@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events    FinancialEvent[]
+}
+
+model Account {
+  id        String   @id @default(cuid())
+  name      String
+  type      String
+  institution String?
+  openingBalance Decimal @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events    FinancialEvent[]
+  ledgerEntries LedgerEntry[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  group     String?
+  type      String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events    FinancialEvent[]
+}
+
+model PaymentMethod {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  type      String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events    FinancialEvent[]
+}
+
+model FinancialEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  description String
+  type      String
+  status    String   @default("planned")
+  date      DateTime
+  competence String
+  amount    Decimal
+  signedAmount Decimal
+  notes     String?
+  archivedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User?    @relation(fields: [userId], references: [id])
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id])
+  categoryId String?
+  category  Category? @relation(fields: [categoryId], references: [id])
+  paymentMethodId String?
+  paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+
+  ledgerEntries LedgerEntry[]
+}
+
+model LedgerEntry {
+  id        String   @id @default(cuid())
+  eventId   String
+  date      DateTime
+  accountId String
+  debit     Decimal @default(0)
+  credit    Decimal @default(0)
+  memo      String?
+  createdAt DateTime @default(now())
+
+  event     FinancialEvent @relation(fields: [eventId], references: [id])
+  account   Account @relation(fields: [accountId], references: [id])
+}
+
+model Budget {
+  id        String   @id @default(cuid())
+  month     String
+  group     String
+  amount    Decimal
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  entity    String
+  entityId  String
+  action    String
+  metadata  String?
+  createdAt DateTime @default(now())
+}

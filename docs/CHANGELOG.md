@@ -1,24 +1,19 @@
 # Changelog
 
-## Platform 1.2 — Analytics 360
+## Sprint 004 — Project Phoenix
 
 ### Adicionado
-- Analytics 360 Engine.
-- Resumo mensal.
-- Comparativo com mês anterior.
-- Pareto por grupo.
-- Análise por forma de pagamento.
-- Média diária de despesas.
-- Leitura executiva automática.
+- API Fastify em `apps/api`.
+- Prisma + SQLite em `packages/database`.
+- Schema inicial com User, Account, Category, PaymentMethod, FinancialEvent, LedgerEntry, Budget e AuditLog.
+- Seed inicial.
+- Endpoints financeiros.
+- Swagger em `/docs`.
+- ADR-001 Ledger Financeiro.
+- ADR-002 API Fastify.
+- ADR-003 Prisma + SQLite.
+- Documentação de banco e API.
 
-### Melhorado
-- Aba Inteligência reconstruída.
-- Analytics deixa de ser gráfico genérico e passa a responder perguntas.
-
-## Platform 1.1 — Decision Center
-
-### Adicionado
-- Nova aba Decision Center.
-- Replay Engine.
-- Simulador rápido.
-- Analytics por perguntas.
+### Estratégia
+- LocalStorage deixa de ser a arquitetura-alvo.
+- Banco e API passam a ser a fonte futura da verdade.
