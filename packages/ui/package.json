@@ -1,0 +1,6 @@
+{
+  "name": "@meg/ui",
+  "version": "0.1.0-alpha",
+  "type": "module",
+  "main": "src/index.ts"
+}

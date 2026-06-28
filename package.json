@@ -1,0 +1,21 @@
+{
+  "name": "meg-financial-os",
+  "version": "1.2.0-analytics-360",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/web",
+    "packages/core",
+    "packages/ui",
+    "packages/shared",
+    "packages/analytics",
+    "packages/intelligence"
+  ],
+  "scripts": {
+    "dev": "npm --workspace apps/web run dev",
+    "build": "npm --workspace apps/web run build",
+    "test": "node packages/core/src/tests/core.test.js",
+    "lint": "echo \"Lint configurado para pr\u00f3xima sprint\""
+  },
+  "devDependencies": {}
+}
