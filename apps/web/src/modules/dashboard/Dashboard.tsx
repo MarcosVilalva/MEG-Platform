@@ -5,6 +5,7 @@ import { runFinancialEngine } from '@core/finance/financial-engine';
 import { generateFinancialInsights } from '@core/insights/insights';
 import { MEGBadge, MEGButton, MEGCard, MEGMetric } from '@ui';
 import { useAppStore } from '../../app/store';
+import { useFinancialEvents } from '../../hooks/useFinancialEvents';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -13,7 +14,30 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onNewTransaction }: DashboardProps) {
-  const { transactions, selectedMonth, setSelectedMonth, markAsPaid } = useAppStore();
+  const { selectedMonth, setSelectedMonth, markAsPaid } = useAppStore();
+  const { events: apiTransactions, loading, error, reload } = useFinancialEvents();
+  const transactions = apiTransactions;
+
+  if (loading) {
+    return (
+      <section className="page">
+        <div className="empty-state">Carregando dados reais da API...</div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="page">
+        <div className="empty-state">
+          Erro ao carregar API: {error}
+          <br />
+          <button className="mini-action" onClick={reload}>Tentar novamente</button>
+        </div>
+      </section>
+    );
+  }
+
   const events = normalizeEvents(transactions);
   const projection = calculateMonthProjection(events, selectedMonth);
   const monthEvents = events.filter((event) => event.competence === selectedMonth);
