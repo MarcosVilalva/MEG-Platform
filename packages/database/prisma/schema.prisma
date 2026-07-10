@@ -40,6 +40,8 @@ model User {
   events         FinancialEvent[]
   sessions       AuthSession[]
   auditLogs      AuditLog[]
+  customers      Customer[]
+  receivables    Receivable[]
 
   @@index([status])
   @@index([role])
@@ -73,6 +75,7 @@ model Account {
 
   events         FinancialEvent[]
   ledgerEntries  LedgerEntry[]
+  receipts       Receipt[]
 }
 
 model Category {
@@ -96,6 +99,7 @@ model PaymentMethod {
   updatedAt DateTime @updatedAt
 
   events    FinancialEvent[]
+  receipts  Receipt[]
 }
 
 model FinancialEvent {
@@ -121,6 +125,7 @@ model FinancialEvent {
   paymentMethodId  String?
   paymentMethod    PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   ledgerEntries    LedgerEntry[]
+  receipt          Receipt?
 }
 
 model LedgerEntry {
@@ -135,6 +140,70 @@ model LedgerEntry {
 
   event     FinancialEvent @relation(fields: [eventId], references: [id])
   account   Account        @relation(fields: [accountId], references: [id])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  email     String?
+  phone     String?
+  document  String?
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  receivables Receivable[]
+
+  @@index([userId, name])
+}
+
+model Receivable {
+  id             String   @id @default(cuid())
+  userId         String
+  customerId     String?
+  description    String
+  totalAmount    Decimal
+  openAmount     Decimal
+  dueDate        DateTime
+  status         String   @default("open")
+  installmentNo  Int      @default(1)
+  installmentQty Int      @default(1)
+  interestRate   Decimal  @default(0)
+  fineRate       Decimal  @default(0)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer   Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  receipts   Receipt[]
+
+  @@index([userId, dueDate])
+  @@index([status])
+}
+
+model Receipt {
+  id              String   @id @default(cuid())
+  receivableId    String
+  amount          Decimal
+  receivedAt      DateTime
+  interestAmount  Decimal  @default(0)
+  fineAmount      Decimal  @default(0)
+  accountId       String?
+  paymentMethodId String?
+  financialEventId String? @unique
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  receivable    Receivable     @relation(fields: [receivableId], references: [id], onDelete: Cascade)
+  account       Account?       @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
+  financialEvent FinancialEvent? @relation(fields: [financialEventId], references: [id], onDelete: SetNull)
+
+  @@index([receivableId, receivedAt])
 }
 
 model Budget {
