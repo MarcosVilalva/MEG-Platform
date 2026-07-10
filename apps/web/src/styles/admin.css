@@ -1,0 +1,74 @@
+.auth-success {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(15, 146, 127, .12);
+  color: #086b5d;
+  font-weight: 700;
+}
+
+.permission-guide h3 { margin-top: 0; }
+.permission-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.permission-grid div {
+  padding: 14px;
+  border-radius: 16px;
+  background: #f3f8f6;
+}
+.permission-grid strong,
+.permission-grid span { display: block; }
+.permission-grid span { margin-top: 6px; color: #60766f; font-size: .88rem; }
+
+.user-list { display: grid; gap: 14px; }
+.user-card-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+}
+.user-card h3 { margin: 8px 0 3px; }
+.user-card p { margin: 0 0 8px; color: #40566a; }
+.user-card label { display: grid; gap: 6px; min-width: 190px; font-weight: 800; }
+.user-card select {
+  min-height: 42px;
+  border: 1px solid rgba(15, 146, 127, .25);
+  border-radius: 12px;
+  padding: 0 10px;
+  background: #fff;
+}
+.user-actions { display: flex; gap: 10px; margin-top: 16px; }
+.user-actions button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 12px;
+  padding: 0 16px;
+  background: #0f927f;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+.user-actions .danger-button { background: #b42318; }
+.status-pill {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.status-pending { background: #fff4ce; color: #8a5a00; }
+.status-active { background: #dff7ef; color: #08745f; }
+.status-rejected,
+.status-blocked { background: #fee4e2; color: #b42318; }
+
+@media (max-width: 900px) {
+  .permission-grid { grid-template-columns: 1fr 1fr; }
+  .user-card-main { align-items: stretch; flex-direction: column; }
+}
+
+@media (max-width: 560px) {
+  .permission-grid { grid-template-columns: 1fr; }
+  .user-actions { flex-direction: column; }
+}
