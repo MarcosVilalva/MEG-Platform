@@ -58,7 +58,7 @@ export type FinancialEventInput = {
   notes?: string;
 };
 
-async function authorizedRequest<T>(path: string, init?: RequestInit): Promise<T> {
+export async function authorizedRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const session = readSession();
   if (!session) throw new Error('UNAUTHORIZED');
 

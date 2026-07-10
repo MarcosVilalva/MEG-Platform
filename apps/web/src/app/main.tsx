@@ -4,6 +4,7 @@ import { AuthenticatedApp } from './AuthenticatedApp';
 import '../styles/global.css';
 import '../styles/catalogs.css';
 import '../styles/admin.css';
+import '../styles/cards-planning.css';
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -1,27 +1,18 @@
-# Regras de NegÃ³cio
+# Regras de Negócio
 
-## Receita disponÃ­vel
+## Cartões de crédito
+- Uma compra compromete o limite total no momento do registro.
+- Compra acima do limite disponível é recusada.
+- Compras após o fechamento entram na fatura seguinte.
+- Parcelas dividem o valor total, preservando os centavos na última parcela.
+- Cancelamento é lógico e restaura o limite comprometido.
+- Usuário Leitor apenas consulta; Operador lança; Gerente e Administrador podem cancelar.
 
-Receita disponÃ­vel do mÃªs = saldo final do mÃªs anterior + entradas do mÃªs.
+## Orçamento
+- O orçamento é definido por usuário, mês e grupo de categoria.
+- O realizado soma despesas não arquivadas cuja competência coincide com o mês.
+- O saldo do orçamento pode ficar negativo e deve ser destacado.
 
-## Datas independentes
-
-CompetÃªncia, vencimento e pagamento sÃ£o datas independentes.
-
-## Ciclo financeiro
-
-Todo evento financeiro pode evoluir no ciclo:
-
-Rascunho â†’ Previsto â†’ Confirmado â†’ Pago â†’ Conciliado â†’ Arquivado
-
-## Dashboard
-
-A Home deve exibir apenas informaÃ§Ãµes que exigem aÃ§Ã£o ou decisÃ£o.
-
-## Analytics
-
-Analytics Ã© para investigaÃ§Ã£o, tendÃªncia e comparaÃ§Ã£o histÃ³rica.
-
-## Core
-
-Todo cÃ¡lculo financeiro deve ser executado pelo MEG Core.
+## Segurança
+- Todo dado pessoal é filtrado pelo usuário autenticado.
+- Novas contas dependem de aprovação do administrador, salvo bootstrap inicial.

@@ -10,6 +10,8 @@ import { Platform } from '../modules/platform/Platform';
 import { DecisionCenter } from '../modules/decision/DecisionCenter';
 import { FinancialCatalogs } from '../modules/catalogs/FinancialCatalogs';
 import { UserManagement } from '../modules/admin/UserManagement';
+import { CreditCards } from '../modules/cards/CreditCards';
+import { Planning } from '../modules/planning/Planning';
 import { CommandPalette } from './CommandPalette';
 import { useAppStore } from './store';
 
@@ -48,6 +50,8 @@ export function App() {
         {view === 'dashboard' && <Dashboard onNewTransaction={openNewTransaction} />}
         {view === 'transactions' && <PersistentTransactions />}
         {view === 'receivables' && <Receivables />}
+        {view === 'cards' && <CreditCards />}
+        {view === 'planning' && <Planning />}
         {view === 'catalogs' && <FinancialCatalogs />}
         {view === 'users' && <UserManagement />}
         {view === 'analytics' && <Analytics />}
