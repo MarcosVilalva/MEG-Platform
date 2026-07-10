@@ -7,6 +7,7 @@ import { registerAuth } from './plugins/auth';
 import { authRoutes } from './modules/auth/routes';
 import { financeRoutes } from './modules/finance/routes';
 import { receivableRoutes } from './modules/receivables/routes';
+import { cardRoutes } from './modules/cards/routes';
 
 const app = Fastify({
   logger: {
@@ -53,6 +54,7 @@ app.get('/health', async () => ({
 await app.register(authRoutes, { prefix: '/auth' });
 await app.register(financeRoutes, { prefix: '/finance' });
 await app.register(receivableRoutes, { prefix: '/receivables' });
+await app.register(cardRoutes, { prefix: '/cards' });
 
 const shutdown = async (signal: string) => {
   app.log.info({ signal }, 'Graceful shutdown started');

@@ -15,6 +15,7 @@ const baseNavItems = [
   ['dashboard', 'Cockpit Financeiro', '⌂'],
   ['transactions', 'Movimentações', '▦'],
   ['receivables', 'Contas a Receber', '◫'],
+  ['cards', 'Cartões de Crédito', '▣'],
   ['catalogs', 'Cadastros', '▤'],
   ['analytics', 'Inteligência', '⌁'],
   ['cashflow', 'Fluxo', '↔'],
