@@ -8,6 +8,7 @@ import { Settings } from '../modules/settings/Settings';
 import { Platform } from '../modules/platform/Platform';
 import { DecisionCenter } from '../modules/decision/DecisionCenter';
 import { FinancialCatalogs } from '../modules/catalogs/FinancialCatalogs';
+import { UserManagement } from '../modules/admin/UserManagement';
 import { TransactionModal } from '../modules/transactions/TransactionModal';
 import { CommandPalette } from './CommandPalette';
 import { useAppStore } from './store';
@@ -45,13 +46,11 @@ export function App() {
         event.preventDefault();
         setCommandOpen(true);
       }
-
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'n') {
         event.preventDefault();
         openNewTransaction();
       }
     }
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
@@ -61,10 +60,9 @@ export function App() {
       <AppShell active={view} onNavigate={setView} onOpenCommand={() => setCommandOpen(true)}>
         {view === 'decision' && <DecisionCenter onNavigate={setView} />}
         {view === 'dashboard' && <Dashboard onNewTransaction={openNewTransaction} />}
-        {view === 'transactions' && (
-          <Transactions onNewTransaction={openNewTransaction} onEditTransaction={openEditTransaction} />
-        )}
+        {view === 'transactions' && <Transactions onNewTransaction={openNewTransaction} onEditTransaction={openEditTransaction} />}
         {view === 'catalogs' && <FinancialCatalogs />}
+        {view === 'users' && <UserManagement />}
         {view === 'analytics' && <Analytics />}
         {view === 'cashflow' && <Cashflow />}
         {view === 'platform' && <Platform />}
@@ -72,12 +70,7 @@ export function App() {
       </AppShell>
 
       <TransactionModal open={modalOpen} editing={editing} onClose={closeModal} />
-      <CommandPalette
-        open={commandOpen}
-        onClose={() => setCommandOpen(false)}
-        onNavigate={setView}
-        onNewTransaction={openNewTransaction}
-      />
+      <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} onNavigate={setView} onNewTransaction={openNewTransaction} />
     </>
   );
 }

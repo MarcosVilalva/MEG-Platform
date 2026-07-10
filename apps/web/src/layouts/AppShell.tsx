@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useAppStore } from '../app/store';
+import { readSession } from '../app/auth-client';
 import { FinancialControlBar } from './FinancialControlBar';
 
 interface AppShellProps {
@@ -9,7 +10,7 @@ interface AppShellProps {
   children: ReactNode;
 }
 
-const navItems = [
+const baseNavItems = [
   ['decision', 'Decision Center', '◆'],
   ['dashboard', 'Cockpit Financeiro', '⌂'],
   ['transactions', 'Movimentações', '▦'],
@@ -23,36 +24,32 @@ const navItems = [
 export function AppShell({ active, onNavigate, onOpenCommand, children }: AppShellProps) {
   const theme = useAppStore((state) => state.theme);
   const toggleTheme = useAppStore((state) => state.toggleTheme);
+  const session = readSession();
+  const navItems = session?.user.role === 'ADMIN'
+    ? [...baseNavItems.slice(0, 4), ['users', 'Usuários e Permissões', '♙'], ...baseNavItems.slice(4)]
+    : baseNavItems;
 
   return (
     <div className={`app-shell ${theme}`}>
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">M</div>
-          <div>
-            <strong>MEG</strong>
-            <small>Financial OS</small>
-          </div>
+          <div><strong>MEG</strong><small>Financial OS</small></div>
         </div>
 
         <button className="command-trigger" onClick={onOpenCommand}>⌘ Buscar ou comando</button>
 
         <nav>
           {navItems.map(([id, label, icon]) => (
-            <button
-              key={id}
-              className={active === id ? 'active' : ''}
-              onClick={() => onNavigate(id)}
-            >
-              <span>{icon}</span>
-              {label}
+            <button key={id} className={active === id ? 'active' : ''} onClick={() => onNavigate(id)}>
+              <span>{icon}</span>{label}
             </button>
           ))}
         </nav>
 
         <div className="sidebar-footer">
-          <span>Alpha 0.3</span>
-          <small>Cadastros persistentes</small>
+          <span>Alpha 0.4</span>
+          <small>Aprovação e permissões</small>
           <button onClick={toggleTheme}>Alternar tema</button>
         </div>
       </aside>
