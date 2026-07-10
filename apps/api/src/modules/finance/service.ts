@@ -132,3 +132,72 @@ export async function deleteFinancialEvent(userId: string, id: string) {
   await prisma.ledgerEntry.deleteMany({ where: { eventId: id } });
   return { id, archived: true };
 }
+export async function getFinancialSummary(userId: string, month: string) {
+  const [year, monthNumber] = month.split('-').map(Number);
+  const start = new Date(Date.UTC(year, monthNumber - 1, 1));
+  const end = new Date(Date.UTC(year, monthNumber, 1));
+  const now = new Date();
+  const postedStatuses = ['paid', 'reconciled', 'confirmed'];
+
+  const [monthEvents, postedEvents, nextDue, pendingTotals] = await Promise.all([
+    prisma.financialEvent.findMany({
+      where: { userId, archivedAt: null, date: { gte: start, lt: end } },
+      select: { type: true, status: true, amount: true, signedAmount: true, category: { select: { name: true } } }
+    }),
+    prisma.financialEvent.aggregate({
+      where: { userId, archivedAt: null, status: { in: postedStatuses } },
+      _sum: { signedAmount: true }
+    }),
+    prisma.financialEvent.findFirst({
+      where: { userId, archivedAt: null, status: 'planned', date: { gte: now } },
+      orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true, description: true, date: true, amount: true, type: true }
+    }),
+    prisma.financialEvent.aggregate({
+      where: { userId, archivedAt: null, status: 'planned' },
+      _count: { _all: true },
+      _sum: { amount: true }
+    })
+  ]);
+
+  let income = 0;
+  let expense = 0;
+  let realizedIncome = 0;
+  let realizedExpense = 0;
+  const categoryTotals = new Map<string, number>();
+
+  for (const event of monthEvents) {
+    const amount = Number(event.amount);
+    const posted = postedStatuses.includes(event.status);
+    if (event.type === 'income' || event.type === 'redemption') {
+      income += amount;
+      if (posted) realizedIncome += amount;
+    } else {
+      expense += amount;
+      if (posted) realizedExpense += amount;
+      const category = event.category?.name || 'Sem categoria';
+      categoryTotals.set(category, (categoryTotals.get(category) || 0) + amount);
+    }
+  }
+
+  const topCategories = [...categoryTotals.entries()]
+    .map(([name, amount]) => ({ name, amount }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5);
+
+  return {
+    month,
+    availableBalance: Number(postedEvents._sum.signedAmount || 0),
+    income,
+    expense,
+    projectedResult: income - expense,
+    realizedIncome,
+    realizedExpense,
+    realizedResult: realizedIncome - realizedExpense,
+    eventCount: monthEvents.length,
+    pendingCount: pendingTotals._count._all,
+    pendingAmount: Number(pendingTotals._sum.amount || 0),
+    nextDue,
+    topCategories
+  };
+}

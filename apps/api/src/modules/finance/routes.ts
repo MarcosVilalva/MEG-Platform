@@ -4,6 +4,7 @@ import { createFinancialEventSchema, updateFinancialEventSchema } from './schema
 import {
   createFinancialEvent,
   deleteFinancialEvent,
+  getFinancialSummary,
   listFinancialEvents,
   updateFinancialEvent
 } from './service';
@@ -46,6 +47,13 @@ function eventError(reply: FastifyReply, error: unknown) {
 }
 
 export async function financeRoutes(app: FastifyInstance) {
+  app.get('/summary', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    const parsed = z.object({
+      month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+    }).safeParse(request.query);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    return getFinancialSummary(request.user.sub, parsed.data.month);
+  });
   app.get('/events', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({
       page: z.coerce.number().int().positive().default(1),

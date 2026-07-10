@@ -20,7 +20,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   transactions: loadTransactions(),
-  selectedMonth: '2026-06',
+  selectedMonth: new Date().toISOString().slice(0, 7),
   theme: (localStorage.getItem('meg-theme') as 'light' | 'dark') || 'light',
 
   setSelectedMonth: (month) => set({ selectedMonth: month }),

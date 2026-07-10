@@ -1,33 +1,31 @@
-import { normalizeEvents } from '@core/finance/events';
-import { runFinancialEngine } from '@core/finance/financial-engine';
 import { useAppStore } from '../app/store';
+import { useFinanceSummary } from '../app/use-finance-summary';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export function FinancialControlBar() {
-  const { transactions, selectedMonth } = useAppStore();
-  const events = normalizeEvents(transactions);
-  const engine = runFinancialEngine(events, selectedMonth, `${selectedMonth}-15`);
+  const selectedMonth = useAppStore((state) => state.selectedMonth);
+  const { summary, loading } = useFinanceSummary(selectedMonth);
 
   return (
-    <section className="control-bar">
+    <section className="control-bar" aria-busy={loading}>
       <div>
-        <span>Saldo disponível</span>
-        <strong>{brl.format(engine.availableCash)}</strong>
+        <span>Saldo realizado</span>
+        <strong>{loading && !summary ? 'Carregando...' : brl.format(summary?.availableBalance || 0)}</strong>
       </div>
       <div>
-        <span>Fechamento</span>
-        <strong className={engine.projectedClosing >= 0 ? 'positive' : 'negative'}>
-          {brl.format(engine.projectedClosing)}
+        <span>Resultado previsto</span>
+        <strong className={(summary?.projectedResult || 0) >= 0 ? 'positive' : 'negative'}>
+          {loading && !summary ? '—' : brl.format(summary?.projectedResult || 0)}
         </strong>
       </div>
       <div>
         <span>Próximo vencimento</span>
-        <strong>{engine.nextDue ? engine.nextDue.description : 'Nenhum'}</strong>
+        <strong>{loading && !summary ? '—' : summary?.nextDue?.description || 'Nenhum'}</strong>
       </div>
       <div>
         <span>Pendências</span>
-        <strong>{engine.openCommitments} • {brl.format(engine.openCommitmentsAmount)}</strong>
+        <strong>{loading && !summary ? '—' : `${summary?.pendingCount || 0} • ${brl.format(summary?.pendingAmount || 0)}`}</strong>
       </div>
     </section>
   );
