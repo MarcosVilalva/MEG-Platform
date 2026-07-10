@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AppShell } from '../layouts/AppShell';
 import { Dashboard } from '../modules/dashboard/Dashboard';
 import { PersistentTransactions } from '../modules/transactions/PersistentTransactions';
+import { Receivables } from '../modules/receivables/Receivables';
 import { Analytics } from '../modules/analytics/Analytics';
 import { Cashflow } from '../modules/cashflow/Cashflow';
 import { Settings } from '../modules/settings/Settings';
@@ -46,6 +47,7 @@ export function App() {
         {view === 'decision' && <DecisionCenter onNavigate={setView} />}
         {view === 'dashboard' && <Dashboard onNewTransaction={openNewTransaction} />}
         {view === 'transactions' && <PersistentTransactions />}
+        {view === 'receivables' && <Receivables />}
         {view === 'catalogs' && <FinancialCatalogs />}
         {view === 'users' && <UserManagement />}
         {view === 'analytics' && <Analytics />}
