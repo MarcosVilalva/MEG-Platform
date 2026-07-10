@@ -81,7 +81,10 @@ async function authorizedRequest<T>(path: string, init?: RequestInit): Promise<T
 }
 
 export const financeClient = {
-  listEvents: () => authorizedRequest<FinancialEvent[]>('/finance/events'),
+  listEvents: (page = 1, pageSize = 50, search = '') =>
+    authorizedRequest<{ items: FinancialEvent[]; total: number; page: number; pageSize: number }>(
+      `/finance/events?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`
+    ),
   createEvent: (data: FinancialEventInput) => authorizedRequest<FinancialEvent>('/finance/events', {
     method: 'POST',
     body: JSON.stringify(data)

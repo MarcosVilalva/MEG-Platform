@@ -39,17 +39,30 @@ async function syncLedger(eventId: string) {
   });
 }
 
-export async function listFinancialEvents(userId: string) {
-  return prisma.financialEvent.findMany({
-    where: { userId, archivedAt: null },
-    orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
-    include: {
-      account: true,
-      category: true,
-      paymentMethod: true,
-      ledgerEntries: true
-    }
-  });
+export async function listFinancialEvents(userId: string, input: { page: number; pageSize: number; search?: string }) {
+  const where = {
+    userId,
+    archivedAt: null,
+    ...(input.search ? {
+      OR: [
+        { description: { contains: input.search, mode: 'insensitive' as const } },
+        { account: { name: { contains: input.search, mode: 'insensitive' as const } } },
+        { category: { name: { contains: input.search, mode: 'insensitive' as const } } },
+        { paymentMethod: { name: { contains: input.search, mode: 'insensitive' as const } } }
+      ]
+    } : {})
+  };
+  const [items, total] = await prisma.$transaction([
+    prisma.financialEvent.findMany({
+      where,
+      skip: (input.page - 1) * input.pageSize,
+      take: input.pageSize,
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+      include: { account: true, category: true, paymentMethod: true }
+    }),
+    prisma.financialEvent.count({ where })
+  ]);
+  return { items, total, page: input.page, pageSize: input.pageSize };
 }
 
 export async function createFinancialEvent(userId: string, input: CreateFinancialEventInput) {
