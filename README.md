@@ -1,64 +1,64 @@
-# MEG Platform — Sprint 004 Project Phoenix
+# MEG Platform
 
-Project Phoenix cria a fundação real da plataforma: API, Prisma, SQLite e camada inicial de persistência.
+Sistema moderno de **finanças pessoais**, voltado a controle, planejamento e tomada de decisão.
 
-## Setup inicial
+> O MEG Platform não é um sistema de gestão pública.
 
-```powershell
-npm.cmd install
-copy .env.example .env
-npm.cmd run db:generate
-npm.cmd run db:push
-npm.cmd run db:seed
-```
+## Estado
 
-## Rodar API
+O projeto está em desenvolvimento Alpha. Já possui autenticação, aprovação de usuários, perfis de acesso, cadastros financeiros, receitas, despesas, contas a receber, Dashboard e Analytics iniciais.
 
-```powershell
-npm.cmd run dev:api
-```
+Frontend de demonstração:
 
-API:
+https://marcosvilalva.github.io/MEG-Platform/
 
-```text
-http://localhost:3333
-```
+A versão pública estática não hospeda a API.
 
-Swagger:
+## Stack
 
-```text
-http://localhost:3333/docs
-```
+- React, TypeScript e Vite;
+- Fastify;
+- Prisma;
+- SQLite em desenvolvimento;
+- JWT e refresh token;
+- monorepo npm.
 
-## Rodar Web
-
-Em outro terminal:
+## Setup
 
 ```powershell
-npm.cmd run dev:web
+npm install
+Copy-Item .env.example .env
+Copy-Item .env packages\database\.env -Force
+npm run db:generate
+npm run db:push
+npm run db:seed
+npm run check
+npm run dev
 ```
 
-## Rodar tudo junto
+Web: http://localhost:5173
+
+API: http://localhost:3333
+
+Swagger: http://localhost:3333/docs
+
+## Documentação
+
+Comece por [docs/README.md](docs/README.md) e [docs/MASTER_CONTEXT.md](docs/MASTER_CONTEXT.md).
+
+Documentos principais:
+
+- [Visão do produto](docs/PRODUCT_VISION.md)
+- [Regras de negócio](docs/BUSINESS_RULES.md)
+- [Arquitetura](docs/ARCHITECTURE.md)
+- [Segurança](docs/SECURITY.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Contexto para IA](docs/AI_CONTEXT.md)
+
+## Qualidade
 
 ```powershell
-npm.cmd run dev
+npm run check
 ```
 
-## Scripts úteis
-
-```powershell
-npm.cmd run db:studio
-npm.cmd run test
-```
-
-## O que entrou nesta Sprint
-
-- `apps/api` com Fastify.
-- `packages/database` com Prisma.
-- SQLite local.
-- Modelos iniciais.
-- Seed inicial.
-- Rotas financeiras.
-- ADRs.
-- Documentação de API e banco.
-- Preparação para o React migrar do LocalStorage para API.
+Uma funcionalidade só é considerada concluída quando existe no código, compila, passa nos testes pertinentes e tem documentação atualizada.
