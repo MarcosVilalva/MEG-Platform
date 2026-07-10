@@ -80,6 +80,25 @@ async function authorizedRequest<T>(path: string, init?: RequestInit): Promise<T
   return response.json() as Promise<T>;
 }
 
+export type BudgetOverview = {
+  id: string;
+  month: string;
+  group: string;
+  amount: number;
+  used: number;
+  available: number;
+  percent: number;
+  status: 'good' | 'warning' | 'danger';
+};
+
+export type FinancialAnalytics = {
+  month: string;
+  summary: FinanceSummary;
+  previous: { month: string; income: number; expense: number; result: number };
+  delta: { income: number; expense: number; result: number };
+  dailyAverageExpense: number;
+  paymentMethods: Array<{ name: string; amount: number }>;
+};
 export type FinancialCashflow = {
   month: string;
   openingBalance: number;
@@ -119,6 +138,14 @@ export type FinanceSummary = {
   topCategories: Array<{ name: string; amount: number }>;
 };
 export const financeClient = {
+  getAnalytics: (month: string) =>
+    authorizedRequest<FinancialAnalytics>(`/finance/analytics?month=${encodeURIComponent(month)}`),
+  listBudgets: (month: string) =>
+    authorizedRequest<BudgetOverview[]>(`/finance/budgets?month=${encodeURIComponent(month)}`),
+  saveBudget: (data: { month: string; group: string; amount: number }) =>
+    authorizedRequest<BudgetOverview>('/finance/budgets', { method: 'PUT', body: JSON.stringify(data) }),
+  deleteBudget: (id: string) =>
+    authorizedRequest<{ id: string; deleted: boolean }>(`/finance/budgets/${id}`, { method: 'DELETE' }),
   getCashflow: (month: string) =>
     authorizedRequest<FinancialCashflow>(`/finance/cashflow?month=${encodeURIComponent(month)}`),
   getSummary: (month: string) =>
