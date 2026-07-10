@@ -14,6 +14,7 @@ const baseNavItems = [
   ['decision', 'Decision Center', '◆'],
   ['dashboard', 'Cockpit Financeiro', '⌂'],
   ['transactions', 'Movimentações', '▦'],
+  ['receivables', 'Contas a Receber', '◫'],
   ['catalogs', 'Cadastros', '▤'],
   ['analytics', 'Inteligência', '⌁'],
   ['cashflow', 'Fluxo', '↔'],
@@ -26,7 +27,7 @@ export function AppShell({ active, onNavigate, onOpenCommand, children }: AppShe
   const toggleTheme = useAppStore((state) => state.toggleTheme);
   const session = readSession();
   const navItems = session?.user.role === 'ADMIN'
-    ? [...baseNavItems.slice(0, 4), ['users', 'Usuários e Permissões', '♙'], ...baseNavItems.slice(4)]
+    ? [...baseNavItems.slice(0, 5), ['users', 'Usuários e Permissões', '♙'], ...baseNavItems.slice(5)]
     : baseNavItems;
 
   return (
@@ -48,8 +49,8 @@ export function AppShell({ active, onNavigate, onOpenCommand, children }: AppShe
         </nav>
 
         <div className="sidebar-footer">
-          <span>Alpha 0.4</span>
-          <small>Aprovação e permissões</small>
+          <span>Alpha 0.5</span>
+          <small>Contas a receber</small>
           <button onClick={toggleTheme}>Alternar tema</button>
         </div>
       </aside>
