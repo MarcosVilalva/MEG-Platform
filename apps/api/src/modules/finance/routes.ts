@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { createFinancialEventSchema, updateFinancialEventSchema } from './schemas';
 import {
@@ -34,7 +34,7 @@ const paymentMethodSchema = z.object({
   isActive: z.boolean().optional()
 });
 
-function validationError(reply: Parameters<Parameters<FastifyInstance['post']>[2]>[1], details: unknown) {
+function validationError(reply: FastifyReply, details: unknown) {
   return reply.code(400).send({ error: 'VALIDATION_ERROR', details });
 }
 
