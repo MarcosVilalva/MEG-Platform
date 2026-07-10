@@ -27,8 +27,8 @@ model User {
   email          String     @unique
   passwordHash   String     @default("")
   role           UserRole   @default(VIEWER)
-  status         UserStatus @default(PENDING)
-  isActive       Boolean    @default(false)
+  status         UserStatus @default(ACTIVE)
+  isActive       Boolean    @default(true)
   approvedAt     DateTime?
   approvedById   String?
   rejectedAt     DateTime?
