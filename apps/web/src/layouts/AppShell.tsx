@@ -13,6 +13,7 @@ const navItems = [
   ['decision', 'Decision Center', '◆'],
   ['dashboard', 'Cockpit Financeiro', '⌂'],
   ['transactions', 'Movimentações', '▦'],
+  ['catalogs', 'Cadastros', '▤'],
   ['analytics', 'Inteligência', '⌁'],
   ['cashflow', 'Fluxo', '↔'],
   ['platform', 'Platform', '◈'],
@@ -50,8 +51,8 @@ export function AppShell({ active, onNavigate, onOpenCommand, children }: AppShe
         </nav>
 
         <div className="sidebar-footer">
-          <span>Alpha 0.2</span>
-          <small>Core + UX Sprint</small>
+          <span>Alpha 0.3</span>
+          <small>Cadastros persistentes</small>
           <button onClick={toggleTheme}>Alternar tema</button>
         </div>
       </aside>
