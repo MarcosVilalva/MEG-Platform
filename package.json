@@ -28,6 +28,8 @@
     "db:push": "npm --workspace packages/database run db:push",
     "db:seed": "npm --workspace packages/database run db:seed",
     "db:studio": "npm --workspace packages/database run db:studio",
+    "db:generate:legacy": "npm --workspace packages/database run db:generate:legacy",
+    "db:migrate:supabase": "npm --workspace packages/database run db:migrate:supabase",
     "phoenix:setup": "npm install && npm run db:generate && npm run db:push && npm run db:seed"
   },
   "devDependencies": {

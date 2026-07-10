@@ -18,6 +18,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      VITE_API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
