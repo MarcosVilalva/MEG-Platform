@@ -10,3 +10,4 @@ Thumbs.db
 *.db
 *.db-journal
 packages/database/prisma/dev.db
+packages/database/generated/

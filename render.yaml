@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: meg-platform-api
+    runtime: node
+    plan: free
+    region: ohio
+    buildCommand: npm install && npm run db:generate && npm run build:api
+    startCommand: npm run db:push && npm run start:api
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: CORS_ORIGINS
+        value: https://marcosvilalva.github.io
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

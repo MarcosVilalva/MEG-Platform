@@ -20,3 +20,11 @@
 ## Alpha 0.7
 - Simulador financeiro inicial.
 - Replay financeiro inicial.
+
+
+## Infraestrutura de produção
+- [x] PostgreSQL Supabase preparado
+- [x] API Render preparada
+- [x] Migração idempotente do SQLite
+- [ ] Credenciais configuradas nos painéis
+- [ ] Conferência final dos dados migrados

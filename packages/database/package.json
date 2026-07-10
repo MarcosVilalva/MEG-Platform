@@ -8,7 +8,9 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:generate:legacy": "prisma generate --schema prisma/schema.sqlite.prisma",
+    "db:migrate:supabase": "tsx prisma/migrate-sqlite-to-postgres.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0"

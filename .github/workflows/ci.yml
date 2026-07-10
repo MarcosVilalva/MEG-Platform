@@ -35,11 +35,11 @@ jobs:
       - name: Generate Prisma client
         run: npm run db:generate
         env:
-          DATABASE_URL: file:./dev.db
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
 
       - name: Run tests and builds
         run: npm run check
         env:
-          DATABASE_URL: file:./dev.db
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
           NODE_ENV: test
           CORS_ORIGINS: http://localhost:5173
