@@ -3,6 +3,8 @@ import cors from '@fastify/cors';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { config } from './config';
+import { registerAuth } from './plugins/auth';
+import { authRoutes } from './modules/auth/routes';
 import { financeRoutes } from './modules/finance/routes';
 
 const app = Fastify({
@@ -37,6 +39,8 @@ await app.register(swaggerUi, {
   routePrefix: '/docs'
 });
 
+await registerAuth(app);
+
 app.get('/health', async () => ({
   status: 'ok',
   service: 'meg-api',
@@ -45,6 +49,7 @@ app.get('/health', async () => ({
   timestamp: new Date().toISOString()
 }));
 
+await app.register(authRoutes, { prefix: '/auth' });
 await app.register(financeRoutes, { prefix: '/finance' });
 
 const shutdown = async (signal: string) => {
