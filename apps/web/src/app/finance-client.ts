@@ -26,11 +26,13 @@ export type PaymentMethod = {
   isActive: boolean;
 };
 
+export type FinancialEventStatus = 'draft' | 'planned' | 'confirmed' | 'paid' | 'reconciled' | 'archived';
+
 export type FinancialEvent = {
   id: string;
   description: string;
   type: 'income' | 'expense';
-  status: 'draft' | 'planned' | 'confirmed' | 'paid' | 'reconciled' | 'archived';
+  status: FinancialEventStatus;
   date: string;
   competence: string;
   amount: string | number;
@@ -47,7 +49,7 @@ export type FinancialEvent = {
 export type FinancialEventInput = {
   description: string;
   type: 'income' | 'expense';
-  status: 'planned' | 'paid';
+  status: FinancialEventStatus;
   date: string;
   amount: number;
   accountId?: string;
@@ -88,7 +90,7 @@ export const financeClient = {
     method: 'PATCH',
     body: JSON.stringify(data)
   }),
-  archiveEvent: (id: string) => authorizedRequest<FinancialEvent>(`/finance/events/${id}`, { method: 'DELETE' }),
+  archiveEvent: (id: string) => authorizedRequest<{ id: string; archived: boolean }>(`/finance/events/${id}`, { method: 'DELETE' }),
 
   listAccounts: () => authorizedRequest<Account[]>('/finance/accounts'),
   createAccount: (data: Omit<Account, 'id' | 'isActive'>) => authorizedRequest<Account>('/finance/accounts', {
