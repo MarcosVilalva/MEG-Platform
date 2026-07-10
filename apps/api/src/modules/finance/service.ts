@@ -201,3 +201,78 @@ export async function getFinancialSummary(userId: string, month: string) {
     topCategories
   };
 }
+
+export async function getFinancialCashflow(userId: string, month: string) {
+  const [year, monthNumber] = month.split('-').map(Number);
+  const start = new Date(Date.UTC(year, monthNumber - 1, 1));
+  const end = new Date(Date.UTC(year, monthNumber, 1));
+  const postedStatuses = ['paid', 'reconciled', 'confirmed'];
+
+  const [opening, events] = await Promise.all([
+    prisma.financialEvent.aggregate({
+      where: { userId, archivedAt: null, date: { lt: start }, status: { in: postedStatuses } },
+      _sum: { signedAmount: true }
+    }),
+    prisma.financialEvent.findMany({
+      where: { userId, archivedAt: null, date: { gte: start, lt: end } },
+      orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+      select: {
+        id: true,
+        date: true,
+        description: true,
+        status: true,
+        type: true,
+        amount: true,
+        signedAmount: true,
+        category: { select: { name: true } }
+      }
+    })
+  ]);
+
+  const openingBalance = Number(opening._sum.signedAmount || 0);
+  let projectedBalance = openingBalance;
+  let realizedBalance = openingBalance;
+  const days = new Map<string, {
+    date: string;
+    income: number;
+    expense: number;
+    net: number;
+    projectedBalance: number;
+    realizedBalance: number;
+    eventCount: number;
+  }>();
+
+  for (const event of events) {
+    const date = event.date.toISOString().slice(0, 10);
+    const signed = Number(event.signedAmount);
+    const amount = Number(event.amount);
+    projectedBalance += signed;
+    if (postedStatuses.includes(event.status)) realizedBalance += signed;
+    const day = days.get(date) || {
+      date,
+      income: 0,
+      expense: 0,
+      net: 0,
+      projectedBalance,
+      realizedBalance,
+      eventCount: 0
+    };
+    if (signed >= 0) day.income += amount;
+    else day.expense += amount;
+    day.net += signed;
+    day.projectedBalance = projectedBalance;
+    day.realizedBalance = realizedBalance;
+    day.eventCount += 1;
+    days.set(date, day);
+  }
+
+  return {
+    month,
+    openingBalance,
+    projectedClosing: projectedBalance,
+    realizedClosing: realizedBalance,
+    totalIncome: [...days.values()].reduce((sum, day) => sum + day.income, 0),
+    totalExpense: [...days.values()].reduce((sum, day) => sum + day.expense, 0),
+    days: [...days.values()]
+  };
+}
