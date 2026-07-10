@@ -1311,3 +1311,51 @@ button, input {
     grid-template-columns: 1fr;
   }
 }
+
+.budget-form {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(120px, .6fr) auto;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.budget-form input,
+.budget-form button {
+  min-height: 42px;
+  border-radius: 12px;
+}
+
+.budget-form input {
+  border: 1px solid #c9ddd7;
+  padding: 0 12px;
+  background: transparent;
+  color: inherit;
+}
+
+.budget-form button {
+  border: 0;
+  padding: 0 16px;
+  background: #087f6d;
+  color: #fff;
+  font-weight: 800;
+}
+
+.budget-row:has(> button) {
+  grid-template-columns: minmax(180px, 1fr) minmax(120px, 1fr) 80px auto;
+}
+
+.budget-row > button.danger {
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #b42318;
+  background: #fff0ee;
+  font-weight: 700;
+}
+
+@media(max-width: 760px) {
+  .budget-form,
+  .budget-row:has(> button) {
+    grid-template-columns: 1fr;
+  }
+}

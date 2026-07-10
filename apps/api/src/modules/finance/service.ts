@@ -276,3 +276,111 @@ export async function getFinancialCashflow(userId: string, month: string) {
     days: [...days.values()]
   };
 }
+
+export async function listBudgetOverview(userId: string, month: string) {
+  const [year, monthNumber] = month.split('-').map(Number);
+  const start = new Date(Date.UTC(year, monthNumber - 1, 1));
+  const end = new Date(Date.UTC(year, monthNumber, 1));
+  const [budgets, expenses] = await Promise.all([
+    prisma.budget.findMany({ where: { userId, month }, orderBy: { group: 'asc' } }),
+    prisma.financialEvent.findMany({
+      where: {
+        userId,
+        archivedAt: null,
+        date: { gte: start, lt: end },
+        type: { notIn: ['income', 'redemption'] }
+      },
+      select: { amount: true, category: { select: { name: true, group: true } } }
+    })
+  ]);
+
+  const usedByGroup = new Map<string, number>();
+  for (const expense of expenses) {
+    const group = expense.category?.group || expense.category?.name || 'Sem categoria';
+    usedByGroup.set(group, (usedByGroup.get(group) || 0) + Number(expense.amount));
+  }
+
+  return budgets.map((budget) => {
+    const amount = Number(budget.amount);
+    const used = usedByGroup.get(budget.group) || 0;
+    const percent = amount > 0 ? (used / amount) * 100 : 0;
+    return {
+      id: budget.id,
+      month: budget.month,
+      group: budget.group,
+      amount,
+      used,
+      available: amount - used,
+      percent,
+      status: percent >= 100 ? 'danger' : percent >= 80 ? 'warning' : 'good'
+    };
+  });
+}
+
+export async function upsertBudget(userId: string, input: { month: string; group: string; amount: number }) {
+  return prisma.budget.upsert({
+    where: { userId_month_group: { userId, month: input.month, group: input.group } },
+    update: { amount: input.amount },
+    create: { userId, month: input.month, group: input.group, amount: input.amount }
+  });
+}
+
+export async function deleteBudget(userId: string, id: string) {
+  const result = await prisma.budget.deleteMany({ where: { id, userId } });
+  if (!result.count) throw new Error('BUDGET_NOT_FOUND');
+  return { id, deleted: true };
+}
+
+export async function getFinancialAnalytics(userId: string, month: string) {
+  const [year, monthNumber] = month.split('-').map(Number);
+  const start = new Date(Date.UTC(year, monthNumber - 1, 1));
+  const end = new Date(Date.UTC(year, monthNumber, 1));
+  const previousDate = new Date(Date.UTC(year, monthNumber - 2, 1));
+  const previousMonth = previousDate.toISOString().slice(0, 7);
+
+  const [current, previous, events] = await Promise.all([
+    getFinancialSummary(userId, month),
+    getFinancialSummary(userId, previousMonth),
+    prisma.financialEvent.findMany({
+      where: { userId, archivedAt: null, date: { gte: start, lt: end } },
+      select: {
+        type: true,
+        amount: true,
+        date: true,
+        category: { select: { name: true, group: true } },
+        paymentMethod: { select: { name: true } }
+      }
+    })
+  ]);
+
+  const paymentTotals = new Map<string, number>();
+  const expenseDays = new Set<string>();
+  for (const event of events) {
+    if (event.type === 'income' || event.type === 'redemption') continue;
+    const amount = Number(event.amount);
+    const method = event.paymentMethod?.name || 'Não informada';
+    paymentTotals.set(method, (paymentTotals.get(method) || 0) + amount);
+    expenseDays.add(event.date.toISOString().slice(0, 10));
+  }
+
+  return {
+    month,
+    summary: current,
+    previous: {
+      month: previousMonth,
+      income: previous.income,
+      expense: previous.expense,
+      result: previous.projectedResult
+    },
+    delta: {
+      income: current.income - previous.income,
+      expense: current.expense - previous.expense,
+      result: current.projectedResult - previous.projectedResult
+    },
+    dailyAverageExpense: expenseDays.size ? current.expense / expenseDays.size : 0,
+    paymentMethods: [...paymentTotals.entries()]
+      .map(([name, amount]) => ({ name, amount }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 6)
+  };
+}
