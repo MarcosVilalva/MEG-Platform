@@ -8,6 +8,13 @@ import {
 } from '../../app/finance-client';
 
 type Tab = 'accounts' | 'categories' | 'paymentMethods';
+type CatalogItem = Account | Category | PaymentMethod;
+
+function getItemDetail(item: CatalogItem): string {
+  if ('institution' in item) return String(item.institution || item.type || '');
+  if ('group' in item) return String(item.group || item.type || '');
+  return String(item.type || '');
+}
 
 export function FinancialCatalogs() {
   const [tab, setTab] = useState<Tab>('accounts');
@@ -91,7 +98,7 @@ export function FinancialCatalogs() {
     }
   }
 
-  const rows = tab === 'accounts' ? accounts : tab === 'categories' ? categories : paymentMethods;
+  const rows: CatalogItem[] = tab === 'accounts' ? accounts : tab === 'categories' ? categories : paymentMethods;
 
   return (
     <section className="page catalogs-page">
@@ -135,7 +142,7 @@ export function FinancialCatalogs() {
           <div className="catalog-table">
             {rows.map((item) => (
               <article key={item.id} className={!item.isActive ? 'inactive' : ''}>
-                <div><strong>{item.name}</strong><span>{'institution' in item ? item.institution || item.type : 'group' in item ? item.group || item.type : item.type}</span></div>
+                <div><strong>{item.name}</strong><span>{getItemDetail(item)}</span></div>
                 <span className={`status-pill ${item.isActive ? 'active' : ''}`}>{item.isActive ? 'Ativo' : 'Inativo'}</span>
                 {item.isActive && canDeactivate && <button onClick={() => void deactivate(tab, item.id)} disabled={busy}>Desativar</button>}
               </article>
