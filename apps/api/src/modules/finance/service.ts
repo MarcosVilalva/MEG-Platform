@@ -13,9 +13,36 @@ function competenceFromDate(date: string) {
   return date.slice(0, 7);
 }
 
-export async function listFinancialEvents() {
+function isPosted(status: string) {
+  return status === 'paid' || status === 'reconciled' || status === 'confirmed';
+}
+
+async function syncLedger(eventId: string) {
+  await prisma.$transaction(async (tx) => {
+    const event = await tx.financialEvent.findUnique({ where: { id: eventId } });
+    if (!event) return;
+
+    await tx.ledgerEntry.deleteMany({ where: { eventId } });
+    if (!event.accountId || !isPosted(event.status) || event.archivedAt) return;
+
+    const value = Number(event.amount);
+    await tx.ledgerEntry.create({
+      data: {
+        eventId: event.id,
+        date: event.date,
+        accountId: event.accountId,
+        debit: Number(event.signedAmount) >= 0 ? value : 0,
+        credit: Number(event.signedAmount) < 0 ? value : 0,
+        memo: event.description
+      }
+    });
+  });
+}
+
+export async function listFinancialEvents(userId: string) {
   return prisma.financialEvent.findMany({
-    orderBy: { date: 'desc' },
+    where: { userId, archivedAt: null },
+    orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
     include: {
       account: true,
       category: true,
@@ -25,79 +52,70 @@ export async function listFinancialEvents() {
   });
 }
 
-export async function createFinancialEvent(input: CreateFinancialEventInput) {
+export async function createFinancialEvent(userId: string, input: CreateFinancialEventInput) {
   const competence = input.competence || competenceFromDate(input.date);
   const value = Math.abs(input.amount);
-  const signed = signedAmount(input.type, value);
 
-  return prisma.$transaction(async (tx) => {
-    const event = await tx.financialEvent.create({
-      data: {
-        description: input.description,
-        type: input.type,
-        status: input.status,
-        date: new Date(input.date),
-        competence,
-        amount: value,
-        signedAmount: signed,
-        accountId: input.accountId,
-        categoryId: input.categoryId,
-        paymentMethodId: input.paymentMethodId,
-        notes: input.notes
-      }
-    });
+  const event = await prisma.financialEvent.create({
+    data: {
+      userId,
+      description: input.description.trim(),
+      type: input.type,
+      status: input.status,
+      date: new Date(input.date),
+      competence,
+      amount: value,
+      signedAmount: signedAmount(input.type, value),
+      accountId: input.accountId,
+      categoryId: input.categoryId,
+      paymentMethodId: input.paymentMethodId,
+      notes: input.notes?.trim() || undefined
+    },
+    include: { account: true, category: true, paymentMethod: true, ledgerEntries: true }
+  });
 
-    if (input.accountId) {
-      const debitAccountId = signed >= 0 ? input.accountId : input.categoryId;
-      const creditAccountId = signed >= 0 ? input.categoryId : input.accountId;
-
-      if (debitAccountId && creditAccountId) {
-        await tx.ledgerEntry.createMany({
-          data: [
-            {
-              eventId: event.id,
-              date: event.date,
-              accountId: debitAccountId,
-              debit: value,
-              credit: 0,
-              memo: event.description
-            },
-            {
-              eventId: event.id,
-              date: event.date,
-              accountId: creditAccountId,
-              debit: 0,
-              credit: value,
-              memo: event.description
-            }
-          ]
-        });
-      }
-    }
-
-    return event;
+  await syncLedger(event.id);
+  return prisma.financialEvent.findUnique({
+    where: { id: event.id },
+    include: { account: true, category: true, paymentMethod: true, ledgerEntries: true }
   });
 }
 
-export async function updateFinancialEvent(id: string, input: UpdateFinancialEventInput) {
-  return prisma.financialEvent.update({
+export async function updateFinancialEvent(userId: string, id: string, input: UpdateFinancialEventInput) {
+  const current = await prisma.financialEvent.findFirst({ where: { id, userId, archivedAt: null } });
+  if (!current) throw new Error('FINANCIAL_EVENT_NOT_FOUND');
+
+  const nextType = input.type ?? current.type;
+  const nextAmount = input.amount === undefined ? Number(current.amount) : Math.abs(input.amount);
+
+  await prisma.financialEvent.update({
     where: { id },
     data: {
       ...input,
+      description: input.description?.trim(),
       date: input.date ? new Date(input.date) : undefined,
       competence: input.competence || (input.date ? competenceFromDate(input.date) : undefined),
-      amount: input.amount ? Math.abs(input.amount) : undefined,
-      signedAmount: input.amount && input.type ? signedAmount(input.type, input.amount) : undefined
+      amount: input.amount === undefined ? undefined : nextAmount,
+      signedAmount: signedAmount(nextType, nextAmount),
+      notes: input.notes?.trim()
     }
+  });
+
+  await syncLedger(id);
+  return prisma.financialEvent.findUnique({
+    where: { id },
+    include: { account: true, category: true, paymentMethod: true, ledgerEntries: true }
   });
 }
 
-export async function deleteFinancialEvent(id: string) {
-  return prisma.financialEvent.update({
+export async function deleteFinancialEvent(userId: string, id: string) {
+  const current = await prisma.financialEvent.findFirst({ where: { id, userId, archivedAt: null } });
+  if (!current) throw new Error('FINANCIAL_EVENT_NOT_FOUND');
+
+  await prisma.financialEvent.update({
     where: { id },
-    data: {
-      status: 'archived',
-      archivedAt: new Date()
-    }
+    data: { status: 'archived', archivedAt: new Date() }
   });
+  await prisma.ledgerEntry.deleteMany({ where: { eventId: id } });
+  return { id, archived: true };
 }
