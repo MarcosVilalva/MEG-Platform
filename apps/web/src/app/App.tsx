@@ -7,6 +7,7 @@ import { Cashflow } from '../modules/cashflow/Cashflow';
 import { Settings } from '../modules/settings/Settings';
 import { Platform } from '../modules/platform/Platform';
 import { DecisionCenter } from '../modules/decision/DecisionCenter';
+import { FinancialCatalogs } from '../modules/catalogs/FinancialCatalogs';
 import { TransactionModal } from '../modules/transactions/TransactionModal';
 import { CommandPalette } from './CommandPalette';
 import { useAppStore } from './store';
@@ -63,6 +64,7 @@ export function App() {
         {view === 'transactions' && (
           <Transactions onNewTransaction={openNewTransaction} onEditTransaction={openEditTransaction} />
         )}
+        {view === 'catalogs' && <FinancialCatalogs />}
         {view === 'analytics' && <Analytics />}
         {view === 'cashflow' && <Cashflow />}
         {view === 'platform' && <Platform />}
