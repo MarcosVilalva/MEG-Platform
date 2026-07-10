@@ -26,8 +26,8 @@ model User {
   email          String             @unique
   passwordHash   String             @default("")
   role           UserRole           @default(VIEWER)
-  approvalStatus UserApprovalStatus @default(PENDING)
-  isActive       Boolean            @default(false)
+  approvalStatus UserApprovalStatus @default(APPROVED)
+  isActive       Boolean            @default(true)
   approvedAt     DateTime?
   approvedById   String?
   rejectedAt     DateTime?
@@ -52,111 +52,101 @@ model AuthSession {
   ipAddress    String?
   userAgent    String?
   createdAt    DateTime @default(now())
-
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@index([userId])
   @@index([expiresAt])
 }
 
 model Account {
-  id        String   @id @default(cuid())
-  name      String
-  type      String
+  id String @id @default(cuid())
+  name String
+  type String
   institution String?
   openingBalance Decimal @default(0)
-  isActive  Boolean  @default(true)
+  isActive Boolean @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  events    FinancialEvent[]
+  events FinancialEvent[]
   ledgerEntries LedgerEntry[]
 }
 
 model Category {
-  id        String   @id @default(cuid())
-  name      String
-  group     String?
-  type      String?
-  isActive  Boolean  @default(true)
+  id String @id @default(cuid())
+  name String
+  group String?
+  type String?
+  isActive Boolean @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  events    FinancialEvent[]
+  events FinancialEvent[]
 }
 
 model PaymentMethod {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  type      String?
-  isActive  Boolean  @default(true)
+  id String @id @default(cuid())
+  name String @unique
+  type String?
+  isActive Boolean @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  events    FinancialEvent[]
+  events FinancialEvent[]
 }
 
 model FinancialEvent {
-  id        String   @id @default(cuid())
-  userId    String?
+  id String @id @default(cuid())
+  userId String?
   description String
-  type      String
-  status    String   @default("planned")
-  date      DateTime
+  type String
+  status String @default("planned")
+  date DateTime
   competence String
-  amount    Decimal
+  amount Decimal
   signedAmount Decimal
-  notes     String?
+  notes String?
   archivedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user      User?    @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
   accountId String?
-  account   Account? @relation(fields: [accountId], references: [id])
+  account Account? @relation(fields: [accountId], references: [id])
   categoryId String?
-  category  Category? @relation(fields: [categoryId], references: [id])
+  category Category? @relation(fields: [categoryId], references: [id])
   paymentMethodId String?
   paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
-
   ledgerEntries LedgerEntry[]
 }
 
 model LedgerEntry {
-  id        String   @id @default(cuid())
-  eventId   String
-  date      DateTime
+  id String @id @default(cuid())
+  eventId String
+  date DateTime
   accountId String
-  debit     Decimal @default(0)
-  credit    Decimal @default(0)
-  memo      String?
+  debit Decimal @default(0)
+  credit Decimal @default(0)
+  memo String?
   createdAt DateTime @default(now())
-
-  event     FinancialEvent @relation(fields: [eventId], references: [id])
-  account   Account @relation(fields: [accountId], references: [id])
+  event FinancialEvent @relation(fields: [eventId], references: [id])
+  account Account @relation(fields: [accountId], references: [id])
 }
 
 model Budget {
-  id        String   @id @default(cuid())
-  month     String
-  group     String
-  amount    Decimal
+  id String @id @default(cuid())
+  month String
+  group String
+  amount Decimal
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String?
-  entity    String
-  entityId  String
-  action    String
-  metadata  String?
+  id String @id @default(cuid())
+  userId String?
+  entity String
+  entityId String
+  action String
+  metadata String?
   ipAddress String?
   createdAt DateTime @default(now())
-
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
   @@index([userId])
   @@index([entity, entityId])
 }
