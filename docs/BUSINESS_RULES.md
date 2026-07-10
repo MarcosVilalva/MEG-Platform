@@ -1,27 +1,87 @@
 # Regras de Negócio
 
-## Receita disponível
+## Princípios financeiros
 
-Receita disponível do mês = saldo final do mês anterior + entradas do mês.
-
-## Datas independentes
-
-Competência, vencimento e pagamento são datas independentes.
+- Receita disponível do mês = saldo final do mês anterior + entradas efetivadas do mês.
+- Competência, vencimento e pagamento são datas independentes.
+- Eventos previstos não compõem o saldo disponível.
+- O saldo é consequência dos eventos; não deve ser alterado diretamente.
+- Transferências entre contas não alteram o patrimônio líquido.
 
 ## Ciclo financeiro
 
-Todo evento financeiro pode evoluir no ciclo:
+Rascunho → Previsto → Confirmado → Pago/Recebido → Conciliado → Arquivado.
 
-Rascunho → Previsto → Confirmado → Pago → Conciliado → Arquivado
+Arquivamento não remove histórico. Estornos devem ser registrados como eventos reversos.
 
-## Dashboard
+## Usuários e acesso
 
-A Home deve exibir apenas informações que exigem ação ou decisão.
+- O primeiro administrador só pode ser criado com o e-mail principal configurado.
+- Novos usuários entram como pendentes.
+- Usuário pendente, rejeitado ou bloqueado não pode autenticar.
+- Apenas ADMIN gerencia usuários e permissões críticas.
+- Bloquear usuário revoga sessões ativas.
+- Mudanças de acesso geram auditoria.
 
-## Analytics
+## Perfis
 
-Analytics é para investigação, tendência e comparação histórica.
+- ADMIN: acesso total.
+- MANAGER: cria, altera e arquiva dados financeiros.
+- OPERATOR: cria e altera lançamentos, sem ações administrativas críticas.
+- VIEWER: somente leitura.
 
-## Core
+## Eventos financeiros
 
-Todo cálculo financeiro deve ser executado pelo MEG Core.
+- Receitas possuem valor positivo; despesas, valor negativo.
+- Eventos pagos ou recebidos afetam o saldo realizado.
+- Eventos conciliados permanecem rastreáveis.
+- Cada evento pertence ao usuário, salvo compartilhamento familiar explícito futuro.
+
+## Contas
+
+- Saldo atual = saldo inicial + eventos efetivados.
+- Contas inativas não aceitam novos lançamentos.
+- Inativação preserva histórico.
+
+## Categorias e formas de pagamento
+
+- Categorias podem ser de receita ou despesa.
+- Cadastros utilizados não são apagados fisicamente.
+- Itens inativos permanecem no histórico.
+
+## Contas a receber
+
+- Cada título possui valor original, vencimento e saldo aberto.
+- Recebimento parcial reduz o saldo aberto.
+- O título só é quitado quando o saldo chega a zero.
+- Juros e multa devem permanecer identificáveis.
+- Recebimento associado a conta gera evento financeiro de receita.
+- Títulos vencidos e não quitados devem ser destacados.
+
+## Cartões de crédito — planejado para Alpha 0.5
+
+- Compra parcelada gera todas as parcelas na confirmação.
+- O limite disponível é reduzido pelo total comprometido.
+- Pagamento da fatura libera limite conforme a regra do cartão.
+- Fechamento e vencimento determinam a fatura da compra.
+- Estorno gera evento reverso; não apaga a compra original.
+
+## Orçamento e metas — planejado
+
+- Orçamento é definido por competência e categoria.
+- Realizado considera eventos pagos ou recebidos.
+- Projetado inclui eventos previstos conforme configuração.
+- Metas registram objetivo, valor acumulado e prazo.
+- Simulações nunca alteram dados reais.
+
+## Dashboard e Analytics
+
+- A Home exibe informações que exigem ação ou decisão.
+- Analytics é destinado à investigação, tendência e comparação histórica.
+- Cálculos financeiros reutilizáveis devem residir no MEG Core.
+
+## IA
+
+- A IA pode classificar, sugerir, explicar e simular.
+- A IA não exclui, paga, transfere ou confirma sem ação explícita do usuário.
+- Sugestões devem informar os dados considerados sempre que possível.
