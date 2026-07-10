@@ -2,28 +2,81 @@
 
 ## Regra principal
 
-> Tela exibe. Core calcula. Storage persiste.
+> Interface apresenta. API autoriza e orquestra. Domínio valida. Persistência armazena.
 
-## Camadas
+## Monorepo
 
 ### apps/web
-Interface React.
+
+React + TypeScript + Vite. Responsável por experiência, navegação e estado de interface.
+
+### apps/api
+
+Fastify. Responsável por autenticação, autorização, validação, casos de uso e integração com repositórios.
+
+### packages/database
+
+Prisma e schema do banco. SQLite em desenvolvimento; PostgreSQL é o destino de produção.
 
 ### packages/core
-Regras financeiras.
+
+Motores financeiros, projeções, analytics, decisões, ledger e regras reutilizáveis.
 
 ### packages/ui
-Componentes visuais reutilizáveis.
+
+Componentes visuais.
 
 ### packages/shared
-Tipos e contratos.
+
+Tipos e contratos compartilhados.
 
 ### packages/analytics
-Análises históricas, tendências e comparativos.
+
+Funções analíticas.
 
 ### packages/intelligence
-IA, insights, replay e simulações.
 
-## Diretriz
+Insights e simulações.
 
-Nenhuma tela deve conter regra financeira crítica.
+## Fluxo
+
+```text
+React
+  ↓ HTTPS/JSON
+Fastify
+  ↓ autenticação + autorização + validação
+Serviços / regras
+  ↓
+Prisma
+  ↓
+SQLite (dev) / PostgreSQL (produção)
+```
+
+## Identidade
+
+JWT de curta duração e refresh tokens persistidos. Perfis: ADMIN, MANAGER, OPERATOR e VIEWER.
+
+## Dados
+
+- valores financeiros usam Decimal na persistência;
+- exclusões financeiras preferem arquivamento ou reversão;
+- usuário é a fronteira principal de isolamento;
+- ações sensíveis geram auditoria.
+
+## Integrações
+
+E-mail, WhatsApp, calendário, armazenamento e IA serão adaptadores de backend. O frontend nunca recebe segredos de provedor.
+
+## Deploy
+
+- frontend estático: GitHub Pages para demonstração;
+- API e banco exigem hospedagem própria;
+- CI executa testes e builds antes do merge.
+
+## Dívidas técnicas conhecidas
+
+- dados de exemplo ainda participam de alguns fluxos;
+- testes ainda não cobrem todas as regras;
+- lint precisa ser efetivado;
+- Prisma 6 deve migrar sua configuração antes do Prisma 7;
+- produção ainda precisa de PostgreSQL, backups e observabilidade.
