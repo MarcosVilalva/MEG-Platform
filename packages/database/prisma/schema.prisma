@@ -42,6 +42,9 @@ model User {
   auditLogs      AuditLog[]
   customers      Customer[]
   receivables    Receivable[]
+  creditCards    CreditCard[]
+  cardPurchases  CardPurchase[]
+  budgets        Budget[]
 
   @@index([status])
   @@index([role])
@@ -208,11 +211,59 @@ model Receipt {
 
 model Budget {
   id        String   @id @default(cuid())
+  userId    String?
   month     String
   group     String
   amount    Decimal
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month, group])
+  @@index([userId, month])
+}
+
+model CreditCard {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  issuer       String?
+  brand        String?
+  lastFour     String?
+  color        String   @default("#0f927f")
+  creditLimit  Decimal
+  closingDay   Int
+  dueDay       Int
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purchases    CardPurchase[]
+
+  @@index([userId, isActive])
+}
+
+model CardPurchase {
+  id             String   @id @default(cuid())
+  userId         String
+  cardId         String
+  description    String
+  purchaseDate   DateTime
+  totalAmount    Decimal
+  installmentQty Int      @default(1)
+  categoryId     String?
+  notes          String?
+  isCancelled    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card           CreditCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purchaseDate])
+  @@index([cardId, isCancelled])
 }
 
 model AuditLog {

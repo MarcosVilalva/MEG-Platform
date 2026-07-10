@@ -1,22 +1,23 @@
 # Roadmap
 
-## Alpha 0.4
-- Financial Engine.
-- Centro de Controle Financeiro.
-- OrÃ§amento por grupo.
-- Backup JSON.
+## Alpha 0.5 — Núcleo financeiro
+- [x] Autenticação, aprovação e perfis
+- [x] Contas, categorias e formas de pagamento
+- [x] Receitas e despesas persistentes
+- [x] Contas a receber
+- [x] Cartões, compras parceladas e faturas projetadas
+- [x] Orçamento mensal por grupo
+- [ ] Teste funcional ampliado e refinamento de UX
 
-## Alpha 0.5
-- Analytics 360.
-- Comparativo mÃªs a mÃªs.
-- TendÃªncias.
-- Pareto de despesas.
+## Alpha 0.6 — Planejamento
+- [ ] Metas financeiras
+- [ ] Reserva de emergência
+- [ ] Patrimônio líquido
+- [ ] Projeções de 30, 60 e 90 dias
 
-## Alpha 0.6
-- CalendÃ¡rio Financeiro.
-- Agenda 7/15/30 dias.
-- RecorrÃªncias simples.
-
-## Alpha 0.7
-- Simulador financeiro inicial.
-- Replay financeiro inicial.
+## Beta 1.0
+- [ ] Importação OFX/CSV
+- [ ] Backup e restauração
+- [ ] PWA
+- [ ] Deploy de API e banco de produção
+- [ ] Documentação de instalação e uso
