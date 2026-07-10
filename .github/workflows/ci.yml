@@ -1,13 +1,45 @@
-name: CI
+name: MEG Platform CI
 
 on:
   push:
+    branches:
+      - main
+      - 'sprint-*'
+      - 'feature/**'
+      - 'fix/**'
   pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
 
 jobs:
-  test:
+  validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Placeholder
-        run: echo "CI será ativado após instalação das dependências no repositório."
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+        env:
+          DATABASE_URL: file:./dev.db
+
+      - name: Run tests and builds
+        run: npm run check
+        env:
+          DATABASE_URL: file:./dev.db
+          NODE_ENV: test
+          CORS_ORIGINS: http://localhost:5173

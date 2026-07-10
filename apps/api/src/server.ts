@@ -2,14 +2,25 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import { config } from './config';
 import { financeRoutes } from './modules/finance/routes';
 
 const app = Fastify({
-  logger: true
+  logger: {
+    level: config.logLevel
+  }
 });
 
 await app.register(cors, {
-  origin: true
+  origin(origin, callback) {
+    if (!origin || config.corsOrigins.includes('*') || config.corsOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error('Origin not allowed by CORS'), false);
+  },
+  credentials: true
 });
 
 await app.register(swagger, {
@@ -29,14 +40,25 @@ await app.register(swaggerUi, {
 app.get('/health', async () => ({
   status: 'ok',
   service: 'meg-api',
-  version: '1.3.0-project-phoenix'
+  version: '1.3.0-project-phoenix',
+  environment: config.nodeEnv,
+  timestamp: new Date().toISOString()
 }));
 
 await app.register(financeRoutes, { prefix: '/finance' });
 
-const port = Number(process.env.PORT || 3333);
+const shutdown = async (signal: string) => {
+  app.log.info({ signal }, 'Graceful shutdown started');
+  await app.close();
+  process.exit(0);
+};
 
-app.listen({ port, host: '0.0.0.0' }).catch((error) => {
+process.on('SIGINT', () => void shutdown('SIGINT'));
+process.on('SIGTERM', () => void shutdown('SIGTERM'));
+
+try {
+  await app.listen({ port: config.port, host: config.host });
+} catch (error) {
   app.log.error(error);
   process.exit(1);
-});
+}
