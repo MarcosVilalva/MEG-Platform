@@ -80,7 +80,30 @@ async function authorizedRequest<T>(path: string, init?: RequestInit): Promise<T
   return response.json() as Promise<T>;
 }
 
+export type FinanceSummary = {
+  month: string;
+  availableBalance: number;
+  income: number;
+  expense: number;
+  projectedResult: number;
+  realizedIncome: number;
+  realizedExpense: number;
+  realizedResult: number;
+  eventCount: number;
+  pendingCount: number;
+  pendingAmount: number;
+  nextDue?: {
+    id: string;
+    description: string;
+    date: string;
+    amount: string | number;
+    type: string;
+  } | null;
+  topCategories: Array<{ name: string; amount: number }>;
+};
 export const financeClient = {
+  getSummary: (month: string) =>
+    authorizedRequest<FinanceSummary>(`/finance/summary?month=${encodeURIComponent(month)}`),
   listEvents: (page = 1, pageSize = 50, search = '') =>
     authorizedRequest<{ items: FinancialEvent[]; total: number; page: number; pageSize: number }>(
       `/finance/events?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`

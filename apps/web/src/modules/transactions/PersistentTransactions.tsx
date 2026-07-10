@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { readSession } from '../../app/auth-client';
+import { invalidateFinanceSummary } from '../../app/use-finance-summary';
 import {
   financeClient,
   type Account,
@@ -94,6 +95,7 @@ export function PersistentTransactions() {
       });
       setDescription('');
       setAmount('');
+      invalidateFinanceSummary();
       await load(1, search, false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'SAVE_ERROR');
@@ -107,6 +109,7 @@ export function PersistentTransactions() {
     setBusy(true);
     try {
       await financeClient.updateEvent(item.id, { status: next as 'paid' });
+      invalidateFinanceSummary();
       await load(1, search, false);
     } finally {
       setBusy(false);
@@ -118,6 +121,7 @@ export function PersistentTransactions() {
     setBusy(true);
     try {
       await financeClient.archiveEvent(id);
+      invalidateFinanceSummary();
       await load(1, search, false);
     } finally {
       setBusy(false);
