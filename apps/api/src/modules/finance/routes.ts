@@ -46,9 +46,15 @@ function eventError(reply: FastifyReply, error: unknown) {
 }
 
 export async function financeRoutes(app: FastifyInstance) {
-  app.get('/events', { preHandler: app.authorize([...readRoles]) }, async (request) =>
-    listFinancialEvents(request.user.sub)
-  );
+  app.get('/events', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    const parsed = z.object({
+      page: z.coerce.number().int().positive().default(1),
+      pageSize: z.coerce.number().int().min(10).max(100).default(50),
+      search: z.string().trim().max(120).optional()
+    }).safeParse(request.query);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    return listFinancialEvents(request.user.sub, parsed.data);
+  });
 
   app.post('/events', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = createFinancialEventSchema.safeParse(request.body);

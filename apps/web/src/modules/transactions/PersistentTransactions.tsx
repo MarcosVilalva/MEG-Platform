@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { readSession } from '../../app/auth-client';
 import {
   financeClient,
@@ -12,6 +12,8 @@ const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' 
 
 export function PersistentTransactions() {
   const [events, setEvents] = useState<FinancialEvent[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
@@ -31,16 +33,13 @@ export function PersistentTransactions() {
   const canWrite = role !== 'VIEWER';
   const canArchive = role === 'ADMIN' || role === 'MANAGER';
 
-  async function load() {
-    setError('');
+  async function loadCatalogs() {
     try {
-      const [eventData, accountData, categoryData, methodData] = await Promise.all([
-        financeClient.listEvents(),
+      const [accountData, categoryData, methodData] = await Promise.all([
         financeClient.listAccounts(),
         financeClient.listCategories(),
         financeClient.listPaymentMethods()
       ]);
-      setEvents(eventData.filter((item) => item.status !== 'archived'));
       setAccounts(accountData.filter((item) => item.isActive));
       setCategories(categoryData.filter((item) => item.isActive));
       setMethods(methodData.filter((item) => item.isActive));
@@ -49,19 +48,28 @@ export function PersistentTransactions() {
     }
   }
 
-  useEffect(() => { void load(); }, []);
+  async function load(page = 1, query = search, append = false) {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await financeClient.listEvents(page, 50, query.trim());
+      setEvents((current) => append ? [...current, ...response.items] : response.items);
+      setTotal(response.total);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'LOAD_ERROR');
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return events;
-    return events.filter((item) => [
-      item.description,
-      item.account?.name,
-      item.category?.name,
-      item.paymentMethod?.name
-    ].join(' ').toLowerCase().includes(term));
-  }, [events, search]);
+  useEffect(() => { void loadCatalogs(); }, []);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void load(1, search, false); }, 350);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const filtered = events;
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!canWrite) return;
@@ -86,7 +94,7 @@ export function PersistentTransactions() {
       });
       setDescription('');
       setAmount('');
-      await load();
+      await load(1, search, false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'SAVE_ERROR');
     } finally {
@@ -99,7 +107,7 @@ export function PersistentTransactions() {
     setBusy(true);
     try {
       await financeClient.updateEvent(item.id, { status: next as 'paid' });
-      await load();
+      await load(1, search, false);
     } finally {
       setBusy(false);
     }
@@ -110,7 +118,7 @@ export function PersistentTransactions() {
     setBusy(true);
     try {
       await financeClient.archiveEvent(id);
-      await load();
+      await load(1, search, false);
     } finally {
       setBusy(false);
     }
@@ -145,7 +153,7 @@ export function PersistentTransactions() {
 
         <div className="meg-card catalog-list">
           <div className="catalog-list-heading">
-            <div><span className="meg-eyebrow">Histórico</span><h3>{filtered.length} lançamentos</h3></div>
+            <div><span className="meg-eyebrow">Histórico</span><h3>{total} lançamentos</h3></div>
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar movimentação" />
           </div>
           <div className="catalog-table">
@@ -167,7 +175,18 @@ export function PersistentTransactions() {
                 </article>
               );
             })}
-            {filtered.length === 0 && <p className="catalog-empty">Nenhuma movimentação encontrada.</p>}
+            {loading && events.length === 0 && <p className="catalog-empty">Carregando movimentações...</p>}
+            {!loading && filtered.length === 0 && <p className="catalog-empty">Nenhuma movimentação encontrada.</p>}
+            {events.length < total && (
+              <button
+                className="auth-submit"
+                type="button"
+                disabled={loading}
+                onClick={() => void load(Math.floor(events.length / 50) + 1, search, true)}
+              >
+                {loading ? 'Carregando...' : `Carregar mais (${events.length} de ${total})`}
+              </button>
+            )}
           </div>
         </div>
       </div>
