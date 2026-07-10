@@ -26,6 +26,38 @@ export type PaymentMethod = {
   isActive: boolean;
 };
 
+export type FinancialEventStatus = 'draft' | 'planned' | 'confirmed' | 'paid' | 'reconciled' | 'archived';
+
+export type FinancialEvent = {
+  id: string;
+  description: string;
+  type: 'income' | 'expense';
+  status: FinancialEventStatus;
+  date: string;
+  competence: string;
+  amount: string | number;
+  signedAmount: string | number;
+  notes?: string | null;
+  accountId?: string | null;
+  categoryId?: string | null;
+  paymentMethodId?: string | null;
+  account?: Account | null;
+  category?: Category | null;
+  paymentMethod?: PaymentMethod | null;
+};
+
+export type FinancialEventInput = {
+  description: string;
+  type: 'income' | 'expense';
+  status: FinancialEventStatus;
+  date: string;
+  amount: number;
+  accountId?: string;
+  categoryId?: string;
+  paymentMethodId?: string;
+  notes?: string;
+};
+
 async function authorizedRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const session = readSession();
   if (!session) throw new Error('UNAUTHORIZED');
@@ -49,6 +81,17 @@ async function authorizedRequest<T>(path: string, init?: RequestInit): Promise<T
 }
 
 export const financeClient = {
+  listEvents: () => authorizedRequest<FinancialEvent[]>('/finance/events'),
+  createEvent: (data: FinancialEventInput) => authorizedRequest<FinancialEvent>('/finance/events', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  updateEvent: (id: string, data: Partial<FinancialEventInput>) => authorizedRequest<FinancialEvent>(`/finance/events/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data)
+  }),
+  archiveEvent: (id: string) => authorizedRequest<{ id: string; archived: boolean }>(`/finance/events/${id}`, { method: 'DELETE' }),
+
   listAccounts: () => authorizedRequest<Account[]>('/finance/accounts'),
   createAccount: (data: Omit<Account, 'id' | 'isActive'>) => authorizedRequest<Account>('/finance/accounts', {
     method: 'POST',

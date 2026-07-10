@@ -38,25 +38,42 @@ function validationError(reply: FastifyReply, details: unknown) {
   return reply.code(400).send({ error: 'VALIDATION_ERROR', details });
 }
 
+function eventError(reply: FastifyReply, error: unknown) {
+  if (error instanceof Error && error.message === 'FINANCIAL_EVENT_NOT_FOUND') {
+    return reply.code(404).send({ error: 'FINANCIAL_EVENT_NOT_FOUND' });
+  }
+  throw error;
+}
+
 export async function financeRoutes(app: FastifyInstance) {
-  app.get('/events', { preHandler: app.authorize([...readRoles]) }, async () => listFinancialEvents());
+  app.get('/events', { preHandler: app.authorize([...readRoles]) }, async (request) =>
+    listFinancialEvents(request.user.sub)
+  );
 
   app.post('/events', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = createFinancialEventSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return createFinancialEvent(parsed.data);
+    return reply.code(201).send(await createFinancialEvent(request.user.sub, parsed.data));
   });
 
   app.patch('/events/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const parsed = updateFinancialEventSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return updateFinancialEvent(id, parsed.data);
+    try {
+      return await updateFinancialEvent(request.user.sub, id, parsed.data);
+    } catch (error) {
+      return eventError(reply, error);
+    }
   });
 
-  app.delete('/events/:id', { preHandler: app.authorize([...adminRoles]) }, async (request) => {
+  app.delete('/events/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    return deleteFinancialEvent(id);
+    try {
+      return await deleteFinancialEvent(request.user.sub, id);
+    } catch (error) {
+      return eventError(reply, error);
+    }
   });
 
   app.get('/accounts', { preHandler: app.authorize([...readRoles]) }, async () =>
@@ -125,8 +142,9 @@ export async function financeRoutes(app: FastifyInstance) {
     return prisma.paymentMethod.update({ where: { id }, data: { isActive: false } });
   });
 
-  app.get('/ledger', { preHandler: app.authorize([...readRoles]) }, async () =>
+  app.get('/ledger', { preHandler: app.authorize([...readRoles]) }, async (request) =>
     prisma.ledgerEntry.findMany({
+      where: { event: { userId: request.user.sub } },
       orderBy: { date: 'desc' },
       include: { account: true, event: true }
     })
