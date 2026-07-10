@@ -42,6 +42,7 @@ model User {
   auditLogs      AuditLog[]
   customers      Customer[]
   receivables    Receivable[]
+  importBatches  ImportBatch[]
 
   @@index([status])
   @@index([role])
@@ -126,6 +127,7 @@ model FinancialEvent {
   paymentMethod    PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   ledgerEntries    LedgerEntry[]
   receipt          Receipt?
+  importedRow      ImportedRow?
 }
 
 model LedgerEntry {
@@ -229,4 +231,41 @@ model AuditLog {
 
   @@index([userId])
   @@index([entity, entityId])
+}
+model ImportBatch {
+  id            String   @id @default(cuid())
+  userId        String
+  fileName      String
+  fileHash      String
+  sourceEncoding String  @default("cp850")
+  rowCount      Int
+  importedCount Int      @default(0)
+  issueCount    Int      @default(0)
+  status        String   @default("processing")
+  createdAt     DateTime @default(now())
+  completedAt   DateTime?
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rows          ImportedRow[]
+
+  @@unique([userId, fileHash])
+  @@index([userId, createdAt])
+}
+
+model ImportedRow {
+  id             String   @id @default(cuid())
+  batchId        String
+  rowNumber      Int
+  eventId        String?  @unique
+  status         String
+  issueCode      String?
+  duplicateOfRow Int?
+  rawData        Json
+  createdAt      DateTime @default(now())
+
+  batch          ImportBatch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  event          FinancialEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@unique([batchId, rowNumber])
+  @@index([batchId, status])
 }
