@@ -4,7 +4,7 @@ type RawRow = Record<string, unknown>;
 const HEADERS = {
   date: 'DATA', type: 'TPLANCAMENTO', description: 'DESCRICAO', income: 'RECEITA',
   expenseClass: 'CLASSIFICAODADESPESA', group: 'GRUPO', expense: 'DESPESAR',
-  payment: 'FORMADEPAGAMENTO', situation: 'SITUACAO'
+  payment: 'FORMADEPAGAMENTO', situation: 'SITUACAO', modality: 'MODADLIDADE', notes: 'OBSERVACOES'
 } as const;
 function normalizeKey(value: string) { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 function fields(raw: RawRow) { return new Map(Object.entries(raw).map(([key, value]) => [normalizeKey(key), value])); }
@@ -25,8 +25,10 @@ export function parseImportedRawRow(rawData: unknown) {
   if ((income === null && expense === null) || (income !== null && expense !== null)) throw new Error('INVALID_AMOUNT_COLUMNS');
   const rawExpense = expense ?? 0;
   const isRefund = income === null && rawExpense < 0;
-  const type = income !== null || isRefund ? 'income' : 'expense';
-  const amount = Math.abs(income ?? rawExpense);
+  const type = income !== null ? 'income' : 'expense';
+  // Estornos permanecem despesas negativas. Isso preserva os totais e os
+  // agrupamentos da base original, em vez de inflar artificialmente receitas.
+  const amount = income ?? rawExpense;
   const date = excelDate(text(values, 'date'));
   const situation = normalize(text(values, 'situation'));
   const status = situation === 'PAGO' ? 'paid' : situation === 'PENDENTE' ? 'planned' : date <= new Date() ? 'paid' : 'planned';
@@ -38,39 +40,59 @@ export function parseImportedRawRow(rawData: unknown) {
     competence: date.toISOString().slice(0, 7),
     amount,
     signedAmount: type === 'income' ? amount : -amount,
-    categoryName: text(values, 'group') || 'Sem categoria',
-    categoryGroup: text(values, 'expenseClass') || (type === 'income' ? 'Receitas' : 'Despesas')
+    categoryName: type === 'income' ? 'Receitas' : text(values, 'group') || 'Sem categoria',
+    categoryGroup: text(values, 'expenseClass') || (type === 'income' ? 'Receitas' : 'Despesas'),
+    expenseClass: text(values, 'expenseClass'),
+    group: text(values, 'group'),
+    paymentName: text(values, 'payment'),
+    situation: text(values, 'situation'),
+    modality: text(values, 'modality'),
+    notes: text(values, 'notes'),
+    isRefund
   };
 }
 
 export async function repairLegacyImportedEvents() {
   const rows = await prisma.importedRow.findMany({
-    where: { event: { description: { startsWith: 'Linha ' } } },
+    // Reprocessar todas as linhas importadas torna a correção idempotente e
+    // também recupera categoria e forma de pagamento de eventos já renomeados.
+    where: { eventId: { not: null } },
     select: { id: true, rawData: true, eventId: true }
   });
   if (!rows.length) return { repaired: 0, issues: 0 };
 
   const categoryCache = new Map<string, string>();
+  const paymentCache = new Map<string, string>();
   let repaired = 0;
   let issues = 0;
-  const prepared: Array<{ eventId: string; data: ReturnType<typeof parseImportedRawRow>; categoryId?: string }> = [];
+  const prepared: Array<{ eventId: string; data: ReturnType<typeof parseImportedRawRow>; categoryId?: string; paymentMethodId?: string }> = [];
 
   for (const row of rows) {
     if (!row.eventId) continue;
     try {
       const data = parseImportedRawRow(row.rawData);
       let categoryId: string | undefined;
-      if (data.type === 'expense') {
+      {
         const key = `${data.categoryGroup}|${data.categoryName}`;
         categoryId = categoryCache.get(key);
         if (!categoryId) {
-          const category = await prisma.category.findFirst({ where: { name: data.categoryName, group: data.categoryGroup, type: 'expense' } })
-            ?? await prisma.category.create({ data: { name: data.categoryName, group: data.categoryGroup, type: 'expense' } });
+          const category = await prisma.category.findFirst({ where: { name: data.categoryName, group: data.categoryGroup, type: data.type } })
+            ?? await prisma.category.create({ data: { name: data.categoryName, group: data.categoryGroup, type: data.type } });
           categoryId = category.id;
           categoryCache.set(key, category.id);
         }
       }
-      prepared.push({ eventId: row.eventId, data, categoryId });
+      let paymentMethodId: string | undefined;
+      if (data.paymentName && normalize(data.paymentName) !== 'NAO INFORMADO') {
+        paymentMethodId = paymentCache.get(data.paymentName);
+        if (!paymentMethodId) {
+          const payment = await prisma.paymentMethod.findUnique({ where: { name: data.paymentName } })
+            ?? await prisma.paymentMethod.create({ data: { name: data.paymentName, type: 'other' } });
+          paymentMethodId = payment.id;
+          paymentCache.set(data.paymentName, payment.id);
+        }
+      }
+      prepared.push({ eventId: row.eventId, data, categoryId, paymentMethodId });
     } catch {
       issues += 1;
     }
@@ -78,7 +100,7 @@ export async function repairLegacyImportedEvents() {
 
   for (let index = 0; index < prepared.length; index += 40) {
     const batch = prepared.slice(index, index + 40);
-    await Promise.all(batch.map(({ eventId, data, categoryId }) => prisma.financialEvent.update({
+    await Promise.all(batch.map(({ eventId, data, categoryId, paymentMethodId }) => prisma.financialEvent.update({
       where: { id: eventId },
       data: {
         description: data.description,
@@ -88,7 +110,13 @@ export async function repairLegacyImportedEvents() {
         competence: data.competence,
         amount: data.amount,
         signedAmount: data.signedAmount,
-        categoryId: data.type === 'expense' ? categoryId : null
+        categoryId,
+        paymentMethodId: paymentMethodId ?? null,
+        notes: [
+          data.isRefund ? 'Estorno/reembolso importado' : '',
+          data.modality && data.modality !== '-' ? `Modalidade: ${data.modality}` : '',
+          data.notes
+        ].filter(Boolean).join(' | ') || null
       }
     })));
     repaired += batch.length;

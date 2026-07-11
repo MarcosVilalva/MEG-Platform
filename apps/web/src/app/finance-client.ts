@@ -44,6 +44,17 @@ export type FinancialEvent = {
   account?: Account | null;
   category?: Category | null;
   paymentMethod?: PaymentMethod | null;
+  sourceRowNumber?: number | null;
+  sourceDetails?: {
+    weekday: string;
+    launchType: string;
+    expenseClass: string;
+    group: string;
+    paymentMethod: string;
+    situation: string;
+    modality: string;
+    observations: string;
+  } | null;
 };
 
 export type FinancialEventInput = {

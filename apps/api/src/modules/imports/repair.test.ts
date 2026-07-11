@@ -7,6 +7,7 @@ assert.equal(expense.description, 'Mercado'); assert.equal(expense.type, 'expens
 const income = parseImportedRawRow({ ...base, 'TP LANÇAMENTO': 'RECEITA', DESCRIÇÃO: 'Salário', 'RECEITA($)': '5000,00', 'DESPESA (R$)': '' });
 assert.equal(income.type, 'income'); assert.equal(income.signedAmount, 5000);
 const refund = parseImportedRawRow({ ...base, DESCRIÇÃO: 'Estorno', 'DESPESA (R$)': '-50,00' });
-assert.equal(refund.type, 'income'); assert.equal(refund.signedAmount, 50);
+assert.equal(refund.type, 'expense'); assert.equal(refund.amount, -50); assert.equal(refund.signedAmount, 50); assert.equal(refund.isRefund, true);
+assert.equal(expense.group, 'SUPERMERCADO'); assert.equal(expense.paymentName, 'PIX');
 assert.throws(() => parseImportedRawRow({ ...base, DESCRIÇÃO: '' }), /MISSING_DESCRIPTION/);
 console.log('Import repair tests passed.');

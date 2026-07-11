@@ -72,16 +72,16 @@ async function main() {
   const read = (row: RawRow, key: keyof typeof HEADERS) => row[headers[key]] || '';
   const replaceExisting = process.argv.includes('--replace');
   if (process.argv.includes('--validate-only')) {
-    let incomeCount = 0; let expenseCount = 0; let missingDescriptions = 0; let invalidAmounts = 0; let invalidDates = 0;
+    let incomeCount = 0; let expenseCount = 0; let missingDescriptions = 0; let invalidAmounts = 0; let invalidDates = 0; let totalIncome = 0; let totalExpense = 0;
     for (const row of rows) {
       const income = decimal(read(row, 'income')); const expense = decimal(read(row, 'expense'));
       if ((income === null && expense === null) || (income !== null && expense !== null)) invalidAmounts += 1;
-      else if (income !== null || expense! < 0) incomeCount += 1;
-      else expenseCount += 1;
+      else if (income !== null) { incomeCount += 1; totalIncome += income; }
+      else { expenseCount += 1; totalExpense += expense!; }
       if (!read(row, 'description').trim()) missingDescriptions += 1;
       try { excelDate(read(row, 'date')); } catch { invalidDates += 1; }
     }
-    console.log(JSON.stringify({ encoding, rows: rows.length, incomeCount, expenseCount, missingDescriptions, invalidAmounts, invalidDates, headers: Object.fromEntries(Object.entries(headers).map(([key, value]) => [key, normalizeHeader(value)])) }, null, 2));
+    console.log(JSON.stringify({ encoding, rows: rows.length, incomeCount, expenseCount, totalIncome, totalExpense, balance: totalIncome - totalExpense, missingDescriptions, invalidAmounts, invalidDates, headers: Object.fromEntries(Object.entries(headers).map(([key, value]) => [key, normalizeHeader(value)])) }, null, 2));
     return;
   }
   const user = await prisma.user.findUnique({ where: { email: userEmail } });
@@ -138,23 +138,23 @@ async function main() {
     }
 
     const isRefund = expense !== null && expense < 0;
-    const type = income !== null || isRefund ? 'income' : 'expense';
+    const type = income !== null ? 'income' : 'expense';
     const rawAmount = income ?? expense ?? 0;
-    const amount = Math.abs(rawAmount);
+    const amount = rawAmount;
     const signedAmount = type === 'income' ? amount : -amount;
     const situation = (read(row, 'situation')).toUpperCase();
     const today = new Date();
     const status = situation === 'PAGO' ? 'paid' : situation === 'PENDENTE' ? 'planned' : date <= today ? 'paid' : 'planned';
 
     let categoryId: string | undefined;
-    if (type === 'expense') {
-      const categoryName = read(row, 'group') || 'Sem categoria';
-      const categoryGroup = read(row, 'expenseClass') || 'Despesas';
+    {
+      const categoryName = type === 'income' ? 'Receitas' : read(row, 'group') || 'Sem categoria';
+      const categoryGroup = read(row, 'expenseClass') || (type === 'income' ? 'Receitas' : 'Despesas');
       const cacheKey = `${categoryGroup}|${categoryName}`;
       categoryId = categoryCache.get(cacheKey);
       if (!categoryId) {
-        const category = await prisma.category.findFirst({ where: { name: categoryName, group: categoryGroup, type: 'expense' } })
-          ?? await prisma.category.create({ data: { name: categoryName, group: categoryGroup, type: 'expense' } });
+        const category = await prisma.category.findFirst({ where: { name: categoryName, group: categoryGroup, type } })
+          ?? await prisma.category.create({ data: { name: categoryName, group: categoryGroup, type } });
         categoryId = category.id; categoryCache.set(cacheKey, category.id);
       }
     }
