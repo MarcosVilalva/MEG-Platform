@@ -7,6 +7,7 @@ interface AppShellProps {
   active: string;
   onNavigate: (view: string) => void;
   onOpenCommand: () => void;
+  onLogout: () => void;
   children: ReactNode;
 }
 
@@ -24,7 +25,7 @@ const baseNavItems = [
   ['settings', 'Configurações', '⚙']
 ];
 
-export function AppShell({ active, onNavigate, onOpenCommand, children }: AppShellProps) {
+export function AppShell({ active, onNavigate, onOpenCommand, onLogout, children }: AppShellProps) {
   const theme = useAppStore((state) => state.theme);
   const toggleTheme = useAppStore((state) => state.toggleTheme);
   const session = readSession();
@@ -51,9 +52,9 @@ export function AppShell({ active, onNavigate, onOpenCommand, children }: AppShe
         </nav>
 
         <div className="sidebar-footer">
-          <span>Alpha 0.5</span>
-          <small>Contas a receber</small>
+          <div className="sidebar-user"><strong>{session?.user.name}</strong><small>{session?.user.role}</small></div>
           <button onClick={toggleTheme}>Alternar tema</button>
+          <button className="sidebar-logout" onClick={onLogout}>Sair com segurança</button>
         </div>
       </aside>
 

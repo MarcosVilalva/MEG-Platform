@@ -13,6 +13,7 @@ const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' 
 
 export function PersistentTransactions() {
   const [events, setEvents] = useState<FinancialEvent[]>([]);
+  const [showForm, setShowForm] = useState(false);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -136,11 +137,11 @@ export function PersistentTransactions() {
           <h1>Movimentações reais</h1>
           <p>Receitas e despesas salvas no banco e vinculadas aos seus cadastros.</p>
         </div>
-        <div className="catalog-role">Perfil: <strong>{role}</strong></div>
+        <div className="page-header-actions"><span className="catalog-role">Perfil: <strong>{role}</strong></span>{canWrite && <button className="header-primary" onClick={() => setShowForm((value) => !value)}>{showForm ? 'Fechar formulário' : 'Novo lançamento'}</button>}</div>
       </header>
 
-      <div className="catalog-layout">
-        <form className="meg-card catalog-form" onSubmit={submit}>
+      <div className={`catalog-layout transactions-layout ${showForm ? '' : 'form-hidden'}`}>
+        {showForm && <form className="meg-card catalog-form transaction-form" onSubmit={submit}>
           <span className="meg-eyebrow">Novo lançamento</span>
           <h3>{type === 'income' ? 'Nova receita' : 'Nova despesa'}</h3>
           <label>Tipo<select value={type} onChange={(e) => setType(e.target.value as 'income' | 'expense')} disabled={!canWrite}><option value="expense">Despesa</option><option value="income">Receita</option></select></label>
@@ -153,23 +154,25 @@ export function PersistentTransactions() {
           <label>Forma de pagamento<select value={paymentMethodId} onChange={(e) => setPaymentMethodId(e.target.value)} disabled={!canWrite}><option value="">Não informada</option>{methods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           {error && <div className="auth-error">{error}</div>}
           <button className="auth-submit" disabled={!canWrite || busy}>{canWrite ? busy ? 'Salvando...' : 'Salvar lançamento' : 'Perfil somente leitura'}</button>
-        </form>
+        </form>}
 
         <div className="meg-card catalog-list">
           <div className="catalog-list-heading">
             <div><span className="meg-eyebrow">Histórico</span><h3>{total} lançamentos</h3></div>
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar movimentação" />
           </div>
-          <div className="catalog-table">
+          <div className="transaction-table"><div className="transaction-table-head"><span>Lançamento</span><span>Data</span><span>Valor</span><span>Status</span><span>Ações</span></div>
             {filtered.map((item) => {
               const signed = Number(item.signedAmount);
               return (
-                <article key={item.id}>
-                  <div>
+                <article className="transaction-row" key={item.id}>
+                  <div className="transaction-main">
+                    <span className={`transaction-kind ${signed >= 0 ? 'income' : 'expense'}`}>{signed >= 0 ? 'Receita' : 'Despesa'}</span>
                     <strong>{item.description}</strong>
-                    <span>{new Date(item.date).toLocaleDateString('pt-BR')} · {item.category?.name || 'Sem categoria'} · {item.account?.name || 'Sem conta'}</span>
+                    <small>{item.category?.group ? `${item.category.group} • ` : ''}{item.category?.name || 'Sem categoria'} • {item.account?.name || 'Sem conta'} • {item.paymentMethod?.name || 'Forma não informada'}</small>
                   </div>
-                  <strong className={signed >= 0 ? 'positive' : 'negative'}>{brl.format(Math.abs(Number(item.amount)))}</strong>
+                  <time>{new Date(item.date).toLocaleDateString('pt-BR')}</time>
+                  <strong className={signed >= 0 ? 'positive' : 'negative'}>{signed >= 0 ? '+' : '−'} {brl.format(Math.abs(Number(item.amount)))}</strong>
                   <span className={`status-pill ${item.status !== 'planned' ? 'active' : ''}`}>{item.status === 'planned' ? 'Previsto' : item.status === 'paid' ? 'Pago' : 'Conciliado'}</span>
                   <div className="table-actions">
                     {item.status === 'planned' && canWrite && <button onClick={() => void changeStatus(item, 'paid')} disabled={busy}>Marcar pago</button>}

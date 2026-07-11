@@ -15,7 +15,9 @@ import { UserManagement } from '../modules/admin/UserManagement';
 import { CommandPalette } from './CommandPalette';
 import { useAppStore } from './store';
 
-export function App() {
+interface AppProps { onLogout: () => void; }
+
+export function App({ onLogout }: AppProps) {
   const [view, setView] = useState('dashboard');
   const [commandOpen, setCommandOpen] = useState(false);
   const theme = useAppStore((state) => state.theme);
@@ -45,7 +47,7 @@ export function App() {
 
   return (
     <>
-      <AppShell active={view} onNavigate={setView} onOpenCommand={() => setCommandOpen(true)}>
+      <AppShell active={view} onNavigate={setView} onOpenCommand={() => setCommandOpen(true)} onLogout={onLogout}>
         {view === 'decision' && <DecisionCenter onNavigate={setView} />}
         {view === 'dashboard' && <Dashboard onNewTransaction={openNewTransaction} />}
         {view === 'transactions' && <PersistentTransactions />}
