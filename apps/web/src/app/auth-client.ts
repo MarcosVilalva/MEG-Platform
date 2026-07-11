@@ -29,6 +29,11 @@ export type RegistrationResult = AuthSession | {
 
 const SESSION_KEY = 'meg.auth.session';
 
+export type ApiHealth = {
+  status: string;
+  dataRepair?: { status: string; scanned: number; repaired: number; issues: number };
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -102,4 +107,8 @@ export async function changeUserAccess(
     headers: { Authorization: `Bearer ${session.accessToken}` },
     body: JSON.stringify(payload)
   });
+}
+
+export async function getApiHealth() {
+  return request<ApiHealth>('/health');
 }

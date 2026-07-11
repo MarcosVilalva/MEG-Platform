@@ -9,5 +9,7 @@ assert.equal(income.type, 'income'); assert.equal(income.signedAmount, 5000);
 const refund = parseImportedRawRow({ ...base, DESCRIÇÃO: 'Estorno', 'DESPESA (R$)': '-50,00' });
 assert.equal(refund.type, 'expense'); assert.equal(refund.amount, -50); assert.equal(refund.signedAmount, 50); assert.equal(refund.isRefund, true);
 assert.equal(expense.group, 'SUPERMERCADO'); assert.equal(expense.paymentName, 'PIX');
+const positional = parseImportedRawRow(Object.fromEntries(Object.entries(base).map(([key, value], index) => [`coluna-${index}`, value])));
+assert.equal(positional.description, 'Mercado'); assert.equal(positional.type, 'expense'); assert.equal(positional.paymentName, 'PIX');
 assert.throws(() => parseImportedRawRow({ ...base, DESCRIÇÃO: '' }), /MISSING_DESCRIPTION/);
 console.log('Import repair tests passed.');
