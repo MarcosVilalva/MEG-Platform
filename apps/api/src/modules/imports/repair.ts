@@ -59,7 +59,7 @@ export async function repairLegacyImportedEvents() {
     where: { eventId: { not: null } },
     select: { id: true, rawData: true, eventId: true }
   });
-  if (!rows.length) return { repaired: 0, issues: 0 };
+  if (!rows.length) return { scanned: 0, repaired: 0, issues: 0 };
 
   const categoryCache = new Map<string, string>();
   const paymentCache = new Map<string, string>();
@@ -122,5 +122,8 @@ export async function repairLegacyImportedEvents() {
     repaired += batch.length;
   }
 
-  return { repaired, issues };
+  if (rows.length > 0 && repaired === 0) {
+    throw new Error(`IMPORT_REPAIR_ABORTED: ${issues} de ${rows.length} linhas não puderam ser interpretadas.`);
+  }
+  return { scanned: rows.length, repaired, issues };
 }
