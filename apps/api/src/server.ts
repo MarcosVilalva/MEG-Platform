@@ -9,6 +9,7 @@ import { financeRoutes } from './modules/finance/routes';
 import { receivableRoutes } from './modules/receivables/routes';
 import { cardRoutes } from './modules/cards/routes';
 import { payableRoutes } from './modules/payables/routes';
+import { repairLegacyImportedEvents } from './modules/imports/repair';
 
 const app = Fastify({
   logger: {
@@ -69,6 +70,9 @@ process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
 try {
   await app.listen({ port: config.port, host: config.host });
+  void repairLegacyImportedEvents()
+    .then((result) => app.log.info(result, 'Legacy import repair completed'))
+    .catch((error) => app.log.error(error, 'Legacy import repair failed'));
 } catch (error) {
   app.log.error(error);
   process.exit(1);

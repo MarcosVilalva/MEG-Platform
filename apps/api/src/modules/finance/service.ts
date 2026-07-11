@@ -149,12 +149,12 @@ export async function getFinancialSummary(userId: string, month: string) {
       _sum: { signedAmount: true }
     }),
     prisma.financialEvent.findFirst({
-      where: { userId, archivedAt: null, status: 'planned', date: { gte: now } },
+      where: { userId, archivedAt: null, status: 'planned', type: { notIn: ['income', 'redemption'] }, date: { gte: now } },
       orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
       select: { id: true, description: true, date: true, amount: true, type: true }
     }),
     prisma.financialEvent.aggregate({
-      where: { userId, archivedAt: null, status: 'planned' },
+      where: { userId, archivedAt: null, status: 'planned', type: { notIn: ['income', 'redemption'] } },
       _count: { _all: true },
       _sum: { amount: true }
     })
