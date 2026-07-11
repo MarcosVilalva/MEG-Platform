@@ -23,6 +23,7 @@ export function CommandPalette({ open, onClose, onNavigate, onNewTransaction }: 
       { label: 'Ir para Centro de Operações', action: () => onNavigate('dashboard') },
       { label: 'Ir para Movimentações', action: () => onNavigate('transactions') },
       { label: 'Ir para Cartões de Crédito', action: () => onNavigate('cards') },
+      { label: 'Ir para Contas a Pagar', action: () => onNavigate('payables') },
       { label: 'Ir para Inteligência', action: () => onNavigate('analytics') },
       { label: 'Ir para Fluxo', action: () => onNavigate('cashflow') },
       { label: 'Novo lançamento', action: onNewTransaction },
