@@ -17,6 +17,10 @@ const app = Fastify({
   }
 });
 
+let dataRepair: { status: 'pending' | 'completed'; scanned: number; repaired: number; issues: number } = {
+  status: 'pending', scanned: 0, repaired: 0, issues: 0
+};
+
 await app.register(cors, {
   origin(origin, callback) {
     if (!origin || config.corsOrigins.includes('*') || config.corsOrigins.includes(origin)) {
@@ -50,7 +54,8 @@ app.get('/health', async () => ({
   service: 'meg-api',
   version: '1.3.0-project-phoenix',
   environment: config.nodeEnv,
-  timestamp: new Date().toISOString()
+  timestamp: new Date().toISOString(),
+  dataRepair
 }));
 
 await app.register(authRoutes, { prefix: '/auth' });
@@ -69,10 +74,10 @@ process.on('SIGINT', () => void shutdown('SIGINT'));
 process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
 try {
+  const repairResult = await repairLegacyImportedEvents();
+  dataRepair = { status: 'completed', ...repairResult };
+  app.log.info(dataRepair, 'Legacy import repair completed before startup');
   await app.listen({ port: config.port, host: config.host });
-  void repairLegacyImportedEvents()
-    .then((result) => app.log.info(result, 'Legacy import repair completed'))
-    .catch((error) => app.log.error(error, 'Legacy import repair failed'));
 } catch (error) {
   app.log.error(error);
   process.exit(1);
