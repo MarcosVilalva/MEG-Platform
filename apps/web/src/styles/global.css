@@ -1420,3 +1420,35 @@ button, input {
 .legacy-transaction-row .table-actions button { border: 0; border-radius: 9px; padding: 7px 9px; background: #edf8f5; color: #0b7465; font-size: .72rem; font-weight: 800; cursor: pointer; }
 .legacy-transaction-row .table-actions button.danger { color: #b42318; background: #fff0ee; }
 @media (max-width: 900px) { .transaction-toolbar, .transaction-filters { display: grid; grid-template-columns: 1fr; width: 100%; } }
+
+.analytics-main-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(340px, .8fr); gap: 16px; }
+.trend-chart { height: 310px; display: grid; grid-template-columns: repeat(12, minmax(34px, 1fr)); gap: 8px; align-items: end; padding: 24px 10px 0; border-bottom: 1px solid #dbe7e3; background: linear-gradient(to top, rgba(15,146,127,.035), transparent); }
+.trend-column { height: 100%; display: grid; grid-template-rows: minmax(0,1fr) auto auto; gap: 5px; align-items: end; text-align: center; color: #61766f; font-size: .68rem; }
+.trend-bars { height: 100%; display: flex; justify-content: center; align-items: flex-end; gap: 3px; }
+.trend-bars i { width: min(14px, 42%); min-height: 2px; border-radius: 6px 6px 2px 2px; }
+.trend-bars i.income, .chart-legend i.income { background: #15937e; }
+.trend-bars i.expense, .chart-legend i.expense { background: #e15449; }
+.trend-column strong { color: #203c36; font-size: .68rem; }
+.chart-legend { display: flex; justify-content: center; gap: 20px; margin-top: 14px; color: #60766f; font-size: .78rem; }
+.chart-legend span { display: flex; gap: 7px; align-items: center; }
+.chart-legend i { width: 12px; height: 12px; border-radius: 4px; }
+.category-bars { display: grid; gap: 14px; }
+.category-bar-row { display: grid; grid-template-columns: 145px minmax(80px,1fr) 55px; gap: 10px; align-items: center; font-size: .75rem; }
+.category-bar-row > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #536b65; }
+.category-bar-row > div { height: 12px; border-radius: 999px; background: #e8efed; overflow: hidden; }
+.category-bar-row i { display: block; height: 100%; border-radius: inherit; background: #32689d; }
+.category-bar-row i.top { background: #ca4a40; }
+.category-bar-row strong { font-size: .72rem; }
+.cashflow-chart-wrap { min-height: 370px; padding: 12px 0; }
+.cashflow-chart { width: 100%; height: 370px; overflow: visible; }
+.chart-grid-line { stroke: #dce7e3; stroke-width: .25; }
+.chart-zero-line { stroke: #b9cac5; stroke-width: .45; stroke-dasharray: 2 2; }
+.cashflow-line { fill: none; stroke: #28639e; stroke-width: .8; vector-effect: non-scaling-stroke; }
+.cashflow-dot { fill: #fff; stroke: #28639e; stroke-width: .55; vector-effect: non-scaling-stroke; }
+.cashflow-caption { display: flex; justify-content: space-between; gap: 14px; color: #60766f; }
+.cashflow-day-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+.cashflow-day-grid > div { display: grid; gap: 4px; padding: 14px; border: 1px solid #dde9e5; border-radius: 14px; background: #f8fbfa; }
+.cashflow-day-grid time { font-weight: 850; }
+.cashflow-day-grid span { color: #6b807a; font-size: .75rem; }
+@media(max-width: 1100px) { .analytics-main-grid { grid-template-columns: 1fr; } .cashflow-day-grid { grid-template-columns: repeat(2,1fr); } }
+@media(max-width: 700px) { .trend-chart { overflow-x: auto; grid-template-columns: repeat(12, 42px); } .cashflow-day-grid { grid-template-columns: 1fr; } .cashflow-chart-wrap, .cashflow-chart { min-height: 280px; height: 280px; } }
