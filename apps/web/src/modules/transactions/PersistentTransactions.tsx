@@ -20,6 +20,8 @@ export function PersistentTransactions() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'planned' | 'paid'>('all');
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -71,7 +73,10 @@ export function PersistentTransactions() {
     return () => window.clearTimeout(timer);
   }, [search]);
 
-  const filtered = events;
+  const filtered = events.filter((item) =>
+    (filterType === 'all' || item.type === filterType)
+    && (filterStatus === 'all' || (filterStatus === 'planned' ? item.status === 'planned' : item.status !== 'planned'))
+  );
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!canWrite) return;
@@ -157,23 +162,33 @@ export function PersistentTransactions() {
         </form>}
 
         <div className="meg-card catalog-list">
-          <div className="catalog-list-heading">
-            <div><span className="meg-eyebrow">Histórico</span><h3>{total} lançamentos</h3></div>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar movimentação" />
+          <div className="catalog-list-heading transaction-toolbar">
+            <div><span className="meg-eyebrow">Histórico financeiro</span><h3>{total} lançamentos</h3></div>
+            <div className="transaction-filters">
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por descrição, grupo ou pagamento" />
+              <select value={filterType} onChange={(e) => setFilterType(e.target.value as typeof filterType)}><option value="all">Receitas e despesas</option><option value="income">Receitas</option><option value="expense">Despesas</option></select>
+              <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}><option value="all">Todas as situações</option><option value="planned">Pendentes</option><option value="paid">Pagos/recebidos</option></select>
+            </div>
           </div>
-          <div className="transaction-table"><div className="transaction-table-head"><span>Lançamento</span><span>Data</span><span>Valor</span><span>Status</span><span>Ações</span></div>
+          <div className="legacy-transaction-scroll"><div className="legacy-transaction-table">
+            <div className="legacy-transaction-head"><span>Data</span><span>Dia</span><span>Tipo</span><span>Descrição</span><span>Receita</span><span>Classificação</span><span>Grupo</span><span>Despesa</span><span>Forma de pagamento</span><span>Situação</span><span>Modalidade</span><span>Ações</span></div>
             {filtered.map((item) => {
               const signed = Number(item.signedAmount);
+              const source = item.sourceDetails;
+              const isIncome = item.type === 'income';
               return (
-                <article className="transaction-row" key={item.id}>
-                  <div className="transaction-main">
-                    <span className={`transaction-kind ${signed >= 0 ? 'income' : 'expense'}`}>{signed >= 0 ? 'Receita' : 'Despesa'}</span>
-                    <strong>{item.description}</strong>
-                    <small>{item.category?.group ? `${item.category.group} • ` : ''}{item.category?.name || 'Sem categoria'} • {item.account?.name || 'Sem conta'} • {item.paymentMethod?.name || 'Forma não informada'}</small>
-                  </div>
+                <article className="legacy-transaction-row" key={item.id}>
                   <time>{new Date(item.date).toLocaleDateString('pt-BR')}</time>
-                  <strong className={signed >= 0 ? 'positive' : 'negative'}>{signed >= 0 ? '+' : '−'} {brl.format(Math.abs(Number(item.amount)))}</strong>
+                  <span>{source?.weekday || '—'}</span>
+                  <span className={`transaction-kind ${isIncome ? 'income' : 'expense'}`}>{isIncome ? 'Receita' : 'Despesa'}</span>
+                  <div className="legacy-description"><strong>{item.description}</strong>{source?.observations && <small>{source.observations}</small>}</div>
+                  <strong className="positive">{isIncome ? brl.format(Number(item.amount)) : '—'}</strong>
+                  <span>{source?.expenseClass || item.category?.group || '—'}</span>
+                  <span>{source?.group || item.category?.name || (isIncome ? 'Receitas' : 'Sem categoria')}</span>
+                  <strong className={signed >= 0 ? 'positive' : 'negative'}>{isIncome ? '—' : brl.format(Number(item.amount))}</strong>
+                  <span>{source?.paymentMethod || item.paymentMethod?.name || 'Não informado'}</span>
                   <span className={`status-pill ${item.status !== 'planned' ? 'active' : ''}`}>{item.status === 'planned' ? 'Previsto' : item.status === 'paid' ? 'Pago' : 'Conciliado'}</span>
+                  <span>{source?.modality || '—'}</span>
                   <div className="table-actions">
                     {item.status === 'planned' && canWrite && <button onClick={() => void changeStatus(item, 'paid')} disabled={busy}>Marcar pago</button>}
                     {item.status === 'paid' && canWrite && <button onClick={() => void changeStatus(item, 'reconciled')} disabled={busy}>Conciliar</button>}
@@ -194,7 +209,7 @@ export function PersistentTransactions() {
                 {loading ? 'Carregando...' : `Carregar mais (${events.length} de ${total})`}
               </button>
             )}
-          </div>
+          </div></div>
         </div>
       </div>
     </section>

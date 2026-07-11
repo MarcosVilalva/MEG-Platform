@@ -17,6 +17,30 @@ function isPosted(status: string) {
   return status === 'paid' || status === 'reconciled' || status === 'confirmed';
 }
 
+function normalizeText(value: unknown) {
+  return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+}
+
+function isBenefitCard(event: { description: string; paymentMethod?: { name: string } | null }) {
+  return normalizeText(event.paymentMethod?.name) === 'VEROCARD' || normalizeText(event.description).includes('VEROCARD');
+}
+
+function sourceDetails(rawData: unknown) {
+  if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) return null;
+  const values = new Map(Object.entries(rawData as Record<string, unknown>).map(([key, value]) => [normalizeText(key).replace(/[^A-Z0-9]/g, ''), value]));
+  const read = (key: string) => String(values.get(key) ?? '').trim();
+  return {
+    weekday: read('DIASEMANA'),
+    launchType: read('TPLANCAMENTO'),
+    expenseClass: read('CLASSIFICAODADESPESA'),
+    group: read('GRUPO'),
+    paymentMethod: read('FORMADEPAGAMENTO'),
+    situation: read('SITUACAO'),
+    modality: read('MODADLIDADE'),
+    observations: read('OBSERVACOES')
+  };
+}
+
 async function syncLedger(eventId: string) {
   await prisma.$transaction(async (tx) => {
     const event = await tx.financialEvent.findUnique({ where: { id: eventId } });
@@ -58,11 +82,21 @@ export async function listFinancialEvents(userId: string, input: { page: number;
       skip: (input.page - 1) * input.pageSize,
       take: input.pageSize,
       orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
-      include: { account: true, category: true, paymentMethod: true }
+      include: { account: true, category: true, paymentMethod: true, importedRow: { select: { rowNumber: true, rawData: true } } }
     }),
     prisma.financialEvent.count({ where })
   ]);
-  return { items, total, page: input.page, pageSize: input.pageSize };
+  return {
+    items: items.map((item) => ({
+      ...item,
+      sourceRowNumber: item.importedRow?.rowNumber ?? null,
+      sourceDetails: sourceDetails(item.importedRow?.rawData),
+      importedRow: undefined
+    })),
+    total,
+    page: input.page,
+    pageSize: input.pageSize
+  };
 }
 
 export async function createFinancialEvent(userId: string, input: CreateFinancialEventInput) {
@@ -139,14 +173,14 @@ export async function getFinancialSummary(userId: string, month: string) {
   const now = new Date();
   const postedStatuses = ['paid', 'reconciled', 'confirmed'];
 
-  const [monthEvents, postedEvents, nextDue, pendingTotals] = await Promise.all([
+  const [monthEvents, historicalEvents, nextDue, pendingTotals] = await Promise.all([
     prisma.financialEvent.findMany({
       where: { userId, archivedAt: null, date: { gte: start, lt: end } },
-      select: { type: true, status: true, amount: true, signedAmount: true, category: { select: { name: true } } }
+      select: { description: true, type: true, status: true, date: true, amount: true, signedAmount: true, category: { select: { name: true } }, paymentMethod: { select: { name: true } } }
     }),
-    prisma.financialEvent.aggregate({
-      where: { userId, archivedAt: null, status: { in: postedStatuses } },
-      _sum: { signedAmount: true }
+    prisma.financialEvent.findMany({
+      where: { userId, archivedAt: null, date: { lte: now } },
+      select: { description: true, type: true, signedAmount: true, paymentMethod: { select: { name: true } } }
     }),
     prisma.financialEvent.findFirst({
       where: { userId, archivedAt: null, status: 'planned', type: { notIn: ['income', 'redemption'] }, date: { gte: now } },
@@ -168,7 +202,7 @@ export async function getFinancialSummary(userId: string, month: string) {
 
   for (const event of monthEvents) {
     const amount = Number(event.amount);
-    const posted = postedStatuses.includes(event.status);
+    const posted = postedStatuses.includes(event.status) || (event.type === 'income' && event.date <= now);
     if (event.type === 'income' || event.type === 'redemption') {
       income += amount;
       if (posted) realizedIncome += amount;
@@ -185,9 +219,13 @@ export async function getFinancialSummary(userId: string, month: string) {
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 5);
 
+  const availableBalance = historicalEvents
+    .filter((event) => !isBenefitCard(event))
+    .reduce((sum, event) => sum + Number(event.signedAmount), 0);
+
   return {
     month,
-    availableBalance: Number(postedEvents._sum.signedAmount || 0),
+    availableBalance,
     income,
     expense,
     projectedResult: income - expense,
@@ -208,10 +246,10 @@ export async function getFinancialCashflow(userId: string, month: string) {
   const end = new Date(Date.UTC(year, monthNumber, 1));
   const postedStatuses = ['paid', 'reconciled', 'confirmed'];
 
-  const [opening, events] = await Promise.all([
-    prisma.financialEvent.aggregate({
-      where: { userId, archivedAt: null, date: { lt: start }, status: { in: postedStatuses } },
-      _sum: { signedAmount: true }
+  const [openingEvents, rawEvents] = await Promise.all([
+    prisma.financialEvent.findMany({
+      where: { userId, archivedAt: null, date: { lt: start } },
+      select: { description: true, signedAmount: true, paymentMethod: { select: { name: true } } }
     }),
     prisma.financialEvent.findMany({
       where: { userId, archivedAt: null, date: { gte: start, lt: end } },
@@ -224,12 +262,16 @@ export async function getFinancialCashflow(userId: string, month: string) {
         type: true,
         amount: true,
         signedAmount: true,
-        category: { select: { name: true } }
+        category: { select: { name: true } },
+        paymentMethod: { select: { name: true } }
       }
     })
   ]);
 
-  const openingBalance = Number(opening._sum.signedAmount || 0);
+  const events = rawEvents.filter((event) => !isBenefitCard(event));
+  const openingBalance = openingEvents
+    .filter((event) => !isBenefitCard(event))
+    .reduce((sum, event) => sum + Number(event.signedAmount), 0);
   let projectedBalance = openingBalance;
   let realizedBalance = openingBalance;
   const days = new Map<string, {
@@ -247,7 +289,7 @@ export async function getFinancialCashflow(userId: string, month: string) {
     const signed = Number(event.signedAmount);
     const amount = Number(event.amount);
     projectedBalance += signed;
-    if (postedStatuses.includes(event.status)) realizedBalance += signed;
+    if (postedStatuses.includes(event.status) || (event.type === 'income' && event.date <= new Date())) realizedBalance += signed;
     const day = days.get(date) || {
       date,
       income: 0,
