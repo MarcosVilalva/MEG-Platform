@@ -379,8 +379,9 @@ export async function getFinancialAnalytics(userId: string, month: string) {
   const end = new Date(Date.UTC(year, monthNumber, 1));
   const previousDate = new Date(Date.UTC(year, monthNumber - 2, 1));
   const previousMonth = previousDate.toISOString().slice(0, 7);
+  const trendStart = new Date(Date.UTC(year, monthNumber - 12, 1));
 
-  const [current, previous, events] = await Promise.all([
+  const [current, previous, events, trendEvents] = await Promise.all([
     getFinancialSummary(userId, month),
     getFinancialSummary(userId, previousMonth),
     prisma.financialEvent.findMany({
@@ -392,18 +393,44 @@ export async function getFinancialAnalytics(userId: string, month: string) {
         category: { select: { name: true, group: true } },
         paymentMethod: { select: { name: true } }
       }
+    }),
+    prisma.financialEvent.findMany({
+      where: { userId, archivedAt: null, date: { gte: trendStart, lt: end } },
+      select: { date: true, type: true, amount: true }
     })
   ]);
 
   const paymentTotals = new Map<string, number>();
+  const categoryTotals = new Map<string, number>();
   const expenseDays = new Set<string>();
   for (const event of events) {
     if (event.type === 'income' || event.type === 'redemption') continue;
     const amount = Number(event.amount);
     const method = event.paymentMethod?.name || 'Não informada';
     paymentTotals.set(method, (paymentTotals.get(method) || 0) + amount);
+    const category = event.category?.group || event.category?.name || 'Sem categoria';
+    categoryTotals.set(category, (categoryTotals.get(category) || 0) + amount);
     expenseDays.add(event.date.toISOString().slice(0, 10));
   }
+
+  const trend = new Map<string, { month: string; income: number; expense: number; result: number }>();
+  for (let offset = 11; offset >= 0; offset -= 1) {
+    const date = new Date(Date.UTC(year, monthNumber - 1 - offset, 1));
+    const key = date.toISOString().slice(0, 7);
+    trend.set(key, { month: key, income: 0, expense: 0, result: 0 });
+  }
+  for (const event of trendEvents) {
+    const point = trend.get(event.date.toISOString().slice(0, 7));
+    if (!point) continue;
+    if (event.type === 'income' || event.type === 'redemption') point.income += Number(event.amount);
+    else point.expense += Number(event.amount);
+    point.result = point.income - point.expense;
+  }
+
+  const categories = [...categoryTotals.entries()]
+    .map(([name, amount]) => ({ name, amount }))
+    .sort((a, b) => b.amount - a.amount);
+  const totalCategoryExpense = categories.reduce((sum, item) => sum + item.amount, 0);
 
   return {
     month,
@@ -420,6 +447,9 @@ export async function getFinancialAnalytics(userId: string, month: string) {
       result: current.projectedResult - previous.projectedResult
     },
     dailyAverageExpense: expenseDays.size ? current.expense / expenseDays.size : 0,
+    concentrationTop3: totalCategoryExpense > 0 ? categories.slice(0, 3).reduce((sum, item) => sum + item.amount, 0) / totalCategoryExpense * 100 : 0,
+    categories: categories.slice(0, 10),
+    monthlyTrend: [...trend.values()],
     paymentMethods: [...paymentTotals.entries()]
       .map(([name, amount]) => ({ name, amount }))
       .sort((a, b) => b.amount - a.amount)

@@ -108,6 +108,9 @@ export type FinancialAnalytics = {
   previous: { month: string; income: number; expense: number; result: number };
   delta: { income: number; expense: number; result: number };
   dailyAverageExpense: number;
+  concentrationTop3: number;
+  categories: Array<{ name: string; amount: number }>;
+  monthlyTrend: Array<{ month: string; income: number; expense: number; result: number }>;
   paymentMethods: Array<{ name: string; amount: number }>;
 };
 export type FinancialCashflow = {
