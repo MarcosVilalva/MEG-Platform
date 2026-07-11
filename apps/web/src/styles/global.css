@@ -16,6 +16,14 @@ body {
     linear-gradient(180deg,#f9fcfb,#eef6f3);
 }
 
+.data-migration-screen { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at 50% 0%, rgba(22,182,159,.2), transparent 38%), #eef6f3; }
+.data-migration-card { width: min(560px, 100%); display: grid; justify-items: center; gap: 14px; padding: 48px; border: 1px solid rgba(15,146,127,.18); border-radius: 30px; background: #fff; box-shadow: 0 28px 80px rgba(6,47,43,.16); text-align: center; }
+.data-migration-card > span { color: #0f927f; font-size: .75rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.data-migration-card h1 { margin: 4px 0; font-size: 2rem; }
+.data-migration-card p { margin: 0 0 10px; color: #5c746d; line-height: 1.6; }
+.data-migration-card button { min-height: 46px; border: 0; border-radius: 13px; padding: 0 22px; color: #fff; background: #087f6d; font-weight: 850; cursor: pointer; }
+.data-migration-card button.secondary { color: #49635c; background: #edf5f2; }
+
 button, input {
   font: inherit;
 }

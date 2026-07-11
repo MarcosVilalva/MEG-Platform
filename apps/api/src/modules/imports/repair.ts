@@ -7,7 +7,21 @@ const HEADERS = {
   payment: 'FORMADEPAGAMENTO', situation: 'SITUACAO', modality: 'MODADLIDADE', notes: 'OBSERVACOES'
 } as const;
 function normalizeKey(value: string) { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
-function fields(raw: RawRow) { return new Map(Object.entries(raw).map(([key, value]) => [normalizeKey(key), value])); }
+function fields(raw: RawRow) {
+  const entries = Object.entries(raw);
+  const values = new Map(entries.map(([key, value]) => [normalizeKey(key), value]));
+  // A primeira importação foi feita com alguns cabeçalhos danificados. A ordem
+  // é a do arquivo oficial e serve apenas como recuperação quando a chave não
+  // pode ser reconhecida pelo nome.
+  const positions: Partial<Record<keyof typeof HEADERS, number>> = {
+    date: 0, type: 2, description: 3, income: 4, expenseClass: 5,
+    group: 6, expense: 7, payment: 8, situation: 9, modality: 10, notes: 11
+  };
+  for (const [field, index] of Object.entries(positions) as Array<[keyof typeof HEADERS, number]>) {
+    if (!values.has(HEADERS[field]) && entries[index]) values.set(HEADERS[field], entries[index][1]);
+  }
+  return values;
+}
 function text(values: Map<string, unknown>, key: keyof typeof HEADERS) { const value = values.get(HEADERS[key]); return value == null ? '' : String(value).trim(); }
 function decimal(value: string) { const normalized = value.replace(/\./g, '').replace(',', '.'); if (!normalized) return null; const number = Number(normalized); return Number.isFinite(number) ? number : null; }
 function excelDate(value: string) { const serial = Number(value.replace(',', '.')); if (!Number.isFinite(serial)) throw new Error('INVALID_DATE'); return new Date(Date.UTC(1899, 11, 30) + serial * 86_400_000); }
