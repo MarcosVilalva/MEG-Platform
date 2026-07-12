@@ -28,6 +28,7 @@
     "start:api": "npm --workspace apps/api run start",
     "db:generate": "npm --workspace packages/database run db:generate",
     "db:push": "npm --workspace packages/database run db:push",
+    "db:push:production": "npm --workspace packages/database run db:push:production",
     "db:prepare:production": "npm --workspace packages/database run db:prepare:production",
     "db:seed": "npm --workspace packages/database run db:seed",
     "db:studio": "npm --workspace packages/database run db:studio",
