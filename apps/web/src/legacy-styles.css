@@ -59,6 +59,9 @@
 .auth-form .button { width: 100%; justify-content: center; padding: 14px; }
 .auth-error { min-height: 20px; margin: 0; color: #bd2b2b; }
 .auth-error.success { color: #087562; }
+.settings-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+.notification-preview { min-height: 110px; max-height: 320px; overflow: auto; padding: 14px; border: 1px solid #d5e4e0; border-radius: 12px; background: #f5faf8; color: #173b34; white-space: pre-wrap; font: 13px/1.55 system-ui, sans-serif; }
+.fatal-error { position: fixed; inset: 20px; z-index: 10000; display: grid; place-content: center; gap: 12px; text-align: center; border-radius: 20px; background: #fff; color: #173b34; }
 .hidden { display: none !important; }
 
 @media (max-width: 760px) {
@@ -1283,3 +1286,4 @@ tbody tr:hover {
     flex-direction: column-reverse;
   }
 }
+
