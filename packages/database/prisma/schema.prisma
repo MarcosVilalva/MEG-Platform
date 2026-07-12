@@ -48,9 +48,37 @@ model User {
   cardPurchases  CardPurchase[]
   payables       Payable[]
   recurringExpenses RecurringExpense[]
+  appState       AppState?
+  notificationDeliveries NotificationDelivery[]
 
   @@index([status])
   @@index([role])
+}
+
+model AppState {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  state      Json
+  revision   Int      @default(1)
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationDelivery {
+  id          String   @id @default(cuid())
+  userId      String
+  channel     String
+  reference   String
+  status      String
+  detail      String?
+  deliveredAt DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel, reference])
+  @@index([deliveredAt])
 }
 
 model AuthSession {

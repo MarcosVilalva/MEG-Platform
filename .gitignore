@@ -6,6 +6,12 @@ dist/
 Thumbs.db
 .vscode/
 *.log
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+real-data.js
+*.tsbuildinfo
 
 *.db
 *.db-journal

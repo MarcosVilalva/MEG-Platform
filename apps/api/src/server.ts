@@ -10,8 +10,11 @@ import { receivableRoutes } from './modules/receivables/routes';
 import { cardRoutes } from './modules/cards/routes';
 import { payableRoutes } from './modules/payables/routes';
 import { repairLegacyImportedEvents } from './modules/imports/repair';
+import { appStateRoutes } from './modules/app-state/routes';
+import { notificationRoutes } from './modules/notifications/routes';
 
 const app = Fastify({
+  bodyLimit: 12 * 1024 * 1024,
   logger: {
     level: config.logLevel
   }
@@ -63,6 +66,8 @@ await app.register(financeRoutes, { prefix: '/finance' });
 await app.register(receivableRoutes, { prefix: '/receivables' });
 await app.register(cardRoutes, { prefix: '/cards' });
 await app.register(payableRoutes, { prefix: '/payables' });
+await app.register(appStateRoutes, { prefix: '/app-state' });
+await app.register(notificationRoutes, { prefix: '/notifications' });
 
 const shutdown = async (signal: string) => {
   app.log.info({ signal }, 'Graceful shutdown started');
