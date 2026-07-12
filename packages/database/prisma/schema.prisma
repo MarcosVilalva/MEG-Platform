@@ -50,6 +50,7 @@ model User {
   recurringExpenses RecurringExpense[]
   appState       AppState?
   notificationDeliveries NotificationDelivery[]
+  notificationRecipients NotificationRecipient[]
 
   @@index([status])
   @@index([role])
@@ -79,6 +80,21 @@ model NotificationDelivery {
 
   @@unique([userId, channel, reference])
   @@index([deliveredAt])
+}
+
+model NotificationRecipient {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  phone     String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, phone])
+  @@index([userId, isActive])
 }
 
 model AuthSession {

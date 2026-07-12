@@ -1,4 +1,4 @@
-import readXlsxFile from 'read-excel-file/browser';
+import { readSheet } from 'read-excel-file/browser';
 import { bootstrapCloud } from './legacy-cloud.js';
 
 const normalize = (value) => String(value ?? '')
@@ -29,7 +29,12 @@ function isoDate(value) {
 }
 
 async function parseMegWorkbook(file) {
-    const workbookRows = await readXlsxFile(file);
+    let workbookRows;
+    try {
+      workbookRows = await readSheet(file, 'LANÇAMENTOS');
+    } catch {
+      throw new Error('A aba LANÇAMENTOS não foi encontrada na planilha.');
+    }
     const rows = Array.isArray(workbookRows?.[0]?.data) ? workbookRows[0].data : workbookRows;
     const headerIndex = rows.findIndex((row) => {
       const cells = row.map(normalize);
@@ -99,8 +104,46 @@ function wireLegacyApp() {
   const previewButton = document.querySelector('#previewNotificationsBtn');
   const sendButton = document.querySelector('#sendNotificationsBtn');
   const notificationPreview = document.querySelector('#notificationPreview');
+  const recipientNameInput = document.querySelector('#recipientNameInput');
+  const recipientPhoneInput = document.querySelector('#recipientPhoneInput');
+  const addRecipientButton = document.querySelector('#addRecipientBtn');
+  const recipientList = document.querySelector('#notificationRecipientList');
   if (userName) userName.textContent = window.MEG_CLOUD.user.name;
   logoutButton?.addEventListener('click', () => window.MEG_CLOUD.logout());
+
+  async function loadRecipients() {
+    if (!recipientList) return;
+    try {
+      const recipients = await window.MEG_CLOUD.listNotificationRecipients();
+      recipientList.innerHTML = recipients.length
+        ? recipients.map((item) => `<label class="recipient-item"><input type="checkbox" value="${item.id}" data-notification-recipient checked /><span><strong>${escapeMarkup(item.name)}</strong><small>${escapeMarkup(item.phone)}</small></span><button class="filter-clear-button" type="button" data-remove-recipient="${item.id}">Remover</button></label>`).join('')
+        : '<span class="muted">Cadastre ao menos um WhatsApp para selecionar o envio.</span>';
+    } catch (cause) {
+      recipientList.innerHTML = `<span class="muted">${escapeMarkup(cause instanceof Error ? cause.message : 'Falha ao carregar destinatários.')}</span>`;
+    }
+  }
+
+  function escapeMarkup(value) {
+    return String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+  }
+
+  addRecipientButton?.addEventListener('click', async () => {
+    try {
+      await window.MEG_CLOUD.addNotificationRecipient(recipientNameInput.value, recipientPhoneInput.value);
+      recipientNameInput.value = '';
+      recipientPhoneInput.value = '';
+      await loadRecipients();
+    } catch (cause) {
+      notificationPreview.textContent = cause instanceof Error ? cause.message : 'Não foi possível adicionar o destinatário.';
+    }
+  });
+
+  recipientList?.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-remove-recipient]');
+    if (!button) return;
+    await window.MEG_CLOUD.removeNotificationRecipient(button.dataset.removeRecipient);
+    await loadRecipients();
+  });
 
   previewButton?.addEventListener('click', async () => {
     notificationPreview.textContent = 'Gerando resumo...';
@@ -115,13 +158,18 @@ function wireLegacyApp() {
   sendButton?.addEventListener('click', async () => {
     notificationPreview.textContent = 'Enviando alertas...';
     try {
-      const result = await window.MEG_CLOUD.sendNotifications();
-      const delivery = (result.deliveries || []).map((item) => `${item.channel}: ${item.status}${item.detail ? ` — ${item.detail}` : ''}`).join('\n');
+      const recipientIds = [...document.querySelectorAll('[data-notification-recipient]:checked')].map((item) => item.value);
+      const hasRecipients = document.querySelectorAll('[data-notification-recipient]').length > 0;
+      if (hasRecipients && !recipientIds.length) throw new Error('Selecione ao menos um número para o envio.');
+      const result = await window.MEG_CLOUD.sendNotifications(recipientIds);
+      const delivery = (result.deliveries || []).map((item) => `${item.recipient || item.channel}: ${item.status}${item.detail ? ` — ${item.detail}` : ''}`).join('\n');
       notificationPreview.textContent = `${result.digest?.text || result.message || ''}\n\nResultado do envio:\n${delivery || 'Nenhum canal enviado.'}`;
     } catch (cause) {
       notificationPreview.textContent = cause instanceof Error ? cause.message : 'Falha ao enviar alertas.';
     }
   });
+
+  loadRecipients();
 
   importInput?.addEventListener('change', async () => {
   const file = importInput.files?.[0];

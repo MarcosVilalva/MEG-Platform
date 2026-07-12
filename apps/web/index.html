@@ -112,7 +112,7 @@
                 </span>
                 <div>
                   <strong id="incomeMetric">R$ 0,00</strong>
-                  <span>total receitas</span>
+                  <span>receitas + saldo anterior</span>
                   <small id="incomeTrend">0 lancamentos</small>
                 </div>
               </article>
@@ -130,7 +130,7 @@
                 <span class="money-symbol" aria-hidden="true">$</span>
                 <div>
                   <strong id="balanceMetric">R$ 0,00</strong>
-                  <span>total saldo</span>
+                  <span>fechamento do período</span>
                   <small id="balanceTrend">Resultado do periodo</small>
                 </div>
               </article>
@@ -166,7 +166,7 @@
               <article class="mini-metric">
                 <span id="previousCloseLabel">Saldo fechamento mes anterior</span>
                 <strong id="availableBalanceMetric">R$ 0,00</strong>
-                <small id="previousCloseTrend">Conta bancaria, sem VEROCARD</small>
+                <small id="previousCloseTrend">Fechamento acumulado da base</small>
               </article>
               <article class="mini-metric">
                 <span>Receitas do mes atual</span>
@@ -290,7 +290,8 @@
             <div class="filter-row">
               <label class="stacked-control">
                 Modalidade
-                <select id="analyticsPaymentFilter" multiple size="4"></select>
+                <select id="analyticsPaymentFilter" multiple size="6" aria-describedby="modalityFilterHelp"></select>
+                <small id="modalityFilterHelp" class="muted">Todas as modalidades da planilha. Use Ctrl para combinar filtros.</small>
               </label>
             </div>
           </section>
@@ -400,6 +401,21 @@
                     <th>MODALIDADE</th>
                     <th>OBSERVAÇÕES</th>
                     <th class="actions-col">Ações</th>
+                  </tr>
+                  <tr class="column-filter-row">
+                    <th><input data-column-filter="date" type="date" aria-label="Filtrar por data" /></th>
+                    <th></th>
+                    <th><select data-column-filter="type" aria-label="Filtrar tipo"><option value="">Todos</option><option value="income">Receita</option><option value="expense">Despesa</option></select></th>
+                    <th><input data-column-filter="description" type="search" placeholder="Filtrar..." aria-label="Filtrar descrição" /></th>
+                    <th><input data-column-filter="income" type="number" min="0" step="0.01" placeholder="Mínimo" aria-label="Receita mínima" /></th>
+                    <th><select data-column-filter="expenseClass" aria-label="Filtrar classificação"><option value="">Todas</option></select></th>
+                    <th><select data-column-filter="group" aria-label="Filtrar grupo"><option value="">Todos</option></select></th>
+                    <th><input data-column-filter="expense" type="number" step="0.01" placeholder="Mínimo" aria-label="Despesa mínima" /></th>
+                    <th><select data-column-filter="paymentMethod" aria-label="Filtrar forma de pagamento"><option value="">Todas</option></select></th>
+                    <th><select data-column-filter="situation" aria-label="Filtrar situação"><option value="">Todas</option></select></th>
+                    <th><select data-column-filter="modality" aria-label="Filtrar modalidade"><option value="">Todas</option></select></th>
+                    <th><input data-column-filter="notes" type="search" placeholder="Filtrar..." aria-label="Filtrar observações" /></th>
+                    <th><button class="filter-clear-button" id="clearColumnFiltersBtn" type="button">Limpar</button></th>
                   </tr>
                 </thead>
                 <tbody id="transactionRows"></tbody>
@@ -511,6 +527,14 @@
             <section class="panel">
               <h3>Alertas de vencimento</h3>
               <p class="muted">Confira as contas vencidas e as que vencem nos próximos três dias. O envio usa e-mail e WhatsApp configurados no servidor.</p>
+              <div class="recipient-form">
+                <input id="recipientNameInput" type="text" maxlength="60" placeholder="Nome do destinatário" aria-label="Nome do destinatário" />
+                <input id="recipientPhoneInput" type="tel" maxlength="20" placeholder="WhatsApp: 55 + DDD + número" aria-label="Número do WhatsApp" />
+                <button class="button" id="addRecipientBtn" type="button">Adicionar número</button>
+              </div>
+              <div class="recipient-list" id="notificationRecipientList">
+                <span class="muted">Carregando destinatários...</span>
+              </div>
               <div class="settings-actions">
                 <button class="button" id="previewNotificationsBtn" type="button">Ver resumo</button>
                 <button class="button primary" id="sendNotificationsBtn" type="button">Enviar agora</button>

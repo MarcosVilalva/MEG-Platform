@@ -226,8 +226,22 @@ export async function bootstrapCloud() {
       if (!response.ok) throw new Error('Não foi possível gerar o resumo.');
       return response.json();
     },
-    async sendNotifications() {
-      const response = await api('/notifications/send', { method: 'POST' });
+    async listNotificationRecipients() {
+      const response = await api('/notifications/recipients');
+      if (!response.ok) throw new Error('Não foi possível carregar os destinatários.');
+      return response.json();
+    },
+    async addNotificationRecipient(name, phone) {
+      const response = await api('/notifications/recipients', { method: 'POST', body: JSON.stringify({ name, phone }) });
+      if (!response.ok) throw new Error('Informe um nome e um WhatsApp válido com DDD.');
+      return response.json();
+    },
+    async removeNotificationRecipient(id) {
+      const response = await api(`/notifications/recipients/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Não foi possível remover o destinatário.');
+    },
+    async sendNotifications(recipientIds = []) {
+      const response = await api('/notifications/send', { method: 'POST', body: JSON.stringify({ recipientIds }) });
       if (!response.ok) throw new Error('Não foi possível enviar os alertas.');
       return response.json();
     }
