@@ -62,7 +62,7 @@ function authMarkup() {
   return `
     <div class="auth-shell" id="authShell">
       <section class="auth-card">
-        <div class="auth-brand"><span>M</span><div><strong>MEG Finanças</strong><small>Seus dados protegidos e sincronizados</small></div></div>
+        <div class="auth-brand"><span>M</span><div><strong>MEG FinanÃ§as</strong><small>Seus dados protegidos e sincronizados</small></div></div>
         <div class="auth-tabs"><button class="active" data-auth-tab="login">Entrar</button><button data-auth-tab="register">Solicitar acesso</button></div>
         <form id="loginForm" class="auth-form">
           <h1>Acesse sua conta</h1>
@@ -78,7 +78,7 @@ function authMarkup() {
           <label>Senha<input name="password" type="password" autocomplete="new-password" minlength="8" required /></label>
           <label>Repetir senha<input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required /></label>
           <p class="auth-error" id="registerError"></p>
-          <button class="button primary" type="submit">Enviar solicitação</button>
+          <button class="button primary" type="submit">Enviar solicitaÃ§Ã£o</button>
         </form>
       </section>
     </div>`;
@@ -108,12 +108,12 @@ function showAuthentication() {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
         });
         const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error === 'PENDING_APPROVAL' ? 'Seu acesso ainda aguarda aprovação.' : 'E-mail ou senha inválidos.');
+        if (!response.ok) throw new Error(payload.error === 'PENDING_APPROVAL' ? 'Seu acesso ainda aguarda aprovaÃ§Ã£o.' : 'E-mail ou senha invÃ¡lidos.');
         persistSession(payload);
         shell.remove();
         resolve(payload.user);
       } catch (cause) {
-        error.textContent = cause instanceof Error ? cause.message : 'Não foi possível conectar à API.';
+        error.textContent = cause instanceof Error ? cause.message : 'NÃ£o foi possÃ­vel conectar Ã  API.';
       }
     });
 
@@ -131,7 +131,7 @@ function showAuthentication() {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
         });
         const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error === 'EMAIL_ALREADY_REGISTERED' ? 'Este e-mail já está cadastrado.' : 'Não foi possível solicitar o acesso.');
+        if (!response.ok) throw new Error(payload.error === 'EMAIL_ALREADY_REGISTERED' ? 'Este e-mail jÃ¡ estÃ¡ cadastrado.' : 'NÃ£o foi possÃ­vel solicitar o acesso.');
         if (payload.accessToken) {
           persistSession(payload);
           shell.remove();
@@ -139,9 +139,9 @@ function showAuthentication() {
           return;
         }
         error.classList.add('success');
-        error.textContent = 'Solicitação enviada. O administrador precisa aprovar seu acesso.';
+        error.textContent = 'SolicitaÃ§Ã£o enviada. O administrador precisa aprovar seu acesso.';
       } catch (cause) {
-        error.textContent = cause instanceof Error ? cause.message : 'Não foi possível conectar à API.';
+        error.textContent = cause instanceof Error ? cause.message : 'NÃ£o foi possÃ­vel conectar Ã  API.';
       }
     });
   });
@@ -161,7 +161,7 @@ async function validateOrLogin() {
 
 async function loadCloudState() {
   const response = await api('/app-state');
-  if (!response.ok) throw new Error('Não foi possível carregar seus dados da nuvem.');
+  if (!response.ok) throw new Error('NÃ£o foi possÃ­vel carregar seus dados da nuvem.');
   const payload = await response.json();
   revision = payload.revision || 0;
   if (payload.state) {
@@ -179,7 +179,7 @@ async function saveNow(state) {
     body: JSON.stringify({ state, expectedRevision: revision })
   });
   if (response.status === 409) {
-    document.querySelector('#cloudSyncStatus').textContent = 'Alteração em outro dispositivo';
+    document.querySelector('#cloudSyncStatus').textContent = 'AlteraÃ§Ã£o em outro dispositivo';
     return;
   }
   if (!response.ok) throw new Error('Falha ao salvar na nuvem.');
@@ -216,6 +216,17 @@ export async function bootstrapCloud() {
       }
       clearSession();
       location.reload();
+    },
+    async previewNotifications() {
+      const response = await api('/notifications/preview');
+      if (!response.ok) throw new Error('NÃ£o foi possÃ­vel gerar o resumo.');
+      return response.json();
+    },
+    async sendNotifications() {
+      const response = await api('/notifications/send', { method: 'POST' });
+      if (!response.ok) throw new Error('NÃ£o foi possÃ­vel enviar os alertas.');
+      return response.json();
     }
   };
 }
+
