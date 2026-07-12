@@ -112,8 +112,10 @@ export async function repairLegacyImportedEvents() {
     }
   }
 
-  for (let index = 0; index < prepared.length; index += 40) {
-    const batch = prepared.slice(index, index + 40);
+  // O pooler gratuito do Supabase limita as conexões simultâneas. Lotes
+  // pequenos mantêm a manutenção opcional abaixo desse limite.
+  for (let index = 0; index < prepared.length; index += 4) {
+    const batch = prepared.slice(index, index + 4);
     await Promise.all(batch.map(({ eventId, data, categoryId, paymentMethodId }) => prisma.financialEvent.update({
       where: { id: eventId },
       data: {
