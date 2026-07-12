@@ -1,3 +1,5 @@
+import { calculateFinancialSummary } from "./legacy-finance.js";
+
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
 
 const money = new Intl.NumberFormat("pt-BR", {
@@ -90,6 +92,7 @@ let analyticsFilters = {
   groups: [],
   payments: [],
 };
+const transactionColumnFilters = {};
 
 const els = {
   periodMode: document.querySelector("#periodMode"),
@@ -181,6 +184,8 @@ const els = {
   searchInput: document.querySelector("#searchInput"),
   typeFilter: document.querySelector("#typeFilter"),
   transactionSortFilter: document.querySelector("#transactionSortFilter"),
+  transactionColumnFilters: document.querySelectorAll("[data-column-filter]"),
+  clearColumnFiltersBtn: document.querySelector("#clearColumnFiltersBtn"),
   budgetEditorGrid: document.querySelector("#budgetEditorGrid"),
   addBudgetBtn: document.querySelector("#addBudgetBtn"),
   categoryTags: document.querySelector("#categoryTags"),
@@ -334,6 +339,21 @@ function totalsFor(items) {
   );
 }
 
+function openingBalanceBefore(dateValue) {
+  if (!dateValue) return 0;
+  const totals = totalsFor(state.transactions.filter((item) => item.date < dateValue));
+  return totals.income - totals.expense;
+}
+
+function financialSummaryForPeriod(items = selectedTransactions()) {
+  if (!items.length || selectedPeriod.mode === "all") {
+    const totals = totalsFor(items);
+    return { ...totals, openingBalance: 0, availableIncome: totals.income, closingBalance: totals.income - totals.expense };
+  }
+  const { start, end } = dateRangeForSelectedPeriod();
+  return calculateFinancialSummary(state.transactions, start, end);
+}
+
 function currentMonthTransactions() {
   return state.transactions.filter((item) => monthOf(item.date) === currentMonth);
 }
@@ -354,7 +374,7 @@ function paidTransactionsUntilToday() {
 }
 
 function transactionsUntil(dateValue) {
-  return state.transactions.filter((item) => item.date <= dateValue && !isVerocardTransaction(item));
+  return state.transactions.filter((item) => item.date <= dateValue);
 }
 
 function accountBalanceUntil(dateValue) {
@@ -650,25 +670,27 @@ function render() {
 
 function renderDashboard() {
   const items = selectedTransactions();
-  const totals = totalsFor(items);
-  const balance = totals.income - totals.expense;
+  const totals = financialSummaryForPeriod(items);
+  const balance = totals.closingBalance;
   const monthCount = selectedPeriodMonthCount(items);
   const totalBudget = Object.values(state.budgets).reduce((sum, value) => sum + Number(value || 0), 0) * monthCount;
   const usedBudget = totalBudget ? Math.round((totals.expense / totalBudget) * 100) : 0;
 
   els.dashboardTitle.textContent = `Resumo - ${periodLabel()}`;
   if (els.categoryChartNote) els.categoryChartNote.textContent = `${formatCompactMoney(totals.expense)} no periodo`;
-  els.incomeMetric.textContent = money.format(totals.income);
+  els.incomeMetric.textContent = money.format(totals.availableIncome);
   els.expenseMetric.textContent = money.format(totals.expense);
   els.balanceMetric.textContent = money.format(balance);
   els.budgetMetric.textContent = `${usedBudget}%`;
-  els.incomeTrend.textContent = `${items.filter((item) => item.type === "income").length} lancamentos`;
+  els.incomeTrend.textContent = selectedPeriod.mode === "all"
+    ? `${items.filter((item) => item.type === "income").length} lançamentos`
+    : `${money.format(totals.income)} recebidos + ${money.format(totals.openingBalance)} do fechamento anterior`;
   els.expenseTrend.textContent = `${items.filter((item) => item.type === "expense").length} lancamentos`;
   els.balanceTrend.textContent = balance >= 0 ? "Periodo positivo" : "Ajuste recomendado";
   els.budgetTrend.textContent = usedBudget <= 100 ? "Dentro do limite" : "Acima do orcado";
 
-  const shareBase = totals.income + totals.expense;
-  const incomeShare = shareBase ? (totals.income / shareBase) * 100 : 0;
+  const shareBase = Math.max(totals.availableIncome, 0) + Math.max(totals.expense, 0);
+  const incomeShare = shareBase ? (Math.max(totals.availableIncome, 0) / shareBase) * 100 : 0;
   const expenseShare = shareBase ? (totals.expense / shareBase) * 100 : 0;
   els.incomeShareFill.style.width = `${incomeShare}%`;
   els.expenseShareFill.style.width = `${expenseShare}%`;
@@ -1386,12 +1408,53 @@ function renderPeriodControls() {
   });
 }
 
+function fillColumnFilterOptions(key, values) {
+  const select = document.querySelector(`[data-column-filter="${key}"]`);
+  if (!select || select.tagName !== "SELECT") return;
+  const current = transactionColumnFilters[key] || "";
+  const firstLabel = key === "type" ? "Todos" : key === "situation" ? "Todas" : key === "expenseClass" ? "Todas" : "Todos";
+  const fixedTypeOptions = key === "type"
+    ? '<option value="">Todos</option><option value="income">Receita</option><option value="expense">Despesa</option>'
+    : "";
+  select.innerHTML = fixedTypeOptions || `<option value="">${firstLabel}</option>${values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}`;
+  select.value = current;
+}
+
+function renderColumnFilterOptions() {
+  const valuesFor = (key, fallback = "") => [...new Set(state.transactions.map((item) => String(item[key] || fallback).trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  fillColumnFilterOptions("type", []);
+  fillColumnFilterOptions("expenseClass", valuesFor("expenseClass"));
+  fillColumnFilterOptions("group", valuesFor("group"));
+  fillColumnFilterOptions("paymentMethod", valuesFor("paymentMethod"));
+  fillColumnFilterOptions("situation", valuesFor("situation"));
+  fillColumnFilterOptions("modality", sortedModalities());
+}
+
+function matchesColumnFilters(item) {
+  const textMatches = (key, value) => !transactionColumnFilters[key] || normalizeText(value).includes(normalizeText(transactionColumnFilters[key]));
+  const exactMatches = (key, value) => !transactionColumnFilters[key] || normalizeText(value) === normalizeText(transactionColumnFilters[key]);
+  if (transactionColumnFilters.date && item.date !== transactionColumnFilters.date) return false;
+  if (transactionColumnFilters.type && item.type !== transactionColumnFilters.type) return false;
+  if (!textMatches("description", item.description)) return false;
+  if (!textMatches("notes", item.notes)) return false;
+  if (!exactMatches("expenseClass", item.expenseClass)) return false;
+  if (!exactMatches("group", item.group || item.category)) return false;
+  if (!exactMatches("paymentMethod", item.paymentMethod || item.account)) return false;
+  if (!exactMatches("situation", item.situation)) return false;
+  if (!exactMatches("modality", item.modality || PAYMENT_MODALITIES[item.paymentMethod || item.account])) return false;
+  if (transactionColumnFilters.income && Number(item.incomeAmount || 0) < Number(transactionColumnFilters.income)) return false;
+  if (transactionColumnFilters.expense && Number(item.expenseAmount || 0) < Number(transactionColumnFilters.expense)) return false;
+  return true;
+}
+
 function renderTransactions() {
+  renderColumnFilterOptions();
   const query = els.searchInput.value.trim().toLowerCase();
   const type = els.typeFilter.value;
   const rows = selectedTransactions()
     .filter((item) => (type === "all" ? true : item.type === type))
-    .filter((item) => `${item.description} ${item.category} ${item.account}`.toLowerCase().includes(query));
+    .filter((item) => `${item.description} ${item.category} ${item.account}`.toLowerCase().includes(query))
+    .filter(matchesColumnFilters);
   sortTransactions(rows, els.transactionSortFilter?.value || "date_desc");
 
   els.transactionRows.innerHTML = rows.length
@@ -1962,6 +2025,17 @@ els.resetDemoBtn.addEventListener("click", () => {
 els.searchInput.addEventListener("input", renderTransactions);
 els.typeFilter.addEventListener("change", renderTransactions);
 els.transactionSortFilter.addEventListener("change", renderTransactions);
+els.transactionColumnFilters.forEach((control) => {
+  control.addEventListener(control.tagName === "SELECT" ? "change" : "input", () => {
+    transactionColumnFilters[control.dataset.columnFilter] = control.value;
+    renderTransactions();
+  });
+});
+els.clearColumnFiltersBtn?.addEventListener("click", () => {
+  Object.keys(transactionColumnFilters).forEach((key) => delete transactionColumnFilters[key]);
+  els.transactionColumnFilters.forEach((control) => { control.value = ""; });
+  renderTransactions();
+});
 els.dashboardSortFilter?.addEventListener("change", renderRecentList);
 els.pendingStatusFilter.addEventListener("change", renderPending);
 els.pendingPaymentFilter.addEventListener("change", renderPending);

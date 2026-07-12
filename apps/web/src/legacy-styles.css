@@ -61,12 +61,19 @@
 .auth-error.success { color: #087562; }
 .settings-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
 .notification-preview { min-height: 110px; max-height: 320px; overflow: auto; padding: 14px; border: 1px solid #d5e4e0; border-radius: 12px; background: #f5faf8; color: #173b34; white-space: pre-wrap; font: 13px/1.55 system-ui, sans-serif; }
+.recipient-form { display: grid; grid-template-columns: minmax(150px, .8fr) minmax(220px, 1fr) auto; gap: 10px; margin-top: 16px; }
+.recipient-list { display: grid; gap: 8px; margin-top: 12px; }
+.recipient-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #d5e4e0; border-radius: 10px; background: #fbfdfc; }
+.recipient-item input { width: 18px; height: 18px; min-height: 18px; }
+.recipient-item strong, .recipient-item small { display: block; }
+.recipient-item small { color: var(--muted); }
 .fatal-error { position: fixed; inset: 20px; z-index: 10000; display: grid; place-content: center; gap: 12px; text-align: center; border-radius: 20px; background: #fff; color: #173b34; }
 .hidden { display: none !important; }
 
 @media (max-width: 760px) {
   .cloud-user { margin: 10px 0; }
   .auth-card { padding: 22px; }
+  .recipient-form { grid-template-columns: 1fr; }
 }
 
 * {
@@ -987,6 +994,13 @@ textarea {
 .table-wrap {
   overflow-x: auto;
 }
+
+thead { position: sticky; top: 0; z-index: 2; }
+
+.column-filter-row th { padding: 7px 8px 10px; background: #e4efeb; }
+.column-filter-row input,
+.column-filter-row select { width: 100%; min-width: 96px; min-height: 34px; padding: 6px 8px; border: 1px solid #bfd2cc; border-radius: 7px; background: #fff; color: var(--text); font-size: .75rem; text-transform: none; }
+.filter-clear-button { min-height: 34px; border: 1px solid #b9cec8; border-radius: 7px; background: #fff; color: var(--primary-strong); font-size: .72rem; font-weight: 800; cursor: pointer; }
 
 table {
   width: 100%;

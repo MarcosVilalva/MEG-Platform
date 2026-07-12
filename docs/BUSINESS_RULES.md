@@ -3,6 +3,9 @@
 ## Princípios financeiros
 
 - Receita disponível do mês = saldo final do mês anterior + entradas efetivadas do mês.
+- Fechamento do mês = saldo final anterior + receitas do mês - despesas do mês.
+- O painel deve exibir separadamente saldo anterior, receitas do mês, receita disponível e fechamento; o saldo anterior nunca pode ficar oculto dentro de outro indicador.
+- Para julho de 2026 na planilha de origem, a reconciliação esperada é: saldo anterior R$ 882,81 + receitas R$ 11.574,31 - despesas R$ 12.153,40 = fechamento R$ 303,72.
 - Competência, vencimento e pagamento são datas independentes.
 - Eventos previstos não compõem o saldo disponível.
 - O saldo é consequência dos eventos; não deve ser alterado diretamente.
@@ -79,6 +82,13 @@ Arquivamento não remove histórico. Estornos devem ser registrados como eventos
 - A Home exibe informações que exigem ação ou decisão.
 - Analytics é destinado à investigação, tendência e comparação histórica.
 - Cálculos financeiros reutilizáveis devem residir no MEG Core.
+
+## Alertas e destinatários
+
+- O administrador escolhe quais números cadastrados recebem cada alerta manual.
+- Números de WhatsApp pertencem ao usuário administrador e não são compartilhados entre contas.
+- O alerta informa data da consulta, total em aberto, contas vencidas, contas dos próximos três dias, valor e forma de pagamento.
+- O agendamento automático envia para todos os destinatários ativos e não repete o mesmo alerta no mesmo canal e dia.
 
 ## IA
 
