@@ -96,8 +96,32 @@ function wireLegacyApp() {
   const logoutButton = document.querySelector('#logoutBtn');
   const importInput = document.querySelector('#xlsxImport');
   const importStatus = document.querySelector('#xlsxImportStatus');
+  const previewButton = document.querySelector('#previewNotificationsBtn');
+  const sendButton = document.querySelector('#sendNotificationsBtn');
+  const notificationPreview = document.querySelector('#notificationPreview');
   if (userName) userName.textContent = window.MEG_CLOUD.user.name;
   logoutButton?.addEventListener('click', () => window.MEG_CLOUD.logout());
+
+  previewButton?.addEventListener('click', async () => {
+    notificationPreview.textContent = 'Gerando resumo...';
+    try {
+      const result = await window.MEG_CLOUD.previewNotifications();
+      notificationPreview.textContent = result.text || 'Nenhuma conta exige atenção.';
+    } catch (cause) {
+      notificationPreview.textContent = cause instanceof Error ? cause.message : 'Falha ao gerar resumo.';
+    }
+  });
+
+  sendButton?.addEventListener('click', async () => {
+    notificationPreview.textContent = 'Enviando alertas...';
+    try {
+      const result = await window.MEG_CLOUD.sendNotifications();
+      const delivery = (result.deliveries || []).map((item) => `${item.channel}: ${item.status}${item.detail ? ` — ${item.detail}` : ''}`).join('\n');
+      notificationPreview.textContent = `${result.digest?.text || result.message || ''}\n\nResultado do envio:\n${delivery || 'Nenhum canal enviado.'}`;
+    } catch (cause) {
+      notificationPreview.textContent = cause instanceof Error ? cause.message : 'Falha ao enviar alertas.';
+    }
+  });
 
   importInput?.addEventListener('change', async () => {
   const file = importInput.files?.[0];
