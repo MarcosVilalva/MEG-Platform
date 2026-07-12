@@ -7,7 +7,9 @@ const transactionSchema = z.object({
   date: z.string().min(10),
   description: z.string().min(1),
   type: z.enum(['income', 'expense']),
-  amount: z.coerce.number().nonnegative()
+  // Estornos e reembolsos permanecem como despesas negativas, exatamente
+  // como na planilha original. O sinal participa dos totais do MEG.
+  amount: z.coerce.number().finite()
 }).passthrough();
 
 const stateSchema = z.object({
