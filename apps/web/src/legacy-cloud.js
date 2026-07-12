@@ -216,6 +216,16 @@ export async function bootstrapCloud() {
       }
       clearSession();
       location.reload();
+    },
+    async previewNotifications() {
+      const response = await api('/notifications/preview');
+      if (!response.ok) throw new Error('Não foi possível gerar o resumo.');
+      return response.json();
+    },
+    async sendNotifications() {
+      const response = await api('/notifications/send', { method: 'POST' });
+      if (!response.ok) throw new Error('Não foi possível enviar os alertas.');
+      return response.json();
     }
   };
 }
