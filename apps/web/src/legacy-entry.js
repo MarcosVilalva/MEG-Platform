@@ -35,17 +35,17 @@ async function parseMegWorkbook(file) {
       const cells = row.map(normalize);
       return cells.includes('DATA') && cells.some((cell) => cell === 'TP LANCAMENTO');
     });
-    if (headerIndex < 0) throw new Error('Cabeçalho da base MEG não encontrado.');
+    if (headerIndex < 0) throw new Error('CabeÃ§alho da base MEG nÃ£o encontrado.');
 
     const headers = rows[headerIndex].map(normalize);
     const column = (...names) => headers.findIndex((header) => names.map(normalize).includes(header));
     const indexes = {
-      date: column('DATA'), weekday: column('DIASEMANA'), type: column('TP LANÇAMENTO'),
-      description: column('DESCRIÇÃO'), income: column('RECEITA($)'), expenseClass: column('CLASSIFIÇÃO DA DESPESA', 'CLASSIFICAÇÃO DA DESPESA'),
+      date: column('DATA'), weekday: column('DIASEMANA'), type: column('TP LANÃ‡AMENTO'),
+      description: column('DESCRIÃ‡ÃƒO'), income: column('RECEITA($)'), expenseClass: column('CLASSIFIÃ‡ÃƒO DA DESPESA', 'CLASSIFICAÃ‡ÃƒO DA DESPESA'),
       group: column('GRUPO'), expense: column('DESPESA (R$)'), payment: column('FORMA DE PAGAMENTO'),
-      situation: column('SITUAÇÃO'), modality: column('MODADLIDADE', 'MODALIDADE'), notes: column('OBSERVAÇÕES')
+      situation: column('SITUAÃ‡ÃƒO'), modality: column('MODADLIDADE', 'MODALIDADE'), notes: column('OBSERVAÃ‡Ã•ES')
     };
-    if (Object.values(indexes).slice(0, 9).some((index) => index < 0)) throw new Error('A planilha não possui todas as colunas essenciais do MEG.');
+    if (Object.values(indexes).slice(0, 9).some((index) => index < 0)) throw new Error('A planilha nÃ£o possui todas as colunas essenciais do MEG.');
 
     const transactions = [];
     let issues = 0;
@@ -64,7 +64,7 @@ async function parseMegWorkbook(file) {
       if (!incomeAmount && !expenseAmount) issues += 1;
       const rawSituation = normalize(row[indexes.situation]);
       const status = rawSituation === 'PENDENTE' ? 'pending' : 'paid';
-      const paymentMethod = String(row[indexes.payment] ?? '').trim() || 'Não informado';
+      const paymentMethod = String(row[indexes.payment] ?? '').trim() || 'NÃ£o informado';
       const group = String(row[indexes.group] ?? '').trim();
       transactions.push({
         id: `meg-xlsx-${headerIndex + offset + 2}-${date}`,
@@ -96,8 +96,32 @@ function wireLegacyApp() {
   const logoutButton = document.querySelector('#logoutBtn');
   const importInput = document.querySelector('#xlsxImport');
   const importStatus = document.querySelector('#xlsxImportStatus');
+  const previewButton = document.querySelector('#previewNotificationsBtn');
+  const sendButton = document.querySelector('#sendNotificationsBtn');
+  const notificationPreview = document.querySelector('#notificationPreview');
   if (userName) userName.textContent = window.MEG_CLOUD.user.name;
   logoutButton?.addEventListener('click', () => window.MEG_CLOUD.logout());
+
+  previewButton?.addEventListener('click', async () => {
+    notificationPreview.textContent = 'Gerando resumo...';
+    try {
+      const result = await window.MEG_CLOUD.previewNotifications();
+      notificationPreview.textContent = result.text || 'Nenhuma conta exige atenÃ§Ã£o.';
+    } catch (cause) {
+      notificationPreview.textContent = cause instanceof Error ? cause.message : 'Falha ao gerar resumo.';
+    }
+  });
+
+  sendButton?.addEventListener('click', async () => {
+    notificationPreview.textContent = 'Enviando alertas...';
+    try {
+      const result = await window.MEG_CLOUD.sendNotifications();
+      const delivery = (result.deliveries || []).map((item) => `${item.channel}: ${item.status}${item.detail ? ` â€” ${item.detail}` : ''}`).join('\n');
+      notificationPreview.textContent = `${result.digest?.text || result.message || ''}\n\nResultado do envio:\n${delivery || 'Nenhum canal enviado.'}`;
+    } catch (cause) {
+      notificationPreview.textContent = cause instanceof Error ? cause.message : 'Falha ao enviar alertas.';
+    }
+  });
 
   importInput?.addEventListener('change', async () => {
   const file = importInput.files?.[0];
@@ -108,20 +132,20 @@ function wireLegacyApp() {
     const income = result.transactions.reduce((sum, item) => sum + item.incomeAmount, 0);
     const expense = result.transactions.reduce((sum, item) => sum + item.expenseAmount, 0);
     const confirmation = confirm(
-      `Importar ${result.transactions.length} lançamentos?\n\n` +
+      `Importar ${result.transactions.length} lanÃ§amentos?\n\n` +
       `Receitas: ${income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n` +
       `Despesas: ${expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n\n` +
-      'A base atual na nuvem será substituída por esta planilha.'
+      'A base atual na nuvem serÃ¡ substituÃ­da por esta planilha.'
     );
     if (!confirmation) {
-      importStatus.textContent = 'Importação cancelada.';
+      importStatus.textContent = 'ImportaÃ§Ã£o cancelada.';
       return;
     }
     window.MEG_APP.replaceImportedState(result.transactions);
     await window.MEG_CLOUD.saveNow(window.MEG_APP.getState());
-    importStatus.textContent = `${result.transactions.length} lançamentos importados e salvos na nuvem. ${result.issues} linha(s) exigem revisão.`;
+    importStatus.textContent = `${result.transactions.length} lanÃ§amentos importados e salvos na nuvem. ${result.issues} linha(s) exigem revisÃ£o.`;
   } catch (cause) {
-    importStatus.textContent = cause instanceof Error ? cause.message : 'Não foi possível importar a planilha.';
+    importStatus.textContent = cause instanceof Error ? cause.message : 'NÃ£o foi possÃ­vel importar a planilha.';
   } finally {
     importInput.value = '';
   }
@@ -135,6 +159,7 @@ async function start() {
 }
 
 start().catch((cause) => {
-  const message = cause instanceof Error ? cause.message : 'Não foi possível iniciar o MEG.';
-  document.body.insertAdjacentHTML('beforeend', `<div class="fatal-error"><strong>Não foi possível abrir o MEG</strong><span>${message}</span><button onclick="location.reload()">Tentar novamente</button></div>`);
+  const message = cause instanceof Error ? cause.message : 'NÃ£o foi possÃ­vel iniciar o MEG.';
+  document.body.insertAdjacentHTML('beforeend', `<div class="fatal-error"><strong>NÃ£o foi possÃ­vel abrir o MEG</strong><span>${message}</span><button onclick="location.reload()">Tentar novamente</button></div>`);
 });
+
