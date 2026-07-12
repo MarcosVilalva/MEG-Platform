@@ -19,3 +19,19 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
+      - key: ADMIN_EMAIL
+        value: m_vilalva@hotmail.com
+      - key: RESEND_API_KEY
+        sync: false
+      - key: NOTIFICATION_EMAIL_FROM
+        value: MEG Finanças <onboarding@resend.dev>
+      - key: EVOLUTION_API_URL
+        sync: false
+      - key: EVOLUTION_API_KEY
+        sync: false
+      - key: EVOLUTION_INSTANCE
+        sync: false
+      - key: WHATSAPP_RECIPIENT
+        sync: false
+      - key: NOTIFICATION_CRON_SECRET
+        generateValue: true

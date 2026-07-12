@@ -1,14 +1,602 @@
 <!doctype html>
 <html lang="pt-BR">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#052f2b" />
-    <title>MEG Financial OS</title>
-    <link rel="stylesheet" href="/src/styles/auth.css" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MEG Financas</title>
+    <link rel="stylesheet" href="/src/legacy-styles.css" />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/app/main.tsx"></script>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegacao principal">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">M</span>
+          <div>
+            <strong>MEG Financas</strong>
+            <small>Despesas sob controle</small>
+          </div>
+        </div>
+
+        <div class="cloud-user">
+          <div>
+            <strong id="cloudUserName">Conta MEG</strong>
+            <small id="cloudSyncStatus">Sincronizando...</small>
+          </div>
+          <button class="button ghost" id="logoutBtn" type="button">Sair</button>
+        </div>
+
+        <nav class="nav-list">
+          <button class="nav-item active" data-view="dashboard" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z"/></svg>
+            Painel
+          </button>
+          <button class="nav-item" data-view="analytics" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19h16v2H2V3h2v16Zm3-2H5v-6h2v6Zm4 0H9V7h2v10Zm4 0h-2v-4h2v4Zm4 0h-2V5h2v12Z"/></svg>
+            Analises
+          </button>
+          <button class="nav-item" data-view="cashflow" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19h16v2H2V4h2v15Zm2-2V9h4v8H6Zm6 0V5h4v12h-4Zm6 0v-6h4v6h-4Z"/></svg>
+            Fluxo
+          </button>
+          <button class="nav-item" data-view="transactions" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 0 1 2-2Zm2 5h6V6H9v2Zm0 4h6v-2H9v2Zm0 4h4v-2H9v2Z"/></svg>
+            Lancamentos
+          </button>
+          <button class="nav-item" data-view="budgets" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10h-4a6 6 0 1 1-6-6V2Zm2 0v8h8a10 10 0 0 0-8-8Z"/></svg>
+            Orcamentos
+          </button>
+          <button class="nav-item" data-view="pending" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 2h10v4h3v16H4V6h3V2Zm2 4h6V4H9v2Zm-1 5h8V9H8v2Zm0 4h8v-2H8v2Zm0 4h5v-2H8v2Z"/></svg>
+            Pendentes
+          </button>
+          <button class="nav-item" data-view="settings" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M19.4 13.5c.1-.5.1-1 .1-1.5s0-1-.1-1.5l2-1.5-2-3.5-2.4 1a8 8 0 0 0-2.6-1.5L14 2h-4l-.4 3a8 8 0 0 0-2.6 1.5l-2.4-1-2 3.5 2 1.5A9 9 0 0 0 4.5 12c0 .5 0 1 .1 1.5l-2 1.5 2 3.5 2.4-1a8 8 0 0 0 2.6 1.5l.4 3h4l.4-3a8 8 0 0 0 2.6-1.5l2.4 1 2-3.5-2-1.5ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
+            Ajustes
+          </button>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Gestao pessoal</p>
+            <h1>Controle de despesas</h1>
+          </div>
+          <div class="topbar-actions">
+            <div class="period-control" aria-label="Filtro de periodo">
+              <label>
+                <span>Periodo</span>
+                <select id="periodMode">
+                  <option value="month">Mes</option>
+                  <option value="year">Ano</option>
+                  <option value="range">Intervalo</option>
+                  <option value="all">Tudo</option>
+                </select>
+              </label>
+              <label class="period-field" data-period-field="month">
+                <span>Mes</span>
+                <input id="monthFilter" type="month" />
+              </label>
+              <label class="period-field hidden" data-period-field="year">
+                <span>Ano</span>
+                <select id="yearFilter"></select>
+              </label>
+              <label class="period-field hidden" data-period-field="range">
+                <span>Inicio</span>
+                <input id="startDateFilter" type="date" />
+              </label>
+              <label class="period-field hidden" data-period-field="range">
+                <span>Fim</span>
+                <input id="endDateFilter" type="date" />
+              </label>
+            </div>
+            <button class="button primary" id="quickAddBtn" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></svg>
+              Novo
+            </button>
+          </div>
+        </header>
+
+        <section class="view active" id="dashboard" aria-labelledby="dashboardTitle">
+          <div class="section-heading">
+            <h2 id="dashboardTitle">Resumo do periodo</h2>
+            <button class="button ghost" id="resetDemoBtn" type="button">Recarregar da nuvem</button>
+          </div>
+
+          <div class="dashboard-main-grid">
+            <section class="panel money-board" aria-label="Resumo financeiro do periodo">
+              <article class="money-line income-line">
+                <span class="money-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M3 6h18v12H3V6Zm2 2v8h14V8H5Zm7 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm-5 0h2v2H7v-2Zm8 2h2v2h-2v-2Z"/></svg>
+                </span>
+                <div>
+                  <strong id="incomeMetric">R$ 0,00</strong>
+                  <span>total receitas</span>
+                  <small id="incomeTrend">0 lancamentos</small>
+                </div>
+              </article>
+              <article class="money-line expense-line">
+                <span class="money-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M4 7h16v12H4V7Zm2 2v8h12V9H6Zm1-5h10v2H7V4Zm4 7h6v2h-6v-2Z"/></svg>
+                </span>
+                <div>
+                  <strong id="expenseMetric">R$ 0,00</strong>
+                  <span>total despesas</span>
+                  <small id="expenseTrend">0 lancamentos</small>
+                </div>
+              </article>
+              <article class="money-line balance-line">
+                <span class="money-symbol" aria-hidden="true">$</span>
+                <div>
+                  <strong id="balanceMetric">R$ 0,00</strong>
+                  <span>total saldo</span>
+                  <small id="balanceTrend">Resultado do periodo</small>
+                </div>
+              </article>
+              <article class="money-line budget-line">
+                <span class="money-symbol small" aria-hidden="true">%</span>
+                <div>
+                  <strong id="budgetMetric">0%</strong>
+                  <span>orcado usado</span>
+                  <small id="budgetTrend">Dentro do limite</small>
+                </div>
+              </article>
+            </section>
+
+            <section class="panel split-board" aria-label="Receitas versus despesas em percentual">
+              <h3>Receitas x despesas (%)</h3>
+              <div class="split-meter" aria-hidden="true">
+                <span class="split-income" id="incomeShareFill"></span>
+                <span class="split-expense" id="expenseShareFill"></span>
+              </div>
+              <div class="split-labels">
+                <strong><span id="incomeShareLabel">0%</span><small>Receita</small></strong>
+                <strong><span id="expenseShareLabel">0%</span><small>Despesa</small></strong>
+              </div>
+            </section>
+          </div>
+
+          <section class="panel current-panel">
+            <div class="panel-title">
+              <h3>Fechamento do mes</h3>
+              <span id="currentMonthLabel">Mes atual</span>
+            </div>
+            <div class="current-grid">
+              <article class="mini-metric">
+                <span id="previousCloseLabel">Saldo fechamento mes anterior</span>
+                <strong id="availableBalanceMetric">R$ 0,00</strong>
+                <small id="previousCloseTrend">Conta bancaria, sem VEROCARD</small>
+              </article>
+              <article class="mini-metric">
+                <span>Receitas do mes atual</span>
+                <strong id="currentIncomeMetric">R$ 0,00</strong>
+                <small id="currentIncomeTrend">0 lancamentos</small>
+              </article>
+              <article class="mini-metric danger">
+                <span>Despesas do mes atual</span>
+                <strong id="currentExpenseMetric">R$ 0,00</strong>
+                <small id="currentExpenseTrend">0 lancamentos</small>
+              </article>
+              <article class="mini-metric warn">
+                <span id="pendingLaunchedLabel">Total pendente lancado</span>
+                <strong id="pendingLaunchedMetric">R$ 0,00</strong>
+                <small id="pendingLaunchedTrend">Pendencias do mes</small>
+              </article>
+              <article class="mini-metric warn" id="monthCloseCard">
+                <span class="mood-emoji" id="monthCloseMood" aria-hidden="true">😟</span>
+                <span id="monthCloseLabel">Pendente para fechar o mes</span>
+                <strong id="missingToCloseMetric">R$ 0,00</strong>
+                <small id="pendingBillsTrend">Pendencias do mes</small>
+              </article>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h3>Sinais rapidos</h3>
+              <span>Prioridades para decidir</span>
+            </div>
+            <div class="signal-grid" id="quickSignals"></div>
+          </section>
+
+          <div class="dashboard-grid recent-grid">
+            <section class="panel">
+              <div class="panel-title">
+                <h3>Ultimos lancamentos</h3>
+                <div class="panel-actions">
+                  <select id="dashboardSortFilter" aria-label="Ordenar lancamentos do painel">
+                    <option value="date_desc">Mais recentes</option>
+                    <option value="expense_desc">Maior gasto</option>
+                    <option value="expense_asc">Menor gasto</option>
+                    <option value="date_asc">Mais antigos</option>
+                  </select>
+                  <button class="link-button" data-view-link="transactions" type="button">Ver todos</button>
+                </div>
+              </div>
+              <div class="compact-list" id="recentList"></div>
+            </section>
+          </div>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h3>Saude dos orcamentos</h3>
+              <span>Gasto mensal versus limite</span>
+            </div>
+            <div class="budget-list" id="budgetHealthList"></div>
+          </section>
+        </section>
+
+        <section class="view" id="cashflow" aria-labelledby="cashflowTitle">
+          <div class="section-heading">
+            <div>
+              <h2 id="cashflowTitle">Fluxo de caixa</h2>
+              <p class="muted" id="cashflowPeriodLabel">Saldo previsto por data</p>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <article class="metric">
+              <span>Saldo inicial</span>
+              <strong id="cashflowStartMetric">R$ 0,00</strong>
+              <small>Antes do periodo</small>
+            </article>
+            <article class="metric">
+              <span>Entradas previstas</span>
+              <strong id="cashflowIncomeMetric">R$ 0,00</strong>
+              <small id="cashflowIncomeTrend">0 receitas</small>
+            </article>
+            <article class="metric danger">
+              <span>Saidas previstas</span>
+              <strong id="cashflowExpenseMetric">R$ 0,00</strong>
+              <small id="cashflowExpenseTrend">0 despesas</small>
+            </article>
+            <article class="metric warn">
+              <span>Menor saldo</span>
+              <strong id="cashflowLowMetric">R$ 0,00</strong>
+              <small id="cashflowLowTrend">Ponto de atencao</small>
+            </article>
+          </div>
+
+          <section class="panel chart-panel">
+            <div class="panel-title">
+              <h3>Saldo previsto</h3>
+              <span>Receitas e despesas do periodo</span>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="cashflowChart" width="1120" height="360" aria-label="Grafico de fluxo de caixa"></canvas>
+              <div class="chart-tooltip" id="cashflowTooltip" role="status"></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h3>Proximos movimentos</h3>
+              <span>Ordem por data</span>
+            </div>
+            <div class="cashflow-list" id="cashflowList"></div>
+          </section>
+        </section>
+
+        <section class="view" id="analytics" aria-labelledby="analyticsTitle">
+          <div class="section-heading">
+            <div>
+              <h2 id="analyticsTitle">Analises para decisao</h2>
+              <p class="muted" id="analyticsPeriodLabel">Periodo selecionado</p>
+            </div>
+          </div>
+
+          <section class="panel analytics-filter-panel">
+            <div class="filter-row">
+              <label class="stacked-control">
+                Modalidade
+                <select id="analyticsPaymentFilter" multiple size="4"></select>
+              </label>
+            </div>
+          </section>
+
+          <div class="kpi-grid">
+            <article class="metric">
+              <span>Media mensal de despesas</span>
+              <strong id="avgExpenseMetric">R$ 0,00</strong>
+              <small id="avgExpenseTrend">Periodo selecionado</small>
+            </article>
+            <article class="metric danger">
+              <span>Maior grupo de gasto</span>
+              <strong id="topGroupMetric">-</strong>
+              <small id="topGroupTrend">R$ 0,00</small>
+            </article>
+            <article class="metric">
+              <span>Variacao vs. periodo anterior</span>
+              <strong id="variationMetric">0%</strong>
+              <small id="variationTrend">Comparativo de despesas</small>
+            </article>
+            <article class="metric warn">
+              <span>Concentracao top 3</span>
+              <strong id="concentrationMetric">0%</strong>
+              <small>Participacao nas despesas</small>
+            </article>
+          </div>
+
+          <div class="analytics-grid">
+            <section class="panel chart-panel">
+              <div class="panel-title">
+                <h3>Evolucao por modalidade</h3>
+                <span>Gastos no periodo</span>
+              </div>
+              <canvas id="monthlyTrendChart" width="760" height="360" aria-label="Grafico de evolucao de gastos por modalidade"></canvas>
+            </section>
+            <section class="panel chart-panel">
+              <div class="panel-title">
+                <h3>Gastos por grupo</h3>
+                <span>Conforme modalidade selecionada</span>
+              </div>
+              <canvas id="groupCompareChart" width="760" height="360" aria-label="Grafico de gastos por grupo"></canvas>
+            </section>
+          </div>
+
+          <section class="panel chart-panel">
+            <div class="panel-title">
+              <h3>Saldo bancario</h3>
+              <span>Fechamento acumulado mes a mes</span>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="balanceClosingChart" width="1120" height="360" aria-label="Grafico de fechamento do saldo bancario"></canvas>
+              <div class="chart-tooltip" id="balanceTooltip" role="status"></div>
+            </div>
+          </section>
+
+          <div class="analytics-grid">
+            <section class="panel">
+              <div class="panel-title">
+                <h3>Ranking de gastos</h3>
+                <span>Decisao por prioridade</span>
+              </div>
+              <div class="decision-list" id="expenseRankingList"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-title">
+                <h3>Alertas</h3>
+                <span>O que merece atencao</span>
+              </div>
+              <div class="decision-list" id="decisionInsightsList"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="transactions" aria-labelledby="transactionsTitle">
+          <div class="section-heading">
+            <h2 id="transactionsTitle">Lancamentos</h2>
+            <div class="filter-row">
+              <input id="searchInput" type="search" placeholder="Buscar por descricao, categoria ou conta" />
+              <select id="typeFilter" aria-label="Tipo">
+                <option value="all">Todos</option>
+                <option value="expense">Despesas</option>
+                <option value="income">Receitas</option>
+              </select>
+              <select id="transactionSortFilter" aria-label="Ordenar lancamentos">
+                <option value="date_desc">Mais recentes</option>
+                <option value="expense_desc">Maior gasto</option>
+                <option value="expense_asc">Menor gasto</option>
+                <option value="date_asc">Mais antigos</option>
+              </select>
+            </div>
+          </div>
+          <section class="panel table-panel">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>DATA</th>
+                    <th>DiaSemana</th>
+                    <th>TP LANÇAMENTO</th>
+                    <th>DESCRIÇÃO</th>
+                    <th class="amount-col">RECEITA($)</th>
+                    <th>CLASSIFICAÇÃO DA DESPESA</th>
+                    <th>GRUPO</th>
+                    <th class="amount-col">DESPESA (R$)</th>
+                    <th>FORMA DE PAGAMENTO</th>
+                    <th>SITUAÇÃO</th>
+                    <th>MODALIDADE</th>
+                    <th>OBSERVAÇÕES</th>
+                    <th class="actions-col">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="transactionRows"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" id="budgets" aria-labelledby="budgetsTitle">
+          <div class="section-heading">
+            <h2 id="budgetsTitle">Orcamentos por categoria</h2>
+            <button class="button primary" id="addBudgetBtn" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></svg>
+              Categoria
+            </button>
+          </div>
+          <div class="budget-editor-grid" id="budgetEditorGrid"></div>
+        </section>
+
+        <section class="view" id="pending" aria-labelledby="pendingTitle">
+          <div class="section-heading">
+            <div>
+              <h2 id="pendingTitle">Contas do mes atual</h2>
+              <p class="muted" id="pendingMonthLabel">Pendencias do mes</p>
+            </div>
+            <div class="filter-row">
+              <input id="pendingMonthFilter" type="month" aria-label="Mes das contas pendentes" />
+              <select id="pendingStatusFilter" aria-label="Status das contas">
+                <option value="pending">Pendentes</option>
+                <option value="paid">Pagas</option>
+                <option value="all">Todas</option>
+              </select>
+              <select id="pendingPaymentFilter" aria-label="Forma de pagamento das contas">
+                <option value="all">Todas as formas</option>
+              </select>
+              <button class="button" id="markAllPendingPaidBtn" type="button">Marcar pendentes como pagas</button>
+            </div>
+          </div>
+
+          <div class="current-grid">
+            <article class="mini-metric warn">
+              <span>Total pendente</span>
+              <strong id="pendingTotalMetric">R$ 0,00</strong>
+              <small id="pendingCountMetric">0 contas</small>
+            </article>
+            <article class="mini-metric">
+              <span>Total pago no mes</span>
+              <strong id="paidMonthMetric">R$ 0,00</strong>
+              <small>Despesas pagas</small>
+            </article>
+            <article class="mini-metric">
+              <span>Credito VEROCARD</span>
+              <strong id="verocardCreditMetric">R$ 0,00</strong>
+              <small>Receitas do mes</small>
+            </article>
+            <article class="mini-metric">
+              <span>Saldo VEROCARD</span>
+              <strong id="verocardBalanceMetric">R$ 0,00</strong>
+              <small id="verocardSpentMetric">Gastos abatidos</small>
+            </article>
+          </div>
+
+          <div class="pending-grid">
+            <section class="panel">
+              <div class="panel-title">
+                <h3>Selecionar contas</h3>
+                <span>Marque quando pagar</span>
+              </div>
+              <div class="bill-list" id="pendingBillsList"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-title">
+                <h3>VEROCARD</h3>
+                <span>Saldo correndo no mes</span>
+              </div>
+              <div class="verocard-list" id="verocardLedger"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="settings" aria-labelledby="settingsTitle">
+          <div class="section-heading">
+            <h2 id="settingsTitle">Ajustes e dados</h2>
+          </div>
+          <div class="settings-grid">
+            <section class="panel">
+              <h3>Base carregada</h3>
+              <p class="muted" id="realDataSummary">Dados locais do navegador.</p>
+            </section>
+            <section class="panel">
+              <h3>Importar base MEG</h3>
+              <p class="muted">Selecione a planilha Excel original. As colunas, descrições, receitas, despesas, grupos e situações serão preservadas.</p>
+              <input id="xlsxImport" type="file" accept=".xlsx,.xls,.xlsm" />
+              <p class="muted" id="xlsxImportStatus"></p>
+            </section>
+            <section class="panel">
+              <h3>Importar CSV</h3>
+              <p class="muted">Alternativa para arquivos CSV simples.</p>
+              <input id="csvImport" type="file" accept=".csv,text/csv" />
+            </section>
+            <section class="panel">
+              <h3>Exportar</h3>
+              <p class="muted">Baixe seus lancamentos para manter backup ou abrir no Excel.</p>
+              <button class="button" id="exportCsvBtn" type="button">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2ZM13 4h-2v8H7l5 5 5-5h-4V4Z"/></svg>
+                Baixar CSV
+              </button>
+            </section>
+            <section class="panel">
+              <h3>Categorias padrao</h3>
+              <div class="tag-cloud" id="categoryTags"></div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="modal" id="transactionDialog">
+      <form id="transactionForm" method="dialog">
+        <div class="modal-header">
+          <h2 id="dialogTitle">Novo lancamento</h2>
+          <button class="icon-button" id="closeDialogBtn" type="button" aria-label="Fechar">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6.4 5 12.6 12.6-1.4 1.4L5 6.4 6.4 5Zm12.6 1.4L6.4 19 5 17.6 17.6 5 19 6.4Z"/></svg>
+          </button>
+        </div>
+        <input id="transactionId" type="hidden" />
+        <div class="form-grid">
+          <label>
+            DATA
+            <input id="dateInput" type="date" required />
+          </label>
+          <label>
+            DiaSemana
+            <input id="weekdayInput" type="text" readonly />
+          </label>
+          <label>
+            TP LANÇAMENTO
+            <select id="transactionType" required>
+              <option value="expense">DESPESA</option>
+              <option value="income">RECEITA</option>
+            </select>
+          </label>
+          <label>
+            SITUAÇÃO
+            <select id="statusInput">
+              <option value="paid">PAGO</option>
+              <option value="pending">PENDENTE</option>
+            </select>
+          </label>
+          <label class="full">
+            DESCRIÇÃO
+            <input id="descriptionInput" type="text" maxlength="80" required />
+          </label>
+          <label>
+            RECEITA($)
+            <input id="incomeAmountInput" type="number" min="0" step="0.01" />
+          </label>
+          <label>
+            DESPESA (R$)
+            <input id="expenseAmountInput" type="number" min="0" step="0.01" />
+          </label>
+          <label>
+            CLASSIFICAÇÃO DA DESPESA
+            <input id="expenseClassInput" type="text" list="expenseClassOptions" />
+            <datalist id="expenseClassOptions"></datalist>
+          </label>
+          <label>
+            GRUPO
+            <input id="groupInput" type="text" list="categoryOptions" />
+            <datalist id="categoryOptions"></datalist>
+          </label>
+          <label>
+            FORMA DE PAGAMENTO
+            <input id="paymentMethodInput" type="text" list="accountOptions" required />
+            <datalist id="accountOptions"></datalist>
+          </label>
+          <label>
+            MODALIDADE
+            <input id="modalityInput" type="text" list="modalityOptions" />
+            <datalist id="modalityOptions"></datalist>
+          </label>
+          <label class="full">
+            OBSERVAÇÕES
+            <textarea id="notesInput" rows="3"></textarea>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button class="button ghost" id="deleteTransactionBtn" type="button">Excluir</button>
+          <div>
+            <button class="button" id="cancelDialogBtn" type="button">Cancelar</button>
+            <button class="button primary" type="submit">Salvar</button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="app-toast" id="appToast" role="status" aria-live="polite"></div>
+    <script type="module" src="/src/legacy-entry.js"></script>
   </body>
 </html>
