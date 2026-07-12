@@ -223,18 +223,18 @@ function loadState() {
   return normalizeState(structuredClone(defaultState));
 }
 
-function saveState() {
+function saveState({ cloud = true } = {}) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  window.MEG_CLOUD?.saveState(state);
+  if (cloud) window.MEG_CLOUD?.saveState(state);
 }
 
-function replaceImportedState(transactions) {
+function replaceImportedState(transactions, options = {}) {
   state = normalizeState({
     transactions,
     budgets: state.budgets || {}
   });
   originalTransactionsById = new Map(state.transactions.map((item) => [item.id, item]));
-  saveState();
+  saveState(options);
   render();
   return state.transactions.length;
 }

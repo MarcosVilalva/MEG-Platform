@@ -141,8 +141,8 @@ function wireLegacyApp() {
       importStatus.textContent = 'Importação cancelada.';
       return;
     }
-    window.MEG_APP.replaceImportedState(result.transactions);
-    await window.MEG_CLOUD.saveNow(window.MEG_APP.getState());
+    window.MEG_APP.replaceImportedState(result.transactions, { cloud: false });
+    await window.MEG_CLOUD.saveNow(window.MEG_APP.getState(), { force: true });
     importStatus.textContent = `${result.transactions.length} lançamentos importados e salvos na nuvem. ${result.issues} linha(s) exigem revisão.`;
   } catch (cause) {
     importStatus.textContent = cause instanceof Error ? cause.message : 'Não foi possível importar a planilha.';

@@ -14,7 +14,7 @@ import { appStateRoutes } from './modules/app-state/routes';
 import { notificationRoutes } from './modules/notifications/routes';
 
 const app = Fastify({
-  bodyLimit: 12 * 1024 * 1024,
+  bodyLimit: 25 * 1024 * 1024,
   logger: {
     level: config.logLevel
   }
@@ -58,6 +58,8 @@ app.get('/health', async () => ({
   version: '1.3.0-project-phoenix',
   environment: config.nodeEnv,
   timestamp: new Date().toISOString(),
+  features: ['legacy-ui', 'cloud-state', 'xlsx-import', 'email-reminders', 'whatsapp-reminders'],
+  commit: process.env.RENDER_GIT_COMMIT || 'local',
   dataRepair
 }));
 

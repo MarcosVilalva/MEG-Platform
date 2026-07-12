@@ -173,17 +173,21 @@ async function loadCloudState() {
   }
 }
 
-async function saveNow(state) {
+async function saveNow(state, { force = false } = {}) {
   const response = await api('/app-state', {
     method: 'PUT',
-    body: JSON.stringify({ state, expectedRevision: revision })
+    body: JSON.stringify({ state, ...(force ? {} : { expectedRevision: revision }) })
   });
   if (response.status === 409) {
-    document.querySelector('#cloudSyncStatus').textContent = 'Alteração em outro dispositivo';
-    return;
+    throw new Error('Os dados foram alterados em outro dispositivo. Recarregue a nuvem antes de salvar.');
   }
-  if (!response.ok) throw new Error('Falha ao salvar na nuvem.');
-  const payload = await response.json();
+  const raw = await response.text();
+  let payload = {};
+  try { payload = raw ? JSON.parse(raw) : {}; } catch {}
+  if (!response.ok) {
+    const detail = payload.error || payload.message || raw || 'sem detalhes';
+    throw new Error(`Falha ao salvar na nuvem (${response.status}): ${detail}`);
+  }
   revision = payload.revision;
   const status = document.querySelector('#cloudSyncStatus');
   if (status) status.textContent = `Salvo ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
