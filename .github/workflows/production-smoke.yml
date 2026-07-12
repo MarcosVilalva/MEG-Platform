@@ -1,0 +1,20 @@
+name: MEG Production Smoke Test
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for deployments
+        run: sleep 120
+      - name: Verify API
+        run: curl --fail-with-body --retry 5 --retry-delay 20 --max-time 90 https://meg-platform-api.onrender.com/health
+      - name: Verify web application
+        run: |
+          curl --fail-with-body --retry 3 --retry-delay 10 --max-time 60 https://marcosvilalva.github.io/MEG-Platform/ -o site.html
+          grep -q "MEG Financas" site.html
+
