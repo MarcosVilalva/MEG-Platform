@@ -184,7 +184,7 @@
                 <small id="pendingLaunchedTrend">Pendencias do mes</small>
               </article>
               <article class="mini-metric warn" id="monthCloseCard">
-                <span class="mood-emoji" id="monthCloseMood" aria-hidden="true">😟</span>
+                <span class="mood-emoji" id="monthCloseMood" aria-hidden="true">ðŸ˜Ÿ</span>
                 <span id="monthCloseLabel">Pendente para fechar o mes</span>
                 <strong id="missingToCloseMetric">R$ 0,00</strong>
                 <small id="pendingBillsTrend">Pendencias do mes</small>
@@ -389,17 +389,17 @@
                   <tr>
                     <th>DATA</th>
                     <th>DiaSemana</th>
-                    <th>TP LANÇAMENTO</th>
-                    <th>DESCRIÇÃO</th>
+                    <th>TP LANÃ‡AMENTO</th>
+                    <th>DESCRIÃ‡ÃƒO</th>
                     <th class="amount-col">RECEITA($)</th>
-                    <th>CLASSIFICAÇÃO DA DESPESA</th>
+                    <th>CLASSIFICAÃ‡ÃƒO DA DESPESA</th>
                     <th>GRUPO</th>
                     <th class="amount-col">DESPESA (R$)</th>
                     <th>FORMA DE PAGAMENTO</th>
-                    <th>SITUAÇÃO</th>
+                    <th>SITUAÃ‡ÃƒO</th>
                     <th>MODALIDADE</th>
-                    <th>OBSERVAÇÕES</th>
-                    <th class="actions-col">Ações</th>
+                    <th>OBSERVAÃ‡Ã•ES</th>
+                    <th class="actions-col">AÃ§Ãµes</th>
                   </tr>
                 </thead>
                 <tbody id="transactionRows"></tbody>
@@ -491,7 +491,7 @@
             </section>
             <section class="panel">
               <h3>Importar base MEG</h3>
-              <p class="muted">Selecione a planilha Excel original. As colunas, descrições, receitas, despesas, grupos e situações serão preservadas.</p>
+              <p class="muted">Selecione a planilha Excel original. As colunas, descriÃ§Ãµes, receitas, despesas, grupos e situaÃ§Ãµes serÃ£o preservadas.</p>
               <input id="xlsxImport" type="file" accept=".xlsx,.xls,.xlsm" />
               <p class="muted" id="xlsxImportStatus"></p>
             </section>
@@ -507,6 +507,15 @@
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2ZM13 4h-2v8H7l5 5 5-5h-4V4Z"/></svg>
                 Baixar CSV
               </button>
+            </section>
+            <section class="panel">
+              <h3>Alertas de vencimento</h3>
+              <p class="muted">Confira as contas vencidas e as que vencem nos prÃ³ximos trÃªs dias. O envio usa e-mail e WhatsApp configurados no servidor.</p>
+              <div class="settings-actions">
+                <button class="button" id="previewNotificationsBtn" type="button">Ver resumo</button>
+                <button class="button primary" id="sendNotificationsBtn" type="button">Enviar agora</button>
+              </div>
+              <pre class="notification-preview" id="notificationPreview">Nenhum resumo carregado.</pre>
             </section>
             <section class="panel">
               <h3>Categorias padrao</h3>
@@ -536,21 +545,21 @@
             <input id="weekdayInput" type="text" readonly />
           </label>
           <label>
-            TP LANÇAMENTO
+            TP LANÃ‡AMENTO
             <select id="transactionType" required>
               <option value="expense">DESPESA</option>
               <option value="income">RECEITA</option>
             </select>
           </label>
           <label>
-            SITUAÇÃO
+            SITUAÃ‡ÃƒO
             <select id="statusInput">
               <option value="paid">PAGO</option>
               <option value="pending">PENDENTE</option>
             </select>
           </label>
           <label class="full">
-            DESCRIÇÃO
+            DESCRIÃ‡ÃƒO
             <input id="descriptionInput" type="text" maxlength="80" required />
           </label>
           <label>
@@ -562,7 +571,7 @@
             <input id="expenseAmountInput" type="number" min="0" step="0.01" />
           </label>
           <label>
-            CLASSIFICAÇÃO DA DESPESA
+            CLASSIFICAÃ‡ÃƒO DA DESPESA
             <input id="expenseClassInput" type="text" list="expenseClassOptions" />
             <datalist id="expenseClassOptions"></datalist>
           </label>
@@ -582,7 +591,7 @@
             <datalist id="modalityOptions"></datalist>
           </label>
           <label class="full">
-            OBSERVAÇÕES
+            OBSERVAÃ‡Ã•ES
             <textarea id="notesInput" rows="3"></textarea>
           </label>
         </div>
@@ -600,3 +609,4 @@
     <script type="module" src="/src/legacy-entry.js"></script>
   </body>
 </html>
+
