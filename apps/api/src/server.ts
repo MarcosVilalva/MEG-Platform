@@ -81,10 +81,20 @@ process.on('SIGINT', () => void shutdown('SIGINT'));
 process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
 try {
-  const repairResult = await repairLegacyImportedEvents();
-  dataRepair = { status: 'completed', ...repairResult };
-  app.log.info(dataRepair, 'Legacy import repair completed before startup');
   await app.listen({ port: config.port, host: config.host });
+  if (config.runLegacyRepair) {
+    void repairLegacyImportedEvents()
+      .then((repairResult) => {
+        dataRepair = { status: 'completed', ...repairResult };
+        app.log.info(dataRepair, 'Optional legacy import repair completed');
+      })
+      .catch((error) => {
+        app.log.error(error, 'Optional legacy import repair failed without stopping the API');
+      });
+  } else {
+    dataRepair = { status: 'completed', scanned: 0, repaired: 0, issues: 0 };
+    app.log.info('Legacy import repair disabled; simple cloud state is authoritative');
+  }
 } catch (error) {
   app.log.error(error);
   process.exit(1);
