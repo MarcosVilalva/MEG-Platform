@@ -1540,10 +1540,10 @@ function renderVerocardLedger(card = verocardSummary()) {
 
 function renderSettings() {
   els.categoryTags.innerHTML = sortedCategories().map((category) => `<span>${escapeHtml(category)}</span>`).join("");
-  const summary = window.MEG_REAL_SUMMARY;
-  els.realDataSummary.textContent = summary
-    ? `${summary.count} lancamentos importados da planilha, de ${formatDate(summary.minDate)} a ${formatDate(summary.maxDate)}.`
-    : "Usando dados locais do navegador.";
+  const dates = state.transactions.map((item) => item.date).filter(Boolean).sort();
+  els.realDataSummary.textContent = state.transactions.length
+    ? `${state.transactions.length} lançamentos sincronizados na nuvem, de ${formatDate(dates[0])} a ${formatDate(dates[dates.length - 1])}. Uma cópia local mantém o sistema rápido.`
+    : "Nenhum lançamento salvo. Importe sua base MEG para iniciar.";
 }
 
 function renderDatalists() {
