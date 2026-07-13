@@ -1,4 +1,5 @@
 import { calculateFinancialSummary } from "./legacy-finance.js";
+import { installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
 
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
 
@@ -77,6 +78,14 @@ const DEFAULT_GROUPS = [
   "VESTUÁRIO",
 ];
 
+const DEFAULT_CATALOGS = {
+  groups: [...DEFAULT_GROUPS],
+  expenseClasses: ["CONTAS GERAIS", "RES. PAG. DÍVIDA"],
+  paymentMethods: Object.entries(PAYMENT_MODALITIES).map(([description, modality]) => ({ description, modality })),
+};
+
+const ESSENTIAL_GROUPS = new Set(["COMUNICAÇÃO", "HIGIENE PESSOAL", "IMÓVEL", "MAT. ESCOLAR", "PGTO DE DIVIDAS", "SAÚDE", "SUPERMERCADO", "TITULOS/PREVIDÊNCIA", "TRANSPORTE"] .map((item) => normalizeText(item)));
+
 let state = loadState();
 let originalTransactionsById = new Map((defaultState.transactions || []).map((item) => [item.id, normalizeTransaction(item)]));
 let selectedPeriod = {
@@ -105,18 +114,25 @@ const els = {
   views: document.querySelectorAll(".view"),
   quickAddBtn: document.querySelector("#quickAddBtn"),
   resetDemoBtn: document.querySelector("#resetDemoBtn"),
-  incomeMetric: document.querySelector("#incomeMetric"),
-  expenseMetric: document.querySelector("#expenseMetric"),
-  balanceMetric: document.querySelector("#balanceMetric"),
-  budgetMetric: document.querySelector("#budgetMetric"),
-  incomeTrend: document.querySelector("#incomeTrend"),
-  expenseTrend: document.querySelector("#expenseTrend"),
-  balanceTrend: document.querySelector("#balanceTrend"),
-  budgetTrend: document.querySelector("#budgetTrend"),
-  incomeShareFill: document.querySelector("#incomeShareFill"),
-  expenseShareFill: document.querySelector("#expenseShareFill"),
-  incomeShareLabel: document.querySelector("#incomeShareLabel"),
-  expenseShareLabel: document.querySelector("#expenseShareLabel"),
+  monetaryPanel: document.querySelector("#monetaryPanel"),
+  ticketPanel: document.querySelector("#ticketPanel"),
+  consolidatedPanel: document.querySelector("#consolidatedPanel"),
+  monetaryRevenueMetric: document.querySelector("#monetaryRevenueMetric"),
+  monetaryExpenseMetric: document.querySelector("#monetaryExpenseMetric"),
+  monetarySituationMetric: document.querySelector("#monetarySituationMetric"),
+  monetaryRevenueNote: document.querySelector("#monetaryRevenueNote"),
+  monetaryExpenseNote: document.querySelector("#monetaryExpenseNote"),
+  monetarySituationNote: document.querySelector("#monetarySituationNote"),
+  ticketRevenueMetric: document.querySelector("#ticketRevenueMetric"),
+  ticketExpenseMetric: document.querySelector("#ticketExpenseMetric"),
+  ticketSituationMetric: document.querySelector("#ticketSituationMetric"),
+  ticketRevenueNote: document.querySelector("#ticketRevenueNote"),
+  ticketExpenseNote: document.querySelector("#ticketExpenseNote"),
+  ticketSituationNote: document.querySelector("#ticketSituationNote"),
+  consolidatedRevenueMetric: document.querySelector("#consolidatedRevenueMetric"),
+  consolidatedExpenseMetric: document.querySelector("#consolidatedExpenseMetric"),
+  consolidatedSituationMetric: document.querySelector("#consolidatedSituationMetric"),
+  consolidatedSituationNote: document.querySelector("#consolidatedSituationNote"),
   dashboardTitle: document.querySelector("#dashboardTitle"),
   categoryChartNote: document.querySelector("#categoryChartNote"),
   currentMonthLabel: document.querySelector("#currentMonthLabel"),
@@ -131,11 +147,24 @@ const els = {
   monthCloseCard: document.querySelector("#monthCloseCard"),
   monthCloseMood: document.querySelector("#monthCloseMood"),
   monthCloseLabel: document.querySelector("#monthCloseLabel"),
+  monthDecisionStatus: document.querySelector("#monthDecisionStatus"),
   missingToCloseMetric: document.querySelector("#missingToCloseMetric"),
   currentIncomeTrend: document.querySelector("#currentIncomeTrend"),
   currentExpenseTrend: document.querySelector("#currentExpenseTrend"),
   pendingBillsTrend: document.querySelector("#pendingBillsTrend"),
-  quickSignals: document.querySelector("#quickSignals"),
+  dashboardPayables: document.querySelector("#dashboardPayables"),
+  dashboardPayableSummary: document.querySelector("#dashboardPayableSummary"),
+  paymentConfirmDialog: document.querySelector("#paymentConfirmDialog"),
+  paymentConfirmForm: document.querySelector("#paymentConfirmForm"),
+  paymentConfirmBody: document.querySelector("#paymentConfirmBody"),
+  closePaymentConfirmBtn: document.querySelector("#closePaymentConfirmBtn"),
+  cancelPaymentConfirmBtn: document.querySelector("#cancelPaymentConfirmBtn"),
+  cardLaunchDialog: document.querySelector("#cardLaunchDialog"),
+  cardLaunchDialogTitle: document.querySelector("#cardLaunchDialogTitle"),
+  cardLaunchDialogSummary: document.querySelector("#cardLaunchDialogSummary"),
+  cardLaunchList: document.querySelector("#cardLaunchList"),
+  closeCardLaunchDialogBtn: document.querySelector("#closeCardLaunchDialogBtn"),
+  cancelCardLaunchDialogBtn: document.querySelector("#cancelCardLaunchDialogBtn"),
   cashflowPeriodLabel: document.querySelector("#cashflowPeriodLabel"),
   cashflowStartMetric: document.querySelector("#cashflowStartMetric"),
   cashflowIncomeMetric: document.querySelector("#cashflowIncomeMetric"),
@@ -177,9 +206,19 @@ const els = {
   expenseRankingList: document.querySelector("#expenseRankingList"),
   decisionInsightsList: document.querySelector("#decisionInsightsList"),
   categoryChart: document.querySelector("#categoryChart"),
-  recentList: document.querySelector("#recentList"),
-  dashboardSortFilter: document.querySelector("#dashboardSortFilter"),
-  budgetHealthList: document.querySelector("#budgetHealthList"),
+  monthProgressMessage: document.querySelector("#monthProgressMessage"),
+  monthProgressFill: document.querySelector("#monthProgressFill"),
+  incomeExpenseRingIncome: document.querySelector("#incomeExpenseRingIncome"),
+  incomeExpenseRingExpense: document.querySelector("#incomeExpenseRingExpense"),
+  incomeExpenseRatioMetric: document.querySelector("#incomeExpenseRatioMetric"),
+  ringIncomeLabel: document.querySelector("#ringIncomeLabel"),
+  ringExpenseLabel: document.querySelector("#ringExpenseLabel"),
+  monthPaidCount: document.querySelector("#monthPaidCount"),
+  monthPaidValue: document.querySelector("#monthPaidValue"),
+  monthPendingCount: document.querySelector("#monthPendingCount"),
+  monthPendingValue: document.querySelector("#monthPendingValue"),
+  monthNextDue: document.querySelector("#monthNextDue"),
+  monthNextDueDescription: document.querySelector("#monthNextDueDescription"),
   transactionRows: document.querySelector("#transactionRows"),
   searchInput: document.querySelector("#searchInput"),
   typeFilter: document.querySelector("#typeFilter"),
@@ -187,15 +226,21 @@ const els = {
   transactionColumnFilters: document.querySelectorAll("[data-column-filter]"),
   clearColumnFiltersBtn: document.querySelector("#clearColumnFiltersBtn"),
   budgetEditorGrid: document.querySelector("#budgetEditorGrid"),
-  addBudgetBtn: document.querySelector("#addBudgetBtn"),
+  applySuggestedBudgetsBtn: document.querySelector("#applySuggestedBudgetsBtn"),
+  budgetHistoryLabel: document.querySelector("#budgetHistoryLabel"),
+  budgetHealthTitle: document.querySelector("#budgetHealthTitle"),
+  budgetHealthMessage: document.querySelector("#budgetHealthMessage"),
+  budgetHealthScore: document.querySelector("#budgetHealthScore"),
+  savingsGoalMetric: document.querySelector("#savingsGoalMetric"),
+  emergencyGoalMetric: document.querySelector("#emergencyGoalMetric"),
+  essentialGoalMetric: document.querySelector("#essentialGoalMetric"),
+  flexibleGoalMetric: document.querySelector("#flexibleGoalMetric"),
+  budgetSuggestionSummary: document.querySelector("#budgetSuggestionSummary"),
   categoryTags: document.querySelector("#categoryTags"),
   realDataSummary: document.querySelector("#realDataSummary"),
   csvImport: document.querySelector("#csvImport"),
   exportCsvBtn: document.querySelector("#exportCsvBtn"),
-  categoryOptions: document.querySelector("#categoryOptions"),
-  accountOptions: document.querySelector("#accountOptions"),
-  expenseClassOptions: document.querySelector("#expenseClassOptions"),
-  modalityOptions: document.querySelector("#modalityOptions"),
+  catalogModalityOptions: document.querySelector("#catalogModalityOptions"),
   dialog: document.querySelector("#transactionDialog"),
   form: document.querySelector("#transactionForm"),
   dialogTitle: document.querySelector("#dialogTitle"),
@@ -204,18 +249,36 @@ const els = {
   weekdayInput: document.querySelector("#weekdayInput"),
   transactionType: document.querySelector("#transactionType"),
   descriptionInput: document.querySelector("#descriptionInput"),
+  descriptionOptions: document.querySelector("#descriptionOptions"),
   incomeAmountInput: document.querySelector("#incomeAmountInput"),
   expenseAmountInput: document.querySelector("#expenseAmountInput"),
   expenseClassInput: document.querySelector("#expenseClassInput"),
   groupInput: document.querySelector("#groupInput"),
   paymentMethodInput: document.querySelector("#paymentMethodInput"),
   modalityInput: document.querySelector("#modalityInput"),
+  installmentFields: document.querySelector("#installmentFields"),
+  purchaseTotalInput: document.querySelector("#purchaseTotalInput"),
+  installmentCountInput: document.querySelector("#installmentCountInput"),
+  installmentPreview: document.querySelector("#installmentPreview"),
   statusInput: document.querySelector("#statusInput"),
   notesInput: document.querySelector("#notesInput"),
   deleteTransactionBtn: document.querySelector("#deleteTransactionBtn"),
   closeDialogBtn: document.querySelector("#closeDialogBtn"),
   cancelDialogBtn: document.querySelector("#cancelDialogBtn"),
   appToast: document.querySelector("#appToast"),
+  groupCatalogForm: document.querySelector("#groupCatalogForm"),
+  newGroupInput: document.querySelector("#newGroupInput"),
+  groupCatalogList: document.querySelector("#groupCatalogList"),
+  groupCatalogCount: document.querySelector("#groupCatalogCount"),
+  expenseClassCatalogForm: document.querySelector("#expenseClassCatalogForm"),
+  newExpenseClassInput: document.querySelector("#newExpenseClassInput"),
+  expenseClassCatalogList: document.querySelector("#expenseClassCatalogList"),
+  expenseClassCatalogCount: document.querySelector("#expenseClassCatalogCount"),
+  paymentCatalogForm: document.querySelector("#paymentCatalogForm"),
+  newPaymentInput: document.querySelector("#newPaymentInput"),
+  newPaymentModalityInput: document.querySelector("#newPaymentModalityInput"),
+  paymentCatalogList: document.querySelector("#paymentCatalogList"),
+  paymentCatalogCount: document.querySelector("#paymentCatalogCount"),
 };
 
 function loadState() {
@@ -236,7 +299,8 @@ function saveState({ cloud = true } = {}) {
 function replaceImportedState(transactions, options = {}) {
   state = normalizeState({
     transactions,
-    budgets: state.budgets || {}
+    budgets: state.budgets || {},
+    catalogs: state.catalogs || DEFAULT_CATALOGS,
   });
   originalTransactionsById = new Map(state.transactions.map((item) => [item.id, item]));
   saveState(options);
@@ -273,10 +337,20 @@ function normalizeTransaction(item) {
 }
 
 function normalizeState(nextState) {
+  const incomingCatalogs = nextState.catalogs || {};
+  const transactions = (nextState.transactions || []).map(normalizeTransaction);
+  const groups = [...new Set([...DEFAULT_GROUPS, ...(incomingCatalogs.groups || []), ...transactions.map((item) => item.group)].map((item) => String(item || "").trim()).filter(Boolean))];
+  const expenseClasses = [...new Set([...DEFAULT_CATALOGS.expenseClasses, ...(incomingCatalogs.expenseClasses || []), ...transactions.map((item) => item.expenseClass)].map((item) => String(item || "").trim()).filter(Boolean))];
+  const paymentMap = new Map(DEFAULT_CATALOGS.paymentMethods.map((item) => [normalizeText(item.description), { ...item }]));
+  (incomingCatalogs.paymentMethods || []).forEach((item) => {
+    const description = String(item?.description || "").trim();
+    if (description) paymentMap.set(normalizeText(description), { description, modality: String(item?.modality || "").trim() });
+  });
   return {
     ...nextState,
-    transactions: (nextState.transactions || []).map(normalizeTransaction),
+    transactions,
     budgets: nextState.budgets || {},
+    catalogs: { groups, expenseClasses, paymentMethods: [...paymentMap.values()] },
   };
 }
 
@@ -346,10 +420,6 @@ function openingBalanceBefore(dateValue) {
 }
 
 function financialSummaryForPeriod(items = selectedTransactions()) {
-  if (!items.length || selectedPeriod.mode === "all") {
-    const totals = totalsFor(items);
-    return { ...totals, openingBalance: 0, availableIncome: totals.income, closingBalance: totals.income - totals.expense };
-  }
   const { start, end } = dateRangeForSelectedPeriod();
   return calculateFinancialSummary(state.transactions, start, end);
 }
@@ -366,7 +436,9 @@ function previousMonthValue(monthValue = currentMonth) {
 function isVerocardTransaction(item) {
   const payment = normalizeText(item.paymentMethod || item.account);
   const description = normalizeText(item.description);
-  return payment === "VEROCARD" || (item.type === "income" && description.includes("VEROCARD"));
+  if (item.type === "income") return description.includes("VEROCARD");
+  if (item.type === "expense") return payment === "VEROCARD";
+  return false;
 }
 
 function paidTransactionsUntilToday() {
@@ -414,6 +486,9 @@ function alertInsufficientBankBalance({ amount, available }) {
 }
 
 let toastTimer;
+let payableGroupCache = new Map();
+let paymentConfirmationIds = [];
+let suggestedBudgetsByCategory = new Map();
 
 function showToast(title, message, tone = "") {
   if (!els.appToast) return;
@@ -426,26 +501,24 @@ function showToast(title, message, tone = "") {
 }
 
 function currentSituation() {
-  const currentItems = currentMonthTransactions();
-  const currentTotals = totalsFor(currentItems);
-  const availableTotals = totalsFor(paidTransactionsUntilToday());
-  const calculatedBalance = availableTotals.income - availableTotals.expense;
-  const availableBalance = availableBankBalanceForPayment();
+  const monthStart = `${currentMonth}-01`;
+  const monthEnd = lastDayOfMonth(currentMonth);
+  const summary = calculateFinancialSummary(state.transactions, monthStart, monthEnd);
+  const currentItems = currentMonthTransactions().filter((item) => !isVerocardTransaction(item));
+  const currentTotals = { income: summary.income, expense: summary.paidExpense };
+  const calculatedBalance = summary.closingBalance;
+  const availableBalance = summary.closingBalance;
   const previousMonth = previousMonthValue();
   const previousMonthEnd = lastDayOfMonth(previousMonth);
-  const previousCloseBalance = accountBalanceUntil(previousMonthEnd);
-  const allPendingItems = state.transactions
-    .filter((item) => item.type === "expense" && item.status === "pending" && !isVerocardTransaction(item))
-    .sort((a, b) => b.date.localeCompare(a.date) || b.description.localeCompare(a.description, "pt-BR"));
+  const previousCloseBalance = summary.openingBalance;
+  const allPendingItems = currentItems
+    .filter((item) => item.type === "expense" && item.status === "pending")
+    .sort((a, b) => a.date.localeCompare(b.date) || a.description.localeCompare(b.description, "pt-BR"));
   const allPendingExpenses = allPendingItems.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const pendingExpenses = currentItems
-    .filter((item) => item.type === "expense" && item.status === "pending" && !isVerocardTransaction(item))
-    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const pendingItems = currentItems
-    .filter((item) => item.type === "expense" && item.status === "pending" && !isVerocardTransaction(item))
-    .sort((a, b) => b.date.localeCompare(a.date) || b.description.localeCompare(a.description, "pt-BR"));
-  const missingToClose = Math.max(pendingExpenses - Math.max(availableBalance, 0), 0);
-  const surplusAfterPending = availableBalance - pendingExpenses;
+  const pendingExpenses = summary.pendingExpense;
+  const pendingItems = allPendingItems;
+  const missingToClose = Math.max(-summary.projectedBalance, 0);
+  const surplusAfterPending = Math.max(summary.projectedBalance, 0);
 
   return {
     currentItems,
@@ -472,23 +545,23 @@ function categoryTotals() {
 }
 
 function sortedCategories() {
-  return [...new Set([...DEFAULT_GROUPS, ...Object.keys(state.budgets), ...state.transactions.map((item) => item.group || item.category).filter(Boolean)])].sort((a, b) =>
+  return [...new Set(state.catalogs?.groups || DEFAULT_GROUPS)].sort((a, b) =>
     a.localeCompare(b, "pt-BR"),
   );
 }
 
 function sortedAccounts() {
-  return [...new Set([...Object.keys(PAYMENT_MODALITIES), ...state.transactions.map((item) => item.paymentMethod || item.account).filter(Boolean)])].sort((a, b) =>
+  return [...new Set((state.catalogs?.paymentMethods || DEFAULT_CATALOGS.paymentMethods).map((item) => item.description))].sort((a, b) =>
     a.localeCompare(b, "pt-BR"),
   );
 }
 
 function sortedExpenseClasses() {
-  return [...new Set(state.transactions.map((item) => item.expenseClass).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  return [...new Set(state.catalogs?.expenseClasses || DEFAULT_CATALOGS.expenseClasses)].sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
 function sortedModalities() {
-  return [...new Set([...Object.values(PAYMENT_MODALITIES), ...state.transactions.map((item) => item.modality).filter(Boolean)])].sort((a, b) =>
+  return [...new Set([...(state.catalogs?.paymentMethods || DEFAULT_CATALOGS.paymentMethods).map((item) => item.modality), ...Object.values(PAYMENT_MODALITIES)])].filter(Boolean).sort((a, b) =>
     a.localeCompare(b, "pt-BR"),
   );
 }
@@ -665,72 +738,185 @@ function render() {
   renderTransactions();
   renderBudgets();
   renderPending();
+  renderCatalogs();
   renderSettings();
 }
 
 function renderDashboard() {
   const items = selectedTransactions();
   const totals = financialSummaryForPeriod(items);
-  const balance = totals.closingBalance;
+  const balance = totals.consolidatedBalance;
   const monthCount = selectedPeriodMonthCount(items);
   const totalBudget = Object.values(state.budgets).reduce((sum, value) => sum + Number(value || 0), 0) * monthCount;
   const usedBudget = totalBudget ? Math.round((totals.expense / totalBudget) * 100) : 0;
 
   els.dashboardTitle.textContent = `Resumo - ${periodLabel()}`;
   if (els.categoryChartNote) els.categoryChartNote.textContent = `${formatCompactMoney(totals.expense)} no periodo`;
-  els.incomeMetric.textContent = money.format(totals.availableIncome);
-  els.expenseMetric.textContent = money.format(totals.expense);
-  els.balanceMetric.textContent = money.format(balance);
-  els.budgetMetric.textContent = `${usedBudget}%`;
-  els.incomeTrend.textContent = selectedPeriod.mode === "all"
-    ? `${items.filter((item) => item.type === "income").length} lançamentos`
-    : `${money.format(totals.income)} recebidos + ${money.format(totals.openingBalance)} do fechamento anterior`;
-  els.expenseTrend.textContent = `${items.filter((item) => item.type === "expense").length} lancamentos`;
-  els.balanceTrend.textContent = balance >= 0 ? "Periodo positivo" : "Ajuste recomendado";
-  els.budgetTrend.textContent = usedBudget <= 100 ? "Dentro do limite" : "Acima do orcado";
-
-  const shareBase = Math.max(totals.availableIncome, 0) + Math.max(totals.expense, 0);
-  const incomeShare = shareBase ? (Math.max(totals.availableIncome, 0) / shareBase) * 100 : 0;
-  const expenseShare = shareBase ? (totals.expense / shareBase) * 100 : 0;
-  els.incomeShareFill.style.width = `${incomeShare}%`;
-  els.expenseShareFill.style.width = `${expenseShare}%`;
-  els.incomeShareLabel.textContent = `${incomeShare.toFixed(2).replace(".", ",")}%`;
-  els.expenseShareLabel.textContent = `${expenseShare.toFixed(2).replace(".", ",")}%`;
+  els.monetaryRevenueMetric.textContent = money.format(totals.availableIncome);
+  els.monetaryExpenseMetric.textContent = money.format(totals.paidExpense);
+  els.monetarySituationMetric.textContent = money.format(totals.closingBalance);
+  els.monetaryRevenueNote.textContent = selectedPeriod.mode !== "month"
+    ? `${money.format(totals.income)} no período + ${money.format(totals.openingBalance)} anteriores`
+    : `${money.format(totals.income)} em ${formatMonthCode(selectedPeriod.month)} + ${money.format(totals.openingBalance)} até ${formatMonthCode(previousMonthValue(selectedPeriod.month))}`;
+  els.monetaryExpenseNote.textContent = `${money.format(totals.pendingExpense)} ainda pendentes`;
+  els.monetarySituationNote.textContent = totals.closingBalance >= 0 ? "✅ Saldo monetário positivo" : "🚨 Saldo monetário negativo";
+  els.ticketRevenueMetric.textContent = money.format(totals.ticketIncome);
+  els.ticketExpenseMetric.textContent = money.format(totals.ticketExpense);
+  els.ticketSituationMetric.textContent = money.format(totals.ticketBalance);
+  els.ticketRevenueNote.textContent = `Créditos no período selecionado`;
+  els.ticketExpenseNote.textContent = `Utilizações no período selecionado`;
+  els.ticketSituationNote.textContent = totals.ticketBalance >= 0 ? "✅ Ticket disponível" : "🚨 Ticket negativo";
+  els.consolidatedRevenueMetric.textContent = money.format(totals.consolidatedIncome);
+  els.consolidatedExpenseMetric.textContent = money.format(totals.consolidatedExpense);
+  els.consolidatedSituationMetric.textContent = money.format(totals.consolidatedBalance);
+  els.consolidatedSituationNote.textContent = totals.consolidatedBalance >= 0 ? "🟢 Situação geral positiva" : "🔴 Situação geral negativa";
+  const setCardTone = (card, positive) => {
+    card?.classList.toggle("kpi-positive", positive);
+    card?.classList.toggle("kpi-negative", !positive);
+  };
+  setCardTone(els.monetaryPanel, totals.closingBalance >= 0);
+  setCardTone(els.ticketPanel, totals.ticketBalance >= 0);
+  setCardTone(els.consolidatedPanel, totals.consolidatedBalance >= 0);
 
   renderCurrentSituation();
-  renderQuickSignals();
+  renderDashboardPayables();
   renderCategoryChart();
-  renderRecentList();
-  renderBudgetHealth();
+  renderMonthProgress();
+}
+
+function modalityForPayment(method) {
+  const catalogItem = (state.catalogs?.paymentMethods || []).find((item) => normalizeText(item.description) === normalizeText(method));
+  return catalogItem?.modality || PAYMENT_MODALITIES[method] || "";
+}
+
+function refreshPaymentMethodOptions(preferred = "") {
+  const modality = normalizeText(els.modalityInput.value);
+  const allowed = (state.catalogs?.paymentMethods || DEFAULT_CATALOGS.paymentMethods)
+    .filter((item) => !modality || normalizeText(item.modality) === modality)
+    .map((item) => item.description)
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+  els.paymentMethodInput.innerHTML = allowed.map((account) => `<option value="${escapeHtml(account)}">${escapeHtml(account)}</option>`).join("");
+  if (allowed.includes(preferred)) els.paymentMethodInput.value = preferred;
 }
 
 function renderCurrentSituation() {
   const situation = currentSituation();
   const currentIncomeCount = situation.currentItems.filter((item) => item.type === "income").length;
-  const currentExpenseCount = situation.currentItems.filter((item) => item.type === "expense").length;
+  const currentExpenseCount = situation.currentItems.filter((item) => item.type === "expense" && item.status === "paid").length;
 
   els.currentMonthLabel.textContent = `${formatMonth(currentMonth)} - hoje ${formatDate(todayIso)}`;
   els.previousCloseLabel.textContent = `Saldo fechamento ${formatMonthCode(situation.previousMonth)}`;
   els.availableBalanceMetric.textContent = money.format(situation.previousCloseBalance);
-  els.previousCloseTrend.textContent = `Saldo bancario atual: ${money.format(situation.availableBalance)}`;
+  els.previousCloseTrend.textContent = `Base trazida para ${formatMonthCode(currentMonth)}`;
   els.currentIncomeMetric.textContent = money.format(situation.currentTotals.income);
   els.currentExpenseMetric.textContent = money.format(situation.currentTotals.expense);
-  els.pendingLaunchedLabel.textContent = "Total pendente lancado";
+  els.pendingLaunchedLabel.textContent = "Contas monetárias a pagar";
   els.pendingLaunchedMetric.textContent = money.format(situation.allPendingExpenses);
   els.pendingLaunchedTrend.textContent = situation.allPendingItems.length
-    ? `Ultimo pendente: ${formatDate(situation.allPendingItems[0].date)} · ${situation.allPendingItems[0].description}`
-    : "Sem pendencias lancadas";
+    ? `${situation.allPendingItems.length} conta(s) · próxima: ${formatDate(situation.allPendingItems[0].date)}`
+    : "✅ Nenhuma conta pendente no mês";
   els.monthCloseCard.classList.toggle("danger", situation.missingToClose > 0);
   els.monthCloseCard.classList.toggle("positive-card", situation.missingToClose <= 0);
-  els.monthCloseMood.textContent = situation.missingToClose > 0 ? "😟" : "😊";
-  els.monthCloseLabel.textContent = `Pendente para fechar ${formatMonthCode(currentMonth)}`;
+  els.monthCloseMood.textContent = situation.missingToClose > 0 ? "🚨" : "✅";
+  els.monthCloseLabel.textContent = situation.missingToClose > 0 ? `Falta dinheiro para fechar ${formatMonthCode(currentMonth)}` : `Dinheiro suficiente para fechar ${formatMonthCode(currentMonth)}`;
   els.missingToCloseMetric.textContent = situation.missingToClose > 0 ? money.format(situation.missingToClose) : money.format(Math.max(situation.surplusAfterPending, 0));
+  els.monthDecisionStatus.textContent = situation.missingToClose > 0 ? "ATENÇÃO" : "SAUDÁVEL";
   els.currentIncomeTrend.textContent = `${currentIncomeCount} lancamentos`;
   els.currentExpenseTrend.textContent = `${currentExpenseCount} lancamentos`;
   els.pendingBillsTrend.textContent =
     situation.missingToClose > 0
-      ? `☹ Falta ${money.format(situation.missingToClose)} apos abater o saldo bancario`
-      : `☺ Sobra ${money.format(Math.max(situation.surplusAfterPending, 0))} apos pagar pendentes`;
+      ? `As receitas disponíveis não cobrem todas as despesas monetárias previstas do mês.`
+      : `Sobra prevista após pagar todas as despesas monetárias do mês.`;
+}
+
+function isCreditCardExpense(item) {
+  const method = normalizeText(item.paymentMethod || item.account);
+  const modality = normalizeText(item.modality);
+  return item.type === "expense" && (modality.includes("CREDITO") || method.includes("CARTAO") || method.includes("CREDITO"));
+}
+
+function renderDashboardPayables() {
+  const pending = selectedTransactions()
+    .filter((item) => item.type === "expense" && item.status === "pending")
+    .sort((a, b) => a.date.localeCompare(b.date) || a.description.localeCompare(b.description, "pt-BR"));
+  const grouped = new Map();
+
+  pending.forEach((item) => {
+    const payment = item.paymentMethod || item.account || "Não informado";
+    const key = isCreditCardExpense(item) ? `card:${item.date}:${normalizeText(payment)}` : `item:${item.id}`;
+    if (!grouped.has(key)) grouped.set(key, { date: item.date, payment, isCard: isCreditCardExpense(item), items: [] });
+    grouped.get(key).items.push(item);
+  });
+
+  const groups = [...grouped.values()].sort((a, b) => a.date.localeCompare(b.date) || a.payment.localeCompare(b.payment, "pt-BR"));
+  payableGroupCache = new Map(groups.map((group, index) => [`payable-${index}`, group]));
+  const total = pending.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  els.dashboardPayableSummary.textContent = `${pending.length} lançamento(s) · ${money.format(total)} em aberto`;
+  els.dashboardPayables.innerHTML = groups.length
+    ? groups.map((group, index) => {
+        const totalGroup = group.items.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+        const overdue = group.date < todayIso;
+        const title = group.isCard ? `Fatura ${group.payment}` : group.items[0].description;
+        const groupKey = `payable-${index}`;
+        const cardItems = group.items.length > 5
+          ? `<button type="button" class="card-launch-button" data-card-group="${groupKey}">Editar ${group.items.length} lançamentos do cartão <span>→</span></button>`
+          : `<div class="payable-card-items">${group.items.map((item) => `<button type="button" class="payable-item-link" data-edit="${escapeHtml(item.id)}"><span>${escapeHtml(item.description)}</span><strong>${money.format(item.expenseAmount || item.amount || 0)}</strong></button>`).join("")}</div>`;
+        const info = group.isCard
+          ? `<div class="payable-info"><span class="payable-kind">💳 CARTÃO DE CRÉDITO</span><strong>${escapeHtml(title)}</strong>${cardItems}</div>`
+          : `<button type="button" class="payable-info payable-edit-single" data-edit="${escapeHtml(group.items[0].id)}"><span class="payable-kind">🧾 CONTA · CLIQUE PARA EDITAR</span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(group.payment)} · ${escapeHtml(group.items[0].group || group.items[0].category || "Sem categoria")}</small></button>`;
+        return `<article class="payable-row ${overdue ? "overdue" : ""}">
+          <div class="payable-date"><strong>${formatDate(group.date)}</strong><small>${overdue ? "VENCIDA" : "VENCIMENTO"}</small></div>
+          ${info}
+          <strong class="payable-amount">${money.format(totalGroup)}</strong>
+          <button class="button pay-now-button" type="button" data-payable-group="payable-${index}">Pagar</button>
+        </article>`;
+      }).join("")
+    : `<div class="empty payable-empty">✅ Nenhuma conta pendente no período selecionado.</div>`;
+}
+
+function openCardLaunchDialog(groupKey) {
+  const group = payableGroupCache.get(groupKey);
+  if (!group?.isCard) return;
+  const total = group.items.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  els.cardLaunchDialogTitle.textContent = `Fatura ${group.payment}`;
+  els.cardLaunchDialogSummary.textContent = `${formatDate(group.date)} · ${group.items.length} lançamento(s) · ${money.format(total)}`;
+  els.cardLaunchList.innerHTML = group.items.map((item) => `
+    <button type="button" class="card-launch-row" data-edit="${escapeHtml(item.id)}">
+      <span><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.group || item.category || "Sem categoria")} · ${escapeHtml(item.status === "paid" ? "PAGO" : "PENDENTE")}</small></span>
+      <strong>${money.format(item.expenseAmount || item.amount || 0)}</strong>
+    </button>`).join("");
+  els.cardLaunchDialog.showModal();
+}
+
+function openPaymentConfirmation(groupKey) {
+  const group = payableGroupCache.get(groupKey);
+  if (!group) return;
+  paymentConfirmationIds = group.items.map((item) => item.id);
+  const total = group.items.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  els.paymentConfirmBody.innerHTML = `
+    <div class="payment-confirm-summary"><span>${group.isCard ? "💳 Fatura agrupada" : "🧾 Conta a pagar"}</span><strong>${money.format(total)}</strong><small>Vencimento em ${formatDate(group.date)}</small></div>
+    <div class="payment-confirm-list">${group.items.map((item) => `<div><span>${escapeHtml(item.description)}</span><strong>${money.format(item.expenseAmount || item.amount || 0)}</strong></div>`).join("")}</div>
+    <p>Ao confirmar, ${group.items.length === 1 ? "este lançamento será marcado" : "estes lançamentos serão marcados"} como <strong>PAGO</strong>.</p>`;
+  els.paymentConfirmDialog.showModal();
+}
+
+function confirmDashboardPayment(event) {
+  event.preventDefault();
+  const items = paymentConfirmationIds.map((id) => state.transactions.find((item) => item.id === id)).filter(Boolean);
+  if (!items.length) return els.paymentConfirmDialog.close();
+  const monetaryTotal = items.filter((item) => !isVerocardTransaction(item)).reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const available = availableBankBalanceForPayment();
+  if (monetaryTotal > Math.max(available, 0)) {
+    els.paymentConfirmDialog.close();
+    alertInsufficientBankBalance({ amount: monetaryTotal, available });
+    return;
+  }
+  items.forEach((item) => { item.status = "paid"; item.situation = "PAGO"; });
+  saveState();
+  els.paymentConfirmDialog.close();
+  showToast("Pagamento confirmado", `${items.length} lançamento(s) marcado(s) como PAGO`, "success");
+  paymentConfirmationIds = [];
+  render();
 }
 
 function renderQuickSignals() {
@@ -1340,23 +1526,41 @@ function roundRect(ctx, x, y, width, height, radius) {
   ctx.closePath();
 }
 
-function renderRecentList() {
-  const items = sortTransactions([...selectedTransactions()], els.dashboardSortFilter?.value || "date_desc").slice(0, 6);
-  els.recentList.innerHTML = items.length
-    ? items
-        .map(
-          (item) => `
-          <button class="compact-item" type="button" data-edit="${item.id}">
-            <span>
-              <strong>${escapeHtml(item.description)}</strong><br />
-              <small>${formatDate(item.date)} · ${escapeHtml(item.category)}</small>
-            </span>
-            <strong class="amount ${item.type === "expense" ? "negative" : "positive"}">${item.type === "expense" ? "-" : "+"}${money.format(item.amount)}</strong>
-          </button>
-        `,
-        )
-        .join("")
-    : `<div class="empty">Sem lancamentos neste periodo.</div>`;
+function renderMonthProgress() {
+  const expenses = selectedTransactions().filter((item) => item.type === "expense" && !isVerocardTransaction(item));
+  const paid = expenses.filter((item) => item.status === "paid");
+  const pending = expenses.filter((item) => item.status === "pending").sort((a, b) => a.date.localeCompare(b.date));
+  const paidValue = paid.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const pendingValue = pending.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const total = paidValue + pendingValue;
+  const progress = total ? Math.min((paidValue / total) * 100, 100) : 0;
+  const summary = financialSummaryForPeriod();
+  const comparisonBase = Math.max(summary.availableIncome, 0) + Math.max(summary.expense, 0);
+  const incomeShare = comparisonBase ? (Math.max(summary.availableIncome, 0) / comparisonBase) * 100 : 0;
+  const expenseShare = comparisonBase ? (Math.max(summary.expense, 0) / comparisonBase) * 100 : 0;
+  const next = pending[0];
+  els.monthProgressFill.style.width = `${progress}%`;
+  const circumference = 2 * Math.PI * 48;
+  const incomeLength = circumference * (incomeShare / 100);
+  const expenseLength = circumference * (expenseShare / 100);
+  els.incomeExpenseRingIncome.style.strokeDasharray = `${incomeLength} ${circumference - incomeLength}`;
+  els.incomeExpenseRingIncome.style.strokeDashoffset = "0";
+  els.incomeExpenseRingExpense.style.strokeDasharray = `${expenseLength} ${circumference - expenseLength}`;
+  els.incomeExpenseRingExpense.style.strokeDashoffset = `${-incomeLength}`;
+  els.incomeExpenseRatioMetric.textContent = `${incomeShare.toFixed(0)}%`;
+  els.ringIncomeLabel.textContent = `${incomeShare.toFixed(0)}%`;
+  els.ringExpenseLabel.textContent = `${expenseShare.toFixed(0)}%`;
+  els.monthProgressMessage.textContent = progress >= 100
+    ? "✅ Todas as obrigações monetárias do período estão quitadas."
+    : progress >= 70
+      ? "Bom andamento. Restam poucas obrigações para concluir o período."
+      : "Acompanhe as próximas contas e priorize os vencimentos mais próximos.";
+  els.monthPaidCount.textContent = String(paid.length);
+  els.monthPaidValue.textContent = money.format(paidValue);
+  els.monthPendingCount.textContent = String(pending.length);
+  els.monthPendingValue.textContent = money.format(pendingValue);
+  els.monthNextDue.textContent = next ? formatDate(next.date) : "—";
+  els.monthNextDueDescription.textContent = next ? `${next.description} · ${money.format(next.expenseAmount || next.amount || 0)}` : "Nenhuma conta pendente";
 }
 
 function sortTransactions(items, sortMode) {
@@ -1368,30 +1572,6 @@ function sortTransactions(items, sortMode) {
     if (sortMode === "date_asc") return a.date.localeCompare(b.date) || a.description.localeCompare(b.description, "pt-BR");
     return dateCompare(a, b);
   });
-}
-
-function renderBudgetHealth() {
-  const spent = categoryTotals();
-  const monthCount = selectedPeriodMonthCount(selectedTransactions());
-  const categories = sortedCategories().filter((category) => Number(state.budgets[category] || 0) > 0);
-  els.budgetHealthList.innerHTML = categories.length
-    ? categories
-        .map((category) => {
-          const used = spent[category] || 0;
-          const budget = (Number(state.budgets[category]) || 0) * monthCount;
-          const pct = budget ? Math.round((used / budget) * 100) : 0;
-          return `
-            <div class="budget-row">
-              <div class="budget-row-header">
-                <strong>${escapeHtml(category)}</strong>
-                <span>${money.format(used)} / ${money.format(budget)}</span>
-              </div>
-              <div class="progress ${pct > 100 ? "over" : ""}" style="--value: ${Math.min(pct, 100)}%"><span></span></div>
-            </div>
-          `;
-        })
-        .join("")
-    : `<div class="empty">Crie orcamentos para acompanhar seus limites.</div>`;
 }
 
 function renderPeriodControls() {
@@ -1491,23 +1671,86 @@ function renderTransactions() {
     : `<tr><td colspan="13" class="empty">Nenhum lancamento encontrado.</td></tr>`;
 }
 
+function budgetPlanningData() {
+  const monetary = state.transactions.filter((item) => !isVerocardTransaction(item));
+  const months = [...new Set(monetary.map((item) => monthOf(item.date)).filter(Boolean))].sort();
+  const monthCount = Math.max(months.length, 1);
+  const incomes = monetary.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.incomeAmount || item.amount || 0), 0);
+  const expenses = monetary.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const averageIncome = incomes / monthCount;
+  const averageExpense = expenses / monthCount;
+  const categoryTotalsMap = new Map();
+  monetary.filter((item) => item.type === "expense").forEach((item) => {
+    const category = item.group || item.category || "Sem categoria";
+    categoryTotalsMap.set(category, (categoryTotalsMap.get(category) || 0) + Number(item.expenseAmount || item.amount || 0));
+  });
+  const categories = sortedCategories();
+  const averages = new Map(categories.map((category) => [category, (categoryTotalsMap.get(category) || 0) / monthCount]));
+  const essentialAverage = categories.filter((category) => ESSENTIAL_GROUPS.has(normalizeText(category))).reduce((sum, category) => sum + averages.get(category), 0);
+  const flexibleAverage = categories.filter((category) => !ESSENTIAL_GROUPS.has(normalizeText(category))).reduce((sum, category) => sum + averages.get(category), 0);
+  const essentialLimit = averageIncome * 0.5;
+  const flexibleLimit = averageIncome * 0.3;
+  const savingsGoal = averageIncome * 0.2;
+  const emergencyGoal = essentialAverage * 6;
+  const savingsRate = averageIncome ? (averageIncome - averageExpense) / averageIncome : 0;
+  const savingsScore = Math.max(0, Math.min(40, (savingsRate / 0.2) * 40));
+  const essentialRatio = averageIncome ? essentialAverage / averageIncome : 1;
+  const essentialScore = essentialRatio <= 0.5 ? 30 : Math.max(0, 30 - (essentialRatio - 0.5) * 100);
+  const balanceScore = averageIncome ? Math.max(0, Math.min(30, ((averageIncome - averageExpense) / averageIncome + 0.1) * 150)) : 0;
+  const score = Math.round(Math.max(0, Math.min(100, savingsScore + essentialScore + balanceScore)));
+  const suggestions = new Map(categories.map((category) => {
+    const average = averages.get(category) || 0;
+    const essential = ESSENTIAL_GROUPS.has(normalizeText(category));
+    const poolAverage = essential ? essentialAverage : flexibleAverage;
+    const poolLimit = essential ? essentialLimit : flexibleLimit;
+    const proportionalLimit = poolAverage ? poolLimit * (average / poolAverage) : 0;
+    const reductionTarget = average * (essential ? 0.95 : 0.85);
+    const suggested = average ? Math.max(10, Math.round(Math.min(reductionTarget, proportionalLimit || reductionTarget) / 10) * 10) : 0;
+    return [category, suggested];
+  }));
+  return { months, monthCount, averageIncome, averageExpense, essentialAverage, essentialLimit, flexibleLimit, savingsGoal, emergencyGoal, savingsRate, score, averages, suggestions };
+}
+
 function renderBudgets() {
-  els.budgetEditorGrid.innerHTML = sortedCategories()
-    .map(
-      (category) => `
-      <article class="budget-card">
-        <strong>${escapeHtml(category)}</strong>
-        <div class="inline">
-          <input type="number" min="0" step="10" value="${Number(state.budgets[category] || 0)}" data-budget="${escapeHtml(category)}" aria-label="Orcamento de ${escapeHtml(category)}" />
-          <button class="button" type="button" data-save-budget="${escapeHtml(category)}">Salvar</button>
-          <button class="icon-button" type="button" data-remove-budget="${escapeHtml(category)}" aria-label="Remover categoria">
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 21a2 2 0 0 1-2-2V7h14v12a2 2 0 0 1-2 2H7ZM9 4h6l1 1h4v2H4V5h4l1-1Z"/></svg>
-          </button>
-        </div>
-      </article>
-    `,
-    )
-    .join("");
+  const plan = budgetPlanningData();
+  suggestedBudgetsByCategory = plan.suggestions;
+  const selectedExpenses = selectedTransactions().filter((item) => item.type === "expense" && !isVerocardTransaction(item));
+  const spent = new Map();
+  selectedExpenses.forEach((item) => {
+    const category = item.group || item.category || "Sem categoria";
+    spent.set(category, (spent.get(category) || 0) + Number(item.expenseAmount || item.amount || 0));
+  });
+  const healthTone = plan.score >= 80 ? "Saudável" : plan.score >= 60 ? "Em atenção" : "Precisa de reequilíbrio";
+  els.budgetHistoryLabel.textContent = plan.months.length ? `Metas calculadas com ${plan.monthCount} mês(es) de histórico, de ${formatMonthCode(plan.months[0])} a ${formatMonthCode(plan.months.at(-1))}.` : "Importe seus lançamentos para gerar metas personalizadas.";
+  els.budgetHealthScore.textContent = String(plan.score);
+  els.budgetHealthTitle.textContent = healthTone;
+  els.budgetHealthMessage.textContent = plan.savingsRate >= 0.2
+    ? `Sua capacidade histórica de poupança é ${(plan.savingsRate * 100).toFixed(0)}%. Continue protegendo esse resultado.`
+    : `A meta é reservar 20% da renda média. Hoje sua capacidade histórica está em ${(plan.savingsRate * 100).toFixed(0)}%.`;
+  els.savingsGoalMetric.textContent = money.format(plan.savingsGoal);
+  els.emergencyGoalMetric.textContent = money.format(plan.emergencyGoal);
+  els.essentialGoalMetric.textContent = money.format(plan.essentialLimit);
+  els.flexibleGoalMetric.textContent = money.format(plan.flexibleLimit);
+  const activeSuggestions = [...plan.suggestions.values()].filter((value) => value > 0).length;
+  els.budgetSuggestionSummary.textContent = `${activeSuggestions} meta(s) sugerida(s)`;
+  els.budgetEditorGrid.innerHTML = sortedCategories().map((category) => {
+    const average = plan.averages.get(category) || 0;
+    const suggested = plan.suggestions.get(category) || 0;
+    const custom = Number(state.budgets[category] || 0);
+    const target = custom || suggested;
+    const current = spent.get(category) || 0;
+    const pct = target ? (current / target) * 100 : 0;
+    const tone = pct > 100 ? "over" : pct >= 80 ? "attention" : "healthy";
+    const status = pct > 100 ? "Limite excedido" : pct >= 80 ? "Próximo do limite" : target ? "Dentro da meta" : "Sem histórico";
+    return `<article class="budget-card smart-budget-card ${tone}">
+      <div class="smart-budget-header"><div><span class="budget-type">${ESSENTIAL_GROUPS.has(normalizeText(category)) ? "ESSENCIAL" : "FLEXÍVEL"}</span><h3>${escapeHtml(category)}</h3></div><span class="budget-status">${status}</span></div>
+      <div class="budget-comparison"><div><span>Média histórica</span><strong>${money.format(average)}</strong></div><div><span>Gasto no período</span><strong>${money.format(current)}</strong></div></div>
+      <div class="budget-progress"><span style="width:${Math.min(pct, 100)}%"></span></div>
+      <small>${target ? `${pct.toFixed(0)}% da meta utilizada` : "Aguardando dados para sugerir uma meta"}</small>
+      <div class="budget-target-editor"><label>Meta mensal<input type="number" min="0" step="10" value="${target.toFixed(0)}" data-budget="${escapeHtml(category)}" aria-label="Meta de ${escapeHtml(category)}" /></label><button class="button" type="button" data-save-budget="${escapeHtml(category)}">Salvar meta</button></div>
+      ${!custom && suggested ? `<div class="suggested-budget">✨ Sugestão MEG baseada no histórico: ${money.format(suggested)}</div>` : ""}
+    </article>`;
+  }).join("");
 }
 
 function expensesForPendingMonth(monthValue = selectedPendingMonth) {
@@ -1610,10 +1853,78 @@ function renderSettings() {
 }
 
 function renderDatalists() {
-  els.categoryOptions.innerHTML = sortedCategories().map((category) => `<option value="${escapeHtml(category)}"></option>`).join("");
-  els.accountOptions.innerHTML = sortedAccounts().map((account) => `<option value="${escapeHtml(account)}"></option>`).join("");
-  els.expenseClassOptions.innerHTML = sortedExpenseClasses().map((item) => `<option value="${escapeHtml(item)}"></option>`).join("");
-  els.modalityOptions.innerHTML = sortedModalities().map((item) => `<option value="${escapeHtml(item)}"></option>`).join("");
+  const currentGroup = els.groupInput.value;
+  const groups = sortedCategories();
+  els.groupInput.innerHTML = groups.map((group) => `<option value="${escapeHtml(group)}">${escapeHtml(group)}</option>`).join("");
+  if (groups.includes(currentGroup)) els.groupInput.value = currentGroup;
+  const currentExpenseClass = els.expenseClassInput.value;
+  const expenseClasses = sortedExpenseClasses();
+  els.expenseClassInput.innerHTML = expenseClasses.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
+  if (expenseClasses.includes(currentExpenseClass)) els.expenseClassInput.value = currentExpenseClass;
+  const currentPayment = els.paymentMethodInput.value;
+  const currentModality = els.modalityInput.value;
+  const modalities = sortedModalities();
+  els.modalityInput.innerHTML = modalities.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
+  if (modalities.includes(currentModality)) els.modalityInput.value = currentModality;
+  refreshPaymentMethodOptions(currentPayment);
+  els.catalogModalityOptions.innerHTML = modalities.map((item) => `<option value="${escapeHtml(item)}"></option>`).join("");
+  const descriptions = [...new Set(state.transactions.map((item) => String(item.description || "").replace(/\s+\d+\/\d+$/u, "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  els.descriptionOptions.innerHTML = descriptions.map((item) => `<option value="${escapeHtml(item)}"></option>`).join("");
+}
+
+function renderCatalogs() {
+  const groups = state.catalogs?.groups || [];
+  const expenseClasses = state.catalogs?.expenseClasses || [];
+  const payments = state.catalogs?.paymentMethods || [];
+  const defaultGroupKeys = new Set(DEFAULT_GROUPS.map(normalizeText));
+  const defaultExpenseClassKeys = new Set(DEFAULT_CATALOGS.expenseClasses.map(normalizeText));
+  const defaultPaymentKeys = new Set(DEFAULT_CATALOGS.paymentMethods.map((item) => normalizeText(item.description)));
+  els.groupCatalogCount.textContent = `${groups.length} cadastrados`;
+  els.paymentCatalogCount.textContent = `${payments.length} cadastradas`;
+  els.expenseClassCatalogCount.textContent = `${expenseClasses.length} cadastradas`;
+  els.groupCatalogList.innerHTML = groups.map((group) => `<div class="catalog-row"><strong>${escapeHtml(group)}</strong>${defaultGroupKeys.has(normalizeText(group)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-group="${escapeHtml(group)}">Remover</button>`}</div>`).join("");
+  els.expenseClassCatalogList.innerHTML = expenseClasses.map((item) => `<div class="catalog-row"><strong>${escapeHtml(item)}</strong>${defaultExpenseClassKeys.has(normalizeText(item)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-expense-class="${escapeHtml(item)}">Remover</button>`}</div>`).join("");
+  els.paymentCatalogList.innerHTML = payments.map((item) => `<div class="catalog-row"><span><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.modality)}</small></span>${defaultPaymentKeys.has(normalizeText(item.description)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-payment="${escapeHtml(item.description)}">Remover</button>`}</div>`).join("");
+}
+
+function addGroupCatalog(event) {
+  event.preventDefault();
+  const value = els.newGroupInput.value.trim().toUpperCase();
+  if (!value || state.catalogs.groups.some((item) => normalizeText(item) === normalizeText(value))) return;
+  state.catalogs.groups.push(value);
+  els.newGroupInput.value = "";
+  saveState();
+  render();
+}
+
+function addPaymentCatalog(event) {
+  event.preventDefault();
+  const description = els.newPaymentInput.value.trim().toUpperCase();
+  const modality = els.newPaymentModalityInput.value.trim().toUpperCase();
+  if (!description || !modality || state.catalogs.paymentMethods.some((item) => normalizeText(item.description) === normalizeText(description))) return;
+  state.catalogs.paymentMethods.push({ description, modality });
+  els.newPaymentInput.value = "";
+  els.newPaymentModalityInput.value = "";
+  saveState();
+  render();
+}
+
+function addExpenseClassCatalog(event) {
+  event.preventDefault();
+  const value = els.newExpenseClassInput.value.trim().toUpperCase();
+  if (!value || state.catalogs.expenseClasses.some((item) => normalizeText(item) === normalizeText(value))) return;
+  state.catalogs.expenseClasses.push(value);
+  els.newExpenseClassInput.value = "";
+  saveState();
+  render();
+}
+
+function removeCatalogItem(type, value) {
+  if (type === "group") state.catalogs.groups = state.catalogs.groups.filter((item) => normalizeText(item) !== normalizeText(value));
+  if (type === "expenseClass") state.catalogs.expenseClasses = state.catalogs.expenseClasses.filter((item) => normalizeText(item) !== normalizeText(value));
+  if (type === "payment") state.catalogs.paymentMethods = state.catalogs.paymentMethods.filter((item) => normalizeText(item.description) !== normalizeText(value));
+  saveState();
+  render();
 }
 
 function setView(view) {
@@ -1638,11 +1949,64 @@ function syncAmountFields() {
   } else {
     els.incomeAmountInput.value = "";
   }
+  syncInstallmentFields();
+}
+
+function isInstallmentModality() {
+  const modality = normalizeText(els.modalityInput.value);
+  return modality === "CREDITO" || modality === "CREDIARIO";
+}
+
+function syncInstallmentFields() {
+  const show = !els.transactionId.value && els.transactionType.value === "expense" && isInstallmentModality();
+  els.installmentFields.classList.toggle("hidden", !show);
+  els.expenseAmountInput.disabled = show || els.transactionType.value === "income";
+  if (!show) return;
+  const total = Number(els.purchaseTotalInput.value || 0);
+  const count = Math.max(Number.parseInt(els.installmentCountInput.value || "1", 10), 1);
+  const installment = total / count;
+  els.expenseAmountInput.value = total ? installment.toFixed(2) : "";
+  els.installmentPreview.textContent = total
+    ? `${count} parcela(s) de aproximadamente ${money.format(installment)}. Vencimentos em fim de semana passam para segunda-feira.`
+    : "Informe o valor total e a quantidade de parcelas.";
+}
+
+function createInstallmentTransactions(payload) {
+  const count = Math.max(Number.parseInt(els.installmentCountInput.value || "1", 10), 1);
+  const total = Number(els.purchaseTotalInput.value || 0);
+  const amounts = splitInstallmentAmounts(total, count);
+  const seriesId = crypto.randomUUID();
+  return Array.from({ length: count }, (_, index) => {
+    const date = installmentDueDate(payload.date, index);
+    const amount = amounts[index];
+    return {
+      ...payload,
+      id: crypto.randomUUID(),
+      date,
+      weekday: weekdayShort(date),
+      description: `${payload.description} ${index + 1}/${count}`,
+      expenseAmount: amount,
+      amount,
+      status: "pending",
+      situation: "PENDENTE",
+      installmentSeriesId: seriesId,
+      installmentNumber: index + 1,
+      installmentCount: count,
+      purchaseTotal: total,
+    };
+  });
 }
 
 function syncPaymentModality() {
   const method = els.paymentMethodInput.value.trim();
-  if (PAYMENT_MODALITIES[method]) els.modalityInput.value = PAYMENT_MODALITIES[method];
+  const modality = modalityForPayment(method);
+  if (modality) els.modalityInput.value = modality;
+  syncInstallmentFields();
+}
+
+function syncModalityPaymentOptions() {
+  refreshPaymentMethodOptions();
+  syncInstallmentFields();
 }
 
 function openTransactionDialog(item = null) {
@@ -1657,12 +2021,16 @@ function openTransactionDialog(item = null) {
   els.expenseAmountInput.value = item?.expenseAmount || "";
   els.expenseClassInput.value = item?.expenseClass || "";
   els.groupInput.value = item?.group || (item?.type === "expense" ? item?.category || "" : "");
-  els.paymentMethodInput.value = item?.paymentMethod || item?.account || "PIX";
+  const desiredPayment = item?.paymentMethod || item?.account || "PIX";
   els.statusInput.value = item?.status || "paid";
-  els.modalityInput.value = item?.modality || PAYMENT_MODALITIES[els.paymentMethodInput.value] || "";
+  els.modalityInput.value = item?.modality || modalityForPayment(desiredPayment) || sortedModalities()[0] || "";
+  refreshPaymentMethodOptions(desiredPayment);
   els.notesInput.value = item?.notes || "";
+  els.purchaseTotalInput.value = "";
+  els.installmentCountInput.value = "1";
   els.deleteTransactionBtn.style.visibility = item ? "visible" : "hidden";
   syncAmountFields();
+  syncInstallmentFields();
   els.dialog.showModal();
   els.descriptionInput.focus();
 }
@@ -1699,6 +2067,23 @@ function saveTransaction(event) {
 
   const index = state.transactions.findIndex((item) => item.id === id);
   const previous = index >= 0 ? state.transactions[index] : null;
+  if (!previous && payload.type === "expense" && isInstallmentModality()) {
+    try {
+      const installments = createInstallmentTransactions(payload);
+      state.transactions.push(...installments);
+      if (!state.budgets[payload.category]) state.budgets[payload.category] = 0;
+      selectedPeriod.mode = "month";
+      selectedPeriod.month = monthOf(installments[0].date);
+      saveState();
+      els.dialog.close();
+      showToast("Parcelamento criado", `${installments.length} parcela(s) geradas até ${formatDate(installments.at(-1).date)}`, "success");
+      render();
+      return;
+    } catch (error) {
+      showToast("Revise o parcelamento", error.message, "danger");
+      return;
+    }
+  }
   const isChangingToPaidExpense = payload.type === "expense" && payload.status === "paid" && previous?.status !== "paid";
   if (isChangingToPaidExpense) {
     const paymentCheck = canPayWithBankBalance(payload, { excludeId: id });
@@ -1772,28 +2157,21 @@ function markAllCurrentPendingPaid() {
   }
 }
 
-function addBudgetCategory() {
-  const name = prompt("Nome da categoria");
-  if (!name?.trim()) return;
-  const category = name.trim();
-  state.budgets[category] = state.budgets[category] || 0;
+function applySuggestedBudgets() {
+  suggestedBudgetsByCategory.forEach((value, category) => {
+    if (value > 0) state.budgets[category] = value;
+  });
   saveState();
+  showToast("Metas aplicadas", "As recomendações do histórico foram salvas como metas mensais.", "success");
   render();
 }
 
 function handleBudgetClick(event) {
   const saveButton = event.target.closest("[data-save-budget]");
-  const removeButton = event.target.closest("[data-remove-budget]");
   if (saveButton) {
     const category = saveButton.dataset.saveBudget;
     const input = els.budgetEditorGrid.querySelector(`[data-budget="${cssEscape(category)}"]`);
     state.budgets[category] = Number(input.value) || 0;
-    saveState();
-    render();
-  }
-  if (removeButton) {
-    const category = removeButton.dataset.removeBudget;
-    delete state.budgets[category];
     saveState();
     render();
   }
@@ -1978,11 +2356,24 @@ function cssEscape(value) {
 document.addEventListener("click", (event) => {
   const editButton = event.target.closest("[data-edit]");
   const viewLink = event.target.closest("[data-view-link]");
+  const payableButton = event.target.closest("[data-payable-group]");
+  const cardGroupButton = event.target.closest("[data-card-group]");
+  const removeGroupButton = event.target.closest("[data-remove-group]");
+  const removePaymentButton = event.target.closest("[data-remove-payment]");
+  const removeExpenseClassButton = event.target.closest("[data-remove-expense-class]");
   if (editButton) {
     const item = state.transactions.find((transaction) => transaction.id === editButton.dataset.edit);
-    if (item) openTransactionDialog(item);
+    if (item) {
+      if (els.cardLaunchDialog.open) els.cardLaunchDialog.close();
+      openTransactionDialog(item);
+    }
   }
   if (viewLink) setView(viewLink.dataset.viewLink);
+  if (payableButton) openPaymentConfirmation(payableButton.dataset.payableGroup);
+  if (cardGroupButton) openCardLaunchDialog(cardGroupButton.dataset.cardGroup);
+  if (removeGroupButton) removeCatalogItem("group", removeGroupButton.dataset.removeGroup);
+  if (removePaymentButton) removeCatalogItem("payment", removePaymentButton.dataset.removePayment);
+  if (removeExpenseClassButton) removeCatalogItem("expenseClass", removeExpenseClassButton.dataset.removeExpenseClass);
 });
 
 document.addEventListener("change", (event) => {
@@ -2036,7 +2427,6 @@ els.clearColumnFiltersBtn?.addEventListener("click", () => {
   els.transactionColumnFilters.forEach((control) => { control.value = ""; });
   renderTransactions();
 });
-els.dashboardSortFilter?.addEventListener("change", renderRecentList);
 els.pendingStatusFilter.addEventListener("change", renderPending);
 els.pendingPaymentFilter.addEventListener("change", renderPending);
 els.pendingMonthFilter.addEventListener("change", () => {
@@ -2063,15 +2453,25 @@ els.dateInput.addEventListener("change", () => {
 });
 els.transactionType.addEventListener("change", syncAmountFields);
 els.paymentMethodInput.addEventListener("change", syncPaymentModality);
-els.paymentMethodInput.addEventListener("input", syncPaymentModality);
+els.modalityInput.addEventListener("change", syncModalityPaymentOptions);
+els.purchaseTotalInput.addEventListener("input", syncInstallmentFields);
+els.installmentCountInput.addEventListener("input", syncInstallmentFields);
 els.form.addEventListener("submit", saveTransaction);
 els.deleteTransactionBtn.addEventListener("click", deleteTransaction);
 els.closeDialogBtn.addEventListener("click", () => els.dialog.close());
 els.cancelDialogBtn.addEventListener("click", () => els.dialog.close());
-els.addBudgetBtn.addEventListener("click", addBudgetCategory);
+els.paymentConfirmForm.addEventListener("submit", confirmDashboardPayment);
+els.closePaymentConfirmBtn.addEventListener("click", () => els.paymentConfirmDialog.close());
+els.cancelPaymentConfirmBtn.addEventListener("click", () => els.paymentConfirmDialog.close());
+els.closeCardLaunchDialogBtn.addEventListener("click", () => els.cardLaunchDialog.close());
+els.cancelCardLaunchDialogBtn.addEventListener("click", () => els.cardLaunchDialog.close());
+els.applySuggestedBudgetsBtn.addEventListener("click", applySuggestedBudgets);
 els.budgetEditorGrid.addEventListener("click", handleBudgetClick);
 els.csvImport.addEventListener("change", handleCsvImport);
 els.exportCsvBtn.addEventListener("click", exportCsv);
+els.groupCatalogForm.addEventListener("submit", addGroupCatalog);
+els.expenseClassCatalogForm.addEventListener("submit", addExpenseClassCatalog);
+els.paymentCatalogForm.addEventListener("submit", addPaymentCatalog);
 window.addEventListener("resize", () => {
   renderCategoryChart();
   renderAnalytics();

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Laboratório financeiro — MEG</title>
+    <style>
+      :root { font-family: Inter, system-ui, sans-serif; color: #16211e; background: #edf5f2; }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 32px; }
+      main { width: min(1050px, 100%); margin: auto; }
+      h1 { margin-bottom: 8px; }
+      .muted { color: #60726c; }
+      .inputs, .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
+      .panel, .card { padding: 20px; border: 1px solid #cfe0da; border-radius: 18px; background: #fff; box-shadow: 0 12px 34px rgba(15, 66, 56, .07); }
+      label { display: grid; gap: 7px; font-weight: 800; }
+      input { width: 100%; padding: 12px; border: 1px solid #a9c7bf; border-radius: 10px; font: inherit; }
+      .card span, .formula { color: #60726c; }
+      .card strong { display: block; margin: 10px 0; font-size: 30px; }
+      .primary { border-top: 5px solid #118a74; }
+      .danger { border-top: 5px solid #c4473b; }
+      .formula { margin-top: 22px; padding: 18px; border-radius: 14px; background: #dff0eb; line-height: 1.6; }
+      @media (max-width: 760px) { body { padding: 18px; } .inputs, .cards { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="muted">AMBIENTE LOCAL — NÃO PUBLICADO</p>
+      <h1>Laboratório das regras mensais</h1>
+      <p class="muted">Altere os quatro valores e confira imediatamente a composição dos cards antes de aprovarmos a publicação.</p>
+      <section class="inputs panel">
+        <label>Todas as receitas até junho<input id="previousIncome" type="number" step="0.01" value="179986.02" /></label>
+        <label>Todas as despesas até junho<input id="previousExpense" type="number" step="0.001" value="179103.211" /></label>
+        <label>Receitas de julho<input id="currentIncome" type="number" step="0.01" value="11574.31" /></label>
+        <label>Despesas pagas de julho<input id="paidExpense" type="number" step="0.01" value="4419.66" /></label>
+        <label>Despesas pendentes de julho<input id="pendingExpense" type="number" step="0.01" value="7733.74" /></label>
+      </section>
+      <section class="cards">
+        <article class="card primary"><span>RECEITAS + FECHAMENTO ANTERIOR</span><strong id="availableIncome"></strong><small id="availableDescription"></small></article>
+        <article class="card danger"><span>DESPESAS DE JULHO</span><strong id="expense"></strong><small id="expenseDescription"></small></article>
+        <article class="card primary"><span>SALDO REALIZADO DE JULHO</span><strong id="closing"></strong><small>Receita disponível menos despesas pagas</small></article>
+      </section>
+      <div class="formula" id="formula"></div>
+    </main>
+    <script type="module">
+      const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+      const fields = [...document.querySelectorAll('input')];
+      function render() {
+        const [previousIncome, previousExpense, currentIncome, paidExpense, pendingExpense] = fields.map((field) => Number(field.value || 0));
+        const currentExpense = paidExpense + pendingExpense;
+        const previousClose = previousIncome - previousExpense;
+        const availableIncome = currentIncome + previousClose;
+        const closing = availableIncome - paidExpense;
+        document.querySelector('#availableIncome').textContent = money.format(availableIncome);
+        document.querySelector('#availableDescription').textContent = `Receitas de julho (${money.format(currentIncome)}) + saldo acumulado até junho (${money.format(previousClose)})`;
+        document.querySelector('#expense').textContent = money.format(currentExpense);
+        document.querySelector('#expenseDescription').textContent = `Pagas (${money.format(paidExpense)}) + pendentes (${money.format(pendingExpense)})`;
+        document.querySelector('#closing').textContent = money.format(closing);
+        document.querySelector('#formula').textContent = `Acumulado até junho: ${money.format(previousIncome)} − ${money.format(previousExpense)} = ${money.format(previousClose)}. Saldo realizado de julho: ${money.format(currentIncome)} + ${money.format(previousClose)} − despesas pagas ${money.format(paidExpense)} = ${money.format(closing)}. Pendentes: ${money.format(pendingExpense)}.`;
+      }
+      fields.forEach((field) => field.addEventListener('input', render));
+      render();
+    </script>
+  </body>
+</html>

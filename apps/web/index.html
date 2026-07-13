@@ -50,6 +50,10 @@
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 2h10v4h3v16H4V6h3V2Zm2 4h6V4H9v2Zm-1 5h8V9H8v2Zm0 4h8v-2H8v2Zm0 4h5v-2H8v2Z"/></svg>
             Pendentes
           </button>
+          <button class="nav-item" data-view="catalogs" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z"/></svg>
+            Cadastros
+          </button>
           <button class="nav-item" data-view="settings" type="button">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M19.4 13.5c.1-.5.1-1 .1-1.5s0-1-.1-1.5l2-1.5-2-3.5-2.4 1a8 8 0 0 0-2.6-1.5L14 2h-4l-.4 3a8 8 0 0 0-2.6 1.5l-2.4-1-2 3.5 2 1.5A9 9 0 0 0 4.5 12c0 .5 0 1 .1 1.5l-2 1.5 2 3.5 2.4-1a8 8 0 0 0 2.6 1.5l.4 3h4l.4-3a8 8 0 0 0 2.6-1.5l2.4 1 2-3.5-2-1.5ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
             Ajustes
@@ -105,63 +109,78 @@
           </div>
 
           <div class="dashboard-main-grid">
-            <section class="panel money-board" aria-label="Resumo financeiro do periodo">
-              <article class="money-line income-line">
-                <span class="money-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M3 6h18v12H3V6Zm2 2v8h14V8H5Zm7 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm-5 0h2v2H7v-2Zm8 2h2v2h-2v-2Z"/></svg>
-                </span>
-                <div>
-                  <strong id="incomeMetric">R$ 0,00</strong>
-                  <span>receitas + saldo anterior</span>
-                  <small id="incomeTrend">0 lancamentos</small>
+            <section class="finance-panels" aria-label="Painéis financeiro, ticket e consolidado">
+              <article class="finance-panel monetary-panel" id="monetaryPanel">
+                <header><span>💵</span><div><small>DINHEIRO</small><h3>Monetário</h3></div></header>
+                <div class="finance-panel-values">
+                  <div><span>Receitas</span><strong id="monetaryRevenueMetric">R$ 0,00</strong><small id="monetaryRevenueNote"></small></div>
+                  <div><span>Despesas pagas</span><strong id="monetaryExpenseMetric">R$ 0,00</strong><small id="monetaryExpenseNote"></small></div>
+                  <div class="situation"><span>Situação</span><strong id="monetarySituationMetric">R$ 0,00</strong><small id="monetarySituationNote"></small></div>
                 </div>
               </article>
-              <article class="money-line expense-line">
-                <span class="money-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M4 7h16v12H4V7Zm2 2v8h12V9H6Zm1-5h10v2H7V4Zm4 7h6v2h-6v-2Z"/></svg>
-                </span>
-                <div>
-                  <strong id="expenseMetric">R$ 0,00</strong>
-                  <span>total despesas</span>
-                  <small id="expenseTrend">0 lancamentos</small>
+              <article class="finance-panel ticket-panel" id="ticketPanel">
+                <header><span>🍽️</span><div><small>BENEFÍCIO</small><h3>Ticket alimentação</h3></div></header>
+                <div class="finance-panel-values">
+                  <div><span>Receitas</span><strong id="ticketRevenueMetric">R$ 0,00</strong><small id="ticketRevenueNote"></small></div>
+                  <div><span>Despesas</span><strong id="ticketExpenseMetric">R$ 0,00</strong><small id="ticketExpenseNote"></small></div>
+                  <div class="situation"><span>Situação</span><strong id="ticketSituationMetric">R$ 0,00</strong><small id="ticketSituationNote"></small></div>
                 </div>
               </article>
-              <article class="money-line balance-line">
-                <span class="money-symbol" aria-hidden="true">$</span>
-                <div>
-                  <strong id="balanceMetric">R$ 0,00</strong>
-                  <span>fechamento do período</span>
-                  <small id="balanceTrend">Resultado do periodo</small>
-                </div>
-              </article>
-              <article class="money-line budget-line">
-                <span class="money-symbol small" aria-hidden="true">%</span>
-                <div>
-                  <strong id="budgetMetric">0%</strong>
-                  <span>orcado usado</span>
-                  <small id="budgetTrend">Dentro do limite</small>
+              <article class="finance-panel consolidated-panel" id="consolidatedPanel">
+                <header><span>📊</span><div><small>VISÃO GERAL</small><h3>Consolidado</h3></div></header>
+                <div class="finance-panel-values">
+                  <div><span>Receitas</span><strong id="consolidatedRevenueMetric">R$ 0,00</strong><small>Monetário + ticket</small></div>
+                  <div><span>Despesas</span><strong id="consolidatedExpenseMetric">R$ 0,00</strong><small>Pagas + ticket utilizado</small></div>
+                  <div class="situation"><span>Situação</span><strong id="consolidatedSituationMetric">R$ 0,00</strong><small id="consolidatedSituationNote"></small></div>
                 </div>
               </article>
             </section>
 
-            <section class="panel split-board" aria-label="Receitas versus despesas em percentual">
-              <h3>Receitas x despesas (%)</h3>
-              <div class="split-meter" aria-hidden="true">
-                <span class="split-income" id="incomeShareFill"></span>
-                <span class="split-expense" id="expenseShareFill"></span>
+            <section class="panel month-progress-panel compact-progress-panel">
+              <div class="progress-ring-wrap">
+                <svg class="progress-ring" viewBox="0 0 120 120" aria-hidden="true">
+                  <circle class="progress-ring-base" cx="60" cy="60" r="48"></circle>
+                  <circle class="income-expense-ring income-ring" id="incomeExpenseRingIncome" cx="60" cy="60" r="48"></circle>
+                  <circle class="income-expense-ring expense-ring" id="incomeExpenseRingExpense" cx="60" cy="60" r="48"></circle>
+                </svg>
+                <div class="ring-center"><strong id="incomeExpenseRatioMetric">0%</strong><small>RECEITA</small></div>
+                <div class="ring-legend"><span><i></i><b id="ringIncomeLabel">0%</b> receita</span><span><i></i><b id="ringExpenseLabel">0%</b> despesa</span></div>
               </div>
-              <div class="split-labels">
-                <strong><span id="incomeShareLabel">0%</span><small>Receita</small></strong>
-                <strong><span id="expenseShareLabel">0%</span><small>Despesa</small></strong>
+              <div class="compact-progress-content">
+                <div class="month-progress-heading">
+                  <div>
+                    <small class="decision-eyebrow">ACOMPANHAMENTO</small>
+                    <h3>Progresso financeiro do período</h3>
+                    <p class="muted" id="monthProgressMessage">Acompanhamento das obrigações monetárias.</p>
+                  </div>
+                </div>
+                <div class="month-progress-track" aria-hidden="true"><span id="monthProgressFill"></span></div>
+                <div class="month-progress-stats">
+                  <div><span>✅ Pagamentos realizados</span><strong id="monthPaidCount">0</strong><small id="monthPaidValue">R$ 0,00</small></div>
+                  <div><span>⏳ Contas pendentes</span><strong id="monthPendingCount">0</strong><small id="monthPendingValue">R$ 0,00</small></div>
+                  <div><span>📅 Próximo vencimento</span><strong id="monthNextDue">—</strong><small id="monthNextDueDescription">Nenhuma conta pendente</small></div>
+                </div>
               </div>
             </section>
           </div>
 
-          <section class="panel current-panel">
+          <section class="panel current-panel" id="currentDecisionPanel">
             <div class="panel-title">
-              <h3>Fechamento do mes</h3>
+              <div>
+                <small class="decision-eyebrow">DECISÃO RÁPIDA</small>
+                <h3>Situação financeira do mês</h3>
+              </div>
               <span id="currentMonthLabel">Mes atual</span>
             </div>
+            <article class="month-decision" id="monthCloseCard">
+              <div class="decision-icon"><span id="monthCloseMood" aria-hidden="true">😟</span></div>
+              <div class="decision-copy">
+                <span id="monthCloseLabel">Pendente para fechar o mes</span>
+                <strong id="missingToCloseMetric">R$ 0,00</strong>
+                <small id="pendingBillsTrend">Pendencias do mes</small>
+              </div>
+              <div class="decision-status" id="monthDecisionStatus">ATENÇÃO</div>
+            </article>
             <div class="current-grid">
               <article class="mini-metric">
                 <span id="previousCloseLabel">Saldo fechamento mes anterior</span>
@@ -169,62 +188,34 @@
                 <small id="previousCloseTrend">Fechamento acumulado da base</small>
               </article>
               <article class="mini-metric">
-                <span>Receitas do mes atual</span>
+                <span>Receitas monetárias do mês</span>
                 <strong id="currentIncomeMetric">R$ 0,00</strong>
                 <small id="currentIncomeTrend">0 lancamentos</small>
               </article>
-              <article class="mini-metric danger">
-                <span>Despesas do mes atual</span>
+              <article class="mini-metric paid-card">
+                <span>Despesas já pagas</span>
                 <strong id="currentExpenseMetric">R$ 0,00</strong>
                 <small id="currentExpenseTrend">0 lancamentos</small>
               </article>
               <article class="mini-metric warn">
-                <span id="pendingLaunchedLabel">Total pendente lancado</span>
+                <span id="pendingLaunchedLabel">Contas monetárias a pagar</span>
                 <strong id="pendingLaunchedMetric">R$ 0,00</strong>
                 <small id="pendingLaunchedTrend">Pendencias do mes</small>
               </article>
-              <article class="mini-metric warn" id="monthCloseCard">
-                <span class="mood-emoji" id="monthCloseMood" aria-hidden="true">😟</span>
-                <span id="monthCloseLabel">Pendente para fechar o mes</span>
-                <strong id="missingToCloseMetric">R$ 0,00</strong>
-                <small id="pendingBillsTrend">Pendencias do mes</small>
-              </article>
             </div>
           </section>
 
-          <section class="panel">
+          <section class="panel payable-panel">
             <div class="panel-title">
-              <h3>Sinais rapidos</h3>
-              <span>Prioridades para decidir</span>
-            </div>
-            <div class="signal-grid" id="quickSignals"></div>
-          </section>
-
-          <div class="dashboard-grid recent-grid">
-            <section class="panel">
-              <div class="panel-title">
-                <h3>Ultimos lancamentos</h3>
-                <div class="panel-actions">
-                  <select id="dashboardSortFilter" aria-label="Ordenar lancamentos do painel">
-                    <option value="date_desc">Mais recentes</option>
-                    <option value="expense_desc">Maior gasto</option>
-                    <option value="expense_asc">Menor gasto</option>
-                    <option value="date_asc">Mais antigos</option>
-                  </select>
-                  <button class="link-button" data-view-link="transactions" type="button">Ver todos</button>
-                </div>
+              <div>
+                <small class="decision-eyebrow">AGENDA FINANCEIRA</small>
+                <h3>Contas a pagar</h3>
               </div>
-              <div class="compact-list" id="recentList"></div>
-            </section>
-          </div>
-
-          <section class="panel">
-            <div class="panel-title">
-              <h3>Saude dos orcamentos</h3>
-              <span>Gasto mensal versus limite</span>
+              <span id="dashboardPayableSummary">Ordenadas por vencimento</span>
             </div>
-            <div class="budget-list" id="budgetHealthList"></div>
+            <div class="dashboard-payables" id="dashboardPayables"></div>
           </section>
+
         </section>
 
         <section class="view" id="cashflow" aria-labelledby="cashflowTitle">
@@ -426,12 +417,20 @@
 
         <section class="view" id="budgets" aria-labelledby="budgetsTitle">
           <div class="section-heading">
-            <h2 id="budgetsTitle">Orcamentos por categoria</h2>
-            <button class="button primary" id="addBudgetBtn" type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></svg>
-              Categoria
-            </button>
+            <div><h2 id="budgetsTitle">Planejamento financeiro</h2><p class="muted" id="budgetHistoryLabel">Metas calculadas pelo seu histórico completo.</p></div>
+            <button class="button primary" id="applySuggestedBudgetsBtn" type="button">Aplicar metas sugeridas</button>
           </div>
+          <section class="budget-health-hero">
+            <div class="budget-health-copy"><small class="decision-eyebrow">SAÚDE FINANCEIRA</small><h3 id="budgetHealthTitle">Construindo seu plano</h3><p id="budgetHealthMessage">Analisando receitas e despesas desde o início do controle.</p></div>
+            <div class="budget-score"><strong id="budgetHealthScore">0</strong><span>/100</span><small>Índice MEG</small></div>
+          </section>
+          <div class="budget-goals-grid">
+            <article><span>💰 Poupança mensal</span><strong id="savingsGoalMetric">R$ 0,00</strong><small>Meta saudável: 20% da renda média</small></article>
+            <article><span>🛟 Reserva de emergência</span><strong id="emergencyGoalMetric">R$ 0,00</strong><small>Seis meses de despesas essenciais</small></article>
+            <article><span>🏠 Teto para essenciais</span><strong id="essentialGoalMetric">R$ 0,00</strong><small>Até 50% da renda média mensal</small></article>
+            <article><span>🎯 Gastos flexíveis</span><strong id="flexibleGoalMetric">R$ 0,00</strong><small>Até 30% da renda média mensal</small></article>
+          </div>
+          <div class="budget-section-title"><div><h3>Metas por grupo</h3><p class="muted">Compare média histórica, gasto no período e limite recomendado.</p></div><span id="budgetSuggestionSummary"></span></div>
           <div class="budget-editor-grid" id="budgetEditorGrid"></div>
         </section>
 
@@ -492,6 +491,27 @@
                 <span>Saldo correndo no mes</span>
               </div>
               <div class="verocard-list" id="verocardLedger"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="catalogs" aria-labelledby="catalogsTitle">
+          <div class="section-heading"><div><h2 id="catalogsTitle">Cadastros</h2><p class="muted">Mantenha grupos e formas de pagamento usados nos lançamentos.</p></div></div>
+          <div class="catalogs-grid">
+            <section class="panel catalog-panel">
+              <div class="panel-title"><div><small class="decision-eyebrow">CLASSIFICAÇÃO</small><h3>Grupos</h3></div><span id="groupCatalogCount">0 cadastrados</span></div>
+              <form class="catalog-form" id="groupCatalogForm"><input id="newGroupInput" type="text" maxlength="60" placeholder="Novo grupo" required /><button class="button primary" type="submit">Adicionar</button></form>
+              <div class="catalog-list" id="groupCatalogList"></div>
+            </section>
+            <section class="panel catalog-panel">
+              <div class="panel-title"><div><small class="decision-eyebrow">DESPESAS</small><h3>Classificações</h3></div><span id="expenseClassCatalogCount">0 cadastradas</span></div>
+              <form class="catalog-form" id="expenseClassCatalogForm"><input id="newExpenseClassInput" type="text" maxlength="60" placeholder="Nova classificação" required /><button class="button primary" type="submit">Adicionar</button></form>
+              <div class="catalog-list" id="expenseClassCatalogList"></div>
+            </section>
+            <section class="panel catalog-panel">
+              <div class="panel-title"><div><small class="decision-eyebrow">PAGAMENTO</small><h3>Formas e modalidades</h3></div><span id="paymentCatalogCount">0 cadastradas</span></div>
+              <form class="catalog-form payment-catalog-form" id="paymentCatalogForm"><input id="newPaymentInput" type="text" maxlength="60" placeholder="Forma de pagamento" required /><input id="newPaymentModalityInput" type="text" list="catalogModalityOptions" maxlength="30" placeholder="Modalidade" required /><datalist id="catalogModalityOptions"></datalist><button class="button primary" type="submit">Adicionar</button></form>
+              <div class="catalog-list" id="paymentCatalogList"></div>
             </section>
           </div>
         </section>
@@ -576,16 +596,19 @@
             </select>
           </label>
           <label>
-            SITUAÇÃO
-            <select id="statusInput">
-              <option value="paid">PAGO</option>
-              <option value="pending">PENDENTE</option>
-            </select>
+            MODALIDADE
+            <select id="modalityInput" required></select>
           </label>
           <label class="full">
             DESCRIÇÃO
-            <input id="descriptionInput" type="text" maxlength="80" required />
+            <input id="descriptionInput" type="text" list="descriptionOptions" maxlength="80" autocomplete="off" required />
+            <datalist id="descriptionOptions"></datalist>
           </label>
+          <div class="installment-fields full hidden" id="installmentFields">
+            <label>VALOR TOTAL DA COMPRA<input id="purchaseTotalInput" type="number" min="0.01" step="0.01" /></label>
+            <label>TOTAL DE PARCELAS<input id="installmentCountInput" type="number" min="1" max="120" step="1" value="1" /></label>
+            <small id="installmentPreview">Informe o valor total e a quantidade de parcelas.</small>
+          </div>
           <label>
             RECEITA($)
             <input id="incomeAmountInput" type="number" min="0" step="0.01" />
@@ -596,23 +619,22 @@
           </label>
           <label>
             CLASSIFICAÇÃO DA DESPESA
-            <input id="expenseClassInput" type="text" list="expenseClassOptions" />
-            <datalist id="expenseClassOptions"></datalist>
+            <select id="expenseClassInput"></select>
           </label>
           <label>
             GRUPO
-            <input id="groupInput" type="text" list="categoryOptions" />
-            <datalist id="categoryOptions"></datalist>
+            <select id="groupInput"></select>
           </label>
           <label>
             FORMA DE PAGAMENTO
-            <input id="paymentMethodInput" type="text" list="accountOptions" required />
-            <datalist id="accountOptions"></datalist>
+            <select id="paymentMethodInput" required></select>
           </label>
           <label>
-            MODALIDADE
-            <input id="modalityInput" type="text" list="modalityOptions" />
-            <datalist id="modalityOptions"></datalist>
+            SITUAÇÃO
+            <select id="statusInput">
+              <option value="paid">PAGO</option>
+              <option value="pending">PENDENTE</option>
+            </select>
           </label>
           <label class="full">
             OBSERVAÇÕES
@@ -627,6 +649,38 @@
           </div>
         </div>
       </form>
+    </dialog>
+
+    <dialog class="modal payment-confirm-dialog" id="paymentConfirmDialog">
+      <form method="dialog" id="paymentConfirmForm">
+        <div class="modal-header">
+          <div>
+            <small class="decision-eyebrow">CONFIRMAÇÃO</small>
+            <h2>Confirmar pagamento</h2>
+          </div>
+          <button class="icon-button" id="closePaymentConfirmBtn" type="button" aria-label="Fechar">×</button>
+        </div>
+        <div class="payment-confirm-body" id="paymentConfirmBody"></div>
+        <div class="modal-actions">
+          <button class="button ghost" id="cancelPaymentConfirmBtn" type="button">Cancelar</button>
+          <button class="button primary" id="confirmPaymentBtn" type="submit">Confirmar pagamento</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="modal card-launch-dialog" id="cardLaunchDialog">
+      <div class="modal-header">
+        <div>
+          <small class="decision-eyebrow">FATURA DO CARTÃO</small>
+          <h2 id="cardLaunchDialogTitle">Lançamentos do cartão</h2>
+        </div>
+        <button class="icon-button" id="closeCardLaunchDialogBtn" type="button" aria-label="Fechar">×</button>
+      </div>
+      <p class="muted" id="cardLaunchDialogSummary"></p>
+      <div class="card-launch-list" id="cardLaunchList"></div>
+      <div class="modal-actions">
+        <button class="button ghost" id="cancelCardLaunchDialogBtn" type="button">Fechar</button>
+      </div>
     </dialog>
 
     <div class="app-toast" id="appToast" role="status" aria-live="polite"></div>

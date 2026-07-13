@@ -1,9 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meg/database';
 import { config } from '../../config';
-import { deliverNotifications, notificationDigest } from './service';
+import { deliverNotifications, notificationDigest, notificationIntegrationStatus } from './service';
 
 export async function notificationRoutes(app: FastifyInstance) {
+  app.get('/status', { preHandler: app.authorize(['ADMIN']) }, async () => notificationIntegrationStatus());
+
   app.get('/preview', { preHandler: app.authenticate }, async (request) => notificationDigest(request.user.sub));
 
   app.get('/recipients', { preHandler: app.authenticate }, async (request) => prisma.notificationRecipient.findMany({

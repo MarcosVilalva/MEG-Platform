@@ -1,5 +1,27 @@
 import { readSheet } from 'read-excel-file/browser';
 import { bootstrapCloud } from './legacy-cloud.js';
+import { excelDateToIso } from './legacy-import-utils.js';
+
+const validationMode = new URLSearchParams(location.search).get('validacao') === '1';
+const localStateKey = 'meg-financas-state-v4-paid-fixes';
+
+function bootstrapValidationMode() {
+  let savedState = null;
+  try { savedState = JSON.parse(localStorage.getItem(localStateKey) || 'null'); } catch {}
+  window.MEG_REAL_STATE = savedState || { transactions: [], budgets: {} };
+  window.MEG_CLOUD = {
+    user: { name: 'VALIDAÇÃO LOCAL', role: 'ADMIN' },
+    saveState(state) { localStorage.setItem(localStateKey, JSON.stringify(state)); },
+    async saveNow(state) { localStorage.setItem(localStateKey, JSON.stringify(state)); },
+    async reload() { location.reload(); },
+    async logout() { localStorage.removeItem(localStateKey); location.reload(); },
+    async previewNotifications() { throw new Error('Alertas externos ficam desativados no modo local.'); },
+    async sendNotifications() { throw new Error('Alertas externos ficam desativados no modo local.'); },
+    async listNotificationRecipients() { return []; },
+    async addNotificationRecipient() { throw new Error('Destinatários ficam desativados no modo local.'); },
+    async removeNotificationRecipient() {}
+  };
+}
 
 const normalize = (value) => String(value ?? '')
   .normalize('NFD')
@@ -18,14 +40,7 @@ function numberValue(value) {
 }
 
 function isoDate(value) {
-  if (value instanceof Date && !Number.isNaN(value.valueOf())) {
-    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
-  }
-  const text = String(value ?? '').trim();
-  const brazilian = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (brazilian) return `${brazilian[3]}-${brazilian[2].padStart(2, '0')}-${brazilian[1].padStart(2, '0')}`;
-  const date = new Date(text);
-  return Number.isNaN(date.valueOf()) ? '' : date.toISOString().slice(0, 10);
+  return excelDateToIso(value);
 }
 
 async function parseMegWorkbook(file) {
@@ -33,7 +48,11 @@ async function parseMegWorkbook(file) {
     try {
       workbookRows = await readSheet(file, 'LANÇAMENTOS');
     } catch {
-      throw new Error('A aba LANÇAMENTOS não foi encontrada na planilha.');
+      try {
+        workbookRows = await readSheet(file, 2);
+      } catch {
+        throw new Error('A aba LANÇAMENTOS não foi encontrada na planilha.');
+      }
     }
     const rows = Array.isArray(workbookRows?.[0]?.data) ? workbookRows[0].data : workbookRows;
     const headerIndex = rows.findIndex((row) => {
@@ -183,7 +202,7 @@ function wireLegacyApp() {
       `Importar ${result.transactions.length} lançamentos?\n\n` +
       `Receitas: ${income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n` +
       `Despesas: ${expense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n\n` +
-      'A base atual na nuvem será substituída por esta planilha.'
+      (validationMode ? 'A base ficará somente neste navegador para validação.' : 'A base atual na nuvem será substituída por esta planilha.')
     );
     if (!confirmation) {
       importStatus.textContent = 'Importação cancelada.';
@@ -191,7 +210,9 @@ function wireLegacyApp() {
     }
     window.MEG_APP.replaceImportedState(result.transactions, { cloud: false });
     await window.MEG_CLOUD.saveNow(window.MEG_APP.getState(), { force: true });
-    importStatus.textContent = `${result.transactions.length} lançamentos importados e salvos na nuvem. ${result.issues} linha(s) exigem revisão.`;
+    importStatus.textContent = validationMode
+      ? `${result.transactions.length} lançamentos importados somente no ambiente local. ${result.issues} linha(s) exigem revisão.`
+      : `${result.transactions.length} lançamentos importados e salvos na nuvem. ${result.issues} linha(s) exigem revisão.`;
   } catch (cause) {
     importStatus.textContent = cause instanceof Error ? cause.message : 'Não foi possível importar a planilha.';
   } finally {
@@ -201,9 +222,17 @@ function wireLegacyApp() {
 }
 
 async function start() {
-  await bootstrapCloud();
+  if (validationMode) bootstrapValidationMode();
+  else await bootstrapCloud();
   await import('./legacy-app.js');
   wireLegacyApp();
+  if (validationMode) {
+    document.body.insertAdjacentHTML('afterbegin', '<div class="validation-banner">AMBIENTE LOCAL DE VALIDAÇÃO — nenhuma alteração será enviada para a nuvem</div>');
+    const status = document.querySelector('#cloudSyncStatus');
+    if (status) status.textContent = 'Dados somente neste navegador';
+    const logout = document.querySelector('#logoutBtn');
+    if (logout) logout.textContent = 'Limpar teste';
+  }
 }
 
 start().catch((cause) => {
