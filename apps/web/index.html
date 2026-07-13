@@ -319,6 +319,13 @@
             </div>
           </section>
 
+          <section class="analytics-executive-strip" aria-label="Leitura executiva do período">
+            <article><span>💰 Receitas analisadas</span><strong id="analyticsIncomeMetric">R$ 0,00</strong><small id="analyticsIncomeNote">Entradas no recorte</small></article>
+            <article><span>💸 Despesas lançadas</span><strong id="analyticsExpenseMetric">R$ 0,00</strong><small id="analyticsExpenseNote">Pagas e pendentes</small></article>
+            <article><span>⏳ Ainda pendente</span><strong id="analyticsPendingMetric">R$ 0,00</strong><small id="analyticsPendingNote">Compromissos em aberto</small></article>
+            <article id="analyticsCoverageCard"><span>🛡️ Cobertura das despesas</span><strong id="analyticsCoverageMetric">0%</strong><small id="analyticsCoverageNote">Quanto a receita cobre</small></article>
+          </section>
+
           <div class="kpi-grid">
             <article class="metric">
               <span>Media mensal de despesas</span>
@@ -362,7 +369,13 @@
           <section class="panel chart-panel">
             <div class="panel-title">
               <div><small class="decision-eyebrow">HISTÓRICO ACUMULADO</small><h3>Evolução do saldo</h3></div>
-              <span>Linha suavizada de fechamento mês a mês</span>
+              <span id="historicalPeriodLabel">Do primeiro lançamento até hoje · não muda com os filtros</span>
+            </div>
+            <div class="historical-summary-grid">
+              <article><span>Primeiro registro</span><strong id="historicalFirstDate">—</strong><small>Início do seu controle</small></article>
+              <article><span>Receitas acumuladas</span><strong id="historicalIncomeMetric">R$ 0,00</strong><small>Até a data atual</small></article>
+              <article><span>Despesas acumuladas</span><strong id="historicalExpenseMetric">R$ 0,00</strong><small>Até a data atual</small></article>
+              <article id="historicalBalanceCard"><span>Saldo histórico</span><strong id="historicalBalanceMetric">R$ 0,00</strong><small>Receitas menos despesas</small></article>
             </div>
             <div class="chart-wrap">
               <canvas id="balanceClosingChart" width="1120" height="360" aria-label="Grafico de fechamento do saldo bancario"></canvas>
@@ -380,8 +393,8 @@
             </section>
             <section class="panel">
               <div class="panel-title">
-                <h3>Alertas</h3>
-                <span>O que merece atencao</span>
+                <h3>Plano de ação MEG</h3>
+                <span>Prioridades explicadas em linguagem direta</span>
               </div>
               <div class="decision-list" id="decisionInsightsList"></div>
             </section>

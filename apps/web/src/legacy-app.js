@@ -221,6 +221,21 @@ const els = {
   analyticsHealthMessage: document.querySelector("#analyticsHealthMessage"),
   analyticsSavingsMetric: document.querySelector("#analyticsSavingsMetric"),
   analyticsSavingsTrend: document.querySelector("#analyticsSavingsTrend"),
+  analyticsIncomeMetric: document.querySelector("#analyticsIncomeMetric"),
+  analyticsIncomeNote: document.querySelector("#analyticsIncomeNote"),
+  analyticsExpenseMetric: document.querySelector("#analyticsExpenseMetric"),
+  analyticsExpenseNote: document.querySelector("#analyticsExpenseNote"),
+  analyticsPendingMetric: document.querySelector("#analyticsPendingMetric"),
+  analyticsPendingNote: document.querySelector("#analyticsPendingNote"),
+  analyticsCoverageCard: document.querySelector("#analyticsCoverageCard"),
+  analyticsCoverageMetric: document.querySelector("#analyticsCoverageMetric"),
+  analyticsCoverageNote: document.querySelector("#analyticsCoverageNote"),
+  historicalPeriodLabel: document.querySelector("#historicalPeriodLabel"),
+  historicalFirstDate: document.querySelector("#historicalFirstDate"),
+  historicalIncomeMetric: document.querySelector("#historicalIncomeMetric"),
+  historicalExpenseMetric: document.querySelector("#historicalExpenseMetric"),
+  historicalBalanceCard: document.querySelector("#historicalBalanceCard"),
+  historicalBalanceMetric: document.querySelector("#historicalBalanceMetric"),
   monthlyTrendChart: document.querySelector("#monthlyTrendChart"),
   groupCompareChart: document.querySelector("#groupCompareChart"),
   balanceClosingChart: document.querySelector("#balanceClosingChart"),
@@ -709,10 +724,29 @@ function selectedMonthsInPeriod() {
   return months;
 }
 
+function historicalTransactionsUntilToday() {
+  return state.transactions
+    .filter((item) => item.date && item.date <= todayIso)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function historicalMonthsUntilToday() {
+  const items = historicalTransactionsUntilToday();
+  if (!items.length) return [];
+  const months = [];
+  let cursor = monthOf(items[0].date);
+  while (cursor <= currentMonth) {
+    months.push(cursor);
+    const [year, month] = cursor.split("-").map(Number);
+    cursor = new Date(year, month, 1).toISOString().slice(0, 7);
+  }
+  return months;
+}
+
 function monthlyClosingBalanceRows() {
-  return selectedMonthsInPeriod().map((month) => ({
+  return historicalMonthsUntilToday().map((month) => ({
     month,
-    value: accountBalanceUntil(lastDayOfMonth(month)),
+    value: accountBalanceUntil(month === currentMonth ? todayIso : lastDayOfMonth(month)),
   }));
 }
 
@@ -1174,6 +1208,15 @@ function renderAnalytics() {
   const concentration = totals.expense ? (top3 / totals.expense) * 100 : 0;
   const result = totals.income - totals.expense;
   const savingsRate = totals.income ? (result / totals.income) * 100 : 0;
+  const paidExpense = expenses.filter((item) => item.status === "paid").reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const pendingExpenses = expenses.filter((item) => item.status === "pending");
+  const pendingExpense = pendingExpenses.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const overdueExpenses = pendingExpenses.filter((item) => item.date < todayIso);
+  const overdueValue = overdueExpenses.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const coverage = totals.expense ? (totals.income / totals.expense) * 100 : totals.income ? 100 : 0;
+  const historicalItems = historicalTransactionsUntilToday();
+  const historicalTotals = totalsFor(historicalItems);
+  const historicalBalance = historicalTotals.income - historicalTotals.expense;
 
   const paymentLabel = analyticsFilters.payments.length ? `${analyticsFilters.payments.length} modalidade(s)` : "todas as modalidades";
   els.analyticsPeriodLabel.textContent = `${periodLabel()} · modalidades: ${paymentLabel}`;
@@ -1184,6 +1227,25 @@ function renderAnalytics() {
   els.variationMetric.textContent = previousExpense ? `${variation > 0 ? "+" : ""}${variation.toFixed(1)}%` : "Sem base";
   els.variationTrend.textContent = previousExpense ? `Periodo anterior: ${money.format(previousExpense)}` : "Sem periodo anterior comparavel";
   els.concentrationMetric.textContent = `${concentration.toFixed(0)}%`;
+  els.analyticsIncomeMetric.textContent = money.format(totals.income);
+  els.analyticsIncomeNote.textContent = `${paymentItems.filter((item) => item.type === "income").length} entrada(s) no período`;
+  els.analyticsExpenseMetric.textContent = money.format(totals.expense);
+  els.analyticsExpenseNote.textContent = `${money.format(paidExpense)} pagas · ${money.format(pendingExpense)} pendentes`;
+  els.analyticsPendingMetric.textContent = money.format(pendingExpense);
+  els.analyticsPendingNote.textContent = overdueExpenses.length ? `${overdueExpenses.length} vencida(s), somando ${money.format(overdueValue)}` : `${pendingExpenses.length} compromisso(s), nenhum vencido`;
+  els.analyticsCoverageMetric.textContent = `${coverage.toFixed(0)}%`;
+  els.analyticsCoverageNote.textContent = coverage >= 100 ? `Sobra projetada de ${money.format(Math.max(result, 0))}` : `Faltam ${money.format(Math.max(-result, 0))} para cobrir tudo`;
+  els.analyticsCoverageCard.classList.toggle("risk", coverage < 100 && totals.expense > 0);
+  els.analyticsCoverageCard.classList.toggle("healthy", coverage >= 100 && totals.expense > 0);
+  els.historicalFirstDate.textContent = historicalItems.length ? formatDate(historicalItems[0].date) : "—";
+  els.historicalIncomeMetric.textContent = money.format(historicalTotals.income);
+  els.historicalExpenseMetric.textContent = money.format(historicalTotals.expense);
+  els.historicalBalanceMetric.textContent = money.format(historicalBalance);
+  els.historicalBalanceCard.classList.toggle("risk", historicalBalance < 0);
+  els.historicalBalanceCard.classList.toggle("healthy", historicalBalance >= 0);
+  els.historicalPeriodLabel.textContent = historicalItems.length
+    ? `${formatDate(historicalItems[0].date)} até ${formatDate(todayIso)} · histórico fixo, independente do filtro acima`
+    : "Sem lançamentos históricos até hoje";
 
   const analyticsTone = result < 0 ? "risk" : savingsRate >= 20 ? "healthy" : "attention";
   els.analyticsDecisionHero.classList.remove("risk", "attention", "healthy");
@@ -1191,21 +1253,21 @@ function renderAnalytics() {
   els.analyticsSavingsMetric.textContent = money.format(result);
   els.analyticsSavingsTrend.textContent = totals.income ? `Taxa de economia: ${savingsRate.toFixed(1)}%` : "Sem receitas no período";
   if (result < 0) {
-    els.analyticsHealthTitle.textContent = "Despesas acima das receitas";
-    els.analyticsHealthMessage.textContent = `O período apresenta déficit de ${money.format(Math.abs(result))}. ${topGroup ? `${topGroup.group} é o primeiro grupo a revisar.` : "Revise os maiores gastos."}`;
+    els.analyticsHealthTitle.textContent = `🔴 Faltam ${money.format(Math.abs(result))} para o período fechar`;
+    els.analyticsHealthMessage.textContent = `As receitas cobrem ${coverage.toFixed(0)}% das despesas lançadas. ${pendingExpense ? `Ainda existem ${money.format(pendingExpense)} em contas pendentes.` : "Todas as despesas já foram pagas."} ${topGroup ? `O maior peso é ${topGroup.group}, com ${money.format(topGroup.value)}.` : ""}`;
   } else if (savingsRate >= 20) {
-    els.analyticsHealthTitle.textContent = "Período financeiramente saudável";
-    els.analyticsHealthMessage.textContent = `Você preservou ${savingsRate.toFixed(1)}% das receitas. A referência saudável de 20% foi alcançada.`;
+    els.analyticsHealthTitle.textContent = `🟢 Período saudável: sobra de ${money.format(result)}`;
+    els.analyticsHealthMessage.textContent = `Depois de considerar todas as despesas lançadas, ${savingsRate.toFixed(1)}% das receitas permanecem livres. A meta saudável de preservar pelo menos 20% foi alcançada.`;
   } else {
-    els.analyticsHealthTitle.textContent = "Resultado positivo, com espaço para evoluir";
-    els.analyticsHealthMessage.textContent = `O período fecha positivo em ${money.format(result)}, mas a taxa de economia está abaixo da referência de 20%.`;
+    els.analyticsHealthTitle.textContent = `🟡 O período fecha, mas com margem pequena`;
+    els.analyticsHealthMessage.textContent = `A sobra projetada é ${money.format(result)}, equivalente a ${savingsRate.toFixed(1)}% das receitas. Para atingir a referência de 20%, preserve mais ${money.format(Math.max(totals.income * .2 - result, 0))}.`;
   }
 
   renderModalityEvolutionChart(evolution);
   renderBalanceClosingChart(closingBalances);
   renderGroupBarChart(groups.slice(0, 10));
   renderExpenseRanking(groups, totals.expense);
-  renderDecisionInsights({ groups, totals, variation, previousExpense, concentration, expenses });
+  renderDecisionInsights({ groups, totals, variation, previousExpense, concentration, expenses, result, coverage, pendingExpense, overdueExpenses, overdueValue, savingsRate });
 }
 
 let balanceChartPoints = [];
@@ -1448,42 +1510,66 @@ function renderExpenseRanking(groups, totalExpense) {
     : `<div class="empty">Sem despesas no periodo selecionado.</div>`;
 }
 
-function renderDecisionInsights({ groups, totals, variation, previousExpense, concentration, expenses }) {
+function renderDecisionInsights({ groups, totals, variation, previousExpense, concentration, expenses, result, coverage, pendingExpense, overdueExpenses, overdueValue, savingsRate }) {
   const insights = [];
   const top = groups[0];
+  if (result < 0) {
+    insights.push({
+      tone: "risk",
+      title: `1. Cubra o déficit de ${money.format(Math.abs(result))}`,
+      text: `As receitas pagam apenas ${coverage.toFixed(0)}% das despesas lançadas. Priorize novas entradas ou adie despesas ainda não vencidas até eliminar essa diferença.`,
+    });
+  } else if (savingsRate < 20 && totals.income > 0) {
+    insights.push({
+      tone: "attention",
+      title: "1. Proteja uma reserva antes de novos gastos",
+      text: `A sobra é ${money.format(result)} (${savingsRate.toFixed(1)}% da receita). A referência de 20% pede uma reserva de ${money.format(totals.income * .2)} neste período.`,
+    });
+  } else if (totals.income > 0) {
+    insights.push({
+      tone: "",
+      title: "1. Resultado dentro da faixa saudável",
+      text: `O período preserva ${money.format(result)} após todas as despesas lançadas. Mantenha essa sobra separada dos gastos do dia a dia.`,
+    });
+  }
+  if (overdueExpenses.length) {
+    insights.push({
+      tone: "risk",
+      title: `2. Regularize ${overdueExpenses.length} conta(s) vencida(s)`,
+      text: `O atraso soma ${money.format(overdueValue)}. Quite primeiro as contas com juros, serviços essenciais ou risco de bloqueio.`,
+    });
+  } else if (pendingExpense > 0) {
+    insights.push({
+      tone: "attention",
+      title: "2. Reserve o valor das contas pendentes",
+      text: `${money.format(pendingExpense)} ainda sairão do caixa. Trate esse valor como comprometido, mesmo antes do pagamento.`,
+    });
+  }
   if (top && totals.expense) {
     insights.push({
       tone: "attention",
-      title: `${top.group} lidera os gastos`,
-      text: `${money.format(top.value)} no periodo. Se precisar cortar, comece avaliando este grupo.`,
+      title: `${insights.length + 1}. Revise ${top.group}`,
+      text: `É o maior grupo do período: ${money.format(top.value)}, ou ${((top.value / totals.expense) * 100).toFixed(1)}% das despesas. Compare os itens antes de cortar despesas menores.`,
     });
   }
   if (previousExpense && variation > 10) {
     insights.push({
       tone: "risk",
-      title: "Despesas subiram no comparativo",
-      text: `Alta de ${variation.toFixed(1)}% contra o periodo anterior.`,
+      title: `${insights.length + 1}. Despesas cresceram no comparativo`,
+      text: `A alta foi de ${variation.toFixed(1)}%: de ${money.format(previousExpense)} para ${money.format(totals.expense)}. Confira quais grupos explicam o aumento.`,
     });
   } else if (previousExpense && variation < -10) {
     insights.push({
       tone: "",
-      title: "Despesas cairam no comparativo",
-      text: `Queda de ${Math.abs(variation).toFixed(1)}% contra o periodo anterior.`,
+      title: `${insights.length + 1}. Economia confirmada no comparativo`,
+      text: `As despesas caíram ${Math.abs(variation).toFixed(1)}% contra o período anterior. Identifique o que mudou para repetir o resultado.`,
     });
   }
   if (concentration >= 60) {
     insights.push({
       tone: "attention",
-      title: "Gastos concentrados",
-      text: `Os 3 maiores grupos representam ${concentration.toFixed(0)}% das despesas.`,
-    });
-  }
-  const pending = expenses.filter((item) => item.status === "pending").reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
-  if (pending > 0) {
-    insights.push({
-      tone: "risk",
-      title: "Ainda ha despesas pendentes",
-      text: `${money.format(pending)} em despesas do periodo ainda marcadas como pendentes.`,
+      title: `${insights.length + 1}. Poucos grupos controlam o orçamento`,
+      text: `Os três maiores grupos concentram ${concentration.toFixed(0)}% das despesas. Uma redução pequena neles tem impacto maior que vários cortes pequenos.`,
     });
   }
   els.decisionInsightsList.innerHTML = insights.length
