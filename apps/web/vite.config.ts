@@ -11,5 +11,14 @@ export default defineConfig({
       '@ui': path.resolve(__dirname, '../../packages/ui/src'),
       '@shared': path.resolve(__dirname, '../../packages/shared/src')
     }
+  },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://meg-platform-api.onrender.com',
+        changeOrigin: true,
+        rewrite: (requestPath) => requestPath.replace(/^\/api/, '')
+      }
+    }
   }
 });
