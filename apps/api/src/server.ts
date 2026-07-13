@@ -12,6 +12,7 @@ import { payableRoutes } from './modules/payables/routes';
 import { repairLegacyImportedEvents } from './modules/imports/repair';
 import { appStateRoutes } from './modules/app-state/routes';
 import { notificationRoutes } from './modules/notifications/routes';
+import { notificationIntegrationStatus } from './modules/notifications/service';
 
 const app = Fastify({
   bodyLimit: 25 * 1024 * 1024,
@@ -59,6 +60,7 @@ app.get('/health', async () => ({
   environment: config.nodeEnv,
   timestamp: new Date().toISOString(),
   features: ['legacy-ui', 'cloud-state', 'xlsx-import', 'email-reminders', 'whatsapp-reminders'],
+  integrations: notificationIntegrationStatus(),
   commit: process.env.RENDER_GIT_COMMIT || 'local',
   dataRepair
 }));
