@@ -151,6 +151,10 @@ async function sendEmail(to: string, subject: string, text: string) {
   return { status: 'sent', detail: await response.text() };
 }
 
+export async function sendSystemEmail(to: string, subject: string, text: string) {
+  return sendEmail(to, subject, text);
+}
+
 async function sendWhatsApp(number: string, text: string) {
   if (!config.evolutionApiUrl || !config.evolutionApiKey || !config.evolutionInstance || !number) return { status: 'skipped', detail: 'Evolution API não configurada' };
   const response = await fetch(`${config.evolutionApiUrl.replace(/\/$/, '')}/message/sendText/${encodeURIComponent(config.evolutionInstance)}`, {

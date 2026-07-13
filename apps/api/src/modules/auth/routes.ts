@@ -8,6 +8,7 @@ import {
   getUserById,
   listUsers,
   registerUser,
+  resetUserPassword,
   revokeRefreshSession,
   updateUserAccess
 } from './service';
@@ -117,6 +118,19 @@ export async function authRoutes(app: FastifyInstance) {
       const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
       if (message === 'USER_NOT_FOUND') return reply.status(404).send({ error: message });
       if (message === 'PRIMARY_ADMIN_CANNOT_BE_BLOCKED') return reply.status(409).send({ error: message });
+      throw error;
+    }
+  });
+
+  app.post('/users/:id/reset-password', { preHandler: app.authorize(['ADMIN']) }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    try {
+      return await resetUserPassword({ actorId: request.user.sub, userId: id });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+      if (message === 'USER_NOT_FOUND') return reply.status(404).send({ error: message });
+      if (message === 'USER_NOT_ACTIVE') return reply.status(409).send({ error: message });
+      if (message === 'EMAIL_DELIVERY_FAILED') return reply.status(502).send({ error: message });
       throw error;
     }
   });

@@ -258,6 +258,23 @@ export async function bootstrapCloud() {
       const response = await api('/notifications/send', { method: 'POST', body: JSON.stringify({ recipientIds, emailRecipientIds }) });
       if (!response.ok) throw new Error('Não foi possível enviar os alertas.');
       return response.json();
+    },
+    async listManagedUsers() {
+      const response = await api('/auth/users');
+      if (!response.ok) throw new Error(response.status === 403 ? 'Apenas administradores podem gerenciar usuários.' : 'Não foi possível carregar os usuários.');
+      return response.json();
+    },
+    async changeUserAccess(userId, payload) {
+      const response = await api(`/auth/users/${encodeURIComponent(userId)}/access`, { method: 'PATCH', body: JSON.stringify(payload) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error === 'PRIMARY_ADMIN_CANNOT_BE_BLOCKED' ? 'O administrador principal não pode ser bloqueado.' : 'Não foi possível atualizar o acesso.');
+      return result;
+    },
+    async resetUserPassword(userId) {
+      const response = await api(`/auth/users/${encodeURIComponent(userId)}/reset-password`, { method: 'POST' });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error === 'EMAIL_DELIVERY_FAILED' ? 'A senha não foi alterada porque o e-mail não pôde ser entregue.' : result.error === 'USER_NOT_ACTIVE' ? 'Ative o usuário antes de redefinir a senha.' : 'Não foi possível redefinir a senha.');
+      return result;
     }
   };
 }

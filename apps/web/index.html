@@ -54,6 +54,10 @@
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z"/></svg>
             Cadastros
           </button>
+          <button class="nav-item hidden" id="adminUsersNav" data-view="users" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3ZM8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3Zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13Zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5Z"/></svg>
+            Usuários e permissões
+          </button>
           <button class="nav-item" data-view="settings" type="button">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M19.4 13.5c.1-.5.1-1 .1-1.5s0-1-.1-1.5l2-1.5-2-3.5-2.4 1a8 8 0 0 0-2.6-1.5L14 2h-4l-.4 3a8 8 0 0 0-2.6 1.5l-2.4-1-2 3.5 2 1.5A9 9 0 0 0 4.5 12c0 .5 0 1 .1 1.5l-2 1.5 2 3.5 2.4-1a8 8 0 0 0 2.6 1.5l.4 3h4l.4-3a8 8 0 0 0 2.6-1.5l2.4 1 2-3.5-2-1.5ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
             Ajustes
@@ -562,6 +566,35 @@
               <div class="catalog-list" id="paymentCatalogList"></div>
             </section>
           </div>
+        </section>
+
+        <section class="view" id="users" aria-labelledby="usersTitle">
+          <div class="section-heading">
+            <div><p class="eyebrow">Administração e segurança</p><h2 id="usersTitle">Usuários e permissões</h2><p class="muted">Aprove solicitações, defina o nível de acesso e proteja as contas cadastradas.</p></div>
+            <button class="button ghost" id="reloadUsersBtn" type="button">Atualizar usuários</button>
+          </div>
+
+          <section class="user-security-hero">
+            <div><small class="decision-eyebrow">CENTRO DE SEGURANÇA</small><h3 id="userSecurityTitle">Controle de acesso centralizado</h3><p>Novos usuários entram como pendentes. Somente o administrador pode aprovar, definir permissões, bloquear ou redefinir senhas.</p></div>
+            <div class="user-security-stats">
+              <article><span>Cadastrados</span><strong id="registeredUsersMetric">0</strong></article>
+              <article><span>Aguardando aprovação</span><strong id="pendingUsersMetric">0</strong></article>
+              <article><span>Ativos</span><strong id="activeUsersMetric">0</strong></article>
+            </div>
+          </section>
+
+          <section class="panel permission-matrix-panel">
+            <div class="panel-title"><div><small class="decision-eyebrow">MATRIZ DE ACESSO</small><h3>O que cada perfil pode fazer</h3></div><span>Permissões aplicadas em todo o sistema</span></div>
+            <div class="permission-matrix">
+              <article><strong>Leitor</strong><span>Consultar painéis, lançamentos e relatórios.</span><b>Somente leitura</b></article>
+              <article><strong>Operador</strong><span>Consultar, incluir e alterar lançamentos.</span><b>Operação diária</b></article>
+              <article><strong>Gerente</strong><span>Operar, arquivar e excluir dados financeiros.</span><b>Gestão financeira</b></article>
+              <article><strong>Administrador</strong><span>Controle completo, usuários e configurações.</span><b>Acesso total</b></article>
+            </div>
+          </section>
+
+          <div class="admin-feedback" id="adminUsersFeedback" role="status"></div>
+          <section class="user-management-list" id="adminUsersList"><div class="empty">Carregando usuários cadastrados...</div></section>
         </section>
 
         <section class="view" id="settings" aria-labelledby="settingsTitle">

@@ -298,6 +298,13 @@ const els = {
   paymentCatalogForm: document.querySelector("#paymentCatalogForm"),
   newPaymentInput: document.querySelector("#newPaymentInput"),
   newPaymentModalityInput: document.querySelector("#newPaymentModalityInput"),
+  adminUsersNav: document.querySelector("#adminUsersNav"),
+  reloadUsersBtn: document.querySelector("#reloadUsersBtn"),
+  registeredUsersMetric: document.querySelector("#registeredUsersMetric"),
+  pendingUsersMetric: document.querySelector("#pendingUsersMetric"),
+  activeUsersMetric: document.querySelector("#activeUsersMetric"),
+  adminUsersFeedback: document.querySelector("#adminUsersFeedback"),
+  adminUsersList: document.querySelector("#adminUsersList"),
   paymentCatalogList: document.querySelector("#paymentCatalogList"),
   paymentCatalogCount: document.querySelector("#paymentCatalogCount"),
 };
@@ -2494,6 +2501,102 @@ function cssEscape(value) {
   return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
+const USER_ROLE_LABELS = { ADMIN: "Administrador", MANAGER: "Gerente", OPERATOR: "Operador", VIEWER: "Leitor" };
+const USER_STATUS_LABELS = { ACTIVE: "Ativo", PENDING: "Aguardando aprovação", BLOCKED: "Bloqueado", REJECTED: "Rejeitado" };
+
+function userDate(value) {
+  return value ? new Date(value).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }) : "Ainda não acessou";
+}
+
+function setUsersFeedback(message, tone = "") {
+  if (!els.adminUsersFeedback) return;
+  els.adminUsersFeedback.textContent = message;
+  els.adminUsersFeedback.className = `admin-feedback ${tone}`.trim();
+}
+
+function renderManagedUsers(users) {
+  els.registeredUsersMetric.textContent = String(users.length);
+  els.pendingUsersMetric.textContent = String(users.filter((user) => user.status === "PENDING").length);
+  els.activeUsersMetric.textContent = String(users.filter((user) => user.status === "ACTIVE" && user.isActive).length);
+  if (!users.length) {
+    els.adminUsersList.innerHTML = '<div class="empty">Nenhum usuário cadastrado.</div>';
+    return;
+  }
+  els.adminUsersList.innerHTML = users.map((user) => {
+    const primaryAdmin = user.email.toLowerCase() === "m_vilalva@hotmail.com";
+    const roleOptions = Object.entries(USER_ROLE_LABELS).map(([value, label]) =>
+      `<option value="${value}" ${user.role === value ? "selected" : ""}>${label}</option>`
+    ).join("");
+    const pendingActions = user.status === "PENDING"
+      ? `<button class="button primary" type="button" data-user-action="APPROVE" data-user-id="${escapeHtml(user.id)}">Aprovar acesso</button><button class="button danger-soft" type="button" data-user-action="REJECT" data-user-id="${escapeHtml(user.id)}">Rejeitar</button>`
+      : "";
+    const activeActions = user.status === "ACTIVE" && !primaryAdmin
+      ? `<button class="button danger-soft" type="button" data-user-action="BLOCK" data-user-id="${escapeHtml(user.id)}">Bloquear</button>`
+      : "";
+    const inactiveActions = user.status === "BLOCKED" || user.status === "REJECTED"
+      ? `<button class="button primary" type="button" data-user-action="ACTIVATE" data-user-id="${escapeHtml(user.id)}">Reativar</button>`
+      : "";
+    const resetAction = user.status === "ACTIVE"
+      ? `<button class="button ghost" type="button" data-reset-user-password="${escapeHtml(user.id)}">Enviar nova senha</button>`
+      : "";
+    return `<article class="admin-user-card" data-managed-user="${escapeHtml(user.id)}">
+      <div class="admin-user-head">
+        <div class="user-avatar">${escapeHtml(user.name.slice(0, 1).toUpperCase())}</div>
+        <div class="admin-user-identity"><span class="user-status-pill ${user.status.toLowerCase()}">${escapeHtml(USER_STATUS_LABELS[user.status] || user.status)}</span><h3>${escapeHtml(user.name)}</h3><a href="mailto:${escapeHtml(user.email)}">${escapeHtml(user.email)}</a></div>
+        ${primaryAdmin ? '<span class="primary-admin-badge">Administrador principal</span>' : ""}
+      </div>
+      <div class="admin-user-details"><span><small>Cadastrado em</small><strong>${userDate(user.createdAt)}</strong></span><span><small>Último acesso</small><strong>${userDate(user.lastLoginAt)}</strong></span></div>
+      <div class="admin-user-permissions"><label>Perfil de acesso<select class="user-role-select" data-user-role="${escapeHtml(user.id)}" ${primaryAdmin ? "disabled" : ""}>${roleOptions}</select></label><p>${primaryAdmin ? "A conta principal mantém acesso total e não pode ser bloqueada." : "A alteração de perfil é registrada na auditoria do sistema."}</p></div>
+      <div class="admin-user-actions">${!primaryAdmin && user.status === "ACTIVE" ? `<button class="button" type="button" data-save-user-role="${escapeHtml(user.id)}">Salvar permissão</button>` : ""}${pendingActions}${activeActions}${inactiveActions}${resetAction}</div>
+    </article>`;
+  }).join("");
+}
+
+async function loadManagedUsers({ keepFeedback = false } = {}) {
+  if (!els.adminUsersList || typeof window.MEG_CLOUD?.listManagedUsers !== "function") return;
+  els.adminUsersList.innerHTML = '<div class="empty">Carregando usuários cadastrados...</div>';
+  if (!keepFeedback) setUsersFeedback("");
+  try {
+    const result = await window.MEG_CLOUD.listManagedUsers();
+    renderManagedUsers(result.users || result);
+  } catch (cause) {
+    els.adminUsersList.innerHTML = '<div class="empty">Não foi possível carregar os usuários.</div>';
+    setUsersFeedback(cause instanceof Error ? cause.message : "Falha ao carregar usuários.", "error");
+  }
+}
+
+async function updateManagedUser(userId, action) {
+  const card = document.querySelector(`[data-managed-user="${cssEscape(userId)}"]`);
+  const role = card?.querySelector("[data-user-role]")?.value || "VIEWER";
+  let note;
+  if (action === "REJECT") {
+    note = window.prompt("Informe o motivo da rejeição (opcional):", "") ?? undefined;
+  }
+  if ((action === "BLOCK" || action === "REJECT") && !window.confirm(`Confirma ${action === "BLOCK" ? "o bloqueio" : "a rejeição"} deste usuário?`)) return;
+  setUsersFeedback("Atualizando acesso...", "loading");
+  try {
+    await window.MEG_CLOUD.changeUserAccess(userId, { action, role, note });
+    const successMessage = action === "APPROVE" ? "Usuário aprovado e avisado por e-mail." : action === "BLOCK" ? "Usuário bloqueado e sessões encerradas." : action === "REJECT" ? "Solicitação rejeitada." : "Acesso e permissão atualizados.";
+    await loadManagedUsers({ keepFeedback: true });
+    setUsersFeedback(successMessage, "success");
+  } catch (cause) {
+    setUsersFeedback(cause instanceof Error ? cause.message : "Falha ao atualizar acesso.", "error");
+  }
+}
+
+async function resetManagedUserPassword(userId) {
+  const card = document.querySelector(`[data-managed-user="${cssEscape(userId)}"]`);
+  const email = card?.querySelector(".admin-user-identity a")?.textContent || "o e-mail cadastrado";
+  if (!window.confirm(`Enviar uma nova senha temporária para ${email}? Todas as sessões atuais serão encerradas.`)) return;
+  setUsersFeedback("Gerando a senha e confirmando o envio do e-mail...", "loading");
+  try {
+    const result = await window.MEG_CLOUD.resetUserPassword(userId);
+    setUsersFeedback(`Nova senha enviada com segurança para ${result.deliveredTo}.`, "success");
+  } catch (cause) {
+    setUsersFeedback(cause instanceof Error ? cause.message : "Falha ao redefinir a senha.", "error");
+  }
+}
+
 document.addEventListener("click", (event) => {
   const editButton = event.target.closest("[data-edit]");
   const viewLink = event.target.closest("[data-view-link]");
@@ -2502,6 +2605,9 @@ document.addEventListener("click", (event) => {
   const removeGroupButton = event.target.closest("[data-remove-group]");
   const removePaymentButton = event.target.closest("[data-remove-payment]");
   const removeExpenseClassButton = event.target.closest("[data-remove-expense-class]");
+  const userActionButton = event.target.closest("[data-user-action]");
+  const saveUserRoleButton = event.target.closest("[data-save-user-role]");
+  const resetUserPasswordButton = event.target.closest("[data-reset-user-password]");
   if (editButton) {
     const item = state.transactions.find((transaction) => transaction.id === editButton.dataset.edit);
     if (item) {
@@ -2515,6 +2621,9 @@ document.addEventListener("click", (event) => {
   if (removeGroupButton) removeCatalogItem("group", removeGroupButton.dataset.removeGroup);
   if (removePaymentButton) removeCatalogItem("payment", removePaymentButton.dataset.removePayment);
   if (removeExpenseClassButton) removeCatalogItem("expenseClass", removeExpenseClassButton.dataset.removeExpenseClass);
+  if (userActionButton) updateManagedUser(userActionButton.dataset.userId, userActionButton.dataset.userAction);
+  if (saveUserRoleButton) updateManagedUser(saveUserRoleButton.dataset.saveUserRole, "ACTIVATE");
+  if (resetUserPasswordButton) resetManagedUserPassword(resetUserPasswordButton.dataset.resetUserPassword);
 });
 
 document.addEventListener("change", (event) => {
@@ -2523,6 +2632,10 @@ document.addEventListener("change", (event) => {
 });
 
 els.navItems.forEach((item) => item.addEventListener("click", () => setView(item.dataset.view)));
+const canManageUsers = window.MEG_CLOUD?.user?.role === "ADMIN" && typeof window.MEG_CLOUD?.listManagedUsers === "function";
+els.adminUsersNav?.classList.toggle("hidden", !canManageUsers);
+els.adminUsersNav?.addEventListener("click", loadManagedUsers);
+els.reloadUsersBtn?.addEventListener("click", loadManagedUsers);
 els.periodMode.value = selectedPeriod.mode;
 els.monthFilter.value = selectedPeriod.month;
 els.yearFilter.value = selectedPeriod.year;

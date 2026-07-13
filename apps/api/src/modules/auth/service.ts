@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { prisma, UserRole, UserStatus } from '@meg/database';
+import { sendSystemEmail } from '../notifications/service';
 
 const SESSION_TTL_DAYS = 30;
 const ADMIN_EMAIL = 'm_vilalva@hotmail.com';
@@ -66,6 +67,14 @@ export async function registerUser(input: {
       metadata: JSON.stringify({ administratorEmail: ADMIN_EMAIL })
     }
   });
+
+  if (!isInitialAdmin) {
+    await sendSystemEmail(
+      ADMIN_EMAIL,
+      `MEG Finanças: nova solicitação de ${user.name}`,
+      `Olá, Marcos.\n\n${user.name} (${user.email}) solicitou acesso ao MEG Finanças.\n\nAcesse Ajustes > Usuários e permissões para aprovar, rejeitar e definir o perfil.\n\nMEG Finanças — Segurança e controle.`
+    ).catch(() => undefined);
+  }
 
   return {
     user: publicUser(user),
@@ -142,7 +151,50 @@ export async function updateUserAccess(input: {
     }
   });
 
+  const accessMessages = {
+    APPROVE: `Seu acesso ao MEG Finanças foi aprovado com o perfil ${updated.role}. Você já pode entrar com sua senha cadastrada.`,
+    REJECT: `Sua solicitação de acesso ao MEG Finanças foi rejeitada.${input.note ? ` Motivo: ${input.note}` : ''}`,
+    BLOCK: 'Seu acesso ao MEG Finanças foi bloqueado pelo administrador.',
+    ACTIVATE: `Seu acesso ao MEG Finanças foi reativado com o perfil ${updated.role}.`
+  };
+  await sendSystemEmail(
+    updated.email,
+    `MEG Finanças: acesso ${input.action === 'APPROVE' ? 'aprovado' : input.action === 'ACTIVATE' ? 'reativado' : input.action === 'BLOCK' ? 'bloqueado' : 'não aprovado'}`,
+    `Olá, ${updated.name}.\n\n${accessMessages[input.action]}\n\nMEG Finanças — Seus dados protegidos.`
+  ).catch(() => undefined);
+
   return publicUser(updated);
+}
+
+export async function resetUserPassword(input: { actorId: string; userId: string }) {
+  const target = await prisma.user.findUnique({ where: { id: input.userId } });
+  if (!target) throw new Error('USER_NOT_FOUND');
+  if (!target.isActive || target.status !== UserStatus.ACTIVE) throw new Error('USER_NOT_ACTIVE');
+
+  const temporaryPassword = `Meg#${randomBytes(6).toString('base64url')}9a`;
+  const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+  const delivery = await sendSystemEmail(
+    target.email,
+    'MEG Finanças: sua senha temporária',
+    `Olá, ${target.name}.\n\nO administrador redefiniu sua senha.\n\nSenha temporária: ${temporaryPassword}\n\nEntre no MEG e mantenha esta mensagem em local seguro até confirmar o acesso. Não compartilhe esta senha.\n\nMEG Finanças — Segurança e controle.`
+  ).catch(() => ({ status: 'failed' as const }));
+  if (delivery.status !== 'sent') throw new Error('EMAIL_DELIVERY_FAILED');
+
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: target.id }, data: { passwordHash } }),
+    prisma.authSession.updateMany({ where: { userId: target.id, revokedAt: null }, data: { revokedAt: new Date() } }),
+    prisma.auditLog.create({
+      data: {
+        userId: input.actorId,
+        entity: 'User',
+        entityId: target.id,
+        action: 'PASSWORD_RESET_BY_ADMIN',
+        metadata: JSON.stringify({ deliveredTo: target.email })
+      }
+    })
+  ]);
+
+  return { user: publicUser(target), deliveredTo: target.email };
 }
 
 export async function createRefreshSession(input: { userId: string; ipAddress?: string; userAgent?: string }) {
