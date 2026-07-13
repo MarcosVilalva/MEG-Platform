@@ -8,6 +8,16 @@ const localStateKey = 'meg-financas-state-v4-paid-fixes';
 function bootstrapValidationMode() {
   let savedState = null;
   try { savedState = JSON.parse(localStorage.getItem(localStateKey) || 'null'); } catch {}
+  const validationUsersKey = 'meg-validation-users-v1';
+  const initialValidationUsers = [
+    { id: 'validation-admin', name: 'MARCOS DE ANDRADE VILALVA', email: 'm_vilalva@hotmail.com', role: 'ADMIN', status: 'ACTIVE', isActive: true, createdAt: '2026-07-01T12:00:00.000Z', approvedAt: '2026-07-01T12:00:00.000Z', lastLoginAt: new Date().toISOString() },
+    { id: 'validation-pending', name: 'USUÁRIO DE TESTE', email: 'usuario.teste@meg.local', role: 'VIEWER', status: 'PENDING', isActive: false, createdAt: new Date().toISOString(), approvedAt: null, lastLoginAt: null }
+  ];
+  let validationUsers;
+  try { validationUsers = JSON.parse(localStorage.getItem(validationUsersKey) || 'null'); } catch {}
+  if (!Array.isArray(validationUsers)) validationUsers = initialValidationUsers;
+  const saveValidationUsers = () => localStorage.setItem(validationUsersKey, JSON.stringify(validationUsers));
+  saveValidationUsers();
   window.MEG_REAL_STATE = savedState || { transactions: [], budgets: {} };
   window.MEG_CLOUD = {
     user: { name: 'VALIDAÇÃO LOCAL', role: 'ADMIN' },
@@ -22,7 +32,24 @@ function bootstrapValidationMode() {
     async removeNotificationRecipient() {},
     async listNotificationEmailRecipients() { return []; },
     async addNotificationEmailRecipient() { throw new Error('E-mails ficam desativados no modo local.'); },
-    async removeNotificationEmailRecipient() {}
+    async removeNotificationEmailRecipient() {},
+    async listManagedUsers() { return { users: structuredClone(validationUsers) }; },
+    async changeUserAccess(userId, payload) {
+      validationUsers = validationUsers.map((user) => {
+        if (user.id !== userId) return user;
+        if (payload.action === 'APPROVE' || payload.action === 'ACTIVATE') return { ...user, role: payload.role || user.role, status: 'ACTIVE', isActive: true, approvedAt: new Date().toISOString() };
+        if (payload.action === 'BLOCK') return { ...user, status: 'BLOCKED', isActive: false };
+        if (payload.action === 'REJECT') return { ...user, status: 'REJECTED', isActive: false, rejectionNote: payload.note || null };
+        return user;
+      });
+      saveValidationUsers();
+      return { user: validationUsers.find((user) => user.id === userId) };
+    },
+    async resetUserPassword(userId) {
+      const user = validationUsers.find((item) => item.id === userId);
+      if (!user) throw new Error('Usuário não encontrado.');
+      return { deliveredTo: `${user.email} (simulação local)` };
+    }
   };
 }
 
