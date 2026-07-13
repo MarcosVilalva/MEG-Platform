@@ -41,11 +41,11 @@ Variáveis do Render para WhatsApp via Evolution API:
 - `EVOLUTION_INSTANCE`
 - `WHATSAPP_RECIPIENT` (DDD + número, somente dígitos)
 
-Automação diária:
+Ativação da automação:
 
 1. Copie o valor de `NOTIFICATION_CRON_SECRET` do Render.
 2. Crie no GitHub o segredo de Actions com o mesmo nome e valor.
-3. O workflow `MEG Daily Notifications` executará diariamente às 08:00 no horário de Brasília.
+3. O workflow `MEG Smart Notifications` executará nos horários descritos abaixo.
 
 ## Agenda inteligente de alertas
 
