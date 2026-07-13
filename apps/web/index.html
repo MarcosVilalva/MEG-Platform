@@ -226,6 +226,19 @@
             </div>
           </div>
 
+          <section class="decision-hero cashflow-decision-hero" id="cashflowDecisionHero">
+            <div class="decision-hero-copy">
+              <small class="decision-eyebrow">LEITURA DO CAIXA</small>
+              <h3 id="cashflowHealthTitle">Calculando a segurança do período</h3>
+              <p id="cashflowHealthMessage">Analisando entradas, saídas e os pontos de menor saldo.</p>
+            </div>
+            <div class="decision-hero-value">
+              <span>Fechamento projetado</span>
+              <strong id="cashflowClosingMetric">R$ 0,00</strong>
+              <small id="cashflowCoverageTrend">Aguardando movimentos</small>
+            </div>
+          </section>
+
           <div class="kpi-grid">
             <article class="metric">
               <span>Saldo inicial</span>
@@ -249,15 +262,16 @@
             </article>
           </div>
 
-          <section class="panel chart-panel">
+          <section class="panel chart-panel cashflow-chart-panel">
             <div class="panel-title">
-              <h3>Saldo previsto</h3>
-              <span>Receitas e despesas do periodo</span>
+              <div><small class="decision-eyebrow">EVOLUÇÃO DIÁRIA</small><h3>Linha suavizada do saldo</h3></div>
+              <span id="cashflowChartSummary">Receitas e despesas do período</span>
             </div>
             <div class="chart-wrap">
               <canvas id="cashflowChart" width="1120" height="360" aria-label="Grafico de fluxo de caixa"></canvas>
               <div class="chart-tooltip" id="cashflowTooltip" role="status"></div>
             </div>
+            <div class="chart-stat-legend" id="cashflowChartLegend"></div>
           </section>
 
           <section class="panel">
@@ -278,12 +292,26 @@
           </div>
 
           <section class="panel analytics-filter-panel">
+            <div class="analytics-filter-copy"><small class="decision-eyebrow">RECORTE DA ANÁLISE</small><strong>Escolha uma ou mais modalidades</strong><span>A leitura abaixo se recalcula automaticamente.</span></div>
             <div class="filter-row">
               <label class="stacked-control">
                 Modalidade
                 <select id="analyticsPaymentFilter" multiple size="6" aria-describedby="modalityFilterHelp"></select>
                 <small id="modalityFilterHelp" class="muted">Todas as modalidades da planilha. Use Ctrl para combinar filtros.</small>
               </label>
+            </div>
+          </section>
+
+          <section class="decision-hero analytics-decision-hero" id="analyticsDecisionHero">
+            <div class="decision-hero-copy">
+              <small class="decision-eyebrow">DIAGNÓSTICO MEG</small>
+              <h3 id="analyticsHealthTitle">Analisando a saúde financeira</h3>
+              <p id="analyticsHealthMessage">Comparando receitas, despesas e concentração dos gastos.</p>
+            </div>
+            <div class="decision-hero-value">
+              <span>Resultado do período</span>
+              <strong id="analyticsSavingsMetric">R$ 0,00</strong>
+              <small id="analyticsSavingsTrend">Taxa de economia: 0%</small>
             </div>
           </section>
 
@@ -329,8 +357,8 @@
 
           <section class="panel chart-panel">
             <div class="panel-title">
-              <h3>Saldo bancario</h3>
-              <span>Fechamento acumulado mes a mes</span>
+              <div><small class="decision-eyebrow">HISTÓRICO ACUMULADO</small><h3>Evolução do saldo</h3></div>
+              <span>Linha suavizada de fechamento mês a mês</span>
             </div>
             <div class="chart-wrap">
               <canvas id="balanceClosingChart" width="1120" height="360" aria-label="Grafico de fechamento do saldo bancario"></canvas>
@@ -374,6 +402,7 @@
               </select>
             </div>
           </div>
+
           <section class="panel table-panel">
             <div class="table-wrap">
               <table>
@@ -454,6 +483,25 @@
             </div>
           </div>
 
+          <section class="pending-command-center" id="pendingCommandCenter">
+            <div class="pending-command-copy">
+              <small class="decision-eyebrow">CENTRAL DE PAGAMENTOS</small>
+              <h3 id="pendingHealthTitle">Organizando as prioridades do mês</h3>
+              <p id="pendingHealthMessage">As contas serão priorizadas por vencimento e disponibilidade financeira.</p>
+              <div class="pending-progress"><span id="pendingProgressBar"></span></div>
+            </div>
+            <div class="pending-coverage">
+              <span>Cobertura disponível</span>
+              <strong id="pendingCoverageMetric">0%</strong>
+              <small id="pendingCoverageTrend">Aguardando contas</small>
+            </div>
+            <div class="pending-priority-grid">
+              <article class="priority-danger"><span>Vencidas</span><strong id="overduePendingMetric">0</strong></article>
+              <article class="priority-today"><span>Vencem hoje</span><strong id="todayPendingMetric">0</strong></article>
+              <article class="priority-next"><span>Próximos 7 dias</span><strong id="nextSevenPendingMetric">0</strong></article>
+            </div>
+          </section>
+
           <div class="current-grid">
             <article class="mini-metric warn">
               <span>Total pendente</span>
@@ -480,8 +528,8 @@
           <div class="pending-grid">
             <section class="panel">
               <div class="panel-title">
-                <h3>Selecionar contas</h3>
-                <span>Marque quando pagar</span>
+                <div><small class="decision-eyebrow">AGENDA PRIORIZADA</small><h3>Contas por vencimento</h3></div>
+                <span>Clique na conta para editar ou marque quando pagar</span>
               </div>
               <div class="bill-list" id="pendingBillsList"></div>
             </section>

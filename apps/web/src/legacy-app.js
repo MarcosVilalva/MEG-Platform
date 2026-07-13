@@ -173,6 +173,13 @@ const els = {
   cashflowExpenseTrend: document.querySelector("#cashflowExpenseTrend"),
   cashflowLowMetric: document.querySelector("#cashflowLowMetric"),
   cashflowLowTrend: document.querySelector("#cashflowLowTrend"),
+  cashflowDecisionHero: document.querySelector("#cashflowDecisionHero"),
+  cashflowHealthTitle: document.querySelector("#cashflowHealthTitle"),
+  cashflowHealthMessage: document.querySelector("#cashflowHealthMessage"),
+  cashflowClosingMetric: document.querySelector("#cashflowClosingMetric"),
+  cashflowCoverageTrend: document.querySelector("#cashflowCoverageTrend"),
+  cashflowChartSummary: document.querySelector("#cashflowChartSummary"),
+  cashflowChartLegend: document.querySelector("#cashflowChartLegend"),
   cashflowChart: document.querySelector("#cashflowChart"),
   cashflowTooltip: document.querySelector("#cashflowTooltip"),
   cashflowList: document.querySelector("#cashflowList"),
@@ -187,6 +194,15 @@ const els = {
   verocardCreditMetric: document.querySelector("#verocardCreditMetric"),
   verocardBalanceMetric: document.querySelector("#verocardBalanceMetric"),
   verocardSpentMetric: document.querySelector("#verocardSpentMetric"),
+  pendingCommandCenter: document.querySelector("#pendingCommandCenter"),
+  pendingHealthTitle: document.querySelector("#pendingHealthTitle"),
+  pendingHealthMessage: document.querySelector("#pendingHealthMessage"),
+  pendingCoverageMetric: document.querySelector("#pendingCoverageMetric"),
+  pendingCoverageTrend: document.querySelector("#pendingCoverageTrend"),
+  pendingProgressBar: document.querySelector("#pendingProgressBar"),
+  overduePendingMetric: document.querySelector("#overduePendingMetric"),
+  todayPendingMetric: document.querySelector("#todayPendingMetric"),
+  nextSevenPendingMetric: document.querySelector("#nextSevenPendingMetric"),
   pendingBillsList: document.querySelector("#pendingBillsList"),
   verocardLedger: document.querySelector("#verocardLedger"),
   analyticsPeriodLabel: document.querySelector("#analyticsPeriodLabel"),
@@ -199,6 +215,11 @@ const els = {
   variationMetric: document.querySelector("#variationMetric"),
   variationTrend: document.querySelector("#variationTrend"),
   concentrationMetric: document.querySelector("#concentrationMetric"),
+  analyticsDecisionHero: document.querySelector("#analyticsDecisionHero"),
+  analyticsHealthTitle: document.querySelector("#analyticsHealthTitle"),
+  analyticsHealthMessage: document.querySelector("#analyticsHealthMessage"),
+  analyticsSavingsMetric: document.querySelector("#analyticsSavingsMetric"),
+  analyticsSavingsTrend: document.querySelector("#analyticsSavingsTrend"),
   monthlyTrendChart: document.querySelector("#monthlyTrendChart"),
   groupCompareChart: document.querySelector("#groupCompareChart"),
   balanceClosingChart: document.querySelector("#balanceClosingChart"),
@@ -1006,7 +1027,31 @@ function renderCashflow() {
   els.cashflowExpenseTrend.textContent = `${data.movements.filter((item) => item.type === "expense").length} despesas`;
   els.cashflowLowMetric.textContent = money.format(data.lowPoint ? data.lowPoint.value : data.openingBalance);
   els.cashflowLowTrend.textContent = data.lowPoint ? `Em ${formatDate(data.lowPoint.date)}` : "Sem movimentos";
-  renderCashflowChart(data.points, data.openingBalance);
+  const closingBalance = data.points.at(-1)?.value ?? data.openingBalance;
+  const availableResources = data.openingBalance + data.totals.income;
+  const coverage = data.totals.expense ? (availableResources / data.totals.expense) * 100 : 100;
+  const negativePoints = data.points.filter((point) => point.value < 0);
+  const tone = closingBalance < 0 || negativePoints.length ? "risk" : coverage < 110 ? "attention" : "healthy";
+  els.cashflowDecisionHero.classList.remove("risk", "attention", "healthy");
+  els.cashflowDecisionHero.classList.add(tone);
+  els.cashflowClosingMetric.textContent = money.format(closingBalance);
+  els.cashflowCoverageTrend.textContent = `${coverage.toFixed(0)}% das saídas cobertas pelos recursos do período`;
+  if (negativePoints.length) {
+    els.cashflowHealthTitle.textContent = `O caixa fica negativo em ${negativePoints.length} data(s)`;
+    els.cashflowHealthMessage.textContent = `O primeiro alerta ocorre em ${formatDate(negativePoints[0].date)}. Antecipe receitas ou reprograme pagamentos antes dessa data.`;
+  } else if (closingBalance >= 0 && coverage >= 110) {
+    els.cashflowHealthTitle.textContent = "Caixa seguro no período selecionado";
+    els.cashflowHealthMessage.textContent = `O menor saldo previsto é ${money.format(data.lowPoint?.value ?? data.openingBalance)} e não há ruptura de caixa.`;
+  } else {
+    els.cashflowHealthTitle.textContent = "Caixa fecha, mas com pouca margem";
+    els.cashflowHealthMessage.textContent = "As obrigações estão cobertas, porém qualquer gasto inesperado pode comprometer o fechamento.";
+  }
+  els.cashflowChartSummary.textContent = `${data.points.length} dia(s) com movimentação · fechamento ${money.format(closingBalance)}`;
+  els.cashflowChartLegend.innerHTML = `
+    <span><i class="legend-dot opening"></i>Inicial <strong>${money.format(data.openingBalance)}</strong></span>
+    <span><i class="legend-dot low"></i>Menor saldo <strong>${money.format(data.lowPoint?.value ?? data.openingBalance)}</strong></span>
+    <span><i class="legend-dot closing"></i>Fechamento <strong>${money.format(closingBalance)}</strong></span>`;
+  renderCashflowChart(data.points, data.openingBalance, data.start);
   renderCashflowList(data.movements);
 }
 
@@ -1028,14 +1073,14 @@ function renderCashflowList(items) {
     : `<div class="empty">Sem movimentos bancarios no periodo.</div>`;
 }
 
-function renderCashflowChart(points, openingBalance) {
+function renderCashflowChart(points, openingBalance, startDate) {
   const canvas = els.cashflowChart;
   const ctx = setupCanvas(canvas, 1120, 320);
   const width = canvas.clientWidth || Number(canvas.getAttribute("width")) || 1120;
   const height = canvas.clientHeight || Number(canvas.getAttribute("height")) || 320;
   ctx.clearRect(0, 0, width, height);
   cashflowChartPoints = [];
-  const data = points.length ? points : [{ date: dateRangeForSelectedPeriod().start, value: openingBalance, income: 0, expense: 0, net: 0 }];
+  const data = [{ date: startDate, value: openingBalance, income: 0, expense: 0, net: 0, opening: true }, ...points];
   const values = data.map((item) => item.value);
   const min = Math.min(...values, 0);
   const max = Math.max(...values, 0);
@@ -1046,34 +1091,58 @@ function renderCashflowChart(points, openingBalance) {
   const xStep = plotWidth / Math.max(data.length - 1, 1);
   drawGrid(ctx, width, height, pad);
 
+  const zeroY = pad.top + plotHeight - ((0 - min) / range) * plotHeight;
+  ctx.save();
+  ctx.setLineDash([7, 7]);
+  ctx.strokeStyle = "rgba(188, 66, 54, 0.45)";
+  ctx.beginPath();
+  ctx.moveTo(pad.left, zeroY);
+  ctx.lineTo(width - pad.right, zeroY);
+  ctx.stroke();
+  ctx.restore();
+
   const chartPoints = data.map((item, index) => {
     const x = pad.left + index * xStep;
     const y = pad.top + plotHeight - ((item.value - min) / range) * plotHeight;
     return { ...item, x, y };
   });
 
-  ctx.strokeStyle = "#315f99";
+  const closingPositive = data.at(-1).value >= 0;
+  ctx.strokeStyle = closingPositive ? "#176b5d" : "#bc4236";
   ctx.lineWidth = 4;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
   drawSmoothPath(ctx, chartPoints);
   ctx.stroke();
 
-  ctx.fillStyle = "rgba(49, 95, 153, 0.1)";
+  const fill = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotHeight);
+  fill.addColorStop(0, closingPositive ? "rgba(31, 191, 155, 0.22)" : "rgba(188, 66, 54, 0.2)");
+  fill.addColorStop(1, "rgba(255, 255, 255, 0.02)");
+  ctx.fillStyle = fill;
   ctx.lineTo(chartPoints[chartPoints.length - 1].x, pad.top + plotHeight);
   ctx.lineTo(chartPoints[0].x, pad.top + plotHeight);
   ctx.closePath();
   ctx.fill();
 
   ctx.textAlign = "center";
-  chartPoints.forEach((point) => {
+  const importantIndexes = new Set([0, chartPoints.length - 1]);
+  const lowIndex = chartPoints.reduce((best, point, index) => point.value < chartPoints[best].value ? index : best, 0);
+  importantIndexes.add(lowIndex);
+  const step = Math.max(1, Math.ceil(chartPoints.length / 10));
+  chartPoints.forEach((point, index) => {
+    if (!importantIndexes.has(index) && index % step !== 0) return;
     ctx.fillStyle = "#ffffff";
-    ctx.strokeStyle = "#315f99";
+    ctx.strokeStyle = point.value < 0 ? "#bc4236" : "#176b5d";
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+    if (importantIndexes.has(index)) {
+      ctx.fillStyle = "#18201d";
+      ctx.font = "800 12px Inter, system-ui, sans-serif";
+      ctx.fillText(formatCompactNumber(point.value), point.x, Math.max(16, point.y - 13));
+    }
   });
   cashflowChartPoints = chartPoints;
   ctx.textAlign = "left";
@@ -1094,6 +1163,8 @@ function renderAnalytics() {
   const variation = previousExpense ? ((totals.expense - previousExpense) / previousExpense) * 100 : 0;
   const top3 = groups.slice(0, 3).reduce((sum, item) => sum + item.value, 0);
   const concentration = totals.expense ? (top3 / totals.expense) * 100 : 0;
+  const result = totals.income - totals.expense;
+  const savingsRate = totals.income ? (result / totals.income) * 100 : 0;
 
   const paymentLabel = analyticsFilters.payments.length ? `${analyticsFilters.payments.length} modalidade(s)` : "todas as modalidades";
   els.analyticsPeriodLabel.textContent = `${periodLabel()} · modalidades: ${paymentLabel}`;
@@ -1104,6 +1175,22 @@ function renderAnalytics() {
   els.variationMetric.textContent = previousExpense ? `${variation > 0 ? "+" : ""}${variation.toFixed(1)}%` : "Sem base";
   els.variationTrend.textContent = previousExpense ? `Periodo anterior: ${money.format(previousExpense)}` : "Sem periodo anterior comparavel";
   els.concentrationMetric.textContent = `${concentration.toFixed(0)}%`;
+
+  const analyticsTone = result < 0 ? "risk" : savingsRate >= 20 ? "healthy" : "attention";
+  els.analyticsDecisionHero.classList.remove("risk", "attention", "healthy");
+  els.analyticsDecisionHero.classList.add(analyticsTone);
+  els.analyticsSavingsMetric.textContent = money.format(result);
+  els.analyticsSavingsTrend.textContent = totals.income ? `Taxa de economia: ${savingsRate.toFixed(1)}%` : "Sem receitas no período";
+  if (result < 0) {
+    els.analyticsHealthTitle.textContent = "Despesas acima das receitas";
+    els.analyticsHealthMessage.textContent = `O período apresenta déficit de ${money.format(Math.abs(result))}. ${topGroup ? `${topGroup.group} é o primeiro grupo a revisar.` : "Revise os maiores gastos."}`;
+  } else if (savingsRate >= 20) {
+    els.analyticsHealthTitle.textContent = "Período financeiramente saudável";
+    els.analyticsHealthMessage.textContent = `Você preservou ${savingsRate.toFixed(1)}% das receitas. A referência saudável de 20% foi alcançada.`;
+  } else {
+    els.analyticsHealthTitle.textContent = "Resultado positivo, com espaço para evoluir";
+    els.analyticsHealthMessage.textContent = `O período fecha positivo em ${money.format(result)}, mas a taxa de economia está abaixo da referência de 20%.`;
+  }
 
   renderModalityEvolutionChart(evolution);
   renderBalanceClosingChart(closingBalances);
@@ -1184,31 +1271,44 @@ function renderBalanceClosingChart(data) {
     return { ...item, x, y };
   });
 
-  ctx.strokeStyle = "#176b5d";
+  const closingPositive = points.at(-1).value >= 0;
+  ctx.strokeStyle = closingPositive ? "#176b5d" : "#bc4236";
   ctx.lineWidth = 4;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
   drawSmoothPath(ctx, points);
   ctx.stroke();
 
-  ctx.fillStyle = "rgba(23, 107, 93, 0.1)";
+  const fill = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotHeight);
+  fill.addColorStop(0, closingPositive ? "rgba(31, 191, 155, 0.2)" : "rgba(188, 66, 54, 0.18)");
+  fill.addColorStop(1, "rgba(255, 255, 255, 0.02)");
+  ctx.fillStyle = fill;
   ctx.lineTo(points[points.length - 1].x, pad.top + plotHeight);
   ctx.lineTo(points[0].x, pad.top + plotHeight);
   ctx.closePath();
   ctx.fill();
 
   ctx.textAlign = "center";
-  points.forEach((point) => {
+  const importantIndexes = new Set([0, points.length - 1]);
+  const lowIndex = points.reduce((best, point, index) => point.value < points[best].value ? index : best, 0);
+  const highIndex = points.reduce((best, point, index) => point.value > points[best].value ? index : best, 0);
+  importantIndexes.add(lowIndex);
+  importantIndexes.add(highIndex);
+  const step = Math.max(1, Math.ceil(points.length / 10));
+  points.forEach((point, index) => {
+    if (!importantIndexes.has(index) && index % step !== 0) return;
     ctx.fillStyle = "#ffffff";
-    ctx.strokeStyle = "#176b5d";
+    ctx.strokeStyle = point.value < 0 ? "#bc4236" : "#176b5d";
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = "#18201d";
-    ctx.font = "800 12px Inter, system-ui, sans-serif";
-    ctx.fillText(formatCompactNumber(point.value), point.x, Math.max(14, point.y - 12));
+    if (importantIndexes.has(index)) {
+      ctx.fillStyle = "#18201d";
+      ctx.font = "800 12px Inter, system-ui, sans-serif";
+      ctx.fillText(formatCompactNumber(point.value), point.x, Math.max(14, point.y - 12));
+    }
   });
   balanceChartPoints = points;
   ctx.textAlign = "left";
@@ -1791,6 +1891,17 @@ function renderPending() {
   const pendingTotal = pendingVisible.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const paidTotal = paidVisible.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const card = verocardSummary(selectedPendingMonth);
+  const allPending = expenses.filter((item) => item.status === "pending" && !isVerocardTransaction(item));
+  const allPaid = expenses.filter((item) => item.status === "paid" && !isVerocardTransaction(item));
+  const allPendingTotal = allPending.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const allPaidTotal = allPaid.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const available = Math.max(availableBankBalanceForPayment(), 0);
+  const coverage = allPendingTotal ? Math.min((available / allPendingTotal) * 100, 999) : 100;
+  const paidProgress = allPaidTotal + allPendingTotal ? (allPaidTotal / (allPaidTotal + allPendingTotal)) * 100 : 100;
+  const sevenDaysAhead = addDays(todayIso, 7);
+  const overdue = allPending.filter((item) => item.date < todayIso);
+  const dueToday = allPending.filter((item) => item.date === todayIso);
+  const nextSeven = allPending.filter((item) => item.date > todayIso && item.date <= sevenDaysAhead);
 
   els.pendingMonthLabel.textContent = `${formatMonth(selectedPendingMonth)} - filtro da aba Pendentes`;
   els.pendingTotalMetric.textContent = money.format(pendingTotal);
@@ -1800,19 +1911,49 @@ function renderPending() {
   els.verocardBalanceMetric.textContent = money.format(card.balance);
   els.verocardSpentMetric.textContent = `${money.format(card.spent)} gastos abatidos`;
 
+  const pendingTone = overdue.length || coverage < 100 ? "risk" : allPending.length ? "attention" : "healthy";
+  els.pendingCommandCenter.classList.remove("risk", "attention", "healthy");
+  els.pendingCommandCenter.classList.add(pendingTone);
+  els.pendingCoverageMetric.textContent = allPendingTotal ? `${coverage.toFixed(0)}%` : "100%";
+  els.pendingCoverageTrend.textContent = allPendingTotal
+    ? `${money.format(available)} disponíveis para ${money.format(allPendingTotal)} em aberto`
+    : "Nenhuma obrigação monetária em aberto";
+  els.pendingProgressBar.style.width = `${Math.min(Math.max(paidProgress, 0), 100)}%`;
+  els.overduePendingMetric.textContent = `${overdue.length} · ${money.format(overdue.reduce((sum, item) => sum + Number(item.amount || 0), 0))}`;
+  els.todayPendingMetric.textContent = `${dueToday.length} · ${money.format(dueToday.reduce((sum, item) => sum + Number(item.amount || 0), 0))}`;
+  els.nextSevenPendingMetric.textContent = `${nextSeven.length} · ${money.format(nextSeven.reduce((sum, item) => sum + Number(item.amount || 0), 0))}`;
+  if (overdue.length) {
+    els.pendingHealthTitle.textContent = `${overdue.length} conta(s) vencida(s) exigem ação`;
+    els.pendingHealthMessage.textContent = `Regularize primeiro ${overdue[0].description}, vencida em ${formatDate(overdue[0].date)}. ${coverage < 100 ? "O saldo disponível ainda não cobre todas as obrigações." : "Há saldo para cobrir as contas em aberto."}`;
+  } else if (coverage < 100) {
+    els.pendingHealthTitle.textContent = `Faltam ${money.format(Math.max(allPendingTotal - available, 0))} para cobrir o mês`;
+    els.pendingHealthMessage.textContent = "Não há contas vencidas, mas o caixa disponível não cobre todas as pendências monetárias.";
+  } else if (allPending.length) {
+    els.pendingHealthTitle.textContent = "Contas em dia e com cobertura financeira";
+    els.pendingHealthMessage.textContent = `${allPending.length} obrigação(ões) ainda aguardam pagamento, todas cobertas pelo saldo disponível.`;
+  } else {
+    els.pendingHealthTitle.textContent = "Mês concluído sem pendências";
+    els.pendingHealthMessage.textContent = "Todas as obrigações monetárias deste mês estão marcadas como pagas.";
+  }
+
   els.pendingBillsList.innerHTML = visibleItems.length
     ? visibleItems
+        .sort((a, b) => (a.status === b.status ? a.date.localeCompare(b.date) : a.status === "pending" ? -1 : 1))
         .map(
-          (item) => `
-          <label class="bill-item ${item.status === "paid" ? "done" : ""}">
+          (item) => {
+            const priority = item.status === "paid" ? "paid" : item.date < todayIso ? "overdue" : item.date === todayIso ? "today" : item.date <= sevenDaysAhead ? "soon" : "future";
+            const priorityLabel = { paid: "PAGA", overdue: "VENCIDA", today: "VENCE HOJE", soon: "PRÓXIMOS 7 DIAS", future: "PROGRAMADA" }[priority];
+            return `
+          <article class="bill-item ${item.status === "paid" ? "done" : ""} priority-${priority}">
             <input type="checkbox" data-toggle-paid="${item.id}" ${item.status === "paid" ? "checked" : ""} />
-            <span class="bill-meta">
+            <button type="button" class="bill-meta bill-edit-button" data-edit="${escapeHtml(item.id)}">
               <strong>${escapeHtml(item.description)}</strong>
-              <small>${formatDate(item.date)} · ${escapeHtml(item.account)} · ${escapeHtml(item.category)}</small>
-            </span>
+              <small>${formatDate(item.date)} · ${escapeHtml(item.paymentMethod || item.account || "Não informado")} · ${escapeHtml(item.group || item.category || "Sem categoria")}</small>
+            </button>
+            <span class="bill-priority">${priorityLabel}</span>
             <strong class="amount negative">${money.format(item.amount)}</strong>
-          </label>
-        `,
+          </article>
+        `; },
         )
         .join("")
     : `<div class="empty">Nenhuma conta para este filtro no mes atual.</div>`;
