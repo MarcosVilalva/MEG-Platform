@@ -555,6 +555,16 @@
               <div class="recipient-list" id="notificationRecipientList">
                 <span class="muted">Carregando destinatários...</span>
               </div>
+              <h4>E-mails que receberão os alertas</h4>
+              <div class="recipient-form">
+                <input id="emailRecipientNameInput" type="text" maxlength="60" placeholder="Nome do destinatário" aria-label="Nome do destinatário do e-mail" />
+                <input id="emailRecipientInput" type="email" maxlength="160" placeholder="nome@exemplo.com" aria-label="E-mail para notificações" />
+                <button class="button" id="addEmailRecipientBtn" type="button">Adicionar e-mail</button>
+              </div>
+              <div class="recipient-list" id="notificationEmailRecipientList">
+                <span class="muted">Carregando e-mails...</span>
+              </div>
+              <p class="muted">Automático: 3 dias antes; no vencimento às 06:00, 12:00 e 19:00; e resumo completo das contas abertas a cada 5 dias às 06:00.</p>
               <div class="settings-actions">
                 <button class="button" id="previewNotificationsBtn" type="button">Ver resumo</button>
                 <button class="button primary" id="sendNotificationsBtn" type="button">Enviar agora</button>

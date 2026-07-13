@@ -126,6 +126,14 @@ Arquivamento não remove histórico. Estornos devem ser registrados como eventos
 - O alerta informa data da consulta, total em aberto, contas vencidas, contas dos próximos três dias, valor e forma de pagamento.
 - O agendamento automático envia para todos os destinatários ativos e não repete o mesmo alerta no mesmo canal e dia.
 
+## Automação inteligente de notificações
+
+- Compras em cartão de crédito com o mesmo cartão e vencimento aparecem como uma única fatura, com valor total e quantidade de compras.
+- A prioridade é classificada como crítica (vencida), urgente (vence hoje), alta (amanhã), atenção (até três dias) ou programada.
+- Os alertas automáticos são avaliados às 06:00, 12:00 e 19:00 no horário de São Paulo; itens pagos deixam de aparecer imediatamente.
+- A cada cinco dias, às 06:00, o aviso normal é substituído por um resumo de todas as contas ainda abertas e do total que falta pagar.
+- O administrador pode cadastrar vários números de WhatsApp e vários e-mails na tela Ajustes.
+
 ## IA
 
 - A IA pode classificar, sugerir, explicar e simular.

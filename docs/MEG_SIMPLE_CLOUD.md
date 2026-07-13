@@ -47,6 +47,15 @@ Automação diária:
 2. Crie no GitHub o segredo de Actions com o mesmo nome e valor.
 3. O workflow `MEG Daily Notifications` executará diariamente às 08:00 no horário de Brasília.
 
+## Agenda inteligente de alertas
+
+- Faturas de cartão são agrupadas por cartão e vencimento antes do envio.
+- Às 06:00 são enviadas contas vencidas e dos próximos três dias.
+- Às 12:00 e 19:00 são repetidas apenas contas vencidas e com vencimento no dia, desde que ainda não estejam pagas.
+- A cada cinco dias, o envio das 06:00 traz todas as contas abertas e o total restante.
+- O administrador cadastra números de WhatsApp e e-mails adicionais em **Ajustes > Alertas de vencimento**.
+- O workflow `MEG Smart Notifications` depende do segredo `NOTIFICATION_CRON_SECRET` no GitHub Actions, com o mesmo valor configurado no Render.
+
 ## Segurança
 
 - novos usuários solicitam acesso e aguardam aprovação;
