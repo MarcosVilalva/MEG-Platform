@@ -240,8 +240,22 @@ export async function bootstrapCloud() {
       const response = await api(`/notifications/recipients/${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Não foi possível remover o destinatário.');
     },
-    async sendNotifications(recipientIds = []) {
-      const response = await api('/notifications/send', { method: 'POST', body: JSON.stringify({ recipientIds }) });
+    async listNotificationEmailRecipients() {
+      const response = await api('/notifications/email-recipients');
+      if (!response.ok) throw new Error('Não foi possível carregar os e-mails.');
+      return response.json();
+    },
+    async addNotificationEmailRecipient(name, email) {
+      const response = await api('/notifications/email-recipients', { method: 'POST', body: JSON.stringify({ name, email }) });
+      if (!response.ok) throw new Error('Informe um nome e um e-mail válido.');
+      return response.json();
+    },
+    async removeNotificationEmailRecipient(id) {
+      const response = await api(`/notifications/email-recipients/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Não foi possível remover o e-mail.');
+    },
+    async sendNotifications(recipientIds = [], emailRecipientIds = []) {
+      const response = await api('/notifications/send', { method: 'POST', body: JSON.stringify({ recipientIds, emailRecipientIds }) });
       if (!response.ok) throw new Error('Não foi possível enviar os alertas.');
       return response.json();
     }

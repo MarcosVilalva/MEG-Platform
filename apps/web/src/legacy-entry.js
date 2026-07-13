@@ -19,7 +19,10 @@ function bootstrapValidationMode() {
     async sendNotifications() { throw new Error('Alertas externos ficam desativados no modo local.'); },
     async listNotificationRecipients() { return []; },
     async addNotificationRecipient() { throw new Error('Destinatários ficam desativados no modo local.'); },
-    async removeNotificationRecipient() {}
+    async removeNotificationRecipient() {},
+    async listNotificationEmailRecipients() { return []; },
+    async addNotificationEmailRecipient() { throw new Error('E-mails ficam desativados no modo local.'); },
+    async removeNotificationEmailRecipient() {}
   };
 }
 
@@ -127,6 +130,10 @@ function wireLegacyApp() {
   const recipientPhoneInput = document.querySelector('#recipientPhoneInput');
   const addRecipientButton = document.querySelector('#addRecipientBtn');
   const recipientList = document.querySelector('#notificationRecipientList');
+  const emailRecipientNameInput = document.querySelector('#emailRecipientNameInput');
+  const emailRecipientInput = document.querySelector('#emailRecipientInput');
+  const addEmailRecipientButton = document.querySelector('#addEmailRecipientBtn');
+  const emailRecipientList = document.querySelector('#notificationEmailRecipientList');
   if (userName) userName.textContent = window.MEG_CLOUD.user.name;
   logoutButton?.addEventListener('click', () => window.MEG_CLOUD.logout());
 
@@ -139,6 +146,18 @@ function wireLegacyApp() {
         : '<span class="muted">Cadastre ao menos um WhatsApp para selecionar o envio.</span>';
     } catch (cause) {
       recipientList.innerHTML = `<span class="muted">${escapeMarkup(cause instanceof Error ? cause.message : 'Falha ao carregar destinatários.')}</span>`;
+    }
+  }
+
+  async function loadEmailRecipients() {
+    if (!emailRecipientList) return;
+    try {
+      const recipients = await window.MEG_CLOUD.listNotificationEmailRecipients();
+      emailRecipientList.innerHTML = recipients.length
+        ? recipients.map((item) => `<label class="recipient-item"><input type="checkbox" value="${item.id}" data-notification-email checked /><span><strong>${escapeMarkup(item.name)}</strong><small>${escapeMarkup(item.email)}</small></span><button class="filter-clear-button" type="button" data-remove-email-recipient="${item.id}">Remover</button></label>`).join('')
+        : '<span class="muted">Sem e-mails adicionais. O administrador padrão continuará recebendo.</span>';
+    } catch (cause) {
+      emailRecipientList.innerHTML = `<span class="muted">${escapeMarkup(cause instanceof Error ? cause.message : 'Falha ao carregar e-mails.')}</span>`;
     }
   }
 
@@ -164,6 +183,24 @@ function wireLegacyApp() {
     await loadRecipients();
   });
 
+  addEmailRecipientButton?.addEventListener('click', async () => {
+    try {
+      await window.MEG_CLOUD.addNotificationEmailRecipient(emailRecipientNameInput.value, emailRecipientInput.value);
+      emailRecipientNameInput.value = '';
+      emailRecipientInput.value = '';
+      await loadEmailRecipients();
+    } catch (cause) {
+      notificationPreview.textContent = cause instanceof Error ? cause.message : 'Não foi possível adicionar o e-mail.';
+    }
+  });
+
+  emailRecipientList?.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-remove-email-recipient]');
+    if (!button) return;
+    await window.MEG_CLOUD.removeNotificationEmailRecipient(button.dataset.removeEmailRecipient);
+    await loadEmailRecipients();
+  });
+
   previewButton?.addEventListener('click', async () => {
     notificationPreview.textContent = 'Gerando resumo...';
     try {
@@ -180,7 +217,8 @@ function wireLegacyApp() {
       const recipientIds = [...document.querySelectorAll('[data-notification-recipient]:checked')].map((item) => item.value);
       const hasRecipients = document.querySelectorAll('[data-notification-recipient]').length > 0;
       if (hasRecipients && !recipientIds.length) throw new Error('Selecione ao menos um número para o envio.');
-      const result = await window.MEG_CLOUD.sendNotifications(recipientIds);
+      const emailRecipientIds = [...document.querySelectorAll('[data-notification-email]:checked')].map((item) => item.value);
+      const result = await window.MEG_CLOUD.sendNotifications(recipientIds, emailRecipientIds);
       const delivery = (result.deliveries || []).map((item) => `${item.recipient || item.channel}: ${item.status}${item.detail ? ` — ${item.detail}` : ''}`).join('\n');
       notificationPreview.textContent = `${result.digest?.text || result.message || ''}\n\nResultado do envio:\n${delivery || 'Nenhum canal enviado.'}`;
     } catch (cause) {
@@ -189,6 +227,7 @@ function wireLegacyApp() {
   });
 
   loadRecipients();
+  loadEmailRecipients();
 
   importInput?.addEventListener('change', async () => {
   const file = importInput.files?.[0];

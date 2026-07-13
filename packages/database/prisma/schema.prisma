@@ -51,6 +51,7 @@ model User {
   appState       AppState?
   notificationDeliveries NotificationDelivery[]
   notificationRecipients NotificationRecipient[]
+  notificationEmailRecipients NotificationEmailRecipient[]
 
   @@index([status])
   @@index([role])
@@ -94,6 +95,21 @@ model NotificationRecipient {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, phone])
+  @@index([userId, isActive])
+}
+
+model NotificationEmailRecipient {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  email     String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, email])
   @@index([userId, isActive])
 }
 
