@@ -221,6 +221,17 @@ const els = {
   analyticsHealthMessage: document.querySelector("#analyticsHealthMessage"),
   analyticsSavingsMetric: document.querySelector("#analyticsSavingsMetric"),
   analyticsSavingsTrend: document.querySelector("#analyticsSavingsTrend"),
+  analyticsCalculationPeriod: document.querySelector("#analyticsCalculationPeriod"),
+  analyticsOpeningMetric: document.querySelector("#analyticsOpeningMetric"),
+  analyticsPeriodIncomeMetric: document.querySelector("#analyticsPeriodIncomeMetric"),
+  analyticsPaidExpenseMetric: document.querySelector("#analyticsPaidExpenseMetric"),
+  analyticsAvailableCard: document.querySelector("#analyticsAvailableCard"),
+  analyticsAvailableMetric: document.querySelector("#analyticsAvailableMetric"),
+  analyticsProjectionLine: document.querySelector("#analyticsProjectionLine"),
+  analyticsProjectedMetric: document.querySelector("#analyticsProjectedMetric"),
+  analyticsProjectedNote: document.querySelector("#analyticsProjectedNote"),
+  analyticsTicketMetric: document.querySelector("#analyticsTicketMetric"),
+  analyticsTicketNote: document.querySelector("#analyticsTicketNote"),
   analyticsIncomeMetric: document.querySelector("#analyticsIncomeMetric"),
   analyticsIncomeNote: document.querySelector("#analyticsIncomeNote"),
   analyticsExpenseMetric: document.querySelector("#analyticsExpenseMetric"),
@@ -495,7 +506,7 @@ function transactionsUntil(dateValue) {
 }
 
 function accountBalanceUntil(dateValue) {
-  const totals = totalsFor(transactionsUntil(dateValue));
+  const totals = totalsFor(transactionsUntil(dateValue).filter((item) => !isVerocardTransaction(item)));
   return totals.income - totals.expense;
 }
 
@@ -1194,80 +1205,102 @@ function renderCashflowChart(points, openingBalance, startDate) {
 function renderAnalytics() {
   const periodItems = selectedTransactions();
   const paymentItems = paymentAnalyticsTransactions(periodItems);
-  const expenses = paymentItems.filter((item) => item.type === "expense");
-  const totals = totalsFor(paymentItems);
+  const monetaryItems = paymentItems.filter((item) => !isVerocardTransaction(item));
+  const expenses = monetaryItems.filter((item) => item.type === "expense");
+  const analysisUniverse = filterAnalyticsPayments(state.transactions);
+  const { start, end } = dateRangeForSelectedPeriod();
+  const summary = calculateFinancialSummary(analysisUniverse, start, end);
+  const totals = { income: summary.availableIncome, expense: summary.expense };
   const monthCount = selectedPeriodMonthCount(periodItems);
-  const groups = groupExpenseRows(paymentItems);
-  const evolution = modalityEvolutionRows(paymentItems);
+  const groups = groupExpenseRows(monetaryItems);
+  const evolution = modalityEvolutionRows(monetaryItems);
   const closingBalances = monthlyClosingBalanceRows();
   const topGroup = groups[0];
-  const previousTotals = totalsFor(filterAnalyticsPayments(previousPeriodTransactions()));
+  const previousTotals = totalsFor(filterAnalyticsPayments(previousPeriodTransactions()).filter((item) => !isVerocardTransaction(item)));
   const previousExpense = previousTotals.expense || 0;
-  const variation = previousExpense ? ((totals.expense - previousExpense) / previousExpense) * 100 : 0;
+  const variation = previousExpense ? ((summary.expense - previousExpense) / previousExpense) * 100 : 0;
   const top3 = groups.slice(0, 3).reduce((sum, item) => sum + item.value, 0);
-  const concentration = totals.expense ? (top3 / totals.expense) * 100 : 0;
-  const result = totals.income - totals.expense;
-  const savingsRate = totals.income ? (result / totals.income) * 100 : 0;
-  const paidExpense = expenses.filter((item) => item.status === "paid").reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const concentration = summary.expense ? (top3 / summary.expense) * 100 : 0;
+  const result = summary.closingBalance;
+  const projectedResult = summary.projectedBalance;
+  const savingsRate = summary.availableIncome ? (projectedResult / summary.availableIncome) * 100 : 0;
+  const paidExpense = summary.paidExpense;
   const pendingExpenses = expenses.filter((item) => item.status === "pending");
-  const pendingExpense = pendingExpenses.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const pendingExpense = summary.pendingExpense;
   const overdueExpenses = pendingExpenses.filter((item) => item.date < todayIso);
   const overdueValue = overdueExpenses.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
-  const coverage = totals.expense ? (totals.income / totals.expense) * 100 : totals.income ? 100 : 0;
-  const historicalItems = historicalTransactionsUntilToday();
+  const coverage = summary.expense ? (summary.availableIncome / summary.expense) * 100 : summary.availableIncome ? 100 : 0;
+  const allHistoricalItems = historicalTransactionsUntilToday();
+  const historicalItems = allHistoricalItems.filter((item) => !isVerocardTransaction(item));
   const historicalTotals = totalsFor(historicalItems);
   const historicalBalance = historicalTotals.income - historicalTotals.expense;
 
   const paymentLabel = analyticsFilters.payments.length ? `${analyticsFilters.payments.length} modalidade(s)` : "todas as modalidades";
   els.analyticsPeriodLabel.textContent = `${periodLabel()} · modalidades: ${paymentLabel}`;
-  els.avgExpenseMetric.textContent = money.format(totals.expense / monthCount);
+  els.avgExpenseMetric.textContent = money.format(summary.expense / monthCount);
   els.avgExpenseTrend.textContent = `${monthCount} mes(es) no periodo`;
   els.topGroupMetric.textContent = topGroup ? topGroup.group : "-";
   els.topGroupTrend.textContent = topGroup ? money.format(topGroup.value) : money.format(0);
   els.variationMetric.textContent = previousExpense ? `${variation > 0 ? "+" : ""}${variation.toFixed(1)}%` : "Sem base";
   els.variationTrend.textContent = previousExpense ? `Periodo anterior: ${money.format(previousExpense)}` : "Sem periodo anterior comparavel";
   els.concentrationMetric.textContent = `${concentration.toFixed(0)}%`;
-  els.analyticsIncomeMetric.textContent = money.format(totals.income);
-  els.analyticsIncomeNote.textContent = `${paymentItems.filter((item) => item.type === "income").length} entrada(s) no período`;
-  els.analyticsExpenseMetric.textContent = money.format(totals.expense);
+  els.analyticsIncomeMetric.textContent = money.format(summary.income);
+  els.analyticsIncomeNote.textContent = `${monetaryItems.filter((item) => item.type === "income").length} entrada(s) monetária(s) no período`;
+  els.analyticsExpenseMetric.textContent = money.format(summary.expense);
   els.analyticsExpenseNote.textContent = `${money.format(paidExpense)} pagas · ${money.format(pendingExpense)} pendentes`;
   els.analyticsPendingMetric.textContent = money.format(pendingExpense);
   els.analyticsPendingNote.textContent = overdueExpenses.length ? `${overdueExpenses.length} vencida(s), somando ${money.format(overdueValue)}` : `${pendingExpenses.length} compromisso(s), nenhum vencido`;
   els.analyticsCoverageMetric.textContent = `${coverage.toFixed(0)}%`;
-  els.analyticsCoverageNote.textContent = coverage >= 100 ? `Sobra projetada de ${money.format(Math.max(result, 0))}` : `Faltam ${money.format(Math.max(-result, 0))} para cobrir tudo`;
-  els.analyticsCoverageCard.classList.toggle("risk", coverage < 100 && totals.expense > 0);
-  els.analyticsCoverageCard.classList.toggle("healthy", coverage >= 100 && totals.expense > 0);
-  els.historicalFirstDate.textContent = historicalItems.length ? formatDate(historicalItems[0].date) : "—";
+  els.analyticsCoverageNote.textContent = projectedResult >= 0 ? `Saldo projetado de ${money.format(projectedResult)}` : `Faltam ${money.format(Math.abs(projectedResult))} para cobrir tudo`;
+  els.analyticsCoverageCard.classList.toggle("risk", projectedResult < 0);
+  els.analyticsCoverageCard.classList.toggle("healthy", projectedResult >= 0);
+  els.analyticsCalculationPeriod.textContent = `${formatDate(start)} a ${formatDate(end)}`;
+  els.analyticsOpeningMetric.textContent = money.format(summary.openingBalance);
+  els.analyticsPeriodIncomeMetric.textContent = money.format(summary.income);
+  els.analyticsPaidExpenseMetric.textContent = money.format(summary.paidExpense);
+  els.analyticsAvailableMetric.textContent = money.format(summary.closingBalance);
+  els.analyticsAvailableCard.classList.toggle("risk", summary.closingBalance < 0);
+  els.analyticsAvailableCard.classList.toggle("healthy", summary.closingBalance >= 0);
+  els.analyticsProjectedMetric.textContent = money.format(summary.projectedBalance);
+  els.analyticsProjectedNote.textContent = `${money.format(summary.closingBalance)} disponíveis − ${money.format(summary.pendingExpense)} pendentes`;
+  els.analyticsProjectionLine.classList.toggle("risk", summary.projectedBalance < 0);
+  els.analyticsProjectionLine.classList.toggle("healthy", summary.projectedBalance >= 0);
+  els.analyticsTicketMetric.textContent = money.format(summary.ticketBalance);
+  els.analyticsTicketNote.textContent = `${money.format(summary.ticketIncome)} em créditos − ${money.format(summary.ticketExpense)} em gastos`;
+  els.historicalFirstDate.textContent = allHistoricalItems.length ? formatDate(allHistoricalItems[0].date) : "—";
   els.historicalIncomeMetric.textContent = money.format(historicalTotals.income);
   els.historicalExpenseMetric.textContent = money.format(historicalTotals.expense);
   els.historicalBalanceMetric.textContent = money.format(historicalBalance);
   els.historicalBalanceCard.classList.toggle("risk", historicalBalance < 0);
   els.historicalBalanceCard.classList.toggle("healthy", historicalBalance >= 0);
-  els.historicalPeriodLabel.textContent = historicalItems.length
-    ? `${formatDate(historicalItems[0].date)} até ${formatDate(todayIso)} · histórico fixo, independente do filtro acima`
+  els.historicalPeriodLabel.textContent = allHistoricalItems.length
+    ? `${formatDate(allHistoricalItems[0].date)} até ${formatDate(todayIso)} · histórico fixo, independente do filtro acima`
     : "Sem lançamentos históricos até hoje";
 
-  const analyticsTone = result < 0 ? "risk" : savingsRate >= 20 ? "healthy" : "attention";
+  const analyticsTone = summary.closingBalance < 0 || projectedResult < 0 ? "risk" : savingsRate >= 20 ? "healthy" : "attention";
   els.analyticsDecisionHero.classList.remove("risk", "attention", "healthy");
   els.analyticsDecisionHero.classList.add(analyticsTone);
   els.analyticsSavingsMetric.textContent = money.format(result);
-  els.analyticsSavingsTrend.textContent = totals.income ? `Taxa de economia: ${savingsRate.toFixed(1)}%` : "Sem receitas no período";
-  if (result < 0) {
-    els.analyticsHealthTitle.textContent = `🔴 Faltam ${money.format(Math.abs(result))} para o período fechar`;
-    els.analyticsHealthMessage.textContent = `As receitas cobrem ${coverage.toFixed(0)}% das despesas lançadas. ${pendingExpense ? `Ainda existem ${money.format(pendingExpense)} em contas pendentes.` : "Todas as despesas já foram pagas."} ${topGroup ? `O maior peso é ${topGroup.group}, com ${money.format(topGroup.value)}.` : ""}`;
+  els.analyticsSavingsTrend.textContent = `Projeção após pendências: ${money.format(projectedResult)}`;
+  if (summary.closingBalance < 0) {
+    els.analyticsHealthTitle.textContent = `🔴 Saldo disponível negativo em ${money.format(Math.abs(summary.closingBalance))}`;
+    els.analyticsHealthMessage.textContent = `A conta é: ${money.format(summary.openingBalance)} de saldo anterior + ${money.format(summary.income)} de receitas − ${money.format(summary.paidExpense)} já pagas. Além disso, ainda há ${money.format(summary.pendingExpense)} pendentes.`;
+  } else if (projectedResult < 0) {
+    els.analyticsHealthTitle.textContent = `🟠 Há saldo agora, mas faltam ${money.format(Math.abs(projectedResult))} para quitar tudo`;
+    els.analyticsHealthMessage.textContent = `Você possui ${money.format(summary.closingBalance)} disponíveis, porém as contas pendentes somam ${money.format(summary.pendingExpense)}. Não trate o saldo atual como sobra: parte dele já está comprometida.`;
   } else if (savingsRate >= 20) {
-    els.analyticsHealthTitle.textContent = `🟢 Período saudável: sobra de ${money.format(result)}`;
-    els.analyticsHealthMessage.textContent = `Depois de considerar todas as despesas lançadas, ${savingsRate.toFixed(1)}% das receitas permanecem livres. A meta saudável de preservar pelo menos 20% foi alcançada.`;
+    els.analyticsHealthTitle.textContent = `🟢 Todas as contas cabem e restam ${money.format(projectedResult)}`;
+    els.analyticsHealthMessage.textContent = `Após reservar ${money.format(summary.pendingExpense)} para as contas ainda abertas, o saldo projetado permanece positivo. Essa é a sobra efetiva do recorte, não apenas a diferença entre receitas e despesas.`;
   } else {
-    els.analyticsHealthTitle.textContent = `🟡 O período fecha, mas com margem pequena`;
-    els.analyticsHealthMessage.textContent = `A sobra projetada é ${money.format(result)}, equivalente a ${savingsRate.toFixed(1)}% das receitas. Para atingir a referência de 20%, preserve mais ${money.format(Math.max(totals.income * .2 - result, 0))}.`;
+    els.analyticsHealthTitle.textContent = `🟡 As contas cabem, mas a margem é curta`;
+    els.analyticsHealthMessage.textContent = `O saldo disponível é ${money.format(summary.closingBalance)} e cai para ${money.format(projectedResult)} depois das pendências. Evite assumir novos compromissos até aumentar essa margem.`;
   }
 
   renderModalityEvolutionChart(evolution);
   renderBalanceClosingChart(closingBalances);
   renderGroupBarChart(groups.slice(0, 10));
-  renderExpenseRanking(groups, totals.expense);
-  renderDecisionInsights({ groups, totals, variation, previousExpense, concentration, expenses, result, coverage, pendingExpense, overdueExpenses, overdueValue, savingsRate });
+  renderExpenseRanking(groups, summary.expense);
+  renderDecisionInsights({ groups, totals, variation, previousExpense, concentration, expenses, result: projectedResult, coverage, pendingExpense, overdueExpenses, overdueValue, savingsRate });
 }
 
 let balanceChartPoints = [];

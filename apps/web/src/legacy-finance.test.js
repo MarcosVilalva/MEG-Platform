@@ -67,4 +67,23 @@ const marchSummary = calculateFinancialSummary([
 assert.equal(Number(marchSummary.openingBalance.toFixed(2)), 1300);
 assert.equal(Number(marchSummary.availableIncome.toFixed(2)), 2000);
 
+const customRangeSummary = calculateFinancialSummary([
+  { date: '2026-05-10', type: 'income', incomeAmount: 1000 },
+  { date: '2026-05-20', type: 'expense', expenseAmount: 400, status: 'paid' },
+  { date: '2026-06-05', type: 'income', incomeAmount: 500 },
+  { date: '2026-06-10', type: 'expense', expenseAmount: 300, status: 'paid' },
+  { date: '2026-06-25', type: 'expense', expenseAmount: 200, status: 'pending' },
+  { date: '2026-07-02', type: 'income', incomeAmount: 200 },
+  { date: '2026-07-08', type: 'expense', expenseAmount: 100, status: 'paid' },
+  { date: '2026-07-12', type: 'expense', expenseAmount: 50, status: 'pending' },
+  { date: '2026-07-01', type: 'income', description: 'VEROCARD', incomeAmount: 300 },
+], '2026-06-01', '2026-07-14');
+assert.equal(customRangeSummary.openingBalance, 600);
+assert.equal(customRangeSummary.income, 700);
+assert.equal(customRangeSummary.paidExpense, 400);
+assert.equal(customRangeSummary.pendingExpense, 250);
+assert.equal(customRangeSummary.closingBalance, 900);
+assert.equal(customRangeSummary.projectedBalance, 650);
+assert.equal(customRangeSummary.ticketIncome, 300);
+
 console.log('MEG legacy financial reconciliation passed.');

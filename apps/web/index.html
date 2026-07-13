@@ -313,10 +313,25 @@
               <p id="analyticsHealthMessage">Comparando receitas, despesas e concentração dos gastos.</p>
             </div>
             <div class="decision-hero-value">
-              <span>Resultado do período</span>
+              <span>Saldo monetário disponível</span>
               <strong id="analyticsSavingsMetric">R$ 0,00</strong>
-              <small id="analyticsSavingsTrend">Taxa de economia: 0%</small>
+              <small id="analyticsSavingsTrend">Após as despesas já pagas</small>
             </div>
+          </section>
+
+          <section class="analytics-calculation-panel" aria-label="Memória de cálculo do diagnóstico">
+            <div class="analytics-calculation-heading"><div><small class="decision-eyebrow">MEMÓRIA DE CÁLCULO</small><h3>Como chegamos ao saldo</h3></div><span id="analyticsCalculationPeriod">Período selecionado</span></div>
+            <div class="analytics-equation">
+              <article><span>Saldo anterior</span><strong id="analyticsOpeningMetric">R$ 0,00</strong><small>Acumulado até o dia anterior</small></article>
+              <b>+</b>
+              <article><span>Receitas monetárias</span><strong id="analyticsPeriodIncomeMetric">R$ 0,00</strong><small>Dentro do período</small></article>
+              <b>−</b>
+              <article><span>Despesas pagas</span><strong id="analyticsPaidExpenseMetric">R$ 0,00</strong><small>Dinheiro que já saiu</small></article>
+              <b>=</b>
+              <article class="equation-result" id="analyticsAvailableCard"><span>Saldo disponível</span><strong id="analyticsAvailableMetric">R$ 0,00</strong><small>Posição real no fim do recorte</small></article>
+            </div>
+            <div class="analytics-projection-line" id="analyticsProjectionLine"><span>Depois de reservar as contas pendentes:</span><strong id="analyticsProjectedMetric">R$ 0,00</strong><small id="analyticsProjectedNote">Projeção após todos os pagamentos</small></div>
+            <div class="analytics-ticket-line"><span>🍽️ Verocard separado:</span><strong id="analyticsTicketMetric">R$ 0,00</strong><small id="analyticsTicketNote">Créditos menos gastos do ticket no período</small></div>
           </section>
 
           <section class="analytics-executive-strip" aria-label="Leitura executiva do período">
