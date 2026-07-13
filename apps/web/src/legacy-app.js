@@ -96,6 +96,7 @@ let selectedPeriod = {
   end: "",
 };
 let selectedView = "dashboard";
+let analyticsDefaultPeriodApplied = false;
 let selectedPendingMonth = currentMonth;
 let analyticsFilters = {
   groups: [],
@@ -331,6 +332,7 @@ function replaceImportedState(transactions, options = {}) {
     catalogs: state.catalogs || DEFAULT_CATALOGS,
   });
   originalTransactionsById = new Map(state.transactions.map((item) => [item.id, item]));
+  analyticsDefaultPeriodApplied = false;
   saveState(options);
   render();
   return state.transactions.length;
@@ -2080,7 +2082,17 @@ function setView(view) {
   els.navItems.forEach((item) => item.classList.toggle("active", item.dataset.view === view));
   els.views.forEach((item) => item.classList.toggle("active", item.id === view));
   if (view === "cashflow") requestAnimationFrame(renderCashflow);
-  if (view === "analytics") requestAnimationFrame(renderAnalytics);
+  if (view === "analytics" && !analyticsDefaultPeriodApplied) {
+    const historicalDates = state.transactions
+      .map((item) => String(item.date || ""))
+      .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date) && date <= todayIso)
+      .sort();
+    selectedPeriod.mode = "range";
+    selectedPeriod.start = historicalDates[0] || `${currentMonth}-01`;
+    selectedPeriod.end = todayIso;
+    analyticsDefaultPeriodApplied = true;
+    render();
+  } else if (view === "analytics") requestAnimationFrame(renderAnalytics);
   if (view === "dashboard") requestAnimationFrame(renderCategoryChart);
 }
 
