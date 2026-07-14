@@ -139,6 +139,12 @@ body {
   color: var(--text);
 }
 
+.mobile-menu-button,
+.sidebar-close-button,
+.sidebar-backdrop {
+  display: none;
+}
+
 .validation-banner { position: sticky; top: 0; z-index: 1000; padding: 9px 16px; background: #f7d77c; color: #4d3900; text-align: center; font-size: .78rem; font-weight: 900; letter-spacing: .03em; }
 
 button,
@@ -1970,29 +1976,107 @@ tbody tr:hover {
 
 @media (max-width: 980px) {
   .app-shell {
-    grid-template-columns: 1fr;
+    display: block;
+    min-height: 100dvh;
   }
 
   .sidebar {
-    position: static;
-    height: auto;
-    padding: 16px;
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 1200;
+    width: min(86vw, 320px);
+    height: 100dvh;
+    padding: calc(18px + env(safe-area-inset-top)) 18px calc(24px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translateX(-105%);
+    transition: transform 220ms ease;
+    box-shadow: 18px 0 45px rgba(3, 31, 26, .28);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .mobile-menu-button {
+    position: fixed;
+    top: calc(12px + env(safe-area-inset-top));
+    left: 12px;
+    z-index: 1100;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 14px;
+    color: #fff;
+    background: rgba(9, 77, 66, .96);
+    box-shadow: 0 10px 28px rgba(4, 54, 45, .25);
+    backdrop-filter: blur(12px);
+    font-weight: 850;
+  }
+
+  .mobile-menu-button svg {
+    width: 21px;
+    height: 21px;
+    fill: currentColor;
+  }
+
+  .sidebar-close-button {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    margin-left: auto;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 13px;
+    color: #fff;
+    background: rgba(255,255,255,.08);
+    font-size: 1.65rem;
+    line-height: 1;
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1150;
+    display: block;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+    background: rgba(3, 25, 21, .55);
+    backdrop-filter: blur(3px);
+    transition: opacity 180ms ease;
+  }
+
+  .sidebar-backdrop.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  body.mobile-menu-open {
+    overflow: hidden;
   }
 
   .nav-list {
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   .nav-item {
-    justify-content: center;
+    justify-content: flex-start;
+    min-height: 48px;
+    padding: 12px 14px;
   }
 
   .nav-item svg {
-    display: none;
+    display: block;
   }
 
   .content {
-    padding: 20px;
+    width: 100%;
+    padding: calc(72px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));
   }
 
   .kpi-grid,
@@ -2086,6 +2170,7 @@ tbody tr:hover {
   transform: translateY(-2px);
 }
 .transaction-date-cell { white-space: nowrap; }
+.transaction-date-value { display: inline-flex; align-items: center; gap: 8px; }
 .transaction-edit-button {
   display: inline-grid;
   place-items: center;
@@ -2115,6 +2200,189 @@ tbody tr:hover {
 }
 
 @media (max-width: 680px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .content {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .topbar {
+    gap: 18px;
+    margin-bottom: 20px;
+  }
+
+  .topbar h1 {
+    font-size: clamp(1.75rem, 10vw, 2.35rem);
+    line-height: 1.04;
+  }
+
+  .topbar-actions .button,
+  .period-control label,
+  .period-control select,
+  .period-control input,
+  .filter-row input,
+  .filter-row select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .panel,
+  .metric,
+  .mini-metric {
+    border-radius: 16px;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .section-heading {
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .table-panel:has(.transactions-table) {
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .table-panel:has(.transactions-table) .table-wrap {
+    max-height: none;
+    min-height: 0;
+    overflow: visible;
+    scrollbar-gutter: auto;
+  }
+
+  .transactions-table {
+    display: block;
+    min-width: 0;
+    width: 100%;
+    padding: 0;
+    border-spacing: 0;
+    background: transparent;
+  }
+
+  .transactions-table thead {
+    display: none;
+  }
+
+  .transactions-table tbody {
+    display: grid;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .transactions-table tbody .transaction-row {
+    display: grid;
+    width: 100%;
+    padding: 14px;
+    border: 1px solid rgba(101, 125, 116, .18);
+    border-left: 5px solid #c34337;
+    border-radius: 18px;
+    background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(253,235,232,.94));
+    box-shadow: 0 8px 24px rgba(26, 53, 47, .08);
+  }
+
+  .transactions-table tbody .transaction-income-row {
+    border-left-color: #168463;
+    background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(226,247,238,.94));
+  }
+
+  .transactions-table tbody .transaction-row td {
+    display: grid;
+    grid-template-columns: minmax(92px, .42fr) minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    width: 100%;
+    padding: 8px 0;
+    border: 0;
+    border-bottom: 1px solid rgba(101, 125, 116, .12);
+    border-radius: 0;
+    background: transparent;
+    overflow-wrap: anywhere;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .transactions-table tbody .transaction-row td::before {
+    color: #657872;
+    font-size: .68rem;
+    font-weight: 900;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+  }
+
+  .transactions-table tbody .transaction-row td:nth-child(1)::before { content: "Data"; }
+  .transactions-table tbody .transaction-row td:nth-child(2)::before { content: "Dia"; }
+  .transactions-table tbody .transaction-row td:nth-child(3)::before { content: "Tipo"; }
+  .transactions-table tbody .transaction-row td:nth-child(4)::before { content: "Descrição"; }
+  .transactions-table tbody .transaction-row td:nth-child(5)::before { content: "Receita"; }
+  .transactions-table tbody .transaction-row td:nth-child(6)::before { content: "Classificação"; }
+  .transactions-table tbody .transaction-row td:nth-child(7)::before { content: "Grupo"; }
+  .transactions-table tbody .transaction-row td:nth-child(8)::before { content: "Despesa"; }
+  .transactions-table tbody .transaction-row td:nth-child(9)::before { content: "Pagamento"; }
+  .transactions-table tbody .transaction-row td:nth-child(10)::before { content: "Situação"; }
+  .transactions-table tbody .transaction-row td:nth-child(11)::before { content: "Modalidade"; }
+  .transactions-table tbody .transaction-row td:nth-child(12)::before { content: "Observações"; }
+  .transactions-table tbody .transaction-row td:nth-child(13)::before { content: "Natureza"; }
+
+  .transactions-table tbody .transaction-row td:empty {
+    display: none;
+  }
+
+  .transactions-table tbody .transaction-row td:last-child {
+    padding-bottom: 0;
+    border: 0;
+  }
+
+  .transaction-date-cell {
+    white-space: normal;
+  }
+
+  .transaction-edit-button {
+    margin-right: 6px;
+  }
+
+  .transactions-table tbody > tr:not(.transaction-row) {
+    display: block;
+  }
+
+  .transactions-table tbody > tr:not(.transaction-row) td {
+    display: block;
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+  }
+
+  .modal {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    margin: auto;
+    border-radius: 18px;
+    overflow-y: auto;
+  }
+
+  .modal form {
+    padding: 18px 15px;
+  }
+
+  .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    padding: 4px 0 10px;
+    background: #fff;
+  }
+
   .topbar,
   .section-heading {
     align-items: stretch;

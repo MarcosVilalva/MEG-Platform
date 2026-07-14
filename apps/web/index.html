@@ -2,19 +2,24 @@
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>MEG Financas</title>
     <link rel="stylesheet" href="/src/legacy-styles.css" />
   </head>
   <body>
     <div class="app-shell">
-      <aside class="sidebar" aria-label="Navegacao principal">
+      <button class="mobile-menu-button" id="mobileMenuBtn" type="button" aria-controls="primarySidebar" aria-expanded="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z"/></svg>
+        <span>Menu</span>
+      </button>
+      <aside class="sidebar" id="primarySidebar" aria-label="Navegacao principal">
         <div class="brand">
           <span class="brand-mark" aria-hidden="true">M</span>
           <div>
             <strong>MEG Financas</strong>
             <small>Despesas sob controle</small>
           </div>
+          <button class="sidebar-close-button" id="sidebarCloseBtn" type="button" aria-label="Fechar menu">&times;</button>
         </div>
 
         <div class="cloud-user">
@@ -64,6 +69,7 @@
           </button>
         </nav>
       </aside>
+      <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu"></button>
 
       <main class="content">
         <header class="topbar">

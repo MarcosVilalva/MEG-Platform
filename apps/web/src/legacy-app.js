@@ -105,6 +105,10 @@ let analyticsFilters = {
 const transactionColumnFilters = {};
 
 const els = {
+  sidebar: document.querySelector("#primarySidebar"),
+  mobileMenuBtn: document.querySelector("#mobileMenuBtn"),
+  sidebarCloseBtn: document.querySelector("#sidebarCloseBtn"),
+  sidebarBackdrop: document.querySelector("#sidebarBackdrop"),
   periodMode: document.querySelector("#periodMode"),
   monthFilter: document.querySelector("#monthFilter"),
   yearFilter: document.querySelector("#yearFilter"),
@@ -2005,12 +2009,12 @@ function renderTransactions() {
         .map(
           (item) => `
         <tr class="transaction-row ${item.type === "income" ? "transaction-income-row" : "transaction-expense-row"}">
-          <td class="transaction-date-cell">
+          <td class="transaction-date-cell"><span class="transaction-date-value">
             <button class="transaction-edit-button" type="button" data-edit="${item.id}" aria-label="Editar ${escapeHtml(item.description)}" title="Editar lançamento">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m4 17.2 9.8-9.8 2.8 2.8L6.8 20H4v-2.8ZM18.8 8 16 5.2l1.4-1.4a2 2 0 0 1 2.8 2.8L18.8 8Z"/></svg>
             </button>
             <span>${formatDate(item.date)}</span>
-          </td>
+          </span></td>
           <td>${escapeHtml(item.weekday || weekdayShort(item.date))}</td>
           <td><span class="pill ${item.type === "expense" ? "expense" : ""}">${escapeHtml(item.launchType || (item.type === "expense" ? "DESPESA" : "RECEITA"))}</span></td>
           <td>
@@ -2332,6 +2336,7 @@ function removeCatalogItem(type, value) {
 
 function setView(view) {
   selectedView = view;
+  setMobileMenu(false);
   els.navItems.forEach((item) => item.classList.toggle("active", item.dataset.view === view));
   els.views.forEach((item) => item.classList.toggle("active", item.id === view));
   if (view === "cashflow") requestAnimationFrame(renderCashflow);
@@ -2347,6 +2352,15 @@ function setView(view) {
     render();
   } else if (view === "analytics") requestAnimationFrame(renderAnalytics);
   if (view === "dashboard") requestAnimationFrame(renderCategoryChart);
+}
+
+function setMobileMenu(open) {
+  const isMobile = window.matchMedia("(max-width: 980px)").matches;
+  const shouldOpen = Boolean(open && isMobile);
+  els.sidebar?.classList.toggle("mobile-open", shouldOpen);
+  els.sidebarBackdrop?.classList.toggle("visible", shouldOpen);
+  els.mobileMenuBtn?.setAttribute("aria-expanded", String(shouldOpen));
+  document.body.classList.toggle("mobile-menu-open", shouldOpen);
 }
 
 function syncAmountFields() {
@@ -2897,6 +2911,15 @@ document.addEventListener("change", (event) => {
 });
 
 els.navItems.forEach((item) => item.addEventListener("click", () => setView(item.dataset.view)));
+els.mobileMenuBtn?.addEventListener("click", () => setMobileMenu(true));
+els.sidebarCloseBtn?.addEventListener("click", () => setMobileMenu(false));
+els.sidebarBackdrop?.addEventListener("click", () => setMobileMenu(false));
+window.addEventListener("resize", () => {
+  if (!window.matchMedia("(max-width: 980px)").matches) setMobileMenu(false);
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") setMobileMenu(false);
+});
 const canManageUsers = window.MEG_CLOUD?.user?.role === "ADMIN" && typeof window.MEG_CLOUD?.listManagedUsers === "function";
 els.adminUsersNav?.classList.toggle("hidden", !canManageUsers);
 els.adminUsersNav?.addEventListener("click", loadManagedUsers);
