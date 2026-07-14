@@ -843,15 +843,17 @@ function filterAnalyticsPayments(items) {
 function render() {
   renderPeriodControls();
   renderDatalists();
-  renderAnalyticsFilters();
-  renderDashboard();
-  renderCashflow();
-  renderAnalytics();
-  renderTransactions();
-  renderBudgets();
-  renderPending();
-  renderCatalogs();
-  renderSettings();
+  if (selectedView === "dashboard") renderDashboard();
+  if (selectedView === "cashflow") renderCashflow();
+  if (selectedView === "analytics") {
+    renderAnalyticsFilters();
+    renderAnalytics();
+  }
+  if (selectedView === "transactions") renderTransactions();
+  if (selectedView === "budgets") renderBudgets();
+  if (selectedView === "pending") renderPending();
+  if (selectedView === "catalogs") renderCatalogs();
+  if (selectedView === "settings") renderSettings();
 }
 
 function renderDashboard() {
@@ -1922,6 +1924,14 @@ function renderMonthProgress() {
   els.monthNextDueDescription.textContent = nextDate ? `${money.format(nextTotal)} · ${nextDescription}` : "Nenhuma conta pendente";
 }
 
+function replaceState(nextState) {
+  state = normalizeState(nextState || { transactions: [], budgets: {} });
+  originalTransactionsById = new Map(state.transactions.map((item) => [item.id, item]));
+  analyticsDefaultPeriodApplied = false;
+  render();
+  return state.transactions.length;
+}
+
 function sortTransactions(items, sortMode) {
   const expenseValue = (item) => (item.type === "expense" ? Number(item.expenseAmount || item.amount || 0) : 0);
   const dateCompare = (a, b) => b.date.localeCompare(a.date) || b.description.localeCompare(a.description, "pt-BR");
@@ -2343,7 +2353,7 @@ function setView(view) {
   setMobileMenu(false);
   els.navItems.forEach((item) => item.classList.toggle("active", item.dataset.view === view));
   els.views.forEach((item) => item.classList.toggle("active", item.id === view));
-  if (view === "cashflow") requestAnimationFrame(renderCashflow);
+  document.querySelectorAll("[data-mobile-view]").forEach((item) => item.classList.toggle("active", item.dataset.mobileView === view));
   if (view === "analytics" && !analyticsDefaultPeriodApplied) {
     const historicalDates = state.transactions
       .map((item) => String(item.date || ""))
@@ -2354,8 +2364,9 @@ function setView(view) {
     selectedPeriod.end = todayIso;
     analyticsDefaultPeriodApplied = true;
     render();
-  } else if (view === "analytics") requestAnimationFrame(renderAnalytics);
-  if (view === "dashboard") requestAnimationFrame(renderCategoryChart);
+  } else {
+    requestAnimationFrame(render);
+  }
 }
 
 function setMobileMenu(open) {
@@ -2977,6 +2988,9 @@ document.addEventListener("change", (event) => {
 });
 
 els.navItems.forEach((item) => item.addEventListener("click", () => setView(item.dataset.view)));
+document.querySelectorAll("[data-mobile-view]").forEach((item) => item.addEventListener("click", () => setView(item.dataset.mobileView)));
+document.querySelector("[data-mobile-action='new']")?.addEventListener("click", () => openTransactionDialog());
+document.querySelector("[data-mobile-action='menu']")?.addEventListener("click", () => setMobileMenu(true));
 els.mobileMenuBtn?.addEventListener("click", () => setMobileMenu(true));
 els.sidebarCloseBtn?.addEventListener("click", () => setMobileMenu(false));
 els.sidebarBackdrop?.addEventListener("click", () => setMobileMenu(false));
@@ -3090,6 +3104,7 @@ render();
 
 window.MEG_APP = {
   replaceImportedState,
+  replaceState,
   getState: () => structuredClone(state),
   render
 };

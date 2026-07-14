@@ -3,6 +3,7 @@ const ACCESS_KEY = 'meg-access-token';
 const REFRESH_KEY = 'meg-refresh-token';
 const USER_KEY = 'meg-auth-user';
 const STATE_KEY = 'meg-financas-state-v4-paid-fixes';
+const REVISION_KEY = 'meg-cloud-revision-v1';
 
 let revision = 0;
 let saveTimer;
@@ -77,15 +78,29 @@ function friendlyAuthError(code) {
 function authMarkup() {
   return `
     <div class="auth-shell" id="authShell">
+      <section class="auth-showcase" aria-label="Apresentação do MEG Finanças">
+        <div class="auth-showcase-brand"><span>M</span><strong>MEG Finanças</strong></div>
+        <div class="auth-showcase-copy">
+          <small>SEU CONTROLE FINANCEIRO, TODOS OS DIAS</small>
+          <h1>Clareza para decidir.<br>Agilidade para registrar.</h1>
+          <p>Organize receitas, despesas e vencimentos em um só lugar. Acompanhe o mês, receba alertas e cuide do seu dinheiro com confiança.</p>
+        </div>
+        <div class="auth-benefits">
+          <span>✓ Visão rápida da sua situação</span>
+          <span>✓ Lançamentos e contas a pagar</span>
+          <span>✓ Alertas por WhatsApp e e-mail</span>
+        </div>
+        <div class="auth-trust"><b>Dados sincronizados</b><span>Web e aplicativo sempre juntos</span></div>
+      </section>
       <section class="auth-card">
-        <div class="auth-brand"><span>M</span><div><strong>MEG Finanças</strong><small>Seus dados protegidos e sincronizados</small></div></div>
+        <div class="auth-brand"><span>M</span><div><strong>MEG Finanças</strong><small>Seu dinheiro. Suas escolhas. Seu controle.</small></div></div>
         <div class="auth-tabs"><button class="active" data-auth-tab="login">Entrar</button><button data-auth-tab="register">Solicitar acesso</button></div>
         <form id="loginForm" class="auth-form">
-          <h1>Acesse sua conta</h1>
+          <div class="auth-form-heading"><small>ÁREA SEGURA</small><h1>Bem-vindo de volta</h1><p>Entre para visualizar seu painel financeiro.</p></div>
           <label>E-mail<input name="email" type="email" autocomplete="email" required /></label>
           <label>Senha<input name="password" type="password" autocomplete="current-password" minlength="8" required /></label>
           <p class="auth-error" id="loginError"></p>
-          <button class="button primary" type="submit">Entrar no MEG</button>
+          <button class="button primary" type="submit">Acessar meu painel <span>→</span></button>
           <button class="auth-link" id="forgotPasswordButton" type="button">Esqueci minha senha</button>
         </form>
         <form id="registerForm" class="auth-form hidden">
@@ -219,6 +234,7 @@ async function loadCloudState() {
   if (!response.ok) throw new Error('Não foi possível carregar seus dados da nuvem.');
   const payload = await response.json();
   revision = payload.revision || 0;
+  localStorage.setItem(REVISION_KEY, String(revision));
   if (payload.state) {
     localStorage.setItem(STATE_KEY, JSON.stringify(payload.state));
     window.MEG_REAL_STATE = payload.state;
@@ -226,9 +242,11 @@ async function loadCloudState() {
     localStorage.removeItem(STATE_KEY);
     window.MEG_REAL_STATE = { transactions: [], budgets: {} };
   }
+  return payload;
 }
 
 async function saveNow(state, { force = false } = {}) {
+  if (window.MEG_CLOUD?.whenFresh) await window.MEG_CLOUD.whenFresh.catch(() => undefined);
   const response = await api('/app-state', {
     method: 'PUT',
     body: JSON.stringify({ state, ...(force ? {} : { expectedRevision: revision }) })
@@ -244,6 +262,7 @@ async function saveNow(state, { force = false } = {}) {
     throw new Error(`Falha ao salvar na nuvem (${response.status}): ${detail}`);
   }
   revision = payload.revision;
+  localStorage.setItem(REVISION_KEY, String(revision));
   const status = document.querySelector('#cloudSyncStatus');
   if (status) status.textContent = `Salvo ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
 }
@@ -259,9 +278,23 @@ function queueSave(state) {
 
 export async function bootstrapCloud() {
   const user = await validateOrLogin();
-  await loadCloudState();
+  let cachedState = null;
+  try { cachedState = JSON.parse(localStorage.getItem(STATE_KEY) || 'null'); } catch {}
+  const hasCache = Array.isArray(cachedState?.transactions);
+  revision = Number(localStorage.getItem(REVISION_KEY) || 0);
+  const cachedRevision = revision;
+  if (hasCache) window.MEG_REAL_STATE = cachedState;
+  const freshState = loadCloudState().then((payload) => {
+    const remoteState = window.MEG_REAL_STATE;
+    return {
+      state: remoteState,
+      changed: hasCache && Number(payload.revision || 0) !== cachedRevision
+    };
+  });
+  if (!hasCache) await freshState;
   window.MEG_CLOUD = {
     user,
+    whenFresh: freshState,
     saveState: queueSave,
     saveNow,
     async reload() {

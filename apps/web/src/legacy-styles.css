@@ -60,6 +60,47 @@
 .auth-link { border: 0; background: transparent; color: #0b7567; font: inherit; font-weight: 800; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .auth-error { min-height: 20px; margin: 0; color: #bd2b2b; }
 .auth-error.success { color: #087562; }
+.auth-shell {
+  grid-template-columns: minmax(0, 1.08fr) minmax(420px, .92fr);
+  gap: 0;
+  padding: clamp(20px, 4vw, 64px);
+  background:
+    radial-gradient(circle at 12% 14%, rgba(68, 231, 196, .24), transparent 30%),
+    radial-gradient(circle at 88% 88%, rgba(27, 148, 127, .22), transparent 34%),
+    linear-gradient(135deg, #032d27 0%, #075348 52%, #0b7567 100%);
+}
+.auth-showcase {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: min(720px, calc(100vh - 80px));
+  padding: clamp(36px, 5vw, 78px);
+  overflow: hidden;
+  border-radius: 34px 0 0 34px;
+  color: #fff;
+  background: linear-gradient(155deg, rgba(3,44,38,.98), rgba(8,111,95,.88));
+  box-shadow: 0 38px 100px rgba(0,0,0,.28);
+}
+.auth-showcase::after { content: ''; position: absolute; width: 420px; height: 420px; right: -180px; bottom: -180px; border: 70px solid rgba(80,230,198,.10); border-radius: 50%; }
+.auth-showcase-brand { display: flex; align-items: center; gap: 14px; font-size: 1.3rem; }
+.auth-showcase-brand > span { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 15px; color: #063f37; background: #50e6c6; font-weight: 950; }
+.auth-showcase-copy { position: relative; z-index: 1; max-width: 680px; }
+.auth-showcase-copy small, .auth-form-heading > small { color: #50e6c6; font-size: .73rem; font-weight: 900; letter-spacing: .16em; }
+.auth-showcase-copy h1 { margin: 16px 0 20px; font-size: clamp(2.4rem, 4.4vw, 5rem); line-height: .98; letter-spacing: -.055em; }
+.auth-showcase-copy p { max-width: 620px; margin: 0; color: rgba(255,255,255,.78); font-size: clamp(1rem, 1.35vw, 1.2rem); line-height: 1.65; }
+.auth-benefits { display: grid; gap: 11px; color: rgba(255,255,255,.88); font-weight: 750; }
+.auth-benefits span::first-letter { color: #50e6c6; }
+.auth-trust { position: absolute; right: 34px; bottom: 34px; z-index: 2; display: grid; padding: 14px 18px; border: 1px solid rgba(255,255,255,.18); border-radius: 16px; background: rgba(255,255,255,.08); backdrop-filter: blur(12px); }
+.auth-trust span { margin-top: 3px; color: rgba(255,255,255,.65); font-size: .78rem; }
+.auth-card { align-self: stretch; display: flex; flex-direction: column; justify-content: center; width: 100%; min-height: min(720px, calc(100vh - 80px)); padding: clamp(34px, 5vw, 72px); border-radius: 0 34px 34px 0; box-shadow: 24px 38px 100px rgba(0,0,0,.2); }
+.auth-form-heading { display: grid; gap: 5px; margin-bottom: 6px; }
+.auth-form-heading h1 { margin: 4px 0 0; }
+.auth-form-heading p { margin: 0; color: #647873; font-weight: 500; }
+.auth-form input { min-height: 52px; background: #f8fbfa; transition: border-color .18s ease, box-shadow .18s ease, background .18s ease; }
+.auth-form input:focus { outline: 0; border-color: #0b8d7b; background: #fff; box-shadow: 0 0 0 4px rgba(11,141,123,.12); }
+.auth-form .button.primary { min-height: 54px; gap: 12px; background: linear-gradient(135deg, #0b8d7b, #075c50); box-shadow: 0 12px 26px rgba(8,111,95,.22); }
+.mobile-dock { display: none; }
 .settings-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
 .notification-preview { min-height: 110px; max-height: 320px; overflow: auto; padding: 14px; border: 1px solid #d5e4e0; border-radius: 12px; background: #f5faf8; color: #173b34; white-space: pre-wrap; font: 13px/1.55 system-ui, sans-serif; }
 .recipient-form { display: grid; grid-template-columns: minmax(150px, .8fr) minmax(220px, 1fr) auto; gap: 10px; margin-top: 16px; }
@@ -1993,6 +2034,13 @@ tbody tr:hover {
 }
 
 @media (max-width: 980px) {
+  .auth-shell { display: grid; grid-template-columns: 1fr; align-content: center; padding: 18px; overflow-y: auto; }
+  .auth-showcase { min-height: auto; padding: 26px; border-radius: 24px 24px 0 0; }
+  .auth-showcase-copy h1 { margin: 20px 0 12px; font-size: clamp(2rem, 8vw, 3.2rem); }
+  .auth-showcase-copy p { font-size: .95rem; }
+  .auth-benefits, .auth-trust { display: none; }
+  .auth-card { min-height: auto; padding: 26px; border-radius: 0 0 24px 24px; }
+  .auth-brand { display: none; }
   .app-shell {
     display: block;
     min-height: 100dvh;
@@ -2120,6 +2168,37 @@ tbody tr:hover {
   .budget-goals-grid, .budget-editor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .current-month-health-equation { display: grid; grid-template-columns: 1fr; }
   .current-month-health-equation > b { display: none; }
+}
+
+@media (max-width: 680px) {
+  body.native-mobile .content { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  body.native-mobile .mobile-menu-button { display: none; }
+  body.native-mobile .mobile-dock {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    z-index: 1080;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 7px;
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 22px;
+    background: rgba(5,55,47,.96);
+    box-shadow: 0 16px 45px rgba(3,38,32,.35);
+    backdrop-filter: blur(16px);
+  }
+  body.native-mobile .mobile-dock button { display: grid; justify-items: center; gap: 2px; min-height: 54px; padding: 5px; border: 0; border-radius: 15px; color: rgba(255,255,255,.74); background: transparent; font: 750 .72rem/1.1 system-ui, sans-serif; }
+  body.native-mobile .mobile-dock button:nth-child(2) { color: #073e35; background: #50e6c6; box-shadow: 0 8px 20px rgba(80,230,198,.24); }
+  body.native-mobile .mobile-dock span { font-size: 1.25rem; line-height: 1; }
+  body.native-mobile .topbar { margin-top: 0; }
+  body.native-mobile .topbar h1 { font-size: 2rem; }
+  body.native-mobile .topbar-actions { gap: 8px; }
+  body.native-mobile .finance-panels,
+  body.native-mobile .current-grid,
+  body.native-mobile .month-progress-stats { grid-template-columns: 1fr; }
+  body.native-mobile .dashboard-payables { max-height: 52vh; overflow-y: auto; overscroll-behavior: contain; }
+  body.native-mobile dialog.modal { width: calc(100% - 16px); max-height: calc(100dvh - 20px); margin: 10px auto; border-radius: 22px; }
 }
 
 .transactions-table {

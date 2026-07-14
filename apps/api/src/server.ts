@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import compress from '@fastify/compress';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { config } from './config';
@@ -36,6 +37,13 @@ await app.register(cors, {
     callback(new Error('Origin not allowed by CORS'), false);
   },
   credentials: true
+});
+
+// O estado financeiro pode conter milhares de lançamentos. A compressão reduz
+// drasticamente o volume transferido para a web e para o aplicativo Android.
+await app.register(compress, {
+  global: true,
+  threshold: 1024
 });
 
 await app.register(swagger, {

@@ -4,6 +4,8 @@ import { excelDateToIso } from './legacy-import-utils.js';
 
 const validationMode = new URLSearchParams(location.search).get('validacao') === '1';
 const localStateKey = 'meg-financas-state-v4-paid-fixes';
+const nativeMobileMode = import.meta.env.VITE_MOBILE_APP === 'true' || Boolean(window.Capacitor?.isNativePlatform?.());
+document.body.classList.toggle('native-mobile', nativeMobileMode);
 
 function bootstrapValidationMode() {
   let savedState = null;
@@ -292,6 +294,9 @@ async function start() {
   else await bootstrapCloud();
   await import('./legacy-app.js');
   wireLegacyApp();
+  window.MEG_CLOUD?.whenFresh?.then((result) => {
+    if (result?.changed && result.state) window.MEG_APP?.replaceState(result.state);
+  }).catch(() => undefined);
   if (validationMode) {
     document.body.insertAdjacentHTML('afterbegin', '<div class="validation-banner">AMBIENTE LOCAL DE VALIDAÇÃO — nenhuma alteração será enviada para a nuvem</div>');
     const status = document.querySelector('#cloudSyncStatus');
