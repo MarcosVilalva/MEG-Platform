@@ -243,6 +243,33 @@
             </div>
           </section>
 
+          <section class="cashflow-answer-grid" aria-label="Respostas rápidas sobre o caixa">
+            <article class="cashflow-answer-card available">
+              <span class="cashflow-answer-icon" aria-hidden="true">💳</span>
+              <div><small>Disponível após o que já foi pago</small><strong id="cashflowAvailableMetric">R$ 0,00</strong><p id="cashflowAvailableTrend">Saldo trazido mais receitas, menos pagamentos realizados.</p></div>
+            </article>
+            <article class="cashflow-answer-card committed">
+              <span class="cashflow-answer-icon" aria-hidden="true">🧾</span>
+              <div><small>Ainda comprometido</small><strong id="cashflowPendingMetric">R$ 0,00</strong><p id="cashflowPendingTrend">Contas pendentes dentro do período.</p></div>
+            </article>
+            <article class="cashflow-answer-card" id="cashflowSafeCard">
+              <span class="cashflow-answer-icon" id="cashflowSafeIcon" aria-hidden="true">🛡️</span>
+              <div><small id="cashflowSafeLabel">Margem segura ao final</small><strong id="cashflowSafeMetric">R$ 0,00</strong><p id="cashflowSafeTrend">Valor livre depois de cumprir todas as obrigações.</p></div>
+            </article>
+          </section>
+
+          <section class="cashflow-equation" aria-label="Cálculo do fechamento projetado">
+            <div><small>Saldo trazido</small><strong id="cashflowEquationOpening">R$ 0,00</strong></div>
+            <b aria-hidden="true">+</b>
+            <div><small>Receitas</small><strong id="cashflowEquationIncome">R$ 0,00</strong></div>
+            <b aria-hidden="true">−</b>
+            <div><small>Despesas pagas</small><strong id="cashflowEquationPaid">R$ 0,00</strong></div>
+            <b aria-hidden="true">−</b>
+            <div><small>Despesas pendentes</small><strong id="cashflowEquationPending">R$ 0,00</strong></div>
+            <b aria-hidden="true">=</b>
+            <div class="cashflow-equation-result" id="cashflowEquationResult"><small>Fechamento projetado</small><strong id="cashflowEquationClosing">R$ 0,00</strong></div>
+          </section>
+
           <div class="kpi-grid">
             <article class="metric">
               <span>Saldo inicial</span>
@@ -444,7 +471,7 @@
 
           <section class="panel table-panel">
             <div class="table-wrap">
-              <table>
+              <table class="transactions-table">
                 <thead>
                   <tr>
                     <th>DATA</th>
@@ -459,7 +486,7 @@
                     <th>SITUAÇÃO</th>
                     <th>MODALIDADE</th>
                     <th>OBSERVAÇÕES</th>
-                    <th class="actions-col">Ações</th>
+                    <th class="actions-col">Detalhes</th>
                   </tr>
                   <tr class="column-filter-row">
                     <th><input data-column-filter="date" type="date" aria-label="Filtrar por data" /></th>

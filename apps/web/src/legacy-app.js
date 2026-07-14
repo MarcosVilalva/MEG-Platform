@@ -179,6 +179,21 @@ const els = {
   cashflowHealthMessage: document.querySelector("#cashflowHealthMessage"),
   cashflowClosingMetric: document.querySelector("#cashflowClosingMetric"),
   cashflowCoverageTrend: document.querySelector("#cashflowCoverageTrend"),
+  cashflowAvailableMetric: document.querySelector("#cashflowAvailableMetric"),
+  cashflowAvailableTrend: document.querySelector("#cashflowAvailableTrend"),
+  cashflowPendingMetric: document.querySelector("#cashflowPendingMetric"),
+  cashflowPendingTrend: document.querySelector("#cashflowPendingTrend"),
+  cashflowSafeCard: document.querySelector("#cashflowSafeCard"),
+  cashflowSafeIcon: document.querySelector("#cashflowSafeIcon"),
+  cashflowSafeLabel: document.querySelector("#cashflowSafeLabel"),
+  cashflowSafeMetric: document.querySelector("#cashflowSafeMetric"),
+  cashflowSafeTrend: document.querySelector("#cashflowSafeTrend"),
+  cashflowEquationOpening: document.querySelector("#cashflowEquationOpening"),
+  cashflowEquationIncome: document.querySelector("#cashflowEquationIncome"),
+  cashflowEquationPaid: document.querySelector("#cashflowEquationPaid"),
+  cashflowEquationPending: document.querySelector("#cashflowEquationPending"),
+  cashflowEquationResult: document.querySelector("#cashflowEquationResult"),
+  cashflowEquationClosing: document.querySelector("#cashflowEquationClosing"),
   cashflowChartSummary: document.querySelector("#cashflowChartSummary"),
   cashflowChartLegend: document.querySelector("#cashflowChartLegend"),
   cashflowChart: document.querySelector("#cashflowChart"),
@@ -1097,6 +1112,11 @@ function renderCashflow() {
   els.cashflowLowTrend.textContent = data.lowPoint ? `Em ${formatDate(data.lowPoint.date)}` : "Sem movimentos";
   const closingBalance = data.points.at(-1)?.value ?? data.openingBalance;
   const availableResources = data.openingBalance + data.totals.income;
+  const paidExpenses = data.movements
+    .filter((item) => item.type === "expense" && (item.status === "paid" || normalizeText(item.situation) === "PAGO"))
+    .reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const pendingExpenses = Math.max(data.totals.expense - paidExpenses, 0);
+  const availableAfterPaid = availableResources - paidExpenses;
   const coverage = data.totals.expense ? (availableResources / data.totals.expense) * 100 : 100;
   const negativePoints = data.points.filter((point) => point.value < 0);
   const tone = closingBalance < 0 || negativePoints.length ? "risk" : coverage < 110 ? "attention" : "healthy";
@@ -1104,6 +1124,25 @@ function renderCashflow() {
   els.cashflowDecisionHero.classList.add(tone);
   els.cashflowClosingMetric.textContent = money.format(closingBalance);
   els.cashflowCoverageTrend.textContent = `${coverage.toFixed(0)}% das saídas cobertas pelos recursos do período`;
+  els.cashflowAvailableMetric.textContent = money.format(availableAfterPaid);
+  els.cashflowAvailableTrend.textContent = `${money.format(paidExpenses)} já saiu do caixa no período.`;
+  els.cashflowPendingMetric.textContent = money.format(pendingExpenses);
+  els.cashflowPendingTrend.textContent = `${data.movements.filter((item) => item.type === "expense" && !(item.status === "paid" || normalizeText(item.situation) === "PAGO")).length} conta(s) ainda aguardam pagamento.`;
+  els.cashflowSafeCard.classList.remove("healthy", "risk", "attention");
+  els.cashflowSafeCard.classList.add(closingBalance < 0 ? "risk" : coverage < 110 ? "attention" : "healthy");
+  els.cashflowSafeIcon.textContent = closingBalance < 0 ? "🚨" : coverage < 110 ? "⚠️" : "✅";
+  els.cashflowSafeLabel.textContent = closingBalance < 0 ? "Falta para pagar tudo" : "Sobra depois de pagar tudo";
+  els.cashflowSafeMetric.textContent = money.format(Math.abs(closingBalance));
+  els.cashflowSafeTrend.textContent = closingBalance < 0
+    ? "O caixa atual não cobre todas as obrigações previstas."
+    : "Margem livre estimada depois de cumprir todas as obrigações.";
+  els.cashflowEquationOpening.textContent = money.format(data.openingBalance);
+  els.cashflowEquationIncome.textContent = money.format(data.totals.income);
+  els.cashflowEquationPaid.textContent = money.format(paidExpenses);
+  els.cashflowEquationPending.textContent = money.format(pendingExpenses);
+  els.cashflowEquationClosing.textContent = money.format(closingBalance);
+  els.cashflowEquationResult.classList.toggle("risk", closingBalance < 0);
+  els.cashflowEquationResult.classList.toggle("healthy", closingBalance >= 0);
   if (negativePoints.length) {
     els.cashflowHealthTitle.textContent = `O caixa fica negativo em ${negativePoints.length} data(s)`;
     els.cashflowHealthMessage.textContent = `O primeiro alerta ocorre em ${formatDate(negativePoints[0].date)}. Antecipe receitas ou reprograme pagamentos antes dessa data.`;
@@ -1890,8 +1929,13 @@ function renderTransactions() {
     ? rows
         .map(
           (item) => `
-        <tr>
-          <td>${formatDate(item.date)}</td>
+        <tr class="transaction-row ${item.type === "income" ? "transaction-income-row" : "transaction-expense-row"}">
+          <td class="transaction-date-cell">
+            <button class="transaction-edit-button" type="button" data-edit="${item.id}" aria-label="Editar ${escapeHtml(item.description)}" title="Editar lançamento">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m4 17.2 9.8-9.8 2.8 2.8L6.8 20H4v-2.8ZM18.8 8 16 5.2l1.4-1.4a2 2 0 0 1 2.8 2.8L18.8 8Z"/></svg>
+            </button>
+            <span>${formatDate(item.date)}</span>
+          </td>
           <td>${escapeHtml(item.weekday || weekdayShort(item.date))}</td>
           <td><span class="pill ${item.type === "expense" ? "expense" : ""}">${escapeHtml(item.launchType || (item.type === "expense" ? "DESPESA" : "RECEITA"))}</span></td>
           <td>
@@ -1906,13 +1950,7 @@ function renderTransactions() {
           <td>${escapeHtml(item.situation || (item.status === "paid" ? "PAGO" : "PENDENTE"))}</td>
           <td>${escapeHtml(item.modality || "")}</td>
           <td>${escapeHtml(item.notes || "")}</td>
-          <td class="actions-col">
-            <span class="row-actions">
-              <button class="icon-button" type="button" data-edit="${item.id}" aria-label="Editar">
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m4 17.2 9.8-9.8 2.8 2.8L6.8 20H4v-2.8ZM18.8 8 16 5.2l1.4-1.4a2 2 0 0 1 2.8 2.8L18.8 8Z"/></svg>
-              </button>
-            </span>
-          </td>
+          <td class="actions-col"><span class="transaction-row-status" aria-hidden="true">${item.type === "income" ? "↗" : "↘"}</span></td>
         </tr>
       `,
         )
