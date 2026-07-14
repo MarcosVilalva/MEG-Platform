@@ -200,6 +200,8 @@ const els = {
   cashflowChartLegend: document.querySelector("#cashflowChartLegend"),
   cashflowChart: document.querySelector("#cashflowChart"),
   cashflowTooltip: document.querySelector("#cashflowTooltip"),
+  cashflowAgendaTitle: document.querySelector("#cashflowAgendaTitle"),
+  cashflowAgendaSummary: document.querySelector("#cashflowAgendaSummary"),
   cashflowList: document.querySelector("#cashflowList"),
   pendingMonthLabel: document.querySelector("#pendingMonthLabel"),
   pendingMonthFilter: document.querySelector("#pendingMonthFilter"),
@@ -1165,25 +1167,92 @@ function renderCashflow() {
     <span><i class="legend-dot low"></i>Menor saldo <strong>${money.format(data.lowPoint?.value ?? data.openingBalance)}</strong></span>
     <span><i class="legend-dot closing"></i>Fechamento <strong>${money.format(closingBalance)}</strong></span>`;
   renderCashflowChart(data.points, data.openingBalance, data.start);
-  renderCashflowList(data.movements);
+  renderCashflowList(data);
 }
 
-function renderCashflowList(items) {
-  els.cashflowList.innerHTML = items.length
-    ? items.slice(0, 16)
-        .map(
-          (item) => `
-            <div class="cashflow-item">
-              <span>
-                <strong>${escapeHtml(item.description)}</strong>
-                <small>${formatDate(item.date)} · ${escapeHtml(item.paymentMethod || item.account || "")} · ${escapeHtml(item.group || item.category || "")}</small>
-              </span>
-              <strong class="amount ${item.type === "income" ? "positive" : "negative"}">${item.type === "income" ? "+" : "-"}${money.format(item.amount)}</strong>
+function renderCashflowList(data) {
+  const isLivePeriod = data.start <= todayIso && data.end >= todayIso;
+  const isFuturePeriod = data.start > todayIso;
+  const isPaid = (item) => item.status === "paid" || normalizeText(item.situation) === "PAGO";
+  const candidates = data.movements.filter((item) => {
+    if (!isLivePeriod) return true;
+    if (item.type === "expense") return !isPaid(item);
+    return item.date >= todayIso;
+  });
+  const futureIncomeCount = candidates.filter((item) => item.type === "income").length;
+  const pendingCount = candidates.filter((item) => item.type === "expense").length;
+  els.cashflowAgendaTitle.textContent = isLivePeriod || isFuturePeriod ? "Próximos impactos no seu saldo" : "Movimentos ocorridos no período";
+  els.cashflowAgendaSummary.textContent = isLivePeriod
+    ? `${pendingCount} conta(s) em aberto · ${futureIncomeCount} entrada(s) futura(s)`
+    : `${candidates.length} movimento(s) agrupados por data`;
+
+  const dates = new Map();
+  candidates.forEach((item) => {
+    if (!dates.has(item.date)) dates.set(item.date, []);
+    dates.get(item.date).push(item);
+  });
+  const pointByDate = new Map(data.points.map((point) => [point.date, point]));
+  const dayCards = [...dates.entries()].sort(([dateA], [dateB]) => dateA.localeCompare(dateB)).slice(0, 12);
+
+  els.cashflowList.innerHTML = dayCards.length
+    ? dayCards.map(([date, items]) => {
+        const income = items.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.incomeAmount || item.amount || 0), 0);
+        const expense = items.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+        const impact = income - expense;
+        const balanceAfter = pointByDate.get(date)?.value ?? data.openingBalance;
+        const overdue = isLivePeriod && date < todayIso;
+        const daysUntil = date >= todayIso ? Math.max(daysBetween(todayIso, date) - 1, 0) : -1;
+        const timing = !isLivePeriod && !isFuturePeriod
+          ? "REALIZADO"
+          : overdue
+            ? "VENCIDO"
+            : daysUntil === 0
+              ? "HOJE"
+              : daysUntil === 1
+                ? "AMANHÃ"
+                : daysUntil <= 7
+                  ? `EM ${daysUntil} DIAS`
+                  : "PROGRAMADO";
+        const summarized = new Map();
+        items.forEach((item) => {
+          const payment = item.paymentMethod || item.account || "Não informado";
+          const card = isCreditCardExpense(item);
+          const key = card ? `card:${normalizeText(payment)}` : `item:${item.id}`;
+          if (!summarized.has(key)) summarized.set(key, { card, payment, items: [], total: 0, type: item.type });
+          const row = summarized.get(key);
+          row.items.push(item);
+          row.total += Number(item.type === "income" ? item.incomeAmount || item.amount || 0 : item.expenseAmount || item.amount || 0);
+        });
+        const rows = [...summarized.values()];
+        const visibleRows = rows.slice(0, 5).map((row) => {
+          const item = row.items[0];
+          const title = row.card ? `Fatura ${row.payment}` : item.description;
+          const detail = row.card
+            ? `${row.items.length} lançamento(s) agrupado(s)`
+            : `${item.paymentMethod || item.account || "Não informado"} · ${item.group || item.category || "Sem categoria"}`;
+          const rowTag = row.card ? "div" : "button";
+          const rowAction = row.card ? "" : `type="button" data-edit="${escapeHtml(item.id)}" title="Editar lançamento"`;
+          return `<${rowTag} class="cashflow-movement-row ${row.type}" ${rowAction}>
+            <span class="cashflow-movement-icon" aria-hidden="true">${row.type === "income" ? "↗" : row.card ? "💳" : "↘"}</span>
+            <span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail)}</small></span>
+            <strong class="amount ${row.type === "income" ? "positive" : "negative"}">${row.type === "income" ? "+" : "−"}${money.format(Math.abs(row.total))}</strong>
+          </${rowTag}>`;
+        }).join("");
+        const hiddenRows = rows.length > 5 ? `<div class="cashflow-more">+ ${rows.length - 5} movimento(s) resumido(s) nesta data</div>` : "";
+        return `<article class="cashflow-day-card ${overdue ? "overdue" : ""} ${balanceAfter < 0 ? "negative-balance" : ""}">
+          <header class="cashflow-day-header">
+            <div class="cashflow-day-date"><span>${escapeHtml(weekdayShort(date))}</span><strong>${formatDate(date)}</strong><small>${timing}</small></div>
+            <div class="cashflow-day-totals">
+              <span>Entradas<strong class="positive">+${money.format(income)}</strong></span>
+              <span>Saídas<strong class="negative">−${money.format(expense)}</strong></span>
+              <span>Impacto do dia<strong class="${impact >= 0 ? "positive" : "negative"}">${impact >= 0 ? "+" : "−"}${money.format(Math.abs(impact))}</strong></span>
             </div>
-          `,
-        )
-        .join("")
-    : `<div class="empty">Sem movimentos bancarios no periodo.</div>`;
+          </header>
+          <div class="cashflow-day-movements">${visibleRows}${hiddenRows}</div>
+          <footer><span>Saldo projetado após esta data</span><strong class="${balanceAfter >= 0 ? "positive" : "negative"}">${money.format(balanceAfter)}</strong></footer>
+        </article>`;
+      }).join("")
+    : `<div class="empty cashflow-empty"><strong>✅ Nenhum movimento futuro neste período</strong><span>Não há entradas previstas nem contas pendentes para alterar o seu saldo.</span></div>`;
 }
 
 function renderCashflowChart(points, openingBalance, startDate) {
