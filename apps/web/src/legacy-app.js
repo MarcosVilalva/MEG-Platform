@@ -2818,6 +2818,9 @@ function renderManagedUsers(users) {
     const resetAction = user.status === "ACTIVE"
       ? `<button class="button ghost" type="button" data-reset-user-password="${escapeHtml(user.id)}">Enviar nova senha</button>`
       : "";
+    const deleteAction = !primaryAdmin
+      ? `<button class="button danger-soft" type="button" data-delete-managed-user="${escapeHtml(user.id)}">Excluir acesso</button>`
+      : "";
     return `<article class="admin-user-card" data-managed-user="${escapeHtml(user.id)}">
       <div class="admin-user-head">
         <div class="user-avatar">${escapeHtml(user.name.slice(0, 1).toUpperCase())}</div>
@@ -2825,8 +2828,8 @@ function renderManagedUsers(users) {
         ${primaryAdmin ? '<span class="primary-admin-badge">Administrador principal</span>' : ""}
       </div>
       <div class="admin-user-details"><span><small>Cadastrado em</small><strong>${userDate(user.createdAt)}</strong></span><span><small>Último acesso</small><strong>${userDate(user.lastLoginAt)}</strong></span></div>
-      <div class="admin-user-permissions"><label>Perfil de acesso<select class="user-role-select" data-user-role="${escapeHtml(user.id)}" ${primaryAdmin ? "disabled" : ""}>${roleOptions}</select></label><p>${primaryAdmin ? "A conta principal mantém acesso total e não pode ser bloqueada." : "A alteração de perfil é registrada na auditoria do sistema."}</p></div>
-      <div class="admin-user-actions">${!primaryAdmin && user.status === "ACTIVE" ? `<button class="button" type="button" data-save-user-role="${escapeHtml(user.id)}">Salvar permissão</button>` : ""}${pendingActions}${activeActions}${inactiveActions}${resetAction}</div>
+      <div class="admin-user-permissions"><label>Perfil de acesso<select class="user-role-select" data-user-role="${escapeHtml(user.id)}" ${primaryAdmin ? "disabled" : ""}>${roleOptions}</select></label><label>WhatsApp<input class="user-phone-input" data-user-phone="${escapeHtml(user.id)}" value="${escapeHtml(user.phone || "")}" placeholder="5518999999999" inputmode="tel" ${primaryAdmin ? "disabled" : ""}></label></div>
+      <div class="admin-user-actions">${!primaryAdmin && user.status === "ACTIVE" ? `<button class="button" type="button" data-save-user-role="${escapeHtml(user.id)}">Salvar dados e permissão</button>` : ""}${pendingActions}${activeActions}${inactiveActions}${resetAction}${deleteAction}</div>
     </article>`;
   }).join("");
 }
@@ -2847,6 +2850,7 @@ async function loadManagedUsers({ keepFeedback = false } = {}) {
 async function updateManagedUser(userId, action) {
   const card = document.querySelector(`[data-managed-user="${cssEscape(userId)}"]`);
   const role = card?.querySelector("[data-user-role]")?.value || "VIEWER";
+  const phone = card?.querySelector("[data-user-phone]")?.value?.replace(/\D/g, "") || undefined;
   let note;
   if (action === "REJECT") {
     note = window.prompt("Informe o motivo da rejeição (opcional):", "") ?? undefined;
@@ -2854,8 +2858,10 @@ async function updateManagedUser(userId, action) {
   if ((action === "BLOCK" || action === "REJECT") && !window.confirm(`Confirma ${action === "BLOCK" ? "o bloqueio" : "a rejeição"} deste usuário?`)) return;
   setUsersFeedback("Atualizando acesso...", "loading");
   try {
-    await window.MEG_CLOUD.changeUserAccess(userId, { action, role, note });
-    const successMessage = action === "APPROVE" ? "Usuário aprovado e avisado por e-mail." : action === "BLOCK" ? "Usuário bloqueado e sessões encerradas." : action === "REJECT" ? "Solicitação rejeitada." : "Acesso e permissão atualizados.";
+    const result = await window.MEG_CLOUD.changeUserAccess(userId, { action, role, phone, note });
+    const delivered = (result.notifications || []).filter((item) => item.status === "sent").map((item) => item.channel === "whatsapp" ? "WhatsApp" : "e-mail");
+    const channelText = delivered.length ? ` Aviso enviado por ${delivered.join(" e ")}.` : action === "UPDATE" ? "" : " Atenção: nenhum aviso foi entregue.";
+    const successMessage = action === "APPROVE" ? `Usuário aprovado.${channelText}` : action === "BLOCK" ? `Usuário bloqueado e sessões encerradas.${channelText}` : action === "REJECT" ? `Solicitação rejeitada.${channelText}` : "Dados e permissão atualizados.";
     await loadManagedUsers({ keepFeedback: true });
     setUsersFeedback(successMessage, "success");
   } catch (cause) {
@@ -2870,9 +2876,24 @@ async function resetManagedUserPassword(userId) {
   setUsersFeedback("Gerando a senha e confirmando o envio do e-mail...", "loading");
   try {
     const result = await window.MEG_CLOUD.resetUserPassword(userId);
-    setUsersFeedback(`Nova senha enviada com segurança para ${result.deliveredTo}.`, "success");
+    const delivered = (result.notifications || []).filter((item) => item.status === "sent").map((item) => item.channel === "whatsapp" ? "WhatsApp" : "e-mail");
+    setUsersFeedback(`Nova senha enviada com segurança por ${delivered.join(" e ") || result.deliveredTo}.`, "success");
   } catch (cause) {
     setUsersFeedback(cause instanceof Error ? cause.message : "Falha ao redefinir a senha.", "error");
+  }
+}
+
+async function deleteManagedUser(userId) {
+  const card = document.querySelector(`[data-managed-user="${cssEscape(userId)}"]`);
+  const email = card?.querySelector(".admin-user-identity a")?.textContent || "este usuário";
+  if (!window.confirm(`Excluir definitivamente o acesso de ${email}? As sessões e os dados pessoais desta conta serão removidos. Esta ação não pode ser desfeita.`)) return;
+  setUsersFeedback("Excluindo acesso...", "loading");
+  try {
+    await window.MEG_CLOUD.deleteManagedUser(userId);
+    await loadManagedUsers({ keepFeedback: true });
+    setUsersFeedback("Acesso excluído definitivamente.", "success");
+  } catch (cause) {
+    setUsersFeedback(cause instanceof Error ? cause.message : "Falha ao excluir o acesso.", "error");
   }
 }
 
@@ -2887,6 +2908,7 @@ document.addEventListener("click", (event) => {
   const userActionButton = event.target.closest("[data-user-action]");
   const saveUserRoleButton = event.target.closest("[data-save-user-role]");
   const resetUserPasswordButton = event.target.closest("[data-reset-user-password]");
+  const deleteManagedUserButton = event.target.closest("[data-delete-managed-user]");
   if (editButton) {
     const item = state.transactions.find((transaction) => transaction.id === editButton.dataset.edit);
     if (item) {
@@ -2901,8 +2923,9 @@ document.addEventListener("click", (event) => {
   if (removePaymentButton) removeCatalogItem("payment", removePaymentButton.dataset.removePayment);
   if (removeExpenseClassButton) removeCatalogItem("expenseClass", removeExpenseClassButton.dataset.removeExpenseClass);
   if (userActionButton) updateManagedUser(userActionButton.dataset.userId, userActionButton.dataset.userAction);
-  if (saveUserRoleButton) updateManagedUser(saveUserRoleButton.dataset.saveUserRole, "ACTIVATE");
+  if (saveUserRoleButton) updateManagedUser(saveUserRoleButton.dataset.saveUserRole, "UPDATE");
   if (resetUserPasswordButton) resetManagedUserPassword(resetUserPasswordButton.dataset.resetUserPassword);
+  if (deleteManagedUserButton) deleteManagedUser(deleteManagedUserButton.dataset.deleteManagedUser);
 });
 
 document.addEventListener("change", (event) => {

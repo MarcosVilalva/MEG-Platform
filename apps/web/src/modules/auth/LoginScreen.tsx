@@ -24,6 +24,7 @@ export function LoginScreen({ onAuthenticated }: Props) {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -50,7 +51,7 @@ export function LoginScreen({ onAuthenticated }: Props) {
           setError('As senhas não coincidem.');
           return;
         }
-        const result = await register(name, email, password, confirmPassword);
+        const result = await register(name, email, phone, password, confirmPassword);
         if ('status' in result && result.status === 'PENDING_APPROVAL') {
           setSuccess(`Solicitação enviada. O administrador ${result.administratorEmail} analisará seu acesso.`);
           setMode('login');
@@ -107,6 +108,10 @@ export function LoginScreen({ onAuthenticated }: Props) {
           )}
 
           <label>E-mail<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>
+
+          {mode === 'register' && (
+            <label>WhatsApp<input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} minLength={10} required autoComplete="tel" placeholder="5518999999999" /><small>DDD e número para avisos de aprovação e recuperação.</small></label>
+          )}
 
           {mode !== 'forgot' && <label>
             Senha

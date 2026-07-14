@@ -118,6 +118,7 @@
 .admin-user-details strong { font-size: .9rem; }
 .admin-user-permissions { display: grid; grid-template-columns: minmax(220px, 330px) 1fr; gap: 18px; align-items: end; padding: 17px; border-radius: 16px; background: #f8fbfa; }
 .admin-user-permissions label { display: grid; gap: 6px; color: #4a605b; font-size: .76rem; font-weight: 850; text-transform: uppercase; }
+.admin-user-permissions input { min-width: 0; padding: 11px 12px; border: 1px solid #c9ddd8; border-radius: 11px; background: #fff; color: #173b34; font: inherit; font-size: .9rem; }
 .user-role-select { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid #bfd4cf; border-radius: 12px; background: #fff; color: #10231e; font: inherit; font-weight: 750; }
 .admin-user-permissions p { margin: 0 0 7px; color: #647772; font-size: .85rem; }
 .admin-user-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px; margin-top: 16px; }

@@ -7,6 +7,7 @@ export type AuthUser = {
   id: string;
   name: string;
   email: string;
+  phone?: string | null;
   role: UserRole;
   status: UserStatus;
   isActive: boolean;
@@ -72,10 +73,10 @@ export async function login(email: string, password: string) {
   return session;
 }
 
-export async function register(name: string, email: string, password: string, confirmPassword: string) {
+export async function register(name: string, email: string, phone: string, password: string, confirmPassword: string) {
   const result = await request<RegistrationResult>('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ name, email, password, confirmPassword })
+    body: JSON.stringify({ name, email, phone, password, confirmPassword })
   });
   if ('accessToken' in result) saveSession(result);
   return result;
@@ -107,12 +108,18 @@ export async function listManagedUsers(session: AuthSession) {
 export async function changeUserAccess(
   session: AuthSession,
   userId: string,
-  payload: { action: 'APPROVE' | 'REJECT' | 'BLOCK' | 'ACTIVATE'; role?: UserRole; note?: string }
+  payload: { action: 'APPROVE' | 'REJECT' | 'BLOCK' | 'ACTIVATE' | 'UPDATE'; role?: UserRole; phone?: string; note?: string }
 ) {
   return request<{ user: AuthUser }>(`/auth/users/${userId}/access`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${session.accessToken}` },
     body: JSON.stringify(payload)
+  });
+}
+
+export async function deleteManagedUser(session: AuthSession, userId: string) {
+  return request<{ id: string; deleted: true }>(`/auth/users/${userId}`, {
+    method: 'DELETE', headers: { Authorization: `Bearer ${session.accessToken}` }
   });
 }
 

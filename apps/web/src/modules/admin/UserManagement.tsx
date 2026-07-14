@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   changeUserAccess,
+  deleteManagedUser,
   listManagedUsers,
   readSession,
   type AuthUser,
@@ -27,6 +28,7 @@ export function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [roles, setRoles] = useState<Record<string, UserRole>>({});
+  const [phones, setPhones] = useState<Record<string, string>>({});
 
   async function load() {
     if (!session) return;
@@ -36,6 +38,7 @@ export function UserManagement() {
       const result = await listManagedUsers(session);
       setUsers(result.users);
       setRoles(Object.fromEntries(result.users.map((user) => [user.id, user.role])));
+      setPhones(Object.fromEntries(result.users.map((user) => [user.id, user.phone || ''])));
     } catch (cause) {
       setError(cause instanceof Error && cause.message === 'FORBIDDEN'
         ? 'Apenas administradores podem gerenciar usuários.'
@@ -47,15 +50,21 @@ export function UserManagement() {
 
   useEffect(() => { void load(); }, []);
 
-  async function apply(user: AuthUser, action: 'APPROVE' | 'REJECT' | 'BLOCK' | 'ACTIVATE') {
+  async function apply(user: AuthUser, action: 'APPROVE' | 'REJECT' | 'BLOCK' | 'ACTIVATE' | 'UPDATE') {
     if (!session) return;
     const note = action === 'REJECT' ? window.prompt('Motivo da rejeição (opcional):') ?? undefined : undefined;
     try {
-      await changeUserAccess(session, user.id, { action, role: roles[user.id], note });
+      await changeUserAccess(session, user.id, { action, role: roles[user.id], phone: phones[user.id] || undefined, note });
       await load();
     } catch {
       setError('Não foi possível atualizar o acesso deste usuário.');
     }
+  }
+
+  async function remove(user: AuthUser) {
+    if (!session || !window.confirm(`Excluir definitivamente o acesso de ${user.email}?`)) return;
+    try { await deleteManagedUser(session, user.id); await load(); }
+    catch { setError('Não foi possível excluir este acesso.'); }
   }
 
   return (
@@ -100,6 +109,7 @@ export function UserManagement() {
                     {Object.entries(roleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                   </select>
                 </label>
+                <label>WhatsApp<input value={phones[user.id] || ''} onChange={(event) => setPhones((current) => ({ ...current, [user.id]: event.target.value }))} disabled={user.email === 'm_vilalva@hotmail.com'} placeholder="5518999999999" /></label>
               </div>
 
               <div className="user-actions">
@@ -113,6 +123,8 @@ export function UserManagement() {
                 {(user.status === 'BLOCKED' || user.status === 'REJECTED') && (
                   <button onClick={() => void apply(user, 'ACTIVATE')}>Reativar</button>
                 )}
+                {user.status === 'ACTIVE' && user.email !== 'm_vilalva@hotmail.com' && <button onClick={() => void apply(user, 'UPDATE')}>Salvar dados</button>}
+                {user.email !== 'm_vilalva@hotmail.com' && <button className="danger-button" onClick={() => void remove(user)}>Excluir acesso</button>}
               </div>
             </article>
           ))}

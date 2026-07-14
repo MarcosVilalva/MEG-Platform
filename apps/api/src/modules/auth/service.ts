@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { prisma, UserRole, UserStatus } from '@meg/database';
-import { sendSystemEmail } from '../notifications/service';
+import { sendSystemEmail, sendSystemWhatsApp } from '../notifications/service';
 import { config } from '../../config';
 
 const SESSION_TTL_DAYS = 30;
@@ -11,10 +11,17 @@ function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex');
 }
 
+function normalizePhone(value?: string | null) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (!digits) return null;
+  return digits.length === 10 || digits.length === 11 ? `55${digits}` : digits;
+}
+
 function publicUser(user: {
   id: string;
   name: string;
   email: string;
+  phone?: string | null;
   role: UserRole;
   status: UserStatus;
   isActive: boolean;
@@ -25,6 +32,7 @@ function publicUser(user: {
     id: user.id,
     name: user.name,
     email: user.email,
+    phone: user.phone ?? null,
     role: user.role,
     status: user.status,
     isActive: user.isActive,
@@ -36,6 +44,7 @@ function publicUser(user: {
 export async function registerUser(input: {
   name: string;
   email: string;
+  phone?: string;
   password: string;
 }) {
   const email = input.email.trim().toLowerCase();
@@ -52,6 +61,7 @@ export async function registerUser(input: {
     data: {
       name: input.name.trim(),
       email,
+      phone: normalizePhone(input.phone),
       passwordHash,
       role: isInitialAdmin ? UserRole.ADMIN : UserRole.VIEWER,
       status: isInitialAdmin ? UserStatus.ACTIVE : UserStatus.PENDING,
@@ -108,6 +118,7 @@ export async function listUsers() {
       id: true,
       name: true,
       email: true,
+      phone: true,
       role: true,
       status: true,
       isActive: true,
@@ -122,8 +133,9 @@ export async function listUsers() {
 export async function updateUserAccess(input: {
   actorId: string;
   userId: string;
-  action: 'APPROVE' | 'REJECT' | 'BLOCK' | 'ACTIVATE';
+  action: 'APPROVE' | 'REJECT' | 'BLOCK' | 'ACTIVATE' | 'UPDATE';
   role?: UserRole;
+  phone?: string;
   note?: string;
 }) {
   const target = await prisma.user.findUnique({ where: { id: input.userId } });
@@ -131,12 +143,14 @@ export async function updateUserAccess(input: {
   if (target.email === ADMIN_EMAIL && input.action === 'BLOCK') throw new Error('PRIMARY_ADMIN_CANNOT_BE_BLOCKED');
 
   const data = input.action === 'APPROVE'
-    ? { status: UserStatus.ACTIVE, isActive: true, role: input.role ?? UserRole.VIEWER, approvedAt: new Date(), approvedById: input.actorId, rejectedAt: null, rejectionNote: null }
+    ? { status: UserStatus.ACTIVE, isActive: true, role: input.role ?? UserRole.VIEWER, phone: normalizePhone(input.phone) ?? target.phone, approvedAt: new Date(), approvedById: input.actorId, rejectedAt: null, rejectionNote: null }
     : input.action === 'REJECT'
       ? { status: UserStatus.REJECTED, isActive: false, rejectedAt: new Date(), rejectionNote: input.note ?? null }
       : input.action === 'BLOCK'
         ? { status: UserStatus.BLOCKED, isActive: false }
-        : { status: UserStatus.ACTIVE, isActive: true, role: input.role ?? target.role };
+        : input.action === 'ACTIVATE'
+          ? { status: UserStatus.ACTIVE, isActive: true, role: input.role ?? target.role, phone: normalizePhone(input.phone) ?? target.phone }
+          : { role: input.role ?? target.role, phone: normalizePhone(input.phone) ?? target.phone };
 
   const updated = await prisma.user.update({ where: { id: input.userId }, data });
   if (!updated.isActive) {
@@ -157,15 +171,35 @@ export async function updateUserAccess(input: {
     APPROVE: `Seu acesso ao MEG Finanças foi aprovado com o perfil ${updated.role}. Você já pode entrar com sua senha cadastrada.`,
     REJECT: `Sua solicitação de acesso ao MEG Finanças foi rejeitada.${input.note ? ` Motivo: ${input.note}` : ''}`,
     BLOCK: 'Seu acesso ao MEG Finanças foi bloqueado pelo administrador.',
-    ACTIVATE: `Seu acesso ao MEG Finanças foi reativado com o perfil ${updated.role}.`
+    ACTIVATE: `Seu acesso ao MEG Finanças foi reativado com o perfil ${updated.role}.`,
+    UPDATE: 'Seus dados de acesso ao MEG Finanças foram atualizados pelo administrador.'
   };
-  await sendSystemEmail(
-    updated.email,
+  const notifications = input.action === 'UPDATE' ? [] : await notifyUser(
+    updated,
     `MEG Finanças: acesso ${input.action === 'APPROVE' ? 'aprovado' : input.action === 'ACTIVATE' ? 'reativado' : input.action === 'BLOCK' ? 'bloqueado' : 'não aprovado'}`,
-    `Olá, ${updated.name}.\n\n${accessMessages[input.action]}\n\nMEG Finanças — Seus dados protegidos.`
-  ).catch(() => undefined);
+    `Olá, ${updated.name}.\n\n${accessMessages[input.action]}\n\nMEG Finanças — Seus dados protegidos.`,
+    `🔐 *MEG Finanças — Controle de acesso*\n\nOlá, *${updated.name}*!\n\n${accessMessages[input.action]}\n\n🤖 MEG Finanças — Seus dados protegidos.`
+  );
 
-  return publicUser(updated);
+  return { user: publicUser(updated), notifications };
+}
+
+async function notifyUser(
+  target: { email: string; phone?: string | null },
+  subject: string,
+  emailText: string,
+  whatsappText: string
+) {
+  const email = await sendSystemEmail(target.email, subject, emailText)
+    .catch((error) => ({ status: 'failed', detail: error instanceof Error ? error.message : 'Falha desconhecida' }));
+  const whatsapp = target.phone
+    ? await sendSystemWhatsApp(target.phone, whatsappText)
+      .catch((error) => ({ status: 'failed', detail: error instanceof Error ? error.message : 'Falha desconhecida' }))
+    : { status: 'skipped', detail: 'Telefone não cadastrado' };
+  return [
+    { channel: 'email', ...email },
+    { channel: 'whatsapp', ...whatsapp }
+  ];
 }
 
 export async function requestPasswordReset(emailInput: string) {
@@ -188,12 +222,13 @@ export async function requestPasswordReset(emailInput: string) {
 
   const temporaryPassword = `Meg#${randomBytes(6).toString('base64url')}9a`;
   const passwordHash = await bcrypt.hash(temporaryPassword, 12);
-  const delivery = await sendSystemEmail(
-    target.email,
+  const notifications = await notifyUser(
+    target,
     'MEG Finanças: nova senha temporária',
-    `Olá, ${target.name}.\n\nUma nova senha temporária foi solicitada para sua conta.\n\nSenha temporária: ${temporaryPassword}\n\nEntre no MEG com esta senha. Por segurança, não a compartilhe.\n\nMEG Finanças — Segurança e controle.`
-  ).catch(() => ({ status: 'failed' as const }));
-  if (delivery.status !== 'sent') throw new Error('EMAIL_DELIVERY_FAILED');
+    `Olá, ${target.name}.\n\nUma nova senha temporária foi solicitada para sua conta.\n\nSenha temporária: ${temporaryPassword}\n\nEntre no MEG com esta senha. Por segurança, não a compartilhe.\n\nMEG Finanças — Segurança e controle.`,
+    `🔑 *MEG Finanças — Senha redefinida*\n\nOlá, *${target.name}*! Sua nova senha temporária é:\n\n*${temporaryPassword}*\n\nEntre no MEG e não compartilhe esta senha.\n\n🤖 MEG Finanças — Segurança e controle.`
+  );
+  if (!notifications.some((item) => item.status === 'sent')) throw new Error('NOTIFICATION_DELIVERY_FAILED');
 
   await prisma.$transaction([
     prisma.user.update({ where: { id: target.id }, data: { passwordHash } }),
@@ -209,7 +244,7 @@ export async function requestPasswordReset(emailInput: string) {
     })
   ]);
 
-  return { deliveredTo: target.email };
+  return { deliveredTo: target.email, notifications };
 }
 
 export async function resetUserPassword(input: { actorId: string; userId: string }) {
@@ -219,12 +254,13 @@ export async function resetUserPassword(input: { actorId: string; userId: string
 
   const temporaryPassword = `Meg#${randomBytes(6).toString('base64url')}9a`;
   const passwordHash = await bcrypt.hash(temporaryPassword, 12);
-  const delivery = await sendSystemEmail(
-    target.email,
+  const notifications = await notifyUser(
+    target,
     'MEG Finanças: sua senha temporária',
-    `Olá, ${target.name}.\n\nO administrador redefiniu sua senha.\n\nSenha temporária: ${temporaryPassword}\n\nEntre no MEG e mantenha esta mensagem em local seguro até confirmar o acesso. Não compartilhe esta senha.\n\nMEG Finanças — Segurança e controle.`
-  ).catch(() => ({ status: 'failed' as const }));
-  if (delivery.status !== 'sent') throw new Error('EMAIL_DELIVERY_FAILED');
+    `Olá, ${target.name}.\n\nO administrador redefiniu sua senha.\n\nSenha temporária: ${temporaryPassword}\n\nEntre no MEG e mantenha esta mensagem em local seguro até confirmar o acesso. Não compartilhe esta senha.\n\nMEG Finanças — Segurança e controle.`,
+    `🔑 *MEG Finanças — Senha redefinida pelo administrador*\n\nOlá, *${target.name}*! Sua nova senha temporária é:\n\n*${temporaryPassword}*\n\nEntre no MEG e não compartilhe esta senha.\n\n🤖 MEG Finanças — Segurança e controle.`
+  );
+  if (!notifications.some((item) => item.status === 'sent')) throw new Error('NOTIFICATION_DELIVERY_FAILED');
 
   await prisma.$transaction([
     prisma.user.update({ where: { id: target.id }, data: { passwordHash } }),
@@ -240,7 +276,29 @@ export async function resetUserPassword(input: { actorId: string; userId: string
     })
   ]);
 
-  return { user: publicUser(target), deliveredTo: target.email };
+  return { user: publicUser(target), deliveredTo: target.email, notifications };
+}
+
+export async function deleteUserAccess(input: { actorId: string; userId: string }) {
+  const target = await prisma.user.findUnique({ where: { id: input.userId } });
+  if (!target) throw new Error('USER_NOT_FOUND');
+  if (target.email.toLowerCase() === ADMIN_EMAIL) throw new Error('PRIMARY_ADMIN_CANNOT_BE_DELETED');
+  if (target.id === input.actorId) throw new Error('CANNOT_DELETE_OWN_ACCESS');
+
+  await prisma.$transaction([
+    prisma.auditLog.create({
+      data: {
+        userId: input.actorId,
+        entity: 'User',
+        entityId: target.id,
+        action: 'ACCESS_DELETED',
+        metadata: JSON.stringify({ name: target.name, email: target.email, phone: target.phone })
+      }
+    }),
+    prisma.financialEvent.updateMany({ where: { userId: target.id }, data: { userId: null } }),
+    prisma.user.delete({ where: { id: target.id } })
+  ]);
+  return { id: target.id, deleted: true };
 }
 
 export async function createRefreshSession(input: { userId: string; ipAddress?: string; userAgent?: string }) {

@@ -5,6 +5,7 @@ import {
   authenticateUser,
   consumeRefreshSession,
   createRefreshSession,
+  deleteUserAccess,
   getUserById,
   listUsers,
   registerUser,
@@ -21,6 +22,7 @@ const credentialsSchema = z.object({
 
 const registerSchema = credentialsSchema.extend({
   name: z.string().min(2).max(120),
+  phone: z.string().transform((value) => value.replace(/\D/g, '')).refine((value) => value.length >= 10 && value.length <= 15, 'INVALID_PHONE'),
   confirmPassword: z.string().min(8).max(128)
 }).refine((value) => value.password === value.confirmPassword, {
   message: 'PASSWORDS_DO_NOT_MATCH',
@@ -30,8 +32,9 @@ const registerSchema = credentialsSchema.extend({
 const refreshSchema = z.object({ refreshToken: z.string().min(20) });
 const forgotPasswordSchema = z.object({ email: z.string().email() });
 const accessSchema = z.object({
-  action: z.enum(['APPROVE', 'REJECT', 'BLOCK', 'ACTIVATE']),
+  action: z.enum(['APPROVE', 'REJECT', 'BLOCK', 'ACTIVATE', 'UPDATE']),
   role: z.nativeEnum(UserRole).optional(),
+  phone: z.string().transform((value) => value.replace(/\D/g, '')).refine((value) => value.length >= 10 && value.length <= 15, 'INVALID_PHONE').optional(),
   note: z.string().max(500).optional()
 });
 
@@ -102,7 +105,7 @@ export async function authRoutes(app: FastifyInstance) {
       if (['ACCESS_PENDING', 'ACCESS_REJECTED', 'USER_BLOCKED', 'PASSWORD_RESET_RATE_LIMITED'].includes(message)) {
         return reply.status(409).send({ error: message });
       }
-      if (message === 'EMAIL_DELIVERY_FAILED') return reply.status(502).send({ error: message });
+      if (message === 'EMAIL_DELIVERY_FAILED' || message === 'NOTIFICATION_DELIVERY_FAILED') return reply.status(502).send({ error: message });
       throw error;
     }
   });
@@ -138,7 +141,7 @@ export async function authRoutes(app: FastifyInstance) {
     if (!parsed.success) return reply.status(400).send({ error: 'VALIDATION_ERROR', details: parsed.error.flatten().fieldErrors });
     const { id } = request.params as { id: string };
     try {
-      return { user: await updateUserAccess({ actorId: request.user.sub, userId: id, ...parsed.data }) };
+      return await updateUserAccess({ actorId: request.user.sub, userId: id, ...parsed.data });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
       if (message === 'USER_NOT_FOUND') return reply.status(404).send({ error: message });
@@ -155,7 +158,19 @@ export async function authRoutes(app: FastifyInstance) {
       const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
       if (message === 'USER_NOT_FOUND') return reply.status(404).send({ error: message });
       if (message === 'USER_NOT_ACTIVE') return reply.status(409).send({ error: message });
-      if (message === 'EMAIL_DELIVERY_FAILED') return reply.status(502).send({ error: message });
+      if (message === 'EMAIL_DELIVERY_FAILED' || message === 'NOTIFICATION_DELIVERY_FAILED') return reply.status(502).send({ error: message });
+      throw error;
+    }
+  });
+
+  app.delete('/users/:id', { preHandler: app.authorize(['ADMIN']) }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    try {
+      return await deleteUserAccess({ actorId: request.user.sub, userId: id });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+      if (message === 'USER_NOT_FOUND') return reply.status(404).send({ error: message });
+      if (message === 'PRIMARY_ADMIN_CANNOT_BE_DELETED' || message === 'CANNOT_DELETE_OWN_ACCESS') return reply.status(409).send({ error: message });
       throw error;
     }
   });

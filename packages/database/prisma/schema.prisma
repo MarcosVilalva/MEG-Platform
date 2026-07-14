@@ -25,6 +25,7 @@ model User {
   id             String     @id @default(cuid())
   name           String
   email          String     @unique
+  phone          String?
   passwordHash   String     @default("")
   role           UserRole   @default(VIEWER)
   status         UserStatus @default(ACTIVE)

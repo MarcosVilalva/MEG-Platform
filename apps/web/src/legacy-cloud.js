@@ -91,6 +91,7 @@ function authMarkup() {
           <h1>Solicitar acesso</h1>
           <label>Nome<input name="name" autocomplete="name" required /></label>
           <label>E-mail<input name="email" type="email" autocomplete="email" required /></label>
+          <label>WhatsApp<input name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="5518999999999" minlength="10" maxlength="18" required /><small>Informe DDD e número. Usaremos para avisos de aprovação e recuperação.</small></label>
           <label>Senha<input name="password" type="password" autocomplete="new-password" minlength="8" required /></label>
           <label>Repetir senha<input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required /></label>
           <p class="auth-error" id="registerError"></p>
@@ -321,10 +322,16 @@ export async function bootstrapCloud() {
       if (!response.ok) throw new Error(result.error === 'PRIMARY_ADMIN_CANNOT_BE_BLOCKED' ? 'O administrador principal não pode ser bloqueado.' : 'Não foi possível atualizar o acesso.');
       return result;
     },
+    async deleteManagedUser(userId) {
+      const response = await api(`/auth/users/${encodeURIComponent(userId)}`, { method: 'DELETE' });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error === 'PRIMARY_ADMIN_CANNOT_BE_DELETED' ? 'O administrador principal não pode ser excluído.' : 'Não foi possível excluir este acesso.');
+      return result;
+    },
     async resetUserPassword(userId) {
       const response = await api(`/auth/users/${encodeURIComponent(userId)}/reset-password`, { method: 'POST' });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error === 'EMAIL_DELIVERY_FAILED' ? 'A senha não foi alterada porque o e-mail não pôde ser entregue.' : result.error === 'USER_NOT_ACTIVE' ? 'Ative o usuário antes de redefinir a senha.' : 'Não foi possível redefinir a senha.');
+      if (!response.ok) throw new Error(result.error === 'EMAIL_DELIVERY_FAILED' || result.error === 'NOTIFICATION_DELIVERY_FAILED' ? 'A senha não foi alterada porque nem o e-mail nem o WhatsApp puderam ser entregues.' : result.error === 'USER_NOT_ACTIVE' ? 'Ative o usuário antes de redefinir a senha.' : 'Não foi possível redefinir a senha.');
       return result;
     }
   };

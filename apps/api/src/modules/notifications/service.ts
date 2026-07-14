@@ -165,6 +165,10 @@ async function sendWhatsApp(number: string, text: string) {
   return { status: 'sent', detail: await response.text() };
 }
 
+export async function sendSystemWhatsApp(number: string, text: string) {
+  return sendWhatsApp(number, text);
+}
+
 export function notificationIntegrationStatus() {
   return {
     email: { configured: Boolean(config.resendApiKey && config.notificationEmailFrom), recipient: config.adminEmail },
