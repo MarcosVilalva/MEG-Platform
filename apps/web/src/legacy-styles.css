@@ -1614,11 +1614,20 @@ button.cashflow-movement-row:hover { border-color: #9fc9bd; box-shadow: 0 6px 16
 .bill-item,
 .ledger-item {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 12px;
   padding: 12px;
 }
+
+.bill-item.grouped-card-bill {
+  border-color: rgba(49, 95, 153, .24);
+  background: linear-gradient(110deg, rgba(240, 247, 255, .96), rgba(255, 255, 255, .98));
+  box-shadow: 0 8px 22px rgba(49, 95, 153, .08);
+}
+
+.grouped-card-bill .bill-meta strong { color: #234f86; }
+.grouped-card-bill .bill-meta small { white-space: normal; }
 
 .bill-item input {
   width: 18px;
@@ -1647,6 +1656,12 @@ button.cashflow-movement-row:hover { border-color: #9fc9bd; box-shadow: 0 6px 16
 
 .ledger-item {
   grid-template-columns: 1fr auto;
+}
+
+@media (max-width: 720px) {
+  .bill-item { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .bill-item .bill-priority { grid-column: 2; justify-self: start; }
+  .bill-item > .amount { grid-column: 3; grid-row: 1 / span 2; }
 }
 
 .decision-item {

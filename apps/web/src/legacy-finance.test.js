@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { calculateCurrentMonthHealth, calculateFinancialSummary } from './legacy-finance.js';
+import { calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, payableGroupLabel, payableGroupTotal } from './legacy-finance.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { installmentDueDate, splitInstallmentAmounts } from './legacy-installments.js';
 
@@ -9,6 +9,17 @@ assert.deepEqual(splitInstallmentAmounts(100, 3), [33.34, 33.33, 33.33]);
 assert.equal(installmentDueDate('2026-07-31', 1), '2026-08-31');
 assert.equal(installmentDueDate('2026-07-31', 2), '2026-09-30');
 assert.equal(installmentDueDate('2026-07-11', 0), '2026-07-13');
+
+const payableGroups = groupPayableItems([
+  { id: 'card-1', date: '2026-07-15', type: 'expense', status: 'pending', modality: 'CREDITO', paymentMethod: 'CARTÃO AZUL', description: 'COMPRA 1', expenseAmount: 100 },
+  { id: 'card-2', date: '2026-07-15', type: 'expense', status: 'pending', modality: 'CREDITO', paymentMethod: 'CARTÃO AZUL', description: 'COMPRA 2', expenseAmount: 50 },
+  { id: 'bill-1', date: '2026-07-15', type: 'expense', status: 'pending', modality: 'À VISTA', paymentMethod: 'PIX', description: 'CPFL', expenseAmount: 80 },
+]);
+assert.equal(payableGroups.length, 2);
+assert.equal(payableGroups[0].items.length, 2);
+assert.equal(payableGroupLabel(payableGroups[0]), 'CARTÃO AZUL');
+assert.equal(payableGroupTotal(payableGroups[0]), 150);
+assert.equal(payableGroupLabel(payableGroups[1]), 'CPFL');
 
 const workbookReconciliation = [
   { date: '2026-06-30', type: 'income', incomeAmount: 179986.02 },

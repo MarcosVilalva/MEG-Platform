@@ -13,6 +13,37 @@ export function isVerocardTransaction(item) {
   return false;
 }
 
+function normalizedFinanceText(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+}
+
+export function isCreditCardExpense(item) {
+  const method = normalizedFinanceText(item.paymentMethod || item.account);
+  const modality = normalizedFinanceText(item.modality);
+  return item.type === 'expense' && (modality.includes('CREDITO') || method.includes('CARTAO') || method.includes('CREDITO'));
+}
+
+export function groupPayableItems(items, { separateStatus = false } = {}) {
+  const grouped = new Map();
+  items.forEach((item) => {
+    const payment = item.paymentMethod || item.account || 'Não informado';
+    const isCard = isCreditCardExpense(item);
+    const statusKey = separateStatus ? `:${item.status}` : '';
+    const key = isCard ? `card:${item.date}:${normalizedFinanceText(payment)}${statusKey}` : `item:${item.id}`;
+    if (!grouped.has(key)) grouped.set(key, { date: item.date, payment, isCard, status: item.status, items: [] });
+    grouped.get(key).items.push(item);
+  });
+  return [...grouped.values()].sort((a, b) => a.date.localeCompare(b.date) || a.payment.localeCompare(b.payment, 'pt-BR'));
+}
+
+export function payableGroupTotal(group) {
+  return group.items.reduce((sum, item) => sum + transactionValue(item, 'expense'), 0);
+}
+
+export function payableGroupLabel(group) {
+  return group.isCard ? group.payment : group.items[0]?.description || 'Conta';
+}
+
 export function calculateFinancialSummary(transactions, start = '', end = '') {
   const previousMonthEnd = start ? new Date(`${start}T12:00:00`).getTime() - 86400000 : 0;
   const previousMonthEndIso = previousMonthEnd ? new Date(previousMonthEnd).toISOString().slice(0, 10) : '';

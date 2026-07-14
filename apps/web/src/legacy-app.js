@@ -1,4 +1,4 @@
-import { calculateCurrentMonthHealth, calculateFinancialSummary } from "./legacy-finance.js";
+import { calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal } from "./legacy-finance.js";
 import { installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
 
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
@@ -941,34 +941,19 @@ function renderCurrentSituation() {
       : `Sobra prevista após pagar todas as despesas monetárias do mês.`;
 }
 
-function isCreditCardExpense(item) {
-  const method = normalizeText(item.paymentMethod || item.account);
-  const modality = normalizeText(item.modality);
-  return item.type === "expense" && (modality.includes("CREDITO") || method.includes("CARTAO") || method.includes("CREDITO"));
-}
-
 function renderDashboardPayables() {
   const pending = selectedTransactions()
     .filter((item) => item.type === "expense" && item.status === "pending")
     .sort((a, b) => a.date.localeCompare(b.date) || a.description.localeCompare(b.description, "pt-BR"));
-  const grouped = new Map();
-
-  pending.forEach((item) => {
-    const payment = item.paymentMethod || item.account || "Não informado";
-    const key = isCreditCardExpense(item) ? `card:${item.date}:${normalizeText(payment)}` : `item:${item.id}`;
-    if (!grouped.has(key)) grouped.set(key, { date: item.date, payment, isCard: isCreditCardExpense(item), items: [] });
-    grouped.get(key).items.push(item);
-  });
-
-  const groups = [...grouped.values()].sort((a, b) => a.date.localeCompare(b.date) || a.payment.localeCompare(b.payment, "pt-BR"));
+  const groups = groupPayableItems(pending);
   payableGroupCache = new Map(groups.map((group, index) => [`payable-${index}`, group]));
   const total = pending.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
   els.dashboardPayableSummary.textContent = `${pending.length} lançamento(s) · ${money.format(total)} em aberto`;
   els.dashboardPayables.innerHTML = groups.length
     ? groups.map((group, index) => {
-        const totalGroup = group.items.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+        const totalGroup = payableGroupTotal(group);
         const overdue = group.date < todayIso;
-        const title = group.isCard ? `Fatura ${group.payment}` : group.items[0].description;
+        const title = group.isCard ? `Fatura ${payableGroupLabel(group)}` : payableGroupLabel(group);
         const groupKey = `payable-${index}`;
         const cardItems = group.items.length > 5
           ? `<button type="button" class="card-launch-button" data-card-group="${groupKey}">Editar ${group.items.length} lançamentos do cartão <span>→</span></button>`
@@ -1905,7 +1890,14 @@ function renderMonthProgress() {
   const comparisonBase = Math.max(summary.availableIncome, 0) + Math.max(summary.expense, 0);
   const incomeShare = comparisonBase ? (Math.max(summary.availableIncome, 0) / comparisonBase) * 100 : 0;
   const expenseShare = comparisonBase ? (Math.max(summary.expense, 0) / comparisonBase) * 100 : 0;
-  const next = pending[0];
+  const nextDate = pending[0]?.date;
+  const nextItems = nextDate ? pending.filter((item) => item.date === nextDate) : [];
+  const nextGroups = groupPayableItems(nextItems);
+  const nextTotal = nextItems.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const nextLabels = [...new Set(nextGroups.map(payableGroupLabel))];
+  const nextDescription = nextLabels.length > 3
+    ? `${nextLabels.slice(0, 3).join(", ")} +${nextLabels.length - 3}`
+    : nextLabels.join(", ");
   els.monthProgressFill.style.width = `${progress}%`;
   const circumference = 2 * Math.PI * 48;
   const incomeLength = circumference * (incomeShare / 100);
@@ -1926,8 +1918,8 @@ function renderMonthProgress() {
   els.monthPaidValue.textContent = money.format(paidValue);
   els.monthPendingCount.textContent = String(pending.length);
   els.monthPendingValue.textContent = money.format(pendingValue);
-  els.monthNextDue.textContent = next ? formatDate(next.date) : "—";
-  els.monthNextDueDescription.textContent = next ? `${next.description} · ${money.format(next.expenseAmount || next.amount || 0)}` : "Nenhuma conta pendente";
+  els.monthNextDue.textContent = nextDate ? formatDate(nextDate) : "—";
+  els.monthNextDueDescription.textContent = nextDate ? `${money.format(nextTotal)} · ${nextDescription}` : "Nenhuma conta pendente";
 }
 
 function sortTransactions(items, sortMode) {
@@ -2152,6 +2144,7 @@ function renderPending() {
     paymentOptions.map((item) => `<option value="${escapeHtml(item)}" ${els.pendingPaymentFilter.value === item ? "selected" : ""}>${escapeHtml(item)}</option>`).join("");
   const selectedPayment = els.pendingPaymentFilter.value || "all";
   const visibleItems = statusItems.filter((item) => selectedPayment === "all" || (item.paymentMethod || item.account) === selectedPayment);
+  const visibleGroups = groupPayableItems(visibleItems, { separateStatus: true });
   const pendingVisible = visibleItems.filter((item) => item.status === "pending");
   const paidVisible = visibleItems.filter((item) => item.status === "paid");
   const pendingTotal = pendingVisible.reduce((sum, item) => sum + Number(item.amount || 0), 0);
@@ -2202,22 +2195,33 @@ function renderPending() {
     els.pendingHealthMessage.textContent = "Todas as obrigações monetárias deste mês estão marcadas como pagas.";
   }
 
-  els.pendingBillsList.innerHTML = visibleItems.length
-    ? visibleItems
-        .sort((a, b) => (a.status === b.status ? a.date.localeCompare(b.date) : a.status === "pending" ? -1 : 1))
+  const orderedVisibleGroups = visibleGroups.sort((a, b) => (a.status === b.status ? a.date.localeCompare(b.date) : a.status === "pending" ? -1 : 1));
+  [...payableGroupCache.keys()].filter((key) => key.startsWith("pending-payable-")).forEach((key) => payableGroupCache.delete(key));
+  orderedVisibleGroups.forEach((group, index) => payableGroupCache.set(`pending-payable-${index}`, group));
+  els.pendingBillsList.innerHTML = orderedVisibleGroups.length
+    ? orderedVisibleGroups
         .map(
-          (item) => {
-            const priority = item.status === "paid" ? "paid" : item.date < todayIso ? "overdue" : item.date === todayIso ? "today" : item.date <= sevenDaysAhead ? "soon" : "future";
+          (group, index) => {
+            const item = group.items[0];
+            const groupKey = `pending-payable-${index}`;
+            const totalGroup = payableGroupTotal(group);
+            const priority = group.status === "paid" ? "paid" : group.date < todayIso ? "overdue" : group.date === todayIso ? "today" : group.date <= sevenDaysAhead ? "soon" : "future";
             const priorityLabel = { paid: "PAGA", overdue: "VENCIDA", today: "VENCE HOJE", soon: "PRÓXIMOS 7 DIAS", future: "PROGRAMADA" }[priority];
+            const title = group.isCard ? `Fatura ${payableGroupLabel(group)}` : payableGroupLabel(group);
+            const detail = group.isCard
+              ? `${formatDate(group.date)} · ${group.items.length} lançamento(s) agrupado(s) · clique para conferir`
+              : `${formatDate(group.date)} · ${group.payment} · ${item.group || item.category || "Sem categoria"}`;
+            const editAttribute = group.isCard ? `data-card-group="${groupKey}"` : `data-edit="${escapeHtml(item.id)}"`;
+            const toggleAttribute = group.isCard ? `data-toggle-paid-group="${groupKey}"` : `data-toggle-paid="${escapeHtml(item.id)}"`;
             return `
-          <article class="bill-item ${item.status === "paid" ? "done" : ""} priority-${priority}">
-            <input type="checkbox" data-toggle-paid="${item.id}" ${item.status === "paid" ? "checked" : ""} />
-            <button type="button" class="bill-meta bill-edit-button" data-edit="${escapeHtml(item.id)}">
-              <strong>${escapeHtml(item.description)}</strong>
-              <small>${formatDate(item.date)} · ${escapeHtml(item.paymentMethod || item.account || "Não informado")} · ${escapeHtml(item.group || item.category || "Sem categoria")}</small>
+          <article class="bill-item ${group.status === "paid" ? "done" : ""} ${group.isCard ? "grouped-card-bill" : ""} priority-${priority}">
+            <input type="checkbox" ${toggleAttribute} ${group.status === "paid" ? "checked" : ""} aria-label="${group.status === "paid" ? "Reabrir" : "Pagar"} ${escapeHtml(title)}" />
+            <button type="button" class="bill-meta bill-edit-button" ${editAttribute}>
+              <strong>${group.isCard ? "💳 " : ""}${escapeHtml(title)}</strong>
+              <small>${escapeHtml(detail)}</small>
             </button>
             <span class="bill-priority">${priorityLabel}</span>
-            <strong class="amount negative">${money.format(item.amount)}</strong>
+            <strong class="amount negative">${money.format(totalGroup)}</strong>
           </article>
         `; },
         )
@@ -2554,6 +2558,23 @@ function togglePaid(id, paid) {
   item.situation = paid ? "PAGO" : "PENDENTE";
   saveState();
   if (paid) showToast("Conta paga", `${item.description} · ${money.format(item.amount)}`, "success");
+  render();
+}
+
+function togglePaidGroup(groupKey, paid, control) {
+  const group = payableGroupCache.get(groupKey);
+  if (!group) return;
+  if (paid) {
+    if (control) control.checked = false;
+    openPaymentConfirmation(groupKey);
+    return;
+  }
+  group.items.forEach((item) => {
+    item.status = "pending";
+    item.situation = "PENDENTE";
+  });
+  saveState();
+  showToast("Fatura reaberta", `${group.payment} · ${money.format(payableGroupTotal(group))}`);
   render();
 }
 
@@ -2930,7 +2951,9 @@ document.addEventListener("click", (event) => {
 
 document.addEventListener("change", (event) => {
   const paidToggle = event.target.closest("[data-toggle-paid]");
+  const paidGroupToggle = event.target.closest("[data-toggle-paid-group]");
   if (paidToggle) togglePaid(paidToggle.dataset.togglePaid, paidToggle.checked);
+  if (paidGroupToggle) togglePaidGroup(paidGroupToggle.dataset.togglePaidGroup, paidGroupToggle.checked, paidGroupToggle);
 });
 
 els.navItems.forEach((item) => item.addEventListener("click", () => setView(item.dataset.view)));
