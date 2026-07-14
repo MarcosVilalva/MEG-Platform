@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { calculateFinancialSummary } from './legacy-finance.js';
+import { calculateCurrentMonthHealth, calculateFinancialSummary } from './legacy-finance.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { installmentDueDate, splitInstallmentAmounts } from './legacy-installments.js';
 
@@ -85,5 +85,22 @@ assert.equal(customRangeSummary.pendingExpense, 250);
 assert.equal(customRangeSummary.closingBalance, 900);
 assert.equal(customRangeSummary.projectedBalance, 650);
 assert.equal(customRangeSummary.ticketIncome, 300);
+
+const currentMonthHealth = calculateCurrentMonthHealth([
+  { date: '2026-06-30', type: 'income', incomeAmount: 3000 },
+  { date: '2026-06-30', type: 'expense', expenseAmount: 1000, status: 'paid' },
+  { date: '2026-07-01', type: 'income', incomeAmount: 2000 },
+  { date: '2026-07-02', type: 'income', description: 'VEROCARD', incomeAmount: 500 },
+  { date: '2026-07-05', type: 'expense', expenseAmount: 1500, status: 'paid' },
+  { date: '2026-07-10', type: 'expense', expenseAmount: 300, status: 'pending' },
+  { date: '2026-07-20', type: 'expense', expenseAmount: 2500, status: 'pending' },
+  { date: '2026-07-22', type: 'expense', paymentMethod: 'VEROCARD', expenseAmount: 200, status: 'pending' },
+], '2026-07-01', '2026-07-14', '2026-07-31');
+assert.equal(currentMonthHealth.availableToday, 2500);
+assert.equal(currentMonthHealth.pendingValue, 2800);
+assert.equal(currentMonthHealth.projectedClosing, -300);
+assert.equal(currentMonthHealth.pendingItems.length, 2);
+assert.equal(currentMonthHealth.overdueItems.length, 1);
+assert.equal(currentMonthHealth.nextDue.date, '2026-07-20');
 
 console.log('MEG legacy financial reconciliation passed.');

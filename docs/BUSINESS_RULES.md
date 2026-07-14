@@ -10,6 +10,8 @@
 - O mês anterior é sempre derivado do mês escolhido no filtro; ao trocar o período mensal, o saldo acumulado e o texto explicativo do card devem acompanhar a nova seleção.
 - Saldo realizado do mês atual = receita disponível do mês atual - despesas pagas do mês atual.
 - Despesas pendentes são exibidas separadamente e não reduzem o saldo realizado até serem pagas.
+- O diagnóstico principal de saúde financeira sempre responde à situação do mês corrente, independentemente do filtro analítico: saldo monetário disponível hoje menos todas as despesas monetárias pendentes dentro do mês. Resultado negativo significa falta de dinheiro para fechar o mês e deve ser apresentado como alerta prioritário.
+- O filtro da aba Análises continua controlando a memória de cálculo, comparativos, grupos e gráficos; ele não pode mascarar um déficit existente no mês corrente.
 - O painel deve exibir separadamente saldo anterior, receitas do mês, receita disponível e fechamento; o saldo anterior nunca pode ficar oculto dentro de outro indicador.
 - O resumo principal possui três painéis: Monetário, Ticket Alimentação e Consolidado. Cada painel exibe Receitas, Despesas e Situação usando o mesmo período selecionado.
 - No painel Monetário, Receitas = saldo monetário anterior + receitas monetárias do período; Despesas = despesas monetárias pagas; Situação = Receitas - Despesas pagas. As pendências aparecem no detalhamento.

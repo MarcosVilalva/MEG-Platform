@@ -57,3 +57,29 @@ export function calculateFinancialSummary(transactions, start = '', end = '') {
     previousMonthEnd: previousMonthEndIso,
   };
 }
+
+export function calculateCurrentMonthHealth(transactions, monthStart, today, monthEnd) {
+  const effectiveToday = today < monthStart ? monthStart : today > monthEnd ? monthEnd : today;
+  const availableSummary = calculateFinancialSummary(transactions, monthStart, effectiveToday);
+  const pendingItems = transactions
+    .filter((item) => (
+      item.type === 'expense'
+      && !isVerocardTransaction(item)
+      && item.date >= monthStart
+      && item.date <= monthEnd
+      && (item.status === 'pending' || String(item.situation || '').toUpperCase() === 'PENDENTE')
+    ))
+    .sort((a, b) => a.date.localeCompare(b.date) || String(a.description || '').localeCompare(String(b.description || ''), 'pt-BR'));
+  const pendingValue = pendingItems.reduce((sum, item) => sum + transactionValue(item, 'expense'), 0);
+  const overdueItems = pendingItems.filter((item) => item.date < today);
+  const nextDue = pendingItems.find((item) => item.date >= today) || null;
+
+  return {
+    availableToday: availableSummary.closingBalance,
+    pendingItems,
+    pendingValue,
+    projectedClosing: availableSummary.closingBalance - pendingValue,
+    overdueItems,
+    nextDue,
+  };
+}

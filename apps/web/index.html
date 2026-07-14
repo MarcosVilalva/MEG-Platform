@@ -308,14 +308,21 @@
 
           <section class="decision-hero analytics-decision-hero" id="analyticsDecisionHero">
             <div class="decision-hero-copy">
-              <small class="decision-eyebrow">DIAGNÓSTICO MEG</small>
+              <small class="decision-eyebrow">SAÚDE FINANCEIRA DO MÊS ATUAL</small>
               <h3 id="analyticsHealthTitle">Analisando a saúde financeira</h3>
-              <p id="analyticsHealthMessage">Comparando receitas, despesas e concentração dos gastos.</p>
+              <p id="analyticsHealthMessage">Comparando o saldo disponível hoje com tudo que ainda falta pagar no mês.</p>
+              <div class="current-month-health-equation">
+                <span>Disponível hoje <strong id="currentHealthAvailableMetric">R$ 0,00</strong></span>
+                <b>−</b>
+                <span>Pendente no mês <strong id="currentHealthPendingMetric">R$ 0,00</strong></span>
+                <b>=</b>
+                <span>Fechamento projetado <strong id="currentHealthClosingMetric">R$ 0,00</strong></span>
+              </div>
             </div>
             <div class="decision-hero-value">
-              <span>Saldo monetário disponível</span>
+              <span id="analyticsSavingsLabel">Situação ao fechar o mês</span>
               <strong id="analyticsSavingsMetric">R$ 0,00</strong>
-              <small id="analyticsSavingsTrend">Após as despesas já pagas</small>
+              <small id="analyticsSavingsTrend">Saldo de hoje menos contas pendentes</small>
             </div>
           </section>
 

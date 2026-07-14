@@ -1,4 +1,4 @@
-import { calculateFinancialSummary } from "./legacy-finance.js";
+import { calculateCurrentMonthHealth, calculateFinancialSummary } from "./legacy-finance.js";
 import { installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
 
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
@@ -219,6 +219,10 @@ const els = {
   analyticsDecisionHero: document.querySelector("#analyticsDecisionHero"),
   analyticsHealthTitle: document.querySelector("#analyticsHealthTitle"),
   analyticsHealthMessage: document.querySelector("#analyticsHealthMessage"),
+  currentHealthAvailableMetric: document.querySelector("#currentHealthAvailableMetric"),
+  currentHealthPendingMetric: document.querySelector("#currentHealthPendingMetric"),
+  currentHealthClosingMetric: document.querySelector("#currentHealthClosingMetric"),
+  analyticsSavingsLabel: document.querySelector("#analyticsSavingsLabel"),
   analyticsSavingsMetric: document.querySelector("#analyticsSavingsMetric"),
   analyticsSavingsTrend: document.querySelector("#analyticsSavingsTrend"),
   analyticsCalculationPeriod: document.querySelector("#analyticsCalculationPeriod"),
@@ -741,6 +745,16 @@ function historicalTransactionsUntilToday() {
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+function currentMonthFinancialHealth() {
+  const monthStart = `${currentMonth}-01`;
+  const monthEnd = lastDayOfMonth(currentMonth);
+  return {
+    monthStart,
+    monthEnd,
+    ...calculateCurrentMonthHealth(state.transactions, monthStart, todayIso, monthEnd),
+  };
+}
+
 function historicalMonthsUntilToday() {
   const items = historicalTransactionsUntilToday();
   if (!items.length) return [];
@@ -1234,6 +1248,7 @@ function renderAnalytics() {
   const historicalItems = allHistoricalItems.filter((item) => !isVerocardTransaction(item));
   const historicalTotals = totalsFor(historicalItems);
   const historicalBalance = historicalTotals.income - historicalTotals.expense;
+  const monthHealth = currentMonthFinancialHealth();
 
   const paymentLabel = analyticsFilters.payments.length ? `${analyticsFilters.payments.length} modalidade(s)` : "todas as modalidades";
   els.analyticsPeriodLabel.textContent = `${periodLabel()} · modalidades: ${paymentLabel}`;
@@ -1277,30 +1292,36 @@ function renderAnalytics() {
     ? `${formatDate(allHistoricalItems[0].date)} até ${formatDate(todayIso)} · histórico fixo, independente do filtro acima`
     : "Sem lançamentos históricos até hoje";
 
-  const analyticsTone = summary.closingBalance < 0 || projectedResult < 0 ? "risk" : savingsRate >= 20 ? "healthy" : "attention";
+  const monthMarginRate = monthHealth.availableToday > 0 ? (monthHealth.projectedClosing / monthHealth.availableToday) * 100 : 0;
+  const analyticsTone = monthHealth.projectedClosing < 0 ? "risk" : monthMarginRate >= 20 ? "healthy" : "attention";
   els.analyticsDecisionHero.classList.remove("risk", "attention", "healthy");
   els.analyticsDecisionHero.classList.add(analyticsTone);
-  els.analyticsSavingsMetric.textContent = money.format(result);
-  els.analyticsSavingsTrend.textContent = `Projeção após pendências: ${money.format(projectedResult)}`;
-  if (summary.closingBalance < 0) {
-    els.analyticsHealthTitle.textContent = `🔴 Saldo disponível negativo em ${money.format(Math.abs(summary.closingBalance))}`;
-    els.analyticsHealthMessage.textContent = `A conta é: ${money.format(summary.openingBalance)} de saldo anterior + ${money.format(summary.income)} de receitas − ${money.format(summary.paidExpense)} já pagas. Além disso, ainda há ${money.format(summary.pendingExpense)} pendentes.`;
-  } else if (projectedResult < 0) {
-    els.analyticsHealthTitle.textContent = `🟠 Há saldo agora, mas faltam ${money.format(Math.abs(projectedResult))} para quitar tudo`;
-    els.analyticsHealthMessage.textContent = `Você possui ${money.format(summary.closingBalance)} disponíveis, porém as contas pendentes somam ${money.format(summary.pendingExpense)}. Não trate o saldo atual como sobra: parte dele já está comprometida.`;
-  } else if (savingsRate >= 20) {
-    els.analyticsHealthTitle.textContent = `🟢 Todas as contas cabem e restam ${money.format(projectedResult)}`;
-    els.analyticsHealthMessage.textContent = `Após reservar ${money.format(summary.pendingExpense)} para as contas ainda abertas, o saldo projetado permanece positivo. Essa é a sobra efetiva do recorte, não apenas a diferença entre receitas e despesas.`;
+  els.currentHealthAvailableMetric.textContent = money.format(monthHealth.availableToday);
+  els.currentHealthPendingMetric.textContent = money.format(monthHealth.pendingValue);
+  els.currentHealthClosingMetric.textContent = money.format(monthHealth.projectedClosing);
+  els.analyticsSavingsLabel.textContent = monthHealth.projectedClosing < 0 ? "Falta para fechar o mês" : "Sobra após quitar o mês";
+  els.analyticsSavingsMetric.textContent = money.format(Math.abs(monthHealth.projectedClosing));
+  els.analyticsSavingsTrend.textContent = `${monthHealth.pendingItems.length} conta(s) pendente(s) em ${formatMonthCode(currentMonth)}`;
+  const overdueWarning = monthHealth.overdueItems.length ? ` Há ${monthHealth.overdueItems.length} conta(s) vencida(s).` : "";
+  const nextDueWarning = monthHealth.nextDue
+    ? ` Próximo vencimento: ${monthHealth.nextDue.description || "conta"} em ${formatDate(monthHealth.nextDue.date)} (${money.format(Number(monthHealth.nextDue.expenseAmount || monthHealth.nextDue.amount || 0))}).`
+    : "";
+  if (monthHealth.projectedClosing < 0) {
+    els.analyticsHealthTitle.textContent = `🔴 Saúde financeira em alerta: faltam ${money.format(Math.abs(monthHealth.projectedClosing))}`;
+    els.analyticsHealthMessage.textContent = `Você tem ${money.format(monthHealth.availableToday)} disponíveis hoje, mas ainda precisa pagar ${money.format(monthHealth.pendingValue)} neste mês. Mesmo usando todo o saldo, o caixa fecha negativo.${overdueWarning}${nextDueWarning}`;
+  } else if (monthMarginRate >= 20) {
+    els.analyticsHealthTitle.textContent = `🟢 O mês fecha com sobra real de ${money.format(monthHealth.projectedClosing)}`;
+    els.analyticsHealthMessage.textContent = `O saldo de hoje cobre todas as ${monthHealth.pendingItems.length} contas ainda abertas e preserva ${monthMarginRate.toFixed(1)}% de margem. Essa é a sobra efetiva depois de quitar o mês.${nextDueWarning}`;
   } else {
-    els.analyticsHealthTitle.textContent = `🟡 As contas cabem, mas a margem é curta`;
-    els.analyticsHealthMessage.textContent = `O saldo disponível é ${money.format(summary.closingBalance)} e cai para ${money.format(projectedResult)} depois das pendências. Evite assumir novos compromissos até aumentar essa margem.`;
+    els.analyticsHealthTitle.textContent = `🟡 O mês fecha, mas a margem é curta: ${money.format(monthHealth.projectedClosing)}`;
+    els.analyticsHealthMessage.textContent = `O saldo atual cobre as contas pendentes, porém resta apenas ${monthMarginRate.toFixed(1)}% de margem. Evite novos compromissos até concluir os pagamentos.${overdueWarning}${nextDueWarning}`;
   }
 
   renderModalityEvolutionChart(evolution);
   renderBalanceClosingChart(closingBalances);
   renderGroupBarChart(groups.slice(0, 10));
   renderExpenseRanking(groups, summary.expense);
-  renderDecisionInsights({ groups, totals, variation, previousExpense, concentration, expenses, result: projectedResult, coverage, pendingExpense, overdueExpenses, overdueValue, savingsRate });
+  renderDecisionInsights({ monthHealth, groups, totals, variation, previousExpense, concentration, expenses, result: projectedResult, coverage, pendingExpense, overdueExpenses, overdueValue, savingsRate });
 }
 
 let balanceChartPoints = [];
@@ -1543,26 +1564,26 @@ function renderExpenseRanking(groups, totalExpense) {
     : `<div class="empty">Sem despesas no periodo selecionado.</div>`;
 }
 
-function renderDecisionInsights({ groups, totals, variation, previousExpense, concentration, expenses, result, coverage, pendingExpense, overdueExpenses, overdueValue, savingsRate }) {
+function renderDecisionInsights({ monthHealth, groups, totals, variation, previousExpense, concentration, expenses, result, coverage, pendingExpense, overdueExpenses, overdueValue, savingsRate }) {
   const insights = [];
   const top = groups[0];
-  if (result < 0) {
+  if (monthHealth.projectedClosing < 0) {
     insights.push({
       tone: "risk",
-      title: `1. Cubra o déficit de ${money.format(Math.abs(result))}`,
-      text: `As receitas pagam apenas ${coverage.toFixed(0)}% das despesas lançadas. Priorize novas entradas ou adie despesas ainda não vencidas até eliminar essa diferença.`,
+      title: `1. Prioridade máxima: faltam ${money.format(Math.abs(monthHealth.projectedClosing))} para fechar ${formatMonthCode(currentMonth)}`,
+      text: `O caixa disponível hoje é ${money.format(monthHealth.availableToday)}, enquanto as contas restantes somam ${money.format(monthHealth.pendingValue)}. Regularize primeiro vencidas e essenciais; depois renegocie ou adie compromissos até eliminar o déficit.`,
     });
-  } else if (savingsRate < 20 && totals.income > 0) {
+  } else if (monthHealth.availableToday > 0 && (monthHealth.projectedClosing / monthHealth.availableToday) < .2) {
     insights.push({
       tone: "attention",
-      title: "1. Proteja uma reserva antes de novos gastos",
-      text: `A sobra é ${money.format(result)} (${savingsRate.toFixed(1)}% da receita). A referência de 20% pede uma reserva de ${money.format(totals.income * .2)} neste período.`,
+      title: "1. O mês fecha, mas sem margem de segurança",
+      text: `Depois das contas ainda abertas restam apenas ${money.format(monthHealth.projectedClosing)}. Não trate esse valor como disponível para novos gastos antes de concluir o mês.`,
     });
-  } else if (totals.income > 0) {
+  } else {
     insights.push({
       tone: "",
-      title: "1. Resultado dentro da faixa saudável",
-      text: `O período preserva ${money.format(result)} após todas as despesas lançadas. Mantenha essa sobra separada dos gastos do dia a dia.`,
+      title: "1. As contas do mês estão cobertas",
+      text: `Após reservar ${money.format(monthHealth.pendingValue)} para tudo que ainda falta pagar, permanecem ${money.format(monthHealth.projectedClosing)}. Preserve essa margem até o fechamento.`,
     });
   }
   if (overdueExpenses.length) {

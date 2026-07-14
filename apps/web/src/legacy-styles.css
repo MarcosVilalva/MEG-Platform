@@ -667,6 +667,8 @@ textarea {
   .pending-command-center { grid-template-columns: 1fr; }
   .pending-priority-grid { grid-column: auto; grid-template-columns: 1fr; }
   .analytics-filter-panel { align-items: stretch; flex-direction: column; }
+  .current-month-health-equation { display: grid; grid-template-columns: 1fr; }
+  .current-month-health-equation > b { display: none; }
 }
 
 @media (max-width: 1120px) {
@@ -1204,6 +1206,42 @@ textarea {
   max-width: 850px;
   font-size: 1rem;
   line-height: 1.6;
+}
+
+.current-month-health-equation {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.current-month-health-equation > span {
+  display: grid;
+  gap: 2px;
+  min-width: 150px;
+  padding: 9px 12px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 12px;
+  background: rgba(255,255,255,.1);
+  color: rgba(255,255,255,.72);
+  font-size: .7rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.current-month-health-equation > span strong {
+  color: #fff;
+  font-size: clamp(.96rem, 1.5vw, 1.18rem);
+  letter-spacing: -.02em;
+  text-transform: none;
+}
+
+.current-month-health-equation > b {
+  color: rgba(255,255,255,.78);
+  font-size: 1.1rem;
 }
 
 .analytics-calculation-panel {
@@ -1828,6 +1866,8 @@ tbody tr:hover {
 
   .finance-panels { grid-template-columns: 1fr; }
   .budget-goals-grid, .budget-editor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .current-month-health-equation { display: grid; grid-template-columns: 1fr; }
+  .current-month-health-equation > b { display: none; }
 }
 
 @media (max-width: 680px) {
