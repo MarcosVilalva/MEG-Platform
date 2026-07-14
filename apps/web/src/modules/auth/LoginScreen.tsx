@@ -15,6 +15,7 @@ function friendlyError(error: unknown) {
   if (message === 'EMAIL_ALREADY_REGISTERED') return 'Este e-mail já está cadastrado.';
   if (message === 'VALIDATION_ERROR') return 'Revise os dados informados.';
   if (message === 'EMAIL_DELIVERY_FAILED') return 'Não foi possível enviar o e-mail. Avise o administrador para revisar a configuração de e-mail.';
+  if (message === 'NOTIFICATION_DELIVERY_FAILED') return 'Não foi possível entregar a nova senha por e-mail nem por WhatsApp. Avise o administrador.';
   if (message === 'PASSWORD_RESET_RATE_LIMITED') return 'Uma nova senha já foi enviada recentemente. Aguarde 10 minutos antes de tentar novamente.';
   if (message.includes('Failed to fetch')) return 'Não foi possível conectar à API. Verifique se ela está em execução.';
   return 'Não foi possível concluir o acesso.';
@@ -40,7 +41,8 @@ export function LoginScreen({ onAuthenticated }: Props) {
     try {
       if (mode === 'forgot') {
         const result = await forgotPassword(email);
-        setSuccess(`Nova senha temporária enviada para ${result.deliveredTo}.`);
+        const channels = result.notifications.filter((item) => item.status === 'sent').map((item) => item.channel === 'email' ? 'e-mail' : 'WhatsApp');
+        setSuccess(`Nova senha temporária enviada por ${channels.join(' e ')}.`);
         setMode('login');
         setPassword('');
         return;

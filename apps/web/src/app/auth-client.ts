@@ -83,7 +83,11 @@ export async function register(name: string, email: string, phone: string, passw
 }
 
 export async function forgotPassword(email: string) {
-  return request<{ status: 'PASSWORD_SENT'; deliveredTo: string }>('/auth/forgot-password', {
+  return request<{
+    status: 'PASSWORD_SENT';
+    deliveredTo: string;
+    notifications: Array<{ channel: 'email' | 'whatsapp'; status: 'sent' | 'failed' | 'skipped'; detail?: string }>;
+  }>('/auth/forgot-password', {
     method: 'POST',
     body: JSON.stringify({ email })
   });

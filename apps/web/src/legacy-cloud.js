@@ -67,6 +67,7 @@ function friendlyAuthError(code) {
     INVALID_CREDENTIALS: 'E-mail ou senha inválidos.',
     EMAIL_ALREADY_REGISTERED: 'Este e-mail já está cadastrado.',
     EMAIL_DELIVERY_FAILED: 'Não foi possível enviar o e-mail. Avise o administrador para revisar a configuração de e-mail.',
+    NOTIFICATION_DELIVERY_FAILED: 'Não foi possível entregar a nova senha por e-mail nem por WhatsApp. Avise o administrador.',
     PASSWORD_RESET_RATE_LIMITED: 'Uma nova senha já foi enviada recentemente. Aguarde 10 minutos antes de tentar novamente.',
     VALIDATION_ERROR: 'Revise os dados informados.'
   };
@@ -191,7 +192,8 @@ function showAuthentication() {
         const payload = await response.json();
         if (!response.ok) throw new Error(friendlyAuthError(payload.error));
         error.classList.add('success');
-        error.textContent = `Nova senha temporária enviada para ${payload.deliveredTo}.`;
+        const channels = (payload.notifications || []).filter((item) => item.status === 'sent').map((item) => item.channel === 'email' ? 'e-mail' : 'WhatsApp');
+        error.textContent = `Nova senha temporária enviada por ${channels.join(' e ')}.`;
       } catch (cause) {
         error.textContent = cause instanceof Error ? cause.message : 'Não foi possível conectar à API.';
       }

@@ -98,7 +98,7 @@ export async function authRoutes(app: FastifyInstance) {
     if (!parsed.success) return reply.status(400).send({ error: 'VALIDATION_ERROR' });
     try {
       const result = await requestPasswordReset(parsed.data.email);
-      return { status: 'PASSWORD_SENT', deliveredTo: result.deliveredTo };
+      return { status: 'PASSWORD_SENT', deliveredTo: result.deliveredTo, notifications: result.notifications };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
       if (message === 'ACCOUNT_NOT_FOUND') return reply.status(404).send({ error: message });
