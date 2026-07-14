@@ -99,6 +99,7 @@
 .admin-feedback:not(:empty) { min-height: 48px; padding: 14px 17px; border: 1px solid #cfe4df; background: #eff8f6; color: #075b4e; }
 .admin-feedback.error { border-color: #f1c8c5; background: #fff1f0; color: #a3241c; }
 .admin-feedback.success { border-color: #a9dfcf; background: #e9faf4; color: #07634f; }
+.admin-feedback.warning { border-color: #e9ca77; background: #fff8df; color: #745100; }
 .admin-feedback.loading { color: #735200; background: #fff9e9; border-color: #eedb9f; }
 .user-management-list { display: grid; gap: 14px; }
 .admin-user-card { padding: 22px; border: 1px solid #d9e7e3; border-radius: 21px; background: rgba(255,255,255,.94); box-shadow: 0 10px 30px rgba(16,57,49,.07); }

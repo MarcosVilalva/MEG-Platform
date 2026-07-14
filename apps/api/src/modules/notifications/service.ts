@@ -143,9 +143,18 @@ export async function notificationDigest(userId: string, referenceDate = new Dat
 
 async function sendEmail(to: string, subject: string, text: string) {
   if (!config.resendApiKey) return { status: 'skipped', detail: 'RESEND_API_KEY não configurada' };
+  const recipient = to.trim().replace(/[?？]+$/u, '').toLowerCase();
+  const senderAddress = config.notificationEmailFrom.match(/<([^>]+)>/)?.[1] || config.notificationEmailFrom;
+  const usesResendTestDomain = senderAddress.trim().toLowerCase().endsWith('@resend.dev');
+  if (usesResendTestDomain && recipient !== config.adminEmail.trim().toLowerCase()) {
+    return {
+      status: 'failed',
+      detail: 'O remetente onboarding@resend.dev só envia para o proprietário da conta Resend. Verifique um domínio no Resend e configure NOTIFICATION_EMAIL_FROM.'
+    };
+  }
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST', headers: { Authorization: `Bearer ${config.resendApiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: config.notificationEmailFrom, to: [to], subject, text })
+    body: JSON.stringify({ from: config.notificationEmailFrom, to: [recipient], reply_to: config.adminEmail, subject, text })
   });
   if (!response.ok) throw new Error(`E-mail recusado (${response.status}): ${await response.text()}`);
   return { status: 'sent', detail: await response.text() };
@@ -170,8 +179,16 @@ export async function sendSystemWhatsApp(number: string, text: string) {
 }
 
 export function notificationIntegrationStatus() {
+  const senderAddress = config.notificationEmailFrom.match(/<([^>]+)>/)?.[1] || config.notificationEmailFrom;
+  const testOnly = senderAddress.trim().toLowerCase().endsWith('@resend.dev');
   return {
-    email: { configured: Boolean(config.resendApiKey && config.notificationEmailFrom), recipient: config.adminEmail },
+    email: {
+      configured: Boolean(config.resendApiKey && config.notificationEmailFrom),
+      recipient: config.adminEmail,
+      sender: senderAddress,
+      mode: testOnly ? 'test-only' : 'production',
+      readyForAllUsers: Boolean(config.resendApiKey && config.notificationEmailFrom && !testOnly)
+    },
     whatsapp: { configured: Boolean(config.evolutionApiUrl && config.evolutionApiKey && config.evolutionInstance), defaultRecipient: config.whatsappRecipient ? config.whatsappRecipient.replace(/\d(?=\d{4})/g, '•') : null },
     automation: { configured: Boolean(config.notificationCronSecret), schedule: '06:00, 12:00 e 19:00 America/Sao_Paulo; resumo geral a cada 5 dias às 06:00' }
   };

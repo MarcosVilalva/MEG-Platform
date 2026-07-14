@@ -42,7 +42,8 @@ export function LoginScreen({ onAuthenticated }: Props) {
       if (mode === 'forgot') {
         const result = await forgotPassword(email);
         const channels = result.notifications.filter((item) => item.status === 'sent').map((item) => item.channel === 'email' ? 'e-mail' : 'WhatsApp');
-        setSuccess(`Nova senha temporária enviada por ${channels.join(' e ')}.`);
+        const failed = result.notifications.filter((item) => item.status === 'failed').map((item) => item.channel === 'email' ? 'e-mail' : 'WhatsApp');
+        setSuccess(`Nova senha temporária enviada por ${channels.join(' e ')}.${failed.length ? ` Não entregue por ${failed.join(' e ')}.` : ''}`);
         setMode('login');
         setPassword('');
         return;

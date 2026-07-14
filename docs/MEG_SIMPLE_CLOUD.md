@@ -31,6 +31,7 @@ O resumo diário inclui contas vencidas e contas que vencem nos próximos três 
 Variáveis do Render para e-mail:
 
 - `RESEND_API_KEY`
+- `NOTIFICATION_EMAIL_FROM`: use um endereço de domínio verificado no Resend para enviar recuperação de senha a usuários diferentes do proprietário da conta. `onboarding@resend.dev` é somente para testes.
 - `NOTIFICATION_EMAIL_FROM`
 - `ADMIN_EMAIL` (padrão: `m_vilalva@hotmail.com`)
 

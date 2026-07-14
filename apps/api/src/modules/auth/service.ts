@@ -3,9 +3,10 @@ import bcrypt from 'bcryptjs';
 import { prisma, UserRole, UserStatus } from '@meg/database';
 import { sendSystemEmail, sendSystemWhatsApp } from '../notifications/service';
 import { config } from '../../config';
+import { createTemporaryPassword, normalizeAccountEmail, passwordResetMessages } from './password-reset';
 
 const SESSION_TTL_DAYS = 30;
-const ADMIN_EMAIL = config.adminEmail.toLowerCase();
+const ADMIN_EMAIL = normalizeAccountEmail(config.adminEmail);
 
 function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex');
@@ -47,7 +48,7 @@ export async function registerUser(input: {
   phone?: string;
   password: string;
 }) {
-  const email = input.email.trim().toLowerCase();
+  const email = normalizeAccountEmail(input.email);
   const existing = await prisma.user.findUnique({ where: { email } });
 
   if (existing?.status === UserStatus.PENDING) throw new Error('ACCESS_PENDING');
@@ -96,7 +97,7 @@ export async function registerUser(input: {
 }
 
 export async function authenticateUser(emailInput: string, password: string) {
-  const email = emailInput.trim().toLowerCase();
+  const email = normalizeAccountEmail(emailInput);
   const user = await prisma.user.findUnique({ where: { email } });
 
   if (!user) return { error: 'ACCOUNT_NOT_FOUND' as const };
@@ -190,7 +191,7 @@ async function notifyUser(
   emailText: string,
   whatsappText: string
 ) {
-  const email = await sendSystemEmail(target.email, subject, emailText)
+  const email = await sendSystemEmail(normalizeAccountEmail(target.email), subject, emailText)
     .catch((error) => ({ status: 'failed', detail: error instanceof Error ? error.message : 'Falha desconhecida' }));
   const whatsapp = target.phone
     ? await sendSystemWhatsApp(target.phone, whatsappText)
@@ -203,7 +204,7 @@ async function notifyUser(
 }
 
 export async function requestPasswordReset(emailInput: string) {
-  const email = emailInput.trim().toLowerCase();
+  const email = normalizeAccountEmail(emailInput);
   const target = await prisma.user.findUnique({ where: { email } });
   if (!target) throw new Error('ACCOUNT_NOT_FOUND');
   if (target.status === UserStatus.PENDING) throw new Error('ACCESS_PENDING');
@@ -220,13 +221,14 @@ export async function requestPasswordReset(emailInput: string) {
   });
   if (recentReset) throw new Error('PASSWORD_RESET_RATE_LIMITED');
 
-  const temporaryPassword = `Meg#${randomBytes(6).toString('base64url')}9a`;
+  const temporaryPassword = createTemporaryPassword();
   const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+  const messages = passwordResetMessages(target, temporaryPassword);
   const notifications = await notifyUser(
     target,
-    'MEG Finanças: nova senha temporária',
-    `Olá, ${target.name}.\n\nUma nova senha temporária foi solicitada para sua conta.\n\nSenha temporária: ${temporaryPassword}\n\nEntre no MEG com esta senha. Por segurança, não a compartilhe.\n\nMEG Finanças — Segurança e controle.`,
-    `🔑 *MEG Finanças — Senha redefinida*\n\nOlá, *${target.name}*! Sua nova senha temporária é:\n\n*${temporaryPassword}*\n\nEntre no MEG e não compartilhe esta senha.\n\n🤖 MEG Finanças — Segurança e controle.`
+    messages.subject,
+    messages.emailText,
+    messages.whatsappText
   );
   if (!notifications.some((item) => item.status === 'sent')) throw new Error('NOTIFICATION_DELIVERY_FAILED');
 
@@ -252,13 +254,14 @@ export async function resetUserPassword(input: { actorId: string; userId: string
   if (!target) throw new Error('USER_NOT_FOUND');
   if (!target.isActive || target.status !== UserStatus.ACTIVE) throw new Error('USER_NOT_ACTIVE');
 
-  const temporaryPassword = `Meg#${randomBytes(6).toString('base64url')}9a`;
+  const temporaryPassword = createTemporaryPassword();
   const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+  const messages = passwordResetMessages(target, temporaryPassword, true);
   const notifications = await notifyUser(
     target,
-    'MEG Finanças: sua senha temporária',
-    `Olá, ${target.name}.\n\nO administrador redefiniu sua senha.\n\nSenha temporária: ${temporaryPassword}\n\nEntre no MEG e mantenha esta mensagem em local seguro até confirmar o acesso. Não compartilhe esta senha.\n\nMEG Finanças — Segurança e controle.`,
-    `🔑 *MEG Finanças — Senha redefinida pelo administrador*\n\nOlá, *${target.name}*! Sua nova senha temporária é:\n\n*${temporaryPassword}*\n\nEntre no MEG e não compartilhe esta senha.\n\n🤖 MEG Finanças — Segurança e controle.`
+    messages.subject,
+    messages.emailText,
+    messages.whatsappText
   );
   if (!notifications.some((item) => item.status === 'sent')) throw new Error('NOTIFICATION_DELIVERY_FAILED');
 
@@ -277,6 +280,30 @@ export async function resetUserPassword(input: { actorId: string; userId: string
   ]);
 
   return { user: publicUser(target), deliveredTo: target.email, notifications };
+}
+
+export async function testUserEmail(input: { actorId: string; userId: string }) {
+  const target = await prisma.user.findUnique({ where: { id: input.userId } });
+  if (!target) throw new Error('USER_NOT_FOUND');
+
+  const deliveredTo = normalizeAccountEmail(target.email);
+  const email = await sendSystemEmail(
+    deliveredTo,
+    'MEG Finanças: teste de entrega',
+    `Olá, ${target.name}.\n\nEste é um teste do canal de e-mail do MEG Finanças. Nenhuma senha foi alterada.\n\nSe você recebeu esta mensagem, o endereço está pronto para receber avisos de acesso e recuperação de senha.\n\nMEG Finanças — Segurança e controle.`
+  ).catch((error) => ({ status: 'failed', detail: error instanceof Error ? error.message : 'Falha desconhecida' }));
+
+  await prisma.auditLog.create({
+    data: {
+      userId: input.actorId,
+      entity: 'User',
+      entityId: target.id,
+      action: 'EMAIL_DELIVERY_TESTED',
+      metadata: JSON.stringify({ deliveredTo, status: email.status })
+    }
+  });
+
+  return { deliveredTo, email };
 }
 
 export async function deleteUserAccess(input: { actorId: string; userId: string }) {

@@ -193,7 +193,8 @@ function showAuthentication() {
         if (!response.ok) throw new Error(friendlyAuthError(payload.error));
         error.classList.add('success');
         const channels = (payload.notifications || []).filter((item) => item.status === 'sent').map((item) => item.channel === 'email' ? 'e-mail' : 'WhatsApp');
-        error.textContent = `Nova senha temporária enviada por ${channels.join(' e ')}.`;
+        const failed = (payload.notifications || []).filter((item) => item.status === 'failed').map((item) => item.channel === 'email' ? 'e-mail' : 'WhatsApp');
+        error.textContent = `Nova senha temporária enviada por ${channels.join(' e ')}.${failed.length ? ` Não entregue por ${failed.join(' e ')}.` : ''}`;
       } catch (cause) {
         error.textContent = cause instanceof Error ? cause.message : 'Não foi possível conectar à API.';
       }
@@ -334,6 +335,12 @@ export async function bootstrapCloud() {
       const response = await api(`/auth/users/${encodeURIComponent(userId)}/reset-password`, { method: 'POST' });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error === 'EMAIL_DELIVERY_FAILED' || result.error === 'NOTIFICATION_DELIVERY_FAILED' ? 'A senha não foi alterada porque nem o e-mail nem o WhatsApp puderam ser entregues.' : result.error === 'USER_NOT_ACTIVE' ? 'Ative o usuário antes de redefinir a senha.' : 'Não foi possível redefinir a senha.');
+      return result;
+    },
+    async testUserEmail(userId) {
+      const response = await api(`/auth/users/${encodeURIComponent(userId)}/test-email`, { method: 'POST' });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.email?.detail || 'O provedor recusou o e-mail de teste.');
       return result;
     }
   };

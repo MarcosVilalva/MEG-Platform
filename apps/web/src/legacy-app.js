@@ -2808,6 +2808,10 @@ function userDate(value) {
   return value ? new Date(value).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }) : "Ainda não acessou";
 }
 
+function cleanManagedUserEmail(value) {
+  return String(value || "").trim().replace(/[?？]+$/u, "").toLowerCase();
+}
+
 function setUsersFeedback(message, tone = "") {
   if (!els.adminUsersFeedback) return;
   els.adminUsersFeedback.textContent = message;
@@ -2823,7 +2827,8 @@ function renderManagedUsers(users) {
     return;
   }
   els.adminUsersList.innerHTML = users.map((user) => {
-    const primaryAdmin = user.email.toLowerCase() === "m_vilalva@hotmail.com";
+    const cleanEmail = cleanManagedUserEmail(user.email);
+    const primaryAdmin = cleanEmail === "m_vilalva@hotmail.com";
     const roleOptions = Object.entries(USER_ROLE_LABELS).map(([value, label]) =>
       `<option value="${value}" ${user.role === value ? "selected" : ""}>${label}</option>`
     ).join("");
@@ -2837,7 +2842,7 @@ function renderManagedUsers(users) {
       ? `<button class="button primary" type="button" data-user-action="ACTIVATE" data-user-id="${escapeHtml(user.id)}">Reativar</button>`
       : "";
     const resetAction = user.status === "ACTIVE"
-      ? `<button class="button ghost" type="button" data-reset-user-password="${escapeHtml(user.id)}">Enviar nova senha</button>`
+      ? `<button class="button primary" type="button" data-reset-user-password="${escapeHtml(user.id)}">Redefinir senha</button><button class="button ghost" type="button" data-test-user-email="${escapeHtml(user.id)}">Testar e-mail</button>`
       : "";
     const deleteAction = !primaryAdmin
       ? `<button class="button danger-soft" type="button" data-delete-managed-user="${escapeHtml(user.id)}">Excluir acesso</button>`
@@ -2845,7 +2850,7 @@ function renderManagedUsers(users) {
     return `<article class="admin-user-card" data-managed-user="${escapeHtml(user.id)}">
       <div class="admin-user-head">
         <div class="user-avatar">${escapeHtml(user.name.slice(0, 1).toUpperCase())}</div>
-        <div class="admin-user-identity"><span class="user-status-pill ${user.status.toLowerCase()}">${escapeHtml(USER_STATUS_LABELS[user.status] || user.status)}</span><h3>${escapeHtml(user.name)}</h3><a href="mailto:${escapeHtml(user.email)}">${escapeHtml(user.email)}</a></div>
+        <div class="admin-user-identity"><span class="user-status-pill ${user.status.toLowerCase()}">${escapeHtml(USER_STATUS_LABELS[user.status] || user.status)}</span><h3>${escapeHtml(user.name)}</h3><a href="mailto:${escapeHtml(cleanEmail)}">${escapeHtml(cleanEmail)}</a></div>
         ${primaryAdmin ? '<span class="primary-admin-badge">Administrador principal</span>' : ""}
       </div>
       <div class="admin-user-details"><span><small>Cadastrado em</small><strong>${userDate(user.createdAt)}</strong></span><span><small>Último acesso</small><strong>${userDate(user.lastLoginAt)}</strong></span></div>
@@ -2898,9 +2903,22 @@ async function resetManagedUserPassword(userId) {
   try {
     const result = await window.MEG_CLOUD.resetUserPassword(userId);
     const delivered = (result.notifications || []).filter((item) => item.status === "sent").map((item) => item.channel === "whatsapp" ? "WhatsApp" : "e-mail");
-    setUsersFeedback(`Nova senha enviada com segurança por ${delivered.join(" e ") || result.deliveredTo}.`, "success");
+    const failed = (result.notifications || []).filter((item) => item.status === "failed").map((item) => item.channel === "whatsapp" ? "WhatsApp" : "e-mail");
+    setUsersFeedback(`Nova senha enviada com segurança por ${delivered.join(" e ") || result.deliveredTo}.${failed.length ? ` Não entregue por ${failed.join(" e ")}; use “Testar e-mail” para ver o motivo.` : ""}`, failed.length ? "warning" : "success");
   } catch (cause) {
     setUsersFeedback(cause instanceof Error ? cause.message : "Falha ao redefinir a senha.", "error");
+  }
+}
+
+async function testManagedUserEmail(userId) {
+  const card = document.querySelector(`[data-managed-user="${cssEscape(userId)}"]`);
+  const email = card?.querySelector(".admin-user-identity a")?.textContent || "o e-mail cadastrado";
+  setUsersFeedback(`Testando a entrega para ${email} sem alterar a senha...`, "loading");
+  try {
+    await window.MEG_CLOUD.testUserEmail(userId);
+    setUsersFeedback(`E-mail de teste aceito pelo provedor para ${email}.`, "success");
+  } catch (cause) {
+    setUsersFeedback(cause instanceof Error ? cause.message : "Falha no teste de e-mail.", "error");
   }
 }
 
@@ -2929,6 +2947,7 @@ document.addEventListener("click", (event) => {
   const userActionButton = event.target.closest("[data-user-action]");
   const saveUserRoleButton = event.target.closest("[data-save-user-role]");
   const resetUserPasswordButton = event.target.closest("[data-reset-user-password]");
+  const testUserEmailButton = event.target.closest("[data-test-user-email]");
   const deleteManagedUserButton = event.target.closest("[data-delete-managed-user]");
   if (editButton) {
     const item = state.transactions.find((transaction) => transaction.id === editButton.dataset.edit);
@@ -2946,6 +2965,7 @@ document.addEventListener("click", (event) => {
   if (userActionButton) updateManagedUser(userActionButton.dataset.userId, userActionButton.dataset.userAction);
   if (saveUserRoleButton) updateManagedUser(saveUserRoleButton.dataset.saveUserRole, "UPDATE");
   if (resetUserPasswordButton) resetManagedUserPassword(resetUserPasswordButton.dataset.resetUserPassword);
+  if (testUserEmailButton) testManagedUserEmail(testUserEmailButton.dataset.testUserEmail);
   if (deleteManagedUserButton) deleteManagedUser(deleteManagedUserButton.dataset.deleteManagedUser);
 });
 

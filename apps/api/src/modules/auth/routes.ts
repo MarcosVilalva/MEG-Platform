@@ -12,6 +12,7 @@ import {
   requestPasswordReset,
   resetUserPassword,
   revokeRefreshSession,
+  testUserEmail,
   updateUserAccess
 } from './service';
 
@@ -159,6 +160,19 @@ export async function authRoutes(app: FastifyInstance) {
       if (message === 'USER_NOT_FOUND') return reply.status(404).send({ error: message });
       if (message === 'USER_NOT_ACTIVE') return reply.status(409).send({ error: message });
       if (message === 'EMAIL_DELIVERY_FAILED' || message === 'NOTIFICATION_DELIVERY_FAILED') return reply.status(502).send({ error: message });
+      throw error;
+    }
+  });
+
+  app.post('/users/:id/test-email', { preHandler: app.authorize(['ADMIN']) }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    try {
+      const result = await testUserEmail({ actorId: request.user.sub, userId: id });
+      if (result.email.status !== 'sent') return reply.status(502).send({ error: 'EMAIL_DELIVERY_FAILED', ...result });
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+      if (message === 'USER_NOT_FOUND') return reply.status(404).send({ error: message });
       throw error;
     }
   });
