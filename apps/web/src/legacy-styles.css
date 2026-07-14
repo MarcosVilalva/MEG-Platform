@@ -57,6 +57,7 @@
 .auth-form label { display: grid; gap: 7px; color: #173b34; font-weight: 800; }
 .auth-form input { width: 100%; padding: 14px 16px; border: 1px solid #bfd9d3; border-radius: 12px; font: inherit; }
 .auth-form .button { width: 100%; justify-content: center; padding: 14px; }
+.auth-link { border: 0; background: transparent; color: #0b7567; font: inherit; font-weight: 800; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .auth-error { min-height: 20px; margin: 0; color: #bd2b2b; }
 .auth-error.success { color: #087562; }
 .settings-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }

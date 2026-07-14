@@ -8,6 +8,7 @@ import {
   getUserById,
   listUsers,
   registerUser,
+  requestPasswordReset,
   resetUserPassword,
   revokeRefreshSession,
   updateUserAccess
@@ -27,6 +28,7 @@ const registerSchema = credentialsSchema.extend({
 });
 
 const refreshSchema = z.object({ refreshToken: z.string().min(20) });
+const forgotPasswordSchema = z.object({ email: z.string().email() });
 const accessSchema = z.object({
   action: z.enum(['APPROVE', 'REJECT', 'BLOCK', 'ACTIVATE']),
   role: z.nativeEnum(UserRole).optional(),
@@ -65,6 +67,9 @@ export async function authRoutes(app: FastifyInstance) {
       if (error instanceof Error && error.message === 'EMAIL_ALREADY_REGISTERED') {
         return reply.status(409).send({ error: 'EMAIL_ALREADY_REGISTERED' });
       }
+      if (error instanceof Error && error.message === 'ACCESS_PENDING') {
+        return reply.status(409).send({ error: 'ACCESS_PENDING' });
+      }
       throw error;
     }
   });
@@ -74,12 +79,32 @@ export async function authRoutes(app: FastifyInstance) {
     if (!parsed.success) return reply.status(400).send({ error: 'VALIDATION_ERROR', details: parsed.error.flatten().fieldErrors });
 
     const result = await authenticateUser(parsed.data.email, parsed.data.password);
-    if ('error' in result) return reply.status(401).send({ error: result.error });
+    if ('error' in result) {
+      const status = result.error === 'ACCOUNT_NOT_FOUND' ? 404 : result.error === 'ACCESS_PENDING' ? 403 : 401;
+      return reply.status(status).send({ error: result.error });
+    }
 
     const user = result.user;
     const accessToken = await reply.jwtSign({ sub: user.id, role: user.role, email: user.email }, { expiresIn: '15m' });
     const refresh = await createRefreshSession({ userId: user.id, ...requestContext(request) });
     return { user, accessToken, refreshToken: refresh.token, refreshExpiresAt: refresh.expiresAt };
+  });
+
+  app.post('/forgot-password', async (request, reply) => {
+    const parsed = forgotPasswordSchema.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: 'VALIDATION_ERROR' });
+    try {
+      const result = await requestPasswordReset(parsed.data.email);
+      return { status: 'PASSWORD_SENT', deliveredTo: result.deliveredTo };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+      if (message === 'ACCOUNT_NOT_FOUND') return reply.status(404).send({ error: message });
+      if (['ACCESS_PENDING', 'ACCESS_REJECTED', 'USER_BLOCKED', 'PASSWORD_RESET_RATE_LIMITED'].includes(message)) {
+        return reply.status(409).send({ error: message });
+      }
+      if (message === 'EMAIL_DELIVERY_FAILED') return reply.status(502).send({ error: message });
+      throw error;
+    }
   });
 
   app.post('/refresh', async (request, reply) => {

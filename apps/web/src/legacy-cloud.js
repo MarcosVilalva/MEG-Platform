@@ -58,6 +58,21 @@ async function api(path, options = {}, retry = true) {
   return response;
 }
 
+function friendlyAuthError(code) {
+  const messages = {
+    ACCOUNT_NOT_FOUND: 'Este e-mail ainda não está cadastrado. Clique em Solicitar acesso para realizar seu cadastro.',
+    ACCESS_PENDING: 'Seu cadastro foi recebido e está aguardando aprovação do administrador.',
+    ACCESS_REJECTED: 'Sua solicitação de acesso foi rejeitada. Fale com o administrador.',
+    USER_BLOCKED: 'Este usuário está bloqueado. Fale com o administrador.',
+    INVALID_CREDENTIALS: 'E-mail ou senha inválidos.',
+    EMAIL_ALREADY_REGISTERED: 'Este e-mail já está cadastrado.',
+    EMAIL_DELIVERY_FAILED: 'Não foi possível enviar o e-mail. Avise o administrador para revisar a configuração de e-mail.',
+    PASSWORD_RESET_RATE_LIMITED: 'Uma nova senha já foi enviada recentemente. Aguarde 10 minutos antes de tentar novamente.',
+    VALIDATION_ERROR: 'Revise os dados informados.'
+  };
+  return messages[code] || 'Não foi possível concluir a operação.';
+}
+
 function authMarkup() {
   return `
     <div class="auth-shell" id="authShell">
@@ -70,6 +85,7 @@ function authMarkup() {
           <label>Senha<input name="password" type="password" autocomplete="current-password" minlength="8" required /></label>
           <p class="auth-error" id="loginError"></p>
           <button class="button primary" type="submit">Entrar no MEG</button>
+          <button class="auth-link" id="forgotPasswordButton" type="button">Esqueci minha senha</button>
         </form>
         <form id="registerForm" class="auth-form hidden">
           <h1>Solicitar acesso</h1>
@@ -80,6 +96,14 @@ function authMarkup() {
           <p class="auth-error" id="registerError"></p>
           <button class="button primary" type="submit">Enviar solicitação</button>
         </form>
+        <form id="forgotForm" class="auth-form hidden">
+          <h1>Recupere seu acesso</h1>
+          <p>Informe seu e-mail para receber uma senha temporária.</p>
+          <label>E-mail<input name="email" type="email" autocomplete="email" required /></label>
+          <p class="auth-error" id="forgotError"></p>
+          <button class="button primary" type="submit">Enviar nova senha</button>
+          <button class="auth-link" id="backToLoginButton" type="button">Voltar para entrar</button>
+        </form>
       </section>
     </div>`;
 }
@@ -89,13 +113,21 @@ function showAuthentication() {
   const shell = document.querySelector('#authShell');
   const login = document.querySelector('#loginForm');
   const register = document.querySelector('#registerForm');
+  const forgot = document.querySelector('#forgotForm');
+
+  function selectMode(mode) {
+    shell.querySelectorAll('[data-auth-tab]').forEach((item) => item.classList.toggle('active', item.dataset.authTab === mode));
+    login.classList.toggle('hidden', mode !== 'login');
+    register.classList.toggle('hidden', mode !== 'register');
+    forgot.classList.toggle('hidden', mode !== 'forgot');
+  }
 
   shell.querySelectorAll('[data-auth-tab]').forEach((button) => button.addEventListener('click', () => {
     const mode = button.dataset.authTab;
-    shell.querySelectorAll('[data-auth-tab]').forEach((item) => item.classList.toggle('active', item === button));
-    login.classList.toggle('hidden', mode !== 'login');
-    register.classList.toggle('hidden', mode !== 'register');
+    selectMode(mode);
   }));
+  document.querySelector('#forgotPasswordButton').addEventListener('click', () => selectMode('forgot'));
+  document.querySelector('#backToLoginButton').addEventListener('click', () => selectMode('login'));
 
   return new Promise((resolve) => {
     login.addEventListener('submit', async (event) => {
@@ -108,7 +140,7 @@ function showAuthentication() {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
         });
         const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error === 'PENDING_APPROVAL' ? 'Seu acesso ainda aguarda aprovação.' : 'E-mail ou senha inválidos.');
+        if (!response.ok) throw new Error(friendlyAuthError(payload.error));
         persistSession(payload);
         shell.remove();
         resolve(payload.user);
@@ -131,7 +163,7 @@ function showAuthentication() {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
         });
         const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error === 'EMAIL_ALREADY_REGISTERED' ? 'Este e-mail já está cadastrado.' : 'Não foi possível solicitar o acesso.');
+        if (!response.ok) throw new Error(friendlyAuthError(payload.error));
         if (payload.accessToken) {
           persistSession(payload);
           shell.remove();
@@ -140,6 +172,25 @@ function showAuthentication() {
         }
         error.classList.add('success');
         error.textContent = 'Solicitação enviada. O administrador precisa aprovar seu acesso.';
+      } catch (cause) {
+        error.textContent = cause instanceof Error ? cause.message : 'Não foi possível conectar à API.';
+      }
+    });
+
+    forgot.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const error = document.querySelector('#forgotError');
+      error.classList.remove('success');
+      error.textContent = 'Enviando...';
+      try {
+        const body = Object.fromEntries(new FormData(forgot));
+        const response = await fetch(`${API_URL}/auth/forgot-password`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(friendlyAuthError(payload.error));
+        error.classList.add('success');
+        error.textContent = `Nova senha temporária enviada para ${payload.deliveredTo}.`;
       } catch (cause) {
         error.textContent = cause instanceof Error ? cause.message : 'Não foi possível conectar à API.';
       }

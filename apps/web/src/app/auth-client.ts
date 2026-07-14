@@ -81,6 +81,13 @@ export async function register(name: string, email: string, password: string, co
   return result;
 }
 
+export async function forgotPassword(email: string) {
+  return request<{ status: 'PASSWORD_SENT'; deliveredTo: string }>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email })
+  });
+}
+
 export async function logout(session: AuthSession) {
   try {
     await request<void>('/auth/logout', { method: 'POST', body: JSON.stringify({ refreshToken: session.refreshToken }) });

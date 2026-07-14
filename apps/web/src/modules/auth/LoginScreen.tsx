@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { login, register, type AuthSession } from '../../app/auth-client';
+import { forgotPassword, login, register, type AuthSession } from '../../app/auth-client';
 
 type Props = {
   onAuthenticated: (session: AuthSession) => void;
@@ -8,17 +8,20 @@ type Props = {
 function friendlyError(error: unknown) {
   const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
   if (message === 'INVALID_CREDENTIALS') return 'E-mail ou senha inválidos.';
-  if (message === 'ACCESS_PENDING') return 'Seu acesso ainda aguarda aprovação do administrador.';
+  if (message === 'ACCOUNT_NOT_FOUND') return 'Este e-mail ainda não está cadastrado. Selecione Solicitar acesso para realizar seu cadastro.';
+  if (message === 'ACCESS_PENDING') return 'Seu cadastro foi recebido e está aguardando aprovação do administrador.';
   if (message === 'ACCESS_REJECTED') return 'Sua solicitação de acesso foi rejeitada.';
   if (message === 'USER_BLOCKED') return 'Este usuário está bloqueado.';
   if (message === 'EMAIL_ALREADY_REGISTERED') return 'Este e-mail já está cadastrado.';
   if (message === 'VALIDATION_ERROR') return 'Revise os dados informados.';
+  if (message === 'EMAIL_DELIVERY_FAILED') return 'Não foi possível enviar o e-mail. Avise o administrador para revisar a configuração de e-mail.';
+  if (message === 'PASSWORD_RESET_RATE_LIMITED') return 'Uma nova senha já foi enviada recentemente. Aguarde 10 minutos antes de tentar novamente.';
   if (message.includes('Failed to fetch')) return 'Não foi possível conectar à API. Verifique se ela está em execução.';
   return 'Não foi possível concluir o acesso.';
 }
 
 export function LoginScreen({ onAuthenticated }: Props) {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,6 +37,14 @@ export function LoginScreen({ onAuthenticated }: Props) {
     setSuccess('');
 
     try {
+      if (mode === 'forgot') {
+        const result = await forgotPassword(email);
+        setSuccess(`Nova senha temporária enviada para ${result.deliveredTo}.`);
+        setMode('login');
+        setPassword('');
+        return;
+      }
+
       if (mode === 'register') {
         if (password !== confirmPassword) {
           setError('As senhas não coincidem.');
@@ -87,8 +98,8 @@ export function LoginScreen({ onAuthenticated }: Props) {
 
           <div className="auth-card-heading">
             <span>Área segura</span>
-            <h2>{mode === 'login' ? 'Acesse sua conta' : 'Solicite seu acesso'}</h2>
-            <p>{mode === 'login' ? 'Informe suas credenciais para continuar.' : 'Seu cadastro dependerá da aprovação do administrador.'}</p>
+            <h2>{mode === 'login' ? 'Acesse sua conta' : mode === 'forgot' ? 'Recupere seu acesso' : 'Solicite seu acesso'}</h2>
+            <p>{mode === 'login' ? 'Informe suas credenciais para continuar.' : mode === 'forgot' ? 'Informe seu e-mail para receber uma senha temporária.' : 'Seu cadastro dependerá da aprovação do administrador.'}</p>
           </div>
 
           {mode === 'register' && (
@@ -97,11 +108,11 @@ export function LoginScreen({ onAuthenticated }: Props) {
 
           <label>E-mail<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>
 
-          <label>
+          {mode !== 'forgot' && <label>
             Senha
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} required autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
             <small>Mínimo de 8 caracteres.</small>
-          </label>
+          </label>}
 
           {mode === 'register' && (
             <label>
@@ -114,8 +125,10 @@ export function LoginScreen({ onAuthenticated }: Props) {
           {success && <div className="auth-success" role="status">{success}</div>}
 
           <button className="auth-submit" disabled={busy}>
-            {busy ? 'Processando...' : mode === 'login' ? 'Entrar no MEG' : 'Enviar solicitação'}
+            {busy ? 'Processando...' : mode === 'login' ? 'Entrar no MEG' : mode === 'forgot' ? 'Enviar nova senha' : 'Enviar solicitação'}
           </button>
+          {mode === 'login' && <button type="button" className="auth-link" onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }}>Esqueci minha senha</button>}
+          {mode === 'forgot' && <button type="button" className="auth-link" onClick={() => { setMode('login'); setError(''); }}>Voltar para entrar</button>}
           <p className="auth-security">Novos usuários só acessam o sistema após aprovação.</p>
         </form>
       </section>

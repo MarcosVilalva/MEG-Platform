@@ -2,9 +2,10 @@ import { createHash, randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { prisma, UserRole, UserStatus } from '@meg/database';
 import { sendSystemEmail } from '../notifications/service';
+import { config } from '../../config';
 
 const SESSION_TTL_DAYS = 30;
-const ADMIN_EMAIL = 'm_vilalva@hotmail.com';
+const ADMIN_EMAIL = config.adminEmail.toLowerCase();
 
 function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex');
@@ -40,6 +41,7 @@ export async function registerUser(input: {
   const email = input.email.trim().toLowerCase();
   const existing = await prisma.user.findUnique({ where: { email } });
 
+  if (existing?.status === UserStatus.PENDING) throw new Error('ACCESS_PENDING');
   if (existing) throw new Error('EMAIL_ALREADY_REGISTERED');
 
   const hasAdmin = await prisma.user.count({ where: { role: UserRole.ADMIN } });
@@ -87,7 +89,7 @@ export async function authenticateUser(emailInput: string, password: string) {
   const email = emailInput.trim().toLowerCase();
   const user = await prisma.user.findUnique({ where: { email } });
 
-  if (!user) return { error: 'INVALID_CREDENTIALS' as const };
+  if (!user) return { error: 'ACCOUNT_NOT_FOUND' as const };
   if (user.status === UserStatus.PENDING) return { error: 'ACCESS_PENDING' as const };
   if (user.status === UserStatus.REJECTED) return { error: 'ACCESS_REJECTED' as const };
   if (user.status === UserStatus.BLOCKED || !user.isActive) return { error: 'USER_BLOCKED' as const };
@@ -164,6 +166,50 @@ export async function updateUserAccess(input: {
   ).catch(() => undefined);
 
   return publicUser(updated);
+}
+
+export async function requestPasswordReset(emailInput: string) {
+  const email = emailInput.trim().toLowerCase();
+  const target = await prisma.user.findUnique({ where: { email } });
+  if (!target) throw new Error('ACCOUNT_NOT_FOUND');
+  if (target.status === UserStatus.PENDING) throw new Error('ACCESS_PENDING');
+  if (target.status === UserStatus.REJECTED) throw new Error('ACCESS_REJECTED');
+  if (!target.isActive || target.status === UserStatus.BLOCKED) throw new Error('USER_BLOCKED');
+
+  const recentReset = await prisma.auditLog.findFirst({
+    where: {
+      entity: 'User',
+      entityId: target.id,
+      action: 'PASSWORD_RESET_BY_USER',
+      createdAt: { gte: new Date(Date.now() - 10 * 60 * 1000) }
+    }
+  });
+  if (recentReset) throw new Error('PASSWORD_RESET_RATE_LIMITED');
+
+  const temporaryPassword = `Meg#${randomBytes(6).toString('base64url')}9a`;
+  const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+  const delivery = await sendSystemEmail(
+    target.email,
+    'MEG Finanças: nova senha temporária',
+    `Olá, ${target.name}.\n\nUma nova senha temporária foi solicitada para sua conta.\n\nSenha temporária: ${temporaryPassword}\n\nEntre no MEG com esta senha. Por segurança, não a compartilhe.\n\nMEG Finanças — Segurança e controle.`
+  ).catch(() => ({ status: 'failed' as const }));
+  if (delivery.status !== 'sent') throw new Error('EMAIL_DELIVERY_FAILED');
+
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: target.id }, data: { passwordHash } }),
+    prisma.authSession.updateMany({ where: { userId: target.id, revokedAt: null }, data: { revokedAt: new Date() } }),
+    prisma.auditLog.create({
+      data: {
+        userId: target.id,
+        entity: 'User',
+        entityId: target.id,
+        action: 'PASSWORD_RESET_BY_USER',
+        metadata: JSON.stringify({ deliveredTo: target.email })
+      }
+    })
+  ]);
+
+  return { deliveredTo: target.email };
 }
 
 export async function resetUserPassword(input: { actorId: string; userId: string }) {
