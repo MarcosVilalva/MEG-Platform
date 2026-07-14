@@ -11,6 +11,8 @@
 - Saldo realizado do mês atual = receita disponível do mês atual - despesas pagas do mês atual.
 - Despesas pendentes são exibidas separadamente e não reduzem o saldo realizado até serem pagas.
 - O diagnóstico principal de saúde financeira sempre responde à situação do mês corrente, independentemente do filtro analítico: saldo monetário disponível hoje menos todas as despesas monetárias pendentes dentro do mês. Resultado negativo significa falta de dinheiro para fechar o mês e deve ser apresentado como alerta prioritário.
+- Na aba Fluxo, o resultado líquido do período = receitas monetárias do período - todas as despesas monetárias do período, pagas ou pendentes. Esse indicador operacional pode ser negativo mesmo quando existe caixa realizado antes das pendências.
+- O fechamento projetado do Fluxo = saldo de fechamento anterior + resultado líquido do período. Ele é o indicador principal de sobra ou falta de dinheiro; o subtotal antes das contas pendentes nunca deve ser apresentado como dinheiro livre.
 - O filtro da aba Análises continua controlando a memória de cálculo, comparativos, grupos e gráficos; ele não pode mascarar um déficit existente no mês corrente.
 - O painel deve exibir separadamente saldo anterior, receitas do mês, receita disponível e fechamento; o saldo anterior nunca pode ficar oculto dentro de outro indicador.
 - O resumo principal possui três painéis: Monetário, Ticket Alimentação e Consolidado. Cada painel exibe Receitas, Despesas e Situação usando o mesmo período selecionado.

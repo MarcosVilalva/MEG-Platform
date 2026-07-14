@@ -32,6 +32,7 @@ export function calculateFinancialSummary(transactions, start = '', end = '') {
   const ticketIncome = sum(ticketPeriodItems, 'income');
   const ticketExpense = sum(ticketPeriodItems, 'expense');
   const ticketBalance = ticketIncome - ticketExpense;
+  const operatingResult = income - expense;
   const availableIncome = openingBalance + income;
   const closingBalance = availableIncome - paidExpense;
   const projectedBalance = availableIncome - expense;
@@ -51,6 +52,7 @@ export function calculateFinancialSummary(transactions, start = '', end = '') {
     ticketIncome,
     ticketExpense,
     ticketBalance,
+    operatingResult,
     consolidatedIncome,
     consolidatedExpense,
     consolidatedBalance,

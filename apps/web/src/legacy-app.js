@@ -179,6 +179,8 @@ const els = {
   cashflowHealthMessage: document.querySelector("#cashflowHealthMessage"),
   cashflowClosingMetric: document.querySelector("#cashflowClosingMetric"),
   cashflowCoverageTrend: document.querySelector("#cashflowCoverageTrend"),
+  cashflowOperatingCard: document.querySelector("#cashflowOperatingCard"),
+  cashflowOperatingIcon: document.querySelector("#cashflowOperatingIcon"),
   cashflowAvailableMetric: document.querySelector("#cashflowAvailableMetric"),
   cashflowAvailableTrend: document.querySelector("#cashflowAvailableTrend"),
   cashflowPendingMetric: document.querySelector("#cashflowPendingMetric"),
@@ -1093,8 +1095,9 @@ function cashflowData() {
     return { ...bucket, value: running, net: bucket.income - bucket.expense };
   });
   const totals = totalsFor(movements);
+  const summary = calculateFinancialSummary(state.transactions, start, end);
   const lowPoint = points.reduce((lowest, point) => (!lowest || point.value < lowest.value ? point : lowest), null);
-  return { openingBalance, movements, points, totals, lowPoint, start, end };
+  return { openingBalance, movements, points, totals, summary, lowPoint, start, end };
 }
 
 let cashflowChartPoints = [];
@@ -1110,13 +1113,11 @@ function renderCashflow() {
   els.cashflowExpenseTrend.textContent = `${data.movements.filter((item) => item.type === "expense").length} despesas`;
   els.cashflowLowMetric.textContent = money.format(data.lowPoint ? data.lowPoint.value : data.openingBalance);
   els.cashflowLowTrend.textContent = data.lowPoint ? `Em ${formatDate(data.lowPoint.date)}` : "Sem movimentos";
-  const closingBalance = data.points.at(-1)?.value ?? data.openingBalance;
-  const availableResources = data.openingBalance + data.totals.income;
-  const paidExpenses = data.movements
-    .filter((item) => item.type === "expense" && (item.status === "paid" || normalizeText(item.situation) === "PAGO"))
-    .reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
-  const pendingExpenses = Math.max(data.totals.expense - paidExpenses, 0);
-  const availableAfterPaid = availableResources - paidExpenses;
+  const closingBalance = data.summary.projectedBalance;
+  const availableResources = data.summary.availableIncome;
+  const paidExpenses = data.summary.paidExpense;
+  const pendingExpenses = data.summary.pendingExpense;
+  const operatingResult = data.summary.operatingResult;
   const coverage = data.totals.expense ? (availableResources / data.totals.expense) * 100 : 100;
   const negativePoints = data.points.filter((point) => point.value < 0);
   const tone = closingBalance < 0 || negativePoints.length ? "risk" : coverage < 110 ? "attention" : "healthy";
@@ -1124,8 +1125,13 @@ function renderCashflow() {
   els.cashflowDecisionHero.classList.add(tone);
   els.cashflowClosingMetric.textContent = money.format(closingBalance);
   els.cashflowCoverageTrend.textContent = `${coverage.toFixed(0)}% das saídas cobertas pelos recursos do período`;
-  els.cashflowAvailableMetric.textContent = money.format(availableAfterPaid);
-  els.cashflowAvailableTrend.textContent = `${money.format(paidExpenses)} já saiu do caixa no período.`;
+  els.cashflowOperatingCard.classList.remove("healthy", "risk", "attention");
+  els.cashflowOperatingCard.classList.add(operatingResult < 0 ? "risk" : operatingResult === 0 ? "attention" : "healthy");
+  els.cashflowOperatingIcon.textContent = operatingResult < 0 ? "📉" : operatingResult === 0 ? "➖" : "📈";
+  els.cashflowAvailableMetric.textContent = money.format(operatingResult);
+  els.cashflowAvailableTrend.textContent = operatingResult < 0
+    ? `As despesas superam as receitas em ${money.format(Math.abs(operatingResult))}.`
+    : `As receitas superam as despesas em ${money.format(operatingResult)}.`;
   els.cashflowPendingMetric.textContent = money.format(pendingExpenses);
   els.cashflowPendingTrend.textContent = `${data.movements.filter((item) => item.type === "expense" && !(item.status === "paid" || normalizeText(item.situation) === "PAGO")).length} conta(s) ainda aguardam pagamento.`;
   els.cashflowSafeCard.classList.remove("healthy", "risk", "attention");
