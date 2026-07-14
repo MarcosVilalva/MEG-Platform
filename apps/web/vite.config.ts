@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
 export default defineConfig({
-  base: process.env.GITHUB_ACTIONS ? '/MEG-Platform/' : '/',
+  base: process.env.CAPACITOR_BUILD ? './' : process.env.GITHUB_ACTIONS ? '/MEG-Platform/' : '/',
   plugins: [react()],
   resolve: {
     alias: {
