@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { config } from './config';
+import { isAllowedOrigin } from './cors';
 import { registerAuth } from './plugins/auth';
 import { authRoutes } from './modules/auth/routes';
 import { financeRoutes } from './modules/finance/routes';
@@ -27,7 +28,7 @@ let dataRepair: { status: 'pending' | 'completed'; scanned: number; repaired: nu
 
 await app.register(cors, {
   origin(origin, callback) {
-    if (!origin || config.corsOrigins.includes('*') || config.corsOrigins.includes(origin)) {
+    if (isAllowedOrigin(origin, config.corsOrigins)) {
       callback(null, true);
       return;
     }

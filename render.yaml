@@ -14,7 +14,7 @@ services:
       - key: HOST
         value: 0.0.0.0
       - key: CORS_ORIGINS
-        value: https://marcosvilalva.github.io
+        value: https://marcosvilalva.github.io,https://localhost,capacitor://localhost
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET

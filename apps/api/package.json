@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "test:imports": "tsx src/modules/imports/repair.test.ts",
     "test:notifications": "tsx src/modules/notifications/service.test.ts",
+    "test:cors": "tsx src/cors.test.ts",
     "start": "tsx src/server.ts"
   },
   "dependencies": {
