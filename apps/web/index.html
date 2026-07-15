@@ -748,12 +748,24 @@
               <input id="csvImport" type="file" accept=".csv,text/csv" />
             </section>
             <section class="panel">
-              <h3>Exportar</h3>
-              <p class="muted">Baixe seus lancamentos para manter backup ou abrir no Excel.</p>
-              <button class="button" id="exportCsvBtn" type="button">
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2ZM13 4h-2v8H7l5 5 5-5h-4V4Z"/></svg>
-                Baixar CSV
-              </button>
+              <h3>Backup e exportação</h3>
+              <p class="muted">Baixe uma cópia completa dos seus lançamentos, orçamentos, cadastros e regras de cartões.</p>
+              <div class="settings-actions">
+                <button class="button primary" id="exportBackupBtn" type="button">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2ZM13 4h-2v8H7l5 5 5-5h-4V4Z"/></svg>
+                  Baixar backup completo
+                </button>
+                <button class="button" id="exportCsvBtn" type="button">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2ZM13 4h-2v8H7l5 5 5-5h-4V4Z"/></svg>
+                  Baixar CSV
+                </button>
+              </div>
+              <label class="backup-restore-field">
+                <strong>Restaurar backup JSON</strong>
+                <span class="muted">A restauração substitui a base financeira atual depois da sua confirmação.</span>
+                <input id="backupImport" type="file" accept=".json,application/json" />
+              </label>
+              <p class="muted" id="backupImportStatus"></p>
             </section>
             <section class="panel">
               <h3>Alertas de vencimento</h3>

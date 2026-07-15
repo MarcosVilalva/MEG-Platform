@@ -343,6 +343,9 @@ const els = {
   categoryTags: document.querySelector("#categoryTags"),
   realDataSummary: document.querySelector("#realDataSummary"),
   csvImport: document.querySelector("#csvImport"),
+  backupImport: document.querySelector("#backupImport"),
+  backupImportStatus: document.querySelector("#backupImportStatus"),
+  exportBackupBtn: document.querySelector("#exportBackupBtn"),
   exportCsvBtn: document.querySelector("#exportCsvBtn"),
   catalogModalityOptions: document.querySelector("#catalogModalityOptions"),
   dialog: document.querySelector("#transactionDialog"),
@@ -2650,6 +2653,7 @@ function addGroupCatalog(event) {
   state.catalogs.groups.push(value);
   els.newGroupInput.value = "";
   saveState();
+  showToast("Grupo cadastrado", value + " foi adicionado à lista.", "success");
   render();
 }
 
@@ -2662,6 +2666,7 @@ function addPaymentCatalog(event) {
   els.newPaymentInput.value = "";
   els.newPaymentModalityInput.value = "";
   saveState();
+  showToast("Forma de pagamento cadastrada", description + " · " + modality, "success");
   render();
 }
 
@@ -2672,6 +2677,7 @@ function addExpenseClassCatalog(event) {
   state.catalogs.expenseClasses.push(value);
   els.newExpenseClassInput.value = "";
   saveState();
+  showToast("Classificação cadastrada", value + " foi adicionada à lista.", "success");
   render();
 }
 
@@ -2699,6 +2705,7 @@ function removeCatalogItem(type, value) {
   if (type === "payment") state.catalogs.paymentMethods = state.catalogs.paymentMethods.filter((item) => normalizeText(item.description) !== normalizeText(value));
   if (type === "card") state.catalogs.cards = state.catalogs.cards.filter((item) => normalizeText(item.paymentMethod) !== normalizeText(value));
   saveState();
+  showToast("Cadastro removido", value + " foi excluído da lista.", "success");
   render();
 }
 
@@ -2939,15 +2946,22 @@ function saveTransaction(event) {
   selectedPeriod.month = monthOf(payload.date);
   saveState();
   els.dialog.close();
+  showToast(
+    previous ? "Lançamento atualizado" : "Lançamento salvo",
+    payload.description + " · " + money.format(payload.amount),
+    "success"
+  );
   render();
 }
 
 function deleteTransaction() {
   const id = els.transactionId.value;
   if (!id) return;
+  const removed = state.transactions.find((item) => item.id === id);
   state.transactions = state.transactions.filter((item) => item.id !== id);
   saveState();
   els.dialog.close();
+  showToast("Lançamento excluído", removed ? removed.description : "O lançamento foi removido.", "success");
   render();
 }
 
@@ -3029,6 +3043,7 @@ function handleBudgetClick(event) {
     const input = els.budgetEditorGrid.querySelector(`[data-budget="${cssEscape(category)}"]`);
     state.budgets[category] = Number(input.value) || 0;
     saveState();
+    showToast("Meta salva", category + " · " + money.format(state.budgets[category]), "success");
     render();
   }
 }
@@ -3049,7 +3064,7 @@ function handleCsvImport(event) {
     });
     saveState();
     render();
-    alert(`${imported.length} lancamentos importados.`);
+    showToast("CSV importado", imported.length + " lançamentos foram adicionados com sucesso.", "success");
   };
   reader.readAsText(file, "utf-8");
   event.target.value = "";
@@ -3128,6 +3143,54 @@ function normalizeDate(value) {
   return "";
 }
 
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportBackup() {
+  const payload = {
+    format: "MEG_FINANCAS_BACKUP",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    state: structuredClone(state),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+  downloadBlob(blob, "backup-meg-financas-" + new Date().toISOString().slice(0, 10) + ".json");
+  showToast("Backup concluído", state.transactions.length + " lançamentos foram incluídos na cópia.", "success");
+}
+
+async function handleBackupImport(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    const parsed = JSON.parse(await file.text());
+    const backupState = parsed?.format === "MEG_FINANCAS_BACKUP" ? parsed.state : parsed;
+    if (!backupState || !Array.isArray(backupState.transactions) || typeof backupState.budgets !== "object") {
+      throw new Error("Este arquivo não é um backup válido do MEG Finanças.");
+    }
+    if (!window.confirm("Restaurar " + backupState.transactions.length + " lançamentos? A base atual será substituída.")) {
+      els.backupImportStatus.textContent = "Restauração cancelada.";
+      return;
+    }
+    replaceState(backupState);
+    saveState({ cloud: false });
+    await window.MEG_CLOUD?.saveNow?.(state, { force: true });
+    els.backupImportStatus.textContent = state.transactions.length + " lançamentos restaurados e salvos com segurança.";
+    showToast("Backup restaurado", "A base financeira foi restaurada com sucesso.", "success");
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : "Não foi possível restaurar o backup.";
+    els.backupImportStatus.textContent = message;
+    showToast("Falha na restauração", message, "danger");
+  } finally {
+    event.target.value = "";
+  }
+}
+
 function exportCsv() {
   const headers = ["DATA", "DATA DA COMPRA", "DiaSemana", "TP LANÇAMENTO", "DESCRIÇÃO", "RECEITA($)", "CLASSIFICAÇÃO DA DESPESA", "GRUPO", "DESPESA (R$)", "FORMA DE PAGAMENTO", "SITUAÇÃO", "MODALIDADE", "OBSERVAÇÕES"];
   const rows = state.transactions
@@ -3149,12 +3212,8 @@ function exportCsv() {
     ]);
   const csv = [headers, ...rows].map((row) => row.map(csvCell).join(";")).join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `despesas-meg-${new Date().toISOString().slice(0, 10)}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, "despesas-meg-" + new Date().toISOString().slice(0, 10) + ".csv");
+  showToast("CSV exportado", "O arquivo de lançamentos foi gerado com sucesso.", "success");
 }
 
 function csvCell(value) {
@@ -3300,6 +3359,7 @@ async function updateManagedUser(userId, action) {
     const successMessage = action === "APPROVE" ? `Usuário aprovado.${channelText}` : action === "BLOCK" ? `Usuário bloqueado e sessões encerradas.${channelText}` : action === "REJECT" ? `Solicitação rejeitada.${channelText}` : "Dados e permissão atualizados.";
     await loadManagedUsers({ keepFeedback: true });
     setUsersFeedback(successMessage, "success");
+    showToast("Acesso atualizado", successMessage, "success");
   } catch (cause) {
     setUsersFeedback(cause instanceof Error ? cause.message : "Falha ao atualizar acesso.", "error");
   }
@@ -3341,6 +3401,7 @@ async function deleteManagedUser(userId) {
     await window.MEG_CLOUD.deleteManagedUser(userId);
     await loadManagedUsers({ keepFeedback: true });
     setUsersFeedback("Acesso excluído definitivamente.", "success");
+    showToast("Acesso excluído", email + " não possui mais acesso ao MEG.", "success");
   } catch (cause) {
     setUsersFeedback(cause instanceof Error ? cause.message : "Falha ao excluir o acesso.", "error");
   }
@@ -3530,6 +3591,8 @@ els.addMissingIncomeBtn.addEventListener("click", () => {
 els.applySuggestedBudgetsBtn.addEventListener("click", applySuggestedBudgets);
 els.budgetEditorGrid.addEventListener("click", handleBudgetClick);
 els.csvImport.addEventListener("change", handleCsvImport);
+els.backupImport.addEventListener("change", handleBackupImport);
+els.exportBackupBtn.addEventListener("click", exportBackup);
 els.exportCsvBtn.addEventListener("click", exportCsv);
 els.groupCatalogForm.addEventListener("submit", addGroupCatalog);
 els.expenseClassCatalogForm.addEventListener("submit", addExpenseClassCatalog);
@@ -3556,5 +3619,6 @@ window.MEG_APP = {
   replaceImportedState,
   replaceState,
   getState: () => structuredClone(state),
+  showToast,
   render
 };

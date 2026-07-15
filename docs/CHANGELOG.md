@@ -1,5 +1,17 @@
 # Changelog
 
+## Segurança, confirmações e backup — 2026-07-15
+
+### Adicionado
+- Avisos visuais de sucesso ao salvar, excluir, importar e administrar acessos.
+- Encerramento automático da sessão após 2 minutos sem atividade, com aviso 30 segundos antes.
+- Backup completo em JSON com lançamentos, orçamentos, cadastros e regras de cartões.
+- Restauração do backup com validação do arquivo e confirmação antes de substituir a base.
+- Exportação CSV mantida como opção complementar.
+
+### Segurança
+- O backup não inclui senhas, tokens nem segredos de integração.
+- Após o encerramento por inatividade, a tela de entrada informa claramente o motivo.
 ## Experiência rápida web e Android — 2026-07-14
 
 ### Melhorado

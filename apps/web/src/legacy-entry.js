@@ -7,6 +7,11 @@ const validationMode = new URLSearchParams(location.search).get('validacao') ===
 const localStateKey = 'meg-financas-state-v4-paid-fixes';
 const nativeMobileMode = import.meta.env.VITE_MOBILE_APP === 'true' || Boolean(window.Capacitor?.isNativePlatform?.());
 document.body.classList.toggle('native-mobile', nativeMobileMode);
+const INACTIVITY_LIMIT_MS = 2 * 60 * 1000;
+const INACTIVITY_WARNING_MS = 30 * 1000;
+const INACTIVITY_MESSAGE_KEY = 'meg-inactivity-message';
+
+const showSuccess = (title, message) => window.MEG_APP?.showToast?.(title, message, 'success');
 
 function bootstrapValidationMode() {
   let savedState = null;
@@ -200,6 +205,7 @@ function wireLegacyApp() {
       await window.MEG_CLOUD.addNotificationRecipient(recipientNameInput.value, recipientPhoneInput.value);
       recipientNameInput.value = '';
       recipientPhoneInput.value = '';
+      showSuccess("WhatsApp cadastrado", "O número foi adicionado aos destinatários.");
       await loadRecipients();
     } catch (cause) {
       notificationPreview.textContent = cause instanceof Error ? cause.message : 'Não foi possível adicionar o destinatário.';
@@ -210,6 +216,7 @@ function wireLegacyApp() {
     const button = event.target.closest('[data-remove-recipient]');
     if (!button) return;
     await window.MEG_CLOUD.removeNotificationRecipient(button.dataset.removeRecipient);
+    showSuccess("WhatsApp removido", "O número não receberá mais alertas.");
     await loadRecipients();
   });
 
@@ -218,6 +225,7 @@ function wireLegacyApp() {
       await window.MEG_CLOUD.addNotificationEmailRecipient(emailRecipientNameInput.value, emailRecipientInput.value);
       emailRecipientNameInput.value = '';
       emailRecipientInput.value = '';
+      showSuccess("E-mail cadastrado", "O endereço foi adicionado aos destinatários.");
       await loadEmailRecipients();
     } catch (cause) {
       notificationPreview.textContent = cause instanceof Error ? cause.message : 'Não foi possível adicionar o e-mail.';
@@ -228,6 +236,7 @@ function wireLegacyApp() {
     const button = event.target.closest('[data-remove-email-recipient]');
     if (!button) return;
     await window.MEG_CLOUD.removeNotificationEmailRecipient(button.dataset.removeEmailRecipient);
+    showSuccess("E-mail removido", "O endereço não receberá mais alertas.");
     await loadEmailRecipients();
   });
 
@@ -282,6 +291,7 @@ function wireLegacyApp() {
     importStatus.textContent = validationMode
       ? `${result.transactions.length} lançamentos importados somente no ambiente local. ${result.issues} linha(s) exigem revisão.`
       : `${result.transactions.length} lançamentos importados e salvos na nuvem. ${result.issues} linha(s) exigem revisão.`;
+    showSuccess("Base importada", result.transactions.length + " lançamentos foram salvos com sucesso.");
   } catch (cause) {
     importStatus.textContent = cause instanceof Error ? cause.message : 'Não foi possível importar a planilha.';
   } finally {
@@ -290,12 +300,41 @@ function wireLegacyApp() {
   });
 }
 
+function setupInactivityLogout() {
+  if (validationMode) return;
+  let warningTimer;
+  let logoutTimer;
+  const resetTimers = () => {
+    clearTimeout(warningTimer);
+    clearTimeout(logoutTimer);
+    warningTimer = window.setTimeout(() => {
+      window.MEG_APP?.showToast?.(
+        'Sessão perto de encerrar',
+        'Por segurança, sua sessão será encerrada em 30 segundos se não houver atividade.',
+        'warning'
+      );
+    }, INACTIVITY_LIMIT_MS - INACTIVITY_WARNING_MS);
+    logoutTimer = window.setTimeout(async () => {
+      sessionStorage.setItem(INACTIVITY_MESSAGE_KEY, 'Sua sessão foi encerrada após 2 minutos sem atividade.');
+      await window.MEG_CLOUD.logout();
+    }, INACTIVITY_LIMIT_MS);
+  };
+  ['pointerdown', 'keydown', 'touchstart', 'scroll'].forEach((eventName) => {
+    window.addEventListener(eventName, resetTimers, { passive: true });
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) resetTimers();
+  });
+  resetTimers();
+}
+
 async function start() {
   if (validationMode) bootstrapValidationMode();
   else await bootstrapCloud();
   window.MEG_NATIVE_NOTIFICATIONS = { sync: syncLocalDueNotifications };
   await import('./legacy-app.js');
   wireLegacyApp();
+  setupInactivityLogout();
   syncLocalDueNotifications(window.MEG_APP.getState());
   window.MEG_CLOUD?.whenFresh?.then((result) => {
     if (result?.changed && result.state) window.MEG_APP?.replaceState(result.state);

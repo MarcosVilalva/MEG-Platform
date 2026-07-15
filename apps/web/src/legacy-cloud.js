@@ -132,6 +132,14 @@ function showAuthentication() {
   const register = document.querySelector('#registerForm');
   const forgot = document.querySelector('#forgotForm');
 
+  const inactivityMessage = sessionStorage.getItem('meg-inactivity-message');
+  if (inactivityMessage) {
+    const loginError = document.querySelector('#loginError');
+    loginError.textContent = inactivityMessage;
+    loginError.classList.add('session-ended');
+    sessionStorage.removeItem('meg-inactivity-message');
+  }
+
   function selectMode(mode) {
     shell.querySelectorAll('[data-auth-tab]').forEach((item) => item.classList.toggle('active', item.dataset.authTab === mode));
     login.classList.toggle('hidden', mode !== 'login');

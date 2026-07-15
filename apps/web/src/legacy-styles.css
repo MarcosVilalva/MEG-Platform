@@ -60,6 +60,7 @@
 .auth-link { border: 0; background: transparent; color: #0b7567; font: inherit; font-weight: 800; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .auth-error { min-height: 20px; margin: 0; color: #bd2b2b; }
 .auth-error.success { color: #087562; }
+.auth-error.session-ended { color: #8a5a00; background: #fff4d6; border-radius: 12px; padding: 10px 12px; }
 .auth-shell {
   grid-template-columns: minmax(0, 1.08fr) minmax(420px, .92fr);
   gap: 0;
@@ -102,6 +103,8 @@
 .auth-form .button.primary { min-height: 54px; gap: 12px; background: linear-gradient(135deg, #0b8d7b, #075c50); box-shadow: 0 12px 26px rgba(8,111,95,.22); }
 .mobile-dock { display: none; }
 .settings-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+.backup-restore-field { display: grid; gap: 7px; margin-top: 16px; }
+.backup-restore-field input { max-width: 100%; }
 .notification-preview { min-height: 110px; max-height: 320px; overflow: auto; padding: 14px; border: 1px solid #d5e4e0; border-radius: 12px; background: #f5faf8; color: #173b34; white-space: pre-wrap; font: 13px/1.55 system-ui, sans-serif; }
 .recipient-form { display: grid; grid-template-columns: minmax(150px, .8fr) minmax(220px, 1fr) auto; gap: 10px; margin-top: 16px; }
 .recipient-list { display: grid; gap: 8px; margin-top: 12px; }
@@ -2096,6 +2099,11 @@ tbody tr:hover {
 .app-toast.success {
   border-color: rgba(23, 107, 93, 0.35);
   background: linear-gradient(135deg, #fff, #dceee9);
+}
+
+.app-toast.warning {
+  border-color: rgba(184, 119, 0, 0.35);
+  background: linear-gradient(135deg, #fff, #fff0c7);
 }
 
 .app-toast strong {
