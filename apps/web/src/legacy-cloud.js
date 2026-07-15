@@ -137,7 +137,15 @@ function showAuthentication() {
     login.classList.toggle('hidden', mode !== 'login');
     register.classList.toggle('hidden', mode !== 'register');
     forgot.classList.toggle('hidden', mode !== 'forgot');
+    if (window.matchMedia('(max-width: 980px)').matches) {
+      requestAnimationFrame(() => shell.scrollTo({ top: 0, behavior: 'auto' }));
+    }
   }
+
+  shell.querySelectorAll('input').forEach((input) => input.addEventListener('focus', () => {
+    if (!window.matchMedia('(max-width: 680px)').matches) return;
+    window.setTimeout(() => input.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' }), 180);
+  }));
 
   shell.querySelectorAll('[data-auth-tab]').forEach((button) => button.addEventListener('click', () => {
     const mode = button.dataset.authTab;
