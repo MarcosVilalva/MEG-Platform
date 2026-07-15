@@ -1224,6 +1224,13 @@ textarea {
 .catalog-panel { border-radius: 20px; }
 .catalog-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; margin: 16px 0; }
 .payment-catalog-form { grid-template-columns: minmax(0,1.2fr) minmax(150px,.8fr) auto; }
+.card-catalog-panel { grid-column: 1 / -1; }
+.card-catalog-form { grid-template-columns: minmax(190px,1.4fr) repeat(3,minmax(105px,.55fr)) minmax(135px,.75fr) auto; align-items: end; }
+.card-catalog-form label { display: grid; gap: 7px; color: var(--muted); font-size: .72rem; font-weight: 900; text-transform: uppercase; }
+.card-catalog-row > span { display: grid; gap: 3px; }
+.card-due-preview { display: block; margin-top: 5px; color: var(--primary); font-size: .68rem; font-weight: 800; text-transform: none; }
+.card-due-preview.hidden { display: none; }
+.form-grid input[readonly] { color: var(--primary-dark); background: rgba(230,246,241,.78); cursor: not-allowed; }
 .catalog-list { display: grid; gap: 7px; max-height: 58vh; overflow: auto; padding-right: 4px; }
 .catalog-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 11px 12px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255,255,255,.82); }
 .catalog-row > span:first-child { display: grid; gap: 2px; }
@@ -1249,7 +1256,7 @@ textarea {
   .month-progress-stats { grid-template-columns: 1fr; }
   .compact-progress-panel { grid-template-columns: 1fr; }
   .progress-ring-wrap { justify-self: center; }
-  .installment-fields, .catalogs-grid, .catalog-form, .payment-catalog-form { grid-template-columns: 1fr; }
+  .installment-fields, .catalogs-grid, .catalog-form, .payment-catalog-form, .card-catalog-form { grid-template-columns: 1fr; }
 }
 
 .analytics-filter-panel {
@@ -2484,19 +2491,20 @@ tbody tr:hover {
     text-transform: uppercase;
   }
 
-  .transactions-table tbody .transaction-row td:nth-child(1)::before { content: "Data"; }
-  .transactions-table tbody .transaction-row td:nth-child(2)::before { content: "Dia"; }
-  .transactions-table tbody .transaction-row td:nth-child(3)::before { content: "Tipo"; }
-  .transactions-table tbody .transaction-row td:nth-child(4)::before { content: "Descrição"; }
-  .transactions-table tbody .transaction-row td:nth-child(5)::before { content: "Receita"; }
-  .transactions-table tbody .transaction-row td:nth-child(6)::before { content: "Classificação"; }
-  .transactions-table tbody .transaction-row td:nth-child(7)::before { content: "Grupo"; }
-  .transactions-table tbody .transaction-row td:nth-child(8)::before { content: "Despesa"; }
-  .transactions-table tbody .transaction-row td:nth-child(9)::before { content: "Pagamento"; }
-  .transactions-table tbody .transaction-row td:nth-child(10)::before { content: "Situação"; }
-  .transactions-table tbody .transaction-row td:nth-child(11)::before { content: "Modalidade"; }
-  .transactions-table tbody .transaction-row td:nth-child(12)::before { content: "Observações"; }
-  .transactions-table tbody .transaction-row td:nth-child(13)::before { content: "Natureza"; }
+  .transactions-table tbody .transaction-row td:nth-child(1)::before { content: "Vencimento"; }
+  .transactions-table tbody .transaction-row td:nth-child(2)::before { content: "Data da compra"; }
+  .transactions-table tbody .transaction-row td:nth-child(3)::before { content: "Dia"; }
+  .transactions-table tbody .transaction-row td:nth-child(4)::before { content: "Tipo"; }
+  .transactions-table tbody .transaction-row td:nth-child(5)::before { content: "Descrição"; }
+  .transactions-table tbody .transaction-row td:nth-child(6)::before { content: "Receita"; }
+  .transactions-table tbody .transaction-row td:nth-child(7)::before { content: "Classificação"; }
+  .transactions-table tbody .transaction-row td:nth-child(8)::before { content: "Grupo"; }
+  .transactions-table tbody .transaction-row td:nth-child(9)::before { content: "Despesa"; }
+  .transactions-table tbody .transaction-row td:nth-child(10)::before { content: "Pagamento"; }
+  .transactions-table tbody .transaction-row td:nth-child(11)::before { content: "Situação"; }
+  .transactions-table tbody .transaction-row td:nth-child(12)::before { content: "Modalidade"; }
+  .transactions-table tbody .transaction-row td:nth-child(13)::before { content: "Observações"; }
+  .transactions-table tbody .transaction-row td:nth-child(14)::before { content: "Natureza"; }
 
   .transactions-table tbody .transaction-row td:empty {
     display: none;

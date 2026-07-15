@@ -1,5 +1,5 @@
 import { calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal } from "./legacy-finance.js";
-import { installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
+import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
 
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
 
@@ -82,6 +82,7 @@ const DEFAULT_CATALOGS = {
   groups: [...DEFAULT_GROUPS],
   expenseClasses: ["CONTAS GERAIS", "RES. PAG. DÍVIDA"],
   paymentMethods: Object.entries(PAYMENT_MODALITIES).map(([description, modality]) => ({ description, modality })),
+  cards: [],
 };
 
 const ESSENTIAL_GROUPS = new Set(["COMUNICAÇÃO", "HIGIENE PESSOAL", "IMÓVEL", "MAT. ESCOLAR", "PGTO DE DIVIDAS", "SAÚDE", "SUPERMERCADO", "TITULOS/PREVIDÊNCIA", "TRANSPORTE"] .map((item) => normalizeText(item)));
@@ -323,8 +324,12 @@ const els = {
   dialogTitle: document.querySelector("#dialogTitle"),
   transactionId: document.querySelector("#transactionId"),
   dateInput: document.querySelector("#dateInput"),
+  dateInputLabel: document.querySelector("#dateInputLabel"),
   weekdayInput: document.querySelector("#weekdayInput"),
   transactionType: document.querySelector("#transactionType"),
+  purchaseDateField: document.querySelector("#purchaseDateField"),
+  purchaseDateInput: document.querySelector("#purchaseDateInput"),
+  cardDuePreview: document.querySelector("#cardDuePreview"),
   descriptionInput: document.querySelector("#descriptionInput"),
   descriptionSuggestions: document.querySelector("#descriptionSuggestions"),
   incomeAmountInput: document.querySelector("#incomeAmountInput"),
@@ -368,6 +373,14 @@ const els = {
   adminUsersList: document.querySelector("#adminUsersList"),
   paymentCatalogList: document.querySelector("#paymentCatalogList"),
   paymentCatalogCount: document.querySelector("#paymentCatalogCount"),
+  cardCatalogForm: document.querySelector("#cardCatalogForm"),
+  newCardPaymentInput: document.querySelector("#newCardPaymentInput"),
+  newCardClosingDayInput: document.querySelector("#newCardClosingDayInput"),
+  newCardDueDayInput: document.querySelector("#newCardDueDayInput"),
+  newCardBestDayInput: document.querySelector("#newCardBestDayInput"),
+  newCardLimitInput: document.querySelector("#newCardLimitInput"),
+  cardCatalogList: document.querySelector("#cardCatalogList"),
+  cardCatalogCount: document.querySelector("#cardCatalogCount"),
 };
 
 function loadState() {
@@ -440,7 +453,18 @@ function normalizeState(nextState) {
     ...nextState,
     transactions,
     budgets: nextState.budgets || {},
-    catalogs: { groups, expenseClasses, paymentMethods: [...paymentMap.values()] },
+    catalogs: {
+      groups,
+      expenseClasses,
+      paymentMethods: [...paymentMap.values()],
+      cards: (incomingCatalogs.cards || []).map((card) => ({
+        paymentMethod: String(card?.paymentMethod || "").trim(),
+        closingDay: Number(card?.closingDay || 0),
+        dueDay: Number(card?.dueDay || 0),
+        bestPurchaseDay: Number(card?.bestPurchaseDay || 0),
+        limit: Number(card?.limit || 0),
+      })).filter((card) => card.paymentMethod && card.closingDay && card.dueDay),
+    },
   };
 }
 
@@ -908,6 +932,10 @@ function renderDashboard() {
 function modalityForPayment(method) {
   const catalogItem = (state.catalogs?.paymentMethods || []).find((item) => normalizeText(item.description) === normalizeText(method));
   return catalogItem?.modality || PAYMENT_MODALITIES[method] || "";
+}
+
+function cardForPayment(method) {
+  return (state.catalogs?.cards || []).find((card) => normalizeText(card.paymentMethod) === normalizeText(method)) || null;
 }
 
 function refreshPaymentMethodOptions(preferred = "") {
@@ -1990,6 +2018,7 @@ function matchesColumnFilters(item) {
   const textMatches = (key, value) => !transactionColumnFilters[key] || normalizeText(value).includes(normalizeText(transactionColumnFilters[key]));
   const exactMatches = (key, value) => !transactionColumnFilters[key] || normalizeText(value) === normalizeText(transactionColumnFilters[key]);
   if (transactionColumnFilters.date && item.date !== transactionColumnFilters.date) return false;
+  if (transactionColumnFilters.purchaseDate && item.purchaseDate !== transactionColumnFilters.purchaseDate) return false;
   if (transactionColumnFilters.type && item.type !== transactionColumnFilters.type) return false;
   if (!textMatches("description", item.description)) return false;
   if (!textMatches("notes", item.notes)) return false;
@@ -2024,6 +2053,7 @@ function renderTransactions() {
             </button>
             <span>${formatDate(item.date)}</span>
           </span></td>
+          <td>${item.purchaseDate ? formatDate(item.purchaseDate) : ""}</td>
           <td>${escapeHtml(item.weekday || weekdayShort(item.date))}</td>
           <td><span class="pill ${item.type === "expense" ? "expense" : ""}">${escapeHtml(item.launchType || (item.type === "expense" ? "DESPESA" : "RECEITA"))}</span></td>
           <td>
@@ -2043,7 +2073,7 @@ function renderTransactions() {
       `,
         )
         .join("")
-    : `<tr><td colspan="13" class="empty">Nenhum lancamento encontrado.</td></tr>`;
+    : `<tr><td colspan="14" class="empty">Nenhum lancamento encontrado.</td></tr>`;
 }
 
 function budgetPlanningData() {
@@ -2415,15 +2445,24 @@ function renderCatalogs() {
   const groups = state.catalogs?.groups || [];
   const expenseClasses = state.catalogs?.expenseClasses || [];
   const payments = state.catalogs?.paymentMethods || [];
+  const cards = state.catalogs?.cards || [];
   const defaultGroupKeys = new Set(DEFAULT_GROUPS.map(normalizeText));
   const defaultExpenseClassKeys = new Set(DEFAULT_CATALOGS.expenseClasses.map(normalizeText));
   const defaultPaymentKeys = new Set(DEFAULT_CATALOGS.paymentMethods.map((item) => normalizeText(item.description)));
   els.groupCatalogCount.textContent = `${groups.length} cadastrados`;
   els.paymentCatalogCount.textContent = `${payments.length} cadastradas`;
   els.expenseClassCatalogCount.textContent = `${expenseClasses.length} cadastradas`;
+  els.cardCatalogCount.textContent = `${cards.length} cadastrados`;
   els.groupCatalogList.innerHTML = groups.map((group) => `<div class="catalog-row"><strong>${escapeHtml(group)}</strong>${defaultGroupKeys.has(normalizeText(group)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-group="${escapeHtml(group)}">Remover</button>`}</div>`).join("");
   els.expenseClassCatalogList.innerHTML = expenseClasses.map((item) => `<div class="catalog-row"><strong>${escapeHtml(item)}</strong>${defaultExpenseClassKeys.has(normalizeText(item)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-expense-class="${escapeHtml(item)}">Remover</button>`}</div>`).join("");
   els.paymentCatalogList.innerHTML = payments.map((item) => `<div class="catalog-row"><span><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.modality)}</small></span>${defaultPaymentKeys.has(normalizeText(item.description)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-payment="${escapeHtml(item.description)}">Remover</button>`}</div>`).join("");
+  const creditPayments = payments.filter((item) => normalizeText(item.modality) === "CREDITO");
+  const selectedCardPayment = els.newCardPaymentInput.value;
+  els.newCardPaymentInput.innerHTML = `<option value="">Selecione o cartão</option>${creditPayments.map((item) => `<option value="${escapeHtml(item.description)}">${escapeHtml(item.description)}</option>`).join("")}`;
+  if (creditPayments.some((item) => item.description === selectedCardPayment)) els.newCardPaymentInput.value = selectedCardPayment;
+  els.cardCatalogList.innerHTML = cards.length
+    ? cards.map((card) => `<div class="catalog-row card-catalog-row"><span><strong>${escapeHtml(card.paymentMethod)}</strong><small>Fecha dia ${card.closingDay} · vence dia ${card.dueDay} · melhor compra dia ${card.bestPurchaseDay || "—"}</small><small>Limite ${money.format(card.limit || 0)}</small></span><button type="button" class="catalog-remove" data-remove-card="${escapeHtml(card.paymentMethod)}">Remover</button></div>`).join("")
+    : `<div class="empty">Cadastre as regras dos seus cartões para calcular as próximas faturas.</div>`;
 }
 
 function addGroupCatalog(event) {
@@ -2458,10 +2497,29 @@ function addExpenseClassCatalog(event) {
   render();
 }
 
+function addCardCatalog(event) {
+  event.preventDefault();
+  const paymentMethod = els.newCardPaymentInput.value.trim();
+  const closingDay = Number(els.newCardClosingDayInput.value);
+  const dueDay = Number(els.newCardDueDayInput.value);
+  const bestPurchaseDay = Number(els.newCardBestDayInput.value);
+  const limit = Number(els.newCardLimitInput.value);
+  if (!paymentMethod || [closingDay, dueDay, bestPurchaseDay].some((day) => day < 1 || day > 31) || limit < 0) return;
+  const card = { paymentMethod, closingDay, dueDay, bestPurchaseDay, limit };
+  const index = state.catalogs.cards.findIndex((item) => normalizeText(item.paymentMethod) === normalizeText(paymentMethod));
+  if (index >= 0) state.catalogs.cards[index] = card;
+  else state.catalogs.cards.push(card);
+  els.cardCatalogForm.reset();
+  saveState();
+  render();
+  showToast("Cartão configurado", `${paymentMethod}: fechamento dia ${closingDay} e vencimento dia ${dueDay}.`, "success");
+}
+
 function removeCatalogItem(type, value) {
   if (type === "group") state.catalogs.groups = state.catalogs.groups.filter((item) => normalizeText(item) !== normalizeText(value));
   if (type === "expenseClass") state.catalogs.expenseClasses = state.catalogs.expenseClasses.filter((item) => normalizeText(item) !== normalizeText(value));
   if (type === "payment") state.catalogs.paymentMethods = state.catalogs.paymentMethods.filter((item) => normalizeText(item.description) !== normalizeText(value));
+  if (type === "card") state.catalogs.cards = state.catalogs.cards.filter((item) => normalizeText(item.paymentMethod) !== normalizeText(value));
   saveState();
   render();
 }
@@ -2520,6 +2578,7 @@ function syncAmountFields() {
   } else {
     els.incomeAmountInput.value = "";
   }
+  syncCardDates();
   syncInstallmentFields();
   if (document.activeElement === els.descriptionInput) renderDescriptionSuggestions();
 }
@@ -2527,6 +2586,31 @@ function syncAmountFields() {
 function isInstallmentModality() {
   const modality = normalizeText(els.modalityInput.value);
   return modality === "CREDITO" || modality === "CREDIARIO";
+}
+
+function syncCardDates({ recalculate = !els.transactionId.value } = {}) {
+  const card = els.transactionType.value === "expense" ? cardForPayment(els.paymentMethodInput.value) : null;
+  const show = Boolean(card);
+  els.purchaseDateField.classList.toggle("hidden", !show);
+  els.purchaseDateInput.disabled = !show;
+  els.purchaseDateInput.required = show;
+  els.dateInput.readOnly = show;
+  els.dateInputLabel.textContent = show ? "DATA DE VENCIMENTO DA FATURA" : "DATA";
+  els.cardDuePreview.classList.toggle("hidden", !show);
+
+  if (!show) {
+    els.cardDuePreview.textContent = "";
+    return;
+  }
+
+  if (!els.purchaseDateInput.value && !els.transactionId.value) els.purchaseDateInput.value = todayIso;
+  if (recalculate && els.purchaseDateInput.value) {
+    els.dateInput.value = cardStatementDueDate(els.purchaseDateInput.value, card.closingDay, card.dueDay);
+    els.weekdayInput.value = weekdayShort(els.dateInput.value);
+  }
+  els.cardDuePreview.textContent = els.purchaseDateInput.value
+    ? `Fecha dia ${card.closingDay}. Esta compra vence em ${formatDate(els.dateInput.value)}. Melhor dia: ${card.bestPurchaseDay || "—"}.`
+    : `Informe a data da compra para calcular a fatura. Fecha dia ${card.closingDay}.`;
 }
 
 function syncInstallmentFields() {
@@ -2573,11 +2657,13 @@ function syncPaymentModality() {
   const method = els.paymentMethodInput.value.trim();
   const modality = modalityForPayment(method);
   if (modality) els.modalityInput.value = modality;
+  syncCardDates({ recalculate: true });
   syncInstallmentFields();
 }
 
 function syncModalityPaymentOptions() {
   refreshPaymentMethodOptions();
+  syncCardDates({ recalculate: true });
   syncInstallmentFields();
 }
 
@@ -2586,6 +2672,7 @@ function openTransactionDialog(item = null) {
   els.dialogTitle.textContent = item ? "Editar lancamento" : "Novo lancamento";
   els.transactionId.value = item?.id || "";
   els.dateInput.value = item?.date || defaultDate;
+  els.purchaseDateInput.value = item?.purchaseDate || "";
   els.weekdayInput.value = item?.weekday || weekdayShort(els.dateInput.value);
   els.transactionType.value = item?.type || "expense";
   els.descriptionInput.value = item?.description || "";
@@ -2602,10 +2689,10 @@ function openTransactionDialog(item = null) {
   els.installmentCountInput.value = "1";
   els.deleteTransactionBtn.style.visibility = item ? "visible" : "hidden";
   syncAmountFields();
+  syncCardDates({ recalculate: !item });
   syncInstallmentFields();
   els.dialog.showModal();
-  els.descriptionInput.focus();
-  renderDescriptionSuggestions();
+  els.transactionType.focus();
 }
 
 function saveTransaction(event) {
@@ -2620,6 +2707,7 @@ function saveTransaction(event) {
   const payload = {
     id,
     date: els.dateInput.value,
+    ...(!els.purchaseDateInput.disabled && els.purchaseDateInput.value ? { purchaseDate: els.purchaseDateInput.value } : {}),
     weekday: weekdayShort(els.dateInput.value),
     description: els.descriptionInput.value.trim(),
     type,
@@ -2809,6 +2897,7 @@ function parseCsv(text) {
       return {
         id: crypto.randomUUID(),
         date,
+        ...(normalizeDate(row["data da compra"] || row.purchasedate) ? { purchaseDate: normalizeDate(row["data da compra"] || row.purchasedate) } : {}),
         weekday: row.diasemana || weekdayShort(date),
         description: row.descricao || row.description || "Lancamento importado",
         type: isIncome ? "income" : "expense",
@@ -2862,11 +2951,12 @@ function normalizeDate(value) {
 }
 
 function exportCsv() {
-  const headers = ["DATA", "DiaSemana", "TP LANÇAMENTO", "DESCRIÇÃO", "RECEITA($)", "CLASSIFICAÇÃO DA DESPESA", "GRUPO", "DESPESA (R$)", "FORMA DE PAGAMENTO", "SITUAÇÃO", "MODALIDADE", "OBSERVAÇÕES"];
+  const headers = ["DATA", "DATA DA COMPRA", "DiaSemana", "TP LANÇAMENTO", "DESCRIÇÃO", "RECEITA($)", "CLASSIFICAÇÃO DA DESPESA", "GRUPO", "DESPESA (R$)", "FORMA DE PAGAMENTO", "SITUAÇÃO", "MODALIDADE", "OBSERVAÇÕES"];
   const rows = state.transactions
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((item) => [
       item.date,
+      item.purchaseDate || "",
       item.weekday || weekdayShort(item.date),
       item.launchType || (item.type === "income" ? "RECEITA" : "DESPESA"),
       item.description,
@@ -3086,6 +3176,7 @@ document.addEventListener("click", (event) => {
   const removeGroupButton = event.target.closest("[data-remove-group]");
   const removePaymentButton = event.target.closest("[data-remove-payment]");
   const removeExpenseClassButton = event.target.closest("[data-remove-expense-class]");
+  const removeCardButton = event.target.closest("[data-remove-card]");
   const userActionButton = event.target.closest("[data-user-action]");
   const saveUserRoleButton = event.target.closest("[data-save-user-role]");
   const resetUserPasswordButton = event.target.closest("[data-reset-user-password]");
@@ -3104,6 +3195,7 @@ document.addEventListener("click", (event) => {
   if (removeGroupButton) removeCatalogItem("group", removeGroupButton.dataset.removeGroup);
   if (removePaymentButton) removeCatalogItem("payment", removePaymentButton.dataset.removePayment);
   if (removeExpenseClassButton) removeCatalogItem("expenseClass", removeExpenseClassButton.dataset.removeExpenseClass);
+  if (removeCardButton) removeCatalogItem("card", removeCardButton.dataset.removeCard);
   if (userActionButton) updateManagedUser(userActionButton.dataset.userId, userActionButton.dataset.userAction);
   if (saveUserRoleButton) updateManagedUser(saveUserRoleButton.dataset.saveUserRole, "UPDATE");
   if (resetUserPasswordButton) resetManagedUserPassword(resetUserPasswordButton.dataset.resetUserPassword);
@@ -3204,6 +3296,7 @@ els.cashflowChart?.addEventListener("mouseleave", hideCashflowTooltip);
 els.dateInput.addEventListener("change", () => {
   els.weekdayInput.value = weekdayShort(els.dateInput.value);
 });
+els.purchaseDateInput.addEventListener("change", () => syncCardDates({ recalculate: true }));
 els.transactionType.addEventListener("change", syncAmountFields);
 els.descriptionInput.addEventListener("input", renderDescriptionSuggestions);
 els.descriptionInput.addEventListener("focus", renderDescriptionSuggestions);
@@ -3236,6 +3329,15 @@ els.exportCsvBtn.addEventListener("click", exportCsv);
 els.groupCatalogForm.addEventListener("submit", addGroupCatalog);
 els.expenseClassCatalogForm.addEventListener("submit", addExpenseClassCatalog);
 els.paymentCatalogForm.addEventListener("submit", addPaymentCatalog);
+els.cardCatalogForm.addEventListener("submit", addCardCatalog);
+els.newCardPaymentInput.addEventListener("change", () => {
+  const card = cardForPayment(els.newCardPaymentInput.value);
+  if (!card) return;
+  els.newCardClosingDayInput.value = String(card.closingDay);
+  els.newCardDueDayInput.value = String(card.dueDay);
+  els.newCardBestDayInput.value = String(card.bestPurchaseDay || "");
+  els.newCardLimitInput.value = String(card.limit || 0);
+});
 window.addEventListener("resize", () => {
   renderCategoryChart();
   renderAnalytics();

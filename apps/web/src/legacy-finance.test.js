@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, payableGroupLabel, payableGroupTotal } from './legacy-finance.js';
 import { excelDateToIso } from './legacy-import-utils.js';
-import { installmentDueDate, splitInstallmentAmounts } from './legacy-installments.js';
+import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from './legacy-installments.js';
 
 assert.equal(excelDateToIso(new Date('2026-07-01T00:00:00.000Z')), '2026-07-01');
 assert.equal(excelDateToIso(new Date('2026-07-02T00:00:00.000Z')), '2026-07-02');
@@ -9,6 +9,12 @@ assert.deepEqual(splitInstallmentAmounts(100, 3), [33.34, 33.33, 33.33]);
 assert.equal(installmentDueDate('2026-07-31', 1), '2026-08-31');
 assert.equal(installmentDueDate('2026-07-31', 2), '2026-09-30');
 assert.equal(installmentDueDate('2026-07-11', 0), '2026-07-13');
+assert.equal(cardStatementDueDate('2026-07-10', 25, 5), '2026-08-05');
+assert.equal(cardStatementDueDate('2026-07-25', 25, 5), '2026-08-05');
+assert.equal(cardStatementDueDate('2026-07-26', 25, 5), '2026-09-07');
+assert.equal(cardStatementDueDate('2026-07-01', 5, 20), '2026-07-20');
+assert.equal(cardStatementDueDate('2026-07-06', 5, 20), '2026-08-20');
+assert.equal(cardStatementDueDate('2026-12-26', 25, 5), '2027-02-05');
 
 const payableGroups = groupPayableItems([
   { id: 'card-1', date: '2026-07-15', type: 'expense', status: 'pending', modality: 'CREDITO', paymentMethod: 'CARTÃO AZUL', description: 'COMPRA 1', expenseAmount: 100 },

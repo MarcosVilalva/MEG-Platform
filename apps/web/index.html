@@ -480,7 +480,8 @@
               <table class="transactions-table">
                 <thead>
                   <tr>
-                    <th>DATA</th>
+                    <th>VENCIMENTO</th>
+                    <th>DATA DA COMPRA</th>
                     <th>DiaSemana</th>
                     <th>TP LANÇAMENTO</th>
                     <th>DESCRIÇÃO</th>
@@ -495,7 +496,8 @@
                     <th class="actions-col">Detalhes</th>
                   </tr>
                   <tr class="column-filter-row">
-                    <th><input data-column-filter="date" type="date" aria-label="Filtrar por data" /></th>
+                    <th><input data-column-filter="date" type="date" aria-label="Filtrar por vencimento" /></th>
+                    <th><input data-column-filter="purchaseDate" type="date" aria-label="Filtrar por data da compra" /></th>
                     <th></th>
                     <th><select data-column-filter="type" aria-label="Filtrar tipo"><option value="">Todos</option><option value="income">Receita</option><option value="expense">Despesa</option></select></th>
                     <th><input data-column-filter="description" type="search" placeholder="Filtrar..." aria-label="Filtrar descrição" /></th>
@@ -616,7 +618,7 @@
         </section>
 
         <section class="view" id="catalogs" aria-labelledby="catalogsTitle">
-          <div class="section-heading"><div><h2 id="catalogsTitle">Cadastros</h2><p class="muted">Mantenha grupos e formas de pagamento usados nos lançamentos.</p></div></div>
+          <div class="section-heading"><div><h2 id="catalogsTitle">Cadastros</h2><p class="muted">Mantenha grupos, classificações, formas de pagamento e regras dos cartões.</p></div></div>
           <div class="catalogs-grid">
             <section class="panel catalog-panel">
               <div class="panel-title"><div><small class="decision-eyebrow">CLASSIFICAÇÃO</small><h3>Grupos</h3></div><span id="groupCatalogCount">0 cadastrados</span></div>
@@ -632,6 +634,19 @@
               <div class="panel-title"><div><small class="decision-eyebrow">PAGAMENTO</small><h3>Formas e modalidades</h3></div><span id="paymentCatalogCount">0 cadastradas</span></div>
               <form class="catalog-form payment-catalog-form" id="paymentCatalogForm"><input id="newPaymentInput" type="text" maxlength="60" placeholder="Forma de pagamento" required /><input id="newPaymentModalityInput" type="text" list="catalogModalityOptions" maxlength="30" placeholder="Modalidade" required /><datalist id="catalogModalityOptions"></datalist><button class="button primary" type="submit">Adicionar</button></form>
               <div class="catalog-list" id="paymentCatalogList"></div>
+            </section>
+            <section class="panel catalog-panel card-catalog-panel">
+              <div class="panel-title"><div><small class="decision-eyebrow">CARTÕES DE CRÉDITO</small><h3>Regras das faturas</h3></div><span id="cardCatalogCount">0 cadastrados</span></div>
+              <p class="muted">Vincule um cartão já existente nas formas de pagamento. A data de vencimento dos novos lançamentos será calculada automaticamente.</p>
+              <form class="catalog-form card-catalog-form" id="cardCatalogForm">
+                <label>Cartão<select id="newCardPaymentInput" required></select></label>
+                <label>Fechamento<input id="newCardClosingDayInput" type="number" min="1" max="31" placeholder="Dia" required /></label>
+                <label>Vencimento<input id="newCardDueDayInput" type="number" min="1" max="31" placeholder="Dia" required /></label>
+                <label>Melhor dia<input id="newCardBestDayInput" type="number" min="1" max="31" placeholder="Dia" required /></label>
+                <label>Limite<input id="newCardLimitInput" type="number" min="0" step="0.01" placeholder="R$ 0,00" required /></label>
+                <button class="button primary" type="submit">Salvar cartão</button>
+              </form>
+              <div class="catalog-list card-catalog-list" id="cardCatalogList"></div>
             </section>
           </div>
         </section>
@@ -747,14 +762,6 @@
         <input id="transactionId" type="hidden" />
         <div class="form-grid">
           <label>
-            DATA
-            <input id="dateInput" type="date" required />
-          </label>
-          <label>
-            DiaSemana
-            <input id="weekdayInput" type="text" readonly />
-          </label>
-          <label>
             TP LANÇAMENTO
             <select id="transactionType" required>
               <option value="expense">DESPESA</option>
@@ -764,6 +771,19 @@
           <label>
             MODALIDADE
             <select id="modalityInput" required></select>
+          </label>
+          <label class="hidden" id="purchaseDateField">
+            DATA DA COMPRA
+            <input id="purchaseDateInput" type="date" />
+          </label>
+          <label>
+            <span id="dateInputLabel">DATA</span>
+            <input id="dateInput" type="date" required />
+            <small class="card-due-preview hidden" id="cardDuePreview"></small>
+          </label>
+          <label>
+            DiaSemana
+            <input id="weekdayInput" type="text" readonly />
           </label>
           <label class="full autocomplete-label">
             DESCRIÇÃO
