@@ -3190,3 +3190,189 @@ dialog.modal {
   .income-source-composition { grid-template-columns: 1fr; }
   .income-source-donut { margin-inline: auto; }
 }
+
+/* Mobile readability: panels must reflow their contents instead of clipping text. */
+.panel,
+.metric,
+.mini-metric,
+.finance-panel,
+.signal-card,
+.cashflow-answer-card,
+.smart-budget-card,
+.analytics-executive-strip article,
+.historical-summary-grid article,
+.income-kpi-grid article {
+  container-type: inline-size;
+}
+
+.panel :is(h2, h3, p, strong, span, small),
+.metric :is(strong, span, small),
+.mini-metric :is(strong, span, small),
+.finance-panel :is(h3, strong, span, small),
+.signal-card :is(strong, span, small),
+.cashflow-answer-card :is(strong, span, small),
+.smart-budget-card :is(h3, strong, span, small),
+.analytics-executive-strip article :is(strong, span, small),
+.historical-summary-grid article :is(strong, span, small),
+.income-kpi-grid article :is(strong, span, small) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 680px) {
+  .view.active { gap: 14px; }
+
+  .panel-title,
+  .month-progress-heading,
+  .analytics-calculation-heading,
+  .budget-section-title {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .panel-title > *,
+  .month-progress-heading > *,
+  .analytics-calculation-heading > *,
+  .budget-section-title > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .panel-title > span { text-align: left; }
+
+  .metric,
+  .mini-metric,
+  .finance-panel,
+  .signal-card,
+  .cashflow-answer-card,
+  .analytics-executive-strip article,
+  .historical-summary-grid article,
+  .income-kpi-grid article {
+    width: 100%;
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .metric strong,
+  .mini-metric strong,
+  .finance-panel-values strong,
+  .analytics-executive-strip article > strong,
+  .historical-summary-grid article > strong,
+  .income-kpi-grid strong {
+    white-space: normal;
+    font-size: clamp(1.15rem, 7vw, 1.65rem);
+    line-height: 1.12;
+  }
+
+  .finance-panel > header { align-items: flex-start; margin-bottom: 12px; }
+  .finance-panel > header > div { min-width: 0; }
+  .finance-panel-values > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    align-items: start;
+    padding: 12px 0;
+  }
+  .finance-panel-values > div > strong { justify-self: start; text-align: left; }
+  .finance-panel-values small { grid-column: 1; }
+
+  .month-decision {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 12px;
+    padding: 16px;
+  }
+  .decision-icon { width: 48px; height: 48px; border-radius: 14px; font-size: 1.4rem; }
+  .decision-copy { min-width: 0; }
+  .decision-copy strong { font-size: clamp(1.35rem, 8vw, 2rem); overflow-wrap: anywhere; }
+  .decision-copy small { line-height: 1.35; overflow-wrap: anywhere; }
+
+  .decision-hero,
+  .pending-command-center {
+    gap: 16px;
+    padding: 20px 18px;
+    border-radius: 20px;
+  }
+  .decision-hero-value,
+  .pending-coverage { width: 100%; min-width: 0; padding: 15px; }
+  .decision-hero-value strong,
+  .pending-coverage strong { white-space: normal; overflow-wrap: anywhere; }
+
+  .cashflow-answer-card { grid-template-columns: 42px minmax(0, 1fr); gap: 11px; }
+  .cashflow-answer-icon { width: 42px; height: 42px; }
+  .cashflow-day-card footer,
+  .payment-confirm-list > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .cashflow-day-card footer strong,
+  .payment-confirm-list > div strong {
+    white-space: normal;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+  .cashflow-movement-row > span:nth-child(2) strong {
+    white-space: normal;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+
+  .income-source-item,
+  .income-recurring-item { grid-template-columns: auto minmax(0, 1fr); }
+  .income-source-item > strong,
+  .income-recurring-item > strong {
+    grid-column: 2;
+    justify-self: start;
+    white-space: normal;
+    text-align: left;
+  }
+
+  .opening-alert-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .opening-alert-summary article { min-width: 0; }
+  .opening-alert-summary strong {
+    font-size: clamp(1rem, 6vw, 1.3rem);
+    overflow-wrap: anywhere;
+  }
+
+  .bill-meta,
+  .ledger-meta,
+  .payable-info,
+  .card-launch-row > span { min-width: 0; }
+  .bill-meta strong,
+  .ledger-meta strong,
+  .payable-info strong,
+  .card-launch-row > span strong {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+  }
+  .bill-item > .amount,
+  .payable-amount,
+  .card-launch-row > strong {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .budget-score {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+  .budget-score strong { font-size: clamp(2rem, 13vw, 2.7rem); }
+}
+
+@media (max-width: 390px) {
+  .content,
+  body.native-mobile .content { padding-left: 9px; padding-right: 9px; }
+  .panel,
+  .metric,
+  .mini-metric,
+  .finance-panel,
+  .signal-card,
+  .cashflow-answer-card { padding: 14px; border-radius: 15px; }
+  .opening-alert-summary { grid-template-columns: 1fr; }
+  .month-decision { grid-template-columns: 1fr; }
+  .decision-icon { display: none; }
+  .decision-status { grid-column: 1; }
+}
