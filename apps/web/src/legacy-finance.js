@@ -44,6 +44,19 @@ export function payableGroupLabel(group) {
   return group.isCard ? group.payment : group.items[0]?.description || 'Conta';
 }
 
+export function summarizeDueDate(items, referenceDate = '') {
+  const expenses = items
+    .filter((item) => item.type === 'expense')
+    .sort((a, b) => a.date.localeCompare(b.date) || String(a.description || '').localeCompare(String(b.description || ''), 'pt-BR'));
+  const date = referenceDate || expenses[0]?.date || '';
+  if (!date) return null;
+  const dateItems = expenses.filter((item) => item.date === date);
+  const groups = groupPayableItems(dateItems);
+  const labels = groups.map((group) => group.isCard ? `Fatura ${payableGroupLabel(group)}` : payableGroupLabel(group));
+  const total = groups.reduce((sum, group) => sum + payableGroupTotal(group), 0);
+  return { date, items: dateItems, groups, labels, total, count: groups.length, description: labels.join(', ') };
+}
+
 export function calculateFinancialSummary(transactions, start = '', end = '') {
   const previousMonthEnd = start ? new Date(`${start}T12:00:00`).getTime() - 86400000 : 0;
   const previousMonthEndIso = previousMonthEnd ? new Date(previousMonthEnd).toISOString().slice(0, 10) : '';
@@ -105,7 +118,8 @@ export function calculateCurrentMonthHealth(transactions, monthStart, today, mon
     .sort((a, b) => a.date.localeCompare(b.date) || String(a.description || '').localeCompare(String(b.description || ''), 'pt-BR'));
   const pendingValue = pendingItems.reduce((sum, item) => sum + transactionValue(item, 'expense'), 0);
   const overdueItems = pendingItems.filter((item) => item.date < today);
-  const nextDue = pendingItems.find((item) => item.date >= today) || null;
+  const nextDate = pendingItems.find((item) => item.date >= today)?.date || '';
+  const nextDue = nextDate ? summarizeDueDate(pendingItems, nextDate) : null;
 
   return {
     availableToday: availableSummary.closingBalance,

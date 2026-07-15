@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { availableMonetaryBalance, calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, payableGroupLabel, payableGroupTotal } from './legacy-finance.js';
+import { availableMonetaryBalance, calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, payableGroupLabel, payableGroupTotal, summarizeDueDate } from './legacy-finance.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from './legacy-installments.js';
 
@@ -26,6 +26,15 @@ assert.equal(payableGroups[0].items.length, 2);
 assert.equal(payableGroupLabel(payableGroups[0]), 'CARTÃO AZUL');
 assert.equal(payableGroupTotal(payableGroups[0]), 150);
 assert.equal(payableGroupLabel(payableGroups[1]), 'CPFL');
+
+const dueDateSummary = summarizeDueDate([
+  { id: 'butcher', date: '2026-07-15', type: 'expense', status: 'pending', modality: 'CREDITO', paymentMethod: 'CARTÃO AZUL', description: 'AÇOUGUE', expenseAmount: 120 },
+  { id: 'market', date: '2026-07-15', type: 'expense', status: 'pending', modality: 'CREDITO', paymentMethod: 'CARTÃO AZUL', description: 'MERCADO', expenseAmount: 80 },
+  { id: 'energy', date: '2026-07-15', type: 'expense', status: 'pending', modality: 'À VISTA', paymentMethod: 'PIX', description: 'CPFL', expenseAmount: 90 },
+]);
+assert.equal(dueDateSummary.count, 2);
+assert.equal(dueDateSummary.total, 290);
+assert.deepEqual(dueDateSummary.labels, ['Fatura CARTÃO AZUL', 'CPFL']);
 
 const paymentBalance = [
   { id: 'salary', date: '2026-07-01', type: 'income', incomeAmount: 1000, status: 'paid' },
@@ -130,5 +139,6 @@ assert.equal(currentMonthHealth.projectedClosing, -300);
 assert.equal(currentMonthHealth.pendingItems.length, 2);
 assert.equal(currentMonthHealth.overdueItems.length, 1);
 assert.equal(currentMonthHealth.nextDue.date, '2026-07-20');
+assert.equal(currentMonthHealth.nextDue.total, 2500);
 
 console.log('MEG legacy financial reconciliation passed.');

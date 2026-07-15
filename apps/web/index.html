@@ -464,6 +464,15 @@
           <div class="section-heading">
             <div><small class="decision-eyebrow">INTELIGÊNCIA DE RECEITAS</small><h2 id="incomeAnalysisTitle">Análise das receitas</h2><p class="muted" id="incomeAnalysisPeriodLabel">Período selecionado</p></div>
           </div>
+          <section class="income-filter-bar" aria-label="Filtros das receitas">
+            <div>
+              <small class="decision-eyebrow">ORIGEM DA RECEITA</small>
+              <strong>Descubra quanto entrou de cada fonte</strong>
+            </div>
+            <label><span>Filtrar origem</span><select id="incomeSourceFilter"><option value="all">Todas as origens</option></select></label>
+            <label><span>Pesquisar</span><input id="incomeSourceSearch" type="search" placeholder="Ex.: Mercado Livre" autocomplete="off" /></label>
+            <button class="button" id="clearIncomeFiltersBtn" type="button">Limpar filtros</button>
+          </section>
           <section class="income-analysis-hero" id="incomeAnalysisHero">
             <div><small>DIAGNÓSTICO DE ENTRADAS</small><h3 id="incomeAnalysisHealthTitle">Analisando suas fontes de renda</h3><p id="incomeAnalysisHealthMessage">Comparando entradas monetárias, ticket alimentação e recorrência.</p></div>
             <div class="income-hero-total"><span>Receita monetária</span><strong id="incomeAnalysisTotalMetric">R$ 0,00</strong><small id="incomeAnalysisTotalNote">0 lançamento(s)</small></div>
@@ -479,8 +488,12 @@
               <div class="panel-title"><div><small class="decision-eyebrow">EVOLUÇÃO MENSAL</small><h3>Entradas ao longo do tempo</h3></div><span>Receitas monetárias</span></div>
               <div class="income-monthly-chart" id="incomeMonthlyChart"></div>
             </section>
-            <section class="panel">
+            <section class="panel income-source-panel">
               <div class="panel-title"><div><small class="decision-eyebrow">FONTES DE RENDA</small><h3>De onde vem o dinheiro</h3></div><span>Ranking do período</span></div>
+              <div class="income-source-composition">
+                <div class="income-source-donut" id="incomeSourceDonut"><strong id="incomeSourceDonutMetric">0%</strong><small>da receita</small></div>
+                <div><span>Origem selecionada</span><strong id="incomeFilteredSourceMetric">Todas</strong><small id="incomeFilteredSourceNote">Exibindo todas as receitas monetÃ¡rias</small></div>
+              </div>
               <div class="income-source-list" id="incomeSourceList"></div>
             </section>
           </div>

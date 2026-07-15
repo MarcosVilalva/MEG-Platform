@@ -1,4 +1,4 @@
-import { availableMonetaryBalance, calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal } from "./legacy-finance.js";
+import { availableMonetaryBalance, calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal, summarizeDueDate } from "./legacy-finance.js";
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
 
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
@@ -103,6 +103,8 @@ let analyticsFilters = {
   groups: [],
   payments: [],
 };
+let incomeSourceFilter = "all";
+let incomeSourceSearch = "";
 const transactionColumnFilters = {};
 let descriptionSuggestionItems = [];
 let activeDescriptionSuggestion = -1;
@@ -239,6 +241,9 @@ const els = {
   incomeAnalysisHealthMessage: document.querySelector("#incomeAnalysisHealthMessage"),
   incomeAnalysisTotalMetric: document.querySelector("#incomeAnalysisTotalMetric"),
   incomeAnalysisTotalNote: document.querySelector("#incomeAnalysisTotalNote"),
+  incomeSourceFilter: document.querySelector("#incomeSourceFilter"),
+  incomeSourceSearch: document.querySelector("#incomeSourceSearch"),
+  clearIncomeFiltersBtn: document.querySelector("#clearIncomeFiltersBtn"),
   incomeAverageMetric: document.querySelector("#incomeAverageMetric"),
   incomeAverageNote: document.querySelector("#incomeAverageNote"),
   incomeTicketMetric: document.querySelector("#incomeTicketMetric"),
@@ -250,6 +255,10 @@ const els = {
   incomeMonthlyChart: document.querySelector("#incomeMonthlyChart"),
   incomeSourceList: document.querySelector("#incomeSourceList"),
   incomeRecurringList: document.querySelector("#incomeRecurringList"),
+  incomeSourceDonut: document.querySelector("#incomeSourceDonut"),
+  incomeSourceDonutMetric: document.querySelector("#incomeSourceDonutMetric"),
+  incomeFilteredSourceMetric: document.querySelector("#incomeFilteredSourceMetric"),
+  incomeFilteredSourceNote: document.querySelector("#incomeFilteredSourceNote"),
   analyticsGroupFilter: document.querySelector("#analyticsGroupFilter"),
   analyticsPaymentFilter: document.querySelector("#analyticsPaymentFilter"),
   avgExpenseMetric: document.querySelector("#avgExpenseMetric"),
@@ -961,17 +970,32 @@ function modalityForPayment(method) {
   return catalogItem?.modality || PAYMENT_MODALITIES[method] || "";
 }
 
+function incomeSourceName(item) {
+  return String(item.description || "Receita sem descrição").trim().toUpperCase();
+}
+
 function renderIncomeAnalysis() {
   const incomeItems = selectedTransactions().filter((item) => item.type === "income");
-  const monetaryItems = incomeItems.filter((item) => !isVerocardTransaction(item));
+  const allMonetaryItems = incomeItems.filter((item) => !isVerocardTransaction(item));
   const ticketItems = incomeItems.filter(isVerocardTransaction);
+  const sourceOptions = [...new Set(allMonetaryItems.map(incomeSourceName))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  if (incomeSourceFilter !== "all" && !sourceOptions.includes(incomeSourceFilter)) incomeSourceFilter = "all";
+  els.incomeSourceFilter.innerHTML = `<option value="all">Todas as origens</option>${sourceOptions.map((source) => `<option value="${escapeHtml(source)}">${escapeHtml(source)}</option>`).join("")}`;
+  els.incomeSourceFilter.value = incomeSourceFilter;
+  if (els.incomeSourceSearch.value !== incomeSourceSearch) els.incomeSourceSearch.value = incomeSourceSearch;
+  const search = normalizeText(incomeSourceSearch);
+  const monetaryItems = allMonetaryItems.filter((item) => {
+    const source = incomeSourceName(item);
+    return (incomeSourceFilter === "all" || source === incomeSourceFilter) && (!search || normalizeText(source).includes(search));
+  });
   const total = monetaryItems.reduce((sum, item) => sum + Number(item.incomeAmount || item.amount || 0), 0);
+  const unfilteredTotal = allMonetaryItems.reduce((sum, item) => sum + Number(item.incomeAmount || item.amount || 0), 0);
   const ticketTotal = ticketItems.reduce((sum, item) => sum + Number(item.incomeAmount || item.amount || 0), 0);
   const months = [...new Set(monetaryItems.map((item) => monthOf(item.date)).filter(Boolean))].sort();
   const average = months.length ? total / months.length : 0;
   const sourceMap = new Map();
   monetaryItems.forEach((item) => {
-    const source = String(item.description || "Receita sem descrição").trim().toUpperCase();
+    const source = incomeSourceName(item);
     const current = sourceMap.get(source) || { source, value: 0, count: 0, months: new Set() };
     current.value += Number(item.incomeAmount || item.amount || 0);
     current.count += 1;
@@ -989,10 +1013,15 @@ function renderIncomeAnalysis() {
   const variation = previous ? ((latest - previous) / previous) * 100 : latest ? 100 : 0;
   const maxMonthly = Math.max(...monthly.map((item) => item.value), 1);
   const maxSource = Math.max(...sources.map((item) => item.value), 1);
+  const filteredShare = unfilteredTotal ? Math.min((total / unfilteredTotal) * 100, 100) : 0;
 
   els.incomeAnalysisPeriodLabel.textContent = periodLabel();
   els.incomeAnalysisTotalMetric.textContent = money.format(total);
-  els.incomeAnalysisTotalNote.textContent = `${monetaryItems.length} entrada(s) monetária(s)`;
+  els.incomeAnalysisTotalNote.textContent = `${monetaryItems.length} entrada(s) monetária(s)${incomeSourceFilter !== "all" || search ? " no filtro" : ""}`;
+  els.incomeSourceDonut.style.setProperty("--income-share", `${filteredShare * 3.6}deg`);
+  els.incomeSourceDonutMetric.textContent = `${filteredShare.toFixed(0)}%`;
+  els.incomeFilteredSourceMetric.textContent = incomeSourceFilter === "all" ? (search ? `Busca: ${incomeSourceSearch}` : "Todas") : incomeSourceFilter;
+  els.incomeFilteredSourceNote.textContent = `${money.format(total)} de ${money.format(unfilteredTotal)} no período selecionado`;
   els.incomeAverageMetric.textContent = money.format(average);
   els.incomeAverageNote.textContent = months.length ? `Média em ${months.length} mês(es) com receita` : "Sem base para média";
   els.incomeTicketMetric.textContent = money.format(ticketTotal);
@@ -1037,7 +1066,17 @@ function openingAlertData() {
   const upcoming = relevant.filter((item) => item.date > todayIso);
   const total = relevant.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
   const health = calculateCurrentMonthHealth(state.transactions, `${currentMonth}-01`, todayIso, lastDayOfMonth(currentMonth));
-  return { relevant, overdue, todayItems, upcoming, total, health };
+  return {
+    relevant,
+    overdue,
+    todayItems,
+    upcoming,
+    overdueCount: groupPayableItems(overdue).length,
+    todayCount: groupPayableItems(todayItems).length,
+    upcomingCount: groupPayableItems(upcoming).length,
+    total,
+    health,
+  };
 }
 
 function showOpeningFinancialAlert() {
@@ -1045,18 +1084,18 @@ function showOpeningFinancialAlert() {
   const data = openingAlertData();
   if (!data.relevant.length && data.health.projectedClosing >= 0) return;
   sessionStorage.setItem(`meg-opening-alert-${todayIso}`, "1");
-  const tone = data.overdue.length || data.health.projectedClosing < 0 ? "risk" : "attention";
+  const tone = data.overdueCount || data.health.projectedClosing < 0 ? "risk" : "attention";
   els.openingAlertDialog.classList.remove("risk", "attention");
   els.openingAlertDialog.classList.add(tone);
-  els.openingAlertTitle.textContent = data.overdue.length
-    ? `🚨 ${data.overdue.length} conta(s) vencida(s)`
-    : data.todayItems.length ? `⏰ ${data.todayItems.length} conta(s) vencem hoje` : "📅 Próximos vencimentos";
+  els.openingAlertTitle.textContent = data.overdueCount
+    ? `🚨 ${data.overdueCount} conta(s)/fatura(s) vencida(s)`
+    : data.todayCount ? `⏰ ${data.todayCount} conta(s)/fatura(s) vencem hoje` : "📅 Próximos vencimentos";
   const grouped = groupPayableItems(data.relevant).slice(0, 5);
   els.openingAlertBody.innerHTML = `
     <div class="opening-alert-summary">
-      <article><span>Vencidas</span><strong>${data.overdue.length}</strong></article>
-      <article><span>Hoje</span><strong>${data.todayItems.length}</strong></article>
-      <article><span>Próximos 3 dias</span><strong>${data.upcoming.length}</strong></article>
+      <article><span>Vencidas</span><strong>${data.overdueCount}</strong></article>
+      <article><span>Hoje</span><strong>${data.todayCount}</strong></article>
+      <article><span>Próximos 3 dias</span><strong>${data.upcomingCount}</strong></article>
       <article><span>Total urgente</span><strong>${money.format(data.total)}</strong></article>
     </div>
     ${data.health.projectedClosing < 0 ? `<div class="opening-alert-critical">⚠️ Mesmo usando o saldo atual, faltam <strong>${money.format(Math.abs(data.health.projectedClosing))}</strong> para fechar ${formatMonthCode(currentMonth)}. Priorize inserir a receita faltante.</div>` : ""}
@@ -1094,8 +1133,9 @@ function renderCurrentSituation() {
   els.currentExpenseMetric.textContent = money.format(situation.currentTotals.expense);
   els.pendingLaunchedLabel.textContent = "Contas monetárias a pagar";
   els.pendingLaunchedMetric.textContent = money.format(situation.allPendingExpenses);
-  els.pendingLaunchedTrend.textContent = situation.allPendingItems.length
-    ? `${situation.allPendingItems.length} conta(s) · próxima: ${formatDate(situation.allPendingItems[0].date)}`
+  const nextPendingSummary = summarizeDueDate(situation.allPendingItems);
+  els.pendingLaunchedTrend.textContent = nextPendingSummary
+    ? `${groupPayableItems(situation.allPendingItems).length} conta(s)/fatura(s) · próxima: ${formatDate(nextPendingSummary.date)} · ${nextPendingSummary.description}`
     : "✅ Nenhuma conta pendente no mês";
   els.monthCloseCard.classList.toggle("danger", situation.missingToClose > 0);
   els.monthCloseCard.classList.toggle("positive-card", situation.missingToClose <= 0);
@@ -1118,7 +1158,7 @@ function renderDashboardPayables() {
   const groups = groupPayableItems(pending);
   payableGroupCache = new Map(groups.map((group, index) => [`payable-${index}`, group]));
   const total = pending.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
-  els.dashboardPayableSummary.textContent = `${pending.length} lançamento(s) · ${money.format(total)} em aberto`;
+  els.dashboardPayableSummary.textContent = `${groups.length} conta(s)/fatura(s) · ${pending.length} lançamento(s) · ${money.format(total)} em aberto`;
   els.dashboardPayables.innerHTML = groups.length
     ? groups.map((group, index) => {
         const totalGroup = payableGroupTotal(group);
@@ -1191,9 +1231,10 @@ function renderQuickSignals() {
   const monthExpenses = monthItems.filter((item) => item.type === "expense");
   const groups = groupExpenseRows(monthItems);
   const topGroup = groups[0];
-  const pendingSoon = monthExpenses
+  const pendingSoonItems = monthExpenses
     .filter((item) => item.status === "pending" && item.date >= todayIso)
-    .sort((a, b) => a.date.localeCompare(b.date))[0];
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const pendingSoon = summarizeDueDate(pendingSoonItems);
   const situation = currentSituation();
   const verocard = verocardSummary(currentMonth);
   const signals = [
@@ -1213,7 +1254,7 @@ function renderQuickSignals() {
       tone: pendingSoon ? "risk" : "",
       title: "Proxima pendencia",
       value: pendingSoon ? formatDate(pendingSoon.date) : "Sem alerta",
-      text: pendingSoon ? `${pendingSoon.description} · ${money.format(pendingSoon.amount)}` : "Nada futuro pendente",
+      text: pendingSoon ? `${pendingSoon.description} · ${money.format(pendingSoon.total)}` : "Nada futuro pendente",
     },
     {
       tone: verocard.balance < 0 ? "risk" : "positive",
@@ -1577,7 +1618,7 @@ function renderAnalytics() {
   els.analyticsSavingsTrend.textContent = `${monthHealth.pendingItems.length} conta(s) pendente(s) em ${formatMonthCode(currentMonth)}`;
   const overdueWarning = monthHealth.overdueItems.length ? ` Há ${monthHealth.overdueItems.length} conta(s) vencida(s).` : "";
   const nextDueWarning = monthHealth.nextDue
-    ? ` Próximo vencimento: ${monthHealth.nextDue.description || "conta"} em ${formatDate(monthHealth.nextDue.date)} (${money.format(Number(monthHealth.nextDue.expenseAmount || monthHealth.nextDue.amount || 0))}).`
+    ? ` Próximo vencimento: ${monthHealth.nextDue.description || "conta"} em ${formatDate(monthHealth.nextDue.date)} (${money.format(monthHealth.nextDue.total)}).`
     : "";
   if (monthHealth.projectedClosing < 0) {
     els.analyticsHealthTitle.textContent = `🔴 Saúde financeira em alerta: faltam ${money.format(Math.abs(monthHealth.projectedClosing))}`;
@@ -2084,9 +2125,9 @@ function renderMonthProgress() {
     : progress >= 70
       ? "Bom andamento. Restam poucas obrigações para concluir o período."
       : "Acompanhe as próximas contas e priorize os vencimentos mais próximos.";
-  els.monthPaidCount.textContent = String(paid.length);
+  els.monthPaidCount.textContent = String(groupPayableItems(paid).length);
   els.monthPaidValue.textContent = money.format(paidValue);
-  els.monthPendingCount.textContent = String(pending.length);
+  els.monthPendingCount.textContent = String(groupPayableItems(pending).length);
   els.monthPendingValue.textContent = money.format(pendingValue);
   els.monthNextDue.textContent = nextDate ? formatDate(nextDate) : "—";
   els.monthNextDueDescription.textContent = nextDate ? `${money.format(nextTotal)} · ${nextDescription}` : "Nenhuma conta pendente";
@@ -2341,10 +2382,13 @@ function renderPending() {
   const overdue = allPending.filter((item) => item.date < todayIso);
   const dueToday = allPending.filter((item) => item.date === todayIso);
   const nextSeven = allPending.filter((item) => item.date > todayIso && item.date <= sevenDaysAhead);
+  const overdueGroups = groupPayableItems(overdue);
+  const todayGroups = groupPayableItems(dueToday);
+  const nextSevenGroups = groupPayableItems(nextSeven);
 
   els.pendingMonthLabel.textContent = `${formatMonth(selectedPendingMonth)} - filtro da aba Pendentes`;
   els.pendingTotalMetric.textContent = money.format(pendingTotal);
-  els.pendingCountMetric.textContent = `${pendingVisible.length} contas pendentes no filtro`;
+  els.pendingCountMetric.textContent = `${groupPayableItems(pendingVisible).length} conta(s)/fatura(s) pendente(s) no filtro`;
   els.paidMonthMetric.textContent = money.format(paidTotal);
   els.verocardCreditMetric.textContent = money.format(card.credit);
   els.verocardBalanceMetric.textContent = money.format(card.balance);
@@ -2358,12 +2402,13 @@ function renderPending() {
     ? `${money.format(available)} disponíveis para ${money.format(allPendingTotal)} em aberto`
     : "Nenhuma obrigação monetária em aberto";
   els.pendingProgressBar.style.width = `${Math.min(Math.max(paidProgress, 0), 100)}%`;
-  els.overduePendingMetric.textContent = `${overdue.length} · ${money.format(overdue.reduce((sum, item) => sum + Number(item.amount || 0), 0))}`;
-  els.todayPendingMetric.textContent = `${dueToday.length} · ${money.format(dueToday.reduce((sum, item) => sum + Number(item.amount || 0), 0))}`;
-  els.nextSevenPendingMetric.textContent = `${nextSeven.length} · ${money.format(nextSeven.reduce((sum, item) => sum + Number(item.amount || 0), 0))}`;
+  els.overduePendingMetric.textContent = `${overdueGroups.length} · ${money.format(overdue.reduce((sum, item) => sum + Number(item.amount || 0), 0))}`;
+  els.todayPendingMetric.textContent = `${todayGroups.length} · ${money.format(dueToday.reduce((sum, item) => sum + Number(item.amount || 0), 0))}`;
+  els.nextSevenPendingMetric.textContent = `${nextSevenGroups.length} · ${money.format(nextSeven.reduce((sum, item) => sum + Number(item.amount || 0), 0))}`;
   if (overdue.length) {
-    els.pendingHealthTitle.textContent = `${overdue.length} conta(s) vencida(s) exigem ação`;
-    els.pendingHealthMessage.textContent = `Regularize primeiro ${overdue[0].description}, vencida em ${formatDate(overdue[0].date)}. ${coverage < 100 ? "O saldo disponível ainda não cobre todas as obrigações." : "Há saldo para cobrir as contas em aberto."}`;
+    const firstOverdue = summarizeDueDate(overdue);
+    els.pendingHealthTitle.textContent = `${overdueGroups.length} conta(s)/fatura(s) vencida(s) exigem ação`;
+    els.pendingHealthMessage.textContent = `Regularize primeiro ${firstOverdue.description}, com total de ${money.format(firstOverdue.total)} vencido em ${formatDate(firstOverdue.date)}. ${coverage < 100 ? "O saldo disponível ainda não cobre todas as obrigações." : "Há saldo para cobrir as contas em aberto."}`;
   } else if (coverage < 100) {
     els.pendingHealthTitle.textContent = `Faltam ${money.format(Math.max(allPendingTotal - available, 0))} para cobrir o mês`;
     els.pendingHealthMessage.textContent = "Não há contas vencidas, mas o caixa disponível não cobre todas as pendências monetárias.";
@@ -3412,6 +3457,19 @@ els.pendingMonthFilter.addEventListener("change", () => {
   renderPending();
 });
 els.markAllPendingPaidBtn.addEventListener("click", markAllCurrentPendingPaid);
+els.incomeSourceFilter?.addEventListener("change", () => {
+  incomeSourceFilter = els.incomeSourceFilter.value || "all";
+  renderIncomeAnalysis();
+});
+els.incomeSourceSearch?.addEventListener("input", () => {
+  incomeSourceSearch = els.incomeSourceSearch.value.trim();
+  renderIncomeAnalysis();
+});
+els.clearIncomeFiltersBtn?.addEventListener("click", () => {
+  incomeSourceFilter = "all";
+  incomeSourceSearch = "";
+  renderIncomeAnalysis();
+});
 if (els.analyticsGroupFilter) {
   els.analyticsGroupFilter.addEventListener("change", () => {
     analyticsFilters.groups = selectedOptions(els.analyticsGroupFilter);

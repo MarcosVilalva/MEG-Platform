@@ -141,12 +141,14 @@ Arquivamento não remove histórico. Estornos devem ser registrados como eventos
 ## Análise de receitas
 
 - A aba Receitas respeita o período global e separa receitas monetárias dos créditos Verocard.
+- A origem/descrição da receita pode ser filtrada e pesquisada; total, indicadores, evolução mensal, participação e ranking respondem ao filtro selecionado.
 - A análise apresenta total monetário, média mensal, maior fonte, recorrência, evolução mensal e concentração por fonte.
 - Queda superior a 10% entre os dois meses mais recentes do período deve ser destacada como atenção; ausência de receita monetária é uma situação crítica.
 
 ## Automação inteligente de notificações
 
 - Compras em cartão de crédito com o mesmo cartão e vencimento aparecem como uma única fatura, com valor total e quantidade de compras.
+- Em painéis, diagnósticos, alertas e indicadores de próximo vencimento, os compromissos são resumidos por data. Compras do mesmo cartão e vencimento aparecem sob o nome da fatura, nunca como a descrição isolada de uma compra.
 - A prioridade é classificada como crítica (vencida), urgente (vence hoje), alta (amanhã), atenção (até três dias) ou programada.
 - Os alertas automáticos são avaliados às 06:00, 12:00 e 19:00 no horário de São Paulo; itens pagos deixam de aparecer imediatamente.
 - A cada cinco dias, às 06:00, o aviso normal é substituído por um resumo de todas as contas ainda abertas e do total que falta pagar.
