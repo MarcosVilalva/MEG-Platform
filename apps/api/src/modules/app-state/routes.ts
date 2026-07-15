@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { Prisma, prisma } from '@meg/database';
+import { resolveSharedStateOwnerId } from './shared-owner';
 
 const transactionSchema = z.object({
   id: z.string().min(1),
@@ -24,10 +25,11 @@ const putSchema = z.object({
 
 export async function appStateRoutes(app: FastifyInstance) {
   app.get('/', { preHandler: app.authenticate }, async (request) => {
-    const saved = await prisma.appState.findUnique({ where: { userId: request.user.sub } });
+    const ownerId = await resolveSharedStateOwnerId(request.user.sub);
+    const saved = await prisma.appState.findUnique({ where: { userId: ownerId } });
     return saved
-      ? { state: saved.state, revision: saved.revision, updatedAt: saved.updatedAt }
-      : { state: null, revision: 0, updatedAt: null };
+      ? { state: saved.state, revision: saved.revision, updatedAt: saved.updatedAt, shared: true }
+      : { state: null, revision: 0, updatedAt: null, shared: true };
   });
 
   app.put('/', { preHandler: app.authorize(['ADMIN', 'MANAGER', 'OPERATOR']) }, async (request, reply) => {
@@ -36,7 +38,8 @@ export async function appStateRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: 'INVALID_APP_STATE', details: parsed.error.flatten() });
     }
 
-    const current = await prisma.appState.findUnique({ where: { userId: request.user.sub } });
+    const ownerId = await resolveSharedStateOwnerId(request.user.sub);
+    const current = await prisma.appState.findUnique({ where: { userId: ownerId } });
     if (current && parsed.data.expectedRevision !== undefined && current.revision !== parsed.data.expectedRevision) {
       return reply.status(409).send({
         error: 'STATE_CONFLICT',
@@ -47,11 +50,11 @@ export async function appStateRoutes(app: FastifyInstance) {
 
     const jsonState = JSON.parse(JSON.stringify(parsed.data.state)) as Prisma.InputJsonValue;
     const saved = await prisma.appState.upsert({
-      where: { userId: request.user.sub },
-      create: { userId: request.user.sub, state: jsonState, revision: 1 },
+      where: { userId: ownerId },
+      create: { userId: ownerId, state: jsonState, revision: 1 },
       update: { state: jsonState, revision: { increment: 1 } }
     });
 
-    return { revision: saved.revision, updatedAt: saved.updatedAt };
+    return { revision: saved.revision, updatedAt: saved.updatedAt, shared: true };
   });
 }
