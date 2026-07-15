@@ -765,34 +765,36 @@
             MODALIDADE
             <select id="modalityInput" required></select>
           </label>
-          <label class="full">
+          <label class="full autocomplete-label">
             DESCRIÇÃO
-            <input id="descriptionInput" type="text" list="descriptionOptions" maxlength="80" autocomplete="off" required />
-            <datalist id="descriptionOptions"></datalist>
+            <div class="autocomplete-field">
+              <input id="descriptionInput" type="text" maxlength="80" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="descriptionSuggestions" required />
+              <div class="autocomplete-menu hidden" id="descriptionSuggestions" role="listbox" aria-label="Sugestões de descrições"></div>
+            </div>
           </label>
           <div class="installment-fields full hidden" id="installmentFields">
             <label>VALOR TOTAL DA COMPRA<input id="purchaseTotalInput" type="number" min="0.01" step="0.01" /></label>
             <label>TOTAL DE PARCELAS<input id="installmentCountInput" type="number" min="1" max="120" step="1" value="1" /></label>
             <small id="installmentPreview">Informe o valor total e a quantidade de parcelas.</small>
           </div>
-          <label>
+          <label id="incomeAmountField" data-transaction-scope="income">
             RECEITA($)
             <input id="incomeAmountInput" type="number" min="0" step="0.01" />
           </label>
-          <label>
+          <label id="expenseAmountField" data-transaction-scope="expense">
             DESPESA (R$)
             <input id="expenseAmountInput" type="number" min="0" step="0.01" />
           </label>
-          <label>
+          <label id="expenseClassField" data-transaction-scope="expense">
             CLASSIFICAÇÃO DA DESPESA
             <select id="expenseClassInput"></select>
           </label>
-          <label>
+          <label id="groupField" data-transaction-scope="expense">
             GRUPO
             <select id="groupInput"></select>
           </label>
-          <label>
-            FORMA DE PAGAMENTO
+          <label id="paymentMethodField">
+            <span id="paymentMethodLabel">FORMA DE PAGAMENTO</span>
             <select id="paymentMethodInput" required></select>
           </label>
           <label>

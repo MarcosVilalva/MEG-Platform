@@ -103,6 +103,8 @@ let analyticsFilters = {
   payments: [],
 };
 const transactionColumnFilters = {};
+let descriptionSuggestionItems = [];
+let activeDescriptionSuggestion = -1;
 
 const els = {
   sidebar: document.querySelector("#primarySidebar"),
@@ -324,12 +326,17 @@ const els = {
   weekdayInput: document.querySelector("#weekdayInput"),
   transactionType: document.querySelector("#transactionType"),
   descriptionInput: document.querySelector("#descriptionInput"),
-  descriptionOptions: document.querySelector("#descriptionOptions"),
+  descriptionSuggestions: document.querySelector("#descriptionSuggestions"),
   incomeAmountInput: document.querySelector("#incomeAmountInput"),
   expenseAmountInput: document.querySelector("#expenseAmountInput"),
+  incomeAmountField: document.querySelector("#incomeAmountField"),
+  expenseAmountField: document.querySelector("#expenseAmountField"),
   expenseClassInput: document.querySelector("#expenseClassInput"),
+  expenseClassField: document.querySelector("#expenseClassField"),
   groupInput: document.querySelector("#groupInput"),
+  groupField: document.querySelector("#groupField"),
   paymentMethodInput: document.querySelector("#paymentMethodInput"),
+  paymentMethodLabel: document.querySelector("#paymentMethodLabel"),
   modalityInput: document.querySelector("#modalityInput"),
   installmentFields: document.querySelector("#installmentFields"),
   purchaseTotalInput: document.querySelector("#purchaseTotalInput"),
@@ -2289,8 +2296,119 @@ function renderDatalists() {
   if (modalities.includes(currentModality)) els.modalityInput.value = currentModality;
   refreshPaymentMethodOptions(currentPayment);
   els.catalogModalityOptions.innerHTML = modalities.map((item) => `<option value="${escapeHtml(item)}"></option>`).join("");
-  const descriptions = [...new Set(state.transactions.map((item) => String(item.description || "").replace(/\s+\d+\/\d+$/u, "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  els.descriptionOptions.innerHTML = descriptions.map((item) => `<option value="${escapeHtml(item)}"></option>`).join("");
+  if (els.dialog?.open && document.activeElement === els.descriptionInput) renderDescriptionSuggestions();
+}
+
+function descriptionHistory() {
+  const selectedType = els.transactionType.value;
+  const history = new Map();
+  state.transactions.forEach((item, index) => {
+    if (item.type !== selectedType) return;
+    const description = String(item.description || "").replace(/\s+\d+\/\d+$/u, "").trim();
+    if (!description) return;
+    const key = normalizeText(description);
+    const current = history.get(key) || { description, count: 0, lastIndex: -1 };
+    current.count += 1;
+    current.lastIndex = index;
+    history.set(key, current);
+  });
+  return [...history.values()];
+}
+
+function matchingDescriptions(query = els.descriptionInput.value) {
+  const normalizedQuery = normalizeText(query.trim());
+  return descriptionHistory()
+    .map((item) => {
+      const normalized = normalizeText(item.description);
+      const words = normalized.split(/\s+/u);
+      let score = 0;
+      if (!normalizedQuery) score = item.count * 10 + item.lastIndex / 10000;
+      else if (normalized === normalizedQuery) score = 10000;
+      else if (normalized.startsWith(normalizedQuery)) score = 7000;
+      else if (words.some((word) => word.startsWith(normalizedQuery))) score = 5000;
+      else if (normalized.includes(normalizedQuery)) score = 3000;
+      return { ...item, score: score + item.count * 10 + item.lastIndex / 10000 };
+    })
+    .filter((item) => !normalizedQuery || item.score >= 3000)
+    .sort((a, b) => b.score - a.score || a.description.localeCompare(b.description, "pt-BR"))
+    .slice(0, 40);
+}
+
+function closeDescriptionSuggestions() {
+  descriptionSuggestionItems = [];
+  activeDescriptionSuggestion = -1;
+  els.descriptionSuggestions.classList.add("hidden");
+  els.descriptionSuggestions.innerHTML = "";
+  els.descriptionInput.setAttribute("aria-expanded", "false");
+  els.descriptionInput.removeAttribute("aria-activedescendant");
+}
+
+function selectDescriptionSuggestion(index) {
+  const suggestion = descriptionSuggestionItems[index];
+  if (!suggestion) return;
+  els.descriptionInput.value = suggestion.description;
+  closeDescriptionSuggestions();
+  els.descriptionInput.focus();
+}
+
+function setActiveDescriptionSuggestion(index) {
+  if (!descriptionSuggestionItems.length) return;
+  activeDescriptionSuggestion = (index + descriptionSuggestionItems.length) % descriptionSuggestionItems.length;
+  const options = [...els.descriptionSuggestions.querySelectorAll(".autocomplete-option")];
+  options.forEach((option, optionIndex) => {
+    const active = optionIndex === activeDescriptionSuggestion;
+    option.classList.toggle("active", active);
+    option.setAttribute("aria-selected", String(active));
+  });
+  const activeOption = options[activeDescriptionSuggestion];
+  if (activeOption) {
+    els.descriptionInput.setAttribute("aria-activedescendant", activeOption.id);
+    activeOption.scrollIntoView({ block: "nearest" });
+  }
+}
+
+function renderDescriptionSuggestions() {
+  descriptionSuggestionItems = matchingDescriptions();
+  activeDescriptionSuggestion = -1;
+  els.descriptionSuggestions.innerHTML = "";
+  if (!descriptionSuggestionItems.length) {
+    closeDescriptionSuggestions();
+    return;
+  }
+  descriptionSuggestionItems.forEach((item, index) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.id = `description-suggestion-${index}`;
+    option.className = "autocomplete-option";
+    option.setAttribute("role", "option");
+    option.setAttribute("aria-selected", "false");
+    const label = document.createElement("span");
+    label.textContent = item.description;
+    const useCount = document.createElement("small");
+    useCount.textContent = item.count > 1 ? `${item.count} usos` : "Usado anteriormente";
+    option.append(label, useCount);
+    option.addEventListener("mousedown", (event) => event.preventDefault());
+    option.addEventListener("click", () => selectDescriptionSuggestion(index));
+    els.descriptionSuggestions.append(option);
+  });
+  els.descriptionSuggestions.classList.remove("hidden");
+  els.descriptionInput.setAttribute("aria-expanded", "true");
+}
+
+function handleDescriptionKeydown(event) {
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    if (els.descriptionSuggestions.classList.contains("hidden")) renderDescriptionSuggestions();
+    setActiveDescriptionSuggestion(activeDescriptionSuggestion + 1);
+  } else if (event.key === "ArrowUp") {
+    event.preventDefault();
+    setActiveDescriptionSuggestion(activeDescriptionSuggestion - 1);
+  } else if (event.key === "Enter" && activeDescriptionSuggestion >= 0) {
+    event.preventDefault();
+    selectDescriptionSuggestion(activeDescriptionSuggestion);
+  } else if (event.key === "Escape") {
+    closeDescriptionSuggestions();
+  }
 }
 
 function renderCatalogs() {
@@ -2380,10 +2498,21 @@ function setMobileMenu(open) {
 
 function syncAmountFields() {
   const isIncome = els.transactionType.value === "income";
+  els.incomeAmountField.classList.toggle("hidden", !isIncome);
+  els.expenseAmountField.classList.toggle("hidden", isIncome);
+  els.expenseClassField.classList.toggle("hidden", isIncome);
+  els.groupField.classList.toggle("hidden", isIncome);
   els.incomeAmountInput.disabled = !isIncome;
   els.expenseAmountInput.disabled = isIncome;
   els.expenseClassInput.disabled = isIncome;
   els.groupInput.disabled = isIncome;
+  els.incomeAmountInput.required = isIncome;
+  els.expenseAmountInput.required = !isIncome;
+  els.expenseClassInput.required = !isIncome;
+  els.groupInput.required = !isIncome;
+  els.paymentMethodLabel.textContent = isIncome ? "FORMA DE RECEBIMENTO" : "FORMA DE PAGAMENTO";
+  const paidOption = els.statusInput.querySelector('option[value="paid"]');
+  if (paidOption) paidOption.textContent = isIncome ? "RECEBIDO" : "PAGO";
   if (isIncome) {
     els.expenseAmountInput.value = "";
     els.expenseClassInput.value = "";
@@ -2392,6 +2521,7 @@ function syncAmountFields() {
     els.incomeAmountInput.value = "";
   }
   syncInstallmentFields();
+  if (document.activeElement === els.descriptionInput) renderDescriptionSuggestions();
 }
 
 function isInstallmentModality() {
@@ -2475,6 +2605,7 @@ function openTransactionDialog(item = null) {
   syncInstallmentFields();
   els.dialog.showModal();
   els.descriptionInput.focus();
+  renderDescriptionSuggestions();
 }
 
 function saveTransaction(event) {
@@ -3074,14 +3205,25 @@ els.dateInput.addEventListener("change", () => {
   els.weekdayInput.value = weekdayShort(els.dateInput.value);
 });
 els.transactionType.addEventListener("change", syncAmountFields);
+els.descriptionInput.addEventListener("input", renderDescriptionSuggestions);
+els.descriptionInput.addEventListener("focus", renderDescriptionSuggestions);
+els.descriptionInput.addEventListener("keydown", handleDescriptionKeydown);
+els.descriptionInput.addEventListener("blur", () => window.setTimeout(closeDescriptionSuggestions, 120));
 els.paymentMethodInput.addEventListener("change", syncPaymentModality);
 els.modalityInput.addEventListener("change", syncModalityPaymentOptions);
 els.purchaseTotalInput.addEventListener("input", syncInstallmentFields);
 els.installmentCountInput.addEventListener("input", syncInstallmentFields);
 els.form.addEventListener("submit", saveTransaction);
 els.deleteTransactionBtn.addEventListener("click", deleteTransaction);
-els.closeDialogBtn.addEventListener("click", () => els.dialog.close());
-els.cancelDialogBtn.addEventListener("click", () => els.dialog.close());
+els.closeDialogBtn.addEventListener("click", () => {
+  closeDescriptionSuggestions();
+  els.dialog.close();
+});
+els.cancelDialogBtn.addEventListener("click", () => {
+  closeDescriptionSuggestions();
+  els.dialog.close();
+});
+els.dialog.addEventListener("close", closeDescriptionSuggestions);
 els.paymentConfirmForm.addEventListener("submit", confirmDashboardPayment);
 els.closePaymentConfirmBtn.addEventListener("click", () => els.paymentConfirmDialog.close());
 els.cancelPaymentConfirmBtn.addEventListener("click", () => els.paymentConfirmDialog.close());

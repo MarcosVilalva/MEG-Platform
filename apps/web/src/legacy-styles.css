@@ -1975,6 +1975,73 @@ tbody tr:hover {
   grid-column: 1 / -1;
 }
 
+.autocomplete-label {
+  position: relative;
+  z-index: 6;
+}
+
+.autocomplete-field {
+  position: relative;
+}
+
+.autocomplete-field > input {
+  width: 100%;
+}
+
+.autocomplete-menu {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  left: 0;
+  z-index: 40;
+  max-height: 230px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 7px;
+  border: 1px solid rgba(14, 102, 88, 0.22);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.99);
+  box-shadow: 0 18px 45px rgba(10, 48, 41, 0.2);
+  scrollbar-color: rgba(14, 119, 100, 0.55) transparent;
+  scrollbar-width: thin;
+}
+
+.autocomplete-menu::-webkit-scrollbar { width: 8px; }
+.autocomplete-menu::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(14, 119, 100, 0.45); }
+
+.autocomplete-option {
+  display: grid;
+  width: 100%;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.autocomplete-option span {
+  overflow: hidden;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.autocomplete-option small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.autocomplete-option:hover,
+.autocomplete-option.active {
+  background: linear-gradient(90deg, rgba(31, 180, 151, 0.14), rgba(31, 180, 151, 0.05));
+  color: var(--primary-dark);
+}
+
 .modal-actions {
   margin-top: 20px;
 }
