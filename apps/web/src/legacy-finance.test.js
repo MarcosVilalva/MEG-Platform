@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, payableGroupLabel, payableGroupTotal } from './legacy-finance.js';
+import { availableMonetaryBalance, calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, payableGroupLabel, payableGroupTotal } from './legacy-finance.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from './legacy-installments.js';
 
@@ -26,6 +26,15 @@ assert.equal(payableGroups[0].items.length, 2);
 assert.equal(payableGroupLabel(payableGroups[0]), 'CARTÃO AZUL');
 assert.equal(payableGroupTotal(payableGroups[0]), 150);
 assert.equal(payableGroupLabel(payableGroups[1]), 'CPFL');
+
+const paymentBalance = [
+  { id: 'salary', date: '2026-07-01', type: 'income', incomeAmount: 1000, status: 'paid' },
+  { id: 'paid', date: '2026-07-02', type: 'expense', expenseAmount: 650, status: 'paid' },
+  { id: 'pending', date: '2026-07-03', type: 'expense', expenseAmount: 500, status: 'pending' },
+  { id: 'ticket', date: '2026-07-04', type: 'income', incomeAmount: 200, description: 'VEROCARD', status: 'paid' },
+];
+assert.equal(availableMonetaryBalance(paymentBalance, '2026-07-15'), 350);
+assert.equal(availableMonetaryBalance(paymentBalance, '2026-07-15', 'paid'), 1000);
 
 const workbookReconciliation = [
   { date: '2026-06-30', type: 'income', incomeAmount: 179986.02 },

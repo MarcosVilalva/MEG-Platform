@@ -1,6 +1,7 @@
 import { readSheet } from 'read-excel-file/browser';
 import { bootstrapCloud } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
+import { syncLocalDueNotifications } from './native-notifications.js';
 
 const validationMode = new URLSearchParams(location.search).get('validacao') === '1';
 const localStateKey = 'meg-financas-state-v4-paid-fixes';
@@ -292,10 +293,13 @@ function wireLegacyApp() {
 async function start() {
   if (validationMode) bootstrapValidationMode();
   else await bootstrapCloud();
+  window.MEG_NATIVE_NOTIFICATIONS = { sync: syncLocalDueNotifications };
   await import('./legacy-app.js');
   wireLegacyApp();
+  syncLocalDueNotifications(window.MEG_APP.getState());
   window.MEG_CLOUD?.whenFresh?.then((result) => {
     if (result?.changed && result.state) window.MEG_APP?.replaceState(result.state);
+    if (result?.state) syncLocalDueNotifications(result.state);
   }).catch(() => undefined);
   if (validationMode) {
     document.body.insertAdjacentHTML('afterbegin', '<div class="validation-banner">AMBIENTE LOCAL DE VALIDAÇÃO — nenhuma alteração será enviada para a nuvem</div>');

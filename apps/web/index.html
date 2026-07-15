@@ -39,6 +39,10 @@
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19h16v2H2V3h2v16Zm3-2H5v-6h2v6Zm4 0H9V7h2v10Zm4 0h-2v-4h2v4Zm4 0h-2V5h2v12Z"/></svg>
             Analises
           </button>
+          <button class="nav-item" data-view="income-analysis" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19h16v2H2V3h2v16Zm3-2H5v-4h2v4Zm4 0H9V9h2v8Zm4 0h-2V6h2v11Zm4 0h-2V4h2v13ZM6 9l4-4 3 3 5-5 1.4 1.4L13 11l-3-3-2.6 2.4L6 9Z"/></svg>
+            Receitas
+          </button>
           <button class="nav-item" data-view="cashflow" type="button">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19h16v2H2V4h2v15Zm2-2V9h4v8H6Zm6 0V5h4v12h-4Zm6 0v-6h4v6h-4Z"/></svg>
             Fluxo
@@ -456,6 +460,36 @@
           </div>
         </section>
 
+        <section class="view" id="income-analysis" aria-labelledby="incomeAnalysisTitle">
+          <div class="section-heading">
+            <div><small class="decision-eyebrow">INTELIGÊNCIA DE RECEITAS</small><h2 id="incomeAnalysisTitle">Análise das receitas</h2><p class="muted" id="incomeAnalysisPeriodLabel">Período selecionado</p></div>
+          </div>
+          <section class="income-analysis-hero" id="incomeAnalysisHero">
+            <div><small>DIAGNÓSTICO DE ENTRADAS</small><h3 id="incomeAnalysisHealthTitle">Analisando suas fontes de renda</h3><p id="incomeAnalysisHealthMessage">Comparando entradas monetárias, ticket alimentação e recorrência.</p></div>
+            <div class="income-hero-total"><span>Receita monetária</span><strong id="incomeAnalysisTotalMetric">R$ 0,00</strong><small id="incomeAnalysisTotalNote">0 lançamento(s)</small></div>
+          </section>
+          <div class="income-kpi-grid">
+            <article><span>💵 Média mensal</span><strong id="incomeAverageMetric">R$ 0,00</strong><small id="incomeAverageNote">Baseada no período</small></article>
+            <article><span>🍽️ Ticket alimentação</span><strong id="incomeTicketMetric">R$ 0,00</strong><small id="incomeTicketNote">Créditos separados do dinheiro</small></article>
+            <article><span>🏆 Maior fonte</span><strong id="incomeTopSourceMetric">—</strong><small id="incomeTopSourceNote">Sem receitas no período</small></article>
+            <article><span>🔁 Receitas recorrentes</span><strong id="incomeRecurringMetric">0</strong><small id="incomeRecurringNote">Fontes presentes em mais de um mês</small></article>
+          </div>
+          <div class="income-analysis-grid">
+            <section class="panel income-evolution-panel">
+              <div class="panel-title"><div><small class="decision-eyebrow">EVOLUÇÃO MENSAL</small><h3>Entradas ao longo do tempo</h3></div><span>Receitas monetárias</span></div>
+              <div class="income-monthly-chart" id="incomeMonthlyChart"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-title"><div><small class="decision-eyebrow">FONTES DE RENDA</small><h3>De onde vem o dinheiro</h3></div><span>Ranking do período</span></div>
+              <div class="income-source-list" id="incomeSourceList"></div>
+            </section>
+          </div>
+          <section class="panel income-recurring-panel">
+            <div class="panel-title"><div><small class="decision-eyebrow">PREVISIBILIDADE</small><h3>Receitas que se repetem</h3></div><span>Ajuda a planejar os próximos meses</span></div>
+            <div class="income-recurring-list" id="incomeRecurringList"></div>
+          </section>
+        </section>
+
         <section class="view" id="transactions" aria-labelledby="transactionsTitle">
           <div class="section-heading">
             <h2 id="transactionsTitle">Lancamentos</h2>
@@ -868,6 +902,35 @@
       <div class="card-launch-list" id="cardLaunchList"></div>
       <div class="modal-actions">
         <button class="button ghost" id="cancelCardLaunchDialogBtn" type="button">Fechar</button>
+      </div>
+    </dialog>
+
+    <dialog class="modal opening-alert-dialog" id="openingAlertDialog">
+      <div class="modal-header">
+        <div><small class="decision-eyebrow">CENTRAL DE ALERTAS</small><h2 id="openingAlertTitle">Sua agenda financeira de hoje</h2></div>
+        <button class="icon-button" id="closeOpeningAlertBtn" type="button" aria-label="Fechar">×</button>
+      </div>
+      <div class="opening-alert-body" id="openingAlertBody"></div>
+      <div class="modal-actions">
+        <button class="button ghost" id="dismissOpeningAlertBtn" type="button">Agora não</button>
+        <button class="button primary" id="viewOpeningAlertsBtn" type="button">Ver contas pendentes</button>
+      </div>
+    </dialog>
+
+    <dialog class="modal insufficient-balance-dialog" id="insufficientBalanceDialog">
+      <div class="critical-balance-icon" aria-hidden="true">!</div>
+      <small class="decision-eyebrow">PAGAMENTO BLOQUEADO</small>
+      <h2>Saldo insuficiente para pagar esta conta</h2>
+      <p>Para proteger seu caixa, o MEG não permite confirmar um pagamento maior que o saldo monetário disponível.</p>
+      <div class="critical-balance-equation">
+        <article><span>Pagamento solicitado</span><strong id="blockedPaymentMetric">R$ 0,00</strong></article>
+        <article><span>Saldo disponível</span><strong id="blockedAvailableMetric">R$ 0,00</strong></article>
+        <article class="critical"><span>Receita necessária</span><strong id="blockedMissingMetric">R$ 0,00</strong></article>
+      </div>
+      <div class="critical-balance-message" id="blockedBalanceMessage">Insira a receita faltante antes de confirmar o pagamento.</div>
+      <div class="modal-actions">
+        <button class="button ghost" id="closeInsufficientBalanceBtn" type="button">Voltar</button>
+        <button class="button primary" id="addMissingIncomeBtn" type="button">+ Inserir receita</button>
       </div>
     </dialog>
 

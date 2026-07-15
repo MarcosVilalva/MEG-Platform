@@ -116,3 +116,8 @@ export function calculateCurrentMonthHealth(transactions, monthStart, today, mon
     nextDue,
   };
 }
+
+export function availableMonetaryBalance(transactions, endDate, excludeId = '') {
+  const eligible = transactions.filter((item) => item.id !== excludeId);
+  return calculateFinancialSummary(eligible, '', endDate).closingBalance;
+}

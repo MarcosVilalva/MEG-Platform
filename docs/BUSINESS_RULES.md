@@ -129,6 +129,20 @@ Arquivamento não remove histórico. Estornos devem ser registrados como eventos
 - Números de WhatsApp pertencem ao usuário administrador e não são compartilhados entre contas.
 - O alerta informa data da consulta, total em aberto, contas vencidas, contas dos próximos três dias, valor e forma de pagamento.
 - O agendamento automático envia para todos os destinatários ativos e não repete o mesmo alerta no mesmo canal e dia.
+- Ao abrir o sistema web, o usuário recebe uma central de alertas com contas vencidas, vencimentos de hoje, compromissos dos próximos três dias e eventual falta de caixa para fechar o mês.
+- No aplicativo Android, as contas pendentes geram notificações locais três dias antes e às 06:00 do vencimento. A agenda é refeita sempre que os dados são carregados ou alterados, removendo contas já pagas.
+
+## Proteção do saldo
+
+- Uma despesa monetária não pode ser marcada como paga quando seu valor for superior ao saldo monetário disponível na data atual.
+- O saldo disponível para pagamento considera todas as receitas monetárias recebidas até hoje menos todas as despesas monetárias já pagas até hoje; Verocard permanece separado.
+- Quando o saldo for insuficiente, o sistema bloqueia a baixa, informa pagamento solicitado, saldo disponível e receita faltante, e oferece acesso direto a um novo lançamento de receita.
+
+## Análise de receitas
+
+- A aba Receitas respeita o período global e separa receitas monetárias dos créditos Verocard.
+- A análise apresenta total monetário, média mensal, maior fonte, recorrência, evolução mensal e concentração por fonte.
+- Queda superior a 10% entre os dois meses mais recentes do período deve ser destacada como atenção; ausência de receita monetária é uma situação crítica.
 
 ## Automação inteligente de notificações
 

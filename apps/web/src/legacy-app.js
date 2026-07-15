@@ -1,4 +1,4 @@
-import { calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal } from "./legacy-finance.js";
+import { availableMonetaryBalance, calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal } from "./legacy-finance.js";
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
 
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
@@ -233,6 +233,23 @@ const els = {
   pendingBillsList: document.querySelector("#pendingBillsList"),
   verocardLedger: document.querySelector("#verocardLedger"),
   analyticsPeriodLabel: document.querySelector("#analyticsPeriodLabel"),
+  incomeAnalysisPeriodLabel: document.querySelector("#incomeAnalysisPeriodLabel"),
+  incomeAnalysisHero: document.querySelector("#incomeAnalysisHero"),
+  incomeAnalysisHealthTitle: document.querySelector("#incomeAnalysisHealthTitle"),
+  incomeAnalysisHealthMessage: document.querySelector("#incomeAnalysisHealthMessage"),
+  incomeAnalysisTotalMetric: document.querySelector("#incomeAnalysisTotalMetric"),
+  incomeAnalysisTotalNote: document.querySelector("#incomeAnalysisTotalNote"),
+  incomeAverageMetric: document.querySelector("#incomeAverageMetric"),
+  incomeAverageNote: document.querySelector("#incomeAverageNote"),
+  incomeTicketMetric: document.querySelector("#incomeTicketMetric"),
+  incomeTicketNote: document.querySelector("#incomeTicketNote"),
+  incomeTopSourceMetric: document.querySelector("#incomeTopSourceMetric"),
+  incomeTopSourceNote: document.querySelector("#incomeTopSourceNote"),
+  incomeRecurringMetric: document.querySelector("#incomeRecurringMetric"),
+  incomeRecurringNote: document.querySelector("#incomeRecurringNote"),
+  incomeMonthlyChart: document.querySelector("#incomeMonthlyChart"),
+  incomeSourceList: document.querySelector("#incomeSourceList"),
+  incomeRecurringList: document.querySelector("#incomeRecurringList"),
   analyticsGroupFilter: document.querySelector("#analyticsGroupFilter"),
   analyticsPaymentFilter: document.querySelector("#analyticsPaymentFilter"),
   avgExpenseMetric: document.querySelector("#avgExpenseMetric"),
@@ -353,6 +370,19 @@ const els = {
   closeDialogBtn: document.querySelector("#closeDialogBtn"),
   cancelDialogBtn: document.querySelector("#cancelDialogBtn"),
   appToast: document.querySelector("#appToast"),
+  openingAlertDialog: document.querySelector("#openingAlertDialog"),
+  openingAlertTitle: document.querySelector("#openingAlertTitle"),
+  openingAlertBody: document.querySelector("#openingAlertBody"),
+  closeOpeningAlertBtn: document.querySelector("#closeOpeningAlertBtn"),
+  dismissOpeningAlertBtn: document.querySelector("#dismissOpeningAlertBtn"),
+  viewOpeningAlertsBtn: document.querySelector("#viewOpeningAlertsBtn"),
+  insufficientBalanceDialog: document.querySelector("#insufficientBalanceDialog"),
+  blockedPaymentMetric: document.querySelector("#blockedPaymentMetric"),
+  blockedAvailableMetric: document.querySelector("#blockedAvailableMetric"),
+  blockedMissingMetric: document.querySelector("#blockedMissingMetric"),
+  blockedBalanceMessage: document.querySelector("#blockedBalanceMessage"),
+  closeInsufficientBalanceBtn: document.querySelector("#closeInsufficientBalanceBtn"),
+  addMissingIncomeBtn: document.querySelector("#addMissingIncomeBtn"),
   groupCatalogForm: document.querySelector("#groupCatalogForm"),
   newGroupInput: document.querySelector("#newGroupInput"),
   groupCatalogList: document.querySelector("#groupCatalogList"),
@@ -396,6 +426,7 @@ function loadState() {
 function saveState({ cloud = true } = {}) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   if (cloud) window.MEG_CLOUD?.saveState(state);
+  window.MEG_NATIVE_NOTIFICATIONS?.sync?.(state);
 }
 
 function replaceImportedState(transactions, options = {}) {
@@ -568,20 +599,8 @@ function accountBalanceUntil(dateValue) {
   return totals.income - totals.expense;
 }
 
-function paymentImpactSinceBase(excludeId = "") {
-  return state.transactions.reduce((sum, item) => {
-    if (item.id === excludeId || item.type !== "expense" || item.status !== "paid" || isVerocardTransaction(item)) return sum;
-    const original = originalTransactionsById.get(item.id);
-    const becamePaid = original ? original.status !== "paid" : true;
-    return becamePaid ? sum + Number(item.expenseAmount || item.amount || 0) : sum;
-  }, 0);
-}
-
 function availableBankBalanceForPayment(excludeId = "") {
-  const paidTotals = totalsFor(paidTransactionsUntilToday());
-  const calculatedBalance = paidTotals.income - paidTotals.expense;
-  const baseBalance = Number.isFinite(window.MEG_REAL_SUMMARY?.bankBalance) ? window.MEG_REAL_SUMMARY.bankBalance : calculatedBalance;
-  return baseBalance - paymentImpactSinceBase(excludeId);
+  return availableMonetaryBalance(state.transactions, todayIso, excludeId);
 }
 
 function canPayWithBankBalance(item, options = {}) {
@@ -596,7 +615,14 @@ function canPayWithBankBalance(item, options = {}) {
 }
 
 function alertInsufficientBankBalance({ amount, available }) {
-  showToast("Saldo bancario insuficiente", `Pagamento: ${money.format(amount)} · Disponivel: ${money.format(Math.max(available, 0))}`, "danger");
+  const safeAvailable = Math.max(available, 0);
+  const missing = Math.max(amount - safeAvailable, 0);
+  els.blockedPaymentMetric.textContent = money.format(amount);
+  els.blockedAvailableMetric.textContent = money.format(safeAvailable);
+  els.blockedMissingMetric.textContent = money.format(missing);
+  els.blockedBalanceMessage.textContent = `Insira ao menos ${money.format(missing)} em receita recebida antes de confirmar este pagamento.`;
+  showToast("Pagamento bloqueado", `Faltam ${money.format(missing)} no saldo monetário.`, "danger");
+  if (!els.insufficientBalanceDialog.open) els.insufficientBalanceDialog.showModal();
 }
 
 let toastTimer;
@@ -880,6 +906,7 @@ function render() {
     renderAnalyticsFilters();
     renderAnalytics();
   }
+  if (selectedView === "income-analysis") renderIncomeAnalysis();
   if (selectedView === "transactions") renderTransactions();
   if (selectedView === "budgets") renderBudgets();
   if (selectedView === "pending") renderPending();
@@ -932,6 +959,112 @@ function renderDashboard() {
 function modalityForPayment(method) {
   const catalogItem = (state.catalogs?.paymentMethods || []).find((item) => normalizeText(item.description) === normalizeText(method));
   return catalogItem?.modality || PAYMENT_MODALITIES[method] || "";
+}
+
+function renderIncomeAnalysis() {
+  const incomeItems = selectedTransactions().filter((item) => item.type === "income");
+  const monetaryItems = incomeItems.filter((item) => !isVerocardTransaction(item));
+  const ticketItems = incomeItems.filter(isVerocardTransaction);
+  const total = monetaryItems.reduce((sum, item) => sum + Number(item.incomeAmount || item.amount || 0), 0);
+  const ticketTotal = ticketItems.reduce((sum, item) => sum + Number(item.incomeAmount || item.amount || 0), 0);
+  const months = [...new Set(monetaryItems.map((item) => monthOf(item.date)).filter(Boolean))].sort();
+  const average = months.length ? total / months.length : 0;
+  const sourceMap = new Map();
+  monetaryItems.forEach((item) => {
+    const source = String(item.description || "Receita sem descrição").trim().toUpperCase();
+    const current = sourceMap.get(source) || { source, value: 0, count: 0, months: new Set() };
+    current.value += Number(item.incomeAmount || item.amount || 0);
+    current.count += 1;
+    current.months.add(monthOf(item.date));
+    sourceMap.set(source, current);
+  });
+  const sources = [...sourceMap.values()].sort((a, b) => b.value - a.value);
+  const recurring = sources.filter((item) => item.months.size > 1);
+  const monthly = months.map((month) => ({
+    month,
+    value: monetaryItems.filter((item) => monthOf(item.date) === month).reduce((sum, item) => sum + Number(item.incomeAmount || item.amount || 0), 0),
+  }));
+  const previous = monthly.at(-2)?.value || 0;
+  const latest = monthly.at(-1)?.value || 0;
+  const variation = previous ? ((latest - previous) / previous) * 100 : latest ? 100 : 0;
+  const maxMonthly = Math.max(...monthly.map((item) => item.value), 1);
+  const maxSource = Math.max(...sources.map((item) => item.value), 1);
+
+  els.incomeAnalysisPeriodLabel.textContent = periodLabel();
+  els.incomeAnalysisTotalMetric.textContent = money.format(total);
+  els.incomeAnalysisTotalNote.textContent = `${monetaryItems.length} entrada(s) monetária(s)`;
+  els.incomeAverageMetric.textContent = money.format(average);
+  els.incomeAverageNote.textContent = months.length ? `Média em ${months.length} mês(es) com receita` : "Sem base para média";
+  els.incomeTicketMetric.textContent = money.format(ticketTotal);
+  els.incomeTicketNote.textContent = `${ticketItems.length} crédito(s) de alimentação`;
+  els.incomeTopSourceMetric.textContent = sources[0]?.source || "—";
+  els.incomeTopSourceNote.textContent = sources[0] ? `${money.format(sources[0].value)} em ${sources[0].count} lançamento(s)` : "Sem receitas no período";
+  els.incomeRecurringMetric.textContent = String(recurring.length);
+  els.incomeRecurringNote.textContent = recurring.length ? `${recurring.length} fonte(s) aumentam a previsibilidade` : "Nenhuma fonte repetida identificada";
+  els.incomeAnalysisHero.classList.toggle("risk", !total);
+  els.incomeAnalysisHero.classList.toggle("attention", total > 0 && variation < -10);
+  els.incomeAnalysisHero.classList.toggle("healthy", total > 0 && variation >= -10);
+  if (!total) {
+    els.incomeAnalysisHealthTitle.textContent = "🔴 Nenhuma receita monetária no período";
+    els.incomeAnalysisHealthMessage.textContent = "Registre as entradas recebidas para acompanhar estabilidade, recorrência e evolução da renda.";
+  } else if (variation < -10 && monthly.length > 1) {
+    els.incomeAnalysisHealthTitle.textContent = `🟡 Receita do último mês caiu ${Math.abs(variation).toFixed(1)}%`;
+    els.incomeAnalysisHealthMessage.textContent = `A entrada mais recente foi ${money.format(latest)}, abaixo dos ${money.format(previous)} do mês anterior. Preserve caixa e revise receitas previstas.`;
+  } else {
+    els.incomeAnalysisHealthTitle.textContent = `🟢 ${money.format(total)} em receitas monetárias`;
+    els.incomeAnalysisHealthMessage.textContent = recurring.length
+      ? `${recurring.length} fonte(s) recorrente(s) dão previsibilidade. A média mensal do período é ${money.format(average)}.`
+      : `A média mensal é ${money.format(average)}. Identifique receitas recorrentes para tornar o planejamento mais seguro.`;
+  }
+  els.incomeMonthlyChart.innerHTML = monthly.length
+    ? monthly.map((item) => `<article class="income-month-bar"><strong>${money.format(item.value)}</strong><i style="height:${Math.max((item.value / maxMonthly) * 100, 2)}%"></i><span>${formatMonthCode(item.month)}</span></article>`).join("")
+    : `<div class="empty">Nenhuma receita monetária no período selecionado.</div>`;
+  els.incomeSourceList.innerHTML = sources.length
+    ? sources.slice(0, 10).map((item, index) => `<article class="income-source-item"><span class="income-rank">${index + 1}</span><div><strong>${escapeHtml(item.source)}</strong><small>${item.count} lançamento(s) · ${item.months.size} mês(es)</small></div><b>${money.format(item.value)}</b><div class="income-source-track"><i style="width:${Math.max((item.value / maxSource) * 100, 3)}%"></i></div></article>`).join("")
+    : `<div class="empty">Cadastre receitas para descobrir suas principais fontes.</div>`;
+  els.incomeRecurringList.innerHTML = recurring.length
+    ? recurring.slice(0, 8).map((item) => `<article class="income-recurring-item"><span>🔁</span><div><strong>${escapeHtml(item.source)}</strong><small>Presente em ${item.months.size} meses · média ${money.format(item.value / item.months.size)}</small></div><b>${money.format(item.value)}</b></article>`).join("")
+    : `<div class="empty">Ainda não há receitas repetidas em meses diferentes.</div>`;
+}
+
+function openingAlertData() {
+  const horizon = new Date(`${todayIso}T12:00:00`);
+  horizon.setDate(horizon.getDate() + 3);
+  const horizonIso = horizon.toISOString().slice(0, 10);
+  const relevant = state.transactions.filter((item) => item.type === "expense" && item.status === "pending" && !isVerocardTransaction(item) && item.date <= horizonIso);
+  const overdue = relevant.filter((item) => item.date < todayIso);
+  const todayItems = relevant.filter((item) => item.date === todayIso);
+  const upcoming = relevant.filter((item) => item.date > todayIso);
+  const total = relevant.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const health = calculateCurrentMonthHealth(state.transactions, `${currentMonth}-01`, todayIso, lastDayOfMonth(currentMonth));
+  return { relevant, overdue, todayItems, upcoming, total, health };
+}
+
+function showOpeningFinancialAlert() {
+  if (!els.openingAlertDialog || sessionStorage.getItem(`meg-opening-alert-${todayIso}`)) return;
+  const data = openingAlertData();
+  if (!data.relevant.length && data.health.projectedClosing >= 0) return;
+  sessionStorage.setItem(`meg-opening-alert-${todayIso}`, "1");
+  const tone = data.overdue.length || data.health.projectedClosing < 0 ? "risk" : "attention";
+  els.openingAlertDialog.classList.remove("risk", "attention");
+  els.openingAlertDialog.classList.add(tone);
+  els.openingAlertTitle.textContent = data.overdue.length
+    ? `🚨 ${data.overdue.length} conta(s) vencida(s)`
+    : data.todayItems.length ? `⏰ ${data.todayItems.length} conta(s) vencem hoje` : "📅 Próximos vencimentos";
+  const grouped = groupPayableItems(data.relevant).slice(0, 5);
+  els.openingAlertBody.innerHTML = `
+    <div class="opening-alert-summary">
+      <article><span>Vencidas</span><strong>${data.overdue.length}</strong></article>
+      <article><span>Hoje</span><strong>${data.todayItems.length}</strong></article>
+      <article><span>Próximos 3 dias</span><strong>${data.upcoming.length}</strong></article>
+      <article><span>Total urgente</span><strong>${money.format(data.total)}</strong></article>
+    </div>
+    ${data.health.projectedClosing < 0 ? `<div class="opening-alert-critical">⚠️ Mesmo usando o saldo atual, faltam <strong>${money.format(Math.abs(data.health.projectedClosing))}</strong> para fechar ${formatMonthCode(currentMonth)}. Priorize inserir a receita faltante.</div>` : ""}
+    <div class="opening-alert-list">${grouped.length ? grouped.map((group) => {
+      const itemTone = group.date < todayIso ? "critical" : group.date === todayIso ? "warning" : "";
+      return `<article class="opening-alert-item ${itemTone}"><span aria-hidden="true">${group.date < todayIso ? "🚨" : group.date === todayIso ? "⏰" : "📅"}</span><span><strong>${escapeHtml(payableGroupLabel(group))}</strong><small>${formatDate(group.date)} · ${group.items.length > 1 ? `${group.items.length} lançamentos agrupados` : group.payment}</small></span><b>${money.format(payableGroupTotal(group))}</b></article>`;
+    }).join("") : `<div class="empty">Nenhuma conta vence nos próximos três dias.</div>`}</div>`;
+  els.openingAlertDialog.showModal();
 }
 
 function cardForPayment(method) {
@@ -3322,6 +3455,20 @@ els.closePaymentConfirmBtn.addEventListener("click", () => els.paymentConfirmDia
 els.cancelPaymentConfirmBtn.addEventListener("click", () => els.paymentConfirmDialog.close());
 els.closeCardLaunchDialogBtn.addEventListener("click", () => els.cardLaunchDialog.close());
 els.cancelCardLaunchDialogBtn.addEventListener("click", () => els.cardLaunchDialog.close());
+els.closeOpeningAlertBtn.addEventListener("click", () => els.openingAlertDialog.close());
+els.dismissOpeningAlertBtn.addEventListener("click", () => els.openingAlertDialog.close());
+els.viewOpeningAlertsBtn.addEventListener("click", () => {
+  els.openingAlertDialog.close();
+  setView("pending");
+});
+els.closeInsufficientBalanceBtn.addEventListener("click", () => els.insufficientBalanceDialog.close());
+els.addMissingIncomeBtn.addEventListener("click", () => {
+  els.insufficientBalanceDialog.close();
+  openTransactionDialog();
+  els.transactionType.value = "income";
+  syncAmountFields();
+  els.descriptionInput.focus();
+});
 els.applySuggestedBudgetsBtn.addEventListener("click", applySuggestedBudgets);
 els.budgetEditorGrid.addEventListener("click", handleBudgetClick);
 els.csvImport.addEventListener("change", handleCsvImport);
@@ -3345,6 +3492,7 @@ window.addEventListener("resize", () => {
 
 setView(selectedView);
 render();
+window.setTimeout(showOpeningFinancialAlert, 450);
 
 window.MEG_APP = {
   replaceImportedState,

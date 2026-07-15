@@ -2942,3 +2942,194 @@ dialog.modal {
     display: flex;
   }
 }
+
+/* Income intelligence and proactive financial alerts */
+.income-analysis-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(250px, .65fr);
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: clamp(24px, 4vw, 42px);
+  overflow: hidden;
+  color: #fff;
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 87% 18%, rgba(72, 224, 190, .28), transparent 30%),
+    linear-gradient(125deg, #073f38, #087664 62%, #0c9a81);
+  box-shadow: 0 22px 52px rgba(4, 83, 71, .18);
+}
+
+.income-analysis-hero h3 {
+  max-width: 720px;
+  margin: 8px 0;
+  font-size: clamp(1.75rem, 3.4vw, 3rem);
+  line-height: 1.03;
+}
+
+.income-analysis-hero p { max-width: 680px; margin: 0; color: rgba(255, 255, 255, .82); }
+.income-analysis-hero small { color: #8ff4de; font-weight: 900; letter-spacing: .1em; }
+
+.income-hero-total {
+  display: grid;
+  gap: 6px;
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .12);
+  backdrop-filter: blur(12px);
+}
+
+.income-hero-total span { color: rgba(255, 255, 255, .75); font-weight: 800; }
+.income-hero-total strong { font-size: clamp(1.75rem, 4vw, 2.8rem); }
+.income-hero-total small { color: rgba(255, 255, 255, .72); letter-spacing: 0; }
+
+.income-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.income-kpi-grid article {
+  display: grid;
+  gap: 7px;
+  min-height: 142px;
+  padding: 20px;
+  border: 1px solid #d8e8e4;
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .98), rgba(232, 247, 243, .82));
+  box-shadow: 0 12px 30px rgba(18, 72, 64, .07);
+}
+
+.income-kpi-grid span { color: #55706b; font-size: .82rem; font-weight: 900; text-transform: uppercase; }
+.income-kpi-grid strong { align-self: end; font-size: clamp(1.3rem, 2.1vw, 2rem); overflow-wrap: anywhere; }
+.income-kpi-grid small { color: #6f827e; }
+
+.income-analysis-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, .75fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.income-monthly-chart {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  min-height: 290px;
+  padding: 24px 8px 4px;
+  overflow-x: auto;
+}
+
+.income-month-bar {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 8px;
+  align-items: end;
+  flex: 1 0 68px;
+  height: 245px;
+  text-align: center;
+}
+
+.income-month-bar strong { font-size: .72rem; color: #325e56; white-space: nowrap; }
+.income-month-bar i {
+  display: block;
+  width: min(48px, 78%);
+  min-height: 7px;
+  margin-inline: auto;
+  border-radius: 14px 14px 5px 5px;
+  background: linear-gradient(180deg, #31d3b1, #0b7967);
+  box-shadow: 0 9px 20px rgba(18, 163, 136, .2);
+}
+.income-month-bar span { color: #6c7f7b; font-size: .75rem; font-weight: 800; }
+
+.income-source-list,
+.income-recurring-list { display: grid; gap: 10px; }
+
+.income-source-item,
+.income-recurring-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 14px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid #dfebe8;
+  border-radius: 16px;
+  background: rgba(250, 253, 252, .92);
+}
+
+.income-source-item { grid-template-columns: auto minmax(0, 1fr) auto; }
+.income-recurring-item { grid-template-columns: auto minmax(0, 1fr) auto; }
+.income-rank { display: grid; place-items: center; width: 28px; height: 28px; color: #08715f; border-radius: 9px; background: #dff5ef; font-weight: 950; }
+
+.income-source-item small,
+.income-recurring-item small { color: #6f817d; }
+.income-source-track { grid-column: 1 / -1; height: 7px; overflow: hidden; border-radius: 99px; background: #e5efed; }
+.income-source-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0d8874, #42d8b8); }
+.income-recurring-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.opening-alert-dialog,
+.insufficient-balance-dialog {
+  width: min(720px, calc(100vw - 24px));
+  padding: clamp(22px, 4vw, 34px);
+  border: 0;
+  border-radius: 28px;
+  box-shadow: 0 30px 90px rgba(1, 35, 31, .3);
+}
+
+.opening-alert-dialog::backdrop,
+.insufficient-balance-dialog::backdrop { background: rgba(1, 28, 25, .7); backdrop-filter: blur(5px); }
+.opening-alert-body { display: grid; gap: 14px; }
+.opening-alert-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.opening-alert-summary article { padding: 14px; border-radius: 16px; background: #f0f7f5; }
+.opening-alert-summary span { display: block; color: #607872; font-size: .75rem; font-weight: 900; text-transform: uppercase; }
+.opening-alert-summary strong { display: block; margin-top: 5px; font-size: 1.35rem; }
+.opening-alert-list { display: grid; gap: 8px; max-height: 260px; overflow-y: auto; }
+.opening-alert-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px; border: 1px solid #dbe8e5; border-radius: 15px; }
+.opening-alert-item.critical { border-color: #ffc7c0; background: #fff4f2; }
+.opening-alert-item.warning { border-color: #f3d79f; background: #fffaf0; }
+.opening-alert-item small { display: block; color: #667b77; }
+.opening-alert-critical { padding: 14px 16px; color: #8c1d18; border: 1px solid #ffc7c0; border-radius: 16px; background: #fff3f1; line-height: 1.45; }
+
+.critical-balance-icon {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  margin-bottom: 18px;
+  color: #fff;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #ff574c, #c71f1f);
+  box-shadow: 0 16px 30px rgba(209, 35, 35, .25);
+  font-size: 2rem;
+  font-weight: 950;
+}
+
+.insufficient-balance-dialog h2 { margin: 7px 0 10px; font-size: clamp(1.6rem, 4vw, 2.35rem); }
+.insufficient-balance-dialog > p { color: #5e716e; line-height: 1.55; }
+.critical-balance-equation { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 22px 0 14px; }
+.critical-balance-equation article { display: grid; gap: 6px; padding: 15px; border-radius: 16px; background: #eff6f4; }
+.critical-balance-equation article.critical { color: #b82121; background: #fff0ee; }
+.critical-balance-equation span { font-size: .73rem; font-weight: 900; text-transform: uppercase; }
+.critical-balance-equation strong { font-size: 1.3rem; }
+.critical-balance-message { padding: 14px 16px; color: #861717; border: 1px solid #ffc6c0; border-radius: 15px; background: #fff5f3; font-weight: 800; }
+
+@media (max-width: 980px) {
+  .income-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .income-analysis-grid { grid-template-columns: 1fr; }
+  .income-recurring-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 680px) {
+  .income-analysis-hero { grid-template-columns: 1fr; padding: 22px; border-radius: 24px; }
+  .income-kpi-grid,
+  .income-recurring-list,
+  .opening-alert-summary,
+  .critical-balance-equation { grid-template-columns: 1fr; }
+  .income-kpi-grid article { min-height: 116px; }
+  .opening-alert-dialog,
+  .insufficient-balance-dialog { padding: 20px 16px; border-radius: 22px; }
+  .opening-alert-item { grid-template-columns: auto minmax(0, 1fr); }
+  .opening-alert-item > strong { grid-column: 2; }
+}
