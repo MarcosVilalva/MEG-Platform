@@ -108,6 +108,9 @@ let incomeSourceSearch = "";
 const transactionColumnFilters = {};
 let descriptionSuggestionItems = [];
 let activeDescriptionSuggestion = -1;
+let editingGroup = "";
+let editingExpenseClass = "";
+let editingPaymentMethod = "";
 let editingCardPaymentMethod = "";
 
 const els = {
@@ -398,15 +401,18 @@ const els = {
   addMissingIncomeBtn: document.querySelector("#addMissingIncomeBtn"),
   groupCatalogForm: document.querySelector("#groupCatalogForm"),
   newGroupInput: document.querySelector("#newGroupInput"),
+  groupCatalogSubmitBtn: document.querySelector("#groupCatalogSubmitBtn"),
   groupCatalogList: document.querySelector("#groupCatalogList"),
   groupCatalogCount: document.querySelector("#groupCatalogCount"),
   expenseClassCatalogForm: document.querySelector("#expenseClassCatalogForm"),
   newExpenseClassInput: document.querySelector("#newExpenseClassInput"),
+  expenseClassCatalogSubmitBtn: document.querySelector("#expenseClassCatalogSubmitBtn"),
   expenseClassCatalogList: document.querySelector("#expenseClassCatalogList"),
   expenseClassCatalogCount: document.querySelector("#expenseClassCatalogCount"),
   paymentCatalogForm: document.querySelector("#paymentCatalogForm"),
   newPaymentInput: document.querySelector("#newPaymentInput"),
   newPaymentModalityInput: document.querySelector("#newPaymentModalityInput"),
+  paymentCatalogSubmitBtn: document.querySelector("#paymentCatalogSubmitBtn"),
   adminUsersNav: document.querySelector("#adminUsersNav"),
   reloadUsersBtn: document.querySelector("#reloadUsersBtn"),
   registeredUsersMetric: document.querySelector("#registeredUsersMetric"),
@@ -2636,9 +2642,9 @@ function renderCatalogs() {
   els.paymentCatalogCount.textContent = `${payments.length} cadastradas`;
   els.expenseClassCatalogCount.textContent = `${expenseClasses.length} cadastradas`;
   els.cardCatalogCount.textContent = `${cards.length} cadastrados`;
-  els.groupCatalogList.innerHTML = groups.map((group) => `<div class="catalog-row"><strong>${escapeHtml(group)}</strong>${defaultGroupKeys.has(normalizeText(group)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-group="${escapeHtml(group)}">Remover</button>`}</div>`).join("");
-  els.expenseClassCatalogList.innerHTML = expenseClasses.map((item) => `<div class="catalog-row"><strong>${escapeHtml(item)}</strong>${defaultExpenseClassKeys.has(normalizeText(item)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-expense-class="${escapeHtml(item)}">Remover</button>`}</div>`).join("");
-  els.paymentCatalogList.innerHTML = payments.map((item) => `<div class="catalog-row"><span><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.modality)}</small></span>${defaultPaymentKeys.has(normalizeText(item.description)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-payment="${escapeHtml(item.description)}">Remover</button>`}</div>`).join("");
+  els.groupCatalogList.innerHTML = groups.map((group) => `<div class="catalog-row"><strong>${escapeHtml(group)}</strong><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-group="${escapeHtml(group)}">Editar</button>${defaultGroupKeys.has(normalizeText(group)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-group="${escapeHtml(group)}">Remover</button>`}</span></div>`).join("");
+  els.expenseClassCatalogList.innerHTML = expenseClasses.map((item) => `<div class="catalog-row"><strong>${escapeHtml(item)}</strong><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-expense-class="${escapeHtml(item)}">Editar</button>${defaultExpenseClassKeys.has(normalizeText(item)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-expense-class="${escapeHtml(item)}">Remover</button>`}</span></div>`).join("");
+  els.paymentCatalogList.innerHTML = payments.map((item) => `<div class="catalog-row"><span><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.modality)}</small></span><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-payment="${escapeHtml(item.description)}">Editar</button>${defaultPaymentKeys.has(normalizeText(item.description)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-payment="${escapeHtml(item.description)}">Remover</button>`}</span></div>`).join("");
   const creditPayments = payments.filter((item) => normalizeText(item.modality) === "CREDITO");
   const selectedCardPayment = els.newCardPaymentInput.value;
   els.newCardPaymentInput.innerHTML = `<option value="">Selecione o cartão</option>${creditPayments.map((item) => `<option value="${escapeHtml(item.description)}">${escapeHtml(item.description)}</option>`).join("")}`;
@@ -2646,6 +2652,35 @@ function renderCatalogs() {
   els.cardCatalogList.innerHTML = cards.length
     ? cards.map((card) => `<div class="catalog-row card-catalog-row"><span><strong>${escapeHtml(card.paymentMethod)}</strong><small>Fecha dia ${card.closingDay} · vence dia ${card.dueDay} · melhor compra dia ${card.bestPurchaseDay || "—"}</small><small>Limite ${money.format(card.limit || 0)}</small></span><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-card="${escapeHtml(card.paymentMethod)}">Editar</button><button type="button" class="catalog-remove" data-remove-card="${escapeHtml(card.paymentMethod)}">Remover</button></span></div>`).join("")
     : `<div class="empty">Cadastre as regras dos seus cartões para calcular as próximas faturas.</div>`;
+}
+
+function beginCatalogEdit(type, value) {
+  if (type === "group") {
+    editingGroup = value;
+    els.newGroupInput.value = value;
+    els.groupCatalogSubmitBtn.textContent = "Atualizar";
+    els.newGroupInput.focus();
+  }
+  if (type === "expenseClass") {
+    editingExpenseClass = value;
+    els.newExpenseClassInput.value = value;
+    els.expenseClassCatalogSubmitBtn.textContent = "Atualizar";
+    els.newExpenseClassInput.focus();
+  }
+  if (type === "payment") {
+    const payment = state.catalogs.paymentMethods.find((item) => normalizeText(item.description) === normalizeText(value));
+    if (!payment) return;
+    editingPaymentMethod = payment.description;
+    els.newPaymentInput.value = payment.description;
+    els.newPaymentModalityInput.value = payment.modality;
+    els.paymentCatalogSubmitBtn.textContent = "Atualizar";
+    els.newPaymentInput.focus();
+  }
+}
+
+function catalogNameExists(items, value, originalValue, selector = (item) => item) {
+  return items.some((item) => normalizeText(selector(item)) === normalizeText(value)
+    && normalizeText(selector(item)) !== normalizeText(originalValue));
 }
 
 function editCardCatalog(paymentMethod) {
@@ -2665,11 +2700,27 @@ function editCardCatalog(paymentMethod) {
 function addGroupCatalog(event) {
   event.preventDefault();
   const value = els.newGroupInput.value.trim().toUpperCase();
-  if (!value || state.catalogs.groups.some((item) => normalizeText(item) === normalizeText(value))) return;
-  state.catalogs.groups.push(value);
+  if (!value || catalogNameExists(state.catalogs.groups, value, editingGroup)) return;
+  const updated = Boolean(editingGroup);
+  if (updated) {
+    const previous = editingGroup;
+    state.catalogs.groups = state.catalogs.groups.map((item) => normalizeText(item) === normalizeText(previous) ? value : item);
+    state.transactions = state.transactions.map((item) => ({
+      ...item,
+      group: normalizeText(item.group) === normalizeText(previous) ? value : item.group,
+      category: normalizeText(item.category) === normalizeText(previous) ? value : item.category,
+    }));
+    const budgetKey = Object.keys(state.budgets || {}).find((key) => normalizeText(key) === normalizeText(previous));
+    if (budgetKey && budgetKey !== value) {
+      state.budgets[value] = state.budgets[budgetKey];
+      delete state.budgets[budgetKey];
+    }
+  } else state.catalogs.groups.push(value);
+  editingGroup = "";
   els.newGroupInput.value = "";
+  els.groupCatalogSubmitBtn.textContent = "Adicionar";
   saveState();
-  showToast("Grupo cadastrado", value + " foi adicionado à lista.", "success");
+  showToast(updated ? "Grupo atualizado" : "Grupo cadastrado", value + (updated ? " foi atualizado em todo o histórico." : " foi adicionado à lista."), "success");
   render();
 }
 
@@ -2677,23 +2728,43 @@ function addPaymentCatalog(event) {
   event.preventDefault();
   const description = els.newPaymentInput.value.trim().toUpperCase();
   const modality = els.newPaymentModalityInput.value.trim().toUpperCase();
-  if (!description || !modality || state.catalogs.paymentMethods.some((item) => normalizeText(item.description) === normalizeText(description))) return;
-  state.catalogs.paymentMethods.push({ description, modality });
+  if (!description || !modality || catalogNameExists(state.catalogs.paymentMethods, description, editingPaymentMethod, (item) => item.description)) return;
+  const updated = Boolean(editingPaymentMethod);
+  if (updated) {
+    const previous = editingPaymentMethod;
+    state.catalogs.paymentMethods = state.catalogs.paymentMethods.map((item) => normalizeText(item.description) === normalizeText(previous) ? { description, modality } : item);
+    state.transactions = state.transactions.map((item) => ({
+      ...item,
+      paymentMethod: normalizeText(item.paymentMethod) === normalizeText(previous) ? description : item.paymentMethod,
+      account: normalizeText(item.account) === normalizeText(previous) ? description : item.account,
+      modality: normalizeText(item.paymentMethod) === normalizeText(previous) ? modality : item.modality,
+    }));
+    state.catalogs.cards = state.catalogs.cards.map((card) => normalizeText(card.paymentMethod) === normalizeText(previous) ? { ...card, paymentMethod: description } : card);
+  } else state.catalogs.paymentMethods.push({ description, modality });
+  editingPaymentMethod = "";
   els.newPaymentInput.value = "";
   els.newPaymentModalityInput.value = "";
+  els.paymentCatalogSubmitBtn.textContent = "Adicionar";
   saveState();
-  showToast("Forma de pagamento cadastrada", description + " · " + modality, "success");
+  showToast(updated ? "Forma de pagamento atualizada" : "Forma de pagamento cadastrada", description + " · " + modality, "success");
   render();
 }
 
 function addExpenseClassCatalog(event) {
   event.preventDefault();
   const value = els.newExpenseClassInput.value.trim().toUpperCase();
-  if (!value || state.catalogs.expenseClasses.some((item) => normalizeText(item) === normalizeText(value))) return;
-  state.catalogs.expenseClasses.push(value);
+  if (!value || catalogNameExists(state.catalogs.expenseClasses, value, editingExpenseClass)) return;
+  const updated = Boolean(editingExpenseClass);
+  if (updated) {
+    const previous = editingExpenseClass;
+    state.catalogs.expenseClasses = state.catalogs.expenseClasses.map((item) => normalizeText(item) === normalizeText(previous) ? value : item);
+    state.transactions = state.transactions.map((item) => ({ ...item, expenseClass: normalizeText(item.expenseClass) === normalizeText(previous) ? value : item.expenseClass }));
+  } else state.catalogs.expenseClasses.push(value);
+  editingExpenseClass = "";
   els.newExpenseClassInput.value = "";
+  els.expenseClassCatalogSubmitBtn.textContent = "Adicionar";
   saveState();
-  showToast("Classificação cadastrada", value + " foi adicionada à lista.", "success");
+  showToast(updated ? "Classificação atualizada" : "Classificação cadastrada", value + (updated ? " foi atualizada em todo o histórico." : " foi adicionada à lista."), "success");
   render();
 }
 
@@ -2728,6 +2799,21 @@ function removeCatalogItem(type, value) {
     editingCardPaymentMethod = "";
     els.cardCatalogForm.reset();
     els.cardCatalogSubmitBtn.textContent = "Salvar cartão";
+  }
+  if (type === "group" && normalizeText(editingGroup) === normalizeText(value)) {
+    editingGroup = "";
+    els.groupCatalogForm.reset();
+    els.groupCatalogSubmitBtn.textContent = "Adicionar";
+  }
+  if (type === "expenseClass" && normalizeText(editingExpenseClass) === normalizeText(value)) {
+    editingExpenseClass = "";
+    els.expenseClassCatalogForm.reset();
+    els.expenseClassCatalogSubmitBtn.textContent = "Adicionar";
+  }
+  if (type === "payment" && normalizeText(editingPaymentMethod) === normalizeText(value)) {
+    editingPaymentMethod = "";
+    els.paymentCatalogForm.reset();
+    els.paymentCatalogSubmitBtn.textContent = "Adicionar";
   }
   saveState();
   showToast("Cadastro removido", value + " foi excluído da lista.", "success");
@@ -3442,6 +3528,9 @@ document.addEventListener("click", (event) => {
   const removeExpenseClassButton = event.target.closest("[data-remove-expense-class]");
   const removeCardButton = event.target.closest("[data-remove-card]");
   const editCardButton = event.target.closest("[data-edit-card]");
+  const editGroupCatalogButton = event.target.closest("[data-edit-group]");
+  const editExpenseClassCatalogButton = event.target.closest("[data-edit-expense-class]");
+  const editPaymentCatalogButton = event.target.closest("[data-edit-payment]");
   const userActionButton = event.target.closest("[data-user-action]");
   const saveUserRoleButton = event.target.closest("[data-save-user-role]");
   const resetUserPasswordButton = event.target.closest("[data-reset-user-password]");
@@ -3462,6 +3551,9 @@ document.addEventListener("click", (event) => {
   if (removeExpenseClassButton) removeCatalogItem("expenseClass", removeExpenseClassButton.dataset.removeExpenseClass);
   if (removeCardButton) removeCatalogItem("card", removeCardButton.dataset.removeCard);
   if (editCardButton) editCardCatalog(editCardButton.dataset.editCard);
+  if (editGroupCatalogButton) beginCatalogEdit("group", editGroupCatalogButton.dataset.editGroup);
+  if (editExpenseClassCatalogButton) beginCatalogEdit("expenseClass", editExpenseClassCatalogButton.dataset.editExpenseClass);
+  if (editPaymentCatalogButton) beginCatalogEdit("payment", editPaymentCatalogButton.dataset.editPayment);
   if (userActionButton) updateManagedUser(userActionButton.dataset.userId, userActionButton.dataset.userAction);
   if (saveUserRoleButton) updateManagedUser(saveUserRoleButton.dataset.saveUserRole, "UPDATE");
   if (resetUserPasswordButton) resetManagedUserPassword(resetUserPasswordButton.dataset.resetUserPassword);

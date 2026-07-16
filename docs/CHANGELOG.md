@@ -2,7 +2,8 @@
 
 ## 2026-07-15 - Finalização dos cadastros
 
-- Adicionado botão **Editar** nos cartões cadastrados, carregando fechamento, vencimento, melhor dia e limite no formulário.
+- Adicionado botão **Editar** em grupos, classificações, formas de pagamento e cartões cadastrados.
+- A alteração de nomes em cadastros passa a atualizar também os lançamentos históricos, orçamentos e regras de cartão relacionados.
 - Padronizados os avisos positivos ao desfazer pagamentos e reabrir faturas.
 - Mantidos o backup completo, a restauração e o encerramento da sessão após dois minutos de inatividade.
 
