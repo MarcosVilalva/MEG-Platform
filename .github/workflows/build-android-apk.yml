@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   build-apk:
@@ -100,3 +101,9 @@ jobs:
           git add apps/web/public/downloads/MEG-Financas.apk apps/web/public/downloads/app-version.json
           git diff --cached --quiet || git commit -m "chore: publicar APK atualizado [skip apk]"
           git push
+
+      - name: Publish generated APK and manifest on GitHub Pages
+        if: github.actor != 'github-actions[bot]'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages.yml --ref main
