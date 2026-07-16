@@ -14,10 +14,11 @@ on:
       - '.github/workflows/build-android-apk.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-apk:
+    if: github.actor != 'github-actions[bot]' || !contains(github.event.head_commit.message, '[skip apk]')
     runs-on: ubuntu-latest
     env:
       VITE_API_URL: https://meg-platform-api.onrender.com
@@ -45,6 +46,9 @@ jobs:
       - name: Build mobile web application
         run: npm run build:web
 
+      - name: Remove previous APK from mobile web assets
+        run: rm -f apps/web/dist/downloads/MEG-Financas.apk
+
       - name: Synchronize Android project
         run: npx cap sync android
 
@@ -62,3 +66,13 @@ jobs:
           path: MEG-Financas.apk
           if-no-files-found: error
           retention-days: 90
+
+      - name: Publish latest APK on the website
+        if: github.actor != 'github-actions[bot]'
+        run: |
+          cp MEG-Financas.apk apps/web/public/downloads/MEG-Financas.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/web/public/downloads/MEG-Financas.apk
+          git diff --cached --quiet || git commit -m "chore: publicar APK atualizado [skip apk]"
+          git push
