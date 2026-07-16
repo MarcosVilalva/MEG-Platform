@@ -142,22 +142,37 @@ export async function notificationDigest(userId: string, referenceDate = new Dat
 }
 
 async function sendEmail(to: string, subject: string, text: string) {
-  if (!config.resendApiKey) return { status: 'skipped', detail: 'RESEND_API_KEY não configurada' };
   const recipient = to.trim().replace(/[?？]+$/u, '').toLowerCase();
   const senderAddress = config.notificationEmailFrom.match(/<([^>]+)>/)?.[1] || config.notificationEmailFrom;
   const usesResendTestDomain = senderAddress.trim().toLowerCase().endsWith('@resend.dev');
-  if (usesResendTestDomain && recipient !== config.adminEmail.trim().toLowerCase()) {
-    return {
-      status: 'failed',
-      detail: 'O remetente onboarding@resend.dev só envia para o proprietário da conta Resend. Verifique um domínio no Resend e configure NOTIFICATION_EMAIL_FROM.'
-    };
+  const canUseResend = Boolean(config.resendApiKey) && (!usesResendTestDomain || recipient === config.adminEmail.trim().toLowerCase());
+  if (canUseResend) {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST', headers: { Authorization: `Bearer ${config.resendApiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: config.notificationEmailFrom, to: [recipient], reply_to: config.adminEmail, subject, text })
+    });
+    if (!response.ok) throw new Error(`E-mail Resend recusado (${response.status}): ${await response.text()}`);
+    return { status: 'sent', provider: 'resend', detail: await response.text() };
   }
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST', headers: { Authorization: `Bearer ${config.resendApiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: config.notificationEmailFrom, to: [recipient], reply_to: config.adminEmail, subject, text })
-  });
-  if (!response.ok) throw new Error(`E-mail recusado (${response.status}): ${await response.text()}`);
-  return { status: 'sent', detail: await response.text() };
+  if (config.brevoApiKey && config.brevoSenderEmail) {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': config.brevoApiKey, accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sender: { name: config.brevoSenderName, email: config.brevoSenderEmail },
+        to: [{ email: recipient }],
+        replyTo: { email: config.adminEmail, name: 'Administrador MEG' },
+        subject,
+        textContent: text
+      })
+    });
+    if (!response.ok) throw new Error(`E-mail Brevo recusado (${response.status}): ${await response.text()}`);
+    return { status: 'sent', provider: 'brevo', detail: await response.text() };
+  }
+  const reason = usesResendTestDomain && recipient !== config.adminEmail.trim().toLowerCase()
+    ? 'Resend em modo de teste e Brevo não configurado para outros destinatários.'
+    : 'Nenhum provedor de e-mail configurado.';
+  return { status: 'failed', detail: reason };
 }
 
 export async function sendSystemEmail(to: string, subject: string, text: string) {
@@ -181,13 +196,16 @@ export async function sendSystemWhatsApp(number: string, text: string) {
 export function notificationIntegrationStatus() {
   const senderAddress = config.notificationEmailFrom.match(/<([^>]+)>/)?.[1] || config.notificationEmailFrom;
   const testOnly = senderAddress.trim().toLowerCase().endsWith('@resend.dev');
+  const brevoReady = Boolean(config.brevoApiKey && config.brevoSenderEmail);
+  const resendReadyForAll = Boolean(config.resendApiKey && config.notificationEmailFrom && !testOnly);
   return {
     email: {
-      configured: Boolean(config.resendApiKey && config.notificationEmailFrom),
+      configured: Boolean(config.resendApiKey || brevoReady),
       recipient: config.adminEmail,
-      sender: senderAddress,
-      mode: testOnly ? 'test-only' : 'production',
-      readyForAllUsers: Boolean(config.resendApiKey && config.notificationEmailFrom && !testOnly)
+      sender: brevoReady ? config.brevoSenderEmail : senderAddress,
+      provider: brevoReady ? 'brevo' : 'resend',
+      mode: brevoReady || resendReadyForAll ? 'production' : 'test-only',
+      readyForAllUsers: brevoReady || resendReadyForAll
     },
     whatsapp: { configured: Boolean(config.evolutionApiUrl && config.evolutionApiKey && config.evolutionInstance), defaultRecipient: config.whatsappRecipient ? config.whatsappRecipient.replace(/\d(?=\d{4})/g, '•') : null },
     automation: { configured: Boolean(config.notificationCronSecret), schedule: '06:00, 12:00 e 19:00 America/Sao_Paulo; resumo geral a cada 5 dias às 06:00' }
@@ -237,8 +255,12 @@ export async function deliverNotifications(userId: string, options: DeliveryOpti
   return { digest, deliveries };
 }
 
-export function automationSlot(referenceDate = new Date()) {
+export function automationSlot(referenceDate = new Date(), requestedSlot?: string) {
   const local = saoPauloParts(referenceDate);
+  if (requestedSlot && ['06:00', '12:00', '19:00'].includes(requestedSlot)) {
+    const hour = Number(requestedSlot.slice(0, 2));
+    return { ...local, hour, slot: requestedSlot, mode: hour === 6 ? 'upcoming' as const : 'due-now' as const };
+  }
   if (![6, 12, 19].includes(local.hour)) return null;
   return { ...local, slot: `${String(local.hour).padStart(2, '0')}:00`, mode: local.hour === 6 ? 'upcoming' as const : 'due-now' as const };
 }

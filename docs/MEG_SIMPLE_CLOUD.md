@@ -32,6 +32,7 @@ Variáveis do Render para e-mail:
 
 - `RESEND_API_KEY`
 - `NOTIFICATION_EMAIL_FROM`: use um endereço de domínio verificado no Resend para enviar recuperação de senha a usuários diferentes do proprietário da conta. `onboarding@resend.dev` é somente para testes.
+- Alternativa sem domínio próprio: configure `BREVO_API_KEY`, `BREVO_SENDER_EMAIL` e `BREVO_SENDER_NAME`. O remetente deve ser previamente verificado no Brevo. Quando o Resend estiver em modo de teste, o MEG usa o Brevo automaticamente para os demais destinatários.
 - `NOTIFICATION_EMAIL_FROM`
 - `ADMIN_EMAIL` (padrão: `m_vilalva@hotmail.com`)
 
@@ -47,6 +48,8 @@ Ativação da automação:
 1. Copie o valor de `NOTIFICATION_CRON_SECRET` do Render.
 2. Crie no GitHub o segredo de Actions com o mesmo nome e valor.
 3. O workflow `MEG Smart Notifications` executará nos horários descritos abaixo.
+
+O segredo deve ser idêntico nos dois serviços. Sem ele no GitHub, o workflow encerra antes de chamar a API.
 
 ## Agenda inteligente de alertas
 

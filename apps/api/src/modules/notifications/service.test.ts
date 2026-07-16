@@ -34,6 +34,8 @@ assert.match(openSummary.text, /Raio-X das Contas em Aberto/);
 assert.equal(automationSlot(new Date('2026-07-12T09:05:00Z'))?.slot, '06:00');
 assert.equal(automationSlot(new Date('2026-07-12T15:05:00Z'))?.mode, 'due-now');
 assert.equal(automationSlot(new Date('2026-07-12T18:05:00Z')), null);
+assert.equal(automationSlot(new Date('2026-07-12T18:05:00Z'), '19:00')?.slot, '19:00', 'o horário solicitado deve resistir a atrasos do agendador');
+assert.equal(automationSlot(new Date('2026-07-12T18:05:00Z'), '19:00')?.mode, 'due-now');
 
 const lateNightBrazil = buildNotificationDigest([
   { type: 'expense', date: '2026-07-16', description: 'FATURA TESTE', expenseAmount: 100, status: 'PENDING', paymentMethod: 'PIX' }

@@ -25,6 +25,12 @@ services:
         sync: false
       - key: NOTIFICATION_EMAIL_FROM
         value: MEG Finanças <onboarding@resend.dev>
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false
+      - key: BREVO_SENDER_NAME
+        value: MEG Finanças
       - key: EVOLUTION_API_URL
         sync: false
       - key: EVOLUTION_API_KEY

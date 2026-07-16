@@ -68,15 +68,16 @@ export async function notificationRoutes(app: FastifyInstance) {
       return reply.status(401).send({ error: 'INVALID_CRON_SECRET' });
     }
     const now = new Date();
-    const slot = automationSlot(now);
+    const body = (request.body || {}) as { slot?: string; force?: boolean };
+    const slot = automationSlot(now, body.slot);
     if (!slot) return { skipped: true, reason: 'Fora dos horários automáticos de 06:00, 12:00 e 19:00 (São Paulo).' };
     const users = await prisma.user.findMany({ where: { isActive: true, status: 'ACTIVE' }, select: { id: true, email: true } });
     const results = [];
     for (const user of users) {
       const fullSummary = slot.hour === 6 && await shouldSendOpenSummary(user.id, now);
       const deliveries = [await deliverNotifications(user.id, fullSummary
-        ? { referenceDate: now, mode: 'open-summary', slot: '06:00-5dias' }
-        : { referenceDate: now, mode: slot.mode, slot: slot.slot })];
+        ? { referenceDate: now, mode: 'open-summary', slot: '06:00-5dias', force: Boolean(body.force) }
+        : { referenceDate: now, mode: slot.mode, slot: slot.slot, force: Boolean(body.force) })];
       results.push({ email: user.email, deliveries });
     }
     return { users: results.length, results };
