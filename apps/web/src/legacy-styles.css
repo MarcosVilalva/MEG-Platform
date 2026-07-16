@@ -1239,6 +1239,9 @@ textarea {
 .catalog-row > span:first-child { display: grid; gap: 2px; }
 .catalog-row small { color: var(--muted); }
 .catalog-badge { padding: 5px 8px; border-radius: 999px; color: var(--primary-dark); background: rgba(23,107,93,.1); font-size: .62rem; font-weight: 950; }
+.catalog-actions { display: flex; align-items: center; gap: 5px; }
+.catalog-edit { padding: 6px 10px; border: 0; border-radius: 9px; color: var(--primary-dark); background: rgba(23,107,93,.1); font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
+.catalog-edit:hover { color: #fff; background: var(--primary); }
 .catalog-remove { padding: 5px 8px; border: 0; color: var(--danger); background: transparent; font: inherit; font-size: .72rem; font-weight: 850; cursor: pointer; }
 .catalog-remove:hover { text-decoration: underline; }
 .card-launch-dialog { width: min(680px, calc(100vw - 32px)); }

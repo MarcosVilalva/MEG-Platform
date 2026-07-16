@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-15 - Finalização dos cadastros
+
+- Adicionado botão **Editar** nos cartões cadastrados, carregando fechamento, vencimento, melhor dia e limite no formulário.
+- Padronizados os avisos positivos ao desfazer pagamentos e reabrir faturas.
+- Mantidos o backup completo, a restauração e o encerramento da sessão após dois minutos de inatividade.
+
 ## Segurança, confirmações e backup — 2026-07-15
 
 ### Adicionado

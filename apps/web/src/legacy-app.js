@@ -108,6 +108,7 @@ let incomeSourceSearch = "";
 const transactionColumnFilters = {};
 let descriptionSuggestionItems = [];
 let activeDescriptionSuggestion = -1;
+let editingCardPaymentMethod = "";
 
 const els = {
   sidebar: document.querySelector("#primarySidebar"),
@@ -421,6 +422,7 @@ const els = {
   newCardDueDayInput: document.querySelector("#newCardDueDayInput"),
   newCardBestDayInput: document.querySelector("#newCardBestDayInput"),
   newCardLimitInput: document.querySelector("#newCardLimitInput"),
+  cardCatalogSubmitBtn: document.querySelector("#cardCatalogSubmitBtn"),
   cardCatalogList: document.querySelector("#cardCatalogList"),
   cardCatalogCount: document.querySelector("#cardCatalogCount"),
 };
@@ -2642,8 +2644,22 @@ function renderCatalogs() {
   els.newCardPaymentInput.innerHTML = `<option value="">Selecione o cartão</option>${creditPayments.map((item) => `<option value="${escapeHtml(item.description)}">${escapeHtml(item.description)}</option>`).join("")}`;
   if (creditPayments.some((item) => item.description === selectedCardPayment)) els.newCardPaymentInput.value = selectedCardPayment;
   els.cardCatalogList.innerHTML = cards.length
-    ? cards.map((card) => `<div class="catalog-row card-catalog-row"><span><strong>${escapeHtml(card.paymentMethod)}</strong><small>Fecha dia ${card.closingDay} · vence dia ${card.dueDay} · melhor compra dia ${card.bestPurchaseDay || "—"}</small><small>Limite ${money.format(card.limit || 0)}</small></span><button type="button" class="catalog-remove" data-remove-card="${escapeHtml(card.paymentMethod)}">Remover</button></div>`).join("")
+    ? cards.map((card) => `<div class="catalog-row card-catalog-row"><span><strong>${escapeHtml(card.paymentMethod)}</strong><small>Fecha dia ${card.closingDay} · vence dia ${card.dueDay} · melhor compra dia ${card.bestPurchaseDay || "—"}</small><small>Limite ${money.format(card.limit || 0)}</small></span><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-card="${escapeHtml(card.paymentMethod)}">Editar</button><button type="button" class="catalog-remove" data-remove-card="${escapeHtml(card.paymentMethod)}">Remover</button></span></div>`).join("")
     : `<div class="empty">Cadastre as regras dos seus cartões para calcular as próximas faturas.</div>`;
+}
+
+function editCardCatalog(paymentMethod) {
+  const card = cardForPayment(paymentMethod);
+  if (!card) return;
+  editingCardPaymentMethod = card.paymentMethod;
+  els.newCardPaymentInput.value = card.paymentMethod;
+  els.newCardClosingDayInput.value = String(card.closingDay);
+  els.newCardDueDayInput.value = String(card.dueDay);
+  els.newCardBestDayInput.value = String(card.bestPurchaseDay || "");
+  els.newCardLimitInput.value = String(card.limit || 0);
+  els.cardCatalogSubmitBtn.textContent = "Atualizar cartão";
+  els.cardCatalogForm.scrollIntoView({ behavior: "smooth", block: "center" });
+  window.setTimeout(() => els.newCardClosingDayInput.focus(), 250);
 }
 
 function addGroupCatalog(event) {
@@ -2690,13 +2706,17 @@ function addCardCatalog(event) {
   const limit = Number(els.newCardLimitInput.value);
   if (!paymentMethod || [closingDay, dueDay, bestPurchaseDay].some((day) => day < 1 || day > 31) || limit < 0) return;
   const card = { paymentMethod, closingDay, dueDay, bestPurchaseDay, limit };
-  const index = state.catalogs.cards.findIndex((item) => normalizeText(item.paymentMethod) === normalizeText(paymentMethod));
+  const lookupPaymentMethod = editingCardPaymentMethod || paymentMethod;
+  const index = state.catalogs.cards.findIndex((item) => normalizeText(item.paymentMethod) === normalizeText(lookupPaymentMethod));
+  const updated = index >= 0;
   if (index >= 0) state.catalogs.cards[index] = card;
   else state.catalogs.cards.push(card);
+  editingCardPaymentMethod = "";
   els.cardCatalogForm.reset();
+  els.cardCatalogSubmitBtn.textContent = "Salvar cartão";
   saveState();
   render();
-  showToast("Cartão configurado", `${paymentMethod}: fechamento dia ${closingDay} e vencimento dia ${dueDay}.`, "success");
+  showToast(updated ? "Cartão atualizado" : "Cartão cadastrado", `${paymentMethod}: fechamento dia ${closingDay} e vencimento dia ${dueDay}.`, "success");
 }
 
 function removeCatalogItem(type, value) {
@@ -2704,6 +2724,11 @@ function removeCatalogItem(type, value) {
   if (type === "expenseClass") state.catalogs.expenseClasses = state.catalogs.expenseClasses.filter((item) => normalizeText(item) !== normalizeText(value));
   if (type === "payment") state.catalogs.paymentMethods = state.catalogs.paymentMethods.filter((item) => normalizeText(item.description) !== normalizeText(value));
   if (type === "card") state.catalogs.cards = state.catalogs.cards.filter((item) => normalizeText(item.paymentMethod) !== normalizeText(value));
+  if (type === "card" && normalizeText(editingCardPaymentMethod) === normalizeText(value)) {
+    editingCardPaymentMethod = "";
+    els.cardCatalogForm.reset();
+    els.cardCatalogSubmitBtn.textContent = "Salvar cartão";
+  }
   saveState();
   showToast("Cadastro removido", value + " foi excluído da lista.", "success");
   render();
@@ -2979,7 +3004,7 @@ function togglePaid(id, paid) {
   item.status = paid ? "paid" : "pending";
   item.situation = paid ? "PAGO" : "PENDENTE";
   saveState();
-  if (paid) showToast("Conta paga", `${item.description} · ${money.format(item.amount)}`, "success");
+  showToast(paid ? "Conta paga" : "Pagamento desfeito", `${item.description} · ${money.format(item.amount)}`, "success");
   render();
 }
 
@@ -2996,7 +3021,7 @@ function togglePaidGroup(groupKey, paid, control) {
     item.situation = "PENDENTE";
   });
   saveState();
-  showToast("Fatura reaberta", `${group.payment} · ${money.format(payableGroupTotal(group))}`);
+  showToast("Fatura reaberta", `${group.payment} · ${money.format(payableGroupTotal(group))}`, "success");
   render();
 }
 
@@ -3416,6 +3441,7 @@ document.addEventListener("click", (event) => {
   const removePaymentButton = event.target.closest("[data-remove-payment]");
   const removeExpenseClassButton = event.target.closest("[data-remove-expense-class]");
   const removeCardButton = event.target.closest("[data-remove-card]");
+  const editCardButton = event.target.closest("[data-edit-card]");
   const userActionButton = event.target.closest("[data-user-action]");
   const saveUserRoleButton = event.target.closest("[data-save-user-role]");
   const resetUserPasswordButton = event.target.closest("[data-reset-user-password]");
@@ -3435,6 +3461,7 @@ document.addEventListener("click", (event) => {
   if (removePaymentButton) removeCatalogItem("payment", removePaymentButton.dataset.removePayment);
   if (removeExpenseClassButton) removeCatalogItem("expenseClass", removeExpenseClassButton.dataset.removeExpenseClass);
   if (removeCardButton) removeCatalogItem("card", removeCardButton.dataset.removeCard);
+  if (editCardButton) editCardCatalog(editCardButton.dataset.editCard);
   if (userActionButton) updateManagedUser(userActionButton.dataset.userId, userActionButton.dataset.userAction);
   if (saveUserRoleButton) updateManagedUser(saveUserRoleButton.dataset.saveUserRole, "UPDATE");
   if (resetUserPasswordButton) resetManagedUserPassword(resetUserPasswordButton.dataset.resetUserPassword);
