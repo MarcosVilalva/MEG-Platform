@@ -374,11 +374,11 @@
               <b>+</b>
               <article><span>Receitas monetárias</span><strong id="analyticsPeriodIncomeMetric">R$ 0,00</strong><small>Dentro do período</small></article>
               <b>−</b>
-              <article><span>Despesas pagas</span><strong id="analyticsPaidExpenseMetric">R$ 0,00</strong><small>Dinheiro que já saiu</small></article>
+              <article><span>Despesas do período</span><strong id="analyticsPaidExpenseMetric">R$ 0,00</strong><small>Pagas e pendentes</small></article>
               <b>=</b>
-              <article class="equation-result" id="analyticsAvailableCard"><span>Saldo disponível</span><strong id="analyticsAvailableMetric">R$ 0,00</strong><small>Posição real no fim do recorte</small></article>
+              <article class="equation-result" id="analyticsAvailableCard"><span>Saldo após compromissos</span><strong id="analyticsAvailableMetric">R$ 0,00</strong><small>Considera todas as contas do recorte</small></article>
             </div>
-            <div class="analytics-projection-line" id="analyticsProjectionLine"><span>Depois de reservar as contas pendentes:</span><strong id="analyticsProjectedMetric">R$ 0,00</strong><small id="analyticsProjectedNote">Projeção após todos os pagamentos</small></div>
+            <div class="analytics-projection-line" id="analyticsProjectionLine"><span>Saldo disponível antes das pendências:</span><strong id="analyticsProjectedMetric">R$ 0,00</strong><small id="analyticsProjectedNote">Pagamentos realizados e valores ainda reservados</small></div>
             <div class="analytics-ticket-line"><span>🍽️ Verocard separado:</span><strong id="analyticsTicketMetric">R$ 0,00</strong><small id="analyticsTicketNote">Créditos menos gastos do ticket no período</small></div>
           </section>
 
@@ -418,32 +418,40 @@
                 <h3>Evolucao por modalidade</h3>
                 <span>Gastos no periodo</span>
               </div>
-              <canvas id="monthlyTrendChart" width="760" height="360" aria-label="Grafico de evolucao de gastos por modalidade"></canvas>
+              <div class="chart-scroll" role="region" aria-label="Grafico rolavel de evolucao por modalidade" tabindex="0">
+                <canvas id="monthlyTrendChart" width="760" height="360" aria-label="Grafico de evolucao de gastos por modalidade"></canvas>
+              </div>
+              <small class="chart-scroll-hint">Deslize horizontalmente para explorar periodos longos</small>
             </section>
             <section class="panel chart-panel">
               <div class="panel-title">
                 <h3>Gastos por grupo</h3>
                 <span>Conforme modalidade selecionada</span>
               </div>
-              <canvas id="groupCompareChart" width="760" height="360" aria-label="Grafico de gastos por grupo"></canvas>
+              <div class="chart-scroll" role="region" aria-label="Grafico rolavel de gastos por grupo" tabindex="0">
+                <canvas id="groupCompareChart" width="760" height="360" aria-label="Grafico de gastos por grupo"></canvas>
+              </div>
             </section>
           </div>
 
           <section class="panel chart-panel">
             <div class="panel-title">
               <div><small class="decision-eyebrow">HISTÓRICO ACUMULADO</small><h3>Evolução do saldo</h3></div>
-              <span id="historicalPeriodLabel">Do primeiro lançamento até hoje · não muda com os filtros</span>
+              <span id="historicalPeriodLabel">Do primeiro lançamento ao fechamento do mês atual</span>
             </div>
             <div class="historical-summary-grid">
               <article><span>Primeiro registro</span><strong id="historicalFirstDate">—</strong><small>Início do seu controle</small></article>
-              <article><span>Receitas acumuladas</span><strong id="historicalIncomeMetric">R$ 0,00</strong><small>Até a data atual</small></article>
-              <article><span>Despesas acumuladas</span><strong id="historicalExpenseMetric">R$ 0,00</strong><small>Até a data atual</small></article>
-              <article id="historicalBalanceCard"><span>Saldo histórico</span><strong id="historicalBalanceMetric">R$ 0,00</strong><small>Receitas menos despesas</small></article>
+              <article><span>Receitas acumuladas</span><strong id="historicalIncomeMetric">R$ 0,00</strong><small>Até o fechamento do mês atual</small></article>
+              <article><span>Despesas acumuladas</span><strong id="historicalExpenseMetric">R$ 0,00</strong><small>Pagas e pendentes do mês atual</small></article>
+              <article id="historicalBalanceCard"><span>Saldo histórico projetado</span><strong id="historicalBalanceMetric">R$ 0,00</strong><small>Receitas menos todas as despesas lançadas</small></article>
             </div>
-            <div class="chart-wrap">
-              <canvas id="balanceClosingChart" width="1120" height="360" aria-label="Grafico de fechamento do saldo bancario"></canvas>
-              <div class="chart-tooltip" id="balanceTooltip" role="status"></div>
+            <div class="chart-scroll" role="region" aria-label="Historico acumulado rolavel" tabindex="0">
+              <div class="chart-scroll-content">
+                <canvas id="balanceClosingChart" width="1120" height="360" aria-label="Grafico de fechamento do saldo bancario"></canvas>
+                <div class="chart-tooltip" id="balanceTooltip" role="status"></div>
+              </div>
             </div>
+            <small class="chart-scroll-hint">Deslize horizontalmente para comparar todos os meses</small>
           </section>
 
           <div class="analytics-grid">

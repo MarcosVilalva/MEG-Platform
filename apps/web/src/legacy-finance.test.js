@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { availableMonetaryBalance, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, payableGroupLabel, payableGroupTotal, summarizeDueDate } from './legacy-finance.js';
+import { availableMonetaryBalance, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, calculateHistoricalProjection, groupPayableItems, payableGroupLabel, payableGroupTotal, summarizeDueDate } from './legacy-finance.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from './legacy-installments.js';
 import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOfMonth } from './calendar-date.js';
@@ -148,6 +148,22 @@ assert.equal(currentMonthHealth.pendingItems.length, 2);
 assert.equal(currentMonthHealth.overdueItems.length, 1);
 assert.equal(currentMonthHealth.nextDue.date, '2026-07-20');
 assert.equal(currentMonthHealth.nextDue.total, 2500);
+
+const historicalProjection = calculateHistoricalProjection([
+  { date: '2026-06-01', type: 'income', incomeAmount: 1000, status: 'paid' },
+  { date: '2026-06-20', type: 'expense', expenseAmount: 200, status: 'paid' },
+  { date: '2026-07-01', type: 'income', incomeAmount: 500, status: 'paid' },
+  { date: '2026-07-10', type: 'expense', expenseAmount: 100, status: 'paid' },
+  { date: '2026-07-31', type: 'expense', expenseAmount: 300, status: 'pending' },
+  { date: '2026-07-31', type: 'income', incomeAmount: 150, description: 'VEROCARD' },
+  { date: '2026-08-01', type: 'expense', expenseAmount: 900, status: 'pending' },
+], '2026-07-31');
+assert.equal(historicalProjection.income, 1500);
+assert.equal(historicalProjection.expense, 600);
+assert.equal(historicalProjection.paidExpense, 300);
+assert.equal(historicalProjection.pendingExpense, 300);
+assert.equal(historicalProjection.balance, 900);
+assert.equal(historicalProjection.allItems.length, 6);
 
 const cardTransactions = [
   { id: 'visa-paid', date: '2026-07-10', type: 'expense', expenseAmount: 200, status: 'paid', modality: 'CREDITO', paymentMethod: 'CARTÃO AZUL', group: 'SUPERMERCADO' },

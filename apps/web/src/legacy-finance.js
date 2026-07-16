@@ -196,6 +196,30 @@ export function calculateCurrentMonthHealth(transactions, monthStart, today, mon
   };
 }
 
+export function calculateHistoricalProjection(transactions, endDate) {
+  const allItems = transactions
+    .filter((item) => item.date && (!endDate || item.date <= endDate))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const items = allItems.filter((item) => !isVerocardTransaction(item));
+  const income = items.reduce((sum, item) => sum + transactionValue(item, 'income'), 0);
+  const expenses = items.filter((item) => item.type === 'expense');
+  const expense = expenses.reduce((sum, item) => sum + transactionValue(item, 'expense'), 0);
+  const paidExpense = expenses
+    .filter((item) => item.status === 'paid' || String(item.situation || '').toUpperCase() === 'PAGO')
+    .reduce((sum, item) => sum + transactionValue(item, 'expense'), 0);
+  const pendingExpense = expense - paidExpense;
+
+  return {
+    allItems,
+    items,
+    income,
+    expense,
+    paidExpense,
+    pendingExpense,
+    balance: income - expense,
+  };
+}
+
 export function availableMonetaryBalance(transactions, endDate, excludeId = '') {
   const eligible = transactions.filter((item) => item.id !== excludeId);
   return calculateFinancialSummary(eligible, '', endDate).closingBalance;

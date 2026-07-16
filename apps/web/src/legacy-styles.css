@@ -3574,3 +3574,145 @@ dialog.modal {
   .credit-invoice-table td:nth-child(7) { grid-column: 2; grid-row: 3 / span 2; justify-self: end; }
   .credit-invoice-table td:nth-child(8) { grid-column: 2; grid-row: 5; justify-self: end; }
 }
+
+/* Analytics: mobile-first reading and horizontally explorable long series. */
+#analytics,
+#analytics > *,
+#analytics .panel,
+#analytics .metric,
+#analytics .analytics-filter-panel,
+#analytics .analytics-decision-hero,
+#analytics .analytics-calculation-panel {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.chart-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  scrollbar-gutter: stable;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chart-scroll:focus-visible {
+  outline: 3px solid rgba(18, 143, 121, .24);
+  outline-offset: 3px;
+}
+
+.chart-scroll-content {
+  position: relative;
+  min-width: 100%;
+  width: max-content;
+}
+
+.chart-scroll canvas,
+.chart-panel .chart-scroll canvas {
+  display: block;
+  width: var(--chart-width, 100%) !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: 320px;
+  margin-top: 16px;
+}
+
+.chart-scroll-hint {
+  display: none;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: .75rem;
+  font-weight: 750;
+}
+
+@media (max-width: 680px) {
+  #analytics {
+    width: 100%;
+    overflow: visible;
+  }
+
+  #analytics .section-heading,
+  #analytics .analytics-filter-panel,
+  #analytics .analytics-decision-hero,
+  #analytics .analytics-calculation-panel,
+  #analytics .analytics-executive-strip,
+  #analytics .kpi-grid,
+  #analytics .analytics-grid,
+  #analytics .historical-summary-grid {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #analytics .analytics-filter-panel select,
+  #analytics .analytics-filter-panel .stacked-control,
+  #analytics .analytics-filter-panel .button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #analytics .analytics-decision-hero {
+    padding: 20px 17px;
+  }
+
+  #analytics .current-month-health-equation {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    width: 100%;
+  }
+
+  #analytics .current-month-health-equation > b {
+    min-height: 16px;
+    transform: rotate(90deg);
+    justify-self: center;
+  }
+
+  #analytics .current-month-health-equation > span,
+  #analytics .analytics-equation article,
+  #analytics .historical-summary-grid article,
+  #analytics .analytics-executive-strip article {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  #analytics .analytics-calculation-panel,
+  #analytics .panel {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  #analytics .panel-title {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  #analytics .panel-title > span,
+  #analytics .analytics-calculation-heading > span {
+    max-width: 100%;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+
+  #analytics .analytics-equation {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #analytics .analytics-projection-line,
+  #analytics .analytics-ticket-line {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chart-scroll canvas,
+  .chart-panel .chart-scroll canvas {
+    width: var(--chart-width, 100%) !important;
+    max-width: none !important;
+    height: min(72vw, 300px);
+  }
+
+  .chart-scroll-hint {
+    display: block;
+  }
+}

@@ -1,4 +1,4 @@
-import { availableMonetaryBalance, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal, summarizeDueDate } from "./legacy-finance.js";
+import { availableMonetaryBalance, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, calculateHistoricalProjection, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal, summarizeDueDate } from "./legacy-finance.js";
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
 import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOfMonth } from "./calendar-date.js";
 
@@ -863,9 +863,10 @@ function selectedMonthsInPeriod() {
   return months;
 }
 
-function historicalTransactionsUntilToday() {
+function historicalTransactionsThroughCurrentMonth() {
+  const currentMonthEnd = lastDayOfMonth(currentMonth);
   return state.transactions
-    .filter((item) => item.date && item.date <= todayIso)
+    .filter((item) => item.date && item.date <= currentMonthEnd)
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
@@ -879,8 +880,8 @@ function currentMonthFinancialHealth() {
   };
 }
 
-function historicalMonthsUntilToday() {
-  const items = historicalTransactionsUntilToday();
+function historicalMonthsThroughCurrentMonth() {
+  const items = historicalTransactionsThroughCurrentMonth();
   if (!items.length) return [];
   const months = [];
   let cursor = monthOf(items[0].date);
@@ -893,9 +894,9 @@ function historicalMonthsUntilToday() {
 }
 
 function monthlyClosingBalanceRows() {
-  return historicalMonthsUntilToday().map((month) => ({
+  return historicalMonthsThroughCurrentMonth().map((month) => ({
     month,
-    value: accountBalanceUntil(month === currentMonth ? todayIso : lastDayOfMonth(month)),
+    value: accountBalanceUntil(lastDayOfMonth(month)),
   }));
 }
 
@@ -1592,10 +1593,11 @@ function renderAnalytics() {
   const overdueExpenses = pendingExpenses.filter((item) => item.date < todayIso);
   const overdueValue = overdueExpenses.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
   const coverage = summary.expense ? (summary.availableIncome / summary.expense) * 100 : summary.availableIncome ? 100 : 0;
-  const allHistoricalItems = historicalTransactionsUntilToday();
-  const historicalItems = allHistoricalItems.filter((item) => !isVerocardTransaction(item));
-  const historicalTotals = totalsFor(historicalItems);
-  const historicalBalance = historicalTotals.income - historicalTotals.expense;
+  const currentMonthEnd = lastDayOfMonth(currentMonth);
+  const historicalProjection = calculateHistoricalProjection(state.transactions, currentMonthEnd);
+  const allHistoricalItems = historicalProjection.allItems;
+  const historicalTotals = historicalProjection;
+  const historicalBalance = historicalProjection.balance;
   const monthHealth = currentMonthFinancialHealth();
 
   const paymentLabel = analyticsFilters.payments.length ? `${analyticsFilters.payments.length} modalidade(s)` : "todas as modalidades";
@@ -1620,14 +1622,14 @@ function renderAnalytics() {
   els.analyticsCalculationPeriod.textContent = `${formatDate(start)} a ${formatDate(end)}`;
   els.analyticsOpeningMetric.textContent = money.format(summary.openingBalance);
   els.analyticsPeriodIncomeMetric.textContent = money.format(summary.income);
-  els.analyticsPaidExpenseMetric.textContent = money.format(summary.paidExpense);
-  els.analyticsAvailableMetric.textContent = money.format(summary.closingBalance);
-  els.analyticsAvailableCard.classList.toggle("risk", summary.closingBalance < 0);
-  els.analyticsAvailableCard.classList.toggle("healthy", summary.closingBalance >= 0);
-  els.analyticsProjectedMetric.textContent = money.format(summary.projectedBalance);
-  els.analyticsProjectedNote.textContent = `${money.format(summary.closingBalance)} disponíveis − ${money.format(summary.pendingExpense)} pendentes`;
-  els.analyticsProjectionLine.classList.toggle("risk", summary.projectedBalance < 0);
-  els.analyticsProjectionLine.classList.toggle("healthy", summary.projectedBalance >= 0);
+  els.analyticsPaidExpenseMetric.textContent = money.format(summary.expense);
+  els.analyticsAvailableMetric.textContent = money.format(summary.projectedBalance);
+  els.analyticsAvailableCard.classList.toggle("risk", summary.projectedBalance < 0);
+  els.analyticsAvailableCard.classList.toggle("healthy", summary.projectedBalance >= 0);
+  els.analyticsProjectedMetric.textContent = money.format(summary.closingBalance);
+  els.analyticsProjectionLine.classList.toggle("risk", summary.closingBalance < 0);
+  els.analyticsProjectionLine.classList.toggle("healthy", summary.closingBalance >= 0);
+  els.analyticsProjectedNote.textContent = `${money.format(summary.paidExpense)} já pagos · ${money.format(summary.pendingExpense)} ainda reservados`;
   els.analyticsTicketMetric.textContent = money.format(summary.ticketBalance);
   els.analyticsTicketNote.textContent = `${money.format(summary.ticketIncome)} em créditos − ${money.format(summary.ticketExpense)} em gastos`;
   els.historicalFirstDate.textContent = allHistoricalItems.length ? formatDate(allHistoricalItems[0].date) : "—";
@@ -1637,8 +1639,8 @@ function renderAnalytics() {
   els.historicalBalanceCard.classList.toggle("risk", historicalBalance < 0);
   els.historicalBalanceCard.classList.toggle("healthy", historicalBalance >= 0);
   els.historicalPeriodLabel.textContent = allHistoricalItems.length
-    ? `${formatDate(allHistoricalItems[0].date)} até ${formatDate(todayIso)} · histórico fixo, independente do filtro acima`
-    : "Sem lançamentos históricos até hoje";
+    ? `${formatDate(allHistoricalItems[0].date)} até ${formatDate(currentMonthEnd)} · inclui contas pagas e pendentes do mês atual`
+    : "Sem lançamentos históricos até o fechamento do mês atual";
 
   const monthMarginRate = monthHealth.availableToday > 0 ? (monthHealth.projectedClosing / monthHealth.availableToday) * 100 : 0;
   const analyticsTone = monthHealth.projectedClosing < 0 ? "risk" : monthMarginRate >= 20 ? "healthy" : "attention";
@@ -1674,8 +1676,18 @@ function renderAnalytics() {
 
 let balanceChartPoints = [];
 
+function prepareScrollableCanvas(canvas, itemCount, itemWidth, sidePadding = 96) {
+  const scroller = canvas.closest(".chart-scroll");
+  const viewportWidth = scroller?.clientWidth || canvas.parentElement?.clientWidth || 320;
+  const desiredWidth = Math.max(viewportWidth, itemCount * itemWidth + sidePadding);
+  canvas.style.setProperty("--chart-width", `${Math.ceil(desiredWidth)}px`);
+  const content = canvas.closest(".chart-scroll-content");
+  if (content) content.style.width = `${Math.ceil(desiredWidth)}px`;
+}
+
 function renderModalityEvolutionChart(data) {
   const canvas = els.monthlyTrendChart;
+  prepareScrollableCanvas(canvas, data.length, 70, 100);
   const ctx = setupCanvas(canvas, 760, 320);
   const width = canvas.clientWidth || Number(canvas.getAttribute("width")) || 760;
   const height = canvas.clientHeight || Number(canvas.getAttribute("height")) || 320;
@@ -1713,6 +1725,7 @@ function renderModalityEvolutionChart(data) {
 
 function renderBalanceClosingChart(data) {
   const canvas = els.balanceClosingChart;
+  prepareScrollableCanvas(canvas, data.length, 82, 120);
   const ctx = setupCanvas(canvas, 1120, 320);
   const width = canvas.clientWidth || Number(canvas.getAttribute("width")) || 1120;
   const height = canvas.clientHeight || Number(canvas.getAttribute("height")) || 320;

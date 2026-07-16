@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-07-15 - Analises responsivas e saldo historico projetado
+
+- Reestruturada a aba Analises para caber integralmente em celulares, com leitura vertical e textos sem cortes.
+- Graficos de periodos longos agora possuem rolagem horizontal propria, sem alargar a pagina.
+- A memoria de calculo passa a exibir saldo anterior + receitas - todas as despesas do periodo, incluindo pagas e pendentes.
+- O saldo disponivel antes das pendencias permanece destacado separadamente para nao confundir caixa atual com compromissos futuros.
+- O historico acumulado passa a considerar o mes corrente completo, incluindo todas as contas pagas e pendentes ate o ultimo dia do mes.
+- Adicionado teste automatizado para impedir que despesas pendentes do fim do mes sejam omitidas do saldo historico projetado.
+
 ## 2026-07-15 - Datas e vencimentos no fuso de Sao Paulo
 
 - Corrigida a Central de Alertas para nao transformar contas de amanha em contas de hoje apos 21h.
