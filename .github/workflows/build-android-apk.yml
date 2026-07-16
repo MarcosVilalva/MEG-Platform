@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   build-apk:
-    if: !contains(github.event.head_commit.message, '[skip apk]')
+    if: ${{ !contains(github.event.head_commit.message, '[skip apk]') }}
     runs-on: ubuntu-latest
     env:
       VITE_API_URL: https://meg-platform-api.onrender.com
