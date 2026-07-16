@@ -24,6 +24,12 @@ jobs:
       VITE_API_URL: https://meg-platform-api.onrender.com
       VITE_MOBILE_APP: 'true'
       CAPACITOR_BUILD: 'true'
+      MEG_VERSION_CODE: ${{ github.run_number }}
+      MEG_VERSION_NAME: 1.1.${{ github.run_number }}
+      ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/app/meg-release.jks
+      ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -43,6 +49,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare permanent Android signing key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64" || (echo "ANDROID_KEYSTORE_BASE64 is not configured" && exit 1)
+          test -n "$ANDROID_STORE_PASSWORD" || (echo "ANDROID_STORE_PASSWORD is not configured" && exit 1)
+          test -n "$ANDROID_KEY_ALIAS" || (echo "ANDROID_KEY_ALIAS is not configured" && exit 1)
+          test -n "$ANDROID_KEY_PASSWORD" || (echo "ANDROID_KEY_PASSWORD is not configured" && exit 1)
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
+
       - name: Build mobile web application
         run: npm run build:web
 
@@ -54,10 +70,17 @@ jobs:
 
       - name: Build installable APK
         working-directory: android
-        run: chmod +x gradlew && ./gradlew assembleDebug
+        run: chmod +x gradlew && ./gradlew assembleRelease
 
       - name: Name APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk MEG-Financas.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk MEG-Financas.apk
+
+      - name: Generate secure update manifest
+        shell: bash
+        run: |
+          SHA256=$(sha256sum MEG-Financas.apk | awk '{print $1}')
+          export SHA256
+          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('app-version.json', JSON.stringify({ versionCode: Number(process.env.MEG_VERSION_CODE), versionName: process.env.MEG_VERSION_NAME, downloadUrl: 'https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk', sha256: process.env.SHA256, mandatory: false, releaseNotes: 'Nova atualização do MEG Finanças com melhorias de segurança, desempenho e experiência.' }, null, 2) + '\n')"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -71,8 +94,9 @@ jobs:
         if: github.actor != 'github-actions[bot]'
         run: |
           cp MEG-Financas.apk apps/web/public/downloads/MEG-Financas.apk
+          cp app-version.json apps/web/public/downloads/app-version.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/web/public/downloads/MEG-Financas.apk
+          git add apps/web/public/downloads/MEG-Financas.apk apps/web/public/downloads/app-version.json
           git diff --cached --quiet || git commit -m "chore: publicar APK atualizado [skip apk]"
           git push

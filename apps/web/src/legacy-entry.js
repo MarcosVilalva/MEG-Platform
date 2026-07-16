@@ -2,6 +2,7 @@ import { readSheet } from 'read-excel-file/browser';
 import { bootstrapCloud } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { syncLocalDueNotifications } from './native-notifications.js';
+import { checkForAppUpdate } from './native-app-update.js';
 
 const validationMode = new URLSearchParams(location.search).get('validacao') === '1';
 const localStateKey = 'meg-financas-state-v4-paid-fixes';
@@ -334,6 +335,8 @@ async function start() {
   window.MEG_NATIVE_NOTIFICATIONS = { sync: syncLocalDueNotifications };
   await import('./legacy-app.js');
   wireLegacyApp();
+  window.MEG_APP_UPDATE = { check: () => checkForAppUpdate({ force: true }) };
+  checkForAppUpdate();
   setupInactivityLogout();
   syncLocalDueNotifications(window.MEG_APP.getState());
   window.MEG_CLOUD?.whenFresh?.then((result) => {

@@ -2255,6 +2255,27 @@ tbody tr:hover {
   .current-month-health-equation > b { display: none; }
 }
 
+.app-update-dialog {
+  width: min(540px, calc(100vw - 24px));
+  padding: 30px;
+  overflow: hidden;
+  border: 1px solid rgba(22, 126, 110, .2);
+  background: linear-gradient(145deg, #ffffff 0%, #effbf8 100%);
+  box-shadow: 0 30px 80px rgba(2, 42, 36, .3);
+}
+.app-update-dialog::backdrop { background: rgba(1, 30, 26, .78); backdrop-filter: blur(8px); }
+.app-update-dialog h2 { margin: 8px 0 10px; font-size: clamp(1.6rem, 6vw, 2.25rem); line-height: 1.05; }
+.app-update-dialog > p { color: #58716d; line-height: 1.5; }
+.app-update-icon { display: grid; place-items: center; width: 64px; height: 64px; margin-bottom: 20px; border-radius: 22px; color: white; background: linear-gradient(145deg, #0d7666, #32cfb2); font-size: 2.5rem; font-weight: 900; box-shadow: 0 14px 28px rgba(13, 118, 102, .24); }
+.app-update-notes { margin: 20px 0; padding: 16px; border-radius: 16px; color: #163e37; background: rgba(255,255,255,.8); border: 1px solid #d5e9e5; line-height: 1.5; white-space: pre-line; }
+.app-update-status { min-height: 24px; font-weight: 700; }
+.app-update-dialog .modal-actions { margin-top: 22px; }
+@media (max-width: 560px) {
+  .app-update-dialog { padding: 22px 18px; max-height: calc(100dvh - 20px); }
+  .app-update-dialog .modal-actions { display: grid; grid-template-columns: 1fr; }
+  .app-update-dialog .modal-actions button { width: 100%; min-height: 52px; }
+}
+
 @media (max-width: 680px) {
   body.native-mobile .content { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
   body.native-mobile .mobile-menu-button { display: none; }
