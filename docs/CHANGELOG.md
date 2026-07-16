@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-07-15 - Central de cartões de crédito
+
+- Criada uma aba exclusiva para acompanhar cartões, limites, faturas e compras.
+- Adicionados indicadores de limite total, utilizado, disponível e compras no período.
+- Incluídos filtros dinâmicos por cartão, situação e texto, além de ranking das maiores compras e concentração por grupo.
+- A fatura detalhada permite abrir qualquer compra diretamente para edição.
+- O cadastro de cartões passa a registrar Visa, Mastercard, Elo, American Express, Hipercard ou outra bandeira.
+- Cada bandeira recebe automaticamente uma apresentação visual própria na carteira digital.
+- O cálculo do limite comprometido considera todas as despesas de crédito ainda em aberto, enquanto as análises da fatura respeitam o período selecionado.
+
 ## 2026-07-15 - Finalização dos cadastros
 
 - Adicionado botão **Editar** em grupos, classificações, formas de pagamento e cartões cadastrados.

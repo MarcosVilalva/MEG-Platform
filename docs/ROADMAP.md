@@ -11,6 +11,7 @@
 - Comparativo mês a mês.
 - Tendências.
 - Pareto de despesas.
+- [x] Central de cartões, limites, filtros e fatura detalhada.
 
 ## Alpha 0.6
 - Calendário Financeiro.

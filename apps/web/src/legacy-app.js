@@ -1,4 +1,4 @@
-import { availableMonetaryBalance, calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal, summarizeDueDate } from "./legacy-finance.js";
+import { availableMonetaryBalance, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal, summarizeDueDate } from "./legacy-finance.js";
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
 
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
@@ -105,6 +105,9 @@ let analyticsFilters = {
 };
 let incomeSourceFilter = "all";
 let incomeSourceSearch = "";
+let creditCardFilter = "all";
+let creditCardStatusFilter = "all";
+let creditCardSearch = "";
 const transactionColumnFilters = {};
 let descriptionSuggestionItems = [];
 let activeDescriptionSuggestion = -1;
@@ -333,6 +336,29 @@ const els = {
   transactionSortFilter: document.querySelector("#transactionSortFilter"),
   transactionColumnFilters: document.querySelectorAll("[data-column-filter]"),
   clearColumnFiltersBtn: document.querySelector("#clearColumnFiltersBtn"),
+  creditCardsPeriodLabel: document.querySelector("#creditCardsPeriodLabel"),
+  newCardTransactionBtn: document.querySelector("#newCardTransactionBtn"),
+  creditCardFilter: document.querySelector("#creditCardFilter"),
+  creditCardStatusFilter: document.querySelector("#creditCardStatusFilter"),
+  creditCardSearchInput: document.querySelector("#creditCardSearchInput"),
+  clearCreditCardFiltersBtn: document.querySelector("#clearCreditCardFiltersBtn"),
+  creditCardCommandCenter: document.querySelector("#creditCardCommandCenter"),
+  creditCardHealthTitle: document.querySelector("#creditCardHealthTitle"),
+  creditCardHealthMessage: document.querySelector("#creditCardHealthMessage"),
+  creditLimitRing: document.querySelector("#creditLimitRing"),
+  creditUsagePercent: document.querySelector("#creditUsagePercent"),
+  creditTotalLimitMetric: document.querySelector("#creditTotalLimitMetric"),
+  creditUsedLimitMetric: document.querySelector("#creditUsedLimitMetric"),
+  creditAvailableLimitMetric: document.querySelector("#creditAvailableLimitMetric"),
+  creditPeriodTotalMetric: document.querySelector("#creditPeriodTotalMetric"),
+  creditCardWallet: document.querySelector("#creditCardWallet"),
+  creditTopExpensesNote: document.querySelector("#creditTopExpensesNote"),
+  creditTopExpenses: document.querySelector("#creditTopExpenses"),
+  creditLargestGroupMetric: document.querySelector("#creditLargestGroupMetric"),
+  creditGroupBars: document.querySelector("#creditGroupBars"),
+  creditInvoiceTitle: document.querySelector("#creditInvoiceTitle"),
+  creditInvoiceSummary: document.querySelector("#creditInvoiceSummary"),
+  creditInvoiceRows: document.querySelector("#creditInvoiceRows"),
   budgetEditorGrid: document.querySelector("#budgetEditorGrid"),
   applySuggestedBudgetsBtn: document.querySelector("#applySuggestedBudgetsBtn"),
   budgetHistoryLabel: document.querySelector("#budgetHistoryLabel"),
@@ -424,6 +450,7 @@ const els = {
   paymentCatalogCount: document.querySelector("#paymentCatalogCount"),
   cardCatalogForm: document.querySelector("#cardCatalogForm"),
   newCardPaymentInput: document.querySelector("#newCardPaymentInput"),
+  newCardBrandInput: document.querySelector("#newCardBrandInput"),
   newCardClosingDayInput: document.querySelector("#newCardClosingDayInput"),
   newCardDueDayInput: document.querySelector("#newCardDueDayInput"),
   newCardBestDayInput: document.querySelector("#newCardBestDayInput"),
@@ -510,6 +537,7 @@ function normalizeState(nextState) {
       paymentMethods: [...paymentMap.values()],
       cards: (incomingCatalogs.cards || []).map((card) => ({
         paymentMethod: String(card?.paymentMethod || "").trim(),
+        brand: String(card?.brand || "VISA").trim().toUpperCase(),
         closingDay: Number(card?.closingDay || 0),
         dueDay: Number(card?.dueDay || 0),
         bestPurchaseDay: Number(card?.bestPurchaseDay || 0),
@@ -928,6 +956,7 @@ function render() {
   }
   if (selectedView === "income-analysis") renderIncomeAnalysis();
   if (selectedView === "transactions") renderTransactions();
+  if (selectedView === "credit-cards") renderCreditCards();
   if (selectedView === "budgets") renderBudgets();
   if (selectedView === "pending") renderPending();
   if (selectedView === "catalogs") renderCatalogs();
@@ -2261,6 +2290,86 @@ function renderTransactions() {
     : `<tr><td colspan="14" class="empty">Nenhum lancamento encontrado.</td></tr>`;
 }
 
+function cardBrandClass(brand) {
+  const value = normalizeText(brand).replace(/[^A-Z]/g, "").toLowerCase();
+  return ["visa", "mastercard", "elo", "amex", "hipercard"].includes(value) ? value : "other";
+}
+
+function cardBrandLabel(brand) {
+  const labels = { VISA: "VISA", MASTERCARD: "Mastercard", ELO: "elo", AMEX: "AMERICAN EXPRESS", HIPERCARD: "Hipercard", OUTRO: "MEG CARD" };
+  return labels[normalizeText(brand)] || "MEG CARD";
+}
+
+function renderCreditCards() {
+  const registeredCards = state.catalogs?.cards || [];
+  const paymentNames = [...new Set([
+    ...registeredCards.map((card) => card.paymentMethod),
+    ...state.transactions.filter(isCreditCardExpense).map((item) => item.paymentMethod || item.account).filter(Boolean),
+  ])].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  els.creditCardFilter.innerHTML = `<option value="all">Todos os cartões</option>${paymentNames.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")}`;
+  if (paymentNames.includes(creditCardFilter)) els.creditCardFilter.value = creditCardFilter;
+  else creditCardFilter = "all";
+  els.creditCardStatusFilter.value = creditCardStatusFilter;
+  els.creditCardSearchInput.value = creditCardSearch;
+
+  const portfolio = calculateCreditCardPortfolio(state.transactions, selectedTransactions(), registeredCards, {
+    card: creditCardFilter === "all" ? "" : creditCardFilter,
+    status: creditCardStatusFilter,
+    search: creditCardSearch,
+  });
+  const usage = Math.round(portfolio.usagePercent);
+  const healthTone = usage >= 90 ? "risk" : usage >= 70 ? "attention" : "healthy";
+  els.creditCardsPeriodLabel.textContent = `${periodLabel()} · ${portfolio.items.length} compra(s) encontrada(s)`;
+  els.creditCardCommandCenter.classList.remove("risk", "attention", "healthy");
+  els.creditCardCommandCenter.classList.add(healthTone);
+  els.creditCardHealthTitle.textContent = !portfolio.cards.length
+    ? "Cadastre seus cartões para acompanhar os limites"
+    : usage >= 90 ? "Limite em zona crítica" : usage >= 70 ? "Uso do limite exige atenção" : "Limites sob controle";
+  els.creditCardHealthMessage.textContent = !portfolio.cards.length
+    ? "As compras de crédito já podem ser vistas; complete o cadastro para calcular o limite disponível."
+    : usage >= 90 ? "Evite novas compras até reduzir as faturas em aberto." : usage >= 70 ? "O limite disponível está diminuindo. Revise os maiores gastos antes de comprar." : "Você ainda possui margem disponível nos cartões cadastrados.";
+  els.creditLimitRing.style.setProperty("--credit-progress", `${Math.min(usage, 100) * 3.6}deg`);
+  els.creditUsagePercent.textContent = `${usage}%`;
+  els.creditTotalLimitMetric.textContent = money.format(portfolio.totalLimit);
+  els.creditUsedLimitMetric.textContent = money.format(portfolio.usedLimit);
+  els.creditAvailableLimitMetric.textContent = money.format(portfolio.availableLimit);
+  els.creditPeriodTotalMetric.textContent = money.format(portfolio.periodTotal);
+
+  els.creditCardWallet.innerHTML = portfolio.cards.length ? portfolio.cards.map((card) => {
+    const selected = creditCardFilter !== "all" && normalizeText(creditCardFilter) === normalizeText(card.paymentMethod);
+    const usagePercent = Math.round(card.usagePercent);
+    return `<button type="button" class="credit-card-visual brand-${cardBrandClass(card.brand)} ${selected ? "selected" : ""}" data-credit-card-select="${escapeHtml(card.paymentMethod)}">
+      <span class="credit-card-glow" aria-hidden="true"></span>
+      <span class="credit-card-brand">${escapeHtml(cardBrandLabel(card.brand))}</span>
+      <span class="credit-card-chip" aria-hidden="true"></span>
+      <span class="credit-card-name">${escapeHtml(card.paymentMethod)}</span>
+      <span class="credit-card-cycle">Fecha dia ${card.closingDay || "—"} · vence dia ${card.dueDay || "—"}</span>
+      <span class="credit-card-usage"><i style="width:${Math.min(usagePercent, 100)}%"></i></span>
+      <span class="credit-card-values"><small>Utilizado <b>${money.format(card.used)}</b></small><small>Disponível <b>${money.format(card.available)}</b></small></span>
+    </button>`;
+  }).join("") : `<div class="empty credit-card-empty">Nenhum cartão identificado. <button class="button" type="button" data-view-link="catalogs">Cadastrar cartão</button></div>`;
+
+  const topExpenses = [...portfolio.items].sort((a, b) => Number(b.expenseAmount || b.amount || 0) - Number(a.expenseAmount || a.amount || 0)).slice(0, 6);
+  els.creditTopExpensesNote.textContent = `${money.format(portfolio.periodTotal)} no período`;
+  els.creditTopExpenses.innerHTML = topExpenses.length ? topExpenses.map((item, index) => `<button type="button" data-edit="${item.id}"><span class="credit-expense-rank">${index + 1}</span><span><strong>${escapeHtml(item.description)}</strong><small>${formatDate(item.purchaseDate || item.date)} · ${escapeHtml(item.paymentMethod || item.account)}</small></span><b>${money.format(item.expenseAmount || item.amount || 0)}</b></button>`).join("") : `<div class="empty">Nenhuma compra corresponde aos filtros.</div>`;
+
+  const groups = new Map();
+  portfolio.items.forEach((item) => {
+    const group = item.group || item.category || "Sem categoria";
+    groups.set(group, (groups.get(group) || 0) + Number(item.expenseAmount || item.amount || 0));
+  });
+  const sortedGroups = [...groups.entries()].sort((a, b) => b[1] - a[1]).slice(0, 7);
+  const groupMax = sortedGroups[0]?.[1] || 1;
+  els.creditLargestGroupMetric.textContent = portfolio.largestGroup.name ? `${portfolio.largestGroup.name} · ${money.format(portfolio.largestGroup.total)}` : "Sem dados";
+  els.creditGroupBars.innerHTML = sortedGroups.length ? sortedGroups.map(([group, total], index) => `<div><span><b>${escapeHtml(group)}</b><small>${money.format(total)}</small></span><i><em style="width:${(total / groupMax) * 100}%" class="tone-${Math.min(index + 1, 4)}"></em></i></div>`).join("") : `<div class="empty">Sem grupos para comparar.</div>`;
+
+  els.creditInvoiceTitle.textContent = creditCardFilter === "all" ? "Lançamentos dos cartões" : `Fatura · ${creditCardFilter}`;
+  els.creditInvoiceSummary.textContent = `${portfolio.items.length} compra(s) · ${money.format(portfolio.periodTotal)} · ${money.format(portfolio.pendingTotal)} em aberto`;
+  els.creditInvoiceRows.innerHTML = portfolio.items.length ? portfolio.items.map((item) => `<tr>
+    <td>${formatDate(item.purchaseDate || item.date)}</td><td>${formatDate(item.date)}</td><td><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.notes || "")}</small></td><td>${escapeHtml(item.group || item.category || "")}</td><td>${escapeHtml(item.paymentMethod || item.account || "")}</td><td class="amount negative">${money.format(item.expenseAmount || item.amount || 0)}</td><td><span class="credit-status ${item.status === "paid" ? "paid" : "pending"}">${item.status === "paid" ? "PAGA" : "EM ABERTO"}</span></td><td><button type="button" class="transaction-edit-button" data-edit="${item.id}" aria-label="Editar ${escapeHtml(item.description)}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m4 17.2 9.8-9.8 2.8 2.8L6.8 20H4v-2.8ZM18.8 8 16 5.2l1.4-1.4a2 2 0 0 1 2.8 2.8L18.8 8Z"/></svg></button></td>
+  </tr>`).join("") : `<tr><td colspan="8" class="empty">Nenhuma compra encontrada para o período e filtros selecionados.</td></tr>`;
+}
+
 function budgetPlanningData() {
   const monetary = state.transactions.filter((item) => !isVerocardTransaction(item));
   const months = [...new Set(monetary.map((item) => monthOf(item.date)).filter(Boolean))].sort();
@@ -2650,7 +2759,7 @@ function renderCatalogs() {
   els.newCardPaymentInput.innerHTML = `<option value="">Selecione o cartão</option>${creditPayments.map((item) => `<option value="${escapeHtml(item.description)}">${escapeHtml(item.description)}</option>`).join("")}`;
   if (creditPayments.some((item) => item.description === selectedCardPayment)) els.newCardPaymentInput.value = selectedCardPayment;
   els.cardCatalogList.innerHTML = cards.length
-    ? cards.map((card) => `<div class="catalog-row card-catalog-row"><span><strong>${escapeHtml(card.paymentMethod)}</strong><small>Fecha dia ${card.closingDay} · vence dia ${card.dueDay} · melhor compra dia ${card.bestPurchaseDay || "—"}</small><small>Limite ${money.format(card.limit || 0)}</small></span><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-card="${escapeHtml(card.paymentMethod)}">Editar</button><button type="button" class="catalog-remove" data-remove-card="${escapeHtml(card.paymentMethod)}">Remover</button></span></div>`).join("")
+    ? cards.map((card) => `<div class="catalog-row card-catalog-row"><span><strong>${escapeHtml(card.paymentMethod)}</strong><small>${escapeHtml(cardBrandLabel(card.brand))} · fecha dia ${card.closingDay} · vence dia ${card.dueDay} · melhor compra dia ${card.bestPurchaseDay || "—"}</small><small>Limite ${money.format(card.limit || 0)}</small></span><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-card="${escapeHtml(card.paymentMethod)}">Editar</button><button type="button" class="catalog-remove" data-remove-card="${escapeHtml(card.paymentMethod)}">Remover</button></span></div>`).join("")
     : `<div class="empty">Cadastre as regras dos seus cartões para calcular as próximas faturas.</div>`;
 }
 
@@ -2688,6 +2797,7 @@ function editCardCatalog(paymentMethod) {
   if (!card) return;
   editingCardPaymentMethod = card.paymentMethod;
   els.newCardPaymentInput.value = card.paymentMethod;
+  els.newCardBrandInput.value = card.brand || "VISA";
   els.newCardClosingDayInput.value = String(card.closingDay);
   els.newCardDueDayInput.value = String(card.dueDay);
   els.newCardBestDayInput.value = String(card.bestPurchaseDay || "");
@@ -2771,12 +2881,13 @@ function addExpenseClassCatalog(event) {
 function addCardCatalog(event) {
   event.preventDefault();
   const paymentMethod = els.newCardPaymentInput.value.trim();
+  const brand = els.newCardBrandInput.value.trim().toUpperCase();
   const closingDay = Number(els.newCardClosingDayInput.value);
   const dueDay = Number(els.newCardDueDayInput.value);
   const bestPurchaseDay = Number(els.newCardBestDayInput.value);
   const limit = Number(els.newCardLimitInput.value);
   if (!paymentMethod || [closingDay, dueDay, bestPurchaseDay].some((day) => day < 1 || day > 31) || limit < 0) return;
-  const card = { paymentMethod, closingDay, dueDay, bestPurchaseDay, limit };
+  const card = { paymentMethod, brand, closingDay, dueDay, bestPurchaseDay, limit };
   const lookupPaymentMethod = editingCardPaymentMethod || paymentMethod;
   const index = state.catalogs.cards.findIndex((item) => normalizeText(item.paymentMethod) === normalizeText(lookupPaymentMethod));
   const updated = index >= 0;
@@ -3531,6 +3642,7 @@ document.addEventListener("click", (event) => {
   const editGroupCatalogButton = event.target.closest("[data-edit-group]");
   const editExpenseClassCatalogButton = event.target.closest("[data-edit-expense-class]");
   const editPaymentCatalogButton = event.target.closest("[data-edit-payment]");
+  const creditCardSelectButton = event.target.closest("[data-credit-card-select]");
   const userActionButton = event.target.closest("[data-user-action]");
   const saveUserRoleButton = event.target.closest("[data-save-user-role]");
   const resetUserPasswordButton = event.target.closest("[data-reset-user-password]");
@@ -3554,6 +3666,10 @@ document.addEventListener("click", (event) => {
   if (editGroupCatalogButton) beginCatalogEdit("group", editGroupCatalogButton.dataset.editGroup);
   if (editExpenseClassCatalogButton) beginCatalogEdit("expenseClass", editExpenseClassCatalogButton.dataset.editExpenseClass);
   if (editPaymentCatalogButton) beginCatalogEdit("payment", editPaymentCatalogButton.dataset.editPayment);
+  if (creditCardSelectButton) {
+    creditCardFilter = creditCardSelectButton.dataset.creditCardSelect || "all";
+    renderCreditCards();
+  }
   if (userActionButton) updateManagedUser(userActionButton.dataset.userId, userActionButton.dataset.userAction);
   if (saveUserRoleButton) updateManagedUser(saveUserRoleButton.dataset.saveUserRole, "UPDATE");
   if (resetUserPasswordButton) resetManagedUserPassword(resetUserPasswordButton.dataset.resetUserPassword);
@@ -3629,6 +3745,36 @@ els.clearColumnFiltersBtn?.addEventListener("click", () => {
   Object.keys(transactionColumnFilters).forEach((key) => delete transactionColumnFilters[key]);
   els.transactionColumnFilters.forEach((control) => { control.value = ""; });
   renderTransactions();
+});
+els.creditCardFilter?.addEventListener("change", () => {
+  creditCardFilter = els.creditCardFilter.value || "all";
+  renderCreditCards();
+});
+els.creditCardStatusFilter?.addEventListener("change", () => {
+  creditCardStatusFilter = els.creditCardStatusFilter.value || "all";
+  renderCreditCards();
+});
+els.creditCardSearchInput?.addEventListener("input", () => {
+  creditCardSearch = els.creditCardSearchInput.value.trim();
+  renderCreditCards();
+});
+els.clearCreditCardFiltersBtn?.addEventListener("click", () => {
+  creditCardFilter = "all";
+  creditCardStatusFilter = "all";
+  creditCardSearch = "";
+  renderCreditCards();
+});
+els.newCardTransactionBtn?.addEventListener("click", () => {
+  openTransactionDialog();
+  els.transactionType.value = "expense";
+  syncAmountFields();
+  els.modalityInput.value = "CREDITO";
+  syncModalityPaymentOptions();
+  if (creditCardFilter !== "all") {
+    els.paymentMethodInput.value = creditCardFilter;
+    syncPaymentModality();
+  }
+  els.descriptionInput.focus();
 });
 els.pendingStatusFilter.addEventListener("change", renderPending);
 els.pendingPaymentFilter.addEventListener("change", renderPending);
@@ -3724,6 +3870,7 @@ els.newCardPaymentInput.addEventListener("change", () => {
   els.newCardDueDayInput.value = String(card.dueDay);
   els.newCardBestDayInput.value = String(card.bestPurchaseDay || "");
   els.newCardLimitInput.value = String(card.limit || 0);
+  els.newCardBrandInput.value = card.brand || "VISA";
 });
 window.addEventListener("resize", () => {
   renderCategoryChart();

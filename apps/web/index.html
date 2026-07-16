@@ -51,6 +51,10 @@
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 0 1 2-2Zm2 5h6V6H9v2Zm0 4h6v-2H9v2Zm0 4h4v-2H9v2Z"/></svg>
             Lancamentos
           </button>
+          <button class="nav-item" data-view="credit-cards" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 5h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 4h18V7H3v2Zm2 6h6v-2H5v2Z"/></svg>
+            Cartoes
+          </button>
           <button class="nav-item" data-view="budgets" type="button">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10h-4a6 6 0 1 1-6-6V2Zm2 0v8h8a10 10 0 0 0-8-8Z"/></svg>
             Orcamentos
@@ -565,6 +569,54 @@
           </section>
         </section>
 
+        <section class="view" id="credit-cards" aria-labelledby="creditCardsTitle">
+          <div class="section-heading credit-card-heading">
+            <div><small class="decision-eyebrow">CENTRAL DE CARTÕES</small><h2 id="creditCardsTitle">Cartões de crédito</h2><p class="muted" id="creditCardsPeriodLabel">Limites, faturas e compras do período selecionado.</p></div>
+            <button class="button primary" id="newCardTransactionBtn" type="button">+ Nova compra</button>
+          </div>
+
+          <section class="credit-card-filterbar" aria-label="Filtros dos cartões">
+            <label><span>Cartão</span><select id="creditCardFilter"><option value="all">Todos os cartões</option></select></label>
+            <label><span>Situação</span><select id="creditCardStatusFilter"><option value="all">Todas</option><option value="pending">Em aberto</option><option value="paid">Pagas</option></select></label>
+            <label class="credit-card-search"><span>Pesquisar na fatura</span><input id="creditCardSearchInput" type="search" placeholder="Descrição, grupo ou observação" autocomplete="off" /></label>
+            <button class="button" id="clearCreditCardFiltersBtn" type="button">Limpar filtros</button>
+          </section>
+
+          <section class="credit-card-command-center" id="creditCardCommandCenter">
+            <div class="credit-card-health"><small class="decision-eyebrow">VISÃO CONSOLIDADA</small><h3 id="creditCardHealthTitle">Uso dos cartões sob controle</h3><p id="creditCardHealthMessage">Acompanhando limite comprometido e despesas da fatura.</p></div>
+            <div class="credit-limit-ring" id="creditLimitRing"><strong id="creditUsagePercent">0%</strong><span>do limite usado</span></div>
+            <div class="credit-card-kpis">
+              <article><span>Limite total</span><strong id="creditTotalLimitMetric">R$ 0,00</strong></article>
+              <article><span>Limite utilizado</span><strong id="creditUsedLimitMetric">R$ 0,00</strong></article>
+              <article><span>Disponível</span><strong id="creditAvailableLimitMetric">R$ 0,00</strong></article>
+              <article><span>Compras no período</span><strong id="creditPeriodTotalMetric">R$ 0,00</strong></article>
+            </div>
+          </section>
+
+          <div class="credit-wallet" id="creditCardWallet"></div>
+
+          <div class="credit-card-insights-grid">
+            <section class="panel">
+              <div class="panel-title"><div><small class="decision-eyebrow">MAIORES GASTOS</small><h3>Compras que mais pesaram</h3></div><span id="creditTopExpensesNote">Período selecionado</span></div>
+              <div class="credit-top-expenses" id="creditTopExpenses"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-title"><div><small class="decision-eyebrow">CONCENTRAÇÃO</small><h3>Gastos por grupo</h3></div><span id="creditLargestGroupMetric">Sem dados</span></div>
+              <div class="credit-group-bars" id="creditGroupBars"></div>
+            </section>
+          </div>
+
+          <section class="panel credit-invoice-panel">
+            <div class="panel-title"><div><small class="decision-eyebrow">FATURA DETALHADA</small><h3 id="creditInvoiceTitle">Lançamentos dos cartões</h3></div><span id="creditInvoiceSummary">0 compras</span></div>
+            <div class="table-wrap">
+              <table class="credit-invoice-table">
+                <thead><tr><th>Compra</th><th>Vencimento</th><th>Descrição</th><th>Grupo</th><th>Cartão</th><th>Valor</th><th>Situação</th><th></th></tr></thead>
+                <tbody id="creditInvoiceRows"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
         <section class="view" id="budgets" aria-labelledby="budgetsTitle">
           <div class="section-heading">
             <div><h2 id="budgetsTitle">Planejamento financeiro</h2><p class="muted" id="budgetHistoryLabel">Metas calculadas pelo seu histórico completo.</p></div>
@@ -687,6 +739,7 @@
               <p class="muted">Vincule um cartão já existente nas formas de pagamento. A data de vencimento dos novos lançamentos será calculada automaticamente.</p>
               <form class="catalog-form card-catalog-form" id="cardCatalogForm">
                 <label>Cartão<select id="newCardPaymentInput" required></select></label>
+                <label>Bandeira<select id="newCardBrandInput" required><option value="VISA">Visa</option><option value="MASTERCARD">Mastercard</option><option value="ELO">Elo</option><option value="AMEX">American Express</option><option value="HIPERCARD">Hipercard</option><option value="OUTRO">Outra</option></select></label>
                 <label>Fechamento<input id="newCardClosingDayInput" type="number" min="1" max="31" placeholder="Dia" required /></label>
                 <label>Vencimento<input id="newCardDueDayInput" type="number" min="1" max="31" placeholder="Dia" required /></label>
                 <label>Melhor dia<input id="newCardBestDayInput" type="number" min="1" max="31" placeholder="Dia" required /></label>

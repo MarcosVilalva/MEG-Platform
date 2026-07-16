@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { availableMonetaryBalance, calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, payableGroupLabel, payableGroupTotal, summarizeDueDate } from './legacy-finance.js';
+import { availableMonetaryBalance, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, payableGroupLabel, payableGroupTotal, summarizeDueDate } from './legacy-finance.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from './legacy-installments.js';
 
@@ -140,5 +140,30 @@ assert.equal(currentMonthHealth.pendingItems.length, 2);
 assert.equal(currentMonthHealth.overdueItems.length, 1);
 assert.equal(currentMonthHealth.nextDue.date, '2026-07-20');
 assert.equal(currentMonthHealth.nextDue.total, 2500);
+
+const cardTransactions = [
+  { id: 'visa-paid', date: '2026-07-10', type: 'expense', expenseAmount: 200, status: 'paid', modality: 'CREDITO', paymentMethod: 'CARTÃO AZUL', group: 'SUPERMERCADO' },
+  { id: 'visa-open', date: '2026-07-10', type: 'expense', expenseAmount: 350, status: 'pending', modality: 'CREDITO', paymentMethod: 'CARTÃO AZUL', group: 'LAZER' },
+  { id: 'master-open', date: '2026-08-10', type: 'expense', expenseAmount: 600, status: 'pending', modality: 'CREDITO', paymentMethod: 'CARTÃO ML', group: 'SUPERMERCADO' },
+];
+const cardPortfolio = calculateCreditCardPortfolio(
+  cardTransactions,
+  cardTransactions.filter((item) => item.date.startsWith('2026-07')),
+  [
+    { paymentMethod: 'CARTÃO AZUL', brand: 'VISA', limit: 2000 },
+    { paymentMethod: 'CARTÃO ML', brand: 'MASTERCARD', limit: 1500 },
+  ],
+);
+assert.equal(cardPortfolio.totalLimit, 3500);
+assert.equal(cardPortfolio.usedLimit, 950);
+assert.equal(cardPortfolio.availableLimit, 2550);
+assert.equal(cardPortfolio.periodTotal, 550);
+assert.equal(cardPortfolio.paidTotal, 200);
+assert.equal(cardPortfolio.pendingTotal, 350);
+assert.equal(cardPortfolio.cards[0].available, 1650);
+assert.equal(cardPortfolio.largestGroup.name, 'LAZER');
+const filteredCardPortfolio = calculateCreditCardPortfolio(cardTransactions, cardTransactions, cardPortfolio.cards, { card: 'CARTÃO ML', status: 'pending', search: 'super' });
+assert.equal(filteredCardPortfolio.items.length, 1);
+assert.equal(filteredCardPortfolio.periodTotal, 600);
 
 console.log('MEG legacy financial reconciliation passed.');

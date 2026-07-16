@@ -1228,7 +1228,7 @@ textarea {
 .catalog-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; margin: 16px 0; }
 .payment-catalog-form { grid-template-columns: minmax(0,1.2fr) minmax(150px,.8fr) auto; }
 .card-catalog-panel { grid-column: 1 / -1; }
-.card-catalog-form { grid-template-columns: minmax(190px,1.4fr) repeat(3,minmax(105px,.55fr)) minmax(135px,.75fr) auto; align-items: end; }
+.card-catalog-form { grid-template-columns: minmax(170px,1.2fr) minmax(120px,.7fr) repeat(3,minmax(90px,.5fr)) minmax(120px,.7fr) auto; align-items: end; }
 .card-catalog-form label { display: grid; gap: 7px; color: var(--muted); font-size: .72rem; font-weight: 900; text-transform: uppercase; }
 .card-catalog-row > span { display: grid; gap: 3px; }
 .card-due-preview { display: block; margin-top: 5px; color: var(--primary); font-size: .68rem; font-weight: 800; text-transform: none; }
@@ -3386,4 +3386,191 @@ dialog.modal {
   .month-decision { grid-template-columns: 1fr; }
   .decision-icon { display: none; }
   .decision-status { grid-column: 1; }
+}
+
+/* Central de cartoes de credito */
+.credit-card-filterbar {
+  display: grid;
+  grid-template-columns: minmax(150px, .8fr) minmax(150px, .7fr) minmax(240px, 1.5fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 18px;
+}
+.credit-card-filterbar label { display: grid; gap: 7px; color: var(--muted); font-size: .74rem; font-weight: 900; text-transform: uppercase; }
+.credit-card-filterbar input,
+.credit-card-filterbar select { width: 100%; }
+
+.credit-card-command-center {
+  --credit-progress: 0deg;
+  display: grid;
+  grid-template-columns: minmax(230px, .9fr) minmax(180px, .55fr) minmax(0, 1.75fr);
+  gap: 22px;
+  align-items: center;
+  overflow: hidden;
+  color: #f8fffd;
+  background:
+    radial-gradient(circle at 88% 15%, rgba(106, 244, 210, .22), transparent 28%),
+    linear-gradient(135deg, #063f38, #0c695c 58%, #148c78);
+  border: 0;
+  box-shadow: 0 22px 50px rgba(4, 58, 51, .2);
+}
+.credit-card-command-center.attention { background: radial-gradient(circle at 88% 15%, rgba(255, 218, 123, .2), transparent 28%), linear-gradient(135deg, #43330a, #88630a 58%, #a7780d); }
+.credit-card-command-center.risk { background: radial-gradient(circle at 88% 15%, rgba(255, 172, 172, .22), transparent 28%), linear-gradient(135deg, #4b1515, #8c2929 58%, #b23a3a); }
+.credit-card-health { display: grid; gap: 8px; min-width: 0; }
+.credit-card-health .eyebrow { color: #8ff1dc; }
+.credit-card-command-center.attention .eyebrow,
+.credit-card-command-center.risk .eyebrow { color: #fff1c7; }
+.credit-card-health h3 { margin: 0; font-size: clamp(1.35rem, 3vw, 2.1rem); }
+.credit-card-health p { margin: 0; color: rgba(255,255,255,.8); line-height: 1.45; }
+.credit-limit-ring {
+  width: 142px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  position: relative;
+  justify-self: center;
+  border-radius: 50%;
+  background: conic-gradient(#62e6c7 var(--credit-progress), rgba(255,255,255,.15) 0);
+  box-shadow: 0 12px 30px rgba(0,0,0,.18);
+}
+.credit-limit-ring::before { content: ""; position: absolute; inset: 13px; border-radius: inherit; background: rgba(5, 66, 58, .94); }
+.credit-card-command-center.attention .credit-limit-ring::before { background: rgba(85, 61, 6, .94); }
+.credit-card-command-center.risk .credit-limit-ring::before { background: rgba(83, 22, 22, .94); }
+.credit-limit-ring strong,
+.credit-limit-ring span { position: relative; z-index: 1; }
+.credit-limit-ring strong { display: block; font-size: 1.9rem; }
+.credit-limit-ring span { position: absolute; top: 86px; width: 92px; color: rgba(255,255,255,.72); font-size: .64rem; font-weight: 800; text-align: center; text-transform: uppercase; }
+.credit-card-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.credit-card-kpis article { min-width: 0; padding: 14px; border: 1px solid rgba(255,255,255,.15); border-radius: 15px; background: rgba(255,255,255,.09); backdrop-filter: blur(8px); }
+.credit-card-kpis span { display: block; color: rgba(255,255,255,.7); font-size: .7rem; font-weight: 900; text-transform: uppercase; }
+.credit-card-kpis strong { display: block; margin-top: 5px; font-size: clamp(1.05rem, 2vw, 1.45rem); overflow-wrap: anywhere; }
+
+.credit-wallet { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 16px; margin: 20px 0; }
+.credit-card-visual {
+  min-height: 184px;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  align-content: space-between;
+  gap: 18px;
+  padding: 20px;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 22px;
+  background: linear-gradient(135deg, #173d75, #246bb7 60%, #55a2ea);
+  box-shadow: 0 18px 35px rgba(22, 52, 83, .18);
+  cursor: pointer;
+  text-align: left;
+  transition: transform .2s ease, box-shadow .2s ease, outline .2s ease;
+}
+.credit-card-visual::before { content: ""; position: absolute; width: 210px; height: 210px; right: -85px; top: -105px; border: 32px solid rgba(255,255,255,.11); border-radius: 50%; }
+.credit-card-visual::after { content: ""; position: absolute; inset: auto -40px -85px auto; width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,.08); }
+.credit-card-visual:hover { transform: translateY(-3px); box-shadow: 0 23px 42px rgba(22, 52, 83, .25); }
+.credit-card-visual.selected { outline: 4px solid rgba(24, 172, 144, .22); outline-offset: 3px; }
+.credit-card-visual.brand-mastercard { background: linear-gradient(135deg, #1b1b27, #343448 58%, #5c4452); }
+.credit-card-visual.brand-elo { background: linear-gradient(135deg, #171717, #333 58%, #6c5920); }
+.credit-card-visual.brand-amex { background: linear-gradient(135deg, #07576e, #0e849a 58%, #58c4d4); }
+.credit-card-visual.brand-hipercard { background: linear-gradient(135deg, #751b22, #b52634 58%, #ee6873); }
+.credit-card-visual.brand-other { background: linear-gradient(135deg, #3d3657, #695b8a 58%, #9c83c2); }
+.credit-card-brand-row,
+.credit-card-name-row,
+.credit-card-value-row { position: relative; z-index: 1; display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.credit-card-brand { font-size: 1.05rem; font-weight: 1000; letter-spacing: .08em; }
+.credit-card-chip { position: absolute; z-index: 1; top: 55px; left: 20px; width: 43px; height: 31px; border-radius: 8px; background: linear-gradient(135deg, #f8eaa5, #b89b39); box-shadow: inset 0 0 0 1px rgba(70,56,12,.28); }
+.credit-card-name { position: relative; z-index: 1; margin-top: 26px; font-size: 1.18rem; font-weight: 900; overflow-wrap: anywhere; }
+.credit-card-cycle { position: relative; z-index: 1; margin-top: -14px; color: rgba(255,255,255,.7); font-size: .75rem; }
+.credit-card-glow { position: absolute; inset: 0; pointer-events: none; }
+.credit-card-usage { position: relative; z-index: 1; display: block; height: 6px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.18); }
+.credit-card-usage i { display: block; height: 100%; max-width: 100%; border-radius: inherit; background: #7ff4d8; }
+.credit-card-values { position: relative; z-index: 1; display: flex; justify-content: space-between; gap: 14px; }
+.credit-card-values small { color: rgba(255,255,255,.72); font-size: .66rem; font-weight: 900; text-transform: uppercase; }
+.credit-card-values b { display: block; margin-top: 3px; color: #fff; font-size: .96rem; }
+.credit-card-name-row { align-items: flex-end; }
+.credit-card-name-row strong { display: block; max-width: 78%; font-size: 1.18rem; overflow-wrap: anywhere; }
+.credit-card-name-row small { color: rgba(255,255,255,.7); }
+.credit-card-usage { text-align: right; }
+.credit-card-value-row span { color: rgba(255,255,255,.72); font-size: .69rem; font-weight: 900; text-transform: uppercase; }
+.credit-card-value-row strong { display: block; margin-top: 3px; font-size: 1.08rem; }
+.credit-card-progress { position: relative; z-index: 1; height: 6px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.18); }
+.credit-card-progress i { display: block; height: 100%; width: var(--card-use); max-width: 100%; border-radius: inherit; background: #7ff4d8; }
+
+.credit-card-insights,
+.credit-card-insights-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 16px; margin-bottom: 18px; }
+.credit-card-insights .panel,
+.credit-card-insights-grid .panel { min-width: 0; }
+.credit-card-list,
+.credit-group-bars { display: grid; gap: 10px; }
+.credit-card-list article { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.credit-card-list article:last-child { border: 0; }
+.credit-card-list strong { overflow-wrap: anywhere; }
+.credit-card-list small { color: var(--muted); }
+.credit-card-list .amount { grid-row: 1 / span 2; grid-column: 2; align-self: center; color: var(--danger); white-space: nowrap; }
+.credit-top-expenses { display: grid; gap: 8px; }
+.credit-top-expenses button { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%; padding: 11px 0; color: inherit; background: transparent; border: 0; border-bottom: 1px solid var(--line); text-align: left; cursor: pointer; }
+.credit-top-expenses button:last-child { border-bottom: 0; }
+.credit-top-expenses button:hover strong { color: var(--primary); }
+.credit-top-expenses button span:nth-child(2) { min-width: 0; }
+.credit-top-expenses button strong,
+.credit-top-expenses button small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.credit-top-expenses button small { margin-top: 3px; color: var(--muted); }
+.credit-top-expenses button > b { color: var(--danger); white-space: nowrap; }
+.credit-expense-rank { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 9px; background: #e4f5f0; color: #087763; font-weight: 900; }
+.credit-group-row { display: grid; grid-template-columns: minmax(90px, .8fr) minmax(120px, 1.5fr) auto; gap: 10px; align-items: center; }
+.credit-group-row > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .82rem; font-weight: 800; }
+.credit-group-track { height: 10px; overflow: hidden; border-radius: 99px; background: #e5ecea; }
+.credit-group-track i { display: block; width: var(--group-progress); height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0b7565, #42d5b3); }
+.credit-group-row strong { font-size: .82rem; white-space: nowrap; }
+.credit-group-bars > div { display: grid; gap: 6px; }
+.credit-group-bars > div > span { display: flex; justify-content: space-between; gap: 12px; }
+.credit-group-bars > div > span small { color: var(--muted); }
+.credit-group-bars > div > i { display: block; height: 10px; overflow: hidden; border-radius: 99px; background: #e5ecea; }
+.credit-group-bars > div > i > em { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0b7565, #42d5b3); }
+
+.credit-invoice-panel { overflow: hidden; }
+.credit-invoice-table-wrap,
+.credit-invoice-panel .table-wrap { overflow: auto; max-height: min(720px, 68vh); border: 1px solid var(--line); border-radius: 16px; }
+.credit-invoice-table { width: 100%; min-width: 980px; border-collapse: separate; border-spacing: 0; }
+.credit-invoice-table th { position: sticky; top: 0; z-index: 2; padding: 12px 14px; color: var(--muted); background: #edf5f2; font-size: .7rem; text-transform: uppercase; text-align: left; }
+.credit-invoice-table td { padding: 13px 14px; border-top: 1px solid var(--line); vertical-align: middle; }
+.credit-invoice-table tbody tr:hover { background: rgba(18, 143, 121, .06); }
+.credit-invoice-table .amount { color: var(--danger); font-weight: 900; white-space: nowrap; }
+.credit-invoice-table .status-pill { display: inline-flex; padding: 6px 10px; border-radius: 99px; background: #fff1df; color: #87520d; font-size: .7rem; font-weight: 900; text-transform: uppercase; }
+.credit-invoice-table .status-pill.paid { background: #e0f7ef; color: #08745f; }
+.credit-status { display: inline-flex; padding: 6px 10px; border-radius: 99px; background: #fff1df; color: #87520d; font-size: .7rem; font-weight: 900; text-transform: uppercase; white-space: nowrap; }
+.credit-status.paid { background: #e0f7ef; color: #08745f; }
+.credit-invoice-table td:nth-child(3) small { display: block; margin-top: 3px; color: var(--muted); }
+
+@media (max-width: 980px) {
+  .credit-card-filterbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .credit-card-command-center { grid-template-columns: minmax(0, 1fr) 150px; }
+  .credit-card-kpis { grid-column: 1 / -1; }
+  .credit-card-insights,
+  .credit-card-insights-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 620px) {
+  .credit-card-filterbar { grid-template-columns: 1fr; }
+  .credit-card-command-center { grid-template-columns: 1fr; padding: 20px 17px; }
+  .credit-limit-ring { width: 128px; justify-self: start; }
+  .credit-card-kpis { grid-template-columns: 1fr 1fr; }
+  .credit-wallet { grid-template-columns: 1fr; }
+  .credit-card-visual { min-height: 178px; padding: 18px; }
+  .credit-card-insights { gap: 12px; }
+  .credit-group-row { grid-template-columns: minmax(80px, .8fr) minmax(80px, 1fr); }
+  .credit-group-row strong { grid-column: 2; justify-self: end; }
+  .credit-invoice-table-wrap,
+  .credit-invoice-panel .table-wrap { max-height: none; overflow: visible; border: 0; }
+  .credit-invoice-table { min-width: 0; display: block; }
+  .credit-invoice-table thead { display: none; }
+  .credit-invoice-table tbody { display: grid; gap: 10px; }
+  .credit-invoice-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 12px; padding: 14px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.84); }
+  .credit-invoice-table td { padding: 0; border: 0; }
+  .credit-invoice-table td:nth-child(1) { grid-column: 1; grid-row: 2; color: var(--muted); font-size: .78rem; }
+  .credit-invoice-table td:nth-child(2) { grid-column: 1; grid-row: 3; color: var(--muted); font-size: .78rem; }
+  .credit-invoice-table td:nth-child(3) { grid-column: 1 / -1; grid-row: 1; font-weight: 900; overflow-wrap: anywhere; }
+  .credit-invoice-table td:nth-child(4) { grid-column: 1; grid-row: 4; color: var(--muted); font-size: .78rem; }
+  .credit-invoice-table td:nth-child(5) { grid-column: 1; grid-row: 5; color: var(--muted); font-size: .78rem; }
+  .credit-invoice-table td:nth-child(6) { grid-column: 2; grid-row: 1; align-self: start; }
+  .credit-invoice-table td:nth-child(7) { grid-column: 2; grid-row: 3 / span 2; justify-self: end; }
+  .credit-invoice-table td:nth-child(8) { grid-column: 2; grid-row: 5; justify-self: end; }
 }

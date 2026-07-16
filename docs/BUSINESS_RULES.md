@@ -101,13 +101,18 @@ Arquivamento não remove histórico. Estornos devem ser registrados como eventos
 - Recebimento associado a conta gera evento financeiro de receita.
 - Títulos vencidos e não quitados devem ser destacados.
 
-## Cartões de crédito — planejado para Alpha 0.5
+## Cartões de crédito
 
 - Compra parcelada gera todas as parcelas na confirmação.
 - O limite disponível é reduzido pelo total comprometido.
 - Pagamento da fatura libera limite conforme a regra do cartão.
 - Fechamento e vencimento determinam a fatura da compra.
 - Estorno gera evento reverso; não apaga a compra original.
+- Cada cartão possui bandeira, forma de pagamento, limite, fechamento, vencimento e melhor dia de compra.
+- A bandeira define automaticamente a identidade visual do cartão, sem alterar os dados financeiros.
+- Limite utilizado corresponde às despesas de crédito ainda não pagas, inclusive parcelas futuras; limite disponível é o limite cadastrado menos esse total comprometido.
+- A Central de Cartões respeita o período global para fatura, maiores compras e grupos, mas calcula o limite comprometido usando todo o histórico ainda em aberto.
+- Os filtros por cartão, situação e pesquisa devem atualizar todos os indicadores e a fatura detalhada da central.
 
 ## Orçamento e metas — planejado
 

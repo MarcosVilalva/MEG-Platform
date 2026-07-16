@@ -23,6 +23,71 @@ export function isCreditCardExpense(item) {
   return item.type === 'expense' && (modality.includes('CREDITO') || method.includes('CARTAO') || method.includes('CREDITO'));
 }
 
+export function calculateCreditCardPortfolio(allTransactions, periodTransactions, registeredCards = [], filters = {}) {
+  const cardFilter = normalizedFinanceText(filters.card || '');
+  const statusFilter = String(filters.status || 'all').toLowerCase();
+  const search = normalizedFinanceText(filters.search || '');
+  const isPaid = (item) => item.status === 'paid' || normalizedFinanceText(item.situation) === 'PAGO';
+  const cardExpenses = allTransactions.filter(isCreditCardExpense);
+  const periodCardExpenses = periodTransactions.filter(isCreditCardExpense);
+  const registeredByMethod = new Map(registeredCards.map((card) => [normalizedFinanceText(card.paymentMethod), card]));
+
+  cardExpenses.forEach((item) => {
+    const method = String(item.paymentMethod || item.account || 'Cartão não cadastrado').trim();
+    const key = normalizedFinanceText(method);
+    if (!registeredByMethod.has(key)) {
+      registeredByMethod.set(key, { paymentMethod: method, brand: 'OUTRO', limit: 0, closingDay: 0, dueDay: 0, bestPurchaseDay: 0 });
+    }
+  });
+
+  const matchesCard = (item) => !cardFilter || normalizedFinanceText(item.paymentMethod || item.account) === cardFilter;
+  const matchesStatus = (item) => statusFilter === 'all' || (statusFilter === 'paid' ? isPaid(item) : !isPaid(item));
+  const matchesSearch = (item) => !search || [item.description, item.group, item.category, item.paymentMethod, item.notes].some((value) => normalizedFinanceText(value).includes(search));
+  const items = periodCardExpenses.filter((item) => matchesCard(item) && matchesStatus(item) && matchesSearch(item));
+  const visibleCards = [...registeredByMethod.values()].filter((card) => !cardFilter || normalizedFinanceText(card.paymentMethod) === cardFilter);
+
+  const cardSummaries = visibleCards.map((card) => {
+    const key = normalizedFinanceText(card.paymentMethod);
+    const allItems = cardExpenses.filter((item) => normalizedFinanceText(item.paymentMethod || item.account) === key);
+    const periodItems = periodCardExpenses.filter((item) => normalizedFinanceText(item.paymentMethod || item.account) === key);
+    const used = allItems.filter((item) => !isPaid(item)).reduce((sum, item) => sum + transactionValue(item, 'expense'), 0);
+    const periodTotal = periodItems.reduce((sum, item) => sum + transactionValue(item, 'expense'), 0);
+    const limit = Number(card.limit || 0);
+    return {
+      ...card,
+      used,
+      available: Math.max(limit - used, 0),
+      usagePercent: limit > 0 ? Math.min((used / limit) * 100, 999) : 0,
+      periodTotal,
+      purchaseCount: periodItems.length,
+    };
+  });
+
+  const totalLimit = cardSummaries.reduce((sum, card) => sum + Number(card.limit || 0), 0);
+  const usedLimit = cardSummaries.reduce((sum, card) => sum + card.used, 0);
+  const periodTotal = items.reduce((sum, item) => sum + transactionValue(item, 'expense'), 0);
+  const paidTotal = items.filter(isPaid).reduce((sum, item) => sum + transactionValue(item, 'expense'), 0);
+  const groupTotals = new Map();
+  items.forEach((item) => {
+    const group = String(item.group || item.category || 'Sem categoria');
+    groupTotals.set(group, (groupTotals.get(group) || 0) + transactionValue(item, 'expense'));
+  });
+  const largestGroup = [...groupTotals.entries()].sort((a, b) => b[1] - a[1])[0] || ['', 0];
+
+  return {
+    cards: cardSummaries,
+    items: [...items].sort((a, b) => b.date.localeCompare(a.date) || String(a.description || '').localeCompare(String(b.description || ''), 'pt-BR')),
+    totalLimit,
+    usedLimit,
+    availableLimit: Math.max(totalLimit - usedLimit, 0),
+    usagePercent: totalLimit > 0 ? Math.min((usedLimit / totalLimit) * 100, 999) : 0,
+    periodTotal,
+    paidTotal,
+    pendingTotal: periodTotal - paidTotal,
+    largestGroup: { name: largestGroup[0], total: largestGroup[1] },
+  };
+}
+
 export function groupPayableItems(items, { separateStatus = false } = {}) {
   const grouped = new Map();
   items.forEach((item) => {
