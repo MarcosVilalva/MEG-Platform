@@ -54,9 +54,10 @@ O segredo deve ser idêntico nos dois serviços. Sem ele no GitHub, o workflow e
 ## Agenda inteligente de alertas
 
 - Faturas de cartão são agrupadas por cartão e vencimento antes do envio.
-- Às 06:00 são enviadas contas vencidas e dos próximos três dias.
-- Às 12:00 e 19:00 são repetidas apenas contas vencidas e com vencimento no dia, desde que ainda não estejam pagas.
-- A cada cinco dias, o envio das 06:00 traz todas as contas abertas e o total restante.
+- Às 06:00 são enviadas pendências de meses anteriores, contas vencidas e contas dos próximos três dias do mês corrente.
+- Às 12:00 e 19:00 são repetidas as pendências de meses anteriores, contas vencidas no mês corrente e contas com vencimento no dia, desde que ainda não estejam pagas.
+- Pendências carregadas de meses anteriores recebem prioridade máxima até a baixa.
+- A cada cinco dias, o envio das 06:00 traz pendências anteriores e todas as contas abertas do mês corrente, sem antecipar meses futuros.
 - O administrador cadastra números de WhatsApp e e-mails adicionais em **Ajustes > Alertas de vencimento**.
 - O workflow `MEG Smart Notifications` depende do segredo `NOTIFICATION_CRON_SECRET` no GitHub Actions, com o mesmo valor configurado no Render.
 

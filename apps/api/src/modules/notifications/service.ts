@@ -22,7 +22,7 @@ type DigestItem = LegacyTransaction & {
   value: number;
   label: string;
   payment: string;
-  priority: 'CRÍTICA' | 'URGENTE' | 'ALTA' | 'ATENÇÃO' | 'PROGRAMADA';
+  priority: 'MÁXIMA' | 'CRÍTICA' | 'URGENTE' | 'ALTA' | 'ATENÇÃO' | 'PROGRAMADA';
   daysUntilDue: number;
   entries: number;
   isCard: boolean;
@@ -59,7 +59,12 @@ function isCreditCard(item: LegacyTransaction) {
   return modality === 'CREDITO' || (method.includes('CARTAO') && !method.includes('DEBITO'));
 }
 
-function priority(days: number): DigestItem['priority'] {
+function monthKey(value: string) {
+  return value.slice(0, 7);
+}
+
+function priority(days: number, dueDate: string, currentMonth: string): DigestItem['priority'] {
+  if (monthKey(dueDate) < currentMonth) return 'MÁXIMA';
   if (days < 0) return 'CRÍTICA';
   if (days === 0) return 'URGENTE';
   if (days === 1) return 'ALTA';
@@ -67,7 +72,7 @@ function priority(days: number): DigestItem['priority'] {
   return 'PROGRAMADA';
 }
 
-function groupItems(transactions: LegacyTransaction[], today: Date): DigestItem[] {
+function groupItems(transactions: LegacyTransaction[], today: Date, currentMonth: string): DigestItem[] {
   const regular: DigestItem[] = [];
   const cards = new Map<string, DigestItem>();
   for (const item of transactions) {
@@ -79,7 +84,7 @@ function groupItems(transactions: LegacyTransaction[], today: Date): DigestItem[
     const payment = paymentLabel(item);
     const value = amountOf(item);
     const entry: DigestItem = {
-      ...item, dueDate: item.date, value, payment, daysUntilDue: days, priority: priority(days), entries: 1,
+      ...item, dueDate: item.date, value, payment, daysUntilDue: days, priority: priority(days, item.date, currentMonth), entries: 1,
       label: card ? `FATURA ${payment}` : normalize(item.description || 'CONTA SEM DESCRIÇÃO'), isCard: card
     };
     if (!card) regular.push(entry);
@@ -94,10 +99,12 @@ function groupItems(transactions: LegacyTransaction[], today: Date): DigestItem[
   return [...regular, ...cards.values()].sort((a, b) => a.dueDate.localeCompare(b.dueDate) || b.value - a.value);
 }
 
-function selectForMode(items: DigestItem[], mode: NotificationMode) {
-  if (mode === 'open-summary') return items;
-  if (mode === 'due-now') return items.filter((item) => item.daysUntilDue <= 0);
-  return items.filter((item) => item.daysUntilDue <= 3);
+function selectForMode(items: DigestItem[], mode: NotificationMode, currentMonth: string) {
+  const belongsToCurrentScope = (item: DigestItem) => monthKey(item.dueDate) <= currentMonth;
+  const carriedOver = (item: DigestItem) => monthKey(item.dueDate) < currentMonth;
+  if (mode === 'open-summary') return items.filter(belongsToCurrentScope);
+  if (mode === 'due-now') return items.filter((item) => carriedOver(item) || (monthKey(item.dueDate) === currentMonth && item.daysUntilDue <= 0));
+  return items.filter((item) => carriedOver(item) || (monthKey(item.dueDate) === currentMonth && item.daysUntilDue <= 3));
 }
 
 function section(lines: string[], title: string, icon: string, items: DigestItem[]) {
@@ -111,13 +118,18 @@ function section(lines: string[], title: string, icon: string, items: DigestItem
 
 export function buildNotificationDigest(transactions: LegacyTransaction[], referenceDate = new Date(), mode: NotificationMode = 'upcoming') {
   const local = saoPauloParts(referenceDate);
-  const selected = selectForMode(groupItems(transactions, local.date), mode);
+  const currentMonth = monthKey(local.iso);
+  const selected = selectForMode(groupItems(transactions, local.date, currentMonth), mode, currentMonth);
   const totalAmount = selected.reduce((sum, item) => sum + item.value, 0);
-  const overdue = selected.filter((item) => item.daysUntilDue < 0);
+  const maximumPriority = selected.filter((item) => item.priority === 'MÁXIMA');
+  const overdue = selected.filter((item) => item.priority === 'CRÍTICA');
   const today = selected.filter((item) => item.daysUntilDue === 0);
   const tomorrow = selected.filter((item) => item.daysUntilDue === 1);
   const next = selected.filter((item) => item.daysUntilDue >= 2);
-  const headline = overdue.length ? '🔴 AÇÃO IMEDIATA: existem contas vencidas.' : today.length ? '🟠 ATENÇÃO: existem pagamentos para hoje.' : '🟢 Agenda financeira sob controle.';
+  const headline = maximumPriority.length
+    ? '🚨 PRIORIDADE MÁXIMA: existem pendências trazidas de meses anteriores.'
+    : overdue.length ? '🔴 AÇÃO IMEDIATA: existem contas vencidas neste mês.'
+      : today.length ? '🟠 ATENÇÃO: existem pagamentos para hoje.' : '🟢 Agenda financeira sob controle.';
   const title = mode === 'open-summary' ? 'Raio-X das Contas em Aberto' : 'Central de Vencimentos';
   const lines = [
     `🚨 *MEG Finanças — ${title}* 🚨`, '',
@@ -126,13 +138,14 @@ export function buildNotificationDigest(transactions: LegacyTransaction[], refer
     `💰 *Total que falta pagar:* ${money(totalAmount)}`,
     `🧾 *Obrigações:* ${selected.length} item(ns)${selected.some((item) => item.isCard) ? ' — faturas já agrupadas por cartão' : ''}`
   ];
-  section(lines, 'PRIORIDADE CRÍTICA — VENCIDAS', '🔴', overdue);
+  section(lines, 'PRIORIDADE MÁXIMA — PENDÊNCIAS DE MESES ANTERIORES', '🚨', maximumPriority);
+  section(lines, 'PRIORIDADE CRÍTICA — VENCIDAS NO MÊS ATUAL', '🔴', overdue);
   section(lines, 'URGENTE — VENCE HOJE', '🟠', today);
   section(lines, 'ALTA — VENCE AMANHÃ', '🟡', tomorrow);
-  section(lines, mode === 'open-summary' ? 'DEMAIS CONTAS PROGRAMADAS' : 'PRÓXIMOS 3 DIAS', '🔵', next);
+  section(lines, mode === 'open-summary' ? 'DEMAIS CONTAS EM ABERTO NO MÊS ATUAL' : 'PRÓXIMOS 3 DIAS DO MÊS ATUAL', '🔵', next);
   if (!selected.length) lines.push('', '✅ *Nenhuma conta exige atenção neste envio.*');
   lines.push('', '━━━━━━━━━━━━━━━━━━━━', '💡 *Dica MEG:* priorize vencidas, depois as de hoje e preserve saldo para as próximas.', '', '🤖 *MEG Finanças — Seu copiloto financeiro*');
-  return { overdue, today, tomorrow, upcoming: [...tomorrow, ...next], items: selected, text: lines.join('\n'), totalCount: selected.length, totalAmount, mode };
+  return { maximumPriority, overdue, today, tomorrow, upcoming: [...tomorrow, ...next], items: selected, text: lines.join('\n'), totalCount: selected.length, totalAmount, mode };
 }
 
 export async function notificationDigest(userId: string, referenceDate = new Date(), mode: NotificationMode = 'upcoming') {

@@ -154,9 +154,10 @@ Arquivamento não remove histórico. Estornos devem ser registrados como eventos
 
 - Compras em cartão de crédito com o mesmo cartão e vencimento aparecem como uma única fatura, com valor total e quantidade de compras.
 - Em painéis, diagnósticos, alertas e indicadores de próximo vencimento, os compromissos são resumidos por data. Compras do mesmo cartão e vencimento aparecem sob o nome da fatura, nunca como a descrição isolada de uma compra.
-- A prioridade é classificada como crítica (vencida), urgente (vence hoje), alta (amanhã), atenção (até três dias) ou programada.
+- A prioridade é classificada como máxima (pendência aberta trazida de mês anterior), crítica (vencida no mês atual), urgente (vence hoje), alta (amanhã), atenção (até três dias) ou programada.
 - Os alertas automáticos são avaliados às 06:00, 12:00 e 19:00 no horário de São Paulo; itens pagos deixam de aparecer imediatamente.
-- A cada cinco dias, às 06:00, o aviso normal é substituído por um resumo de todas as contas ainda abertas e do total que falta pagar.
+- Pendências de meses anteriores continuam nos alertas até serem pagas e aparecem como prioridade máxima.
+- A cada cinco dias, às 06:00, o aviso normal é substituído por um resumo das pendências anteriores e de todas as contas abertas no mês corrente, sem antecipar meses futuros.
 - O administrador pode cadastrar vários números de WhatsApp e vários e-mails na tela Ajustes.
 
 ## IA
