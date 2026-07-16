@@ -12,3 +12,4 @@ export * from './analytics/analytics-engine';
 export * from './platform/manifest';
 export * from './analytics/replay-engine';
 export * from './analytics/analytics-360';
+export * from './time/calendar';

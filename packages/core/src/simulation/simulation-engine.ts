@@ -1,5 +1,6 @@
 import type { FinancialEvent } from '@shared';
 import { runFinancialEngine } from '../finance/financial-engine';
+import { dateInSaoPaulo } from '../time/calendar';
 
 export interface SimulationScenario {
   id: string;
@@ -43,7 +44,7 @@ export function simulateScenario(
   events: FinancialEvent[],
   month: string,
   scenario: SimulationScenario,
-  today = new Date().toISOString().slice(0, 10)
+  today = dateInSaoPaulo()
 ): SimulationResult {
   const before = runFinancialEngine(events, month, today);
   const afterEvents = applyScenario(events, scenario);

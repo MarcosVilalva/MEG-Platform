@@ -1,4 +1,5 @@
 import type { FinancialEvent } from '@shared';
+import { calendarDayDifference, dateInSaoPaulo } from '../time/calendar';
 
 export interface AgendaItem {
   event: FinancialEvent;
@@ -10,20 +11,14 @@ function dateOnly(value: string): string {
   return String(value || '').slice(0, 10);
 }
 
-function daysBetween(a: string, b: string): number {
-  const ad = new Date(`${dateOnly(a)}T00:00:00`);
-  const bd = new Date(`${dateOnly(b)}T00:00:00`);
-  return Math.round((ad.getTime() - bd.getTime()) / 86400000);
-}
-
 export function buildFinancialAgenda(
   events: FinancialEvent[],
-  today = new Date().toISOString().slice(0, 10)
+  today = dateInSaoPaulo()
 ): AgendaItem[] {
   return events
     .filter((event) => event.signedAmount < 0 && ['planned', 'confirmed'].includes(event.status))
     .map((event) => {
-      const diff = daysBetween(event.date, today);
+      const diff = calendarDayDifference(today, dateOnly(event.date));
 
       if (diff < 0) {
         return { event, priority: 'critical' as const, reason: 'Vencida' };

@@ -2,6 +2,7 @@ import type { FinancialEvent } from '@shared';
 import { buildFinancialAgenda } from '../projections/agenda';
 import { runFinancialEngine } from '../finance/financial-engine';
 import { groupByAmount } from '../insights/insights';
+import { dateInSaoPaulo } from '../time/calendar';
 
 export type DecisionPriority = 'critical' | 'warning' | 'info' | 'good';
 export type DecisionAction = 'pay' | 'analyze' | 'simulate' | 'review' | 'none';
@@ -19,7 +20,7 @@ export interface DecisionItem {
 export function buildDecisionCenter(
   events: FinancialEvent[],
   month: string,
-  today = new Date().toISOString().slice(0, 10)
+  today = dateInSaoPaulo()
 ): DecisionItem[] {
   const engine = runFinancialEngine(events, month, today);
   const monthEvents = events.filter((event) => event.competence === month);

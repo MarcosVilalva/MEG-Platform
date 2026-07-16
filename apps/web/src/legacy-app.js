@@ -1,5 +1,6 @@
 import { availableMonetaryBalance, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal, summarizeDueDate } from "./legacy-finance.js";
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
+import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOfMonth } from "./calendar-date.js";
 
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
 
@@ -9,8 +10,8 @@ const money = new Intl.NumberFormat("pt-BR", {
 });
 
 const today = new Date();
-const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-const todayIso = today.toISOString().slice(0, 10);
+const todayIso = dateInTimeZone(today);
+const currentMonth = todayIso.slice(0, 7);
 
 const demoState = {
   transactions: [
@@ -92,7 +93,7 @@ let originalTransactionsById = new Map((defaultState.transactions || []).map((it
 let selectedPeriod = {
   mode: "month",
   month: currentMonth,
-  year: String(today.getFullYear()),
+  year: todayIso.slice(0, 4),
   start: "",
   end: "",
 };
@@ -779,20 +780,15 @@ function dateRangeForSelectedPeriod() {
 }
 
 function lastDayOfMonth(monthValue) {
-  const [year, month] = monthValue.split("-").map(Number);
-  return new Date(year, month, 0).toISOString().slice(0, 10);
+  return lastCalendarDayOfMonth(monthValue);
 }
 
 function addDays(dateValue, days) {
-  const date = new Date(`${dateValue}T12:00:00`);
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return addCalendarDays(dateValue, days);
 }
 
 function daysBetween(start, end) {
-  const startDate = new Date(`${start}T12:00:00`);
-  const endDate = new Date(`${end}T12:00:00`);
-  return Math.max(1, Math.round((endDate - startDate) / 86400000) + 1);
+  return Math.max(1, calendarDaysBetween(start, end) + 1);
 }
 
 function previousPeriodTransactions() {
@@ -1097,9 +1093,7 @@ function renderIncomeAnalysis() {
 }
 
 function openingAlertData() {
-  const horizon = new Date(`${todayIso}T12:00:00`);
-  horizon.setDate(horizon.getDate() + 3);
-  const horizonIso = horizon.toISOString().slice(0, 10);
+  const horizonIso = addDays(todayIso, 3);
   const relevant = state.transactions.filter((item) => item.type === "expense" && item.status === "pending" && !isVerocardTransaction(item) && item.date <= horizonIso);
   const overdue = relevant.filter((item) => item.date < todayIso);
   const todayItems = relevant.filter((item) => item.date === todayIso);
@@ -2194,7 +2188,7 @@ function sortTransactions(items, sortMode) {
 
 function renderPeriodControls() {
   const years = availableYears();
-  if (!years.includes(selectedPeriod.year)) selectedPeriod.year = years[0] || String(today.getFullYear());
+  if (!years.includes(selectedPeriod.year)) selectedPeriod.year = years[0] || todayIso.slice(0, 4);
   els.yearFilter.innerHTML = years.map((year) => `<option value="${year}">${year}</option>`).join("");
   els.periodMode.value = selectedPeriod.mode;
   els.monthFilter.value = selectedPeriod.month;
@@ -3075,7 +3069,7 @@ function syncModalityPaymentOptions() {
 }
 
 function openTransactionDialog(item = null) {
-  const defaultDate = selectedPeriod.mode === "month" ? `${selectedPeriod.month}-${String(today.getDate()).padStart(2, "0")}` : new Date().toISOString().slice(0, 10);
+  const defaultDate = selectedPeriod.mode === "month" ? `${selectedPeriod.month}-${todayIso.slice(8, 10)}` : todayIso;
   els.dialogTitle.textContent = item ? "Editar lancamento" : "Novo lancamento";
   els.transactionId.value = item?.id || "";
   els.dateInput.value = item?.date || defaultDate;
@@ -3714,7 +3708,7 @@ els.monthFilter.addEventListener("change", () => {
   render();
 });
 els.yearFilter.addEventListener("change", () => {
-  selectedPeriod.year = els.yearFilter.value || String(today.getFullYear());
+  selectedPeriod.year = els.yearFilter.value || todayIso.slice(0, 4);
   selectedPeriod.mode = "year";
   render();
 });

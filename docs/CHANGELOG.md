@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-15 - Datas e vencimentos no fuso de Sao Paulo
+
+- Corrigida a Central de Alertas para nao transformar contas de amanha em contas de hoje apos 21h.
+- Padronizada a data de negocio em `America/Sao_Paulo` nos alertas, agenda financeira, lancamentos, pagamentos, recebimentos e cartoes.
+- Operacoes de calendario agora sao independentes da conversao UTC e seguras em viradas de mes e ano.
+- Adicionados testes para o caso real de 15/07/2026 as 22:54, quando 16/07 deve ser classificado como amanha.
+
 ## 2026-07-15 - Central de cartões de crédito
 
 - Criada uma aba exclusiva para acompanhar cartões, limites, faturas e compras.

@@ -35,4 +35,11 @@ assert.equal(automationSlot(new Date('2026-07-12T09:05:00Z'))?.slot, '06:00');
 assert.equal(automationSlot(new Date('2026-07-12T15:05:00Z'))?.mode, 'due-now');
 assert.equal(automationSlot(new Date('2026-07-12T18:05:00Z')), null);
 
+const lateNightBrazil = buildNotificationDigest([
+  { type: 'expense', date: '2026-07-16', description: 'FATURA TESTE', expenseAmount: 100, status: 'PENDING', paymentMethod: 'PIX' }
+], new Date('2026-07-16T01:54:00Z'));
+assert.equal(lateNightBrazil.today.length, 0, '22:54 em SÃ£o Paulo ainda deve ser 15/07');
+assert.equal(lateNightBrazil.tomorrow.length, 1, 'vencimento em 16/07 deve aparecer como amanhÃ£');
+assert.match(lateNightBrazil.text, /VENCE AMANH/);
+
 console.log('MEG notification digest tests passed.');

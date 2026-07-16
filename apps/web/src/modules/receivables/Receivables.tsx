@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { financeClient, type Account, type PaymentMethod } from '../../app/finance-client';
 import { receivablesClient, type Customer, type Receivable } from '../../app/receivables-client';
 import { readSession } from '../../app/auth-client';
+import { dateInSaoPaulo } from '../../app/calendar';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -14,7 +15,7 @@ export function Receivables() {
   const [description, setDescription] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [amount, setAmount] = useState('');
-  const [dueDate, setDueDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [dueDate, setDueDate] = useState(() => dateInSaoPaulo());
   const [receiving, setReceiving] = useState<Receivable | null>(null);
   const [receiptAmount, setReceiptAmount] = useState('');
   const [accountId, setAccountId] = useState('');
@@ -93,7 +94,7 @@ export function Receivables() {
     try {
       await receivablesClient.receive(receiving.id, {
         amount: value,
-        receivedAt: new Date().toISOString().slice(0, 10),
+        receivedAt: dateInSaoPaulo(),
         accountId: accountId || null,
         paymentMethodId: paymentMethodId || null
       });

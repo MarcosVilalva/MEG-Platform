@@ -5,6 +5,7 @@ import { cardsClient, type CreditCard } from '../../app/cards-client';
 import { financeClient, type Category } from '../../app/finance-client';
 import { useAppStore } from '../../app/store';
 import { invalidateFinanceSummary } from '../../app/use-finance-summary';
+import { dateInSaoPaulo } from '../../app/calendar';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -21,7 +22,7 @@ export function CreditCards() {
   const [cardId, setCardId] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
-  const [purchaseDate, setPurchaseDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [purchaseDate, setPurchaseDate] = useState(() => dateInSaoPaulo());
   const [installments, setInstallments] = useState('1');
   const [categoryId, setCategoryId] = useState('');
   const [busy, setBusy] = useState(false);
@@ -69,7 +70,7 @@ export function CreditCards() {
   async function pay(card: CreditCard) {
     if (!canWrite || card.statementAmount <= 0 || !confirm(`Pagar fatura de ${brl.format(card.statementAmount)}?`)) return;
     setBusy(true);
-    try { await cardsClient.payStatement(card.id, selectedMonth, { paidAt: new Date().toISOString().slice(0, 10) }); invalidateFinanceSummary(); await load(); }
+    try { await cardsClient.payStatement(card.id, selectedMonth, { paidAt: dateInSaoPaulo() }); invalidateFinanceSummary(); await load(); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'STATEMENT_PAYMENT_ERROR'); }
     finally { setBusy(false); }
   }

@@ -2,6 +2,14 @@ import assert from 'node:assert/strict';
 import { availableMonetaryBalance, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, groupPayableItems, payableGroupLabel, payableGroupTotal, summarizeDueDate } from './legacy-finance.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from './legacy-installments.js';
+import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOfMonth } from './calendar-date.js';
+
+// 15/07/2026 22:54 em SÃ£o Paulo jÃ¡ Ã© 16/07 em UTC. O MEG deve manter o dia local.
+assert.equal(dateInTimeZone(new Date('2026-07-16T01:54:00.000Z')), '2026-07-15');
+assert.equal(dateInTimeZone(new Date('2026-07-16T03:01:00.000Z')), '2026-07-16');
+assert.equal(addCalendarDays('2026-07-15', 1), '2026-07-16');
+assert.equal(calendarDaysBetween('2026-07-15', '2026-07-16'), 1);
+assert.equal(lastCalendarDayOfMonth('2028-02'), '2028-02-29');
 
 assert.equal(excelDateToIso(new Date('2026-07-01T00:00:00.000Z')), '2026-07-01');
 assert.equal(excelDateToIso(new Date('2026-07-02T00:00:00.000Z')), '2026-07-02');

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { LegacyTransaction } from '@core/finance/events';
 import { loadTransactions, saveTransactions } from './storage';
+import { monthInSaoPaulo } from './calendar';
 
 interface AppState {
   transactions: LegacyTransaction[];
@@ -20,7 +21,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   transactions: loadTransactions(),
-  selectedMonth: new Date().toISOString().slice(0, 7),
+  selectedMonth: monthInSaoPaulo(),
   theme: (localStorage.getItem('meg-theme') as 'light' | 'dark') || 'light',
 
   setSelectedMonth: (month) => set({ selectedMonth: month }),

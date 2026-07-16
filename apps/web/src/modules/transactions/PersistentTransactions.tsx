@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { readSession } from '../../app/auth-client';
 import { invalidateFinanceSummary } from '../../app/use-finance-summary';
+import { dateInSaoPaulo } from '../../app/calendar';
 import {
   financeClient,
   type Account,
@@ -24,7 +25,7 @@ export function PersistentTransactions() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'planned' | 'paid'>('all');
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [description, setDescription] = useState('');
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => dateInSaoPaulo());
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState<'planned' | 'paid'>('planned');
   const [accountId, setAccountId] = useState('');

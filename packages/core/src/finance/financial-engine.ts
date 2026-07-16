@@ -2,6 +2,7 @@ import type { FinancialEvent } from '@shared';
 import { calculateMonthProjection, projectDailyCashflow } from '../projections/cashflow';
 import { buildFinancialAgenda } from '../projections/agenda';
 import { groupByAmount } from '../insights/insights';
+import { dateInSaoPaulo } from '../time/calendar';
 
 export interface FinancialEngineResult {
   month: string;
@@ -27,7 +28,7 @@ export interface FinancialEngineResult {
 export function runFinancialEngine(
   events: FinancialEvent[],
   month: string,
-  today = new Date().toISOString().slice(0, 10)
+  today = dateInSaoPaulo()
 ): FinancialEngineResult {
   const projection = calculateMonthProjection(events, month);
   const monthEvents = events.filter((event) => event.competence === month);

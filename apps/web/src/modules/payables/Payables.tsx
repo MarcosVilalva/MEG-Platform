@@ -5,6 +5,7 @@ import { financeClient, type Account, type Category, type PaymentMethod } from '
 import { payablesClient, type Payable } from '../../app/payables-client';
 import { useAppStore } from '../../app/store';
 import { invalidateFinanceSummary } from '../../app/use-finance-summary';
+import { dateInSaoPaulo } from '../../app/calendar';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -16,7 +17,7 @@ export function Payables() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [description, setDescription] = useState(''); const [amount, setAmount] = useState('');
-  const [dueDate, setDueDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [dueDate, setDueDate] = useState(() => dateInSaoPaulo());
   const [installmentQty, setInstallmentQty] = useState('1'); const [categoryId, setCategoryId] = useState('');
   const [recurring, setRecurring] = useState(false); const [frequency, setFrequency] = useState<'weekly' | 'monthly' | 'yearly'>('monthly'); const [endDate, setEndDate] = useState('');
   const [paying, setPaying] = useState<Payable | null>(null); const [paymentAmount, setPaymentAmount] = useState(''); const [accountId, setAccountId] = useState(''); const [paymentMethodId, setPaymentMethodId] = useState('');
@@ -29,7 +30,7 @@ export function Payables() {
   const totals = useMemo(() => { const now = new Date(); return { open: items.filter((item) => item.status !== 'paid').reduce((sum, item) => sum + Number(item.openAmount), 0), overdue: items.filter((item) => item.status !== 'paid' && new Date(item.dueDate) < now).reduce((sum, item) => sum + Number(item.openAmount), 0), paid: items.filter((item) => item.status === 'paid').reduce((sum, item) => sum + Number(item.totalAmount), 0), count: items.filter((item) => item.status !== 'paid').length }; }, [items]);
 
   async function submit(event: FormEvent) { event.preventDefault(); const value = Number(amount.replace(',', '.')); if (!canWrite || !description.trim() || value <= 0) return; setBusy(true); try { if (recurring) await payablesClient.createRecurring({ description: description.trim(), amount: value, categoryId: categoryId || undefined, frequency, nextDueDate: dueDate, endDate: endDate || undefined }); else await payablesClient.create({ description: description.trim(), totalAmount: value, categoryId: categoryId || undefined, dueDate, installmentQty: Number(installmentQty) }); setDescription(''); setAmount(''); setInstallmentQty('1'); await load(); } catch (cause) { setError(cause instanceof Error ? cause.message : 'PAYABLE_SAVE_ERROR'); } finally { setBusy(false); } }
-  async function confirmPayment(event: FormEvent) { event.preventDefault(); if (!paying) return; const value = Number(paymentAmount.replace(',', '.')); if (value <= 0) return; setBusy(true); try { await payablesClient.pay(paying.id, { amount: value, paidAt: new Date().toISOString().slice(0, 10), accountId: accountId || undefined, paymentMethodId: paymentMethodId || undefined }); setPaying(null); setPaymentAmount(''); invalidateFinanceSummary(); await load(); } catch (cause) { setError(cause instanceof Error ? cause.message : 'PAYMENT_ERROR'); } finally { setBusy(false); } }
+  async function confirmPayment(event: FormEvent) { event.preventDefault(); if (!paying) return; const value = Number(paymentAmount.replace(',', '.')); if (value <= 0) return; setBusy(true); try { await payablesClient.pay(paying.id, { amount: value, paidAt: dateInSaoPaulo(), accountId: accountId || undefined, paymentMethodId: paymentMethodId || undefined }); setPaying(null); setPaymentAmount(''); invalidateFinanceSummary(); await load(); } catch (cause) { setError(cause instanceof Error ? cause.message : 'PAYMENT_ERROR'); } finally { setBusy(false); } }
 
   return <section className="page">
     <header className="page-header compact"><div><span>Contas a pagar</span><h1>Obrigações e recorrências</h1><p>Controle vencimentos, parcelas e pagamentos integrados ao fluxo de caixa.</p></div><label className="catalog-role">Mês<input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} /></label></header>
