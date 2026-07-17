@@ -226,21 +226,22 @@ export function calculateHistoricalProjection(transactions, endDate) {
   };
 }
 
-export function calculateMonetaryDashboard(transactions, start = '', end = '', asOfDate = '') {
-  const effectiveEnd = asOfDate && (!start || asOfDate >= start) && (!end || asOfDate <= end) ? asOfDate : end;
-  const current = calculateFinancialSummary(transactions, start, effectiveEnd);
+export function calculateMonetaryDashboard(transactions, start = '', end = '') {
+  // The dashboard is a reconciliation of the selected period, not a snapshot
+  // cut off at today's date. A future-dated item already marked as paid must
+  // therefore compose the paid total whenever its date is inside the filter.
   const period = calculateFinancialSummary(transactions, start, end);
-  const balanceAfterPending = current.closingBalance - period.pendingExpense;
+  const balanceAfterPending = period.closingBalance - period.pendingExpense;
 
   return {
     ...period,
-    currentIncome: current.income,
-    currentPaidExpense: current.paidExpense,
-    currentBalance: current.closingBalance,
+    currentIncome: period.income,
+    currentPaidExpense: period.paidExpense,
+    currentBalance: period.closingBalance,
     balanceAfterPending,
     missingAfterPending: Math.max(-balanceAfterPending, 0),
     surplusAfterPending: Math.max(balanceAfterPending, 0),
-    effectiveEnd,
+    effectiveEnd: end,
   };
 }
 

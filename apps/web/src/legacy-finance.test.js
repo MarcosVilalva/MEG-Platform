@@ -119,9 +119,10 @@ const currentMonetaryPosition = calculateMonetaryDashboard([
   { date: '2026-07-25', type: 'expense', expenseAmount: 1309.38, status: 'pending' },
   { date: '2026-07-12', type: 'expense', expenseAmount: 300, status: 'paid', modality: 'ALIMENTAÇÃO' },
 ], '2026-07-01', '2026-07-31', '2026-07-17');
-assert.equal(Number(currentMonetaryPosition.currentBalance.toFixed(2)), 157.89);
+assert.equal(Number(currentMonetaryPosition.currentPaidExpense.toFixed(2)), 1142.45);
+assert.equal(Number(currentMonetaryPosition.currentBalance.toFixed(2)), -42.45);
 assert.equal(Number(currentMonetaryPosition.pendingExpense.toFixed(2)), 1309.38);
-assert.equal(Number(currentMonetaryPosition.missingAfterPending.toFixed(2)), 1151.49);
+assert.equal(Number(currentMonetaryPosition.missingAfterPending.toFixed(2)), 1351.83);
 
 const reconciliation = calculateBalanceReconciliation([
   { date: '2026-07-01', type: 'income', incomeAmount: 11499.31 },

@@ -988,7 +988,7 @@ function renderDashboard() {
   const items = selectedTransactions();
   const totals = financialSummaryForPeriod(items);
   const { start: dashboardStart, end: dashboardEnd } = dateRangeForSelectedPeriod();
-  const monetaryPosition = calculateMonetaryDashboard(state.transactions, dashboardStart, dashboardEnd, todayIso);
+  const monetaryPosition = calculateMonetaryDashboard(state.transactions, dashboardStart, dashboardEnd);
   const balance = totals.consolidatedBalance;
   const monthCount = selectedPeriodMonthCount(items);
   const totalBudget = Object.values(state.budgets).reduce((sum, value) => sum + Number(value || 0), 0) * monthCount;
