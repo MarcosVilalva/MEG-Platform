@@ -495,7 +495,10 @@ function loadState() {
 
 function saveState({ cloud = true } = {}) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  if (cloud) window.MEG_CLOUD?.saveState(state);
+  // Recalculate the active screen immediately. Cloud persistence happens in
+  // the background and must never delay the financial feedback to the user.
+  requestAnimationFrame(render);
+  if (cloud) window.MEG_CLOUD?.saveState(structuredClone(state));
   window.MEG_NATIVE_NOTIFICATIONS?.sync?.(state);
 }
 

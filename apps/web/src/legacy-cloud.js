@@ -7,6 +7,11 @@ const REVISION_KEY = 'meg-cloud-revision-v1';
 
 let revision = 0;
 let saveTimer;
+let saveInFlight = false;
+let pendingSave = false;
+let queuedState = null;
+let pollingTimer;
+const syncChannel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('meg-cloud-state-v1') : null;
 
 function session() {
   try {
@@ -263,33 +268,105 @@ async function loadCloudState() {
 
 async function saveNow(state, { force = false } = {}) {
   if (window.MEG_CLOUD?.whenFresh) await window.MEG_CLOUD.whenFresh.catch(() => undefined);
-  const response = await api('/app-state', {
-    method: 'PUT',
-    body: JSON.stringify({ state, ...(force ? {} : { expectedRevision: revision }) })
-  });
-  if (response.status === 409) {
-    throw new Error('Os dados foram alterados em outro dispositivo. Recarregue a nuvem antes de salvar.');
+  saveInFlight = true;
+  try {
+    const response = await api('/app-state', {
+      method: 'PUT',
+      body: JSON.stringify({ state, ...(force ? {} : { expectedRevision: revision }) })
+    });
+    if (response.status === 409) {
+      throw new Error('Os dados foram alterados em outro dispositivo. Recarregue a nuvem antes de salvar.');
+    }
+    const raw = await response.text();
+    let payload = {};
+    try { payload = raw ? JSON.parse(raw) : {}; } catch {}
+    if (!response.ok) {
+      const detail = payload.error || payload.message || raw || 'sem detalhes';
+      throw new Error(`Falha ao salvar na nuvem (${response.status}): ${detail}`);
+    }
+    revision = payload.revision;
+    localStorage.setItem(REVISION_KEY, String(revision));
+    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    syncChannel?.postMessage({ revision, state });
+    const status = document.querySelector('#cloudSyncStatus');
+    if (status) status.textContent = `Sincronizado ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    return payload;
+  } finally {
+    saveInFlight = false;
   }
-  const raw = await response.text();
-  let payload = {};
-  try { payload = raw ? JSON.parse(raw) : {}; } catch {}
-  if (!response.ok) {
-    const detail = payload.error || payload.message || raw || 'sem detalhes';
-    throw new Error(`Falha ao salvar na nuvem (${response.status}): ${detail}`);
+}
+
+async function flushQueuedSave() {
+  if (saveInFlight) {
+    saveTimer = window.setTimeout(flushQueuedSave, 50);
+    return;
   }
-  revision = payload.revision;
-  localStorage.setItem(REVISION_KEY, String(revision));
+  if (!queuedState) return;
+  const snapshot = queuedState;
+  queuedState = null;
   const status = document.querySelector('#cloudSyncStatus');
-  if (status) status.textContent = `Salvo ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+  try {
+    await saveNow(snapshot);
+  } catch (error) {
+    if (status) status.textContent = error.message;
+  } finally {
+    if (queuedState) {
+      saveTimer = window.setTimeout(flushQueuedSave, 0);
+    } else {
+      pendingSave = false;
+    }
+  }
 }
 
 function queueSave(state) {
   const status = document.querySelector('#cloudSyncStatus');
-  if (status) status.textContent = 'Salvando...';
+  if (status) status.textContent = 'Sincronizando...';
+  queuedState = state;
+  pendingSave = true;
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => saveNow(state).catch((error) => {
-    if (status) status.textContent = error.message;
-  }), 700);
+  saveTimer = window.setTimeout(() => {
+    saveTimer = undefined;
+    flushQueuedSave();
+  }, 120);
+}
+
+function applyRemoteState(payload, source = 'nuvem') {
+  const incomingRevision = Number(payload?.revision || 0);
+  if (!payload?.state || incomingRevision <= revision || pendingSave || saveInFlight) return false;
+  revision = incomingRevision;
+  localStorage.setItem(REVISION_KEY, String(revision));
+  localStorage.setItem(STATE_KEY, JSON.stringify(payload.state));
+  window.MEG_REAL_STATE = payload.state;
+  window.MEG_APP?.replaceState(payload.state);
+  window.MEG_NATIVE_NOTIFICATIONS?.sync?.(payload.state);
+  const status = document.querySelector('#cloudSyncStatus');
+  if (status) status.textContent = `Atualizado pela ${source} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+  return true;
+}
+
+async function checkForRemoteState() {
+  if (document.hidden || pendingSave || saveInFlight) return;
+  try {
+    const revisionResponse = await api('/app-state/revision');
+    if (!revisionResponse.ok) return;
+    const metadata = await revisionResponse.json();
+    if (Number(metadata?.revision || 0) <= revision) return;
+    const stateResponse = await api('/app-state');
+    if (!stateResponse.ok) return;
+    applyRemoteState(await stateResponse.json());
+  } catch {
+    // A temporary network failure must not interrupt local usage.
+  }
+}
+
+function startRealtimeSync() {
+  clearInterval(pollingTimer);
+  pollingTimer = window.setInterval(checkForRemoteState, 3000);
+  window.addEventListener('focus', checkForRemoteState);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) checkForRemoteState();
+  });
+  syncChannel?.addEventListener('message', (event) => applyRemoteState(event.data, 'outra aba'));
 }
 
 export async function bootstrapCloud() {
@@ -393,4 +470,5 @@ export async function bootstrapCloud() {
       return result;
     }
   };
+  startRealtimeSync();
 }

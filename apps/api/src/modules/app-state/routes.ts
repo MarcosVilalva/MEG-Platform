@@ -24,6 +24,17 @@ const putSchema = z.object({
 });
 
 export async function appStateRoutes(app: FastifyInstance) {
+  app.get('/revision', { preHandler: app.authenticate }, async (request) => {
+    const ownerId = await resolveSharedStateOwnerId(request.user.sub);
+    const saved = await prisma.appState.findUnique({
+      where: { userId: ownerId },
+      select: { revision: true, updatedAt: true }
+    });
+    return saved
+      ? { revision: saved.revision, updatedAt: saved.updatedAt, shared: true }
+      : { revision: 0, updatedAt: null, shared: true };
+  });
+
   app.get('/', { preHandler: app.authenticate }, async (request) => {
     const ownerId = await resolveSharedStateOwnerId(request.user.sub);
     const saved = await prisma.appState.findUnique({ where: { userId: ownerId } });
