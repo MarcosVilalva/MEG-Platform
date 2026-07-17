@@ -118,7 +118,11 @@ let editingPaymentMethod = "";
 let editingCardPaymentMethod = "";
 
 const els = {
+  appShell: document.querySelector(".app-shell"),
   sidebar: document.querySelector("#primarySidebar"),
+  desktopSidebarToggle: document.querySelector("#desktopSidebarToggle"),
+  sidebarDateTime: document.querySelector("#sidebarDateTime"),
+  sidebarVersion: document.querySelector("#sidebarVersion"),
   mobileMenuBtn: document.querySelector("#mobileMenuBtn"),
   sidebarCloseBtn: document.querySelector("#sidebarCloseBtn"),
   sidebarBackdrop: document.querySelector("#sidebarBackdrop"),
@@ -649,9 +653,9 @@ function isVerocardTransaction(item) {
   const payment = normalizeText(item.paymentMethod || item.account);
   const description = normalizeText(item.description);
   const modality = normalizeText(item.modality);
-  if (modality.includes("ALIMENTACAO")) return true;
+  if (modality.includes("ALIMENTA")) return true;
   if (item.type === "income") return description.includes("VEROCARD");
-  if (item.type === "expense") return payment === "VEROCARD";
+  if (item.type === "expense") return payment.includes("VEROCARD");
   return false;
 }
 
@@ -2303,15 +2307,20 @@ function renderPeriodControls() {
 }
 
 function fillColumnFilterOptions(key, values) {
-  const select = document.querySelector(`[data-column-filter="${key}"]`);
-  if (!select || select.tagName !== "SELECT") return;
-  const current = transactionColumnFilters[key] || "";
-  const firstLabel = key === "type" ? "Todos" : key === "situation" ? "Todas" : key === "expenseClass" ? "Todas" : "Todos";
-  const fixedTypeOptions = key === "type"
-    ? '<option value="">Todos</option><option value="income">Receita</option><option value="expense">Despesa</option>'
-    : "";
-  select.innerHTML = fixedTypeOptions || `<option value="">${firstLabel}</option>${values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}`;
-  select.value = current;
+  const filter = document.querySelector(`[data-multi-filter="${key}"]`);
+  if (!filter) return;
+  const selected = Array.isArray(transactionColumnFilters[key]) ? transactionColumnFilters[key] : [];
+  const search = normalizeText(filter.querySelector("[data-multi-filter-search]")?.value || "");
+  const labels = key === "type" ? { income: "Receita", expense: "Despesa" } : {};
+  const options = (key === "type" ? ["income", "expense"] : values)
+    .filter((value) => !search || normalizeText(labels[value] || value).includes(search));
+  const summary = filter.querySelector("summary");
+  const emptyLabel = ["expenseClass", "paymentMethod", "situation", "modality"].includes(key) ? "Todas" : "Todos";
+  summary.textContent = selected.length === 0 ? emptyLabel : selected.length === 1 ? (labels[selected[0]] || selected[0]) : `${selected.length} selecionados`;
+  summary.classList.toggle("has-filter", selected.length > 0);
+  filter.querySelector("[data-multi-filter-options]").innerHTML = options.length
+    ? options.map((value) => `<label><input type="checkbox" data-multi-filter-option value="${escapeHtml(value)}" ${selected.includes(value) ? "checked" : ""} /><span>${escapeHtml(labels[value] || value)}</span></label>`).join("")
+    : '<small class="excel-filter-empty">Nenhum item encontrado.</small>';
 }
 
 function renderColumnFilterOptions() {
@@ -2326,10 +2335,14 @@ function renderColumnFilterOptions() {
 
 function matchesColumnFilters(item) {
   const textMatches = (key, value) => !transactionColumnFilters[key] || normalizeText(value).includes(normalizeText(transactionColumnFilters[key]));
-  const exactMatches = (key, value) => !transactionColumnFilters[key] || normalizeText(value) === normalizeText(transactionColumnFilters[key]);
+  const exactMatches = (key, value) => {
+    const selected = transactionColumnFilters[key];
+    if (!Array.isArray(selected) || selected.length === 0) return true;
+    return selected.some((candidate) => normalizeText(value) === normalizeText(candidate));
+  };
   if (transactionColumnFilters.date && item.date !== transactionColumnFilters.date) return false;
   if (transactionColumnFilters.purchaseDate && item.purchaseDate !== transactionColumnFilters.purchaseDate) return false;
-  if (transactionColumnFilters.type && item.type !== transactionColumnFilters.type) return false;
+  if (!exactMatches("type", item.type)) return false;
   if (!textMatches("description", item.description)) return false;
   if (!textMatches("notes", item.notes)) return false;
   if (!exactMatches("expenseClass", item.expenseClass)) return false;
@@ -3082,6 +3095,31 @@ function setMobileMenu(open) {
   document.body.classList.toggle("mobile-menu-open", shouldOpen);
 }
 
+function setDesktopSidebarCollapsed(collapsed) {
+  const shouldCollapse = Boolean(collapsed);
+  els.appShell?.classList.toggle("sidebar-collapsed", shouldCollapse);
+  els.desktopSidebarToggle?.setAttribute("aria-expanded", String(!shouldCollapse));
+  els.desktopSidebarToggle?.setAttribute("aria-label", shouldCollapse ? "Expandir menu" : "Recolher menu");
+  try { localStorage.setItem("meg-sidebar-collapsed", shouldCollapse ? "1" : "0"); } catch {}
+}
+
+function updateSidebarClock() {
+  if (!els.sidebarDateTime) return;
+  els.sidebarDateTime.textContent = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date());
+}
+
+async function loadSidebarVersion() {
+  if (!els.sidebarVersion) return;
+  try {
+    const response = await fetch(new URL("downloads/app-version.json", document.baseURI), { cache: "no-store" });
+    if (!response.ok) throw new Error(String(response.status));
+    const release = await response.json();
+    els.sidebarVersion.textContent = `MEG v${release.versionName || release.version || "1.3.0"}`;
+  } catch {
+    els.sidebarVersion.textContent = "MEG v1.3.0";
+  }
+}
+
 function syncAmountFields() {
   const isIncome = els.transactionType.value === "income";
   els.incomeAmountField.classList.toggle("hidden", !isIncome);
@@ -3812,6 +3850,7 @@ document.querySelector("[data-mobile-action='menu']")?.addEventListener("click",
 els.mobileMenuBtn?.addEventListener("click", () => setMobileMenu(true));
 els.sidebarCloseBtn?.addEventListener("click", () => setMobileMenu(false));
 els.sidebarBackdrop?.addEventListener("click", () => setMobileMenu(false));
+els.desktopSidebarToggle?.addEventListener("click", () => setDesktopSidebarCollapsed(!els.appShell?.classList.contains("sidebar-collapsed")));
 window.addEventListener("resize", () => {
   if (!window.matchMedia("(max-width: 980px)").matches) setMobileMenu(false);
 });
@@ -3867,9 +3906,32 @@ els.transactionColumnFilters.forEach((control) => {
     renderTransactions();
   });
 });
+document.addEventListener("input", (event) => {
+  if (event.target.matches?.("[data-multi-filter-search]")) renderColumnFilterOptions();
+});
+document.addEventListener("change", (event) => {
+  if (!event.target.matches?.("[data-multi-filter-option]")) return;
+  const filter = event.target.closest("[data-multi-filter]");
+  if (!filter) return;
+  transactionColumnFilters[filter.dataset.multiFilter] = [...filter.querySelectorAll("[data-multi-filter-option]:checked")].map((input) => input.value);
+  renderTransactions();
+});
+document.addEventListener("click", (event) => {
+  const clearButton = event.target.closest?.("[data-multi-filter-clear]");
+  if (!clearButton) return;
+  const filter = clearButton.closest("[data-multi-filter]");
+  if (!filter) return;
+  transactionColumnFilters[filter.dataset.multiFilter] = [];
+  const search = filter.querySelector("[data-multi-filter-search]");
+  if (search) search.value = "";
+  renderTransactions();
+});
 els.clearColumnFiltersBtn?.addEventListener("click", () => {
   Object.keys(transactionColumnFilters).forEach((key) => delete transactionColumnFilters[key]);
   els.transactionColumnFilters.forEach((control) => { control.value = ""; });
+  document.querySelectorAll("[data-multi-filter-search]").forEach((control) => { control.value = ""; });
+  els.searchInput.value = "";
+  els.typeFilter.value = "all";
   renderTransactions();
 });
 els.creditCardFilter?.addEventListener("change", () => {
@@ -4004,6 +4066,10 @@ window.addEventListener("resize", () => {
 });
 
 setView(selectedView);
+setDesktopSidebarCollapsed(localStorage.getItem("meg-sidebar-collapsed") === "1");
+updateSidebarClock();
+window.setInterval(updateSidebarClock, 30000);
+loadSidebarVersion();
 render();
 window.setTimeout(showOpeningFinancialAlert, 450);
 

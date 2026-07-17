@@ -102,6 +102,15 @@ assert.equal(modalityClassificationSummary.income, 2000);
 assert.equal(modalityClassificationSummary.ticketIncome, 1000);
 assert.equal(modalityClassificationSummary.ticketExpense, 250);
 
+const namedBenefitCardSummary = calculateFinancialSummary([
+  { date: '2026-07-01', type: 'income', description: 'SALARIO', incomeAmount: 11499.31 },
+  { date: '2026-07-10', type: 'expense', description: 'DESPESAS MONETARIAS', paymentMethod: 'PIX', expenseAmount: 11346.42, status: 'paid' },
+  { date: '2026-07-10', type: 'expense', description: 'REFEICAO', paymentMethod: 'VEROCARD MARCOS', expenseAmount: 90.34, status: 'paid' },
+], '2026-07-01', '2026-07-31');
+assert.equal(Number(namedBenefitCardSummary.expense.toFixed(2)), 11346.42);
+assert.equal(Number(namedBenefitCardSummary.ticketExpense.toFixed(2)), 90.34);
+assert.equal(Number(namedBenefitCardSummary.closingBalance.toFixed(2)), 152.89);
+
 const currentMonetaryPosition = calculateMonetaryDashboard([
   { date: '2026-06-30', type: 'income', incomeAmount: 100 },
   { date: '2026-07-01', type: 'income', incomeAmount: 1000 },
