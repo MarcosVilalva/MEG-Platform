@@ -1,4 +1,4 @@
-import { availableMonetaryBalance, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, calculateHistoricalProjection, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal, summarizeDueDate } from "./legacy-finance.js";
+import { availableMonetaryBalance, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, calculateHistoricalProjection, calculateMonetaryDashboard, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal, summarizeDueDate } from "./legacy-finance.js";
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
 import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOfMonth } from "./calendar-date.js";
 
@@ -637,6 +637,8 @@ function previousMonthValue(monthValue = currentMonth) {
 function isVerocardTransaction(item) {
   const payment = normalizeText(item.paymentMethod || item.account);
   const description = normalizeText(item.description);
+  const modality = normalizeText(item.modality);
+  if (modality.includes("ALIMENTACAO")) return true;
   if (item.type === "income") return description.includes("VEROCARD");
   if (item.type === "expense") return payment === "VEROCARD";
   return false;
@@ -970,6 +972,8 @@ function render() {
 function renderDashboard() {
   const items = selectedTransactions();
   const totals = financialSummaryForPeriod(items);
+  const { start: dashboardStart, end: dashboardEnd } = dateRangeForSelectedPeriod();
+  const monetaryPosition = calculateMonetaryDashboard(state.transactions, dashboardStart, dashboardEnd, todayIso);
   const balance = totals.consolidatedBalance;
   const monthCount = selectedPeriodMonthCount(items);
   const totalBudget = Object.values(state.budgets).reduce((sum, value) => sum + Number(value || 0), 0) * monthCount;
@@ -977,14 +981,16 @@ function renderDashboard() {
 
   els.dashboardTitle.textContent = `Resumo - ${periodLabel()}`;
   if (els.categoryChartNote) els.categoryChartNote.textContent = `${formatCompactMoney(totals.expense)} no periodo`;
-  els.monetaryRevenueMetric.textContent = money.format(totals.availableIncome);
-  els.monetaryExpenseMetric.textContent = money.format(totals.paidExpense);
-  els.monetarySituationMetric.textContent = money.format(totals.closingBalance);
+  els.monetaryRevenueMetric.textContent = money.format(monetaryPosition.openingBalance + monetaryPosition.currentIncome);
+  els.monetaryExpenseMetric.textContent = money.format(monetaryPosition.currentPaidExpense);
+  els.monetarySituationMetric.textContent = money.format(monetaryPosition.currentBalance);
   els.monetaryRevenueNote.textContent = selectedPeriod.mode !== "month"
-    ? `${money.format(totals.income)} no período + ${money.format(totals.openingBalance)} anteriores`
-    : `${money.format(totals.income)} em ${formatMonthCode(selectedPeriod.month)} + ${money.format(totals.openingBalance)} até ${formatMonthCode(previousMonthValue(selectedPeriod.month))}`;
-  els.monetaryExpenseNote.textContent = `${money.format(totals.pendingExpense)} ainda pendentes`;
-  els.monetarySituationNote.textContent = totals.closingBalance >= 0 ? "✅ Saldo monetário positivo" : "🚨 Saldo monetário negativo";
+    ? `${money.format(monetaryPosition.currentIncome)} no período + ${money.format(monetaryPosition.openingBalance)} anteriores`
+    : `${money.format(monetaryPosition.currentIncome)} em ${formatMonthCode(selectedPeriod.month)} + ${money.format(monetaryPosition.openingBalance)} até ${formatMonthCode(previousMonthValue(selectedPeriod.month))}`;
+  els.monetaryExpenseNote.textContent = `${money.format(monetaryPosition.pendingExpense)} em contas pendentes`;
+  els.monetarySituationNote.textContent = monetaryPosition.balanceAfterPending >= 0
+    ? `✅ Após quitar as pendências, sobram ${money.format(monetaryPosition.surplusAfterPending)}`
+    : `🚨 Após quitar as pendências, faltam ${money.format(monetaryPosition.missingAfterPending)}`;
   els.ticketRevenueMetric.textContent = money.format(totals.ticketIncome);
   els.ticketExpenseMetric.textContent = money.format(totals.ticketExpense);
   els.ticketSituationMetric.textContent = money.format(totals.ticketBalance);
@@ -999,7 +1005,7 @@ function renderDashboard() {
     card?.classList.toggle("kpi-positive", positive);
     card?.classList.toggle("kpi-negative", !positive);
   };
-  setCardTone(els.monetaryPanel, totals.closingBalance >= 0);
+  setCardTone(els.monetaryPanel, monetaryPosition.balanceAfterPending >= 0);
   setCardTone(els.ticketPanel, totals.ticketBalance >= 0);
   setCardTone(els.consolidatedPanel, totals.consolidatedBalance >= 0);
 

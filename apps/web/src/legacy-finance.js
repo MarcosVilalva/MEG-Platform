@@ -8,6 +8,8 @@ export function isVerocardTransaction(item) {
   const normalize = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
   const payment = normalize(item.paymentMethod || item.account);
   const description = normalize(item.description);
+  const modality = normalize(item.modality);
+  if (modality.includes('ALIMENTACAO')) return true;
   if (item.type === 'income') return description.includes('VEROCARD');
   if (item.type === 'expense') return payment === 'VEROCARD';
   return false;
@@ -217,6 +219,24 @@ export function calculateHistoricalProjection(transactions, endDate) {
     paidExpense,
     pendingExpense,
     balance: income - expense,
+  };
+}
+
+export function calculateMonetaryDashboard(transactions, start = '', end = '', asOfDate = '') {
+  const effectiveEnd = asOfDate && (!start || asOfDate >= start) && (!end || asOfDate <= end) ? asOfDate : end;
+  const current = calculateFinancialSummary(transactions, start, effectiveEnd);
+  const period = calculateFinancialSummary(transactions, start, end);
+  const balanceAfterPending = current.closingBalance - period.pendingExpense;
+
+  return {
+    ...period,
+    currentIncome: current.income,
+    currentPaidExpense: current.paidExpense,
+    currentBalance: current.closingBalance,
+    balanceAfterPending,
+    missingAfterPending: Math.max(-balanceAfterPending, 0),
+    surplusAfterPending: Math.max(balanceAfterPending, 0),
+    effectiveEnd,
   };
 }
 

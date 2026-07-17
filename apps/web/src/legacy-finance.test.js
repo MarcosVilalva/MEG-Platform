@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { availableMonetaryBalance, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, calculateHistoricalProjection, groupPayableItems, payableGroupLabel, payableGroupTotal, summarizeDueDate } from './legacy-finance.js';
+import { availableMonetaryBalance, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, calculateHistoricalProjection, calculateMonetaryDashboard, groupPayableItems, payableGroupLabel, payableGroupTotal, summarizeDueDate } from './legacy-finance.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from './legacy-installments.js';
 import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOfMonth } from './calendar-date.js';
@@ -92,6 +92,27 @@ assert.equal(classificationSummary.expense, 100);
 assert.equal(classificationSummary.ticketIncome, 2000);
 assert.equal(classificationSummary.ticketExpense, 500);
 assert.equal(classificationSummary.ticketBalance, 1500);
+
+const modalityClassificationSummary = calculateFinancialSummary([
+  { date: '2026-07-01', type: 'income', description: 'CRÉDITO BENEFÍCIO', modality: 'ALIMENTAÇÃO', incomeAmount: 1000 },
+  { date: '2026-07-02', type: 'expense', description: 'REFEIÇÃO', paymentMethod: 'CARTÃO BENEFÍCIO', modality: 'ALIMENTAÇÃO', expenseAmount: 250, status: 'paid' },
+  { date: '2026-07-03', type: 'income', description: 'SALÁRIO', incomeAmount: 2000 },
+], '2026-07-01', '2026-07-31');
+assert.equal(modalityClassificationSummary.income, 2000);
+assert.equal(modalityClassificationSummary.ticketIncome, 1000);
+assert.equal(modalityClassificationSummary.ticketExpense, 250);
+
+const currentMonetaryPosition = calculateMonetaryDashboard([
+  { date: '2026-06-30', type: 'income', incomeAmount: 100 },
+  { date: '2026-07-01', type: 'income', incomeAmount: 1000 },
+  { date: '2026-07-10', type: 'expense', expenseAmount: 942.11, status: 'paid' },
+  { date: '2026-07-20', type: 'expense', expenseAmount: 200.34, status: 'paid' },
+  { date: '2026-07-25', type: 'expense', expenseAmount: 1309.38, status: 'pending' },
+  { date: '2026-07-12', type: 'expense', expenseAmount: 300, status: 'paid', modality: 'ALIMENTAÇÃO' },
+], '2026-07-01', '2026-07-31', '2026-07-17');
+assert.equal(Number(currentMonetaryPosition.currentBalance.toFixed(2)), 157.89);
+assert.equal(Number(currentMonetaryPosition.pendingExpense.toFixed(2)), 1309.38);
+assert.equal(Number(currentMonetaryPosition.missingAfterPending.toFixed(2)), 1151.49);
 
 const februarySummary = calculateFinancialSummary([
   { date: '2025-12-31', type: 'income', incomeAmount: 12000 },
