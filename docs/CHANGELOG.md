@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-07-17 - Conciliacao do saldo monetario
+
+- Adicionada conciliacao entre o saldo calculado pelos lancamentos e o saldo real informado pelo usuario.
+- A diferenca passa a ser mostrada antes da confirmacao e registrada como ajuste financeiro auditavel.
+- Incluido teste de regressao para o caso real de R$ 62,55 no livro-caixa, R$ 152,89 no banco e diferenca de R$ 90,34.
+
 ## 2026-07-15 - Analises responsivas e saldo historico projetado
 
 - Reestruturada a aba Analises para caber integralmente em celulares, com leitura vertical e textos sem cortes.

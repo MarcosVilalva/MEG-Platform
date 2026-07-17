@@ -129,6 +129,7 @@
           <div class="dashboard-main-grid">
             <section class="finance-panels" aria-label="Painéis financeiro, ticket e consolidado">
               <article class="finance-panel monetary-panel" id="monetaryPanel">
+                <button class="reconciliation-button" id="openReconciliationBtn" type="button">Conciliar saldo</button>
                 <header><span>💵</span><div><small>DINHEIRO</small><h3>Monetário</h3></div></header>
                 <div class="finance-panel-values">
                   <div><span>Receitas</span><strong id="monetaryRevenueMetric">R$ 0,00</strong><small id="monetaryRevenueNote"></small></div>
@@ -1033,6 +1034,29 @@
         <button class="button ghost" id="closeInsufficientBalanceBtn" type="button">Voltar</button>
         <button class="button primary" id="addMissingIncomeBtn" type="button">+ Inserir receita</button>
       </div>
+    </dialog>
+
+    <dialog class="modal reconciliation-dialog" id="reconciliationDialog">
+      <form id="reconciliationForm" method="dialog">
+        <div class="modal-header">
+          <div><small class="decision-eyebrow">CONCILIAÇÃO BANCÁRIA</small><h2>Confirmar saldo real</h2></div>
+          <button class="icon-button" id="closeReconciliationBtn" type="button" aria-label="Fechar">&times;</button>
+        </div>
+        <p class="muted">Compare o saldo calculado pelos lançamentos com o valor que realmente existe na conta. A diferença será registrada de forma visível e auditável.</p>
+        <div class="reconciliation-equation">
+          <article><span>Saldo no MEG</span><strong id="reconciliationLedgerMetric">R$ 0,00</strong></article>
+          <article><span>Saldo real informado</span><strong id="reconciliationActualMetric">R$ 0,00</strong></article>
+          <article id="reconciliationDifferenceCard"><span>Diferença a conciliar</span><strong id="reconciliationDifferenceMetric">R$ 0,00</strong></article>
+        </div>
+        <label class="reconciliation-input">Saldo atual da conta
+          <input id="reconciliationActualInput" type="number" step="0.01" inputmode="decimal" required />
+        </label>
+        <p class="reconciliation-message" id="reconciliationMessage">Informe o saldo exibido pelo seu banco.</p>
+        <div class="modal-actions">
+          <button class="button ghost" id="cancelReconciliationBtn" type="button">Cancelar</button>
+          <button class="button primary" type="submit">Registrar conciliação</button>
+        </div>
+      </form>
     </dialog>
 
     <div class="app-toast" id="appToast" role="status" aria-live="polite"></div>

@@ -244,3 +244,17 @@ export function availableMonetaryBalance(transactions, endDate, excludeId = '') 
   const eligible = transactions.filter((item) => item.id !== excludeId);
   return calculateFinancialSummary(eligible, '', endDate).closingBalance;
 }
+
+export function calculateBalanceReconciliation(transactions, actualBalance, endDate) {
+  const ledgerBalance = availableMonetaryBalance(transactions, endDate);
+  const safeActualBalance = Number(actualBalance);
+  const difference = Number.isFinite(safeActualBalance) ? safeActualBalance - ledgerBalance : 0;
+  return {
+    ledgerBalance,
+    actualBalance: Number.isFinite(safeActualBalance) ? safeActualBalance : 0,
+    difference,
+    adjustmentType: difference >= 0 ? 'income' : 'expense',
+    adjustmentAmount: Math.abs(difference),
+    reconciled: Math.abs(difference) < 0.005,
+  };
+}

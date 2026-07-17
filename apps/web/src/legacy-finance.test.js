@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { availableMonetaryBalance, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, calculateHistoricalProjection, calculateMonetaryDashboard, groupPayableItems, payableGroupLabel, payableGroupTotal, summarizeDueDate } from './legacy-finance.js';
+import { availableMonetaryBalance, calculateBalanceReconciliation, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, calculateHistoricalProjection, calculateMonetaryDashboard, groupPayableItems, payableGroupLabel, payableGroupTotal, summarizeDueDate } from './legacy-finance.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from './legacy-installments.js';
 import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOfMonth } from './calendar-date.js';
@@ -113,6 +113,15 @@ const currentMonetaryPosition = calculateMonetaryDashboard([
 assert.equal(Number(currentMonetaryPosition.currentBalance.toFixed(2)), 157.89);
 assert.equal(Number(currentMonetaryPosition.pendingExpense.toFixed(2)), 1309.38);
 assert.equal(Number(currentMonetaryPosition.missingAfterPending.toFixed(2)), 1151.49);
+
+const reconciliation = calculateBalanceReconciliation([
+  { date: '2026-07-01', type: 'income', incomeAmount: 11499.31 },
+  { date: '2026-07-17', type: 'expense', expenseAmount: 11436.76, status: 'paid' },
+], 152.89, '2026-07-17');
+assert.equal(Number(reconciliation.ledgerBalance.toFixed(2)), 62.55);
+assert.equal(Number(reconciliation.difference.toFixed(2)), 90.34);
+assert.equal(reconciliation.adjustmentType, 'income');
+assert.equal(Number(reconciliation.adjustmentAmount.toFixed(2)), 90.34);
 
 const februarySummary = calculateFinancialSummary([
   { date: '2025-12-31', type: 'income', incomeAmount: 12000 },

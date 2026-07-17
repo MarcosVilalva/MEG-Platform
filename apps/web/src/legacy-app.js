@@ -1,4 +1,4 @@
-import { availableMonetaryBalance, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, calculateHistoricalProjection, calculateMonetaryDashboard, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal, summarizeDueDate } from "./legacy-finance.js";
+import { availableMonetaryBalance, calculateBalanceReconciliation, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, calculateHistoricalProjection, calculateMonetaryDashboard, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal, summarizeDueDate } from "./legacy-finance.js";
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
 import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOfMonth } from "./calendar-date.js";
 
@@ -141,6 +141,17 @@ const els = {
   monetaryRevenueNote: document.querySelector("#monetaryRevenueNote"),
   monetaryExpenseNote: document.querySelector("#monetaryExpenseNote"),
   monetarySituationNote: document.querySelector("#monetarySituationNote"),
+  openReconciliationBtn: document.querySelector("#openReconciliationBtn"),
+  reconciliationDialog: document.querySelector("#reconciliationDialog"),
+  reconciliationForm: document.querySelector("#reconciliationForm"),
+  closeReconciliationBtn: document.querySelector("#closeReconciliationBtn"),
+  cancelReconciliationBtn: document.querySelector("#cancelReconciliationBtn"),
+  reconciliationLedgerMetric: document.querySelector("#reconciliationLedgerMetric"),
+  reconciliationActualMetric: document.querySelector("#reconciliationActualMetric"),
+  reconciliationDifferenceMetric: document.querySelector("#reconciliationDifferenceMetric"),
+  reconciliationDifferenceCard: document.querySelector("#reconciliationDifferenceCard"),
+  reconciliationActualInput: document.querySelector("#reconciliationActualInput"),
+  reconciliationMessage: document.querySelector("#reconciliationMessage"),
   ticketRevenueMetric: document.querySelector("#ticketRevenueMetric"),
   ticketExpenseMetric: document.querySelector("#ticketExpenseMetric"),
   ticketSituationMetric: document.querySelector("#ticketSituationMetric"),
@@ -1013,6 +1024,71 @@ function renderDashboard() {
   renderDashboardPayables();
   renderCategoryChart();
   renderMonthProgress();
+}
+
+function updateReconciliationPreview() {
+  const actualBalance = Number(els.reconciliationActualInput.value || 0);
+  const reconciliation = calculateBalanceReconciliation(state.transactions, actualBalance, todayIso);
+  els.reconciliationLedgerMetric.textContent = money.format(reconciliation.ledgerBalance);
+  els.reconciliationActualMetric.textContent = money.format(reconciliation.actualBalance);
+  els.reconciliationDifferenceMetric.textContent = money.format(reconciliation.difference);
+  els.reconciliationDifferenceCard.classList.toggle("positive", reconciliation.difference > 0.005);
+  els.reconciliationDifferenceCard.classList.toggle("negative", reconciliation.difference < -0.005);
+  els.reconciliationMessage.textContent = reconciliation.reconciled
+    ? "O saldo do MEG já confere com o banco. Nenhum ajuste será criado."
+    : reconciliation.difference > 0
+      ? `Faltam ${money.format(reconciliation.adjustmentAmount)} no livro-caixa. O MEG registrará uma receita de ajuste.`
+      : `Sobram ${money.format(reconciliation.adjustmentAmount)} no livro-caixa. O MEG registrará uma despesa de ajuste.`;
+  return reconciliation;
+}
+
+function openReconciliationDialog() {
+  const ledgerBalance = availableMonetaryBalance(state.transactions, todayIso);
+  els.reconciliationActualInput.value = ledgerBalance.toFixed(2);
+  updateReconciliationPreview();
+  els.reconciliationDialog.showModal();
+  window.setTimeout(() => {
+    els.reconciliationActualInput.select();
+    els.reconciliationActualInput.focus();
+  }, 40);
+}
+
+function saveBalanceReconciliation(event) {
+  event.preventDefault();
+  const reconciliation = updateReconciliationPreview();
+  if (reconciliation.reconciled) {
+    els.reconciliationDialog.close();
+    showToast("Saldo conferido", "O saldo do MEG já corresponde ao saldo bancário.", "success");
+    return;
+  }
+  const type = reconciliation.adjustmentType;
+  const adjustment = normalizeTransaction({
+    id: crypto.randomUUID(),
+    date: todayIso,
+    weekday: weekdayShort(todayIso),
+    type,
+    launchType: type === "income" ? "RECEITA" : "DESPESA",
+    description: "AJUSTE DE CONCILIAÇÃO BANCÁRIA",
+    incomeAmount: type === "income" ? reconciliation.adjustmentAmount : 0,
+    expenseAmount: type === "expense" ? reconciliation.adjustmentAmount : 0,
+    amount: reconciliation.adjustmentAmount,
+    category: type === "income" ? "Receitas" : "AJUSTE DE SALDO",
+    group: type === "expense" ? "AJUSTE DE SALDO" : "",
+    expenseClass: type === "expense" ? "AJUSTE DE SALDO" : "",
+    paymentMethod: "AJUSTE DE SALDO",
+    account: "AJUSTE DE SALDO",
+    status: "paid",
+    situation: "PAGO",
+    modality: "A VISTA",
+    notes: `Conciliação em ${todayIso}: saldo calculado ${money.format(reconciliation.ledgerBalance)}; saldo bancário ${money.format(reconciliation.actualBalance)}.`,
+    source: "CONCILIAÇÃO BANCÁRIA",
+    reconciliation: true,
+  });
+  state.transactions.push(adjustment);
+  saveState();
+  els.reconciliationDialog.close();
+  render();
+  showToast("Saldo conciliado", `${money.format(reconciliation.adjustmentAmount)} registrados como ajuste auditável.`, "success");
 }
 
 function modalityForPayment(method) {
@@ -3777,6 +3853,11 @@ els.quickAddBtn.addEventListener("click", () => openTransactionDialog());
 els.resetDemoBtn.addEventListener("click", () => {
   window.MEG_CLOUD?.reload();
 });
+els.openReconciliationBtn?.addEventListener("click", openReconciliationDialog);
+els.reconciliationActualInput?.addEventListener("input", updateReconciliationPreview);
+els.reconciliationForm?.addEventListener("submit", saveBalanceReconciliation);
+els.closeReconciliationBtn?.addEventListener("click", () => els.reconciliationDialog.close());
+els.cancelReconciliationBtn?.addEventListener("click", () => els.reconciliationDialog.close());
 els.searchInput.addEventListener("input", renderTransactions);
 els.typeFilter.addEventListener("change", renderTransactions);
 els.transactionSortFilter.addEventListener("change", renderTransactions);

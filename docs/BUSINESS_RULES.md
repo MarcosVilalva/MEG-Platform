@@ -29,6 +29,7 @@
 - Competência, vencimento e pagamento são datas independentes.
 - Eventos previstos não compõem o saldo disponível.
 - O saldo é consequência dos eventos; não deve ser alterado diretamente.
+- Quando o saldo calculado divergir do saldo real do banco, a conciliação deve exibir os dois valores e registrar a diferença como um lançamento pago, identificado como `AJUSTE DE CONCILIAÇÃO BANCÁRIA`. O ajuste nunca pode ficar oculto nem sobrescrever lançamentos existentes.
 
 ## Lançamentos e parcelamentos
 
