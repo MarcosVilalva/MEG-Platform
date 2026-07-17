@@ -17,6 +17,7 @@ export function AuthenticatedApp() {
   }, [session]);
 
   function handleLogout() {
+    if (!window.confirm('Deseja sair do MEG Finanças? Sua sessão será encerrada com segurança.')) return;
     const current = session;
     clearSession();
     setSession(null);

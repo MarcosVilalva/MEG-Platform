@@ -52,7 +52,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function readSession(): AuthSession | null {
   try {
-    const value = localStorage.getItem(SESSION_KEY);
+    const value = sessionStorage.getItem(SESSION_KEY);
     return value ? JSON.parse(value) as AuthSession : null;
   } catch {
     return null;
@@ -60,10 +60,12 @@ export function readSession(): AuthSession | null {
 }
 
 export function saveSession(session: AuthSession) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  localStorage.removeItem(SESSION_KEY);
 }
 
 export function clearSession() {
+  sessionStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(SESSION_KEY);
 }
 

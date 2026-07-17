@@ -171,7 +171,26 @@ function wireLegacyApp() {
   const addEmailRecipientButton = document.querySelector('#addEmailRecipientBtn');
   const emailRecipientList = document.querySelector('#notificationEmailRecipientList');
   if (userName) userName.textContent = window.MEG_CLOUD.user.name;
-  logoutButton?.addEventListener('click', () => window.MEG_CLOUD.logout());
+  logoutButton?.addEventListener('click', async () => {
+    const confirmed = window.confirm('Deseja sair do MEG Finanças? Seus dados serão sincronizados antes de encerrar a sessão.');
+    if (!confirmed) return;
+    const originalText = logoutButton.textContent;
+    logoutButton.disabled = true;
+    logoutButton.textContent = 'Salvando...';
+    const status = document.querySelector('#cloudSyncStatus');
+    if (status) status.textContent = 'Salvando antes de sair...';
+    try {
+      await window.MEG_CLOUD.logout({ save: true });
+    } catch (cause) {
+      logoutButton.disabled = false;
+      logoutButton.textContent = originalText;
+      window.MEG_APP?.showToast?.(
+        'Não foi possível sair com segurança',
+        cause instanceof Error ? cause.message : 'Verifique sua conexão e tente novamente.',
+        'error'
+      );
+    }
+  });
 
   async function loadRecipients() {
     if (!recipientList) return;
@@ -317,7 +336,11 @@ function setupInactivityLogout() {
     }, INACTIVITY_LIMIT_MS - INACTIVITY_WARNING_MS);
     logoutTimer = window.setTimeout(async () => {
       sessionStorage.setItem(INACTIVITY_MESSAGE_KEY, 'Sua sessão foi encerrada após 2 minutos sem atividade.');
-      await window.MEG_CLOUD.logout();
+      try {
+        await window.MEG_CLOUD.logout({ save: true });
+      } catch {
+        await window.MEG_CLOUD.logout({ save: false });
+      }
     }, INACTIVITY_LIMIT_MS);
   };
   ['pointerdown', 'keydown', 'touchstart', 'scroll'].forEach((eventName) => {

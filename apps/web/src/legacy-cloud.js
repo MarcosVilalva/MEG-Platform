@@ -16,9 +16,9 @@ const syncChannel = typeof BroadcastChannel === 'function' ? new BroadcastChanne
 function session() {
   try {
     return {
-      accessToken: localStorage.getItem(ACCESS_KEY),
-      refreshToken: localStorage.getItem(REFRESH_KEY),
-      user: JSON.parse(localStorage.getItem(USER_KEY) || 'null')
+      accessToken: sessionStorage.getItem(ACCESS_KEY),
+      refreshToken: sessionStorage.getItem(REFRESH_KEY),
+      user: JSON.parse(sessionStorage.getItem(USER_KEY) || 'null')
     };
   } catch {
     return { accessToken: null, refreshToken: null, user: null };
@@ -26,16 +26,30 @@ function session() {
 }
 
 function persistSession(payload) {
-  localStorage.setItem(ACCESS_KEY, payload.accessToken);
-  localStorage.setItem(REFRESH_KEY, payload.refreshToken);
-  localStorage.setItem(USER_KEY, JSON.stringify(payload.user));
-}
-
-function clearSession() {
+  sessionStorage.setItem(ACCESS_KEY, payload.accessToken);
+  sessionStorage.setItem(REFRESH_KEY, payload.refreshToken);
+  sessionStorage.setItem(USER_KEY, JSON.stringify(payload.user));
+  // Versions prior to 1.1.39 kept credentials indefinitely. Remove them so
+  // closing the tab or native WebView always requires a new authentication.
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
   localStorage.removeItem(USER_KEY);
 }
+
+function clearSession() {
+  sessionStorage.removeItem(ACCESS_KEY);
+  sessionStorage.removeItem(REFRESH_KEY);
+  sessionStorage.removeItem(USER_KEY);
+  localStorage.removeItem(ACCESS_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+  localStorage.removeItem(USER_KEY);
+}
+
+// Discard credentials written by older builds. Financial data remains in its
+// own storage key and is not affected by this security migration.
+localStorage.removeItem(ACCESS_KEY);
+localStorage.removeItem(REFRESH_KEY);
+localStorage.removeItem(USER_KEY);
 
 async function refreshAccess() {
   const current = session();
@@ -62,6 +76,24 @@ async function api(path, options = {}, retry = true) {
   });
   if (response.status === 401 && retry && await refreshAccess()) return api(path, options, false);
   return response;
+}
+
+async function waitForSaveIdle(timeoutMs = 8000) {
+  const startedAt = Date.now();
+  while (saveInFlight) {
+    if (Date.now() - startedAt >= timeoutMs) throw new Error('O salvamento demorou mais que o esperado. Tente sair novamente.');
+    await new Promise((resolve) => window.setTimeout(resolve, 50));
+  }
+}
+
+async function saveBeforeLogout() {
+  clearTimeout(saveTimer);
+  saveTimer = undefined;
+  await waitForSaveIdle();
+  const latestState = window.MEG_APP?.getState?.() || queuedState;
+  queuedState = null;
+  pendingSave = false;
+  if (latestState) await saveNow(structuredClone(latestState));
 }
 
 function friendlyAuthError(code) {
@@ -394,7 +426,8 @@ export async function bootstrapCloud() {
       await loadCloudState();
       location.reload();
     },
-    async logout() {
+    async logout({ save = true } = {}) {
+      if (save) await saveBeforeLogout();
       const current = session();
       if (current.refreshToken) {
         await api('/auth/logout', { method: 'POST', body: JSON.stringify({ refreshToken: current.refreshToken }) }).catch(() => undefined);
