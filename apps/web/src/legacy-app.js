@@ -337,6 +337,13 @@ const els = {
   transactionSortFilter: document.querySelector("#transactionSortFilter"),
   transactionColumnFilters: document.querySelectorAll("[data-column-filter]"),
   clearColumnFiltersBtn: document.querySelector("#clearColumnFiltersBtn"),
+  transactionsFilteredIncome: document.querySelector("#transactionsFilteredIncome"),
+  transactionsFilteredIncomeCount: document.querySelector("#transactionsFilteredIncomeCount"),
+  transactionsFilteredExpense: document.querySelector("#transactionsFilteredExpense"),
+  transactionsFilteredExpenseCount: document.querySelector("#transactionsFilteredExpenseCount"),
+  transactionsFilteredResult: document.querySelector("#transactionsFilteredResult"),
+  transactionsFilteredResultStatus: document.querySelector("#transactionsFilteredResultStatus"),
+  transactionsFilteredResultCard: document.querySelector("#transactionsFilteredResultCard"),
   creditCardsPeriodLabel: document.querySelector("#creditCardsPeriodLabel"),
   newCardTransactionBtn: document.querySelector("#newCardTransactionBtn"),
   creditCardFilter: document.querySelector("#creditCardFilter"),
@@ -2253,6 +2260,30 @@ function matchesColumnFilters(item) {
   return true;
 }
 
+function renderTransactionsFilterSummary(items) {
+  const incomeItems = items.filter((item) => item.type === "income");
+  const expenseItems = items.filter((item) => item.type === "expense");
+  const income = incomeItems.reduce((total, item) => total + Number(item.incomeAmount || item.amount || 0), 0);
+  const expense = expenseItems.reduce((total, item) => total + Number(item.expenseAmount || item.amount || 0), 0);
+  const result = income - expense;
+  const plural = (count) => `${count} ${count === 1 ? "lançamento" : "lançamentos"}`;
+
+  els.transactionsFilteredIncome.textContent = money.format(income);
+  els.transactionsFilteredIncomeCount.textContent = plural(incomeItems.length);
+  els.transactionsFilteredExpense.textContent = money.format(expense);
+  els.transactionsFilteredExpenseCount.textContent = plural(expenseItems.length);
+  els.transactionsFilteredResult.textContent = money.format(result);
+  els.transactionsFilteredResultStatus.textContent = result > 0
+    ? "Sobra no recorte selecionado"
+    : result < 0
+      ? "Déficit no recorte selecionado"
+      : items.length
+        ? "Recorte equilibrado"
+        : "Nenhum lançamento encontrado";
+  els.transactionsFilteredResultCard.classList.toggle("is-positive", result > 0);
+  els.transactionsFilteredResultCard.classList.toggle("is-negative", result < 0);
+}
+
 function renderTransactions() {
   renderColumnFilterOptions();
   const query = els.searchInput.value.trim().toLowerCase();
@@ -2261,6 +2292,7 @@ function renderTransactions() {
     .filter((item) => (type === "all" ? true : item.type === type))
     .filter((item) => `${item.description} ${item.category} ${item.account}`.toLowerCase().includes(query))
     .filter(matchesColumnFilters);
+  renderTransactionsFilterSummary(rows);
   sortTransactions(rows, els.transactionSortFilter?.value || "date_desc");
 
   els.transactionRows.innerHTML = rows.length

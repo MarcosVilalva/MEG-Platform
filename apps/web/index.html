@@ -534,6 +534,21 @@
             </div>
           </div>
 
+          <section class="transactions-filter-summary" aria-label="Resumo dos lançamentos filtrados" aria-live="polite">
+            <article class="transactions-filter-card transactions-filter-income">
+              <span class="transactions-filter-icon" aria-hidden="true">↗</span>
+              <div><small>RECEITAS NO FILTRO</small><strong id="transactionsFilteredIncome">R$ 0,00</strong><span id="transactionsFilteredIncomeCount">0 lançamentos</span></div>
+            </article>
+            <article class="transactions-filter-card transactions-filter-expense">
+              <span class="transactions-filter-icon" aria-hidden="true">↘</span>
+              <div><small>DESPESAS NO FILTRO</small><strong id="transactionsFilteredExpense">R$ 0,00</strong><span id="transactionsFilteredExpenseCount">0 lançamentos</span></div>
+            </article>
+            <article class="transactions-filter-card transactions-filter-result" id="transactionsFilteredResultCard">
+              <span class="transactions-filter-icon" aria-hidden="true">Σ</span>
+              <div><small>RESULTADO DO FILTRO</small><strong id="transactionsFilteredResult">R$ 0,00</strong><span id="transactionsFilteredResultStatus">Recorte equilibrado</span></div>
+            </article>
+          </section>
+
           <section class="panel table-panel">
             <div class="table-wrap">
               <table class="transactions-table">
