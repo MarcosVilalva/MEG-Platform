@@ -27,6 +27,7 @@ const registerSchema = credentialsSchema.extend({
   confirmPassword: z.string().min(8).max(128),
   accountType: z.enum(['REQUEST_ACCESS', 'CREATE_WORKSPACE']).default('REQUEST_ACCESS'),
   workspaceName: z.string().min(2).max(120).optional(),
+  planCode: z.enum(['ESSENCIAL', 'FAMILIA', 'PRO']).default('ESSENCIAL'),
   workspaceSlug: z.string().min(2).max(120).regex(/^[a-z0-9-]+$/).optional()
 }).refine((value) => value.password === value.confirmPassword, {
   message: 'PASSWORDS_DO_NOT_MATCH',

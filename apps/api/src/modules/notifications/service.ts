@@ -1,6 +1,7 @@
 import { prisma } from '@meg/database';
 import { config } from '../../config';
 import { resolveWorkspaceContext } from '../workspaces/service';
+import { sendWorkspaceWhatsApp } from '../integrations/service';
 
 export type NotificationMode = 'upcoming' | 'due-now' | 'open-summary';
 
@@ -156,15 +157,20 @@ export async function notificationDigest(userId: string, referenceDate = new Dat
   return buildNotificationDigest(state?.transactions || [], referenceDate, mode);
 }
 
-async function sendEmail(to: string, subject: string, text: string) {
+type EmailBranding = { senderName?: string | null; replyToEmail?: string | null };
+
+async function sendEmail(to: string, subject: string, text: string, branding: EmailBranding = {}) {
   const recipient = to.trim().replace(/[?？]+$/u, '').toLowerCase();
   const senderAddress = config.notificationEmailFrom.match(/<([^>]+)>/)?.[1] || config.notificationEmailFrom;
+  const senderName = branding.senderName?.trim();
+  const replyToEmail = branding.replyToEmail?.trim().replace(/[?？]+$/u, '').toLowerCase() || config.adminEmail;
+  const brandedFrom = senderName ? `${senderName} <${senderAddress}>` : config.notificationEmailFrom;
   const usesResendTestDomain = senderAddress.trim().toLowerCase().endsWith('@resend.dev');
   const canUseResend = Boolean(config.resendApiKey) && (!usesResendTestDomain || recipient === config.adminEmail.trim().toLowerCase());
   if (canUseResend) {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${config.resendApiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: config.notificationEmailFrom, to: [recipient], reply_to: config.adminEmail, subject, text })
+      body: JSON.stringify({ from: brandedFrom, to: [recipient], reply_to: replyToEmail, subject, text })
     });
     if (!response.ok) throw new Error(`E-mail Resend recusado (${response.status}): ${await response.text()}`);
     return { status: 'sent', provider: 'resend', detail: await response.text() };
@@ -174,9 +180,9 @@ async function sendEmail(to: string, subject: string, text: string) {
       method: 'POST',
       headers: { 'api-key': config.brevoApiKey, accept: 'application/json', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        sender: { name: config.brevoSenderName, email: config.brevoSenderEmail },
+        sender: { name: senderName || config.brevoSenderName, email: config.brevoSenderEmail },
         to: [{ email: recipient }],
-        replyTo: { email: config.adminEmail, name: 'Administrador MEG' },
+        replyTo: { email: replyToEmail, name: senderName || 'Administrador MEG' },
         subject,
         textContent: text
       })
@@ -242,13 +248,19 @@ export async function deliverNotifications(userId: string, options: DeliveryOpti
   if (!digest.totalCount) return { digest, deliveries: [], message: 'Nenhuma conta exige atenção neste envio.' };
   const local = saoPauloParts(referenceDate);
   const subject = `MEG Finanças: ${digest.totalCount} obrigação(ões) — ${money(digest.totalAmount)}`;
-  const phones = await prisma.notificationRecipient.findMany({ where: { userId, isActive: true, ...(recipientIds.length ? { id: { in: recipientIds } } : {}) }, orderBy: { name: 'asc' } });
-  const emails = await prisma.notificationEmailRecipient.findMany({ where: { userId, isActive: true, ...(emailRecipientIds.length ? { id: { in: emailRecipientIds } } : {}) }, orderBy: { name: 'asc' } });
-  const whatsappTargets = phones.length ? phones : config.whatsappRecipient ? [{ id: 'default', name: 'Número padrão', phone: config.whatsappRecipient }] : [];
-  const emailTargets = emails.length ? emails : [{ id: 'default', name: 'Administrador', email: config.adminEmail }];
+  const context = await resolveWorkspaceContext(userId);
+  const notificationConfig = await prisma.workspaceNotificationConfig.findUnique({ where: { workspaceId: context.workspaceId } });
+  const [phones, emails, owner] = await Promise.all([
+    prisma.notificationRecipient.findMany({ where: { userId, isActive: true, ...(recipientIds.length ? { id: { in: recipientIds } } : {}) }, orderBy: { name: 'asc' } }),
+    notificationConfig?.emailEnabled === false ? Promise.resolve([]) : prisma.notificationEmailRecipient.findMany({ where: { userId, isActive: true, ...(emailRecipientIds.length ? { id: { in: emailRecipientIds } } : {}) }, orderBy: { name: 'asc' } }),
+    prisma.user.findUnique({ where: { id: context.workspace.ownerId }, select: { name: true, email: true, phone: true } })
+  ]);
+  const ownerFallbackPhone = owner?.phone || (owner?.email === config.adminEmail.trim().toLowerCase() ? config.whatsappRecipient : null);
+  const whatsappTargets = phones.length ? phones : ownerFallbackPhone ? [{ id: 'workspace-owner', name: owner?.name || 'Responsável', phone: ownerFallbackPhone }] : [];
+  const emailTargets = notificationConfig?.emailEnabled === false ? [] : emails.length ? emails : owner?.email ? [{ id: 'workspace-owner', name: owner.name, email: owner.email }] : [];
   const channels = [
-    ...emailTargets.map((recipient) => ({ channel: `email:${recipient.id}`, label: `${recipient.name} (${recipient.email})`, send: () => sendEmail(recipient.email, subject, digest.text) })),
-    ...whatsappTargets.map((recipient) => ({ channel: `whatsapp:${recipient.id}`, label: `${recipient.name} (${recipient.phone})`, send: () => sendWhatsApp(recipient.phone, digest.text) }))
+    ...emailTargets.map((recipient) => ({ channel: `email:${recipient.id}`, label: `${recipient.name} (${recipient.email})`, send: () => sendEmail(recipient.email, subject, digest.text, notificationConfig ?? undefined) })),
+    ...whatsappTargets.map((recipient) => ({ channel: `whatsapp:${recipient.id}`, label: `${recipient.name} (${recipient.phone})`, send: async () => (await sendWorkspaceWhatsApp(userId, recipient.phone, digest.text)) ?? sendWhatsApp(recipient.phone, digest.text) }))
   ];
   const deliveries = [];
   const reference = `${local.iso}:${slot}:${mode}`;

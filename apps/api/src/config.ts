@@ -19,7 +19,8 @@ const environmentSchema = z.object({
   EVOLUTION_INSTANCE: z.string().optional(),
   WHATSAPP_RECIPIENT: z.string().optional(),
   NOTIFICATION_CRON_SECRET: z.string().min(24).optional(),
-  RUN_LEGACY_REPAIR: z.coerce.boolean().default(false)
+  RUN_LEGACY_REPAIR: z.coerce.boolean().default(false),
+  INTEGRATION_ENCRYPTION_KEY: z.string().min(32).optional()
 });
 
 const parsed = environmentSchema.safeParse(process.env);
@@ -54,6 +55,7 @@ export const config = {
   whatsappRecipient: values.WHATSAPP_RECIPIENT,
   notificationCronSecret: values.NOTIFICATION_CRON_SECRET,
   runLegacyRepair: values.RUN_LEGACY_REPAIR,
+  integrationEncryptionKey: values.INTEGRATION_ENCRYPTION_KEY || values.JWT_SECRET,
   corsOrigins: values.CORS_ORIGINS.split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),

@@ -152,6 +152,7 @@ function authMarkup() {
           <h1>Comece no MEG</h1>
           <label>Tipo de cadastro<select name="accountType" id="accountType"><option value="CREATE_WORKSPACE">Criar meu espaço financeiro</option><option value="REQUEST_ACCESS">Entrar em um espaço existente</option></select></label>
           <label id="workspaceNameField">Nome do seu espaço<input name="workspaceName" minlength="2" maxlength="120" value="Meu MEG" required /><small>Você será o administrador e começará com uma base vazia.</small></label>
+          <label id="workspacePlanField">Plano inicial<select name="planCode"><option value="ESSENCIAL">Essencial · 1 acesso</option><option value="FAMILIA" selected>Família · até 6 acessos</option><option value="PRO">Pro · até 10 acessos</option></select><small>O plano só começa após a aprovação comercial.</small></label>
           <label id="workspaceSlugField" class="hidden">Código do espaço<input name="workspaceSlug" minlength="2" maxlength="80" placeholder="ex.: familia-silva" /><small>Peça este código ao administrador do seu espaço.</small></label>
           <label>Nome<input name="name" autocomplete="name" required /></label>
           <label>E-mail<input name="email" type="email" autocomplete="email" required /></label>
@@ -212,10 +213,12 @@ function showAuthentication() {
   const accountType = document.querySelector('#accountType');
   const workspaceNameField = document.querySelector('#workspaceNameField');
   const workspaceSlugField = document.querySelector('#workspaceSlugField');
+  const workspacePlanField = document.querySelector('#workspacePlanField');
   const syncRegistrationType = () => {
     const createsWorkspace = accountType.value === 'CREATE_WORKSPACE';
     workspaceNameField.classList.toggle('hidden', !createsWorkspace);
     workspaceNameField.querySelector('input').required = createsWorkspace;
+    workspacePlanField.classList.toggle('hidden', !createsWorkspace);
     workspaceSlugField.classList.toggle('hidden', createsWorkspace);
     workspaceSlugField.querySelector('input').required = !createsWorkspace;
   };
@@ -497,7 +500,24 @@ export async function bootstrapCloud() {
       if (!response.ok) throw new Error('Não foi possível enviar os alertas.');
       return response.json();
     },
-    async listManagedUsers() {
+    async getWorkspaceIntegrations() {
+      const response = await api('/integrations');
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(response.status === 403 ? 'Somente o administrador do espaço pode configurar integrações.' : 'Não foi possível carregar as integrações.');
+      return result;
+    },
+    async saveWorkspaceIntegrations(payload) {
+      const response = await api('/integrations', { method: 'PUT', body: JSON.stringify(payload) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error === 'WHATSAPP_CONFIGURATION_INCOMPLETE' ? 'Preencha URL, instância e chave do WhatsApp.' : 'Não foi possível salvar as integrações.');
+      return result;
+    },
+    async testWorkspaceWhatsapp() {
+      const response = await api('/integrations/test-whatsapp', { method: 'POST' });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error === 'OWNER_PHONE_REQUIRED' ? 'Cadastre o WhatsApp do administrador do espaço antes do teste.' : 'Não foi possível enviar o teste do WhatsApp.');
+      return result;
+    },    async listManagedUsers() {
       const response = await api('/auth/users');
       if (!response.ok) throw new Error(response.status === 403 ? 'Apenas administradores podem gerenciar usuários.' : 'Não foi possível carregar os usuários.');
       return response.json();
@@ -508,7 +528,18 @@ export async function bootstrapCloud() {
       if (!response.ok) throw new Error(result.error === 'PLATFORM_ADMIN_REQUIRED' ? 'Apenas o administrador da plataforma pode acessar esta área.' : 'Não foi possível carregar os clientes.');
       return result;
     },
-    async changeCommercialLicense(workspaceId, payload) {
+    async createCommercialInvoice(workspaceId, payload) {
+      const response = await api(`/platform-admin/workspaces/${encodeURIComponent(workspaceId)}/invoices`, { method: 'POST', body: JSON.stringify(payload) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error('Não foi possível gerar a mensalidade.');
+      return result;
+    },
+    async changeCommercialInvoice(invoiceId, payload) {
+      const response = await api(`/platform-admin/invoices/${encodeURIComponent(invoiceId)}`, { method: 'PATCH', body: JSON.stringify(payload) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error('Não foi possível atualizar a mensalidade.');
+      return result;
+    },    async changeCommercialLicense(workspaceId, payload) {
       const response = await api(`/platform-admin/workspaces/${encodeURIComponent(workspaceId)}/license`, { method: 'PATCH', body: JSON.stringify(payload) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error === 'PLAN_NOT_FOUND' ? 'Plano não encontrado.' : 'Não foi possível atualizar a licença.');

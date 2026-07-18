@@ -1,59 +1,82 @@
-# Plataforma comercial do MEG
+﻿# Plataforma comercial do MEG
 
-## Entrega atual
+## Visão atual
 
-O MEG permanece um produto de finanças pessoais, agora preparado para comercialização multicliente. Cada cliente possui um `Workspace` isolado. Marcos continua sendo um cliente normal no espaço `marcos-financas`, com sua base preservada.
+O MEG continua sendo um produto de finanças pessoais, agora estruturado como uma plataforma comercial multicliente. Cada cliente possui um `Workspace` isolado. O espaço pessoal de Marcos permanece como o primeiro cliente, sem mistura de dados com os próximos assinantes.
+
+## Como as atualizações funcionam
+
+Existe uma única versão do código da aplicação. Quando uma atualização é publicada, todas as organizações passam a usar a nova versão automaticamente no próximo acesso ou recarregamento. Os dados não são copiados entre clientes e não são substituídos pelo deploy.
+
+As mudanças de banco são aplicadas uma vez ao esquema compartilhado. Toda tabela financeira usa o identificador do `Workspace`, mantendo a separação lógica dos dados. A administração comercial não precisa abrir lançamentos financeiros dos clientes.
 
 ## Papéis administrativos
 
-- **Administrador da plataforma:** controla clientes, planos, licenças, vencimentos e suspensão. Não precisa abrir nem consultar os lançamentos financeiros dos clientes.
-- **Administrador do espaço:** gerencia somente os usuários do próprio cliente, dentro do limite do plano.
-- **Gerente, Operador e Leitor:** mantêm as permissões financeiras já existentes.
+- **Administrador da plataforma:** controla clientes, planos, licenças, mensalidades, vencimentos, suspensão e reativação.
+- **Administrador do espaço:** gerencia somente os usuários e integrações do próprio cliente, dentro do limite do plano.
+- **Gerente, Operador e Leitor:** seguem as permissões financeiras existentes.
 
 ## Planos iniciais
 
-| Plano | Usuários | Recursos base |
-| --- | ---: | --- |
-| Essencial | 1 | financeiro, alertas e backup |
-| Família | 6 (administrador + 5 convidados) | Essencial, equipe e cartões |
-| Pro | 10 | Família e relatórios |
+| Plano | Usuários | Mensalidade inicial | Recursos base |
+| --- | ---: | ---: | --- |
+| Essencial | 1 | R$ 19,90 | financeiro, alertas e backup |
+| Família | 6 | R$ 29,90 | Essencial, equipe e cartões |
+| Pro | 10 | R$ 49,90 | Família e relatórios |
 
-Os planos são registros no banco e podem evoluir sem alterar os dados financeiros.
-
-## Licenças
-
-Estados suportados: pendente, teste, ativa, pagamento pendente, suspensa, vencida e cancelada.
-
-- ativa ou teste: leitura e gravação normais;
-- demais estados: consulta e backup permanecem disponíveis, mas gravações são bloqueadas;
-- ativação, renovação e suspensão são auditadas;
-- o responsável recebe aviso por e-mail e WhatsApp usando as integrações oficiais do MEG.
+Os preços são registros administráveis no banco; a alteração de plano não move nem apaga dados financeiros.
 
 ## Cadastro e aprovação
 
 ### Novo cliente
 
-1. seleciona **Criar meu espaço financeiro**;
-2. informa o nome do espaço e seus dados;
-3. recebe um espaço vazio e uma licença pendente;
-4. o administrador da plataforma escolhe plano e validade;
-5. ao ativar, o responsável vira administrador do próprio espaço.
+1. Seleciona **Criar meu espaço financeiro** e escolhe o plano pretendido.
+2. Informa o nome do espaço e seus dados.
+3. O sistema cria um espaço vazio e uma licença pendente.
+4. O administrador da plataforma analisa, escolhe o plano definitivo e ativa ou libera o teste.
+5. Ao ativar, o responsável passa a ser administrador do próprio espaço.
 
 ### Novo membro
 
-1. seleciona **Entrar em um espaço existente**;
-2. informa o código do espaço exibido em **Usuários e permissões**;
-3. aguarda o administrador daquele cliente aprovar;
-4. a solicitação respeita o número máximo de usuários do plano.
+1. Seleciona **Entrar em um espaço existente**.
+2. Informa o código do espaço exibido em **Usuários e permissões**.
+3. Aguarda o administrador daquele cliente aprovar.
+4. A aprovação respeita o limite de usuários do plano.
 
-## Mensageria
+## Licença, mensalidade e bloqueio
 
-O remetente de WhatsApp e e-mail é a infraestrutura oficial do MEG. Cada cliente cadastra seus próprios destinatários para alertas financeiros. Remetente exclusivo por cliente e cobrança automática não fazem parte deste marco.
+Estados suportados: pendente, teste, ativa, pagamento pendente, suspensa, vencida e cancelada.
 
-## Próximos marcos recomendados
+- a cobrança automática só é habilitada quando a primeira mensalidade é gerada no painel comercial;
+- depois disso, uma mensalidade é criada a cada competência, usando o plano e o dia de vencimento do cliente;
+- após o vencimento, a licença entra em **pagamento pendente** durante a carência configurada, inicialmente de cinco dias;
+- terminado o prazo de carência sem baixa, a licença é suspensa automaticamente;
+- ao marcar a mensalidade como paga, o espaço é reativado e recebe mais 30 dias de validade;
+- durante bloqueio, consulta e backup permanecem disponíveis, mas novas gravações financeiras são impedidas;
+- ativações, alterações de plano e baixas de mensalidade ficam na auditoria.
 
-- cobrança recorrente e integração com gateway de pagamento;
-- página pública de planos e contratação;
-- cupons, inadimplência automática e período de carência configurável;
-- métricas comerciais sem exposição de dados financeiros;
-- remetente de WhatsApp dedicado como adicional opcional.
+A base pessoal de Marcos não recebe cobrança automática: assinaturas antigas começam com `billingEnabled=false`.
+
+## WhatsApp de cada cliente
+
+Em **Ajustes e dados > Integrações do cliente**, o administrador do espaço pode cadastrar:
+
+- URL da Evolution API;
+- nome da instância;
+- chave da API;
+- destinatários que receberão os alertas.
+
+A chave é criptografada no banco com AES-256-GCM e nunca é devolvida ao navegador. Os alertas financeiros daquele espaço usam o WhatsApp próprio. Se ele não for configurado, o MEG pode usar o remetente central como fallback.
+
+A variável `INTEGRATION_ENCRYPTION_KEY` deve conter uma chave forte, estável e com pelo menos 32 caracteres. Alterá-la depois de cadastrar clientes invalida a leitura das chaves já criptografadas.
+
+## E-mail por cliente
+
+O provedor de entrega continua centralizado no MEG (Resend ou Brevo). Cada cliente pode ativar ou desativar o canal, cadastrar destinatários, definir o nome visível do remetente e o endereço de resposta. Isso evita obrigar cada cliente a contratar um provedor de e-mail e mantém a reputação do domínio sob controle.
+
+## Próximos incrementos opcionais
+
+- gateway de pagamento para baixa automática por Pix/cartão;
+- página pública de contratação e cupons;
+- métricas comerciais de uso sem exposição de dados financeiros;
+- WhatsApp gerenciado pelo MEG como adicional pago para clientes sem Evolution própria.
