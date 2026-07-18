@@ -71,7 +71,10 @@ export async function notificationRoutes(app: FastifyInstance) {
     const body = (request.body || {}) as { slot?: string; force?: boolean };
     const slot = automationSlot(now, body.slot);
     if (!slot) return { skipped: true, reason: 'Fora dos horários automáticos de 06:00, 12:00 e 19:00 (São Paulo).' };
-    const users = await prisma.user.findMany({ where: { isActive: true, status: 'ACTIVE' }, select: { id: true, email: true } });
+    const users = await prisma.user.findMany({
+      where: { isActive: true, status: 'ACTIVE', ownedWorkspace: { isActive: true } },
+      select: { id: true, email: true }
+    });
     const results = [];
     for (const user of users) {
       const fullSummary = slot.hour === 6 && await shouldSendOpenSummary(user.id, now);

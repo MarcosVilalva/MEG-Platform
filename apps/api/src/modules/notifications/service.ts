@@ -1,5 +1,6 @@
 import { prisma } from '@meg/database';
 import { config } from '../../config';
+import { resolveWorkspaceContext } from '../workspaces/service';
 
 export type NotificationMode = 'upcoming' | 'due-now' | 'open-summary';
 
@@ -149,7 +150,8 @@ export function buildNotificationDigest(transactions: LegacyTransaction[], refer
 }
 
 export async function notificationDigest(userId: string, referenceDate = new Date(), mode: NotificationMode = 'upcoming') {
-  const saved = await prisma.appState.findUnique({ where: { userId } });
+  const context = await resolveWorkspaceContext(userId);
+  const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId } });
   const state = saved?.state as { transactions?: LegacyTransaction[] } | null;
   return buildNotificationDigest(state?.transactions || [], referenceDate, mode);
 }
