@@ -3936,3 +3936,43 @@ dialog.modal {
   .commercial-invoice-row { grid-template-columns:1fr auto; }
   .commercial-invoice-row .button, .commercial-invoice-row .license-status { justify-self:start; }
 }
+
+/* Card identity and forecast */
+.card-catalog-form { grid-template-columns: repeat(3, minmax(145px, 1fr)) repeat(3, minmax(110px, .75fr)); }
+.card-catalog-form .button { min-height: 45px; align-self: end; }
+.credit-card-visual { min-height: 220px; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto 34px auto auto 6px auto; gap: 8px 14px; text-align: left; }
+.credit-card-issuer { position: relative; z-index: 2; align-self: center; font-size: 1.08rem; font-weight: 1000; letter-spacing: .01em; text-shadow: 0 2px 12px rgba(0,0,0,.24); }
+.credit-card-network { position: relative; z-index: 2; width: 92px; height: 34px; object-fit: contain; border-radius: 9px; justify-self: end; filter: drop-shadow(0 4px 8px rgba(0,0,0,.18)); }
+.credit-card-chip { position: relative; top: auto; left: auto; grid-column: 1; grid-row: 2; width: 43px; height: 31px; }
+.credit-card-contactless { position: relative; z-index: 2; grid-column: 1; grid-row: 2; margin-left: 51px; align-self: center; transform: rotate(90deg); transform-origin: center; color: rgba(255,255,255,.86); font-size: .75rem; font-weight: 900; letter-spacing: -2px; }
+.credit-card-name { grid-column: 1 / -1; grid-row: 3; margin-top: 2px; font-size: 1.28rem; line-height: 1.05; }
+.credit-card-number { position: relative; z-index: 2; grid-column: 1 / -1; grid-row: 4; color: rgba(255,255,255,.9); font-size: .82rem; font-weight: 800; letter-spacing: .12em; }
+.credit-card-cycle { grid-column: 1 / -1; grid-row: 4; justify-self: end; align-self: end; margin-top: 0; max-width: 58%; text-align: right; }
+.credit-card-usage { grid-column: 1 / -1; grid-row: 5; }
+.credit-card-values { grid-column: 1 / -1; grid-row: 6; }
+.credit-card-visual.theme-itau { background: radial-gradient(circle at 85% 18%, rgba(255,184,56,.35), transparent 32%), linear-gradient(135deg,#082d6d,#0b4b9f 57%,#f18b21); }
+.credit-card-visual.theme-latam { background: radial-gradient(circle at 80% 20%, rgba(240,63,104,.3), transparent 34%), linear-gradient(135deg,#35145f,#6b267e 56%,#d72f67); }
+.credit-card-visual.theme-nubank { background: linear-gradient(135deg,#3b0b55,#7205a8 56%,#a43bd2); }
+.credit-card-visual.theme-santander { background: radial-gradient(circle at 85% 15%, rgba(255,255,255,.2), transparent 30%), linear-gradient(135deg,#7c0810,#c4161c 58%,#ed4a50); }
+.credit-card-visual.theme-bb { color:#062f6d; background: radial-gradient(circle at 83% 14%, rgba(33,83,168,.16), transparent 34%), linear-gradient(135deg,#ffe300,#f6d500 58%,#ffef72); }
+.credit-card-visual.theme-bb .credit-card-cycle,.credit-card-visual.theme-bb .credit-card-values small,.credit-card-visual.theme-bb .credit-card-number,.credit-card-visual.theme-bb .credit-card-contactless { color:rgba(6,47,109,.78); }
+.credit-card-visual.theme-caixa { background: linear-gradient(135deg,#075393,#087fb5 58%,#f28c22); }
+.credit-card-visual.theme-mercado { color:#172d3e; background: radial-gradient(circle at 83% 14%, rgba(255,255,255,.35), transparent 34%), linear-gradient(135deg,#ffe600,#ffd600 58%,#2fa4dd); }
+.credit-card-visual.theme-mercado .credit-card-cycle,.credit-card-visual.theme-mercado .credit-card-values small,.credit-card-visual.theme-mercado .credit-card-number,.credit-card-visual.theme-mercado .credit-card-contactless { color:rgba(23,45,62,.76); }
+.credit-card-visual.theme-azul { background: linear-gradient(135deg,#082d62,#075aa9 58%,#28a8de); }
+.credit-card-visual.theme-bv { background: linear-gradient(135deg,#152857,#294da4 55%,#ea3267); }
+.credit-card-visual.theme-riachuelo { background: linear-gradient(135deg,#171717,#303030 58%,#6f6f6f); }
+.credit-card-visual.theme-kabum { background: linear-gradient(135deg,#152154,#263c8d 55%,#f47a22); }
+.credit-card-visual.theme-generic { background: linear-gradient(135deg,#093f38,#0d6b5e 58%,#31ad94); }
+.credit-forecast-panel { margin: 18px 0; overflow: hidden; }
+.credit-forecast-bars { min-height: 240px; display: grid; grid-template-columns: repeat(6,minmax(92px,1fr)); gap: 12px; align-items: end; padding: 18px 8px 2px; }
+.credit-forecast-bars article { min-width: 0; display: grid; grid-template-rows: auto 150px auto; gap: 8px; }
+.credit-forecast-bars article > div { min-width:0; display:grid; gap:2px; text-align:center; }
+.credit-forecast-bars span,.credit-forecast-bars small { color:var(--muted); font-size:.7rem; font-weight:850; text-align:center; }
+.credit-forecast-bars strong { font-size:.82rem; overflow-wrap:anywhere; }
+.credit-forecast-bars i { height:150px; display:flex; align-items:flex-end; overflow:hidden; border-radius:12px 12px 5px 5px; background:linear-gradient(180deg,rgba(12,116,99,.04),rgba(12,116,99,.12)); }
+.credit-forecast-bars em { width:100%; min-height:3px; border-radius:12px 12px 4px 4px; background:linear-gradient(180deg,#43d3b2,#087c6b); box-shadow:0 10px 24px rgba(8,124,107,.22); }
+@media (max-width: 900px) { .card-catalog-form { grid-template-columns: repeat(2,minmax(0,1fr)); } .credit-forecast-bars { overflow-x:auto; grid-template-columns:repeat(6,minmax(112px,1fr)); padding-bottom:10px; } }
+@media (max-width: 620px) { .card-catalog-form { grid-template-columns:1fr; } .credit-card-visual { min-height:212px; } .credit-card-cycle { max-width:55%; font-size:.65rem; } .credit-card-network { width:82px; } .credit-forecast-panel .panel-title { align-items:flex-start; } }
+
+.credit-card-visual.theme-magalu { --card-accent: #00a650; --card-ink: #ffffff; background: linear-gradient(135deg, #007f43 0%, #00a650 48%, #ffe600 160%); }

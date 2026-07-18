@@ -166,3 +166,11 @@ Arquivamento não remove histórico. Estornos devem ser registrados como eventos
 - A IA pode classificar, sugerir, explicar e simular.
 - A IA não exclui, paga, transfere ou confirma sem ação explícita do usuário.
 - Sugestões devem informar os dados considerados sempre que possível.
+
+## Identidade visual e projeção dos cartões
+
+- O cadastro de cartão pode armazenar emissor, nome comercial, bandeira, quatro últimos dígitos e tema visual. Esses dados são cadastrais e não alteram valores, datas ou históricos financeiros.
+- Cartões históricos sem os novos campos continuam válidos. O sistema infere identidade pelo nome da forma de pagamento e usa o visual genérico quando não houver correspondência segura.
+- As bandeiras são recursos locais do aplicativo; a disponibilidade da carteira não depende de serviços de imagens de terceiros.
+- A projeção de faturas considera despesas de crédito dos seis meses iniciados no mês selecionado, agrupando valor e quantidade por competência.
+- A identidade visual nunca deve substituir a forma de pagamento usada para relacionar lançamentos, faturas e limites.

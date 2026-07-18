@@ -3,6 +3,7 @@ import { availableMonetaryBalance, calculateBalanceReconciliation, calculateCred
 import { excelDateToIso } from './legacy-import-utils.js';
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from './legacy-installments.js';
 import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOfMonth } from './calendar-date.js';
+import { buildCardForecast, resolveCardIdentity } from './legacy-card-identity.js';
 
 // 15/07/2026 22:54 em SÃ£o Paulo jÃ¡ Ã© 16/07 em UTC. O MEG deve manter o dia local.
 assert.equal(dateInTimeZone(new Date('2026-07-16T01:54:00.000Z')), '2026-07-15');
@@ -230,4 +231,19 @@ const filteredCardPortfolio = calculateCreditCardPortfolio(cardTransactions, car
 assert.equal(filteredCardPortfolio.items.length, 1);
 assert.equal(filteredCardPortfolio.periodTotal, 600);
 
+const latamIdentity = resolveCardIdentity({ paymentMethod: 'CARTÃO LATAM', brand: 'MASTERCARD', lastFour: '1234' });
+assert.equal(latamIdentity.issuer, 'LATAM PASS');
+assert.equal(latamIdentity.productName, 'LATAM PASS');
+assert.equal(latamIdentity.theme, 'latam');
+assert.equal(latamIdentity.networkLabel, 'Mastercard');
+assert.equal(latamIdentity.lastFour, '1234');
+const itauIdentity = resolveCardIdentity({ paymentMethod: 'CARTÃO ITAÚ', brand: 'VISA' });
+assert.equal(itauIdentity.issuer, 'Itaú');
+assert.equal(itauIdentity.theme, 'itau');
+const magaluIdentity = resolveCardIdentity({ paymentMethod: 'CARTAO MAGALU', brand: 'MASTERCARD' });
+assert.equal(magaluIdentity.issuer, 'Magalu');
+assert.equal(magaluIdentity.theme, 'magalu');
+const cardForecast = buildCardForecast(cardTransactions, '2026-07', 3);
+assert.deepEqual(cardForecast.map((item) => item.total), [550, 600, 0]);
+assert.deepEqual(cardForecast.map((item) => item.count), [2, 1, 0]);
 console.log('MEG legacy financial reconciliation passed.');
