@@ -1,4 +1,11 @@
 # Changelog
+## 2026-07-18 - Carteira digital e projeção de faturas
+
+- Cartões agora registram emissor, nome comercial, bandeira, final e tema visual sem alterar lançamentos financeiros existentes.
+- Identidade visual automática para Itaú, LATAM PASS, Nubank, Santander, Banco do Brasil, CAIXA, Mercado Pago, Magalu, Azul, BV, Riachuelo e KaBuM.
+- Bandeiras Visa, Mastercard, Elo, American Express e Hipercard usam recursos locais, evitando dependência de imagens externas.
+- A Central de Cartões passa a projetar as faturas dos próximos seis meses e continua respeitando o filtro global.
+- Cadastros antigos permanecem compatíveis e recebem identidade visual inferida pelo nome quando os novos campos estiverem vazios.
 
 ## 2026-07-17 - Conciliacao do saldo monetario
 

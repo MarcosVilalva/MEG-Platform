@@ -1,6 +1,7 @@
 import { availableMonetaryBalance, calculateBalanceReconciliation, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, calculateHistoricalProjection, calculateMonetaryDashboard, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal, summarizeDueDate } from "./legacy-finance.js";
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
 import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOfMonth } from "./calendar-date.js";
+import { buildCardForecast, resolveCardIdentity } from "./legacy-card-identity.js";
 
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
 
@@ -382,6 +383,8 @@ const els = {
   creditInvoiceTitle: document.querySelector("#creditInvoiceTitle"),
   creditInvoiceSummary: document.querySelector("#creditInvoiceSummary"),
   creditInvoiceRows: document.querySelector("#creditInvoiceRows"),
+  creditForecastBars: document.querySelector("#creditForecastBars"),
+  creditForecastSummary: document.querySelector("#creditForecastSummary"),
   budgetEditorGrid: document.querySelector("#budgetEditorGrid"),
   applySuggestedBudgetsBtn: document.querySelector("#applySuggestedBudgetsBtn"),
   budgetHistoryLabel: document.querySelector("#budgetHistoryLabel"),
@@ -487,7 +490,11 @@ const els = {
   paymentCatalogCount: document.querySelector("#paymentCatalogCount"),
   cardCatalogForm: document.querySelector("#cardCatalogForm"),
   newCardPaymentInput: document.querySelector("#newCardPaymentInput"),
+  newCardIssuerInput: document.querySelector("#newCardIssuerInput"),
+  newCardProductInput: document.querySelector("#newCardProductInput"),
   newCardBrandInput: document.querySelector("#newCardBrandInput"),
+  newCardLastFourInput: document.querySelector("#newCardLastFourInput"),
+  newCardThemeInput: document.querySelector("#newCardThemeInput"),
   newCardClosingDayInput: document.querySelector("#newCardClosingDayInput"),
   newCardDueDayInput: document.querySelector("#newCardDueDayInput"),
   newCardBestDayInput: document.querySelector("#newCardBestDayInput"),
@@ -577,7 +584,11 @@ function normalizeState(nextState) {
       paymentMethods: [...paymentMap.values()],
       cards: (incomingCatalogs.cards || []).map((card) => ({
         paymentMethod: String(card?.paymentMethod || "").trim(),
-        brand: String(card?.brand || "VISA").trim().toUpperCase(),
+        issuer: String(card?.issuer || "").trim(),
+        productName: String(card?.productName || "").trim(),
+        brand: String(card?.brand || "OUTRO").trim().toUpperCase(),
+        lastFour: String(card?.lastFour || "").replace(/\D/g, "").slice(-4),
+        theme: String(card?.theme || "AUTO").trim().toUpperCase(),
         closingDay: Number(card?.closingDay || 0),
         dueDay: Number(card?.dueDay || 0),
         bestPurchaseDay: Number(card?.bestPurchaseDay || 0),
@@ -2447,8 +2458,18 @@ function cardBrandClass(brand) {
 }
 
 function cardBrandLabel(brand) {
-  const labels = { VISA: "VISA", MASTERCARD: "Mastercard", ELO: "elo", AMEX: "AMERICAN EXPRESS", HIPERCARD: "Hipercard", OUTRO: "MEG CARD" };
-  return labels[normalizeText(brand)] || "MEG CARD";
+  return resolveCardIdentity({ brand }).networkLabel;
+}
+
+function cardThemeClass(card) {
+  return resolveCardIdentity(card).theme.replace(/[^a-z0-9-]/g, "") || "generic";
+}
+
+function cardAssetUrl(asset, brand) {
+  const byBrand = { VISA: "visa", MASTERCARD: "mastercard", ELO: "elo", AMEX: "amex", HIPERCARD: "hipercard" };
+  const fallback = `assets/card-brands/${byBrand[normalizeText(brand)] || "generic"}.svg`;
+  const base = import.meta.env.BASE_URL || "/";
+  return `${base}${asset || fallback}`;
 }
 
 function renderCreditCards() {
@@ -2487,14 +2508,18 @@ function renderCreditCards() {
   els.creditPeriodTotalMetric.textContent = money.format(portfolio.periodTotal);
 
   els.creditCardWallet.innerHTML = portfolio.cards.length ? portfolio.cards.map((card) => {
+    const identity = resolveCardIdentity(card);
     const selected = creditCardFilter !== "all" && normalizeText(creditCardFilter) === normalizeText(card.paymentMethod);
     const usagePercent = Math.round(card.usagePercent);
-    return `<button type="button" class="credit-card-visual brand-${cardBrandClass(card.brand)} ${selected ? "selected" : ""}" data-credit-card-select="${escapeHtml(card.paymentMethod)}">
+    return `<button type="button" class="credit-card-visual brand-${cardBrandClass(identity.brand)} theme-${cardThemeClass(identity)} ${selected ? "selected" : ""}" data-credit-card-select="${escapeHtml(card.paymentMethod)}">
       <span class="credit-card-glow" aria-hidden="true"></span>
-      <span class="credit-card-brand">${escapeHtml(cardBrandLabel(card.brand))}</span>
+      <span class="credit-card-issuer">${escapeHtml(identity.issuer)}</span>
+      <img class="credit-card-network" src="${cardAssetUrl(identity.networkAsset, identity.brand)}" alt="${escapeHtml(identity.networkLabel)}" />
       <span class="credit-card-chip" aria-hidden="true"></span>
-      <span class="credit-card-name">${escapeHtml(card.paymentMethod)}</span>
-      <span class="credit-card-cycle">Fecha dia ${card.closingDay || "—"} · vence dia ${card.dueDay || "—"}</span>
+      <span class="credit-card-contactless" aria-hidden="true">)))</span>
+      <span class="credit-card-name">${escapeHtml(identity.productName)}</span>
+      <span class="credit-card-number">•••• •••• •••• ${escapeHtml(identity.lastFour || "MEG")}</span>
+      <span class="credit-card-cycle">${escapeHtml(card.paymentMethod)} · fecha ${card.closingDay || "—"} · vence ${card.dueDay || "—"}</span>
       <span class="credit-card-usage"><i style="width:${Math.min(usagePercent, 100)}%"></i></span>
       <span class="credit-card-values"><small>Utilizado <b>${money.format(card.used)}</b></small><small>Disponível <b>${money.format(card.available)}</b></small></span>
     </button>`;
@@ -2516,6 +2541,13 @@ function renderCreditCards() {
 
   els.creditInvoiceTitle.textContent = creditCardFilter === "all" ? "Lançamentos dos cartões" : `Fatura · ${creditCardFilter}`;
   els.creditInvoiceSummary.textContent = `${portfolio.items.length} compra(s) · ${money.format(portfolio.periodTotal)} · ${money.format(portfolio.pendingTotal)} em aberto`;
+  const forecast = buildCardForecast(state.transactions, selectedPeriod.month || currentMonth, 6);
+  const forecastMax = Math.max(...forecast.map((item) => item.total), 1);
+  const forecastTotal = forecast.reduce((sum, item) => sum + item.total, 0);
+  const peak = [...forecast].sort((a, b) => b.total - a.total)[0];
+  els.creditForecastSummary.textContent = `${money.format(forecastTotal)} previstos · pico em ${formatMonth(peak.month)}`;
+  els.creditForecastBars.innerHTML = forecast.map((item) => `<article><div><span>${escapeHtml(formatMonth(item.month).replace(/ de /g, "/"))}</span><strong>${money.format(item.total)}</strong></div><i><em style="height:${Math.max((item.total / forecastMax) * 100, item.total ? 8 : 2)}%"></em></i><small>${item.count} compra(s)</small></article>`).join("");
+
   els.creditInvoiceRows.innerHTML = portfolio.items.length ? portfolio.items.map((item) => `<tr>
     <td>${formatDate(item.purchaseDate || item.date)}</td><td>${formatDate(item.date)}</td><td><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.notes || "")}</small></td><td>${escapeHtml(item.group || item.category || "")}</td><td>${escapeHtml(item.paymentMethod || item.account || "")}</td><td class="amount negative">${money.format(item.expenseAmount || item.amount || 0)}</td><td><span class="credit-status ${item.status === "paid" ? "paid" : "pending"}">${item.status === "paid" ? "PAGA" : "EM ABERTO"}</span></td><td><button type="button" class="transaction-edit-button" data-edit="${item.id}" aria-label="Editar ${escapeHtml(item.description)}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m4 17.2 9.8-9.8 2.8 2.8L6.8 20H4v-2.8ZM18.8 8 16 5.2l1.4-1.4a2 2 0 0 1 2.8 2.8L18.8 8Z"/></svg></button></td>
   </tr>`).join("") : `<tr><td colspan="8" class="empty">Nenhuma compra encontrada para o período e filtros selecionados.</td></tr>`;
@@ -2910,7 +2942,10 @@ function renderCatalogs() {
   els.newCardPaymentInput.innerHTML = `<option value="">Selecione o cartão</option>${creditPayments.map((item) => `<option value="${escapeHtml(item.description)}">${escapeHtml(item.description)}</option>`).join("")}`;
   if (creditPayments.some((item) => item.description === selectedCardPayment)) els.newCardPaymentInput.value = selectedCardPayment;
   els.cardCatalogList.innerHTML = cards.length
-    ? cards.map((card) => `<div class="catalog-row card-catalog-row"><span><strong>${escapeHtml(card.paymentMethod)}</strong><small>${escapeHtml(cardBrandLabel(card.brand))} · fecha dia ${card.closingDay} · vence dia ${card.dueDay} · melhor compra dia ${card.bestPurchaseDay || "—"}</small><small>Limite ${money.format(card.limit || 0)}</small></span><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-card="${escapeHtml(card.paymentMethod)}">Editar</button><button type="button" class="catalog-remove" data-remove-card="${escapeHtml(card.paymentMethod)}">Remover</button></span></div>`).join("")
+    ? cards.map((card) => {
+      const identity = resolveCardIdentity(card);
+      return `<div class="catalog-row card-catalog-row"><span><strong>${escapeHtml(identity.productName)}</strong><small>${escapeHtml(identity.issuer)} · ${escapeHtml(identity.networkLabel)}${identity.lastFour ? ` · final ${escapeHtml(identity.lastFour)}` : ""}</small><small>${escapeHtml(card.paymentMethod)} · fecha dia ${card.closingDay} · vence dia ${card.dueDay} · melhor compra dia ${card.bestPurchaseDay || "—"}</small><small>Limite ${money.format(card.limit || 0)}</small></span><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-card="${escapeHtml(card.paymentMethod)}">Editar</button><button type="button" class="catalog-remove" data-remove-card="${escapeHtml(card.paymentMethod)}">Remover</button></span></div>`;
+    }).join("")
     : `<div class="empty">Cadastre as regras dos seus cartões para calcular as próximas faturas.</div>`;
 }
 
@@ -2948,7 +2983,11 @@ function editCardCatalog(paymentMethod) {
   if (!card) return;
   editingCardPaymentMethod = card.paymentMethod;
   els.newCardPaymentInput.value = card.paymentMethod;
-  els.newCardBrandInput.value = card.brand || "VISA";
+  els.newCardIssuerInput.value = card.issuer || "";
+  els.newCardProductInput.value = card.productName || "";
+  els.newCardBrandInput.value = card.brand || "OUTRO";
+  els.newCardLastFourInput.value = card.lastFour || "";
+  els.newCardThemeInput.value = card.theme || "AUTO";
   els.newCardClosingDayInput.value = String(card.closingDay);
   els.newCardDueDayInput.value = String(card.dueDay);
   els.newCardBestDayInput.value = String(card.bestPurchaseDay || "");
@@ -3032,13 +3071,17 @@ function addExpenseClassCatalog(event) {
 function addCardCatalog(event) {
   event.preventDefault();
   const paymentMethod = els.newCardPaymentInput.value.trim();
+  const issuer = els.newCardIssuerInput.value.trim();
+  const productName = els.newCardProductInput.value.trim();
   const brand = els.newCardBrandInput.value.trim().toUpperCase();
+  const lastFour = els.newCardLastFourInput.value.replace(/\D/g, "").slice(-4);
+  const theme = els.newCardThemeInput.value.trim().toUpperCase() || "AUTO";
   const closingDay = Number(els.newCardClosingDayInput.value);
   const dueDay = Number(els.newCardDueDayInput.value);
   const bestPurchaseDay = Number(els.newCardBestDayInput.value);
   const limit = Number(els.newCardLimitInput.value);
   if (!paymentMethod || [closingDay, dueDay, bestPurchaseDay].some((day) => day < 1 || day > 31) || limit < 0) return;
-  const card = { paymentMethod, brand, closingDay, dueDay, bestPurchaseDay, limit };
+  const card = { paymentMethod, issuer, productName, brand, lastFour, theme, closingDay, dueDay, bestPurchaseDay, limit };
   const lookupPaymentMethod = editingCardPaymentMethod || paymentMethod;
   const index = state.catalogs.cards.findIndex((item) => normalizeText(item.paymentMethod) === normalizeText(lookupPaymentMethod));
   const updated = index >= 0;
@@ -4174,7 +4217,11 @@ els.newCardPaymentInput.addEventListener("change", () => {
   els.newCardDueDayInput.value = String(card.dueDay);
   els.newCardBestDayInput.value = String(card.bestPurchaseDay || "");
   els.newCardLimitInput.value = String(card.limit || 0);
-  els.newCardBrandInput.value = card.brand || "VISA";
+  els.newCardBrandInput.value = card.brand || "OUTRO";
+  els.newCardIssuerInput.value = card.issuer || "";
+  els.newCardProductInput.value = card.productName || "";
+  els.newCardLastFourInput.value = card.lastFour || "";
+  els.newCardThemeInput.value = card.theme || "AUTO";
 });
 window.addEventListener("resize", () => {
   renderCategoryChart();

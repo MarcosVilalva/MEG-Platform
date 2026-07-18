@@ -642,6 +642,10 @@
             </section>
           </div>
 
+          <section class="panel credit-forecast-panel">
+            <div class="panel-title"><div><small class="decision-eyebrow">PROJEÇÃO DE FATURAS</small><h3>Próximos seis meses</h3></div><span id="creditForecastSummary">Sem parcelas previstas</span></div>
+            <div class="credit-forecast-bars" id="creditForecastBars" aria-label="Projeção mensal das faturas"></div>
+          </section>
           <section class="panel credit-invoice-panel">
             <div class="panel-title"><div><small class="decision-eyebrow">FATURA DETALHADA</small><h3 id="creditInvoiceTitle">Lançamentos dos cartões</h3></div><span id="creditInvoiceSummary">0 compras</span></div>
             <div class="table-wrap">
@@ -774,8 +778,12 @@
               <div class="panel-title"><div><small class="decision-eyebrow">CARTÕES DE CRÉDITO</small><h3>Regras das faturas</h3></div><span id="cardCatalogCount">0 cadastrados</span></div>
               <p class="muted">Vincule um cartão já existente nas formas de pagamento. A data de vencimento dos novos lançamentos será calculada automaticamente.</p>
               <form class="catalog-form card-catalog-form" id="cardCatalogForm">
-                <label>Cartão<select id="newCardPaymentInput" required></select></label>
-                <label>Bandeira<select id="newCardBrandInput" required><option value="VISA">Visa</option><option value="MASTERCARD">Mastercard</option><option value="ELO">Elo</option><option value="AMEX">American Express</option><option value="HIPERCARD">Hipercard</option><option value="OUTRO">Outra</option></select></label>
+                <label>Forma de pagamento<select id="newCardPaymentInput" required></select></label>
+                <label>Emissor / banco<input id="newCardIssuerInput" type="text" maxlength="50" placeholder="Ex.: Itaú" /></label>
+                <label>Nome comercial<input id="newCardProductInput" type="text" maxlength="60" placeholder="Ex.: LATAM PASS" /></label>
+                <label>Bandeira<select id="newCardBrandInput" required><option value="OUTRO">Identificar depois</option><option value="VISA">Visa</option><option value="MASTERCARD">Mastercard</option><option value="ELO">Elo</option><option value="AMEX">American Express</option><option value="HIPERCARD">Hipercard</option></select></label>
+                <label>Final do cartão<input id="newCardLastFourInput" type="text" inputmode="numeric" maxlength="4" placeholder="1234" /></label>
+                <label>Tema visual<select id="newCardThemeInput"><option value="AUTO">Automático pelo nome</option><option value="ITAU">Itaú</option><option value="LATAM">LATAM</option><option value="NUBANK">Nubank</option><option value="SANTANDER">Santander</option><option value="BB">Banco do Brasil</option><option value="CAIXA">CAIXA</option><option value="AZUL">Azul</option><option value="MERCADO">Mercado Pago</option><option value="MAGALU">Magalu</option><option value="GENERIC">MEG</option></select></label>
                 <label>Fechamento<input id="newCardClosingDayInput" type="number" min="1" max="31" placeholder="Dia" required /></label>
                 <label>Vencimento<input id="newCardDueDayInput" type="number" min="1" max="31" placeholder="Dia" required /></label>
                 <label>Melhor dia<input id="newCardBestDayInput" type="number" min="1" max="31" placeholder="Dia" required /></label>
