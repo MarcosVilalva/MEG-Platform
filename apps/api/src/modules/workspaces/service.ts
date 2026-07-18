@@ -18,7 +18,7 @@ async function availableSlug(name: string) {
   return slug;
 }
 
-export async function createWorkspaceForOwner(userId: string, name: string, pendingApproval = false) {
+export async function createWorkspaceForOwner(userId: string, name: string, pendingApproval = false, planCode = 'ESSENCIAL') {
   const existing = await prisma.workspace.findUnique({ where: { ownerId: userId } });
   if (existing) return existing;
   const workspace = await prisma.workspace.create({
@@ -30,7 +30,7 @@ export async function createWorkspaceForOwner(userId: string, name: string, pend
       appState: { create: { userId, state: EMPTY_STATE, revision: 1 } }
     }
   });
-  await ensureWorkspaceSubscription(workspace.id, pendingApproval ? LicenseStatus.PENDING : LicenseStatus.ACTIVE);
+  await ensureWorkspaceSubscription(workspace.id, pendingApproval ? LicenseStatus.PENDING : LicenseStatus.ACTIVE, planCode);
   return workspace;
 }
 

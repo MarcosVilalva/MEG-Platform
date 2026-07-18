@@ -6,9 +6,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_PLAN_CODE = 'ESSENCIAL';
 
 const DEFAULT_PLANS = [
-  { code: 'ESSENCIAL', name: 'Essencial', description: 'Uso individual com os recursos financeiros principais.', maxMembers: 1, trialDays: 14, features: ['financeiro', 'alertas', 'backup'] },
-  { code: 'FAMILIA', name: 'Família', description: 'Administrador e até cinco pessoas no mesmo espaço financeiro.', maxMembers: 6, trialDays: 14, features: ['financeiro', 'alertas', 'backup', 'usuarios', 'cartoes'] },
-  { code: 'PRO', name: 'Pro', description: 'Gestão completa para equipes e clientes com mais acessos.', maxMembers: 10, trialDays: 14, features: ['financeiro', 'alertas', 'backup', 'usuarios', 'cartoes', 'relatorios'] }
+  { monthlyPrice: 19.9, code: 'ESSENCIAL', name: 'Essencial', description: 'Uso individual com os recursos financeiros principais.', maxMembers: 1, trialDays: 14, features: ['financeiro', 'alertas', 'backup'] },
+  { monthlyPrice: 29.9, code: 'FAMILIA', name: 'Família', description: 'Administrador e até cinco pessoas no mesmo espaço financeiro.', maxMembers: 6, trialDays: 14, features: ['financeiro', 'alertas', 'backup', 'usuarios', 'cartoes'] },
+  { monthlyPrice: 49.9, code: 'PRO', name: 'Pro', description: 'Gestão completa para equipes e clientes com mais acessos.', maxMembers: 10, trialDays: 14, features: ['financeiro', 'alertas', 'backup', 'usuarios', 'cartoes', 'relatorios'] }
 ] as const;
 
 export async function ensureCommercialFoundation() {
@@ -16,7 +16,7 @@ export async function ensureCommercialFoundation() {
     await prisma.plan.upsert({
       where: { code: plan.code },
       create: { ...plan, features: plan.features as unknown as Prisma.InputJsonValue },
-      update: { name: plan.name, description: plan.description, maxMembers: plan.maxMembers, trialDays: plan.trialDays, features: plan.features as unknown as Prisma.InputJsonValue, isActive: true }
+      update: { name: plan.name, description: plan.description, maxMembers: plan.maxMembers, trialDays: plan.trialDays, monthlyPrice: plan.monthlyPrice, features: plan.features as unknown as Prisma.InputJsonValue, isActive: true }
     });
   }
 
@@ -39,10 +39,11 @@ export async function ensureCommercialFoundation() {
   }
 }
 
-export async function ensureWorkspaceSubscription(workspaceId: string, status: LicenseStatus = LicenseStatus.PENDING) {
+export async function ensureWorkspaceSubscription(workspaceId: string, status: LicenseStatus = LicenseStatus.PENDING, planCode = DEFAULT_PLAN_CODE) {
   const existing = await prisma.workspaceSubscription.findUnique({ where: { workspaceId } });
   if (existing) return existing;
-  const plan = await prisma.plan.findUniqueOrThrow({ where: { code: DEFAULT_PLAN_CODE } });
+  const plan = await prisma.plan.findFirst({ where: { code: planCode, isActive: true } });
+  if (!plan) throw new Error('PLAN_NOT_FOUND');
   return prisma.workspaceSubscription.create({ data: { workspaceId, planId: plan.id, status } });
 }
 
@@ -58,7 +59,8 @@ export async function assertWorkspaceWriteAccess(workspaceId: string) {
   const subscription = await prisma.workspaceSubscription.findUnique({ where: { workspaceId }, include: { plan: true } });
   if (!subscription) throw new Error('LICENSE_NOT_CONFIGURED');
   const status = effectiveLicenseStatus(subscription);
-  if (status !== LicenseStatus.ACTIVE && status !== LicenseStatus.TRIAL) throw new Error(`LICENSE_${status}`);
+  const inGrace = status === LicenseStatus.PAST_DUE && Boolean(subscription.graceUntil && subscription.graceUntil.getTime() >= Date.now());
+  if (status !== LicenseStatus.ACTIVE && status !== LicenseStatus.TRIAL && !inGrace) throw new Error(`LICENSE_${status}`);
   return subscription;
 }
 
@@ -102,13 +104,13 @@ export async function listCommercialWorkspaces() {
       orderBy: { createdAt: 'desc' },
       include: {
         owner: { select: { id: true, name: true, email: true, phone: true, status: true, lastLoginAt: true } },
-        subscription: { include: { plan: true } },
+        subscription: { include: { plan: true, invoices: { orderBy: { dueAt: 'desc' }, take: 6 } } },
         _count: { select: { members: { where: { status: { not: UserStatus.REJECTED } } } } }
       }
     })
   ]);
   return {
-    plans: plans.map((plan) => ({ code: plan.code, name: plan.name, description: plan.description, maxMembers: plan.maxMembers, trialDays: plan.trialDays, features: plan.features })),
+    plans: plans.map((plan) => ({ code: plan.code, name: plan.name, description: plan.description, maxMembers: plan.maxMembers, trialDays: plan.trialDays, monthlyPrice: plan.monthlyPrice, features: plan.features })),
     workspaces: workspaces.map((workspace) => ({
       id: workspace.id, name: workspace.name, slug: workspace.slug, isActive: workspace.isActive, createdAt: workspace.createdAt,
       owner: workspace.owner,
@@ -116,7 +118,8 @@ export async function listCommercialWorkspaces() {
       license: workspace.subscription ? {
         status: effectiveLicenseStatus(workspace.subscription), storedStatus: workspace.subscription.status,
         startsAt: workspace.subscription.startsAt, expiresAt: workspace.subscription.expiresAt, graceUntil: workspace.subscription.graceUntil,
-        plan: { code: workspace.subscription.plan.code, name: workspace.subscription.plan.name }
+        plan: { code: workspace.subscription.plan.code, name: workspace.subscription.plan.name, monthlyPrice: Number(workspace.subscription.plan.monthlyPrice) },
+        billingEnabled: workspace.subscription.billingEnabled, billingDay: workspace.subscription.billingDay, autoSuspendAfterDays: workspace.subscription.autoSuspendAfterDays, invoices: workspace.subscription.invoices.map((invoice) => ({ ...invoice, amount: Number(invoice.amount) }))
       } : null
     }))
   };

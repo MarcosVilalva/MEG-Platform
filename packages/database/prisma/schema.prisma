@@ -31,6 +31,14 @@ enum LicenseStatus {
   CANCELLED
 }
 
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
 model User {
   id             String     @id @default(cuid())
   name           String
@@ -97,6 +105,8 @@ model Workspace {
   members   WorkspaceMember[]
   appState  AppState?
   subscription WorkspaceSubscription?
+  notificationConfig WorkspaceNotificationConfig?
+  invoices WorkspaceInvoice[]
 }
 
 model WorkspaceMember {
@@ -134,6 +144,7 @@ model Plan {
   description String?
   maxMembers  Int      @default(1)
   trialDays   Int      @default(14)
+  monthlyPrice Decimal @default(0)
   features    Json
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -152,14 +163,56 @@ model WorkspaceSubscription {
   graceUntil  DateTime?
   suspendedAt DateTime?
   notes       String?
+  billingEnabled Boolean @default(false)
+  billingDay  Int      @default(10)
+  autoSuspendAfterDays Int @default(5)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   plan        Plan      @relation(fields: [planId], references: [id], onDelete: Restrict)
+  invoices    WorkspaceInvoice[]
 
   @@index([status, expiresAt])
   @@index([planId])
+}
+model WorkspaceNotificationConfig {
+  id                       String   @id @default(cuid())
+  workspaceId              String   @unique
+  whatsappEnabled          Boolean  @default(false)
+  evolutionApiUrl          String?
+  evolutionInstance        String?
+  evolutionApiKeyEncrypted String?
+  emailEnabled             Boolean  @default(true)
+  replyToEmail             String?
+  senderName               String?  @default("MEG Finanças")
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model WorkspaceInvoice {
+  id             String        @id @default(cuid())
+  workspaceId    String
+  subscriptionId String?
+  reference      String
+  amount         Decimal
+  dueAt          DateTime
+  paidAt         DateTime?
+  status         InvoiceStatus @default(PENDING)
+  paymentMethod  String?
+  externalId     String?
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  workspace    Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subscription WorkspaceSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, reference])
+  @@index([status, dueAt])
+  @@index([workspaceId, dueAt])
 }
 model NotificationDelivery {
   id          String   @id @default(cuid())

@@ -3830,26 +3830,29 @@ function setCommercialFeedback(message, tone = "") {
 function renderCommercialWorkspaces(result) {
   const workspaces = result.workspaces || [];
   const plans = result.plans || [];
+  const invoiceLabels = { PENDING: "Em aberto", PAID: "Paga", OVERDUE: "Vencida", CANCELLED: "Cancelada", REFUNDED: "Estornada" };
+  const today = new Date();
+  const defaultReference = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  const defaultDue = new Date(today.getFullYear(), today.getMonth(), 10).toISOString().slice(0, 10);
   els.commercialClientsMetric.textContent = String(workspaces.length);
   els.commercialActiveMetric.textContent = String(workspaces.filter((item) => ["ACTIVE", "TRIAL"].includes(item.license?.status)).length);
   els.commercialPendingMetric.textContent = String(workspaces.filter((item) => item.license?.status === "PENDING").length);
   els.commercialAttentionMetric.textContent = String(workspaces.filter((item) => ["PAST_DUE", "SUSPENDED", "EXPIRED", "CANCELLED"].includes(item.license?.status)).length);
-  if (!workspaces.length) {
-    els.commercialWorkspaceList.innerHTML = '<div class="empty">Nenhum cliente cadastrado.</div>';
-    return;
-  }
-  const planOptions = (current) => plans.map((plan) => `<option value="${escapeHtml(plan.code)}" ${plan.code === current ? "selected" : ""}>${escapeHtml(plan.name)} (${plan.maxMembers} usuário${plan.maxMembers > 1 ? "s" : ""})</option>`).join("");
+  if (!workspaces.length) { els.commercialWorkspaceList.innerHTML = '<div class="empty">Nenhum cliente cadastrado.</div>'; return; }
+  const planOptions = (current) => plans.map((plan) => `<option value="${escapeHtml(plan.code)}" ${plan.code === current ? "selected" : ""}>${escapeHtml(plan.name)} · ${formatCurrency(plan.monthlyPrice || 0)} · ${plan.maxMembers} acesso${plan.maxMembers > 1 ? "s" : ""}</option>`).join("");
   els.commercialWorkspaceList.innerHTML = workspaces.map((workspace) => {
     const status = workspace.license?.status || "PENDING";
     const attention = !["ACTIVE", "TRIAL"].includes(status);
+    const invoices = workspace.license?.invoices || [];
+    const invoiceRows = invoices.length ? invoices.map((invoice) => `<div class="commercial-invoice-row"><span><strong>${escapeHtml(invoice.reference)}</strong><small>Vence ${commercialDate(invoice.dueAt)}</small></span><b>${formatCurrency(invoice.amount)}</b><span class="license-status ${String(invoice.status).toLowerCase()}">${escapeHtml(invoiceLabels[invoice.status] || invoice.status)}</span>${invoice.status !== "PAID" && invoice.status !== "CANCELLED" ? `<button class="button" data-invoice-action="MARK_PAID" data-invoice-id="${invoice.id}" type="button">Confirmar pagamento</button>` : ""}</div>`).join("") : '<p class="muted">Nenhuma mensalidade gerada.</p>';
     return `<article class="commercial-workspace-card ${attention ? "attention" : ""}" data-commercial-workspace="${escapeHtml(workspace.id)}">
       <div class="commercial-workspace-head"><div><span class="license-status ${status.toLowerCase()}">${escapeHtml(LICENSE_STATUS_LABELS[status] || status)}</span><h3>${escapeHtml(workspace.name)}</h3><p>${escapeHtml(workspace.owner?.name || "Administrador pendente")} &middot; ${escapeHtml(workspace.owner?.email || "")}</p></div><div class="commercial-seat"><strong>${workspace.members.used} / ${workspace.members.limit}</strong><span>acessos utilizados</span></div></div>
-      <div class="commercial-workspace-meta"><span><small>Código do espaço</small><b>${escapeHtml(workspace.slug)}</b></span><span><small>Vencimento</small><b>${commercialDate(workspace.license?.expiresAt)}</b></span><span><small>Último acesso</small><b>${commercialDate(workspace.owner?.lastLoginAt)}</b></span></div>
-      <div class="commercial-license-controls"><label>Plano<select data-commercial-plan>${planOptions(workspace.license?.plan.code)}</select></label><label>Dias<input data-commercial-days type="number" min="1" max="3650" value="30" /></label><div class="commercial-actions"><button class="button primary" data-license-action="ACTIVATE" type="button">Ativar</button><button class="button" data-license-action="START_TRIAL" type="button">Teste</button><button class="button" data-license-action="RENEW" type="button">Renovar</button><button class="button ghost" data-license-action="CHANGE_PLAN" type="button">Trocar plano</button><button class="button danger-soft" data-license-action="SUSPEND" type="button">Suspender</button></div></div>
+      <div class="commercial-workspace-meta"><span><small>Código do espaço</small><b>${escapeHtml(workspace.slug)}</b></span><span><small>Vencimento da licença</small><b>${commercialDate(workspace.license?.expiresAt)}</b></span><span><small>Plano mensal</small><b>${formatCurrency(workspace.license?.plan?.monthlyPrice || 0)}</b></span><span><small>Último acesso</small><b>${commercialDate(workspace.owner?.lastLoginAt)}</b></span></div>
+      <div class="commercial-license-controls"><label>Plano<select data-commercial-plan>${planOptions(workspace.license?.plan?.code)}</select></label><label>Dias<input data-commercial-days type="number" min="1" max="3650" value="30" /></label><div class="commercial-actions"><button class="button primary" data-license-action="ACTIVATE" type="button">Ativar</button><button class="button" data-license-action="START_TRIAL" type="button">Teste</button><button class="button" data-license-action="RENEW" type="button">Renovar</button><button class="button ghost" data-license-action="CHANGE_PLAN" type="button">Trocar plano</button><button class="button danger-soft" data-license-action="SUSPEND" type="button">Suspender</button></div></div>
+      <details class="commercial-billing"><summary>Mensalidades e cobrança</summary><div class="commercial-invoice-create"><label>Referência<input data-invoice-reference type="month" value="${defaultReference}" /></label><label>Vencimento<input data-invoice-due type="date" value="${defaultDue}" /></label><label>Valor<input data-invoice-amount type="number" min="0.01" step="0.01" value="${Number(workspace.license?.plan?.monthlyPrice || 0).toFixed(2)}" /></label><button class="button primary" data-create-invoice type="button">Gerar mensalidade</button></div><div class="commercial-invoice-list">${invoiceRows}</div><p class="muted">Após ${workspace.license?.autoSuspendAfterDays ?? 5} dia(s) de atraso, o acesso é suspenso automaticamente.</p></details>
     </article>`;
   }).join("");
 }
-
 async function loadCommercialWorkspaces({ keepFeedback = false } = {}) {
   if (!els.commercialWorkspaceList || typeof window.MEG_CLOUD?.listCommercialWorkspaces !== "function") return;
   els.commercialWorkspaceList.innerHTML = '<div class="empty">Carregando clientes...</div>';
@@ -3873,6 +3876,24 @@ async function updateCommercialWorkspaceLicense(button) {
     showToast("Gestão comercial", "Licença do cliente atualizada.", "success");
   } catch (cause) { setCommercialFeedback(cause instanceof Error ? cause.message : "Falha ao atualizar a licença.", "error"); }
 }
+async function createCommercialInvoice(button) {
+  const card = button.closest("[data-commercial-workspace]");
+  const workspaceId = card.dataset.commercialWorkspace;
+  const reference = card.querySelector("[data-invoice-reference]").value;
+  const dueAt = card.querySelector("[data-invoice-due]").value;
+  const amount = Number(card.querySelector("[data-invoice-amount]").value);
+  setCommercialFeedback("Gerando mensalidade...", "loading");
+  try { await window.MEG_CLOUD.createCommercialInvoice(workspaceId, { reference, dueAt, amount }); await loadCommercialWorkspaces({ keepFeedback: true }); setCommercialFeedback("Mensalidade gerada com sucesso.", "success"); showToast("Cobrança", "Mensalidade registrada.", "success"); }
+  catch (cause) { setCommercialFeedback(cause instanceof Error ? cause.message : "Falha ao gerar mensalidade.", "error"); }
+}
+
+async function changeCommercialInvoice(button) {
+  const action = button.dataset.invoiceAction;
+  if (action === "MARK_PAID" && !window.confirm("Confirmar o recebimento desta mensalidade e reativar a licença?")) return;
+  setCommercialFeedback("Atualizando mensalidade...", "loading");
+  try { await window.MEG_CLOUD.changeCommercialInvoice(button.dataset.invoiceId, { action, paymentMethod: "manual" }); await loadCommercialWorkspaces({ keepFeedback: true }); setCommercialFeedback("Mensalidade atualizada com sucesso.", "success"); }
+  catch (cause) { setCommercialFeedback(cause instanceof Error ? cause.message : "Falha ao atualizar mensalidade.", "error"); }
+}
 document.addEventListener("click", (event) => {
   const editButton = event.target.closest("[data-edit]");
   const viewLink = event.target.closest("[data-view-link]");
@@ -3893,6 +3914,8 @@ document.addEventListener("click", (event) => {
   const testUserEmailButton = event.target.closest("[data-test-user-email]");
   const deleteManagedUserButton = event.target.closest("[data-delete-managed-user]");
   const commercialLicenseButton = event.target.closest("[data-license-action]");
+  const commercialInvoiceCreateButton = event.target.closest("[data-create-invoice]");
+  const commercialInvoiceActionButton = event.target.closest("[data-invoice-action]");
   if (editButton) {
     const item = state.transactions.find((transaction) => transaction.id === editButton.dataset.edit);
     if (item) {
@@ -3921,6 +3944,8 @@ document.addEventListener("click", (event) => {
   if (testUserEmailButton) testManagedUserEmail(testUserEmailButton.dataset.testUserEmail);
   if (deleteManagedUserButton) deleteManagedUser(deleteManagedUserButton.dataset.deleteManagedUser);
   if (commercialLicenseButton) updateCommercialWorkspaceLicense(commercialLicenseButton);
+  if (commercialInvoiceCreateButton) createCommercialInvoice(commercialInvoiceCreateButton);
+  if (commercialInvoiceActionButton) changeCommercialInvoice(commercialInvoiceActionButton);
 });
 
 document.addEventListener("change", (event) => {

@@ -903,7 +903,21 @@
               </div>
               <pre class="notification-preview" id="notificationPreview">Nenhum resumo carregado.</pre>
             </section>
-            <section class="panel">
+            <section class="panel workspace-integration-panel">
+              <h3>Integrações do espaço</h3>
+              <p class="muted">O administrador configura o WhatsApp do próprio cliente. A chave fica criptografada e nunca aparece novamente na tela.</p>
+              <form id="workspaceIntegrationForm" class="integration-form">
+                <label class="toggle-line"><input id="workspaceWhatsappEnabled" type="checkbox" /> <span>Usar WhatsApp próprio (Evolution API)</span></label>
+                <label>URL da Evolution API<input id="workspaceEvolutionUrl" type="url" placeholder="https://sua-evolution.onrender.com" /></label>
+                <label>Nome da instância<input id="workspaceEvolutionInstance" type="text" maxlength="120" placeholder="cliente-meg" /></label>
+                <label>Chave da API<input id="workspaceEvolutionKey" type="password" maxlength="500" autocomplete="new-password" placeholder="Deixe vazio para manter a chave atual" /></label>
+                <label class="toggle-line"><input id="workspaceEmailEnabled" type="checkbox" checked /> <span>Enviar alertas por e-mail</span></label>
+                <label>Nome do remetente<input id="workspaceSenderName" type="text" maxlength="80" value="MEG Finanças" /></label>
+                <label>E-mail para respostas<input id="workspaceReplyToEmail" type="email" placeholder="financeiro@cliente.com" /></label>
+                <div class="settings-actions"><button class="button primary" type="submit">Salvar integrações</button><button class="button" id="testWorkspaceWhatsappBtn" type="button">Testar WhatsApp</button></div>
+                <p class="muted" id="workspaceIntegrationStatus">Carregando configuração...</p>
+              </form>
+            </section>            <section class="panel">
               <h3>Categorias padrao</h3>
               <div class="tag-cloud" id="categoryTags"></div>
             </section>

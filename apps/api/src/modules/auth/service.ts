@@ -53,6 +53,7 @@ export async function registerUser(input: {
   accountType?: 'REQUEST_ACCESS' | 'CREATE_WORKSPACE';
   workspaceName?: string;
   workspaceSlug?: string;
+  planCode?: 'ESSENCIAL' | 'FAMILIA' | 'PRO';
 }) {
   const email = normalizeAccountEmail(input.email);
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -77,7 +78,7 @@ export async function registerUser(input: {
   let requestedWorkspaceName = input.workspaceName ?? null;
   try {
     if (createsWorkspace) {
-      await createWorkspaceForOwner(user.id, input.workspaceName?.trim() || `Finanças de ${user.name}`, !approvedImmediately);
+      await createWorkspaceForOwner(user.id, input.workspaceName?.trim() || `Finanças de ${user.name}`, !approvedImmediately, input.planCode || 'ESSENCIAL');
     } else if (isInitialAdmin) {
       await ensurePrimaryWorkspace();
     } else {
@@ -93,7 +94,7 @@ export async function registerUser(input: {
     data: {
       userId: user.id, entity: 'User', entityId: user.id,
       action: createsWorkspace ? 'COMMERCIAL_WORKSPACE_REQUESTED' : isInitialAdmin ? 'INITIAL_ADMIN_REGISTERED' : 'ACCESS_REQUESTED',
-      metadata: JSON.stringify({ administratorEmail: approvalEmail, workspaceName: requestedWorkspaceName, workspaceSlug: input.workspaceSlug ?? null })
+      metadata: JSON.stringify({ administratorEmail: approvalEmail, workspaceName: requestedWorkspaceName, workspaceSlug: input.workspaceSlug ?? null, planCode: input.planCode ?? null })
     }
   });
   if (!approvedImmediately) {
