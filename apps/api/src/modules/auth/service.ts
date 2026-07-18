@@ -4,7 +4,8 @@ import { prisma, UserRole, UserStatus } from '@meg/database';
 import { sendSystemEmail, sendSystemWhatsApp } from '../notifications/service';
 import { config } from '../../config';
 import { createTemporaryPassword, normalizeAccountEmail, passwordResetMessages } from './password-reset';
-import { addUserToPrimaryWorkspace, assertSameWorkspace, createWorkspaceForOwner, currentWorkspaceForUser, ensurePrimaryWorkspace, resolveWorkspaceContext } from '../workspaces/service';
+import { addUserToRequestedWorkspace, assertSameWorkspace, createWorkspaceForOwner, currentWorkspaceForUser, ensurePrimaryWorkspace, resolveWorkspaceContext } from '../workspaces/service';
+import { workspaceSeatSummary } from '../platform-admin/service';
 
 const SESSION_TTL_DAYS = 30;
 const ADMIN_EMAIL = normalizeAccountEmail(config.adminEmail);
@@ -39,7 +40,8 @@ function publicUser(user: {
     status: user.status,
     isActive: user.isActive,
     lastLoginAt: user.lastLoginAt ?? null,
-    createdAt: user.createdAt
+    createdAt: user.createdAt,
+    platformAdmin: normalizeAccountEmail(user.email) === ADMIN_EMAIL
   };
 }
 
@@ -50,6 +52,7 @@ export async function registerUser(input: {
   password: string;
   accountType?: 'REQUEST_ACCESS' | 'CREATE_WORKSPACE';
   workspaceName?: string;
+  workspaceSlug?: string;
 }) {
   const email = normalizeAccountEmail(input.email);
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -59,20 +62,29 @@ export async function registerUser(input: {
   const createsWorkspace = input.accountType === 'CREATE_WORKSPACE';
   const hasAdmin = await prisma.user.count({ where: { role: UserRole.ADMIN } });
   const isInitialAdmin = hasAdmin === 0 && email === ADMIN_EMAIL;
-  const isOwner = createsWorkspace || isInitialAdmin;
+  const isWorkspaceOwner = createsWorkspace || isInitialAdmin;
+  const approvedImmediately = isInitialAdmin;
   const passwordHash = await bcrypt.hash(input.password, 12);
   const user = await prisma.user.create({
     data: {
       name: input.name.trim(), email, phone: normalizePhone(input.phone), passwordHash,
-      role: isOwner ? UserRole.ADMIN : UserRole.VIEWER,
-      status: isOwner ? UserStatus.ACTIVE : UserStatus.PENDING,
-      isActive: isOwner, approvedAt: isOwner ? new Date() : null
+      role: isWorkspaceOwner ? UserRole.ADMIN : UserRole.VIEWER,
+      status: approvedImmediately ? UserStatus.ACTIVE : UserStatus.PENDING,
+      isActive: approvedImmediately, approvedAt: approvedImmediately ? new Date() : null
     }
   });
+  let approvalEmail = ADMIN_EMAIL;
+  let requestedWorkspaceName = input.workspaceName ?? null;
   try {
-    if (createsWorkspace) await createWorkspaceForOwner(user.id, input.workspaceName?.trim() || `Finanças de ${user.name}`);
-    else if (isInitialAdmin) await ensurePrimaryWorkspace();
-    else await addUserToPrimaryWorkspace(user.id, UserRole.VIEWER, UserStatus.PENDING, false);
+    if (createsWorkspace) {
+      await createWorkspaceForOwner(user.id, input.workspaceName?.trim() || `Finanças de ${user.name}`, !approvedImmediately);
+    } else if (isInitialAdmin) {
+      await ensurePrimaryWorkspace();
+    } else {
+      const requestedWorkspace = await addUserToRequestedWorkspace(user.id, input.workspaceSlug);
+      approvalEmail = requestedWorkspace.owner.email;
+      requestedWorkspaceName = requestedWorkspace.name;
+    }
   } catch (error) {
     await prisma.user.delete({ where: { id: user.id } }).catch(() => undefined);
     throw error;
@@ -80,14 +92,18 @@ export async function registerUser(input: {
   await prisma.auditLog.create({
     data: {
       userId: user.id, entity: 'User', entityId: user.id,
-      action: createsWorkspace ? 'WORKSPACE_OWNER_REGISTERED' : isInitialAdmin ? 'INITIAL_ADMIN_REGISTERED' : 'ACCESS_REQUESTED',
-      metadata: JSON.stringify({ administratorEmail: ADMIN_EMAIL, workspaceName: input.workspaceName ?? null })
+      action: createsWorkspace ? 'COMMERCIAL_WORKSPACE_REQUESTED' : isInitialAdmin ? 'INITIAL_ADMIN_REGISTERED' : 'ACCESS_REQUESTED',
+      metadata: JSON.stringify({ administratorEmail: approvalEmail, workspaceName: requestedWorkspaceName, workspaceSlug: input.workspaceSlug ?? null })
     }
   });
-  if (!isOwner) {
-    await sendSystemEmail(ADMIN_EMAIL, `MEG Finanças: nova solicitação de ${user.name}`, `Olá, Marcos.\n\n${user.name} (${user.email}) solicitou acesso ao MEG Finanças.\n\nAcesse Usuários e permissões para analisar a solicitação.`).catch(() => undefined);
+  if (!approvedImmediately) {
+    const subject = createsWorkspace ? `MEG Comercial: novo cliente ${user.name}` : `MEG Finanças: nova solicitação de ${user.name}`;
+    const body = createsWorkspace
+      ? `Novo cliente aguardando ativação.\n\nResponsável: ${user.name}\nE-mail: ${user.email}\nEspaço: ${requestedWorkspaceName}\n\nAcesse Gestão comercial para escolher o plano e ativar a licença.`
+      : `${user.name} (${user.email}) solicitou acesso ao espaço ${requestedWorkspaceName}.\n\nAcesse Usuários e permissões para analisar a solicitação.`;
+    await sendSystemEmail(approvalEmail, subject, body).catch(() => undefined);
   }
-  return { user: publicUser(user), requiresApproval: !isOwner, administratorEmail: ADMIN_EMAIL };
+  return { user: publicUser(user), requiresApproval: !approvedImmediately, administratorEmail: approvalEmail };
 }
 export async function authenticateUser(emailInput: string, password: string) {
   const email = normalizeAccountEmail(emailInput);
@@ -107,7 +123,7 @@ export async function authenticateUser(emailInput: string, password: string) {
 
 export async function listUsers(actorId: string) {
   const context = await resolveWorkspaceContext(actorId);
-  return prisma.user.findMany({
+  const users = await prisma.user.findMany({
     where: { workspaceMemberships: { some: { workspaceId: context.workspaceId } } },
     orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
     select: {
@@ -124,8 +140,8 @@ export async function listUsers(actorId: string) {
       rejectionNote: true
     }
   });
+  return { users, workspace: { id: context.workspace.id, name: context.workspace.name, slug: context.workspace.slug, commercial: await workspaceSeatSummary(context.workspaceId) } };
 }
-
 export async function updateUserAccess(input: {
   actorId: string;
   userId: string;

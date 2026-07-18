@@ -107,6 +107,14 @@ function friendlyAuthError(code) {
     EMAIL_DELIVERY_FAILED: 'Não foi possível enviar o e-mail. Avise o administrador para revisar a configuração de e-mail.',
     NOTIFICATION_DELIVERY_FAILED: 'Não foi possível entregar a nova senha por e-mail nem por WhatsApp. Avise o administrador.',
     PASSWORD_RESET_RATE_LIMITED: 'Uma nova senha já foi enviada recentemente. Aguarde 10 minutos antes de tentar novamente.',
+    WORKSPACE_NOT_FOUND: 'Espaço não encontrado. Confira o código informado ou peça ao administrador.',
+    WORKSPACE_MEMBER_LIMIT_REACHED: 'O limite de usuários deste plano foi atingido. Fale com o administrador do espaço.',
+    LICENSE_PENDING: 'A licença deste espaço ainda aguarda ativação.',
+    LICENSE_EXPIRED: 'A licença deste espaço expirou. O administrador comercial precisa renová-la.',
+    LICENSE_SUSPENDED: 'Este espaço está temporariamente suspenso.',
+    LICENSE_CANCELLED: 'A licença deste espaço foi cancelada.',
+    LICENSE_PAST_DUE: 'A licença deste espaço possui pagamento pendente.',
+    LICENSE_NOT_CONFIGURED: 'Este espaço ainda não possui uma licença configurada.',
     VALIDATION_ERROR: 'Revise os dados informados.'
   };
   return messages[code] || 'Não foi possível concluir a operação.';
@@ -142,8 +150,9 @@ function authMarkup() {
         </form>
         <form id="registerForm" class="auth-form hidden">
           <h1>Comece no MEG</h1>
-          <label>Tipo de cadastro<select name="accountType" id="accountType"><option value="CREATE_WORKSPACE">Criar meu espaço financeiro</option><option value="REQUEST_ACCESS">Entrar na equipe de Marcos</option></select></label>
+          <label>Tipo de cadastro<select name="accountType" id="accountType"><option value="CREATE_WORKSPACE">Criar meu espaço financeiro</option><option value="REQUEST_ACCESS">Entrar em um espaço existente</option></select></label>
           <label id="workspaceNameField">Nome do seu espaço<input name="workspaceName" minlength="2" maxlength="120" value="Meu MEG" required /><small>Você será o administrador e começará com uma base vazia.</small></label>
+          <label id="workspaceSlugField" class="hidden">Código do espaço<input name="workspaceSlug" minlength="2" maxlength="80" placeholder="ex.: familia-silva" /><small>Peça este código ao administrador do seu espaço.</small></label>
           <label>Nome<input name="name" autocomplete="name" required /></label>
           <label>E-mail<input name="email" type="email" autocomplete="email" required /></label>
           <label>WhatsApp<input name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="5518999999999" minlength="10" maxlength="18" required /><small>Informe DDD e número. Usaremos para avisos de aprovação e recuperação.</small></label>
@@ -202,10 +211,13 @@ function showAuthentication() {
   document.querySelector('#backToLoginButton').addEventListener('click', () => selectMode('login'));
   const accountType = document.querySelector('#accountType');
   const workspaceNameField = document.querySelector('#workspaceNameField');
+  const workspaceSlugField = document.querySelector('#workspaceSlugField');
   const syncRegistrationType = () => {
     const createsWorkspace = accountType.value === 'CREATE_WORKSPACE';
     workspaceNameField.classList.toggle('hidden', !createsWorkspace);
     workspaceNameField.querySelector('input').required = createsWorkspace;
+    workspaceSlugField.classList.toggle('hidden', createsWorkspace);
+    workspaceSlugField.querySelector('input').required = !createsWorkspace;
   };
   accountType.addEventListener('change', syncRegistrationType);
   syncRegistrationType();
@@ -325,6 +337,7 @@ async function saveNow(state, { force = false } = {}) {
     try { payload = raw ? JSON.parse(raw) : {}; } catch {}
     if (!response.ok) {
       const detail = payload.error || payload.message || raw || 'sem detalhes';
+      if (response.status === 402) throw new Error(friendlyAuthError(detail));
       throw new Error(`Falha ao salvar na nuvem (${response.status}): ${detail}`);
     }
     revision = payload.revision;
@@ -488,6 +501,18 @@ export async function bootstrapCloud() {
       const response = await api('/auth/users');
       if (!response.ok) throw new Error(response.status === 403 ? 'Apenas administradores podem gerenciar usuários.' : 'Não foi possível carregar os usuários.');
       return response.json();
+    },
+    async listCommercialWorkspaces() {
+      const response = await api('/platform-admin/workspaces');
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error === 'PLATFORM_ADMIN_REQUIRED' ? 'Apenas o administrador da plataforma pode acessar esta área.' : 'Não foi possível carregar os clientes.');
+      return result;
+    },
+    async changeCommercialLicense(workspaceId, payload) {
+      const response = await api(`/platform-admin/workspaces/${encodeURIComponent(workspaceId)}/license`, { method: 'PATCH', body: JSON.stringify(payload) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error === 'PLAN_NOT_FOUND' ? 'Plano não encontrado.' : 'Não foi possível atualizar a licença.');
+      return result;
     },
     async changeUserAccess(userId, payload) {
       const response = await api(`/auth/users/${encodeURIComponent(userId)}/access`, { method: 'PATCH', body: JSON.stringify(payload) });

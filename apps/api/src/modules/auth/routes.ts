@@ -26,7 +26,8 @@ const registerSchema = credentialsSchema.extend({
   phone: z.string().transform((value) => value.replace(/\D/g, '')).refine((value) => value.length >= 10 && value.length <= 15, 'INVALID_PHONE'),
   confirmPassword: z.string().min(8).max(128),
   accountType: z.enum(['REQUEST_ACCESS', 'CREATE_WORKSPACE']).default('REQUEST_ACCESS'),
-  workspaceName: z.string().min(2).max(120).optional()
+  workspaceName: z.string().min(2).max(120).optional(),
+  workspaceSlug: z.string().min(2).max(120).regex(/^[a-z0-9-]+$/).optional()
 }).refine((value) => value.password === value.confirmPassword, {
   message: 'PASSWORDS_DO_NOT_MATCH',
   path: ['confirmPassword']
@@ -75,6 +76,9 @@ export async function authRoutes(app: FastifyInstance) {
       }
       if (error instanceof Error && error.message === 'ACCESS_PENDING') {
         return reply.status(409).send({ error: 'ACCESS_PENDING' });
+      }
+      if (error instanceof Error && ['WORKSPACE_NOT_FOUND', 'WORKSPACE_MEMBER_LIMIT_REACHED'].includes(error.message)) {
+        return reply.status(error.message === 'WORKSPACE_NOT_FOUND' ? 404 : 409).send({ error: error.message });
       }
       throw error;
     }
@@ -137,7 +141,7 @@ export async function authRoutes(app: FastifyInstance) {
     return { user };
   });
 
-  app.get('/users', { preHandler: app.authorize(['ADMIN']) }, async (request) => ({ users: await listUsers(request.user.sub) }));
+  app.get('/users', { preHandler: app.authorize(['ADMIN']) }, async (request) => listUsers(request.user.sub));
 
   app.patch('/users/:id/access', { preHandler: app.authorize(['ADMIN']) }, async (request, reply) => {
     const parsed = accessSchema.safeParse(request.body);

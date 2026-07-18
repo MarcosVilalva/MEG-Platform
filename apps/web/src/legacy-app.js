@@ -469,6 +469,20 @@ const els = {
   activeUsersMetric: document.querySelector("#activeUsersMetric"),
   adminUsersFeedback: document.querySelector("#adminUsersFeedback"),
   adminUsersList: document.querySelector("#adminUsersList"),
+  workspaceNameMetric: document.querySelector("#workspaceNameMetric"),
+  workspaceAccessCode: document.querySelector("#workspaceAccessCode"),
+  workspacePlanMetric: document.querySelector("#workspacePlanMetric"),
+  workspaceLicenseMetric: document.querySelector("#workspaceLicenseMetric"),
+  workspaceSeatsMetric: document.querySelector("#workspaceSeatsMetric"),
+  workspaceSeatsAvailable: document.querySelector("#workspaceSeatsAvailable"),
+  platformAdminNav: document.querySelector("#platformAdminNav"),
+  reloadCommercialBtn: document.querySelector("#reloadCommercialBtn"),
+  commercialWorkspaceList: document.querySelector("#commercialWorkspaceList"),
+  commercialFeedback: document.querySelector("#commercialFeedback"),
+  commercialClientsMetric: document.querySelector("#commercialClientsMetric"),
+  commercialActiveMetric: document.querySelector("#commercialActiveMetric"),
+  commercialPendingMetric: document.querySelector("#commercialPendingMetric"),
+  commercialAttentionMetric: document.querySelector("#commercialAttentionMetric"),
   paymentCatalogList: document.querySelector("#paymentCatalogList"),
   paymentCatalogCount: document.querySelector("#paymentCatalogCount"),
   cardCatalogForm: document.querySelector("#cardCatalogForm"),
@@ -3671,7 +3685,17 @@ function setUsersFeedback(message, tone = "") {
   els.adminUsersFeedback.className = `admin-feedback ${tone}`.trim();
 }
 
-function renderManagedUsers(users) {
+function renderManagedUsers(users, workspace) {
+  if (workspace) {
+    const commercial = workspace.commercial || {};
+    const members = commercial.members || {};
+    if (els.workspaceNameMetric) els.workspaceNameMetric.textContent = workspace.name || "Meu MEG";
+    if (els.workspaceAccessCode) els.workspaceAccessCode.textContent = workspace.slug || "--";
+    if (els.workspacePlanMetric) els.workspacePlanMetric.textContent = commercial.plan?.name || "Sem plano";
+    if (els.workspaceLicenseMetric) els.workspaceLicenseMetric.textContent = `Licença: ${commercial.licenseStatus || "--"}`;
+    if (els.workspaceSeatsMetric) els.workspaceSeatsMetric.textContent = `${members.used || 0} / ${members.limit || 0}`;
+    if (els.workspaceSeatsAvailable) els.workspaceSeatsAvailable.textContent = `${members.available || 0} vaga(s) disponível(is)`;
+  }
   els.registeredUsersMetric.textContent = String(users.length);
   els.pendingUsersMetric.textContent = String(users.filter((user) => user.status === "PENDING").length);
   els.activeUsersMetric.textContent = String(users.filter((user) => user.status === "ACTIVE" && user.isActive).length);
@@ -3719,7 +3743,7 @@ async function loadManagedUsers({ keepFeedback = false } = {}) {
   if (!keepFeedback) setUsersFeedback("");
   try {
     const result = await window.MEG_CLOUD.listManagedUsers();
-    renderManagedUsers(result.users || result);
+    renderManagedUsers(result.users || result, result.workspace);
   } catch (cause) {
     els.adminUsersList.innerHTML = '<div class="empty">Não foi possível carregar os usuários.</div>';
     setUsersFeedback(cause instanceof Error ? cause.message : "Falha ao carregar usuários.", "error");
@@ -3791,6 +3815,64 @@ async function deleteManagedUser(userId) {
   }
 }
 
+const LICENSE_STATUS_LABELS = { PENDING: "Aguardando ativação", TRIAL: "Período de teste", ACTIVE: "Ativa", PAST_DUE: "Pagamento pendente", SUSPENDED: "Suspensa", EXPIRED: "Vencida", CANCELLED: "Cancelada" };
+
+function commercialDate(value) {
+  return value ? new Date(value).toLocaleDateString("pt-BR") : "Sem vencimento";
+}
+
+function setCommercialFeedback(message, tone = "") {
+  if (!els.commercialFeedback) return;
+  els.commercialFeedback.textContent = message;
+  els.commercialFeedback.className = `admin-feedback ${tone}`.trim();
+}
+
+function renderCommercialWorkspaces(result) {
+  const workspaces = result.workspaces || [];
+  const plans = result.plans || [];
+  els.commercialClientsMetric.textContent = String(workspaces.length);
+  els.commercialActiveMetric.textContent = String(workspaces.filter((item) => ["ACTIVE", "TRIAL"].includes(item.license?.status)).length);
+  els.commercialPendingMetric.textContent = String(workspaces.filter((item) => item.license?.status === "PENDING").length);
+  els.commercialAttentionMetric.textContent = String(workspaces.filter((item) => ["PAST_DUE", "SUSPENDED", "EXPIRED", "CANCELLED"].includes(item.license?.status)).length);
+  if (!workspaces.length) {
+    els.commercialWorkspaceList.innerHTML = '<div class="empty">Nenhum cliente cadastrado.</div>';
+    return;
+  }
+  const planOptions = (current) => plans.map((plan) => `<option value="${escapeHtml(plan.code)}" ${plan.code === current ? "selected" : ""}>${escapeHtml(plan.name)} (${plan.maxMembers} usuário${plan.maxMembers > 1 ? "s" : ""})</option>`).join("");
+  els.commercialWorkspaceList.innerHTML = workspaces.map((workspace) => {
+    const status = workspace.license?.status || "PENDING";
+    const attention = !["ACTIVE", "TRIAL"].includes(status);
+    return `<article class="commercial-workspace-card ${attention ? "attention" : ""}" data-commercial-workspace="${escapeHtml(workspace.id)}">
+      <div class="commercial-workspace-head"><div><span class="license-status ${status.toLowerCase()}">${escapeHtml(LICENSE_STATUS_LABELS[status] || status)}</span><h3>${escapeHtml(workspace.name)}</h3><p>${escapeHtml(workspace.owner?.name || "Administrador pendente")} &middot; ${escapeHtml(workspace.owner?.email || "")}</p></div><div class="commercial-seat"><strong>${workspace.members.used} / ${workspace.members.limit}</strong><span>acessos utilizados</span></div></div>
+      <div class="commercial-workspace-meta"><span><small>Código do espaço</small><b>${escapeHtml(workspace.slug)}</b></span><span><small>Vencimento</small><b>${commercialDate(workspace.license?.expiresAt)}</b></span><span><small>Último acesso</small><b>${commercialDate(workspace.owner?.lastLoginAt)}</b></span></div>
+      <div class="commercial-license-controls"><label>Plano<select data-commercial-plan>${planOptions(workspace.license?.plan.code)}</select></label><label>Dias<input data-commercial-days type="number" min="1" max="3650" value="30" /></label><div class="commercial-actions"><button class="button primary" data-license-action="ACTIVATE" type="button">Ativar</button><button class="button" data-license-action="START_TRIAL" type="button">Teste</button><button class="button" data-license-action="RENEW" type="button">Renovar</button><button class="button ghost" data-license-action="CHANGE_PLAN" type="button">Trocar plano</button><button class="button danger-soft" data-license-action="SUSPEND" type="button">Suspender</button></div></div>
+    </article>`;
+  }).join("");
+}
+
+async function loadCommercialWorkspaces({ keepFeedback = false } = {}) {
+  if (!els.commercialWorkspaceList || typeof window.MEG_CLOUD?.listCommercialWorkspaces !== "function") return;
+  els.commercialWorkspaceList.innerHTML = '<div class="empty">Carregando clientes...</div>';
+  if (!keepFeedback) setCommercialFeedback("");
+  try { renderCommercialWorkspaces(await window.MEG_CLOUD.listCommercialWorkspaces()); }
+  catch (cause) { els.commercialWorkspaceList.innerHTML = '<div class="empty">Não foi possível carregar os clientes.</div>'; setCommercialFeedback(cause instanceof Error ? cause.message : "Falha ao carregar clientes.", "error"); }
+}
+
+async function updateCommercialWorkspaceLicense(button) {
+  const card = button.closest("[data-commercial-workspace]");
+  const action = button.dataset.licenseAction;
+  const workspaceId = card.dataset.commercialWorkspace;
+  const planCode = card.querySelector("[data-commercial-plan]").value;
+  const durationDays = Number(card.querySelector("[data-commercial-days]").value || 30);
+  if (["SUSPEND", "CANCEL"].includes(action) && !window.confirm("Confirma a suspensão deste cliente? O acesso ficará somente para consulta e backup.")) return;
+  setCommercialFeedback("Atualizando licença...", "loading");
+  try {
+    await window.MEG_CLOUD.changeCommercialLicense(workspaceId, { action, planCode, durationDays });
+    await loadCommercialWorkspaces({ keepFeedback: true });
+    setCommercialFeedback("Licença atualizada com sucesso.", "success");
+    showToast("Gestão comercial", "Licença do cliente atualizada.", "success");
+  } catch (cause) { setCommercialFeedback(cause instanceof Error ? cause.message : "Falha ao atualizar a licença.", "error"); }
+}
 document.addEventListener("click", (event) => {
   const editButton = event.target.closest("[data-edit]");
   const viewLink = event.target.closest("[data-view-link]");
@@ -3810,6 +3892,7 @@ document.addEventListener("click", (event) => {
   const resetUserPasswordButton = event.target.closest("[data-reset-user-password]");
   const testUserEmailButton = event.target.closest("[data-test-user-email]");
   const deleteManagedUserButton = event.target.closest("[data-delete-managed-user]");
+  const commercialLicenseButton = event.target.closest("[data-license-action]");
   if (editButton) {
     const item = state.transactions.find((transaction) => transaction.id === editButton.dataset.edit);
     if (item) {
@@ -3837,6 +3920,7 @@ document.addEventListener("click", (event) => {
   if (resetUserPasswordButton) resetManagedUserPassword(resetUserPasswordButton.dataset.resetUserPassword);
   if (testUserEmailButton) testManagedUserEmail(testUserEmailButton.dataset.testUserEmail);
   if (deleteManagedUserButton) deleteManagedUser(deleteManagedUserButton.dataset.deleteManagedUser);
+  if (commercialLicenseButton) updateCommercialWorkspaceLicense(commercialLicenseButton);
 });
 
 document.addEventListener("change", (event) => {
@@ -3864,6 +3948,10 @@ const canManageUsers = window.MEG_CLOUD?.user?.role === "ADMIN" && typeof window
 els.adminUsersNav?.classList.toggle("hidden", !canManageUsers);
 els.adminUsersNav?.addEventListener("click", loadManagedUsers);
 els.reloadUsersBtn?.addEventListener("click", loadManagedUsers);
+const canManagePlatform = Boolean(window.MEG_CLOUD?.user?.platformAdmin);
+els.platformAdminNav?.classList.toggle("hidden", !canManagePlatform);
+els.platformAdminNav?.addEventListener("click", loadCommercialWorkspaces);
+els.reloadCommercialBtn?.addEventListener("click", loadCommercialWorkspaces);
 els.periodMode.value = selectedPeriod.mode;
 els.monthFilter.value = selectedPeriod.month;
 els.yearFilter.value = selectedPeriod.year;

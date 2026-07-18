@@ -2,6 +2,8 @@ import fastifyJwt from '@fastify/jwt';
 import type { UserRole } from '@meg/database';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { config } from '../config';
+import { resolveWorkspaceContext } from '../modules/workspaces/service';
+import { assertWorkspaceWriteAccess } from '../modules/platform-admin/service';
 
 export async function registerAuth(app: FastifyInstance) {
   await app.register(fastifyJwt, {
@@ -33,6 +35,17 @@ export async function registerAuth(app: FastifyInstance) {
           requiredRoles: roles,
           currentRole: request.user.role
         });
+      }
+
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+        try {
+          const context = await resolveWorkspaceContext(request.user.sub);
+          await assertWorkspaceWriteAccess(context.workspaceId);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'LICENSE_REQUIRED';
+          if (message.startsWith('LICENSE_')) return reply.status(402).send({ error: message, readOnly: true });
+          throw error;
+        }
       }
     };
   });

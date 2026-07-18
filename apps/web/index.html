@@ -66,6 +66,10 @@
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3ZM8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3Zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13Zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5Z"/></svg>
             Usuários e permissões
           </button>
+          <button class="nav-item hidden" id="platformAdminNav" data-view="platform-admin" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 3h16v18H4V3Zm3 4v2h4V7H7Zm0 4v2h10v-2H7Zm0 4v2h10v-2H7Zm7-8v2h3V7h-3Z"/></svg>
+            Gestão comercial
+          </button>
           <button class="nav-item" data-view="settings" type="button">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M19.4 13.5c.1-.5.1-1 .1-1.5s0-1-.1-1.5l2-1.5-2-3.5-2.4 1a8 8 0 0 0-2.6-1.5L14 2h-4l-.4 3a8 8 0 0 0-2.6 1.5l-2.4-1-2 3.5 2 1.5A9 9 0 0 0 4.5 12c0 .5 0 1 .1 1.5l-2 1.5 2 3.5 2.4-1a8 8 0 0 0 2.6 1.5l.4 3h4l.4-3a8 8 0 0 0 2.6-1.5l2.4 1 2-3.5-2-1.5ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
             Ajustes
@@ -789,6 +793,12 @@
             <button class="button ghost" id="reloadUsersBtn" type="button">Atualizar usuários</button>
           </div>
 
+          <section class="workspace-commercial-summary" id="workspaceCommercialSummary">
+            <div><small>ESPAÇO ATUAL</small><strong id="workspaceNameMetric">Meu MEG</strong><span>Código para convites: <b id="workspaceAccessCode">--</b></span></div>
+            <div><small>PLANO</small><strong id="workspacePlanMetric">--</strong><span id="workspaceLicenseMetric">Licença</span></div>
+            <div><small>USUÁRIOS</small><strong id="workspaceSeatsMetric">0 / 0</strong><span id="workspaceSeatsAvailable">0 vaga(s) disponível(is)</span></div>
+          </section>
+
           <section class="user-security-hero">
             <div><small class="decision-eyebrow">CENTRO DE SEGURANÇA</small><h3 id="userSecurityTitle">Controle de acesso centralizado</h3><p>Novos usuários entram como pendentes. Somente o administrador pode aprovar, definir permissões, bloquear ou redefinir senhas.</p></div>
             <div class="user-security-stats">
@@ -812,6 +822,20 @@
           <section class="user-management-list" id="adminUsersList"><div class="empty">Carregando usuários cadastrados...</div></section>
         </section>
 
+        <section class="view" id="platform-admin" aria-labelledby="platformAdminTitle">
+          <div class="section-heading commercial-heading">
+            <div><p class="eyebrow">Operação da plataforma</p><h2 id="platformAdminTitle">Gestão comercial</h2><p class="muted">Ative clientes, controle planos, vencimentos e limites sem acessar os dados financeiros de cada espaço.</p></div>
+            <button class="button ghost" id="reloadCommercialBtn" type="button">Atualizar clientes</button>
+          </div>
+          <section class="commercial-kpis">
+            <article><span>Clientes</span><strong id="commercialClientsMetric">0</strong></article>
+            <article><span>Ativos e em teste</span><strong id="commercialActiveMetric">0</strong></article>
+            <article><span>Aguardando ativação</span><strong id="commercialPendingMetric">0</strong></article>
+            <article><span>Suspensos ou vencidos</span><strong id="commercialAttentionMetric">0</strong></article>
+          </section>
+          <div class="admin-feedback" id="commercialFeedback" role="status"></div>
+          <section class="commercial-workspace-list" id="commercialWorkspaceList"><div class="empty">Carregando clientes...</div></section>
+        </section>
         <section class="view" id="settings" aria-labelledby="settingsTitle">
           <div class="section-heading">
             <h2 id="settingsTitle">Ajustes e dados</h2>
