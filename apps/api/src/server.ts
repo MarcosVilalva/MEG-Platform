@@ -68,7 +68,7 @@ app.get('/health', async () => ({
   version: '1.3.0-project-phoenix',
   environment: config.nodeEnv,
   timestamp: new Date().toISOString(),
-  features: ['legacy-ui', 'cloud-state', 'xlsx-import', 'email-reminders', 'whatsapp-reminders'],
+  features: ['legacy-ui', 'cloud-state', 'xlsx-import', 'email-reminders', 'whatsapp-reminders', 'multi-client-workspaces'],
   integrations: notificationIntegrationStatus(),
   commit: process.env.RENDER_GIT_COMMIT || 'local',
   dataRepair

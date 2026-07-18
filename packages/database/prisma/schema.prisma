@@ -53,20 +53,56 @@ model User {
   notificationDeliveries NotificationDelivery[]
   notificationRecipients NotificationRecipient[]
   notificationEmailRecipients NotificationEmailRecipient[]
+  ownedWorkspace  Workspace?        @relation("WorkspaceOwner")
+  workspaceMemberships WorkspaceMember[]
 
   @@index([status])
   @@index([role])
 }
 
 model AppState {
-  id         String   @id @default(cuid())
-  userId     String   @unique
-  state      Json
-  revision   Int      @default(1)
-  updatedAt  DateTime @updatedAt
-  createdAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  workspaceId String?  @unique
+  state       Json
+  revision    Int      @default(1)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  ownerId   String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner     User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  members   WorkspaceMember[]
+  appState  AppState?
+}
+
+model WorkspaceMember {
+  id          String     @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        UserRole   @default(VIEWER)
+  status      UserStatus @default(PENDING)
+  isActive    Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId, isActive])
+  @@index([workspaceId, status])
 }
 
 model NotificationDelivery {

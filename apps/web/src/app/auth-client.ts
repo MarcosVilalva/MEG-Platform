@@ -75,10 +75,10 @@ export async function login(email: string, password: string) {
   return session;
 }
 
-export async function register(name: string, email: string, phone: string, password: string, confirmPassword: string) {
+export async function register(name: string, email: string, phone: string, password: string, confirmPassword: string, accountType: 'REQUEST_ACCESS' | 'CREATE_WORKSPACE' = 'REQUEST_ACCESS', workspaceName?: string) {
   const result = await request<RegistrationResult>('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ name, email, phone, password, confirmPassword })
+    body: JSON.stringify({ name, email, phone, password, confirmPassword, accountType, workspaceName })
   });
   if ('accessToken' in result) saveSession(result);
   return result;

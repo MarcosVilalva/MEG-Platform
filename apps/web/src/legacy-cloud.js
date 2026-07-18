@@ -131,7 +131,7 @@ function authMarkup() {
       </section>
       <section class="auth-card">
         <div class="auth-brand"><span>M</span><div><strong>MEG Finanças</strong><small>Seu dinheiro. Suas escolhas. Seu controle.</small></div></div>
-        <div class="auth-tabs"><button class="active" data-auth-tab="login">Entrar</button><button data-auth-tab="register">Solicitar acesso</button></div>
+        <div class="auth-tabs"><button class="active" data-auth-tab="login">Entrar</button><button data-auth-tab="register">Começar</button></div>
         <form id="loginForm" class="auth-form">
           <div class="auth-form-heading"><small>ÁREA SEGURA</small><h1>Bem-vindo de volta</h1><p>Entre para visualizar seu painel financeiro.</p></div>
           <label>E-mail<input name="email" type="email" autocomplete="email" required /></label>
@@ -141,7 +141,9 @@ function authMarkup() {
           <button class="auth-link" id="forgotPasswordButton" type="button">Esqueci minha senha</button>
         </form>
         <form id="registerForm" class="auth-form hidden">
-          <h1>Solicitar acesso</h1>
+          <h1>Comece no MEG</h1>
+          <label>Tipo de cadastro<select name="accountType" id="accountType"><option value="CREATE_WORKSPACE">Criar meu espaço financeiro</option><option value="REQUEST_ACCESS">Entrar na equipe de Marcos</option></select></label>
+          <label id="workspaceNameField">Nome do seu espaço<input name="workspaceName" minlength="2" maxlength="120" value="Meu MEG" required /><small>Você será o administrador e começará com uma base vazia.</small></label>
           <label>Nome<input name="name" autocomplete="name" required /></label>
           <label>E-mail<input name="email" type="email" autocomplete="email" required /></label>
           <label>WhatsApp<input name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="5518999999999" minlength="10" maxlength="18" required /><small>Informe DDD e número. Usaremos para avisos de aprovação e recuperação.</small></label>
@@ -198,6 +200,15 @@ function showAuthentication() {
   }));
   document.querySelector('#forgotPasswordButton').addEventListener('click', () => selectMode('forgot'));
   document.querySelector('#backToLoginButton').addEventListener('click', () => selectMode('login'));
+  const accountType = document.querySelector('#accountType');
+  const workspaceNameField = document.querySelector('#workspaceNameField');
+  const syncRegistrationType = () => {
+    const createsWorkspace = accountType.value === 'CREATE_WORKSPACE';
+    workspaceNameField.classList.toggle('hidden', !createsWorkspace);
+    workspaceNameField.querySelector('input').required = createsWorkspace;
+  };
+  accountType.addEventListener('change', syncRegistrationType);
+  syncRegistrationType();
 
   return new Promise((resolve) => {
     login.addEventListener('submit', async (event) => {

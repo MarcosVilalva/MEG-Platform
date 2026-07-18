@@ -24,7 +24,9 @@ const credentialsSchema = z.object({
 const registerSchema = credentialsSchema.extend({
   name: z.string().min(2).max(120),
   phone: z.string().transform((value) => value.replace(/\D/g, '')).refine((value) => value.length >= 10 && value.length <= 15, 'INVALID_PHONE'),
-  confirmPassword: z.string().min(8).max(128)
+  confirmPassword: z.string().min(8).max(128),
+  accountType: z.enum(['REQUEST_ACCESS', 'CREATE_WORKSPACE']).default('REQUEST_ACCESS'),
+  workspaceName: z.string().min(2).max(120).optional()
 }).refine((value) => value.password === value.confirmPassword, {
   message: 'PASSWORDS_DO_NOT_MATCH',
   path: ['confirmPassword']
@@ -135,7 +137,7 @@ export async function authRoutes(app: FastifyInstance) {
     return { user };
   });
 
-  app.get('/users', { preHandler: app.authorize(['ADMIN']) }, async () => ({ users: await listUsers() }));
+  app.get('/users', { preHandler: app.authorize(['ADMIN']) }, async (request) => ({ users: await listUsers(request.user.sub) }));
 
   app.patch('/users/:id/access', { preHandler: app.authorize(['ADMIN']) }, async (request, reply) => {
     const parsed = accessSchema.safeParse(request.body);
@@ -145,7 +147,7 @@ export async function authRoutes(app: FastifyInstance) {
       return await updateUserAccess({ actorId: request.user.sub, userId: id, ...parsed.data });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
-      if (message === 'USER_NOT_FOUND') return reply.status(404).send({ error: message });
+      if (message === 'USER_NOT_FOUND' || message === 'USER_NOT_IN_WORKSPACE') return reply.status(404).send({ error: message });
       if (message === 'PRIMARY_ADMIN_CANNOT_BE_BLOCKED') return reply.status(409).send({ error: message });
       throw error;
     }
@@ -157,7 +159,7 @@ export async function authRoutes(app: FastifyInstance) {
       return await resetUserPassword({ actorId: request.user.sub, userId: id });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
-      if (message === 'USER_NOT_FOUND') return reply.status(404).send({ error: message });
+      if (message === 'USER_NOT_FOUND' || message === 'USER_NOT_IN_WORKSPACE') return reply.status(404).send({ error: message });
       if (message === 'USER_NOT_ACTIVE') return reply.status(409).send({ error: message });
       if (message === 'EMAIL_DELIVERY_FAILED' || message === 'NOTIFICATION_DELIVERY_FAILED') return reply.status(502).send({ error: message });
       throw error;
@@ -172,7 +174,7 @@ export async function authRoutes(app: FastifyInstance) {
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
-      if (message === 'USER_NOT_FOUND') return reply.status(404).send({ error: message });
+      if (message === 'USER_NOT_FOUND' || message === 'USER_NOT_IN_WORKSPACE') return reply.status(404).send({ error: message });
       throw error;
     }
   });
@@ -183,7 +185,7 @@ export async function authRoutes(app: FastifyInstance) {
       return await deleteUserAccess({ actorId: request.user.sub, userId: id });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
-      if (message === 'USER_NOT_FOUND') return reply.status(404).send({ error: message });
+      if (message === 'USER_NOT_FOUND' || message === 'USER_NOT_IN_WORKSPACE') return reply.status(404).send({ error: message });
       if (message === 'PRIMARY_ADMIN_CANNOT_BE_DELETED' || message === 'CANNOT_DELETE_OWN_ACCESS') return reply.status(409).send({ error: message });
       throw error;
     }

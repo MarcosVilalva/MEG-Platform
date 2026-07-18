@@ -1,71 +1,49 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { Prisma, prisma } from '@meg/database';
-import { resolveSharedStateOwnerId } from './shared-owner';
+import { resolveWorkspaceContext } from '../workspaces/service';
 
 const transactionSchema = z.object({
-  id: z.string().min(1),
-  date: z.string().min(10),
-  description: z.string().min(1),
-  type: z.enum(['income', 'expense']),
-  // Estornos e reembolsos permanecem como despesas negativas, exatamente
-  // como na planilha original. O sinal participa dos totais do MEG.
-  amount: z.coerce.number().finite()
+  id: z.string().min(1), date: z.string().min(10), description: z.string().min(1),
+  type: z.enum(['income', 'expense']), amount: z.coerce.number().finite()
 }).passthrough();
-
 const stateSchema = z.object({
   transactions: z.array(transactionSchema).max(20000),
   budgets: z.record(z.string(), z.coerce.number().nonnegative()).default({})
 }).passthrough();
-
-const putSchema = z.object({
-  state: stateSchema,
-  expectedRevision: z.number().int().nonnegative().optional()
-});
+const putSchema = z.object({ state: stateSchema, expectedRevision: z.number().int().nonnegative().optional() });
 
 export async function appStateRoutes(app: FastifyInstance) {
   app.get('/revision', { preHandler: app.authenticate }, async (request) => {
-    const ownerId = await resolveSharedStateOwnerId(request.user.sub);
-    const saved = await prisma.appState.findUnique({
-      where: { userId: ownerId },
-      select: { revision: true, updatedAt: true }
-    });
+    const context = await resolveWorkspaceContext(request.user.sub);
+    const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { revision: true, updatedAt: true } });
     return saved
-      ? { revision: saved.revision, updatedAt: saved.updatedAt, shared: true }
-      : { revision: 0, updatedAt: null, shared: true };
+      ? { revision: saved.revision, updatedAt: saved.updatedAt, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } }
+      : { revision: 0, updatedAt: null, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
   });
 
   app.get('/', { preHandler: app.authenticate }, async (request) => {
-    const ownerId = await resolveSharedStateOwnerId(request.user.sub);
-    const saved = await prisma.appState.findUnique({ where: { userId: ownerId } });
+    const context = await resolveWorkspaceContext(request.user.sub);
+    const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId } });
     return saved
-      ? { state: saved.state, revision: saved.revision, updatedAt: saved.updatedAt, shared: true }
-      : { state: null, revision: 0, updatedAt: null, shared: true };
+      ? { state: saved.state, revision: saved.revision, updatedAt: saved.updatedAt, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } }
+      : { state: null, revision: 0, updatedAt: null, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
   });
 
   app.put('/', { preHandler: app.authorize(['ADMIN', 'MANAGER', 'OPERATOR']) }, async (request, reply) => {
     const parsed = putSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.status(400).send({ error: 'INVALID_APP_STATE', details: parsed.error.flatten() });
-    }
+    if (!parsed.success) return reply.status(400).send({ error: 'INVALID_APP_STATE', details: parsed.error.flatten() });
 
-    const ownerId = await resolveSharedStateOwnerId(request.user.sub);
-    const current = await prisma.appState.findUnique({ where: { userId: ownerId } });
+    const context = await resolveWorkspaceContext(request.user.sub);
+    const current = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId } });
     if (current && parsed.data.expectedRevision !== undefined && current.revision !== parsed.data.expectedRevision) {
-      return reply.status(409).send({
-        error: 'STATE_CONFLICT',
-        revision: current.revision,
-        updatedAt: current.updatedAt
-      });
+      return reply.status(409).send({ error: 'STATE_CONFLICT', revision: current.revision, updatedAt: current.updatedAt });
     }
 
     const jsonState = JSON.parse(JSON.stringify(parsed.data.state)) as Prisma.InputJsonValue;
-    const saved = await prisma.appState.upsert({
-      where: { userId: ownerId },
-      create: { userId: ownerId, state: jsonState, revision: 1 },
-      update: { state: jsonState, revision: { increment: 1 } }
-    });
-
-    return { revision: saved.revision, updatedAt: saved.updatedAt, shared: true };
+    const saved = current
+      ? await prisma.appState.update({ where: { id: current.id }, data: { state: jsonState, revision: { increment: 1 } } })
+      : await prisma.appState.create({ data: { userId: context.workspace.ownerId, workspaceId: context.workspaceId, state: jsonState, revision: 1 } });
+    return { revision: saved.revision, updatedAt: saved.updatedAt, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
   });
 }

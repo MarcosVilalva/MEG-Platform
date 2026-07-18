@@ -4,6 +4,7 @@ import { prisma, UserRole, UserStatus } from '@meg/database';
 import { sendSystemEmail, sendSystemWhatsApp } from '../notifications/service';
 import { config } from '../../config';
 import { createTemporaryPassword, normalizeAccountEmail, passwordResetMessages } from './password-reset';
+import { addUserToPrimaryWorkspace, assertSameWorkspace, createWorkspaceForOwner, currentWorkspaceForUser, ensurePrimaryWorkspace, resolveWorkspaceContext } from '../workspaces/service';
 
 const SESSION_TTL_DAYS = 30;
 const ADMIN_EMAIL = normalizeAccountEmail(config.adminEmail);
@@ -47,55 +48,47 @@ export async function registerUser(input: {
   email: string;
   phone?: string;
   password: string;
+  accountType?: 'REQUEST_ACCESS' | 'CREATE_WORKSPACE';
+  workspaceName?: string;
 }) {
   const email = normalizeAccountEmail(input.email);
   const existing = await prisma.user.findUnique({ where: { email } });
-
   if (existing?.status === UserStatus.PENDING) throw new Error('ACCESS_PENDING');
   if (existing) throw new Error('EMAIL_ALREADY_REGISTERED');
 
+  const createsWorkspace = input.accountType === 'CREATE_WORKSPACE';
   const hasAdmin = await prisma.user.count({ where: { role: UserRole.ADMIN } });
   const isInitialAdmin = hasAdmin === 0 && email === ADMIN_EMAIL;
+  const isOwner = createsWorkspace || isInitialAdmin;
   const passwordHash = await bcrypt.hash(input.password, 12);
-
   const user = await prisma.user.create({
     data: {
-      name: input.name.trim(),
-      email,
-      phone: normalizePhone(input.phone),
-      passwordHash,
-      role: isInitialAdmin ? UserRole.ADMIN : UserRole.VIEWER,
-      status: isInitialAdmin ? UserStatus.ACTIVE : UserStatus.PENDING,
-      isActive: isInitialAdmin,
-      approvedAt: isInitialAdmin ? new Date() : null
+      name: input.name.trim(), email, phone: normalizePhone(input.phone), passwordHash,
+      role: isOwner ? UserRole.ADMIN : UserRole.VIEWER,
+      status: isOwner ? UserStatus.ACTIVE : UserStatus.PENDING,
+      isActive: isOwner, approvedAt: isOwner ? new Date() : null
     }
   });
-
+  try {
+    if (createsWorkspace) await createWorkspaceForOwner(user.id, input.workspaceName?.trim() || `Finanças de ${user.name}`);
+    else if (isInitialAdmin) await ensurePrimaryWorkspace();
+    else await addUserToPrimaryWorkspace(user.id, UserRole.VIEWER, UserStatus.PENDING, false);
+  } catch (error) {
+    await prisma.user.delete({ where: { id: user.id } }).catch(() => undefined);
+    throw error;
+  }
   await prisma.auditLog.create({
     data: {
-      userId: user.id,
-      entity: 'User',
-      entityId: user.id,
-      action: isInitialAdmin ? 'INITIAL_ADMIN_REGISTERED' : 'ACCESS_REQUESTED',
-      metadata: JSON.stringify({ administratorEmail: ADMIN_EMAIL })
+      userId: user.id, entity: 'User', entityId: user.id,
+      action: createsWorkspace ? 'WORKSPACE_OWNER_REGISTERED' : isInitialAdmin ? 'INITIAL_ADMIN_REGISTERED' : 'ACCESS_REQUESTED',
+      metadata: JSON.stringify({ administratorEmail: ADMIN_EMAIL, workspaceName: input.workspaceName ?? null })
     }
   });
-
-  if (!isInitialAdmin) {
-    await sendSystemEmail(
-      ADMIN_EMAIL,
-      `MEG Finanças: nova solicitação de ${user.name}`,
-      `Olá, Marcos.\n\n${user.name} (${user.email}) solicitou acesso ao MEG Finanças.\n\nAcesse Ajustes > Usuários e permissões para aprovar, rejeitar e definir o perfil.\n\nMEG Finanças — Segurança e controle.`
-    ).catch(() => undefined);
+  if (!isOwner) {
+    await sendSystemEmail(ADMIN_EMAIL, `MEG Finanças: nova solicitação de ${user.name}`, `Olá, Marcos.\n\n${user.name} (${user.email}) solicitou acesso ao MEG Finanças.\n\nAcesse Usuários e permissões para analisar a solicitação.`).catch(() => undefined);
   }
-
-  return {
-    user: publicUser(user),
-    requiresApproval: !isInitialAdmin,
-    administratorEmail: ADMIN_EMAIL
-  };
+  return { user: publicUser(user), requiresApproval: !isOwner, administratorEmail: ADMIN_EMAIL };
 }
-
 export async function authenticateUser(emailInput: string, password: string) {
   const email = normalizeAccountEmail(emailInput);
   const user = await prisma.user.findUnique({ where: { email } });
@@ -112,8 +105,10 @@ export async function authenticateUser(emailInput: string, password: string) {
   return { user: publicUser(user) };
 }
 
-export async function listUsers() {
+export async function listUsers(actorId: string) {
+  const context = await resolveWorkspaceContext(actorId);
   return prisma.user.findMany({
+    where: { workspaceMemberships: { some: { workspaceId: context.workspaceId } } },
     orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
     select: {
       id: true,
@@ -141,7 +136,8 @@ export async function updateUserAccess(input: {
 }) {
   const target = await prisma.user.findUnique({ where: { id: input.userId } });
   if (!target) throw new Error('USER_NOT_FOUND');
-  if (target.email === ADMIN_EMAIL && input.action === 'BLOCK') throw new Error('PRIMARY_ADMIN_CANNOT_BE_BLOCKED');
+  const scope = await assertSameWorkspace(input.actorId, input.userId);
+  if (scope.actor.workspace.ownerId === target.id && input.action === 'BLOCK') throw new Error('PRIMARY_ADMIN_CANNOT_BE_BLOCKED');
 
   const data = input.action === 'APPROVE'
     ? { status: UserStatus.ACTIVE, isActive: true, role: input.role ?? UserRole.VIEWER, phone: normalizePhone(input.phone) ?? target.phone, approvedAt: new Date(), approvedById: input.actorId, rejectedAt: null, rejectionNote: null }
@@ -154,6 +150,10 @@ export async function updateUserAccess(input: {
           : { role: input.role ?? target.role, phone: normalizePhone(input.phone) ?? target.phone };
 
   const updated = await prisma.user.update({ where: { id: input.userId }, data });
+  await prisma.workspaceMember.update({
+    where: { workspaceId_userId: { workspaceId: scope.actor.workspaceId, userId: updated.id } },
+    data: { role: updated.role, status: updated.status, isActive: updated.isActive }
+  });
   if (!updated.isActive) {
     await prisma.authSession.updateMany({ where: { userId: updated.id, revokedAt: null }, data: { revokedAt: new Date() } });
   }
@@ -252,6 +252,7 @@ export async function requestPasswordReset(emailInput: string) {
 export async function resetUserPassword(input: { actorId: string; userId: string }) {
   const target = await prisma.user.findUnique({ where: { id: input.userId } });
   if (!target) throw new Error('USER_NOT_FOUND');
+  await assertSameWorkspace(input.actorId, input.userId);
   if (!target.isActive || target.status !== UserStatus.ACTIVE) throw new Error('USER_NOT_ACTIVE');
 
   const temporaryPassword = createTemporaryPassword();
@@ -285,6 +286,7 @@ export async function resetUserPassword(input: { actorId: string; userId: string
 export async function testUserEmail(input: { actorId: string; userId: string }) {
   const target = await prisma.user.findUnique({ where: { id: input.userId } });
   if (!target) throw new Error('USER_NOT_FOUND');
+  await assertSameWorkspace(input.actorId, input.userId);
 
   const deliveredTo = normalizeAccountEmail(target.email);
   const email = await sendSystemEmail(
@@ -309,7 +311,8 @@ export async function testUserEmail(input: { actorId: string; userId: string }) 
 export async function deleteUserAccess(input: { actorId: string; userId: string }) {
   const target = await prisma.user.findUnique({ where: { id: input.userId } });
   if (!target) throw new Error('USER_NOT_FOUND');
-  if (target.email.toLowerCase() === ADMIN_EMAIL) throw new Error('PRIMARY_ADMIN_CANNOT_BE_DELETED');
+  const scope = await assertSameWorkspace(input.actorId, input.userId);
+  if (scope.actor.workspace.ownerId === target.id) throw new Error('PRIMARY_ADMIN_CANNOT_BE_DELETED');
   if (target.id === input.actorId) throw new Error('CANNOT_DELETE_OWN_ACCESS');
 
   await prisma.$transaction([
@@ -350,8 +353,11 @@ export async function revokeRefreshSession(rawToken: string) {
 }
 
 export async function getUserById(userId: string) {
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, name: true, email: true, role: true, status: true, isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true }
   });
+  if (!user) return null;
+  const workspace = await currentWorkspaceForUser(userId);
+  return { ...user, workspace };
 }
