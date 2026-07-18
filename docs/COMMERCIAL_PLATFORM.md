@@ -1,4 +1,4 @@
-﻿# Plataforma comercial do MEG
+# Plataforma comercial do MEG
 
 ## Visão atual
 
@@ -57,19 +57,13 @@ Estados suportados: pendente, teste, ativa, pagamento pendente, suspensa, vencid
 
 A base pessoal de Marcos não recebe cobrança automática: assinaturas antigas começam com `billingEnabled=false`.
 
-## WhatsApp de cada cliente
+## WhatsApp gerenciado pelo MEG
 
-Em **Ajustes e dados > Integrações do cliente**, o administrador do espaço pode cadastrar:
+O envio é centralizado no número oficial do MEG. O cliente não precisa contratar Evolution API, criar instância nem informar chave técnica.
 
-- URL da Evolution API;
-- nome da instância;
-- chave da API;
-- destinatários que receberão os alertas.
+Em **Ajustes e dados > Alertas de vencimento**, o administrador do espaço apenas cadastra e seleciona os números que receberão os avisos. Os destinatários continuam isolados por cliente e o conteúdo financeiro nunca é compartilhado entre espaços.
 
-A chave é criptografada no banco com AES-256-GCM e nunca é devolvida ao navegador. Os alertas financeiros daquele espaço usam o WhatsApp próprio. Se ele não for configurado, o MEG pode usar o remetente central como fallback.
-
-A variável `INTEGRATION_ENCRYPTION_KEY` deve conter uma chave forte, estável e com pelo menos 32 caracteres. Alterá-la depois de cadastrar clientes invalida a leitura das chaves já criptografadas.
-
+As credenciais centrais permanecem exclusivamente no ambiente seguro da API (`EVOLUTION_API_URL`, `EVOLUTION_API_KEY` e `EVOLUTION_INSTANCE`). A tela do cliente não exibe nem aceita essas credenciais. O botão de teste envia pelo canal oficial do MEG ao telefone do administrador do espaço.
 ## E-mail por cliente
 
 O provedor de entrega continua centralizado no MEG (Resend ou Brevo). Cada cliente pode ativar ou desativar o canal, cadastrar destinatários, definir o nome visível do remetente e o endereço de resposta. Isso evita obrigar cada cliente a contratar um provedor de e-mail e mantém a reputação do domínio sob controle.
@@ -79,4 +73,4 @@ O provedor de entrega continua centralizado no MEG (Resend ou Brevo). Cada clien
 - gateway de pagamento para baixa automática por Pix/cartão;
 - página pública de contratação e cupons;
 - métricas comerciais de uso sem exposição de dados financeiros;
-- WhatsApp gerenciado pelo MEG como adicional pago para clientes sem Evolution própria.
+- observabilidade de entregas e franquias de mensagens por plano;

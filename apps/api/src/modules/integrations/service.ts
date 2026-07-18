@@ -33,7 +33,8 @@ export async function workspaceIntegrationForUser(userId: string) {
     emailEnabled: stored?.emailEnabled ?? true,
     replyToEmail: stored?.replyToEmail ?? '',
     senderName: stored?.senderName ?? 'MEG Finanças',
-    usesMegFallback: !stored?.whatsappEnabled
+    usesMegFallback: true,
+    managedWhatsapp: true
   };
 }
 

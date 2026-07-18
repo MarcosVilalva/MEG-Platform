@@ -101,4 +101,4 @@ npm run check
 **Alpha 0.5**: núcleo financeiro pessoal integrado, com movimentações, contas a pagar e receber, cartões, fluxo de caixa, dashboard, segurança, auditoria e documentação coerente.
 ## Cobrança e integrações por cliente
 
-A plataforma possui mensalidades, carência e suspensão automática, escolha de plano no onboarding e Evolution API configurável por workspace. Um único deploy atualiza o produto para todos sem misturar bases. Consulte `COMMERCIAL_PLATFORM.md`.
+A plataforma possui mensalidades, carência e suspensão automática, escolha de plano no onboarding e WhatsApp gerenciado centralmente pelo MEG, com destinatários isolados por workspace. Um único deploy atualiza o produto para todos sem misturar bases. Consulte `COMMERCIAL_PLATFORM.md`.

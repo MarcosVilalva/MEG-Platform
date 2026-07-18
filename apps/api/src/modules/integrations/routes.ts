@@ -1,7 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@meg/database';
-import { saveWorkspaceIntegration, sendWorkspaceWhatsApp, workspaceIntegrationForUser } from './service';
+import { saveWorkspaceIntegration, workspaceIntegrationForUser } from './service';
+import { sendSystemWhatsApp } from '../notifications/service';
 import { resolveWorkspaceContext } from '../workspaces/service';
 
 const integrationSchema = z.object({
@@ -31,8 +32,8 @@ export async function integrationRoutes(app: FastifyInstance) {
     const context = await resolveWorkspaceContext(request.user.sub);
     const owner = await prisma.user.findUnique({ where: { id: context.workspace.ownerId }, select: { phone: true, name: true } });
     if (!owner?.phone) return reply.status(400).send({ error: 'OWNER_PHONE_REQUIRED' });
-    const result = await sendWorkspaceWhatsApp(request.user.sub, owner.phone, `✅ *MEG Finanças — Integração validada*\n\nOlá, ${owner.name}. O WhatsApp do seu espaço está conectado e pronto para enviar alertas.`);
-    if (!result) return reply.status(400).send({ error: 'WORKSPACE_WHATSAPP_NOT_CONFIGURED' });
+    const result = await sendSystemWhatsApp(owner.phone, `✅ *MEG Finanças — Canal oficial validado*\n\nOlá, ${owner.name}. O WhatsApp gerenciado pelo MEG está ativo e pronto para enviar os alertas do seu espaço.`);
+    if (result.status === 'skipped') return reply.status(503).send({ error: 'MANAGED_WHATSAPP_UNAVAILABLE' });
     return result;
   });
 }
