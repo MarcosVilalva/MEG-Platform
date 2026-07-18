@@ -1,7 +1,6 @@
 import { prisma } from '@meg/database';
 import { config } from '../../config';
 import { resolveWorkspaceContext } from '../workspaces/service';
-import { sendWorkspaceWhatsApp } from '../integrations/service';
 
 export type NotificationMode = 'upcoming' | 'due-now' | 'open-summary';
 
@@ -260,7 +259,7 @@ export async function deliverNotifications(userId: string, options: DeliveryOpti
   const emailTargets = notificationConfig?.emailEnabled === false ? [] : emails.length ? emails : owner?.email ? [{ id: 'workspace-owner', name: owner.name, email: owner.email }] : [];
   const channels = [
     ...emailTargets.map((recipient) => ({ channel: `email:${recipient.id}`, label: `${recipient.name} (${recipient.email})`, send: () => sendEmail(recipient.email, subject, digest.text, notificationConfig ?? undefined) })),
-    ...whatsappTargets.map((recipient) => ({ channel: `whatsapp:${recipient.id}`, label: `${recipient.name} (${recipient.phone})`, send: async () => (await sendWorkspaceWhatsApp(userId, recipient.phone, digest.text)) ?? sendWhatsApp(recipient.phone, digest.text) }))
+    ...whatsappTargets.map((recipient) => ({ channel: `whatsapp:${recipient.id}`, label: `${recipient.name} (${recipient.phone})`, send: () => sendWhatsApp(recipient.phone, digest.text) }))
   ];
   const deliveries = [];
   const reference = `${local.iso}:${slot}:${mode}`;

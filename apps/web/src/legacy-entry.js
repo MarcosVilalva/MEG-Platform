@@ -171,10 +171,6 @@ function wireLegacyApp() {
   const addEmailRecipientButton = document.querySelector('#addEmailRecipientBtn');
   const emailRecipientList = document.querySelector('#notificationEmailRecipientList');
   const integrationForm = document.querySelector('#workspaceIntegrationForm');
-  const workspaceWhatsappEnabled = document.querySelector('#workspaceWhatsappEnabled');
-  const workspaceEvolutionUrl = document.querySelector('#workspaceEvolutionUrl');
-  const workspaceEvolutionInstance = document.querySelector('#workspaceEvolutionInstance');
-  const workspaceEvolutionKey = document.querySelector('#workspaceEvolutionKey');
   const workspaceEmailEnabled = document.querySelector('#workspaceEmailEnabled');
   const workspaceSenderName = document.querySelector('#workspaceSenderName');
   const workspaceReplyToEmail = document.querySelector('#workspaceReplyToEmail');
@@ -302,25 +298,20 @@ function wireLegacyApp() {
     if (!integrationForm || typeof window.MEG_CLOUD.getWorkspaceIntegrations !== 'function') return;
     try {
       const config = await window.MEG_CLOUD.getWorkspaceIntegrations();
-      workspaceWhatsappEnabled.checked = Boolean(config.whatsappEnabled);
-      workspaceEvolutionUrl.value = config.evolutionApiUrl || '';
-      workspaceEvolutionInstance.value = config.evolutionInstance || '';
-      workspaceEvolutionKey.value = '';
-      workspaceEvolutionKey.placeholder = config.evolutionApiKeyConfigured ? 'Chave protegida — deixe vazio para manter' : 'Informe a chave da Evolution API';
       workspaceEmailEnabled.checked = config.emailEnabled !== false;
       workspaceSenderName.value = config.senderName || 'MEG Finanças';
       workspaceReplyToEmail.value = config.replyToEmail || '';
-      workspaceIntegrationStatus.textContent = config.whatsappEnabled ? 'WhatsApp próprio configurado para este cliente.' : 'Usando o remetente central do MEG como fallback.';
+      workspaceIntegrationStatus.textContent = 'WhatsApp gerenciado ativo. Cadastre acima os números e e-mails que receberão os alertas.';
     } catch { integrationForm.closest('.panel')?.classList.add('hidden'); }
   }
   integrationForm?.addEventListener('submit', async (event) => {
     event.preventDefault(); workspaceIntegrationStatus.textContent = 'Salvando integrações...';
-    try { await window.MEG_CLOUD.saveWorkspaceIntegrations({ whatsappEnabled: workspaceWhatsappEnabled.checked, evolutionApiUrl: workspaceEvolutionUrl.value.trim(), evolutionInstance: workspaceEvolutionInstance.value.trim(), evolutionApiKey: workspaceEvolutionKey.value.trim(), emailEnabled: workspaceEmailEnabled.checked, senderName: workspaceSenderName.value.trim(), replyToEmail: workspaceReplyToEmail.value.trim() }); workspaceIntegrationStatus.textContent = 'Integrações salvas e protegidas com sucesso.'; showSuccess('Integrações atualizadas', 'As próximas notificações usarão a configuração deste cliente.'); await loadWorkspaceIntegrations(); }
+    try { await window.MEG_CLOUD.saveWorkspaceIntegrations({ whatsappEnabled: false, emailEnabled: workspaceEmailEnabled.checked, senderName: workspaceSenderName.value.trim(), replyToEmail: workspaceReplyToEmail.value.trim() }); workspaceIntegrationStatus.textContent = 'Preferências salvas. O WhatsApp gerenciado permanece ativo.'; showSuccess('Canais atualizados', 'Os alertas usarão o remetente oficial do MEG.'); await loadWorkspaceIntegrations(); }
     catch (cause) { workspaceIntegrationStatus.textContent = cause instanceof Error ? cause.message : 'Falha ao salvar integrações.'; }
   });
   testWorkspaceWhatsappBtn?.addEventListener('click', async () => {
     workspaceIntegrationStatus.textContent = 'Enviando mensagem de teste...';
-    try { await window.MEG_CLOUD.testWorkspaceWhatsapp(); workspaceIntegrationStatus.textContent = 'Teste enviado com sucesso ao administrador do espaço.'; }
+    try { await window.MEG_CLOUD.testWorkspaceWhatsapp(); workspaceIntegrationStatus.textContent = 'Teste enviado pelo WhatsApp oficial do MEG ao administrador do espaço.'; }
     catch (cause) { workspaceIntegrationStatus.textContent = cause instanceof Error ? cause.message : 'Falha no teste.'; }
   });
   loadWorkspaceIntegrations();
