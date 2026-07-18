@@ -21,6 +21,16 @@ enum UserStatus {
   BLOCKED
 }
 
+enum LicenseStatus {
+  PENDING
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  EXPIRED
+  CANCELLED
+}
+
 model User {
   id             String     @id @default(cuid())
   name           String
@@ -55,6 +65,7 @@ model User {
   notificationEmailRecipients NotificationEmailRecipient[]
   ownedWorkspace  Workspace?        @relation("WorkspaceOwner")
   workspaceMemberships WorkspaceMember[]
+  platformAdministrator PlatformAdministrator?
 
   @@index([status])
   @@index([role])
@@ -85,6 +96,7 @@ model Workspace {
   owner     User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   members   WorkspaceMember[]
   appState  AppState?
+  subscription WorkspaceSubscription?
 }
 
 model WorkspaceMember {
@@ -105,6 +117,50 @@ model WorkspaceMember {
   @@index([workspaceId, status])
 }
 
+model PlatformAdministrator {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Plan {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  maxMembers  Int      @default(1)
+  trialDays   Int      @default(14)
+  features    Json
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscriptions WorkspaceSubscription[]
+}
+
+model WorkspaceSubscription {
+  id          String        @id @default(cuid())
+  workspaceId String        @unique
+  planId      String
+  status      LicenseStatus @default(PENDING)
+  startsAt    DateTime?
+  expiresAt   DateTime?
+  graceUntil  DateTime?
+  suspendedAt DateTime?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  plan        Plan      @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([status, expiresAt])
+  @@index([planId])
+}
 model NotificationDelivery {
   id          String   @id @default(cuid())
   userId      String

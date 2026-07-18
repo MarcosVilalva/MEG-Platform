@@ -2,7 +2,7 @@
 
 ## Identidade do produto
 
-O MEG Platform é um sistema de **finanças pessoais**. Não é um sistema de gestão pública, contabilidade governamental ou tesouraria municipal.
+O MEG Platform é um sistema de **finanças pessoais**, preparado para atender clientes comerciais em espaços isolados. Não é um sistema de gestão pública, contabilidade governamental ou tesouraria municipal.
 
 ## Objetivo
 
@@ -24,8 +24,8 @@ Ajudar pessoas a registrar, compreender, planejar e melhorar sua vida financeira
 - Frontend: React, TypeScript e Vite.
 - API: Fastify e TypeScript.
 - Persistência: Prisma.
-- Banco de desenvolvimento: SQLite.
-- Banco de produção planejado: PostgreSQL.
+- Banco principal: PostgreSQL por meio do Prisma.
+- Produção: PostgreSQL gerenciado no Supabase.
 - Autenticação: JWT, refresh token e sessões persistidas.
 - Monorepo com `apps/*` e `packages/*`.
 
@@ -51,6 +51,16 @@ Já existem ou estão em evolução:
 - dashboard e módulos analíticos iniciais.
 
 O estado exato deve ser confirmado no código e nas Pull Requests integradas à `main`.
+
+## Plataforma comercial
+
+- cada cliente possui um `Workspace` isolado;
+- Marcos permanece cliente no espaço `marcos-financas` e sua base não é recriada;
+- planos e licenças limitam usuários e controlam escrita sem impedir consulta e backup;
+- o administrador da plataforma gerencia clientes sem abrir os dados financeiros deles;
+- o administrador de cada espaço gerencia somente sua própria equipe.
+
+Consulte `COMMERCIAL_PLATFORM.md` e `MULTI_TENANCY.md`.
 
 ## Administrador principal
 

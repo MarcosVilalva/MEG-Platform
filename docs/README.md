@@ -13,6 +13,11 @@ Esta pasta é a fonte oficial de contexto do projeto.
 7. `PRODUCT_DECISIONS.md`
 8. `CODING_STANDARDS.md`
 
+## Plataforma comercial
+
+- `COMMERCIAL_PLATFORM.md`: clientes, planos, licenças e gestão da plataforma.
+- `MULTI_TENANCY.md`: isolamento dos espaços e preservação da base pessoal.
+
 ## Regra de manutenção
 
 Toda entrega funcional deve atualizar, quando aplicável:

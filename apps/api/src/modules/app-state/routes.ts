@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { Prisma, prisma } from '@meg/database';
 import { resolveWorkspaceContext } from '../workspaces/service';
+import { assertWorkspaceWriteAccess } from '../platform-admin/service';
 
 const transactionSchema = z.object({
   id: z.string().min(1), date: z.string().min(10), description: z.string().min(1),
@@ -35,6 +36,11 @@ export async function appStateRoutes(app: FastifyInstance) {
     if (!parsed.success) return reply.status(400).send({ error: 'INVALID_APP_STATE', details: parsed.error.flatten() });
 
     const context = await resolveWorkspaceContext(request.user.sub);
+    try { await assertWorkspaceWriteAccess(context.workspaceId); }
+    catch (error) {
+      const code = error instanceof Error ? error.message : 'LICENSE_REQUIRED';
+      return reply.status(402).send({ error: code, readOnly: true });
+    }
     const current = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId } });
     if (current && parsed.data.expectedRevision !== undefined && current.revision !== parsed.data.expectedRevision) {
       return reply.status(409).send({ error: 'STATE_CONFLICT', revision: current.revision, updatedAt: current.updatedAt });

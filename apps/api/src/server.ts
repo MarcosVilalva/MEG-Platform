@@ -15,6 +15,8 @@ import { repairLegacyImportedEvents } from './modules/imports/repair';
 import { appStateRoutes } from './modules/app-state/routes';
 import { notificationRoutes } from './modules/notifications/routes';
 import { notificationIntegrationStatus } from './modules/notifications/service';
+import { platformAdminRoutes } from './modules/platform-admin/routes';
+import { ensureCommercialFoundation } from './modules/platform-admin/service';
 
 const app = Fastify({
   bodyLimit: 25 * 1024 * 1024,
@@ -68,7 +70,7 @@ app.get('/health', async () => ({
   version: '1.3.0-project-phoenix',
   environment: config.nodeEnv,
   timestamp: new Date().toISOString(),
-  features: ['legacy-ui', 'cloud-state', 'xlsx-import', 'email-reminders', 'whatsapp-reminders', 'multi-client-workspaces'],
+  features: ['legacy-ui', 'cloud-state', 'xlsx-import', 'email-reminders', 'whatsapp-reminders', 'multi-client-workspaces', 'commercial-licenses'],
   integrations: notificationIntegrationStatus(),
   commit: process.env.RENDER_GIT_COMMIT || 'local',
   dataRepair
@@ -81,6 +83,7 @@ await app.register(cardRoutes, { prefix: '/cards' });
 await app.register(payableRoutes, { prefix: '/payables' });
 await app.register(appStateRoutes, { prefix: '/app-state' });
 await app.register(notificationRoutes, { prefix: '/notifications' });
+await app.register(platformAdminRoutes, { prefix: '/platform-admin' });
 
 const shutdown = async (signal: string) => {
   app.log.info({ signal }, 'Graceful shutdown started');
@@ -92,6 +95,7 @@ process.on('SIGINT', () => void shutdown('SIGINT'));
 process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
 try {
+  await ensureCommercialFoundation();
   await app.listen({ port: config.port, host: config.host });
   if (config.runLegacyRepair) {
     void repairLegacyImportedEvents()

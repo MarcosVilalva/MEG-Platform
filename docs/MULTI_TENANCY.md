@@ -1,40 +1,28 @@
 # Arquitetura multicliente do MEG
 
-## Objetivo
+## Isolamento
 
-O MEG continua sendo um produto de finanças pessoais. A evolução comercial permite atender vários clientes sem compartilhar lançamentos, saldos, cartões, relatórios ou configurações entre eles.
+Cada cliente possui um `Workspace`. Usuários acessam o espaço por `WorkspaceMember`; estado financeiro, aprovações e destinatários pertencem ao espaço autenticado. Consultas nunca recebem um `workspaceId` fornecido livremente pelo navegador: o identificador é derivado da sessão.
 
-## Unidade de isolamento
+## Preservação da base de Marcos
 
-Cada cliente possui um `Workspace` (espaço financeiro). Usuários acessam um espaço por meio de `WorkspaceMember`, com perfil e status próprios. O estado financeiro usado pela interface atual pertence ao espaço, nunca ao usuário autenticado isoladamente.
+- `m_vilalva@hotmail.com` é proprietário de `marcos-financas`;
+- o estado financeiro existente é apenas vinculado ao espaço, sem recalcular ou zerar o JSON;
+- usuários existentes permanecem membros do espaço pessoal;
+- a preparação é idempotente e cria para ambientes existentes uma licença ativa padrão.
 
-## Migração do ambiente de Marcos
+## Novos clientes
 
-- O administrador `m_vilalva@hotmail.com` é o proprietário do espaço `marcos-financas`.
-- A base já existente é vinculada a esse espaço sem copiar, regravar, recalcular ou zerar o JSON financeiro.
-- Usuários já aprovados no ambiente anterior tornam-se membros desse mesmo espaço.
-- A operação é idempotente: novas execuções não duplicam o espaço, membros ou estado.
+A criação gera usuário administrador pendente, workspace vazio, associação de proprietário pendente e licença pendente. Somente a Gestão comercial pode ativar ou iniciar teste. A ativação libera o responsável e envia aviso.
 
-## Primeiro acesso de um novo cliente
+## Equipes
 
-Ao selecionar **Criar meu espaço financeiro**:
+O código público do espaço é usado no pedido de entrada. O administrador do cliente aprova membros e escolhe perfis. Solicitações são recusadas quando o plano não possui vaga.
 
-1. é criado um usuário administrador ativo;
-2. é criado um espaço financeiro exclusivo;
-3. é criado um estado vazio com `transactions: []` e `budgets: {}`;
-4. a sessão é iniciada automaticamente;
-5. nenhum dado de Marcos ou de outro cliente fica visível.
+## Licença
 
-O fluxo **Entrar na equipe de Marcos** mantém o pedido de acesso com aprovação administrativa. Convites direcionados a outros espaços serão acrescentados no próximo marco.
+Toda rota autenticada que grava dados valida a licença. Licenças inativas mantêm leitura e backup, mas retornam HTTP 402 em gravações. A Gestão comercial usa uma autorização separada da administração do cliente.
 
-## Regras de segurança obrigatórias
+## Limitação conhecida
 
-- Consultas e gravações de `AppState` usam `workspaceId` derivado da sessão autenticada.
-- Listagem, aprovação, bloqueio, exclusão, redefinição de senha e teste de e-mail só alcançam membros do mesmo espaço do administrador.
-- O proprietário do espaço não pode ser bloqueado nem excluído pelo painel.
-- A automação envia uma execução por proprietário de espaço, evitando mensagens duplicadas por membro.
-- Novas tabelas financeiras normalizadas devem receber `workspaceId` antes de serem consideradas multicliente.
-
-## Estado da implementação
-
-Esta entrega implementa a fundação multicliente compatível com o sistema legado. Ainda são próximos marcos: convites por espaço, contas bancárias e saldo inicial, administração comercial, planos e cobrança, e migração das entidades financeiras normalizadas para `workspaceId`.
+O modelo atual mantém e-mail de usuário único na plataforma. Participação do mesmo login em vários espaços já é possível pelo modelo de membros, mas a troca de espaço na interface ainda é um marco futuro.
