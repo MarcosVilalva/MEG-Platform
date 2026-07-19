@@ -1,8 +1,8 @@
 {
-  "versionCode": 49,
-  "versionName": "1.1.49",
+  "versionCode": 50,
+  "versionName": "1.1.50",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "3816fe8b3c5837b23ade1873852f3b564cd0ebbd7555ed773d241e543095464a",
+  "sha256": "3b5188d85fa8cfa95783afe7b0aec677adefc881c2663304223d6faac4609a4e",
   "mandatory": false,
   "releaseNotes": "Nova atualização do MEG Finanças com melhorias de segurança, desempenho e experiência."
 }
