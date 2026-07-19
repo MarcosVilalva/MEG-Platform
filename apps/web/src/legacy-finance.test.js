@@ -4,6 +4,42 @@ import { excelDateToIso } from './legacy-import-utils.js';
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from './legacy-installments.js';
 import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOfMonth } from './calendar-date.js';
 import { buildCardForecast, resolveCardIdentity } from './legacy-card-identity.js';
+import { DEFAULT_MONETARY_ACCOUNT_ID, LEGACY_VEROCARD_ACCOUNT_ID, buildOpeningBalanceTransaction, isBenefitTransaction, migrateGlobalFinancialState, reconcileGlobalFinancialMigration, upsertOpeningBalanceTransaction } from './legacy-financial-accounts.js';
+
+
+const legacyGlobalState = {
+  transactions: [
+    { id: 'salary', date: '2026-07-01', type: 'income', incomeAmount: 3000, amount: 3000, description: 'SALARIO' },
+    { id: 'benefit-credit', date: '2026-07-01', type: 'income', incomeAmount: 1000, amount: 1000, description: 'VEROCARD' },
+    { id: 'benefit-expense', date: '2026-07-02', type: 'expense', expenseAmount: 250, amount: 250, paymentMethod: 'VEROCARD' },
+  ],
+  budgets: {},
+};
+const migratedGlobalState = migrateGlobalFinancialState(legacyGlobalState);
+assert.deepEqual(migrateGlobalFinancialState(migratedGlobalState), migratedGlobalState);
+assert.equal(migratedGlobalState.transactions[0].financialAccountId, DEFAULT_MONETARY_ACCOUNT_ID);
+assert.equal(migratedGlobalState.transactions[1].financialAccountId, LEGACY_VEROCARD_ACCOUNT_ID);
+assert.equal(migratedGlobalState.transactions[2].financialScope, 'benefit');
+assert.equal(isBenefitTransaction(migratedGlobalState.transactions[0]), false);
+assert.equal(isBenefitTransaction(migratedGlobalState.transactions[1]), true);
+assert.equal(reconcileGlobalFinancialMigration(legacyGlobalState, migratedGlobalState).valid, true);
+const customBenefitState = migrateGlobalFinancialState({
+  transactions: [{ id: 'flex-credit', date: '2026-07-03', type: 'income', incomeAmount: 500, amount: 500, description: 'CREDITO FLEX', financialAccountId: 'account-custom-flex' }],
+  budgets: {},
+  catalogs: { accounts: [{ id: 'account-custom-flex', name: 'Beneficio Flex', type: 'BENEFIT', subtype: 'FLEX' }] },
+});
+assert.equal(customBenefitState.transactions[0].financialAccountId, 'account-custom-flex');
+assert.equal(customBenefitState.transactions[0].financialScope, 'benefit');
+assert.equal(isBenefitTransaction(customBenefitState.transactions[0]), true);
+assert.equal(isBenefitTransaction({ financialScope: 'monetary', modality: 'ALIMENTACAO' }), false);
+const openingAccount = { id: 'account-bank-a', name: 'Banco A', type: 'MONETARY', openingBalance: 1250.50 };
+const openingEvent = buildOpeningBalanceTransaction(openingAccount, '2026-07-18');
+assert.equal(openingEvent.incomeAmount, 1250.50);
+assert.equal(openingEvent.financialAccountId, openingAccount.id);
+assert.equal(upsertOpeningBalanceTransaction([], openingAccount, '2026-07-18').length, 1);
+assert.equal(upsertOpeningBalanceTransaction([openingEvent], { ...openingAccount, openingBalance: 900 }, '2026-07-19')[0].incomeAmount, 900);
+assert.equal(upsertOpeningBalanceTransaction([openingEvent], { ...openingAccount, openingBalance: 0 }, '2026-07-19').length, 0);
+
 
 // 15/07/2026 22:54 em SÃ£o Paulo jÃ¡ Ã© 16/07 em UTC. O MEG deve manter o dia local.
 assert.equal(dateInTimeZone(new Date('2026-07-16T01:54:00.000Z')), '2026-07-15');

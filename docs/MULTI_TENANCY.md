@@ -26,3 +26,7 @@ Toda rota autenticada que grava dados valida a licença. Licenças inativas mant
 ## Limitação conhecida
 
 O modelo atual mantém e-mail de usuário único na plataforma. Participação do mesmo login em vários espaços já é possível pelo modelo de membros, mas a troca de espaço na interface ainda é um marco futuro.
+
+## Migracao da estrutura financeira global
+
+A versao global de contas e beneficios e aplicada dentro do `AppState` de cada workspace. A migracao e idempotente, executada apenas quando a versao do estado for antiga e persistida de volta no mesmo workspace. Nenhum catalogo ou lancamento e compartilhado entre clientes.
