@@ -783,6 +783,11 @@ function showToast(title, message, tone = "") {
   }, 5200);
 }
 
+function confirmPermanentDeletion(itemLabel, detail = "") {
+  const description = detail ? `\n\n${detail}` : "";
+  return window.confirm(`Tem certeza de que deseja excluir ${itemLabel}?${description}\n\nEsta acao nao pode ser desfeita.`);
+}
+
 function currentSituation() {
   const monthStart = `${currentMonth}-01`;
   const monthEnd = lastDayOfMonth(currentMonth);
@@ -3355,6 +3360,21 @@ function removeCatalogItem(type, value) {
       return;
     }
   }
+  if (type === "financialAccount") {
+    const linked = state.transactions.some((item) => item.financialAccountId === value);
+    if (linked) { showToast("Conta em uso", "Edite a conta ou mova os lancamentos antes de remove-la.", "danger"); return; }
+  }
+  const typeLabels = {
+    card: "o cartao",
+    group: "o grupo",
+    expenseClass: "a classificacao",
+    modality: "a modalidade",
+    payment: "a forma de pagamento",
+    financialAccount: "a conta",
+  };
+  const account = type === "financialAccount" ? financialAccountById(value) : null;
+  const itemName = account?.name || value;
+  if (!confirmPermanentDeletion(`${typeLabels[type] || "o cadastro"} \"${itemName}\"`, "O cadastro sera removido definitivamente.")) return;
   if (type === "group") {
     state.catalogs.groups = state.catalogs.groups.filter((item) => normalizeText(item) !== normalizeText(value));
     setCatalogItemActive("groups", value, true);
@@ -3379,8 +3399,6 @@ function removeCatalogItem(type, value) {
   }
   if (type === "card") state.catalogs.cards = state.catalogs.cards.filter((item) => normalizeText(item.paymentMethod) !== normalizeText(value));
   if (type === "financialAccount") {
-    const linked = state.transactions.some((item) => item.financialAccountId === value);
-    if (linked) { showToast("Conta em uso", "Edite a conta ou mova os lancamentos antes de remove-la.", "danger"); return; }
     state.catalogs.accounts = state.catalogs.accounts.filter((item) => item.id !== value);
   }
   if (type === "card" && normalizeText(editingCardPaymentMethod) === normalizeText(value)) {
@@ -3824,6 +3842,7 @@ function deleteTransaction() {
   const id = els.transactionId.value;
   if (!id) return;
   const removed = state.transactions.find((item) => item.id === id);
+  if (!confirmPermanentDeletion(`o lancamento \"${removed?.description || "selecionado"}\"`, removed ? `${formatDate(removed.date)} - ${money.format(removed.amount || 0)}` : "")) return;
   state.transactions = state.transactions.filter((item) => item.id !== id);
   saveState();
   els.dialog.close();

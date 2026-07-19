@@ -7,5 +7,8 @@ export const payablesClient = {
   create: (data: { categoryId?: string; description: string; totalAmount: number; dueDate: string; installmentQty: number; notes?: string }) => request<{ created: number }>('/payables', { method: 'POST', body: JSON.stringify(data) }),
   createRecurring: (data: { categoryId?: string; description: string; amount: number; frequency: 'weekly' | 'monthly' | 'yearly'; nextDueDate: string; endDate?: string }) => request('/payables/recurring', { method: 'POST', body: JSON.stringify(data) }),
   pay: (id: string, data: { amount: number; paidAt: string; accountId?: string; paymentMethodId?: string }) => request(`/payables/${id}/payments`, { method: 'POST', body: JSON.stringify(data) }),
-  cancel: (id: string) => request(`/payables/${id}`, { method: 'DELETE' })
+  cancel: async (id: string) => {
+    if (!window.confirm('Tem certeza de que deseja cancelar e excluir esta conta?\n\nEsta acao nao pode ser desfeita.')) return null;
+    return request(`/payables/${id}`, { method: 'DELETE' });
+  }
 };

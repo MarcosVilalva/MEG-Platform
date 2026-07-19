@@ -1,4 +1,11 @@
 # Changelog
+## 2026-07-19 - Confirmacao obrigatoria para exclusoes
+
+- Toda exclusao iniciada pela interface exige confirmacao explicita antes de alterar os dados.
+- A protecao cobre lancamentos, cadastros, contas, cartoes, compras, destinatarios de notificacao e acessos de usuarios.
+- A mensagem identifica o registro quando possivel e alerta quando a acao nao pode ser desfeita.
+- Cancelar a confirmacao preserva os dados e encerra a operacao sem efeitos colaterais.
+
 ## 2026-07-19 - Gerenciamento de modalidades
 
 - A aba Cadastros passa a ter um painel exclusivo para criar, editar, desativar, reativar e remover modalidades.
