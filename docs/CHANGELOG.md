@@ -1,4 +1,13 @@
 # Changelog
+## 2026-07-19 - Cartões ativos e edição segura de parcelamentos
+
+- Ao escolher a modalidade crédito, o cartão utilizado aparece imediatamente e seu cadastro calcula o vencimento da fatura.
+- Cartões podem ser desabilitados sem apagar o histórico; deixam de aparecer em novos lançamentos, na Central de Cartões e no limite disponível.
+- Cartões vinculados a lançamentos não podem ser removidos por engano e devem ser desabilitados.
+- A edição de uma compra parcelada permite atualizar somente a parcela atual, a atual e as futuras ou todas as parcelas pendentes.
+- Ao trocar cartão ou data da compra, os vencimentos pendentes são recalculados conforme o número original de cada parcela, sem concentrá-los na data atual.
+- Parcelas já pagas permanecem intactas durante alterações da série.
+
 ## 2026-07-18 - Carteira digital e projeção de faturas
 
 - Cartões agora registram emissor, nome comercial, bandeira, final e tema visual sem alterar lançamentos financeiros existentes.

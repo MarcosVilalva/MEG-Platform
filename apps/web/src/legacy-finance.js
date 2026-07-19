@@ -25,9 +25,10 @@ export function calculateCreditCardPortfolio(allTransactions, periodTransactions
   const statusFilter = String(filters.status || 'all').toLowerCase();
   const search = normalizedFinanceText(filters.search || '');
   const isPaid = (item) => item.status === 'paid' || normalizedFinanceText(item.situation) === 'PAGO';
-  const cardExpenses = allTransactions.filter(isCreditCardExpense);
-  const periodCardExpenses = periodTransactions.filter(isCreditCardExpense);
-  const registeredByMethod = new Map(registeredCards.map((card) => [normalizedFinanceText(card.paymentMethod), card]));
+  const inactiveMethods = new Set(registeredCards.filter((card) => card.isActive === false).map((card) => normalizedFinanceText(card.paymentMethod)));
+  const cardExpenses = allTransactions.filter((item) => isCreditCardExpense(item) && !inactiveMethods.has(normalizedFinanceText(item.paymentMethod || item.account)));
+  const periodCardExpenses = periodTransactions.filter((item) => isCreditCardExpense(item) && !inactiveMethods.has(normalizedFinanceText(item.paymentMethod || item.account)));
+  const registeredByMethod = new Map(registeredCards.filter((card) => card.isActive !== false).map((card) => [normalizedFinanceText(card.paymentMethod), card]));
 
   cardExpenses.forEach((item) => {
     const method = String(item.paymentMethod || item.account || 'Cartão não cadastrado').trim();

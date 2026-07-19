@@ -266,6 +266,14 @@ assert.equal(cardPortfolio.largestGroup.name, 'LAZER');
 const filteredCardPortfolio = calculateCreditCardPortfolio(cardTransactions, cardTransactions, cardPortfolio.cards, { card: 'CARTÃO ML', status: 'pending', search: 'super' });
 assert.equal(filteredCardPortfolio.items.length, 1);
 assert.equal(filteredCardPortfolio.periodTotal, 600);
+const activeOnlyPortfolio = calculateCreditCardPortfolio(cardTransactions, cardTransactions, [
+  { paymentMethod: 'CARTÃO AZUL', brand: 'VISA', limit: 2000, isActive: true },
+  { paymentMethod: 'CARTÃO ML', brand: 'MASTERCARD', limit: 1500, isActive: false },
+]);
+assert.equal(activeOnlyPortfolio.cards.length, 1);
+assert.equal(activeOnlyPortfolio.totalLimit, 2000);
+assert.equal(activeOnlyPortfolio.usedLimit, 350);
+assert.equal(activeOnlyPortfolio.items.some((item) => item.paymentMethod === 'CARTÃO ML'), false);
 
 const latamIdentity = resolveCardIdentity({ paymentMethod: 'CARTÃO LATAM', brand: 'MASTERCARD', lastFour: '1234' });
 assert.equal(latamIdentity.issuer, 'LATAM PASS');

@@ -800,6 +800,7 @@
                 <label>Vencimento<input id="newCardDueDayInput" type="number" min="1" max="31" placeholder="Dia" required /></label>
                 <label>Melhor dia<input id="newCardBestDayInput" type="number" min="1" max="31" placeholder="Dia" required /></label>
                 <label>Limite<input id="newCardLimitInput" type="number" min="0" step="0.01" placeholder="R$ 0,00" required /></label>
+                <label class="catalog-switch"><input id="newCardActiveInput" type="checkbox" checked /> Cart&atilde;o ativo</label>
                 <button class="button primary" id="cardCatalogSubmitBtn" type="submit">Salvar cartão</button>
               </form>
               <div class="catalog-list card-catalog-list" id="cardCatalogList"></div>
@@ -973,6 +974,10 @@
             MODALIDADE
             <select id="modalityInput" required></select>
           </label>
+          <label id="paymentMethodField">
+            <span id="paymentMethodLabel">FORMA DE PAGAMENTO</span>
+            <select id="paymentMethodInput" required></select>
+          </label>
           <label>
             CONTA FINANCEIRA / BENEF&Iacute;CIO
             <select id="financialAccountInput" required></select>
@@ -1002,6 +1007,15 @@
             <label>TOTAL DE PARCELAS<input id="installmentCountInput" type="number" min="1" max="120" step="1" value="1" /></label>
             <small id="installmentPreview">Informe o valor total e a quantidade de parcelas.</small>
           </div>
+          <label class="full hidden installment-edit-scope" id="installmentEditScopeField">
+            ATUALIZAR PARCELAMENTO
+            <select id="installmentEditScopeInput">
+              <option value="future">Esta e as pr&oacute;ximas parcelas pendentes</option>
+              <option value="pending">Todas as parcelas pendentes da compra</option>
+              <option value="current">Somente esta parcela</option>
+            </select>
+            <small>Parcelas j&aacute; pagas permanecem intactas. Cart&atilde;o e vencimentos ser&atilde;o recalculados sem trazer as demais parcelas para a data atual.</small>
+          </label>
           <label id="incomeAmountField" data-transaction-scope="income">
             RECEITA($)
             <input id="incomeAmountInput" type="number" min="0" step="0.01" />
@@ -1017,10 +1031,6 @@
           <label id="groupField" data-transaction-scope="expense">
             GRUPO
             <select id="groupInput"></select>
-          </label>
-          <label id="paymentMethodField">
-            <span id="paymentMethodLabel">FORMA DE PAGAMENTO</span>
-            <select id="paymentMethodInput" required></select>
           </label>
           <label>
             SITUAÇÃO
