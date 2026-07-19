@@ -1,3 +1,5 @@
+import { isBenefitTransaction } from './legacy-financial-accounts.js';
+
 export function transactionValue(item, type) {
   if (item.type !== type) return 0;
   const explicit = type === 'income' ? item.incomeAmount : item.expenseAmount;
@@ -5,18 +7,7 @@ export function transactionValue(item, type) {
 }
 
 export function isVerocardTransaction(item) {
-  const normalize = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
-  const payment = normalize(item.paymentMethod || item.account);
-  const description = normalize(item.description);
-  const modality = normalize(item.modality);
-  // Imported spreadsheets are not always consistent about accents or the
-  // complete name of the benefit/card. The stem and partial payment match
-  // keep VEROCARD balances out of the monetary ledger without classifying
-  // ordinary food purchases paid with cash/credit as benefit transactions.
-  if (modality.includes('ALIMENTA')) return true;
-  if (item.type === 'income') return description.includes('VEROCARD');
-  if (item.type === 'expense') return payment.includes('VEROCARD');
-  return false;
+  return isBenefitTransaction(item);
 }
 
 function normalizedFinanceText(value) {

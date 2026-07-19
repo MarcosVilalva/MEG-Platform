@@ -174,3 +174,14 @@ Arquivamento não remove histórico. Estornos devem ser registrados como eventos
 - As bandeiras são recursos locais do aplicativo; a disponibilidade da carteira não depende de serviços de imagens de terceiros.
 - A projeção de faturas considera despesas de crédito dos seis meses iniciados no mês selecionado, agrupando valor e quantidade por competência.
 - A identidade visual nunca deve substituir a forma de pagamento usada para relacionar lançamentos, faturas e limites.
+
+## Contas financeiras e beneficios
+
+- Todo lancamento pertence explicitamente a uma conta financeira.
+- Contas monetarias representam conta corrente, poupanca, dinheiro, carteira digital, investimento ou outra disponibilidade em moeda.
+- Contas de beneficio representam alimentacao, refeicao, transporte, combustivel, saldo flexivel ou outro beneficio que nao deve compor o caixa monetario.
+- O Verocard existente de Marcos e migrado para uma conta de beneficio de alimentacao; o nome e mantido apenas como dado legado do cliente.
+- Novos clientes podem cadastrar qualquer emissor de beneficio sem depender de regra ou nome especifico.
+- O campo `financialScope` prevalece sobre heuristicas antigas. A identificacao por descricao, modalidade ou forma de pagamento existe somente para migrar dados sem classificacao explicita.
+- A migracao nao altera descricao, data, situacao, valor, quantidade de lancamentos nem totais historicos.
+- Contas vinculadas a lancamentos nao podem ser excluidas; devem ser editadas ou ter os lancamentos movidos.

@@ -2,6 +2,7 @@ import { availableMonetaryBalance, calculateBalanceReconciliation, calculateCred
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
 import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOfMonth } from "./calendar-date.js";
 import { buildCardForecast, resolveCardIdentity } from "./legacy-card-identity.js";
+import { GLOBAL_FINANCIAL_SCHEMA_VERSION, isBenefitTransaction, migrateGlobalFinancialState, upsertOpeningBalanceTransaction } from "./legacy-financial-accounts.js";
 
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
 
@@ -85,6 +86,7 @@ const DEFAULT_CATALOGS = {
   expenseClasses: ["CONTAS GERAIS", "RES. PAG. DÍVIDA"],
   paymentMethods: Object.entries(PAYMENT_MODALITIES).map(([description, modality]) => ({ description, modality })),
   cards: [],
+  accounts: [],
 };
 
 const ESSENTIAL_GROUPS = new Set(["COMUNICAÇÃO", "HIGIENE PESSOAL", "IMÓVEL", "MAT. ESCOLAR", "PGTO DE DIVIDAS", "SAÚDE", "SUPERMERCADO", "TITULOS/PREVIDÊNCIA", "TRANSPORTE"] .map((item) => normalizeText(item)));
@@ -117,6 +119,7 @@ let editingGroup = "";
 let editingExpenseClass = "";
 let editingPaymentMethod = "";
 let editingCardPaymentMethod = "";
+let editingFinancialAccountId = "";
 
 const els = {
   appShell: document.querySelector(".app-shell"),
@@ -428,6 +431,7 @@ const els = {
   paymentMethodInput: document.querySelector("#paymentMethodInput"),
   paymentMethodLabel: document.querySelector("#paymentMethodLabel"),
   modalityInput: document.querySelector("#modalityInput"),
+  financialAccountInput: document.querySelector("#financialAccountInput"),
   installmentFields: document.querySelector("#installmentFields"),
   purchaseTotalInput: document.querySelector("#purchaseTotalInput"),
   installmentCountInput: document.querySelector("#installmentCountInput"),
@@ -451,6 +455,14 @@ const els = {
   blockedBalanceMessage: document.querySelector("#blockedBalanceMessage"),
   closeInsufficientBalanceBtn: document.querySelector("#closeInsufficientBalanceBtn"),
   addMissingIncomeBtn: document.querySelector("#addMissingIncomeBtn"),
+  financialAccountCatalogForm: document.querySelector("#financialAccountCatalogForm"),
+  newFinancialAccountNameInput: document.querySelector("#newFinancialAccountNameInput"),
+  newFinancialAccountTypeInput: document.querySelector("#newFinancialAccountTypeInput"),
+  newFinancialAccountSubtypeInput: document.querySelector("#newFinancialAccountSubtypeInput"),
+  newFinancialAccountOpeningBalanceInput: document.querySelector("#newFinancialAccountOpeningBalanceInput"),
+  financialAccountCatalogSubmitBtn: document.querySelector("#financialAccountCatalogSubmitBtn"),
+  financialAccountCatalogList: document.querySelector("#financialAccountCatalogList"),
+  financialAccountCatalogCount: document.querySelector("#financialAccountCatalogCount"),
   groupCatalogForm: document.querySelector("#groupCatalogForm"),
   newGroupInput: document.querySelector("#newGroupInput"),
   groupCatalogSubmitBtn: document.querySelector("#groupCatalogSubmitBtn"),
@@ -565,6 +577,7 @@ function normalizeTransaction(item) {
 }
 
 function normalizeState(nextState) {
+  nextState = migrateGlobalFinancialState(nextState);
   const incomingCatalogs = nextState.catalogs || {};
   const transactions = (nextState.transactions || []).map(normalizeTransaction);
   const groups = [...new Set([...DEFAULT_GROUPS, ...(incomingCatalogs.groups || []), ...transactions.map((item) => item.group)].map((item) => String(item || "").trim()).filter(Boolean))];
@@ -594,6 +607,16 @@ function normalizeState(nextState) {
         bestPurchaseDay: Number(card?.bestPurchaseDay || 0),
         limit: Number(card?.limit || 0),
       })).filter((card) => card.paymentMethod && card.closingDay && card.dueDay),
+      accounts: Array.isArray(incomingCatalogs.accounts) ? incomingCatalogs.accounts.map((account) => ({
+        ...account,
+        id: String(account?.id || crypto.randomUUID()),
+        name: String(account?.name || "Conta sem nome").trim(),
+        type: String(account?.type || "MONETARY").trim().toUpperCase(),
+        subtype: String(account?.subtype || "OTHER").trim().toUpperCase(),
+        currency: String(account?.currency || "BRL").trim().toUpperCase(),
+        openingBalance: Number(account?.openingBalance || 0),
+        isActive: account?.isActive !== false,
+      })) : [],
     },
   };
 }
@@ -678,13 +701,7 @@ function previousMonthValue(monthValue = currentMonth) {
 }
 
 function isVerocardTransaction(item) {
-  const payment = normalizeText(item.paymentMethod || item.account);
-  const description = normalizeText(item.description);
-  const modality = normalizeText(item.modality);
-  if (modality.includes("ALIMENTA")) return true;
-  if (item.type === "income") return description.includes("VEROCARD");
-  if (item.type === "expense") return payment.includes("VEROCARD");
-  return false;
+  return isBenefitTransaction(item);
 }
 
 function paidTransactionsUntilToday() {
@@ -1414,7 +1431,7 @@ function renderQuickSignals() {
     },
     {
       tone: verocard.balance < 0 ? "risk" : "positive",
-      title: "VEROCARD",
+      title: "BENEF\u00cdCIOS",
       value: money.format(verocard.balance),
       text: `${money.format(verocard.spent)} em gastos`,
     },
@@ -2302,10 +2319,12 @@ function renderMonthProgress() {
 }
 
 function replaceState(nextState) {
+  const migrationRequired = Number(nextState?.schemaVersion || 0) < GLOBAL_FINANCIAL_SCHEMA_VERSION;
   state = normalizeState(nextState || { transactions: [], budgets: {} });
   originalTransactionsById = new Map(state.transactions.map((item) => [item.id, item]));
   analyticsDefaultPeriodApplied = false;
   render();
+  if (migrationRequired) requestAnimationFrame(() => saveState());
   return state.transactions.length;
 }
 
@@ -2780,7 +2799,7 @@ function renderVerocardLedger(card = verocardSummary()) {
           `;
         })
         .join("")
-    : `<div class="empty">Sem movimentos VEROCARD no mes atual.</div>`;
+    : `<div class="empty">Sem movimentos de benef\u00edcios no m\u00eas atual.</div>`;
 }
 
 function renderSettings() {
@@ -2806,6 +2825,8 @@ function renderDatalists() {
   els.modalityInput.innerHTML = modalities.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
   if (modalities.includes(currentModality)) els.modalityInput.value = currentModality;
   refreshPaymentMethodOptions(currentPayment);
+  refreshFinancialAccountOptions();
+  refreshFinancialAccountSubtypeOptions();
   els.catalogModalityOptions.innerHTML = modalities.map((item) => `<option value="${escapeHtml(item)}"></option>`).join("");
   if (els.dialog?.open && document.activeElement === els.descriptionInput) renderDescriptionSuggestions();
 }
@@ -2923,6 +2944,7 @@ function handleDescriptionKeydown(event) {
 }
 
 function renderCatalogs() {
+  const accounts = state.catalogs?.accounts || [];
   const groups = state.catalogs?.groups || [];
   const expenseClasses = state.catalogs?.expenseClasses || [];
   const payments = state.catalogs?.paymentMethods || [];
@@ -2930,6 +2952,12 @@ function renderCatalogs() {
   const defaultGroupKeys = new Set(DEFAULT_GROUPS.map(normalizeText));
   const defaultExpenseClassKeys = new Set(DEFAULT_CATALOGS.expenseClasses.map(normalizeText));
   const defaultPaymentKeys = new Set(DEFAULT_CATALOGS.paymentMethods.map((item) => normalizeText(item.description)));
+  els.financialAccountCatalogCount.textContent = `${accounts.length} cadastradas`;
+  els.financialAccountCatalogList.innerHTML = accounts.length ? accounts.map((account) => {
+    const scopeLabel = account.type === "BENEFIT" ? "Beneficio" : "Monetaria";
+    const system = String(account.source || "").startsWith("SYSTEM") || String(account.source || "").startsWith("LEGACY");
+    return `<div class="catalog-row"><span><strong>${escapeHtml(account.name)}</strong><small>${scopeLabel} - ${escapeHtml(financialAccountSubtypeLabel(account.subtype))} - saldo inicial ${money.format(account.openingBalance || 0)}</small></span><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-financial-account="${escapeHtml(account.id)}">Editar</button>${system ? `<span class="catalog-badge">BASE</span>` : `<button type="button" class="catalog-remove" data-remove-financial-account="${escapeHtml(account.id)}">Remover</button>`}</span></div>`;
+  }).join("") : `<div class="empty">Cadastre ao menos uma conta monetaria.</div>`;
   els.groupCatalogCount.textContent = `${groups.length} cadastrados`;
   els.paymentCatalogCount.textContent = `${payments.length} cadastradas`;
   els.expenseClassCatalogCount.textContent = `${expenseClasses.length} cadastradas`;
@@ -2950,6 +2978,17 @@ function renderCatalogs() {
 }
 
 function beginCatalogEdit(type, value) {
+  if (type === "financialAccount") {
+    const account = financialAccountById(value);
+    if (!account) return;
+    editingFinancialAccountId = account.id;
+    els.newFinancialAccountNameInput.value = account.name;
+    els.newFinancialAccountTypeInput.value = account.type;
+    refreshFinancialAccountSubtypeOptions(account.subtype);
+    els.newFinancialAccountOpeningBalanceInput.value = String(account.openingBalance || 0);
+    els.financialAccountCatalogSubmitBtn.textContent = "Atualizar conta";
+    els.newFinancialAccountNameInput.focus();
+  }
   if (type === "group") {
     editingGroup = value;
     els.newGroupInput.value = value;
@@ -2995,6 +3034,35 @@ function editCardCatalog(paymentMethod) {
   els.cardCatalogSubmitBtn.textContent = "Atualizar cartão";
   els.cardCatalogForm.scrollIntoView({ behavior: "smooth", block: "center" });
   window.setTimeout(() => els.newCardClosingDayInput.focus(), 250);
+}
+
+function addFinancialAccountCatalog(event) {
+  event.preventDefault();
+  const name = els.newFinancialAccountNameInput.value.trim();
+  const type = els.newFinancialAccountTypeInput.value === "BENEFIT" ? "BENEFIT" : "MONETARY";
+  const subtype = els.newFinancialAccountSubtypeInput.value || "OTHER";
+  const openingBalance = Number(els.newFinancialAccountOpeningBalanceInput.value || 0);
+  if (!name) return;
+  const duplicate = state.catalogs.accounts.some((account) => normalizeText(account.name) === normalizeText(name) && account.id !== editingFinancialAccountId);
+  if (duplicate) { showToast("Conta ja cadastrada", "Use outro nome para diferenciar suas contas.", "danger"); return; }
+  const previous = editingFinancialAccountId ? financialAccountById(editingFinancialAccountId) : null;
+  const account = {
+    ...(previous || {}),
+    id: previous?.id || `account-${type.toLowerCase()}-${crypto.randomUUID()}`,
+    name, type, subtype, openingBalance, currency: previous?.currency || "BRL", isActive: true, source: previous?.source || "USER",
+  };
+  if (previous) state.catalogs.accounts = state.catalogs.accounts.map((item) => item.id === previous.id ? account : item);
+  else state.catalogs.accounts.push(account);
+  if (previous && previous.type !== type) state.transactions = state.transactions.map((item) => item.financialAccountId === account.id ? { ...item, financialScope: type === "BENEFIT" ? "benefit" : "monetary" } : item);
+  state.transactions = upsertOpeningBalanceTransaction(state.transactions, account, todayIso());
+  editingFinancialAccountId = "";
+  els.financialAccountCatalogForm.reset();
+  els.newFinancialAccountOpeningBalanceInput.value = "0";
+  refreshFinancialAccountSubtypeOptions();
+  els.financialAccountCatalogSubmitBtn.textContent = "Adicionar conta";
+  saveState();
+  showToast(previous ? "Conta atualizada" : "Conta cadastrada", `${name} esta pronta para receber lancamentos.`, "success");
+  render();
 }
 
 function addGroupCatalog(event) {
@@ -3100,6 +3168,11 @@ function removeCatalogItem(type, value) {
   if (type === "expenseClass") state.catalogs.expenseClasses = state.catalogs.expenseClasses.filter((item) => normalizeText(item) !== normalizeText(value));
   if (type === "payment") state.catalogs.paymentMethods = state.catalogs.paymentMethods.filter((item) => normalizeText(item.description) !== normalizeText(value));
   if (type === "card") state.catalogs.cards = state.catalogs.cards.filter((item) => normalizeText(item.paymentMethod) !== normalizeText(value));
+  if (type === "financialAccount") {
+    const linked = state.transactions.some((item) => item.financialAccountId === value);
+    if (linked) { showToast("Conta em uso", "Edite a conta ou mova os lancamentos antes de remove-la.", "danger"); return; }
+    state.catalogs.accounts = state.catalogs.accounts.filter((item) => item.id !== value);
+  }
   if (type === "card" && normalizeText(editingCardPaymentMethod) === normalizeText(value)) {
     editingCardPaymentMethod = "";
     els.cardCatalogForm.reset();
@@ -3279,16 +3352,56 @@ function createInstallmentTransactions(payload) {
   });
 }
 
+const FINANCIAL_ACCOUNT_SUBTYPES = {
+  MONETARY: [["CHECKING", "Conta corrente"], ["SAVINGS", "Poupanca"], ["CASH", "Dinheiro"], ["WALLET", "Carteira digital"], ["INVESTMENT", "Investimento"], ["OTHER", "Outra"]],
+  BENEFIT: [["FOOD", "Alimentacao"], ["MEAL", "Refeicao"], ["TRANSPORT", "Transporte"], ["FUEL", "Combustivel"], ["FLEX", "Flexivel"], ["OTHER", "Outro beneficio"]],
+};
+
+function financialAccountSubtypeLabel(subtype) {
+  return Object.values(FINANCIAL_ACCOUNT_SUBTYPES).flat().find(([value]) => value === subtype)?.[1] || subtype || "Outra";
+}
+
+function financialAccountById(id) { return (state.catalogs?.accounts || []).find((account) => account.id === id); }
+
+function suggestedFinancialAccountId() {
+  const benefit = normalizeText(els.modalityInput?.value).includes("ALIMENTA") || normalizeText(els.paymentMethodInput?.value).includes("VEROCARD");
+  const expectedType = benefit ? "BENEFIT" : "MONETARY";
+  return (state.catalogs?.accounts || []).find((account) => account.isActive !== false && account.type === expectedType)?.id || (state.catalogs?.accounts || []).find((account) => account.isActive !== false)?.id || "";
+}
+
+function refreshFinancialAccountOptions(preferred = els.financialAccountInput?.value) {
+  if (!els.financialAccountInput) return;
+  const accounts = (state.catalogs?.accounts || []).filter((account) => account.isActive !== false);
+  els.financialAccountInput.innerHTML = accounts.map((account) => `<option value="${escapeHtml(account.id)}">${escapeHtml(account.name)} - ${account.type === "BENEFIT" ? "Beneficio" : "Monetaria"}</option>`).join("");
+  els.financialAccountInput.value = accounts.some((account) => account.id === preferred) ? preferred : suggestedFinancialAccountId();
+}
+
+function refreshFinancialAccountSubtypeOptions(preferred = els.newFinancialAccountSubtypeInput?.value) {
+  if (!els.newFinancialAccountSubtypeInput) return;
+  const items = FINANCIAL_ACCOUNT_SUBTYPES[els.newFinancialAccountTypeInput?.value] || FINANCIAL_ACCOUNT_SUBTYPES.MONETARY;
+  els.newFinancialAccountSubtypeInput.innerHTML = items.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+  if (items.some(([value]) => value === preferred)) els.newFinancialAccountSubtypeInput.value = preferred;
+}
+
+function syncFinancialAccountSelection({ force = false } = {}) {
+  if (!els.financialAccountInput) return;
+  const current = financialAccountById(els.financialAccountInput.value);
+  const suggested = financialAccountById(suggestedFinancialAccountId());
+  if (force || !current || (suggested && current.type !== suggested.type)) els.financialAccountInput.value = suggested?.id || current?.id || "";
+}
+
 function syncPaymentModality() {
   const method = els.paymentMethodInput.value.trim();
   const modality = modalityForPayment(method);
   if (modality) els.modalityInput.value = modality;
+  syncFinancialAccountSelection({ force: true });
   syncCardDates({ recalculate: true });
   syncInstallmentFields();
 }
 
 function syncModalityPaymentOptions() {
   refreshPaymentMethodOptions();
+  syncFinancialAccountSelection({ force: true });
   syncCardDates({ recalculate: true });
   syncInstallmentFields();
 }
@@ -3310,6 +3423,7 @@ function openTransactionDialog(item = null) {
   els.statusInput.value = item?.status || "paid";
   els.modalityInput.value = item?.modality || modalityForPayment(desiredPayment) || sortedModalities()[0] || "";
   refreshPaymentMethodOptions(desiredPayment);
+  refreshFinancialAccountOptions(item?.financialAccountId || suggestedFinancialAccountId());
   els.notesInput.value = item?.notes || "";
   els.purchaseTotalInput.value = "";
   els.installmentCountInput.value = "1";
@@ -3330,6 +3444,7 @@ function saveTransaction(event) {
   const paymentMethod = els.paymentMethodInput.value.trim();
   const group = els.groupInput.value.trim();
   const situation = els.statusInput.value === "paid" ? "PAGO" : "PENDENTE";
+  const financialAccount = financialAccountById(els.financialAccountInput.value);
   const payload = {
     id,
     date: els.dateInput.value,
@@ -3346,6 +3461,8 @@ function saveTransaction(event) {
     category: type === "income" ? "Receitas" : group || "Sem categoria",
     paymentMethod,
     account: paymentMethod,
+    financialAccountId: financialAccount?.id || suggestedFinancialAccountId(),
+    financialScope: financialAccount?.type === "BENEFIT" ? "benefit" : "monetary",
     status: els.statusInput.value,
     situation,
     modality: els.modalityInput.value.trim(),
@@ -3946,7 +4063,9 @@ document.addEventListener("click", (event) => {
   const removePaymentButton = event.target.closest("[data-remove-payment]");
   const removeExpenseClassButton = event.target.closest("[data-remove-expense-class]");
   const removeCardButton = event.target.closest("[data-remove-card]");
+  const removeFinancialAccountButton = event.target.closest("[data-remove-financial-account]");
   const editCardButton = event.target.closest("[data-edit-card]");
+  const editFinancialAccountButton = event.target.closest("[data-edit-financial-account]");
   const editGroupCatalogButton = event.target.closest("[data-edit-group]");
   const editExpenseClassCatalogButton = event.target.closest("[data-edit-expense-class]");
   const editPaymentCatalogButton = event.target.closest("[data-edit-payment]");
@@ -3970,10 +4089,12 @@ document.addEventListener("click", (event) => {
   if (payableButton) openPaymentConfirmation(payableButton.dataset.payableGroup);
   if (cardGroupButton) openCardLaunchDialog(cardGroupButton.dataset.cardGroup);
   if (removeGroupButton) removeCatalogItem("group", removeGroupButton.dataset.removeGroup);
+  if (removeFinancialAccountButton) removeCatalogItem("financialAccount", removeFinancialAccountButton.dataset.removeFinancialAccount);
   if (removePaymentButton) removeCatalogItem("payment", removePaymentButton.dataset.removePayment);
   if (removeExpenseClassButton) removeCatalogItem("expenseClass", removeExpenseClassButton.dataset.removeExpenseClass);
   if (removeCardButton) removeCatalogItem("card", removeCardButton.dataset.removeCard);
   if (editCardButton) editCardCatalog(editCardButton.dataset.editCard);
+  if (editFinancialAccountButton) beginCatalogEdit("financialAccount", editFinancialAccountButton.dataset.editFinancialAccount);
   if (editGroupCatalogButton) beginCatalogEdit("group", editGroupCatalogButton.dataset.editGroup);
   if (editExpenseClassCatalogButton) beginCatalogEdit("expenseClass", editExpenseClassCatalogButton.dataset.editExpenseClass);
   if (editPaymentCatalogButton) beginCatalogEdit("payment", editPaymentCatalogButton.dataset.editPayment);
@@ -4168,6 +4289,7 @@ els.descriptionInput.addEventListener("keydown", handleDescriptionKeydown);
 els.descriptionInput.addEventListener("blur", () => window.setTimeout(closeDescriptionSuggestions, 120));
 els.paymentMethodInput.addEventListener("change", syncPaymentModality);
 els.modalityInput.addEventListener("change", syncModalityPaymentOptions);
+els.financialAccountInput.addEventListener("change", () => syncFinancialAccountSelection());
 els.purchaseTotalInput.addEventListener("input", syncInstallmentFields);
 els.installmentCountInput.addEventListener("input", syncInstallmentFields);
 els.form.addEventListener("submit", saveTransaction);
@@ -4206,6 +4328,8 @@ els.csvImport.addEventListener("change", handleCsvImport);
 els.backupImport.addEventListener("change", handleBackupImport);
 els.exportBackupBtn.addEventListener("click", exportBackup);
 els.exportCsvBtn.addEventListener("click", exportCsv);
+els.financialAccountCatalogForm.addEventListener("submit", addFinancialAccountCatalog);
+els.newFinancialAccountTypeInput.addEventListener("change", () => refreshFinancialAccountSubtypeOptions());
 els.groupCatalogForm.addEventListener("submit", addGroupCatalog);
 els.expenseClassCatalogForm.addEventListener("submit", addExpenseClassCatalog);
 els.paymentCatalogForm.addEventListener("submit", addPaymentCatalog);

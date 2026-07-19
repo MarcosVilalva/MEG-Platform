@@ -727,12 +727,12 @@
               <small>Despesas pagas</small>
             </article>
             <article class="mini-metric">
-              <span>Credito VEROCARD</span>
+              <span>Cr&eacute;ditos de benef&iacute;cios</span>
               <strong id="verocardCreditMetric">R$ 0,00</strong>
               <small>Receitas do mes</small>
             </article>
             <article class="mini-metric">
-              <span>Saldo VEROCARD</span>
+              <span>Saldo de benef&iacute;cios</span>
               <strong id="verocardBalanceMetric">R$ 0,00</strong>
               <small id="verocardSpentMetric">Gastos abatidos</small>
             </article>
@@ -748,7 +748,7 @@
             </section>
             <section class="panel">
               <div class="panel-title">
-                <h3>VEROCARD</h3>
+                <h3>Cart&otilde;es de benef&iacute;cios</h3>
                 <span>Saldo correndo no mes</span>
               </div>
               <div class="verocard-list" id="verocardLedger"></div>
@@ -759,6 +759,18 @@
         <section class="view" id="catalogs" aria-labelledby="catalogsTitle">
           <div class="section-heading"><div><h2 id="catalogsTitle">Cadastros</h2><p class="muted">Mantenha grupos, classificações, formas de pagamento e regras dos cartões.</p></div></div>
           <div class="catalogs-grid">
+            <section class="panel catalog-panel financial-account-catalog-panel">
+              <div class="panel-title"><div><small class="decision-eyebrow">ESTRUTURA FINANCEIRA</small><h3>Contas e benef&iacute;cios</h3></div><span id="financialAccountCatalogCount">0 cadastradas</span></div>
+              <p class="muted">Separe dinheiro, conta banc&aacute;ria, carteira, investimento e cart&otilde;es de benef&iacute;cios sem misturar saldos.</p>
+              <form class="catalog-form financial-account-catalog-form" id="financialAccountCatalogForm">
+                <label>Nome<input id="newFinancialAccountNameInput" type="text" maxlength="60" placeholder="Ex.: Conta principal" required /></label>
+                <label>Tipo<select id="newFinancialAccountTypeInput" required><option value="MONETARY">Monet&aacute;ria</option><option value="BENEFIT">Benef&iacute;cio</option></select></label>
+                <label>Finalidade<select id="newFinancialAccountSubtypeInput" required></select></label>
+                <label>Saldo inicial<input id="newFinancialAccountOpeningBalanceInput" type="number" step="0.01" value="0" /></label>
+                <button class="button primary" id="financialAccountCatalogSubmitBtn" type="submit">Adicionar conta</button>
+              </form>
+              <div class="catalog-list" id="financialAccountCatalogList"></div>
+            </section>
             <section class="panel catalog-panel">
               <div class="panel-title"><div><small class="decision-eyebrow">CLASSIFICAÇÃO</small><h3>Grupos</h3></div><span id="groupCatalogCount">0 cadastrados</span></div>
               <form class="catalog-form" id="groupCatalogForm"><input id="newGroupInput" type="text" maxlength="60" placeholder="Novo grupo" required /><button class="button primary" id="groupCatalogSubmitBtn" type="submit">Adicionar</button></form>
@@ -960,6 +972,10 @@
           <label>
             MODALIDADE
             <select id="modalityInput" required></select>
+          </label>
+          <label>
+            CONTA FINANCEIRA / BENEF&Iacute;CIO
+            <select id="financialAccountInput" required></select>
           </label>
           <label class="hidden" id="purchaseDateField">
             DATA DA COMPRA

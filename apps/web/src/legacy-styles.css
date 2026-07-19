@@ -1323,6 +1323,9 @@ textarea {
 .catalog-panel { border-radius: 20px; }
 .catalog-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; margin: 16px 0; }
 .payment-catalog-form { grid-template-columns: minmax(0,1.2fr) minmax(150px,.8fr) auto; }
+.financial-account-catalog-panel { grid-column: 1 / -1; }
+.financial-account-catalog-form { grid-template-columns: minmax(180px,1.3fr) repeat(3,minmax(130px,.75fr)) auto; align-items: end; }
+.financial-account-catalog-form label { display: grid; gap: 7px; color: var(--muted); font-size: .72rem; font-weight: 900; text-transform: uppercase; }
 .card-catalog-panel { grid-column: 1 / -1; }
 .card-catalog-form { grid-template-columns: minmax(170px,1.2fr) minmax(120px,.7fr) repeat(3,minmax(90px,.5fr)) minmax(120px,.7fr) auto; align-items: end; }
 .card-catalog-form label { display: grid; gap: 7px; color: var(--muted); font-size: .72rem; font-weight: 900; text-transform: uppercase; }
@@ -1358,7 +1361,7 @@ textarea {
   .month-progress-stats { grid-template-columns: 1fr; }
   .compact-progress-panel { grid-template-columns: 1fr; }
   .progress-ring-wrap { justify-self: center; }
-  .installment-fields, .catalogs-grid, .catalog-form, .payment-catalog-form, .card-catalog-form { grid-template-columns: 1fr; }
+  .installment-fields, .catalogs-grid, .catalog-form, .payment-catalog-form, .financial-account-catalog-form, .card-catalog-form { grid-template-columns: 1fr; }
 }
 
 .analytics-filter-panel {
