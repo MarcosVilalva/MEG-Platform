@@ -2612,7 +2612,7 @@ function renderCreditCards() {
 
   const topExpenses = [...portfolio.items].sort((a, b) => Number(b.expenseAmount || b.amount || 0) - Number(a.expenseAmount || a.amount || 0)).slice(0, 6);
   els.creditTopExpensesNote.textContent = `${money.format(portfolio.periodTotal)} no período`;
-  els.creditTopExpenses.innerHTML = topExpenses.length ? topExpenses.map((item, index) => `<button type="button" data-edit="${item.id}"><span class="credit-expense-rank">${index + 1}</span><span><strong>${escapeHtml(item.description)}</strong><small>${formatDate(item.purchaseDate || item.date)} · ${escapeHtml(item.paymentMethod || item.account)}</small></span><b>${money.format(item.expenseAmount || item.amount || 0)}</b></button>`).join("") : `<div class="empty">Nenhuma compra corresponde aos filtros.</div>`;
+  els.creditTopExpenses.innerHTML = topExpenses.length ? topExpenses.map((item, index) => `<button type="button" data-edit="${item.id}" title="Editar ${escapeHtml(item.description)}"><span class="credit-expense-rank">${index + 1}</span><span><strong title="${escapeHtml(item.description)}">${escapeHtml(item.description)}</strong><small title="${escapeHtml(item.paymentMethod || item.account)}">${formatDate(item.purchaseDate || item.date)} · ${escapeHtml(item.paymentMethod || item.account)}</small></span><b>${money.format(item.expenseAmount || item.amount || 0)}</b></button>`).join("") : `<div class="empty">Nenhuma compra corresponde aos filtros.</div>`;
 
   const groups = new Map();
   portfolio.items.forEach((item) => {
@@ -2622,7 +2622,7 @@ function renderCreditCards() {
   const sortedGroups = [...groups.entries()].sort((a, b) => b[1] - a[1]).slice(0, 7);
   const groupMax = sortedGroups[0]?.[1] || 1;
   els.creditLargestGroupMetric.textContent = portfolio.largestGroup.name ? `${portfolio.largestGroup.name} · ${money.format(portfolio.largestGroup.total)}` : "Sem dados";
-  els.creditGroupBars.innerHTML = sortedGroups.length ? sortedGroups.map(([group, total], index) => `<div><span><b>${escapeHtml(group)}</b><small>${money.format(total)}</small></span><i><em style="width:${(total / groupMax) * 100}%" class="tone-${Math.min(index + 1, 4)}"></em></i></div>`).join("") : `<div class="empty">Sem grupos para comparar.</div>`;
+  els.creditGroupBars.innerHTML = sortedGroups.length ? sortedGroups.map(([group, total], index) => `<article class="credit-group-item"><div class="credit-group-caption"><b title="${escapeHtml(group)}">${escapeHtml(group)}</b><strong>${money.format(total)}</strong></div><div class="credit-group-track" role="img" aria-label="${escapeHtml(group)}: ${money.format(total)}"><i style="width:${(total / groupMax) * 100}%" class="tone-${Math.min(index + 1, 4)}"></i></div></article>`).join("") : `<div class="empty">Sem grupos para comparar.</div>`;
 
   els.creditInvoiceTitle.textContent = creditCardFilter === "all" ? "Lançamentos dos cartões" : `Fatura · ${creditCardFilter}`;
   els.creditInvoiceSummary.textContent = `${portfolio.items.length} compra(s) · ${money.format(portfolio.periodTotal)} · ${money.format(portfolio.pendingTotal)} em aberto`;
@@ -2631,7 +2631,16 @@ function renderCreditCards() {
   const forecastTotal = forecast.reduce((sum, item) => sum + item.total, 0);
   const peak = [...forecast].sort((a, b) => b.total - a.total)[0];
   els.creditForecastSummary.textContent = `${money.format(forecastTotal)} previstos · pico em ${formatMonth(peak.month)}`;
-  els.creditForecastBars.innerHTML = forecast.map((item) => `<article><div><span>${escapeHtml(formatMonth(item.month).replace(/ de /g, "/"))}</span><strong>${money.format(item.total)}</strong></div><i><em style="height:${Math.max((item.total / forecastMax) * 100, item.total ? 8 : 2)}%"></em></i><small>${item.count} compra(s)</small></article>`).join("");
+  els.creditForecastBars.innerHTML = forecast.map((item, index) => {
+    const monthLabel = formatMonth(item.month).replace(/ de /g, "/");
+    const height = Math.max((item.total / forecastMax) * 100, item.total ? 8 : 2);
+    const isPeak = peak?.month === item.month && item.total > 0;
+    return `<article class="credit-forecast-item ${isPeak ? "peak" : ""}" aria-label="${escapeHtml(monthLabel)}: ${money.format(item.total)}, ${item.count} compra(s)">
+      <div class="credit-forecast-value"><strong>${money.format(item.total)}</strong>${isPeak ? '<span class="credit-forecast-badge">Maior fatura</span>' : ""}</div>
+      <div class="credit-forecast-column" aria-hidden="true"><i style="height:${height}%"></i></div>
+      <div class="credit-forecast-label"><b>${escapeHtml(monthLabel)}</b><small>${item.count} ${item.count === 1 ? "compra" : "compras"}</small></div>
+    </article>`;
+  }).join("");
 
   els.creditInvoiceRows.innerHTML = portfolio.items.length ? portfolio.items.map((item) => `<tr>
     <td>${formatDate(item.purchaseDate || item.date)}</td><td>${formatDate(item.date)}</td><td><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.notes || "")}</small></td><td>${escapeHtml(item.group || item.category || "")}</td><td>${escapeHtml(item.paymentMethod || item.account || "")}</td><td class="amount negative">${money.format(item.expenseAmount || item.amount || 0)}</td><td><span class="credit-status ${item.status === "paid" ? "paid" : "pending"}">${item.status === "paid" ? "PAGA" : "EM ABERTO"}</span></td><td><button type="button" class="transaction-edit-button" data-edit="${item.id}" aria-label="Editar ${escapeHtml(item.description)}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m4 17.2 9.8-9.8 2.8 2.8L6.8 20H4v-2.8ZM18.8 8 16 5.2l1.4-1.4a2 2 0 0 1 2.8 2.8L18.8 8Z"/></svg></button></td>
