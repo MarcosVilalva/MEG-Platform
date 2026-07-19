@@ -1,4 +1,11 @@
 # Changelog
+## 2026-07-19 - Gerenciamento de modalidades
+
+- A aba Cadastros passa a ter um painel exclusivo para criar, editar, desativar, reativar e remover modalidades.
+- Formas de pagamento agora selecionam uma modalidade cadastrada, evitando nomes divergentes e erros de digitação.
+- Modalidades desativadas deixam de aparecer em novos lancamentos e ocultam suas formas de pagamento, sem alterar o historico existente.
+- A exclusao e bloqueada quando a modalidade ainda estiver vinculada a formas de pagamento ou lancamentos.
+
 ## 2026-07-19 - Cadastros editaveis e desativacao segura
 
 - Contas, grupos, classificacoes, formas de pagamento e cartoes passam a oferecer as acoes Editar e Desativar/Reativar.
