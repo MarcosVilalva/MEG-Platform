@@ -1,4 +1,11 @@
 # Changelog
+## 2026-07-19 - Cadastros editaveis e desativacao segura
+
+- Contas, grupos, classificacoes, formas de pagamento e cartoes passam a oferecer as acoes Editar e Desativar/Reativar.
+- Itens desativados deixam de aparecer nas listas de novos lancamentos, orcamentos, contas e cartoes operacionais.
+- O historico financeiro continua preservado e lancamentos antigos podem ser abertos com o cadastro desativado original.
+- A aba Cadastros informa separadamente quantos itens estao ativos e desativados em cada categoria.
+
 ## 2026-07-19 - Rolagem do menu lateral web
 
 - O menu lateral da versão web passa a ter rolagem vertical própria pela roda do mouse.
