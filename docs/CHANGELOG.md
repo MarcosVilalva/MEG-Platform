@@ -1,4 +1,10 @@
 # Changelog
+## 2026-07-19 - Rolagem do menu lateral web
+
+- O menu lateral da versão web passa a ter rolagem vertical própria pela roda do mouse.
+- A barra de rolagem fica discreta e aparece ao passar o mouse ou navegar pelo teclado no menu.
+- A rolagem do menu não movimenta nem bloqueia o conteúdo principal da tela.
+
 ## 2026-07-19 - Cartões ativos e edição segura de parcelamentos
 
 - Ao escolher a modalidade crédito, o cartão utilizado aparece imediatamente e seu cadastro calcula o vencimento da fatura.
