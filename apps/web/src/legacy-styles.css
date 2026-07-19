@@ -1330,6 +1330,11 @@ textarea {
 .card-catalog-form { grid-template-columns: minmax(170px,1.2fr) minmax(120px,.7fr) repeat(3,minmax(90px,.5fr)) minmax(120px,.7fr) auto; align-items: end; }
 .card-catalog-form label { display: grid; gap: 7px; color: var(--muted); font-size: .72rem; font-weight: 900; text-transform: uppercase; }
 .card-catalog-row > span { display: grid; gap: 3px; }
+.card-catalog-row.is-disabled { opacity: .68; background: rgba(100,116,139,.08); }
+.catalog-switch { display: flex !important; flex-direction: row !important; align-items: center; gap: 9px !important; min-height: 45px; padding: 0 12px; border: 1px solid rgba(23,107,93,.18); border-radius: 12px; background: rgba(255,255,255,.72); }
+.catalog-switch input { width: 18px; height: 18px; accent-color: var(--primary); }
+.installment-edit-scope { padding: 14px; border: 1px solid rgba(23,107,93,.2); border-radius: 14px; background: rgba(226,245,239,.64); }
+.installment-edit-scope small { color: var(--primary-dark); line-height: 1.45; text-transform: none; }
 .card-due-preview { display: block; margin-top: 5px; color: var(--primary); font-size: .68rem; font-weight: 800; text-transform: none; }
 .card-due-preview.hidden { display: none; }
 .form-grid input[readonly] { color: var(--primary-dark); background: rgba(230,246,241,.78); cursor: not-allowed; }

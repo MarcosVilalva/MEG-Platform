@@ -433,6 +433,8 @@ const els = {
   modalityInput: document.querySelector("#modalityInput"),
   financialAccountInput: document.querySelector("#financialAccountInput"),
   installmentFields: document.querySelector("#installmentFields"),
+  installmentEditScopeField: document.querySelector("#installmentEditScopeField"),
+  installmentEditScopeInput: document.querySelector("#installmentEditScopeInput"),
   purchaseTotalInput: document.querySelector("#purchaseTotalInput"),
   installmentCountInput: document.querySelector("#installmentCountInput"),
   installmentPreview: document.querySelector("#installmentPreview"),
@@ -511,6 +513,7 @@ const els = {
   newCardDueDayInput: document.querySelector("#newCardDueDayInput"),
   newCardBestDayInput: document.querySelector("#newCardBestDayInput"),
   newCardLimitInput: document.querySelector("#newCardLimitInput"),
+  newCardActiveInput: document.querySelector("#newCardActiveInput"),
   cardCatalogSubmitBtn: document.querySelector("#cardCatalogSubmitBtn"),
   cardCatalogList: document.querySelector("#cardCatalogList"),
   cardCatalogCount: document.querySelector("#cardCatalogCount"),
@@ -606,6 +609,7 @@ function normalizeState(nextState) {
         dueDay: Number(card?.dueDay || 0),
         bestPurchaseDay: Number(card?.bestPurchaseDay || 0),
         limit: Number(card?.limit || 0),
+        isActive: card?.isActive !== false,
       })).filter((card) => card.paymentMethod && card.closingDay && card.dueDay),
       accounts: Array.isArray(incomingCatalogs.accounts) ? incomingCatalogs.accounts.map((account) => ({
         ...account,
@@ -1279,17 +1283,32 @@ function showOpeningFinancialAlert() {
   els.openingAlertDialog.showModal();
 }
 
-function cardForPayment(method) {
-  return (state.catalogs?.cards || []).find((card) => normalizeText(card.paymentMethod) === normalizeText(method)) || null;
+function cardForPayment(method, { includeInactive = false } = {}) {
+  return (state.catalogs?.cards || []).find((card) => (
+    normalizeText(card.paymentMethod) === normalizeText(method)
+    && (includeInactive || card.isActive !== false)
+  )) || null;
 }
 
 function refreshPaymentMethodOptions(preferred = "") {
   const modality = normalizeText(els.modalityInput.value);
+  const inactiveCardMethods = new Set((state.catalogs?.cards || [])
+    .filter((card) => card.isActive === false)
+    .map((card) => normalizeText(card.paymentMethod)));
+  const activeCardMethods = new Set((state.catalogs?.cards || [])
+    .filter((card) => card.isActive !== false)
+    .map((card) => normalizeText(card.paymentMethod)));
   const allowed = (state.catalogs?.paymentMethods || DEFAULT_CATALOGS.paymentMethods)
     .filter((item) => !modality || normalizeText(item.modality) === modality)
+    .filter((item) => {
+      if (modality !== "CREDITO") return true;
+      const key = normalizeText(item.description);
+      if (normalizeText(preferred) === key) return true;
+      return activeCardMethods.has(key) && !inactiveCardMethods.has(key);
+    })
     .map((item) => item.description)
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
-  els.paymentMethodInput.innerHTML = allowed.map((account) => `<option value="${escapeHtml(account)}">${escapeHtml(account)}</option>`).join("");
+  els.paymentMethodInput.innerHTML = `${modality === "CREDITO" ? '<option value="">Selecione o cart&atilde;o</option>' : ""}${allowed.map((account) => `<option value="${escapeHtml(account)}">${escapeHtml(account)}</option>`).join("")}`;
   if (allowed.includes(preferred)) els.paymentMethodInput.value = preferred;
 }
 
@@ -2492,10 +2511,14 @@ function cardAssetUrl(asset, brand) {
 }
 
 function renderCreditCards() {
-  const registeredCards = state.catalogs?.cards || [];
+  const allRegisteredCards = state.catalogs?.cards || [];
+  const registeredCards = allRegisteredCards.filter((card) => card.isActive !== false);
+  const inactiveMethods = new Set(allRegisteredCards.filter((card) => card.isActive === false).map((card) => normalizeText(card.paymentMethod)));
+  const visibleCardTransactions = state.transactions.filter((item) => !inactiveMethods.has(normalizeText(item.paymentMethod || item.account)));
+  const visiblePeriodTransactions = selectedTransactions().filter((item) => !inactiveMethods.has(normalizeText(item.paymentMethod || item.account)));
   const paymentNames = [...new Set([
     ...registeredCards.map((card) => card.paymentMethod),
-    ...state.transactions.filter(isCreditCardExpense).map((item) => item.paymentMethod || item.account).filter(Boolean),
+    ...visibleCardTransactions.filter(isCreditCardExpense).map((item) => item.paymentMethod || item.account).filter(Boolean),
   ])].sort((a, b) => a.localeCompare(b, "pt-BR"));
   els.creditCardFilter.innerHTML = `<option value="all">Todos os cartões</option>${paymentNames.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")}`;
   if (paymentNames.includes(creditCardFilter)) els.creditCardFilter.value = creditCardFilter;
@@ -2503,7 +2526,7 @@ function renderCreditCards() {
   els.creditCardStatusFilter.value = creditCardStatusFilter;
   els.creditCardSearchInput.value = creditCardSearch;
 
-  const portfolio = calculateCreditCardPortfolio(state.transactions, selectedTransactions(), registeredCards, {
+  const portfolio = calculateCreditCardPortfolio(visibleCardTransactions, visiblePeriodTransactions, registeredCards, {
     card: creditCardFilter === "all" ? "" : creditCardFilter,
     status: creditCardStatusFilter,
     search: creditCardSearch,
@@ -2560,7 +2583,7 @@ function renderCreditCards() {
 
   els.creditInvoiceTitle.textContent = creditCardFilter === "all" ? "Lançamentos dos cartões" : `Fatura · ${creditCardFilter}`;
   els.creditInvoiceSummary.textContent = `${portfolio.items.length} compra(s) · ${money.format(portfolio.periodTotal)} · ${money.format(portfolio.pendingTotal)} em aberto`;
-  const forecast = buildCardForecast(state.transactions, selectedPeriod.month || currentMonth, 6);
+  const forecast = buildCardForecast(visibleCardTransactions, selectedPeriod.month || currentMonth, 6);
   const forecastMax = Math.max(...forecast.map((item) => item.total), 1);
   const forecastTotal = forecast.reduce((sum, item) => sum + item.total, 0);
   const peak = [...forecast].sort((a, b) => b.total - a.total)[0];
@@ -2961,7 +2984,8 @@ function renderCatalogs() {
   els.groupCatalogCount.textContent = `${groups.length} cadastrados`;
   els.paymentCatalogCount.textContent = `${payments.length} cadastradas`;
   els.expenseClassCatalogCount.textContent = `${expenseClasses.length} cadastradas`;
-  els.cardCatalogCount.textContent = `${cards.length} cadastrados`;
+  const activeCardCount = cards.filter((card) => card.isActive !== false).length;
+  els.cardCatalogCount.textContent = `${activeCardCount} ativo(s) · ${cards.length - activeCardCount} desabilitado(s)`;
   els.groupCatalogList.innerHTML = groups.map((group) => `<div class="catalog-row"><strong>${escapeHtml(group)}</strong><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-group="${escapeHtml(group)}">Editar</button>${defaultGroupKeys.has(normalizeText(group)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-group="${escapeHtml(group)}">Remover</button>`}</span></div>`).join("");
   els.expenseClassCatalogList.innerHTML = expenseClasses.map((item) => `<div class="catalog-row"><strong>${escapeHtml(item)}</strong><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-expense-class="${escapeHtml(item)}">Editar</button>${defaultExpenseClassKeys.has(normalizeText(item)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-expense-class="${escapeHtml(item)}">Remover</button>`}</span></div>`).join("");
   els.paymentCatalogList.innerHTML = payments.map((item) => `<div class="catalog-row"><span><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.modality)}</small></span><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-payment="${escapeHtml(item.description)}">Editar</button>${defaultPaymentKeys.has(normalizeText(item.description)) ? `<span class="catalog-badge">PADRÃO</span>` : `<button type="button" class="catalog-remove" data-remove-payment="${escapeHtml(item.description)}">Remover</button>`}</span></div>`).join("");
@@ -2972,7 +2996,8 @@ function renderCatalogs() {
   els.cardCatalogList.innerHTML = cards.length
     ? cards.map((card) => {
       const identity = resolveCardIdentity(card);
-      return `<div class="catalog-row card-catalog-row"><span><strong>${escapeHtml(identity.productName)}</strong><small>${escapeHtml(identity.issuer)} · ${escapeHtml(identity.networkLabel)}${identity.lastFour ? ` · final ${escapeHtml(identity.lastFour)}` : ""}</small><small>${escapeHtml(card.paymentMethod)} · fecha dia ${card.closingDay} · vence dia ${card.dueDay} · melhor compra dia ${card.bestPurchaseDay || "—"}</small><small>Limite ${money.format(card.limit || 0)}</small></span><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-card="${escapeHtml(card.paymentMethod)}">Editar</button><button type="button" class="catalog-remove" data-remove-card="${escapeHtml(card.paymentMethod)}">Remover</button></span></div>`;
+      const active = card.isActive !== false;
+      return `<div class="catalog-row card-catalog-row ${active ? "" : "is-disabled"}"><span><strong>${escapeHtml(identity.productName)}</strong><small>${escapeHtml(identity.issuer)} · ${escapeHtml(identity.networkLabel)}${identity.lastFour ? ` · final ${escapeHtml(identity.lastFour)}` : ""}</small><small>${escapeHtml(card.paymentMethod)} · fecha dia ${card.closingDay} · vence dia ${card.dueDay} · melhor compra dia ${card.bestPurchaseDay || "—"}</small><small>Limite ${money.format(card.limit || 0)} · ${active ? "ATIVO" : "DESABILITADO"}</small></span><span class="catalog-actions"><button type="button" class="catalog-edit" data-edit-card="${escapeHtml(card.paymentMethod)}">Editar</button><button type="button" class="${active ? "catalog-remove" : "catalog-edit"}" data-toggle-card="${escapeHtml(card.paymentMethod)}">${active ? "Desabilitar" : "Reativar"}</button><button type="button" class="catalog-remove" data-remove-card="${escapeHtml(card.paymentMethod)}">Remover</button></span></div>`;
     }).join("")
     : `<div class="empty">Cadastre as regras dos seus cartões para calcular as próximas faturas.</div>`;
 }
@@ -3018,7 +3043,7 @@ function catalogNameExists(items, value, originalValue, selector = (item) => ite
 }
 
 function editCardCatalog(paymentMethod) {
-  const card = cardForPayment(paymentMethod);
+  const card = cardForPayment(paymentMethod, { includeInactive: true });
   if (!card) return;
   editingCardPaymentMethod = card.paymentMethod;
   els.newCardPaymentInput.value = card.paymentMethod;
@@ -3031,6 +3056,7 @@ function editCardCatalog(paymentMethod) {
   els.newCardDueDayInput.value = String(card.dueDay);
   els.newCardBestDayInput.value = String(card.bestPurchaseDay || "");
   els.newCardLimitInput.value = String(card.limit || 0);
+  els.newCardActiveInput.checked = card.isActive !== false;
   els.cardCatalogSubmitBtn.textContent = "Atualizar cartão";
   els.cardCatalogForm.scrollIntoView({ behavior: "smooth", block: "center" });
   window.setTimeout(() => els.newCardClosingDayInput.focus(), 250);
@@ -3148,8 +3174,9 @@ function addCardCatalog(event) {
   const dueDay = Number(els.newCardDueDayInput.value);
   const bestPurchaseDay = Number(els.newCardBestDayInput.value);
   const limit = Number(els.newCardLimitInput.value);
+  const isActive = els.newCardActiveInput.checked;
   if (!paymentMethod || [closingDay, dueDay, bestPurchaseDay].some((day) => day < 1 || day > 31) || limit < 0) return;
-  const card = { paymentMethod, issuer, productName, brand, lastFour, theme, closingDay, dueDay, bestPurchaseDay, limit };
+  const card = { paymentMethod, issuer, productName, brand, lastFour, theme, closingDay, dueDay, bestPurchaseDay, limit, isActive };
   const lookupPaymentMethod = editingCardPaymentMethod || paymentMethod;
   const index = state.catalogs.cards.findIndex((item) => normalizeText(item.paymentMethod) === normalizeText(lookupPaymentMethod));
   const updated = index >= 0;
@@ -3157,13 +3184,33 @@ function addCardCatalog(event) {
   else state.catalogs.cards.push(card);
   editingCardPaymentMethod = "";
   els.cardCatalogForm.reset();
+  els.newCardActiveInput.checked = true;
   els.cardCatalogSubmitBtn.textContent = "Salvar cartão";
   saveState();
   render();
   showToast(updated ? "Cartão atualizado" : "Cartão cadastrado", `${paymentMethod}: fechamento dia ${closingDay} e vencimento dia ${dueDay}.`, "success");
 }
 
+function toggleCardCatalog(paymentMethod) {
+  const card = cardForPayment(paymentMethod, { includeInactive: true });
+  if (!card) return;
+  card.isActive = card.isActive === false;
+  if (normalizeText(editingCardPaymentMethod) === normalizeText(card.paymentMethod)) els.newCardActiveInput.checked = card.isActive;
+  saveState();
+  showToast(card.isActive ? "Cartão reativado" : "Cartão desabilitado", card.isActive
+    ? `${card.paymentMethod} voltou às listas de lançamento e limites.`
+    : `${card.paymentMethod} foi ocultado dos novos lançamentos e deixou de compor os limites disponíveis.`, "success");
+  render();
+}
+
 function removeCatalogItem(type, value) {
+  if (type === "card") {
+    const linked = state.transactions.some((item) => normalizeText(item.paymentMethod || item.account) === normalizeText(value));
+    if (linked) {
+      showToast("Cartão em uso", "Desabilite o cartão para ocultá-lo sem comprometer o histórico das faturas.", "danger");
+      return;
+    }
+  }
   if (type === "group") state.catalogs.groups = state.catalogs.groups.filter((item) => normalizeText(item) !== normalizeText(value));
   if (type === "expenseClass") state.catalogs.expenseClasses = state.catalogs.expenseClasses.filter((item) => normalizeText(item) !== normalizeText(value));
   if (type === "payment") state.catalogs.paymentMethods = state.catalogs.paymentMethods.filter((item) => normalizeText(item.description) !== normalizeText(value));
@@ -3267,7 +3314,8 @@ function syncAmountFields() {
   els.expenseAmountInput.required = !isIncome;
   els.expenseClassInput.required = !isIncome;
   els.groupInput.required = !isIncome;
-  els.paymentMethodLabel.textContent = isIncome ? "FORMA DE RECEBIMENTO" : "FORMA DE PAGAMENTO";
+  const creditExpense = !isIncome && normalizeText(els.modalityInput.value) === "CREDITO";
+  els.paymentMethodLabel.textContent = isIncome ? "FORMA DE RECEBIMENTO" : creditExpense ? "CARTÃO UTILIZADO" : "FORMA DE PAGAMENTO";
   const paidOption = els.statusInput.querySelector('option[value="paid"]');
   if (paidOption) paidOption.textContent = isIncome ? "RECEBIDO" : "PAGO";
   if (isIncome) {
@@ -3287,8 +3335,24 @@ function isInstallmentModality() {
   return modality === "CREDITO" || modality === "CREDIARIO";
 }
 
+function installmentBaseDescription(description) {
+  return String(description || "").replace(/\s+\d+\/\d+$/u, "").trim();
+}
+
+function editingTransaction() {
+  return state.transactions.find((item) => item.id === els.transactionId.value) || null;
+}
+
+function installmentSeries(item) {
+  if (!item?.installmentSeriesId) return [];
+  return state.transactions
+    .filter((candidate) => candidate.installmentSeriesId === item.installmentSeriesId)
+    .sort((a, b) => Number(a.installmentNumber || 0) - Number(b.installmentNumber || 0));
+}
+
 function syncCardDates({ recalculate = !els.transactionId.value } = {}) {
-  const card = els.transactionType.value === "expense" ? cardForPayment(els.paymentMethodInput.value) : null;
+  const currentItem = editingTransaction();
+  const card = els.transactionType.value === "expense" ? cardForPayment(els.paymentMethodInput.value, { includeInactive: Boolean(currentItem) }) : null;
   const show = Boolean(card);
   els.purchaseDateField.classList.toggle("hidden", !show);
   els.purchaseDateInput.disabled = !show;
@@ -3304,7 +3368,9 @@ function syncCardDates({ recalculate = !els.transactionId.value } = {}) {
 
   if (!els.purchaseDateInput.value && !els.transactionId.value) els.purchaseDateInput.value = todayIso;
   if (recalculate && els.purchaseDateInput.value) {
-    els.dateInput.value = cardStatementDueDate(els.purchaseDateInput.value, card.closingDay, card.dueDay);
+    const firstDueDate = cardStatementDueDate(els.purchaseDateInput.value, card.closingDay, card.dueDay);
+    const installmentOffset = Math.max(Number(currentItem?.installmentNumber || 1) - 1, 0);
+    els.dateInput.value = installmentDueDate(firstDueDate, installmentOffset);
     els.weekdayInput.value = weekdayShort(els.dateInput.value);
   }
   els.cardDuePreview.textContent = els.purchaseDateInput.value
@@ -3313,8 +3379,11 @@ function syncCardDates({ recalculate = !els.transactionId.value } = {}) {
 }
 
 function syncInstallmentFields() {
-  const show = !els.transactionId.value && els.transactionType.value === "expense" && isInstallmentModality();
+  const currentItem = editingTransaction();
+  const currentSeries = installmentSeries(currentItem);
+  const show = !currentItem && els.transactionType.value === "expense" && isInstallmentModality();
   els.installmentFields.classList.toggle("hidden", !show);
+  els.installmentEditScopeField.classList.toggle("hidden", currentSeries.length <= 1);
   els.expenseAmountInput.disabled = show || els.transactionType.value === "income";
   if (!show) return;
   const total = Number(els.purchaseTotalInput.value || 0);
@@ -3394,6 +3463,7 @@ function syncPaymentModality() {
   const method = els.paymentMethodInput.value.trim();
   const modality = modalityForPayment(method);
   if (modality) els.modalityInput.value = modality;
+  els.paymentMethodLabel.textContent = els.transactionType.value === "income" ? "FORMA DE RECEBIMENTO" : normalizeText(els.modalityInput.value) === "CREDITO" ? "CARTÃO UTILIZADO" : "FORMA DE PAGAMENTO";
   syncFinancialAccountSelection({ force: true });
   syncCardDates({ recalculate: true });
   syncInstallmentFields();
@@ -3401,6 +3471,7 @@ function syncPaymentModality() {
 
 function syncModalityPaymentOptions() {
   refreshPaymentMethodOptions();
+  els.paymentMethodLabel.textContent = els.transactionType.value === "income" ? "FORMA DE RECEBIMENTO" : normalizeText(els.modalityInput.value) === "CREDITO" ? "CARTÃO UTILIZADO" : "FORMA DE PAGAMENTO";
   syncFinancialAccountSelection({ force: true });
   syncCardDates({ recalculate: true });
   syncInstallmentFields();
@@ -3425,14 +3496,69 @@ function openTransactionDialog(item = null) {
   refreshPaymentMethodOptions(desiredPayment);
   refreshFinancialAccountOptions(item?.financialAccountId || suggestedFinancialAccountId());
   els.notesInput.value = item?.notes || "";
-  els.purchaseTotalInput.value = "";
-  els.installmentCountInput.value = "1";
+  const series = installmentSeries(item);
+  els.purchaseTotalInput.value = item?.purchaseTotal || (series.length ? series.reduce((sum, installment) => sum + Number(installment.expenseAmount || installment.amount || 0), 0) : "");
+  els.installmentCountInput.value = String(item?.installmentCount || series.length || 1);
+  els.installmentEditScopeInput.value = series.length > 1 ? "future" : "current";
   els.deleteTransactionBtn.style.visibility = item ? "visible" : "hidden";
   syncAmountFields();
   syncCardDates({ recalculate: !item });
   syncInstallmentFields();
   els.dialog.showModal();
   els.transactionType.focus();
+}
+
+function updateInstallmentSeries(previous, payload) {
+  const scope = els.installmentEditScopeInput.value;
+  const series = installmentSeries(previous);
+  if (series.length <= 1 || scope === "current") return 0;
+
+  const currentNumber = Number(previous.installmentNumber || 1);
+  const pending = (item) => item.status !== "paid" && normalizeText(item.situation) !== "PAGO";
+  const targets = series.filter((item) => pending(item) && (scope === "pending" || Number(item.installmentNumber || 1) >= currentNumber));
+  if (!targets.length) return 0;
+
+  const card = cardForPayment(payload.paymentMethod, { includeInactive: true });
+  const firstDueDate = card && payload.purchaseDate
+    ? cardStatementDueDate(payload.purchaseDate, card.closingDay, card.dueDay)
+    : installmentDueDate(payload.date, -(currentNumber - 1));
+  const baseDescription = installmentBaseDescription(payload.description);
+  const shared = {
+    type: payload.type,
+    launchType: payload.launchType,
+    expenseClass: payload.expenseClass,
+    group: payload.group,
+    category: payload.category,
+    paymentMethod: payload.paymentMethod,
+    account: payload.account,
+    financialAccountId: payload.financialAccountId,
+    financialScope: payload.financialScope,
+    modality: payload.modality,
+    notes: payload.notes,
+    ...(payload.purchaseDate ? { purchaseDate: payload.purchaseDate } : {}),
+  };
+  const targetIds = new Set(targets.map((item) => item.id));
+
+  state.transactions = state.transactions.map((item) => {
+    if (!targetIds.has(item.id)) return item;
+    const installmentNumber = Number(item.installmentNumber || 1);
+    const date = installmentDueDate(firstDueDate, installmentNumber - 1);
+    const isCurrent = item.id === previous.id;
+    return {
+      ...item,
+      ...shared,
+      ...(isCurrent ? {
+        expenseAmount: payload.expenseAmount,
+        amount: payload.amount,
+        status: payload.status,
+        situation: payload.situation,
+      } : {}),
+      date,
+      weekday: weekdayShort(date),
+      description: `${baseDescription} ${installmentNumber}/${item.installmentCount || series.length}`,
+    };
+  });
+  return targets.length;
 }
 
 function saveTransaction(event) {
@@ -3497,16 +3623,17 @@ function saveTransaction(event) {
     }
   }
 
-  if (index >= 0) state.transactions[index] = payload;
-  else state.transactions.push(payload);
+  const updatedInstallments = previous ? updateInstallmentSeries(previous, payload) : 0;
+  if (index >= 0 && !updatedInstallments) state.transactions[index] = { ...previous, ...payload };
+  else if (index < 0) state.transactions.push(payload);
   if (!state.budgets[payload.category] && payload.type === "expense") state.budgets[payload.category] = 0;
   selectedPeriod.mode = "month";
   selectedPeriod.month = monthOf(payload.date);
   saveState();
   els.dialog.close();
   showToast(
-    previous ? "Lançamento atualizado" : "Lançamento salvo",
-    payload.description + " · " + money.format(payload.amount),
+    updatedInstallments ? "Parcelamento atualizado" : previous ? "Lançamento atualizado" : "Lançamento salvo",
+    updatedInstallments ? `${updatedInstallments} parcela(s) pendente(s) recalculadas com segurança.` : payload.description + " · " + money.format(payload.amount),
     "success"
   );
   render();
@@ -4065,6 +4192,7 @@ document.addEventListener("click", (event) => {
   const removeCardButton = event.target.closest("[data-remove-card]");
   const removeFinancialAccountButton = event.target.closest("[data-remove-financial-account]");
   const editCardButton = event.target.closest("[data-edit-card]");
+  const toggleCardButton = event.target.closest("[data-toggle-card]");
   const editFinancialAccountButton = event.target.closest("[data-edit-financial-account]");
   const editGroupCatalogButton = event.target.closest("[data-edit-group]");
   const editExpenseClassCatalogButton = event.target.closest("[data-edit-expense-class]");
@@ -4094,6 +4222,7 @@ document.addEventListener("click", (event) => {
   if (removeExpenseClassButton) removeCatalogItem("expenseClass", removeExpenseClassButton.dataset.removeExpenseClass);
   if (removeCardButton) removeCatalogItem("card", removeCardButton.dataset.removeCard);
   if (editCardButton) editCardCatalog(editCardButton.dataset.editCard);
+  if (toggleCardButton) toggleCardCatalog(toggleCardButton.dataset.toggleCard);
   if (editFinancialAccountButton) beginCatalogEdit("financialAccount", editFinancialAccountButton.dataset.editFinancialAccount);
   if (editGroupCatalogButton) beginCatalogEdit("group", editGroupCatalogButton.dataset.editGroup);
   if (editExpenseClassCatalogButton) beginCatalogEdit("expenseClass", editExpenseClassCatalogButton.dataset.editExpenseClass);
@@ -4335,7 +4464,7 @@ els.expenseClassCatalogForm.addEventListener("submit", addExpenseClassCatalog);
 els.paymentCatalogForm.addEventListener("submit", addPaymentCatalog);
 els.cardCatalogForm.addEventListener("submit", addCardCatalog);
 els.newCardPaymentInput.addEventListener("change", () => {
-  const card = cardForPayment(els.newCardPaymentInput.value);
+  const card = cardForPayment(els.newCardPaymentInput.value, { includeInactive: true });
   if (!card) return;
   els.newCardClosingDayInput.value = String(card.closingDay);
   els.newCardDueDayInput.value = String(card.dueDay);
