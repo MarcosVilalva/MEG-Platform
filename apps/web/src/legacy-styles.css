@@ -264,6 +264,34 @@ body {
 
 .validation-banner { position: sticky; top: 0; z-index: 1000; padding: 9px 16px; background: #f7d77c; color: #4d3900; text-align: center; font-size: .78rem; font-weight: 900; letter-spacing: .03em; }
 
+.staging-lock {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(83, 224, 195, .22), transparent 30%),
+    linear-gradient(135deg, #042d27, #0b5c51);
+}
+.staging-lock section {
+  width: min(520px, 100%);
+  padding: clamp(26px, 5vw, 42px);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 28px;
+  color: #fff;
+  background: rgba(255,255,255,.1);
+  box-shadow: 0 28px 80px rgba(0,0,0,.28);
+  backdrop-filter: blur(16px);
+}
+.staging-lock-badge { display: inline-flex; margin-bottom: 16px; padding: 7px 10px; border-radius: 999px; color: #0a3c34; background: #53e0c3; font-size: .75rem; font-weight: 950; letter-spacing: .08em; }
+.staging-lock h1 { margin: 0 0 10px; font-size: clamp(2rem, 7vw, 3rem); }
+.staging-lock p { margin: 0 0 24px; color: rgba(255,255,255,.78); line-height: 1.5; }
+.staging-lock form { display: grid; gap: 12px; }
+.staging-lock label { display: grid; gap: 8px; font-weight: 850; }
+.staging-lock input { width: 100%; padding: 14px 16px; border: 1px solid rgba(255,255,255,.28); border-radius: 14px; color: #fff; background: rgba(0,0,0,.18); font: inherit; }
+.staging-lock button { min-height: 48px; border: 0; border-radius: 14px; color: #063f37; background: #53e0c3; font: inherit; font-weight: 950; cursor: pointer; }
+.staging-lock small { min-height: 18px; color: #ffd1d1; font-weight: 800; }
+
 button,
 input,
 select,

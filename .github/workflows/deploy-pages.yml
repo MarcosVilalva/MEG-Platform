@@ -49,7 +49,8 @@ jobs:
           VITE_APP_ENV: staging
           VITE_VALIDATION_MODE: 'true'
           VITE_PUBLIC_BASE_PATH: /MEG-Platform/staging/
-          VITE_API_URL: ${{ vars.VITE_STAGING_API_URL || vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
+          VITE_API_URL: ${{ vars.VITE_STAGING_API_URL || 'http://127.0.0.1:9' }}
+          VITE_STAGING_ACCESS_CODE: ${{ vars.VITE_STAGING_ACCESS_CODE || 'meg-teste' }}
         run: npm run build:web
 
       - name: Stage isolated staging artifact
