@@ -318,6 +318,47 @@ body[data-app-environment="staging"] .button.primary {
   background: linear-gradient(135deg, #087262, #20c7a9);
   box-shadow: 0 14px 28px rgba(13, 119, 105, .20);
 }
+.staging-environment-banner,
+.auth-staging-notice {
+  display: none;
+}
+body[data-app-environment="staging"] .staging-environment-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  border: 1px solid rgba(183, 121, 31, .24);
+  border-radius: 18px;
+  color: #3f2b06;
+  background: linear-gradient(135deg, #fff6db, #eafff9);
+  box-shadow: 0 14px 32px rgba(114, 74, 15, .08);
+}
+body[data-app-environment="staging"] .staging-environment-banner strong,
+body[data-app-environment="staging"] .auth-staging-notice strong {
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: .78rem;
+}
+body[data-app-environment="staging"] .staging-environment-banner span {
+  color: #65522a;
+  font-weight: 750;
+}
+body[data-app-environment="staging"] .auth-staging-notice {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 18px;
+  padding: 13px 15px;
+  border: 1px solid rgba(183, 121, 31, .25);
+  border-radius: 16px;
+  color: #3f2b06;
+  background: linear-gradient(135deg, #fff4ce, #eefaf7);
+}
+body[data-app-environment="staging"] .auth-staging-notice span {
+  color: #65522a;
+  line-height: 1.35;
+}
 
 button,
 input,
@@ -2731,6 +2772,13 @@ tbody tr:hover {
   .topbar {
     gap: 18px;
     margin-bottom: 20px;
+  }
+
+  body[data-app-environment="staging"] .staging-environment-banner {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-bottom: 14px;
+    padding: 11px 13px;
   }
 
   .topbar h1 {

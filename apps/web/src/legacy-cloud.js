@@ -193,6 +193,10 @@ function authMarkup() {
         <div class="auth-trust"><b>Dados sincronizados</b><span>Web e aplicativo sempre juntos</span></div>
       </section>
       <section class="auth-card">
+        <div class="auth-staging-notice" role="status">
+          <strong>Ambiente de testes</strong>
+          <span>Acesso restrito ao administrador. Use para validar melhorias antes da produção.</span>
+        </div>
         <div class="auth-brand"><span>M</span><div><strong>MEG Finanças</strong><small>Seu dinheiro. Suas escolhas. Seu controle.</small></div></div>
         <div class="auth-tabs"><button class="active" data-auth-tab="login">Entrar</button><button data-auth-tab="register">Começar</button></div>
         <form id="loginForm" class="auth-form">
