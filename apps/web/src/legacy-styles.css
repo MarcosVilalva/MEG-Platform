@@ -57,6 +57,11 @@
 .auth-form label { display: grid; gap: 7px; color: #173b34; font-weight: 800; }
 .auth-form input, .auth-form select { width: 100%; padding: 14px 16px; border: 1px solid #bfd9d3; border-radius: 12px; font: inherit; }
 .auth-form .button { width: 100%; justify-content: center; padding: 14px; }
+.biometric-opt-in { display: flex !important; align-items: center; gap: 10px !important; padding: 12px 14px; border: 1px solid #cce2dd; border-radius: 14px; background: #f1faf7; color: #164c43 !important; font-weight: 800; }
+.biometric-opt-in.hidden { display: none !important; }
+.biometric-opt-in input { width: 18px !important; height: 18px; padding: 0; accent-color: #0b8d7b; }
+.biometric-button { color: #0b5f54; border: 1px solid #b9d9d2; background: #eff8f5; box-shadow: none; }
+.biometric-button::before { content: "🔐"; margin-right: 8px; }
 .auth-link { border: 0; background: transparent; color: #0b7567; font: inherit; font-weight: 800; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .cloud-loading-overlay { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at top left, rgba(82, 226, 197, .24), transparent 36%), linear-gradient(135deg, #063f35, #041f1b); color: #fff; }
 .cloud-loading-overlay.hidden { display: none; }
