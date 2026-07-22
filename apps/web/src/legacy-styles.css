@@ -290,7 +290,34 @@ body {
 .staging-lock label { display: grid; gap: 8px; font-weight: 850; }
 .staging-lock input { width: 100%; padding: 14px 16px; border: 1px solid rgba(255,255,255,.28); border-radius: 14px; color: #fff; background: rgba(0,0,0,.18); font: inherit; }
 .staging-lock button { min-height: 48px; border: 0; border-radius: 14px; color: #063f37; background: #53e0c3; font: inherit; font-weight: 950; cursor: pointer; }
+.staging-lock-warning { margin: 4px 0 0 !important; padding: 10px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 12px; color: rgba(255,255,255,.86) !important; background: rgba(0,0,0,.16); font-size: .84rem; }
 .staging-lock small { min-height: 18px; color: #ffd1d1; font-weight: 800; }
+
+body[data-app-environment="staging"] .content {
+  background:
+    radial-gradient(circle at 75% 0%, rgba(83, 224, 195, .16), transparent 28%),
+    radial-gradient(circle at 15% 18%, rgba(13, 119, 105, .10), transparent 26%);
+}
+body[data-app-environment="staging"] .topbar h1::after {
+  content: " LAB";
+  display: inline-flex;
+  margin-left: 10px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: #073a33;
+  background: #53e0c3;
+  font-size: .72rem;
+  font-weight: 950;
+  vertical-align: middle;
+  letter-spacing: .08em;
+}
+body[data-app-environment="staging"] .panel {
+  box-shadow: 0 18px 46px rgba(7, 52, 45, .08);
+}
+body[data-app-environment="staging"] .button.primary {
+  background: linear-gradient(135deg, #087262, #20c7a9);
+  box-shadow: 0 14px 28px rgba(13, 119, 105, .20);
+}
 
 button,
 input,
@@ -1333,6 +1360,72 @@ textarea {
 .payable-empty { padding: 30px; border: 1px dashed rgba(23,107,93,.25); border-radius: 15px; background: rgba(232,247,242,.55); text-align: center; }
 
 .month-progress-panel { padding: 24px; border-radius: 22px; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(235,247,243,.91)), url("assets/dashboard-financas.png") center / cover no-repeat; }
+
+.executive-command-panel {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 18px;
+  padding: clamp(18px, 2.2vw, 28px);
+  border: 1px solid rgba(11, 116, 101, .18);
+  background:
+    radial-gradient(circle at 86% 8%, rgba(83, 224, 195, .22), transparent 26%),
+    linear-gradient(135deg, rgba(255,255,255,.98), rgba(236,248,244,.92)),
+    url("assets/dashboard-financas.png") center / cover no-repeat;
+}
+.executive-command-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 7px;
+  background: linear-gradient(180deg, #0d7769, #53e0c3);
+}
+.executive-command-panel.risk::before { background: linear-gradient(180deg, #bc4236, #ff7a6e); }
+.executive-command-panel.attention::before { background: linear-gradient(180deg, #b7791f, #ffd36a); }
+.executive-command-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+}
+.executive-command-hero h3 { margin: 4px 0 6px; font-size: clamp(1.35rem, 2.6vw, 2.1rem); }
+.executive-command-hero p { max-width: 860px; margin: 0; color: #526962; line-height: 1.5; }
+.executive-score {
+  width: 132px;
+  height: 132px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  border-radius: 34px;
+  color: #073a33;
+  background: linear-gradient(145deg, #eafff9, #c8f5eb);
+  box-shadow: inset 0 0 0 1px rgba(13, 119, 105, .14), 0 18px 36px rgba(13, 119, 105, .14);
+}
+.executive-command-panel.risk .executive-score { color: #8f1f17; background: linear-gradient(145deg, #fff6f4, #ffd9d3); }
+.executive-command-panel.attention .executive-score { color: #744400; background: linear-gradient(145deg, #fffaf0, #ffe7a8); }
+.executive-score strong { font-size: 3.1rem; line-height: .9; letter-spacing: -.06em; }
+.executive-score span { font-weight: 950; opacity: .68; }
+.executive-score small { margin-top: 3px; font-size: .72rem; font-weight: 950; text-transform: uppercase; letter-spacing: .08em; }
+.executive-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.executive-insight-grid article {
+  min-height: 132px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid rgba(13, 119, 105, .14);
+  border-radius: 22px;
+  background: rgba(255,255,255,.76);
+  box-shadow: 0 12px 28px rgba(7, 52, 45, .06);
+}
+.executive-insight-grid span { color: #5c706a; font-size: .78rem; font-weight: 950; text-transform: uppercase; letter-spacing: .04em; }
+.executive-insight-grid strong { color: #111b18; font-size: clamp(1.25rem, 2vw, 1.9rem); line-height: 1.05; }
+.executive-insight-grid small { color: #5a6d67; line-height: 1.38; }
 .compact-progress-panel { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 24px; align-items: center; }
 .compact-progress-content { min-width: 0; }
 .progress-ring-wrap { position: relative; display: grid; place-items: start center; width: 180px; height: 184px; }
@@ -2464,6 +2557,9 @@ tbody tr:hover {
   }
 
   .finance-panels { grid-template-columns: 1fr; }
+  .executive-command-hero,
+  .executive-insight-grid { grid-template-columns: 1fr; }
+  .executive-score { width: 100%; height: auto; min-height: 112px; border-radius: 22px; }
   .budget-goals-grid, .budget-editor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .current-month-health-equation { display: grid; grid-template-columns: 1fr; }
   .current-month-health-equation > b { display: none; }
@@ -2516,7 +2612,11 @@ tbody tr:hover {
   body.native-mobile .topbar-actions { gap: 8px; }
   body.native-mobile .finance-panels,
   body.native-mobile .current-grid,
+  body.native-mobile .executive-insight-grid,
   body.native-mobile .month-progress-stats { grid-template-columns: 1fr; }
+  body.native-mobile .executive-command-panel { padding: 18px; border-radius: 22px; }
+  body.native-mobile .executive-command-hero { grid-template-columns: 1fr; }
+  body.native-mobile .executive-score { width: 100%; height: auto; min-height: 98px; }
   body.native-mobile .dashboard-payables { max-height: 52vh; overflow-y: auto; overscroll-behavior: contain; }
   body.native-mobile dialog.modal { width: calc(100% - 16px); max-height: calc(100dvh - 20px); margin: 10px auto; border-radius: 22px; }
 }

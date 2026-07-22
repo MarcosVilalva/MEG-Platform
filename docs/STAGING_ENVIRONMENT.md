@@ -13,6 +13,8 @@ O staging é compilado com:
 - `VITE_VALIDATION_MODE=true`
 - `VITE_PUBLIC_BASE_PATH=/MEG-Platform/staging/`
 - `VITE_API_URL=http://127.0.0.1:9`, salvo se `VITE_STAGING_API_URL` for configurado explicitamente
+- `VITE_STAGING_USERNAME=admin@meg.test`
+- `VITE_STAGING_PASSWORD=meg-teste`
 
 Isso significa que ele abre em modo de validação local, sem gravar alterações na nuvem oficial.
 
@@ -24,9 +26,9 @@ Por isso, o staging possui três proteções práticas:
 
 1. não aponta para a API oficial;
 2. usa cache/sessão separados;
-3. exige uma chave simples de acesso antes de abrir a interface.
+3. exige login e senha simples de acesso antes de abrir a interface.
 
-Essa chave não deve ser considerada segurança bancária, porque aplicação estática sempre roda no navegador do usuário. Ela serve para bloquear acesso casual.
+Esse login não deve ser considerado segurança bancária, porque aplicação estática sempre roda no navegador do usuário. Ele serve para bloquear acesso casual.
 
 Regra operacional: não importar base real no staging público. Para testar dados sensíveis, usar base fictícia, mascarada ou um ambiente protegido por Cloudflare Access.
 
@@ -52,6 +54,14 @@ Staging usa chaves com sufixo:
 
 Essa separação evita contaminar o app oficial ao testar telas, importações ou alterações visuais.
 
+## Funcionalidades experimentais
+
+O staging pode exibir recursos que ainda não aparecem na produção. Exemplo atual:
+
+- painel `Consultor MEG`, com score gerencial, margem após pendências, maior risco e próxima ação recomendada.
+
+Esses recursos devem ser aprovados visualmente e funcionalmente antes de serem liberados na URL oficial.
+
 ## Quando usar
 
 Use o staging para:
@@ -70,10 +80,11 @@ Se futuramente for criado um backend separado, configure a variável do reposit�
 VITE_STAGING_API_URL=https://sua-api-staging.exemplo.com
 ```
 
-Se quiser trocar a chave simples do staging, configure também:
+Se quiser trocar as credenciais simples do staging, configure também:
 
 ```text
-VITE_STAGING_ACCESS_CODE=sua-chave
+VITE_STAGING_USERNAME=seu-email-de-teste
+VITE_STAGING_PASSWORD=sua-senha-de-teste
 ```
 
 Enquanto `VITE_STAGING_API_URL` não existir, o staging continua em modo local de validação e não usa a API oficial.

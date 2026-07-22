@@ -192,6 +192,18 @@ const els = {
   currentIncomeTrend: document.querySelector("#currentIncomeTrend"),
   currentExpenseTrend: document.querySelector("#currentExpenseTrend"),
   pendingBillsTrend: document.querySelector("#pendingBillsTrend"),
+  executiveCommandPanel: document.querySelector("#executiveCommandPanel"),
+  executiveDiagnosticTitle: document.querySelector("#executiveDiagnosticTitle"),
+  executiveDiagnosticMessage: document.querySelector("#executiveDiagnosticMessage"),
+  executiveScoreCard: document.querySelector("#executiveScoreCard"),
+  executiveScoreMetric: document.querySelector("#executiveScoreMetric"),
+  executiveScoreLabel: document.querySelector("#executiveScoreLabel"),
+  executiveMarginMetric: document.querySelector("#executiveMarginMetric"),
+  executiveMarginNote: document.querySelector("#executiveMarginNote"),
+  executiveRiskMetric: document.querySelector("#executiveRiskMetric"),
+  executiveRiskNote: document.querySelector("#executiveRiskNote"),
+  executiveActionMetric: document.querySelector("#executiveActionMetric"),
+  executiveActionNote: document.querySelector("#executiveActionNote"),
   dashboardPayables: document.querySelector("#dashboardPayables"),
   dashboardPayableSummary: document.querySelector("#dashboardPayableSummary"),
   paymentConfirmDialog: document.querySelector("#paymentConfirmDialog"),
@@ -1141,9 +1153,65 @@ function renderDashboard() {
   setCardTone(els.consolidatedPanel, totals.consolidatedBalance >= 0);
 
   renderCurrentSituation();
+  renderExecutiveCommandCenter(monetaryPosition, totals);
   renderDashboardPayables();
   renderCategoryChart();
   renderMonthProgress();
+}
+
+function renderExecutiveCommandCenter(monetaryPosition, totals) {
+  if (!els.executiveCommandPanel) return;
+  const stagingOnly = document.body.dataset.appEnvironment === "staging";
+  els.executiveCommandPanel.classList.toggle("hidden", !stagingOnly);
+  if (!stagingOnly) return;
+  const items = selectedTransactions().filter((item) => !isVerocardTransaction(item));
+  const expenses = items.filter((item) => item.type === "expense");
+  const pending = expenses.filter((item) => item.status === "pending");
+  const overdue = pending.filter((item) => item.date < todayIso);
+  const groups = groupExpenseRows(items);
+  const topGroup = groups[0];
+  const pendingTotal = pending.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const margin = monetaryPosition.balanceAfterPending;
+  const coverage = pendingTotal > 0 ? (Math.max(monetaryPosition.currentBalance, 0) / pendingTotal) * 100 : 100;
+  const deficitPenalty = margin < 0 ? Math.min(45, Math.abs(margin) / Math.max(monetaryPosition.availableIncome, 1) * 100) : 0;
+  const overduePenalty = Math.min(25, overdue.length * 6);
+  const concentration = totals.expense ? ((topGroup?.value || 0) / totals.expense) * 100 : 0;
+  const concentrationPenalty = concentration > 45 ? Math.min(15, (concentration - 45) / 2) : 0;
+  const score = Math.max(0, Math.min(100, Math.round(92 - deficitPenalty - overduePenalty - concentrationPenalty)));
+  const tone = score < 55 ? "risk" : score < 78 ? "attention" : "healthy";
+
+  els.executiveCommandPanel.classList.remove("risk", "attention", "healthy");
+  els.executiveCommandPanel.classList.add(tone);
+  els.executiveScoreMetric.textContent = String(score);
+  els.executiveScoreLabel.textContent = tone === "risk" ? "Alerta" : tone === "attention" ? "Atenção" : "Saudável";
+  els.executiveMarginMetric.textContent = money.format(margin);
+  els.executiveMarginNote.textContent = margin >= 0
+    ? `Sobram ${money.format(margin)} depois de reservar ${money.format(pendingTotal)} para pendências.`
+    : `Faltam ${money.format(Math.abs(margin))} depois de considerar ${money.format(pendingTotal)} pendentes.`;
+  els.executiveRiskMetric.textContent = overdue.length
+    ? `${overdue.length} vencida(s)`
+    : topGroup
+      ? topGroup.group
+      : "Sem risco";
+  els.executiveRiskNote.textContent = overdue.length
+    ? `Regularizar ${money.format(overdue.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0))} em atraso.`
+    : topGroup
+      ? `${money.format(topGroup.value)} no maior grupo do período.`
+      : "Nenhuma despesa relevante no filtro.";
+  els.executiveActionMetric.textContent = margin < 0 ? "Inserir receita" : overdue.length ? "Quitar vencidas" : coverage < 120 ? "Preservar caixa" : "Manter plano";
+  els.executiveActionNote.textContent = margin < 0
+    ? "Priorize entrada monetária ou renegocie despesas antes de assumir novos gastos."
+    : overdue.length
+      ? "Pague primeiro contas vencidas, cartão e serviços essenciais."
+      : coverage < 120
+        ? "Evite novas compras até concluir o mês com margem segura."
+        : "Caixa confortável no filtro atual; acompanhe apenas novos vencimentos.";
+  els.executiveDiagnosticTitle.textContent = tone === "risk"
+    ? "Diagnóstico crítico: precisa de ação"
+    : tone === "attention"
+      ? "Diagnóstico moderado: margem curta"
+      : "Diagnóstico positivo: caixa sob controle";
+  els.executiveDiagnosticMessage.textContent = `Período ${periodLabel()}: receitas disponíveis ${money.format(monetaryPosition.availableIncome)}, despesas pagas ${money.format(monetaryPosition.paidExpense)} e pendências ${money.format(pendingTotal)}.`;
 }
 
 function updateReconciliationPreview() {
