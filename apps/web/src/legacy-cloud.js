@@ -187,10 +187,8 @@ function authMarkup() {
           <div class="auth-form-heading"><small>ÁREA SEGURA</small><h1>Bem-vindo de volta</h1><p>Entre para visualizar seu painel financeiro.</p></div>
           <label>E-mail<input name="email" type="email" autocomplete="email" required /></label>
           <label>Senha<input name="password" type="password" autocomplete="current-password" minlength="8" required /></label>
-          <label class="biometric-opt-in hidden" id="biometricOptIn"><input id="biometricOptInInput" type="checkbox" /> Ativar entrada por biometria neste aparelho</label>
           <p class="auth-error" id="loginError"></p>
           <button class="button primary" type="submit">Acessar meu painel <span>→</span></button>
-          <button class="button biometric-button hidden" id="biometricLoginButton" type="button">Entrar com biometria</button>
           <button class="auth-link" id="forgotPasswordButton" type="button">Esqueci minha senha</button>
         </form>
         <form id="registerForm" class="auth-form hidden">
@@ -225,9 +223,7 @@ function showAuthentication() {
   const login = document.querySelector('#loginForm');
   const register = document.querySelector('#registerForm');
   const forgot = document.querySelector('#forgotForm');
-  const biometricButton = document.querySelector('#biometricLoginButton');
-  const biometricOptIn = document.querySelector('#biometricOptIn');
-  const biometricOptInInput = document.querySelector('#biometricOptInInput');
+  let biometricStatus = { available: false, enabled: false };
 
   const inactivityMessage = sessionStorage.getItem('meg-inactivity-message');
   if (inactivityMessage) {
@@ -275,7 +271,7 @@ function showAuthentication() {
 
   let resolveAuth;
 
-  async function loginWithCredentials(credentials, { rememberBiometric = false } = {}) {
+  async function loginWithCredentials(credentials, { offerBiometricSetup = false } = {}) {
     const response = await resilientFetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -284,27 +280,25 @@ function showAuthentication() {
     const payload = await response.json();
     if (!response.ok) throw new Error(friendlyAuthError(payload.error));
     persistSession(payload);
-    if (rememberBiometric) {
-      await saveBiometricLogin({ email: credentials.email, password: credentials.password });
+    if (offerBiometricSetup && biometricStatus.available && !biometricStatus.enabled) {
+      const wantsBiometric = window.confirm('Deseja usar biometria para entrar mais rápido nas próximas vezes neste aparelho?');
+      if (wantsBiometric) {
+        const saved = await saveBiometricLogin({ email: credentials.email, password: credentials.password });
+        biometricStatus = { ...biometricStatus, enabled: Boolean(saved?.saved), email: credentials.email };
+      }
     }
     shell.remove();
     showCloudLoading();
     return payload.user;
   }
 
-  getBiometricLoginStatus().then((status) => {
-    if (!status?.available) return;
-    biometricOptIn?.classList.remove('hidden');
-    if (status.enabled) biometricButton?.classList.remove('hidden');
-  }).catch(() => undefined);
-
-  biometricButton?.addEventListener('click', async () => {
+  async function performAutomaticBiometricLogin() {
     const error = document.querySelector('#loginError');
     error.classList.remove('session-ended');
-    error.textContent = 'Aguardando biometria...';
+    error.textContent = 'Confirme sua biometria para entrar automaticamente...';
     const credentials = await requestBiometricLogin();
     if (!credentials) {
-      error.textContent = 'Biometria cancelada ou indisponivel. Use e-mail e senha.';
+      error.textContent = 'Biometria cancelada ou indisponível. Use e-mail e senha.';
       return;
     }
     try {
@@ -313,7 +307,14 @@ function showAuthentication() {
     } catch (cause) {
       error.textContent = cause instanceof Error ? cause.message : 'Nao foi possivel conectar a API.';
     }
-  });
+  }
+
+  getBiometricLoginStatus().then((status) => {
+    biometricStatus = status || { available: false, enabled: false };
+    if (biometricStatus.available && biometricStatus.enabled) {
+      window.setTimeout(performAutomaticBiometricLogin, 350);
+    }
+  }).catch(() => undefined);
 
   return new Promise((resolve) => {
     resolveAuth = resolve;
@@ -324,7 +325,7 @@ function showAuthentication() {
       error.textContent = 'Conectando...';
       try {
         const body = Object.fromEntries(new FormData(login));
-        const user = await loginWithCredentials(body, { rememberBiometric: Boolean(biometricOptInInput?.checked) });
+        const user = await loginWithCredentials(body, { offerBiometricSetup: true });
         resolve(user);
       } catch (cause) {
         error.textContent = cause instanceof Error ? cause.message : 'Não foi possível conectar à API.';

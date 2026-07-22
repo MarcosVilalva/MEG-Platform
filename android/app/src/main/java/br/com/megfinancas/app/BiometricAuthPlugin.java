@@ -79,13 +79,39 @@ public class BiometricAuthPlugin extends Plugin {
             call.reject("Biometria ou bloqueio de tela indisponivel.");
             return;
         }
-        prefs().edit()
-            .putString(KEY_EMAIL, email)
-            .putString(KEY_PASSWORD, password)
-            .apply();
-        JSObject response = new JSObject();
-        response.put("saved", true);
-        call.resolve(response);
+
+        Executor executor = ContextCompat.getMainExecutor(getContext());
+        FragmentActivity activity = (FragmentActivity) getActivity();
+        BiometricPrompt biometricPrompt = new BiometricPrompt(activity, executor, new BiometricPrompt.AuthenticationCallback() {
+            @Override
+            public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                prefs().edit()
+                    .putString(KEY_EMAIL, email)
+                    .putString(KEY_PASSWORD, password)
+                    .apply();
+                JSObject response = new JSObject();
+                response.put("saved", true);
+                call.resolve(response);
+            }
+
+            @Override
+            public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                call.reject(errString.toString());
+            }
+
+            @Override
+            public void onAuthenticationFailed() {
+                // Keep the prompt open so Android can allow another attempt.
+            }
+        });
+
+        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Ativar biometria no MEG Financas")
+            .setSubtitle("Confirme sua identidade para liberar o acesso rapido")
+            .setAllowedAuthenticators(authenticators())
+            .build();
+
+        getActivity().runOnUiThread(() -> biometricPrompt.authenticate(promptInfo));
     }
 
     @PluginMethod
