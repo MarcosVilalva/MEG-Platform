@@ -2,6 +2,7 @@ import { getBiometricLoginStatus, requestBiometricLogin, saveBiometricLogin } fr
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
 const APP_ENV = import.meta.env.VITE_APP_ENV || 'production';
+const STAGING_ADMIN_EMAIL = String(import.meta.env.VITE_STAGING_ADMIN_EMAIL || 'm_vilalva@hotmail.com').trim().toLowerCase();
 const ENV_SUFFIX = APP_ENV === 'production' ? '' : `-${APP_ENV}`;
 const ACCESS_KEY = `meg-access-token${ENV_SUFFIX}`;
 const REFRESH_KEY = `meg-refresh-token${ENV_SUFFIX}`;
@@ -70,6 +71,15 @@ function clearSession() {
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
   localStorage.removeItem(USER_KEY);
+}
+
+function assertStagingAdmin(user) {
+  if (APP_ENV !== 'staging') return;
+  const email = String(user?.email || '').trim().toLowerCase();
+  if (email !== STAGING_ADMIN_EMAIL) {
+    clearSession();
+    throw new Error('Ambiente de testes liberado apenas para o administrador principal.');
+  }
 }
 
 function showCloudLoading(message = 'Carregando dados financeiros...', detail = 'Sincronizando com a nuvem') {
@@ -281,6 +291,7 @@ function showAuthentication() {
     }, { retries: 1, timeoutMs: 20000 });
     const payload = await response.json();
     if (!response.ok) throw new Error(friendlyAuthError(payload.error));
+    assertStagingAdmin(payload.user);
     persistSession(payload);
     if (offerBiometricSetup && biometricStatus.available && !biometricStatus.enabled) {
       const wantsBiometric = window.confirm('Deseja usar biometria para entrar mais rápido nas próximas vezes neste aparelho?');
@@ -392,7 +403,11 @@ async function validateOrLogin() {
     showCloudLoading('Validando acesso...', 'Conferindo sua sessão segura');
     try {
       const response = await api('/auth/me');
-      if (response.ok) return (await response.json()).user;
+      if (response.ok) {
+        const user = (await response.json()).user;
+        assertStagingAdmin(user);
+        return user;
+      }
     } catch {}
     clearSession();
     hideCloudLoading();

@@ -47,12 +47,10 @@ jobs:
       - name: Build isolated staging web application
         env:
           VITE_APP_ENV: staging
-          VITE_VALIDATION_MODE: 'true'
+          VITE_VALIDATION_MODE: 'false'
           VITE_PUBLIC_BASE_PATH: /MEG-Platform/staging/
-          VITE_API_URL: ${{ vars.VITE_STAGING_API_URL || 'http://127.0.0.1:9' }}
-          VITE_STAGING_ACCESS_CODE: ${{ vars.VITE_STAGING_ACCESS_CODE || 'meg-teste' }}
-          VITE_STAGING_USERNAME: ${{ vars.VITE_STAGING_USERNAME || 'admin@meg.test' }}
-          VITE_STAGING_PASSWORD: ${{ vars.VITE_STAGING_PASSWORD || 'meg-teste' }}
+          VITE_API_URL: ${{ vars.VITE_STAGING_API_URL || vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
+          VITE_STAGING_ADMIN_EMAIL: ${{ vars.VITE_STAGING_ADMIN_EMAIL || 'm_vilalva@hotmail.com' }}
         run: npm run build:web
 
       - name: Stage isolated staging artifact

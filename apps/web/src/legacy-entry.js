@@ -7,9 +7,6 @@ import { checkForAppUpdate } from './native-app-update.js';
 const appEnvironment = import.meta.env.VITE_APP_ENV || 'production';
 const appEnvironmentSuffix = appEnvironment === 'production' ? '' : `-${appEnvironment}`;
 const validationMode = import.meta.env.VITE_VALIDATION_MODE === 'true' || new URLSearchParams(location.search).get('validacao') === '1';
-const stagingAccessCode = import.meta.env.VITE_STAGING_ACCESS_CODE || 'meg-teste';
-const stagingUsername = import.meta.env.VITE_STAGING_USERNAME || 'admin@meg.test';
-const stagingPassword = import.meta.env.VITE_STAGING_PASSWORD || stagingAccessCode;
 const localStateKey = `meg-financas-state-v4-paid-fixes${appEnvironmentSuffix}`;
 const nativeMobileMode = import.meta.env.VITE_MOBILE_APP === 'true' || Boolean(window.Capacitor?.isNativePlatform?.());
 document.body.classList.toggle('native-mobile', nativeMobileMode);
@@ -22,36 +19,7 @@ const showSuccess = (title, message) => window.MEG_APP?.showToast?.(title, messa
 
 function requireStagingAccess() {
   if (appEnvironment !== 'staging') return true;
-  const accessKey = `meg-staging-access-ok${appEnvironmentSuffix}`;
-  if (sessionStorage.getItem(accessKey) === '1') return true;
-  document.body.innerHTML = `
-    <main class="staging-lock">
-      <section>
-        <div class="staging-lock-badge">AMBIENTE DE TESTES</div>
-        <h1>MEG Staging protegido</h1>
-        <p>Este endereço é público no GitHub Pages. Para validar melhorias sem expor dados sensíveis, o ambiente de testes exige login e senha próprios.</p>
-        <form id="stagingAccessForm">
-          <label>Usuário<input name="username" type="email" autocomplete="username" autofocus /></label>
-          <label>Senha<input name="password" type="password" autocomplete="current-password" /></label>
-          <button type="submit">Entrar no ambiente de testes</button>
-          <p class="staging-lock-warning">Use somente dados fictícios ou mascarados neste ambiente. A produção continua separada.</p>
-          <small id="stagingAccessError"></small>
-        </form>
-      </section>
-    </main>`;
-  document.querySelector('#stagingAccessForm')?.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const username = String(form.get('username') || '').trim().toLowerCase();
-    const password = String(form.get('password') || '');
-    if (username !== String(stagingUsername).toLowerCase() || password !== String(stagingPassword)) {
-      document.querySelector('#stagingAccessError').textContent = 'Usuário ou senha incorretos.';
-      return;
-    }
-    sessionStorage.setItem(accessKey, '1');
-    location.reload();
-  });
-  return false;
+  return true;
 }
 
 function bootstrapValidationMode() {
