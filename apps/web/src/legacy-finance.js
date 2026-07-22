@@ -20,6 +20,10 @@ export function isCreditCardExpense(item) {
   return item.type === 'expense' && (modality.includes('CREDITO') || method.includes('CARTAO') || method.includes('CREDITO'));
 }
 
+export function transactionPeriodDate(item) {
+  return String(item?.purchaseDate || item?.date || '');
+}
+
 export function calculateCreditCardPortfolio(allTransactions, periodTransactions, registeredCards = [], filters = {}) {
   const cardFilter = normalizedFinanceText(filters.card || '');
   const statusFilter = String(filters.status || 'all').toLowerCase();
@@ -123,8 +127,11 @@ export function summarizeDueDate(items, referenceDate = '') {
 export function calculateFinancialSummary(transactions, start = '', end = '') {
   const previousMonthEnd = start ? new Date(`${start}T12:00:00`).getTime() - 86400000 : 0;
   const previousMonthEndIso = previousMonthEnd ? new Date(previousMonthEnd).toISOString().slice(0, 10) : '';
-  const openingItems = previousMonthEndIso ? transactions.filter((item) => item.date <= previousMonthEndIso) : [];
-  const periodItems = transactions.filter((item) => (!start || item.date >= start) && (!end || item.date <= end));
+  const openingItems = previousMonthEndIso ? transactions.filter((item) => transactionPeriodDate(item) <= previousMonthEndIso) : [];
+  const periodItems = transactions.filter((item) => {
+    const competenceDate = transactionPeriodDate(item);
+    return (!start || competenceDate >= start) && (!end || competenceDate <= end);
+  });
   const sum = (items, type) => items.reduce((total, item) => total + transactionValue(item, type), 0);
 
   const cashOpeningItems = openingItems.filter((item) => !isVerocardTransaction(item));
