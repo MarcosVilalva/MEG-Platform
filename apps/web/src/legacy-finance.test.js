@@ -148,6 +148,14 @@ assert.equal(Number(namedBenefitCardSummary.expense.toFixed(2)), 11346.42);
 assert.equal(Number(namedBenefitCardSummary.ticketExpense.toFixed(2)), 90.34);
 assert.equal(Number(namedBenefitCardSummary.closingBalance.toFixed(2)), 152.89);
 
+const creditCardCompetenceSummary = calculateFinancialSummary([
+  { date: '2026-08-10', purchaseDate: '2026-07-21', type: 'expense', expenseAmount: 500, status: 'pending', modality: 'CREDITO', paymentMethod: 'CARTAO AZUL' },
+  { date: '2026-07-05', type: 'income', incomeAmount: 1200, status: 'paid' },
+], '2026-07-01', '2026-07-31');
+assert.equal(creditCardCompetenceSummary.income, 1200);
+assert.equal(creditCardCompetenceSummary.expense, 500);
+assert.equal(creditCardCompetenceSummary.pendingExpense, 500);
+
 const currentMonetaryPosition = calculateMonetaryDashboard([
   { date: '2026-06-30', type: 'income', incomeAmount: 100 },
   { date: '2026-07-01', type: 'income', incomeAmount: 1000 },

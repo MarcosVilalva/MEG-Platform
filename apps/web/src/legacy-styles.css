@@ -58,6 +58,12 @@
 .auth-form input, .auth-form select { width: 100%; padding: 14px 16px; border: 1px solid #bfd9d3; border-radius: 12px; font: inherit; }
 .auth-form .button { width: 100%; justify-content: center; padding: 14px; }
 .auth-link { border: 0; background: transparent; color: #0b7567; font: inherit; font-weight: 800; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.cloud-loading-overlay { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at top left, rgba(82, 226, 197, .24), transparent 36%), linear-gradient(135deg, #063f35, #041f1b); color: #fff; }
+.cloud-loading-overlay.hidden { display: none; }
+.cloud-loading-card { width: min(420px, 92vw); display: grid; gap: 12px; justify-items: center; padding: 34px 28px; border: 1px solid rgba(255,255,255,.18); border-radius: 28px; background: rgba(255,255,255,.1); box-shadow: 0 24px 80px rgba(0,0,0,.28); text-align: center; backdrop-filter: blur(16px); }
+.cloud-loading-card span { display: grid; place-items: center; width: 68px; height: 68px; border-radius: 22px; background: #53e0c3; color: #07392f; font-size: 2rem; font-weight: 1000; }
+.cloud-loading-card strong { font-size: clamp(1.5rem, 4vw, 2.15rem); }
+.cloud-loading-card small { color: rgba(255,255,255,.76); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .auth-error { min-height: 20px; margin: 0; color: #bd2b2b; }
 .auth-error.success { color: #087562; }
 .auth-error.session-ended { color: #8a5a00; background: #fff4d6; border-radius: 12px; padding: 10px 12px; }
@@ -3361,6 +3367,12 @@ dialog.modal {
 .opening-alert-summary article { padding: 14px; border-radius: 16px; background: #f0f7f5; }
 .opening-alert-summary span { display: block; color: #607872; font-size: .75rem; font-weight: 900; text-transform: uppercase; }
 .opening-alert-summary strong { display: block; margin-top: 5px; font-size: 1.35rem; }
+.opening-alert-days { display: grid; gap: 8px; }
+.opening-alert-days article { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid #cfe2dc; border-radius: 16px; background: linear-gradient(135deg, #f7fffc, #eef8f4); }
+.opening-alert-days span { min-width: 0; }
+.opening-alert-days strong { display: block; font-size: .95rem; color: #0b5f50; }
+.opening-alert-days small { display: block; max-width: 100%; color: #607872; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opening-alert-days b { flex: 0 0 auto; font-size: 1.05rem; }
 .opening-alert-list { display: grid; gap: 8px; max-height: 260px; overflow-y: auto; }
 .opening-alert-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px; border: 1px solid #dbe8e5; border-radius: 15px; }
 .opening-alert-item.critical { border-color: #ffc7c0; background: #fff4f2; }

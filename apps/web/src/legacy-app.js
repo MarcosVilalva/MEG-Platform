@@ -1,4 +1,4 @@
-import { availableMonetaryBalance, calculateBalanceReconciliation, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, calculateHistoricalProjection, calculateMonetaryDashboard, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal, summarizeDueDate } from "./legacy-finance.js";
+import { availableMonetaryBalance, calculateBalanceReconciliation, calculateCreditCardPortfolio, calculateCurrentMonthHealth, calculateFinancialSummary, calculateHistoricalProjection, calculateMonetaryDashboard, groupPayableItems, isCreditCardExpense, payableGroupLabel, payableGroupTotal, summarizeDueDate, transactionPeriodDate } from "./legacy-finance.js";
 import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } from "./legacy-installments.js";
 import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOfMonth } from "./calendar-date.js";
 import { buildCardForecast, resolveCardIdentity } from "./legacy-card-identity.js";
@@ -665,11 +665,11 @@ function weekdayShort(dateValue) {
 }
 
 function availableYears() {
-  return [...new Set(state.transactions.map((item) => String(item.date).slice(0, 4)))].sort((a, b) => b.localeCompare(a));
+  return [...new Set(state.transactions.map((item) => transactionPeriodDate(item).slice(0, 4)).filter(Boolean))].sort((a, b) => b.localeCompare(a));
 }
 
 function availableDateBounds() {
-  const dates = state.transactions.map((item) => item.date).sort();
+  const dates = state.transactions.map(transactionPeriodDate).filter(Boolean).sort();
   return {
     min: dates[0] || `${currentMonth}-01`,
     max: dates[dates.length - 1] || `${currentMonth}-28`,
@@ -679,15 +679,18 @@ function availableDateBounds() {
 function selectedTransactions() {
   if (selectedPeriod.mode === "all") return [...state.transactions];
   if (selectedPeriod.mode === "year") {
-    return state.transactions.filter((item) => String(item.date).startsWith(selectedPeriod.year));
+    return state.transactions.filter((item) => transactionPeriodDate(item).startsWith(selectedPeriod.year));
   }
   if (selectedPeriod.mode === "range") {
     const bounds = availableDateBounds();
     const start = selectedPeriod.start || bounds.min;
     const end = selectedPeriod.end || bounds.max;
-    return state.transactions.filter((item) => item.date >= start && item.date <= end);
+    return state.transactions.filter((item) => {
+      const competenceDate = transactionPeriodDate(item);
+      return competenceDate >= start && competenceDate <= end;
+    });
   }
-  return state.transactions.filter((item) => monthOf(item.date) === selectedPeriod.month);
+  return state.transactions.filter((item) => monthOf(transactionPeriodDate(item)) === selectedPeriod.month);
 }
 
 function expensesForMonth() {
@@ -707,7 +710,7 @@ function totalsFor(items) {
 
 function openingBalanceBefore(dateValue) {
   if (!dateValue) return 0;
-  const totals = totalsFor(state.transactions.filter((item) => item.date < dateValue));
+  const totals = totalsFor(state.transactions.filter((item) => transactionPeriodDate(item) < dateValue));
   return totals.income - totals.expense;
 }
 
@@ -717,7 +720,7 @@ function financialSummaryForPeriod(items = selectedTransactions()) {
 }
 
 function currentMonthTransactions() {
-  return state.transactions.filter((item) => monthOf(item.date) === currentMonth);
+  return state.transactions.filter((item) => monthOf(transactionPeriodDate(item)) === currentMonth);
 }
 
 function previousMonthValue(monthValue = currentMonth) {
@@ -930,13 +933,16 @@ function previousPeriodTransactions() {
   const length = daysBetween(start, end);
   const previousEnd = addDays(start, -1);
   const previousStart = addDays(previousEnd, -(length - 1));
-  return state.transactions.filter((item) => item.date >= previousStart && item.date <= previousEnd);
+  return state.transactions.filter((item) => {
+    const competenceDate = transactionPeriodDate(item);
+    return competenceDate >= previousStart && competenceDate <= previousEnd;
+  });
 }
 
 function monthlyBuckets(items) {
   const buckets = new Map();
   items.forEach((item) => {
-    const key = monthOf(item.date);
+    const key = monthOf(transactionPeriodDate(item));
     if (!buckets.has(key)) buckets.set(key, { month: key, income: 0, expense: 0 });
     const bucket = buckets.get(key);
     if (item.type === "income") bucket.income += Number(item.incomeAmount || item.amount || 0);
@@ -1317,6 +1323,18 @@ function openingAlertData() {
   };
 }
 
+function dailyAlertTotals(items) {
+  const byDate = new Map();
+  groupPayableItems(items).forEach((group) => {
+    const current = byDate.get(group.date) || { date: group.date, total: 0, count: 0, labels: [] };
+    current.total += payableGroupTotal(group);
+    current.count += 1;
+    current.labels.push(payableGroupLabel(group));
+    byDate.set(group.date, current);
+  });
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
 function showOpeningFinancialAlert() {
   if (!els.openingAlertDialog || sessionStorage.getItem(`meg-opening-alert-${todayIso}`)) return;
   const data = openingAlertData();
@@ -1329,6 +1347,7 @@ function showOpeningFinancialAlert() {
     ? `🚨 ${data.overdueCount} conta(s)/fatura(s) vencida(s)`
     : data.todayCount ? `⏰ ${data.todayCount} conta(s)/fatura(s) vencem hoje` : "📅 Próximos vencimentos";
   const grouped = groupPayableItems(data.relevant).slice(0, 5);
+  const dailyTotals = dailyAlertTotals(data.relevant);
   els.openingAlertBody.innerHTML = `
     <div class="opening-alert-summary">
       <article><span>Vencidas</span><strong>${data.overdueCount}</strong></article>
@@ -1337,6 +1356,7 @@ function showOpeningFinancialAlert() {
       <article><span>Total urgente</span><strong>${money.format(data.total)}</strong></article>
     </div>
     ${data.health.projectedClosing < 0 ? `<div class="opening-alert-critical">⚠️ Mesmo usando o saldo atual, faltam <strong>${money.format(Math.abs(data.health.projectedClosing))}</strong> para fechar ${formatMonthCode(currentMonth)}. Priorize inserir a receita faltante.</div>` : ""}
+    ${dailyTotals.length ? `<div class="opening-alert-days">${dailyTotals.map((day) => `<article><span><strong>${formatDate(day.date)}</strong><small>${day.labels.slice(0, 3).map(escapeHtml).join(" + ")}${day.labels.length > 3 ? ` +${day.labels.length - 3}` : ""}</small></span><b>${money.format(day.total)}</b></article>`).join("")}</div>` : ""}
     <div class="opening-alert-list">${grouped.length ? grouped.map((group) => {
       const itemTone = group.date < todayIso ? "critical" : group.date === todayIso ? "warning" : "";
       return `<article class="opening-alert-item ${itemTone}"><span aria-hidden="true">${group.date < todayIso ? "🚨" : group.date === todayIso ? "⏰" : "📅"}</span><span><strong>${escapeHtml(payableGroupLabel(group))}</strong><small>${formatDate(group.date)} · ${group.items.length > 1 ? `${group.items.length} lançamentos agrupados` : group.payment}</small></span><b>${money.format(payableGroupTotal(group))}</b></article>`;
@@ -2428,8 +2448,8 @@ function renderPeriodControls() {
   els.periodMode.value = selectedPeriod.mode;
   els.monthFilter.value = selectedPeriod.month;
   els.yearFilter.value = selectedPeriod.year;
-  els.startDateFilter.value = selectedPeriod.start;
-  els.endDateFilter.value = selectedPeriod.end;
+  if (document.activeElement !== els.startDateFilter) els.startDateFilter.value = selectedPeriod.start;
+  if (document.activeElement !== els.endDateFilter) els.endDateFilter.value = selectedPeriod.end;
   els.periodFields.forEach((field) => {
     field.classList.toggle("hidden", field.dataset.periodField !== selectedPeriod.mode);
   });
@@ -3504,6 +3524,7 @@ function syncAmountFields() {
   els.paymentMethodLabel.textContent = isIncome ? "FORMA DE RECEBIMENTO" : creditExpense ? "CARTÃO UTILIZADO" : "FORMA DE PAGAMENTO";
   const paidOption = els.statusInput.querySelector('option[value="paid"]');
   if (paidOption) paidOption.textContent = isIncome ? "RECEBIDO" : "PAGO";
+  if (!isIncome && !els.transactionId.value) els.statusInput.value = "pending";
   if (isIncome) {
     els.expenseAmountInput.value = "";
     els.expenseClassInput.value = "";
@@ -3690,7 +3711,7 @@ function openTransactionDialog(item = null) {
   els.expenseAmountInput.value = item?.expenseAmount || "";
   els.expenseClassInput.value = desiredExpenseClass;
   els.groupInput.value = desiredGroup;
-  els.statusInput.value = item?.status || "paid";
+  els.statusInput.value = item?.status || (els.transactionType.value === "expense" ? "pending" : "paid");
   els.modalityInput.value = desiredModality;
   refreshPaymentMethodOptions(desiredPayment);
   refreshFinancialAccountOptions(item?.financialAccountId || suggestedFinancialAccountId());
@@ -3768,7 +3789,10 @@ function saveTransaction(event) {
   const expenseAmount = type === "expense" ? Number(els.expenseAmountInput.value || 0) : 0;
   const paymentMethod = els.paymentMethodInput.value.trim();
   const group = els.groupInput.value.trim();
-  const situation = els.statusInput.value === "paid" ? "PAGO" : "PENDENTE";
+  const index = state.transactions.findIndex((item) => item.id === id);
+  const previous = index >= 0 ? state.transactions[index] : null;
+  const status = type === "expense" && !previous ? "pending" : els.statusInput.value;
+  const situation = status === "paid" ? "PAGO" : "PENDENTE";
   const financialAccount = financialAccountById(els.financialAccountInput.value);
   const payload = {
     id,
@@ -3788,21 +3812,19 @@ function saveTransaction(event) {
     account: paymentMethod,
     financialAccountId: financialAccount?.id || suggestedFinancialAccountId(),
     financialScope: financialAccount?.type === "BENEFIT" ? "benefit" : "monetary",
-    status: els.statusInput.value,
+    status,
     situation,
     modality: els.modalityInput.value.trim(),
     notes: els.notesInput.value.trim(),
   };
 
-  const index = state.transactions.findIndex((item) => item.id === id);
-  const previous = index >= 0 ? state.transactions[index] : null;
   if (!previous && payload.type === "expense" && isInstallmentModality()) {
     try {
       const installments = createInstallmentTransactions(payload);
       state.transactions.push(...installments);
       if (!state.budgets[payload.category]) state.budgets[payload.category] = 0;
       selectedPeriod.mode = "month";
-      selectedPeriod.month = monthOf(installments[0].date);
+      selectedPeriod.month = monthOf(transactionPeriodDate(installments[0]));
       saveState();
       els.dialog.close();
       showToast("Parcelamento criado", `${installments.length} parcela(s) geradas até ${formatDate(installments.at(-1).date)}`, "success");
@@ -3827,7 +3849,7 @@ function saveTransaction(event) {
   else if (index < 0) state.transactions.push(payload);
   if (!state.budgets[payload.category] && payload.type === "expense") state.budgets[payload.category] = 0;
   selectedPeriod.mode = "month";
-  selectedPeriod.month = monthOf(payload.date);
+  selectedPeriod.month = monthOf(transactionPeriodDate(payload));
   saveState();
   els.dialog.close();
   showToast(
@@ -4489,6 +4511,11 @@ els.monthFilter.value = selectedPeriod.month;
 els.yearFilter.value = selectedPeriod.year;
 els.periodMode.addEventListener("change", () => {
   selectedPeriod.mode = els.periodMode.value;
+  if (selectedPeriod.mode === "range" && (!selectedPeriod.start || !selectedPeriod.end)) {
+    const bounds = dateRangeForSelectedPeriod();
+    selectedPeriod.start = selectedPeriod.start || bounds.start;
+    selectedPeriod.end = selectedPeriod.end || bounds.end;
+  }
   render();
 });
 els.monthFilter.addEventListener("change", () => {
@@ -4501,16 +4528,19 @@ els.yearFilter.addEventListener("change", () => {
   selectedPeriod.mode = "year";
   render();
 });
-els.startDateFilter.addEventListener("change", () => {
-  selectedPeriod.start = els.startDateFilter.value;
+function commitRangeFilter() {
+  if (els.startDateFilter.value) selectedPeriod.start = els.startDateFilter.value;
+  if (els.endDateFilter.value) selectedPeriod.end = els.endDateFilter.value;
   selectedPeriod.mode = "range";
+  if (selectedPeriod.start && selectedPeriod.end && selectedPeriod.start > selectedPeriod.end) {
+    [selectedPeriod.start, selectedPeriod.end] = [selectedPeriod.end, selectedPeriod.start];
+  }
   render();
-});
-els.endDateFilter.addEventListener("change", () => {
-  selectedPeriod.end = els.endDateFilter.value;
-  selectedPeriod.mode = "range";
-  render();
-});
+}
+els.startDateFilter.addEventListener("change", commitRangeFilter);
+els.endDateFilter.addEventListener("change", commitRangeFilter);
+els.startDateFilter.addEventListener("blur", commitRangeFilter);
+els.endDateFilter.addEventListener("blur", commitRangeFilter);
 els.quickAddBtn.addEventListener("click", () => openTransactionDialog());
 els.resetDemoBtn.addEventListener("click", () => {
   window.MEG_CLOUD?.reload();

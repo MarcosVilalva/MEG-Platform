@@ -45,6 +45,23 @@ function clearSession() {
   localStorage.removeItem(USER_KEY);
 }
 
+function showCloudLoading(message = 'Carregando dados financeiros...') {
+  let overlay = document.querySelector('#cloudLoadingOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'cloudLoadingOverlay';
+    overlay.className = 'cloud-loading-overlay';
+    overlay.innerHTML = '<div class="cloud-loading-card"><span>M</span><strong></strong><small>Sincronizando com a nuvem</small></div>';
+    document.body.appendChild(overlay);
+  }
+  overlay.querySelector('strong').textContent = message;
+  overlay.classList.remove('hidden');
+}
+
+function hideCloudLoading() {
+  document.querySelector('#cloudLoadingOverlay')?.classList.add('hidden');
+}
+
 // Discard credentials written by older builds. Financial data remains in its
 // own storage key and is not affected by this security migration.
 localStorage.removeItem(ACCESS_KEY);
@@ -239,6 +256,7 @@ function showAuthentication() {
         if (!response.ok) throw new Error(friendlyAuthError(payload.error));
         persistSession(payload);
         shell.remove();
+        showCloudLoading();
         resolve(payload.user);
       } catch (cause) {
         error.textContent = cause instanceof Error ? cause.message : 'Não foi possível conectar à API.';
@@ -263,6 +281,7 @@ function showAuthentication() {
         if (payload.accessToken) {
           persistSession(payload);
           shell.remove();
+          showCloudLoading();
           resolve(payload.user);
           return;
         }
@@ -444,6 +463,7 @@ export async function bootstrapCloud() {
     };
   });
   if (!hasCache) await freshState;
+  hideCloudLoading();
   window.MEG_CLOUD = {
     user,
     whenFresh: freshState,
