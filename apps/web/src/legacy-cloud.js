@@ -15,6 +15,29 @@ let queuedState = null;
 let pollingTimer;
 const syncChannel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('meg-cloud-state-v1') : null;
 
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function resilientFetch(url, options = {}, { retries = 1, timeoutMs = 18000 } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    const timeout = controller ? window.setTimeout(() => controller.abort(), timeoutMs) : null;
+    try {
+      const response = await fetch(url, { ...options, signal: controller?.signal || options.signal });
+      if (timeout) window.clearTimeout(timeout);
+      return response;
+    } catch (cause) {
+      if (timeout) window.clearTimeout(timeout);
+      lastError = cause;
+      if (attempt >= retries) break;
+      await wait(900 + attempt * 800);
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Falha de conexao com a API.');
+}
+
 function session() {
   try {
     return {
@@ -47,7 +70,7 @@ function clearSession() {
   localStorage.removeItem(USER_KEY);
 }
 
-function showCloudLoading(message = 'Carregando dados financeiros...') {
+function showCloudLoading(message = 'Carregando dados financeiros...', detail = 'Sincronizando com a nuvem') {
   let overlay = document.querySelector('#cloudLoadingOverlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -57,6 +80,7 @@ function showCloudLoading(message = 'Carregando dados financeiros...') {
     document.body.appendChild(overlay);
   }
   overlay.querySelector('strong').textContent = message;
+  overlay.querySelector('small').textContent = detail;
   overlay.classList.remove('hidden');
 }
 
@@ -73,11 +97,11 @@ localStorage.removeItem(USER_KEY);
 async function refreshAccess() {
   const current = session();
   if (!current.refreshToken) return false;
-  const response = await fetch(`${API_URL}/auth/refresh`, {
+  const response = await resilientFetch(`${API_URL}/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken: current.refreshToken })
-  });
+  }, { retries: 1, timeoutMs: 15000 });
   if (!response.ok) return false;
   persistSession(await response.json());
   return true;
@@ -85,14 +109,14 @@ async function refreshAccess() {
 
 async function api(path, options = {}, retry = true) {
   const current = session();
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await resilientFetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
       ...(current.accessToken ? { Authorization: `Bearer ${current.accessToken}` } : {}),
       ...options.headers
     }
-  });
+  }, { retries: path === '/app-state' ? 2 : 1, timeoutMs: path === '/app-state' ? 22000 : 18000 });
   if (response.status === 401 && retry && await refreshAccess()) return api(path, options, false);
   return response;
 }
@@ -252,11 +276,11 @@ function showAuthentication() {
   let resolveAuth;
 
   async function loginWithCredentials(credentials, { rememberBiometric = false } = {}) {
-    const response = await fetch(`${API_URL}/auth/login`, {
+    const response = await resilientFetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials)
-    });
+    }, { retries: 1, timeoutMs: 20000 });
     const payload = await response.json();
     if (!response.ok) throw new Error(friendlyAuthError(payload.error));
     persistSession(payload);
@@ -317,9 +341,9 @@ function showAuthentication() {
       }
       error.textContent = 'Enviando...';
       try {
-        const response = await fetch(`${API_URL}/auth/register`, {
+        const response = await resilientFetch(`${API_URL}/auth/register`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
-        });
+        }, { retries: 0, timeoutMs: 20000 });
         const payload = await response.json();
         if (!response.ok) throw new Error(friendlyAuthError(payload.error));
         if (payload.accessToken) {
@@ -343,9 +367,9 @@ function showAuthentication() {
       error.textContent = 'Enviando...';
       try {
         const body = Object.fromEntries(new FormData(forgot));
-        const response = await fetch(`${API_URL}/auth/forgot-password`, {
+        const response = await resilientFetch(`${API_URL}/auth/forgot-password`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
-        });
+        }, { retries: 0, timeoutMs: 20000 });
         const payload = await response.json();
         if (!response.ok) throw new Error(friendlyAuthError(payload.error));
         error.classList.add('success');
@@ -362,11 +386,13 @@ function showAuthentication() {
 async function validateOrLogin() {
   const current = session();
   if (current.accessToken) {
+    showCloudLoading('Validando acesso...', 'Conferindo sua sessão segura');
     try {
       const response = await api('/auth/me');
       if (response.ok) return (await response.json()).user;
     } catch {}
     clearSession();
+    hideCloudLoading();
   }
   return showAuthentication();
 }
@@ -493,24 +519,38 @@ function startRealtimeSync() {
 
 export async function bootstrapCloud() {
   const user = await validateOrLogin();
+  showCloudLoading('Carregando seus dados...', 'Buscando a base mais recente');
   let cachedState = null;
   try { cachedState = JSON.parse(localStorage.getItem(STATE_KEY) || 'null'); } catch {}
   const hasCache = Array.isArray(cachedState?.transactions);
   revision = Number(localStorage.getItem(REVISION_KEY) || 0);
   const cachedRevision = revision;
   if (hasCache) window.MEG_REAL_STATE = cachedState;
-  const freshState = loadCloudState().then((payload) => {
-    const remoteState = window.MEG_REAL_STATE;
-    return {
-      state: remoteState,
-      changed: hasCache && Number(payload.revision || 0) !== cachedRevision
+  let freshState;
+  try {
+    freshState = await loadCloudState().then((payload) => {
+      const remoteState = window.MEG_REAL_STATE;
+      return {
+        state: remoteState,
+        changed: hasCache && Number(payload.revision || 0) !== cachedRevision
+      };
+    });
+  } catch (cause) {
+    if (!hasCache) {
+      hideCloudLoading();
+      throw cause;
+    }
+    freshState = {
+      state: cachedState,
+      changed: false,
+      warning: 'Não foi possível atualizar a nuvem agora. Usando dados salvos neste aparelho.'
     };
-  });
-  if (!hasCache) await freshState;
+    window.MEG_REAL_STATE = cachedState;
+  }
   hideCloudLoading();
   window.MEG_CLOUD = {
     user,
-    whenFresh: freshState,
+    whenFresh: Promise.resolve(freshState),
     saveState: queueSave,
     saveNow,
     async reload() {
