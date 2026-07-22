@@ -784,6 +784,7 @@ function alertInsufficientBankBalance({ amount, available }) {
 }
 
 let toastTimer;
+let actionPopupTimer;
 let payableGroupCache = new Map();
 let paymentConfirmationIds = [];
 let suggestedBudgetsByCategory = new Map();
@@ -796,6 +797,228 @@ function showToast(title, message, tone = "") {
   toastTimer = setTimeout(() => {
     els.appToast.classList.remove("visible");
   }, 5200);
+  if (tone === "success") showActionPopup(title, message);
+}
+
+function showActionPopup(title, message) {
+  let popup = document.querySelector("#actionConfirmationPopup");
+  if (!popup) {
+    popup = document.createElement("div");
+    popup.id = "actionConfirmationPopup";
+    popup.className = "action-confirmation-popup";
+    popup.setAttribute("role", "status");
+    popup.setAttribute("aria-live", "polite");
+    popup.innerHTML = `
+      <div class="action-confirmation-card">
+        <span class="action-confirmation-icon" aria-hidden="true">✓</span>
+        <div>
+          <strong data-action-popup-title></strong>
+          <p data-action-popup-message></p>
+        </div>
+        <button type="button" data-action-popup-close aria-label="Fechar confirmação">×</button>
+      </div>
+    `;
+    document.body.appendChild(popup);
+    popup.querySelector("[data-action-popup-close]")?.addEventListener("click", () => popup.classList.remove("visible"));
+  }
+  popup.querySelector("[data-action-popup-title]").textContent = title || "Alteração confirmada";
+  popup.querySelector("[data-action-popup-message]").textContent = message || "A operação foi concluída com sucesso.";
+  popup.classList.add("visible");
+  clearTimeout(actionPopupTimer);
+  actionPopupTimer = setTimeout(() => popup.classList.remove("visible"), 4200);
+}
+
+function isStagingEnvironment() {
+  return document.body.dataset.appEnvironment === "staging";
+}
+
+function percentOf(value, total) {
+  return total ? Math.min(Math.max((value / total) * 100, 0), 999) : 0;
+}
+
+function summarizeStatus(items) {
+  const income = items.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.incomeAmount || item.amount || 0), 0);
+  const expense = items.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const pending = items.filter((item) => item.type === "expense" && item.status === "pending").reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const paid = items.filter((item) => item.type === "expense" && item.status === "paid").reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  return { income, expense, pending, paid, result: income - expense };
+}
+
+function ensureStagingInsightPanels() {
+  if (!isStagingEnvironment()) return;
+  const analytics = document.querySelector("#analytics");
+  if (analytics && !document.querySelector("#stagingAnalyticsLab")) {
+    analytics.insertAdjacentHTML("beforeend", `
+      <section class="panel staging-insight-panel" id="stagingAnalyticsLab">
+        <div class="panel-title">
+          <div><small class="decision-eyebrow">LAB TESTES</small><h3>Consultor financeiro MEG</h3></div>
+          <span>Diagnóstico ampliado do recorte</span>
+        </div>
+        <div class="staging-insight-hero" id="stagingAnalyticsHero"></div>
+        <div class="staging-insight-grid" id="stagingAnalyticsGrid"></div>
+        <div class="staging-priority-list" id="stagingAnalyticsPriorities"></div>
+      </section>
+    `);
+  }
+  const income = document.querySelector("#income-analysis");
+  if (income && !document.querySelector("#stagingIncomeLab")) {
+    income.insertAdjacentHTML("beforeend", `
+      <section class="panel staging-insight-panel" id="stagingIncomeLab">
+        <div class="panel-title">
+          <div><small class="decision-eyebrow">LAB TESTES</small><h3>Radar de receitas</h3></div>
+          <span>Previsibilidade, concentração e oportunidades</span>
+        </div>
+        <div class="staging-insight-grid" id="stagingIncomeGrid"></div>
+        <div class="staging-priority-list" id="stagingIncomeSources"></div>
+      </section>
+    `);
+  }
+  const pending = document.querySelector("#pending");
+  if (pending && !document.querySelector("#stagingPendingLab")) {
+    const pendingGrid = pending.querySelector(".pending-grid") || pending;
+    pendingGrid.insertAdjacentHTML("beforebegin", `
+      <section class="panel staging-insight-panel" id="stagingPendingLab">
+        <div class="panel-title">
+          <div><small class="decision-eyebrow">LAB TESTES</small><h3>Mesa de decisão das pendências</h3></div>
+          <span>Prioridade, agrupamento e ação rápida</span>
+        </div>
+        <div class="staging-pending-actions">
+          <button class="button" type="button" data-staging-pending-filter="critical">Críticas</button>
+          <button class="button" type="button" data-staging-pending-filter="today">Hoje</button>
+          <button class="button" type="button" data-staging-pending-filter="week">7 dias</button>
+          <button class="button" type="button" data-staging-copy-pending>Copiar resumo</button>
+        </div>
+        <div class="staging-insight-grid" id="stagingPendingGrid"></div>
+        <div class="staging-priority-list" id="stagingPendingTimeline"></div>
+      </section>
+    `);
+    pending.querySelector("[data-staging-copy-pending]")?.addEventListener("click", copyStagingPendingSummary);
+    pending.querySelectorAll("[data-staging-pending-filter]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const mode = button.dataset.stagingPendingFilter;
+        const month = selectedPendingMonth || currentMonth;
+        const horizon = mode === "critical" ? todayIso : mode === "today" ? todayIso : addDays(todayIso, 7);
+        selectedPeriod.mode = "range";
+        selectedPeriod.start = mode === "critical" ? `${month}-01` : todayIso;
+        selectedPeriod.end = horizon;
+        setView("pending");
+        renderPending();
+      });
+    });
+  }
+}
+
+function renderStagingAnalyticsLab() {
+  if (!isStagingEnvironment()) return;
+  ensureStagingInsightPanels();
+  const hero = document.querySelector("#stagingAnalyticsHero");
+  const grid = document.querySelector("#stagingAnalyticsGrid");
+  const priorities = document.querySelector("#stagingAnalyticsPriorities");
+  if (!hero || !grid || !priorities) return;
+  const { start, end } = dateRangeForSelectedPeriod();
+  const monetaryItems = selectedTransactions().filter((item) => !isVerocardTransaction(item));
+  const summary = calculateFinancialSummary(state.transactions, start, end);
+  const status = summarizeStatus(monetaryItems);
+  const groups = groupExpenseRows(monetaryItems);
+  const pending = monetaryItems.filter((item) => item.type === "expense" && item.status === "pending");
+  const overdue = pending.filter((item) => item.date < todayIso);
+  const coverage = percentOf(summary.availableIncome, summary.expense);
+  const closingTone = summary.projectedBalance < 0 ? "risk" : coverage < 105 ? "attention" : "healthy";
+  const top = groups[0];
+  hero.className = `staging-insight-hero ${closingTone}`;
+  hero.innerHTML = `
+    <div>
+      <small>DIAGNÓSTICO MEG</small>
+      <strong>${summary.projectedBalance < 0 ? "Caixa projetado negativo" : coverage < 105 ? "Caixa cobre, mas margem curta" : "Caixa sob controle"}</strong>
+      <p>${formatDate(start)} a ${formatDate(end)}: ${money.format(summary.availableIncome)} disponíveis contra ${money.format(summary.expense)} de despesas lançadas. ${overdue.length ? `${overdue.length} pendência(s) vencida(s) exigem prioridade.` : "Sem vencidas no recorte."}</p>
+    </div>
+    <b>${money.format(summary.projectedBalance)}</b>
+  `;
+  grid.innerHTML = [
+    ["Receitas monetárias", money.format(summary.income), `${monetaryItems.filter((item) => item.type === "income").length} entrada(s)`],
+    ["Despesas pagas", money.format(summary.paidExpense), `${money.format(summary.pendingExpense)} ainda pendente`],
+    ["Cobertura", `${coverage.toFixed(0)}%`, summary.projectedBalance < 0 ? `Faltam ${money.format(Math.abs(summary.projectedBalance))}` : `Sobra ${money.format(summary.projectedBalance)}`],
+    ["Maior pressão", top?.group || "Sem grupo", top ? money.format(top.value) : "Sem despesa"],
+  ].map(([label, value, note]) => `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(note)}</small></article>`).join("");
+  priorities.innerHTML = groups.slice(0, 6).map((item, index) => {
+    const share = percentOf(item.value, status.expense);
+    return `<article><span>${index + 1}</span><div><strong>${escapeHtml(item.group)}</strong><small>${share.toFixed(1)}% das despesas do recorte</small><i><b style="width:${Math.min(share, 100)}%"></b></i></div><em>${money.format(item.value)}</em></article>`;
+  }).join("") || `<div class="empty">Sem despesas monetárias no recorte.</div>`;
+}
+
+function renderStagingIncomeLab() {
+  if (!isStagingEnvironment()) return;
+  ensureStagingInsightPanels();
+  const grid = document.querySelector("#stagingIncomeGrid");
+  const sourcesList = document.querySelector("#stagingIncomeSources");
+  if (!grid || !sourcesList) return;
+  const incomeItems = selectedTransactions().filter((item) => item.type === "income" && !isVerocardTransaction(item));
+  const bySource = new Map();
+  incomeItems.forEach((item) => {
+    const source = incomeSourceName(item);
+    const current = bySource.get(source) || { source, value: 0, count: 0, months: new Set() };
+    current.value += Number(item.incomeAmount || item.amount || 0);
+    current.count += 1;
+    current.months.add(monthOf(item.date));
+    bySource.set(source, current);
+  });
+  const sources = [...bySource.values()].sort((a, b) => b.value - a.value);
+  const total = sources.reduce((sum, item) => sum + item.value, 0);
+  const recurring = sources.filter((item) => item.months.size > 1);
+  const concentration = percentOf(sources[0]?.value || 0, total);
+  grid.innerHTML = [
+    ["Total recebido", money.format(total), `${incomeItems.length} lançamento(s)`],
+    ["Fontes", String(sources.length), `${recurring.length} recorrente(s)`],
+    ["Dependência da maior fonte", `${concentration.toFixed(0)}%`, sources[0]?.source || "Sem fonte"],
+    ["Ticket separado", money.format(selectedTransactions().filter((item) => item.type === "income" && isVerocardTransaction(item)).reduce((sum, item) => sum + Number(item.amount || 0), 0)), "Não compõe caixa monetário"],
+  ].map(([label, value, note]) => `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(note)}</small></article>`).join("");
+  sourcesList.innerHTML = sources.slice(0, 8).map((item, index) => {
+    const share = percentOf(item.value, total);
+    return `<article><span>${index + 1}</span><div><strong>${escapeHtml(item.source)}</strong><small>${item.count} entrada(s) · ${item.months.size} mês(es)</small><i><b style="width:${Math.min(share, 100)}%"></b></i></div><em>${money.format(item.value)}</em></article>`;
+  }).join("") || `<div class="empty">Sem receitas monetárias no recorte.</div>`;
+}
+
+function pendingGroupsForSelectedPendingMonth() {
+  const expenses = expensesForPendingMonth(selectedPendingMonth).filter((item) => item.status === "pending" && !isVerocardTransaction(item));
+  return groupPayableItems(expenses).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function renderStagingPendingLab() {
+  if (!isStagingEnvironment()) return;
+  ensureStagingInsightPanels();
+  const grid = document.querySelector("#stagingPendingGrid");
+  const timeline = document.querySelector("#stagingPendingTimeline");
+  if (!grid || !timeline) return;
+  const groups = pendingGroupsForSelectedPendingMonth();
+  const total = groups.reduce((sum, group) => sum + payableGroupTotal(group), 0);
+  const overdue = groups.filter((group) => group.date < todayIso);
+  const today = groups.filter((group) => group.date === todayIso);
+  const week = groups.filter((group) => group.date > todayIso && group.date <= addDays(todayIso, 7));
+  const available = Math.max(availableBankBalanceForPayment(), 0);
+  grid.innerHTML = [
+    ["Total aberto", money.format(total), `${groups.length} conta(s)/fatura(s)`],
+    ["Críticas", money.format(overdue.reduce((sum, item) => sum + payableGroupTotal(item), 0)), `${overdue.length} vencida(s)`],
+    ["Vencem hoje", money.format(today.reduce((sum, item) => sum + payableGroupTotal(item), 0)), `${today.length} compromisso(s)`],
+    ["Saldo após pagar", money.format(available - total), available >= total ? "Cobertura suficiente" : `Faltam ${money.format(total - available)}`],
+  ].map(([label, value, note]) => `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(note)}</small></article>`).join("");
+  timeline.innerHTML = groups.slice(0, 12).map((group) => {
+    const tone = group.date < todayIso ? "risk" : group.date === todayIso ? "attention" : "";
+    return `<article class="${tone}"><span>${formatDate(group.date)}</span><div><strong>${escapeHtml(payableGroupLabel(group))}</strong><small>${group.isCard ? `${group.items.length} lançamento(s) agrupados` : group.payment}</small></div><em>${money.format(payableGroupTotal(group))}</em></article>`;
+  }).join("") || `<div class="empty">Nenhuma pendência monetária para o mês selecionado.</div>`;
+}
+
+function copyStagingPendingSummary() {
+  const groups = pendingGroupsForSelectedPendingMonth();
+  const total = groups.reduce((sum, group) => sum + payableGroupTotal(group), 0);
+  const text = [
+    `MEG Finanças - Pendências de ${formatMonth(selectedPendingMonth)}`,
+    `Total em aberto: ${money.format(total)}`,
+    ...groups.slice(0, 20).map((group) => `- ${formatDate(group.date)} | ${payableGroupLabel(group)} | ${money.format(payableGroupTotal(group))}`),
+  ].join("\n");
+  navigator.clipboard?.writeText(text).then(
+    () => showToast("Resumo copiado", "A lista de pendências foi copiada para envio.", "success"),
+    () => showToast("Não foi possível copiar", "Seu navegador bloqueou a área de transferência.", "danger"),
+  );
 }
 
 function confirmPermanentDeletion(itemLabel, detail = "") {
@@ -1095,6 +1318,7 @@ function filterAnalyticsPayments(items) {
 }
 
 function render() {
+  ensureStagingInsightPanels();
   renderPeriodControls();
   renderDatalists();
   if (selectedView === "dashboard") renderDashboard();
@@ -1102,12 +1326,19 @@ function render() {
   if (selectedView === "analytics") {
     renderAnalyticsFilters();
     renderAnalytics();
+    renderStagingAnalyticsLab();
   }
-  if (selectedView === "income-analysis") renderIncomeAnalysis();
+  if (selectedView === "income-analysis") {
+    renderIncomeAnalysis();
+    renderStagingIncomeLab();
+  }
   if (selectedView === "transactions") renderTransactions();
   if (selectedView === "credit-cards") renderCreditCards();
   if (selectedView === "budgets") renderBudgets();
-  if (selectedView === "pending") renderPending();
+  if (selectedView === "pending") {
+    renderPending();
+    renderStagingPendingLab();
+  }
   if (selectedView === "catalogs") renderCatalogs();
   if (selectedView === "settings") renderSettings();
 }
