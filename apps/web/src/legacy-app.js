@@ -3524,6 +3524,7 @@ function syncAmountFields() {
   els.paymentMethodLabel.textContent = isIncome ? "FORMA DE RECEBIMENTO" : creditExpense ? "CARTÃO UTILIZADO" : "FORMA DE PAGAMENTO";
   const paidOption = els.statusInput.querySelector('option[value="paid"]');
   if (paidOption) paidOption.textContent = isIncome ? "RECEBIDO" : "PAGO";
+  if (isIncome) els.statusInput.value = "paid";
   if (!isIncome && !els.transactionId.value) els.statusInput.value = "pending";
   if (isIncome) {
     els.expenseAmountInput.value = "";
@@ -3791,8 +3792,8 @@ function saveTransaction(event) {
   const group = els.groupInput.value.trim();
   const index = state.transactions.findIndex((item) => item.id === id);
   const previous = index >= 0 ? state.transactions[index] : null;
-  const status = type === "expense" && !previous ? "pending" : els.statusInput.value;
-  const situation = status === "paid" ? "PAGO" : "PENDENTE";
+  const status = type === "income" ? "paid" : type === "expense" && !previous ? "pending" : els.statusInput.value;
+  const situation = type === "income" ? "RECEBIDO" : status === "paid" ? "PAGO" : "PENDENTE";
   const financialAccount = financialAccountById(els.financialAccountInput.value);
   const payload = {
     id,
@@ -3824,7 +3825,7 @@ function saveTransaction(event) {
       state.transactions.push(...installments);
       if (!state.budgets[payload.category]) state.budgets[payload.category] = 0;
       selectedPeriod.mode = "month";
-      selectedPeriod.month = monthOf(transactionPeriodDate(installments[0]));
+      selectedPeriod.month = currentMonth;
       saveState();
       els.dialog.close();
       showToast("Parcelamento criado", `${installments.length} parcela(s) geradas até ${formatDate(installments.at(-1).date)}`, "success");
@@ -3849,7 +3850,7 @@ function saveTransaction(event) {
   else if (index < 0) state.transactions.push(payload);
   if (!state.budgets[payload.category] && payload.type === "expense") state.budgets[payload.category] = 0;
   selectedPeriod.mode = "month";
-  selectedPeriod.month = monthOf(transactionPeriodDate(payload));
+  selectedPeriod.month = currentMonth;
   saveState();
   els.dialog.close();
   showToast(

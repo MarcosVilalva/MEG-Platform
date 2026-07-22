@@ -153,8 +153,13 @@ const creditCardCompetenceSummary = calculateFinancialSummary([
   { date: '2026-07-05', type: 'income', incomeAmount: 1200, status: 'paid' },
 ], '2026-07-01', '2026-07-31');
 assert.equal(creditCardCompetenceSummary.income, 1200);
-assert.equal(creditCardCompetenceSummary.expense, 500);
-assert.equal(creditCardCompetenceSummary.pendingExpense, 500);
+assert.equal(creditCardCompetenceSummary.expense, 0);
+assert.equal(creditCardCompetenceSummary.pendingExpense, 0);
+const creditCardDueMonthSummary = calculateFinancialSummary([
+  { date: '2026-08-10', purchaseDate: '2026-07-21', type: 'expense', expenseAmount: 500, status: 'pending', modality: 'CREDITO', paymentMethod: 'CARTAO AZUL' },
+], '2026-08-01', '2026-08-31');
+assert.equal(creditCardDueMonthSummary.expense, 500);
+assert.equal(creditCardDueMonthSummary.pendingExpense, 500);
 
 const currentMonetaryPosition = calculateMonetaryDashboard([
   { date: '2026-06-30', type: 'income', incomeAmount: 100 },

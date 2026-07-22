@@ -21,7 +21,7 @@ export function isCreditCardExpense(item) {
 }
 
 export function transactionPeriodDate(item) {
-  return String(item?.purchaseDate || item?.date || '');
+  return String(item?.date || '');
 }
 
 export function calculateCreditCardPortfolio(allTransactions, periodTransactions, registeredCards = [], filters = {}) {
