@@ -1,11 +1,13 @@
 import { getBiometricLoginStatus, requestBiometricLogin, saveBiometricLogin } from './native-biometric-login.js';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
-const ACCESS_KEY = 'meg-access-token';
-const REFRESH_KEY = 'meg-refresh-token';
-const USER_KEY = 'meg-auth-user';
-const STATE_KEY = 'meg-financas-state-v4-paid-fixes';
-const REVISION_KEY = 'meg-cloud-revision-v1';
+const APP_ENV = import.meta.env.VITE_APP_ENV || 'production';
+const ENV_SUFFIX = APP_ENV === 'production' ? '' : `-${APP_ENV}`;
+const ACCESS_KEY = `meg-access-token${ENV_SUFFIX}`;
+const REFRESH_KEY = `meg-refresh-token${ENV_SUFFIX}`;
+const USER_KEY = `meg-auth-user${ENV_SUFFIX}`;
+const STATE_KEY = `meg-financas-state-v4-paid-fixes${ENV_SUFFIX}`;
+const REVISION_KEY = `meg-cloud-revision-v1${ENV_SUFFIX}`;
 
 let revision = 0;
 let saveTimer;

@@ -4,10 +4,13 @@ import { excelDateToIso } from './legacy-import-utils.js';
 import { syncLocalDueNotifications } from './native-notifications.js';
 import { checkForAppUpdate } from './native-app-update.js';
 
-const validationMode = new URLSearchParams(location.search).get('validacao') === '1';
-const localStateKey = 'meg-financas-state-v4-paid-fixes';
+const appEnvironment = import.meta.env.VITE_APP_ENV || 'production';
+const appEnvironmentSuffix = appEnvironment === 'production' ? '' : `-${appEnvironment}`;
+const validationMode = import.meta.env.VITE_VALIDATION_MODE === 'true' || new URLSearchParams(location.search).get('validacao') === '1';
+const localStateKey = `meg-financas-state-v4-paid-fixes${appEnvironmentSuffix}`;
 const nativeMobileMode = import.meta.env.VITE_MOBILE_APP === 'true' || Boolean(window.Capacitor?.isNativePlatform?.());
 document.body.classList.toggle('native-mobile', nativeMobileMode);
+document.body.dataset.appEnvironment = appEnvironment;
 const INACTIVITY_LIMIT_MS = 2 * 60 * 1000;
 const INACTIVITY_WARNING_MS = 30 * 1000;
 const INACTIVITY_MESSAGE_KEY = 'meg-inactivity-message';
@@ -17,7 +20,7 @@ const showSuccess = (title, message) => window.MEG_APP?.showToast?.(title, messa
 function bootstrapValidationMode() {
   let savedState = null;
   try { savedState = JSON.parse(localStorage.getItem(localStateKey) || 'null'); } catch {}
-  const validationUsersKey = 'meg-validation-users-v1';
+  const validationUsersKey = `meg-validation-users-v1${appEnvironmentSuffix}`;
   const initialValidationUsers = [
     { id: 'validation-admin', name: 'MARCOS DE ANDRADE VILALVA', email: 'm_vilalva@hotmail.com', role: 'ADMIN', status: 'ACTIVE', isActive: true, createdAt: '2026-07-01T12:00:00.000Z', approvedAt: '2026-07-01T12:00:00.000Z', lastLoginAt: new Date().toISOString() },
     { id: 'validation-pending', name: 'USUÁRIO DE TESTE', email: 'usuario.teste@meg.local', role: 'VIEWER', status: 'PENDING', isActive: false, createdAt: new Date().toISOString(), approvedAt: null, lastLoginAt: null }
@@ -396,7 +399,7 @@ async function start() {
     if (result?.state) syncLocalDueNotifications(result.state);
   }).catch(() => undefined);
   if (validationMode) {
-    document.body.insertAdjacentHTML('afterbegin', '<div class="validation-banner">AMBIENTE LOCAL DE VALIDAÇÃO — nenhuma alteração será enviada para a nuvem</div>');
+    document.body.insertAdjacentHTML('afterbegin', '<div class="validation-banner">AMBIENTE DE TESTES — dados isolados neste navegador, sem afetar o oficial</div>');
     const status = document.querySelector('#cloudSyncStatus');
     if (status) status.textContent = 'Dados somente neste navegador';
     const logout = document.querySelector('#logoutBtn');
