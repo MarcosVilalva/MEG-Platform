@@ -6,18 +6,16 @@ function loadOptionalUiEnhancements() {
       await Promise.all([
         import('./ux-enhancements.css'),
         import('./market-upgrades.css'),
-        import('./excel-filter-pro.css')
+        import('./excel-filter-pro.css'),
+        import('./transaction-grid-stability.css')
       ]);
 
-      const [{ initializeUxEnhancements }, { initializeMarketUpgrades }] = await Promise.all([
-        import('./ux-enhancements-safe.js'),
-        import('./market-upgrades.js')
-      ]);
-
+      const { initializeUxEnhancements } = await import('./ux-enhancements-safe.js');
       initializeUxEnhancements();
-      initializeMarketUpgrades();
+
       await import('./ux-enhancements-hotfix.js');
       await import('./excel-filter-pro.js');
+      await import('./transaction-grid-stability.js');
     } catch (cause) {
       console.error('MEG optional UI enhancements failed to load', cause);
     }
