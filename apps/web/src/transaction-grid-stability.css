@@ -1,0 +1,9 @@
+#transactions .transactions-table thead .column-filter-row{display:none!important}
+#transactions .transactions-table thead tr:first-child th{top:0!important}
+#transactions .transactions-table thead tr:first-child th .excel-filter-button,
+#transactions .transactions-table thead tr:first-child th .meg-date-sort-button{display:none!important}
+#transactions .transactions-table thead tr:first-child th .meg-grid-filter-button{display:grid!important}
+#transactions .transactions-table thead tr:first-child th .meg-grid-header-label{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+#transactions .transactions-table:not(.meg-grid-ready){visibility:hidden}
+#transactions .transactions-table.meg-grid-ready{visibility:visible}
+@media(max-width:760px){#transactions .transactions-table:not(.meg-grid-ready){display:none!important}}
