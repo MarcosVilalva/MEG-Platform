@@ -2,18 +2,16 @@ const MOBILE_BREAKPOINT = 760;
 
 const text = (cell) => String(cell?.textContent || '').replace(/\s+/g, ' ').trim();
 const normalize = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+const escapeHtml = (value) => String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 
 function isMobileExperience() {
   return document.body.classList.contains('native-mobile') || window.matchMedia(`(max-width:${MOBILE_BREAKPOINT}px)`).matches;
 }
 
 function toneFor(row) {
-  const cells = row.cells;
-  const type = normalize(text(cells[3]));
-  const situation = normalize(text(cells[10]));
-  const dueText = text(cells[0]);
-  const overdue = situation.includes('PENDENTE') && row.dataset.overdue === 'true';
-  if (overdue) return 'overdue';
+  const type = normalize(text(row.cells[3]));
+  const situation = normalize(text(row.cells[10]));
+  if (situation.includes('ATRAS') || row.classList.contains('overdue')) return 'overdue';
   if (situation.includes('PENDENTE')) return 'pending';
   if (type.includes('RECEITA')) return 'income';
   return 'expense';
@@ -21,11 +19,9 @@ function toneFor(row) {
 
 function amountFor(row) {
   const type = normalize(text(row.cells[3]));
-  const income = text(row.cells[5]);
-  const expense = text(row.cells[8]);
   return {
     type: type.includes('RECEITA') ? 'income' : 'expense',
-    value: type.includes('RECEITA') ? income : expense,
+    value: type.includes('RECEITA') ? text(row.cells[5]) : text(row.cells[8]),
   };
 }
 
@@ -51,26 +47,26 @@ function createCard(row) {
     <div class="meg-mobile-transaction-main">
       <span class="meg-mobile-transaction-icon" aria-hidden="true">${amount.type === 'income' ? '↗' : '↘'}</span>
       <div class="meg-mobile-transaction-copy">
-        <strong>${description}</strong>
-        <span>${group} · ${payment}</span>
+        <strong>${escapeHtml(description)}</strong>
+        <span>${escapeHtml(group)} · ${escapeHtml(payment)}</span>
       </div>
       <div class="meg-mobile-transaction-value ${amount.type}">
-        <strong>${amount.type === 'income' ? '+' : '−'} ${amount.value}</strong>
-        <span>${due}</span>
+        <strong>${amount.type === 'income' ? '+' : '−'} ${escapeHtml(amount.value)}</strong>
+        <span>${escapeHtml(due)}</span>
       </div>
     </div>
     <div class="meg-mobile-transaction-status-row">
-      <span class="meg-mobile-status">${situation}</span>
+      <span class="meg-mobile-status">${escapeHtml(situation)}</span>
       <span>Toque para ver detalhes</span>
     </div>
     <div class="meg-mobile-transaction-details" hidden>
       <dl>
-        <div><dt>Vencimento</dt><dd>${due}</dd></div>
-        ${purchase ? `<div><dt>Compra</dt><dd>${purchase}</dd></div>` : ''}
-        <div><dt>Grupo</dt><dd>${group}</dd></div>
-        <div><dt>Pagamento</dt><dd>${payment}</dd></div>
-        ${modality ? `<div><dt>Modalidade</dt><dd>${modality}</dd></div>` : ''}
-        ${notes ? `<div class="wide"><dt>Observações</dt><dd>${notes}</dd></div>` : ''}
+        <div><dt>Vencimento</dt><dd>${escapeHtml(due)}</dd></div>
+        ${purchase ? `<div><dt>Compra</dt><dd>${escapeHtml(purchase)}</dd></div>` : ''}
+        <div><dt>Grupo</dt><dd>${escapeHtml(group)}</dd></div>
+        <div><dt>Pagamento</dt><dd>${escapeHtml(payment)}</dd></div>
+        ${modality ? `<div><dt>Modalidade</dt><dd>${escapeHtml(modality)}</dd></div>` : ''}
+        ${notes ? `<div class="wide"><dt>Observações</dt><dd>${escapeHtml(notes)}</dd></div>` : ''}
       </dl>
       <button class="button primary meg-mobile-edit" type="button">Abrir lançamento</button>
     </div>`;
@@ -84,8 +80,7 @@ function createCard(row) {
   };
 
   card.addEventListener('click', (event) => {
-    if (event.target.closest('.meg-mobile-edit')) return;
-    toggle();
+    if (!event.target.closest('.meg-mobile-edit')) toggle();
   });
   card.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -124,6 +119,7 @@ function ensureMobileShell() {
 
   shell.querySelectorAll('[data-mobile-type]').forEach((button) => {
     button.addEventListener('click', () => {
+      shell.dataset.statusFilter = '';
       shell.querySelectorAll('.meg-mobile-transaction-toolbar button').forEach((item) => item.classList.remove('active'));
       button.classList.add('active');
       const select = document.querySelector('#typeFilter');
@@ -135,10 +131,18 @@ function ensureMobileShell() {
   });
 
   shell.querySelector('[data-mobile-status="pending"]')?.addEventListener('click', () => {
+    const button = shell.querySelector('[data-mobile-status="pending"]');
+    const activating = shell.dataset.statusFilter !== 'pending';
+    shell.dataset.statusFilter = activating ? 'pending' : '';
     shell.querySelectorAll('.meg-mobile-transaction-toolbar button').forEach((item) => item.classList.remove('active'));
-    shell.querySelector('[data-mobile-status="pending"]').classList.add('active');
-    shell.dataset.statusFilter = shell.dataset.statusFilter === 'pending' ? '' : 'pending';
-    renderMobileCards();
+    (activating ? button : shell.querySelector('[data-mobile-type="all"]'))?.classList.add('active');
+    if (!activating) {
+      const select = document.querySelector('#typeFilter');
+      if (select) {
+        select.value = 'all';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    } else renderMobileCards();
   });
   return shell;
 }
@@ -150,9 +154,8 @@ function renderMobileCards() {
   const list = shell?.querySelector('.meg-mobile-transaction-list');
   if (!shell || !body || !list) return;
 
-  const rows = [...body.querySelectorAll('tr')].filter((row) => row.cells.length >= 13 && row.offsetParent !== null);
-  const statusFilter = shell.dataset.statusFilter;
-  const filtered = statusFilter === 'pending'
+  const rows = [...body.querySelectorAll('tr')].filter((row) => row.cells.length >= 13 && !row.hidden && row.style.display !== 'none');
+  const filtered = shell.dataset.statusFilter === 'pending'
     ? rows.filter((row) => normalize(text(row.cells[10])).includes('PENDENTE'))
     : rows;
 
@@ -176,7 +179,7 @@ function start() {
   ensureMobileShell();
   scheduleRender();
   const body = document.querySelector('#transactionRows');
-  if (body) new MutationObserver(scheduleRender).observe(body, { childList: true, subtree: true, characterData: true });
+  if (body) new MutationObserver(scheduleRender).observe(body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['style', 'hidden'] });
   ['searchInput', 'typeFilter', 'transactionSortFilter'].forEach((id) => {
     document.querySelector(`#${id}`)?.addEventListener('input', scheduleRender);
     document.querySelector(`#${id}`)?.addEventListener('change', scheduleRender);
