@@ -1,14 +1,36 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
-import './ux-enhancements.css';
-import './ux-enhancements-hotfix.js';
-import './market-upgrades.css';
-import './excel-filter-pro.css';
-import './excel-filter-pro.js';
-import { initializeUxEnhancements } from './ux-enhancements-safe.js';
-import { initializeMarketUpgrades } from './market-upgrades.js';
 
-initializeUxEnhancements();
-initializeMarketUpgrades();
+function loadOptionalUiEnhancements() {
+  const start = async () => {
+    try {
+      await Promise.all([
+        import('./ux-enhancements.css'),
+        import('./market-upgrades.css'),
+        import('./excel-filter-pro.css')
+      ]);
+
+      const [{ initializeUxEnhancements }, { initializeMarketUpgrades }] = await Promise.all([
+        import('./ux-enhancements-safe.js'),
+        import('./market-upgrades.js')
+      ]);
+
+      initializeUxEnhancements();
+      initializeMarketUpgrades();
+      await import('./ux-enhancements-hotfix.js');
+      await import('./excel-filter-pro.js');
+    } catch (cause) {
+      console.error('MEG optional UI enhancements failed to load', cause);
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else {
+    window.setTimeout(start, 0);
+  }
+}
+
+loadOptionalUiEnhancements();
 
 const AppUpdater = registerPlugin('AppUpdater');
 const VERSION_URL = 'https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json';
