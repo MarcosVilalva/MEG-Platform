@@ -2,6 +2,8 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 import './ux-enhancements.css';
 import './ux-enhancements-hotfix.js';
 import './market-upgrades.css';
+import './excel-filter-pro.css';
+import './excel-filter-pro.js';
 import { initializeUxEnhancements } from './ux-enhancements-safe.js';
 import { initializeMarketUpgrades } from './market-upgrades.js';
 
