@@ -1,149 +1,212 @@
-const FILTER_SELECTOR = '#transactions .column-filter-row select:not(.meg-hidden-date-sort)';
-let active = null;
+const TABLE_SELECTOR = '#transactions .transactions-table, #transactions table';
+const runtime = { table: null, activeColumn: null, selections: new Map(), popover: null, signature: '' };
 
-const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+const normalize = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
 
-function columnTitle(select) {
-  const cell = select.closest('th');
-  const index = [...cell.parentElement.children].indexOf(cell);
-  const header = select.closest('table')?.querySelector(`thead tr:first-child th:nth-child(${index + 1})`);
-  return header?.textContent?.trim() || select.getAttribute('aria-label') || 'Filtro';
+function tableHeaders(table) {
+  return [...table.querySelectorAll('thead tr:first-child th')].map((cell, index) => normalize(cell.textContent) || `Coluna ${index + 1}`);
 }
 
-function selectedValues(select) {
-  return new Set([...select.options].filter((option) => option.selected).map((option) => option.value));
+function dataRows(table) {
+  return [...table.querySelectorAll('tbody tr')].filter((row) => !row.classList.contains('meg-filter-empty-row'));
 }
 
-function closeFilter({ restoreFocus = false } = {}) {
-  if (!active) return;
-  const { popover, select } = active;
-  popover.remove();
-  select.classList.remove('meg-filter-open');
-  active = null;
-  if (restoreFocus) select.focus({ preventScroll: true });
+function cellValue(row, index) {
+  return normalize(row.children[index]?.textContent || '');
 }
 
-function positionPopover(popover, select) {
-  const rect = select.getBoundingClientRect();
+function uniqueValues(table, index) {
+  return [...new Set(dataRows(table).map((row) => cellValue(row, index)).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true, sensitivity: 'base' }));
+}
+
+function closePopover() {
+  runtime.popover?.remove();
+  runtime.popover = null;
+  runtime.activeColumn = null;
+  document.querySelectorAll('.meg-grid-filter-button.is-open').forEach((button) => button.classList.remove('is-open'));
+}
+
+function positionPopover(popover, anchor) {
+  const rect = anchor.getBoundingClientRect();
   const margin = 12;
-  const width = Math.min(360, window.innerWidth - margin * 2);
+  const width = Math.min(380, window.innerWidth - margin * 2);
   let left = Math.min(Math.max(margin, rect.left), window.innerWidth - width - margin);
   let top = rect.bottom + 8;
-  const estimatedHeight = Math.min(520, window.innerHeight - margin * 2);
-  if (top + estimatedHeight > window.innerHeight - margin) top = Math.max(margin, rect.top - estimatedHeight - 8);
+  const height = Math.min(540, window.innerHeight - margin * 2);
+  if (top + height > window.innerHeight - margin) top = Math.max(margin, rect.top - height - 8);
   popover.style.left = `${left}px`;
   popover.style.top = `${top}px`;
 }
 
-function openFilter(select) {
-  if (active?.select === select) return closeFilter({ restoreFocus: true });
-  closeFilter();
-  const options = [...select.options].filter((option) => option.value !== '');
-  const original = selectedValues(select);
-  const working = new Set(original);
-  const title = columnTitle(select);
+function applyFilters(table) {
+  let visible = 0;
+  dataRows(table).forEach((row) => {
+    const matches = [...runtime.selections.entries()].every(([index, selected]) => !selected.size || selected.has(cellValue(row, Number(index))));
+    row.hidden = !matches;
+    if (matches) visible += 1;
+  });
+  table.classList.toggle('meg-grid-filtered', runtime.selections.size > 0);
+  table.querySelectorAll('.meg-grid-filter-button').forEach((button) => {
+    const selected = runtime.selections.get(Number(button.dataset.columnIndex));
+    button.classList.toggle('is-filtered', Boolean(selected?.size));
+    button.dataset.count = selected?.size ? String(selected.size) : '';
+  });
+  const panel = table.closest('.table-panel') || table.parentElement;
+  let summary = panel?.querySelector('.meg-grid-result-summary');
+  if (!summary && panel) {
+    summary = document.createElement('div');
+    summary.className = 'meg-grid-result-summary';
+    panel.querySelector('.meg-table-toolbar')?.append(summary) || panel.prepend(summary);
+  }
+  if (summary) summary.textContent = `${visible} de ${dataRows(table).length} lançamento(s)`;
+}
+
+function clearColumnFilter(table, index) {
+  runtime.selections.delete(index);
+  applyFilters(table);
+}
+
+function sortRows(table, index, direction) {
+  const tbody = table.tBodies[0];
+  if (!tbody) return;
+  const rows = dataRows(table);
+  const parse = (text) => {
+    const dateMatch = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (dateMatch) return Number(`${dateMatch[3]}${dateMatch[2]}${dateMatch[1]}`);
+    const money = Number(text.replace(/R\$/g, '').replace(/\./g, '').replace(',', '.').replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(money) && /\d/.test(text) ? money : text.toLocaleLowerCase('pt-BR');
+  };
+  rows.sort((a, b) => {
+    const av = parse(cellValue(a, index));
+    const bv = parse(cellValue(b, index));
+    const result = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv), 'pt-BR', { numeric: true });
+    return direction === 'asc' ? result : -result;
+  }).forEach((row) => tbody.append(row));
+}
+
+function openFilter(table, index, button) {
+  closePopover();
+  runtime.activeColumn = index;
+  button.classList.add('is-open');
+  const headers = tableHeaders(table);
+  const values = uniqueValues(table, index);
+  const applied = runtime.selections.get(index);
+  const working = new Set(applied?.size ? applied : values);
   const popover = document.createElement('section');
   popover.className = 'meg-excel-filter-popover';
   popover.setAttribute('role', 'dialog');
-  popover.setAttribute('aria-label', `Filtro de ${title}`);
+  popover.setAttribute('aria-label', `Filtro de ${headers[index]}`);
   popover.innerHTML = `
-    <div class="meg-excel-filter-head"><strong>Filtrar ${escapeHtml(title)}</strong><span class="meg-excel-filter-count"></span></div>
-    <div class="meg-excel-filter-search-wrap"><input type="search" placeholder="Pesquisar valores" autocomplete="off" aria-label="Pesquisar valores"></div>
-    <div class="meg-excel-filter-options" role="listbox" aria-multiselectable="true"></div>
-    <div class="meg-excel-filter-actions"><button type="button" data-action="clear">Limpar</button><button type="button" data-action="cancel">Cancelar</button><button type="button" class="meg-excel-apply" data-action="apply">Aplicar</button></div>`;
+    <header class="meg-excel-filter-head"><div><small>FILTRO DA COLUNA</small><strong>${escapeHtml(headers[index])}</strong></div><button type="button" class="meg-filter-close" aria-label="Fechar">×</button></header>
+    <div class="meg-filter-sort-actions"><button type="button" data-sort="asc">A → Z</button><button type="button" data-sort="desc">Z → A</button></div>
+    <div class="meg-excel-filter-search-wrap"><input type="search" placeholder="Pesquisar em ${escapeHtml(headers[index])}" autocomplete="off"></div>
+    <label class="meg-excel-filter-option is-all"><input type="checkbox" data-select-all><span>Selecionar tudo</span><small>${values.length}</small></label>
+    <div class="meg-excel-filter-options"></div>
+    <footer class="meg-excel-filter-actions"><button type="button" data-action="clear">Limpar</button><button type="button" data-action="cancel">Cancelar</button><button type="button" class="meg-excel-apply" data-action="apply">Aplicar</button></footer>`;
   document.body.append(popover);
-  select.classList.add('meg-filter-open');
-  active = { popover, select, original, working };
-  positionPopover(popover, select);
-
+  runtime.popover = popover;
+  positionPopover(popover, button);
   const search = popover.querySelector('input[type=search]');
   const list = popover.querySelector('.meg-excel-filter-options');
-  const count = popover.querySelector('.meg-excel-filter-count');
+  const selectAll = popover.querySelector('[data-select-all]');
 
   const render = () => {
-    const query = search.value.trim().toLocaleLowerCase('pt-BR');
-    const visible = options.filter((option) => option.textContent.toLocaleLowerCase('pt-BR').includes(query));
-    const visibleValues = visible.map((option) => option.value);
-    const allVisibleSelected = visibleValues.length > 0 && visibleValues.every((value) => working.has(value));
-    list.innerHTML = `
-      <label class="meg-excel-filter-option is-all"><input type="checkbox" data-select-all ${allVisibleSelected ? 'checked' : ''}><span>Selecionar tudo${query ? ' (resultados)' : ''}</span><small>${visible.length}</small></label>
-      ${visible.map((option) => `<label class="meg-excel-filter-option"><input type="checkbox" value="${escapeHtml(option.value)}" ${working.has(option.value) ? 'checked' : ''}><span title="${escapeHtml(option.textContent)}">${escapeHtml(option.textContent)}</span></label>`).join('') || '<div class="meg-excel-filter-empty">Nenhum valor encontrado.</div>'}`;
-    count.textContent = working.size ? `${working.size} selecionado(s)` : 'Nenhum selecionado';
+    const query = normalize(search.value).toLocaleLowerCase('pt-BR');
+    const visible = values.filter((value) => value.toLocaleLowerCase('pt-BR').includes(query));
+    list.innerHTML = visible.length
+      ? visible.map((value) => `<label class="meg-excel-filter-option"><input type="checkbox" value="${escapeHtml(value)}" ${working.has(value) ? 'checked' : ''}><span title="${escapeHtml(value)}">${escapeHtml(value)}</span></label>`).join('')
+      : '<div class="meg-excel-filter-empty">Nenhum valor encontrado.</div>';
+    selectAll.checked = visible.length > 0 && visible.every((value) => working.has(value));
+    selectAll.indeterminate = visible.some((value) => working.has(value)) && !selectAll.checked;
   };
 
   search.addEventListener('input', render);
+  selectAll.addEventListener('change', () => {
+    const query = normalize(search.value).toLocaleLowerCase('pt-BR');
+    values.filter((value) => value.toLocaleLowerCase('pt-BR').includes(query)).forEach((value) => selectAll.checked ? working.add(value) : working.delete(value));
+    render();
+  });
   list.addEventListener('change', (event) => {
     const checkbox = event.target.closest('input[type=checkbox]');
     if (!checkbox) return;
-    const query = search.value.trim().toLocaleLowerCase('pt-BR');
-    const visible = options.filter((option) => option.textContent.toLocaleLowerCase('pt-BR').includes(query));
-    if (checkbox.hasAttribute('data-select-all')) {
-      visible.forEach((option) => checkbox.checked ? working.add(option.value) : working.delete(option.value));
-    } else if (checkbox.checked) working.add(checkbox.value); else working.delete(checkbox.value);
+    checkbox.checked ? working.add(checkbox.value) : working.delete(checkbox.value);
     render();
   });
-
   popover.addEventListener('click', (event) => {
+    if (event.target.closest('.meg-filter-close')) return closePopover();
+    const sort = event.target.closest('[data-sort]')?.dataset.sort;
+    if (sort) { sortRows(table, index, sort); closePopover(); return; }
     const action = event.target.closest('[data-action]')?.dataset.action;
-    if (!action) return;
-    if (action === 'cancel') return closeFilter({ restoreFocus: true });
-    if (action === 'clear') {
-      working.clear();
-      const fallback = options.find((option) => /^(todos|todas)$/i.test(option.textContent.trim()));
-      if (fallback) working.add(fallback.value);
-      render();
-      return;
-    }
+    if (action === 'cancel') return closePopover();
+    if (action === 'clear') { clearColumnFilter(table, index); closePopover(); return; }
     if (action === 'apply') {
-      const hasAll = options.some((option) => /^(todos|todas)$/i.test(option.textContent.trim()) && working.has(option.value));
-      [...select.options].forEach((option) => {
-        option.selected = hasAll ? /^(todos|todas)$/i.test(option.textContent.trim()) : working.has(option.value);
-      });
-      if (!select.multiple && !select.selectedOptions.length && select.options.length) select.options[0].selected = true;
-      select.dispatchEvent(new Event('input', { bubbles: true }));
-      select.dispatchEvent(new Event('change', { bubbles: true }));
-      closeFilter({ restoreFocus: true });
+      if (working.size === values.length) runtime.selections.delete(index); else runtime.selections.set(index, working);
+      applyFilters(table);
+      closePopover();
     }
   });
-
   render();
   window.setTimeout(() => search.focus(), 0);
 }
 
-function bindSelect(select) {
-  if (select.dataset.megExcelFilter === 'true') return;
-  select.dataset.megExcelFilter = 'true';
-  select.setAttribute('aria-haspopup', 'dialog');
-  select.addEventListener('pointerdown', (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    openFilter(select);
-  });
-  select.addEventListener('keydown', (event) => {
-    if (['Enter', ' ', 'ArrowDown'].includes(event.key)) {
-      event.preventDefault();
-      openFilter(select);
-    }
+function ensureFilterButtons(table) {
+  table.classList.add('meg-professional-grid');
+  const headers = table.querySelectorAll('thead tr:first-child th');
+  headers.forEach((header, index) => {
+    if (index === headers.length - 1 || header.querySelector('.meg-grid-filter-button')) return;
+    const title = normalize(header.textContent);
+    header.textContent = '';
+    const label = document.createElement('span');
+    label.className = 'meg-grid-header-label';
+    label.textContent = title;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'meg-grid-filter-button';
+    button.dataset.columnIndex = String(index);
+    button.setAttribute('aria-label', `Filtrar ${title}`);
+    button.innerHTML = '<span aria-hidden="true">▾</span>';
+    button.addEventListener('click', (event) => { event.stopPropagation(); openFilter(table, index, button); });
+    header.append(label, button);
   });
 }
 
-function bindAll() {
-  document.querySelectorAll(FILTER_SELECTOR).forEach(bindSelect);
+function prepareMobileCards(table) {
+  const headers = tableHeaders(table);
+  dataRows(table).forEach((row) => {
+    row.classList.add('meg-mobile-transaction-card');
+    [...row.children].forEach((cell, index) => {
+      cell.dataset.label = headers[index] || '';
+      if (/descri/i.test(headers[index])) cell.classList.add('meg-mobile-description');
+      if (/receita|despesa|valor/i.test(headers[index])) cell.classList.add('meg-mobile-value');
+      if (/situa/i.test(headers[index])) cell.classList.add('meg-mobile-status');
+      if (/observ/i.test(headers[index])) cell.classList.add('meg-mobile-notes');
+      if (index === headers.length - 1) cell.classList.add('meg-mobile-actions');
+    });
+  });
+}
+
+function enhanceTable() {
+  const table = document.querySelector(TABLE_SELECTOR);
+  if (!table?.tHead || !table.tBodies.length) return;
+  const rows = dataRows(table);
+  const signature = `${rows.length}|${tableHeaders(table).join('|')}|${rows[0]?.textContent || ''}|${rows.at(-1)?.textContent || ''}`;
+  if (runtime.table === table && runtime.signature === signature) return;
+  runtime.table = table;
+  runtime.signature = signature;
+  ensureFilterButtons(table);
+  prepareMobileCards(table);
+  applyFilters(table);
 }
 
 document.addEventListener('pointerdown', (event) => {
-  if (!active) return;
-  if (event.target.closest('.meg-excel-filter-popover') || event.target === active.select) return;
-  closeFilter();
+  if (!runtime.popover) return;
+  if (event.target.closest('.meg-excel-filter-popover') || event.target.closest('.meg-grid-filter-button')) return;
+  closePopover();
 }, true);
-
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && active) closeFilter({ restoreFocus: true });
-});
-
-window.addEventListener('resize', () => active && positionPopover(active.popover, active.select));
-window.addEventListener('scroll', () => active && positionPopover(active.popover, active.select), true);
-
-const observer = new MutationObserver(bindAll);
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closePopover(); });
+window.addEventListener('resize', () => runtime.popover && positionPopover(runtime.popover, document.querySelector('.meg-grid-filter-button.is-open')));
+const observer = new MutationObserver(() => window.requestAnimationFrame(enhanceTable));
 observer.observe(document.documentElement, { childList: true, subtree: true });
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindAll, { once: true }); else bindAll();
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', enhanceTable, { once: true }); else enhanceTable();
