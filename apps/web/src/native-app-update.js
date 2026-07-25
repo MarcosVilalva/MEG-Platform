@@ -1,6 +1,6 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import './ux-enhancements.css';
-import { initializeUxEnhancements } from './ux-enhancements.js';
+import { initializeUxEnhancements } from './ux-enhancements-safe.js';
 
 initializeUxEnhancements();
 
