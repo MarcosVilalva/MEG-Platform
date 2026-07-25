@@ -33,9 +33,10 @@ loadOptionalUiEnhancements();
 const AppUpdater = registerPlugin('AppUpdater');
 const VERSION_URL = 'https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json';
 const DISMISSED_KEY = 'meg-dismissed-app-version';
+let startupCheckPromise = null;
 
 function updateDialog(release, installed) {
-  document.querySelector('#appUpdateDialog')?.remove();
+  if (document.querySelector('#appUpdateDialog')) return;
   const dialog = document.createElement('dialog');
   dialog.id = 'appUpdateDialog';
   dialog.className = 'modal app-update-dialog';
@@ -102,4 +103,18 @@ export async function checkForAppUpdate({ force = false } = {}) {
     console.warn('MEG app update check failed', cause);
     return { available: false, error: cause };
   }
+}
+
+function checkAtAppStartup() {
+  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return;
+  if (startupCheckPromise) return;
+  startupCheckPromise = checkForAppUpdate({ force: true }).finally(() => {
+    startupCheckPromise = null;
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', checkAtAppStartup, { once: true });
+} else {
+  window.setTimeout(checkAtAppStartup, 0);
 }
