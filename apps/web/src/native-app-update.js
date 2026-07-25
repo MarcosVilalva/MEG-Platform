@@ -1,5 +1,8 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
-import './transaction-date-sort.js';
+import './ux-enhancements.css';
+import { initializeUxEnhancements } from './ux-enhancements.js';
+
+initializeUxEnhancements();
 
 const AppUpdater = registerPlugin('AppUpdater');
 const VERSION_URL = 'https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json';
