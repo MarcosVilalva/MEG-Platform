@@ -23,6 +23,7 @@ function loadOptionalUiEnhancements() {
       await import('./finance-workspace-modernization.js');
       await import('./pending-monetary-balance.js');
       await import('./transaction-status-guard.js');
+      await import('./fast-logout.js');
     } catch (cause) {
       console.error('MEG optional UI enhancements failed to load', cause);
     }
