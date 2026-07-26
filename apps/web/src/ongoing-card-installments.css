@@ -1,0 +1,120 @@
+.ongoing-installment-panel {
+  grid-column: 1 / -1;
+  padding: 18px;
+  border: 1px solid rgba(37, 99, 235, .2);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(239, 246, 255, .96), rgba(248, 250, 252, .98));
+  box-shadow: 0 10px 28px rgba(15, 23, 42, .06);
+}
+
+.ongoing-installment-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ongoing-installment-head > div {
+  display: grid;
+  gap: 3px;
+}
+
+.ongoing-installment-head small {
+  color: #2563eb;
+  font-weight: 800;
+  letter-spacing: .09em;
+}
+
+.ongoing-installment-head strong {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.ongoing-installment-panel > p {
+  margin: 10px 0 0;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.ongoing-switch {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  min-width: auto !important;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+}
+
+.ongoing-switch input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.ongoing-installment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(37, 99, 235, .15);
+}
+
+.ongoing-installment-grid label {
+  display: grid;
+  gap: 7px;
+  color: #334155;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .03em;
+}
+
+.ongoing-installment-grid input {
+  width: 100%;
+  min-height: 44px;
+}
+
+.ongoing-installment-preview {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 15px;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.ongoing-installment-preview strong {
+  color: #fff;
+}
+
+.ongoing-installment-preview span {
+  text-align: right;
+}
+
+.native-mobile .ongoing-installment-panel,
+@media (max-width: 680px) {
+  .ongoing-installment-panel {
+    padding: 15px;
+    border-radius: 15px;
+  }
+
+  .ongoing-installment-head {
+    align-items: flex-start;
+  }
+
+  .ongoing-installment-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ongoing-installment-preview {
+    flex-direction: column;
+  }
+
+  .ongoing-installment-preview span {
+    text-align: left;
+  }
+}
