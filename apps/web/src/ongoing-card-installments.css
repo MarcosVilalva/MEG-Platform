@@ -95,7 +95,27 @@
   text-align: right;
 }
 
-.native-mobile .ongoing-installment-panel,
+.native-mobile .ongoing-installment-panel {
+  padding: 15px;
+  border-radius: 15px;
+}
+
+.native-mobile .ongoing-installment-head {
+  align-items: flex-start;
+}
+
+.native-mobile .ongoing-installment-grid {
+  grid-template-columns: 1fr;
+}
+
+.native-mobile .ongoing-installment-preview {
+  flex-direction: column;
+}
+
+.native-mobile .ongoing-installment-preview span {
+  text-align: left;
+}
+
 @media (max-width: 680px) {
   .ongoing-installment-panel {
     padding: 15px;
