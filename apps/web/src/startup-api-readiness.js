@@ -1,6 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
 const READY_TIMEOUT_MS = 9000;
-const RETRY_DELAY_MS = 1600;
+const INITIAL_RETRY_DELAY_MS = 1600;
+const MAX_RETRY_DELAY_MS = 6000;
 
 function ensureOverlay() {
   let overlay = document.querySelector('#startupReadinessOverlay');
@@ -11,21 +12,22 @@ function ensureOverlay() {
   overlay.innerHTML = `
     <div class="cloud-loading-card startup-readiness-card">
       <span>M</span>
-      <strong>Preparando conexão segura...</strong>
-      <small>Conectando ao MEG e ao banco de dados antes de solicitar seu acesso.</small>
-      <button type="button" class="button hidden" data-startup-retry>Tentar novamente</button>
+      <strong>Carregando dados do banco...</strong>
+      <small>Conectando ao MEG e preparando o banco de dados antes de liberar seu acesso.</small>
     </div>`;
   document.body.appendChild(overlay);
   return overlay;
 }
 
-function setStatus(title, detail, retry = false) {
+function setStatus(title, detail) {
   const overlay = ensureOverlay();
   overlay.querySelector('strong').textContent = title;
   overlay.querySelector('small').textContent = detail;
-  const button = overlay.querySelector('[data-startup-retry]');
-  button.classList.toggle('hidden', !retry);
   overlay.classList.remove('hidden');
+}
+
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 async function probeApi() {
@@ -38,7 +40,8 @@ async function probeApi() {
       signal: controller.signal,
       headers: { 'X-MEG-Startup-Probe': '1' }
     });
-    // 401 is expected without a session and proves that the API and database path are awake.
+    // Sem sessão, 401 é a resposta esperada. Ela comprova que a API e o caminho
+    // até o banco estão disponíveis para receber a autenticação.
     return response.status === 401 || response.ok || response.status === 403;
   } catch {
     return false;
@@ -48,34 +51,29 @@ async function probeApi() {
 }
 
 async function waitUntilReady() {
-  setStatus('Preparando conexão segura...', 'Acordando os serviços e validando a conexão com o banco de dados.');
   let attempt = 0;
-  while (attempt < 4) {
+  setStatus('Carregando dados do banco...', 'Acordando os serviços e validando a conexão segura.');
+
+  while (true) {
     attempt += 1;
     if (await probeApi()) {
-      setStatus('Conexão pronta', 'Agora você pode entrar com biometria, usuário e senha.');
-      await new Promise((resolve) => window.setTimeout(resolve, 280));
+      setStatus('Conexão pronta', 'Banco de dados disponível. Liberando a tela de acesso.');
+      await wait(280);
       document.querySelector('#startupReadinessOverlay')?.classList.add('hidden');
       document.body.classList.add('meg-api-ready');
       return true;
     }
-    if (attempt < 4) {
-      setStatus('Servidor iniciando...', `Tentativa ${attempt} de 4. Aguarde enquanto a conexão é preparada.`);
-      await new Promise((resolve) => window.setTimeout(resolve, RETRY_DELAY_MS * attempt));
-    }
-  }
 
-  setStatus('Não foi possível conectar', 'Verifique sua internet e tente novamente. O login será liberado somente quando a conexão estiver pronta.', true);
-  return new Promise((resolve) => {
-    const button = document.querySelector('[data-startup-retry]');
-    button?.addEventListener('click', async () => {
-      button.disabled = true;
-      button.classList.add('hidden');
-      const ready = await waitUntilReady();
-      button.disabled = false;
-      resolve(ready);
-    }, { once: true });
-  });
+    const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+    const retryDelay = Math.min(INITIAL_RETRY_DELAY_MS * Math.max(1, attempt), MAX_RETRY_DELAY_MS);
+    setStatus(
+      offline ? 'Sem conexão com a internet' : 'Servidor ainda iniciando...',
+      offline
+        ? 'O MEG continuará tentando automaticamente e liberará o login quando a internet voltar.'
+        : `Tentativa ${attempt} sem resposta. Nova tentativa automática em ${Math.ceil(retryDelay / 1000)} segundos.`
+    );
+    await wait(retryDelay);
+  }
 }
 
 export const apiReadiness = (() => {
