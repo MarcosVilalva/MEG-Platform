@@ -2,6 +2,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
 const READY_TIMEOUT_MS = 9000;
 const INITIAL_RETRY_DELAY_MS = 1600;
 const MAX_RETRY_DELAY_MS = 6000;
+const SKIP_READINESS_ONCE_KEY = 'meg-skip-startup-readiness-once';
 
 function ensureOverlay() {
   let overlay = document.querySelector('#startupReadinessOverlay');
@@ -78,6 +79,11 @@ async function waitUntilReady() {
 
 export const apiReadiness = (() => {
   if (import.meta.env.VITE_VALIDATION_MODE === 'true' || new URLSearchParams(location.search).get('validacao') === '1') {
+    return Promise.resolve(true);
+  }
+  if (sessionStorage.getItem(SKIP_READINESS_ONCE_KEY) === '1') {
+    sessionStorage.removeItem(SKIP_READINESS_ONCE_KEY);
+    document.body.classList.add('meg-api-ready');
     return Promise.resolve(true);
   }
   return waitUntilReady();

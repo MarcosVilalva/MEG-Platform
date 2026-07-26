@@ -1,4 +1,5 @@
-const SAVE_TIMEOUT_MS = 1400;
+const SAVE_TIMEOUT_MS = 900;
+const SKIP_READINESS_ONCE_KEY = 'meg-skip-startup-readiness-once';
 
 function wait(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -40,6 +41,9 @@ async function performFastLogout(button) {
     await saveWithDeadline();
   } finally {
     clearMegSession();
+    // A API acabou de responder ao salvamento. Na recarga de logout não há motivo
+    // para repetir o aquecimento de até vários segundos antes de mostrar o login.
+    sessionStorage.setItem(SKIP_READINESS_ONCE_KEY, '1');
     location.replace(location.pathname + location.search);
   }
 }
