@@ -1,3 +1,4 @@
+import './startup-api-readiness.js';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
 function loadOptionalUiEnhancements() {
@@ -20,6 +21,7 @@ function loadOptionalUiEnhancements() {
       await import('./transaction-grid-stability.js');
       await import('./mobile-transactions.js');
       await import('./finance-workspace-modernization.js');
+      await import('./pending-monetary-balance.js');
       await import('./transaction-status-guard.js');
     } catch (cause) {
       console.error('MEG optional UI enhancements failed to load', cause);

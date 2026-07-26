@@ -6,6 +6,12 @@ function isNativeAndroid() {
   return Capacitor?.isNativePlatform?.() && Capacitor.getPlatform?.() === 'android';
 }
 
+async function waitForApiReadiness() {
+  try {
+    if (window.MEG_API_READY) await window.MEG_API_READY;
+  } catch {}
+}
+
 function beginAuthenticatedLoadingTransition() {
   const authShell = document.querySelector('#authShell');
   const loginError = document.querySelector('#loginError');
@@ -82,6 +88,7 @@ export async function saveBiometricLogin({ email, password }) {
 
 export async function requestBiometricLogin() {
   if (!isNativeAndroid()) return null;
+  await waitForApiReadiness();
   try {
     const credentials = await BiometricAuth.authenticate({
       title: 'Entrar no MEG Finanças',
