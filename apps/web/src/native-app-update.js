@@ -24,6 +24,7 @@ function loadOptionalUiEnhancements() {
       await import('./finance-workspace-modernization.js');
       await import('./pending-monetary-balance.js');
       await import('./transaction-status-guard.js');
+      await import('./transaction-classification-defaults.js');
       await import('./fast-logout.js');
       await import('./ongoing-card-installments.js');
     } catch (cause) {

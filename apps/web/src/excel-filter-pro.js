@@ -3,6 +3,7 @@ const runtime = { table: null, activeColumn: null, selections: new Map(), popove
 
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const normalize = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
+const EMPTY_VALUE = '__MEG_EMPTY__';
 
 function tableHeaders(table) {
   return [...table.querySelectorAll('thead tr:first-child th')].map((cell, index) => normalize(cell.textContent) || `Coluna ${index + 1}`);
@@ -12,13 +13,21 @@ function dataRows(table) {
   return [...table.querySelectorAll('tbody tr')].filter((row) => !row.classList.contains('meg-filter-empty-row'));
 }
 
-function cellValue(row, index) {
+function rawCellValue(row, index) {
   return normalize(row.children[index]?.textContent || '');
 }
 
+function cellValue(row, index) {
+  return rawCellValue(row, index) || EMPTY_VALUE;
+}
+
+function displayValue(value) {
+  return value === EMPTY_VALUE ? '(Sem classificação)' : value;
+}
+
 function uniqueValues(table, index) {
-  return [...new Set(dataRows(table).map((row) => cellValue(row, index)).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true, sensitivity: 'base' }));
+  return [...new Set(dataRows(table).map((row) => cellValue(row, index)))]
+    .sort((a, b) => displayValue(a).localeCompare(displayValue(b), 'pt-BR', { numeric: true, sensitivity: 'base' }));
 }
 
 function closePopover() {
@@ -29,10 +38,11 @@ function closePopover() {
 }
 
 function positionPopover(popover, anchor) {
+  if (!anchor) return;
   const rect = anchor.getBoundingClientRect();
   const margin = 12;
   const width = Math.min(380, window.innerWidth - margin * 2);
-  let left = Math.min(Math.max(margin, rect.left), window.innerWidth - width - margin);
+  const left = Math.min(Math.max(margin, rect.left), window.innerWidth - width - margin);
   let top = rect.bottom + 8;
   const height = Math.min(540, window.innerHeight - margin * 2);
   if (top + height > window.innerHeight - margin) top = Math.max(margin, rect.top - height - 8);
@@ -79,8 +89,8 @@ function sortRows(table, index, direction) {
     return Number.isFinite(money) && /\d/.test(text) ? money : text.toLocaleLowerCase('pt-BR');
   };
   rows.sort((a, b) => {
-    const av = parse(cellValue(a, index));
-    const bv = parse(cellValue(b, index));
+    const av = parse(rawCellValue(a, index));
+    const bv = parse(rawCellValue(b, index));
     const result = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv), 'pt-BR', { numeric: true });
     return direction === 'asc' ? result : -result;
   }).forEach((row) => tbody.append(row));
@@ -93,7 +103,7 @@ function openFilter(table, index, button) {
   const headers = tableHeaders(table);
   const values = uniqueValues(table, index);
   const applied = runtime.selections.get(index);
-  const working = new Set(applied?.size ? applied : values);
+  const working = new Set(applied ? [...applied] : []);
   const popover = document.createElement('section');
   popover.className = 'meg-excel-filter-popover';
   popover.setAttribute('role', 'dialog');
@@ -112,27 +122,35 @@ function openFilter(table, index, button) {
   const list = popover.querySelector('.meg-excel-filter-options');
   const selectAll = popover.querySelector('[data-select-all]');
 
-  const render = () => {
+  const visibleValues = () => {
     const query = normalize(search.value).toLocaleLowerCase('pt-BR');
-    const visible = values.filter((value) => value.toLocaleLowerCase('pt-BR').includes(query));
-    list.innerHTML = visible.length
-      ? visible.map((value) => `<label class="meg-excel-filter-option"><input type="checkbox" value="${escapeHtml(value)}" ${working.has(value) ? 'checked' : ''}><span title="${escapeHtml(value)}">${escapeHtml(value)}</span></label>`).join('')
-      : '<div class="meg-excel-filter-empty">Nenhum valor encontrado.</div>';
+    return values.filter((value) => displayValue(value).toLocaleLowerCase('pt-BR').includes(query));
+  };
+
+  const syncSelectAll = () => {
+    const visible = visibleValues();
     selectAll.checked = visible.length > 0 && visible.every((value) => working.has(value));
     selectAll.indeterminate = visible.some((value) => working.has(value)) && !selectAll.checked;
   };
 
+  const render = () => {
+    const visible = visibleValues();
+    list.innerHTML = visible.length
+      ? visible.map((value) => `<label class="meg-excel-filter-option"><input type="checkbox" value="${escapeHtml(value)}" ${working.has(value) ? 'checked' : ''}><span title="${escapeHtml(displayValue(value))}">${escapeHtml(displayValue(value))}</span></label>`).join('')
+      : '<div class="meg-excel-filter-empty">Nenhum valor encontrado.</div>';
+    syncSelectAll();
+  };
+
   search.addEventListener('input', render);
   selectAll.addEventListener('change', () => {
-    const query = normalize(search.value).toLocaleLowerCase('pt-BR');
-    values.filter((value) => value.toLocaleLowerCase('pt-BR').includes(query)).forEach((value) => selectAll.checked ? working.add(value) : working.delete(value));
+    visibleValues().forEach((value) => selectAll.checked ? working.add(value) : working.delete(value));
     render();
   });
   list.addEventListener('change', (event) => {
     const checkbox = event.target.closest('input[type=checkbox]');
     if (!checkbox) return;
     checkbox.checked ? working.add(checkbox.value) : working.delete(checkbox.value);
-    render();
+    syncSelectAll();
   });
   popover.addEventListener('click', (event) => {
     if (event.target.closest('.meg-filter-close')) return closePopover();
@@ -142,7 +160,8 @@ function openFilter(table, index, button) {
     if (action === 'cancel') return closePopover();
     if (action === 'clear') { clearColumnFilter(table, index); closePopover(); return; }
     if (action === 'apply') {
-      if (working.size === values.length) runtime.selections.delete(index); else runtime.selections.set(index, working);
+      if (!working.size || working.size === values.length) runtime.selections.delete(index);
+      else runtime.selections.set(index, new Set(working));
       applyFilters(table);
       closePopover();
     }
@@ -181,6 +200,7 @@ function prepareMobileCards(table) {
       if (/descri/i.test(headers[index])) cell.classList.add('meg-mobile-description');
       if (/receita|despesa|valor/i.test(headers[index])) cell.classList.add('meg-mobile-value');
       if (/situa/i.test(headers[index])) cell.classList.add('meg-mobile-status');
+      if (/classifica/i.test(headers[index]) && !normalize(cell.textContent)) cell.textContent = 'SEM CLASSIFICAÇÃO';
       if (/observ/i.test(headers[index])) cell.classList.add('meg-mobile-notes');
       if (index === headers.length - 1) cell.classList.add('meg-mobile-actions');
     });
