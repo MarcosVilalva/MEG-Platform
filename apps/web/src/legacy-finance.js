@@ -30,55 +30,86 @@ export function calculateCreditCardPortfolio(allTransactions, periodTransactions
   const search = normalizedFinanceText(filters.search || '');
   const isPaid = (item) => item.status === 'paid' || normalizedFinanceText(item.situation) === 'PAGO';
   const inactiveMethods = new Set(registeredCards.filter((card) => card.isActive === false).map((card) => normalizedFinanceText(card.paymentMethod)));
-  const cardExpenses = allTransactions.filter((item) => isCreditCardExpense(item) && !inactiveMethods.has(normalizedFinanceText(item.paymentMethod || item.account)));
-  const periodCardExpenses = periodTransactions.filter((item) => isCreditCardExpense(item) && !inactiveMethods.has(normalizedFinanceText(item.paymentMethod || item.account)));
   const registeredByMethod = new Map(registeredCards.filter((card) => card.isActive !== false).map((card) => [normalizedFinanceText(card.paymentMethod), card]));
+  const usedByMethod = new Map();
+  const periodByMethod = new Map();
 
-  cardExpenses.forEach((item) => {
+  allTransactions.forEach((item) => {
+    if (!isCreditCardExpense(item)) return;
     const method = String(item.paymentMethod || item.account || 'Cartão não cadastrado').trim();
     const key = normalizedFinanceText(method);
+    if (inactiveMethods.has(key)) return;
     if (!registeredByMethod.has(key)) {
       registeredByMethod.set(key, { paymentMethod: method, brand: 'OUTRO', limit: 0, closingDay: 0, dueDay: 0, bestPurchaseDay: 0 });
     }
+    if (!isPaid(item)) usedByMethod.set(key, (usedByMethod.get(key) || 0) + transactionValue(item, 'expense'));
   });
 
-  const matchesCard = (item) => !cardFilter || normalizedFinanceText(item.paymentMethod || item.account) === cardFilter;
   const matchesStatus = (item) => statusFilter === 'all' || (statusFilter === 'paid' ? isPaid(item) : !isPaid(item));
-  const matchesSearch = (item) => !search || [item.description, item.group, item.category, item.paymentMethod, item.notes].some((value) => normalizedFinanceText(value).includes(search));
-  const items = periodCardExpenses.filter((item) => matchesCard(item) && matchesStatus(item) && matchesSearch(item));
-  const visibleCards = [...registeredByMethod.values()].filter((card) => !cardFilter || normalizedFinanceText(card.paymentMethod) === cardFilter);
+  const items = [];
+  periodTransactions.forEach((item) => {
+    if (!isCreditCardExpense(item)) return;
+    const method = String(item.paymentMethod || item.account || 'Cartão não cadastrado').trim();
+    const key = normalizedFinanceText(method);
+    if (inactiveMethods.has(key)) return;
+    const periodSummary = periodByMethod.get(key) || { total: 0, count: 0 };
+    periodSummary.total += transactionValue(item, 'expense');
+    periodSummary.count += 1;
+    periodByMethod.set(key, periodSummary);
+    if (cardFilter && key !== cardFilter) return;
+    if (!matchesStatus(item)) return;
+    if (search) {
+      const searchable = [item.description, item.group, item.category, item.paymentMethod, item.notes];
+      if (!searchable.some((value) => normalizedFinanceText(value).includes(search))) return;
+    }
+    items.push(item);
+  });
 
-  const cardSummaries = visibleCards.map((card) => {
-    const key = normalizedFinanceText(card.paymentMethod);
-    const allItems = cardExpenses.filter((item) => normalizedFinanceText(item.paymentMethod || item.account) === key);
-    const periodItems = periodCardExpenses.filter((item) => normalizedFinanceText(item.paymentMethod || item.account) === key);
-    const used = allItems.filter((item) => !isPaid(item)).reduce((sum, item) => sum + transactionValue(item, 'expense'), 0);
-    const periodTotal = periodItems.reduce((sum, item) => sum + transactionValue(item, 'expense'), 0);
+  const visibleCards = [...registeredByMethod.entries()]
+    .filter(([key]) => !cardFilter || key === cardFilter)
+    .map(([key, card]) => ({ key, card }));
+  const cardSummaries = visibleCards.map(({ key, card }) => {
+    const used = usedByMethod.get(key) || 0;
+    const periodSummary = periodByMethod.get(key) || { total: 0, count: 0 };
     const limit = Number(card.limit || 0);
     return {
       ...card,
       used,
       available: Math.max(limit - used, 0),
       usagePercent: limit > 0 ? Math.min((used / limit) * 100, 999) : 0,
-      periodTotal,
-      purchaseCount: periodItems.length,
+      periodTotal: periodSummary.total,
+      purchaseCount: periodSummary.count,
     };
   });
 
-  const totalLimit = cardSummaries.reduce((sum, card) => sum + Number(card.limit || 0), 0);
-  const usedLimit = cardSummaries.reduce((sum, card) => sum + card.used, 0);
-  const periodTotal = items.reduce((sum, item) => sum + transactionValue(item, 'expense'), 0);
-  const paidTotal = items.filter(isPaid).reduce((sum, item) => sum + transactionValue(item, 'expense'), 0);
+  let totalLimit = 0;
+  let usedLimit = 0;
+  cardSummaries.forEach((card) => {
+    totalLimit += Number(card.limit || 0);
+    usedLimit += card.used;
+  });
+  let periodTotal = 0;
+  let paidTotal = 0;
   const groupTotals = new Map();
   items.forEach((item) => {
+    const value = transactionValue(item, 'expense');
+    periodTotal += value;
+    if (isPaid(item)) paidTotal += value;
     const group = String(item.group || item.category || 'Sem categoria');
-    groupTotals.set(group, (groupTotals.get(group) || 0) + transactionValue(item, 'expense'));
+    groupTotals.set(group, (groupTotals.get(group) || 0) + value);
   });
-  const largestGroup = [...groupTotals.entries()].sort((a, b) => b[1] - a[1])[0] || ['', 0];
+  let largestGroupName = '';
+  let largestGroupTotal = 0;
+  groupTotals.forEach((total, name) => {
+    if (total > largestGroupTotal) {
+      largestGroupName = name;
+      largestGroupTotal = total;
+    }
+  });
 
   return {
     cards: cardSummaries,
-    items: [...items].sort((a, b) => b.date.localeCompare(a.date) || String(a.description || '').localeCompare(String(b.description || ''), 'pt-BR')),
+    items: items.sort((a, b) => b.date.localeCompare(a.date) || String(a.description || '').localeCompare(String(b.description || ''), 'pt-BR')),
     totalLimit,
     usedLimit,
     availableLimit: Math.max(totalLimit - usedLimit, 0),
@@ -86,7 +117,7 @@ export function calculateCreditCardPortfolio(allTransactions, periodTransactions
     periodTotal,
     paidTotal,
     pendingTotal: periodTotal - paidTotal,
-    largestGroup: { name: largestGroup[0], total: largestGroup[1] },
+    largestGroup: { name: largestGroupName, total: largestGroupTotal },
   };
 }
 

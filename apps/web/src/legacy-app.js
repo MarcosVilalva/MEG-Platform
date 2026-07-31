@@ -122,7 +122,14 @@ let transactionDataVersion = 0;
 let renderedColumnFilterVersion = -1;
 let columnFilterValueCache = { version: -1, values: {} };
 let descriptionHistoryCache = { version: -1, type: "", items: [] };
-const transactionSearchTextCache = new WeakMap();
+let transactionSearchTextCache = new WeakMap();
+let transactionFilterIndexCache = new WeakMap();
+let periodMetadataCache = { version: -1, years: [], bounds: null };
+let selectedTransactionsCache = { version: -1, key: "", items: [] };
+let previousPeriodTransactionsCache = { version: -1, key: "", items: [] };
+let incomeAnalysisBaseCache = { version: -1, key: "", data: null };
+let creditCardBaseCache = { version: -1, key: "", data: null };
+let scheduledActiveViewFrame = 0;
 let localStateSaveTimer;
 let nativeNotificationSyncTimer;
 let descriptionSuggestionItems = [];
@@ -569,6 +576,13 @@ function invalidateTransactionCaches() {
   renderedColumnFilterVersion = -1;
   columnFilterValueCache = { version: -1, values: {} };
   descriptionHistoryCache = { version: -1, type: "", items: [] };
+  transactionSearchTextCache = new WeakMap();
+  transactionFilterIndexCache = new WeakMap();
+  periodMetadataCache = { version: -1, years: [], bounds: null };
+  selectedTransactionsCache = { version: -1, key: "", items: [] };
+  previousPeriodTransactionsCache = { version: -1, key: "", items: [] };
+  incomeAnalysisBaseCache = { version: -1, key: "", data: null };
+  creditCardBaseCache = { version: -1, key: "", data: null };
 }
 
 function scheduleLocalStateSave() {
@@ -716,33 +730,62 @@ function weekdayShort(dateValue) {
   return Number.isNaN(date.getTime()) ? "" : labels[date.getDay()];
 }
 
+function selectedPeriodCacheKey() {
+  return [selectedPeriod.mode, selectedPeriod.month, selectedPeriod.year, selectedPeriod.start, selectedPeriod.end].join("|");
+}
+
+function transactionPeriodMetadata() {
+  if (periodMetadataCache.version === transactionDataVersion && periodMetadataCache.bounds) return periodMetadataCache;
+  const years = new Set();
+  let min = "";
+  let max = "";
+  state.transactions.forEach((item) => {
+    const date = transactionPeriodDate(item);
+    if (!date) return;
+    const year = date.slice(0, 4);
+    if (year) years.add(year);
+    if (!min || date < min) min = date;
+    if (!max || date > max) max = date;
+  });
+  periodMetadataCache = {
+    version: transactionDataVersion,
+    years: [...years].sort((a, b) => b.localeCompare(a)),
+    bounds: { min: min || `${currentMonth}-01`, max: max || `${currentMonth}-28` },
+  };
+  return periodMetadataCache;
+}
+
 function availableYears() {
-  return [...new Set(state.transactions.map((item) => transactionPeriodDate(item).slice(0, 4)).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+  return transactionPeriodMetadata().years;
 }
 
 function availableDateBounds() {
-  const dates = state.transactions.map(transactionPeriodDate).filter(Boolean).sort();
-  return {
-    min: dates[0] || `${currentMonth}-01`,
-    max: dates[dates.length - 1] || `${currentMonth}-28`,
-  };
+  return transactionPeriodMetadata().bounds;
 }
 
 function selectedTransactions() {
-  if (selectedPeriod.mode === "all") return [...state.transactions];
-  if (selectedPeriod.mode === "year") {
-    return state.transactions.filter((item) => transactionPeriodDate(item).startsWith(selectedPeriod.year));
+  const key = selectedPeriodCacheKey();
+  if (selectedTransactionsCache.version === transactionDataVersion && selectedTransactionsCache.key === key) {
+    return selectedTransactionsCache.items;
   }
-  if (selectedPeriod.mode === "range") {
+  let items;
+  if (selectedPeriod.mode === "all") {
+    items = [...state.transactions];
+  } else if (selectedPeriod.mode === "year") {
+    items = state.transactions.filter((item) => transactionPeriodDate(item).startsWith(selectedPeriod.year));
+  } else if (selectedPeriod.mode === "range") {
     const bounds = availableDateBounds();
     const start = selectedPeriod.start || bounds.min;
     const end = selectedPeriod.end || bounds.max;
-    return state.transactions.filter((item) => {
+    items = state.transactions.filter((item) => {
       const competenceDate = transactionPeriodDate(item);
       return competenceDate >= start && competenceDate <= end;
     });
+  } else {
+    items = state.transactions.filter((item) => monthOf(transactionPeriodDate(item)) === selectedPeriod.month);
   }
-  return state.transactions.filter((item) => monthOf(transactionPeriodDate(item)) === selectedPeriod.month);
+  selectedTransactionsCache = { version: transactionDataVersion, key, items };
+  return items;
 }
 
 function expensesForMonth() {
@@ -1423,14 +1466,20 @@ function daysBetween(start, end) {
 }
 
 function previousPeriodTransactions() {
+  const key = selectedPeriodCacheKey();
+  if (previousPeriodTransactionsCache.version === transactionDataVersion && previousPeriodTransactionsCache.key === key) {
+    return previousPeriodTransactionsCache.items;
+  }
   const { start, end } = dateRangeForSelectedPeriod();
   const length = daysBetween(start, end);
   const previousEnd = addDays(start, -1);
   const previousStart = addDays(previousEnd, -(length - 1));
-  return state.transactions.filter((item) => {
+  const items = state.transactions.filter((item) => {
     const competenceDate = transactionPeriodDate(item);
     return competenceDate >= previousStart && competenceDate <= previousEnd;
   });
+  previousPeriodTransactionsCache = { version: transactionDataVersion, key, items };
+  return items;
 }
 
 function monthlyBuckets(items) {
@@ -1539,8 +1588,15 @@ function selectedOptions(select) {
 }
 
 function setMultiOptions(select, values, selectedValues) {
+  const optionsKey = values.join("|");
+  if (select.dataset.optionsKey !== optionsKey) {
+    select.innerHTML = values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
+    select.dataset.optionsKey = optionsKey;
+  }
   const selected = new Set(selectedValues);
-  select.innerHTML = values.map((value) => `<option value="${escapeHtml(value)}" ${selected.has(value) ? "selected" : ""}>${escapeHtml(value)}</option>`).join("");
+  Array.from(select.options).forEach((option) => {
+    option.selected = selected.has(option.value);
+  });
 }
 
 function renderAnalyticsFilters(items = selectedTransactions()) {
@@ -1576,9 +1632,8 @@ function filterAnalyticsPayments(items) {
   });
 }
 
-function render() {
+function renderActiveView() {
   ensureStagingInsightPanels();
-  renderPeriodControls();
   if (selectedView === "dashboard") renderDashboard();
   if (selectedView === "cashflow") renderCashflow();
   if (selectedView === "analytics") {
@@ -1602,6 +1657,26 @@ function render() {
     renderCatalogs();
   }
   if (selectedView === "settings") renderSettings();
+}
+
+function cancelScheduledActiveViewRender() {
+  if (!scheduledActiveViewFrame) return;
+  window.cancelAnimationFrame(scheduledActiveViewFrame);
+  scheduledActiveViewFrame = 0;
+}
+
+function scheduleActiveViewRender() {
+  cancelScheduledActiveViewRender();
+  scheduledActiveViewFrame = window.requestAnimationFrame(() => {
+    scheduledActiveViewFrame = 0;
+    renderActiveView();
+  });
+}
+
+function render() {
+  cancelScheduledActiveViewRender();
+  renderPeriodControls();
+  renderActiveView();
 }
 
 function renderDashboard() {
@@ -1781,40 +1856,76 @@ function incomeSourceName(item) {
   return String(item.description || "Receita sem descrição").trim().toUpperCase();
 }
 
+function incomeAnalysisBaseData() {
+  const key = selectedPeriodCacheKey();
+  if (incomeAnalysisBaseCache.version === transactionDataVersion && incomeAnalysisBaseCache.key === key && incomeAnalysisBaseCache.data) {
+    return incomeAnalysisBaseCache.data;
+  }
+  const allMonetaryItems = [];
+  const ticketItems = [];
+  const sourceSet = new Set();
+  let unfilteredTotal = 0;
+  let ticketTotal = 0;
+  selectedTransactions().forEach((item) => {
+    if (item.type !== "income") return;
+    const value = Number(item.incomeAmount || item.amount || 0);
+    if (isVerocardTransaction(item)) {
+      ticketItems.push(item);
+      ticketTotal += value;
+      return;
+    }
+    allMonetaryItems.push(item);
+    unfilteredTotal += value;
+    sourceSet.add(incomeSourceName(item));
+  });
+  const data = {
+    allMonetaryItems,
+    ticketItems,
+    sourceOptions: [...sourceSet].sort((a, b) => a.localeCompare(b, "pt-BR")),
+    unfilteredTotal,
+    ticketTotal,
+  };
+  incomeAnalysisBaseCache = { version: transactionDataVersion, key, data };
+  return data;
+}
+
 function renderIncomeAnalysis() {
-  const incomeItems = selectedTransactions().filter((item) => item.type === "income");
-  const allMonetaryItems = incomeItems.filter((item) => !isVerocardTransaction(item));
-  const ticketItems = incomeItems.filter(isVerocardTransaction);
-  const sourceOptions = [...new Set(allMonetaryItems.map(incomeSourceName))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const { allMonetaryItems, ticketItems, sourceOptions, unfilteredTotal, ticketTotal } = incomeAnalysisBaseData();
   if (incomeSourceFilter !== "all" && !sourceOptions.includes(incomeSourceFilter)) incomeSourceFilter = "all";
-  els.incomeSourceFilter.innerHTML = `<option value="all">Todas as origens</option>${sourceOptions.map((source) => `<option value="${escapeHtml(source)}">${escapeHtml(source)}</option>`).join("")}`;
-  els.incomeSourceFilter.value = incomeSourceFilter;
+  const sourceOptionsKey = sourceOptions.join("|");
+  if (els.incomeSourceFilter.dataset.optionsKey !== sourceOptionsKey) {
+    els.incomeSourceFilter.innerHTML = `<option value="all">Todas as origens</option>${sourceOptions.map((source) => `<option value="${escapeHtml(source)}">${escapeHtml(source)}</option>`).join("")}`;
+    els.incomeSourceFilter.dataset.optionsKey = sourceOptionsKey;
+  }
+  if (els.incomeSourceFilter.value !== incomeSourceFilter) els.incomeSourceFilter.value = incomeSourceFilter;
   if (els.incomeSourceSearch.value !== incomeSourceSearch) els.incomeSourceSearch.value = incomeSourceSearch;
   const search = normalizeText(incomeSourceSearch);
-  const monetaryItems = allMonetaryItems.filter((item) => {
-    const source = incomeSourceName(item);
-    return (incomeSourceFilter === "all" || source === incomeSourceFilter) && (!search || normalizeText(source).includes(search));
-  });
-  const total = monetaryItems.reduce((sum, item) => sum + Number(item.incomeAmount || item.amount || 0), 0);
-  const unfilteredTotal = allMonetaryItems.reduce((sum, item) => sum + Number(item.incomeAmount || item.amount || 0), 0);
-  const ticketTotal = ticketItems.reduce((sum, item) => sum + Number(item.incomeAmount || item.amount || 0), 0);
-  const months = [...new Set(monetaryItems.map((item) => monthOf(item.date)).filter(Boolean))].sort();
-  const average = months.length ? total / months.length : 0;
+  const monetaryItems = [];
   const sourceMap = new Map();
-  monetaryItems.forEach((item) => {
+  const monthlyMap = new Map();
+  let total = 0;
+  allMonetaryItems.forEach((item) => {
     const source = incomeSourceName(item);
+    if (incomeSourceFilter !== "all" && source !== incomeSourceFilter) return;
+    if (search && !normalizeText(source).includes(search)) return;
+    const value = Number(item.incomeAmount || item.amount || 0);
+    const month = monthOf(item.date);
+    monetaryItems.push(item);
+    total += value;
+    if (month) monthlyMap.set(month, (monthlyMap.get(month) || 0) + value);
     const current = sourceMap.get(source) || { source, value: 0, count: 0, months: new Set() };
-    current.value += Number(item.incomeAmount || item.amount || 0);
+    current.value += value;
     current.count += 1;
-    current.months.add(monthOf(item.date));
+    if (month) current.months.add(month);
     sourceMap.set(source, current);
   });
+  const monthly = [...monthlyMap.entries()]
+    .map(([month, value]) => ({ month, value }))
+    .sort((a, b) => a.month.localeCompare(b.month));
+  const months = monthly.map((item) => item.month);
+  const average = months.length ? total / months.length : 0;
   const sources = [...sourceMap.values()].sort((a, b) => b.value - a.value);
   const recurring = sources.filter((item) => item.months.size > 1);
-  const monthly = months.map((month) => ({
-    month,
-    value: monetaryItems.filter((item) => monthOf(item.date) === month).reduce((sum, item) => sum + Number(item.incomeAmount || item.amount || 0), 0),
-  }));
   const previous = monthly.at(-2)?.value || 0;
   const latest = monthly.at(-1)?.value || 0;
   const variation = previous ? ((latest - previous) / previous) * 100 : latest ? 100 : 0;
@@ -3004,34 +3115,22 @@ function sortTransactions(items, sortMode) {
 }
 
 function renderPeriodControls() {
-  const years = availableYears();
-  if (!years.includes(selectedPeriod.year)) selectedPeriod.year = years[0] || todayIso.slice(0, 4);
-  els.yearFilter.innerHTML = years.map((year) => `<option value="${year}">${year}</option>`).join("");
-  els.periodMode.value = selectedPeriod.mode;
-  els.monthFilter.value = selectedPeriod.month;
-  els.yearFilter.value = selectedPeriod.year;
-  if (document.activeElement !== els.startDateFilter) els.startDateFilter.value = selectedPeriod.start;
-  if (document.activeElement !== els.endDateFilter) els.endDateFilter.value = selectedPeriod.end;
+  const available = availableYears();
+  const years = available.length ? available : [todayIso.slice(0, 4)];
+  if (!years.includes(selectedPeriod.year)) selectedPeriod.year = years[0];
+  const yearOptionsKey = years.join("|");
+  if (els.yearFilter.dataset.optionsKey !== yearOptionsKey) {
+    els.yearFilter.innerHTML = years.map((year) => `<option value="${year}">${year}</option>`).join("");
+    els.yearFilter.dataset.optionsKey = yearOptionsKey;
+  }
+  if (els.periodMode.value !== selectedPeriod.mode) els.periodMode.value = selectedPeriod.mode;
+  if (els.monthFilter.value !== selectedPeriod.month) els.monthFilter.value = selectedPeriod.month;
+  if (els.yearFilter.value !== selectedPeriod.year) els.yearFilter.value = selectedPeriod.year;
+  if (document.activeElement !== els.startDateFilter && els.startDateFilter.value !== selectedPeriod.start) els.startDateFilter.value = selectedPeriod.start;
+  if (document.activeElement !== els.endDateFilter && els.endDateFilter.value !== selectedPeriod.end) els.endDateFilter.value = selectedPeriod.end;
   els.periodFields.forEach((field) => {
     field.classList.toggle("hidden", field.dataset.periodField !== selectedPeriod.mode);
   });
-}
-
-function fillColumnFilterOptions(key, values) {
-  const filter = document.querySelector(`[data-multi-filter="${key}"]`);
-  if (!filter) return;
-  const selected = Array.isArray(transactionColumnFilters[key]) ? transactionColumnFilters[key] : [];
-  const search = normalizeText(filter.querySelector("[data-multi-filter-search]")?.value || "");
-  const labels = key === "type" ? { income: "Receita", expense: "Despesa" } : {};
-  const options = (key === "type" ? ["income", "expense"] : values)
-    .filter((value) => !search || normalizeText(labels[value] || value).includes(search));
-  const summary = filter.querySelector("summary");
-  const emptyLabel = ["expenseClass", "paymentMethod", "situation", "modality"].includes(key) ? "Todas" : "Todos";
-  summary.textContent = selected.length === 0 ? emptyLabel : selected.length === 1 ? (labels[selected[0]] || selected[0]) : `${selected.length} selecionados`;
-  summary.classList.toggle("has-filter", selected.length > 0);
-  filter.querySelector("[data-multi-filter-options]").innerHTML = options.length
-    ? options.map((value) => `<label><input type="checkbox" data-multi-filter-option value="${escapeHtml(value)}" ${selected.includes(value) ? "checked" : ""} /><span>${escapeHtml(labels[value] || value)}</span></label>`).join("")
-    : '<small class="excel-filter-empty">Nenhum item encontrado.</small>';
 }
 
 function columnFilterValues() {
@@ -3062,14 +3161,35 @@ function columnFilterValues() {
   return values;
 }
 
+function valuesForColumnFilter(key) {
+  if (key === "type") return ["income", "expense"];
+  if (key === "modality") return sortedModalities();
+  return columnFilterValues()[key] || [];
+}
+
+function fillColumnFilterOptions(key, values = valuesForColumnFilter(key)) {
+  const filter = document.querySelector(`[data-multi-filter="${key}"]`);
+  if (!filter) return;
+  const selected = Array.isArray(transactionColumnFilters[key]) ? transactionColumnFilters[key] : [];
+  const selectedSet = new Set(selected);
+  const search = normalizeText(filter.querySelector("[data-multi-filter-search]")?.value || "");
+  const labels = key === "type" ? { income: "Receita", expense: "Despesa" } : {};
+  const options = values.filter((value) => !search || normalizeText(labels[value] || value).includes(search));
+  const summary = filter.querySelector("summary");
+  const emptyLabel = ["expenseClass", "paymentMethod", "situation", "modality"].includes(key) ? "Todas" : "Todos";
+  summary.textContent = selected.length === 0 ? emptyLabel : selected.length === 1 ? (labels[selected[0]] || selected[0]) : `${selected.length} selecionados`;
+  summary.classList.toggle("has-filter", selected.length > 0);
+  filter.querySelector("[data-multi-filter-options]").innerHTML = options.length
+    ? options.map((value) => `<label><input type="checkbox" data-multi-filter-option value="${escapeHtml(value)}" ${selectedSet.has(value) ? "checked" : ""} /><span>${escapeHtml(labels[value] || value)}</span></label>`).join("")
+    : '<small class="excel-filter-empty">Nenhum item encontrado.</small>';
+}
+
+function renderColumnFilterOption(key) {
+  fillColumnFilterOptions(key, valuesForColumnFilter(key));
+}
+
 function renderColumnFilterOptions() {
-  const values = columnFilterValues();
-  fillColumnFilterOptions("type", []);
-  fillColumnFilterOptions("expenseClass", values.expenseClass || []);
-  fillColumnFilterOptions("group", values.group || []);
-  fillColumnFilterOptions("paymentMethod", values.paymentMethod || []);
-  fillColumnFilterOptions("situation", values.situation || []);
-  fillColumnFilterOptions("modality", sortedModalities());
+  ["type", "expenseClass", "group", "paymentMethod", "situation", "modality"].forEach(renderColumnFilterOption);
   renderedColumnFilterVersion = transactionDataVersion;
 }
 
@@ -3077,39 +3197,65 @@ function ensureColumnFilterOptions() {
   if (renderedColumnFilterVersion !== transactionDataVersion) renderColumnFilterOptions();
 }
 
-function matchesColumnFilters(item) {
-  const textMatches = (key, value) => !transactionColumnFilters[key] || normalizeText(value).includes(normalizeText(transactionColumnFilters[key]));
-  const exactMatches = (key, value) => {
-    const selected = transactionColumnFilters[key];
-    if (!Array.isArray(selected) || selected.length === 0) return true;
-    return selected.some((candidate) => normalizeText(value) === normalizeText(candidate));
+function transactionFilterIndex(item) {
+  if (transactionFilterIndexCache.has(item)) return transactionFilterIndexCache.get(item);
+  const paymentMethod = item.paymentMethod || item.account || "";
+  const group = item.group || item.category || "";
+  const modality = item.modality || PAYMENT_MODALITIES[paymentMethod] || "";
+  const index = {
+    description: normalizeText(item.description),
+    notes: normalizeText(item.notes),
+    expenseClass: normalizeText(item.expenseClass),
+    group: normalizeText(group),
+    paymentMethod: normalizeText(paymentMethod),
+    situation: normalizeText(item.situation || (item.status === "paid" ? "PAGO" : "PENDENTE")),
+    modality: normalizeText(modality),
+    searchText: normalizeText(`${item.description || ""} ${item.category || ""} ${group} ${item.account || ""} ${paymentMethod} ${item.notes || ""}`),
   };
-  if (transactionColumnFilters.date && item.date !== transactionColumnFilters.date) return false;
-  if (transactionColumnFilters.purchaseDate && item.purchaseDate !== transactionColumnFilters.purchaseDate) return false;
-  if (!exactMatches("type", item.type)) return false;
-  if (!textMatches("description", item.description)) return false;
-  if (!textMatches("notes", item.notes)) return false;
-  if (!exactMatches("expenseClass", item.expenseClass)) return false;
-  if (!exactMatches("group", item.group || item.category)) return false;
-  if (!exactMatches("paymentMethod", item.paymentMethod || item.account)) return false;
-  if (!exactMatches("situation", item.situation)) return false;
-  if (!exactMatches("modality", item.modality || PAYMENT_MODALITIES[item.paymentMethod || item.account])) return false;
-  if (transactionColumnFilters.income && Number(item.incomeAmount || 0) < Number(transactionColumnFilters.income)) return false;
-  if (transactionColumnFilters.expense && Number(item.expenseAmount || 0) < Number(transactionColumnFilters.expense)) return false;
+  transactionFilterIndexCache.set(item, index);
+  return index;
+}
+
+function compileTransactionColumnFilters() {
+  const exactSet = (key) => new Set((Array.isArray(transactionColumnFilters[key]) ? transactionColumnFilters[key] : []).map(normalizeText));
+  const numericFilter = (key) => {
+    const raw = transactionColumnFilters[key];
+    return raw === undefined || raw === null || raw === "" ? null : Number(raw);
+  };
+  return {
+    date: transactionColumnFilters.date || "",
+    purchaseDate: transactionColumnFilters.purchaseDate || "",
+    description: normalizeText(transactionColumnFilters.description),
+    notes: normalizeText(transactionColumnFilters.notes),
+    type: exactSet("type"),
+    expenseClass: exactSet("expenseClass"),
+    group: exactSet("group"),
+    paymentMethod: exactSet("paymentMethod"),
+    situation: exactSet("situation"),
+    modality: exactSet("modality"),
+    income: numericFilter("income"),
+    expense: numericFilter("expense"),
+  };
+}
+
+function matchesCompiledColumnFilters(item, filters, index = transactionFilterIndex(item)) {
+  const exactMatches = (set, value) => !set.size || set.has(value);
+  if (filters.date && item.date !== filters.date) return false;
+  if (filters.purchaseDate && item.purchaseDate !== filters.purchaseDate) return false;
+  if (!exactMatches(filters.type, normalizeText(item.type))) return false;
+  if (filters.description && !index.description.includes(filters.description)) return false;
+  if (filters.notes && !index.notes.includes(filters.notes)) return false;
+  if (!exactMatches(filters.expenseClass, index.expenseClass)) return false;
+  if (!exactMatches(filters.group, index.group)) return false;
+  if (!exactMatches(filters.paymentMethod, index.paymentMethod)) return false;
+  if (!exactMatches(filters.situation, index.situation)) return false;
+  if (!exactMatches(filters.modality, index.modality)) return false;
+  if (filters.income !== null && Number(item.incomeAmount || 0) < filters.income) return false;
+  if (filters.expense !== null && Number(item.expenseAmount || 0) < filters.expense) return false;
   return true;
 }
 
-function renderTransactionsFilterSummary(items) {
-  const totals = items.reduce((summary, item) => {
-    if (item.type === "income") {
-      summary.income += Number(item.incomeAmount || item.amount || 0);
-      summary.incomeCount += 1;
-    } else if (item.type === "expense") {
-      summary.expense += Number(item.expenseAmount || item.amount || 0);
-      summary.expenseCount += 1;
-    }
-    return summary;
-  }, { income: 0, expense: 0, incomeCount: 0, expenseCount: 0 });
+function renderTransactionsFilterSummary(totals, itemCount) {
   const { income, expense, incomeCount, expenseCount } = totals;
   const result = income - expense;
   const plural = (count) => `${count} ${count === 1 ? "lançamento" : "lançamentos"}`;
@@ -3123,7 +3269,7 @@ function renderTransactionsFilterSummary(items) {
     ? "Sobra no recorte selecionado"
     : result < 0
       ? "Déficit no recorte selecionado"
-      : items.length
+      : itemCount
         ? "Recorte equilibrado"
         : "Nenhum lançamento encontrado";
   els.transactionsFilteredResultCard.classList.toggle("is-positive", result > 0);
@@ -3132,7 +3278,7 @@ function renderTransactionsFilterSummary(items) {
 
 function transactionSearchText(item) {
   if (transactionSearchTextCache.has(item)) return transactionSearchTextCache.get(item);
-  const normalized = normalizeText(`${item.description || ""} ${item.category || ""} ${item.group || ""} ${item.account || ""} ${item.paymentMethod || ""} ${item.notes || ""}`);
+  const normalized = transactionFilterIndex(item).searchText;
   transactionSearchTextCache.set(item, normalized);
   return normalized;
 }
@@ -3142,11 +3288,24 @@ function renderTransactions({ resetPage = false } = {}) {
   if (resetPage) transactionPage = 1;
   const query = normalizeText(els.searchInput.value);
   const type = els.typeFilter.value;
-  const rows = selectedTransactions()
-    .filter((item) => (type === "all" ? true : item.type === type))
-    .filter((item) => !query || transactionSearchText(item).includes(query))
-    .filter(matchesColumnFilters);
-  renderTransactionsFilterSummary(rows);
+  const compiledFilters = compileTransactionColumnFilters();
+  const rows = [];
+  const totals = { income: 0, expense: 0, incomeCount: 0, expenseCount: 0 };
+  selectedTransactions().forEach((item) => {
+    if (type !== "all" && item.type !== type) return;
+    const index = transactionFilterIndex(item);
+    if (query && !index.searchText.includes(query)) return;
+    if (!matchesCompiledColumnFilters(item, compiledFilters, index)) return;
+    rows.push(item);
+    if (item.type === "income") {
+      totals.income += Number(item.incomeAmount || item.amount || 0);
+      totals.incomeCount += 1;
+    } else if (item.type === "expense") {
+      totals.expense += Number(item.expenseAmount || item.amount || 0);
+      totals.expenseCount += 1;
+    }
+  });
+  renderTransactionsFilterSummary(totals, rows.length);
   sortTransactions(rows, els.transactionSortFilter?.value || "date_desc");
 
   const totalPages = Math.max(1, Math.ceil(rows.length / transactionPageSize));
@@ -3216,7 +3375,11 @@ function cardAssetUrl(asset, brand) {
   return `${base}${asset || fallback}`;
 }
 
-function renderCreditCards() {
+function creditCardBaseData() {
+  const key = selectedPeriodCacheKey();
+  if (creditCardBaseCache.version === transactionDataVersion && creditCardBaseCache.key === key && creditCardBaseCache.data) {
+    return creditCardBaseCache.data;
+  }
   const allRegisteredCards = state.catalogs?.cards || [];
   const registeredCards = allRegisteredCards.filter((card) => card.isActive !== false && isCatalogItemActive("paymentMethods", card.paymentMethod));
   const inactiveMethods = new Set([
@@ -3229,11 +3392,26 @@ function renderCreditCards() {
     ...registeredCards.map((card) => card.paymentMethod),
     ...visibleCardTransactions.filter(isCreditCardExpense).map((item) => item.paymentMethod || item.account).filter(Boolean),
   ])].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  els.creditCardFilter.innerHTML = `<option value="all">Todos os cartões</option>${paymentNames.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")}`;
-  if (paymentNames.includes(creditCardFilter)) els.creditCardFilter.value = creditCardFilter;
-  else creditCardFilter = "all";
-  els.creditCardStatusFilter.value = creditCardStatusFilter;
-  els.creditCardSearchInput.value = creditCardSearch;
+  const data = { registeredCards, visibleCardTransactions, visiblePeriodTransactions, paymentNames };
+  creditCardBaseCache = { version: transactionDataVersion, key, data };
+  return data;
+}
+
+function renderCreditCards() {
+  const { registeredCards, visibleCardTransactions, visiblePeriodTransactions, paymentNames } = creditCardBaseData();
+  const paymentOptionsKey = paymentNames.join("|");
+  if (els.creditCardFilter.dataset.optionsKey !== paymentOptionsKey) {
+    els.creditCardFilter.innerHTML = `<option value="all">Todos os cartões</option>${paymentNames.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")}`;
+    els.creditCardFilter.dataset.optionsKey = paymentOptionsKey;
+  }
+  if (paymentNames.includes(creditCardFilter)) {
+    if (els.creditCardFilter.value !== creditCardFilter) els.creditCardFilter.value = creditCardFilter;
+  } else {
+    creditCardFilter = "all";
+    els.creditCardFilter.value = "all";
+  }
+  if (els.creditCardStatusFilter.value !== creditCardStatusFilter) els.creditCardStatusFilter.value = creditCardStatusFilter;
+  if (els.creditCardSearchInput.value !== creditCardSearch) els.creditCardSearchInput.value = creditCardSearch;
 
   const portfolio = calculateCreditCardPortfolio(visibleCardTransactions, visiblePeriodTransactions, registeredCards, {
     card: creditCardFilter === "all" ? "" : creditCardFilter,
@@ -3422,11 +3600,16 @@ function renderPending() {
   const selectedStatus = els.pendingStatusFilter.value || "pending";
   const statusItems = expenses.filter((item) => selectedStatus === "all" || item.status === selectedStatus);
   const paymentOptions = [...new Set(statusItems.map((item) => item.paymentMethod || item.account).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-  if (!paymentOptions.includes(els.pendingPaymentFilter.value)) els.pendingPaymentFilter.value = "all";
-  els.pendingPaymentFilter.innerHTML =
-    `<option value="all">Todas as formas</option>` +
-    paymentOptions.map((item) => `<option value="${escapeHtml(item)}" ${els.pendingPaymentFilter.value === item ? "selected" : ""}>${escapeHtml(item)}</option>`).join("");
-  const selectedPayment = els.pendingPaymentFilter.value || "all";
+  const paymentOptionsKey = paymentOptions.join("|");
+  let selectedPayment = els.pendingPaymentFilter.value || "all";
+  if (!paymentOptions.includes(selectedPayment)) selectedPayment = "all";
+  if (els.pendingPaymentFilter.dataset.optionsKey !== paymentOptionsKey) {
+    els.pendingPaymentFilter.innerHTML =
+      `<option value="all">Todas as formas</option>` +
+      paymentOptions.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
+    els.pendingPaymentFilter.dataset.optionsKey = paymentOptionsKey;
+  }
+  if (els.pendingPaymentFilter.value !== selectedPayment) els.pendingPaymentFilter.value = selectedPayment;
   const visibleItems = statusItems.filter((item) => selectedPayment === "all" || (item.paymentMethod || item.account) === selectedPayment);
   const visibleGroups = groupPayableItems(visibleItems, { separateStatus: true });
   const pendingVisible = visibleItems.filter((item) => item.status === "pending");
@@ -4086,18 +4269,14 @@ function setView(view) {
   els.views.forEach((item) => item.classList.toggle("active", item.id === view));
   document.querySelectorAll("[data-mobile-view]").forEach((item) => item.classList.toggle("active", item.dataset.mobileView === view));
   if (view === "analytics" && !analyticsDefaultPeriodApplied) {
-    const historicalDates = state.transactions
-      .map((item) => String(item.date || ""))
-      .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date) && date <= todayIso)
-      .sort();
+    const bounds = availableDateBounds();
     selectedPeriod.mode = "range";
-    selectedPeriod.start = historicalDates[0] || `${currentMonth}-01`;
+    selectedPeriod.start = bounds.min <= todayIso ? bounds.min : `${currentMonth}-01`;
     selectedPeriod.end = todayIso;
     analyticsDefaultPeriodApplied = true;
-    render();
-  } else {
-    requestAnimationFrame(render);
   }
+  renderPeriodControls();
+  scheduleActiveViewRender();
 }
 
 function setMobileMenu(open) {
@@ -5109,7 +5288,7 @@ document.addEventListener("click", (event) => {
   if (editPaymentCatalogButton) beginCatalogEdit("payment", editPaymentCatalogButton.dataset.editPayment);
   if (creditCardSelectButton) {
     creditCardFilter = creditCardSelectButton.dataset.creditCardSelect || "all";
-    renderCreditCards();
+    renderCreditCardsNextFrame();
   }
   if (userActionButton) updateManagedUser(userActionButton.dataset.userId, userActionButton.dataset.userAction);
   if (saveUserRoleButton) updateManagedUser(saveUserRoleButton.dataset.saveUserRole, "UPDATE");
@@ -5153,30 +5332,33 @@ els.reloadCommercialBtn?.addEventListener("click", loadCommercialWorkspaces);
 els.periodMode.value = selectedPeriod.mode;
 els.monthFilter.value = selectedPeriod.month;
 els.yearFilter.value = selectedPeriod.year;
-els.periodMode.addEventListener("change", () => {
+function commitPeriodSelection() {
   transactionPage = 1;
+  renderPeriodControls();
+  scheduleActiveViewRender();
+}
+
+els.periodMode.addEventListener("change", () => {
   selectedPeriod.mode = els.periodMode.value;
   if (selectedPeriod.mode === "range" && (!selectedPeriod.start || !selectedPeriod.end)) {
     const bounds = dateRangeForSelectedPeriod();
     selectedPeriod.start = selectedPeriod.start || bounds.start;
     selectedPeriod.end = selectedPeriod.end || bounds.end;
   }
-  render();
+  commitPeriodSelection();
 });
 els.monthFilter.addEventListener("change", () => {
-  transactionPage = 1;
   selectedPeriod.month = els.monthFilter.value || currentMonth;
   selectedPeriod.mode = "month";
-  render();
+  commitPeriodSelection();
 });
 els.yearFilter.addEventListener("change", () => {
-  transactionPage = 1;
   selectedPeriod.year = els.yearFilter.value || todayIso.slice(0, 4);
   selectedPeriod.mode = "year";
-  render();
+  commitPeriodSelection();
 });
 function commitRangeFilter() {
-  transactionPage = 1;
+  const previousKey = selectedPeriodCacheKey();
   const startValue = els.startDateFilter.value;
   const endValue = els.endDateFilter.value;
   const completeIsoDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -5188,7 +5370,7 @@ function commitRangeFilter() {
   if (selectedPeriod.start && selectedPeriod.end && selectedPeriod.start > selectedPeriod.end) {
     [selectedPeriod.start, selectedPeriod.end] = [selectedPeriod.end, selectedPeriod.start];
   }
-  render();
+  if (previousKey !== selectedPeriodCacheKey()) commitPeriodSelection();
 }
 els.startDateFilter.addEventListener("change", commitRangeFilter);
 els.endDateFilter.addEventListener("change", commitRangeFilter);
@@ -5211,44 +5393,96 @@ function debounce(callback, delay = 120) {
   };
 }
 
-const renderTransactionsFromTextFilter = debounce(() => renderTransactions({ resetPage: true }), 120);
-const renderColumnFilterOptionsDebounced = debounce(renderColumnFilterOptions, 90);
-const renderDescriptionSuggestionsDebounced = debounce(() => {
+function debounceFrame(callback, delay = 120) {
+  let timer;
+  let frame;
+  return (...args) => {
+    window.clearTimeout(timer);
+    if (frame) window.cancelAnimationFrame(frame);
+    timer = window.setTimeout(() => {
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        callback(...args);
+      });
+    }, delay);
+  };
+}
+
+function frameThrottle(callback) {
+  let frame;
+  let latestArgs = [];
+  return (...args) => {
+    latestArgs = args;
+    if (frame) return;
+    frame = window.requestAnimationFrame(() => {
+      frame = 0;
+      callback(...latestArgs);
+    });
+  };
+}
+
+const renderTransactionsFromTextFilter = debounceFrame(() => renderTransactions({ resetPage: true }), 140);
+const renderDescriptionSuggestionsDebounced = debounceFrame(() => {
   if (els.dialog.open && document.activeElement === els.descriptionInput) renderDescriptionSuggestions();
 }, 90);
+const renderCreditCardsFromSearch = debounceFrame(() => renderCreditCards(), 170);
+const renderIncomeAnalysisFromSearch = debounceFrame(() => renderIncomeAnalysis(), 170);
+const renderTransactionsNextFrame = frameThrottle((options = {}) => renderTransactions(options));
+const renderCreditCardsNextFrame = frameThrottle(() => renderCreditCards());
+const renderIncomeAnalysisNextFrame = frameThrottle(() => renderIncomeAnalysis());
+const renderPendingNextFrame = frameThrottle(() => renderPending());
+const renderAnalyticsNextFrame = frameThrottle(() => renderAnalytics());
+const multiFilterSearchRenderers = new WeakMap();
 
 els.searchInput.addEventListener("input", renderTransactionsFromTextFilter);
-els.typeFilter.addEventListener("change", () => renderTransactions({ resetPage: true }));
-els.transactionSortFilter.addEventListener("change", () => renderTransactions({ resetPage: true }));
+els.typeFilter.addEventListener("change", () => renderTransactionsNextFrame({ resetPage: true }));
+els.transactionSortFilter.addEventListener("change", () => renderTransactionsNextFrame({ resetPage: true }));
 els.transactionColumnFilters.forEach((control) => {
   const commitFilter = () => {
     transactionColumnFilters[control.dataset.columnFilter] = control.value;
     renderTransactions({ resetPage: true });
   };
-  const isTextFilter = control.type === "search";
-  control.addEventListener(isTextFilter || control.type === "number" ? "input" : "change", isTextFilter ? debounce(commitFilter, 120) : commitFilter);
+  const isDeferredFilter = control.type === "search" || control.type === "number";
+  if (isDeferredFilter) control.addEventListener("input", debounceFrame(commitFilter, 140));
+  else control.addEventListener("change", () => {
+    transactionColumnFilters[control.dataset.columnFilter] = control.value;
+    renderTransactionsNextFrame({ resetPage: true });
+  });
 });
 document.addEventListener("input", (event) => {
-  if (event.target.matches?.("[data-multi-filter-search]")) renderColumnFilterOptionsDebounced();
+  if (!event.target.matches?.("[data-multi-filter-search]")) return;
+  const filter = event.target.closest("[data-multi-filter]");
+  if (!filter) return;
+  let renderSearch = multiFilterSearchRenderers.get(filter);
+  if (!renderSearch) {
+    renderSearch = debounceFrame(() => renderColumnFilterOption(filter.dataset.multiFilter), 90);
+    multiFilterSearchRenderers.set(filter, renderSearch);
+  }
+  renderSearch();
 });
 document.addEventListener("change", (event) => {
   if (!event.target.matches?.("[data-multi-filter-option]")) return;
   const filter = event.target.closest("[data-multi-filter]");
   if (!filter) return;
-  transactionColumnFilters[filter.dataset.multiFilter] = [...filter.querySelectorAll("[data-multi-filter-option]:checked")].map((input) => input.value);
-  renderColumnFilterOptions();
-  renderTransactions({ resetPage: true });
+  const key = filter.dataset.multiFilter;
+  const selected = new Set(Array.isArray(transactionColumnFilters[key]) ? transactionColumnFilters[key] : []);
+  if (event.target.checked) selected.add(event.target.value);
+  else selected.delete(event.target.value);
+  transactionColumnFilters[key] = [...selected];
+  renderColumnFilterOption(key);
+  renderTransactionsNextFrame({ resetPage: true });
 });
 document.addEventListener("click", (event) => {
   const clearButton = event.target.closest?.("[data-multi-filter-clear]");
   if (!clearButton) return;
   const filter = clearButton.closest("[data-multi-filter]");
   if (!filter) return;
-  transactionColumnFilters[filter.dataset.multiFilter] = [];
+  const key = filter.dataset.multiFilter;
+  transactionColumnFilters[key] = [];
   const search = filter.querySelector("[data-multi-filter-search]");
   if (search) search.value = "";
-  renderColumnFilterOptions();
-  renderTransactions({ resetPage: true });
+  renderColumnFilterOption(key);
+  renderTransactionsNextFrame({ resetPage: true });
 });
 els.clearColumnFiltersBtn?.addEventListener("click", () => {
   Object.keys(transactionColumnFilters).forEach((key) => delete transactionColumnFilters[key]);
@@ -5257,37 +5491,37 @@ els.clearColumnFiltersBtn?.addEventListener("click", () => {
   els.searchInput.value = "";
   els.typeFilter.value = "all";
   renderColumnFilterOptions();
-  renderTransactions({ resetPage: true });
+  renderTransactionsNextFrame({ resetPage: true });
 });
 els.transactionsPreviousPage?.addEventListener("click", () => {
   transactionPage -= 1;
-  renderTransactions();
+  renderTransactionsNextFrame();
 });
 els.transactionsNextPage?.addEventListener("click", () => {
   transactionPage += 1;
-  renderTransactions();
+  renderTransactionsNextFrame();
 });
 els.transactionsPageSize?.addEventListener("change", () => {
   transactionPageSize = Number(els.transactionsPageSize.value) || TRANSACTIONS_PAGE_SIZE_DEFAULT;
-  renderTransactions({ resetPage: true });
+  renderTransactionsNextFrame({ resetPage: true });
 });
 els.creditCardFilter?.addEventListener("change", () => {
   creditCardFilter = els.creditCardFilter.value || "all";
-  renderCreditCards();
+  renderCreditCardsNextFrame();
 });
 els.creditCardStatusFilter?.addEventListener("change", () => {
   creditCardStatusFilter = els.creditCardStatusFilter.value || "all";
-  renderCreditCards();
+  renderCreditCardsNextFrame();
 });
 els.creditCardSearchInput?.addEventListener("input", () => {
   creditCardSearch = els.creditCardSearchInput.value.trim();
-  renderCreditCards();
+  renderCreditCardsFromSearch();
 });
 els.clearCreditCardFiltersBtn?.addEventListener("click", () => {
   creditCardFilter = "all";
   creditCardStatusFilter = "all";
   creditCardSearch = "";
-  renderCreditCards();
+  renderCreditCardsNextFrame();
 });
 els.newCardTransactionBtn?.addEventListener("click", () => {
   openTransactionDialog();
@@ -5301,35 +5535,35 @@ els.newCardTransactionBtn?.addEventListener("click", () => {
   }
   els.descriptionInput.focus();
 });
-els.pendingStatusFilter.addEventListener("change", renderPending);
-els.pendingPaymentFilter.addEventListener("change", renderPending);
+els.pendingStatusFilter.addEventListener("change", renderPendingNextFrame);
+els.pendingPaymentFilter.addEventListener("change", renderPendingNextFrame);
 els.pendingMonthFilter.addEventListener("change", () => {
   selectedPendingMonth = els.pendingMonthFilter.value || currentMonth;
-  renderPending();
+  renderPendingNextFrame();
 });
 els.markAllPendingPaidBtn.addEventListener("click", markAllCurrentPendingPaid);
 els.incomeSourceFilter?.addEventListener("change", () => {
   incomeSourceFilter = els.incomeSourceFilter.value || "all";
-  renderIncomeAnalysis();
+  renderIncomeAnalysisNextFrame();
 });
 els.incomeSourceSearch?.addEventListener("input", () => {
   incomeSourceSearch = els.incomeSourceSearch.value.trim();
-  renderIncomeAnalysis();
+  renderIncomeAnalysisFromSearch();
 });
 els.clearIncomeFiltersBtn?.addEventListener("click", () => {
   incomeSourceFilter = "all";
   incomeSourceSearch = "";
-  renderIncomeAnalysis();
+  renderIncomeAnalysisNextFrame();
 });
 if (els.analyticsGroupFilter) {
   els.analyticsGroupFilter.addEventListener("change", () => {
     analyticsFilters.groups = selectedOptions(els.analyticsGroupFilter);
-    renderAnalytics();
+    renderAnalyticsNextFrame();
   });
 }
 els.analyticsPaymentFilter.addEventListener("change", () => {
   analyticsFilters.payments = selectedOptions(els.analyticsPaymentFilter);
-  renderAnalytics();
+  renderAnalyticsNextFrame();
 });
 els.balanceClosingChart?.addEventListener("mousemove", handleBalanceTooltip);
 els.balanceClosingChart?.addEventListener("mouseleave", hideBalanceTooltip);
@@ -5410,10 +5644,11 @@ els.newCardPaymentInput.addEventListener("change", () => {
   els.newCardLastFourInput.value = card.lastFour || "";
   els.newCardThemeInput.value = card.theme || "AUTO";
 });
-window.addEventListener("resize", () => {
-  renderCategoryChart();
-  renderAnalytics();
-});
+const renderVisibleChartsAfterResize = debounceFrame(() => {
+  if (selectedView === "dashboard") renderCategoryChart();
+  if (selectedView === "analytics") renderAnalytics();
+}, 180);
+window.addEventListener("resize", renderVisibleChartsAfterResize);
 
 setView(selectedView);
 setDesktopSidebarCollapsed(localStorage.getItem("meg-sidebar-collapsed") === "1");
