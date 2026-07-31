@@ -114,7 +114,7 @@ let incomeSourceSearch = "";
 let creditCardFilter = "all";
 let creditCardStatusFilter = "all";
 let creditCardSearch = "";
-const TRANSACTIONS_PAGE_SIZE_DEFAULT = 200;
+const TRANSACTIONS_PAGE_SIZE_DEFAULT = 100;
 const transactionColumnFilters = {};
 let transactionPage = 1;
 let transactionPageSize = TRANSACTIONS_PAGE_SIZE_DEFAULT;
@@ -122,15 +122,16 @@ let transactionDataVersion = 0;
 let renderedColumnFilterVersion = -1;
 let columnFilterValueCache = { version: -1, values: {} };
 let descriptionHistoryCache = { version: -1, type: "", items: [] };
-let transactionSearchTextCache = new WeakMap();
 let transactionFilterIndexCache = new WeakMap();
 let periodMetadataCache = { version: -1, years: [], bounds: null };
 let selectedTransactionsCache = { version: -1, key: "", items: [] };
 let previousPeriodTransactionsCache = { version: -1, key: "", items: [] };
+let financialSummaryCache = { version: -1, key: "", data: null };
 let incomeAnalysisBaseCache = { version: -1, key: "", data: null };
 let creditCardBaseCache = { version: -1, key: "", data: null };
 let scheduledActiveViewFrame = 0;
 let localStateSaveTimer;
+let localStateIdleHandle;
 let nativeNotificationSyncTimer;
 let descriptionSuggestionItems = [];
 let activeDescriptionSuggestion = -1;
@@ -576,21 +577,46 @@ function invalidateTransactionCaches() {
   renderedColumnFilterVersion = -1;
   columnFilterValueCache = { version: -1, values: {} };
   descriptionHistoryCache = { version: -1, type: "", items: [] };
-  transactionSearchTextCache = new WeakMap();
   transactionFilterIndexCache = new WeakMap();
   periodMetadataCache = { version: -1, years: [], bounds: null };
   selectedTransactionsCache = { version: -1, key: "", items: [] };
   previousPeriodTransactionsCache = { version: -1, key: "", items: [] };
+  financialSummaryCache = { version: -1, key: "", data: null };
   incomeAnalysisBaseCache = { version: -1, key: "", data: null };
   creditCardBaseCache = { version: -1, key: "", data: null };
 }
 
-function scheduleLocalStateSave() {
+function cancelLocalStateSave() {
   window.clearTimeout(localStateSaveTimer);
-  localStateSaveTimer = window.setTimeout(() => {
+  localStateSaveTimer = undefined;
+  if (localStateIdleHandle && typeof window.cancelIdleCallback === "function") {
+    window.cancelIdleCallback(localStateIdleHandle);
+  }
+  localStateIdleHandle = undefined;
+}
+
+function persistLocalState() {
+  cancelLocalStateSave();
+  try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // A cópia local é auxiliar; falha de armazenamento não pode travar o uso.
+  }
+}
+
+function scheduleLocalStateSave() {
+  cancelLocalStateSave();
+  localStateSaveTimer = window.setTimeout(() => {
     localStateSaveTimer = undefined;
-  }, 0);
+    if (typeof window.requestIdleCallback === "function") {
+      localStateIdleHandle = window.requestIdleCallback(() => {
+        localStateIdleHandle = undefined;
+        persistLocalState();
+      }, { timeout: 2500 });
+    } else {
+      persistLocalState();
+    }
+  }, 900);
 }
 
 function scheduleNativeNotificationSync() {
@@ -809,9 +835,15 @@ function openingBalanceBefore(dateValue) {
   return totals.income - totals.expense;
 }
 
-function financialSummaryForPeriod(items = selectedTransactions()) {
+function financialSummaryForPeriod() {
+  const key = selectedPeriodCacheKey();
+  if (financialSummaryCache.version === transactionDataVersion && financialSummaryCache.key === key) {
+    return financialSummaryCache.data;
+  }
   const { start, end } = dateRangeForSelectedPeriod();
-  return calculateFinancialSummary(state.transactions, start, end);
+  const data = calculateFinancialSummary(state.transactions, start, end);
+  financialSummaryCache = { version: transactionDataVersion, key, data };
+  return data;
 }
 
 function currentMonthTransactions() {
@@ -1681,9 +1713,9 @@ function render() {
 
 function renderDashboard() {
   const items = selectedTransactions();
-  const totals = financialSummaryForPeriod(items);
+  const totals = financialSummaryForPeriod();
   const { start: dashboardStart, end: dashboardEnd } = dateRangeForSelectedPeriod();
-  const monetaryPosition = calculateMonetaryDashboard(state.transactions, dashboardStart, dashboardEnd);
+  const monetaryPosition = calculateMonetaryDashboard(state.transactions, dashboardStart, dashboardEnd, totals);
   const balance = totals.consolidatedBalance;
   const monthCount = selectedPeriodMonthCount(items);
   const totalBudget = Object.values(state.budgets).reduce((sum, value) => sum + Number(value || 0), 0) * monthCount;
@@ -1701,10 +1733,10 @@ function renderDashboard() {
   els.monetarySituationNote.textContent = monetaryPosition.balanceAfterPending >= 0
     ? `✅ Após quitar as pendências, sobram ${money.format(monetaryPosition.surplusAfterPending)}`
     : `🚨 Após quitar as pendências, faltam ${money.format(monetaryPosition.missingAfterPending)}`;
-  els.ticketRevenueMetric.textContent = money.format(totals.ticketIncome);
+  els.ticketRevenueMetric.textContent = money.format(totals.ticketAvailableIncome);
   els.ticketExpenseMetric.textContent = money.format(totals.ticketExpense);
   els.ticketSituationMetric.textContent = money.format(totals.ticketBalance);
-  els.ticketRevenueNote.textContent = `Créditos no período selecionado`;
+  els.ticketRevenueNote.textContent = `${money.format(totals.ticketOpeningBalance)} anteriores + ${money.format(totals.ticketIncome)} em créditos`;
   els.ticketExpenseNote.textContent = `Utilizações no período selecionado`;
   els.ticketSituationNote.textContent = totals.ticketBalance >= 0 ? "✅ Ticket disponível" : "🚨 Ticket negativo";
   els.consolidatedRevenueMetric.textContent = money.format(totals.consolidatedIncome);
@@ -2543,7 +2575,7 @@ function renderAnalytics() {
   els.analyticsProjectionLine.classList.toggle("healthy", summary.closingBalance >= 0);
   els.analyticsProjectedNote.textContent = `${money.format(summary.paidExpense)} já pagos · ${money.format(summary.pendingExpense)} ainda reservados`;
   els.analyticsTicketMetric.textContent = money.format(summary.ticketBalance);
-  els.analyticsTicketNote.textContent = `${money.format(summary.ticketIncome)} em créditos − ${money.format(summary.ticketExpense)} em gastos`;
+  els.analyticsTicketNote.textContent = `${money.format(summary.ticketOpeningBalance)} anteriores + ${money.format(summary.ticketIncome)} em créditos − ${money.format(summary.ticketExpense)} em gastos`;
   els.historicalFirstDate.textContent = allHistoricalItems.length ? formatDate(allHistoricalItems[0].date) : "—";
   els.historicalIncomeMetric.textContent = money.format(historicalTotals.income);
   els.historicalExpenseMetric.textContent = money.format(historicalTotals.expense);
@@ -3098,6 +3130,7 @@ function replaceState(nextState) {
   invalidateTransactionCaches();
   originalTransactionsById = new Map(state.transactions.map((item) => [item.id, item]));
   analyticsDefaultPeriodApplied = false;
+  scheduleLocalStateSave();
   render();
   if (migrationRequired) requestAnimationFrame(() => saveState());
   return state.transactions.length;
@@ -3274,13 +3307,6 @@ function renderTransactionsFilterSummary(totals, itemCount) {
         : "Nenhum lançamento encontrado";
   els.transactionsFilteredResultCard.classList.toggle("is-positive", result > 0);
   els.transactionsFilteredResultCard.classList.toggle("is-negative", result < 0);
-}
-
-function transactionSearchText(item) {
-  if (transactionSearchTextCache.has(item)) return transactionSearchTextCache.get(item);
-  const normalized = transactionFilterIndex(item).searchText;
-  transactionSearchTextCache.set(item, normalized);
-  return normalized;
 }
 
 function renderTransactions({ resetPage = false } = {}) {
@@ -3589,9 +3615,15 @@ function verocardItems(monthValue = selectedPendingMonth) {
 
 function verocardSummary(monthValue = selectedPendingMonth) {
   const items = verocardItems(monthValue);
-  const credit = items.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const spent = items.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  return { items, credit, spent, balance: credit - spent };
+  const summary = calculateFinancialSummary(state.transactions, `${monthValue}-01`, lastDayOfMonth(monthValue));
+  return {
+    items,
+    openingBalance: summary.ticketOpeningBalance,
+    credit: summary.ticketIncome,
+    availableIncome: summary.ticketAvailableIncome,
+    spent: summary.ticketExpense,
+    balance: summary.ticketBalance,
+  };
 }
 
 function renderPending() {
@@ -3636,9 +3668,9 @@ function renderPending() {
   els.pendingTotalMetric.textContent = money.format(pendingTotal);
   els.pendingCountMetric.textContent = `${groupPayableItems(pendingVisible).length} conta(s)/fatura(s) pendente(s) no filtro`;
   els.paidMonthMetric.textContent = money.format(paidTotal);
-  els.verocardCreditMetric.textContent = money.format(card.credit);
+  els.verocardCreditMetric.textContent = money.format(card.availableIncome);
   els.verocardBalanceMetric.textContent = money.format(card.balance);
-  els.verocardSpentMetric.textContent = `${money.format(card.spent)} gastos abatidos`;
+  els.verocardSpentMetric.textContent = `${money.format(card.openingBalance)} anteriores + ${money.format(card.credit)} em créditos · ${money.format(card.spent)} gastos`;
 
   const pendingTone = overdue.length || coverage < 100 ? "risk" : allPending.length ? "attention" : "healthy";
   els.pendingCommandCenter.classList.remove("risk", "attention", "healthy");
@@ -3703,8 +3735,11 @@ function renderPending() {
 }
 
 function renderVerocardLedger(card = verocardSummary()) {
-  let running = 0;
-  els.verocardLedger.innerHTML = card.items.length
+  let running = Number(card.openingBalance || 0);
+  const openingRow = card.openingBalance
+    ? `<div class="ledger-item ledger-opening"><span class="ledger-meta"><strong>Saldo anterior</strong><small>Valor trazido do mês anterior</small></span><strong class="ledger-running ${running < 0 ? "amount negative" : "amount positive"}">${money.format(running)}</strong></div>`
+    : "";
+  const movementRows = card.items.length
     ? card.items
         .map((item) => {
           const value = Number(item.amount || 0);
@@ -3723,7 +3758,8 @@ function renderVerocardLedger(card = verocardSummary()) {
           `;
         })
         .join("")
-    : `<div class="empty">Sem movimentos de benef\u00edcios no m\u00eas atual.</div>`;
+    : "";
+  els.verocardLedger.innerHTML = openingRow || movementRows ? `${openingRow}${movementRows}` : `<div class="empty">Sem movimentos de benefícios no mês atual.</div>`;
 }
 
 function renderSettings() {
@@ -4262,7 +4298,41 @@ function removeCatalogItem(type, value) {
   render();
 }
 
+function releaseViewMemory(view) {
+  const targets = {
+    dashboard: [els.dashboardPayables],
+    cashflow: [els.cashflowChart, els.cashflowChartLegend],
+    analytics: [els.monthlyTrendChart, els.groupCompareChart, els.balanceClosingChart, els.expenseRankingList, els.decisionInsightsList],
+    "income-analysis": [els.incomeMonthlyChart, els.incomeSourceList, els.incomeRecurringList],
+    transactions: [els.transactionRows],
+    "credit-cards": [els.creditCardWallet, els.creditTopExpenses, els.creditGroupBars, els.creditInvoiceRows, els.creditForecastBars],
+    budgets: [els.budgetEditorGrid],
+    pending: [els.pendingBillsList, els.verocardLedger],
+    catalogs: [els.financialAccountCatalogList, els.groupCatalogList, els.expenseClassCatalogList, els.modalityCatalogList, els.paymentCatalogList, els.cardCatalogList],
+  };
+  (targets[view] || []).forEach((element) => {
+    if (!element) return;
+    if (element instanceof HTMLCanvasElement) {
+      element.width = 1;
+      element.height = 1;
+    } else {
+      element.replaceChildren();
+    }
+  });
+  if (view === "dashboard") {
+    document.querySelector("#premiumWebDashboard")?.remove();
+    payableGroupCache.clear();
+  }
+  if (view === "cashflow") cashflowChartPoints = [];
+  if (view === "analytics") balanceChartPoints = [];
+  if (view === "transactions") transactionFilterIndexCache = new WeakMap();
+  if (view === "income-analysis") incomeAnalysisBaseCache = { version: -1, key: "", data: null };
+  if (view === "credit-cards") creditCardBaseCache = { version: -1, key: "", data: null };
+}
+
 function setView(view) {
+  const previousView = selectedView;
+  if (previousView !== view) releaseViewMemory(previousView);
   selectedView = view;
   setMobileMenu(false);
   els.navItems.forEach((item) => item.classList.toggle("active", item.dataset.view === view));
@@ -5657,11 +5727,14 @@ window.setInterval(updateSidebarClock, 30000);
 loadSidebarVersion();
 render();
 window.setTimeout(showOpeningFinancialAlert, 450);
+window.addEventListener("pagehide", persistLocalState);
 
 window.MEG_APP = {
   replaceImportedState,
   replaceState,
   getState: () => structuredClone(state),
+  getStateRef: () => state,
+  flushLocalStateSave: persistLocalState,
   showToast,
   render
 };

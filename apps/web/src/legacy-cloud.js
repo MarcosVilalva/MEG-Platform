@@ -10,6 +10,9 @@ const REFRESH_KEY = `meg-refresh-token${ENV_SUFFIX}`;
 const USER_KEY = `meg-auth-user${ENV_SUFFIX}`;
 const STATE_KEY = `meg-financas-state-v4-paid-fixes${ENV_SUFFIX}`;
 const REVISION_KEY = `meg-cloud-revision-v1${ENV_SUFFIX}`;
+const ACTIVE_SYNC_INTERVAL_MS = 12000;
+const BUSY_SYNC_RETRY_MS = 3500;
+const FAILED_SYNC_INTERVAL_MAX_MS = 60000;
 
 let revision = 0;
 let saveTimer;
@@ -18,6 +21,9 @@ let pendingSave = false;
 let queuedState = null;
 let syncBaseline = null;
 let pollingTimer;
+let remoteCheckInFlight = false;
+let remoteFailureCount = 0;
+let realtimeListenersBound = false;
 const syncChannel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('meg-cloud-state-v1') : null;
 
 function wait(ms) {
@@ -123,7 +129,10 @@ async function refreshAccess() {
 
 async function api(path, options = {}, retry = true) {
   const current = session();
+  const isRevisionRequest = path === '/app-state/revision';
   const isAppStateRequest = path === '/app-state' || path.startsWith('/app-state/');
+  const retries = isRevisionRequest ? 0 : 1;
+  const timeoutMs = isRevisionRequest ? 8000 : isAppStateRequest ? 22000 : 18000;
   const response = await resilientFetch(`${API_URL}${path}`, {
     ...options,
     headers: {
@@ -131,7 +140,7 @@ async function api(path, options = {}, retry = true) {
       ...(current.accessToken ? { Authorization: `Bearer ${current.accessToken}` } : {}),
       ...options.headers
     }
-  }, { retries: isAppStateRequest ? 2 : 1, timeoutMs: isAppStateRequest ? 22000 : 18000 });
+  }, { retries, timeoutMs });
   if (response.status === 401 && retry && await refreshAccess()) return api(path, options, false);
   return response;
 }
@@ -148,10 +157,11 @@ async function saveBeforeLogout() {
   clearTimeout(saveTimer);
   saveTimer = undefined;
   await waitForSaveIdle();
-  const latestState = window.MEG_APP?.getState?.() || queuedState;
+  const latestState = window.MEG_APP?.getStateRef?.() || window.MEG_APP?.getState?.() || queuedState;
   queuedState = null;
   pendingSave = false;
-  if (latestState) await saveNow(structuredClone(latestState));
+  if (latestState) await saveNow(latestState);
+  window.MEG_APP?.flushLocalStateSave?.();
 }
 
 function friendlyAuthError(code) {
@@ -429,8 +439,7 @@ async function loadCloudState() {
   revision = payload.revision || 0;
   localStorage.setItem(REVISION_KEY, String(revision));
   if (payload.state) {
-    localStorage.setItem(STATE_KEY, JSON.stringify(payload.state));
-    window.MEG_REAL_STATE = payload.state;
+      window.MEG_REAL_STATE = payload.state;
     syncBaseline = createStateSyncBaseline(payload.state);
   } else {
     localStorage.removeItem(STATE_KEY);
@@ -444,15 +453,12 @@ async function saveNow(state, { force = false } = {}) {
   if (window.MEG_CLOUD?.whenFresh) await window.MEG_CLOUD.whenFresh.catch(() => undefined);
   saveInFlight = true;
   try {
-    const serializedState = JSON.stringify(state);
     const transactionPatch = force ? null : createTransactionPatch(syncBaseline, state);
     let response;
     let saveMode = 'full';
 
     if (transactionPatch) {
       if (transactionPatch.upserts.length === 0 && transactionPatch.deletes.length === 0) {
-        localStorage.setItem(STATE_KEY, serializedState);
-        syncBaseline = createStateSyncBaseline(state);
         const status = document.querySelector('#cloudSyncStatus');
         if (status) status.textContent = `Sincronizado ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
         return { revision, changed: false, mode: 'none' };
@@ -469,6 +475,7 @@ async function saveNow(state, { force = false } = {}) {
     }
 
     if (!response) {
+      const serializedState = JSON.stringify(state);
       const body = force
         ? `{"state":${serializedState}}`
         : `{"state":${serializedState},"expectedRevision":${revision}}`;
@@ -488,9 +495,8 @@ async function saveNow(state, { force = false } = {}) {
     }
     revision = Number(payload.revision ?? revision);
     localStorage.setItem(REVISION_KEY, String(revision));
-    localStorage.setItem(STATE_KEY, serializedState);
     syncBaseline = createStateSyncBaseline(state);
-    syncChannel?.postMessage({ revision, state });
+    syncChannel?.postMessage({ revision });
     const status = document.querySelector('#cloudSyncStatus');
     if (status) status.textContent = `Sincronizado ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     return { ...payload, mode: saveMode };
@@ -548,29 +554,77 @@ function applyRemoteState(payload, source = 'nuvem') {
   return true;
 }
 
+function nextRemoteCheckDelay() {
+  if (!remoteFailureCount) return ACTIVE_SYNC_INTERVAL_MS;
+  return Math.min(ACTIVE_SYNC_INTERVAL_MS * (2 ** remoteFailureCount), FAILED_SYNC_INTERVAL_MAX_MS);
+}
+
+function scheduleRemoteCheck(delay = ACTIVE_SYNC_INTERVAL_MS) {
+  clearTimeout(pollingTimer);
+  pollingTimer = undefined;
+  if (document.hidden || navigator.onLine === false) return;
+  pollingTimer = window.setTimeout(() => {
+    pollingTimer = undefined;
+    checkForRemoteState();
+  }, Math.max(0, delay));
+}
+
 async function checkForRemoteState() {
-  if (document.hidden || pendingSave || saveInFlight) return;
+  if (document.hidden || navigator.onLine === false) return;
+  if (pendingSave || saveInFlight || remoteCheckInFlight) {
+    scheduleRemoteCheck(BUSY_SYNC_RETRY_MS);
+    return;
+  }
+  remoteCheckInFlight = true;
   try {
     const revisionResponse = await api('/app-state/revision');
-    if (!revisionResponse.ok) return;
+    if (!revisionResponse.ok) throw new Error(`REVISION_${revisionResponse.status}`);
     const metadata = await revisionResponse.json();
-    if (Number(metadata?.revision || 0) <= revision) return;
-    const stateResponse = await api('/app-state');
-    if (!stateResponse.ok) return;
-    applyRemoteState(await stateResponse.json());
+    if (Number(metadata?.revision || 0) > revision) {
+      const stateResponse = await api('/app-state');
+      if (!stateResponse.ok) throw new Error(`STATE_${stateResponse.status}`);
+      applyRemoteState(await stateResponse.json());
+    }
+    remoteFailureCount = 0;
   } catch {
     // A temporary network failure must not interrupt local usage.
+    remoteFailureCount += 1;
+  } finally {
+    remoteCheckInFlight = false;
+    scheduleRemoteCheck(nextRemoteCheckDelay());
   }
 }
 
+function handleSyncChannelMessage(event) {
+  if (event.data?.state) {
+    applyRemoteState(event.data, 'outra aba');
+    return;
+  }
+  if (Number(event.data?.revision || 0) > revision) scheduleRemoteCheck(0);
+}
+
 function startRealtimeSync() {
-  clearInterval(pollingTimer);
-  pollingTimer = window.setInterval(checkForRemoteState, 1500);
-  window.addEventListener('focus', checkForRemoteState);
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) checkForRemoteState();
+  scheduleRemoteCheck(ACTIVE_SYNC_INTERVAL_MS);
+  if (realtimeListenersBound) return;
+  realtimeListenersBound = true;
+  window.addEventListener('focus', () => scheduleRemoteCheck(0));
+  window.addEventListener('online', () => {
+    remoteFailureCount = 0;
+    scheduleRemoteCheck(0);
   });
-  syncChannel?.addEventListener('message', (event) => applyRemoteState(event.data, 'outra aba'));
+  window.addEventListener('offline', () => {
+    clearTimeout(pollingTimer);
+    pollingTimer = undefined;
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      clearTimeout(pollingTimer);
+      pollingTimer = undefined;
+    } else {
+      scheduleRemoteCheck(0);
+    }
+  });
+  syncChannel?.addEventListener('message', handleSyncChannelMessage);
 }
 
 export async function bootstrapCloud() {

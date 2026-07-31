@@ -155,34 +155,53 @@ export function summarizeDueDate(items, referenceDate = '') {
   return { date, items: dateItems, groups, labels, total, count: groups.length, description: labels.join(', ') };
 }
 
-export function calculateFinancialSummary(transactions, start = '', end = '') {
+export function calculateFinancialSummary(transactions, start = '', end = '', options = {}) {
   const previousMonthEnd = start ? new Date(`${start}T12:00:00`).getTime() - 86400000 : 0;
   const previousMonthEndIso = previousMonthEnd ? new Date(previousMonthEnd).toISOString().slice(0, 10) : '';
-  const openingItems = previousMonthEndIso ? transactions.filter((item) => transactionPeriodDate(item) <= previousMonthEndIso) : [];
-  const periodItems = transactions.filter((item) => {
+  const excludeId = String(options.excludeId || '');
+  let openingBalance = 0;
+  let income = 0;
+  let expense = 0;
+  let paidExpense = 0;
+  let ticketOpeningBalance = 0;
+  let ticketIncome = 0;
+  let ticketExpense = 0;
+
+  for (const item of transactions) {
+    if (excludeId && item.id === excludeId) continue;
     const competenceDate = transactionPeriodDate(item);
-    return (!start || competenceDate >= start) && (!end || competenceDate <= end);
-  });
-  const sum = (items, type) => items.reduce((total, item) => total + transactionValue(item, type), 0);
+    if (!competenceDate) continue;
+    const incomeValue = transactionValue(item, 'income');
+    const expenseValue = transactionValue(item, 'expense');
+    const benefit = isVerocardTransaction(item);
 
-  const cashOpeningItems = openingItems.filter((item) => !isVerocardTransaction(item));
-  const cashPeriodItems = periodItems.filter((item) => !isVerocardTransaction(item));
-  const ticketPeriodItems = periodItems.filter(isVerocardTransaction);
+    if (previousMonthEndIso && competenceDate <= previousMonthEndIso) {
+      if (benefit) ticketOpeningBalance += incomeValue - expenseValue;
+      else openingBalance += incomeValue - expenseValue;
+    }
 
-  const openingBalance = sum(cashOpeningItems, 'income') - sum(cashOpeningItems, 'expense');
-  const income = sum(cashPeriodItems, 'income');
-  const expense = sum(cashPeriodItems, 'expense');
-  const paidExpense = sum(cashPeriodItems.filter((item) => item.status === 'paid' || String(item.situation || '').toUpperCase() === 'PAGO'), 'expense');
+    if ((start && competenceDate < start) || (end && competenceDate > end)) continue;
+
+    if (benefit) {
+      ticketIncome += incomeValue;
+      ticketExpense += expenseValue;
+      continue;
+    }
+
+    income += incomeValue;
+    expense += expenseValue;
+    if (item.status === 'paid' || normalizedFinanceText(item.situation) === 'PAGO') paidExpense += expenseValue;
+  }
+
   const pendingExpense = expense - paidExpense;
-  const ticketIncome = sum(ticketPeriodItems, 'income');
-  const ticketExpense = sum(ticketPeriodItems, 'expense');
-  const ticketBalance = ticketIncome - ticketExpense;
+  const ticketAvailableIncome = ticketOpeningBalance + ticketIncome;
+  const ticketBalance = ticketAvailableIncome - ticketExpense;
   const operatingResult = income - expense;
   const availableIncome = openingBalance + income;
   const closingBalance = availableIncome - paidExpense;
   const projectedBalance = availableIncome - expense;
   const consolidatedBalance = closingBalance + ticketBalance;
-  const consolidatedIncome = availableIncome + ticketIncome;
+  const consolidatedIncome = availableIncome + ticketAvailableIncome;
   const consolidatedExpense = paidExpense + ticketExpense;
 
   return {
@@ -194,7 +213,9 @@ export function calculateFinancialSummary(transactions, start = '', end = '') {
     pendingExpense,
     closingBalance,
     projectedBalance,
+    ticketOpeningBalance,
     ticketIncome,
+    ticketAvailableIncome,
     ticketExpense,
     ticketBalance,
     operatingResult,
@@ -256,11 +277,13 @@ export function calculateHistoricalProjection(transactions, endDate) {
   };
 }
 
-export function calculateMonetaryDashboard(transactions, start = '', end = '') {
+export function calculateMonetaryDashboard(transactions, start = '', end = '', precomputedSummary = null) {
   // The dashboard is a reconciliation of the selected period, not a snapshot
   // cut off at today's date. A future-dated item already marked as paid must
   // therefore compose the paid total whenever its date is inside the filter.
-  const period = calculateFinancialSummary(transactions, start, end);
+  const period = precomputedSummary && typeof precomputedSummary === 'object'
+    ? precomputedSummary
+    : calculateFinancialSummary(transactions, start, end);
   const balanceAfterPending = period.closingBalance - period.pendingExpense;
 
   return {
@@ -276,8 +299,7 @@ export function calculateMonetaryDashboard(transactions, start = '', end = '') {
 }
 
 export function availableMonetaryBalance(transactions, endDate, excludeId = '') {
-  const eligible = transactions.filter((item) => item.id !== excludeId);
-  return calculateFinancialSummary(eligible, '', endDate).closingBalance;
+  return calculateFinancialSummary(transactions, '', endDate, { excludeId }).closingBalance;
 }
 
 export function calculateBalanceReconciliation(transactions, actualBalance, endDate) {
