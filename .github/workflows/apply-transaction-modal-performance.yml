@@ -1,0 +1,39 @@
+name: Apply transaction modal performance fix
+
+on:
+  push:
+    branches:
+      - agent/optimize-transaction-modal
+    paths:
+      - .github/workflows/apply-transaction-modal-performance.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/optimize-transaction-modal
+          fetch-depth: 0
+
+      - name: Apply and validate patch
+        run: |
+          git apply --check .github/patches/transaction-modal-performance.patch
+          git apply .github/patches/transaction-modal-performance.patch
+          node --check apps/web/src/legacy-app.js
+          node --check apps/web/src/legacy-cloud.js
+          node packages/core/src/tests/core.test.js
+          node apps/web/src/legacy-finance.test.js
+
+      - name: Commit final files and remove temporary assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/web/src/legacy-app.js apps/web/src/legacy-styles.css
+          git rm .github/patches/transaction-modal-performance.patch
+          git rm .github/workflows/apply-transaction-modal-performance.yml
+          git commit -m "fix: optimize transaction modal interactions"
+          git push origin HEAD:agent/optimize-transaction-modal
