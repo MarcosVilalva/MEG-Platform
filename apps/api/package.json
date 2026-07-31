@@ -11,6 +11,7 @@
     "test:auth": "tsx src/modules/auth/password-reset.test.ts",
     "test:cors": "tsx src/cors.test.ts",
     "test:commercial": "tsx src/modules/platform-admin/service.test.ts",
+    "test:app-state": "tsx src/modules/app-state/transaction-patch.test.ts",
     "start": "tsx src/server.ts"
   },
   "dependencies": {
