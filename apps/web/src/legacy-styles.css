@@ -2880,6 +2880,28 @@ tbody tr:hover {
   font-weight: 700;
 }
 
+
+/* Mantem o formulario de lancamento responsivo mesmo com uma grade extensa ao fundo. */
+body.transaction-modal-open {
+  overflow: hidden;
+}
+
+body.transaction-modal-open .app-shell {
+  visibility: hidden;
+}
+
+#transactionDialog {
+  contain: layout paint style;
+}
+
+#transactionDialog input,
+#transactionDialog select,
+#transactionDialog textarea,
+#transactionDialog button {
+  transition: none !important;
+  animation: none !important;
+}
+
 .modal {
   width: min(720px, calc(100vw - 28px));
   border: 0;

@@ -127,6 +127,8 @@ let localStateSaveTimer;
 let nativeNotificationSyncTimer;
 let descriptionSuggestionItems = [];
 let activeDescriptionSuggestion = -1;
+let activeDialogTransaction = null;
+let activeDialogInstallmentSeries = [];
 let editingGroup = "";
 let editingExpenseClass = "";
 let editingModality = "";
@@ -4174,14 +4176,23 @@ function installmentBaseDescription(description) {
 }
 
 function editingTransaction() {
-  return state.transactions.find((item) => item.id === els.transactionId.value) || null;
+  const id = els.transactionId.value;
+  if (!id) return null;
+  if (activeDialogTransaction?.id === id) return activeDialogTransaction;
+  activeDialogTransaction = state.transactions.find((item) => item.id === id) || null;
+  return activeDialogTransaction;
 }
 
 function installmentSeries(item) {
   if (!item?.installmentSeriesId) return [];
-  return state.transactions
+  if (activeDialogTransaction?.id === item.id && activeDialogInstallmentSeries.length) {
+    return activeDialogInstallmentSeries;
+  }
+  const series = state.transactions
     .filter((candidate) => candidate.installmentSeriesId === item.installmentSeriesId)
     .sort((a, b) => Number(a.installmentNumber || 0) - Number(b.installmentNumber || 0));
+  if (activeDialogTransaction?.id === item.id) activeDialogInstallmentSeries = series;
+  return series;
 }
 
 function syncCardDates({ recalculate = !els.transactionId.value } = {}) {
@@ -4312,6 +4323,12 @@ function syncModalityPaymentOptions() {
 }
 
 function openTransactionDialog(item = null) {
+  activeDialogTransaction = item;
+  activeDialogInstallmentSeries = item?.installmentSeriesId
+    ? state.transactions
+      .filter((candidate) => candidate.installmentSeriesId === item.installmentSeriesId)
+      .sort((a, b) => Number(a.installmentNumber || 0) - Number(b.installmentNumber || 0))
+    : [];
   const defaultDate = selectedPeriod.mode === "month" ? `${selectedPeriod.month}-${todayIso.slice(8, 10)}` : todayIso;
   const desiredGroup = item?.group || (item?.type === "expense" ? item?.category || "" : "");
   const desiredExpenseClass = item?.expenseClass || "";
@@ -4347,8 +4364,9 @@ function openTransactionDialog(item = null) {
   els.installmentEditScopeInput.value = series.length > 1 ? "future" : "current";
   els.deleteTransactionBtn.style.visibility = item ? "visible" : "hidden";
   syncAmountFields();
+  document.body.classList.add("transaction-modal-open");
   els.dialog.showModal();
-  els.transactionType.focus();
+  requestAnimationFrame(() => els.transactionType.focus({ preventScroll: true }));
 }
 
 function updateInstallmentSeries(previous, payload) {
@@ -5029,6 +5047,7 @@ async function changeCommercialInvoice(button) {
   catch (cause) { setCommercialFeedback(cause instanceof Error ? cause.message : "Falha ao atualizar mensalidade.", "error"); }
 }
 document.addEventListener("click", (event) => {
+  if (els.dialog?.open && event.target.closest?.("#transactionDialog")) return;
   const editButton = event.target.closest("[data-edit]");
   const viewLink = event.target.closest("[data-view-link]");
   const payableButton = event.target.closest("[data-payable-group]");
@@ -5340,7 +5359,12 @@ els.cancelDialogBtn.addEventListener("click", () => {
   closeDescriptionSuggestions();
   els.dialog.close();
 });
-els.dialog.addEventListener("close", closeDescriptionSuggestions);
+els.dialog.addEventListener("close", () => {
+  closeDescriptionSuggestions();
+  document.body.classList.remove("transaction-modal-open");
+  activeDialogTransaction = null;
+  activeDialogInstallmentSeries = [];
+});
 els.paymentConfirmForm.addEventListener("submit", confirmDashboardPayment);
 els.closePaymentConfirmBtn.addEventListener("click", () => els.paymentConfirmDialog.close());
 els.cancelPaymentConfirmBtn.addEventListener("click", () => els.paymentConfirmDialog.close());
