@@ -90,22 +90,9 @@ function monthLabel(value) {
 }
 
 function excelFilters() {
-  const table = document.querySelector('#transactions .transactions-table');
-  if (!table) return;
-  table.classList.add('excel-table');
-  table.querySelectorAll('thead tr:first-child th').forEach((header, index) => {
-    if (header.querySelector('.excel-filter-button') || index === 0) return;
-    const title = header.textContent.trim();
-    header.innerHTML = `<span class="excel-header-label">${esc(title)}</span><button class="excel-filter-button" type="button" aria-label="Filtrar ${esc(title)}" title="Filtrar ${esc(title)}"><span></span></button>`;
-    header.querySelector('button').addEventListener('click', () => {
-      const filterCell = table.querySelector(`thead .column-filter-row th:nth-child(${index + 1})`);
-      const nativeControl = filterCell?.querySelector('select,input');
-      nativeControl?.focus();
-      nativeControl?.click();
-    });
-  });
-  document.querySelectorAll('.filter-dropdown,.filter-popover,.multi-filter-dropdown,[class*="filter-menu"]').forEach((menu) => menu.classList.add('excel-filter-menu'));
-  table.querySelectorAll('thead .column-filter-row th').forEach((cell) => cell.classList.add('excel-filter-cell'));
+  // The production transaction grid is now owned by excel-filter-pro.js.
+  // Keeping this legacy enhancer as a no-op prevents duplicate filter buttons
+  // and corrupted header text in the web "Lançamentos" table.
 }
 
 function analyticsCarryForward(transactions) {

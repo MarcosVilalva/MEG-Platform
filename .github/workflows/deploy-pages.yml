@@ -44,20 +44,6 @@ jobs:
           mkdir -p pages-artifact
           cp -r apps/web/dist/. pages-artifact/
 
-      - name: Build isolated staging web application
-        env:
-          VITE_APP_ENV: staging
-          VITE_VALIDATION_MODE: 'false'
-          VITE_PUBLIC_BASE_PATH: /MEG-Platform/staging/
-          VITE_API_URL: ${{ vars.VITE_STAGING_API_URL || vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
-          VITE_STAGING_ADMIN_EMAIL: ${{ vars.VITE_STAGING_ADMIN_EMAIL || 'm_vilalva@hotmail.com' }}
-        run: npm run build:web
-
-      - name: Stage isolated staging artifact
-        run: |
-          mkdir -p pages-artifact/staging
-          cp -r apps/web/dist/. pages-artifact/staging/
-
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 

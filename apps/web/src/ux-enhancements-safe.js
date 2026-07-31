@@ -144,12 +144,17 @@ function enhanceTable() {
   if (!table || !panel) return;
   const rows = table.querySelectorAll('tbody tr');
   const currentSignature = `${rows.length}|${rows[0]?.textContent}|${rows[rows.length - 1]?.textContent}`;
-  if (runtime.tableSignature === currentSignature && table.querySelector('.meg-date-sort-button')) return;
+  if (runtime.tableSignature === currentSignature && table.classList.contains('meg-enhanced-table')) return;
   runtime.tableSignature = currentSignature;
   tableToolbar(panel);
-  ensureSortButton();
+  table.classList.add('meg-enhanced-table');
   const headers = ['Vencimento', 'Compra', 'Dia', 'Tipo', 'Descrição', 'Receita', 'Categoria', 'Grupo', 'Despesa', 'Pagamento', 'Situação', 'Modalidade', 'Observações', ''];
-  table.querySelectorAll('thead tr:first-child th').forEach((cell, index) => { if (index && headers[index] !== undefined) cell.textContent = headers[index]; });
+  table.querySelectorAll('thead tr:first-child th').forEach((cell, index) => {
+    if (!index || headers[index] === undefined || cell.querySelector('.meg-grid-filter-button')) return;
+    const label = cell.querySelector('.meg-grid-header-label');
+    if (label) label.textContent = headers[index];
+    else cell.textContent = headers[index];
+  });
   rows.forEach((row) => {
     row.classList.add('meg-data-row');
     const cells = row.children;

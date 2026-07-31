@@ -4,9 +4,28 @@ const runtime = { table: null, activeColumn: null, selections: new Map(), popove
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const normalize = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
 const EMPTY_VALUE = '__MEG_EMPTY__';
+const HEADER_LABELS = [
+  'Vencimento',
+  'Compra',
+  'Dia',
+  'Tipo',
+  'Descrição',
+  'Receita',
+  'Classificação',
+  'Grupo',
+  'Despesa',
+  'Pagamento',
+  'Situação',
+  'Modalidade',
+  'Observações',
+  'Ações',
+];
 
 function tableHeaders(table) {
-  return [...table.querySelectorAll('thead tr:first-child th')].map((cell, index) => normalize(cell.textContent) || `Coluna ${index + 1}`);
+  return [...table.querySelectorAll('thead tr:first-child th')].map((cell, index) => {
+    const label = cell.querySelector('.meg-grid-header-label')?.textContent || cell.textContent;
+    return normalize(label.replace(/[▾▼⌄]/g, '')) || HEADER_LABELS[index] || `Coluna ${index + 1}`;
+  });
 }
 
 function dataRows(table) {
@@ -175,8 +194,8 @@ function ensureFilterButtons(table) {
   const headers = table.querySelectorAll('thead tr:first-child th');
   headers.forEach((header, index) => {
     if (index === headers.length - 1 || header.querySelector('.meg-grid-filter-button')) return;
-    const title = normalize(header.textContent);
-    header.textContent = '';
+    const title = HEADER_LABELS[index] || normalize(header.textContent);
+    header.replaceChildren();
     const label = document.createElement('span');
     label.className = 'meg-grid-header-label';
     label.textContent = title;
