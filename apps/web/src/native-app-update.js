@@ -4,28 +4,34 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 function loadOptionalUiEnhancements() {
   const start = async () => {
     try {
-      await Promise.all([
+      const nativeMobile = document.body.classList.contains('native-mobile');
+      const sharedStyles = [
         import('./ux-enhancements.css'),
-        import('./market-upgrades.css'),
-        import('./excel-filter-pro.css'),
         import('./transaction-grid-stability.css'),
         import('./mobile-transactions.css'),
-        import('./finance-workspace-modernization.css'),
         import('./ongoing-card-installments.css')
-      ]);
+      ];
+      const webOnlyStyles = nativeMobile ? [] : [
+        import('./market-upgrades.css'),
+        import('./excel-filter-pro.css'),
+        import('./finance-workspace-modernization.css')
+      ];
+      await Promise.all([...sharedStyles, ...webOnlyStyles]);
 
       const { initializeUxEnhancements } = await import('./ux-enhancements-safe.js');
       initializeUxEnhancements();
-      if (!document.body.classList.contains('native-mobile')) {
+      if (!nativeMobile) {
         const { initializeMarketUpgrades } = await import('./market-upgrades.js');
         initializeMarketUpgrades();
       }
 
       await import('./ux-enhancements-hotfix.js');
-      await import('./excel-filter-pro.js');
       await import('./transaction-grid-stability.js');
       await import('./mobile-transactions.js');
-      await import('./finance-workspace-modernization.js');
+      if (!nativeMobile) {
+        await import('./excel-filter-pro.js');
+        await import('./finance-workspace-modernization.js');
+      }
       await import('./pending-monetary-balance.js');
       await import('./transaction-status-guard.js');
       await import('./transaction-classification-defaults.js');
