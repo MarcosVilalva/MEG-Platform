@@ -908,6 +908,225 @@ function ensureStagingInsightPanels() {
   }
 }
 
+function ensurePremiumWebDashboard() {
+  if (document.body.classList.contains("native-mobile")) return;
+  const dashboard = document.querySelector("#dashboard");
+  if (!dashboard || document.querySelector("#premiumWebDashboard")) return;
+  const heading = dashboard.querySelector(".section-heading");
+  heading?.insertAdjacentHTML("afterend", `
+    <section class="premium-dashboard-web" id="premiumWebDashboard" aria-label="Dashboard executivo MEG">
+      <div class="premium-orb premium-orb-one" aria-hidden="true"></div>
+      <div class="premium-orb premium-orb-two" aria-hidden="true"></div>
+      <div class="premium-dashboard-hero">
+        <div class="premium-hero-copy">
+          <span class="premium-badge">MEG EXECUTIVO WEB</span>
+          <h3>Cockpit financeiro inteligente</h3>
+          <p id="premiumDashboardNarrative">Leitura consolidada do período com caixa, cartão, pendências e pressão por categoria.</p>
+        </div>
+        <div class="premium-score-card" id="premiumScoreCard">
+          <span>Índice MEG</span>
+          <strong id="premiumScoreMetric">0</strong>
+          <small id="premiumScoreNote">calculando...</small>
+        </div>
+      </div>
+
+      <div class="premium-kpi-grid">
+        <article class="premium-kpi balance"><span>Saldo após pendências</span><strong id="premiumNetMetric">R$ 0,00</strong><small id="premiumNetNote">Caixa projetado</small></article>
+        <article class="premium-kpi income"><span>Receitas disponíveis</span><strong id="premiumIncomeMetric">R$ 0,00</strong><small id="premiumIncomeNote">Saldo anterior + entradas</small></article>
+        <article class="premium-kpi expense"><span>Despesas monetárias</span><strong id="premiumExpenseMetric">R$ 0,00</strong><small id="premiumExpenseNote">Pagas + pendentes</small></article>
+        <article class="premium-kpi cards"><span>Cartões em aberto</span><strong id="premiumCardsMetric">R$ 0,00</strong><small id="premiumCardsNote">Faturas e compras</small></article>
+        <article class="premium-kpi pending"><span>Pendências críticas</span><strong id="premiumPendingMetric">0</strong><small id="premiumPendingNote">Vencidas e próximas</small></article>
+      </div>
+
+      <div class="premium-dashboard-grid">
+        <article class="premium-panel premium-wide-panel">
+          <div class="premium-panel-title"><div><span>Evolução</span><strong>Receitas x despesas</strong></div><small id="premiumTrendNote">últimos períodos</small></div>
+          <div class="premium-bars" id="premiumMonthlyBars"></div>
+          <div class="premium-chart-legend"><span><i class="income"></i>Receitas</span><span><i class="expense"></i>Despesas</span><span><i class="balance"></i>Resultado</span></div>
+        </article>
+
+        <article class="premium-panel">
+          <div class="premium-panel-title"><div><span>Concentração</span><strong>Maiores gastos</strong></div><small id="premiumCategoryNote">por grupo</small></div>
+          <div class="premium-donut-row">
+            <div class="premium-donut" id="premiumExpenseDonut"><strong id="premiumDonutMetric">0%</strong><small>top 3</small></div>
+            <div class="premium-category-list" id="premiumCategoryList"></div>
+          </div>
+        </article>
+
+        <article class="premium-panel">
+          <div class="premium-panel-title"><div><span>Agenda</span><strong>Próximas decisões</strong></div><small>prioridade automática</small></div>
+          <div class="premium-decision-list" id="premiumDecisionList"></div>
+        </article>
+
+        <article class="premium-panel premium-wide-panel">
+          <div class="premium-panel-title"><div><span>Cartões</span><strong>Exposição por fatura</strong></div><small id="premiumCardNote">limite, uso e risco</small></div>
+          <div class="premium-card-strip" id="premiumCardStrip"></div>
+        </article>
+      </div>
+    </section>
+  `);
+}
+
+function recentMonthKeysUntil(endDate, minimum = 8) {
+  const endMonth = monthOf(endDate || todayIso);
+  const [endYear, endMonthNumber] = endMonth.split("-").map(Number);
+  const keys = [];
+  for (let index = minimum - 1; index >= 0; index -= 1) {
+    const date = new Date(endYear, endMonthNumber - 1 - index, 1);
+    keys.push(date.toISOString().slice(0, 7));
+  }
+  const transactionMonths = [...new Set(state.transactions.map((item) => monthOf(transactionPeriodDate(item))).filter(Boolean))]
+    .filter((month) => month <= endMonth)
+    .sort()
+    .slice(-minimum);
+  return [...new Set([...transactionMonths, ...keys])].sort().slice(-Math.max(minimum, transactionMonths.length));
+}
+
+function buildPremiumMonthBuckets(endDate) {
+  const months = recentMonthKeysUntil(endDate, 10);
+  const byMonth = new Map(months.map((month) => [month, { month, income: 0, expense: 0, paidExpense: 0, pendingExpense: 0 }]));
+  state.transactions
+    .filter((item) => !isVerocardTransaction(item))
+    .forEach((item) => {
+      const month = monthOf(transactionPeriodDate(item));
+      if (!byMonth.has(month)) return;
+      const bucket = byMonth.get(month);
+      if (item.type === "income") bucket.income += Number(item.incomeAmount || item.amount || 0);
+      if (item.type === "expense") {
+        const value = Number(item.expenseAmount || item.amount || 0);
+        bucket.expense += value;
+        if (item.status === "paid") bucket.paidExpense += value;
+        else bucket.pendingExpense += value;
+      }
+    });
+  return [...byMonth.values()];
+}
+
+function renderPremiumWebDashboard(monetaryPosition, totals) {
+  ensurePremiumWebDashboard();
+  const panel = document.querySelector("#premiumWebDashboard");
+  if (!panel) return;
+
+  const { start, end } = dateRangeForSelectedPeriod();
+  const periodItems = selectedTransactions();
+  const monetaryItems = periodItems.filter((item) => !isVerocardTransaction(item));
+  const expenses = monetaryItems.filter((item) => item.type === "expense");
+  const paidExpenses = expenses.filter((item) => item.status === "paid");
+  const pendingExpenses = expenses.filter((item) => item.status === "pending").sort((a, b) => a.date.localeCompare(b.date));
+  const overdueExpenses = pendingExpenses.filter((item) => item.date < todayIso);
+  const dueSoonExpenses = pendingExpenses.filter((item) => item.date >= todayIso && item.date <= addDays(todayIso, 7));
+  const pendingTotal = pendingExpenses.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const paidTotal = paidExpenses.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const cardPortfolio = calculateCreditCardPortfolio(state.transactions, periodItems, state.catalogs?.cards || []);
+  const cardOpen = cardPortfolio.items
+    .filter((item) => item.status !== "paid")
+    .reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  const groups = groupExpenseRows(monetaryItems);
+  const topGroup = groups[0];
+  const topThreeTotal = groups.slice(0, 3).reduce((sum, item) => sum + item.value, 0);
+  const concentration = monetaryPosition.expense ? (topThreeTotal / monetaryPosition.expense) * 100 : 0;
+  const margin = monetaryPosition.balanceAfterPending;
+  const coverage = pendingTotal ? (Math.max(monetaryPosition.currentBalance, 0) / pendingTotal) * 100 : 100;
+  const riskPenalty = margin < 0 ? Math.min(46, Math.abs(margin) / Math.max(monetaryPosition.availableIncome, 1) * 100) : 0;
+  const overduePenalty = Math.min(28, overdueExpenses.length * 7);
+  const concentrationPenalty = concentration > 55 ? Math.min(16, (concentration - 55) / 2) : 0;
+  const score = Math.max(0, Math.min(100, Math.round(94 - riskPenalty - overduePenalty - concentrationPenalty)));
+  const tone = score < 55 ? "risk" : score < 78 ? "attention" : "healthy";
+
+  panel.classList.remove("risk", "attention", "healthy");
+  panel.classList.add(tone);
+  document.querySelector("#premiumScoreCard")?.style.setProperty("--score", score);
+  document.querySelector("#premiumScoreMetric").textContent = String(score);
+  document.querySelector("#premiumScoreNote").textContent = tone === "risk" ? "ação imediata" : tone === "attention" ? "atenção no caixa" : "operação saudável";
+  document.querySelector("#premiumDashboardNarrative").textContent = `Período ${periodLabel()}: ${money.format(monetaryPosition.availableIncome)} disponíveis, ${money.format(paidTotal)} pagos e ${money.format(pendingTotal)} ainda comprometidos.`;
+  document.querySelector("#premiumNetMetric").textContent = money.format(margin);
+  document.querySelector("#premiumNetNote").textContent = margin >= 0 ? `Sobram ${money.format(Math.max(margin, 0))} após pendências` : `Faltam ${money.format(Math.abs(margin))} para fechar`;
+  document.querySelector("#premiumIncomeMetric").textContent = money.format(monetaryPosition.availableIncome);
+  document.querySelector("#premiumIncomeNote").textContent = `${money.format(monetaryPosition.openingBalance)} anteriores + ${money.format(monetaryPosition.currentIncome)} no filtro`;
+  document.querySelector("#premiumExpenseMetric").textContent = money.format(monetaryPosition.expense);
+  document.querySelector("#premiumExpenseNote").textContent = `${money.format(paidTotal)} pagas · ${money.format(pendingTotal)} pendentes`;
+  document.querySelector("#premiumCardsMetric").textContent = money.format(cardOpen);
+  document.querySelector("#premiumCardsNote").textContent = `${cardPortfolio.cards.length} cartão(ões) · ${cardPortfolio.usagePercent.toFixed(0)}% do limite`;
+  document.querySelector("#premiumPendingMetric").textContent = String(groupPayableItems(pendingExpenses).length);
+  document.querySelector("#premiumPendingNote").textContent = `${overdueExpenses.length} vencida(s) · ${dueSoonExpenses.length} em 7 dias`;
+
+  const buckets = buildPremiumMonthBuckets(end);
+  const maxBucket = Math.max(1, ...buckets.map((item) => Math.max(item.income, item.expense)));
+  document.querySelector("#premiumTrendNote").textContent = `${formatDate(start)} a ${formatDate(end)}`;
+  document.querySelector("#premiumMonthlyBars").innerHTML = buckets.map((item) => {
+    const incomeHeight = Math.max(6, (item.income / maxBucket) * 100);
+    const expenseHeight = Math.max(6, (item.expense / maxBucket) * 100);
+    const result = item.income - item.expense;
+    const resultTone = result >= 0 ? "positive" : "negative";
+    return `
+      <div class="premium-month">
+        <div class="premium-month-bars" title="${escapeHtml(formatMonth(item.month))}">
+          <span class="income" style="height:${incomeHeight}%"></span>
+          <span class="expense" style="height:${expenseHeight}%"></span>
+        </div>
+        <strong class="${resultTone}">${formatCompactMoney(result)}</strong>
+        <small>${escapeHtml(formatMonthShort(item.month))}</small>
+      </div>
+    `;
+  }).join("");
+
+  const donutStops = groups.slice(0, 5);
+  let cursor = 0;
+  const colors = ["#55e6c1", "#7c5cff", "#ffce4a", "#ff5c8a", "#52a7ff"];
+  const segments = donutStops.map((item, index) => {
+    const share = monetaryPosition.expense ? (item.value / monetaryPosition.expense) * 100 : 0;
+    const segment = `${colors[index]} ${cursor}% ${cursor + share}%`;
+    cursor += share;
+    return segment;
+  });
+  const donut = document.querySelector("#premiumExpenseDonut");
+  donut.style.setProperty("--premium-donut", segments.length ? `conic-gradient(${segments.join(", ")}, rgba(255,255,255,.13) ${cursor}% 100%)` : "conic-gradient(rgba(255,255,255,.13) 0 100%)");
+  document.querySelector("#premiumDonutMetric").textContent = `${Math.min(concentration, 100).toFixed(0)}%`;
+  document.querySelector("#premiumCategoryNote").textContent = topGroup ? `${topGroup.group} lidera o período` : "sem despesas";
+  document.querySelector("#premiumCategoryList").innerHTML = groups.slice(0, 5).map((item, index) => {
+    const share = monetaryPosition.expense ? (item.value / monetaryPosition.expense) * 100 : 0;
+    return `<div><i style="background:${colors[index]}"></i><span title="${escapeHtml(item.group)}">${escapeHtml(item.group)}</span><strong>${formatCompactMoney(item.value)}</strong><small>${share.toFixed(0)}%</small></div>`;
+  }).join("") || `<p class="premium-empty">Sem gastos no recorte.</p>`;
+
+  const payableGroups = groupPayableItems(pendingExpenses).slice(0, 5);
+  const actionTitle = margin < 0 ? "Inserir receita ou adiar gasto" : overdueExpenses.length ? "Quitar vencidas primeiro" : coverage < 130 ? "Preservar caixa" : "Manter execução";
+  document.querySelector("#premiumDecisionList").innerHTML = [
+    {
+      icon: margin < 0 ? "🚨" : "✅",
+      title: actionTitle,
+      meta: margin < 0 ? `Déficit projetado de ${money.format(Math.abs(margin))}` : `Margem projetada de ${money.format(Math.max(margin, 0))}`,
+      tone: margin < 0 ? "risk" : "healthy",
+    },
+    {
+      icon: "💳",
+      title: "Cartões em aberto",
+      meta: `${money.format(cardOpen)} agrupados por fatura`,
+      tone: cardOpen > Math.max(monetaryPosition.availableIncome * .35, 1) ? "attention" : "",
+    },
+    ...payableGroups.map((group) => ({
+      icon: group.date < todayIso ? "🔥" : group.date === todayIso ? "⏰" : "📅",
+      title: payableGroupLabel(group),
+      meta: `${formatDate(group.date)} · ${money.format(payableGroupTotal(group))}`,
+      tone: group.date < todayIso ? "risk" : group.date === todayIso ? "attention" : "",
+    })),
+  ].slice(0, 7).map((item) => `<div class="${item.tone}"><span>${item.icon}</span><p><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.meta)}</small></p></div>`).join("");
+
+  document.querySelector("#premiumCardNote").textContent = cardPortfolio.cards.length ? `${money.format(cardPortfolio.usedLimit)} usados de ${money.format(cardPortfolio.totalLimit)}` : "cadastre cartões para ativar limite";
+  document.querySelector("#premiumCardStrip").innerHTML = cardPortfolio.cards.length
+    ? cardPortfolio.cards.slice(0, 6).map((card) => {
+        const usage = Math.min(card.usagePercent || 0, 100);
+        const risk = usage >= 85 ? "risk" : usage >= 65 ? "attention" : "healthy";
+        return `
+          <article class="${risk}">
+            <div><span>${escapeHtml(card.paymentMethod || "Cartão")}</span><strong>${money.format(card.used || 0)}</strong></div>
+            <small>${usage.toFixed(0)}% usado · limite ${money.format(card.limit || 0)}</small>
+            <i><b style="width:${usage}%"></b></i>
+          </article>
+        `;
+      }).join("")
+    : `<p class="premium-empty">Nenhum cartão ativo para exibir.</p>`;
+}
+
 function renderStagingAnalyticsLab() {
   if (!isStagingEnvironment()) return;
   ensureStagingInsightPanels();
@@ -1383,6 +1602,7 @@ function renderDashboard() {
   setCardTone(els.ticketPanel, totals.ticketBalance >= 0);
   setCardTone(els.consolidatedPanel, totals.consolidatedBalance >= 0);
 
+  renderPremiumWebDashboard(monetaryPosition, totals);
   renderCurrentSituation();
   renderExecutiveCommandCenter(monetaryPosition, totals);
   renderDashboardPayables();
