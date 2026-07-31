@@ -104,9 +104,11 @@ const workbookReconciliation = [
 const summary = calculateFinancialSummary(workbookReconciliation, '2026-07-01', '2026-07-31');
 assert.equal(Number(summary.openingBalance.toFixed(2)), 882.81);
 assert.equal(Number(summary.income.toFixed(2)), 9574.31);
+assert.equal(Number(summary.ticketOpeningBalance.toFixed(2)), 200);
 assert.equal(Number(summary.ticketIncome.toFixed(2)), 2000);
+assert.equal(Number(summary.ticketAvailableIncome.toFixed(2)), 2200);
 assert.equal(Number(summary.ticketExpense.toFixed(2)), 0);
-assert.equal(Number(summary.ticketBalance.toFixed(2)), 2000);
+assert.equal(Number(summary.ticketBalance.toFixed(2)), 2200);
 assert.equal(Number(summary.expense.toFixed(2)), 12153.40);
 assert.equal(Number(summary.paidExpense.toFixed(2)), 4419.66);
 assert.equal(Number(summary.pendingExpense.toFixed(2)), 7733.74);
@@ -114,9 +116,21 @@ assert.equal(Number(summary.operatingResult.toFixed(2)), -2579.09);
 assert.equal(Number(summary.availableIncome.toFixed(2)), 10457.12);
 assert.equal(Number(summary.closingBalance.toFixed(2)), 6037.46);
 assert.equal(Number(summary.projectedBalance.toFixed(2)), -1696.28);
-assert.equal(Number(summary.consolidatedIncome.toFixed(2)), 12457.12);
+assert.equal(Number(summary.consolidatedIncome.toFixed(2)), 12657.12);
 assert.equal(Number(summary.consolidatedExpense.toFixed(2)), 4419.66);
-assert.equal(Number(summary.consolidatedBalance.toFixed(2)), 8037.46);
+assert.equal(Number(summary.consolidatedBalance.toFixed(2)), 8237.46);
+
+const benefitCarryoverSummary = calculateFinancialSummary([
+  { date: '2026-06-01', type: 'income', description: 'VEROCARD', incomeAmount: 1000 },
+  { date: '2026-06-15', type: 'expense', paymentMethod: 'VEROCARD', expenseAmount: 350, status: 'paid' },
+  { date: '2026-07-01', type: 'income', description: 'VEROCARD', incomeAmount: 900 },
+  { date: '2026-07-10', type: 'expense', paymentMethod: 'VEROCARD', expenseAmount: 400, status: 'paid' },
+], '2026-07-01', '2026-07-31');
+assert.equal(benefitCarryoverSummary.ticketOpeningBalance, 650);
+assert.equal(benefitCarryoverSummary.ticketIncome, 900);
+assert.equal(benefitCarryoverSummary.ticketAvailableIncome, 1550);
+assert.equal(benefitCarryoverSummary.ticketExpense, 400);
+assert.equal(benefitCarryoverSummary.ticketBalance, 1150);
 
 const classificationSummary = calculateFinancialSummary([
   { date: '2026-07-01', type: 'income', description: 'VEROCARD', paymentMethod: '', incomeAmount: 2000 },
