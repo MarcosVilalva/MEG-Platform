@@ -114,7 +114,17 @@ let incomeSourceSearch = "";
 let creditCardFilter = "all";
 let creditCardStatusFilter = "all";
 let creditCardSearch = "";
+const TRANSACTIONS_PAGE_SIZE_DEFAULT = 200;
 const transactionColumnFilters = {};
+let transactionPage = 1;
+let transactionPageSize = TRANSACTIONS_PAGE_SIZE_DEFAULT;
+let transactionDataVersion = 0;
+let renderedColumnFilterVersion = -1;
+let columnFilterValueCache = { version: -1, values: {} };
+let descriptionHistoryCache = { version: -1, type: "", items: [] };
+const transactionSearchTextCache = new WeakMap();
+let localStateSaveTimer;
+let nativeNotificationSyncTimer;
 let descriptionSuggestionItems = [];
 let activeDescriptionSuggestion = -1;
 let editingGroup = "";
@@ -371,6 +381,10 @@ const els = {
   transactionSortFilter: document.querySelector("#transactionSortFilter"),
   transactionColumnFilters: document.querySelectorAll("[data-column-filter]"),
   clearColumnFiltersBtn: document.querySelector("#clearColumnFiltersBtn"),
+  transactionsPageInfo: document.querySelector("#transactionsPageInfo"),
+  transactionsPageSize: document.querySelector("#transactionsPageSize"),
+  transactionsPreviousPage: document.querySelector("#transactionsPreviousPage"),
+  transactionsNextPage: document.querySelector("#transactionsNextPage"),
   transactionsFilteredIncome: document.querySelector("#transactionsFilteredIncome"),
   transactionsFilteredIncomeCount: document.querySelector("#transactionsFilteredIncomeCount"),
   transactionsFilteredExpense: document.querySelector("#transactionsFilteredExpense"),
@@ -548,13 +562,36 @@ function loadState() {
   return normalizeState(structuredClone(defaultState));
 }
 
+function invalidateTransactionCaches() {
+  transactionDataVersion += 1;
+  renderedColumnFilterVersion = -1;
+  columnFilterValueCache = { version: -1, values: {} };
+  descriptionHistoryCache = { version: -1, type: "", items: [] };
+}
+
+function scheduleLocalStateSave() {
+  window.clearTimeout(localStateSaveTimer);
+  localStateSaveTimer = window.setTimeout(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStateSaveTimer = undefined;
+  }, 0);
+}
+
+function scheduleNativeNotificationSync() {
+  window.clearTimeout(nativeNotificationSyncTimer);
+  nativeNotificationSyncTimer = window.setTimeout(() => {
+    window.MEG_NATIVE_NOTIFICATIONS?.sync?.(state);
+    nativeNotificationSyncTimer = undefined;
+  }, 250);
+}
+
 function saveState({ cloud = true } = {}) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  // Recalculate the active screen immediately. Cloud persistence happens in
-  // the background and must never delay the financial feedback to the user.
-  requestAnimationFrame(render);
-  if (cloud) window.MEG_CLOUD?.saveState(structuredClone(state));
-  window.MEG_NATIVE_NOTIFICATIONS?.sync?.(state);
+  invalidateTransactionCaches();
+  // Persistência e sincronização são agendadas para permitir que o fechamento
+  // do formulário e a atualização visual ocorram antes da serialização completa.
+  scheduleLocalStateSave();
+  if (cloud) window.MEG_CLOUD?.saveState(state);
+  scheduleNativeNotificationSync();
 }
 
 function replaceImportedState(transactions, options = {}) {
@@ -563,6 +600,7 @@ function replaceImportedState(transactions, options = {}) {
     budgets: state.budgets || {},
     catalogs: state.catalogs || DEFAULT_CATALOGS,
   });
+  invalidateTransactionCaches();
   originalTransactionsById = new Map(state.transactions.map((item) => [item.id, item]));
   analyticsDefaultPeriodApplied = false;
   saveState(options);
@@ -1539,7 +1577,6 @@ function filterAnalyticsPayments(items) {
 function render() {
   ensureStagingInsightPanels();
   renderPeriodControls();
-  renderDatalists();
   if (selectedView === "dashboard") renderDashboard();
   if (selectedView === "cashflow") renderCashflow();
   if (selectedView === "analytics") {
@@ -1558,7 +1595,10 @@ function render() {
     renderPending();
     renderStagingPendingLab();
   }
-  if (selectedView === "catalogs") renderCatalogs();
+  if (selectedView === "catalogs") {
+    renderDatalists();
+    renderCatalogs();
+  }
   if (selectedView === "settings") renderSettings();
 }
 
@@ -2942,6 +2982,7 @@ function renderMonthProgress() {
 function replaceState(nextState) {
   const migrationRequired = Number(nextState?.schemaVersion || 0) < GLOBAL_FINANCIAL_SCHEMA_VERSION;
   state = normalizeState(nextState || { transactions: [], budgets: {} });
+  invalidateTransactionCaches();
   originalTransactionsById = new Map(state.transactions.map((item) => [item.id, item]));
   analyticsDefaultPeriodApplied = false;
   render();
@@ -2991,14 +3032,47 @@ function fillColumnFilterOptions(key, values) {
     : '<small class="excel-filter-empty">Nenhum item encontrado.</small>';
 }
 
+function columnFilterValues() {
+  if (columnFilterValueCache.version === transactionDataVersion) return columnFilterValueCache.values;
+  const sets = {
+    expenseClass: new Set(),
+    group: new Set(),
+    paymentMethod: new Set(),
+    situation: new Set(),
+  };
+  state.transactions.forEach((item) => {
+    const values = {
+      expenseClass: item.expenseClass,
+      group: item.group || item.category,
+      paymentMethod: item.paymentMethod || item.account,
+      situation: item.situation,
+    };
+    Object.entries(values).forEach(([key, value]) => {
+      const text = String(value || "").trim();
+      if (text) sets[key].add(text);
+    });
+  });
+  const values = Object.fromEntries(Object.entries(sets).map(([key, set]) => [
+    key,
+    [...set].sort((a, b) => a.localeCompare(b, "pt-BR")),
+  ]));
+  columnFilterValueCache = { version: transactionDataVersion, values };
+  return values;
+}
+
 function renderColumnFilterOptions() {
-  const valuesFor = (key, fallback = "") => [...new Set(state.transactions.map((item) => String(item[key] || fallback).trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const values = columnFilterValues();
   fillColumnFilterOptions("type", []);
-  fillColumnFilterOptions("expenseClass", valuesFor("expenseClass"));
-  fillColumnFilterOptions("group", valuesFor("group"));
-  fillColumnFilterOptions("paymentMethod", valuesFor("paymentMethod"));
-  fillColumnFilterOptions("situation", valuesFor("situation"));
+  fillColumnFilterOptions("expenseClass", values.expenseClass || []);
+  fillColumnFilterOptions("group", values.group || []);
+  fillColumnFilterOptions("paymentMethod", values.paymentMethod || []);
+  fillColumnFilterOptions("situation", values.situation || []);
   fillColumnFilterOptions("modality", sortedModalities());
+  renderedColumnFilterVersion = transactionDataVersion;
+}
+
+function ensureColumnFilterOptions() {
+  if (renderedColumnFilterVersion !== transactionDataVersion) renderColumnFilterOptions();
 }
 
 function matchesColumnFilters(item) {
@@ -3024,17 +3098,24 @@ function matchesColumnFilters(item) {
 }
 
 function renderTransactionsFilterSummary(items) {
-  const incomeItems = items.filter((item) => item.type === "income");
-  const expenseItems = items.filter((item) => item.type === "expense");
-  const income = incomeItems.reduce((total, item) => total + Number(item.incomeAmount || item.amount || 0), 0);
-  const expense = expenseItems.reduce((total, item) => total + Number(item.expenseAmount || item.amount || 0), 0);
+  const totals = items.reduce((summary, item) => {
+    if (item.type === "income") {
+      summary.income += Number(item.incomeAmount || item.amount || 0);
+      summary.incomeCount += 1;
+    } else if (item.type === "expense") {
+      summary.expense += Number(item.expenseAmount || item.amount || 0);
+      summary.expenseCount += 1;
+    }
+    return summary;
+  }, { income: 0, expense: 0, incomeCount: 0, expenseCount: 0 });
+  const { income, expense, incomeCount, expenseCount } = totals;
   const result = income - expense;
   const plural = (count) => `${count} ${count === 1 ? "lançamento" : "lançamentos"}`;
 
   els.transactionsFilteredIncome.textContent = money.format(income);
-  els.transactionsFilteredIncomeCount.textContent = plural(incomeItems.length);
+  els.transactionsFilteredIncomeCount.textContent = plural(incomeCount);
   els.transactionsFilteredExpense.textContent = money.format(expense);
-  els.transactionsFilteredExpenseCount.textContent = plural(expenseItems.length);
+  els.transactionsFilteredExpenseCount.textContent = plural(expenseCount);
   els.transactionsFilteredResult.textContent = money.format(result);
   els.transactionsFilteredResultStatus.textContent = result > 0
     ? "Sobra no recorte selecionado"
@@ -3047,19 +3128,40 @@ function renderTransactionsFilterSummary(items) {
   els.transactionsFilteredResultCard.classList.toggle("is-negative", result < 0);
 }
 
-function renderTransactions() {
-  renderColumnFilterOptions();
-  const query = els.searchInput.value.trim().toLowerCase();
+function transactionSearchText(item) {
+  if (transactionSearchTextCache.has(item)) return transactionSearchTextCache.get(item);
+  const normalized = normalizeText(`${item.description || ""} ${item.category || ""} ${item.group || ""} ${item.account || ""} ${item.paymentMethod || ""} ${item.notes || ""}`);
+  transactionSearchTextCache.set(item, normalized);
+  return normalized;
+}
+
+function renderTransactions({ resetPage = false } = {}) {
+  ensureColumnFilterOptions();
+  if (resetPage) transactionPage = 1;
+  const query = normalizeText(els.searchInput.value);
   const type = els.typeFilter.value;
   const rows = selectedTransactions()
     .filter((item) => (type === "all" ? true : item.type === type))
-    .filter((item) => `${item.description} ${item.category} ${item.account}`.toLowerCase().includes(query))
+    .filter((item) => !query || transactionSearchText(item).includes(query))
     .filter(matchesColumnFilters);
   renderTransactionsFilterSummary(rows);
   sortTransactions(rows, els.transactionSortFilter?.value || "date_desc");
 
-  els.transactionRows.innerHTML = rows.length
-    ? rows
+  const totalPages = Math.max(1, Math.ceil(rows.length / transactionPageSize));
+  transactionPage = Math.min(Math.max(transactionPage, 1), totalPages);
+  const startIndex = (transactionPage - 1) * transactionPageSize;
+  const visibleRows = rows.slice(startIndex, startIndex + transactionPageSize);
+  if (els.transactionsPageInfo) {
+    const first = rows.length ? startIndex + 1 : 0;
+    const last = Math.min(startIndex + visibleRows.length, rows.length);
+    els.transactionsPageInfo.textContent = `Exibindo ${first}-${last} de ${rows.length} lançamento(s)`;
+  }
+  if (els.transactionsPreviousPage) els.transactionsPreviousPage.disabled = transactionPage <= 1;
+  if (els.transactionsNextPage) els.transactionsNextPage.disabled = transactionPage >= totalPages;
+  if (els.transactionsPageSize) els.transactionsPageSize.value = String(transactionPageSize);
+
+  els.transactionRows.innerHTML = visibleRows.length
+    ? visibleRows
         .map(
           (item) => `
         <tr class="transaction-row ${item.type === "income" ? "transaction-income-row" : "transaction-expense-row"}">
@@ -3470,26 +3572,31 @@ function renderDatalists(preferred = {}) {
 
 function descriptionHistory() {
   const selectedType = els.transactionType.value;
+  if (descriptionHistoryCache.version === transactionDataVersion && descriptionHistoryCache.type === selectedType) {
+    return descriptionHistoryCache.items;
+  }
   const history = new Map();
   state.transactions.forEach((item, index) => {
     if (item.type !== selectedType) return;
     const description = String(item.description || "").replace(/\s+\d+\/\d+$/u, "").trim();
     if (!description) return;
     const key = normalizeText(description);
-    const current = history.get(key) || { description, count: 0, lastIndex: -1 };
+    const current = history.get(key) || { description, normalized: key, words: key.split(/\s+/u), count: 0, lastIndex: -1 };
     current.count += 1;
     current.lastIndex = index;
     history.set(key, current);
   });
-  return [...history.values()];
+  const items = [...history.values()];
+  descriptionHistoryCache = { version: transactionDataVersion, type: selectedType, items };
+  return items;
 }
 
 function matchingDescriptions(query = els.descriptionInput.value) {
   const normalizedQuery = normalizeText(query.trim());
   return descriptionHistory()
     .map((item) => {
-      const normalized = normalizeText(item.description);
-      const words = normalized.split(/\s+/u);
+      const normalized = item.normalized;
+      const words = item.words;
       let score = 0;
       if (!normalizedQuery) score = item.count * 10 + item.lastIndex / 10000;
       else if (normalized === normalizedQuery) score = 10000;
@@ -4233,8 +4340,6 @@ function openTransactionDialog(item = null) {
   els.groupInput.value = desiredGroup;
   els.statusInput.value = item?.status || (els.transactionType.value === "expense" ? "pending" : "paid");
   els.modalityInput.value = desiredModality;
-  refreshPaymentMethodOptions(desiredPayment);
-  refreshFinancialAccountOptions(item?.financialAccountId || suggestedFinancialAccountId());
   els.notesInput.value = item?.notes || "";
   const series = installmentSeries(item);
   els.purchaseTotalInput.value = item?.purchaseTotal || (series.length ? series.reduce((sum, installment) => sum + Number(installment.expenseAmount || installment.amount || 0), 0) : "");
@@ -4242,8 +4347,6 @@ function openTransactionDialog(item = null) {
   els.installmentEditScopeInput.value = series.length > 1 ? "future" : "current";
   els.deleteTransactionBtn.style.visibility = item ? "visible" : "hidden";
   syncAmountFields();
-  syncCardDates({ recalculate: !item });
-  syncInstallmentFields();
   els.dialog.showModal();
   els.transactionType.focus();
 }
@@ -4345,6 +4448,7 @@ function saveTransaction(event) {
       if (!state.budgets[payload.category]) state.budgets[payload.category] = 0;
       selectedPeriod.mode = "month";
       selectedPeriod.month = currentMonth;
+      transactionPage = 1;
       saveState();
       els.dialog.close();
       showToast("Parcelamento criado", `${installments.length} parcela(s) geradas até ${formatDate(installments.at(-1).date)}`, "success");
@@ -4370,6 +4474,7 @@ function saveTransaction(event) {
   if (!state.budgets[payload.category] && payload.type === "expense") state.budgets[payload.category] = 0;
   selectedPeriod.mode = "month";
   selectedPeriod.month = currentMonth;
+  transactionPage = 1;
   saveState();
   els.dialog.close();
   showToast(
@@ -5030,6 +5135,7 @@ els.periodMode.value = selectedPeriod.mode;
 els.monthFilter.value = selectedPeriod.month;
 els.yearFilter.value = selectedPeriod.year;
 els.periodMode.addEventListener("change", () => {
+  transactionPage = 1;
   selectedPeriod.mode = els.periodMode.value;
   if (selectedPeriod.mode === "range" && (!selectedPeriod.start || !selectedPeriod.end)) {
     const bounds = dateRangeForSelectedPeriod();
@@ -5039,16 +5145,19 @@ els.periodMode.addEventListener("change", () => {
   render();
 });
 els.monthFilter.addEventListener("change", () => {
+  transactionPage = 1;
   selectedPeriod.month = els.monthFilter.value || currentMonth;
   selectedPeriod.mode = "month";
   render();
 });
 els.yearFilter.addEventListener("change", () => {
+  transactionPage = 1;
   selectedPeriod.year = els.yearFilter.value || todayIso.slice(0, 4);
   selectedPeriod.mode = "year";
   render();
 });
 function commitRangeFilter() {
+  transactionPage = 1;
   const startValue = els.startDateFilter.value;
   const endValue = els.endDateFilter.value;
   const completeIsoDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -5075,24 +5184,41 @@ els.reconciliationActualInput?.addEventListener("input", updateReconciliationPre
 els.reconciliationForm?.addEventListener("submit", saveBalanceReconciliation);
 els.closeReconciliationBtn?.addEventListener("click", () => els.reconciliationDialog.close());
 els.cancelReconciliationBtn?.addEventListener("click", () => els.reconciliationDialog.close());
-els.searchInput.addEventListener("input", renderTransactions);
-els.typeFilter.addEventListener("change", renderTransactions);
-els.transactionSortFilter.addEventListener("change", renderTransactions);
+function debounce(callback, delay = 120) {
+  let timer;
+  return (...args) => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => callback(...args), delay);
+  };
+}
+
+const renderTransactionsFromTextFilter = debounce(() => renderTransactions({ resetPage: true }), 120);
+const renderColumnFilterOptionsDebounced = debounce(renderColumnFilterOptions, 90);
+const renderDescriptionSuggestionsDebounced = debounce(() => {
+  if (els.dialog.open && document.activeElement === els.descriptionInput) renderDescriptionSuggestions();
+}, 90);
+
+els.searchInput.addEventListener("input", renderTransactionsFromTextFilter);
+els.typeFilter.addEventListener("change", () => renderTransactions({ resetPage: true }));
+els.transactionSortFilter.addEventListener("change", () => renderTransactions({ resetPage: true }));
 els.transactionColumnFilters.forEach((control) => {
-  control.addEventListener(control.tagName === "SELECT" ? "change" : "input", () => {
+  const commitFilter = () => {
     transactionColumnFilters[control.dataset.columnFilter] = control.value;
-    renderTransactions();
-  });
+    renderTransactions({ resetPage: true });
+  };
+  const isTextFilter = control.type === "search";
+  control.addEventListener(isTextFilter || control.type === "number" ? "input" : "change", isTextFilter ? debounce(commitFilter, 120) : commitFilter);
 });
 document.addEventListener("input", (event) => {
-  if (event.target.matches?.("[data-multi-filter-search]")) renderColumnFilterOptions();
+  if (event.target.matches?.("[data-multi-filter-search]")) renderColumnFilterOptionsDebounced();
 });
 document.addEventListener("change", (event) => {
   if (!event.target.matches?.("[data-multi-filter-option]")) return;
   const filter = event.target.closest("[data-multi-filter]");
   if (!filter) return;
   transactionColumnFilters[filter.dataset.multiFilter] = [...filter.querySelectorAll("[data-multi-filter-option]:checked")].map((input) => input.value);
-  renderTransactions();
+  renderColumnFilterOptions();
+  renderTransactions({ resetPage: true });
 });
 document.addEventListener("click", (event) => {
   const clearButton = event.target.closest?.("[data-multi-filter-clear]");
@@ -5102,7 +5228,8 @@ document.addEventListener("click", (event) => {
   transactionColumnFilters[filter.dataset.multiFilter] = [];
   const search = filter.querySelector("[data-multi-filter-search]");
   if (search) search.value = "";
-  renderTransactions();
+  renderColumnFilterOptions();
+  renderTransactions({ resetPage: true });
 });
 els.clearColumnFiltersBtn?.addEventListener("click", () => {
   Object.keys(transactionColumnFilters).forEach((key) => delete transactionColumnFilters[key]);
@@ -5110,7 +5237,20 @@ els.clearColumnFiltersBtn?.addEventListener("click", () => {
   document.querySelectorAll("[data-multi-filter-search]").forEach((control) => { control.value = ""; });
   els.searchInput.value = "";
   els.typeFilter.value = "all";
+  renderColumnFilterOptions();
+  renderTransactions({ resetPage: true });
+});
+els.transactionsPreviousPage?.addEventListener("click", () => {
+  transactionPage -= 1;
   renderTransactions();
+});
+els.transactionsNextPage?.addEventListener("click", () => {
+  transactionPage += 1;
+  renderTransactions();
+});
+els.transactionsPageSize?.addEventListener("change", () => {
+  transactionPageSize = Number(els.transactionsPageSize.value) || TRANSACTIONS_PAGE_SIZE_DEFAULT;
+  renderTransactions({ resetPage: true });
 });
 els.creditCardFilter?.addEventListener("change", () => {
   creditCardFilter = els.creditCardFilter.value || "all";
@@ -5181,7 +5321,7 @@ els.dateInput.addEventListener("change", () => {
 });
 els.purchaseDateInput.addEventListener("change", () => syncCardDates({ recalculate: true }));
 els.transactionType.addEventListener("change", syncAmountFields);
-els.descriptionInput.addEventListener("input", renderDescriptionSuggestions);
+els.descriptionInput.addEventListener("input", renderDescriptionSuggestionsDebounced);
 els.descriptionInput.addEventListener("focus", renderDescriptionSuggestions);
 els.descriptionInput.addEventListener("keydown", handleDescriptionKeydown);
 els.descriptionInput.addEventListener("blur", () => window.setTimeout(closeDescriptionSuggestions, 120));

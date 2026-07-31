@@ -439,9 +439,13 @@ async function saveNow(state, { force = false } = {}) {
   if (window.MEG_CLOUD?.whenFresh) await window.MEG_CLOUD.whenFresh.catch(() => undefined);
   saveInFlight = true;
   try {
+    const serializedState = JSON.stringify(state);
+    const body = force
+      ? `{"state":${serializedState}}`
+      : `{"state":${serializedState},"expectedRevision":${revision}}`;
     const response = await api('/app-state', {
       method: 'PUT',
-      body: JSON.stringify({ state, ...(force ? {} : { expectedRevision: revision }) })
+      body
     });
     if (response.status === 409) {
       throw new Error('Os dados foram alterados em outro dispositivo. Recarregue a nuvem antes de salvar.');
@@ -456,7 +460,7 @@ async function saveNow(state, { force = false } = {}) {
     }
     revision = payload.revision;
     localStorage.setItem(REVISION_KEY, String(revision));
-    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    localStorage.setItem(STATE_KEY, serializedState);
     syncChannel?.postMessage({ revision, state });
     const status = document.querySelector('#cloudSyncStatus');
     if (status) status.textContent = `Sincronizado ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
@@ -497,7 +501,7 @@ function queueSave(state) {
   saveTimer = window.setTimeout(() => {
     saveTimer = undefined;
     flushQueuedSave();
-  }, 120);
+  }, 300);
 }
 
 function applyRemoteState(payload, source = 'nuvem') {

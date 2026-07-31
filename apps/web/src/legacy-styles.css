@@ -4836,3 +4836,47 @@ dialog.modal {
 }
 
 .credit-card-visual.theme-magalu { --card-accent: #00a650; --card-ink: #ffffff; background: linear-gradient(135deg, #007f43 0%, #00a650 48%, #ffe600 160%); }
+
+/* Paginação da grade financeira: evita montar milhares de linhas no DOM. */
+.transactions-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-top: 1px solid #d8e5e1;
+  background: #f8fbfa;
+  color: #526761;
+  font-size: .82rem;
+  font-weight: 700;
+}
+.transactions-pagination label,
+.transactions-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.transactions-pagination select {
+  min-height: 34px;
+  border: 1px solid #ccdcd7;
+  border-radius: 8px;
+  background: #fff;
+  padding: 4px 28px 4px 9px;
+}
+.transactions-pagination .button {
+  min-height: 34px;
+  padding: 6px 12px;
+}
+.transactions-pagination .button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+@media (max-width: 760px) {
+  .transactions-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .transactions-pagination > div {
+    justify-content: space-between;
+  }
+}
