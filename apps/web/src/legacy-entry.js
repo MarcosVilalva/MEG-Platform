@@ -4,13 +4,13 @@ import { excelDateToIso } from './legacy-import-utils.js';
 import { syncLocalDueNotifications } from './native-notifications.js';
 import { checkForAppUpdate } from './native-app-update.js';
 
-const appEnvironment = import.meta.env.VITE_APP_ENV || 'production';
-const appEnvironmentSuffix = appEnvironment === 'production' ? '' : `-${appEnvironment}`;
+const appEnvironment = 'production';
+const appEnvironmentSuffix = '';
 const validationMode = import.meta.env.VITE_VALIDATION_MODE === 'true' || new URLSearchParams(location.search).get('validacao') === '1';
 const localStateKey = `meg-financas-state-v4-paid-fixes${appEnvironmentSuffix}`;
 const nativeMobileMode = import.meta.env.VITE_MOBILE_APP === 'true' || Boolean(window.Capacitor?.isNativePlatform?.());
 document.body.classList.toggle('native-mobile', nativeMobileMode);
-document.body.dataset.appEnvironment = appEnvironment;
+document.body.dataset.appEnvironment = 'production';
 const INACTIVITY_LIMIT_MS = 2 * 60 * 1000;
 const INACTIVITY_WARNING_MS = 30 * 1000;
 const INACTIVITY_MESSAGE_KEY = 'meg-inactivity-message';
@@ -18,7 +18,6 @@ const INACTIVITY_MESSAGE_KEY = 'meg-inactivity-message';
 const showSuccess = (title, message) => window.MEG_APP?.showToast?.(title, message, 'success');
 
 function requireStagingAccess() {
-  if (appEnvironment !== 'staging') return true;
   return true;
 }
 

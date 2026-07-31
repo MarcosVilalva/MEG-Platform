@@ -1,9 +1,9 @@
 import { getBiometricLoginStatus, requestBiometricLogin, saveBiometricLogin } from './native-biometric-login.js';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
-const APP_ENV = import.meta.env.VITE_APP_ENV || 'production';
-const STAGING_ADMIN_EMAIL = String(import.meta.env.VITE_STAGING_ADMIN_EMAIL || 'm_vilalva@hotmail.com').trim().toLowerCase();
-const ENV_SUFFIX = APP_ENV === 'production' ? '' : `-${APP_ENV}`;
+const APP_ENV = 'production';
+const STAGING_ADMIN_EMAIL = '';
+const ENV_SUFFIX = '';
 const ACCESS_KEY = `meg-access-token${ENV_SUFFIX}`;
 const REFRESH_KEY = `meg-refresh-token${ENV_SUFFIX}`;
 const USER_KEY = `meg-auth-user${ENV_SUFFIX}`;
@@ -531,7 +531,7 @@ async function checkForRemoteState() {
 
 function startRealtimeSync() {
   clearInterval(pollingTimer);
-  pollingTimer = window.setInterval(checkForRemoteState, 3000);
+  pollingTimer = window.setInterval(checkForRemoteState, 1500);
   window.addEventListener('focus', checkForRemoteState);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) checkForRemoteState();

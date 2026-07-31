@@ -1612,9 +1612,9 @@ function renderDashboard() {
 
 function renderExecutiveCommandCenter(monetaryPosition, totals) {
   if (!els.executiveCommandPanel) return;
-  const stagingOnly = document.body.dataset.appEnvironment === "staging";
-  els.executiveCommandPanel.classList.toggle("hidden", !stagingOnly);
-  if (!stagingOnly) return;
+  const mobileNative = document.body.classList.contains("native-mobile");
+  els.executiveCommandPanel.classList.toggle("hidden", mobileNative);
+  if (mobileNative) return;
   const items = selectedTransactions().filter((item) => !isVerocardTransaction(item));
   const expenses = items.filter((item) => item.type === "expense");
   const pending = expenses.filter((item) => item.status === "pending");
