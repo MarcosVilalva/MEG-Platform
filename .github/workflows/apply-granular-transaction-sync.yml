@@ -1,0 +1,52 @@
+name: Apply granular transaction sync
+
+on:
+  push:
+    branches:
+      - agent/granular-transaction-sync
+    paths:
+      - .performance-patch/granular-cloud.patch
+      - .github/workflows/apply-granular-transaction-sync.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/granular-transaction-sync
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Apply patch
+        run: |
+          git apply --check .performance-patch/granular-cloud.patch
+          git apply .performance-patch/granular-cloud.patch
+
+      - name: Validate browser modules
+        run: |
+          node --check apps/web/src/legacy-cloud.js
+          node --check apps/web/src/legacy-state-patch.js
+          node apps/web/src/legacy-state-patch.test.js
+          node apps/web/src/legacy-finance.test.js
+          node packages/core/src/tests/core.test.js
+
+      - name: Remove temporary files
+        run: |
+          rm -f .performance-patch/granular-cloud.patch
+          rmdir .performance-patch 2>/dev/null || true
+          rm -f .github/workflows/apply-granular-transaction-sync.yml
+
+      - name: Commit result
+        run: |
+          git add -A
+          git commit -m "feat: usar sincronização granular de lançamentos"
+          git push origin HEAD:agent/granular-transaction-sync
