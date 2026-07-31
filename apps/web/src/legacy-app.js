@@ -5049,8 +5049,13 @@ els.yearFilter.addEventListener("change", () => {
   render();
 });
 function commitRangeFilter() {
-  if (els.startDateFilter.value) selectedPeriod.start = els.startDateFilter.value;
-  if (els.endDateFilter.value) selectedPeriod.end = els.endDateFilter.value;
+  const startValue = els.startDateFilter.value;
+  const endValue = els.endDateFilter.value;
+  const completeIsoDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+  if (startValue && !completeIsoDate(startValue)) return;
+  if (endValue && !completeIsoDate(endValue)) return;
+  if (startValue) selectedPeriod.start = startValue;
+  if (endValue) selectedPeriod.end = endValue;
   selectedPeriod.mode = "range";
   if (selectedPeriod.start && selectedPeriod.end && selectedPeriod.start > selectedPeriod.end) {
     [selectedPeriod.start, selectedPeriod.end] = [selectedPeriod.end, selectedPeriod.start];
