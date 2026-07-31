@@ -41,15 +41,25 @@ export async function appStateRoutes(app: FastifyInstance) {
       const code = error instanceof Error ? error.message : 'LICENSE_REQUIRED';
       return reply.status(402).send({ error: code, readOnly: true });
     }
-    const current = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId } });
+    const current = await prisma.appState.findUnique({
+      where: { workspaceId: context.workspaceId },
+      select: { id: true, revision: true, updatedAt: true }
+    });
     if (current && parsed.data.expectedRevision !== undefined && current.revision !== parsed.data.expectedRevision) {
       return reply.status(409).send({ error: 'STATE_CONFLICT', revision: current.revision, updatedAt: current.updatedAt });
     }
 
-    const jsonState = JSON.parse(JSON.stringify(parsed.data.state)) as Prisma.InputJsonValue;
+    const jsonState = parsed.data.state as Prisma.InputJsonValue;
     const saved = current
-      ? await prisma.appState.update({ where: { id: current.id }, data: { state: jsonState, revision: { increment: 1 } } })
-      : await prisma.appState.create({ data: { userId: context.workspace.ownerId, workspaceId: context.workspaceId, state: jsonState, revision: 1 } });
+      ? await prisma.appState.update({
+          where: { id: current.id },
+          data: { state: jsonState, revision: { increment: 1 } },
+          select: { revision: true, updatedAt: true }
+        })
+      : await prisma.appState.create({
+          data: { userId: context.workspace.ownerId, workspaceId: context.workspaceId, state: jsonState, revision: 1 },
+          select: { revision: true, updatedAt: true }
+        });
     return { revision: saved.revision, updatedAt: saved.updatedAt, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
   });
 }
