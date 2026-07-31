@@ -12,6 +12,7 @@ const valueOf = (item, type) => item.type === type ? Number((type === 'income' ?
 const paid = (item) => item.status === 'paid' || ['PAGO', 'RECEBIDO'].includes(norm(item.situation));
 const pending = (item) => item.status === 'pending' || norm(item.situation) === 'PENDENTE';
 const benefit = (item) => item.financialScope === 'benefit' || /VEROCARD|BENEFICIO|ALIMENTACAO/.test(norm(`${item.account || ''} ${item.paymentMethod || ''} ${item.modality || ''}`));
+const isCardExpense = (item) => item.type === 'expense' && /CARTAO|CREDITO/.test(norm(`${item.paymentMethod || ''} ${item.account || ''} ${item.modality || ''}`));
 const isoToday = () => new Date().toISOString().slice(0, 10);
 
 function selectedPeriod() {
@@ -40,6 +41,35 @@ function currentBalance(transactions) {
   const today = isoToday();
   return transactions.filter((item) => !benefit(item) && item.date <= today)
     .reduce((sum, item) => sum + valueOf(item, 'income') - (paid(item) ? valueOf(item, 'expense') : 0), 0);
+}
+
+function cardLabel(item) {
+  return item.paymentMethod || item.account || item.financialAccountName || 'Cartão de crédito';
+}
+
+function incomeSource(item) {
+  return item.description || item.group || item.category || item.account || 'Outras receitas';
+}
+
+function compactDescription(description) {
+  return String(description || 'Despesa').replace(/\s+\d+\s*\/\s*\d+\s*$/i, '').trim();
+}
+
+function groupedPendingItems(items) {
+  const grouped = new Map();
+  items.forEach((item) => {
+    const isCard = isCardExpense(item);
+    const key = isCard ? `${item.date}|card|${norm(cardLabel(item))}` : `${item.date}|single|${item.id || item.description}`;
+    const row = grouped.get(key) || { date: item.date, isCard, label: isCard ? cardLabel(item) : item.description || 'Despesa', detail: '', total: 0, count: 0, items: [] };
+    row.total += valueOf(item, 'expense');
+    row.count += 1;
+    row.items.push(item);
+    row.detail = isCard
+      ? `${number.format(row.count)} lançamento(s) · ${row.items.slice(0, 3).map((entry) => compactDescription(entry.description)).join(', ')}${row.count > 3 ? '...' : ''}`
+      : `${item.group || item.category || 'Sem grupo'} · ${item.paymentMethod || item.account || 'Não informado'}`;
+    grouped.set(key, row);
+  });
+  return [...grouped.values()].sort((a, b) => String(a.date).localeCompare(String(b.date)) || b.total - a.total);
 }
 
 function chart(id) {
@@ -111,6 +141,7 @@ function analyticsCarryForward(transactions) {
 function incomeHtml() {
   return `<section class="market-module" id="marketIncome">
     <header class="market-hero income"><div><small>INTELIGÊNCIA DE RECEITAS</small><h3>Previsibilidade, crescimento e concentração da sua renda</h3><p>Entenda de onde o dinheiro vem, como evolui e quanto pode entrar nos próximos meses.</p></div><div class="market-score"><strong id="incomeStabilityScore">0</strong><span>/100</span><small>Estabilidade</small></div></header>
+    <div class="income-control-strip"><label><span>Origem da receita</span><select id="incomeSourceFilter"><option value="all">Todas as origens</option></select></label><label><span>Busca rapida</span><input id="incomeSearchFilter" type="search" placeholder="Ex.: salario, rendimento, mercado livre"></label><button type="button" id="incomeClearFilters">Limpar</button></div>
     <div class="market-kpis"><article><span>Fechamento anterior</span><strong id="incomeOpening">R$ 0,00</strong><small>Saldo trazido para o período</small></article><article><span>Receitas do período</span><strong id="incomePeriod">R$ 0,00</strong><small id="incomeCount">0 recebimentos</small></article><article><span>Recursos disponíveis</span><strong id="incomeResources">R$ 0,00</strong><small>Fechamento anterior + receitas</small></article><article><span>Previsão próximo mês</span><strong id="incomeForecast">R$ 0,00</strong><small id="incomeForecastNote">Baseada no histórico</small></article></div>
     <div class="market-grid"><article class="market-card wide"><header><div><small>EVOLUÇÃO</small><h4>Receitas mensais e tendência</h4></div><span id="incomeTrendLabel"></span></header><div class="market-chart" id="incomeTrendChart"></div></article><article class="market-card"><header><div><small>ORIGEM</small><h4>Composição das receitas</h4></div></header><div class="market-chart" id="incomeSourceChart"></div></article><article class="market-card"><header><div><small>QUALIDADE DA RENDA</small><h4>Diagnóstico automático</h4></div></header><div class="market-insights" id="incomeInsights"></div></article></div>
   </section>`;
@@ -119,10 +150,34 @@ function incomeHtml() {
 function renderIncome(transactions) {
   const view = document.querySelector('#income-analysis');
   if (!view) return;
-  if (!view.querySelector('#marketIncome')) view.querySelector('.section-heading')?.insertAdjacentHTML('afterend', incomeHtml());
+  if (!view.querySelector('#marketIncome')) {
+    view.querySelector('.section-heading')?.insertAdjacentHTML('afterend', incomeHtml());
+    document.getElementById('incomeSourceFilter')?.addEventListener('input', () => renderIncome(state().transactions || []));
+    document.getElementById('incomeSearchFilter')?.addEventListener('input', () => renderIncome(state().transactions || []));
+    document.getElementById('incomeClearFilters')?.addEventListener('click', () => {
+      const source = document.getElementById('incomeSourceFilter');
+      const search = document.getElementById('incomeSearchFilter');
+      if (source) source.value = 'all';
+      if (search) search.value = '';
+      renderIncome(state().transactions || []);
+    });
+  }
   const period = selectedPeriod();
   const opening = closingBefore(transactions, period.start);
-  const items = transactions.filter((item) => !benefit(item) && item.type === 'income' && inPeriod(item, period));
+  const allPeriodIncome = transactions.filter((item) => !benefit(item) && item.type === 'income' && inPeriod(item, period));
+  const sourceOptions = [...new Set(allPeriodIncome.map(incomeSource).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const sourceFilter = document.getElementById('incomeSourceFilter');
+  if (sourceFilter) {
+    const current = sourceFilter.value || 'all';
+    sourceFilter.innerHTML = `<option value="all">Todas as origens</option>${sourceOptions.map((value) => `<option value="${esc(value)}">${esc(value)}</option>`).join('')}`;
+    sourceFilter.value = sourceOptions.includes(current) ? current : 'all';
+  }
+  const selectedSource = sourceFilter?.value || 'all';
+  const search = norm(document.getElementById('incomeSearchFilter')?.value || '');
+  const items = allPeriodIncome.filter((item) => {
+    if (selectedSource !== 'all' && norm(incomeSource(item)) !== norm(selectedSource)) return false;
+    return !search || norm([item.description, item.group, item.category, item.account, item.notes].join(' ')).includes(search);
+  });
   const total = items.reduce((sum, item) => sum + valueOf(item, 'income'), 0);
   const allIncome = transactions.filter((item) => !benefit(item) && item.type === 'income');
   const monthly = new Map();
@@ -136,7 +191,7 @@ function renderIncome(transactions) {
   const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
   set('incomeOpening', money.format(opening)); set('incomePeriod', money.format(total)); set('incomeResources', money.format(opening + total)); set('incomeCount', `${number.format(items.length)} recebimento(s)`); set('incomeForecast', money.format(avg)); set('incomeStabilityScore', String(score)); set('incomeTrendLabel', `${trend >= 0 ? '+' : ''}${trend.toFixed(1)}% em 6 meses`); set('incomeForecastNote', `Média móvel dos últimos ${recent.length || 0} meses`);
   chart('incomeTrendChart')?.setOption({ animationDuration: 900, tooltip: { trigger: 'axis', valueFormatter: (value) => money.format(value) }, grid: { left: 62, right: 24, top: 30, bottom: 42 }, xAxis: { type: 'category', data: rows.map(([key]) => monthLabel(key)) }, yAxis: { type: 'value', splitLine: { lineStyle: { color: '#edf3f1' } } }, series: [{ name: 'Receitas', type: 'bar', data: rows.map(([, value]) => value), itemStyle: { color: '#20b486', borderRadius: [8, 8, 0, 0] } }, { name: 'Tendência', type: 'line', smooth: true, data: rows.map((_, index) => { const slice = rows.slice(Math.max(0, index - 2), index + 1); return slice.reduce((sum, [, value]) => sum + value, 0) / slice.length; }), lineStyle: { color: '#315efb', width: 4 }, itemStyle: { color: '#315efb' } }] }, true);
-  const sources = new Map(); items.forEach((item) => { const key = item.description || item.group || 'Outras'; sources.set(key, (sources.get(key) || 0) + valueOf(item, 'income')); });
+  const sources = new Map(); items.forEach((item) => { const key = incomeSource(item); sources.set(key, (sources.get(key) || 0) + valueOf(item, 'income')); });
   const sourceRows = [...sources].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 8);
   chart('incomeSourceChart')?.setOption({ tooltip: { trigger: 'item', formatter: ({ name, value, percent }) => `${esc(name)}<br><b>${money.format(value)}</b> · ${percent}%` }, series: [{ type: 'pie', radius: ['52%', '80%'], padAngle: 3, label: { show: false }, itemStyle: { borderRadius: 9, borderColor: '#fff', borderWidth: 3 }, data: sourceRows }] }, true);
   const concentration = total && sourceRows[0] ? sourceRows[0].value / total * 100 : 0;
@@ -156,8 +211,7 @@ function renderCards(transactions) {
   const view = document.querySelector('#credit-cards'); if (!view) return;
   if (!view.querySelector('#marketCards')) view.querySelector('.section-heading')?.insertAdjacentHTML('afterend', cardsHtml());
   const period = selectedPeriod();
-  const isCard = (item) => item.type === 'expense' && /CARTAO|CREDITO/.test(norm(`${item.paymentMethod || ''} ${item.account || ''} ${item.modality || ''}`));
-  const all = transactions.filter(isCard);
+  const all = transactions.filter(isCardExpense);
   const items = all.filter((item) => inPeriod(item, period));
   const total = items.reduce((sum, item) => sum + valueOf(item, 'expense'), 0);
   const pendingTotal = all.filter(pending).reduce((sum, item) => sum + valueOf(item, 'expense'), 0);
@@ -170,8 +224,8 @@ function renderCards(transactions) {
   set('cardPeriodSpend', money.format(total)); set('cardPurchaseCount', `${number.format(items.length)} compra(s)`); set('cardPendingSpend', money.format(pendingTotal)); set('cardTopName', cardRows[0]?.[0] || '—'); set('cardTopValue', money.format(cardRows[0]?.[1] || 0)); set('cardNextDue', next ? formatDate(next.date) : '—'); set('cardNextDescription', next?.description || 'Sem faturas pendentes'); set('cardRiskScore', usage.toFixed(0));
   const monthly = new Map(); all.forEach((item) => { const key = item.date?.slice(0, 7); if (!key) return; const row = monthly.get(key) || {}; const card = item.paymentMethod || item.account || 'Cartão'; row[card] = (row[card] || 0) + valueOf(item, 'expense'); monthly.set(key, row); });
   const months = [...monthly.keys()].sort(); const cards = [...new Set(all.map((item) => item.paymentMethod || item.account || 'Cartão'))];
-  chart('cardEvolutionChart')?.setOption({ tooltip: { trigger: 'axis', valueFormatter: (value) => money.format(value) }, legend: { bottom: 0, type: 'scroll' }, grid: { left: 58, right: 24, top: 30, bottom: 58 }, xAxis: { type: 'category', data: months.map(monthLabel) }, yAxis: { type: 'value', splitLine: { lineStyle: { color: '#edf3f1' } } }, series: cards.map((cardName) => ({ name: cardName, type: 'line', smooth: true, stack: 'total', areaStyle: {}, emphasis: { focus: 'series' }, data: months.map((month) => monthly.get(month)?.[cardName] || 0) })) }, true);
-  chart('cardShareChart')?.setOption({ tooltip: { trigger: 'item', formatter: ({ name, value, percent }) => `${esc(name)}<br><b>${money.format(value)}</b> · ${percent}%` }, series: [{ type: 'pie', roseType: 'radius', radius: ['25%', '78%'], label: { formatter: '{b}' }, data: cardRows.map(([name, value]) => ({ name, value })) }] }, true);
+  chart('cardEvolutionChart')?.setOption({ tooltip: { trigger: 'axis', valueFormatter: (value) => money.format(value) }, legend: { bottom: 0, type: 'scroll' }, grid: { left: 58, right: 24, top: 30, bottom: 70 }, xAxis: { type: 'category', data: months.map(monthLabel) }, yAxis: { type: 'value', splitLine: { lineStyle: { color: '#edf3f1' } } }, series: cards.map((cardName) => ({ name: cardName, type: 'line', smooth: true, showSymbol: false, stack: 'total', areaStyle: { opacity: 0.08 }, emphasis: { focus: 'series' }, data: months.map((month) => monthly.get(month)?.[cardName] || 0) })) }, true);
+  chart('cardShareChart')?.setOption({ tooltip: { trigger: 'item', formatter: ({ name, value, percent }) => `${esc(name)}<br><b>${money.format(value)}</b> ? ${percent}%` }, legend: { bottom: 0, type: 'scroll' }, series: [{ type: 'pie', roseType: 'radius', radius: ['30%', '72%'], center: ['50%', '43%'], label: { show: false }, labelLine: { show: false }, itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 3 }, data: cardRows.map(([name, value]) => ({ name, value })) }] }, true);
   const insights = [
     { tone: usage > 80 ? 'risk' : usage > 60 ? 'warn' : 'good', title: usage > 80 ? 'Uso elevado' : 'Uso sob controle', text: `${usage.toFixed(0)}% de utilização estimada considerando compromissos pendentes.` },
     { tone: cardRows.length > 3 ? 'warn' : 'good', title: cardRows.length > 3 ? 'Muitos cartões ativos' : 'Carteira simples', text: `${cardRows.length} cartão(ões) movimentado(s) no período.` },
@@ -211,7 +265,8 @@ function renderPending(transactions) {
   set('pendingOverdue', money.format(sum(overdue))); set('pendingOverdueCount', `${number.format(overdue.length)} conta(s)`); set('pending7Days', money.format(sum(next7))); set('pending7DaysCount', `${number.format(next7.length)} conta(s)`); set('pendingTotal', money.format(total)); set('pendingTotalCount', `${number.format(all.length)} compromisso(s)`); set('pendingAfterBalance', money.format(balance - total)); set('pendingVisibleCount', `${number.format(filtered.length)} visível(is)`);
   const byDate = new Map(); filtered.forEach((item) => byDate.set(item.date, (byDate.get(item.date) || 0) + valueOf(item, 'expense'))); const dates = [...byDate.keys()].sort();
   chart('pendingTimelineChart')?.setOption({ tooltip: { trigger: 'axis', valueFormatter: (value) => money.format(value) }, grid: { left: 60, right: 24, top: 28, bottom: 42 }, xAxis: { type: 'category', data: dates.map((date) => formatDate(date).slice(0, 5)) }, yAxis: { type: 'value', splitLine: { lineStyle: { color: '#edf3f1' } } }, series: [{ type: 'bar', data: dates.map((date) => ({ value: byDate.get(date), itemStyle: { color: diffDays(date) < 0 ? '#ef4444' : diffDays(date) <= 7 ? '#f59e0b' : '#315efb', borderRadius: [8, 8, 0, 0] } })), markLine: { silent: true, data: [{ xAxis: formatDate(today).slice(0, 5), name: 'Hoje' }] } }] }, true);
-  const list = document.getElementById('pendingSmartList'); if (list) list.innerHTML = filtered.length ? filtered.map((item) => { const days = diffDays(item.date); const tone = days < 0 ? 'overdue' : days === 0 ? 'today' : days <= 7 ? 'soon' : 'future'; const label = days < 0 ? `${Math.abs(days)} dia(s) em atraso` : days === 0 ? 'Vence hoje' : `Vence em ${days} dia(s)`; return `<article class="${tone}"><div class="pending-date"><strong>${formatDate(item.date).slice(0, 5)}</strong><span>${esc(label)}</span></div><div class="pending-main"><strong>${esc(item.description || 'Despesa')}</strong><span>${esc(item.group || item.category || 'Sem grupo')} · ${esc(item.paymentMethod || item.account || 'Não informado')}</span></div><strong class="pending-value">${money.format(valueOf(item, 'expense'))}</strong></article>`; }).join('') : '<div class="pending-empty"><strong>Nenhum compromisso encontrado</strong><span>Ajuste os filtros ou aproveite que não há contas nesse recorte.</span></div>';
+  const grouped = groupedPendingItems(filtered);
+  const list = document.getElementById('pendingSmartList'); if (list) list.innerHTML = grouped.length ? grouped.map((item) => { const days = diffDays(item.date); const tone = days < 0 ? 'overdue' : days === 0 ? 'today' : days <= 7 ? 'soon' : 'future'; const label = days < 0 ? `${Math.abs(days)} dia(s) em atraso` : days === 0 ? 'Vence hoje' : `Vence em ${days} dia(s)`; return `<article class="${tone} ${item.isCard ? 'card-group' : ''}"><div class="pending-date"><strong>${formatDate(item.date).slice(0, 5)}</strong><span>${esc(label)}</span></div><div class="pending-main"><strong>${esc(item.label)}</strong><span>${esc(item.detail)}</span></div><strong class="pending-value">${money.format(item.total)}</strong></article>`; }).join('') : '<div class="pending-empty"><strong>Nenhum compromisso encontrado</strong><span>Ajuste os filtros ou aproveite que nao ha contas nesse recorte.</span></div>';
 }
 
 function refresh() {

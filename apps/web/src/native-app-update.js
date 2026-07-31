@@ -16,6 +16,10 @@ function loadOptionalUiEnhancements() {
 
       const { initializeUxEnhancements } = await import('./ux-enhancements-safe.js');
       initializeUxEnhancements();
+      if (!document.body.classList.contains('native-mobile')) {
+        const { initializeMarketUpgrades } = await import('./market-upgrades.js');
+        initializeMarketUpgrades();
+      }
 
       await import('./ux-enhancements-hotfix.js');
       await import('./excel-filter-pro.js');
