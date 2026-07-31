@@ -638,6 +638,20 @@
                 <tbody id="transactionRows"></tbody>
               </table>
             </div>
+            <div class="transactions-pagination" aria-label="Paginação dos lançamentos">
+              <span id="transactionsPageInfo">Exibindo 0-0 de 0 lançamento(s)</span>
+              <label>Linhas por página
+                <select id="transactionsPageSize">
+                  <option value="100">100</option>
+                  <option value="200" selected>200</option>
+                  <option value="500">500</option>
+                </select>
+              </label>
+              <div>
+                <button class="button ghost" id="transactionsPreviousPage" type="button">Anterior</button>
+                <button class="button ghost" id="transactionsNextPage" type="button">Próxima</button>
+              </div>
+            </div>
           </section>
         </section>
 
