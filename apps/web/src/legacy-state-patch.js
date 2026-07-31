@@ -4,30 +4,45 @@ function plainObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : null;
 }
 
-function metadataSnapshot(state) {
-  const source = plainObject(state) || {};
-  const { transactions: _transactions, ...metadata } = source;
-  return JSON.stringify(metadata);
+function fingerprint(value) {
+  const serialized = JSON.stringify(value);
+  let first = 2166136261;
+  let second = 2246822507;
+
+  for (let index = 0; index < serialized.length; index += 1) {
+    const code = serialized.charCodeAt(index);
+    first = Math.imul(first ^ code, 16777619);
+    second = Math.imul(second ^ code, 3266489909);
+    second ^= second >>> 13;
+  }
+
+  return `${serialized.length}:${first >>> 0}:${second >>> 0}`;
 }
 
-function transactionSnapshot(item) {
-  return JSON.stringify(item);
+function metadataFingerprint(state) {
+  const source = plainObject(state) || {};
+  const { transactions: _transactions, ...metadata } = source;
+  return fingerprint(metadata);
+}
+
+function transactionFingerprint(item) {
+  return fingerprint(item);
 }
 
 export function createStateSyncBaseline(state) {
   const source = plainObject(state) || {};
   const transactions = Array.isArray(source.transactions) ? source.transactions : [];
-  const transactionSnapshots = new Map();
+  const transactionFingerprints = new Map();
 
   transactions.forEach((item) => {
     const id = typeof item?.id === 'string' ? item.id : '';
     if (!id) return;
-    transactionSnapshots.set(id, transactionSnapshot(item));
+    transactionFingerprints.set(id, transactionFingerprint(item));
   });
 
   return {
-    metadata: metadataSnapshot(source),
-    transactions: transactionSnapshots,
+    metadata: metadataFingerprint(source),
+    transactions: transactionFingerprints,
   };
 }
 
@@ -35,7 +50,7 @@ export function createTransactionPatch(baseline, state, { maxOperations = DEFAUL
   if (!baseline || !(baseline.transactions instanceof Map)) return null;
   const source = plainObject(state);
   if (!source || !Array.isArray(source.transactions)) return null;
-  if (metadataSnapshot(source) !== baseline.metadata) return null;
+  if (metadataFingerprint(source) !== baseline.metadata) return null;
 
   const currentIds = new Set();
   const upserts = [];
@@ -44,7 +59,7 @@ export function createTransactionPatch(baseline, state, { maxOperations = DEFAUL
     const id = typeof item?.id === 'string' ? item.id : '';
     if (!id || currentIds.has(id)) return null;
     currentIds.add(id);
-    if (baseline.transactions.get(id) !== transactionSnapshot(item)) upserts.push(item);
+    if (baseline.transactions.get(id) !== transactionFingerprint(item)) upserts.push(item);
     if (upserts.length > maxOperations) return null;
   }
 
