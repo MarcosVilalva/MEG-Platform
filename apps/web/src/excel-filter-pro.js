@@ -193,19 +193,24 @@ function ensureFilterButtons(table) {
   table.classList.add('meg-professional-grid');
   const headers = table.querySelectorAll('thead tr:first-child th');
   headers.forEach((header, index) => {
-    if (index === headers.length - 1 || header.querySelector('.meg-grid-filter-button')) return;
+    if (index === headers.length - 1) return;
+
     const title = HEADER_LABELS[index] || normalize(header.textContent);
+    const existingButton = header.querySelector('.meg-grid-filter-button');
+
     header.replaceChildren();
+
     const label = document.createElement('span');
     label.className = 'meg-grid-header-label';
     label.textContent = title;
-    const button = document.createElement('button');
+
+    const button = existingButton || document.createElement('button');
     button.type = 'button';
     button.className = 'meg-grid-filter-button';
     button.dataset.columnIndex = String(index);
     button.setAttribute('aria-label', `Filtrar ${title}`);
     button.innerHTML = '<span aria-hidden="true">▾</span>';
-    button.addEventListener('click', (event) => { event.stopPropagation(); openFilter(table, index, button); });
+
     header.append(label, button);
   });
 }
@@ -244,6 +249,22 @@ document.addEventListener('pointerdown', (event) => {
   if (event.target.closest('.meg-excel-filter-popover') || event.target.closest('.meg-grid-filter-button')) return;
   closePopover();
 }, true);
+
+document.addEventListener('click', (event) => {
+  const button = event.target.closest?.('.meg-grid-filter-button');
+  if (!button) return;
+
+  const table = button.closest('table');
+  if (!table?.matches?.(TABLE_SELECTOR)) return;
+
+  const index = Number(button.dataset.columnIndex);
+  if (!Number.isFinite(index)) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  openFilter(table, index, button);
+});
+
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closePopover(); });
 window.addEventListener('resize', () => runtime.popover && positionPopover(runtime.popover, document.querySelector('.meg-grid-filter-button.is-open')));
 const observer = new MutationObserver(() => window.requestAnimationFrame(enhanceTable));
