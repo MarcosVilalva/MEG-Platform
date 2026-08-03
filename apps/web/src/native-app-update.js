@@ -22,6 +22,9 @@ export function initializeStableUiFeatures() {
           import('./ongoing-card-installments.js')
         ]);
         initializeStableGridFilters();
+        document.querySelector('#clearCreditCardFiltersBtn')?.addEventListener('click', () => {
+          window.MEG_STABLE_GRID_FILTERS?.clearCardFilters();
+        });
         document.body.dataset.webRuntime = 'stable';
         return;
       }
