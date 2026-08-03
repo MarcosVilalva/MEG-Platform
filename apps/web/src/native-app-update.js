@@ -4,8 +4,7 @@ let optionalUiPromise = null;
 
 /**
  * Carrega recursos complementares somente depois que o aplicativo principal está pronto.
- * No navegador, mantém apenas a funcionalidade de parcelamentos em andamento e evita
- * a antiga pilha de overlays, observers e renderizações paralelas.
+ * No navegador, mantém apenas recursos leves e isolados das telas financeiras.
  */
 export function initializeStableUiFeatures() {
   if (optionalUiPromise) return optionalUiPromise;
@@ -14,8 +13,15 @@ export function initializeStableUiFeatures() {
     try {
       const nativeMobile = document.body.classList.contains('native-mobile');
       if (!nativeMobile) {
-        await import('./ongoing-card-installments.css');
-        await import('./ongoing-card-installments.js');
+        await Promise.all([
+          import('./ongoing-card-installments.css'),
+          import('./stable-grid-filters.css')
+        ]);
+        const [{ initializeStableGridFilters }] = await Promise.all([
+          import('./stable-grid-filters.js'),
+          import('./ongoing-card-installments.js')
+        ]);
+        initializeStableGridFilters();
         document.body.dataset.webRuntime = 'stable';
         return;
       }
