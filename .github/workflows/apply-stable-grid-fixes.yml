@@ -1,0 +1,106 @@
+name: Concluir filtros estaveis das grades
+
+on:
+  push:
+    branches:
+      - agent/stable-header-grid-filters
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Corrigir integracao e registrar testes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          path = Path('apps/web/src/stable-grid-filters.js')
+          text = path.read_text()
+          old_apply = """    popover.querySelector('[data-apply]').addEventListener('click', () => {
+              sourceOptions.forEach((option) => {
+                const next = working.has(option.value);
+                if (option.checked === next) return;
+                option.checked = next;
+                option.dispatchEvent(new Event('change', { bubbles: true }));
+              });"""
+          new_apply = """    const applyWorkingSelection = (selectedValues) => {
+              values.forEach(({ value }) => {
+                const option = [...source.querySelectorAll('[data-multi-filter-option]')].find((item) => item.value === value);
+                if (!option) return;
+                const next = selectedValues.has(value);
+                if (option.checked === next) return;
+                option.checked = next;
+                option.dispatchEvent(new Event('change', { bubbles: true }));
+              });
+            };
+            popover.querySelector('[data-apply]').addEventListener('click', () => {
+              applyWorkingSelection(working);"""
+          old_clear = """    popover.querySelector('[data-clear]').addEventListener('click', () => {
+              sourceOptions.forEach((option) => {
+                if (!option.checked) return;
+                option.checked = false;
+                option.dispatchEvent(new Event('change', { bubbles: true }));
+              });"""
+          new_clear = """    popover.querySelector('[data-clear]').addEventListener('click', () => {
+              applyWorkingSelection(new Set());"""
+          old_sort = """  if (cardState.sort) {
+            const { index, direction } = cardState.sort;
+            const config = CARD_COLUMNS[index];
+            rows.sort((a, b) => {
+              const result = compareCardValues(cardCellValue(a, index), cardCellValue(b, index), config);
+              return direction === 'asc' ? result : -result;
+            }).forEach((row) => tbody.append(row));
+          }
+          """
+          new_sort = """  if (cardState.sort) {
+            const { index, direction } = cardState.sort;
+            const config = CARD_COLUMNS[index];
+            const sortedRows = [...rows].sort((a, b) => {
+              const result = compareCardValues(cardCellValue(a, index), cardCellValue(b, index), config);
+              return direction === 'asc' ? result : -result;
+            });
+            if (sortedRows.some((row, position) => row !== rows[position])) {
+              const fragment = document.createDocumentFragment();
+              sortedRows.forEach((row) => fragment.append(row));
+              tbody.append(fragment);
+            }
+          }
+          """
+          for old, new, label in [(old_apply, new_apply, 'multi apply'), (old_clear, new_clear, 'multi clear'), (old_sort, new_sort, 'stable sort')]:
+              if old not in text:
+                  raise SystemExit(f'Trecho não encontrado: {label}')
+              text = text.replace(old, new, 1)
+          path.write_text(text)
+
+          package_path = Path('package.json')
+          package = json.loads(package_path.read_text())
+          scripts = package.setdefault('scripts', {})
+          scripts['test:stable-grid-filters'] = 'node apps/web/src/stable-grid-filters.test.js'
+          current = scripts['test']
+          if 'test:stable-grid-filters' not in current:
+              scripts['test'] = current + ' test:stable-grid-filters'
+          package_path.write_text(json.dumps(package, ensure_ascii=False, indent=2) + '\n')
+          PY
+          rm -f .github/workflows/export-stable-grid-source.yml
+          rm -f .github/workflows/apply-stable-grid-fixes.yml
+      - name: Validar arquivos
+        run: |
+          node --check apps/web/src/stable-grid-filters.js
+          node --check apps/web/src/native-app-update.js
+          node apps/web/src/stable-grid-filters.test.js
+          node apps/web/src/web-runtime-stability.test.js
+      - name: Gravar resultado
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(web): concluir filtros estaveis nos cabecalhos" || exit 0
+          git push
