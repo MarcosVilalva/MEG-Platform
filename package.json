@@ -30,6 +30,7 @@
     "test:legacy-finance": "node apps/web/src/legacy-finance.test.js",
     "test:legacy-state-patch": "node apps/web/src/legacy-state-patch.test.js",
     "test:transaction-editor": "node apps/web/src/transaction-editor.test.js",
+    "test:web-runtime-stability": "node apps/web/src/web-runtime-stability.test.js",
     "lint": "echo \"Lint configurado para próxima sprint\"",
     "dev:web": "npm --workspace apps/web run dev",
     "dev:api": "npm --workspace apps/api run dev",
@@ -45,8 +46,7 @@
     "db:import:basemeg": "npm --workspace packages/database run db:import:basemeg --",
     "phoenix:setup": "npm install && npm run db:generate && npm run db:push && npm run db:seed",
     "android:sync": "npx cap sync android",
-    "android:open": "npx cap open android",
-    "test:web-runtime-stability": "node apps/web/src/web-runtime-stability.test.js"
+    "android:open": "npx cap open android"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
