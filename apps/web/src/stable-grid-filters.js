@@ -29,11 +29,7 @@ const CARD_COLUMNS = [
   null,
 ];
 
-const cardState = {
-  filters: new Map(),
-  sort: null,
-};
-
+const cardState = { filters: new Map(), sort: null };
 let activePopover = null;
 let activeButton = null;
 let initialized = false;
@@ -191,6 +187,17 @@ function transactionSort(direction, config) {
   select.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
+function applyTransactionMultiSelection(source, values, selectedValues) {
+  values.forEach(({ value }) => {
+    const option = [...source.querySelectorAll('[data-multi-filter-option]')].find((item) => item.value === value);
+    if (!option) return;
+    const next = selectedValues.has(value);
+    if (option.checked === next) return;
+    option.checked = next;
+    option.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
+
 function openTransactionFilter(config, button) {
   const source = transactionSource(config);
   if (!source) return;
@@ -200,8 +207,7 @@ function openTransactionFilter(config, button) {
   const body = popover.querySelector('.meg-stable-filter-body');
 
   if (config.kind === 'multi') {
-    const sourceOptions = [...source.querySelectorAll('[data-multi-filter-option]')];
-    const values = sourceOptions.map((option) => ({
+    const values = [...source.querySelectorAll('[data-multi-filter-option]')].map((option) => ({
       value: option.value,
       label: option.closest('label')?.querySelector('span')?.textContent?.trim() || option.value,
       checked: option.checked,
@@ -238,21 +244,12 @@ function openTransactionFilter(config, button) {
       render();
     });
     popover.querySelector('[data-apply]').addEventListener('click', () => {
-      sourceOptions.forEach((option) => {
-        const next = working.has(option.value);
-        if (option.checked === next) return;
-        option.checked = next;
-        option.dispatchEvent(new Event('change', { bubbles: true }));
-      });
+      applyTransactionMultiSelection(source, values, working);
       closePopover();
       requestAnimationFrame(syncTransactionButtons);
     });
     popover.querySelector('[data-clear]').addEventListener('click', () => {
-      sourceOptions.forEach((option) => {
-        if (!option.checked) return;
-        option.checked = false;
-        option.dispatchEvent(new Event('change', { bubbles: true }));
-      });
+      applyTransactionMultiSelection(source, values, new Set());
       closePopover();
       requestAnimationFrame(syncTransactionButtons);
     });
@@ -321,16 +318,25 @@ function applyCardFilters() {
   if (cardState.sort) {
     const { index, direction } = cardState.sort;
     const config = CARD_COLUMNS[index];
-    rows.sort((a, b) => {
+    const sortedRows = [...rows].sort((a, b) => {
       const result = compareCardValues(cardCellValue(a, index), cardCellValue(b, index), config);
       return direction === 'asc' ? result : -result;
-    }).forEach((row) => tbody.append(row));
+    });
+    if (sortedRows.some((row, position) => row !== rows[position])) {
+      const fragment = document.createDocumentFragment();
+      sortedRows.forEach((row) => fragment.append(row));
+      tbody.append(fragment);
+    }
   }
   const visibleRows = rows.filter((row) => !row.hidden);
   const total = visibleRows.reduce((sum, row) => sum + parseGridNumber(cardCellValue(row, 5)), 0);
-  const open = visibleRows.filter((row) => normalizeGridText(cardCellValue(row, 6)).includes('ABERTO')).reduce((sum, row) => sum + parseGridNumber(cardCellValue(row, 5)), 0);
+  const open = visibleRows
+    .filter((row) => normalizeGridText(cardCellValue(row, 6)).includes('ABERTO'))
+    .reduce((sum, row) => sum + parseGridNumber(cardCellValue(row, 5)), 0);
   const summary = document.querySelector('#creditInvoiceSummary');
-  if (summary) summary.textContent = `${visibleRows.length} de ${rows.length} compra(s) · ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} · ${open.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} em aberto`;
+  if (summary) {
+    summary.textContent = `${visibleRows.length} de ${rows.length} compra(s) · ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} · ${open.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} em aberto`;
+  }
   const table = document.querySelector('#credit-cards .credit-invoice-table');
   table?.querySelectorAll('.meg-stable-filter-button').forEach((button) => {
     const index = Number(button.dataset.column);
@@ -384,7 +390,9 @@ function openCardFilter(config, index, button) {
     };
     const render = () => {
       const visible = visibleValues();
-      optionsBox.innerHTML = visible.length ? visible.map(([value, label]) => `<label><input type="checkbox" value="${escapeHtml(value)}" ${working.has(value) ? 'checked' : ''}><span title="${escapeHtml(label)}">${escapeHtml(label)}</span></label>`).join('') : '<p class="meg-stable-filter-empty">Nenhum valor encontrado.</p>';
+      optionsBox.innerHTML = visible.length
+        ? visible.map(([value, label]) => `<label><input type="checkbox" value="${escapeHtml(value)}" ${working.has(value) ? 'checked' : ''}><span title="${escapeHtml(label)}">${escapeHtml(label)}</span></label>`).join('')
+        : '<p class="meg-stable-filter-empty">Nenhum valor encontrado.</p>';
       selectAll.checked = visible.length > 0 && visible.every(([value]) => working.has(value));
       selectAll.indeterminate = visible.some(([value]) => working.has(value)) && !selectAll.checked;
     };
