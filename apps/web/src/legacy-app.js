@@ -3,6 +3,7 @@ import { cardStatementDueDate, installmentDueDate, splitInstallmentAmounts } fro
 import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOfMonth } from "./calendar-date.js";
 import { buildCardForecast, resolveCardIdentity } from "./legacy-card-identity.js";
 import { GLOBAL_FINANCIAL_SCHEMA_VERSION, isBenefitTransaction, migrateGlobalFinancialState, upsertOpeningBalanceTransaction } from "./legacy-financial-accounts.js";
+import { createTransactionEditor, replaceSelectOptions } from "./transaction-editor.js";
 
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
 
@@ -561,6 +562,20 @@ const els = {
   cardCatalogList: document.querySelector("#cardCatalogList"),
   cardCatalogCount: document.querySelector("#cardCatalogCount"),
 };
+
+const transactionEditor = createTransactionEditor({
+  dialog: els.dialog,
+  form: els.form,
+  appShell: els.appShell,
+  comboboxSelects: [
+    els.modalityInput,
+    els.paymentMethodInput,
+    els.financialAccountInput,
+    els.expenseClassInput,
+    els.groupInput,
+  ],
+  segmentedSelects: [els.transactionType, els.statusInput],
+});
 
 function loadState() {
   try {
@@ -2095,8 +2110,13 @@ function refreshPaymentMethodOptions(preferred = "") {
     })
     .map((item) => item.description)
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
-  els.paymentMethodInput.innerHTML = `${modality === "CREDITO" ? '<option value="">Selecione o cart&atilde;o</option>' : ""}${allowed.map((account) => `<option value="${escapeHtml(account)}">${escapeHtml(account)}</option>`).join("")}`;
-  if (allowed.includes(preferred)) els.paymentMethodInput.value = preferred;
+  const preferredValue = allowed.includes(preferred) ? preferred : modality === "CREDITO" ? "" : allowed[0] || "";
+  const entries = [
+    ...(modality === "CREDITO" ? [{ value: "", label: "Selecione o cartão", disabled: true }] : []),
+    ...allowed.map((value) => ({ value, label: value })),
+  ];
+  replaceSelectOptions(els.paymentMethodInput, entries, preferredValue);
+  transactionEditor.refreshAll();
 }
 
 function renderCurrentSituation() {
@@ -3773,22 +3793,25 @@ function renderSettings() {
 function renderDatalists(preferred = {}) {
   const currentGroup = preferred.group ?? els.groupInput.value;
   const groups = sortedCategories(currentGroup);
-  els.groupInput.innerHTML = groups.map((group) => `<option value="${escapeHtml(group)}">${escapeHtml(group)}</option>`).join("");
-  if (groups.includes(currentGroup)) els.groupInput.value = currentGroup;
+  replaceSelectOptions(els.groupInput, groups, currentGroup);
+
   const currentExpenseClass = preferred.expenseClass ?? els.expenseClassInput.value;
   const expenseClasses = sortedExpenseClasses(currentExpenseClass);
-  els.expenseClassInput.innerHTML = expenseClasses.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
-  if (expenseClasses.includes(currentExpenseClass)) els.expenseClassInput.value = currentExpenseClass;
+  replaceSelectOptions(els.expenseClassInput, expenseClasses, currentExpenseClass);
+
   const currentPayment = preferred.paymentMethod ?? els.paymentMethodInput.value;
   const currentModality = preferred.modality ?? els.modalityInput.value;
   const modalities = sortedModalities(currentModality);
-  els.modalityInput.innerHTML = modalities.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
-  if (modalities.includes(currentModality)) els.modalityInput.value = currentModality;
+  replaceSelectOptions(els.modalityInput, modalities, currentModality);
   refreshPaymentMethodOptions(currentPayment);
   refreshFinancialAccountOptions(preferred.financialAccountId ?? els.financialAccountInput?.value);
-  refreshFinancialAccountSubtypeOptions();
-  refreshPaymentCatalogModalityOptions(editingPaymentMethod ? els.newPaymentModalityInput.value : "");
+
+  if (selectedView === "catalogs") {
+    refreshFinancialAccountSubtypeOptions();
+    refreshPaymentCatalogModalityOptions(editingPaymentMethod ? els.newPaymentModalityInput.value : "");
+  }
   if (els.dialog?.open && document.activeElement === els.descriptionInput) renderDescriptionSuggestions();
+  transactionEditor.refreshAll();
 }
 
 function descriptionHistory() {
@@ -3828,7 +3851,7 @@ function matchingDescriptions(query = els.descriptionInput.value) {
     })
     .filter((item) => !normalizedQuery || item.score >= 3000)
     .sort((a, b) => b.score - a.score || a.description.localeCompare(b.description, "pt-BR"))
-    .slice(0, 40);
+    .slice(0, 20);
 }
 
 function closeDescriptionSuggestions() {
@@ -3867,16 +3890,17 @@ function setActiveDescriptionSuggestion(index) {
 function renderDescriptionSuggestions() {
   descriptionSuggestionItems = matchingDescriptions();
   activeDescriptionSuggestion = -1;
-  els.descriptionSuggestions.innerHTML = "";
   if (!descriptionSuggestionItems.length) {
     closeDescriptionSuggestions();
     return;
   }
+  const fragment = document.createDocumentFragment();
   descriptionSuggestionItems.forEach((item, index) => {
     const option = document.createElement("button");
     option.type = "button";
     option.id = `description-suggestion-${index}`;
     option.className = "autocomplete-option";
+    option.dataset.descriptionSuggestionIndex = String(index);
     option.setAttribute("role", "option");
     option.setAttribute("aria-selected", "false");
     const label = document.createElement("span");
@@ -3884,10 +3908,9 @@ function renderDescriptionSuggestions() {
     const useCount = document.createElement("small");
     useCount.textContent = item.count > 1 ? `${item.count} usos` : "Usado anteriormente";
     option.append(label, useCount);
-    option.addEventListener("mousedown", (event) => event.preventDefault());
-    option.addEventListener("click", () => selectDescriptionSuggestion(index));
-    els.descriptionSuggestions.append(option);
+    fragment.append(option);
   });
+  els.descriptionSuggestions.replaceChildren(fragment);
   els.descriptionSuggestions.classList.remove("hidden");
   els.descriptionInput.setAttribute("aria-expanded", "true");
 }
@@ -4413,6 +4436,7 @@ function syncAmountFields() {
   syncCardDates();
   syncInstallmentFields();
   if (document.activeElement === els.descriptionInput) renderDescriptionSuggestions();
+  transactionEditor.refreshAll();
 }
 
 function isInstallmentModality() {
@@ -4535,8 +4559,16 @@ function suggestedFinancialAccountId() {
 function refreshFinancialAccountOptions(preferred = els.financialAccountInput?.value) {
   if (!els.financialAccountInput) return;
   const accounts = (state.catalogs?.accounts || []).filter((account) => account.isActive !== false || account.id === preferred);
-  els.financialAccountInput.innerHTML = accounts.map((account) => `<option value="${escapeHtml(account.id)}">${escapeHtml(account.name)} - ${account.type === "BENEFIT" ? "Beneficio" : "Monetaria"}${account.isActive === false ? " (desativada)" : ""}</option>`).join("");
-  els.financialAccountInput.value = accounts.some((account) => account.id === preferred) ? preferred : suggestedFinancialAccountId();
+  const selected = accounts.some((account) => account.id === preferred) ? preferred : suggestedFinancialAccountId();
+  replaceSelectOptions(
+    els.financialAccountInput,
+    accounts.map((account) => ({
+      value: account.id,
+      label: `${account.name} - ${account.type === "BENEFIT" ? "Benefício" : "Monetária"}${account.isActive === false ? " (desativada)" : ""}`,
+    })),
+    selected,
+  );
+  transactionEditor.refreshAll();
 }
 
 function refreshFinancialAccountSubtypeOptions(preferred = els.newFinancialAccountSubtypeInput?.value) {
@@ -4561,6 +4593,7 @@ function syncPaymentModality() {
   syncFinancialAccountSelection({ force: true });
   syncCardDates({ recalculate: true });
   syncInstallmentFields();
+  transactionEditor.refreshAll();
 }
 
 function syncModalityPaymentOptions() {
@@ -4569,6 +4602,7 @@ function syncModalityPaymentOptions() {
   syncFinancialAccountSelection({ force: true });
   syncCardDates({ recalculate: true });
   syncInstallmentFields();
+  transactionEditor.refreshAll();
 }
 
 function openTransactionDialog(item = null) {
@@ -4615,7 +4649,8 @@ function openTransactionDialog(item = null) {
   syncAmountFields();
   document.body.classList.add("transaction-modal-open");
   els.dialog.showModal();
-  requestAnimationFrame(() => els.transactionType.focus({ preventScroll: true }));
+  transactionEditor.open();
+  requestAnimationFrame(() => transactionEditor.focusPrimary());
 }
 
 function updateInstallmentSeries(previous, payload) {
@@ -4671,6 +4706,11 @@ function updateInstallmentSeries(previous, payload) {
   return targets.length;
 }
 
+function renderAfterTransactionMutation() {
+  renderPeriodControls();
+  scheduleActiveViewRender();
+}
+
 function saveTransaction(event) {
   event.preventDefault();
   const id = els.transactionId.value || crypto.randomUUID();
@@ -4719,7 +4759,7 @@ function saveTransaction(event) {
       saveState();
       els.dialog.close();
       showToast("Parcelamento criado", `${installments.length} parcela(s) geradas até ${formatDate(installments.at(-1).date)}`, "success");
-      render();
+      renderAfterTransactionMutation();
       return;
     } catch (error) {
       showToast("Revise o parcelamento", error.message, "danger");
@@ -4749,7 +4789,7 @@ function saveTransaction(event) {
     updatedInstallments ? `${updatedInstallments} parcela(s) pendente(s) recalculadas com segurança.` : payload.description + " · " + money.format(payload.amount),
     "success"
   );
-  render();
+  renderAfterTransactionMutation();
 }
 
 function deleteTransaction() {
@@ -4761,7 +4801,7 @@ function deleteTransaction() {
   saveState();
   els.dialog.close();
   showToast("Lançamento excluído", removed ? removed.description : "O lançamento foi removido.", "success");
-  render();
+  renderAfterTransactionMutation();
 }
 
 function togglePaid(id, paid) {
@@ -5648,6 +5688,12 @@ els.descriptionInput.addEventListener("input", renderDescriptionSuggestionsDebou
 els.descriptionInput.addEventListener("focus", renderDescriptionSuggestions);
 els.descriptionInput.addEventListener("keydown", handleDescriptionKeydown);
 els.descriptionInput.addEventListener("blur", () => window.setTimeout(closeDescriptionSuggestions, 120));
+els.descriptionSuggestions.addEventListener("pointerdown", (event) => event.preventDefault());
+els.descriptionSuggestions.addEventListener("click", (event) => {
+  const option = event.target.closest("[data-description-suggestion-index]");
+  if (!option) return;
+  selectDescriptionSuggestion(Number(option.dataset.descriptionSuggestionIndex));
+});
 els.paymentMethodInput.addEventListener("change", syncPaymentModality);
 els.modalityInput.addEventListener("change", syncModalityPaymentOptions);
 els.financialAccountInput.addEventListener("change", () => syncFinancialAccountSelection());
@@ -5665,6 +5711,7 @@ els.cancelDialogBtn.addEventListener("click", () => {
 });
 els.dialog.addEventListener("close", () => {
   closeDescriptionSuggestions();
+  transactionEditor.close();
   document.body.classList.remove("transaction-modal-open");
   activeDialogTransaction = null;
   activeDialogInstallmentSeries = [];
