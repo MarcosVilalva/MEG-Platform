@@ -1,0 +1,267 @@
+/* Filtros leves de cabeçalho para as grades web. Sem animações, blur ou observadores globais. */
+body:not(.native-mobile) .meg-header-filters-ready thead tr:first-child th {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  min-height: 48px;
+  padding-right: 36px !important;
+  background: #edf5f2;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+body:not(.native-mobile) .meg-header-filters-ready .column-filter-row {
+  display: none !important;
+}
+
+.meg-stable-header-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 800;
+}
+
+.meg-stable-filter-button {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #49645d;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.meg-stable-filter-button:hover,
+.meg-stable-filter-button.is-open {
+  border-color: #afcbc3;
+  background: #dcece7;
+}
+
+.meg-stable-filter-button.is-filtered {
+  border-color: #087a67;
+  background: #087a67;
+  color: #fff;
+}
+
+.meg-stable-filter-button.is-filtered::after {
+  content: attr(data-count);
+  position: absolute;
+  top: -7px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #e89012;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.meg-stable-filter-popover {
+  position: fixed;
+  z-index: 10000;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  max-height: min(500px, calc(100vh - 20px));
+  overflow: hidden;
+  border: 1px solid #bed1cb;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(10, 50, 42, .20);
+  color: #183832;
+  font-size: 13px;
+}
+
+.meg-stable-filter-popover > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 14px 11px;
+  border-bottom: 1px solid #e2ece9;
+}
+
+.meg-stable-filter-popover > header div {
+  display: grid;
+  gap: 2px;
+}
+
+.meg-stable-filter-popover > header small {
+  color: #087a67;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .11em;
+}
+
+.meg-stable-filter-popover > header strong {
+  font-size: 15px;
+}
+
+.meg-stable-filter-popover > header button {
+  width: 29px;
+  height: 29px;
+  border: 0;
+  border-radius: 7px;
+  background: #edf4f2;
+  color: #46615a;
+  font-size: 19px;
+  cursor: pointer;
+}
+
+.meg-stable-filter-sort {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  padding: 10px 14px 0;
+}
+
+.meg-stable-filter-sort button,
+.meg-stable-filter-popover footer button {
+  min-height: 36px;
+  border: 1px solid #c9dad5;
+  border-radius: 8px;
+  background: #fff;
+  color: #31544c;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.meg-stable-filter-sort button:hover,
+.meg-stable-filter-popover footer button:hover {
+  background: #edf7f4;
+}
+
+.meg-stable-filter-body {
+  min-height: 0;
+  overflow: hidden;
+  padding: 11px 14px;
+}
+
+.meg-stable-filter-search,
+.meg-stable-single-filter input,
+.meg-stable-range input {
+  width: 100%;
+  min-height: 39px;
+  padding: 0 10px;
+  border: 1px solid #c9dad5;
+  border-radius: 8px;
+  background: #fbfdfc;
+  color: #173832;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.meg-stable-filter-search:focus,
+.meg-stable-single-filter input:focus,
+.meg-stable-range input:focus {
+  outline: 2px solid rgba(8, 122, 103, .16);
+  border-color: #087a67;
+  background: #fff;
+}
+
+.meg-stable-select-all,
+.meg-stable-filter-options label {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  padding: 5px 7px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.meg-stable-select-all {
+  margin-top: 8px;
+  border-bottom: 1px solid #e4eeeb;
+  border-radius: 0;
+  font-weight: 800;
+}
+
+.meg-stable-filter-options {
+  max-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-top: 4px;
+  scrollbar-width: thin;
+}
+
+.meg-stable-filter-options label:hover {
+  background: #eef7f4;
+}
+
+.meg-stable-filter-options span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meg-stable-select-all input,
+.meg-stable-filter-options input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #087a67;
+}
+
+.meg-stable-single-filter,
+.meg-stable-range label {
+  display: grid;
+  gap: 6px;
+  color: #4e655f;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.meg-stable-range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.meg-stable-filter-empty {
+  margin: 0;
+  padding: 24px 8px;
+  color: #72847f;
+  text-align: center;
+}
+
+.meg-stable-filter-popover > footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 7px;
+  padding: 11px 14px 14px;
+  border-top: 1px solid #e2ece9;
+  background: #fafdfc;
+}
+
+.meg-stable-filter-popover footer .primary {
+  border-color: #087a67;
+  background: #087a67;
+  color: #fff;
+}
+
+#credit-cards .credit-invoice-table tr[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  body:not(.native-mobile) .meg-header-filters-ready .meg-stable-filter-button {
+    width: 28px;
+    height: 28px;
+  }
+  .meg-stable-range {
+    grid-template-columns: 1fr;
+  }
+}
