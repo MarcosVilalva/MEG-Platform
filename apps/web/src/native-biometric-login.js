@@ -1,9 +1,14 @@
-import { Capacitor, registerPlugin } from '@capacitor/core';
-
-const BiometricAuth = registerPlugin('BiometricAuth');
+let biometricPluginPromise = null;
 
 function isNativeAndroid() {
-  return Capacitor?.isNativePlatform?.() && Capacitor.getPlatform?.() === 'android';
+  const capacitor = window.Capacitor;
+  return Boolean(capacitor?.isNativePlatform?.() && capacitor.getPlatform?.() === 'android');
+}
+
+async function getBiometricAuth() {
+  if (!isNativeAndroid()) return null;
+  biometricPluginPromise ||= import('@capacitor/core').then(({ registerPlugin }) => registerPlugin('BiometricAuth'));
+  return biometricPluginPromise;
 }
 
 async function waitForApiReadiness() {
@@ -71,7 +76,8 @@ function beginAuthenticatedLoadingTransition() {
 export async function getBiometricLoginStatus() {
   if (!isNativeAndroid()) return { available: false, enabled: false, reason: 'NOT_NATIVE_ANDROID' };
   try {
-    return await BiometricAuth.isAvailable();
+    const BiometricAuth = await getBiometricAuth();
+    return BiometricAuth ? await BiometricAuth.isAvailable() : { available: false, enabled: false, reason: 'PLUGIN_UNAVAILABLE' };
   } catch {
     return { available: false, enabled: false, reason: 'PLUGIN_UNAVAILABLE' };
   }
@@ -80,7 +86,8 @@ export async function getBiometricLoginStatus() {
 export async function saveBiometricLogin({ email, password }) {
   if (!isNativeAndroid() || !email || !password) return { saved: false };
   try {
-    return await BiometricAuth.saveCredentials({ email, password });
+    const BiometricAuth = await getBiometricAuth();
+    return BiometricAuth ? await BiometricAuth.saveCredentials({ email, password }) : { saved: false };
   } catch {
     return { saved: false };
   }
@@ -90,6 +97,8 @@ export async function requestBiometricLogin() {
   if (!isNativeAndroid()) return null;
   await waitForApiReadiness();
   try {
+    const BiometricAuth = await getBiometricAuth();
+    if (!BiometricAuth) return null;
     const credentials = await BiometricAuth.authenticate({
       title: 'Entrar no MEG Finanças',
       subtitle: 'Confirme sua identidade para acessar sua conta'
@@ -105,6 +114,7 @@ export async function requestBiometricLogin() {
 export async function clearBiometricLogin() {
   if (!isNativeAndroid()) return;
   try {
-    await BiometricAuth.clear();
+    const BiometricAuth = await getBiometricAuth();
+    await BiometricAuth?.clear();
   } catch {}
 }

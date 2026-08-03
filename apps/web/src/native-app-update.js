@@ -1,62 +1,68 @@
 import './startup-api-readiness.js';
-import { Capacitor, registerPlugin } from '@capacitor/core';
 
-function loadOptionalUiEnhancements() {
-  const start = async () => {
+let optionalUiPromise = null;
+
+/**
+ * Carrega recursos complementares somente depois que o aplicativo principal está pronto.
+ * No navegador, mantém apenas a funcionalidade de parcelamentos em andamento e evita
+ * a antiga pilha de overlays, observers e renderizações paralelas.
+ */
+export function initializeStableUiFeatures() {
+  if (optionalUiPromise) return optionalUiPromise;
+
+  optionalUiPromise = (async () => {
     try {
       const nativeMobile = document.body.classList.contains('native-mobile');
-      const sharedStyles = [
+      if (!nativeMobile) {
+        await import('./ongoing-card-installments.css');
+        await import('./ongoing-card-installments.js');
+        document.body.dataset.webRuntime = 'stable';
+        return;
+      }
+
+      await Promise.all([
         import('./ux-enhancements.css'),
         import('./transaction-grid-stability.css'),
         import('./mobile-transactions.css'),
         import('./ongoing-card-installments.css')
-      ];
-      const webOnlyStyles = nativeMobile ? [] : [
-        import('./market-upgrades.css'),
-        import('./excel-filter-pro.css'),
-        import('./finance-workspace-modernization.css')
-      ];
-      await Promise.all([...sharedStyles, ...webOnlyStyles]);
+      ]);
 
       const { initializeUxEnhancements } = await import('./ux-enhancements-safe.js');
       initializeUxEnhancements();
-      if (!nativeMobile) {
-        const { initializeMarketUpgrades } = await import('./market-upgrades.js');
-        initializeMarketUpgrades();
-      }
-
       await import('./ux-enhancements-hotfix.js');
       await import('./transaction-grid-stability.js');
       await import('./mobile-transactions.js');
-      if (!nativeMobile) {
-        await import('./excel-filter-pro.js');
-        await import('./finance-workspace-modernization.js');
-      }
       await import('./pending-monetary-balance.js');
       await import('./transaction-status-guard.js');
       await import('./transaction-classification-defaults.js');
       await import('./fast-logout.js');
       await import('./ongoing-card-installments.js');
     } catch (cause) {
+      optionalUiPromise = null;
       console.error('MEG optional UI enhancements failed to load', cause);
     }
-  };
+  })();
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start, { once: true });
-  } else {
-    window.setTimeout(start, 0);
-  }
+  return optionalUiPromise;
 }
 
-loadOptionalUiEnhancements();
+let appUpdaterPromise = null;
 
-const AppUpdater = registerPlugin('AppUpdater');
+function isNativeAndroid() {
+  const capacitor = window.Capacitor;
+  return Boolean(capacitor?.isNativePlatform?.() && capacitor.getPlatform?.() === 'android');
+}
+
+async function getAppUpdater() {
+  if (!isNativeAndroid()) return null;
+  appUpdaterPromise ||= import('@capacitor/core').then(({ registerPlugin }) => registerPlugin('AppUpdater'));
+  return appUpdaterPromise;
+}
 const VERSION_URL = 'https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json';
 const DISMISSED_KEY = 'meg-dismissed-app-version';
 let startupCheckPromise = null;
 
-function updateDialog(release, installed) {
+function updateDialog(release, installed, AppUpdater) {
   if (document.querySelector('#appUpdateDialog')) return;
   const dialog = document.createElement('dialog');
   dialog.id = 'appUpdateDialog';
@@ -108,8 +114,10 @@ function updateDialog(release, installed) {
 }
 
 export async function checkForAppUpdate({ force = false } = {}) {
-  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return { available: false };
+  if (!isNativeAndroid()) return { available: false };
   try {
+    const AppUpdater = await getAppUpdater();
+    if (!AppUpdater) return { available: false };
     const [installed, response] = await Promise.all([
       AppUpdater.getInfo(),
       fetch(`${VERSION_URL}?t=${Date.now()}`, { cache: 'no-store' })
@@ -118,7 +126,7 @@ export async function checkForAppUpdate({ force = false } = {}) {
     const release = await response.json();
     const available = Number(release.versionCode) > Number(installed.versionCode);
     const dismissed = sessionStorage.getItem(DISMISSED_KEY) === String(release.versionCode);
-    if (available && (force || release.mandatory || !dismissed)) updateDialog(release, installed);
+    if (available && (force || release.mandatory || !dismissed)) updateDialog(release, installed, AppUpdater);
     return { available, release, installed };
   } catch (cause) {
     console.warn('MEG app update check failed', cause);
@@ -127,7 +135,7 @@ export async function checkForAppUpdate({ force = false } = {}) {
 }
 
 function checkAtAppStartup() {
-  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return;
+  if (!isNativeAndroid()) return;
   if (startupCheckPromise) return;
   startupCheckPromise = checkForAppUpdate({ force: true }).finally(() => {
     startupCheckPromise = null;
