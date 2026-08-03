@@ -60,7 +60,7 @@ export function replaceSelectOptions(select, entries, preferredValue = '') {
     select.dataset.fastOptionsSignature = signature;
   }
 
-  const available = normalizedEntries.find((entry) => entry.value === preferred && !entry.disabled)
+  const available = normalizedEntries.find((entry) => entry.value === preferred)
     || normalizedEntries.find((entry) => !entry.disabled)
     || normalizedEntries[0];
   select.value = available?.value ?? '';
@@ -298,6 +298,7 @@ class SegmentedSelect {
       button.type = 'button';
       button.dataset.segmentValue = option.value;
       button.textContent = option.textContent || option.value;
+      button.dataset.optionDisabled = option.disabled ? "1" : "0";
       button.disabled = option.disabled || this.select.disabled;
       fragment.append(button);
     });
@@ -310,7 +311,7 @@ class SegmentedSelect {
       const selected = button.dataset.segmentValue === this.select.value;
       button.classList.toggle('active', selected);
       button.setAttribute('aria-pressed', String(selected));
-      button.disabled = this.select.disabled || button.disabled;
+      button.disabled = this.select.disabled || button.dataset.optionDisabled === "1";
     });
   }
 }
