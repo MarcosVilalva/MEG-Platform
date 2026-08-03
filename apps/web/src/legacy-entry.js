@@ -1,8 +1,6 @@
-import { readSheet } from 'read-excel-file/browser';
 import { bootstrapCloud } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
-import { syncLocalDueNotifications } from './native-notifications.js';
-import { checkForAppUpdate } from './native-app-update.js';
+import { checkForAppUpdate, initializeStableUiFeatures } from './native-app-update.js';
 
 const appEnvironment = 'production';
 const appEnvironmentSuffix = '';
@@ -14,6 +12,26 @@ document.body.dataset.appEnvironment = 'production';
 const INACTIVITY_LIMIT_MS = 2 * 60 * 1000;
 const INACTIVITY_WARNING_MS = 30 * 1000;
 const INACTIVITY_MESSAGE_KEY = 'meg-inactivity-message';
+
+let spreadsheetReaderPromise;
+let nativeNotificationsPromise;
+
+async function getSpreadsheetReader() {
+  spreadsheetReaderPromise ||= import('read-excel-file/browser');
+  const module = await spreadsheetReaderPromise;
+  return module.readSheet;
+}
+
+function syncLocalDueNotifications(state) {
+  if (!nativeMobileMode) return Promise.resolve({ scheduled: 0, skipped: true });
+  nativeNotificationsPromise ||= import('./native-notifications.js');
+  return nativeNotificationsPromise
+    .then((module) => module.syncLocalDueNotifications(state))
+    .catch((cause) => {
+      console.warn('MEG native notifications failed to synchronize', cause);
+      return { scheduled: 0, error: cause };
+    });
+}
 
 const showSuccess = (title, message) => window.MEG_APP?.showToast?.(title, message, 'success');
 
@@ -90,6 +108,7 @@ function isoDate(value) {
 }
 
 async function parseMegWorkbook(file) {
+    const readSheet = await getSpreadsheetReader();
     let workbookRows;
     try {
       workbookRows = await readSheet(file, 'LANÇAMENTOS');
@@ -360,7 +379,11 @@ function setupInactivityLogout() {
   if (validationMode) return;
   let warningTimer;
   let logoutTimer;
-  const resetTimers = () => {
+  let lastResetAt = 0;
+  const resetTimers = ({ force = false } = {}) => {
+    const now = Date.now();
+    if (!force && now - lastResetAt < 5000) return;
+    lastResetAt = now;
     clearTimeout(warningTimer);
     clearTimeout(logoutTimer);
     warningTimer = window.setTimeout(() => {
@@ -379,13 +402,14 @@ function setupInactivityLogout() {
       }
     }, INACTIVITY_LIMIT_MS);
   };
+  const registerActivity = () => resetTimers();
   ['pointerdown', 'keydown', 'touchstart', 'scroll'].forEach((eventName) => {
-    window.addEventListener(eventName, resetTimers, { passive: true });
+    window.addEventListener(eventName, registerActivity, { passive: true });
   });
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) resetTimers();
+    if (!document.hidden) resetTimers({ force: true });
   });
-  resetTimers();
+  resetTimers({ force: true });
 }
 
 async function start() {
@@ -395,6 +419,7 @@ async function start() {
   window.MEG_NATIVE_NOTIFICATIONS = { sync: syncLocalDueNotifications };
   await import('./legacy-app.js');
   wireLegacyApp();
+  await initializeStableUiFeatures();
   window.MEG_APP_UPDATE = { check: () => checkForAppUpdate({ force: true }) };
   checkForAppUpdate();
   setupInactivityLogout();

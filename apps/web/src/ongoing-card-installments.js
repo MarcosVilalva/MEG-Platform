@@ -220,11 +220,14 @@ function start() {
   ensureFields();
   const form = document.querySelector('#transactionForm');
   form?.addEventListener('submit', handleSubmit, { capture: true });
-  document.querySelector('#transactionDialog')?.addEventListener('close', resetPanel);
+  const dialog = document.querySelector('#transactionDialog');
+  dialog?.addEventListener('close', resetPanel);
   ['transactionType', 'modalityInput', 'paymentMethodInput', 'transactionId'].forEach((id) => {
     document.querySelector(`#${id}`)?.addEventListener('change', () => requestAnimationFrame(syncVisibility));
   });
-  new MutationObserver(syncVisibility).observe(document.body, { childList: true, subtree: true });
+  if (dialog) {
+    new MutationObserver(syncVisibility).observe(dialog, { attributes: true, attributeFilter: ['open'] });
+  }
   syncVisibility();
 }
 

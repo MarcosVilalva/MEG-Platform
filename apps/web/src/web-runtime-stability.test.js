@@ -1,0 +1,48 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const read = (name) => fs.readFileSync(path.join(here, name), 'utf8');
+const nativeUpdate = read('native-app-update.js');
+const legacyApp = read('legacy-app.js');
+const legacyStyles = read('legacy-styles.css');
+const ongoing = read('ongoing-card-installments.js');
+const legacyEntry = read('legacy-entry.js');
+const biometric = read('native-biometric-login.js');
+
+const webBranch = nativeUpdate.slice(
+  nativeUpdate.indexOf("if (!nativeMobile)"),
+  nativeUpdate.indexOf("await Promise.all", nativeUpdate.indexOf("if (!nativeMobile)")),
+);
+const forbiddenWebModules = [
+  'market-upgrades',
+  'ux-enhancements-safe',
+  'excel-filter-pro',
+  'finance-workspace-modernization',
+  'transaction-grid-stability',
+  'pending-monetary-balance',
+  'transaction-status-guard',
+  'transaction-classification-defaults',
+  'fast-logout',
+];
+for (const moduleName of forbiddenWebModules) {
+  assert.equal(webBranch.includes(moduleName), false, `${moduleName} não pode ser carregado no navegador`);
+}
+
+assert.equal(nativeUpdate.includes('loadOptionalUiEnhancements();'), false, 'recursos opcionais não podem iniciar durante a avaliação do módulo');
+assert.equal(legacyApp.includes('premiumWebDashboard'), false, 'dashboard premium duplicado deve permanecer removido');
+assert.equal(legacyApp.includes('renderPremiumWebDashboard'), false, 'renderização premium duplicada deve permanecer removida');
+assert.equal(legacyStyles.includes('.premium-dashboard-web'), false, 'CSS premium pesado deve permanecer removido');
+assert.equal(legacyStyles.includes('.fast-combobox'), false, 'CSS do editor personalizado removido não pode permanecer no pacote');
+assert.equal(legacyStyles.includes('.transaction-editor-v2'), false, 'layout antigo do editor personalizado deve permanecer removido');
+assert.equal(ongoing.includes("observe(document.body"), false, 'parcelamentos não podem observar todo o documento');
+assert.equal(ongoing.includes("attributeFilter: ['open']"), true, 'parcelamentos devem observar apenas a abertura do diálogo');
+assert.equal(legacyApp.includes('DEFAULT_CATALOGS.expenseClasses[0]'), true, 'classificação padrão deve ser tratada pelo núcleo');
+assert.equal(legacyEntry.includes("import { readSheet } from 'read-excel-file/browser'"), false, 'leitor de planilha deve ser carregado somente quando necessário');
+assert.equal(legacyEntry.includes("import { syncLocalDueNotifications }"), false, 'notificações nativas não podem entrar no pacote inicial da web');
+assert.equal(nativeUpdate.includes("import { Capacitor, registerPlugin }"), false, 'atualizador Android deve ser carregado sob demanda');
+assert.equal(biometric.includes("import { Capacitor, registerPlugin }"), false, 'biometria Android deve ser carregada sob demanda');
+
+console.log('web runtime stability tests passed');

@@ -19,7 +19,7 @@
     "build:web": "npm --workspace apps/web run build",
     "build:api": "npm --workspace apps/api run build",
     "check": "npm-run-all test build",
-    "test": "npm-run-all test:core test:imports test:notifications test:auth test:cors test:commercial test:app-state test:legacy-finance test:legacy-state-patch test:transaction-editor",
+    "test": "npm-run-all test:core test:imports test:notifications test:auth test:cors test:commercial test:app-state test:legacy-finance test:legacy-state-patch test:transaction-editor test:web-runtime-stability",
     "test:core": "node packages/core/src/tests/core.test.js",
     "test:imports": "npm --workspace apps/api run test:imports",
     "test:notifications": "npm --workspace apps/api run test:notifications",
@@ -45,7 +45,8 @@
     "db:import:basemeg": "npm --workspace packages/database run db:import:basemeg --",
     "phoenix:setup": "npm install && npm run db:generate && npm run db:push && npm run db:seed",
     "android:sync": "npx cap sync android",
-    "android:open": "npx cap open android"
+    "android:open": "npx cap open android",
+    "test:web-runtime-stability": "node apps/web/src/web-runtime-stability.test.js"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
