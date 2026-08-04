@@ -36,6 +36,8 @@ export function validateExpenseAmount({
   modality = '',
   amount = '',
   recurrenceEnabled = false,
+  installmentCount = 1,
+  ongoingInstallmentEnabled = false,
 } = {}) {
   const parsedAmount = parseFinancialAmount(amount);
   if (!Number.isFinite(parsedAmount) || parsedAmount >= 0) {
@@ -58,16 +60,6 @@ export function validateExpenseAmount({
     };
   }
 
-  if (isInstallmentExpenseModality(modality)) {
-    return {
-      valid: false,
-      negative: true,
-      amount: parsedAmount,
-      creditAmount: Math.abs(parsedAmount),
-      message: 'Crédito e crediário não aceitam valor negativo. Registre o abatimento como uma conta comum.',
-    };
-  }
-
   if (recurrenceEnabled) {
     return {
       valid: false,
@@ -78,11 +70,34 @@ export function validateExpenseAmount({
     };
   }
 
+  if (ongoingInstallmentEnabled) {
+    return {
+      valid: false,
+      negative: true,
+      amount: parsedAmount,
+      creditAmount: Math.abs(parsedAmount),
+      message: 'Parcelamento já em andamento não aceita valor negativo.',
+    };
+  }
+
+  const installments = Math.max(Number.parseInt(String(installmentCount || 1), 10) || 1, 1);
+  if (isInstallmentExpenseModality(modality) && installments > 1) {
+    return {
+      valid: false,
+      negative: true,
+      amount: parsedAmount,
+      creditAmount: Math.abs(parsedAmount),
+      message: 'Crédito ou crediário com valor negativo deve ter somente 1 parcela.',
+    };
+  }
+
   return {
     valid: true,
     negative: true,
     amount: parsedAmount,
     creditAmount: Math.abs(parsedAmount),
-    message: 'Crédito ou abatimento que reduz a despesa do período.',
+    message: isInstallmentExpenseModality(modality)
+      ? 'Crédito ou estorno lançado em uma única fatura.'
+      : 'Crédito ou abatimento que reduz a despesa do período.',
   };
 }
