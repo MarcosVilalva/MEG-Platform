@@ -1,3 +1,5 @@
+import './startup-data-protection.js';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
 const READY_TIMEOUT_MS = 9000;
 const INITIAL_RETRY_DELAY_MS = 1600;
