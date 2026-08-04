@@ -1,7 +1,8 @@
 import { currency, escapeHtml, matchesExactNumbers, normalizeExactNumber, normalizeText, openExactValuePopover, syncFilterButton } from './exact-number-filter-core.js';
 import { compareTransactionAmountRows } from './numeric-grid-sort-core.js';
+import { compareTransactionPurchaseDates } from './transaction-date-sort-core.js';
 
-const state = { income: new Set(), expense: new Set(), page: 1, sort: '' };
+const state = { purchaseDate: new Set(), income: new Set(), expense: new Set(), page: 1, sort: '' };
 let observer = null;
 let scheduledFrame = 0;
 
@@ -37,15 +38,28 @@ function numberOptions(config) {
     .map((value) => ({ value, label: currency.format(Number(value)) }));
 }
 
-function clearLegacyMinimum(key) {
+function dateOptions() {
+  const transactions = window.MEG_APP?.getStateRef?.()?.transactions || [];
+  const values = new Set();
+  transactions.forEach((item) => {
+    if (!periodMatches(item)) return;
+    const value = String(item.purchaseDate || '');
+    if (value) values.add(value);
+  });
+  return [...values]
+    .sort((a, b) => a.localeCompare(b))
+    .map((value) => ({ value, label: formatDate(value) }));
+}
+
+function clearLegacyControl(key) {
   const control = document.querySelector(`[data-column-filter="${key}"]`);
   if (!control || !control.value) return;
   control.value = '';
-  control.dispatchEvent(new Event('input', { bubbles: true }));
+  control.dispatchEvent(new Event(control.type === 'date' ? 'change' : 'input', { bubbles: true }));
 }
 
 function active() {
-  return state.income.size > 0 || state.expense.size > 0 || Boolean(state.sort);
+  return state.purchaseDate.size > 0 || state.income.size > 0 || state.expense.size > 0 || Boolean(state.sort);
 }
 
 function selectedValues(key) {
@@ -68,6 +82,7 @@ function matches(item) {
   const notes = normalizeText(document.querySelector('[data-column-filter="notes"]')?.value || '');
   if (date && item.date !== date) return false;
   if (purchaseDate && item.purchaseDate !== purchaseDate) return false;
+  if (state.purchaseDate.size && !state.purchaseDate.has(String(item.purchaseDate || ''))) return false;
   if (description && !normalizeText(item.description).includes(description)) return false;
   if (notes && !normalizeText(item.notes).includes(notes)) return false;
 
@@ -97,6 +112,8 @@ function sortRows(items) {
       if (amountResult !== 0) return amountResult;
       return String(b.date || '').localeCompare(String(a.date || ''));
     }
+    const purchaseDateMatch = mode.match(/^purchaseDate_(asc|desc)$/);
+    if (purchaseDateMatch) return compareTransactionPurchaseDates(a, b, purchaseDateMatch[1]);
     if (mode === 'date_asc') return String(a.date).localeCompare(String(b.date));
     return String(b.date).localeCompare(String(a.date));
   });
@@ -176,6 +193,7 @@ function restore() {
 }
 
 function syncButtons() {
+  syncFilterButton(document.querySelector('.meg-stable-filter-button[data-grid="transactions"][data-column="1"]'), state.purchaseDate);
   syncFilterButton(document.querySelector('.meg-stable-filter-button[data-grid="transactions"][data-column="5"]'), state.income);
   syncFilterButton(document.querySelector('.meg-stable-filter-button[data-grid="transactions"][data-column="8"]'), state.expense);
 }
@@ -184,23 +202,37 @@ export function transactionExactActive() { return active(); }
 export function refreshExactTransactions(options) { schedule(options); }
 
 export function openTransactionExactFilter(column, button) {
-  const config = column === 5
-    ? { key: 'income', label: 'Receita', type: 'income' }
-    : { key: 'expense', label: 'Despesa', type: 'expense' };
+  const config = column === 1
+    ? { key: 'purchaseDate', label: 'Data da compra', kind: 'date' }
+    : column === 5
+      ? { key: 'income', label: 'Receita', type: 'income', kind: 'number' }
+      : { key: 'expense', label: 'Despesa', type: 'expense', kind: 'number' };
   openExactValuePopover({
     label: config.label,
-    values: numberOptions(config),
+    values: config.kind === 'date' ? dateOptions() : numberOptions(config),
     selected: state[config.key],
     button,
-    onApply() { state.page = 1; clearLegacyMinimum(config.key); schedule(); },
-    onClear() { state.page = 1; clearLegacyMinimum(config.key); restore(); },
-    onSort(direction) { state.sort = `${config.key}_${direction}`; schedule(); },
+    onApply() {
+      state.page = 1;
+      clearLegacyControl(config.key);
+      schedule();
+    },
+    onClear() {
+      state.page = 1;
+      clearLegacyControl(config.key);
+      restore();
+    },
+    onSort(direction) {
+      state.page = 1;
+      state.sort = `${config.key}_${direction}`;
+      schedule();
+    },
   });
 }
 
 export function initializeTransactionExactFilter() {
-  clearLegacyMinimum('income');
-  clearLegacyMinimum('expense');
+  clearLegacyControl('income');
+  clearLegacyControl('expense');
   const tbody = document.querySelector('#transactionRows');
   if (tbody) {
     observer = new MutationObserver(() => schedule());
@@ -226,7 +258,12 @@ export function initializeTransactionExactFilter() {
     if (active() && event.target.closest?.('#transactions')) schedule({ resetPage: true });
   });
   document.querySelector('#clearColumnFiltersBtn')?.addEventListener('click', () => {
-    state.income.clear(); state.expense.clear(); state.page = 1; state.sort = ''; restore();
+    state.purchaseDate.clear();
+    state.income.clear();
+    state.expense.clear();
+    state.page = 1;
+    state.sort = '';
+    restore();
   });
   syncButtons();
 }

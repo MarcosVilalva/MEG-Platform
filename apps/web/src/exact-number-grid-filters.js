@@ -9,12 +9,12 @@ function handleHeaderCapture(event) {
   if (!button) return;
   const grid = button.dataset.grid;
   const column = Number(button.dataset.column);
-  const numericTransaction = grid === 'transactions' && (column === 5 || column === 8);
+  const exactTransaction = grid === 'transactions' && (column === 1 || column === 5 || column === 8);
   const numericCard = grid === 'cards' && column === 5;
-  if (!numericTransaction && !numericCard) return;
+  if (!exactTransaction && !numericCard) return;
   event.preventDefault();
   event.stopImmediatePropagation();
-  if (numericTransaction) openTransactionExactFilter(column, button);
+  if (exactTransaction) openTransactionExactFilter(column, button);
   else openCardExactFilter(button);
 }
 
