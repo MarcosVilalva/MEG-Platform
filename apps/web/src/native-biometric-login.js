@@ -3,7 +3,7 @@ let biometricAuthenticationPromise = null;
 let biometricControlsObserver = null;
 
 const ANDROID_RUNTIME_RETRIES = 8;
-const PLUGIN_CALL_RETRIES = 4;
+const STATUS_CALL_RETRIES = 4;
 const RETRY_DELAY_MS = 180;
 
 function delay(milliseconds) {
@@ -68,9 +68,9 @@ async function getBiometricAuth() {
   return biometricPluginPromise;
 }
 
-async function callBiometricPlugin(method, payload) {
+async function callBiometricPlugin(method, payload, { retries = 1 } = {}) {
   let lastError;
-  for (let attempt = 0; attempt < PLUGIN_CALL_RETRIES; attempt += 1) {
+  for (let attempt = 0; attempt < retries; attempt += 1) {
     try {
       const BiometricAuth = await getBiometricAuth();
       if (!BiometricAuth?.[method]) throw new Error('PLUGIN_UNAVAILABLE');
@@ -78,7 +78,7 @@ async function callBiometricPlugin(method, payload) {
     } catch (cause) {
       lastError = cause;
       biometricPluginPromise = null;
-      if (attempt < PLUGIN_CALL_RETRIES - 1) await delay(RETRY_DELAY_MS * (attempt + 1));
+      if (attempt < retries - 1) await delay(RETRY_DELAY_MS * (attempt + 1));
     }
   }
   throw lastError instanceof Error ? lastError : new Error('PLUGIN_UNAVAILABLE');
@@ -151,7 +151,7 @@ export async function getBiometricLoginStatus() {
     return { available: false, enabled: false, reason: 'NOT_NATIVE_ANDROID' };
   }
   try {
-    return await callBiometricPlugin('isAvailable');
+    return await callBiometricPlugin('isAvailable', undefined, { retries: STATUS_CALL_RETRIES });
   } catch {
     return { available: false, enabled: false, reason: 'PLUGIN_UNAVAILABLE' };
   }
@@ -276,6 +276,8 @@ function initializeAndroidBiometricControls() {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
   const tryMount = () => {
     if (!document.querySelector('#loginForm')) return;
+    biometricControlsObserver?.disconnect();
+    biometricControlsObserver = null;
     mountAndroidBiometricControl().catch(() => undefined);
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryMount, { once: true });
