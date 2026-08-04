@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { matchesExactNumbers, normalizeExactNumber, parseBrazilianNumber } from './exact-number-filter-core.js';
 import { compareNumbersWithEmptyLast, compareTransactionAmountRows } from './numeric-grid-sort-core.js';
 import { matchesCardFilter, normalizeGridText, parseGridDate, parseGridNumber } from './stable-grid-filters.js';
+import { compareTransactionPurchaseDates } from './transaction-date-sort-core.js';
 
 assert.equal(normalizeGridText(' Cartão Débito '), 'CARTAO DEBITO');
 assert.equal(parseGridNumber('R$ 1.007,36'), 1007.36);
@@ -37,5 +38,16 @@ const descending = [...rows].sort((a, b) => compareTransactionAmountRows(a, b, '
 assert.deepEqual(descending.map((item) => item.id), ['positive', 'zero', 'negative', 'income']);
 const ascending = [...rows].sort((a, b) => compareTransactionAmountRows(a, b, 'expense', 'asc', valueReader));
 assert.deepEqual(ascending.map((item) => item.id), ['negative', 'zero', 'positive', 'income']);
+
+const purchaseRows = [
+  { id: 'empty', purchaseDate: '', date: '2026-08-04' },
+  { id: 'latest', purchaseDate: '2026-07-12', date: '2026-08-04' },
+  { id: 'oldest', purchaseDate: '2026-06-30', date: '2026-07-04' },
+  { id: 'middle', purchaseDate: '2026-07-01', date: '2026-08-04' },
+];
+const purchaseAscending = [...purchaseRows].sort((a, b) => compareTransactionPurchaseDates(a, b, 'asc'));
+assert.deepEqual(purchaseAscending.map((item) => item.id), ['oldest', 'middle', 'latest', 'empty']);
+const purchaseDescending = [...purchaseRows].sort((a, b) => compareTransactionPurchaseDates(a, b, 'desc'));
+assert.deepEqual(purchaseDescending.map((item) => item.id), ['latest', 'middle', 'oldest', 'empty']);
 
 console.log('stable grid filters tests passed');
