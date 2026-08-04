@@ -7,6 +7,7 @@ import {
 } from './negative-expense-core.js';
 
 assert.equal(parseFinancialAmount('-35,40'), -35.40);
+assert.equal(parseFinancialAmount('-35.40'), -35.40);
 assert.equal(parseFinancialAmount('R$ -1.250,75'), -1250.75);
 assert.equal(isInstallmentExpenseModality('CRÉDITO'), true);
 assert.equal(isInstallmentExpenseModality('crediário'), true);
