@@ -1,10 +1,17 @@
 import assert from 'node:assert/strict';
 import { calculateFinancialSummary } from './legacy-finance.js';
+import { isMonetaryNumberInput } from './negative-expense-amounts.js';
 import {
   isInstallmentExpenseModality,
   parseFinancialAmount,
   validateExpenseAmount,
 } from './negative-expense-core.js';
+
+assert.equal(isMonetaryNumberInput({ tagName: 'INPUT', type: 'number', step: '0.01', id: '' }), true);
+assert.equal(isMonetaryNumberInput({ tagName: 'INPUT', type: 'number', step: '1', id: 'purchaseTotalInput' }), true);
+assert.equal(isMonetaryNumberInput({ tagName: 'INPUT', type: 'number', step: '1', id: 'installmentCountInput' }), false);
+assert.equal(isMonetaryNumberInput({ tagName: 'INPUT', type: 'text', step: '0.01', id: 'expenseAmountInput' }), false);
+assert.equal(isMonetaryNumberInput(null), false);
 
 assert.equal(parseFinancialAmount('-35,40'), -35.40);
 assert.equal(parseFinancialAmount('-35.40'), -35.40);
