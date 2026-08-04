@@ -22,10 +22,29 @@ assert.equal(regularCredit.valid, true);
 assert.equal(regularCredit.negative, true);
 assert.equal(regularCredit.creditAmount, 35.40);
 
+const singleCardCredit = validateExpenseAmount({
+  type: 'expense',
+  modality: 'CRÉDITO',
+  amount: '-31.00',
+  installmentCount: 1,
+});
+assert.equal(singleCardCredit.valid, true);
+assert.equal(singleCardCredit.negative, true);
+assert.equal(singleCardCredit.creditAmount, 31);
+
 assert.equal(validateExpenseAmount({
   type: 'expense',
   modality: 'CRÉDITO',
   amount: '-35.40',
+  installmentCount: 2,
+}).valid, false);
+
+assert.equal(validateExpenseAmount({
+  type: 'expense',
+  modality: 'CRÉDITO',
+  amount: '-35.40',
+  installmentCount: 1,
+  ongoingInstallmentEnabled: true,
 }).valid, false);
 
 assert.equal(validateExpenseAmount({
