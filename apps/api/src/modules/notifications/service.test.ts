@@ -38,7 +38,7 @@ const dueNow = buildNotificationDigest(transactions, new Date('2026-07-12T15:00:
 assert.equal(dueNow.totalCount, 3, 'meio-dia e 19h incluem pendências anteriores, vencidas e vencendo hoje');
 assert.equal(dueNow.openCount, 4, 'contas posteriores de julho continuam informadas no total geral');
 assert.match(dueNow.text, /Itens em atenção:\* 3 item/);
-assert.match(dueNow.text, /Total em aberto até o mês atual:\* R\$ 504,90 em 4 obrigação/);
+assert.match(dueNow.text, /Total em aberto até o mês atual:\* R\$\s+504,90 em 4 obrigação/);
 
 const openSummary = buildNotificationDigest(transactions, new Date('2026-07-12T15:00:00Z'), 'open-summary');
 assert.equal(openSummary.totalCount, 4, 'resumo inclui pendências anteriores e abertas do mês atual, sem antecipar meses futuros');
@@ -59,9 +59,9 @@ assert.equal(misleadingPreviousMessage.openCount, 2);
 assert.equal(misleadingPreviousMessage.openAmount, 167.68);
 assert.equal(misleadingPreviousMessage.futureCount, 1);
 assert.equal(misleadingPreviousMessage.futureAmount, 40);
-assert.match(misleadingPreviousMessage.text, /Exigem atenção neste envio:\* R\$ 17,68/);
-assert.match(misleadingPreviousMessage.text, /Total em aberto até o mês atual:\* R\$ 167,68 em 2 obrigação/);
-assert.match(misleadingPreviousMessage.text, /Compromissos após este mês:\* R\$ 40,00 em 1 obrigação/);
+assert.match(misleadingPreviousMessage.text, /Exigem atenção neste envio:\* R\$\s+17,68/);
+assert.match(misleadingPreviousMessage.text, /Total em aberto até o mês atual:\* R\$\s+167,68 em 2 obrigação/);
+assert.match(misleadingPreviousMessage.text, /Compromissos após este mês:\* R\$\s+40,00 em 1 obrigação/);
 assert.doesNotMatch(misleadingPreviousMessage.text, /Total que falta pagar/);
 
 assert.equal(automationSlot(new Date('2026-07-12T09:05:00Z'))?.slot, '06:00');
