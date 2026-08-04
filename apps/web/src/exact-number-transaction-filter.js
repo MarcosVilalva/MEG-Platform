@@ -1,4 +1,5 @@
 import { currency, escapeHtml, matchesExactNumbers, normalizeExactNumber, normalizeText, openExactValuePopover, syncFilterButton } from './exact-number-filter-core.js';
+import { compareTransactionAmountRows } from './numeric-grid-sort-core.js';
 
 const state = { income: new Set(), expense: new Set(), page: 1, sort: '' };
 let observer = null;
@@ -29,9 +30,11 @@ function numberOptions(config) {
   transactions.forEach((item) => {
     if (item.type !== config.type || !periodMatches(item)) return;
     const value = valueOf(item, config.key);
-    if (value > 0) values.add(normalizeExactNumber(value));
+    if (Number.isFinite(value)) values.add(normalizeExactNumber(value));
   });
-  return [...values].sort((a, b) => Number(a) - Number(b)).map((value) => ({ value, label: currency.format(Number(value)) }));
+  return [...values]
+    .sort((a, b) => Number(a) - Number(b))
+    .map((value) => ({ value, label: currency.format(Number(value)) }));
 }
 
 function clearLegacyMinimum(key) {
@@ -42,7 +45,7 @@ function clearLegacyMinimum(key) {
 }
 
 function active() {
-  return state.income.size > 0 || state.expense.size > 0;
+  return state.income.size > 0 || state.expense.size > 0 || Boolean(state.sort);
 }
 
 function selectedValues(key) {
@@ -87,10 +90,13 @@ function matches(item) {
 function sortRows(items) {
   const mode = state.sort || document.querySelector('#transactionSortFilter')?.value || 'date_desc';
   return items.sort((a, b) => {
-    if (mode === 'income_desc') return valueOf(b, 'income') - valueOf(a, 'income');
-    if (mode === 'income_asc') return valueOf(a, 'income') - valueOf(b, 'income');
-    if (mode === 'expense_desc') return valueOf(b, 'expense') - valueOf(a, 'expense');
-    if (mode === 'expense_asc') return valueOf(a, 'expense') - valueOf(b, 'expense');
+    const amountMatch = mode.match(/^(income|expense)_(asc|desc)$/);
+    if (amountMatch) {
+      const [, key, direction] = amountMatch;
+      const amountResult = compareTransactionAmountRows(a, b, key, direction, valueOf);
+      if (amountResult !== 0) return amountResult;
+      return String(b.date || '').localeCompare(String(a.date || ''));
+    }
     if (mode === 'date_asc') return String(a.date).localeCompare(String(b.date));
     return String(b.date).localeCompare(String(a.date));
   });
@@ -212,6 +218,7 @@ export function initializeTransactionExactFilter() {
   }, true);
   document.addEventListener('change', (event) => {
     if (!active()) return;
+    if (event.target.matches?.('#transactionSortFilter')) state.sort = '';
     if (event.target.matches?.('#transactionsPageSize')) event.stopImmediatePropagation();
     if (event.target.closest?.('#transactions')) schedule({ resetPage: true });
   }, true);
