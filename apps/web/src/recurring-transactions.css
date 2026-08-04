@@ -1,0 +1,102 @@
+.meg-recurring-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border, #d9dee8);
+  border-radius: 14px;
+  background: var(--surface-soft, rgba(15, 23, 42, 0.035));
+}
+
+.meg-recurring-panel[hidden],
+.meg-recurring-fields[hidden],
+.meg-duplicate-notice[hidden],
+.meg-duplicate-transaction-button[hidden] {
+  display: none !important;
+}
+
+.meg-recurring-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.meg-recurring-toggle input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+}
+
+.meg-recurring-toggle span {
+  display: grid;
+  gap: 3px;
+}
+
+.meg-recurring-toggle strong {
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+}
+
+.meg-recurring-toggle small,
+.meg-recurring-fields small,
+.meg-recurring-fields p {
+  color: var(--muted, #64748b);
+  line-height: 1.45;
+}
+
+.meg-recurring-fields {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(220px, 1fr);
+  align-items: end;
+  gap: 10px 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border, #d9dee8);
+}
+
+.meg-recurring-fields label {
+  display: grid;
+  gap: 6px;
+}
+
+.meg-recurring-fields input {
+  width: 100%;
+}
+
+.meg-recurring-fields p {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.meg-duplicate-notice {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--success-soft, rgba(22, 163, 74, 0.1));
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.meg-duplicate-transaction-button {
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .meg-recurring-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .meg-recurring-fields p {
+    grid-column: auto;
+  }
+
+  #transactionForm .modal-actions {
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .meg-duplicate-transaction-button {
+    width: 100%;
+    white-space: normal;
+  }
+}

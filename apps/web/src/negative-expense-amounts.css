@@ -1,0 +1,22 @@
+.meg-negative-expense-help {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--muted, #64748b);
+}
+
+.meg-negative-expense-help.is-credit {
+  color: var(--success, #15803d);
+  font-weight: 700;
+}
+
+.meg-negative-expense-help.is-error {
+  color: var(--danger, #b91c1c);
+  font-weight: 700;
+}
+
+#expenseAmountInput[data-negative-credit="true"] {
+  font-weight: 800;
+  color: var(--success, #15803d);
+}
