@@ -39,13 +39,15 @@ export function recoveryDecision({ dirty, localState, remoteState, remoteRevisio
     return { action: 'remote', state: remoteState, revision: remoteRevision };
   }
 
-  const merged = mergeRecoveryStates(remoteState, localState);
+  const sameBaseRevision = Number(dirty.baseRevision) === Number(remoteRevision);
+  const recovered = sameBaseRevision ? localState : mergeRecoveryStates(remoteState, localState);
   return {
     action: 'recover',
-    state: merged,
+    strategy: sameBaseRevision ? 'local' : 'merge',
+    state: recovered,
     revision: remoteRevision,
     localCount: transactionCount(localState),
     remoteCount: transactionCount(remoteState),
-    mergedCount: transactionCount(merged),
+    mergedCount: transactionCount(recovered),
   };
 }
