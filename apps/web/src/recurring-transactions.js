@@ -103,6 +103,7 @@ function controls() {
     transactionId: document.querySelector('#transactionId'),
     transactionType: document.querySelector('#transactionType'),
     modality: document.querySelector('#modalityInput'),
+    paymentMethod: document.querySelector('#paymentMethodInput'),
     date: document.querySelector('#dateInput'),
     weekday: document.querySelector('#weekdayInput'),
     purchaseDate: document.querySelector('#purchaseDateInput'),
@@ -323,6 +324,7 @@ function wireEvents() {
   current.description.addEventListener('input', () => updatePreview(current));
   current.transactionType.addEventListener('change', () => syncUi());
   current.modality.addEventListener('change', () => syncUi());
+  current.paymentMethod.addEventListener('change', () => syncUi());
   current.form.addEventListener('submit', createRecurringTransactions, true);
 
   dialogObserver = new MutationObserver(() => {
