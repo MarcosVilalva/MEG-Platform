@@ -108,6 +108,10 @@ function selectForMode(items: DigestItem[], mode: NotificationMode, currentMonth
   return items.filter((item) => carriedOver(item) || (monthKey(item.dueDate) === currentMonth && item.daysUntilDue <= 3));
 }
 
+function groupedSuffix(items: DigestItem[]) {
+  return items.some((item) => item.isCard) ? ' — faturas já agrupadas por cartão' : '';
+}
+
 function section(lines: string[], title: string, icon: string, items: DigestItem[]) {
   if (!items.length) return;
   lines.push('', `${icon} *${title}*`);
@@ -120,8 +124,13 @@ function section(lines: string[], title: string, icon: string, items: DigestItem
 export function buildNotificationDigest(transactions: LegacyTransaction[], referenceDate = new Date(), mode: NotificationMode = 'upcoming') {
   const local = saoPauloParts(referenceDate);
   const currentMonth = monthKey(local.iso);
-  const selected = selectForMode(groupItems(transactions, local.date, currentMonth), mode, currentMonth);
+  const grouped = groupItems(transactions, local.date, currentMonth);
+  const selected = selectForMode(grouped, mode, currentMonth);
+  const currentScope = grouped.filter((item) => monthKey(item.dueDate) <= currentMonth);
+  const futureScope = grouped.filter((item) => monthKey(item.dueDate) > currentMonth);
   const totalAmount = selected.reduce((sum, item) => sum + item.value, 0);
+  const openAmount = currentScope.reduce((sum, item) => sum + item.value, 0);
+  const futureAmount = futureScope.reduce((sum, item) => sum + item.value, 0);
   const maximumPriority = selected.filter((item) => item.priority === 'MÁXIMA');
   const overdue = selected.filter((item) => item.priority === 'CRÍTICA');
   const today = selected.filter((item) => item.daysUntilDue === 0);
@@ -135,10 +144,23 @@ export function buildNotificationDigest(transactions: LegacyTransaction[], refer
   const lines = [
     `🚨 *MEG Finanças — ${title}* 🚨`, '',
     `📅 *Consulta:* ${dateLabel(local.iso)} às ${String(local.hour).padStart(2, '0')}:00`,
-    `🎯 *Situação:* ${headline}`,
-    `💰 *Total que falta pagar:* ${money(totalAmount)}`,
-    `🧾 *Obrigações:* ${selected.length} item(ns)${selected.some((item) => item.isCard) ? ' — faturas já agrupadas por cartão' : ''}`
+    `🎯 *Situação:* ${headline}`
   ];
+
+  if (mode === 'open-summary') {
+    lines.push(
+      `💰 *Total em aberto até o mês atual:* ${money(openAmount)}`,
+      `🧾 *Obrigações em aberto:* ${currentScope.length} item(ns)${groupedSuffix(currentScope)}`
+    );
+  } else {
+    lines.push(
+      `⚠️ *Exigem atenção neste envio:* ${money(totalAmount)}`,
+      `🧾 *Itens em atenção:* ${selected.length} item(ns)${groupedSuffix(selected)}`,
+      `📌 *Total em aberto até o mês atual:* ${money(openAmount)} em ${currentScope.length} obrigação(ões)${groupedSuffix(currentScope)}`,
+      `🔭 *Compromissos após este mês:* ${money(futureAmount)} em ${futureScope.length} obrigação(ões)${groupedSuffix(futureScope)}`
+    );
+  }
+
   section(lines, 'PRIORIDADE MÁXIMA — PENDÊNCIAS DE MESES ANTERIORES', '🚨', maximumPriority);
   section(lines, 'PRIORIDADE CRÍTICA — VENCIDAS NO MÊS ATUAL', '🔴', overdue);
   section(lines, 'URGENTE — VENCE HOJE', '🟠', today);
@@ -146,7 +168,22 @@ export function buildNotificationDigest(transactions: LegacyTransaction[], refer
   section(lines, mode === 'open-summary' ? 'DEMAIS CONTAS EM ABERTO NO MÊS ATUAL' : 'PRÓXIMOS 3 DIAS DO MÊS ATUAL', '🔵', next);
   if (!selected.length) lines.push('', '✅ *Nenhuma conta exige atenção neste envio.*');
   lines.push('', '━━━━━━━━━━━━━━━━━━━━', '💡 *Dica MEG:* priorize vencidas, depois as de hoje e preserve saldo para as próximas.', '', '🤖 *MEG Finanças — Seu copiloto financeiro*');
-  return { maximumPriority, overdue, today, tomorrow, upcoming: [...tomorrow, ...next], items: selected, text: lines.join('\n'), totalCount: selected.length, totalAmount, mode };
+  return {
+    maximumPriority,
+    overdue,
+    today,
+    tomorrow,
+    upcoming: [...tomorrow, ...next],
+    items: selected,
+    text: lines.join('\n'),
+    totalCount: selected.length,
+    totalAmount,
+    openCount: currentScope.length,
+    openAmount,
+    futureCount: futureScope.length,
+    futureAmount,
+    mode
+  };
 }
 
 export async function notificationDigest(userId: string, referenceDate = new Date(), mode: NotificationMode = 'upcoming') {
