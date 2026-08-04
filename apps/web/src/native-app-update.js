@@ -15,15 +15,23 @@ export function initializeStableUiFeatures() {
       if (!nativeMobile) {
         await Promise.all([
           import('./ongoing-card-installments.css'),
-          import('./stable-grid-filters.css')
+          import('./stable-grid-filters.css'),
+          import('./recurring-transactions.css')
         ]);
-        const [{ initializeStableGridFilters }, { initializeExactNumberGridFilters }] = await Promise.all([
+        const [
+          { initializeStableGridFilters },
+          { initializeExactNumberGridFilters },
+          ,
+          { initializeRecurringTransactions }
+        ] = await Promise.all([
           import('./stable-grid-filters.js'),
           import('./exact-number-grid-filters.js'),
-          import('./ongoing-card-installments.js')
+          import('./ongoing-card-installments.js'),
+          import('./recurring-transactions.js')
         ]);
         initializeStableGridFilters();
         initializeExactNumberGridFilters();
+        initializeRecurringTransactions();
         document.querySelector('#clearCreditCardFiltersBtn')?.addEventListener('click', () => {
           window.MEG_STABLE_GRID_FILTERS?.clearCardFilters();
         });
@@ -35,7 +43,8 @@ export function initializeStableUiFeatures() {
         import('./ux-enhancements.css'),
         import('./transaction-grid-stability.css'),
         import('./mobile-transactions.css'),
-        import('./ongoing-card-installments.css')
+        import('./ongoing-card-installments.css'),
+        import('./recurring-transactions.css')
       ]);
 
       const { initializeUxEnhancements } = await import('./ux-enhancements-safe.js');
@@ -48,6 +57,8 @@ export function initializeStableUiFeatures() {
       await import('./transaction-classification-defaults.js');
       await import('./fast-logout.js');
       await import('./ongoing-card-installments.js');
+      const { initializeRecurringTransactions } = await import('./recurring-transactions.js');
+      initializeRecurringTransactions();
     } catch (cause) {
       optionalUiPromise = null;
       console.error('MEG optional UI enhancements failed to load', cause);
