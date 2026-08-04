@@ -1,2 +1,3 @@
-Publicação web solicitada em 2026-07-31 21:51 BRT.
-APK correspondente: MEG Finanças 1.1.94.
+Publicação web solicitada em 2026-08-04 08:36 BRT.
+APK correspondente: MEG Finanças 1.1.106.
+Motivo: disponibilizar a correção da biometria exclusiva do Android.
