@@ -76,33 +76,75 @@ export function initializeStableUiFeatures() {
 }
 
 let appUpdaterPromise = null;
+const ANDROID_RUNTIME_RETRIES = 10;
+const ANDROID_RUNTIME_RETRY_MS = 180;
+
+function delay(milliseconds) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
 
 function isNativeAndroid() {
   const capacitor = window.Capacitor;
-  return Boolean(capacitor?.isNativePlatform?.() && capacitor.getPlatform?.() === 'android');
+  const platform = capacitor?.getPlatform?.() || capacitor?.platform || '';
+  const nativePlatform = capacitor?.isNativePlatform?.();
+  if (platform === 'android' && nativePlatform === true) return true;
+  const markedNative = document.body?.classList?.contains('native-mobile');
+  return Boolean(platform === 'android' && markedNative && /Android/i.test(navigator.userAgent || ''));
+}
+
+function potentiallyNativeAndroid() {
+  const capacitor = window.Capacitor;
+  const platform = capacitor?.getPlatform?.() || capacitor?.platform || '';
+  if (platform === 'android') return true;
+  return Boolean(document.body?.classList?.contains('native-mobile') && /Android/i.test(navigator.userAgent || ''));
+}
+
+async function waitForNativeAndroid() {
+  if (!potentiallyNativeAndroid()) return false;
+  for (let attempt = 0; attempt < ANDROID_RUNTIME_RETRIES; attempt += 1) {
+    if (isNativeAndroid()) return true;
+    await delay(ANDROID_RUNTIME_RETRY_MS);
+  }
+  return isNativeAndroid();
 }
 
 async function getAppUpdater() {
-  if (!isNativeAndroid()) return null;
+  if (!await waitForNativeAndroid()) return null;
   appUpdaterPromise ||= import('@capacitor/core').then(({ registerPlugin }) => registerPlugin('AppUpdater'));
   return appUpdaterPromise;
 }
 const VERSION_URL = 'https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json';
 const DISMISSED_KEY = 'meg-dismissed-app-version';
 let startupCheckPromise = null;
+let resolveStartupGate;
+const startupGate = new Promise((resolve) => {
+  resolveStartupGate = resolve;
+});
+window.MEG_ANDROID_STARTUP_GATE = startupGate;
+window.MEG_API_READY = Promise.all([
+  window.MEG_API_READY || Promise.resolve(true),
+  startupGate,
+]).then(() => true);
 
 function updateDialog(release, installed, AppUpdater) {
-  if (document.querySelector('#appUpdateDialog')) return;
+  const existing = document.querySelector('#appUpdateDialog');
+  if (existing?._megDecisionPromise) return existing._megDecisionPromise;
+
+  let resolveDecision;
+  const decisionPromise = new Promise((resolve) => {
+    resolveDecision = resolve;
+  });
   const dialog = document.createElement('dialog');
   dialog.id = 'appUpdateDialog';
   dialog.className = 'modal app-update-dialog';
+  dialog._megDecisionPromise = decisionPromise;
   dialog.innerHTML = `
     <div class="app-update-icon" aria-hidden="true">↻</div>
     <small class="decision-eyebrow">ATUALIZAÇÃO DO APLICATIVO</small>
     <h2>Uma nova versão do MEG está disponível</h2>
     <p>Versão instalada: <strong>${installed.versionName}</strong> · nova versão: <strong>${release.versionName}</strong></p>
     <div class="app-update-notes">${String(release.releaseNotes || 'Melhorias de desempenho, segurança e experiência.').replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</div>
-    <p class="app-update-status" id="appUpdateStatus">A atualização preserva todos os dados salvos na nuvem.</p>
+    <p class="app-update-status" id="appUpdateStatus">A atualização é verificada antes do login e preserva os dados sincronizados.</p>
     <div class="modal-actions">
       <button type="button" class="ghost-button" id="appUpdateLater">Agora não</button>
       <button type="button" class="primary-button" id="appUpdateNow">Atualizar agora</button>
@@ -112,7 +154,7 @@ function updateDialog(release, installed, AppUpdater) {
   const updateButton = dialog.querySelector('#appUpdateNow');
   dialog.querySelector('#appUpdateLater').addEventListener('click', () => {
     sessionStorage.setItem(DISMISSED_KEY, String(release.versionCode));
-    dialog.close();
+    dialog.close('later');
   });
   updateButton.addEventListener('click', async () => {
     updateButton.disabled = true;
@@ -138,12 +180,16 @@ function updateDialog(release, installed, AppUpdater) {
       updateButton.disabled = false;
     }
   });
-  dialog.addEventListener('close', () => dialog.remove(), { once: true });
+  dialog.addEventListener('close', () => {
+    resolveDecision?.(dialog.returnValue || 'closed');
+    dialog.remove();
+  }, { once: true });
   dialog.showModal();
+  return decisionPromise;
 }
 
-export async function checkForAppUpdate({ force = false } = {}) {
-  if (!isNativeAndroid()) return { available: false };
+export async function checkForAppUpdate({ force = false, waitForDecision = false } = {}) {
+  if (!await waitForNativeAndroid()) return { available: false };
   try {
     const AppUpdater = await getAppUpdater();
     if (!AppUpdater) return { available: false };
@@ -155,8 +201,12 @@ export async function checkForAppUpdate({ force = false } = {}) {
     const release = await response.json();
     const available = Number(release.versionCode) > Number(installed.versionCode);
     const dismissed = sessionStorage.getItem(DISMISSED_KEY) === String(release.versionCode);
-    if (available && (force || release.mandatory || !dismissed)) updateDialog(release, installed, AppUpdater);
-    return { available, release, installed };
+    let decision = null;
+    if (available && (force || release.mandatory || !dismissed)) {
+      const dialogDecision = updateDialog(release, installed, AppUpdater);
+      if (waitForDecision) decision = await dialogDecision;
+    }
+    return { available, release, installed, decision };
   } catch (cause) {
     console.warn('MEG app update check failed', cause);
     return { available: false, error: cause };
@@ -164,11 +214,12 @@ export async function checkForAppUpdate({ force = false } = {}) {
 }
 
 function checkAtAppStartup() {
-  if (!isNativeAndroid()) return;
-  if (startupCheckPromise) return;
-  startupCheckPromise = checkForAppUpdate({ force: true }).finally(() => {
-    startupCheckPromise = null;
-  });
+  if (startupCheckPromise) return startupCheckPromise;
+  startupCheckPromise = checkForAppUpdate({ force: true, waitForDecision: true })
+    .finally(() => {
+      resolveStartupGate?.(true);
+    });
+  return startupCheckPromise;
 }
 
 if (document.readyState === 'loading') {
