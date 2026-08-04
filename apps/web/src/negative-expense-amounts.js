@@ -11,6 +11,24 @@ const money = new Intl.NumberFormat('pt-BR', {
   currency: 'BRL',
 });
 
+const monetaryFieldPattern = /(amount|total|value|balance|limit|budget|income|expense|revenue|cost|price)/i;
+
+export function isMonetaryNumberInput(input) {
+  if (!input) return false;
+  const tagName = String(input.tagName || '').toUpperCase();
+  const type = String(input.type || '').toLowerCase();
+  if (tagName !== 'INPUT' || type !== 'number') return false;
+  if (String(input.step || '') === '0.01') return true;
+  if (String(input.dataset?.monetary || '') === 'true') return true;
+  return monetaryFieldPattern.test(String(input.id || input.name || ''));
+}
+
+function preventMonetaryWheelChange(event) {
+  const input = event.target?.closest?.('input[type="number"]');
+  if (!isMonetaryNumberInput(input) || document.activeElement !== input) return;
+  event.preventDefault();
+}
+
 function controls() {
   return {
     dialog: document.querySelector('#transactionDialog'),
@@ -143,6 +161,7 @@ function wireEvents() {
     }
   });
   current.form.addEventListener('submit', validateBeforeSubmit, true);
+  document.addEventListener('wheel', preventMonetaryWheelChange, { capture: true, passive: false });
 
   dialogObserver = new MutationObserver(() => {
     const latest = controls();
