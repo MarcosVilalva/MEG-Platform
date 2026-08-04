@@ -10,12 +10,18 @@ export function parseFinancialAmount(value) {
   if (typeof value === 'number') return Number.isFinite(value) ? value : Number.NaN;
   const raw = String(value ?? '').trim();
   if (!raw) return Number.NaN;
-  const normalized = raw
+
+  let normalized = raw
     .replace(/R\$/gi, '')
     .replace(/\s/g, '')
-    .replace(/\./g, '')
-    .replace(',', '.')
-    .replace(/[^0-9.-]/g, '');
+    .replace(/[^0-9,.-]/g, '');
+
+  if (normalized.includes(',') && normalized.includes('.')) {
+    normalized = normalized.replace(/\./g, '').replace(',', '.');
+  } else if (normalized.includes(',')) {
+    normalized = normalized.replace(',', '.');
+  }
+
   const amount = Number(normalized);
   return Number.isFinite(amount) ? amount : Number.NaN;
 }
