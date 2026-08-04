@@ -1,5 +1,6 @@
 import { isFinancialState, recoveryDecision, transactionCount } from './state-recovery-core.js';
 
+const VALIDATION_MODE = import.meta.env.VITE_VALIDATION_MODE === 'true' || new URLSearchParams(location.search).get('validacao') === '1';
 const STATE_KEY = 'meg-financas-state-v4-paid-fixes';
 const REVISION_KEY = 'meg-cloud-revision-v1';
 const DIRTY_KEY = 'meg-local-state-pending-v1';
@@ -86,7 +87,7 @@ function openRecoveryDatabase() {
 }
 
 async function saveSnapshot(state, reason, revision = currentRevision(), { force = false } = {}) {
-  if (!isFinancialState(state)) return false;
+  if (VALIDATION_MODE || !isFinancialState(state)) return false;
   const now = Date.now();
   if (!force && now - lastSnapshotAt < SNAPSHOT_INTERVAL_MS) return false;
   lastSnapshotAt = now;
@@ -167,6 +168,7 @@ function showBlockedNotice() {
 }
 
 Storage.prototype.setItem = function protectedSetItem(key, value) {
+  if (VALIDATION_MODE) return originalSetItem.call(this, key, value);
   if (this === window.localStorage && key === STATE_KEY && !internalStateWrite) {
     const previousRaw = localValue(STATE_KEY);
     if (previousRaw && previousRaw !== value) {
@@ -180,6 +182,7 @@ Storage.prototype.setItem = function protectedSetItem(key, value) {
 };
 
 window.fetch = async function protectedFetch(input, init = {}) {
+  if (VALIDATION_MODE) return originalFetch(input, init);
   const url = requestUrl(input);
   const method = String(init.method || 'GET').toUpperCase();
   const isStateRequest = appStateRequest(url);
@@ -247,6 +250,7 @@ window.fetch = async function protectedFetch(input, init = {}) {
   saveSnapshot(decision.state, 'recuperacao-automatica-concluida', saved.revision, { force: true }).catch(() => undefined);
   window.MEG_DATA_RECOVERY_RESULT = {
     recovered: true,
+    strategy: decision.strategy,
     localCount: decision.localCount,
     remoteCount: decision.remoteCount,
     mergedCount: decision.mergedCount,
@@ -263,14 +267,17 @@ window.fetch = async function protectedFetch(input, init = {}) {
 };
 
 window.addEventListener('pagehide', () => {
+  if (VALIDATION_MODE) return;
   const state = parseJson(localValue(STATE_KEY));
   saveSnapshot(state, 'fechamento-do-aplicativo', currentRevision(), { force: true }).catch(() => undefined);
 });
 
 window.MEG_DATA_PROTECTION = {
-  dirty: () => readDirtyState(),
-  blocked: () => recoveryBlocked,
+  enabled: !VALIDATION_MODE,
+  dirty: () => VALIDATION_MODE ? null : readDirtyState(),
+  blocked: () => !VALIDATION_MODE && recoveryBlocked,
   snapshot(reason = 'copia-manual') {
+    if (VALIDATION_MODE) return Promise.resolve(false);
     return saveSnapshot(parseJson(localValue(STATE_KEY)), reason, currentRevision(), { force: true });
   },
 };
