@@ -20,3 +20,47 @@
   font-weight: 800;
   color: var(--success, #15803d);
 }
+
+:is(
+  input[type="number"][step="0.01"],
+  input[type="number"][data-monetary="true"],
+  input[type="number"][id*="amount" i],
+  input[type="number"][id*="total" i],
+  input[type="number"][id*="value" i],
+  input[type="number"][id*="balance" i],
+  input[type="number"][id*="limit" i],
+  input[type="number"][id*="budget" i],
+  input[type="number"][id*="income" i],
+  input[type="number"][id*="expense" i]
+) {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+:is(
+  input[type="number"][step="0.01"],
+  input[type="number"][data-monetary="true"],
+  input[type="number"][id*="amount" i],
+  input[type="number"][id*="total" i],
+  input[type="number"][id*="value" i],
+  input[type="number"][id*="balance" i],
+  input[type="number"][id*="limit" i],
+  input[type="number"][id*="budget" i],
+  input[type="number"][id*="income" i],
+  input[type="number"][id*="expense" i]
+)::-webkit-inner-spin-button,
+:is(
+  input[type="number"][step="0.01"],
+  input[type="number"][data-monetary="true"],
+  input[type="number"][id*="amount" i],
+  input[type="number"][id*="total" i],
+  input[type="number"][id*="value" i],
+  input[type="number"][id*="balance" i],
+  input[type="number"][id*="limit" i],
+  input[type="number"][id*="budget" i],
+  input[type="number"][id*="income" i],
+  input[type="number"][id*="expense" i]
+)::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
