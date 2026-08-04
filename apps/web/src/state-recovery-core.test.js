@@ -29,15 +29,28 @@ assert.deepEqual(merged.budgets, { CASA: 120, CARRO: 80 });
 assert.deepEqual(merged.catalogs.groups, ['CASA', 'CARRO']);
 
 assert.equal(recoveryDecision({ dirty: null, localState: local, remoteState: remote, remoteRevision: 7 }).action, 'remote');
-const decision = recoveryDecision({
+
+const sameRevision = recoveryDecision({
+  dirty: { baseRevision: 7 },
+  localState: local,
+  remoteState: remote,
+  remoteRevision: 7,
+});
+assert.equal(sameRevision.action, 'recover');
+assert.equal(sameRevision.strategy, 'local');
+assert.equal(sameRevision.state, local);
+assert.equal(sameRevision.mergedCount, 2);
+
+const changedRevision = recoveryDecision({
   dirty: { baseRevision: 6 },
   localState: local,
   remoteState: remote,
   remoteRevision: 7,
 });
-assert.equal(decision.action, 'recover');
-assert.equal(decision.localCount, 2);
-assert.equal(decision.remoteCount, 2);
-assert.equal(decision.mergedCount, 3);
+assert.equal(changedRevision.action, 'recover');
+assert.equal(changedRevision.strategy, 'merge');
+assert.equal(changedRevision.localCount, 2);
+assert.equal(changedRevision.remoteCount, 2);
+assert.equal(changedRevision.mergedCount, 3);
 
 console.log('state recovery core tests passed');
