@@ -17,11 +17,13 @@ export function initializeStableUiFeatures() {
           import('./ongoing-card-installments.css'),
           import('./stable-grid-filters.css')
         ]);
-        const [{ initializeStableGridFilters }] = await Promise.all([
+        const [{ initializeStableGridFilters }, { initializeExactNumberGridFilters }] = await Promise.all([
           import('./stable-grid-filters.js'),
+          import('./exact-number-grid-filters.js'),
           import('./ongoing-card-installments.js')
         ]);
         initializeStableGridFilters();
+        initializeExactNumberGridFilters();
         document.querySelector('#clearCreditCardFiltersBtn')?.addEventListener('click', () => {
           window.MEG_STABLE_GRID_FILTERS?.clearCardFilters();
         });
