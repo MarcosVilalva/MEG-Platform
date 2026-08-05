@@ -59,9 +59,9 @@ assert.match(biometricUnavailableMessage('PLUGIN_UNAVAILABLE'), /componente biom
 assert.match(nativePlugin, /LEGACY_PREFS_NAME\s*=\s*"meg_biometric_login"/);
 assert.match(nativePlugin, /SECURE_PREFS_NAME\s*=\s*"meg_biometric_login_secure_v2"/);
 assert.match(nativePlugin, /migrateLegacyCredentials\(securePreferences\)/);
-assert.match(nativePlugin, /EncryptedSharedPreferences\.create\([\s\S]*SECURE_PREFS_NAME/);
+assert.match(nativePlugin, /EncryptedSharedPreferences\.create\(\s*getContext\(\),\s*SECURE_PREFS_NAME,/);
 assert.equal(
-  /EncryptedSharedPreferences\.create\([\s\S]*LEGACY_PREFS_NAME/.test(nativePlugin),
+  nativePlugin.includes('EncryptedSharedPreferences.create(\n            getContext(),\n            LEGACY_PREFS_NAME,'),
   false,
   'o arquivo legado não pode ser aberto como armazenamento criptografado',
 );
