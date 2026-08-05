@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
-import { biometricControlMode, isNativeAndroidRuntime } from './native-biometric-login.js';
+import {
+  biometricControlMode,
+  biometricUnavailableMessage,
+  isNativeAndroidRuntime,
+} from './native-biometric-login.js';
 
 const classList = (...values) => ({ contains: (value) => values.includes(value) });
 const nativeRuntime = (platform, native = true) => ({
@@ -40,5 +44,7 @@ assert.equal(isNativeAndroidRuntime({
 assert.equal(biometricControlMode({ available: false, enabled: false }), 'hidden');
 assert.equal(biometricControlMode({ available: true, enabled: false }), 'setup');
 assert.equal(biometricControlMode({ available: true, enabled: true }), 'login');
+assert.match(biometricUnavailableMessage('11'), /Nenhuma digital/);
+assert.match(biometricUnavailableMessage('PLUGIN_UNAVAILABLE'), /componente biométrico/);
 
 console.log('native Android biometric login tests passed');
