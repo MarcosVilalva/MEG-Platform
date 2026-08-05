@@ -66,6 +66,9 @@ export function initializeStableUiFeatures() {
       initializeNegativeExpenseAmounts();
       const { initializeRecurringTransactions } = await import('./recurring-transactions.js');
       initializeRecurringTransactions();
+      const { initializeAuthenticatedBiometricSettings } = await import('./native-biometric-settings.js');
+      initializeAuthenticatedBiometricSettings();
+      document.body.dataset.cloudCanonical = 'true';
     } catch (cause) {
       optionalUiPromise = null;
       console.error('MEG optional UI enhancements failed to load', cause);

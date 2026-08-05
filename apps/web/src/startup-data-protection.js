@@ -7,6 +7,7 @@ const DIRTY_KEY = 'meg-local-state-pending-v1';
 const DB_NAME = 'meg-financas-recovery';
 const DB_VERSION = 1;
 const STORE_NAME = 'snapshots';
+const BASELINE_ID = 'cloud-baseline';
 const MAX_SNAPSHOTS = 12;
 const SNAPSHOT_INTERVAL_MS = 60_000;
 
@@ -17,6 +18,8 @@ let confirmedStateUntil = 0;
 let lastSnapshotAt = 0;
 let recoveryBlocked = false;
 let blockedNoticeShown = false;
+let cloudBaselineState = null;
+let cloudBaselineRevision = 0;
 
 const originalFetch = window.fetch.bind(window);
 const originalSetItem = Storage.prototype.setItem;
@@ -107,13 +110,58 @@ async function saveSnapshot(state, reason, revision = currentRevision(), { force
     });
     const allRequest = store.getAll();
     allRequest.onsuccess = () => {
-      const excess = allRequest.result
-        .sort((left, right) => String(left.createdAt).localeCompare(String(right.createdAt)))
-        .slice(0, Math.max(0, allRequest.result.length - MAX_SNAPSHOTS));
+      const ordinarySnapshots = allRequest.result
+        .filter((item) => item.id !== BASELINE_ID)
+        .sort((left, right) => String(left.createdAt).localeCompare(String(right.createdAt)));
+      const excess = ordinarySnapshots.slice(0, Math.max(0, ordinarySnapshots.length - MAX_SNAPSHOTS));
       excess.forEach((item) => store.delete(item.id));
     };
     transaction.oncomplete = () => resolve(true);
     transaction.onerror = () => resolve(false);
+  });
+}
+
+async function saveCloudBaseline(state, revision) {
+  if (VALIDATION_MODE || !isFinancialState(state)) return false;
+  cloudBaselineState = state;
+  cloudBaselineRevision = Number(revision || 0);
+  const database = await openRecoveryDatabase();
+  if (!database) return false;
+
+  return new Promise((resolve) => {
+    const transaction = database.transaction(STORE_NAME, 'readwrite');
+    transaction.objectStore(STORE_NAME).put({
+      id: BASELINE_ID,
+      createdAt: new Date().toISOString(),
+      reason: 'ultima-base-confirmada-na-nuvem',
+      revision: cloudBaselineRevision,
+      transactionCount: transactionCount(state),
+      state,
+    });
+    transaction.oncomplete = () => resolve(true);
+    transaction.onerror = () => resolve(false);
+  });
+}
+
+async function loadCloudBaseline() {
+  if (isFinancialState(cloudBaselineState)) {
+    return { state: cloudBaselineState, revision: cloudBaselineRevision };
+  }
+  const database = await openRecoveryDatabase();
+  if (!database) return { state: null, revision: 0 };
+
+  return new Promise((resolve) => {
+    const transaction = database.transaction(STORE_NAME, 'readonly');
+    const request = transaction.objectStore(STORE_NAME).get(BASELINE_ID);
+    request.onsuccess = () => {
+      const item = request.result;
+      if (isFinancialState(item?.state)) {
+        cloudBaselineState = item.state;
+        cloudBaselineRevision = Number(item.revision || 0);
+      }
+      resolve({ state: cloudBaselineState, revision: cloudBaselineRevision });
+    };
+    request.onerror = () => resolve({ state: null, revision: 0 });
   });
 }
 
@@ -123,10 +171,17 @@ function setProtectedLocalState(state) {
     const raw = JSON.stringify(state);
     writeLocalValue(STATE_KEY, raw);
     confirmedStateRaw = raw;
-    confirmedStateUntil = Date.now() + 5000;
+    confirmedStateUntil = Date.now() + 30_000;
   } finally {
     internalStateWrite = false;
   }
+}
+
+function markRemoteStateAsConfirmed(state) {
+  if (!isFinancialState(state)) return;
+  confirmedStateRaw = JSON.stringify(state);
+  confirmedStateUntil = Date.now() + 30_000;
+  remoteStateWindowUntil = Date.now() + 30_000;
 }
 
 function requestUrl(input) {
@@ -160,7 +215,7 @@ function showBlockedNotice() {
     notice.id = 'megDataRecoveryNotice';
     notice.setAttribute('role', 'alert');
     notice.style.cssText = 'position:fixed;inset:auto 16px 16px;z-index:2147483647;padding:14px 16px;border-radius:12px;background:#7f1d1d;color:#fff;font:600 14px/1.4 system-ui;box-shadow:0 12px 30px #0005';
-    notice.textContent = 'O MEG protegeu uma cópia local ainda não sincronizada. Não recarregue a nuvem; verifique a conexão e abra novamente para concluir a recuperação automática.';
+    notice.textContent = 'O MEG protegeu alterações locais ainda não sincronizadas. A base da nuvem não foi substituída. Verifique a conexão e abra novamente.';
     document.body.appendChild(notice);
   };
   if (document.body) show();
@@ -175,7 +230,7 @@ Storage.prototype.setItem = function protectedSetItem(key, value) {
       saveSnapshot(parseJson(previousRaw), 'antes-de-alteracao-local').catch(() => undefined);
     }
     const confirmedWrite = Date.now() <= confirmedStateUntil && value === confirmedStateRaw;
-    const remoteWrite = Date.now() <= remoteStateWindowUntil;
+    const remoteWrite = Date.now() <= remoteStateWindowUntil && value === confirmedStateRaw;
     if (!confirmedWrite && !remoteWrite) markDirty(value);
   }
   return originalSetItem.call(this, key, value);
@@ -202,10 +257,11 @@ window.fetch = async function protectedFetch(input, init = {}) {
     } catch {
       confirmedState = window.MEG_APP?.getStateRef?.() || window.MEG_APP?.getState?.();
     }
+    const responsePayload = await response.clone().json().catch(() => ({}));
     if (isFinancialState(confirmedState)) {
-      confirmedStateRaw = JSON.stringify(confirmedState);
-      confirmedStateUntil = Date.now() + 5000;
+      markRemoteStateAsConfirmed(confirmedState);
       saveSnapshot(confirmedState, 'confirmado-na-nuvem').catch(() => undefined);
+      saveCloudBaseline(confirmedState, Number(responsePayload.revision || currentRevision())).catch(() => undefined);
     }
     clearDirtyState();
     return response;
@@ -213,20 +269,40 @@ window.fetch = async function protectedFetch(input, init = {}) {
 
   if (method !== 'GET' || !exactAppStateRequest(url) || !response.ok) return response;
 
-  remoteStateWindowUntil = Date.now() + 3000;
   const payload = await response.clone().json().catch(() => null);
-  if (!payload) return response;
+  if (!payload || !isFinancialState(payload.state)) return response;
+
+  markRemoteStateAsConfirmed(payload.state);
   saveSnapshot(payload.state, 'nuvem-antes-da-abertura', payload.revision, { force: true }).catch(() => undefined);
 
   const dirty = readDirtyState();
   const localState = parseJson(localValue(STATE_KEY));
+  const baseline = await loadCloudBaseline();
   const decision = recoveryDecision({
     dirty,
     localState,
     remoteState: payload.state,
     remoteRevision: Number(payload.revision || 0),
+    baselineState: baseline.state,
+    baselineRevision: baseline.revision,
   });
-  if (decision.action !== 'recover') return response;
+
+  if (decision.action !== 'recover') {
+    if (decision.protectedLocal && isFinancialState(localState)) {
+      await saveSnapshot(localState, `copia-local-protegida-${decision.strategy}`, currentRevision(), { force: true });
+      window.MEG_DATA_RECOVERY_RESULT = {
+        recovered: false,
+        cloudCanonical: true,
+        strategy: decision.strategy,
+        localCount: decision.localCount,
+        remoteCount: decision.remoteCount,
+        conflicts: Number(decision.conflicts || 0),
+      };
+    }
+    clearDirtyState();
+    saveCloudBaseline(payload.state, payload.revision).catch(() => undefined);
+    return response;
+  }
 
   const headers = new Headers(init.headers || {});
   headers.set('Content-Type', 'application/json');
@@ -245,22 +321,29 @@ window.fetch = async function protectedFetch(input, init = {}) {
   }
 
   const saved = await recoveryResponse.json().catch(() => ({}));
+  const savedRevision = Number(saved.revision || decision.revision);
   setProtectedLocalState(decision.state);
   clearDirtyState();
-  saveSnapshot(decision.state, 'recuperacao-automatica-concluida', saved.revision, { force: true }).catch(() => undefined);
+  saveSnapshot(decision.state, 'recuperacao-automatica-concluida', savedRevision, { force: true }).catch(() => undefined);
+  saveCloudBaseline(decision.state, savedRevision).catch(() => undefined);
   window.MEG_DATA_RECOVERY_RESULT = {
     recovered: true,
+    cloudCanonical: true,
     strategy: decision.strategy,
     localCount: decision.localCount,
     remoteCount: decision.remoteCount,
     mergedCount: decision.mergedCount,
-    revision: Number(saved.revision || decision.revision),
+    conflicts: Number(decision.conflicts || 0),
+    additions: Number(decision.additions || 0),
+    updates: Number(decision.updates || 0),
+    deletions: Number(decision.deletions || 0),
+    revision: savedRevision,
   };
 
   return responseFromPayload({
     ...payload,
     state: decision.state,
-    revision: Number(saved.revision || decision.revision),
+    revision: savedRevision,
     updatedAt: saved.updatedAt || payload.updatedAt,
     recovered: true,
   }, response);
@@ -274,8 +357,10 @@ window.addEventListener('pagehide', () => {
 
 window.MEG_DATA_PROTECTION = {
   enabled: !VALIDATION_MODE,
+  cloudCanonical: true,
   dirty: () => VALIDATION_MODE ? null : readDirtyState(),
   blocked: () => !VALIDATION_MODE && recoveryBlocked,
+  baseline: () => ({ revision: cloudBaselineRevision, transactionCount: transactionCount(cloudBaselineState) }),
   snapshot(reason = 'copia-manual') {
     if (VALIDATION_MODE) return Promise.resolve(false);
     return saveSnapshot(parseJson(localValue(STATE_KEY)), reason, currentRevision(), { force: true });

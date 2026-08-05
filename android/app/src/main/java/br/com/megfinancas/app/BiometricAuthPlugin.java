@@ -1,5 +1,6 @@
 package br.com.megfinancas.app;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 
 import androidx.annotation.NonNull;
@@ -20,7 +21,8 @@ import java.util.concurrent.Executor;
 
 @CapacitorPlugin(name = "BiometricAuth")
 public class BiometricAuthPlugin extends Plugin {
-    private static final String PREFS_NAME = "meg_biometric_login";
+    private static final String LEGACY_PREFS_NAME = "meg_biometric_login";
+    private static final String SECURE_PREFS_NAME = "meg_biometric_login_secure_v2";
     private static final String KEY_EMAIL = "email";
     private static final String KEY_PASSWORD = "password";
     private static final int AUTHENTICATORS = BiometricManager.Authenticators.BIOMETRIC_WEAK;
@@ -34,14 +36,36 @@ public class BiometricAuthPlugin extends Plugin {
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build();
 
-        cachedPreferences = EncryptedSharedPreferences.create(
+        SharedPreferences securePreferences = EncryptedSharedPreferences.create(
             getContext(),
-            PREFS_NAME,
+            SECURE_PREFS_NAME,
             masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         );
+
+        migrateLegacyCredentials(securePreferences);
+        cachedPreferences = securePreferences;
         return cachedPreferences;
+    }
+
+    private void migrateLegacyCredentials(SharedPreferences securePreferences) {
+        if (securePreferences.contains(KEY_EMAIL) && securePreferences.contains(KEY_PASSWORD)) return;
+
+        try {
+            SharedPreferences legacy = getContext().getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE);
+            String email = legacy.getString(KEY_EMAIL, "");
+            String password = legacy.getString(KEY_PASSWORD, "");
+            if (email == null || email.trim().isEmpty() || password == null || password.isEmpty()) return;
+
+            boolean migrated = securePreferences.edit()
+                .putString(KEY_EMAIL, email.trim())
+                .putString(KEY_PASSWORD, password)
+                .commit();
+            if (migrated) legacy.edit().clear().commit();
+        } catch (Exception ignored) {
+            // Arquivos antigos criptografados ou corrompidos não podem impedir uma nova ativação.
+        }
     }
 
     private boolean hasStoredCredentials() {
@@ -102,6 +126,7 @@ public class BiometricAuthPlugin extends Plugin {
         response.put("available", available);
         response.put("enabled", available && hasStoredCredentials());
         response.put("authenticator", "BIOMETRIC_WEAK");
+        response.put("storageVersion", 2);
 
         if (available && hasStoredCredentials()) {
             try {
@@ -140,12 +165,17 @@ public class BiometricAuthPlugin extends Plugin {
             @Override
             public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
                 try {
-                    prefs().edit()
+                    boolean saved = prefs().edit()
                         .putString(KEY_EMAIL, email)
                         .putString(KEY_PASSWORD, password)
                         .commit();
+                    if (!saved) {
+                        call.reject("SECURE_STORAGE_WRITE_FAILED");
+                        return;
+                    }
                     JSObject response = new JSObject();
                     response.put("saved", true);
+                    response.put("storageVersion", 2);
                     call.resolve(response);
                 } catch (Exception cause) {
                     call.reject("SECURE_STORAGE_UNAVAILABLE", cause);
@@ -175,6 +205,7 @@ public class BiometricAuthPlugin extends Plugin {
     public void clear(PluginCall call) {
         try {
             prefs().edit().clear().commit();
+            getContext().getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE).edit().clear().commit();
             call.resolve();
         } catch (Exception cause) {
             call.reject("SECURE_STORAGE_UNAVAILABLE", cause);
@@ -215,6 +246,7 @@ public class BiometricAuthPlugin extends Plugin {
                 JSObject response = new JSObject();
                 response.put("email", email);
                 response.put("password", password);
+                response.put("storageVersion", 2);
                 call.resolve(response);
             }
 
