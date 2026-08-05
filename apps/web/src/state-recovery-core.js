@@ -1,3 +1,7 @@
+const STATE_KEY = 'meg-financas-state-v4-paid-fixes';
+const REVISION_KEY = 'meg-cloud-revision-v1';
+const CANONICAL_CACHE_KEY = 'meg-cloud-canonical-cache-v2';
+
 export function isFinancialState(value) {
   return Boolean(value && typeof value === 'object' && Array.isArray(value.transactions));
 }
@@ -11,6 +15,27 @@ function sameValue(left, right) {
   if (left == null || right == null) return false;
   try {
     return JSON.stringify(left) === JSON.stringify(right);
+  } catch {
+    return false;
+  }
+}
+
+export function persistCanonicalRemoteState(remoteState, remoteRevision) {
+  if (!isFinancialState(remoteState)) return false;
+  const storage = globalThis.window?.localStorage;
+  if (!storage?.setItem) return false;
+
+  const revision = Number(remoteRevision || 0);
+  const rawState = JSON.stringify(remoteState);
+  try {
+    storage.setItem(CANONICAL_CACHE_KEY, JSON.stringify({
+      revision,
+      confirmedAt: new Date().toISOString(),
+      state: remoteState,
+    }));
+    storage.setItem(STATE_KEY, rawState);
+    storage.setItem(REVISION_KEY, String(revision));
+    return true;
   } catch {
     return false;
   }
@@ -71,7 +96,6 @@ export function mergeRecoveryStatesWithReport(remoteState, localState, baselineS
       mergedById.set(id, localItem);
       updates += 1;
     } else {
-      // O mesmo lançamento mudou ou foi excluído na nuvem. A nuvem vence o conflito.
       conflicts += 1;
     }
   }
@@ -84,7 +108,6 @@ export function mergeRecoveryStatesWithReport(remoteState, localState, baselineS
       mergedById.delete(id);
       deletions += 1;
     } else {
-      // Uma exclusão local não pode apagar uma alteração mais nova feita no web.
       conflicts += 1;
     }
   }
@@ -117,22 +140,38 @@ export function recoveryDecision({
   baselineState,
   baselineRevision,
 }) {
+  const currentRemoteRevision = Number(remoteRevision || 0);
+
+  // A abertura do aplicativo nunca pode publicar uma cópia local. A nuvem é a
+  // única fonte ativa e também substitui imediatamente o cache usado pelo app.
+  persistCanonicalRemoteState(remoteState, currentRemoteRevision);
+
   if (!dirty || !isFinancialState(localState)) {
-    return { action: 'remote', strategy: 'remote', state: remoteState, revision: remoteRevision };
+    return {
+      action: 'remote',
+      strategy: 'remote-canonical',
+      state: remoteState,
+      revision: currentRemoteRevision,
+    };
   }
 
+  const localDiffers = !sameValue(localState, remoteState);
   const dirtyBaseRevision = Number(dirty.baseRevision);
-  const currentRemoteRevision = Number(remoteRevision);
+  const common = {
+    action: 'remote',
+    state: remoteState,
+    revision: currentRemoteRevision,
+    localCount: transactionCount(localState),
+    remoteCount: transactionCount(remoteState),
+    mergedCount: transactionCount(remoteState),
+    protectedLocal: localDiffers,
+  };
+
   if (dirtyBaseRevision === currentRemoteRevision) {
     return {
-      action: 'recover',
-      strategy: 'local-same-revision',
-      state: localState,
-      revision: currentRemoteRevision,
-      localCount: transactionCount(localState),
-      remoteCount: transactionCount(remoteState),
-      mergedCount: transactionCount(localState),
-      conflicts: 0,
+      ...common,
+      strategy: localDiffers ? 'remote-canonical-same-revision' : 'remote-canonical-no-change',
+      conflicts: localDiffers ? 1 : 0,
     };
   }
 
@@ -141,41 +180,19 @@ export function recoveryDecision({
 
   if (!baselineMatches) {
     return {
-      action: 'remote',
+      ...common,
       strategy: 'remote-protected-no-baseline',
-      state: remoteState,
-      revision: currentRemoteRevision,
-      localCount: transactionCount(localState),
-      remoteCount: transactionCount(remoteState),
-      mergedCount: transactionCount(remoteState),
-      protectedLocal: true,
       conflicts: 0,
     };
   }
 
   const report = mergeRecoveryStatesWithReport(remoteState, localState, baselineState);
-  if (report.appliedChanges === 0) {
-    return {
-      action: 'remote',
-      strategy: report.conflicts ? 'remote-wins-conflicts' : 'remote-no-local-changes',
-      state: remoteState,
-      revision: currentRemoteRevision,
-      localCount: transactionCount(localState),
-      remoteCount: transactionCount(remoteState),
-      mergedCount: transactionCount(remoteState),
-      conflicts: report.conflicts,
-      protectedLocal: report.conflicts > 0,
-    };
-  }
-
   return {
-    action: 'recover',
-    strategy: 'offline-delta',
-    state: report.state,
-    revision: currentRemoteRevision,
-    localCount: transactionCount(localState),
-    remoteCount: transactionCount(remoteState),
-    mergedCount: transactionCount(report.state),
+    ...common,
+    strategy: report.appliedChanges || report.conflicts
+      ? 'remote-canonical-offline-changes'
+      : 'remote-canonical-no-change',
+    protectedLocal: localDiffers || report.appliedChanges > 0 || report.conflicts > 0,
     conflicts: report.conflicts,
     additions: report.additions,
     updates: report.updates,

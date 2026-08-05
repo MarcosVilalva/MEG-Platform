@@ -3,6 +3,7 @@ import {
   isFinancialState,
   mergeRecoveryStates,
   mergeRecoveryStatesWithReport,
+  persistCanonicalRemoteState,
   recoveryDecision,
   transactionCount,
 } from './state-recovery-core.js';
@@ -31,11 +32,8 @@ const remote = {
 
 const local = {
   transactions: [
-    // Estado antigo intacto no Android: não é alteração local e a nuvem vence.
     { id: 'shared-web', amount: 20, status: 'pending' },
-    // Alteração feita apenas offline: deve ser aplicada.
     { id: 'shared-local', amount: 35, status: 'pending' },
-    // Alterado nos dois dispositivos: a nuvem vence o conflito.
     { id: 'shared-conflict', amount: 60, status: 'cancelled' },
     { id: 'local-only', amount: 50 },
   ],
@@ -63,12 +61,29 @@ assert.deepEqual(report.state.budgets, { CASA: 150 });
 const merged = mergeRecoveryStates(remote, local, baseline);
 assert.equal(merged.transactions.length, 5);
 
-assert.equal(recoveryDecision({
+const storage = new Map();
+globalThis.window = {
+  localStorage: {
+    setItem(key, value) { storage.set(key, value); },
+  },
+};
+
+assert.equal(persistCanonicalRemoteState(remote, 7), true);
+assert.deepEqual(JSON.parse(storage.get('meg-financas-state-v4-paid-fixes')), remote);
+assert.equal(storage.get('meg-cloud-revision-v1'), '7');
+const canonicalCache = JSON.parse(storage.get('meg-cloud-canonical-cache-v2'));
+assert.equal(canonicalCache.revision, 7);
+assert.deepEqual(canonicalCache.state, remote);
+
+const cleanOpening = recoveryDecision({
   dirty: null,
   localState: local,
   remoteState: remote,
   remoteRevision: 7,
-}).action, 'remote');
+});
+assert.equal(cleanOpening.action, 'remote');
+assert.equal(cleanOpening.strategy, 'remote-canonical');
+assert.equal(cleanOpening.state, remote);
 
 const sameRevision = recoveryDecision({
   dirty: { baseRevision: 7 },
@@ -76,9 +91,12 @@ const sameRevision = recoveryDecision({
   remoteState: remote,
   remoteRevision: 7,
 });
-assert.equal(sameRevision.action, 'recover');
-assert.equal(sameRevision.strategy, 'local-same-revision');
-assert.equal(sameRevision.state, local);
+assert.equal(sameRevision.action, 'remote');
+assert.equal(sameRevision.strategy, 'remote-canonical-same-revision');
+assert.equal(sameRevision.state, remote);
+assert.equal(sameRevision.protectedLocal, true);
+assert.equal(sameRevision.conflicts, 1);
+assert.deepEqual(JSON.parse(storage.get('meg-financas-state-v4-paid-fixes')), remote);
 
 const changedRevision = recoveryDecision({
   dirty: { baseRevision: 6 },
@@ -88,11 +106,14 @@ const changedRevision = recoveryDecision({
   baselineState: baseline,
   baselineRevision: 6,
 });
-assert.equal(changedRevision.action, 'recover');
-assert.equal(changedRevision.strategy, 'offline-delta');
+assert.equal(changedRevision.action, 'remote');
+assert.equal(changedRevision.strategy, 'remote-canonical-offline-changes');
+assert.equal(changedRevision.state, remote);
+assert.equal(changedRevision.protectedLocal, true);
 assert.equal(changedRevision.conflicts, 1);
-assert.equal(changedRevision.state.transactions.find((item) => item.id === 'shared-web').status, 'paid');
-assert.equal(changedRevision.state.transactions.find((item) => item.id === 'shared-conflict').status, 'paid');
+assert.equal(changedRevision.additions, 1);
+assert.equal(changedRevision.updates, 1);
+assert.equal(changedRevision.deletions, 1);
 
 const migrationWithoutBaseline = recoveryDecision({
   dirty: { baseRevision: 6 },
@@ -114,7 +135,20 @@ const conflictingDelete = recoveryDecision({
   baselineRevision: 6,
 });
 assert.equal(conflictingDelete.action, 'remote');
-assert.equal(conflictingDelete.strategy, 'remote-wins-conflicts');
+assert.equal(conflictingDelete.strategy, 'remote-canonical-offline-changes');
 assert.equal(conflictingDelete.state.transactions[0].status, 'paid');
+assert.equal(conflictingDelete.protectedLocal, true);
+
+const identicalLocal = recoveryDecision({
+  dirty: { baseRevision: 7 },
+  localState: remote,
+  remoteState: remote,
+  remoteRevision: 7,
+});
+assert.equal(identicalLocal.action, 'remote');
+assert.equal(identicalLocal.strategy, 'remote-canonical-no-change');
+assert.equal(identicalLocal.protectedLocal, false);
+
+delete globalThis.window;
 
 console.log('state recovery core tests passed');
