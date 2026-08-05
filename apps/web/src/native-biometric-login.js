@@ -1,17 +1,23 @@
+let capacitorCorePromise = null;
+let importedCapacitor = null;
 let biometricPluginPromise = null;
 let biometricAuthenticationPromise = null;
 let biometricControlsObserver = null;
+let biometricMountTimer = null;
+let biometricMountAttempts = 0;
 
-const ANDROID_RUNTIME_RETRIES = 8;
+const ANDROID_RUNTIME_RETRIES = 24;
 const STATUS_CALL_RETRIES = 4;
-const RETRY_DELAY_MS = 180;
+const RETRY_DELAY_MS = 250;
+const CONTROL_MOUNT_RETRIES = 30;
 
 function delay(milliseconds) {
   return new Promise((resolve) => globalThis.setTimeout(resolve, milliseconds));
 }
 
 function currentRuntime() {
-  return typeof window === 'undefined' ? null : window.Capacitor;
+  if (typeof window === 'undefined') return importedCapacitor;
+  return window.Capacitor || importedCapacitor;
 }
 
 function currentBodyClassList() {
@@ -20,6 +26,29 @@ function currentBodyClassList() {
 
 function currentUserAgent() {
   return typeof navigator === 'undefined' ? '' : navigator.userAgent;
+}
+
+function hasAndroidRuntimeHint() {
+  const runtime = currentRuntime();
+  const platform = runtime?.getPlatform?.() || runtime?.platform || '';
+  return Boolean(
+    platform === 'android'
+    || currentBodyClassList()?.contains?.('native-mobile')
+    || /Android/i.test(currentUserAgent())
+  );
+}
+
+async function getCapacitorCore() {
+  capacitorCorePromise ||= import('@capacitor/core')
+    .then((module) => {
+      importedCapacitor = module.Capacitor;
+      return module;
+    })
+    .catch((cause) => {
+      capacitorCorePromise = null;
+      throw cause;
+    });
+  return capacitorCorePromise;
 }
 
 export function isNativeAndroidRuntime({
@@ -41,15 +70,36 @@ export function biometricControlMode(status) {
   return status.enabled ? 'login' : 'setup';
 }
 
-function potentiallyNativeAndroid() {
-  const capacitor = currentRuntime();
-  const platform = capacitor?.getPlatform?.() || capacitor?.platform || '';
-  if (platform === 'android') return true;
-  return Boolean(currentBodyClassList()?.contains?.('native-mobile') && /Android/i.test(currentUserAgent()));
+export function biometricUnavailableMessage(reason) {
+  const normalized = String(reason ?? '').trim();
+  const messages = {
+    '1': 'O sensor biométrico está temporariamente indisponível. Reinicie o aparelho e tente novamente.',
+    '7': 'A biometria foi bloqueada após várias tentativas. Desbloqueie o aparelho e tente novamente.',
+    '9': 'A biometria está bloqueada. Use o bloqueio de tela do Android e tente novamente.',
+    '11': 'Nenhuma digital ou biometria está cadastrada nas configurações do Android.',
+    '12': 'Este aparelho não possui sensor biométrico compatível.',
+    '15': 'O Android exige uma atualização de segurança para liberar a biometria.',
+    '-2': 'A configuração biométrica deste aparelho não é compatível com a versão instalada.',
+    BIOMETRIC_HW_UNAVAILABLE: 'O sensor biométrico está temporariamente indisponível. Reinicie o aparelho e tente novamente.',
+    BIOMETRIC_LOCKOUT: 'A biometria foi bloqueada após várias tentativas. Desbloqueie o aparelho e tente novamente.',
+    BIOMETRIC_LOCKOUT_PERMANENT: 'A biometria está bloqueada. Use o bloqueio de tela do Android e tente novamente.',
+    BIOMETRIC_NONE_ENROLLED: 'Nenhuma digital ou biometria está cadastrada nas configurações do Android.',
+    BIOMETRIC_NO_HARDWARE: 'Este aparelho não possui sensor biométrico compatível.',
+    BIOMETRIC_SECURITY_UPDATE_REQUIRED: 'O Android exige uma atualização de segurança para liberar a biometria.',
+    BIOMETRIC_UNSUPPORTED: 'A configuração biométrica deste aparelho não é compatível com a versão instalada.',
+    SECURE_STORAGE_UNAVAILABLE: 'O armazenamento seguro do Android não está disponível. Reinicie o aparelho e tente novamente.',
+    PLUGIN_UNAVAILABLE: 'O componente biométrico não foi carregado. Feche o aplicativo e abra novamente.',
+    NOT_NATIVE_ANDROID: 'A biometria está disponível somente no aplicativo Android.',
+  };
+  return messages[normalized] || 'Cadastre uma digital ou biometria e mantenha o bloqueio de tela ativo no Android.';
 }
 
 async function waitForNativeAndroid() {
-  if (!potentiallyNativeAndroid()) return false;
+  if (!hasAndroidRuntimeHint()) return false;
+  try {
+    await getCapacitorCore();
+  } catch {}
+
   for (let attempt = 0; attempt < ANDROID_RUNTIME_RETRIES; attempt += 1) {
     if (isNativeAndroidRuntime()) return true;
     await delay(RETRY_DELAY_MS);
@@ -59,7 +109,7 @@ async function waitForNativeAndroid() {
 
 async function getBiometricAuth() {
   if (!await waitForNativeAndroid()) return null;
-  biometricPluginPromise ||= import('@capacitor/core')
+  biometricPluginPromise ||= getCapacitorCore()
     .then(({ registerPlugin }) => registerPlugin('BiometricAuth'))
     .catch((cause) => {
       biometricPluginPromise = null;
@@ -151,18 +201,26 @@ export async function getBiometricLoginStatus() {
     return { available: false, enabled: false, reason: 'NOT_NATIVE_ANDROID' };
   }
   try {
-    return await callBiometricPlugin('isAvailable', undefined, { retries: STATUS_CALL_RETRIES });
-  } catch {
-    return { available: false, enabled: false, reason: 'PLUGIN_UNAVAILABLE' };
+    const status = await callBiometricPlugin('isAvailable', undefined, { retries: STATUS_CALL_RETRIES });
+    window.MEG_BIOMETRIC_STATUS = status;
+    return status;
+  } catch (cause) {
+    const status = {
+      available: false,
+      enabled: false,
+      reason: cause?.message || 'PLUGIN_UNAVAILABLE',
+    };
+    window.MEG_BIOMETRIC_STATUS = status;
+    return status;
   }
 }
 
 export async function saveBiometricLogin({ email, password }) {
   if (!await waitForNativeAndroid() || !email || !password) return { saved: false };
   try {
-    return await callBiometricPlugin('saveCredentials', { email, password });
-  } catch {
-    return { saved: false };
+    return await callBiometricPlugin('saveCredentials', { email, password }, { retries: 2 });
+  } catch (cause) {
+    return { saved: false, reason: cause?.message || 'SAVE_FAILED' };
   }
 }
 
@@ -176,7 +234,7 @@ export async function requestBiometricLogin() {
       const credentials = await callBiometricPlugin('authenticate', {
         title: 'Entrar no MEG Finanças',
         subtitle: 'Confirme sua identidade para acessar sua conta',
-      });
+      }, { retries: 2 });
       if (!credentials?.email || !credentials?.password) return null;
       beginAuthenticatedLoadingTransition();
       return credentials;
@@ -205,7 +263,7 @@ function ensureBiometricControlStyles() {
     .meg-android-biometric-control { display: grid; gap: 8px; margin-top: 2px; }
     .meg-android-biometric-control[hidden] { display: none !important; }
     .meg-android-biometric-button { width: 100%; justify-content: center; padding: 13px 14px; border: 1px solid #b9d9d2; border-radius: 12px; background: #eff8f5; color: #0b5f54; font: inherit; font-weight: 800; cursor: pointer; }
-    .meg-android-biometric-button:disabled { cursor: wait; opacity: .68; }
+    .meg-android-biometric-button:disabled { cursor: default; opacity: .72; }
     .meg-android-biometric-help { margin: 0; color: #55726c; font-size: .78rem; line-height: 1.4; }
   `;
   document.head.appendChild(style);
@@ -235,18 +293,23 @@ async function mountAndroidBiometricControl() {
   control.hidden = true;
   control.innerHTML = '<button class="meg-android-biometric-button" type="button"></button><p class="meg-android-biometric-help"></p>';
   const forgotButton = form.querySelector('#forgotPasswordButton');
-  forgotButton?.insertAdjacentElement('beforebegin', control);
+  if (forgotButton) forgotButton.insertAdjacentElement('beforebegin', control);
+  else form.appendChild(control);
 
   const button = control.querySelector('button');
   const help = control.querySelector('p');
   const status = await getBiometricLoginStatus();
   const mode = biometricControlMode(status);
-  if (mode === 'hidden' || !form.isConnected) {
-    control.remove();
-    return false;
-  }
+  if (!form.isConnected) return false;
 
   control.hidden = false;
+  if (mode === 'hidden') {
+    button.textContent = 'Biometria indisponível';
+    button.disabled = true;
+    help.textContent = biometricUnavailableMessage(status?.reason);
+    return true;
+  }
+
   if (mode === 'login') {
     button.textContent = 'Entrar com biometria';
     help.textContent = 'Disponível somente neste aplicativo Android.';
@@ -272,17 +335,45 @@ async function mountAndroidBiometricControl() {
   return true;
 }
 
+function stopBiometricMounting() {
+  biometricControlsObserver?.disconnect();
+  biometricControlsObserver = null;
+  if (biometricMountTimer) globalThis.clearTimeout(biometricMountTimer);
+  biometricMountTimer = null;
+}
+
 function initializeAndroidBiometricControls() {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
-  const tryMount = () => {
-    if (!document.querySelector('#loginForm')) return;
-    biometricControlsObserver?.disconnect();
-    biometricControlsObserver = null;
-    mountAndroidBiometricControl().catch(() => undefined);
+
+  const tryMount = async () => {
+    if (document.querySelector('#loginForm')?.dataset.megBiometricControl === 'true') {
+      stopBiometricMounting();
+      return;
+    }
+
+    biometricMountAttempts += 1;
+    const mounted = document.querySelector('#loginForm')
+      ? await mountAndroidBiometricControl().catch(() => false)
+      : false;
+
+    if (mounted) {
+      stopBiometricMounting();
+      return;
+    }
+
+    if (biometricMountAttempts < CONTROL_MOUNT_RETRIES) {
+      biometricMountTimer = globalThis.setTimeout(tryMount, 500);
+    } else {
+      stopBiometricMounting();
+    }
   };
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryMount, { once: true });
   else queueMicrotask(tryMount);
-  biometricControlsObserver = new MutationObserver(tryMount);
+
+  biometricControlsObserver = new MutationObserver(() => {
+    if (document.querySelector('#loginForm')) tryMount();
+  });
   biometricControlsObserver.observe(document.documentElement, { childList: true, subtree: true });
 }
 
