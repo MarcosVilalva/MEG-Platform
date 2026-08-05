@@ -11,6 +11,7 @@ const baseline = {
   transactions: [
     { id: 'shared-web', amount: 20, status: 'pending' },
     { id: 'shared-local', amount: 30, status: 'pending' },
+    { id: 'shared-conflict', amount: 60, status: 'pending' },
     { id: 'deleted-local', amount: 40, status: 'pending' },
   ],
   budgets: { CASA: 100 },
@@ -20,6 +21,7 @@ const remote = {
   transactions: [
     { id: 'shared-web', amount: 20, status: 'paid' },
     { id: 'shared-local', amount: 30, status: 'pending' },
+    { id: 'shared-conflict', amount: 60, status: 'paid' },
     { id: 'deleted-local', amount: 40, status: 'pending' },
     { id: 'remote-only', amount: 10 },
   ],
@@ -29,8 +31,12 @@ const remote = {
 
 const local = {
   transactions: [
+    // Estado antigo intacto no Android: não é alteração local e a nuvem vence.
     { id: 'shared-web', amount: 20, status: 'pending' },
+    // Alteração feita apenas offline: deve ser aplicada.
     { id: 'shared-local', amount: 35, status: 'pending' },
+    // Alterado nos dois dispositivos: a nuvem vence o conflito.
+    { id: 'shared-conflict', amount: 60, status: 'cancelled' },
     { id: 'local-only', amount: 50 },
   ],
   budgets: { CASA: 120, CARRO: 80 },
@@ -39,7 +45,7 @@ const local = {
 
 assert.equal(isFinancialState(remote), true);
 assert.equal(isFinancialState({ transactions: null }), false);
-assert.equal(transactionCount(local), 3);
+assert.equal(transactionCount(local), 4);
 
 const report = mergeRecoveryStatesWithReport(remote, local, baseline);
 assert.equal(report.appliedChanges, 3);
@@ -49,12 +55,13 @@ assert.equal(report.updates, 1);
 assert.equal(report.deletions, 1);
 assert.equal(report.state.transactions.find((item) => item.id === 'shared-web').status, 'paid');
 assert.equal(report.state.transactions.find((item) => item.id === 'shared-local').amount, 35);
+assert.equal(report.state.transactions.find((item) => item.id === 'shared-conflict').status, 'paid');
 assert.equal(report.state.transactions.some((item) => item.id === 'deleted-local'), false);
 assert.equal(report.state.transactions.some((item) => item.id === 'local-only'), true);
 assert.deepEqual(report.state.budgets, { CASA: 150 });
 
 const merged = mergeRecoveryStates(remote, local, baseline);
-assert.equal(merged.transactions.length, 4);
+assert.equal(merged.transactions.length, 5);
 
 assert.equal(recoveryDecision({
   dirty: null,
@@ -85,6 +92,7 @@ assert.equal(changedRevision.action, 'recover');
 assert.equal(changedRevision.strategy, 'offline-delta');
 assert.equal(changedRevision.conflicts, 1);
 assert.equal(changedRevision.state.transactions.find((item) => item.id === 'shared-web').status, 'paid');
+assert.equal(changedRevision.state.transactions.find((item) => item.id === 'shared-conflict').status, 'paid');
 
 const migrationWithoutBaseline = recoveryDecision({
   dirty: { baseRevision: 6 },
