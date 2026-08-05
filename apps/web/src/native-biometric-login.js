@@ -1,5 +1,5 @@
-import { Capacitor, registerPlugin } from '@capacitor/core';
-
+let capacitorCorePromise = null;
+let importedCapacitor = null;
 let biometricPluginPromise = null;
 let biometricAuthenticationPromise = null;
 let biometricControlsObserver = null;
@@ -16,8 +16,8 @@ function delay(milliseconds) {
 }
 
 function currentRuntime() {
-  if (typeof window === 'undefined') return Capacitor;
-  return window.Capacitor || Capacitor;
+  if (typeof window === 'undefined') return importedCapacitor;
+  return window.Capacitor || importedCapacitor;
 }
 
 function currentBodyClassList() {
@@ -26,6 +26,29 @@ function currentBodyClassList() {
 
 function currentUserAgent() {
   return typeof navigator === 'undefined' ? '' : navigator.userAgent;
+}
+
+function hasAndroidRuntimeHint() {
+  const runtime = currentRuntime();
+  const platform = runtime?.getPlatform?.() || runtime?.platform || '';
+  return Boolean(
+    platform === 'android'
+    || currentBodyClassList()?.contains?.('native-mobile')
+    || /Android/i.test(currentUserAgent())
+  );
+}
+
+async function getCapacitorCore() {
+  capacitorCorePromise ||= import('@capacitor/core')
+    .then((module) => {
+      importedCapacitor = module.Capacitor;
+      return module;
+    })
+    .catch((cause) => {
+      capacitorCorePromise = null;
+      throw cause;
+    });
+  return capacitorCorePromise;
 }
 
 export function isNativeAndroidRuntime({
@@ -57,20 +80,26 @@ export function biometricUnavailableMessage(reason) {
     '12': 'Este aparelho não possui sensor biométrico compatível.',
     '15': 'O Android exige uma atualização de segurança para liberar a biometria.',
     '-2': 'A configuração biométrica deste aparelho não é compatível com a versão instalada.',
+    BIOMETRIC_HW_UNAVAILABLE: 'O sensor biométrico está temporariamente indisponível. Reinicie o aparelho e tente novamente.',
+    BIOMETRIC_LOCKOUT: 'A biometria foi bloqueada após várias tentativas. Desbloqueie o aparelho e tente novamente.',
+    BIOMETRIC_LOCKOUT_PERMANENT: 'A biometria está bloqueada. Use o bloqueio de tela do Android e tente novamente.',
+    BIOMETRIC_NONE_ENROLLED: 'Nenhuma digital ou biometria está cadastrada nas configurações do Android.',
+    BIOMETRIC_NO_HARDWARE: 'Este aparelho não possui sensor biométrico compatível.',
+    BIOMETRIC_SECURITY_UPDATE_REQUIRED: 'O Android exige uma atualização de segurança para liberar a biometria.',
+    BIOMETRIC_UNSUPPORTED: 'A configuração biométrica deste aparelho não é compatível com a versão instalada.',
+    SECURE_STORAGE_UNAVAILABLE: 'O armazenamento seguro do Android não está disponível. Reinicie o aparelho e tente novamente.',
     PLUGIN_UNAVAILABLE: 'O componente biométrico não foi carregado. Feche o aplicativo e abra novamente.',
     NOT_NATIVE_ANDROID: 'A biometria está disponível somente no aplicativo Android.',
   };
   return messages[normalized] || 'Cadastre uma digital ou biometria e mantenha o bloqueio de tela ativo no Android.';
 }
 
-function potentiallyNativeAndroid() {
-  const capacitor = currentRuntime();
-  const platform = capacitor?.getPlatform?.() || capacitor?.platform || '';
-  if (platform === 'android') return true;
-  return Boolean(currentBodyClassList()?.contains?.('native-mobile') && /Android/i.test(currentUserAgent()));
-}
-
 async function waitForNativeAndroid() {
+  if (!hasAndroidRuntimeHint()) return false;
+  try {
+    await getCapacitorCore();
+  } catch {}
+
   for (let attempt = 0; attempt < ANDROID_RUNTIME_RETRIES; attempt += 1) {
     if (isNativeAndroidRuntime()) return true;
     await delay(RETRY_DELAY_MS);
@@ -80,7 +109,8 @@ async function waitForNativeAndroid() {
 
 async function getBiometricAuth() {
   if (!await waitForNativeAndroid()) return null;
-  biometricPluginPromise ||= Promise.resolve(registerPlugin('BiometricAuth'))
+  biometricPluginPromise ||= getCapacitorCore()
+    .then(({ registerPlugin }) => registerPlugin('BiometricAuth'))
     .catch((cause) => {
       biometricPluginPromise = null;
       throw cause;
