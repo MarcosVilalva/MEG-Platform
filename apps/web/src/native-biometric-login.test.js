@@ -10,7 +10,7 @@ import {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const read = (relativePath) => fs.readFileSync(path.resolve(here, relativePath), 'utf8');
-const nativePlugin = read('../../../android/app/src/main/java/br/com/megfinancas/app/BiometricAuthPlugin.java');
+const nativePlugin = read('../../../android/app/src/main/java/br/com/megfinancas/app/BiometricAuthPlugin.java').replace(/\r\n/g, '\n');
 const nativeUpdate = read('./native-app-update.js');
 const biometricSettings = read('./native-biometric-settings.js');
 const buildFix = read('../../../scripts/apply-android-biometric-runtime-fix.mjs');

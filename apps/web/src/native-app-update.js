@@ -123,9 +123,10 @@ let resolveStartupGate;
 const startupGate = new Promise((resolve) => {
   resolveStartupGate = resolve;
 });
+const apiReadyBeforeUpdate = window.MEG_API_READY || Promise.resolve(true);
 window.MEG_ANDROID_STARTUP_GATE = startupGate;
 window.MEG_API_READY = Promise.all([
-  window.MEG_API_READY || Promise.resolve(true),
+  apiReadyBeforeUpdate,
   startupGate,
 ]).then(() => true);
 
@@ -218,7 +219,9 @@ export async function checkForAppUpdate({ force = false, waitForDecision = false
 
 function checkAtAppStartup() {
   if (startupCheckPromise) return startupCheckPromise;
-  startupCheckPromise = checkForAppUpdate({ force: true, waitForDecision: true })
+  startupCheckPromise = apiReadyBeforeUpdate
+    .catch(() => true)
+    .then(() => checkForAppUpdate({ force: true, waitForDecision: true }))
     .finally(() => {
       resolveStartupGate?.(true);
     });

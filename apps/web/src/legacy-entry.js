@@ -421,7 +421,6 @@ async function start() {
   wireLegacyApp();
   await initializeStableUiFeatures();
   window.MEG_APP_UPDATE = { check: () => checkForAppUpdate({ force: true }) };
-  checkForAppUpdate();
   setupInactivityLogout();
   syncLocalDueNotifications(window.MEG_APP.getState());
   window.MEG_CLOUD?.whenFresh?.then((result) => {

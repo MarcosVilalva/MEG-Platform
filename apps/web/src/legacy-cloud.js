@@ -1,5 +1,6 @@
 import { getBiometricLoginStatus, requestBiometricLogin, saveBiometricLogin } from './native-biometric-login.js';
 import { createStateSyncBaseline, createTransactionPatch } from './legacy-state-patch.js';
+import { Capacitor } from '@capacitor/core';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
 const APP_ENV = 'production';
@@ -25,6 +26,16 @@ let remoteCheckInFlight = false;
 let remoteFailureCount = 0;
 let realtimeListenersBound = false;
 const syncChannel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('meg-cloud-state-v1') : null;
+
+function isNativeAndroid() {
+  return Capacitor?.isNativePlatform?.() && Capacitor.getPlatform?.() === 'android';
+}
+
+function assertCloudApiConfigured() {
+  if (!isNativeAndroid()) return;
+  if (/^https:\/\/meg-platform-api\.onrender\.com\/?$/i.test(API_URL)) return;
+  throw new Error('O aplicativo Android não está apontando para a API oficial da nuvem. Recompile com VITE_API_URL=https://meg-platform-api.onrender.com para evitar divergência entre web e app.');
+}
 
 function wait(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -628,6 +639,7 @@ function startRealtimeSync() {
 }
 
 export async function bootstrapCloud() {
+  assertCloudApiConfigured();
   const user = await validateOrLogin();
   showCloudLoading('Carregando seus dados...', 'Buscando a base mais recente');
   let cachedState = null;
@@ -663,6 +675,7 @@ export async function bootstrapCloud() {
   hideCloudLoading();
   window.MEG_CLOUD = {
     user,
+    apiUrl: API_URL,
     whenFresh: Promise.resolve(freshState),
     saveState: queueSave,
     saveNow,
