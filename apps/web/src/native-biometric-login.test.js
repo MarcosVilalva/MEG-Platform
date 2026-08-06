@@ -13,6 +13,7 @@ const read = (relativePath) => fs.readFileSync(path.resolve(here, relativePath),
 const nativePlugin = read('../../../android/app/src/main/java/br/com/megfinancas/app/BiometricAuthPlugin.java');
 const nativeUpdate = read('./native-app-update.js');
 const biometricSettings = read('./native-biometric-settings.js');
+const buildFix = read('../../../scripts/apply-android-biometric-runtime-fix.mjs');
 
 const classList = (...values) => ({ contains: (value) => values.includes(value) });
 const nativeRuntime = (platform, native = true) => ({
@@ -57,15 +58,18 @@ assert.match(biometricUnavailableMessage('11'), /Nenhuma digital/);
 assert.match(biometricUnavailableMessage('PLUGIN_UNAVAILABLE'), /componente biométrico/);
 
 assert.match(nativePlugin, /LEGACY_PREFS_NAME\s*=\s*"meg_biometric_login"/);
-assert.match(nativePlugin, /SECURE_PREFS_NAME\s*=\s*"meg_biometric_login_secure_v2"/);
+assert.match(nativePlugin, /SECURE_PREFS_NAME\s*=\s*"meg_biometric_login_secure_v3"/);
+assert.match(nativePlugin, /META_PREFS_NAME\s*=\s*"meg_biometric_meta_v1"/);
 assert.match(nativePlugin, /migrateLegacyCredentials\(securePreferences\)/);
 assert.match(nativePlugin, /EncryptedSharedPreferences\.create\(\s*getContext\(\),\s*SECURE_PREFS_NAME,/);
-assert.equal(
-  nativePlugin.includes('EncryptedSharedPreferences.create(\n            getContext(),\n            LEGACY_PREFS_NAME,'),
-  false,
-  'o arquivo legado não pode ser aberto como armazenamento criptografado',
-);
-assert.match(nativePlugin, /response\.put\("storageVersion", 2\)/);
+assert.match(nativePlugin, /public void ping\(PluginCall call\)/);
+assert.match(nativePlugin, /response\.put\("pluginVersion", 3\)/);
+assert.match(nativePlugin, /response\.put\("storageVersion", 3\)/);
+assert.match(nativePlugin, /Executors\.newSingleThreadExecutor\(\)/);
+
+const availabilityMethod = nativePlugin.match(/public void isAvailable\(PluginCall call\) \{([\s\S]*?)\n    \}\n\n    @PluginMethod/)?.[1] || '';
+assert.match(availabilityMethod, /isConfigured\(\)/);
+assert.equal(availabilityMethod.includes('prefs()'), false, 'a verificação inicial não pode abrir o Android Keystore');
 
 assert.match(nativeUpdate, /import\('\.\/native-biometric-settings\.js'\)/);
 assert.match(nativeUpdate, /initializeAuthenticatedBiometricSettings\(\)/);
@@ -73,5 +77,10 @@ assert.match(biometricSettings, /#logoutBtn/);
 assert.match(biometricSettings, /\/auth\/login/);
 assert.match(biometricSettings, /saveBiometricLogin\(\{ email, password \}\)/);
 assert.match(biometricSettings, /Biometria ativa — testar/);
+
+assert.match(buildFix, /callBiometricPlugin\('ping'/);
+assert.match(buildFix, /withBiometricTimeout/);
+assert.match(buildFix, /BIOMETRIC_STATUS_TIMEOUT_MS = 8000/);
+assert.match(buildFix, /Biometria: tentar novamente/);
 
 console.log('native Android biometric login tests passed');
