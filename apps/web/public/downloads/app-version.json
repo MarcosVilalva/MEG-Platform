@@ -1,8 +1,8 @@
 {
-  "versionCode": 117,
-  "versionName": "1.1.117",
-  "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "7ad4f75da4086ece5233f7de33ceffc7b7d1ce90a9b1c64abd71caef08402287",
+  "versionCode": 118,
+  "versionName": "1.1.118",
+  "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas-v1.1.118.apk",
+  "sha256": "7fdc4b70f8e23054ee4c80400a2ce655aaba6bdd7eb321df475dfa04b3676ad1",
   "mandatory": false,
-  "releaseNotes": "Nova atualização do MEG Finanças com melhorias de segurança, desempenho e experiência."
+  "releaseNotes": "Biometria Android corrigida, com recuperação automática quando o aparelho demora a responder."
 }
