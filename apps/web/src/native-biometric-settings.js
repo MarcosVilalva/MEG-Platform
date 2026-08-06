@@ -138,18 +138,32 @@ async function mountSettingsButton() {
   logoutButton.insertAdjacentElement('beforebegin', button);
 
   const updateButton = async () => {
-    const status = await withStatusTimeout(getBiometricLoginStatus());
-    button.dataset.enabled = String(Boolean(status?.enabled));
-    if (!status?.available) {
-      button.textContent = 'Biometria indisponível';
-      button.title = biometricUnavailableMessage(status?.reason);
+    button.disabled = true;
+    button.textContent = 'Verificando biometria...';
+    try {
+      const status = await withStatusTimeout(getBiometricLoginStatus());
+      button.dataset.enabled = String(Boolean(status?.enabled));
+      if (!status?.available) {
+        button.textContent = 'Biometria indisponível';
+        button.title = biometricUnavailableMessage(status?.reason);
+        return status;
+      }
+      button.textContent = status.enabled ? 'Biometria ativa — testar' : 'Ativar biometria neste aparelho';
+      button.title = status.enabled
+        ? 'Toque para testar a leitura biométrica.'
+        : 'Toque para vincular sua conta à biometria do Android.';
       return status;
+    } catch (cause) {
+      const reason = cause instanceof Error ? cause.message : 'PLUGIN_UNAVAILABLE';
+      button.dataset.enabled = 'false';
+      button.textContent = 'Tentar biometria novamente';
+      button.title = reason === 'BIOMETRIC_STATUS_TIMEOUT'
+        ? 'O Android não respondeu à verificação. Toque para tentar novamente.'
+        : biometricUnavailableMessage(reason);
+      return { available: false, enabled: false, reason };
+    } finally {
+      button.disabled = false;
     }
-    button.textContent = status.enabled ? 'Biometria ativa — testar' : 'Ativar biometria neste aparelho';
-    button.title = status.enabled
-      ? 'Toque para testar a leitura biométrica.'
-      : 'Toque para vincular sua conta à biometria do Android.';
-    return status;
   };
 
   await updateButton();
@@ -160,7 +174,9 @@ async function mountSettingsButton() {
     try {
       const status = await withStatusTimeout(getBiometricLoginStatus());
       if (!status?.available) {
-        window.alert(biometricUnavailableMessage(status?.reason));
+        window.alert(status?.reason === 'BIOMETRIC_STATUS_TIMEOUT'
+          ? 'O Android não respondeu à biometria. Verifique se há uma digital cadastrada no aparelho e tente novamente.'
+          : biometricUnavailableMessage(status?.reason));
         return;
       }
       if (status.enabled) {

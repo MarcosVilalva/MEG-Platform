@@ -83,5 +83,11 @@ assert.match(biometricLogin, /withBiometricTimeout/);
 assert.match(biometricLogin, /BIOMETRIC_STATUS_TIMEOUT_MS = 8000/);
 assert.match(biometricLogin, /NOT_NATIVE_ANDROID/);
 assert.match(biometricSettings, /BIOMETRIC_STATUS_TIMEOUT_MS = 9000/);
+assert.match(biometricSettings, /Tentar biometria novamente/);
+assert.match(biometricSettings, /finally \{\s*button\.disabled = false;/);
+
+const androidWorkflow = read('../../../.github/workflows/build-android-apk.yml');
+assert.match(androidWorkflow, /MEG-Financas-v\$\{MEG_VERSION_NAME\}\.apk/);
+assert.match(androidWorkflow, /downloadUrl: 'https:\/\/marcosvilalva\.github\.io\/MEG-Platform\/downloads\/' \+ process\.env\.VERSIONED_APK/);
 
 console.log('native Android biometric login tests passed');

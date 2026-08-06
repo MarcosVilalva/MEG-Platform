@@ -75,14 +75,19 @@ jobs:
         run: chmod +x gradlew && ./gradlew assembleRelease
 
       - name: Name APK
-        run: cp android/app/build/outputs/apk/release/app-release.apk MEG-Financas.apk
+        shell: bash
+        run: |
+          VERSIONED_APK="MEG-Financas-v${MEG_VERSION_NAME}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk MEG-Financas.apk
+          cp MEG-Financas.apk "$VERSIONED_APK"
+          echo "VERSIONED_APK=$VERSIONED_APK" >> "$GITHUB_ENV"
 
       - name: Generate secure update manifest
         shell: bash
         run: |
           SHA256=$(sha256sum MEG-Financas.apk | awk '{print $1}')
           export SHA256
-          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('app-version.json', JSON.stringify({ versionCode: Number(process.env.MEG_VERSION_CODE), versionName: process.env.MEG_VERSION_NAME, downloadUrl: 'https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk', sha256: process.env.SHA256, mandatory: false, releaseNotes: 'Nova atualização do MEG Finanças com melhorias de segurança, desempenho e experiência.' }, null, 2) + '\n')"
+          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('app-version.json', JSON.stringify({ versionCode: Number(process.env.MEG_VERSION_CODE), versionName: process.env.MEG_VERSION_NAME, downloadUrl: 'https://marcosvilalva.github.io/MEG-Platform/downloads/' + process.env.VERSIONED_APK, sha256: process.env.SHA256, mandatory: false, releaseNotes: 'Biometria Android corrigida, com recuperação automática quando o aparelho demora a responder.' }, null, 2) + '\n')"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -96,10 +101,11 @@ jobs:
         if: github.actor != 'github-actions[bot]'
         run: |
           cp MEG-Financas.apk apps/web/public/downloads/MEG-Financas.apk
+          cp "$VERSIONED_APK" "apps/web/public/downloads/$VERSIONED_APK"
           cp app-version.json apps/web/public/downloads/app-version.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/web/public/downloads/MEG-Financas.apk apps/web/public/downloads/app-version.json
+          git add apps/web/public/downloads/MEG-Financas.apk "apps/web/public/downloads/$VERSIONED_APK" apps/web/public/downloads/app-version.json
           git diff --cached --quiet || git commit -m "chore: publicar APK atualizado [skip apk]"
           git push
 
