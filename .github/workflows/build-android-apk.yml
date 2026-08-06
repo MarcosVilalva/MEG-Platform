@@ -11,6 +11,7 @@ on:
       - 'capacitor.config.ts'
       - 'package.json'
       - 'package-lock.json'
+      - 'scripts/apply-android-biometric-runtime-fix.mjs'
       - '.github/workflows/build-android-apk.yml'
 
 permissions:
@@ -49,6 +50,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Apply definitive Android biometric runtime fix
+        run: node scripts/apply-android-biometric-runtime-fix.mjs
 
       - name: Prepare permanent Android signing key
         env:
