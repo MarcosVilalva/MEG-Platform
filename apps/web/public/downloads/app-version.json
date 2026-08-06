@@ -1,8 +1,8 @@
 {
-  "versionCode": 121,
-  "versionName": "1.1.121",
-  "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas-v1.1.121.apk",
-  "sha256": "677213094e53a4adde472f02322ea83568d3ea40d529838df4ee283349d7a93a",
+  "versionCode": 124,
+  "versionName": "1.1.124",
+  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=124",
+  "sha256": "f280d5bc0bea5dae2e0557795a2a4a783481f0173b0a1c70c4fe08308593b466",
   "mandatory": false,
-  "releaseNotes": "Biometria persistente em toda reabertura do Android, com nova tela de privacidade."
+  "releaseNotes": "Biometria nativa antes do login e em toda reabertura do Android, sem bloqueio posterior."
 }
