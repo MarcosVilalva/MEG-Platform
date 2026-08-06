@@ -18,155 +18,47 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @CapacitorPlugin(name = "BiometricAuth")
 public class BiometricAuthPlugin extends Plugin {
-    private static final String LEGACY_PREFS_NAME = "meg_biometric_login";
-    private static final String SECURE_PREFS_NAME = "meg_biometric_login_secure_v3";
-    private static final String META_PREFS_NAME = "meg_biometric_meta_v1";
+    private static final String PREFS_NAME = "meg_biometric_login";
     private static final String KEY_EMAIL = "email";
     private static final String KEY_PASSWORD = "password";
-    private static final String KEY_CONFIGURED = "configured";
-    private static final int AUTHENTICATORS = BiometricManager.Authenticators.BIOMETRIC_WEAK;
 
-    private final ExecutorService storageExecutor = Executors.newSingleThreadExecutor();
-    private volatile SharedPreferences cachedPreferences;
-
-    private synchronized SharedPreferences prefs() throws Exception {
-        if (cachedPreferences != null) return cachedPreferences;
-
-        MasterKey masterKey = new MasterKey.Builder(getContext())
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build();
-
-        SharedPreferences securePreferences = EncryptedSharedPreferences.create(
-            getContext(),
-            SECURE_PREFS_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        );
-
-        migrateLegacyCredentials(securePreferences);
-        cachedPreferences = securePreferences;
-        return cachedPreferences;
-    }
-
-    private SharedPreferences metaPrefs() {
-        return getContext().getSharedPreferences(META_PREFS_NAME, Context.MODE_PRIVATE);
-    }
-
-    private boolean isConfigured() {
-        return metaPrefs().getBoolean(KEY_CONFIGURED, false);
-    }
-
-    private void setConfigured(boolean configured) {
-        metaPrefs().edit().putBoolean(KEY_CONFIGURED, configured).apply();
-    }
-
-    private void migrateLegacyCredentials(SharedPreferences securePreferences) {
-        if (securePreferences.contains(KEY_EMAIL) && securePreferences.contains(KEY_PASSWORD)) {
-            setConfigured(true);
-            return;
-        }
-
-        String[] legacyNames = { "meg_biometric_login_secure_v2", LEGACY_PREFS_NAME };
-        for (String legacyName : legacyNames) {
-            try {
-                SharedPreferences legacy = getContext().getSharedPreferences(legacyName, Context.MODE_PRIVATE);
-                String email = legacy.getString(KEY_EMAIL, "");
-                String password = legacy.getString(KEY_PASSWORD, "");
-                if (email == null || email.trim().isEmpty() || password == null || password.isEmpty()) continue;
-
-                boolean migrated = securePreferences.edit()
-                    .putString(KEY_EMAIL, email.trim())
-                    .putString(KEY_PASSWORD, password)
-                    .commit();
-                if (migrated) {
-                    setConfigured(true);
-                    legacy.edit().clear().apply();
-                    return;
-                }
-            } catch (Exception ignored) {
-                // Uma base antiga inválida não pode impedir uma nova ativação.
-            }
+    private SharedPreferences prefs() {
+        try {
+            MasterKey masterKey = new MasterKey.Builder(getContext())
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build();
+            return EncryptedSharedPreferences.create(
+                getContext(),
+                PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+        } catch (Exception ignored) {
+            return getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         }
     }
 
-    private FragmentActivity fragmentActivity(PluginCall call) {
-        if (!(getActivity() instanceof FragmentActivity)) {
-            call.reject("BIOMETRIC_ACTIVITY_UNAVAILABLE");
-            return null;
-        }
-        return (FragmentActivity) getActivity();
+    private int authenticators() {
+        return BiometricManager.Authenticators.BIOMETRIC_STRONG
+            | BiometricManager.Authenticators.DEVICE_CREDENTIAL;
     }
 
-    private String availabilityReason(int result) {
-        switch (result) {
-            case 1:
-                return "BIOMETRIC_HW_UNAVAILABLE";
-            case 7:
-                return "BIOMETRIC_LOCKOUT";
-            case 9:
-                return "BIOMETRIC_LOCKOUT_PERMANENT";
-            case 11:
-                return "BIOMETRIC_NONE_ENROLLED";
-            case 12:
-                return "BIOMETRIC_NO_HARDWARE";
-            case 15:
-                return "BIOMETRIC_SECURITY_UPDATE_REQUIRED";
-            case -2:
-                return "BIOMETRIC_UNSUPPORTED";
-            default:
-                return String.valueOf(result);
-        }
-    }
-
-    private BiometricPrompt.PromptInfo promptInfo(String title, String subtitle, String negativeButton) {
-        return new BiometricPrompt.PromptInfo.Builder()
-            .setTitle(title)
-            .setSubtitle(subtitle)
-            .setAllowedAuthenticators(AUTHENTICATORS)
-            .setNegativeButtonText(negativeButton)
-            .build();
-    }
-
-    private void resolveOnUiThread(FragmentActivity activity, PluginCall call, JSObject response) {
-        activity.runOnUiThread(() -> call.resolve(response));
-    }
-
-    private void rejectOnUiThread(FragmentActivity activity, PluginCall call, String code, Exception cause) {
-        activity.runOnUiThread(() -> call.reject(code, cause));
-    }
-
-    @PluginMethod
-    public void ping(PluginCall call) {
-        JSObject response = new JSObject();
-        response.put("native", true);
-        response.put("platform", "android");
-        response.put("pluginVersion", 3);
-        call.resolve(response);
+    private boolean hasStoredCredentials() {
+        SharedPreferences sharedPreferences = prefs();
+        return sharedPreferences.contains(KEY_EMAIL) && sharedPreferences.contains(KEY_PASSWORD);
     }
 
     @PluginMethod
     public void isAvailable(PluginCall call) {
-        int result = BiometricManager.from(getContext()).canAuthenticate(AUTHENTICATORS);
-        boolean available = result == BiometricManager.BIOMETRIC_SUCCESS;
-
+        int result = BiometricManager.from(getContext()).canAuthenticate(authenticators());
         JSObject response = new JSObject();
-        response.put("available", available);
-        response.put("enabled", available && isConfigured());
-        response.put("authenticator", "BIOMETRIC_WEAK");
-        response.put("storageVersion", 3);
-        response.put("native", true);
-        response.put("platform", "android");
-
-        if (!available) {
-            response.put("reason", availabilityReason(result));
-            response.put("reasonCode", result);
-        }
+        response.put("available", result == BiometricManager.BIOMETRIC_SUCCESS);
+        response.put("enabled", hasStoredCredentials());
+        if (result != BiometricManager.BIOMETRIC_SUCCESS) response.put("reason", String.valueOf(result));
         call.resolve(response);
     }
 
@@ -175,143 +67,73 @@ public class BiometricAuthPlugin extends Plugin {
         String email = call.getString("email", "").trim();
         String password = call.getString("password", "");
         if (email.isEmpty() || password.isEmpty()) {
-            call.reject("CREDENTIALS_INCOMPLETE");
+            call.reject("Credenciais incompletas.");
             return;
         }
-
-        int result = BiometricManager.from(getContext()).canAuthenticate(AUTHENTICATORS);
-        if (result != BiometricManager.BIOMETRIC_SUCCESS) {
-            call.reject(availabilityReason(result));
+        if (BiometricManager.from(getContext()).canAuthenticate(authenticators()) != BiometricManager.BIOMETRIC_SUCCESS) {
+            call.reject("Biometria ou bloqueio de tela indisponível.");
             return;
         }
-
-        FragmentActivity activity = fragmentActivity(call);
-        if (activity == null) return;
-
-        Executor executor = ContextCompat.getMainExecutor(getContext());
-        BiometricPrompt biometricPrompt = new BiometricPrompt(activity, executor, new BiometricPrompt.AuthenticationCallback() {
-            @Override
-            public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
-                storageExecutor.execute(() -> {
-                    try {
-                        boolean saved = prefs().edit()
-                            .putString(KEY_EMAIL, email)
-                            .putString(KEY_PASSWORD, password)
-                            .commit();
-                        if (!saved) {
-                            activity.runOnUiThread(() -> call.reject("SECURE_STORAGE_WRITE_FAILED"));
-                            return;
-                        }
-                        setConfigured(true);
-                        JSObject response = new JSObject();
-                        response.put("saved", true);
-                        response.put("storageVersion", 3);
-                        resolveOnUiThread(activity, call, response);
-                    } catch (Exception cause) {
-                        setConfigured(false);
-                        rejectOnUiThread(activity, call, "SECURE_STORAGE_UNAVAILABLE", cause);
-                    }
-                });
-            }
-
-            @Override
-            public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
-                call.reject("BIOMETRIC_ERROR_" + errorCode + ": " + errString);
-            }
-
-            @Override
-            public void onAuthenticationFailed() {
-                // O Android mantém a janela aberta para permitir nova tentativa.
-            }
-        });
-
-        BiometricPrompt.PromptInfo promptInfo = promptInfo(
-            "Ativar biometria no MEG Finanças",
-            "Confirme sua identidade para liberar o acesso rápido",
-            "Cancelar"
-        );
-        activity.runOnUiThread(() -> biometricPrompt.authenticate(promptInfo));
-    }
-
-    @PluginMethod
-    public void clear(PluginCall call) {
-        FragmentActivity activity = fragmentActivity(call);
-        if (activity == null) return;
-
-        storageExecutor.execute(() -> {
-            try {
-                prefs().edit().clear().commit();
-                getContext().getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE).edit().clear().apply();
-                getContext().getSharedPreferences("meg_biometric_login_secure_v2", Context.MODE_PRIVATE).edit().clear().apply();
-                setConfigured(false);
-                resolveOnUiThread(activity, call, new JSObject());
-            } catch (Exception cause) {
-                rejectOnUiThread(activity, call, "SECURE_STORAGE_UNAVAILABLE", cause);
-            }
+        authenticateAndRun(call, "Ativar biometria no MEG Finanças", "Confirme sua identidade para liberar o acesso rápido", () -> {
+            prefs().edit().putString(KEY_EMAIL, email).putString(KEY_PASSWORD, password).apply();
+            JSObject response = new JSObject();
+            response.put("saved", true);
+            call.resolve(response);
         });
     }
 
     @PluginMethod
     public void authenticate(PluginCall call) {
-        if (!isConfigured()) {
-            call.reject("BIOMETRIC_NOT_CONFIGURED");
+        SharedPreferences sharedPreferences = prefs();
+        String email = sharedPreferences.getString(KEY_EMAIL, "");
+        String password = sharedPreferences.getString(KEY_PASSWORD, "");
+        if (email.isEmpty() || password.isEmpty()) {
+            call.reject("Biometria ainda não configurada.");
             return;
         }
+        authenticateAndRun(
+            call,
+            call.getString("title", "Entrar no MEG Finanças"),
+            call.getString("subtitle", "Confirme sua identidade"),
+            () -> {
+                JSObject response = new JSObject();
+                response.put("email", email);
+                response.put("password", password);
+                call.resolve(response);
+            }
+        );
+    }
 
-        int availability = BiometricManager.from(getContext()).canAuthenticate(AUTHENTICATORS);
-        if (availability != BiometricManager.BIOMETRIC_SUCCESS) {
-            call.reject(availabilityReason(availability));
-            return;
-        }
-
-        FragmentActivity activity = fragmentActivity(call);
-        if (activity == null) return;
-
+    private void authenticateAndRun(PluginCall call, String title, String subtitle, Runnable success) {
+        FragmentActivity activity = (FragmentActivity) getActivity();
         Executor executor = ContextCompat.getMainExecutor(getContext());
-        BiometricPrompt biometricPrompt = new BiometricPrompt(activity, executor, new BiometricPrompt.AuthenticationCallback() {
+        BiometricPrompt prompt = new BiometricPrompt(activity, executor, new BiometricPrompt.AuthenticationCallback() {
             @Override
             public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
-                storageExecutor.execute(() -> {
-                    try {
-                        SharedPreferences sharedPreferences = prefs();
-                        String email = sharedPreferences.getString(KEY_EMAIL, "");
-                        String password = sharedPreferences.getString(KEY_PASSWORD, "");
-                        if (email == null || email.isEmpty() || password == null || password.isEmpty()) {
-                            setConfigured(false);
-                            activity.runOnUiThread(() -> call.reject("BIOMETRIC_NOT_CONFIGURED"));
-                            return;
-                        }
-
-                        JSObject response = new JSObject();
-                        response.put("email", email);
-                        response.put("password", password);
-                        response.put("storageVersion", 3);
-                        resolveOnUiThread(activity, call, response);
-                    } catch (Exception cause) {
-                        setConfigured(false);
-                        rejectOnUiThread(activity, call, "SECURE_STORAGE_UNAVAILABLE", cause);
-                    }
-                });
+                success.run();
             }
 
             @Override
             public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
-                call.reject("BIOMETRIC_ERROR_" + errorCode + ": " + errString);
+                call.reject(errString.toString());
             }
 
             @Override
             public void onAuthenticationFailed() {
-                // O Android mantém a janela aberta para permitir nova tentativa.
+                // Android keeps the prompt open for another attempt.
             }
         });
+        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+            .setTitle(title)
+            .setSubtitle(subtitle)
+            .setAllowedAuthenticators(authenticators())
+            .build();
+        activity.runOnUiThread(() -> prompt.authenticate(promptInfo));
+    }
 
-        String title = call.getString("title", "Entrar no MEG Finanças");
-        String subtitle = call.getString("subtitle", "Confirme sua identidade");
-        BiometricPrompt.PromptInfo promptInfo = promptInfo(
-            title,
-            subtitle,
-            "Usar e-mail e senha"
-        );
-        activity.runOnUiThread(() -> biometricPrompt.authenticate(promptInfo));
+    @PluginMethod
+    public void clear(PluginCall call) {
+        prefs().edit().clear().apply();
+        call.resolve();
     }
 }

@@ -43,6 +43,7 @@ assert.equal(legacyApp.includes('DEFAULT_CATALOGS.expenseClasses[0]'), true, 'cl
 assert.equal(legacyEntry.includes("import { readSheet } from 'read-excel-file/browser'"), false, 'leitor de planilha deve ser carregado somente quando necessário');
 assert.equal(legacyEntry.includes("import { syncLocalDueNotifications }"), false, 'notificações nativas não podem entrar no pacote inicial da web');
 assert.equal(nativeUpdate.includes("import { Capacitor, registerPlugin }"), false, 'atualizador Android deve ser carregado sob demanda');
-assert.equal(biometric.includes("import { Capacitor, registerPlugin }"), false, 'biometria Android deve ser carregada sob demanda');
+assert.equal(biometric.includes('@capgo/capacitor-native-biometric'), false, 'somente uma ponte biométrica pode existir no aplicativo');
+assert.equal(biometric.includes('withBiometricTimeout'), false, 'a ponte biométrica não pode ser interrompida por timeouts da camada web');
 
 console.log('web runtime stability tests passed');
