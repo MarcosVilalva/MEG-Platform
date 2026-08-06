@@ -51,9 +51,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Apply definitive Android biometric runtime fix
-        run: node scripts/apply-android-biometric-runtime-fix.mjs
-
       - name: Prepare permanent Android signing key
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

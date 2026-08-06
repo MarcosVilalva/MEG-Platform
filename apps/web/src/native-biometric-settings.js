@@ -10,6 +10,17 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
 let settingsObserver = null;
 let settingsTimer = null;
 let mountAttempts = 0;
+const BIOMETRIC_STATUS_TIMEOUT_MS = 9000;
+
+function withStatusTimeout(promise) {
+  let timer;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise((_, reject) => {
+      timer = window.setTimeout(() => reject(new Error('BIOMETRIC_STATUS_TIMEOUT')), BIOMETRIC_STATUS_TIMEOUT_MS);
+    }),
+  ]).finally(() => window.clearTimeout(timer));
+}
 
 function ensureStyles() {
   if (document.querySelector('#megBiometricSettingsStyles')) return;
@@ -127,7 +138,7 @@ async function mountSettingsButton() {
   logoutButton.insertAdjacentElement('beforebegin', button);
 
   const updateButton = async () => {
-    const status = await getBiometricLoginStatus();
+    const status = await withStatusTimeout(getBiometricLoginStatus());
     button.dataset.enabled = String(Boolean(status?.enabled));
     if (!status?.available) {
       button.textContent = 'Biometria indisponível';
@@ -147,7 +158,7 @@ async function mountSettingsButton() {
     const statusText = (message) => { button.textContent = message; };
     button.disabled = true;
     try {
-      const status = await getBiometricLoginStatus();
+      const status = await withStatusTimeout(getBiometricLoginStatus());
       if (!status?.available) {
         window.alert(biometricUnavailableMessage(status?.reason));
         return;

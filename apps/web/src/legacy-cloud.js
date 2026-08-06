@@ -1,4 +1,9 @@
-import { getBiometricLoginStatus, requestBiometricLogin, saveBiometricLogin } from './native-biometric-login.js';
+import {
+  clearBiometricLogin,
+  getBiometricLoginStatus,
+  requestBiometricLogin,
+  saveBiometricLogin,
+} from './native-biometric-login.js';
 import { createStateSyncBaseline, createTransactionPatch } from './legacy-state-patch.js';
 import { Capacitor } from '@capacitor/core';
 
@@ -318,7 +323,11 @@ function showAuthentication() {
       body: JSON.stringify(credentials)
     }, { retries: 1, timeoutMs: 20000 });
     const payload = await response.json();
-    if (!response.ok) throw new Error(friendlyAuthError(payload.error));
+    if (!response.ok) {
+      const error = new Error(friendlyAuthError(payload.error));
+      error.code = payload.error;
+      throw error;
+    }
     assertStagingAdmin(payload.user);
     persistSession(payload);
     if (offerBiometricSetup && biometricStatus.available && !biometricStatus.enabled) {
@@ -346,7 +355,13 @@ function showAuthentication() {
       const user = await loginWithCredentials(credentials);
       resolveAuth?.(user);
     } catch (cause) {
-      error.textContent = cause instanceof Error ? cause.message : 'Nao foi possivel conectar a API.';
+      if (cause?.code === 'INVALID_CREDENTIALS') {
+        await clearBiometricLogin();
+        biometricStatus = { available: true, enabled: false, reason: 'CREDENTIALS_CHANGED' };
+        error.textContent = 'Sua senha mudou. Entre com e-mail e senha para ativar novamente a biometria neste Android.';
+        return;
+      }
+      error.textContent = cause instanceof Error ? cause.message : 'Não foi possível conectar à API.';
     }
   }
 

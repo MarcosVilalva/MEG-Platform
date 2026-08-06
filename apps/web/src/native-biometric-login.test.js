@@ -13,7 +13,7 @@ const read = (relativePath) => fs.readFileSync(path.resolve(here, relativePath),
 const nativePlugin = read('../../../android/app/src/main/java/br/com/megfinancas/app/BiometricAuthPlugin.java').replace(/\r\n/g, '\n');
 const nativeUpdate = read('./native-app-update.js');
 const biometricSettings = read('./native-biometric-settings.js');
-const buildFix = read('../../../scripts/apply-android-biometric-runtime-fix.mjs');
+const biometricLogin = read('./native-biometric-login.js');
 
 const classList = (...values) => ({ contains: (value) => values.includes(value) });
 const nativeRuntime = (platform, native = true) => ({
@@ -78,9 +78,10 @@ assert.match(biometricSettings, /\/auth\/login/);
 assert.match(biometricSettings, /saveBiometricLogin\(\{ email, password \}\)/);
 assert.match(biometricSettings, /Biometria ativa — testar/);
 
-assert.match(buildFix, /callBiometricPlugin\('ping'/);
-assert.match(buildFix, /withBiometricTimeout/);
-assert.match(buildFix, /BIOMETRIC_STATUS_TIMEOUT_MS = 8000/);
-assert.match(buildFix, /Biometria: tentar novamente/);
+assert.match(biometricLogin, /callBiometricPlugin\('ping'/);
+assert.match(biometricLogin, /withBiometricTimeout/);
+assert.match(biometricLogin, /BIOMETRIC_STATUS_TIMEOUT_MS = 8000/);
+assert.match(biometricLogin, /NOT_NATIVE_ANDROID/);
+assert.match(biometricSettings, /BIOMETRIC_STATUS_TIMEOUT_MS = 9000/);
 
 console.log('native Android biometric login tests passed');

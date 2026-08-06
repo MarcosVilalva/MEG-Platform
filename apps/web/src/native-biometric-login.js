@@ -10,9 +10,21 @@ const ANDROID_RUNTIME_RETRIES = 24;
 const STATUS_CALL_RETRIES = 4;
 const RETRY_DELAY_MS = 250;
 const CONTROL_MOUNT_RETRIES = 30;
+const BIOMETRIC_STATUS_TIMEOUT_MS = 8000;
+const BIOMETRIC_PROMPT_TIMEOUT_MS = 45000;
 
 function delay(milliseconds) {
   return new Promise((resolve) => globalThis.setTimeout(resolve, milliseconds));
+}
+
+function withBiometricTimeout(promise, milliseconds, code) {
+  let timer;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise((_, reject) => {
+      timer = globalThis.setTimeout(() => reject(new Error(code)), milliseconds);
+    }),
+  ]).finally(() => globalThis.clearTimeout(timer));
 }
 
 function currentRuntime() {
@@ -124,7 +136,14 @@ async function callBiometricPlugin(method, payload, { retries = 1 } = {}) {
     try {
       const BiometricAuth = await getBiometricAuth();
       if (!BiometricAuth?.[method]) throw new Error('PLUGIN_UNAVAILABLE');
-      return await BiometricAuth[method](payload);
+      const timeout = method === 'ping' || method === 'isAvailable'
+        ? BIOMETRIC_STATUS_TIMEOUT_MS
+        : BIOMETRIC_PROMPT_TIMEOUT_MS;
+      return await withBiometricTimeout(
+        BiometricAuth[method](payload || {}),
+        timeout,
+        `BIOMETRIC_${String(method).toUpperCase()}_TIMEOUT`,
+      );
     } catch (cause) {
       lastError = cause;
       biometricPluginPromise = null;
@@ -201,9 +220,19 @@ export async function getBiometricLoginStatus() {
     return { available: false, enabled: false, reason: 'NOT_NATIVE_ANDROID' };
   }
   try {
-    const status = await callBiometricPlugin('isAvailable', undefined, { retries: STATUS_CALL_RETRIES });
-    window.MEG_BIOMETRIC_STATUS = status;
-    return status;
+    const bridge = await callBiometricPlugin('ping', {}, { retries: 2 });
+    if (!bridge?.native || bridge?.platform !== 'android') throw new Error('PLUGIN_BRIDGE_INVALID');
+    const status = await callBiometricPlugin('isAvailable', {}, { retries: STATUS_CALL_RETRIES });
+    document.body?.classList.add('native-mobile');
+    document.body.dataset.nativeRuntime = 'android-biometric-plugin';
+    window.MEG_NATIVE_ANDROID_CONFIRMED = true;
+    window.MEG_BIOMETRIC_STATUS = {
+      ...status,
+      native: true,
+      platform: 'android',
+      pluginVersion: bridge.pluginVersion,
+    };
+    return window.MEG_BIOMETRIC_STATUS;
   } catch (cause) {
     const status = {
       available: false,
@@ -216,7 +245,8 @@ export async function getBiometricLoginStatus() {
 }
 
 export async function saveBiometricLogin({ email, password }) {
-  if (!await waitForNativeAndroid() || !email || !password) return { saved: false };
+  if (!await waitForNativeAndroid()) return { saved: false, reason: 'NOT_NATIVE_ANDROID' };
+  if (!email || !password) return { saved: false, reason: 'CREDENTIALS_INCOMPLETE' };
   try {
     return await callBiometricPlugin('saveCredentials', { email, password }, { retries: 2 });
   } catch (cause) {
