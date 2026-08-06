@@ -84,7 +84,7 @@ jobs:
         run: |
           SHA256=$(sha256sum MEG-Financas.apk | awk '{print $1}')
           export SHA256
-          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('app-version.json', JSON.stringify({ versionCode: Number(process.env.MEG_VERSION_CODE), versionName: process.env.MEG_VERSION_NAME, downloadUrl: 'https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk?v=' + process.env.MEG_VERSION_CODE, sha256: process.env.SHA256, mandatory: false, releaseNotes: 'Biometria nativa antes do login e em toda reabertura do Android, sem bloqueio posterior.' }, null, 2) + '\n')"
+          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('app-version.json', JSON.stringify({ versionCode: Number(process.env.MEG_VERSION_CODE), versionName: process.env.MEG_VERSION_NAME, downloadUrl: 'https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=' + process.env.MEG_VERSION_CODE, sha256: process.env.SHA256, mandatory: false, releaseNotes: 'Biometria nativa antes do login e em toda reabertura do Android, sem bloqueio posterior.' }, null, 2) + '\n')"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -94,14 +94,21 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: Publish latest APK on the website
+      - name: Publish stable Android release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view android-latest >/dev/null 2>&1 || \
+            gh release create android-latest --title "MEG Finanças Android" --notes "Canal estável de atualização do aplicativo Android."
+          gh release upload android-latest MEG-Financas.apk --clobber
+
+      - name: Publish latest update manifest on the website
         if: github.actor != 'github-actions[bot]'
         run: |
-          cp MEG-Financas.apk apps/web/public/downloads/MEG-Financas.apk
           cp app-version.json apps/web/public/downloads/app-version.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/web/public/downloads/MEG-Financas.apk apps/web/public/downloads/app-version.json
+          git add apps/web/public/downloads/app-version.json
           git diff --cached --quiet || git commit -m "chore: publicar APK atualizado [skip apk]"
           for attempt in 1 2 3; do
             git push && break
