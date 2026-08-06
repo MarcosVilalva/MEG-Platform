@@ -75,7 +75,11 @@ public class BiometricAuthPlugin extends Plugin {
             return;
         }
         authenticateAndRun(call, "Ativar biometria no MEG Finanças", "Confirme sua identidade para liberar o acesso rápido", () -> {
-            prefs().edit().putString(KEY_EMAIL, email).putString(KEY_PASSWORD, password).apply();
+            boolean persisted = prefs().edit().putString(KEY_EMAIL, email).putString(KEY_PASSWORD, password).commit();
+            if (!persisted) {
+                call.reject("Nao foi possivel manter a biometria neste aparelho.");
+                return;
+            }
             JSObject response = new JSObject();
             response.put("saved", true);
             call.resolve(response);

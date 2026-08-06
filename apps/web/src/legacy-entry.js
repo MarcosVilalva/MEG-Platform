@@ -1,6 +1,7 @@
 import { bootstrapCloud } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { checkForAppUpdate, initializeStableUiFeatures } from './native-app-update.js';
+import { ensureAndroidBiometricUnlock, initializeAndroidBiometricAppLock } from './native-biometric-login.js';
 
 const appEnvironment = 'production';
 const appEnvironmentSuffix = '';
@@ -416,10 +417,12 @@ async function start() {
   if (!requireStagingAccess()) return;
   if (validationMode) bootstrapValidationMode();
   else await bootstrapCloud();
+  await ensureAndroidBiometricUnlock();
   window.MEG_NATIVE_NOTIFICATIONS = { sync: syncLocalDueNotifications };
   await import('./legacy-app.js');
   wireLegacyApp();
   await initializeStableUiFeatures();
+  await initializeAndroidBiometricAppLock();
   window.MEG_APP_UPDATE = { check: () => checkForAppUpdate({ force: true }) };
   setupInactivityLogout();
   syncLocalDueNotifications(window.MEG_APP.getState());

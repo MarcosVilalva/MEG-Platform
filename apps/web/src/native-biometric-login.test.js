@@ -33,6 +33,7 @@ assert.match(nativePlugin, /DEVICE_CREDENTIAL/);
 assert.match(nativePlugin, /public void isAvailable\(PluginCall call\)/);
 assert.match(nativePlugin, /public void authenticate\(PluginCall call\)/);
 assert.match(nativePlugin, /public void saveCredentials\(PluginCall call\)/);
+assert.match(nativePlugin, /\.commit\(\)/);
 assert.match(mainActivity, /registerPlugin\(BiometricAuthPlugin\.class\)/);
 
 assert.match(nativeUpdate, /import\('\.\/native-biometric-settings\.js'\)/);
@@ -46,9 +47,14 @@ assert.match(biometricLogin, /registerPlugin\('BiometricAuth'\)/);
 assert.match(biometricLogin, /BiometricAuth\.isAvailable\(\)/);
 assert.match(biometricLogin, /BiometricAuth\.authenticate\(/);
 assert.match(biometricLogin, /BiometricAuth\.saveCredentials\(/);
+assert.match(biometricLogin, /initializeAndroidBiometricAppLock/);
+assert.match(biometricLogin, /appStateChange/);
+assert.match(biometricLogin, /ensureAndroidBiometricUnlock/);
+assert.match(biometricLogin, /androidBiometricLock/);
 assert.equal(biometricLogin.includes('withBiometricTimeout'), false);
 assert.equal(biometricLogin.includes('@capgo/capacitor-native-biometric'), false);
 assert.match(biometricLogin, /NOT_NATIVE_ANDROID/);
+assert.match(read('./legacy-entry.js'), /await ensureAndroidBiometricUnlock\(\)/);
 
 const androidWorkflow = read('../../../.github/workflows/build-android-apk.yml');
 assert.match(androidWorkflow, /MEG-Financas-v\$\{MEG_VERSION_NAME\}\.apk/);

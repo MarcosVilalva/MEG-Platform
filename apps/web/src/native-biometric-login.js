@@ -5,6 +5,12 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 // retries or a second biometric implementation competing for the prompt.
 const BiometricAuth = registerPlugin('BiometricAuth');
 let biometricAuthenticationPromise = null;
+let biometricUnlockPromise = null;
+let biometricPromptOpen = false;
+let biometricLifecycleStarted = false;
+let backgroundedAt = 0;
+const LAST_UNLOCK_KEY = 'meg-biometric-last-unlock-at';
+const RECENT_UNLOCK_MS = 10_000;
 
 function currentBodyClassList() {
   return typeof document === 'undefined' ? null : document.body?.classList;
@@ -74,6 +80,47 @@ function beginAuthenticatedLoadingTransition() {
   overlay.classList.remove('hidden');
 }
 
+function recordBiometricUnlock() {
+  try { sessionStorage.setItem(LAST_UNLOCK_KEY, String(Date.now())); } catch {}
+}
+
+function wasRecentlyUnlocked() {
+  try {
+    return Date.now() - Number(sessionStorage.getItem(LAST_UNLOCK_KEY) || 0) < RECENT_UNLOCK_MS;
+  } catch {
+    return false;
+  }
+}
+
+function biometricLockOverlay() {
+  let overlay = document.querySelector('#androidBiometricLock');
+  if (overlay) return overlay;
+  overlay = document.createElement('div');
+  overlay.id = 'androidBiometricLock';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.innerHTML = `
+    <style>
+      #androidBiometricLock{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#052f2a 0%,#0b6559 62%,#39d7bd 140%);font-family:system-ui,sans-serif;color:#102824}
+      #androidBiometricLock .meg-lock-card{width:min(390px,100%);box-sizing:border-box;padding:30px 24px;border-radius:28px;background:#f8fffd;box-shadow:0 28px 80px #001c1788;text-align:center}
+      #androidBiometricLock .meg-lock-mark{display:grid;place-items:center;width:68px;height:68px;margin:0 auto 18px;border-radius:22px;background:#43dfc4;color:#073b34;font-size:32px;font-weight:900}
+      #androidBiometricLock h1{margin:0 0 8px;font-size:27px}#androidBiometricLock p{margin:0 0 20px;color:#57706b;line-height:1.45}
+      #androidBiometricLock .meg-lock-actions{display:grid;gap:10px}#androidBiometricLock button{min-height:52px;border:0;border-radius:14px;font:inherit;font-weight:850}
+      #androidBiometricLock [data-meg-biometric-retry]{background:#08695c;color:white}#androidBiometricLock [data-meg-biometric-password]{background:#e8f2ef;color:#174c44}
+    </style>
+    <section class="meg-lock-card">
+      <div class="meg-lock-mark" aria-hidden="true">M</div>
+      <h1>MEG protegido</h1>
+      <p data-meg-biometric-message>Confirme sua identidade para visualizar seus dados financeiros.</p>
+      <div class="meg-lock-actions">
+        <button type="button" data-meg-biometric-retry>Usar biometria</button>
+        <button type="button" data-meg-biometric-password>Entrar com senha</button>
+      </div>
+    </section>`;
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
 export async function getBiometricLoginStatus() {
   if (!isNativeAndroid()) return { available: false, enabled: false, reason: 'NOT_NATIVE_ANDROID' };
   try {
@@ -97,21 +144,88 @@ export async function requestBiometricLogin() {
   if (biometricAuthenticationPromise) return biometricAuthenticationPromise;
   biometricAuthenticationPromise = (async () => {
     await waitForApiReadiness();
+    biometricPromptOpen = true;
     try {
       const credentials = await BiometricAuth.authenticate({
         title: 'Entrar no MEG Finanças',
         subtitle: 'Confirme sua identidade para acessar sua conta',
       });
       if (!credentials?.email || !credentials?.password) return null;
+      recordBiometricUnlock();
       beginAuthenticatedLoadingTransition();
       return credentials;
     } catch {
       return null;
+    } finally {
+      biometricPromptOpen = false;
     }
   })().finally(() => {
     biometricAuthenticationPromise = null;
   });
   return biometricAuthenticationPromise;
+}
+
+export async function ensureAndroidBiometricUnlock({ force = false } = {}) {
+  if (!isNativeAndroid()) return true;
+  if (!force && wasRecentlyUnlocked()) return true;
+  if (biometricUnlockPromise) return biometricUnlockPromise;
+
+  const status = await getBiometricLoginStatus();
+  if (!status?.available || !status?.enabled) return true;
+
+  biometricUnlockPromise = new Promise((resolve) => {
+    const overlay = biometricLockOverlay();
+    const message = overlay.querySelector('[data-meg-biometric-message]');
+    const retry = overlay.querySelector('[data-meg-biometric-retry]');
+    const password = overlay.querySelector('[data-meg-biometric-password]');
+
+    const unlock = async () => {
+      retry.disabled = true;
+      retry.textContent = 'Aguardando biometria...';
+      message.textContent = 'Use sua digital ou o bloqueio de tela do Android.';
+      const credentials = await requestBiometricLogin();
+      if (credentials) {
+        overlay.remove();
+        biometricUnlockPromise = null;
+        resolve(true);
+        return;
+      }
+      message.textContent = 'A leitura foi cancelada. Seus dados continuam protegidos.';
+      retry.disabled = false;
+      retry.textContent = 'Tentar novamente';
+    };
+
+    retry.addEventListener('click', unlock);
+    password.addEventListener('click', async () => {
+      message.textContent = 'Encerrando a sessão segura...';
+      password.disabled = true;
+      try { await window.MEG_CLOUD?.logout?.({ save: false }); }
+      finally { location.reload(); }
+    });
+    window.setTimeout(unlock, 120);
+  });
+
+  return biometricUnlockPromise;
+}
+
+export async function initializeAndroidBiometricAppLock() {
+  if (!isNativeAndroid() || biometricLifecycleStarted) return false;
+  biometricLifecycleStarted = true;
+  const { App } = await import('@capacitor/app');
+  await App.addListener('appStateChange', async ({ isActive }) => {
+    if (!isActive) {
+      if (biometricPromptOpen) return;
+      const status = await getBiometricLoginStatus();
+      if (!status?.available || !status?.enabled) return;
+      backgroundedAt = Date.now();
+      biometricLockOverlay();
+      return;
+    }
+    if (!backgroundedAt || biometricPromptOpen) return;
+    backgroundedAt = 0;
+    await ensureAndroidBiometricUnlock({ force: true });
+  });
+  return true;
 }
 
 export async function clearBiometricLogin() {
