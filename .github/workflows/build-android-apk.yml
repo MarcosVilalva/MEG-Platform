@@ -64,8 +64,8 @@ jobs:
       - name: Build mobile web application
         run: npm run build:web
 
-      - name: Remove previous APK from mobile web assets
-        run: rm -f apps/web/dist/downloads/MEG-Financas.apk
+      - name: Verify APK downloads are not embedded in the Android application
+        run: test ! -d apps/web/dist/downloads
 
       - name: Synchronize Android project
         run: npx cap sync android
