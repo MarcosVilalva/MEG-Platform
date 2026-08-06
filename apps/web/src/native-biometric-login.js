@@ -7,11 +7,12 @@ let biometricMountTimer = null;
 let biometricMountAttempts = 0;
 
 const ANDROID_RUNTIME_RETRIES = 24;
-const STATUS_CALL_RETRIES = 4;
+const STATUS_CALL_RETRIES = 2;
 const RETRY_DELAY_MS = 250;
 const CONTROL_MOUNT_RETRIES = 30;
 const BIOMETRIC_STATUS_TIMEOUT_MS = 8000;
 const BIOMETRIC_PROMPT_TIMEOUT_MS = 45000;
+const BIOMETRIC_CREDENTIAL_SERVER = 'meg-financas.br.com';
 
 function delay(milliseconds) {
   return new Promise((resolve) => globalThis.setTimeout(resolve, milliseconds));
@@ -121,8 +122,14 @@ async function waitForNativeAndroid() {
 
 async function getBiometricAuth() {
   if (!await waitForNativeAndroid()) return null;
-  biometricPluginPromise ||= getCapacitorCore()
-    .then(({ registerPlugin }) => registerPlugin('BiometricAuth'))
+  biometricPluginPromise ||= Promise.all([
+    getCapacitorCore(),
+    import('@capgo/capacitor-native-biometric'),
+  ])
+    .then(([{ Capacitor }, { NativeBiometric }]) => {
+      if (!Capacitor.isPluginAvailable('NativeBiometric')) throw new Error('PLUGIN_UNAVAILABLE');
+      return NativeBiometric;
+    })
     .catch((cause) => {
       biometricPluginPromise = null;
       throw cause;
@@ -130,17 +137,79 @@ async function getBiometricAuth() {
   return biometricPluginPromise;
 }
 
+function nativeBiometricReason(errorCode) {
+  const reasons = {
+    1: 'BIOMETRIC_HW_UNAVAILABLE',
+    2: 'BIOMETRIC_LOCKOUT_PERMANENT',
+    3: 'BIOMETRIC_NONE_ENROLLED',
+    4: 'BIOMETRIC_LOCKOUT',
+    14: 'BIOMETRIC_NONE_ENROLLED',
+  };
+  return reasons[Number(errorCode)] || String(errorCode ?? 'BIOMETRIC_UNSUPPORTED');
+}
+
+async function invokeNativeBiometric(plugin, method, payload = {}) {
+  if (method === 'ping') {
+    return { native: true, platform: 'android', pluginVersion: 'capgo-7.6.0' };
+  }
+  if (method === 'isAvailable') {
+    const availability = await plugin.isAvailable({ useFallback: false });
+    const saved = availability.isAvailable
+      ? await plugin.isCredentialsSaved({ server: BIOMETRIC_CREDENTIAL_SERVER })
+      : { isSaved: false };
+    return {
+      available: Boolean(availability.isAvailable),
+      enabled: Boolean(availability.isAvailable && saved.isSaved),
+      authenticator: availability.biometryType,
+      reason: availability.isAvailable ? undefined : nativeBiometricReason(availability.errorCode),
+      reasonCode: availability.errorCode,
+      native: true,
+      platform: 'android',
+    };
+  }
+  if (method === 'saveCredentials') {
+    await plugin.verifyIdentity({
+      title: 'Ativar biometria no MEG Finanças',
+      subtitle: 'Confirme sua identidade para liberar o acesso rápido',
+      reason: 'Proteja o acesso aos seus dados financeiros',
+      negativeButtonText: 'Cancelar',
+      maxAttempts: 5,
+    });
+    await plugin.setCredentials({
+      username: payload.email,
+      password: payload.password,
+      server: BIOMETRIC_CREDENTIAL_SERVER,
+    });
+    return { saved: true, storageVersion: 4 };
+  }
+  if (method === 'authenticate') {
+    await plugin.verifyIdentity({
+      title: payload.title || 'Entrar no MEG Finanças',
+      subtitle: payload.subtitle || 'Confirme sua identidade',
+      reason: 'Acesse seus dados financeiros com segurança',
+      negativeButtonText: 'Usar senha',
+      maxAttempts: 5,
+    });
+    const credentials = await plugin.getCredentials({ server: BIOMETRIC_CREDENTIAL_SERVER });
+    return { email: credentials.username, password: credentials.password };
+  }
+  if (method === 'clear') {
+    await plugin.deleteCredentials({ server: BIOMETRIC_CREDENTIAL_SERVER });
+    return { cleared: true };
+  }
+  throw new Error('PLUGIN_UNAVAILABLE');
+}
+
 async function callBiometricPlugin(method, payload, { retries = 1 } = {}) {
   let lastError;
   for (let attempt = 0; attempt < retries; attempt += 1) {
     try {
       const BiometricAuth = await getBiometricAuth();
-      if (!BiometricAuth?.[method]) throw new Error('PLUGIN_UNAVAILABLE');
       const timeout = method === 'ping' || method === 'isAvailable'
         ? BIOMETRIC_STATUS_TIMEOUT_MS
         : BIOMETRIC_PROMPT_TIMEOUT_MS;
       return await withBiometricTimeout(
-        BiometricAuth[method](payload || {}),
+        invokeNativeBiometric(BiometricAuth, method, payload || {}),
         timeout,
         `BIOMETRIC_${String(method).toUpperCase()}_TIMEOUT`,
       );

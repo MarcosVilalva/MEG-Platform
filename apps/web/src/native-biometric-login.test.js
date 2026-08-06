@@ -73,21 +73,32 @@ assert.equal(availabilityMethod.includes('prefs()'), false, 'a verificação ini
 
 assert.match(nativeUpdate, /import\('\.\/native-biometric-settings\.js'\)/);
 assert.match(nativeUpdate, /initializeAuthenticatedBiometricSettings\(\)/);
+assert.match(nativeUpdate, /MEG_INSTALLED_APP_VERSION/);
 assert.match(biometricSettings, /#logoutBtn/);
 assert.match(biometricSettings, /\/auth\/login/);
 assert.match(biometricSettings, /saveBiometricLogin\(\{ email, password \}\)/);
 assert.match(biometricSettings, /Biometria ativa — testar/);
 
 assert.match(biometricLogin, /callBiometricPlugin\('ping'/);
+assert.match(biometricLogin, /@capgo\/capacitor-native-biometric/);
+assert.match(biometricLogin, /NativeBiometric/);
+assert.match(biometricLogin, /isCredentialsSaved/);
+assert.match(biometricLogin, /verifyIdentity/);
+assert.match(biometricLogin, /setCredentials/);
+assert.match(biometricLogin, /getCredentials/);
 assert.match(biometricLogin, /withBiometricTimeout/);
 assert.match(biometricLogin, /BIOMETRIC_STATUS_TIMEOUT_MS = 8000/);
 assert.match(biometricLogin, /NOT_NATIVE_ANDROID/);
-assert.match(biometricSettings, /BIOMETRIC_STATUS_TIMEOUT_MS = 9000/);
+assert.match(biometricSettings, /BIOMETRIC_STATUS_TIMEOUT_MS = 15000/);
+assert.match(biometricSettings, /readableBiometricError/);
 assert.match(biometricSettings, /Tentar biometria novamente/);
 assert.match(biometricSettings, /finally \{\s*button\.disabled = false;/);
 
 const androidWorkflow = read('../../../.github/workflows/build-android-apk.yml');
 assert.match(androidWorkflow, /MEG-Financas-v\$\{MEG_VERSION_NAME\}\.apk/);
 assert.match(androidWorkflow, /downloadUrl: 'https:\/\/marcosvilalva\.github\.io\/MEG-Platform\/downloads\/' \+ process\.env\.VERSIONED_APK/);
+
+const capacitorSettings = read('../../../android/capacitor.settings.gradle');
+assert.match(capacitorSettings, /capgo-capacitor-native-biometric/);
 
 console.log('native Android biometric login tests passed');

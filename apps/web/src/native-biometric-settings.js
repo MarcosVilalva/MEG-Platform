@@ -10,7 +10,15 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
 let settingsObserver = null;
 let settingsTimer = null;
 let mountAttempts = 0;
-const BIOMETRIC_STATUS_TIMEOUT_MS = 9000;
+const BIOMETRIC_STATUS_TIMEOUT_MS = 15000;
+
+function readableBiometricError(cause) {
+  const reason = cause instanceof Error ? cause.message : String(cause || '');
+  if (reason.includes('TIMEOUT')) {
+    return 'O Android demorou para responder. Feche o MEG, abra novamente e tente ativar a biometria.';
+  }
+  return biometricUnavailableMessage(reason);
+}
 
 function withStatusTimeout(promise) {
   let timer;
@@ -189,7 +197,7 @@ async function mountSettingsButton() {
       const activated = await activateBiometric(button, statusText);
       if (activated) window.alert('Biometria ativada. No próximo acesso, o MEG solicitará sua digital antes do login.');
     } catch (cause) {
-      window.alert(cause instanceof Error ? cause.message : 'Não foi possível configurar a biometria.');
+      window.alert(readableBiometricError(cause));
     } finally {
       button.disabled = false;
       button.textContent = originalText;

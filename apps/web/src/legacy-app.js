@@ -4179,6 +4179,10 @@ function updateSidebarClock() {
 
 async function loadSidebarVersion() {
   if (!els.sidebarVersion) return;
+  if (window.MEG_INSTALLED_APP_VERSION?.versionName) {
+    els.sidebarVersion.textContent = `MEG v${window.MEG_INSTALLED_APP_VERSION.versionName}`;
+    return;
+  }
   try {
     const response = await fetch(new URL("downloads/app-version.json", document.baseURI), { cache: "no-store" });
     if (!response.ok) throw new Error(String(response.status));
@@ -4188,6 +4192,11 @@ async function loadSidebarVersion() {
     els.sidebarVersion.textContent = "MEG v1.3.0";
   }
 }
+
+window.addEventListener("meg:installed-app-version", (event) => {
+  const versionName = event.detail?.versionName;
+  if (els.sidebarVersion && versionName) els.sidebarVersion.textContent = `MEG v${versionName}`;
+});
 
 function syncAmountFields() {
   const isIncome = els.transactionType.value === "income";

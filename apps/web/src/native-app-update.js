@@ -130,6 +130,15 @@ window.MEG_API_READY = Promise.all([
   startupGate,
 ]).then(() => true);
 
+function publishInstalledVersion(installed) {
+  if (!installed?.versionName) return;
+  window.MEG_INSTALLED_APP_VERSION = installed;
+  document.body.dataset.installedAppVersion = String(installed.versionName);
+  const versionLabel = document.querySelector('#sidebarVersion');
+  if (versionLabel) versionLabel.textContent = `MEG v${installed.versionName}`;
+  window.dispatchEvent(new CustomEvent('meg:installed-app-version', { detail: installed }));
+}
+
 function updateDialog(release, installed, AppUpdater) {
   const existing = document.querySelector('#appUpdateDialog');
   if (existing?._megDecisionPromise) return existing._megDecisionPromise;
@@ -201,6 +210,7 @@ export async function checkForAppUpdate({ force = false, waitForDecision = false
       AppUpdater.getInfo(),
       fetch(`${VERSION_URL}?t=${Date.now()}`, { cache: 'no-store' })
     ]);
+    publishInstalledVersion(installed);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const release = await response.json();
     const available = Number(release.versionCode) > Number(installed.versionCode);
