@@ -18,15 +18,20 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @CapacitorPlugin(name = "BiometricAuth")
 public class BiometricAuthPlugin extends Plugin {
     private static final String LEGACY_PREFS_NAME = "meg_biometric_login";
-    private static final String SECURE_PREFS_NAME = "meg_biometric_login_secure_v2";
+    private static final String SECURE_PREFS_NAME = "meg_biometric_login_secure_v3";
+    private static final String META_PREFS_NAME = "meg_biometric_meta_v1";
     private static final String KEY_EMAIL = "email";
     private static final String KEY_PASSWORD = "password";
+    private static final String KEY_CONFIGURED = "configured";
     private static final int AUTHENTICATORS = BiometricManager.Authenticators.BIOMETRIC_WEAK;
 
+    private final ExecutorService storageExecutor = Executors.newSingleThreadExecutor();
     private volatile SharedPreferences cachedPreferences;
 
     private synchronized SharedPreferences prefs() throws Exception {
@@ -49,33 +54,44 @@ public class BiometricAuthPlugin extends Plugin {
         return cachedPreferences;
     }
 
-    private void migrateLegacyCredentials(SharedPreferences securePreferences) {
-        if (securePreferences.contains(KEY_EMAIL) && securePreferences.contains(KEY_PASSWORD)) return;
-
-        try {
-            SharedPreferences legacy = getContext().getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE);
-            String email = legacy.getString(KEY_EMAIL, "");
-            String password = legacy.getString(KEY_PASSWORD, "");
-            if (email == null || email.trim().isEmpty() || password == null || password.isEmpty()) return;
-
-            boolean migrated = securePreferences.edit()
-                .putString(KEY_EMAIL, email.trim())
-                .putString(KEY_PASSWORD, password)
-                .commit();
-            if (migrated) legacy.edit().clear().commit();
-        } catch (Exception ignored) {
-            // Arquivos antigos criptografados ou corrompidos não podem impedir uma nova ativação.
-        }
+    private SharedPreferences metaPrefs() {
+        return getContext().getSharedPreferences(META_PREFS_NAME, Context.MODE_PRIVATE);
     }
 
-    private boolean hasStoredCredentials() {
-        try {
-            SharedPreferences sharedPreferences = prefs();
-            String email = sharedPreferences.getString(KEY_EMAIL, "");
-            String password = sharedPreferences.getString(KEY_PASSWORD, "");
-            return email != null && !email.isEmpty() && password != null && !password.isEmpty();
-        } catch (Exception ignored) {
-            return false;
+    private boolean isConfigured() {
+        return metaPrefs().getBoolean(KEY_CONFIGURED, false);
+    }
+
+    private void setConfigured(boolean configured) {
+        metaPrefs().edit().putBoolean(KEY_CONFIGURED, configured).apply();
+    }
+
+    private void migrateLegacyCredentials(SharedPreferences securePreferences) {
+        if (securePreferences.contains(KEY_EMAIL) && securePreferences.contains(KEY_PASSWORD)) {
+            setConfigured(true);
+            return;
+        }
+
+        String[] legacyNames = { "meg_biometric_login_secure_v2", LEGACY_PREFS_NAME };
+        for (String legacyName : legacyNames) {
+            try {
+                SharedPreferences legacy = getContext().getSharedPreferences(legacyName, Context.MODE_PRIVATE);
+                String email = legacy.getString(KEY_EMAIL, "");
+                String password = legacy.getString(KEY_PASSWORD, "");
+                if (email == null || email.trim().isEmpty() || password == null || password.isEmpty()) continue;
+
+                boolean migrated = securePreferences.edit()
+                    .putString(KEY_EMAIL, email.trim())
+                    .putString(KEY_PASSWORD, password)
+                    .commit();
+                if (migrated) {
+                    setConfigured(true);
+                    legacy.edit().clear().apply();
+                    return;
+                }
+            } catch (Exception ignored) {
+                // Uma base antiga inválida não pode impedir uma nova ativação.
+            }
         }
     }
 
@@ -117,6 +133,23 @@ public class BiometricAuthPlugin extends Plugin {
             .build();
     }
 
+    private void resolveOnUiThread(FragmentActivity activity, PluginCall call, JSObject response) {
+        activity.runOnUiThread(() -> call.resolve(response));
+    }
+
+    private void rejectOnUiThread(FragmentActivity activity, PluginCall call, String code, Exception cause) {
+        activity.runOnUiThread(() -> call.reject(code, cause));
+    }
+
+    @PluginMethod
+    public void ping(PluginCall call) {
+        JSObject response = new JSObject();
+        response.put("native", true);
+        response.put("platform", "android");
+        response.put("pluginVersion", 3);
+        call.resolve(response);
+    }
+
     @PluginMethod
     public void isAvailable(PluginCall call) {
         int result = BiometricManager.from(getContext()).canAuthenticate(AUTHENTICATORS);
@@ -124,18 +157,13 @@ public class BiometricAuthPlugin extends Plugin {
 
         JSObject response = new JSObject();
         response.put("available", available);
-        response.put("enabled", available && hasStoredCredentials());
+        response.put("enabled", available && isConfigured());
         response.put("authenticator", "BIOMETRIC_WEAK");
-        response.put("storageVersion", 2);
+        response.put("storageVersion", 3);
+        response.put("native", true);
+        response.put("platform", "android");
 
-        if (available && hasStoredCredentials()) {
-            try {
-                response.put("email", prefs().getString(KEY_EMAIL, ""));
-            } catch (Exception ignored) {
-                response.put("enabled", false);
-                response.put("reason", "SECURE_STORAGE_UNAVAILABLE");
-            }
-        } else if (!available) {
+        if (!available) {
             response.put("reason", availabilityReason(result));
             response.put("reasonCode", result);
         }
@@ -164,22 +192,26 @@ public class BiometricAuthPlugin extends Plugin {
         BiometricPrompt biometricPrompt = new BiometricPrompt(activity, executor, new BiometricPrompt.AuthenticationCallback() {
             @Override
             public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
-                try {
-                    boolean saved = prefs().edit()
-                        .putString(KEY_EMAIL, email)
-                        .putString(KEY_PASSWORD, password)
-                        .commit();
-                    if (!saved) {
-                        call.reject("SECURE_STORAGE_WRITE_FAILED");
-                        return;
+                storageExecutor.execute(() -> {
+                    try {
+                        boolean saved = prefs().edit()
+                            .putString(KEY_EMAIL, email)
+                            .putString(KEY_PASSWORD, password)
+                            .commit();
+                        if (!saved) {
+                            activity.runOnUiThread(() -> call.reject("SECURE_STORAGE_WRITE_FAILED"));
+                            return;
+                        }
+                        setConfigured(true);
+                        JSObject response = new JSObject();
+                        response.put("saved", true);
+                        response.put("storageVersion", 3);
+                        resolveOnUiThread(activity, call, response);
+                    } catch (Exception cause) {
+                        setConfigured(false);
+                        rejectOnUiThread(activity, call, "SECURE_STORAGE_UNAVAILABLE", cause);
                     }
-                    JSObject response = new JSObject();
-                    response.put("saved", true);
-                    response.put("storageVersion", 2);
-                    call.resolve(response);
-                } catch (Exception cause) {
-                    call.reject("SECURE_STORAGE_UNAVAILABLE", cause);
-                }
+                });
             }
 
             @Override
@@ -203,29 +235,25 @@ public class BiometricAuthPlugin extends Plugin {
 
     @PluginMethod
     public void clear(PluginCall call) {
-        try {
-            prefs().edit().clear().commit();
-            getContext().getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE).edit().clear().commit();
-            call.resolve();
-        } catch (Exception cause) {
-            call.reject("SECURE_STORAGE_UNAVAILABLE", cause);
-        }
+        FragmentActivity activity = fragmentActivity(call);
+        if (activity == null) return;
+
+        storageExecutor.execute(() -> {
+            try {
+                prefs().edit().clear().commit();
+                getContext().getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE).edit().clear().apply();
+                getContext().getSharedPreferences("meg_biometric_login_secure_v2", Context.MODE_PRIVATE).edit().clear().apply();
+                setConfigured(false);
+                resolveOnUiThread(activity, call, new JSObject());
+            } catch (Exception cause) {
+                rejectOnUiThread(activity, call, "SECURE_STORAGE_UNAVAILABLE", cause);
+            }
+        });
     }
 
     @PluginMethod
     public void authenticate(PluginCall call) {
-        final String email;
-        final String password;
-        try {
-            SharedPreferences sharedPreferences = prefs();
-            email = sharedPreferences.getString(KEY_EMAIL, "");
-            password = sharedPreferences.getString(KEY_PASSWORD, "");
-        } catch (Exception cause) {
-            call.reject("SECURE_STORAGE_UNAVAILABLE", cause);
-            return;
-        }
-
-        if (email == null || email.isEmpty() || password == null || password.isEmpty()) {
+        if (!isConfigured()) {
             call.reject("BIOMETRIC_NOT_CONFIGURED");
             return;
         }
@@ -243,11 +271,27 @@ public class BiometricAuthPlugin extends Plugin {
         BiometricPrompt biometricPrompt = new BiometricPrompt(activity, executor, new BiometricPrompt.AuthenticationCallback() {
             @Override
             public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
-                JSObject response = new JSObject();
-                response.put("email", email);
-                response.put("password", password);
-                response.put("storageVersion", 2);
-                call.resolve(response);
+                storageExecutor.execute(() -> {
+                    try {
+                        SharedPreferences sharedPreferences = prefs();
+                        String email = sharedPreferences.getString(KEY_EMAIL, "");
+                        String password = sharedPreferences.getString(KEY_PASSWORD, "");
+                        if (email == null || email.isEmpty() || password == null || password.isEmpty()) {
+                            setConfigured(false);
+                            activity.runOnUiThread(() -> call.reject("BIOMETRIC_NOT_CONFIGURED"));
+                            return;
+                        }
+
+                        JSObject response = new JSObject();
+                        response.put("email", email);
+                        response.put("password", password);
+                        response.put("storageVersion", 3);
+                        resolveOnUiThread(activity, call, response);
+                    } catch (Exception cause) {
+                        setConfigured(false);
+                        rejectOnUiThread(activity, call, "SECURE_STORAGE_UNAVAILABLE", cause);
+                    }
+                });
             }
 
             @Override
