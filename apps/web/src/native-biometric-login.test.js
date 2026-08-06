@@ -70,6 +70,7 @@ assert.ok(
 );
 
 const androidWorkflow = read('../../../.github/workflows/build-android-apk.yml');
-assert.match(androidWorkflow, /MEG-Financas-v\$\{MEG_VERSION_NAME\}\.apk/);
+assert.match(androidWorkflow, /MEG-Financas\.apk\?v=' \+ process\.env\.MEG_VERSION_CODE/);
+assert.equal(androidWorkflow.includes('VERSIONED_APK'), false, 'a publicação não deve duplicar o APK versionado');
 
 console.log('native Android biometric login tests passed');
