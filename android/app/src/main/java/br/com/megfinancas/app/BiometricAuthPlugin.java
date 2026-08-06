@@ -58,6 +58,7 @@ public class BiometricAuthPlugin extends Plugin {
         JSObject response = new JSObject();
         response.put("available", result == BiometricManager.BIOMETRIC_SUCCESS);
         response.put("enabled", hasStoredCredentials());
+        if (hasStoredCredentials()) response.put("email", prefs().getString(KEY_EMAIL, ""));
         if (result != BiometricManager.BIOMETRIC_SUCCESS) response.put("reason", String.valueOf(result));
         call.resolve(response);
     }
@@ -71,19 +72,20 @@ public class BiometricAuthPlugin extends Plugin {
             return;
         }
         if (BiometricManager.from(getContext()).canAuthenticate(authenticators()) != BiometricManager.BIOMETRIC_SUCCESS) {
-            call.reject("Biometria ou bloqueio de tela indisponível.");
+            call.reject("Biometria ou bloqueio de tela indisponivel.");
             return;
         }
-        authenticateAndRun(call, "Ativar biometria no MEG Finanças", "Confirme sua identidade para liberar o acesso rápido", () -> {
-            boolean persisted = prefs().edit().putString(KEY_EMAIL, email).putString(KEY_PASSWORD, password).commit();
-            if (!persisted) {
-                call.reject("Nao foi possivel manter a biometria neste aparelho.");
-                return;
-            }
-            JSObject response = new JSObject();
-            response.put("saved", true);
-            call.resolve(response);
-        });
+        boolean persisted = prefs().edit()
+            .putString(KEY_EMAIL, email)
+            .putString(KEY_PASSWORD, password)
+            .commit();
+        if (!persisted) {
+            call.reject("Nao foi possivel manter a biometria neste aparelho.");
+            return;
+        }
+        JSObject response = new JSObject();
+        response.put("saved", true);
+        call.resolve(response);
     }
 
     @PluginMethod
@@ -92,12 +94,12 @@ public class BiometricAuthPlugin extends Plugin {
         String email = sharedPreferences.getString(KEY_EMAIL, "");
         String password = sharedPreferences.getString(KEY_PASSWORD, "");
         if (email.isEmpty() || password.isEmpty()) {
-            call.reject("Biometria ainda não configurada.");
+            call.reject("Biometria ainda nao configurada.");
             return;
         }
         authenticateAndRun(
             call,
-            call.getString("title", "Entrar no MEG Finanças"),
+            call.getString("title", "Entrar no MEG Financas"),
             call.getString("subtitle", "Confirme sua identidade"),
             () -> {
                 JSObject response = new JSObject();

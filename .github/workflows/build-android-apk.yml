@@ -87,7 +87,7 @@ jobs:
         run: |
           SHA256=$(sha256sum MEG-Financas.apk | awk '{print $1}')
           export SHA256
-          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('app-version.json', JSON.stringify({ versionCode: Number(process.env.MEG_VERSION_CODE), versionName: process.env.MEG_VERSION_NAME, downloadUrl: 'https://marcosvilalva.github.io/MEG-Platform/downloads/' + process.env.VERSIONED_APK, sha256: process.env.SHA256, mandatory: false, releaseNotes: 'Biometria persistente em toda reabertura do Android, com nova tela de privacidade.' }, null, 2) + '\n')"
+          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('app-version.json', JSON.stringify({ versionCode: Number(process.env.MEG_VERSION_CODE), versionName: process.env.MEG_VERSION_NAME, downloadUrl: 'https://marcosvilalva.github.io/MEG-Platform/downloads/' + process.env.VERSIONED_APK, sha256: process.env.SHA256, mandatory: false, releaseNotes: 'Biometria nativa antes do login e em toda reabertura do Android, sem bloqueio posterior.' }, null, 2) + '\n')"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

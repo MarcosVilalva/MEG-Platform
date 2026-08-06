@@ -11,6 +11,7 @@ const mainActivity = read('../../../android/app/src/main/java/br/com/megfinancas
 const nativeUpdate = read('./native-app-update.js');
 const biometricSettings = read('./native-biometric-settings.js');
 const biometricLogin = read('./native-biometric-login.js');
+const legacyEntry = read('./legacy-entry.js');
 
 const classList = (...values) => ({ contains: (value) => values.includes(value) });
 const nativeRuntime = (platform, native = true) => ({ getPlatform: () => platform, isNativePlatform: () => native });
@@ -34,6 +35,11 @@ assert.match(nativePlugin, /public void isAvailable\(PluginCall call\)/);
 assert.match(nativePlugin, /public void authenticate\(PluginCall call\)/);
 assert.match(nativePlugin, /public void saveCredentials\(PluginCall call\)/);
 assert.match(nativePlugin, /\.commit\(\)/);
+const saveCredentialsBlock = nativePlugin.slice(
+  nativePlugin.indexOf('public void saveCredentials'),
+  nativePlugin.indexOf('public void authenticate')
+);
+assert.equal(saveCredentialsBlock.includes('authenticateAndRun'), false, 'ativar biometria não deve abrir um segundo prompt depois do login');
 assert.match(mainActivity, /registerPlugin\(BiometricAuthPlugin\.class\)/);
 
 assert.match(nativeUpdate, /import\('\.\/native-biometric-settings\.js'\)/);
@@ -47,14 +53,21 @@ assert.match(biometricLogin, /registerPlugin\('BiometricAuth'\)/);
 assert.match(biometricLogin, /BiometricAuth\.isAvailable\(\)/);
 assert.match(biometricLogin, /BiometricAuth\.authenticate\(/);
 assert.match(biometricLogin, /BiometricAuth\.saveCredentials\(/);
-assert.match(biometricLogin, /initializeAndroidBiometricAppLock/);
+assert.match(biometricLogin, /prepareAndroidBiometricStartup/);
+assert.match(biometricLogin, /initializeAndroidBiometricLifecycle/);
 assert.match(biometricLogin, /appStateChange/);
-assert.match(biometricLogin, /ensureAndroidBiometricUnlock/);
-assert.match(biometricLogin, /androidBiometricLock/);
+assert.match(biometricLogin, /privacyCover/);
+assert.equal(biometricLogin.includes('androidBiometricLock'), false);
+assert.equal(biometricLogin.includes('waitForApiReadiness'), false);
 assert.equal(biometricLogin.includes('withBiometricTimeout'), false);
 assert.equal(biometricLogin.includes('@capgo/capacitor-native-biometric'), false);
 assert.match(biometricLogin, /NOT_NATIVE_ANDROID/);
-assert.match(read('./legacy-entry.js'), /await ensureAndroidBiometricUnlock\(\)/);
+assert.match(legacyEntry, /await prepareAndroidBiometricStartup\(\)/);
+assert.match(legacyEntry, /await bootstrapCloud\(\)/);
+assert.ok(
+  legacyEntry.indexOf('await prepareAndroidBiometricStartup()') < legacyEntry.indexOf('await bootstrapCloud()'),
+  'a biometria Android deve ser solicitada antes de validar a sessão e carregar os dados'
+);
 
 const androidWorkflow = read('../../../.github/workflows/build-android-apk.yml');
 assert.match(androidWorkflow, /MEG-Financas-v\$\{MEG_VERSION_NAME\}\.apk/);

@@ -1,7 +1,7 @@
-import { bootstrapCloud } from './legacy-cloud.js';
+import { bootstrapCloud, clearLocalCloudSession } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { checkForAppUpdate, initializeStableUiFeatures } from './native-app-update.js';
-import { ensureAndroidBiometricUnlock, initializeAndroidBiometricAppLock } from './native-biometric-login.js';
+import { initializeAndroidBiometricLifecycle, prepareAndroidBiometricStartup } from './native-biometric-login.js';
 
 const appEnvironment = 'production';
 const appEnvironmentSuffix = '';
@@ -415,14 +415,23 @@ function setupInactivityLogout() {
 
 async function start() {
   if (!requireStagingAccess()) return;
-  if (validationMode) bootstrapValidationMode();
-  else await bootstrapCloud();
-  await ensureAndroidBiometricUnlock();
+  if (validationMode) {
+    bootstrapValidationMode();
+  } else {
+    const biometricStartup = await prepareAndroidBiometricStartup();
+    if (biometricStartup.required && !biometricStartup.authenticated) clearLocalCloudSession();
+    await bootstrapCloud();
+  }
   window.MEG_NATIVE_NOTIFICATIONS = { sync: syncLocalDueNotifications };
   await import('./legacy-app.js');
   wireLegacyApp();
   await initializeStableUiFeatures();
-  await initializeAndroidBiometricAppLock();
+  await initializeAndroidBiometricLifecycle({
+    onAuthenticationFailed: async () => {
+      clearLocalCloudSession();
+      location.reload();
+    },
+  });
   window.MEG_APP_UPDATE = { check: () => checkForAppUpdate({ force: true }) };
   setupInactivityLogout();
   syncLocalDueNotifications(window.MEG_APP.getState());

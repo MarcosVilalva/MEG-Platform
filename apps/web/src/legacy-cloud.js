@@ -97,6 +97,10 @@ function clearSession() {
   localStorage.removeItem(USER_KEY);
 }
 
+export function clearLocalCloudSession() {
+  clearSession();
+}
+
 function assertStagingAdmin(user) {
   if (APP_ENV !== 'staging') return;
   const email = String(user?.email || '').trim().toLowerCase();

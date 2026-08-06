@@ -1,16 +1,15 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
-// Keep the Android bridge deliberately small. This is the same direct native
-// approach used by the last known-good biometric flow, without web timeouts,
-// retries or a second biometric implementation competing for the prompt.
 const BiometricAuth = registerPlugin('BiometricAuth');
+const CACHED_CREDENTIALS_MS = 8_000;
+
 let biometricAuthenticationPromise = null;
-let biometricUnlockPromise = null;
+let cachedCredentials = null;
+let cachedCredentialsAt = 0;
 let biometricPromptOpen = false;
 let biometricLifecycleStarted = false;
-let backgroundedAt = 0;
-const LAST_UNLOCK_KEY = 'meg-biometric-last-unlock-at';
-const RECENT_UNLOCK_MS = 10_000;
+let appWasBackgrounded = false;
+let skipNextBiometricRequest = false;
 
 function currentBodyClassList() {
   return typeof document === 'undefined' ? null : document.body?.classList;
@@ -59,12 +58,6 @@ function isNativeAndroid() {
   return isNativeAndroidRuntime();
 }
 
-async function waitForApiReadiness() {
-  try {
-    if (window.MEG_API_READY) await window.MEG_API_READY;
-  } catch {}
-}
-
 function beginAuthenticatedLoadingTransition() {
   const authShell = document.querySelector('#authShell');
   if (!authShell) return;
@@ -80,45 +73,57 @@ function beginAuthenticatedLoadingTransition() {
   overlay.classList.remove('hidden');
 }
 
-function recordBiometricUnlock() {
-  try { sessionStorage.setItem(LAST_UNLOCK_KEY, String(Date.now())); } catch {}
+function cacheCredentials(credentials) {
+  cachedCredentials = credentials;
+  cachedCredentialsAt = Date.now();
 }
 
-function wasRecentlyUnlocked() {
-  try {
-    return Date.now() - Number(sessionStorage.getItem(LAST_UNLOCK_KEY) || 0) < RECENT_UNLOCK_MS;
-  } catch {
-    return false;
+function consumeCachedCredentials() {
+  if (!cachedCredentials || Date.now() - cachedCredentialsAt > CACHED_CREDENTIALS_MS) {
+    cachedCredentials = null;
+    cachedCredentialsAt = 0;
+    return null;
   }
+  const credentials = cachedCredentials;
+  cachedCredentials = null;
+  cachedCredentialsAt = 0;
+  return credentials;
 }
 
-function biometricLockOverlay() {
-  let overlay = document.querySelector('#androidBiometricLock');
-  if (overlay) return overlay;
-  overlay = document.createElement('div');
-  overlay.id = 'androidBiometricLock';
-  overlay.setAttribute('role', 'dialog');
-  overlay.setAttribute('aria-modal', 'true');
-  overlay.innerHTML = `
-    <style>
-      #androidBiometricLock{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#052f2a 0%,#0b6559 62%,#39d7bd 140%);font-family:system-ui,sans-serif;color:#102824}
-      #androidBiometricLock .meg-lock-card{width:min(390px,100%);box-sizing:border-box;padding:30px 24px;border-radius:28px;background:#f8fffd;box-shadow:0 28px 80px #001c1788;text-align:center}
-      #androidBiometricLock .meg-lock-mark{display:grid;place-items:center;width:68px;height:68px;margin:0 auto 18px;border-radius:22px;background:#43dfc4;color:#073b34;font-size:32px;font-weight:900}
-      #androidBiometricLock h1{margin:0 0 8px;font-size:27px}#androidBiometricLock p{margin:0 0 20px;color:#57706b;line-height:1.45}
-      #androidBiometricLock .meg-lock-actions{display:grid;gap:10px}#androidBiometricLock button{min-height:52px;border:0;border-radius:14px;font:inherit;font-weight:850}
-      #androidBiometricLock [data-meg-biometric-retry]{background:#08695c;color:white}#androidBiometricLock [data-meg-biometric-password]{background:#e8f2ef;color:#174c44}
-    </style>
-    <section class="meg-lock-card">
-      <div class="meg-lock-mark" aria-hidden="true">M</div>
-      <h1>MEG protegido</h1>
-      <p data-meg-biometric-message>Confirme sua identidade para visualizar seus dados financeiros.</p>
-      <div class="meg-lock-actions">
-        <button type="button" data-meg-biometric-retry>Usar biometria</button>
-        <button type="button" data-meg-biometric-password>Entrar com senha</button>
-      </div>
-    </section>`;
-  document.body.appendChild(overlay);
-  return overlay;
+function privacyCover() {
+  if (typeof document === 'undefined') return null;
+  let cover = document.querySelector('#androidPrivacyCover');
+  if (cover) return cover;
+  cover = document.createElement('div');
+  cover.id = 'androidPrivacyCover';
+  cover.setAttribute('aria-hidden', 'true');
+  cover.style.cssText = 'position:fixed;inset:0;z-index:2147483646;display:grid;place-items:center;background:#063f37;color:#fff;font:800 22px system-ui,sans-serif;';
+  cover.innerHTML = '<span>MEG Finanças protegido</span>';
+  document.body.appendChild(cover);
+  return cover;
+}
+
+async function authenticateNatively() {
+  if (!isNativeAndroid()) return null;
+  if (biometricAuthenticationPromise) return biometricAuthenticationPromise;
+  biometricAuthenticationPromise = (async () => {
+    biometricPromptOpen = true;
+    try {
+      const credentials = await BiometricAuth.authenticate({
+        title: 'Entrar no MEG Finanças',
+        subtitle: 'Confirme sua identidade para acessar sua conta',
+      });
+      if (!credentials?.email || !credentials?.password) return null;
+      return credentials;
+    } catch {
+      return null;
+    } finally {
+      biometricPromptOpen = false;
+    }
+  })().finally(() => {
+    biometricAuthenticationPromise = null;
+  });
+  return biometricAuthenticationPromise;
 }
 
 export async function getBiometricLoginStatus() {
@@ -141,74 +146,40 @@ export async function saveBiometricLogin({ email, password }) {
 
 export async function requestBiometricLogin() {
   if (!isNativeAndroid()) return null;
-  if (biometricAuthenticationPromise) return biometricAuthenticationPromise;
-  biometricAuthenticationPromise = (async () => {
-    await waitForApiReadiness();
-    biometricPromptOpen = true;
-    try {
-      const credentials = await BiometricAuth.authenticate({
-        title: 'Entrar no MEG Finanças',
-        subtitle: 'Confirme sua identidade para acessar sua conta',
-      });
-      if (!credentials?.email || !credentials?.password) return null;
-      recordBiometricUnlock();
-      beginAuthenticatedLoadingTransition();
-      return credentials;
-    } catch {
-      return null;
-    } finally {
-      biometricPromptOpen = false;
-    }
-  })().finally(() => {
-    biometricAuthenticationPromise = null;
-  });
-  return biometricAuthenticationPromise;
+  if (skipNextBiometricRequest) {
+    skipNextBiometricRequest = false;
+    return null;
+  }
+  const cached = consumeCachedCredentials();
+  if (cached) {
+    beginAuthenticatedLoadingTransition();
+    return cached;
+  }
+  const credentials = await authenticateNatively();
+  if (credentials) beginAuthenticatedLoadingTransition();
+  return credentials;
 }
 
-export async function ensureAndroidBiometricUnlock({ force = false } = {}) {
-  if (!isNativeAndroid()) return true;
-  if (!force && wasRecentlyUnlocked()) return true;
-  if (biometricUnlockPromise) return biometricUnlockPromise;
-
+// Runs before cloud/session bootstrap. When biometric credentials already
+// exist, the Android system prompt is the first security screen displayed.
+export async function prepareAndroidBiometricStartup() {
+  if (!isNativeAndroid()) return { required: false, authenticated: false };
   const status = await getBiometricLoginStatus();
-  if (!status?.available || !status?.enabled) return true;
-
-  biometricUnlockPromise = new Promise((resolve) => {
-    const overlay = biometricLockOverlay();
-    const message = overlay.querySelector('[data-meg-biometric-message]');
-    const retry = overlay.querySelector('[data-meg-biometric-retry]');
-    const password = overlay.querySelector('[data-meg-biometric-password]');
-
-    const unlock = async () => {
-      retry.disabled = true;
-      retry.textContent = 'Aguardando biometria...';
-      message.textContent = 'Use sua digital ou o bloqueio de tela do Android.';
-      const credentials = await requestBiometricLogin();
-      if (credentials) {
-        overlay.remove();
-        biometricUnlockPromise = null;
-        resolve(true);
-        return;
-      }
-      message.textContent = 'A leitura foi cancelada. Seus dados continuam protegidos.';
-      retry.disabled = false;
-      retry.textContent = 'Tentar novamente';
-    };
-
-    retry.addEventListener('click', unlock);
-    password.addEventListener('click', async () => {
-      message.textContent = 'Encerrando a sessão segura...';
-      password.disabled = true;
-      try { await window.MEG_CLOUD?.logout?.({ save: false }); }
-      finally { location.reload(); }
-    });
-    window.setTimeout(unlock, 120);
-  });
-
-  return biometricUnlockPromise;
+  if (!status?.available || !status?.enabled) {
+    return { required: false, authenticated: false, reason: status?.reason };
+  }
+  const credentials = await authenticateNatively();
+  if (!credentials) {
+    skipNextBiometricRequest = true;
+    return { required: true, authenticated: false };
+  }
+  cacheCredentials(credentials);
+  return { required: true, authenticated: true };
 }
 
-export async function initializeAndroidBiometricAppLock() {
+// On Android resume, protect the visible financial data and ask Android
+// directly. No web dialog competes with the operating-system prompt.
+export async function initializeAndroidBiometricLifecycle({ onAuthenticationFailed } = {}) {
   if (!isNativeAndroid() || biometricLifecycleStarted) return false;
   biometricLifecycleStarted = true;
   const { App } = await import('@capacitor/app');
@@ -217,18 +188,25 @@ export async function initializeAndroidBiometricAppLock() {
       if (biometricPromptOpen) return;
       const status = await getBiometricLoginStatus();
       if (!status?.available || !status?.enabled) return;
-      backgroundedAt = Date.now();
-      biometricLockOverlay();
+      appWasBackgrounded = true;
+      privacyCover();
       return;
     }
-    if (!backgroundedAt || biometricPromptOpen) return;
-    backgroundedAt = 0;
-    await ensureAndroidBiometricUnlock({ force: true });
+    if (!appWasBackgrounded || biometricPromptOpen) return;
+    appWasBackgrounded = false;
+    const credentials = await authenticateNatively();
+    if (credentials) {
+      document.querySelector('#androidPrivacyCover')?.remove();
+      return;
+    }
+    await onAuthenticationFailed?.();
   });
   return true;
 }
 
 export async function clearBiometricLogin() {
+  cachedCredentials = null;
+  cachedCredentialsAt = 0;
   if (!isNativeAndroid()) return;
   try {
     await BiometricAuth.clear();
