@@ -117,7 +117,8 @@ async function getAppUpdater() {
   return appUpdaterPromise;
 }
 const VERSION_URL = 'https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json';
-const DISMISSED_KEY = 'meg-dismissed-app-version';
+const INSTALL_PERMISSION_TIMEOUT_MS = 120000;
+const INSTALL_PERMISSION_POLL_MS = 500;
 let startupCheckPromise = null;
 let resolveStartupGate;
 const startupGate = new Promise((resolve) => {
@@ -139,6 +140,16 @@ function publishInstalledVersion(installed) {
   window.dispatchEvent(new CustomEvent('meg:installed-app-version', { detail: installed }));
 }
 
+async function waitForInstallPermission(AppUpdater) {
+  const deadline = Date.now() + INSTALL_PERMISSION_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const info = await AppUpdater.getInfo();
+    if (info.canInstallPackages) return true;
+    await delay(INSTALL_PERMISSION_POLL_MS);
+  }
+  return false;
+}
+
 function updateDialog(release, installed, AppUpdater) {
   const existing = document.querySelector('#appUpdateDialog');
   if (existing?._megDecisionPromise) return existing._megDecisionPromise;
@@ -157,47 +168,54 @@ function updateDialog(release, installed, AppUpdater) {
     <h2>Uma nova versão do MEG está disponível</h2>
     <p>Versão instalada: <strong>${installed.versionName}</strong> · nova versão: <strong>${release.versionName}</strong></p>
     <div class="app-update-notes">${String(release.releaseNotes || 'Melhorias de desempenho, segurança e experiência.').replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</div>
-    <p class="app-update-status" id="appUpdateStatus">A atualização é verificada antes do login e preserva os dados sincronizados.</p>
+    <p class="app-update-status" id="appUpdateStatus">Preparando a atualização automática antes da biometria…</p>
     <div class="modal-actions">
-      <button type="button" class="ghost-button" id="appUpdateLater">Agora não</button>
-      <button type="button" class="primary-button" id="appUpdateNow">Atualizar agora</button>
+      <button type="button" class="ghost-button" id="appUpdateContinue" hidden>Entrar sem atualizar</button>
+      <button type="button" class="primary-button" id="appUpdateRetry" hidden>Tentar novamente</button>
     </div>`;
   document.body.append(dialog);
   const status = dialog.querySelector('#appUpdateStatus');
-  const updateButton = dialog.querySelector('#appUpdateNow');
-  dialog.querySelector('#appUpdateLater').addEventListener('click', () => {
-    sessionStorage.setItem(DISMISSED_KEY, String(release.versionCode));
-    dialog.close('later');
-  });
-  updateButton.addEventListener('click', async () => {
-    updateButton.disabled = true;
+  const continueButton = dialog.querySelector('#appUpdateContinue');
+  const retryButton = dialog.querySelector('#appUpdateRetry');
+  let updateRunning = false;
+
+  const installAutomatically = async () => {
+    if (updateRunning) return;
+    updateRunning = true;
+    retryButton.hidden = true;
+    continueButton.hidden = true;
     try {
       const info = await AppUpdater.getInfo();
       if (!info.canInstallPackages) {
-        status.textContent = 'Ative “Permitir desta fonte”, volte ao MEG e toque em Atualizar novamente.';
+        status.textContent = 'Autorize “Permitir desta fonte”. Ao voltar, o MEG continuará sozinho.';
         await AppUpdater.requestInstallPermission();
-        updateButton.textContent = 'Tentar novamente';
-        return;
+        const granted = await waitForInstallPermission(AppUpdater);
+        if (!granted) throw new Error('INSTALL_PERMISSION_TIMEOUT');
       }
-      status.textContent = 'Baixando a atualização com segurança…';
-      updateButton.textContent = 'Baixando…';
+      status.textContent = 'Baixando e validando a nova versão…';
       await AppUpdater.downloadAndInstall({ url: release.downloadUrl, sha256: release.sha256 || '' });
-      status.textContent = 'Download concluído. Confirme a instalação na tela do Android.';
+      status.textContent = 'Atualização pronta. Conclua a instalação na tela segura do Android.';
+      dialog.close('installer-launched');
     } catch (cause) {
       const message = cause?.message || String(cause || 'Falha desconhecida.');
-      status.textContent = message.includes('INSTALL_PERMISSION_REQUIRED')
-        ? 'Autorize a instalação de apps pelo MEG e tente novamente.'
+      status.textContent = message.includes('INSTALL_PERMISSION')
+        ? 'A permissão de instalação não foi liberada. Autorize e tente novamente.'
         : `Não foi possível atualizar: ${message}`;
-      updateButton.textContent = 'Tentar novamente';
+      retryButton.hidden = false;
+      continueButton.hidden = false;
     } finally {
-      updateButton.disabled = false;
+      updateRunning = false;
     }
-  });
+  };
+
+  retryButton.addEventListener('click', installAutomatically);
+  continueButton.addEventListener('click', () => dialog.close('continue-without-update'));
   dialog.addEventListener('close', () => {
     resolveDecision?.(dialog.returnValue || 'closed');
     dialog.remove();
   }, { once: true });
   dialog.showModal();
+  window.setTimeout(installAutomatically, 0);
   return decisionPromise;
 }
 
@@ -214,9 +232,8 @@ export async function checkForAppUpdate({ force = false, waitForDecision = false
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const release = await response.json();
     const available = Number(release.versionCode) > Number(installed.versionCode);
-    const dismissed = sessionStorage.getItem(DISMISSED_KEY) === String(release.versionCode);
     let decision = null;
-    if (available && (force || release.mandatory || !dismissed)) {
+    if (available) {
       const dialogDecision = updateDialog(release, installed, AppUpdater);
       if (waitForDecision) decision = await dialogDecision;
     }

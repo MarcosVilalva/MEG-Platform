@@ -45,6 +45,10 @@ assert.match(mainActivity, /registerPlugin\(BiometricAuthPlugin\.class\)/);
 assert.match(nativeUpdate, /import\('\.\/native-biometric-settings\.js'\)/);
 assert.match(nativeUpdate, /initializeAuthenticatedBiometricSettings\(\)/);
 assert.match(nativeUpdate, /MEG_INSTALLED_APP_VERSION/);
+assert.match(nativeUpdate, /window\.setTimeout\(installAutomatically, 0\)/);
+assert.match(nativeUpdate, /await waitForInstallPermission\(AppUpdater\)/);
+assert.match(nativeUpdate, /await AppUpdater\.downloadAndInstall/);
+assert.equal(nativeUpdate.includes('appUpdateLater'), false, 'a atualização Android deve iniciar automaticamente');
 assert.match(biometricSettings, /#logoutBtn/);
 assert.match(biometricSettings, /\/auth\/login/);
 assert.match(biometricSettings, /saveBiometricLogin\(\{ email, password \}\)/);
@@ -69,6 +73,8 @@ assert.ok(
   legacyEntry.indexOf('await warmCloudApi()') < legacyEntry.indexOf('await prepareAndroidBiometricStartup()'),
   'a biometria Android deve ser solicitada antes de validar a sessão e carregar os dados'
 );
+assert.match(nativeUpdate, /window\.MEG_API_READY = Promise\.all\(\[/);
+assert.match(nativeUpdate, /apiReadyBeforeUpdate,\s*startupGate/);
 
 const androidWorkflow = read('../../../.github/workflows/build-android-apk.yml');
 assert.match(androidWorkflow, /releases\/download\/android-latest\/MEG-Financas\.apk\?v=' \+ process\.env\.MEG_VERSION_CODE/);

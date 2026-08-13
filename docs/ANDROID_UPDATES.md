@@ -2,14 +2,15 @@
 
 ## Experiência do usuário
 
-Ao abrir o aplicativo, o MEG consulta `downloads/app-version.json`. Quando o `versionCode` publicado é maior que o instalado, uma janela informa a nova versão e permite:
+Ao abrir o aplicativo, o MEG primeiro acorda a API e consulta `downloads/app-version.json`. Quando o `versionCode` publicado é maior que o instalado, o aplicativo:
 
-- atualizar imediatamente;
-- adiar até a próxima abertura;
-- ler o resumo das melhorias;
-- baixar o APK oficial e validar seu SHA-256 antes da instalação.
+- exibe o resumo da nova versão;
+- inicia o download automaticamente;
+- valida o SHA-256 do APK oficial;
+- abre o instalador seguro do Android;
+- somente depois de concluir ou dispensar essa etapa libera a biometria e o carregamento da sessão.
 
-O Android sempre exige confirmação do usuário para instalar uma atualização fora da Play Store. Na primeira vez, também pode solicitar a permissão **Permitir desta fonte** para o MEG.
+Na primeira atualização, o Android pode solicitar a permissão **Permitir desta fonte** para o MEG. O aplicativo aguarda o retorno e continua o download automaticamente. A confirmação final da instalação pertence ao Android e não pode ser suprimida por um aplicativo comum distribuído fora da Play Store.
 
 ## Assinatura permanente
 
