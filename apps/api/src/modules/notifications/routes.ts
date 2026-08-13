@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meg/database';
 import { config } from '../../config';
-import { automationSlot, deliverNotifications, notificationDigest, notificationIntegrationStatus, shouldSendOpenSummary } from './service';
+import { alexaAutomationSlot, automationSlot, deliverAlexaAnnouncement, deliverNotifications, notificationDigest, notificationIntegrationStatus, shouldSendOpenSummary } from './service';
 
 export async function notificationRoutes(app: FastifyInstance) {
   app.get('/status', { preHandler: app.authorize(['ADMIN']) }, async () => notificationIntegrationStatus());
@@ -84,5 +84,19 @@ export async function notificationRoutes(app: FastifyInstance) {
       results.push({ email: user.email, deliveries });
     }
     return { users: results.length, results };
+  });
+
+  app.post('/alexa/cron', async (request, reply) => {
+    if (!config.notificationCronSecret || request.headers['x-cron-secret'] !== config.notificationCronSecret) {
+      return reply.status(401).send({ error: 'INVALID_CRON_SECRET' });
+    }
+    const now = new Date();
+    const body = (request.body || {}) as { slot?: string; force?: boolean };
+    const slot = alexaAutomationSlot(now, body.slot);
+    if (!slot) return { skipped: true, reason: 'Fora da agenda de voz da Alexa.' };
+    const owner = await prisma.user.findUnique({ where: { email: config.alexaOwnerEmail.trim().toLowerCase() }, select: { id: true, email: true, isActive: true, status: true } });
+    if (!owner?.isActive || owner.status !== 'ACTIVE') return reply.status(404).send({ error: 'ALEXA_OWNER_NOT_ACTIVE' });
+    const result = await deliverAlexaAnnouncement(owner.id, now, slot.slot, slot.includeTomorrow, Boolean(body.force));
+    return { owner: owner.email, slot: slot.slot, result };
   });
 }

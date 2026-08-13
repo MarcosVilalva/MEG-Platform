@@ -17,6 +17,7 @@ Esta pasta é a fonte oficial de contexto do projeto.
 
 - `COMMERCIAL_PLATFORM.md`: clientes, planos, licenças e gestão da plataforma.
 - `MULTI_TENANCY.md`: isolamento dos espaços e preservação da base pessoal.
+- `ALEXA_ALERTS.md`: agenda, webhook e operação dos alertas falados de vencimento.
 
 ## Regra de manutenção
 

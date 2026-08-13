@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { filterOptionEntries, normalizeOptionText, optionSignature } from './transaction-editor.js';
+import { createTransactionEditor, filterOptionEntries, normalizeOptionText, optionSignature } from './transaction-editor.js';
 
 assert.equal(normalizeOptionText('Cartão Débito'), 'CARTAO DEBITO');
 assert.equal(normalizeOptionText('  alimentação  '), 'ALIMENTACAO');
@@ -22,5 +22,17 @@ const limited = filterOptionEntries(largeEntries, 'opcao', 60);
 assert.equal(limited.length, 60);
 assert.equal(limited[0].value, '0');
 assert.equal(limited.at(-1).value, '59');
+
+let focused = false;
+const typeField = { focus: () => { focused = true; } };
+const form = {
+  dataset: {},
+  querySelector(selector) {
+    if (selector === '#transactionType') return typeField;
+    throw new Error(`O editor tentou focar ${selector} antes do tipo de lançamento.`);
+  },
+};
+createTransactionEditor({ form }).focusPrimary();
+assert.equal(focused, true);
 
 console.log('transaction-editor tests passed');

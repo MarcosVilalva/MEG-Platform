@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { automationSlot, buildNotificationDigest } from './service';
+import { alexaAutomationSlot, automationSlot, buildAlexaAnnouncement, buildNotificationDigest } from './service';
 
 const transactions = [
   { type: 'expense', date: '2026-06-30', description: 'CONTA ARRASTADA', expenseAmount: 75, status: 'PENDING', paymentMethod: 'BOLETO' },
@@ -76,5 +76,21 @@ const lateNightBrazil = buildNotificationDigest([
 assert.equal(lateNightBrazil.today.length, 0, '22:54 em São Paulo ainda deve ser 15/07');
 assert.equal(lateNightBrazil.tomorrow.length, 1, 'vencimento em 16/07 deve aparecer como amanhã');
 assert.match(lateNightBrazil.text, /VENCE AMANH/);
+
+const alexaWeekday = buildAlexaAnnouncement([
+  { type: 'expense', date: '2026-07-13', description: 'ÁGUA', expenseAmount: 90, status: 'PENDING', paymentMethod: 'PIX' },
+  { type: 'expense', date: '2026-07-14', description: 'ENERGIA', expenseAmount: 150, status: 'PENDING', paymentMethod: 'PIX' },
+  { type: 'expense', date: '2026-07-13', description: 'PAGA', expenseAmount: 50, status: 'PAID', paymentMethod: 'PIX' }
+], new Date('2026-07-13T09:20:00Z'), true);
+assert.ok(alexaWeekday);
+assert.match(alexaWeekday.text, /Vencem hoje/);
+assert.match(alexaWeekday.text, /Vencem amanhã/);
+assert.doesNotMatch(alexaWeekday.text, /PAGA/);
+const alexaWeekend = buildAlexaAnnouncement(transactions, new Date('2026-07-12T15:00:00Z'), false);
+assert.ok(alexaWeekend);
+assert.doesNotMatch(alexaWeekend.text, /Vencem amanhã/);
+assert.equal(alexaAutomationSlot(new Date('2026-07-13T09:20:00Z'), '06:20')?.includeTomorrow, true);
+assert.equal(alexaAutomationSlot(new Date('2026-07-12T15:00:00Z'), '12:00')?.includeTomorrow, false);
+assert.equal(alexaAutomationSlot(new Date('2026-07-12T15:00:00Z'), '18:00'), null);
 
 console.log('MEG notification digest tests passed.');
