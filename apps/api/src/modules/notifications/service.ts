@@ -12,11 +12,16 @@ export type LegacyTransaction = {
   situation?: string;
   type?: string;
   expenseAmount?: number;
+  incomeAmount?: number;
   amount?: number;
   paymentMethod?: string;
   modality?: string;
   account?: string;
+  financialScope?: string;
+  financialAccountId?: string;
 };
+
+export type AlexaSkillIntent = 'overview' | 'pending' | 'next-due' | 'balance';
 
 type DigestItem = LegacyTransaction & {
   dueDate: string;
@@ -34,6 +39,25 @@ const dateLabel = (value: string) => { const [year, month, day] = value.split('-
 const normalize = (value: unknown) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
 const paymentLabel = (item: LegacyTransaction) => normalize(item.paymentMethod || item.account || 'NÃO INFORMADO');
 const amountOf = (item: LegacyTransaction) => Number(item.expenseAmount ?? item.amount ?? 0) || 0;
+const incomeAmountOf = (item: LegacyTransaction) => Number(item.incomeAmount ?? item.amount ?? 0) || 0;
+
+function isBenefitTransaction(item: LegacyTransaction) {
+  if (item.financialScope === 'benefit') return true;
+  if (item.financialScope === 'monetary') return false;
+  if (String(item.financialAccountId || '').startsWith('account-benefit-')) return true;
+  const modality = normalize(item.modality);
+  if (modality.includes('ALIMENTA')) return true;
+  if (normalize(item.type) === 'INCOME' || normalize(item.type) === 'RECEITA') return normalize(item.description).includes('VEROCARD');
+  return normalize(item.paymentMethod || item.account).includes('VEROCARD');
+}
+
+function isPaidExpense(item: LegacyTransaction) {
+  return ['PAID', 'PAGO', 'PAGA', 'RECONCILED', 'CONFIRMED'].includes(normalize(item.status || item.situation));
+}
+
+function isIncome(item: LegacyTransaction) {
+  return ['INCOME', 'RECEITA', 'REDEMPTION'].includes(normalize(item.type));
+}
 
 function saoPauloParts(referenceDate: Date) {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -268,12 +292,145 @@ export function notificationIntegrationStatus() {
     },
     whatsapp: { configured: Boolean(config.evolutionApiUrl && config.evolutionApiKey && config.evolutionInstance), defaultRecipient: config.whatsappRecipient ? config.whatsappRecipient.replace(/\d(?=\d{4})/g, '•') : null },
     alexa: {
-      configured: Boolean(config.alexaAnnouncementWebhookUrl),
+      configured: Boolean(config.alexaAnnouncementWebhookUrl || config.alexaSkillSecret),
+      announcementsConfigured: Boolean(config.alexaAnnouncementWebhookUrl),
+      skillConfigured: Boolean(config.alexaSkillSecret),
       owner: config.alexaOwnerEmail,
       schedule: 'dias úteis às 06:20, 18:00 e 21:00; fins de semana às 12:00'
     },
     automation: { configured: Boolean(config.notificationCronSecret), schedule: '06:00, 12:00 e 19:00 America/Sao_Paulo; resumo geral a cada 5 dias às 06:00' }
   };
+}
+
+function monthBounds(referenceDate: Date) {
+  const local = saoPauloParts(referenceDate);
+  const month = monthKey(local.iso);
+  const [year, monthNumber] = month.split('-').map(Number);
+  const nextMonth = new Date(Date.UTC(year, monthNumber, 1)).toISOString().slice(0, 10);
+  return { ...local, month, start: `${month}-01`, endExclusive: nextMonth };
+}
+
+function spokenMonth(month: string) {
+  const [year, monthNumber] = month.split('-').map(Number);
+  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(year, monthNumber - 1, 1)));
+}
+
+function spokenMoney(value: number) {
+  return money(Math.abs(value));
+}
+
+export function buildAlexaFinancialPanorama(
+  transactions: LegacyTransaction[],
+  referenceDate = new Date(),
+  intent: AlexaSkillIntent = 'overview'
+) {
+  const bounds = monthBounds(referenceDate);
+  let monetaryOpening = 0;
+  let monetaryIncome = 0;
+  let monetaryPaidExpense = 0;
+  let monetaryPendingExpense = 0;
+  let benefitOpening = 0;
+  let benefitIncome = 0;
+  let benefitExpense = 0;
+
+  for (const item of transactions) {
+    const date = String(item.date || '');
+    if (!date) continue;
+    const benefit = isBenefitTransaction(item);
+    const income = isIncome(item) ? incomeAmountOf(item) : 0;
+    const expense = isIncome(item) ? 0 : amountOf(item);
+    if (date < bounds.start) {
+      if (benefit) benefitOpening += income - expense;
+      else monetaryOpening += income - expense;
+      continue;
+    }
+    if (date >= bounds.endExclusive) continue;
+    if (benefit) {
+      benefitIncome += income;
+      benefitExpense += expense;
+    } else if (income) {
+      monetaryIncome += income;
+    } else if (isPaidExpense(item)) {
+      monetaryPaidExpense += expense;
+    } else {
+      monetaryPendingExpense += expense;
+    }
+  }
+
+  const monetaryAvailable = monetaryOpening + monetaryIncome - monetaryPaidExpense;
+  const projectedClosing = monetaryAvailable - monetaryPendingExpense;
+  const benefitBalance = benefitOpening + benefitIncome - benefitExpense;
+  const grouped = groupItems(transactions, bounds.date, bounds.month).filter((item) => !isBenefitTransaction(item));
+  const openThroughMonth = grouped.filter((item) => monthKey(item.dueDate) <= bounds.month);
+  const overdue = openThroughMonth.filter((item) => item.daysUntilDue < 0);
+  const nextDueDate = grouped.find((item) => item.daysUntilDue >= 0)?.dueDate || '';
+  const nextDueItems = nextDueDate ? grouped.filter((item) => item.dueDate === nextDueDate) : [];
+  const nextDueTotal = nextDueItems.reduce((sum, item) => sum + item.value, 0);
+  const nextDueLabels = nextDueItems.slice(0, 3).map((item) => item.label.replace(/^FATURA\s+/u, 'cartão '));
+  const monthLabel = spokenMonth(bounds.month);
+  const projectedMessage = projectedClosing >= 0
+    ? `Depois de quitar as pendências, a projeção é de sobra de ${spokenMoney(projectedClosing)}.`
+    : `Atenção: faltam ${spokenMoney(projectedClosing)} para fechar o mês sem déficit.`;
+  const nextDueMessage = nextDueDate
+    ? `O próximo vencimento é em ${dateLabel(nextDueDate)}, no total de ${spokenMoney(nextDueTotal)}, referente a ${nextDueLabels.join(', ')}.`
+    : 'Não há próximo vencimento cadastrado.';
+
+  let speech: string;
+  if (intent === 'pending') {
+    speech = openThroughMonth.length
+      ? `Você tem ${openThroughMonth.length} obrigações em aberto até ${monthLabel}, somando ${spokenMoney(monetaryPendingExpense)}. ${overdue.length ? `${overdue.length} estão vencidas e precisam de prioridade. ` : ''}${projectedMessage}`
+      : `Ótima notícia. Não há contas monetárias em aberto até ${monthLabel}.`;
+  } else if (intent === 'next-due') {
+    speech = nextDueMessage;
+  } else if (intent === 'balance') {
+    speech = `Seu saldo monetário disponível é ${spokenMoney(monetaryAvailable)}. Há ${spokenMoney(monetaryPendingExpense)} em contas pendentes. ${projectedMessage}`;
+  } else {
+    speech = `Panorama MEG de ${monthLabel}. Seu saldo monetário disponível é ${spokenMoney(monetaryAvailable)}. `
+      + `Neste mês entraram ${spokenMoney(monetaryIncome)} e foram pagas despesas de ${spokenMoney(monetaryPaidExpense)}. `
+      + `Ainda há ${spokenMoney(monetaryPendingExpense)} em contas monetárias pendentes. ${projectedMessage} `
+      + `O saldo do benefício alimentação é ${spokenMoney(benefitBalance)}. ${nextDueMessage}`;
+  }
+
+  return {
+    speech,
+    reprompt: 'Você pode perguntar pelo saldo, pelas pendências ou pelo próximo vencimento.',
+    cardTitle: `MEG Finanças — ${monthLabel}`,
+    cardText: [
+      `Saldo monetário: ${money(monetaryAvailable)}`,
+      `Receitas do mês: ${money(monetaryIncome)}`,
+      `Despesas pagas: ${money(monetaryPaidExpense)}`,
+      `Pendências monetárias: ${money(monetaryPendingExpense)}`,
+      `Projeção de fechamento: ${money(projectedClosing)}`,
+      `Benefício alimentação: ${money(benefitBalance)}`,
+      nextDueDate ? `Próximo vencimento: ${dateLabel(nextDueDate)} — ${money(nextDueTotal)}` : 'Próximo vencimento: nenhum'
+    ].join('\n'),
+    data: {
+      month: bounds.month,
+      monetaryOpening,
+      monetaryIncome,
+      monetaryPaidExpense,
+      monetaryPendingExpense,
+      monetaryAvailable,
+      projectedClosing,
+      benefitBalance,
+      overdueCount: overdue.length,
+      openCount: openThroughMonth.length,
+      nextDueDate: nextDueDate || null,
+      nextDueTotal
+    }
+  };
+}
+
+export async function alexaFinancialPanorama(referenceDate = new Date(), intent: AlexaSkillIntent = 'overview') {
+  const owner = await prisma.user.findUnique({
+    where: { email: config.alexaOwnerEmail.trim().toLowerCase() },
+    select: { id: true, email: true, isActive: true, status: true }
+  });
+  if (!owner?.isActive || owner.status !== 'ACTIVE') throw new Error('ALEXA_OWNER_NOT_ACTIVE');
+  const context = await resolveWorkspaceContext(owner.id);
+  const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId } });
+  const state = saved?.state as { transactions?: LegacyTransaction[] } | null;
+  return { owner: owner.email, ...buildAlexaFinancialPanorama(state?.transactions || [], referenceDate, intent) };
 }
 
 export function buildAlexaAnnouncement(transactions: LegacyTransaction[], referenceDate = new Date(), includeTomorrow = true) {

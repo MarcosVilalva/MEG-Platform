@@ -21,6 +21,7 @@ const environmentSchema = z.object({
   NOTIFICATION_CRON_SECRET: z.string().min(24).optional(),
   ALEXA_ANNOUNCEMENT_WEBHOOK_URL: z.string().url().optional(),
   ALEXA_OWNER_EMAIL: z.string().email().optional(),
+  ALEXA_SKILL_SECRET: z.string().min(24).optional(),
   RUN_LEGACY_REPAIR: z.coerce.boolean().default(false),
   INTEGRATION_ENCRYPTION_KEY: z.string().min(32).optional()
 });
@@ -58,6 +59,7 @@ export const config = {
   notificationCronSecret: values.NOTIFICATION_CRON_SECRET,
   alexaAnnouncementWebhookUrl: values.ALEXA_ANNOUNCEMENT_WEBHOOK_URL,
   alexaOwnerEmail: values.ALEXA_OWNER_EMAIL || values.ADMIN_EMAIL,
+  alexaSkillSecret: values.ALEXA_SKILL_SECRET,
   runLegacyRepair: values.RUN_LEGACY_REPAIR,
   integrationEncryptionKey: values.INTEGRATION_ENCRYPTION_KEY || values.JWT_SECRET,
   corsOrigins: values.CORS_ORIGINS.split(',')

@@ -1,0 +1,54 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "meg finanças",
+      "intents": [
+        {
+          "name": "FinancialOverviewIntent",
+          "samples": [
+            "como estão minhas finanças",
+            "qual é o panorama do mês",
+            "me dê o panorama financeiro",
+            "como está o meu mês",
+            "vou conseguir fechar o mês",
+            "faça meu diagnóstico financeiro"
+          ]
+        },
+        {
+          "name": "PendingBillsIntent",
+          "samples": [
+            "quais contas estão pendentes",
+            "quanto ainda tenho para pagar",
+            "tenho contas vencidas",
+            "como estão minhas pendências",
+            "o que falta pagar este mês"
+          ]
+        },
+        {
+          "name": "NextDueIntent",
+          "samples": [
+            "qual é o próximo vencimento",
+            "qual conta vence primeiro",
+            "o que vence agora",
+            "qual é a próxima conta"
+          ]
+        },
+        {
+          "name": "BalanceIntent",
+          "samples": [
+            "qual é o meu saldo",
+            "quanto tenho disponível",
+            "vai sobrar dinheiro",
+            "quanto falta para fechar o mês"
+          ]
+        },
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.FallbackIntent", "samples": [] },
+        { "name": "AMAZON.NavigateHomeIntent", "samples": [] }
+      ],
+      "types": []
+    }
+  }
+}

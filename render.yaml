@@ -47,3 +47,5 @@ services:
         sync: false
       - key: ALEXA_OWNER_EMAIL
         value: m_vilalva@hotmail.com
+      - key: ALEXA_SKILL_SECRET
+        generateValue: true
