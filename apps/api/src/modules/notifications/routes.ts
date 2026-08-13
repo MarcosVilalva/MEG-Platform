@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meg/database';
 import { config } from '../../config';
-import { alexaAutomationSlot, automationSlot, deliverAlexaAnnouncement, deliverNotifications, notificationDigest, notificationIntegrationStatus, shouldSendOpenSummary } from './service';
+import { alexaAutomationSlot, alexaFinancialPanorama, automationSlot, deliverAlexaAnnouncement, deliverNotifications, notificationDigest, notificationIntegrationStatus, shouldSendOpenSummary, type AlexaSkillIntent } from './service';
 
 export async function notificationRoutes(app: FastifyInstance) {
   app.get('/status', { preHandler: app.authorize(['ADMIN']) }, async () => notificationIntegrationStatus());
@@ -98,5 +98,22 @@ export async function notificationRoutes(app: FastifyInstance) {
     if (!owner?.isActive || owner.status !== 'ACTIVE') return reply.status(404).send({ error: 'ALEXA_OWNER_NOT_ACTIVE' });
     const result = await deliverAlexaAnnouncement(owner.id, now, slot.slot, slot.includeTomorrow, Boolean(body.force));
     return { owner: owner.email, slot: slot.slot, result };
+  });
+
+  app.post('/alexa/skill', async (request, reply) => {
+    if (!config.alexaSkillSecret || request.headers['x-alexa-skill-secret'] !== config.alexaSkillSecret) {
+      return reply.status(401).send({ error: 'INVALID_ALEXA_SKILL_SECRET' });
+    }
+    const body = (request.body || {}) as { intent?: AlexaSkillIntent };
+    const allowed: AlexaSkillIntent[] = ['overview', 'pending', 'next-due', 'balance'];
+    const intent = allowed.includes(body.intent as AlexaSkillIntent) ? body.intent as AlexaSkillIntent : 'overview';
+    try {
+      return await alexaFinancialPanorama(new Date(), intent);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'ALEXA_OWNER_NOT_ACTIVE') {
+        return reply.status(404).send({ error: error.message });
+      }
+      throw error;
+    }
   });
 }

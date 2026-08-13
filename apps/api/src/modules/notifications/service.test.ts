@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { alexaAutomationSlot, automationSlot, buildAlexaAnnouncement, buildNotificationDigest } from './service';
+import { alexaAutomationSlot, automationSlot, buildAlexaAnnouncement, buildAlexaFinancialPanorama, buildNotificationDigest } from './service';
 
 const transactions = [
   { type: 'expense', date: '2026-06-30', description: 'CONTA ARRASTADA', expenseAmount: 75, status: 'PENDING', paymentMethod: 'BOLETO' },
@@ -92,5 +92,28 @@ assert.doesNotMatch(alexaWeekend.text, /Vencem amanhã/);
 assert.equal(alexaAutomationSlot(new Date('2026-07-13T09:20:00Z'), '06:20')?.includeTomorrow, true);
 assert.equal(alexaAutomationSlot(new Date('2026-07-12T15:00:00Z'), '12:00')?.includeTomorrow, false);
 assert.equal(alexaAutomationSlot(new Date('2026-07-12T15:00:00Z'), '18:00'), null);
+
+const panorama = buildAlexaFinancialPanorama([
+  { type: 'income', date: '2026-06-01', description: 'SALÁRIO', incomeAmount: 1000, status: 'paid' },
+  { type: 'expense', date: '2026-06-10', description: 'ALUGUEL', expenseAmount: 300, status: 'paid', paymentMethod: 'PIX' },
+  { type: 'income', date: '2026-07-01', description: 'SALÁRIO', incomeAmount: 2000, status: 'paid' },
+  { type: 'expense', date: '2026-07-05', description: 'MERCADO', expenseAmount: 500, status: 'paid', paymentMethod: 'PIX' },
+  { type: 'expense', date: '2026-07-20', description: 'ENERGIA', expenseAmount: 250, status: 'pending', paymentMethod: 'PIX' },
+  { type: 'income', date: '2026-07-01', description: 'VEROCARD', incomeAmount: 600, status: 'paid', financialScope: 'benefit' },
+  { type: 'expense', date: '2026-07-08', description: 'REFEIÇÃO', expenseAmount: 100, status: 'paid', financialScope: 'benefit' }
+], new Date('2026-07-13T15:00:00Z'));
+assert.equal(panorama.data.monetaryOpening, 700);
+assert.equal(panorama.data.monetaryIncome, 2000);
+assert.equal(panorama.data.monetaryPaidExpense, 500);
+assert.equal(panorama.data.monetaryPendingExpense, 250);
+assert.equal(panorama.data.monetaryAvailable, 2200);
+assert.equal(panorama.data.projectedClosing, 1950);
+assert.equal(panorama.data.benefitBalance, 500);
+assert.match(panorama.speech, /Panorama MEG de julho de 2026/);
+assert.match(panorama.speech, /projeção é de sobra/);
+assert.match(buildAlexaFinancialPanorama([
+  { type: 'income', date: '2026-07-01', description: 'SALÁRIO', incomeAmount: 100 },
+  { type: 'expense', date: '2026-07-20', description: 'ENERGIA', expenseAmount: 150, status: 'pending' }
+], new Date('2026-07-13T15:00:00Z'), 'balance').speech, /faltam R\$\s+50,00/);
 
 console.log('MEG notification digest tests passed.');
