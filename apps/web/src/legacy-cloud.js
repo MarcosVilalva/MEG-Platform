@@ -101,6 +101,18 @@ export function clearLocalCloudSession() {
   clearSession();
 }
 
+export async function warmCloudApi() {
+  assertCloudApiConfigured();
+  showCloudLoading('Conectando ao servidor...', 'Preparando a nuvem antes da validação de segurança');
+  try {
+    const response = await resilientFetch(`${API_URL}/health`, { cache: 'no-store' }, { retries: 2, timeoutMs: 45_000 });
+    if (!response.ok) throw new Error(`API indisponível (${response.status}).`);
+    return response.json().catch(() => ({ status: 'ok' }));
+  } finally {
+    hideCloudLoading();
+  }
+}
+
 function assertStagingAdmin(user) {
   if (APP_ENV !== 'staging') return;
   const email = String(user?.email || '').trim().toLowerCase();

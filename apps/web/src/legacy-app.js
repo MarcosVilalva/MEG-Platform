@@ -452,6 +452,8 @@ const els = {
   transactionId: document.querySelector("#transactionId"),
   dateInput: document.querySelector("#dateInput"),
   dateInputLabel: document.querySelector("#dateInputLabel"),
+  dueDateOverrideField: document.querySelector("#dueDateOverrideField"),
+  dueDateOverrideInput: document.querySelector("#dueDateOverrideInput"),
   weekdayInput: document.querySelector("#weekdayInput"),
   transactionType: document.querySelector("#transactionType"),
   purchaseDateField: document.querySelector("#purchaseDateField"),
@@ -4267,7 +4269,9 @@ function syncCardDates({ recalculate = !els.transactionId.value } = {}) {
   els.purchaseDateField.classList.toggle("hidden", !show);
   els.purchaseDateInput.disabled = !show;
   els.purchaseDateInput.required = show;
-  els.dateInput.readOnly = show;
+  els.dueDateOverrideField.classList.toggle("hidden", !show);
+  els.dueDateOverrideInput.disabled = !show;
+  els.dateInput.readOnly = show && !els.dueDateOverrideInput.checked;
   els.dateInputLabel.textContent = show ? "DATA DE VENCIMENTO DA FATURA" : "DATA";
   els.cardDuePreview.classList.toggle("hidden", !show);
 
@@ -4277,7 +4281,7 @@ function syncCardDates({ recalculate = !els.transactionId.value } = {}) {
   }
 
   if (!els.purchaseDateInput.value && !els.transactionId.value) els.purchaseDateInput.value = todayIso;
-  if (recalculate && els.purchaseDateInput.value) {
+  if (recalculate && !els.dueDateOverrideInput.checked && els.purchaseDateInput.value) {
     const firstDueDate = cardStatementDueDate(els.purchaseDateInput.value, card.closingDay, card.dueDay);
     const installmentOffset = Math.max(Number(currentItem?.installmentNumber || 1) - 1, 0);
     els.dateInput.value = installmentDueDate(firstDueDate, installmentOffset);
@@ -4321,8 +4325,8 @@ function createInstallmentTransactions(payload) {
       description: `${payload.description} ${index + 1}/${count}`,
       expenseAmount: amount,
       amount,
-      status: "pending",
-      situation: "PENDENTE",
+      status: payload.status,
+      situation: payload.situation,
       installmentSeriesId: seriesId,
       installmentNumber: index + 1,
       installmentCount: count,
@@ -4415,6 +4419,7 @@ function openTransactionDialog(item = null) {
   els.dialogTitle.textContent = item ? "Editar lancamento" : "Novo lancamento";
   els.transactionId.value = item?.id || "";
   els.dateInput.value = item?.date || defaultDate;
+  els.dueDateOverrideInput.checked = Boolean(item?.dueDateManual);
   els.purchaseDateInput.value = item?.purchaseDate || "";
   els.weekdayInput.value = item?.weekday || weekdayShort(els.dateInput.value);
   els.transactionType.value = item?.type || "expense";
@@ -4472,6 +4477,7 @@ function updateInstallmentSeries(previous, payload) {
     financialScope: payload.financialScope,
     modality: payload.modality,
     notes: payload.notes,
+    dueDateManual: payload.dueDateManual,
     ...(payload.purchaseDate ? { purchaseDate: payload.purchaseDate } : {}),
   };
   const targetIds = new Set(targets.map((item) => item.id));
@@ -4513,12 +4519,13 @@ function saveTransaction(event) {
   const group = els.groupInput.value.trim();
   const index = state.transactions.findIndex((item) => item.id === id);
   const previous = index >= 0 ? state.transactions[index] : null;
-  const status = type === "income" ? "paid" : type === "expense" && !previous ? "pending" : els.statusInput.value;
+  const status = type === "income" ? "paid" : els.statusInput.value;
   const situation = type === "income" ? "RECEBIDO" : status === "paid" ? "PAGO" : "PENDENTE";
   const financialAccount = financialAccountById(els.financialAccountInput.value);
   const payload = {
     id,
     date: els.dateInput.value,
+    dueDateManual: Boolean(!els.dueDateOverrideInput.disabled && els.dueDateOverrideInput.checked),
     ...(!els.purchaseDateInput.disabled && els.purchaseDateInput.value ? { purchaseDate: els.purchaseDateInput.value } : {}),
     weekday: weekdayShort(els.dateInput.value),
     description: els.descriptionInput.value.trim(),
@@ -4540,6 +4547,20 @@ function saveTransaction(event) {
     notes: els.notesInput.value.trim(),
   };
 
+  const isChangingToPaidExpense = payload.type === "expense" && payload.status === "paid" && previous?.status !== "paid";
+  if (isChangingToPaidExpense) {
+    const paymentAmount = !previous && isInstallmentModality()
+      ? Number(els.purchaseTotalInput.value || payload.amount)
+      : payload.amount;
+    const confirmed = window.confirm(`Confirmar a baixa de ${payload.description || "esta despesa"} no valor de ${money.format(paymentAmount)}?\n\nAo continuar, o lançamento será salvo diretamente como PAGO e não aparecerá novamente para baixa.`);
+    if (!confirmed) return;
+    const paymentCheck = canPayWithBankBalance({ ...payload, amount: paymentAmount, expenseAmount: paymentAmount }, { excludeId: id });
+    if (!paymentCheck.ok) {
+      alertInsufficientBankBalance(paymentCheck);
+      return;
+    }
+  }
+
   if (!previous && payload.type === "expense" && isInstallmentModality()) {
     try {
       const installments = createInstallmentTransactions(payload);
@@ -4558,15 +4579,6 @@ function saveTransaction(event) {
       return;
     }
   }
-  const isChangingToPaidExpense = payload.type === "expense" && payload.status === "paid" && previous?.status !== "paid";
-  if (isChangingToPaidExpense) {
-    const paymentCheck = canPayWithBankBalance(payload, { excludeId: id });
-    if (!paymentCheck.ok) {
-      alertInsufficientBankBalance(paymentCheck);
-      return;
-    }
-  }
-
   const updatedInstallments = previous ? updateInstallmentSeries(previous, payload) : 0;
   if (index >= 0 && !updatedInstallments) state.transactions[index] = { ...previous, ...payload };
   else if (index < 0) state.transactions.push(payload);
@@ -5475,6 +5487,7 @@ els.dateInput.addEventListener("change", () => {
   els.weekdayInput.value = weekdayShort(els.dateInput.value);
 });
 els.purchaseDateInput.addEventListener("change", () => syncCardDates({ recalculate: true }));
+els.dueDateOverrideInput.addEventListener("change", () => syncCardDates({ recalculate: !els.dueDateOverrideInput.checked }));
 els.transactionType.addEventListener("change", syncAmountFields);
 els.descriptionInput.addEventListener("input", renderDescriptionSuggestionsDebounced);
 els.descriptionInput.addEventListener("focus", renderDescriptionSuggestions);

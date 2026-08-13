@@ -82,7 +82,8 @@ export function createTransactionEditor({ dialog, form } = {}) {
       // Os selects nativos leem as opções diretamente; não há cópia visual para sincronizar.
     },
     focusPrimary() {
-      const primary = form?.querySelector('#descriptionInput')
+      const primary = form?.querySelector('#transactionType')
+        || form?.querySelector('#descriptionInput')
         || form?.querySelector('input:not([type="hidden"]):not(:disabled)')
         || form?.querySelector('select:not(:disabled)');
       primary?.focus?.({ preventScroll: true });

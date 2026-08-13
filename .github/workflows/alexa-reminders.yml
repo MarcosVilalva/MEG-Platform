@@ -1,0 +1,41 @@
+name: MEG Alexa Due Reminders
+
+on:
+  schedule:
+    # America/Sao_Paulo (UTC-3). 21:00 local ocorre 00:00 UTC do dia seguinte.
+    - cron: '20 9 * * 1-5'
+    - cron: '0 21 * * 1-5'
+    - cron: '0 0 * * 2-6'
+    - cron: '0 15 * * 0,6'
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: Horário lógico de São Paulo
+        required: true
+        default: '06:20'
+        type: choice
+        options: ['06:20', '18:00', '21:00', '12:00']
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Announce due bills on Alexa
+        env:
+          API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
+          CRON_SECRET: ${{ secrets.NOTIFICATION_CRON_SECRET }}
+          SCHEDULE: ${{ github.event.schedule }}
+          MANUAL_SLOT: ${{ inputs.slot }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          test -n "$CRON_SECRET" || { echo "NOTIFICATION_CRON_SECRET is not configured"; exit 1; }
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then SLOT="$MANUAL_SLOT"; FORCE=true
+          elif [ "$SCHEDULE" = "20 9 * * 1-5" ]; then SLOT="06:20"; FORCE=false
+          elif [ "$SCHEDULE" = "0 21 * * 1-5" ]; then SLOT="18:00"; FORCE=false
+          elif [ "$SCHEDULE" = "0 0 * * 2-6" ]; then SLOT="21:00"; FORCE=false
+          else SLOT="12:00"; FORCE=false; fi
+          curl --fail-with-body --retry 3 --retry-delay 15 \
+            -X POST "$API_URL/notifications/alexa/cron" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --data "{\"slot\":\"$SLOT\",\"force\":$FORCE}"

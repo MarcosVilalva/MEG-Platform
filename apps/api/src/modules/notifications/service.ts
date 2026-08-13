@@ -37,11 +37,13 @@ const amountOf = (item: LegacyTransaction) => Number(item.expenseAmount ?? item.
 
 function saoPauloParts(referenceDate: Date) {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23'
+    timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', weekday: 'short', hourCycle: 'h23'
   }).formatToParts(referenceDate);
   const part = (type: string) => parts.find((item) => item.type === type)?.value || '';
   const iso = `${part('year')}-${part('month')}-${part('day')}`;
-  return { iso, hour: Number(part('hour')), date: new Date(`${iso}T12:00:00-03:00`) };
+  const weekdayName = part('weekday').toLowerCase();
+  const weekday = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].indexOf(weekdayName);
+  return { iso, hour: Number(part('hour')), minute: Number(part('minute')), weekday, date: new Date(`${iso}T12:00:00-03:00`) };
 }
 
 function daysBetween(from: Date, to: Date) {
@@ -265,8 +267,69 @@ export function notificationIntegrationStatus() {
       readyForAllUsers: brevoReady || resendReadyForAll
     },
     whatsapp: { configured: Boolean(config.evolutionApiUrl && config.evolutionApiKey && config.evolutionInstance), defaultRecipient: config.whatsappRecipient ? config.whatsappRecipient.replace(/\d(?=\d{4})/g, '•') : null },
+    alexa: {
+      configured: Boolean(config.alexaAnnouncementWebhookUrl),
+      owner: config.alexaOwnerEmail,
+      schedule: 'dias úteis às 06:20, 18:00 e 21:00; fins de semana às 12:00'
+    },
     automation: { configured: Boolean(config.notificationCronSecret), schedule: '06:00, 12:00 e 19:00 America/Sao_Paulo; resumo geral a cada 5 dias às 06:00' }
   };
+}
+
+export function buildAlexaAnnouncement(transactions: LegacyTransaction[], referenceDate = new Date(), includeTomorrow = true) {
+  const local = saoPauloParts(referenceDate);
+  const grouped = groupItems(transactions, local.date, monthKey(local.iso));
+  const due = grouped.filter((item) => item.daysUntilDue === 0 || (includeTomorrow && item.daysUntilDue === 1));
+  if (!due.length) return null;
+  const today = due.filter((item) => item.daysUntilDue === 0);
+  const tomorrow = due.filter((item) => item.daysUntilDue === 1);
+  const total = due.reduce((sum, item) => sum + item.value, 0);
+  const describe = (items: DigestItem[]) => items.map((item) => `${item.label}, ${money(item.value)}`).join('; ');
+  const sentences = ['Atenção. Alerta MEG Finanças.'];
+  if (today.length) sentences.push(`Vencem hoje: ${describe(today)}.`);
+  if (tomorrow.length) sentences.push(`Vencem amanhã: ${describe(tomorrow)}.`);
+  sentences.push(`O total destes compromissos é ${money(total)}. Contas já pagas foram desconsideradas.`);
+  return { text: sentences.join(' '), items: due, totalAmount: total, totalCount: due.length };
+}
+
+export function alexaAutomationSlot(referenceDate = new Date(), requestedSlot?: string) {
+  const local = saoPauloParts(referenceDate);
+  const weekend = local.weekday === 0 || local.weekday === 6;
+  const slot = requestedSlot || `${String(local.hour).padStart(2, '0')}:${String(local.minute).padStart(2, '0')}`;
+  const allowed = weekend ? ['12:00'] : ['06:20', '18:00', '21:00'];
+  if (!allowed.includes(slot)) return null;
+  return { ...local, slot, includeTomorrow: !weekend };
+}
+
+async function invokeAlexaWebhook(text: string) {
+  const template = config.alexaAnnouncementWebhookUrl;
+  if (!template) return { status: 'skipped', detail: 'Webhook da Alexa não configurado' };
+  const usesTemplate = template.includes('{text}');
+  const response = await fetch(usesTemplate ? template.replaceAll('{text}', encodeURIComponent(text)) : template, usesTemplate
+    ? { method: 'GET' }
+    : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+  if (!response.ok) throw new Error(`Webhook da Alexa recusado (${response.status}): ${await response.text()}`);
+  return { status: 'sent', detail: await response.text() };
+}
+
+export async function deliverAlexaAnnouncement(userId: string, referenceDate = new Date(), slot = 'manual', includeTomorrow = true, force = false) {
+  const context = await resolveWorkspaceContext(userId);
+  const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId } });
+  const state = saved?.state as { transactions?: LegacyTransaction[] } | null;
+  const announcement = buildAlexaAnnouncement(state?.transactions || [], referenceDate, includeTomorrow);
+  if (!announcement) return { status: 'skipped', reason: 'Nenhum vencimento para anunciar.' };
+  const local = saoPauloParts(referenceDate);
+  const reference = `${local.iso}:${slot}:alexa`;
+  const channel = 'alexa:owner';
+  const existing = await prisma.notificationDelivery.findUnique({ where: { userId_channel_reference: { userId, channel, reference } } });
+  if (existing && !force) return { status: 'already-sent', announcement };
+  const result = await invokeAlexaWebhook(announcement.text);
+  if (result.status === 'sent') await prisma.notificationDelivery.upsert({
+    where: { userId_channel_reference: { userId, channel, reference } },
+    create: { userId, channel, reference, status: result.status, detail: result.detail },
+    update: { status: result.status, detail: result.detail, deliveredAt: new Date() }
+  });
+  return { ...result, announcement };
 }
 
 type DeliveryOptions = {

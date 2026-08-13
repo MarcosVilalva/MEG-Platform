@@ -64,8 +64,9 @@ assert.equal(biometricLogin.includes('@capgo/capacitor-native-biometric'), false
 assert.match(biometricLogin, /NOT_NATIVE_ANDROID/);
 assert.match(legacyEntry, /await prepareAndroidBiometricStartup\(\)/);
 assert.match(legacyEntry, /await bootstrapCloud\(\)/);
+assert.match(legacyEntry, /await warmCloudApi\(\)/);
 assert.ok(
-  legacyEntry.indexOf('await prepareAndroidBiometricStartup()') < legacyEntry.indexOf('await bootstrapCloud()'),
+  legacyEntry.indexOf('await warmCloudApi()') < legacyEntry.indexOf('await prepareAndroidBiometricStartup()'),
   'a biometria Android deve ser solicitada antes de validar a sessão e carregar os dados'
 );
 

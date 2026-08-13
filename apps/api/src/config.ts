@@ -19,6 +19,8 @@ const environmentSchema = z.object({
   EVOLUTION_INSTANCE: z.string().optional(),
   WHATSAPP_RECIPIENT: z.string().optional(),
   NOTIFICATION_CRON_SECRET: z.string().min(24).optional(),
+  ALEXA_ANNOUNCEMENT_WEBHOOK_URL: z.string().url().optional(),
+  ALEXA_OWNER_EMAIL: z.string().email().optional(),
   RUN_LEGACY_REPAIR: z.coerce.boolean().default(false),
   INTEGRATION_ENCRYPTION_KEY: z.string().min(32).optional()
 });
@@ -54,6 +56,8 @@ export const config = {
   evolutionInstance: values.EVOLUTION_INSTANCE,
   whatsappRecipient: values.WHATSAPP_RECIPIENT,
   notificationCronSecret: values.NOTIFICATION_CRON_SECRET,
+  alexaAnnouncementWebhookUrl: values.ALEXA_ANNOUNCEMENT_WEBHOOK_URL,
+  alexaOwnerEmail: values.ALEXA_OWNER_EMAIL || values.ADMIN_EMAIL,
   runLegacyRepair: values.RUN_LEGACY_REPAIR,
   integrationEncryptionKey: values.INTEGRATION_ENCRYPTION_KEY || values.JWT_SECRET,
   corsOrigins: values.CORS_ORIGINS.split(',')

@@ -70,6 +70,9 @@
 .cloud-loading-card::after { content: ""; width: 44px; height: 44px; margin-top: 4px; border: 4px solid rgba(255,255,255,.22); border-top-color: #53e0c3; border-radius: 999px; animation: cloud-spin 900ms linear infinite; }
 .cloud-loading-card strong { font-size: clamp(1.5rem, 4vw, 2.15rem); }
 .cloud-loading-card small { color: rgba(255,255,255,.76); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.due-date-override { padding: 12px 14px; border: 1px solid #c9ded9; border-radius: 14px; background: #f3faf8; }
+.due-date-override .checkbox-line { display: flex; align-items: center; gap: 10px; margin-top: 6px; color: #123f37; font-weight: 800; text-transform: none; }
+.due-date-override .checkbox-line input { width: 20px; height: 20px; margin: 0; accent-color: #0f8f7b; }
 @keyframes cloud-spin { to { transform: rotate(360deg); } }
 .auth-error { min-height: 20px; margin: 0; color: #bd2b2b; }
 .auth-error.success { color: #087562; }

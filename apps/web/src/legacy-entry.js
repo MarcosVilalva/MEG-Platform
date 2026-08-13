@@ -1,4 +1,4 @@
-import { bootstrapCloud, clearLocalCloudSession } from './legacy-cloud.js';
+import { bootstrapCloud, clearLocalCloudSession, warmCloudApi } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { checkForAppUpdate, initializeStableUiFeatures } from './native-app-update.js';
 import { initializeAndroidBiometricLifecycle, prepareAndroidBiometricStartup } from './native-biometric-login.js';
@@ -418,6 +418,7 @@ async function start() {
   if (validationMode) {
     bootstrapValidationMode();
   } else {
+    await warmCloudApi();
     const biometricStartup = await prepareAndroidBiometricStartup();
     if (biometricStartup.required && !biometricStartup.authenticated) clearLocalCloudSession();
     await bootstrapCloud();

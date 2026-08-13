@@ -72,7 +72,7 @@ app.get('/health', async () => ({
   version: '1.3.0-project-phoenix',
   environment: config.nodeEnv,
   timestamp: new Date().toISOString(),
-  features: ['legacy-ui', 'cloud-state', 'xlsx-import', 'email-reminders', 'whatsapp-reminders', 'multi-client-workspaces', 'commercial-licenses', 'workspace-integrations', 'subscription-billing'],
+  features: ['legacy-ui', 'cloud-state', 'xlsx-import', 'email-reminders', 'whatsapp-reminders', 'alexa-reminders', 'multi-client-workspaces', 'commercial-licenses', 'workspace-integrations', 'subscription-billing'],
   integrations: notificationIntegrationStatus(),
   commit: process.env.RENDER_GIT_COMMIT || 'local',
   dataRepair
@@ -98,9 +98,13 @@ process.on('SIGINT', () => void shutdown('SIGINT'));
 process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
 try {
-  await ensureCommercialFoundation();
-  await refreshCommercialBillingStatuses();
   await app.listen({ port: config.port, host: config.host });
+  // Abra a porta HTTP primeiro: health/login não devem esperar rotinas de
+  // manutenção, principalmente depois de um cold start do plano gratuito.
+  void Promise.all([
+    ensureCommercialFoundation(),
+    refreshCommercialBillingStatuses()
+  ]).catch((error) => app.log.error(error, 'Background commercial maintenance failed'));
   if (config.runLegacyRepair) {
     void repairLegacyImportedEvents()
       .then((repairResult) => {
