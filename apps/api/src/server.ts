@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import compress from '@fastify/compress';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import { prisma } from '@meg/database';
 import { config } from './config';
 import { isAllowedOrigin } from './cors';
 import { registerAuth } from './plugins/auth';
@@ -77,6 +78,16 @@ app.get('/health', async () => ({
   commit: process.env.RENDER_GIT_COMMIT || 'local',
   dataRepair
 }));
+
+app.get('/ready', async (_request, reply) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return { status: 'ready', service: 'meg-api', database: 'ready', timestamp: new Date().toISOString() };
+  } catch (error) {
+    app.log.error(error, 'Database readiness check failed');
+    return reply.status(503).send({ status: 'unavailable', service: 'meg-api', database: 'unavailable', timestamp: new Date().toISOString() });
+  }
+});
 
 await app.register(authRoutes, { prefix: '/auth' });
 await app.register(financeRoutes, { prefix: '/finance' });

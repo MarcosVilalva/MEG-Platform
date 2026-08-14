@@ -1,0 +1,31 @@
+name: MEG API Availability
+
+on:
+  schedule:
+    # Aquecimento leve de hora em hora entre 06:05 e 23:05 em Sao Paulo.
+    - cron: '5 9-23 * * *'
+    # Acorda 10 minutos antes dos alertas de 06:00, 12:00 e 19:00.
+    - cron: '50 8 * * *'
+    - cron: '50 14 * * *'
+    - cron: '50 21 * * *'
+  workflow_dispatch:
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Warm free API safely
+        env:
+          API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
+        run: |
+          for attempt in {1..12}; do
+            if response=$(curl --silent --show-error --max-time 20 --fail "$API_URL/ready"); then
+              echo "$response"
+              exit 0
+            fi
+            echo "Cold start in progress (attempt $attempt/12)"
+            sleep 10
+          done
+          echo "MEG API health check failed"
+          exit 1

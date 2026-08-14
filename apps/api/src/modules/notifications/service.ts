@@ -261,7 +261,33 @@ export async function notificationDigest(userId: string, referenceDate = new Dat
 
 type EmailBranding = { senderName?: string | null; replyToEmail?: string | null };
 
-async function sendEmail(to: string, subject: string, text: string, branding: EmailBranding = {}) {
+function escapeHtml(value: unknown) {
+  return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+}
+
+const priorityTheme: Record<DigestItem['priority'], { color: string; background: string; label: string }> = {
+  'MÁXIMA': { color: '#991b1b', background: '#fee2e2', label: 'Prioridade máxima' },
+  'CRÍTICA': { color: '#b91c1c', background: '#fef2f2', label: 'Vencida' },
+  'URGENTE': { color: '#c2410c', background: '#fff7ed', label: 'Vence hoje' },
+  'ALTA': { color: '#a16207', background: '#fefce8', label: 'Vence amanhã' },
+  'ATENÇÃO': { color: '#0369a1', background: '#f0f9ff', label: 'Próximos 3 dias' },
+  'PROGRAMADA': { color: '#047857', background: '#ecfdf5', label: 'Programada' }
+};
+
+export function buildNotificationEmailHtml(digest: ReturnType<typeof buildNotificationDigest>) {
+  const title = digest.mode === 'open-summary' ? 'Raio-X das contas em aberto' : 'Central de vencimentos';
+  const rows = digest.items.map((item) => {
+    const theme = priorityTheme[item.priority];
+    const grouped = item.entries > 1 ? `${item.entries} compras agrupadas` : item.payment;
+    return `<tr><td style="padding:14px 16px;border-bottom:1px solid #e5e7eb"><div style="font-weight:800;color:#102a26">${escapeHtml(item.label)}</div><div style="margin-top:4px;color:#64748b;font-size:13px">${escapeHtml(grouped)} &bull; ${escapeHtml(dateLabel(item.dueDate))}</div></td><td style="padding:14px 16px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap"><div style="font-weight:800;color:#102a26">${escapeHtml(money(item.value))}</div><span style="display:inline-block;margin-top:5px;padding:4px 8px;border-radius:999px;background:${theme.background};color:${theme.color};font-size:11px;font-weight:800;text-transform:uppercase">${escapeHtml(theme.label)}</span></td></tr>`;
+  }).join('');
+  const urgent = digest.maximumPriority.length || digest.overdue.length;
+  const statusColor = urgent ? '#b91c1c' : digest.today.length ? '#c2410c' : '#047857';
+  const statusText = digest.maximumPriority.length ? 'Existem pendências de meses anteriores que exigem prioridade máxima.' : digest.overdue.length ? 'Existem contas vencidas que precisam de ação.' : digest.today.length ? 'Existem pagamentos programados para hoje.' : 'Sua agenda financeira está sob controle.';
+  return `<!doctype html><html lang="pt-BR"><body style="margin:0;background:#f2f7f5;font-family:Inter,Segoe UI,Arial,sans-serif;color:#102a26"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f2f7f5;padding:24px 10px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 14px 40px rgba(15,82,72,.12)"><tr><td style="padding:30px;background:#075e54;color:#fff"><div style="font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#8ff3df">MEG Finanças</div><h1 style="margin:10px 0 6px;font-size:28px">${escapeHtml(title)}</h1><div style="font-size:15px;color:#d5fff7">Informação objetiva para decidir e pagar no prazo.</div></td></tr><tr><td style="padding:24px 28px 10px"><div style="padding:15px 17px;border-left:5px solid ${statusColor};background:#f8fafc;border-radius:12px;color:${statusColor};font-weight:750">${escapeHtml(statusText)}</div></td></tr><tr><td style="padding:12px 28px 22px"><table role="presentation" width="100%" cellspacing="8" cellpadding="0"><tr><td style="padding:16px;background:#eaf8f4;border-radius:14px"><div style="font-size:12px;color:#52716b;text-transform:uppercase;font-weight:800">Neste alerta</div><div style="font-size:24px;font-weight:900;margin-top:5px">${escapeHtml(money(digest.totalAmount))}</div><div style="font-size:13px;color:#52716b">${digest.totalCount} obrigação(ões)</div></td><td style="padding:16px;background:#f8fafc;border-radius:14px"><div style="font-size:12px;color:#64748b;text-transform:uppercase;font-weight:800">Em aberto</div><div style="font-size:24px;font-weight:900;margin-top:5px">${escapeHtml(money(digest.openAmount))}</div><div style="font-size:13px;color:#64748b">até o mês atual</div></td></tr></table></td></tr><tr><td style="padding:0 28px 28px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e5e7eb;border-radius:14px;overflow:hidden">${rows || '<tr><td style="padding:24px;text-align:center;color:#047857;font-weight:800">Nenhuma conta exige atenção neste envio.</td></tr>'}</table></td></tr><tr><td style="padding:20px 28px;background:#062f2a;color:#cceee7;text-align:center;font-size:13px">MEG Finanças &bull; Seu copiloto financeiro<br><span style="color:#8fc7bc">Mensagem automática. Pagamentos baixados deixam de aparecer nos próximos alertas.</span></td></tr></table></td></tr></table></body></html>`;
+}
+
+async function sendEmail(to: string, subject: string, text: string, branding: EmailBranding = {}, html?: string) {
   const recipient = to.trim().replace(/[?？]+$/u, '').toLowerCase();
   const senderAddress = config.notificationEmailFrom.match(/<([^>]+)>/)?.[1] || config.notificationEmailFrom;
   const senderName = branding.senderName?.trim();
@@ -272,7 +298,7 @@ async function sendEmail(to: string, subject: string, text: string, branding: Em
   if (canUseResend) {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${config.resendApiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: brandedFrom, to: [recipient], reply_to: replyToEmail, subject, text })
+      body: JSON.stringify({ from: brandedFrom, to: [recipient], reply_to: replyToEmail, subject, text, html })
     });
     if (!response.ok) throw new Error(`E-mail Resend recusado (${response.status}): ${await response.text()}`);
     return { status: 'sent', provider: 'resend', detail: await response.text() };
@@ -286,7 +312,8 @@ async function sendEmail(to: string, subject: string, text: string, branding: Em
         to: [{ email: recipient }],
         replyTo: { email: replyToEmail, name: senderName || 'Administrador MEG' },
         subject,
-        textContent: text
+        textContent: text,
+        htmlContent: html
       })
     });
     if (!response.ok) throw new Error(`E-mail Brevo recusado (${response.status}): ${await response.text()}`);
@@ -627,6 +654,7 @@ export async function deliverNotifications(userId: string, options: DeliveryOpti
   const subject = `MEG Finanças: ${digest.totalCount} obrigação(ões) — ${money(digest.totalAmount)}`;
   const context = await resolveWorkspaceContext(userId);
   const notificationConfig = await prisma.workspaceNotificationConfig.findUnique({ where: { workspaceId: context.workspaceId } });
+  const emailHtml = buildNotificationEmailHtml(digest);
   const [phones, emails, owner] = await Promise.all([
     prisma.notificationRecipient.findMany({ where: { userId, isActive: true, ...(recipientIds.length ? { id: { in: recipientIds } } : {}) }, orderBy: { name: 'asc' } }),
     notificationConfig?.emailEnabled === false ? Promise.resolve([]) : prisma.notificationEmailRecipient.findMany({ where: { userId, isActive: true, ...(emailRecipientIds.length ? { id: { in: emailRecipientIds } } : {}) }, orderBy: { name: 'asc' } }),
@@ -636,24 +664,30 @@ export async function deliverNotifications(userId: string, options: DeliveryOpti
   const whatsappTargets = phones.length ? phones : ownerFallbackPhone ? [{ id: 'workspace-owner', name: owner?.name || 'Responsável', phone: ownerFallbackPhone }] : [];
   const emailTargets = notificationConfig?.emailEnabled === false ? [] : emails.length ? emails : owner?.email ? [{ id: 'workspace-owner', name: owner.name, email: owner.email }] : [];
   const channels = [
-    ...emailTargets.map((recipient) => ({ channel: `email:${recipient.id}`, label: `${recipient.name} (${recipient.email})`, send: () => sendEmail(recipient.email, subject, digest.text, notificationConfig ?? undefined) })),
+    ...emailTargets.map((recipient) => ({ channel: `email:${recipient.id}`, label: `${recipient.name} (${recipient.email})`, send: () => sendEmail(recipient.email, subject, digest.text, notificationConfig ?? undefined, emailHtml) })),
     ...whatsappTargets.map((recipient) => ({ channel: `whatsapp:${recipient.id}`, label: `${recipient.name} (${recipient.phone})`, send: () => sendWhatsApp(recipient.phone, digest.text) }))
   ];
   const deliveries = [];
   const reference = `${local.iso}:${slot}:${mode}`;
   for (const item of channels) {
     const existing = await prisma.notificationDelivery.findUnique({ where: { userId_channel_reference: { userId, channel: item.channel, reference } } });
-    if (existing && !force) { deliveries.push({ channel: item.channel, recipient: item.label, status: 'already-sent' }); continue; }
+    if (existing?.status === 'sent' && !force) { deliveries.push({ channel: item.channel, recipient: item.label, status: 'already-sent' }); continue; }
     try {
       const result = await item.send();
-      if (result.status === 'sent') await prisma.notificationDelivery.upsert({
+      await prisma.notificationDelivery.upsert({
         where: { userId_channel_reference: { userId, channel: item.channel, reference } },
         create: { userId, channel: item.channel, reference, status: result.status, detail: result.detail },
         update: { status: result.status, detail: result.detail, deliveredAt: new Date() }
       });
       deliveries.push({ channel: item.channel, recipient: item.label, ...result });
     } catch (error) {
-      deliveries.push({ channel: item.channel, recipient: item.label, status: 'failed', detail: error instanceof Error ? error.message : 'Falha desconhecida' });
+      const detail = error instanceof Error ? error.message : 'Falha desconhecida';
+      await prisma.notificationDelivery.upsert({
+        where: { userId_channel_reference: { userId, channel: item.channel, reference } },
+        create: { userId, channel: item.channel, reference, status: 'failed', detail },
+        update: { status: 'failed', detail, deliveredAt: new Date() }
+      });
+      deliveries.push({ channel: item.channel, recipient: item.label, status: 'failed', detail });
     }
   }
   return { digest, deliveries };

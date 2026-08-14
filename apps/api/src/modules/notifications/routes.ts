@@ -6,6 +6,27 @@ import { alexaAutomationSlot, alexaFinancialPanorama, automationSlot, deliverAle
 export async function notificationRoutes(app: FastifyInstance) {
   app.get('/status', { preHandler: app.authorize(['ADMIN']) }, async () => notificationIntegrationStatus());
 
+  app.get('/deliveries', { preHandler: app.authorize(['ADMIN']) }, async (request) => {
+    const deliveries = await prisma.notificationDelivery.findMany({
+      where: { userId: request.user.sub },
+      orderBy: { deliveredAt: 'desc' },
+      take: 100,
+      select: { id: true, channel: true, reference: true, status: true, detail: true, deliveredAt: true }
+    });
+    const last24Hours = Date.now() - 86_400_000;
+    return {
+      generatedAt: new Date().toISOString(),
+      summary: {
+        total: deliveries.length,
+        sentLast24Hours: deliveries.filter((item) => item.status === 'sent' && item.deliveredAt.valueOf() >= last24Hours).length,
+        failedLast24Hours: deliveries.filter((item) => item.status === 'failed' && item.deliveredAt.valueOf() >= last24Hours).length,
+        lastSuccessAt: deliveries.find((item) => item.status === 'sent')?.deliveredAt ?? null,
+        lastFailureAt: deliveries.find((item) => item.status === 'failed')?.deliveredAt ?? null
+      },
+      deliveries
+    };
+  });
+
   app.get('/preview', { preHandler: app.authenticate }, async (request) => notificationDigest(request.user.sub));
 
   app.get('/recipients', { preHandler: app.authenticate }, async (request) => prisma.notificationRecipient.findMany({

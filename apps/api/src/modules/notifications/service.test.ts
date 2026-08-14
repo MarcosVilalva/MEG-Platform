@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { alexaAutomationSlot, automationSlot, buildAlexaAnnouncement, buildAlexaFinancialPanorama, buildNotificationDigest } from './service';
+import { alexaAutomationSlot, automationSlot, buildAlexaAnnouncement, buildAlexaFinancialPanorama, buildNotificationDigest, buildNotificationEmailHtml } from './service';
 
 const transactions = [
   { type: 'expense', date: '2026-06-30', description: 'CONTA ARRASTADA', expenseAmount: 75, status: 'PENDING', paymentMethod: 'BOLETO' },
@@ -33,6 +33,11 @@ assert.match(digest.text, /URGENTE — VENCE HOJE/);
 assert.match(digest.text, /Total em aberto até o mês atual/);
 assert.match(digest.text, /Compromissos após este mês/);
 assert.doesNotMatch(digest.text, /PAGA/);
+const emailHtml = buildNotificationEmailHtml(digest);
+assert.match(emailHtml, /Central de vencimentos/);
+assert.match(emailHtml, /FATURA CARTAO ML/);
+assert.match(emailHtml, /R\$&nbsp;504,90|R\$\s*504,90/);
+assert.match(emailHtml, /Pagamentos baixados deixam de aparecer/);
 
 const dueNow = buildNotificationDigest(transactions, new Date('2026-07-12T15:00:00Z'), 'due-now');
 assert.equal(dueNow.totalCount, 3, 'meio-dia e 19h incluem pendências anteriores, vencidas e vencendo hoje');

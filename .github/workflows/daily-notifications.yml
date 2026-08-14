@@ -19,6 +19,21 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
+      - name: Wake API and wait until healthy
+        env:
+          API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
+        run: |
+          echo "Waking MEG API before the notification cycle"
+          for attempt in {1..12}; do
+            if curl --silent --show-error --max-time 20 --fail "$API_URL/ready" > /tmp/meg-health.json; then
+              cat /tmp/meg-health.json
+              exit 0
+            fi
+            echo "API is still waking up (attempt $attempt/12)"
+            sleep 10
+          done
+          echo "API did not become healthy in time"
+          exit 1
       - name: Send smart due and overdue reminders
         env:
           API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
@@ -33,8 +48,11 @@ jobs:
           elif [ "$SCHEDULE" = "0 15 * * *" ]; then SLOT="12:00"; FORCE=false
           else SLOT="19:00"; FORCE=false; fi
           echo "Triggering MEG notification slot $SLOT (force=$FORCE)"
-          curl --fail-with-body --retry 3 --retry-delay 15 \
+          RESPONSE=$(curl --fail-with-body --retry 5 --retry-all-errors --retry-delay 10 --max-time 120 \
             -X POST "$API_URL/notifications/cron" \
             -H "x-cron-secret: $CRON_SECRET" \
             -H "Content-Type: application/json" \
-            --data "{\"slot\":\"$SLOT\",\"force\":$FORCE}"
+            --data "{\"slot\":\"$SLOT\",\"force\":$FORCE}")
+          echo "$RESPONSE" | jq .
+          FAILED=$(echo "$RESPONSE" | jq '[.. | objects | select(.status? == "failed")] | length')
+          test "$FAILED" -eq 0 || { echo "$FAILED delivery channel(s) failed"; exit 1; }

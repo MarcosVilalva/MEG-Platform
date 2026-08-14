@@ -20,6 +20,19 @@ jobs:
   announce:
     runs-on: ubuntu-latest
     steps:
+      - name: Wake API and wait until healthy
+        env:
+          API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
+        run: |
+          for attempt in {1..12}; do
+            if curl --silent --show-error --max-time 20 --fail "$API_URL/ready" > /tmp/meg-health.json; then
+              cat /tmp/meg-health.json
+              exit 0
+            fi
+            echo "API is still waking up (attempt $attempt/12)"
+            sleep 10
+          done
+          exit 1
       - name: Announce due bills on Alexa
         env:
           API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
@@ -34,8 +47,11 @@ jobs:
           elif [ "$SCHEDULE" = "0 21 * * 1-5" ]; then SLOT="18:00"; FORCE=false
           elif [ "$SCHEDULE" = "0 0 * * 2-6" ]; then SLOT="21:00"; FORCE=false
           else SLOT="12:00"; FORCE=false; fi
-          curl --fail-with-body --retry 3 --retry-delay 15 \
+          RESPONSE=$(curl --fail-with-body --retry 5 --retry-all-errors --retry-delay 10 --max-time 120 \
             -X POST "$API_URL/notifications/alexa/cron" \
             -H "x-cron-secret: $CRON_SECRET" \
             -H "Content-Type: application/json" \
-            --data "{\"slot\":\"$SLOT\",\"force\":$FORCE}"
+            --data "{\"slot\":\"$SLOT\",\"force\":$FORCE}")
+          echo "$RESPONSE" | jq .
+          STATUS=$(echo "$RESPONSE" | jq -r '.result.status // "unknown"')
+          case "$STATUS" in sent|already-sent|no-due-items) exit 0 ;; *) echo "Alexa announcement status: $STATUS"; exit 1 ;; esac

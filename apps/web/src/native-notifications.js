@@ -66,8 +66,10 @@ async function performSync(state) {
     const label = payableGroupLabel(group);
     const total = payableGroupTotal(group);
     const schedules = [
-      { suffix: 'three-days', at: dateOffset(group.date, -3, 9), title: '📅 Conta vence em 3 dias' },
+      { suffix: 'three-days', at: dateOffset(group.date, -3, 6), title: '📅 Conta vence em 3 dias' },
       { suffix: 'due-day', at: localDate(group.date, 6), title: '🚨 Conta vence hoje' },
+      { suffix: 'due-day-noon', at: localDate(group.date, 12), title: '🚨 Pagamento pendente hoje' },
+      { suffix: 'due-day-evening', at: localDate(group.date, 19), title: '🚨 Último alerta do vencimento' },
     ];
     schedules.forEach(({ suffix, at, title }) => {
       if (at <= now) return;
