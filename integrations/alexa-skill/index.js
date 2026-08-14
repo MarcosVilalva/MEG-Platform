@@ -1,6 +1,7 @@
 'use strict';
 
 const Alexa = require('ask-sdk-core');
+const https = require('https');
 
 const intentMap = {
   FinancialOverviewIntent: 'overview',
@@ -13,16 +14,40 @@ async function askMeg(intent) {
   const apiUrl = String(process.env.MEG_API_URL || '').replace(/\/$/, '');
   const secret = String(process.env.MEG_ALEXA_SKILL_SECRET || '');
   if (!apiUrl || !secret) throw new Error('MEG_SKILL_NOT_CONFIGURED');
-  const response = await fetch(`${apiUrl}/notifications/alexa/skill`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-alexa-skill-secret': secret
-    },
-    body: JSON.stringify({ intent })
+  const payload = JSON.stringify({ intent });
+  const panorama = await new Promise((resolve, reject) => {
+    const request = https.request(`${apiUrl}/notifications/alexa/skill`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'content-length': Buffer.byteLength(payload),
+        'x-alexa-skill-secret': secret
+      },
+      // Alexa encerra a Lambda hospedada em aproximadamente oito segundos.
+      // Retornamos uma resposta amigavel antes desse limite quando a API esta
+      // acordando, em vez de deixar a Skill falhar com timeout generico.
+      timeout: 6_000
+    }, (response) => {
+      let body = '';
+      response.setEncoding('utf8');
+      response.on('data', (chunk) => { body += chunk; });
+      response.on('end', () => {
+        if (!response.statusCode || response.statusCode < 200 || response.statusCode >= 300) {
+          reject(new Error(`MEG_API_${response.statusCode || 0}:${body.slice(0, 160)}`));
+          return;
+        }
+        try {
+          resolve(JSON.parse(body));
+        } catch (error) {
+          reject(new Error(`MEG_API_INVALID_JSON:${error instanceof Error ? error.message : String(error)}`));
+        }
+      });
+    });
+    request.on('timeout', () => request.destroy(new Error('MEG_API_TIMEOUT')));
+    request.on('error', reject);
+    request.end(payload);
   });
-  if (!response.ok) throw new Error(`MEG_API_${response.status}`);
-  return response.json();
+  return panorama;
 }
 
 function responseFromMeg(handlerInput, panorama) {
