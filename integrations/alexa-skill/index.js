@@ -7,14 +7,18 @@ const intentMap = {
   FinancialOverviewIntent: 'overview',
   PendingBillsIntent: 'pending',
   NextDueIntent: 'next-due',
-  BalanceIntent: 'balance'
+  BalanceIntent: 'balance',
+  BillsInDaysIntent: 'due-in-days',
+  BillsNextDaysIntent: 'due-next-days',
+  BillsOnDateIntent: 'due-on-date',
+  OverdueBillsIntent: 'overdue'
 };
 
-async function askMeg(intent) {
+async function askMeg(intent, query = {}) {
   const apiUrl = String(process.env.MEG_API_URL || '').replace(/\/$/, '');
   const secret = String(process.env.MEG_ALEXA_SKILL_SECRET || '');
   if (!apiUrl || !secret) throw new Error('MEG_SKILL_NOT_CONFIGURED');
-  const payload = JSON.stringify({ intent });
+  const payload = JSON.stringify({ intent, query });
   const panorama = await new Promise((resolve, reject) => {
     const request = https.request(`${apiUrl}/notifications/alexa/skill`, {
       method: 'POST',
@@ -73,7 +77,13 @@ const FinancialIntentHandler = {
       && Boolean(intentMap[Alexa.getIntentName(handlerInput.requestEnvelope)]);
   },
   async handle(handlerInput) {
-    return responseFromMeg(handlerInput, await askMeg(intentMap[Alexa.getIntentName(handlerInput.requestEnvelope)]));
+    const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
+    const days = Number(Alexa.getSlotValue(handlerInput.requestEnvelope, 'days'));
+    const date = Alexa.getSlotValue(handlerInput.requestEnvelope, 'date');
+    return responseFromMeg(handlerInput, await askMeg(intentMap[intentName], {
+      ...(Number.isFinite(days) ? { days } : {}),
+      ...(date ? { date } : {})
+    }));
   }
 };
 
@@ -83,7 +93,7 @@ const HelpIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
   },
   handle(handlerInput) {
-    const text = 'Você pode perguntar: como estão minhas finanças, quanto tenho de saldo, quais contas estão pendentes ou qual é o próximo vencimento.';
+    const text = 'Você pode perguntar: como estão minhas finanças, quais contas vencem daqui a cinco dias, o que vence nos próximos sete dias, quais contas vencem em uma data ou quais contas estão vencidas.';
     return handlerInput.responseBuilder.speak(text).reprompt(text).getResponse();
   }
 };

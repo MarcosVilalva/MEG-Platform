@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meg/database';
 import { config } from '../../config';
-import { alexaAutomationSlot, alexaFinancialPanorama, automationSlot, deliverAlexaAnnouncement, deliverNotifications, notificationDigest, notificationIntegrationStatus, shouldSendOpenSummary, type AlexaSkillIntent } from './service';
+import { alexaAutomationSlot, alexaFinancialPanorama, automationSlot, deliverAlexaAnnouncement, deliverNotifications, notificationDigest, notificationIntegrationStatus, shouldSendOpenSummary, type AlexaSkillIntent, type AlexaSkillQuery } from './service';
 
 export async function notificationRoutes(app: FastifyInstance) {
   app.get('/status', { preHandler: app.authorize(['ADMIN']) }, async () => notificationIntegrationStatus());
@@ -104,11 +104,15 @@ export async function notificationRoutes(app: FastifyInstance) {
     if (!config.alexaSkillSecret || request.headers['x-alexa-skill-secret'] !== config.alexaSkillSecret) {
       return reply.status(401).send({ error: 'INVALID_ALEXA_SKILL_SECRET' });
     }
-    const body = (request.body || {}) as { intent?: AlexaSkillIntent };
-    const allowed: AlexaSkillIntent[] = ['overview', 'pending', 'next-due', 'balance'];
+    const body = (request.body || {}) as { intent?: AlexaSkillIntent; query?: AlexaSkillQuery };
+    const allowed: AlexaSkillIntent[] = ['overview', 'pending', 'next-due', 'balance', 'due-in-days', 'due-next-days', 'due-on-date', 'overdue'];
     const intent = allowed.includes(body.intent as AlexaSkillIntent) ? body.intent as AlexaSkillIntent : 'overview';
+    const query: AlexaSkillQuery = {
+      days: Number.isFinite(Number(body.query?.days)) ? Math.min(365, Math.max(0, Math.trunc(Number(body.query?.days)))) : undefined,
+      date: /^\d{4}-\d{2}-\d{2}$/.test(String(body.query?.date || '')) ? String(body.query?.date) : undefined
+    };
     try {
-      return await alexaFinancialPanorama(new Date(), intent);
+      return await alexaFinancialPanorama(new Date(), intent, query);
     } catch (error) {
       if (error instanceof Error && error.message === 'ALEXA_OWNER_NOT_ACTIVE') {
         return reply.status(404).send({ error: error.message });

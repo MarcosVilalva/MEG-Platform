@@ -116,4 +116,27 @@ assert.match(buildAlexaFinancialPanorama([
   { type: 'expense', date: '2026-07-20', description: 'ENERGIA', expenseAmount: 150, status: 'pending' }
 ], new Date('2026-07-13T15:00:00Z'), 'balance').speech, /faltam R\$\s+50,00/);
 
+const detailedTransactions = [
+  { type: 'expense', date: '2026-07-18', description: 'ENERGIA', expenseAmount: 150, status: 'pending', paymentMethod: 'PIX' },
+  { type: 'expense', date: '2026-07-18', description: 'COMPRA 1', expenseAmount: 200, status: 'pending', paymentMethod: 'CARTÃO AZUL', modality: 'CREDITO' },
+  { type: 'expense', date: '2026-07-18', description: 'COMPRA 2', expenseAmount: 300, status: 'pending', paymentMethod: 'CARTÃO AZUL', modality: 'CREDITO' },
+  { type: 'expense', date: '2026-07-11', description: 'INTERNET', expenseAmount: 90, status: 'pending', paymentMethod: 'PIX' },
+  { type: 'expense', date: '2026-07-18', description: 'REFEIÇÃO', expenseAmount: 40, status: 'pending', financialScope: 'benefit' }
+] as const;
+const inFiveDays = buildAlexaFinancialPanorama([...detailedTransactions], new Date('2026-07-13T15:00:00Z'), 'due-in-days', { days: 5 });
+assert.equal(inFiveDays.data.count, 2);
+assert.equal(inFiveDays.data.total, 650);
+assert.match(inFiveDays.speech, /daqui a 5 dias/);
+assert.match(inFiveDays.speech, /cartão CARTAO AZUL/);
+assert.match(inFiveDays.speech, /2 lançamentos/);
+const nextFiveDays = buildAlexaFinancialPanorama([...detailedTransactions], new Date('2026-07-13T15:00:00Z'), 'due-next-days', { days: 5 });
+assert.equal(nextFiveDays.data.count, 2);
+assert.equal(nextFiveDays.data.total, 650);
+const overdueBills = buildAlexaFinancialPanorama([...detailedTransactions], new Date('2026-07-13T15:00:00Z'), 'overdue');
+assert.equal(overdueBills.data.count, 1);
+assert.equal(overdueBills.data.total, 90);
+const onDate = buildAlexaFinancialPanorama([...detailedTransactions], new Date('2026-07-13T15:00:00Z'), 'due-on-date', { date: '2026-07-18' });
+assert.equal(onDate.data.count, 2);
+assert.equal(onDate.data.total, 650);
+
 console.log('MEG notification digest tests passed.');

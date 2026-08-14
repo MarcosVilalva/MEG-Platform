@@ -24,3 +24,12 @@ Skill privada que consulta o panorama financeiro do proprietário sem duplicar r
 - Para comercialização multiusuário, substitua o proprietário fixo por Account Linking antes de publicar a Skill no catálogo.
 
 As instruções completas estão em `docs/ALEXA_ALERTS.md`.
+
+## Consultas detalhadas
+
+- `BillsInDaysIntent`: contas que vencem exatamente daqui a N dias.
+- `BillsNextDaysIntent`: contas dentro dos próximos N dias.
+- `BillsOnDateIntent`: contas que vencem em uma data informada.
+- `OverdueBillsIntent`: relação detalhada das contas vencidas.
+
+As respostas informam quantidade, valor total e até seis itens. Faturas são agrupadas por cartão e vencimento para manter a fala curta e compreensível.

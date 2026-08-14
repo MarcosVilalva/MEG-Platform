@@ -21,7 +21,47 @@ export type LegacyTransaction = {
   financialAccountId?: string;
 };
 
-export type AlexaSkillIntent = 'overview' | 'pending' | 'next-due' | 'balance';
+export type AlexaSkillIntent =
+  | 'overview'
+  | 'pending'
+  | 'next-due'
+  | 'balance'
+  | 'due-in-days'
+  | 'due-next-days'
+  | 'due-on-date'
+  | 'overdue';
+
+export type AlexaSkillQuery = {
+  days?: number;
+  date?: string;
+};
+
+type AlexaFinancialResponse = {
+  speech: string;
+  reprompt: string;
+  cardTitle: string;
+  cardText: string;
+  data: {
+    month?: string;
+    monetaryOpening?: number;
+    monetaryIncome?: number;
+    monetaryPaidExpense?: number;
+    monetaryPendingExpense?: number;
+    monetaryAvailable?: number;
+    projectedClosing?: number;
+    benefitBalance?: number;
+    overdueCount?: number;
+    openCount?: number;
+    nextDueDate?: string | null;
+    nextDueTotal?: number;
+    query?: AlexaSkillIntent;
+    requestedDays?: number;
+    requestedDate?: string | null;
+    total?: number;
+    count?: number;
+    items?: Array<{ dueDate: string; label: string; value: number; entries: number; priority: DigestItem['priority'] }>;
+  };
+};
 
 type DigestItem = LegacyTransaction & {
   dueDate: string;
@@ -319,11 +359,92 @@ function spokenMoney(value: number) {
   return money(Math.abs(value));
 }
 
+function isoDateAfter(referenceDate: Date, days: number) {
+  const local = saoPauloParts(referenceDate);
+  const target = new Date(`${local.iso}T12:00:00-03:00`);
+  target.setDate(target.getDate() + days);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(target);
+}
+
+function describeAlexaItems(items: DigestItem[], limit = 6) {
+  const details = items.slice(0, limit).map((item) => {
+    const label = item.label.replace(/^FATURA\s+/u, 'cartão ');
+    const grouped = item.entries > 1 ? `, com ${item.entries} lançamentos` : '';
+    return `${label}, ${spokenMoney(item.value)}${grouped}`;
+  });
+  if (items.length > limit) details.push(`e mais ${items.length - limit} contas`);
+  return details.join('; ');
+}
+
+function buildAlexaDetailedBills(
+  transactions: LegacyTransaction[],
+  referenceDate: Date,
+  intent: Extract<AlexaSkillIntent, 'due-in-days' | 'due-next-days' | 'due-on-date' | 'overdue'>,
+  query: AlexaSkillQuery
+): AlexaFinancialResponse {
+  const bounds = monthBounds(referenceDate);
+  const grouped = groupItems(transactions, bounds.date, bounds.month).filter((item) => !isBenefitTransaction(item));
+  const requestedDays = Math.min(365, Math.max(0, Math.trunc(Number(query.days) || 0)));
+  const requestedDate = /^\d{4}-\d{2}-\d{2}$/.test(String(query.date || ''))
+    ? String(query.date)
+    : isoDateAfter(referenceDate, requestedDays);
+
+  let selected: DigestItem[];
+  let subject: string;
+  if (intent === 'overdue') {
+    selected = grouped.filter((item) => item.daysUntilDue < 0);
+    subject = 'contas vencidas';
+  } else if (intent === 'due-next-days') {
+    selected = grouped.filter((item) => item.daysUntilDue >= 0 && item.daysUntilDue <= requestedDays);
+    subject = requestedDays === 1 ? 'próximas 24 horas' : `próximos ${requestedDays} dias`;
+  } else {
+    selected = grouped.filter((item) => item.dueDate === requestedDate);
+    subject = intent === 'due-in-days'
+      ? (requestedDays === 0 ? 'hoje' : requestedDays === 1 ? 'amanhã' : `daqui a ${requestedDays} dias`)
+      : `dia ${dateLabel(requestedDate)}`;
+  }
+
+  const total = selected.reduce((sum, item) => sum + item.value, 0);
+  const speech = selected.length
+    ? `Para ${subject}, encontrei ${selected.length} conta${selected.length === 1 ? '' : 's'} ou fatura${selected.length === 1 ? '' : 's'}, no total de ${spokenMoney(total)}. ${describeAlexaItems(selected)}.`
+    : `Não encontrei contas monetárias em aberto para ${subject}.`;
+
+  return {
+    speech,
+    reprompt: 'Você também pode perguntar pelas contas de uma data, pelos próximos dias ou pelas contas vencidas.',
+    cardTitle: `MEG Finanças — ${subject}`,
+    cardText: selected.length
+      ? [`Total: ${money(total)}`, `Itens: ${selected.length}`, ...selected.map((item) => `${dateLabel(item.dueDate)} — ${item.label} — ${money(item.value)}${item.entries > 1 ? ` (${item.entries} lançamentos)` : ''}`)].join('\n')
+      : `Nenhuma conta monetária em aberto para ${subject}.`,
+    data: {
+      query: intent,
+      requestedDays,
+      requestedDate: intent === 'overdue' || intent === 'due-next-days' ? null : requestedDate,
+      total,
+      count: selected.length,
+      items: selected.map((item) => ({
+        dueDate: item.dueDate, label: item.label, value: item.value, entries: item.entries, priority: item.priority
+      }))
+    }
+  };
+}
+
 export function buildAlexaFinancialPanorama(
   transactions: LegacyTransaction[],
   referenceDate = new Date(),
-  intent: AlexaSkillIntent = 'overview'
-) {
+  intent: AlexaSkillIntent = 'overview',
+  query: AlexaSkillQuery = {}
+): AlexaFinancialResponse {
+  if (['due-in-days', 'due-next-days', 'due-on-date', 'overdue'].includes(intent)) {
+    return buildAlexaDetailedBills(
+      transactions,
+      referenceDate,
+      intent as Extract<AlexaSkillIntent, 'due-in-days' | 'due-next-days' | 'due-on-date' | 'overdue'>,
+      query
+    );
+  }
   const bounds = monthBounds(referenceDate);
   let monetaryOpening = 0;
   let monetaryIncome = 0;
@@ -421,7 +542,7 @@ export function buildAlexaFinancialPanorama(
   };
 }
 
-export async function alexaFinancialPanorama(referenceDate = new Date(), intent: AlexaSkillIntent = 'overview') {
+export async function alexaFinancialPanorama(referenceDate = new Date(), intent: AlexaSkillIntent = 'overview', query: AlexaSkillQuery = {}) {
   const owner = await prisma.user.findUnique({
     where: { email: config.alexaOwnerEmail.trim().toLowerCase() },
     select: { id: true, email: true, isActive: true, status: true }
@@ -430,7 +551,7 @@ export async function alexaFinancialPanorama(referenceDate = new Date(), intent:
   const context = await resolveWorkspaceContext(owner.id);
   const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId } });
   const state = saved?.state as { transactions?: LegacyTransaction[] } | null;
-  return { owner: owner.email, ...buildAlexaFinancialPanorama(state?.transactions || [], referenceDate, intent) };
+  return { owner: owner.email, ...buildAlexaFinancialPanorama(state?.transactions || [], referenceDate, intent, query) };
 }
 
 export function buildAlexaAnnouncement(transactions: LegacyTransaction[], referenceDate = new Date(), includeTomorrow = true) {

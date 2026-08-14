@@ -42,6 +42,46 @@
             "quanto falta para fechar o mês"
           ]
         },
+        {
+          "name": "BillsInDaysIntent",
+          "slots": [{ "name": "days", "type": "AMAZON.NUMBER" }],
+          "samples": [
+            "quais contas vencem daqui a {days} dias",
+            "o que vence daqui a {days} dias",
+            "quanto vence daqui a {days} dias",
+            "contas que vencem em {days} dias",
+            "me diga os vencimentos daqui a {days} dias"
+          ]
+        },
+        {
+          "name": "BillsNextDaysIntent",
+          "slots": [{ "name": "days", "type": "AMAZON.NUMBER" }],
+          "samples": [
+            "quais contas vencem nos próximos {days} dias",
+            "o que tenho para pagar nos próximos {days} dias",
+            "vencimentos dos próximos {days} dias",
+            "quanto vou pagar nos próximos {days} dias"
+          ]
+        },
+        {
+          "name": "BillsOnDateIntent",
+          "slots": [{ "name": "date", "type": "AMAZON.DATE" }],
+          "samples": [
+            "quais contas vencem em {date}",
+            "o que vence no dia {date}",
+            "quanto tenho para pagar em {date}",
+            "me mostre os vencimentos de {date}"
+          ]
+        },
+        {
+          "name": "OverdueBillsIntent",
+          "samples": [
+            "quais contas estão vencidas",
+            "me detalhe as contas atrasadas",
+            "quanto tenho em atraso",
+            "quais contas atrasadas preciso pagar"
+          ]
+        },
         { "name": "AMAZON.CancelIntent", "samples": [] },
         { "name": "AMAZON.HelpIntent", "samples": [] },
         { "name": "AMAZON.StopIntent", "samples": [] },
