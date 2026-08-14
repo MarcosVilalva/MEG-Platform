@@ -69,10 +69,15 @@ assert.match(biometricLogin, /NOT_NATIVE_ANDROID/);
 assert.match(legacyEntry, /await prepareAndroidBiometricStartup\(\)/);
 assert.match(legacyEntry, /await bootstrapCloud\(\)/);
 assert.match(legacyEntry, /await warmCloudApi\(\)/);
+assert.match(legacyEntry, /await waitForStartupAppUpdate\(\)/);
 assert.ok(
-  legacyEntry.indexOf('await warmCloudApi()') < legacyEntry.indexOf('await prepareAndroidBiometricStartup()'),
-  'a biometria Android deve ser solicitada antes de validar a sessão e carregar os dados'
+  legacyEntry.indexOf('await warmCloudApi()') < legacyEntry.indexOf('await waitForStartupAppUpdate()')
+    && legacyEntry.indexOf('await waitForStartupAppUpdate()') < legacyEntry.indexOf('await prepareAndroidBiometricStartup()'),
+  'a atualização Android deve ser verificada depois da API e antes da biometria'
 );
+assert.match(nativeUpdate, /VERSION_FETCH_ATTEMPTS\s*=\s*3/);
+assert.match(nativeUpdate, /export function waitForStartupAppUpdate\(\)/);
+assert.equal(nativeUpdate.includes("document.addEventListener('DOMContentLoaded', checkAtAppStartup"), false);
 assert.match(nativeUpdate, /window\.MEG_API_READY = Promise\.all\(\[/);
 assert.match(nativeUpdate, /apiReadyBeforeUpdate,\s*startupGate/);
 

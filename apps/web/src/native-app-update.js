@@ -117,6 +117,8 @@ async function getAppUpdater() {
   return appUpdaterPromise;
 }
 const VERSION_URL = 'https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json';
+const VERSION_FETCH_ATTEMPTS = 3;
+const VERSION_FETCH_RETRY_MS = 900;
 const INSTALL_PERMISSION_TIMEOUT_MS = 120000;
 const INSTALL_PERMISSION_POLL_MS = 500;
 let startupCheckPromise = null;
@@ -224,13 +226,22 @@ export async function checkForAppUpdate({ force = false, waitForDecision = false
   try {
     const AppUpdater = await getAppUpdater();
     if (!AppUpdater) return { available: false };
-    const [installed, response] = await Promise.all([
-      AppUpdater.getInfo(),
-      fetch(`${VERSION_URL}?t=${Date.now()}`, { cache: 'no-store' })
-    ]);
+    const installed = await AppUpdater.getInfo();
     publishInstalledVersion(installed);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const release = await response.json();
+    let release = null;
+    let lastFetchError = null;
+    for (let attempt = 1; attempt <= VERSION_FETCH_ATTEMPTS; attempt += 1) {
+      try {
+        const response = await fetch(`${VERSION_URL}?t=${Date.now()}-${attempt}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        release = await response.json();
+        break;
+      } catch (cause) {
+        lastFetchError = cause;
+        if (attempt < VERSION_FETCH_ATTEMPTS) await delay(VERSION_FETCH_RETRY_MS * attempt);
+      }
+    }
+    if (!release) throw lastFetchError || new Error('Manifesto de atualização indisponível.');
     const available = Number(release.versionCode) > Number(installed.versionCode);
     let decision = null;
     if (available) {
@@ -255,8 +266,9 @@ function checkAtAppStartup() {
   return startupCheckPromise;
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', checkAtAppStartup, { once: true });
-} else {
-  window.setTimeout(checkAtAppStartup, 0);
+// A inicialização principal chama esta função explicitamente antes da
+// biometria. Não usamos um listener paralelo de DOMContentLoaded porque ele
+// permitia uma corrida entre atualização, autenticação e carga da sessão.
+export function waitForStartupAppUpdate() {
+  return checkAtAppStartup();
 }

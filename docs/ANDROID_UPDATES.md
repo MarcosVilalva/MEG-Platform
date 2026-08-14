@@ -10,6 +10,8 @@ Ao abrir o aplicativo, o MEG primeiro acorda a API e consulta `downloads/app-ver
 - abre o instalador seguro do Android;
 - somente depois de concluir ou dispensar essa etapa libera a biometria e o carregamento da sessão.
 
+A ordem é obrigatória e sequencial: **API pronta -> atualização -> biometria -> sessão e dados**. A leitura do manifesto possui tentativas automáticas para redes móveis instáveis.
+
 Na primeira atualização, o Android pode solicitar a permissão **Permitir desta fonte** para o MEG. O aplicativo aguarda o retorno e continua o download automaticamente. A confirmação final da instalação pertence ao Android e não pode ser suprimida por um aplicativo comum distribuído fora da Play Store.
 
 ## Assinatura permanente
