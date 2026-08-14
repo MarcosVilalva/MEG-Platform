@@ -261,6 +261,10 @@ export async function notificationDigest(userId: string, referenceDate = new Dat
 
 type EmailBranding = { senderName?: string | null; replyToEmail?: string | null };
 
+async function fetchWithTimeout(input: string, init: RequestInit, timeoutMs = 30_000) {
+  return fetch(input, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+}
+
 function escapeHtml(value: unknown) {
   return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 }
@@ -296,7 +300,7 @@ async function sendEmail(to: string, subject: string, text: string, branding: Em
   const usesResendTestDomain = senderAddress.trim().toLowerCase().endsWith('@resend.dev');
   const canUseResend = Boolean(config.resendApiKey) && (!usesResendTestDomain || recipient === config.adminEmail.trim().toLowerCase());
   if (canUseResend) {
-    const response = await fetch('https://api.resend.com/emails', {
+    const response = await fetchWithTimeout('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${config.resendApiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: brandedFrom, to: [recipient], reply_to: replyToEmail, subject, text, html })
     });
@@ -304,7 +308,7 @@ async function sendEmail(to: string, subject: string, text: string, branding: Em
     return { status: 'sent', provider: 'resend', detail: await response.text() };
   }
   if (config.brevoApiKey && config.brevoSenderEmail) {
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    const response = await fetchWithTimeout('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: { 'api-key': config.brevoApiKey, accept: 'application/json', 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -331,10 +335,10 @@ export async function sendSystemEmail(to: string, subject: string, text: string)
 
 async function sendWhatsApp(number: string, text: string) {
   if (!config.evolutionApiUrl || !config.evolutionApiKey || !config.evolutionInstance || !number) return { status: 'skipped', detail: 'Evolution API não configurada' };
-  const response = await fetch(`${config.evolutionApiUrl.replace(/\/$/, '')}/message/sendText/${encodeURIComponent(config.evolutionInstance)}`, {
+  const response = await fetchWithTimeout(`${config.evolutionApiUrl.replace(/\/$/, '')}/message/sendText/${encodeURIComponent(config.evolutionInstance)}`, {
     method: 'POST', headers: { apikey: config.evolutionApiKey, 'Content-Type': 'application/json' },
     body: JSON.stringify({ number: number.replace(/\D/g, ''), text })
-  });
+  }, 45_000);
   if (!response.ok) throw new Error(`WhatsApp recusado (${response.status}): ${await response.text()}`);
   return { status: 'sent', detail: await response.text() };
 }
@@ -610,9 +614,9 @@ async function invokeAlexaWebhook(text: string) {
   const template = config.alexaAnnouncementWebhookUrl;
   if (!template) return { status: 'skipped', detail: 'Webhook da Alexa não configurado' };
   const usesTemplate = template.includes('{text}');
-  const response = await fetch(usesTemplate ? template.replaceAll('{text}', encodeURIComponent(text)) : template, usesTemplate
+  const response = await fetchWithTimeout(usesTemplate ? template.replaceAll('{text}', encodeURIComponent(text)) : template, usesTemplate
     ? { method: 'GET' }
-    : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+    : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) }, 30_000);
   if (!response.ok) throw new Error(`Webhook da Alexa recusado (${response.status}): ${await response.text()}`);
   return { status: 'sent', detail: await response.text() };
 }

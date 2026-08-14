@@ -82,7 +82,25 @@ app.get('/health', async () => ({
 app.get('/ready', async (_request, reply) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    return { status: 'ready', service: 'meg-api', database: 'ready', timestamp: new Date().toISOString() };
+    let whatsappProvider: 'awake' | 'degraded' | 'not-configured' = 'not-configured';
+    if (config.evolutionApiUrl) {
+      try {
+        // A Evolution tambem usa uma instancia gratuita. Este acesso a desperta
+        // antes dos horarios de notificacao sem expor a URL ou credenciais.
+        await fetch(config.evolutionApiUrl, { signal: AbortSignal.timeout(70_000) });
+        whatsappProvider = 'awake';
+      } catch (error) {
+        whatsappProvider = 'degraded';
+        app.log.warn({ error }, 'WhatsApp provider warm-up did not complete');
+      }
+    }
+    return {
+      status: 'ready',
+      service: 'meg-api',
+      database: 'ready',
+      providers: { whatsapp: whatsappProvider },
+      timestamp: new Date().toISOString()
+    };
   } catch (error) {
     app.log.error(error, 'Database readiness check failed');
     return reply.status(503).send({ status: 'unavailable', service: 'meg-api', database: 'unavailable', timestamp: new Date().toISOString() });
