@@ -11,14 +11,14 @@ Cartões de crédito são agrupados por cartão e vencimento. Uma conta paga dei
 
 ## Aquecimento gratuito
 
-O workflow `keep-api-responsive.yml` consulta `/ready`, que valida API e banco, dez minutos antes dos ciclos e uma vez por hora entre 06:05 e 23:05. O próprio workflow de envio também aguarda `/ready` antes de disparar.
+O workflow `keep-api-responsive.yml` consulta `/ready`, que valida API e banco e também desperta o provedor de WhatsApp, dez minutos antes dos ciclos e uma vez por hora entre 06:05 e 23:05. O próprio workflow de envio também aguarda `/ready` antes de disparar.
 
 Isso reduz partidas frias, mas não cria garantia de disponibilidade: o Render gratuito ainda pode suspender a instância e o GitHub pode atrasar execuções agendadas. Disponibilidade garantida exige uma instância sem suspensão.
 
 ## Auditoria e diagnóstico
 
 - `GET /health`: configuração pública e estado geral da API.
-- `GET /ready`: prontidão real da API e do PostgreSQL.
+- `GET /ready`: prontidão real da API e do PostgreSQL, com aquecimento da Evolution API.
 - `GET /notifications/status`: configuração dos canais (ADMIN).
 - `GET /notifications/deliveries`: últimas 100 tentativas, sucessos e falhas (ADMIN).
 - GitHub Actions marca o ciclo como falho quando um canal retorna `failed`.

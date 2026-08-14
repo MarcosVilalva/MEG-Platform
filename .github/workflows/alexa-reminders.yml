@@ -24,12 +24,12 @@ jobs:
         env:
           API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
         run: |
-          for attempt in {1..12}; do
-            if curl --silent --show-error --max-time 20 --fail "$API_URL/ready" > /tmp/meg-health.json; then
+          for attempt in {1..3}; do
+            if curl --silent --show-error --max-time 85 --fail "$API_URL/ready" > /tmp/meg-health.json; then
               cat /tmp/meg-health.json
               exit 0
             fi
-            echo "API is still waking up (attempt $attempt/12)"
+            echo "API or provider is still waking up (attempt $attempt/3)"
             sleep 10
           done
           exit 1

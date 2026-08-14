@@ -19,12 +19,12 @@ jobs:
         env:
           API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
         run: |
-          for attempt in {1..12}; do
-            if response=$(curl --silent --show-error --max-time 20 --fail "$API_URL/ready"); then
+          for attempt in {1..3}; do
+            if response=$(curl --silent --show-error --max-time 85 --fail "$API_URL/ready"); then
               echo "$response"
               exit 0
             fi
-            echo "Cold start in progress (attempt $attempt/12)"
+            echo "Cold start in progress (attempt $attempt/3)"
             sleep 10
           done
           echo "MEG API health check failed"
