@@ -1,4 +1,5 @@
 name: Build MEG Finanças Android APK
+# O push em main também publica a versão estável assinada do aplicativo.
 
 on:
   workflow_dispatch:
