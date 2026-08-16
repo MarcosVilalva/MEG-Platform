@@ -27,6 +27,10 @@
         {
           "name": "NextDueIntent",
           "samples": [
+            "quais são os próximos vencimentos",
+            "quais os próximos vencimentos",
+            "me diga os próximos vencimentos",
+            "me fale os próximos vencimentos",
             "qual é o próximo vencimento",
             "qual conta vence primeiro",
             "o que vence agora",

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meg/database';
 import { config } from '../../config';
-import { alexaAutomationSlot, alexaFinancialPanorama, automationSlot, deliverAlexaAnnouncement, deliverNotifications, notificationDigest, notificationIntegrationStatus, shouldSendOpenSummary, type AlexaSkillIntent, type AlexaSkillQuery } from './service';
+import { alexaAutomationSlot, alexaFinancialPanorama, automationSlot, deliverAlexaAnnouncement, deliverAlexaNextDuePreview, deliverNotifications, notificationDigest, notificationIntegrationStatus, shouldSendOpenSummary, type AlexaSkillIntent, type AlexaSkillQuery } from './service';
 
 export async function notificationRoutes(app: FastifyInstance) {
   app.get('/status', { preHandler: app.authorize(['ADMIN']) }, async () => notificationIntegrationStatus());
@@ -112,11 +112,15 @@ export async function notificationRoutes(app: FastifyInstance) {
       return reply.status(401).send({ error: 'INVALID_CRON_SECRET' });
     }
     const now = new Date();
-    const body = (request.body || {}) as { slot?: string; force?: boolean };
-    const slot = alexaAutomationSlot(now, body.slot);
-    if (!slot) return { skipped: true, reason: 'Fora da agenda de voz da Alexa.' };
+    const body = (request.body || {}) as { slot?: string; force?: boolean; mode?: 'scheduled' | 'next-due-preview' };
     const owner = await prisma.user.findUnique({ where: { email: config.alexaOwnerEmail.trim().toLowerCase() }, select: { id: true, email: true, isActive: true, status: true } });
     if (!owner?.isActive || owner.status !== 'ACTIVE') return reply.status(404).send({ error: 'ALEXA_OWNER_NOT_ACTIVE' });
+    if (body.mode === 'next-due-preview') {
+      const result = await deliverAlexaNextDuePreview(owner.id, now, Boolean(body.force));
+      return { owner: owner.email, mode: body.mode, result };
+    }
+    const slot = alexaAutomationSlot(now, body.slot);
+    if (!slot) return { skipped: true, reason: 'Fora da agenda de voz da Alexa.' };
     const result = await deliverAlexaAnnouncement(owner.id, now, slot.slot, slot.includeTomorrow, Boolean(body.force));
     return { owner: owner.email, slot: slot.slot, result };
   });

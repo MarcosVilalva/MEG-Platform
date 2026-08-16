@@ -641,6 +641,33 @@ export async function deliverAlexaAnnouncement(userId: string, referenceDate = n
   return { ...result, announcement };
 }
 
+export async function deliverAlexaNextDuePreview(userId: string, referenceDate = new Date(), force = false) {
+  const context = await resolveWorkspaceContext(userId);
+  const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId } });
+  const state = saved?.state as { transactions?: LegacyTransaction[] } | null;
+  const panorama = buildAlexaFinancialPanorama(state?.transactions || [], referenceDate, 'next-due');
+  if (!panorama.data.nextDueDate) {
+    return { status: 'skipped', reason: 'Nenhum próximo vencimento cadastrado.' };
+  }
+
+  const local = saoPauloParts(referenceDate);
+  const reference = `${local.iso}:preview-next:alexa`;
+  const channel = 'alexa:owner';
+  const existing = await prisma.notificationDelivery.findUnique({
+    where: { userId_channel_reference: { userId, channel, reference } }
+  });
+  if (existing && !force) return { status: 'already-sent', panorama };
+
+  const announcement = { text: `Prévia da próxima notificação do MEG. ${panorama.speech}` };
+  const result = await invokeAlexaWebhook(announcement.text);
+  if (result.status === 'sent') await prisma.notificationDelivery.upsert({
+    where: { userId_channel_reference: { userId, channel, reference } },
+    create: { userId, channel, reference, status: result.status, detail: result.detail },
+    update: { status: result.status, detail: result.detail, deliveredAt: new Date() }
+  });
+  return { ...result, announcement, panorama };
+}
+
 type DeliveryOptions = {
   force?: boolean;
   recipientIds?: string[];

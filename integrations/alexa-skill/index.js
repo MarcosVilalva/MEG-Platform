@@ -93,7 +93,7 @@ const HelpIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
   },
   handle(handlerInput) {
-    const text = 'Você pode perguntar: como estão minhas finanças, quais contas vencem daqui a cinco dias, o que vence nos próximos sete dias, quais contas vencem em uma data ou quais contas estão vencidas.';
+    const text = 'Você pode perguntar: quais são os próximos vencimentos, como estão minhas finanças, quais contas vencem daqui a cinco dias, o que vence nos próximos sete dias, quais contas vencem em uma data ou quais contas estão vencidas.';
     return handlerInput.responseBuilder.speak(text).reprompt(text).getResponse();
   }
 };
