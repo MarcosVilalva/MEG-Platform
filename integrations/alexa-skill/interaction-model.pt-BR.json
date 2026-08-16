@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "meg finanças",
+      "invocationName": "meu controle financeiro",
       "intents": [
         {
           "name": "FinancialOverviewIntent",

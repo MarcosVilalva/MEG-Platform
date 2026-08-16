@@ -1,5 +1,12 @@
 # MEG Finanças — Skill Alexa
 
+Nome de invocação por voz: `meu controle financeiro`.
+
+Exemplos:
+
+- `Alexa, abrir meu controle financeiro`
+- `Alexa, pergunte ao meu controle financeiro o que tenho para pagar nos próximos dez dias`
+
 Skill privada que consulta o panorama financeiro do proprietário sem duplicar regras de cálculo na Alexa. A Lambda somente traduz intents de voz e consulta a API segura do MEG.
 
 ## Intents
