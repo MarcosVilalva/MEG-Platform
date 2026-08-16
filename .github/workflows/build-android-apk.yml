@@ -73,7 +73,17 @@ jobs:
 
       - name: Build installable APK
         working-directory: android
-        run: chmod +x gradlew && ./gradlew assembleRelease
+        run: chmod +x gradlew && ./gradlew clean assembleRelease
+
+      - name: Verify APK version matches this release
+        shell: bash
+        run: |
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          test -n "$AAPT"
+          BADGING=$($AAPT dump badging android/app/build/outputs/apk/release/app-release.apk)
+          echo "$BADGING"
+          echo "$BADGING" | grep -q "versionCode='$MEG_VERSION_CODE'"
+          echo "$BADGING" | grep -q "versionName='$MEG_VERSION_NAME'"
 
       - name: Name APK
         shell: bash
