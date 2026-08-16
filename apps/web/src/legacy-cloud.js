@@ -483,10 +483,6 @@ async function loadCloudState() {
   if (payload.state) {
       window.MEG_REAL_STATE = payload.state;
     syncBaseline = createStateSyncBaseline(payload.state);
-  } else {
-    localStorage.removeItem(STATE_KEY);
-    window.MEG_REAL_STATE = { transactions: [], budgets: {} };
-    syncBaseline = createStateSyncBaseline(window.MEG_REAL_STATE);
   }
   return payload;
 }
@@ -686,8 +682,29 @@ export async function bootstrapCloud() {
   try {
     freshState = await loadCloudState().then((payload) => {
       const remoteState = window.MEG_REAL_STATE;
+      const remoteTransactions = Array.isArray(payload?.state?.transactions) ? payload.state.transactions : null;
+      const cacheTransactions = Array.isArray(cachedState?.transactions) ? cachedState.transactions : [];
+
+      // A base remota nunca pode substituir uma cópia válida por uma resposta
+      // vazia inesperada. Isso pode acontecer durante uma atualização do APK,
+      // uma sessão expirada ou enquanto a API gratuita está acordando.
+      if ((!remoteTransactions || remoteTransactions.length === 0) && cacheTransactions.length > 0) {
+        window.MEG_REAL_STATE = cachedState;
+        syncBaseline = createStateSyncBaseline(cachedState);
+        return {
+          state: cachedState,
+          changed: false,
+          warning: 'A nuvem respondeu sem lançamentos. Sua cópia local foi preservada; toque em Recarregar da nuvem após confirmar a conexão.'
+        };
+      }
+
+      if (!remoteTransactions) {
+        const emptyState = { transactions: [], budgets: {} };
+        window.MEG_REAL_STATE = emptyState;
+        syncBaseline = createStateSyncBaseline(emptyState);
+      }
       return {
-        state: remoteState,
+        state: window.MEG_REAL_STATE || remoteState,
         changed: hasCache && Number(payload.revision || 0) !== cachedRevision
       };
     });
