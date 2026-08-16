@@ -43,7 +43,12 @@ public class BiometricAuthPlugin extends Plugin {
     }
 
     private int authenticators() {
-        return BiometricManager.Authenticators.BIOMETRIC_STRONG
+        // Alguns aparelhos Android de entrada expõem a digital como
+        // BIOMETRIC_WEAK. Exigir BIOMETRIC_STRONG fazia a biometria funcionar
+        // em uma primeira tentativa e depois aparecer indisponível/expirar.
+        // A combinação abaixo continua protegida pelo bloqueio do aparelho,
+        // mas usa a classe de sensor compatível com o Android comum.
+        return BiometricManager.Authenticators.BIOMETRIC_WEAK
             | BiometricManager.Authenticators.DEVICE_CREDENTIAL;
     }
 

@@ -480,9 +480,33 @@ async function loadCloudState() {
   const payload = await response.json();
   revision = payload.revision || 0;
   localStorage.setItem(REVISION_KEY, String(revision));
-  if (payload.state) {
-      window.MEG_REAL_STATE = payload.state;
-    syncBaseline = createStateSyncBaseline(payload.state);
+  const stateFromCloud = payload?.state;
+  // Backups antigos podem ainda não ter a chave budgets. Eles continuam sendo
+  // uma base financeira válida e não podem resultar em uma tela vazia.
+  const remoteState = Array.isArray(stateFromCloud?.transactions)
+    ? {
+        ...stateFromCloud,
+        budgets: stateFromCloud.budgets && typeof stateFromCloud.budgets === 'object'
+          ? stateFromCloud.budgets
+          : {}
+      }
+    : null;
+  const isUsableState = Array.isArray(remoteState?.transactions);
+
+  if (isUsableState) {
+    let cachedState = null;
+    try { cachedState = JSON.parse(localStorage.getItem(STATE_KEY) || 'null'); } catch {}
+    const cachedTransactions = Array.isArray(cachedState?.transactions) ? cachedState.transactions : [];
+
+    // A API é a fonte da verdade. Gravar uma resposta válida antes de montar
+    // a interface impede que um cache local vazio e antigo vença a base real
+    // durante a inicialização do Android. Nunca substituímos uma cópia válida
+    // por uma resposta vazia inesperada.
+    if (remoteState.transactions.length > 0 || cachedTransactions.length === 0) {
+      localStorage.setItem(STATE_KEY, JSON.stringify(remoteState));
+    }
+    window.MEG_REAL_STATE = remoteState;
+    syncBaseline = createStateSyncBaseline(remoteState);
   }
   return payload;
 }

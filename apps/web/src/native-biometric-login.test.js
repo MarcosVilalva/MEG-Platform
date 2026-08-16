@@ -29,7 +29,12 @@ assert.match(biometricUnavailableMessage('PLUGIN_UNAVAILABLE'), /componente biom
 
 assert.match(nativePlugin, /PREFS_NAME\s*=\s*"meg_biometric_login"/);
 assert.match(nativePlugin, /EncryptedSharedPreferences\.create\(/);
-assert.match(nativePlugin, /BIOMETRIC_STRONG/);
+assert.match(
+  nativePlugin,
+  /return BiometricManager\.Authenticators\.BIOMETRIC_WEAK\s*\|\s*BiometricManager\.Authenticators\.DEVICE_CREDENTIAL/,
+  'a biometria Android deve aceitar sensores BIOMETRIC_WEAK e a credencial do aparelho'
+);
+assert.doesNotMatch(nativePlugin, /return BiometricManager\.Authenticators\.BIOMETRIC_STRONG/);
 assert.match(nativePlugin, /DEVICE_CREDENTIAL/);
 assert.match(nativePlugin, /public void isAvailable\(PluginCall call\)/);
 assert.match(nativePlugin, /public void authenticate\(PluginCall call\)/);

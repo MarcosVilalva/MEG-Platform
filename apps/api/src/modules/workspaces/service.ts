@@ -101,16 +101,42 @@ export async function addUserToPrimaryWorkspace(userId: string, role: UserRole, 
 }
 
 export async function resolveWorkspaceContext(userId: string) {
+  // Um proprietário pode também ter sido incluído em outros espaços de
+  // trabalho (por exemplo, durante uma migração ou teste comercial). A base
+  // financeira principal dele sempre deve abrir primeiro, nunca o primeiro
+  // convite criado cronologicamente — que pode estar vazio.
   let membership = await prisma.workspaceMember.findFirst({
-    where: { userId, isActive: true, status: UserStatus.ACTIVE, workspace: { isActive: true } },
+    where: {
+      userId,
+      isActive: true,
+      status: UserStatus.ACTIVE,
+      workspace: { isActive: true, ownerId: userId }
+    },
     orderBy: { createdAt: 'asc' }, include: { workspace: true }
   });
   if (!membership) {
-    await ensurePrimaryWorkspace();
     membership = await prisma.workspaceMember.findFirst({
       where: { userId, isActive: true, status: UserStatus.ACTIVE, workspace: { isActive: true } },
       orderBy: { createdAt: 'asc' }, include: { workspace: true }
     });
+  }
+  if (!membership) {
+    await ensurePrimaryWorkspace();
+    membership = await prisma.workspaceMember.findFirst({
+      where: {
+        userId,
+        isActive: true,
+        status: UserStatus.ACTIVE,
+        workspace: { isActive: true, ownerId: userId }
+      },
+      orderBy: { createdAt: 'asc' }, include: { workspace: true }
+    });
+    if (!membership) {
+      membership = await prisma.workspaceMember.findFirst({
+        where: { userId, isActive: true, status: UserStatus.ACTIVE, workspace: { isActive: true } },
+        orderBy: { createdAt: 'asc' }, include: { workspace: true }
+      });
+    }
   }
   if (!membership) throw new Error('WORKSPACE_ACCESS_REQUIRED');
   return { workspaceId: membership.workspaceId, workspace: membership.workspace, membership };
