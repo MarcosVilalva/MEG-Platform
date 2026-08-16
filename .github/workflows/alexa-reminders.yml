@@ -9,6 +9,12 @@ on:
     - cron: '0 15 * * 0,6'
   workflow_dispatch:
     inputs:
+      mode:
+        description: Tipo de anúncio
+        required: true
+        default: 'next-due-preview'
+        type: choice
+        options: ['next-due-preview', 'scheduled']
       slot:
         description: Horário lógico de São Paulo
         required: true
@@ -39,19 +45,21 @@ jobs:
           CRON_SECRET: ${{ secrets.NOTIFICATION_CRON_SECRET }}
           SCHEDULE: ${{ github.event.schedule }}
           MANUAL_SLOT: ${{ inputs.slot }}
+          MANUAL_MODE: ${{ inputs.mode }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           test -n "$CRON_SECRET" || { echo "NOTIFICATION_CRON_SECRET is not configured"; exit 1; }
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then SLOT="$MANUAL_SLOT"; FORCE=true
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then SLOT="$MANUAL_SLOT"; MODE="$MANUAL_MODE"; FORCE=true
           elif [ "$SCHEDULE" = "20 9 * * 1-5" ]; then SLOT="06:20"; FORCE=false
           elif [ "$SCHEDULE" = "0 21 * * 1-5" ]; then SLOT="18:00"; FORCE=false
           elif [ "$SCHEDULE" = "0 0 * * 2-6" ]; then SLOT="21:00"; FORCE=false
           else SLOT="12:00"; FORCE=false; fi
+          MODE="${MODE:-scheduled}"
           RESPONSE=$(curl --fail-with-body --retry 5 --retry-all-errors --retry-delay 10 --max-time 120 \
             -X POST "$API_URL/notifications/alexa/cron" \
             -H "x-cron-secret: $CRON_SECRET" \
             -H "Content-Type: application/json" \
-            --data "{\"slot\":\"$SLOT\",\"force\":$FORCE}")
+            --data "{\"slot\":\"$SLOT\",\"mode\":\"$MODE\",\"force\":$FORCE}")
           echo "$RESPONSE" | jq .
           STATUS=$(echo "$RESPONSE" | jq -r '.result.status // "unknown"')
-          case "$STATUS" in sent|already-sent|no-due-items) exit 0 ;; *) echo "Alexa announcement status: $STATUS"; exit 1 ;; esac
+          case "$STATUS" in sent|already-sent|no-due-items|skipped) exit 0 ;; *) echo "Alexa announcement status: $STATUS"; exit 1 ;; esac
