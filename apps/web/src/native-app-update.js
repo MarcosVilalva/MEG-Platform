@@ -121,17 +121,6 @@ const VERSION_FETCH_ATTEMPTS = 3;
 const VERSION_FETCH_RETRY_MS = 900;
 const INSTALL_PERMISSION_TIMEOUT_MS = 120000;
 const INSTALL_PERMISSION_POLL_MS = 500;
-let startupCheckPromise = null;
-let resolveStartupGate;
-const startupGate = new Promise((resolve) => {
-  resolveStartupGate = resolve;
-});
-const apiReadyBeforeUpdate = window.MEG_API_READY || Promise.resolve(true);
-window.MEG_ANDROID_STARTUP_GATE = startupGate;
-window.MEG_API_READY = Promise.all([
-  apiReadyBeforeUpdate,
-  startupGate,
-]).then(() => true);
 
 function publishInstalledVersion(installed) {
   if (!installed?.versionName) return;
@@ -255,20 +244,3 @@ export async function checkForAppUpdate({ force = false, waitForDecision = false
   }
 }
 
-function checkAtAppStartup() {
-  if (startupCheckPromise) return startupCheckPromise;
-  startupCheckPromise = apiReadyBeforeUpdate
-    .catch(() => true)
-    .then(() => checkForAppUpdate({ force: true, waitForDecision: true }))
-    .finally(() => {
-      resolveStartupGate?.(true);
-    });
-  return startupCheckPromise;
-}
-
-// A inicialização principal chama esta função explicitamente antes da
-// biometria. Não usamos um listener paralelo de DOMContentLoaded porque ele
-// permitia uma corrida entre atualização, autenticação e carga da sessão.
-export function waitForStartupAppUpdate() {
-  return checkAtAppStartup();
-}

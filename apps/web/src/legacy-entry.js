@@ -1,6 +1,6 @@
 import { bootstrapCloud, clearLocalCloudSession, warmCloudApi } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
-import { checkForAppUpdate, initializeStableUiFeatures, waitForStartupAppUpdate } from './native-app-update.js';
+import { checkForAppUpdate, initializeStableUiFeatures } from './native-app-update.js';
 import { initializeAndroidBiometricLifecycle, prepareAndroidBiometricStartup } from './native-biometric-login.js';
 
 const appEnvironment = 'production';
@@ -419,7 +419,6 @@ async function start() {
     bootstrapValidationMode();
   } else {
     await warmCloudApi();
-    await waitForStartupAppUpdate();
     const biometricStartup = await prepareAndroidBiometricStartup();
     if (biometricStartup.required && !biometricStartup.authenticated) clearLocalCloudSession();
     await bootstrapCloud();
@@ -435,6 +434,14 @@ async function start() {
     },
   });
   window.MEG_APP_UPDATE = { check: () => checkForAppUpdate({ force: true }) };
+  // Atualizações nunca podem bloquear a autenticação nem a leitura do banco.
+  // A versão 31 aguardava esta rotina antes da biometria e deixava o app sem
+  // dados quando a rede ou o instalador demorava a responder.
+  if (!validationMode) {
+    window.setTimeout(() => {
+      checkForAppUpdate({ force: true }).catch(() => undefined);
+    }, 1800);
+  }
   setupInactivityLogout();
   syncLocalDueNotifications(window.MEG_APP.getState());
   window.MEG_CLOUD?.whenFresh?.then((result) => {
