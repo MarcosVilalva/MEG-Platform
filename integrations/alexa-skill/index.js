@@ -57,8 +57,8 @@ async function askMeg(intent, query = {}) {
 function responseFromMeg(handlerInput, panorama) {
   return handlerInput.responseBuilder
     .speak(panorama.speech)
-    .reprompt(panorama.reprompt)
     .withSimpleCard(panorama.cardTitle, panorama.cardText)
+    .withShouldEndSession(true)
     .getResponse();
 }
 
@@ -94,7 +94,7 @@ const HelpIntentHandler = {
   },
   handle(handlerInput) {
     const text = 'Você pode perguntar: quais são os próximos vencimentos, como estão minhas finanças, quais contas vencem daqui a cinco dias, o que vence nos próximos sete dias, quais contas vencem em uma data ou quais contas estão vencidas.';
-    return handlerInput.responseBuilder.speak(text).reprompt(text).getResponse();
+    return handlerInput.responseBuilder.speak(text).withShouldEndSession(true).getResponse();
   }
 };
 
@@ -104,7 +104,10 @@ const StopIntentHandler = {
       && ['AMAZON.CancelIntent', 'AMAZON.StopIntent'].includes(Alexa.getIntentName(handlerInput.requestEnvelope));
   },
   handle(handlerInput) {
-    return handlerInput.responseBuilder.speak('Até logo. O MEG continua cuidando da sua agenda financeira.').getResponse();
+    return handlerInput.responseBuilder
+      .speak('Até logo. O MEG continua cuidando da sua agenda financeira.')
+      .withShouldEndSession(true)
+      .getResponse();
   }
 };
 
@@ -115,7 +118,7 @@ const FallbackIntentHandler = {
   },
   handle(handlerInput) {
     const text = 'Não entendi. Pergunte, por exemplo: qual é o panorama das minhas finanças?';
-    return handlerInput.responseBuilder.speak(text).reprompt(text).getResponse();
+    return handlerInput.responseBuilder.speak(text).withShouldEndSession(true).getResponse();
   }
 };
 
@@ -133,7 +136,7 @@ const ErrorHandler = {
   handle(handlerInput, error) {
     console.error(error);
     const text = 'O MEG não conseguiu consultar sua base agora. Aguarde alguns segundos e tente novamente.';
-    return handlerInput.responseBuilder.speak(text).reprompt(text).getResponse();
+    return handlerInput.responseBuilder.speak(text).withShouldEndSession(true).getResponse();
   }
 };
 
