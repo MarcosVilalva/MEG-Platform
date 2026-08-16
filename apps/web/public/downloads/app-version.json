@@ -1,8 +1,8 @@
 {
-  "versionCode": 130,
-  "versionName": "1.1.130",
-  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=130",
-  "sha256": "6ad3437ac27d87d490fb4b4a8d498fb93c438d682e5342a3d29b040f5c7bff26",
+  "versionCode": 131,
+  "versionName": "1.1.131",
+  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=131",
+  "sha256": "68a4f04bf820ca5ba8ae70e1090c3a2fab02aa95607f5d03322b04490c9ba516",
   "mandatory": false,
   "releaseNotes": "Atualização automática antes da biometria, com download e validação segura do APK."
 }
