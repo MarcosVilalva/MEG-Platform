@@ -8,11 +8,29 @@ const intentMap = {
   PendingBillsIntent: 'pending',
   NextDueIntent: 'next-due',
   BalanceIntent: 'balance',
+  MonetaryBalanceIntent: 'monetary-balance',
+  BenefitBalanceIntent: 'benefit-balance',
+  MonthlyIncomeIntent: 'monthly-income',
+  MonthlyExpensesIntent: 'monthly-expenses',
+  ProjectedClosingIntent: 'projected-closing',
   BillsInDaysIntent: 'due-in-days',
   BillsNextDaysIntent: 'due-next-days',
   BillsOnDateIntent: 'due-on-date',
   OverdueBillsIntent: 'overdue'
 };
+
+function classifyNaturalQuestion(value) {
+  const text = String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (/beneficio|alimentacao|vale/.test(text)) return 'benefit-balance';
+  if (/receita|recebi|entrou|entrada/.test(text)) return 'monthly-income';
+  if (/despesa|gastei|paguei|gasto/.test(text)) return 'monthly-expenses';
+  if (/vencid|atrasad/.test(text)) return 'overdue';
+  if (/proxim|vencimento|vence/.test(text)) return 'next-due';
+  if (/pendente|falta pagar|em aberto/.test(text)) return 'pending';
+  if (/fechar|projecao|vai sobrar|depois de pagar/.test(text)) return 'projected-closing';
+  if (/saldo|dinheiro|disponivel/.test(text)) return 'monetary-balance';
+  return 'overview';
+}
 
 async function askMeg(intent, query = {}) {
   const apiUrl = String(process.env.MEG_API_URL || '').replace(/\/$/, '');
@@ -74,13 +92,16 @@ const LaunchRequestHandler = {
 const FinancialIntentHandler = {
   canHandle(handlerInput) {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-      && Boolean(intentMap[Alexa.getIntentName(handlerInput.requestEnvelope)]);
+      && (Boolean(intentMap[Alexa.getIntentName(handlerInput.requestEnvelope)])
+        || Alexa.getIntentName(handlerInput.requestEnvelope) === 'NaturalFinancialQueryIntent');
   },
   async handle(handlerInput) {
     const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
     const days = Number(Alexa.getSlotValue(handlerInput.requestEnvelope, 'days'));
     const date = Alexa.getSlotValue(handlerInput.requestEnvelope, 'date');
-    return responseFromMeg(handlerInput, await askMeg(intentMap[intentName], {
+    const question = Alexa.getSlotValue(handlerInput.requestEnvelope, 'question');
+    const intent = intentName === 'NaturalFinancialQueryIntent' ? classifyNaturalQuestion(question) : intentMap[intentName];
+    return responseFromMeg(handlerInput, await askMeg(intent, {
       ...(Number.isFinite(days) ? { days } : {}),
       ...(date ? { date } : {})
     }));
@@ -93,7 +114,7 @@ const HelpIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
   },
   handle(handlerInput) {
-    const text = 'Você pode perguntar: quais são os próximos vencimentos, como estão minhas finanças, quais contas vencem daqui a cinco dias, o que vence nos próximos sete dias, quais contas vencem em uma data ou quais contas estão vencidas.';
+    const text = 'Você pode perguntar pelo saldo monetário, saldo do benefício, receitas ou despesas do mês, projeção de fechamento, próximos vencimentos, contas vencidas ou contas de uma data específica.';
     return handlerInput.responseBuilder.speak(text).withShouldEndSession(true).getResponse();
   }
 };
@@ -117,7 +138,7 @@ const FallbackIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.FallbackIntent';
   },
   handle(handlerInput) {
-    const text = 'Não entendi. Pergunte, por exemplo: qual é o panorama das minhas finanças?';
+    const text = 'Não entendi essa consulta. Você pode perguntar, por exemplo: qual é meu saldo monetário, ou quais contas vencem nos próximos cinco dias?';
     return handlerInput.responseBuilder.speak(text).withShouldEndSession(true).getResponse();
   }
 };

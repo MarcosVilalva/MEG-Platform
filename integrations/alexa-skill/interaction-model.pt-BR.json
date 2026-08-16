@@ -41,9 +41,73 @@
           "name": "BalanceIntent",
           "samples": [
             "qual é o meu saldo",
-            "quanto tenho disponível",
+            "qual é meu saldo geral",
+            "me diga meu saldo"
+          ]
+        },
+        {
+          "name": "MonetaryBalanceIntent",
+          "samples": [
+            "qual é o meu saldo monetário",
+            "qual o saldo monetário",
+            "quanto tenho em dinheiro",
+            "quanto tenho disponível na conta",
+            "qual é o saldo da conta",
+            "me diga meu saldo em dinheiro"
+          ]
+        },
+        {
+          "name": "BenefitBalanceIntent",
+          "samples": [
+            "qual é o saldo do benefício",
+            "qual o saldo do benefício",
+            "quanto tenho de benefício",
+            "quanto tenho no vale alimentação",
+            "qual é o saldo da alimentação",
+            "quanto ainda tenho para alimentação",
+            "me diga o saldo do cartão benefício"
+          ]
+        },
+        {
+          "name": "MonthlyIncomeIntent",
+          "samples": [
+            "quanto recebi este mês",
+            "qual foi minha receita do mês",
+            "quanto entrou este mês",
+            "qual é a receita deste mês",
+            "me diga as receitas do mês"
+          ]
+        },
+        {
+          "name": "MonthlyExpensesIntent",
+          "samples": [
+            "quanto gastei este mês",
+            "quanto já paguei este mês",
+            "qual foi minha despesa do mês",
+            "quanto ainda tenho de despesas",
+            "me diga as despesas do mês"
+          ]
+        },
+        {
+          "name": "ProjectedClosingIntent",
+          "samples": [
             "vai sobrar dinheiro",
-            "quanto falta para fechar o mês"
+            "quanto falta para fechar o mês",
+            "como vai fechar o mês",
+            "vou conseguir pagar todas as contas",
+            "quanto sobra depois de pagar tudo",
+            "qual é a projeção de fechamento"
+          ]
+        },
+        {
+          "name": "NaturalFinancialQueryIntent",
+          "slots": [{ "name": "question", "type": "AMAZON.SearchQuery" }],
+          "samples": [
+            "consulte {question}",
+            "quero saber {question}",
+            "me responda {question}",
+            "procure {question}",
+            "analise {question}"
           ]
         },
         {

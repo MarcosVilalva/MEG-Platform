@@ -6,6 +6,8 @@ Exemplos:
 
 - `Alexa, abrir meu controle financeiro`
 - `Alexa, pergunte ao meu controle financeiro o que tenho para pagar nos próximos dez dias`
+- `Alexa, pergunte ao meu controle financeiro qual é meu saldo monetário`
+- `Alexa, pergunte ao meu controle financeiro qual é o saldo do benefício`
 
 Skill privada que consulta o panorama financeiro do proprietário sem duplicar regras de cálculo na Alexa. A Lambda somente traduz intents de voz e consulta a API segura do MEG.
 
@@ -16,7 +18,13 @@ Skill privada que consulta o panorama financeiro do proprietário sem duplicar r
 | `FinancialOverviewIntent` | Panorama completo do mês |
 | `PendingBillsIntent` | Contas abertas e vencidas |
 | `NextDueIntent` | Próximo vencimento agrupado |
-| `BalanceIntent` | Saldo disponível e projeção |
+| `BalanceIntent` | Consulta geral de saldo |
+| `MonetaryBalanceIntent` | Saldo monetário e pendências |
+| `BenefitBalanceIntent` | Saldo dos benefícios |
+| `MonthlyIncomeIntent` | Receitas monetárias do mês |
+| `MonthlyExpensesIntent` | Despesas pagas e pendentes do mês |
+| `ProjectedClosingIntent` | Projeção após quitar as pendências |
+| `NaturalFinancialQueryIntent` | Pergunta aberta, classificada com segurança em uma consulta somente leitura |
 
 ## Variáveis da Lambda
 
@@ -39,4 +47,4 @@ As instruções completas estão em `docs/ALEXA_ALERTS.md`.
 - `BillsOnDateIntent`: contas que vencem em uma data informada.
 - `OverdueBillsIntent`: relação detalhada das contas vencidas.
 
-As respostas informam quantidade, valor total e até seis itens. Faturas são agrupadas por cartão e vencimento para manter a fala curta e compreensível.
+As respostas informam quantidade, valor total e até seis itens. Faturas são agrupadas por cartão e vencimento, e o nome é falado apenas uma vez (por exemplo, `Cartão Azul`) para manter a conversa curta e natural.

@@ -26,6 +26,11 @@ export type AlexaSkillIntent =
   | 'pending'
   | 'next-due'
   | 'balance'
+  | 'monetary-balance'
+  | 'benefit-balance'
+  | 'monthly-income'
+  | 'monthly-expenses'
+  | 'projected-closing'
   | 'due-in-days'
   | 'due-next-days'
   | 'due-on-date'
@@ -399,14 +404,35 @@ function isoDateAfter(referenceDate: Date, days: number) {
   }).format(target);
 }
 
+function naturalLabel(value: string) {
+  const known: Record<string, string> = {
+    BB: 'BB', BV: 'BV', C6: 'C6', CPFL: 'CPFL', IPTU: 'IPTU', LATAM: 'Latam', ML: 'Mercado Livre', PIX: 'Pix'
+  };
+  return normalize(value)
+    .split(/\s+/u)
+    .filter(Boolean)
+    .map((word) => known[word] || `${word.charAt(0)}${word.slice(1).toLocaleLowerCase('pt-BR')}`)
+    .join(' ');
+}
+
+function spokenItemLabel(item: DigestItem) {
+  if (!item.isCard) return naturalLabel(item.label);
+  const cardName = normalize(item.payment)
+    .replace(/^FATURA\s+/u, '')
+    .replace(/^CARTAO(?:\s+DE\s+CREDITO)?\s*/u, '')
+    .trim();
+  return `Cartão ${naturalLabel(cardName || item.payment)}`;
+}
+
+function joinSpokenItems(parts: string[]) {
+  if (parts.length <= 1) return parts[0] || '';
+  return `${parts.slice(0, -1).join('; ')}; e ${parts.at(-1)}`;
+}
+
 function describeAlexaItems(items: DigestItem[], limit = 6) {
-  const details = items.slice(0, limit).map((item) => {
-    const label = item.label.replace(/^FATURA\s+/u, 'cartão ');
-    const grouped = item.entries > 1 ? `, com ${item.entries} lançamentos` : '';
-    return `${label}, ${spokenMoney(item.value)}${grouped}`;
-  });
-  if (items.length > limit) details.push(`e mais ${items.length - limit} contas`);
-  return details.join('; ');
+  const details = items.slice(0, limit).map((item) => `${spokenItemLabel(item)}, no valor de ${spokenMoney(item.value)}`);
+  if (items.length > limit) details.push(`mais ${items.length - limit} compromisso${items.length - limit === 1 ? '' : 's'}`);
+  return joinSpokenItems(details);
 }
 
 function buildAlexaDetailedBills(
@@ -439,7 +465,7 @@ function buildAlexaDetailedBills(
 
   const total = selected.reduce((sum, item) => sum + item.value, 0);
   const speech = selected.length
-    ? `Para ${subject}, encontrei ${selected.length} conta${selected.length === 1 ? '' : 's'} ou fatura${selected.length === 1 ? '' : 's'}, no total de ${spokenMoney(total)}. ${describeAlexaItems(selected)}.`
+    ? `Para ${subject}, há ${selected.length} compromisso${selected.length === 1 ? '' : 's'}, somando ${spokenMoney(total)}. ${describeAlexaItems(selected)}.`
     : `Não encontrei contas monetárias em aberto para ${subject}.`;
 
   return {
@@ -518,7 +544,7 @@ export function buildAlexaFinancialPanorama(
   const nextDueDate = grouped.find((item) => item.daysUntilDue >= 0)?.dueDate || '';
   const nextDueItems = nextDueDate ? grouped.filter((item) => item.dueDate === nextDueDate) : [];
   const nextDueTotal = nextDueItems.reduce((sum, item) => sum + item.value, 0);
-  const nextDueLabels = nextDueItems.slice(0, 3).map((item) => item.label.replace(/^FATURA\s+/u, 'cartão '));
+  const nextDueLabels = nextDueItems.slice(0, 3).map(spokenItemLabel);
   const monthLabel = spokenMonth(bounds.month);
   const projectedMessage = projectedClosing >= 0
     ? `Depois de quitar as pendências, a projeção é de sobra de ${spokenMoney(projectedClosing)}.`
@@ -534,8 +560,16 @@ export function buildAlexaFinancialPanorama(
       : `Ótima notícia. Não há contas monetárias em aberto até ${monthLabel}.`;
   } else if (intent === 'next-due') {
     speech = nextDueMessage;
-  } else if (intent === 'balance') {
+  } else if (intent === 'balance' || intent === 'monetary-balance') {
     speech = `Seu saldo monetário disponível é ${spokenMoney(monetaryAvailable)}. Há ${spokenMoney(monetaryPendingExpense)} em contas pendentes. ${projectedMessage}`;
+  } else if (intent === 'benefit-balance') {
+    speech = `Seu saldo disponível em benefícios é ${spokenMoney(benefitBalance)}. Neste mês, entraram ${spokenMoney(benefitIncome)} e foram utilizados ${spokenMoney(benefitExpense)}.`;
+  } else if (intent === 'monthly-income') {
+    speech = `Em ${monthLabel}, suas receitas monetárias somam ${spokenMoney(monetaryIncome)}. Considerando o saldo trazido dos meses anteriores, você tem ${spokenMoney(monetaryAvailable)} disponíveis agora.`;
+  } else if (intent === 'monthly-expenses') {
+    speech = `Em ${monthLabel}, você já pagou ${spokenMoney(monetaryPaidExpense)} em despesas monetárias e ainda tem ${spokenMoney(monetaryPendingExpense)} em aberto. ${projectedMessage}`;
+  } else if (intent === 'projected-closing') {
+    speech = `Hoje você tem ${spokenMoney(monetaryAvailable)} disponíveis e ${spokenMoney(monetaryPendingExpense)} em compromissos pendentes. ${projectedMessage}`;
   } else {
     speech = `Panorama MEG de ${monthLabel}. Seu saldo monetário disponível é ${spokenMoney(monetaryAvailable)}. `
       + `Neste mês entraram ${spokenMoney(monetaryIncome)} e foram pagas despesas de ${spokenMoney(monetaryPaidExpense)}. `

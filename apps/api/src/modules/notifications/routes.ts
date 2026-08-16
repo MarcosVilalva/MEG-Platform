@@ -130,7 +130,11 @@ export async function notificationRoutes(app: FastifyInstance) {
       return reply.status(401).send({ error: 'INVALID_ALEXA_SKILL_SECRET' });
     }
     const body = (request.body || {}) as { intent?: AlexaSkillIntent; query?: AlexaSkillQuery };
-    const allowed: AlexaSkillIntent[] = ['overview', 'pending', 'next-due', 'balance', 'due-in-days', 'due-next-days', 'due-on-date', 'overdue'];
+    const allowed: AlexaSkillIntent[] = [
+      'overview', 'pending', 'next-due', 'balance', 'monetary-balance', 'benefit-balance',
+      'monthly-income', 'monthly-expenses', 'projected-closing',
+      'due-in-days', 'due-next-days', 'due-on-date', 'overdue'
+    ];
     const intent = allowed.includes(body.intent as AlexaSkillIntent) ? body.intent as AlexaSkillIntent : 'overview';
     const query: AlexaSkillQuery = {
       days: Number.isFinite(Number(body.query?.days)) ? Math.min(365, Math.max(0, Math.trunc(Number(body.query?.days)))) : undefined,

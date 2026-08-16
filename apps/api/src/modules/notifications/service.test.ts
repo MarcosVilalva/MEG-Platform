@@ -117,6 +117,13 @@ assert.equal(panorama.data.benefitBalance, 500);
 assert.match(panorama.speech, /Panorama MEG de julho de 2026/);
 assert.match(panorama.speech, /projeção é de sobra/);
 assert.match(buildAlexaFinancialPanorama([
+  { type: 'income', date: '2026-07-01', description: 'VEROCARD', incomeAmount: 600, status: 'paid', financialScope: 'benefit' },
+  { type: 'expense', date: '2026-07-08', description: 'REFEIÇÃO', expenseAmount: 100, status: 'paid', financialScope: 'benefit' }
+], new Date('2026-07-13T15:00:00Z'), 'benefit-balance').speech, /saldo disponível em benefícios é R\$\s+500,00/);
+assert.match(buildAlexaFinancialPanorama([
+  { type: 'income', date: '2026-07-01', description: 'SALÁRIO', incomeAmount: 2000, status: 'paid' }
+], new Date('2026-07-13T15:00:00Z'), 'monthly-income').speech, /receitas monetárias somam R\$\s+2\.000,00/);
+assert.match(buildAlexaFinancialPanorama([
   { type: 'income', date: '2026-07-01', description: 'SALÁRIO', incomeAmount: 100 },
   { type: 'expense', date: '2026-07-20', description: 'ENERGIA', expenseAmount: 150, status: 'pending' }
 ], new Date('2026-07-13T15:00:00Z'), 'balance').speech, /faltam R\$\s+50,00/);
@@ -132,8 +139,9 @@ const inFiveDays = buildAlexaFinancialPanorama([...detailedTransactions], new Da
 assert.equal(inFiveDays.data.count, 2);
 assert.equal(inFiveDays.data.total, 650);
 assert.match(inFiveDays.speech, /daqui a 5 dias/);
-assert.match(inFiveDays.speech, /cartão CARTAO AZUL/);
-assert.match(inFiveDays.speech, /2 lançamentos/);
+assert.match(inFiveDays.speech, /Cartão Azul, no valor de R\$\s+500,00/);
+assert.doesNotMatch(inFiveDays.speech, /cartão cartão/i);
+assert.doesNotMatch(inFiveDays.speech, /lançamentos/i, 'a fala deve ser curta; a quantidade permanece no cartão visual');
 const nextFiveDays = buildAlexaFinancialPanorama([...detailedTransactions], new Date('2026-07-13T15:00:00Z'), 'due-next-days', { days: 5 });
 assert.equal(nextFiveDays.data.count, 2);
 assert.equal(nextFiveDays.data.total, 650);
