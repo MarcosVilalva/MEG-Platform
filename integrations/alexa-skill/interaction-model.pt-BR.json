@@ -52,6 +52,9 @@
           "samples": [
             "quais contas vencem daqui a {days} dias",
             "o que vence daqui a {days} dias",
+            "o que vai vencer daqui a {days} dias",
+            "quais contas vão vencer daqui a {days} dias",
+            "o que tenho para pagar daqui a {days} dias",
             "quanto vence daqui a {days} dias",
             "contas que vencem em {days} dias",
             "me diga os vencimentos daqui a {days} dias"
