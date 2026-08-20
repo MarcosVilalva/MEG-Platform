@@ -25,6 +25,7 @@ let saveTimer;
 let saveInFlight = false;
 let pendingSave = false;
 let queuedState = null;
+let saveRetryDelayMs = 1500;
 let syncBaseline = null;
 let pollingTimer;
 let remoteCheckInFlight = false;
@@ -188,11 +189,13 @@ async function waitForSaveIdle(timeoutMs = 8000) {
 async function saveBeforeLogout() {
   clearTimeout(saveTimer);
   saveTimer = undefined;
-  await waitForSaveIdle();
+  // A cópia local já é gravada pelo app antes de chegar aqui. Mantemos a
+  // última alteração na fila até a API confirmá-la, inclusive se o usuário
+  // fechar o WebView logo após salvar.
   const latestState = window.MEG_APP?.getStateRef?.() || window.MEG_APP?.getState?.() || queuedState;
-  queuedState = null;
-  pendingSave = false;
-  if (latestState) await saveNow(latestState);
+  if (latestState) queuedState = latestState;
+  await flushQueuedSave({ immediate: true, throwOnError: true });
+  await waitForSaveIdle();
   window.MEG_APP?.flushLocalStateSave?.();
 }
 
@@ -511,8 +514,10 @@ async function loadCloudState() {
   return payload;
 }
 
-async function saveNow(state, { force = false } = {}) {
-  if (window.MEG_CLOUD?.whenFresh) await window.MEG_CLOUD.whenFresh.catch(() => undefined);
+async function saveNow(state, { force = false, retryConflict = true } = {}) {
+  // Não espere uma leitura remota em andamento. Esperar aqui fazia uma
+  // alteração recente competir com um snapshot antigo e, no Android, podia
+  // reaparecer a versão anterior ao voltar para o aplicativo.
   saveInFlight = true;
   try {
     const transactionPatch = force ? null : createTransactionPatch(syncBaseline, state);
@@ -545,7 +550,20 @@ async function saveNow(state, { force = false } = {}) {
     }
 
     if (response.status === 409) {
-      throw new Error('Os dados foram alterados em outro dispositivo. Recarregue a nuvem antes de salvar.');
+      // Para patches de lançamentos, atualizar apenas a revisão e repetir o
+      // patch preserva as alterações locais sem sobrescrever os dados de outro
+      // aparelho. Isto também resolve a disputa entre dois salvamentos rápidos.
+      if (retryConflict && transactionPatch) {
+        const remote = await api('/app-state');
+        if (remote.ok) {
+          const latest = await remote.json();
+          revision = Number(latest.revision || revision);
+          localStorage.setItem(REVISION_KEY, String(revision));
+          syncBaseline = createStateSyncBaseline(latest.state || {});
+          return saveNow(state, { force, retryConflict: false });
+        }
+      }
+      throw new Error('Os dados foram alterados em outro dispositivo. A alteração local será tentada novamente assim que a nuvem for atualizada.');
     }
     const raw = await response.text();
     let payload = {};
@@ -567,7 +585,7 @@ async function saveNow(state, { force = false } = {}) {
   }
 }
 
-async function flushQueuedSave() {
+async function flushQueuedSave({ immediate = false, throwOnError = false } = {}) {
   if (saveInFlight) {
     saveTimer = window.setTimeout(flushQueuedSave, 50);
     return;
@@ -578,12 +596,27 @@ async function flushQueuedSave() {
   const status = document.querySelector('#cloudSyncStatus');
   try {
     await saveNow(snapshot);
+    saveRetryDelayMs = 1500;
   } catch (error) {
     if (status) status.textContent = error.message;
+    // Nunca descarte uma alteração financeira quando a conexão falhar.
+    // Uma alteração posterior prevalece, mas este snapshot continua sendo
+    // enviado quando a rede/API voltar.
+    queuedState ||= snapshot;
+    pendingSave = true;
+    const retryDelay = immediate ? 350 : saveRetryDelayMs;
+    saveRetryDelayMs = Math.min(saveRetryDelayMs * 2, FAILED_SYNC_INTERVAL_MAX_MS);
+    saveTimer = window.setTimeout(() => {
+      saveTimer = undefined;
+      flushQueuedSave().catch(() => undefined);
+    }, retryDelay);
+    // O chamador pode avisar que a conexão não confirmou a saída, mas a fila
+    // continua programada para sincronizar assim que a API responder.
+    if (throwOnError) throw error;
   } finally {
-    if (queuedState) {
+    if (queuedState && !saveTimer) {
       saveTimer = window.setTimeout(flushQueuedSave, 0);
-    } else {
+    } else if (!saveTimer) {
       pendingSave = false;
     }
   }
@@ -680,11 +713,17 @@ function startRealtimeSync() {
   });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
+      // Em Android, trocar de tela/fechar o app pode pausar a WebView antes do
+      // debounce normal. Forçamos a tentativa de envio, sem bloquear a UI.
+      flushQueuedSave({ immediate: true }).catch(() => undefined);
       clearTimeout(pollingTimer);
       pollingTimer = undefined;
     } else {
       scheduleRemoteCheck(0);
     }
+  });
+  window.addEventListener('pagehide', () => {
+    flushQueuedSave({ immediate: true }).catch(() => undefined);
   });
   syncChannel?.addEventListener('message', handleSyncChannelMessage);
 }
@@ -751,17 +790,28 @@ export async function bootstrapCloud() {
     whenFresh: Promise.resolve(freshState),
     saveState: queueSave,
     saveNow,
+    flush: flushQueuedSave,
     async reload() {
       await loadCloudState();
       location.reload();
     },
-    async logout({ save = true } = {}) {
+    async logout({ save = true, nativeExit = false } = {}) {
       if (save) await saveBeforeLogout();
       const current = session();
       if (current.refreshToken) {
         await api('/auth/logout', { method: 'POST', body: JSON.stringify({ refreshToken: current.refreshToken }) }).catch(() => undefined);
       }
       clearSession();
+      if (nativeExit && isNativeAndroid()) {
+        try {
+          const { App } = await import('@capacitor/app');
+          await App.exitApp();
+          return;
+        } catch {
+          // Em navegadores e em WebViews sem a API App, mantemos o logout
+          // normal para nunca prender o usuário na tela atual.
+        }
+      }
       location.reload();
     },
     async previewNotifications() {

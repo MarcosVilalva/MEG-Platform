@@ -446,6 +446,7 @@ const els = {
   backupImportStatus: document.querySelector("#backupImportStatus"),
   exportBackupBtn: document.querySelector("#exportBackupBtn"),
   exportCsvBtn: document.querySelector("#exportCsvBtn"),
+  exportPdfReportBtn: document.querySelector("#exportPdfReportBtn"),
   dialog: document.querySelector("#transactionDialog"),
   form: document.querySelector("#transactionForm"),
   dialogTitle: document.querySelector("#dialogTitle"),
@@ -646,8 +647,11 @@ function scheduleNativeNotificationSync() {
 
 function saveState({ cloud = true } = {}) {
   invalidateTransactionCaches();
-  // Persistência e sincronização são agendadas para permitir que o fechamento
-  // do formulário e a atualização visual ocorram antes da serialização completa.
+  // O cache local é a primeira camada de segurança: uma edição nunca depende
+  // do timer ocioso para sobreviver a uma troca de tela ou fechamento do app.
+  persistLocalState();
+  // A nuvem continua em debounce, mas legacy-cloud preserva a última alteração
+  // até receber confirmação da API.
   scheduleLocalStateSave();
   if (cloud) window.MEG_CLOUD?.saveState(state);
   scheduleNativeNotificationSync();
@@ -4219,7 +4223,13 @@ function syncAmountFields() {
   const paidOption = els.statusInput.querySelector('option[value="paid"]');
   if (paidOption) paidOption.textContent = isIncome ? "RECEBIDO" : "PAGO";
   if (isIncome) els.statusInput.value = "paid";
+  // A compra nova no credito sempre nasce pendente. Ao editar uma parcela ja
+  // quitada, preserve a baixa historica em vez de reabri-la acidentalmente.
+  if (creditExpense && !els.transactionId.value) els.statusInput.value = "pending";
   if (!isIncome && !els.transactionId.value) els.statusInput.value = "pending";
+  // Compras no crédito sempre entram como pendentes da fatura. A baixa é
+  // feita quando a fatura/lançamento é efetivamente paga.
+  els.statusInput.disabled = isIncome || (creditExpense && !els.transactionId.value);
   if (isIncome) {
     els.expenseAmountInput.value = "";
     els.expenseClassInput.value = "";
@@ -4414,8 +4424,12 @@ function openTransactionDialog(item = null) {
   const activePayments = (state.catalogs?.paymentMethods || DEFAULT_CATALOGS.paymentMethods)
     .filter((payment) => isCatalogItemActive("paymentMethods", payment.description) && isCatalogItemActive("modalities", payment.modality));
   const defaultPayment = activePayments.find((payment) => normalizeText(payment.description) === "PIX")?.description || activePayments[0]?.description || "";
-  const desiredPayment = item ? item.paymentMethod || item.account || defaultPayment : defaultPayment;
-  const desiredModality = item?.modality || modalityForPayment(desiredPayment) || sortedModalities()[0] || "";
+  const defaultCreditPayment = activePayments.find((payment) => normalizeText(payment.modality) === "CREDITO")?.description || defaultPayment;
+  const isNewExpense = !item;
+  const desiredPayment = item
+    ? item.paymentMethod || item.account || defaultPayment
+    : isNewExpense ? defaultCreditPayment : defaultPayment;
+  const desiredModality = item?.modality || (isNewExpense ? "CREDITO" : modalityForPayment(desiredPayment)) || modalityForPayment(desiredPayment) || sortedModalities()[0] || "";
   els.dialogTitle.textContent = item ? "Editar lancamento" : "Novo lancamento";
   els.transactionId.value = item?.id || "";
   els.dateInput.value = item?.date || defaultDate;
@@ -4857,6 +4871,37 @@ function exportCsv() {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   downloadBlob(blob, "despesas-meg-" + new Date().toISOString().slice(0, 10) + ".csv");
   showToast("CSV exportado", "O arquivo de lançamentos foi gerado com sucesso.", "success");
+}
+
+function escapeReportText(value) {
+  return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
+
+function exportFinancialPdfReport() {
+  const { start, end } = dateRangeForSelectedPeriod();
+  const summary = financialSummaryForPeriod();
+  const periodItems = selectedTransactions();
+  const expenses = periodItems.filter((item) => item.type === "expense");
+  const byGroup = new Map();
+  expenses.forEach((item) => {
+    const label = item.group || item.category || "Sem categoria";
+    byGroup.set(label, (byGroup.get(label) || 0) + Number(item.expenseAmount || item.amount || 0));
+  });
+  const ranking = [...byGroup.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const projected = summary.projectedBalance;
+  const insight = projected < 0
+    ? `Atenção: faltam ${money.format(Math.abs(projected))} para cobrir todas as despesas do recorte.`
+    : `Boa margem: após reservar as pendências, sobra ${money.format(projected)} no recorte.`;
+  const popup = window.open("", "meg-financial-report", "width=920,height=760");
+  if (!popup) {
+    showToast("Relatório bloqueado", "Permita janelas deste site para gerar o PDF.", "warning");
+    return;
+  }
+  const rankingRows = ranking.map(([group, value]) => `<tr><td>${escapeReportText(group)}</td><td>${money.format(value)}</td></tr>`).join("") || '<tr><td colspan="2">Sem despesas no período.</td></tr>';
+  popup.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório MEG Finanças</title><style>body{font-family:Arial,sans-serif;color:#102a26;margin:38px}header{background:#075e54;color:#fff;border-radius:18px;padding:26px}h1{margin:0;font-size:28px}small{color:#d6fff7}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}.card{border:1px solid #d8e6e1;border-radius:14px;padding:15px}.card span{display:block;font-size:11px;color:#52716b;font-weight:bold;text-transform:uppercase}.card strong{font-size:21px;display:block;margin-top:7px}.risk{color:#b91c1c}.good{color:#047857}.insight{background:#f2f7f5;border-left:5px solid #0f766e;padding:14px;border-radius:10px;margin:18px 0}table{width:100%;border-collapse:collapse}th,td{padding:11px;border-bottom:1px solid #d8e6e1;text-align:left}th{font-size:12px;color:#52716b;text-transform:uppercase}@media print{body{margin:16px}.no-print{display:none}}</style></head><body><header><small>MEG FINANCIAL OS · RELATÓRIO GERENCIAL</small><h1>Panorama financeiro</h1><p>${formatDate(start)} a ${formatDate(end)} · emitido em ${new Date().toLocaleString("pt-BR")}</p></header><section class="cards"><div class="card"><span>Receitas</span><strong>${money.format(summary.availableIncome)}</strong></div><div class="card"><span>Despesas pagas</span><strong>${money.format(summary.paidExpense)}</strong></div><div class="card"><span>Pendências</span><strong>${money.format(summary.pendingExpense)}</strong></div><div class="card"><span>Saldo projetado</span><strong class="${projected < 0 ? "risk" : "good"}">${money.format(projected)}</strong></div></section><section class="insight"><strong>Leitura do MEG</strong><br>${escapeReportText(insight)}</section><h2>Maiores despesas por grupo</h2><table><thead><tr><th>Grupo</th><th>Valor</th></tr></thead><tbody>${rankingRows}</tbody></table><h2>Indicadores</h2><p>${periodItems.length} lançamento(s) no período · ${expenses.filter((item) => item.status === "pending").length} despesa(s) pendente(s) · fechamento operacional de ${money.format(summary.closingBalance)}.</p><button class="no-print" onclick="window.print()">Salvar como PDF / Imprimir</button></body></html>`);
+  popup.document.close();
+  popup.focus();
+  showToast("Relatório preparado", "Na nova janela, use “Salvar como PDF”.", "success");
 }
 
 function csvCell(value) {
@@ -5546,6 +5591,7 @@ els.csvImport.addEventListener("change", handleCsvImport);
 els.backupImport.addEventListener("change", handleBackupImport);
 els.exportBackupBtn.addEventListener("click", exportBackup);
 els.exportCsvBtn.addEventListener("click", exportCsv);
+els.exportPdfReportBtn?.addEventListener("click", exportFinancialPdfReport);
 els.financialAccountCatalogForm.addEventListener("submit", addFinancialAccountCatalog);
 els.newFinancialAccountTypeInput.addEventListener("change", () => refreshFinancialAccountSubtypeOptions());
 els.groupCatalogForm.addEventListener("submit", addGroupCatalog);

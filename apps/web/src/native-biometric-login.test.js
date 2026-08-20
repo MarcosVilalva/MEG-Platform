@@ -74,9 +74,12 @@ assert.match(biometricLogin, /NOT_NATIVE_ANDROID/);
 assert.match(legacyEntry, /await prepareAndroidBiometricStartup\(\)/);
 assert.match(legacyEntry, /await bootstrapCloud\(\)/);
 assert.match(legacyEntry, /await warmCloudApi\(\)/);
+assert.match(legacyEntry, /await preflightAppUpdate\(\)/);
 assert.doesNotMatch(legacyEntry, /waitForStartupAppUpdate/);
 assert.ok(
-  legacyEntry.indexOf('await warmCloudApi()') < legacyEntry.indexOf('await prepareAndroidBiometricStartup()')
+  legacyEntry.indexOf('await warmCloudApi()') < legacyEntry.indexOf('await preflightAppUpdate()')
+    && legacyEntry.indexOf('await preflightAppUpdate()') < legacyEntry.indexOf('await prepareAndroidBiometricStartup()')
+    && legacyEntry.indexOf('await warmCloudApi()') < legacyEntry.indexOf('await prepareAndroidBiometricStartup()')
     && legacyEntry.indexOf('await prepareAndroidBiometricStartup()') < legacyEntry.indexOf('await bootstrapCloud()'),
   'a biometria e a base devem iniciar sem aguardar o atualizador'
 );

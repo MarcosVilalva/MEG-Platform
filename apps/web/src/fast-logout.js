@@ -1,4 +1,6 @@
-const SAVE_TIMEOUT_MS = 900;
+// O logout deve priorizar integridade. Cinco segundos ainda deixam a saida
+// responsiva, mas evitam abandonar uma alteracao quando o Render acorda.
+const SAVE_TIMEOUT_MS = 5000;
 const SKIP_READINESS_ONCE_KEY = 'meg-skip-startup-readiness-once';
 
 function wait(ms) {
@@ -37,10 +39,19 @@ async function performFastLogout(button) {
   const status = document.querySelector('#cloudSyncStatus');
   if (status) status.textContent = 'Salvando alterações...';
 
+  let exitedNativeApp = false;
   try {
     await saveWithDeadline();
+    const capacitor = window.Capacitor;
+    const nativeAndroid = capacitor?.isNativePlatform?.() && capacitor?.getPlatform?.() === 'android';
+    if (nativeAndroid && typeof window.MEG_CLOUD?.logout === 'function') {
+      await window.MEG_CLOUD.logout({ save: false, nativeExit: true });
+      exitedNativeApp = true;
+      return;
+    }
   } finally {
     clearMegSession();
+    if (exitedNativeApp) return;
     // A API acabou de responder ao salvamento. Na recarga de logout não há motivo
     // para repetir o aquecimento de até vários segundos antes de mostrar o login.
     sessionStorage.setItem(SKIP_READINESS_ONCE_KEY, '1');

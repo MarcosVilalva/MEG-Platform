@@ -404,6 +404,39 @@ function isoDateAfter(referenceDate: Date, days: number) {
   }).format(target);
 }
 
+/**
+ * Versão pensada para leitura no celular. Evolution/WhatsApp não renderiza o
+ * HTML do e-mail, então enviamos uma composição própria, curta e identificada
+ * como mensagem oficial do MEG Financial OS.
+ */
+export function buildNotificationWhatsAppText(digest: ReturnType<typeof buildNotificationDigest>) {
+  const title = digest.mode === 'open-summary' ? 'Resumo de contas em aberto' : 'Alerta de vencimentos';
+  const priorityIcon: Record<DigestItem['priority'], string> = {
+    'MÁXIMA': '🚨', 'CRÍTICA': '🔴', 'URGENTE': '🟠', 'ALTA': '🟡', 'ATENÇÃO': '🔵', 'PROGRAMADA': '🟢'
+  };
+  const lines = [
+    '╔════════════════════╗',
+    '   *MEG FINANCIAL OS*',
+    '╚════════════════════╝',
+    `📲 *${title}*`,
+    '',
+    `💰 *Em atenção agora:* ${money(digest.totalAmount)}`,
+    `📌 *Em aberto até o mês atual:* ${money(digest.openAmount)}`,
+  ];
+  if (!digest.items.length) {
+    lines.push('', '✅ Nenhuma pendência exige ação neste momento.');
+  } else {
+    lines.push('', '*Prioridades para decidir:*');
+    digest.items.slice(0, 10).forEach((item) => {
+      const group = item.entries > 1 ? ` · ${item.entries} lançamentos agrupados` : '';
+      lines.push(`${priorityIcon[item.priority]} *${item.label}*`, `   ${dateLabel(item.dueDate)} · ${money(item.value)}${group}`);
+    });
+    if (digest.items.length > 10) lines.push(`   + ${digest.items.length - 10} item(ns) no painel MEG.`);
+  }
+  lines.push('', '💡 *MEG:* priorize vencidas, depois as de hoje, e preserve saldo para os próximos dias.', '', '_Alerta automático do MEG Financial OS_');
+  return lines.join('\n');
+}
+
 function naturalLabel(value: string) {
   const known: Record<string, string> = {
     BB: 'BB', BV: 'BV', C6: 'C6', CPFL: 'CPFL', IPTU: 'IPTU', LATAM: 'Latam', ML: 'Mercado Livre', PIX: 'Pix'
@@ -720,6 +753,7 @@ export async function deliverNotifications(userId: string, options: DeliveryOpti
   const context = await resolveWorkspaceContext(userId);
   const notificationConfig = await prisma.workspaceNotificationConfig.findUnique({ where: { workspaceId: context.workspaceId } });
   const emailHtml = buildNotificationEmailHtml(digest);
+  const whatsappText = buildNotificationWhatsAppText(digest);
   const [phones, emails, owner] = await Promise.all([
     prisma.notificationRecipient.findMany({ where: { userId, isActive: true, ...(recipientIds.length ? { id: { in: recipientIds } } : {}) }, orderBy: { name: 'asc' } }),
     notificationConfig?.emailEnabled === false ? Promise.resolve([]) : prisma.notificationEmailRecipient.findMany({ where: { userId, isActive: true, ...(emailRecipientIds.length ? { id: { in: emailRecipientIds } } : {}) }, orderBy: { name: 'asc' } }),
@@ -730,7 +764,7 @@ export async function deliverNotifications(userId: string, options: DeliveryOpti
   const emailTargets = notificationConfig?.emailEnabled === false ? [] : emails.length ? emails : owner?.email ? [{ id: 'workspace-owner', name: owner.name, email: owner.email }] : [];
   const channels = [
     ...emailTargets.map((recipient) => ({ channel: `email:${recipient.id}`, label: `${recipient.name} (${recipient.email})`, send: () => sendEmail(recipient.email, subject, digest.text, notificationConfig ?? undefined, emailHtml) })),
-    ...whatsappTargets.map((recipient) => ({ channel: `whatsapp:${recipient.id}`, label: `${recipient.name} (${recipient.phone})`, send: () => sendWhatsApp(recipient.phone, digest.text) }))
+    ...whatsappTargets.map((recipient) => ({ channel: `whatsapp:${recipient.id}`, label: `${recipient.name} (${recipient.phone})`, send: () => sendWhatsApp(recipient.phone, whatsappText) }))
   ];
   const deliveries = [];
   const reference = `${local.iso}:${slot}:${mode}`;

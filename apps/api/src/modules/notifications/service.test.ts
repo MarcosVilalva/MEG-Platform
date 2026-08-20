@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { alexaAutomationSlot, automationSlot, buildAlexaAnnouncement, buildAlexaFinancialPanorama, buildNotificationDigest, buildNotificationEmailHtml } from './service';
+import { alexaAutomationSlot, automationSlot, buildAlexaAnnouncement, buildAlexaFinancialPanorama, buildNotificationDigest, buildNotificationEmailHtml, buildNotificationWhatsAppText } from './service';
 
 const transactions = [
   { type: 'expense', date: '2026-06-30', description: 'CONTA ARRASTADA', expenseAmount: 75, status: 'PENDING', paymentMethod: 'BOLETO' },
@@ -13,6 +13,8 @@ const transactions = [
 ];
 
 const digest = buildNotificationDigest(transactions, new Date('2026-07-12T15:00:00Z'));
+assert.match(buildNotificationWhatsAppText(digest), /MEG FINANCIAL OS/);
+assert.match(buildNotificationWhatsAppText(digest), /FATURA CARTAO ML/);
 assert.equal(digest.totalCount, 4, 'pendência anterior deve acompanhar as contas próximas do mês atual');
 assert.equal(digest.totalAmount, 504.9);
 assert.equal(digest.openCount, 4);
