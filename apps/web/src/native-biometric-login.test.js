@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { biometricControlMode, biometricUnavailableMessage, isNativeAndroidRuntime } from './native-biometric-login.js';
+import { biometricControlMode, biometricUnavailableMessage, isNativeAndroidRuntime, isPotentialNativeAndroidRuntime } from './native-biometric-login.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const read = (relativePath) => fs.readFileSync(path.resolve(here, relativePath), 'utf8').replace(/\r\n/g, '\n');
@@ -20,6 +20,16 @@ assert.equal(isNativeAndroidRuntime({ capacitor: nativeRuntime('android'), bodyC
 assert.equal(isNativeAndroidRuntime({ capacitor: nativeRuntime('ios'), bodyClassList: classList('native-mobile'), userAgent: 'iPhone' }), false);
 assert.equal(isNativeAndroidRuntime({ capacitor: null, bodyClassList: classList(), userAgent: 'Mozilla/5.0 (Linux; Android 16)' }), false);
 assert.equal(isNativeAndroidRuntime({ capacitor: nativeRuntime('android', false), bodyClassList: classList('native-mobile'), userAgent: 'Mozilla/5.0 (Linux; Android 16)' }), true);
+assert.equal(
+  isPotentialNativeAndroidRuntime({ capacitor: nativeRuntime('web', false), bodyClassList: classList('native-mobile'), userAgent: 'Mozilla/5.0 (Linux; Android 16)' }),
+  true,
+  'o APK deve consultar o plugin mesmo enquanto a ponte Capacitor ainda informa plataforma web'
+);
+assert.equal(
+  isPotentialNativeAndroidRuntime({ capacitor: nativeRuntime('web', false), bodyClassList: classList(), userAgent: 'Mozilla/5.0 (Windows NT 10.0)' }),
+  false,
+  'o navegador comum não deve tentar abrir biometria nativa'
+);
 
 assert.equal(biometricControlMode({ available: false, enabled: false }), 'hidden');
 assert.equal(biometricControlMode({ available: true, enabled: false }), 'setup');
@@ -60,6 +70,8 @@ assert.match(biometricSettings, /saveBiometricLogin\(\{ email, password \}\)/);
 
 assert.match(biometricLogin, /registerPlugin\('BiometricAuth'\)/);
 assert.match(biometricLogin, /BiometricAuth\.isAvailable\(\)/);
+assert.match(biometricLogin, /BIOMETRIC_BRIDGE_ATTEMPTS\s*=\s*12/);
+assert.match(biometricLogin, /await delay\(BIOMETRIC_BRIDGE_RETRY_MS\)/);
 assert.match(biometricLogin, /BiometricAuth\.authenticate\(/);
 assert.match(biometricLogin, /BiometricAuth\.saveCredentials\(/);
 assert.match(biometricLogin, /prepareAndroidBiometricStartup/);
