@@ -51,16 +51,24 @@ async function resilientFetch(url, options = {}, { retries = 1, timeoutMs = 1800
   let lastError;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     const controller = typeof AbortController === 'function' ? new AbortController() : null;
-    const timeout = controller ? window.setTimeout(() => controller.abort(), timeoutMs) : null;
+    let timeout;
     try {
-      const response = await fetch(url, { ...options, signal: controller?.signal || options.signal });
-      if (timeout) window.clearTimeout(timeout);
-      return response;
+      const request = fetch(url, { ...options, signal: controller?.signal || options.signal });
+      const deadline = new Promise((_, reject) => {
+        timeout = window.setTimeout(() => {
+          controller?.abort();
+          const error = new Error(`A conexão excedeu ${timeoutMs} ms.`);
+          error.code = 'NETWORK_TIMEOUT';
+          reject(error);
+        }, timeoutMs);
+      });
+      return await Promise.race([request, deadline]);
     } catch (cause) {
-      if (timeout) window.clearTimeout(timeout);
       lastError = cause;
       if (attempt >= retries) break;
       await wait(900 + attempt * 800);
+    } finally {
+      if (timeout) window.clearTimeout(timeout);
     }
   }
   throw lastError instanceof Error ? lastError : new Error('Falha de conexao com a API.');
@@ -100,40 +108,6 @@ function clearSession() {
 
 export function clearLocalCloudSession() {
   clearSession();
-}
-
-export async function warmCloudApi({ keepLoading = false, retryUntilReady = false } = {}) {
-  assertCloudApiConfigured();
-  let attempt = 0;
-  while (true) {
-    attempt += 1;
-    showCloudLoading(
-      'Conectando ao banco de dados...',
-      attempt === 1
-        ? 'Preparando a nuvem antes da validação de segurança'
-        : `Tentativa ${attempt}. O MEG continuará tentando automaticamente`
-    );
-    try {
-      const response = await resilientFetch(`${API_URL}/health`, { cache: 'no-store' }, { retries: 0, timeoutMs: 15_000 });
-      if (!response.ok) throw new Error(`API indisponível (${response.status}).`);
-      console.info('[MEG database] conexão disponível', { attempt });
-      const payload = await response.json().catch(() => ({ status: 'ok' }));
-      if (!keepLoading) hideCloudLoading();
-      return payload;
-    } catch (cause) {
-      console.warn('[MEG database] tentativa de conexão falhou', { attempt, reason: cause?.message || String(cause) });
-      if (!retryUntilReady) {
-        if (!keepLoading) hideCloudLoading();
-        throw cause;
-      }
-      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
-      showCloudLoading(
-        offline ? 'Sem conexão com a internet' : 'Servidor ainda iniciando...',
-        'O MEG continuará tentando automaticamente antes de liberar seu acesso'
-      );
-      await wait(Math.min(1500 * attempt, 6000));
-    }
-  }
 }
 
 function assertStagingAdmin(user) {
