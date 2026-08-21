@@ -210,7 +210,7 @@ function updateDialog(release, installed, AppUpdater) {
   return decisionPromise;
 }
 
-export async function checkForAppUpdate({ force = false, waitForDecision = false, preflightOnly = false, timeoutMs = 1400 } = {}) {
+export async function checkForAppUpdate({ force = false, waitForDecision = false, preflightOnly = false, timeoutMs = 1400, fetchAttempts = VERSION_FETCH_ATTEMPTS } = {}) {
   if (!await waitForNativeAndroid()) return { available: false };
   try {
     const AppUpdater = await getAppUpdater();
@@ -219,7 +219,7 @@ export async function checkForAppUpdate({ force = false, waitForDecision = false
     publishInstalledVersion(installed);
     let release = null;
     let lastFetchError = null;
-    const attempts = preflightOnly ? 1 : VERSION_FETCH_ATTEMPTS;
+    const attempts = preflightOnly ? 1 : Math.max(1, Math.min(Number(fetchAttempts) || 1, VERSION_FETCH_ATTEMPTS));
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
       try {
         const controller = typeof AbortController === 'function' ? new AbortController() : null;

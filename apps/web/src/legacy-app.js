@@ -4,6 +4,7 @@ import { addCalendarDays, calendarDaysBetween, dateInTimeZone, lastCalendarDayOf
 import { buildCardForecast, resolveCardIdentity } from "./legacy-card-identity.js";
 import { GLOBAL_FINANCIAL_SCHEMA_VERSION, isBenefitTransaction, migrateGlobalFinancialState, upsertOpeningBalanceTransaction } from "./legacy-financial-accounts.js";
 import { createTransactionEditor, replaceSelectOptions } from "./transaction-editor.js";
+import { transactionStatusPolicy } from "./transaction-status-policy.js";
 
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
 
@@ -1900,9 +1901,13 @@ function refreshPaymentMethodOptions(preferred = "") {
     })
     .map((item) => item.description)
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
-  const preferredValue = allowed.includes(preferred) ? preferred : modality === "CREDITO" ? "" : allowed[0] || "";
+  const preferredValue = allowed.includes(preferred) ? preferred : "";
   const entries = [
-    ...(modality === "CREDITO" ? [{ value: "", label: "Selecione o cartão", disabled: true }] : []),
+    {
+      value: "",
+      label: modality === "CREDITO" ? "Selecione o cartão" : "Selecione a forma de pagamento",
+      disabled: true,
+    },
     ...allowed.map((value) => ({ value, label: value })),
   ];
   replaceSelectOptions(els.paymentMethodInput, entries, preferredValue);
@@ -4222,14 +4227,15 @@ function syncAmountFields() {
   els.paymentMethodLabel.textContent = isIncome ? "FORMA DE RECEBIMENTO" : creditExpense ? "CARTÃO UTILIZADO" : "FORMA DE PAGAMENTO";
   const paidOption = els.statusInput.querySelector('option[value="paid"]');
   if (paidOption) paidOption.textContent = isIncome ? "RECEBIDO" : "PAGO";
-  if (isIncome) els.statusInput.value = "paid";
-  // A compra nova no credito sempre nasce pendente. Ao editar uma parcela ja
-  // quitada, preserve a baixa historica em vez de reabri-la acidentalmente.
-  if (creditExpense && !els.transactionId.value) els.statusInput.value = "pending";
-  if (!isIncome && !els.transactionId.value) els.statusInput.value = "pending";
-  // Compras no crédito sempre entram como pendentes da fatura. A baixa é
-  // feita quando a fatura/lançamento é efetivamente paga.
-  els.statusInput.disabled = isIncome || (creditExpense && !els.transactionId.value);
+  const statusPolicy = transactionStatusPolicy({
+    type: els.transactionType.value,
+    modality: els.modalityInput.value,
+    currentStatus: els.statusInput.value,
+    isNew: !els.transactionId.value,
+  });
+  els.statusInput.value = statusPolicy.status;
+  els.statusInput.disabled = statusPolicy.locked;
+  els.statusInput.dataset.statusPolicy = statusPolicy.reason;
   if (isIncome) {
     els.expenseAmountInput.value = "";
     els.expenseClassInput.value = "";
@@ -4399,6 +4405,7 @@ function syncPaymentModality() {
   syncFinancialAccountSelection({ force: true });
   syncCardDates({ recalculate: true });
   syncInstallmentFields();
+  syncAmountFields();
   transactionEditor.refreshAll();
 }
 
@@ -4408,6 +4415,7 @@ function syncModalityPaymentOptions() {
   syncFinancialAccountSelection({ force: true });
   syncCardDates({ recalculate: true });
   syncInstallmentFields();
+  syncAmountFields();
   transactionEditor.refreshAll();
 }
 
@@ -4421,14 +4429,10 @@ function openTransactionDialog(item = null) {
   const defaultDate = selectedPeriod.mode === "month" ? `${selectedPeriod.month}-${todayIso.slice(8, 10)}` : todayIso;
   const desiredGroup = item?.group || (item?.type === "expense" ? item?.category || "" : "");
   const desiredExpenseClass = item?.expenseClass || "";
-  const activePayments = (state.catalogs?.paymentMethods || DEFAULT_CATALOGS.paymentMethods)
-    .filter((payment) => isCatalogItemActive("paymentMethods", payment.description) && isCatalogItemActive("modalities", payment.modality));
-  const defaultPayment = activePayments.find((payment) => normalizeText(payment.description) === "PIX")?.description || activePayments[0]?.description || "";
-  const defaultCreditPayment = activePayments.find((payment) => normalizeText(payment.modality) === "CREDITO")?.description || defaultPayment;
   const isNewExpense = !item;
   const desiredPayment = item
-    ? item.paymentMethod || item.account || defaultPayment
-    : isNewExpense ? defaultCreditPayment : defaultPayment;
+    ? item.paymentMethod || item.account || ""
+    : "";
   const desiredModality = item?.modality || (isNewExpense ? "CREDITO" : modalityForPayment(desiredPayment)) || modalityForPayment(desiredPayment) || sortedModalities()[0] || "";
   els.dialogTitle.textContent = item ? "Editar lancamento" : "Novo lancamento";
   els.transactionId.value = item?.id || "";
