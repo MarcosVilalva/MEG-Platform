@@ -426,7 +426,11 @@ async function start() {
     // deixava o aplicativo aberto sem dados.
     startupUpdate = await checkForAppUpdate({ force: true, preflightOnly: true, timeoutMs: 2200, fetchAttempts: 1 });
     const biometricStartup = await prepareAndroidBiometricStartup();
-    if (biometricStartup.required && !biometricStartup.authenticated) clearLocalCloudSession();
+    // No APK, nenhuma sessão anterior pode liberar os dados sem uma
+    // confirmação biométrica válida. Se as credenciais nativas estiverem
+    // ausentes ou indisponíveis, limpamos somente a sessão e mostramos o login
+    // para permitir recadastrar a biometria com segurança.
+    if (biometricStartup.native && !biometricStartup.authenticated) clearLocalCloudSession();
     // A base financeira sempre vem antes de qualquer verificação nativa de
     // atualização. O AppUpdater pode recriar/pausar a Activity no Android e,
     // se executado aqui, permite que a WebView seja remontada sem o estado da

@@ -75,6 +75,19 @@ assert.match(biometricLogin, /await delay\(BIOMETRIC_BRIDGE_RETRY_MS\)/);
 assert.match(biometricLogin, /BiometricAuth\.authenticate\(/);
 assert.match(biometricLogin, /BiometricAuth\.saveCredentials\(/);
 assert.match(biometricLogin, /prepareAndroidBiometricStartup/);
+const authenticateNativeBlock = biometricLogin.slice(
+  biometricLogin.indexOf('async function authenticateNatively'),
+  biometricLogin.indexOf('export async function getBiometricLoginStatus')
+);
+assert.match(authenticateNativeBlock, /isPotentialNativeAndroidRuntime\(\)/);
+assert.equal(authenticateNativeBlock.includes('if (!isNativeAndroid())'), false);
+const startupBiometricBlock = biometricLogin.slice(
+  biometricLogin.indexOf('export async function prepareAndroidBiometricStartup'),
+  biometricLogin.indexOf('export async function initializeAndroidBiometricLifecycle')
+);
+assert.match(startupBiometricBlock, /isPotentialNativeAndroidRuntime\(\)/);
+assert.match(startupBiometricBlock, /native:\s*true/);
+assert.equal(startupBiometricBlock.includes('if (!isNativeAndroid())'), false);
 assert.match(biometricLogin, /initializeAndroidBiometricLifecycle/);
 assert.match(biometricLogin, /appStateChange/);
 assert.match(biometricLogin, /privacyCover/);
@@ -84,6 +97,8 @@ assert.equal(biometricLogin.includes('withBiometricTimeout'), false);
 assert.equal(biometricLogin.includes('@capgo/capacitor-native-biometric'), false);
 assert.match(biometricLogin, /NOT_NATIVE_ANDROID/);
 assert.match(legacyEntry, /await prepareAndroidBiometricStartup\(\)/);
+assert.match(legacyEntry, /biometricStartup\.native\s*&&\s*!biometricStartup\.authenticated/);
+assert.equal(legacyEntry.includes('biometricStartup.required && !biometricStartup.authenticated'), false);
 assert.match(legacyEntry, /await bootstrapCloud\(\)/);
 assert.match(legacyEntry, /await warmCloudApi\(\)/);
 assert.match(legacyEntry, /preflightOnly:\s*true/);

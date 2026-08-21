@@ -123,7 +123,7 @@ function privacyCover() {
 }
 
 async function authenticateNatively() {
-  if (!isNativeAndroid()) return null;
+  if (!isPotentialNativeAndroidRuntime()) return null;
   if (biometricAuthenticationPromise) return biometricAuthenticationPromise;
   biometricAuthenticationPromise = (async () => {
     biometricPromptOpen = true;
@@ -168,7 +168,7 @@ export async function getBiometricLoginStatus() {
 }
 
 export async function saveBiometricLogin({ email, password }) {
-  if (!isNativeAndroid() || !email || !password) return { saved: false };
+  if (!isPotentialNativeAndroidRuntime() || !email || !password) return { saved: false };
   try {
     return await BiometricAuth.saveCredentials({ email, password });
   } catch (cause) {
@@ -195,18 +195,33 @@ export async function requestBiometricLogin() {
 // Runs before cloud/session bootstrap. When biometric credentials already
 // exist, the Android system prompt is the first security screen displayed.
 export async function prepareAndroidBiometricStartup() {
-  if (!isNativeAndroid()) return { required: false, authenticated: false };
+  if (!isPotentialNativeAndroidRuntime()) {
+    return { native: false, required: false, authenticated: false, reason: 'NOT_NATIVE_ANDROID' };
+  }
   const status = await getBiometricLoginStatus();
+  window.MEG_BIOMETRIC_STARTUP = {
+    native: true,
+    available: Boolean(status?.available),
+    enabled: Boolean(status?.enabled),
+    reason: status?.reason || null,
+  };
   if (!status?.available || !status?.enabled) {
-    return { required: false, authenticated: false, reason: status?.reason };
+    return {
+      native: true,
+      required: false,
+      authenticated: false,
+      available: Boolean(status?.available),
+      enabled: Boolean(status?.enabled),
+      reason: status?.reason || (status?.enabled ? 'BIOMETRIC_UNAVAILABLE' : 'CREDENTIALS_NOT_STORED'),
+    };
   }
   const credentials = await authenticateNatively();
   if (!credentials) {
     skipNextBiometricRequest = true;
-    return { required: true, authenticated: false };
+    return { native: true, required: true, authenticated: false, available: true, enabled: true };
   }
   cacheCredentials(credentials);
-  return { required: true, authenticated: true };
+  return { native: true, required: true, authenticated: true, available: true, enabled: true };
 }
 
 // On Android resume, protect the visible financial data and ask Android
