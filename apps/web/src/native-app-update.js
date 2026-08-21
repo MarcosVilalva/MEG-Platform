@@ -252,10 +252,3 @@ export async function checkForAppUpdate({ force = false, waitForDecision = false
   }
 }
 
-// A pré-checagem acontece antes da biometria, mas tem prazo curto e nunca
-// abre o instalador. Assim o servidor/base pode aquecer sem reproduzir a
-// regressão em que o Android ficava preso numa atualização lenta.
-export function preflightAppUpdate() {
-  return checkForAppUpdate({ preflightOnly: true, timeoutMs: 1200 });
-}
-

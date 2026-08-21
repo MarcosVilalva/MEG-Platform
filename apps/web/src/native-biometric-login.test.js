@@ -74,14 +74,14 @@ assert.match(biometricLogin, /NOT_NATIVE_ANDROID/);
 assert.match(legacyEntry, /await prepareAndroidBiometricStartup\(\)/);
 assert.match(legacyEntry, /await bootstrapCloud\(\)/);
 assert.match(legacyEntry, /await warmCloudApi\(\)/);
-assert.match(legacyEntry, /await preflightAppUpdate\(\)/);
+assert.doesNotMatch(legacyEntry, /preflightAppUpdate/);
 assert.doesNotMatch(legacyEntry, /waitForStartupAppUpdate/);
 assert.ok(
-  legacyEntry.indexOf('await warmCloudApi()') < legacyEntry.indexOf('await preflightAppUpdate()')
-    && legacyEntry.indexOf('await preflightAppUpdate()') < legacyEntry.indexOf('await prepareAndroidBiometricStartup()')
-    && legacyEntry.indexOf('await warmCloudApi()') < legacyEntry.indexOf('await prepareAndroidBiometricStartup()')
-    && legacyEntry.indexOf('await prepareAndroidBiometricStartup()') < legacyEntry.indexOf('await bootstrapCloud()'),
-  'a biometria e a base devem iniciar sem aguardar o atualizador'
+  legacyEntry.indexOf('await warmCloudApi()') < legacyEntry.indexOf('await prepareAndroidBiometricStartup()')
+    && legacyEntry.indexOf('await prepareAndroidBiometricStartup()') < legacyEntry.indexOf('await bootstrapCloud()')
+    && legacyEntry.indexOf('await bootstrapCloud()') < legacyEntry.indexOf("await import('./legacy-app.js')")
+    && legacyEntry.indexOf("await import('./legacy-app.js')") < legacyEntry.indexOf('checkForAppUpdate({ force: true })'),
+  'servidor, biometria e base devem carregar antes da interface e do atualizador'
 );
 assert.match(nativeUpdate, /VERSION_FETCH_ATTEMPTS\s*=\s*3/);
 assert.match(legacyEntry, /window\.setTimeout\([\s\S]*checkForAppUpdate\(\{ force: true \}\)/);
