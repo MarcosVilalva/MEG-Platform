@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { strFromU8, unzipSync } from 'fflate';
 import { buildExecutiveFinancialModel } from './executive-financial-report-core.js';
 import { createExecutiveFinancialWorkbook, executiveWorkbookInternals, shareExecutiveFinancialWorkbook } from './executive-financial-report.js';
@@ -102,5 +103,13 @@ const emptyArchive = unzipSync(emptyReport.bytes);
 assert.match(strFromU8(emptyArchive['docProps/core.xml']), /Teste &amp; Qualidade/);
 assert.match(strFromU8(emptyArchive['xl/worksheets/sheet5.xml']), /Nenhuma conta pendente/);
 assert.doesNotMatch(strFromU8(emptyArchive['xl/charts/chart2.xml']), /\$G\$16:\$G\$15/);
+
+const legacyAppSource = fs.readFileSync(new URL('./legacy-app.js', import.meta.url), 'utf8');
+assert.match(legacyAppSource, /const \{ min: start, max: end \} = availableDateBounds\(\)/);
+assert.doesNotMatch(
+  legacyAppSource.slice(legacyAppSource.indexOf('async function exportExecutiveExcelReport'), legacyAppSource.indexOf('function escapeReportText')),
+  /dateRangeForSelectedPeriod\(\)/,
+  'o super relatório deve analisar a base completa, independentemente do filtro atual da tela',
+);
 
 console.log('executive financial Excel report tests passed');

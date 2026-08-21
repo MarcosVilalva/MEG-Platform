@@ -4883,15 +4883,15 @@ async function exportExecutiveExcelReport() {
   if (!button || button.disabled) return;
   const originalMarkup = button.innerHTML;
   button.disabled = true;
-  button.textContent = "Analisando suas finanças...";
+  button.textContent = "Lendo a base do MEG...";
   try {
     const { createExecutiveFinancialWorkbook, shareExecutiveFinancialWorkbook } = await import('./executive-financial-report.js');
-    const { start, end } = dateRangeForSelectedPeriod();
+    const { min: start, max: end } = availableDateBounds();
     const report = createExecutiveFinancialWorkbook({
       state: structuredClone(state),
       start,
       end,
-      periodLabel: periodLabel(),
+      periodLabel: `Histórico completo, ${formatDate(start)} a ${formatDate(end)}`,
       owner: window.MEG_CLOUD?.user?.name || 'Usuário MEG',
       generatedAt: new Date(),
     });
@@ -4899,7 +4899,7 @@ async function exportExecutiveExcelReport() {
     if (!sharedNatively) downloadBlob(report.blob, report.filename);
     showToast(
       "Relatório Excel concluído",
-      `${report.model.metrics.transactionCount} lançamentos analisados, saúde financeira ${report.model.metrics.healthScore}/100 e ${report.model.recommendations.length} recomendação(ões). ${sharedNatively ? 'Escolha onde salvar ou compartilhar o arquivo.' : 'O download foi iniciado.'}`,
+      `A base do MEG foi analisada: ${report.model.metrics.transactionCount} lançamentos, saúde financeira ${report.model.metrics.healthScore}/100 e ${report.model.recommendations.length} recomendação(ões). ${sharedNatively ? 'Escolha onde salvar ou compartilhar o arquivo.' : 'O download foi iniciado.'}`,
       "success",
     );
   } catch (cause) {
