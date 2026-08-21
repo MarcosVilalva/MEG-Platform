@@ -210,7 +210,7 @@ function updateDialog(release, installed, AppUpdater) {
   return decisionPromise;
 }
 
-export async function checkForAppUpdate({ force = false, waitForDecision = false } = {}) {
+export async function checkForAppUpdate({ force = false, waitForDecision = false, preflightOnly = false, timeoutMs = 1400 } = {}) {
   if (!await waitForNativeAndroid()) return { available: false };
   try {
     const AppUpdater = await getAppUpdater();
@@ -219,21 +219,29 @@ export async function checkForAppUpdate({ force = false, waitForDecision = false
     publishInstalledVersion(installed);
     let release = null;
     let lastFetchError = null;
-    for (let attempt = 1; attempt <= VERSION_FETCH_ATTEMPTS; attempt += 1) {
+    const attempts = preflightOnly ? 1 : VERSION_FETCH_ATTEMPTS;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
       try {
-        const response = await fetch(`${VERSION_URL}?t=${Date.now()}-${attempt}`, { cache: 'no-store' });
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        const timeout = controller ? window.setTimeout(() => controller.abort(), timeoutMs) : null;
+        let response;
+        try {
+          response = await fetch(`${VERSION_URL}?t=${Date.now()}-${attempt}`, { cache: 'no-store', signal: controller?.signal });
+        } finally {
+          if (timeout) window.clearTimeout(timeout);
+        }
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         release = await response.json();
         break;
       } catch (cause) {
         lastFetchError = cause;
-        if (attempt < VERSION_FETCH_ATTEMPTS) await delay(VERSION_FETCH_RETRY_MS * attempt);
+        if (attempt < attempts) await delay(VERSION_FETCH_RETRY_MS * attempt);
       }
     }
     if (!release) throw lastFetchError || new Error('Manifesto de atualização indisponível.');
     const available = Number(release.versionCode) > Number(installed.versionCode);
     let decision = null;
-    if (available) {
+    if (available && !preflightOnly) {
       const dialogDecision = updateDialog(release, installed, AppUpdater);
       if (waitForDecision) decision = await dialogDecision;
     }
@@ -242,5 +250,12 @@ export async function checkForAppUpdate({ force = false, waitForDecision = false
     console.warn('MEG app update check failed', cause);
     return { available: false, error: cause };
   }
+}
+
+// A pré-checagem acontece antes da biometria, mas tem prazo curto e nunca
+// abre o instalador. Assim o servidor/base pode aquecer sem reproduzir a
+// regressão em que o Android ficava preso numa atualização lenta.
+export function preflightAppUpdate() {
+  return checkForAppUpdate({ preflightOnly: true, timeoutMs: 1200 });
 }
 
