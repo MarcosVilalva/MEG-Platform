@@ -2,6 +2,8 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 
 const BiometricAuth = registerPlugin('BiometricAuth');
 const CACHED_CREDENTIALS_MS = 8_000;
+const BIOMETRIC_BRIDGE_ATTEMPTS = 12;
+const BIOMETRIC_BRIDGE_RETRY_MS = 180;
 
 let biometricAuthenticationPromise = null;
 let cachedCredentials = null;
@@ -54,8 +56,25 @@ export function biometricUnavailableMessage(reason) {
     || 'Cadastre uma digital ou biometria e mantenha o bloqueio de tela ativo no Android.';
 }
 
+export function isPotentialNativeAndroidRuntime({
+  capacitor = Capacitor,
+  bodyClassList = currentBodyClassList(),
+  userAgent = currentUserAgent(),
+} = {}) {
+  if (isNativeAndroidRuntime({ capacitor, bodyClassList, userAgent })) return true;
+  const platform = capacitor?.getPlatform?.() || capacitor?.platform || '';
+  return Boolean(
+    (platform === 'android' || bodyClassList?.contains?.('native-mobile'))
+    && /Android/i.test(String(userAgent || ''))
+  );
+}
+
 function isNativeAndroid() {
   return isNativeAndroidRuntime();
+}
+
+function delay(milliseconds) {
+  return new Promise((resolve) => globalThis.setTimeout(resolve, milliseconds));
 }
 
 function beginAuthenticatedLoadingTransition() {
@@ -127,12 +146,25 @@ async function authenticateNatively() {
 }
 
 export async function getBiometricLoginStatus() {
-  if (!isNativeAndroid()) return { available: false, enabled: false, reason: 'NOT_NATIVE_ANDROID' };
-  try {
-    return await BiometricAuth.isAvailable();
-  } catch (cause) {
-    return { available: false, enabled: false, reason: cause?.message || 'PLUGIN_UNAVAILABLE' };
+  if (!isPotentialNativeAndroidRuntime()) {
+    return { available: false, enabled: false, reason: 'NOT_NATIVE_ANDROID' };
   }
+  let lastCause = null;
+  for (let attempt = 1; attempt <= BIOMETRIC_BRIDGE_ATTEMPTS; attempt += 1) {
+    try {
+      const status = await BiometricAuth.isAvailable();
+      if (status && typeof status.available === 'boolean') {
+        document.body?.classList?.add('native-mobile');
+        document.body.dataset.nativeRuntime = 'android-biometric-plugin';
+        return status;
+      }
+      lastCause = new Error('BIOMETRIC_STATUS_INVALID');
+    } catch (cause) {
+      lastCause = cause;
+    }
+    if (attempt < BIOMETRIC_BRIDGE_ATTEMPTS) await delay(BIOMETRIC_BRIDGE_RETRY_MS);
+  }
+  return { available: false, enabled: false, reason: lastCause?.message || 'PLUGIN_UNAVAILABLE' };
 }
 
 export async function saveBiometricLogin({ email, password }) {
@@ -145,7 +177,7 @@ export async function saveBiometricLogin({ email, password }) {
 }
 
 export async function requestBiometricLogin() {
-  if (!isNativeAndroid()) return null;
+  if (!isPotentialNativeAndroidRuntime()) return null;
   if (skipNextBiometricRequest) {
     skipNextBiometricRequest = false;
     return null;
@@ -180,7 +212,7 @@ export async function prepareAndroidBiometricStartup() {
 // On Android resume, protect the visible financial data and ask Android
 // directly. No web dialog competes with the operating-system prompt.
 export async function initializeAndroidBiometricLifecycle({ onAuthenticationFailed } = {}) {
-  if (!isNativeAndroid() || biometricLifecycleStarted) return false;
+  if (!isPotentialNativeAndroidRuntime() || biometricLifecycleStarted) return false;
   biometricLifecycleStarted = true;
   const { App } = await import('@capacitor/app');
   await App.addListener('appStateChange', async ({ isActive }) => {
@@ -207,7 +239,7 @@ export async function initializeAndroidBiometricLifecycle({ onAuthenticationFail
 export async function clearBiometricLogin() {
   cachedCredentials = null;
   cachedCredentialsAt = 0;
-  if (!isNativeAndroid()) return;
+  if (!isPotentialNativeAndroidRuntime()) return;
   try {
     await BiometricAuth.clear();
   } catch {}
