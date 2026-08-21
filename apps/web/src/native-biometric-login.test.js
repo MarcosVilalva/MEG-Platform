@@ -97,7 +97,12 @@ assert.equal(biometricLogin.includes('withBiometricTimeout'), false);
 assert.equal(biometricLogin.includes('@capgo/capacitor-native-biometric'), false);
 assert.match(biometricLogin, /NOT_NATIVE_ANDROID/);
 assert.match(legacyEntry, /await prepareAndroidBiometricStartup\(\)/);
-assert.match(legacyEntry, /biometricStartup\.native\s*&&\s*!biometricStartup\.authenticated/);
+assert.match(legacyEntry, /if \(biometricStartup\.native\) clearLocalCloudSession\(\)/);
+assert.equal(
+  legacyEntry.includes('biometricStartup.native && !biometricStartup.authenticated'),
+  false,
+  'uma biometria aprovada também deve invalidar a sessão WebView anterior'
+);
 assert.equal(legacyEntry.includes('biometricStartup.required && !biometricStartup.authenticated'), false);
 assert.match(legacyEntry, /await bootstrapCloud\(\)/);
 assert.match(legacyEntry, /await warmCloudApi\(\)/);
@@ -107,6 +112,8 @@ assert.doesNotMatch(legacyEntry, /waitForStartupAppUpdate/);
 assert.ok(
   legacyEntry.indexOf('await warmCloudApi()') < legacyEntry.indexOf('startupUpdate = await checkForAppUpdate')
     && legacyEntry.indexOf('startupUpdate = await checkForAppUpdate') < legacyEntry.indexOf('await prepareAndroidBiometricStartup()')
+    && legacyEntry.indexOf('await prepareAndroidBiometricStartup()') < legacyEntry.indexOf('clearLocalCloudSession()')
+    && legacyEntry.indexOf('clearLocalCloudSession()') < legacyEntry.indexOf('await bootstrapCloud()')
     && legacyEntry.indexOf('await prepareAndroidBiometricStartup()') < legacyEntry.indexOf('await bootstrapCloud()')
     && legacyEntry.indexOf('await bootstrapCloud()') < legacyEntry.indexOf("await import('./legacy-app.js')")
     && legacyEntry.indexOf("await import('./legacy-app.js')") < legacyEntry.lastIndexOf('checkForAppUpdate({ force: true })'),
