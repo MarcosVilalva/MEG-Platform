@@ -12,6 +12,8 @@ const nativeUpdate = read('./native-app-update.js');
 const biometricSettings = read('./native-biometric-settings.js');
 const biometricLogin = read('./native-biometric-login.js');
 const legacyEntry = read('./legacy-entry.js');
+const legacyCloud = read('./legacy-cloud.js');
+const capacitorConfig = read('../../../capacitor.config.ts');
 
 const classList = (...values) => ({ contains: (value) => values.includes(value) });
 const nativeRuntime = (platform, native = true) => ({ getPlatform: () => platform, isNativePlatform: () => native });
@@ -66,6 +68,7 @@ assert.match(nativeUpdate, /import\('\.\/native-biometric-settings\.js'\)/);
 assert.match(nativeUpdate, /initializeAuthenticatedBiometricSettings\(\)/);
 assert.match(nativeUpdate, /MEG_INSTALLED_APP_VERSION/);
 assert.match(nativeUpdate, /window\.setTimeout\(installAutomatically, 0\)/);
+assert.match(nativeUpdate, /Promise\.race\(\[request, deadline\]\)/);
 assert.match(nativeUpdate, /await waitForInstallPermission\(AppUpdater\)/);
 assert.match(nativeUpdate, /await AppUpdater\.downloadAndInstall/);
 assert.equal(nativeUpdate.includes('appUpdateLater'), false, 'a atualização Android deve iniciar automaticamente');
@@ -105,7 +108,10 @@ assert.match(legacyEntry, /await prepareAndroidBiometricStartup\(\)/);
 assert.match(legacyEntry, /if \(nativeMobileMode\) \{[\s\S]*clearLocalCloudSession\(\)/);
 assert.match(legacyEntry, /consumePreparedAndroidBiometricCredentials\(\)/);
 assert.match(legacyEntry, /await bootstrapCloud\(\{ biometricCredentials, keepLoading: true \}\)/);
-assert.match(legacyEntry, /await warmCloudApi\(\{ keepLoading: true, retryUntilReady: true \}\)/);
+assert.doesNotMatch(legacyEntry, /warmCloudApi/);
+assert.match(capacitorConfig, /CapacitorHttp:\s*\{\s*enabled:\s*true\s*\}/);
+assert.match(legacyCloud, /Promise\.race\(\[request, deadline\]\)/);
+assert.match(legacyCloud, /error\.code\s*=\s*'NETWORK_TIMEOUT'/);
 assert.doesNotMatch(nativeUpdate, /startup-api-readiness/);
 assert.equal(
   legacyEntry.includes('biometricStartup.native && !biometricStartup.authenticated'),
@@ -113,26 +119,23 @@ assert.equal(
   'uma biometria aprovada também deve invalidar a sessão WebView anterior'
 );
 assert.equal(legacyEntry.includes('biometricStartup.required && !biometricStartup.authenticated'), false);
-assert.match(legacyEntry, /preflightOnly:\s*true/);
+assert.doesNotMatch(legacyEntry, /preflightOnly/);
 assert.equal(legacyEntry.includes("startupUpdate?.decision === 'installer-launched'"), false);
 assert.doesNotMatch(legacyEntry, /waitForStartupAppUpdate/);
 assert.ok(
-  legacyEntry.indexOf('await warmCloudApi({ keepLoading: true, retryUntilReady: true })') < legacyEntry.indexOf('startupUpdate = await checkForAppUpdate')
-    && legacyEntry.indexOf('startupUpdate = await checkForAppUpdate') < legacyEntry.indexOf('await prepareAndroidBiometricStartup()')
-    && legacyEntry.indexOf('await prepareAndroidBiometricStartup()') < legacyEntry.indexOf('consumePreparedAndroidBiometricCredentials()')
+  legacyEntry.indexOf('await prepareAndroidBiometricStartup()') < legacyEntry.indexOf('consumePreparedAndroidBiometricCredentials()')
     && legacyEntry.indexOf('consumePreparedAndroidBiometricCredentials()') < legacyEntry.indexOf('clearLocalCloudSession()')
     && legacyEntry.indexOf('clearLocalCloudSession()') < legacyEntry.indexOf('await bootstrapCloud({ biometricCredentials, keepLoading: true })')
     && legacyEntry.indexOf('await prepareAndroidBiometricStartup()') < legacyEntry.indexOf('await bootstrapCloud({ biometricCredentials, keepLoading: true })')
     && legacyEntry.indexOf('await bootstrapCloud({ biometricCredentials, keepLoading: true })') < legacyEntry.indexOf("await import('./legacy-app.js')")
     && legacyEntry.indexOf("await import('./legacy-app.js')") < legacyEntry.lastIndexOf('checkForAppUpdate({ force: true })'),
-  'servidor e atualização devem preceder biometria, base e interface; retentativa permanece em segundo plano'
+  'biometria, autenticação e base devem preceder a interface; OTA permanece em segundo plano'
 );
 assert.ok(
-  legacyEntry.indexOf('await bootstrapCloud({ biometricCredentials, keepLoading: true })') < legacyEntry.indexOf('if (!validationMode && startupUpdate?.available)'),
-  'o instalador só pode ser oferecido depois da restauração da base real'
+  legacyEntry.indexOf('await bootstrapCloud({ biometricCredentials, keepLoading: true })') < legacyEntry.indexOf('if (!validationMode) {'),
+  'a verificação OTA só pode começar depois da restauração da base real'
 );
 assert.match(nativeUpdate, /VERSION_FETCH_ATTEMPTS\s*=\s*3/);
-assert.match(legacyEntry, /fetchAttempts: 1/);
 assert.match(legacyEntry, /window\.setTimeout\([\s\S]*checkForAppUpdate\(\{ force: true \}\)/);
 assert.doesNotMatch(nativeUpdate, /MEG_ANDROID_STARTUP_GATE/);
 

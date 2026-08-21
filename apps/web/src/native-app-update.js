@@ -84,6 +84,23 @@ function delay(milliseconds) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
 
+async function fetchWithDeadline(url, options, timeoutMs) {
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  let timeout;
+  try {
+    const request = fetch(url, { ...options, signal: controller?.signal || options?.signal });
+    const deadline = new Promise((_, reject) => {
+      timeout = window.setTimeout(() => {
+        controller?.abort();
+        reject(new Error(`UPDATE_FETCH_TIMEOUT_${timeoutMs}`));
+      }, timeoutMs);
+    });
+    return await Promise.race([request, deadline]);
+  } finally {
+    if (timeout) window.clearTimeout(timeout);
+  }
+}
+
 function isNativeAndroid() {
   const capacitor = window.Capacitor;
   const platform = capacitor?.getPlatform?.() || capacitor?.platform || '';
@@ -220,14 +237,11 @@ export async function checkForAppUpdate({ force = false, waitForDecision = false
     const attempts = preflightOnly ? 1 : Math.max(1, Math.min(Number(fetchAttempts) || 1, VERSION_FETCH_ATTEMPTS));
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
       try {
-        const controller = typeof AbortController === 'function' ? new AbortController() : null;
-        const timeout = controller ? window.setTimeout(() => controller.abort(), timeoutMs) : null;
-        let response;
-        try {
-          response = await fetch(`${VERSION_URL}?t=${Date.now()}-${attempt}`, { cache: 'no-store', signal: controller?.signal });
-        } finally {
-          if (timeout) window.clearTimeout(timeout);
-        }
+        const response = await fetchWithDeadline(
+          `${VERSION_URL}?t=${Date.now()}-${attempt}`,
+          { cache: 'no-store' },
+          timeoutMs
+        );
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         release = await response.json();
         break;

@@ -1,5 +1,5 @@
 import './startup-data-protection.js';
-import { bootstrapCloud, clearLocalCloudSession, hideCloudLoading, warmCloudApi } from './legacy-cloud.js';
+import { bootstrapCloud, clearLocalCloudSession, hideCloudLoading, showCloudLoading } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { checkForAppUpdate, initializeStableUiFeatures } from './native-app-update.js';
 import {
@@ -427,22 +427,16 @@ function setupInactivityLogout() {
 async function start() {
   traceStartup('início', { nativeMobileMode, validationMode });
   if (!requireStagingAccess()) return;
-  let startupUpdate = { available: false };
   if (validationMode) {
     bootstrapValidationMode();
     hideCloudLoading();
   } else {
-    // Uma única barreira cobre conexão, atualização, biometria, nova sessão e
-    // GET /app-state. O Dashboard está presente no HTML e nunca pode aparecer
-    // antes de todas essas etapas terminarem.
-    await warmCloudApi({ keepLoading: true, retryUntilReady: true });
-    traceStartup('banco-disponível');
-    // Consulte a versão antes da biometria, mas não abra o instalador enquanto
-    // a sessão e a base ainda não foram restauradas. Alguns Androids retornam
-    // do instalador sem recriar a WebView; interromper o bootstrap nesse ponto
-    // deixava o aplicativo aberto sem dados.
-    startupUpdate = await checkForAppUpdate({ force: true, preflightOnly: true, timeoutMs: 2200, fetchAttempts: 1 });
-    traceStartup('ota-verificada', { available: Boolean(startupUpdate?.available), error: Boolean(startupUpdate?.error) });
+    // Não bloqueie a ponte biométrica com um GET /health. Em algumas WebViews
+    // Android, o fetch fica pendente mesmo depois do AbortController e impede
+    // que a segurança nativa seja chamada. O POST /auth/login e o GET
+    // /app-state abaixo são a validação real e suficiente da conexão.
+    showCloudLoading('Validando acesso seguro...', 'Preparando a autenticação biométrica');
+    traceStartup('biometria-iniciada');
     const biometricStartup = await prepareAndroidBiometricStartup();
     traceStartup('biometria-verificada', {
       native: Boolean(biometricStartup.native),
@@ -464,10 +458,7 @@ async function start() {
       clearLocalCloudSession();
       traceStartup('sessão-web-descartada');
     }
-    // A base financeira sempre vem antes de qualquer verificação nativa de
-    // atualização. O AppUpdater pode recriar/pausar a Activity no Android e,
-    // se executado aqui, permite que a WebView seja remontada sem o estado da
-    // nuvem. Só montamos a interface depois desta barreira terminar.
+    traceStartup('autenticação-api-iniciada', { biometric: Boolean(biometricCredentials) });
     await bootstrapCloud({ biometricCredentials, keepLoading: true });
     traceStartup('base-carregada', { transactions: window.MEG_REAL_STATE?.transactions?.length ?? null });
   }
@@ -484,17 +475,12 @@ async function start() {
     },
   });
   window.MEG_APP_UPDATE = { check: () => checkForAppUpdate({ force: true }) };
-  // A consulta ocorre antes da biometria; a instalação só é oferecida depois
-  // que a base real já foi carregada e a interface pode sobreviver ao retorno
-  // da Activity do instalador.
-  if (!validationMode && startupUpdate?.available) {
+  // OTA nunca participa da barreira de autenticação. A consulta e o instalador
+  // só começam depois que a sessão, a base e o Dashboard estão íntegros.
+  if (!validationMode) {
     window.setTimeout(() => {
       checkForAppUpdate({ force: true }).catch(() => undefined);
-    }, 250);
-  } else if (!validationMode && startupUpdate?.error) {
-    window.setTimeout(() => {
-      checkForAppUpdate({ force: true }).catch(() => undefined);
-    }, 1800);
+    }, 500);
   }
   setupInactivityLogout();
   syncLocalDueNotifications(window.MEG_APP.getState());
