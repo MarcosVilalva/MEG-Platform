@@ -1,8 +1,8 @@
 {
-  "versionCode": 135,
-  "versionName": "1.1.135",
-  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=135",
-  "sha256": "36e0f4edf0ef69c360c09d530bd37cb8878eb4f206e683407b449c89649932cb",
+  "versionCode": 136,
+  "versionName": "1.1.136",
+  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=136",
+  "sha256": "bc2e578fb53dac3dbabbf444a1275336996ced2ca46682001a5d406e70787a79",
   "mandatory": false,
   "releaseNotes": "Correção de estabilidade: a nuvem e a biometria carregam primeiro; a atualização é verificada em segundo plano."
 }
