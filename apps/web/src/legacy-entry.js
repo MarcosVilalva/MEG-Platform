@@ -1,6 +1,6 @@
 import { bootstrapCloud, clearLocalCloudSession, warmCloudApi } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
-import { checkForAppUpdate, initializeStableUiFeatures, preflightAppUpdate } from './native-app-update.js';
+import { checkForAppUpdate, initializeStableUiFeatures } from './native-app-update.js';
 import { initializeAndroidBiometricLifecycle, prepareAndroidBiometricStartup } from './native-biometric-login.js';
 
 const appEnvironment = 'production';
@@ -419,11 +419,12 @@ async function start() {
     bootstrapValidationMode();
   } else {
     await warmCloudApi();
-    // Verifica rapidamente a versão antes da biometria, sem abrir o
-    // instalador nem atrasar o acesso se a rede estiver lenta.
-    await preflightAppUpdate().catch(() => undefined);
     const biometricStartup = await prepareAndroidBiometricStartup();
     if (biometricStartup.required && !biometricStartup.authenticated) clearLocalCloudSession();
+    // A base financeira sempre vem antes de qualquer verificação nativa de
+    // atualização. O AppUpdater pode recriar/pausar a Activity no Android e,
+    // se executado aqui, permite que a WebView seja remontada sem o estado da
+    // nuvem. Só montamos a interface depois desta barreira terminar.
     await bootstrapCloud();
   }
   window.MEG_NATIVE_NOTIFICATIONS = { sync: syncLocalDueNotifications };

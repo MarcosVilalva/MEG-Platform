@@ -65,6 +65,7 @@ const storage = new Map();
 globalThis.window = {
   localStorage: {
     setItem(key, value) { storage.set(key, value); },
+    getItem(key) { return storage.get(key) ?? null; },
   },
 };
 
@@ -74,6 +75,24 @@ assert.equal(storage.get('meg-cloud-revision-v1'), '7');
 const canonicalCache = JSON.parse(storage.get('meg-cloud-canonical-cache-v2'));
 assert.equal(canonicalCache.revision, 7);
 assert.deepEqual(canonicalCache.state, remote);
+
+const nonEmptyCachedState = {
+  transactions: [{ id: 'financeiro-real', amount: 125 }],
+  budgets: {},
+};
+storage.set('meg-financas-state-v4-paid-fixes', JSON.stringify(nonEmptyCachedState));
+assert.equal(
+  persistCanonicalRemoteState({ transactions: [], budgets: {} }, 8),
+  false,
+  'uma resposta remota vazia nunca deve apagar uma base local não vazia durante a abertura',
+);
+assert.deepEqual(
+  JSON.parse(storage.get('meg-financas-state-v4-paid-fixes')),
+  nonEmptyCachedState,
+);
+assert.equal(storage.get('meg-cloud-revision-v1'), '7');
+
+storage.set('meg-financas-state-v4-paid-fixes', JSON.stringify(remote));
 
 const cleanOpening = recoveryDecision({
   dirty: null,

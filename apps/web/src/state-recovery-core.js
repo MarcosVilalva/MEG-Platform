@@ -25,6 +25,20 @@ export function persistCanonicalRemoteState(remoteState, remoteRevision) {
   const storage = globalThis.window?.localStorage;
   if (!storage?.setItem) return false;
 
+  // Uma resposta remota vazia não pode apagar silenciosamente uma base local
+  // que contém lançamentos. Em aparelhos Android isso já aconteceu durante a
+  // retomada da API/Activity: o GET era tecnicamente válido, mas apontava para
+  // um estado vazio transitório e substituía o cache antes da UI ser montada.
+  // A remoção deliberada de todos os dados deve passar pelo fluxo explícito de
+  // restauração/reset, nunca por uma leitura de inicialização.
+  let cachedState = null;
+  try {
+    cachedState = JSON.parse(storage.getItem?.(STATE_KEY) || 'null');
+  } catch {}
+  if (transactionCount(remoteState) === 0 && transactionCount(cachedState) > 0) {
+    return false;
+  }
+
   const revision = Number(remoteRevision || 0);
   const rawState = JSON.stringify(remoteState);
   try {
