@@ -415,10 +415,17 @@ function setupInactivityLogout() {
 
 async function start() {
   if (!requireStagingAccess()) return;
+  let startupUpdate = { available: false };
   if (validationMode) {
     bootstrapValidationMode();
   } else {
     await warmCloudApi();
+    // No Android, a versão é consultada antes da biometria. Se houver uma
+    // atualização, o instalador é resolvido antes de autenticar ou montar a
+    // interface. A proteção de recuperação impede que uma resposta remota
+    // vazia substitua o cache financeiro após a eventual recriação da Activity.
+    startupUpdate = await checkForAppUpdate({ force: true, waitForDecision: true, timeoutMs: 2200, fetchAttempts: 1 });
+    if (startupUpdate?.decision === 'installer-launched') return;
     const biometricStartup = await prepareAndroidBiometricStartup();
     if (biometricStartup.required && !biometricStartup.authenticated) clearLocalCloudSession();
     // A base financeira sempre vem antes de qualquer verificação nativa de
@@ -438,10 +445,9 @@ async function start() {
     },
   });
   window.MEG_APP_UPDATE = { check: () => checkForAppUpdate({ force: true }) };
-  // Atualizações nunca podem bloquear a autenticação nem a leitura do banco.
-  // A versão 31 aguardava esta rotina antes da biometria e deixava o app sem
-  // dados quando a rede ou o instalador demorava a responder.
-  if (!validationMode) {
+  // Repete em segundo plano apenas quando a consulta inicial não conseguiu
+  // alcançar o manifesto. Não há duas verificações no fluxo normal.
+  if (!validationMode && startupUpdate?.error) {
     window.setTimeout(() => {
       checkForAppUpdate({ force: true }).catch(() => undefined);
     }, 1800);
