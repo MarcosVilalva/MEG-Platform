@@ -446,6 +446,7 @@ const els = {
   backupImport: document.querySelector("#backupImport"),
   backupImportStatus: document.querySelector("#backupImportStatus"),
   exportBackupBtn: document.querySelector("#exportBackupBtn"),
+  exportExecutiveExcelBtn: document.querySelector("#exportExecutiveExcelBtn"),
   exportCsvBtn: document.querySelector("#exportCsvBtn"),
   exportPdfReportBtn: document.querySelector("#exportPdfReportBtn"),
   dialog: document.querySelector("#transactionDialog"),
@@ -4877,6 +4878,43 @@ function exportCsv() {
   showToast("CSV exportado", "O arquivo de lançamentos foi gerado com sucesso.", "success");
 }
 
+async function exportExecutiveExcelReport() {
+  const button = els.exportExecutiveExcelBtn;
+  if (!button || button.disabled) return;
+  const originalMarkup = button.innerHTML;
+  button.disabled = true;
+  button.textContent = "Analisando suas finanças...";
+  try {
+    const { createExecutiveFinancialWorkbook, shareExecutiveFinancialWorkbook } = await import('./executive-financial-report.js');
+    const { start, end } = dateRangeForSelectedPeriod();
+    const report = createExecutiveFinancialWorkbook({
+      state: structuredClone(state),
+      start,
+      end,
+      periodLabel: periodLabel(),
+      owner: window.MEG_CLOUD?.user?.name || 'Usuário MEG',
+      generatedAt: new Date(),
+    });
+    const sharedNatively = await shareExecutiveFinancialWorkbook(report);
+    if (!sharedNatively) downloadBlob(report.blob, report.filename);
+    showToast(
+      "Relatório Excel concluído",
+      `${report.model.metrics.transactionCount} lançamentos analisados, saúde financeira ${report.model.metrics.healthScore}/100 e ${report.model.recommendations.length} recomendação(ões). ${sharedNatively ? 'Escolha onde salvar ou compartilhar o arquivo.' : 'O download foi iniciado.'}`,
+      "success",
+    );
+  } catch (cause) {
+    console.error('MEG executive Excel report failed', cause);
+    showToast(
+      "Não foi possível gerar o Excel",
+      cause instanceof Error ? cause.message : "Tente novamente após conferir a base carregada.",
+      "danger",
+    );
+  } finally {
+    button.disabled = false;
+    button.innerHTML = originalMarkup;
+  }
+}
+
 function escapeReportText(value) {
   return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }
@@ -5594,6 +5632,7 @@ els.budgetEditorGrid.addEventListener("click", handleBudgetClick);
 els.csvImport.addEventListener("change", handleCsvImport);
 els.backupImport.addEventListener("change", handleBackupImport);
 els.exportBackupBtn.addEventListener("click", exportBackup);
+els.exportExecutiveExcelBtn?.addEventListener("click", exportExecutiveExcelReport);
 els.exportCsvBtn.addEventListener("click", exportCsv);
 els.exportPdfReportBtn?.addEventListener("click", exportFinancialPdfReport);
 els.financialAccountCatalogForm.addEventListener("submit", addFinancialAccountCatalog);
