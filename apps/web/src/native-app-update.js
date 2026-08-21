@@ -1,5 +1,3 @@
-import './startup-api-readiness.js';
-
 let optionalUiPromise = null;
 
 /**
@@ -251,4 +249,3 @@ export async function checkForAppUpdate({ force = false, waitForDecision = false
     return { available: false, error: cause };
   }
 }
-

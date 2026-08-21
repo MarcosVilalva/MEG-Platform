@@ -26,6 +26,11 @@ assert.equal(
   'o APK deve consultar o plugin mesmo enquanto a ponte Capacitor ainda informa plataforma web'
 );
 assert.equal(
+  isPotentialNativeAndroidRuntime({ capacitor: nativeRuntime('web', false), bodyClassList: classList(), userAgent: '', mobileBuild: true }),
+  true,
+  'o sinal VITE_MOBILE_APP deve identificar o APK antes da ponte e do user agent'
+);
+assert.equal(
   isPotentialNativeAndroidRuntime({ capacitor: nativeRuntime('web', false), bodyClassList: classList(), userAgent: 'Mozilla/5.0 (Windows NT 10.0)' }),
   false,
   'o navegador comum não deve tentar abrir biometria nativa'
@@ -97,30 +102,33 @@ assert.equal(biometricLogin.includes('withBiometricTimeout'), false);
 assert.equal(biometricLogin.includes('@capgo/capacitor-native-biometric'), false);
 assert.match(biometricLogin, /NOT_NATIVE_ANDROID/);
 assert.match(legacyEntry, /await prepareAndroidBiometricStartup\(\)/);
-assert.match(legacyEntry, /if \(biometricStartup\.native\) clearLocalCloudSession\(\)/);
+assert.match(legacyEntry, /if \(nativeMobileMode\) \{[\s\S]*clearLocalCloudSession\(\)/);
+assert.match(legacyEntry, /consumePreparedAndroidBiometricCredentials\(\)/);
+assert.match(legacyEntry, /await bootstrapCloud\(\{ biometricCredentials, keepLoading: true \}\)/);
+assert.match(legacyEntry, /await warmCloudApi\(\{ keepLoading: true, retryUntilReady: true \}\)/);
+assert.doesNotMatch(nativeUpdate, /startup-api-readiness/);
 assert.equal(
   legacyEntry.includes('biometricStartup.native && !biometricStartup.authenticated'),
   false,
   'uma biometria aprovada também deve invalidar a sessão WebView anterior'
 );
 assert.equal(legacyEntry.includes('biometricStartup.required && !biometricStartup.authenticated'), false);
-assert.match(legacyEntry, /await bootstrapCloud\(\)/);
-assert.match(legacyEntry, /await warmCloudApi\(\)/);
 assert.match(legacyEntry, /preflightOnly:\s*true/);
 assert.equal(legacyEntry.includes("startupUpdate?.decision === 'installer-launched'"), false);
 assert.doesNotMatch(legacyEntry, /waitForStartupAppUpdate/);
 assert.ok(
-  legacyEntry.indexOf('await warmCloudApi()') < legacyEntry.indexOf('startupUpdate = await checkForAppUpdate')
+  legacyEntry.indexOf('await warmCloudApi({ keepLoading: true, retryUntilReady: true })') < legacyEntry.indexOf('startupUpdate = await checkForAppUpdate')
     && legacyEntry.indexOf('startupUpdate = await checkForAppUpdate') < legacyEntry.indexOf('await prepareAndroidBiometricStartup()')
-    && legacyEntry.indexOf('await prepareAndroidBiometricStartup()') < legacyEntry.indexOf('clearLocalCloudSession()')
-    && legacyEntry.indexOf('clearLocalCloudSession()') < legacyEntry.indexOf('await bootstrapCloud()')
-    && legacyEntry.indexOf('await prepareAndroidBiometricStartup()') < legacyEntry.indexOf('await bootstrapCloud()')
-    && legacyEntry.indexOf('await bootstrapCloud()') < legacyEntry.indexOf("await import('./legacy-app.js')")
+    && legacyEntry.indexOf('await prepareAndroidBiometricStartup()') < legacyEntry.indexOf('consumePreparedAndroidBiometricCredentials()')
+    && legacyEntry.indexOf('consumePreparedAndroidBiometricCredentials()') < legacyEntry.indexOf('clearLocalCloudSession()')
+    && legacyEntry.indexOf('clearLocalCloudSession()') < legacyEntry.indexOf('await bootstrapCloud({ biometricCredentials, keepLoading: true })')
+    && legacyEntry.indexOf('await prepareAndroidBiometricStartup()') < legacyEntry.indexOf('await bootstrapCloud({ biometricCredentials, keepLoading: true })')
+    && legacyEntry.indexOf('await bootstrapCloud({ biometricCredentials, keepLoading: true })') < legacyEntry.indexOf("await import('./legacy-app.js')")
     && legacyEntry.indexOf("await import('./legacy-app.js')") < legacyEntry.lastIndexOf('checkForAppUpdate({ force: true })'),
   'servidor e atualização devem preceder biometria, base e interface; retentativa permanece em segundo plano'
 );
 assert.ok(
-  legacyEntry.indexOf('await bootstrapCloud()') < legacyEntry.indexOf('if (!validationMode && startupUpdate?.available)'),
+  legacyEntry.indexOf('await bootstrapCloud({ biometricCredentials, keepLoading: true })') < legacyEntry.indexOf('if (!validationMode && startupUpdate?.available)'),
   'o instalador só pode ser oferecido depois da restauração da base real'
 );
 assert.match(nativeUpdate, /VERSION_FETCH_ATTEMPTS\s*=\s*3/);

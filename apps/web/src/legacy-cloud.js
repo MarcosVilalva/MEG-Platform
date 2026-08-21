@@ -102,15 +102,37 @@ export function clearLocalCloudSession() {
   clearSession();
 }
 
-export async function warmCloudApi() {
+export async function warmCloudApi({ keepLoading = false, retryUntilReady = false } = {}) {
   assertCloudApiConfigured();
-  showCloudLoading('Conectando ao servidor...', 'Preparando a nuvem antes da validação de segurança');
-  try {
-    const response = await resilientFetch(`${API_URL}/health`, { cache: 'no-store' }, { retries: 2, timeoutMs: 45_000 });
-    if (!response.ok) throw new Error(`API indisponível (${response.status}).`);
-    return response.json().catch(() => ({ status: 'ok' }));
-  } finally {
-    hideCloudLoading();
+  let attempt = 0;
+  while (true) {
+    attempt += 1;
+    showCloudLoading(
+      'Conectando ao banco de dados...',
+      attempt === 1
+        ? 'Preparando a nuvem antes da validação de segurança'
+        : `Tentativa ${attempt}. O MEG continuará tentando automaticamente`
+    );
+    try {
+      const response = await resilientFetch(`${API_URL}/health`, { cache: 'no-store' }, { retries: 0, timeoutMs: 15_000 });
+      if (!response.ok) throw new Error(`API indisponível (${response.status}).`);
+      console.info('[MEG database] conexão disponível', { attempt });
+      const payload = await response.json().catch(() => ({ status: 'ok' }));
+      if (!keepLoading) hideCloudLoading();
+      return payload;
+    } catch (cause) {
+      console.warn('[MEG database] tentativa de conexão falhou', { attempt, reason: cause?.message || String(cause) });
+      if (!retryUntilReady) {
+        if (!keepLoading) hideCloudLoading();
+        throw cause;
+      }
+      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      showCloudLoading(
+        offline ? 'Sem conexão com a internet' : 'Servidor ainda iniciando...',
+        'O MEG continuará tentando automaticamente antes de liberar seu acesso'
+      );
+      await wait(Math.min(1500 * attempt, 6000));
+    }
   }
 }
 
@@ -123,7 +145,7 @@ function assertStagingAdmin(user) {
   }
 }
 
-function showCloudLoading(message = 'Carregando dados financeiros...', detail = 'Sincronizando com a nuvem') {
+export function showCloudLoading(message = 'Carregando dados financeiros...', detail = 'Sincronizando com a nuvem') {
   let overlay = document.querySelector('#cloudLoadingOverlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -137,7 +159,7 @@ function showCloudLoading(message = 'Carregando dados financeiros...', detail = 
   overlay.classList.remove('hidden');
 }
 
-function hideCloudLoading() {
+export function hideCloudLoading() {
   document.querySelector('#cloudLoadingOverlay')?.classList.add('hidden');
 }
 
@@ -223,6 +245,25 @@ function friendlyAuthError(code) {
   return messages[code] || 'Não foi possível concluir a operação.';
 }
 
+async function authenticateCredentials(credentials) {
+  console.info('[MEG auth] criando sessão autenticada');
+  const response = await resilientFetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(credentials)
+  }, { retries: 1, timeoutMs: 20000 });
+  const payload = await response.json();
+  if (!response.ok) {
+    const error = new Error(friendlyAuthError(payload.error));
+    error.code = payload.error;
+    throw error;
+  }
+  assertStagingAdmin(payload.user);
+  persistSession(payload);
+  console.info('[MEG auth] sessão criada', { role: payload.user?.role || null });
+  return payload;
+}
+
 function authMarkup() {
   return `
     <div class="auth-shell" id="authShell">
@@ -288,6 +329,7 @@ function showAuthentication() {
   const register = document.querySelector('#registerForm');
   const forgot = document.querySelector('#forgotForm');
   let biometricStatus = { available: false, enabled: false };
+  hideCloudLoading();
 
   const inactivityMessage = sessionStorage.getItem('meg-inactivity-message');
   if (inactivityMessage) {
@@ -336,19 +378,7 @@ function showAuthentication() {
   let resolveAuth;
 
   async function loginWithCredentials(credentials, { offerBiometricSetup = false } = {}) {
-    const response = await resilientFetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials)
-    }, { retries: 1, timeoutMs: 20000 });
-    const payload = await response.json();
-    if (!response.ok) {
-      const error = new Error(friendlyAuthError(payload.error));
-      error.code = payload.error;
-      throw error;
-    }
-    assertStagingAdmin(payload.user);
-    persistSession(payload);
+    const payload = await authenticateCredentials(credentials);
     if (offerBiometricSetup && biometricStatus.available && !biometricStatus.enabled) {
       const wantsBiometric = window.confirm('Deseja usar biometria para entrar mais rápido nas próximas vezes neste aparelho?');
       if (wantsBiometric) {
@@ -459,7 +489,23 @@ function showAuthentication() {
   });
 }
 
-async function validateOrLogin() {
+async function validateOrLogin({ biometricCredentials = null } = {}) {
+  if (biometricCredentials?.email && biometricCredentials?.password) {
+    showCloudLoading('Biometria reconhecida', 'Criando uma sessão nova antes de carregar seus dados');
+    try {
+      return (await authenticateCredentials(biometricCredentials)).user;
+    } catch (cause) {
+      clearSession();
+      if (cause?.code === 'INVALID_CREDENTIALS') await clearBiometricLogin();
+      sessionStorage.setItem(
+        'meg-inactivity-message',
+        cause?.code === 'INVALID_CREDENTIALS'
+          ? 'Sua senha mudou. Entre novamente para ativar a biometria neste Android.'
+          : 'Não foi possível concluir o acesso biométrico. Entre com e-mail e senha.'
+      );
+      hideCloudLoading();
+    }
+  }
   const current = session();
   if (current.accessToken) {
     showCloudLoading('Validando acesso...', 'Conferindo sua sessão segura');
@@ -474,6 +520,7 @@ async function validateOrLogin() {
     clearSession();
     hideCloudLoading();
   }
+  hideCloudLoading();
   return showAuthentication();
 }
 
@@ -495,6 +542,12 @@ async function loadCloudState() {
       }
     : null;
   const isUsableState = Array.isArray(remoteState?.transactions);
+
+  console.info('[MEG database] app-state recebido', {
+    revision,
+    usable: isUsableState,
+    transactions: isUsableState ? remoteState.transactions.length : null,
+  });
 
   if (isUsableState) {
     let cachedState = null;
@@ -728,9 +781,9 @@ function startRealtimeSync() {
   syncChannel?.addEventListener('message', handleSyncChannelMessage);
 }
 
-export async function bootstrapCloud() {
+export async function bootstrapCloud({ biometricCredentials = null, keepLoading = false } = {}) {
   assertCloudApiConfigured();
-  const user = await validateOrLogin();
+  const user = await validateOrLogin({ biometricCredentials });
   showCloudLoading('Carregando seus dados...', 'Buscando a base mais recente');
   let cachedState = null;
   try { cachedState = JSON.parse(localStorage.getItem(STATE_KEY) || 'null'); } catch {}
@@ -783,7 +836,7 @@ export async function bootstrapCloud() {
     };
     window.MEG_REAL_STATE = cachedState;
   }
-  hideCloudLoading();
+  if (!keepLoading) hideCloudLoading();
   window.MEG_CLOUD = {
     user,
     apiUrl: API_URL,
