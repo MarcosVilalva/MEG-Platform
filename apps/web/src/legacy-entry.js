@@ -1,7 +1,12 @@
-import { bootstrapCloud, clearLocalCloudSession, warmCloudApi } from './legacy-cloud.js';
+import './startup-data-protection.js';
+import { bootstrapCloud, clearLocalCloudSession, hideCloudLoading, warmCloudApi } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { checkForAppUpdate, initializeStableUiFeatures } from './native-app-update.js';
-import { initializeAndroidBiometricLifecycle, prepareAndroidBiometricStartup } from './native-biometric-login.js';
+import {
+  consumePreparedAndroidBiometricCredentials,
+  initializeAndroidBiometricLifecycle,
+  prepareAndroidBiometricStartup,
+} from './native-biometric-login.js';
 
 const appEnvironment = 'production';
 const appEnvironmentSuffix = '';
@@ -16,6 +21,12 @@ const INACTIVITY_MESSAGE_KEY = 'meg-inactivity-message';
 
 let spreadsheetReaderPromise;
 let nativeNotificationsPromise;
+
+function traceStartup(stage, details = {}) {
+  const event = { stage, at: new Date().toISOString(), ...details };
+  window.MEG_STARTUP_TRACE = [...(window.MEG_STARTUP_TRACE || []), event].slice(-50);
+  console.info(`[MEG startup] ${stage}`, details);
+}
 
 async function getSpreadsheetReader() {
   spreadsheetReaderPromise ||= import('read-excel-file/browser');
@@ -414,35 +425,58 @@ function setupInactivityLogout() {
 }
 
 async function start() {
+  traceStartup('início', { nativeMobileMode, validationMode });
   if (!requireStagingAccess()) return;
   let startupUpdate = { available: false };
   if (validationMode) {
     bootstrapValidationMode();
+    hideCloudLoading();
   } else {
-    await warmCloudApi();
+    // Uma única barreira cobre conexão, atualização, biometria, nova sessão e
+    // GET /app-state. O Dashboard está presente no HTML e nunca pode aparecer
+    // antes de todas essas etapas terminarem.
+    await warmCloudApi({ keepLoading: true, retryUntilReady: true });
+    traceStartup('banco-disponível');
     // Consulte a versão antes da biometria, mas não abra o instalador enquanto
     // a sessão e a base ainda não foram restauradas. Alguns Androids retornam
     // do instalador sem recriar a WebView; interromper o bootstrap nesse ponto
     // deixava o aplicativo aberto sem dados.
     startupUpdate = await checkForAppUpdate({ force: true, preflightOnly: true, timeoutMs: 2200, fetchAttempts: 1 });
+    traceStartup('ota-verificada', { available: Boolean(startupUpdate?.available), error: Boolean(startupUpdate?.error) });
     const biometricStartup = await prepareAndroidBiometricStartup();
+    traceStartup('biometria-verificada', {
+      native: Boolean(biometricStartup.native),
+      available: Boolean(biometricStartup.available),
+      enabled: Boolean(biometricStartup.enabled),
+      authenticated: Boolean(biometricStartup.authenticated),
+      reason: biometricStartup.reason || null,
+    });
+    const biometricCredentials = biometricStartup.authenticated
+      ? consumePreparedAndroidBiometricCredentials()
+      : null;
     // A biometria confirma as credenciais guardadas pelo Android, não a sessão
     // que restou na WebView. Mesmo quando o prompt for aprovado, descarte essa
     // sessão anterior para obrigar o login biométrico a criar tokens novos para
     // o usuário/workspace correto antes do GET /app-state. Sem esta barreira,
     // uma sessão ainda válida de outro acesso podia ignorar a biometria recém
     // confirmada e abrir um workspace vazio.
-    if (biometricStartup.native) clearLocalCloudSession();
+    if (nativeMobileMode) {
+      clearLocalCloudSession();
+      traceStartup('sessão-web-descartada');
+    }
     // A base financeira sempre vem antes de qualquer verificação nativa de
     // atualização. O AppUpdater pode recriar/pausar a Activity no Android e,
     // se executado aqui, permite que a WebView seja remontada sem o estado da
     // nuvem. Só montamos a interface depois desta barreira terminar.
-    await bootstrapCloud();
+    await bootstrapCloud({ biometricCredentials, keepLoading: true });
+    traceStartup('base-carregada', { transactions: window.MEG_REAL_STATE?.transactions?.length ?? null });
   }
   window.MEG_NATIVE_NOTIFICATIONS = { sync: syncLocalDueNotifications };
   await import('./legacy-app.js');
   wireLegacyApp();
   await initializeStableUiFeatures();
+  hideCloudLoading();
+  traceStartup('dashboard-liberado', { transactions: window.MEG_APP?.getState?.()?.transactions?.length ?? null });
   await initializeAndroidBiometricLifecycle({
     onAuthenticationFailed: async () => {
       clearLocalCloudSession();
@@ -478,6 +512,8 @@ async function start() {
 }
 
 start().catch((cause) => {
+  console.error('[MEG startup] falha fatal', cause);
+  hideCloudLoading();
   const message = cause instanceof Error ? cause.message : 'Não foi possível iniciar o MEG.';
   document.body.insertAdjacentHTML('beforeend', `<div class="fatal-error"><strong>Não foi possível abrir o MEG</strong><span>${message}</span><button onclick="location.reload()">Tentar novamente</button></div>`);
 });

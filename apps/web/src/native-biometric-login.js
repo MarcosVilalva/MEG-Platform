@@ -60,7 +60,12 @@ export function isPotentialNativeAndroidRuntime({
   capacitor = Capacitor,
   bodyClassList = currentBodyClassList(),
   userAgent = currentUserAgent(),
+  mobileBuild = import.meta.env?.VITE_MOBILE_APP === 'true',
 } = {}) {
+  // O sinal de compilação é a fonte mais confiável durante o primeiro frame
+  // do APK. A ponte Capacitor pode ainda informar "web" e alguns WebViews
+  // alteram o user agent antes de os plugins nativos terminarem de registrar.
+  if (mobileBuild) return true;
   if (isNativeAndroidRuntime({ capacitor, bodyClassList, userAgent })) return true;
   const platform = capacitor?.getPlatform?.() || capacitor?.platform || '';
   return Boolean(
@@ -107,6 +112,10 @@ function consumeCachedCredentials() {
   cachedCredentials = null;
   cachedCredentialsAt = 0;
   return credentials;
+}
+
+export function consumePreparedAndroidBiometricCredentials() {
+  return consumeCachedCredentials();
 }
 
 function privacyCover() {
@@ -156,6 +165,11 @@ export async function getBiometricLoginStatus() {
       if (status && typeof status.available === 'boolean') {
         document.body?.classList?.add('native-mobile');
         document.body.dataset.nativeRuntime = 'android-biometric-plugin';
+        console.info('[MEG biometric] status recebido', {
+          available: Boolean(status.available),
+          enabled: Boolean(status.enabled),
+          attempt,
+        });
         return status;
       }
       lastCause = new Error('BIOMETRIC_STATUS_INVALID');
@@ -164,7 +178,9 @@ export async function getBiometricLoginStatus() {
     }
     if (attempt < BIOMETRIC_BRIDGE_ATTEMPTS) await delay(BIOMETRIC_BRIDGE_RETRY_MS);
   }
-  return { available: false, enabled: false, reason: lastCause?.message || 'PLUGIN_UNAVAILABLE' };
+  const reason = lastCause?.message || 'PLUGIN_UNAVAILABLE';
+  console.warn('[MEG biometric] plugin indisponível', { reason });
+  return { available: false, enabled: false, reason };
 }
 
 export async function saveBiometricLogin({ email, password }) {

@@ -11,6 +11,7 @@ const legacyStyles = read('legacy-styles.css');
 const ongoing = read('ongoing-card-installments.js');
 const legacyEntry = read('legacy-entry.js');
 const biometric = read('native-biometric-login.js');
+const indexHtml = read('../index.html');
 
 const webBranch = nativeUpdate.slice(
   nativeUpdate.indexOf("if (!nativeMobile)"),
@@ -32,6 +33,13 @@ for (const moduleName of forbiddenWebModules) {
 }
 
 assert.equal(nativeUpdate.includes('loadOptionalUiEnhancements();'), false, 'recursos opcionais não podem iniciar durante a avaliação do módulo');
+assert.equal(nativeUpdate.includes('startup-api-readiness'), false, 'a prontidão da API não pode liberar a interface em paralelo');
+assert.ok(
+  indexHtml.indexOf('id="cloudLoadingOverlay"') < indexHtml.indexOf('class="app-shell"'),
+  'a barreira de inicialização deve existir antes do Dashboard no primeiro frame'
+);
+assert.match(indexHtml, /Conectando ao banco de dados/);
+assert.match(legacyEntry, /import '\.\/startup-data-protection\.js'/);
 assert.equal(legacyApp.includes('premiumWebDashboard'), false, 'dashboard premium duplicado deve permanecer removido');
 assert.equal(legacyApp.includes('renderPremiumWebDashboard'), false, 'renderização premium duplicada deve permanecer removida');
 assert.equal(legacyStyles.includes('.premium-dashboard-web'), false, 'CSS premium pesado deve permanecer removido');
