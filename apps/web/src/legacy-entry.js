@@ -420,12 +420,11 @@ async function start() {
     bootstrapValidationMode();
   } else {
     await warmCloudApi();
-    // No Android, a versão é consultada antes da biometria. Se houver uma
-    // atualização, o instalador é resolvido antes de autenticar ou montar a
-    // interface. A proteção de recuperação impede que uma resposta remota
-    // vazia substitua o cache financeiro após a eventual recriação da Activity.
-    startupUpdate = await checkForAppUpdate({ force: true, waitForDecision: true, timeoutMs: 2200, fetchAttempts: 1 });
-    if (startupUpdate?.decision === 'installer-launched') return;
+    // Consulte a versão antes da biometria, mas não abra o instalador enquanto
+    // a sessão e a base ainda não foram restauradas. Alguns Androids retornam
+    // do instalador sem recriar a WebView; interromper o bootstrap nesse ponto
+    // deixava o aplicativo aberto sem dados.
+    startupUpdate = await checkForAppUpdate({ force: true, preflightOnly: true, timeoutMs: 2200, fetchAttempts: 1 });
     const biometricStartup = await prepareAndroidBiometricStartup();
     if (biometricStartup.required && !biometricStartup.authenticated) clearLocalCloudSession();
     // A base financeira sempre vem antes de qualquer verificação nativa de
@@ -445,9 +444,14 @@ async function start() {
     },
   });
   window.MEG_APP_UPDATE = { check: () => checkForAppUpdate({ force: true }) };
-  // Repete em segundo plano apenas quando a consulta inicial não conseguiu
-  // alcançar o manifesto. Não há duas verificações no fluxo normal.
-  if (!validationMode && startupUpdate?.error) {
+  // A consulta ocorre antes da biometria; a instalação só é oferecida depois
+  // que a base real já foi carregada e a interface pode sobreviver ao retorno
+  // da Activity do instalador.
+  if (!validationMode && startupUpdate?.available) {
+    window.setTimeout(() => {
+      checkForAppUpdate({ force: true }).catch(() => undefined);
+    }, 250);
+  } else if (!validationMode && startupUpdate?.error) {
     window.setTimeout(() => {
       checkForAppUpdate({ force: true }).catch(() => undefined);
     }, 1800);

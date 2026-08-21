@@ -74,7 +74,8 @@ assert.match(biometricLogin, /NOT_NATIVE_ANDROID/);
 assert.match(legacyEntry, /await prepareAndroidBiometricStartup\(\)/);
 assert.match(legacyEntry, /await bootstrapCloud\(\)/);
 assert.match(legacyEntry, /await warmCloudApi\(\)/);
-assert.match(legacyEntry, /startupUpdate\?\.decision === 'installer-launched'/);
+assert.match(legacyEntry, /preflightOnly:\s*true/);
+assert.equal(legacyEntry.includes("startupUpdate?.decision === 'installer-launched'"), false);
 assert.doesNotMatch(legacyEntry, /waitForStartupAppUpdate/);
 assert.ok(
   legacyEntry.indexOf('await warmCloudApi()') < legacyEntry.indexOf('startupUpdate = await checkForAppUpdate')
@@ -83,6 +84,10 @@ assert.ok(
     && legacyEntry.indexOf('await bootstrapCloud()') < legacyEntry.indexOf("await import('./legacy-app.js')")
     && legacyEntry.indexOf("await import('./legacy-app.js')") < legacyEntry.lastIndexOf('checkForAppUpdate({ force: true })'),
   'servidor e atualização devem preceder biometria, base e interface; retentativa permanece em segundo plano'
+);
+assert.ok(
+  legacyEntry.indexOf('await bootstrapCloud()') < legacyEntry.indexOf('if (!validationMode && startupUpdate?.available)'),
+  'o instalador só pode ser oferecido depois da restauração da base real'
 );
 assert.match(nativeUpdate, /VERSION_FETCH_ATTEMPTS\s*=\s*3/);
 assert.match(legacyEntry, /fetchAttempts: 1/);
