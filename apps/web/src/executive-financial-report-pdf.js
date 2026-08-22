@@ -277,11 +277,11 @@ function addBackground(page) {
 }
 
 function addHeader(page, title, subtitle, pageNumber) {
-  page.roundedRect(MARGIN, 23, 36, 36, 11, { fill: COLORS.teal });
-  page.text(MARGIN, 30, 'M', { size: 20, font: 'bold', color: '#063f37', align: 'center', width: 36 });
-  page.text(MARGIN + 48, 22, 'MEG FINANÇAS', { size: 7.2, font: 'bold', color: COLORS.teal });
-  page.text(MARGIN + 48, 34, title, { size: 13.2, font: 'bold' });
-  page.text(MARGIN + 48, 53, subtitle, { size: 6.8, color: COLORS.muted });
+  page.roundedRect(MARGIN, 23, 42, 36, 11, { fill: COLORS.teal });
+  page.text(MARGIN, 34, 'MEG', { size: 10.8, font: 'bold', color: '#063f37', align: 'center', width: 42 });
+  page.text(MARGIN + 54, 22, 'MEG FINANÇAS', { size: 7.2, font: 'bold', color: COLORS.teal });
+  page.text(MARGIN + 54, 34, title, { size: 13.2, font: 'bold' });
+  page.text(MARGIN + 54, 53, subtitle, { size: 6.8, color: COLORS.muted });
   page.roundedRect(PAGE_WIDTH - MARGIN - 60, 29, 60, 23, 11, { fill: COLORS.surfaceAlt, stroke: COLORS.border, lineWidth: 0.6 });
   page.text(PAGE_WIDTH - MARGIN - 60, 35, `PÁGINA ${pageNumber}`, { size: 6.6, font: 'bold', color: COLORS.teal, align: 'center', width: 60 });
   page.line(MARGIN, 78, PAGE_WIDTH - MARGIN, 78, { color: COLORS.border, lineWidth: 0.7 });
