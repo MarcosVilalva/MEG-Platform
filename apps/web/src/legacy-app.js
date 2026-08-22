@@ -446,7 +446,6 @@ const els = {
   backupImport: document.querySelector("#backupImport"),
   backupImportStatus: document.querySelector("#backupImportStatus"),
   exportBackupBtn: document.querySelector("#exportBackupBtn"),
-  exportExecutiveExcelBtn: document.querySelector("#exportExecutiveExcelBtn"),
   exportCsvBtn: document.querySelector("#exportCsvBtn"),
   exportPdfReportBtn: document.querySelector("#exportPdfReportBtn"),
   dialog: document.querySelector("#transactionDialog"),
@@ -4878,16 +4877,16 @@ function exportCsv() {
   showToast("CSV exportado", "O arquivo de lançamentos foi gerado com sucesso.", "success");
 }
 
-async function exportExecutiveExcelReport() {
-  const button = els.exportExecutiveExcelBtn;
-  if (!button || button.disabled) return;
+async function exportFinancialPdfReport() {
+  const button = els.exportPdfReportBtn;
+  if (!button || button.disabled || document.body.classList.contains("native-mobile")) return;
   const originalMarkup = button.innerHTML;
   button.disabled = true;
-  button.textContent = "Lendo a base do MEG...";
+  button.textContent = "Analisando a base do MEG...";
   try {
-    const { createExecutiveFinancialWorkbook, shareExecutiveFinancialWorkbook } = await import('./executive-financial-report.js');
+    const { createExecutiveFinancialPdf } = await import('./executive-financial-report-pdf.js');
     const { min: start, max: end } = availableDateBounds();
-    const report = createExecutiveFinancialWorkbook({
+    const report = createExecutiveFinancialPdf({
       state: structuredClone(state),
       start,
       end,
@@ -4895,17 +4894,16 @@ async function exportExecutiveExcelReport() {
       owner: window.MEG_CLOUD?.user?.name || 'Usuário MEG',
       generatedAt: new Date(),
     });
-    const sharedNatively = await shareExecutiveFinancialWorkbook(report);
-    if (!sharedNatively) downloadBlob(report.blob, report.filename);
+    downloadBlob(report.blob, report.filename);
     showToast(
-      "Relatório Excel concluído",
-      `A base do MEG foi analisada: ${report.model.metrics.transactionCount} lançamentos, saúde financeira ${report.model.metrics.healthScore}/100 e ${report.model.recommendations.length} recomendação(ões). ${sharedNatively ? 'Escolha onde salvar ou compartilhar o arquivo.' : 'O download foi iniciado.'}`,
+      "Super relatório concluído",
+      `O PDF analisou ${report.model.metrics.transactionCount} lançamentos, calculou saúde financeira ${report.model.metrics.healthScore}/100 e gerou ${report.model.recommendations.length} recomendação(ões).`,
       "success",
     );
   } catch (cause) {
-    console.error('MEG executive Excel report failed', cause);
+    console.error('MEG executive PDF report failed', cause);
     showToast(
-      "Não foi possível gerar o Excel",
+      "Não foi possível gerar o PDF",
       cause instanceof Error ? cause.message : "Tente novamente após conferir a base carregada.",
       "danger",
     );
@@ -4913,37 +4911,6 @@ async function exportExecutiveExcelReport() {
     button.disabled = false;
     button.innerHTML = originalMarkup;
   }
-}
-
-function escapeReportText(value) {
-  return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
-}
-
-function exportFinancialPdfReport() {
-  const { start, end } = dateRangeForSelectedPeriod();
-  const summary = financialSummaryForPeriod();
-  const periodItems = selectedTransactions();
-  const expenses = periodItems.filter((item) => item.type === "expense");
-  const byGroup = new Map();
-  expenses.forEach((item) => {
-    const label = item.group || item.category || "Sem categoria";
-    byGroup.set(label, (byGroup.get(label) || 0) + Number(item.expenseAmount || item.amount || 0));
-  });
-  const ranking = [...byGroup.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
-  const projected = summary.projectedBalance;
-  const insight = projected < 0
-    ? `Atenção: faltam ${money.format(Math.abs(projected))} para cobrir todas as despesas do recorte.`
-    : `Boa margem: após reservar as pendências, sobra ${money.format(projected)} no recorte.`;
-  const popup = window.open("", "meg-financial-report", "width=920,height=760");
-  if (!popup) {
-    showToast("Relatório bloqueado", "Permita janelas deste site para gerar o PDF.", "warning");
-    return;
-  }
-  const rankingRows = ranking.map(([group, value]) => `<tr><td>${escapeReportText(group)}</td><td>${money.format(value)}</td></tr>`).join("") || '<tr><td colspan="2">Sem despesas no período.</td></tr>';
-  popup.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório MEG Finanças</title><style>body{font-family:Arial,sans-serif;color:#102a26;margin:38px}header{background:#075e54;color:#fff;border-radius:18px;padding:26px}h1{margin:0;font-size:28px}small{color:#d6fff7}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}.card{border:1px solid #d8e6e1;border-radius:14px;padding:15px}.card span{display:block;font-size:11px;color:#52716b;font-weight:bold;text-transform:uppercase}.card strong{font-size:21px;display:block;margin-top:7px}.risk{color:#b91c1c}.good{color:#047857}.insight{background:#f2f7f5;border-left:5px solid #0f766e;padding:14px;border-radius:10px;margin:18px 0}table{width:100%;border-collapse:collapse}th,td{padding:11px;border-bottom:1px solid #d8e6e1;text-align:left}th{font-size:12px;color:#52716b;text-transform:uppercase}@media print{body{margin:16px}.no-print{display:none}}</style></head><body><header><small>MEG FINANCIAL OS · RELATÓRIO GERENCIAL</small><h1>Panorama financeiro</h1><p>${formatDate(start)} a ${formatDate(end)} · emitido em ${new Date().toLocaleString("pt-BR")}</p></header><section class="cards"><div class="card"><span>Receitas</span><strong>${money.format(summary.availableIncome)}</strong></div><div class="card"><span>Despesas pagas</span><strong>${money.format(summary.paidExpense)}</strong></div><div class="card"><span>Pendências</span><strong>${money.format(summary.pendingExpense)}</strong></div><div class="card"><span>Saldo projetado</span><strong class="${projected < 0 ? "risk" : "good"}">${money.format(projected)}</strong></div></section><section class="insight"><strong>Leitura do MEG</strong><br>${escapeReportText(insight)}</section><h2>Maiores despesas por grupo</h2><table><thead><tr><th>Grupo</th><th>Valor</th></tr></thead><tbody>${rankingRows}</tbody></table><h2>Indicadores</h2><p>${periodItems.length} lançamento(s) no período · ${expenses.filter((item) => item.status === "pending").length} despesa(s) pendente(s) · fechamento operacional de ${money.format(summary.closingBalance)}.</p><button class="no-print" onclick="window.print()">Salvar como PDF / Imprimir</button></body></html>`);
-  popup.document.close();
-  popup.focus();
-  showToast("Relatório preparado", "Na nova janela, use “Salvar como PDF”.", "success");
 }
 
 function csvCell(value) {
@@ -5632,9 +5599,12 @@ els.budgetEditorGrid.addEventListener("click", handleBudgetClick);
 els.csvImport.addEventListener("change", handleCsvImport);
 els.backupImport.addEventListener("change", handleBackupImport);
 els.exportBackupBtn.addEventListener("click", exportBackup);
-els.exportExecutiveExcelBtn?.addEventListener("click", exportExecutiveExcelReport);
 els.exportCsvBtn.addEventListener("click", exportCsv);
-els.exportPdfReportBtn?.addEventListener("click", exportFinancialPdfReport);
+if (els.exportPdfReportBtn) {
+  const nativeMobile = document.body.classList.contains("native-mobile");
+  els.exportPdfReportBtn.hidden = nativeMobile;
+  if (!nativeMobile) els.exportPdfReportBtn.addEventListener("click", exportFinancialPdfReport);
+}
 els.financialAccountCatalogForm.addEventListener("submit", addFinancialAccountCatalog);
 els.newFinancialAccountTypeInput.addEventListener("change", () => refreshFinancialAccountSubtypeOptions());
 els.groupCatalogForm.addEventListener("submit", addGroupCatalog);

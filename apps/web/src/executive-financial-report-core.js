@@ -28,6 +28,16 @@ function roundMoney(value) {
   return Math.round((Number(value) || 0) * 100) / 100;
 }
 
+function formatMoney(value) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+    .format(Number(value) || 0)
+    .replace(/\u00a0/g, ' ');
+}
+
+function formatRate(value) {
+  return `${(Number(value) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+}
+
 function itemGroup(item) {
   return String(item?.group || item?.category || 'Sem categoria').trim() || 'Sem categoria';
 }
@@ -98,7 +108,7 @@ function generateRecommendations(model) {
     recommendations.push(recommendation(
       'CRÍTICA',
       'Eliminar o déficit projetado',
-      `Reduza, adie ou renegocie ao menos R$ ${Math.abs(metrics.projectedBalance).toFixed(2)} antes de assumir novas despesas.`,
+      `Reduza, adie ou renegocie ao menos ${formatMoney(Math.abs(metrics.projectedBalance))} antes de assumir novas despesas.`,
       Math.abs(metrics.projectedBalance),
       'As receitas e o saldo disponível não cobrem todas as despesas lançadas no período.',
     ));
@@ -110,7 +120,7 @@ function generateRecommendations(model) {
       `Regularizar ${metrics.overdueCount} conta(s) vencida(s)`,
       'Priorize contas com juros, risco de bloqueio de serviço ou impacto no histórico de crédito.',
       metrics.overdueValue,
-      `As pendências vencidas somam R$ ${metrics.overdueValue.toFixed(2)}.`,
+      `As pendências vencidas somam ${formatMoney(metrics.overdueValue)}.`,
     ));
   } else if (pending.length > 0) {
     recommendations.push(recommendation(
@@ -127,9 +137,9 @@ function generateRecommendations(model) {
     recommendations.push(recommendation(
       metrics.savingsRate < 0 ? 'CRÍTICA' : 'ALTA',
       'Construir uma taxa de poupança de 20%',
-      `Direcione mais R$ ${gap.toFixed(2)} por mês para reserva, investimento ou antecipação de dívidas.`,
+      `Direcione mais ${formatMoney(gap)} por mês para reserva, investimento ou antecipação de dívidas.`,
       gap,
-      `A capacidade histórica estimada é ${(metrics.savingsRate * 100).toFixed(1)}% da renda média.`,
+      `A capacidade histórica estimada é ${formatRate(metrics.savingsRate * 100)} da renda média.`,
     ));
   } else if (metrics.averageIncome > 0) {
     recommendations.push(recommendation(
@@ -137,7 +147,7 @@ function generateRecommendations(model) {
       'Proteger a boa capacidade de poupança',
       'Automatize a transferência da reserva no dia do recebimento da renda.',
       metrics.savingsCapacity,
-      `A capacidade histórica estimada está em ${(metrics.savingsRate * 100).toFixed(1)}%.`,
+      `A capacidade histórica estimada está em ${formatRate(metrics.savingsRate * 100)}.`,
     ));
   }
 
@@ -145,9 +155,9 @@ function generateRecommendations(model) {
     recommendations.push(recommendation(
       'ALTA',
       'Completar a reserva de emergência',
-      `Acumule R$ ${metrics.emergencyGap.toFixed(2)} para alcançar seis meses das despesas essenciais médias.`,
+      `Acumule ${formatMoney(metrics.emergencyGap)} para alcançar seis meses das despesas essenciais médias.`,
       metrics.emergencyGap,
-      `A meta calculada é R$ ${metrics.emergencyGoal.toFixed(2)}.`,
+      `A meta calculada é ${formatMoney(metrics.emergencyGoal)}.`,
     ));
   }
 
@@ -157,9 +167,9 @@ function generateRecommendations(model) {
     recommendations.push(recommendation(
       'MÉDIA',
       `Revisar gastos de ${topFlexible.category}`,
-      `Busque uma redução inicial de R$ ${target.toFixed(2)} no período, começando pelos itens de menor impacto na qualidade de vida.`,
+      `Busque uma redução inicial de ${formatMoney(target)} no período, começando pelos itens de menor impacto na qualidade de vida.`,
       target,
-      `É o maior grupo flexível, com R$ ${topFlexible.total.toFixed(2)}.`,
+      `É o maior grupo flexível, com ${formatMoney(topFlexible.total)}.`,
     ));
   }
 
@@ -168,9 +178,9 @@ function generateRecommendations(model) {
     recommendations.push(recommendation(
       'MÉDIA',
       `Corrigir a meta de ${budgetOverrun.category}`,
-      `Reduza R$ ${budgetOverrun.variance.toFixed(2)} ou ajuste conscientemente a meta para refletir a realidade.`,
+      `Reduza ${formatMoney(budgetOverrun.variance)} ou ajuste conscientemente a meta para refletir a realidade.`,
       budgetOverrun.variance,
-      `O gasto ficou ${(budgetOverrun.utilization * 100).toFixed(1)}% da meta definida.`,
+      `O gasto ficou em ${formatRate(budgetOverrun.utilization * 100)} da meta definida.`,
     ));
   }
 
@@ -181,7 +191,7 @@ function generateRecommendations(model) {
       `Reduzir o uso do cartão ${stressedCard.name}`,
       'Evite novas parcelas até que a utilização fique abaixo de 50% do limite.',
       stressedCard.pending,
-      `A utilização estimada está em ${(stressedCard.usage * 100).toFixed(1)}% do limite.`,
+      `A utilização estimada está em ${formatRate(stressedCard.usage * 100)} do limite.`,
     ));
   }
 
