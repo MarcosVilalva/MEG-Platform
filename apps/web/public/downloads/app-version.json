@@ -1,8 +1,8 @@
 {
-  "versionCode": 144,
-  "versionName": "1.1.144",
-  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=144",
-  "sha256": "3bdf79f78db69131ddb6ed29830d4ae2161c10cc1c88b20e3d07656dd3588ad6",
+  "versionCode": 151,
+  "versionName": "1.1.151",
+  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=151",
+  "sha256": "83405706c7694df70047f3d39e1e1839a23b7b5970bb51052420d57dcc904043",
   "mandatory": false,
   "releaseNotes": "Conexão Android corrigida: rede nativa, biometria e base carregadas antes do Dashboard."
 }
