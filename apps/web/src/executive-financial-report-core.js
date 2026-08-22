@@ -5,6 +5,18 @@ const ESSENTIAL_GROUPS = new Set([
   'SAÚDE', 'SUPERMERCADO', 'TITULOS/PREVIDÊNCIA', 'TRANSPORTE',
 ].map(normalizeText));
 
+const LIFESTYLE_GROUPS = new Set([
+  'BEBIDAS', 'ELETRO', 'ELETRO/ELETRONICOS', 'FAST FOOD', 'LAZER', 'PRESENTES', 'VESTUARIO',
+].map(normalizeText));
+
+const DEVELOPMENT_GROUPS = new Set([
+  'CURSOS', 'EDUCACAO', 'MAT. ESCOLAR',
+].map(normalizeText));
+
+const INVESTMENT_GROUPS = new Set([
+  'INVESTIMENTOS', 'TITULOS/PREVIDENCIA',
+].map(normalizeText));
+
 function normalizeText(value) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
 }
@@ -32,6 +44,17 @@ function itemGroup(item) {
 
 function itemExpenseType(item) {
   return String(item?.expenseClass || 'Não classificada').trim() || 'Não classificada';
+}
+
+function managerialGroup(item) {
+  const category = normalizeText(itemGroup(item));
+  const expenseClass = normalizeText(itemExpenseType(item));
+  if (expenseClass.includes('INVEST') || INVESTMENT_GROUPS.has(category)) return 'INVESTIMENTOS';
+  if (expenseClass.includes('DIVIDA') || category === normalizeText('PGTO DE DIVIDAS')) return 'DÍVIDAS';
+  if (DEVELOPMENT_GROUPS.has(category)) return 'DESENVOLVIMENTO';
+  if (ESSENTIAL_GROUPS.has(category)) return 'ESSENCIAIS';
+  if (LIFESTYLE_GROUPS.has(category)) return 'ESTILO DE VIDA';
+  return 'OUTROS';
 }
 
 function isPaid(item) {
@@ -118,10 +141,10 @@ function generateRecommendations(model) {
     ));
   } else if (metrics.monthlyGap > 0) {
     recommendations.push(recommendation(
-      'CRÍTICA', 'Atingir a receita mínima saudável',
-      `Eleve a receita média em ${formatMoney(metrics.monthlyGap)} ou reduza despesas no mesmo valor.`,
-      metrics.monthlyGap,
-      `A receita saudável estimada é ${formatMoney(metrics.healthyIncome)} por mês, já considerando poupança de 20%.`,
+      'CRÍTICA', 'Executar o plano híbrido recomendado',
+      `Combine aumento de receita de ${formatMoney(metrics.hybridIncomeIncrease)} com redução de despesas de ${formatMoney(metrics.hybridExpenseReduction)} por mês.`,
+      metrics.hybridIncomeIncrease + metrics.hybridExpenseReduction,
+      `A combinação leva a margem mensal para ${formatRate(metrics.hybridSavingsRate * 100)}, com receita de ${formatMoney(metrics.hybridIncome)} e despesa de ${formatMoney(metrics.hybridExpense)}.`,
     ));
   } else {
     recommendations.push(recommendation(
@@ -263,6 +286,15 @@ export function buildExecutiveFinancialModel({ state, start, end, generatedAt = 
     .map(([type, total]) => ({ type, total, share: expense > 0 ? total / expense : 0, monthlyAverage: roundMoney(total / activeMonths) }))
     .sort((a, b) => b.total - a.total || a.type.localeCompare(b.type, 'pt-BR'));
 
+  const managerialGroups = [...aggregateExpenses(realizedExpenses, managerialGroup).entries()]
+    .map(([group, total]) => ({
+      group,
+      total,
+      share: expense > 0 ? total / expense : 0,
+      monthlyAverage: roundMoney(total / activeMonths),
+    }))
+    .sort((a, b) => b.total - a.total || a.group.localeCompare(b.group, 'pt-BR'));
+
   const budgetRows = categories.map((item) => ({ ...item }));
   Object.entries(budgets).forEach(([category, monthlyBudget]) => {
     if (budgetRows.some((item) => normalizeText(item.category) === normalizeText(category))) return;
@@ -270,6 +302,10 @@ export function buildExecutiveFinancialModel({ state, start, end, generatedAt = 
     budgetRows.push({ category, total: 0, share: 0, essential: ESSENTIAL_GROUPS.has(normalizeText(category)), monthlyAverage: 0, monthlyBudget: value, budget: value, variance: -value, utilization: 0 });
   });
   budgetRows.sort((a, b) => b.monthlyAverage - a.monthlyAverage || a.category.localeCompare(b.category, 'pt-BR'));
+  const budgetOpportunities = budgetRows
+    .filter((item) => item.monthlyBudget > 0 && item.variance > 0)
+    .sort((a, b) => b.variance - a.variance || b.utilization - a.utilization)
+    .slice(0, 6);
 
   const accounts = Array.isArray(catalogs.accounts) ? catalogs.accounts : [];
   const monetaryAccounts = accounts.filter((account) => normalizeText(account.type) !== 'BENEFIT');
@@ -317,17 +353,45 @@ export function buildExecutiveFinancialModel({ state, start, end, generatedAt = 
   const minimumIncome = roundMoney(averageExpense);
   const monthlyGap = roundMoney(Math.max(healthyIncome - averageIncome, 0));
   const monthlySurplus = roundMoney(Math.max(averageIncome - healthyIncome, 0));
+  const actualMarginRate = averageIncome > 0 ? savingsCapacity / averageIncome : 0;
+  const healthyExpenseCeiling = roundMoney(averageIncome * 0.8);
+  const expenseReductionRequired = roundMoney(Math.max(averageExpense - healthyExpenseCeiling, 0));
+  const incomeIncreaseRequired = monthlyGap;
+  const rawHybridIncomeIncrease = incomeIncreaseRequired / 2;
+  const hybridIncomeIncrease = roundMoney(incomeIncreaseRequired > 200
+    ? Math.round(rawHybridIncomeIncrease / 100) * 100
+    : rawHybridIncomeIncrease);
+  const hybridExpenseReduction = roundMoney(Math.max(
+    averageExpense - 0.8 * (averageIncome + hybridIncomeIncrease),
+    0,
+  ));
+  const hybridIncome = roundMoney(averageIncome + hybridIncomeIncrease);
+  const hybridExpense = roundMoney(Math.max(averageExpense - hybridExpenseReduction, 0));
+  const hybridSavings = roundMoney(hybridIncome - hybridExpense);
+  const hybridSavingsRate = hybridIncome > 0 ? hybridSavings / hybridIncome : 0;
   const emergencyGoal = roundMoney(essentialAverage * 6);
   const emergencyGap = roundMoney(Math.max(emergencyGoal - Math.max(currentBalance, 0), 0));
   const overdueValue = roundMoney(overdue.reduce((sum, item) => sum + item.value, 0));
   const futureValue = roundMoney(futureCommitments.reduce((sum, item) => sum + item.value, 0));
   const next30Value = roundMoney(next30.reduce((sum, item) => sum + item.value, 0));
+  const cashCoverage30 = next30Value > 0 ? Math.max(currentBalance, 0) / next30Value : 1;
+  const unfunded30 = roundMoney(Math.max(next30Value - Math.max(currentBalance, 0), 0));
+  const afterAverageIncome30 = roundMoney(currentBalance + averageIncome - next30Value);
+  const otherExpenseAverage = roundMoney(Math.max(averageExpense - essentialAverage, 0));
   const savingsScore = clamp(savingsRate / 0.2, 0, 1) * 40;
   const essentialScore = essentialRatio <= 0.5 ? 25 : clamp(1 - ((essentialRatio - 0.5) / 0.35), 0, 1) * 25;
   const balanceScore = currentBalance >= 0 ? 20 : clamp(1 + currentBalance / Math.max(averageIncome, 1), 0, 1) * 20;
   const punctualityScore = overdue.length ? clamp(1 - overdue.length / Math.max(allPending.length, 1), 0, 1) * 15 : 15;
   const hasSufficientData = realizedItems.length > 0 && averageIncome > 0;
-  const healthScore = hasSufficientData ? Math.round(clamp(savingsScore + essentialScore + balanceScore + punctualityScore, 0, 100)) : 0;
+  const scoreComponents = [
+    { label: 'Poupança', score: hasSufficientData ? Math.round(savingsScore) : 0, max: 40 },
+    { label: 'Essenciais', score: hasSufficientData ? Math.round(essentialScore) : 0, max: 25 },
+    { label: 'Saldo', score: hasSufficientData ? Math.round(balanceScore) : 0, max: 20 },
+    { label: 'Pontualidade', score: hasSufficientData ? Math.round(punctualityScore) : 0, max: 15 },
+  ];
+  const healthScore = hasSufficientData
+    ? Math.round(clamp(scoreComponents.reduce((sum, item) => sum + item.score, 0), 0, 100))
+    : 0;
 
   const metrics = {
     income, expense, paidExpense: expense, operatingResult, currentBalance,
@@ -337,8 +401,13 @@ export function buildExecutiveFinancialModel({ state, start, end, generatedAt = 
     futureCount: futureCommitments.length, futureValue, next30Count: next30.length, next30Value,
     averageIncome, averageExpense, savingsCapacity, savingsRate, savingsGoal,
     expenseRatio, essentialAverage: roundMoney(essentialAverage), essentialRatio,
+    otherExpenseAverage, actualMarginRate, healthyExpenseCeiling,
     minimumIncome, healthyIncome, monthlyGap, monthlySurplus,
+    incomeIncreaseRequired, expenseReductionRequired,
+    hybridIncomeIncrease, hybridExpenseReduction, hybridIncome, hybridExpense,
+    hybridSavings, hybridSavingsRate,
     emergencyGoal, currentReserve: roundMoney(Math.max(currentBalance, 0)), emergencyGap,
+    cashCoverage30, unfunded30, afterAverageIncome30,
     hasSufficientData, healthScore,
     healthStatus: !hasSufficientData ? 'SEM DADOS SUFICIENTES' : healthScore >= 80 ? 'SAUDÁVEL' : healthScore >= 60 ? 'EM ATENÇÃO' : 'PRECISA DE REEQUILÍBRIO',
   };
@@ -350,7 +419,8 @@ export function buildExecutiveFinancialModel({ state, start, end, generatedAt = 
       periodLabel: `Últimos 12 meses realizados, ${isoDateLabel(analysisStart)} a ${isoDateLabel(analysisEnd)}`,
       source: 'MEG Finanças, base autenticada na nuvem', methodologyVersion: '2.0',
     },
-    metrics, monthly, categories, expenseTypes, budgetRows, overdue, futureCommitments,
+    metrics, monthly, categories, expenseTypes, managerialGroups, scoreComponents,
+    budgetRows, budgetOpportunities, overdue, futureCommitments,
     upcoming: allPending.filter((item) => item.date >= referenceDate).slice(0, 10),
     futureMonthly, accountRows, cardRows, paymentMethods, transactions: realizedItems,
   };
