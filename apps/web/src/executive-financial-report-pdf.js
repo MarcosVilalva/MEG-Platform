@@ -341,119 +341,139 @@ function priorityTone(priority) {
   return { fill: COLORS.greenSoft, value: COLORS.green };
 }
 
+function horizontalBars(page, { x, top, width, height, items, labelWidth = 116 }) {
+  const maximum = Math.max(1, ...items.map((item) => Number(item.value) || 0));
+  const rowHeight = height / Math.max(items.length, 1);
+  items.forEach((item, index) => {
+    const rowTop = top + index * rowHeight;
+    const trackX = x + labelWidth;
+    const trackWidth = width - labelWidth - 76;
+    const barWidth = Math.max(2, trackWidth * ((Number(item.value) || 0) / maximum));
+    page.text(x, rowTop + 7, truncate(item.label, labelWidth - 8, 7.6, 'bold'), { size: 7.6, font: 'bold', color: COLORS.ink });
+    page.rect(trackX, rowTop + 5, trackWidth, 13, { fill: '#e9f1ef' });
+    page.rect(trackX, rowTop + 5, barWidth, 13, { fill: item.color || COLORS.teal });
+    page.text(trackX + trackWidth + 7, rowTop + 7, item.display || compactMoney(item.value), { size: 7.2, font: 'bold', color: item.color || COLORS.tealDark });
+    if (item.subtitle) page.text(x, rowTop + 22, item.subtitle, { size: 6.5, color: COLORS.muted });
+  });
+  if (!items.length) page.text(x + 10, top + 28, 'Sem dados suficientes para exibir.', { size: 8, color: COLORS.muted });
+}
+
+function incomeTargetChart(page, { x, top, width, metrics }) {
+  const items = [
+    { label: 'Receita média atual', value: metrics.averageIncome, color: COLORS.blue, display: money(metrics.averageIncome) },
+    { label: 'Mínimo para equilibrar', value: metrics.minimumIncome, color: COLORS.amber, display: money(metrics.minimumIncome) },
+    { label: 'Meta financeira saudável', value: metrics.healthyIncome, color: COLORS.green, display: money(metrics.healthyIncome) },
+  ];
+  horizontalBars(page, { x, top, width, height: 126, items, labelWidth: 132 });
+  const gap = metrics.monthlyGap;
+  const tone = gap > 0 ? { fill: COLORS.redSoft, value: COLORS.red } : { fill: COLORS.greenSoft, value: COLORS.green };
+  page.rect(x, top + 130, width, 42, { fill: tone.fill, stroke: COLORS.border, lineWidth: 0.5 });
+  page.text(x + 10, top + 9 + 130, gap > 0 ? 'AJUSTE MENSAL NECESSÁRIO' : 'MARGEM MENSAL ACIMA DA META', { size: 7.2, font: 'bold', color: COLORS.muted });
+  page.text(x + 10, top + 23 + 130, money(gap > 0 ? gap : metrics.monthlySurplus), { size: 12, font: 'bold', color: tone.value });
+}
+
+function expenseTypeChart(page, { x, top, width, height, items }) {
+  const palette = [COLORS.teal, COLORS.blue, COLORS.amber, '#8b5cf6', '#db2777'];
+  horizontalBars(page, {
+    x, top, width, height,
+    labelWidth: 120,
+    items: items.slice(0, 5).map((item, index) => ({
+      label: item.type,
+      value: item.monthlyAverage,
+      display: `${money(item.monthlyAverage)} / mês`,
+      subtitle: `${percent(item.share)} das despesas pagas`,
+      color: palette[index % palette.length],
+    })),
+  });
+}
+
 function addExecutivePage(document, model) {
   const page = document.addPage();
-  reportHeader(page, 'RELATÓRIO FINANCEIRO INTELIGENTE', `${model.metadata.periodLabel} | ${model.metadata.owner}`);
+  reportHeader(page, 'PAINEL FINANCEIRO GERENCIAL', `${model.metadata.periodLabel} | ${model.metadata.owner}`);
   const gap = 8;
   const cardWidth = (PAGE_WIDTH - MARGIN * 2 - gap * 3) / 4;
   const { metrics } = model;
   const first = [
-    ['Receitas', money(metrics.income), toneForValue(false)],
-    ['Despesas', money(metrics.expense), toneForValue(true)],
-    ['Resultado', money(metrics.operatingResult), toneForValue(metrics.operatingResult < 0)],
-    ['Saldo projetado', money(metrics.projectedBalance), toneForValue(metrics.projectedBalance < 0)],
-  ];
-  const second = [
-    ['Saúde financeira', `${metrics.healthScore}/100`, toneForValue(metrics.healthScore < 60, metrics.healthScore >= 60 && metrics.healthScore < 80)],
-    ['Taxa de poupança', percent(metrics.savingsRate), toneForValue(metrics.savingsRate < 0.1, metrics.savingsRate >= 0.1 && metrics.savingsRate < 0.2)],
-    ['Pendências', money(metrics.pendingExpense), toneForValue(metrics.overdueCount > 0, metrics.pendingCount > 0 && !metrics.overdueCount)],
-    ['Reserva a construir', money(metrics.emergencyGap), toneForValue(metrics.emergencyGap > 0, false)],
+    ['Receita média / mês', money(metrics.averageIncome), toneForValue(false)],
+    ['Despesa média / mês', money(metrics.averageExpense), toneForValue(metrics.averageExpense > metrics.averageIncome)],
+    ['Meta de receita saudável', money(metrics.healthyIncome), toneForValue(metrics.monthlyGap > 0, metrics.monthlyGap === 0)],
+    ['Saldo atual realizado', money(metrics.currentBalance), toneForValue(metrics.currentBalance < 0)],
   ];
   first.forEach((item, index) => kpiCard(page, MARGIN + index * (cardWidth + gap), 108, cardWidth, ...item));
-  second.forEach((item, index) => kpiCard(page, MARGIN + index * (cardWidth + gap), 177, cardWidth, ...item));
 
-  const chartWidth = (PAGE_WIDTH - MARGIN * 2 - 12) / 2;
-  sectionLabel(page, MARGIN, 252, chartWidth, 'EVOLUÇÃO DOS ÚLTIMOS 12 MESES');
-  sectionLabel(page, MARGIN + chartWidth + 12, 252, chartWidth, 'MAIORES CATEGORIAS');
-  lineChart(page, { x: MARGIN, top: 282, width: chartWidth, height: 186, monthly: model.monthly });
-  categoryChart(page, { x: MARGIN + chartWidth + 12, top: 282, width: chartWidth, height: 186, categories: model.categories });
+  sectionLabel(page, MARGIN, 184, PAGE_WIDTH - MARGIN * 2, 'QUANTO PRECISO TER DE RECEITA POR MÊS', `Saúde: ${metrics.healthScore}/100`);
+  incomeTargetChart(page, { x: MARGIN + 12, top: 224, width: PAGE_WIDTH - MARGIN * 2 - 24, metrics });
 
-  sectionLabel(page, MARGIN, 482, PAGE_WIDTH - MARGIN * 2, 'PRÓXIMAS AÇÕES RECOMENDADAS', `Status: ${metrics.healthStatus}`);
-  model.recommendations.slice(0, 3).forEach((item, index) => {
-    const top = 518 + index * 82;
+  sectionLabel(page, MARGIN, 410, PAGE_WIDTH - MARGIN * 2, 'EVOLUÇÃO REALIZADA', 'Somente receitas recebidas e despesas pagas');
+  lineChart(page, { x: MARGIN, top: 440, width: PAGE_WIDTH - MARGIN * 2, height: 170, monthly: model.monthly });
+
+  sectionLabel(page, MARGIN, 626, PAGE_WIDTH - MARGIN * 2, 'DECISÕES PRIORITÁRIAS', `Status: ${metrics.healthStatus}`);
+  model.recommendations.slice(0, 2).forEach((item, index) => {
+    const top = 662 + index * 64;
     const tone = priorityTone(item.priority);
-    page.rect(MARGIN, top, PAGE_WIDTH - MARGIN * 2, 70, { fill: index % 2 ? COLORS.soft : COLORS.paper, stroke: COLORS.border, lineWidth: 0.6 });
-    page.rect(MARGIN, top, 72, 70, { fill: tone.fill });
-    page.text(MARGIN + 8, top + 12, item.priority, { size: 8, font: 'bold', color: tone.value });
-    page.text(MARGIN + 8, top + 34, compactMoney(item.impact), { size: 8, color: tone.value });
-    page.text(MARGIN + 84, top + 10, item.title, { size: 10, font: 'bold', color: COLORS.tealDark });
-    page.wrappedText(MARGIN + 84, top + 29, item.action, { width: PAGE_WIDTH - MARGIN * 2 - 98, size: 8, lineHeight: 11, color: COLORS.ink, maxLines: 3 });
+    page.rect(MARGIN, top, PAGE_WIDTH - MARGIN * 2, 54, { fill: index % 2 ? COLORS.soft : COLORS.paper, stroke: COLORS.border, lineWidth: 0.6 });
+    page.rect(MARGIN, top, 68, 54, { fill: tone.fill });
+    page.text(MARGIN + 8, top + 10, item.priority, { size: 7.5, font: 'bold', color: tone.value });
+    page.text(MARGIN + 8, top + 29, compactMoney(item.impact), { size: 7.5, color: tone.value });
+    page.text(MARGIN + 80, top + 8, item.title, { size: 9.2, font: 'bold', color: COLORS.tealDark });
+    page.wrappedText(MARGIN + 80, top + 25, item.action, { width: PAGE_WIDTH - MARGIN * 2 - 92, size: 7.5, lineHeight: 9.5, color: COLORS.ink, maxLines: 2 });
   });
 }
 
 function addDiagnosisPage(document, model) {
   const page = document.addPage();
-  reportHeader(page, 'DIAGNÓSTICO FINANCEIRO', 'Comportamento mensal, categorias, metas e formas de pagamento');
-  pageHeading(page, 'Como o dinheiro se movimenta', 'Os valores abaixo foram calculados diretamente a partir da base autenticada do MEG.');
-  sectionLabel(page, MARGIN, 166, PAGE_WIDTH - MARGIN * 2, 'EVOLUÇÃO MENSAL');
-  const monthly = model.monthly.slice(-12);
-  table(page, {
-    x: MARGIN,
-    top: 196,
-    width: PAGE_WIDTH - MARGIN * 2,
-    rowHeight: 20,
-    columns: [
-      { label: 'Competência', key: 'label', width: 104 },
-      { label: 'Receitas', key: 'income', width: 98, align: 'right', format: money },
-      { label: 'Despesas', key: 'expense', width: 98, align: 'right', format: money },
-      { label: 'Resultado', key: 'result', width: 102, align: 'right', format: money, color: (value) => value < 0 ? COLORS.red : COLORS.green },
-      { label: 'Poupança', key: 'savingsRate', width: 109, align: 'right', format: percent },
-    ],
-    rows: monthly,
-  });
+  reportHeader(page, 'LEITURA GERENCIAL DAS DESPESAS', 'Visão consolidada para decisões rápidas');
+  pageHeading(page, 'Onde o dinheiro está comprometido', 'Valores realizados, sem parcelas futuras e sem detalhamento de lançamentos.');
+  const halfWidth = (PAGE_WIDTH - MARGIN * 2 - 12) / 2;
+  sectionLabel(page, MARGIN, 166, halfWidth, 'POR TIPO DE DESPESA');
+  sectionLabel(page, MARGIN + halfWidth + 12, 166, halfWidth, 'PRINCIPAIS GRUPOS');
+  expenseTypeChart(page, { x: MARGIN + 8, top: 204, width: halfWidth - 16, height: 218, items: model.expenseTypes });
+  categoryChart(page, { x: MARGIN + halfWidth + 18, top: 204, width: halfWidth - 18, height: 218, categories: model.categories });
 
-  const lowerTop = 196 + 24 + monthly.length * 20 + 24;
-  const categoryWidth = 342;
-  const paymentWidth = PAGE_WIDTH - MARGIN * 2 - categoryWidth - 12;
-  sectionLabel(page, MARGIN, lowerTop, categoryWidth, 'CATEGORIAS E METAS');
-  sectionLabel(page, MARGIN + categoryWidth + 12, lowerTop, paymentWidth, 'FORMAS DE PAGAMENTO');
+  sectionLabel(page, MARGIN, 446, PAGE_WIDTH - MARGIN * 2, 'MÉDIA MENSAL POR GRUPO E META');
   table(page, {
     x: MARGIN,
-    top: lowerTop + 30,
-    width: categoryWidth,
-    rowHeight: 19,
+    top: 476,
+    width: PAGE_WIDTH - MARGIN * 2,
+    rowHeight: 25,
     columns: [
-      { label: 'Categoria', key: 'category', width: 104 },
-      { label: 'Gasto', key: 'total', width: 78, align: 'right', format: money },
-      { label: '%', key: 'share', width: 38, align: 'right', format: percent },
-      { label: 'Meta', key: 'budget', width: 78, align: 'right', format: (value) => value ? compactMoney(value) : 'Não definida' },
-      { label: 'Uso', key: 'utilization', width: 44, align: 'right', format: (value, row) => row.budget ? `${Math.round(value * 100)}%` : '-' },
+      { label: 'Grupo', key: 'category', width: 175 },
+      { label: 'Média / mês', key: 'monthlyAverage', width: 105, align: 'right', format: money },
+      { label: 'Participação', key: 'share', width: 80, align: 'right', format: percent },
+      { label: 'Meta mensal', key: 'monthlyBudget', width: 96, align: 'right', format: (value) => value ? money(value) : 'Não definida' },
+      { label: 'Situação', key: 'utilization', width: 55, align: 'right', format: (value, row) => row.monthlyBudget ? `${Math.round(value * 100)}%` : '-', color: (value, row) => row.monthlyBudget && value > 1 ? COLORS.red : COLORS.green, bold: true },
     ],
     rows: model.budgetRows.slice(0, 10),
-  });
-  table(page, {
-    x: MARGIN + categoryWidth + 12,
-    top: lowerTop + 30,
-    width: paymentWidth,
-    rowHeight: 19,
-    columns: [
-      { label: 'Forma', key: 'method', width: paymentWidth - 62 },
-      { label: '%', key: 'share', width: 62, align: 'right', format: percent },
-    ],
-    rows: model.paymentMethods.slice(0, 10),
   });
 }
 
 function addActionPages(document, model) {
-  const chunks = [];
-  for (let index = 0; index < model.recommendations.length; index += 7) chunks.push(model.recommendations.slice(index, index + 7));
-  (chunks.length ? chunks : [[]]).forEach((items, pageIndex) => {
-    const page = document.addPage();
-    reportHeader(page, 'PLANO DE AÇÃO FINANCEIRA', 'Sugestões calculadas a partir do histórico completo do usuário');
-    pageHeading(page, pageIndex ? 'Continuação do plano de ação' : 'O que fazer para melhorar', 'Priorize as ações críticas e de alto impacto antes de assumir novos compromissos.');
-    items.forEach((item, index) => {
-      const top = 166 + index * 88;
-      const tone = priorityTone(item.priority);
-      page.rect(MARGIN, top, PAGE_WIDTH - MARGIN * 2, 76, { fill: COLORS.paper, stroke: COLORS.border, lineWidth: 0.7 });
-      page.rect(MARGIN, top, 82, 76, { fill: tone.fill });
-      page.text(MARGIN + 10, top + 13, item.priority, { size: 8, font: 'bold', color: tone.value });
-      page.text(MARGIN + 10, top + 37, 'Impacto', { size: 7, color: COLORS.muted });
-      page.text(MARGIN + 10, top + 51, compactMoney(item.impact), { size: 8, font: 'bold', color: tone.value });
-      page.text(MARGIN + 94, top + 10, item.title, { size: 10, font: 'bold', color: COLORS.tealDark });
-      page.wrappedText(MARGIN + 94, top + 27, item.action, { width: PAGE_WIDTH - MARGIN * 2 - 110, size: 8, lineHeight: 10.5, maxLines: 2 });
-      page.wrappedText(MARGIN + 94, top + 51, `Por que: ${item.reason}`, { width: PAGE_WIDTH - MARGIN * 2 - 110, size: 7.2, lineHeight: 9, color: COLORS.muted, maxLines: 2 });
-    });
-    if (!items.length) page.text(MARGIN, 180, 'Nenhum alerta financeiro relevante foi identificado.', { size: 10, color: COLORS.green });
+  const page = document.addPage();
+  reportHeader(page, 'PLANO GERENCIAL DE AÇÃO', 'Decisões priorizadas a partir dos dados realizados');
+  pageHeading(page, 'O que fazer a partir de agora', 'A primeira ação define a receita mensal necessária para alcançar equilíbrio e poupança.');
+  model.recommendations.slice(0, 5).forEach((item, index) => {
+    const top = 166 + index * 96;
+    const tone = priorityTone(item.priority);
+    page.rect(MARGIN, top, PAGE_WIDTH - MARGIN * 2, 84, { fill: index % 2 ? COLORS.soft : COLORS.paper, stroke: COLORS.border, lineWidth: 0.7 });
+    page.rect(MARGIN, top, 88, 84, { fill: tone.fill });
+    page.text(MARGIN + 10, top + 13, item.priority, { size: 8, font: 'bold', color: tone.value });
+    page.text(MARGIN + 10, top + 38, 'Impacto mensal', { size: 6.8, color: COLORS.muted });
+    page.text(MARGIN + 10, top + 54, compactMoney(item.impact), { size: 8, font: 'bold', color: tone.value });
+    page.text(MARGIN + 100, top + 10, item.title, { size: 9.5, font: 'bold', color: COLORS.tealDark });
+    page.wrappedText(MARGIN + 100, top + 28, item.action, { width: PAGE_WIDTH - MARGIN * 2 - 116, size: 7.8, lineHeight: 10, maxLines: 2 });
+    page.wrappedText(MARGIN + 100, top + 53, `Leitura: ${item.reason}`, { width: PAGE_WIDTH - MARGIN * 2 - 116, size: 7, lineHeight: 9, color: COLORS.muted, maxLines: 2 });
+  });
+
+  sectionLabel(page, MARGIN, 660, PAGE_WIDTH - MARGIN * 2, 'COMO OS NÚMEROS FORAM CALCULADOS');
+  const notes = [
+    'Receitas e despesas realizadas: somente valores recebidos e despesas efetivamente pagas até a data de geração.',
+    'Receita saudável: despesa média mensal dividida por 80%, preservando uma meta de poupança de 20%.',
+    'Parcelas e contas futuras aparecem apenas na projeção, sem serem tratadas como gastos já realizados.',
+    'As recomendações são gerenciais e dependem da atualização dos lançamentos, saldos, cartões e metas do MEG.',
+  ];
+  notes.forEach((note, index) => {
+    page.rect(MARGIN, 700 + index * 23, 4, 15, { fill: index < 2 ? COLORS.mint : COLORS.border });
+    page.wrappedText(MARGIN + 12, 697 + index * 23, note, { width: PAGE_WIDTH - MARGIN * 2 - 12, size: 7.2, lineHeight: 9, color: index < 2 ? COLORS.ink : COLORS.muted, maxLines: 2 });
   });
 }
 
@@ -556,6 +576,70 @@ function addTransactionPages(document, model) {
   }
 }
 
+function addProjectionPage(document, model) {
+  const page = document.addPage();
+  const { metrics } = model;
+  reportHeader(page, 'PROJEÇÃO E COMPROMISSOS', 'O que está à frente, sem misturar futuro com gasto realizado');
+  pageHeading(page, 'Próximos compromissos financeiros', 'Receitas futuras não são presumidas, pois dependem de confirmação no sistema.');
+
+  const gap = 8;
+  const cardWidth = (PAGE_WIDTH - MARGIN * 2 - gap * 3) / 4;
+  const cards = [
+    ['Contas vencidas', money(metrics.overdueValue), toneForValue(metrics.overdueCount > 0)],
+    ['Próximos 30 dias', money(metrics.next30Value), toneForValue(false, metrics.next30Value > metrics.currentBalance)],
+    ['Compromissos futuros', money(metrics.futureValue), toneForValue(false, metrics.futureValue > 0)],
+    ['Reserva a construir', money(metrics.emergencyGap), toneForValue(false, metrics.emergencyGap > 0)],
+  ];
+  cards.forEach((item, index) => kpiCard(page, MARGIN + index * (cardWidth + gap), 166, cardWidth, ...item));
+
+  const halfWidth = (PAGE_WIDTH - MARGIN * 2 - 12) / 2;
+  sectionLabel(page, MARGIN, 246, halfWidth, 'COMPROMISSOS POR MÊS');
+  sectionLabel(page, MARGIN + halfWidth + 12, 246, halfWidth, 'UTILIZAÇÃO DOS CARTÕES');
+  horizontalBars(page, {
+    x: MARGIN + 8,
+    top: 284,
+    width: halfWidth - 16,
+    height: 156,
+    labelWidth: 68,
+    items: model.futureMonthly.map((item) => ({
+      label: item.label,
+      value: item.total,
+      display: compactMoney(item.total),
+      subtitle: `${item.count} compromisso(s)`,
+      color: COLORS.teal,
+    })),
+  });
+  horizontalBars(page, {
+    x: MARGIN + halfWidth + 20,
+    top: 284,
+    width: halfWidth - 20,
+    height: 156,
+    labelWidth: 82,
+    items: model.cardRows.slice(0, 6).map((item) => ({
+      label: item.name,
+      value: item.pending,
+      display: item.limit > 0 ? `${Math.round(item.usage * 100)}%` : compactMoney(item.pending),
+      subtitle: item.limit > 0 ? `${compactMoney(item.pending)} de ${compactMoney(item.limit)}` : 'Limite não informado',
+      color: item.usage >= 0.9 ? COLORS.red : item.usage >= 0.7 ? COLORS.amber : COLORS.blue,
+    })),
+  });
+
+  sectionLabel(page, MARGIN, 466, PAGE_WIDTH - MARGIN * 2, 'PRÓXIMOS VENCIMENTOS', `Exibindo até ${Math.min(model.upcoming.length, 10)}`);
+  table(page, {
+    x: MARGIN,
+    top: 496,
+    width: PAGE_WIDTH - MARGIN * 2,
+    rowHeight: 25,
+    columns: [
+      { label: 'Data', key: 'date', width: 72, format: dateLabel },
+      { label: 'Descrição', key: 'description', width: 212 },
+      { label: 'Grupo', value: (row) => row.group || row.category || 'Sem categoria', width: 132 },
+      { label: 'Valor', key: 'value', width: 95, align: 'right', format: money, bold: true },
+    ],
+    rows: model.upcoming.slice(0, 10),
+  });
+}
+
 function addFooters(document, generatedAt) {
   document.pages.forEach((page, index) => {
     page.line(MARGIN, 810, PAGE_WIDTH - MARGIN, 810, { color: COLORS.border, lineWidth: 0.6 });
@@ -564,25 +648,23 @@ function addFooters(document, generatedAt) {
   });
 }
 
-export function createExecutiveFinancialPdf({ state, start, end, owner, periodLabel, generatedAt = new Date() }) {
-  const model = buildExecutiveFinancialModel({ state, start, end, owner, periodLabel, generatedAt });
+export function createExecutiveFinancialPdf({ state, start, end, owner, generatedAt = new Date() }) {
+  const model = buildExecutiveFinancialModel({ state, start, end, owner, generatedAt });
   const document = new PdfDocument({
-    title: 'Super relatório financeiro MEG',
+    title: 'Painel financeiro gerencial MEG',
     author: owner || 'MEG Finanças',
     generatedAt,
   });
   addExecutivePage(document, model);
   addDiagnosisPage(document, model);
+  addProjectionPage(document, model);
   addActionPages(document, model);
-  addPendingPages(document, model);
-  addAccountsPage(document, model);
-  addTransactionPages(document, model);
   addFooters(document, generatedAt);
   const bytes = document.bytes();
   return {
     bytes,
     blob: new Blob([bytes], { type: MIME_PDF }),
-    filename: `super-relatorio-financeiro-meg-${generatedAt.toISOString().slice(0, 10)}.pdf`,
+    filename: `relatorio-gerencial-meg-${model.metadata.referenceDate}.pdf`,
     mimeType: MIME_PDF,
     model,
     pageCount: document.pages.length,

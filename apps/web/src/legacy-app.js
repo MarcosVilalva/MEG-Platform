@@ -4890,14 +4890,13 @@ async function exportFinancialPdfReport() {
       state: structuredClone(state),
       start,
       end,
-      periodLabel: `Histórico completo, ${formatDate(start)} a ${formatDate(end)}`,
       owner: window.MEG_CLOUD?.user?.name || 'Usuário MEG',
       generatedAt: new Date(),
     });
     downloadBlob(report.blob, report.filename);
     showToast(
-      "Super relatório concluído",
-      `O PDF analisou ${report.model.metrics.transactionCount} lançamentos, calculou saúde financeira ${report.model.metrics.healthScore}/100 e gerou ${report.model.recommendations.length} recomendação(ões).`,
+      "Relatório gerencial concluído",
+      `O PDF consolidou os últimos 12 meses realizados, calculou a receita saudável de ${currency(report.model.metrics.healthyIncome)} por mês e gerou ${report.model.recommendations.length} decisão(ões) prioritária(s).`,
       "success",
     );
   } catch (cause) {
