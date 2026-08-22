@@ -92,6 +92,7 @@ assert.equal(report.pageCount, 4, 'o relatório gerencial deve permanecer curto'
 
 const pdfSource = new TextDecoder().decode(report.bytes);
 assert.match(pdfSource, /MEG Premium Financial Report/);
+assert.match(pdfSource, /MEG FINAN\\307AS/);
 assert.match(pdfSource, /PAINEL FINANCEIRO PREMIUM/);
 assert.match(pdfSource, /TR\\312S CAMINHOS PARA A META/);
 assert.match(pdfSource, /AN\\301LISE INTELIGENTE/);
@@ -100,8 +101,13 @@ assert.match(pdfSource, /PLANO DE A\\307\\303O EM 90 DIAS/);
 assert.doesNotMatch(pdfSource, /LAN\\307AMENTOS DO HIST\\323RICO/);
 assert.match(pdfSource, /startxref/);
 assert.match(pdfSource, /%%EOF/);
+assert.match(pdfSource, /\/FontFile2/);
+assert.match(pdfSource, /MEGREG\+Inter-Regular/);
+assert.match(pdfSource, /MEGBLD\+Inter-SemiBold/);
+assert.doesNotMatch(pdfSource, /\/BaseFont \/Helvetica/);
 assert.equal((pdfSource.match(/\/Type \/Page \/Parent/g) || []).length, report.pageCount);
 assert.match(executivePdfInternals.pdfText('Ação e saúde'), /\\347/);
+assert.ok(executivePdfInternals.measureTextWidth('MEG Finanças', 12, 'bold') > executivePdfInternals.measureTextWidth('MEG', 12, 'bold'));
 
 const emptyReport = createExecutiveFinancialPdf({
   state: { transactions: [], budgets: {}, catalogs: { accounts: [], cards: [] } },

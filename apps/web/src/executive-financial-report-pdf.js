@@ -1,4 +1,5 @@
 import { buildExecutiveFinancialModel } from './executive-financial-report-core.js';
+import { REPORT_FONT_FAMILY, REPORT_FONTS } from './executive-financial-report-fonts.js';
 
 const PAGE_WIDTH = 595.28;
 const PAGE_HEIGHT = 841.89;
@@ -8,7 +9,7 @@ const MIME_PDF = 'application/pdf';
 const COLORS = {
   bg: '#07131f', surface: '#0d2232', surfaceAlt: '#102b3d', surfaceLight: '#173347',
   border: '#234357', white: '#f5fbff', muted: '#91a9ba', mutedDark: '#6f899b',
-  teal: '#2bd8b2', tealDark: '#0aa283', blue: '#4d7cff', purple: '#b574ff',
+  teal: '#50e6c6', tealDark: '#176b5d', blue: '#4d7cff', purple: '#b574ff',
   orange: '#ffad4d', red: '#ff676d', green: '#55d58b',
 };
 
@@ -72,17 +73,25 @@ function pdfText(value) {
   }).join('');
 }
 
-function approximateTextWidth(value, size, font = 'regular') {
-  const factor = font === 'bold' ? 0.55 : 0.51;
-  return [...String(value ?? '')].reduce((total, character) => total + (character === ' ' ? size * 0.27 : size * factor), 0);
+function fontMetrics(font = 'regular') {
+  return font === 'bold' ? REPORT_FONTS.bold : REPORT_FONTS.regular;
+}
+
+function measureTextWidth(value, size, font = 'regular') {
+  const metrics = fontMetrics(font);
+  return [...String(value ?? '')].reduce((total, character) => {
+    const code = winAnsiCode(character);
+    const width = metrics.widths[code - metrics.firstChar] ?? metrics.widths[63 - metrics.firstChar];
+    return total + width * size / 1000;
+  }, 0);
 }
 
 function truncate(value, maxWidth, size, font = 'regular') {
   const source = String(value ?? '');
-  if (approximateTextWidth(source, size, font) <= maxWidth) return source;
+  if (measureTextWidth(source, size, font) <= maxWidth) return source;
   let output = source;
-  while (output.length > 1 && approximateTextWidth(`${output}...`, size, font) > maxWidth) output = output.slice(0, -1);
-  return `${output.trim()}...`;
+  while (output.length > 1 && measureTextWidth(`${output}…`, size, font) > maxWidth) output = output.slice(0, -1);
+  return `${output.trim()}…`;
 }
 
 function wrapLines(value, maxWidth, size, font = 'regular', maxLines = Infinity) {
@@ -92,7 +101,7 @@ function wrapLines(value, maxWidth, size, font = 'regular', maxLines = Infinity)
   let current = '';
   words.forEach((word) => {
     const candidate = current ? `${current} ${word}` : word;
-    if (!current || approximateTextWidth(candidate, size, font) <= maxWidth) current = candidate;
+    if (!current || measureTextWidth(candidate, size, font) <= maxWidth) current = candidate;
     else {
       lines.push(current);
       current = word;
@@ -179,7 +188,7 @@ class PdfPage {
 
   text(x, top, value, { size = 10, font = 'regular', color = COLORS.white, align = 'left', width = 0 } = {}) {
     const clean = String(value ?? '');
-    const measured = approximateTextWidth(clean, size, font);
+    const measured = measureTextWidth(clean, size, font);
     let textX = x;
     if (align === 'right') textX = x + width - measured;
     if (align === 'center') textX = x + (width - measured) / 2;
@@ -188,9 +197,9 @@ class PdfPage {
     this.commands.push(`BT /${fontName} ${size.toFixed(2)} Tf ${colorCommand(color)} 1 0 0 1 ${textX.toFixed(2)} ${baseline.toFixed(2)} Tm (${pdfText(clean)}) Tj ET`);
   }
 
-  wrappedText(x, top, value, { width, size = 10, lineHeight = size * 1.3, font = 'regular', color = COLORS.white, maxLines = Infinity } = {}) {
+  wrappedText(x, top, value, { width, size = 10, lineHeight = size * 1.3, font = 'regular', color = COLORS.white, align = 'left', maxLines = Infinity } = {}) {
     const lines = wrapLines(value, width, size, font, maxLines);
-    lines.forEach((line, index) => this.text(x, top + index * lineHeight, line, { size, font, color }));
+    lines.forEach((line, index) => this.text(x, top + index * lineHeight, line, { size, font, color, align, width }));
     return lines.length * lineHeight;
   }
 
@@ -215,20 +224,26 @@ class PdfDocument {
 
   bytes() {
     const objects = [];
-    const firstPageId = 7;
+    const infoId = 9;
+    const firstPageId = 10;
     const pageIds = this.pages.map((_, index) => firstPageId + index * 2);
     objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
     objects[2] = `<< /Type /Pages /Count ${this.pages.length} /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] >>`;
-    objects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
-    objects[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
-    objects[5] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique /Encoding /WinAnsiEncoding >>';
+    const regularBinary = globalThis.atob(REPORT_FONTS.regular.base64);
+    const boldBinary = globalThis.atob(REPORT_FONTS.bold.base64);
+    objects[3] = this.fontObject(REPORT_FONTS.regular, 'MEGREG', 4);
+    objects[4] = this.fontDescriptorObject(REPORT_FONTS.regular, 'MEGREG', 5, 80);
+    objects[5] = `<< /Length ${regularBinary.length} /Length1 ${regularBinary.length} >>\nstream\n${regularBinary}\nendstream`;
+    objects[6] = this.fontObject(REPORT_FONTS.bold, 'MEGBLD', 7);
+    objects[7] = this.fontDescriptorObject(REPORT_FONTS.bold, 'MEGBLD', 8, 120);
+    objects[8] = `<< /Length ${boldBinary.length} /Length1 ${boldBinary.length} >>\nstream\n${boldBinary}\nendstream`;
     const timestamp = this.generatedAt.toISOString().replace(/[-:T]/g, '').slice(0, 14);
-    objects[6] = `<< /Title (${pdfText(this.title)}) /Author (${pdfText(this.author)}) /Creator (MEG Financas Web) /CreationDate (D:${timestamp}) >>`;
+    objects[infoId] = `<< /Title (${pdfText(this.title)}) /Author (${pdfText(this.author)}) /Creator (MEG Financas Web) /Producer (MEG Financas PDF Engine, ${REPORT_FONT_FAMILY}) /CreationDate (D:${timestamp}) >>`;
     this.pages.forEach((page, index) => {
       const pageId = firstPageId + index * 2;
       const contentId = pageId + 1;
       const content = page.content();
-      objects[pageId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents ${contentId} 0 R >>`;
+      objects[pageId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}] /Resources << /Font << /F1 3 0 R /F2 6 0 R /F3 3 0 R >> >> /Contents ${contentId} 0 R >>`;
       objects[contentId] = `<< /Length ${content.length} >>\nstream\n${content}\nendstream`;
     });
     let output = '%PDF-1.4\n% MEG Premium Financial Report\n';
@@ -240,8 +255,18 @@ class PdfDocument {
     const xrefOffset = output.length;
     output += `xref\n0 ${objects.length}\n0000000000 65535 f \n`;
     for (let id = 1; id < objects.length; id += 1) output += `${String(offsets[id]).padStart(10, '0')} 00000 n \n`;
-    output += `trailer\n<< /Size ${objects.length} /Root 1 0 R /Info 6 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
-    return new TextEncoder().encode(output);
+    output += `trailer\n<< /Size ${objects.length} /Root 1 0 R /Info ${infoId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+    return Uint8Array.from(output, (character) => character.charCodeAt(0) & 0xff);
+  }
+
+  fontObject(font, subsetTag, descriptorId) {
+    const baseFont = `${subsetTag}+${font.postScriptName}`;
+    return `<< /Type /Font /Subtype /TrueType /BaseFont /${baseFont} /FirstChar ${font.firstChar} /LastChar ${font.lastChar} /Widths [${font.widths.join(' ')}] /FontDescriptor ${descriptorId} 0 R /Encoding /WinAnsiEncoding >>`;
+  }
+
+  fontDescriptorObject(font, subsetTag, fontFileId, stemV) {
+    const baseFont = `${subsetTag}+${font.postScriptName}`;
+    return `<< /Type /FontDescriptor /FontName /${baseFont} /Flags 32 /FontBBox [${font.bbox.join(' ')}] /ItalicAngle 0 /Ascent ${font.ascent} /Descent ${font.descent} /CapHeight ${font.capHeight} /StemV ${stemV} /FontFile2 ${fontFileId} 0 R >>`;
   }
 }
 
@@ -252,13 +277,14 @@ function addBackground(page) {
 }
 
 function addHeader(page, title, subtitle, pageNumber) {
-  page.roundedRect(MARGIN, 24, 34, 34, 10, { fill: COLORS.teal });
-  page.text(MARGIN, 31, 'M', { size: 19, font: 'bold', color: COLORS.bg, align: 'center', width: 34 });
-  page.text(MARGIN + 46, 25, title, { size: 15, font: 'bold' });
-  page.text(MARGIN + 46, 46, subtitle, { size: 7.6, color: COLORS.muted });
+  page.roundedRect(MARGIN, 23, 36, 36, 11, { fill: COLORS.teal });
+  page.text(MARGIN, 30, 'M', { size: 20, font: 'bold', color: '#063f37', align: 'center', width: 36 });
+  page.text(MARGIN + 48, 22, 'MEG FINANÇAS', { size: 7.2, font: 'bold', color: COLORS.teal });
+  page.text(MARGIN + 48, 34, title, { size: 13.2, font: 'bold' });
+  page.text(MARGIN + 48, 53, subtitle, { size: 6.8, color: COLORS.muted });
   page.roundedRect(PAGE_WIDTH - MARGIN - 60, 29, 60, 23, 11, { fill: COLORS.surfaceAlt, stroke: COLORS.border, lineWidth: 0.6 });
-  page.text(PAGE_WIDTH - MARGIN - 60, 35, `PÁGINA ${pageNumber}`, { size: 6.8, font: 'bold', color: COLORS.teal, align: 'center', width: 60 });
-  page.line(MARGIN, 75, PAGE_WIDTH - MARGIN, 75, { color: COLORS.border, lineWidth: 0.7 });
+  page.text(PAGE_WIDTH - MARGIN - 60, 35, `PÁGINA ${pageNumber}`, { size: 6.6, font: 'bold', color: COLORS.teal, align: 'center', width: 60 });
+  page.line(MARGIN, 78, PAGE_WIDTH - MARGIN, 78, { color: COLORS.border, lineWidth: 0.7 });
 }
 
 function sectionTitle(page, x, top, title, subtitle = '', width = PAGE_WIDTH - MARGIN * 2) {
@@ -300,8 +326,10 @@ function scenarioCard(page, { x, top, width, title, accent, main, subtitle, resu
 function addFooter(document, generatedAt) {
   document.pages.forEach((page, index) => {
     page.line(MARGIN, 810, PAGE_WIDTH - MARGIN, 810, { color: COLORS.border, lineWidth: 0.6 });
-    page.text(MARGIN, 817, `MEG FINANÇAS  |  ${generatedAt.toLocaleString('pt-BR')}`, { size: 6.4, color: COLORS.mutedDark });
-    page.text(PAGE_WIDTH - MARGIN - 90, 817, `${index + 1} / ${document.pages.length}`, { size: 6.4, color: COLORS.mutedDark, align: 'right', width: 90 });
+    page.text(MARGIN, 817, 'MEG FINANÇAS', { size: 6.2, font: 'bold', color: COLORS.teal });
+    page.text(MARGIN + 74, 817, 'Seu dinheiro. Suas escolhas. Seu controle.', { size: 5.9, color: COLORS.mutedDark });
+    page.text(PAGE_WIDTH - MARGIN - 182, 817, `Gerado em ${generatedAt.toLocaleString('pt-BR')}`, { size: 5.9, color: COLORS.mutedDark, align: 'right', width: 138 });
+    page.text(PAGE_WIDTH - MARGIN - 36, 817, `${index + 1} / ${document.pages.length}`, { size: 6.2, font: 'bold', color: COLORS.muted, align: 'right', width: 36 });
   });
 }
 
@@ -558,7 +586,7 @@ function addActionPage(document, model) {
 
 export function createExecutiveFinancialPdf({ state, start, end, owner, generatedAt = new Date() }) {
   const model = buildExecutiveFinancialModel({ state, start, end, owner, generatedAt });
-  const document = new PdfDocument({ title: 'Relatório financeiro premium MEG', author: owner || 'MEG Finanças', generatedAt });
+  const document = new PdfDocument({ title: 'MEG Finanças | Relatório financeiro premium', author: owner || 'MEG Finanças', generatedAt });
   addExecutivePage(document, model);
   addAnalysisPage(document, model);
   addProjectionPage(document, model);
@@ -568,4 +596,4 @@ export function createExecutiveFinancialPdf({ state, start, end, owner, generate
   return { bytes, blob: new Blob([bytes], { type: MIME_PDF }), filename: `relatorio-financeiro-premium-meg-${model.metadata.referenceDate}.pdf`, mimeType: MIME_PDF, model, pageCount: document.pages.length };
 }
 
-export const executivePdfInternals = { PdfDocument, PdfPage, pdfText, wrapLines };
+export const executivePdfInternals = { PdfDocument, PdfPage, measureTextWidth, pdfText, wrapLines };
