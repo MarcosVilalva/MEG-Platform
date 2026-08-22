@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { buildExecutiveFinancialModel } from './executive-financial-report-core.js';
-import { createExecutiveFinancialPdf, executivePdfInternals } from './executive-financial-report-pdf.js';
+import { buildExecutiveFinancialModel, buildMonthlyExpenseModel } from './executive-financial-report-core.js';
+import { createExecutiveFinancialPdf, createMonthlyExpensePdf, executivePdfInternals } from './executive-financial-report-pdf.js';
 
 const state = {
   transactions: [
@@ -119,6 +119,70 @@ assert.equal(emptyReport.pageCount, 4);
 assert.equal(emptyReport.model.metrics.transactionCount, 0);
 assert.equal(emptyReport.model.metrics.healthyIncome, 0);
 
+const monthlyState = {
+  transactions: [
+    { id: 'pm1', date: '2026-07-04', description: 'Aluguel anterior', type: 'expense', amount: 1800, group: 'IMÓVEL', status: 'paid' },
+    { id: 'pm2', date: '2026-07-11', description: 'Mercado anterior', type: 'expense', amount: 1200, group: 'SUPERMERCADO', status: 'paid' },
+    { id: 'pm3', date: '2026-07-19', description: 'Lazer anterior', type: 'expense', amount: 900, group: 'LAZER', status: 'paid' },
+    { id: 'mr1', date: '2026-08-02', description: 'Receita mensal', type: 'income', amount: 8000, status: 'paid' },
+    { id: 'mp1', date: '2026-08-05', description: 'Aluguel', type: 'expense', amount: 1800, group: 'IMÓVEL', status: 'paid', paymentMethod: 'PIX' },
+    { id: 'mp2', date: '2026-08-09', description: 'Supermercado', type: 'expense', amount: 1200, group: 'SUPERMERCADO', status: 'paid', paymentMethod: 'Cartão MEG' },
+    { id: 'mp3', date: '2026-08-12', description: 'Restaurantes', type: 'expense', amount: 900, group: 'FAST FOOD', status: 'paid', paymentMethod: 'Cartão MEG' },
+    { id: 'mp4', date: '2026-08-14', description: 'Combustível', type: 'expense', amount: 500, group: 'TRANSPORTE', status: 'paid', paymentMethod: 'PIX' },
+    { id: 'mp5', date: '2026-08-17', description: 'Curso', type: 'expense', amount: 350, group: 'CURSOS', status: 'paid', paymentMethod: 'Boleto' },
+    { id: 'mo1', date: '2026-08-18', description: 'Fatura de lazer', type: 'expense', amount: 1100, group: 'LAZER', status: 'pending', situation: 'PENDENTE', paymentMethod: 'Cartão MEG' },
+    { id: 'mo2', date: '2026-08-25', description: 'Conta de telefone', type: 'expense', amount: 300, group: 'COMUNICAÇÃO', status: 'pending', situation: 'PENDENTE', paymentMethod: 'Débito' },
+    { id: 'mf1', date: '2026-09-05', description: 'Fora do mês', type: 'expense', amount: 9000, group: 'ELETRO', status: 'pending' },
+  ],
+  budgets: { 'IMÓVEL': 1800, 'SUPERMERCADO': 1000, 'FAST FOOD': 600, 'TRANSPORTE': 600, 'LAZER': 800, 'COMUNICAÇÃO': 300 },
+  catalogs: { accounts: [], cards: [] },
+};
+const monthlyOptions = {
+  state: monthlyState,
+  start: '2026-08-01',
+  end: '2026-08-31',
+  owner: 'Marcos de Andrade Vilalva',
+  generatedAt: new Date(2026, 7, 21, 12, 0, 0),
+};
+const monthlyModel = buildMonthlyExpenseModel(monthlyOptions);
+assert.equal(monthlyModel.metadata.month, '2026-08');
+assert.equal(monthlyModel.metrics.income, 8000);
+assert.equal(monthlyModel.metrics.paidExpense, 4750);
+assert.equal(monthlyModel.metrics.pendingValue, 1400);
+assert.equal(monthlyModel.metrics.committedExpense, 6150);
+assert.equal(monthlyModel.metrics.variablePaidExpense, 900);
+assert.equal(monthlyModel.metrics.paceProjection, 6578.57);
+assert.equal(monthlyModel.metrics.projectedExpense, 6578.57);
+assert.equal(monthlyModel.metrics.projectedClosing, 1421.43);
+assert.equal(monthlyModel.metrics.healthyExpenseCeiling, 6400);
+assert.equal(monthlyModel.metrics.requiredHealthyIncome, 8223.21);
+assert.equal(monthlyModel.metrics.incomeIncreaseRequired, 223.21);
+assert.equal(monthlyModel.metrics.expenseReductionRequired, 178.57);
+assert.equal(monthlyModel.metrics.previousExpense, 3900);
+assert.equal(monthlyModel.metrics.overdueCount, 1);
+assert.equal(monthlyModel.metrics.overdueValue, 1100);
+assert.equal(monthlyModel.categories[0].category, 'IMÓVEL');
+assert.equal(monthlyModel.managerialGroups[0].group, 'ESSENCIAIS');
+assert.equal(monthlyModel.savingsOpportunities.reduce((sum, item) => sum + item.saving, 0), 178.57);
+assert.ok(monthlyModel.recommendations.some((item) => item.title.includes('vencido')));
+assert.ok(monthlyModel.recommendations.some((item) => item.title.includes('fechamento')));
+assert.equal(monthlyModel.topExpenses.at(-1)?.description, 'Conta de telefone');
+
+const monthlyReport = createMonthlyExpensePdf(monthlyOptions);
+assert.equal(monthlyReport.filename, 'relatorio-mensal-despesas-meg-2026-08.pdf');
+assert.equal(monthlyReport.mimeType, 'application/pdf');
+assert.equal(monthlyReport.pageCount, 4);
+assert.ok(monthlyReport.bytes.length > 10_000);
+const monthlyPdfSource = new TextDecoder().decode(monthlyReport.bytes);
+assert.match(monthlyPdfSource, /PAINEL DE DESPESAS DO M\\312S/);
+assert.match(monthlyPdfSource, /O QUE MAIS IMPACTOU/);
+assert.match(monthlyPdfSource, /EM ABERTO E PROJE\\307\\325ES/);
+assert.match(monthlyPdfSource, /PLANO DE MELHORIA/);
+assert.equal((monthlyPdfSource.match(/\(MEG\) Tj ET/g) || []).length, monthlyReport.pageCount);
+assert.match(monthlyPdfSource, /MEGREG\+Inter-Regular/);
+assert.match(monthlyPdfSource, /MEGBLD\+Inter-SemiBold/);
+assert.equal((monthlyPdfSource.match(/\/Type \/Page \/Parent/g) || []).length, monthlyReport.pageCount);
+
 const legacyAppSource = fs.readFileSync(new URL('./legacy-app.js', import.meta.url), 'utf8');
 const indexSource = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const mainActivity = fs.readFileSync(new URL('../../../android/app/src/main/java/br/com/megfinancas/app/MainActivity.java', import.meta.url), 'utf8');
@@ -127,7 +191,10 @@ assert.match(exportBlock, /const \{ min: start, max: end \} = availableDateBound
 assert.match(exportBlock, /createExecutiveFinancialPdf/);
 assert.doesNotMatch(exportBlock, /periodLabel/);
 assert.match(legacyAppSource, /els\.exportPdfReportBtn\.hidden = nativeMobile/);
+assert.match(legacyAppSource, /createMonthlyExpensePdf/);
+assert.match(legacyAppSource, /els\.exportMonthlyExpensePdfBtn\.hidden = nativeMobile/);
 assert.match(indexSource, /Relatório financeiro premium em PDF/);
+assert.match(indexSource, /Relatório mensal de despesas em PDF/);
 assert.doesNotMatch(indexSource, /Super relatório financeiro em PDF/);
 assert.doesNotMatch(mainActivity, /ReportExporterPlugin/);
 

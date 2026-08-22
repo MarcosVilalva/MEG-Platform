@@ -1,4 +1,4 @@
-import { buildExecutiveFinancialModel } from './executive-financial-report-core.js';
+import { buildExecutiveFinancialModel, buildMonthlyExpenseModel } from './executive-financial-report-core.js';
 import { REPORT_FONT_FAMILY, REPORT_FONTS } from './executive-financial-report-fonts.js';
 
 const PAGE_WIDTH = 595.28;
@@ -584,6 +584,270 @@ function addActionPage(document, model) {
   indicators.forEach((item, index) => page.text(MARGIN + 14 + (index % 2) * 255, 766 + Math.floor(index / 2) * 12, truncate(item, 238, 6.4), { size: 6.4, color: index < 2 ? COLORS.white : COLORS.muted }));
 }
 
+function monthlyTone(metrics) {
+  if (!metrics.hasSufficientData) return COLORS.muted;
+  if (metrics.projectedExpenseRatio <= 0.8) return COLORS.green;
+  if (metrics.projectedExpenseRatio <= 1) return COLORS.orange;
+  return COLORS.red;
+}
+
+function monthlyDecision(metrics) {
+  if (!metrics.hasSufficientData) return 'Registrar o movimento do mês';
+  if (metrics.overdueCount > 0) return 'Regularizar pendências e proteger o caixa';
+  if (metrics.projectedExpenseRatio > 1) return 'Reduzir despesas e reforçar a receita';
+  if (metrics.projectedExpenseRatio > 0.8) return 'Conter o ritmo para recuperar a margem';
+  return 'Preservar o fechamento saudável';
+}
+
+function addMonthlyOverviewPage(document, model) {
+  const page = document.addPage();
+  const { metrics } = model;
+  const tone = monthlyTone(metrics);
+  addBackground(page);
+  addHeader(page, 'PAINEL DE DESPESAS DO MÊS', `${model.metadata.periodLabel}  |  ${model.metadata.owner}`, 1);
+
+  page.roundedRect(MARGIN, 96, PAGE_WIDTH - MARGIN * 2, 150, 18, { fill: COLORS.surface, stroke: COLORS.border, lineWidth: 0.8 });
+  scoreGauge(page, MARGIN + 80, 170, metrics.controlScore, 49);
+  page.text(MARGIN + 25, 220, metrics.healthStatus, { size: 6.3, font: 'bold', color: tone, align: 'center', width: 110 });
+  page.line(MARGIN + 160, 113, MARGIN + 160, 226, { color: COLORS.border, lineWidth: 0.7 });
+  chip(page, MARGIN + 181, 112, 'DECISÃO DO MÊS', tone, 90);
+  page.text(MARGIN + 181, 142, monthlyDecision(metrics), { size: 14, font: 'bold' });
+  const decisionText = metrics.projectedExpense > 0
+    ? `O mês projeta ${money(metrics.projectedExpense)} em despesas. Com receita realizada de ${money(metrics.income)}, o fechamento estimado é ${signedMoney(metrics.projectedClosing)}.`
+    : 'Não existem despesas monetárias cadastradas para o mês selecionado.';
+  page.wrappedText(MARGIN + 181, 169, decisionText, { width: 310, size: 8, lineHeight: 11, color: COLORS.muted, maxLines: 3 });
+  page.text(MARGIN + 181, 214, `REALIZADO  ${money(metrics.paidExpense)}    EM ABERTO  ${money(metrics.pendingValue)}`, { size: 7, font: 'bold', color: COLORS.teal });
+
+  const kpis = [
+    ['DESPESAS PAGAS', money(metrics.paidExpense), COLORS.blue],
+    ['EM ABERTO', money(metrics.pendingValue), metrics.overdueCount ? COLORS.red : COLORS.orange],
+    ['PROJEÇÃO DO MÊS', money(metrics.projectedExpense), COLORS.purple],
+    ['FECHAMENTO', signedMoney(metrics.projectedClosing), metrics.projectedClosing >= 0 ? COLORS.green : COLORS.red],
+  ];
+  const kpiWidth = (PAGE_WIDTH - MARGIN * 2 - 18) / 4;
+  kpis.forEach((item, index) => {
+    const x = MARGIN + index * (kpiWidth + 6);
+    page.roundedRect(x, 266, kpiWidth, 70, 12, { fill: COLORS.surface, stroke: COLORS.border, lineWidth: 0.7 });
+    page.text(x + 10, 279, item[0], { size: 6.1, font: 'bold', color: COLORS.muted });
+    page.text(x + 10, 303, truncate(item[1], kpiWidth - 20, 11.5, 'bold'), { size: 11.5, font: 'bold', color: item[2] });
+  });
+
+  const half = (PAGE_WIDTH - MARGIN * 2 - 10) / 2;
+  page.roundedRect(MARGIN, 356, half, 205, 15, { fill: COLORS.surface, stroke: COLORS.border, lineWidth: 0.7 });
+  sectionTitle(page, MARGIN + 14, 371, 'Composição gerencial', 'Pago e pendente agrupados por tipo de necessidade.');
+  const groupColors = [COLORS.blue, COLORS.purple, COLORS.orange, COLORS.teal, COLORS.green, COLORS.red];
+  const groupMaximum = Math.max(1, ...model.managerialGroups.map((item) => item.total));
+  model.managerialGroups.slice(0, 6).forEach((item, index) => {
+    const top = 416 + index * 24;
+    page.text(MARGIN + 14, top, truncate(item.group, 105, 6.5, 'bold'), { size: 6.5, font: 'bold' });
+    page.text(MARGIN + half - 79, top, compactMoney(item.total), { size: 6.5, font: 'bold', align: 'right', width: 65 });
+    progressBar(page, MARGIN + 14, top + 12, half - 28, item.total / groupMaximum, groupColors[index % groupColors.length], 6);
+  });
+  if (!model.managerialGroups.length) page.text(MARGIN + 14, 430, 'Sem despesas no mês selecionado.', { size: 8, color: COLORS.muted });
+
+  const impactX = MARGIN + half + 10;
+  page.roundedRect(impactX, 356, half, 205, 15, { fill: COLORS.surface, stroke: COLORS.border, lineWidth: 0.7 });
+  sectionTitle(page, impactX + 14, 371, 'O que mais impactou', 'Categorias com maior peso no fechamento mensal.');
+  const categoryMaximum = Math.max(1, ...model.categories.map((item) => item.total));
+  model.categories.slice(0, 5).forEach((item, index) => {
+    const top = 419 + index * 28;
+    page.text(impactX + 14, top, truncate(item.category, 115, 6.8, 'bold'), { size: 6.8, font: 'bold' });
+    page.text(impactX + half - 82, top, `${percent(item.share)}  ${compactMoney(item.total)}`, { size: 6.3, font: 'bold', color: index === 0 ? COLORS.orange : COLORS.white, align: 'right', width: 68 });
+    progressBar(page, impactX + 14, top + 13, half - 28, item.total / categoryMaximum, index === 0 ? COLORS.orange : COLORS.teal, 6);
+  });
+  if (!model.categories.length) page.text(impactX + 14, 430, 'Sem categorias para analisar.', { size: 8, color: COLORS.muted });
+
+  page.roundedRect(MARGIN, 581, PAGE_WIDTH - MARGIN * 2, 199, 16, { fill: COLORS.surfaceAlt, stroke: COLORS.border, lineWidth: 0.7 });
+  sectionTitle(page, MARGIN + 16, 597, 'Leitura rápida do fechamento', model.metadata.projectionMethod);
+  const bridge = [
+    ['RECEITA REALIZADA', metrics.income, COLORS.teal],
+    ['DESPESA PAGA', -metrics.paidExpense, COLORS.blue],
+    ['COMPROMISSOS ABERTOS', -metrics.pendingValue, COLORS.orange],
+    ['RITMO ADICIONAL', -Math.max(metrics.projectedExpense - metrics.committedExpense, 0), COLORS.purple],
+    ['SALDO PROJETADO', metrics.projectedClosing, metrics.projectedClosing >= 0 ? COLORS.green : COLORS.red],
+  ];
+  const bridgeWidth = (PAGE_WIDTH - MARGIN * 2 - 32) / 5;
+  bridge.forEach((item, index) => {
+    const x = MARGIN + 16 + index * (bridgeWidth + 4);
+    page.roundedRect(x, 641, bridgeWidth, 71, 11, { fill: COLORS.surface, stroke: index === 4 ? item[2] : COLORS.border, lineWidth: index === 4 ? 1 : 0.5 });
+    page.text(x + 7, 652, item[0], { size: 5.5, font: 'bold', color: COLORS.muted });
+    page.text(x + 7, 677, truncate(signedMoney(item[1]), bridgeWidth - 14, 9, 'bold'), { size: 9, font: 'bold', color: item[2] });
+  });
+  page.wrappedText(MARGIN + 16, 732, metrics.incomeIncreaseRequired > 0
+    ? `Para uma margem saudável de 20%, a receita necessária é ${money(metrics.requiredHealthyIncome)}. Alternativamente, reduza ${money(metrics.expenseReductionRequired)} da projeção atual.`
+    : `A projeção está dentro do teto saudável de ${money(metrics.healthyExpenseCeiling)}. Preserve a diferença e transforme o saldo em reserva.`,
+  { width: PAGE_WIDTH - MARGIN * 2 - 32, size: 7.2, lineHeight: 9.4, color: COLORS.muted, maxLines: 3 });
+}
+
+function addMonthlyImpactPage(document, model) {
+  const page = document.addPage();
+  const { metrics } = model;
+  addBackground(page);
+  addHeader(page, 'O QUE MAIS IMPACTOU', 'Categorias, lançamentos e meios de pagamento que explicam o mês', 2);
+  const kpis = [
+    ['MAIOR CATEGORIA', model.categories[0]?.category || 'Sem dados', COLORS.orange],
+    ['PESO NO MÊS', percent(metrics.topCategoryShare), COLORS.purple],
+    ['MÊS ANTERIOR', money(metrics.previousExpense), COLORS.blue],
+    ['VARIAÇÃO PROJETADA', signedMoney(metrics.trendValue), metrics.trendValue <= 0 ? COLORS.green : COLORS.red],
+  ];
+  const kpiWidth = (PAGE_WIDTH - MARGIN * 2 - 18) / 4;
+  kpis.forEach((item, index) => {
+    const x = MARGIN + index * (kpiWidth + 6);
+    page.roundedRect(x, 96, kpiWidth, 72, 12, { fill: COLORS.surface, stroke: COLORS.border, lineWidth: 0.7 });
+    page.text(x + 10, 109, item[0], { size: 6, font: 'bold', color: COLORS.muted });
+    page.text(x + 10, 133, truncate(item[1], kpiWidth - 20, index === 0 ? 8.5 : 11, 'bold'), { size: index === 0 ? 8.5 : 11, font: 'bold', color: item[2] });
+  });
+
+  page.roundedRect(MARGIN, 188, PAGE_WIDTH - MARGIN * 2, 276, 16, { fill: COLORS.surface, stroke: COLORS.border, lineWidth: 0.7 });
+  sectionTitle(page, MARGIN + 16, 203, 'Ranking das categorias', 'O total combina valores pagos e compromissos em aberto no mês.');
+  const maximum = Math.max(1, ...model.categories.map((item) => item.total));
+  model.categories.slice(0, 7).forEach((item, index) => {
+    const top = 247 + index * 29;
+    page.text(MARGIN + 16, top, `${String(index + 1).padStart(2, '0')}  ${truncate(item.category, 126, 7, 'bold')}`, { size: 7, font: 'bold' });
+    progressBar(page, MARGIN + 163, top + 1, 252, item.total / maximum, index === 0 ? COLORS.orange : index < 3 ? COLORS.teal : COLORS.blue, 9);
+    page.text(MARGIN + 428, top - 1, money(item.total), { size: 7, font: 'bold', align: 'right', width: 77 });
+    page.text(PAGE_WIDTH - MARGIN - 28, top - 1, percent(item.share), { size: 6.5, color: COLORS.muted, align: 'right', width: 28 });
+  });
+  if (!model.categories.length) page.text(MARGIN + 16, 257, 'Nenhuma categoria encontrada.', { size: 8, color: COLORS.muted });
+
+  const half = (PAGE_WIDTH - MARGIN * 2 - 10) / 2;
+  page.roundedRect(MARGIN, 484, half, 193, 15, { fill: COLORS.surface, stroke: COLORS.border, lineWidth: 0.7 });
+  sectionTitle(page, MARGIN + 14, 499, 'Maiores despesas individuais');
+  model.topExpenses.slice(0, 6).forEach((item, index) => {
+    const top = 536 + index * 23;
+    if (index) page.line(MARGIN + 14, top - 7, MARGIN + half - 14, top - 7, { color: COLORS.border, lineWidth: 0.4 });
+    page.text(MARGIN + 14, top, truncate(item.description, 121, 6.6, 'bold'), { size: 6.6, font: 'bold' });
+    page.text(MARGIN + half - 85, top, money(item.value), { size: 6.6, font: 'bold', color: item.status === 'EM ABERTO' ? COLORS.orange : COLORS.white, align: 'right', width: 71 });
+    page.text(MARGIN + 14, top + 10, `${dateLabel(item.date)}  |  ${item.status}`, { size: 5.5, color: COLORS.muted });
+  });
+  if (!model.topExpenses.length) page.text(MARGIN + 14, 546, 'Sem despesas individuais.', { size: 8, color: COLORS.muted });
+
+  const paymentX = MARGIN + half + 10;
+  page.roundedRect(paymentX, 484, half, 193, 15, { fill: COLORS.surface, stroke: COLORS.border, lineWidth: 0.7 });
+  sectionTitle(page, paymentX + 14, 499, 'Meios de pagamento');
+  const paymentMaximum = Math.max(1, ...model.paymentMethods.map((item) => item.total));
+  model.paymentMethods.slice(0, 6).forEach((item, index) => {
+    const top = 539 + index * 23;
+    page.text(paymentX + 14, top, truncate(item.method, 98, 6.5, 'bold'), { size: 6.5, font: 'bold' });
+    page.text(paymentX + half - 80, top, compactMoney(item.total), { size: 6.5, font: 'bold', align: 'right', width: 66 });
+    progressBar(page, paymentX + 14, top + 11, half - 28, item.total / paymentMaximum, [COLORS.purple, COLORS.blue, COLORS.teal][index % 3], 5);
+  });
+  if (!model.paymentMethods.length) page.text(paymentX + 14, 546, 'Sem meios de pagamento.', { size: 8, color: COLORS.muted });
+
+  page.roundedRect(MARGIN, 697, PAGE_WIDTH - MARGIN * 2, 83, 14, { fill: COLORS.surfaceAlt, stroke: COLORS.border, lineWidth: 0.7 });
+  sectionTitle(page, MARGIN + 14, 711, 'Leitura gerencial');
+  const topCategory = model.categories[0];
+  const budget = model.budgetOpportunities[0];
+  page.wrappedText(MARGIN + 14, 741, topCategory
+    ? `${topCategory.category} concentra ${percent(topCategory.share)} do mês, total de ${money(topCategory.total)}. ${budget ? `${budget.category} é o maior desvio de orçamento, com ${money(budget.variance)} acima da meta.` : 'Nenhum desvio positivo foi encontrado nas metas cadastradas.'}`
+    : 'Ainda não há dados suficientes para identificar os principais impactos.',
+  { width: PAGE_WIDTH - MARGIN * 2 - 28, size: 7.2, lineHeight: 9.5, color: COLORS.muted, maxLines: 3 });
+}
+
+function addMonthlyOpenProjectionPage(document, model) {
+  const page = document.addPage();
+  const { metrics } = model;
+  addBackground(page);
+  addHeader(page, 'EM ABERTO E PROJEÇÕES', 'Compromissos pendentes, riscos de atraso e fechamento esperado', 3);
+
+  page.roundedRect(MARGIN, 96, PAGE_WIDTH - MARGIN * 2, 112, 17, { fill: metrics.overdueCount ? '#2c2026' : COLORS.surface, stroke: metrics.overdueCount ? COLORS.red : COLORS.border, lineWidth: 0.9 });
+  chip(page, MARGIN + 16, 112, metrics.overdueCount ? 'ATENÇÃO IMEDIATA' : 'COMPROMISSOS DO MÊS', metrics.overdueCount ? COLORS.red : COLORS.teal, 104);
+  page.text(MARGIN + 16, 145, money(metrics.pendingValue), { size: 22, font: 'bold', color: metrics.overdueCount ? COLORS.red : COLORS.orange });
+  page.text(MARGIN + 16, 177, `${metrics.openCount} item(ns) em aberto, ${metrics.overdueCount} vencido(s)`, { size: 8, font: 'bold' });
+  page.line(MARGIN + 235, 115, MARGIN + 235, 190, { color: COLORS.border, lineWidth: 0.7 });
+  page.text(MARGIN + 257, 119, 'VALOR VENCIDO', { size: 6.5, font: 'bold', color: COLORS.muted });
+  page.text(MARGIN + 257, 143, money(metrics.overdueValue), { size: 15, font: 'bold', color: metrics.overdueValue ? COLORS.red : COLORS.green });
+  page.wrappedText(MARGIN + 257, 170, metrics.overdueCount ? 'Regularize primeiro os itens com juros, bloqueio ou impacto no crédito.' : 'Nenhum compromisso vencido foi encontrado no mês.', { width: 250, size: 6.8, lineHeight: 9, color: COLORS.muted, maxLines: 2 });
+
+  page.roundedRect(MARGIN, 228, PAGE_WIDTH - MARGIN * 2, 253, 15, { fill: COLORS.surface, stroke: COLORS.border, lineWidth: 0.7 });
+  sectionTitle(page, MARGIN + 14, 243, 'Compromissos em aberto', `Até ${Math.min(model.openItems.length, 8)} itens, priorizados por atraso e data.`);
+  page.text(MARGIN + 14, 281, 'DATA', { size: 6, font: 'bold', color: COLORS.muted });
+  page.text(MARGIN + 78, 281, 'COMPROMISSO', { size: 6, font: 'bold', color: COLORS.muted });
+  page.text(PAGE_WIDTH - MARGIN - 135, 281, 'STATUS', { size: 6, font: 'bold', color: COLORS.muted });
+  page.text(PAGE_WIDTH - MARGIN - 76, 281, 'VALOR', { size: 6, font: 'bold', color: COLORS.muted, align: 'right', width: 76 });
+  model.openItems.slice(0, 8).forEach((item, index) => {
+    const top = 307 + index * 21;
+    if (index) page.line(MARGIN + 14, top - 7, PAGE_WIDTH - MARGIN - 14, top - 7, { color: COLORS.border, lineWidth: 0.4 });
+    page.text(MARGIN + 14, top, dateLabel(item.date), { size: 6.6, color: item.overdue ? COLORS.red : COLORS.muted });
+    page.text(MARGIN + 78, top, truncate(item.description || 'Despesa sem descrição', 245, 6.6, 'bold'), { size: 6.6, font: 'bold' });
+    page.text(PAGE_WIDTH - MARGIN - 135, top, item.overdue ? `${item.daysLate} DIA(S)` : item.dueToday ? 'HOJE' : 'A VENCER', { size: 5.8, font: 'bold', color: item.overdue ? COLORS.red : COLORS.orange });
+    page.text(PAGE_WIDTH - MARGIN - 76, top, money(item.value), { size: 6.6, font: 'bold', align: 'right', width: 76 });
+  });
+  if (!model.openItems.length) page.text(MARGIN + 14, 320, 'Nenhum compromisso em aberto no mês selecionado.', { size: 8, color: COLORS.muted });
+
+  sectionTitle(page, MARGIN, 506, 'Cenários de fechamento', 'A receita futura não é presumida, somente valores realizados entram no cálculo.');
+  const cardWidth = (PAGE_WIDTH - MARGIN * 2 - 16) / 3;
+  scenarioCard(page, { x: MARGIN, top: 542, width: cardWidth, title: 'Comprometido', accent: COLORS.orange, main: money(metrics.committedExpense), subtitle: 'Pago mais compromissos em aberto', result: `Saldo: ${signedMoney(metrics.income - metrics.committedExpense)}` });
+  scenarioCard(page, { x: MARGIN + cardWidth + 8, top: 542, width: cardWidth, title: 'Ritmo do mês', accent: COLORS.purple, main: money(metrics.paceProjection), subtitle: `${metrics.daysElapsed} de ${metrics.daysInMonth} dias considerados`, result: 'Projeção por ritmo realizado' });
+  scenarioCard(page, { x: MARGIN + (cardWidth + 8) * 2, top: 542, width: cardWidth, title: 'Fechamento', accent: monthlyTone(metrics), main: signedMoney(metrics.projectedClosing), subtitle: `Despesa projetada: ${money(metrics.projectedExpense)}`, result: metrics.healthStatus, recommended: metrics.projectedExpenseRatio <= 0.8 });
+
+  page.roundedRect(MARGIN, 668, PAGE_WIDTH - MARGIN * 2, 112, 15, { fill: '#10372f', stroke: COLORS.teal, lineWidth: 0.9 });
+  sectionTitle(page, MARGIN + 16, 684, 'Receita necessária para saúde financeira');
+  page.text(MARGIN + 16, 718, money(metrics.requiredHealthyIncome), { size: 19, font: 'bold', color: COLORS.teal });
+  page.text(MARGIN + 203, 719, `Teto saudável de despesas: ${money(metrics.healthyExpenseCeiling)}`, { size: 8, font: 'bold' });
+  page.wrappedText(MARGIN + 203, 743, metrics.incomeIncreaseRequired > 0
+    ? `Faltam ${money(metrics.incomeIncreaseRequired)} em receita para que a projeção represente no máximo 80% da renda.`
+    : 'A receita realizada já sustenta uma margem de pelo menos 20% no cenário projetado.',
+  { width: 330, size: 7, lineHeight: 9, color: COLORS.muted, maxLines: 3 });
+}
+
+function addMonthlyImprovementPage(document, model) {
+  const page = document.addPage();
+  const { metrics } = model;
+  addBackground(page);
+  addHeader(page, 'PLANO DE MELHORIA', 'Ações objetivas para reduzir pressão e preparar o próximo mês', 4);
+
+  page.roundedRect(MARGIN, 96, PAGE_WIDTH - MARGIN * 2, 105, 17, { fill: '#10372f', stroke: COLORS.teal, lineWidth: 1 });
+  chip(page, MARGIN + 16, 112, 'META DO PRÓXIMO MÊS', COLORS.teal, 106);
+  page.text(MARGIN + 16, 145, `Limitar despesas a ${money(Math.max(metrics.projectedExpense - metrics.suggestedSavings, 0))}`, { size: 14, font: 'bold' });
+  page.wrappedText(MARGIN + 16, 173, metrics.suggestedSavings > 0
+    ? `As oportunidades identificadas podem liberar ${money(metrics.suggestedSavings)}. Depois desse ajuste, a receita adicional estimada para manter 20% de margem seria ${money(metrics.incomeNeededAfterSavings)}.`
+    : 'Não foram encontradas categorias controláveis suficientes. Revise metas e confirme a receita do próximo mês.',
+  { width: PAGE_WIDTH - MARGIN * 2 - 32, size: 7.2, lineHeight: 9.5, color: COLORS.muted, maxLines: 2 });
+
+  page.roundedRect(MARGIN, 222, PAGE_WIDTH - MARGIN * 2, 218, 15, { fill: COLORS.surface, stroke: COLORS.border, lineWidth: 0.7 });
+  sectionTitle(page, MARGIN + 14, 237, 'Onde melhorar primeiro', 'Sugestões aplicadas somente a categorias flexíveis e controláveis.');
+  page.text(MARGIN + 14, 276, 'CATEGORIA', { size: 6, font: 'bold', color: COLORS.muted });
+  page.text(MARGIN + 260, 276, 'ATUAL', { size: 6, font: 'bold', color: COLORS.muted, align: 'right', width: 70 });
+  page.text(MARGIN + 344, 276, 'NOVO LIMITE', { size: 6, font: 'bold', color: COLORS.muted, align: 'right', width: 82 });
+  page.text(PAGE_WIDTH - MARGIN - 76, 276, 'ECONOMIA', { size: 6, font: 'bold', color: COLORS.muted, align: 'right', width: 76 });
+  model.savingsOpportunities.slice(0, 5).forEach((item, index) => {
+    const top = 307 + index * 25;
+    if (index) page.line(MARGIN + 14, top - 8, PAGE_WIDTH - MARGIN - 14, top - 8, { color: COLORS.border, lineWidth: 0.4 });
+    page.text(MARGIN + 14, top, truncate(item.category, 195, 7, 'bold'), { size: 7, font: 'bold' });
+    page.text(MARGIN + 260, top, money(item.current), { size: 7, color: COLORS.muted, align: 'right', width: 70 });
+    page.text(MARGIN + 344, top, money(item.newLimit), { size: 7, font: 'bold', align: 'right', width: 82 });
+    page.text(PAGE_WIDTH - MARGIN - 76, top, `-${money(item.saving)}`, { size: 7, font: 'bold', color: COLORS.green, align: 'right', width: 76 });
+  });
+  if (!model.savingsOpportunities.length) page.text(MARGIN + 14, 312, 'Nenhuma categoria flexível com valor relevante foi encontrada.', { size: 8, color: COLORS.muted });
+  page.text(MARGIN + 14, 417, `ECONOMIA POTENCIAL  ${money(metrics.suggestedSavings)}`, { size: 7.3, font: 'bold', color: COLORS.teal });
+
+  page.roundedRect(MARGIN, 460, PAGE_WIDTH - MARGIN * 2, 185, 15, { fill: COLORS.surface, stroke: COLORS.border, lineWidth: 0.7 });
+  sectionTitle(page, MARGIN + 14, 475, 'Ações priorizadas');
+  model.recommendations.slice(0, 5).forEach((item, index) => {
+    const top = 512 + index * 25;
+    const color = item.priority === 'CRÍTICA' ? COLORS.red : item.priority === 'ALTA' ? COLORS.orange : item.priority === 'MANTER' ? COLORS.green : COLORS.teal;
+    page.roundedRect(MARGIN + 14, top, 52, 17, 8, { fill: COLORS.surfaceLight });
+    page.text(MARGIN + 14, top + 5, item.priority, { size: 5.5, font: 'bold', color, align: 'center', width: 52 });
+    page.text(MARGIN + 77, top + 4, truncate(`${item.title}: ${item.action}`, PAGE_WIDTH - MARGIN * 2 - 105, 6.7), { size: 6.7, color: index === 0 ? COLORS.white : COLORS.muted });
+  });
+
+  page.roundedRect(MARGIN, 665, PAGE_WIDTH - MARGIN * 2, 115, 15, { fill: COLORS.surfaceAlt, stroke: COLORS.border, lineWidth: 0.7 });
+  sectionTitle(page, MARGIN + 14, 680, 'Checklist de decisão gerencial');
+  const checklist = [
+    `1. Reservar ${money(metrics.pendingValue)} para compromissos em aberto.`,
+    `2. Trabalhar com teto de ${money(Math.max(metrics.projectedExpense - metrics.suggestedSavings, 0))} em despesas.`,
+    `3. Buscar receita mínima de ${money(Math.max(metrics.requiredHealthyIncome - metrics.suggestedSavings / 0.8, 0))}.`,
+    `4. Acompanhar semanalmente ${model.categories[0]?.category || 'a categoria de maior impacto'}.`,
+  ];
+  checklist.forEach((item, index) => {
+    const x = MARGIN + 14 + (index % 2) * 257;
+    const top = 718 + Math.floor(index / 2) * 28;
+    page.circle(x + 3, top + 5, 3, { fill: index < 2 ? COLORS.teal : COLORS.blue });
+    page.text(x + 12, top, truncate(item, 235, 6.6), { size: 6.6, color: index < 2 ? COLORS.white : COLORS.muted });
+  });
+}
+
 export function createExecutiveFinancialPdf({ state, start, end, owner, generatedAt = new Date() }) {
   const model = buildExecutiveFinancialModel({ state, start, end, owner, generatedAt });
   const document = new PdfDocument({ title: 'MEG Finanças | Relatório financeiro premium', author: owner || 'MEG Finanças', generatedAt });
@@ -594,6 +858,18 @@ export function createExecutiveFinancialPdf({ state, start, end, owner, generate
   addFooter(document, generatedAt);
   const bytes = document.bytes();
   return { bytes, blob: new Blob([bytes], { type: MIME_PDF }), filename: `relatorio-financeiro-premium-meg-${model.metadata.referenceDate}.pdf`, mimeType: MIME_PDF, model, pageCount: document.pages.length };
+}
+
+export function createMonthlyExpensePdf({ state, start, end, owner, generatedAt = new Date() }) {
+  const model = buildMonthlyExpenseModel({ state, start, end, owner, generatedAt });
+  const document = new PdfDocument({ title: `MEG Finanças | Despesas de ${model.metadata.periodLabel}`, author: owner || 'MEG Finanças', generatedAt });
+  addMonthlyOverviewPage(document, model);
+  addMonthlyImpactPage(document, model);
+  addMonthlyOpenProjectionPage(document, model);
+  addMonthlyImprovementPage(document, model);
+  addFooter(document, generatedAt);
+  const bytes = document.bytes();
+  return { bytes, blob: new Blob([bytes], { type: MIME_PDF }), filename: `relatorio-mensal-despesas-meg-${model.metadata.month}.pdf`, mimeType: MIME_PDF, model, pageCount: document.pages.length };
 }
 
 export const executivePdfInternals = { PdfDocument, PdfPage, measureTextWidth, pdfText, wrapLines };
