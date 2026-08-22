@@ -428,4 +428,211 @@ export function buildExecutiveFinancialModel({ state, start, end, generatedAt = 
   return model;
 }
 
+export function buildMonthlyExpenseModel({ state, start, end, generatedAt = new Date(), owner = 'Usuário MEG' }) {
+  const transactions = Array.isArray(state?.transactions) ? [...state.transactions] : [];
+  const catalogs = state?.catalogs && typeof state.catalogs === 'object' ? state.catalogs : {};
+  const budgets = state?.budgets && typeof state.budgets === 'object' ? state.budgets : {};
+  const referenceDate = localDateIso(generatedAt);
+  const startMonth = /^\d{4}-\d{2}/.test(String(start || '')) ? String(start).slice(0, 7) : '';
+  const endMonth = /^\d{4}-\d{2}/.test(String(end || '')) ? String(end).slice(0, 7) : '';
+  const selectedMonth = startMonth && startMonth === endMonth ? startMonth : endMonth || startMonth || referenceDate.slice(0, 7);
+  const monthStart = `${selectedMonth}-01`;
+  const monthEnd = shiftIsoDate(shiftIsoDate(monthStart, { months: 1, firstDay: true }), { days: -1 });
+  const previousMonthStart = shiftIsoDate(monthStart, { months: -1, firstDay: true });
+  const previousMonthEnd = shiftIsoDate(monthStart, { days: -1 });
+  const daysInMonth = Number(monthEnd.slice(-2)) || 30;
+  const isCurrentMonth = selectedMonth === referenceDate.slice(0, 7);
+  const isPastMonth = selectedMonth < referenceDate.slice(0, 7);
+  const daysElapsed = isCurrentMonth ? Math.min(Number(referenceDate.slice(-2)) || 1, daysInMonth) : isPastMonth ? daysInMonth : 0;
+
+  const monetary = transactions
+    .filter((item) => !isVerocardTransaction(item))
+    .filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(transactionPeriodDate(item)));
+  const monthItems = monetary.filter((item) => {
+    const date = transactionPeriodDate(item);
+    return date >= monthStart && date <= monthEnd;
+  });
+  const previousMonthItems = monetary.filter((item) => {
+    const date = transactionPeriodDate(item);
+    return date >= previousMonthStart && date <= previousMonthEnd;
+  });
+  const realizedIncome = monthItems.filter(isRealizedIncome);
+  const paidExpenses = monthItems.filter((item) => item.type === 'expense' && isPaid(item));
+  const pendingExpenses = monthItems.filter((item) => item.type === 'expense' && !isPaid(item));
+  const committedExpenses = [...paidExpenses, ...pendingExpenses];
+  const previousPaidExpenses = previousMonthItems.filter((item) => item.type === 'expense' && isPaid(item));
+  const sum = (items, type) => roundMoney(items.reduce((total, item) => total + transactionValue(item, type), 0));
+
+  const income = sum(realizedIncome, 'income');
+  const paidExpense = sum(paidExpenses, 'expense');
+  const pendingValue = sum(pendingExpenses, 'expense');
+  const committedExpense = roundMoney(paidExpense + pendingValue);
+  const previousExpense = sum(previousPaidExpenses, 'expense');
+  const variablePaidExpense = sum(paidExpenses.filter((item) => ['ESTILO DE VIDA', 'OUTROS'].includes(managerialGroup(item))), 'expense');
+  const paceProjection = isCurrentMonth && daysElapsed > 0
+    ? roundMoney(committedExpense + (variablePaidExpense / daysElapsed) * Math.max(daysInMonth - daysElapsed, 0))
+    : committedExpense;
+  const projectedExpense = roundMoney(Math.max(committedExpense, paceProjection));
+  const realizedResult = roundMoney(income - paidExpense);
+  const projectedClosing = roundMoney(income - projectedExpense);
+  const expenseRatio = income > 0 ? paidExpense / income : paidExpense > 0 ? 1 : 0;
+  const projectedExpenseRatio = income > 0 ? projectedExpense / income : projectedExpense > 0 ? 1 : 0;
+  const healthyExpenseCeiling = roundMoney(income * 0.8);
+  const requiredHealthyIncome = roundMoney(projectedExpense / 0.8);
+  const incomeIncreaseRequired = roundMoney(Math.max(requiredHealthyIncome - income, 0));
+  const expenseReductionRequired = roundMoney(Math.max(projectedExpense - healthyExpenseCeiling, 0));
+  const trendValue = roundMoney(projectedExpense - previousExpense);
+  const trendRate = previousExpense > 0 ? trendValue / previousExpense : 0;
+
+  const categoryBudgetKeys = new Map(Object.keys(budgets).map((key) => [normalizeText(key), key]));
+  const categoryMap = new Map();
+  committedExpenses.forEach((item) => {
+    const category = itemGroup(item);
+    const current = categoryMap.get(category) || { category, paid: 0, pending: 0, total: 0 };
+    const value = transactionValue(item, 'expense');
+    if (isPaid(item)) current.paid = roundMoney(current.paid + value);
+    else current.pending = roundMoney(current.pending + value);
+    current.total = roundMoney(current.paid + current.pending);
+    categoryMap.set(category, current);
+  });
+  const categories = [...categoryMap.values()].map((item) => {
+    const budgetKey = categoryBudgetKeys.get(normalizeText(item.category));
+    const budget = Number(budgetKey ? budgets[budgetKey] : 0) || 0;
+    return {
+      ...item,
+      share: committedExpense > 0 ? item.total / committedExpense : 0,
+      essential: ESSENTIAL_GROUPS.has(normalizeText(item.category)),
+      budget,
+      variance: roundMoney(item.total - budget),
+      utilization: budget > 0 ? item.total / budget : 0,
+    };
+  }).sort((a, b) => b.total - a.total || a.category.localeCompare(b.category, 'pt-BR'));
+
+  const managerialGroups = [...aggregateExpenses(committedExpenses, managerialGroup).entries()]
+    .map(([group, total]) => ({ group, total, share: committedExpense > 0 ? total / committedExpense : 0 }))
+    .sort((a, b) => b.total - a.total || a.group.localeCompare(b.group, 'pt-BR'));
+  const paymentMethods = [...aggregateExpenses(committedExpenses, (item) => String(item.paymentMethod || item.account || 'Não informado').trim() || 'Não informado').entries()]
+    .map(([method, total]) => ({ method, total, share: committedExpense > 0 ? total / committedExpense : 0 }))
+    .sort((a, b) => b.total - a.total || a.method.localeCompare(b.method, 'pt-BR'));
+  const expenseTypes = [...aggregateExpenses(committedExpenses, itemExpenseType).entries()]
+    .map(([type, total]) => ({ type, total, share: committedExpense > 0 ? total / committedExpense : 0 }))
+    .sort((a, b) => b.total - a.total || a.type.localeCompare(b.type, 'pt-BR'));
+
+  const openItems = pendingExpenses.map((item) => {
+    const date = transactionPeriodDate(item);
+    return {
+      ...item,
+      date,
+      value: roundMoney(transactionValue(item, 'expense')),
+      overdue: date < referenceDate,
+      dueToday: date === referenceDate,
+      daysLate: daysLate(date, referenceDate),
+    };
+  }).sort((a, b) => Number(b.overdue) - Number(a.overdue) || String(a.date).localeCompare(String(b.date)) || b.value - a.value);
+  const overdue = openItems.filter((item) => item.overdue);
+  const overdueValue = roundMoney(overdue.reduce((total, item) => total + item.value, 0));
+  const configuredBudget = roundMoney(Object.values(budgets).reduce((total, value) => total + (Number(value) || 0), 0));
+  const budgetVariance = configuredBudget > 0 ? roundMoney(committedExpense - configuredBudget) : 0;
+  const budgetOverValue = roundMoney(categories.filter((item) => item.budget > 0 && item.variance > 0).reduce((total, item) => total + item.variance, 0));
+  const budgetOpportunities = categories
+    .filter((item) => item.budget > 0 && item.variance > 0)
+    .sort((a, b) => b.variance - a.variance || b.utilization - a.utilization);
+
+  const controllableCategories = categories.filter((item) => {
+    const group = committedExpenses.find((expense) => normalizeText(itemGroup(expense)) === normalizeText(item.category));
+    const classification = group ? managerialGroup(group) : 'OUTROS';
+    return !item.essential && classification !== 'INVESTIMENTOS' && classification !== 'DÍVIDAS' && classification !== 'DESENVOLVIMENTO';
+  });
+  const controllableExpense = roundMoney(controllableCategories.reduce((total, item) => total + item.total, 0));
+  const desiredSavings = expenseReductionRequired > 0 ? expenseReductionRequired : roundMoney(projectedExpense * 0.05);
+  const suggestedRate = controllableExpense > 0 ? clamp(desiredSavings / controllableExpense, 0.08, 0.2) : 0;
+  const savingsOpportunities = controllableCategories.slice(0, 5).map((item) => ({
+    category: item.category,
+    current: item.total,
+    rate: suggestedRate,
+    saving: roundMoney(item.total * suggestedRate),
+    newLimit: roundMoney(item.total * (1 - suggestedRate)),
+  }));
+  const suggestedSavings = roundMoney(savingsOpportunities.reduce((total, item) => total + item.saving, 0));
+  const remainingExpenseGap = roundMoney(Math.max(expenseReductionRequired - suggestedSavings, 0));
+  const incomeNeededAfterSavings = roundMoney(Math.max((projectedExpense - suggestedSavings) / 0.8 - income, 0));
+
+  const spendingScore = income > 0 ? clamp((1.2 - projectedExpenseRatio) / 0.4, 0, 1) * 55 : projectedExpense === 0 ? 55 : 0;
+  const punctualityScore = openItems.length ? clamp(1 - overdue.length / openItems.length, 0, 1) * 25 : 25;
+  const budgetScore = configuredBudget > 0 ? clamp(1 - Math.max(budgetVariance, 0) / Math.max(configuredBudget, 1), 0, 1) * 20 : 12;
+  const hasSufficientData = monthItems.length > 0;
+  const controlScore = hasSufficientData ? Math.round(clamp(spendingScore + punctualityScore + budgetScore, 0, 100)) : 0;
+  const healthStatus = !hasSufficientData ? 'SEM DADOS NO MÊS' : income <= 0 && projectedExpense > 0 ? 'SEM RECEITA REGISTRADA' : projectedExpenseRatio <= 0.8 ? 'MÊS SAUDÁVEL' : projectedExpenseRatio <= 1 ? 'MÊS EM ATENÇÃO' : 'MÊS CRÍTICO';
+
+  const metrics = {
+    income, paidExpense, pendingValue, committedExpense, variablePaidExpense, paceProjection, projectedExpense,
+    realizedResult, projectedClosing, expenseRatio, projectedExpenseRatio,
+    healthyExpenseCeiling, requiredHealthyIncome, incomeIncreaseRequired, expenseReductionRequired,
+    previousExpense, trendValue, trendRate, daysElapsed, daysInMonth,
+    openCount: openItems.length, overdueCount: overdue.length, overdueValue,
+    configuredBudget, budgetVariance, budgetOverValue, controllableExpense,
+    desiredSavings, suggestedSavings, remainingExpenseGap, incomeNeededAfterSavings,
+    topCategoryShare: categories[0]?.share || 0, controlScore, healthStatus, hasSufficientData,
+  };
+
+  const recommendations = [];
+  if (overdue.length) recommendations.push(recommendation(
+    'CRÍTICA', `Regularizar ${overdue.length} compromisso(s) vencido(s)`,
+    `Priorize ${formatMoney(overdueValue)} antes de assumir novas despesas.`, overdueValue,
+    'Itens vencidos elevam juros, bloqueios e perda de previsibilidade do caixa.',
+  ));
+  if (expenseReductionRequired > 0) recommendations.push(recommendation(
+    'ALTA', 'Reequilibrar o fechamento do mês',
+    `Reduza até ${formatMoney(expenseReductionRequired)} ou eleve a receita em ${formatMoney(incomeIncreaseRequired)} para preservar uma margem de 20%.`,
+    Math.min(expenseReductionRequired, incomeIncreaseRequired || expenseReductionRequired),
+    `A despesa projetada é ${formatMoney(projectedExpense)} para uma receita realizada de ${formatMoney(income)}.`,
+  ));
+  else if (income > 0) recommendations.push(recommendation(
+    'MANTER', 'Proteger a margem saudável',
+    `Mantenha as despesas abaixo de ${formatMoney(healthyExpenseCeiling)} e reserve o saldo projetado.`,
+    Math.max(projectedClosing, 0), 'A projeção permanece dentro do limite gerencial de 80% da receita.',
+  ));
+  if (budgetOpportunities.length) recommendations.push(recommendation(
+    'ALTA', `Corrigir o desvio em ${budgetOpportunities[0].category}`,
+    `A categoria está ${formatMoney(budgetOpportunities[0].variance)} acima da meta cadastrada.`,
+    budgetOpportunities[0].variance, `Utilização atual de ${formatRate(budgetOpportunities[0].utilization * 100)} do orçamento.`,
+  ));
+  if (savingsOpportunities.length) recommendations.push(recommendation(
+    'MÉDIA', `Ajustar ${savingsOpportunities[0].category}`,
+    `Um limite de ${formatMoney(savingsOpportunities[0].newLimit)} pode liberar ${formatMoney(savingsOpportunities[0].saving)} no próximo mês.`,
+    savingsOpportunities[0].saving, 'É a maior categoria controlável encontrada no mês.',
+  ));
+  if (previousExpense > 0) recommendations.push(recommendation(
+    trendValue > 0 ? 'MÉDIA' : 'MANTER', trendValue > 0 ? 'Conter a alta mensal' : 'Consolidar a redução mensal',
+    trendValue > 0 ? `A projeção está ${formatMoney(trendValue)} acima do mês anterior.` : `A projeção está ${formatMoney(Math.abs(trendValue))} abaixo do mês anterior.`,
+    Math.abs(trendValue), `Variação projetada de ${formatRate(trendRate * 100)}.`,
+  ));
+  if (!recommendations.length) recommendations.push(recommendation(
+    'MANTER', 'Registrar o movimento do mês',
+    'Cadastre receitas, despesas pagas e compromissos em aberto para ativar as projeções gerenciais.',
+    0, 'Ainda não há dados suficientes para uma recomendação específica.',
+  ));
+
+  const topExpenses = committedExpenses.map((item) => ({
+    date: transactionPeriodDate(item),
+    description: item.description || 'Despesa sem descrição',
+    group: itemGroup(item),
+    value: roundMoney(transactionValue(item, 'expense')),
+    status: isPaid(item) ? 'PAGO' : 'EM ABERTO',
+  })).sort((a, b) => b.value - a.value || a.date.localeCompare(b.date));
+
+  return {
+    metadata: {
+      owner, generatedAt: generatedAt.toISOString(), referenceDate,
+      start: monthStart, end: monthEnd, month: selectedMonth,
+      periodLabel: monthLabel(selectedMonth),
+      source: 'MEG Finanças, base autenticada na nuvem', methodologyVersion: '1.0 mensal',
+      projectionMethod: isCurrentMonth ? 'Compromissos cadastrados mais o ritmo diário dos gastos flexíveis' : isPastMonth ? 'Fechamento do mês com compromissos ainda em aberto' : 'Compromissos cadastrados para o mês futuro',
+    },
+    metrics, categories, managerialGroups, paymentMethods, expenseTypes,
+    budgetOpportunities, savingsOpportunities, openItems, overdue,
+    topExpenses, recommendations: recommendations.slice(0, 5),
+  };
+}
+
 export const executiveFinancialReportInternals = { normalizeText, monthLabel, monthsBetween, localDateIso, shiftIsoDate };

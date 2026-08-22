@@ -448,6 +448,7 @@ const els = {
   exportBackupBtn: document.querySelector("#exportBackupBtn"),
   exportCsvBtn: document.querySelector("#exportCsvBtn"),
   exportPdfReportBtn: document.querySelector("#exportPdfReportBtn"),
+  exportMonthlyExpensePdfBtn: document.querySelector("#exportMonthlyExpensePdfBtn"),
   dialog: document.querySelector("#transactionDialog"),
   form: document.querySelector("#transactionForm"),
   dialogTitle: document.querySelector("#dialogTitle"),
@@ -4912,6 +4913,45 @@ async function exportFinancialPdfReport() {
   }
 }
 
+
+async function exportMonthlyExpensePdfReport() {
+  const button = els.exportMonthlyExpensePdfBtn;
+  if (!button || button.disabled || document.body.classList.contains("native-mobile")) return;
+  const originalMarkup = button.innerHTML;
+  button.disabled = true;
+  button.textContent = "Analisando as despesas do mês...";
+  try {
+    const { createMonthlyExpensePdf } = await import('./executive-financial-report-pdf.js');
+    const selectedRange = dateRangeForSelectedPeriod();
+    const reportMonth = selectedPeriod.mode === "month"
+      ? selectedPeriod.month
+      : String(selectedRange.end || selectedRange.start || todayIso).slice(0, 7);
+    const report = createMonthlyExpensePdf({
+      state: structuredClone(state),
+      start: `${reportMonth}-01`,
+      end: lastDayOfMonth(reportMonth),
+      owner: window.MEG_CLOUD?.user?.name || 'Usuário MEG',
+      generatedAt: new Date(),
+    });
+    downloadBlob(report.blob, report.filename);
+    showToast(
+      "Relatório mensal de despesas concluído",
+      `O PDF de ${formatMonth(reportMonth)} reúne o fechamento, os maiores impactos, os valores em aberto, as projeções e um plano de melhoria.`,
+      "success",
+    );
+  } catch (cause) {
+    console.error('MEG monthly expense PDF report failed', cause);
+    showToast(
+      "Não foi possível gerar o relatório mensal",
+      cause instanceof Error ? cause.message : "Tente novamente após conferir a base carregada.",
+      "danger",
+    );
+  } finally {
+    button.disabled = false;
+    button.innerHTML = originalMarkup;
+  }
+}
+
 function csvCell(value) {
   const text = String(value ?? "");
   return /[;"\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
@@ -5603,6 +5643,11 @@ if (els.exportPdfReportBtn) {
   const nativeMobile = document.body.classList.contains("native-mobile");
   els.exportPdfReportBtn.hidden = nativeMobile;
   if (!nativeMobile) els.exportPdfReportBtn.addEventListener("click", exportFinancialPdfReport);
+}
+if (els.exportMonthlyExpensePdfBtn) {
+  const nativeMobile = document.body.classList.contains("native-mobile");
+  els.exportMonthlyExpensePdfBtn.hidden = nativeMobile;
+  if (!nativeMobile) els.exportMonthlyExpensePdfBtn.addEventListener("click", exportMonthlyExpensePdfReport);
 }
 els.financialAccountCatalogForm.addEventListener("submit", addFinancialAccountCatalog);
 els.newFinancialAccountTypeInput.addEventListener("change", () => refreshFinancialAccountSubtypeOptions());
