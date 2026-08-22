@@ -93,6 +93,7 @@ assert.equal(report.pageCount, 4, 'o relatório gerencial deve permanecer curto'
 const pdfSource = new TextDecoder().decode(report.bytes);
 assert.match(pdfSource, /MEG Premium Financial Report/);
 assert.match(pdfSource, /MEG FINAN\\307AS/);
+assert.equal((pdfSource.match(/\(MEG\) Tj ET/g) || []).length, report.pageCount, 'o monograma MEG deve aparecer em todas as páginas');
 assert.match(pdfSource, /PAINEL FINANCEIRO PREMIUM/);
 assert.match(pdfSource, /TR\\312S CAMINHOS PARA A META/);
 assert.match(pdfSource, /AN\\301LISE INTELIGENTE/);
