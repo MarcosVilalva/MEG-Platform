@@ -47,23 +47,57 @@ assert.equal(model.metrics.next30Value, 5000);
 assert.equal(model.monthly.length, 3);
 assert.equal(model.expenseTypes[0].type, 'CONTAS GERAIS');
 assert.equal(model.expenseTypes[0].total, 3050);
+assert.equal(model.managerialGroups[0].group, 'ESSENCIAIS');
+assert.equal(model.scoreComponents.reduce((sum, item) => sum + item.score, 0), model.metrics.healthScore);
 assert.equal(model.cardRows[0].usage, 1.44);
 assert.ok(model.recommendations.some((item) => item.title.includes('vencida')));
 assert.ok(model.recommendations.every((item) => !item.title.includes('déficit projetado')));
 
 const report = createExecutiveFinancialPdf(options);
-assert.match(report.filename, /^relatorio-gerencial-meg-2026-08-21\.pdf$/);
+const strainedModel = buildExecutiveFinancialModel({
+  state: {
+    transactions: [
+      { date: '2026-06-05', description: 'Receita', type: 'income', amount: 5000, status: 'paid' },
+      { date: '2026-06-10', description: 'Despesas', type: 'expense', amount: 4500, group: 'LAZER', status: 'paid' },
+      { date: '2026-07-05', description: 'Receita', type: 'income', amount: 5000, status: 'paid' },
+      { date: '2026-07-10', description: 'Despesas', type: 'expense', amount: 4500, group: 'LAZER', status: 'paid' },
+      { date: '2026-08-05', description: 'Receita', type: 'income', amount: 5000, status: 'paid' },
+      { date: '2026-08-10', description: 'Despesas', type: 'expense', amount: 4500, group: 'LAZER', status: 'paid' },
+    ],
+    budgets: { LAZER: 3000 },
+    catalogs: { accounts: [], cards: [] },
+  },
+  start: '2026-06-01',
+  end: '2026-08-21',
+  generatedAt: new Date(2026, 7, 21, 12, 0, 0),
+});
+assert.equal(strainedModel.metrics.averageIncome, 5000);
+assert.equal(strainedModel.metrics.averageExpense, 4500);
+assert.equal(strainedModel.metrics.healthyIncome, 5625);
+assert.equal(strainedModel.metrics.incomeIncreaseRequired, 625);
+assert.equal(strainedModel.metrics.expenseReductionRequired, 500);
+assert.equal(strainedModel.metrics.hybridIncomeIncrease, 300);
+assert.equal(strainedModel.metrics.hybridExpenseReduction, 260);
+assert.equal(strainedModel.metrics.hybridSavingsRate, 0.2);
+assert.equal(strainedModel.managerialGroups[0].group, 'ESTILO DE VIDA');
+assert.equal(strainedModel.budgetOpportunities[0].variance, 1500);
+assert.match(strainedModel.recommendations[0].action, /R\$ 300,00.*R\$ 260,00/);
+assert.doesNotMatch(strainedModel.recommendations[0].action, /mesmo valor/);
+
+assert.match(report.filename, /^relatorio-financeiro-premium-meg-2026-08-21\.pdf$/);
 assert.equal(report.mimeType, 'application/pdf');
 assert.equal(new TextDecoder().decode(report.bytes.slice(0, 8)), '%PDF-1.4');
 assert.ok(report.bytes.length > 10_000);
 assert.equal(report.pageCount, 4, 'o relatório gerencial deve permanecer curto');
 
 const pdfSource = new TextDecoder().decode(report.bytes);
-assert.match(pdfSource, /MEG Financial Report/);
-assert.match(pdfSource, /PAINEL FINANCEIRO GERENCIAL/);
-assert.match(pdfSource, /QUANTO PRECISO TER DE RECEITA/);
-assert.match(pdfSource, /PLANO GERENCIAL DE A/);
-assert.doesNotMatch(pdfSource, /LAN\307AMENTOS DO HIST\323RICO/);
+assert.match(pdfSource, /MEG Premium Financial Report/);
+assert.match(pdfSource, /PAINEL FINANCEIRO PREMIUM/);
+assert.match(pdfSource, /TR\\312S CAMINHOS PARA A META/);
+assert.match(pdfSource, /AN\\301LISE INTELIGENTE/);
+assert.match(pdfSource, /PROJE\\307\\303O E RISCO/);
+assert.match(pdfSource, /PLANO DE A\\307\\303O EM 90 DIAS/);
+assert.doesNotMatch(pdfSource, /LAN\\307AMENTOS DO HIST\\323RICO/);
 assert.match(pdfSource, /startxref/);
 assert.match(pdfSource, /%%EOF/);
 assert.equal((pdfSource.match(/\/Type \/Page \/Parent/g) || []).length, report.pageCount);
@@ -86,7 +120,7 @@ assert.match(exportBlock, /const \{ min: start, max: end \} = availableDateBound
 assert.match(exportBlock, /createExecutiveFinancialPdf/);
 assert.doesNotMatch(exportBlock, /periodLabel/);
 assert.match(legacyAppSource, /els\.exportPdfReportBtn\.hidden = nativeMobile/);
-assert.match(indexSource, /Relatório gerencial em PDF/);
+assert.match(indexSource, /Relatório financeiro premium em PDF/);
 assert.doesNotMatch(indexSource, /Super relatório financeiro em PDF/);
 assert.doesNotMatch(mainActivity, /ReportExporterPlugin/);
 

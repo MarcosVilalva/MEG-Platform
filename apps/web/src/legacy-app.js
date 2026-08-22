@@ -4895,8 +4895,8 @@ async function exportFinancialPdfReport() {
     });
     downloadBlob(report.blob, report.filename);
     showToast(
-      "Relatório gerencial concluído",
-      `O PDF consolidou os últimos 12 meses realizados, calculou a receita saudável de ${currency(report.model.metrics.healthyIncome)} por mês e gerou ${report.model.recommendations.length} decisão(ões) prioritária(s).`,
+      "Relatório financeiro premium concluído",
+      `O PDF analisou os últimos 12 meses realizados, comparou três cenários para alcançar a margem de 20% e gerou um plano de ação de 90 dias.`,
       "success",
     );
   } catch (cause) {
