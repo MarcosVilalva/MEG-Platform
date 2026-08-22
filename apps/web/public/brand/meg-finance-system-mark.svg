@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-labelledby="title desc">
+  <title id="title">MEG Finance System</title>
+  <desc id="desc">Marca MEG com barras financeiras e seta de crescimento</desc>
+  <defs>
+    <linearGradient id="tile" x1="24" y1="18" x2="170" y2="178" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#184b55"/>
+      <stop offset=".48" stop-color="#0d3443"/>
+      <stop offset="1" stop-color="#061627"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="18" y1="14" x2="176" y2="180" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#78ffe5"/>
+      <stop offset=".48" stop-color="#2edbb3"/>
+      <stop offset="1" stop-color="#2485bd"/>
+    </linearGradient>
+    <linearGradient id="word" x1="40" y1="72" x2="145" y2="146" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#78f3ef"/>
+      <stop offset=".48" stop-color="#38b9d6"/>
+      <stop offset="1" stop-color="#24d494"/>
+    </linearGradient>
+    <linearGradient id="growth" x1="82" y1="52" x2="150" y2="25" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3e96cf"/>
+      <stop offset="1" stop-color="#45e7a7"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#020812" flood-opacity=".68"/>
+    </filter>
+  </defs>
+  <rect x="8" y="8" width="176" height="176" rx="45" fill="url(#tile)" stroke="url(#edge)" stroke-width="5" filter="url(#shadow)"/>
+  <path d="M18 136C50 114 66 116 94 88c21-21 42-44 75-61" fill="none" stroke="#3ef4c2" stroke-opacity=".1" stroke-width="16"/>
+  <g filter="url(#glow)">
+    <rect x="83" y="59" width="14" height="23" rx="2" fill="#399bc8"/>
+    <rect x="105" y="45" width="14" height="37" rx="2" fill="#43cbd3"/>
+    <rect x="127" y="26" width="14" height="56" rx="2" fill="#39db9e"/>
+    <path d="M81 93c24-4 37-20 51-36l-9-8 37-9-9 37-9-9c-18 20-34 34-58 40z" fill="url(#growth)" stroke="#b9fff1" stroke-width="2.5" stroke-linejoin="round"/>
+  </g>
+  <text x="30" y="139" fill="url(#word)" stroke="#c5fff5" stroke-opacity=".38" stroke-width="1.2" font-family="Inter, Segoe UI, sans-serif" font-size="64" font-weight="900" letter-spacing="-7">MEG</text>
+  <path d="M32 151h128" stroke="#60e8d0" stroke-opacity=".48"/>
+  <text x="96" y="167" fill="#d9f7f5" font-family="Inter, Segoe UI, sans-serif" font-size="9.5" font-weight="800" letter-spacing="2.2" text-anchor="middle">FINANCE SYSTEM</text>
+</svg>

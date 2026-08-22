@@ -2285,7 +2285,7 @@ function renderCashflowChart(points, openingBalance, startDate) {
   });
 
   const closingPositive = data.at(-1).value >= 0;
-  ctx.strokeStyle = closingPositive ? "#176b5d" : "#bc4236";
+  ctx.strokeStyle = closingPositive ? "#50e6c6" : "#ff6f7b";
   ctx.lineWidth = 4;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
@@ -2308,15 +2308,15 @@ function renderCashflowChart(points, openingBalance, startDate) {
   const step = Math.max(1, Math.ceil(chartPoints.length / 10));
   chartPoints.forEach((point, index) => {
     if (!importantIndexes.has(index) && index % step !== 0) return;
-    ctx.fillStyle = "#ffffff";
-    ctx.strokeStyle = point.value < 0 ? "#bc4236" : "#176b5d";
+    ctx.fillStyle = "#071725";
+    ctx.strokeStyle = point.value < 0 ? "#ff6f7b" : "#50e6c6";
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     if (importantIndexes.has(index)) {
-      ctx.fillStyle = "#18201d";
+      ctx.fillStyle = "#dff8ff";
       ctx.font = "800 12px Inter, system-ui, sans-serif";
       ctx.fillText(formatCompactNumber(point.value), point.x, Math.max(16, point.y - 13));
     }
@@ -2466,16 +2466,19 @@ function renderModalityEvolutionChart(data) {
     const x = pad.left + index * (barWidth + gap);
     const h = (plotHeight * item.value) / max;
     const y = pad.top + plotHeight - h;
-    ctx.fillStyle = "#176b5d";
+    const gradient = ctx.createLinearGradient(x, y, x, y + h);
+    gradient.addColorStop(0, "#56ebc9");
+    gradient.addColorStop(1, "#328ed0");
+    ctx.fillStyle = gradient;
     roundRect(ctx, x, y, barWidth, h, 7);
     ctx.fill();
-    ctx.fillStyle = "#18201d";
+    ctx.fillStyle = "#dff8ff";
     ctx.font = "800 12px Inter, system-ui, sans-serif";
     ctx.fillText(formatCompactNumber(item.value), x + barWidth / 2, Math.max(14, y - 8));
     ctx.save();
     ctx.translate(x + barWidth / 2, height - 36);
     ctx.rotate(data.length > 8 ? -Math.PI / 5 : 0);
-    ctx.fillStyle = "#64706b";
+    ctx.fillStyle = "#91a9ba";
     ctx.font = "12px Inter, system-ui, sans-serif";
     ctx.fillText(formatMonthShort(item.period), 0, 0);
     ctx.restore();
@@ -2504,7 +2507,7 @@ function renderBalanceClosingChart(data) {
   drawGrid(ctx, width, height, pad);
 
   const zeroY = pad.top + plotHeight - ((0 - min) / range) * plotHeight;
-  ctx.strokeStyle = "rgba(24, 32, 29, 0.18)";
+  ctx.strokeStyle = "rgba(126, 183, 196, 0.22)";
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(pad.left, zeroY);
@@ -2518,7 +2521,7 @@ function renderBalanceClosingChart(data) {
   });
 
   const closingPositive = points.at(-1).value >= 0;
-  ctx.strokeStyle = closingPositive ? "#176b5d" : "#bc4236";
+  ctx.strokeStyle = closingPositive ? "#50e6c6" : "#ff6f7b";
   ctx.lineWidth = 4;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
@@ -2543,15 +2546,15 @@ function renderBalanceClosingChart(data) {
   const step = Math.max(1, Math.ceil(points.length / 10));
   points.forEach((point, index) => {
     if (!importantIndexes.has(index) && index % step !== 0) return;
-    ctx.fillStyle = "#ffffff";
-    ctx.strokeStyle = point.value < 0 ? "#bc4236" : "#176b5d";
+    ctx.fillStyle = "#071725";
+    ctx.strokeStyle = point.value < 0 ? "#ff6f7b" : "#50e6c6";
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     if (importantIndexes.has(index)) {
-      ctx.fillStyle = "#18201d";
+      ctx.fillStyle = "#dff8ff";
       ctx.font = "800 12px Inter, system-ui, sans-serif";
       ctx.fillText(formatCompactNumber(point.value), point.x, Math.max(14, point.y - 12));
     }
@@ -2593,17 +2596,20 @@ function renderGroupBarChart(data) {
   data.forEach((item, index) => {
     const y = pad.top + index * (barHeight + 10);
     const barWidth = (plotWidth * item.value) / max;
-    ctx.fillStyle = "#64706b";
+    ctx.fillStyle = "#91a9ba";
     ctx.font = "13px Inter, system-ui, sans-serif";
     ctx.textAlign = "left";
     ctx.fillText(trimLabel(item.group, 17), 8, y + barHeight / 2);
-    ctx.fillStyle = "#e9efec";
+    ctx.fillStyle = "#153044";
     roundRect(ctx, pad.left, y, plotWidth, barHeight, 7);
     ctx.fill();
-    ctx.fillStyle = index < 3 ? "#bc4236" : "#315f99";
+    const gradient = ctx.createLinearGradient(pad.left, 0, pad.left + plotWidth, 0);
+    gradient.addColorStop(0, index < 3 ? "#ff6f7b" : "#328ed0");
+    gradient.addColorStop(1, index < 3 ? "#ffc166" : "#56ebc9");
+    ctx.fillStyle = gradient;
     roundRect(ctx, pad.left, y, Math.max(barWidth, 8), barHeight, 7);
     ctx.fill();
-    ctx.fillStyle = "#18201d";
+    ctx.fillStyle = "#dff8ff";
     ctx.font = "700 12px Inter, system-ui, sans-serif";
     ctx.textAlign = "left";
     ctx.fillText(formatCompactNumber(item.value), Math.min(pad.left + barWidth + 8, width - pad.right + 4), y + barHeight / 2);
@@ -2624,7 +2630,7 @@ function setupCanvas(canvas, fallbackWidth, fallbackHeight) {
 }
 
 function drawGrid(ctx, width, height, pad) {
-  ctx.strokeStyle = "#e2e8e4";
+  ctx.strokeStyle = "rgba(116, 175, 190, .18)";
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i += 1) {
     const y = pad.top + ((height - pad.top - pad.bottom) * i) / 4;
@@ -2663,7 +2669,7 @@ function drawChartLegend(ctx, items, x, y) {
     ctx.fillStyle = color;
     roundRect(ctx, x + offset, y, 14, 8, 4);
     ctx.fill();
-    ctx.fillStyle = "#64706b";
+    ctx.fillStyle = "#91a9ba";
     ctx.fillText(label, x + offset + 20, y + 8);
   });
 }
@@ -2791,16 +2797,19 @@ function renderCategoryChart() {
   data.forEach(([category, value], index) => {
     const y = top + index * (barHeight + gap);
     const barWidth = ((width - left - right) * value) / max;
-    ctx.fillStyle = "#64706b";
+    ctx.fillStyle = "#91a9ba";
     ctx.textAlign = "right";
     ctx.fillText(trimLabel(category, 24), left - 10, y + barHeight / 2);
-    ctx.fillStyle = "#e7efe8";
+    ctx.fillStyle = "#153044";
     roundRect(ctx, left, y, width - left - right, barHeight, 4);
     ctx.fill();
-    ctx.fillStyle = index < 3 ? "#83c51f" : "#9bd443";
+    const gradient = ctx.createLinearGradient(left, 0, left + width - right, 0);
+    gradient.addColorStop(0, index < 3 ? "#328ed0" : "#237caa");
+    gradient.addColorStop(1, index < 3 ? "#56ebc9" : "#30d59a");
+    ctx.fillStyle = gradient;
     roundRect(ctx, left, y, Math.max(barWidth, 8), barHeight, 4);
     ctx.fill();
-    ctx.fillStyle = "#18201d";
+    ctx.fillStyle = "#dff8ff";
     ctx.font = "800 11px Inter, system-ui, sans-serif";
     ctx.textAlign = "left";
     ctx.fillText(formatCompactNumber(value), Math.min(left + barWidth + 8, width - right + 8), y + barHeight / 2);
@@ -2871,7 +2880,7 @@ function formatCompactMoney(value) {
 }
 
 function drawEmptyChart(ctx, width, height) {
-  ctx.fillStyle = "#eef4f2";
+  ctx.fillStyle = "#0a1d2b";
   roundRect(ctx, 0, 0, width, height, 8);
   ctx.fill();
   ctx.fillStyle = "#64706b";

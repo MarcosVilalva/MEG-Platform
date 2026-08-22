@@ -241,12 +241,12 @@ async function authenticateCredentials(credentials) {
 function authMarkup() {
   return `
     <div class="auth-shell" id="authShell">
-      <section class="auth-showcase" aria-label="Apresentação do MEG Finanças">
-        <div class="auth-showcase-brand"><span>M</span><strong>MEG Finanças</strong></div>
+      <section class="auth-showcase" aria-label="Apresentação do MEG Finance System">
+        <div class="auth-showcase-brand"><img src="${new URL('brand/meg-finance-system-mark.svg', document.baseURI).href}" alt=""><strong>MEG Finance System</strong></div>
         <div class="auth-showcase-copy">
-          <small>SEU CONTROLE FINANCEIRO, TODOS OS DIAS</small>
-          <h1>Clareza para decidir.<br>Agilidade para registrar.</h1>
-          <p>Organize receitas, despesas e vencimentos em um só lugar. Acompanhe o mês, receba alertas e cuide do seu dinheiro com confiança.</p>
+          <small>INTELIGÊNCIA FINANCEIRA, TODOS OS DIAS</small>
+          <h1>Clareza para decidir.<br>Agilidade para evoluir.</h1>
+          <p>Transforme receitas, despesas e compromissos em uma visão gerencial moderna, com análises reais e recomendações objetivas.</p>
         </div>
         <div class="auth-benefits">
           <span>✓ Visão rápida da sua situação</span>
@@ -260,7 +260,7 @@ function authMarkup() {
           <strong>Ambiente de testes</strong>
           <span>Acesso restrito ao administrador. Use para validar melhorias antes da produção.</span>
         </div>
-        <div class="auth-brand"><span>M</span><div><strong>MEG Finanças</strong><small>Seu dinheiro. Suas escolhas. Seu controle.</small></div></div>
+        <div class="auth-brand"><img class="auth-brand-logo" src="${new URL('brand/meg-finance-system-lockup.svg', document.baseURI).href}" alt="MEG Finance System"><div class="auth-brand-copy"><strong>Inteligência financeira pessoal</strong><small>Seus dados transformados em decisões claras.</small></div></div>
         <div class="auth-tabs"><button class="active" data-auth-tab="login">Entrar</button><button data-auth-tab="register">Começar</button></div>
         <form id="loginForm" class="auth-form">
           <div class="auth-form-heading"><small>ÁREA SEGURA</small><h1>Bem-vindo de volta</h1><p>Entre para visualizar seu painel financeiro.</p></div>

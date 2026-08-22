@@ -7,10 +7,10 @@ const MARGIN = 34;
 const MIME_PDF = 'application/pdf';
 
 const COLORS = {
-  bg: '#07131f', surface: '#0d2232', surfaceAlt: '#102b3d', surfaceLight: '#173347',
-  border: '#234357', white: '#f5fbff', muted: '#91a9ba', mutedDark: '#6f899b',
-  teal: '#50e6c6', tealDark: '#176b5d', blue: '#4d7cff', purple: '#b574ff',
-  orange: '#ffad4d', red: '#ff676d', green: '#55d58b',
+  bg: '#050f1b', surface: '#0b1d2b', surfaceAlt: '#102839', surfaceLight: '#17384a',
+  border: '#285061', white: '#f1fbff', muted: '#91a9ba', mutedDark: '#688493',
+  teal: '#56ebc9', tealDark: '#176b70', blue: '#4db8ff', purple: '#9a8cff',
+  orange: '#ffc166', red: '#ff6f7b', green: '#30d59a',
 };
 
 const moneyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -238,7 +238,7 @@ class PdfDocument {
     objects[7] = this.fontDescriptorObject(REPORT_FONTS.bold, 'MEGBLD', 8, 120);
     objects[8] = `<< /Length ${boldBinary.length} /Length1 ${boldBinary.length} >>\nstream\n${boldBinary}\nendstream`;
     const timestamp = this.generatedAt.toISOString().replace(/[-:T]/g, '').slice(0, 14);
-    objects[infoId] = `<< /Title (${pdfText(this.title)}) /Author (${pdfText(this.author)}) /Creator (MEG Financas Web) /Producer (MEG Financas PDF Engine, ${REPORT_FONT_FAMILY}) /CreationDate (D:${timestamp}) >>`;
+    objects[infoId] = `<< /Title (${pdfText(this.title)}) /Author (${pdfText(this.author)}) /Creator (MEG Finance System Web) /Producer (MEG Finance System PDF Engine, ${REPORT_FONT_FAMILY}) /CreationDate (D:${timestamp}) >>`;
     this.pages.forEach((page, index) => {
       const pageId = firstPageId + index * 2;
       const contentId = pageId + 1;
@@ -272,16 +272,41 @@ class PdfDocument {
 
 function addBackground(page) {
   page.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, { fill: COLORS.bg });
-  page.circle(PAGE_WIDTH - 28, 10, 86, { fill: '#0a1b2a' });
-  page.circle(18, PAGE_HEIGHT - 5, 72, { fill: '#091a28' });
+  page.circle(PAGE_WIDTH - 28, 10, 92, { fill: '#0a2734' });
+  page.circle(18, PAGE_HEIGHT - 5, 78, { fill: '#081e2d' });
+  const circuits = [
+    [[0, 118], [62, 118], [88, 144], [136, 144]],
+    [[PAGE_WIDTH, 166], [542, 166], [520, 188], [482, 188]],
+    [[0, 704], [52, 704], [78, 678], [118, 678]],
+    [[PAGE_WIDTH, 742], [548, 742], [520, 714], [472, 714]],
+  ];
+  circuits.forEach((points) => {
+    page.polyline(points.map(([x, top]) => ({ x, top })), { color: '#123b4a', lineWidth: 0.65 });
+    const [x, top] = points.at(-1);
+    page.circle(x, top, 2.1, { fill: '#1c5d66' });
+  });
+}
+
+function addBrandMark(page, x, top, size = 42) {
+  page.roundedRect(x, top, size, size, 11, { fill: '#0d3443', stroke: COLORS.teal, lineWidth: 1.2 });
+  const scale = size / 42;
+  page.rect(x + 20 * scale, top + 8 * scale, 4 * scale, 10 * scale, { fill: COLORS.blue });
+  page.rect(x + 26 * scale, top + 5 * scale, 4 * scale, 13 * scale, { fill: '#39c8d2' });
+  page.rect(x + 32 * scale, top + 2 * scale, 4 * scale, 16 * scale, { fill: COLORS.green });
+  page.polyline([
+    { x: x + 18 * scale, top: top + 21 * scale },
+    { x: x + 25 * scale, top: top + 18 * scale },
+    { x: x + 31 * scale, top: top + 12 * scale },
+    { x: x + 36 * scale, top: top + 8 * scale },
+  ], { color: COLORS.teal, lineWidth: 2.3 * scale });
+  page.text(x + 2 * scale, top + 22 * scale, 'MEG', { size: 10.2 * scale, font: 'bold', color: COLORS.white, align: 'center', width: 38 * scale });
 }
 
 function addHeader(page, title, subtitle, pageNumber) {
-  page.roundedRect(MARGIN, 23, 42, 36, 11, { fill: COLORS.teal });
-  page.text(MARGIN, 34, 'MEG', { size: 10.8, font: 'bold', color: '#063f37', align: 'center', width: 42 });
-  page.text(MARGIN + 54, 22, 'MEG FINANÇAS', { size: 7.2, font: 'bold', color: COLORS.teal });
-  page.text(MARGIN + 54, 34, title, { size: 13.2, font: 'bold' });
-  page.text(MARGIN + 54, 53, subtitle, { size: 6.8, color: COLORS.muted });
+  addBrandMark(page, MARGIN, 19, 44);
+  page.text(MARGIN + 56, 20, 'MEG FINANCE SYSTEM', { size: 7.2, font: 'bold', color: COLORS.teal });
+  page.text(MARGIN + 56, 34, title, { size: 13.2, font: 'bold' });
+  page.text(MARGIN + 56, 53, subtitle, { size: 6.8, color: COLORS.muted });
   page.roundedRect(PAGE_WIDTH - MARGIN - 60, 29, 60, 23, 11, { fill: COLORS.surfaceAlt, stroke: COLORS.border, lineWidth: 0.6 });
   page.text(PAGE_WIDTH - MARGIN - 60, 35, `PÁGINA ${pageNumber}`, { size: 6.6, font: 'bold', color: COLORS.teal, align: 'center', width: 60 });
   page.line(MARGIN, 78, PAGE_WIDTH - MARGIN, 78, { color: COLORS.border, lineWidth: 0.7 });
@@ -326,8 +351,8 @@ function scenarioCard(page, { x, top, width, title, accent, main, subtitle, resu
 function addFooter(document, generatedAt) {
   document.pages.forEach((page, index) => {
     page.line(MARGIN, 810, PAGE_WIDTH - MARGIN, 810, { color: COLORS.border, lineWidth: 0.6 });
-    page.text(MARGIN, 817, 'MEG FINANÇAS', { size: 6.2, font: 'bold', color: COLORS.teal });
-    page.text(MARGIN + 74, 817, 'Seu dinheiro. Suas escolhas. Seu controle.', { size: 5.9, color: COLORS.mutedDark });
+    page.text(MARGIN, 817, 'MEG FINANCE SYSTEM', { size: 6.2, font: 'bold', color: COLORS.teal });
+    page.text(MARGIN + 101, 817, 'Inteligência financeira para decisões melhores.', { size: 5.9, color: COLORS.mutedDark });
     page.text(PAGE_WIDTH - MARGIN - 182, 817, `Gerado em ${generatedAt.toLocaleString('pt-BR')}`, { size: 5.9, color: COLORS.mutedDark, align: 'right', width: 138 });
     page.text(PAGE_WIDTH - MARGIN - 36, 817, `${index + 1} / ${document.pages.length}`, { size: 6.2, font: 'bold', color: COLORS.muted, align: 'right', width: 36 });
   });
@@ -850,7 +875,7 @@ function addMonthlyImprovementPage(document, model) {
 
 export function createExecutiveFinancialPdf({ state, start, end, owner, generatedAt = new Date() }) {
   const model = buildExecutiveFinancialModel({ state, start, end, owner, generatedAt });
-  const document = new PdfDocument({ title: 'MEG Finanças | Relatório financeiro premium', author: owner || 'MEG Finanças', generatedAt });
+  const document = new PdfDocument({ title: 'MEG Finance System | Relatório financeiro premium', author: owner || 'MEG Finance System', generatedAt });
   addExecutivePage(document, model);
   addAnalysisPage(document, model);
   addProjectionPage(document, model);
@@ -862,7 +887,7 @@ export function createExecutiveFinancialPdf({ state, start, end, owner, generate
 
 export function createMonthlyExpensePdf({ state, start, end, owner, generatedAt = new Date() }) {
   const model = buildMonthlyExpenseModel({ state, start, end, owner, generatedAt });
-  const document = new PdfDocument({ title: `MEG Finanças | Despesas de ${model.metadata.periodLabel}`, author: owner || 'MEG Finanças', generatedAt });
+  const document = new PdfDocument({ title: `MEG Finance System | Despesas de ${model.metadata.periodLabel}`, author: owner || 'MEG Finance System', generatedAt });
   addMonthlyOverviewPage(document, model);
   addMonthlyImpactPage(document, model);
   addMonthlyOpenProjectionPage(document, model);
