@@ -104,7 +104,7 @@ public class BiometricAuthPlugin extends Plugin {
         }
         authenticateAndRun(
             call,
-            call.getString("title", "Entrar no MEG Financas"),
+            call.getString("title", "Entrar no MEG Finance System"),
             call.getString("subtitle", "Confirme sua identidade"),
             () -> {
                 JSObject response = new JSObject();

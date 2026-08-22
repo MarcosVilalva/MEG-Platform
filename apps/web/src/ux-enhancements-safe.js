@@ -1,5 +1,32 @@
 import * as echarts from 'echarts';
 
+const MEG_CHART_PALETTE = ['#56ebc9', '#4db8ff', '#30d59a', '#ffc166', '#b58cff', '#ff6f7b', '#39c8d2'];
+echarts.registerTheme('meg-finance-system', {
+  color: MEG_CHART_PALETTE,
+  backgroundColor: 'transparent',
+  textStyle: { color: '#b8ced7', fontFamily: 'Inter, Segoe UI, sans-serif' },
+  title: { textStyle: { color: '#f0fbff' }, subtextStyle: { color: '#91a9ba' } },
+  legend: { textStyle: { color: '#91a9ba' }, pageTextStyle: { color: '#91a9ba' } },
+  categoryAxis: {
+    axisLine: { lineStyle: { color: '#28495a' } },
+    axisTick: { lineStyle: { color: '#28495a' } },
+    axisLabel: { color: '#91a9ba' },
+    splitLine: { lineStyle: { color: 'rgba(116, 175, 190, .14)' } },
+  },
+  valueAxis: {
+    axisLine: { lineStyle: { color: '#28495a' } },
+    axisTick: { lineStyle: { color: '#28495a' } },
+    axisLabel: { color: '#91a9ba' },
+    splitLine: { lineStyle: { color: 'rgba(116, 175, 190, .14)' } },
+  },
+  tooltip: {
+    backgroundColor: 'rgba(7, 23, 37, .96)',
+    borderColor: 'rgba(86, 235, 201, .32)',
+    textStyle: { color: '#effbff' },
+    extraCssText: 'box-shadow:0 18px 40px rgba(0,6,16,.38);border-radius:12px;backdrop-filter:blur(12px)',
+  },
+});
+
 const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const integer = new Intl.NumberFormat('pt-BR');
 const runtime = {
@@ -239,7 +266,7 @@ function correctHealth(transactions) {
 function chart(id) {
   const element = document.getElementById(id);
   if (!element) return null;
-  if (!runtime.charts.has(id)) runtime.charts.set(id, echarts.init(element));
+  if (!runtime.charts.has(id)) runtime.charts.set(id, echarts.init(element, 'meg-finance-system'));
   return runtime.charts.get(id);
 }
 
@@ -262,15 +289,15 @@ function expenses(items) {
 
 function renderCharts(items, health) {
   const months = monthly(items); let running = 0;
-  chart('megBalanceTrendChart')?.setOption({ animationDuration: 800, tooltip: { trigger: 'axis', valueFormatter: (value) => currency.format(value) }, legend: { bottom: 0 }, grid: { left: 58, right: 24, top: 35, bottom: 58 }, xAxis: { type: 'category', data: months.map((row) => formatMonth(row.month)) }, yAxis: { type: 'value', splitLine: { lineStyle: { color: '#edf3f1' } } }, series: [{ name: 'Receitas', type: 'bar', data: months.map((row) => row.income), itemStyle: { color: '#20b486', borderRadius: [7,7,0,0] } }, { name: 'Despesas', type: 'bar', data: months.map((row) => row.expense), itemStyle: { color: '#f56f6f', borderRadius: [7,7,0,0] } }, { name: 'Resultado acumulado', type: 'line', smooth: true, data: months.map((row) => running += row.income - row.expense), lineStyle: { width: 4, color: '#0a5c50' }, itemStyle: { color: '#0a5c50' }, areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(10,92,80,.28)'},{offset:1,color:'rgba(10,92,80,.02)'}]) } }] }, true);
+  chart('megBalanceTrendChart')?.setOption({ animationDuration: 800, tooltip: { trigger: 'axis', valueFormatter: (value) => currency.format(value) }, legend: { bottom: 0 }, grid: { left: 58, right: 24, top: 35, bottom: 58 }, xAxis: { type: 'category', data: months.map((row) => formatMonth(row.month)) }, yAxis: { type: 'value' }, series: [{ name: 'Receitas', type: 'bar', data: months.map((row) => row.income), itemStyle: { color: '#30d59a', borderRadius: [7,7,0,0] } }, { name: 'Despesas', type: 'bar', data: months.map((row) => row.expense), itemStyle: { color: '#ff6f7b', borderRadius: [7,7,0,0] } }, { name: 'Resultado acumulado', type: 'line', smooth: true, data: months.map((row) => running += row.income - row.expense), lineStyle: { width: 4, color: '#4db8ff', shadowColor: 'rgba(77,184,255,.35)', shadowBlur: 12 }, itemStyle: { color: '#56ebc9' }, areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(77,184,255,.28)'},{offset:1,color:'rgba(77,184,255,.01)'}]) } }] }, true);
   const grouped = expenses(items);
-  chart('megExpenseDonutChart')?.setOption({ tooltip: { trigger: 'item', formatter: ({name,value,percent}) => `${html(name)}<br><b>${currency.format(value)}</b> · ${percent}%` }, series: [{ type: 'pie', radius: ['56%','82%'], padAngle: 3, label: { show: false }, itemStyle: { borderRadius: 9, borderColor: '#fff', borderWidth: 3 }, data: grouped }] }, true);
+  chart('megExpenseDonutChart')?.setOption({ tooltip: { trigger: 'item', formatter: ({name,value,percent}) => `${html(name)}<br><b>${currency.format(value)}</b> · ${percent}%` }, series: [{ type: 'pie', radius: ['56%','82%'], padAngle: 3, label: { show: false }, itemStyle: { borderRadius: 9, borderColor: '#0a1d2b', borderWidth: 3, shadowColor: 'rgba(0,0,0,.28)', shadowBlur: 8 }, data: grouped }] }, true);
   const donut = chart('megExpenseDonutChart'); donut?.off('click'); donut?.on('click', ({name}) => { runtime.filters.group = name; const select = document.querySelector('[data-meg-filter="group"]'); if (select) select.value = name; runtime.signature = ''; renderAnalytics(); });
   const total = grouped.reduce((sum,row) => sum + row.value,0); let cumulative = 0;
-  chart('megParetoChart')?.setOption({ tooltip: { trigger:'axis' }, grid:{left:100,right:45,top:22,bottom:32}, xAxis:[{type:'value',splitLine:{show:false}},{type:'value',min:0,max:100,axisLabel:{formatter:'{value}%'}}], yAxis:{type:'category',inverse:true,data:grouped.map((row)=>row.name),axisLabel:{width:115,overflow:'truncate'}}, series:[{type:'bar',data:grouped.map((row)=>row.value),barWidth:16,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'#0a5c50'},{offset:1,color:'#26c3a4'}]),borderRadius:[0,8,8,0]}},{type:'line',xAxisIndex:1,smooth:true,data:grouped.map((row)=>total?((cumulative+=row.value)/total)*100:0),lineStyle:{color:'#ff9f43',width:3},itemStyle:{color:'#ff9f43'}}] }, true);
+  chart('megParetoChart')?.setOption({ tooltip: { trigger:'axis' }, grid:{left:100,right:45,top:22,bottom:32}, xAxis:[{type:'value',splitLine:{show:false}},{type:'value',min:0,max:100,axisLabel:{formatter:'{value}%'}}], yAxis:{type:'category',inverse:true,data:grouped.map((row)=>row.name),axisLabel:{width:115,overflow:'truncate'}}, series:[{type:'bar',data:grouped.map((row)=>row.value),barWidth:16,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'#328ed0'},{offset:1,color:'#56ebc9'}]),borderRadius:[0,8,8,0]}},{type:'line',xAxisIndex:1,smooth:true,data:grouped.map((row)=>total?((cumulative+=row.value)/total)*100:0),lineStyle:{color:'#ffc166',width:3,shadowColor:'rgba(255,193,102,.25)',shadowBlur:8},itemStyle:{color:'#ffc166'}}] }, true);
   const byDay = new Map(); items.forEach((item) => { if (!item.date) return; const row = byDay.get(item.date) || { income:0, expense:0 }; row.income += valueOf(item,'income'); row.expense += valueOf(item,'expense'); byDay.set(item.date,row); });
   const days = [...byDay.keys()].sort(); let projected = health.balance;
-  chart('megDailyCashflowChart')?.setOption({ tooltip:{trigger:'axis',valueFormatter:(value)=>currency.format(value)},legend:{bottom:0},grid:{left:58,right:24,top:35,bottom:58},xAxis:{type:'category',data:days.map((day)=>formatDate(day).slice(0,5))},yAxis:{type:'value',splitLine:{lineStyle:{color:'#edf3f1'}}},series:[{name:'Entradas',type:'bar',data:days.map((day)=>byDay.get(day).income),itemStyle:{color:'#33c79b'}},{name:'Saídas',type:'bar',data:days.map((day)=>-byDay.get(day).expense),itemStyle:{color:'#ff7878'}},{name:'Saldo projetado',type:'line',smooth:true,data:days.map((day)=>projected+=byDay.get(day).income-byDay.get(day).expense),lineStyle:{width:4,color:'#315efb'},itemStyle:{color:'#315efb'},markLine:{silent:true,data:[{yAxis:0}],lineStyle:{color:'#ef4444',type:'dashed'}}}] }, true);
+  chart('megDailyCashflowChart')?.setOption({ tooltip:{trigger:'axis',valueFormatter:(value)=>currency.format(value)},legend:{bottom:0},grid:{left:58,right:24,top:35,bottom:58},xAxis:{type:'category',data:days.map((day)=>formatDate(day).slice(0,5))},yAxis:{type:'value'},series:[{name:'Entradas',type:'bar',data:days.map((day)=>byDay.get(day).income),itemStyle:{color:'#30d59a'}},{name:'Saídas',type:'bar',data:days.map((day)=>-byDay.get(day).expense),itemStyle:{color:'#ff6f7b'}},{name:'Saldo projetado',type:'line',smooth:true,data:days.map((day)=>projected+=byDay.get(day).income-byDay.get(day).expense),lineStyle:{width:4,color:'#4db8ff',shadowColor:'rgba(77,184,255,.32)',shadowBlur:10},itemStyle:{color:'#56ebc9'},markLine:{silent:true,data:[{yAxis:0}],lineStyle:{color:'#ff6f7b',type:'dashed'}}}] }, true);
   document.querySelector('#megTrendSummary').textContent = `${months.length} mês(es) analisado(s)`;
   document.querySelector('#megCashflowSummary').textContent = `${days.length} dia(s) com movimentação`;
 }

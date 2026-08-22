@@ -126,7 +126,7 @@ function privacyCover() {
   cover.id = 'androidPrivacyCover';
   cover.setAttribute('aria-hidden', 'true');
   cover.style.cssText = 'position:fixed;inset:0;z-index:2147483646;display:grid;place-items:center;background:#063f37;color:#fff;font:800 22px system-ui,sans-serif;';
-  cover.innerHTML = '<span>MEG Finanças protegido</span>';
+  cover.innerHTML = '<span>MEG Finance System protegido</span>';
   document.body.appendChild(cover);
   return cover;
 }
@@ -138,7 +138,7 @@ async function authenticateNatively() {
     biometricPromptOpen = true;
     try {
       const credentials = await BiometricAuth.authenticate({
-        title: 'Entrar no MEG Finanças',
+        title: 'Entrar no MEG Finance System',
         subtitle: 'Confirme sua identidade para acessar sua conta',
       });
       if (!credentials?.email || !credentials?.password) return null;

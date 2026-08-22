@@ -92,7 +92,7 @@ assert.equal(report.pageCount, 4, 'o relatório gerencial deve permanecer curto'
 
 const pdfSource = new TextDecoder().decode(report.bytes);
 assert.match(pdfSource, /MEG Premium Financial Report/);
-assert.match(pdfSource, /MEG FINAN\\307AS/);
+assert.match(pdfSource, /MEG FINANCE SYSTEM/);
 assert.equal((pdfSource.match(/\(MEG\) Tj ET/g) || []).length, report.pageCount, 'o monograma MEG deve aparecer em todas as páginas');
 assert.match(pdfSource, /PAINEL FINANCEIRO PREMIUM/);
 assert.match(pdfSource, /TR\\312S CAMINHOS PARA A META/);
@@ -179,6 +179,7 @@ assert.match(monthlyPdfSource, /O QUE MAIS IMPACTOU/);
 assert.match(monthlyPdfSource, /EM ABERTO E PROJE\\307\\325ES/);
 assert.match(monthlyPdfSource, /PLANO DE MELHORIA/);
 assert.equal((monthlyPdfSource.match(/\(MEG\) Tj ET/g) || []).length, monthlyReport.pageCount);
+assert.match(monthlyPdfSource, /MEG FINANCE SYSTEM/);
 assert.match(monthlyPdfSource, /MEGREG\+Inter-Regular/);
 assert.match(monthlyPdfSource, /MEGBLD\+Inter-SemiBold/);
 assert.equal((monthlyPdfSource.match(/\/Type \/Page \/Parent/g) || []).length, monthlyReport.pageCount);
