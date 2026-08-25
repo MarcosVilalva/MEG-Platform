@@ -1,8 +1,8 @@
 {
-  "versionCode": 154,
-  "versionName": "1.1.154",
-  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=154",
-  "sha256": "727c315de741e9c6cef2f5c94ec49c47bacedd902ff3c182fe3c1e5027874bcb",
+  "versionCode": 155,
+  "versionName": "1.1.155",
+  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=155",
+  "sha256": "45015dca066b5a00f4d7d394447ab8e7c27a6e6efb86f691df6e3ac13f8ee7f2",
   "mandatory": false,
   "releaseNotes": "Visual MEG aprimorado: contraste equilibrado, cartões mais confortáveis e tabela de lançamentos mais legível."
 }
