@@ -61,5 +61,7 @@ assert.match(comfortContrast, /\.cashflow-answer-card/);
 assert.match(comfortContrast, /\.smart-budget-card/);
 assert.match(comfortContrast, /\.catalog-row/);
 assert.match(comfortContrast, /\.meg-mobile-transaction/);
+assert.match(comfortContrast, /\.app-update-banner/);
+assert.match(comfortContrast, /\.app-update-sidebar-badge/);
 
 console.log('web runtime stability tests passed');

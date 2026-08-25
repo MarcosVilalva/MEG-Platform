@@ -137,6 +137,16 @@ assert.ok(
 );
 assert.match(nativeUpdate, /VERSION_FETCH_ATTEMPTS\s*=\s*3/);
 assert.match(legacyEntry, /window\.setTimeout\([\s\S]*checkForAppUpdate\(\{ force: true \}\)/);
+assert.match(legacyEntry, /await initializeAndroidUpdateLifecycle\(\)/);
+assert.ok(
+  legacyEntry.indexOf("traceStartup('dashboard-liberado'") < legacyEntry.indexOf('await initializeAndroidUpdateLifecycle()'),
+  'o monitor de atualização ao retomar só pode iniciar depois que o Dashboard estiver autenticado'
+);
+assert.match(nativeUpdate, /appUpdateBanner/);
+assert.match(nativeUpdate, /appUpdateSidebarBadge/);
+assert.match(nativeUpdate, /meg:app-update-available/);
+assert.match(nativeUpdate, /appStateChange/);
+assert.match(nativeUpdate, /androidPrivacyCover/);
 assert.doesNotMatch(nativeUpdate, /MEG_ANDROID_STARTUP_GATE/);
 
 const androidWorkflow = read('../../../.github/workflows/build-android-apk.yml');

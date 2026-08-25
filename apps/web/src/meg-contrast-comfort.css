@@ -377,6 +377,70 @@ body .catalog-switch {
   background: var(--meg-comfort-surface-alt) !important;
 }
 
+/* Atualização Android visível dentro do sistema autenticado. */
+body .app-update-banner {
+  position: sticky;
+  top: 12px;
+  z-index: 1060;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 18px;
+  padding: 13px 14px;
+  color: var(--meg-comfort-text);
+  border: 1px solid rgba(75, 218, 190, .34);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(18, 61, 69, .98), rgba(13, 43, 53, .98));
+  box-shadow: 0 14px 34px rgba(1, 15, 23, .24);
+}
+body .app-update-banner-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  color: #062a28;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #55dec2, #33b99f);
+  font-size: 1.55rem;
+  font-weight: 900;
+}
+body .app-update-banner-copy { display: grid; gap: 2px; min-width: 0; }
+body .app-update-banner-copy small { color: #69dcc5 !important; font-size: .66rem; font-weight: 900; letter-spacing: .11em; }
+body .app-update-banner-copy strong { color: var(--meg-comfort-heading) !important; font-size: 1rem; }
+body .app-update-banner-copy span { color: var(--meg-comfort-muted) !important; font-size: .78rem; }
+body .app-update-banner > button {
+  min-height: 42px;
+  padding: 0 16px;
+  color: #062a28 !important;
+  border: 1px solid rgba(171, 255, 235, .32) !important;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #58dfc3, #38bea4) !important;
+  font-weight: 900;
+}
+body .app-update-sidebar-badge {
+  width: fit-content;
+  margin-top: 5px;
+  padding: 5px 8px;
+  color: #79e5cf;
+  border: 1px solid rgba(75, 218, 190, .28);
+  border-radius: 999px;
+  background: rgba(55, 190, 163, .1);
+  font-size: .64rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+@media (max-width: 680px) {
+  body.native-mobile .app-update-banner {
+    top: calc(8px + env(safe-area-inset-top));
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+    padding: 11px;
+    border-radius: 16px;
+  }
+  body.native-mobile .app-update-banner > button { grid-column: 1 / -1; width: 100%; }
+}
+
 /* Componentes móveis carregados depois do tema principal. */
 body.native-mobile .meg-mobile-transaction-toolbar { background: #081923 !important; }
 body.native-mobile .meg-mobile-transaction-toolbar button,
