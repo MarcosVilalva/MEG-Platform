@@ -138,6 +138,11 @@ const VERSION_FETCH_ATTEMPTS = 3;
 const VERSION_FETCH_RETRY_MS = 900;
 const INSTALL_PERMISSION_TIMEOUT_MS = 120000;
 const INSTALL_PERMISSION_POLL_MS = 500;
+const UPDATE_RESUME_DELAY_MS = 1200;
+const UPDATE_RESUME_UI_ATTEMPTS = 60;
+const UPDATE_RESUME_UI_RETRY_MS = 500;
+let updateLifecycleStarted = false;
+let updateResumeTimer = null;
 
 function publishInstalledVersion(installed) {
   if (!installed?.versionName) return;
@@ -146,6 +151,55 @@ function publishInstalledVersion(installed) {
   const versionLabel = document.querySelector('#sidebarVersion');
   if (versionLabel) versionLabel.textContent = `MEG v${installed.versionName}`;
   window.dispatchEvent(new CustomEvent('meg:installed-app-version', { detail: installed }));
+}
+
+function removeAvailableUpdateNotice() {
+  document.querySelector('#appUpdateBanner')?.remove();
+  document.querySelector('#appUpdateSidebarBadge')?.remove();
+  delete document.body.dataset.availableAppVersion;
+  delete window.MEG_AVAILABLE_APP_UPDATE;
+}
+
+function publishAvailableUpdate(release, installed, AppUpdater) {
+  window.MEG_AVAILABLE_APP_UPDATE = { release, installed };
+  document.body.dataset.availableAppVersion = String(release.versionName || release.versionCode || 'nova');
+
+  let banner = document.querySelector('#appUpdateBanner');
+  if (!banner) {
+    banner = document.createElement('section');
+    banner.id = 'appUpdateBanner';
+    banner.className = 'app-update-banner';
+    banner.setAttribute('role', 'status');
+    banner.setAttribute('aria-live', 'polite');
+    const topbar = document.querySelector('.topbar');
+    if (topbar) topbar.insertAdjacentElement('afterend', banner);
+    else document.querySelector('main.content')?.prepend(banner);
+  }
+  banner.innerHTML = `
+    <div class="app-update-banner-icon" aria-hidden="true">↻</div>
+    <div class="app-update-banner-copy">
+      <small>ATUALIZAÇÃO DISPONÍVEL</small>
+      <strong>MEG ${String(release.versionName || release.versionCode || '').replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</strong>
+      <span>Uma versão mais recente está pronta para instalar.</span>
+    </div>
+    <button type="button" class="primary-button" data-install-app-update>Atualizar agora</button>`;
+  banner.querySelector('[data-install-app-update]')?.addEventListener('click', () => {
+    updateDialog(release, installed, AppUpdater);
+  });
+
+  let sidebarBadge = document.querySelector('#appUpdateSidebarBadge');
+  if (!sidebarBadge) {
+    sidebarBadge = document.createElement('button');
+    sidebarBadge.id = 'appUpdateSidebarBadge';
+    sidebarBadge.className = 'app-update-sidebar-badge';
+    sidebarBadge.type = 'button';
+    document.querySelector('.sidebar-user-footer > div')?.append(sidebarBadge);
+  }
+  sidebarBadge.textContent = `Atualizar para v${release.versionName || release.versionCode}`;
+  sidebarBadge.setAttribute('aria-label', `Atualização ${release.versionName || release.versionCode} disponível. Atualizar agora.`);
+  sidebarBadge.onclick = () => updateDialog(release, installed, AppUpdater);
+
+  window.dispatchEvent(new CustomEvent('meg:app-update-available', { detail: { release, installed } }));
 }
 
 async function waitForInstallPermission(AppUpdater) {
@@ -176,7 +230,7 @@ function updateDialog(release, installed, AppUpdater) {
     <h2>Uma nova versão do MEG está disponível</h2>
     <p>Versão instalada: <strong>${installed.versionName}</strong> · nova versão: <strong>${release.versionName}</strong></p>
     <div class="app-update-notes">${String(release.releaseNotes || 'Melhorias de desempenho, segurança e experiência.').replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</div>
-    <p class="app-update-status" id="appUpdateStatus">Preparando a atualização automática antes da biometria…</p>
+    <p class="app-update-status" id="appUpdateStatus">Preparando a atualização segura…</p>
     <div class="modal-actions">
       <button type="button" class="ghost-button" id="appUpdateContinue" hidden>Entrar sem atualizar</button>
       <button type="button" class="primary-button" id="appUpdateRetry" hidden>Tentar novamente</button>
@@ -256,12 +310,44 @@ export async function checkForAppUpdate({ force = false, waitForDecision = false
     const available = Number(release.versionCode) > Number(installed.versionCode);
     let decision = null;
     if (available && !preflightOnly) {
+      publishAvailableUpdate(release, installed, AppUpdater);
       const dialogDecision = updateDialog(release, installed, AppUpdater);
       if (waitForDecision) decision = await dialogDecision;
+    } else if (!available) {
+      removeAvailableUpdateNotice();
     }
     return { available, release, installed, decision };
   } catch (cause) {
     console.warn('MEG app update check failed', cause);
     return { available: false, error: cause };
   }
+}
+
+async function waitForAuthenticatedUpdateUi() {
+  for (let attempt = 0; attempt < UPDATE_RESUME_UI_ATTEMPTS; attempt += 1) {
+    if (document.hidden) return false;
+    if (!document.querySelector('#androidPrivacyCover')) return true;
+    await delay(UPDATE_RESUME_UI_RETRY_MS);
+  }
+  return false;
+}
+
+export async function initializeAndroidUpdateLifecycle() {
+  if (updateLifecycleStarted || !await waitForNativeAndroid()) return false;
+  updateLifecycleStarted = true;
+  const { App } = await import('@capacitor/app');
+  await App.addListener('appStateChange', ({ isActive }) => {
+    if (!isActive) {
+      if (updateResumeTimer) window.clearTimeout(updateResumeTimer);
+      updateResumeTimer = null;
+      return;
+    }
+    if (updateResumeTimer) window.clearTimeout(updateResumeTimer);
+    updateResumeTimer = window.setTimeout(async () => {
+      updateResumeTimer = null;
+      if (!await waitForAuthenticatedUpdateUi()) return;
+      await checkForAppUpdate({ force: true });
+    }, UPDATE_RESUME_DELAY_MS);
+  });
+  return true;
 }

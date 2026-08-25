@@ -1,7 +1,7 @@
 import './startup-data-protection.js';
 import { bootstrapCloud, clearLocalCloudSession, hideCloudLoading, showCloudLoading } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
-import { checkForAppUpdate, initializeStableUiFeatures } from './native-app-update.js';
+import { checkForAppUpdate, initializeAndroidUpdateLifecycle, initializeStableUiFeatures } from './native-app-update.js';
 import {
   consumePreparedAndroidBiometricCredentials,
   initializeAndroidBiometricLifecycle,
@@ -475,6 +475,7 @@ async function start() {
     },
   });
   window.MEG_APP_UPDATE = { check: () => checkForAppUpdate({ force: true }) };
+  await initializeAndroidUpdateLifecycle();
   // OTA nunca participa da barreira de autenticação. A consulta e o instalador
   // só começam depois que a sessão, a base e o Dashboard estão íntegros.
   if (!validationMode) {
