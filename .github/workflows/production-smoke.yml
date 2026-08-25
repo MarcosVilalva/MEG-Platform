@@ -19,4 +19,4 @@ jobs:
       - name: Verify web application
         run: |
           curl --fail-with-body --retry 3 --retry-delay 10 --max-time 60 https://marcosvilalva.github.io/MEG-Platform/ -o site.html
-          grep -q "MEG Financas" site.html
+          grep -Eq "MEG Finance System|MEG Financas" site.html
