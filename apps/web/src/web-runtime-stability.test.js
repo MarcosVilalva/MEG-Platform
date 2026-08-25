@@ -11,6 +11,7 @@ const legacyStyles = read('legacy-styles.css');
 const ongoing = read('ongoing-card-installments.js');
 const legacyEntry = read('legacy-entry.js');
 const biometric = read('native-biometric-login.js');
+const comfortContrast = read('meg-contrast-comfort.css');
 const indexHtml = read('../index.html');
 
 const webBranch = nativeUpdate.slice(
@@ -53,5 +54,12 @@ assert.equal(legacyEntry.includes("import { syncLocalDueNotifications }"), false
 assert.equal(nativeUpdate.includes("import { Capacitor, registerPlugin }"), false, 'atualizador Android deve ser carregado sob demanda');
 assert.equal(biometric.includes('@capgo/capacitor-native-biometric'), false, 'somente uma ponte biométrica pode existir no aplicativo');
 assert.equal(biometric.includes('withBiometricTimeout'), false, 'a ponte biométrica não pode ser interrompida por timeouts da camada web');
+assert.equal((nativeUpdate.match(/meg-contrast-comfort\.css/g) || []).length, 2, 'o contraste confortável deve carregar no web e no Android');
+assert.match(comfortContrast, /\.analytics-calculation-panel/);
+assert.match(comfortContrast, /\.income-kpi-grid article/);
+assert.match(comfortContrast, /\.cashflow-answer-card/);
+assert.match(comfortContrast, /\.smart-budget-card/);
+assert.match(comfortContrast, /\.catalog-row/);
+assert.match(comfortContrast, /\.meg-mobile-transaction/);
 
 console.log('web runtime stability tests passed');
