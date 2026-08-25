@@ -1,0 +1,407 @@
+:root {
+  --meg-comfort-surface: #102832;
+  --meg-comfort-surface-alt: #14313b;
+  --meg-comfort-surface-soft: #193945;
+  --meg-comfort-surface-deep: #0d222c;
+  --meg-comfort-text: #d7e4e7;
+  --meg-comfort-heading: #e3edef;
+  --meg-comfort-muted: #93a9b0;
+  --meg-comfort-line: rgba(111, 183, 179, .18);
+  --meg-comfort-shadow: 0 14px 32px rgba(0, 8, 15, .19);
+}
+
+/*
+ * Camada final de contraste do MEG.
+ * Este arquivo precisa ser carregado depois dos módulos legados para impedir
+ * combinações de texto claro sobre cartões claros em qualquer aba.
+ */
+body {
+  --ink: var(--meg-comfort-text);
+  --background: #081923;
+}
+
+body .view :is(
+  .metric,
+  .mini-metric,
+  .cashflow-answer-card,
+  .signal-card,
+  .analytics-executive-strip article,
+  .historical-summary-grid article,
+  .income-kpi-grid article,
+  .budget-goals-grid article,
+  .smart-budget-card,
+  .compact-item,
+  .bill-item,
+  .ledger-item,
+  .cashflow-item,
+  .decision-item,
+  .budget-row,
+  .budget-card,
+  .catalog-row,
+  .permission-matrix article,
+  .admin-user-card,
+  .recipient-item,
+  .workspace-commercial-summary > div,
+  .commercial-kpis article,
+  .commercial-workspace-card,
+  .commercial-invoice-row
+) {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: linear-gradient(145deg, var(--meg-comfort-surface-alt), var(--meg-comfort-surface)) !important;
+  background-image: linear-gradient(145deg, var(--meg-comfort-surface-alt), var(--meg-comfort-surface)) !important;
+  box-shadow: var(--meg-comfort-shadow) !important;
+}
+
+body .view :is(
+  .metric,
+  .mini-metric,
+  .cashflow-answer-card,
+  .signal-card,
+  .analytics-executive-strip article,
+  .historical-summary-grid article,
+  .income-kpi-grid article,
+  .budget-goals-grid article,
+  .smart-budget-card,
+  .compact-item,
+  .bill-item,
+  .ledger-item,
+  .cashflow-item,
+  .decision-item,
+  .budget-row,
+  .budget-card,
+  .catalog-row,
+  .permission-matrix article,
+  .admin-user-card,
+  .recipient-item,
+  .commercial-workspace-card
+) :is(h3, h4, strong, b) {
+  color: var(--meg-comfort-heading) !important;
+  text-shadow: none !important;
+}
+
+body .view :is(
+  .metric,
+  .mini-metric,
+  .cashflow-answer-card,
+  .signal-card,
+  .analytics-executive-strip article,
+  .historical-summary-grid article,
+  .income-kpi-grid article,
+  .budget-goals-grid article,
+  .smart-budget-card,
+  .compact-item,
+  .bill-item,
+  .ledger-item,
+  .cashflow-item,
+  .decision-item,
+  .budget-row,
+  .budget-card,
+  .catalog-row,
+  .permission-matrix article,
+  .admin-user-card,
+  .recipient-item,
+  .commercial-workspace-card
+) :is(span, small, p) {
+  color: var(--meg-comfort-muted) !important;
+}
+
+body .view :is(.metric.danger, .mini-metric.danger, .signal-card.risk, .cashflow-answer-card.risk, .smart-budget-card.over, .historical-summary-grid article.risk, .analytics-executive-strip article.risk) {
+  border-color: rgba(221, 116, 121, .27) !important;
+  background: linear-gradient(145deg, #342a30, #28242b) !important;
+  background-image: linear-gradient(145deg, #342a30, #28242b) !important;
+}
+body .view :is(.metric.warn, .mini-metric.warn, .signal-card.attention, .cashflow-answer-card.attention, .cashflow-answer-card.committed, .smart-budget-card.attention) {
+  border-color: rgba(207, 168, 98, .25) !important;
+  background: linear-gradient(145deg, #332f29, #282a2a) !important;
+  background-image: linear-gradient(145deg, #332f29, #282a2a) !important;
+}
+body .view :is(.signal-card.positive, .cashflow-answer-card.healthy, .smart-budget-card.healthy, .historical-summary-grid article.healthy, .analytics-executive-strip article.healthy) {
+  border-color: rgba(87, 197, 175, .25) !important;
+  background: linear-gradient(145deg, #16352f, #122b2c) !important;
+  background-image: linear-gradient(145deg, #16352f, #122b2c) !important;
+}
+body .view :is(.metric.danger, .signal-card.risk, .cashflow-answer-card.risk, .smart-budget-card.over) strong { color: #ef9297 !important; }
+body .view :is(.metric.warn, .signal-card.attention, .cashflow-answer-card.attention, .cashflow-answer-card.committed, .smart-budget-card.attention) strong { color: #dfbd7c !important; }
+body .view :is(.signal-card.positive, .cashflow-answer-card.healthy, .smart-budget-card.healthy) strong { color: #71d2bc !important; }
+
+body .button:not(.primary),
+body .link-button,
+body .meg-table-actions button,
+body .meg-segment-bar > button {
+  color: #bfd4d8 !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: #17343e !important;
+  box-shadow: none !important;
+}
+body .button:not(.primary):hover,
+body .link-button:hover,
+body .meg-table-actions button:hover,
+body .meg-segment-bar > button:hover {
+  color: #e3edef !important;
+  border-color: rgba(91, 204, 188, .3) !important;
+  background: #1c4249 !important;
+}
+body .button.danger-soft { color: #ef9297 !important; border-color: rgba(221, 116, 121, .25) !important; background: rgba(166, 64, 69, .16) !important; }
+
+/* Painel e análise gerencial */
+body .analytics-calculation-panel,
+body .income-filter-bar,
+body .meg-segment-bar,
+body .meg-pending-workspace,
+body .meg-advanced-pending-filters {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: linear-gradient(145deg, var(--meg-comfort-surface), var(--meg-comfort-surface-deep)) !important;
+  box-shadow: var(--meg-comfort-shadow) !important;
+}
+body .analytics-calculation-heading h3,
+body .income-filter-bar strong,
+body .meg-pending-toolbar strong { color: var(--meg-comfort-heading) !important; }
+body .analytics-calculation-heading > span,
+body .income-filter-bar label,
+body .meg-pending-search span { color: var(--meg-comfort-muted) !important; }
+
+body .analytics-equation article,
+body .analytics-projection-line,
+body .analytics-ticket-line,
+body .current-month-health-equation > span,
+body .executive-insight-grid article {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: rgba(25, 57, 69, .82) !important;
+  box-shadow: none !important;
+}
+body .analytics-equation article :is(strong, b),
+body .analytics-projection-line strong,
+body .analytics-ticket-line strong,
+body .executive-insight-grid strong { color: var(--meg-comfort-heading) !important; }
+body .analytics-equation article :is(span, small),
+body .analytics-projection-line :is(span, small),
+body .analytics-ticket-line :is(span, small),
+body .executive-insight-grid :is(span, small) { color: var(--meg-comfort-muted) !important; }
+body .analytics-equation .equation-result,
+body .analytics-projection-line.healthy { background: rgba(49, 128, 111, .18) !important; }
+body .analytics-equation .equation-result.risk,
+body .analytics-projection-line.risk { background: rgba(166, 64, 69, .17) !important; }
+body .analytics-ticket-line { background: rgba(161, 119, 49, .16) !important; }
+
+/* Receitas */
+body .income-source-composition,
+body .income-source-item,
+body .income-recurring-item {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-alt) !important;
+}
+body .income-source-composition :is(strong, b),
+body .income-source-item :is(strong, b),
+body .income-recurring-item :is(strong, b),
+body .income-month-bar strong { color: var(--meg-comfort-heading) !important; }
+body .income-source-composition :is(span, small),
+body .income-source-item small,
+body .income-recurring-item small,
+body .income-month-bar span { color: var(--meg-comfort-muted) !important; }
+body .income-source-donut { background: conic-gradient(#32bea3 0 var(--income-share), #27434a var(--income-share) 360deg) !important; }
+body .income-source-donut::before { background: var(--meg-comfort-surface) !important; }
+body .income-source-track,
+body .credit-group-track { background: #25434b !important; }
+
+/* Fluxo de caixa */
+body .cashflow-equation {
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-deep) !important;
+}
+body .cashflow-equation > div:not(.cashflow-equation-result) {
+  color: var(--meg-comfort-text) !important;
+  background: var(--meg-comfort-surface-alt) !important;
+}
+body .cashflow-equation > div:not(.cashflow-equation-result) strong { color: var(--meg-comfort-heading) !important; }
+body .cashflow-equation > div:not(.cashflow-equation-result) small,
+body .cashflow-equation > b { color: var(--meg-comfort-muted) !important; }
+body .cashflow-day-card {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  border-left-color: #45bca5 !important;
+  background: linear-gradient(145deg, var(--meg-comfort-surface-alt), var(--meg-comfort-surface)) !important;
+  box-shadow: var(--meg-comfort-shadow) !important;
+}
+body .cashflow-day-card.negative-balance { border-left-color: #df7479 !important; background: linear-gradient(145deg, #342a30, #28242b) !important; }
+body .cashflow-day-header,
+body .cashflow-day-card.overdue .cashflow-day-header,
+body .cashflow-day-card footer { border-color: var(--meg-comfort-line) !important; background: rgba(13, 34, 44, .62) !important; }
+body .cashflow-day-card :is(strong, b) { color: var(--meg-comfort-heading) !important; }
+body .cashflow-day-card :is(span, small) { color: var(--meg-comfort-muted) !important; }
+body .cashflow-movement-row {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-soft) !important;
+}
+body .cashflow-movement-row strong { color: var(--meg-comfort-heading) !important; }
+body .cashflow-movement-row small { color: var(--meg-comfort-muted) !important; }
+
+/* Orçamentos, pendências e cadastros */
+body .budget-comparison > div,
+body .suggested-budget,
+body .reconciliation-equation article,
+body .admin-user-details span,
+body .admin-user-permissions,
+body .commercial-workspace-meta span {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-soft) !important;
+}
+body .budget-progress { background: #27434a !important; }
+body .suggested-budget { color: #9fd8cd !important; }
+body .bill-item.priority-overdue { border-left-color: #df7479 !important; background: linear-gradient(145deg, #342a30, #28242b) !important; }
+body .bill-item.priority-today { border-left-color: #d6a84e !important; background: linear-gradient(145deg, #332f29, #282a2a) !important; }
+body .bill-item.grouped-card-bill { border-left-color: #6ba7d2 !important; background: linear-gradient(145deg, #172f40, #132936) !important; }
+body .payable-row,
+body .payable-item-link,
+body .card-launch-button,
+body .payable-empty,
+body .tag-cloud span {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-alt) !important;
+}
+body .catalog-row.is-disabled { opacity: .72; background: #172c35 !important; }
+body .catalog-row small,
+body .admin-user-details small,
+body .commercial-workspace-meta small { color: var(--meg-comfort-muted) !important; }
+body .catalog-row button:not(.button),
+body .admin-user-card button:not(.button) { color: #a9d8cf !important; }
+body .meg-pending-workspace,
+body .meg-pending-card {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface) !important;
+  box-shadow: var(--meg-comfort-shadow) !important;
+}
+body .meg-pending-card :is(strong, b),
+body .meg-pending-toolbar strong { color: var(--meg-comfort-heading) !important; }
+body .meg-pending-card :is(span, small),
+body .meg-pending-toolbar :is(span, small) { color: var(--meg-comfort-muted) !important; }
+body .meg-pending-chips button,
+body .meg-filter-toggle {
+  color: #bfd4d8 !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-soft) !important;
+}
+body .meg-pending-chips button.active,
+body .meg-filter-toggle:hover { color: #e7f3f1 !important; background: #287f73 !important; }
+body .meg-pending-insight { color: #9ed9ce !important; background: rgba(49, 128, 111, .17) !important; }
+
+/* Lançamentos, tabelas, filtros e paginação */
+body #transactions .table-panel,
+body #transactions .table-wrap,
+body #transactions .transactions-table,
+body .credit-invoice-table-wrap,
+body .credit-invoice-panel .table-wrap {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-deep) !important;
+}
+body #transactions .transactions-table thead tr:first-child th,
+body #transactions .transactions-table thead th:first-child,
+body .credit-invoice-table th {
+  color: #a3b7bc !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: linear-gradient(180deg, #17343e, #122b35) !important;
+}
+body #transactions .transactions-table.meg-professional-grid tbody tr td,
+body #transactions .transactions-table tbody .transaction-row td,
+body #transactions .transactions-table tbody .transaction-income-row td,
+body #transactions .transactions-table tbody .transaction-expense-row td {
+  color: var(--meg-comfort-text) !important;
+  border-color: rgba(112, 174, 173, .13) !important;
+  background: #102832 !important;
+  background-image: none !important;
+  filter: none !important;
+}
+body #transactions .transactions-table.meg-professional-grid tbody tr:nth-child(even) td,
+body #transactions .transactions-table tbody tr:nth-child(even) td { background: #14313b !important; }
+body #transactions .transactions-table.meg-professional-grid tbody tr:hover td,
+body #transactions .transactions-table tbody tr:hover td { background: #1a3d46 !important; }
+body #transactions .transactions-table tbody .transaction-income-row td:first-child { border-left-color: #4fc4aa !important; }
+body #transactions .transactions-table tbody .transaction-expense-row td:first-child { border-left-color: #dd7479 !important; }
+body #transactions .meg-description-cell strong,
+body #transactions .transaction-row td strong { color: var(--meg-comfort-heading) !important; }
+body #transactions .transaction-edit-button,
+body .meg-date-sort-button,
+body .meg-grid-filter-button {
+  color: #9ed9ce !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-soft) !important;
+}
+body .transactions-pagination {
+  color: var(--meg-comfort-muted) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-deep) !important;
+}
+body .meg-table-toolbar,
+body .meg-column-menu,
+body .meg-stable-filter-popover,
+body .excel-filter-popover {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface) !important;
+}
+body :is(.meg-column-menu, .meg-stable-filter-popover, .excel-filter-popover) :is(label, span, strong) { color: var(--meg-comfort-text) !important; }
+
+/* Cartões de crédito, usuários e configurações */
+body .credit-invoice-table td { color: var(--meg-comfort-text) !important; border-color: var(--meg-comfort-line) !important; background: var(--meg-comfort-surface) !important; }
+body .credit-invoice-table tbody tr:nth-child(even) td { background: var(--meg-comfort-surface-alt) !important; }
+body .credit-invoice-table tr,
+body .credit-forecast-item {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-alt) !important;
+}
+body .credit-expense-rank,
+body .income-rank { color: #8ed7c8 !important; background: #1b4548 !important; }
+body .permission-matrix article :is(strong, b),
+body .admin-user-card :is(h3, strong, b),
+body .commercial-workspace-card :is(h3, strong, b) { color: var(--meg-comfort-heading) !important; }
+body .permission-matrix article :is(span, small),
+body .admin-user-card :is(span, small, p),
+body .commercial-workspace-card :is(span, small, p) { color: var(--meg-comfort-muted) !important; }
+body .notification-preview,
+body .app-update-notes,
+body .payment-confirm-summary,
+body .installment-fields,
+body .installment-edit-scope,
+body .catalog-switch {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-alt) !important;
+}
+
+/* Componentes móveis carregados depois do tema principal. */
+body.native-mobile .meg-mobile-transaction-toolbar { background: #081923 !important; }
+body.native-mobile .meg-mobile-transaction-toolbar button,
+body.native-mobile .meg-mobile-transaction,
+body.native-mobile .meg-mobile-transaction-empty {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface) !important;
+}
+body.native-mobile .meg-mobile-transaction :is(strong, b) { color: var(--meg-comfort-heading) !important; }
+body.native-mobile .meg-mobile-transaction :is(span, small) { color: var(--meg-comfort-muted) !important; }
+
+/* Estados e elementos de apoio permanecem legíveis sem superfícies luminosas. */
+body .chart-tooltip,
+body .app-toast {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: #0d252f !important;
+}
+body .progress,
+body .month-progress-track,
+body .meg-mini-bar { background: #25434b !important; }
+body .pill { color: #7bd2be !important; background: rgba(63, 178, 153, .15) !important; }
+body .pill.expense { color: #ee8b91 !important; background: rgba(203, 83, 91, .16) !important; }
+
+@media (max-width: 620px) {
+  body .credit-invoice-table tr { background: var(--meg-comfort-surface) !important; }
+}
