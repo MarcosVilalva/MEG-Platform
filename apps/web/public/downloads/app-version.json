@@ -4,5 +4,5 @@
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=163",
   "sha256": "d7155050fc3b87bfee88b28f7c8886ce97b971e3498656f2613b970b75057d56",
   "mandatory": false,
-  "releaseNotes": "Teste de atualização OTA: esta versão confirma o aviso automático, o download seguro e a instalação pelo próprio aplicativo."
+  "releaseNotes": "Atualização Android corrigida: aviso nativo após a biometria, consulta independente da interface web e instalação segura com validação SHA-256."
 }
