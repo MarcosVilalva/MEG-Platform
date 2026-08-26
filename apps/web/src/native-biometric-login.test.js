@@ -14,6 +14,7 @@ const biometricLogin = read('./native-biometric-login.js');
 const legacyEntry = read('./legacy-entry.js');
 const legacyCloud = read('./legacy-cloud.js');
 const capacitorConfig = read('../../../capacitor.config.ts');
+const appUpdaterPlugin = read('../../../android/app/src/main/java/br/com/megfinancas/app/AppUpdaterPlugin.java');
 
 const classList = (...values) => ({ contains: (value) => values.includes(value) });
 const nativeRuntime = (platform, native = true) => ({ getPlatform: () => platform, isNativePlatform: () => native });
@@ -136,6 +137,12 @@ assert.ok(
   'a verificação OTA só pode começar depois da restauração da base real'
 );
 assert.match(nativeUpdate, /VERSION_FETCH_ATTEMPTS\s*=\s*3/);
+assert.match(nativeUpdate, /VERSION_FETCH_TIMEOUT_MS\s*=\s*8000/);
+assert.match(nativeUpdate, /AppUpdater\.getReleaseManifest/);
+assert.match(nativeUpdate, /raw\.githubusercontent\.com/);
+assert.match(nativeUpdate, /appUpdateCheckWarning/);
+assert.match(appUpdaterPlugin, /void getReleaseManifest\(PluginCall call\)/);
+assert.match(appUpdaterPlugin, /setConnectTimeout\(12000\)/);
 assert.match(legacyEntry, /window\.setTimeout\([\s\S]*checkForAppUpdate\(\{ force: true \}\)/);
 assert.match(legacyEntry, /await initializeAndroidUpdateLifecycle\(\)/);
 assert.ok(

@@ -133,9 +133,13 @@ async function getAppUpdater() {
   appUpdaterPromise ||= import('@capacitor/core').then(({ registerPlugin }) => registerPlugin('AppUpdater'));
   return appUpdaterPromise;
 }
-const VERSION_URL = 'https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json';
+const VERSION_URLS = [
+  'https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json',
+  'https://raw.githubusercontent.com/MarcosVilalva/MEG-Platform/main/apps/web/public/downloads/app-version.json',
+];
 const VERSION_FETCH_ATTEMPTS = 3;
 const VERSION_FETCH_RETRY_MS = 900;
+const VERSION_FETCH_TIMEOUT_MS = 8000;
 const INSTALL_PERMISSION_TIMEOUT_MS = 120000;
 const INSTALL_PERMISSION_POLL_MS = 500;
 const UPDATE_RESUME_DELAY_MS = 1200;
@@ -158,6 +162,61 @@ function removeAvailableUpdateNotice() {
   document.querySelector('#appUpdateSidebarBadge')?.remove();
   delete document.body.dataset.availableAppVersion;
   delete window.MEG_AVAILABLE_APP_UPDATE;
+}
+
+function removeUpdateCheckWarning() {
+  document.querySelector('#appUpdateCheckWarning')?.remove();
+}
+
+function publishUpdateCheckWarning(cause) {
+  let warning = document.querySelector('#appUpdateCheckWarning');
+  if (!warning) {
+    warning = document.createElement('section');
+    warning.id = 'appUpdateCheckWarning';
+    warning.className = 'app-update-check-warning';
+    warning.setAttribute('role', 'status');
+    warning.setAttribute('aria-live', 'polite');
+    const topbar = document.querySelector('.topbar');
+    if (topbar) topbar.insertAdjacentElement('afterend', warning);
+    else document.querySelector('main.content')?.prepend(warning);
+  }
+  warning.innerHTML = `
+    <div><strong>Não foi possível verificar atualizações</strong><span>Confira sua internet e tente novamente.</span></div>
+    <button type="button">Tentar novamente</button>`;
+  warning.querySelector('button')?.addEventListener('click', () => {
+    warning.querySelector('button').disabled = true;
+    checkForAppUpdate({ force: true }).catch(() => undefined);
+  });
+  window.dispatchEvent(new CustomEvent('meg:app-update-check-failed', { detail: { message: cause?.message || String(cause || '') } }));
+}
+
+async function fetchReleaseManifest(AppUpdater, { timeoutMs, fetchAttempts }) {
+  const errors = [];
+  for (const url of VERSION_URLS) {
+    try {
+      const release = await AppUpdater.getReleaseManifest({ url: `${url}?t=${Date.now()}` });
+      if (release?.versionCode) return release;
+      throw new Error('MANIFEST_WITHOUT_VERSION');
+    } catch (cause) {
+      errors.push(cause);
+    }
+  }
+
+  const attempts = Math.max(1, Math.min(Number(fetchAttempts) || 1, VERSION_FETCH_ATTEMPTS));
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const url = VERSION_URLS[(attempt - 1) % VERSION_URLS.length];
+    try {
+      const response = await fetchWithDeadline(`${url}?t=${Date.now()}-${attempt}`, { cache: 'no-store' }, timeoutMs);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const release = await response.json();
+      if (!release?.versionCode) throw new Error('MANIFEST_WITHOUT_VERSION');
+      return release;
+    } catch (cause) {
+      errors.push(cause);
+      if (attempt < attempts) await delay(VERSION_FETCH_RETRY_MS * attempt);
+    }
+  }
+  throw errors.at(-1) || new Error('Manifesto de atualização indisponível.');
 }
 
 function publishAvailableUpdate(release, installed, AppUpdater) {
@@ -281,33 +340,19 @@ function updateDialog(release, installed, AppUpdater) {
   return decisionPromise;
 }
 
-export async function checkForAppUpdate({ force = false, waitForDecision = false, preflightOnly = false, timeoutMs = 1400, fetchAttempts = VERSION_FETCH_ATTEMPTS } = {}) {
+export async function checkForAppUpdate({ force = false, waitForDecision = false, preflightOnly = false, timeoutMs = VERSION_FETCH_TIMEOUT_MS, fetchAttempts = VERSION_FETCH_ATTEMPTS } = {}) {
   if (!await waitForNativeAndroid()) return { available: false };
   try {
     const AppUpdater = await getAppUpdater();
     if (!AppUpdater) return { available: false };
     const installed = await AppUpdater.getInfo();
     publishInstalledVersion(installed);
-    let release = null;
-    let lastFetchError = null;
-    const attempts = preflightOnly ? 1 : Math.max(1, Math.min(Number(fetchAttempts) || 1, VERSION_FETCH_ATTEMPTS));
-    for (let attempt = 1; attempt <= attempts; attempt += 1) {
-      try {
-        const response = await fetchWithDeadline(
-          `${VERSION_URL}?t=${Date.now()}-${attempt}`,
-          { cache: 'no-store' },
-          timeoutMs
-        );
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        release = await response.json();
-        break;
-      } catch (cause) {
-        lastFetchError = cause;
-        if (attempt < attempts) await delay(VERSION_FETCH_RETRY_MS * attempt);
-      }
-    }
-    if (!release) throw lastFetchError || new Error('Manifesto de atualização indisponível.');
-    const available = Number(release.versionCode) > Number(installed.versionCode);
+    const release = await fetchReleaseManifest(AppUpdater, { timeoutMs, fetchAttempts: preflightOnly ? 1 : fetchAttempts });
+    const installedCode = Number(installed.versionCode);
+    const releaseCode = Number(release.versionCode);
+    if (!Number.isFinite(installedCode) || !Number.isFinite(releaseCode)) throw new Error('INVALID_APP_VERSION');
+    const available = releaseCode > installedCode;
+    removeUpdateCheckWarning();
     let decision = null;
     if (available && !preflightOnly) {
       publishAvailableUpdate(release, installed, AppUpdater);
@@ -319,6 +364,7 @@ export async function checkForAppUpdate({ force = false, waitForDecision = false
     return { available, release, installed, decision };
   } catch (cause) {
     console.warn('MEG app update check failed', cause);
+    publishUpdateCheckWarning(cause);
     return { available: false, error: cause };
   }
 }

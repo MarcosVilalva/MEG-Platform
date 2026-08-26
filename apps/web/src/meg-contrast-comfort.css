@@ -430,6 +430,35 @@ body .app-update-sidebar-badge {
   font-weight: 900;
   cursor: pointer;
 }
+body .app-update-check-warning {
+  position: sticky;
+  top: 12px;
+  z-index: 1055;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  color: #e9ded0;
+  border: 1px solid rgba(224, 174, 95, .38);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #3b3427, #2c2c29);
+}
+body .app-update-check-warning > div { display: grid; gap: 2px; }
+body .app-update-check-warning strong { color: #f3e8d5 !important; }
+body .app-update-check-warning span { color: #bcae99 !important; font-size: .76rem; }
+body .app-update-check-warning button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 0 13px;
+  color: #f4e9d7 !important;
+  border: 1px solid rgba(224, 174, 95, .42) !important;
+  border-radius: 11px;
+  background: rgba(224, 174, 95, .12) !important;
+  font-weight: 850;
+}
+
 /* Central de Alertas, sem cartões brancos ou textos apagados. */
 body .opening-alert-dialog {
   color: var(--meg-comfort-text) !important;
@@ -507,6 +536,12 @@ body .autocomplete-option.active {
     border-radius: 16px;
   }
   body.native-mobile .app-update-banner > button { grid-column: 1 / -1; width: 100%; }
+  body.native-mobile .app-update-check-warning {
+    top: calc(8px + env(safe-area-inset-top));
+    align-items: stretch;
+    flex-direction: column;
+  }
+  body.native-mobile .app-update-check-warning button { width: 100%; }
 }
 
 /* Componentes móveis carregados depois do tema principal. */
