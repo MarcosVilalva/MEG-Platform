@@ -129,7 +129,7 @@ async function waitForNativeAndroid() {
 }
 
 async function getAppUpdater() {
-  if (!await waitForNativeAndroid()) return null;
+  if (!potentiallyNativeAndroid()) return null;
   appUpdaterPromise ||= import('@capacitor/core').then(({ registerPlugin }) => registerPlugin('AppUpdater'));
   return appUpdaterPromise;
 }
@@ -178,7 +178,8 @@ function publishUpdateCheckWarning(cause) {
     warning.setAttribute('aria-live', 'polite');
     const topbar = document.querySelector('.topbar');
     if (topbar) topbar.insertAdjacentElement('afterend', warning);
-    else document.querySelector('main.content')?.prepend(warning);
+    else if (document.querySelector('main.content')) document.querySelector('main.content').prepend(warning);
+    else document.body.append(warning);
   }
   warning.innerHTML = `
     <div><strong>Não foi possível verificar atualizações</strong><span>Confira sua internet e tente novamente.</span></div>
@@ -259,6 +260,22 @@ function publishAvailableUpdate(release, installed, AppUpdater) {
   sidebarBadge.onclick = () => updateDialog(release, installed, AppUpdater);
 
   window.dispatchEvent(new CustomEvent('meg:app-update-available', { detail: { release, installed } }));
+  AppUpdater.suppressNativePrompt({ versionCode: Number(release.versionCode) }).catch(() => undefined);
+}
+
+export async function markAndroidUpdateUiReady() {
+  if (!potentiallyNativeAndroid()) return false;
+  try {
+    const AppUpdater = await getAppUpdater();
+    if (!AppUpdater) return false;
+    await AppUpdater.setAuthenticatedUiReady();
+    document.body.dataset.androidUpdateReady = 'true';
+    return true;
+  } catch (cause) {
+    console.warn('MEG native update readiness failed', cause);
+    publishUpdateCheckWarning(cause);
+    return false;
+  }
 }
 
 async function waitForInstallPermission(AppUpdater) {

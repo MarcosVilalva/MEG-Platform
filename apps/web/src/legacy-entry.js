@@ -1,7 +1,7 @@
 import './startup-data-protection.js';
 import { bootstrapCloud, clearLocalCloudSession, hideCloudLoading, showCloudLoading } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
-import { checkForAppUpdate, initializeAndroidUpdateLifecycle, initializeStableUiFeatures } from './native-app-update.js';
+import { checkForAppUpdate, initializeAndroidUpdateLifecycle, initializeStableUiFeatures, markAndroidUpdateUiReady } from './native-app-update.js';
 import {
   consumePreparedAndroidBiometricCredentials,
   initializeAndroidBiometricLifecycle,
@@ -468,14 +468,17 @@ async function start() {
   await initializeStableUiFeatures();
   hideCloudLoading();
   traceStartup('dashboard-liberado', { transactions: window.MEG_APP?.getState?.()?.transactions?.length ?? null });
-  await initializeAndroidBiometricLifecycle({
+  // Libera a verificação nativa imediatamente após o Dashboard e antes de
+  // qualquer registro de ciclo de vida que possa ficar aguardando a ponte.
+  markAndroidUpdateUiReady().catch(() => undefined);
+  initializeAndroidBiometricLifecycle({
     onAuthenticationFailed: async () => {
       clearLocalCloudSession();
       location.reload();
     },
-  });
+  }).catch(() => undefined);
   window.MEG_APP_UPDATE = { check: () => checkForAppUpdate({ force: true }) };
-  await initializeAndroidUpdateLifecycle();
+  initializeAndroidUpdateLifecycle().catch(() => undefined);
   // OTA nunca participa da barreira de autenticação. A consulta e o instalador
   // só começam depois que a sessão, a base e o Dashboard estão íntegros.
   if (!validationMode) {
