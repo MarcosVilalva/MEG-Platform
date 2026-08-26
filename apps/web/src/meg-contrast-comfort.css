@@ -128,7 +128,8 @@ body .view :is(.signal-card.positive, .cashflow-answer-card.healthy, .smart-budg
 body .button:not(.primary),
 body .link-button,
 body .meg-table-actions button,
-body .meg-segment-bar > button {
+body .meg-segment-bar > button,
+body .filter-clear-button {
   color: #bfd4d8 !important;
   border-color: var(--meg-comfort-line) !important;
   background: #17343e !important;
@@ -137,7 +138,8 @@ body .meg-segment-bar > button {
 body .button:not(.primary):hover,
 body .link-button:hover,
 body .meg-table-actions button:hover,
-body .meg-segment-bar > button:hover {
+body .meg-segment-bar > button:hover,
+body .filter-clear-button:hover {
   color: #e3edef !important;
   border-color: rgba(91, 204, 188, .3) !important;
   background: #1c4249 !important;
@@ -773,7 +775,7 @@ body .meg-excel-filter-option input[type="checkbox"] {
 body .meg-excel-filter-option input[type="checkbox"]:checked { background: #2f9d89 !important; }
 
 /* Estados auxiliares, chips e painéis administrativos sem branco luminoso. */
-body :is(.meg-chip, .kpi-status, .credit-status, .status-pill, .credit-forecast-badge, .bill-priority, .meg-pending-priority-label) {
+body :is(.meg-chip, .kpi-status, .credit-status, .status-pill, .credit-forecast-badge, .bill-priority, .meg-pending-priority-label, .catalog-badge, .budget-status, .transaction-row-status, .user-status-pill, .primary-admin-badge, .license-status) {
   color: #a9c0c4 !important;
   border-color: var(--meg-comfort-line) !important;
   background: #1a3943 !important;
@@ -782,6 +784,29 @@ body :is(.meg-chip, .kpi-status, .credit-status, .status-pill, .credit-forecast-
 body :is(.meg-chip-10, .credit-status, .credit-forecast-badge, .bill-priority) {
   color: #dbbd82 !important;
   background: rgba(171, 125, 51, .15) !important;
+}
+body :is(.catalog-badge, .user-status-pill.active, .license-status.active, .license-status.paid, .primary-admin-badge) {
+  color: #8edcca !important;
+  background: rgba(48, 143, 119, .2) !important;
+}
+body :is(.user-status-pill.pending, .license-status.pending, .license-status.expired, .license-status.suspended, .license-status.cancelled, .license-status.past_due, .budget-status) {
+  color: #dfbd7c !important;
+  background: rgba(171, 125, 51, .18) !important;
+}
+body :is(.user-status-pill.blocked, .user-status-pill.rejected, .license-status.overdue),
+body .transaction-expense-row .transaction-row-status,
+body .smart-budget-card.over .budget-status {
+  color: #ef9297 !important;
+  background: rgba(166, 64, 69, .18) !important;
+}
+body .transaction-income-row .transaction-row-status,
+body .smart-budget-card.healthy .budget-status {
+  color: #79d6bd !important;
+  background: rgba(48, 143, 119, .18) !important;
+}
+body .smart-budget-card.attention .budget-status {
+  color: #dfbd7c !important;
+  background: rgba(171, 125, 51, .18) !important;
 }
 body :is(.payment-confirm-summary, .reconciliation-equation article, .managed-channel-card, .recipient-form, .recipient-item, .user-security-stats article, .permission-matrix article, .admin-user-permissions, .notification-preview) {
   color: var(--meg-comfort-text) !important;
@@ -794,6 +819,29 @@ body :is(.payment-confirm-summary, .managed-channel-card, .recipient-item, .user
 }
 body :is(.payment-confirm-summary, .managed-channel-card, .recipient-item, .user-security-stats article, .permission-matrix article) :is(p, span, small) {
   color: var(--meg-comfort-muted) !important;
+}
+body .admin-user-permissions :is(input, select),
+body .commercial-license-controls :is(input, select),
+body .integration-form input:not([type="checkbox"]),
+body .recipient-form :is(input, select, textarea) {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: #0d252f !important;
+}
+body .admin-feedback {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-alt) !important;
+}
+body .admin-feedback:is(.warning, .loading) {
+  color: #dfbd7c !important;
+  border-color: rgba(207, 168, 98, .25) !important;
+  background: rgba(171, 125, 51, .16) !important;
+}
+body .admin-feedback.error {
+  color: #ef9297 !important;
+  border-color: rgba(221, 116, 121, .27) !important;
+  background: rgba(166, 64, 69, .16) !important;
 }
 body .fatal-error {
   color: var(--meg-comfort-text) !important;
