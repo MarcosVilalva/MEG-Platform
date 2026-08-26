@@ -64,6 +64,8 @@ const saveCredentialsBlock = nativePlugin.slice(
 );
 assert.equal(saveCredentialsBlock.includes('authenticateAndRun'), false, 'ativar biometria não deve abrir um segundo prompt depois do login');
 assert.match(mainActivity, /registerPlugin\(BiometricAuthPlugin\.class\)/);
+assert.match(mainActivity, /onWindowFocusChanged/);
+assert.match(mainActivity, /checkForAvailableUpdateNative\(\)/);
 
 assert.match(nativeUpdate, /import\('\.\/native-biometric-settings\.js'\)/);
 assert.match(nativeUpdate, /initializeAuthenticatedBiometricSettings\(\)/);
@@ -143,11 +145,23 @@ assert.match(nativeUpdate, /raw\.githubusercontent\.com/);
 assert.match(nativeUpdate, /appUpdateCheckWarning/);
 assert.match(appUpdaterPlugin, /void getReleaseManifest\(PluginCall call\)/);
 assert.match(appUpdaterPlugin, /setConnectTimeout\(12000\)/);
+assert.match(appUpdaterPlugin, /void setAuthenticatedUiReady\(PluginCall call\)/);
+assert.match(appUpdaterPlugin, /void checkForAvailableUpdateNative\(\)/);
+assert.match(appUpdaterPlugin, /new AlertDialog\.Builder\(activity\)/);
+assert.match(appUpdaterPlugin, /fetchFirstAvailableReleaseManifest\(\)/);
+assert.match(appUpdaterPlugin, /downloadAndInstallInternal\(/);
+assert.match(nativeUpdate, /export async function markAndroidUpdateUiReady\(\)/);
+assert.match(nativeUpdate, /AppUpdater\.setAuthenticatedUiReady\(\)/);
+assert.match(nativeUpdate, /AppUpdater\.suppressNativePrompt/);
 assert.match(legacyEntry, /window\.setTimeout\([\s\S]*checkForAppUpdate\(\{ force: true \}\)/);
-assert.match(legacyEntry, /await initializeAndroidUpdateLifecycle\(\)/);
+assert.match(legacyEntry, /markAndroidUpdateUiReady\(\)\.catch/);
+assert.match(legacyEntry, /initializeAndroidUpdateLifecycle\(\)\.catch/);
+assert.doesNotMatch(legacyEntry, /await initializeAndroidUpdateLifecycle\(\)/);
 assert.ok(
-  legacyEntry.indexOf("traceStartup('dashboard-liberado'") < legacyEntry.indexOf('await initializeAndroidUpdateLifecycle()'),
-  'o monitor de atualização ao retomar só pode iniciar depois que o Dashboard estiver autenticado'
+  legacyEntry.indexOf("traceStartup('dashboard-liberado'") < legacyEntry.indexOf('markAndroidUpdateUiReady()')
+    && legacyEntry.indexOf('markAndroidUpdateUiReady()') < legacyEntry.indexOf('initializeAndroidBiometricLifecycle({')
+    && legacyEntry.indexOf('markAndroidUpdateUiReady()') < legacyEntry.indexOf('initializeAndroidUpdateLifecycle()'),
+  'a ponte nativa OTA deve ser liberada logo após o Dashboard e antes dos listeners de ciclo de vida'
 );
 assert.match(nativeUpdate, /appUpdateBanner/);
 assert.match(nativeUpdate, /appUpdateSidebarBadge/);
