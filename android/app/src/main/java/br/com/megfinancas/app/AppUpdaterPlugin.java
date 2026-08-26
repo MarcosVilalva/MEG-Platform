@@ -18,8 +18,11 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -54,6 +57,43 @@ public class AppUpdaterPlugin extends Plugin {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         getContext().startActivity(intent);
         call.resolve();
+    }
+
+    @PluginMethod
+    public void getReleaseManifest(PluginCall call) {
+        String source = call.getString("url");
+        if (source == null || !source.startsWith("https://")) {
+            call.reject("O manifesto de atualização precisa usar HTTPS.");
+            return;
+        }
+
+        executor.execute(() -> {
+            HttpURLConnection connection = null;
+            try {
+                connection = (HttpURLConnection) new URL(source).openConnection();
+                connection.setConnectTimeout(12000);
+                connection.setReadTimeout(20000);
+                connection.setInstanceFollowRedirects(true);
+                connection.setUseCaches(false);
+                connection.setRequestProperty("Cache-Control", "no-cache");
+                connection.setRequestProperty("Accept", "application/json");
+                connection.connect();
+                int status = connection.getResponseCode();
+                if (status < 200 || status >= 300) {
+                    throw new IllegalStateException("Manifesto respondeu HTTP " + status);
+                }
+                StringBuilder payload = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) payload.append(line);
+                }
+                call.resolve(new JSObject(payload.toString()));
+            } catch (Exception error) {
+                call.reject("Não foi possível consultar a atualização: " + error.getMessage(), error);
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        });
     }
 
     @PluginMethod
