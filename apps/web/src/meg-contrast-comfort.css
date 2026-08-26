@@ -430,6 +430,74 @@ body .app-update-sidebar-badge {
   font-weight: 900;
   cursor: pointer;
 }
+/* Central de Alertas, sem cartões brancos ou textos apagados. */
+body .opening-alert-dialog {
+  color: var(--meg-comfort-text) !important;
+  border: 1px solid rgba(82, 190, 174, .24) !important;
+  background: linear-gradient(155deg, #112b35, #0c222c) !important;
+  box-shadow: 0 28px 75px rgba(0, 11, 18, .48) !important;
+}
+body .opening-alert-dialog .modal-header {
+  color: var(--meg-comfort-heading) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: transparent !important;
+}
+body .opening-alert-dialog :is(h2, h3, strong, b) { color: var(--meg-comfort-heading) !important; }
+body .opening-alert-dialog .decision-eyebrow { color: #63d9c2 !important; }
+body .opening-alert-dialog .icon-button {
+  color: #b8cdd1 !important;
+  border-color: rgba(140, 188, 193, .28) !important;
+  background: #193844 !important;
+}
+body .opening-alert-summary article {
+  color: var(--meg-comfort-text) !important;
+  border: 1px solid var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-alt) !important;
+}
+body .opening-alert-summary span,
+body .opening-alert-days small,
+body .opening-alert-item small { color: var(--meg-comfort-muted) !important; }
+body .opening-alert-summary strong { color: #8be1d0 !important; }
+body .opening-alert-days article,
+body .opening-alert-item {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-alt) !important;
+}
+body .opening-alert-days strong { color: #84d7c8 !important; }
+body .opening-alert-item.critical {
+  border-color: rgba(241, 116, 109, .4) !important;
+  background: linear-gradient(135deg, #402a2d, #30262b) !important;
+}
+body .opening-alert-item.warning {
+  border-color: rgba(226, 176, 79, .42) !important;
+  background: linear-gradient(135deg, #3b3425, #2d2d28) !important;
+}
+body .opening-alert-critical {
+  color: #f2b1ac !important;
+  border-color: rgba(241, 116, 109, .4) !important;
+  background: #3a292d !important;
+}
+body .opening-alert-dialog .empty {
+  color: var(--meg-comfort-muted) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-deep) !important;
+}
+
+/* Sugestões de descrição dentro do lançamento Android. */
+body .autocomplete-menu {
+  border-color: rgba(83, 190, 174, .32) !important;
+  background: #112b35 !important;
+  box-shadow: 0 18px 42px rgba(0, 13, 20, .42) !important;
+}
+body .autocomplete-option { color: var(--meg-comfort-text) !important; }
+body .autocomplete-option span { color: var(--meg-comfort-heading) !important; }
+body .autocomplete-option small { color: var(--meg-comfort-muted) !important; }
+body .autocomplete-option:hover,
+body .autocomplete-option.active {
+  color: #dffff8 !important;
+  background: linear-gradient(90deg, rgba(54, 192, 165, .24), rgba(54, 192, 165, .09)) !important;
+}
 @media (max-width: 680px) {
   body.native-mobile .app-update-banner {
     top: calc(8px + env(safe-area-inset-top));
