@@ -1,8 +1,8 @@
 {
-  "versionCode": 170,
-  "versionName": "1.1.170",
-  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=170",
-  "sha256": "e8dc9c66ff1fc4ac10c669a7a675a98612e2ec19515ce4b4a18911fa1e033a79",
+  "versionCode": 171,
+  "versionName": "1.1.171",
+  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=171",
+  "sha256": "0bb11bd655b56197d5dcc877f523c441681891062a9cc89bb73f996e943666db",
   "mandatory": false,
   "releaseNotes": "Teste da atualização automática: a versão 1.1.167 deve identificar esta versão após a biometria e abrir o instalador pelo botão Atualizar agora."
 }
