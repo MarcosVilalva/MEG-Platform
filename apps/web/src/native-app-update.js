@@ -153,8 +153,20 @@ function publishInstalledVersion(installed) {
   window.MEG_INSTALLED_APP_VERSION = installed;
   document.body.dataset.installedAppVersion = String(installed.versionName);
   const versionLabel = document.querySelector('#sidebarVersion');
-  if (versionLabel) versionLabel.textContent = `MEG v${installed.versionName}`;
+  if (versionLabel) {
+    versionLabel.textContent = `APK v${installed.versionName}`;
+    versionLabel.dataset.versionSource = 'native';
+  }
   window.dispatchEvent(new CustomEvent('meg:installed-app-version', { detail: installed }));
+}
+
+export async function refreshInstalledAppVersion() {
+  if (!await waitForNativeAndroid()) return null;
+  const AppUpdater = await getAppUpdater();
+  if (!AppUpdater) return null;
+  const installed = await AppUpdater.getInfo();
+  publishInstalledVersion(installed);
+  return installed;
 }
 
 function removeAvailableUpdateNotice() {

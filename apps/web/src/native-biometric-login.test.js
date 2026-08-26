@@ -74,6 +74,9 @@ assert.match(nativePlugin, /onAuthenticationSucceeded[\s\S]*onBiometricAuthentic
 assert.match(nativeUpdate, /import\('\.\/native-biometric-settings\.js'\)/);
 assert.match(nativeUpdate, /initializeAuthenticatedBiometricSettings\(\)/);
 assert.match(nativeUpdate, /MEG_INSTALLED_APP_VERSION/);
+assert.match(nativeUpdate, /export async function refreshInstalledAppVersion\(\)/);
+assert.match(nativeUpdate, /const installed = await AppUpdater\.getInfo\(\)/);
+assert.match(nativeUpdate, /`APK v\$\{installed\.versionName\}`/);
 assert.match(nativeUpdate, /window\.setTimeout\(installAutomatically, 0\)/);
 assert.match(nativeUpdate, /Promise\.race\(\[request, deadline\]\)/);
 assert.match(nativeUpdate, /await waitForInstallPermission\(AppUpdater\)/);
@@ -82,6 +85,8 @@ assert.equal(nativeUpdate.includes('appUpdateLater'), false, 'a atualização An
 assert.match(biometricSettings, /#logoutBtn/);
 assert.match(biometricSettings, /\/auth\/login/);
 assert.match(biometricSettings, /saveBiometricLogin\(\{ email, password \}\)/);
+assert.match(biometricSettings, /status\.enabled \? 'Biometria ativa' : 'Ativar biometria'/);
+assert.doesNotMatch(biometricSettings, /Biometria ativa — testar/);
 
 assert.match(biometricLogin, /registerPlugin\('BiometricAuth'\)/);
 assert.match(biometricLogin, /BiometricAuth\.isAvailable\(\)/);
@@ -115,6 +120,7 @@ assert.match(legacyEntry, /await prepareAndroidBiometricStartup\(\)/);
 assert.match(legacyEntry, /if \(nativeMobileMode\) \{[\s\S]*clearLocalCloudSession\(\)/);
 assert.match(legacyEntry, /consumePreparedAndroidBiometricCredentials\(\)/);
 assert.match(legacyEntry, /await bootstrapCloud\(\{ biometricCredentials, keepLoading: true \}\)/);
+assert.match(legacyEntry, /if \(nativeMobileMode\) await refreshInstalledAppVersion\(\)\.catch/);
 assert.doesNotMatch(legacyEntry, /warmCloudApi/);
 assert.match(capacitorConfig, /CapacitorHttp:\s*\{\s*enabled:\s*true\s*\}/);
 assert.match(legacyCloud, /Promise\.race\(\[request, deadline\]\)/);

@@ -572,3 +572,313 @@ body .pill.expense { color: #ee8b91 !important; background: rgba(203, 83, 91, .1
 @media (max-width: 620px) {
   body .credit-invoice-table tr { background: var(--meg-comfort-surface) !important; }
 }
+
+/* Rodapé do menu: identidade, estado e versão sem compressão horizontal. */
+body .sidebar-user-footer {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  gap: 12px !important;
+  margin: 18px 6px 8px !important;
+  padding: 14px !important;
+  border-color: rgba(105, 181, 181, .2) !important;
+  border-radius: 17px !important;
+  background: linear-gradient(145deg, rgba(19, 48, 61, .92), rgba(12, 34, 45, .94)) !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .025), 0 12px 28px rgba(0, 8, 16, .2) !important;
+}
+body .sidebar-user-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+body .sidebar-user-copy > #cloudUserName {
+  display: block;
+  overflow: hidden;
+  color: var(--meg-comfort-heading) !important;
+  font-size: .84rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body .sidebar-user-copy > :is(#cloudSyncStatus, #sidebarDateTime) {
+  overflow: hidden;
+  color: #89a7ad !important;
+  font-size: .68rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body .sidebar-version-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(90, 195, 180, .2);
+  border-radius: 11px;
+  background: rgba(7, 25, 35, .72);
+}
+body .sidebar-version-status > span {
+  color: #86a5aa !important;
+  font-size: .62rem;
+  font-weight: 750;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+body #sidebarVersion {
+  overflow: visible !important;
+  color: #74d6c1 !important;
+  font-size: .72rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-overflow: clip !important;
+  white-space: nowrap;
+}
+body #sidebarVersion[data-version-source="loading"] { color: #b8aaa0 !important; }
+body .sidebar-user-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+body .sidebar-user-actions > :is(button, .button),
+body #androidBiometricSettingsBtn {
+  min-width: 0;
+  min-height: 40px;
+  margin: 0 !important;
+  padding: 8px 10px !important;
+  border-color: rgba(102, 200, 185, .24) !important;
+  border-radius: 11px !important;
+  color: #bdd2d5 !important;
+  background: #173640 !important;
+  box-shadow: none !important;
+  font-size: .72rem !important;
+  line-height: 1.2 !important;
+}
+body #androidBiometricSettingsBtn[data-enabled="true"] {
+  color: #8edcca !important;
+  border-color: rgba(87, 205, 177, .34) !important;
+  background: #19433f !important;
+}
+body #androidBiometricSettingsBtn:hover,
+body .sidebar-user-actions > :is(button, .button):hover {
+  color: #e0eeee !important;
+  background: #1c454b !important;
+}
+body .sidebar-user-actions #logoutBtn { min-width: 62px; }
+
+/* Formulário de lançamentos e módulos que entram dinamicamente. */
+body #transactionDialog,
+body #transactionDialog form {
+  color: var(--meg-comfort-text) !important;
+  background: linear-gradient(155deg, #112b35, #0b202a) !important;
+}
+body #transactionDialog .modal-header {
+  color: var(--meg-comfort-heading) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: #112b35 !important;
+}
+body #transactionDialog .form-grid label,
+body #transactionDialog .form-grid label > span {
+  color: #a8bcc1 !important;
+}
+body #transactionDialog :is(input, select, textarea) {
+  color: #dce9ec !important;
+  border-color: rgba(105, 181, 181, .23) !important;
+  background: #0d252f !important;
+}
+body #transactionDialog :is(input, select, textarea):focus {
+  color: #e6f0f2 !important;
+  border-color: rgba(83, 210, 187, .72) !important;
+  background: #102c36 !important;
+  box-shadow: 0 0 0 3px rgba(76, 196, 174, .1) !important;
+}
+body #transactionDialog input[readonly] {
+  color: #98afb4 !important;
+  background: #132e37 !important;
+  cursor: not-allowed;
+}
+body #transactionDialog :is(.due-date-override, .installment-fields, .installment-edit-scope, .meg-recurring-panel, .ongoing-installment-panel) {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: linear-gradient(145deg, #17343e, #102832) !important;
+  box-shadow: none !important;
+}
+body #transactionDialog :is(.due-date-override, .installment-fields, .installment-edit-scope, .meg-recurring-panel, .ongoing-installment-panel) :is(h3, strong, b) {
+  color: var(--meg-comfort-heading) !important;
+}
+body #transactionDialog :is(.due-date-override, .installment-fields, .installment-edit-scope, .meg-recurring-panel, .ongoing-installment-panel) :is(p, small, span) {
+  color: var(--meg-comfort-muted) !important;
+}
+body #transactionDialog .ongoing-installment-head > div > small,
+body #transactionDialog .card-due-preview,
+body #transactionDialog .meg-negative-expense-help.is-credit { color: #70cdb9 !important; }
+body #transactionDialog .ongoing-switch {
+  color: #b9ced2 !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: #193945 !important;
+}
+body #transactionDialog .ongoing-installment-grid,
+body #transactionDialog .meg-recurring-fields { border-color: var(--meg-comfort-line) !important; }
+body #transactionDialog .ongoing-installment-grid label,
+body #transactionDialog .meg-recurring-fields label { color: #a8bcc1 !important; }
+body #transactionDialog .ongoing-installment-preview {
+  color: var(--meg-comfort-text) !important;
+  border: 1px solid var(--meg-comfort-line);
+  background: #0d252f !important;
+}
+body #transactionDialog .meg-duplicate-notice {
+  color: #91d7c8 !important;
+  border: 1px solid rgba(78, 189, 164, .22);
+  background: rgba(49, 128, 111, .15) !important;
+}
+body #transactionDialog :is(input[type="checkbox"], input[type="radio"]) { accent-color: #43bea7; }
+
+/* Filtros, menus e escolhas: mesma profundidade visual em todas as grades. */
+body :is(.meg-stable-filter-popover, .excel-filter-popover, .meg-column-menu) {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: #112b35 !important;
+  box-shadow: 0 22px 52px rgba(0, 9, 16, .36) !important;
+}
+body :is(.meg-stable-filter-popover, .excel-filter-popover, .meg-column-menu) :is(header, footer) {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: #102832 !important;
+}
+body :is(.meg-stable-filter-popover, .excel-filter-popover, .meg-column-menu) :is(strong, label, span) { color: var(--meg-comfort-text) !important; }
+body :is(.meg-stable-filter-popover, .excel-filter-popover, .meg-column-menu) small { color: var(--meg-comfort-muted) !important; }
+body :is(.meg-stable-filter-popover, .excel-filter-popover, .meg-column-menu) :is(input, select) {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: #0d252f !important;
+}
+body :is(.meg-stable-filter-popover, .excel-filter-popover, .meg-column-menu) button:not(.meg-excel-apply) {
+  color: #bdd2d5 !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: #193945 !important;
+}
+body :is(.meg-stable-filter-options label, .meg-excel-filter-option, .meg-column-menu label):hover {
+  color: #e2eeee !important;
+  background: rgba(65, 176, 157, .13) !important;
+}
+body .meg-stable-filter-popover input[type="checkbox"],
+body .meg-excel-filter-option input[type="checkbox"] {
+  border-color: #5f8586 !important;
+  background: #0d252f !important;
+}
+body .meg-excel-filter-option input[type="checkbox"]:checked { background: #2f9d89 !important; }
+
+/* Estados auxiliares, chips e painéis administrativos sem branco luminoso. */
+body :is(.meg-chip, .kpi-status, .credit-status, .status-pill, .credit-forecast-badge, .bill-priority, .meg-pending-priority-label) {
+  color: #a9c0c4 !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: #1a3943 !important;
+  box-shadow: none !important;
+}
+body :is(.meg-chip-10, .credit-status, .credit-forecast-badge, .bill-priority) {
+  color: #dbbd82 !important;
+  background: rgba(171, 125, 51, .15) !important;
+}
+body :is(.payment-confirm-summary, .reconciliation-equation article, .managed-channel-card, .recipient-form, .recipient-item, .user-security-stats article, .permission-matrix article, .admin-user-permissions, .notification-preview) {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: var(--meg-comfort-surface-alt) !important;
+  box-shadow: none !important;
+}
+body :is(.payment-confirm-summary, .managed-channel-card, .recipient-item, .user-security-stats article, .permission-matrix article) :is(h3, h4, strong, b) {
+  color: var(--meg-comfort-heading) !important;
+}
+body :is(.payment-confirm-summary, .managed-channel-card, .recipient-item, .user-security-stats article, .permission-matrix article) :is(p, span, small) {
+  color: var(--meg-comfort-muted) !important;
+}
+body .fatal-error {
+  color: var(--meg-comfort-text) !important;
+  border: 1px solid var(--meg-comfort-line) !important;
+  background: #0d252f !important;
+}
+
+/* Camada premium do Android: neutraliza os cartões claros carregados por último. */
+body :is(.meg-kpi-card, .meg-chart-card, .meg-pivot-card) {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: linear-gradient(145deg, var(--meg-comfort-surface-alt), var(--meg-comfort-surface)) !important;
+  background-image: linear-gradient(145deg, var(--meg-comfort-surface-alt), var(--meg-comfort-surface)) !important;
+  box-shadow: var(--meg-comfort-shadow) !important;
+}
+body :is(.meg-kpi-card, .meg-chart-card, .meg-pivot-card) :is(h3, h4, strong, b) {
+  color: var(--meg-comfort-heading) !important;
+}
+body :is(.meg-kpi-card, .meg-chart-card, .meg-pivot-card) :is(span, small, p, label) {
+  color: var(--meg-comfort-muted) !important;
+}
+body .meg-pivot-card > header,
+body .meg-pivot-card thead th {
+  color: var(--meg-comfort-muted) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: #102832 !important;
+}
+body .meg-pivot-card :is(th, td) {
+  color: var(--meg-comfort-text) !important;
+  border-color: rgba(112, 174, 173, .13) !important;
+  background: transparent !important;
+}
+body .meg-pivot-card tbody tr:hover td { background: #1a3d46 !important; }
+body .meg-pivot-card header select,
+body .meg-segment-bar :is(select, input),
+body #transactions .transactions-table thead :is(input, select, summary) {
+  color: var(--meg-comfort-text) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: #0d252f !important;
+  box-shadow: none !important;
+}
+body .meg-segment-bar :is(select, input):focus,
+body #transactions .transactions-table thead :is(input, select, summary):focus {
+  border-color: rgba(83, 210, 187, .72) !important;
+  background: #102c36 !important;
+  box-shadow: 0 0 0 3px rgba(76, 196, 174, .1) !important;
+}
+body #transactions .transactions-table thead .column-filter-row th {
+  color: var(--meg-comfort-muted) !important;
+  border-color: var(--meg-comfort-line) !important;
+  background: #122b35 !important;
+}
+
+/* Cartões compactos de lançamentos usados no celular. */
+body.native-mobile .meg-mobile-transaction-icon,
+body.native-mobile .meg-mobile-status {
+  color: #b9ced2 !important;
+  background: #1a3943 !important;
+}
+body.native-mobile .meg-mobile-transaction.income :is(.meg-mobile-transaction-icon, .meg-mobile-status) {
+  color: #79d6bd !important;
+  background: rgba(48, 143, 119, .18) !important;
+}
+body.native-mobile .meg-mobile-transaction.pending :is(.meg-mobile-transaction-icon, .meg-mobile-status) {
+  color: #dfbd7c !important;
+  background: rgba(171, 125, 51, .18) !important;
+}
+body.native-mobile .meg-mobile-transaction.overdue :is(.meg-mobile-transaction-icon, .meg-mobile-status) {
+  color: #ef9297 !important;
+  background: rgba(166, 64, 69, .18) !important;
+}
+body.native-mobile .meg-mobile-transaction-status-row,
+body.native-mobile .meg-mobile-transaction-details {
+  color: var(--meg-comfort-muted) !important;
+  border-color: var(--meg-comfort-line) !important;
+}
+body.native-mobile .meg-mobile-transaction-details dt { color: #849da3 !important; }
+body.native-mobile .meg-mobile-transaction-details dd { color: var(--meg-comfort-text) !important; }
+
+@media (max-width: 680px) {
+  body .sidebar-user-footer { margin-inline: 2px !important; }
+  body #transactionDialog .modal-header {
+    margin-inline: -2px;
+    padding: 8px 2px 12px;
+  }
+  body #transactionDialog .ongoing-installment-head { gap: 10px; }
+  body #transactionDialog .ongoing-switch { flex: 0 1 auto; padding: 7px 9px; }
+}

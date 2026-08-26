@@ -1,7 +1,7 @@
 import './startup-data-protection.js';
 import { bootstrapCloud, clearLocalCloudSession, hideCloudLoading, showCloudLoading } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
-import { checkForAppUpdate, initializeAndroidUpdateLifecycle, initializeStableUiFeatures, markAndroidUpdateUiReady } from './native-app-update.js';
+import { checkForAppUpdate, initializeAndroidUpdateLifecycle, initializeStableUiFeatures, markAndroidUpdateUiReady, refreshInstalledAppVersion } from './native-app-update.js';
 import {
   consumePreparedAndroidBiometricCredentials,
   initializeAndroidBiometricLifecycle,
@@ -466,6 +466,7 @@ async function start() {
   await import('./legacy-app.js');
   wireLegacyApp();
   await initializeStableUiFeatures();
+  if (nativeMobileMode) await refreshInstalledAppVersion().catch(() => undefined);
   hideCloudLoading();
   traceStartup('dashboard-liberado', { transactions: window.MEG_APP?.getState?.()?.transactions?.length ?? null });
   // Libera a verificação nativa imediatamente após o Dashboard e antes de

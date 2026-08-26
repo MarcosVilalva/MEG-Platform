@@ -37,22 +37,24 @@ function ensureStyles() {
   style.textContent = `
     .meg-biometric-settings-button {
       width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
-      margin: 8px 0; padding: 11px 13px; border: 1px solid #b9d9d2; border-radius: 12px;
-      background: #eff8f5; color: #0b5f54; font: inherit; font-weight: 800; cursor: pointer;
+      min-height: 40px; margin: 0; padding: 9px 11px; border: 1px solid rgba(102, 200, 185, .25); border-radius: 11px;
+      background: #173640; color: #bcd7d9; font: inherit; font-size: .74rem; line-height: 1.25; font-weight: 800; cursor: pointer;
     }
-    .meg-biometric-settings-button[data-enabled="true"] { background: #e5f7ef; border-color: #8fd3b8; }
+    .meg-biometric-settings-button[data-enabled="true"] { background: #19433f; border-color: rgba(87, 205, 177, .34); color: #8edcca; }
+    .meg-biometric-settings-button:hover { background: #1c454b; color: #e0eeee; }
     .meg-biometric-settings-button:disabled { opacity: .7; cursor: wait; }
-    .meg-biometric-settings-dialog { max-width: 420px; width: calc(100% - 32px); border: 0; border-radius: 18px; padding: 0; box-shadow: 0 24px 70px #0006; }
+    .meg-biometric-settings-dialog { max-width: 420px; width: calc(100% - 32px); border: 1px solid rgba(102, 200, 185, .22); border-radius: 18px; padding: 0; color: #d7e4e7; background: linear-gradient(145deg, #112b35, #0c222c); box-shadow: 0 24px 70px #0008; }
     .meg-biometric-settings-dialog::backdrop { background: #0f2926aa; backdrop-filter: blur(3px); }
     .meg-biometric-settings-card { display: grid; gap: 14px; padding: 22px; font-family: system-ui, sans-serif; }
     .meg-biometric-settings-card h2, .meg-biometric-settings-card p { margin: 0; }
-    .meg-biometric-settings-card p { color: #526b66; line-height: 1.45; }
-    .meg-biometric-settings-card label { display: grid; gap: 7px; font-weight: 750; color: #173d37; }
-    .meg-biometric-settings-card input { width: 100%; box-sizing: border-box; padding: 13px; border: 1px solid #b8cbc7; border-radius: 11px; font: inherit; }
-    .meg-biometric-settings-error { min-height: 20px; color: #a11b1b !important; font-weight: 700; }
+    .meg-biometric-settings-card h2 { color: #e3edef; }
+    .meg-biometric-settings-card p { color: #93a9b0; line-height: 1.45; }
+    .meg-biometric-settings-card label { display: grid; gap: 7px; font-weight: 750; color: #bcd0d4; }
+    .meg-biometric-settings-card input { width: 100%; box-sizing: border-box; padding: 13px; border: 1px solid rgba(102, 200, 185, .23); border-radius: 11px; color: #e4eff1; background: #0c222c; font: inherit; }
+    .meg-biometric-settings-error { min-height: 20px; color: #ef9297 !important; font-weight: 700; }
     .meg-biometric-settings-actions { display: flex; gap: 10px; justify-content: flex-end; }
-    .meg-biometric-settings-actions button { padding: 11px 14px; border-radius: 10px; border: 1px solid #aec7c2; font: inherit; font-weight: 800; }
-    .meg-biometric-settings-actions .primary { background: #0b6b5d; border-color: #0b6b5d; color: #fff; }
+    .meg-biometric-settings-actions button { padding: 11px 14px; border-radius: 10px; border: 1px solid rgba(102, 200, 185, .23); color: #bfd4d8; background: #173640; font: inherit; font-weight: 800; }
+    .meg-biometric-settings-actions .primary { background: #38bea4; border-color: #58dfc3; color: #062a28; }
   `;
   document.head.appendChild(style);
 }
@@ -156,7 +158,7 @@ async function mountSettingsButton() {
         button.title = biometricUnavailableMessage(status?.reason);
         return status;
       }
-      button.textContent = status.enabled ? 'Biometria ativa — testar' : 'Ativar biometria neste aparelho';
+      button.textContent = status.enabled ? 'Biometria ativa' : 'Ativar biometria';
       button.title = status.enabled
         ? 'Toque para testar a leitura biométrica.'
         : 'Toque para vincular sua conta à biometria do Android.';

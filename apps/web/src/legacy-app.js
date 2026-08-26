@@ -4200,23 +4200,35 @@ function updateSidebarClock() {
 
 async function loadSidebarVersion() {
   if (!els.sidebarVersion) return;
+  const nativeMobile = document.body.classList.contains("native-mobile");
   if (window.MEG_INSTALLED_APP_VERSION?.versionName) {
-    els.sidebarVersion.textContent = `MEG v${window.MEG_INSTALLED_APP_VERSION.versionName}`;
+    els.sidebarVersion.textContent = `APK v${window.MEG_INSTALLED_APP_VERSION.versionName}`;
+    els.sidebarVersion.dataset.versionSource = "native";
+    return;
+  }
+  if (nativeMobile) {
+    els.sidebarVersion.textContent = "Consultando APK...";
+    els.sidebarVersion.dataset.versionSource = "loading";
     return;
   }
   try {
     const response = await fetch(new URL("downloads/app-version.json", document.baseURI), { cache: "no-store" });
     if (!response.ok) throw new Error(String(response.status));
     const release = await response.json();
-    els.sidebarVersion.textContent = `MEG v${release.versionName || release.version || "1.3.0"}`;
+    els.sidebarVersion.textContent = `Web v${release.versionName || release.version || "atual"}`;
+    els.sidebarVersion.dataset.versionSource = "web";
   } catch {
-    els.sidebarVersion.textContent = "MEG v1.3.0";
+    els.sidebarVersion.textContent = "MEG Web";
+    els.sidebarVersion.dataset.versionSource = "web";
   }
 }
 
 window.addEventListener("meg:installed-app-version", (event) => {
   const versionName = event.detail?.versionName;
-  if (els.sidebarVersion && versionName) els.sidebarVersion.textContent = `MEG v${versionName}`;
+  if (els.sidebarVersion && versionName) {
+    els.sidebarVersion.textContent = `APK v${versionName}`;
+    els.sidebarVersion.dataset.versionSource = "native";
+  }
 });
 
 function syncAmountFields() {
