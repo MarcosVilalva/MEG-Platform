@@ -4259,6 +4259,31 @@ function syncAmountFields() {
   transactionEditor.refreshAll();
 }
 
+function applyIncomeTransactionDefaults() {
+  const sightModality = sortedModalities().find((item) => normalizeText(item) === "A VISTA") || "À VISTA";
+  const paymentCatalog = state.catalogs?.paymentMethods || DEFAULT_CATALOGS.paymentMethods;
+  const pixPayment = paymentCatalog.find((item) => (
+    normalizeText(item.description) === "PIX"
+    && normalizeText(item.modality) === "A VISTA"
+    && isCatalogItemActive("modalities", item.modality)
+    && isCatalogItemActive("paymentMethods", item.description)
+  ));
+
+  els.modalityInput.value = sightModality;
+  refreshPaymentMethodOptions(pixPayment?.description || "PIX");
+  if (pixPayment) els.paymentMethodInput.value = pixPayment.description;
+  syncFinancialAccountSelection({ force: true });
+  syncAmountFields();
+}
+
+function syncTransactionType() {
+  if (els.transactionType.value === "income") {
+    applyIncomeTransactionDefaults();
+    return;
+  }
+  syncAmountFields();
+}
+
 function isInstallmentModality() {
   const modality = normalizeText(els.modalityInput.value);
   return modality === "CREDITO" || modality === "CREDIARIO";
@@ -5590,7 +5615,7 @@ els.dateInput.addEventListener("change", () => {
 });
 els.purchaseDateInput.addEventListener("change", () => syncCardDates({ recalculate: true }));
 els.dueDateOverrideInput.addEventListener("change", () => syncCardDates({ recalculate: !els.dueDateOverrideInput.checked }));
-els.transactionType.addEventListener("change", syncAmountFields);
+els.transactionType.addEventListener("change", syncTransactionType);
 els.descriptionInput.addEventListener("input", renderDescriptionSuggestionsDebounced);
 els.descriptionInput.addEventListener("focus", renderDescriptionSuggestions);
 els.descriptionInput.addEventListener("keydown", handleDescriptionKeydown);
@@ -5639,7 +5664,7 @@ els.addMissingIncomeBtn.addEventListener("click", () => {
   els.insufficientBalanceDialog.close();
   openTransactionDialog();
   els.transactionType.value = "income";
-  syncAmountFields();
+  applyIncomeTransactionDefaults();
   els.descriptionInput.focus();
 });
 els.applySuggestedBudgetsBtn.addEventListener("click", applySuggestedBudgets);

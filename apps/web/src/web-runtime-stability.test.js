@@ -64,4 +64,11 @@ assert.match(comfortContrast, /\.meg-mobile-transaction/);
 assert.match(comfortContrast, /\.app-update-banner/);
 assert.match(comfortContrast, /\.app-update-sidebar-badge/);
 
+assert.match(comfortContrast, /\.opening-alert-dialog/);
+assert.match(comfortContrast, /\.autocomplete-option/);
+assert.match(legacyApp, /function applyIncomeTransactionDefaults\(\)/);
+assert.match(legacyApp, /normalizeText\(item\.description\) === "PIX"/);
+assert.match(legacyApp, /normalizeText\(item\) === "A VISTA"/);
+assert.match(legacyApp, /transactionType\.addEventListener\("change", syncTransactionType\)/);
+
 console.log('web runtime stability tests passed');
