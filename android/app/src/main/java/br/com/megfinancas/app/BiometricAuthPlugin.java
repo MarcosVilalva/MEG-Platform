@@ -121,6 +121,9 @@ public class BiometricAuthPlugin extends Plugin {
         BiometricPrompt prompt = new BiometricPrompt(activity, executor, new BiometricPrompt.AuthenticationCallback() {
             @Override
             public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                if (activity instanceof MainActivity) {
+                    ((MainActivity) activity).onBiometricAuthenticationSucceeded();
+                }
                 success.run();
             }
 

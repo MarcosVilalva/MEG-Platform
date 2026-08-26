@@ -66,7 +66,10 @@ assert.equal(saveCredentialsBlock.includes('authenticateAndRun'), false, 'ativar
 assert.match(mainActivity, /registerPlugin\(BiometricAuthPlugin\.class\)/);
 assert.match(mainActivity, /onWindowFocusChanged/);
 assert.match(mainActivity, /checkForAvailableUpdateNative\(\)/);
+assert.match(mainActivity, /void onBiometricAuthenticationSucceeded\(\)/);
+assert.match(mainActivity, /markAuthenticatedSessionReady\(\)/);
 assert.match(mainActivity, /public void onPause\(\)/);
+assert.match(nativePlugin, /onAuthenticationSucceeded[\s\S]*onBiometricAuthenticationSucceeded\(\)/);
 
 assert.match(nativeUpdate, /import\('\.\/native-biometric-settings\.js'\)/);
 assert.match(nativeUpdate, /initializeAuthenticatedBiometricSettings\(\)/);
@@ -147,6 +150,7 @@ assert.match(nativeUpdate, /appUpdateCheckWarning/);
 assert.match(appUpdaterPlugin, /void getReleaseManifest\(PluginCall call\)/);
 assert.match(appUpdaterPlugin, /setConnectTimeout\(12000\)/);
 assert.match(appUpdaterPlugin, /void setAuthenticatedUiReady\(PluginCall call\)/);
+assert.match(appUpdaterPlugin, /void markAuthenticatedSessionReady\(\)/);
 assert.match(appUpdaterPlugin, /void checkForAvailableUpdateNative\(\)/);
 assert.match(appUpdaterPlugin, /new AlertDialog\.Builder\(activity\)/);
 assert.match(appUpdaterPlugin, /fetchFirstAvailableReleaseManifest\(\)/);

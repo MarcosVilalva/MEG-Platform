@@ -97,8 +97,13 @@ public class AppUpdaterPlugin extends Plugin {
 
     @PluginMethod
     public void setAuthenticatedUiReady(PluginCall call) {
-        authenticatedUiReady = true;
+        markAuthenticatedSessionReady();
         call.resolve();
+    }
+
+    public void markAuthenticatedSessionReady() {
+        authenticatedUiReady = true;
+        Log.i(TAG, "Sessão autenticada. Verificação nativa liberada.");
         checkForAvailableUpdateNative();
     }
 

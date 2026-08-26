@@ -8,6 +8,7 @@ import com.getcapacitor.PluginHandle;
 
 public class MainActivity extends BridgeActivity {
     private static final long UPDATE_FOCUS_DELAY_MS = 1500;
+    private static final long UPDATE_AFTER_BIOMETRIC_DELAY_MS = 900;
     private final Handler updateHandler = new Handler(Looper.getMainLooper());
     private final Runnable updateCheck = () -> {
         if (!hasWindowFocus() || getBridge() == null) return;
@@ -29,6 +30,16 @@ public class MainActivity extends BridgeActivity {
         super.onWindowFocusChanged(hasFocus);
         updateHandler.removeCallbacks(updateCheck);
         if (hasFocus) updateHandler.postDelayed(updateCheck, UPDATE_FOCUS_DELAY_MS);
+    }
+
+    public void onBiometricAuthenticationSucceeded() {
+        updateHandler.postDelayed(() -> {
+            if (getBridge() == null) return;
+            PluginHandle handle = getBridge().getPlugin("AppUpdater");
+            if (handle != null && handle.getInstance() instanceof AppUpdaterPlugin) {
+                ((AppUpdaterPlugin) handle.getInstance()).markAuthenticatedSessionReady();
+            }
+        }, UPDATE_AFTER_BIOMETRIC_DELAY_MS);
     }
 
     @Override
