@@ -32,7 +32,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    protected void onPause() {
+    public void onPause() {
         updateHandler.removeCallbacks(updateCheck);
         super.onPause();
     }

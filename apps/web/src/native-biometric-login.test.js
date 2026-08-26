@@ -66,6 +66,7 @@ assert.equal(saveCredentialsBlock.includes('authenticateAndRun'), false, 'ativar
 assert.match(mainActivity, /registerPlugin\(BiometricAuthPlugin\.class\)/);
 assert.match(mainActivity, /onWindowFocusChanged/);
 assert.match(mainActivity, /checkForAvailableUpdateNative\(\)/);
+assert.match(mainActivity, /public void onPause\(\)/);
 
 assert.match(nativeUpdate, /import\('\.\/native-biometric-settings\.js'\)/);
 assert.match(nativeUpdate, /initializeAuthenticatedBiometricSettings\(\)/);
