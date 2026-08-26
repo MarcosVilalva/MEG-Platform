@@ -4,5 +4,5 @@
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=159",
   "sha256": "2fab4874b12182eca5e2f311844b34650bb9e973c7beb20c8f1ad9b97cfe927a",
   "mandatory": false,
-  "releaseNotes": "Visualização corrigida: Central de Alertas e sugestões mais legíveis, com À VISTA e PIX automáticos ao selecionar receita."
+  "releaseNotes": "Atualização confiável: verificação nativa no Android, fonte alternativa e aviso visível quando a consulta falhar."
 }
