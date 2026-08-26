@@ -83,13 +83,18 @@
         </nav>
 
         <div class="cloud-user sidebar-user-footer">
-          <div>
+          <div class="sidebar-user-copy">
             <strong id="cloudUserName">Conta MEG</strong>
             <small id="cloudSyncStatus">Sincronizando...</small>
             <small id="sidebarDateTime">--/--/---- --:--</small>
-            <small id="sidebarVersion">MEG v...</small>
+            <div class="sidebar-version-status" role="status" aria-live="polite">
+              <span>Versão instalada</span>
+              <strong id="sidebarVersion">Consultando...</strong>
+            </div>
           </div>
-          <button class="button ghost" id="logoutBtn" type="button">Sair</button>
+          <div class="sidebar-user-actions">
+            <button class="button ghost" id="logoutBtn" type="button">Sair</button>
+          </div>
         </div>
       </aside>
       <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu"></button>
