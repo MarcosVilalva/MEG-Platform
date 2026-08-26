@@ -95,7 +95,7 @@ jobs:
         run: |
           SHA256=$(sha256sum MEG-Financas.apk | awk '{print $1}')
           export SHA256
-          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('app-version.json', JSON.stringify({ versionCode: Number(process.env.MEG_VERSION_CODE), versionName: process.env.MEG_VERSION_NAME, downloadUrl: 'https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=' + process.env.MEG_VERSION_CODE, sha256: process.env.SHA256, mandatory: false, releaseNotes: 'Atualização Android corrigida: aviso nativo após a biometria, consulta independente da interface web e instalação segura com validação SHA-256.' }, null, 2) + '\n')"
+          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('app-version.json', JSON.stringify({ versionCode: Number(process.env.MEG_VERSION_CODE), versionName: process.env.MEG_VERSION_NAME, downloadUrl: 'https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=' + process.env.MEG_VERSION_CODE, sha256: process.env.SHA256, mandatory: false, releaseNotes: 'Teste final da atualização nativa: confirme o aviso após a biometria e toque em Atualizar agora para validar o download e o instalador.' }, null, 2) + '\n')"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
