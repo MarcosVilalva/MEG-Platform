@@ -4,5 +4,5 @@
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=171",
   "sha256": "0bb11bd655b56197d5dcc877f523c441681891062a9cc89bb73f996e943666db",
   "mandatory": false,
-  "releaseNotes": "Teste da atualização automática: a versão 1.1.167 deve identificar esta versão após a biometria e abrir o instalador pelo botão Atualizar agora."
+  "releaseNotes": "Visual mais confortável em todas as abas, versão instalada visível no menu e correções de contraste em lançamentos, filtros, usuários e biometria."
 }
