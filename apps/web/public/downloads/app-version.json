@@ -4,5 +4,5 @@
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=173",
   "sha256": "d61cd48c4286d707d25cf9342481dedf8525013508e8d542caa521641c867842",
   "mandatory": false,
-  "releaseNotes": "Visual mais confortável em todas as abas, versão instalada visível no menu e correções de contraste em lançamentos, filtros, usuários e biometria."
+  "releaseNotes": "Corrige o carregamento infinito após os alertas, libera o Painel antes das rotinas opcionais e mantém a consulta de versão e atualização em segundo plano."
 }
