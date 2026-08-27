@@ -102,5 +102,22 @@ assert.match(legacyApp, /function applyIncomeTransactionDefaults\(\)/);
 assert.match(legacyApp, /normalizeText\(item\.description\) === "PIX"/);
 assert.match(legacyApp, /normalizeText\(item\) === "A VISTA"/);
 assert.match(legacyApp, /transactionType\.addEventListener\("change", syncTransactionType\)/);
+assert.doesNotMatch(legacyApp, /window\.setTimeout\(showOpeningFinancialAlert, 450\)/, 'alertas não podem iniciar antes da liberação do Dashboard');
+assert.match(legacyApp, /function scheduleOpeningFinancialAlert\(delayMs = 450\)/);
+assert.match(legacyApp, /#cloudLoadingOverlay:not\(\.hidden\)/, 'o alerta deve respeitar a barreira visual ativa');
+assert.match(legacyApp, /scheduleOpeningFinancialAlert,/);
+assert.doesNotMatch(legacyEntry, /await initializeStableUiFeatures\(\)/, 'recursos opcionais não podem bloquear a abertura');
+assert.doesNotMatch(legacyEntry, /await refreshInstalledAppVersion\(\)/, 'a versão instalada não pode bloquear a abertura');
+const wiredDashboardIndex = legacyEntry.indexOf('wireLegacyApp();');
+const releasedDashboardIndex = legacyEntry.indexOf('hideCloudLoading();', wiredDashboardIndex);
+assert.ok(
+  wiredDashboardIndex < releasedDashboardIndex
+    && releasedDashboardIndex < legacyEntry.indexOf('initializeStableUiFeatures().catch', wiredDashboardIndex)
+    && releasedDashboardIndex < legacyEntry.indexOf('refreshInstalledAppVersion().catch', wiredDashboardIndex),
+  'o Dashboard deve ser liberado antes de recursos opcionais e da consulta de versão'
+);
+assert.match(nativeUpdate, /INSTALLED_VERSION_TIMEOUT_MS\s*=\s*3000/);
+assert.match(nativeUpdate, /INSTALLED_VERSION_BRIDGE_TIMEOUT/);
+assert.match(nativeUpdate, /APK: versão indisponível/);
 
 console.log('web runtime stability tests passed');

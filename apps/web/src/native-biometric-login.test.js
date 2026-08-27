@@ -67,15 +67,27 @@ assert.match(mainActivity, /registerPlugin\(BiometricAuthPlugin\.class\)/);
 assert.match(mainActivity, /onWindowFocusChanged/);
 assert.match(mainActivity, /checkForAvailableUpdateNative\(\)/);
 assert.match(mainActivity, /void onBiometricAuthenticationSucceeded\(\)/);
-assert.match(mainActivity, /markAuthenticatedSessionReady\(\)/);
 assert.match(mainActivity, /public void onPause\(\)/);
 assert.match(nativePlugin, /onAuthenticationSucceeded[\s\S]*onBiometricAuthenticationSucceeded\(\)/);
+const biometricSuccessActivityBlock = mainActivity.slice(
+  mainActivity.indexOf('public void onBiometricAuthenticationSucceeded'),
+  mainActivity.indexOf('@Override', mainActivity.indexOf('public void onBiometricAuthenticationSucceeded'))
+);
+assert.doesNotMatch(
+  biometricSuccessActivityBlock,
+  /markAuthenticatedSessionReady\(\)/,
+  'a biometria não pode liberar o atualizador antes do Dashboard e dos alertas iniciais'
+);
+assert.match(biometricSuccessActivityBlock, /removeCallbacks\(updateCheck\)/);
 
 assert.match(nativeUpdate, /import\('\.\/native-biometric-settings\.js'\)/);
 assert.match(nativeUpdate, /initializeAuthenticatedBiometricSettings\(\)/);
 assert.match(nativeUpdate, /MEG_INSTALLED_APP_VERSION/);
 assert.match(nativeUpdate, /export async function refreshInstalledAppVersion\(\)/);
-assert.match(nativeUpdate, /const installed = await AppUpdater\.getInfo\(\)/);
+assert.match(nativeUpdate, /promiseWithDeadline\([\s\S]*AppUpdater\.getInfo\(\)/);
+assert.match(nativeUpdate, /INSTALLED_VERSION_TIMEOUT_MS\s*=\s*3000/);
+assert.match(nativeUpdate, /INSTALLED_VERSION_BRIDGE_TIMEOUT/);
+assert.match(nativeUpdate, /APK: versão indisponível/);
 assert.match(nativeUpdate, /`APK v\$\{installed\.versionName\}`/);
 assert.match(nativeUpdate, /window\.setTimeout\(installAutomatically, 0\)/);
 assert.match(nativeUpdate, /Promise\.race\(\[request, deadline\]\)/);
@@ -120,7 +132,11 @@ assert.match(legacyEntry, /await prepareAndroidBiometricStartup\(\)/);
 assert.match(legacyEntry, /if \(nativeMobileMode\) \{[\s\S]*clearLocalCloudSession\(\)/);
 assert.match(legacyEntry, /consumePreparedAndroidBiometricCredentials\(\)/);
 assert.match(legacyEntry, /await bootstrapCloud\(\{ biometricCredentials, keepLoading: true \}\)/);
-assert.match(legacyEntry, /if \(nativeMobileMode\) await refreshInstalledAppVersion\(\)\.catch/);
+assert.match(legacyEntry, /if \(nativeMobileMode\) refreshInstalledAppVersion\(\)\.catch/);
+assert.doesNotMatch(legacyEntry, /await refreshInstalledAppVersion\(\)/);
+assert.doesNotMatch(legacyEntry, /await initializeStableUiFeatures\(\)/);
+assert.match(legacyEntry, /scheduleOpeningFinancialAlert/);
+assert.match(legacyEntry, /openingAlertSettled[\s\S]*finally\(releaseAndroidUpdateAfterOpeningAlert\)/);
 assert.doesNotMatch(legacyEntry, /warmCloudApi/);
 assert.match(capacitorConfig, /CapacitorHttp:\s*\{\s*enabled:\s*true\s*\}/);
 assert.match(legacyCloud, /Promise\.race\(\[request, deadline\]\)/);
@@ -170,9 +186,10 @@ assert.match(legacyEntry, /initializeAndroidUpdateLifecycle\(\)\.catch/);
 assert.doesNotMatch(legacyEntry, /await initializeAndroidUpdateLifecycle\(\)/);
 assert.ok(
   legacyEntry.indexOf("traceStartup('dashboard-liberado'") < legacyEntry.indexOf('markAndroidUpdateUiReady()')
+    && legacyEntry.indexOf('scheduleOpeningFinancialAlert') < legacyEntry.indexOf('markAndroidUpdateUiReady()')
     && legacyEntry.indexOf('markAndroidUpdateUiReady()') < legacyEntry.indexOf('initializeAndroidBiometricLifecycle({')
     && legacyEntry.indexOf('markAndroidUpdateUiReady()') < legacyEntry.indexOf('initializeAndroidUpdateLifecycle()'),
-  'a ponte nativa OTA deve ser liberada logo após o Dashboard e antes dos listeners de ciclo de vida'
+  'a ponte nativa OTA deve ser preparada após o Dashboard e depender da conclusão dos alertas iniciais'
 );
 assert.match(nativeUpdate, /appUpdateBanner/);
 assert.match(nativeUpdate, /appUpdateSidebarBadge/);

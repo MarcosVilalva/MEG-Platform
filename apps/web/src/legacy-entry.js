@@ -465,28 +465,32 @@ async function start() {
   window.MEG_NATIVE_NOTIFICATIONS = { sync: syncLocalDueNotifications };
   await import('./legacy-app.js');
   wireLegacyApp();
-  await initializeStableUiFeatures();
-  if (nativeMobileMode) await refreshInstalledAppVersion().catch(() => undefined);
+  // O Dashboard é a única barreira visual obrigatória. Versão, contraste
+  // complementar e OTA continuam em segundo plano e nunca podem manter esta
+  // tela de carregamento visível.
   hideCloudLoading();
   traceStartup('dashboard-liberado', { transactions: window.MEG_APP?.getState?.()?.transactions?.length ?? null });
-  // Libera a verificação nativa imediatamente após o Dashboard e antes de
-  // qualquer registro de ciclo de vida que possa ficar aguardando a ponte.
-  markAndroidUpdateUiReady().catch(() => undefined);
+  const openingAlertSettled = window.MEG_APP?.scheduleOpeningFinancialAlert?.() || Promise.resolve('unavailable');
+  initializeStableUiFeatures().catch(() => undefined);
+  if (nativeMobileMode) refreshInstalledAppVersion().catch(() => undefined);
+  window.MEG_APP_UPDATE = { check: () => checkForAppUpdate({ force: true }) };
+  const releaseAndroidUpdateAfterOpeningAlert = () => {
+    traceStartup('alertas-iniciais-concluídos');
+    markAndroidUpdateUiReady().catch(() => undefined);
+    initializeAndroidUpdateLifecycle().catch(() => undefined);
+    if (!validationMode) {
+      window.setTimeout(() => {
+        checkForAppUpdate({ force: true }).catch(() => undefined);
+      }, 500);
+    }
+  };
+  Promise.resolve(openingAlertSettled).catch(() => undefined).finally(releaseAndroidUpdateAfterOpeningAlert);
   initializeAndroidBiometricLifecycle({
     onAuthenticationFailed: async () => {
       clearLocalCloudSession();
       location.reload();
     },
   }).catch(() => undefined);
-  window.MEG_APP_UPDATE = { check: () => checkForAppUpdate({ force: true }) };
-  initializeAndroidUpdateLifecycle().catch(() => undefined);
-  // OTA nunca participa da barreira de autenticação. A consulta e o instalador
-  // só começam depois que a sessão, a base e o Dashboard estão íntegros.
-  if (!validationMode) {
-    window.setTimeout(() => {
-      checkForAppUpdate({ force: true }).catch(() => undefined);
-    }, 500);
-  }
   setupInactivityLogout();
   syncLocalDueNotifications(window.MEG_APP.getState());
   window.MEG_CLOUD?.whenFresh?.then((result) => {

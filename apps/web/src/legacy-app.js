@@ -1847,9 +1847,9 @@ function dailyAlertTotals(items) {
 }
 
 function showOpeningFinancialAlert() {
-  if (!els.openingAlertDialog || sessionStorage.getItem(`meg-opening-alert-${todayIso}`)) return;
+  if (!els.openingAlertDialog || sessionStorage.getItem(`meg-opening-alert-${todayIso}`)) return false;
   const data = openingAlertData();
-  if (!data.relevant.length && data.health.projectedClosing >= 0) return;
+  if (!data.relevant.length && data.health.projectedClosing >= 0) return false;
   sessionStorage.setItem(`meg-opening-alert-${todayIso}`, "1");
   const tone = data.overdueCount || data.health.projectedClosing < 0 ? "risk" : "attention";
   els.openingAlertDialog.classList.remove("risk", "attention");
@@ -1873,6 +1873,29 @@ function showOpeningFinancialAlert() {
       return `<article class="opening-alert-item ${itemTone}"><span aria-hidden="true">${group.date < todayIso ? "🚨" : group.date === todayIso ? "⏰" : "📅"}</span><span><strong>${escapeHtml(payableGroupLabel(group))}</strong><small>${formatDate(group.date)} · ${group.items.length > 1 ? `${group.items.length} lançamentos agrupados` : group.payment}</small></span><b>${money.format(payableGroupTotal(group))}</b></article>`;
     }).join("") : `<div class="empty">Nenhuma conta vence nos próximos três dias.</div>`}</div>`;
   els.openingAlertDialog.showModal();
+  return true;
+}
+
+let openingAlertTimer = null;
+
+function scheduleOpeningFinancialAlert(delayMs = 450) {
+  if (openingAlertTimer) window.clearTimeout(openingAlertTimer);
+  return new Promise((resolve) => {
+    openingAlertTimer = window.setTimeout(() => {
+      openingAlertTimer = null;
+      const loadingOverlay = document.querySelector("#cloudLoadingOverlay:not(.hidden)");
+      if (loadingOverlay) {
+        resolve("loading-active");
+        return;
+      }
+      const shown = showOpeningFinancialAlert();
+      if (!shown || !els.openingAlertDialog?.open) {
+        resolve("not-shown");
+        return;
+      }
+      els.openingAlertDialog.addEventListener("close", () => resolve("closed"), { once: true });
+    }, Math.max(0, Number(delayMs) || 0));
+  });
 }
 
 function cardForPayment(method, { includeInactive = false } = {}) {
@@ -5727,7 +5750,6 @@ updateSidebarClock();
 window.setInterval(updateSidebarClock, 30000);
 loadSidebarVersion();
 render();
-window.setTimeout(showOpeningFinancialAlert, 450);
 window.addEventListener("pagehide", persistLocalState);
 
 window.MEG_APP = {
@@ -5736,6 +5758,7 @@ window.MEG_APP = {
   getState: () => structuredClone(state),
   getStateRef: () => state,
   flushLocalStateSave: persistLocalState,
+  scheduleOpeningFinancialAlert,
   showToast,
   render
 };
