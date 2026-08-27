@@ -81,6 +81,7 @@ export function initializeStableUiFeatures() {
 let appUpdaterPromise = null;
 const ANDROID_RUNTIME_RETRIES = 10;
 const ANDROID_RUNTIME_RETRY_MS = 180;
+const INSTALLED_VERSION_TIMEOUT_MS = 3000;
 
 function delay(milliseconds) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
@@ -98,6 +99,18 @@ async function fetchWithDeadline(url, options, timeoutMs) {
       }, timeoutMs);
     });
     return await Promise.race([request, deadline]);
+  } finally {
+    if (timeout) window.clearTimeout(timeout);
+  }
+}
+
+async function promiseWithDeadline(promise, timeoutMs, errorCode) {
+  let timeout;
+  try {
+    const deadline = new Promise((_, reject) => {
+      timeout = window.setTimeout(() => reject(new Error(errorCode)), timeoutMs);
+    });
+    return await Promise.race([Promise.resolve(promise), deadline]);
   } finally {
     if (timeout) window.clearTimeout(timeout);
   }
@@ -160,13 +173,41 @@ function publishInstalledVersion(installed) {
   window.dispatchEvent(new CustomEvent('meg:installed-app-version', { detail: installed }));
 }
 
+function publishInstalledVersionUnavailable() {
+  const versionLabel = document.querySelector('#sidebarVersion');
+  if (!versionLabel || versionLabel.dataset.versionSource === 'native') return;
+  versionLabel.textContent = 'APK: versão indisponível';
+  versionLabel.dataset.versionSource = 'unavailable';
+}
+
 export async function refreshInstalledAppVersion() {
-  if (!await waitForNativeAndroid()) return null;
-  const AppUpdater = await getAppUpdater();
-  if (!AppUpdater) return null;
-  const installed = await AppUpdater.getInfo();
-  publishInstalledVersion(installed);
-  return installed;
+  try {
+    const nativeAndroid = await promiseWithDeadline(
+      waitForNativeAndroid(),
+      INSTALLED_VERSION_TIMEOUT_MS,
+      'INSTALLED_VERSION_RUNTIME_TIMEOUT'
+    );
+    if (!nativeAndroid) {
+      publishInstalledVersionUnavailable();
+      return null;
+    }
+    const AppUpdater = await getAppUpdater();
+    if (!AppUpdater) {
+      publishInstalledVersionUnavailable();
+      return null;
+    }
+    const installed = await promiseWithDeadline(
+      AppUpdater.getInfo(),
+      INSTALLED_VERSION_TIMEOUT_MS,
+      'INSTALLED_VERSION_BRIDGE_TIMEOUT'
+    );
+    publishInstalledVersion(installed);
+    return installed;
+  } catch (cause) {
+    console.warn('MEG installed version lookup failed', cause);
+    publishInstalledVersionUnavailable();
+    return null;
+  }
 }
 
 function removeAvailableUpdateNotice() {

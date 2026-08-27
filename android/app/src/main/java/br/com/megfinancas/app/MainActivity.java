@@ -8,7 +8,6 @@ import com.getcapacitor.PluginHandle;
 
 public class MainActivity extends BridgeActivity {
     private static final long UPDATE_FOCUS_DELAY_MS = 1500;
-    private static final long UPDATE_AFTER_BIOMETRIC_DELAY_MS = 900;
     private final Handler updateHandler = new Handler(Looper.getMainLooper());
     private final Runnable updateCheck = () -> {
         if (!hasWindowFocus() || getBridge() == null) return;
@@ -33,13 +32,10 @@ public class MainActivity extends BridgeActivity {
     }
 
     public void onBiometricAuthenticationSucceeded() {
-        updateHandler.postDelayed(() -> {
-            if (getBridge() == null) return;
-            PluginHandle handle = getBridge().getPlugin("AppUpdater");
-            if (handle != null && handle.getInstance() instanceof AppUpdaterPlugin) {
-                ((AppUpdaterPlugin) handle.getInstance()).markAuthenticatedSessionReady();
-            }
-        }, UPDATE_AFTER_BIOMETRIC_DELAY_MS);
+        // A biometria libera apenas a autenticação. O atualizador será liberado
+        // pela WebView depois que a base, o Dashboard e os alertas iniciais
+        // estiverem concluídos, evitando diálogos concorrentes no início.
+        updateHandler.removeCallbacks(updateCheck);
     }
 
     @Override
