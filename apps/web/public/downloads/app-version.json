@@ -1,8 +1,8 @@
 {
-  "versionCode": 173,
-  "versionName": "1.1.173",
-  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=173",
-  "sha256": "d61cd48c4286d707d25cf9342481dedf8525013508e8d542caa521641c867842",
+  "versionCode": 175,
+  "versionName": "1.1.175",
+  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=175",
+  "sha256": "b869d1692d8b0c159fac66973059a95ab58962eba569c58243656cafce4f7256",
   "mandatory": false,
   "releaseNotes": "Corrige o carregamento infinito após os alertas, libera o Painel antes das rotinas opcionais e mantém a consulta de versão e atualização em segundo plano."
 }
