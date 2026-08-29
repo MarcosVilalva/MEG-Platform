@@ -103,8 +103,10 @@ public class AppUpdaterPlugin extends Plugin {
 
     public void markAuthenticatedSessionReady() {
         authenticatedUiReady = true;
-        Log.i(TAG, "Sessão autenticada. Verificação nativa liberada.");
-        checkForAvailableUpdateNative();
+        // A WebView executa a primeira verificação imediatamente depois que o
+        // alerta financeiro inicial termina. O código nativo fica como segunda
+        // proteção para retomadas/foco, evitando dois diálogos simultâneos.
+        Log.i(TAG, "Sessão autenticada. Verificação nativa liberada para retomadas.");
     }
 
     @PluginMethod
@@ -122,7 +124,7 @@ public class AppUpdaterPlugin extends Plugin {
         if (!authenticatedUiReady || nativePromptVisible.get() || !nativeCheckRunning.compareAndSet(false, true)) return;
         executor.execute(() -> {
             try {
-                JSObject release = fetchFirstAvailableReleaseManifest();
+                JSObject release = fetchNewestReleaseManifest();
                 PackageInfo installed = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0);
                 long installedCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? installed.getLongVersionCode() : installed.versionCode;
                 long releaseCode = release.getLong("versionCode");
@@ -139,7 +141,6 @@ public class AppUpdaterPlugin extends Plugin {
                 activity.runOnUiThread(() -> showNativeUpdatePrompt(activity, installed.versionName, releaseName, releaseNotes, releaseCode, downloadUrl, sha256));
             } catch (Exception error) {
                 Log.w(TAG, "Falha na verificação nativa de atualização", error);
-                showToast("Não foi possível verificar atualizações. Tente novamente mais tarde.");
             } finally {
                 nativeCheckRunning.set(false);
             }
@@ -174,15 +175,27 @@ public class AppUpdaterPlugin extends Plugin {
         });
     }
 
-    private JSObject fetchFirstAvailableReleaseManifest() throws Exception {
+    private JSObject fetchNewestReleaseManifest() throws Exception {
         Exception lastError = null;
-        for (String source : RELEASE_MANIFEST_URLS) {
+        JSObject newest = null;
+        long newestCode = -1L;
+        long nonce = System.currentTimeMillis();
+
+        for (int index = 0; index < RELEASE_MANIFEST_URLS.length; index += 1) {
+            String source = RELEASE_MANIFEST_URLS[index];
             try {
-                return fetchReleaseManifest(source + "?native=" + System.currentTimeMillis());
+                JSObject release = fetchReleaseManifest(source + "?native=" + nonce + "-" + index);
+                long code = release.optLong("versionCode", -1L);
+                if (code > newestCode) {
+                    newest = release;
+                    newestCode = code;
+                }
             } catch (Exception error) {
                 lastError = error;
             }
         }
+
+        if (newest != null && newestCode > 0) return newest;
         throw lastError != null ? lastError : new IllegalStateException("Manifesto de atualização indisponível.");
     }
 
@@ -194,7 +207,8 @@ public class AppUpdaterPlugin extends Plugin {
             connection.setReadTimeout(20000);
             connection.setInstanceFollowRedirects(true);
             connection.setUseCaches(false);
-            connection.setRequestProperty("Cache-Control", "no-cache");
+            connection.setRequestProperty("Cache-Control", "no-cache, no-store, max-age=0");
+            connection.setRequestProperty("Pragma", "no-cache");
             connection.setRequestProperty("Accept", "application/json");
             connection.connect();
             int status = connection.getResponseCode();
@@ -204,7 +218,11 @@ public class AppUpdaterPlugin extends Plugin {
                 String line;
                 while ((line = reader.readLine()) != null) payload.append(line);
             }
-            return new JSObject(payload.toString());
+            JSObject result = new JSObject(payload.toString());
+            if (result.optLong("versionCode", -1L) <= 0) {
+                throw new IllegalStateException("Manifesto sem versionCode válido.");
+            }
+            return result;
         } finally {
             if (connection != null) connection.disconnect();
         }
