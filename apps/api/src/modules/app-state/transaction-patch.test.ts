@@ -7,6 +7,7 @@ const state = {
     { id: '2', description: 'B', amount: 20 },
   ],
   budgets: { CASA: 1000 },
+  activityLog: [],
 };
 
 const result = applyTransactionPatch(
@@ -16,6 +17,7 @@ const result = applyTransactionPatch(
     { id: '3', description: 'C', amount: 30 },
   ],
   ['2'],
+  { activityLog: [{ id: 'activity-1', action: 'UPDATED', transactionId: '1' }] },
 );
 
 assert.deepEqual(result, {
@@ -24,6 +26,7 @@ assert.deepEqual(result, {
     { id: '3', description: 'C', amount: 30 },
   ],
   budgets: { CASA: 1000 },
+  activityLog: [{ id: 'activity-1', action: 'UPDATED', transactionId: '1' }],
 });
 
 const empty = applyTransactionPatch(null, [{ id: '1', description: 'A' }], []);
