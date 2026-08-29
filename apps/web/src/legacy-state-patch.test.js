@@ -8,6 +8,7 @@ const original = {
   ],
   budgets: { CASA: 1000 },
   catalogs: { groups: ['CASA'] },
+  activityLog: [],
 };
 
 const baseline = createStateSyncBaseline(original);
@@ -20,9 +21,19 @@ const changed = structuredClone(original);
 changed.transactions[0].amount = 15;
 changed.transactions.push({ id: '3', date: '2026-07-03', description: 'C', type: 'expense', amount: 30 });
 changed.transactions.splice(1, 1);
+changed.activityLog = [{ id: 'activity-1', action: 'UPDATED', transactionId: '1' }];
 assert.deepEqual(createTransactionPatch(baseline, changed), {
   upserts: [changed.transactions[0], changed.transactions[1]],
   deletes: ['2'],
+  activityLog: changed.activityLog,
+});
+
+const activityOnly = structuredClone(original);
+activityOnly.activityLog = [{ id: 'activity-2', action: 'CREATED', transactionId: '1' }];
+assert.deepEqual(createTransactionPatch(baseline, activityOnly), {
+  upserts: [],
+  deletes: [],
+  activityLog: activityOnly.activityLog,
 });
 
 const metadataChanged = structuredClone(original);

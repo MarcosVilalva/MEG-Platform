@@ -17,6 +17,7 @@ export function applyTransactionPatch(
   state: unknown,
   upserts: AppTransaction[],
   deletes: string[],
+  metadataPatch: Record<string, unknown> = {},
 ): Record<string, unknown> {
   const source = objectRecord(state);
   const current = Array.isArray(source.transactions)
@@ -39,5 +40,5 @@ export function applyTransactionPatch(
 
   for (const item of pendingUpserts.values()) transactions.push(item);
 
-  return { ...source, transactions };
+  return { ...source, ...metadataPatch, transactions };
 }

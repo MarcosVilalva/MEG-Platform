@@ -1,3 +1,6 @@
+import './instant-persistence.js';
+import './currency-input-mask.js';
+
 const STATE_KEY = 'meg-financas-state-v4-paid-fixes';
 const REVISION_KEY = 'meg-cloud-revision-v1';
 const CANONICAL_CACHE_KEY = 'meg-cloud-canonical-cache-v2';
@@ -156,11 +159,8 @@ export function recoveryDecision({
 }) {
   const currentRemoteRevision = Number(remoteRevision || 0);
 
-  // A abertura do aplicativo nunca pode publicar uma cópia local. A nuvem é a
-  // única fonte ativa e também substitui imediatamente o cache usado pelo app.
-  persistCanonicalRemoteState(remoteState, currentRemoteRevision);
-
   if (!dirty || !isFinancialState(localState)) {
+    persistCanonicalRemoteState(remoteState, currentRemoteRevision);
     return {
       action: 'remote',
       strategy: 'remote-canonical',
@@ -172,7 +172,6 @@ export function recoveryDecision({
   const localDiffers = !sameValue(localState, remoteState);
   const dirtyBaseRevision = Number(dirty.baseRevision);
   const common = {
-    action: 'remote',
     state: remoteState,
     revision: currentRemoteRevision,
     localCount: transactionCount(localState),
@@ -181,11 +180,32 @@ export function recoveryDecision({
     protectedLocal: localDiffers,
   };
 
+  if (!localDiffers) {
+    persistCanonicalRemoteState(remoteState, currentRemoteRevision);
+    return {
+      ...common,
+      action: 'remote',
+      strategy: 'remote-canonical-no-change',
+      protectedLocal: false,
+      conflicts: 0,
+    };
+  }
+
+  // Se a nuvem ainda está exatamente na revisão a partir da qual o usuário
+  // fez a alteração local, não existe concorrência. A cópia local pendente é a
+  // continuação legítima daquela revisão e deve ser reenviada antes da abertura
+  // do app, em vez de ser substituída pelo snapshot remoto antigo.
   if (dirtyBaseRevision === currentRemoteRevision) {
     return {
       ...common,
-      strategy: localDiffers ? 'remote-canonical-same-revision' : 'remote-canonical-no-change',
-      conflicts: localDiffers ? 1 : 0,
+      action: 'recover',
+      strategy: 'recover-local-same-revision',
+      state: localState,
+      mergedCount: transactionCount(localState),
+      conflicts: 0,
+      additions: 0,
+      updates: 0,
+      deletions: 0,
     };
   }
 
@@ -195,14 +215,39 @@ export function recoveryDecision({
   if (!baselineMatches) {
     return {
       ...common,
+      action: 'remote',
       strategy: 'remote-protected-no-baseline',
       conflicts: 0,
     };
   }
 
   const report = mergeRecoveryStatesWithReport(remoteState, localState, baselineState);
+
+  // Quando outro aparelho avançou a revisão, reaplicamos somente alterações
+  // locais que podem ser provadas como independentes daquelas alterações.
+  // Havendo conflito no mesmo lançamento, a nuvem continua prevalecendo e a
+  // cópia local permanece protegida pelos snapshots de recuperação.
+  if (report.conflicts === 0 && report.appliedChanges > 0) {
+    return {
+      ...common,
+      action: 'recover',
+      strategy: 'recover-merged-offline-changes',
+      state: report.state,
+      mergedCount: transactionCount(report.state),
+      conflicts: 0,
+      additions: report.additions,
+      updates: report.updates,
+      deletions: report.deletions,
+    };
+  }
+
+  if (report.conflicts === 0 && report.appliedChanges === 0) {
+    persistCanonicalRemoteState(remoteState, currentRemoteRevision);
+  }
+
   return {
     ...common,
+    action: 'remote',
     strategy: report.appliedChanges || report.conflicts
       ? 'remote-canonical-offline-changes'
       : 'remote-canonical-no-change',
