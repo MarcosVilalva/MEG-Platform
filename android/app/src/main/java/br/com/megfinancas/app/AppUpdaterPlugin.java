@@ -103,9 +103,6 @@ public class AppUpdaterPlugin extends Plugin {
 
     public void markAuthenticatedSessionReady() {
         authenticatedUiReady = true;
-        // A WebView executa a primeira verificação imediatamente depois que o
-        // alerta financeiro inicial termina. O código nativo fica como segunda
-        // proteção para retomadas/foco, evitando dois diálogos simultâneos.
         Log.i(TAG, "Sessão autenticada. Verificação nativa liberada para retomadas.");
     }
 
@@ -197,6 +194,13 @@ public class AppUpdaterPlugin extends Plugin {
 
         if (newest != null && newestCode > 0) return newest;
         throw lastError != null ? lastError : new IllegalStateException("Manifesto de atualização indisponível.");
+    }
+
+    // Mantido apenas para compatibilidade com verificações legadas. A regra
+    // atual não aceita mais o primeiro manifesto: sempre delega ao seletor da
+    // maior versão disponível.
+    private JSObject fetchFirstAvailableReleaseManifest() throws Exception {
+        return fetchNewestReleaseManifest();
     }
 
     private JSObject fetchReleaseManifest(String source) throws Exception {
