@@ -25,7 +25,8 @@ assert.match(controller, /INSTALL_PERMISSION_REQUIRED/);
 assert.match(nativePlugin, /fetchNewestReleaseManifest\(\)/);
 assert.match(nativePlugin, /long newestCode = -1L/);
 assert.match(nativePlugin, /if \(code > newestCode\)/);
-assert.doesNotMatch(nativePlugin, /fetchFirstAvailableReleaseManifest/);
+assert.match(nativePlugin, /fetchFirstAvailableReleaseManifest\(\)[\s\S]{0,180}return fetchNewestReleaseManifest\(\);/);
+assert.doesNotMatch(nativePlugin, /JSObject release = fetchFirstAvailableReleaseManifest\(\)/);
 assert.doesNotMatch(nativePlugin, /markAuthenticatedSessionReady\(\)[\s\S]{0,300}checkForAvailableUpdateNative\(\);/);
 
 assert.match(mainActivity, /registerPlugin\(AppUpdaterPlugin\.class\)/);
