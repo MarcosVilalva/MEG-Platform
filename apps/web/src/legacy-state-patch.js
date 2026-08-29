@@ -21,8 +21,13 @@ function fingerprint(value) {
 
 function metadataFingerprint(state) {
   const source = plainObject(state) || {};
-  const { transactions: _transactions, ...metadata } = source;
+  const { transactions: _transactions, activityLog: _activityLog, ...metadata } = source;
   return fingerprint(metadata);
+}
+
+function activityLogFingerprint(state) {
+  const source = plainObject(state) || {};
+  return fingerprint(Array.isArray(source.activityLog) ? source.activityLog : []);
 }
 
 function transactionFingerprint(item) {
@@ -42,6 +47,7 @@ export function createStateSyncBaseline(state) {
 
   return {
     metadata: metadataFingerprint(source),
+    activityLog: activityLogFingerprint(source),
     transactions: transactionFingerprints,
   };
 }
@@ -69,5 +75,10 @@ export function createTransactionPatch(baseline, state, { maxOperations = DEFAUL
     if (upserts.length + deletes.length > maxOperations) return null;
   }
 
-  return { upserts, deletes };
+  const activityChanged = activityLogFingerprint(source) !== baseline.activityLog;
+  return {
+    upserts,
+    deletes,
+    ...(activityChanged ? { activityLog: Array.isArray(source.activityLog) ? source.activityLog : [] } : {}),
+  };
 }
