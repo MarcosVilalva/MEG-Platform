@@ -1,8 +1,8 @@
 {
-  "versionCode": 175,
-  "versionName": "1.1.175",
-  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=175",
-  "sha256": "b869d1692d8b0c159fac66973059a95ab58962eba569c58243656cafce4f7256",
+  "versionCode": 177,
+  "versionName": "1.1.177",
+  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=177",
+  "sha256": "f1bd01adc892c2f531e720ed8d1b271b07836dd2507c2396472885e4637beeb8",
   "mandatory": false,
-  "releaseNotes": "Grava lançamentos imediatamente na base com recuperação automática de pendências, adiciona Histórico e Atividade recente separados da tela de Lançamentos e aplica máscara monetária brasileira aos campos de valor."
+  "releaseNotes": "Corrige o carregamento infinito após os alertas, libera o Painel antes das rotinas opcionais e mantém a consulta de versão e atualização em segundo plano."
 }
