@@ -6,6 +6,7 @@ import { assertWorkspaceWriteAccess } from '../platform-admin/service';
 import { applyTransactionPatch } from './transaction-patch';
 
 const MAX_TRANSACTION_PATCH_OPERATIONS = 2000;
+const MAX_ACTIVITY_LOG_ITEMS = 500;
 
 const transactionSchema = z.object({
   id: z.string().min(1), date: z.string().min(10), description: z.string().min(1),
@@ -20,6 +21,7 @@ const transactionPatchSchema = z.object({
   expectedRevision: z.number().int().nonnegative(),
   upserts: z.array(transactionSchema).max(MAX_TRANSACTION_PATCH_OPERATIONS).default([]),
   deletes: z.array(z.string().min(1)).max(MAX_TRANSACTION_PATCH_OPERATIONS).default([]),
+  activityLog: z.array(z.unknown()).max(MAX_ACTIVITY_LOG_ITEMS).optional(),
 }).superRefine((value, context) => {
   if (value.upserts.length + value.deletes.length > MAX_TRANSACTION_PATCH_OPERATIONS) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: 'Muitas alterações em um único lote.' });
@@ -42,6 +44,10 @@ const transactionPatchSchema = z.object({
     deleteIds.add(id);
   });
 });
+
+function activityMetadata(activityLog: unknown[] | undefined): Record<string, unknown> {
+  return activityLog === undefined ? {} : { activityLog };
+}
 
 async function assertWriteAccess(workspaceId: string, reply: { status(code: number): { send(payload: unknown): unknown } }) {
   try {
@@ -82,15 +88,21 @@ export async function appStateRoutes(app: FastifyInstance) {
       where: { workspaceId: context.workspaceId },
       select: { id: true, state: true, revision: true, updatedAt: true }
     });
+    const hasActivityPatch = parsed.data.activityLog !== undefined;
 
     if (!current) {
       if (parsed.data.expectedRevision !== 0) {
         return reply.status(409).send({ error: 'STATE_CONFLICT', revision: 0, updatedAt: null });
       }
-      if (parsed.data.upserts.length === 0 && parsed.data.deletes.length === 0) {
+      if (parsed.data.upserts.length === 0 && parsed.data.deletes.length === 0 && !hasActivityPatch) {
         return { revision: 0, updatedAt: null, changed: false, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
       }
-      const initialState = stateSchema.safeParse(applyTransactionPatch({ transactions: [], budgets: {} }, parsed.data.upserts, parsed.data.deletes));
+      const initialState = stateSchema.safeParse(applyTransactionPatch(
+        { transactions: [], budgets: {} },
+        parsed.data.upserts,
+        parsed.data.deletes,
+        activityMetadata(parsed.data.activityLog),
+      ));
       if (!initialState.success) {
         return reply.status(400).send({ error: 'INVALID_APP_STATE_PATCH', details: initialState.error.flatten() });
       }
@@ -117,11 +129,16 @@ export async function appStateRoutes(app: FastifyInstance) {
     if (current.revision !== parsed.data.expectedRevision) {
       return reply.status(409).send({ error: 'STATE_CONFLICT', revision: current.revision, updatedAt: current.updatedAt });
     }
-    if (parsed.data.upserts.length === 0 && parsed.data.deletes.length === 0) {
+    if (parsed.data.upserts.length === 0 && parsed.data.deletes.length === 0 && !hasActivityPatch) {
       return { revision: current.revision, updatedAt: current.updatedAt, changed: false, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
     }
 
-    const nextState = stateSchema.safeParse(applyTransactionPatch(current.state, parsed.data.upserts, parsed.data.deletes));
+    const nextState = stateSchema.safeParse(applyTransactionPatch(
+      current.state,
+      parsed.data.upserts,
+      parsed.data.deletes,
+      activityMetadata(parsed.data.activityLog),
+    ));
     if (!nextState.success) {
       return reply.status(400).send({ error: 'INVALID_APP_STATE_PATCH', details: nextState.error.flatten() });
     }
@@ -144,6 +161,7 @@ export async function appStateRoutes(app: FastifyInstance) {
       changed: true,
       upserted: parsed.data.upserts.length,
       deleted: parsed.data.deletes.length,
+      activityLogUpdated: hasActivityPatch,
       shared: true,
       workspace: { id: context.workspace.id, name: context.workspace.name }
     };
