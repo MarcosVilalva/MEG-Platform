@@ -104,18 +104,25 @@ assert.equal(cleanOpening.action, 'remote');
 assert.equal(cleanOpening.strategy, 'remote-canonical');
 assert.equal(cleanOpening.state, remote);
 
+const pendingSameRevision = {
+  transactions: [
+    ...remote.transactions,
+    { id: 'balbina', date: '2026-08-28', description: 'Paciente Dona Balbina', type: 'income', amount: 150, paymentMethod: 'PIX' },
+  ],
+  budgets: remote.budgets,
+};
 const sameRevision = recoveryDecision({
   dirty: { baseRevision: 7 },
-  localState: local,
+  localState: pendingSameRevision,
   remoteState: remote,
   remoteRevision: 7,
 });
-assert.equal(sameRevision.action, 'remote');
-assert.equal(sameRevision.strategy, 'remote-canonical-same-revision');
-assert.equal(sameRevision.state, remote);
+assert.equal(sameRevision.action, 'recover');
+assert.equal(sameRevision.strategy, 'recover-local-same-revision');
+assert.equal(sameRevision.state, pendingSameRevision);
 assert.equal(sameRevision.protectedLocal, true);
-assert.equal(sameRevision.conflicts, 1);
-assert.deepEqual(JSON.parse(storage.get('meg-financas-state-v4-paid-fixes')), remote);
+assert.equal(sameRevision.conflicts, 0);
+assert.equal(sameRevision.state.transactions.some((item) => item.id === 'balbina'), true);
 
 const changedRevision = recoveryDecision({
   dirty: { baseRevision: 6 },
@@ -133,6 +140,39 @@ assert.equal(changedRevision.conflicts, 1);
 assert.equal(changedRevision.additions, 1);
 assert.equal(changedRevision.updates, 1);
 assert.equal(changedRevision.deletions, 1);
+
+const cleanBaseline = {
+  transactions: [{ id: 'base', amount: 10, status: 'pending' }],
+  budgets: {},
+};
+const remoteAdvanced = {
+  transactions: [
+    { id: 'base', amount: 10, status: 'pending' },
+    { id: 'other-device', amount: 25, status: 'pending' },
+  ],
+  budgets: {},
+};
+const localPending = {
+  transactions: [
+    { id: 'base', amount: 10, status: 'pending' },
+    { id: 'local-new', amount: 150, status: 'paid' },
+  ],
+  budgets: {},
+};
+const mergedRecovery = recoveryDecision({
+  dirty: { baseRevision: 9 },
+  localState: localPending,
+  remoteState: remoteAdvanced,
+  remoteRevision: 10,
+  baselineState: cleanBaseline,
+  baselineRevision: 9,
+});
+assert.equal(mergedRecovery.action, 'recover');
+assert.equal(mergedRecovery.strategy, 'recover-merged-offline-changes');
+assert.equal(mergedRecovery.conflicts, 0);
+assert.equal(mergedRecovery.additions, 1);
+assert.equal(mergedRecovery.state.transactions.some((item) => item.id === 'local-new'), true);
+assert.equal(mergedRecovery.state.transactions.some((item) => item.id === 'other-device'), true);
 
 const migrationWithoutBaseline = recoveryDecision({
   dirty: { baseRevision: 6 },
