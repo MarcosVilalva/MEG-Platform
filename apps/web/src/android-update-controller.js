@@ -6,8 +6,6 @@ const MANIFEST_URLS = [
 ];
 const BRIDGE_TIMEOUT_MS = 3500;
 const FETCH_TIMEOUT_MS = 8000;
-const INSTALL_PERMISSION_TIMEOUT_MS = 90000;
-const INSTALL_PERMISSION_POLL_MS = 500;
 const RESUME_DELAY_MS = 1200;
 
 let appUpdaterPromise = null;
@@ -52,12 +50,7 @@ function normalizeInstalled(info, source) {
   const versionName = String(info.versionName || info.version || '').trim();
   const versionCode = Number(info.versionCode ?? info.build);
   if (!versionName || !Number.isFinite(versionCode)) return null;
-  return {
-    versionName,
-    versionCode,
-    canInstallPackages: info.canInstallPackages,
-    source,
-  };
+  return { versionName, versionCode, canInstallPackages: info.canInstallPackages, source };
 }
 
 async function installedAppInfo() {
@@ -106,21 +99,37 @@ function publishVersionUnavailable() {
   label.dataset.versionSource = 'unavailable';
 }
 
+function ensureManualCheckButton() {
+  let button = document.querySelector('#checkAppUpdateBtn');
+  if (button) return button;
+  const versionStatus = document.querySelector('.sidebar-version-status');
+  if (!versionStatus) return null;
+  button = document.createElement('button');
+  button.id = 'checkAppUpdateBtn';
+  button.type = 'button';
+  button.className = 'button ghost';
+  button.textContent = 'Verificar atualização';
+  button.style.marginTop = '8px';
+  button.style.width = '100%';
+  versionStatus.insertAdjacentElement('afterend', button);
+  return button;
+}
+
 function setManualButtonState(text, disabled = false) {
-  const button = document.querySelector('#checkAppUpdateBtn');
+  const button = ensureManualCheckButton();
   if (!button) return;
   button.textContent = text;
   button.disabled = disabled;
 }
 
 function bindManualCheck() {
-  const button = document.querySelector('#checkAppUpdateBtn');
+  const button = ensureManualCheckButton();
   if (!button || button.dataset.updateCheckBound === 'true') return;
   button.dataset.updateCheckBound = 'true';
   button.addEventListener('click', async () => {
     setManualButtonState('Verificando...', true);
     try {
-      await checkForAppUpdate({ force: true, notifyIfCurrent: true });
+      await checkForAppUpdate({ notifyIfCurrent: true });
     } finally {
       setManualButtonState('Verificar atualização', false);
     }
@@ -201,7 +210,7 @@ function publishWarning(message) {
     else document.querySelector('main.content')?.prepend(warning);
   }
   warning.innerHTML = `<div><strong>Não foi possível verificar atualizações</strong><span>${escapeHtml(message || 'Confira a internet e tente novamente.')}</span></div><button type="button">Tentar novamente</button>`;
-  warning.querySelector('button')?.addEventListener('click', () => checkForAppUpdate({ force: true, notifyIfCurrent: true }));
+  warning.querySelector('button')?.addEventListener('click', () => checkForAppUpdate({ notifyIfCurrent: true }));
 }
 
 function escapeHtml(value) {
@@ -240,28 +249,19 @@ function ensureUpdateBanner(release, installed, AppUpdater) {
   AppUpdater?.suppressNativePrompt?.({ versionCode: Number(release.versionCode) }).catch(() => undefined);
 }
 
-async function waitForInstallPermission(AppUpdater) {
-  const deadline = Date.now() + INSTALL_PERMISSION_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    try {
-      const info = await withDeadline(AppUpdater.getInfo(), BRIDGE_TIMEOUT_MS, 'INSTALL_PERMISSION_INFO_TIMEOUT');
-      if (info?.canInstallPackages) return true;
-    } catch {}
-    await delay(INSTALL_PERMISSION_POLL_MS);
-  }
-  return false;
-}
-
 function showUpdateDialog(release, installed, AppUpdater) {
   const existing = document.querySelector('#appUpdateDialog');
   if (existing) {
     if (!existing.open) existing.showModal();
-    return;
+    return existing._megDecisionPromise || Promise.resolve('existing');
   }
 
+  let resolveDecision;
+  const decisionPromise = new Promise((resolve) => { resolveDecision = resolve; });
   const dialog = document.createElement('dialog');
   dialog.id = 'appUpdateDialog';
   dialog.className = 'modal app-update-dialog';
+  dialog._megDecisionPromise = decisionPromise;
   dialog.innerHTML = `
     <div class="app-update-icon" aria-hidden="true">↻</div>
     <small class="decision-eyebrow">ATUALIZAÇÃO DO APLICATIVO</small>
@@ -284,16 +284,23 @@ function showUpdateDialog(release, installed, AppUpdater) {
     later.disabled = true;
     try {
       if (!AppUpdater) throw new Error('Atualizador nativo indisponível.');
-      let info = await withDeadline(AppUpdater.getInfo(), BRIDGE_TIMEOUT_MS, 'APP_UPDATER_INFO_TIMEOUT');
-      if (!info.canInstallPackages) {
-        status.textContent = 'Autorize “Permitir desta fonte”. Ao voltar ao MEG, a atualização continuará.';
-        await AppUpdater.requestInstallPermission();
-        const granted = await waitForInstallPermission(AppUpdater);
-        if (!granted) throw new Error('Permissão de instalação não liberada.');
-        info = await AppUpdater.getInfo();
-      }
       status.textContent = 'Baixando e validando a nova versão...';
-      await AppUpdater.downloadAndInstall({ url: release.downloadUrl, sha256: release.sha256 || '' });
+      try {
+        await withDeadline(
+          AppUpdater.downloadAndInstall({ url: release.downloadUrl, sha256: release.sha256 || '' }),
+          140000,
+          'UPDATE_DOWNLOAD_TIMEOUT',
+        );
+      } catch (cause) {
+        const message = String(cause?.message || cause || '');
+        if (!message.includes('INSTALL_PERMISSION_REQUIRED')) throw cause;
+        status.textContent = 'Autorize “Permitir desta fonte”. Depois volte ao MEG e toque em “Atualizar agora” novamente.';
+        await AppUpdater.requestInstallPermission();
+        update.disabled = false;
+        later.disabled = false;
+        update.textContent = 'Atualizar agora';
+        return;
+      }
       status.textContent = 'APK validado. Conclua a instalação na tela do Android.';
       window.setTimeout(() => {
         if (dialog.open) dialog.close('installer-launched');
@@ -305,8 +312,12 @@ function showUpdateDialog(release, installed, AppUpdater) {
       update.textContent = 'Tentar novamente';
     }
   });
-  dialog.addEventListener('close', () => dialog.remove(), { once: true });
+  dialog.addEventListener('close', () => {
+    resolveDecision?.(dialog.returnValue || 'closed');
+    dialog.remove();
+  }, { once: true });
   dialog.showModal();
+  return decisionPromise;
 }
 
 export async function checkForAppUpdate({ notifyIfCurrent = false } = {}) {
