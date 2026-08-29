@@ -1,5 +1,6 @@
 import './instant-persistence.js';
 import './currency-input-mask.js';
+import './android-update-fallback.js';
 
 const STATE_KEY = 'meg-financas-state-v4-paid-fixes';
 const REVISION_KEY = 'meg-cloud-revision-v1';
