@@ -1,3 +1,4 @@
+import './embedded-apk-version.js';
 import {
   checkForAppUpdate,
   initializeAndroidUpdateController,

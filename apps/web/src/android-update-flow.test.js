@@ -3,14 +3,24 @@ import { readFileSync } from 'node:fs';
 
 const controller = readFileSync(new URL('./android-update-controller.js', import.meta.url), 'utf8');
 const fallback = readFileSync(new URL('./android-update-fallback.js', import.meta.url), 'utf8');
+const embeddedVersion = readFileSync(new URL('./embedded-apk-version.js', import.meta.url), 'utf8');
 const nativePlugin = readFileSync(new URL('../../../android/app/src/main/java/br/com/megfinancas/app/AppUpdaterPlugin.java', import.meta.url), 'utf8');
 const mainActivity = readFileSync(new URL('../../../android/app/src/main/java/br/com/megfinancas/app/MainActivity.java', import.meta.url), 'utf8');
+const androidWorkflow = readFileSync(new URL('../../../.github/workflows/build-android-apk.yml', import.meta.url), 'utf8');
 
+assert.match(fallback, /import '\.\/embedded-apk-version\.js'/);
 assert.match(fallback, /from '\.\/android-update-controller\.js'/);
 assert.match(fallback, /waitUntilOpeningDialogsFinish/);
 assert.match(fallback, /checkForAppUpdate\(\)/);
 assert.doesNotMatch(fallback, /registerPlugin\('AppUpdater'\)/);
 assert.doesNotMatch(fallback, /AppUpdater\.getInfo\(\)/);
+
+assert.match(embeddedVersion, /VITE_ANDROID_VERSION_NAME/);
+assert.match(embeddedVersion, /VITE_ANDROID_VERSION_CODE/);
+assert.match(embeddedVersion, /APK v\$\{installed\.versionName\}/);
+assert.match(embeddedVersion, /versionSource = 'native'/);
+assert.match(androidWorkflow, /VITE_ANDROID_VERSION_CODE: \$\{\{ github\.run_number \}\}/);
+assert.match(androidWorkflow, /VITE_ANDROID_VERSION_NAME: 1\.1\.\$\{\{ github\.run_number \}\}/);
 
 assert.match(controller, /APP_UPDATER_INFO_TIMEOUT/);
 assert.match(controller, /CAPACITOR_APP_INFO_TIMEOUT/);

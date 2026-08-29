@@ -1,7 +1,14 @@
-const TARGET_IDS = ['incomeAmountInput', 'expenseAmountInput'];
+const TARGET_IDS = ['incomeAmountInput', 'expenseAmountInput', 'purchaseTotalInput'];
+const PURCHASE_TOTAL_ID = 'purchaseTotalInput';
+const INSTALLMENT_COUNT_ID = 'installmentCountInput';
+const DERIVED_EXPENSE_ID = 'expenseAmountInput';
+
+function normalizeDigits(digits) {
+  return String(digits || '').replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+}
 
 export function digitsToCurrency(digits) {
-  const onlyDigits = String(digits || '').replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  const onlyDigits = normalizeDigits(digits);
   if (!onlyDigits) return '';
   const cents = Number(onlyDigits);
   if (!Number.isFinite(cents)) return '';
@@ -26,20 +33,31 @@ export function canonicalToCurrency(value) {
   return digitsToCurrency(String(cents));
 }
 
+function canonicalFromDigits(digits) {
+  const normalized = normalizeDigits(digits);
+  if (!normalized) return '';
+  const cents = Number(normalized);
+  return Number.isFinite(cents) ? (cents / 100).toFixed(2) : '';
+}
+
 function digitsFromInput(input) {
   if (input.dataset.megCurrencyDigits !== undefined) return input.dataset.megCurrencyDigits;
   const canonical = currencyToCanonical(input.value);
   return canonical ? canonical.replace(/\D/g, '') : '';
 }
 
-function setDigits(input, digits) {
-  const normalized = String(digits || '').replace(/\D/g, '').replace(/^0+(?=\d)/, '');
-  input.dataset.megCurrencyDigits = normalized;
-  input.value = digitsToCurrency(normalized);
+function moveCaretToEnd(input) {
   try {
     const end = input.value.length;
     input.setSelectionRange(end, end);
   } catch {}
+}
+
+function setDigits(input, digits) {
+  const normalized = normalizeDigits(digits);
+  input.dataset.megCurrencyDigits = normalized;
+  input.value = digitsToCurrency(normalized);
+  moveCaretToEnd(input);
 }
 
 function formatProgrammaticValue(input) {
@@ -56,6 +74,31 @@ function formatProgrammaticValue(input) {
   setDigits(input, digits);
 }
 
+function refreshDerivedInstallmentAmount() {
+  const expenseInput = document.getElementById(DERIVED_EXPENSE_ID);
+  if (!expenseInput) return;
+  delete expenseInput.dataset.megCurrencyDigits;
+  formatProgrammaticValue(expenseInput);
+}
+
+function restorePurchaseTotalVisual(input, digits) {
+  setDigits(input, digits);
+  refreshDerivedInstallmentAmount();
+}
+
+function dispatchPurchaseTotalInput(input, digits) {
+  const normalized = normalizeDigits(digits);
+  input.dataset.megCurrencyDigits = normalized;
+  input.dataset.megCurrencyCanonicalDispatch = 'true';
+  input.value = canonicalFromDigits(normalized);
+  try {
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  } finally {
+    delete input.dataset.megCurrencyCanonicalDispatch;
+    restorePurchaseTotalVisual(input, normalized);
+  }
+}
+
 function bindCurrencyInput(input) {
   if (!input || input.dataset.megCurrencyMaskBound === 'true') return;
   input.dataset.megCurrencyMaskBound = 'true';
@@ -63,39 +106,54 @@ function bindCurrencyInput(input) {
   input.inputMode = 'numeric';
   input.autocomplete = 'off';
   input.setAttribute('aria-label', input.getAttribute('aria-label') || 'Valor em reais');
+  const isPurchaseTotal = input.id === PURCHASE_TOTAL_ID;
 
   input.addEventListener('focus', () => {
     const raw = String(input.value || '').trim();
     if (!input.dataset.megCurrencyDigits && raw) formatProgrammaticValue(input);
-    requestAnimationFrame(() => {
-      try {
-        input.setSelectionRange(input.value.length, input.value.length);
-      } catch {}
-    });
+    requestAnimationFrame(() => moveCaretToEnd(input));
   });
 
   input.addEventListener('keydown', (event) => {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     if (/^\d$/.test(event.key)) {
       event.preventDefault();
-      setDigits(input, `${digitsFromInput(input)}${event.key}`);
-      input.dispatchEvent(new Event('change', { bubbles: true }));
+      const digits = `${digitsFromInput(input)}${event.key}`;
+      if (isPurchaseTotal) dispatchPurchaseTotalInput(input, digits);
+      else {
+        setDigits(input, digits);
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
       return;
     }
     if (event.key === 'Backspace' || event.key === 'Delete') {
       event.preventDefault();
-      setDigits(input, digitsFromInput(input).slice(0, -1));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
+      const digits = digitsFromInput(input).slice(0, -1);
+      if (isPurchaseTotal) dispatchPurchaseTotalInput(input, digits);
+      else {
+        setDigits(input, digits);
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
       return;
     }
     if (['Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
   });
 
-  input.addEventListener('input', () => {
+  const handleInput = () => {
+    if (isPurchaseTotal && input.dataset.megCurrencyCanonicalDispatch === 'true') return;
     const digits = String(input.value || '').replace(/\D/g, '');
-    setDigits(input, digits);
-  });
+    if (!isPurchaseTotal) {
+      setDigits(input, digits);
+      return;
+    }
+
+    const normalized = normalizeDigits(digits);
+    input.dataset.megCurrencyDigits = normalized;
+    input.value = canonicalFromDigits(normalized);
+    queueMicrotask(() => restorePurchaseTotalVisual(input, normalized));
+  };
+  input.addEventListener('input', handleInput, isPurchaseTotal ? { capture: true } : undefined);
 
   input.addEventListener('paste', (event) => {
     const pasted = event.clipboardData?.getData('text') || '';
@@ -106,7 +164,9 @@ function bindCurrencyInput(input) {
       : Number.isFinite(Number(pasted.replace(/\s/g, '')))
         ? Number(pasted.replace(/\s/g, '')).toFixed(2)
         : currencyToCanonical(pasted);
-    setDigits(input, canonical.replace(/\D/g, ''));
+    const digits = canonical.replace(/\D/g, '');
+    if (isPurchaseTotal) dispatchPurchaseTotalInput(input, digits);
+    else setDigits(input, digits);
   });
 }
 
@@ -128,6 +188,9 @@ function startCurrencyMask() {
   if (!inputs.length) return;
   inputs.forEach(bindCurrencyInput);
   bindFormSubmit(document.getElementById('transactionForm'), inputs);
+
+  const installmentCount = document.getElementById(INSTALLMENT_COUNT_ID);
+  installmentCount?.addEventListener('input', () => queueMicrotask(refreshDerivedInstallmentAmount));
 
   const dialog = document.getElementById('transactionDialog');
   if (dialog) {
