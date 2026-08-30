@@ -1,4 +1,5 @@
 import './embedded-apk-version.js';
+import './android-update-current-feedback.js';
 import {
   checkForAppUpdate,
   initializeAndroidUpdateController,
