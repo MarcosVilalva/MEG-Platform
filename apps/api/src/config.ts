@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { z } from 'zod';
-import { resolveAlexaSkillSecret } from './modules/notifications/alexa-auth';
+import { deriveAlexaSkillSecret } from './modules/notifications/alexa-auth';
 
 const environmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -35,6 +35,9 @@ if (!parsed.success) {
 }
 
 const values = parsed.data;
+const derivedAlexaSkillSecret = values.NOTIFICATION_CRON_SECRET
+  ? deriveAlexaSkillSecret(values.NOTIFICATION_CRON_SECRET)
+  : undefined;
 
 if (values.NODE_ENV === 'production' && values.JWT_SECRET.includes('development-only')) {
   console.error('JWT_SECRET must be configured in production.');
@@ -60,7 +63,8 @@ export const config = {
   notificationCronSecret: values.NOTIFICATION_CRON_SECRET,
   alexaAnnouncementWebhookUrl: values.ALEXA_ANNOUNCEMENT_WEBHOOK_URL,
   alexaOwnerEmail: values.ALEXA_OWNER_EMAIL || values.ADMIN_EMAIL,
-  alexaSkillSecret: resolveAlexaSkillSecret(values.ALEXA_SKILL_SECRET, values.NOTIFICATION_CRON_SECRET),
+  alexaSkillSecret: values.ALEXA_SKILL_SECRET,
+  alexaDerivedSkillSecret: derivedAlexaSkillSecret,
   runLegacyRepair: values.RUN_LEGACY_REPAIR,
   integrationEncryptionKey: values.INTEGRATION_ENCRYPTION_KEY || values.JWT_SECRET,
   corsOrigins: values.CORS_ORIGINS.split(',')
