@@ -12,6 +12,7 @@ const STATE_KEY = 'meg-financas-state-v4-paid-fixes';
 const REVISION_KEY = 'meg-cloud-revision-v1';
 const ACCESS_KEY = 'meg-access-token';
 const OUTBOX_KEY = 'meg-cloud-transaction-outbox-v1';
+const ACTIVITY_MIGRATION_KEY = 'meg-cloud-activity-outbox-migrated-v1';
 const API_URL = import.meta.env?.VITE_API_URL || 'http://localhost:3333';
 const FAILURE_NOTICE_INTERVAL_MS = 30_000;
 const OUTBOX_RETRY_MS = 2_000;
@@ -120,6 +121,16 @@ function clearOutboxIfGeneration(generation) {
   if (latest.generation !== generation) return false;
   localStorage.removeItem(OUTBOX_KEY);
   return true;
+}
+
+function seedCachedActivitiesOnce() {
+  if (!globalThis.localStorage?.getItem || localStorage.getItem(ACTIVITY_MIGRATION_KEY)) return;
+  const cachedState = parseJson(localStorage.getItem(STATE_KEY));
+  const activities = Array.isArray(cachedState?.activityLog)
+    ? cachedState.activityLog.filter((item) => typeof item?.id === 'string' && item.id).slice(0, 500)
+    : [];
+  if (activities.length) persistOutbox({ upserts: [], deletes: [], activities });
+  localStorage.setItem(ACTIVITY_MIGRATION_KEY, new Date().toISOString());
 }
 
 function authenticatedHeaders() {
@@ -354,6 +365,10 @@ function installStorageBridge() {
     }
     return result;
   };
+
+  // Na primeira abertura desta versão, preserve qualquer histórico que ainda
+  // exista no WebView antes que uma leitura da nuvem possa substituir o cache.
+  seedCachedActivitiesOnce();
 
   window.addEventListener('online', () => {
     if (pendingImmediateState) flushImmediateSave().catch(() => undefined);
