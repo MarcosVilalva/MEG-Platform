@@ -12,6 +12,7 @@ const STATE_KEY = 'meg-financas-state-v4-paid-fixes';
 const REVISION_KEY = 'meg-cloud-revision-v1';
 const ACCESS_KEY = 'meg-access-token';
 const OUTBOX_KEY = 'meg-cloud-transaction-outbox-v1';
+const ACTIVITY_MIGRATION_KEY = 'meg-cloud-activity-outbox-migrated-v1';
 const API_URL = import.meta.env?.VITE_API_URL || 'http://localhost:3333';
 const FAILURE_NOTICE_INTERVAL_MS = 30_000;
 const OUTBOX_RETRY_MS = 2_000;
@@ -84,19 +85,20 @@ function notifyPendingFailure(error) {
   window.MEG_APP?.showToast?.(
     'Salvamento pendente',
     error instanceof Error
-      ? `${error.message} O lançamento continua protegido neste aparelho e será reenviado automaticamente.`
-      : 'A nuvem ainda não confirmou o lançamento. Ele continua protegido neste aparelho e será reenviado automaticamente.',
+      ? `${error.message} O lançamento e seu histórico continuam protegidos neste aparelho e serão reenviados automaticamente.`
+      : 'A nuvem ainda não confirmou o lançamento e seu histórico. Ambos continuam protegidos neste aparelho e serão reenviados automaticamente.',
     'error',
   );
 }
 
 function readOutbox() {
   const value = parseJson(globalThis.localStorage?.getItem?.(OUTBOX_KEY));
-  if (!value || typeof value !== 'object') return { generation: 0, upserts: [], deletes: [] };
+  if (!value || typeof value !== 'object') return { generation: 0, upserts: [], deletes: [], activities: [] };
   return {
     generation: Number(value.generation || 0),
     upserts: Array.isArray(value.upserts) ? value.upserts : [],
     deletes: Array.isArray(value.deletes) ? value.deletes : [],
+    activities: Array.isArray(value.activities) ? value.activities : [],
     updatedAt: value.updatedAt || null,
   };
 }
@@ -119,6 +121,16 @@ function clearOutboxIfGeneration(generation) {
   if (latest.generation !== generation) return false;
   localStorage.removeItem(OUTBOX_KEY);
   return true;
+}
+
+function seedCachedActivitiesOnce() {
+  if (!globalThis.localStorage?.getItem || localStorage.getItem(ACTIVITY_MIGRATION_KEY)) return;
+  const cachedState = parseJson(localStorage.getItem(STATE_KEY));
+  const activities = Array.isArray(cachedState?.activityLog)
+    ? cachedState.activityLog.filter((item) => typeof item?.id === 'string' && item.id).slice(0, 500)
+    : [];
+  if (activities.length) persistOutbox({ upserts: [], deletes: [], activities });
+  localStorage.setItem(ACTIVITY_MIGRATION_KEY, new Date().toISOString());
 }
 
 function authenticatedHeaders() {
@@ -166,6 +178,7 @@ function restoreConfirmedOperationsToUi(remoteState, operations) {
     window.MEG_REAL_STATE = restored;
     window.MEG_APP?.replaceState?.(restored);
     window.MEG_NATIVE_NOTIFICATIONS?.sync?.(restored);
+    notifyActivityUpdated();
   }
 }
 
@@ -175,7 +188,12 @@ function publishCloudConfirmation(remote, operations) {
   setSyncStatus(`Confirmado na nuvem ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`);
   try {
     window.dispatchEvent(new CustomEvent('meg:cloud-save-confirmed', {
-      detail: { verified: true, upserts: operations.upserts.length, deletes: operations.deletes.length },
+      detail: {
+        verified: true,
+        upserts: operations.upserts.length,
+        deletes: operations.deletes.length,
+        activities: Array.isArray(operations.activities) ? operations.activities.length : 0,
+      },
     }));
   } catch {}
 }
@@ -199,13 +217,14 @@ async function ensureOutboxConfirmed() {
         continue;
       }
 
-      setSyncStatus('Confirmando lançamento no banco...');
+      setSyncStatus('Confirmando lançamento e histórico no banco...');
       const response = await cloudRequest('/app-state/transactions', {
         method: 'PATCH',
         body: JSON.stringify({
           expectedRevision: remote.revision,
           upserts: pending.upserts,
           deletes: pending.deletes,
+          activities: pending.activities,
         }),
       });
       if (response.status === 409) continue;
@@ -216,7 +235,7 @@ async function ensureOutboxConfirmed() {
 
       const confirmed = await readRemoteState();
       if (!verifyTransactionOperations(confirmed.state, pending)) {
-        throw new Error('A gravação respondeu com sucesso, mas a leitura de conferência ainda não encontrou todas as alterações.');
+        throw new Error('A gravação respondeu com sucesso, mas a leitura de conferência ainda não encontrou o lançamento e seu histórico completos.');
       }
       publishCloudConfirmation(confirmed, pending);
       if (clearOutboxIfGeneration(pending.generation)) return true;
@@ -258,7 +277,7 @@ async function flushImmediateSave() {
       setSyncStatus('Salvando na base...');
       try {
         await cloud.saveNow(snapshot);
-        setSyncStatus('Gravado na nuvem, conferindo...');
+        setSyncStatus('Gravado na nuvem, conferindo lançamento e histórico...');
       } catch (error) {
         pendingImmediateState = snapshot;
         cloud.saveState?.(snapshot);
@@ -310,7 +329,7 @@ function installStorageBridge() {
   Storage.prototype.setItem = function instantPersistentSetItem(key, rawValue) {
     let value = rawValue;
     let stateForImmediateSave = null;
-    let transactionOperations = { upserts: [], deletes: [] };
+    let transactionOperations = { upserts: [], deletes: [], activities: [] };
 
     if (this === window.localStorage && key === STATE_KEY) {
       const previousState = parseJson(nativeGetItem.call(this, key));
@@ -347,6 +366,10 @@ function installStorageBridge() {
     return result;
   };
 
+  // Na primeira abertura desta versão, preserve qualquer histórico que ainda
+  // exista no WebView antes que uma leitura da nuvem possa substituir o cache.
+  seedCachedActivitiesOnce();
+
   window.addEventListener('online', () => {
     if (pendingImmediateState) flushImmediateSave().catch(() => undefined);
     else ensureOutboxConfirmed().catch(() => scheduleOutboxRetry());
@@ -371,7 +394,7 @@ function installStorageBridge() {
       await window.MEG_CLOUD?.flush?.({ immediate: true, throwOnError: true });
       const confirmed = await ensureOutboxConfirmed();
       if (!confirmed && hasTransactionOperations(readOutbox())) {
-        throw new Error('A nuvem ainda não confirmou todos os lançamentos pendentes.');
+        throw new Error('A nuvem ainda não confirmou todos os lançamentos e atividades pendentes.');
       }
     },
   };

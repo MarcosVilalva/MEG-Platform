@@ -1,10 +1,25 @@
+const MAX_ACTIVITY_ITEMS = 500;
+
 function financialTransactions(state) {
   return Array.isArray(state?.transactions) ? state.transactions : [];
+}
+
+function activityItems(state) {
+  return Array.isArray(state?.activityLog) ? state.activityLog : [];
 }
 
 function byId(state) {
   const map = new Map();
   for (const item of financialTransactions(state)) {
+    const id = typeof item?.id === 'string' ? item.id : '';
+    if (id) map.set(id, item);
+  }
+  return map;
+}
+
+function activitiesById(state) {
+  const map = new Map();
+  for (const item of activityItems(state)) {
     const id = typeof item?.id === 'string' ? item.id : '';
     if (id) map.set(id, item);
   }
@@ -22,8 +37,10 @@ function sameValue(left, right) {
 export function buildTransactionOperations(previousState, nextState) {
   const previous = byId(previousState);
   const next = byId(nextState);
+  const previousActivities = activitiesById(previousState);
   const upserts = [];
   const deletes = [];
+  const activities = [];
 
   for (const [id, item] of next.entries()) {
     if (!previous.has(id) || !sameValue(previous.get(id), item)) upserts.push(item);
@@ -31,7 +48,12 @@ export function buildTransactionOperations(previousState, nextState) {
   for (const id of previous.keys()) {
     if (!next.has(id)) deletes.push(id);
   }
-  return { upserts, deletes };
+  for (const item of activityItems(nextState)) {
+    const id = typeof item?.id === 'string' ? item.id : '';
+    if (!id) continue;
+    if (!previousActivities.has(id) || !sameValue(previousActivities.get(id), item)) activities.push(item);
+  }
+  return { upserts, deletes, activities };
 }
 
 export function mergeTransactionOutbox(current, incoming) {
@@ -56,20 +78,41 @@ export function mergeTransactionOutbox(current, incoming) {
     deletes.add(id);
   }
 
-  return { upserts: [...upserts.values()], deletes: [...deletes] };
+  const activities = [];
+  const activityIds = new Set();
+  for (const source of [incoming?.activities, current?.activities]) {
+    for (const item of Array.isArray(source) ? source : []) {
+      const id = typeof item?.id === 'string' ? item.id : '';
+      if (!id || activityIds.has(id)) continue;
+      activityIds.add(id);
+      activities.push(item);
+      if (activities.length >= MAX_ACTIVITY_ITEMS) break;
+    }
+    if (activities.length >= MAX_ACTIVITY_ITEMS) break;
+  }
+
+  return { upserts: [...upserts.values()], deletes: [...deletes], activities };
 }
 
 export function hasTransactionOperations(value) {
-  return Boolean((Array.isArray(value?.upserts) && value.upserts.length) || (Array.isArray(value?.deletes) && value.deletes.length));
+  return Boolean(
+    (Array.isArray(value?.upserts) && value.upserts.length)
+    || (Array.isArray(value?.deletes) && value.deletes.length)
+    || (Array.isArray(value?.activities) && value.activities.length)
+  );
 }
 
 export function verifyTransactionOperations(remoteState, operations) {
   const remote = byId(remoteState);
+  const remoteActivities = activitiesById(remoteState);
   for (const item of Array.isArray(operations?.upserts) ? operations.upserts : []) {
     if (!item?.id || !remote.has(item.id) || !sameValue(remote.get(item.id), item)) return false;
   }
   for (const id of Array.isArray(operations?.deletes) ? operations.deletes : []) {
     if (remote.has(id)) return false;
+  }
+  for (const item of Array.isArray(operations?.activities) ? operations.activities : []) {
+    if (!item?.id || !remoteActivities.has(item.id) || !sameValue(remoteActivities.get(item.id), item)) return false;
   }
   return true;
 }
@@ -83,5 +126,23 @@ export function applyTransactionOperations(remoteState, operations) {
     if (item?.id) map.set(item.id, item);
   }
   for (const id of Array.isArray(operations?.deletes) ? operations.deletes : []) map.delete(id);
-  return { ...source, transactions: [...map.values()] };
+
+  const activities = [];
+  const activityIds = new Set();
+  for (const list of [operations?.activities, source.activityLog]) {
+    for (const item of Array.isArray(list) ? list : []) {
+      const id = typeof item?.id === 'string' ? item.id : '';
+      if (!id || activityIds.has(id)) continue;
+      activityIds.add(id);
+      activities.push(item);
+      if (activities.length >= MAX_ACTIVITY_ITEMS) break;
+    }
+    if (activities.length >= MAX_ACTIVITY_ITEMS) break;
+  }
+
+  return {
+    ...source,
+    transactions: [...map.values()],
+    ...(activities.length || Array.isArray(source.activityLog) ? { activityLog: activities } : {}),
+  };
 }

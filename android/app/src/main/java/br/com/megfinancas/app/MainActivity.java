@@ -13,7 +13,9 @@ public class MainActivity extends BridgeActivity {
         if (!hasWindowFocus() || getBridge() == null) return;
         PluginHandle handle = getBridge().getPlugin("AppUpdater");
         if (handle != null && handle.getInstance() instanceof AppUpdaterPlugin) {
-            ((AppUpdaterPlugin) handle.getInstance()).checkForAvailableUpdateNative();
+            AppUpdaterPlugin updater = (AppUpdaterPlugin) handle.getInstance();
+            if (updater.resumePendingInstallIfAuthorized()) return;
+            updater.checkForAvailableUpdateNative();
         }
     };
 

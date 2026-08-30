@@ -2,11 +2,13 @@ package br.com.megfinancas.app;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
@@ -21,6 +23,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,6 +31,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @CapacitorPlugin(name = "AppUpdater")
 public class AppUpdaterPlugin extends Plugin {
     private static final String TAG = "MEG-AppUpdater";
+    private static final int MAX_DOWNLOAD_REDIRECTS = 6;
     private static final String[] RELEASE_MANIFEST_URLS = {
         "https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json",
         "https://raw.githubusercontent.com/MarcosVilalva/MEG-Platform/main/apps/web/public/downloads/app-version.json"
@@ -45,6 +50,8 @@ public class AppUpdaterPlugin extends Plugin {
     private final AtomicBoolean nativePromptVisible = new AtomicBoolean(false);
     private volatile boolean authenticatedUiReady = false;
     private volatile long suppressedNativePromptVersion = -1;
+    private volatile String pendingInstallSource = null;
+    private volatile String pendingInstallSha256 = "";
 
     private interface DownloadCallback {
         void onSuccess(String actualSha256);
@@ -117,6 +124,25 @@ public class AppUpdaterPlugin extends Plugin {
         call.resolve();
     }
 
+    private void rememberPendingInstall(String source, String expectedSha256) {
+        pendingInstallSource = source;
+        pendingInstallSha256 = expectedSha256 == null ? "" : expectedSha256;
+        Log.i(TAG, "Atualização guardada para retomar após permissão de instalação.");
+    }
+
+    public boolean resumePendingInstallIfAuthorized() {
+        String source = pendingInstallSource;
+        if (source == null || source.isEmpty()) return false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !getContext().getPackageManager().canRequestPackageInstalls()) return false;
+
+        String sha256 = pendingInstallSha256;
+        pendingInstallSource = null;
+        pendingInstallSha256 = "";
+        Log.i(TAG, "Permissão concedida. Retomando atualização pendente automaticamente.");
+        installAvailableUpdateNatively(source, sha256);
+        return true;
+    }
+
     public void checkForAvailableUpdateNative() {
         if (!authenticatedUiReady || nativePromptVisible.get() || !nativeCheckRunning.compareAndSet(false, true)) return;
         executor.execute(() -> {
@@ -153,6 +179,7 @@ public class AppUpdaterPlugin extends Plugin {
             return;
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !getContext().getPackageManager().canRequestPackageInstalls()) {
+            rememberPendingInstall(source, expectedSha256);
             call.reject("INSTALL_PERMISSION_REQUIRED");
             return;
         }
@@ -162,6 +189,7 @@ public class AppUpdaterPlugin extends Plugin {
             public void onSuccess(String actualSha256) {
                 JSObject result = new JSObject();
                 result.put("sha256", actualSha256);
+                result.put("installerLaunched", true);
                 call.resolve(result);
             }
 
@@ -196,9 +224,6 @@ public class AppUpdaterPlugin extends Plugin {
         throw lastError != null ? lastError : new IllegalStateException("Manifesto de atualização indisponível.");
     }
 
-    // Mantido apenas para compatibilidade com verificações legadas. A regra
-    // atual não aceita mais o primeiro manifesto: sempre delega ao seletor da
-    // maior versão disponível.
     private JSObject fetchFirstAvailableReleaseManifest() throws Exception {
         return fetchNewestReleaseManifest();
     }
@@ -251,7 +276,8 @@ public class AppUpdaterPlugin extends Plugin {
 
     private void installAvailableUpdateNatively(String source, String expectedSha256) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !getContext().getPackageManager().canRequestPackageInstalls()) {
-            showToast("Autorize 'Permitir desta fonte' e volte ao MEG para continuar.");
+            rememberPendingInstall(source, expectedSha256);
+            showToast("Autorize 'Permitir desta fonte'. Ao voltar, o MEG continuará a atualização automaticamente.");
             Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getContext().getPackageName()));
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             getContext().startActivity(intent);
@@ -272,42 +298,106 @@ public class AppUpdaterPlugin extends Plugin {
         });
     }
 
+    private HttpURLConnection openDownloadConnection(String source) throws Exception {
+        URL current = new URL(source);
+        for (int redirect = 0; redirect <= MAX_DOWNLOAD_REDIRECTS; redirect += 1) {
+            HttpURLConnection connection = (HttpURLConnection) current.openConnection();
+            connection.setConnectTimeout(30000);
+            connection.setReadTimeout(120000);
+            connection.setInstanceFollowRedirects(false);
+            connection.setUseCaches(false);
+            connection.setRequestProperty("Cache-Control", "no-cache, no-store, max-age=0");
+            connection.setRequestProperty("Pragma", "no-cache");
+            connection.setRequestProperty("Accept", "application/vnd.android.package-archive, application/octet-stream, */*");
+            connection.setRequestProperty("User-Agent", "MEG-Financas-Android-Updater");
+            connection.connect();
+            int status = connection.getResponseCode();
+            if (status >= 200 && status < 300) return connection;
+            if (status >= 300 && status < 400) {
+                String location = connection.getHeaderField("Location");
+                connection.disconnect();
+                if (location == null || location.isEmpty()) throw new IllegalStateException("Redirecionamento do APK sem destino.");
+                current = new URL(current, location);
+                if (!"https".equalsIgnoreCase(current.getProtocol())) throw new SecurityException("Redirecionamento inseguro bloqueado.");
+                continue;
+            }
+            String message = "Download respondeu HTTP " + status;
+            connection.disconnect();
+            throw new IllegalStateException(message);
+        }
+        throw new IllegalStateException("O download excedeu o limite de redirecionamentos.");
+    }
+
+    private void launchPackageInstaller(File apk) throws Exception {
+        if (!apk.isFile() || apk.length() < 4) throw new IllegalStateException("APK baixado está vazio.");
+        try (FileInputStream input = new FileInputStream(apk)) {
+            int first = input.read();
+            int second = input.read();
+            if (first != 'P' || second != 'K') throw new IllegalStateException("Arquivo baixado não possui formato APK válido.");
+        }
+
+        Uri apkUri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", apk);
+        Intent installer = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+        installer.setData(apkUri);
+        installer.setClipData(ClipData.newRawUri("MEG Finanças atualização", apkUri));
+        installer.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+        installer.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true);
+        installer.putExtra(Intent.EXTRA_RETURN_RESULT, false);
+
+        PackageManager packageManager = getContext().getPackageManager();
+        List<ResolveInfo> handlers = packageManager.queryIntentActivities(installer, PackageManager.MATCH_DEFAULT_ONLY);
+        if (handlers.isEmpty()) {
+            installer = new Intent(Intent.ACTION_VIEW);
+            installer.setDataAndType(apkUri, "application/vnd.android.package-archive");
+            installer.setClipData(ClipData.newRawUri("MEG Finanças atualização", apkUri));
+            installer.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+            handlers = packageManager.queryIntentActivities(installer, PackageManager.MATCH_DEFAULT_ONLY);
+        }
+        if (handlers.isEmpty()) throw new IllegalStateException("O Android não encontrou um instalador de pacotes disponível.");
+
+        for (ResolveInfo handler : handlers) {
+            getContext().grantUriPermission(handler.activityInfo.packageName, apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        }
+        getContext().startActivity(installer);
+    }
+
     private void downloadAndInstallInternal(String source, String expectedSha256, DownloadCallback callback) {
         executor.execute(() -> {
-            File directory = getContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+            File directory = new File(getContext().getCacheDir(), "updates");
+            File partial = new File(directory, "MEG-Financas-atualizacao.apk.part");
             File apk = new File(directory, "MEG-Financas-atualizacao.apk");
             try {
-                HttpURLConnection connection = (HttpURLConnection) new URL(source).openConnection();
-                connection.setConnectTimeout(30000);
-                connection.setReadTimeout(120000);
-                connection.setInstanceFollowRedirects(true);
-                connection.connect();
-                if (connection.getResponseCode() < 200 || connection.getResponseCode() >= 300) {
-                    throw new IllegalStateException("Download respondeu HTTP " + connection.getResponseCode());
-                }
+                if (!directory.exists() && !directory.mkdirs()) throw new IllegalStateException("Não foi possível preparar a pasta temporária da atualização.");
+                partial.delete();
+                apk.delete();
+
+                HttpURLConnection connection = openDownloadConnection(source);
                 MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                try (InputStream input = connection.getInputStream(); FileOutputStream output = new FileOutputStream(apk)) {
+                try (InputStream input = connection.getInputStream(); FileOutputStream output = new FileOutputStream(partial)) {
                     byte[] buffer = new byte[16384];
                     int count;
                     while ((count = input.read(buffer)) != -1) {
                         output.write(buffer, 0, count);
                         digest.update(buffer, 0, count);
                     }
+                    output.flush();
+                    output.getFD().sync();
                 } finally {
                     connection.disconnect();
                 }
+
                 String actualSha256 = toHex(digest.digest());
                 if (!expectedSha256.isEmpty() && !actualSha256.equalsIgnoreCase(expectedSha256)) {
-                    apk.delete();
+                    partial.delete();
                     throw new SecurityException("A assinatura digital do arquivo baixado não confere.");
                 }
-                Uri apkUri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", apk);
-                Intent installer = new Intent(Intent.ACTION_VIEW);
-                installer.setDataAndType(apkUri, "application/vnd.android.package-archive");
-                installer.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-                getContext().startActivity(installer);
+                if (!partial.renameTo(apk)) {
+                    throw new IllegalStateException("Não foi possível concluir o arquivo temporário da atualização.");
+                }
+                launchPackageInstaller(apk);
                 callback.onSuccess(actualSha256);
             } catch (Exception error) {
+                partial.delete();
                 callback.onError(error);
             }
         });

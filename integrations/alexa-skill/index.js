@@ -34,6 +34,23 @@ function classifyNaturalQuestion(value, previousIntent = 'overview') {
   return 'overview';
 }
 
+function requestSkillId(handlerInput) {
+  return String(
+    handlerInput?.requestEnvelope?.context?.System?.application?.applicationId
+    || handlerInput?.requestEnvelope?.session?.application?.applicationId
+    || ''
+  ).trim();
+}
+
+const SkillIdRequestInterceptor = {
+  process(handlerInput) {
+    const expected = String(process.env.MEG_ALEXA_SKILL_ID || '').trim();
+    if (!expected) return;
+    const actual = requestSkillId(handlerInput);
+    if (!actual || actual !== expected) throw new Error('MEG_ALEXA_SKILL_ID_MISMATCH');
+  }
+};
+
 async function askMeg(intent, query = {}) {
   const apiUrl = String(process.env.MEG_API_URL || '').replace(/\/$/, '');
   const secret = String(process.env.MEG_ALEXA_SKILL_SECRET || '');
@@ -180,6 +197,7 @@ const ErrorHandler = {
 };
 
 exports.handler = Alexa.SkillBuilders.custom()
+  .addRequestInterceptors(SkillIdRequestInterceptor)
   .addRequestHandlers(
     LaunchRequestHandler,
     FinancialIntentHandler,
