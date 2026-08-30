@@ -3,8 +3,7 @@ import { createHmac } from 'node:crypto';
 import {
   ALEXA_SECRET_DERIVATION_CONTEXT,
   alexaSecretsMatch,
-  deriveAlexaSkillSecret,
-  resolveAlexaSkillSecret
+  deriveAlexaSkillSecret
 } from './alexa-auth';
 
 describe('Alexa skill authentication', () => {
@@ -19,16 +18,12 @@ describe('Alexa skill authentication', () => {
     expect(deriveAlexaSkillSecret(base)).toHaveLength(64);
   });
 
-  it('mantém compatibilidade com um segredo Alexa explícito', () => {
-    expect(resolveAlexaSkillSecret('segredo-alexa-explicito', 'segredo-cron')).toBe('segredo-alexa-explicito');
+  it('produz credenciais diferentes para bases diferentes', () => {
+    expect(deriveAlexaSkillSecret('base-um-com-mais-de-24-caracteres'))
+      .not.toBe(deriveAlexaSkillSecret('base-dois-com-mais-de-24-caracteres'));
   });
 
-  it('usa o segredo de cron somente como origem da derivação', () => {
-    const cron = 'outro-segredo-de-cron-com-mais-de-24-caracteres';
-    expect(resolveAlexaSkillSecret(undefined, cron)).toBe(deriveAlexaSkillSecret(cron));
-  });
-
-  it('compara credenciais sem comparação textual direta', () => {
+  it('compara credenciais com timingSafeEqual', () => {
     const secret = deriveAlexaSkillSecret('base-valida-com-mais-de-24-caracteres');
     expect(alexaSecretsMatch(secret, secret)).toBe(true);
     expect(alexaSecretsMatch(`${secret}x`, secret)).toBe(false);
