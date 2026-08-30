@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { z } from 'zod';
+import { resolveAlexaSkillSecret } from './modules/notifications/alexa-auth';
 
 const environmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -59,7 +60,7 @@ export const config = {
   notificationCronSecret: values.NOTIFICATION_CRON_SECRET,
   alexaAnnouncementWebhookUrl: values.ALEXA_ANNOUNCEMENT_WEBHOOK_URL,
   alexaOwnerEmail: values.ALEXA_OWNER_EMAIL || values.ADMIN_EMAIL,
-  alexaSkillSecret: values.ALEXA_SKILL_SECRET,
+  alexaSkillSecret: resolveAlexaSkillSecret(values.ALEXA_SKILL_SECRET, values.NOTIFICATION_CRON_SECRET),
   runLegacyRepair: values.RUN_LEGACY_REPAIR,
   integrationEncryptionKey: values.INTEGRATION_ENCRYPTION_KEY || values.JWT_SECRET,
   corsOrigins: values.CORS_ORIGINS.split(',')
