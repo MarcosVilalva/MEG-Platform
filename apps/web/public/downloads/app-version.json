@@ -1,8 +1,8 @@
 {
-  "versionCode": 187,
-  "versionName": "1.1.187",
+  "versionCode": 188,
+  "versionName": "1.1.188",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "5970bf07e465faf813821c8b12a6bdab36def0849301823b5de81f18d8f26080",
+  "sha256": "481797c585b5e4436b9dab9dd8cc72f2f3dc224cc207db46a7b3c166ac6cc8c1",
   "mandatory": false,
-  "releaseNotes": "persistência confirmada, resumo diário e Alexa natural (#166) [test integrations]"
+  "releaseNotes": "histórico na nuvem, atualização direta e deploy Alexa"
 }
