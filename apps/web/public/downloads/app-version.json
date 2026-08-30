@@ -4,5 +4,5 @@
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
   "sha256": "92e841fc9819631e119c528d94a8ce0e8207a2d2c7fddbd4f6785d4a6ddea671",
   "mandatory": false,
-  "releaseNotes": "Corrige a verificação de atualização para nunca ficar presa, compara sempre a versão mais nova disponível e elimina superfícies brancas residuais do tema do MEG."
+  "releaseNotes": "Padroniza os campos monetários do MEG em BRL, com digitação de centavos da direita para a esquerda, suporte seguro a saldos negativos e validação automática para novos campos de valor."
 }
