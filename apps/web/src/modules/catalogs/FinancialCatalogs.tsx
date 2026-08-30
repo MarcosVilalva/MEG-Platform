@@ -1,4 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { MEGCurrencyInput } from '@ui';
+import { formatBRLValue, parseBRL } from '@shared/money';
 import { readSession } from '../../app/auth-client';
 import {
   financeClient,
@@ -24,7 +26,7 @@ export function FinancialCatalogs() {
   const [name, setName] = useState('');
   const [detail, setDetail] = useState('');
   const [type, setType] = useState('checking');
-  const [openingBalance, setOpeningBalance] = useState('0');
+  const [openingBalance, setOpeningBalance] = useState(() => formatBRLValue(0));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const role = readSession()?.user.role ?? 'VIEWER';
@@ -53,7 +55,7 @@ export function FinancialCatalogs() {
     if (nextTab) setTab(nextTab);
     setName('');
     setDetail('');
-    setOpeningBalance('0');
+    setOpeningBalance(formatBRLValue(0));
     setType(nextTab === 'categories' ? 'expense' : nextTab === 'paymentMethods' ? 'instant' : 'checking');
     setError('');
   }
@@ -65,11 +67,12 @@ export function FinancialCatalogs() {
     setError('');
     try {
       if (tab === 'accounts') {
+        const openingBalanceValue = parseBRL(openingBalance);
         await financeClient.createAccount({
           name,
           type,
           institution: detail || null,
-          openingBalance: Number(openingBalance)
+          openingBalance: Number.isFinite(openingBalanceValue) ? openingBalanceValue : 0
         });
       } else if (tab === 'categories') {
         await financeClient.createCategory({ name, group: detail || null, type: type as 'income' | 'expense' });
@@ -132,7 +135,7 @@ export function FinancialCatalogs() {
               {tab === 'paymentMethods' && <><option value="instant">PIX</option><option value="bill">Boleto</option><option value="credit">Crédito</option><option value="debit">Débito</option><option value="transfer">Transferência</option><option value="cash">Dinheiro</option><option value="other">Outro</option></>}
             </select>
           </label>
-          {tab === 'accounts' && <label>Saldo inicial<input type="number" step="0.01" value={openingBalance} onChange={(event) => setOpeningBalance(event.target.value)} disabled={!canWrite} /></label>}
+          {tab === 'accounts' && <label>Saldo inicial<MEGCurrencyInput value={openingBalance} onValueChange={setOpeningBalance} allowNegative disabled={!canWrite} /></label>}
           {error && <div className="auth-error">{error}</div>}
           <button className="auth-submit" disabled={!canWrite || busy}>{canWrite ? busy ? 'Salvando...' : 'Salvar cadastro' : 'Perfil somente leitura'}</button>
         </form>

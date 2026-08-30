@@ -1,4 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { MEGCurrencyInput } from '@ui';
+import { formatBRLValue, parseBRL } from '@shared/money';
 import { financeClient, type Account, type PaymentMethod } from '../../app/finance-client';
 import { receivablesClient, type Customer, type Receivable } from '../../app/receivables-client';
 import { readSession } from '../../app/auth-client';
@@ -67,7 +69,7 @@ export function Receivables() {
 
   async function createReceivable(event: FormEvent) {
     event.preventDefault();
-    const value = Number(amount.replace(',', '.'));
+    const value = parseBRL(amount);
     if (!canWrite || !description.trim() || !Number.isFinite(value) || value <= 0) return;
     setBusy(true);
     try {
@@ -88,7 +90,7 @@ export function Receivables() {
   async function confirmReceipt(event: FormEvent) {
     event.preventDefault();
     if (!receiving) return;
-    const value = Number(receiptAmount.replace(',', '.'));
+    const value = parseBRL(receiptAmount);
     if (!Number.isFinite(value) || value <= 0) return;
     setBusy(true);
     try {
@@ -131,7 +133,7 @@ export function Receivables() {
             <span className="meg-eyebrow">Novo título</span><h3>Conta a receber</h3>
             <label>Descrição<input value={description} onChange={(e) => setDescription(e.target.value)} disabled={!canWrite} required /></label>
             <label>Pagador<select value={customerId} onChange={(e) => setCustomerId(e.target.value)} disabled={!canWrite}><option value="">Não informado</option>{customers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-            <label>Valor<input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} disabled={!canWrite} required /></label>
+            <label>Valor<MEGCurrencyInput value={amount} onValueChange={setAmount} disabled={!canWrite} required /></label>
             <label>Vencimento<input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} disabled={!canWrite} required /></label>
             {error && <div className="auth-error">{error}</div>}
             <button className="auth-submit" disabled={!canWrite || busy}>Salvar conta</button>
@@ -147,14 +149,14 @@ export function Receivables() {
                 <div><strong>{item.description}</strong><span>{item.customer?.name || 'Sem pagador'} · vence {new Date(item.dueDate).toLocaleDateString('pt-BR')}</span></div>
                 <strong>{brl.format(Number(item.openAmount))}</strong>
                 <span className={`status-pill ${item.status === 'paid' ? 'active' : ''}`}>{item.status === 'paid' ? 'Recebido' : overdue ? 'Vencido' : item.status === 'partial' ? 'Parcial' : 'Em aberto'}</span>
-                {item.status !== 'paid' && canWrite && <button onClick={() => { setReceiving(item); setReceiptAmount(String(item.openAmount)); }}>Receber</button>}
+                {item.status !== 'paid' && canWrite && <button onClick={() => { setReceiving(item); setReceiptAmount(formatBRLValue(item.openAmount)); }}>Receber</button>}
               </article>;
             })}
           </div>
         </div>
       </div>
 
-      {receiving && <div className="modal-backdrop"><form className="modal-card" onSubmit={confirmReceipt}><header><div><span>Baixa de recebimento</span><h2>{receiving.description}</h2></div><button type="button" className="icon-button" onClick={() => setReceiving(null)}>×</button></header><div className="form-grid"><label>Valor<input value={receiptAmount} onChange={(e) => setReceiptAmount(e.target.value)} /></label><label>Conta<select value={accountId} onChange={(e) => setAccountId(e.target.value)}><option value="">Não informada</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Forma de recebimento<select value={paymentMethodId} onChange={(e) => setPaymentMethodId(e.target.value)}><option value="">Não informada</option>{methods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label></div><footer><button type="button" onClick={() => setReceiving(null)}>Cancelar</button><button className="auth-submit" disabled={busy}>Confirmar recebimento</button></footer></form></div>}
+      {receiving && <div className="modal-backdrop"><form className="modal-card" onSubmit={confirmReceipt}><header><div><span>Baixa de recebimento</span><h2>{receiving.description}</h2></div><button type="button" className="icon-button" onClick={() => setReceiving(null)}>×</button></header><div className="form-grid"><label>Valor<MEGCurrencyInput value={receiptAmount} onValueChange={setReceiptAmount} /></label><label>Conta<select value={accountId} onChange={(e) => setAccountId(e.target.value)}><option value="">Não informada</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Forma de recebimento<select value={paymentMethodId} onChange={(e) => setPaymentMethodId(e.target.value)}><option value="">Não informada</option>{methods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label></div><footer><button type="button" onClick={() => setReceiving(null)}>Cancelar</button><button className="auth-submit" disabled={busy}>Confirmar recebimento</button></footer></form></div>}
     </section>
   );
 }
