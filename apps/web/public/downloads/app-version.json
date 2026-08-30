@@ -1,8 +1,8 @@
 {
-  "versionCode": 185,
-  "versionName": "1.1.185",
+  "versionCode": 186,
+  "versionName": "1.1.186",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "8d5fa2128af6b616ea985a83c8e543a2454d7820cbd3599ba5265d35d2512221",
+  "sha256": "f588f968364791a6943b7a03f170fb386c7c87eb27d1c6d98807d085f39656a6",
   "mandatory": false,
-  "releaseNotes": "adicionar central de recuperação seletiva"
+  "releaseNotes": "corrigir histórico e timeout do atualizador Android"
 }
