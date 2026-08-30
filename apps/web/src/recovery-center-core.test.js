@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { buildSelectiveRecovery, inspectRecoveryState } from './recovery-center-core.js';
 
 const current = {
@@ -41,5 +42,19 @@ assert.equal(safeDuplicate.restoredCount, 1);
 assert.deepEqual(safeDuplicate.skippedExisting, ['conta-atual']);
 assert.deepEqual(safeDuplicate.unknownSelected, ['inexistente']);
 assert.equal(safeDuplicate.state.transactions.filter((item) => item.id === 'conta-atual').length, 1);
+
+const source = readFileSync(new URL('./recovery-center.js', import.meta.url), 'utf8');
+assert.match(source, /meg-financas-recovery/);
+assert.match(source, /cloud-baseline/);
+assert.match(source, /antes-de-recuperacao-seletiva/);
+assert.match(source, /\/app-state\/transactions/);
+assert.match(source, /expectedRevision: latest\.revision/);
+assert.match(source, /upserts: recovery\.restored/);
+assert.match(source, /response\.status === 409/);
+assert.match(source, /latest = await readLatestCloudState\(\)/);
+assert.match(source, /Já existe na base atual com o mesmo identificador e conteúdo diferente/);
+assert.match(source, /A base atual não será substituída/);
+assert.match(source, /querySelector\('#settings'\)/);
+assert.doesNotMatch(source, /method:\s*'PUT'/);
 
 console.log('selective recovery center core tests passed');
