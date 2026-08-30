@@ -29,8 +29,38 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Validate API dependency manifest
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const api = JSON.parse(fs.readFileSync('apps/api/package.json', 'utf8'));
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const declared = api.dependencies || {};
+          const locked = lock.packages?.['apps/api']?.dependencies || {};
+          const declaredKeys = Object.keys(declared).sort();
+          const lockedKeys = Object.keys(locked).sort();
+          if (JSON.stringify(declaredKeys) !== JSON.stringify(lockedKeys)) {
+            console.error('apps/api/package.json e package-lock.json possuem dependências de produção diferentes.');
+            console.error('package.json:', declaredKeys);
+            console.error('package-lock:', lockedKeys);
+            process.exit(1);
+          }
+          for (const name of declaredKeys) {
+            if (declared[name] !== locked[name]) {
+              console.error(`Versão divergente para ${name}: package.json=${declared[name]} package-lock=${locked[name]}`);
+              process.exit(1);
+            }
+          }
+          console.log('Manifesto de dependências da API consistente com o lockfile.');
+          NODE
+
       - name: Install dependencies
         run: npm install
+
+      - name: Verify API runtime imports
+        working-directory: apps/api
+        run: node -e "Promise.all([import('@fastify/swagger'), import('@fastify/swagger-ui')]).then(() => console.log('Dependências runtime da API resolvidas.'))"
 
       - name: Generate Prisma client
         run: npm run db:generate
