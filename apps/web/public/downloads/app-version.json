@@ -1,8 +1,8 @@
 {
-  "versionCode": 179,
-  "versionName": "1.1.179",
-  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=179",
-  "sha256": "f0825f763782df2a071232d2536e51a4bcf041da5da20e9672cc8dfe81ec7a0e",
+  "versionCode": 180,
+  "versionName": "1.1.180",
+  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk?v=180",
+  "sha256": "b8aa587ca2cd1729091f1db4b1256abdde42529ef435f988238561d9806b7719",
   "mandatory": false,
   "releaseNotes": "Exibe a versão instalada diretamente do build e aplica máscara monetária brasileira ao valor total de compras parceladas, com digitação centavo a centavo."
 }
