@@ -7,6 +7,9 @@ on:
       - main
     paths:
       - 'integrations/alexa-skill/**'
+      - 'apps/api/src/config.ts'
+      - 'apps/api/src/modules/notifications/alexa-auth.ts'
+      - 'apps/api/src/modules/notifications/routes.ts'
       - '.github/workflows/deploy-alexa-skill.yml'
 
 permissions:
@@ -20,16 +23,16 @@ concurrency:
 jobs:
   deploy-lambda:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 16
     env:
-      AWS_REGION: ${{ vars.AWS_ALEXA_REGION || 'us-east-1' }}
-      AWS_DEFAULT_REGION: ${{ vars.AWS_ALEXA_REGION || 'us-east-1' }}
-      AWS_ROLE_ARN: ${{ secrets.AWS_ALEXA_DEPLOY_ROLE_ARN }}
-      LAMBDA_FUNCTION: ${{ vars.AWS_ALEXA_LAMBDA_FUNCTION || 'meg-financas-alexa-skill' }}
-      LAMBDA_EXECUTION_ROLE_ARN: ${{ secrets.AWS_ALEXA_LAMBDA_EXECUTION_ROLE_ARN }}
+      AWS_REGION: us-east-1
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ROLE_ARN: arn:aws:iam::807804823736:role/MEG-GitHub-AlexaDeploy
+      LAMBDA_FUNCTION: meg-financas-alexa-skill
+      LAMBDA_EXECUTION_ROLE_ARN: arn:aws:iam::807804823736:role/MEG-AlexaLambdaExecution
       MEG_API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
-      MEG_ALEXA_SKILL_SECRET: ${{ secrets.MEG_ALEXA_SKILL_SECRET || secrets.ALEXA_SKILL_SECRET }}
-      ALEXA_SKILL_ID: ${{ vars.ALEXA_SKILL_ID }}
+      NOTIFICATION_CRON_SECRET: ${{ secrets.NOTIFICATION_CRON_SECRET }}
+      ALEXA_SKILL_ID: amzn1.ask.skill.d974a851-169c-43ea-b30a-a130bdf6c452
 
     steps:
       - name: Checkout repository
@@ -39,10 +42,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -n "$AWS_ROLE_ARN" || { echo "Configure o secret AWS_ALEXA_DEPLOY_ROLE_ARN. Execute scripts/bootstrap-aws-alexa.sh no AWS CloudShell para criar a role OIDC."; exit 1; }
-          test -n "$LAMBDA_EXECUTION_ROLE_ARN" || { echo "Configure o secret AWS_ALEXA_LAMBDA_EXECUTION_ROLE_ARN exibido pelo bootstrap AWS."; exit 1; }
-          test -n "$MEG_ALEXA_SKILL_SECRET" || { echo "Configure o secret MEG_ALEXA_SKILL_SECRET com o mesmo valor de ALEXA_SKILL_SECRET usado na API."; exit 1; }
-          test -n "$ALEXA_SKILL_ID" || { echo "Configure a variável ALEXA_SKILL_ID com o ID amzn1.ask.skill... da Skill."; exit 1; }
+          test -n "$NOTIFICATION_CRON_SECRET" || { echo "NOTIFICATION_CRON_SECRET não está configurado no GitHub Actions."; exit 1; }
+          [[ "$ALEXA_SKILL_ID" == amzn1.ask.skill.* ]] || { echo "Skill ID Alexa inválido."; exit 1; }
+          [[ "$AWS_ROLE_ARN" == arn:aws:iam::*:role/MEG-GitHub-AlexaDeploy ]] || { echo "Role OIDC inesperada."; exit 1; }
+          [[ "$LAMBDA_EXECUTION_ROLE_ARN" == arn:aws:iam::*:role/MEG-AlexaLambdaExecution ]] || { echo "Role da Lambda inesperada."; exit 1; }
+
+      - name: Derive isolated Alexa API credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          DERIVED_SECRET=$(node - <<'NODE'
+          const { createHmac } = require('node:crypto');
+          const base = String(process.env.NOTIFICATION_CRON_SECRET || '').trim();
+          if (!base) process.exit(2);
+          process.stdout.write(createHmac('sha256', base).update('meg-alexa-skill-v1').digest('hex'));
+          NODE
+          )
+          test ${#DERIVED_SECRET} -eq 64
+          echo "::add-mask::$DERIVED_SECRET"
+          echo "MEG_ALEXA_SKILL_SECRET=$DERIVED_SECRET" >> "$GITHUB_ENV"
+          echo "Credencial exclusiva da Alexa derivada sem expor o segredo de cron." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Configure AWS credentials with GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v4
@@ -137,7 +156,7 @@ jobs:
             --event-source-token "$ALEXA_SKILL_ID" \
             >/tmp/alexa-permission.json
 
-      - name: Invoke Lambda smoke test
+      - name: Invoke Lambda smoke test against production API
         shell: bash
         run: |
           set -euo pipefail
@@ -167,12 +186,26 @@ jobs:
             }
           }
           JSON
-          aws lambda invoke \
-            --function-name "$LAMBDA_FUNCTION" \
-            --cli-binary-format raw-in-base64-out \
-            --payload fileb:///tmp/alexa-smoke.json \
-            /tmp/alexa-response.json \
-            >/tmp/alexa-invoke.json
-          test -z "$(jq -r '.FunctionError // empty' /tmp/alexa-invoke.json)" || { cat /tmp/alexa-invoke.json; exit 1; }
-          jq -e '.response.outputSpeech.type and (.response.shouldEndSession == false)' /tmp/alexa-response.json >/dev/null
-          echo "Lambda respondeu ao LaunchRequest e manteve a sessão aberta." >> "$GITHUB_STEP_SUMMARY"
+
+          for attempt in {1..12}; do
+            rm -f /tmp/alexa-response.json /tmp/alexa-invoke.json
+            if aws lambda invoke \
+              --function-name "$LAMBDA_FUNCTION" \
+              --cli-binary-format raw-in-base64-out \
+              --payload fileb:///tmp/alexa-smoke.json \
+              /tmp/alexa-response.json \
+              >/tmp/alexa-invoke.json; then
+              FUNCTION_ERROR=$(jq -r '.FunctionError // empty' /tmp/alexa-invoke.json)
+              if [ -z "$FUNCTION_ERROR" ] && jq -e '.response.outputSpeech.type and (.response.shouldEndSession == false)' /tmp/alexa-response.json >/dev/null 2>&1; then
+                echo "Lambda respondeu ao LaunchRequest, consultou a API e manteve a sessão aberta." >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+            fi
+            echo "API/Lambda ainda não pronta para a nova credencial (tentativa $attempt/12)."
+            sleep 20
+          done
+
+          echo "A Lambda não concluiu o LaunchRequest financeiro dentro da janela de publicação."
+          cat /tmp/alexa-invoke.json || true
+          cat /tmp/alexa-response.json || true
+          exit 1
