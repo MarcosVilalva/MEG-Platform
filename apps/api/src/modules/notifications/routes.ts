@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meg/database';
 import { config } from '../../config';
+import { alexaSecretsMatch } from './alexa-auth';
 import { alexaAutomationSlot, alexaFinancialPanorama, automationSlot, deliverAlexaAnnouncement, deliverAlexaNextDuePreview, deliverNotifications, notificationDigest, notificationIntegrationStatus, type AlexaSkillIntent, type AlexaSkillQuery } from './service';
 import { deliverAlexaDailyBriefing, deliverDailyFinancialSummary } from './daily-summary';
 
@@ -131,7 +132,12 @@ export async function notificationRoutes(app: FastifyInstance) {
   });
 
   app.post('/alexa/skill', async (request, reply) => {
-    if (!config.alexaSkillSecret || request.headers['x-alexa-skill-secret'] !== config.alexaSkillSecret) {
+    const providedSecret = Array.isArray(request.headers['x-alexa-skill-secret'])
+      ? request.headers['x-alexa-skill-secret'][0]
+      : request.headers['x-alexa-skill-secret'];
+    const validExplicitSecret = alexaSecretsMatch(providedSecret, config.alexaSkillSecret);
+    const validDerivedSecret = alexaSecretsMatch(providedSecret, config.alexaDerivedSkillSecret);
+    if (!validExplicitSecret && !validDerivedSecret) {
       return reply.status(401).send({ error: 'INVALID_ALEXA_SKILL_SECRET' });
     }
     const body = (request.body || {}) as { intent?: AlexaSkillIntent; query?: AlexaSkillQuery };
