@@ -75,8 +75,11 @@ assert.match(nativePlugin, /Intent\.ACTION_INSTALL_PACKAGE/);
 assert.match(nativePlugin, /ClipData\.newRawUri/);
 assert.match(nativePlugin, /grantUriPermission/);
 assert.match(nativePlugin, /installerLaunched/);
+assert.match(nativePlugin, /rememberPendingInstall/);
+assert.match(nativePlugin, /resumePendingInstallIfAuthorized/);
 
 assert.match(mainActivity, /registerPlugin\(AppUpdaterPlugin\.class\)/);
+assert.match(mainActivity, /resumePendingInstallIfAuthorized\(\)/);
 assert.match(mainActivity, /checkForAvailableUpdateNative\(\)/);
 
 assert.match(alexaWorkflow, /id-token: write/);
