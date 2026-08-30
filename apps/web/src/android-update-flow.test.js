@@ -51,7 +51,9 @@ assert.match(androidWorkflow, /VITE_ANDROID_VERSION_CODE: \$\{\{ github\.run_num
 assert.match(androidWorkflow, /VITE_ANDROID_VERSION_NAME: 1\.1\.\$\{\{ github\.run_number \}\}/);
 assert.match(androidWorkflow, /releases\/download\/android-latest\/MEG-Financas\.apk'/);
 assert.doesNotMatch(androidWorkflow, /MEG-Financas\.apk\?v=/);
-assert.match(androidWorkflow, /elimina superfícies brancas residuais/);
+assert.match(androidWorkflow, /RELEASE_NOTES=\$\(git log -1 --pretty=%s/);
+assert.match(androidWorkflow, /releaseNotes: process\.env\.RELEASE_NOTES/);
+assert.doesNotMatch(androidWorkflow, /elimina superfícies brancas residuais/);
 
 /* Mantém a implementação secundária protegida como fallback de compatibilidade. */
 assert.match(controller, /APP_UPDATER_INFO_TIMEOUT/);
