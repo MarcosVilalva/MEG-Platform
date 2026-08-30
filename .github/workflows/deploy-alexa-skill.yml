@@ -226,7 +226,7 @@ jobs:
             exit 1
           }
 
-      - name: Invoke Lambda smoke test: financial intent against production API
+      - name: "Invoke Lambda smoke test: financial intent against production API"
         shell: bash
         run: |
           set -euo pipefail
