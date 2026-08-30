@@ -46,6 +46,10 @@ function identity(user = {}) {
   return { userId, userName };
 }
 
+function activityId(index = 0) {
+  return globalThis.crypto?.randomUUID?.() || `activity-${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function transactionChanges(previousState, nextState) {
   const previous = transactionMap(previousState);
   const next = transactionMap(nextState);
@@ -84,7 +88,7 @@ export function appendTransactionActivities(previousState, nextState, user = {},
       : [];
 
   const entries = changes.map((change, index) => ({
-    id: globalThis.crypto?.randomUUID?.() || `activity-${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
+    id: activityId(index),
     at: timestamp,
     ...actor,
     ...change,
@@ -92,6 +96,31 @@ export function appendTransactionActivities(previousState, nextState, user = {},
 
   return {
     ...nextState,
+    activityLog: [...entries, ...existing].slice(0, MAX_ACTIVITY_ITEMS),
+  };
+}
+
+export function appendRecoveryActivities(state, transactions = [], user = {}, now = new Date(), source = {}) {
+  if (!Array.isArray(state?.transactions) || !Array.isArray(transactions) || !transactions.length) return state;
+  const actor = identity(user);
+  const timestamp = now instanceof Date ? now.toISOString() : new Date(now).toISOString();
+  const existing = Array.isArray(state.activityLog) ? state.activityLog : [];
+  const entries = transactions.map((item, index) => ({
+    id: activityId(index),
+    at: timestamp,
+    ...actor,
+    action: 'RECOVERED',
+    transactionId: String(item?.id || ''),
+    transaction: transactionSnapshot(item),
+    recovery: {
+      snapshotId: String(source.snapshotId || ''),
+      snapshotCreatedAt: String(source.snapshotCreatedAt || ''),
+      snapshotReason: String(source.snapshotReason || ''),
+    },
+  }));
+
+  return {
+    ...state,
     activityLog: [...entries, ...existing].slice(0, MAX_ACTIVITY_ITEMS),
   };
 }

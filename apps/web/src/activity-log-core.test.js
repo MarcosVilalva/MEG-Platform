@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { activityLogLimit, appendTransactionActivities, transactionChanges } from './activity-log-core.js';
+import { activityLogLimit, appendRecoveryActivities, appendTransactionActivities, transactionChanges } from './activity-log-core.js';
 
 const previous = {
   transactions: [
@@ -39,6 +39,29 @@ assert.equal(logged.activityLog[0].at, '2026-08-28T18:30:00.000Z');
 assert.equal(logged.activityLog.at(-1).id, 'anterior');
 assert.equal(activityLogLimit(), 500);
 
+const recoveredTransaction = {
+  id: 'balbina',
+  date: '2026-08-28',
+  description: 'Paciente Dona Balbina',
+  type: 'income',
+  amount: 150,
+  paymentMethod: 'PIX',
+};
+const recoveryLogged = appendRecoveryActivities(
+  { ...next, transactions: [...next.transactions, recoveredTransaction], activityLog: logged.activityLog },
+  [recoveredTransaction],
+  { id: 'user-1', name: 'Marcos' },
+  new Date('2026-08-30T14:00:00.000Z'),
+  { snapshotId: 'snapshot-1', snapshotCreatedAt: '2026-08-28T19:00:00.000Z', snapshotReason: 'fechamento-do-aplicativo' },
+);
+assert.equal(recoveryLogged.activityLog[0].action, 'RECOVERED');
+assert.equal(recoveryLogged.activityLog[0].transactionId, 'balbina');
+assert.equal(recoveryLogged.activityLog[0].transaction.description, 'Paciente Dona Balbina');
+assert.equal(recoveryLogged.activityLog[0].transaction.amount, 150);
+assert.equal(recoveryLogged.activityLog[0].userName, 'Marcos');
+assert.equal(recoveryLogged.activityLog[0].recovery.snapshotId, 'snapshot-1');
+assert.equal(recoveryLogged.activityLog[0].recovery.snapshotReason, 'fechamento-do-aplicativo');
+
 const unchanged = appendTransactionActivities(next, next, { name: 'Marcos' });
 assert.equal(unchanged, next);
 
@@ -54,5 +77,14 @@ const withOneMore = appendTransactionActivities(
 );
 assert.equal(withOneMore.activityLog.length, 500);
 assert.equal(withOneMore.activityLog[0].transactionId, 'limite');
+
+const recoveryAtLimit = appendRecoveryActivities(
+  { ...many, transactions: [...many.transactions, recoveredTransaction] },
+  [recoveredTransaction],
+  { name: 'Marcos' },
+  new Date('2026-08-30T14:00:00.000Z'),
+);
+assert.equal(recoveryAtLimit.activityLog.length, 500);
+assert.equal(recoveryAtLimit.activityLog[0].action, 'RECOVERED');
 
 console.log('activity log core tests passed');
