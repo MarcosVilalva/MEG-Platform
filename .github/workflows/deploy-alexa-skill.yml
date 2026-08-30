@@ -37,6 +37,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
 
       - name: Validate deployment configuration
         shell: bash
@@ -156,11 +158,15 @@ jobs:
             --event-source-token "$ALEXA_SKILL_ID" \
             >/tmp/alexa-permission.json
 
-      - name: Wait for exact production API and validate Alexa authentication
+      - name: Wait for production API containing Alexa auth and validate credential
         shell: bash
         run: |
           set -euo pipefail
-          EXPECTED_COMMIT="$GITHUB_SHA"
+          REQUIRED_API_COMMIT=$(git log -1 --format=%H -- \
+            apps/api/src/config.ts \
+            apps/api/src/modules/notifications/alexa-auth.ts \
+            apps/api/src/modules/notifications/routes.ts)
+          test -n "$REQUIRED_API_COMMIT" || { echo "Não foi possível identificar a revisão mínima da API."; exit 1; }
           API_READY=false
 
           for attempt in {1..40}; do
@@ -168,14 +174,18 @@ jobs:
               -o /tmp/meg-health.json -w '%{http_code}' "$MEG_API_URL/health" || true)
             DEPLOYED_COMMIT=$(jq -r '.commit // empty' /tmp/meg-health.json 2>/dev/null || true)
 
-            if [ "$HEALTH_CODE" != "200" ]; then
-              echo "API ainda indisponível, HTTP ${HEALTH_CODE:-000} (tentativa $attempt/40)."
+            if [ "$HEALTH_CODE" != "200" ] || [ -z "$DEPLOYED_COMMIT" ]; then
+              echo "API ainda indisponível ou sem revisão identificável, HTTP ${HEALTH_CODE:-000} (tentativa $attempt/40)."
               sleep 15
               continue
             fi
 
-            if [ "$DEPLOYED_COMMIT" != "$EXPECTED_COMMIT" ]; then
-              echo "Render ainda está em ${DEPLOYED_COMMIT:0:12}; aguardando ${EXPECTED_COMMIT:0:12} (tentativa $attempt/40)."
+            if ! git cat-file -e "${DEPLOYED_COMMIT}^{commit}" 2>/dev/null; then
+              git fetch --quiet origin "$DEPLOYED_COMMIT" --depth=50 || true
+            fi
+
+            if ! git merge-base --is-ancestor "$REQUIRED_API_COMMIT" "$DEPLOYED_COMMIT" 2>/dev/null; then
+              echo "Render em ${DEPLOYED_COMMIT:0:12}; ainda não contém auth Alexa ${REQUIRED_API_COMMIT:0:12} (tentativa $attempt/40)."
               sleep 15
               continue
             fi
@@ -189,7 +199,7 @@ jobs:
 
             if [ "$CRON_STATUS" != "200" ]; then
               CRON_ERROR=$(jq -r '.error // "sem-codigo"' /tmp/cron-auth-check.json 2>/dev/null || echo sem-codigo)
-              echo "A API está na revisão correta, mas o secret de cron não coincide: HTTP $CRON_STATUS, $CRON_ERROR."
+              echo "A API contém a revisão correta, mas o secret de cron não coincide: HTTP $CRON_STATUS, $CRON_ERROR."
               exit 1
             fi
 
@@ -202,7 +212,7 @@ jobs:
 
             if [ "$ALEXA_STATUS" = "200" ] && jq -e '.speech and .cardTitle' /tmp/alexa-auth-check.json >/dev/null 2>&1; then
               API_READY=true
-              echo "API de produção está na revisão ${EXPECTED_COMMIT:0:12} e aceitou a credencial Alexa derivada." >> "$GITHUB_STEP_SUMMARY"
+              echo "API ${DEPLOYED_COMMIT:0:12} contém auth Alexa ${REQUIRED_API_COMMIT:0:12} e aceitou a credencial derivada." >> "$GITHUB_STEP_SUMMARY"
               break
             fi
 
@@ -212,7 +222,7 @@ jobs:
           done
 
           [ "$API_READY" = true ] || {
-            echo "A revisão esperada da API ou a autenticação Alexa não ficou pronta dentro da janela de 10 minutos."
+            echo "A revisão necessária da API ou a autenticação Alexa não ficou pronta dentro da janela de 10 minutos."
             exit 1
           }
 
