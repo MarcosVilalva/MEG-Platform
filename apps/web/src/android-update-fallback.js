@@ -1,11 +1,8 @@
 import './embedded-apk-version.js';
-import './android-update-current-feedback.js';
 import {
-  checkForAppUpdate,
-  initializeAndroidUpdateController,
-  initializeAndroidUpdateLifecycle,
-  markAndroidUpdateUiReady,
-} from './android-update-controller.js';
+  checkForAppUpdateHardened,
+  initializeHardenedAndroidUpdate,
+} from './android-update-hardening.js';
 
 const START_DELAY_MS = 1800;
 const UI_WAIT_ATTEMPTS = 80;
@@ -35,15 +32,13 @@ async function waitUntilOpeningDialogsFinish() {
 export async function runAndroidUpdateFallbackCheck() {
   if (!isAndroid() || navigator.onLine === false) return { available: false };
   if (!await waitUntilOpeningDialogsFinish()) return { available: false };
-  await markAndroidUpdateUiReady().catch(() => false);
-  await initializeAndroidUpdateLifecycle().catch(() => false);
-  return checkForAppUpdate();
+  return checkForAppUpdateHardened({ manual: false });
 }
 
 function initialize() {
   if (started || !isAndroid()) return;
   started = true;
-  initializeAndroidUpdateController();
+  initializeHardenedAndroidUpdate();
   window.setTimeout(() => runAndroidUpdateFallbackCheck().catch(() => undefined), START_DELAY_MS);
   window.addEventListener('online', () => runAndroidUpdateFallbackCheck().catch(() => undefined));
   document.addEventListener('visibilitychange', () => {
