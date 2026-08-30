@@ -226,7 +226,7 @@ jobs:
             exit 1
           }
 
-      - name: Invoke Lambda smoke test against production API
+      - name: Invoke Lambda financial intent smoke test
         shell: bash
         run: |
           set -euo pipefail
@@ -235,9 +235,10 @@ jobs:
           {
             "version": "1.0",
             "session": {
-              "new": true,
+              "new": false,
               "sessionId": "meg-ci-${GITHUB_RUN_ID}",
               "application": { "applicationId": "$ALEXA_SKILL_ID" },
+              "attributes": {},
               "user": { "userId": "meg-ci" }
             },
             "context": {
@@ -249,10 +250,15 @@ jobs:
               }
             },
             "request": {
-              "type": "LaunchRequest",
+              "type": "IntentRequest",
               "requestId": "meg-ci-${GITHUB_RUN_ID}",
               "timestamp": "$NOW",
-              "locale": "pt-BR"
+              "locale": "pt-BR",
+              "intent": {
+                "name": "FinancialOverviewIntent",
+                "confirmationStatus": "NONE",
+                "slots": {}
+              }
             }
           }
           JSON
@@ -269,4 +275,5 @@ jobs:
             exit 1;
           }
           jq -e '.response.outputSpeech.type and (.response.shouldEndSession == false)' /tmp/alexa-response.json >/dev/null
-          echo "Lambda respondeu ao LaunchRequest, consultou a API e manteve a sessão aberta." >> "$GITHUB_STEP_SUMMARY"
+          jq -e '.response.card.title and .response.card.content' /tmp/alexa-response.json >/dev/null
+          echo "Lambda respondeu ao FinancialOverviewIntent, consultou a API e manteve a sessão aberta." >> "$GITHUB_STEP_SUMMARY"
