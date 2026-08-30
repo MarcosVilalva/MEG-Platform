@@ -50,6 +50,8 @@ public class AppUpdaterPlugin extends Plugin {
     private final AtomicBoolean nativePromptVisible = new AtomicBoolean(false);
     private volatile boolean authenticatedUiReady = false;
     private volatile long suppressedNativePromptVersion = -1;
+    private volatile String pendingInstallSource = null;
+    private volatile String pendingInstallSha256 = "";
 
     private interface DownloadCallback {
         void onSuccess(String actualSha256);
@@ -122,6 +124,25 @@ public class AppUpdaterPlugin extends Plugin {
         call.resolve();
     }
 
+    private void rememberPendingInstall(String source, String expectedSha256) {
+        pendingInstallSource = source;
+        pendingInstallSha256 = expectedSha256 == null ? "" : expectedSha256;
+        Log.i(TAG, "Atualização guardada para retomar após permissão de instalação.");
+    }
+
+    public boolean resumePendingInstallIfAuthorized() {
+        String source = pendingInstallSource;
+        if (source == null || source.isEmpty()) return false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !getContext().getPackageManager().canRequestPackageInstalls()) return false;
+
+        String sha256 = pendingInstallSha256;
+        pendingInstallSource = null;
+        pendingInstallSha256 = "";
+        Log.i(TAG, "Permissão concedida. Retomando atualização pendente automaticamente.");
+        installAvailableUpdateNatively(source, sha256);
+        return true;
+    }
+
     public void checkForAvailableUpdateNative() {
         if (!authenticatedUiReady || nativePromptVisible.get() || !nativeCheckRunning.compareAndSet(false, true)) return;
         executor.execute(() -> {
@@ -158,6 +179,7 @@ public class AppUpdaterPlugin extends Plugin {
             return;
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !getContext().getPackageManager().canRequestPackageInstalls()) {
+            rememberPendingInstall(source, expectedSha256);
             call.reject("INSTALL_PERMISSION_REQUIRED");
             return;
         }
@@ -254,7 +276,8 @@ public class AppUpdaterPlugin extends Plugin {
 
     private void installAvailableUpdateNatively(String source, String expectedSha256) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !getContext().getPackageManager().canRequestPackageInstalls()) {
-            showToast("Autorize 'Permitir desta fonte' e volte ao MEG para continuar.");
+            rememberPendingInstall(source, expectedSha256);
+            showToast("Autorize 'Permitir desta fonte'. Ao voltar, o MEG continuará a atualização automaticamente.");
             Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getContext().getPackageName()));
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             getContext().startActivity(intent);
