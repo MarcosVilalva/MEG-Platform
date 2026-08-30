@@ -19,16 +19,18 @@ const intentMap = {
   OverdueBillsIntent: 'overdue'
 };
 
-function classifyNaturalQuestion(value) {
+function classifyNaturalQuestion(value, previousIntent = 'overview') {
   const text = String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (/beneficio|alimentacao|vale/.test(text)) return 'benefit-balance';
-  if (/receita|recebi|entrou|entrada/.test(text)) return 'monthly-income';
-  if (/despesa|gastei|paguei|gasto/.test(text)) return 'monthly-expenses';
-  if (/vencid|atrasad/.test(text)) return 'overdue';
-  if (/proxim|vencimento|vence/.test(text)) return 'next-due';
-  if (/pendente|falta pagar|em aberto/.test(text)) return 'pending';
-  if (/fechar|projecao|vai sobrar|depois de pagar/.test(text)) return 'projected-closing';
-  if (/saldo|dinheiro|disponivel/.test(text)) return 'monetary-balance';
+  if (/receita|recebi|entrou|entrada|ganhei/.test(text)) return 'monthly-income';
+  if (/despesa|gastei|paguei|gasto|saidas/.test(text)) return 'monthly-expenses';
+  if (/vencid|atrasad|em atraso/.test(text)) return 'overdue';
+  if (/proxim|vencimento|vence|vencer/.test(text)) return 'next-due';
+  if (/pendente|falta pagar|em aberto|a pagar/.test(text)) return 'pending';
+  if (/fechar|projecao|vai sobrar|depois de pagar|sobra/.test(text)) return 'projected-closing';
+  if (/saldo|dinheiro|disponivel|tenho na conta/.test(text)) return 'monetary-balance';
+  if (/panorama|resumo|situacao|como estao|como estou/.test(text)) return 'overview';
+  if (/^e\b|^agora\b|^tambem\b/.test(text) && previousIntent) return previousIntent;
   return 'overview';
 }
 
@@ -45,9 +47,6 @@ async function askMeg(intent, query = {}) {
         'content-length': Buffer.byteLength(payload),
         'x-alexa-skill-secret': secret
       },
-      // Alexa encerra a Lambda hospedada em aproximadamente oito segundos.
-      // Retornamos uma resposta amigavel antes desse limite quando a API esta
-      // acordando, em vez de deixar a Skill falhar com timeout generico.
       timeout: 6_000
     }, (response) => {
       let body = '';
@@ -72,11 +71,17 @@ async function askMeg(intent, query = {}) {
   return panorama;
 }
 
-function responseFromMeg(handlerInput, panorama) {
+function responseFromMeg(handlerInput, panorama, intent = 'overview') {
+  const attributes = handlerInput.attributesManager.getSessionAttributes() || {};
+  attributes.lastFinancialIntent = intent;
+  attributes.lastFinancialData = panorama?.data || null;
+  handlerInput.attributesManager.setSessionAttributes(attributes);
+  const reprompt = panorama.reprompt || 'O que mais você quer saber sobre suas finanças?';
   return handlerInput.responseBuilder
-    .speak(panorama.speech)
+    .speak(`${panorama.speech} O que mais você quer saber?`)
+    .reprompt(reprompt)
     .withSimpleCard(panorama.cardTitle, panorama.cardText)
-    .withShouldEndSession(true)
+    .withShouldEndSession(false)
     .getResponse();
 }
 
@@ -85,7 +90,8 @@ const LaunchRequestHandler = {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
   },
   async handle(handlerInput) {
-    return responseFromMeg(handlerInput, await askMeg('overview'));
+    const panorama = await askMeg('overview');
+    return responseFromMeg(handlerInput, panorama, 'overview');
   }
 };
 
@@ -100,11 +106,15 @@ const FinancialIntentHandler = {
     const days = Number(Alexa.getSlotValue(handlerInput.requestEnvelope, 'days'));
     const date = Alexa.getSlotValue(handlerInput.requestEnvelope, 'date');
     const question = Alexa.getSlotValue(handlerInput.requestEnvelope, 'question');
-    const intent = intentName === 'NaturalFinancialQueryIntent' ? classifyNaturalQuestion(question) : intentMap[intentName];
-    return responseFromMeg(handlerInput, await askMeg(intent, {
+    const attributes = handlerInput.attributesManager.getSessionAttributes() || {};
+    const intent = intentName === 'NaturalFinancialQueryIntent'
+      ? classifyNaturalQuestion(question, attributes.lastFinancialIntent || 'overview')
+      : intentMap[intentName];
+    const panorama = await askMeg(intent, {
       ...(Number.isFinite(days) ? { days } : {}),
       ...(date ? { date } : {})
-    }));
+    });
+    return responseFromMeg(handlerInput, panorama, intent);
   }
 };
 
@@ -114,8 +124,12 @@ const HelpIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
   },
   handle(handlerInput) {
-    const text = 'Você pode perguntar pelo saldo monetário, saldo do benefício, receitas ou despesas do mês, projeção de fechamento, próximos vencimentos, contas vencidas ou contas de uma data específica.';
-    return handlerInput.responseBuilder.speak(text).withShouldEndSession(true).getResponse();
+    const text = 'Você pode falar comigo naturalmente sobre saldo, receitas, despesas, contas pendentes, vencimentos e projeção do mês. Por exemplo, diga: como estão minhas finanças?';
+    return handlerInput.responseBuilder
+      .speak(text)
+      .reprompt('O que você quer saber sobre suas finanças?')
+      .withShouldEndSession(false)
+      .getResponse();
   }
 };
 
@@ -138,8 +152,12 @@ const FallbackIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.FallbackIntent';
   },
   handle(handlerInput) {
-    const text = 'Não entendi essa consulta. Você pode perguntar, por exemplo: qual é meu saldo monetário, ou quais contas vencem nos próximos cinco dias?';
-    return handlerInput.responseBuilder.speak(text).withShouldEndSession(true).getResponse();
+    const text = 'Não entendi essa consulta financeira. Você pode perguntar, por exemplo: quanto tenho disponível, quanto gastei este mês ou quais são os próximos vencimentos?';
+    return handlerInput.responseBuilder
+      .speak(text)
+      .reprompt('O que você quer saber sobre suas finanças?')
+      .withShouldEndSession(false)
+      .getResponse();
   }
 };
 

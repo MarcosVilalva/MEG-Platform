@@ -11,7 +11,11 @@
             "me dê o panorama financeiro",
             "como está o meu mês",
             "vou conseguir fechar o mês",
-            "faça meu diagnóstico financeiro"
+            "faça meu diagnóstico financeiro",
+            "fala sobre minhas finanças",
+            "me conta como estão minhas finanças",
+            "tem alguma coisa que eu preciso saber",
+            "me dê um resumo das minhas finanças"
           ]
         },
         {
@@ -21,7 +25,9 @@
             "quanto ainda tenho para pagar",
             "tenho contas vencidas",
             "como estão minhas pendências",
-            "o que falta pagar este mês"
+            "o que falta pagar este mês",
+            "e o que falta pagar",
+            "agora me fale das contas em aberto"
           ]
         },
         {
@@ -34,7 +40,9 @@
             "qual é o próximo vencimento",
             "qual conta vence primeiro",
             "o que vence agora",
-            "qual é a próxima conta"
+            "qual é a próxima conta",
+            "e qual é a próxima",
+            "o que vence depois"
           ]
         },
         {
@@ -53,7 +61,9 @@
             "quanto tenho em dinheiro",
             "quanto tenho disponível na conta",
             "qual é o saldo da conta",
-            "me diga meu saldo em dinheiro"
+            "me diga meu saldo em dinheiro",
+            "quanto tenho disponível",
+            "e quanto tenho na conta"
           ]
         },
         {
@@ -75,7 +85,8 @@
             "qual foi minha receita do mês",
             "quanto entrou este mês",
             "qual é a receita deste mês",
-            "me diga as receitas do mês"
+            "me diga as receitas do mês",
+            "quanto entrou de dinheiro"
           ]
         },
         {
@@ -85,7 +96,9 @@
             "quanto já paguei este mês",
             "qual foi minha despesa do mês",
             "quanto ainda tenho de despesas",
-            "me diga as despesas do mês"
+            "me diga as despesas do mês",
+            "quanto saiu da minha conta",
+            "e quanto eu já gastei"
           ]
         },
         {
@@ -96,7 +109,9 @@
             "como vai fechar o mês",
             "vou conseguir pagar todas as contas",
             "quanto sobra depois de pagar tudo",
-            "qual é a projeção de fechamento"
+            "qual é a projeção de fechamento",
+            "se eu pagar tudo quanto sobra",
+            "e depois de pagar tudo"
           ]
         },
         {
@@ -107,7 +122,12 @@
             "quero saber {question}",
             "me responda {question}",
             "procure {question}",
-            "analise {question}"
+            "analise {question}",
+            "me fale {question}",
+            "me diga {question}",
+            "e {question}",
+            "agora {question}",
+            "também quero saber {question}"
           ]
         },
         {
@@ -150,7 +170,9 @@
             "quais contas estão vencidas",
             "me detalhe as contas atrasadas",
             "quanto tenho em atraso",
-            "quais contas atrasadas preciso pagar"
+            "quais contas atrasadas preciso pagar",
+            "e as vencidas",
+            "tem alguma atrasada"
           ]
         },
         { "name": "AMAZON.CancelIntent", "samples": [] },
