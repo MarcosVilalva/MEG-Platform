@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-AWS_REGION="${AWS_REGION:-us-east-1}"
+# A região da Skill não deve herdar silenciosamente a região selecionada no
+# CloudShell. Para pt-BR/Américas usamos us-east-1 por padrão, região recomendada
+# pela Amazon para menor latência. Para sobrescrever conscientemente, use
+# MEG_ALEXA_AWS_REGION=<região>.
+TARGET_REGION="${MEG_ALEXA_AWS_REGION:-us-east-1}"
+AWS_REGION="$TARGET_REGION"
+AWS_DEFAULT_REGION="$TARGET_REGION"
 GITHUB_REPOSITORY="${MEG_GITHUB_REPOSITORY:-MarcosVilalva/MEG-Platform}"
 GITHUB_BRANCH="${MEG_GITHUB_BRANCH:-main}"
 DEPLOY_ROLE_NAME="${MEG_GITHUB_DEPLOY_ROLE_NAME:-MEG-GitHub-AlexaDeploy}"
@@ -15,8 +21,12 @@ command -v aws >/dev/null 2>&1 || {
   echo "AWS CLI não encontrado. Execute este script no AWS CloudShell ou instale a AWS CLI v2."
   exit 1
 }
+command -v python3 >/dev/null 2>&1 || {
+  echo "Python 3 não encontrado. Execute este script no AWS CloudShell."
+  exit 1
+}
 
-export AWS_REGION AWS_DEFAULT_REGION="$AWS_REGION"
+export AWS_REGION AWS_DEFAULT_REGION
 
 IDENTITY_JSON="$(aws sts get-caller-identity --output json)"
 ACCOUNT_ID="$(printf '%s' "$IDENTITY_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["Account"])')"
@@ -32,7 +42,7 @@ TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 echo "Conta AWS detectada e autenticada."
-echo "Região: ${AWS_REGION}"
+echo "Região da Alexa/Lambda: ${AWS_REGION}"
 echo "Repositório autorizado: ${GITHUB_REPOSITORY}"
 echo "Branch autorizada: ${GITHUB_BRANCH}"
 
@@ -68,6 +78,7 @@ cat >"$TMP_DIR/lambda-trust.json" <<JSON
 JSON
 
 if aws iam get-role --role-name "$EXECUTION_ROLE_NAME" >/dev/null 2>&1; then
+  echo "Atualizando role de execução da Lambda..."
   aws iam update-assume-role-policy \
     --role-name "$EXECUTION_ROLE_NAME" \
     --policy-document "file://$TMP_DIR/lambda-trust.json"
@@ -106,6 +117,7 @@ cat >"$TMP_DIR/github-trust.json" <<JSON
 JSON
 
 if aws iam get-role --role-name "$DEPLOY_ROLE_NAME" >/dev/null 2>&1; then
+  echo "Atualizando role OIDC do GitHub Actions..."
   aws iam update-assume-role-policy \
     --role-name "$DEPLOY_ROLE_NAME" \
     --policy-document "file://$TMP_DIR/github-trust.json"
