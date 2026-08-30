@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import {
   ALEXA_SECRET_DERIVATION_CONTEXT,
@@ -6,27 +6,24 @@ import {
   deriveAlexaSkillSecret
 } from './alexa-auth';
 
-describe('Alexa skill authentication', () => {
-  it('deriva uma credencial estável e isolada do segredo de cron', () => {
-    const base = 'cron-secret-com-mais-de-24-caracteres';
-    const expected = createHmac('sha256', base)
-      .update(ALEXA_SECRET_DERIVATION_CONTEXT)
-      .digest('hex');
+const base = 'cron-secret-com-mais-de-24-caracteres';
+const expected = createHmac('sha256', base)
+  .update(ALEXA_SECRET_DERIVATION_CONTEXT)
+  .digest('hex');
 
-    expect(deriveAlexaSkillSecret(base)).toBe(expected);
-    expect(deriveAlexaSkillSecret(base)).not.toBe(base);
-    expect(deriveAlexaSkillSecret(base)).toHaveLength(64);
-  });
+assert.equal(deriveAlexaSkillSecret(base), expected, 'a derivação deve ser estável e idêntica ao pipeline');
+assert.notEqual(deriveAlexaSkillSecret(base), base, 'o segredo bruto não pode ser reutilizado pela Lambda');
+assert.equal(deriveAlexaSkillSecret(base).length, 64, 'o HMAC SHA-256 em hexadecimal deve ter 64 caracteres');
 
-  it('produz credenciais diferentes para bases diferentes', () => {
-    expect(deriveAlexaSkillSecret('base-um-com-mais-de-24-caracteres'))
-      .not.toBe(deriveAlexaSkillSecret('base-dois-com-mais-de-24-caracteres'));
-  });
+assert.notEqual(
+  deriveAlexaSkillSecret('base-um-com-mais-de-24-caracteres'),
+  deriveAlexaSkillSecret('base-dois-com-mais-de-24-caracteres'),
+  'bases diferentes devem gerar credenciais diferentes'
+);
 
-  it('compara credenciais com timingSafeEqual', () => {
-    const secret = deriveAlexaSkillSecret('base-valida-com-mais-de-24-caracteres');
-    expect(alexaSecretsMatch(secret, secret)).toBe(true);
-    expect(alexaSecretsMatch(`${secret}x`, secret)).toBe(false);
-    expect(alexaSecretsMatch(undefined, secret)).toBe(false);
-  });
-});
+const secret = deriveAlexaSkillSecret('base-valida-com-mais-de-24-caracteres');
+assert.equal(alexaSecretsMatch(secret, secret), true, 'credencial correta deve ser aceita');
+assert.equal(alexaSecretsMatch(`${secret}x`, secret), false, 'credencial de tamanho diferente deve ser rejeitada');
+assert.equal(alexaSecretsMatch(undefined, secret), false, 'credencial ausente deve ser rejeitada');
+
+console.log('Alexa auth tests: OK');
