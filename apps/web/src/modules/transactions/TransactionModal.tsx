@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { MEGButton } from '@ui';
+import { MEGButton, MEGCurrencyInput } from '@ui';
+import { formatBRLValue, parseBRL } from '@shared/money';
 import { useAppStore } from '../../app/store';
 import type { LegacyTransaction } from '@core/finance/events';
 
@@ -28,7 +29,7 @@ export function TransactionModal({ open, editing, onClose }: TransactionModalPro
       setType((editing.type as 'income' | 'expense') || 'expense');
       setDate(editing.date || '2026-06-20');
       setDescription(editing.description || '');
-      setAmount(String(editing.amount ?? editing.incomeAmount ?? editing.expenseAmount ?? ''));
+      setAmount(formatBRLValue(editing.amount ?? editing.incomeAmount ?? editing.expenseAmount ?? ''));
       setGroup(editing.group || '');
       setCategory(editing.category || '');
       setAccount(editing.account || 'Santander');
@@ -49,9 +50,9 @@ export function TransactionModal({ open, editing, onClose }: TransactionModalPro
   if (!open) return null;
 
   function submit() {
-    const value = Number(String(amount).replace(',', '.')) || 0;
+    const value = parseBRL(amount);
 
-    if (!description.trim() || value <= 0) {
+    if (!description.trim() || !Number.isFinite(value) || value <= 0) {
       alert('Informe descrição e valor válido.');
       return;
     }
@@ -111,7 +112,7 @@ export function TransactionModal({ open, editing, onClose }: TransactionModalPro
 
           <label>
             Valor
-            <input value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0,00" />
+            <MEGCurrencyInput value={amount} onValueChange={setAmount} placeholder="0,00" />
           </label>
 
           <label>
