@@ -42,6 +42,71 @@ function requestSkillId(handlerInput) {
   ).trim();
 }
 
+function numberValue(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function spokenMoney(value) {
+  return numberValue(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function spokenMonth(value) {
+  if (!/^\d{4}-\d{2}$/.test(String(value || ''))) return '';
+  const [year, month] = String(value).split('-').map(Number);
+  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(year, month - 1, 1)));
+}
+
+function spokenDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return String(value || '');
+  const [year, month, day] = String(value).split('-').map(Number);
+  return new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+function buildOverviewSpeech(panorama) {
+  const data = panorama?.data || {};
+  const month = String(data.month || '');
+  const monthLabel = spokenMonth(month);
+  if (!monthLabel) return String(panorama?.speech || '');
+
+  const available = numberValue(data.monetaryAvailable);
+  const income = numberValue(data.monetaryIncome);
+  const paid = numberValue(data.monetaryPaidExpense);
+  const pending = numberValue(data.monetaryPendingExpense);
+  const projected = numberValue(data.projectedClosing);
+  const benefit = numberValue(data.benefitBalance);
+  const nextDueDate = String(data.nextDueDate || '');
+  const nextDueTotal = numberValue(data.nextDueTotal);
+  const monthName = monthLabel.replace(/ de \d{4}$/u, '');
+
+  const pendingSentence = pending > 0
+    ? `Ainda há ${spokenMoney(pending)} em contas monetárias em aberto em ${monthName}.`
+    : `Não há contas monetárias em aberto em ${monthName}.`;
+
+  let nextSentence = 'Não há próximo vencimento cadastrado.';
+  if (nextDueDate) {
+    const nextMonth = nextDueDate.slice(0, 7);
+    if (nextMonth > month) {
+      nextSentence = `O próximo compromisso já é do mês seguinte, em ${spokenDate(nextDueDate)}, no total de ${spokenMoney(nextDueTotal)}.`;
+    } else {
+      nextSentence = `O próximo compromisso é em ${spokenDate(nextDueDate)}, no total de ${spokenMoney(nextDueTotal)}.`;
+    }
+  }
+
+  const projectionSentence = pending > 0
+    ? projected >= 0
+      ? `Depois de quitar essas pendências, a projeção é fechar ${monthName} com ${spokenMoney(projected)}.`
+      : `Depois dessas pendências, faltariam ${spokenMoney(Math.abs(projected))} para fechar ${monthName} sem déficit.`
+    : `Mantido o cenário atual, ${monthName} fecha com saldo de ${spokenMoney(projected)}.`;
+
+  return `Panorama de ${monthLabel}. Você tem ${spokenMoney(available)} disponíveis. `
+    + `Em ${monthName}, entraram ${spokenMoney(income)} e já foram pagos ${spokenMoney(paid)} em despesas. `
+    + `${pendingSentence} ${nextSentence} ${projectionSentence} `
+    + `O benefício alimentação está em ${spokenMoney(benefit)}.`;
+}
+
 const SkillIdRequestInterceptor = {
   process(handlerInput) {
     const expected = String(process.env.MEG_ALEXA_SKILL_ID || '').trim();
@@ -94,8 +159,9 @@ function responseFromMeg(handlerInput, panorama, intent = 'overview') {
   attributes.lastFinancialData = panorama?.data || null;
   handlerInput.attributesManager.setSessionAttributes(attributes);
   const reprompt = panorama.reprompt || 'O que mais você quer saber sobre suas finanças?';
+  const speech = intent === 'overview' ? buildOverviewSpeech(panorama) : panorama.speech;
   return handlerInput.responseBuilder
-    .speak(`${panorama.speech} O que mais você quer saber?`)
+    .speak(`${speech} O que mais você quer saber?`)
     .reprompt(reprompt)
     .withSimpleCard(panorama.cardTitle, panorama.cardText)
     .withShouldEndSession(false)
@@ -106,9 +172,31 @@ const LaunchRequestHandler = {
   canHandle(handlerInput) {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
   },
-  async handle(handlerInput) {
-    const panorama = await askMeg('overview');
-    return responseFromMeg(handlerInput, panorama, 'overview');
+  handle(handlerInput) {
+    const attributes = handlerInput.attributesManager.getSessionAttributes() || {};
+    attributes.awaitingFinancialChoice = true;
+    handlerInput.attributesManager.setSessionAttributes(attributes);
+    const text = 'MEG Finanças aberto. Você quer um panorama geral ou prefere consultar uma informação específica, como saldo, despesas, receitas, contas pendentes, benefício ou próximos vencimentos?';
+    return handlerInput.responseBuilder
+      .speak(text)
+      .reprompt('Diga panorama geral ou faça uma pergunta, por exemplo: quanto tenho disponível?')
+      .withShouldEndSession(false)
+      .getResponse();
+  }
+};
+
+const OtherInformationIntentHandler = {
+  canHandle(handlerInput) {
+    return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+      && Alexa.getIntentName(handlerInput.requestEnvelope) === 'OtherInformationIntent';
+  },
+  handle(handlerInput) {
+    const text = 'Claro. O que você quer consultar? Posso falar sobre saldo disponível, receitas, despesas, contas pendentes, benefícios, próximos vencimentos ou projeção do mês.';
+    return handlerInput.responseBuilder
+      .speak(text)
+      .reprompt('O que você quer saber sobre suas finanças?')
+      .withShouldEndSession(false)
+      .getResponse();
   }
 };
 
@@ -124,6 +212,8 @@ const FinancialIntentHandler = {
     const date = Alexa.getSlotValue(handlerInput.requestEnvelope, 'date');
     const question = Alexa.getSlotValue(handlerInput.requestEnvelope, 'question');
     const attributes = handlerInput.attributesManager.getSessionAttributes() || {};
+    attributes.awaitingFinancialChoice = false;
+    handlerInput.attributesManager.setSessionAttributes(attributes);
     const intent = intentName === 'NaturalFinancialQueryIntent'
       ? classifyNaturalQuestion(question, attributes.lastFinancialIntent || 'overview')
       : intentMap[intentName];
@@ -141,7 +231,7 @@ const HelpIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
   },
   handle(handlerInput) {
-    const text = 'Você pode falar comigo naturalmente sobre saldo, receitas, despesas, contas pendentes, vencimentos e projeção do mês. Por exemplo, diga: como estão minhas finanças?';
+    const text = 'Você pode falar comigo naturalmente sobre saldo, receitas, despesas, contas pendentes, vencimentos, benefícios e projeção do mês. Também pode pedir um panorama geral.';
     return handlerInput.responseBuilder
       .speak(text)
       .reprompt('O que você quer saber sobre suas finanças?')
@@ -169,7 +259,7 @@ const FallbackIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.FallbackIntent';
   },
   handle(handlerInput) {
-    const text = 'Não entendi essa consulta financeira. Você pode perguntar, por exemplo: quanto tenho disponível, quanto gastei este mês ou quais são os próximos vencimentos?';
+    const text = 'Não entendi essa consulta financeira. Você pode pedir um panorama geral ou perguntar, por exemplo: quanto tenho disponível, quanto gastei este mês ou quais são os próximos vencimentos?';
     return handlerInput.responseBuilder
       .speak(text)
       .reprompt('O que você quer saber sobre suas finanças?')
@@ -200,6 +290,7 @@ exports.handler = Alexa.SkillBuilders.custom()
   .addRequestInterceptors(SkillIdRequestInterceptor)
   .addRequestHandlers(
     LaunchRequestHandler,
+    OtherInformationIntentHandler,
     FinancialIntentHandler,
     HelpIntentHandler,
     StopIntentHandler,

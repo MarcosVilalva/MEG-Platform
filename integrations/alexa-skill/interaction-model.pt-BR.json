@@ -6,6 +6,9 @@
         {
           "name": "FinancialOverviewIntent",
           "samples": [
+            "panorama geral",
+            "quero um panorama geral",
+            "me dê um panorama geral",
             "como estão minhas finanças",
             "qual é o panorama do mês",
             "me dê o panorama financeiro",
@@ -16,6 +19,18 @@
             "me conta como estão minhas finanças",
             "tem alguma coisa que eu preciso saber",
             "me dê um resumo das minhas finanças"
+          ]
+        },
+        {
+          "name": "OtherInformationIntent",
+          "samples": [
+            "outra informação",
+            "quero outra informação",
+            "prefiro outra informação",
+            "quero saber outra coisa",
+            "outra coisa",
+            "informação específica",
+            "quero uma informação específica"
           ]
         },
         {
