@@ -43,8 +43,8 @@ assert.match(source, /newFinancialAccountOpeningBalanceInput/);
 assert.match(source, /reconciliationActualInput/);
 assert.match(source, /data-budget/);
 assert.match(source, /data-invoice-amount/);
-assert.match(source, /data-column-filter=\\"income\\"/);
-assert.match(source, /data-column-filter=\\"expense\\"/);
+assert.ok(source.includes('[data-column-filter="income"]'));
+assert.ok(source.includes('[data-column-filter="expense"]'));
 assert.match(source, /megCurrencyValueProxy/);
 assert.match(source, /MutationObserver/);
 
