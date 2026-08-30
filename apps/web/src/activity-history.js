@@ -28,6 +28,7 @@ function actionLabel(action) {
     CREATED: 'lançou',
     UPDATED: 'alterou',
     DELETED: 'excluiu',
+    RECOVERED: 'recuperou',
   }[action] || 'atualizou';
 }
 
@@ -36,6 +37,7 @@ function actionBadge(action) {
     CREATED: 'Novo',
     UPDATED: 'Alterado',
     DELETED: 'Excluído',
+    RECOVERED: 'Recuperado',
   }[action] || 'Atualização';
 }
 
@@ -122,10 +124,10 @@ function ensureShell() {
     view.innerHTML = `
       <div class="section-heading"><div><h2>Histórico</h2><p class="muted">Atividades registradas no MEG, da mais recente para a mais antiga.</p></div></div>
       <section class="meg-history-panel">
-        <div class="meg-history-header"><div><h2>Movimentações do sistema</h2><p>Criações, alterações e exclusões de lançamentos.</p></div><strong id="megHistoryCount">0 atividades</strong></div>
+        <div class="meg-history-header"><div><h2>Movimentações do sistema</h2><p>Criações, alterações, exclusões e recuperações de lançamentos.</p></div><strong id="megHistoryCount">0 atividades</strong></div>
         <div class="meg-history-filters">
           <input id="megHistorySearch" type="search" placeholder="Buscar descrição, usuário ou pagamento" aria-label="Buscar no histórico" />
-          <select id="megHistoryAction" aria-label="Filtrar por ação"><option value="">Todas as ações</option><option value="CREATED">Criados</option><option value="UPDATED">Alterados</option><option value="DELETED">Excluídos</option></select>
+          <select id="megHistoryAction" aria-label="Filtrar por ação"><option value="">Todas as ações</option><option value="CREATED">Criados</option><option value="UPDATED">Alterados</option><option value="DELETED">Excluídos</option><option value="RECOVERED">Recuperados</option></select>
           <select id="megHistoryUser" aria-label="Filtrar por usuário"><option value="">Todos os usuários</option></select>
         </div>
         <div class="meg-activity-list" id="megHistoryList"></div>
