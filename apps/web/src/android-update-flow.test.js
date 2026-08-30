@@ -23,7 +23,7 @@ assert.match(hardening, /Promise\.allSettled\(MANIFEST_URLS\.map\(fetchManifestW
 assert.match(hardening, /selectNewestRelease\(webCandidates\)/);
 assert.match(hardening, /right\.versionCode - left\.versionCode/);
 assert.match(hardening, /AbortController/);
-assert.match(hardening, /withDeadline\(AppUpdater\.getReleaseManifest/);
+assert.match(hardening, /withDeadline\([\s\S]{0,120}AppUpdater\.getReleaseManifest/);
 assert.match(hardening, /withDeadline\(AppUpdater\.getInfo\(\)/);
 assert.match(hardening, /embeddedAndroidVersion\(\)/);
 assert.match(hardening, /stopImmediatePropagation\(\)/);
@@ -32,6 +32,7 @@ assert.match(hardening, /Não foi possível verificar atualizações agora/);
 assert.match(hardening, /cleanDownloadUrl/);
 assert.match(hardening, /url\.search = ''/);
 assert.match(hardening, /finally\(\(\) => \{[\s\S]*button\.disabled = false/);
+assert.match(hardening, /import\('\.\/meg-dark-surface-guard\.css'\)/);
 
 assert.match(embeddedVersion, /VITE_ANDROID_VERSION_NAME/);
 assert.match(embeddedVersion, /VITE_ANDROID_VERSION_CODE/);
