@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { MEGCard } from '@ui';
+import { MEGCard, MEGCurrencyInput } from '@ui';
+import { parseBRL } from '@shared/money';
 import { readSession } from '../../app/auth-client';
 import { financeClient, type BudgetOverview } from '../../app/finance-client';
 import { useAppStore } from '../../app/store';
@@ -31,7 +32,7 @@ export function BudgetPanel() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const value = Number(amount.replace(',', '.'));
+    const value = parseBRL(amount);
     if (!group.trim() || !Number.isFinite(value) || value <= 0) return;
     await financeClient.saveBudget({ month: selectedMonth, group: group.trim(), amount: value });
     setGroup('');
@@ -50,7 +51,7 @@ export function BudgetPanel() {
       {canWrite && (
         <form className="budget-form" onSubmit={submit}>
           <input value={group} onChange={(event) => setGroup(event.target.value)} placeholder="Grupo (ex.: Alimentação)" required />
-          <input value={amount} onChange={(event) => setAmount(event.target.value)} inputMode="decimal" placeholder="Limite mensal" required />
+          <MEGCurrencyInput value={amount} onValueChange={setAmount} placeholder="Limite mensal" aria-label="Limite mensal" required />
           <button type="submit">Salvar limite</button>
         </form>
       )}
