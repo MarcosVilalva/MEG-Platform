@@ -10,6 +10,7 @@ const embeddedVersion = readFileSync(new URL('./embedded-apk-version.js', import
 const nativePlugin = readFileSync(new URL('../../../android/app/src/main/java/br/com/megfinancas/app/AppUpdaterPlugin.java', import.meta.url), 'utf8');
 const mainActivity = readFileSync(new URL('../../../android/app/src/main/java/br/com/megfinancas/app/MainActivity.java', import.meta.url), 'utf8');
 const androidWorkflow = readFileSync(new URL('../../../.github/workflows/build-android-apk.yml', import.meta.url), 'utf8');
+const alexaWorkflow = readFileSync(new URL('../../../.github/workflows/deploy-alexa-skill.yml', import.meta.url), 'utf8');
 
 assert.match(fallback, /import '\.\/embedded-apk-version\.js'/);
 assert.match(fallback, /from '\.\/android-update-hardening\.js'/);
@@ -66,8 +67,24 @@ assert.match(nativePlugin, /long newestCode = -1L/);
 assert.match(nativePlugin, /if \(code > newestCode\)/);
 assert.match(nativePlugin, /fetchFirstAvailableReleaseManifest\(\)[\s\S]{0,180}return fetchNewestReleaseManifest\(\);/);
 assert.doesNotMatch(nativePlugin, /JSObject release = fetchFirstAvailableReleaseManifest\(\)/);
+assert.match(nativePlugin, /MAX_DOWNLOAD_REDIRECTS = 6/);
+assert.match(nativePlugin, /openDownloadConnection/);
+assert.match(nativePlugin, /getCacheDir\(\), "updates"/);
+assert.match(nativePlugin, /getFD\(\)\.sync\(\)/);
+assert.match(nativePlugin, /Intent\.ACTION_INSTALL_PACKAGE/);
+assert.match(nativePlugin, /ClipData\.newRawUri/);
+assert.match(nativePlugin, /grantUriPermission/);
+assert.match(nativePlugin, /installerLaunched/);
 
 assert.match(mainActivity, /registerPlugin\(AppUpdaterPlugin\.class\)/);
 assert.match(mainActivity, /checkForAvailableUpdateNative\(\)/);
 
-console.log('android update flow and dark surface tests passed');
+assert.match(alexaWorkflow, /id-token: write/);
+assert.match(alexaWorkflow, /aws-actions\/configure-aws-credentials@v4/);
+assert.match(alexaWorkflow, /aws lambda update-function-code/);
+assert.match(alexaWorkflow, /aws lambda create-function/);
+assert.match(alexaWorkflow, /principal alexa-appkit\.amazon\.com/);
+assert.match(alexaWorkflow, /event-source-token "\$ALEXA_SKILL_ID"/);
+assert.match(alexaWorkflow, /Invoke Lambda smoke test/);
+
+console.log('android update flow, Alexa deploy and dark surface tests passed');
