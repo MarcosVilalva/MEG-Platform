@@ -1,0 +1,196 @@
+:root {
+  --meg-dark-surface: #102832;
+  --meg-dark-surface-alt: #14313b;
+  --meg-dark-surface-soft: #193945;
+  --meg-dark-surface-deep: #0d222c;
+  --meg-dark-heading: #e3edef;
+  --meg-dark-text: #d7e4e7;
+  --meg-dark-muted: #93a9b0;
+  --meg-dark-line: rgba(111, 183, 179, .18);
+  --meg-dark-shadow: 0 14px 32px rgba(0, 8, 15, .20);
+}
+
+/*
+ * Guarda final do tema MEG. Componentes criados dinamicamente devem herdar
+ * superfícies escuras mesmo quando algum módulo legado ainda tiver fallback
+ * claro como #fff ou --surface: #ffffff.
+ */
+body {
+  --panel: var(--meg-dark-surface) !important;
+  --surface: var(--meg-dark-surface) !important;
+  --surface-strong: var(--meg-dark-surface-alt) !important;
+  --text: var(--meg-dark-text) !important;
+  --muted: var(--meg-dark-muted) !important;
+  --line: var(--meg-dark-line) !important;
+  color-scheme: dark;
+}
+
+body .view {
+  --panel: var(--meg-dark-surface) !important;
+  --surface: var(--meg-dark-surface) !important;
+  --surface-strong: var(--meg-dark-surface-alt) !important;
+  color: var(--meg-dark-text);
+}
+
+body .meg-history-panel,
+body .meg-recent-activity,
+body .view .panel,
+body .view .table-panel,
+body .view .form-panel,
+body .view .filter-panel,
+body .view .settings-panel,
+body .view .settings-card,
+body .view .summary-card,
+body .view .workspace-panel,
+body .view .empty-state {
+  color: var(--meg-dark-text) !important;
+  border-color: var(--meg-dark-line) !important;
+  background: linear-gradient(145deg, var(--meg-dark-surface-alt), var(--meg-dark-surface)) !important;
+  background-color: var(--meg-dark-surface) !important;
+  background-image: linear-gradient(145deg, var(--meg-dark-surface-alt), var(--meg-dark-surface)) !important;
+  box-shadow: var(--meg-dark-shadow) !important;
+}
+
+body .meg-history-header,
+body .meg-history-filters,
+body .meg-activity-list,
+body .meg-activity-card,
+body .meg-activity-empty {
+  color: var(--meg-dark-text) !important;
+  border-color: var(--meg-dark-line) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+body .meg-history-header h2,
+body .meg-history-header strong,
+body .meg-activity-heading strong,
+body .meg-activity-copy b {
+  color: var(--meg-dark-heading) !important;
+}
+
+body .meg-history-header p,
+body .meg-activity-copy p,
+body .meg-activity-copy small,
+body .meg-activity-empty,
+body .meg-activity-unavailable {
+  color: var(--meg-dark-muted) !important;
+}
+
+body .meg-history-filters input,
+body .meg-history-filters select,
+body .view input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+body .view select,
+body .view textarea {
+  color: var(--meg-dark-text) !important;
+  caret-color: #78e3cf !important;
+  border-color: var(--meg-dark-line) !important;
+  background: var(--meg-dark-surface-deep) !important;
+  background-color: var(--meg-dark-surface-deep) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+body .view input::placeholder,
+body .view textarea::placeholder {
+  color: #79939a !important;
+  opacity: 1;
+}
+
+body .view select option {
+  color: var(--meg-dark-text) !important;
+  background: var(--meg-dark-surface-deep) !important;
+}
+
+body .view table,
+body .view thead,
+body .view tbody,
+body .view tfoot,
+body .view tr,
+body .view th,
+body .view td {
+  border-color: var(--meg-dark-line) !important;
+}
+
+body .view tbody,
+body .view tr,
+body .view td {
+  background-color: transparent !important;
+}
+
+body dialog.modal,
+body .modal,
+body .meg-update-dialog-hardened {
+  color: var(--meg-dark-text) !important;
+  border-color: var(--meg-dark-line) !important;
+  background: linear-gradient(145deg, var(--meg-dark-surface-alt), var(--meg-dark-surface-deep)) !important;
+  background-color: var(--meg-dark-surface) !important;
+  background-image: linear-gradient(145deg, var(--meg-dark-surface-alt), var(--meg-dark-surface-deep)) !important;
+}
+
+body dialog.modal :is(h1, h2, h3, strong, b),
+body .modal :is(h1, h2, h3, strong, b) {
+  color: var(--meg-dark-heading) !important;
+}
+
+body dialog.modal :is(p, small, span),
+body .modal :is(p, small, span) {
+  color: var(--meg-dark-muted) !important;
+}
+
+body .meg-update-check-button {
+  width: 100% !important;
+  margin-top: 8px !important;
+  color: #d6e7e8 !important;
+  border-color: rgba(111, 183, 179, .28) !important;
+  background: #17343e !important;
+}
+
+body .meg-update-check-button:disabled {
+  opacity: .78;
+  cursor: wait;
+}
+
+body .meg-update-feedback {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--meg-dark-line);
+  border-radius: 12px;
+  color: var(--meg-dark-text);
+  background: var(--meg-dark-surface-deep);
+  font-size: .82rem;
+  font-weight: 750;
+  line-height: 1.35;
+  text-align: center;
+}
+
+body .meg-update-feedback.success {
+  color: #aee6da;
+  border-color: rgba(87, 197, 175, .28);
+  background: rgba(49, 128, 111, .18);
+}
+
+body .meg-update-feedback.error {
+  color: #efb1b4;
+  border-color: rgba(221, 116, 121, .28);
+  background: rgba(166, 64, 69, .17);
+}
+
+/* No Android, nenhuma superfície genérica autenticada deve voltar a branco. */
+body.native-mobile .view :is(
+  .card,
+  .panel,
+  .table-panel,
+  .form-panel,
+  .filter-panel,
+  .settings-panel,
+  .settings-card,
+  .summary-card,
+  .workspace-panel,
+  .empty-state,
+  .meg-history-panel,
+  .meg-recent-activity
+) {
+  background-color: var(--meg-dark-surface) !important;
+}
