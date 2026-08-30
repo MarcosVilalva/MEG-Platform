@@ -1,5 +1,4 @@
 import { embeddedAndroidVersion } from './embedded-apk-version.js';
-import './meg-dark-surface-guard.css';
 
 const MANIFEST_URLS = [
   'https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json',
@@ -339,6 +338,7 @@ export function initializeHardenedAndroidUpdate() {
 }
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  import('./meg-dark-surface-guard.css').catch((cause) => console.warn('MEG dark surface guard failed to load', cause));
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeHardenedAndroidUpdate, { once: true });
   } else {
