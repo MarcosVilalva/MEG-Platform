@@ -1,0 +1,183 @@
+name: Deploy MEG Alexa Skill to AWS
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'integrations/alexa-skill/**'
+      - '.github/workflows/deploy-alexa-skill.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: meg-alexa-skill-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-lambda:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      AWS_REGION: ${{ vars.AWS_ALEXA_REGION || 'us-east-1' }}
+      AWS_DEFAULT_REGION: ${{ vars.AWS_ALEXA_REGION || 'us-east-1' }}
+      AWS_ROLE_ARN: ${{ secrets.AWS_ALEXA_DEPLOY_ROLE_ARN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      LAMBDA_FUNCTION: ${{ vars.AWS_ALEXA_LAMBDA_FUNCTION || 'meg-financas-alexa-skill' }}
+      LAMBDA_EXECUTION_ROLE_ARN: ${{ secrets.AWS_ALEXA_LAMBDA_EXECUTION_ROLE_ARN }}
+      MEG_API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
+      MEG_ALEXA_SKILL_SECRET: ${{ secrets.MEG_ALEXA_SKILL_SECRET || secrets.ALEXA_SKILL_SECRET }}
+      ALEXA_SKILL_ID: ${{ vars.ALEXA_SKILL_ID }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate deployment configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$MEG_ALEXA_SKILL_SECRET" || { echo "Configure o secret MEG_ALEXA_SKILL_SECRET com o mesmo valor de ALEXA_SKILL_SECRET usado na API."; exit 1; }
+          test -n "$ALEXA_SKILL_ID" || { echo "Configure a variável ALEXA_SKILL_ID com o ID amzn1.ask.skill... da Skill."; exit 1; }
+          if [ -z "$AWS_ROLE_ARN" ] && { [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; }; then
+            echo "Configure AWS_ALEXA_DEPLOY_ROLE_ARN para OIDC ou AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY para o primeiro bootstrap."
+            exit 1
+          fi
+
+      - name: Configure AWS credentials with GitHub OIDC
+        if: ${{ env.AWS_ROLE_ARN != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: integrations/alexa-skill/package-lock.json
+
+      - name: Package Alexa Lambda
+        working-directory: integrations/alexa-skill
+        run: |
+          npm ci --omit=dev
+          zip -qr "$GITHUB_WORKSPACE/meg-alexa-skill.zip" index.js package.json package-lock.json node_modules
+          test -s "$GITHUB_WORKSPACE/meg-alexa-skill.zip"
+
+      - name: Create or update Lambda code
+        id: lambda
+        shell: bash
+        run: |
+          set -euo pipefail
+          if aws lambda get-function --function-name "$LAMBDA_FUNCTION" >/dev/null 2>&1; then
+            aws lambda update-function-code \
+              --function-name "$LAMBDA_FUNCTION" \
+              --zip-file fileb://meg-alexa-skill.zip \
+              >/tmp/lambda-code.json
+            aws lambda wait function-updated --function-name "$LAMBDA_FUNCTION"
+          else
+            test -n "$LAMBDA_EXECUTION_ROLE_ARN" || { echo "A função ainda não existe. Configure AWS_ALEXA_LAMBDA_EXECUTION_ROLE_ARN para permitir a criação automática."; exit 1; }
+            aws lambda create-function \
+              --function-name "$LAMBDA_FUNCTION" \
+              --runtime nodejs22.x \
+              --handler index.handler \
+              --role "$LAMBDA_EXECUTION_ROLE_ARN" \
+              --zip-file fileb://meg-alexa-skill.zip \
+              --timeout 15 \
+              --memory-size 256 \
+              >/tmp/lambda-code.json
+            aws lambda wait function-active --function-name "$LAMBDA_FUNCTION"
+          fi
+          ARN=$(aws lambda get-function --function-name "$LAMBDA_FUNCTION" --query 'Configuration.FunctionArn' --output text)
+          echo "arn=$ARN" >> "$GITHUB_OUTPUT"
+          echo "Lambda: $ARN" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Configure Lambda environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          fs.writeFileSync('/tmp/meg-lambda-env.json', JSON.stringify({
+            Variables: {
+              MEG_API_URL: process.env.MEG_API_URL,
+              MEG_ALEXA_SKILL_SECRET: process.env.MEG_ALEXA_SKILL_SECRET,
+              MEG_ALEXA_SKILL_ID: process.env.ALEXA_SKILL_ID,
+            },
+          }));
+          NODE
+          aws lambda update-function-configuration \
+            --function-name "$LAMBDA_FUNCTION" \
+            --runtime nodejs22.x \
+            --handler index.handler \
+            --timeout 15 \
+            --memory-size 256 \
+            --environment file:///tmp/meg-lambda-env.json \
+            >/tmp/lambda-config.json
+          aws lambda wait function-updated --function-name "$LAMBDA_FUNCTION"
+          rm -f /tmp/meg-lambda-env.json
+
+      - name: Configure Alexa Skills Kit trigger
+        shell: bash
+        run: |
+          set -euo pipefail
+          aws lambda remove-permission \
+            --function-name "$LAMBDA_FUNCTION" \
+            --statement-id meg-alexa-skills-kit \
+            >/dev/null 2>&1 || true
+          aws lambda add-permission \
+            --function-name "$LAMBDA_FUNCTION" \
+            --statement-id meg-alexa-skills-kit \
+            --action lambda:InvokeFunction \
+            --principal alexa-appkit.amazon.com \
+            --event-source-token "$ALEXA_SKILL_ID" \
+            >/tmp/alexa-permission.json
+
+      - name: Invoke Lambda smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cat >/tmp/alexa-smoke.json <<JSON
+          {
+            "version": "1.0",
+            "session": {
+              "new": true,
+              "sessionId": "meg-ci-${GITHUB_RUN_ID}",
+              "application": { "applicationId": "$ALEXA_SKILL_ID" },
+              "user": { "userId": "meg-ci" }
+            },
+            "context": {
+              "System": {
+                "application": { "applicationId": "$ALEXA_SKILL_ID" },
+                "user": { "userId": "meg-ci" },
+                "device": { "deviceId": "meg-ci", "supportedInterfaces": {} },
+                "apiEndpoint": "https://api.amazonalexa.com"
+              }
+            },
+            "request": {
+              "type": "LaunchRequest",
+              "requestId": "meg-ci-${GITHUB_RUN_ID}",
+              "timestamp": "$NOW",
+              "locale": "pt-BR"
+            }
+          }
+          JSON
+          aws lambda invoke \
+            --function-name "$LAMBDA_FUNCTION" \
+            --cli-binary-format raw-in-base64-out \
+            --payload fileb:///tmp/alexa-smoke.json \
+            /tmp/alexa-response.json \
+            >/tmp/alexa-invoke.json
+          test -z "$(jq -r '.FunctionError // empty' /tmp/alexa-invoke.json)" || { cat /tmp/alexa-invoke.json; exit 1; }
+          jq -e '.response.outputSpeech.type and (.response.shouldEndSession == false)' /tmp/alexa-response.json >/dev/null
+          echo "Lambda respondeu ao LaunchRequest e manteve a sessão aberta." >> "$GITHUB_STEP_SUMMARY"
