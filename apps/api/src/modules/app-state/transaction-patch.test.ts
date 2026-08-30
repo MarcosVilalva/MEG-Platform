@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
-import { applyTransactionPatch } from './transaction-patch';
+import { applyTransactionPatch, mergeActivityLog } from './transaction-patch';
+
+const activity0 = { id: 'activity-0', action: 'CREATED', transactionId: '2' };
+const activity1 = { id: 'activity-1', action: 'UPDATED', transactionId: '1' };
+const activity2 = { id: 'activity-2', action: 'CREATED', transactionId: '3' };
 
 const state = {
   transactions: [
@@ -7,7 +11,7 @@ const state = {
     { id: '2', description: 'B', amount: 20 },
   ],
   budgets: { CASA: 1000 },
-  activityLog: [],
+  activityLog: [activity0],
 };
 
 const result = applyTransactionPatch(
@@ -17,7 +21,8 @@ const result = applyTransactionPatch(
     { id: '3', description: 'C', amount: 30 },
   ],
   ['2'],
-  { activityLog: [{ id: 'activity-1', action: 'UPDATED', transactionId: '1' }] },
+  { activityLog: [activity1, activity0] },
+  [activity2, activity1],
 );
 
 assert.deepEqual(result, {
@@ -26,8 +31,10 @@ assert.deepEqual(result, {
     { id: '3', description: 'C', amount: 30 },
   ],
   budgets: { CASA: 1000 },
-  activityLog: [{ id: 'activity-1', action: 'UPDATED', transactionId: '1' }],
+  activityLog: [activity2, activity1, activity0],
 });
+
+assert.deepEqual(mergeActivityLog(state, [activity1, activity0]), [activity1, activity0]);
 
 const empty = applyTransactionPatch(null, [{ id: '1', description: 'A' }], []);
 assert.deepEqual(empty, { transactions: [{ id: '1', description: 'A' }] });
