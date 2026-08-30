@@ -1,6 +1,9 @@
 const HISTORY_VIEW_ID = 'activity-history';
 const HISTORY_NAV_ID = 'activityHistoryNav';
 const RECENT_SECTION_ID = 'megRecentActivity';
+const STATE_KEY = 'meg-financas-state-v4-paid-fixes';
+const READY_RETRY_MS = 250;
+const READY_RETRY_LIMIT = 40;
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -12,8 +15,32 @@ function money(value) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
 }
 
+function parseLocalState() {
+  try {
+    return JSON.parse(window.localStorage?.getItem?.(STATE_KEY) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+function validActivityState(value) {
+  return Boolean(value && typeof value === 'object' && Array.isArray(value.transactions));
+}
+
 function activityState() {
-  return window.MEG_APP?.getStateRef?.() || window.MEG_REAL_STATE || null;
+  const candidates = [
+    window.MEG_APP?.getStateRef?.(),
+    parseLocalState(),
+    window.MEG_REAL_STATE,
+  ].filter(validActivityState);
+
+  // Durante a abertura do Android, MEG_APP pode existir antes de receber o
+  // activityLog carregado da nuvem. Não deixe esse estado transitório vazio
+  // esconder um histórico já protegido no cache local.
+  return candidates.find((state) => Array.isArray(state.activityLog) && state.activityLog.length > 0)
+    || candidates.find((state) => Array.isArray(state.activityLog))
+    || candidates[0]
+    || null;
 }
 
 function logs() {
@@ -84,7 +111,7 @@ function activityCard(item, { compact = false } = {}) {
 
 function styleMarkup() {
   return `
-    .meg-recent-activity,.meg-history-panel{margin-top:24px;border:1px solid rgba(148,163,184,.22);border-radius:20px;background:var(--panel,#fff);box-shadow:0 10px 28px rgba(15,23,42,.06);overflow:hidden}
+    .meg-recent-activity,.meg-history-panel{margin-top:24px;border:1px solid rgba(148,163,184,.22);border-radius:20px;background:var(--panel);box-shadow:0 10px 28px rgba(15,23,42,.06);overflow:hidden}
     .meg-recent-activity-header,.meg-history-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px;border-bottom:1px solid rgba(148,163,184,.18)}
     .meg-recent-activity-header h3,.meg-history-header h2{margin:0;font-size:1.05rem}.meg-recent-activity-header p,.meg-history-header p{margin:4px 0 0;color:var(--muted,#64748b);font-size:.84rem}
     .meg-activity-list{display:grid;gap:0}.meg-activity-card{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:14px;align-items:center;padding:15px 20px;border-bottom:1px solid rgba(148,163,184,.14)}
@@ -150,6 +177,23 @@ function ensureShell() {
   renderAll();
 }
 
+function activateHistoryView() {
+  ensureShell();
+  renderAll();
+  const view = document.getElementById(HISTORY_VIEW_ID);
+  const nav = document.getElementById(HISTORY_NAV_ID);
+  if (!view) return false;
+
+  document.querySelectorAll('main.content > .view').forEach((item) => item.classList.remove('active'));
+  view.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach((item) => item.classList.remove('active'));
+  nav?.classList.add('active');
+  document.getElementById('primarySidebar')?.classList.remove('open', 'mobile-open', 'is-open');
+  document.getElementById('sidebarBackdrop')?.classList.remove('active', 'visible');
+  requestAnimationFrame(renderAll);
+  return true;
+}
+
 let filtersBound = false;
 function bindFilters() {
   if (filtersBound) return;
@@ -162,7 +206,7 @@ function bindFilters() {
     control.addEventListener('input', renderHistory);
     control.addEventListener('change', renderHistory);
   });
-  document.getElementById(HISTORY_NAV_ID)?.addEventListener('click', () => requestAnimationFrame(renderHistory));
+  document.getElementById(HISTORY_NAV_ID)?.addEventListener('click', () => requestAnimationFrame(renderAll));
 }
 
 function filteredLogs() {
@@ -220,11 +264,29 @@ function renderAll() {
   renderHistory();
 }
 
+function renderUntilStateReady(attempt = 0) {
+  ensureShell();
+  renderAll();
+  const state = activityState();
+  if ((state && window.MEG_APP?.getStateRef?.()) || attempt >= READY_RETRY_LIMIT) return;
+  window.setTimeout(() => renderUntilStateReady(attempt + 1), READY_RETRY_MS);
+}
+
+function handleHistoryNavigation(event) {
+  const link = event.target?.closest?.(`[data-view-link="${HISTORY_VIEW_ID}"]`);
+  if (!link) return;
+  event.preventDefault();
+  activateHistoryView();
+}
+
 function start() {
   ensureShell();
+  renderUntilStateReady();
+  document.addEventListener('click', handleHistoryNavigation);
   window.addEventListener('meg:activity-log-updated', renderAll);
   window.addEventListener('meg:cloud-save-confirmed', renderAll);
   window.addEventListener('focus', renderAll);
+  window.addEventListener('pageshow', renderAll);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) renderAll();
   });
@@ -235,4 +297,8 @@ if (typeof document !== 'undefined') {
   else start();
 }
 
-if (typeof window !== 'undefined') window.MEG_ACTIVITY_HISTORY = { render: renderAll };
+if (typeof window !== 'undefined') window.MEG_ACTIVITY_HISTORY = {
+  render: renderAll,
+  open: activateHistoryView,
+  logs,
+};
