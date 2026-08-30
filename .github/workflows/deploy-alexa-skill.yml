@@ -25,9 +25,6 @@ jobs:
       AWS_REGION: ${{ vars.AWS_ALEXA_REGION || 'us-east-1' }}
       AWS_DEFAULT_REGION: ${{ vars.AWS_ALEXA_REGION || 'us-east-1' }}
       AWS_ROLE_ARN: ${{ secrets.AWS_ALEXA_DEPLOY_ROLE_ARN }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
       LAMBDA_FUNCTION: ${{ vars.AWS_ALEXA_LAMBDA_FUNCTION || 'meg-financas-alexa-skill' }}
       LAMBDA_EXECUTION_ROLE_ARN: ${{ secrets.AWS_ALEXA_LAMBDA_EXECUTION_ROLE_ARN }}
       MEG_API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
@@ -42,19 +39,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test -n "$AWS_ROLE_ARN" || { echo "Configure o secret AWS_ALEXA_DEPLOY_ROLE_ARN. Execute scripts/bootstrap-aws-alexa.sh no AWS CloudShell para criar a role OIDC."; exit 1; }
+          test -n "$LAMBDA_EXECUTION_ROLE_ARN" || { echo "Configure o secret AWS_ALEXA_LAMBDA_EXECUTION_ROLE_ARN exibido pelo bootstrap AWS."; exit 1; }
           test -n "$MEG_ALEXA_SKILL_SECRET" || { echo "Configure o secret MEG_ALEXA_SKILL_SECRET com o mesmo valor de ALEXA_SKILL_SECRET usado na API."; exit 1; }
           test -n "$ALEXA_SKILL_ID" || { echo "Configure a variável ALEXA_SKILL_ID com o ID amzn1.ask.skill... da Skill."; exit 1; }
-          if [ -z "$AWS_ROLE_ARN" ] && { [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; }; then
-            echo "Configure AWS_ALEXA_DEPLOY_ROLE_ARN para OIDC ou AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY para o primeiro bootstrap."
-            exit 1
-          fi
 
       - name: Configure AWS credentials with GitHub OIDC
-        if: ${{ env.AWS_ROLE_ARN != '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          role-session-name: meg-alexa-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: true
 
       - name: Verify AWS identity
         run: aws sts get-caller-identity
@@ -85,7 +81,6 @@ jobs:
               >/tmp/lambda-code.json
             aws lambda wait function-updated --function-name "$LAMBDA_FUNCTION"
           else
-            test -n "$LAMBDA_EXECUTION_ROLE_ARN" || { echo "A função ainda não existe. Configure AWS_ALEXA_LAMBDA_EXECUTION_ROLE_ARN para permitir a criação automática."; exit 1; }
             aws lambda create-function \
               --function-name "$LAMBDA_FUNCTION" \
               --runtime nodejs22.x \
