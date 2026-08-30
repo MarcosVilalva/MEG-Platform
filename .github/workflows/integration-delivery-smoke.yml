@@ -13,60 +13,62 @@ jobs:
   delivery-smoke:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[test integrations]')
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     env:
       API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
       CRON_SECRET: ${{ secrets.NOTIFICATION_CRON_SECRET }}
 
     steps:
-      - name: Wait for production API
+      - name: Wait for production API and providers
         run: |
+          set -o pipefail
           test -n "$CRON_SECRET" || { echo "NOTIFICATION_CRON_SECRET is not configured"; exit 1; }
-          for attempt in {1..12}; do
-            if curl --silent --show-error --max-time 40 --fail "$API_URL/ready" | jq .; then
-              exit 0
+          for attempt in {1..6}; do
+            echo "Aquecendo API e provedor, tentativa $attempt/6"
+            if curl --silent --show-error --max-time 85 --fail "$API_URL/ready" > /tmp/meg-ready.json; then
+              cat /tmp/meg-ready.json | jq .
+              WHATSAPP_STATE=$(jq -r '.providers.whatsapp // "not-configured"' /tmp/meg-ready.json)
+              if [ "$WHATSAPP_STATE" = "awake" ] || [ "$WHATSAPP_STATE" = "not-configured" ]; then
+                exit 0
+              fi
             fi
-            echo "API ainda não está pronta, tentativa $attempt/12"
+            echo "API ou provedor ainda não está pronto"
             sleep 10
           done
-          echo "API não ficou pronta a tempo"
+          echo "API/provedor não ficou pronto a tempo"
           exit 1
 
       - name: Send and verify email and WhatsApp daily summary
+        id: messaging
+        continue-on-error: true
         run: |
-          for attempt in {1..12}; do
-            echo "Tentativa $attempt/12 de localizar a nova rotina de resumo diário"
-            RESPONSE=$(curl --silent --show-error --fail-with-body --max-time 120 \
-              -X POST "$API_URL/notifications/cron" \
-              -H "x-cron-secret: $CRON_SECRET" \
-              -H "Content-Type: application/json" \
-              --data '{"slot":"06:00","force":false}') || true
-            echo "$RESPONSE" | jq . || true
+          RESPONSE=$(curl --silent --show-error --fail-with-body --max-time 150 \
+            -X POST "$API_URL/notifications/cron" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --data '{"slot":"06:00","force":true}')
+          echo "$RESPONSE" | jq .
 
-            EMAIL_OK=$(echo "$RESPONSE" | jq '[.. | objects | select((.channel? // "") | startswith("email:")) | select(.status? == "sent" or .status? == "already-sent")] | length' 2>/dev/null || echo 0)
-            WHATSAPP_OK=$(echo "$RESPONSE" | jq '[.. | objects | select((.channel? // "") | startswith("whatsapp:")) | select(.status? == "sent" or .status? == "already-sent")] | length' 2>/dev/null || echo 0)
-            FAILED=$(echo "$RESPONSE" | jq '[.. | objects | select(.status? == "failed")] | length' 2>/dev/null || echo 0)
+          EMAIL_OK=$(echo "$RESPONSE" | jq '[.. | objects | select((.channel? // "") | startswith("email:")) | select(.status? == "sent" or .status? == "already-sent")] | length')
+          WHATSAPP_OK=$(echo "$RESPONSE" | jq '[.. | objects | select((.channel? // "") | startswith("whatsapp:")) | select(.status? == "sent" or .status? == "already-sent")] | length')
+          EMAIL_FAILED=$(echo "$RESPONSE" | jq '[.. | objects | select((.channel? // "") | startswith("email:")) | select(.status? == "failed")] | length')
+          WHATSAPP_FAILED=$(echo "$RESPONSE" | jq '[.. | objects | select((.channel? // "") | startswith("whatsapp:")) | select(.status? == "failed")] | length')
 
-            if [ "$FAILED" -gt 0 ]; then
-              echo "Um provedor recusou a entrega."
-              exit 1
-            fi
-            if [ "$EMAIL_OK" -gt 0 ] && [ "$WHATSAPP_OK" -gt 0 ]; then
-              echo "E-mail e WhatsApp confirmados."
-              exit 0
-            fi
-
-            echo "A produção ainda parece estar na versão anterior; aguardando novo deploy..."
-            sleep 15
-          done
-          echo "Não foi possível confirmar e-mail e WhatsApp na nova versão."
-          exit 1
+          echo "email_ok=$EMAIL_OK whatsapp_ok=$WHATSAPP_OK email_failed=$EMAIL_FAILED whatsapp_failed=$WHATSAPP_FAILED"
+          test "$EMAIL_OK" -gt 0 || { echo "Nenhum e-mail foi confirmado."; exit 1; }
+          test "$WHATSAPP_OK" -gt 0 || { echo "Nenhum WhatsApp foi confirmado."; exit 1; }
+          test "$EMAIL_FAILED" -eq 0 || { echo "Houve falha de e-mail."; exit 1; }
+          test "$WHATSAPP_FAILED" -eq 0 || { echo "Houve falha de WhatsApp."; exit 1; }
+          echo "E-mail e WhatsApp confirmados."
 
       - name: Send and verify Alexa daily briefing
+        id: alexa
+        if: always()
+        continue-on-error: true
         run: |
           DOW=$(TZ=America/Sao_Paulo date +%u)
           if [ "$DOW" -ge 6 ]; then SLOT="12:00"; else SLOT="06:20"; fi
-          RESPONSE=$(curl --silent --show-error --fail-with-body --max-time 120 \
+          RESPONSE=$(curl --silent --show-error --fail-with-body --max-time 150 \
             -X POST "$API_URL/notifications/alexa/cron" \
             -H "x-cron-secret: $CRON_SECRET" \
             -H "Content-Type: application/json" \
@@ -74,6 +76,13 @@ jobs:
           echo "$RESPONSE" | jq .
           MODE=$(echo "$RESPONSE" | jq -r '.mode // ""')
           STATUS=$(echo "$RESPONSE" | jq -r '.result.status // "unknown"')
-          test "$MODE" = "daily-briefing" || { echo "A API ainda não executou o briefing diário da Alexa."; exit 1; }
+          test "$MODE" = "daily-briefing" || { echo "A API não executou o briefing diário da Alexa."; exit 1; }
           test "$STATUS" = "sent" || { echo "Alexa não confirmou entrega: $STATUS"; exit 1; }
           echo "Alexa confirmada."
+
+      - name: Assert all integration channels
+        if: always()
+        run: |
+          test "${{ steps.messaging.outcome }}" = "success" || { echo "Falha no teste de e-mail/WhatsApp"; exit 1; }
+          test "${{ steps.alexa.outcome }}" = "success" || { echo "Falha no teste da Alexa"; exit 1; }
+          echo "Todos os canais foram confirmados."
