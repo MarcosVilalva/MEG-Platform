@@ -21,6 +21,7 @@ const transactionPatchSchema = z.object({
   expectedRevision: z.number().int().nonnegative(),
   upserts: z.array(transactionSchema).max(MAX_TRANSACTION_PATCH_OPERATIONS).default([]),
   deletes: z.array(z.string().min(1)).max(MAX_TRANSACTION_PATCH_OPERATIONS).default([]),
+  activities: z.array(z.unknown()).max(MAX_ACTIVITY_LOG_ITEMS).default([]),
   activityLog: z.array(z.unknown()).max(MAX_ACTIVITY_LOG_ITEMS).optional(),
 }).superRefine((value, context) => {
   if (value.upserts.length + value.deletes.length > MAX_TRANSACTION_PATCH_OPERATIONS) {
@@ -88,7 +89,7 @@ export async function appStateRoutes(app: FastifyInstance) {
       where: { workspaceId: context.workspaceId },
       select: { id: true, state: true, revision: true, updatedAt: true }
     });
-    const hasActivityPatch = parsed.data.activityLog !== undefined;
+    const hasActivityPatch = parsed.data.activityLog !== undefined || parsed.data.activities.length > 0;
 
     if (!current) {
       if (parsed.data.expectedRevision !== 0) {
@@ -102,6 +103,7 @@ export async function appStateRoutes(app: FastifyInstance) {
         parsed.data.upserts,
         parsed.data.deletes,
         activityMetadata(parsed.data.activityLog),
+        parsed.data.activities,
       ));
       if (!initialState.success) {
         return reply.status(400).send({ error: 'INVALID_APP_STATE_PATCH', details: initialState.error.flatten() });
@@ -138,6 +140,7 @@ export async function appStateRoutes(app: FastifyInstance) {
       parsed.data.upserts,
       parsed.data.deletes,
       activityMetadata(parsed.data.activityLog),
+      parsed.data.activities,
     ));
     if (!nextState.success) {
       return reply.status(400).send({ error: 'INVALID_APP_STATE_PATCH', details: nextState.error.flatten() });
@@ -161,6 +164,7 @@ export async function appStateRoutes(app: FastifyInstance) {
       changed: true,
       upserted: parsed.data.upserts.length,
       deleted: parsed.data.deletes.length,
+      activitiesMerged: parsed.data.activities.length,
       activityLogUpdated: hasActivityPatch,
       shared: true,
       workspace: { id: context.workspace.id, name: context.workspace.name }
