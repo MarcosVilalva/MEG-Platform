@@ -231,11 +231,17 @@ function scheduleOutboxRetry(delay = OUTBOX_RETRY_MS) {
   if (outboxRetryTimer || !hasTransactionOperations(readOutbox())) return;
   outboxRetryTimer = globalThis.setTimeout?.(() => {
     outboxRetryTimer = null;
-    ensureOutboxConfirmed().catch((error) => {
-      setSyncStatus('Salvamento protegido, aguardando nova confirmação...');
-      notifyPendingFailure(error);
-      scheduleOutboxRetry(Math.min(delay * 2, 30_000));
-    });
+    ensureOutboxConfirmed()
+      .then((confirmed) => {
+        if (!confirmed && hasTransactionOperations(readOutbox())) {
+          scheduleOutboxRetry(Math.min(delay * 2, 30_000));
+        }
+      })
+      .catch((error) => {
+        setSyncStatus('Salvamento protegido, aguardando nova confirmação...');
+        notifyPendingFailure(error);
+        scheduleOutboxRetry(Math.min(delay * 2, 30_000));
+      });
   }, delay);
 }
 
@@ -311,10 +317,6 @@ function installStorageBridge() {
       const incomingState = parseJson(rawValue);
       const appState = window.MEG_APP?.getStateRef?.();
 
-      // Uma gravação originada pela própria interface contém exatamente a
-      // coleção que está na memória do app. Atualizações vindas da nuvem são
-      // escritas no localStorage antes de replaceState e, por isso, não passam
-      // por este critério. Isso impede histórico duplicado e reenvio em loop.
       const localAppWrite = isFinancialState(incomingState)
         && isFinancialState(appState)
         && sameTransactions(incomingState, appState);
