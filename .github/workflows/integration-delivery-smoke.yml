@@ -1,0 +1,79 @@
+name: MEG Integration Delivery Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  delivery-smoke:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[test integrations]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
+      CRON_SECRET: ${{ secrets.NOTIFICATION_CRON_SECRET }}
+
+    steps:
+      - name: Wait for production API
+        run: |
+          test -n "$CRON_SECRET" || { echo "NOTIFICATION_CRON_SECRET is not configured"; exit 1; }
+          for attempt in {1..12}; do
+            if curl --silent --show-error --max-time 40 --fail "$API_URL/ready" | jq .; then
+              exit 0
+            fi
+            echo "API ainda não está pronta, tentativa $attempt/12"
+            sleep 10
+          done
+          echo "API não ficou pronta a tempo"
+          exit 1
+
+      - name: Send and verify email and WhatsApp daily summary
+        run: |
+          for attempt in {1..12}; do
+            echo "Tentativa $attempt/12 de localizar a nova rotina de resumo diário"
+            RESPONSE=$(curl --silent --show-error --fail-with-body --max-time 120 \
+              -X POST "$API_URL/notifications/cron" \
+              -H "x-cron-secret: $CRON_SECRET" \
+              -H "Content-Type: application/json" \
+              --data '{"slot":"06:00","force":false}') || true
+            echo "$RESPONSE" | jq . || true
+
+            EMAIL_OK=$(echo "$RESPONSE" | jq '[.. | objects | select((.channel? // "") | startswith("email:")) | select(.status? == "sent" or .status? == "already-sent")] | length' 2>/dev/null || echo 0)
+            WHATSAPP_OK=$(echo "$RESPONSE" | jq '[.. | objects | select((.channel? // "") | startswith("whatsapp:")) | select(.status? == "sent" or .status? == "already-sent")] | length' 2>/dev/null || echo 0)
+            FAILED=$(echo "$RESPONSE" | jq '[.. | objects | select(.status? == "failed")] | length' 2>/dev/null || echo 0)
+
+            if [ "$FAILED" -gt 0 ]; then
+              echo "Um provedor recusou a entrega."
+              exit 1
+            fi
+            if [ "$EMAIL_OK" -gt 0 ] && [ "$WHATSAPP_OK" -gt 0 ]; then
+              echo "E-mail e WhatsApp confirmados."
+              exit 0
+            fi
+
+            echo "A produção ainda parece estar na versão anterior; aguardando novo deploy..."
+            sleep 15
+          done
+          echo "Não foi possível confirmar e-mail e WhatsApp na nova versão."
+          exit 1
+
+      - name: Send and verify Alexa daily briefing
+        run: |
+          DOW=$(TZ=America/Sao_Paulo date +%u)
+          if [ "$DOW" -ge 6 ]; then SLOT="12:00"; else SLOT="06:20"; fi
+          RESPONSE=$(curl --silent --show-error --fail-with-body --max-time 120 \
+            -X POST "$API_URL/notifications/alexa/cron" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --data "{\"slot\":\"$SLOT\",\"mode\":\"scheduled\",\"force\":true}")
+          echo "$RESPONSE" | jq .
+          MODE=$(echo "$RESPONSE" | jq -r '.mode // ""')
+          STATUS=$(echo "$RESPONSE" | jq -r '.result.status // "unknown"')
+          test "$MODE" = "daily-briefing" || { echo "A API ainda não executou o briefing diário da Alexa."; exit 1; }
+          test "$STATUS" = "sent" || { echo "Alexa não confirmou entrega: $STATUS"; exit 1; }
+          echo "Alexa confirmada."
