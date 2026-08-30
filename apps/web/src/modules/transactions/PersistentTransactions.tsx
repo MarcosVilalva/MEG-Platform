@@ -1,4 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { MEGCurrencyInput } from '@ui';
+import { parseBRL } from '@shared/money';
 import { readSession } from '../../app/auth-client';
 import { invalidateFinanceSummary } from '../../app/use-finance-summary';
 import { dateInSaoPaulo } from '../../app/calendar';
@@ -78,10 +80,11 @@ export function PersistentTransactions() {
     (filterType === 'all' || item.type === filterType)
     && (filterStatus === 'all' || (filterStatus === 'planned' ? item.status === 'planned' : item.status !== 'planned'))
   );
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!canWrite) return;
-    const value = Number(amount.replace(',', '.'));
+    const value = parseBRL(amount);
     if (!description.trim() || !Number.isFinite(value) || value <= 0) {
       setError('Informe descrição e valor válido.');
       return;
@@ -153,7 +156,7 @@ export function PersistentTransactions() {
           <label>Tipo<select value={type} onChange={(e) => setType(e.target.value as 'income' | 'expense')} disabled={!canWrite}><option value="expense">Despesa</option><option value="income">Receita</option></select></label>
           <label>Descrição<input value={description} onChange={(e) => setDescription(e.target.value)} required disabled={!canWrite} /></label>
           <label>Data<input type="date" value={date} onChange={(e) => setDate(e.target.value)} required disabled={!canWrite} /></label>
-          <label>Valor<input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" required disabled={!canWrite} /></label>
+          <label>Valor<MEGCurrencyInput value={amount} onValueChange={setAmount} placeholder="0,00" required disabled={!canWrite} /></label>
           <label>Status<select value={status} onChange={(e) => setStatus(e.target.value as 'planned' | 'paid')} disabled={!canWrite}><option value="planned">Previsto</option><option value="paid">Pago/Recebido</option></select></label>
           <label>Conta<select value={accountId} onChange={(e) => setAccountId(e.target.value)} disabled={!canWrite}><option value="">Sem conta</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           <label>Categoria<select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} disabled={!canWrite}><option value="">Sem categoria</option>{categories.filter((item) => !item.type || item.type === type).map((item) => <option key={item.id} value={item.id}>{item.group ? `${item.group} — ` : ''}{item.name}</option>)}</select></label>
