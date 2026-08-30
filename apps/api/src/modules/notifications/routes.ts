@@ -1,7 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meg/database';
 import { config } from '../../config';
-import { alexaAutomationSlot, alexaFinancialPanorama, automationSlot, deliverAlexaAnnouncement, deliverAlexaNextDuePreview, deliverNotifications, notificationDigest, notificationIntegrationStatus, shouldSendOpenSummary, type AlexaSkillIntent, type AlexaSkillQuery } from './service';
+import { alexaAutomationSlot, alexaFinancialPanorama, automationSlot, deliverAlexaAnnouncement, deliverAlexaNextDuePreview, deliverNotifications, notificationDigest, notificationIntegrationStatus, type AlexaSkillIntent, type AlexaSkillQuery } from './service';
+import { deliverAlexaDailyBriefing, deliverDailyFinancialSummary } from './daily-summary';
 
 export async function notificationRoutes(app: FastifyInstance) {
   app.get('/status', { preHandler: app.authorize(['ADMIN']) }, async () => notificationIntegrationStatus());
@@ -77,11 +78,13 @@ export async function notificationRoutes(app: FastifyInstance) {
 
   app.post('/send', { preHandler: app.authorize(['ADMIN']) }, async (request) => {
     const body = (request.body || {}) as { recipientIds?: string[]; emailRecipientIds?: string[] };
-    return deliverNotifications(request.user.sub, {
+    const result = await deliverNotifications(request.user.sub, {
       force: true,
       recipientIds: Array.isArray(body.recipientIds) ? body.recipientIds : [],
       emailRecipientIds: Array.isArray(body.emailRecipientIds) ? body.emailRecipientIds : []
     });
+    if (result.deliveries.length || result.digest.totalCount) return result;
+    return deliverDailyFinancialSummary(request.user.sub, { force: true, slot: 'manual' });
   });
 
   app.post('/cron', async (request, reply) => {
@@ -98,11 +101,10 @@ export async function notificationRoutes(app: FastifyInstance) {
     });
     const results = [];
     for (const user of users) {
-      const fullSummary = slot.hour === 6 && await shouldSendOpenSummary(user.id, now);
-      const deliveries = [await deliverNotifications(user.id, fullSummary
-        ? { referenceDate: now, mode: 'open-summary', slot: '06:00-5dias', force: Boolean(body.force) }
-        : { referenceDate: now, mode: slot.mode, slot: slot.slot, force: Boolean(body.force) })];
-      results.push({ email: user.email, deliveries });
+      const delivery = slot.hour === 6
+        ? await deliverDailyFinancialSummary(user.id, { referenceDate: now, slot: slot.slot, force: Boolean(body.force) })
+        : await deliverNotifications(user.id, { referenceDate: now, mode: slot.mode, slot: slot.slot, force: Boolean(body.force) });
+      results.push({ email: user.email, deliveries: [delivery] });
     }
     return { users: results.length, results };
   });
@@ -121,8 +123,11 @@ export async function notificationRoutes(app: FastifyInstance) {
     }
     const slot = alexaAutomationSlot(now, body.slot);
     if (!slot) return { skipped: true, reason: 'Fora da agenda de voz da Alexa.' };
-    const result = await deliverAlexaAnnouncement(owner.id, now, slot.slot, slot.includeTomorrow, Boolean(body.force));
-    return { owner: owner.email, slot: slot.slot, result };
+    const isMorningBriefing = slot.slot === '06:20' || ((slot.weekday === 0 || slot.weekday === 6) && slot.slot === '12:00');
+    const result = isMorningBriefing
+      ? await deliverAlexaDailyBriefing(now, slot.slot, Boolean(body.force))
+      : await deliverAlexaAnnouncement(owner.id, now, slot.slot, slot.includeTomorrow, Boolean(body.force));
+    return { owner: owner.email, slot: slot.slot, mode: isMorningBriefing ? 'daily-briefing' : 'scheduled', result };
   });
 
   app.post('/alexa/skill', async (request, reply) => {
