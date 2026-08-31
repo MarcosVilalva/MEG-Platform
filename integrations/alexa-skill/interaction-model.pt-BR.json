@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "controle do marcos",
+      "invocationName": "controle financeiro marcos",
       "intents": [
         {
           "name": "FinancialOverviewIntent",
