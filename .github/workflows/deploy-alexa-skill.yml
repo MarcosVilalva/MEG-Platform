@@ -293,5 +293,5 @@ jobs:
           }
           jq -e '.response.outputSpeech.type and (.response.shouldEndSession == false)' /tmp/alexa-response.json >/dev/null
           jq -e '.response.card.title and .response.card.content' /tmp/alexa-response.json >/dev/null
-          jq -e '.response.outputSpeech.text | test("Análise financeira|analise financeira"; "i")' /tmp/alexa-response.json >/dev/null
+          jq -e '((.response.outputSpeech.text // .response.outputSpeech.ssml // "") | test("Análise financeira|analise financeira"; "i"))' /tmp/alexa-response.json >/dev/null
           echo "Lambda respondeu ao FinancialAnalysisIntent, consultou a API e manteve a sessão aberta." >> "$GITHUB_STEP_SUMMARY"
