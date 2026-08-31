@@ -15,6 +15,7 @@ import { payableRoutes } from './modules/payables/routes';
 import { repairLegacyImportedEvents } from './modules/imports/repair';
 import { appStateRoutes } from './modules/app-state/routes';
 import { notificationRoutes } from './modules/notifications/routes';
+import { advisorRoutes } from './modules/notifications/advisor-routes';
 import { notificationIntegrationStatus } from './modules/notifications/service';
 import { platformAdminRoutes } from './modules/platform-admin/routes';
 import { ensureCommercialFoundation } from './modules/platform-admin/service';
@@ -73,7 +74,7 @@ app.get('/health', async () => ({
   version: '1.3.0-project-phoenix',
   environment: config.nodeEnv,
   timestamp: new Date().toISOString(),
-  features: ['legacy-ui', 'cloud-state', 'xlsx-import', 'email-reminders', 'whatsapp-reminders', 'alexa-reminders', 'multi-client-workspaces', 'commercial-licenses', 'workspace-integrations', 'subscription-billing'],
+  features: ['legacy-ui', 'cloud-state', 'xlsx-import', 'email-reminders', 'whatsapp-reminders', 'alexa-reminders', 'alexa-financial-advisor', 'multi-client-workspaces', 'commercial-licenses', 'workspace-integrations', 'subscription-billing'],
   integrations: notificationIntegrationStatus(),
   commit: process.env.RENDER_GIT_COMMIT || 'local',
   dataRepair
@@ -114,6 +115,7 @@ await app.register(cardRoutes, { prefix: '/cards' });
 await app.register(payableRoutes, { prefix: '/payables' });
 await app.register(appStateRoutes, { prefix: '/app-state' });
 await app.register(notificationRoutes, { prefix: '/notifications' });
+await app.register(advisorRoutes, { prefix: '/notifications' });
 await app.register(platformAdminRoutes, { prefix: '/platform-admin' });
 await app.register(integrationRoutes, { prefix: '/integrations' });
 
