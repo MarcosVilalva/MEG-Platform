@@ -14,11 +14,91 @@
             "me dê o panorama financeiro",
             "como está o meu mês",
             "vou conseguir fechar o mês",
-            "faça meu diagnóstico financeiro",
             "fala sobre minhas finanças",
             "me conta como estão minhas finanças",
             "tem alguma coisa que eu preciso saber",
             "me dê um resumo das minhas finanças"
+          ]
+        },
+        {
+          "name": "FinancialAnalysisIntent",
+          "samples": [
+            "faça uma análise financeira das minhas contas",
+            "faça uma análise financeira",
+            "analise minhas finanças",
+            "analisa minhas finanças",
+            "quero uma análise financeira",
+            "me dê uma análise financeira",
+            "faça um diagnóstico financeiro",
+            "faça um diagnóstico das minhas contas",
+            "como está minha saúde financeira",
+            "como estou financeiramente",
+            "estou financeiramente bem",
+            "analise minha situação financeira"
+          ]
+        },
+        {
+          "name": "FinancialRiskIntent",
+          "samples": [
+            "qual é meu maior risco financeiro",
+            "qual é o meu maior risco",
+            "qual meu maior risco",
+            "onde está meu risco financeiro",
+            "o que mais preocupa nas minhas finanças",
+            "qual é meu ponto de atenção",
+            "qual o principal ponto de atenção",
+            "tem algum alerta financeiro",
+            "o que devo observar nas minhas finanças"
+          ]
+        },
+        {
+          "name": "SavingsOpportunitiesIntent",
+          "samples": [
+            "onde posso economizar",
+            "como posso economizar",
+            "onde dá para economizar",
+            "como posso reduzir meus gastos",
+            "o que posso cortar",
+            "quais gastos posso revisar",
+            "me dê oportunidades de economia",
+            "onde estou gastando demais"
+          ]
+        },
+        {
+          "name": "SpendingAnalysisIntent",
+          "samples": [
+            "onde estou gastando mais",
+            "quais são minhas maiores despesas",
+            "quais são meus maiores gastos",
+            "qual foi meu maior gasto",
+            "qual foi minha maior despesa",
+            "o que mais pesou no mês",
+            "me mostre os maiores gastos",
+            "me diga as maiores despesas"
+          ]
+        },
+        {
+          "name": "CashMarginIntent",
+          "samples": [
+            "quanto posso gastar",
+            "quanto posso gastar sem comprometer as contas",
+            "quanto posso usar agora",
+            "qual é minha margem livre",
+            "qual minha margem de caixa",
+            "quanto posso comprometer",
+            "quanto tenho livre depois das contas"
+          ]
+        },
+        {
+          "name": "FinancialScenarioIntent",
+          "slots": [{ "name": "date", "type": "AMAZON.DATE" }],
+          "samples": [
+            "se eu pagar tudo até {date} quanto sobra",
+            "quanto sobra se eu pagar as contas até {date}",
+            "se eu quitar as contas até {date} quanto fica",
+            "qual meu saldo depois de pagar até {date}",
+            "simule meu saldo até {date}",
+            "faça uma simulação até {date}"
           ]
         },
         {
@@ -137,7 +217,6 @@
             "quero saber {question}",
             "me responda {question}",
             "procure {question}",
-            "analise {question}",
             "me fale {question}",
             "me diga {question}",
             "e {question}",
