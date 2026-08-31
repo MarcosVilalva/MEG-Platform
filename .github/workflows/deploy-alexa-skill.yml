@@ -8,8 +8,11 @@ on:
     paths:
       - 'integrations/alexa-skill/**'
       - 'apps/api/src/config.ts'
+      - 'apps/api/src/server.ts'
       - 'apps/api/src/modules/notifications/alexa-auth.ts'
       - 'apps/api/src/modules/notifications/routes.ts'
+      - 'apps/api/src/modules/notifications/advisor-routes.ts'
+      - 'apps/api/src/modules/notifications/financial-advisor.ts'
       - '.github/workflows/deploy-alexa-skill.yml'
 
 permissions:
@@ -158,14 +161,17 @@ jobs:
             --event-source-token "$ALEXA_SKILL_ID" \
             >/tmp/alexa-permission.json
 
-      - name: Wait for production API containing Alexa auth and validate credential
+      - name: Wait for production API containing Alexa advisor and validate credential
         shell: bash
         run: |
           set -euo pipefail
           REQUIRED_API_COMMIT=$(git log -1 --format=%H -- \
             apps/api/src/config.ts \
+            apps/api/src/server.ts \
             apps/api/src/modules/notifications/alexa-auth.ts \
-            apps/api/src/modules/notifications/routes.ts)
+            apps/api/src/modules/notifications/routes.ts \
+            apps/api/src/modules/notifications/advisor-routes.ts \
+            apps/api/src/modules/notifications/financial-advisor.ts)
           test -n "$REQUIRED_API_COMMIT" || { echo "Não foi possível identificar a revisão mínima da API."; exit 1; }
           API_READY=false
 
@@ -185,7 +191,7 @@ jobs:
             fi
 
             if ! git merge-base --is-ancestor "$REQUIRED_API_COMMIT" "$DEPLOYED_COMMIT" 2>/dev/null; then
-              echo "Render em ${DEPLOYED_COMMIT:0:12}; ainda não contém auth Alexa ${REQUIRED_API_COMMIT:0:12} (tentativa $attempt/40)."
+              echo "Render em ${DEPLOYED_COMMIT:0:12}; ainda não contém consultora Alexa ${REQUIRED_API_COMMIT:0:12} (tentativa $attempt/40)."
               sleep 15
               continue
             fi
@@ -210,23 +216,34 @@ jobs:
               -H 'Content-Type: application/json' \
               --data '{"intent":"overview","query":{}}' || true)
 
-            if [ "$ALEXA_STATUS" = "200" ] && jq -e '.speech and .cardTitle' /tmp/alexa-auth-check.json >/dev/null 2>&1; then
+            ADVISOR_STATUS=$(curl --silent --show-error --max-time 30 \
+              -o /tmp/alexa-advisor-check.json -w '%{http_code}' \
+              -X POST "$MEG_API_URL/notifications/alexa/advisor" \
+              -H "x-alexa-skill-secret: $MEG_ALEXA_SKILL_SECRET" \
+              -H 'Content-Type: application/json' \
+              --data '{"intent":"financial-analysis","query":{}}' || true)
+
+            if [ "$ALEXA_STATUS" = "200" ] \
+              && jq -e '.speech and .cardTitle' /tmp/alexa-auth-check.json >/dev/null 2>&1 \
+              && [ "$ADVISOR_STATUS" = "200" ] \
+              && jq -e '.speech and .cardTitle and .data.riskLevel' /tmp/alexa-advisor-check.json >/dev/null 2>&1; then
               API_READY=true
-              echo "API ${DEPLOYED_COMMIT:0:12} contém auth Alexa ${REQUIRED_API_COMMIT:0:12} e aceitou a credencial derivada." >> "$GITHUB_STEP_SUMMARY"
+              echo "API ${DEPLOYED_COMMIT:0:12} contém a consultora Alexa ${REQUIRED_API_COMMIT:0:12} e aceitou a credencial derivada." >> "$GITHUB_STEP_SUMMARY"
               break
             fi
 
             ALEXA_ERROR=$(jq -r '.error // "resposta-invalida"' /tmp/alexa-auth-check.json 2>/dev/null || echo resposta-invalida)
-            echo "API correta, autenticação/consulta Alexa ainda não pronta: HTTP $ALEXA_STATUS, $ALEXA_ERROR (tentativa $attempt/40)."
+            ADVISOR_ERROR=$(jq -r '.error // "resposta-invalida"' /tmp/alexa-advisor-check.json 2>/dev/null || echo resposta-invalida)
+            echo "API correta, Alexa ainda não pronta: skill HTTP $ALEXA_STATUS/$ALEXA_ERROR; advisor HTTP $ADVISOR_STATUS/$ADVISOR_ERROR (tentativa $attempt/40)."
             sleep 15
           done
 
           [ "$API_READY" = true ] || {
-            echo "A revisão necessária da API ou a autenticação Alexa não ficou pronta dentro da janela de 10 minutos."
+            echo "A revisão necessária da API ou a consultora Alexa não ficou pronta dentro da janela de 10 minutos."
             exit 1
           }
 
-      - name: "Invoke Lambda smoke test: financial intent against production API"
+      - name: "Invoke Lambda smoke test: financial advisor against production API"
         shell: bash
         run: |
           set -euo pipefail
@@ -255,7 +272,7 @@ jobs:
               "timestamp": "$NOW",
               "locale": "pt-BR",
               "intent": {
-                "name": "FinancialOverviewIntent",
+                "name": "FinancialAnalysisIntent",
                 "confirmationStatus": "NONE",
                 "slots": {}
               }
@@ -276,4 +293,5 @@ jobs:
           }
           jq -e '.response.outputSpeech.type and (.response.shouldEndSession == false)' /tmp/alexa-response.json >/dev/null
           jq -e '.response.card.title and .response.card.content' /tmp/alexa-response.json >/dev/null
-          echo "Lambda respondeu ao FinancialOverviewIntent, consultou a API e manteve a sessão aberta." >> "$GITHUB_STEP_SUMMARY"
+          jq -e '.response.outputSpeech.text | test("Análise financeira|analise financeira"; "i")' /tmp/alexa-response.json >/dev/null
+          echo "Lambda respondeu ao FinancialAnalysisIntent, consultou a API e manteve a sessão aberta." >> "$GITHUB_STEP_SUMMARY"
