@@ -5,6 +5,12 @@ const https = require('https');
 
 const intentMap = {
   FinancialOverviewIntent: 'overview',
+  FinancialAnalysisIntent: 'financial-analysis',
+  FinancialRiskIntent: 'financial-risk',
+  SavingsOpportunitiesIntent: 'savings-opportunities',
+  SpendingAnalysisIntent: 'spending-analysis',
+  CashMarginIntent: 'cash-margin',
+  FinancialScenarioIntent: 'scenario-by-date',
   PendingBillsIntent: 'pending',
   NextDueIntent: 'next-due',
   BalanceIntent: 'balance',
@@ -19,8 +25,22 @@ const intentMap = {
   OverdueBillsIntent: 'overdue'
 };
 
+const advisorIntents = new Set([
+  'financial-analysis',
+  'financial-risk',
+  'savings-opportunities',
+  'spending-analysis',
+  'cash-margin',
+  'scenario-by-date'
+]);
+
 function classifyNaturalQuestion(value, previousIntent = 'overview') {
   const text = String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (/maior risco|risco financeiro|ponto de atencao|mais preocupa|preocupante/.test(text)) return 'financial-risk';
+  if (/economiz|reduzir.{0,20}gasto|cortar.{0,20}gasto|o que posso cortar|oportunidade.{0,20}econom/.test(text)) return 'savings-opportunities';
+  if (/gastando mais|maiores despesas|maior despesa|maior gasto|mais pesou|gastos maiores/.test(text)) return 'spending-analysis';
+  if (/quanto posso gastar|margem livre|quanto posso usar|quanto posso comprometer/.test(text)) return 'cash-margin';
+  if (/analise financeira|analisa minhas financas|analise minhas financas|diagnostico financeiro|saude financeira|como estou financeiramente/.test(text)) return 'financial-analysis';
   if (/beneficio|alimentacao|vale/.test(text)) return 'benefit-balance';
   if (/receita|recebi|entrou|entrada|ganhei/.test(text)) return 'monthly-income';
   if (/despesa|gastei|paguei|gasto|saidas/.test(text)) return 'monthly-expenses';
@@ -121,8 +141,9 @@ async function askMeg(intent, query = {}) {
   const secret = String(process.env.MEG_ALEXA_SKILL_SECRET || '');
   if (!apiUrl || !secret) throw new Error('MEG_SKILL_NOT_CONFIGURED');
   const payload = JSON.stringify({ intent, query });
+  const endpoint = advisorIntents.has(intent) ? '/notifications/alexa/advisor' : '/notifications/alexa/skill';
   const panorama = await new Promise((resolve, reject) => {
-    const request = https.request(`${apiUrl}/notifications/alexa/skill`, {
+    const request = https.request(`${apiUrl}${endpoint}`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -176,10 +197,10 @@ const LaunchRequestHandler = {
     const attributes = handlerInput.attributesManager.getSessionAttributes() || {};
     attributes.awaitingFinancialChoice = true;
     handlerInput.attributesManager.setSessionAttributes(attributes);
-    const text = 'MEG Finanças aberto. Você quer um panorama geral ou prefere consultar uma informação específica, como saldo, despesas, receitas, contas pendentes, benefício ou próximos vencimentos?';
+    const text = 'MEG Finanças aberto. Você quer um panorama geral, uma análise financeira ou prefere consultar uma informação específica, como saldo, despesas, receitas, contas pendentes, benefício ou próximos vencimentos?';
     return handlerInput.responseBuilder
       .speak(text)
-      .reprompt('Diga panorama geral ou faça uma pergunta, por exemplo: quanto tenho disponível?')
+      .reprompt('Diga panorama geral, análise financeira, ou faça uma pergunta, por exemplo: quanto tenho disponível?')
       .withShouldEndSession(false)
       .getResponse();
   }
@@ -191,7 +212,7 @@ const OtherInformationIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'OtherInformationIntent';
   },
   handle(handlerInput) {
-    const text = 'Claro. O que você quer consultar? Posso falar sobre saldo disponível, receitas, despesas, contas pendentes, benefícios, próximos vencimentos ou projeção do mês.';
+    const text = 'Claro. O que você quer consultar? Posso falar sobre saldo disponível, receitas, despesas, contas pendentes, benefícios, próximos vencimentos, projeção do mês ou fazer uma análise financeira mais completa.';
     return handlerInput.responseBuilder
       .speak(text)
       .reprompt('O que você quer saber sobre suas finanças?')
@@ -231,7 +252,7 @@ const HelpIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
   },
   handle(handlerInput) {
-    const text = 'Você pode falar comigo naturalmente sobre saldo, receitas, despesas, contas pendentes, vencimentos, benefícios e projeção do mês. Também pode pedir um panorama geral.';
+    const text = 'Você pode falar comigo naturalmente sobre saldo, receitas, despesas, contas pendentes, vencimentos, benefícios e projeção do mês. Também posso fazer uma análise financeira, apontar o maior risco, mostrar os maiores gastos, sugerir onde revisar despesas e simular quanto sobra depois de pagar as contas até uma data.';
     return handlerInput.responseBuilder
       .speak(text)
       .reprompt('O que você quer saber sobre suas finanças?')
@@ -259,7 +280,7 @@ const FallbackIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.FallbackIntent';
   },
   handle(handlerInput) {
-    const text = 'Não entendi essa consulta financeira. Você pode pedir um panorama geral ou perguntar, por exemplo: quanto tenho disponível, quanto gastei este mês ou quais são os próximos vencimentos?';
+    const text = 'Não entendi essa consulta financeira. Você pode pedir um panorama geral, uma análise financeira, perguntar quanto tem disponível, onde está gastando mais, qual é o maior risco ou quais são os próximos vencimentos.';
     return handlerInput.responseBuilder
       .speak(text)
       .reprompt('O que você quer saber sobre suas finanças?')
