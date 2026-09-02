@@ -655,7 +655,10 @@ function saveState({ cloud = true } = {}) {
   // A nuvem continua em debounce, mas legacy-cloud preserva a última alteração
   // até receber confirmação da API.
   scheduleLocalStateSave();
-  if (cloud) window.MEG_CLOUD?.saveState(state);
+  // instant-persistence é o único coordenador de escrita quando instalado.
+  // Manter também o debounce legado criava dois escritores concorrentes para
+  // a mesma revisão, exatamente a condição que gerava confirmações ambíguas.
+  if (cloud && !window.MEG_INSTANT_PERSISTENCE) window.MEG_CLOUD?.saveState(state);
   scheduleNativeNotificationSync();
 }
 
@@ -929,6 +932,17 @@ let suggestedBudgetsByCategory = new Map();
 
 function showToast(title, message, tone = "") {
   if (!els.appToast) return;
+  if (tone === "success" && window.MEG_INSTANT_PERSISTENCE?.pending?.()) {
+    const showAfterConfirmation = () => {
+      if (window.MEG_INSTANT_PERSISTENCE?.pending?.()) {
+        window.addEventListener("meg:cloud-save-confirmed", showAfterConfirmation, { once: true });
+        return;
+      }
+      showToast(title, message, tone);
+    };
+    window.addEventListener("meg:cloud-save-confirmed", showAfterConfirmation, { once: true });
+    return;
+  }
   clearTimeout(toastTimer);
   els.appToast.className = `app-toast visible ${tone}`;
   els.appToast.innerHTML = `<strong>${escapeHtml(title)}</strong><span>${escapeHtml(message)}</span>`;
@@ -4597,7 +4611,14 @@ function renderAfterTransactionMutation() {
   scheduleActiveViewRender();
 }
 
-function saveTransaction(event) {
+async function confirmTransactionPersistence() {
+  if (!window.MEG_INSTANT_PERSISTENCE?.flush) {
+    throw new Error('O serviço de confirmação da base ainda não está disponível. Aguarde a inicialização do MEG.');
+  }
+  await window.MEG_INSTANT_PERSISTENCE.flush();
+}
+
+async function saveTransaction(event) {
   event.preventDefault();
   const id = els.transactionId.value || crypto.randomUUID();
   const type = els.transactionType.value;
@@ -4652,12 +4673,14 @@ function saveTransaction(event) {
   if (!previous && payload.type === "expense" && isInstallmentModality()) {
     try {
       const installments = createInstallmentTransactions(payload);
+      els.transactionId.value = id;
       state.transactions.push(...installments);
       if (!state.budgets[payload.category]) state.budgets[payload.category] = 0;
       selectedPeriod.mode = "month";
       selectedPeriod.month = currentMonth;
       transactionPage = 1;
       saveState();
+      await confirmTransactionPersistence();
       els.dialog.close();
       showToast("Parcelamento criado", `${installments.length} parcela(s) geradas até ${formatDate(installments.at(-1).date)}`, "success");
       renderAfterTransactionMutation();
@@ -4674,7 +4697,18 @@ function saveTransaction(event) {
   selectedPeriod.mode = "month";
   selectedPeriod.month = currentMonth;
   transactionPage = 1;
+  els.transactionId.value = id;
   saveState();
+  try {
+    await confirmTransactionPersistence();
+  } catch (error) {
+    showToast(
+      "Aguardando confirmação da base",
+      error instanceof Error ? error.message : "O lançamento continua protegido e será reenviado automaticamente.",
+      "danger",
+    );
+    return;
+  }
   els.dialog.close();
   showToast(
     updatedInstallments ? "Parcelamento atualizado" : previous ? "Lançamento atualizado" : "Lançamento salvo",
