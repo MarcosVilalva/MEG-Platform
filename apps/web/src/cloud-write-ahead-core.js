@@ -1,5 +1,43 @@
 const MAX_ACTIVITY_ITEMS = 500;
 
+export function normalizeTransactionOutbox(value) {
+  const upserts = [];
+  const upsertIds = new Set();
+  for (const item of Array.isArray(value?.upserts) ? value.upserts : []) {
+    const id = typeof item?.id === 'string' ? item.id : '';
+    if (!id || upsertIds.has(id)) continue;
+    upsertIds.add(id);
+    upserts.push(item);
+  }
+
+  const deletes = [];
+  const deleteIds = new Set();
+  for (const id of Array.isArray(value?.deletes) ? value.deletes : []) {
+    if (typeof id !== 'string' || !id || deleteIds.has(id) || upsertIds.has(id)) continue;
+    deleteIds.add(id);
+    deletes.push(id);
+  }
+
+  const activities = [];
+  const activityIds = new Set();
+  for (const item of Array.isArray(value?.activities) ? value.activities : []) {
+    const id = typeof item?.id === 'string' ? item.id : '';
+    if (!id || activityIds.has(id)) continue;
+    activityIds.add(id);
+    activities.push(item);
+    if (activities.length >= MAX_ACTIVITY_ITEMS) break;
+  }
+
+  return {
+    generation: Number.isFinite(Number(value?.generation)) ? Number(value.generation) : 0,
+    operationId: typeof value?.operationId === 'string' ? value.operationId : '',
+    upserts,
+    deletes,
+    activities,
+    updatedAt: value?.updatedAt || null,
+  };
+}
+
 function financialTransactions(state) {
   return Array.isArray(state?.transactions) ? state.transactions : [];
 }
