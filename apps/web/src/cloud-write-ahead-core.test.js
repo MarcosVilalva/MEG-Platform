@@ -4,6 +4,7 @@ import {
   buildTransactionOperations,
   hasTransactionOperations,
   mergeTransactionOutbox,
+  normalizeTransactionOutbox,
   samePersistedValue,
   verifyTransactionOperations,
   verifyMutationConfirmation,
@@ -36,6 +37,24 @@ assert.deepEqual(merged, { upserts: [bEdited, c], deletes: ['a'], activities: [a
 assert.equal(hasTransactionOperations(merged), true);
 assert.equal(hasTransactionOperations({ upserts: [], deletes: [], activities: [activity1] }), true);
 assert.equal(hasTransactionOperations({ upserts: [], deletes: [], activities: [] }), false);
+
+assert.deepEqual(normalizeTransactionOutbox({
+  generation: '4',
+  operationId: 'op-safe',
+  upserts: [a, null, a],
+  deletes: ['b', 'b', '', null, 'a'],
+  activities: [activity1, null, activity1, activity2],
+}), {
+  generation: 4,
+  operationId: 'op-safe',
+  upserts: [a],
+  deletes: ['b'],
+  activities: [activity1, activity2],
+  updatedAt: null,
+});
+assert.equal(normalizeTransactionOutbox({
+  activities: Array.from({ length: 520 }, (_, index) => ({ id: `activity-${index}` })),
+}).activities.length, 500);
 
 const remote = { transactions: [a, b], budgets: { casa: 100 }, activityLog: [] };
 const operations = { upserts: [bEdited, c], deletes: ['a'], activities: [activity2, activity1] };

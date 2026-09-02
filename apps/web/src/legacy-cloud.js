@@ -960,5 +960,6 @@ export async function bootstrapCloud({ biometricCredentials = null, keepLoading 
       return result;
     }
   };
+  try { window.dispatchEvent(new CustomEvent('meg:cloud-ready')); } catch {}
   startRealtimeSync();
 }

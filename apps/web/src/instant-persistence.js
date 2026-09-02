@@ -4,6 +4,7 @@ import {
   buildTransactionOperations,
   hasTransactionOperations,
   mergeTransactionOutbox,
+  normalizeTransactionOutbox,
   verifyMutationConfirmation,
   verifyTransactionOperations,
 } from './cloud-write-ahead-core.js';
@@ -13,6 +14,7 @@ const STATE_KEY = 'meg-financas-state-v4-paid-fixes';
 const REVISION_KEY = 'meg-cloud-revision-v1';
 const ACCESS_KEY = 'meg-access-token';
 const OUTBOX_KEY = 'meg-cloud-transaction-outbox-v1';
+const OUTBOX_RECOVERY_KEY = 'meg-cloud-transaction-outbox-recovery-v1';
 const ACTIVITY_MIGRATION_KEY = 'meg-cloud-activity-outbox-migrated-v1';
 const API_URL = import.meta.env?.VITE_API_URL || 'http://localhost:3333';
 const FAILURE_NOTICE_INTERVAL_MS = 30_000;
@@ -103,14 +105,14 @@ function createOperationId() {
 }
 
 function showPersistenceBlocker(message = 'Gravando e confirmando na base...') {
-  if (!globalThis.document?.body) return;
+  if (!globalThis.document?.body || !isCloudSessionReady()) return;
   if (!persistenceBlocker) {
     persistenceBlocker = document.createElement('div');
     persistenceBlocker.id = 'megPersistenceBlocker';
     persistenceBlocker.setAttribute('role', 'status');
     persistenceBlocker.setAttribute('aria-live', 'assertive');
-    persistenceBlocker.style.cssText = 'position:fixed;inset:0;z-index:2147483646;background:rgba(3,18,27,.88);display:grid;place-items:center;padding:24px;';
-    persistenceBlocker.innerHTML = '<div style="max-width:460px;padding:28px;border:1px solid #285365;border-radius:18px;background:#0b2632;color:#fff;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.45)"><strong style="display:block;font-size:20px;margin-bottom:10px">Salvamento seguro em andamento</strong><p data-persistence-message style="margin:0;color:#b8d5df;line-height:1.5"></p><small style="display:block;margin-top:14px;color:#70d8c8">A próxima ação será liberada somente após a confirmação do banco.</small></div>';
+    persistenceBlocker.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:2147483646;width:min(420px,calc(100vw - 36px));pointer-events:none;';
+    persistenceBlocker.innerHTML = '<div style="padding:18px;border:1px solid #285365;border-radius:16px;background:#0b2632;color:#fff;box-shadow:0 16px 45px rgba(0,0,0,.35)"><strong style="display:block;font-size:16px;margin-bottom:7px">Sincronização protegida</strong><p data-persistence-message style="margin:0;color:#b8d5df;line-height:1.45"></p><small style="display:block;margin-top:9px;color:#70d8c8">Os dados permanecem guardados neste aparelho até a confirmação.</small></div>';
     document.body.appendChild(persistenceBlocker);
   }
   const text = persistenceBlocker.querySelector('[data-persistence-message]');
@@ -125,14 +127,14 @@ function hidePersistenceBlocker() {
 function readOutbox() {
   const value = parseJson(globalThis.localStorage?.getItem?.(OUTBOX_KEY));
   if (!value || typeof value !== 'object') return { generation: 0, operationId: '', upserts: [], deletes: [], activities: [] };
-  return {
-    generation: Number(value.generation || 0),
-    operationId: typeof value.operationId === 'string' ? value.operationId : '',
-    upserts: Array.isArray(value.upserts) ? value.upserts : [],
-    deletes: Array.isArray(value.deletes) ? value.deletes : [],
-    activities: Array.isArray(value.activities) ? value.activities : [],
-    updatedAt: value.updatedAt || null,
-  };
+  const normalized = normalizeTransactionOutbox(value);
+  if (!sameValue(value, normalized)) {
+    try {
+      localStorage.setItem(OUTBOX_RECOVERY_KEY, JSON.stringify({ savedAt: new Date().toISOString(), original: value }));
+      localStorage.setItem(OUTBOX_KEY, JSON.stringify(normalized));
+    } catch {}
+  }
+  return normalized;
 }
 
 function persistOutbox(operations) {
@@ -177,6 +179,10 @@ function seedCachedActivitiesOnce() {
 function authenticatedHeaders() {
   const token = globalThis.sessionStorage?.getItem?.(ACCESS_KEY);
   return token ? { Authorization: `Bearer ${token}` } : null;
+}
+
+function isCloudSessionReady() {
+  return Boolean(authenticatedHeaders() && window.MEG_CLOUD?.apiUrl);
 }
 
 async function cloudRequest(path, options = {}) {
@@ -243,7 +249,10 @@ async function ensureOutboxConfirmed() {
   if (outboxReplayRunning) return false;
   const initial = readOutbox();
   if (!hasTransactionOperations(initial)) return true;
-  if (!window.MEG_CLOUD?.apiUrl || navigator.onLine === false) return false;
+  if (!isCloudSessionReady() || navigator.onLine === false) {
+    hidePersistenceBlocker();
+    return false;
+  }
 
   outboxReplayRunning = true;
   try {
@@ -320,7 +329,7 @@ function scheduleOutboxRetry(delay = OUTBOX_RETRY_MS) {
       })
       .catch((error) => {
         setSyncStatus('Salvamento protegido, aguardando nova confirmação...');
-        notifyPendingFailure(error);
+        if (isCloudSessionReady()) notifyPendingFailure(error);
         scheduleOutboxRetry(Math.min(delay * 2, 30_000));
       });
   }, delay);
@@ -445,6 +454,12 @@ function installStorageBridge() {
     if (pendingImmediateState) flushImmediateSave().catch(() => undefined);
     else ensureOutboxConfirmed().catch(() => scheduleOutboxRetry());
   });
+  window.addEventListener('meg:cloud-ready', () => {
+    if (hasTransactionOperations(readOutbox())) {
+      showPersistenceBlocker('Sessão iniciada. Confirmando os dados protegidos na base...');
+      ensureOutboxConfirmed().catch(() => scheduleOutboxRetry());
+    }
+  });
   window.addEventListener('focus', () => {
     if (hasTransactionOperations(readOutbox())) ensureOutboxConfirmed().catch(() => scheduleOutboxRetry());
   });
@@ -480,7 +495,6 @@ function installStorageBridge() {
   };
 
   if (hasTransactionOperations(readOutbox())) {
-    showPersistenceBlocker('Há uma gravação protegida neste aparelho. Confirmando na base antes de liberar o sistema...');
     scheduleOutboxRetry(600);
   }
 }
