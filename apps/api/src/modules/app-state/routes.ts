@@ -1,9 +1,11 @@
 import type { FastifyInstance } from 'fastify';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { Prisma, prisma } from '@meg/database';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { assertWorkspaceWriteAccess } from '../platform-admin/service';
 import { applyTransactionPatch } from './transaction-patch';
+import { buildMutationConfirmation } from './mutation-confirmation';
 
 const MAX_TRANSACTION_PATCH_OPERATIONS = 2000;
 const MAX_ACTIVITY_LOG_ITEMS = 500;
@@ -18,6 +20,7 @@ const stateSchema = z.object({
 }).passthrough();
 const putSchema = z.object({ state: stateSchema, expectedRevision: z.number().int().nonnegative().optional() });
 const transactionPatchSchema = z.object({
+  operationId: z.string().uuid().optional(),
   expectedRevision: z.number().int().nonnegative(),
   upserts: z.array(transactionSchema).max(MAX_TRANSACTION_PATCH_OPERATIONS).default([]),
   deletes: z.array(z.string().min(1)).max(MAX_TRANSACTION_PATCH_OPERATIONS).default([]),
@@ -84,6 +87,11 @@ export async function appStateRoutes(app: FastifyInstance) {
 
     const context = await resolveWorkspaceContext(request.user.sub);
     if (!await assertWriteAccess(context.workspaceId, reply)) return;
+    const operationId = parsed.data.operationId || randomUUID();
+    const upsertIds = parsed.data.upserts.map((item) => item.id);
+    const activityIds = parsed.data.activities
+      .map((item) => typeof item === 'object' && item && typeof (item as { id?: unknown }).id === 'string' ? (item as { id: string }).id : '')
+      .filter(Boolean);
 
     const current = await prisma.appState.findUnique({
       where: { workspaceId: context.workspaceId },
@@ -96,7 +104,11 @@ export async function appStateRoutes(app: FastifyInstance) {
         return reply.status(409).send({ error: 'STATE_CONFLICT', revision: 0, updatedAt: null });
       }
       if (parsed.data.upserts.length === 0 && parsed.data.deletes.length === 0 && !hasActivityPatch) {
-        return { revision: 0, updatedAt: null, changed: false, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
+        return {
+          revision: 0, updatedAt: null, changed: false,
+          confirmation: buildMutationConfirmation({ transactions: [], activityLog: [] }, operationId, 0, upsertIds, parsed.data.deletes, activityIds),
+          shared: true, workspace: { id: context.workspace.id, name: context.workspace.name }
+        };
       }
       const initialState = stateSchema.safeParse(applyTransactionPatch(
         { transactions: [], budgets: {} },
@@ -116,9 +128,13 @@ export async function appStateRoutes(app: FastifyInstance) {
             state: initialState.data as Prisma.InputJsonValue,
             revision: 1,
           },
-          select: { revision: true, updatedAt: true }
+          select: { state: true, revision: true, updatedAt: true }
         });
-        return { revision: created.revision, updatedAt: created.updatedAt, changed: true, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
+        return {
+          revision: created.revision, updatedAt: created.updatedAt, changed: true,
+          confirmation: buildMutationConfirmation(created.state, operationId, created.revision, upsertIds, parsed.data.deletes, activityIds),
+          shared: true, workspace: { id: context.workspace.id, name: context.workspace.name }
+        };
       } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
           const latest = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { revision: true, updatedAt: true } });
@@ -132,7 +148,11 @@ export async function appStateRoutes(app: FastifyInstance) {
       return reply.status(409).send({ error: 'STATE_CONFLICT', revision: current.revision, updatedAt: current.updatedAt });
     }
     if (parsed.data.upserts.length === 0 && parsed.data.deletes.length === 0 && !hasActivityPatch) {
-      return { revision: current.revision, updatedAt: current.updatedAt, changed: false, shared: true, workspace: { id: context.workspace.id, name: context.workspace.name } };
+      return {
+        revision: current.revision, updatedAt: current.updatedAt, changed: false,
+        confirmation: buildMutationConfirmation(current.state, operationId, current.revision, upsertIds, parsed.data.deletes, activityIds),
+        shared: true, workspace: { id: context.workspace.id, name: context.workspace.name }
+      };
     }
 
     const nextState = stateSchema.safeParse(applyTransactionPatch(
@@ -156,7 +176,7 @@ export async function appStateRoutes(app: FastifyInstance) {
     }
     const saved = await prisma.appState.findUniqueOrThrow({
       where: { id: current.id },
-      select: { revision: true, updatedAt: true }
+      select: { state: true, revision: true, updatedAt: true }
     });
     return {
       revision: saved.revision,
@@ -166,6 +186,7 @@ export async function appStateRoutes(app: FastifyInstance) {
       deleted: parsed.data.deletes.length,
       activitiesMerged: parsed.data.activities.length,
       activityLogUpdated: hasActivityPatch,
+      confirmation: buildMutationConfirmation(saved.state, operationId, saved.revision, upsertIds, parsed.data.deletes, activityIds),
       shared: true,
       workspace: { id: context.workspace.id, name: context.workspace.name }
     };

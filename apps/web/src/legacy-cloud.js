@@ -612,6 +612,16 @@ async function saveNow(state, { force = false, retryConflict = true } = {}) {
   }
 }
 
+function acceptConfirmedState(payload) {
+  const confirmedRevision = Number(payload?.revision || 0);
+  if (!payload?.state || !Number.isFinite(confirmedRevision) || confirmedRevision < revision) return false;
+  revision = confirmedRevision;
+  localStorage.setItem(REVISION_KEY, String(revision));
+  syncBaseline = createStateSyncBaseline(payload.state);
+  syncChannel?.postMessage({ revision });
+  return true;
+}
+
 async function flushQueuedSave({ immediate = false, throwOnError = false } = {}) {
   if (saveInFlight) {
     saveTimer = window.setTimeout(flushQueuedSave, 50);
@@ -817,6 +827,7 @@ export async function bootstrapCloud({ biometricCredentials = null, keepLoading 
     whenFresh: Promise.resolve(freshState),
     saveState: queueSave,
     saveNow,
+    acceptConfirmedState,
     flush: flushQueuedSave,
     async reload() {
       await loadCloudState();

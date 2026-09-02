@@ -26,9 +26,18 @@ function activitiesById(state) {
   return map;
 }
 
-function sameValue(left, right) {
+function canonicalValue(value) {
+  if (Array.isArray(value)) return value.map(canonicalValue);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.keys(value).sort().map((key) => [key, canonicalValue(value[key])]),
+  );
+}
+
+export function samePersistedValue(left, right) {
+  if (left === right) return true;
   try {
-    return JSON.stringify(left) === JSON.stringify(right);
+    return JSON.stringify(canonicalValue(left)) === JSON.stringify(canonicalValue(right));
   } catch {
     return false;
   }
@@ -43,7 +52,7 @@ export function buildTransactionOperations(previousState, nextState) {
   const activities = [];
 
   for (const [id, item] of next.entries()) {
-    if (!previous.has(id) || !sameValue(previous.get(id), item)) upserts.push(item);
+    if (!previous.has(id) || !samePersistedValue(previous.get(id), item)) upserts.push(item);
   }
   for (const id of previous.keys()) {
     if (!next.has(id)) deletes.push(id);
@@ -51,7 +60,7 @@ export function buildTransactionOperations(previousState, nextState) {
   for (const item of activityItems(nextState)) {
     const id = typeof item?.id === 'string' ? item.id : '';
     if (!id) continue;
-    if (!previousActivities.has(id) || !sameValue(previousActivities.get(id), item)) activities.push(item);
+    if (!previousActivities.has(id) || !samePersistedValue(previousActivities.get(id), item)) activities.push(item);
   }
   return { upserts, deletes, activities };
 }
@@ -106,15 +115,25 @@ export function verifyTransactionOperations(remoteState, operations) {
   const remote = byId(remoteState);
   const remoteActivities = activitiesById(remoteState);
   for (const item of Array.isArray(operations?.upserts) ? operations.upserts : []) {
-    if (!item?.id || !remote.has(item.id) || !sameValue(remote.get(item.id), item)) return false;
+    if (!item?.id || !remote.has(item.id) || !samePersistedValue(remote.get(item.id), item)) return false;
   }
   for (const id of Array.isArray(operations?.deletes) ? operations.deletes : []) {
     if (remote.has(id)) return false;
   }
   for (const item of Array.isArray(operations?.activities) ? operations.activities : []) {
-    if (!item?.id || !remoteActivities.has(item.id) || !sameValue(remoteActivities.get(item.id), item)) return false;
+    if (!item?.id || !remoteActivities.has(item.id) || !samePersistedValue(remoteActivities.get(item.id), item)) return false;
   }
   return true;
+}
+
+export function verifyMutationConfirmation(confirmation, operations) {
+  if (!confirmation?.committed || confirmation.operationId !== operations?.operationId) return false;
+  const confirmedDeletes = new Set(Array.isArray(confirmation.deletes) ? confirmation.deletes : []);
+  if ((operations?.deletes || []).some((id) => !confirmedDeletes.has(id))) return false;
+  return verifyTransactionOperations({
+    transactions: Array.isArray(confirmation.upserts) ? confirmation.upserts : [],
+    activityLog: Array.isArray(confirmation.activities) ? confirmation.activities : [],
+  }, operations);
 }
 
 export function applyTransactionOperations(remoteState, operations) {

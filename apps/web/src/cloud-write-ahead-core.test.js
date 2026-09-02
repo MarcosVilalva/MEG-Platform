@@ -4,7 +4,9 @@ import {
   buildTransactionOperations,
   hasTransactionOperations,
   mergeTransactionOutbox,
+  samePersistedValue,
   verifyTransactionOperations,
+  verifyMutationConfirmation,
 } from './cloud-write-ahead-core.js';
 
 const a = { id: 'a', date: '2026-08-30', description: 'A', type: 'expense', amount: 10 };
@@ -45,5 +47,23 @@ assert.equal(verifyTransactionOperations(applied, operations), true);
 assert.equal(verifyTransactionOperations({ ...applied, activityLog: [activity1] }, operations), false);
 assert.equal(verifyTransactionOperations(remote, { upserts: [bEdited], deletes: [], activities: [] }), false);
 assert.equal(verifyTransactionOperations(remote, { upserts: [], deletes: ['a'], activities: [] }), false);
+assert.equal(samePersistedValue(
+  { id: 'a', amount: 10, nested: { z: 1, a: 2 } },
+  { nested: { a: 2, z: 1 }, amount: 10, id: 'a' },
+), true);
+assert.equal(verifyTransactionOperations(
+  { transactions: [{ amount: 10, description: 'A', id: 'a', date: '2026-08-30', type: 'expense' }] },
+  { upserts: [a], deletes: [], activities: [] },
+), true);
+assert.equal(verifyMutationConfirmation({
+  operationId: 'op-1', committed: true, upserts: [{ amount: 10, id: 'a', type: 'expense', date: '2026-08-30', description: 'A' }], deletes: ['b'], activities: [activity1],
+}, {
+  operationId: 'op-1', upserts: [a], deletes: ['b'], activities: [activity1],
+}), true);
+assert.equal(verifyMutationConfirmation({
+  operationId: 'op-wrong', committed: true, upserts: [a], deletes: ['b'], activities: [activity1],
+}, {
+  operationId: 'op-1', upserts: [a], deletes: ['b'], activities: [activity1],
+}), false);
 
 console.log('cloud write-ahead core tests passed');
