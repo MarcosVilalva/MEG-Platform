@@ -92,8 +92,8 @@ jobs:
         run: |
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
           test -n "$APKSIGNER"
-          "$APKSIGNER" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk 2>&1 | tee apk-signature.txt
-          SIGNER_SHA256=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' apk-signature.txt | head -n 1)
+          "$APKSIGNER" verify android/app/build/outputs/apk/release/app-release.apk
+          SIGNER_SHA256=$(keytool -exportcert -alias "$ANDROID_KEY_ALIAS" -keystore "$ANDROID_KEYSTORE_PATH" -storepass "$ANDROID_STORE_PASSWORD" -rfc | openssl x509 -noout -fingerprint -sha256 | sed -E 's/^sha256 Fingerprint=//I' | tr -d ':' | tr 'A-F' 'a-f')
           test -n "$SIGNER_SHA256"
           echo "SIGNER_SHA256=$SIGNER_SHA256" >> "$GITHUB_ENV"
 
