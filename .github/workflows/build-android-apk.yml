@@ -92,7 +92,7 @@ jobs:
         run: |
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
           test -n "$APKSIGNER"
-          "$APKSIGNER" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk | tee apk-signature.txt
+          "$APKSIGNER" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk 2>&1 | tee apk-signature.txt
           grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" apk-signature.txt
           SIGNER_SHA256=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' apk-signature.txt | head -n 1)
           test -n "$SIGNER_SHA256"
