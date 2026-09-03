@@ -153,8 +153,6 @@ const VERSION_URLS = [
 const VERSION_FETCH_ATTEMPTS = 3;
 const VERSION_FETCH_RETRY_MS = 900;
 const VERSION_FETCH_TIMEOUT_MS = 8000;
-const INSTALL_PERMISSION_TIMEOUT_MS = 120000;
-const INSTALL_PERMISSION_POLL_MS = 500;
 const UPDATE_RESUME_DELAY_MS = 1200;
 const UPDATE_RESUME_UI_ATTEMPTS = 60;
 const UPDATE_RESUME_UI_RETRY_MS = 500;
@@ -331,16 +329,6 @@ export async function markAndroidUpdateUiReady() {
   }
 }
 
-async function waitForInstallPermission(AppUpdater) {
-  const deadline = Date.now() + INSTALL_PERMISSION_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    const info = await AppUpdater.getInfo();
-    if (info.canInstallPackages) return true;
-    await delay(INSTALL_PERMISSION_POLL_MS);
-  }
-  return false;
-}
-
 function updateDialog(release, installed, AppUpdater) {
   const existing = document.querySelector('#appUpdateDialog');
   if (existing?._megDecisionPromise) return existing._megDecisionPromise;
@@ -376,15 +364,16 @@ function updateDialog(release, installed, AppUpdater) {
     retryButton.hidden = true;
     continueButton.hidden = true;
     try {
-      const info = await AppUpdater.getInfo();
-      if (!info.canInstallPackages) {
-        status.textContent = 'Autorize “Permitir desta fonte”. Ao voltar, o MEG continuará sozinho.';
-        await AppUpdater.requestInstallPermission();
-        const granted = await waitForInstallPermission(AppUpdater);
-        if (!granted) throw new Error('INSTALL_PERMISSION_TIMEOUT');
-      }
       status.textContent = 'Baixando e validando a nova versão…';
-      await AppUpdater.downloadAndInstall({ url: release.downloadUrl, sha256: release.sha256 || '' });
+      try {
+        await AppUpdater.downloadAndInstall({ url: release.downloadUrl, sha256: release.sha256 || '' });
+      } catch (cause) {
+        if (!String(cause?.message || cause).includes('INSTALL_PERMISSION_REQUIRED')) throw cause;
+        status.textContent = 'Autorize “Permitir desta fonte”. Ao voltar, o MEG continuará o download e abrirá o instalador automaticamente.';
+        await AppUpdater.requestInstallPermission();
+        window.setTimeout(() => dialog.open && dialog.close('permission-requested'), 500);
+        return;
+      }
       status.textContent = 'Atualização pronta. Conclua a instalação na tela segura do Android.';
       dialog.close('installer-launched');
     } catch (cause) {

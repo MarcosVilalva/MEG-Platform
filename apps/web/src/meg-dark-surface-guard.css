@@ -139,6 +139,52 @@ body .modal :is(p, small, span) {
   color: var(--meg-dark-muted) !important;
 }
 
+body .transaction-save-status {
+  margin: 0 18px 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(100, 214, 191, .32);
+  border-radius: 12px;
+  color: #baf3e7 !important;
+  background: rgba(22, 82, 75, .34) !important;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+body .meg-delete-confirm-dialog {
+  width: min(430px, calc(100vw - 32px));
+  padding: 24px !important;
+  color-scheme: dark;
+}
+
+body .meg-delete-confirm-dialog::backdrop {
+  background: rgba(2, 13, 20, .82) !important;
+  backdrop-filter: blur(3px);
+}
+
+body .meg-delete-confirm-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  color: #ffd7d9;
+  background: rgba(166, 64, 69, .3);
+  font-size: 1.45rem;
+  font-weight: 900;
+}
+
+body .meg-delete-confirm-detail {
+  display: block;
+  margin: 12px 0;
+  padding: 11px 12px;
+  border-radius: 10px;
+  color: #e8f3f5 !important;
+  background: #0b2029 !important;
+}
+
+body .meg-delete-confirm-warning { color: #e9aeb2 !important; }
+
 body .meg-update-check-button {
   width: 100% !important;
   margin-top: 8px !important;

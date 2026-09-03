@@ -1178,8 +1178,37 @@ function copyStagingPendingSummary() {
 }
 
 function confirmPermanentDeletion(itemLabel, detail = "") {
-  const description = detail ? `\n\n${detail}` : "";
-  return window.confirm(`Tem certeza de que deseja excluir ${itemLabel}?${description}\n\nEsta acao nao pode ser desfeita.`);
+  return new Promise((resolve) => {
+    document.querySelector('#megDeleteConfirmDialog')?.remove();
+    const dialog = document.createElement('dialog');
+    dialog.id = 'megDeleteConfirmDialog';
+    dialog.className = 'modal meg-delete-confirm-dialog';
+    dialog.innerHTML = `
+      <div class="meg-delete-confirm-icon" aria-hidden="true">!</div>
+      <small class="decision-eyebrow">EXCLUSÃO DEFINITIVA</small>
+      <h2>Confirmar exclusão</h2>
+      <p>Tem certeza de que deseja excluir ${escapeHtml(itemLabel)}?</p>
+      ${detail ? `<strong class="meg-delete-confirm-detail">${escapeHtml(detail)}</strong>` : ''}
+      <p class="meg-delete-confirm-warning">Esta ação não pode ser desfeita. A exclusão somente será concluída após a confirmação da nuvem.</p>
+      <div class="modal-actions">
+        <button class="button ghost" type="button" data-delete-cancel>Cancelar</button>
+        <button class="button danger" type="button" data-delete-confirm>Excluir definitivamente</button>
+      </div>`;
+    document.body.append(dialog);
+    let decided = false;
+    const finish = (confirmed) => {
+      if (decided) return;
+      decided = true;
+      resolve(confirmed);
+      if (dialog.open) dialog.close();
+      dialog.remove();
+    };
+    dialog.querySelector('[data-delete-cancel]').addEventListener('click', () => finish(false));
+    dialog.querySelector('[data-delete-confirm]').addEventListener('click', () => finish(true));
+    dialog.addEventListener('cancel', (event) => { event.preventDefault(); finish(false); });
+    dialog.addEventListener('close', () => finish(false), { once: true });
+    dialog.showModal();
+  });
 }
 
 function currentSituation() {
@@ -4084,7 +4113,7 @@ function toggleCatalogItem(type, value) {
   render();
 }
 
-function removeCatalogItem(type, value) {
+async function removeCatalogItem(type, value) {
   if (type === "card") {
     const linked = state.transactions.some((item) => normalizeText(item.paymentMethod || item.account) === normalizeText(value));
     if (linked) {
@@ -4106,7 +4135,7 @@ function removeCatalogItem(type, value) {
   };
   const account = type === "financialAccount" ? financialAccountById(value) : null;
   const itemName = account?.name || value;
-  if (!confirmPermanentDeletion(`${typeLabels[type] || "o cadastro"} \"${itemName}\"`, "O cadastro sera removido definitivamente.")) return;
+  if (!await confirmPermanentDeletion(`${typeLabels[type] || "o cadastro"} \"${itemName}\"`, "O cadastro será removido definitivamente.")) return;
   if (type === "group") {
     state.catalogs.groups = state.catalogs.groups.filter((item) => normalizeText(item) !== normalizeText(value));
     setCatalogItemActive("groups", value, true);
@@ -4618,8 +4647,48 @@ async function confirmTransactionPersistence() {
   await window.MEG_INSTANT_PERSISTENCE.flush();
 }
 
+let transactionMutationRunning = false;
+
+function setTransactionMutationUi(active, message = '') {
+  const saveButton = document.querySelector('#saveTransactionBtn');
+  const status = document.querySelector('#transactionSaveStatus');
+  if (saveButton) {
+    saveButton.disabled = active;
+    saveButton.textContent = active ? 'Sincronizando...' : 'Salvar';
+  }
+  if (els.deleteTransactionBtn) els.deleteTransactionBtn.disabled = active;
+  if (els.cancelDialogBtn) els.cancelDialogBtn.disabled = active;
+  if (status) {
+    status.hidden = !message;
+    status.textContent = message;
+    status.className = `transaction-save-status${active ? ' active' : ''}`;
+  }
+}
+
 async function saveTransaction(event) {
   event.preventDefault();
+  if (transactionMutationRunning) {
+    setTransactionMutationUi(true, 'Aguarde. Este lançamento já está sendo enviado e confirmado na nuvem.');
+    return;
+  }
+  transactionMutationRunning = true;
+  setTransactionMutationUi(true, 'Preparando o lançamento para sincronização segura...');
+  try {
+    if (window.MEG_INSTANT_PERSISTENCE?.pending?.()) {
+      setTransactionMutationUi(true, 'Concluindo a gravação anterior antes de continuar...');
+      await confirmTransactionPersistence();
+    }
+    await saveTransactionOnce();
+  } catch (error) {
+    setTransactionMutationUi(false, error instanceof Error ? error.message : 'A gravação continua protegida e será reenviada automaticamente.');
+    showToast('Aguardando confirmação da base', error instanceof Error ? error.message : 'A gravação continua protegida neste aparelho.', 'danger');
+  } finally {
+    transactionMutationRunning = false;
+    if (!els.dialog.open || !window.MEG_INSTANT_PERSISTENCE?.pending?.()) setTransactionMutationUi(false, '');
+  }
+}
+
+async function saveTransactionOnce() {
   const id = els.transactionId.value || crypto.randomUUID();
   const type = els.transactionType.value;
   const incomeAmount = type === "income" ? Number(els.incomeAmountInput.value || 0) : 0;
@@ -4680,12 +4749,14 @@ async function saveTransaction(event) {
       selectedPeriod.month = currentMonth;
       transactionPage = 1;
       saveState();
+      setTransactionMutationUi(true, 'Parcelas enviadas. Aguardando confirmação definitiva da nuvem...');
       await confirmTransactionPersistence();
       els.dialog.close();
       showToast("Parcelamento criado", `${installments.length} parcela(s) geradas até ${formatDate(installments.at(-1).date)}`, "success");
       renderAfterTransactionMutation();
       return;
     } catch (error) {
+      if (window.MEG_INSTANT_PERSISTENCE?.pending?.()) throw error;
       showToast("Revise o parcelamento", error.message, "danger");
       return;
     }
@@ -4699,15 +4770,11 @@ async function saveTransaction(event) {
   transactionPage = 1;
   els.transactionId.value = id;
   saveState();
+  setTransactionMutationUi(true, 'Lançamento enviado. Confirmando gravação e histórico na nuvem...');
   try {
     await confirmTransactionPersistence();
   } catch (error) {
-    showToast(
-      "Aguardando confirmação da base",
-      error instanceof Error ? error.message : "O lançamento continua protegido e será reenviado automaticamente.",
-      "danger",
-    );
-    return;
+    throw error;
   }
   els.dialog.close();
   showToast(
@@ -4718,16 +4785,28 @@ async function saveTransaction(event) {
   renderAfterTransactionMutation();
 }
 
-function deleteTransaction() {
+async function deleteTransaction() {
+  if (transactionMutationRunning) return;
   const id = els.transactionId.value;
   if (!id) return;
   const removed = state.transactions.find((item) => item.id === id);
-  if (!confirmPermanentDeletion(`o lancamento \"${removed?.description || "selecionado"}\"`, removed ? `${formatDate(removed.date)} - ${money.format(removed.amount || 0)}` : "")) return;
+  if (!await confirmPermanentDeletion(`o lançamento \"${removed?.description || "selecionado"}\"`, removed ? `${formatDate(removed.date)} - ${money.format(removed.amount || 0)}` : "")) return;
+  transactionMutationRunning = true;
+  setTransactionMutationUi(true, 'Exclusão protegida. Aguardando confirmação da nuvem...');
   state.transactions = state.transactions.filter((item) => item.id !== id);
   saveState();
-  els.dialog.close();
-  showToast("Lançamento excluído", removed ? removed.description : "O lançamento foi removido.", "success");
-  renderAfterTransactionMutation();
+  try {
+    await confirmTransactionPersistence();
+    els.dialog.close();
+    showToast("Lançamento excluído", removed ? removed.description : "O lançamento foi removido.", "success");
+    renderAfterTransactionMutation();
+  } catch (error) {
+    setTransactionMutationUi(false, error instanceof Error ? error.message : 'A exclusão continua protegida e será reenviada automaticamente.');
+    showToast('Exclusão aguardando confirmação', 'O pedido permanece protegido neste aparelho e não será duplicado.', 'danger');
+  } finally {
+    transactionMutationRunning = false;
+    if (!els.dialog.open || !window.MEG_INSTANT_PERSISTENCE?.pending?.()) setTransactionMutationUi(false, '');
+  }
 }
 
 function togglePaid(id, paid) {

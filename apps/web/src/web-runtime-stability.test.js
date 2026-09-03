@@ -105,6 +105,13 @@ assert.match(legacyApp, /transactionType\.addEventListener\("change", syncTransa
 assert.doesNotMatch(legacyApp, /window\.setTimeout\(showOpeningFinancialAlert, 450\)/, 'alertas não podem iniciar antes da liberação do Dashboard');
 assert.match(legacyApp, /function scheduleOpeningFinancialAlert\(delayMs = 450\)/);
 assert.match(legacyApp, /#cloudLoadingOverlay:not\(\.hidden\)/, 'o alerta deve respeitar a barreira visual ativa');
+assert.match(legacyApp, /let transactionMutationRunning = false/);
+assert.match(legacyApp, /if \(transactionMutationRunning\)/);
+assert.match(legacyApp, /Sincronizando\.\.\./);
+assert.match(legacyApp, /Lançamento enviado\. Confirmando gravação e histórico na nuvem/);
+assert.match(legacyApp, /await confirmTransactionPersistence\(\)/);
+assert.match(legacyApp, /meg-delete-confirm-dialog/);
+assert.doesNotMatch(legacyApp, /function confirmPermanentDeletion[\s\S]{0,240}window\.confirm/);
 assert.match(legacyApp, /scheduleOpeningFinancialAlert,/);
 assert.doesNotMatch(legacyEntry, /await initializeStableUiFeatures\(\)/, 'recursos opcionais não podem bloquear a abertura');
 assert.doesNotMatch(legacyEntry, /await refreshInstalledAppVersion\(\)/, 'a versão instalada não pode bloquear a abertura');
