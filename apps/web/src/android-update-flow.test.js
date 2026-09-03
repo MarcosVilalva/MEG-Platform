@@ -34,6 +34,8 @@ assert.match(hardening, /cleanDownloadUrl/);
 assert.match(hardening, /url\.search = ''/);
 assert.match(hardening, /finally\(\(\) => \{[\s\S]*button\.disabled = false/);
 assert.match(hardening, /import\('\.\/meg-dark-surface-guard\.css'\)/);
+assert.doesNotMatch(hardening, /Baixar APK/);
+assert.match(hardening, /Ao voltar, o MEG continuará o download e abrirá o instalador automaticamente/);
 
 assert.match(embeddedVersion, /VITE_ANDROID_VERSION_NAME/);
 assert.match(embeddedVersion, /VITE_ANDROID_VERSION_CODE/);
@@ -54,6 +56,9 @@ assert.match(androidWorkflow, /releases\/download\/android-latest\/MEG-Financas\
 assert.doesNotMatch(androidWorkflow, /MEG-Financas\.apk\?v=/);
 assert.match(androidWorkflow, /RELEASE_NOTES=\$\(git log -1 --pretty=%s/);
 assert.match(androidWorkflow, /releaseNotes: process\.env\.RELEASE_NOTES/);
+assert.match(androidWorkflow, /APKSIGNER=.*apksigner/);
+assert.match(androidWorkflow, /verify --verbose --print-certs/);
+assert.match(androidWorkflow, /signerSha256: process\.env\.SIGNER_SHA256/);
 assert.doesNotMatch(androidWorkflow, /elimina superfícies brancas residuais/);
 
 /* Mantém a implementação secundária protegida como fallback de compatibilidade. */
@@ -77,6 +82,7 @@ assert.match(nativePlugin, /grantUriPermission/);
 assert.match(nativePlugin, /installerLaunched/);
 assert.match(nativePlugin, /rememberPendingInstall/);
 assert.match(nativePlugin, /resumePendingInstallIfAuthorized/);
+assert.match(nativePlugin, /AtomicBoolean installRunning/);
 
 assert.match(mainActivity, /registerPlugin\(AppUpdaterPlugin\.class\)/);
 assert.match(mainActivity, /resumePendingInstallIfAuthorized\(\)/);

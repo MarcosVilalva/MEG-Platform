@@ -48,6 +48,7 @@ public class AppUpdaterPlugin extends Plugin {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final AtomicBoolean nativeCheckRunning = new AtomicBoolean(false);
     private final AtomicBoolean nativePromptVisible = new AtomicBoolean(false);
+    private final AtomicBoolean installRunning = new AtomicBoolean(false);
     private volatile boolean authenticatedUiReady = false;
     private volatile long suppressedNativePromptVersion = -1;
     private volatile String pendingInstallSource = null;
@@ -362,6 +363,11 @@ public class AppUpdaterPlugin extends Plugin {
     }
 
     private void downloadAndInstallInternal(String source, String expectedSha256, DownloadCallback callback) {
+        if (!installRunning.compareAndSet(false, true)) {
+            showToast("A atualização já está sendo baixada. Aguarde a abertura do instalador.");
+            callback.onSuccess("");
+            return;
+        }
         executor.execute(() -> {
             File directory = new File(getContext().getCacheDir(), "updates");
             File partial = new File(directory, "MEG-Financas-atualizacao.apk.part");
@@ -399,6 +405,8 @@ public class AppUpdaterPlugin extends Plugin {
             } catch (Exception error) {
                 partial.delete();
                 callback.onError(error);
+            } finally {
+                installRunning.set(false);
             }
         });
     }

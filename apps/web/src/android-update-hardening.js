@@ -50,7 +50,7 @@ function friendlyUpdateError(cause, { installing = false } = {}) {
   if (code.includes('OFFLINE')) return 'Sem conexão com a internet. Conecte-se e tente novamente.';
   if (updaterBridgeFailure(cause)) {
     return installing
-      ? 'O instalador do Android não respondeu a tempo. Tente novamente ou use “Baixar APK” para concluir a atualização.'
+      ? 'O instalador do Android não respondeu a tempo. Feche o aviso e tente a atualização novamente.'
       : 'O serviço de atualização do Android demorou para responder. Tente novamente em alguns segundos.';
   }
   if (code.includes('UPDATE_DOWNLOAD_TIMEOUT')) return 'O download da atualização demorou além do esperado. Confira sua conexão e tente novamente.';
@@ -58,7 +58,7 @@ function friendlyUpdateError(cause, { installing = false } = {}) {
   if (code.includes('INSTALL_PERMISSION')) return 'O Android precisa da permissão “Instalar apps desconhecidos” para concluir a atualização.';
   if (code.includes('SHA') || code.includes('ASSINATURA DIGITAL')) return 'A validação de segurança do APK não foi concluída. Não instale este arquivo e tente novamente.';
   return installing
-    ? 'Não foi possível iniciar a atualização automática. Tente novamente ou use “Baixar APK”.'
+    ? 'Não foi possível iniciar a atualização automática. Feche o aviso e tente novamente.'
     : 'Não foi possível verificar atualizações agora. Tente novamente.';
 }
 
@@ -214,20 +214,6 @@ function cleanDownloadUrl(value) {
   }
 }
 
-function openApkDownload(value) {
-  const downloadUrl = cleanDownloadUrl(value);
-  if (!downloadUrl) return false;
-  const link = document.createElement('a');
-  link.href = downloadUrl;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.style.display = 'none';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  return true;
-}
-
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (character) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -258,7 +244,6 @@ function showUpdateDialog(release, installed) {
     <div class="app-update-notes">${escapeHtml(release.releaseNotes)}</div>
     <p class="app-update-status" id="appUpdateStatus">A atualização está pronta para iniciar.</p>
     <div class="modal-actions">
-      <button type="button" class="ghost-button" id="appUpdateDownloadFallback" hidden>Baixar APK</button>
       <button type="button" class="ghost-button" id="appUpdateLater">Agora não</button>
       <button type="button" class="primary-button" id="appUpdateNow">Atualizar agora</button>
     </div>`;
@@ -267,19 +252,10 @@ function showUpdateDialog(release, installed) {
   const status = dialog.querySelector('#appUpdateStatus');
   const later = dialog.querySelector('#appUpdateLater');
   const update = dialog.querySelector('#appUpdateNow');
-  const fallback = dialog.querySelector('#appUpdateDownloadFallback');
   later.addEventListener('click', () => dialog.close('later'));
-  fallback.addEventListener('click', () => {
-    if (openApkDownload(release.downloadUrl)) {
-      status.textContent = 'O APK foi aberto para download. Instale por cima da versão atual, sem desinstalar o MEG.';
-    } else {
-      status.textContent = 'Não foi possível abrir o endereço do APK. Tente novamente pelo botão de atualização.';
-    }
-  });
   update.addEventListener('click', async () => {
     update.disabled = true;
     later.disabled = true;
-    fallback.hidden = true;
     try {
       const AppUpdater = await getAppUpdater();
       if (!AppUpdater) throw new Error('UPDATE_PLUGIN_UNAVAILABLE');
@@ -294,10 +270,9 @@ function showUpdateDialog(release, installed) {
         );
       } catch (cause) {
         if (!String(cause?.message || cause).includes('INSTALL_PERMISSION_REQUIRED')) throw cause;
-        status.textContent = 'Autorize “Permitir desta fonte”. Depois volte e toque em “Atualizar agora” novamente.';
+        status.textContent = 'Autorize “Permitir desta fonte”. Ao voltar, o MEG continuará o download e abrirá o instalador automaticamente.';
         await withDeadline(AppUpdater.requestInstallPermission(), BRIDGE_TIMEOUT_MS, 'INSTALL_PERMISSION_REQUEST_TIMEOUT');
-        update.disabled = false;
-        later.disabled = false;
+        window.setTimeout(() => dialog.open && dialog.close('permission-requested'), 500);
         return;
       }
       status.textContent = 'APK validado. Conclua a instalação na tela do Android.';
@@ -305,7 +280,6 @@ function showUpdateDialog(release, installed) {
     } catch (cause) {
       console.warn('MEG Android installation failed', cause);
       status.textContent = friendlyUpdateError(cause, { installing: true });
-      if (updaterBridgeFailure(cause) || errorCode(cause).includes('UPDATE_DOWNLOAD_TIMEOUT')) fallback.hidden = false;
       update.disabled = false;
       later.disabled = false;
       update.textContent = 'Tentar novamente';
