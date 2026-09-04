@@ -4724,6 +4724,7 @@ async function saveTransactionOnce() {
     modality: els.modalityInput.value.trim(),
     notes: els.notesInput.value.trim(),
   };
+  const duplicateMode = els.dialog.dataset.duplicateMode === "true";
 
   const isChangingToPaidExpense = payload.type === "expense" && payload.status === "paid" && previous?.status !== "paid";
   if (isChangingToPaidExpense) {
@@ -4761,12 +4762,33 @@ async function saveTransactionOnce() {
       return;
     }
   }
+  const recurringBatch = !previous
+    ? window.MEG_RECURRING_TRANSACTIONS?.buildBatch?.(payload)
+    : null;
+  if (recurringBatch?.transactions?.length) {
+    state.transactions.push(...recurringBatch.transactions);
+    if (!state.budgets[payload.category]) state.budgets[payload.category] = 0;
+    selectedPeriod.mode = "all";
+    transactionPage = 1;
+    els.transactionId.value = payload.id;
+    saveState();
+    setTransactionMutationUi(true, `${recurringBatch.count} lançamentos enviados. Confirmando o lote completo na nuvem...`);
+    await confirmTransactionPersistence();
+    els.dialog.close();
+    showToast(
+      "Recorrência criada",
+      `${recurringBatch.count} lançamentos confirmados na nuvem até ${formatDate(recurringBatch.lastDate)}.`,
+      "success"
+    );
+    renderAfterTransactionMutation();
+    return;
+  }
   const updatedInstallments = previous ? updateInstallmentSeries(previous, payload) : 0;
   if (index >= 0 && !updatedInstallments) state.transactions[index] = { ...previous, ...payload };
   else if (index < 0) state.transactions.push(payload);
   if (!state.budgets[payload.category] && payload.type === "expense") state.budgets[payload.category] = 0;
   selectedPeriod.mode = "month";
-  selectedPeriod.month = currentMonth;
+  selectedPeriod.month = duplicateMode ? payload.date.slice(0, 7) : currentMonth;
   transactionPage = 1;
   els.transactionId.value = id;
   saveState();
@@ -4778,7 +4800,7 @@ async function saveTransactionOnce() {
   }
   els.dialog.close();
   showToast(
-    updatedInstallments ? "Parcelamento atualizado" : previous ? "Lançamento atualizado" : "Lançamento salvo",
+    updatedInstallments ? "Parcelamento atualizado" : duplicateMode ? "Lançamento duplicado" : previous ? "Lançamento atualizado" : "Lançamento salvo",
     updatedInstallments ? `${updatedInstallments} parcela(s) pendente(s) recalculadas com segurança.` : payload.description + " · " + money.format(payload.amount),
     "success"
   );

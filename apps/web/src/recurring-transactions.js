@@ -1,5 +1,6 @@
 import {
   addMonthsClamped,
+  buildMonthlyTransactionBatch,
   buildMonthlySchedule,
   isInstallmentModality,
   normalizeRecurrenceCount,
@@ -8,7 +9,6 @@ import {
 } from './recurring-transactions-core.js';
 
 let initialized = false;
-let replayingSubmission = false;
 let dialogObserver = null;
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -44,53 +44,6 @@ function setConfirmation(title, message, tone = 'success') {
     if (popupTitle) popupTitle.textContent = title;
     if (popupMessage) popupMessage.textContent = message;
   }
-}
-
-function beginCloudBatch() {
-  const cloud = window.MEG_CLOUD;
-  const originalSave = cloud?.saveState;
-  let latestState = null;
-  let installed = false;
-
-  if (cloud && typeof originalSave === 'function') {
-    const deferredSave = (nextState) => {
-      latestState = nextState;
-      return Promise.resolve({ deferred: true });
-    };
-    try {
-      cloud.saveState = deferredSave;
-      installed = cloud.saveState === deferredSave;
-    } catch {
-      installed = false;
-    }
-  }
-
-  return {
-    get latestState() {
-      return latestState;
-    },
-    finish() {
-      if (!installed) return;
-      try {
-        cloud.saveState = originalSave;
-      } catch {
-        return;
-      }
-      if (latestState) {
-        Promise.resolve(originalSave.call(cloud, latestState)).catch((cause) => {
-          console.error('MEG recurring transaction cloud sync failed', cause);
-        });
-      }
-    },
-  };
-}
-
-function createSubmitEvent(form) {
-  const submitter = form.querySelector('button[type="submit"]');
-  if (typeof SubmitEvent === 'function') {
-    return new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter });
-  }
-  return new Event('submit', { bubbles: true, cancelable: true });
 }
 
 function controls() {
@@ -237,78 +190,19 @@ function prepareDuplicate() {
   setConfirmation('Cópia preparada', `Novo vencimento em ${formatDate(nextDate)}. Ajuste o valor e salve.`);
 }
 
-function markRecurringMetadata(snapshot, metadata) {
-  const transactions = snapshot?.transactions;
-  if (!Array.isArray(transactions) || !transactions.length) return;
-  const candidate = transactions.at(-1);
-  if (!candidate || candidate.date !== metadata.date) return;
-  Object.assign(candidate, {
-    recurrenceKind: 'monthly',
-    recurrenceSeriesId: metadata.seriesId,
-    recurrenceNumber: metadata.number,
-    recurrenceCount: metadata.count,
-    recurrenceDay: metadata.day,
-    recurrenceCreatedAt: metadata.createdAt,
-  });
-}
-
-function createRecurringTransactions(event) {
-  if (replayingSubmission) return;
+function buildRecurringBatch(payload) {
   const current = controls();
   const enabled = current.recurringEnabled?.checked;
-  if (!enabled || current.transactionId?.value || !eligibleForMonthlyTools(current)) return;
-
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  if (!current.form.reportValidity()) return;
+  if (!enabled || current.transactionId?.value || !eligibleForMonthlyTools(current)) return null;
 
   const count = normalizeRecurrenceCount(current.recurringCount.value);
-  const schedule = buildMonthlySchedule(current.date.value, count);
-  const parsedFirstDate = parseIsoDate(current.date.value);
-  if (!schedule.length || !parsedFirstDate) {
-    setConfirmation('Recorrência não criada', 'Informe uma data de vencimento válida.', 'danger');
-    return;
-  }
-
-  const seriesId = crypto.randomUUID();
-  const createdAt = new Date().toISOString();
-  const batch = beginCloudBatch();
-  const originalDate = current.date.value;
-  const originalWeekday = current.weekday.value;
-  const originalStatus = current.status.value;
-
-  try {
-    replayingSubmission = true;
-    current.status.value = 'pending';
-    schedule.forEach((date, index) => {
-      current.transactionId.value = '';
-      current.date.value = date;
-      current.weekday.value = weekdayShortPt(date);
-      current.status.value = 'pending';
-      current.form.dispatchEvent(createSubmitEvent(current.form));
-      markRecurringMetadata(batch.latestState, {
-        seriesId,
-        number: index + 1,
-        count,
-        day: parsedFirstDate.day,
-        date,
-        createdAt,
-      });
-    });
-  } finally {
-    replayingSubmission = false;
-    current.date.value = originalDate;
-    current.weekday.value = originalWeekday;
-    current.status.value = originalStatus;
-    batch.finish();
-  }
-
-  window.setTimeout(() => {
-    setConfirmation(
-      'Recorrência criada',
-      `${count} lançamentos pendentes gerados até ${formatDate(schedule.at(-1))}.`,
-    );
-  }, 0);
+  const transactions = buildMonthlyTransactionBatch(payload, count);
+  if (!transactions.length) return null;
+  return {
+    transactions,
+    count: transactions.length,
+    lastDate: transactions.at(-1).date,
+  };
 }
 
 function wireEvents() {
@@ -325,7 +219,6 @@ function wireEvents() {
   current.transactionType.addEventListener('change', () => syncUi());
   current.modality.addEventListener('change', () => syncUi());
   current.paymentMethod.addEventListener('change', () => syncUi());
-  current.form.addEventListener('submit', createRecurringTransactions, true);
 
   dialogObserver = new MutationObserver(() => {
     if (current.dialog.open) window.setTimeout(() => syncUi({ reset: true }), 0);
@@ -344,5 +237,6 @@ export function initializeRecurringTransactions() {
     refresh: syncUi,
     addMonthsClamped,
     buildMonthlySchedule,
+    buildBatch: buildRecurringBatch,
   };
 }
