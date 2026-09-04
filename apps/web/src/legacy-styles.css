@@ -2782,6 +2782,24 @@ body.transaction-modal-open .app-shell {
 .app-update-notes { margin: 20px 0; padding: 16px; border-radius: 16px; color: #163e37; background: rgba(255,255,255,.8); border: 1px solid #d5e9e5; line-height: 1.5; white-space: pre-line; }
 .app-update-status { min-height: 24px; font-weight: 700; }
 .app-update-dialog .modal-actions { margin-top: 22px; }
+.app-update-dialog button[aria-busy="true"] {
+  cursor: wait;
+  opacity: .82;
+  pointer-events: none;
+}
+.app-update-dialog button[aria-busy="true"]::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 10px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -3px;
+  animation: meg-update-spin .75s linear infinite;
+}
+@keyframes meg-update-spin { to { transform: rotate(360deg); } }
 @media (max-width: 560px) {
   .app-update-dialog { padding: 22px 18px; max-height: calc(100dvh - 20px); }
   .app-update-dialog .modal-actions { display: grid; grid-template-columns: 1fr; }

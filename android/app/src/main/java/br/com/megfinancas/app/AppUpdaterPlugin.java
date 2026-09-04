@@ -65,6 +65,14 @@ public class AppUpdaterPlugin extends Plugin {
         void onError(Exception error);
     }
 
+    private void notifyUpdateState(String state, int percent, String message) {
+        JSObject payload = new JSObject();
+        payload.put("state", state);
+        if (percent >= 0) payload.put("percent", percent);
+        if (message != null && !message.isEmpty()) payload.put("message", message);
+        notifyListeners("appUpdateState", payload, false);
+    }
+
     @PluginMethod
     public void getInfo(PluginCall call) {
         try {
@@ -229,6 +237,26 @@ public class AppUpdaterPlugin extends Plugin {
         });
     }
 
+    @PluginMethod
+    public void startDownloadAndInstall(PluginCall call) {
+        String source = call.getString("url");
+        String expectedSha256 = call.getString("sha256", "");
+        if (source == null || !source.startsWith("https://")) {
+            call.reject("A atualização precisa usar um endereço HTTPS válido.");
+            return;
+        }
+
+        rememberPendingInstall(source, expectedSha256);
+        boolean permissionRequired = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+            && !getContext().getPackageManager().canRequestPackageInstalls();
+        JSObject accepted = new JSObject();
+        accepted.put("accepted", true);
+        accepted.put("permissionRequired", permissionRequired);
+        call.resolve(accepted);
+
+        installAvailableUpdateNatively(source, expectedSha256);
+    }
+
     private JSObject fetchNewestReleaseManifest() throws Exception {
         Exception lastError = null;
         JSObject newest = null;
@@ -306,6 +334,7 @@ public class AppUpdaterPlugin extends Plugin {
     private void installAvailableUpdateNatively(String source, String expectedSha256) {
         rememberPendingInstall(source, expectedSha256);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !getContext().getPackageManager().canRequestPackageInstalls()) {
+            notifyUpdateState("waiting-permission", -1, null);
             showToast("Autorize 'Permitir desta fonte'. Ao voltar, o MEG continuará a atualização automaticamente.");
             Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getContext().getPackageName()));
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -317,12 +346,14 @@ public class AppUpdaterPlugin extends Plugin {
             @Override
             public void onSuccess(String actualSha256) {
                 if (actualSha256 != null && !actualSha256.isEmpty()) clearPendingInstall();
+                notifyUpdateState("installer-launched", 100, null);
                 showToast("Atualização validada. Conclua a instalação na tela do Android.");
             }
 
             @Override
             public void onError(Exception error) {
                 Log.e(TAG, "Falha ao instalar atualização", error);
+                notifyUpdateState("failed", -1, error.getMessage());
                 showToast("Não foi possível instalar a atualização: " + error.getMessage());
             }
         });
@@ -372,7 +403,6 @@ public class AppUpdaterPlugin extends Plugin {
         installer.setData(apkUri);
         installer.setClipData(ClipData.newRawUri("MEG Finanças atualização", apkUri));
         installer.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-        installer.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true);
         installer.putExtra(Intent.EXTRA_RETURN_RESULT, false);
 
         PackageManager packageManager = getContext().getPackageManager();
@@ -384,12 +414,22 @@ public class AppUpdaterPlugin extends Plugin {
             installer.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
             handlers = packageManager.queryIntentActivities(installer, PackageManager.MATCH_DEFAULT_ONLY);
         }
-        if (handlers.isEmpty()) throw new IllegalStateException("O Android não encontrou um instalador de pacotes disponível.");
-
         for (ResolveInfo handler : handlers) {
             getContext().grantUriPermission(handler.activityInfo.packageName, apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
         }
-        getContext().startActivity(installer);
+        try {
+            getContext().startActivity(installer);
+        } catch (Exception primaryError) {
+            Intent fallback = new Intent(Intent.ACTION_VIEW);
+            fallback.setDataAndType(apkUri, "application/vnd.android.package-archive");
+            fallback.setClipData(ClipData.newRawUri("MEG Finanças atualização", apkUri));
+            fallback.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+            try {
+                getContext().startActivity(fallback);
+            } catch (Exception fallbackError) {
+                throw new IllegalStateException("O Android não conseguiu abrir o instalador de pacotes.", fallbackError);
+            }
+        }
     }
 
     @SuppressWarnings("deprecation")
@@ -434,18 +474,30 @@ public class AppUpdaterPlugin extends Plugin {
             File partial = new File(directory, "MEG-Financas-atualizacao.apk.part");
             File apk = new File(directory, "MEG-Financas-atualizacao.apk");
             try {
+                notifyUpdateState("downloading", 0, null);
                 if (!directory.exists() && !directory.mkdirs()) throw new IllegalStateException("Não foi possível preparar a pasta temporária da atualização.");
                 partial.delete();
                 apk.delete();
 
                 HttpURLConnection connection = openDownloadConnection(source);
                 MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                long expectedBytes = connection.getContentLength();
+                long downloadedBytes = 0L;
+                int lastPercent = -1;
                 try (InputStream input = connection.getInputStream(); FileOutputStream output = new FileOutputStream(partial)) {
                     byte[] buffer = new byte[16384];
                     int count;
                     while ((count = input.read(buffer)) != -1) {
                         output.write(buffer, 0, count);
                         digest.update(buffer, 0, count);
+                        downloadedBytes += count;
+                        if (expectedBytes > 0) {
+                            int percent = (int) Math.min(99L, (downloadedBytes * 100L) / expectedBytes);
+                            if (percent >= lastPercent + 5) {
+                                lastPercent = percent;
+                                notifyUpdateState("downloading", percent, null);
+                            }
+                        }
                     }
                     output.flush();
                     output.getFD().sync();
@@ -453,6 +505,7 @@ public class AppUpdaterPlugin extends Plugin {
                     connection.disconnect();
                 }
 
+                notifyUpdateState("validating", 100, null);
                 String actualSha256 = toHex(digest.digest());
                 if (!expectedSha256.isEmpty() && !actualSha256.equalsIgnoreCase(expectedSha256)) {
                     partial.delete();

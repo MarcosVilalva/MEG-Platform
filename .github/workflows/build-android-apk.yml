@@ -109,7 +109,7 @@ jobs:
           RELEASE_NOTES=$(git log -1 --pretty=%s | sed -E 's/ \(#[0-9]+\)$//' | sed -E 's/^(Feat|Fix|Chore|Refactor|Perf|Test):[[:space:]]*//I')
           test -n "$RELEASE_NOTES" || RELEASE_NOTES="Atualização do MEG Finanças."
           export SHA256 RELEASE_NOTES
-          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('app-version.json', JSON.stringify({ versionCode: Number(process.env.MEG_VERSION_CODE), versionName: process.env.MEG_VERSION_NAME, downloadUrl: 'https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk', sha256: process.env.SHA256, signerSha256: process.env.SIGNER_SHA256, mandatory: false, releaseNotes: process.env.RELEASE_NOTES }, null, 2) + '\n')"
+          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('app-version.json', JSON.stringify({ versionCode: Number(process.env.MEG_VERSION_CODE), versionName: process.env.MEG_VERSION_NAME, downloadUrl: 'https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk', sha256: process.env.SHA256, signerSha256: process.env.SIGNER_SHA256, mandatory: false, releaseNotes: process.env.RELEASE_NOTES }, null, 2) + '\n')"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
