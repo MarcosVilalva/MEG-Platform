@@ -39,6 +39,33 @@ export function buildMonthlySchedule(firstDate, count) {
   return Array.from({ length: normalizedCount }, (_, index) => addMonthsClamped(firstDate, index));
 }
 
+export function buildMonthlyTransactionBatch(payload, count, options = {}) {
+  const schedule = buildMonthlySchedule(payload?.date, count);
+  if (!payload?.id || !schedule.length) return [];
+  const createId = typeof options.createId === 'function'
+    ? options.createId
+    : () => globalThis.crypto?.randomUUID?.() || `meg-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const seriesId = options.seriesId || createId();
+  const createdAt = options.createdAt || new Date().toISOString();
+  const parsedFirstDate = parseIsoDate(payload.date);
+
+  return schedule.map((date, index) => ({
+    ...payload,
+    id: index === 0 ? payload.id : createId(),
+    date,
+    weekday: weekdayShortPt(date),
+    ...(payload.purchaseDate ? { purchaseDate: addMonthsClamped(payload.purchaseDate, index) } : {}),
+    status: 'pending',
+    situation: 'PENDENTE',
+    recurrenceKind: 'monthly',
+    recurrenceSeriesId: seriesId,
+    recurrenceNumber: index + 1,
+    recurrenceCount: schedule.length,
+    recurrenceDay: parsedFirstDate?.day,
+    recurrenceCreatedAt: createdAt,
+  }));
+}
+
 export function weekdayShortPt(value) {
   const parsed = parseIsoDate(value);
   if (!parsed) return '';
