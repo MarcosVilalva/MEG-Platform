@@ -37,6 +37,10 @@ function transactionSnapshot(item) {
     paymentMethod: String(item.paymentMethod || item.account || 'Não informado'),
     group: String(item.group || item.category || ''),
     status: String(item.status || ''),
+    installmentSeriesId: String(item.installmentSeriesId || ''),
+    installmentNumber: Number(item.installmentNumber || 0),
+    installmentCount: Number(item.installmentCount || 0),
+    purchaseTotal: Number(item.purchaseTotal || 0),
   };
 }
 

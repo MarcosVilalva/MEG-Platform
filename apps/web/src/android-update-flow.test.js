@@ -36,6 +36,7 @@ assert.match(hardening, /finally\(\(\) => \{[\s\S]*button\.disabled = false/);
 assert.match(hardening, /import\('\.\/meg-dark-surface-guard\.css'\)/);
 assert.doesNotMatch(hardening, /Baixar APK/);
 assert.match(hardening, /Ao voltar, o MEG continuará o download e abrirá o instalador automaticamente/);
+assert.match(hardening, /checkForCanonicalAppUpdate\(\{ force: true, waitForDecision: false \}\)/);
 
 assert.match(embeddedVersion, /VITE_ANDROID_VERSION_NAME/);
 assert.match(embeddedVersion, /VITE_ANDROID_VERSION_CODE/);
@@ -57,7 +58,7 @@ assert.doesNotMatch(androidWorkflow, /MEG-Financas\.apk\?v=/);
 assert.match(androidWorkflow, /RELEASE_NOTES=\$\(git log -1 --pretty=%s/);
 assert.match(androidWorkflow, /releaseNotes: process\.env\.RELEASE_NOTES/);
 assert.match(androidWorkflow, /APKSIGNER=.*apksigner/);
-assert.match(androidWorkflow, /verify --verbose --print-certs/);
+assert.match(androidWorkflow, /"\$APKSIGNER" verify android\/app\/build\/outputs\/apk\/release\/app-release\.apk/);
 assert.match(androidWorkflow, /signerSha256: process\.env\.SIGNER_SHA256/);
 assert.doesNotMatch(androidWorkflow, /elimina superfícies brancas residuais/);
 
@@ -83,10 +84,16 @@ assert.match(nativePlugin, /installerLaunched/);
 assert.match(nativePlugin, /rememberPendingInstall/);
 assert.match(nativePlugin, /resumePendingInstallIfAuthorized/);
 assert.match(nativePlugin, /AtomicBoolean installRunning/);
+assert.match(nativePlugin, /SharedPreferences/);
+assert.match(nativePlugin, /PENDING_SOURCE_KEY/);
+assert.match(nativePlugin, /verifyPackageSignature/);
+assert.match(nativePlugin, /installedSignature\.equals\(candidateSignature\)/);
 
 assert.match(mainActivity, /registerPlugin\(AppUpdaterPlugin\.class\)/);
 assert.match(mainActivity, /resumePendingInstallIfAuthorized\(\)/);
 assert.match(mainActivity, /checkForAvailableUpdateNative\(\)/);
+assert.match(mainActivity, /public void onResume\(\)/);
+assert.match(mainActivity, /scheduleUpdateCheck\(\)/);
 
 assert.match(alexaWorkflow, /id-token: write/);
 assert.match(alexaWorkflow, /aws-actions\/configure-aws-credentials@v4/);

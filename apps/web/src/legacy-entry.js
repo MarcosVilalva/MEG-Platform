@@ -279,7 +279,7 @@ function wireLegacyApp() {
   recipientList?.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-remove-recipient]');
     if (!button) return;
-    if (!window.confirm('Tem certeza de que deseja excluir este destinatario do WhatsApp?\n\nEle deixara de receber os alertas do MEG.')) return;
+    if (!await window.MEG_APP.confirmPermanentDeletion('este destinatário do WhatsApp', 'Ele deixará de receber os alertas do MEG.')) return;
     await window.MEG_CLOUD.removeNotificationRecipient(button.dataset.removeRecipient);
     showSuccess("WhatsApp removido", "O número não receberá mais alertas.");
     await loadRecipients();
@@ -300,7 +300,7 @@ function wireLegacyApp() {
   emailRecipientList?.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-remove-email-recipient]');
     if (!button) return;
-    if (!window.confirm('Tem certeza de que deseja excluir este destinatario de e-mail?\n\nEle deixara de receber os alertas do MEG.')) return;
+    if (!await window.MEG_APP.confirmPermanentDeletion('este destinatário de e-mail', 'Ele deixará de receber os alertas do MEG.')) return;
     await window.MEG_CLOUD.removeNotificationEmailRecipient(button.dataset.removeEmailRecipient);
     showSuccess("E-mail removido", "O endereço não receberá mais alertas.");
     await loadEmailRecipients();

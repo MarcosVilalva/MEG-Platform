@@ -1,4 +1,5 @@
 import { embeddedAndroidVersion } from './embedded-apk-version.js';
+import { checkForAppUpdate as checkForCanonicalAppUpdate } from './native-app-update.js';
 
 const MANIFEST_URLS = [
   'https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json',
@@ -297,26 +298,19 @@ function showUpdateDialog(release, installed) {
 async function performCheck({ manual = false } = {}) {
   if (!isAndroidRuntime()) return { available: false, skipped: true };
   if (navigator.onLine === false) throw new Error('OFFLINE');
-
-  const [installed, release] = await Promise.all([installedVersion(), newestRelease()]);
-  const available = Number(release.versionCode) > Number(installed.versionCode);
+  const result = await checkForCanonicalAppUpdate({ force: true, waitForDecision: false });
+  if (result?.error) throw result.error;
   document.getElementById('appUpdateCheckWarning')?.remove();
-
-  if (available) {
-    showUpdateDialog(release, installed);
-    if (manual) showFeedback('success', `Atualização ${release.versionName} encontrada.`, { temporaryButtonText: 'Atualização encontrada' });
-  } else {
-    delete window.MEG_AVAILABLE_APP_UPDATE;
-    delete document.body.dataset.availableAppVersion;
-    if (manual) {
-      showFeedback(
-        'success',
-        `Você já está usando a versão mais recente do MEG, APK v${installed.versionName}.`,
-        { temporaryButtonText: 'Última versão instalada' },
-      );
-    }
+  if (manual && result?.available) {
+    showFeedback('success', `Atualização ${result.release.versionName} encontrada e iniciada.`, { temporaryButtonText: 'Atualizando...' });
+  } else if (manual && result?.installed) {
+    showFeedback(
+      'success',
+      `Você já está usando a versão mais recente do MEG, APK v${result.installed.versionName}.`,
+      { temporaryButtonText: 'Última versão instalada' },
+    );
   }
-  return { available, installed, release };
+  return result;
 }
 
 export async function checkForAppUpdateHardened({ manual = false } = {}) {
