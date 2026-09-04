@@ -1,9 +1,9 @@
 {
-  "versionCode": 197,
-  "versionName": "1.1.197",
+  "versionCode": 199,
+  "versionName": "1.1.199",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "ad41745f3e678909efd67c84a8457221ee79b17573d8f0b629dd6048e14e2f55",
+  "sha256": "1768ac7a196ec78ade6ca9a2f9ebbfd9c5f14280e3237aad63480ce9dca65513",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Corrigir recorrências e duplicação mensal"
+  "releaseNotes": "Sincronização durável e recibos idempotentes"
 }
