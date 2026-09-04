@@ -7,6 +7,7 @@ import { assertWorkspaceWriteAccess } from '../platform-admin/service';
 import { applyTransactionPatch } from './transaction-patch';
 import { buildMutationConfirmation } from './mutation-confirmation';
 import { findMutationReceipt, mutationRequestHash, recordMutationReceipt } from './mutation-receipt';
+import { applyNormalizationShadow, normalizationPreview } from './normalization-migration';
 
 const MAX_TRANSACTION_PATCH_OPERATIONS = 2000;
 const MAX_ACTIVITY_LOG_ITEMS = 500;
@@ -60,6 +61,11 @@ const statePropertiesPatchSchema = z.object({
     }
   });
 });
+const normalizationSchema = z.object({
+  expectedRevision: z.number().int().nonnegative(),
+  apply: z.boolean().default(false),
+  confirmation: z.string().optional(),
+});
 
 function activityMetadata(activityLog: unknown[] | undefined): Record<string, unknown> {
   return activityLog === undefined ? {} : { activityLog };
@@ -77,6 +83,30 @@ async function assertWriteAccess(workspaceId: string, reply: { status(code: numb
 }
 
 export async function appStateRoutes(app: FastifyInstance) {
+  app.get('/normalization-preview', { preHandler: app.authenticate }, async (request) => {
+    const context = await resolveWorkspaceContext(request.user.sub);
+    return normalizationPreview(context.workspaceId, context.workspace.ownerId);
+  });
+
+  app.post('/normalization-shadow', { preHandler: app.authorize(['ADMIN']) }, async (request, reply) => {
+    const parsed = normalizationSchema.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: 'INVALID_NORMALIZATION_REQUEST', details: parsed.error.flatten() });
+    const context = await resolveWorkspaceContext(request.user.sub);
+    const preview = await normalizationPreview(context.workspaceId, context.workspace.ownerId);
+    if (!parsed.data.apply) return { ...preview, dryRun: true };
+    if (parsed.data.confirmation !== 'CONFIRMAR_MIGRACAO_SOMBRA') {
+      return reply.status(400).send({ error: 'NORMALIZATION_CONFIRMATION_REQUIRED' });
+    }
+    try {
+      return { ...(await applyNormalizationShadow(context.workspaceId, context.workspace.ownerId, parsed.data.expectedRevision)), dryRun: false };
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'NORMALIZATION_FAILED';
+      if (code === 'NORMALIZATION_REVISION_CONFLICT') return reply.status(409).send({ error: code });
+      if (code === 'NORMALIZATION_INVALID_SOURCE') return reply.status(422).send({ error: code, preview });
+      throw error;
+    }
+  });
+
   app.get('/revision', { preHandler: app.authenticate }, async (request) => {
     const context = await resolveWorkspaceContext(request.user.sub);
     const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { revision: true, updatedAt: true } });
