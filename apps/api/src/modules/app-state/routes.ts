@@ -6,6 +6,7 @@ import { resolveWorkspaceContext } from '../workspaces/service';
 import { assertWorkspaceWriteAccess } from '../platform-admin/service';
 import { applyTransactionPatch } from './transaction-patch';
 import { buildMutationConfirmation } from './mutation-confirmation';
+import { findMutationReceipt, mutationRequestHash, recordMutationReceipt } from './mutation-receipt';
 
 const MAX_TRANSACTION_PATCH_OPERATIONS = 2000;
 const MAX_ACTIVITY_LOG_ITEMS = 500;
@@ -99,6 +100,25 @@ export async function appStateRoutes(app: FastifyInstance) {
     const context = await resolveWorkspaceContext(request.user.sub);
     if (!await assertWriteAccess(context.workspaceId, reply)) return;
     const operationId = parsed.data.operationId || randomUUID();
+    const requestHash = mutationRequestHash(parsed.data);
+    const previousReceipt = await findMutationReceipt(context.workspaceId, operationId, requestHash);
+    if (previousReceipt?.conflict) {
+      return reply.status(409).send({ error: 'OPERATION_ID_REUSED', operationId });
+    }
+    if (previousReceipt?.response) {
+      return { ...(previousReceipt.response as Record<string, unknown>), replayed: true };
+    }
+    const confirm = async (response: Record<string, unknown>) => {
+      await recordMutationReceipt({
+        workspaceId: context.workspaceId,
+        operationId,
+        requestHash,
+        mutationType: 'transactions',
+        revision: Number(response.revision || 0),
+        response,
+      });
+      return response;
+    };
     const upsertIds = parsed.data.upserts.map((item) => item.id);
     const activityIds = parsed.data.activities
       .map((item) => typeof item === 'object' && item && typeof (item as { id?: unknown }).id === 'string' ? (item as { id: string }).id : '')
@@ -115,11 +135,11 @@ export async function appStateRoutes(app: FastifyInstance) {
         return reply.status(409).send({ error: 'STATE_CONFLICT', revision: 0, updatedAt: null });
       }
       if (parsed.data.upserts.length === 0 && parsed.data.deletes.length === 0 && !hasActivityPatch) {
-        return {
+        return confirm({
           revision: 0, updatedAt: null, changed: false,
           confirmation: buildMutationConfirmation({ transactions: [], activityLog: [] }, operationId, 0, upsertIds, parsed.data.deletes, activityIds),
           shared: true, workspace: { id: context.workspace.id, name: context.workspace.name }
-        };
+        });
       }
       const initialState = stateSchema.safeParse(applyTransactionPatch(
         { transactions: [], budgets: {} },
@@ -141,11 +161,11 @@ export async function appStateRoutes(app: FastifyInstance) {
           },
           select: { state: true, revision: true, updatedAt: true }
         });
-        return {
+        return confirm({
           revision: created.revision, updatedAt: created.updatedAt, changed: true,
           confirmation: buildMutationConfirmation(created.state, operationId, created.revision, upsertIds, parsed.data.deletes, activityIds),
           shared: true, workspace: { id: context.workspace.id, name: context.workspace.name }
-        };
+        });
       } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
           const latest = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { revision: true, updatedAt: true } });
@@ -159,11 +179,11 @@ export async function appStateRoutes(app: FastifyInstance) {
       return reply.status(409).send({ error: 'STATE_CONFLICT', revision: current.revision, updatedAt: current.updatedAt });
     }
     if (parsed.data.upserts.length === 0 && parsed.data.deletes.length === 0 && !hasActivityPatch) {
-      return {
+      return confirm({
         revision: current.revision, updatedAt: current.updatedAt, changed: false,
         confirmation: buildMutationConfirmation(current.state, operationId, current.revision, upsertIds, parsed.data.deletes, activityIds),
         shared: true, workspace: { id: context.workspace.id, name: context.workspace.name }
-      };
+      });
     }
 
     const nextState = stateSchema.safeParse(applyTransactionPatch(
@@ -189,7 +209,7 @@ export async function appStateRoutes(app: FastifyInstance) {
       where: { id: current.id },
       select: { state: true, revision: true, updatedAt: true }
     });
-    return {
+    return confirm({
       revision: saved.revision,
       updatedAt: saved.updatedAt,
       changed: true,
@@ -200,7 +220,7 @@ export async function appStateRoutes(app: FastifyInstance) {
       confirmation: buildMutationConfirmation(saved.state, operationId, saved.revision, upsertIds, parsed.data.deletes, activityIds),
       shared: true,
       workspace: { id: context.workspace.id, name: context.workspace.name }
-    };
+    });
   });
 
   app.patch('/properties', { preHandler: app.authorize(['ADMIN', 'MANAGER', 'OPERATOR']) }, async (request, reply) => {
@@ -209,6 +229,25 @@ export async function appStateRoutes(app: FastifyInstance) {
 
     const context = await resolveWorkspaceContext(request.user.sub);
     if (!await assertWriteAccess(context.workspaceId, reply)) return;
+    const requestHash = mutationRequestHash(parsed.data);
+    const previousReceipt = await findMutationReceipt(context.workspaceId, parsed.data.operationId, requestHash);
+    if (previousReceipt?.conflict) {
+      return reply.status(409).send({ error: 'OPERATION_ID_REUSED', operationId: parsed.data.operationId });
+    }
+    if (previousReceipt?.response) {
+      return { ...(previousReceipt.response as Record<string, unknown>), replayed: true };
+    }
+    const confirm = async (response: Record<string, unknown>) => {
+      await recordMutationReceipt({
+        workspaceId: context.workspaceId,
+        operationId: parsed.data.operationId,
+        requestHash,
+        mutationType: 'state-properties',
+        revision: Number(response.revision || 0),
+        response,
+      });
+      return response;
+    };
     const current = await prisma.appState.findUnique({
       where: { workspaceId: context.workspaceId },
       select: { id: true, state: true, revision: true, updatedAt: true }
@@ -228,7 +267,7 @@ export async function appStateRoutes(app: FastifyInstance) {
 
     const changed = JSON.stringify(currentState) !== JSON.stringify(nextState.data);
     if (!changed) {
-      return {
+      return confirm({
         operationId: parsed.data.operationId,
         revision: currentRevision,
         updatedAt: current?.updatedAt || null,
@@ -236,7 +275,7 @@ export async function appStateRoutes(app: FastifyInstance) {
         propertyNames: Object.keys(parsed.data.properties),
         shared: true,
         workspace: { id: context.workspace.id, name: context.workspace.name }
-      };
+      });
     }
 
     if (!current) {
@@ -250,7 +289,7 @@ export async function appStateRoutes(app: FastifyInstance) {
           },
           select: { revision: true, updatedAt: true }
         });
-        return {
+        return confirm({
           operationId: parsed.data.operationId,
           revision: created.revision,
           updatedAt: created.updatedAt,
@@ -258,7 +297,7 @@ export async function appStateRoutes(app: FastifyInstance) {
           propertyNames: Object.keys(parsed.data.properties),
           shared: true,
           workspace: { id: context.workspace.id, name: context.workspace.name }
-        };
+        });
       } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
           const latest = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { revision: true, updatedAt: true } });
@@ -277,7 +316,7 @@ export async function appStateRoutes(app: FastifyInstance) {
       return reply.status(409).send({ error: 'STATE_CONFLICT', revision: latest?.revision || currentRevision, updatedAt: latest?.updatedAt || current?.updatedAt || null });
     }
     const saved = await prisma.appState.findUniqueOrThrow({ where: { id: current.id }, select: { revision: true, updatedAt: true } });
-    return {
+    return confirm({
       operationId: parsed.data.operationId,
       revision: saved.revision,
       updatedAt: saved.updatedAt,
@@ -285,7 +324,7 @@ export async function appStateRoutes(app: FastifyInstance) {
       propertyNames: Object.keys(parsed.data.properties),
       shared: true,
       workspace: { id: context.workspace.id, name: context.workspace.name }
-    };
+    });
   });
 
   app.put('/', { preHandler: app.authorize(['ADMIN', 'MANAGER', 'OPERATOR']) }, async (request, reply) => {

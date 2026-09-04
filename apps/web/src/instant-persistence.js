@@ -14,6 +14,18 @@ import {
   stateProperties,
 } from './cloud-state-properties-core.js';
 import { installCloudMutationGuard } from './cloud-mutation-guard.js';
+import {
+  emptyStateOutbox,
+  emptyTransactionOutbox,
+  normalizeStateOutbox,
+  reconcileStateOutboxes,
+  reconcileTransactionOutboxes,
+} from './durable-outbox-core.js';
+import {
+  deleteDurableOutboxIfGeneration,
+  protectDurableOutbox,
+  readDurableOutbox,
+} from './durable-outbox-store.js';
 import './activity-history.js';
 
 const STATE_KEY = 'meg-financas-state-v4-paid-fixes';
@@ -34,6 +46,10 @@ let lastFailureNoticeAt = 0;
 let outboxRetryTimer = null;
 let persistenceBlocker = null;
 let publishingConfirmedState = false;
+let durableHydrationRunning = true;
+let durableStorageUnavailable = false;
+let durableWriteBarrier = Promise.resolve();
+let durableWriteFailure = null;
 
 function isFinancialState(value) {
   return Boolean(value && typeof value === 'object' && Array.isArray(value.transactions));
@@ -136,7 +152,7 @@ function hidePersistenceBlocker() {
 
 function readOutbox() {
   const value = parseJson(globalThis.localStorage?.getItem?.(OUTBOX_KEY));
-  if (!value || typeof value !== 'object') return { generation: 0, operationId: '', upserts: [], deletes: [], activities: [] };
+  if (!value || typeof value !== 'object') return emptyTransactionOutbox();
   const normalized = normalizeTransactionOutbox(value);
   if (!sameValue(value, normalized)) {
     try {
@@ -149,15 +165,57 @@ function readOutbox() {
 
 function readStateOutbox() {
   const value = parseJson(globalThis.localStorage?.getItem?.(STATE_OUTBOX_KEY));
-  if (!value || typeof value !== 'object' || !value.properties || typeof value.properties !== 'object') {
-    return { generation: 0, operationId: '', properties: null };
+  return normalizeStateOutbox(value);
+}
+
+function enqueueDurableWrite(task) {
+  durableWriteBarrier = durableWriteBarrier.catch(() => undefined).then(async () => {
+    try {
+      const result = await task();
+      durableWriteFailure = null;
+      return result;
+    } catch (error) {
+      durableWriteFailure = error;
+      throw error;
+    }
+  });
+  durableWriteBarrier.catch(() => undefined);
+  return durableWriteBarrier;
+}
+
+async function protectOutbox(kind, value) {
+  const result = await protectDurableOutbox(kind, value);
+  if (result.unavailable) durableStorageUnavailable = true;
+  return result;
+}
+
+async function initializeDurableOutboxes() {
+  try {
+    const [durableTransactions, durableState] = await Promise.all([
+      readDurableOutbox('transactions'),
+      readDurableOutbox('state-properties'),
+    ]);
+    const transactions = reconcileTransactionOutboxes(readOutbox(), durableTransactions);
+    const state = reconcileStateOutboxes(readStateOutbox(), durableState);
+    if (hasTransactionOperations(transactions)) {
+      localStorage.setItem(OUTBOX_KEY, JSON.stringify(transactions));
+      await protectOutbox('transactions', transactions);
+    }
+    if (hasStateOutbox(state)) {
+      localStorage.setItem(STATE_OUTBOX_KEY, JSON.stringify(state));
+      await protectOutbox('state-properties', state);
+    }
+  } finally {
+    durableHydrationRunning = false;
   }
-  return {
-    generation: Number(value.generation || 0),
-    operationId: String(value.operationId || ''),
-    properties: stateProperties(value.properties),
-    updatedAt: String(value.updatedAt || ''),
-  };
+}
+
+const durableReadyPromise = initializeDurableOutboxes();
+
+async function awaitDurableProtection() {
+  await durableReadyPromise;
+  await durableWriteBarrier.catch(() => undefined);
+  if (durableWriteFailure && !durableStorageUnavailable) throw durableWriteFailure;
 }
 
 function hasStateOutbox(value = readStateOutbox()) {
@@ -173,6 +231,7 @@ function persistStateOutbox(properties) {
     updatedAt: new Date().toISOString(),
   };
   localStorage.setItem(STATE_OUTBOX_KEY, JSON.stringify(next));
+  enqueueDurableWrite(() => protectOutbox('state-properties', next));
   return next;
 }
 
@@ -180,6 +239,7 @@ function ensureStateOutboxOperationId(value) {
   if (value.operationId) return value;
   const next = { ...value, generation: value.generation + 1, operationId: createOperationId() };
   localStorage.setItem(STATE_OUTBOX_KEY, JSON.stringify(next));
+  enqueueDurableWrite(() => protectOutbox('state-properties', next));
   return next;
 }
 
@@ -187,6 +247,7 @@ function clearStateOutboxIfGeneration(generation) {
   const latest = readStateOutbox();
   if (latest.generation !== generation) return false;
   localStorage.removeItem(STATE_OUTBOX_KEY);
+  enqueueDurableWrite(() => deleteDurableOutboxIfGeneration('state-properties', generation));
   return true;
 }
 
@@ -201,6 +262,7 @@ function persistOutbox(operations) {
     updatedAt: new Date().toISOString(),
   };
   localStorage.setItem(OUTBOX_KEY, JSON.stringify(next));
+  enqueueDurableWrite(() => protectOutbox('transactions', next));
   return next;
 }
 
@@ -208,6 +270,7 @@ function ensureOutboxOperationId(value) {
   if (value.operationId) return value;
   const next = { ...value, generation: value.generation + 1, operationId: createOperationId() };
   localStorage.setItem(OUTBOX_KEY, JSON.stringify(next));
+  enqueueDurableWrite(() => protectOutbox('transactions', next));
   return next;
 }
 
@@ -215,6 +278,7 @@ function clearOutboxIfGeneration(generation) {
   const latest = readOutbox();
   if (latest.generation !== generation) return false;
   localStorage.removeItem(OUTBOX_KEY);
+  enqueueDurableWrite(() => deleteDurableOutboxIfGeneration('transactions', generation));
   if (!pendingImmediateState && !immediateSaveRunning && !hasStateOutbox()) hidePersistenceBlocker();
   return true;
 }
@@ -321,6 +385,7 @@ function publishStatePropertiesConfirmation(remote) {
 }
 
 async function ensureOutboxConfirmed() {
+  await awaitDurableProtection();
   if (outboxReplayRunning) return false;
   const initial = readOutbox();
   if (!hasTransactionOperations(initial)) return true;
@@ -388,6 +453,7 @@ async function ensureOutboxConfirmed() {
 }
 
 async function ensureStateOutboxConfirmed() {
+  await awaitDurableProtection();
   const initial = readStateOutbox();
   if (!hasStateOutbox(initial)) return true;
   if (!isCloudSessionReady() || navigator.onLine === false) return false;
@@ -450,6 +516,7 @@ function scheduleOutboxRetry(delay = OUTBOX_RETRY_MS) {
 }
 
 async function flushImmediateSave() {
+  await durableReadyPromise;
   if (immediateSaveRunning || (!pendingImmediateState && !hasTransactionOperations(readOutbox()) && !hasStateOutbox())) return;
   const cloud = window.MEG_CLOUD;
   if (!cloud?.saveNow || !isCloudSessionReady()) return;
@@ -597,10 +664,11 @@ function installStorageBridge() {
   });
 
   window.MEG_INSTANT_PERSISTENCE = {
-    pending: () => Boolean(pendingImmediateState || immediateSaveRunning || hasTransactionOperations(readOutbox()) || hasStateOutbox() || outboxReplayRunning),
+    pending: () => Boolean(durableHydrationRunning || pendingImmediateState || immediateSaveRunning || hasTransactionOperations(readOutbox()) || hasStateOutbox() || outboxReplayRunning),
     outbox: () => safeClone(readOutbox()),
     stateOutbox: () => safeClone(readStateOutbox()),
     hasProtectedState: () => hasStateOutbox(),
+    durableStorage: () => durableStorageUnavailable ? 'local-fallback' : 'indexeddb',
     async flush() {
       const deadline = Date.now() + 120_000;
       showPersistenceBlocker('Aguardando o recibo definitivo da base de dados...');
@@ -624,6 +692,9 @@ function installStorageBridge() {
   if (hasTransactionOperations(readOutbox()) || hasStateOutbox()) {
     scheduleOutboxRetry(600);
   }
+  durableReadyPromise.then(() => {
+    if (hasTransactionOperations(readOutbox()) || hasStateOutbox()) scheduleOutboxRetry(100);
+  });
 }
 
 installStorageBridge();
