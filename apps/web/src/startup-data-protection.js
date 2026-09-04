@@ -200,11 +200,17 @@ function responseFromPayload(payload, response, status = 200) {
 
 function appStateRequest(url) {
   if (!url) return false;
-  return /\/app-state\/?$/.test(url.pathname) || /\/app-state\/transactions\/?$/.test(url.pathname);
+  return /\/app-state\/?$/.test(url.pathname)
+    || /\/app-state\/transactions\/?$/.test(url.pathname)
+    || /\/app-state\/properties\/?$/.test(url.pathname);
 }
 
 function exactAppStateRequest(url) {
   return Boolean(url && /\/app-state\/?$/.test(url.pathname));
+}
+
+function cloudConfirmationRequest(url) {
+  return url?.searchParams?.get?.('megCloudConfirmation') === '1';
 }
 
 function showBlockedNotice() {
@@ -272,11 +278,28 @@ window.fetch = async function protectedFetch(input, init = {}) {
   const payload = await response.clone().json().catch(() => null);
   if (!payload || !isFinancialState(payload.state)) return response;
 
+  // A fila transacional usa esta leitura como recibo da fonte de verdade.
+  // Ela precisa enxergar o estado remoto puro e não pode acionar o antigo
+  // mecanismo de recuperação por PUT, que concorreria com os patches atômicos.
+  if (cloudConfirmationRequest(url)) return response;
+
+  const localState = parseJson(localValue(STATE_KEY));
+  const protectedByOutbox = Boolean(window.MEG_INSTANT_PERSISTENCE?.pending?.());
+  if (protectedByOutbox && isFinancialState(localState)) {
+    window.MEG_DATA_RECOVERY_RESULT = {
+      recovered: false,
+      cloudCanonical: false,
+      strategy: 'durable-outbox-in-progress',
+      localCount: transactionCount(localState),
+      remoteCount: transactionCount(payload.state),
+    };
+    return responseFromPayload({ ...payload, state: localState, protectedLocal: true }, response);
+  }
+
   markRemoteStateAsConfirmed(payload.state);
   saveSnapshot(payload.state, 'nuvem-antes-da-abertura', payload.revision, { force: true }).catch(() => undefined);
 
   const dirty = readDirtyState();
-  const localState = parseJson(localValue(STATE_KEY));
   const baseline = await loadCloudBaseline();
   const decision = recoveryDecision({
     dirty,

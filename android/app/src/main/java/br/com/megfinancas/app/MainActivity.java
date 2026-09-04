@@ -10,7 +10,11 @@ public class MainActivity extends BridgeActivity {
     private static final long UPDATE_FOCUS_DELAY_MS = 1500;
     private final Handler updateHandler = new Handler(Looper.getMainLooper());
     private final Runnable updateCheck = () -> {
-        if (!hasWindowFocus() || getBridge() == null) return;
+        if (!hasWindowFocus()) {
+            scheduleUpdateCheck();
+            return;
+        }
+        if (getBridge() == null) return;
         PluginHandle handle = getBridge().getPlugin("AppUpdater");
         if (handle != null && handle.getInstance() instanceof AppUpdaterPlugin) {
             AppUpdaterPlugin updater = (AppUpdaterPlugin) handle.getInstance();
@@ -18,6 +22,11 @@ public class MainActivity extends BridgeActivity {
             updater.checkForAvailableUpdateNative();
         }
     };
+
+    private void scheduleUpdateCheck() {
+        updateHandler.removeCallbacks(updateCheck);
+        updateHandler.postDelayed(updateCheck, UPDATE_FOCUS_DELAY_MS);
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -30,7 +39,13 @@ public class MainActivity extends BridgeActivity {
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         updateHandler.removeCallbacks(updateCheck);
-        if (hasFocus) updateHandler.postDelayed(updateCheck, UPDATE_FOCUS_DELAY_MS);
+        if (hasFocus) scheduleUpdateCheck();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        scheduleUpdateCheck();
     }
 
     public void onBiometricAuthenticationSucceeded() {

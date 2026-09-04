@@ -48,6 +48,17 @@ const transactionPatchSchema = z.object({
     deleteIds.add(id);
   });
 });
+const statePropertiesPatchSchema = z.object({
+  operationId: z.string().uuid(),
+  expectedRevision: z.number().int().nonnegative(),
+  properties: z.record(z.string(), z.unknown()),
+}).superRefine((value, context) => {
+  ['transactions', 'activityLog'].forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(value.properties, key)) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: `A propriedade ${key} possui protocolo próprio.`, path: ['properties', key] });
+    }
+  });
+});
 
 function activityMetadata(activityLog: unknown[] | undefined): Record<string, unknown> {
   return activityLog === undefined ? {} : { activityLog };
@@ -187,6 +198,91 @@ export async function appStateRoutes(app: FastifyInstance) {
       activitiesMerged: parsed.data.activities.length,
       activityLogUpdated: hasActivityPatch,
       confirmation: buildMutationConfirmation(saved.state, operationId, saved.revision, upsertIds, parsed.data.deletes, activityIds),
+      shared: true,
+      workspace: { id: context.workspace.id, name: context.workspace.name }
+    };
+  });
+
+  app.patch('/properties', { preHandler: app.authorize(['ADMIN', 'MANAGER', 'OPERATOR']) }, async (request, reply) => {
+    const parsed = statePropertiesPatchSchema.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: 'INVALID_STATE_PROPERTIES_PATCH', details: parsed.error.flatten() });
+
+    const context = await resolveWorkspaceContext(request.user.sub);
+    if (!await assertWriteAccess(context.workspaceId, reply)) return;
+    const current = await prisma.appState.findUnique({
+      where: { workspaceId: context.workspaceId },
+      select: { id: true, state: true, revision: true, updatedAt: true }
+    });
+    const currentRevision = current?.revision || 0;
+    if (currentRevision !== parsed.data.expectedRevision) {
+      return reply.status(409).send({ error: 'STATE_CONFLICT', revision: currentRevision, updatedAt: current?.updatedAt || null });
+    }
+
+    const currentState = current?.state && typeof current.state === 'object' && !Array.isArray(current.state)
+      ? current.state as Record<string, unknown>
+      : { transactions: [], budgets: {} };
+    const nextState = stateSchema.safeParse({ ...currentState, ...parsed.data.properties });
+    if (!nextState.success) {
+      return reply.status(400).send({ error: 'INVALID_APP_STATE_PROPERTIES', details: nextState.error.flatten() });
+    }
+
+    const changed = JSON.stringify(currentState) !== JSON.stringify(nextState.data);
+    if (!changed) {
+      return {
+        operationId: parsed.data.operationId,
+        revision: currentRevision,
+        updatedAt: current?.updatedAt || null,
+        changed: false,
+        propertyNames: Object.keys(parsed.data.properties),
+        shared: true,
+        workspace: { id: context.workspace.id, name: context.workspace.name }
+      };
+    }
+
+    if (!current) {
+      try {
+        const created = await prisma.appState.create({
+          data: {
+            userId: context.workspace.ownerId,
+            workspaceId: context.workspaceId,
+            state: nextState.data as Prisma.InputJsonValue,
+            revision: 1,
+          },
+          select: { revision: true, updatedAt: true }
+        });
+        return {
+          operationId: parsed.data.operationId,
+          revision: created.revision,
+          updatedAt: created.updatedAt,
+          changed: true,
+          propertyNames: Object.keys(parsed.data.properties),
+          shared: true,
+          workspace: { id: context.workspace.id, name: context.workspace.name }
+        };
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          const latest = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { revision: true, updatedAt: true } });
+          return reply.status(409).send({ error: 'STATE_CONFLICT', revision: latest?.revision || 0, updatedAt: latest?.updatedAt || null });
+        }
+        throw error;
+      }
+    }
+
+    const updated = await prisma.appState.updateMany({
+      where: { id: current.id, revision: parsed.data.expectedRevision },
+      data: { state: nextState.data as Prisma.InputJsonValue, revision: { increment: 1 } }
+    });
+    if (updated.count !== 1) {
+      const latest = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { revision: true, updatedAt: true } });
+      return reply.status(409).send({ error: 'STATE_CONFLICT', revision: latest?.revision || currentRevision, updatedAt: latest?.updatedAt || current?.updatedAt || null });
+    }
+    const saved = await prisma.appState.findUniqueOrThrow({ where: { id: current.id }, select: { revision: true, updatedAt: true } });
+    return {
+      operationId: parsed.data.operationId,
+      revision: saved.revision,
+      updatedAt: saved.updatedAt,
+      changed: true,
+      propertyNames: Object.keys(parsed.data.properties),
       shared: true,
       workspace: { id: context.workspace.id, name: context.workspace.name }
     };

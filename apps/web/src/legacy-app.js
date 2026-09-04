@@ -5323,7 +5323,7 @@ async function testManagedUserEmail(userId) {
 async function deleteManagedUser(userId) {
   const card = document.querySelector(`[data-managed-user="${cssEscape(userId)}"]`);
   const email = card?.querySelector(".admin-user-identity a")?.textContent || "este usuário";
-  if (!window.confirm(`Excluir definitivamente o acesso de ${email}? As sessões e os dados pessoais desta conta serão removidos. Esta ação não pode ser desfeita.`)) return;
+  if (!await confirmPermanentDeletion(`o acesso de ${email}`, 'As sessões e os dados pessoais desta conta serão removidos.')) return;
   setUsersFeedback("Excluindo acesso...", "loading");
   try {
     await window.MEG_CLOUD.deleteManagedUser(userId);
@@ -5872,6 +5872,7 @@ window.MEG_APP = {
   getStateRef: () => state,
   flushLocalStateSave: persistLocalState,
   scheduleOpeningFinancialAlert,
+  confirmPermanentDeletion,
   showToast,
   render
 };

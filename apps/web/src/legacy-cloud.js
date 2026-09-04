@@ -507,7 +507,7 @@ async function loadCloudState() {
   const stateFromCloud = payload?.state;
   // Backups antigos podem ainda não ter a chave budgets. Eles continuam sendo
   // uma base financeira válida e não podem resultar em uma tela vazia.
-  const remoteState = Array.isArray(stateFromCloud?.transactions)
+  let remoteState = Array.isArray(stateFromCloud?.transactions)
     ? {
         ...stateFromCloud,
         budgets: stateFromCloud.budgets && typeof stateFromCloud.budgets === 'object'
@@ -515,6 +515,11 @@ async function loadCloudState() {
           : {}
       }
     : null;
+  const protectedProperties = window.MEG_INSTANT_PERSISTENCE?.stateOutbox?.()?.properties;
+  if (remoteState && protectedProperties && typeof protectedProperties === 'object') {
+    remoteState = { ...remoteState, ...protectedProperties };
+    payload.state = remoteState;
+  }
   const isUsableState = Array.isArray(remoteState?.transactions);
 
   console.info('[MEG database] app-state recebido', {

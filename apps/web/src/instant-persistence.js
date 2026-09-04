@@ -8,6 +8,12 @@ import {
   verifyMutationConfirmation,
   verifyTransactionOperations,
 } from './cloud-write-ahead-core.js';
+import {
+  changedStateProperties,
+  matchesStateProperties,
+  stateProperties,
+} from './cloud-state-properties-core.js';
+import { installCloudMutationGuard } from './cloud-mutation-guard.js';
 import './activity-history.js';
 
 const STATE_KEY = 'meg-financas-state-v4-paid-fixes';
@@ -15,6 +21,7 @@ const REVISION_KEY = 'meg-cloud-revision-v1';
 const ACCESS_KEY = 'meg-access-token';
 const OUTBOX_KEY = 'meg-cloud-transaction-outbox-v1';
 const OUTBOX_RECOVERY_KEY = 'meg-cloud-transaction-outbox-recovery-v1';
+const STATE_OUTBOX_KEY = 'meg-cloud-state-properties-outbox-v1';
 const ACTIVITY_MIGRATION_KEY = 'meg-cloud-activity-outbox-migrated-v1';
 const API_URL = import.meta.env?.VITE_API_URL || 'http://localhost:3333';
 const FAILURE_NOTICE_INTERVAL_MS = 30_000;
@@ -26,6 +33,7 @@ let outboxReplayRunning = false;
 let lastFailureNoticeAt = 0;
 let outboxRetryTimer = null;
 let persistenceBlocker = null;
+let publishingConfirmedState = false;
 
 function isFinancialState(value) {
   return Boolean(value && typeof value === 'object' && Array.isArray(value.transactions));
@@ -105,23 +113,25 @@ function createOperationId() {
 }
 
 function showPersistenceBlocker(message = 'Gravando e confirmando na base...') {
-  if (!globalThis.document?.body || !isCloudSessionReady()) return;
+  if (!globalThis.document?.body) return;
   if (!persistenceBlocker) {
     persistenceBlocker = document.createElement('div');
     persistenceBlocker.id = 'megPersistenceBlocker';
     persistenceBlocker.setAttribute('role', 'status');
     persistenceBlocker.setAttribute('aria-live', 'assertive');
     persistenceBlocker.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:2147483646;width:min(420px,calc(100vw - 36px));pointer-events:none;';
-    persistenceBlocker.innerHTML = '<div style="padding:18px;border:1px solid #285365;border-radius:16px;background:#0b2632;color:#fff;box-shadow:0 16px 45px rgba(0,0,0,.35)"><strong style="display:block;font-size:16px;margin-bottom:7px">Sincronização protegida</strong><p data-persistence-message style="margin:0;color:#b8d5df;line-height:1.45"></p><small style="display:block;margin-top:9px;color:#70d8c8">Os dados permanecem guardados neste aparelho até a confirmação.</small></div>';
+    persistenceBlocker.innerHTML = '<div style="padding:18px;border:1px solid #285365;border-radius:16px;background:#0b2632;color:#fff;box-shadow:0 16px 45px rgba(0,0,0,.35)"><strong style="display:block;font-size:16px;margin-bottom:7px">Sincronizando com a nuvem</strong><p data-persistence-message style="margin:0;color:#b8d5df;line-height:1.45"></p><small style="display:block;margin-top:9px;color:#70d8c8">A próxima alteração será liberada após a confirmação da base.</small></div>';
     document.body.appendChild(persistenceBlocker);
   }
   const text = persistenceBlocker.querySelector('[data-persistence-message]');
   if (text) text.textContent = message;
+  window.MEG_CLOUD_MUTATION_GUARD?.setVisualPending?.(true);
 }
 
 function hidePersistenceBlocker() {
   persistenceBlocker?.remove();
   persistenceBlocker = null;
+  if (!window.MEG_CLOUD_MUTATION_GUARD?.pending?.()) window.MEG_CLOUD_MUTATION_GUARD?.setVisualPending?.(false);
 }
 
 function readOutbox() {
@@ -135,6 +145,49 @@ function readOutbox() {
     } catch {}
   }
   return normalized;
+}
+
+function readStateOutbox() {
+  const value = parseJson(globalThis.localStorage?.getItem?.(STATE_OUTBOX_KEY));
+  if (!value || typeof value !== 'object' || !value.properties || typeof value.properties !== 'object') {
+    return { generation: 0, operationId: '', properties: null };
+  }
+  return {
+    generation: Number(value.generation || 0),
+    operationId: String(value.operationId || ''),
+    properties: stateProperties(value.properties),
+    updatedAt: String(value.updatedAt || ''),
+  };
+}
+
+function hasStateOutbox(value = readStateOutbox()) {
+  return Boolean(value.properties && Object.keys(value.properties).length > 0);
+}
+
+function persistStateOutbox(properties) {
+  const current = readStateOutbox();
+  const next = {
+    generation: current.generation + 1,
+    operationId: createOperationId(),
+    properties: { ...(current.properties || {}), ...stateProperties(properties) },
+    updatedAt: new Date().toISOString(),
+  };
+  localStorage.setItem(STATE_OUTBOX_KEY, JSON.stringify(next));
+  return next;
+}
+
+function ensureStateOutboxOperationId(value) {
+  if (value.operationId) return value;
+  const next = { ...value, generation: value.generation + 1, operationId: createOperationId() };
+  localStorage.setItem(STATE_OUTBOX_KEY, JSON.stringify(next));
+  return next;
+}
+
+function clearStateOutboxIfGeneration(generation) {
+  const latest = readStateOutbox();
+  if (latest.generation !== generation) return false;
+  localStorage.removeItem(STATE_OUTBOX_KEY);
+  return true;
 }
 
 function persistOutbox(operations) {
@@ -162,7 +215,7 @@ function clearOutboxIfGeneration(generation) {
   const latest = readOutbox();
   if (latest.generation !== generation) return false;
   localStorage.removeItem(OUTBOX_KEY);
-  if (!pendingImmediateState && !immediateSaveRunning) hidePersistenceBlocker();
+  if (!pendingImmediateState && !immediateSaveRunning && !hasStateOutbox()) hidePersistenceBlocker();
   return true;
 }
 
@@ -190,8 +243,10 @@ async function cloudRequest(path, options = {}) {
   if (!headers) throw new Error('A sessão ainda não está pronta para confirmar o lançamento.');
   const controller = typeof AbortController === 'function' ? new AbortController() : null;
   const timeout = globalThis.setTimeout?.(() => controller?.abort(), 15_000);
+  const separator = path.includes('?') ? '&' : '?';
+  const confirmedPath = `${path}${separator}megCloudConfirmation=1`;
   try {
-    return await fetch(`${window.MEG_CLOUD?.apiUrl || API_URL}${path}`, {
+    return await fetch(`${window.MEG_CLOUD?.apiUrl || API_URL}${confirmedPath}`, {
       ...options,
       headers: {
         ...(options.body ? { 'Content-Type': 'application/json' } : {}),
@@ -245,12 +300,31 @@ function publishCloudConfirmation(remote, operations) {
   } catch {}
 }
 
+function publishStatePropertiesConfirmation(remote) {
+  if (Number.isFinite(remote.revision)) localStorage.setItem(REVISION_KEY, String(remote.revision));
+  publishingConfirmedState = true;
+  try {
+    localStorage.setItem(STATE_KEY, JSON.stringify(remote.state));
+    window.MEG_REAL_STATE = remote.state;
+    window.MEG_CLOUD?.acceptConfirmedState?.(remote);
+    window.MEG_APP?.replaceState?.(remote.state);
+  } finally {
+    publishingConfirmedState = false;
+  }
+  window.MEG_NATIVE_NOTIFICATIONS?.sync?.(remote.state);
+  setSyncStatus(`Confirmado na nuvem ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`);
+  try {
+    window.dispatchEvent(new CustomEvent('meg:cloud-save-confirmed', {
+      detail: { verified: true, properties: true },
+    }));
+  } catch {}
+}
+
 async function ensureOutboxConfirmed() {
   if (outboxReplayRunning) return false;
   const initial = readOutbox();
   if (!hasTransactionOperations(initial)) return true;
   if (!isCloudSessionReady() || navigator.onLine === false) {
-    hidePersistenceBlocker();
     return false;
   }
 
@@ -313,17 +387,57 @@ async function ensureOutboxConfirmed() {
   }
 }
 
+async function ensureStateOutboxConfirmed() {
+  const initial = readStateOutbox();
+  if (!hasStateOutbox(initial)) return true;
+  if (!isCloudSessionReady() || navigator.onLine === false) return false;
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const pending = ensureStateOutboxOperationId(readStateOutbox());
+    if (!hasStateOutbox(pending)) return true;
+    const remote = await readRemoteState();
+    if (matchesStateProperties(remote.state, pending.properties)) {
+      publishStatePropertiesConfirmation(remote);
+      if (clearStateOutboxIfGeneration(pending.generation)) return true;
+      continue;
+    }
+
+    setSyncStatus('Salvando configurações e cadastros na nuvem...');
+    showPersistenceBlocker('Enviando a alteração e aguardando a releitura confirmada da base...');
+    const response = await cloudRequest('/app-state/properties', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        operationId: pending.operationId,
+        expectedRevision: remote.revision,
+        properties: pending.properties,
+      }),
+    });
+    if (response.status === 409) continue;
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      throw new Error(`A base recusou a confirmação da alteração (${response.status})${detail ? `: ${detail.slice(0, 180)}` : ''}`);
+    }
+    const receipt = await response.json().catch(() => ({}));
+    if (receipt.operationId && receipt.operationId !== pending.operationId) {
+      throw new Error('O recibo retornado pela base não corresponde à alteração enviada.');
+    }
+    const confirmed = await readRemoteState();
+    if (!matchesStateProperties(confirmed.state, pending.properties)) {
+      throw new Error('A alteração foi recebida, mas a releitura da base ainda não confirmou todos os dados.');
+    }
+    publishStatePropertiesConfirmation(confirmed);
+    if (clearStateOutboxIfGeneration(pending.generation)) return true;
+  }
+  return !hasStateOutbox();
+}
+
 function scheduleOutboxRetry(delay = OUTBOX_RETRY_MS) {
-  if (outboxRetryTimer || !hasTransactionOperations(readOutbox())) return;
+  if (outboxRetryTimer || (!hasTransactionOperations(readOutbox()) && !hasStateOutbox())) return;
   outboxRetryTimer = globalThis.setTimeout?.(() => {
     outboxRetryTimer = null;
-    ensureOutboxConfirmed()
-      .then((confirmed) => {
-        if (confirmed && pendingImmediateState && !immediateSaveRunning) {
-          flushImmediateSave().catch(() => scheduleOutboxRetry());
-          return;
-        }
-        if (!confirmed && hasTransactionOperations(readOutbox())) {
+    flushImmediateSave()
+      .then(() => {
+        if (hasTransactionOperations(readOutbox()) || hasStateOutbox() || pendingImmediateState) {
           scheduleOutboxRetry(Math.min(delay * 2, 30_000));
         }
       })
@@ -336,9 +450,9 @@ function scheduleOutboxRetry(delay = OUTBOX_RETRY_MS) {
 }
 
 async function flushImmediateSave() {
-  if (immediateSaveRunning || !pendingImmediateState) return;
+  if (immediateSaveRunning || (!pendingImmediateState && !hasTransactionOperations(readOutbox()) && !hasStateOutbox())) return;
   const cloud = window.MEG_CLOUD;
-  if (!cloud?.saveNow) return;
+  if (!cloud?.saveNow || !isCloudSessionReady()) return;
 
   immediateSaveRunning = true;
   try {
@@ -350,22 +464,14 @@ async function flushImmediateSave() {
       }
     }
 
-    while (pendingImmediateState) {
-      const snapshot = pendingImmediateState;
-      pendingImmediateState = null;
-      setSyncStatus('Salvando na base...');
-      try {
-        await cloud.saveNow(snapshot);
-        setSyncStatus(`Confirmado na base ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`);
-      } catch (error) {
-        pendingImmediateState = snapshot;
-        setSyncStatus('Aguardando confirmação completa da base...');
-        showPersistenceBlocker('A parte principal foi gravada, mas o MEG ainda está confirmando todos os dados relacionados antes de liberar o sistema...');
-        notifyPendingFailure(error);
-        globalThis.setTimeout?.(() => flushImmediateSave().catch(() => undefined), 1_500);
-        break;
+    if (hasStateOutbox()) {
+      const confirmed = await ensureStateOutboxConfirmed();
+      if (!confirmed) {
+        scheduleOutboxRetry();
+        return;
       }
     }
+    pendingImmediateState = null;
   } catch (error) {
     setSyncStatus('Aguardando confirmação segura do banco...');
     showPersistenceBlocker('A conexão ainda não confirmou a gravação. O MEG continuará tentando automaticamente, sem liberar outra operação.');
@@ -375,18 +481,22 @@ async function flushImmediateSave() {
     immediateSaveRunning = false;
   }
 
-  if (!hasTransactionOperations(readOutbox()) && !pendingImmediateState) {
+  if (!hasTransactionOperations(readOutbox()) && !hasStateOutbox() && !pendingImmediateState) {
     hidePersistenceBlocker();
     setSyncStatus(`Salvo na base ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`);
     try { window.dispatchEvent(new CustomEvent('meg:cloud-save-confirmed', { detail: { verified: true } })); } catch {}
   }
 }
 
-function scheduleImmediateSave(state, operations) {
+function scheduleImmediateSave(state, operations, propertyChanges = {}) {
   if (!isFinancialState(state)) return;
   if (hasTransactionOperations(operations)) {
     persistOutbox(operations);
     showPersistenceBlocker('O lançamento foi protegido neste aparelho e está sendo confirmado na base...');
+  }
+  if (Object.keys(propertyChanges).length > 0) {
+    persistStateOutbox(propertyChanges);
+    showPersistenceBlocker('A alteração foi protegida neste aparelho e está sendo confirmada na nuvem...');
   }
   pendingImmediateState = safeClone(state);
   const schedule = typeof queueMicrotask === 'function'
@@ -402,6 +512,7 @@ function installStorageBridge() {
   if (typeof window === 'undefined' || typeof Storage === 'undefined') return;
   if (window.__MEG_INSTANT_PERSISTENCE_INSTALLED__) return;
   window.__MEG_INSTANT_PERSISTENCE_INSTALLED__ = true;
+  installCloudMutationGuard();
 
   const nativeSetItem = Storage.prototype.setItem;
   const nativeGetItem = Storage.prototype.getItem;
@@ -410,8 +521,9 @@ function installStorageBridge() {
     let value = rawValue;
     let stateForImmediateSave = null;
     let transactionOperations = { upserts: [], deletes: [], activities: [] };
+    let propertyChanges = {};
 
-    if (this === window.localStorage && key === STATE_KEY) {
+    if (this === window.localStorage && key === STATE_KEY && !publishingConfirmedState) {
       const previousState = parseJson(nativeGetItem.call(this, key));
       const incomingState = parseJson(rawValue);
       const appState = window.MEG_APP?.getStateRef?.();
@@ -429,6 +541,7 @@ function installStorageBridge() {
           window.MEG_CLOUD?.user || {},
         );
         transactionOperations = buildTransactionOperations(previousState, nextState);
+        propertyChanges = changedStateProperties(previousState, nextState);
         if (Array.isArray(nextState?.activityLog)) {
           appState.activityLog = nextState.activityLog;
           value = JSON.stringify(nextState);
@@ -441,7 +554,7 @@ function installStorageBridge() {
     const result = nativeSetItem.call(this, key, value);
     if (stateForImmediateSave) {
       const persistedState = parseJson(nativeGetItem.call(this, STATE_KEY));
-      scheduleImmediateSave(isFinancialState(persistedState) ? persistedState : stateForImmediateSave, transactionOperations);
+      scheduleImmediateSave(isFinancialState(persistedState) ? persistedState : stateForImmediateSave, transactionOperations, propertyChanges);
     }
     return result;
   };
@@ -451,30 +564,43 @@ function installStorageBridge() {
   seedCachedActivitiesOnce();
 
   window.addEventListener('online', () => {
-    if (pendingImmediateState) flushImmediateSave().catch(() => undefined);
-    else ensureOutboxConfirmed().catch(() => scheduleOutboxRetry());
+    if (pendingImmediateState || hasTransactionOperations(readOutbox()) || hasStateOutbox()) {
+      flushImmediateSave().catch(() => scheduleOutboxRetry());
+    }
   });
   window.addEventListener('meg:cloud-ready', () => {
-    if (hasTransactionOperations(readOutbox())) {
+    if (hasTransactionOperations(readOutbox()) || hasStateOutbox()) {
       showPersistenceBlocker('Sessão iniciada. Confirmando os dados protegidos na base...');
-      ensureOutboxConfirmed().catch(() => scheduleOutboxRetry());
+      flushImmediateSave().catch(() => scheduleOutboxRetry());
     }
   });
   window.addEventListener('focus', () => {
-    if (hasTransactionOperations(readOutbox())) ensureOutboxConfirmed().catch(() => scheduleOutboxRetry());
+    if (hasTransactionOperations(readOutbox()) || hasStateOutbox()) flushImmediateSave().catch(() => scheduleOutboxRetry());
   });
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && hasTransactionOperations(readOutbox())) {
-      ensureOutboxConfirmed().catch(() => scheduleOutboxRetry());
+    if (!document.hidden && (hasTransactionOperations(readOutbox()) || hasStateOutbox())) {
+      flushImmediateSave().catch(() => scheduleOutboxRetry());
     }
   });
   window.addEventListener('pagehide', () => {
     if (pendingImmediateState) window.MEG_CLOUD?.saveState?.(pendingImmediateState);
   });
+  window.addEventListener('meg:cloud-action-started', () => {
+    showPersistenceBlocker('Ação enviada. Aguardando a confirmação da nuvem...');
+    setSyncStatus('Sincronizando com a nuvem...');
+  });
+  window.addEventListener('meg:cloud-network-idle', () => {
+    if (!pendingImmediateState && !hasTransactionOperations(readOutbox()) && !hasStateOutbox()) hidePersistenceBlocker();
+  });
+  window.addEventListener('meg:cloud-action-blocked', () => {
+    window.MEG_APP?.showToast?.('Aguarde a confirmação', 'A ação anterior ainda está sendo sincronizada com a nuvem.', 'warning');
+  });
 
   window.MEG_INSTANT_PERSISTENCE = {
-    pending: () => Boolean(pendingImmediateState || immediateSaveRunning || hasTransactionOperations(readOutbox()) || outboxReplayRunning),
+    pending: () => Boolean(pendingImmediateState || immediateSaveRunning || hasTransactionOperations(readOutbox()) || hasStateOutbox() || outboxReplayRunning),
     outbox: () => safeClone(readOutbox()),
+    stateOutbox: () => safeClone(readStateOutbox()),
+    hasProtectedState: () => hasStateOutbox(),
     async flush() {
       const deadline = Date.now() + 120_000;
       showPersistenceBlocker('Aguardando o recibo definitivo da base de dados...');
@@ -483,7 +609,8 @@ function installStorageBridge() {
         if (!outboxReplayRunning && hasTransactionOperations(readOutbox())) {
           await ensureOutboxConfirmed().catch(() => false);
         }
-        if (!hasTransactionOperations(readOutbox()) && !pendingImmediateState && !immediateSaveRunning && !outboxReplayRunning) {
+        if (hasStateOutbox()) await ensureStateOutboxConfirmed().catch(() => false);
+        if (!hasTransactionOperations(readOutbox()) && !hasStateOutbox() && !pendingImmediateState && !immediateSaveRunning && !outboxReplayRunning) {
           await window.MEG_CLOUD?.flush?.({ immediate: true, throwOnError: true });
           hidePersistenceBlocker();
           return true;
@@ -494,7 +621,7 @@ function installStorageBridge() {
     },
   };
 
-  if (hasTransactionOperations(readOutbox())) {
+  if (hasTransactionOperations(readOutbox()) || hasStateOutbox()) {
     scheduleOutboxRetry(600);
   }
 }

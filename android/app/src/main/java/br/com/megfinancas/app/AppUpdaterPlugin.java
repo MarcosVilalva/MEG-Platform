@@ -4,9 +4,11 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.pm.Signature;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
@@ -31,6 +33,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -40,6 +43,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @CapacitorPlugin(name = "AppUpdater")
 public class AppUpdaterPlugin extends Plugin {
     private static final String TAG = "MEG-AppUpdater";
+    private static final String UPDATE_PREFERENCES = "meg-secure-app-update";
+    private static final String PENDING_SOURCE_KEY = "pending-source";
+    private static final String PENDING_SHA256_KEY = "pending-sha256";
     private static final int MAX_DOWNLOAD_REDIRECTS = 6;
     private static final String[] RELEASE_MANIFEST_URLS = {
         "https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json",
@@ -128,17 +134,38 @@ public class AppUpdaterPlugin extends Plugin {
     private void rememberPendingInstall(String source, String expectedSha256) {
         pendingInstallSource = source;
         pendingInstallSha256 = expectedSha256 == null ? "" : expectedSha256;
+        getContext().getSharedPreferences(UPDATE_PREFERENCES, android.content.Context.MODE_PRIVATE)
+            .edit()
+            .putString(PENDING_SOURCE_KEY, pendingInstallSource)
+            .putString(PENDING_SHA256_KEY, pendingInstallSha256)
+            .apply();
         Log.i(TAG, "Atualização guardada para retomar após permissão de instalação.");
     }
 
+    private String pendingInstallSource() {
+        if (pendingInstallSource != null && !pendingInstallSource.isEmpty()) return pendingInstallSource;
+        SharedPreferences preferences = getContext().getSharedPreferences(UPDATE_PREFERENCES, android.content.Context.MODE_PRIVATE);
+        pendingInstallSource = preferences.getString(PENDING_SOURCE_KEY, null);
+        pendingInstallSha256 = preferences.getString(PENDING_SHA256_KEY, "");
+        return pendingInstallSource;
+    }
+
+    private void clearPendingInstall() {
+        pendingInstallSource = null;
+        pendingInstallSha256 = "";
+        getContext().getSharedPreferences(UPDATE_PREFERENCES, android.content.Context.MODE_PRIVATE)
+            .edit()
+            .remove(PENDING_SOURCE_KEY)
+            .remove(PENDING_SHA256_KEY)
+            .apply();
+    }
+
     public boolean resumePendingInstallIfAuthorized() {
-        String source = pendingInstallSource;
+        String source = pendingInstallSource();
         if (source == null || source.isEmpty()) return false;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !getContext().getPackageManager().canRequestPackageInstalls()) return false;
 
         String sha256 = pendingInstallSha256;
-        pendingInstallSource = null;
-        pendingInstallSha256 = "";
         Log.i(TAG, "Permissão concedida. Retomando atualização pendente automaticamente.");
         installAvailableUpdateNatively(source, sha256);
         return true;
@@ -179,8 +206,8 @@ public class AppUpdaterPlugin extends Plugin {
             call.reject("A atualização precisa usar um endereço HTTPS válido.");
             return;
         }
+        rememberPendingInstall(source, expectedSha256);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !getContext().getPackageManager().canRequestPackageInstalls()) {
-            rememberPendingInstall(source, expectedSha256);
             call.reject("INSTALL_PERMISSION_REQUIRED");
             return;
         }
@@ -188,6 +215,7 @@ public class AppUpdaterPlugin extends Plugin {
         downloadAndInstallInternal(source, expectedSha256, new DownloadCallback() {
             @Override
             public void onSuccess(String actualSha256) {
+                if (actualSha256 != null && !actualSha256.isEmpty()) clearPendingInstall();
                 JSObject result = new JSObject();
                 result.put("sha256", actualSha256);
                 result.put("installerLaunched", true);
@@ -276,8 +304,8 @@ public class AppUpdaterPlugin extends Plugin {
     }
 
     private void installAvailableUpdateNatively(String source, String expectedSha256) {
+        rememberPendingInstall(source, expectedSha256);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !getContext().getPackageManager().canRequestPackageInstalls()) {
-            rememberPendingInstall(source, expectedSha256);
             showToast("Autorize 'Permitir desta fonte'. Ao voltar, o MEG continuará a atualização automaticamente.");
             Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getContext().getPackageName()));
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -288,6 +316,7 @@ public class AppUpdaterPlugin extends Plugin {
         downloadAndInstallInternal(source, expectedSha256, new DownloadCallback() {
             @Override
             public void onSuccess(String actualSha256) {
+                if (actualSha256 != null && !actualSha256.isEmpty()) clearPendingInstall();
                 showToast("Atualização validada. Conclua a instalação na tela do Android.");
             }
 
@@ -336,6 +365,7 @@ public class AppUpdaterPlugin extends Plugin {
             int second = input.read();
             if (first != 'P' || second != 'K') throw new IllegalStateException("Arquivo baixado não possui formato APK válido.");
         }
+        verifyPackageSignature(apk);
 
         Uri apkUri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", apk);
         Intent installer = new Intent(Intent.ACTION_INSTALL_PACKAGE);
@@ -360,6 +390,37 @@ public class AppUpdaterPlugin extends Plugin {
             getContext().grantUriPermission(handler.activityInfo.packageName, apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
         }
         getContext().startActivity(installer);
+    }
+
+    @SuppressWarnings("deprecation")
+    private Signature[] packageSignatures(PackageInfo info) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && info.signingInfo != null) {
+            return info.signingInfo.hasMultipleSigners()
+                ? info.signingInfo.getApkContentsSigners()
+                : info.signingInfo.getSigningCertificateHistory();
+        }
+        return info.signatures;
+    }
+
+    private void verifyPackageSignature(File apk) throws Exception {
+        PackageManager manager = getContext().getPackageManager();
+        int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+            ? PackageManager.GET_SIGNING_CERTIFICATES
+            : PackageManager.GET_SIGNATURES;
+        PackageInfo candidate = manager.getPackageArchiveInfo(apk.getAbsolutePath(), flags);
+        PackageInfo installed = manager.getPackageInfo(getContext().getPackageName(), flags);
+        if (candidate == null || !getContext().getPackageName().equals(candidate.packageName)) {
+            throw new SecurityException("O arquivo baixado não pertence ao aplicativo MEG.");
+        }
+        Signature[] candidateSignatures = packageSignatures(candidate);
+        Signature[] installedSignatures = packageSignatures(installed);
+        if (candidateSignatures == null || installedSignatures == null || candidateSignatures.length == 0 || installedSignatures.length == 0) {
+            throw new SecurityException("Não foi possível validar o certificado do aplicativo.");
+        }
+        boolean trusted = Arrays.stream(candidateSignatures).anyMatch(candidateSignature ->
+            Arrays.stream(installedSignatures).anyMatch(installedSignature -> installedSignature.equals(candidateSignature))
+        );
+        if (!trusted) throw new SecurityException("O certificado da atualização não corresponde ao MEG instalado.");
     }
 
     private void downloadAndInstallInternal(String source, String expectedSha256, DownloadCallback callback) {
