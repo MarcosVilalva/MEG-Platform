@@ -1,9 +1,9 @@
 {
-  "versionCode": 194,
-  "versionName": "1.1.194",
+  "versionCode": 195,
+  "versionName": "1.1.195",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "f7df4d643a55e41cc9850b8c544ccf5acee897429159288d2124667e342b0292",
+  "sha256": "c6f717ad7f84e3646a03d9cb9ee8cdc81a736308f2775295248ffc08e78e48e5",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #183 from MarcosVilalva/fix/apk-certificate-fingerprint"
+  "releaseNotes": "Confirmação global da nuvem, histórico limpo e atualização automática"
 }
