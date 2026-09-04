@@ -107,6 +107,25 @@ model Workspace {
   subscription WorkspaceSubscription?
   notificationConfig WorkspaceNotificationConfig?
   invoices WorkspaceInvoice[]
+  mutationReceipts CloudMutationReceipt[]
+}
+
+model CloudMutationReceipt {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  operationId  String
+  requestHash  String
+  mutationType String
+  revision     Int
+  response     Json
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, operationId])
+  @@index([expiresAt])
+  @@index([workspaceId, createdAt])
 }
 
 model WorkspaceMember {
