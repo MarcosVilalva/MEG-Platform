@@ -65,6 +65,8 @@ function friendlyUpdateError(cause, { installing = false } = {}) {
 
 async function getAppUpdater() {
   if (!isAndroidRuntime()) return null;
+  const nativeProxy = window.Capacitor?.Plugins?.AppUpdater;
+  if (nativeProxy) return nativeProxy;
   appUpdaterPromise ||= import('@capacitor/core').then(({ registerPlugin }) => registerPlugin('AppUpdater'));
   return withDeadline(appUpdaterPromise, BRIDGE_TIMEOUT_MS, 'UPDATE_PLUGIN_TIMEOUT');
 }

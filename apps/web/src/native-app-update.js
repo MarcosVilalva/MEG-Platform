@@ -143,6 +143,8 @@ async function waitForNativeAndroid() {
 
 async function getAppUpdater() {
   if (!potentiallyNativeAndroid()) return null;
+  const nativeProxy = window.Capacitor?.Plugins?.AppUpdater;
+  if (nativeProxy) return nativeProxy;
   appUpdaterPromise ||= import('@capacitor/core').then(({ registerPlugin }) => registerPlugin('AppUpdater'));
   return appUpdaterPromise;
 }
@@ -347,55 +349,102 @@ function updateDialog(release, installed, AppUpdater) {
     <h2>Uma nova versão do MEG está disponível</h2>
     <p>Versão instalada: <strong>${installed.versionName}</strong> · nova versão: <strong>${release.versionName}</strong></p>
     <div class="app-update-notes">${String(release.releaseNotes || 'Melhorias de desempenho, segurança e experiência.').replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</div>
-    <p class="app-update-status" id="appUpdateStatus">Preparando a atualização segura…</p>
+    <p class="app-update-status" id="appUpdateStatus">Toque em “Atualizar agora”. O MEG fará o download seguro e abrirá a instalação.</p>
     <div class="modal-actions">
-      <button type="button" class="ghost-button" id="appUpdateContinue" hidden>Entrar sem atualizar</button>
-      <button type="button" class="primary-button" id="appUpdateRetry" hidden>Tentar novamente</button>
+      <button type="button" class="ghost-button" id="appUpdateContinue">Agora não</button>
+      <button type="button" class="primary-button" id="appUpdateRetry">Atualizar agora</button>
     </div>`;
   document.body.append(dialog);
   const status = dialog.querySelector('#appUpdateStatus');
   const continueButton = dialog.querySelector('#appUpdateContinue');
   const retryButton = dialog.querySelector('#appUpdateRetry');
   let updateRunning = false;
+  let stateListener = null;
+
+  const setRunning = (running) => {
+    updateRunning = running;
+    retryButton.disabled = running;
+    continueButton.disabled = running;
+    retryButton.toggleAttribute('aria-busy', running);
+    retryButton.textContent = running ? 'Processando atualização…' : 'Tentar novamente';
+  };
+
+  const showInstallError = (cause) => {
+    const message = cause?.message || String(cause || 'Falha desconhecida.');
+    status.textContent = message.includes('INSTALL_PERMISSION')
+      ? 'A permissão de instalação não foi liberada. Autorize e tente novamente.'
+      : `Não foi possível atualizar: ${message}`;
+    setRunning(false);
+  };
+
+  const observeNativeState = async () => {
+    if (stateListener || typeof AppUpdater.addListener !== 'function') return;
+    stateListener = await AppUpdater.addListener('appUpdateState', (event) => {
+      if (!dialog.isConnected) return;
+      if (event?.state === 'waiting-permission') {
+        status.textContent = 'Autorize “Permitir desta fonte”. Ao voltar, o MEG continuará automaticamente.';
+      } else if (event?.state === 'downloading') {
+        const percent = Number(event.percent);
+        status.textContent = Number.isFinite(percent) && percent > 0
+          ? `Baixando atualização… ${Math.min(100, Math.round(percent))}%`
+          : 'Baixando a nova versão…';
+      } else if (event?.state === 'validating') {
+        status.textContent = 'Download concluído. Validando a assinatura do aplicativo…';
+      } else if (event?.state === 'installer-launched') {
+        status.textContent = 'Instalação iniciada. Conclua na tela segura do Android.';
+      } else if (event?.state === 'failed') {
+        showInstallError(new Error(event.message || 'O Android não conseguiu iniciar a instalação.'));
+      }
+    });
+  };
 
   const installAutomatically = async () => {
     if (updateRunning) return;
-    updateRunning = true;
-    retryButton.hidden = true;
-    continueButton.hidden = true;
+    setRunning(true);
     try {
+      status.textContent = 'Iniciando o atualizador seguro do Android…';
+      await observeNativeState();
+
+      if (typeof AppUpdater.startDownloadAndInstall === 'function') {
+        try {
+          const accepted = await AppUpdater.startDownloadAndInstall({
+            url: release.downloadUrl,
+            sha256: release.sha256 || '',
+          });
+          status.textContent = accepted?.permissionRequired
+            ? 'Autorize “Permitir desta fonte”. Ao voltar, o MEG continuará automaticamente.'
+            : 'Atualização iniciada. Aguarde o download, a validação e a abertura do instalador…';
+          return;
+        } catch (cause) {
+          const unsupported = /not implemented|does not exist|unavailable/i.test(String(cause?.message || cause));
+          if (!unsupported) throw cause;
+        }
+      }
+
       status.textContent = 'Baixando e validando a nova versão…';
       try {
         await AppUpdater.downloadAndInstall({ url: release.downloadUrl, sha256: release.sha256 || '' });
       } catch (cause) {
         if (!String(cause?.message || cause).includes('INSTALL_PERMISSION_REQUIRED')) throw cause;
         status.textContent = 'Autorize “Permitir desta fonte”. Ao voltar, o MEG continuará o download e abrirá o instalador automaticamente.';
-        await AppUpdater.requestInstallPermission();
-        window.setTimeout(() => dialog.open && dialog.close('permission-requested'), 500);
+        Promise.resolve(AppUpdater.requestInstallPermission()).catch(showInstallError);
         return;
       }
       status.textContent = 'Atualização pronta. Conclua a instalação na tela segura do Android.';
       dialog.close('installer-launched');
     } catch (cause) {
-      const message = cause?.message || String(cause || 'Falha desconhecida.');
-      status.textContent = message.includes('INSTALL_PERMISSION')
-        ? 'A permissão de instalação não foi liberada. Autorize e tente novamente.'
-        : `Não foi possível atualizar: ${message}`;
-      retryButton.hidden = false;
-      continueButton.hidden = false;
-    } finally {
-      updateRunning = false;
+      showInstallError(cause);
     }
   };
 
   retryButton.addEventListener('click', installAutomatically);
   continueButton.addEventListener('click', () => dialog.close('continue-without-update'));
   dialog.addEventListener('close', () => {
+    Promise.resolve(stateListener?.remove?.()).catch(() => undefined);
     resolveDecision?.(dialog.returnValue || 'closed');
     dialog.remove();
   }, { once: true });
   dialog.showModal();
-  window.setTimeout(installAutomatically, 0);
   return decisionPromise;
 }
 

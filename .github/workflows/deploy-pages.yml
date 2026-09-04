@@ -43,6 +43,18 @@ jobs:
           rm -rf pages-artifact
           mkdir -p pages-artifact
           cp -r apps/web/dist/. pages-artifact/
+          mkdir -p pages-artifact/downloads
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output pages-artifact/downloads/MEG-Financas.apk \
+            https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk
+          node --input-type=module - <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          const manifest = JSON.parse(fs.readFileSync('pages-artifact/downloads/app-version.json', 'utf8'));
+          const apk = fs.readFileSync('pages-artifact/downloads/MEG-Financas.apk');
+          const actual = crypto.createHash('sha256').update(apk).digest('hex');
+          if (actual !== manifest.sha256) throw new Error(`APK publicado não corresponde ao manifesto: ${actual}`);
+          NODE
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

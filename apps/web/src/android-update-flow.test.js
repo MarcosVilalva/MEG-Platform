@@ -9,6 +9,7 @@ const activityHistory = readFileSync(new URL('./activity-history.js', import.met
 const embeddedVersion = readFileSync(new URL('./embedded-apk-version.js', import.meta.url), 'utf8');
 const nativePlugin = readFileSync(new URL('../../../android/app/src/main/java/br/com/megfinancas/app/AppUpdaterPlugin.java', import.meta.url), 'utf8');
 const mainActivity = readFileSync(new URL('../../../android/app/src/main/java/br/com/megfinancas/app/MainActivity.java', import.meta.url), 'utf8');
+const canonicalUpdate = readFileSync(new URL('./native-app-update.js', import.meta.url), 'utf8');
 const androidWorkflow = readFileSync(new URL('../../../.github/workflows/build-android-apk.yml', import.meta.url), 'utf8');
 const alexaWorkflow = readFileSync(new URL('../../../.github/workflows/deploy-alexa-skill.yml', import.meta.url), 'utf8');
 
@@ -37,6 +38,14 @@ assert.match(hardening, /import\('\.\/meg-dark-surface-guard\.css'\)/);
 assert.doesNotMatch(hardening, /Baixar APK/);
 assert.match(hardening, /Ao voltar, o MEG continuará o download e abrirá o instalador automaticamente/);
 assert.match(hardening, /checkForCanonicalAppUpdate\(\{ force: true, waitForDecision: false \}\)/);
+assert.match(hardening, /window\.Capacitor\?\.Plugins\?\.AppUpdater/);
+
+assert.match(canonicalUpdate, /window\.Capacitor\?\.Plugins\?\.AppUpdater/);
+assert.match(canonicalUpdate, /Processando atualização…/);
+assert.match(canonicalUpdate, /toggleAttribute\('aria-busy', running\)/);
+assert.match(canonicalUpdate, /AppUpdater\.startDownloadAndInstall/);
+assert.match(canonicalUpdate, /AppUpdater\.addListener\('appUpdateState'/);
+assert.doesNotMatch(canonicalUpdate, /window\.setTimeout\(installAutomatically, 0\)/);
 
 assert.match(embeddedVersion, /VITE_ANDROID_VERSION_NAME/);
 assert.match(embeddedVersion, /VITE_ANDROID_VERSION_CODE/);
@@ -53,7 +62,7 @@ assert.match(activityHistory, /meg-history-panel/);
 
 assert.match(androidWorkflow, /VITE_ANDROID_VERSION_CODE: \$\{\{ github\.run_number \}\}/);
 assert.match(androidWorkflow, /VITE_ANDROID_VERSION_NAME: 1\.1\.\$\{\{ github\.run_number \}\}/);
-assert.match(androidWorkflow, /releases\/download\/android-latest\/MEG-Financas\.apk'/);
+assert.match(androidWorkflow, /marcosvilalva\.github\.io\/MEG-Platform\/downloads\/MEG-Financas\.apk'/);
 assert.doesNotMatch(androidWorkflow, /MEG-Financas\.apk\?v=/);
 assert.match(androidWorkflow, /RELEASE_NOTES=\$\(git log -1 --pretty=%s/);
 assert.match(androidWorkflow, /releaseNotes: process\.env\.RELEASE_NOTES/);
@@ -61,6 +70,9 @@ assert.match(androidWorkflow, /APKSIGNER=.*apksigner/);
 assert.match(androidWorkflow, /"\$APKSIGNER" verify android\/app\/build\/outputs\/apk\/release\/app-release\.apk/);
 assert.match(androidWorkflow, /signerSha256: process\.env\.SIGNER_SHA256/);
 assert.doesNotMatch(androidWorkflow, /elimina superfícies brancas residuais/);
+
+assert.match(readFileSync(new URL('../../../.github/workflows/deploy-pages.yml', import.meta.url), 'utf8'), /pages-artifact\/downloads\/MEG-Financas\.apk/);
+assert.match(readFileSync(new URL('../../../.github/workflows/deploy-pages.yml', import.meta.url), 'utf8'), /createHash\('sha256'\)/);
 
 /* Mantém a implementação secundária protegida como fallback de compatibilidade. */
 assert.match(controller, /APP_UPDATER_INFO_TIMEOUT/);
@@ -88,6 +100,12 @@ assert.match(nativePlugin, /SharedPreferences/);
 assert.match(nativePlugin, /PENDING_SOURCE_KEY/);
 assert.match(nativePlugin, /verifyPackageSignature/);
 assert.match(nativePlugin, /installedSignature\.equals\(candidateSignature\)/);
+assert.match(nativePlugin, /public void startDownloadAndInstall\(PluginCall call\)/);
+assert.match(nativePlugin, /notifyListeners\("appUpdateState"/);
+assert.match(nativePlugin, /notifyUpdateState\("downloading"/);
+assert.match(nativePlugin, /notifyUpdateState\("validating"/);
+assert.match(nativePlugin, /notifyUpdateState\("installer-launched"/);
+assert.doesNotMatch(nativePlugin, /Intent\.EXTRA_NOT_UNKNOWN_SOURCE/);
 
 assert.match(mainActivity, /registerPlugin\(AppUpdaterPlugin\.class\)/);
 assert.match(mainActivity, /resumePendingInstallIfAuthorized\(\)/);
