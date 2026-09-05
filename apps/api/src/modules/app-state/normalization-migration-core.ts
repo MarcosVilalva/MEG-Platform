@@ -12,7 +12,7 @@ function number(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function canonical(value: unknown): unknown {
+export function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical);
   if (!value || typeof value !== 'object') return value;
   return Object.fromEntries(Object.keys(value as LegacyTransaction).sort().map((key) => [key, canonical((value as LegacyTransaction)[key])]));
@@ -41,6 +41,14 @@ export function legacyTransactionAmount(item: LegacyTransaction): number {
   return Math.abs(number(raw));
 }
 
+export function legacyTransactionEnteredAmount(item: LegacyTransaction): number {
+  const type = text(item.type).toLowerCase() === 'income' ? 'income' : 'expense';
+  const raw = type === 'income'
+    ? item.incomeAmount ?? item.amount
+    : item.expenseAmount ?? item.amount;
+  return number(raw);
+}
+
 export function legacyTransactionToFinancialEvent(item: LegacyTransaction, context: {
   workspaceId: string;
   userId: string;
@@ -51,7 +59,8 @@ export function legacyTransactionToFinancialEvent(item: LegacyTransaction, conte
   const description = text(item.description);
   if (!legacyTransactionId || !isoDate || !description) return null;
   const type = text(item.type).toLowerCase() === 'income' ? 'income' : 'expense';
-  const amount = legacyTransactionAmount(item);
+  const enteredAmount = legacyTransactionEnteredAmount(item);
+  const amount = Math.abs(enteredAmount);
   return {
     workspaceId: context.workspaceId,
     userId: context.userId,
@@ -62,7 +71,7 @@ export function legacyTransactionToFinancialEvent(item: LegacyTransaction, conte
     date: new Date(`${isoDate}T12:00:00.000Z`),
     competence: isoDate.slice(0, 7),
     amount,
-    signedAmount: type === 'income' ? amount : -amount,
+    signedAmount: type === 'income' ? enteredAmount : -enteredAmount,
     notes: text(item.notes) || null,
     sourceRevision: context.revision,
     sourcePayload: canonical(item),
@@ -72,6 +81,53 @@ export function legacyTransactionToFinancialEvent(item: LegacyTransaction, conte
     classificationConfidence: item.classificationConfidence == null ? null : number(item.classificationConfidence),
     classificationSource: text(item.classificationSource) || null,
   };
+}
+
+type FingerprintEvent = {
+  legacyTransactionId: string | null;
+  date: Date;
+  description: string;
+  type: string;
+  status: string;
+  amount: unknown;
+  signedAmount: unknown;
+  notes: string | null;
+  sourcePayload: unknown;
+  amountBehavior: string | null;
+  necessity: string | null;
+  frequency: string | null;
+  classificationConfidence: number | null;
+  classificationSource: string | null;
+};
+
+export function normalizationFingerprint(items: FingerprintEvent[]): string {
+  const projection = items.map((item) => ({
+    id: String(item.legacyTransactionId || ''),
+    date: item.date.toISOString().slice(0, 10),
+    description: item.description,
+    type: item.type,
+    status: item.status,
+    amount: Number(item.amount),
+    signedAmount: Number(item.signedAmount),
+    notes: item.notes || null,
+    sourcePayload: canonical(item.sourcePayload),
+    amountBehavior: item.amountBehavior || null,
+    necessity: item.necessity || null,
+    frequency: item.frequency || null,
+    classificationConfidence: item.classificationConfidence == null ? null : Number(item.classificationConfidence),
+    classificationSource: item.classificationSource || null,
+  })).sort((left, right) => left.id.localeCompare(right.id));
+  return createHash('sha256').update(JSON.stringify(projection)).digest('hex');
+}
+
+export function financialEventToLegacyTransaction(item: FingerprintEvent): LegacyTransaction {
+  const payload = item.sourcePayload && typeof item.sourcePayload === 'object' && !Array.isArray(item.sourcePayload)
+    ? canonical(item.sourcePayload) as LegacyTransaction
+    : {};
+  // sourcePayload is the lossless representation of the original transaction.
+  // The normalized columns are its queryable, reconciled projection and must not
+  // silently add, rename or standardize fields when the source is switched.
+  return payload;
 }
 
 export function buildNormalizationPreview(state: unknown, context: {
@@ -99,14 +155,9 @@ export function buildNormalizationPreview(state: unknown, context: {
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
   const invalid = transactions.length - events.length;
-  const income = events.filter((item) => item.type === 'income').reduce((sum, item) => sum + item.amount, 0);
-  const expense = events.filter((item) => item.type === 'expense').reduce((sum, item) => sum + item.amount, 0);
-  const fingerprint = createHash('sha256').update(JSON.stringify(events.map((item) => ({
-    id: item.legacyTransactionId,
-    date: item.date.toISOString().slice(0, 10),
-    type: item.type,
-    amount: item.amount,
-  })).sort((left, right) => left.id.localeCompare(right.id)))).digest('hex');
+  const income = events.filter((item) => item.type === 'income').reduce((sum, item) => sum + item.signedAmount, 0);
+  const expense = events.filter((item) => item.type === 'expense').reduce((sum, item) => sum - item.signedAmount, 0);
+  const fingerprint = normalizationFingerprint(events);
   const classification = [...suggestions.values()].reduce((summary, item) => {
     summary[item.confidence] = (summary[item.confidence] || 0) + 1;
     if (item.necessity === 'REVIEW') summary.review += 1;

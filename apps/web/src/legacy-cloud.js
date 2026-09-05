@@ -575,9 +575,7 @@ async function saveNow(state, { force = false, retryConflict = true } = {}) {
 
     if (!response) {
       const serializedState = JSON.stringify(state);
-      const body = force
-        ? `{"state":${serializedState}}`
-        : `{"state":${serializedState},"expectedRevision":${revision}}`;
+      const body = `{"state":${serializedState},"expectedRevision":${revision}}`;
       response = await api('/app-state', { method: 'PUT', body });
     }
 

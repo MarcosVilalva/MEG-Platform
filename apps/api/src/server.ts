@@ -21,6 +21,8 @@ import { platformAdminRoutes } from './modules/platform-admin/routes';
 import { ensureCommercialFoundation } from './modules/platform-admin/service';
 import { integrationRoutes } from './modules/integrations/routes';
 import { refreshCommercialBillingStatuses } from './modules/billing/service';
+import { ensurePrimaryWorkspace } from './modules/workspaces/service';
+import { activateNormalizationPrimary } from './modules/app-state/normalization-migration';
 
 const app = Fastify({
   bodyLimit: 25 * 1024 * 1024,
@@ -31,6 +33,12 @@ const app = Fastify({
 
 let dataRepair: { status: 'pending' | 'completed'; scanned: number; repaired: number; issues: number } = {
   status: 'pending', scanned: 0, repaired: 0, issues: 0
+};
+let normalization = {
+  status: 'pending' as 'pending' | 'completed' | 'fallback' | 'rollback-protected',
+  primary: false,
+  reconciled: false,
+  count: 0,
 };
 
 await app.register(cors, {
@@ -77,7 +85,8 @@ app.get('/health', async () => ({
   features: ['legacy-ui', 'cloud-state', 'xlsx-import', 'email-reminders', 'whatsapp-reminders', 'alexa-reminders', 'alexa-financial-advisor', 'multi-client-workspaces', 'commercial-licenses', 'workspace-integrations', 'subscription-billing'],
   integrations: notificationIntegrationStatus(),
   commit: process.env.RENDER_GIT_COMMIT || 'local',
-  dataRepair
+  dataRepair,
+  normalization,
 }));
 
 app.get('/ready', async (_request, reply) => {
@@ -136,6 +145,41 @@ try {
     ensureCommercialFoundation(),
     refreshCommercialBillingStatuses()
   ]).catch((error) => app.log.error(error, 'Background commercial maintenance failed'));
+  void ensurePrimaryWorkspace()
+    .then(async (workspace) => {
+      if (!workspace) return null;
+      let result: Awaited<ReturnType<typeof activateNormalizationPrimary>> | null = null;
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+          result = await activateNormalizationPrimary(workspace.id, workspace.ownerId, { automatic: true });
+          break;
+        } catch (error) {
+          const retryable = error instanceof Error && error.message === 'NORMALIZATION_REVISION_CONFLICT';
+          if (!retryable || attempt === 3) throw error;
+          await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+        }
+      }
+      if (!result) throw new Error('NORMALIZATION_ACTIVATION_EMPTY_RESULT');
+      const blockedByRollback = Boolean('blockedByRollback' in result && result.blockedByRollback);
+      normalization = {
+        status: blockedByRollback ? 'rollback-protected' : result.primary ? 'completed' : 'fallback',
+        primary: result.primary,
+        reconciled: result.reconciled,
+        count: result.normalized.count,
+      };
+      app.log.info({
+        mode: result.mode,
+        reconciled: result.reconciled,
+        count: result.normalized.count,
+        fingerprint: result.normalized.fingerprint,
+        blockedByRollback,
+      }, 'Normalized financial source startup check completed');
+      return result;
+    })
+    .catch((error) => {
+      normalization = { status: 'fallback', primary: false, reconciled: false, count: 0 };
+      app.log.error(error, 'Normalized financial source remained on AppState fallback');
+    });
   if (config.runLegacyRepair) {
     void repairLegacyImportedEvents()
       .then((repairResult) => {
