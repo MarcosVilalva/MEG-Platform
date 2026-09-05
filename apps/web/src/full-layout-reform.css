@@ -1,0 +1,534 @@
+/* MEG Layout Reform
+   Camada canônica de apresentação. Mantém os seletores funcionais existentes,
+   mas substitui a composição visual anterior em todas as telas. */
+
+:root,
+:root[data-meg-theme="light"] {
+  color-scheme: light;
+  --bg: #f5f8f7;
+  --surface: #ffffff;
+  --surface-strong: #edf4f1;
+  --text: #17201e;
+  --muted: #687570;
+  --line: #d9e4e0;
+  --primary: #0f766e;
+  --primary-strong: #095c55;
+  --primary-soft: #e3f6f1;
+  --danger: #c64d5e;
+  --danger-soft: #fff0f2;
+  --warn: #9b6815;
+  --warn-soft: #fff7df;
+  --blue: #3678a8;
+  --shadow: 0 1px 2px rgba(10, 38, 32, .04);
+  --meg-canvas: #f5f8f7;
+  --meg-sidebar: #102b28;
+  --meg-sidebar-ink: #dcebe7;
+  --meg-card: #ffffff;
+  --meg-card-soft: #edfaf6;
+  --meg-border: #d9e4e0;
+  --meg-accent: #0f766e;
+  --meg-accent-bright: #39d6b3;
+  --meg-heading: #17201e;
+  --meg-subtle: #687570;
+}
+
+:root[data-meg-theme="dark"] {
+  color-scheme: dark;
+  --bg: #091b19;
+  --surface: #102724;
+  --surface-strong: #17312e;
+  --text: #edf7f4;
+  --muted: #a4bbb5;
+  --line: #294743;
+  --primary: #65dfc5;
+  --primary-strong: #8aecd8;
+  --primary-soft: #173b35;
+  --danger: #ff8290;
+  --danger-soft: #42262d;
+  --warn: #efc36e;
+  --warn-soft: #3d3320;
+  --blue: #80c7f2;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .18);
+  --meg-canvas: #091b19;
+  --meg-sidebar: #071714;
+  --meg-sidebar-ink: #d8ebe6;
+  --meg-card: #102724;
+  --meg-card-soft: #12332d;
+  --meg-border: #294743;
+  --meg-accent: #65dfc5;
+  --meg-accent-bright: #53dfc0;
+  --meg-heading: #f0f8f6;
+  --meg-subtle: #a4bbb5;
+}
+
+html { background: var(--meg-canvas); }
+body.meg-layout-reformed {
+  min-height: 100dvh;
+  color: var(--text);
+  background: var(--meg-canvas);
+  font-family: Inter, "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+body.meg-layout-reformed::before { display: none; }
+
+.meg-layout-reformed .app-shell {
+  grid-template-columns: 228px minmax(0, 1fr);
+  min-height: 100dvh;
+  background: var(--meg-canvas);
+}
+
+.meg-layout-reformed .sidebar {
+  width: auto;
+  padding: 20px 14px 14px;
+  color: var(--meg-sidebar-ink);
+  border-right: 0;
+  background: var(--meg-sidebar);
+  box-shadow: none;
+}
+.meg-layout-reformed .brand { min-height: 44px; margin: 0 8px 18px; }
+.meg-layout-reformed .brand-logo { width: 174px; max-width: calc(100% - 48px); filter: none; }
+.meg-layout-reformed .desktop-sidebar-toggle,
+.meg-layout-reformed .sidebar-close-button {
+  border-color: rgba(255,255,255,.13);
+  background: rgba(255,255,255,.05);
+  box-shadow: none;
+}
+.meg-layout-reformed .nav-list { gap: 3px; }
+.meg-layout-reformed .nav-item {
+  min-height: 39px;
+  padding: 9px 11px;
+  color: #bdd0cb;
+  border: 0;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 590;
+  box-shadow: none;
+  transform: none;
+}
+.meg-layout-reformed .nav-item:hover {
+  color: #fff;
+  border: 0;
+  background: rgba(255,255,255,.06);
+  transform: none;
+}
+.meg-layout-reformed .nav-item.active {
+  color: #0b5e55;
+  border: 0;
+  background: #e8f8f3;
+  box-shadow: none;
+  font-weight: 760;
+}
+.meg-layout-reformed .nav-item.active svg { color: #0f766e; filter: none; }
+.meg-layout-reformed .nav-item svg { width: 17px; height: 17px; }
+.meg-layout-reformed .cloud-user {
+  margin: auto 2px 0;
+  padding: 12px 8px 2px;
+  color: #fff;
+  border: 0;
+  border-top: 1px solid rgba(255,255,255,.1);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.meg-layout-reformed .cloud-user small { color: #adc7c1; }
+.meg-layout-reformed .sidebar-version-status { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.1); }
+
+.meg-layout-reformed .content {
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  padding: 0 clamp(20px, 3.2vw, 52px) 52px;
+  background: var(--meg-canvas);
+}
+.meg-layout-reformed .staging-environment-banner { margin: 0 calc(clamp(20px, 3.2vw, 52px) * -1); border-radius: 0; }
+.meg-layout-reformed .meg-command-bar {
+  position: sticky;
+  top: 0;
+  z-index: 35;
+  min-height: 64px;
+  margin: 0 0 28px;
+  padding: 0;
+  border-bottom: 1px solid var(--meg-border);
+  background: color-mix(in srgb, var(--meg-canvas) 92%, transparent);
+  backdrop-filter: blur(14px);
+}
+.meg-command-context { display: grid; gap: 2px; }
+.meg-command-context .eyebrow { margin: 0; font-size: 9px; letter-spacing: .14em; }
+.meg-command-context strong { color: var(--meg-subtle); font-size: 12px; font-weight: 650; }
+.meg-layout-reformed .topbar-actions { position: relative; gap: 8px; }
+.meg-layout-reformed .meg-period-toggle,
+.meg-layout-reformed .meg-theme-toggle,
+.meg-layout-reformed #quickAddBtn { min-height: 38px; border-radius: 10px; }
+.meg-theme-toggle { width: 38px; padding: 0 !important; justify-content: center; }
+.meg-theme-label { display: none; }
+.meg-theme-toggle svg { width: 17px !important; height: 17px !important; }
+.meg-theme-moon { display: none; }
+:root[data-meg-theme="dark"] .meg-theme-sun { display: none; }
+:root[data-meg-theme="dark"] .meg-theme-moon { display: block; }
+.meg-layout-reformed .period-control {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 86px;
+  z-index: 40;
+  width: min(620px, calc(100vw - 280px));
+  padding: 14px;
+  border: 1px solid var(--meg-border);
+  border-radius: 14px;
+  background: var(--meg-card);
+  box-shadow: 0 18px 50px rgba(13, 42, 36, .14);
+}
+.meg-layout-reformed .period-control[hidden] { display: none !important; }
+
+.meg-layout-reformed .view { max-width: 1660px; margin: 0 auto; }
+.meg-layout-reformed .meg-page-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 0 22px;
+  padding: 0;
+}
+.meg-page-heading-copy { min-width: 0; }
+.meg-layout-reformed .meg-page-heading .eyebrow {
+  margin: 0 0 5px;
+  color: var(--meg-accent);
+  font-size: 10px;
+  font-weight: 820;
+  letter-spacing: .13em;
+}
+.meg-layout-reformed .meg-page-heading h2 {
+  margin: 0;
+  color: var(--meg-heading);
+  font-size: clamp(28px, 3.2vw, 43px);
+  line-height: 1.02;
+  letter-spacing: -.045em;
+  font-weight: 740;
+}
+.meg-layout-reformed .meg-page-subtitle { margin: 8px 0 0; max-width: 720px; font-size: 13px; line-height: 1.5; }
+.meg-layout-reformed .meg-page-actions { flex: 0 0 auto; }
+
+.meg-layout-reformed .panel,
+.meg-layout-reformed .metric,
+.meg-layout-reformed .mini-metric,
+.meg-layout-reformed .finance-panel,
+.meg-layout-reformed .cashflow-answer-card,
+.meg-layout-reformed .analytics-calculation-panel,
+.meg-layout-reformed .income-kpi-grid article,
+.meg-layout-reformed .budget-goals-grid article,
+.meg-layout-reformed .commercial-kpis article,
+.meg-layout-reformed .workspace-commercial-summary > div,
+.meg-layout-reformed .user-security-stats article,
+.meg-layout-reformed .permission-matrix article {
+  color: var(--text);
+  border: 1px solid var(--meg-border);
+  border-radius: 16px;
+  background: var(--meg-card);
+  box-shadow: var(--shadow);
+}
+.meg-layout-reformed .panel { padding: 18px; }
+.meg-layout-reformed .panel-title { margin-bottom: 14px; }
+.meg-layout-reformed .panel-title h3,
+.meg-layout-reformed .panel h3 { color: var(--meg-heading); font-size: 15px; letter-spacing: -.015em; }
+.meg-layout-reformed .panel-title > span { color: var(--meg-subtle); }
+.meg-layout-reformed .decision-eyebrow { color: var(--meg-accent); font-size: 9px; letter-spacing: .12em; }
+
+.meg-layout-reformed .button,
+.meg-layout-reformed button:not(.nav-item):not(.mobile-menu-button) {
+  border-radius: 10px;
+  box-shadow: none;
+}
+.meg-layout-reformed .button { min-height: 38px; padding: 9px 13px; font-size: 12px; font-weight: 700; }
+.meg-layout-reformed .button.primary {
+  color: #fff;
+  border-color: #111715;
+  background: #111715;
+}
+.meg-layout-reformed #quickAddBtn { color: #073c34; border-color: var(--meg-accent-bright); background: var(--meg-accent-bright); }
+.meg-layout-reformed .button.ghost { color: var(--text); border-color: var(--meg-border); background: var(--meg-card); }
+.meg-layout-reformed input,
+.meg-layout-reformed select,
+.meg-layout-reformed textarea,
+.meg-layout-reformed details > summary {
+  color: var(--text);
+  border-color: var(--meg-border);
+  border-radius: 9px;
+  background: var(--meg-card);
+  box-shadow: none;
+}
+.meg-layout-reformed input:focus,
+.meg-layout-reformed select:focus,
+.meg-layout-reformed textarea:focus {
+  border-color: var(--meg-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--meg-accent) 14%, transparent);
+  outline: 0;
+}
+
+/* Painel */
+.meg-layout-reformed .dashboard-main-grid { grid-template-columns: minmax(0, 1.45fr) minmax(320px, .55fr); gap: 14px; }
+.meg-layout-reformed .finance-panels { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.meg-layout-reformed .finance-panel { min-height: 0; padding: 16px; background: var(--meg-card); }
+.meg-layout-reformed .finance-panel::before,
+.meg-layout-reformed .finance-panel::after { display: none; }
+.meg-layout-reformed .finance-panel header { padding-bottom: 12px; border-bottom: 1px solid var(--meg-border); }
+.meg-layout-reformed .finance-panel header > span { background: var(--meg-card-soft); border: 1px solid var(--meg-border); }
+.meg-layout-reformed .finance-panel-values { gap: 10px; }
+.meg-layout-reformed .finance-panel-values > div { background: transparent; border: 0; border-radius: 0; padding: 8px 0 0; }
+.meg-layout-reformed .finance-panel-values strong { color: var(--meg-heading); }
+.meg-layout-reformed .current-panel,
+.meg-layout-reformed .executive-command-panel,
+.meg-layout-reformed .payable-panel { margin-top: 14px; }
+.meg-layout-reformed .executive-command-panel { background: var(--meg-card-soft); border-color: color-mix(in srgb, var(--meg-accent) 38%, var(--meg-border)); }
+.meg-layout-reformed .executive-command-hero { background: transparent; border: 0; box-shadow: none; }
+
+/* Heróis e leituras */
+.meg-layout-reformed .decision-hero,
+.meg-layout-reformed .income-analysis-hero,
+.meg-layout-reformed .budget-health-hero,
+.meg-layout-reformed .pending-command-center,
+.meg-layout-reformed .credit-card-command-center,
+.meg-layout-reformed .user-security-hero {
+  color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--meg-accent) 42%, var(--meg-border));
+  border-radius: 20px;
+  background: linear-gradient(120deg, var(--meg-card-soft), color-mix(in srgb, var(--meg-accent-bright) 11%, var(--meg-card)));
+  box-shadow: none;
+}
+.meg-layout-reformed .decision-hero::before,
+.meg-layout-reformed .decision-hero::after,
+.meg-layout-reformed .income-analysis-hero::before,
+.meg-layout-reformed .credit-card-command-center::before { display: none; }
+.meg-layout-reformed .decision-hero h3,
+.meg-layout-reformed .income-analysis-hero h3,
+.meg-layout-reformed .budget-health-hero h3,
+.meg-layout-reformed .pending-command-center h3,
+.meg-layout-reformed .credit-card-command-center h3,
+.meg-layout-reformed .user-security-hero h3 { color: var(--meg-heading); letter-spacing: -.025em; }
+.meg-layout-reformed .decision-hero p,
+.meg-layout-reformed .income-analysis-hero p,
+.meg-layout-reformed .budget-health-hero p,
+.meg-layout-reformed .pending-command-center p,
+.meg-layout-reformed .credit-card-command-center p,
+.meg-layout-reformed .user-security-hero p { color: var(--meg-subtle); }
+.meg-layout-reformed .decision-hero-value,
+.meg-layout-reformed .income-hero-total,
+.meg-layout-reformed .pending-coverage,
+.meg-layout-reformed .budget-score { border-color: color-mix(in srgb, var(--meg-accent) 32%, var(--meg-border)); background: color-mix(in srgb, var(--meg-card) 74%, transparent); }
+
+/* Grades */
+.meg-layout-reformed .kpi-grid,
+.meg-layout-reformed .current-grid,
+.meg-layout-reformed .income-kpi-grid,
+.meg-layout-reformed .budget-goals-grid,
+.meg-layout-reformed .commercial-kpis { gap: 12px; }
+.meg-layout-reformed .metric,
+.meg-layout-reformed .mini-metric,
+.meg-layout-reformed .income-kpi-grid article,
+.meg-layout-reformed .budget-goals-grid article,
+.meg-layout-reformed .commercial-kpis article { padding: 16px; }
+.meg-layout-reformed .metric strong,
+.meg-layout-reformed .mini-metric strong,
+.meg-layout-reformed .income-kpi-grid strong,
+.meg-layout-reformed .budget-goals-grid strong,
+.meg-layout-reformed .commercial-kpis strong { color: var(--meg-heading); white-space: nowrap; }
+.meg-layout-reformed .analytics-grid,
+.meg-layout-reformed .income-analysis-grid,
+.meg-layout-reformed .credit-card-insights-grid,
+.meg-layout-reformed .pending-grid,
+.meg-layout-reformed .settings-grid { gap: 14px; }
+
+/* Filtros */
+.meg-layout-reformed .analytics-filter-panel,
+.meg-layout-reformed .income-filter-bar,
+.meg-layout-reformed .credit-card-filterbar {
+  padding: 14px 16px;
+  color: var(--text);
+  border: 1px solid var(--meg-border);
+  border-radius: 15px;
+  background: var(--meg-card);
+  box-shadow: none;
+}
+.meg-layout-reformed .filter-row { gap: 9px; }
+.meg-layout-reformed .filter-row input,
+.meg-layout-reformed .filter-row select { min-height: 38px; }
+
+/* Lançamentos */
+.meg-layout-reformed #transactions .meg-page-heading { align-items: start; }
+.meg-layout-reformed #transactions .meg-page-actions {
+  max-width: 760px;
+  padding: 12px;
+  border: 1px solid var(--meg-border);
+  border-radius: 14px;
+  background: var(--meg-card);
+}
+.meg-layout-reformed .transactions-filter-summary { gap: 12px; }
+.meg-layout-reformed .transactions-filter-card {
+  min-height: 108px;
+  padding: 16px;
+  color: var(--text);
+  border: 1px solid var(--meg-border);
+  border-radius: 16px;
+  background: var(--meg-card);
+  box-shadow: none;
+}
+.meg-layout-reformed .transactions-filter-card::after { display: none; }
+.meg-layout-reformed .transactions-filter-card strong { color: var(--meg-heading); }
+.meg-layout-reformed .transactions-filter-icon { width: 38px; height: 38px; border-radius: 10px; background: var(--meg-card-soft); }
+.meg-layout-reformed .transaction-batch-editor {
+  grid-template-columns: minmax(190px, .8fr) minmax(180px, .7fr) minmax(230px, 1fr) auto auto;
+  gap: 12px 14px;
+  margin: 14px 0;
+  padding: 17px;
+  color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--meg-accent) 38%, var(--meg-border));
+  border-radius: 16px;
+  background: var(--meg-card-soft);
+  box-shadow: none;
+}
+.meg-layout-reformed .transaction-batch-editor.is-active { border-color: var(--meg-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--meg-accent) 10%, transparent); }
+.meg-layout-reformed .transaction-batch-summary-icon { width: 34px; height: 34px; border-radius: 9px; color: #083d35; background: var(--meg-accent-bright); }
+.meg-layout-reformed .transaction-batch-summary strong { color: var(--meg-heading); }
+.meg-layout-reformed .transaction-batch-summary small,
+.meg-layout-reformed .transaction-batch-editor label small,
+.meg-layout-reformed #transactionBatchStatus { color: var(--meg-subtle); }
+.meg-layout-reformed .transaction-batch-editor label { color: #52645f; }
+.meg-layout-reformed .transaction-batch-editor :is(input, select) { min-height: 40px; }
+.meg-layout-reformed .transaction-batch-editor .button { min-height: 40px; }
+.meg-layout-reformed .transaction-row.is-batch-selected td { background: color-mix(in srgb, var(--primary-soft) 74%, var(--meg-card)) !important; }
+.meg-layout-reformed .meg-transaction-description-icon { color: var(--meg-accent); background: var(--primary-soft); }
+.meg-layout-reformed .table-panel { padding: 0; overflow: hidden; }
+.meg-layout-reformed .table-wrap { border-radius: 14px; background: var(--meg-card); }
+.meg-layout-reformed .transactions-table,
+.meg-layout-reformed .credit-invoice-table { color: var(--text); background: var(--meg-card); }
+.meg-layout-reformed .transactions-table thead,
+.meg-layout-reformed .credit-invoice-table thead { color: #59706a; background: var(--surface-strong); }
+.meg-layout-reformed .transactions-table th,
+.meg-layout-reformed .credit-invoice-table th { border-color: var(--meg-border); font-size: 10px; letter-spacing: .05em; }
+.meg-layout-reformed .transactions-table td,
+.meg-layout-reformed .credit-invoice-table td { border-color: var(--meg-border); background: var(--meg-card); }
+.meg-layout-reformed .transactions-table tbody tr:hover td,
+.meg-layout-reformed .credit-invoice-table tbody tr:hover td { background: var(--primary-soft); }
+.meg-layout-reformed .column-filter-row th { background: color-mix(in srgb, var(--surface-strong) 78%, var(--meg-card)); }
+.meg-layout-reformed .excel-filter-popover { color: var(--text); border-color: var(--meg-border); background: var(--meg-card); box-shadow: 0 18px 45px rgba(13,42,36,.16); }
+.meg-layout-reformed .transactions-pagination { border-top: 1px solid var(--meg-border); background: var(--meg-card); }
+
+/* Cartões, cadastros, usuários e ajustes */
+.meg-layout-reformed .credit-card-visual { box-shadow: 0 8px 22px rgba(10, 35, 30, .12); }
+.meg-layout-reformed .credit-card-insights-grid { margin-top: 14px; }
+.meg-layout-reformed .catalogs-grid { gap: 14px; align-items: start; }
+.meg-layout-reformed .catalog-panel { border-radius: 16px; }
+.meg-layout-reformed .catalog-form { padding: 12px; border: 1px solid var(--meg-border); border-radius: 12px; background: var(--surface-strong); }
+.meg-layout-reformed .catalog-list { border-color: var(--meg-border); }
+.meg-layout-reformed .workspace-commercial-summary,
+.meg-layout-reformed .permission-matrix { gap: 12px; }
+.meg-layout-reformed .settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.meg-layout-reformed .settings-grid > .panel { margin: 0; }
+.meg-layout-reformed .settings-actions { gap: 8px; }
+
+/* Modais e confirmação, sempre legíveis nos dois temas */
+.meg-layout-reformed dialog,
+.meg-layout-reformed .modal,
+.meg-layout-reformed .cloud-sync-card,
+.meg-layout-reformed .save-confirmation-card {
+  color: var(--text);
+  border: 1px solid var(--meg-border);
+  border-radius: 18px;
+  background: var(--meg-card);
+  box-shadow: 0 24px 70px rgba(6, 28, 23, .2);
+}
+.meg-layout-reformed dialog::backdrop { background: rgba(6, 22, 19, .56); backdrop-filter: blur(3px); }
+.meg-layout-reformed .modal-header { border-color: var(--meg-border); }
+.meg-layout-reformed .modal h2,
+.meg-layout-reformed .modal h3 { color: var(--meg-heading); }
+.meg-layout-reformed .modal-actions { border-color: var(--meg-border); background: var(--meg-card); }
+.meg-layout-reformed .app-toast { color: var(--text); border-color: var(--meg-border); background: var(--meg-card); }
+
+.meg-layout-reformed .empty { color: var(--meg-subtle); border-color: var(--meg-border); background: var(--surface-strong); }
+.meg-layout-reformed .muted { color: var(--meg-subtle); }
+
+@media (max-width: 1180px) {
+  .meg-layout-reformed .app-shell { grid-template-columns: 82px minmax(0, 1fr); }
+  .meg-layout-reformed .sidebar { padding-inline: 11px; }
+  .meg-layout-reformed .brand-logo { width: 48px; height: 48px; object-fit: cover; object-position: left; }
+  .meg-layout-reformed .brand { justify-content: center; margin-inline: 0; }
+  .meg-layout-reformed .nav-item { justify-content: center; font-size: 0; }
+  .meg-layout-reformed .nav-item svg { width: 19px; height: 19px; }
+  .meg-layout-reformed .sidebar-user-copy,
+  .meg-layout-reformed .sidebar-user-actions { display: none; }
+  .meg-layout-reformed .dashboard-main-grid { grid-template-columns: 1fr; }
+  .meg-layout-reformed .period-control { width: min(620px, calc(100vw - 130px)); }
+}
+
+@media (max-width: 760px) {
+  .meg-layout-reformed .app-shell { display: block; }
+  .meg-layout-reformed .content { padding: 0 14px calc(88px + env(safe-area-inset-bottom)); }
+  .meg-layout-reformed .mobile-menu-button {
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top));
+    left: 12px;
+    z-index: 70;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid var(--meg-border);
+    border-radius: 11px;
+    color: var(--text);
+    background: var(--meg-card);
+    box-shadow: none;
+  }
+  .meg-layout-reformed .mobile-menu-button span { display: none; }
+  .meg-layout-reformed .sidebar {
+    width: min(300px, 86vw);
+    padding-top: max(20px, env(safe-area-inset-top));
+  }
+  .meg-layout-reformed .nav-item { justify-content: flex-start; font-size: 13px; }
+  .meg-layout-reformed .sidebar-user-copy,
+  .meg-layout-reformed .sidebar-user-actions { display: block; }
+  .meg-layout-reformed .meg-command-bar {
+    min-height: 66px;
+    margin-bottom: 18px;
+    padding-left: 48px;
+  }
+  .meg-layout-reformed .meg-command-context { display: none; }
+  .meg-layout-reformed .topbar-actions { width: 100%; justify-content: flex-end; }
+  .meg-layout-reformed .period-control { position: fixed; inset: 72px 12px auto; width: auto; max-height: calc(100dvh - 90px); overflow: auto; }
+  .meg-layout-reformed .meg-page-heading { display: grid; align-items: start; gap: 14px; }
+  .meg-layout-reformed .meg-page-heading h2 { font-size: clamp(28px, 9vw, 38px); }
+  .meg-layout-reformed .meg-page-actions { width: 100%; }
+  .meg-layout-reformed #transactions .meg-page-actions { max-width: none; }
+  .meg-layout-reformed .finance-panels,
+  .meg-layout-reformed .kpi-grid,
+  .meg-layout-reformed .current-grid,
+  .meg-layout-reformed .cashflow-answer-grid,
+  .meg-layout-reformed .income-kpi-grid,
+  .meg-layout-reformed .budget-goals-grid,
+  .meg-layout-reformed .commercial-kpis,
+  .meg-layout-reformed .settings-grid,
+  .meg-layout-reformed .catalogs-grid { grid-template-columns: 1fr; }
+  .meg-layout-reformed .transactions-filter-summary { display: grid; grid-template-columns: 1fr; }
+  .meg-layout-reformed .transactions-filter-card { min-height: 86px; }
+  .meg-layout-reformed .transaction-batch-editor,
+  .meg-layout-reformed.native-mobile .transaction-batch-editor {
+    position: static;
+    grid-template-columns: 1fr 1fr;
+    padding: 14px;
+    border-radius: 15px;
+  }
+  .meg-layout-reformed .transaction-batch-summary,
+  .meg-layout-reformed .transaction-batch-editor label { grid-column: 1 / -1; }
+  .meg-layout-reformed .decision-hero,
+  .meg-layout-reformed .income-analysis-hero,
+  .meg-layout-reformed .budget-health-hero,
+  .meg-layout-reformed .pending-command-center,
+  .meg-layout-reformed .credit-card-command-center,
+  .meg-layout-reformed .user-security-hero { border-radius: 17px; }
+  .meg-layout-reformed .table-wrap { overflow-x: auto; overscroll-behavior-inline: contain; }
+  .meg-layout-reformed .transactions-table { min-width: 1080px; }
+  .meg-layout-reformed .credit-invoice-table { min-width: 760px; }
+  .meg-layout-reformed dialog.modal { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); border-radius: 17px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meg-layout-reformed *,
+  .meg-layout-reformed *::before,
+  .meg-layout-reformed *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
