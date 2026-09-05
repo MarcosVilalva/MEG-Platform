@@ -25,8 +25,9 @@
   .meg-mobile-transaction.pending::before{background:#f59e0b}
   .meg-mobile-transaction.overdue::before{background:#b91c1c}
   .meg-mobile-transaction:focus-visible{box-shadow:0 0 0 3px rgba(37,99,235,.22),0 10px 28px rgba(15,23,42,.07)}
-  .meg-mobile-transaction-main{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:11px;align-items:center}
+  .meg-mobile-transaction-main{display:grid;grid-template-columns:34px 42px minmax(0,1fr) auto;gap:10px;align-items:center}
   .meg-mobile-transaction-icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:#f1f5f9;color:#334155;font-size:1.25rem;font-weight:900}
+  .meg-mobile-transaction-icon svg{width:21px;height:21px;fill:currentColor}
   .meg-mobile-transaction.income .meg-mobile-transaction-icon{background:#dcfce7;color:#15803d}
   .meg-mobile-transaction.pending .meg-mobile-transaction-icon{background:#fef3c7;color:#b45309}
   .meg-mobile-transaction-copy{min-width:0;display:grid;gap:4px}

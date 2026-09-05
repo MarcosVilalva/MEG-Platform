@@ -1,4 +1,5 @@
 import './startup-data-protection.js';
+import { initializeAppearanceTheme } from './appearance-theme.js';
 import { bootstrapCloud, clearLocalCloudSession, hideCloudLoading, showCloudLoading } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { checkForAppUpdate, initializeAndroidUpdateLifecycle, initializeStableUiFeatures, markAndroidUpdateUiReady, refreshInstalledAppVersion } from './native-app-update.js';
@@ -16,6 +17,7 @@ const localStateKey = `meg-financas-state-v4-paid-fixes${appEnvironmentSuffix}`;
 const nativeMobileMode = import.meta.env.VITE_MOBILE_APP === 'true' || Boolean(window.Capacitor?.isNativePlatform?.());
 document.body.classList.toggle('native-mobile', nativeMobileMode);
 document.body.dataset.appEnvironment = 'production';
+initializeAppearanceTheme();
 const INACTIVITY_LIMIT_MS = 2 * 60 * 1000;
 const INACTIVITY_WARNING_MS = 30 * 1000;
 const INACTIVITY_MESSAGE_KEY = 'meg-inactivity-message';

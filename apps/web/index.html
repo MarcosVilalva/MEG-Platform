@@ -110,6 +110,10 @@
             <h1>Controle de despesas</h1>
           </div>
           <div class="topbar-actions">
+            <button class="button ghost meg-theme-toggle" id="appearanceThemeToggle" type="button" aria-pressed="false" aria-label="Ativar modo claro">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4V2h1v2h-1Zm0 18v-2h1v2h-1ZM4 13H2v-1h2v1Zm18 0h-2v-1h2v1ZM5.6 6.3 4.2 4.9l.7-.7 1.4 1.4-.7.7Zm13.5 13.5-1.4-1.4.7-.7 1.4 1.4-.7.7Zm0-15.6.7.7-1.4 1.4-.7-.7 1.4-1.4ZM4.2 19.1l1.4-1.4.7.7-1.4 1.4-.7-.7ZM12.5 7a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
+              <span>Modo claro</span>
+            </button>
             <div class="period-control" aria-label="Filtro de periodo">
               <label>
                 <span>Periodo</span>
@@ -609,12 +613,32 @@
             </article>
           </section>
 
+          <section class="transaction-batch-editor" id="transactionBatchEditor" aria-label="Alterar lançamentos selecionados">
+            <div class="transaction-batch-summary">
+              <span class="transaction-batch-summary-icon" aria-hidden="true">✓</span>
+              <span><strong id="transactionBatchCount">Nenhum selecionado</strong><small>Marque um ou vários lançamentos</small></span>
+            </div>
+            <label>Vencimento
+              <input id="transactionBatchDate" type="date" aria-label="Novo vencimento dos lançamentos selecionados" disabled />
+              <small>Vazio significa não alterar</small>
+            </label>
+            <label>Forma de pagamento
+              <select id="transactionBatchPayment" aria-label="Nova forma de pagamento dos lançamentos selecionados" disabled>
+                <option value="">Não alterar</option>
+              </select>
+              <small>Mantenha para preservar o valor atual</small>
+            </label>
+            <button class="button ghost" id="transactionBatchClear" type="button" disabled>Cancelar seleção</button>
+            <button class="button primary" id="transactionBatchApply" type="button" disabled>Revisar e salvar</button>
+            <p id="transactionBatchStatus" role="status" aria-live="assertive">Selecione os lançamentos que deseja alterar.</p>
+          </section>
+
           <section class="panel table-panel">
             <div class="table-wrap">
               <table class="transactions-table">
                 <thead>
                   <tr>
-                    <th>VENCIMENTO</th>
+                    <th><span class="transaction-select-heading"><input id="transactionSelectVisible" type="checkbox" aria-label="Selecionar lançamentos visíveis" /> VENCIMENTO</span></th>
                     <th>DATA DA COMPRA</th>
                     <th>DiaSemana</th>
                     <th>TP LANÇAMENTO</th>

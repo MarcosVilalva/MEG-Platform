@@ -35,6 +35,9 @@ export function initializeStableUiFeatures() {
         initializeNegativeExpenseAmounts();
         initializeRecurringTransactions();
         await import('./meg-contrast-comfort.css');
+        await import('./transaction-batch-editor.css');
+        const { initializeTransactionBatchEditor } = await import('./transaction-batch-editor.js');
+        initializeTransactionBatchEditor();
         document.querySelector('#clearCreditCardFiltersBtn')?.addEventListener('click', () => {
           window.MEG_STABLE_GRID_FILTERS?.clearCardFilters();
         });
@@ -51,6 +54,9 @@ export function initializeStableUiFeatures() {
         import('./negative-expense-amounts.css')
       ]);
       await import('./meg-contrast-comfort.css');
+      await import('./transaction-batch-editor.css');
+      const { initializeTransactionBatchEditor } = await import('./transaction-batch-editor.js');
+      initializeTransactionBatchEditor();
 
       const { initializeUxEnhancements } = await import('./ux-enhancements-safe.js');
       initializeUxEnhancements();

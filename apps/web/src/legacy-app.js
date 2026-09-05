@@ -5,6 +5,7 @@ import { buildCardForecast, resolveCardIdentity } from "./legacy-card-identity.j
 import { GLOBAL_FINANCIAL_SCHEMA_VERSION, isBenefitTransaction, migrateGlobalFinancialState, upsertOpeningBalanceTransaction } from "./legacy-financial-accounts.js";
 import { createTransactionEditor, replaceSelectOptions } from "./transaction-editor.js";
 import { transactionStatusPolicy } from "./transaction-status-policy.js";
+import { applyBatchTransactionChanges } from "./transaction-visual-core.js";
 
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
 
@@ -4695,6 +4696,40 @@ async function applyFinancialClassifications(classifications = []) {
   }
 }
 
+async function applyTransactionBatch({ ids = [], date = "", paymentMethod = "" } = {}) {
+  const selectedIds = [...new Set(ids.map(String).filter(Boolean))];
+  if (!selectedIds.length) throw new Error("Selecione pelo menos um lançamento.");
+  if (!date && !paymentMethod) throw new Error("Escolha ao menos um campo para alterar.");
+  if (transactionMutationRunning) throw new Error("Há outra alteração sendo confirmada. Aguarde a conclusão.");
+
+  transactionMutationRunning = true;
+  try {
+    if (window.MEG_INSTANT_PERSISTENCE?.pending?.()) await confirmTransactionPersistence();
+    const result = applyBatchTransactionChanges(state.transactions, {
+      ids: selectedIds,
+      date,
+      paymentMethod,
+      resolveModality: modalityForPayment,
+    });
+    if (!result.changed) return { changed: 0 };
+    state.transactions = result.transactions.map((item) => (
+      selectedIds.includes(String(item.id)) && date
+        ? { ...item, weekday: weekdayShort(date) }
+        : item
+    ));
+    saveState();
+    await confirmTransactionPersistence();
+    renderAfterTransactionMutation();
+    showToast("Alterações confirmadas", `${result.changed} lançamento${result.changed === 1 ? "" : "s"} salvo${result.changed === 1 ? "" : "s"} na nuvem.`, "success");
+    return { changed: result.changed };
+  } catch (error) {
+    showToast("Aguardando confirmação da base", error instanceof Error ? error.message : "A alteração continua protegida neste aparelho.", "danger");
+    throw error;
+  } finally {
+    transactionMutationRunning = false;
+  }
+}
+
 let transactionMutationRunning = false;
 
 function setTransactionMutationUi(active, message = '') {
@@ -5960,6 +5995,7 @@ window.MEG_APP = {
   scheduleOpeningFinancialAlert,
   confirmPermanentDeletion,
   showToast,
+  applyTransactionBatch,
   applyFinancialClassifications,
   render
 };
