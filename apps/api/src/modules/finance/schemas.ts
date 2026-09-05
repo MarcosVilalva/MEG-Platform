@@ -6,7 +6,7 @@ export const createFinancialEventSchema = z.object({
   status: z.enum(['draft', 'planned', 'confirmed', 'paid', 'reconciled', 'archived']).default('planned'),
   date: z.string().min(10),
   competence: z.string().min(7).optional(),
-  amount: z.number().positive(),
+  amount: z.number().finite().refine((value) => value !== 0, 'O valor não pode ser zero.'),
   accountId: z.string().optional(),
   categoryId: z.string().optional(),
   paymentMethodId: z.string().optional(),

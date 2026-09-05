@@ -12,6 +12,7 @@
     "test:cors": "tsx src/cors.test.ts",
     "test:commercial": "tsx src/modules/platform-admin/service.test.ts",
     "test:app-state": "tsx src/modules/app-state/transaction-patch.test.ts && tsx src/modules/app-state/mutation-confirmation.test.ts && tsx src/modules/app-state/mutation-receipt.test.ts && tsx src/modules/app-state/normalization-migration-core.test.ts && tsx src/modules/app-state/transaction-classification-core.test.ts",
+    "test:finance": "tsx src/modules/finance/amount-sign.test.ts",
     "start": "tsx src/server.ts"
   },
   "dependencies": {

@@ -85,8 +85,8 @@ export function PersistentTransactions() {
     event.preventDefault();
     if (!canWrite) return;
     const value = parseBRL(amount);
-    if (!description.trim() || !Number.isFinite(value) || value <= 0) {
-      setError('Informe descrição e valor válido.');
+    if (!description.trim() || !Number.isFinite(value) || value === 0) {
+      setError('Informe descrição e valor diferente de zero. Valores negativos são aceitos para estornos.');
       return;
     }
 
@@ -156,7 +156,7 @@ export function PersistentTransactions() {
           <label>Tipo<select value={type} onChange={(e) => setType(e.target.value as 'income' | 'expense')} disabled={!canWrite}><option value="expense">Despesa</option><option value="income">Receita</option></select></label>
           <label>Descrição<input value={description} onChange={(e) => setDescription(e.target.value)} required disabled={!canWrite} /></label>
           <label>Data<input type="date" value={date} onChange={(e) => setDate(e.target.value)} required disabled={!canWrite} /></label>
-          <label>Valor<MEGCurrencyInput value={amount} onValueChange={setAmount} placeholder="0,00" required disabled={!canWrite} /></label>
+          <label>Valor<MEGCurrencyInput value={amount} onValueChange={setAmount} allowNegative placeholder="0,00" required disabled={!canWrite} /></label>
           <label>Status<select value={status} onChange={(e) => setStatus(e.target.value as 'planned' | 'paid')} disabled={!canWrite}><option value="planned">Previsto</option><option value="paid">Pago/Recebido</option></select></label>
           <label>Conta<select value={accountId} onChange={(e) => setAccountId(e.target.value)} disabled={!canWrite}><option value="">Sem conta</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           <label>Categoria<select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} disabled={!canWrite}><option value="">Sem categoria</option>{categories.filter((item) => !item.type || item.type === type).map((item) => <option key={item.id} value={item.id}>{item.group ? `${item.group} — ` : ''}{item.name}</option>)}</select></label>

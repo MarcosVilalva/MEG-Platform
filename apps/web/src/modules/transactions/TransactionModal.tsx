@@ -52,7 +52,7 @@ export function TransactionModal({ open, editing, onClose }: TransactionModalPro
   function submit() {
     const value = parseBRL(amount);
 
-    if (!description.trim() || !Number.isFinite(value) || value <= 0) {
+    if (!description.trim() || !Number.isFinite(value) || value === 0) {
       alert('Informe descrição e valor válido.');
       return;
     }
@@ -112,7 +112,7 @@ export function TransactionModal({ open, editing, onClose }: TransactionModalPro
 
           <label>
             Valor
-            <MEGCurrencyInput value={amount} onValueChange={setAmount} placeholder="0,00" />
+            <MEGCurrencyInput value={amount} onValueChange={setAmount} allowNegative placeholder="0,00" />
           </label>
 
           <label>
