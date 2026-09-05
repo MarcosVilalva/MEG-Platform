@@ -108,6 +108,7 @@ model Workspace {
   notificationConfig WorkspaceNotificationConfig?
   invoices WorkspaceInvoice[]
   mutationReceipts CloudMutationReceipt[]
+  financialEvents FinancialEvent[]
 }
 
 model CloudMutationReceipt {
@@ -341,6 +342,8 @@ model PaymentMethod {
 model FinancialEvent {
   id              String   @id @default(cuid())
   userId          String?
+  workspaceId     String?
+  legacyTransactionId String?
   description     String
   type            String
   status          String   @default("planned")
@@ -349,11 +352,19 @@ model FinancialEvent {
   amount          Decimal
   signedAmount    Decimal
   notes           String?
+  sourceRevision  Int?
+  sourcePayload   Json?
+  amountBehavior  String?
+  necessity       String?
+  frequency       String?
+  classificationConfidence Float?
+  classificationSource String?
   archivedAt      DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   user             User?          @relation(fields: [userId], references: [id])
+  workspace        Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   accountId        String?
   account          Account?       @relation(fields: [accountId], references: [id])
   categoryId       String?
@@ -364,6 +375,9 @@ model FinancialEvent {
   receipt          Receipt?
   importedRow      ImportedRow?
   payablePayment   PayablePayment?
+
+  @@unique([workspaceId, legacyTransactionId])
+  @@index([workspaceId, date])
 }
 
 model LedgerEntry {

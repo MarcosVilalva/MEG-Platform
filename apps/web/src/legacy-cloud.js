@@ -834,6 +834,11 @@ export async function bootstrapCloud({ biometricCredentials = null, keepLoading 
     saveNow,
     acceptConfirmedState,
     flush: flushQueuedSave,
+    async normalizationPreview() {
+      const response = await api('/app-state/normalization-preview');
+      if (!response.ok) throw new Error('Não foi possível analisar a classificação financeira agora.');
+      return response.json();
+    },
     async reload() {
       await loadCloudState();
       location.reload();
