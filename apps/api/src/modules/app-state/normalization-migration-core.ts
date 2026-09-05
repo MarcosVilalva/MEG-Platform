@@ -93,7 +93,7 @@ export function buildNormalizationPreview(state: unknown, context: {
         amountBehavior: event.amountBehavior || suggestion.amountBehavior,
         necessity: event.necessity || suggestion.necessity,
         frequency: event.frequency || suggestion.frequency,
-        classificationConfidence: event.classificationConfidence ?? ({ HIGH: 0.95, MEDIUM: 0.7, LOW: 0.4 }[suggestion.confidence] || 0.4),
+        classificationConfidence: event.classificationConfidence ?? ({ HIGH: 0.95, MEDIUM: 0.7, LOW: 0.4, REVIEWED: 1 }[suggestion.confidence] || 0.4),
         classificationSource: event.classificationSource || 'SYSTEM_PREVIEW',
       };
     })
@@ -111,6 +111,6 @@ export function buildNormalizationPreview(state: unknown, context: {
     summary[item.confidence] = (summary[item.confidence] || 0) + 1;
     if (item.necessity === 'REVIEW') summary.review += 1;
     return summary;
-  }, { HIGH: 0, MEDIUM: 0, LOW: 0, review: 0 } as Record<string, number>);
+  }, { HIGH: 0, MEDIUM: 0, LOW: 0, REVIEWED: 0, review: 0 } as Record<string, number>);
   return { events, suggestions: [...suggestions.values()], summary: { sourceCount: transactions.length, validCount: events.length, invalidCount: invalid, income, expense, net: income - expense, fingerprint, classification } };
 }

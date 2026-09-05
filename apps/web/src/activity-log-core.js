@@ -1,4 +1,12 @@
 const MAX_ACTIVITY_ITEMS = 500;
+const CLASSIFICATION_METADATA = new Set([
+  'amountBehavior',
+  'necessity',
+  'frequency',
+  'classificationConfidence',
+  'classificationSource',
+  'classificationReviewedAt',
+]);
 
 function sameValue(left, right) {
   if (left === right) return true;
@@ -17,6 +25,11 @@ function transactionMap(state) {
     if (item?.id) map.set(String(item.id), item);
   });
   return map;
+}
+
+function operationalTransaction(item) {
+  if (!item || typeof item !== 'object') return item;
+  return Object.fromEntries(Object.entries(item).filter(([key]) => !CLASSIFICATION_METADATA.has(key)));
 }
 
 function amountOf(item) {
@@ -65,7 +78,7 @@ export function transactionChanges(previousState, nextState) {
       changes.push({ action: 'CREATED', transactionId: id, transaction: transactionSnapshot(item) });
       return;
     }
-    if (!sameValue(before, item)) {
+    if (!sameValue(operationalTransaction(before), operationalTransaction(item))) {
       changes.push({ action: 'UPDATED', transactionId: id, transaction: transactionSnapshot(item) });
     }
   });

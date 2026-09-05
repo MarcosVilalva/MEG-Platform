@@ -8,6 +8,7 @@ const classifications = classifyTransactionsPreview([
   { id: 'energy-1', date: '2026-09-12', description: 'Energia', type: 'expense', amount: 190, group: 'Contas gerais' },
   { id: 'streaming-1', date: '2026-09-15', description: 'Assinatura streaming', type: 'expense', amount: 39.9, group: 'Lazer' },
   { id: 'phone-2', date: '2026-10-20', description: 'Aparelho 2/8', type: 'expense', amount: 99.9, installmentSeriesId: 'phone', installmentCount: 8, group: 'Compras' },
+  { id: 'reviewed', date: '2026-09-20', description: 'Caso específico', type: 'expense', amount: 50, amountBehavior: 'FIXED', necessity: 'ESSENTIAL', frequency: 'ONE_OFF', classificationSource: 'USER_REVIEWED' },
 ]);
 
 const byId = new Map(classifications.map((item) => [item.transactionId, item]));
@@ -18,5 +19,7 @@ assert.deepEqual(
 assert.equal(byId.get('energy-1')?.amountBehavior, 'VARIABLE');
 assert.equal(byId.get('streaming-1')?.necessity, 'FLEXIBLE');
 assert.equal(byId.get('phone-2')?.frequency, 'INSTALLMENT');
+assert.equal(byId.get('reviewed')?.confidence, 'REVIEWED');
+assert.equal(byId.get('reviewed')?.necessity, 'ESSENTIAL');
 
 console.log('transaction classification preview tests passed');

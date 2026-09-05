@@ -4647,6 +4647,54 @@ async function confirmTransactionPersistence() {
   await window.MEG_INSTANT_PERSISTENCE.flush();
 }
 
+async function applyFinancialClassifications(classifications = []) {
+  const allowedAmountBehavior = new Set(['FIXED', 'VARIABLE']);
+  const allowedNecessity = new Set(['ESSENTIAL', 'FLEXIBLE', 'REVIEW']);
+  const allowedFrequency = new Set(['RECURRING', 'INSTALLMENT', 'ONE_OFF']);
+  const valid = classifications.filter((item) => (
+    item?.transactionId
+    && allowedAmountBehavior.has(item.amountBehavior)
+    && allowedNecessity.has(item.necessity)
+    && allowedFrequency.has(item.frequency)
+  ));
+  if (!valid.length) return 0;
+  if (transactionMutationRunning) throw new Error('Há outra alteração sendo confirmada. Aguarde a conclusão.');
+
+  transactionMutationRunning = true;
+  try {
+    if (window.MEG_INSTANT_PERSISTENCE?.pending?.()) await confirmTransactionPersistence();
+    const byId = new Map(valid.map((item) => [String(item.transactionId), item]));
+    let changed = 0;
+    state.transactions = state.transactions.map((transaction) => {
+      const classification = byId.get(String(transaction.id));
+      if (!classification) return transaction;
+      if (
+        transaction.amountBehavior === classification.amountBehavior
+        && transaction.necessity === classification.necessity
+        && transaction.frequency === classification.frequency
+        && transaction.classificationSource === 'USER_REVIEWED'
+      ) return transaction;
+      changed += 1;
+      return {
+        ...transaction,
+        amountBehavior: classification.amountBehavior,
+        necessity: classification.necessity,
+        frequency: classification.frequency,
+        classificationConfidence: Number(classification.confidence || 0),
+        classificationSource: 'USER_REVIEWED',
+        classificationReviewedAt: new Date().toISOString(),
+      };
+    });
+    if (!changed) return 0;
+    saveState();
+    await confirmTransactionPersistence();
+    renderAfterTransactionMutation();
+    return changed;
+  } finally {
+    transactionMutationRunning = false;
+  }
+}
+
 let transactionMutationRunning = false;
 
 function setTransactionMutationUi(active, message = '') {
@@ -5896,5 +5944,6 @@ window.MEG_APP = {
   scheduleOpeningFinancialAlert,
   confirmPermanentDeletion,
   showToast,
+  applyFinancialClassifications,
   render
 };
