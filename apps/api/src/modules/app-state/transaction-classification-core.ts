@@ -76,13 +76,18 @@ export function classifyTransactionsPreview(transactions: Transaction[]) {
     const confidence = installment || explicitRecurrence || variation != null
       ? 'HIGH'
       : fixedByTerm || variableByTerm || necessity !== 'REVIEW' ? 'MEDIUM' : 'LOW';
+    const reviewed = normalize(item.classificationSource) === 'USER REVIEWED';
+    const reviewedAmountBehavior = ['FIXED', 'VARIABLE'].includes(String(item.amountBehavior)) ? String(item.amountBehavior) : null;
+    const reviewedNecessity = ['ESSENTIAL', 'FLEXIBLE', 'REVIEW'].includes(String(item.necessity)) ? String(item.necessity) : null;
+    const reviewedFrequency = ['RECURRING', 'INSTALLMENT', 'ONE_OFF'].includes(String(item.frequency)) ? String(item.frequency) : null;
     return {
       transactionId: String(item.id || ''),
-      amountBehavior: variableByTerm && variation == null ? 'VARIABLE' : amountBehavior,
-      necessity,
-      frequency,
-      confidence,
-      evidence,
+      amountBehavior: reviewedAmountBehavior || (variableByTerm && variation == null ? 'VARIABLE' : amountBehavior),
+      necessity: reviewedNecessity || necessity,
+      frequency: reviewedFrequency || frequency,
+      confidence: reviewed ? 'REVIEWED' : confidence,
+      reviewed,
+      evidence: reviewed ? ['classificação revisada pelo usuário'] : evidence,
     };
   });
 }

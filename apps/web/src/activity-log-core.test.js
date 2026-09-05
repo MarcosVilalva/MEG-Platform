@@ -65,6 +65,20 @@ assert.equal(recoveryLogged.activityLog[0].recovery.snapshotReason, 'fechamento-
 const unchanged = appendTransactionActivities(next, next, { name: 'Marcos' });
 assert.equal(unchanged, next);
 
+const classificationOnly = {
+  ...next,
+  transactions: next.transactions.map((item) => item.id === 'mantido' ? {
+    ...item,
+    amountBehavior: 'FIXED',
+    necessity: 'ESSENTIAL',
+    frequency: 'RECURRING',
+    classificationConfidence: 0.95,
+    classificationSource: 'USER_REVIEWED',
+  } : item),
+};
+assert.deepEqual(transactionChanges(next, classificationOnly), []);
+assert.equal(appendTransactionActivities(next, classificationOnly, { name: 'Marcos' }), classificationOnly);
+
 const many = {
   ...next,
   activityLog: Array.from({ length: 500 }, (_, index) => ({ id: `old-${index}` })),

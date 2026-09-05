@@ -160,8 +160,8 @@ function styleMarkup() {
     .meg-activity-unavailable{font-size:.72rem;color:var(--muted,#64748b)}.meg-activity-empty{padding:32px 20px;text-align:center;color:var(--muted,#64748b)}
     .meg-history-filters{display:grid;grid-template-columns:minmax(180px,1fr) repeat(2,minmax(140px,190px));gap:10px;padding:16px 20px;border-bottom:1px solid rgba(148,163,184,.14)}.meg-history-filters input,.meg-history-filters select{width:100%}
     .meg-history-more{display:flex;justify-content:center;padding:16px;border-top:1px solid rgba(148,163,184,.12)}.meg-history-more[hidden]{display:none}
-    .meg-classification-panel{margin-top:18px;padding:20px}.meg-classification-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}.meg-classification-metric{padding:13px;border:1px solid rgba(148,163,184,.18);border-radius:13px;background:rgba(15,118,110,.06)}.meg-classification-metric strong,.meg-classification-metric span{display:block}.meg-classification-metric strong{font-size:1.25rem}.meg-classification-metric span{margin-top:3px;color:var(--muted,#64748b);font-size:.75rem}.meg-classification-list{display:grid;gap:8px;max-height:430px;overflow:auto}.meg-classification-row{display:grid;grid-template-columns:minmax(180px,1fr) repeat(3,minmax(110px,auto));gap:10px;align-items:center;padding:11px 12px;border:1px solid rgba(148,163,184,.14);border-radius:12px}.meg-classification-row small{display:block;margin-top:3px;color:var(--muted,#64748b)}.meg-classification-tag{padding:5px 8px;border-radius:999px;background:rgba(148,163,184,.12);font-size:.7rem;font-weight:800;text-align:center}.meg-classification-note{margin:12px 0 0;color:var(--muted,#64748b);font-size:.8rem}
-    @media(max-width:760px){.meg-recent-activity,.meg-history-panel{margin-top:16px;border-radius:16px}.meg-recent-activity-header,.meg-history-header{padding:15px 16px;align-items:flex-start}.meg-activity-card{grid-template-columns:36px minmax(0,1fr);padding:14px 16px;gap:11px}.meg-activity-marker{width:34px;height:34px}.meg-activity-value{grid-column:2;display:flex;align-items:center;justify-content:space-between;width:100%;justify-items:initial}.meg-activity-heading{align-items:flex-start;flex-wrap:wrap}.meg-history-filters{grid-template-columns:1fr;padding:14px 16px}.meg-recent-activity-header .button{white-space:nowrap}.meg-classification-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.meg-classification-row{grid-template-columns:1fr 1fr}.meg-classification-row>div:first-child{grid-column:1/-1}}
+    .meg-classification-panel{margin-top:18px;padding:20px}.meg-classification-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}.meg-classification-metric{padding:13px;border:1px solid rgba(148,163,184,.18);border-radius:13px;background:rgba(15,118,110,.06)}.meg-classification-metric strong,.meg-classification-metric span{display:block}.meg-classification-metric strong{font-size:1.25rem}.meg-classification-metric span{margin-top:3px;color:var(--muted,#64748b);font-size:.75rem}.meg-classification-list{display:grid;gap:8px;max-height:430px;overflow:auto}.meg-classification-row{display:grid;grid-template-columns:32px minmax(180px,1fr) repeat(3,minmax(110px,auto));gap:10px;align-items:center;padding:11px 12px;border:1px solid rgba(148,163,184,.14);border-radius:12px}.meg-classification-row small{display:block;margin-top:3px;color:var(--muted,#64748b)}.meg-classification-row select{width:100%;min-width:0;padding:7px}.meg-classification-check{width:18px;height:18px}.meg-classification-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}.meg-classification-note{margin:0;color:var(--muted,#64748b);font-size:.8rem}
+    @media(max-width:760px){.meg-recent-activity,.meg-history-panel{margin-top:16px;border-radius:16px}.meg-recent-activity-header,.meg-history-header{padding:15px 16px;align-items:flex-start}.meg-activity-card{grid-template-columns:36px minmax(0,1fr);padding:14px 16px;gap:11px}.meg-activity-marker{width:34px;height:34px}.meg-activity-value{grid-column:2;display:flex;align-items:center;justify-content:space-between;width:100%;justify-items:initial}.meg-activity-heading{align-items:flex-start;flex-wrap:wrap}.meg-history-filters{grid-template-columns:1fr;padding:14px 16px}.meg-recent-activity-header .button{white-space:nowrap}.meg-classification-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.meg-classification-row{grid-template-columns:28px 1fr}.meg-classification-row>div{grid-column:2}.meg-classification-row select{grid-column:1/-1}.meg-classification-actions{align-items:stretch;flex-direction:column}.meg-classification-actions button{width:100%}}
   `;
 }
 
@@ -228,6 +228,10 @@ function classificationLabel(value) {
   return ({ FIXED: 'Valor fixo', VARIABLE: 'Valor variável', ESSENTIAL: 'Essencial', FLEXIBLE: 'Flexível', REVIEW: 'Revisar', RECURRING: 'Recorrente', INSTALLMENT: 'Parcelado', ONE_OFF: 'Pontual' })[value] || value || 'Revisar';
 }
 
+function classificationOptions(values, selected) {
+  return values.map(([value, label]) => `<option value="${value}"${value === selected ? ' selected' : ''}>${label}</option>`).join('');
+}
+
 function renderClassificationPreview() {
   const container = document.querySelector('#megClassificationPreview');
   if (!container) return;
@@ -248,9 +252,44 @@ function renderClassificationPreview() {
     </div>
     <div class="meg-classification-list">${suggestions.slice(0, 80).map((item) => {
       const transaction = transactions.get(String(item.transactionId)) || {};
-      return `<div class="meg-classification-row"><div><strong>${escapeHtml(transaction.description || 'Lançamento')}</strong><small>${escapeHtml((item.evidence || []).join(' · '))}</small></div><span class="meg-classification-tag">${escapeHtml(classificationLabel(item.amountBehavior))}</span><span class="meg-classification-tag">${escapeHtml(classificationLabel(item.necessity))}</span><span class="meg-classification-tag">${escapeHtml(classificationLabel(item.frequency))}</span></div>`;
+      const checked = item.confidence === 'HIGH' && !item.reviewed ? ' checked' : '';
+      return `<div class="meg-classification-row" data-classification-row="${escapeHtml(item.transactionId)}" data-confidence="${escapeHtml(item.confidence)}"><input class="meg-classification-check" type="checkbox" aria-label="Selecionar ${escapeHtml(transaction.description || 'lançamento')}"${checked}><div><strong>${escapeHtml(transaction.description || 'Lançamento')}</strong><small>${escapeHtml((item.evidence || []).join(' · '))} · confiança ${escapeHtml(String(item.confidence || '').toLowerCase())}</small></div><select data-axis="amountBehavior" aria-label="Comportamento do valor">${classificationOptions([['FIXED', 'Valor fixo'], ['VARIABLE', 'Valor variável']], item.amountBehavior)}</select><select data-axis="necessity" aria-label="Necessidade">${classificationOptions([['ESSENTIAL', 'Essencial'], ['FLEXIBLE', 'Flexível'], ['REVIEW', 'Revisar']], item.necessity)}</select><select data-axis="frequency" aria-label="Frequência">${classificationOptions([['RECURRING', 'Recorrente'], ['INSTALLMENT', 'Parcelado'], ['ONE_OFF', 'Pontual']], item.frequency)}</select></div>`;
     }).join('')}</div>
-    <p class="meg-classification-note">Esta etapa é somente leitura. Nenhuma classificação será gravada antes da sua revisão.</p>`;
+    <div class="meg-classification-actions"><p class="meg-classification-note">Alta confiança vem selecionada. Revise os campos antes de gravar.</p><button class="button primary" id="megApplyClassifications" type="button">Aplicar selecionadas</button></div>`;
+  bindClassificationApplication();
+}
+
+function bindClassificationApplication() {
+  const button = document.querySelector('#megApplyClassifications');
+  if (!button || button.dataset.bound === 'true') return;
+  button.dataset.bound = 'true';
+  button.addEventListener('click', async () => {
+    const selected = [...document.querySelectorAll('[data-classification-row]')]
+      .filter((row) => row.querySelector('.meg-classification-check')?.checked)
+      .map((row) => ({
+        transactionId: row.dataset.classificationRow,
+        amountBehavior: row.querySelector('[data-axis="amountBehavior"]')?.value,
+        necessity: row.querySelector('[data-axis="necessity"]')?.value,
+        frequency: row.querySelector('[data-axis="frequency"]')?.value,
+        confidence: ({ HIGH: 0.95, MEDIUM: 0.7, LOW: 0.4 })[row.dataset.confidence] || 0.4,
+      }));
+    if (!selected.length) {
+      window.MEG_APP?.showToast?.('Nenhuma despesa selecionada', 'Marque ao menos uma classificação para continuar.', 'warning');
+      return;
+    }
+    button.disabled = true;
+    button.textContent = 'Sincronizando...';
+    try {
+      const changed = await window.MEG_APP?.applyFinancialClassifications?.(selected);
+      window.MEG_APP?.showToast?.('Classificação confirmada', `${changed} despesa(s) foram gravadas e confirmadas na nuvem.`, 'success');
+      classificationPreview = null;
+      document.querySelector('#megClassificationAnalyze')?.click();
+    } catch (error) {
+      window.MEG_APP?.showToast?.('Classificação pendente', error instanceof Error ? error.message : 'A base ainda não confirmou a alteração.', 'error');
+      button.disabled = false;
+      button.textContent = 'Aplicar selecionadas';
+    }
+  });
 }
 
 let classificationBound = false;
