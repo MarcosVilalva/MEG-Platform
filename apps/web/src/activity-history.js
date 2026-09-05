@@ -240,7 +240,9 @@ function renderClassificationPreview() {
     return;
   }
   if (!classificationPreview) return;
-  const suggestions = Array.isArray(classificationPreview.classificationSuggestions) ? classificationPreview.classificationSuggestions : [];
+  const allSuggestions = Array.isArray(classificationPreview.classificationSuggestions) ? classificationPreview.classificationSuggestions : [];
+  const suggestions = [...allSuggestions].sort((left, right) => Number(Boolean(left.reviewed)) - Number(Boolean(right.reviewed)));
+  const pendingReview = suggestions.filter((item) => !item.reviewed).length;
   const transactions = new Map((activityState()?.transactions || []).map((item) => [String(item.id), item]));
   const summary = classificationPreview.source?.classification || {};
   container.innerHTML = `
@@ -255,7 +257,7 @@ function renderClassificationPreview() {
       const checked = item.confidence === 'HIGH' && !item.reviewed ? ' checked' : '';
       return `<div class="meg-classification-row" data-classification-row="${escapeHtml(item.transactionId)}" data-confidence="${escapeHtml(item.confidence)}"><input class="meg-classification-check" type="checkbox" aria-label="Selecionar ${escapeHtml(transaction.description || 'lançamento')}"${checked}><div><strong>${escapeHtml(transaction.description || 'Lançamento')}</strong><small>${escapeHtml((item.evidence || []).join(' · '))} · confiança ${escapeHtml(String(item.confidence || '').toLowerCase())}</small></div><select data-axis="amountBehavior" aria-label="Comportamento do valor">${classificationOptions([['FIXED', 'Valor fixo'], ['VARIABLE', 'Valor variável']], item.amountBehavior)}</select><select data-axis="necessity" aria-label="Necessidade">${classificationOptions([['ESSENTIAL', 'Essencial'], ['FLEXIBLE', 'Flexível'], ['REVIEW', 'Revisar']], item.necessity)}</select><select data-axis="frequency" aria-label="Frequência">${classificationOptions([['RECURRING', 'Recorrente'], ['INSTALLMENT', 'Parcelado'], ['ONE_OFF', 'Pontual']], item.frequency)}</select></div>`;
     }).join('')}</div>
-    <div class="meg-classification-actions"><p class="meg-classification-note">Alta confiança vem selecionada. Revise os campos antes de gravar.</p><button class="button primary" id="megApplyClassifications" type="button">Aplicar selecionadas</button></div>`;
+    <div class="meg-classification-actions"><p class="meg-classification-note">${pendingReview} despesa(s) aguardam revisão. A tela prioriza as pendentes em lotes de até 80.</p><button class="button primary" id="megApplyClassifications" type="button">Aplicar selecionadas</button></div>`;
   bindClassificationApplication();
 }
 
