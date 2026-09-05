@@ -22,7 +22,12 @@ import { ensureCommercialFoundation } from './modules/platform-admin/service';
 import { integrationRoutes } from './modules/integrations/routes';
 import { refreshCommercialBillingStatuses } from './modules/billing/service';
 import { ensurePrimaryWorkspace } from './modules/workspaces/service';
-import { activateNormalizationPrimary } from './modules/app-state/normalization-migration';
+import {
+  activateNormalizationPrimary,
+  getNormalizationRuntimeStatus,
+  normalizationPreview,
+  recordNormalizationRuntimeStatus,
+} from './modules/app-state/normalization-migration';
 
 const app = Fastify({
   bodyLimit: 25 * 1024 * 1024,
@@ -33,12 +38,6 @@ const app = Fastify({
 
 let dataRepair: { status: 'pending' | 'completed'; scanned: number; repaired: number; issues: number } = {
   status: 'pending', scanned: 0, repaired: 0, issues: 0
-};
-let normalization = {
-  status: 'pending' as 'pending' | 'completed' | 'fallback' | 'rollback-protected',
-  primary: false,
-  reconciled: false,
-  count: 0,
 };
 
 await app.register(cors, {
@@ -86,7 +85,7 @@ app.get('/health', async () => ({
   integrations: notificationIntegrationStatus(),
   commit: process.env.RENDER_GIT_COMMIT || 'local',
   dataRepair,
-  normalization,
+  normalization: getNormalizationRuntimeStatus(),
 }));
 
 app.get('/ready', async (_request, reply) => {
@@ -161,12 +160,13 @@ try {
       }
       if (!result) throw new Error('NORMALIZATION_ACTIVATION_EMPTY_RESULT');
       const blockedByRollback = Boolean('blockedByRollback' in result && result.blockedByRollback);
-      normalization = {
+      recordNormalizationRuntimeStatus({
         status: blockedByRollback ? 'rollback-protected' : result.primary ? 'completed' : 'fallback',
         primary: result.primary,
         reconciled: result.reconciled,
         count: result.normalized.count,
-      };
+        reason: blockedByRollback ? 'ADMIN_ROLLBACK' : result.primary ? null : 'NORMALIZED_PRIMARY_INACTIVE',
+      });
       app.log.info({
         mode: result.mode,
         reconciled: result.reconciled,
@@ -177,9 +177,35 @@ try {
       return result;
     })
     .catch((error) => {
-      normalization = { status: 'fallback', primary: false, reconciled: false, count: 0 };
+      recordNormalizationRuntimeStatus({ status: 'fallback', primary: false, reconciled: false, count: 0, reason: error instanceof Error ? error.message : 'NORMALIZATION_STARTUP_FAILED' });
       app.log.error(error, 'Normalized financial source remained on AppState fallback');
     });
+  let normalizationAuditRunning = false;
+  const normalizationAuditTimer = setInterval(() => {
+    if (normalizationAuditRunning) return;
+    normalizationAuditRunning = true;
+    void ensurePrimaryWorkspace()
+      .then(async (workspace) => {
+        if (!workspace) throw new Error('NORMALIZATION_SOURCE_NOT_FOUND');
+        const preview = await normalizationPreview(workspace.id, workspace.ownerId);
+        if (preview.mode === 'app-state-rollback') {
+          recordNormalizationRuntimeStatus({ status: 'rollback-protected', primary: false, reconciled: preview.reconciled, count: preview.normalized.count, reason: 'ADMIN_ROLLBACK' });
+          return;
+        }
+        if (!preview.primary || !preview.reconciled) {
+          recordNormalizationRuntimeStatus({ status: 'fallback', primary: false, reconciled: false, count: preview.normalized.count, reason: 'PERIODIC_RECONCILIATION_FAILED' });
+          app.log.warn({ sourceCount: preview.source.validCount, normalizedCount: preview.normalized.count }, 'Periodic normalized financial source audit detected a divergence');
+          return;
+        }
+        recordNormalizationRuntimeStatus({ status: 'completed', primary: true, reconciled: true, count: preview.normalized.count, reason: null });
+      })
+      .catch((error) => {
+        recordNormalizationRuntimeStatus({ status: 'fallback', primary: false, reconciled: false, reason: error instanceof Error ? error.message : 'PERIODIC_NORMALIZATION_AUDIT_FAILED' });
+        app.log.error(error, 'Periodic normalized financial source audit failed');
+      })
+      .finally(() => { normalizationAuditRunning = false; });
+  }, 15 * 60 * 1000);
+  normalizationAuditTimer.unref();
   if (config.runLegacyRepair) {
     void repairLegacyImportedEvents()
       .then((repairResult) => {

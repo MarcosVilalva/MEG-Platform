@@ -2,6 +2,7 @@ import './startup-data-protection.js';
 import { bootstrapCloud, clearLocalCloudSession, hideCloudLoading, showCloudLoading } from './legacy-cloud.js';
 import { excelDateToIso } from './legacy-import-utils.js';
 import { checkForAppUpdate, initializeAndroidUpdateLifecycle, initializeStableUiFeatures, markAndroidUpdateUiReady, refreshInstalledAppVersion } from './native-app-update.js';
+import { initializeAdaptiveCardTypography } from './adaptive-card-typography.js';
 import {
   consumePreparedAndroidBiometricCredentials,
   initializeAndroidBiometricLifecycle,
@@ -470,6 +471,7 @@ async function start() {
   // tela de carregamento visível.
   hideCloudLoading();
   traceStartup('dashboard-liberado', { transactions: window.MEG_APP?.getState?.()?.transactions?.length ?? null });
+  requestAnimationFrame(() => initializeAdaptiveCardTypography());
   const openingAlertSettled = window.MEG_APP?.scheduleOpeningFinancialAlert?.() || Promise.resolve('unavailable');
   initializeStableUiFeatures().catch(() => undefined);
   if (nativeMobileMode) refreshInstalledAppVersion().catch(() => undefined);

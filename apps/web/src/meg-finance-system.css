@@ -52,6 +52,24 @@ body::before {
   mask-image: linear-gradient(to bottom, #000, transparent 88%);
 }
 
+/* Títulos e valores principais dos cards permanecem em uma linha. O tamanho é
+   calculado pela largura real no web e na WebView Android. */
+.meg-autofit-text {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  font-size: var(--meg-autofit-size) !important;
+  line-height: 1.08;
+}
+
+.meg-autofit-text.meg-autofit-reduced {
+  letter-spacing: -.018em;
+}
+
 .app-shell { background: transparent; }
 .content {
   background:
