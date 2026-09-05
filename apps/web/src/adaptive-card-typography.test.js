@@ -12,5 +12,9 @@ assert.match(runtime, /MutationObserver/);
 assert.match(runtime, /document\.fonts\?\.ready/);
 assert.match(runtime, /income-analysis-hero/);
 assert.match(runtime, /childElementCount > 0/);
+assert.ok(
+  runtime.indexOf('card.clientWidth <= 0') < runtime.indexOf("element.classList.add('meg-autofit-text')"),
+  'cards ocultos não podem capturar a fonte antes de ficarem visíveis',
+);
 
 console.log('adaptive card typography tests passed');
