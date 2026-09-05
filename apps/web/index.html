@@ -577,8 +577,12 @@
         </section>
 
         <section class="view" id="transactions" aria-labelledby="transactionsTitle">
-          <div class="section-heading">
-            <h2 id="transactionsTitle">Lancamentos</h2>
+          <div class="section-heading transaction-modern-heading">
+            <div class="section-heading-copy">
+              <p class="eyebrow">LANÇAMENTOS</p>
+              <h2 id="transactionsTitle">Controle de despesas</h2>
+              <p class="section-subtitle">Consulte todos os campos ou selecione vários itens para uma alteração segura.</p>
+            </div>
             <div class="filter-row">
               <div class="transaction-search-stack">
                 <input id="searchInput" type="search" placeholder="Buscar por descricao, categoria ou conta" />
@@ -616,9 +620,9 @@
           <section class="transaction-batch-editor" id="transactionBatchEditor" aria-label="Alterar lançamentos selecionados">
             <div class="transaction-batch-summary">
               <span class="transaction-batch-summary-icon" aria-hidden="true">✓</span>
-              <span><strong id="transactionBatchCount">Nenhum selecionado</strong><small>Marque um ou vários lançamentos</small></span>
+              <span><strong id="transactionBatchCount">0 selecionados</strong><small>Uma confirmação para todo o lote</small></span>
             </div>
-            <label>Vencimento
+            <label>Novo vencimento
               <input id="transactionBatchDate" type="date" aria-label="Novo vencimento dos lançamentos selecionados" disabled />
               <small>Vazio significa não alterar</small>
             </label>
@@ -629,7 +633,10 @@
               <small>Mantenha para preservar o valor atual</small>
             </label>
             <button class="button ghost" id="transactionBatchClear" type="button" disabled>Cancelar seleção</button>
-            <button class="button primary" id="transactionBatchApply" type="button" disabled>Revisar e salvar</button>
+            <button class="button primary" id="transactionBatchApply" type="button" disabled>
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Zm4-8h2v4.2l1.6-1.6L16 14l-4 4-4-4 1.4-1.4 1.6 1.6V10Z"/></svg>
+              <span>Salvar alterações</span>
+            </button>
             <p id="transactionBatchStatus" role="status" aria-live="assertive">Selecione os lançamentos que deseja alterar.</p>
           </section>
 

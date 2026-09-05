@@ -1,10 +1,12 @@
 import './appearance-theme.css';
+import './global-modern-clarity.css';
 
 const STORAGE_KEY = 'meg-appearance-theme-v1';
 const COLORS = { dark: '#071725', light: '#eef5f2' };
+const ASSET_BASE = import.meta.env?.BASE_URL || '/';
 
 function storedTheme() {
-  try { return localStorage.getItem(STORAGE_KEY) === 'light' ? 'light' : 'dark'; } catch { return 'dark'; }
+  try { return localStorage.getItem(STORAGE_KEY) === 'dark' ? 'dark' : 'light'; } catch { return 'light'; }
 }
 
 export function applyAppearanceTheme(theme, { persist = true } = {}) {
@@ -13,11 +15,17 @@ export function applyAppearanceTheme(theme, { persist = true } = {}) {
   document.body.dataset.megTheme = value;
   document.documentElement.style.colorScheme = value;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', COLORS[value]);
+  document.querySelectorAll('img.brand-logo').forEach((image) => {
+    image.src = value === 'light'
+      ? `${ASSET_BASE}brand/meg-finance-system-lockup-light.svg`
+      : `${ASSET_BASE}brand/meg-finance-system-lockup.svg`;
+  });
   const button = document.querySelector('#appearanceThemeToggle');
   if (button) {
     const light = value === 'light';
     button.setAttribute('aria-pressed', String(light));
     button.setAttribute('aria-label', light ? 'Ativar modo escuro' : 'Ativar modo claro');
+    button.dataset.activeTheme = value;
     const label = button.querySelector('span');
     if (label) label.textContent = light ? 'Modo escuro' : 'Modo claro';
   }
