@@ -159,6 +159,11 @@ body.meg-layout-reformed::before { display: none; }
 .meg-layout-reformed .meg-period-toggle,
 .meg-layout-reformed .meg-theme-toggle,
 .meg-layout-reformed #quickAddBtn { min-height: 38px; border-radius: 10px; }
+.meg-period-toggle-copy { display: grid; min-width: 0; gap: 1px; text-align: left; line-height: 1.05; }
+.meg-period-toggle-copy strong { font: inherit; font-weight: 680; }
+.meg-period-toggle-copy small { max-width: 170px; overflow: hidden; color: var(--meg-subtle); font-size: 9px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.meg-filter-active-dot { flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%; background: transparent; }
+.meg-period-toggle.has-active-filter .meg-filter-active-dot { background: var(--meg-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--meg-accent) 15%, transparent); }
 .meg-theme-toggle { width: 38px; padding: 0 !important; justify-content: center; }
 .meg-theme-label { display: none; }
 .meg-theme-toggle svg { width: 17px !important; height: 17px !important; }
@@ -483,14 +488,56 @@ body.meg-layout-reformed::before { display: none; }
   .meg-layout-reformed .nav-item { justify-content: flex-start; font-size: 13px; }
   .meg-layout-reformed .sidebar-user-copy,
   .meg-layout-reformed .sidebar-user-actions { display: block; }
-  .meg-layout-reformed .meg-command-bar {
+  body.meg-layout-reformed .meg-command-bar {
     min-height: 66px;
     margin-bottom: 18px;
     padding-left: 48px;
   }
   .meg-layout-reformed .meg-command-context { display: none; }
-  .meg-layout-reformed .topbar-actions { width: 100%; justify-content: flex-end; }
-  .meg-layout-reformed .period-control { position: fixed; inset: 72px 12px auto; width: auto; max-height: calc(100dvh - 90px); overflow: auto; }
+  body.meg-layout-reformed .topbar-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 42px minmax(88px, auto);
+    align-items: center;
+    gap: 8px !important;
+    width: 100%;
+    min-width: 0;
+    flex-wrap: nowrap;
+  }
+  body.meg-layout-reformed .topbar-actions > .button {
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 42px;
+    margin: 0 !important;
+  }
+  body.meg-layout-reformed .meg-period-toggle {
+    justify-content: flex-start;
+    overflow: hidden;
+    padding: 6px 11px;
+  }
+  body.meg-layout-reformed .meg-period-toggle > svg { flex: 0 0 18px; }
+  body.meg-layout-reformed .meg-period-toggle-copy { flex: 1 1 auto; }
+  body.meg-layout-reformed .meg-theme-toggle {
+    width: 42px !important;
+    padding: 0 !important;
+  }
+  body.meg-layout-reformed .meg-theme-label { display: none !important; }
+  body.meg-layout-reformed #quickAddBtn {
+    justify-content: center;
+    padding-inline: 12px;
+    white-space: nowrap;
+  }
+  body.meg-layout-reformed .period-control {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    left: 0;
+    z-index: 80;
+    grid-column: 1 / -1;
+    width: auto !important;
+    max-height: calc(100dvh - 90px);
+    overflow: auto;
+    box-shadow: 0 22px 55px rgba(5, 28, 23, .24);
+  }
   .meg-layout-reformed .meg-page-heading { display: grid; align-items: start; gap: 14px; }
   .meg-layout-reformed .meg-page-heading h2 { font-size: clamp(28px, 9vw, 38px); }
   .meg-layout-reformed .meg-page-actions { width: 100%; }
@@ -525,6 +572,13 @@ body.meg-layout-reformed::before { display: none; }
   .meg-layout-reformed .transactions-table { min-width: 1080px; }
   .meg-layout-reformed .credit-invoice-table { min-width: 760px; }
   .meg-layout-reformed dialog.modal { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); border-radius: 17px; }
+}
+
+@media (max-width: 380px) {
+  body.meg-layout-reformed .meg-command-bar { padding-left: 44px; }
+  body.meg-layout-reformed .topbar-actions { grid-template-columns: minmax(0, 1fr) 40px auto; gap: 6px !important; }
+  body.meg-layout-reformed .meg-theme-toggle { width: 40px !important; }
+  body.meg-layout-reformed #quickAddBtn { padding-inline: 9px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
