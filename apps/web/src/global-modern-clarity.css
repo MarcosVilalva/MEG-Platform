@@ -1,0 +1,497 @@
+/* Linguagem visual global inspirada na referência aprovada: clara, calma e funcional. */
+:root {
+  --meg-modern-radius: 18px;
+  --meg-modern-radius-sm: 12px;
+  --meg-modern-control: 44px;
+  --meg-modern-gap: 18px;
+  --meg-modern-font: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  font-family: var(--meg-modern-font) !important;
+  font-feature-settings: "tnum" 1, "cv02" 1, "cv03" 1;
+  letter-spacing: -.006em;
+}
+
+body[data-meg-theme="light"] {
+  --background: #f3f8f6;
+  --bg: #f3f8f6;
+  --panel: #ffffff;
+  --surface: #ffffff;
+  --surface-strong: #edf7f3;
+  --text: #202725;
+  --muted: #697370;
+  --line: #d9e4e0;
+  --primary: #177f70;
+  --primary-strong: #0e695d;
+  --meg-modern-accent: #1a8b7b;
+  --meg-modern-accent-soft: #eaf8f4;
+  --meg-modern-border: #d6e4df;
+  --meg-modern-card: #ffffff;
+  --meg-modern-elevated: #f8fbfa;
+  --meg-modern-heading: #1c2422;
+  --meg-modern-muted: #6e7774;
+  --meg-modern-shadow: 0 8px 24px rgba(35, 70, 62, .055);
+}
+
+body[data-meg-theme="dark"] {
+  --meg-modern-accent: #58d8bd;
+  --meg-modern-accent-soft: rgba(62, 205, 175, .12);
+  --meg-modern-border: rgba(125, 182, 172, .18);
+  --meg-modern-card: #102832;
+  --meg-modern-elevated: #142f38;
+  --meg-modern-heading: #edf7f5;
+  --meg-modern-muted: #9cb0ad;
+  --meg-modern-shadow: 0 10px 28px rgba(0, 9, 15, .16);
+}
+
+body .content {
+  padding: clamp(18px, 2.25vw, 34px) !important;
+}
+
+body .view.active {
+  gap: var(--meg-modern-gap) !important;
+}
+
+body :is(.topbar, .section-heading) {
+  align-items: flex-end;
+  gap: 18px;
+}
+
+body :is(.topbar h1, .section-heading h2) {
+  color: var(--meg-modern-heading) !important;
+  font-weight: 760 !important;
+  letter-spacing: -.035em !important;
+}
+
+body .topbar h1 {
+  font-size: clamp(1.85rem, 3vw, 2.65rem) !important;
+}
+
+body .section-heading h2 {
+  font-size: clamp(1.45rem, 2vw, 2rem) !important;
+}
+
+body .eyebrow,
+body .decision-eyebrow {
+  color: var(--meg-modern-accent) !important;
+  font-size: .7rem !important;
+  font-weight: 760 !important;
+  letter-spacing: .08em !important;
+}
+
+.section-heading-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 240px;
+}
+
+.section-heading-copy :is(h2, p) { margin: 0; }
+.section-subtitle {
+  color: var(--meg-modern-muted) !important;
+  font-size: .86rem;
+  line-height: 1.45;
+}
+
+body :is(
+  .panel, .table-panel, .form-panel, .filter-panel, .settings-panel, .settings-card,
+  .summary-card, .workspace-panel, .metric, .mini-metric, .metric-card,
+  .analytics-card, .chart-panel, .dashboard-card, .dashboard-group-panel,
+  .cashflow-summary-card, .cashflow-day-card, .cashflow-answer-card, .budget-card,
+  .catalog-card, .catalog-panel, .credit-card-panel, .credit-forecast-panel,
+  .credit-invoice-panel, .decision-card, .decision-hero, .health-card,
+  .recommendation-card, .reconciliation-card, .meg-chart-card, .meg-kpi-card,
+  .meg-pivot-card, .meg-segment-bar, .finance-panel, .month-progress-panel,
+  .transactions-filter-card, .pending-command-center, .pending-coverage,
+  .analytics-decision-hero, .analytics-filter-panel, .income-analysis-hero,
+  .cashflow-decision-hero, .executive-command-panel, .user-security-hero,
+  .workspace-integration-panel, .managed-channel-card, .meg-history-panel,
+  .meg-recent-activity, .empty-state
+) {
+  border: 1px solid var(--meg-modern-border) !important;
+  border-radius: var(--meg-modern-radius) !important;
+  box-shadow: var(--meg-modern-shadow) !important;
+}
+
+body[data-meg-theme="light"] :is(
+  .panel, .table-panel, .form-panel, .filter-panel, .settings-panel, .settings-card,
+  .summary-card, .workspace-panel, .metric, .mini-metric, .metric-card,
+  .analytics-card, .chart-panel, .dashboard-card, .dashboard-group-panel,
+  .cashflow-summary-card, .cashflow-day-card, .cashflow-answer-card, .budget-card,
+  .catalog-card, .catalog-panel, .credit-card-panel, .credit-forecast-panel,
+  .credit-invoice-panel, .decision-card, .health-card, .recommendation-card,
+  .reconciliation-card, .meg-chart-card, .meg-kpi-card, .meg-pivot-card,
+  .meg-segment-bar, .finance-panel, .month-progress-panel, .transactions-filter-card,
+  .pending-command-center, .pending-coverage, .analytics-filter-panel,
+  .executive-command-panel, .workspace-integration-panel, .managed-channel-card,
+  .meg-history-panel, .meg-recent-activity, .empty-state
+) {
+  color: var(--meg-modern-heading) !important;
+  background: var(--meg-modern-card) !important;
+  background-color: var(--meg-modern-card) !important;
+  background-image: none !important;
+}
+
+body[data-meg-theme="light"] :is(
+  .decision-hero, .analytics-decision-hero, .income-analysis-hero,
+  .cashflow-decision-hero, .user-security-hero
+) {
+  color: var(--meg-modern-heading) !important;
+  background: linear-gradient(135deg, #eef9f5, #e2f4ee) !important;
+  border-color: #bfe2d8 !important;
+}
+
+body[data-meg-theme="light"] :is(
+  .panel, .metric, .mini-metric, .summary-card, .metric-card, .finance-panel,
+  .dashboard-card, .analytics-card, .meg-chart-card, .meg-kpi-card,
+  .month-progress-panel, .transactions-filter-card, .decision-hero,
+  .analytics-decision-hero, .income-analysis-hero, .cashflow-decision-hero
+) :is(h1, h2, h3, h4, strong, b) {
+  color: var(--meg-modern-heading) !important;
+}
+
+body[data-meg-theme="light"] :is(
+  .panel, .metric, .mini-metric, .summary-card, .metric-card, .finance-panel,
+  .dashboard-card, .analytics-card, .meg-chart-card, .meg-kpi-card,
+  .month-progress-panel, .transactions-filter-card, .decision-hero,
+  .analytics-decision-hero, .income-analysis-hero, .cashflow-decision-hero
+) :is(p, small) {
+  color: var(--meg-modern-muted) !important;
+}
+
+body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  min-height: var(--meg-modern-control) !important;
+  padding: 10px 13px !important;
+  border: 1px solid var(--meg-modern-border) !important;
+  border-radius: var(--meg-modern-radius-sm) !important;
+  box-shadow: none !important;
+  font-family: inherit;
+  font-size: .9rem;
+}
+
+body[data-meg-theme="light"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  color: var(--meg-modern-heading) !important;
+  background: #fbfdfc !important;
+}
+
+body :is(input, select, textarea):focus {
+  border-color: var(--meg-modern-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--meg-modern-accent) 14%, transparent) !important;
+  outline: 0 !important;
+}
+
+body :is(.button, .icon-button, .filter-clear-button, .excel-column-filter summary) {
+  min-height: 40px;
+  border-radius: 11px !important;
+  font-family: inherit;
+  font-weight: 690 !important;
+  letter-spacing: -.01em;
+}
+
+body[data-meg-theme="light"] .button.primary {
+  color: #ffffff !important;
+  border-color: #171c1b !important;
+  background: #171c1b !important;
+  box-shadow: none !important;
+}
+
+body[data-meg-theme="light"] .button.primary:hover { background: #2b3331 !important; }
+body[data-meg-theme="light"] .button.primary:disabled {
+  color: #f2f4f3 !important;
+  border-color: #a8b0ae !important;
+  background: #a8b0ae !important;
+  opacity: 1 !important;
+}
+
+body[data-meg-theme="light"] :is(.button.ghost, .ghost-button, .icon-button, .filter-clear-button) {
+  color: #343a38 !important;
+  border-color: var(--meg-modern-border) !important;
+  background: #f3f5f4 !important;
+  box-shadow: none !important;
+}
+
+body :is(.button, .icon-button):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--meg-modern-accent) 24%, transparent);
+  outline-offset: 2px;
+}
+
+body .panel-title {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--meg-modern-border);
+}
+
+body .panel-title h3 { font-size: 1rem !important; }
+
+body[data-meg-theme="light"] .sidebar {
+  color: #27312e !important;
+  border-right: 1px solid var(--meg-modern-border) !important;
+  background: #fbfdfc !important;
+  box-shadow: 12px 0 34px rgba(31, 68, 60, .04) !important;
+}
+
+body[data-meg-theme="light"] .sidebar .brand-logo { filter: none !important; }
+body[data-meg-theme="light"] .nav-item { color: #66726e !important; }
+body[data-meg-theme="light"] .nav-item svg { fill: currentColor !important; }
+body[data-meg-theme="light"] .nav-item:hover { color: #1c5047 !important; background: #eff7f4 !important; }
+body[data-meg-theme="light"] .nav-item.active {
+  color: #166e61 !important;
+  background: #e2f3ed !important;
+  box-shadow: inset 3px 0 #299b89 !important;
+}
+body[data-meg-theme="light"] .sidebar-user-footer {
+  border-color: var(--meg-modern-border) !important;
+  background: #f3f8f6 !important;
+}
+body[data-meg-theme="light"] .sidebar-user-footer :is(strong, span) { color: #27312e !important; }
+body[data-meg-theme="light"] .sidebar-user-footer small { color: #72807c !important; }
+
+body[data-meg-theme="light"] .auth-shell {
+  color: var(--meg-modern-heading) !important;
+  background: #f3f8f6 !important;
+}
+body :is(.auth-card, .auth-showcase) {
+  border: 1px solid var(--meg-modern-border) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--meg-modern-shadow) !important;
+}
+body[data-meg-theme="light"] :is(.auth-card, .auth-showcase) {
+  color: var(--meg-modern-heading) !important;
+  background: #ffffff !important;
+  background-image: none !important;
+}
+body[data-meg-theme="light"] .auth-tabs {
+  border-color: var(--meg-modern-border) !important;
+  background: #f2f6f4 !important;
+}
+body[data-meg-theme="light"] .auth-tabs button { color: #6c7774 !important; }
+body[data-meg-theme="light"] .auth-tabs button.active { color: #ffffff !important; background: #1a8172 !important; }
+
+body .transaction-modern-heading { margin-bottom: 2px; }
+body .transaction-modern-heading .filter-row { align-items: center; }
+
+body .transactions-filter-summary { gap: 12px !important; }
+body .transactions-filter-card { padding: 15px 18px !important; }
+body .transactions-filter-card::before { display: none !important; }
+body .transactions-filter-card strong { font-size: clamp(1.25rem, 2vw, 1.7rem) !important; }
+body[data-meg-theme="light"] .transactions-filter-icon {
+  color: #1b7568 !important;
+  background: #e7f5f0 !important;
+}
+
+body .transaction-batch-editor {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  grid-template-areas:
+    "summary summary"
+    "date payment"
+    "clear apply"
+    "status status";
+  gap: 13px 15px !important;
+  padding: 19px !important;
+  border: 1px solid color-mix(in srgb, var(--meg-modern-accent) 42%, var(--meg-modern-border)) !important;
+  border-radius: var(--meg-modern-radius) !important;
+  box-shadow: none !important;
+}
+body[data-meg-theme="light"] .transaction-batch-editor {
+  color: var(--meg-modern-heading) !important;
+  background: #effaf6 !important;
+}
+body .transaction-batch-summary { grid-area: summary; }
+body .transaction-batch-editor > label:first-of-type { grid-area: date; }
+body .transaction-batch-editor > label:nth-of-type(2) { grid-area: payment; }
+body #transactionBatchClear { grid-area: clear; justify-self: start; }
+body #transactionBatchApply { grid-area: apply; justify-self: start; }
+body #transactionBatchStatus { grid-area: status; }
+body .transaction-batch-summary-icon {
+  width: 30px !important;
+  height: 30px !important;
+  color: var(--meg-modern-accent) !important;
+  background: transparent !important;
+}
+body .transaction-batch-editor label {
+  color: var(--meg-modern-heading) !important;
+  font-size: .84rem !important;
+  font-weight: 560 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+body .transaction-batch-editor label small { display: none; }
+body .transaction-batch-summary strong { color: var(--meg-modern-heading) !important; }
+body .transaction-batch-summary small { color: var(--meg-modern-muted) !important; }
+body #transactionBatchApply svg { width: 17px; height: 17px; fill: currentColor; }
+
+body .table-panel { overflow: hidden; }
+body .table-wrap { border-radius: calc(var(--meg-modern-radius) - 1px); }
+body .transactions-table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  font-size: .84rem !important;
+}
+body .transactions-table thead th {
+  height: 46px;
+  padding: 10px 12px !important;
+  color: var(--meg-modern-muted) !important;
+  border-bottom: 1px solid var(--meg-modern-border) !important;
+  background: var(--meg-modern-elevated) !important;
+  font-size: .72rem !important;
+  font-weight: 730 !important;
+  letter-spacing: .055em !important;
+}
+body .transactions-table tbody td {
+  height: 54px;
+  padding: 9px 12px !important;
+  border-bottom: 1px solid var(--meg-modern-border) !important;
+  background: var(--meg-modern-card) !important;
+  vertical-align: middle;
+}
+body .transactions-table tbody tr:hover td { background: var(--meg-modern-accent-soft) !important; }
+body .transactions-table .column-filter-row th { padding: 7px 8px !important; }
+body .transactions-table .column-filter-row :is(input, select, summary) {
+  min-height: 36px !important;
+  font-size: .76rem !important;
+}
+body .transaction-edit-button {
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+body[data-meg-theme="light"] .transaction-edit-button {
+  color: #54706a !important;
+  border-color: #d5e2de !important;
+  background: #f4f8f6 !important;
+}
+body .meg-transaction-description-icon {
+  width: 30px !important;
+  height: 30px !important;
+  flex-basis: 30px !important;
+  border-radius: 9px !important;
+  color: var(--meg-modern-heading) !important;
+  background: transparent !important;
+}
+body .meg-transaction-description-copy strong { font-size: .82rem; }
+body .transactions-pagination {
+  padding: 13px 15px;
+  border-top: 1px solid var(--meg-modern-border);
+}
+
+body .view table:not(.transactions-table) {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--meg-modern-border) !important;
+  border-radius: 14px !important;
+  font-size: .84rem;
+}
+body .view table:not(.transactions-table) th {
+  padding: 11px 12px !important;
+  color: var(--meg-modern-muted) !important;
+  border-color: var(--meg-modern-border) !important;
+  background: var(--meg-modern-elevated) !important;
+  font-size: .72rem;
+  font-weight: 730;
+  letter-spacing: .045em;
+}
+body .view table:not(.transactions-table) td {
+  padding: 11px 12px !important;
+  border-color: var(--meg-modern-border) !important;
+  background: var(--meg-modern-card) !important;
+}
+
+body :is(.catalog-row, .recipient-list > *, .user-management-list > *, .commercial-workspace-list > *, .card-launch-list > *, .bill-list > *) {
+  border: 1px solid var(--meg-modern-border) !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+}
+body[data-meg-theme="light"] :is(.catalog-row, .recipient-list > *, .user-management-list > *, .commercial-workspace-list > *, .card-launch-list > *, .bill-list > *) {
+  color: var(--meg-modern-heading) !important;
+  background: #ffffff !important;
+}
+
+body :is(dialog.modal, .modal, .meg-delete-confirm-dialog, .payment-confirm-dialog, .opening-alert-dialog) {
+  border: 1px solid var(--meg-modern-border) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 24px 70px rgba(10, 28, 24, .22) !important;
+}
+body[data-meg-theme="light"] :is(dialog.modal, .modal, .meg-delete-confirm-dialog, .payment-confirm-dialog, .opening-alert-dialog) {
+  color: var(--meg-modern-heading) !important;
+  background: #ffffff !important;
+  background-image: none !important;
+}
+body dialog::backdrop { background: rgba(26, 43, 39, .42) !important; backdrop-filter: blur(4px); }
+body .modal-header { padding-bottom: 14px; border-bottom: 1px solid var(--meg-modern-border); }
+body .modal-actions { padding-top: 14px; border-top: 1px solid var(--meg-modern-border); }
+
+body .app-toast {
+  border: 1px solid var(--meg-modern-border) !important;
+  border-radius: 15px !important;
+  box-shadow: 0 18px 50px rgba(14, 36, 31, .18) !important;
+}
+body[data-meg-theme="light"] .app-toast { color: var(--meg-modern-heading) !important; background: #ffffff !important; }
+
+body :is(.meg-update-dialog-hardened, .app-update-banner, .app-update-check-warning) {
+  border: 1px solid var(--meg-modern-border) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--meg-modern-shadow) !important;
+}
+body[data-meg-theme="light"] :is(.meg-update-dialog-hardened, .app-update-banner, .app-update-check-warning) {
+  color: var(--meg-modern-heading) !important;
+  background: #ffffff !important;
+  background-image: none !important;
+}
+
+body .pill,
+body :is(.decision-status, .credit-status, .meg-mobile-status) {
+  border-radius: 999px !important;
+  font-size: .7rem !important;
+  font-weight: 720 !important;
+  letter-spacing: .02em !important;
+}
+
+body[data-meg-theme="light"] :is(.amount.positive, .positive, .transactions-filter-income strong, .transactions-filter-result.is-positive strong) { color: #087663 !important; }
+body[data-meg-theme="light"] :is(.amount.negative, .negative, .transactions-filter-expense strong, .transactions-filter-result.is-negative strong) { color: #b8444f !important; }
+
+@media (max-width: 980px) {
+  body :is(.topbar, .section-heading) { align-items: stretch; }
+  body .transaction-modern-heading { display: grid !important; }
+  body .transaction-modern-heading .filter-row { width: 100%; }
+}
+
+@media (max-width: 760px) {
+  body .content { padding: 14px 10px calc(100px + env(safe-area-inset-bottom)) !important; }
+  body .topbar { gap: 12px !important; }
+  body .topbar h1 { font-size: 1.75rem !important; }
+  body .section-heading h2 { font-size: 1.55rem !important; }
+  body .section-subtitle { font-size: .8rem; }
+  body .transaction-batch-editor {
+    position: relative !important;
+    top: auto !important;
+    grid-template-columns: 1fr !important;
+    grid-template-areas: "summary" "date" "payment" "apply" "clear" "status" !important;
+    padding: 16px !important;
+  }
+  body #transactionBatchApply,
+  body #transactionBatchClear { width: 100%; justify-self: stretch; }
+  body .transactions-filter-card { padding: 13px !important; }
+  body.native-mobile .meg-mobile-transaction {
+    border-radius: 17px !important;
+    box-shadow: var(--meg-modern-shadow) !important;
+  }
+  body[data-meg-theme="light"].native-mobile .meg-mobile-transaction {
+    color: var(--meg-modern-heading) !important;
+    border-color: var(--meg-modern-border) !important;
+    background: #ffffff !important;
+  }
+  body[data-meg-theme="light"].native-mobile .meg-mobile-transaction-toolbar { background: #f3f8f6 !important; }
+  body[data-meg-theme="light"].native-mobile .mobile-dock {
+    color: #5e6b67 !important;
+    border-color: var(--meg-modern-border) !important;
+    background: rgba(255, 255, 255, .94) !important;
+    box-shadow: 0 -12px 30px rgba(27, 63, 55, .08) !important;
+  }
+  body[data-meg-theme="light"].native-mobile .mobile-dock button { color: #65716e !important; }
+  body[data-meg-theme="light"].native-mobile .mobile-dock button.active { color: #147566 !important; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body :is(.button, .panel, .metric, .mini-metric, .transaction-row td, .nav-item) {
+    transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+  }
+}

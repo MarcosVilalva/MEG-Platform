@@ -43,13 +43,14 @@ function syncControls() {
   const rows = visibleRows();
   const selectedVisible = rows.filter((row) => selectedIds.has(row.dataset.transactionId)).length;
   const hasChange = Boolean(date?.value || payment?.value);
-  if (byId('transactionBatchCount')) byId('transactionBatchCount').textContent = count ? `${count} selecionado${count === 1 ? '' : 's'}` : 'Nenhum selecionado';
+  if (byId('transactionBatchCount')) byId('transactionBatchCount').textContent = `${count} selecionado${count === 1 ? '' : 's'}`;
   if (date) date.disabled = syncing || !count;
   if (payment) payment.disabled = syncing || !count;
   if (clear) clear.disabled = syncing || !count;
   if (apply) {
     apply.disabled = syncing || !count || !hasChange;
-    apply.textContent = syncing ? 'Sincronizando...' : 'Revisar e salvar';
+    const label = apply.querySelector('span');
+    if (label) label.textContent = syncing ? 'Sincronizando...' : 'Salvar alterações';
   }
   if (heading) {
     heading.disabled = syncing || !rows.length;

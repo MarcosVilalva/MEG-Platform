@@ -36,6 +36,8 @@ const loader = readFileSync(new URL('./native-app-update.js', import.meta.url), 
 const batch = readFileSync(new URL('./transaction-batch-editor.js', import.meta.url), 'utf8');
 const theme = readFileSync(new URL('./appearance-theme.js', import.meta.url), 'utf8');
 const themeCss = readFileSync(new URL('./appearance-theme.css', import.meta.url), 'utf8');
+const modernCss = readFileSync(new URL('./global-modern-clarity.css', import.meta.url), 'utf8');
+const lightLogo = readFileSync(new URL('../public/brand/meg-finance-system-lockup-light.svg', import.meta.url), 'utf8');
 
 assert.match(html, /id="appearanceThemeToggle"/);
 assert.match(html, /id="transactionSelectVisible"/);
@@ -51,5 +53,14 @@ assert.match(theme, /meg-appearance-theme-v1/);
 assert.match(themeCss, /data-meg-theme="light"/);
 assert.match(loader, /transaction-batch-editor\.css/);
 assert.match(theme, /import '\.\/appearance-theme\.css'/);
+assert.match(theme, /import '\.\/global-modern-clarity\.css'/);
+assert.match(theme, /=== 'dark' \? 'dark' : 'light'/, 'modo claro deve ser o padrão sem apagar a escolha salva');
+assert.match(html, /Consulte todos os campos/);
+assert.equal((html.match(/<th(?:\s|>)/g) || []).length >= 14, true, 'todos os campos da tabela devem continuar presentes');
+assert.match(modernCss, /\.sidebar/);
+assert.match(modernCss, /\.transactions-table/);
+assert.match(modernCss, /dialog\.modal/);
+assert.match(modernCss, /\.meg-mobile-transaction/);
+assert.match(lightLogo, /para superfícies claras/);
 
 console.log('transaction batch and appearance theme tests passed');
