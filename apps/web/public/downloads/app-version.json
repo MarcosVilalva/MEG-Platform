@@ -1,9 +1,9 @@
 {
-  "versionCode": 207,
-  "versionName": "1.1.207",
+  "versionCode": 208,
+  "versionName": "1.1.208",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "785475fdc4e818e9bb29a7bfe994ba2f366c2501200690568aabfe75c9f02c23",
+  "sha256": "b254c99f03faa4b47428d95c23d8207b98ec76fc09110f28c6f881bdcd6d0ad0",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "tabela moderna, edição em lote e temas"
+  "releaseNotes": "aplicar clareza visual moderna em todo o MEG"
 }
