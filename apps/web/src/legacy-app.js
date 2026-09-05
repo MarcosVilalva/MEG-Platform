@@ -4705,7 +4705,10 @@ function setTransactionMutationUi(active, message = '') {
     saveButton.textContent = active ? 'Sincronizando...' : 'Salvar';
   }
   if (els.deleteTransactionBtn) els.deleteTransactionBtn.disabled = active;
+  if (els.closeDialogBtn) els.closeDialogBtn.disabled = active;
   if (els.cancelDialogBtn) els.cancelDialogBtn.disabled = active;
+  els.form?.setAttribute('aria-busy', active ? 'true' : 'false');
+  els.dialog?.classList.toggle('transaction-cloud-pending', active);
   if (status) {
     status.hidden = !message;
     status.textContent = message;
@@ -5852,12 +5855,25 @@ els.installmentCountInput.addEventListener("input", syncInstallmentFields);
 els.form.addEventListener("submit", saveTransaction);
 els.deleteTransactionBtn.addEventListener("click", deleteTransaction);
 els.closeDialogBtn.addEventListener("click", () => {
+  if (transactionMutationRunning || window.MEG_CLOUD_MUTATION_GUARD?.pending?.()) {
+    setTransactionMutationUi(true, 'Aguarde a confirmação da nuvem antes de fechar este lançamento.');
+    return;
+  }
   closeDescriptionSuggestions();
   els.dialog.close();
 });
 els.cancelDialogBtn.addEventListener("click", () => {
+  if (transactionMutationRunning || window.MEG_CLOUD_MUTATION_GUARD?.pending?.()) {
+    setTransactionMutationUi(true, 'Aguarde a confirmação da nuvem antes de cancelar este lançamento.');
+    return;
+  }
   closeDescriptionSuggestions();
   els.dialog.close();
+});
+els.dialog.addEventListener("cancel", (event) => {
+  if (!transactionMutationRunning && !window.MEG_CLOUD_MUTATION_GUARD?.pending?.()) return;
+  event.preventDefault();
+  setTransactionMutationUi(true, 'Aguarde a confirmação da nuvem antes de fechar este lançamento.');
 });
 els.dialog.addEventListener("close", () => {
   closeDescriptionSuggestions();

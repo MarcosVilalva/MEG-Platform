@@ -150,6 +150,13 @@ body .transaction-save-status {
   line-height: 1.4;
 }
 
+body #transactionDialog.transaction-cloud-pending :is(#closeDialogBtn, #cancelDialogBtn, #deleteTransactionBtn, #saveTransactionBtn):disabled {
+  cursor: progress !important;
+  opacity: .42 !important;
+  filter: grayscale(.2) saturate(.55) !important;
+  pointer-events: none !important;
+}
+
 body .meg-delete-confirm-dialog {
   width: min(430px, calc(100vw - 32px));
   padding: 24px !important;

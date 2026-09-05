@@ -31,6 +31,8 @@ const MUTATION_CONTROL_SELECTOR = [
   '#addEmailRecipientBtn',
   '#sendNotificationsBtn',
   '#testWorkspaceWhatsappBtn',
+  '#closeDialogBtn',
+  '#cancelDialogBtn',
   '#xlsxImport',
   '#csvImport',
   '#backupImport',
@@ -90,7 +92,7 @@ export function installCloudMutationGuard() {
   if (!document.getElementById('megCloudMutationGuardStyles')) {
     const style = document.createElement('style');
     style.id = 'megCloudMutationGuardStyles';
-    style.textContent = `body.meg-cloud-mutation-pending :is(${MUTATION_CONTROL_SELECTOR}){cursor:progress!important;filter:saturate(.72);opacity:.66}`;
+    style.textContent = `body.meg-cloud-mutation-pending :is(${MUTATION_CONTROL_SELECTOR}){cursor:progress!important;filter:saturate(.72);opacity:.46!important;pointer-events:none!important}`;
     document.head.appendChild(style);
   }
   const previousFetch = window.fetch.bind(window);
