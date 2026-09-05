@@ -10,6 +10,38 @@ const NORMALIZATION_MODE = 'normalized-primary';
 const ROLLBACK_MODE = 'app-state-rollback';
 
 type StateRecord = Record<string, unknown>;
+type NormalizationRuntimeStatus = {
+  status: 'pending' | 'completed' | 'fallback' | 'rollback-protected';
+  primary: boolean;
+  reconciled: boolean;
+  count: number;
+  lastCheckedAt: string | null;
+  lastFallbackAt: string | null;
+  fallbackCount: number;
+  reason: string | null;
+};
+
+let runtimeStatus: NormalizationRuntimeStatus = {
+  status: 'pending', primary: false, reconciled: false, count: 0,
+  lastCheckedAt: null, lastFallbackAt: null, fallbackCount: 0, reason: null,
+};
+
+export function recordNormalizationRuntimeStatus(update: Partial<NormalizationRuntimeStatus>) {
+  const now = new Date().toISOString();
+  const enteringFallback = update.status === 'fallback' && runtimeStatus.status !== 'fallback';
+  runtimeStatus = {
+    ...runtimeStatus,
+    ...update,
+    lastCheckedAt: now,
+    lastFallbackAt: enteringFallback ? now : runtimeStatus.lastFallbackAt,
+    fallbackCount: runtimeStatus.fallbackCount + (enteringFallback ? 1 : 0),
+  };
+  return { ...runtimeStatus };
+}
+
+export function getNormalizationRuntimeStatus() {
+  return { ...runtimeStatus };
+}
 
 function stateRecord(value: unknown): StateRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as StateRecord : {};
@@ -114,13 +146,18 @@ export async function activateNormalizationPrimary(workspaceId: string, userId: 
   if (!appState) throw new Error('NORMALIZATION_SOURCE_NOT_FOUND');
   const metadata = normalizationMetadata(appState.state);
   if (options.automatic && metadata.mode === ROLLBACK_MODE) {
-    return { ...(await normalizationPreview(workspaceId, userId)), blockedByRollback: true };
+    const preview = await normalizationPreview(workspaceId, userId);
+    recordNormalizationRuntimeStatus({ status: 'rollback-protected', primary: false, reconciled: preview.reconciled, count: preview.normalized.count, reason: 'ADMIN_ROLLBACK' });
+    return { ...preview, blockedByRollback: true };
   }
 
   let preview = await normalizationPreview(workspaceId, userId);
   if (!preview.reconciled) preview = await applyNormalizationShadow(workspaceId, userId, appState.revision);
   if (!preview.reconciled || preview.source.invalidCount > 0) throw new Error('NORMALIZATION_RECONCILIATION_FAILED');
-  if (isNormalizedPrimary(appState.state)) return { ...preview, activated: false };
+  if (isNormalizedPrimary(appState.state)) {
+    recordNormalizationRuntimeStatus({ status: 'completed', primary: true, reconciled: true, count: preview.normalized.count, reason: null });
+    return { ...preview, activated: false };
+  }
 
   const nextState = {
     ...stateRecord(appState.state),
@@ -138,7 +175,9 @@ export async function activateNormalizationPrimary(workspaceId: string, userId: 
   });
   if (updated.count !== 1) throw new Error('NORMALIZATION_REVISION_CONFLICT');
   appState = await prisma.appState.findUniqueOrThrow({ where: { id: appState.id }, select: { id: true, state: true, revision: true, updatedAt: true } });
-  return { ...(await normalizationPreview(workspaceId, userId)), activated: true, revision: appState.revision, updatedAt: appState.updatedAt };
+  const activated = await normalizationPreview(workspaceId, userId);
+  recordNormalizationRuntimeStatus({ status: 'completed', primary: true, reconciled: activated.reconciled, count: activated.normalized.count, reason: null });
+  return { ...activated, activated: true, revision: appState.revision, updatedAt: appState.updatedAt };
 }
 
 export async function rollbackNormalizationPrimary(workspaceId: string) {
@@ -158,6 +197,7 @@ export async function rollbackNormalizationPrimary(workspaceId: string) {
     data: { state: nextState as Prisma.InputJsonValue, revision: { increment: 1 } },
   });
   if (updated.count !== 1) throw new Error('NORMALIZATION_REVISION_CONFLICT');
+  recordNormalizationRuntimeStatus({ status: 'rollback-protected', primary: false, reconciled: false, reason: 'ADMIN_ROLLBACK' });
   return { active: false, mode: ROLLBACK_MODE, revision: appState.revision + 1 };
 }
 
@@ -196,12 +236,17 @@ export async function normalizedStateForRead(workspaceId: string, userId: string
     dataSource: 'app-state',
     normalizedPrimary: false,
   };
-  if (!isNormalizedPrimary(appState.state)) return fallback;
+  if (!isNormalizedPrimary(appState.state)) {
+    const rollback = normalizationMetadata(appState.state).mode === ROLLBACK_MODE;
+    recordNormalizationRuntimeStatus({ status: rollback ? 'rollback-protected' : 'fallback', primary: false, reconciled: false, count: 0, reason: rollback ? 'ADMIN_ROLLBACK' : 'NORMALIZED_PRIMARY_INACTIVE' });
+    return fallback;
+  }
 
   const source = buildNormalizationPreview(appState.state, { workspaceId, userId, revision: appState.revision });
   const items = await normalizedItems(workspaceId);
   const normalized = databaseSummary(items);
   if (!summariesMatch(source.summary, normalized)) {
+    recordNormalizationRuntimeStatus({ status: 'fallback', primary: false, reconciled: false, count: normalized.count, reason: 'NORMALIZATION_RECONCILIATION_FAILED' });
     return { ...fallback, dataSource: 'app-state-fallback', integrity: { reconciled: false, source: source.summary, normalized } };
   }
 
@@ -210,12 +255,14 @@ export async function normalizedStateForRead(workspaceId: string, userId: string
   const originalTransactions = Array.isArray(originalState.transactions) ? originalState.transactions as StateRecord[] : [];
   const transactions = originalTransactions.map((item) => normalizedById.get(String(item.id || ''))).filter(Boolean);
   if (transactions.length !== originalTransactions.length) {
+    recordNormalizationRuntimeStatus({ status: 'fallback', primary: false, reconciled: false, count: normalized.count, reason: 'NORMALIZED_ORDER_RECONSTRUCTION_FAILED' });
     return {
       ...fallback,
       dataSource: 'app-state-fallback',
       integrity: { reconciled: false, reason: 'NORMALIZED_ORDER_RECONSTRUCTION_FAILED', source: source.summary, normalized },
     };
   }
+  recordNormalizationRuntimeStatus({ status: 'completed', primary: true, reconciled: true, count: normalized.count, reason: null });
   return {
     state: { ...originalState, transactions },
     revision: appState.revision,
