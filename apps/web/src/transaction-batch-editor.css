@@ -1,0 +1,32 @@
+.transaction-batch-editor{display:grid;grid-template-columns:minmax(190px,.8fr) minmax(180px,.7fr) minmax(230px,1fr) auto auto;gap:14px;align-items:end;margin:18px 0;padding:18px;border:1px solid rgba(109,216,195,.18);border-radius:20px;background:linear-gradient(135deg,rgba(21,55,64,.96),rgba(12,38,48,.96));box-shadow:0 14px 34px rgba(0,8,15,.15);transition:border-color .2s ease,box-shadow .2s ease}
+.transaction-batch-editor.is-active{border-color:rgba(84,229,199,.42);box-shadow:0 16px 38px rgba(0,8,15,.2),0 0 0 1px rgba(84,229,199,.08)}
+.transaction-batch-summary{display:flex;align-items:center;gap:11px;min-width:0;align-self:center}
+.transaction-batch-summary-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;color:#062921;background:#56e4c4;font-weight:950}
+.transaction-batch-summary>span:last-child{display:grid;gap:2px;min-width:0}
+.transaction-batch-summary strong{color:#eefafa;font-size:.9rem;white-space:nowrap}
+.transaction-batch-summary small,.transaction-batch-editor label small{color:#8fa8ad;font-size:.69rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.transaction-batch-editor label{display:grid;gap:6px;color:#a9c0c4;font-size:.73rem;font-weight:850;text-transform:uppercase;letter-spacing:.035em}
+.transaction-batch-editor :is(input,select){min-height:44px;border-radius:12px}
+.transaction-batch-editor .button{min-height:44px;white-space:nowrap}
+#transactionBatchStatus{grid-column:1/-1;margin:0;color:#8fa8ad;font-size:.76rem}
+#transactionBatchStatus[data-tone="pending"]{color:#f2ce77}
+#transactionBatchStatus[data-tone="success"]{color:#75e2c9}
+#transactionBatchStatus[data-tone="error"]{color:#f0a4aa}
+.transaction-select-heading{display:inline-flex;align-items:center;gap:9px;white-space:nowrap}
+.transaction-select-heading input,.transaction-select-checkbox{width:17px;height:17px;margin:0;accent-color:#4fe1c1;cursor:pointer;flex:0 0 auto}
+.transaction-date-cell{display:flex;align-items:center;gap:9px}
+.transaction-row.is-batch-selected td{background:rgba(70,219,188,.09)!important;box-shadow:inset 0 1px rgba(83,226,197,.09),inset 0 -1px rgba(83,226,197,.09)}
+.transaction-row.is-batch-selected td:first-child{box-shadow:inset 4px 0 #4fe1c1,inset 0 1px rgba(83,226,197,.09),inset 0 -1px rgba(83,226,197,.09)}
+.meg-transaction-description{display:flex;align-items:center;gap:10px;min-width:170px;max-width:330px}
+.meg-transaction-description-icon{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;border-radius:11px;color:#7cdcca;background:rgba(63,200,175,.13)}
+.meg-transaction-description-icon svg{width:18px;height:18px;fill:currentColor}
+.meg-transaction-description-icon.kind-income{color:#70e0bd;background:rgba(48,180,135,.16)}
+.meg-transaction-description-icon.kind-health{color:#f59aa2;background:rgba(218,91,102,.14)}
+.meg-transaction-description-icon.kind-market,.meg-transaction-description-icon.kind-food{color:#f0c76f;background:rgba(218,165,54,.14)}
+.meg-transaction-description-icon.kind-home{color:#84b8ed;background:rgba(73,139,205,.15)}
+.meg-transaction-description-copy{display:block;min-width:0;overflow:hidden}
+.meg-transaction-description-copy strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meg-transaction-description-copy small{white-space:nowrap}
+@media(max-width:1180px){.transaction-batch-editor{grid-template-columns:1fr 1fr 1fr}.transaction-batch-summary{grid-column:1/-1}.transaction-batch-editor .button{width:100%}#transactionBatchApply{grid-column:3}}
+@media(max-width:760px){body.native-mobile .transaction-batch-editor{position:sticky;top:8px;z-index:12;grid-template-columns:1fr 1fr;margin:12px 0;padding:14px;border-radius:18px}body.native-mobile .transaction-batch-summary{grid-column:1/-1}body.native-mobile .transaction-batch-editor label{grid-column:1/-1}body.native-mobile #transactionBatchApply{grid-column:auto}body.native-mobile #transactionBatchStatus{font-size:.72rem}.meg-mobile-transaction-select{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;border:1px solid rgba(111,183,179,.24);border-radius:11px;background:rgba(30,72,80,.48)}.meg-mobile-transaction-select input{width:18px;height:18px;accent-color:#4fe1c1}.meg-mobile-transaction.is-batch-selected{border-color:rgba(79,225,193,.62)!important;box-shadow:0 0 0 2px rgba(79,225,193,.16),0 12px 30px rgba(0,8,15,.2)!important}}
+

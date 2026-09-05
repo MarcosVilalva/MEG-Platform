@@ -1,0 +1,35 @@
+.meg-theme-toggle{display:inline-flex!important;align-items:center;gap:8px;white-space:nowrap}
+.meg-theme-toggle svg{width:18px;height:18px;fill:currentColor}
+html[data-meg-theme="light"],body[data-meg-theme="light"]{color-scheme:light;--background:#eef5f2;--bg:#eef5f2;--panel:#fff;--surface:#fff;--surface-strong:#f6faf8;--text:#18302d;--muted:#667c77;--line:rgba(39,94,83,.16);--primary:#11987f;--meg-dark-text:#18302d;--meg-dark-heading:#102724;--meg-dark-muted:#667c77;--meg-dark-line:rgba(39,94,83,.16)}
+body[data-meg-theme="light"]{color:#18302d!important;background:#eef5f2!important}
+body[data-meg-theme="light"] .content{background:radial-gradient(circle at 85% 5%,rgba(77,222,191,.13),transparent 28%),#eef5f2!important}
+body[data-meg-theme="light"] :is(.topbar h1,.view h1,.view h2,.view h3,.panel-title h3){color:#102724!important}
+body[data-meg-theme="light"] :is(.view,.panel,.table-panel,.form-panel,.filter-panel,.settings-panel,.settings-card,.summary-card,.workspace-panel,.empty-state,.meg-history-panel,.meg-recent-activity,.transaction-batch-editor,.metric-card,.analytics-card,.chart-panel,.dashboard-card,.dashboard-group-panel,.cashflow-summary-card,.cashflow-day-card,.budget-card,.catalog-card,.credit-card-panel,.decision-card,.health-card,.recommendation-card,.reconciliation-card,.meg-chart-card,.meg-kpi-card,.meg-pivot-card,.meg-segment-bar,.finance-panel,.month-progress-panel,.transactions-filter-card){color:#18302d!important;border-color:rgba(39,94,83,.16)!important;background:#fff!important;background-color:#fff!important;background-image:none!important;box-shadow:0 12px 32px rgba(23,65,57,.08)!important}
+body[data-meg-theme="light"] .view :is(.panel,.metric-card,.summary-card,.finance-panel,.dashboard-card,.analytics-card,.meg-chart-card,.meg-kpi-card,.month-progress-panel,.transactions-filter-card) :is(h1,h2,h3,h4,strong,b){color:#18302d!important}
+body[data-meg-theme="light"] .view :is(.panel,.metric-card,.summary-card,.finance-panel,.dashboard-card,.analytics-card,.meg-chart-card,.meg-kpi-card,.month-progress-panel,.transactions-filter-card) :is(p,small,span){color:#667c77!important}
+body[data-meg-theme="light"] .view :is(.amount.positive,.positive,.transactions-filter-income strong,.transactions-filter-result.is-positive strong){color:#087a62!important}
+body[data-meg-theme="light"] .view :is(.amount.negative,.negative,.transactions-filter-expense strong,.transactions-filter-result.is-negative strong){color:#bf4550!important}
+body[data-meg-theme="light"] .transaction-batch-editor.is-active{border-color:rgba(17,152,127,.42)!important;box-shadow:0 14px 34px rgba(23,65,57,.1),0 0 0 1px rgba(17,152,127,.08)!important}
+body[data-meg-theme="light"] :is(.transaction-batch-summary strong,.transaction-batch-editor label){color:#244e47!important}
+body[data-meg-theme="light"] :is(.transaction-batch-summary small,.transaction-batch-editor label small,#transactionBatchStatus,.muted){color:#6a807b!important}
+body[data-meg-theme="light"] .transaction-batch-summary-icon{color:#fff;background:#11987f}
+body[data-meg-theme="light"] .view :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea){color:#18302d!important;caret-color:#08725f!important;border-color:rgba(39,94,83,.2)!important;background:#f7fbf9!important;background-color:#f7fbf9!important;background-image:none!important}
+body[data-meg-theme="light"] .view :is(input,textarea)::placeholder{color:#82948f!important}
+body[data-meg-theme="light"] .view select option{color:#18302d!important;background:#fff!important}
+body[data-meg-theme="light"] .transactions-table thead{color:#47625d!important;background:#edf6f2!important}
+body[data-meg-theme="light"] .view :is(table,thead,tbody,tfoot,tr,th,td){border-color:rgba(39,94,83,.14)!important}
+body[data-meg-theme="light"] .view tbody tr:nth-child(even) td{background-color:#fbfdfc!important}
+body[data-meg-theme="light"] .view tbody tr:hover td{background-color:#f0f8f5!important}
+body[data-meg-theme="light"] .transaction-row.is-batch-selected td{background:#e5f7f1!important}
+body[data-meg-theme="light"] .meg-transaction-description-icon{color:#087866;background:#dff4ee}
+body[data-meg-theme="light"] :is(dialog.modal,.modal,.meg-update-dialog-hardened,.meg-delete-confirm-dialog){color:#18302d!important;border-color:rgba(39,94,83,.18)!important;background:#fff!important;background-color:#fff!important;background-image:none!important}
+body[data-meg-theme="light"] :is(dialog.modal,.modal) :is(h1,h2,h3,strong,b){color:#102724!important}
+body[data-meg-theme="light"] :is(dialog.modal,.modal) :is(p,small,span){color:#667c77!important}
+body[data-meg-theme="light"] .meg-delete-confirm-detail{color:#244e47!important;background:#edf6f2!important}
+body[data-meg-theme="light"] .meg-delete-confirm-dialog::backdrop{background:rgba(11,37,34,.5)!important}
+body[data-meg-theme="light"] .meg-update-check-button{color:#244e47!important;border-color:rgba(39,94,83,.18)!important;background:#edf6f2!important}
+body[data-meg-theme="light"] :is(.button.ghost,.ghost-button,.icon-button,.topbar-actions>.button,.period-control){color:#244e47!important;border-color:rgba(39,94,83,.2)!important;background:rgba(255,255,255,.9)!important}
+body[data-meg-theme="light"] .meg-update-feedback{color:#244e47;background:#edf6f2;border-color:rgba(39,94,83,.18)}
+@media(max-width:760px){body[data-meg-theme="light"].native-mobile .meg-mobile-transaction-toolbar{background:#eef5f2}body[data-meg-theme="light"].native-mobile .meg-mobile-transaction-toolbar button{color:#47625d;background:#fff;border-color:rgba(39,94,83,.16)}body[data-meg-theme="light"].native-mobile .meg-mobile-transaction-toolbar button.active{color:#fff;background:#117d6b;border-color:#117d6b}body[data-meg-theme="light"].native-mobile .meg-mobile-transaction{color:#18302d;background:#fff;border-color:rgba(39,94,83,.13);box-shadow:0 10px 28px rgba(23,65,57,.08)}body[data-meg-theme="light"].native-mobile .meg-mobile-transaction-copy strong{color:#18302d}body[data-meg-theme="light"].native-mobile .meg-mobile-transaction-copy span,body[data-meg-theme="light"].native-mobile .meg-mobile-transaction-value span{color:#667c77}body[data-meg-theme="light"].native-mobile .meg-mobile-transaction-status-row{border-color:#e1ece8;color:#758a85}body[data-meg-theme="light"].native-mobile .meg-mobile-transaction-details{border-color:#cbded8}body[data-meg-theme="light"].native-mobile .meg-mobile-transaction-details dd{color:#244e47}}
+body[data-meg-theme="light"].native-mobile .view :is(.card,.panel,.table-panel,.form-panel,.filter-panel,.settings-panel,.settings-card,.summary-card,.workspace-panel,.empty-state,.meg-history-panel,.meg-recent-activity){color:#18302d!important;background:#fff!important;background-color:#fff!important;background-image:none!important;border-color:rgba(39,94,83,.16)!important}
+@media(prefers-reduced-motion:no-preference){body,.content,.panel,.table-panel,.meg-mobile-transaction{transition:background-color .2s ease,color .2s ease,border-color .2s ease}}

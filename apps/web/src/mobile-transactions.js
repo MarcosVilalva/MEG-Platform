@@ -1,3 +1,5 @@
+import { transactionIconKind, transactionIconMarkup } from './transaction-visual-core.js';
+
 const MOBILE_BREAKPOINT = 760;
 
 const text = (cell) => String(cell?.textContent || '').replace(/\s+/g, ' ').trim();
@@ -34,6 +36,8 @@ function createCard(row) {
   card.setAttribute('role', 'button');
   card.setAttribute('aria-expanded', 'false');
 
+  const transactionId = String(row.dataset.transactionId || row.querySelector('[data-edit]')?.dataset.edit || '');
+
   const description = text(cells[4]) || 'Lançamento sem descrição';
   const due = text(cells[0]) || 'Sem vencimento';
   const purchase = text(cells[1]);
@@ -42,10 +46,19 @@ function createCard(row) {
   const situation = text(cells[10]) || 'Não informado';
   const modality = text(cells[11]);
   const notes = text(cells[12]);
+  const item = window.MEG_APP?.getStateRef?.()?.transactions?.find((entry) => String(entry.id) === transactionId) || {
+    type: amount.type,
+    description,
+    group,
+  };
+  const iconKind = transactionIconKind(item);
 
   card.innerHTML = `
     <div class="meg-mobile-transaction-main">
-      <span class="meg-mobile-transaction-icon" aria-hidden="true">${amount.type === 'income' ? '↗' : '↘'}</span>
+      <label class="meg-mobile-transaction-select" title="Selecionar lançamento">
+        <input type="checkbox" data-transaction-select="${escapeHtml(transactionId)}" aria-label="Selecionar ${escapeHtml(description)}" ${window.MEG_TRANSACTION_SELECTION?.has?.(transactionId) ? 'checked' : ''} />
+      </label>
+      <span class="meg-mobile-transaction-icon kind-${iconKind}" aria-hidden="true">${transactionIconMarkup(iconKind)}</span>
       <div class="meg-mobile-transaction-copy">
         <strong>${escapeHtml(description)}</strong>
         <span>${escapeHtml(group)} · ${escapeHtml(payment)}</span>
@@ -80,7 +93,7 @@ function createCard(row) {
   };
 
   card.addEventListener('click', (event) => {
-    if (!event.target.closest('.meg-mobile-edit')) toggle();
+    if (!event.target.closest('.meg-mobile-edit, .meg-mobile-transaction-select')) toggle();
   });
   card.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -93,6 +106,10 @@ function createCard(row) {
     if (action) action.click();
     else row.click();
   });
+  const selector = card.querySelector('[data-transaction-select]');
+  selector?.addEventListener('click', (event) => event.stopPropagation());
+  selector?.addEventListener('change', () => window.MEG_TRANSACTION_SELECTION?.set?.(transactionId, selector.checked));
+  card.classList.toggle('is-batch-selected', Boolean(window.MEG_TRANSACTION_SELECTION?.has?.(transactionId)));
   return card;
 }
 
@@ -184,6 +201,7 @@ function start() {
     document.querySelector(`#${id}`)?.addEventListener('input', scheduleRender);
     document.querySelector(`#${id}`)?.addEventListener('change', scheduleRender);
   });
+  window.addEventListener('meg:transaction-selection-change', scheduleRender);
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
