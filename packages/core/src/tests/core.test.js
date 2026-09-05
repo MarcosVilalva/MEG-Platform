@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 function summarizeMonth(events, month) {
   const monthEvents = events.filter((event) => event.competence === month);
@@ -20,5 +21,9 @@ assert.equal(june.income, 1000);
 assert.equal(june.expense, 250);
 assert.equal(june.result, 750);
 assert.equal(june.eventCount, 3);
+
+const normalizationSource = readFileSync(new URL('../finance/events.ts', import.meta.url), 'utf8');
+assert.match(normalizationSource, /signedAmount: isIncome \? enteredAmount : -enteredAmount/);
+assert.doesNotMatch(normalizationSource, /signedAmount: isIncome \? amount : -amount/);
 
 console.log('MEG Analytics 360 tests passed.');

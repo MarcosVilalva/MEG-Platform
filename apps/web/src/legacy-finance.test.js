@@ -51,6 +51,7 @@ assert.equal(lastCalendarDayOfMonth('2028-02'), '2028-02-29');
 assert.equal(excelDateToIso(new Date('2026-07-01T00:00:00.000Z')), '2026-07-01');
 assert.equal(excelDateToIso(new Date('2026-07-02T00:00:00.000Z')), '2026-07-02');
 assert.deepEqual(splitInstallmentAmounts(100, 3), [33.34, 33.33, 33.33]);
+assert.deepEqual(splitInstallmentAmounts(-100, 3), [-33.34, -33.33, -33.33]);
 assert.equal(installmentDueDate('2026-07-31', 1), '2026-08-31');
 assert.equal(installmentDueDate('2026-07-31', 2), '2026-09-30');
 assert.equal(installmentDueDate('2026-07-11', 0), '2026-07-13');

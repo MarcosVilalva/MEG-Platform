@@ -8,9 +8,9 @@ import {
 } from '../../../packages/shared/src/money.js';
 
 const STATIC_TARGETS = [
-  { id: 'incomeAmountInput' },
-  { id: 'expenseAmountInput' },
-  { id: 'purchaseTotalInput' },
+  { id: 'incomeAmountInput', allowNegative: true },
+  { id: 'expenseAmountInput', allowNegative: true },
+  { id: 'purchaseTotalInput', allowNegative: true },
   { id: 'newCardLimitInput' },
   { id: 'newFinancialAccountOpeningBalanceInput', allowNegative: true },
   { id: 'reconciliationActualInput', allowNegative: true },

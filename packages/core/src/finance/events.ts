@@ -39,9 +39,10 @@ export function normalizeFinancialEvent(transaction: LegacyTransaction): Financi
     transaction.type === 'expense' ||
     String(transaction.launchType || '').toUpperCase() === 'DESPESA';
 
-  const amount = Math.abs(
-    Number(transaction.amount ?? transaction.incomeAmount ?? transaction.expenseAmount ?? 0) || 0
-  );
+  const enteredAmount = Number(
+    transaction.amount ?? transaction.incomeAmount ?? transaction.expenseAmount ?? 0
+  ) || 0;
+  const amount = Math.abs(enteredAmount);
 
   return {
     id: transaction.id,
@@ -51,7 +52,7 @@ export function normalizeFinancialEvent(transaction: LegacyTransaction): Financi
     competence: String(transaction.date || '').slice(0, 7),
     description: transaction.description || 'Evento financeiro',
     amount,
-    signedAmount: isIncome ? amount : -amount,
+    signedAmount: isIncome ? enteredAmount : -enteredAmount,
     account: transaction.account,
     paymentMethod: transaction.paymentMethod,
     group: transaction.group,

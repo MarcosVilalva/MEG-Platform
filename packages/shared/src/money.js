@@ -21,7 +21,7 @@ export function parseBRL(value) {
   if (typeof value === 'number') return Number.isFinite(value) ? value : Number.NaN;
   const raw = String(value ?? '').trim();
   if (!raw || raw === '-') return Number.NaN;
-  const negative = raw.startsWith('-') || /^\s*-?R\$\s*-/.test(raw);
+  const negative = raw.includes('-');
   const digits = raw.replace(/\D/g, '');
   if (!digits) return Number.NaN;
   const cents = Number(digits);
@@ -47,7 +47,10 @@ export function formatBRLValue(value) {
 
 export function formatBRLInput(value, { allowNegative = false } = {}) {
   const raw = String(value ?? '');
-  const negative = allowNegative && raw.trimStart().startsWith('-');
+  // Teclados virtuais podem inserir o sinal no fim ou no meio do valor
+  // formatado. Reconhecer o sinal em qualquer posição evita que o Android
+  // transforme um estorno negativo em lançamento positivo.
+  const negative = allowNegative && raw.includes('-');
   const digits = normalizeMoneyDigits(raw);
   if (!digits) return negative ? '-' : '';
   return digitsToBRL(digits, { negative });
@@ -56,8 +59,8 @@ export function formatBRLInput(value, { allowNegative = false } = {}) {
 export function formatPastedBRL(value, { allowNegative = false } = {}) {
   const raw = String(value ?? '').trim().replace(/^R\$\s*/i, '').replace(/\s/g, '');
   if (!raw) return '';
-  const negative = allowNegative && raw.startsWith('-');
-  const unsigned = raw.replace(/^-/, '');
+  const negative = allowNegative && raw.includes('-');
+  const unsigned = raw.replace(/-/g, '');
   let numeric;
 
   if (unsigned.includes(',')) {

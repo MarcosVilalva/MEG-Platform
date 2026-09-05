@@ -1,13 +1,10 @@
 import { prisma } from '@meg/database';
 import { createFinancialEventSchema, updateFinancialEventSchema } from './schemas';
+import { enteredAmountFromStored, financialAmountValues } from './amount-sign';
 import type { z } from 'zod';
 
 type CreateFinancialEventInput = z.infer<typeof createFinancialEventSchema>;
 type UpdateFinancialEventInput = z.infer<typeof updateFinancialEventSchema>;
-
-function signedAmount(type: string, amount: number) {
-  return type === 'income' || type === 'redemption' ? Math.abs(amount) : -Math.abs(amount);
-}
 
 function competenceFromDate(date: string) {
   return date.slice(0, 7);
@@ -101,7 +98,7 @@ export async function listFinancialEvents(userId: string, input: { page: number;
 
 export async function createFinancialEvent(userId: string, input: CreateFinancialEventInput) {
   const competence = input.competence || competenceFromDate(input.date);
-  const value = Math.abs(input.amount);
+  const values = financialAmountValues(input.type, input.amount);
 
   const event = await prisma.financialEvent.create({
     data: {
@@ -111,8 +108,8 @@ export async function createFinancialEvent(userId: string, input: CreateFinancia
       status: input.status,
       date: new Date(input.date),
       competence,
-      amount: value,
-      signedAmount: signedAmount(input.type, value),
+      amount: values.amount,
+      signedAmount: values.signedAmount,
       accountId: input.accountId,
       categoryId: input.categoryId,
       paymentMethodId: input.paymentMethodId,
@@ -133,7 +130,9 @@ export async function updateFinancialEvent(userId: string, id: string, input: Up
   if (!current) throw new Error('FINANCIAL_EVENT_NOT_FOUND');
 
   const nextType = input.type ?? current.type;
-  const nextAmount = input.amount === undefined ? Number(current.amount) : Math.abs(input.amount);
+  const currentEnteredAmount = enteredAmountFromStored(current.type, Number(current.signedAmount));
+  const nextEnteredAmount = input.amount === undefined ? currentEnteredAmount : input.amount;
+  const nextValues = financialAmountValues(nextType, nextEnteredAmount);
 
   await prisma.financialEvent.update({
     where: { id },
@@ -142,8 +141,8 @@ export async function updateFinancialEvent(userId: string, id: string, input: Up
       description: input.description?.trim(),
       date: input.date ? new Date(input.date) : undefined,
       competence: input.competence || (input.date ? competenceFromDate(input.date) : undefined),
-      amount: input.amount === undefined ? undefined : nextAmount,
-      signedAmount: signedAmount(nextType, nextAmount),
+      amount: input.amount === undefined ? undefined : nextValues.amount,
+      signedAmount: nextValues.signedAmount,
       notes: input.notes?.trim()
     }
   });
@@ -173,7 +172,7 @@ export async function getFinancialSummary(userId: string, month: string) {
   const now = new Date();
   const postedStatuses = ['paid', 'reconciled', 'confirmed'];
 
-  const [monthEvents, historicalEvents, nextDue, pendingTotals] = await Promise.all([
+  const [monthEvents, historicalEvents, nextDue, pendingEvents] = await Promise.all([
     prisma.financialEvent.findMany({
       where: { userId, archivedAt: null, date: { gte: start, lt: end } },
       select: { description: true, type: true, status: true, date: true, amount: true, signedAmount: true, category: { select: { name: true } }, paymentMethod: { select: { name: true } } }
@@ -187,10 +186,9 @@ export async function getFinancialSummary(userId: string, month: string) {
       orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
       select: { id: true, description: true, date: true, amount: true, type: true }
     }),
-    prisma.financialEvent.aggregate({
+    prisma.financialEvent.findMany({
       where: { userId, archivedAt: null, status: 'planned', type: { notIn: ['income', 'redemption'] } },
-      _count: { _all: true },
-      _sum: { amount: true }
+      select: { signedAmount: true }
     })
   ]);
 
@@ -201,16 +199,17 @@ export async function getFinancialSummary(userId: string, month: string) {
   const categoryTotals = new Map<string, number>();
 
   for (const event of monthEvents) {
-    const amount = Number(event.amount);
+    const signed = Number(event.signedAmount);
     const posted = postedStatuses.includes(event.status) || (event.type === 'income' && event.date <= now);
     if (event.type === 'income' || event.type === 'redemption') {
-      income += amount;
-      if (posted) realizedIncome += amount;
+      income += signed;
+      if (posted) realizedIncome += signed;
     } else {
-      expense += amount;
-      if (posted) realizedExpense += amount;
+      const expenseEffect = -signed;
+      expense += expenseEffect;
+      if (posted) realizedExpense += expenseEffect;
       const category = event.category?.name || 'Sem categoria';
-      categoryTotals.set(category, (categoryTotals.get(category) || 0) + amount);
+      categoryTotals.set(category, (categoryTotals.get(category) || 0) + expenseEffect);
     }
   }
 
@@ -233,8 +232,8 @@ export async function getFinancialSummary(userId: string, month: string) {
     realizedExpense,
     realizedResult: realizedIncome - realizedExpense,
     eventCount: monthEvents.length,
-    pendingCount: pendingTotals._count._all,
-    pendingAmount: Number(pendingTotals._sum.amount || 0),
+    pendingCount: pendingEvents.length,
+    pendingAmount: pendingEvents.reduce((sum, event) => sum - Number(event.signedAmount), 0),
     nextDue,
     topCategories
   };
@@ -332,14 +331,14 @@ export async function listBudgetOverview(userId: string, month: string) {
         date: { gte: start, lt: end },
         type: { notIn: ['income', 'redemption'] }
       },
-      select: { amount: true, category: { select: { name: true, group: true } } }
+      select: { signedAmount: true, category: { select: { name: true, group: true } } }
     })
   ]);
 
   const usedByGroup = new Map<string, number>();
   for (const expense of expenses) {
     const group = expense.category?.group || expense.category?.name || 'Sem categoria';
-    usedByGroup.set(group, (usedByGroup.get(group) || 0) + Number(expense.amount));
+    usedByGroup.set(group, (usedByGroup.get(group) || 0) - Number(expense.signedAmount));
   }
 
   return budgets.map((budget) => {
@@ -388,7 +387,7 @@ export async function getFinancialAnalytics(userId: string, month: string) {
       where: { userId, archivedAt: null, date: { gte: start, lt: end } },
       select: {
         type: true,
-        amount: true,
+        signedAmount: true,
         date: true,
         category: { select: { name: true, group: true } },
         paymentMethod: { select: { name: true } }
@@ -396,7 +395,7 @@ export async function getFinancialAnalytics(userId: string, month: string) {
     }),
     prisma.financialEvent.findMany({
       where: { userId, archivedAt: null, date: { gte: trendStart, lt: end } },
-      select: { date: true, type: true, amount: true }
+      select: { date: true, type: true, signedAmount: true }
     })
   ]);
 
@@ -405,7 +404,7 @@ export async function getFinancialAnalytics(userId: string, month: string) {
   const expenseDays = new Set<string>();
   for (const event of events) {
     if (event.type === 'income' || event.type === 'redemption') continue;
-    const amount = Number(event.amount);
+    const amount = -Number(event.signedAmount);
     const method = event.paymentMethod?.name || 'Não informada';
     paymentTotals.set(method, (paymentTotals.get(method) || 0) + amount);
     const category = event.category?.group || event.category?.name || 'Sem categoria';
@@ -422,8 +421,8 @@ export async function getFinancialAnalytics(userId: string, month: string) {
   for (const event of trendEvents) {
     const point = trend.get(event.date.toISOString().slice(0, 7));
     if (!point) continue;
-    if (event.type === 'income' || event.type === 'redemption') point.income += Number(event.amount);
-    else point.expense += Number(event.amount);
+    if (event.type === 'income' || event.type === 'redemption') point.income += Number(event.signedAmount);
+    else point.expense -= Number(event.signedAmount);
     point.result = point.income - point.expense;
   }
 

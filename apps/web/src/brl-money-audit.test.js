@@ -59,6 +59,9 @@ const legacyTargets = [
 ];
 legacyTargets.forEach((target) => assert.ok(maskSource.includes(target), `Máscara BRL ausente para ${target}`));
 assert.match(maskSource, /allowNegative: true/);
+['incomeAmountInput', 'expenseAmountInput', 'purchaseTotalInput'].forEach((id) => {
+  assert.ok(maskSource.includes(`id: '${id}', allowNegative: true`), `Valor negativo não habilitado em ${id}`);
+});
 assert.match(maskSource, /megCurrencyValueProxy/);
 assert.match(maskSource, /MutationObserver/);
 
@@ -74,5 +77,10 @@ const legacyAppSource = read('apps/web/src/legacy-app.js');
 ].forEach((id) => assert.ok(indexSource.includes(`id="${id}"`), `Campo legado ${id} não encontrado para auditoria`));
 assert.ok(legacyAppSource.includes('data-budget'));
 assert.ok(legacyAppSource.includes('data-invoice-amount'));
+
+const persistentTransactionsSource = read('apps/web/src/modules/transactions/PersistentTransactions.tsx');
+const transactionModalSource = read('apps/web/src/modules/transactions/TransactionModal.tsx');
+assert.match(persistentTransactionsSource, /<MEGCurrencyInput[^>]*allowNegative/);
+assert.match(transactionModalSource, /<MEGCurrencyInput[^>]*allowNegative/);
 
 console.log(`BRL money audit passed: ${reactCurrencyFields} React + ${legacyTargets.length} legacy monetary fields protected`);
