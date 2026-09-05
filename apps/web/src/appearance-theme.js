@@ -2,7 +2,7 @@ import './appearance-theme.css';
 import './global-modern-clarity.css';
 
 const STORAGE_KEY = 'meg-appearance-theme-v1';
-const COLORS = { dark: '#071725', light: '#eef5f2' };
+const COLORS = { dark: '#091b19', light: '#f5f8f7' };
 const ASSET_BASE = import.meta.env?.BASE_URL || '/';
 
 function storedTheme() {
