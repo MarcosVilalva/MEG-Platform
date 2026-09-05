@@ -1,9 +1,9 @@
 {
-  "versionCode": 203,
-  "versionName": "1.1.203",
+  "versionCode": 204,
+  "versionName": "1.1.204",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "0d4e94eeacb18095757674f656ac63291186bc323e23fb09f55c909caee0737d",
+  "sha256": "10aaedca69c0ddd2c193e4fdb09bfc5dfa33cc622c511fa88d2778a39f670ffe",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Ativar base normalizada com conciliação segura"
+  "releaseNotes": "Adaptar textos dos cards e monitorar conciliação"
 }
