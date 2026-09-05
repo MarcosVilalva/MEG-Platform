@@ -30,13 +30,17 @@ function fitElement(element) {
   if (!(element instanceof HTMLElement) || !element.isConnected || element.childElementCount > 0) return;
   const text = element.textContent?.trim() || '';
   if (!text) return;
+  // Views inativas usam display:none. Não capture o tamanho computado enquanto
+  // o card estiver oculto, pois o navegador pode devolver a fonte padrão.
+  const card = element.closest(CARD_SELECTOR);
+  if (!card || card.clientWidth <= 0) return;
 
-  element.classList.add('meg-autofit-text');
   element.style.removeProperty('--meg-autofit-size');
   const computed = getComputedStyle(element);
   const baseSize = Number(element.dataset.megAutofitBase) || Number.parseFloat(computed.fontSize) || 16;
   element.dataset.megAutofitBase = String(baseSize);
-  const available = element.clientWidth;
+  element.classList.add('meg-autofit-text');
+  const available = element.clientWidth || element.parentElement?.clientWidth || card.clientWidth;
   if (available <= 0) return;
 
   const size = findLargestFittingSize({
