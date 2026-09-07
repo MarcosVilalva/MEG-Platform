@@ -150,6 +150,8 @@ function initializeTransactionDialogPresentation() {
   const select = document.getElementById('transactionType');
   const themeButton = document.getElementById('transactionThemeToggle');
   const globalThemeButton = document.getElementById('appearanceThemeToggle');
+  const closeButton = document.getElementById('closeDialogBtn');
+  const cancelButton = document.getElementById('cancelDialogBtn');
   if (!dialog || !select) return;
 
   const synchronize = () => {
@@ -163,6 +165,13 @@ function initializeTransactionDialogPresentation() {
   };
   select.addEventListener('change', synchronize);
   themeButton?.addEventListener('click', () => globalThemeButton?.click());
+  const closeSafely = () => {
+    if (!dialog.open || closeButton?.disabled || cancelButton?.disabled) return;
+    if (window.MEG_CLOUD_MUTATION_GUARD?.pending?.()) return;
+    dialog.close();
+  };
+  closeButton?.addEventListener('click', closeSafely);
+  cancelButton?.addEventListener('click', closeSafely);
   new MutationObserver(() => {
     if (dialog.open) window.setTimeout(synchronize, 0);
   }).observe(dialog, { attributes: true, attributeFilter: ['open'] });
