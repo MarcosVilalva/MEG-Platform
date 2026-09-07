@@ -1097,6 +1097,19 @@
           <option value="expense">DESPESA</option>
           <option value="income">RECEITA</option>
         </select>
+        <div class="transaction-type-control" role="group" aria-label="Tipo de lançamento">
+          <span>TIPO DE LANÇAMENTO</span>
+          <div class="transaction-type-options">
+            <button type="button" data-transaction-type-option="expense" aria-pressed="true">
+              <span aria-hidden="true">↘</span>
+              Despesa
+            </button>
+            <button type="button" data-transaction-type-option="income" aria-pressed="false">
+              <span aria-hidden="true">↗</span>
+              Receita
+            </button>
+          </div>
+        </div>
         <div class="form-grid">
           <label>
             MODALIDADE

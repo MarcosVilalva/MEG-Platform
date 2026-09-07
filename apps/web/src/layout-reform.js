@@ -148,6 +148,7 @@ function initializeTransactionBatchPanel() {
 function initializeTransactionDialogPresentation() {
   const dialog = document.getElementById('transactionDialog');
   const select = document.getElementById('transactionType');
+  const typeButtons = [...document.querySelectorAll('[data-transaction-type-option]')];
   const themeButton = document.getElementById('transactionThemeToggle');
   const globalThemeButton = document.getElementById('appearanceThemeToggle');
   const closeButton = document.getElementById('closeDialogBtn');
@@ -157,12 +158,27 @@ function initializeTransactionDialogPresentation() {
   const synchronize = () => {
     const expense = select.value !== 'income';
     dialog.dataset.transactionType = expense ? 'expense' : 'income';
+    typeButtons.forEach((button) => {
+      const selected = button.dataset.transactionTypeOption === select.value;
+      button.classList.toggle('selected', selected);
+      button.setAttribute('aria-pressed', String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    });
     const title = document.getElementById('dialogTitle');
     const editing = Boolean(document.getElementById('transactionId')?.value);
     if (title) title.textContent = editing
       ? `Editar ${expense ? 'despesa' : 'receita'}`
       : `Nova ${expense ? 'despesa' : 'receita'}`;
   };
+  typeButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      if (button.disabled || select.disabled) return;
+      const type = button.dataset.transactionTypeOption;
+      if (!['expense', 'income'].includes(type) || select.value === type) return;
+      select.value = type;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
   select.addEventListener('change', synchronize);
   themeButton?.addEventListener('click', () => globalThemeButton?.click());
   const closeSafely = () => {

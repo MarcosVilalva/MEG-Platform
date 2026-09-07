@@ -47,9 +47,12 @@ assert.match(styles, /grid-template-columns: minmax\(0, 1fr\) 42px minmax\(88px,
 assert.match(styles, /\.transactions-table/);
 assert.match(styles, /\.catalogs-grid/);
 assert.match(styles, /\.settings-grid/);
-assert.doesNotMatch(index, /transaction-type-switch|transactionExpenseTypeButton|transactionIncomeTypeButton/);
+assert.match(index, /data-transaction-type-option="expense"/);
+assert.match(index, /data-transaction-type-option="income"/);
+assert.match(index, /role="group" aria-label="Tipo de lançamento"/);
 assert.doesNotMatch(index, /sidebarCloseBtn/);
-assert.doesNotMatch(layout, /transactionExpenseTypeButton|transactionIncomeTypeButton/);
+assert.match(layout, /select\.dispatchEvent\(new Event\('change', \{ bubbles: true \}\)\)/);
+assert.match(styles, /\.transaction-type-options button\.selected/);
 assert.match(styles, /\.transaction-batch-toggle/);
 assert.match(layout, /initializeCollapsiblePanels/);
 assert.match(layout, /meg-collapsible-panel/);
