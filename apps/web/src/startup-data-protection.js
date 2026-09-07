@@ -219,9 +219,22 @@ function showBlockedNotice() {
   const show = () => {
     const notice = document.createElement('div');
     notice.id = 'megDataRecoveryNotice';
-    notice.setAttribute('role', 'alert');
-    notice.style.cssText = 'position:fixed;inset:auto 16px 16px;z-index:2147483647;padding:14px 16px;border-radius:12px;background:#7f1d1d;color:#fff;font:600 14px/1.4 system-ui;box-shadow:0 12px 30px #0005';
-    notice.textContent = 'O MEG protegeu alterações locais ainda não sincronizadas. A base da nuvem não foi substituída. Verifique a conexão e abra novamente.';
+    notice.className = 'meg-data-protection-notice';
+    notice.setAttribute('role', 'status');
+    notice.setAttribute('aria-live', 'polite');
+    const copy = document.createElement('div');
+    const title = document.createElement('strong');
+    const message = document.createElement('span');
+    const close = document.createElement('button');
+    title.textContent = 'Seus dados locais foram preservados';
+    message.textContent = 'A sincronização com a nuvem não terminou. Confira a conexão e tente novamente antes de fazer outra alteração.';
+    close.type = 'button';
+    close.className = 'meg-data-protection-close';
+    close.setAttribute('aria-label', 'Fechar aviso');
+    close.textContent = '×';
+    close.addEventListener('click', () => notice.remove());
+    copy.append(title, message);
+    notice.append(copy, close);
     document.body.appendChild(notice);
   };
   if (document.body) show();
