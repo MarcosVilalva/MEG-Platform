@@ -1,9 +1,9 @@
 {
-  "versionCode": 221,
-  "versionName": "1.1.221",
+  "versionCode": 222,
+  "versionName": "1.1.222",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "760c611bbd1ca553a2c9d459a545745412eb76a42a61f663b60be90419adcdcf",
+  "sha256": "53755f6c3d35c40da0a74ba13d2b5eba29f29d67676b39bde0842eee20bda865",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Mantém título de lançamentos em uma linha no desktop"
+  "releaseNotes": "Restaura lançamento de receitas no novo formulário"
 }
