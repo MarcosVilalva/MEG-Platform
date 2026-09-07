@@ -148,16 +148,12 @@ function initializeTransactionBatchPanel() {
 function initializeTransactionDialogPresentation() {
   const dialog = document.getElementById('transactionDialog');
   const select = document.getElementById('transactionType');
-  const expenseButton = document.getElementById('transactionExpenseTypeButton');
-  const incomeButton = document.getElementById('transactionIncomeTypeButton');
   const themeButton = document.getElementById('transactionThemeToggle');
   const globalThemeButton = document.getElementById('appearanceThemeToggle');
-  if (!dialog || !select || !expenseButton || !incomeButton) return;
+  if (!dialog || !select) return;
 
   const synchronize = () => {
     const expense = select.value !== 'income';
-    expenseButton.setAttribute('aria-pressed', String(expense));
-    incomeButton.setAttribute('aria-pressed', String(!expense));
     dialog.dataset.transactionType = expense ? 'expense' : 'income';
     const title = document.getElementById('dialogTitle');
     const editing = Boolean(document.getElementById('transactionId')?.value);
@@ -165,15 +161,6 @@ function initializeTransactionDialogPresentation() {
       ? `Editar ${expense ? 'despesa' : 'receita'}`
       : `Nova ${expense ? 'despesa' : 'receita'}`;
   };
-  const choose = (type) => {
-    if (select.value !== type) {
-      select.value = type;
-      select.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    synchronize();
-  };
-  expenseButton.addEventListener('click', () => choose('expense'));
-  incomeButton.addEventListener('click', () => choose('income'));
   select.addEventListener('change', synchronize);
   themeButton?.addEventListener('click', () => globalThemeButton?.click());
   new MutationObserver(() => {

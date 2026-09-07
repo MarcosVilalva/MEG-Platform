@@ -154,7 +154,6 @@ const els = {
   sidebarDateTime: document.querySelector("#sidebarDateTime"),
   sidebarVersion: document.querySelector("#sidebarVersion"),
   mobileMenuBtn: document.querySelector("#mobileMenuBtn"),
-  sidebarCloseBtn: document.querySelector("#sidebarCloseBtn"),
   sidebarBackdrop: document.querySelector("#sidebarBackdrop"),
   periodMode: document.querySelector("#periodMode"),
   monthFilter: document.querySelector("#monthFilter"),
@@ -4244,7 +4243,7 @@ function setView(view) {
 }
 
 function setMobileMenu(open) {
-  const isMobile = window.matchMedia("(max-width: 980px)").matches;
+  const isMobile = window.matchMedia("(max-width: 900px)").matches;
   const shouldOpen = Boolean(open && isMobile);
   els.sidebar?.classList.toggle("mobile-open", shouldOpen);
   els.sidebarBackdrop?.classList.toggle("visible", shouldOpen);
@@ -5609,11 +5608,16 @@ document.querySelectorAll("[data-mobile-view]").forEach((item) => item.addEventL
 document.querySelector("[data-mobile-action='new']")?.addEventListener("click", () => openTransactionDialog());
 document.querySelector("[data-mobile-action='menu']")?.addEventListener("click", () => setMobileMenu(true));
 els.mobileMenuBtn?.addEventListener("click", () => setMobileMenu(true));
-els.sidebarCloseBtn?.addEventListener("click", () => setMobileMenu(false));
 els.sidebarBackdrop?.addEventListener("click", () => setMobileMenu(false));
-els.desktopSidebarToggle?.addEventListener("click", () => setDesktopSidebarCollapsed(!els.appShell?.classList.contains("sidebar-collapsed")));
+els.desktopSidebarToggle?.addEventListener("click", () => {
+  if (window.matchMedia("(max-width: 900px)").matches) {
+    setMobileMenu(false);
+    return;
+  }
+  setDesktopSidebarCollapsed(!els.appShell?.classList.contains("sidebar-collapsed"));
+});
 window.addEventListener("resize", () => {
-  if (!window.matchMedia("(max-width: 980px)").matches) setMobileMenu(false);
+  if (!window.matchMedia("(max-width: 900px)").matches) setMobileMenu(false);
 });
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") setMobileMenu(false);
