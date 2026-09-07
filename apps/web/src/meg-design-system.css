@@ -2525,6 +2525,18 @@ body.meg-layout-reformed {
 .meg-layout-reformed .budget-section-title p { margin: 0; }
 .meg-layout-reformed .budget-editor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(330px, 100%), 1fr)); gap: 14px; }
 .meg-layout-reformed .smart-budget-card { padding: 18px; border-radius: 17px; box-shadow: var(--meg-card-shadow); }
+.meg-layout-reformed .smart-budget-header { align-items: start; gap: 14px; }
+.meg-layout-reformed .smart-budget-header h3 { margin-top: 7px; line-height: 1.18; }
+.meg-layout-reformed .budget-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+.meg-layout-reformed .budget-comparison > div { display: grid; gap: 4px; min-width: 0; padding: 11px 12px; border: 1px solid var(--meg-hairline); border-radius: 11px; background: var(--meg-elevated); }
+.meg-layout-reformed .budget-comparison span { color: var(--meg-subtle); font-size: 10px; font-weight: 680; }
+.meg-layout-reformed .budget-comparison strong { color: var(--meg-heading); font-size: 15px; line-height: 1.15; }
+.meg-layout-reformed .budget-target-editor { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; margin-top: 14px; }
+.meg-layout-reformed .budget-target-editor label { display: grid; gap: 6px; min-width: 0; color: var(--meg-subtle); font-size: 11px; font-weight: 680; }
+.meg-layout-reformed .budget-target-editor .button { min-width: 108px; }
+
+.meg-layout-reformed #transactions .meg-page-heading { grid-template-columns: minmax(420px, .78fr) minmax(520px, 1.22fr); }
+.meg-layout-reformed #transactions .meg-page-heading-copy > .section-subtitle { display: none; }
 
 /* Lançamentos, cartões e pendências */
 .meg-layout-reformed #transactions .meg-page-heading { display: grid; grid-template-columns: minmax(320px, .72fr) minmax(540px, 1.28fr); align-items: end; }
