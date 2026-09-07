@@ -1,4 +1,3 @@
-import './full-layout-reform.css';
 import { formatPeriodSummary, VIEW_COPY } from './layout-reform-core.js';
 
 export { VIEW_COPY } from './layout-reform-core.js';
@@ -126,9 +125,68 @@ function synchronizeActiveView() {
   document.body.dataset.activeView = document.querySelector('main.content > .view.active')?.id || 'dashboard';
 }
 
+function initializeTransactionBatchPanel() {
+  const toggle = document.getElementById('transactionBatchToggle');
+  const panel = document.getElementById('transactionBatchFields');
+  const label = document.getElementById('transactionBatchToggleLabel');
+  if (!toggle || !panel || !label) return;
+
+  const setOpen = (open) => {
+    panel.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+    label.textContent = open ? 'Recolher' : 'Expandir';
+  };
+  toggle.addEventListener('click', () => setOpen(panel.hidden));
+  window.addEventListener('meg:transaction-selection-change', (event) => {
+    const count = Array.isArray(event.detail?.ids) ? event.detail.ids.length : 0;
+    if (!count) setOpen(false);
+    else if (panel.hidden) label.textContent = 'Editar selecionados';
+  });
+  setOpen(false);
+}
+
+function initializeTransactionDialogPresentation() {
+  const dialog = document.getElementById('transactionDialog');
+  const select = document.getElementById('transactionType');
+  const expenseButton = document.getElementById('transactionExpenseTypeButton');
+  const incomeButton = document.getElementById('transactionIncomeTypeButton');
+  const themeButton = document.getElementById('transactionThemeToggle');
+  const globalThemeButton = document.getElementById('appearanceThemeToggle');
+  if (!dialog || !select || !expenseButton || !incomeButton) return;
+
+  const synchronize = () => {
+    const expense = select.value !== 'income';
+    expenseButton.setAttribute('aria-pressed', String(expense));
+    incomeButton.setAttribute('aria-pressed', String(!expense));
+    dialog.dataset.transactionType = expense ? 'expense' : 'income';
+    const title = document.getElementById('dialogTitle');
+    const editing = Boolean(document.getElementById('transactionId')?.value);
+    if (title) title.textContent = editing
+      ? `Editar ${expense ? 'despesa' : 'receita'}`
+      : `Nova ${expense ? 'despesa' : 'receita'}`;
+  };
+  const choose = (type) => {
+    if (select.value !== type) {
+      select.value = type;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    synchronize();
+  };
+  expenseButton.addEventListener('click', () => choose('expense'));
+  incomeButton.addEventListener('click', () => choose('income'));
+  select.addEventListener('change', synchronize);
+  themeButton?.addEventListener('click', () => globalThemeButton?.click());
+  new MutationObserver(() => {
+    if (dialog.open) window.setTimeout(synchronize, 0);
+  }).observe(dialog, { attributes: true, attributeFilter: ['open'] });
+  synchronize();
+}
+
 export function initializeLayoutReform() {
   document.body.classList.add('meg-layout-reformed');
   initializePeriodPanel();
+  initializeTransactionBatchPanel();
+  initializeTransactionDialogPresentation();
   labelContentSections();
   synchronizeActiveView();
 }

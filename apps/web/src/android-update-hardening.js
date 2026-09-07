@@ -371,7 +371,6 @@ export function initializeHardenedAndroidUpdate() {
 }
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  import('./meg-dark-surface-guard.css').catch((cause) => console.warn('MEG dark surface guard failed to load', cause));
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeHardenedAndroidUpdate, { once: true });
   } else {
