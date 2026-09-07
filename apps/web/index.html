@@ -24,7 +24,6 @@
       <aside class="sidebar" id="primarySidebar" aria-label="Navegacao principal">
         <div class="brand">
           <img class="brand-logo" src="/brand/meg-finance-system-lockup.svg" alt="MEG Finance System" />
-          <button class="sidebar-close-button" id="sidebarCloseBtn" type="button" aria-label="Fechar menu">&times;</button>
           <button class="desktop-sidebar-toggle" id="desktopSidebarToggle" type="button" aria-label="Recolher menu" title="Recolher ou expandir menu">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15.4 7.4-1.4-1.4-6 6 6 6 1.4-1.4-4.6-4.6 4.6-4.6Z"/></svg>
           </button>
@@ -1098,14 +1097,6 @@
           <option value="expense">DESPESA</option>
           <option value="income">RECEITA</option>
         </select>
-        <div class="transaction-type-switch" aria-label="Tipo do lançamento">
-          <button id="transactionExpenseTypeButton" type="button" aria-pressed="true">
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5H7Z"/></svg>Despesa
-          </button>
-          <button id="transactionIncomeTypeButton" type="button" aria-pressed="false">
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m7 14 5-5 5 5H7Z"/></svg>Receita
-          </button>
-        </div>
         <div class="form-grid">
           <label>
             MODALIDADE
@@ -1129,9 +1120,8 @@
             <small class="card-due-preview hidden" id="cardDuePreview"></small>
           </label>
           <label class="full hidden due-date-override" id="dueDateOverrideField">
-            <span>VENCIMENTO MANUAL</span>
-            <span class="checkbox-line"><input id="dueDateOverrideInput" type="checkbox" /> Alterar manualmente a data calculada da fatura</span>
-            <small>Desmarcado, o MEG calcula o vencimento pelas regras do cart&atilde;o. Marque somente quando precisar de uma exce&ccedil;&atilde;o.</small>
+            <span class="checkbox-line"><input id="dueDateOverrideInput" type="checkbox" /> Definir o vencimento manualmente</span>
+            <small>Desmarcado, o MEG usa automaticamente as regras do cart&atilde;o.</small>
           </label>
           <label>
             DiaSemana

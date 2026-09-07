@@ -47,7 +47,9 @@ assert.match(styles, /grid-template-columns: minmax\(0, 1fr\) 42px minmax\(88px,
 assert.match(styles, /\.transactions-table/);
 assert.match(styles, /\.catalogs-grid/);
 assert.match(styles, /\.settings-grid/);
-assert.match(styles, /\.transaction-type-switch/);
+assert.doesNotMatch(index, /transaction-type-switch|transactionExpenseTypeButton|transactionIncomeTypeButton/);
+assert.doesNotMatch(index, /sidebarCloseBtn/);
+assert.doesNotMatch(layout, /transactionExpenseTypeButton|transactionIncomeTypeButton/);
 assert.match(styles, /\.transaction-batch-toggle/);
 assert.match(layout, /initializeCollapsiblePanels/);
 assert.match(layout, /meg-collapsible-panel/);
