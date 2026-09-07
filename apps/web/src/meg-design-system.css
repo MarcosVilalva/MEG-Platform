@@ -2539,6 +2539,7 @@ body.meg-layout-reformed {
 
 /* Lançamentos, cartões e pendências */
 .meg-layout-reformed #transactions .meg-page-heading { display: grid; grid-template-columns: minmax(420px, .78fr) minmax(520px, 1.22fr); align-items: end; }
+.meg-layout-reformed #transactionsTitle { font-size: clamp(34px, 3vw, 40px); white-space: nowrap; }
 .meg-layout-reformed #transactions .meg-page-actions { width: 100%; max-width: none; }
 .meg-layout-reformed .transactions-filter-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .meg-layout-reformed .transactions-filter-card { min-height: 102px; padding: 17px; }
@@ -2630,6 +2631,7 @@ body.meg-layout-reformed {
   .meg-layout-reformed .view.active { gap: 16px; }
   .meg-layout-reformed .meg-page-heading { align-items: stretch; flex-direction: column; gap: 14px; }
   .meg-layout-reformed .meg-page-heading h2 { font-size: clamp(29px, 9vw, 38px); }
+  .meg-layout-reformed #transactionsTitle { white-space: normal; }
   .meg-layout-reformed .panel { padding: 17px; }
   .meg-layout-reformed .panel-title { align-items: flex-start; }
   .meg-layout-reformed .panel-title > span { max-width: 50%; }
