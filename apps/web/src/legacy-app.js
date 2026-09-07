@@ -1834,7 +1834,7 @@ function renderIncomeAnalysis() {
   els.incomeAnalysisHero.classList.toggle("attention", total > 0 && variation < -10);
   els.incomeAnalysisHero.classList.toggle("healthy", total > 0 && variation >= -10);
   if (!total) {
-    els.incomeAnalysisHealthTitle.textContent = "🔴 Nenhuma receita monetária no período";
+    els.incomeAnalysisHealthTitle.textContent = "Nenhuma receita registrada no período";
     els.incomeAnalysisHealthMessage.textContent = "Registre as entradas recebidas para acompanhar estabilidade, recorrência e evolução da renda.";
   } else if (variation < -10 && monthly.length > 1) {
     els.incomeAnalysisHealthTitle.textContent = `🟡 Receita do último mês caiu ${Math.abs(variation).toFixed(1)}%`;
@@ -2004,8 +2004,8 @@ function renderCurrentSituation() {
   els.monthCloseLabel.textContent = situation.missingToClose > 0 ? `Falta dinheiro para fechar ${formatMonthCode(currentMonth)}` : `Dinheiro suficiente para fechar ${formatMonthCode(currentMonth)}`;
   els.missingToCloseMetric.textContent = situation.missingToClose > 0 ? money.format(situation.missingToClose) : money.format(Math.max(situation.surplusAfterPending, 0));
   els.monthDecisionStatus.textContent = situation.missingToClose > 0 ? "ATENÇÃO" : "SAUDÁVEL";
-  els.currentIncomeTrend.textContent = `${currentIncomeCount} lancamentos`;
-  els.currentExpenseTrend.textContent = `${currentExpenseCount} lancamentos`;
+  els.currentIncomeTrend.textContent = `${currentIncomeCount} lançamentos`;
+  els.currentExpenseTrend.textContent = `${currentExpenseCount} lançamentos`;
   els.pendingBillsTrend.textContent =
     situation.missingToClose > 0
       ? `As receitas disponíveis não cobrem todas as despesas monetárias previstas do mês.`
@@ -2103,13 +2103,13 @@ function renderQuickSignals() {
       tone: situation.missingToClose > 0 ? "risk" : "positive",
       title: situation.missingToClose > 0 ? "Falta para fechar" : "Sobra prevista",
       value: money.format(situation.missingToClose > 0 ? situation.missingToClose : Math.max(situation.surplusAfterPending, 0)),
-      text: "Apos pendencias do mes",
+      text: "Após as pendências do mês",
     },
     {
       tone: topGroup ? "attention" : "",
       title: "Maior gasto",
       value: topGroup ? topGroup.group : "-",
-      text: topGroup ? money.format(topGroup.value) : "Sem despesas no mes",
+      text: topGroup ? money.format(topGroup.value) : "Sem despesas no mês",
     },
     {
       tone: pendingSoon ? "risk" : "",
@@ -2429,11 +2429,11 @@ function renderAnalytics() {
   const paymentLabel = analyticsFilters.payments.length ? `${analyticsFilters.payments.length} modalidade(s)` : "todas as modalidades";
   els.analyticsPeriodLabel.textContent = `${periodLabel()} · modalidades: ${paymentLabel}`;
   els.avgExpenseMetric.textContent = money.format(summary.expense / monthCount);
-  els.avgExpenseTrend.textContent = `${monthCount} mes(es) no periodo`;
+  els.avgExpenseTrend.textContent = `${monthCount} mês(es) no período`;
   els.topGroupMetric.textContent = topGroup ? topGroup.group : "-";
   els.topGroupTrend.textContent = topGroup ? money.format(topGroup.value) : money.format(0);
   els.variationMetric.textContent = previousExpense ? `${variation > 0 ? "+" : ""}${variation.toFixed(1)}%` : "Sem base";
-  els.variationTrend.textContent = previousExpense ? `Periodo anterior: ${money.format(previousExpense)}` : "Sem periodo anterior comparavel";
+  els.variationTrend.textContent = previousExpense ? `Período anterior: ${money.format(previousExpense)}` : "Sem período anterior comparável";
   els.concentrationMetric.textContent = `${concentration.toFixed(0)}%`;
   els.analyticsIncomeMetric.textContent = money.format(summary.income);
   els.analyticsIncomeNote.textContent = `${monetaryItems.filter((item) => item.type === "income").length} entrada(s) monetária(s) no período`;
@@ -2830,7 +2830,7 @@ function renderDecisionInsights({ monthHealth, groups, totals, variation, previo
         `,
         )
         .join("")
-    : `<div class="empty">Periodo equilibrado, sem alerta relevante.</div>`;
+    : `<div class="empty">Período equilibrado, sem alerta relevante.</div>`;
 }
 
 function renderCategoryChart() {
@@ -3269,7 +3269,7 @@ function renderTransactions({ resetPage = false } = {}) {
       `,
         )
         .join("")
-    : `<tr><td colspan="14" class="empty">Nenhum lancamento encontrado.</td></tr>`;
+    : `<tr><td colspan="14" class="empty">Nenhum lançamento encontrado.</td></tr>`;
 }
 
 function cardBrandClass(brand) {
@@ -3620,7 +3620,7 @@ function renderPending() {
         `; },
         )
         .join("")
-    : `<div class="empty">Nenhuma conta para este filtro no mes atual.</div>`;
+    : `<div class="empty">Nenhuma conta para este filtro no mês atual.</div>`;
 
   renderVerocardLedger(card);
 }
@@ -4547,7 +4547,7 @@ function openTransactionDialog(item = null) {
     ? item.paymentMethod || item.account || ""
     : "";
   const desiredModality = item?.modality || (isNewExpense ? "CREDITO" : modalityForPayment(desiredPayment)) || modalityForPayment(desiredPayment) || sortedModalities()[0] || "";
-  els.dialogTitle.textContent = item ? "Editar lancamento" : "Novo lancamento";
+  els.dialogTitle.textContent = item ? "Editar lançamento" : "Novo lançamento";
   els.transactionId.value = item?.id || "";
   els.dateInput.value = item?.date || defaultDate;
   els.dueDateOverrideInput.checked = Boolean(item?.dueDateManual);
