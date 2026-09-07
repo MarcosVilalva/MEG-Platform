@@ -2182,3 +2182,463 @@ body.meg-layout-reformed .content {
   .meg-layout-reformed .catalog-row { align-items: flex-start; flex-direction: column; }
   .meg-layout-reformed .catalog-actions { width: 100%; justify-content: flex-start; }
 }
+
+/* MEG Professional UI, composição canônica final */
+:root,
+:root[data-meg-theme="light"] {
+  --meg-page-glow: rgba(31, 169, 145, .08);
+  --meg-card-shadow: 0 10px 32px rgba(13, 50, 43, .065);
+  --meg-card-shadow-hover: 0 16px 42px rgba(13, 50, 43, .1);
+  --meg-hairline: color-mix(in srgb, var(--meg-border) 78%, transparent);
+}
+
+:root[data-meg-theme="dark"] {
+  --meg-page-glow: rgba(83, 223, 192, .07);
+  --meg-card-shadow: 0 12px 34px rgba(0, 0, 0, .22);
+  --meg-card-shadow-hover: 0 18px 46px rgba(0, 0, 0, .3);
+  --meg-hairline: color-mix(in srgb, var(--meg-border) 72%, transparent);
+}
+
+body.meg-layout-reformed {
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -.006em;
+  background:
+    radial-gradient(circle at 78% 3%, var(--meg-page-glow), transparent 30rem),
+    var(--meg-canvas);
+}
+
+.meg-layout-reformed .validation-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 6px 18px;
+  color: var(--warn);
+  border-bottom: 1px solid color-mix(in srgb, var(--warn) 22%, var(--meg-border));
+  background: color-mix(in srgb, var(--warn-soft) 80%, var(--meg-card));
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .025em;
+  text-align: center;
+}
+
+.meg-layout-reformed .content {
+  width: 100%;
+  max-width: 1640px;
+  margin-inline: auto;
+  padding: clamp(24px, 3vw, 48px);
+}
+
+.meg-layout-reformed .view.active {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+
+.meg-layout-reformed .meg-page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  min-width: 0;
+  margin: 0;
+}
+
+.meg-layout-reformed .meg-page-heading-copy { min-width: 0; }
+.meg-layout-reformed .meg-page-heading .eyebrow { margin-bottom: 7px; }
+.meg-layout-reformed .meg-page-heading h2 {
+  max-width: 920px;
+  margin: 0;
+  color: var(--meg-heading);
+  font-size: clamp(32px, 3.2vw, 46px);
+  font-weight: 780;
+  line-height: 1.02;
+  letter-spacing: -.047em;
+}
+.meg-layout-reformed .meg-page-subtitle {
+  max-width: 760px;
+  margin: 10px 0 0;
+  color: var(--meg-subtle);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.meg-layout-reformed :is(.panel, .metric, .mini-metric, .finance-panel,
+  .cashflow-answer-card, .analytics-calculation-panel, .income-kpi-grid article,
+  .budget-goals-grid article, .transactions-filter-card, .commercial-kpis article,
+  .workspace-commercial-summary > div, .permission-matrix article, .admin-user-card) {
+  min-width: 0;
+  border-color: var(--meg-hairline);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--meg-card) 97%, transparent);
+  box-shadow: var(--meg-card-shadow);
+}
+
+.meg-layout-reformed .panel { padding: 22px; }
+.meg-layout-reformed .panel-title {
+  min-width: 0;
+  margin: 0 0 18px;
+  padding: 0 0 15px;
+  border-bottom: 1px solid var(--meg-hairline);
+}
+.meg-layout-reformed .panel-title > div { display: grid; min-width: 0; gap: 3px; }
+.meg-layout-reformed .panel-title h3,
+.meg-layout-reformed .panel > h3 {
+  margin: 0;
+  color: var(--meg-heading);
+  font-size: 16px;
+  font-weight: 760;
+  line-height: 1.25;
+  letter-spacing: -.022em;
+}
+.meg-layout-reformed .panel-title > span { max-width: 44%; color: var(--meg-subtle); font-size: 12px; line-height: 1.4; text-align: right; }
+.meg-layout-reformed .decision-eyebrow,
+.meg-layout-reformed .eyebrow {
+  color: var(--meg-accent);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .14em;
+}
+
+.meg-layout-reformed .button {
+  min-height: 40px;
+  padding: 9px 14px;
+  border-radius: 11px;
+  font-size: 12px;
+  font-weight: 750;
+}
+.meg-layout-reformed .button:not(:disabled) { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease; }
+.meg-layout-reformed .button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(13, 50, 43, .09); }
+
+/* Navegação */
+.meg-layout-reformed .sidebar {
+  padding: 20px 12px 16px;
+  border-right-color: var(--meg-hairline);
+  background: color-mix(in srgb, var(--meg-sidebar) 97%, var(--meg-card-soft));
+}
+.meg-layout-reformed .brand { margin: 0 7px 22px; }
+.meg-layout-reformed .nav-list { gap: 4px; }
+.meg-layout-reformed .nav-item {
+  position: relative;
+  min-height: 43px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-weight: 650;
+}
+.meg-layout-reformed .nav-item::before {
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  left: -1px;
+  width: 3px;
+  border-radius: 99px;
+  background: transparent;
+  content: "";
+}
+.meg-layout-reformed .nav-item.active {
+  color: var(--primary-strong);
+  border-color: color-mix(in srgb, var(--meg-accent) 18%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--primary-soft) 94%, transparent), color-mix(in srgb, var(--primary-soft) 58%, transparent));
+}
+.meg-layout-reformed .nav-item.active::before { background: var(--meg-accent); }
+.meg-layout-reformed .sidebar-user-footer { margin-top: auto; padding: 18px 7px 0; border-top: 1px solid var(--meg-hairline); }
+
+/* Painel */
+.meg-layout-reformed .dashboard-main-grid { grid-template-columns: 1fr; gap: 18px; }
+.meg-layout-reformed .finance-panels { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.meg-layout-reformed .finance-panel { min-height: 0; padding: 20px; }
+.meg-layout-reformed .finance-panel header { min-height: 58px; padding-bottom: 15px; }
+.meg-layout-reformed .finance-panel header > span { width: 42px; height: 42px; }
+.meg-layout-reformed .finance-panel header h3 { margin: 3px 0 0; font-size: 18px; }
+.meg-layout-reformed .finance-panel-values { gap: 0; }
+.meg-layout-reformed .finance-panel-values > div { display: grid; gap: 4px; padding: 15px 0; border-top: 1px solid var(--meg-hairline); }
+.meg-layout-reformed .finance-panel-values > div:first-child { border-top: 0; }
+.meg-layout-reformed .finance-panel-values span { color: var(--text); font-size: 13px; }
+.meg-layout-reformed .finance-panel-values strong { color: var(--meg-heading); font-size: 20px; line-height: 1.15; }
+.meg-layout-reformed .finance-panel-values small { min-height: 18px; line-height: 1.45; }
+
+.meg-layout-reformed .month-progress-panel { min-height: 220px; padding: 24px; }
+.meg-layout-reformed .current-panel,
+.meg-layout-reformed .executive-command-panel,
+.meg-layout-reformed .payable-panel { margin-top: 0; }
+.meg-layout-reformed .month-decision {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--meg-accent) 28%, var(--meg-border));
+  border-radius: 16px;
+  background: linear-gradient(105deg, color-mix(in srgb, var(--primary-soft) 78%, var(--meg-card)), var(--meg-card));
+}
+.meg-layout-reformed .decision-copy { display: grid; gap: 4px; }
+.meg-layout-reformed .decision-copy > span { color: var(--meg-subtle); font-size: 12px; }
+.meg-layout-reformed .decision-copy > strong { color: var(--meg-heading); font-size: clamp(22px, 2vw, 30px); line-height: 1.05; }
+.meg-layout-reformed .decision-status { padding: 7px 11px; color: var(--primary-strong); border: 1px solid color-mix(in srgb, var(--meg-accent) 30%, var(--meg-border)); border-radius: 999px; background: var(--primary-soft); font-size: 10px; font-weight: 850; }
+.meg-layout-reformed .current-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.meg-layout-reformed .mini-metric { display: grid; align-content: start; gap: 5px; min-height: 118px; padding: 17px; }
+.meg-layout-reformed .mini-metric > span { color: var(--meg-subtle); font-size: 11px; font-weight: 720; }
+.meg-layout-reformed .mini-metric > strong { color: var(--meg-heading); font-size: 19px; line-height: 1.15; }
+.meg-layout-reformed .mini-metric > small { line-height: 1.4; }
+.meg-layout-reformed .executive-command-hero { display: grid; grid-template-columns: minmax(0, 1fr) 130px; padding: 0 0 18px; border: 0; border-bottom: 1px solid var(--meg-hairline); border-radius: 0; background: transparent; }
+.meg-layout-reformed .executive-command-hero h3 { margin: 4px 0 7px; }
+.meg-layout-reformed .executive-command-hero p { margin: 0; }
+.meg-layout-reformed .executive-score { display: grid; place-items: center; min-width: 0; padding: 14px; }
+.meg-layout-reformed .executive-score strong { font-size: 28px; line-height: 1; }
+.meg-layout-reformed .executive-insight-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.meg-layout-reformed .executive-insight-grid article { display: grid; gap: 4px; padding: 15px; border: 1px solid var(--meg-hairline); border-radius: 14px; background: var(--meg-elevated); }
+.meg-layout-reformed .executive-insight-grid strong { color: var(--meg-heading); font-size: 17px; }
+
+/* Análises */
+.meg-layout-reformed .analytics-filter-panel {
+  grid-template-columns: minmax(260px, .8fr) minmax(360px, 1.2fr);
+  align-items: center;
+  gap: 28px;
+}
+.meg-layout-reformed .analytics-filter-copy { display: grid; gap: 6px; }
+.meg-layout-reformed .analytics-filter-copy strong { color: var(--meg-heading); font-size: 18px; line-height: 1.25; }
+.meg-layout-reformed .analytics-filter-copy span { color: var(--meg-subtle); font-size: 13px; }
+.meg-layout-reformed .analytics-filter-panel .filter-row,
+.meg-layout-reformed .stacked-control { display: grid; gap: 7px; }
+.meg-layout-reformed #analyticsPaymentFilter { min-height: 108px; padding: 7px; }
+.meg-layout-reformed #analyticsPaymentFilter option { padding: 7px 9px; border-radius: 7px; }
+
+.meg-layout-reformed .analytics-decision-hero,
+.meg-layout-reformed .cashflow-decision-hero,
+.meg-layout-reformed .income-analysis-hero,
+.meg-layout-reformed .budget-health-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(270px, .48fr);
+  align-items: center;
+  gap: 26px;
+  padding: 24px;
+}
+.meg-layout-reformed :is(.analytics-decision-hero, .cashflow-decision-hero, .income-analysis-hero, .budget-health-hero) h3 { margin: 4px 0 9px; font-size: 19px; }
+.meg-layout-reformed :is(.analytics-decision-hero, .cashflow-decision-hero, .income-analysis-hero, .budget-health-hero) p { margin: 0; line-height: 1.55; }
+.meg-layout-reformed :is(.decision-hero-value, .income-hero-total, .budget-score) { display: grid; place-items: center; gap: 5px; min-width: 0; padding: 20px; }
+.meg-layout-reformed :is(.decision-hero-value, .income-hero-total) strong { color: var(--meg-heading); font-size: 25px; line-height: 1.05; }
+.meg-layout-reformed :is(.decision-hero-value, .income-hero-total) span,
+.meg-layout-reformed :is(.decision-hero-value, .income-hero-total) small { color: var(--meg-subtle); font-size: 11px; text-align: center; }
+
+.meg-layout-reformed .current-month-health-equation { display: flex; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.meg-layout-reformed .current-month-health-equation span { display: grid; gap: 2px; padding: 9px 11px; border: 1px solid var(--meg-hairline); border-radius: 10px; background: var(--meg-card); color: var(--meg-subtle); font-size: 10px; }
+.meg-layout-reformed .current-month-health-equation strong { color: var(--meg-heading); font-size: 13px; }
+.meg-layout-reformed .current-month-health-equation > b { color: var(--meg-subtle); }
+.meg-layout-reformed .analytics-calculation-panel { padding: 22px; }
+.meg-layout-reformed .analytics-calculation-heading { padding-bottom: 15px; border-bottom: 1px solid var(--meg-hairline); }
+.meg-layout-reformed .analytics-calculation-heading > div { display: grid; gap: 3px; }
+.meg-layout-reformed .analytics-calculation-heading h3 { margin: 0; }
+.meg-layout-reformed .analytics-calculation-heading > span { color: var(--meg-subtle); font-size: 12px; }
+.meg-layout-reformed .analytics-equation {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) auto minmax(130px, 1fr) auto minmax(130px, 1fr) auto minmax(160px, 1.15fr);
+  align-items: stretch;
+  gap: 9px;
+  margin-top: 16px;
+}
+.meg-layout-reformed .analytics-equation article { display: grid; align-content: center; gap: 4px; min-width: 0; padding: 13px; border: 1px solid var(--meg-hairline); border-radius: 12px; background: var(--meg-elevated); }
+.meg-layout-reformed .analytics-equation > b { display: grid; place-items: center; color: var(--meg-subtle); font-size: 17px; }
+.meg-layout-reformed .analytics-equation span { color: var(--meg-subtle); font-size: 10px; }
+.meg-layout-reformed .analytics-equation strong { color: var(--meg-heading); font-size: 16px; }
+.meg-layout-reformed .analytics-equation small { color: var(--meg-subtle); font-size: 10px; line-height: 1.35; }
+.meg-layout-reformed .analytics-equation .equation-result { border-color: color-mix(in srgb, var(--meg-accent) 35%, var(--meg-border)); background: var(--primary-soft); }
+.meg-layout-reformed .analytics-projection-line,
+.meg-layout-reformed .analytics-ticket-line { display: grid; grid-template-columns: minmax(210px, auto) minmax(120px, auto) 1fr; align-items: center; gap: 10px; margin-top: 10px; padding: 11px 13px; border: 1px solid var(--meg-hairline); border-radius: 11px; }
+.meg-layout-reformed :is(.analytics-projection-line, .analytics-ticket-line) strong { color: var(--meg-heading); }
+.meg-layout-reformed :is(.analytics-projection-line, .analytics-ticket-line) small { color: var(--meg-subtle); text-align: right; }
+.meg-layout-reformed .analytics-executive-strip,
+.meg-layout-reformed .kpi-grid,
+.meg-layout-reformed .historical-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.meg-layout-reformed .analytics-executive-strip article,
+.meg-layout-reformed .historical-summary-grid article { display: grid; align-content: start; gap: 5px; min-width: 0; padding: 17px; border: 1px solid var(--meg-hairline); border-radius: 16px; background: var(--meg-card); box-shadow: var(--meg-card-shadow); }
+.meg-layout-reformed :is(.analytics-executive-strip, .historical-summary-grid) span { color: var(--meg-subtle); font-size: 11px; }
+.meg-layout-reformed :is(.analytics-executive-strip, .historical-summary-grid) strong { color: var(--meg-heading); font-size: 18px; line-height: 1.15; }
+.meg-layout-reformed :is(.analytics-executive-strip, .historical-summary-grid) small { color: var(--meg-subtle); line-height: 1.4; }
+.meg-layout-reformed .metric { display: grid; align-content: start; gap: 5px; min-height: 112px; padding: 17px; }
+.meg-layout-reformed .metric > span { color: var(--meg-subtle); font-size: 11px; font-weight: 720; }
+.meg-layout-reformed .metric > strong { color: var(--meg-heading); font-size: 19px; line-height: 1.15; }
+.meg-layout-reformed .analytics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+
+/* Receitas */
+.meg-layout-reformed .income-filter-bar {
+  grid-template-columns: minmax(260px, 1fr) minmax(280px, .85fr);
+  align-items: end;
+  gap: 16px 20px;
+  padding: 22px;
+  border: 1px solid var(--meg-hairline);
+  border-radius: 18px;
+  background: var(--meg-card);
+  box-shadow: var(--meg-card-shadow);
+}
+.meg-layout-reformed .income-filter-bar > div { display: grid; align-self: center; gap: 5px; }
+.meg-layout-reformed .income-filter-bar > div strong { color: var(--meg-heading); font-size: 18px; }
+.meg-layout-reformed .income-filter-bar label { display: grid; gap: 6px; color: var(--meg-subtle); font-size: 11px; font-weight: 720; }
+.meg-layout-reformed .income-filter-bar .button { justify-self: stretch; }
+.meg-layout-reformed .income-analysis-hero > div:first-child { display: grid; gap: 4px; }
+.meg-layout-reformed .income-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.meg-layout-reformed .income-kpi-grid article,
+.meg-layout-reformed .budget-goals-grid article { display: grid; align-content: start; gap: 5px; min-height: 112px; padding: 17px; }
+.meg-layout-reformed :is(.income-kpi-grid, .budget-goals-grid) span { color: var(--meg-subtle); font-size: 11px; font-weight: 720; }
+.meg-layout-reformed :is(.income-kpi-grid, .budget-goals-grid) strong { color: var(--meg-heading); font-size: 19px; line-height: 1.15; }
+.meg-layout-reformed :is(.income-kpi-grid, .budget-goals-grid) small { color: var(--meg-subtle); line-height: 1.4; }
+.meg-layout-reformed .income-analysis-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.meg-layout-reformed .income-source-composition { grid-template-columns: 118px minmax(0, 1fr); align-items: center; gap: 18px; margin-bottom: 18px; }
+.meg-layout-reformed .income-source-composition > div:last-child { display: grid; gap: 4px; }
+.meg-layout-reformed .income-source-donut { display: grid; place-items: center; min-height: 108px; border: 10px solid var(--primary-soft); border-radius: 50%; }
+
+/* Fluxo */
+.meg-layout-reformed .cashflow-answer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.meg-layout-reformed .cashflow-answer-card { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 13px; min-height: 132px; padding: 18px; }
+.meg-layout-reformed .cashflow-answer-card > div { display: grid; gap: 5px; }
+.meg-layout-reformed .cashflow-answer-card small { color: var(--meg-subtle); font-size: 11px; font-weight: 720; }
+.meg-layout-reformed .cashflow-answer-card strong { color: var(--meg-heading); font-size: 21px; line-height: 1.1; }
+.meg-layout-reformed .cashflow-answer-card p { margin: 0; color: var(--meg-subtle); font-size: 12px; line-height: 1.45; }
+.meg-layout-reformed .cashflow-equation {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr) auto minmax(120px, 1fr) auto minmax(120px, 1fr) auto minmax(155px, 1.15fr);
+  align-items: stretch;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--meg-hairline);
+  border-radius: 17px;
+  background: var(--meg-card);
+  box-shadow: var(--meg-card-shadow);
+}
+.meg-layout-reformed .cashflow-equation > div { display: grid; align-content: center; gap: 4px; min-width: 0; padding: 12px; border-radius: 11px; background: var(--meg-elevated); }
+.meg-layout-reformed .cashflow-equation > b { display: grid; place-items: center; color: var(--meg-subtle); }
+.meg-layout-reformed .cashflow-equation small { color: var(--meg-subtle); font-size: 10px; }
+.meg-layout-reformed .cashflow-equation strong { color: var(--meg-heading); font-size: 15px; }
+.meg-layout-reformed .cashflow-equation-result { border: 1px solid color-mix(in srgb, var(--meg-accent) 35%, var(--meg-border)); background: var(--primary-soft) !important; }
+
+/* Planejamento */
+.meg-layout-reformed .budget-score { grid-template-columns: auto auto; align-content: center; justify-content: center; gap: 1px 3px; min-height: 108px; }
+.meg-layout-reformed .budget-score strong { color: var(--meg-heading); font-size: 30px; line-height: 1; }
+.meg-layout-reformed .budget-score span { color: var(--meg-subtle); font-size: 14px; }
+.meg-layout-reformed .budget-score small { grid-column: 1 / -1; color: var(--meg-subtle); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+.meg-layout-reformed .budget-goals-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.meg-layout-reformed .budget-section-title { padding: 4px 2px 0; }
+.meg-layout-reformed .budget-section-title > div { display: grid; gap: 4px; }
+.meg-layout-reformed .budget-section-title h3 { margin: 0; color: var(--meg-heading); font-size: 20px; }
+.meg-layout-reformed .budget-section-title p { margin: 0; }
+.meg-layout-reformed .budget-editor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(330px, 100%), 1fr)); gap: 14px; }
+.meg-layout-reformed .smart-budget-card { padding: 18px; border-radius: 17px; box-shadow: var(--meg-card-shadow); }
+
+/* Lançamentos, cartões e pendências */
+.meg-layout-reformed #transactions .meg-page-heading { display: grid; grid-template-columns: minmax(320px, .72fr) minmax(540px, 1.28fr); align-items: end; }
+.meg-layout-reformed #transactions .meg-page-actions { width: 100%; max-width: none; }
+.meg-layout-reformed .transactions-filter-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.meg-layout-reformed .transactions-filter-card { min-height: 102px; padding: 17px; }
+.meg-layout-reformed .transaction-batch-editor { border-radius: 16px; box-shadow: none; }
+.meg-layout-reformed .table-panel { box-shadow: var(--meg-card-shadow); }
+.meg-layout-reformed .transactions-table th { font-size: 9px; letter-spacing: .07em; }
+.meg-layout-reformed .transactions-table td { font-size: 12px; }
+.meg-layout-reformed .transactions-pagination { min-height: 64px; padding: 12px 16px; }
+
+.meg-layout-reformed .credit-card-heading { align-items: flex-end; }
+.meg-layout-reformed .credit-card-filterbar { padding: 18px; border-radius: 17px; box-shadow: var(--meg-card-shadow); }
+.meg-layout-reformed .credit-card-command-center,
+.meg-layout-reformed .pending-command-center { padding: 24px; border-radius: 19px; box-shadow: var(--meg-card-shadow); }
+.meg-layout-reformed .credit-wallet:empty::before {
+  display: block;
+  grid-column: 1 / -1;
+  padding: 18px;
+  color: var(--meg-subtle);
+  border: 1px dashed var(--meg-border);
+  border-radius: 14px;
+  background: var(--meg-elevated);
+  content: "Nenhum cartão cadastrado para o período selecionado.";
+}
+.meg-layout-reformed .credit-card-insights-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+
+.meg-layout-reformed #pending .meg-page-heading { display: grid; grid-template-columns: minmax(300px, .65fr) minmax(580px, 1.35fr); align-items: end; }
+.meg-layout-reformed #pending .meg-page-actions { width: 100%; max-width: none; }
+.meg-layout-reformed #pending .current-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.meg-layout-reformed .pending-grid { grid-template-columns: minmax(0, 1.15fr) minmax(360px, .85fr); }
+
+/* Cadastros, usuários, histórico e ajustes */
+.meg-layout-reformed .catalog-panel { box-shadow: var(--meg-card-shadow); }
+.meg-layout-reformed .catalog-form { gap: 12px; padding: 15px; }
+.meg-layout-reformed .catalog-form label { display: grid; gap: 6px; color: var(--meg-subtle); font-size: 11px; font-weight: 720; }
+.meg-layout-reformed .catalog-row { min-height: 68px; padding: 12px 4px; }
+.meg-layout-reformed .permission-matrix-panel { box-shadow: var(--meg-card-shadow); }
+.meg-layout-reformed .user-security-hero { box-shadow: var(--meg-card-shadow); }
+.meg-layout-reformed .meg-history-panel { padding: 22px; border-radius: 18px; box-shadow: var(--meg-card-shadow); }
+.meg-layout-reformed .meg-history-filters { padding: 14px; border-radius: 14px; background: var(--meg-elevated); }
+.meg-layout-reformed .settings-grid { align-items: start; gap: 16px; }
+.meg-layout-reformed .settings-grid > .panel { display: grid; align-content: start; gap: 12px; min-height: 0; padding: 20px; box-shadow: var(--meg-card-shadow); }
+.meg-layout-reformed .settings-grid > .panel > h3,
+.meg-layout-reformed .settings-grid > .panel > h4 { margin: 0; color: var(--meg-heading); }
+.meg-layout-reformed .settings-grid > .panel > p { margin: 0; line-height: 1.55; }
+.meg-layout-reformed .settings-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.meg-layout-reformed .settings-actions .button { width: 100%; }
+.meg-layout-reformed input[type="file"] { overflow: hidden; min-height: 46px; padding: 5px; color: var(--meg-subtle); font-size: 11px; }
+.meg-layout-reformed input[type="file"]::file-selector-button { min-height: 34px; margin-right: 10px; padding: 6px 12px; border-radius: 9px; }
+
+:root[data-meg-theme="dark"] .meg-layout-reformed :is(.eyebrow, .decision-eyebrow) { color: var(--meg-gold); }
+:root[data-meg-theme="dark"] .meg-layout-reformed :is(.panel, .metric, .mini-metric, .finance-panel, .cashflow-answer-card,
+  .analytics-calculation-panel, .transactions-filter-card, .income-kpi-grid article, .budget-goals-grid article) {
+  background: color-mix(in srgb, var(--meg-card) 96%, #000);
+}
+
+@media (max-width: 1260px) {
+  .meg-layout-reformed .current-grid,
+  .meg-layout-reformed .income-kpi-grid,
+  .meg-layout-reformed .budget-goals-grid,
+  .meg-layout-reformed .analytics-executive-strip,
+  .meg-layout-reformed .historical-summary-grid,
+  .meg-layout-reformed #pending .current-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .meg-layout-reformed #transactions .meg-page-heading,
+  .meg-layout-reformed #pending .meg-page-heading { grid-template-columns: 1fr; align-items: stretch; }
+  .meg-layout-reformed #transactions .meg-page-actions,
+  .meg-layout-reformed #pending .meg-page-actions { margin-top: 4px; }
+}
+
+@media (max-width: 1080px) {
+  .meg-layout-reformed .finance-panels,
+  .meg-layout-reformed .cashflow-answer-grid { grid-template-columns: 1fr; }
+  .meg-layout-reformed .analytics-filter-panel,
+  .meg-layout-reformed .analytics-decision-hero,
+  .meg-layout-reformed .cashflow-decision-hero,
+  .meg-layout-reformed .income-analysis-hero,
+  .meg-layout-reformed .budget-health-hero { grid-template-columns: 1fr; }
+  .meg-layout-reformed .analytics-equation,
+  .meg-layout-reformed .cashflow-equation { grid-template-columns: 1fr; }
+  .meg-layout-reformed :is(.analytics-equation, .cashflow-equation) > b { min-height: 18px; }
+  .meg-layout-reformed .analytics-grid,
+  .meg-layout-reformed .income-analysis-grid,
+  .meg-layout-reformed .credit-card-insights-grid,
+  .meg-layout-reformed .pending-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+  .meg-layout-reformed .validation-banner { min-height: 26px; padding-inline: 12px; font-size: 9px; }
+  .meg-layout-reformed .content { padding: 12px 14px calc(90px + env(safe-area-inset-bottom)); }
+  .meg-layout-reformed .view.active { gap: 16px; }
+  .meg-layout-reformed .meg-page-heading { align-items: stretch; flex-direction: column; gap: 14px; }
+  .meg-layout-reformed .meg-page-heading h2 { font-size: clamp(29px, 9vw, 38px); }
+  .meg-layout-reformed .panel { padding: 17px; }
+  .meg-layout-reformed .panel-title { align-items: flex-start; }
+  .meg-layout-reformed .panel-title > span { max-width: 50%; }
+  .meg-layout-reformed .month-progress-panel { padding: 18px; }
+  .meg-layout-reformed .month-progress-stats,
+  .meg-layout-reformed .current-grid,
+  .meg-layout-reformed .executive-insight-grid,
+  .meg-layout-reformed .income-kpi-grid,
+  .meg-layout-reformed .budget-goals-grid,
+  .meg-layout-reformed .analytics-executive-strip,
+  .meg-layout-reformed .historical-summary-grid,
+  .meg-layout-reformed #pending .current-grid { grid-template-columns: 1fr; }
+  .meg-layout-reformed .month-decision { grid-template-columns: 42px minmax(0, 1fr); }
+  .meg-layout-reformed .decision-status { grid-column: 2; justify-self: start; }
+  .meg-layout-reformed .analytics-projection-line,
+  .meg-layout-reformed .analytics-ticket-line { grid-template-columns: 1fr; gap: 4px; }
+  .meg-layout-reformed :is(.analytics-projection-line, .analytics-ticket-line) small { text-align: left; }
+  .meg-layout-reformed .income-filter-bar { grid-template-columns: 1fr; padding: 17px; }
+  .meg-layout-reformed #transactions .filter-row,
+  .meg-layout-reformed #pending .filter-row { grid-template-columns: 1fr; }
+  .meg-layout-reformed .transactions-filter-summary { grid-template-columns: 1fr; }
+  .meg-layout-reformed .settings-actions { grid-template-columns: 1fr; }
+}

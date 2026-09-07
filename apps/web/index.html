@@ -36,7 +36,7 @@
           </button>
           <button class="nav-item" data-view="analytics" type="button">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19h16v2H2V3h2v16Zm3-2H5v-6h2v6Zm4 0H9V7h2v10Zm4 0h-2v-4h2v4Zm4 0h-2V5h2v12Z"/></svg>
-            Analises
+            Análises
           </button>
           <button class="nav-item" data-view="income-analysis" type="button">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19h16v2H2V3h2v16Zm3-2H5v-4h2v4Zm4 0H9V9h2v8Zm4 0h-2V6h2v11Zm4 0h-2V4h2v13ZM6 9l4-4 3 3 5-5 1.4 1.4L13 11l-3-3-2.6 2.4L6 9Z"/></svg>
@@ -123,16 +123,16 @@
             </button>
             <div class="period-control" id="globalPeriodFilters" aria-label="Filtro de período" hidden>
               <label>
-                <span>Periodo</span>
+                <span>Período</span>
                 <select id="periodMode">
-                  <option value="month">Mes</option>
+                  <option value="month">Mês</option>
                   <option value="year">Ano</option>
                   <option value="range">Intervalo</option>
                   <option value="all">Tudo</option>
                 </select>
               </label>
               <label class="period-field" data-period-field="month">
-                <span>Mes</span>
+                <span>Mês</span>
                 <input id="monthFilter" type="month" />
               </label>
               <label class="period-field hidden" data-period-field="year">
@@ -157,7 +157,7 @@
 
         <section class="view active" id="dashboard" aria-labelledby="dashboardTitle">
           <div class="section-heading">
-            <h2 id="dashboardTitle">Resumo do periodo</h2>
+            <h2 id="dashboardTitle">Resumo do período</h2>
             <button class="button ghost" id="resetDemoBtn" type="button">Recarregar da nuvem</button>
           </div>
 
@@ -224,37 +224,37 @@
                 <small class="decision-eyebrow">DECISÃO RÁPIDA</small>
                 <h3>Situação financeira do mês</h3>
               </div>
-              <span id="currentMonthLabel">Mes atual</span>
+              <span id="currentMonthLabel">Mês atual</span>
             </div>
             <article class="month-decision" id="monthCloseCard">
               <div class="decision-icon"><span id="monthCloseMood" aria-hidden="true">😟</span></div>
               <div class="decision-copy">
-                <span id="monthCloseLabel">Pendente para fechar o mes</span>
+                <span id="monthCloseLabel">Pendente para fechar o mês</span>
                 <strong id="missingToCloseMetric">R$ 0,00</strong>
-                <small id="pendingBillsTrend">Pendencias do mes</small>
+                <small id="pendingBillsTrend">Pendências do mês</small>
               </div>
               <div class="decision-status" id="monthDecisionStatus">ATENÇÃO</div>
             </article>
             <div class="current-grid">
               <article class="mini-metric">
-                <span id="previousCloseLabel">Saldo fechamento mes anterior</span>
+                <span id="previousCloseLabel">Saldo do fechamento anterior</span>
                 <strong id="availableBalanceMetric">R$ 0,00</strong>
                 <small id="previousCloseTrend">Fechamento acumulado da base</small>
               </article>
               <article class="mini-metric">
                 <span>Receitas monetárias do mês</span>
                 <strong id="currentIncomeMetric">R$ 0,00</strong>
-                <small id="currentIncomeTrend">0 lancamentos</small>
+                <small id="currentIncomeTrend">0 lançamentos</small>
               </article>
               <article class="mini-metric paid-card">
                 <span>Despesas já pagas</span>
                 <strong id="currentExpenseMetric">R$ 0,00</strong>
-                <small id="currentExpenseTrend">0 lancamentos</small>
+                <small id="currentExpenseTrend">0 lançamentos</small>
               </article>
               <article class="mini-metric warn">
                 <span id="pendingLaunchedLabel">Contas monetárias a pagar</span>
                 <strong id="pendingLaunchedMetric">R$ 0,00</strong>
-                <small id="pendingLaunchedTrend">Pendencias do mes</small>
+                <small id="pendingLaunchedTrend">Pendências do mês</small>
               </article>
             </div>
           </section>
@@ -356,7 +356,7 @@
             <article class="metric">
               <span>Saldo inicial</span>
               <strong id="cashflowStartMetric">R$ 0,00</strong>
-              <small>Antes do periodo</small>
+              <small>Antes do período</small>
             </article>
             <article class="metric">
               <span>Entradas previstas</span>
@@ -364,14 +364,14 @@
               <small id="cashflowIncomeTrend">0 receitas</small>
             </article>
             <article class="metric danger">
-              <span>Saidas previstas</span>
+              <span>Saídas previstas</span>
               <strong id="cashflowExpenseMetric">R$ 0,00</strong>
               <small id="cashflowExpenseTrend">0 despesas</small>
             </article>
             <article class="metric warn">
               <span>Menor saldo</span>
               <strong id="cashflowLowMetric">R$ 0,00</strong>
-              <small id="cashflowLowTrend">Ponto de atencao</small>
+              <small id="cashflowLowTrend">Ponto de atenção</small>
             </article>
           </div>
 
@@ -399,8 +399,8 @@
         <section class="view" id="analytics" aria-labelledby="analyticsTitle">
           <div class="section-heading">
             <div>
-              <h2 id="analyticsTitle">Analises para decisao</h2>
-              <p class="muted" id="analyticsPeriodLabel">Periodo selecionado</p>
+              <h2 id="analyticsTitle">Análises para decisão</h2>
+              <p class="muted" id="analyticsPeriodLabel">Período selecionado</p>
             </div>
           </div>
 
@@ -461,7 +461,7 @@
             <article class="metric">
               <span>Media mensal de despesas</span>
               <strong id="avgExpenseMetric">R$ 0,00</strong>
-              <small id="avgExpenseTrend">Periodo selecionado</small>
+              <small id="avgExpenseTrend">Período selecionado</small>
             </article>
             <article class="metric danger">
               <span>Maior grupo de gasto</span>
@@ -469,7 +469,7 @@
               <small id="topGroupTrend">R$ 0,00</small>
             </article>
             <article class="metric">
-              <span>Variacao vs. periodo anterior</span>
+              <span>Variação em relação ao período anterior</span>
               <strong id="variationMetric">0%</strong>
               <small id="variationTrend">Comparativo de despesas</small>
             </article>
@@ -484,12 +484,12 @@
             <section class="panel chart-panel">
               <div class="panel-title">
                 <h3>Evolucao por modalidade</h3>
-                <span>Gastos no periodo</span>
+                <span>Gastos no período</span>
               </div>
               <div class="chart-scroll" role="region" aria-label="Grafico rolavel de evolucao por modalidade" tabindex="0">
                 <canvas id="monthlyTrendChart" width="760" height="360" aria-label="Grafico de evolucao de gastos por modalidade"></canvas>
               </div>
-              <small class="chart-scroll-hint">Deslize horizontalmente para explorar periodos longos</small>
+              <small class="chart-scroll-hint">Deslize horizontalmente para explorar períodos longos</small>
             </section>
             <section class="panel chart-panel">
               <div class="panel-title">
@@ -787,11 +787,11 @@
         <section class="view" id="pending" aria-labelledby="pendingTitle">
           <div class="section-heading">
             <div>
-              <h2 id="pendingTitle">Contas do mes atual</h2>
-              <p class="muted" id="pendingMonthLabel">Pendencias do mes</p>
+              <h2 id="pendingTitle">Contas do mês atual</h2>
+              <p class="muted" id="pendingMonthLabel">Pendências do mês</p>
             </div>
             <div class="filter-row">
-              <input id="pendingMonthFilter" type="month" aria-label="Mes das contas pendentes" />
+              <input id="pendingMonthFilter" type="month" aria-label="Mês das contas pendentes" />
               <select id="pendingStatusFilter" aria-label="Status das contas">
                 <option value="pending">Pendentes</option>
                 <option value="paid">Pagas</option>
@@ -830,7 +830,7 @@
               <small id="pendingCountMetric">0 contas</small>
             </article>
             <article class="mini-metric">
-              <span>Total pago no mes</span>
+              <span>Total pago no mês</span>
               <strong id="paidMonthMetric">R$ 0,00</strong>
               <small>Despesas pagas</small>
             </article>
@@ -857,7 +857,7 @@
             <section class="panel">
               <div class="panel-title">
                 <h3>Cart&otilde;es de benef&iacute;cios</h3>
-                <span>Saldo correndo no mes</span>
+                <span>Saldo acumulado no mês</span>
               </div>
               <div class="verocard-list" id="verocardLedger"></div>
             </section>
