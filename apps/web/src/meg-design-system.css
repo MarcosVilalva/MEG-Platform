@@ -2535,11 +2535,10 @@ body.meg-layout-reformed {
 .meg-layout-reformed .budget-target-editor label { display: grid; gap: 6px; min-width: 0; color: var(--meg-subtle); font-size: 11px; font-weight: 680; }
 .meg-layout-reformed .budget-target-editor .button { min-width: 108px; }
 
-.meg-layout-reformed #transactions .meg-page-heading { grid-template-columns: minmax(420px, .78fr) minmax(520px, 1.22fr); }
 .meg-layout-reformed #transactions .meg-page-heading-copy > .section-subtitle { display: none; }
 
 /* Lançamentos, cartões e pendências */
-.meg-layout-reformed #transactions .meg-page-heading { display: grid; grid-template-columns: minmax(320px, .72fr) minmax(540px, 1.28fr); align-items: end; }
+.meg-layout-reformed #transactions .meg-page-heading { display: grid; grid-template-columns: minmax(420px, .78fr) minmax(520px, 1.22fr); align-items: end; }
 .meg-layout-reformed #transactions .meg-page-actions { width: 100%; max-width: none; }
 .meg-layout-reformed .transactions-filter-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .meg-layout-reformed .transactions-filter-card { min-height: 102px; padding: 17px; }
