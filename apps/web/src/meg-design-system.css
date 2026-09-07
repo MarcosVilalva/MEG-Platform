@@ -1921,3 +1921,84 @@ body.meg-layout-reformed .content {
   #transactionDialog .modal-actions { align-items: stretch; flex-direction: column; padding-inline: 16px; }
   #transactionDialog .modal-actions > div { display: grid; grid-template-columns: 1fr 1fr; }
 }
+
+/* Refinamentos verificados na aplicação publicada */
+.meg-layout-reformed .staging-environment-banner { display: none !important; }
+
+.meg-layout-reformed .monetary-panel { position: relative; }
+.meg-layout-reformed .monetary-panel .reconciliation-button {
+  position: absolute;
+  top: 17px;
+  right: 17px;
+  z-index: 2;
+  min-height: 32px;
+  padding: 6px 10px;
+  color: var(--text);
+  border: 1px solid var(--meg-border);
+  border-radius: 9px;
+  background: var(--meg-elevated);
+  font-size: 11px;
+  font-weight: 720;
+}
+.meg-layout-reformed .monetary-panel > header { padding-right: 104px; }
+
+.meg-layout-reformed .month-progress-panel {
+  display: grid;
+  grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(18px, 3vw, 36px);
+  min-height: 230px;
+}
+.meg-layout-reformed .progress-ring-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 184px;
+  padding-bottom: 38px;
+}
+.meg-layout-reformed .progress-ring { width: 132px; height: 132px; overflow: visible; transform: rotate(-90deg); }
+.meg-layout-reformed .progress-ring circle { fill: none; stroke-width: 11; }
+.meg-layout-reformed .progress-ring-base { stroke: var(--meg-border); }
+.meg-layout-reformed .income-ring { stroke: var(--meg-accent-bright); }
+.meg-layout-reformed .expense-ring { stroke: var(--danger); }
+.meg-layout-reformed .ring-center { inset: 49px 0 auto; position: absolute; line-height: 1.05; }
+.meg-layout-reformed .ring-center strong { color: var(--meg-heading); font-size: 24px; }
+.meg-layout-reformed .ring-center small { color: var(--meg-subtle); font-size: 9px; font-weight: 800; letter-spacing: .08em; }
+.meg-layout-reformed .ring-legend { position: absolute; right: 0; bottom: 0; left: 0; justify-content: center; font-size: 11px; }
+.meg-layout-reformed .ring-legend span { display: inline-flex; align-items: center; gap: 4px; color: var(--meg-subtle); }
+.meg-layout-reformed .ring-legend i { width: 7px; height: 7px; border-radius: 50%; background: var(--meg-accent-bright); }
+.meg-layout-reformed .ring-legend span + span i { background: var(--danger); }
+.meg-layout-reformed .compact-progress-content { display: grid; min-width: 0; gap: 15px; }
+.meg-layout-reformed .month-progress-heading h3 { margin: 2px 0 5px; color: var(--meg-heading); }
+.meg-layout-reformed .month-progress-heading p { margin: 0; }
+.meg-layout-reformed .month-progress-track { height: 9px; }
+.meg-layout-reformed .month-progress-track > span { display: block; height: 100%; border-radius: inherit; background: var(--meg-accent-bright); }
+.meg-layout-reformed .month-progress-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.meg-layout-reformed .month-progress-stats > div { display: grid; min-width: 0; gap: 3px; padding: 12px; border: 1px solid var(--meg-border); border-radius: 12px; background: var(--meg-elevated); }
+.meg-layout-reformed .month-progress-stats span,
+.meg-layout-reformed .month-progress-stats small { overflow: hidden; color: var(--meg-subtle); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.meg-layout-reformed .month-progress-stats strong { color: var(--meg-heading); font-size: 18px; }
+
+.meg-layout-reformed .transactions-filter-card { display: flex; align-items: center; gap: 13px; }
+.meg-layout-reformed .transactions-filter-card > div { display: grid; min-width: 0; gap: 3px; }
+.meg-layout-reformed .transactions-filter-card small { color: var(--meg-subtle); font-size: 10px; font-weight: 800; letter-spacing: .055em; }
+.meg-layout-reformed .transactions-filter-card strong { color: var(--meg-heading); font-size: clamp(20px, 1.4vw, 26px); line-height: 1.1; }
+.meg-layout-reformed .transactions-filter-card > div > span { color: var(--meg-subtle); font-size: 12px; }
+.meg-layout-reformed #transactions .filter-row { display: grid; grid-template-columns: minmax(220px, 1.3fr) minmax(150px, .7fr) minmax(170px, .8fr); align-items: stretch; gap: 8px; }
+.meg-layout-reformed .transaction-search-stack { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
+.meg-layout-reformed .transaction-search-stack input { min-width: 0; }
+
+@media (max-width: 900px) {
+  .meg-layout-reformed .month-progress-panel { grid-template-columns: 1fr; }
+  .meg-layout-reformed .progress-ring-wrap { min-height: 174px; }
+  .meg-layout-reformed #transactions .filter-row { grid-template-columns: 1fr 1fr; }
+  .meg-layout-reformed .transaction-search-stack { grid-column: 1 / -1; }
+}
+
+@media (max-width: 560px) {
+  .meg-layout-reformed .month-progress-stats { grid-template-columns: 1fr; }
+  .meg-layout-reformed #transactions .filter-row { grid-template-columns: 1fr; }
+  .meg-layout-reformed .transaction-search-stack { grid-column: auto; grid-template-columns: 1fr; }
+  .meg-layout-reformed .monetary-panel > header { padding-right: 0; padding-top: 40px; }
+  .meg-layout-reformed .monetary-panel .reconciliation-button { right: 14px; }
+}
