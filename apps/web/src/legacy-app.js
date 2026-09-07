@@ -4734,6 +4734,9 @@ let transactionMutationRunning = false;
 function setTransactionMutationUi(active, message = '') {
   const saveButton = document.querySelector('#saveTransactionBtn');
   const status = document.querySelector('#transactionSaveStatus');
+  document.querySelectorAll('[data-transaction-type-option]').forEach((button) => {
+    button.disabled = active;
+  });
   if (saveButton) {
     saveButton.disabled = active;
     saveButton.textContent = active ? 'Sincronizando...' : 'Salvar';
