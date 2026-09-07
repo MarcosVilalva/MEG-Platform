@@ -4,7 +4,7 @@ import { formatPeriodSummary, VIEW_COPY } from './layout-reform-core.js';
 
 const index = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const entry = readFileSync(new URL('./legacy-entry.js', import.meta.url), 'utf8');
-const styles = readFileSync(new URL('./full-layout-reform.css', import.meta.url), 'utf8');
+const styles = readFileSync(new URL('./meg-design-system.css', import.meta.url), 'utf8');
 
 const expectedViews = [
   'dashboard',
@@ -36,6 +36,8 @@ assert.match(index, /id="globalPeriodToggle"/);
 assert.match(index, /id="globalPeriodSummary"/);
 assert.match(index, /id="globalPeriodFilters"[^>]*hidden/);
 assert.match(index, /id="appearanceThemeToggle"/);
+assert.match(index, /href="\/src\/meg-design-system\.css"/);
+assert.doesNotMatch(index, /legacy-styles\.css|meg-finance-system\.css/);
 assert.match(entry, /initializeLayoutReform\(\)/);
 assert.match(styles, /:root\[data-meg-theme="dark"\]/);
 assert.match(styles, /@media \(max-width: 760px\)/);
@@ -43,6 +45,8 @@ assert.match(styles, /grid-template-columns: minmax\(0, 1fr\) 42px minmax\(88px,
 assert.match(styles, /\.transactions-table/);
 assert.match(styles, /\.catalogs-grid/);
 assert.match(styles, /\.settings-grid/);
+assert.match(styles, /\.transaction-type-switch/);
+assert.match(styles, /\.transaction-batch-toggle/);
 
 assert.equal(formatPeriodSummary({ mode: 'month', month: '2026-09' }), 'Set/2026');
 assert.equal(formatPeriodSummary({ mode: 'year', year: '2027' }), '2027');

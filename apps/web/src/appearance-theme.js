@@ -1,6 +1,3 @@
-import './appearance-theme.css';
-import './global-modern-clarity.css';
-
 const STORAGE_KEY = 'meg-appearance-theme-v1';
 const COLORS = { dark: '#091b19', light: '#f5f8f7' };
 const ASSET_BASE = import.meta.env?.BASE_URL || '/';
@@ -26,7 +23,7 @@ export function applyAppearanceTheme(theme, { persist = true } = {}) {
     button.setAttribute('aria-pressed', String(light));
     button.setAttribute('aria-label', light ? 'Ativar modo escuro' : 'Ativar modo claro');
     button.dataset.activeTheme = value;
-    const label = button.querySelector('span');
+    const label = button.querySelector('.meg-theme-label');
     if (label) label.textContent = light ? 'Modo escuro' : 'Modo claro';
   }
   if (persist) {

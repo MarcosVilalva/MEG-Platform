@@ -11,12 +11,6 @@ export function initializeStableUiFeatures() {
     try {
       const nativeMobile = document.body.classList.contains('native-mobile');
       if (!nativeMobile) {
-        await Promise.all([
-          import('./ongoing-card-installments.css'),
-          import('./stable-grid-filters.css'),
-          import('./recurring-transactions.css'),
-          import('./negative-expense-amounts.css')
-        ]);
         const [
           { initializeStableGridFilters },
           { initializeExactNumberGridFilters },
@@ -34,8 +28,6 @@ export function initializeStableUiFeatures() {
         initializeExactNumberGridFilters();
         initializeNegativeExpenseAmounts();
         initializeRecurringTransactions();
-        await import('./meg-contrast-comfort.css');
-        await import('./transaction-batch-editor.css');
         const { initializeTransactionBatchEditor } = await import('./transaction-batch-editor.js');
         initializeTransactionBatchEditor();
         document.querySelector('#clearCreditCardFiltersBtn')?.addEventListener('click', () => {
@@ -45,16 +37,6 @@ export function initializeStableUiFeatures() {
         return;
       }
 
-      await Promise.all([
-        import('./ux-enhancements.css'),
-        import('./transaction-grid-stability.css'),
-        import('./mobile-transactions.css'),
-        import('./ongoing-card-installments.css'),
-        import('./recurring-transactions.css'),
-        import('./negative-expense-amounts.css')
-      ]);
-      await import('./meg-contrast-comfort.css');
-      await import('./transaction-batch-editor.css');
       const { initializeTransactionBatchEditor } = await import('./transaction-batch-editor.js');
       initializeTransactionBatchEditor();
 
