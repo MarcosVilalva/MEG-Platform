@@ -1,9 +1,9 @@
 {
-  "versionCode": 217,
-  "versionName": "1.1.217",
+  "versionCode": 218,
+  "versionName": "1.1.218",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "903fe641a67d31e6e90767c70ae00d26c7fb6a4edb4015d118dfc1281c7d57d2",
+  "sha256": "24611529c1ab9473a143d7360355ce8a65e0a0adf10b2fc4df9fc1e5e69b9892",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Refinar usuários, permissões e catálogos no MEG Next"
+  "releaseNotes": "Profissionaliza hierarquia visual em todas as abas"
 }
