@@ -12,3 +12,31 @@ export const VIEW_COPY = Object.freeze({
   'platform-admin': ['ADMINISTRAÇÃO', 'Gestão comercial da plataforma', 'Planos, contas e uso do serviço em uma visão administrativa.'],
   settings: ['PREFERÊNCIAS', 'Ajustes do sistema', 'Personalize segurança, notificações, dados e aplicativo.'],
 });
+
+const capitalize = (value) => value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : value;
+
+export function formatPeriodSummary({ mode = 'month', month = '', year = '', start = '', end = '' } = {}) {
+  if (mode === 'all') return 'Tudo';
+  if (mode === 'year') return year || String(new Date().getFullYear());
+  if (mode === 'range') {
+    const formatDate = (value) => {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+      return match ? `${match[3]}/${match[2]}/${match[1]}` : '';
+    };
+    const formattedStart = formatDate(start);
+    const formattedEnd = formatDate(end);
+    if (formattedStart && formattedEnd) return `${formattedStart} a ${formattedEnd}`;
+    return 'Intervalo';
+  }
+
+  const match = /^(\d{4})-(\d{2})$/.exec(month || '');
+  const reference = match
+    ? new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1))
+    : new Date();
+  const label = new Intl.DateTimeFormat('pt-BR', {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(reference).replace('.', '').replace(/\s+de\s+/i, '/');
+  return capitalize(label);
+}

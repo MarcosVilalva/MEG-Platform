@@ -1,17 +1,48 @@
 import './full-layout-reform.css';
-import { VIEW_COPY } from './layout-reform-core.js';
+import { formatPeriodSummary, VIEW_COPY } from './layout-reform-core.js';
 
 export { VIEW_COPY } from './layout-reform-core.js';
 
 function initializePeriodPanel() {
   const toggle = document.getElementById('globalPeriodToggle');
   const panel = document.getElementById('globalPeriodFilters');
+  const summary = document.getElementById('globalPeriodSummary');
   if (!toggle || !panel) return;
+
+  const storageKey = 'meg-period-panel-open-v1';
+  const mobileQuery = window.matchMedia('(max-width: 760px)');
+  const controls = {
+    mode: document.getElementById('periodMode'),
+    month: document.getElementById('monthFilter'),
+    year: document.getElementById('yearFilter'),
+    start: document.getElementById('startDateFilter'),
+    end: document.getElementById('endDateFilter'),
+  };
+
+  const updateSummary = () => {
+    const mode = controls.mode?.value || 'month';
+    const text = formatPeriodSummary({
+      mode,
+      month: controls.month?.value,
+      year: controls.year?.value,
+      start: controls.start?.value,
+      end: controls.end?.value,
+    });
+    if (summary) summary.textContent = text;
+    toggle.classList.toggle('has-active-filter', mode !== 'all');
+    toggle.setAttribute('aria-label', `${panel.hidden ? 'Abrir' : 'Fechar'} filtros. Período: ${text}`);
+  };
 
   const setOpen = (open) => {
     panel.hidden = !open;
     toggle.setAttribute('aria-expanded', String(open));
+    try { localStorage.setItem(storageKey, open ? 'true' : 'false'); } catch {}
+    updateSummary();
   };
+
+  let storedOpen = false;
+  try { storedOpen = localStorage.getItem(storageKey) === 'true'; } catch {}
+  setOpen(mobileQuery.matches && storedOpen);
 
   toggle.addEventListener('click', (event) => {
     event.stopPropagation();
@@ -22,6 +53,15 @@ function initializePeriodPanel() {
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') setOpen(false);
   });
+  Object.values(controls).forEach((control) => control?.addEventListener('change', () => {
+    window.setTimeout(() => {
+      updateSummary();
+      if (mobileQuery.matches && control !== controls.mode) setOpen(false);
+      if (mobileQuery.matches && control === controls.mode && control.value === 'all') setOpen(false);
+    }, 0);
+  }));
+  mobileQuery.addEventListener?.('change', () => setOpen(false));
+  window.setTimeout(updateSummary, 0);
 }
 
 function reformView(view) {
