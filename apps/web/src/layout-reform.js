@@ -182,11 +182,57 @@ function initializeTransactionDialogPresentation() {
   synchronize();
 }
 
+function initializeCollapsiblePanels() {
+  const panelGroups = [
+    ['#catalogs .catalog-panel', 'meg-catalog-panel-open-v1', 0],
+    ['#settings .settings-grid > .panel', 'meg-settings-panel-open-v1', 0],
+  ];
+
+  panelGroups.forEach(([selector, storagePrefix, initiallyOpenIndex]) => {
+    document.querySelectorAll(selector).forEach((panel, index) => {
+      if (panel.dataset.megCollapsibleReady === 'true') return;
+      const header = panel.querySelector(':scope > .panel-title');
+      const title = header?.querySelector('h3')?.textContent?.trim();
+      if (!header || !title) return;
+
+      panel.dataset.megCollapsibleReady = 'true';
+      panel.classList.add('meg-collapsible-panel');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'meg-panel-collapse-button';
+      button.innerHTML = '<span class="meg-panel-collapse-label">Recolher</span><span class="meg-panel-collapse-icon" aria-hidden="true">⌃</span>';
+      button.setAttribute('aria-label', `Recolher ${title}`);
+      header.append(button);
+
+      const storageKey = `${storagePrefix}-${index}`;
+      let open = index === initiallyOpenIndex;
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored !== null) open = stored === '1';
+      } catch {}
+
+      const setOpen = (nextOpen) => {
+        open = Boolean(nextOpen);
+        panel.classList.toggle('meg-collapsed', !open);
+        button.setAttribute('aria-expanded', String(open));
+        button.setAttribute('aria-label', `${open ? 'Recolher' : 'Expandir'} ${title}`);
+        button.querySelector('.meg-panel-collapse-label').textContent = open ? 'Recolher' : 'Expandir';
+        button.querySelector('.meg-panel-collapse-icon').textContent = open ? '⌃' : '⌄';
+        try { localStorage.setItem(storageKey, open ? '1' : '0'); } catch {}
+      };
+
+      button.addEventListener('click', () => setOpen(!open));
+      setOpen(open);
+    });
+  });
+}
+
 export function initializeLayoutReform() {
   document.body.classList.add('meg-layout-reformed');
   initializePeriodPanel();
   initializeTransactionBatchPanel();
   initializeTransactionDialogPresentation();
+  initializeCollapsiblePanels();
   labelContentSections();
   synchronizeActiveView();
 }

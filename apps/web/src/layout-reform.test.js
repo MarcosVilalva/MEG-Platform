@@ -4,6 +4,8 @@ import { formatPeriodSummary, VIEW_COPY } from './layout-reform-core.js';
 
 const index = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const entry = readFileSync(new URL('./legacy-entry.js', import.meta.url), 'utf8');
+const layout = readFileSync(new URL('./layout-reform.js', import.meta.url), 'utf8');
+const protection = readFileSync(new URL('./startup-data-protection.js', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('./meg-design-system.css', import.meta.url), 'utf8');
 
 const expectedViews = [
@@ -47,6 +49,13 @@ assert.match(styles, /\.catalogs-grid/);
 assert.match(styles, /\.settings-grid/);
 assert.match(styles, /\.transaction-type-switch/);
 assert.match(styles, /\.transaction-batch-toggle/);
+assert.match(layout, /initializeCollapsiblePanels/);
+assert.match(layout, /meg-collapsible-panel/);
+assert.match(styles, /\.meg-panel-collapse-button/);
+assert.match(styles, /\.sidebar\.mobile-open/);
+assert.match(styles, /\.app-shell\.sidebar-collapsed/);
+assert.match(protection, /meg-data-protection-close/);
+assert.match(protection, /Fechar aviso/);
 
 assert.equal(formatPeriodSummary({ mode: 'month', month: '2026-09' }), 'Set/2026');
 assert.equal(formatPeriodSummary({ mode: 'year', year: '2027' }), '2027');
