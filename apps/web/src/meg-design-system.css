@@ -5942,3 +5942,26 @@ body.meg-layout-reformed .ledger-meta strong {
 :root[data-meg-theme="dark"] .meg-layout-reformed .transactions-table :is(th, td) { color: var(--text); border-color: var(--line); background: var(--surface); }
 :root[data-meg-theme="dark"] .meg-layout-reformed .transactions-table th { color: var(--muted); background: var(--surface-strong); }
 :root[data-meg-theme="dark"] .meg-layout-reformed .transactions-table tbody tr:hover td { background: var(--primary-soft); }
+
+/* Ajustes confirmados na validação visual em tela real */
+.meg-layout-reformed .pending-command-center :is(.pending-coverage span, .pending-coverage small, .pending-priority-grid span),
+.meg-layout-reformed .credit-card-command-center :is(.credit-limit-ring span, .credit-card-kpis span) {
+  color: var(--muted);
+}
+
+.meg-layout-reformed .pending-command-center :is(.pending-coverage strong, .pending-priority-grid strong),
+.meg-layout-reformed .credit-card-command-center :is(.credit-limit-ring strong, .credit-card-kpis strong) {
+  color: var(--text);
+}
+
+@media (max-width: 1500px) {
+  .meg-layout-reformed .dashboard-main-grid { grid-template-columns: minmax(0, 1fr); }
+  .meg-layout-reformed .month-progress-panel {
+    grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
+    min-height: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .meg-layout-reformed .month-progress-panel { grid-template-columns: 1fr; }
+}
