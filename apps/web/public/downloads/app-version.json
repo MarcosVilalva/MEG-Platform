@@ -1,9 +1,9 @@
 {
-  "versionCode": 215,
-  "versionName": "1.1.215",
+  "versionCode": 216,
+  "versionName": "1.1.216",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "219cc72a6c19d638e63444ec380ce50a809006619059407cba29257cb3f09fb3",
+  "sha256": "c64918ed847b6908ff92322f907d7053163fe6710cb40329ea2825db1e3e9582",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Refinar painel e controles após validação visual"
+  "releaseNotes": "Organizar cartões e pendências no novo layout"
 }
