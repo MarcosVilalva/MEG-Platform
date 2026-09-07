@@ -1,9 +1,9 @@
 {
-  "versionCode": 214,
-  "versionName": "1.1.214",
+  "versionCode": 215,
+  "versionName": "1.1.215",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "7758288a1548af31f731b5c7407adeb11f69b49ada329ab289a003ac19b81163",
+  "sha256": "219cc72a6c19d638e63444ec380ce50a809006619059407cba29257cb3f09fb3",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Reconstruir interface responsiva do MEG"
+  "releaseNotes": "Refinar painel e controles após validação visual"
 }
