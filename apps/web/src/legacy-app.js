@@ -196,6 +196,12 @@ const els = {
   consolidatedSituationMetric: document.querySelector("#consolidatedSituationMetric"),
   consolidatedSituationNote: document.querySelector("#consolidatedSituationNote"),
   dashboardTitle: document.querySelector("#dashboardTitle"),
+  dashboardGlanceBalance: document.querySelector("#dashboardGlanceBalance"),
+  dashboardGlanceBalanceNote: document.querySelector("#dashboardGlanceBalanceNote"),
+  dashboardGlanceIncome: document.querySelector("#dashboardGlanceIncome"),
+  dashboardGlanceIncomeNote: document.querySelector("#dashboardGlanceIncomeNote"),
+  dashboardGlanceDue: document.querySelector("#dashboardGlanceDue"),
+  dashboardGlanceDueNote: document.querySelector("#dashboardGlanceDueNote"),
   categoryChartNote: document.querySelector("#categoryChartNote"),
   currentMonthLabel: document.querySelector("#currentMonthLabel"),
   previousCloseLabel: document.querySelector("#previousCloseLabel"),
@@ -1572,7 +1578,7 @@ function renderDashboard() {
   const totalBudget = Object.values(state.budgets).reduce((sum, value) => sum + Number(value || 0), 0) * monthCount;
   const usedBudget = totalBudget ? Math.round((totals.expense / totalBudget) * 100) : 0;
 
-  els.dashboardTitle.textContent = `Resumo - ${periodLabel()}`;
+  els.dashboardTitle.textContent = "Seu dinheiro, com clareza";
   if (els.categoryChartNote) els.categoryChartNote.textContent = `${formatCompactMoney(totals.expense)} no periodo`;
   els.monetaryRevenueMetric.textContent = money.format(monetaryPosition.openingBalance + monetaryPosition.currentIncome);
   els.monetaryExpenseMetric.textContent = money.format(monetaryPosition.currentPaidExpense);
@@ -1594,6 +1600,27 @@ function renderDashboard() {
   els.consolidatedExpenseMetric.textContent = money.format(totals.consolidatedExpense);
   els.consolidatedSituationMetric.textContent = money.format(totals.consolidatedBalance);
   els.consolidatedSituationNote.textContent = totals.consolidatedBalance >= 0 ? "🟢 Situação geral positiva" : "🔴 Situação geral negativa";
+
+  const threeDaysFromToday = addCalendarDays(todayIso, 3);
+  const upcomingItems = state.transactions.filter((item) => (
+    item.type === "expense"
+    && item.status === "pending"
+    && !isVerocardTransaction(item)
+    && item.date >= todayIso
+    && item.date <= threeDaysFromToday
+  ));
+  const upcomingGroups = groupPayableItems(upcomingItems);
+  const upcomingTotal = upcomingItems.reduce((sum, item) => sum + Number(item.expenseAmount || item.amount || 0), 0);
+  els.dashboardGlanceBalance.textContent = money.format(monetaryPosition.balanceAfterPending);
+  els.dashboardGlanceBalanceNote.textContent = monetaryPosition.balanceAfterPending >= 0
+    ? "Caixa protegido após as pendências"
+    : `Faltam ${money.format(monetaryPosition.missingAfterPending)}`;
+  els.dashboardGlanceIncome.textContent = money.format(monetaryPosition.currentIncome);
+  els.dashboardGlanceIncomeNote.textContent = `${items.filter((item) => item.type === "income").length} entrada(s) no período`;
+  els.dashboardGlanceDue.textContent = money.format(upcomingTotal);
+  els.dashboardGlanceDueNote.textContent = upcomingGroups.length
+    ? `${upcomingGroups.length} conta(s)/fatura(s) programada(s)`
+    : "Nenhuma conta programada";
   const setCardTone = (card, positive) => {
     card?.classList.toggle("kpi-positive", positive);
     card?.classList.toggle("kpi-negative", !positive);

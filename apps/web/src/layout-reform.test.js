@@ -7,6 +7,9 @@ const entry = readFileSync(new URL('./legacy-entry.js', import.meta.url), 'utf8'
 const layout = readFileSync(new URL('./layout-reform.js', import.meta.url), 'utf8');
 const protection = readFileSync(new URL('./startup-data-protection.js', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('./meg-design-system.css', import.meta.url), 'utf8');
+const enhancements = readFileSync(new URL('./ux-enhancements-safe.js', import.meta.url), 'utf8');
+const appearance = readFileSync(new URL('./appearance-theme.js', import.meta.url), 'utf8');
+const availabilityWorkflow = readFileSync(new URL('../../../.github/workflows/keep-api-responsive.yml', import.meta.url), 'utf8');
 
 const expectedViews = [
   'dashboard',
@@ -40,6 +43,10 @@ assert.match(index, /id="globalPeriodFilters"[^>]*hidden/);
 assert.match(index, /id="appearanceThemeToggle"/);
 assert.match(index, /href="\/src\/meg-design-system\.css"/);
 assert.doesNotMatch(index, /legacy-styles\.css|meg-finance-system\.css/);
+assert.doesNotMatch(index, /staging-environment-banner/);
+for (const metricId of ['dashboardGlanceBalance', 'dashboardGlanceIncome', 'dashboardGlanceDue']) {
+  assert.match(index, new RegExp(`id=["']${metricId}["']`), `o indicador ${metricId} deve existir no resumo rápido`);
+}
 assert.match(entry, /initializeLayoutReform\(\)/);
 assert.match(styles, /:root\[data-meg-theme="dark"\]/);
 assert.match(styles, /@media \(max-width: 760px\)/);
@@ -59,6 +66,15 @@ assert.match(layout, /meg-collapsible-panel/);
 assert.match(styles, /\.meg-panel-collapse-button/);
 assert.match(styles, /\.sidebar\.mobile-open/);
 assert.match(styles, /\.app-shell\.sidebar-collapsed/);
+assert.match(styles, /MEG Adaptive Experience/);
+assert.match(styles, /body\.native-mobile dialog\.modal/);
+assert.match(styles, /overflow-x: hidden/);
+assert.match(styles, /\.dashboard-glance/);
+assert.match(enhancements, /import\('echarts\/core'\)/);
+assert.doesNotMatch(enhancements, /from 'echarts';/);
+assert.match(enhancements, /async function loadEcharts/);
+assert.match(appearance, /saved === 'light' \|\| saved === 'dark' \? saved : 'dark'/);
+assert.match(availabilityWorkflow, /cron: '\*\/14 0-2,9-23 \* \* \*'/);
 assert.match(protection, /meg-data-protection-close/);
 assert.match(protection, /Fechar aviso/);
 

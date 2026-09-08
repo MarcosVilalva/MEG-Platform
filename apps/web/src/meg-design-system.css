@@ -2707,3 +2707,208 @@ body.meg-layout-reformed {
   .meg-layout-reformed .transactions-filter-summary { grid-template-columns: 1fr; }
   .meg-layout-reformed .settings-actions { grid-template-columns: 1fr; }
 }
+
+/* MEG Adaptive Experience
+   Contrato final de responsividade compartilhado pela Web e pelo Android. */
+:root {
+  --meg-space-1: 4px;
+  --meg-space-2: 8px;
+  --meg-space-3: 12px;
+  --meg-space-4: 16px;
+  --meg-space-5: 20px;
+  --meg-space-6: 24px;
+  --meg-radius-sm: 10px;
+  --meg-radius-md: 16px;
+  --meg-radius-lg: 22px;
+  --meg-motion: 180ms cubic-bezier(.2, .8, .2, 1);
+}
+
+body.meg-layout-reformed {
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.meg-layout-reformed :is(.app-shell, .content, .view, .meg-content-section, .meg-content-grid,
+  .dashboard-main-grid, .finance-panels, .finance-panel, .panel, .topbar, .section-heading,
+  .meg-page-heading, .meg-page-heading-copy, .meg-page-actions) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.meg-layout-reformed :is(h1, h2, h3, h4, p, strong, small, span, label) {
+  overflow-wrap: anywhere;
+}
+
+.meg-layout-reformed .dashboard-glance {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--meg-space-4);
+}
+
+.meg-layout-reformed .dashboard-glance-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+  min-width: 0;
+  min-height: 132px;
+  padding: 18px;
+  overflow: hidden;
+  border: 1px solid var(--meg-hairline);
+  border-radius: var(--meg-radius-md);
+  background: color-mix(in srgb, var(--meg-card) 96%, transparent);
+  box-shadow: var(--meg-card-shadow);
+  transition: transform var(--meg-motion), border-color var(--meg-motion), box-shadow var(--meg-motion);
+}
+
+.meg-layout-reformed .dashboard-glance-card::after {
+  position: absolute;
+  right: -34px;
+  bottom: -46px;
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--meg-accent) 8%, transparent);
+  content: "";
+  pointer-events: none;
+}
+
+.meg-layout-reformed .dashboard-glance-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--meg-accent) 28%, var(--meg-border));
+  box-shadow: var(--meg-card-shadow-hover);
+}
+
+.meg-layout-reformed .dashboard-glance-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--meg-accent);
+  border: 1px solid color-mix(in srgb, var(--meg-accent) 18%, var(--meg-border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary-soft) 80%, transparent);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.meg-layout-reformed .dashboard-glance-card > div { display: grid; min-width: 0; gap: 5px; }
+.meg-layout-reformed .dashboard-glance-card small { color: var(--meg-subtle); font-size: 11px; font-weight: 760; letter-spacing: .02em; }
+.meg-layout-reformed .dashboard-glance-card strong { color: var(--meg-gold); font-size: clamp(20px, 1.5vw, 27px); line-height: 1.08; font-variant-numeric: tabular-nums; }
+.meg-layout-reformed .dashboard-glance-card > div > span { color: var(--meg-subtle); font-size: 12px; line-height: 1.4; }
+.meg-layout-reformed .dashboard-glance-primary { border-color: color-mix(in srgb, var(--meg-accent) 30%, var(--meg-border)); }
+.meg-layout-reformed .dashboard-glance-warning .dashboard-glance-icon { color: var(--warn); background: var(--warn-soft); }
+
+.meg-layout-reformed .finance-panel {
+  overflow: hidden;
+  transition: transform var(--meg-motion), border-color var(--meg-motion), box-shadow var(--meg-motion);
+}
+.meg-layout-reformed .finance-panel:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--meg-accent) 24%, var(--meg-border)); box-shadow: var(--meg-card-shadow-hover); }
+.meg-layout-reformed .finance-panel header { min-width: 0; }
+.meg-layout-reformed .finance-panel header > div { min-width: 0; flex: 1 1 auto; }
+.meg-layout-reformed .finance-panel header h3 { max-width: 100%; }
+.meg-layout-reformed .monetary-panel .reconciliation-button { max-width: min(150px, 42%); white-space: normal; }
+
+.meg-layout-reformed :is(.chart-scroll, .table-wrap, .credit-invoice-wrap) {
+  max-width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: var(--meg-border) transparent;
+}
+
+.meg-layout-reformed :is(.chart-scroll, .table-wrap, .credit-invoice-wrap)::-webkit-scrollbar { width: 8px; height: 8px; }
+.meg-layout-reformed :is(.chart-scroll, .table-wrap, .credit-invoice-wrap)::-webkit-scrollbar-thumb { border-radius: 99px; background: var(--meg-border); }
+
+.meg-layout-reformed :focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--meg-accent) 48%, transparent);
+  outline-offset: 2px;
+}
+
+@media (min-width: 1600px) {
+  .meg-layout-reformed .content { padding-inline: clamp(42px, 4vw, 72px); }
+  .meg-layout-reformed .view { max-width: 1760px; }
+  .meg-layout-reformed .dashboard-glance { grid-template-columns: repeat(3, minmax(260px, 1fr)); }
+  .meg-layout-reformed .dashboard-main-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 1080px) {
+  .meg-layout-reformed .dashboard-glance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .meg-layout-reformed .dashboard-glance-card:first-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 900px) {
+  html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+  .meg-layout-reformed .app-shell { width: 100%; }
+  .meg-layout-reformed .content { width: 100%; margin: 0; }
+  .meg-layout-reformed .meg-command-bar { position: sticky; top: 0; z-index: 35; }
+  .meg-layout-reformed .finance-panels { grid-template-columns: 1fr; width: 100%; }
+  .meg-layout-reformed .finance-panel { width: 100%; }
+  .meg-layout-reformed .section-heading > :is(button, .button) { flex: 0 0 auto; }
+}
+
+@media (max-width: 680px) {
+  .meg-layout-reformed .content { padding: 10px 14px calc(94px + env(safe-area-inset-bottom)); }
+  .meg-layout-reformed .dashboard-glance { grid-template-columns: 1fr; gap: 10px; }
+  .meg-layout-reformed .dashboard-glance-card,
+  .meg-layout-reformed .dashboard-glance-card:first-child {
+    grid-column: auto;
+    grid-template-columns: 40px minmax(0, 1fr);
+    min-height: 0;
+    padding: 15px;
+    border-radius: 15px;
+  }
+  .meg-layout-reformed .dashboard-glance-icon { width: 40px; height: 40px; }
+  .meg-layout-reformed .meg-page-heading h2 { max-width: 100%; font-size: clamp(27px, 8.4vw, 36px); line-height: 1.08; text-wrap: pretty; }
+  .meg-layout-reformed .meg-page-subtitle { font-size: 13px; }
+  .meg-layout-reformed .section-heading { align-items: stretch; flex-direction: column; }
+  .meg-layout-reformed .section-heading > :is(button, .button) { width: 100%; }
+  .meg-layout-reformed .finance-panel { padding: 17px; border-radius: 17px; }
+  .meg-layout-reformed .finance-panel header { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; }
+  .meg-layout-reformed .monetary-panel header { padding-top: 44px; }
+  .meg-layout-reformed .monetary-panel .reconciliation-button { top: 12px; right: 12px; max-width: calc(100% - 24px); min-height: 34px; }
+  .meg-layout-reformed .panel-title { gap: 10px; }
+  .meg-layout-reformed .panel-title > span { max-width: 46%; font-size: 11px; }
+  .meg-layout-reformed .mobile-dock { right: 10px; left: 10px; border-radius: 20px; }
+  .meg-layout-reformed .mobile-dock button { min-width: 0; min-height: 52px; padding-inline: 4px; font-size: 11px; }
+}
+
+body.native-mobile {
+  overscroll-behavior-y: contain;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.native-mobile :is(button, .button, input, select) { min-height: 48px; }
+body.native-mobile .mobile-dock { padding-bottom: max(7px, env(safe-area-inset-bottom)); }
+body.native-mobile dialog.modal {
+  inset: auto 0 0;
+  width: 100%;
+  max-width: none;
+  max-height: min(92dvh, 920px);
+  margin: 0;
+  border-width: 1px 0 0;
+  border-radius: 24px 24px 0 0;
+  animation: meg-sheet-enter 220ms cubic-bezier(.2, .8, .2, 1);
+}
+body.native-mobile dialog.modal::before {
+  display: block;
+  width: 42px;
+  height: 4px;
+  margin: 9px auto 0;
+  border-radius: 99px;
+  background: var(--meg-border);
+  content: "";
+}
+
+@keyframes meg-sheet-enter {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meg-layout-reformed *, .meg-layout-reformed *::before, .meg-layout-reformed *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}

@@ -1,4 +1,13 @@
 # Changelog
+## 2026-09-07 - Experiência adaptativa MEG
+
+- Novo painel executivo inspirado na identidade MEG, com modo escuro inicial, contraste turquesa e dourado e indicadores de saldo, receitas e vencimentos próximos.
+- Layout validado sem rolagem horizontal em 412 px e com aproveitamento integral de monitores de 1.440 px ou maiores.
+- No Android, modais se comportam como bottom sheets, controles têm área de toque ampliada e a navegação respeita as áreas seguras do aparelho.
+- Gráficos foram divididos em módulos e carregam somente quando a aba Análises é aberta, reduzindo o JavaScript inicial desse recurso de aproximadamente 1,06 MB para 21 KB.
+- A API do Render passa a receber aquecimento a cada 14 minutos no período diário de uso, além dos aquecimentos anteriores aos alertas programados.
+- Removido o banner residual do antigo ambiente staging da interface oficial.
+
 ## 2026-07-19 - Confirmacao obrigatoria para exclusoes
 
 - Toda exclusao iniciada pela interface exige confirmacao explicita antes de alterar os dados.

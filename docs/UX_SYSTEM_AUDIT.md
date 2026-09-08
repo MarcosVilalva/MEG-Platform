@@ -20,9 +20,9 @@ Revisar o sistema completo para que todas as telas apresentem linguagem clara, d
 ### 1. Estrutura global
 
 - [x] Perfil e botão Sair posicionados no rodapé do menu lateral.
-- [ ] Revisar menu recolhido, menu móvel e áreas seguras do Android.
-- [ ] Padronizar cabeçalhos, filtros e botões principais.
-- [ ] Verificar sobreposição em resoluções pequenas.
+- [x] Revisar menu recolhido, menu móvel e áreas seguras do Android.
+- [x] Padronizar cabeçalhos, filtros e botões principais.
+- [x] Verificar sobreposição em resoluções pequenas.
 
 ### 2. Textos e identificação dos registros
 
@@ -33,26 +33,26 @@ Revisar o sistema completo para que todas as telas apresentem linguagem clara, d
 
 ### 3. Módulos
 
-- [ ] Painel
-- [ ] Análises
-- [ ] Receitas
-- [ ] Fluxo de caixa
-- [ ] Lançamentos
-- [ ] Cartões
-- [ ] Orçamentos
-- [ ] Pendentes
-- [ ] Cadastros
-- [ ] Usuários e permissões
-- [ ] Gestão comercial
-- [ ] Ajustes e integrações
+- [x] Painel
+- [x] Análises
+- [x] Receitas
+- [x] Fluxo de caixa
+- [x] Lançamentos
+- [x] Cartões
+- [x] Orçamentos
+- [x] Pendentes
+- [x] Cadastros
+- [x] Usuários e permissões
+- [x] Gestão comercial
+- [x] Ajustes e integrações
 
 ### 4. Qualidade
 
-- [ ] Testes de desktop e celular.
+- [x] Testes de desktop e celular.
 - [ ] Testes de carregamento com API lenta.
 - [ ] Testes com textos longos.
 - [ ] Testes com base vazia e grande volume de lançamentos.
-- [ ] `npm run check` sem erros.
+- [x] `npm run check` sem erros.
 - [ ] Smoke test de produção aprovado.
 
 ## Critério de aceite

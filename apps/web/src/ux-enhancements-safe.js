@@ -1,7 +1,5 @@
-import * as echarts from 'echarts';
-
 const MEG_CHART_PALETTE = ['#56ebc9', '#4db8ff', '#30d59a', '#ffc166', '#b58cff', '#ff6f7b', '#39c8d2'];
-echarts.registerTheme('meg-finance-system', {
+const MEG_CHART_THEME = {
   color: MEG_CHART_PALETTE,
   backgroundColor: 'transparent',
   textStyle: { color: '#b8ced7', fontFamily: 'Inter, Segoe UI, sans-serif' },
@@ -25,7 +23,35 @@ echarts.registerTheme('meg-finance-system', {
     textStyle: { color: '#effbff' },
     extraCssText: 'box-shadow:0 18px 40px rgba(0,6,16,.38);border-radius:12px;backdrop-filter:blur(12px)',
   },
-});
+};
+
+let echarts;
+let echartsPromise;
+
+async function loadEcharts() {
+  if (echarts) return echarts;
+  echartsPromise ||= Promise.all([
+    import('echarts/core'),
+    import('echarts/charts'),
+    import('echarts/components'),
+    import('echarts/renderers'),
+  ]).then(([core, charts, components, renderers]) => {
+    core.use([
+      charts.BarChart,
+      charts.LineChart,
+      charts.PieChart,
+      components.GridComponent,
+      components.LegendComponent,
+      components.MarkLineComponent,
+      components.TooltipComponent,
+      renderers.CanvasRenderer,
+    ]);
+    core.registerTheme('meg-finance-system', MEG_CHART_THEME);
+    echarts = core;
+    return echarts;
+  });
+  return echartsPromise;
+}
 
 const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const integer = new Intl.NumberFormat('pt-BR');
@@ -287,7 +313,8 @@ function expenses(items) {
   return [...map].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 12);
 }
 
-function renderCharts(items, health) {
+async function renderCharts(items, health) {
+  await loadEcharts();
   const months = monthly(items); let running = 0;
   chart('megBalanceTrendChart')?.setOption({ animationDuration: 800, tooltip: { trigger: 'axis', valueFormatter: (value) => currency.format(value) }, legend: { bottom: 0 }, grid: { left: 58, right: 24, top: 35, bottom: 58 }, xAxis: { type: 'category', data: months.map((row) => formatMonth(row.month)) }, yAxis: { type: 'value' }, series: [{ name: 'Receitas', type: 'bar', data: months.map((row) => row.income), itemStyle: { color: '#30d59a', borderRadius: [7,7,0,0] } }, { name: 'Despesas', type: 'bar', data: months.map((row) => row.expense), itemStyle: { color: '#ff6f7b', borderRadius: [7,7,0,0] } }, { name: 'Resultado acumulado', type: 'line', smooth: true, data: months.map((row) => running += row.income - row.expense), lineStyle: { width: 4, color: '#4db8ff', shadowColor: 'rgba(77,184,255,.35)', shadowBlur: 12 }, itemStyle: { color: '#56ebc9' }, areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(77,184,255,.28)'},{offset:1,color:'rgba(77,184,255,.01)'}]) } }] }, true);
   const grouped = expenses(items);
@@ -333,7 +360,10 @@ function renderAnalytics() {
   const expense = items.reduce((sum,item)=>sum+valueOf(item,'expense'),0);
   const rate = income ? (income-expense)/income*100 : 0;
   const rateElement = document.querySelector('#megSavingsRate'); if (rateElement) rateElement.textContent = `${rate.toFixed(1)}%`;
-  renderCharts(items, health); renderPivot(items);
+  if (document.querySelector('#analytics')?.classList.contains('active')) {
+    void renderCharts(items, health).catch((cause) => console.warn('MEG charts unavailable', cause));
+  }
+  renderPivot(items);
 }
 
 function refresh(force = false) {
@@ -349,6 +379,12 @@ export function initializeUxEnhancements() {
   const start = () => {
     ensureAnalytics(); enhanceTable();
     document.querySelector('#transactionSortFilter')?.addEventListener('change', paintSortButton);
+    document.querySelector('[data-view="analytics"]')?.addEventListener('click', () => {
+      window.setTimeout(() => {
+        runtime.signature = '';
+        refresh(true);
+      }, 0);
+    });
     ['#periodMode','#monthFilter','#yearFilter','#startDateFilter','#endDateFilter'].forEach((selector)=>document.querySelector(selector)?.addEventListener('change',()=>{runtime.signature='';refresh(true);}));
     window.addEventListener('resize',()=>runtime.charts.forEach((instance)=>instance.resize()));
     refresh(true);

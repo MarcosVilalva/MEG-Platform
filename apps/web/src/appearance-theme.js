@@ -3,7 +3,12 @@ const COLORS = { dark: '#091b19', light: '#f5f8f7' };
 const ASSET_BASE = import.meta.env?.BASE_URL || '/';
 
 function storedTheme() {
-  try { return localStorage.getItem(STORAGE_KEY) === 'dark' ? 'dark' : 'light'; } catch { return 'light'; }
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved === 'light' || saved === 'dark' ? saved : 'dark';
+  } catch {
+    return 'dark';
+  }
 }
 
 export function applyAppearanceTheme(theme, { persist = true } = {}) {

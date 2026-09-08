@@ -98,10 +98,6 @@
       <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu"></button>
 
       <main class="content">
-        <div class="staging-environment-banner" role="status" aria-live="polite">
-          <strong>Ambiente de testes</strong>
-          <span>Você está validando melhorias antes da liberação oficial.</span>
-        </div>
         <header class="topbar meg-command-bar">
           <div class="meg-command-context">
             <p class="eyebrow">MEG FINANCIAL OS</p>
@@ -160,6 +156,21 @@
             <h2 id="dashboardTitle">Resumo do período</h2>
             <button class="button ghost" id="resetDemoBtn" type="button">Recarregar da nuvem</button>
           </div>
+
+          <section class="dashboard-glance" aria-label="Resumo financeiro rápido">
+            <article class="dashboard-glance-card dashboard-glance-primary">
+              <span class="dashboard-glance-icon" aria-hidden="true">◉</span>
+              <div><small>Saldo monetário</small><strong id="dashboardGlanceBalance">R$ 0,00</strong><span id="dashboardGlanceBalanceNote">Após as contas pendentes</span></div>
+            </article>
+            <article class="dashboard-glance-card">
+              <span class="dashboard-glance-icon" aria-hidden="true">↗</span>
+              <div><small>Receitas do período</small><strong id="dashboardGlanceIncome">R$ 0,00</strong><span id="dashboardGlanceIncomeNote">Entradas confirmadas</span></div>
+            </article>
+            <article class="dashboard-glance-card dashboard-glance-warning">
+              <span class="dashboard-glance-icon" aria-hidden="true">◷</span>
+              <div><small>Próximos 3 dias</small><strong id="dashboardGlanceDue">R$ 0,00</strong><span id="dashboardGlanceDueNote">Nenhuma conta programada</span></div>
+            </article>
+          </section>
 
           <div class="dashboard-main-grid">
             <section class="finance-panels" aria-label="Painéis financeiro, ticket e consolidado">
