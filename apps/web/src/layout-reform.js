@@ -183,7 +183,6 @@ function initializeTransactionDialogPresentation() {
   themeButton?.addEventListener('click', () => globalThemeButton?.click());
   const closeSafely = () => {
     if (!dialog.open || closeButton?.disabled || cancelButton?.disabled) return;
-    if (window.MEG_CLOUD_MUTATION_GUARD?.pending?.()) return;
     if (typeof dialog.close === 'function') dialog.close();
     if (dialog.open) {
       dialog.removeAttribute('open');
