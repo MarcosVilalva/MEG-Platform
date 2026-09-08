@@ -50,7 +50,7 @@
   cursor: pointer;
 }
 .user-actions .danger-button { background: #b42318; }
-.status-pill {
+.admin-users-page .status-pill {
   display: inline-block;
   padding: 5px 9px;
   border-radius: 999px;
@@ -58,10 +58,10 @@
   font-weight: 900;
   text-transform: uppercase;
 }
-.status-pending { background: #fff4ce; color: #8a5a00; }
-.status-active { background: #dff7ef; color: #08745f; }
-.status-rejected,
-.status-blocked { background: #fee4e2; color: #b42318; }
+.admin-users-page .status-pending { background: #fff4ce; color: #8a5a00; }
+.admin-users-page .status-active { background: #dff7ef; color: #08745f; }
+.admin-users-page .status-rejected,
+.admin-users-page .status-blocked { background: #fee4e2; color: #b42318; }
 
 @media (max-width: 900px) {
   .permission-grid { grid-template-columns: 1fr 1fr; }
