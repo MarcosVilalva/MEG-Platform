@@ -52,7 +52,7 @@ assert.match(theme, /meg-appearance-theme-v1/);
 assert.match(designSystem, /data-meg-theme="light"/);
 assert.doesNotMatch(loader, /\.css['"]/);
 assert.doesNotMatch(theme, /import ['"].*\.css/);
-assert.match(theme, /=== 'dark' \? 'dark' : 'light'/, 'modo claro deve ser o padrão sem apagar a escolha salva');
+assert.match(theme, /saved === 'light' \|\| saved === 'dark' \? saved : 'dark'/, 'modo escuro deve ser o padrão sem apagar a escolha salva');
 assert.match(html, /Consulte todos os campos/);
 assert.equal((html.match(/<th(?:\s|>)/g) || []).length >= 14, true, 'todos os campos da tabela devem continuar presentes');
 assert.match(designSystem, /\.sidebar/);
