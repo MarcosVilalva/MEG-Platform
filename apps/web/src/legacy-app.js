@@ -5924,7 +5924,7 @@ els.installmentCountInput.addEventListener("input", syncInstallmentFields);
 els.form.addEventListener("submit", saveTransaction);
 els.deleteTransactionBtn.addEventListener("click", deleteTransaction);
 els.closeDialogBtn.addEventListener("click", () => {
-  if (transactionMutationRunning || window.MEG_CLOUD_MUTATION_GUARD?.pending?.()) {
+  if (transactionMutationRunning) {
     setTransactionMutationUi(true, 'Aguarde a confirmação da nuvem antes de fechar este lançamento.');
     return;
   }
@@ -5932,7 +5932,7 @@ els.closeDialogBtn.addEventListener("click", () => {
   els.dialog.close();
 });
 els.cancelDialogBtn.addEventListener("click", () => {
-  if (transactionMutationRunning || window.MEG_CLOUD_MUTATION_GUARD?.pending?.()) {
+  if (transactionMutationRunning) {
     setTransactionMutationUi(true, 'Aguarde a confirmação da nuvem antes de cancelar este lançamento.');
     return;
   }
@@ -5940,7 +5940,7 @@ els.cancelDialogBtn.addEventListener("click", () => {
   els.dialog.close();
 });
 els.dialog.addEventListener("cancel", (event) => {
-  if (!transactionMutationRunning && !window.MEG_CLOUD_MUTATION_GUARD?.pending?.()) return;
+  if (!transactionMutationRunning) return;
   event.preventDefault();
   setTransactionMutationUi(true, 'Aguarde a confirmação da nuvem antes de fechar este lançamento.');
 });

@@ -56,12 +56,13 @@ assert.match(guard, /meg:cloud-action-started/);
 assert.match(guard, /previous-operation-pending/);
 assert.match(guard, /stopImmediatePropagation/);
 assert.match(guard, /meg-cloud-mutation-pending/);
-assert.match(guard, /#closeDialogBtn/);
-assert.match(guard, /#cancelDialogBtn/);
+assert.doesNotMatch(guard, /#closeDialogBtn/);
+assert.doesNotMatch(guard, /#cancelDialogBtn/);
 
 const legacyApp = read('./legacy-app.js');
 assert.match(legacyApp, /els\.closeDialogBtn\.disabled = active/);
 assert.match(legacyApp, /els\.cancelDialogBtn\.disabled = active/);
+assert.doesNotMatch(legacyApp, /transactionMutationRunning \|\| window\.MEG_CLOUD_MUTATION_GUARD/);
 assert.match(legacyApp, /setAttribute\('aria-busy', active \? 'true' : 'false'\)/);
 assert.match(legacyApp, /els\.dialog\.addEventListener\("cancel", \(event\) =>/);
 assert.match(legacyApp, /event\.preventDefault\(\)/);

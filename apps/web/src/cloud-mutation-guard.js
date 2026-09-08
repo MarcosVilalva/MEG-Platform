@@ -31,8 +31,6 @@ const MUTATION_CONTROL_SELECTOR = [
   '#addEmailRecipientBtn',
   '#sendNotificationsBtn',
   '#testWorkspaceWhatsappBtn',
-  '#closeDialogBtn',
-  '#cancelDialogBtn',
   '#transactionBatchApply',
   '#transactionBatchClear',
   '#transactionSelectVisible',
