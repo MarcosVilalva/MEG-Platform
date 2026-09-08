@@ -53,7 +53,7 @@ assert.match(designSystem, /data-meg-theme="light"/);
 assert.doesNotMatch(loader, /\.css['"]/);
 assert.doesNotMatch(theme, /import ['"].*\.css/);
 assert.match(theme, /saved === 'light' \|\| saved === 'dark' \? saved : 'dark'/, 'modo escuro deve ser o padrão sem apagar a escolha salva');
-assert.match(html, /Consulte todos os campos/);
+assert.match(html, /Consulte receitas e despesas/);
 assert.equal((html.match(/<th(?:\s|>)/g) || []).length >= 14, true, 'todos os campos da tabela devem continuar presentes');
 assert.match(designSystem, /\.sidebar/);
 assert.match(designSystem, /\.transactions-table/);
