@@ -3,7 +3,7 @@ export const VIEW_COPY = Object.freeze({
   cashflow: ['FLUXO FINANCEIRO', 'Entradas e saídas no tempo', 'Acompanhe saldo, projeções e movimentações por período.'],
   analytics: ['INTELIGÊNCIA FINANCEIRA', 'Análises que orientam decisões', 'Tendências, categorias e alertas apresentados com contexto.'],
   'income-analysis': ['ORIGEM DAS RECEITAS', 'Entenda de onde vem sua renda', 'Compare fontes, recorrência e evolução das entradas.'],
-  transactions: ['LANÇAMENTOS', 'Controle de despesas', 'Consulte, edite ou atualize vários lançamentos com segurança.'],
+  transactions: ['LANÇAMENTOS', 'Lançamentos financeiros', 'Consulte receitas e despesas ou atualize vários lançamentos com segurança.'],
   'credit-cards': ['CARTÕES E FATURAS', 'Cartões sob controle', 'Limites, faturas e compras organizados por cartão.'],
   budgets: ['PLANEJAMENTO', 'Limites que protegem seus planos', 'Defina orçamentos e acompanhe o uso antes de ultrapassar.'],
   pending: ['PENDÊNCIAS', 'O que precisa da sua atenção', 'Concilie, confirme ou corrija itens sem perder o contexto.'],

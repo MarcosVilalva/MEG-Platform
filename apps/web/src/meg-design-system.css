@@ -2737,7 +2737,9 @@ body.meg-layout-reformed {
 }
 
 .meg-layout-reformed :is(h1, h2, h3, h4, p, strong, small, span, label) {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
 }
 
 .meg-layout-reformed .dashboard-glance {

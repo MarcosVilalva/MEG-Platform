@@ -27,6 +27,8 @@ const expectedViews = [
 ];
 
 assert.deepEqual(Object.keys(VIEW_COPY), expectedViews);
+assert.equal(VIEW_COPY.transactions[1], 'Lançamentos financeiros');
+assert.match(index, /Consulte receitas e despesas ou atualize vários lançamentos com segurança\./);
 for (const viewId of expectedViews) {
   assert.match(index, new RegExp(`id=["']${viewId}["']`), `a aba ${viewId} deve continuar no documento`);
   assert.equal(VIEW_COPY[viewId].length, 3, `a aba ${viewId} deve ter chamada, título e descrição`);
@@ -69,6 +71,8 @@ assert.match(styles, /\.app-shell\.sidebar-collapsed/);
 assert.match(styles, /MEG Adaptive Experience/);
 assert.match(styles, /body\.native-mobile dialog\.modal/);
 assert.match(styles, /overflow-x: hidden/);
+assert.doesNotMatch(styles, /overflow-wrap:\s*anywhere/);
+assert.match(styles, /word-break:\s*normal/);
 assert.match(styles, /\.dashboard-glance/);
 assert.match(enhancements, /import\('echarts\/core'\)/);
 assert.doesNotMatch(enhancements, /from 'echarts';/);
