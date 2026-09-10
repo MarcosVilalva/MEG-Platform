@@ -47,6 +47,82 @@ body.meg-layout-reformed table :is(th, td) { line-height: 1.35; vertical-align: 
 body.meg-layout-reformed table :is(strong, small) { display: block; }
 body.meg-layout-reformed table small { margin-top: 3px; }
 
+/* Painel validado: uma leitura gerencial, sem os blocos antigos concorrentes */
+body.meg-layout-reformed #dashboard > :is(.dashboard-glance, .dashboard-main-grid, #currentDecisionPanel, #executiveCommandPanel) { display: none; }
+body.meg-layout-reformed #dashboard > .meg-dashboard-overview { display: grid; gap: var(--meg-contract-gap); }
+.meg-balance-hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(280px, 1.2fr) minmax(420px, 1fr);
+  gap: clamp(24px, 4vw, 58px);
+  min-width: 0;
+  padding: clamp(24px, 3vw, 38px);
+  overflow: hidden;
+  color: #f2fffb;
+  border: 1px solid rgba(104, 229, 194, .22);
+  border-radius: 24px;
+  background: linear-gradient(135deg, #0a3438 0%, #0c4d49 58%, #116a55 100%);
+  box-shadow: 0 22px 48px rgba(2, 17, 25, .18);
+}
+.meg-balance-hero::after { position: absolute; z-index: -1; right: -110px; bottom: -190px; width: 420px; height: 420px; border: 1px solid rgba(111, 235, 203, .18); border-radius: 50%; box-shadow: 0 0 0 64px rgba(111, 235, 203, .035), 0 0 0 128px rgba(111, 235, 203, .02); content: ""; }
+.meg-balance-heading { display: grid; align-content: center; min-width: 0; }
+.meg-balance-heading small { color: #7ee7c9; font-size: .76rem; font-weight: 850; letter-spacing: .08em; }
+.meg-balance-heading > strong { margin-top: 10px; font-size: clamp(2.35rem, 4.2vw, 4.8rem); line-height: 1; letter-spacing: -.055em; white-space: nowrap; }
+.meg-balance-heading > span { margin-top: 12px; color: #b4d8d0; font-size: .9rem; }
+.meg-balance-breakdown { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 14px; }
+.meg-balance-breakdown > div { min-width: 0; padding-top: 16px; border-top: 1px solid rgba(210, 255, 241, .2); }
+.meg-balance-breakdown span, .meg-balance-breakdown strong { display: block; }
+.meg-balance-breakdown span { color: #9dc8be; font-size: .7rem; font-weight: 780; text-transform: uppercase; }
+.meg-balance-breakdown strong { margin-top: 7px; color: #fff; font-size: clamp(1rem, 1.5vw, 1.3rem); white-space: nowrap; }
+.meg-dashboard-attention { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px; padding: 21px 24px; border: 1px solid color-mix(in srgb, var(--danger) 38%, var(--line)); border-radius: 18px; background: color-mix(in srgb, var(--danger-soft) 65%, var(--surface)); }
+.meg-dashboard-attention > div { display: grid; gap: 4px; min-width: 0; }
+.meg-dashboard-attention small, .meg-dashboard-attention span { color: var(--muted); }
+.meg-dashboard-attention small { font-size: .72rem; font-weight: 850; letter-spacing: .06em; }
+.meg-dashboard-attention > div:first-child > strong { font-size: 1.25rem; }
+.meg-dashboard-attention > div:last-child { justify-items: end; text-align: right; }
+.meg-dashboard-attention > div:last-child strong { color: var(--danger); font-size: clamp(1.35rem, 2vw, 2rem); white-space: nowrap; }
+.meg-dashboard-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--meg-contract-gap); }
+.meg-dashboard-metrics article { display: grid; align-content: center; min-width: 0; min-height: 140px; padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: 0 12px 30px rgba(2, 17, 25, .06); }
+.meg-dashboard-metrics span, .meg-dashboard-metrics strong, .meg-dashboard-metrics small { display: block; }
+.meg-dashboard-metrics span { color: var(--muted); font-size: .78rem; font-weight: 800; text-transform: uppercase; }
+.meg-dashboard-metrics strong { margin-top: 10px; font-size: clamp(1.35rem, 2vw, 2rem); white-space: nowrap; }
+.meg-dashboard-metrics small { margin-top: 8px; color: var(--muted); }
+.meg-dashboard-metrics .attention strong { color: var(--danger); }
+.meg-dashboard-metrics .benefit { border-color: color-mix(in srgb, var(--primary) 38%, var(--line)); background: color-mix(in srgb, var(--primary-soft) 55%, var(--surface)); }
+.meg-dashboard-bottom-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--meg-contract-gap); margin-top: var(--meg-contract-gap); }
+.meg-dashboard-bottom-grid > :is(.meg-recent-activity, .payable-panel) { min-width: 0; height: 100%; margin: 0 !important; }
+
+/* Alerta financeiro: leitura separada e adaptativa */
+dialog.opening-alert-dialog { width: min(860px, calc(100vw - 32px)) !important; max-width: 860px; max-height: min(760px, calc(100dvh - 32px)); overflow: hidden; }
+.opening-alert-dialog .modal-header { position: relative; align-items: center; padding: 20px 22px 17px; }
+.opening-alert-dialog .modal-header > div { display: grid; gap: 5px; min-width: 0; }
+.opening-alert-dialog .modal-header h2 { font-size: clamp(1.35rem, 3vw, 1.85rem); line-height: 1.15; }
+.opening-alert-dialog .opening-alert-body { display: grid; gap: 15px; max-height: calc(100dvh - 190px); padding: 18px 22px; overflow-x: hidden; overflow-y: auto; }
+.opening-alert-summary { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.opening-alert-summary article { display: grid; align-content: center; gap: 4px; min-width: 0; min-height: 96px; padding: 13px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface-strong); }
+.opening-alert-summary article > :is(span, strong, small) { display: block; min-width: 0; }
+.opening-alert-summary article > span { color: var(--muted); font-size: .73rem; font-weight: 760; }
+.opening-alert-summary article > strong { color: var(--text); font-size: 1.25rem; line-height: 1.15; white-space: nowrap; }
+.opening-alert-summary article > small { color: var(--muted); font-size: .68rem; }
+.opening-alert-summary article.critical { border-color: color-mix(in srgb, var(--danger) 34%, var(--line)); }
+.opening-alert-summary article.warning { border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); }
+.opening-alert-critical { line-height: 1.5; }
+.opening-alert-list-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding-top: 2px; }
+.opening-alert-list-heading > div { display: grid; gap: 3px; min-width: 0; }
+.opening-alert-list-heading :is(strong, small) { display: block; }
+.opening-alert-list-heading small { color: var(--muted); }
+.opening-alert-list-heading > b { flex: 0 0 auto; color: var(--primary); font-size: .78rem; }
+.opening-alert-list { display: grid !important; gap: 8px; max-height: none; overflow: visible; }
+.opening-alert-item { display: grid !important; grid-template-columns: minmax(104px, .34fr) minmax(0, 1fr) auto; align-items: center; gap: 16px; min-width: 0; padding: 13px 14px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); }
+.opening-alert-item > :is(span, b), .opening-alert-item span > :is(strong, small) { display: block; min-width: 0; }
+.opening-alert-item > b { justify-self: end; color: var(--text); font-size: .92rem; white-space: nowrap; }
+.opening-alert-date, .opening-alert-description { display: grid !important; gap: 3px; min-width: 0; }
+.opening-alert-date strong { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.opening-alert-date small, .opening-alert-description small { color: var(--muted); font-size: .72rem; }
+.opening-alert-description strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opening-alert-dialog .modal-actions { position: relative; padding: 14px 22px 18px; }
+
 /* Login validado */
 .auth-shell {
   grid-template-columns: minmax(440px, 1.08fr) minmax(430px, .92fr) !important;
@@ -119,10 +195,25 @@ body.meg-layout-reformed table small { margin-top: 3px; }
   body.meg-layout-reformed .sidebar.is-open { transform: translateX(0); }
 }
 
+@media (max-width: 1120px) {
+  .meg-balance-hero { grid-template-columns: 1fr; }
+  .meg-dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 680px) {
   body.meg-layout-reformed :is(.dashboard-glance, .finance-panels, .current-grid, .kpi-grid,
     .transactions-filter-summary, .credit-card-kpis, .catalogs-grid, .settings-grid) { grid-template-columns: minmax(0, 1fr); }
   body.meg-layout-reformed :is(.section-heading, .panel-title) { align-items: stretch; }
+  .meg-balance-hero { padding: 22px 18px; border-radius: 19px; }
+  .meg-balance-heading > strong { font-size: clamp(2.1rem, 11vw, 3.1rem); }
+  .meg-balance-breakdown { grid-template-columns: 1fr; gap: 10px; }
+  .meg-dashboard-attention { grid-template-columns: 1fr; gap: 14px; }
+  .meg-dashboard-attention > div:last-child { justify-items: start; text-align: left; }
+  .meg-dashboard-metrics, .meg-dashboard-bottom-grid { grid-template-columns: minmax(0, 1fr); }
+  .opening-alert-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .opening-alert-item { grid-template-columns: minmax(92px, .38fr) minmax(0, 1fr); gap: 10px; }
+  .opening-alert-item > b { grid-column: 2; justify-self: start; }
+  .opening-alert-description strong { white-space: normal; }
 }
 
 @media (max-width: 520px) {
@@ -130,4 +221,18 @@ body.meg-layout-reformed table small { margin-top: 3px; }
   .auth-card-inner { width: 100%; max-height: 100dvh; padding: 22px 18px; border: 0; border-radius: 0; box-shadow: none; }
   .auth-mobile-brand img { width: 62px; height: 62px; }
   .auth-form-heading > h1 { font-size: 27px; }
+  dialog.opening-alert-dialog { width: calc(100vw - 16px) !important; max-height: calc(100dvh - 16px); border-radius: 17px; }
+  .opening-alert-dialog .modal-header { padding: 17px 16px 14px; }
+  .opening-alert-dialog .opening-alert-body { max-height: calc(100dvh - 172px); padding: 14px 16px; }
+  .opening-alert-dialog .modal-actions { gap: 8px; padding: 12px 16px 15px; }
+  .opening-alert-dialog .modal-actions .button { min-width: 0; padding-inline: 10px; font-size: .78rem; }
+  .opening-alert-summary article { min-height: 84px; padding: 11px; }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+  dialog.opening-alert-dialog { max-height: calc(100dvh - 12px); }
+  .opening-alert-dialog .modal-header { padding-block: 12px; }
+  .opening-alert-dialog .opening-alert-body { max-height: calc(100dvh - 132px); padding-block: 11px; }
+  .opening-alert-summary article { min-height: 76px; }
+  .opening-alert-dialog .modal-actions { padding-block: 10px; }
 }
