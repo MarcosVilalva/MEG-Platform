@@ -78,18 +78,17 @@ export function LoginScreen({ onAuthenticated }: Props) {
     <main className="auth-page">
       <section className="auth-presentation">
         <div className="auth-brand">
-          <div className="auth-brand-mark">M</div>
-          <div><strong>MEG</strong><span>Financial OS</span></div>
+          <img src="./brand/meg-finance-system-mark.svg" alt="MEG Finance System" />
         </div>
         <div className="auth-copy">
-          <span>Finanças pessoais inteligentes</span>
-          <h1>Seu dinheiro, suas decisões, um único sistema.</h1>
-          <p>Controle, projeção e inteligência financeira com segurança e privacidade.</p>
+          <span>Finanças pessoais</span>
+          <h1>Seu dinheiro organizado por eventos, não por improvisos.</h1>
+          <p>Saldo, compromissos, cartões, benefícios, metas e análises em um sistema único. Ações financeiras relevantes permanecem sob confirmação do usuário.</p>
         </div>
         <div className="auth-highlights">
-          <div><strong>360°</strong><span>Visão financeira integrada</span></div>
-          <div><strong>Seguro</strong><span>Acesso aprovado pelo administrador</span></div>
-          <div><strong>Auditável</strong><span>Histórico e rastreabilidade</span></div>
+          <div><strong>Dados do usuário</strong><span>Cada evento pertence ao seu espaço financeiro.</span></div>
+          <div><strong>Saldo por eventos</strong><span>O saldo não é editado arbitrariamente.</span></div>
+          <div><strong>Rastreabilidade</strong><span>Alterações relevantes permanecem auditáveis.</span></div>
         </div>
       </section>
 
@@ -119,7 +118,7 @@ export function LoginScreen({ onAuthenticated }: Props) {
           {mode !== 'forgot' && <label>
             Senha
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} required autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
-            <small>Mínimo de 8 caracteres.</small>
+            {mode === 'register' && <small>Mínimo de 8 caracteres.</small>}
           </label>}
 
           {mode === 'register' && (

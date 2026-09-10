@@ -28,7 +28,7 @@ export function AuthenticatedApp() {
   if (dataReady !== true) return (
     <main className="data-migration-screen">
       <div className="data-migration-card">
-        <div className="brand-mark">M</div>
+        <img className="loading-logo" src="./brand/meg-finance-system-mark.svg" alt="MEG Finance System" />
         <span>Proteção de integridade</span>
         <h1>{dataReady === null ? 'Verificando sua base financeira' : 'Atualização dos dados pendente'}</h1>
         <p>O MEG não exibirá saldos ou indicadores até a API confirmar que todos os lançamentos antigos foram reconstruídos corretamente.</p>

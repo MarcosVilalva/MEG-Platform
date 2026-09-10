@@ -139,12 +139,12 @@ export function PersistentTransactions() {
   }
 
   return (
-    <section className="page">
-      <header className="page-header compact">
+    <section className="meg-screen">
+      <header className="screen-heading">
         <div>
-          <span>Finanças pessoais</span>
-          <h1>Movimentações reais</h1>
-          <p>Receitas e despesas salvas no banco e vinculadas aos seus cadastros.</p>
+          <span>LANÇAMENTOS</span>
+          <h1>Controle financeiro</h1>
+          <p>Inclua, consulte e edite eventos sem misturar o histórico de auditoria com o formulário.</p>
         </div>
         <div className="page-header-actions"><span className="catalog-role">Perfil: <strong>{role}</strong></span>{canWrite && <button className="header-primary" onClick={() => setShowForm((value) => !value)}>{showForm ? 'Fechar formulário' : 'Novo lançamento'}</button>}</div>
       </header>
@@ -174,25 +174,24 @@ export function PersistentTransactions() {
               <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}><option value="all">Todas as situações</option><option value="planned">Pendentes</option><option value="paid">Pagos/recebidos</option></select>
             </div>
           </div>
-          <div className="legacy-transaction-scroll"><div className="legacy-transaction-table">
-            <div className="legacy-transaction-head"><span>Data</span><span>Dia</span><span>Tipo</span><span>Descrição</span><span>Receita</span><span>Classificação</span><span>Grupo</span><span>Despesa</span><span>Forma de pagamento</span><span>Situação</span><span>Modalidade</span><span>Ações</span></div>
+          <div className="transaction-grid-scroll"><div className="transaction-grid">
+            <div className="transaction-grid-head"><span>Vencimento</span><span>Dia</span><span>Tipo</span><span>Descrição</span><span>Receita</span><span>Grupo</span><span>Conta</span><span>Despesa</span><span>Forma de pagamento</span><span>Situação</span><span>Ações</span></div>
             {filtered.map((item) => {
               const signed = Number(item.signedAmount);
               const source = item.sourceDetails;
               const isIncome = item.type === 'income';
               return (
-                <article className="legacy-transaction-row" key={item.id}>
+                <article className="transaction-grid-row" key={item.id}>
                   <time>{new Date(item.date).toLocaleDateString('pt-BR')}</time>
                   <span>{source?.weekday || '—'}</span>
                   <span className={`transaction-kind ${isIncome ? 'income' : 'expense'}`}>{isIncome ? 'Receita' : 'Despesa'}</span>
-                  <div className="legacy-description"><strong>{item.description}</strong>{source?.observations && <small>{source.observations}</small>}</div>
+                  <div className="transaction-description"><strong>{item.description}</strong>{source?.observations && <small>{source.observations}</small>}</div>
                   <strong className="positive">{isIncome ? brl.format(Number(item.amount)) : '—'}</strong>
-                  <span>{source?.expenseClass || item.category?.group || '—'}</span>
                   <span>{source?.group || item.category?.name || (isIncome ? 'Receitas' : 'Sem categoria')}</span>
+                  <span>{item.account?.name || 'Não informada'}</span>
                   <strong className={signed >= 0 ? 'positive' : 'negative'}>{isIncome ? '—' : brl.format(Number(item.amount))}</strong>
                   <span>{source?.paymentMethod || item.paymentMethod?.name || 'Não informado'}</span>
                   <span className={`status-pill ${item.status !== 'planned' ? 'active' : ''}`}>{item.status === 'planned' ? 'Previsto' : item.status === 'paid' ? 'Pago' : 'Conciliado'}</span>
-                  <span>{source?.modality || '—'}</span>
                   <div className="table-actions">
                     {item.status === 'planned' && canWrite && <button onClick={() => void changeStatus(item, 'paid')} disabled={busy}>Marcar pago</button>}
                     {item.status === 'paid' && canWrite && <button onClick={() => void changeStatus(item, 'reconciled')} disabled={busy}>Conciliar</button>}
