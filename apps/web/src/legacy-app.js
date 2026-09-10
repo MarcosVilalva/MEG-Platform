@@ -6,6 +6,7 @@ import { GLOBAL_FINANCIAL_SCHEMA_VERSION, isBenefitTransaction, migrateGlobalFin
 import { createTransactionEditor, replaceSelectOptions } from "./transaction-editor.js";
 import { transactionStatusPolicy } from "./transaction-status-policy.js";
 import { applyBatchTransactionChanges } from "./transaction-visual-core.js";
+import { calculateBestPurchaseDay } from "./card-cycle-core.js";
 
 const STORAGE_KEY = "meg-financas-state-v4-paid-fixes";
 
@@ -3947,7 +3948,7 @@ function editCardCatalog(paymentMethod) {
   els.newCardThemeInput.value = card.theme || "AUTO";
   els.newCardClosingDayInput.value = String(card.closingDay);
   els.newCardDueDayInput.value = String(card.dueDay);
-  els.newCardBestDayInput.value = String(card.bestPurchaseDay || "");
+  els.newCardBestDayInput.value = String(calculateBestPurchaseDay(card.closingDay) || "");
   els.newCardLimitInput.value = String(card.limit || 0);
   els.newCardActiveInput.checked = card.isActive !== false;
   els.cardCatalogSubmitBtn.textContent = "Atualizar cartão";
@@ -4088,10 +4089,10 @@ function addCardCatalog(event) {
   const theme = els.newCardThemeInput.value.trim().toUpperCase() || "AUTO";
   const closingDay = Number(els.newCardClosingDayInput.value);
   const dueDay = Number(els.newCardDueDayInput.value);
-  const bestPurchaseDay = Number(els.newCardBestDayInput.value);
+  const bestPurchaseDay = calculateBestPurchaseDay(closingDay);
   const limit = Number(els.newCardLimitInput.value);
   const isActive = els.newCardActiveInput.checked;
-  if (!paymentMethod || [closingDay, dueDay, bestPurchaseDay].some((day) => day < 1 || day > 31) || limit < 0) return;
+  if (!paymentMethod || !bestPurchaseDay || [closingDay, dueDay].some((day) => day < 1 || day > 31) || closingDay === dueDay || limit < 0) return;
   const card = { paymentMethod, issuer, productName, brand, lastFour, theme, closingDay, dueDay, bestPurchaseDay, limit, isActive };
   const lookupPaymentMethod = editingCardPaymentMethod || paymentMethod;
   const index = state.catalogs.cards.findIndex((item) => normalizeText(item.paymentMethod) === normalizeText(lookupPaymentMethod));
@@ -5998,7 +5999,7 @@ els.newCardPaymentInput.addEventListener("change", () => {
   if (!card) return;
   els.newCardClosingDayInput.value = String(card.closingDay);
   els.newCardDueDayInput.value = String(card.dueDay);
-  els.newCardBestDayInput.value = String(card.bestPurchaseDay || "");
+  els.newCardBestDayInput.value = String(calculateBestPurchaseDay(card.closingDay) || "");
   els.newCardLimitInput.value = String(card.limit || 0);
   els.newCardBrandInput.value = card.brand || "OUTRO";
   els.newCardIssuerInput.value = card.issuer || "";
