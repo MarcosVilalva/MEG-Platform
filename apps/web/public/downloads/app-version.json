@@ -1,9 +1,9 @@
 {
-  "versionCode": 228,
-  "versionName": "1.1.228",
+  "versionCode": 229,
+  "versionName": "1.1.229",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "0ab0607e1c055c1279fc11d54dc4d0ee309fcc7d1933a8d3929cedb0a400e77d",
+  "sha256": "01f23866c1aabfa84f3bbffc4cc0f2f8c59ffaf56d234f434e684ed9cc4d344d",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Aplicar workspace adaptativo na Web"
+  "releaseNotes": "Alinhar telas ao padrão visual validado"
 }
