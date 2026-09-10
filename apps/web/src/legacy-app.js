@@ -1924,23 +1924,25 @@ function showOpeningFinancialAlert() {
   const tone = data.overdueCount || data.health.projectedClosing < 0 ? "risk" : "attention";
   els.openingAlertDialog.classList.remove("risk", "attention");
   els.openingAlertDialog.classList.add(tone);
+  const plural = (count, singular, multiple) => count === 1 ? singular : multiple;
   els.openingAlertTitle.textContent = data.overdueCount
-    ? `🚨 ${data.overdueCount} conta(s)/fatura(s) vencida(s)`
-    : data.todayCount ? `⏰ ${data.todayCount} conta(s)/fatura(s) vencem hoje` : "📅 Próximos vencimentos";
-  const grouped = groupPayableItems(data.relevant).slice(0, 5);
-  const dailyTotals = dailyAlertTotals(data.relevant);
+    ? `${data.overdueCount} ${plural(data.overdueCount, "conta vencida", "contas vencidas")}`
+    : data.todayCount
+      ? `${data.todayCount} ${plural(data.todayCount, "conta vence", "contas vencem")} hoje`
+      : "Próximos vencimentos";
+  const grouped = groupPayableItems(data.relevant).slice(0, 8);
   els.openingAlertBody.innerHTML = `
     <div class="opening-alert-summary">
-      <article><span>Vencidas</span><strong>${data.overdueCount}</strong></article>
-      <article><span>Hoje</span><strong>${data.todayCount}</strong></article>
-      <article><span>Próximos 3 dias</span><strong>${data.upcomingCount}</strong></article>
-      <article><span>Total urgente</span><strong>${money.format(data.total)}</strong></article>
+      <article class="critical"><span>Vencidas</span><strong>${data.overdueCount}</strong><small>Exigem ação</small></article>
+      <article class="warning"><span>Vencem hoje</span><strong>${data.todayCount}</strong><small>Prioridade do dia</small></article>
+      <article><span>Próximos 3 dias</span><strong>${data.upcomingCount}</strong><small>Compromissos próximos</small></article>
+      <article><span>Total urgente</span><strong>${money.format(data.total)}</strong><small>Valor ainda pendente</small></article>
     </div>
     ${data.health.projectedClosing < 0 ? `<div class="opening-alert-critical">⚠️ Mesmo usando o saldo atual, faltam <strong>${money.format(Math.abs(data.health.projectedClosing))}</strong> para fechar ${formatMonthCode(currentMonth)}. Priorize inserir a receita faltante.</div>` : ""}
-    ${dailyTotals.length ? `<div class="opening-alert-days">${dailyTotals.map((day) => `<article><span><strong>${formatDate(day.date)}</strong><small>${day.labels.slice(0, 3).map(escapeHtml).join(" + ")}${day.labels.length > 3 ? ` +${day.labels.length - 3}` : ""}</small></span><b>${money.format(day.total)}</b></article>`).join("")}</div>` : ""}
+    <div class="opening-alert-list-heading"><div><strong>Vencimentos por data</strong><small>Contas e faturas agrupadas sem duplicidade</small></div><b>${grouped.length} ${plural(grouped.length, "grupo", "grupos")}</b></div>
     <div class="opening-alert-list">${grouped.length ? grouped.map((group) => {
       const itemTone = group.date < todayIso ? "critical" : group.date === todayIso ? "warning" : "";
-      return `<article class="opening-alert-item ${itemTone}"><span aria-hidden="true">${group.date < todayIso ? "🚨" : group.date === todayIso ? "⏰" : "📅"}</span><span><strong>${escapeHtml(payableGroupLabel(group))}</strong><small>${formatDate(group.date)} · ${group.items.length > 1 ? `${group.items.length} lançamentos agrupados` : group.payment}</small></span><b>${money.format(payableGroupTotal(group))}</b></article>`;
+      return `<article class="opening-alert-item ${itemTone}"><span class="opening-alert-date"><strong>${formatDate(group.date)}</strong><small>${group.date < todayIso ? "Vencida" : group.date === todayIso ? "Hoje" : "Próxima"}</small></span><span class="opening-alert-description"><strong>${escapeHtml(payableGroupLabel(group))}</strong><small>${group.items.length > 1 ? `${group.items.length} lançamentos agrupados` : escapeHtml(group.payment)}</small></span><b>${money.format(payableGroupTotal(group))}</b></article>`;
     }).join("") : `<div class="empty">Nenhuma conta vence nos próximos três dias.</div>`}</div>`;
   els.openingAlertDialog.showModal();
   return true;
