@@ -1,9 +1,9 @@
 {
-  "versionCode": 236,
-  "versionName": "1.1.236",
+  "versionCode": 237,
+  "versionName": "1.1.237",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "949cd2e424e681cdc4c62c5673af302a62066f95ecdde28a2b77864d7fe727d2",
+  "sha256": "6fb19912102f1e6bbd7d751941d3b4cccaa5b5e3e67130495a0cdb79fa191d58",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "restaurar dados reais e controles de lançamentos"
+  "releaseNotes": "aplicar período e calcular painel pela base real"
 }
