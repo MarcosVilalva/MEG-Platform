@@ -39,7 +39,6 @@ function start() {
   ensureClassificationOption();
 
   document.querySelector('#quickAddBtn')?.addEventListener('click', () => requestAnimationFrame(ensureClassificationOption));
-  document.querySelector('#newCardTransactionBtn')?.addEventListener('click', () => requestAnimationFrame(ensureClassificationOption));
   document.querySelector('#transactionDialog')?.addEventListener('close', () => {
     const input = document.querySelector('#expenseClassInput');
     if (input) input.value = DEFAULT_CLASSIFICATION;
