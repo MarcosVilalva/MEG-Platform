@@ -242,33 +242,30 @@ function authMarkup() {
   return `
     <div class="auth-shell" id="authShell">
       <section class="auth-showcase" aria-label="Apresentação do MEG Finance System">
-        <div class="auth-showcase-brand"><img src="${new URL('brand/meg-finance-system-mark.svg', document.baseURI).href}" alt=""><strong>MEG Finance System</strong></div>
+        <div class="auth-showcase-brand"><img src="${new URL('brand/meg-finance-system-mark.svg', document.baseURI).href}" alt="MEG Finance System"></div>
         <div class="auth-showcase-copy">
-          <small>INTELIGÊNCIA FINANCEIRA, TODOS OS DIAS</small>
-          <h1>Clareza para decidir.<br>Agilidade para evoluir.</h1>
-          <p>Transforme receitas, despesas e compromissos em uma visão gerencial moderna, com análises reais e recomendações objetivas.</p>
+          <small>FINANÇAS PESSOAIS</small>
+          <h1>Seu dinheiro organizado por eventos, não por improvisos.</h1>
+          <p>Saldo, compromissos, cartões, benefícios, metas e análises em um sistema único. Ações financeiras relevantes permanecem sob confirmação do usuário.</p>
         </div>
         <div class="auth-benefits">
-          <span>✓ Visão rápida da sua situação</span>
-          <span>✓ Lançamentos e contas a pagar</span>
-          <span>✓ Alertas por WhatsApp e e-mail</span>
+          <article><strong>Dados do usuário</strong><span>Cada evento pertence ao seu espaço financeiro.</span></article>
+          <article><strong>Saldo por eventos</strong><span>O saldo não é editado arbitrariamente.</span></article>
+          <article><strong>Rastreabilidade</strong><span>Alterações relevantes permanecem auditáveis.</span></article>
         </div>
-        <div class="auth-trust"><b>Dados sincronizados</b><span>Web e aplicativo sempre juntos</span></div>
       </section>
       <section class="auth-card">
-        <div class="auth-staging-notice" role="status">
-          <strong>Ambiente de testes</strong>
-          <span>Acesso restrito ao administrador. Use para validar melhorias antes da produção.</span>
-        </div>
-        <div class="auth-brand"><img class="auth-brand-logo" src="${new URL('brand/meg-finance-system-lockup.svg', document.baseURI).href}" alt="MEG Finance System"><div class="auth-brand-copy"><strong>Inteligência financeira pessoal</strong><small>Seus dados transformados em decisões claras.</small></div></div>
-        <div class="auth-tabs"><button class="active" data-auth-tab="login">Entrar</button><button data-auth-tab="register">Começar</button></div>
+        <div class="auth-card-inner">
+        <div class="auth-mobile-brand"><img src="${new URL('brand/meg-finance-system-mark.svg', document.baseURI).href}" alt="MEG Finance System"></div>
+        <div class="auth-tabs"><button class="active" data-auth-tab="login">Entrar</button><button data-auth-tab="register">Solicitar acesso</button></div>
         <form id="loginForm" class="auth-form">
-          <div class="auth-form-heading"><small>ÁREA SEGURA</small><h1>Bem-vindo de volta</h1><p>Entre para visualizar seu painel financeiro.</p></div>
+          <div class="auth-form-heading"><small>ÁREA SEGURA</small><h1>Acesse sua conta</h1><p>Informe suas credenciais para continuar.</p></div>
           <label>E-mail<input name="email" type="email" autocomplete="email" required /></label>
           <label>Senha<input name="password" type="password" autocomplete="current-password" minlength="8" required /></label>
           <p class="auth-error" id="loginError"></p>
-          <button class="button primary" type="submit">Acessar meu painel <span>→</span></button>
+          <button class="button primary" type="submit">Entrar no MEG</button>
           <button class="auth-link" id="forgotPasswordButton" type="button">Esqueci minha senha</button>
+          <p class="auth-access-note">Novos usuários só podem acessar após aprovação do administrador.</p>
         </form>
         <form id="registerForm" class="auth-form hidden">
           <h1>Comece no MEG</h1>
@@ -292,6 +289,7 @@ function authMarkup() {
           <button class="button primary" type="submit">Enviar nova senha</button>
           <button class="auth-link" id="backToLoginButton" type="button">Voltar para entrar</button>
         </form>
+        </div>
       </section>
     </div>`;
 }
