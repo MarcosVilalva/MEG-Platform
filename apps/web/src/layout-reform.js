@@ -200,7 +200,6 @@ function initializeTransactionDialogPresentation() {
 
 function initializeCollapsiblePanels() {
   const panelGroups = [
-    ['#catalogs .catalog-panel', 'meg-catalog-panel-open-v1', 0],
     ['#settings .settings-grid > .panel', 'meg-settings-panel-open-v1', 0],
   ];
 

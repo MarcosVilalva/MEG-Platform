@@ -5,6 +5,7 @@ import { excelDateToIso } from './legacy-import-utils.js';
 import { checkForAppUpdate, initializeAndroidUpdateLifecycle, initializeStableUiFeatures, markAndroidUpdateUiReady, refreshInstalledAppVersion } from './native-app-update.js';
 import { initializeAdaptiveCardTypography } from './adaptive-card-typography.js';
 import { initializeLayoutReform } from './layout-reform.js';
+import { initializeAdaptiveWorkspace } from './adaptive-workspace.js';
 import {
   consumePreparedAndroidBiometricCredentials,
   initializeAndroidBiometricLifecycle,
@@ -430,6 +431,7 @@ function setupInactivityLogout() {
 
 async function start() {
   initializeLayoutReform();
+  initializeAdaptiveWorkspace();
   traceStartup('início', { nativeMobileMode, validationMode });
   if (!requireStagingAccess()) return;
   if (validationMode) {
