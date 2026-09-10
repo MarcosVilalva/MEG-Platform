@@ -178,8 +178,8 @@ export async function getFinancialSummary(userId: string, month: string) {
       select: { description: true, type: true, status: true, date: true, amount: true, signedAmount: true, category: { select: { name: true } }, paymentMethod: { select: { name: true } } }
     }),
     prisma.financialEvent.findMany({
-      where: { userId, archivedAt: null, date: { lte: now } },
-      select: { description: true, type: true, signedAmount: true, paymentMethod: { select: { name: true } } }
+      where: { userId, archivedAt: null, date: { lt: start } },
+      select: { description: true, type: true, status: true, signedAmount: true, paymentMethod: { select: { name: true } } }
     }),
     prisma.financialEvent.findFirst({
       where: { userId, archivedAt: null, status: 'planned', type: { notIn: ['income', 'redemption'] }, date: { gte: now } },
@@ -187,7 +187,7 @@ export async function getFinancialSummary(userId: string, month: string) {
       select: { id: true, description: true, date: true, amount: true, type: true }
     }),
     prisma.financialEvent.findMany({
-      where: { userId, archivedAt: null, status: 'planned', type: { notIn: ['income', 'redemption'] } },
+      where: { userId, archivedAt: null, status: 'planned', type: { notIn: ['income', 'redemption'] }, date: { gte: start, lt: end } },
       select: { signedAmount: true }
     })
   ]);
@@ -219,7 +219,7 @@ export async function getFinancialSummary(userId: string, month: string) {
     .slice(0, 5);
 
   const availableBalance = historicalEvents
-    .filter((event) => !isBenefitCard(event))
+    .filter((event) => !isBenefitCard(event) && (isPosted(event.status) || event.type === 'income' || event.type === 'redemption'))
     .reduce((sum, event) => sum + Number(event.signedAmount), 0);
 
   return {
