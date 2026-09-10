@@ -49,7 +49,6 @@
 .meg-adaptive-workspace .meg-command-context small { overflow: hidden; color: var(--muted); font-size: .76rem; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
 .meg-adaptive-workspace .meg-quick-add-icon { display: grid; place-items: center; width: 42px; min-width: 42px; height: 42px; padding: 0; border-radius: 13px; }
 .meg-adaptive-workspace .meg-quick-add-icon svg { width: 20px; height: 20px; }
-.meg-adaptive-workspace #credit-cards #newCardTransactionBtn { display: none; }
 
 .meg-adaptive-workspace .meg-page-sticky-header {
   position: sticky;
