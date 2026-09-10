@@ -36,7 +36,7 @@
         <nav class="nav-list">
           <button class="nav-item active" data-view="dashboard" type="button">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z"/></svg>
-            Painel
+            Início
           </button>
           <button class="nav-item" data-view="analytics" type="button">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19h16v2H2V3h2v16Zm3-2H5v-6h2v6Zm4 0H9V7h2v10Zm4 0h-2v-4h2v4Zm4 0h-2V5h2v12Z"/></svg>
@@ -104,8 +104,8 @@
       <main class="content">
         <header class="topbar meg-command-bar">
           <div class="meg-command-context">
-            <p class="eyebrow">MEG FINANCIAL OS</p>
-            <strong>Gestão pessoal</strong>
+            <strong>Início</strong>
+            <small>Visão geral da vida financeira</small>
           </div>
           <div class="topbar-actions">
             <button class="button ghost meg-period-toggle" id="globalPeriodToggle" type="button" aria-expanded="false" aria-controls="globalPeriodFilters">
@@ -148,9 +148,8 @@
                 <input id="endDateFilter" type="date" />
               </label>
             </div>
-            <button class="button primary" id="quickAddBtn" type="button">
+            <button class="button primary meg-quick-add-icon" id="quickAddBtn" type="button" aria-label="Novo lançamento" title="Novo lançamento">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></svg>
-              Novo
             </button>
           </div>
         </header>
@@ -729,7 +728,6 @@
         <section class="view" id="credit-cards" aria-labelledby="creditCardsTitle">
           <div class="section-heading credit-card-heading">
             <div><small class="decision-eyebrow">CENTRAL DE CARTÕES</small><h2 id="creditCardsTitle">Cartões de crédito</h2><p class="muted" id="creditCardsPeriodLabel">Limites, faturas e compras do período selecionado.</p></div>
-            <button class="button primary" id="newCardTransactionBtn" type="button">+ Nova compra</button>
           </div>
 
           <section class="credit-card-filterbar" aria-label="Filtros dos cartões">

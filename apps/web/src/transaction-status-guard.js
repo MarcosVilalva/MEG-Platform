@@ -40,7 +40,7 @@ function initialize() {
   }
 
   document.querySelector('#quickAddBtn')?.addEventListener('click', () => setTimeout(ensureNewExpenseDefaultsToPending, 0));
-  document.querySelectorAll('[data-new-transaction],#newCardTransactionBtn').forEach((button) => {
+  document.querySelectorAll('[data-new-transaction]').forEach((button) => {
     button.addEventListener('click', () => setTimeout(ensureNewExpenseDefaultsToPending, 0));
   });
 }

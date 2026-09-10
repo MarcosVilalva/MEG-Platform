@@ -412,7 +412,6 @@ const els = {
   transactionsFilteredResultStatus: document.querySelector("#transactionsFilteredResultStatus"),
   transactionsFilteredResultCard: document.querySelector("#transactionsFilteredResultCard"),
   creditCardsPeriodLabel: document.querySelector("#creditCardsPeriodLabel"),
-  newCardTransactionBtn: document.querySelector("#newCardTransactionBtn"),
   creditCardFilter: document.querySelector("#creditCardFilter"),
   creditCardStatusFilter: document.querySelector("#creditCardStatusFilter"),
   creditCardSearchInput: document.querySelector("#creditCardSearchInput"),
@@ -5854,18 +5853,6 @@ els.clearCreditCardFiltersBtn?.addEventListener("click", () => {
   creditCardStatusFilter = "all";
   creditCardSearch = "";
   renderCreditCardsNextFrame();
-});
-els.newCardTransactionBtn?.addEventListener("click", () => {
-  openTransactionDialog();
-  els.transactionType.value = "expense";
-  syncAmountFields();
-  els.modalityInput.value = "CREDITO";
-  syncModalityPaymentOptions();
-  if (creditCardFilter !== "all") {
-    els.paymentMethodInput.value = creditCardFilter;
-    syncPaymentModality();
-  }
-  els.descriptionInput.focus();
 });
 els.pendingStatusFilter.addEventListener("change", renderPendingNextFrame);
 els.pendingPaymentFilter.addEventListener("change", renderPendingNextFrame);
