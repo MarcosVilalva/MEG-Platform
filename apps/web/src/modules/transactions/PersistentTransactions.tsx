@@ -1,30 +1,34 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { normalizeEvents, type LegacyTransaction } from '@core/finance/events';
 import { MEGCurrencyInput } from '@ui';
 import { parseBRL } from '@shared/money';
 import { readSession } from '../../app/auth-client';
+import { readCloudState, patchCloudTransactions } from '../../app/app-state-client';
 import { invalidateFinanceSummary } from '../../app/use-finance-summary';
 import { dateInSaoPaulo } from '../../app/calendar';
-import {
-  financeClient,
-  type Account,
-  type Category,
-  type FinancialEvent,
-  type PaymentMethod
-} from '../../app/finance-client';
+import { useAppStore } from '../../app/store';
+import { financeClient, type Account, type Category, type PaymentMethod } from '../../app/finance-client';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const isoDate = (value: string) => String(value || '').slice(0, 10);
 
 export function PersistentTransactions() {
-  const [events, setEvents] = useState<FinancialEvent[]>([]);
+  const selectedMonth = useAppStore((state) => state.selectedMonth);
+  const [transactions, setTransactions] = useState<LegacyTransaction[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [search, setSearch] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'planned' | 'paid'>('all');
+  const [periodMode, setPeriodMode] = useState<'month' | 'range'>('month');
+  const [startDate, setStartDate] = useState(`${selectedMonth}-01`);
+  const [endDate, setEndDate] = useState(`${selectedMonth}-31`);
+  const [filterType, setFilterType] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterGroup, setFilterGroup] = useState('all');
+  const [filterAccount, setFilterAccount] = useState('all');
+  const [order, setOrder] = useState<'newest' | 'oldest' | 'highest'>('newest');
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(() => dateInSaoPaulo());
@@ -35,186 +39,86 @@ export function PersistentTransactions() {
   const [paymentMethodId, setPaymentMethodId] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-
+  const descriptionRef = useRef<HTMLInputElement>(null);
   const role = readSession()?.user.role ?? 'VIEWER';
   const canWrite = role !== 'VIEWER';
   const canArchive = role === 'ADMIN' || role === 'MANAGER';
 
-  async function loadCatalogs() {
-    try {
-      const [accountData, categoryData, methodData] = await Promise.all([
-        financeClient.listAccounts(),
-        financeClient.listCategories(),
-        financeClient.listPaymentMethods()
-      ]);
-      setAccounts(accountData.filter((item) => item.isActive));
-      setCategories(categoryData.filter((item) => item.isActive));
-      setMethods(methodData.filter((item) => item.isActive));
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'LOAD_ERROR');
-    }
+  async function load() {
+    setLoading(true); setError('');
+    try { setTransactions((await readCloudState()).state.transactions); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível ler a base financeira.'); }
+    finally { setLoading(false); }
   }
-
-  async function load(page = 1, query = search, append = false) {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await financeClient.listEvents(page, 50, query.trim());
-      setEvents((current) => append ? [...current, ...response.items] : response.items);
-      setTotal(response.total);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'LOAD_ERROR');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { void loadCatalogs(); }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => { void load(1, search, false); }, 350);
-    return () => window.clearTimeout(timer);
-  }, [search]);
+    void Promise.all([financeClient.listAccounts(), financeClient.listCategories(), financeClient.listPaymentMethods()])
+      .then(([a, c, m]) => { setAccounts(a.filter((x) => x.isActive)); setCategories(c.filter((x) => x.isActive)); setMethods(m.filter((x) => x.isActive)); })
+      .catch(() => undefined);
+    void load();
+  }, []);
+  useEffect(() => { setStartDate(`${selectedMonth}-01`); setEndDate(`${selectedMonth}-31`); }, [selectedMonth]);
 
-  const filtered = events.filter((item) =>
-    (filterType === 'all' || item.type === filterType)
-    && (filterStatus === 'all' || (filterStatus === 'planned' ? item.status === 'planned' : item.status !== 'planned'))
-  );
+  const events = useMemo(() => normalizeEvents(transactions), [transactions]);
+  const groups = useMemo(() => [...new Set(events.map((x) => x.group || x.category || 'Não informado'))].sort(), [events]);
+  const accountNames = useMemo(() => [...new Set(events.map((x) => x.account || 'Não informada'))].sort(), [events]);
+  const filtered = useMemo(() => events.filter((item) => {
+    const day = isoDate(item.date);
+    const inPeriod = periodMode === 'month' ? day.startsWith(selectedMonth) : day >= startDate && day <= endDate;
+    const text = `${item.description} ${item.group || ''} ${item.category || ''} ${item.paymentMethod || ''} ${item.account || ''}`.toLowerCase();
+    return inPeriod && text.includes(search.trim().toLowerCase())
+      && (filterType === 'all' || item.type === filterType)
+      && (filterStatus === 'all' || item.status === filterStatus || (filterStatus === 'paid' && item.status === 'reconciled'))
+      && (filterGroup === 'all' || (item.group || item.category || 'Não informado') === filterGroup)
+      && (filterAccount === 'all' || (item.account || 'Não informada') === filterAccount);
+  }).sort((a, b) => order === 'highest' ? Math.abs(b.signedAmount) - Math.abs(a.signedAmount) : order === 'oldest' ? isoDate(a.date).localeCompare(isoDate(b.date)) : isoDate(b.date).localeCompare(isoDate(a.date))), [events, periodMode, selectedMonth, startDate, endDate, search, filterType, filterStatus, filterGroup, filterAccount, order]);
+
+  const totals = useMemo(() => filtered.reduce((acc, item) => {
+    if (item.signedAmount >= 0) acc.income += item.signedAmount;
+    else { acc.expense += Math.abs(item.signedAmount); if (item.status === 'planned') acc.pending += Math.abs(item.signedAmount); }
+    return acc;
+  }, { income: 0, expense: 0, pending: 0 }), [filtered]);
+
+  async function save(upserts: LegacyTransaction[], deletes: string[] = []) {
+    setBusy(true); setError('');
+    try { await patchCloudTransactions(upserts, deletes); invalidateFinanceSummary(); await load(); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'O banco não confirmou a operação.'); }
+    finally { setBusy(false); }
+  }
 
   async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (!canWrite) return;
+    event.preventDefault(); if (!canWrite) return;
     const value = parseBRL(amount);
-    if (!description.trim() || !Number.isFinite(value) || value === 0) {
-      setError('Informe descrição e valor diferente de zero. Valores negativos são aceitos para estornos.');
-      return;
-    }
-
-    setBusy(true);
-    setError('');
-    try {
-      await financeClient.createEvent({
-        description: description.trim(),
-        type,
-        status,
-        date,
-        amount: value,
-        accountId: accountId || undefined,
-        categoryId: categoryId || undefined,
-        paymentMethodId: paymentMethodId || undefined
-      });
-      setDescription('');
-      setAmount('');
-      invalidateFinanceSummary();
-      await load(1, search, false);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'SAVE_ERROR');
-    } finally {
-      setBusy(false);
-    }
+    if (!description.trim()) { setError('Informe a descrição.'); descriptionRef.current?.focus(); return; }
+    if (!Number.isFinite(value) || value === 0) { setError('Informe um valor diferente de zero.'); return; }
+    const account = accounts.find((x) => x.id === accountId)?.name || 'Não informada';
+    const category = categories.find((x) => x.id === categoryId);
+    const paymentMethod = methods.find((x) => x.id === paymentMethodId)?.name || (type === 'income' ? 'PIX' : 'Não informado');
+    const payload: LegacyTransaction = { id: crypto.randomUUID(), type, launchType: type === 'income' ? 'RECEITA' : 'DESPESA', date, description: description.trim(), amount: value, incomeAmount: type === 'income' ? value : undefined, expenseAmount: type === 'expense' ? value : undefined, status: type === 'income' ? 'paid' : status, situation: type === 'income' ? 'PAGO' : status === 'paid' ? 'PAGO' : 'PENDENTE', account, category: category?.name || '', group: category?.group || category?.name || (type === 'income' ? 'Recebimentos' : 'Não informado'), paymentMethod };
+    await save([payload]); setDescription(''); setAmount(''); setShowForm(false);
   }
 
-  async function changeStatus(item: FinancialEvent, next: 'paid' | 'reconciled') {
-    if (!canWrite) return;
-    setBusy(true);
-    try {
-      await financeClient.updateEvent(item.id, { status: next as 'paid' });
-      invalidateFinanceSummary();
-      await load(1, search, false);
-    } finally {
-      setBusy(false);
-    }
+  async function changeStatus(id: string, next: 'paid' | 'reconciled') {
+    const current = transactions.find((item) => item.id === id); if (!current) return;
+    await save([{ ...current, status: next, situation: next === 'paid' ? 'PAGO' : 'CONCILIADO' }]);
   }
+  async function archive(id: string) { if (canArchive && confirm('Arquivar este lançamento?')) await save([], [id]); }
+  const clearFilters = () => { setSearch(''); setFilterType('all'); setFilterStatus('all'); setFilterGroup('all'); setFilterAccount('all'); setOrder('newest'); setPeriodMode('month'); };
 
-  async function archive(id: string) {
-    if (!canArchive || !confirm('Arquivar este lançamento?')) return;
-    setBusy(true);
-    try {
-      await financeClient.archiveEvent(id);
-      invalidateFinanceSummary();
-      await load(1, search, false);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <section className="meg-screen">
-      <header className="screen-heading">
-        <div>
-          <span>LANÇAMENTOS</span>
-          <h1>Controle financeiro</h1>
-          <p>Inclua, consulte e edite eventos sem misturar o histórico de auditoria com o formulário.</p>
-        </div>
-        <div className="page-header-actions"><span className="catalog-role">Perfil: <strong>{role}</strong></span>{canWrite && <button className="header-primary" onClick={() => setShowForm((value) => !value)}>{showForm ? 'Fechar formulário' : 'Novo lançamento'}</button>}</div>
-      </header>
-
-      <div className={`catalog-layout transactions-layout ${showForm ? '' : 'form-hidden'}`}>
-        {showForm && <form className="meg-card catalog-form transaction-form" onSubmit={submit}>
-          <span className="meg-eyebrow">Novo lançamento</span>
-          <h3>{type === 'income' ? 'Nova receita' : 'Nova despesa'}</h3>
-          <label>Tipo<select value={type} onChange={(e) => setType(e.target.value as 'income' | 'expense')} disabled={!canWrite}><option value="expense">Despesa</option><option value="income">Receita</option></select></label>
-          <label>Descrição<input value={description} onChange={(e) => setDescription(e.target.value)} required disabled={!canWrite} /></label>
-          <label>Data<input type="date" value={date} onChange={(e) => setDate(e.target.value)} required disabled={!canWrite} /></label>
-          <label>Valor<MEGCurrencyInput value={amount} onValueChange={setAmount} allowNegative placeholder="0,00" required disabled={!canWrite} /></label>
-          <label>Status<select value={status} onChange={(e) => setStatus(e.target.value as 'planned' | 'paid')} disabled={!canWrite}><option value="planned">Previsto</option><option value="paid">Pago/Recebido</option></select></label>
-          <label>Conta<select value={accountId} onChange={(e) => setAccountId(e.target.value)} disabled={!canWrite}><option value="">Sem conta</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-          <label>Categoria<select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} disabled={!canWrite}><option value="">Sem categoria</option>{categories.filter((item) => !item.type || item.type === type).map((item) => <option key={item.id} value={item.id}>{item.group ? `${item.group} — ` : ''}{item.name}</option>)}</select></label>
-          <label>Forma de pagamento<select value={paymentMethodId} onChange={(e) => setPaymentMethodId(e.target.value)} disabled={!canWrite}><option value="">Não informada</option>{methods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-          {error && <div className="auth-error">{error}</div>}
-          <button className="auth-submit" disabled={!canWrite || busy}>{canWrite ? busy ? 'Salvando...' : 'Salvar lançamento' : 'Perfil somente leitura'}</button>
-        </form>}
-
-        <div className="meg-card catalog-list">
-          <div className="catalog-list-heading transaction-toolbar">
-            <div><span className="meg-eyebrow">Histórico financeiro</span><h3>{total} lançamentos</h3></div>
-            <div className="transaction-filters">
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por descrição, grupo ou pagamento" />
-              <select value={filterType} onChange={(e) => setFilterType(e.target.value as typeof filterType)}><option value="all">Receitas e despesas</option><option value="income">Receitas</option><option value="expense">Despesas</option></select>
-              <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}><option value="all">Todas as situações</option><option value="planned">Pendentes</option><option value="paid">Pagos/recebidos</option></select>
-            </div>
-          </div>
-          <div className="transaction-grid-scroll"><div className="transaction-grid">
-            <div className="transaction-grid-head"><span>Vencimento</span><span>Dia</span><span>Tipo</span><span>Descrição</span><span>Receita</span><span>Grupo</span><span>Conta</span><span>Despesa</span><span>Forma de pagamento</span><span>Situação</span><span>Ações</span></div>
-            {filtered.map((item) => {
-              const signed = Number(item.signedAmount);
-              const source = item.sourceDetails;
-              const isIncome = item.type === 'income';
-              return (
-                <article className="transaction-grid-row" key={item.id}>
-                  <time>{new Date(item.date).toLocaleDateString('pt-BR')}</time>
-                  <span>{source?.weekday || '—'}</span>
-                  <span className={`transaction-kind ${isIncome ? 'income' : 'expense'}`}>{isIncome ? 'Receita' : 'Despesa'}</span>
-                  <div className="transaction-description"><strong>{item.description}</strong>{source?.observations && <small>{source.observations}</small>}</div>
-                  <strong className="positive">{isIncome ? brl.format(Number(item.amount)) : '—'}</strong>
-                  <span>{source?.group || item.category?.name || (isIncome ? 'Receitas' : 'Sem categoria')}</span>
-                  <span>{item.account?.name || 'Não informada'}</span>
-                  <strong className={signed >= 0 ? 'positive' : 'negative'}>{isIncome ? '—' : brl.format(Number(item.amount))}</strong>
-                  <span>{source?.paymentMethod || item.paymentMethod?.name || 'Não informado'}</span>
-                  <span className={`status-pill ${item.status !== 'planned' ? 'active' : ''}`}>{item.status === 'planned' ? 'Previsto' : item.status === 'paid' ? 'Pago' : 'Conciliado'}</span>
-                  <div className="table-actions">
-                    {item.status === 'planned' && canWrite && <button onClick={() => void changeStatus(item, 'paid')} disabled={busy}>Marcar pago</button>}
-                    {item.status === 'paid' && canWrite && <button onClick={() => void changeStatus(item, 'reconciled')} disabled={busy}>Conciliar</button>}
-                    {canArchive && <button className="danger" onClick={() => void archive(item.id)} disabled={busy}>Arquivar</button>}
-                  </div>
-                </article>
-              );
-            })}
-            {loading && events.length === 0 && <p className="catalog-empty">Carregando movimentações...</p>}
-            {!loading && filtered.length === 0 && <p className="catalog-empty">Nenhuma movimentação encontrada.</p>}
-            {events.length < total && (
-              <button
-                className="auth-submit"
-                type="button"
-                disabled={loading}
-                onClick={() => void load(Math.floor(events.length / 50) + 1, search, true)}
-              >
-                {loading ? 'Carregando...' : `Carregar mais (${events.length} de ${total})`}
-              </button>
-            )}
-          </div></div>
-        </div>
+  return <section className="meg-screen transactions-screen">
+    <header className="screen-heading"><div><span>LANÇAMENTOS</span><h1>Controle financeiro</h1><p>Dados carregados e confirmados diretamente na base compartilhada do MEG.</p></div></header>
+    <section className="transaction-summary"><article><span>LANÇAMENTOS NO PERÍODO</span><strong>{filtered.length}</strong><small>Registros encontrados</small></article><article><span>RECEITAS</span><strong className="positive">{brl.format(totals.income)}</strong><small>Receitas do filtro atual</small></article><article><span>DESPESAS</span><strong className="negative">{brl.format(totals.expense)}</strong><small>Pagas e pendentes</small></article><article><span>PENDENTE</span><strong>{brl.format(totals.pending)}</strong><small>Aguardando baixa</small></article></section>
+    <div className="transaction-workspace">
+      <div className="transaction-actions">
+        <div className="period-switch"><button className={periodMode === 'month' ? 'active' : ''} onClick={() => setPeriodMode('month')}>Mês</button><button className={periodMode === 'range' ? 'active' : ''} onClick={() => setPeriodMode('range')}>Intervalo</button></div>
+        {periodMode === 'range' && <><label>De<input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></label><label>Até<input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></label></>}
+        <button className="secondary-button" onClick={clearFilters}>Limpar filtros</button>
+        {canWrite && <button className="header-primary compact-new" onClick={() => setShowForm((value) => !value)} aria-label="Novo lançamento">{showForm ? 'Fechar' : '+'}</button>}
       </div>
-    </section>
-  );
+      {showForm && <form className="meg-card transaction-quick-form" onSubmit={submit}><label>Tipo<select value={type} onChange={(e) => { const next = e.target.value as 'income' | 'expense'; setType(next); setStatus(next === 'income' ? 'paid' : 'planned'); }}><option value="expense">Despesa</option><option value="income">Receita</option></select></label><label className="wide">Descrição<input ref={descriptionRef} value={description} onChange={(e) => setDescription(e.target.value)} required /></label><label>Data<input type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></label><label>Valor<MEGCurrencyInput value={amount} onValueChange={setAmount} allowNegative required /></label><label>Conta<select value={accountId} onChange={(e) => setAccountId(e.target.value)}><option value="">Selecione</option>{accounts.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label><label>Grupo<select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}><option value="">Selecione</option>{categories.filter((x) => !x.type || x.type === type).map((x) => <option key={x.id} value={x.id}>{x.group ? `${x.group} · ` : ''}{x.name}</option>)}</select></label><label>Forma<select value={paymentMethodId} onChange={(e) => setPaymentMethodId(e.target.value)}><option value="">{type === 'income' ? 'PIX' : 'Selecione'}</option>{methods.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>{type === 'expense' && <label>Situação<select value={status} onChange={(e) => setStatus(e.target.value as 'planned' | 'paid')}><option value="planned">Pendente</option><option value="paid">Pago</option></select></label>}<button className="auth-submit" disabled={busy}>{busy ? 'Confirmando no banco...' : 'Salvar e sincronizar'}</button></form>}
+      {error && <div className="notice danger">{error}</div>}
+      <div className="transaction-filter-panel"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar descrição, grupo, conta ou pagamento"/><select value={filterType} onChange={(e) => setFilterType(e.target.value)}><option value="all">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option></select><select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}><option value="all">Todas as situações</option><option value="planned">Pendentes</option><option value="paid">Pagos/recebidos</option><option value="reconciled">Conciliados</option></select><select value={filterGroup} onChange={(e) => setFilterGroup(e.target.value)}><option value="all">Todos os grupos</option>{groups.map((x) => <option key={x}>{x}</option>)}</select><select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)}><option value="all">Todas as contas</option>{accountNames.map((x) => <option key={x}>{x}</option>)}</select><select value={order} onChange={(e) => setOrder(e.target.value as typeof order)}><option value="newest">Mais recentes</option><option value="oldest">Mais antigos</option><option value="highest">Maior valor</option></select></div>
+      <div className="transaction-grid-scroll fixed-grid"><div className="transaction-grid"><div className="transaction-grid-head"><span>Vencimento</span><span>Dia</span><span>Tipo</span><span>Descrição</span><span>Receita</span><span>Grupo</span><span>Conta</span><span>Despesa</span><span>Forma de pagamento</span><span>Situação</span><span>Ações</span></div>{filtered.map((item) => <article className="transaction-grid-row" key={item.id}><time>{new Date(`${isoDate(item.date)}T12:00:00`).toLocaleDateString('pt-BR')}</time><span>{new Date(`${isoDate(item.date)}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short' })}</span><span className={`transaction-kind ${item.type}`}>{item.type === 'income' ? 'Receita' : 'Despesa'}</span><div className="transaction-description"><strong>{item.description}</strong>{item.notes && <small>{item.notes}</small>}</div><strong className="positive">{item.type === 'income' ? brl.format(item.amount) : '—'}</strong><span>{item.group || item.category || 'Não informado'}</span><span>{item.account || 'Não informada'}</span><strong className="negative">{item.type === 'expense' ? brl.format(item.amount) : '—'}</strong><span>{item.paymentMethod || 'Não informado'}</span><span className={`status-pill ${item.status !== 'planned' ? 'active' : ''}`}>{item.status === 'planned' ? 'Pendente' : item.status === 'paid' ? 'Pago' : 'Conciliado'}</span><div className="table-actions">{item.status === 'planned' && canWrite && <button onClick={() => void changeStatus(item.id, 'paid')} disabled={busy}>Baixar</button>}{item.status === 'paid' && canWrite && <button onClick={() => void changeStatus(item.id, 'reconciled')} disabled={busy}>Conciliar</button>}{canArchive && <button className="danger" onClick={() => void archive(item.id)} disabled={busy}>Arquivar</button>}</div></article>)}{loading && <p className="catalog-empty">Carregando dados da base...</p>}{!loading && !filtered.length && <p className="catalog-empty">Nenhum lançamento encontrado para os filtros aplicados.</p>}</div></div>
+    </div>
+  </section>;
 }
