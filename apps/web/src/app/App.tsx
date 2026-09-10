@@ -12,6 +12,7 @@ import { Platform } from '../modules/platform/Platform';
 import { DecisionCenter } from '../modules/decision/DecisionCenter';
 import { FinancialCatalogs } from '../modules/catalogs/FinancialCatalogs';
 import { UserManagement } from '../modules/admin/UserManagement';
+import { History } from '../modules/history/History';
 import { CommandPalette } from './CommandPalette';
 import { useAppStore } from './store';
 
@@ -47,10 +48,11 @@ export function App({ onLogout }: AppProps) {
 
   return (
     <>
-      <AppShell active={view} onNavigate={setView} onOpenCommand={() => setCommandOpen(true)} onLogout={onLogout}>
+      <AppShell active={view} onNavigate={setView} onOpenCommand={() => setCommandOpen(true)} onLogout={onLogout} onNewTransaction={openNewTransaction}>
         {view === 'decision' && <DecisionCenter onNavigate={setView} />}
         {view === 'dashboard' && <Dashboard onNewTransaction={openNewTransaction} />}
         {view === 'transactions' && <PersistentTransactions />}
+        {view === 'history' && <History />}
         {view === 'receivables' && <Receivables />}
         {view === 'cards' && <CreditCards />}
         {view === 'payables' && <Payables />}
