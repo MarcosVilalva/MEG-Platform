@@ -59,6 +59,7 @@ export function AppShell({ active, onNavigate, onOpenCommand, onLogout, onNewTra
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('meg-sidebar-collapsed') === '1');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [periodOpen, setPeriodOpen] = useState(false);
+  const [draftMonth, setDraftMonth] = useState(() => useAppStore.getState().selectedMonth);
   const [moreOpen, setMoreOpen] = useState(false);
   const [isCompactViewport, setIsCompactViewport] = useState(() => window.matchMedia('(max-width: 1100px)').matches);
   const theme = useAppStore((state) => state.theme);
@@ -70,6 +71,7 @@ export function AppShell({ active, onNavigate, onOpenCommand, onLogout, onNewTra
   const initial = session?.user.name?.match(/[\p{L}\p{N}]/u)?.[0]?.toUpperCase() || 'U';
 
   useEffect(() => localStorage.setItem('meg-sidebar-collapsed', collapsed ? '1' : '0'), [collapsed]);
+  useEffect(() => { if (periodOpen) setDraftMonth(selectedMonth); }, [periodOpen, selectedMonth]);
   useEffect(() => {
     const media = window.matchMedia('(max-width: 1100px)');
     const update = () => { setIsCompactViewport(media.matches); if (!media.matches) setMobileOpen(false); };
@@ -95,7 +97,7 @@ export function AppShell({ active, onNavigate, onOpenCommand, onLogout, onNewTra
       <header className="meg-topbar">
         <div className="meg-top-context"><button className="meg-mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Abrir menu"><Icon name="menu" /></button><div><strong>{title}</strong><small>{subtitle}</small></div></div>
         <div className="meg-top-actions">
-          <div className="meg-period-wrap"><button className="meg-icon-action" onClick={() => setPeriodOpen((value) => !value)} aria-expanded={periodOpen} aria-label="Selecionar período" title="Selecionar período"><Icon name="calendar" /></button>{periodOpen && <div className="meg-period-popover"><strong>Período global</strong><label>Mês e ano<input type="month" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} /></label><button onClick={() => setPeriodOpen(false)}>Aplicar período</button></div>}</div>
+          <div className="meg-period-wrap"><button className="meg-icon-action" onClick={() => setPeriodOpen((value) => !value)} aria-expanded={periodOpen} aria-label="Selecionar período" title="Selecionar período"><Icon name="calendar" /></button>{periodOpen && <form className="meg-period-popover" onSubmit={(event) => { event.preventDefault(); if (draftMonth) setSelectedMonth(draftMonth); setPeriodOpen(false); }}><strong>Período global</strong><label>Mês e ano<input type="month" value={draftMonth} onChange={(event) => setDraftMonth(event.target.value)} required /></label><button type="submit">Aplicar período</button></form>}</div>
           <button className="meg-icon-action meg-add" onClick={onNewTransaction} aria-label="Novo lançamento" title="Novo lançamento"><Icon name="plus" /></button>
           <span className="meg-sync"><i />Dados sincronizados</span>
           <button className="meg-icon-action" onClick={toggleTheme} aria-label="Alternar tema" title="Alternar tema"><Icon name="theme" /></button>
