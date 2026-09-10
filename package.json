@@ -47,6 +47,7 @@
     "test:adaptive-cards": "node apps/web/src/adaptive-card-typography.test.js && node apps/web/src/card-cycle-core.test.js",
     "test:adaptive-workspace": "node apps/web/src/adaptive-workspace.test.js",
     "test:login-layout": "node apps/web/src/login-layout.test.js",
+    "test:visual-contract": "node apps/web/src/visual-contract.test.js",
     "test:layout-reform": "node apps/web/src/layout-reform.test.js",
     "test:stable-grid-filters": "node apps/web/src/stable-grid-filters.test.js",
     "test:recurring-transactions": "node apps/web/src/recurring-transactions.test.js",
