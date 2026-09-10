@@ -133,6 +133,57 @@ function initializeValidatedDashboard() {
   if (title) title.textContent = 'Vencimentos agrupados';
   const eyebrow = payables.querySelector('.decision-eyebrow');
   if (eyebrow) eyebrow.textContent = 'AGENDA FINANCEIRA';
+
+  const overview = document.createElement('section');
+  overview.className = 'meg-dashboard-overview';
+  overview.setAttribute('aria-label', 'Visão geral financeira');
+  overview.innerHTML = `
+    <article class="meg-balance-hero">
+      <div class="meg-balance-heading">
+        <small>SALDO MONETÁRIO REALIZADO</small>
+        <strong data-dashboard-copy="monetarySituationMetric">R$ 0,00</strong>
+        <span>Receitas disponíveis menos despesas monetárias efetivamente pagas.</span>
+      </div>
+      <div class="meg-balance-breakdown">
+        <div><span>Saldo anterior</span><strong data-dashboard-copy="availableBalanceMetric">R$ 0,00</strong></div>
+        <div><span>Receitas do período</span><strong data-dashboard-copy="currentIncomeMetric">R$ 0,00</strong></div>
+        <div><span>Saldo disponível</span><strong data-dashboard-copy="dashboardGlanceBalance">R$ 0,00</strong></div>
+      </div>
+    </article>
+    <article class="meg-dashboard-attention">
+      <div><small>DIAGNÓSTICO DO MÊS</small><strong data-dashboard-copy="monthDecisionStatus">ANALISANDO</strong><span data-dashboard-copy="pendingBillsTrend">Verificando os compromissos do período.</span></div>
+      <div><span data-dashboard-copy="monthCloseLabel">Pendente para fechar o mês</span><strong data-dashboard-copy="missingToCloseMetric">R$ 0,00</strong></div>
+    </article>
+    <div class="meg-dashboard-metrics">
+      <article><span>Despesas pagas</span><strong data-dashboard-copy="currentExpenseMetric">R$ 0,00</strong><small data-dashboard-copy="currentExpenseTrend">0 lançamentos</small></article>
+      <article class="attention"><span>Despesas pendentes</span><strong data-dashboard-copy="pendingLaunchedMetric">R$ 0,00</strong><small data-dashboard-copy="pendingLaunchedTrend">Pendências do mês</small></article>
+      <article class="benefit"><span>Benefício alimentação</span><strong data-dashboard-copy="ticketSituationMetric">R$ 0,00</strong><small data-dashboard-copy="ticketSituationNote">Conta separada do caixa monetário</small></article>
+      <article><span>Consolidado realizado</span><strong data-dashboard-copy="consolidatedSituationMetric">R$ 0,00</strong><small data-dashboard-copy="consolidatedSituationNote">Monetário e benefício do período</small></article>
+    </div>`;
+
+  const stickyHeader = dashboard.querySelector(':scope > .meg-page-sticky-header');
+  (stickyHeader || dashboard.firstElementChild)?.insertAdjacentElement('afterend', overview);
+
+  const synchronize = (source) => {
+    overview.querySelectorAll(`[data-dashboard-copy="${source.id}"]`).forEach((target) => {
+      target.textContent = source.textContent?.trim() || target.textContent;
+    });
+  };
+  overview.querySelectorAll('[data-dashboard-copy]').forEach((target) => {
+    const source = document.getElementById(target.dataset.dashboardCopy);
+    if (!source) return;
+    synchronize(source);
+    new MutationObserver(() => synchronize(source)).observe(source, { childList: true, subtree: true, characterData: true });
+  });
+
+  const recent = document.getElementById('megRecentActivity');
+  if (recent) {
+    const bottom = document.createElement('section');
+    bottom.className = 'meg-dashboard-bottom-grid';
+    bottom.setAttribute('aria-label', 'Histórico e agenda financeira');
+    payables.insertAdjacentElement('beforebegin', bottom);
+    bottom.append(recent, payables);
+  }
 }
 
 function initializeTransactionColumns() {
