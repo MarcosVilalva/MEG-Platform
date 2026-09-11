@@ -1,16 +1,11 @@
-import { readSession } from './auth-client';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
+import { authenticatedRequest } from './auth-client';
 
 export type CardInstallment = { id: string; number: number; amount: string | number; statementMonth: string; status: string; paidAt?: string | null };
 export type CardPurchase = { id: string; description: string; totalAmount: string | number; purchaseDate: string; installments: number; status: string; category?: { id: string; name: string } | null; entries: CardInstallment[] };
 export type CreditCard = { id: string; name: string; issuer?: string | null; brand?: string | null; lastFour?: string | null; creditLimit: string | number; closingDay: number; dueDay: number; color?: string | null; isActive: boolean; usedLimit: number; availableLimit: number; statementAmount: number; purchases: CardPurchase[] };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const session = readSession();
-  if (!session) throw new Error('UNAUTHORIZED');
-  const response = await fetch(`${API_URL}${path}`, { ...init, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.accessToken}`, ...(init?.headers || {}) } });
-  if (!response.ok) { const payload = await response.json().catch(() => ({})); throw new Error(payload.error || `HTTP_${response.status}`); }
-  return response.json() as Promise<T>;
+  return authenticatedRequest<T>(path, init);
 }
 
 export const cardsClient = {

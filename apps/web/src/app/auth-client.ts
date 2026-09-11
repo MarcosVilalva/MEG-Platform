@@ -29,6 +29,7 @@ export type RegistrationResult = AuthSession | {
 };
 
 const SESSION_KEY = 'meg.auth.session';
+let refreshInFlight: Promise<AuthSession | null> | null = null;
 
 export type ApiHealth = {
   status: string;
@@ -39,6 +40,8 @@ export type ApiHealth = {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
+    cache: 'no-store',
+    signal: init?.signal || AbortSignal.timeout(45_000),
     headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) }
   });
 
@@ -49,6 +52,43 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
+}
+
+export async function refreshAuthSession(): Promise<AuthSession | null> {
+  if (refreshInFlight) return refreshInFlight;
+  const current = readSession();
+  if (!current?.refreshToken) return null;
+  refreshInFlight = request<AuthSession>('/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken: current.refreshToken })
+  }).then((next) => {
+    saveSession(next);
+    return next;
+  }).catch(() => {
+    clearSession();
+    return null;
+  }).finally(() => { refreshInFlight = null; });
+  return refreshInFlight;
+}
+
+export async function authenticatedRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  let session = readSession();
+  if (!session) throw Object.assign(new Error('UNAUTHORIZED'), { status: 401 });
+  const send = (accessToken: string) => fetch(`${API_URL}${path}`, {
+    ...init,
+    cache: 'no-store',
+    signal: init?.signal || AbortSignal.timeout(45_000),
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}`, ...(init?.headers || {}) }
+  });
+  let response = await send(session.accessToken);
+  if (response.status === 401) {
+    session = await refreshAuthSession();
+    if (!session) throw Object.assign(new Error('UNAUTHORIZED'), { status: 401 });
+    response = await send(session.accessToken);
+  }
+  const payload = response.status === 204 ? undefined : await response.json().catch(() => ({}));
+  if (!response.ok) throw Object.assign(new Error((payload as { error?: string })?.error || `HTTP_${response.status}`), { status: response.status });
+  return payload as T;
 }
 
 export function readSession(): AuthSession | null {
