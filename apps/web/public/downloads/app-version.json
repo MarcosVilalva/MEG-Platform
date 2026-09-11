@@ -1,9 +1,9 @@
 {
-  "versionCode": 243,
-  "versionName": "1.1.243",
+  "versionCode": 244,
+  "versionName": "1.1.244",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "265ee8b1f8a8d2985dbfdb430fb75d4a8c4de7aaf0c4849fed8a5c59a1781f1b",
+  "sha256": "382a93c3f27940b743e296f090d783347ba0050a86a380b04207768af3af7a24",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Aplicar contrato visual validado v6"
+  "releaseNotes": "Alinhar Cadastros e Cartões ao contrato V10"
 }
