@@ -60,7 +60,7 @@ export function App({ onLogout }: AppProps) {
         {view === 'revenues' && <Revenues />}
         {view === 'cards' && <CreditCards />}
         {view === 'payables' && <Payables />}
-        {view === 'catalogs' && <FinancialCatalogs onNavigate={setView} />}
+        {view === 'catalogs' && <FinancialCatalogs />}
         {view === 'users' && <UserManagement />}
         {view === 'analytics' && <Analytics />}
         {view === 'cashflow' && <Cashflow />}
