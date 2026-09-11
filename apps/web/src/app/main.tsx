@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { AuthenticatedApp } from './AuthenticatedApp';
 import '../styles/meg-v15.css';
+import '../styles/v15-fidelity-fixes.css';
 
 document.body.classList.add('web-validation');
 
