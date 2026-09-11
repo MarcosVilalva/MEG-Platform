@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@meg/database';
+import { resolveWorkspaceContext } from '../workspaces/service';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
@@ -35,12 +36,56 @@ function addMonths(month: string, offset: number) {
   return new Date(Date.UTC(year, monthNumber - 1 + offset, 1)).toISOString().slice(0, 7);
 }
 
+type LegacyCard = {
+  paymentMethod?: unknown; issuer?: unknown; productName?: unknown; brand?: unknown;
+  lastFour?: unknown; theme?: unknown; closingDay?: unknown; dueDay?: unknown;
+  limit?: unknown; isActive?: unknown;
+};
+type LegacyTransaction = Record<string, unknown>;
+
+function text(value: unknown) { return typeof value === 'string' ? value.trim() : ''; }
+function number(value: unknown) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0; }
+function key(value: unknown) { return text(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase(); }
+function legacyState(value: unknown) {
+  const state = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+  const catalogs = state.catalogs && typeof state.catalogs === 'object' ? state.catalogs as Record<string, unknown> : {};
+  return {
+    cards: Array.isArray(catalogs.cards) ? catalogs.cards as LegacyCard[] : [],
+    transactions: Array.isArray(state.transactions) ? state.transactions as LegacyTransaction[] : []
+  };
+}
+
+async function sharedCardContext(userId: string) {
+  const context = await resolveWorkspaceContext(userId);
+  const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { state: true } });
+  return { ownerId: context.workspace.ownerId, legacy: legacyState(saved?.state) };
+}
+
+async function migrateLegacyCards(ownerId: string, cards: LegacyCard[]) {
+  const current = await prisma.creditCard.findMany({ where: { userId: ownerId }, select: { name: true } });
+  const existing = new Set(current.map((card) => key(card.name)));
+  const valid = cards.filter((card) => card.isActive !== false && text(card.paymentMethod) && number(card.closingDay) >= 1 && number(card.dueDay) >= 1);
+  for (const card of valid) {
+    const name = text(card.productName) || text(card.paymentMethod);
+    if (existing.has(key(name)) || existing.has(key(card.paymentMethod))) continue;
+    await prisma.creditCard.create({ data: {
+      userId: ownerId, name, issuer: text(card.issuer) || null, brand: text(card.brand) || null,
+      lastFour: text(card.lastFour).replace(/\D/g, '').slice(-4) || null,
+      creditLimit: Math.max(0, number(card.limit)), closingDay: Math.min(31, number(card.closingDay)),
+      dueDay: Math.min(31, number(card.dueDay)), color: '#88796c'
+    } });
+    existing.add(key(name));
+  }
+}
+
 export async function cardRoutes(app: FastifyInstance) {
   app.get('/', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const shared = await sharedCardContext(request.user.sub);
+    await migrateLegacyCards(shared.ownerId, shared.legacy.cards);
     const cards = await prisma.creditCard.findMany({
-      where: { userId: request.user.sub, isActive: true },
+      where: { userId: shared.ownerId, isActive: true },
       orderBy: { createdAt: 'asc' },
       include: {
         purchases: {
@@ -52,30 +97,47 @@ export async function cardRoutes(app: FastifyInstance) {
     });
     return cards.map((card) => {
       const entries = card.purchases.flatMap((purchase) => purchase.entries);
-      const usedLimit = entries.filter((entry) => entry.status === 'open').reduce((sum, entry) => sum + Number(entry.amount), 0);
-      const statementAmount = entries.filter((entry) => entry.statementMonth === parsed.data.month && entry.status === 'open').reduce((sum, entry) => sum + Number(entry.amount), 0);
-      return { ...card, usedLimit, availableLimit: Number(card.creditLimit) - usedLimit, statementAmount };
+      const aliases = new Set([key(card.name), ...shared.legacy.cards.filter((item) => key(item.productName) === key(card.name) || key(item.paymentMethod) === key(card.name)).map((item) => key(item.paymentMethod))]);
+      const legacyPurchases = shared.legacy.transactions.filter((item) => {
+        const method = key(item.paymentMethod || item.account);
+        const modality = key(item.modality);
+        return aliases.has(method) && key(item.type) === 'EXPENSE' && (!modality || modality === 'CREDITO');
+      }).map((item) => {
+        const amount = Math.abs(number(item.expenseAmount || item.amount || item.signedAmount));
+        const purchaseDate = text(item.purchaseDate || item.date);
+        const status = key(item.status || item.situation);
+        return { id: `legacy-${text(item.id)}`, description: text(item.description) || 'Compra no cartão', totalAmount: amount, purchaseDate, installments: number(item.installments || item.installmentQty) || 1, status: 'legacy', category: null, entries: [], legacyOpen: !['PAID', 'PAGO', 'RECEIVED', 'RECEBIDO', 'RECONCILED', 'CONCILIADO'].includes(status) };
+      });
+      const legacyOpen = legacyPurchases.filter((item) => item.legacyOpen);
+      const usedLimit = entries.filter((entry) => entry.status === 'open').reduce((sum, entry) => sum + Number(entry.amount), 0) + legacyOpen.reduce((sum, item) => sum + item.totalAmount, 0);
+      const payableStatementAmount = entries.filter((entry) => entry.statementMonth === parsed.data.month && entry.status === 'open').reduce((sum, entry) => sum + Number(entry.amount), 0);
+      const statementAmount = payableStatementAmount + legacyOpen.filter((item) => item.purchaseDate.startsWith(parsed.data.month)).reduce((sum, item) => sum + item.totalAmount, 0);
+      const periodLegacy = legacyPurchases.filter((item) => item.purchaseDate.startsWith(parsed.data.month));
+      return { ...card, purchases: [...card.purchases, ...periodLegacy].sort((a, b) => String(b.purchaseDate).localeCompare(String(a.purchaseDate))), usedLimit, availableLimit: Number(card.creditLimit) - usedLimit, statementAmount, payableStatementAmount };
     });
   });
 
   app.post('/', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = cardSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return reply.code(201).send(await prisma.creditCard.create({ data: { userId: request.user.sub, ...parsed.data } }));
+    const { ownerId } = await sharedCardContext(request.user.sub);
+    return reply.code(201).send(await prisma.creditCard.create({ data: { userId: ownerId, ...parsed.data } }));
   });
 
   app.patch('/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = cardSchema.partial().safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
-    const card = await prisma.creditCard.findFirst({ where: { id, userId: request.user.sub } });
+    const { ownerId } = await sharedCardContext(request.user.sub);
+    const card = await prisma.creditCard.findFirst({ where: { id, userId: ownerId } });
     if (!card) return reply.code(404).send({ error: 'CARD_NOT_FOUND' });
     return prisma.creditCard.update({ where: { id }, data: parsed.data });
   });
 
   app.delete('/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const card = await prisma.creditCard.findFirst({ where: { id, userId: request.user.sub } });
+    const { ownerId } = await sharedCardContext(request.user.sub);
+    const card = await prisma.creditCard.findFirst({ where: { id, userId: ownerId } });
     if (!card) return reply.code(404).send({ error: 'CARD_NOT_FOUND' });
     return prisma.creditCard.update({ where: { id }, data: { isActive: false } });
   });
@@ -83,7 +145,8 @@ export async function cardRoutes(app: FastifyInstance) {
   app.post('/purchases', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = purchaseSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    const card = await prisma.creditCard.findFirst({ where: { id: parsed.data.cardId, userId: request.user.sub, isActive: true } });
+    const { ownerId } = await sharedCardContext(request.user.sub);
+    const card = await prisma.creditCard.findFirst({ where: { id: parsed.data.cardId, userId: ownerId, isActive: true } });
     if (!card) return reply.code(400).send({ error: 'INVALID_CARD' });
     if (parsed.data.categoryId) {
       const category = await prisma.category.findUnique({ where: { id: parsed.data.categoryId } });
@@ -99,7 +162,7 @@ export async function cardRoutes(app: FastifyInstance) {
 
     const purchase = await prisma.cardPurchase.create({
       data: {
-        userId: request.user.sub,
+        userId: ownerId,
         cardId: card.id,
         categoryId: parsed.data.categoryId,
         description: parsed.data.description,
@@ -121,7 +184,8 @@ export async function cardRoutes(app: FastifyInstance) {
 
   app.delete('/purchases/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const purchase = await prisma.cardPurchase.findFirst({ where: { id, userId: request.user.sub } });
+    const { ownerId } = await sharedCardContext(request.user.sub);
+    const purchase = await prisma.cardPurchase.findFirst({ where: { id, userId: ownerId } });
     if (!purchase) return reply.code(404).send({ error: 'PURCHASE_NOT_FOUND' });
     return prisma.cardPurchase.update({ where: { id }, data: { status: 'cancelled' } });
   });
@@ -130,15 +194,16 @@ export async function cardRoutes(app: FastifyInstance) {
     const params = z.object({ id: z.string(), month: monthSchema }).safeParse(request.params);
     const body = z.object({ accountId: z.string().optional().nullable(), paymentMethodId: z.string().optional().nullable(), paidAt: z.string().min(10) }).safeParse(request.body);
     if (!params.success || !body.success) return validationError(reply, { params: params.success ? null : params.error.flatten(), body: body.success ? null : body.error.flatten() });
-    const card = await prisma.creditCard.findFirst({ where: { id: params.data.id, userId: request.user.sub } });
+    const { ownerId } = await sharedCardContext(request.user.sub);
+    const card = await prisma.creditCard.findFirst({ where: { id: params.data.id, userId: ownerId } });
     if (!card) return reply.code(404).send({ error: 'CARD_NOT_FOUND' });
-    const entries = await prisma.cardInstallment.findMany({ where: { purchase: { cardId: card.id, userId: request.user.sub, status: 'active' }, statementMonth: params.data.month, status: 'open' } });
+    const entries = await prisma.cardInstallment.findMany({ where: { purchase: { cardId: card.id, userId: ownerId, status: 'active' }, statementMonth: params.data.month, status: 'open' } });
     if (!entries.length) return reply.code(400).send({ error: 'EMPTY_STATEMENT' });
     const amount = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
     return prisma.$transaction(async (tx) => {
       await tx.cardInstallment.updateMany({ where: { id: { in: entries.map((entry) => entry.id) } }, data: { status: 'paid', paidAt: new Date(body.data.paidAt) } });
       const event = await tx.financialEvent.create({ data: {
-        userId: request.user.sub,
+        userId: ownerId,
         description: `Fatura ${card.name} ${params.data.month}`,
         type: 'expense', status: 'paid', date: new Date(body.data.paidAt), competence: body.data.paidAt.slice(0, 7),
         amount, signedAmount: -amount, accountId: body.data.accountId, paymentMethodId: body.data.paymentMethodId
