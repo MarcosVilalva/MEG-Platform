@@ -17,6 +17,8 @@ import { Reconciliation } from '../modules/reconcile/Reconciliation';
 import { BudgetPanel } from '../modules/analytics/BudgetPanel';
 import { CommandPalette } from './CommandPalette';
 import { useAppStore } from './store';
+import { invalidateAuthenticatedCache, prefetchAuthenticatedData } from './auth-client';
+import { readCloudState } from './app-state-client';
 
 interface AppProps { onLogout: () => void; }
 
@@ -24,6 +26,8 @@ export function App({ onLogout }: AppProps) {
   const [view, setView] = useState('dashboard');
   const [commandOpen, setCommandOpen] = useState(false);
   const theme = useAppStore((state) => state.theme);
+  const selectedMonth = useAppStore((state) => state.selectedMonth);
+  const replaceTransactions = useAppStore((state) => state.replaceTransactions);
 
   function openNewTransaction() {
     setView('transactions');
@@ -33,6 +37,16 @@ export function App({ onLogout }: AppProps) {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+
+  useEffect(() => {
+    let active = true;
+    const synchronize = (fresh = false) => { if (fresh) invalidateAuthenticatedCache('/app-state'); return void readCloudState().then((result) => { if (active) replaceTransactions(result.state.transactions); }).catch(() => undefined); };
+    void prefetchAuthenticatedData(selectedMonth).then(() => synchronize());
+    const timer = window.setInterval(() => synchronize(true), 15_000);
+    const refresh = () => { if (document.visibilityState === 'visible') synchronize(true); };
+    window.addEventListener('focus', refresh); document.addEventListener('visibilitychange', refresh);
+    return () => { active = false; window.clearInterval(timer); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
+  }, [selectedMonth, replaceTransactions]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
