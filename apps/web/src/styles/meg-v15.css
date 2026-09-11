@@ -58,6 +58,8 @@ body {
   width: 100%;
   min-width: 0;
   margin-left: 0;
+  container-type: inline-size;
+  container-name: meg-workspace;
 }
 
 .web-validation .meg-topbar {
@@ -160,7 +162,7 @@ body {
   min-width: 0;
 }
 
-/* Inicialização: os dados são pré-carregados antes de liberar a interface. */
+/* Inicialização: a fonte compartilhada é confirmada antes de liberar a interface. */
 .meg-boot-screen {
   position: fixed;
   inset: 0;
@@ -233,6 +235,71 @@ body {
   max-width: 100%;
 }
 
+/* Fidelidade V15: o Dashboard React usa a mesma hierarquia do protótipo. */
+.web-validation .validated-dashboard .dashboard-primary {
+  grid-template-columns: 1fr !important;
+}
+
+.web-validation .validated-dashboard .premium-balance {
+  width: 100%;
+}
+
+.web-validation .validated-dashboard .dashboard-updated {
+  display: block;
+  margin-top: 8px;
+  color: var(--brand);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.web-validation .validated-dashboard .premium-alert.ok strong {
+  color: var(--brand);
+}
+
+.web-validation .validated-dashboard .premium-alert.danger strong {
+  color: var(--danger);
+}
+
+/* As artes específicas só aparecem quando a identidade foi realmente resolvida. */
+.web-validation .physical-card.is-generic .card-art-generic {
+  display: block;
+}
+
+.web-validation .credit-card-option .mini-card {
+  background-size: cover !important;
+  background-position: center !important;
+}
+
+@container meg-workspace (max-width: 860px) {
+  .web-validation .validated-dashboard .premium-metrics,
+  .web-validation .validated-dashboard .premium-grid2,
+  .web-validation .grid2,
+  .web-validation .grid3,
+  .web-validation .summary-panels,
+  .web-validation .card-hero-grid,
+  .web-validation .cards-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .web-validation .validated-dashboard .dashboard-alert {
+    grid-template-columns: 1fr;
+  }
+}
+
+@container meg-workspace (max-width: 580px) {
+  .web-validation .metrics,
+  .web-validation .premium-metrics,
+  .web-validation .launch-kpis,
+  .web-validation .card-metrics,
+  .web-validation .invoice-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .web-validation .validated-dashboard .dashboard-row {
+    grid-template-columns: minmax(0,1fr) auto;
+  }
+}
+
 @media (min-width: 681px) and (max-width: 980px) {
   .web-validation.meg-app,
   .web-validation.meg-app.sidebar-collapsed {
@@ -250,6 +317,10 @@ body {
   }
 }
 
+/*
+ * Mobile V15 real: o menu lateral não pode continuar ocupando a largura da tela.
+ * Ele vira drawer e a navegação principal passa para o dock inferior.
+ */
 @media (max-width: 680px) {
   .web-validation.meg-app,
   .web-validation.meg-app.sidebar-collapsed {
@@ -264,20 +335,172 @@ body {
   .web-validation .meg-topbar {
     left: auto;
     width: 100%;
+    height: 58px;
+    padding: 0 10px;
+  }
+
+  .web-validation .meg-top-context {
+    min-width: 0;
+    gap: 7px;
+  }
+
+  .web-validation .top-title strong {
+    font-size: 12px;
+  }
+
+  .web-validation .top-title small {
+    max-width: 42vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 9px;
+  }
+
+  .web-validation .meg-top-actions {
+    gap: 3px;
+  }
+
+  .web-validation .meg-sync,
+  .web-validation .meg-period-active,
+  .web-validation .meg-sidebar-toggle {
+    display: none !important;
+  }
+
+  .web-validation .meg-icon-action,
+  .web-validation .meg-user-avatar,
+  .web-validation .meg-mobile-menu {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 10px;
+  }
+
+  .web-validation .meg-mobile-menu {
+    display: grid !important;
+    place-items: center;
   }
 
   .web-validation .meg-sidebar {
+    display: flex !important;
     position: fixed;
     top: 0;
     bottom: 0;
     left: 0;
+    z-index: 82;
     width: min(292px, 86vw);
     height: 100dvh;
+    transform: translateX(-105%);
+    transition: transform .22s ease;
+    box-shadow: 24px 0 60px rgba(0,0,0,.38);
+  }
+
+  .web-validation.mobile-menu-open .meg-sidebar {
+    transform: translateX(0);
+  }
+
+  .web-validation .meg-sidebar-backdrop {
+    display: none;
+  }
+
+  .web-validation.mobile-menu-open .meg-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 78;
+    border: 0;
+    background: rgba(1,8,13,.62);
+    backdrop-filter: blur(2px);
   }
 
   .web-validation .meg-page-content {
-    padding-left: 10px;
-    padding-right: 10px;
+    padding: 13px 10px 88px;
+  }
+
+  .web-validation .meg-mobile-dock {
+    display: flex !important;
+    position: fixed;
+    z-index: 70;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    min-height: 64px;
+  }
+
+  .web-validation .validated-dashboard .page-head {
+    margin-bottom: 12px;
+  }
+
+  .web-validation .validated-dashboard .page-head h1 {
+    font-size: 22px;
+  }
+
+  .web-validation .validated-dashboard .premium-balance {
+    min-height: auto;
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .web-validation .validated-dashboard .premium-balance h2 {
+    margin: 10px 0 4px;
+    font-size: clamp(31px, 10vw, 43px);
+    line-height: 1;
+  }
+
+  .web-validation .validated-dashboard .premium-balance-stats {
+    position: static;
+    grid-template-columns: 1fr;
+    gap: 9px;
+    margin-top: 24px;
+  }
+
+  .web-validation .validated-dashboard .dashboard-alert {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    min-height: auto;
+    padding: 16px;
+  }
+
+  .web-validation .validated-dashboard .dashboard-alert > div:last-child {
+    text-align: left;
+  }
+
+  .web-validation .validated-dashboard .premium-metrics,
+  .web-validation .validated-dashboard .premium-grid2 {
+    grid-template-columns: 1fr;
+  }
+
+  .web-validation .validated-dashboard .premium-metric {
+    min-height: 104px;
+  }
+
+  .web-validation .validated-dashboard .premium-card-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .web-validation .validated-dashboard .dashboard-row {
+    grid-template-columns: minmax(0,1fr) auto;
+  }
+
+  .web-validation .validated-dashboard .dashboard-row .row-action {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .web-validation .validated-dashboard .agenda-card .dashboard-row {
+    grid-template-columns: auto minmax(0,1fr);
+  }
+
+  .web-validation .validated-dashboard .agenda-card .dashboard-row .row-action {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 681px) {
+  .web-validation .meg-mobile-menu,
+  .web-validation .meg-mobile-dock,
+  .web-validation .meg-sidebar-backdrop {
+    display: none !important;
   }
 }
 
