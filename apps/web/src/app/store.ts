@@ -6,8 +6,12 @@ import { monthInSaoPaulo } from './calendar';
 interface AppState {
   transactions: LegacyTransaction[];
   selectedMonth: string;
+  periodMode: 'month' | 'range' | 'all';
+  periodStart: string;
+  periodEnd: string;
   theme: 'light' | 'dark';
   setSelectedMonth: (month: string) => void;
+  setGlobalPeriod: (period: { mode: 'month' | 'range' | 'all'; month?: string; start?: string; end?: string }) => void;
   addTransaction: (transaction: LegacyTransaction) => void;
   updateTransaction: (id: string, patch: Partial<LegacyTransaction>) => void;
   deleteTransaction: (id: string) => void;
@@ -15,16 +19,24 @@ interface AppState {
   markAsPaid: (id: string) => void;
   markAsReconciled: (id: string) => void;
   toggleTheme: () => void;
-  resetDemoData: () => void;
   replaceTransactions: (transactions: LegacyTransaction[]) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
   transactions: loadTransactions(),
   selectedMonth: monthInSaoPaulo(),
+  periodMode: 'month',
+  periodStart: `${monthInSaoPaulo()}-01`,
+  periodEnd: `${monthInSaoPaulo()}-31`,
   theme: (localStorage.getItem('meg-theme') as 'light' | 'dark') || 'light',
 
-  setSelectedMonth: (month) => set({ selectedMonth: month }),
+  setSelectedMonth: (month) => set({ selectedMonth: month, periodMode: 'month', periodStart: `${month}-01`, periodEnd: `${month}-31` }),
+  setGlobalPeriod: ({ mode, month, start, end }) => set((state) => ({
+    periodMode: mode,
+    selectedMonth: month || state.selectedMonth,
+    periodStart: start || (month ? `${month}-01` : state.periodStart),
+    periodEnd: end || (month ? `${month}-31` : state.periodEnd)
+  })),
 
   addTransaction: (transaction) => {
     const transactions = [transaction, ...get().transactions];
@@ -92,11 +104,5 @@ export const useAppStore = create<AppState>((set, get) => ({
   replaceTransactions: (transactions) => {
     saveTransactions(transactions);
     set({ transactions });
-  },
-
-  resetDemoData: async () => {
-    const { sampleTransactions } = await import('./sample-data');
-    saveTransactions(sampleTransactions);
-    set({ transactions: sampleTransactions });
   }
 }));

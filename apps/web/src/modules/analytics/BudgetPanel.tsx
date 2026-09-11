@@ -14,6 +14,7 @@ export function BudgetPanel() {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [formOpen, setFormOpen] = useState(false);
   const canWrite = readSession()?.user.role !== 'VIEWER';
 
   async function load() {
@@ -37,6 +38,7 @@ export function BudgetPanel() {
     await financeClient.saveBudget({ month: selectedMonth, group: group.trim(), amount: value });
     setGroup('');
     setAmount('');
+    setFormOpen(false);
     await load();
   }
 
@@ -47,12 +49,13 @@ export function BudgetPanel() {
   }
 
   return (
-    <MEGCard title="Orçamento por grupo" eyebrow="Limites mensais reais">
-      {canWrite && (
+    <MEGCard title="Orçamentos e metas" eyebrow="Limites mensais reais">
+      <div className="budget-heading"><div><strong>{brl.format(budgets.reduce((sum, item) => sum + item.amount, 0))}</strong><span>planejados para o período</span></div>{canWrite && <button className="meg-icon-action" onClick={() => setFormOpen((value) => !value)} aria-label="Novo orçamento" title="Novo orçamento">{formOpen ? '×' : '＋'}</button>}</div>
+      {canWrite && formOpen && (
         <form className="budget-form" onSubmit={submit}>
           <input value={group} onChange={(event) => setGroup(event.target.value)} placeholder="Grupo (ex.: Alimentação)" required />
           <MEGCurrencyInput value={amount} onValueChange={setAmount} placeholder="Limite mensal" aria-label="Limite mensal" required />
-          <button type="submit">Salvar limite</button>
+          <button type="submit">Confirmar limite</button>
         </form>
       )}
       {error && <div className="auth-error">Não foi possível carregar o orçamento: {error}</div>}

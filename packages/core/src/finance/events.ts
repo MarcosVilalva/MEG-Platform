@@ -5,6 +5,8 @@ export interface LegacyTransaction {
   type?: string;
   launchType?: string;
   date: string;
+  dueDate?: string;
+  purchaseDate?: string;
   description?: string;
   amount?: number;
   incomeAmount?: number;
@@ -15,6 +17,7 @@ export interface LegacyTransaction {
   paymentMethod?: string;
   group?: string;
   category?: string;
+  classification?: string;
   tags?: string[];
   notes?: string;
 }

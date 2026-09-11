@@ -1,139 +1,90 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { MEGCurrencyInput, MEGMetric } from '@ui';
-import { formatBRLValue, parseBRL } from '@shared/money';
-import { readSession } from '../../app/auth-client';
-import { financeClient, type Account, type Category, type PaymentMethod } from '../../app/finance-client';
-import { payablesClient, type Payable } from '../../app/payables-client';
-import { useAppStore } from '../../app/store';
+import { useEffect, useMemo, useState } from 'react';
+import { normalizeEvents, type LegacyTransaction } from '@core/finance/events';
+import { readCloudState, patchCloudTransactions } from '../../app/app-state-client';
 import { invalidateFinanceSummary } from '../../app/use-finance-summary';
-import { dateInSaoPaulo } from '../../app/calendar';
+import { useAppStore } from '../../app/store';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const iso = (value: string) => String(value || '').slice(0, 10);
+const today = () => new Date().toISOString().slice(0, 10);
+const isBenefit = (item: { account?: string; group?: string; category?: string; paymentMethod?: string }) => /benef|aliment|vero/i.test(`${item.account || ''} ${item.group || ''} ${item.category || ''} ${item.paymentMethod || ''}`);
+
+type Priority = 'all' | 'overdue' | 'today' | 'invoice' | 'upcoming';
 
 export function Payables() {
   const selectedMonth = useAppStore((state) => state.selectedMonth);
-  const setSelectedMonth = useAppStore((state) => state.setSelectedMonth);
-  const [items, setItems] = useState<Payable[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [methods, setMethods] = useState<PaymentMethod[]>([]);
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [dueDate, setDueDate] = useState(() => dateInSaoPaulo());
-  const [installmentQty, setInstallmentQty] = useState('1');
-  const [categoryId, setCategoryId] = useState('');
-  const [recurring, setRecurring] = useState(false);
-  const [frequency, setFrequency] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
-  const [endDate, setEndDate] = useState('');
-  const [paying, setPaying] = useState<Payable | null>(null);
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [accountId, setAccountId] = useState('');
-  const [paymentMethodId, setPaymentMethodId] = useState('');
+  const periodMode = useAppStore((state) => state.periodMode);
+  const periodEnd = useAppStore((state) => state.periodEnd);
+  const [source, setSource] = useState<LegacyTransaction[]>([]);
+  const [search, setSearch] = useState('');
+  const [priority, setPriority] = useState<Priority>('all');
+  const [order, setOrder] = useState<'urgent' | 'highest' | 'lowest'>('urgent');
+  const [payingId, setPayingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const role = readSession()?.user.role || 'VIEWER';
-  const canWrite = role !== 'VIEWER';
-  const canCancel = role === 'ADMIN' || role === 'MANAGER';
 
   async function load() {
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
+    try { setSource((await readCloudState()).state.transactions); }
+    catch { setError('Não foi possível carregar as pendências da base compartilhada.'); }
+    finally { setLoading(false); }
+  }
+  useEffect(() => { void load(); }, []);
+
+  const events = useMemo(() => normalizeEvents(source), [source]);
+  const availableBalance = useMemo(() => events.filter((item) => !isBenefit(item) && (item.type === 'income' || ['paid', 'reconciled'].includes(item.status))).reduce((sum, item) => sum + item.signedAmount, 0), [events]);
+  const pending = useMemo(() => events.filter((item) => {
+    const date = iso(item.date);
+    const inPeriod = periodMode === 'all' || (periodMode === 'range' ? date <= periodEnd : date <= `${selectedMonth}-31`);
+    return inPeriod && item.type === 'expense' && item.status === 'planned';
+  }), [events, selectedMonth, periodMode, periodEnd]);
+
+  const groupOf = (item: (typeof pending)[number]): Exclude<Priority, 'all'> => {
+    const date = iso(item.date);
+    if (/cart[aã]o|cr[eé]dito|fatura/i.test(`${item.paymentMethod || ''} ${item.notes || ''}`)) return 'invoice';
+    if (date < today()) return 'overdue';
+    if (date === today()) return 'today';
+    return 'upcoming';
+  };
+  const visible = useMemo(() => pending.filter((item) => {
+    const text = `${item.description} ${item.account || ''} ${item.group || ''} ${item.paymentMethod || ''}`.toLowerCase();
+    return text.includes(search.trim().toLowerCase()) && (priority === 'all' || groupOf(item) === priority);
+  }).sort((a, b) => order === 'highest' ? b.amount - a.amount : order === 'lowest' ? a.amount - b.amount : iso(a.date).localeCompare(iso(b.date))), [pending, search, priority, order]);
+  const totals = useMemo(() => ({
+    total: pending.reduce((sum, item) => sum + item.amount, 0),
+    overdue: pending.filter((item) => groupOf(item) === 'overdue').reduce((sum, item) => sum + item.amount, 0),
+    today: pending.filter((item) => groupOf(item) === 'today').reduce((sum, item) => sum + item.amount, 0),
+    upcoming: pending.filter((item) => ['invoice', 'upcoming'].includes(groupOf(item))).reduce((sum, item) => sum + item.amount, 0)
+  }), [pending]);
+  const paying = payingId ? pending.find((item) => item.id === payingId) || null : null;
+  const canPay = Boolean(paying && (isBenefit(paying) || paying.amount <= availableBalance));
+
+  async function confirmPayment() {
+    if (!paying || !canPay) return;
+    const current = source.find((item) => item.id === paying.id); if (!current) return;
+    setBusy(true); setError('');
     try {
-      const [payableData, categoryData, accountData, methodData] = await Promise.all([
-        payablesClient.list(selectedMonth),
-        financeClient.listCategories(),
-        financeClient.listAccounts(),
-        financeClient.listPaymentMethods()
-      ]);
-      setItems(payableData);
-      setCategories(categoryData.filter((item) => item.isActive && item.type !== 'income'));
-      setAccounts(accountData.filter((item) => item.isActive));
-      setMethods(methodData.filter((item) => item.isActive));
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'PAYABLES_LOAD_ERROR');
-    } finally {
-      setLoading(false);
-    }
+      await patchCloudTransactions([{ ...current, status: 'paid', situation: 'PAGO' }]);
+      invalidateFinanceSummary(); setPayingId(null); await load();
+    } catch { setError('A base não confirmou a baixa. Nenhum dado foi alterado.'); }
+    finally { setBusy(false); }
   }
 
-  useEffect(() => { void load(); }, [selectedMonth]);
+  const groups: Array<{ id: Exclude<Priority, 'all'>; label: string; hint: string }> = [
+    { id: 'overdue', label: 'Vencidos', hint: 'Pendências anteriores' },
+    { id: 'today', label: 'Hoje', hint: 'Ação imediata' },
+    { id: 'invoice', label: 'Faturas', hint: 'Compras agrupadas por cartão' },
+    { id: 'upcoming', label: 'Próximos', hint: 'Demais compromissos' }
+  ];
 
-  const totals = useMemo(() => {
-    const now = new Date();
-    return {
-      open: items.filter((item) => item.status !== 'paid').reduce((sum, item) => sum + Number(item.openAmount), 0),
-      overdue: items.filter((item) => item.status !== 'paid' && new Date(item.dueDate) < now).reduce((sum, item) => sum + Number(item.openAmount), 0),
-      paid: items.filter((item) => item.status === 'paid').reduce((sum, item) => sum + Number(item.totalAmount), 0),
-      count: items.filter((item) => item.status !== 'paid').length
-    };
-  }, [items]);
-
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    const value = parseBRL(amount);
-    if (!canWrite || !description.trim() || !Number.isFinite(value) || value <= 0) return;
-    setBusy(true);
-    try {
-      if (recurring) {
-        await payablesClient.createRecurring({
-          description: description.trim(),
-          amount: value,
-          categoryId: categoryId || undefined,
-          frequency,
-          nextDueDate: dueDate,
-          endDate: endDate || undefined
-        });
-      } else {
-        await payablesClient.create({
-          description: description.trim(),
-          totalAmount: value,
-          categoryId: categoryId || undefined,
-          dueDate,
-          installmentQty: Number(installmentQty)
-        });
-      }
-      setDescription('');
-      setAmount('');
-      setInstallmentQty('1');
-      await load();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'PAYABLE_SAVE_ERROR');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function confirmPayment(event: FormEvent) {
-    event.preventDefault();
-    if (!paying) return;
-    const value = parseBRL(paymentAmount);
-    if (!Number.isFinite(value) || value <= 0) return;
-    setBusy(true);
-    try {
-      await payablesClient.pay(paying.id, {
-        amount: value,
-        paidAt: dateInSaoPaulo(),
-        accountId: accountId || undefined,
-        paymentMethodId: paymentMethodId || undefined
-      });
-      setPaying(null);
-      setPaymentAmount('');
-      invalidateFinanceSummary();
-      await load();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'PAYMENT_ERROR');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return <section className="page">
-    <header className="page-header compact"><div><span>Contas a pagar</span><h1>Obrigações e recorrências</h1><p>Controle vencimentos, parcelas e pagamentos integrados ao fluxo de caixa.</p></div><label className="catalog-role">Mês<input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} /></label></header>
-    {error && <div className="auth-error">{error}</div>}
-    <section className="metric-grid"><MEGMetric label="Em aberto" value={brl.format(totals.open)} hint={`${totals.count} obrigação(ões)`} tone="warning"/><MEGMetric label="Vencido" value={brl.format(totals.overdue)} hint="Exige atenção" tone={totals.overdue > 0 ? 'danger' : 'good'}/><MEGMetric label="Pago no mês" value={brl.format(totals.paid)} hint="Obrigações quitadas" tone="good"/><MEGMetric label="Comprometimento" value={brl.format(totals.open + totals.paid)} hint={selectedMonth}/></section>
-    <div className="catalog-layout"><form className="meg-card catalog-form" onSubmit={submit}><span className="meg-eyebrow">Nova obrigação</span><h3>{recurring ? 'Despesa recorrente' : 'Conta a pagar'}</h3><label className="toggle-row"><input type="checkbox" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} disabled={!canWrite}/> Repetir automaticamente</label><label>Descrição<input value={description} onChange={(e) => setDescription(e.target.value)} disabled={!canWrite} required/></label><label>Valor {recurring ? 'por ocorrência' : 'total'}<MEGCurrencyInput value={amount} onValueChange={setAmount} disabled={!canWrite} required/></label><label>Primeiro vencimento<input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} disabled={!canWrite}/></label>{recurring ? <><label>Frequência<select value={frequency} onChange={(e) => setFrequency(e.target.value as typeof frequency)} disabled={!canWrite}><option value="weekly">Semanal</option><option value="monthly">Mensal</option><option value="yearly">Anual</option></select></label><label>Encerrar em (opcional)<input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} disabled={!canWrite}/></label></> : <label>Parcelas<input type="number" min="1" max="60" value={installmentQty} onChange={(e) => setInstallmentQty(e.target.value)} disabled={!canWrite}/></label>}<label>Categoria<select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} disabled={!canWrite}><option value="">Sem categoria</option>{categories.map((item) => <option key={item.id} value={item.id}>{item.group ? `${item.group} — ` : ''}{item.name}</option>)}</select></label><button className="auth-submit" disabled={!canWrite || busy}>{busy ? 'Salvando...' : 'Salvar obrigação'}</button></form>
-      <div className="meg-card catalog-list"><div className="catalog-list-heading"><div><span className="meg-eyebrow">Agenda mensal</span><h3>{items.length} conta(s)</h3></div><button onClick={() => void load()}>Atualizar</button></div><div className="catalog-table">{loading && <p className="catalog-empty">Carregando contas...</p>}{items.map((item) => { const overdue = item.status !== 'paid' && new Date(item.dueDate) < new Date(); return <article key={item.id}><div><strong>{item.description}</strong><span>{item.category?.name || 'Sem categoria'} • vence {new Date(item.dueDate).toLocaleDateString('pt-BR')}{item.installmentQty > 1 ? ` • ${item.installmentNo}/${item.installmentQty}` : ''}</span></div><strong>{brl.format(Number(item.openAmount))}</strong><span className={`status-pill ${item.status === 'paid' ? 'active' : ''}`}>{item.status === 'paid' ? 'Pago' : overdue ? 'Vencido' : item.status === 'partial' ? 'Parcial' : 'Em aberto'}</span><div className="table-actions">{item.status !== 'paid' && canWrite && <button onClick={() => { setPaying(item); setPaymentAmount(formatBRLValue(item.openAmount)); }}>Pagar</button>}{item.status !== 'paid' && canCancel && <button className="danger" onClick={() => void payablesClient.cancel(item.id).then(load)}>Cancelar</button>}</div></article>; })}{!loading && !items.length && <p className="catalog-empty">Nenhuma conta no mês.</p>}</div></div></div>
-    {paying && <div className="modal-backdrop"><form className="modal-card" onSubmit={confirmPayment}><header><div><span>Baixa de pagamento</span><h2>{paying.description}</h2></div><button type="button" className="icon-button" onClick={() => setPaying(null)}>×</button></header><div className="form-grid"><label>Valor<MEGCurrencyInput value={paymentAmount} onValueChange={setPaymentAmount}/></label><label>Conta<select value={accountId} onChange={(e) => setAccountId(e.target.value)}><option value="">Não informada</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Forma de pagamento<select value={paymentMethodId} onChange={(e) => setPaymentMethodId(e.target.value)}><option value="">Não informada</option>{methods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label></div><footer><button type="button" onClick={() => setPaying(null)}>Cancelar</button><button className="auth-submit" disabled={busy}>Confirmar pagamento</button></footer></form></div>}
+  return <section className="meg-screen payables-screen" aria-busy={loading}>
+    <header className="screen-heading"><div><span>PENDENTES</span><h1>Vencimentos agrupados</h1><p>Compromissos organizados por urgência, sem alterar o saldo antes da confirmação.</p></div><span className="pending-total-pill">{brl.format(totals.total)} em aberto</span></header>
+    {error && <div className="notice danger">{error}</div>}
+    <section className="pending-summary"><article><span>TOTAL PENDENTE</span><strong className="negative">{brl.format(totals.total)}</strong><small>{pending.length} compromisso(s)</small></article><article><span>VENCIDOS</span><strong>{brl.format(totals.overdue)}</strong><small>Prioridade máxima</small></article><article><span>VENCEM HOJE</span><strong>{brl.format(totals.today)}</strong><small>Confirmação obrigatória</small></article><article><span>PRÓXIMOS</span><strong>{brl.format(totals.upcoming)}</strong><small>Agenda ativa</small></article></section>
+    <div className="pending-priorities">{(['all', 'overdue', 'today', 'invoice', 'upcoming'] as Priority[]).map((id) => <button key={id} className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{id === 'all' ? 'Todos' : groups.find((group) => group.id === id)?.label}</button>)}</div>
+    <div className="pending-toolbar"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar descrição, conta, cartão ou grupo"/><select value={order} onChange={(event) => setOrder(event.target.value as typeof order)}><option value="urgent">Mais urgente primeiro</option><option value="highest">Maior valor primeiro</option><option value="lowest">Menor valor primeiro</option></select></div>
+    <div className="pending-groups">{groups.map((group) => { const items = visible.filter((item) => groupOf(item) === group.id); if (!items.length) return null; return <section key={group.id} className="pending-group meg-panel"><header><div><span>{group.label.toUpperCase()}</span><h2>{group.hint}</h2></div><strong>{brl.format(items.reduce((sum, item) => sum + item.amount, 0))}</strong></header>{items.map((item) => <article className="pending-row" key={item.id}><div><strong>{new Date(`${iso(item.date)}T12:00:00`).toLocaleDateString('pt-BR')}</strong><small>{group.label}</small></div><div><strong>{item.description}</strong><small>{item.account || 'Conta não informada'} · {item.group || item.category || 'Sem grupo'}</small></div><strong>{brl.format(item.amount)}</strong><span className={`status ${group.id === 'overdue' ? 'planned' : 'confirmed'}`}>{group.label}</span><button onClick={() => setPayingId(item.id)}>Baixar</button></article>)}</section>; })}{!loading && !visible.length && <div className="empty-state">Nenhuma pendência corresponde aos filtros.</div>}</div>
+    {paying && <div className="payment-backdrop"><section className="payment-confirm"><header><div><span>CONFIRMAR BAIXA</span><h2>{paying.description}</h2></div><button onClick={() => setPayingId(null)} aria-label="Fechar">×</button></header><dl><div><dt>Valor</dt><dd>{brl.format(paying.amount)}</dd></div><div><dt>Saldo monetário disponível</dt><dd>{brl.format(availableBalance)}</dd></div></dl>{!canPay && <div className="notice danger">Pagamento bloqueado: o valor supera o saldo monetário disponível.</div>}<p>A baixa será gravada no lançamento original e confirmada pela base antes de atualizar a tela.</p><footer><button onClick={() => setPayingId(null)}>Cancelar</button><button className="confirm" disabled={!canPay || busy} onClick={() => void confirmPayment()}>{busy ? 'Confirmando...' : 'Confirmar pagamento'}</button></footer></section></div>}
   </section>;
 }

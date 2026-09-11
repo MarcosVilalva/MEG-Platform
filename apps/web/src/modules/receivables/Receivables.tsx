@@ -24,6 +24,9 @@ export function Receivables() {
   const [paymentMethodId, setPaymentMethodId] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [editor, setEditor] = useState<'customer' | 'receivable' | null>(null);
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('open');
 
   const role = readSession()?.user.role ?? 'VIEWER';
   const canWrite = role !== 'VIEWER';
@@ -61,6 +64,7 @@ export function Receivables() {
     try {
       await receivablesClient.createCustomer({ name: customerName.trim() });
       setCustomerName('');
+      setEditor(null);
       await load();
     } finally {
       setBusy(false);
@@ -81,11 +85,19 @@ export function Receivables() {
       });
       setDescription('');
       setAmount('');
+      setEditor(null);
       await load();
     } finally {
       setBusy(false);
     }
   }
+
+  const visibleItems = useMemo(() => items.filter((item) => {
+    const overdue = item.status !== 'paid' && new Date(item.dueDate) < new Date();
+    const matchesText = `${item.description} ${item.customer?.name || ''}`.toLowerCase().includes(query.trim().toLowerCase());
+    const matchesStatus = statusFilter === 'all' || (statusFilter === 'open' && item.status !== 'paid') || (statusFilter === 'overdue' && overdue) || (statusFilter === 'paid' && item.status === 'paid');
+    return matchesText && matchesStatus;
+  }), [items, query, statusFilter]);
 
   async function confirmReceipt(event: FormEvent) {
     event.preventDefault();
@@ -112,7 +124,7 @@ export function Receivables() {
     <section className="page">
       <header className="page-header compact">
         <div><span>Finanças pessoais</span><h1>Contas a receber</h1><p>Controle de valores previstos, vencidos e recebidos.</p></div>
-        <div className="catalog-role">Perfil: <strong>{role}</strong></div>
+        {canWrite && <div className="page-header-actions"><button className="meg-icon-action" title="Cadastrar pagador" aria-label="Cadastrar pagador" onClick={() => setEditor('customer')}>♙</button><button className="header-primary" onClick={() => setEditor('receivable')}>＋ Nova receita</button></div>}
       </header>
 
       <div className="kpi-grid">
@@ -121,29 +133,12 @@ export function Receivables() {
         <article className="meg-card"><span>Recebido</span><strong>{brl.format(totals.paid)}</strong></article>
       </div>
 
-      <div className="catalog-layout">
-        <div>
-          <form className="meg-card catalog-form" onSubmit={createCustomer}>
-            <span className="meg-eyebrow">Cadastro rápido</span><h3>Novo pagador</h3>
-            <label>Nome<input value={customerName} onChange={(e) => setCustomerName(e.target.value)} disabled={!canWrite} required /></label>
-            <button className="auth-submit" disabled={!canWrite || busy}>Cadastrar</button>
-          </form>
-
-          <form className="meg-card catalog-form" onSubmit={createReceivable}>
-            <span className="meg-eyebrow">Novo título</span><h3>Conta a receber</h3>
-            <label>Descrição<input value={description} onChange={(e) => setDescription(e.target.value)} disabled={!canWrite} required /></label>
-            <label>Pagador<select value={customerId} onChange={(e) => setCustomerId(e.target.value)} disabled={!canWrite}><option value="">Não informado</option>{customers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-            <label>Valor<MEGCurrencyInput value={amount} onValueChange={setAmount} disabled={!canWrite} required /></label>
-            <label>Vencimento<input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} disabled={!canWrite} required /></label>
-            {error && <div className="auth-error">{error}</div>}
-            <button className="auth-submit" disabled={!canWrite || busy}>Salvar conta</button>
-          </form>
-        </div>
-
-        <div className="meg-card catalog-list">
-          <div className="catalog-list-heading"><div><span className="meg-eyebrow">Agenda</span><h3>{items.length} títulos</h3></div><button onClick={() => void load()}>Atualizar</button></div>
+      {error && <div className="auth-error">{error}</div>}
+      <div className="meg-card catalog-list receivables-workspace">
+          <div className="catalog-list-heading"><div><span className="meg-eyebrow">Agenda de recebimentos</span><h3>{visibleItems.length} de {items.length} títulos</h3></div><button onClick={() => void load()}>Atualizar</button></div>
+          <div className="receivable-filters"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Filtrar descrição ou pagador" /><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="open">Em aberto</option><option value="overdue">Vencidos</option><option value="paid">Recebidos</option><option value="all">Todos</option></select></div>
           <div className="catalog-table">
-            {items.map((item) => {
+            {visibleItems.map((item) => {
               const overdue = item.status !== 'paid' && new Date(item.dueDate) < new Date();
               return <article key={item.id}>
                 <div><strong>{item.description}</strong><span>{item.customer?.name || 'Sem pagador'} · vence {new Date(item.dueDate).toLocaleDateString('pt-BR')}</span></div>
@@ -152,11 +147,13 @@ export function Receivables() {
                 {item.status !== 'paid' && canWrite && <button onClick={() => { setReceiving(item); setReceiptAmount(formatBRLValue(item.openAmount)); }}>Receber</button>}
               </article>;
             })}
+            {!visibleItems.length && <p className="catalog-empty">Nenhum recebimento corresponde aos filtros.</p>}
           </div>
-        </div>
       </div>
 
-      {receiving && <div className="modal-backdrop"><form className="modal-card" onSubmit={confirmReceipt}><header><div><span>Baixa de recebimento</span><h2>{receiving.description}</h2></div><button type="button" className="icon-button" onClick={() => setReceiving(null)}>×</button></header><div className="form-grid"><label>Valor<MEGCurrencyInput value={receiptAmount} onValueChange={setReceiptAmount} /></label><label>Conta<select value={accountId} onChange={(e) => setAccountId(e.target.value)}><option value="">Não informada</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Forma de recebimento<select value={paymentMethodId} onChange={(e) => setPaymentMethodId(e.target.value)}><option value="">Não informada</option>{methods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label></div><footer><button type="button" onClick={() => setReceiving(null)}>Cancelar</button><button className="auth-submit" disabled={busy}>Confirmar recebimento</button></footer></form></div>}
+      {editor && <><button className="launch-drawer-backdrop" aria-label="Fechar" onClick={() => setEditor(null)} /><aside className="launch-drawer" role="dialog" aria-modal="true"><header><div><span>{editor === 'customer' ? 'Cadastro rápido' : 'Nova receita'}</span><h2>{editor === 'customer' ? 'Novo pagador' : 'Conta a receber'}</h2></div><button onClick={() => setEditor(null)} aria-label="Fechar">×</button></header>{editor === 'customer' ? <form className="catalog-form" onSubmit={createCustomer}><label>Nome *<input autoFocus value={customerName} onChange={(e) => setCustomerName(e.target.value)} required /></label><button className="auth-submit" disabled={busy}>Cadastrar pagador</button></form> : <form className="catalog-form" onSubmit={createReceivable}><label>Descrição *<input autoFocus value={description} onChange={(e) => setDescription(e.target.value)} required /></label><label>Pagador<select value={customerId} onChange={(e) => setCustomerId(e.target.value)}><option value="">Não informado</option>{customers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Valor *<MEGCurrencyInput value={amount} onValueChange={setAmount} required /></label><label>Vencimento *<input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} required /></label><p className="drawer-note">Receitas são registradas como previstas e passam a realizadas somente após a baixa.</p><button className="auth-submit" disabled={busy}>Salvar recebimento</button></form>}</aside></>}
+
+      {receiving && <div className="payment-backdrop"><form className="payment-confirm" onSubmit={confirmReceipt}><header><div><span>Baixa de recebimento</span><h2>{receiving.description}</h2></div><button type="button" onClick={() => setReceiving(null)}>×</button></header><p>Confirme o valor e o destino. A receita somente será realizada após esta confirmação.</p><div className="form-grid"><label>Valor *<MEGCurrencyInput value={receiptAmount} onValueChange={setReceiptAmount} required /></label><label>Conta<select value={accountId} onChange={(e) => setAccountId(e.target.value)}><option value="">Não informada</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Forma de recebimento<select value={paymentMethodId} onChange={(e) => setPaymentMethodId(e.target.value)}><option value="">Não informada</option>{methods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label></div><footer><button type="button" onClick={() => setReceiving(null)}>Cancelar</button><button className="confirm" disabled={busy}>Confirmar recebimento</button></footer></form></div>}
     </section>
   );
 }

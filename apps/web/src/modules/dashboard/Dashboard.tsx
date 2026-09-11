@@ -11,6 +11,9 @@ function isRealized(item: { type: string; status: string }) { return item.type =
 
 export function Dashboard({ onNewTransaction: _onNewTransaction }: { onNewTransaction: () => void }) {
   const selectedMonth = useAppStore((state) => state.selectedMonth);
+  const periodMode = useAppStore((state) => state.periodMode);
+  const periodStart = useAppStore((state) => state.periodStart);
+  const periodEnd = useAppStore((state) => state.periodEnd);
   const [transactions, setTransactions] = useState<LegacyTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,8 +30,9 @@ export function Dashboard({ onNewTransaction: _onNewTransaction }: { onNewTransa
     const events = normalizeEvents(transactions);
     const monetary = events.filter((item) => !isBenefit(item));
     const before = monetary.filter((item) => day(item.date) < `${selectedMonth}-01` && isRealized(item));
-    const current = monetary.filter((item) => day(item.date).startsWith(selectedMonth));
-    const benefitEvents = events.filter((item) => day(item.date).startsWith(selectedMonth) && isBenefit(item));
+    const inPeriod = (value: string) => periodMode === 'all' || (periodMode === 'range' ? value >= periodStart && value <= periodEnd : value.startsWith(selectedMonth));
+    const current = monetary.filter((item) => inPeriod(day(item.date)));
+    const benefitEvents = events.filter((item) => inPeriod(day(item.date)) && isBenefit(item));
     const opening = before.reduce((sum, item) => sum + item.signedAmount, 0);
     const income = current.filter((item) => item.type === 'income').reduce((sum, item) => sum + item.amount, 0);
     const paidExpense = current.filter((item) => item.type === 'expense' && isRealized(item)).reduce((sum, item) => sum + item.amount, 0);
@@ -37,15 +41,15 @@ export function Dashboard({ onNewTransaction: _onNewTransaction }: { onNewTransa
     const benefit = benefitEvents.reduce((sum, item) => sum + Math.abs(item.signedAmount), 0);
     const realized = opening + income - paidExpense;
     const projected = realized - pending;
-    const recent = events.filter((item) => day(item.date).startsWith(selectedMonth)).sort((a, b) => day(b.date).localeCompare(day(a.date))).slice(0, 4);
+    const recent = events.filter((item) => inPeriod(day(item.date))).sort((a, b) => day(b.date).localeCompare(day(a.date))).slice(0, 4);
     const today = new Date().toISOString().slice(0, 10);
     const overdue = pendingEvents.filter((item) => day(item.date) < today).reduce((sum, item) => sum + item.amount, 0);
     const next = pendingEvents.filter((item) => day(item.date) >= today).reduce((sum, item) => sum + item.amount, 0);
     return { opening, income, paidExpense, pending, benefit, realized, projected, recent, overdue, next };
-  }, [transactions, selectedMonth]);
+  }, [transactions, selectedMonth, periodMode, periodStart, periodEnd]);
 
   return <section className="meg-screen dashboard-screen" aria-busy={loading}>
-    <header className="screen-heading"><div><span>VISÃO GERAL</span><h1>{monthTitle(selectedMonth)}</h1><p>Valores calculados diretamente sobre seus lançamentos da base principal.</p><small>{loading ? 'Atualizando dados...' : 'Base real sincronizada'}</small></div></header>
+    <header className="screen-heading"><div><span>VISÃO GERAL</span><h1>{periodMode === 'month' ? monthTitle(selectedMonth) : periodMode === 'range' ? 'Período selecionado' : 'Todo o histórico'}</h1><p>Valores calculados diretamente sobre seus lançamentos da base principal.</p><small>{loading ? 'Atualizando dados...' : 'Base real sincronizada'}</small></div></header>
     {error && <div className="notice danger">{error}</div>}
     <section className="balance-card"><div><span>SALDO MONETÁRIO REALIZADO</span><strong>{money.format(view.realized)}</strong><p>Saldo anterior mais receitas recebidas, menos despesas efetivamente pagas.</p></div><dl><div><dt>Saldo anterior</dt><dd>{money.format(view.opening)}</dd></div><div><dt>Receitas do mês</dt><dd>{money.format(view.income)}</dd></div><div><dt>Receita disponível</dt><dd>{money.format(view.opening + view.income)}</dd></div></dl></section>
     <section className={`attention-card ${view.projected < 0 ? 'danger' : 'ok'}`}><div><span>{view.projected < 0 ? '!' : '✓'}</span><div><h2>{view.projected < 0 ? 'Mês exige atenção' : 'Mês sob controle'}</h2><p>Resultado realizado considerando também todos os compromissos pendentes do período.</p></div></div><div><small>{view.projected < 0 ? 'FALTA PROJETADA PARA FECHAR O MÊS' : 'RESULTADO PROJETADO'}</small><strong>{money.format(view.projected)}</strong></div></section>

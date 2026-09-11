@@ -11,7 +11,6 @@ interface CommandPaletteProps {
 export function CommandPalette({ open, onClose, onNavigate, onNewTransaction }: CommandPaletteProps) {
   const transactions = useAppStore((state) => state.transactions);
   const toggleTheme = useAppStore((state) => state.toggleTheme);
-  const resetDemoData = useAppStore((state) => state.resetDemoData);
   const [query, setQuery] = useState('');
 
   useEffect(() => {
@@ -27,8 +26,7 @@ export function CommandPalette({ open, onClose, onNavigate, onNewTransaction }: 
       { label: 'Ir para Inteligência', action: () => onNavigate('analytics') },
       { label: 'Ir para Fluxo', action: () => onNavigate('cashflow') },
       { label: 'Novo lançamento', action: onNewTransaction },
-      { label: 'Alternar tema claro/escuro', action: toggleTheme },
-      { label: 'Restaurar dados demo', action: resetDemoData }
+      { label: 'Alternar tema claro/escuro', action: toggleTheme }
     ];
 
     const transactionCommands = transactions.slice(0, 8).map((transaction) => ({
@@ -39,7 +37,7 @@ export function CommandPalette({ open, onClose, onNavigate, onNewTransaction }: 
     return [...base, ...transactionCommands].filter((command) =>
       command.label.toLowerCase().includes(query.toLowerCase())
     );
-  }, [query, transactions, onNavigate, onNewTransaction, toggleTheme, resetDemoData]);
+  }, [query, transactions, onNavigate, onNewTransaction, toggleTheme]);
 
   if (!open) return null;
 
