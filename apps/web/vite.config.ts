@@ -25,6 +25,8 @@ export default defineConfig({
     }
   },
   server: {
+    host: '0.0.0.0',
+    allowedHosts: ['terminal.local'],
     proxy: {
       '/api': {
         target: 'https://meg-platform-api.onrender.com',
