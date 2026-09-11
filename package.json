@@ -14,7 +14,8 @@
     "packages/database"
   ],
   "scripts": {
-    "dev": "npm-run-all --parallel dev:api dev:web",
+    "dev": "npm --workspace apps/web run dev --",
+    "dev:full": "npm-run-all --parallel dev:api dev:web",
     "build": "npm-run-all build:web build:api",
     "build:web": "npm --workspace apps/web run build",
     "build:api": "npm --workspace apps/api run build",

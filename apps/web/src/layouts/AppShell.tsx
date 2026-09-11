@@ -108,20 +108,20 @@ export function AppShell({ active, onNavigate, onOpenCommand, onLogout, onNewTra
     setDraftMode('month'); setDraftMonth(`${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`);
   };
 
-  return <div className={`meg-app ${theme} ${collapsed ? 'sidebar-collapsed' : ''} ${mobileOpen ? 'mobile-menu-open' : ''}`}>
-    <aside className="meg-sidebar" aria-label="Menu principal">
-      <div className="meg-side-brand"><img src="./brand/meg-finance-system-mark.svg" alt="MEG Finance System" />{isCompactViewport && <button onClick={() => setMobileOpen(false)} aria-label="Fechar menu" title="Fechar menu"><Icon name="close" /></button>}</div>
-      <button className="meg-search" onClick={onOpenCommand} title="Buscar no MEG"><span><Icon name="search" /></span><b>Buscar no MEG</b></button>
-      <nav className="meg-nav">{primaryNav.map(navButton)}</nav>
+  return <div className={`web-validation authenticated app meg-app ${theme} ${collapsed ? 'sidebar-collapsed' : ''} ${mobileOpen ? 'mobile-menu-open' : ''}`} data-theme={theme}>
+    <aside className="sidebar meg-sidebar" aria-label="Menu principal">
+      <div className="side-brand meg-side-brand"><img src="./brand/meg-finance-system-mark.svg" alt="MEG Finance System" />{isCompactViewport && <button onClick={() => setMobileOpen(false)} aria-label="Fechar menu" title="Fechar menu"><Icon name="close" /></button>}</div>
+      <button className="search-command meg-search" onClick={onOpenCommand} title="Buscar no MEG"><span><Icon name="search" /></span><b>Buscar no MEG</b></button>
+      <nav className="nav-group meg-nav">{primaryNav.map(navButton)}</nav>
       <div className="meg-side-more"><button onClick={() => setMoreOpen((value) => !value)} aria-expanded={moreOpen}><span><Icon name="plus" /></span><b>Web completo</b></button>{moreOpen && <nav>{secondaryNav.map(navButton)}</nav>}</div>
-      <div className="meg-side-user"><span>{initial}</span><div><strong>{session?.user.name || 'Usuário'}</strong><small>Perfil {session?.user.role || 'MEG'}</small></div></div>
+      <div className="side-user meg-side-user"><span>{initial}</span><div><strong>{session?.user.name || 'Usuário'}</strong><small>Perfil {session?.user.role || 'MEG'}</small></div></div>
       <button className="meg-logout" onClick={onLogout}><span><Icon name="logout" /></span><b>Sair</b></button>
     </aside>
     <button className="meg-sidebar-backdrop" onClick={() => setMobileOpen(false)} aria-label="Fechar menu" />
-    <main className="meg-main">
-      <header className="meg-topbar">
-        <div className="meg-top-context"><button className="meg-mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Abrir menu"><Icon name="menu" /></button><button className="meg-sidebar-toggle" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'} title={collapsed ? 'Expandir menu' : 'Recolher menu'} aria-expanded={!collapsed}><Icon name="menu" /></button><div><strong>{title}</strong><small>{subtitle}</small></div></div>
-        <div className="meg-top-actions">
+    <main className="main meg-main">
+      <header className="topbar meg-topbar">
+        <div className="top-left meg-top-context"><button className="meg-mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Abrir menu"><Icon name="menu" /></button><button className="side-collapse meg-sidebar-toggle" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'} title={collapsed ? 'Expandir menu' : 'Recolher menu'} aria-expanded={!collapsed}><Icon name="menu" /></button><div className="top-title"><strong>{title}</strong><small>{subtitle}</small></div></div>
+        <div className="top-right meg-top-actions">
           <div className="meg-period-wrap"><button className="meg-icon-action" onClick={() => setPeriodOpen((value) => !value)} aria-expanded={periodOpen} aria-label="Selecionar período" title="Selecionar período"><Icon name="calendar" /></button>{periodOpen && <form className="meg-period-popover" onSubmit={(event) => { event.preventDefault(); setGlobalPeriod({ mode: draftMode, month: draftMonth, start: draftStart, end: draftEnd }); setPeriodOpen(false); }}><strong>Período global</strong><div className="meg-period-modes"><button type="button" className={draftMode === 'month' ? 'active' : ''} onClick={() => setDraftMode('month')}>Mês</button><button type="button" className={draftMode === 'range' ? 'active' : ''} onClick={() => setDraftMode('range')}>Intervalo</button><button type="button" className={draftMode === 'all' ? 'active' : ''} onClick={() => setDraftMode('all')}>Tudo</button></div><div className="meg-period-presets"><button type="button" onClick={() => applyPreset('today')}>Hoje</button><button type="button" onClick={() => applyPreset('7')}>7 dias</button><button type="button" onClick={() => applyPreset('30')}>30 dias</button><button type="button" onClick={() => applyPreset('current')}>Mês atual</button><button type="button" onClick={() => applyPreset('previous')}>Mês anterior</button></div>{draftMode === 'month' && <label>Mês e ano<input type="month" value={draftMonth} onChange={(event) => setDraftMonth(event.target.value)} required /></label>}{draftMode === 'range' && <div className="meg-period-range"><label>Data inicial<input type="date" value={draftStart} onChange={(event) => setDraftStart(event.target.value)} required /></label><label>Data final<input type="date" value={draftEnd} min={draftStart} onChange={(event) => setDraftEnd(event.target.value)} required /></label></div>}{draftMode === 'all' && <p className="meg-period-all">Exibir todo o histórico disponível.</p>}<button className="meg-period-apply" type="submit">Aplicar período</button></form>}<span className="meg-period-active">{periodMode === 'month' ? new Date(`${selectedMonth}-02T12:00:00`).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace('.', '') : periodMode === 'range' ? 'Intervalo' : 'Tudo'}</span></div>
           <button className="meg-icon-action meg-add" onClick={onNewTransaction} aria-label="Novo lançamento" title="Novo lançamento"><Icon name="plus" /></button>
           <span className="meg-sync"><i />Dados sincronizados</span>
@@ -129,7 +129,7 @@ export function AppShell({ active, onNavigate, onOpenCommand, onLogout, onNewTra
           <button className="meg-user-avatar" aria-label={`Usuário conectado: ${session?.user.name || 'Usuário'}`} title={session?.user.name}>{initial}</button>
         </div>
       </header>
-      <div className="meg-page-content">{children}</div>
+      <div className="content meg-page-content">{children}</div>
     </main>
     <nav className="meg-mobile-dock" aria-label="Navegação móvel">
       {primaryNav.slice(0, 2).map(navButton)}
