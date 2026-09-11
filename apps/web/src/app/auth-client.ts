@@ -112,9 +112,33 @@ export async function authenticatedRequest<T>(path: string, init?: RequestInit):
 export function clearAuthenticatedCache() { responseCache.clear(); requestsInFlight.clear(); }
 export function invalidateAuthenticatedCache(path?: string) { if (path) responseCache.delete(path); else responseCache.clear(); }
 
+export function peekAuthenticatedCache<T>(path: string): T | undefined {
+  const cached = responseCache.get(path);
+  if (!cached || Date.now() - cached.storedAt >= CACHE_TTL) return undefined;
+  return cached.value as T;
+}
+
 export async function prefetchAuthenticatedData(month: string) {
-  const paths = ['/app-state', '/finance/accounts', '/finance/categories', '/finance/payment-methods', `/cards?month=${encodeURIComponent(month)}`, `/finance/summary?month=${encodeURIComponent(month)}`, `/finance/analytics?month=${encodeURIComponent(month)}`, `/finance/cashflow?month=${encodeURIComponent(month)}`, `/finance/budgets?month=${encodeURIComponent(month)}`];
-  await Promise.allSettled(paths.map((path) => authenticatedRequest(path)));
+  const encodedMonth = encodeURIComponent(month);
+  const priorityPaths = [
+    '/app-state',
+    '/finance/accounts',
+    '/finance/categories',
+    '/finance/payment-methods',
+    `/cards?month=${encodedMonth}`,
+    `/payables?month=${encodedMonth}`,
+    `/finance/summary?month=${encodedMonth}`
+  ];
+  const secondaryPaths = [
+    '/receivables/customers',
+    '/receivables/receivables',
+    `/finance/analytics?month=${encodedMonth}`,
+    `/finance/cashflow?month=${encodedMonth}`,
+    `/finance/budgets?month=${encodedMonth}`
+  ];
+
+  await Promise.allSettled(priorityPaths.map((path) => authenticatedRequest(path)));
+  void Promise.allSettled(secondaryPaths.map((path) => authenticatedRequest(path)));
 }
 
 export function readSession(): AuthSession | null {
