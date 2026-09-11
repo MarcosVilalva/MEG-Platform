@@ -141,12 +141,12 @@ export function UserManagement() {
   }
 
   return (
-    <section className="page admin-users-page">
-      <header className="page-header compact">
+    <section id="users" className="page admin-users-page">
+      <header className="page-head page-header compact">
         <div>
-          <span>Administração</span>
-          <h1>Usuários e permissões</h1>
-          <p>Aprove solicitações e controle exatamente o que cada pessoa pode fazer no MEG.</p>
+          <span>Usuários e acesso</span>
+          <h1>Permissões</h1>
+          <p>Apenas ADMIN gerencia usuários e permissões críticas. Novos usuários entram como pendentes e mudanças de acesso geram auditoria.</p>
         </div>
       </header>
 
