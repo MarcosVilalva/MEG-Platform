@@ -43,27 +43,26 @@ export function App({ onLogout }: AppProps) {
   }, [theme]);
 
   /*
-   * A V15 só é liberada depois que a fonte compartilhada foi lida de verdade.
-   * O prefetch aquece as demais consultas (contas, cartões, resumos, análises),
-   * evitando que cada troca de tela repita a mesma espera de rede.
+   * O estado compartilhado é a única dependência obrigatória para liberar a UI.
+   * As demais consultas começam em paralelo e aquecem o cache sem segurar a tela
+   * inicial. Assim o Dashboard aparece assim que a base real é confirmada e as
+   * outras abas normalmente já encontram seus dados em memória ao serem abertas.
    */
   useEffect(() => {
     let active = true;
 
     async function boot() {
       setBootState('loading');
-      setBootMessage('Carregando lançamentos, contas, cartões e regras...');
+      setBootMessage('Confirmando a base financeira compartilhada...');
       const month = useAppStore.getState().selectedMonth;
       try {
         invalidateAuthenticatedCache();
-        const statePromise = readCloudState();
         const preloadPromise = prefetchAuthenticatedData(month);
-        const result = await statePromise;
+        const result = await readCloudState();
         if (!active) return;
         replaceTransactions(result.state.transactions);
-        setBootMessage('Base confirmada. Preparando a interface...');
-        await preloadPromise;
-        if (active) setBootState('ready');
+        setBootState('ready');
+        void preloadPromise.catch(() => undefined);
       } catch {
         if (!active) return;
         setBootMessage('Não foi possível confirmar a base financeira compartilhada.');
@@ -140,7 +139,7 @@ export function App({ onLogout }: AppProps) {
   return (
     <>
       <AppShell active={view} onNavigate={setView} onOpenCommand={() => setCommandOpen(true)} onLogout={onLogout} onNewTransaction={openNewTransaction}>
-        {view === 'dashboard' && <Dashboard />}
+        {view === 'dashboard' && <Dashboard onNavigate={setView} />}
         {view === 'transactions' && <PersistentTransactions />}
         {view === 'history' && <History />}
         {view === 'receivables' && <Receivables />}
