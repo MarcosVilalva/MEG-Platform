@@ -67,7 +67,7 @@ export function App({ onLogout }: AppProps) {
     <>
       <AppShell active={view} onNavigate={setView} onOpenCommand={() => setCommandOpen(true)} onLogout={onLogout} onNewTransaction={openNewTransaction}>
         {view === 'decision' && <DecisionCenter onNavigate={setView} />}
-        {view === 'dashboard' && <Dashboard onNewTransaction={openNewTransaction} />}
+        {view === 'dashboard' && <Dashboard />}
         {view === 'transactions' && <PersistentTransactions />}
         {view === 'history' && <History />}
         {view === 'receivables' && <Receivables />}
