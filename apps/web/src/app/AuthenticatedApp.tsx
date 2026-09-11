@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { App } from './App';
 import { LoginScreen } from '../modules/auth/LoginScreen';
-import { clearSession, getApiHealth, logout, readSession, type AuthSession } from './auth-client';
+import { clearSession, logout, readSession, type AuthSession } from './auth-client';
 import { readCloudState } from './app-state-client';
 import { useAppStore } from './store';
 
@@ -19,20 +19,11 @@ export function AuthenticatedApp() {
     const wait = (milliseconds: number) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
     void (async () => {
       let lastError: unknown = null;
-      for (let attempt = 0; attempt < 12 && active; attempt += 1) {
+      for (let attempt = 0; attempt < 3 && active; attempt += 1) {
         try {
           setLoadMessage(attempt === 0 ? 'Conectando à sua base financeira' : 'A base está acordando. Aguarde mais um instante');
-          const health = await getApiHealth();
-          const repairReady = health.dataRepair?.status === 'completed';
-          const normalizationReady = health.normalization?.status === 'completed'
-            && health.normalization.primary === true
-            && health.normalization.reconciled === true;
-          if (!repairReady || !normalizationReady) {
-            await wait(2_000);
-            continue;
-          }
           setLoadMessage('Carregando seus lançamentos reais');
-          const cloud = await readCloudState();
+          const cloud = await readCloudState(AbortSignal.timeout(20_000));
           if (!active) return;
           replaceTransactions(cloud.state.transactions);
           setDataReady(true);
@@ -44,7 +35,7 @@ export function AuthenticatedApp() {
             if (active) setSession(null);
             return;
           }
-          await wait(Math.min(2_000 + attempt * 500, 5_000));
+          await wait(1_500);
         }
       }
       if (active) {
