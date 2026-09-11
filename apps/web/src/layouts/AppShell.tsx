@@ -71,7 +71,7 @@ export function AppShell({ active, onNavigate, onOpenCommand, onLogout, onNewTra
   const [draftStart, setDraftStart] = useState(() => useAppStore.getState().periodStart);
   const [draftEnd, setDraftEnd] = useState(() => useAppStore.getState().periodEnd);
   const [moreOpen, setMoreOpen] = useState(false);
-  const [isCompactViewport, setIsCompactViewport] = useState(() => window.matchMedia('(max-width: 820px)').matches);
+  const [isCompactViewport, setIsCompactViewport] = useState(() => window.matchMedia('(max-width: 680px)').matches);
   const theme = useAppStore((state) => state.theme);
   const toggleTheme = useAppStore((state) => state.toggleTheme);
   const selectedMonth = useAppStore((state) => state.selectedMonth);
@@ -91,7 +91,7 @@ export function AppShell({ active, onNavigate, onOpenCommand, onLogout, onNewTra
     setDraftEnd(state.periodEnd);
   }, [periodOpen, selectedMonth]);
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 820px)');
+    const media = window.matchMedia('(max-width: 680px)');
     const update = () => { setIsCompactViewport(media.matches); if (!media.matches) setMobileOpen(false); };
     update(); media.addEventListener('change', update); return () => media.removeEventListener('change', update);
   }, []);
