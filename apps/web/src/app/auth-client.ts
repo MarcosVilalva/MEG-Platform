@@ -30,6 +30,9 @@ export type RegistrationResult = AuthSession | {
 
 const SESSION_KEY = 'meg.auth.session';
 let refreshInFlight: Promise<AuthSession | null> | null = null;
+const responseCache = new Map<string, { value: unknown; storedAt: number }>();
+const requestsInFlight = new Map<string, Promise<unknown>>();
+const CACHE_TTL = 5 * 60_000;
 
 export type ApiHealth = {
   status: string;
@@ -72,6 +75,12 @@ export async function refreshAuthSession(): Promise<AuthSession | null> {
 }
 
 export async function authenticatedRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const method = String(init?.method || 'GET').toUpperCase();
+  const cacheKey = method === 'GET' ? path : '';
+  const cached = cacheKey ? responseCache.get(cacheKey) : undefined;
+  if (cached && Date.now() - cached.storedAt < CACHE_TTL) return cached.value as T;
+  if (cacheKey && requestsInFlight.has(cacheKey)) return requestsInFlight.get(cacheKey) as Promise<T>;
+  const execute = async () => {
   let session = readSession();
   if (!session) throw Object.assign(new Error('UNAUTHORIZED'), { status: 401 });
   const send = (accessToken: string) => fetch(`${API_URL}${path}`, {
@@ -88,7 +97,24 @@ export async function authenticatedRequest<T>(path: string, init?: RequestInit):
   }
   const payload = response.status === 204 ? undefined : await response.json().catch(() => ({}));
   if (!response.ok) throw Object.assign(new Error((payload as { error?: string })?.error || `HTTP_${response.status}`), { status: response.status });
+  if (method === 'GET') responseCache.set(path, { value: payload, storedAt: Date.now() });
+  else {
+    responseCache.clear();
+    window.dispatchEvent(new CustomEvent('meg:data-invalidated', { detail: { path, method } }));
+  }
   return payload as T;
+  };
+  const pending = execute();
+  if (cacheKey) requestsInFlight.set(cacheKey, pending);
+  try { return await pending; } finally { if (cacheKey) requestsInFlight.delete(cacheKey); }
+}
+
+export function clearAuthenticatedCache() { responseCache.clear(); requestsInFlight.clear(); }
+export function invalidateAuthenticatedCache(path?: string) { if (path) responseCache.delete(path); else responseCache.clear(); }
+
+export async function prefetchAuthenticatedData(month: string) {
+  const paths = ['/app-state', '/finance/accounts', '/finance/categories', '/finance/payment-methods', `/cards?month=${encodeURIComponent(month)}`, `/finance/summary?month=${encodeURIComponent(month)}`, `/finance/analytics?month=${encodeURIComponent(month)}`, `/finance/cashflow?month=${encodeURIComponent(month)}`, `/finance/budgets?month=${encodeURIComponent(month)}`];
+  await Promise.allSettled(paths.map((path) => authenticatedRequest(path)));
 }
 
 export function readSession(): AuthSession | null {
@@ -106,6 +132,7 @@ export function saveSession(session: AuthSession) {
 }
 
 export function clearSession() {
+  clearAuthenticatedCache();
   sessionStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(SESSION_KEY);
 }
