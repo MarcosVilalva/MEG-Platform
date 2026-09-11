@@ -1,64 +1,27 @@
-# MEG Platform — Sprint 004 Project Phoenix
+# MEG Finance System
 
-Project Phoenix cria a fundação real da plataforma: API, Prisma, SQLite e camada inicial de persistência.
+Sistema financeiro pessoal com interface React adaptativa, API Fastify, Prisma e persistência compartilhada.
 
-## Setup inicial
+## Aplicação publicada
+
+- Web: https://marcosvilalva.github.io/MEG-Platform/
+- API: https://meg-platform-api.onrender.com
+- Documentação da API: https://meg-platform-api.onrender.com/docs
+
+## Desenvolvimento local
 
 ```powershell
 npm.cmd install
 copy .env.example .env
 npm.cmd run db:generate
 npm.cmd run db:push
-npm.cmd run db:seed
-```
-
-## Rodar API
-
-```powershell
-npm.cmd run dev:api
-```
-
-API:
-
-```text
-http://localhost:3333
-```
-
-Swagger:
-
-```text
-http://localhost:3333/docs
-```
-
-## Rodar Web
-
-Em outro terminal:
-
-```powershell
-npm.cmd run dev:web
-```
-
-## Rodar tudo junto
-
-```powershell
 npm.cmd run dev
 ```
 
-## Scripts úteis
+## Validação
 
 ```powershell
-npm.cmd run db:studio
-npm.cmd run test
+npm.cmd run check
 ```
 
-## O que entrou nesta Sprint
-
-- `apps/api` com Fastify.
-- `packages/database` com Prisma.
-- SQLite local.
-- Modelos iniciais.
-- Seed inicial.
-- Rotas financeiras.
-- ADRs.
-- Documentação de API e banco.
-- Preparação para o React migrar do LocalStorage para API.
+A interface Web usa exclusivamente a entrada React em `apps/web/src/app/main.tsx`. O layout anterior foi removido; regras financeiras, persistência, auditoria e integrações permanecem preservadas.
