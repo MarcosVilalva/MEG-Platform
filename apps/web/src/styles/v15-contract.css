@@ -484,3 +484,20 @@ img{max-width:100%}
 
 /* React renderiza apenas a rota ativa; ela deve usar integralmente a superfície V15. */
 .web-validation .meg-page-content>.page{display:grid}
+
+/* Faixa intermediária V15: barra compacta fixa, sem drawer, desfoque ou sobreposição. */
+@media(min-width:681px) and (max-width:980px){
+  :root{--sidebar:164px}
+  .meg-app.sidebar-collapsed{--sidebar:164px}
+  .meg-sidebar,.sidebar-collapsed .meg-sidebar{display:flex;position:fixed;width:164px;height:100dvh;transform:none;overflow:hidden;padding:14px 8px}
+  .sidebar-collapsed .meg-side-brand{padding:8px 10px;justify-content:space-between}
+  .sidebar-collapsed .meg-side-brand img{width:58px}
+  .sidebar-collapsed .meg-sidebar b,.sidebar-collapsed .meg-side-user div{display:block}
+  .sidebar-collapsed .meg-search,.sidebar-collapsed .meg-nav button,.sidebar-collapsed .meg-side-more button,.sidebar-collapsed .meg-logout{justify-content:flex-start;padding:0 7px}
+  .sidebar-collapsed .meg-search span,.sidebar-collapsed .meg-nav button span,.sidebar-collapsed .meg-side-more button span,.sidebar-collapsed .meg-logout span{width:18px}
+  .sidebar-collapsed .meg-side-user{justify-content:flex-start}
+  .meg-main,.sidebar-collapsed .meg-main{width:calc(100% - 164px);margin-left:164px}
+  .meg-topbar,.sidebar-collapsed .meg-topbar{left:164px}
+  .meg-mobile-menu,.meg-mobile-dock,.meg-sidebar-backdrop,.mobile-menu-open .meg-sidebar-backdrop{display:none!important}
+  .meg-page-content{padding:82px 15px 32px}
+}
