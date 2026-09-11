@@ -8,7 +8,6 @@ import { Payables } from '../modules/payables/Payables';
 import { Analytics } from '../modules/analytics/Analytics';
 import { Cashflow } from '../modules/cashflow/Cashflow';
 import { Settings } from '../modules/settings/Settings';
-import { DecisionCenter } from '../modules/decision/DecisionCenter';
 import { FinancialCatalogs } from '../modules/catalogs/FinancialCatalogs';
 import { UserManagement } from '../modules/admin/UserManagement';
 import { History } from '../modules/history/History';
@@ -66,7 +65,6 @@ export function App({ onLogout }: AppProps) {
   return (
     <>
       <AppShell active={view} onNavigate={setView} onOpenCommand={() => setCommandOpen(true)} onLogout={onLogout} onNewTransaction={openNewTransaction}>
-        {view === 'decision' && <DecisionCenter onNavigate={setView} />}
         {view === 'dashboard' && <Dashboard />}
         {view === 'transactions' && <PersistentTransactions />}
         {view === 'history' && <History />}
@@ -79,7 +77,7 @@ export function App({ onLogout }: AppProps) {
         {view === 'analytics' && <Analytics />}
         {view === 'cashflow' && <Cashflow />}
         {view === 'reconcile' && <Reconciliation />}
-        {view === 'budgets' && <section className="meg-screen"><header className="screen-heading"><div><span>ORÇAMENTOS E METAS</span><h1>Planejamento</h1><p>Orçamento por competência e categoria, preservando os dados reais.</p></div></header><BudgetPanel /></section>}
+        {view === 'budgets' && <section id="budgets" className="page meg-screen"><header className="page-head screen-heading"><div><span>ORÇAMENTOS E METAS</span><h1>Planejamento</h1><p>Orçamento por competência e categoria. Realizado usa eventos efetivados; projetado pode incluir previstos. Simulações nunca alteram os dados reais.</p></div></header><BudgetPanel /></section>}
         {view === 'settings' && <Settings />}
       </AppShell>
 
