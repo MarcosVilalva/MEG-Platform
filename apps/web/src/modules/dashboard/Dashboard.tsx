@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { normalizeEvents } from '@core/finance/events';
-import { readCloudState } from '../../app/app-state-client';
 import { useAppStore } from '../../app/store';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -15,17 +14,6 @@ export function Dashboard() {
   const periodStart = useAppStore((state) => state.periodStart);
   const periodEnd = useAppStore((state) => state.periodEnd);
   const transactions = useAppStore((state) => state.transactions);
-  const replaceTransactions = useAppStore((state) => state.replaceTransactions);
-  const [loading, setLoading] = useState(transactions.length === 0);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let active = true; setLoading(true); setError('');
-    void readCloudState().then((result) => { if (active) replaceTransactions(result.state.transactions); })
-      .catch(() => { if (active) setError('Não foi possível carregar a base financeira compartilhada.'); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [replaceTransactions]);
 
   const view = useMemo(() => {
     const events = normalizeEvents(transactions);
@@ -49,9 +37,8 @@ export function Dashboard() {
     return { opening, income, paidExpense, pending, benefit, realized, projected, recent, overdue, next };
   }, [transactions, selectedMonth, periodMode, periodStart, periodEnd]);
 
-  return <section id="home" className="page meg-screen dashboard-screen validated-dashboard" aria-busy={loading}>
-    <header className="page-head screen-heading"><div><span>VISÃO GERAL</span><h1>{periodMode === 'month' ? monthTitle(selectedMonth) : periodMode === 'range' ? 'Período selecionado' : 'Todo o histórico'}</h1><p>Leitura do período usando exclusivamente os lançamentos preservados na base financeira do MEG.</p><small>{loading ? 'Atualizando em segundo plano...' : 'Atualizado agora · dados sincronizados'}</small></div></header>
-    {error && <div className="notice danger">{error}</div>}
+  return <section id="home" className="page meg-screen dashboard-screen validated-dashboard">
+    <header className="page-head screen-heading"><div><span>VISÃO GERAL</span><h1>{periodMode === 'month' ? monthTitle(selectedMonth) : periodMode === 'range' ? 'Período selecionado' : 'Todo o histórico'}</h1><p>Leitura do período usando exclusivamente os lançamentos preservados na base financeira do MEG.</p><small>Base compartilhada carregada · atualização automática ativa</small></div></header>
     <div className="dashboard-primary"><section className="balance-card premium-balance"><div><span>SALDO MONETÁRIO REALIZADO</span><strong>{money.format(view.realized)}</strong><p>Receita disponível menos despesas monetárias efetivamente pagas.</p></div><dl><div><dt>Saldo anterior</dt><dd>{money.format(view.opening)}</dd></div><div><dt>Receitas do mês</dt><dd>{money.format(view.income)}</dd></div><div><dt>Receita disponível</dt><dd>{money.format(view.opening + view.income)}</dd></div></dl></section></div>
     <section className={`attention-card dashboard-alert ${view.projected < 0 ? 'danger' : 'ok'}`}><div><span className="premium-alert-icon">{view.projected < 0 ? '!' : '✓'}</span><div><h2>{view.projected < 0 ? 'Mês exige atenção' : 'Mês sob controle'}</h2><p>O diagnóstico principal considera o mês corrente e não pode ser mascarado pelos filtros analíticos.</p></div></div><div><small>{view.projected < 0 ? 'FALTA PROJETADA PARA FECHAR O MÊS' : 'RESULTADO PROJETADO'}</small><strong>{money.format(view.projected)}</strong></div></section>
     <section className="premium-metrics dashboard-metrics"><article><span>DESPESAS PAGAS</span><strong>{money.format(view.paidExpense)}</strong><p>Reduzem o saldo realizado</p></article><article><span>DESPESAS PENDENTES</span><strong>{money.format(view.pending)}</strong><p>Não reduzem o realizado até a baixa</p></article><article className="benefit-control"><span>BENEFÍCIO ALIMENTAÇÃO · DISPONÍVEL</span><strong>{money.format(view.benefit)}</strong><p>Conta separada da caixa monetária</p></article><article><span>CONSOLIDADO REALIZADO</span><strong>{money.format(view.realized + view.benefit)}</strong><p>Monetário + benefício do período</p></article></section>

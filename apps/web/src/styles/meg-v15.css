@@ -1,0 +1,289 @@
+@import url('./global.css') layer(legacy);
+@import url('./v15-contract.css');
+
+/*
+ * MEG V15 runtime adapter
+ *
+ * O CSS legado continua disponível apenas como compatibilidade para módulos que
+ * ainda usam classes antigas. O contrato V15 fica fora de cascade layers e,
+ * portanto, tem precedência sobre qualquer regra normal da camada legacy.
+ *
+ * Este arquivo também zera propriedades longhand do shell antigo que não são
+ * redefinidas pelo HTML de validação (width/inset/margins). Sem esses resets,
+ * as duas arquiteturas de layout acabam somadas e a interface perde proporção.
+ */
+
+:root {
+  --meg-sidebar-expanded: 244px;
+  --meg-sidebar-collapsed: 72px;
+  --meg-topbar-height: 64px;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.web-validation.meg-app {
+  width: 100%;
+  min-height: 100vh;
+  grid-template-columns: var(--meg-sidebar-expanded) minmax(0, 1fr);
+  background: var(--bg);
+}
+
+.web-validation.meg-app.sidebar-collapsed {
+  grid-template-columns: var(--meg-sidebar-collapsed) minmax(0, 1fr);
+}
+
+.web-validation .meg-sidebar {
+  position: sticky;
+  inset: auto;
+  top: 0;
+  width: auto;
+  min-width: 0;
+  height: 100vh;
+  transform: none;
+  overflow: hidden;
+}
+
+.web-validation .meg-main {
+  width: 100%;
+  min-width: 0;
+  margin-left: 0;
+}
+
+.web-validation .meg-topbar {
+  position: sticky;
+  inset: auto;
+  top: 0;
+  left: auto;
+  right: auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.web-validation .meg-page-content {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+}
+
+.web-validation .meg-sidebar-toggle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.web-validation .meg-sidebar-toggle .meg-nav-icon,
+.web-validation .meg-icon-action .meg-nav-icon,
+.web-validation .meg-mobile-menu .meg-nav-icon {
+  width: 19px;
+  height: 19px;
+}
+
+.web-validation .meg-side-brand img {
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
+.web-validation.sidebar-collapsed .meg-side-brand img {
+  width: 58px;
+  height: 58px;
+}
+
+.web-validation .meg-nav button,
+.web-validation .meg-side-more button,
+.web-validation .meg-search,
+.web-validation .meg-logout {
+  min-width: 0;
+}
+
+.web-validation .meg-nav button b,
+.web-validation .meg-side-more button b,
+.web-validation .meg-search b,
+.web-validation .meg-logout b,
+.web-validation .meg-side-user div {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.web-validation .meg-nav-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: auto;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #c84d5c;
+  color: #fff;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.web-validation.sidebar-collapsed .meg-nav-badge {
+  position: absolute;
+  transform: translate(12px, -12px);
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  font-size: 7px;
+}
+
+.web-validation .meg-period-wrap,
+.web-validation .meg-side-more {
+  position: relative;
+}
+
+.web-validation .meg-period-popover {
+  z-index: 90;
+}
+
+.web-validation .meg-page-content > .page,
+.web-validation .meg-page-content > .meg-screen {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+/* Inicialização: os dados são pré-carregados antes de liberar a interface. */
+.meg-boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 28px;
+  color: #ecfff9;
+  background:
+    radial-gradient(circle at 26% 20%, rgba(75,186,199,.16), transparent 28%),
+    radial-gradient(circle at 75% 68%, rgba(83,207,141,.13), transparent 30%),
+    linear-gradient(145deg, #030910 0%, #071727 54%, #0a2d33 100%);
+}
+
+.meg-boot-card {
+  width: min(420px, 90vw);
+  display: grid;
+  justify-items: center;
+  gap: 13px;
+  text-align: center;
+}
+
+.meg-boot-card img {
+  width: 104px;
+  height: 104px;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 30px rgba(0,0,0,.36));
+}
+
+.meg-boot-card strong {
+  margin-top: 7px;
+  font-size: 18px;
+  letter-spacing: -.025em;
+}
+
+.meg-boot-card small {
+  color: #9fc3bf;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.meg-boot-progress {
+  width: min(230px, 72vw);
+  height: 4px;
+  margin-top: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #143941;
+}
+
+.meg-boot-progress::after {
+  content: '';
+  display: block;
+  width: 46%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4bbac7, #53cf8d);
+  animation: megBoot 1.05s ease-in-out infinite alternate;
+}
+
+@keyframes megBoot {
+  from { transform: translateX(-12%); }
+  to { transform: translateX(132%); }
+}
+
+/* O conteúdo nunca deve manter dimensões da viewport anterior. */
+.web-validation :is(.card,.meg-panel,.premium-card,.premium-metric,.summary-panel,.catalog-form,.catalog-list,.table-scroll,.transaction-grid-scroll) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (min-width: 681px) and (max-width: 980px) {
+  .web-validation.meg-app,
+  .web-validation.meg-app.sidebar-collapsed {
+    grid-template-columns: 164px minmax(0, 1fr);
+  }
+
+  .web-validation .meg-sidebar,
+  .web-validation.sidebar-collapsed .meg-sidebar {
+    width: auto;
+    min-width: 0;
+  }
+
+  .web-validation .meg-main {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .web-validation.meg-app,
+  .web-validation.meg-app.sidebar-collapsed {
+    display: block;
+  }
+
+  .web-validation .meg-main {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .web-validation .meg-topbar {
+    left: auto;
+    width: 100%;
+  }
+
+  .web-validation .meg-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(292px, 86vw);
+    height: 100dvh;
+  }
+
+  .web-validation .meg-page-content {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meg-boot-progress::after,
+  .page {
+    animation: none !important;
+  }
+}

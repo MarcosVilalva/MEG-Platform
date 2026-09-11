@@ -1,8 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { AuthenticatedApp } from './AuthenticatedApp';
-import '../styles/global.css';
-import '../styles/v15-contract.css';
+import '../styles/meg-v15.css';
 
 document.body.classList.add('web-validation');
 
