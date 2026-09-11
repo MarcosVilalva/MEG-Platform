@@ -1,154 +1,47 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { MEGCurrencyInput } from '@ui';
 import { formatBRLValue, parseBRL } from '@shared/money';
 import { readSession } from '../../app/auth-client';
-import {
-  financeClient,
-  type Account,
-  type Category,
-  type PaymentMethod
-} from '../../app/finance-client';
+import { financeClient, type Account, type Category, type PaymentMethod } from '../../app/finance-client';
+import { cardsClient, type CreditCard } from '../../app/cards-client';
 
-type Tab = 'accounts' | 'categories' | 'paymentMethods';
-type CatalogItem = Account | Category | PaymentMethod;
+type Tab = 'accounts' | 'classifications' | 'groups' | 'payments' | 'cards';
+type Filters = { first: string; second: string; third: string; status: string };
+const emptyFilters: Filters = { first: '', second: '', third: '', status: '' };
+const brands = ['Visa', 'Mastercard', 'Elo', 'American Express', 'Outra'];
 
-function getItemDetail(item: CatalogItem): string {
-  if ('institution' in item) return String(item.institution || item.type || '');
-  if ('group' in item) return String(item.group || item.type || '');
-  return String(item.type || '');
-}
+export function FinancialCatalogs() {
+  const [tab, setTab] = useState<Tab>('classifications');
+  const [accounts, setAccounts] = useState<Account[]>([]); const [categories, setCategories] = useState<Category[]>([]);
+  const [payments, setPayments] = useState<PaymentMethod[]>([]); const [cards, setCards] = useState<CreditCard[]>([]);
+  const [filters, setFilters] = useState<Filters>(emptyFilters);
+  const [name, setName] = useState(''); const [detail, setDetail] = useState(''); const [type, setType] = useState('expense'); const [extra, setExtra] = useState('');
+  const [openingBalance, setOpeningBalance] = useState(() => formatBRLValue(0)); const [closingDay, setClosingDay] = useState('10'); const [dueDay, setDueDay] = useState('17'); const [limit, setLimit] = useState('');
+  const [busy, setBusy] = useState(false); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
+  const firstField = useRef<HTMLInputElement>(null);
+  const role = readSession()?.user.role ?? 'VIEWER'; const canWrite = role !== 'VIEWER'; const canDeactivate = role === 'ADMIN' || role === 'MANAGER';
 
-export function FinancialCatalogs({ onNavigate }: { onNavigate?: (view: string) => void }) {
-  const [tab, setTab] = useState<Tab>('accounts');
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [name, setName] = useState('');
-  const [detail, setDetail] = useState('');
-  const [type, setType] = useState('checking');
-  const [openingBalance, setOpeningBalance] = useState(() => formatBRLValue(0));
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [formOpen, setFormOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const role = readSession()?.user.role ?? 'VIEWER';
-  const canWrite = role !== 'VIEWER';
-  const canDeactivate = role === 'ADMIN' || role === 'MANAGER';
-
-  async function load() {
-    setError('');
-    try {
-      const [accountData, categoryData, paymentData] = await Promise.all([
-        financeClient.listAccounts(),
-        financeClient.listCategories(),
-        financeClient.listPaymentMethods()
-      ]);
-      setAccounts(accountData);
-      setCategories(categoryData);
-      setPaymentMethods(paymentData);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'LOAD_ERROR');
-    }
-  }
-
+  async function load() { setLoading(true); setError(''); try { const [a,c,p,cardData] = await Promise.all([financeClient.listAccounts(), financeClient.listCategories(), financeClient.listPaymentMethods(), cardsClient.list(new Date().toISOString().slice(0,7))]); setAccounts(a); setCategories(c); setPayments(p); setCards(cardData); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível carregar os cadastros.'); } finally { setLoading(false); } }
   useEffect(() => { void load(); }, []);
-
-  function resetForm(nextTab?: Tab) {
-    if (nextTab) setTab(nextTab);
-    setName('');
-    setDetail('');
-    setOpeningBalance(formatBRLValue(0));
-    setType(nextTab === 'categories' ? 'expense' : nextTab === 'paymentMethods' ? 'instant' : 'checking');
-    setError('');
-  }
-
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    if (!canWrite) return;
-    setBusy(true);
-    setError('');
-    try {
-      if (tab === 'accounts') {
-        const openingBalanceValue = parseBRL(openingBalance);
-        await financeClient.createAccount({
-          name,
-          type,
-          institution: detail || null,
-          openingBalance: Number.isFinite(openingBalanceValue) ? openingBalanceValue : 0
-        });
-      } else if (tab === 'categories') {
-        await financeClient.createCategory({ name, group: detail || null, type: type as 'income' | 'expense' });
-      } else {
-        await financeClient.createPaymentMethod({ name, type });
-      }
-      resetForm(tab);
-      setFormOpen(false);
-      await load();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'SAVE_ERROR');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function deactivate(kind: Tab, id: string) {
-    if (!canDeactivate) return;
-    setBusy(true);
-    try {
-      if (kind === 'accounts') await financeClient.deactivateAccount(id);
-      if (kind === 'categories') await financeClient.deactivateCategory(id);
-      if (kind === 'paymentMethods') await financeClient.deactivatePaymentMethod(id);
-      await load();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const rows: CatalogItem[] = tab === 'accounts' ? accounts : tab === 'categories' ? categories : paymentMethods;
-  const visibleRows = useMemo(() => rows.filter((item) => `${item.name} ${getItemDetail(item)}`.toLowerCase().includes(query.trim().toLowerCase())), [rows, query]);
-
-  return (
-    <section className="page catalogs-page">
-      <header className="page-header">
-        <div>
-          <span>Cadastros</span>
-          <h1>Base configurável do MEG</h1>
-          <p>Centralize as opções usadas nos lançamentos sem alterar registros históricos.</p>
-        </div>
-        <div className="page-header-actions"><span className="status-pill active">Histórico protegido</span>{canWrite && <button className="meg-icon-action meg-add" title="Novo cadastro" aria-label="Novo cadastro" onClick={() => setFormOpen(true)}>＋</button>}</div>
-      </header>
-
-      <section className="catalog-summary"><article><span>Contas financeiras</span><strong>{accounts.filter((item) => item.isActive).length} ativas</strong><small>Monetário e benefício</small></article><article><span>Classificações</span><strong>{categories.filter((item) => item.isActive).length} ativas</strong><small>Aplicadas aos lançamentos</small></article><article><span>Grupos</span><strong>{new Set(categories.filter((item) => item.isActive && item.group).map((item) => item.group)).size} ativos</strong><small>Despesas e recebimentos</small></article><article><span>Formas de pagamento</span><strong>{paymentMethods.filter((item) => item.isActive).length} ativas</strong><small>Opções operacionais</small></article></section>
-
-      <div className="catalog-sticky-tabs"><div className="catalog-tabs"><button className={tab === 'accounts' ? 'active' : ''} onClick={() => resetForm('accounts')}>Contas financeiras</button><button className={tab === 'categories' ? 'active' : ''} onClick={() => resetForm('categories')}>Classificações e grupos</button><button className={tab === 'paymentMethods' ? 'active' : ''} onClick={() => resetForm('paymentMethods')}>Formas de pagamento</button><button onClick={() => onNavigate?.('cards')}>Cartões</button></div></div>
-
-      <div className="meg-card catalog-list">
-        <div className="catalog-list-heading"><div><span className="meg-eyebrow">Registros</span><h3>{visibleRows.length} de {rows.length} cadastrados</h3></div><button onClick={() => void load()}>Atualizar</button></div>
-        <label className="search-field"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Filtrar por nome, instituição, classificação ou grupo" /></label>
-        <div className="catalog-table">
-          {visibleRows.map((item) => <article key={item.id} className={!item.isActive ? 'inactive' : ''}><div><strong>{item.name}</strong><span>{getItemDetail(item) || 'Sem detalhe complementar'}</span></div><span className={`status-pill ${item.isActive ? 'active' : ''}`}>{item.isActive ? 'Ativo' : 'Inativo'}</span>{item.isActive && canDeactivate && <button onClick={() => void deactivate(tab, item.id)} disabled={busy}>Desativar</button>}</article>)}
-          {visibleRows.length === 0 && <p className="catalog-empty">Nenhum cadastro encontrado.</p>}
-        </div>
-      </div>
-
-      {formOpen && <><button className="launch-drawer-backdrop" aria-label="Fechar" onClick={() => setFormOpen(false)} /><aside className="launch-drawer" role="dialog" aria-modal="true"><header><div><span>Novo cadastro</span><h2>{tab === 'accounts' ? 'Nova conta financeira' : tab === 'categories' ? 'Nova classificação' : 'Nova forma de pagamento'}</h2></div><button onClick={() => setFormOpen(false)} aria-label="Fechar">×</button></header><form className="catalog-form" onSubmit={handleSubmit}>
-          <span className="meg-eyebrow">Novo cadastro</span>
-          <h3>{tab === 'accounts' ? 'Dados da conta' : tab === 'categories' ? 'Classificação e grupo' : 'Dados da forma de pagamento'}</h3>
-          <label>Nome *<input autoFocus value={name} onChange={(event) => setName(event.target.value)} minLength={2} required disabled={!canWrite} /></label>
-          {tab !== 'paymentMethods' && (
-            <label>{tab === 'accounts' ? 'Instituição' : 'Grupo'}<input value={detail} onChange={(event) => setDetail(event.target.value)} disabled={!canWrite} /></label>
-          )}
-          <label>Tipo
-            <select value={type} onChange={(event) => setType(event.target.value)} disabled={!canWrite}>
-              {tab === 'accounts' && <><option value="checking">Conta corrente</option><option value="savings">Poupança</option><option value="cash">Dinheiro</option><option value="investment">Investimento</option><option value="credit">Crédito</option></>}
-              {tab === 'categories' && <><option value="expense">Despesa</option><option value="income">Receita</option></>}
-              {tab === 'paymentMethods' && <><option value="instant">PIX</option><option value="bill">Boleto</option><option value="credit">Crédito</option><option value="debit">Débito</option><option value="transfer">Transferência</option><option value="cash">Dinheiro</option><option value="other">Outro</option></>}
-            </select>
-          </label>
-          {tab === 'accounts' && <label>Saldo inicial<MEGCurrencyInput value={openingBalance} onValueChange={setOpeningBalance} allowNegative disabled={!canWrite} /></label>}
-          {error && <div className="auth-error">{error}</div>}
-          <button className="auth-submit" disabled={!canWrite || busy}>{busy ? 'Salvando...' : 'Salvar cadastro'}</button>
-        </form></aside></>}
-    </section>
-  );
+  function selectTab(next: Tab) { setTab(next); setFilters(emptyFilters); setName(''); setDetail(''); setExtra(''); setLimit(''); setType(next === 'accounts' ? 'checking' : next === 'payments' ? 'instant' : 'expense'); window.setTimeout(() => firstField.current?.focus(), 0); }
+  const classifications = useMemo(() => [...new Set(categories.filter((item) => item.type !== 'income').map((item) => item.name))].sort(), [categories]);
+  const rows = useMemo(() => {
+    const source: Array<{id:string;first:string;second:string;third:string;active:boolean}> = tab === 'accounts' ? accounts.map(x=>({id:x.id,first:x.name,second:x.institution||'Monetária',third:x.type,active:x.isActive})) : tab === 'classifications' ? classifications.map(value=>{const related=categories.filter(x=>x.name===value&&x.type!=='income');return{id:related[0]?.id||value,first:value,second:'Somente despesas',third:`${new Set(related.map(x=>x.group).filter(Boolean)).size} grupos`,active:related.some(x=>x.isActive)}}) : tab === 'groups' ? categories.map(x=>({id:x.id,first:x.group||x.name,second:x.type==='income'?'Recebimento':'Despesa',third:x.type==='income'?'Não se aplica':x.name,active:x.isActive})) : tab === 'payments' ? payments.map(x=>({id:x.id,first:x.name,second:x.type||'Outro',third:/credit/i.test(x.type||x.name)?'Cartão cadastrado':'Conta compatível',active:x.isActive})) : cards.map(x=>({id:x.id,first:x.name,second:`${x.issuer||'Emissor não informado'} · ${x.brand||'Bandeira não informada'}`,third:`Fecha dia ${x.closingDay} · vence dia ${x.dueDay}`,active:x.isActive}));
+    const match=(value:string,filter:string)=>value.toLowerCase().includes(filter.trim().toLowerCase()); return source.filter(x=>match(x.first,filters.first)&&match(x.second,filters.second)&&match(x.third,filters.third)&&(!filters.status||(filters.status==='active')===x.active));
+  }, [tab,accounts,categories,payments,cards,classifications,filters]);
+  async function submit(event: FormEvent) { event.preventDefault(); if (!canWrite || !name.trim()) { firstField.current?.focus(); return; } setBusy(true); setError(''); try { if(tab==='accounts') await financeClient.createAccount({name:name.trim(),type,institution:detail||null,openingBalance:parseBRL(openingBalance)||0}); if(tab==='classifications') await financeClient.createCategory({name:name.trim(),group:null,type:'expense'}); if(tab==='groups') await financeClient.createCategory({name:type==='income'?name.trim():detail,group:name.trim(),type:type as 'income'|'expense'}); if(tab==='payments') await financeClient.createPaymentMethod({name:name.trim(),type}); if(tab==='cards') await cardsClient.create({name:name.trim(),issuer:detail||undefined,brand:extra||undefined,creditLimit:parseBRL(limit)||0,closingDay:Number(closingDay),dueDay:Number(dueDay)}); setName('');setDetail('');setExtra('');setLimit('');await load();firstField.current?.focus(); } catch(cause){setError(cause instanceof Error?cause.message:'Não foi possível salvar o cadastro.');} finally{setBusy(false);} }
+  async function deactivate(id:string){if(!canDeactivate)return;setBusy(true);try{if(tab==='accounts')await financeClient.deactivateAccount(id);if(tab==='classifications'||tab==='groups')await financeClient.deactivateCategory(id);if(tab==='payments')await financeClient.deactivatePaymentMethod(id);if(tab==='cards')await cardsClient.deactivate(id);await load();}finally{setBusy(false);}}
+  const copy=tab==='accounts'?['Conta financeira','Contas financeiras','Nome','Escopo','Tipo']:tab==='classifications'?['Classificação de despesa','Classificações de despesas','Classificação','Uso','Grupos vinculados']:tab==='groups'?['Grupo','Grupos cadastrados','Grupo','Tipo','Classificação']:tab==='payments'?['Forma de pagamento','Formas de pagamento','Nome','Natureza','Compatibilidade']:['Cartão de crédito','Cartões cadastrados','Cartão','Emissor','Regras'];
+  return <section className="page catalogs-page v10-catalogs"><header className="page-header"><div><span>CADASTROS</span><h1>Base configurável do MEG</h1><p>Centralize as opções usadas nos lançamentos sem alterar registros históricos.</p></div><span className="status-pill active">HISTÓRICO PROTEGIDO</span></header>
+    <section className="catalog-summary">{[[`Contas financeiras`,`${accounts.filter(x=>x.isActive).length} ativas`,'Monetário e benefício'],['Classificações',`${classifications.length} ativas`,'Aplicadas às despesas'],['Grupos',`${categories.filter(x=>x.isActive&&x.group).length} ativos`,'Despesas e recebimentos'],['Cartões',`${cards.filter(x=>x.isActive).length} ativos`,'Identidade visual automática']].map(x=><article key={x[0]}><span>{x[0]}</span><strong>{x[1]}</strong><small>{x[2]}</small></article>)}</section>
+    <nav className="catalog-sticky-tabs v10-tabs" role="tablist">{([['accounts','Contas financeiras'],['classifications','Classificações'],['groups','Grupos'],['payments','Formas de pagamento'],['cards','Cartões']] as const).map(([id,label])=><button key={id} className={tab===id?'active':''} onClick={()=>selectTab(id)}>{label}</button>)}</nav>
+    <div className="v10-catalog-panel"><form className="meg-card v10-catalog-form" onSubmit={submit} noValidate><div><span className="meg-eyebrow">NOVO CADASTRO</span><h3>{copy[0]}</h3></div><label>Nome *<input ref={firstField} value={name} onChange={e=>setName(e.target.value)} required placeholder={tab==='cards'?'Ex.: LATAM PASS Platinum':tab==='groups'?'Ex.: Atendimentos externos':'Informe o nome'} /></label>
+      {tab==='accounts'&&<><label>Escopo financeiro *<select value={detail} onChange={e=>setDetail(e.target.value)} required><option value="">Selecione</option><option>Monetária</option><option>Benefício alimentação</option><option>Benefício refeição</option><option>Benefício transporte</option><option>Outro benefício</option></select></label><label>Tipo *<select value={type} onChange={e=>setType(e.target.value)}><option value="checking">Conta corrente</option><option value="savings">Poupança</option><option value="cash">Dinheiro</option><option value="investment">Investimento</option></select></label><label>Saldo inicial<MEGCurrencyInput value={openingBalance} onValueChange={setOpeningBalance} allowNegative /></label><div className="notice">O saldo inicial gera um evento rastreável. Benefícios permanecem separados do caixa monetário.</div></>}
+      {tab==='classifications'&&<><label>Aplicação<input value="Somente despesas" disabled /></label><label>Descrição<textarea value={detail} onChange={e=>setDetail(e.target.value)} maxLength={180}/></label><div className="notice">Receitas usam apenas grupos de recebimento. A classificação é exclusiva para despesas.</div></>}
+      {tab==='groups'&&<><label>Tipo *<select value={type} onChange={e=>setType(e.target.value)}><option value="expense">Grupo de despesa</option><option value="income">Grupo de recebimento</option></select></label>{type==='expense'&&<label>Classificação da despesa *<select value={detail} onChange={e=>setDetail(e.target.value)} required><option value="">Selecione</option>{classifications.map(x=><option key={x}>{x}</option>)}</select></label>}<label>Palavras para sugestão automática<input value={extra} onChange={e=>setExtra(e.target.value)} placeholder="Ex.: fisioterapia, paciente" /></label></>}
+      {tab==='payments'&&<><label>Natureza *<select value={type} onChange={e=>setType(e.target.value)}><option value="instant">Pagamento imediato</option><option value="credit">Cartão de crédito</option><option value="installment">Crediário</option><option value="benefit">Benefício</option><option value="other">Outro</option></select></label><div className="notice">Crédito e crediário calculam parcelas e vencimentos. O campo Modalidade não é necessário.</div></>}
+      {tab==='cards'&&<><label>Emissor<input value={detail} onChange={e=>setDetail(e.target.value)} placeholder="Ex.: Itaú"/></label><label>Bandeira *<select value={extra} onChange={e=>setExtra(e.target.value)} required><option value="">Selecione</option>{brands.map(x=><option key={x}>{x}</option>)}</select></label><div className="launch-form-row"><label>Dia de fechamento *<input type="number" min="1" max="31" value={closingDay} onChange={e=>setClosingDay(e.target.value)}/></label><label>Dia de vencimento *<input type="number" min="1" max="31" value={dueDay} onChange={e=>setDueDay(e.target.value)}/></label></div><label>Limite<MEGCurrencyInput value={limit} onValueChange={setLimit}/></label><div className="catalog-card-preview"><strong>{name||'Aguardando descrição'}</strong><span>{detail||'Identidade automática'}</span></div></>}
+      {error&&<div className="auth-error">{error}</div>}<button className="auth-submit" disabled={!canWrite||busy}>{busy?'Salvando...':`Salvar ${copy[0].toLowerCase()}`}</button></form>
+      <article className="meg-card v10-catalog-table"><header><div><span className="meg-eyebrow">CADASTRADOS</span><h3>{copy[1]}</h3></div><span className="status-pill active">{rows.length} itens</span></header><div className="table-scroll"><table className="meg-table"><thead><tr><th>{copy[2]}</th><th>{copy[3]}</th><th>{copy[4]}</th><th>Situação</th><th>Ações</th></tr><tr className="table-filter-row"><th><input value={filters.first} onChange={e=>setFilters({...filters,first:e.target.value})} placeholder="Filtrar"/></th><th><input value={filters.second} onChange={e=>setFilters({...filters,second:e.target.value})} placeholder="Filtrar"/></th><th><input value={filters.third} onChange={e=>setFilters({...filters,third:e.target.value})} placeholder="Filtrar"/></th><th><select value={filters.status} onChange={e=>setFilters({...filters,status:e.target.value})}><option value="">Todas</option><option value="active">Ativa</option><option value="inactive">Inativa</option></select></th><th/></tr></thead><tbody>{rows.map(item=><tr key={item.id}><td><strong>{item.first}</strong></td><td>{item.second}</td><td>{item.third}</td><td><span className={`status-pill ${item.active?'active':''}`}>{item.active?'Ativo':'Inativo'}</span></td><td>{item.active&&canDeactivate&&<button className="secondary-button" onClick={()=>void deactivate(item.id)} disabled={busy}>Inativar</button>}</td></tr>)}</tbody></table>{loading&&<p className="catalog-empty">Carregando dados da base...</p>}{!loading&&!rows.length&&<p className="catalog-empty">Nenhum cadastro corresponde aos filtros.</p>}</div><div className="notice catalog-preservation">Itens vinculados não são excluídos. A inativação impede novos usos e preserva o histórico.</div></article></div>
+  </section>;
 }
