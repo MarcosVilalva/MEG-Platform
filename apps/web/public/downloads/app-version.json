@@ -1,9 +1,9 @@
 {
-  "versionCode": 245,
-  "versionName": "1.1.245",
+  "versionCode": 246,
+  "versionName": "1.1.246",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "083d3fe14f0d2f946d17275a4dbf7fcc7bdf84c5844ae9a8d4b24921d137dd10",
+  "sha256": "a06dc9488f8da8559d6aed4d04e95ef6094a9b0f5d468e6f2f31c0dfd09be561",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Pré-carregar dados e aplicar Cartões Inteligentes V15"
+  "releaseNotes": "Corrigir dashboard para o layout V15 validado"
 }
