@@ -12,6 +12,9 @@ import { DecisionCenter } from '../modules/decision/DecisionCenter';
 import { FinancialCatalogs } from '../modules/catalogs/FinancialCatalogs';
 import { UserManagement } from '../modules/admin/UserManagement';
 import { History } from '../modules/history/History';
+import { Revenues } from '../modules/revenues/Revenues';
+import { Reconciliation } from '../modules/reconcile/Reconciliation';
+import { BudgetPanel } from '../modules/analytics/BudgetPanel';
 import { CommandPalette } from './CommandPalette';
 import { useAppStore } from './store';
 
@@ -54,12 +57,15 @@ export function App({ onLogout }: AppProps) {
         {view === 'transactions' && <PersistentTransactions />}
         {view === 'history' && <History />}
         {view === 'receivables' && <Receivables />}
+        {view === 'revenues' && <Revenues />}
         {view === 'cards' && <CreditCards />}
         {view === 'payables' && <Payables />}
         {view === 'catalogs' && <FinancialCatalogs onNavigate={setView} />}
         {view === 'users' && <UserManagement />}
         {view === 'analytics' && <Analytics />}
         {view === 'cashflow' && <Cashflow />}
+        {view === 'reconcile' && <Reconciliation />}
+        {view === 'budgets' && <section className="meg-screen"><header className="screen-heading"><div><span>ORÇAMENTOS E METAS</span><h1>Planejamento</h1><p>Orçamento por competência e categoria, preservando os dados reais.</p></div></header><BudgetPanel /></section>}
         {view === 'settings' && <Settings />}
       </AppShell>
 
