@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { MEGCurrencyInput } from '@ui';
 import { parseBRL } from '@shared/money';
-import { readSession } from '../../app/auth-client';
+import { peekAuthenticatedCache, readSession } from '../../app/auth-client';
 import { cardsClient, type CreditCard } from '../../app/cards-client';
 import { financeClient, type Category } from '../../app/finance-client';
 import { useAppStore } from '../../app/store';
@@ -10,14 +10,51 @@ import { dateInSaoPaulo } from '../../app/calendar';
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const brands = ['Visa', 'Mastercard', 'Elo', 'American Express', 'Hipercard'];
 
+type CardIdentity = {
+  art: 'latam' | 'mercado' | 'generic';
+  label: string;
+  miniLabel: string;
+  background: string;
+};
+
+function normalizeCardText(value: string | null | undefined) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+}
+
 function brandAsset(card: CreditCard) {
-  const value = `${card.brand || ''} ${card.name}`.toLowerCase();
-  if (value.includes('master')) return 'mastercard';
-  if (value.includes('amex') || value.includes('american')) return 'amex';
-  if (value.includes('hiper')) return 'hipercard';
-  if (value.includes('elo')) return 'elo';
-  if (value.includes('visa')) return 'visa';
+  const explicit = normalizeCardText(card.brand);
+  const value = explicit || normalizeCardText(card.name);
+  if (value.includes('MASTER')) return 'mastercard';
+  if (value.includes('AMEX') || value.includes('AMERICAN')) return 'amex';
+  if (value.includes('HIPER')) return 'hipercard';
+  if (value.includes('ELO')) return 'elo';
+  if (value.includes('VISA')) return 'visa';
   return '';
+}
+
+function resolveCardIdentity(card: CreditCard): CardIdentity {
+  const name = normalizeCardText(card.name);
+  const issuer = normalizeCardText(card.issuer);
+  const combined = `${name} ${issuer}`;
+
+  /*
+   * A identidade é resolvida por produto/emissor real. Regras específicas vêm
+   * antes das genéricas para impedir, por exemplo, que um LATAM PASS emitido pelo
+   * Itaú seja confundido com um Itaú genérico ou que o cartão AZUL use a arte LATAM.
+   */
+  if (combined.includes('LATAM')) return { art: 'latam', label: 'LATAM PASS', miniLabel: 'LATAM', background: 'linear-gradient(145deg,#756d62,#403a34)' };
+  if (combined.includes('MERCADO LIVRE') || combined.includes('MERCADO PAGO') || /(^|\s)MELI(\s|$)/.test(combined) || /(^|\s)ML(\s|$)/.test(combined)) return { art: 'mercado', label: 'Mercado Pago', miniLabel: 'MELI', background: 'linear-gradient(145deg,#141719,#020303)' };
+  if (name.includes('AZUL')) return { art: 'generic', label: 'AZUL', miniLabel: 'AZUL', background: 'linear-gradient(145deg,#2558a6 0%,#163f78 48%,#071a35 100%)' };
+  if (name.includes('RIACHUELO') || issuer.includes('MIDWAY')) return { art: 'generic', label: 'Riachuelo', miniLabel: 'RIACHU', background: 'linear-gradient(145deg,#4c1e29 0%,#1d1117 52%,#08090b 100%)' };
+  if (combined.includes('NUBANK')) return { art: 'generic', label: 'Nubank', miniLabel: 'NU', background: 'linear-gradient(145deg,#8a05be,#3f0458)' };
+  if (combined.includes('SANTANDER')) return { art: 'generic', label: 'Santander', miniLabel: 'SANT', background: 'linear-gradient(145deg,#d71920,#65090c)' };
+  if (combined.includes('BANCO DO BRASIL') || /(^|\s)BB(\s|$)/.test(combined)) return { art: 'generic', label: 'Ourocard', miniLabel: 'BB', background: 'linear-gradient(145deg,#f5d316,#1e4d92)' };
+  if (combined.includes('CAIXA')) return { art: 'generic', label: 'CAIXA', miniLabel: 'CAIXA', background: 'linear-gradient(145deg,#1279b9,#0b3764)' };
+  if (combined.includes('BV')) return { art: 'generic', label: 'Banco BV', miniLabel: 'BV', background: 'linear-gradient(145deg,#173d8d,#4f1d92)' };
+  if (combined.includes('ITAU')) return { art: 'generic', label: card.name || 'Itaú', miniLabel: 'ITAÚ', background: 'linear-gradient(145deg,#e56f13,#153f74)' };
+
+  const accent = card.color || '#0e6f68';
+  return { art: 'generic', label: card.name || card.issuer || 'MEG', miniLabel: (card.name || 'MEG').slice(0, 6).toUpperCase(), background: `linear-gradient(135deg, ${accent}, #092338)` };
 }
 
 function nextCycleDate(day: number) {
@@ -42,9 +79,10 @@ function shortMonth(month: string) {
 
 export function CreditCards() {
   const selectedMonth = useAppStore((state) => state.selectedMonth);
-  const setSelectedMonth = useAppStore((state) => state.setSelectedMonth);
-  const [cards, setCards] = useState<CreditCard[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const cachedCards = peekAuthenticatedCache<CreditCard[]>(`/cards?month=${encodeURIComponent(selectedMonth)}`);
+  const cachedCategories = peekAuthenticatedCache<Category[]>('/finance/categories');
+  const [cards, setCards] = useState<CreditCard[]>(() => cachedCards || []);
+  const [categories, setCategories] = useState<Category[]>(() => (cachedCategories || []).filter((item) => item.isActive && item.type !== 'income'));
   const [editor, setEditor] = useState<'card' | 'purchase' | null>(null);
   const [detailTab, setDetailTab] = useState<'current' | 'future' | 'installments' | 'rules'>('current');
   const [query, setQuery] = useState('');
@@ -53,7 +91,7 @@ export function CreditCards() {
   const [limit, setLimit] = useState(''); const [closingDay, setClosingDay] = useState('5'); const [dueDay, setDueDay] = useState('12');
   const [cardId, setCardId] = useState(''); const [description, setDescription] = useState(''); const [amount, setAmount] = useState('');
   const [purchaseDate, setPurchaseDate] = useState(() => dateInSaoPaulo()); const [installments, setInstallments] = useState('1'); const [categoryId, setCategoryId] = useState('');
-  const [busy, setBusy] = useState(false); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false); const [loading, setLoading] = useState(() => !cachedCards); const [error, setError] = useState('');
   const role = readSession()?.user.role || 'VIEWER'; const canWrite = role !== 'VIEWER'; const canDelete = role === 'ADMIN' || role === 'MANAGER';
 
   async function load() {
@@ -61,7 +99,7 @@ export function CreditCards() {
     try {
       const [cardData, categoryData] = await Promise.all([cardsClient.list(selectedMonth), financeClient.listCategories()]);
       setCards(cardData); setCategories(categoryData.filter((item) => item.isActive && item.type !== 'income'));
-      if (!cardId && cardData[0]) setCardId(cardData[0].id);
+      setCardId((current) => current && cardData.some((item) => item.id === current) ? current : (cardData[0]?.id || ''));
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'CARDS_LOAD_ERROR'); }
     finally { setLoading(false); }
   }
@@ -91,24 +129,26 @@ export function CreditCards() {
     try { await cardsClient.createPurchase({ cardId, categoryId: categoryId || undefined, description: description.trim(), totalAmount: value, purchaseDate, installments: Number(installments) }); setDescription(''); setAmount(''); setInstallments('1'); setEditor(null); await load(); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'PURCHASE_SAVE_ERROR'); } finally { setBusy(false); }
   }
+
+  const selectedIdentity = selectedCard ? resolveCardIdentity(selectedCard) : null;
   const selectedAsset = selectedCard ? brandAsset(selectedCard) : '';
-  const visualKey = `${selectedCard?.name || ''} ${selectedCard?.issuer || ''}`.toLowerCase();
-  const cardVisual = visualKey.includes('latam') || visualKey.includes('azul') ? 'azul' : visualKey.includes('mercado') || /(^|\s)ml(\s|$)/.test(visualKey) ? 'ml' : 'generic';
+  const cardVisual = selectedIdentity?.art === 'latam' ? 'azul' : selectedIdentity?.art === 'mercado' ? 'ml' : 'generic';
+
   return <section id="cards" className="page cards-page">
     <header className="page-head"><div><span className="kicker">Cartões de crédito</span><h1>Faturas e compromissos</h1><p>Acompanhe cada cartão sem misturar fatura atual, compras após o fechamento e parcelas futuras.</p></div>{canWrite && <button className="btn secondary" onClick={() => setEditor('card')}>Gerenciar cartões</button>}</header>
     {error && <div className="auth-error">{error}</div>}
-    {loading && !cards.length ? <div className="card empty-state">Carregando cartões da base...</div> : selectedCard ? <div className="cards-shell">
+    {loading && !cards.length ? <div className="card empty-state">Carregando cartões da base...</div> : selectedCard && selectedIdentity ? <div className="cards-shell">
       <aside className="card cards-picker" aria-label="Seleção de cartão">
         <div className="cards-picker-head"><div><span className="kicker">Meus cartões</span><strong>{visibleCards.length} ativo(s)</strong></div></div>
         <label className="search-field"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Filtrar cartões" /></label>
-        {visibleCards.map((card, index) => <button key={card.id} className={`credit-card-option ${selectedCard.id === card.id ? 'active' : ''}`} onClick={() => setCardId(card.id)}><span className={`mini-card ${index % 2 ? 'ml' : ''}`}>{card.name.slice(0, 6).toUpperCase()}</span><span><strong>{card.name}</strong><small>{card.issuer || card.brand || 'Cartão cadastrado'} · {brl.format(card.statementAmount)}</small></span><span>›</span></button>)}
+        {visibleCards.map((card) => { const identity = resolveCardIdentity(card); return <button key={card.id} className={`credit-card-option ${selectedCard.id === card.id ? 'active' : ''}`} onClick={() => setCardId(card.id)}><span className={`mini-card ${identity.art === 'mercado' ? 'ml' : ''}`} style={{ background: identity.background }}>{identity.miniLabel}</span><span><strong>{card.name}</strong><small>{card.issuer || card.brand || 'Cartão cadastrado'} · {brl.format(card.statementAmount)}</small></span><span>›</span></button>; })}
       </aside>
       <div className="cards-detail">
         <article className="card"><div className="card-hero-grid">
-          <div className={`physical-card is-${cardVisual}`} style={cardVisual === 'generic' ? { background: `linear-gradient(135deg, ${selectedCard.color || '#0e6f68'}, #092338)` } as CSSProperties : undefined} aria-label={`Representação visual do ${selectedCard.name}`}>
+          <div className={`physical-card is-${cardVisual}`} aria-label={`Representação visual do ${selectedCard.name}`}>
             <div className="card-art card-art-azul"><img src={`${import.meta.env.BASE_URL}assets/cards/latam-pass-platinum.webp`} alt="LATAM PASS Platinum Visa Itaú" /></div>
             <div className="card-art card-art-ml"><div className="mp-brand"><span className="mp-mark">MP</span><span>Mercado Pago</span></div><span className="ml-chip"/><span className="ml-contactless">)))</span><span className="ml-label">CARTÃO DE CRÉDITO</span><img className="ml-visa" src={`${import.meta.env.BASE_URL}assets/card-brands/visa.svg`} alt="Visa" /></div>
-            <div className="card-art card-art-generic"><strong className="generic-card-brand">{selectedCard.issuer || 'MEG'}</strong><span className="generic-card-chip"/><span className="generic-card-label">{selectedCard.brand || 'CARTÃO CADASTRADO'}</span>{selectedAsset && <img className="card-brand-logo" src={`${import.meta.env.BASE_URL}assets/card-brands/${selectedAsset}.svg`} alt={selectedCard.brand || selectedAsset}/>}</div>
+            <div className="card-art card-art-generic" style={{ background: selectedIdentity.background } as CSSProperties}><strong className="generic-card-brand">{selectedIdentity.label}</strong><span className="generic-card-chip"/><span className="generic-card-label">{selectedCard.issuer || selectedCard.brand || 'CARTÃO CADASTRADO'}</span>{selectedAsset && <img className="card-brand-logo" src={`${import.meta.env.BASE_URL}assets/card-brands/${selectedAsset}.svg`} alt={selectedCard.brand || selectedAsset}/>}</div>
           </div>
           <div><div className="card-account-head"><div className="card-account-title"><span className="card-chip">▣</span><div><h2>{selectedCard.name}</h2><small>{selectedCard.issuer || 'Cartão cadastrado no MEG'}{selectedCard.lastFour ? ` · final ${selectedCard.lastFour}` : ''}</small></div></div><div className="cycle-dates"><div className="cycle-date"><span>Fechamento</span><strong>{nextCycleDate(selectedCard.closingDay)}</strong></div><div className="cycle-date"><span>Vencimento</span><strong>{nextCycleDate(selectedCard.dueDay)}</strong></div><span className="pill warn">Em aberto</span></div></div>
           <div className="card-metrics" style={{ marginTop: 14 }}><div className="card-metric"><span>Fatura atual</span><strong>{brl.format(selectedCard.statementAmount)}</strong><small>Compras até o fechamento</small></div><div className="card-metric"><span>Após fechamento</span><strong>{brl.format(forecast[1]?.amount || 0)}</strong><small>Próxima fatura</small></div><div className="card-metric"><span>Parcelas futuras</span><strong>{brl.format(futureTotal)}</strong><small>Meses seguintes</small></div><div className="card-metric"><span>Total comprometido</span><strong>{brl.format(selectedCard.usedLimit)}</strong><small>Aberto + parcelas futuras</small></div></div>
