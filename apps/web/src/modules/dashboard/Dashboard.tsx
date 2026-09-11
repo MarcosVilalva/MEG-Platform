@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { normalizeEvents, type LegacyTransaction } from '@core/finance/events';
+import { normalizeEvents } from '@core/finance/events';
 import { readCloudState } from '../../app/app-state-client';
 import { useAppStore } from '../../app/store';
 
@@ -9,22 +9,23 @@ function monthTitle(value: string) { const [year, month] = value.split('-').map(
 function isBenefit(item: { description: string; category?: string; group?: string; account?: string; paymentMethod?: string }) { return /benef|aliment|vero/i.test(`${item.description} ${item.category || ''} ${item.group || ''} ${item.account || ''} ${item.paymentMethod || ''}`); }
 function isRealized(item: { type: string; status: string }) { return item.type === 'income' || ['paid', 'confirmed', 'reconciled'].includes(item.status); }
 
-export function Dashboard({ onNewTransaction: _onNewTransaction }: { onNewTransaction: () => void }) {
+export function Dashboard({ onNewTransaction }: { onNewTransaction: () => void }) {
   const selectedMonth = useAppStore((state) => state.selectedMonth);
   const periodMode = useAppStore((state) => state.periodMode);
   const periodStart = useAppStore((state) => state.periodStart);
   const periodEnd = useAppStore((state) => state.periodEnd);
-  const [transactions, setTransactions] = useState<LegacyTransaction[]>([]);
-  const [loading, setLoading] = useState(true);
+  const transactions = useAppStore((state) => state.transactions);
+  const replaceTransactions = useAppStore((state) => state.replaceTransactions);
+  const [loading, setLoading] = useState(transactions.length === 0);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let active = true; setLoading(true); setError('');
-    void readCloudState().then((result) => { if (active) setTransactions(result.state.transactions); })
+    void readCloudState().then((result) => { if (active) replaceTransactions(result.state.transactions); })
       .catch(() => { if (active) setError('Não foi possível carregar a base financeira compartilhada.'); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [selectedMonth]);
+  }, [replaceTransactions]);
 
   const view = useMemo(() => {
     const events = normalizeEvents(transactions);
@@ -48,13 +49,12 @@ export function Dashboard({ onNewTransaction: _onNewTransaction }: { onNewTransa
     return { opening, income, paidExpense, pending, benefit, realized, projected, recent, overdue, next };
   }, [transactions, selectedMonth, periodMode, periodStart, periodEnd]);
 
-  return <section className="meg-screen dashboard-screen" aria-busy={loading}>
-    <header className="screen-heading"><div><span>VISÃO GERAL</span><h1>{periodMode === 'month' ? monthTitle(selectedMonth) : periodMode === 'range' ? 'Período selecionado' : 'Todo o histórico'}</h1><p>Valores calculados diretamente sobre seus lançamentos da base principal.</p><small>{loading ? 'Atualizando dados...' : 'Base real sincronizada'}</small></div></header>
+  return <section className="meg-screen dashboard-screen validated-dashboard" aria-busy={loading}>
+    <header className="screen-heading"><div><span>VISÃO GERAL</span><h1>{periodMode === 'month' ? monthTitle(selectedMonth) : periodMode === 'range' ? 'Período selecionado' : 'Todo o histórico'}</h1><p>Leitura do período usando exclusivamente os lançamentos preservados na base financeira do MEG.</p><small>{loading ? 'Atualizando em segundo plano...' : 'Atualizado agora · dados sincronizados'}</small></div></header>
     {error && <div className="notice danger">{error}</div>}
-    <section className="balance-card"><div><span>SALDO MONETÁRIO REALIZADO</span><strong>{money.format(view.realized)}</strong><p>Saldo anterior mais receitas recebidas, menos despesas efetivamente pagas.</p></div><dl><div><dt>Saldo anterior</dt><dd>{money.format(view.opening)}</dd></div><div><dt>Receitas do mês</dt><dd>{money.format(view.income)}</dd></div><div><dt>Receita disponível</dt><dd>{money.format(view.opening + view.income)}</dd></div></dl></section>
-    <section className={`attention-card ${view.projected < 0 ? 'danger' : 'ok'}`}><div><span>{view.projected < 0 ? '!' : '✓'}</span><div><h2>{view.projected < 0 ? 'Mês exige atenção' : 'Mês sob controle'}</h2><p>Resultado realizado considerando também todos os compromissos pendentes do período.</p></div></div><div><small>{view.projected < 0 ? 'FALTA PROJETADA PARA FECHAR O MÊS' : 'RESULTADO PROJETADO'}</small><strong>{money.format(view.projected)}</strong></div></section>
-    <section className="dashboard-metrics"><article><span>DESPESAS PAGAS</span><strong>{money.format(view.paidExpense)}</strong><p>Reduzem o saldo realizado</p></article><article><span>DESPESAS PENDENTES</span><strong>{money.format(view.pending)}</strong><p>Aguardando baixa</p></article><article><span>BENEFÍCIO ALIMENTAÇÃO</span><strong>{money.format(view.benefit)}</strong><p>Conta separada da caixa monetária</p></article><article><span>CONSOLIDADO REALIZADO</span><strong>{money.format(view.realized + view.benefit)}</strong><p>Monetário + benefício do período</p></article></section>
-    <section className="dashboard-lower"><article className="meg-panel"><header><div><span>HISTÓRICO RECENTE</span><h2>Últimos lançamentos</h2></div></header><div className="compact-list">{view.recent.map((event) => <div key={event.id}><div><strong>{event.description}</strong><small>{new Date(`${day(event.date)}T12:00:00`).toLocaleDateString('pt-BR')} · {event.group || event.category || 'Sem grupo'}</small></div><span className={`status ${event.status}`}>{event.status === 'paid' ? 'Pago' : event.status === 'planned' ? 'Pendente' : 'Conciliado'}</span></div>)}{!view.recent.length && <p className="empty-state">Nenhum lançamento no período.</p>}</div></article>
-      <article className="meg-panel due-agenda"><header><div><span>AGENDA FINANCEIRA</span><h2>Vencimentos agrupados</h2></div><strong>{money.format(view.pending)}</strong></header><div className="due-row overdue"><b>Vencidos</b><span>Compromissos anteriores</span><strong>{money.format(view.overdue)}</strong></div><div className="due-row"><b>Próximos</b><span>Hoje e próximos dias</span><strong>{money.format(view.next)}</strong></div></article></section>
+    <div className="dashboard-primary"><button className="quick-launch" onClick={onNewTransaction}><b>＋</b><span>Novo lançamento</span></button><section className="balance-card premium-balance"><div><span>SALDO MONETÁRIO REALIZADO</span><strong>{money.format(view.realized)}</strong><p>Receita disponível menos despesas monetárias efetivamente pagas.</p></div><dl><div><dt>Saldo anterior</dt><dd>{money.format(view.opening)}</dd></div><div><dt>Receitas do mês</dt><dd>{money.format(view.income)}</dd></div><div><dt>Receita disponível</dt><dd>{money.format(view.opening + view.income)}</dd></div></dl></section></div>
+    <section className={`attention-card dashboard-alert ${view.projected < 0 ? 'danger' : 'ok'}`}><div><span className="premium-alert-icon">{view.projected < 0 ? '!' : '✓'}</span><div><h2>{view.projected < 0 ? 'Mês exige atenção' : 'Mês sob controle'}</h2><p>O diagnóstico principal considera o mês corrente e não pode ser mascarado pelos filtros analíticos.</p></div></div><div><small>{view.projected < 0 ? 'FALTA PROJETADA PARA FECHAR O MÊS' : 'RESULTADO PROJETADO'}</small><strong>{money.format(view.projected)}</strong></div></section>
+    <section className="dashboard-metrics premium-metrics"><article><span>DESPESAS PAGAS</span><strong>{money.format(view.paidExpense)}</strong><p>Reduzem o saldo realizado</p></article><article><span>DESPESAS PENDENTES</span><strong>{money.format(view.pending)}</strong><p>Não reduzem o realizado até a baixa</p></article><article className="benefit-control"><span>BENEFÍCIO ALIMENTAÇÃO · DISPONÍVEL</span><strong>{money.format(view.benefit)}</strong><p>Conta separada da caixa monetária</p></article><article><span>CONSOLIDADO REALIZADO</span><strong>{money.format(view.realized + view.benefit)}</strong><p>Monetário + benefício do período</p></article></section>
+    <section className="dashboard-lower premium-grid2"><article className="meg-panel premium-card"><header><div><span>HISTÓRICO RECENTE</span><h2>Últimos lançamentos</h2></div></header><div className="compact-list">{view.recent.map((event) => <div key={event.id}><div><strong>{event.description}</strong><small>{new Date(`${day(event.date)}T12:00:00`).toLocaleDateString('pt-BR')} · {event.group || event.category || 'Sem grupo'}</small></div><span className={`status ${event.status}`}>{event.status === 'paid' ? 'Pago' : event.status === 'planned' ? 'Pendente' : 'Conciliado'}</span></div>)}{!view.recent.length && <p className="empty-state">Nenhum lançamento no período.</p>}</div></article><article className="meg-panel premium-card due-agenda"><header><div><span>AGENDA FINANCEIRA</span><h2>Vencimentos agrupados</h2></div><strong>{money.format(view.pending)}</strong></header><div className="due-row overdue"><b>Vencidos</b><span>Compromissos anteriores</span><strong>{money.format(view.overdue)}</strong></div><div className="due-row"><b>Fatura</b><span>Compras do mesmo cartão</span><strong>Ver pendentes</strong></div><div className="due-row"><b>Próximos</b><span>Hoje e próximos dias</span><strong>{money.format(view.next)}</strong></div></article></section>
   </section>;
 }
