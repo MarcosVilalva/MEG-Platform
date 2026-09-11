@@ -1,9 +1,9 @@
 {
-  "versionCode": 250,
-  "versionName": "1.1.250",
+  "versionCode": 251,
+  "versionName": "1.1.251",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "e2981c4c023bd16631307c48f0f26c315935f034db8246f804e48ded69f0a195",
+  "sha256": "47da52200a8df105a2fce7931f274fed2a1ac2942ca61eaeaa3bd5a95c6856fa",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "V15: reconstrução visual com dados reais e pré-carregamento"
+  "releaseNotes": "V15: fidelidade de layout, carregamento e identidade dos cartões"
 }
