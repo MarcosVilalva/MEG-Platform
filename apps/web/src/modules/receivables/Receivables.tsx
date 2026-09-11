@@ -121,9 +121,9 @@ export function Receivables() {
   }
 
   return (
-    <section className="page">
-      <header className="page-header compact">
-        <div><span>Finanças pessoais</span><h1>Contas a receber</h1><p>Controle de valores previstos, vencidos e recebidos.</p></div>
+    <section id="receivables" className="page receivables-page">
+      <header className="page-head page-header compact">
+        <div><span>Contas a receber</span><h1>Títulos e recebimentos</h1><p>Valor original, vencimento e saldo aberto permanecem rastreáveis. Recebimentos parciais reduzem o saldo sem quitar o título antes de chegar a zero.</p></div>
         {canWrite && <div className="page-header-actions"><button className="meg-icon-action" title="Cadastrar pagador" aria-label="Cadastrar pagador" onClick={() => setEditor('customer')}>♙</button><button className="header-primary" onClick={() => setEditor('receivable')}>＋ Nova receita</button></div>}
       </header>
 
