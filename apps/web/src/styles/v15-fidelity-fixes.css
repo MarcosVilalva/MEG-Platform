@@ -1,0 +1,420 @@
+/*
+ * V15 fidelity fixes
+ *
+ * Este arquivo e carregado depois do contrato V15 e do adapter React.
+ * Ele corrige apenas diferencas entre o markup React real e o HTML V15 validado.
+ * Nao contem dados financeiros e nao altera regras de negocio.
+ */
+
+/* --------------------------------------------------------------------------
+   Sidebar: reproduz a densidade e os glifos do V15, sem herdar o menu legado.
+   -------------------------------------------------------------------------- */
+.web-validation .meg-sidebar {
+  gap: 8px;
+  padding: 10px 8px 12px;
+}
+
+.web-validation .meg-side-brand {
+  min-height: 76px;
+  height: auto;
+  justify-content: flex-start;
+  padding: 0 8px 6px;
+}
+
+.web-validation .meg-side-brand img {
+  width: 72px;
+  height: 72px;
+}
+
+.web-validation .meg-search {
+  width: 100%;
+  height: 38px;
+  min-height: 38px;
+  margin: 0 0 2px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #2a4453;
+  border-radius: 7px;
+  background: #071827;
+  color: #b7c5cd;
+  box-shadow: none;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.web-validation .meg-search > span {
+  width: 18px;
+  min-width: 18px;
+  display: grid;
+  place-items: center;
+  color: #8bd9c5;
+}
+
+.web-validation .meg-search > span > .meg-nav-icon {
+  display: none !important;
+}
+
+.web-validation .meg-search > span::before {
+  content: "⌘";
+  display: block;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.web-validation .meg-search b {
+  font: inherit;
+  font-weight: 750;
+}
+
+.web-validation .meg-nav {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 2px;
+  padding: 0 2px 0 0;
+  overflow-y: auto;
+}
+
+.web-validation .meg-nav > button,
+.web-validation .meg-side-more nav > button {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #d5dee2;
+  box-shadow: none;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.15;
+}
+
+.web-validation .meg-nav > button:hover,
+.web-validation .meg-side-more nav > button:hover {
+  background: rgba(255,255,255,.045);
+  color: #fff;
+}
+
+.web-validation .meg-nav > button.active {
+  padding-left: 8px;
+  background: linear-gradient(90deg,rgba(62,147,154,.52),rgba(42,102,116,.35));
+  box-shadow: inset 4px 0 0 #59d19a;
+  color: #fff;
+}
+
+.web-validation .meg-nav > button > span,
+.web-validation .meg-side-more nav > button > span {
+  width: 18px;
+  min-width: 18px;
+  display: grid;
+  place-items: center;
+  color: currentColor;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.web-validation .meg-nav > button > span > .meg-nav-icon,
+.web-validation .meg-side-more nav > button > span > .meg-nav-icon {
+  display: none !important;
+}
+
+.web-validation .meg-nav > button > b,
+.web-validation .meg-side-more nav > button > b {
+  min-width: 0;
+  font: inherit;
+  font-weight: 750;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Glifos exatamente na ordem do menu V15 validado. */
+.web-validation .meg-nav > button:nth-child(1) > span::before { content: "⌂"; }
+.web-validation .meg-nav > button:nth-child(2) > span::before { content: "▦"; }
+.web-validation .meg-nav > button:nth-child(3) > span::before { content: "◷"; }
+.web-validation .meg-nav > button:nth-child(4) > span::before { content: "◷"; }
+.web-validation .meg-nav > button:nth-child(5) > span::before { content: "▣"; }
+.web-validation .meg-nav > button:nth-child(6) > span::before { content: "≡"; }
+.web-validation .meg-nav > button:nth-child(7):not(:last-child) > span::before { content: "♙"; }
+.web-validation .meg-nav > button:last-child > span::before { content: "⚙"; }
+
+.web-validation .meg-side-more {
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.web-validation .meg-side-more > button {
+  min-height: 32px;
+  padding: 6px 8px;
+  gap: 7px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #86aaa8;
+  box-shadow: none;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.web-validation .meg-side-more > button > span {
+  width: 18px;
+  min-width: 18px;
+  display: grid;
+  place-items: center;
+}
+
+.web-validation .meg-side-more > button > span > .meg-nav-icon {
+  display: none !important;
+}
+
+.web-validation .meg-side-more > button > span::before {
+  content: "+";
+  font-size: 15px;
+  line-height: 1;
+}
+
+.web-validation .meg-side-more nav {
+  display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 2px;
+  margin-top: 3px;
+}
+
+.web-validation .meg-side-more nav > button:nth-child(1) > span::before { content: "◫"; }
+.web-validation .meg-side-more nav > button:nth-child(2) > span::before { content: "↗"; }
+.web-validation .meg-side-more nav > button:nth-child(3) > span::before { content: "↔"; }
+.web-validation .meg-side-more nav > button:nth-child(4) > span::before { content: "✓"; }
+.web-validation .meg-side-more nav > button:nth-child(5) > span::before { content: "⌁"; }
+.web-validation .meg-side-more nav > button:nth-child(6) > span::before { content: "◎"; }
+
+.web-validation .meg-side-user {
+  margin-top: auto;
+  padding: 9px 7px;
+}
+
+.web-validation .meg-logout {
+  min-height: 34px;
+  padding: 6px 8px;
+  gap: 7px;
+  border-radius: 6px;
+  font-size: 10px;
+}
+
+/* Sidebar recolhida: apenas os simbolos, sem herdar tamanhos antigos. */
+.web-validation.sidebar-collapsed .meg-sidebar {
+  padding-left: 7px;
+  padding-right: 7px;
+}
+
+.web-validation.sidebar-collapsed .meg-nav > button {
+  justify-content: center;
+  min-height: 38px;
+  padding: 7px 4px;
+  gap: 0;
+}
+
+.web-validation.sidebar-collapsed .meg-nav > button > span {
+  width: auto;
+  min-width: 0;
+  font-size: 17px;
+}
+
+/* --------------------------------------------------------------------------
+   Responsividade real: usa a largura do workspace, nao a largura da janela.
+   -------------------------------------------------------------------------- */
+.web-validation .page-head > *,
+.web-validation .screen-heading > *,
+.web-validation .section-head > *,
+.web-validation .premium-card-head > *,
+.web-validation .pending-row > *,
+.web-validation .pending-group > header > * {
+  min-width: 0;
+}
+
+.web-validation .pending-row > div:nth-child(2) strong,
+.web-validation .pending-row > div:nth-child(2) small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.web-validation .pending-row > strong {
+  white-space: nowrap;
+}
+
+@container meg-workspace (max-width: 1080px) {
+  .web-validation .pending-summary {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+
+  .web-validation .pending-row {
+    grid-template-columns: 105px minmax(0,1fr) 110px 78px;
+    gap: 9px;
+    padding: 11px 13px;
+  }
+
+  .web-validation .pending-row .status {
+    display: none;
+  }
+
+  .web-validation .history-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .web-validation .history-detail {
+    display: none;
+  }
+
+  .web-validation .catalog-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@container meg-workspace (max-width: 820px) {
+  .web-validation .validated-dashboard .premium-balance {
+    min-height: auto;
+    padding: 20px;
+  }
+
+  .web-validation .validated-dashboard .premium-balance h2 {
+    font-size: clamp(30px,7cqw,47px);
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .web-validation .validated-dashboard .premium-balance-stats {
+    position: static;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    margin-top: 24px;
+    grid-template-columns: repeat(3,minmax(0,1fr));
+    gap: 10px;
+  }
+
+  .web-validation .validated-dashboard .premium-balance-stats strong {
+    font-size: clamp(12px,2.2cqw,16px);
+    white-space: nowrap;
+  }
+
+  .web-validation .pending-toolbar {
+    grid-template-columns: minmax(0,1fr) minmax(170px,210px);
+  }
+
+  .web-validation .top-title small,
+  .web-validation .meg-sync {
+    display: none;
+  }
+
+  .web-validation .meg-top-actions {
+    gap: 4px;
+  }
+}
+
+@container meg-workspace (max-width: 620px) {
+  .web-validation .pending-summary,
+  .web-validation .pending-toolbar,
+  .web-validation .history-summary,
+  .web-validation .history-filters,
+  .web-validation .history-meta,
+  .web-validation .history-compare {
+    grid-template-columns: 1fr;
+  }
+
+  .web-validation .pending-toolbar {
+    position: static;
+  }
+
+  .web-validation .pending-row {
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 6px 10px;
+    padding: 11px 12px;
+    align-items: start;
+  }
+
+  .web-validation .pending-row > div:first-child {
+    grid-column: 1;
+  }
+
+  .web-validation .pending-row > div:nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .web-validation .pending-row > strong {
+    grid-column: 1;
+    grid-row: 3;
+    align-self: center;
+  }
+
+  .web-validation .pending-row > button {
+    grid-column: 2;
+    grid-row: 3;
+    min-width: 74px;
+  }
+
+  .web-validation .pending-row .status {
+    display: none;
+  }
+
+  .web-validation .pending-group > header {
+    align-items: flex-start;
+  }
+
+  .web-validation .pending-group > header > strong {
+    white-space: nowrap;
+    font-size: 13px;
+  }
+
+  .web-validation .validated-dashboard .premium-balance h2 {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .web-validation .validated-dashboard .premium-balance-stats {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .web-validation .validated-dashboard .premium-balance-stats strong {
+    font-size: 15px;
+  }
+
+  .web-validation .page-head,
+  .web-validation .screen-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .web-validation .pending-total-pill {
+    align-self: flex-start;
+  }
+}
+
+/* Dock mobile com a mesma linguagem de simbolos da V15. */
+@media (max-width: 680px) {
+  .web-validation .meg-mobile-dock > button > span > .meg-nav-icon {
+    display: none !important;
+  }
+
+  .web-validation .meg-mobile-dock > button:nth-child(1) > span::before { content: "⌂"; }
+  .web-validation .meg-mobile-dock > button:nth-child(2) > span::before { content: "▦"; }
+  .web-validation .meg-mobile-dock > button:nth-child(3) > span::before { content: "+"; }
+  .web-validation .meg-mobile-dock > button:nth-child(4) > span::before { content: "◷"; }
+  .web-validation .meg-mobile-dock > button:nth-child(5) > span::before { content: "◷"; }
+  .web-validation .meg-mobile-dock > button:nth-child(6) > span::before { content: "•••"; }
+}
