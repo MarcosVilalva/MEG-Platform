@@ -1,7 +1,6 @@
-import { readSession } from './auth-client';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
+import { authenticatedRequest } from './auth-client';
 export type Payable = { id: string; description: string; totalAmount: string | number; openAmount: string | number; dueDate: string; status: string; installmentNo: number; installmentQty: number; category?: { id: string; name: string; group?: string | null } | null; payments: Array<{ id: string; amount: string | number; paidAt: string }> };
-async function request<T>(path: string, init?: RequestInit): Promise<T> { const session = readSession(); if (!session) throw new Error('UNAUTHORIZED'); const response = await fetch(`${API_URL}${path}`, { ...init, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.accessToken}`, ...(init?.headers || {}) } }); if (!response.ok) { const payload = await response.json().catch(() => ({})); throw new Error(payload.error || `HTTP_${response.status}`); } return response.json() as Promise<T>; }
+async function request<T>(path: string, init?: RequestInit): Promise<T> { return authenticatedRequest<T>(path, init); }
 export const payablesClient = {
   list: (month: string) => request<Payable[]>(`/payables?month=${encodeURIComponent(month)}`),
   create: (data: { categoryId?: string; description: string; totalAmount: number; dueDate: string; installmentQty: number; notes?: string }) => request<{ created: number }>('/payables', { method: 'POST', body: JSON.stringify(data) }),

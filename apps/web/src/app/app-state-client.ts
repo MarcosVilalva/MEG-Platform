@@ -1,7 +1,5 @@
 import type { LegacyTransaction } from '@core/finance/events';
-import { readSession } from './auth-client';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
+import { authenticatedRequest } from './auth-client';
 
 export type CloudAppState = {
   state: { transactions: LegacyTransaction[]; [key: string]: unknown };
@@ -10,15 +8,7 @@ export type CloudAppState = {
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const session = readSession();
-  if (!session) throw new Error('UNAUTHORIZED');
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.accessToken}`, ...(init?.headers || {}) }
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw Object.assign(new Error(payload.error || `HTTP_${response.status}`), { status: response.status });
-  return payload as T;
+  return authenticatedRequest<T>(path, init);
 }
 
 export async function readCloudState(): Promise<CloudAppState> {
