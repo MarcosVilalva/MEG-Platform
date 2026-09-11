@@ -8,22 +8,52 @@ import { useAppStore } from './store';
 export function AuthenticatedApp() {
   const [session, setSession] = useState<AuthSession | null>(() => readSession());
   const [dataReady, setDataReady] = useState<boolean | null>(null);
+  const [loadMessage, setLoadMessage] = useState('Conectando à sua base financeira');
+  const [retryKey, setRetryKey] = useState(0);
   const replaceTransactions = useAppStore((state) => state.replaceTransactions);
 
   useEffect(() => {
     if (!session) { setDataReady(null); return; }
     let active = true;
-    void getApiHealth()
-      .then(async (health) => {
-        if (health.dataRepair?.status !== 'completed') return false;
-        const cloud = await readCloudState();
-        if (active) replaceTransactions(cloud.state.transactions);
-        return true;
-      })
-      .then((ready) => { if (active) setDataReady(ready); })
-      .catch(() => { if (active) setDataReady(false); });
+    setDataReady(null);
+    const wait = (milliseconds: number) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+    void (async () => {
+      let lastError: unknown = null;
+      for (let attempt = 0; attempt < 12 && active; attempt += 1) {
+        try {
+          setLoadMessage(attempt === 0 ? 'Conectando à sua base financeira' : 'A base está acordando. Aguarde mais um instante');
+          const health = await getApiHealth();
+          const repairReady = health.dataRepair?.status === 'completed';
+          const normalizationReady = health.normalization?.status === 'completed'
+            && health.normalization.primary === true
+            && health.normalization.reconciled === true;
+          if (!repairReady || !normalizationReady) {
+            await wait(2_000);
+            continue;
+          }
+          setLoadMessage('Carregando seus lançamentos reais');
+          const cloud = await readCloudState();
+          if (!active) return;
+          replaceTransactions(cloud.state.transactions);
+          setDataReady(true);
+          return;
+        } catch (error) {
+          lastError = error;
+          if ((error as { status?: number }).status === 401) {
+            clearSession();
+            if (active) setSession(null);
+            return;
+          }
+          await wait(Math.min(2_000 + attempt * 500, 5_000));
+        }
+      }
+      if (active) {
+        console.error('Não foi possível carregar a base financeira após novas tentativas.', lastError);
+        setDataReady(false);
+      }
+    })();
     return () => { active = false; };
-  }, [session]);
+  }, [session, retryKey, replaceTransactions]);
 
   function handleLogout() {
     if (!window.confirm('Deseja sair do MEG Finanças? Sua sessão será encerrada com segurança.')) return;
@@ -39,8 +69,8 @@ export function AuthenticatedApp() {
       <div className="meg-loading-card">
         <img className="loading-logo" src="./brand/meg-finance-system-mark.svg" alt="MEG Finance System" />
         <h1>Organize. Entenda. Planeje.</h1>
-        <p>{dataReady === null ? 'Carregando sua base financeira com segurança' : 'Não foi possível confirmar a integridade dos dados'}</p>
-        {dataReady === null ? <span className="meg-loading-spinner" aria-label="Carregando" /> : <div className="meg-loading-actions"><button onClick={() => window.location.reload()}>Verificar novamente</button><button className="secondary" onClick={handleLogout}>Sair</button></div>}
+        <p>{dataReady === null ? loadMessage : 'A conexão com a base não foi concluída. Seus dados permanecem protegidos.'}</p>
+        {dataReady === null ? <span className="meg-loading-spinner" aria-label="Carregando" /> : <div className="meg-loading-actions"><button onClick={() => setRetryKey((value) => value + 1)}>Tentar novamente</button><button className="secondary" onClick={handleLogout}>Sair</button></div>}
       </div>
     </main>
   );

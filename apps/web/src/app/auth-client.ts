@@ -33,6 +33,7 @@ const SESSION_KEY = 'meg.auth.session';
 export type ApiHealth = {
   status: string;
   dataRepair?: { status: string; scanned: number; repaired: number; issues: number };
+  normalization?: { status: string; primary: boolean; reconciled: boolean; count: number; reason?: string | null };
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -43,7 +44,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.error || `HTTP_${response.status}`);
+    throw Object.assign(new Error(payload.error || `HTTP_${response.status}`), { status: response.status });
   }
 
   if (response.status === 204) return undefined as T;
