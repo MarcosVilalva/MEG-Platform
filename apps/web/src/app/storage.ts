@@ -14,5 +14,13 @@ export function loadTransactions(): LegacyTransaction[] {
 }
 
 export function saveTransactions(transactions: LegacyTransaction[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ transactions }));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ transactions }));
+    return true;
+  } catch {
+    // A base oficial é a nuvem. Limite, bloqueio ou corrupção do cache local
+    // nunca pode impedir o usuário de entrar ou concluir uma operação.
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* armazenamento indisponível */ }
+    return false;
+  }
 }

@@ -11,8 +11,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return authenticatedRequest<T>(path, init);
 }
 
-export async function readCloudState(): Promise<CloudAppState> {
-  const result = await request<CloudAppState>('/app-state');
+export async function readCloudState(signal?: AbortSignal): Promise<CloudAppState> {
+  const result = await request<CloudAppState>('/app-state', { signal });
   return { ...result, state: { ...result.state, transactions: Array.isArray(result.state?.transactions) ? result.state.transactions : [] } };
 }
 
