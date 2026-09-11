@@ -1,11 +1,13 @@
-import { normalizeEvents } from '@core/finance/events';
+import { useEffect, useMemo, useState } from 'react';
+import { normalizeEvents, type LegacyTransaction } from '@core/finance/events';
 import { buildDecisionCenter } from '@core/decision/decision-engine';
 import { runFinancialEngine } from '@core/finance/financial-engine';
 import { buildAnalyticsQuestions } from '@core/analytics/analytics-engine';
-import { createPurchaseScenario, simulateScenario } from '@core/simulation/simulation-engine';
 import { buildFinancialReplay } from '@core/analytics/replay-engine';
 import { MEGBadge, MEGButton, MEGCard } from '@ui';
 import { useAppStore } from '../../app/store';
+import { patchCloudTransactions, readCloudState } from '../../app/app-state-client';
+import { dateInSaoPaulo } from '../../app/calendar';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -14,27 +16,23 @@ interface DecisionCenterProps {
 }
 
 export function DecisionCenter({ onNavigate }: DecisionCenterProps) {
-  const { transactions, selectedMonth, markAsPaid } = useAppStore();
-  const events = normalizeEvents(transactions);
-  const engine = runFinancialEngine(events, selectedMonth, `${selectedMonth}-15`);
-  const decisions = buildDecisionCenter(events, selectedMonth, `${selectedMonth}-15`);
+  const selectedMonth = useAppStore((state) => state.selectedMonth);
+  const [transactions, setTransactions] = useState<LegacyTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  async function load() { setLoading(true); setError(''); try { setTransactions((await readCloudState()).state.transactions); } catch { setError('Não foi possível carregar a base financeira compartilhada.'); } finally { setLoading(false); } }
+  useEffect(() => { void load(); }, [selectedMonth]);
+  const events = useMemo(() => normalizeEvents(transactions), [transactions]);
+  const referenceDate = selectedMonth === dateInSaoPaulo().slice(0, 7) ? dateInSaoPaulo() : `${selectedMonth}-15`;
+  const engine = runFinancialEngine(events, selectedMonth, referenceDate);
+  const decisions = buildDecisionCenter(events, selectedMonth, referenceDate);
   const questions = buildAnalyticsQuestions(events, selectedMonth);
   const replay = buildFinancialReplay(events, selectedMonth).slice(0, 9);
 
-  const notebookScenario = createPurchaseScenario({
-    id: 'notebook-gamer',
-    name: 'Notebook gamer',
-    amount: 8600,
-    date: `${selectedMonth}-20`,
-    group: 'Planejamento',
-    category: 'Tecnologia'
-  });
-
-  const simulation = simulateScenario(events, selectedMonth, notebookScenario, `${selectedMonth}-15`);
-
   function handleDecision(decision: ReturnType<typeof buildDecisionCenter>[number]) {
     if (decision.action === 'pay' && decision.eventId) {
-      markAsPaid(decision.eventId);
+      const current = transactions.find((item) => item.id === decision.eventId);
+      if (current) void patchCloudTransactions([{ ...current, status: 'paid', situation: 'PAGO' }]).then(load).catch(() => setError('A base não confirmou a baixa.'));
       return;
     }
 
@@ -43,14 +41,11 @@ export function DecisionCenter({ onNavigate }: DecisionCenterProps) {
       return;
     }
 
-    if (decision.action === 'simulate') {
-      onNavigate('decision');
-      return;
-    }
+    if (decision.action === 'simulate') onNavigate('cashflow');
   }
 
   return (
-    <section className="page">
+    <section className="page decision-page" aria-busy={loading}>
       <header className="page-header decision-hero">
         <div>
           <span>Decision Center</span>
@@ -61,6 +56,7 @@ export function DecisionCenter({ onNavigate }: DecisionCenterProps) {
           </p>
         </div>
       </header>
+      {error && <div className="auth-error">{error}</div>}
 
       <section className="decision-layout">
         <MEGCard title="Fila de decisões" eyebrow="Gestão por exceção">
@@ -121,19 +117,7 @@ export function DecisionCenter({ onNavigate }: DecisionCenterProps) {
           </div>
         </MEGCard>
 
-        <MEGCard title="Simulação rápida" eyebrow="Simulation Engine">
-          <div className="simulation-box">
-            <strong>Comprar Notebook gamer de R$ 8.600</strong>
-            <small>Impacto no fechamento do mês</small>
-            <span className={simulation.delta.projectedClosing >= 0 ? 'positive' : 'negative'}>
-              {brl.format(simulation.delta.projectedClosing)}
-            </span>
-            <p>
-              Antes: {brl.format(simulation.before.projectedClosing)}<br />
-              Depois: {brl.format(simulation.after.projectedClosing)}
-            </p>
-          </div>
-        </MEGCard>
+        <MEGCard title="Cenário atual" eyebrow="Realizado e compromissos"><div className="simulation-box"><strong className={engine.projectedClosing >= 0 ? 'positive' : 'negative'}>{brl.format(engine.projectedClosing)}</strong><small>Fechamento considerando os compromissos registrados.</small><p>{engine.projectedClosing >= 0 ? 'Há cobertura para os compromissos do período.' : `Faltam ${brl.format(Math.abs(engine.projectedClosing))} para equilibrar o período.`}</p><MEGButton variant="ghost" onClick={() => onNavigate('cashflow')}>Abrir fluxo de caixa</MEGButton></div></MEGCard>
       </section>
 
       <MEGCard title="Replay Financeiro inicial" eyebrow="Timeline do dinheiro">

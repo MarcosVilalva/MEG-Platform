@@ -8,7 +8,6 @@ import { Payables } from '../modules/payables/Payables';
 import { Analytics } from '../modules/analytics/Analytics';
 import { Cashflow } from '../modules/cashflow/Cashflow';
 import { Settings } from '../modules/settings/Settings';
-import { Platform } from '../modules/platform/Platform';
 import { DecisionCenter } from '../modules/decision/DecisionCenter';
 import { FinancialCatalogs } from '../modules/catalogs/FinancialCatalogs';
 import { UserManagement } from '../modules/admin/UserManagement';
@@ -25,6 +24,7 @@ export function App({ onLogout }: AppProps) {
 
   function openNewTransaction() {
     setView('transactions');
+    window.setTimeout(() => window.dispatchEvent(new CustomEvent('meg:open-transaction')), 0);
   }
 
   useEffect(() => {
@@ -56,11 +56,10 @@ export function App({ onLogout }: AppProps) {
         {view === 'receivables' && <Receivables />}
         {view === 'cards' && <CreditCards />}
         {view === 'payables' && <Payables />}
-        {view === 'catalogs' && <FinancialCatalogs />}
+        {view === 'catalogs' && <FinancialCatalogs onNavigate={setView} />}
         {view === 'users' && <UserManagement />}
         {view === 'analytics' && <Analytics />}
         {view === 'cashflow' && <Cashflow />}
-        {view === 'platform' && <Platform />}
         {view === 'settings' && <Settings />}
       </AppShell>
 

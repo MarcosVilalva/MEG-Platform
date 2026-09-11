@@ -2,16 +2,25 @@ import { useEffect, useState } from 'react';
 import { App } from './App';
 import { LoginScreen } from '../modules/auth/LoginScreen';
 import { clearSession, getApiHealth, logout, readSession, type AuthSession } from './auth-client';
+import { readCloudState } from './app-state-client';
+import { useAppStore } from './store';
 
 export function AuthenticatedApp() {
   const [session, setSession] = useState<AuthSession | null>(() => readSession());
   const [dataReady, setDataReady] = useState<boolean | null>(null);
+  const replaceTransactions = useAppStore((state) => state.replaceTransactions);
 
   useEffect(() => {
     if (!session) { setDataReady(null); return; }
     let active = true;
     void getApiHealth()
-      .then((health) => { if (active) setDataReady(health.dataRepair?.status === 'completed'); })
+      .then(async (health) => {
+        if (health.dataRepair?.status !== 'completed') return false;
+        const cloud = await readCloudState();
+        if (active) replaceTransactions(cloud.state.transactions);
+        return true;
+      })
+      .then((ready) => { if (active) setDataReady(ready); })
       .catch(() => { if (active) setDataReady(false); });
     return () => { active = false; };
   }, [session]);
@@ -26,14 +35,12 @@ export function AuthenticatedApp() {
 
   if (!session) return <LoginScreen onAuthenticated={setSession} />;
   if (dataReady !== true) return (
-    <main className="data-migration-screen">
-      <div className="data-migration-card">
+    <main className="meg-loading-screen">
+      <div className="meg-loading-card">
         <img className="loading-logo" src="./brand/meg-finance-system-mark.svg" alt="MEG Finance System" />
-        <span>Proteção de integridade</span>
-        <h1>{dataReady === null ? 'Verificando sua base financeira' : 'Atualização dos dados pendente'}</h1>
-        <p>O MEG não exibirá saldos ou indicadores até a API confirmar que todos os lançamentos antigos foram reconstruídos corretamente.</p>
-        <button onClick={() => window.location.reload()}>Verificar novamente</button>
-        <button className="secondary" onClick={handleLogout}>Sair</button>
+        <h1>Organize. Entenda. Planeje.</h1>
+        <p>{dataReady === null ? 'Carregando sua base financeira com segurança' : 'Não foi possível confirmar a integridade dos dados'}</p>
+        {dataReady === null ? <span className="meg-loading-spinner" aria-label="Carregando" /> : <div className="meg-loading-actions"><button onClick={() => window.location.reload()}>Verificar novamente</button><button className="secondary" onClick={handleLogout}>Sair</button></div>}
       </div>
     </main>
   );
