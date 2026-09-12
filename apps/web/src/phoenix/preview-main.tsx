@@ -9,6 +9,7 @@ import {
 } from '../app/auth-client';
 import { PhoenixApp } from './PhoenixApp';
 import './preview.css';
+import './phoenix-preview-parity.css';
 
 type PreviewState = 'checking' | 'signed-out' | 'signed-in';
 
