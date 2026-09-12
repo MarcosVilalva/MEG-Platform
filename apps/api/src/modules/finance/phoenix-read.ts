@@ -5,19 +5,34 @@ function normalizeText(value: unknown) {
   return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
 }
 
-function sourceDetails(rawData: unknown) {
+function normalizedSource(rawData: unknown) {
   if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) return null;
-  const values = new Map(Object.entries(rawData as Record<string, unknown>).map(([key, value]) => [normalizeText(key).replace(/[^A-Z0-9]/g, ''), value]));
-  const read = (key: string) => String(values.get(key) ?? '').trim();
+  return new Map(Object.entries(rawData as Record<string, unknown>).map(([key, value]) => [normalizeText(key).replace(/[^A-Z0-9]/g, ''), value]));
+}
+
+function sourceDetails(...rawSources: unknown[]) {
+  const sources = rawSources.map(normalizedSource).filter((source): source is Map<string, unknown> => Boolean(source));
+  if (!sources.length) return null;
+
+  const read = (...keys: string[]) => {
+    for (const source of sources) {
+      for (const key of keys) {
+        const value = source.get(key);
+        if (value !== null && value !== undefined && String(value).trim()) return String(value).trim();
+      }
+    }
+    return '';
+  };
+
   return {
-    weekday: read('DIASEMANA'),
-    launchType: read('TPLANCAMENTO'),
-    expenseClass: read('CLASSIFICAODADESPESA'),
-    group: read('GRUPO'),
-    paymentMethod: read('FORMADEPAGAMENTO'),
-    situation: read('SITUACAO'),
-    modality: read('MODADLIDADE'),
-    observations: read('OBSERVACOES')
+    weekday: read('WEEKDAY', 'DIASEMANA'),
+    launchType: read('LAUNCHTYPE', 'TPLANCAMENTO', 'TIPOLANCAMENTO'),
+    expenseClass: read('EXPENSECLASS', 'CLASSIFICATION', 'CLASSIFICACAODADESPESA', 'CLASSIFICAODADESPESA'),
+    group: read('GROUP', 'GRUPO', 'CATEGORY'),
+    paymentMethod: read('PAYMENTMETHOD', 'FORMADEPAGAMENTO', 'ACCOUNT'),
+    situation: read('SITUATION', 'SITUACAO', 'STATUS'),
+    modality: read('MODALITY', 'MODALIDADE', 'MODADLIDADE'),
+    observations: read('OBSERVATIONS', 'OBSERVACOES', 'NOTES')
   };
 }
 
@@ -49,7 +64,7 @@ export async function listPhoenixFinancialEventsForMonth(userId: string, month: 
   const mapped = items.map((item) => ({
     ...item,
     sourceRowNumber: item.importedRow?.rowNumber ?? null,
-    sourceDetails: sourceDetails(item.importedRow?.rawData),
+    sourceDetails: sourceDetails(item.sourcePayload, item.importedRow?.rawData),
     importedRow: undefined
   }));
 
