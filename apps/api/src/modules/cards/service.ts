@@ -1,5 +1,6 @@
 import { prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
+import { recordFinancialAudit } from '../finance/audit';
 import {
   isFutureFinancialDay,
   monetaryBalanceAt,
@@ -210,6 +211,16 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
       paymentMethodId: input.paymentMethodId,
     } });
     const response = { paid: true, amount, eventId: event.id, protection: { monetary: true, ...protection, at: input.paidAt.slice(0, 10) }, idempotentReplay: false };
+
+    await recordFinancialAudit(tx, {
+      actorId: userId,
+      entity: 'CreditCard',
+      entityId: card.id,
+      action: 'CARD_STATEMENT_PAID',
+      before: { card, statementMonth: month, openEntries: entries },
+      after: { statementMonth: month, paidEntryIds: entries.map((entry) => entry.id), paidAt: input.paidAt, amount, financialEventId: event.id },
+      context: { protection: response.protection, operationId: input.operationId ?? null, ownerId: shared.ownerId }
+    });
 
     if (input.operationId && requestHash) {
       const state = await tx.appState.findUnique({ where: { workspaceId: shared.workspaceId }, select: { revision: true } });
