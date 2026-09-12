@@ -85,8 +85,14 @@ assert.match(movementScreen, /draft\.type === 'income' \? 'Classificação \(opc
   'Receita não deve exigir classificação ou grupo na Phoenix');
 assert.match(movementScreen, /cardDueDate/,
   'Drawer deve respeitar fechamento e vencimento reais do cartão');
+assert.match(movementScreen, /purchaseDay > closingDay/,
+  'Fechamento da fatura deve seguir a mesma regra da API de cartões');
+assert.match(movementScreen, /dueDay <= closingDay/,
+  'Vencimento visual deve respeitar o ciclo cadastrado do cartão');
 assert.match(movementScreen, /max=\{credit \? 48 : 120\}/,
   'Compra no cartão deve respeitar o limite de 48 parcelas do contrato atual da API');
+assert.match(movementScreen, /Possível duplicidade real encontrada/,
+  'Proteção de duplicidade deve comparar com dados reais já carregados');
 assert.doesNotMatch(movementScreen, /method\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/,
   'Drawer de lançamento deve permanecer sem escrita nesta etapa');
 
