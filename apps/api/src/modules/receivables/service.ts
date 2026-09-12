@@ -10,6 +10,19 @@ export class ReceivableDomainError extends Error {
   }
 }
 
+export type CreateReceivableInput = {
+  customerId?: string | null;
+  description: string;
+  totalAmount: number;
+  dueDate: string;
+  installmentNo: number;
+  installmentQty: number;
+  interestRate: number;
+  fineRate: number;
+  notes?: string | null;
+  operationId?: string;
+};
+
 export type ReceiveReceivableInput = {
   amount: number;
   receivedAt: string;
@@ -20,6 +33,71 @@ export type ReceiveReceivableInput = {
   notes?: string | null;
   operationId?: string;
 };
+
+export async function createReceivableProtected(userId: string, input: CreateReceivableInput) {
+  const workspace = input.operationId ? await resolveWorkspaceContext(userId) : null;
+  const requestHash = input.operationId ? mutationRequestHash({ ...input, operationId: undefined }) : null;
+
+  return serializableFinancialTransaction(async (tx) => {
+    if (input.operationId && workspace && requestHash) {
+      const previous = await tx.cloudMutationReceipt.findUnique({
+        where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
+      });
+      if (previous) {
+        if (previous.requestHash !== requestHash) throw new ReceivableDomainError('OPERATION_ID_REUSED');
+        return previous.response as unknown;
+      }
+    }
+
+    if (input.customerId) {
+      const customer = await tx.customer.findFirst({ where: { id: input.customerId, userId, isActive: true }, select: { id: true } });
+      if (!customer) throw new ReceivableDomainError('INVALID_CUSTOMER');
+    }
+    const dueDate = new Date(input.dueDate);
+    if (Number.isNaN(dueDate.getTime())) throw new ReceivableDomainError('INVALID_DUE_DATE');
+    const value = Math.abs(input.totalAmount);
+    const receivable = await tx.receivable.create({
+      data: {
+        userId,
+        customerId: input.customerId,
+        description: input.description.trim(),
+        totalAmount: value,
+        openAmount: value,
+        dueDate,
+        installmentNo: input.installmentNo,
+        installmentQty: input.installmentQty,
+        interestRate: input.interestRate,
+        fineRate: input.fineRate,
+        notes: input.notes?.trim() || null,
+      },
+      include: { customer: true, receipts: true },
+    });
+
+    await recordFinancialAudit(tx, {
+      actorId: userId,
+      entity: 'Receivable',
+      entityId: receivable.id,
+      action: 'RECEIVABLE_CREATED',
+      before: null,
+      after: receivable,
+      context: { operationId: input.operationId ?? null },
+    });
+
+    const response = { ...receivable, idempotentReplay: false };
+    if (input.operationId && workspace && requestHash) {
+      const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
+      await tx.cloudMutationReceipt.create({ data: receiptCreateData({
+        workspaceId: workspace.workspaceId,
+        operationId: input.operationId,
+        requestHash,
+        mutationType: 'RECEIVABLE_CREATE',
+        revision: state?.revision || 0,
+        response,
+      }) });
+    }
+    return response;
+  });
+}
 
 export async function receiveReceivableProtected(userId: string, receivableId: string, input: ReceiveReceivableInput) {
   if (isFutureFinancialDay(input.receivedAt)) {
