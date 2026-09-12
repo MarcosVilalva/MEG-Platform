@@ -33,6 +33,31 @@ export type PhoenixNormalizationPreview = {
   };
 };
 
+export type PhoenixLegacyTransaction = {
+  id?: string;
+  date?: string;
+  purchaseDate?: string;
+  description?: string;
+  type?: string;
+  amount?: number;
+  expenseAmount?: number;
+  incomeAmount?: number;
+  paymentMethod?: string;
+  account?: string;
+  group?: string;
+  category?: string;
+  expenseClass?: string;
+  status?: string;
+  situation?: string;
+  modality?: string;
+  installmentSeriesId?: string;
+  installmentNumber?: number;
+  installmentCount?: number;
+  purchaseTotal?: number;
+  financialAccountId?: string;
+  notes?: string;
+};
+
 export type PhoenixActivityTransaction = {
   id?: string;
   date?: string;
@@ -128,6 +153,7 @@ export type PhoenixReadModel = {
   events: PhoenixEventPage;
   financialAudit: PhoenixFinancialAuditPage;
   activities: PhoenixActivity[];
+  legacyTransactions: PhoenixLegacyTransaction[];
   workspaceUsers: PhoenixWorkspaceUsers;
   sourcePolicy: {
     mode: 'read-only';
@@ -135,6 +161,7 @@ export type PhoenixReadModel = {
     events: 'finance-domain-month';
     financialAudit: 'finance-audit-log';
     activities: 'app-state-activity-log-legacy';
+    legacyTransactions: 'app-state-transactions-read-only';
     users: 'auth-admin-read';
     receivables: 'receivables-domain';
     analytics: 'finance-domain';
