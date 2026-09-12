@@ -72,6 +72,7 @@ export function legacyTransactionToFinancialEvent(item: LegacyTransaction, conte
     competence: isoDate.slice(0, 7),
     amount,
     signedAmount: type === 'income' ? enteredAmount : -enteredAmount,
+    accountId: text(item.financialAccountId) || null,
     notes: text(item.notes) || null,
     sourceRevision: context.revision,
     sourcePayload: canonical(item),
