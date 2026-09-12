@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const phoenixApp = readFileSync(new URL('./PhoenixApp.tsx', import.meta.url), 'utf8');
+const commandPalette = readFileSync(new URL('./PhoenixCommandPalette.tsx', import.meta.url), 'utf8');
 const screens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.meta.url), 'utf8');
 const webScreens = readFileSync(new URL('./screens/PhoenixWebScreens.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
@@ -11,9 +12,9 @@ const loader = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.
 const previewMain = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
 const phoenixHtml = readFileSync(new URL('../../phoenix.html', import.meta.url), 'utf8');
 const productionHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
-const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
+const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
-const phoenixSource = `${phoenixApp}\n${screens}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
+const phoenixSource = `${phoenixApp}\n${commandPalette}\n${screens}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
 
 for (const forbidden of ['global.css', 'v15-contract.css', 'meg-v15.css']) {
   assert.doesNotMatch(phoenixSource, new RegExp(forbidden.replace('.', '\\.')),
@@ -24,9 +25,9 @@ assert.doesNotMatch(phoenixSource, /\.\.\/modules\//,
   'Phoenix não deve reutilizar componentes visuais da interface antiga');
 assert.doesNotMatch(loader, /method\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/,
   'Bootstrap Phoenix deve permanecer sem mutações explícitas');
-assert.doesNotMatch(`${screens}\n${webScreens}\n${history}\n${users}\n${settings}`, /from\s+['"][^'"]*app\/(?:finance-client|cards-client|payables-client|receivables-client|app-state-client)['"]/,
+assert.doesNotMatch(`${screens}\n${webScreens}\n${history}\n${users}\n${settings}\n${commandPalette}`, /from\s+['"][^'"]*app\/(?:finance-client|cards-client|payables-client|receivables-client|app-state-client)['"]/,
   'Telas Phoenix não podem acessar clientes mutáveis diretamente durante a paridade');
-assert.doesNotMatch(`${screens}\n${webScreens}\n${history}\n${users}\n${settings}`, /patchCloudTransactions|createEvent|updateEvent|archiveEvent|createPurchase|payStatement|createReceivable|receive\(|saveBudget|deleteBudget|changeUserAccess|deleteManagedUser/,
+assert.doesNotMatch(`${screens}\n${webScreens}\n${history}\n${users}\n${settings}\n${commandPalette}`, /patchCloudTransactions|createEvent|updateEvent|archiveEvent|createPurchase|payStatement|createReceivable|receive\(|saveBudget|deleteBudget|changeUserAccess|deleteManagedUser/,
   'Telas Phoenix não podem invocar gateways de escrita durante a paridade');
 assert.match(loader, /financeClient\.getSummary\(month\)/);
 assert.match(loader, /financeClient\.getAnalytics\(month\)/);
@@ -63,6 +64,13 @@ assert.match(webScreens, /Conciliação ainda não liberada na Phoenix/,
   'Conciliação não pode fingir dados sem contrato oficial');
 assert.doesNotMatch(webScreens, /Math\.random|mock|demo/i,
   'Web completo não pode fabricar dados de demonstração');
+assert.match(commandPalette, /Buscar tela, lançamento, cartão, conta, cliente ou usuário/);
+assert.match(commandPalette, /data\.events\.items/);
+assert.match(commandPalette, /data\.cards/);
+assert.match(commandPalette, /data\.accounts/);
+assert.match(commandPalette, /data\.customers/);
+assert.match(commandPalette, /event\.target === event\.currentTarget/,
+  'Busca deve fechar ao clicar fora do painel');
 
 assert.match(styles, /--bg:#f3f7f7/);
 assert.match(styles, /--nav:#071727/);
@@ -73,10 +81,14 @@ assert.doesNotMatch(styles, /@import/,
   'Contrato Phoenix deve ser autocontido e não importar CSS legado');
 
 assert.match(phoenixApp, /⌘ Buscar no MEG/);
+assert.match(phoenixApp, /ctrlKey \|\| event\.metaKey/,
+  'Atalho Ctrl\/Cmd+K deve abrir a busca global');
+assert.match(phoenixApp, /setRefreshKey\(\(value\) => value \+ 1\)/,
+  'Sincronização manual deve refazer somente leituras reais');
 for (const glyph of ['⌂', '▦', '◷', '▣', '≡', '♙', '⚙']) {
   assert.ok(phoenixApp.includes(glyph), `Ícone V15 ausente: ${glyph}`);
 }
-for (const screen of ['PhoenixMovements', 'PhoenixHistory', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs', 'PhoenixUsers', 'PhoenixSettings', 'PhoenixReceivables', 'PhoenixRevenues', 'PhoenixCashflow', 'PhoenixReconciliation', 'PhoenixAnalytics', 'PhoenixBudgets']) {
+for (const screen of ['PhoenixMovements', 'PhoenixHistory', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs', 'PhoenixUsers', 'PhoenixSettings', 'PhoenixReceivables', 'PhoenixRevenues', 'PhoenixCashflow', 'PhoenixReconciliation', 'PhoenixAnalytics', 'PhoenixBudgets', 'PhoenixCommandPalette']) {
   assert.ok(phoenixApp.includes(screen), `Tela Phoenix não conectada: ${screen}`);
 }
 assert.match(phoenixApp, /onLogout/,
