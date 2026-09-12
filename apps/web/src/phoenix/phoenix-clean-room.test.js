@@ -13,7 +13,7 @@ const loader = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.
 const previewMain = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
 const phoenixHtml = readFileSync(new URL('../../phoenix.html', import.meta.url), 'utf8');
 const productionHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
-const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
+const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
 const phoenixSource = `${phoenixApp}\n${commandPalette}\n${screens}\n${movementScreen}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
 const readOnlyScreens = `${screens}\n${movementScreen}\n${webScreens}\n${history}\n${users}\n${settings}\n${commandPalette}`;
@@ -32,6 +32,12 @@ assert.doesNotMatch(readOnlyScreens, /import\s+(?!type\b)[^;]*from\s+['"][^'"]*a
 assert.doesNotMatch(readOnlyScreens, /patchCloudTransactions|createEvent|updateEvent|archiveEvent|createPurchase|payStatement|createReceivable|receive\(|saveBudget|deleteBudget|changeUserAccess|deleteManagedUser/,
   'Telas Phoenix não podem invocar gateways de escrita durante a paridade');
 assert.match(loader, /financeClient\.getSummary\(month\)/);
+assert.match(loader, /financeClient\.getBenefitSummary\(month\)/,
+  'Home Phoenix deve carregar o saldo oficial do benefício separado do caixa monetário');
+assert.match(loader, /financeClient\.listEventsForMonth\(month\)/,
+  'Phoenix deve carregar todos os eventos do mês sem depender da paginação global');
+assert.doesNotMatch(loader, /financeClient\.listEvents\(1,\s*100/,
+  'Bootstrap Phoenix não pode voltar a usar os primeiros 100 eventos globais');
 assert.match(loader, /financeClient\.getAnalytics\(month\)/);
 assert.match(loader, /financeClient\.getCashflow\(month\)/);
 assert.match(loader, /financeClient\.listBudgets\(month\)/);
@@ -48,6 +54,8 @@ assert.match(loader, /app-state-activity-log-legacy/,
   'ActivityLog deve permanecer explicitamente marcado como fonte legada');
 assert.match(loader, /finance-audit-log/,
   'Auditoria normalizada deve ser declarada como fonte principal financeira');
+assert.match(loader, /finance-domain-month/,
+  'Fonte de lançamentos Phoenix deve declarar a leitura mensal completa');
 assert.match(loader, /authenticatedRequest<ManagedUsersRead>\('\/auth\/users'\)/,
   'Usuários Phoenix devem vir da rota administrativa oficial');
 assert.match(history, /Fonte principal:/);
@@ -84,6 +92,10 @@ assert.match(commandPalette, /event\.target === event\.currentTarget/,
   'Busca deve fechar ao clicar fora do painel');
 
 assert.match(movementScreen, /Novo lançamento/);
+assert.match(movementScreen, /launchRequest/,
+  'Drawer de lançamento deve aceitar abertura controlada pelo shell global');
+assert.match(movementScreen, /Lançamentos no período/,
+  'Resumo de lançamentos deve refletir a quantidade completa do mês');
 assert.match(movementScreen, /Despesa/);
 assert.match(movementScreen, /Receita/);
 assert.match(movementScreen, /Transferência/);
@@ -110,12 +122,25 @@ assert.match(styles, /--nav:#071727/);
 assert.match(styles, /--brand:#19b990/);
 assert.match(styles, /container-type:inline-size/);
 assert.match(styles, /@container phoenix-workspace/);
+assert.match(styles, /\.px-top-quick-launch/,
+  'Shell Phoenix deve preservar o quick launch do V15');
+assert.match(styles, /@media \(min-width:681px\) and \(max-width:980px\)/,
+  'Web estreito deve manter sidebar em vez de assumir navegação móvel');
+assert.match(styles, /\.px-premium-balance/);
 assert.match(styles, /\.px-launch-drawer/);
 assert.match(styles, /\.px-detail-drawer/);
 assert.doesNotMatch(styles, /@import/,
   'Contrato Phoenix deve ser autocontido e não importar CSS legado');
 
 assert.match(phoenixApp, /⌘ Buscar no MEG/);
+assert.match(phoenixApp, /px-top-quick-launch/,
+  'Topbar Phoenix deve expor o novo lançamento global do V15');
+assert.match(phoenixApp, /requestLaunch/,
+  'Quick launch e dock móvel devem compartilhar a mesma abertura do drawer');
+assert.match(phoenixApp, /Benefício alimentação · disponível/,
+  'Home deve preservar o indicador de benefício do V15');
+assert.match(phoenixApp, /Consolidado realizado/,
+  'Home deve preservar o consolidado realizado do V15');
 assert.match(phoenixApp, /ctrlKey \|\| event\.metaKey/,
   'Atalho Ctrl\/Cmd+K deve abrir a busca global');
 assert.match(phoenixApp, /setRefreshKey\(\(value\) => value \+ 1\)/,
