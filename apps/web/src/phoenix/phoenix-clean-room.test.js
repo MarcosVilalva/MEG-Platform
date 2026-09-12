@@ -27,8 +27,8 @@ assert.doesNotMatch(phoenixSource, /\.\.\/modules\//,
   'Phoenix não deve reutilizar componentes visuais da interface antiga');
 assert.doesNotMatch(loader, /method\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/,
   'Bootstrap Phoenix deve permanecer sem mutações explícitas');
-assert.doesNotMatch(readOnlyScreens, /from\s+['"][^'"]*app\/(?:finance-client|cards-client|payables-client|receivables-client|app-state-client)['"]/,
-  'Telas Phoenix não podem acessar clientes mutáveis diretamente durante a paridade');
+assert.doesNotMatch(readOnlyScreens, /import\s+(?!type\b)[^;]*from\s+['"][^'"]*app\/(?:finance-client|cards-client|payables-client|receivables-client|app-state-client)['"]/,
+  'Telas Phoenix não podem acessar clientes mutáveis em runtime durante a paridade');
 assert.doesNotMatch(readOnlyScreens, /patchCloudTransactions|createEvent|updateEvent|archiveEvent|createPurchase|payStatement|createReceivable|receive\(|saveBudget|deleteBudget|changeUserAccess|deleteManagedUser/,
   'Telas Phoenix não podem invocar gateways de escrita durante a paridade');
 assert.match(loader, /financeClient\.getSummary\(month\)/);
