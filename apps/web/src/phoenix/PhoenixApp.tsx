@@ -5,14 +5,38 @@ import { PhoenixCards, PhoenixCatalogs, PhoenixMovements, PhoenixPayables } from
 import { PhoenixHistory } from './screens/PhoenixHistory';
 import { PhoenixUsers } from './screens/PhoenixUsers';
 import { PhoenixSettings } from './screens/PhoenixSettings';
+import {
+  PhoenixAnalytics,
+  PhoenixBudgets,
+  PhoenixCashflow,
+  PhoenixReceivables,
+  PhoenixReconciliation,
+  PhoenixRevenues
+} from './screens/PhoenixWebScreens';
 import './phoenix-v15.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const shortDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-type PhoenixView = 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs' | 'users' | 'settings';
+type PhoenixView =
+  | 'home'
+  | 'movements'
+  | 'history'
+  | 'payables'
+  | 'cards'
+  | 'catalogs'
+  | 'users'
+  | 'settings'
+  | 'receivables'
+  | 'revenues'
+  | 'cashflow'
+  | 'reconcile'
+  | 'analytics'
+  | 'budgets';
 
-const views: Array<{ id: PhoenixView; icon: string; label: string }> = [
+type ViewDefinition = { id: PhoenixView; icon: string; label: string };
+
+const mainViews: ViewDefinition[] = [
   { id: 'home', icon: '⌂', label: 'Início' },
   { id: 'movements', icon: '▦', label: 'Lançamentos' },
   { id: 'history', icon: '◷', label: 'Histórico' },
@@ -23,6 +47,17 @@ const views: Array<{ id: PhoenixView; icon: string; label: string }> = [
   { id: 'settings', icon: '⚙', label: 'Configurações' }
 ];
 
+const webViews: ViewDefinition[] = [
+  { id: 'receivables', icon: '◫', label: 'Contas a receber' },
+  { id: 'revenues', icon: '↗', label: 'Receitas' },
+  { id: 'cashflow', icon: '↔', label: 'Fluxo de caixa' },
+  { id: 'reconcile', icon: '✓', label: 'Conciliação' },
+  { id: 'analytics', icon: '⌁', label: 'Análises' },
+  { id: 'budgets', icon: '◎', label: 'Orçamentos e metas' }
+];
+
+const views = [...mainViews, ...webViews];
+
 const subtitles: Record<PhoenixView, string> = {
   home: 'Visão geral da sua vida financeira',
   movements: 'Inclua e controle seus eventos financeiros',
@@ -31,7 +66,13 @@ const subtitles: Record<PhoenixView, string> = {
   cards: 'Limites, faturas e compras',
   catalogs: 'Organize a base operacional',
   users: 'Pessoas, perfis e permissões',
-  settings: 'Personalize o MEG do seu jeito'
+  settings: 'Personalize o MEG do seu jeito',
+  receivables: 'Títulos e recebimentos em aberto',
+  revenues: 'Origem e evolução das entradas',
+  cashflow: 'Fechamento realizado e projetado',
+  reconcile: 'Compare o MEG com o saldo real',
+  analytics: 'Tendências e comparações históricas',
+  budgets: 'Planejamento e metas financeiras'
 };
 
 function currentMonth() {
@@ -94,7 +135,13 @@ function ReadScreen({ view, data, month, theme, onToggleTheme }: { view: Phoenix
   if (view === 'cards') return <PhoenixCards data={data} />;
   if (view === 'catalogs') return <PhoenixCatalogs data={data} />;
   if (view === 'users') return <PhoenixUsers data={data} />;
-  return <PhoenixSettings data={data} theme={theme} onToggleTheme={onToggleTheme} />;
+  if (view === 'settings') return <PhoenixSettings data={data} theme={theme} onToggleTheme={onToggleTheme} />;
+  if (view === 'receivables') return <PhoenixReceivables data={data} />;
+  if (view === 'revenues') return <PhoenixRevenues data={data} />;
+  if (view === 'cashflow') return <PhoenixCashflow data={data} />;
+  if (view === 'reconcile') return <PhoenixReconciliation data={data} />;
+  if (view === 'analytics') return <PhoenixAnalytics data={data} />;
+  return <PhoenixBudgets data={data} />;
 }
 
 export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
@@ -115,7 +162,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   }, [month]);
 
   const data = loadState.status === 'ready' ? loadState.data : null;
-  const currentView = views.find((item) => item.id === view) || views[0];
+  const currentView = views.find((item) => item.id === view) || mainViews[0];
   const pendingCount = data?.summary.pendingCount || 0;
   const toggleTheme = () => setTheme((value) => value === 'dark' ? 'light' : 'dark');
 
@@ -127,8 +174,8 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
         <div className="px-side-brand"><img src="./brand/meg-finance-system-mark.svg" alt="MEG Finance System" /></div>
         <button className="px-search-command" type="button">⌘ Buscar no MEG</button>
         <nav className="px-nav-group">
-          {views.map((item) => <button key={item.id} className={`px-nav-btn ${view === item.id ? 'active' : ''}`} type="button" onClick={() => navigate(item.id)}><span className="px-nav-icon" aria-hidden="true">{item.icon}</span><span className="px-nav-text">{item.label}</span>{item.id === 'payables' && pendingCount > 0 ? <span className="px-side-badge">{pendingCount > 99 ? '99+' : pendingCount}</span> : null}</button>)}
-          <details className="px-side-more"><summary>Web completo</summary><button className="px-nav-btn" type="button"><span className="px-nav-icon">◫</span><span className="px-nav-text">Contas a receber</span></button><button className="px-nav-btn" type="button"><span className="px-nav-icon">↗</span><span className="px-nav-text">Receitas</span></button><button className="px-nav-btn" type="button"><span className="px-nav-icon">↔</span><span className="px-nav-text">Fluxo de caixa</span></button><button className="px-nav-btn" type="button"><span className="px-nav-icon">✓</span><span className="px-nav-text">Conciliação</span></button><button className="px-nav-btn" type="button"><span className="px-nav-icon">⌁</span><span className="px-nav-text">Análises</span></button><button className="px-nav-btn" type="button"><span className="px-nav-icon">◎</span><span className="px-nav-text">Orçamentos e metas</span></button></details>
+          {mainViews.map((item) => <button key={item.id} className={`px-nav-btn ${view === item.id ? 'active' : ''}`} type="button" onClick={() => navigate(item.id)}><span className="px-nav-icon" aria-hidden="true">{item.icon}</span><span className="px-nav-text">{item.label}</span>{item.id === 'payables' && pendingCount > 0 ? <span className="px-side-badge">{pendingCount > 99 ? '99+' : pendingCount}</span> : null}</button>)}
+          <details className="px-side-more" open={webViews.some((item) => item.id === view)}><summary>Web completo</summary>{webViews.map((item) => <button key={item.id} className={`px-nav-btn ${view === item.id ? 'active' : ''}`} type="button" onClick={() => navigate(item.id)}><span className="px-nav-icon" aria-hidden="true">{item.icon}</span><span className="px-nav-text">{item.label}</span></button>)}</details>
         </nav>
         <div className="px-side-user"><strong>{data?.user.name || 'MEG'}</strong><small>Perfil {data?.user.role || '—'}</small></div>
       </aside>
@@ -140,7 +187,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
         </header>
 
         <div className="px-content">
-          {loadState.status === 'error' ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p></section> : data ? <ReadScreen view={view} data={data} month={month} theme={theme} onToggleTheme={toggleTheme} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e cadastros estão sendo carregados em paralelo.</p></section>}
+          {loadState.status === 'error' ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p></section> : data ? <ReadScreen view={view} data={data} month={month} theme={theme} onToggleTheme={toggleTheme} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
         </div>
       </main>
 
