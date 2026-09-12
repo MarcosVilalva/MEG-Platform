@@ -6,6 +6,7 @@ import {
 import { cardsClient } from '../../app/cards-client';
 import { financeClient } from '../../app/finance-client';
 import { payablesClient } from '../../app/payables-client';
+import { receivablesClient } from '../../app/receivables-client';
 import type {
   PhoenixActivity,
   PhoenixNormalizationPreview,
@@ -59,7 +60,8 @@ async function loadWorkspaceUsers(role: string): Promise<PhoenixWorkspaceUsers> 
  * - a normalização é observada explicitamente para evitar esconder fallback;
  * - o histórico operacional é lido do activityLog persistido no AppState,
  *   sem fingir que ele equivale ao AuditLog estrutural do banco;
- * - usuários são consultados pela rota administrativa oficial e nunca alterados aqui.
+ * - usuários são consultados pela rota administrativa oficial e nunca alterados aqui;
+ * - telas Web completo usam somente endpoints de leitura dos domínios oficiais.
  */
 export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
@@ -74,11 +76,16 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
     normalization,
     sharedState,
     summary,
+    analytics,
+    cashflow,
+    budgets,
     accounts,
     categories,
     paymentMethods,
     cards,
     payables,
+    customers,
+    receivables,
     events,
     workspaceUsers
   ] = await Promise.all([
@@ -86,11 +93,16 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
     authenticatedRequest<PhoenixNormalizationPreview>('/app-state/normalization-preview'),
     authenticatedRequest<SharedStateRead>('/app-state'),
     financeClient.getSummary(month),
+    financeClient.getAnalytics(month),
+    financeClient.getCashflow(month),
+    financeClient.listBudgets(month),
     financeClient.listAccounts(),
     financeClient.listCategories(),
     financeClient.listPaymentMethods(),
     cardsClient.list(month),
     payablesClient.list(month),
+    receivablesClient.listCustomers(),
+    receivablesClient.listReceivables(),
     financeClient.listEvents(1, 100, ''),
     loadWorkspaceUsers(session.user.role)
   ]);
@@ -108,11 +120,16 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
     health,
     normalization,
     summary,
+    analytics,
+    cashflow,
+    budgets,
     accounts,
     categories,
     paymentMethods,
     cards,
     payables,
+    customers,
+    receivables,
     events,
     activities,
     workspaceUsers,
@@ -122,6 +139,10 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
       events: 'finance-domain',
       activities: 'app-state-activity-log',
       users: 'auth-admin-read',
+      receivables: 'receivables-domain',
+      analytics: 'finance-domain',
+      cashflow: 'finance-domain',
+      budgets: 'finance-domain',
       sharedFallback: 'app-state-normalized-read',
       cards: 'cards-domain-with-legacy-compatibility',
       payables: 'payables-domain'
