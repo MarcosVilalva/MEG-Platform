@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FinancialEvent } from '../../app/finance-client';
+import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import type { PhoenixReadModel } from '../contracts';
 import '../phoenix-launch.css';
 
@@ -7,6 +8,9 @@ const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
 type TxType = 'expense' | 'income' | 'transfer';
+type GridKey = 'dueDate' | 'purchaseDate' | 'weekday' | 'type' | 'description' | 'income' | 'classification' | 'group' | 'expense' | 'paymentMethod' | 'status' | 'modality';
+type GridSort = { key: GridKey; direction: PhoenixGridSortDirection } | null;
+type GridFilterMap = Record<GridKey, PhoenixGridFilterValue>;
 type LaunchDraft = {
   type: TxType;
   description: string;
@@ -41,6 +45,23 @@ function initialDraft(): LaunchDraft {
     categoryId: '', paymentMethodId: '', cardId: '', installments: 1, manualDue: false,
     firstDue: '', recurring: false, recurrenceFrequency: 'Mensal', recurrenceCount: 12,
     saveTemplate: false, templateName: '', notes: ''
+  };
+}
+
+function initialGridFilters(): GridFilterMap {
+  return {
+    dueDate: { kind: 'date', from: '', to: '' },
+    purchaseDate: { kind: 'date', from: '', to: '' },
+    weekday: { kind: 'multi', values: [] },
+    type: { kind: 'multi', values: [] },
+    description: { kind: 'text', value: '' },
+    income: { kind: 'number', min: '', max: '' },
+    classification: { kind: 'multi', values: [] },
+    group: { kind: 'multi', values: [] },
+    expense: { kind: 'number', min: '', max: '' },
+    paymentMethod: { kind: 'multi', values: [] },
+    status: { kind: 'multi', values: [] },
+    modality: { kind: 'multi', values: [] }
   };
 }
 
@@ -128,11 +149,98 @@ function sourceClassification(event: FinancialEvent) {
   return event.sourceDetails?.expenseClass || event.category?.name || '—';
 }
 
+function sourcePayment(event: FinancialEvent) {
+  return event.sourceDetails?.paymentMethod || event.paymentMethod?.name || '—';
+}
+
+function sourceSituation(event: FinancialEvent) {
+  return event.sourceDetails?.situation || eventStatus(event.status);
+}
+
+function sourceModality(event: FinancialEvent) {
+  return event.sourceDetails?.modality || '—';
+}
+
+function parseBrazilianNumber(value: string) {
+  const normalized = String(value || '').trim().replace(/R\$/gi, '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function gridRow(event: FinancialEvent) {
+  const visualType = launchTypeForEvent(event.type);
+  const isIncome = visualType === 'income';
+  return {
+    dueDate: event.date.slice(0, 10),
+    purchaseDate: event.date.slice(0, 10),
+    weekday: event.sourceDetails?.weekday || weekday(event.date),
+    type: isIncome ? 'Receita' : visualType === 'transfer' ? 'Transferência' : 'Despesa',
+    description: event.description,
+    income: isIncome ? amountFromEvent(event) : null,
+    classification: sourceClassification(event),
+    group: sourceGroup(event),
+    expense: visualType === 'expense' ? amountFromEvent(event) : null,
+    paymentMethod: sourcePayment(event),
+    status: sourceSituation(event),
+    modality: sourceModality(event)
+  };
+}
+
+type GridRow = ReturnType<typeof gridRow>;
+
+function matchesGridFilter(value: GridRow[GridKey], filter: PhoenixGridFilterValue) {
+  if (filter.kind === 'text') return !filter.value.trim() || normalizeText(String(value ?? '')).includes(normalizeText(filter.value));
+  if (filter.kind === 'multi') return !filter.values.length || filter.values.includes(normalizeText(String(value ?? '')));
+  if (filter.kind === 'date') {
+    const current = String(value ?? '').slice(0, 10);
+    if (filter.from && current < filter.from) return false;
+    if (filter.to && current > filter.to) return false;
+    return true;
+  }
+  const current = typeof value === 'number' ? value : Number.NaN;
+  if (!Number.isFinite(current)) return !filter.min && !filter.max;
+  const min = parseBrazilianNumber(filter.min);
+  const max = parseBrazilianNumber(filter.max);
+  if (min !== null && current < min) return false;
+  if (max !== null && current > max) return false;
+  return true;
+}
+
+function compareGridValues(left: GridRow[GridKey], right: GridRow[GridKey], direction: PhoenixGridSortDirection) {
+  const emptyLeft = left === null || left === undefined || left === '';
+  const emptyRight = right === null || right === undefined || right === '';
+  if (emptyLeft !== emptyRight) return emptyLeft ? 1 : -1;
+  if (typeof left === 'number' && typeof right === 'number') return direction === 'asc' ? left - right : right - left;
+  const result = String(left ?? '').localeCompare(String(right ?? ''), 'pt-BR', { numeric: true, sensitivity: 'base' });
+  return direction === 'asc' ? result : -result;
+}
+
+function filterIsActive(filter: PhoenixGridFilterValue) {
+  if (filter.kind === 'text') return Boolean(filter.value.trim());
+  if (filter.kind === 'multi') return filter.values.length > 0;
+  if (filter.kind === 'number') return Boolean(filter.min || filter.max);
+  return Boolean(filter.from || filter.to);
+}
+
+function filterSummary(label: string, filter: PhoenixGridFilterValue) {
+  if (filter.kind === 'text') return `${label}: ${filter.value}`;
+  if (filter.kind === 'multi') return `${label}: ${filter.values.length} valor(es)`;
+  if (filter.kind === 'number') return `${label}: ${filter.min || '−∞'} até ${filter.max || '+∞'}`;
+  return `${label}: ${filter.from || 'início'} até ${filter.to || 'fim'}`;
+}
+
+const gridLabels: Record<GridKey, string> = {
+  dueDate: 'Vencimento', purchaseDate: 'Data da compra', weekday: 'Dia', type: 'Tipo', description: 'Descrição', income: 'Receita', classification: 'Classificação', group: 'Grupo', expense: 'Despesa', paymentMethod: 'Forma de pagamento', status: 'Situação', modality: 'Modalidade'
+};
+
 export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0 }: { data: PhoenixReadModel; onNavigateHistory?: () => void; launchRequest?: number }) {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [status, setStatus] = useState('all');
   const [account, setAccount] = useState('all');
+  const [gridFilters, setGridFilters] = useState<GridFilterMap>(initialGridFilters);
+  const [gridSort, setGridSort] = useState<GridSort>(null);
   const [launchOpen, setLaunchOpen] = useState(false);
   const [detailEvent, setDetailEvent] = useState<FinancialEvent | null>(null);
   const [draft, setDraft] = useState<LaunchDraft>(initialDraft);
@@ -142,17 +250,46 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
   const [reviewed, setReviewed] = useState(false);
 
   const monthEvents = useMemo(() => data.events.items.filter((event) => event.competence === data.month), [data]);
-  const filtered = useMemo(() => monthEvents.filter((event) => {
-    const haystack = `${event.description} ${event.category?.name || ''} ${event.category?.group || ''} ${event.account?.name || ''} ${event.paymentMethod?.name || ''}`.toLocaleLowerCase('pt-BR');
-    const visualType = launchTypeForEvent(event.type);
-    return haystack.includes(search.trim().toLocaleLowerCase('pt-BR'))
-      && (typeFilter === 'all' || visualType === typeFilter)
-      && (status === 'all' || event.status === status)
-      && (account === 'all' || event.accountId === account);
-  }), [monthEvents, search, typeFilter, status, account]);
+  const rows = useMemo(() => monthEvents.map((event) => ({ event, row: gridRow(event) })), [monthEvents]);
+
+  const gridOptions = useMemo(() => {
+    const optionKeys: GridKey[] = ['weekday', 'type', 'classification', 'group', 'paymentMethod', 'status', 'modality'];
+    const result = {} as Record<GridKey, PhoenixGridOption[]>;
+    optionKeys.forEach((key) => {
+      const values = new Map<string, { label: string; count: number }>();
+      rows.forEach(({ row }) => {
+        const label = String(row[key] ?? '—');
+        const normalized = normalizeText(label);
+        const current = values.get(normalized);
+        values.set(normalized, { label, count: (current?.count || 0) + 1 });
+      });
+      result[key] = [...values.entries()]
+        .map(([value, item]) => ({ value, label: item.label, count: item.count }))
+        .sort((left, right) => left.label.localeCompare(right.label, 'pt-BR', { numeric: true, sensitivity: 'base' }));
+    });
+    return result;
+  }, [rows]);
+
+  const filtered = useMemo(() => {
+    const result = rows.filter(({ event, row }) => {
+      const haystack = `${event.description} ${event.category?.name || ''} ${event.category?.group || ''} ${event.account?.name || ''} ${event.paymentMethod?.name || ''}`.toLocaleLowerCase('pt-BR');
+      const visualType = launchTypeForEvent(event.type);
+      const toolbarMatches = haystack.includes(search.trim().toLocaleLowerCase('pt-BR'))
+        && (typeFilter === 'all' || visualType === typeFilter)
+        && (status === 'all' || event.status === status)
+        && (account === 'all' || event.accountId === account);
+      if (!toolbarMatches) return false;
+      return (Object.keys(gridFilters) as GridKey[]).every((key) => matchesGridFilter(row[key], gridFilters[key]));
+    });
+    if (!gridSort) return result.map(({ event }) => event);
+    return [...result]
+      .sort((left, right) => compareGridValues(left.row[gridSort.key], right.row[gridSort.key], gridSort.direction))
+      .map(({ event }) => event);
+  }, [rows, search, typeFilter, status, account, gridFilters, gridSort]);
 
   const income = monthEvents.filter((event) => launchTypeForEvent(event.type) === 'income').reduce((sum, event) => sum + amountFromEvent(event), 0);
   const expense = monthEvents.filter((event) => launchTypeForEvent(event.type) === 'expense').reduce((sum, event) => sum + amountFromEvent(event), 0);
+  const activeGridFilters = (Object.keys(gridFilters) as GridKey[]).filter((key) => filterIsActive(gridFilters[key]));
 
   const selectedAccount = data.accounts.find((item) => item.id === draft.accountId) || null;
   const selectedDestination = data.accounts.find((item) => item.id === draft.destinationId) || null;
@@ -275,6 +412,24 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
     setReviewed(true);
   }
 
+  function updateGridFilter(key: GridKey, value: PhoenixGridFilterValue) {
+    setGridFilters((current) => ({ ...current, [key]: value }));
+  }
+
+  function clearGridFilter(key: GridKey) {
+    const fresh = initialGridFilters();
+    setGridFilters((current) => ({ ...current, [key]: fresh[key] }));
+  }
+
+  function clearAllGridFilters() {
+    setGridFilters(initialGridFilters());
+    setGridSort(null);
+  }
+
+  function gridHeader(label: string, key: GridKey, kind: PhoenixGridFilterKind, options?: PhoenixGridOption[]) {
+    return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={gridFilters[key]} options={options} sort={gridSort?.key === key ? gridSort.direction : null} onSort={(direction) => setGridSort({ key, direction })} onChange={(value) => updateGridFilter(key, value)} /></div>;
+  }
+
   return <section className="px-screen px-movements-v15">
     <header className="px-screen-head">
       <div><span className="px-kicker">Lançamentos</span><h1>Controle financeiro</h1><p>Inclua e consulte eventos mantendo o histórico de auditoria separado do formulário.</p></div>
@@ -287,7 +442,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
       <article><span>Lançamentos no período</span><strong>{monthEvents.length}</strong><small>Quantidade real do mês</small></article>
       <article><span>Receitas</span><strong>{money.format(income)}</strong><small>Movimentação do período</small></article>
       <article><span>Despesas</span><strong>{money.format(expense)}</strong><small>Movimentação do período</small></article>
-      <article><span>Aguardando sincronização</span><strong>0</strong><small>Leitura confirmada pelo backend</small></article>
+      <article><span>Exibidos após filtros</span><strong>{filtered.length}</strong><small>{activeGridFilters.length ? `${activeGridFilters.length} filtro(s) de coluna ativo(s)` : 'Grade pronta para análise'}</small></article>
     </section>
 
     <section className="px-card px-table-card">
@@ -298,9 +453,11 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
         <select value={account} onChange={(event) => setAccount(event.target.value)}><option value="all">Todas as contas</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
       </div>
 
+      {activeGridFilters.length || gridSort ? <div className="px-grid-active-filters"><span>Filtros da grade</span>{activeGridFilters.map((key) => <span className="px-grid-filter-chip" key={key}>{filterSummary(gridLabels[key], gridFilters[key])}<button type="button" onClick={() => clearGridFilter(key)} aria-label={`Remover filtro ${gridLabels[key]}`}>×</button></span>)}{gridSort ? <span className="px-grid-filter-chip">Ordenação: {gridLabels[gridSort.key]} {gridSort.direction === 'asc' ? '↑' : '↓'}<button type="button" onClick={() => setGridSort(null)} aria-label="Remover ordenação">×</button></span> : null}<button className="px-grid-clear-all" type="button" onClick={clearAllGridFilters}>Limpar grade</button></div> : null}
+
       <div className="px-table-scroll">
         <table className="px-data-table px-v15-launch-table">
-          <thead><tr><th>Vencimento</th><th>Data da compra</th><th>Dia</th><th>Tipo</th><th>Descrição</th><th>Receita</th><th>Classificação</th><th>Grupo</th><th>Despesa</th><th>Forma de pagamento</th><th>Situação</th><th>Modalidade</th><th>Detalhes</th></tr></thead>
+          <thead><tr><th>{gridHeader('Vencimento', 'dueDate', 'date')}</th><th>{gridHeader('Data da compra', 'purchaseDate', 'date')}</th><th>{gridHeader('Dia', 'weekday', 'multi', gridOptions.weekday)}</th><th>{gridHeader('Tipo', 'type', 'multi', gridOptions.type)}</th><th>{gridHeader('Descrição', 'description', 'text')}</th><th>{gridHeader('Receita', 'income', 'number')}</th><th>{gridHeader('Classificação', 'classification', 'multi', gridOptions.classification)}</th><th>{gridHeader('Grupo', 'group', 'multi', gridOptions.group)}</th><th>{gridHeader('Despesa', 'expense', 'number')}</th><th>{gridHeader('Forma de pagamento', 'paymentMethod', 'multi', gridOptions.paymentMethod)}</th><th>{gridHeader('Situação', 'status', 'multi', gridOptions.status)}</th><th>{gridHeader('Modalidade', 'modality', 'multi', gridOptions.modality)}</th><th>Detalhes</th></tr></thead>
           <tbody>{filtered.map((event) => {
             const visualType = launchTypeForEvent(event.type);
             const isIncome = visualType === 'income';
@@ -314,9 +471,9 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
               <td data-label="Classificação">{sourceClassification(event)}</td>
               <td data-label="Grupo">{sourceGroup(event)}</td>
               <td data-label="Despesa" className="px-money negative">{visualType === 'expense' ? money.format(amountFromEvent(event)) : '—'}</td>
-              <td data-label="Forma de pagamento">{event.sourceDetails?.paymentMethod || event.paymentMethod?.name || '—'}</td>
-              <td data-label="Situação"><span className={`px-status ${event.status}`}>{event.sourceDetails?.situation || eventStatus(event.status)}</span></td>
-              <td data-label="Modalidade">{event.sourceDetails?.modality || '—'}</td>
+              <td data-label="Forma de pagamento">{sourcePayment(event)}</td>
+              <td data-label="Situação"><span className={`px-status ${event.status}`}>{sourceSituation(event)}</span></td>
+              <td data-label="Modalidade">{sourceModality(event)}</td>
               <td data-label="Detalhes"><button className="px-detail-btn" type="button" onClick={() => setDetailEvent(event)} aria-label={`Detalhes de ${event.description}`}>↘</button></td>
             </tr>;
           })}</tbody>
