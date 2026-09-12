@@ -11,6 +11,7 @@ import { authRoutes } from './modules/auth/routes';
 import { financeRoutes } from './modules/finance/routes';
 import { receivableRoutes } from './modules/receivables/routes';
 import { cardRoutes } from './modules/cards/routes';
+import { migrateLegacyCardsForAllWorkspaces } from './modules/cards/service';
 import { payableRoutes } from './modules/payables/routes';
 import { materializeRecurringExpenses } from './modules/payables/service';
 import { repairLegacyImportedEvents } from './modules/imports/repair';
@@ -145,21 +146,30 @@ try {
     ensureCommercialFoundation(),
     refreshCommercialBillingStatuses()
   ]).catch((error) => app.log.error(error, 'Background commercial maintenance failed'));
-  void materializeRecurringExpenses()
-    .then((result) => app.log.info(result, 'Recurring payables startup materialization completed'))
-    .catch((error) => app.log.error(error, 'Recurring payables startup materialization failed'));
-  let recurringMaterializationRunning = false;
-  const recurringMaterializationTimer = setInterval(() => {
-    if (recurringMaterializationRunning) return;
-    recurringMaterializationRunning = true;
-    void materializeRecurringExpenses()
-      .then((result) => {
-        if (result.processed || result.created) app.log.info(result, 'Recurring payables periodic materialization completed');
-      })
-      .catch((error) => app.log.error(error, 'Recurring payables periodic materialization failed'))
-      .finally(() => { recurringMaterializationRunning = false; });
+
+  async function runFinancialMaintenance(label: string) {
+    const [recurring, cards] = await Promise.all([
+      materializeRecurringExpenses(),
+      migrateLegacyCardsForAllWorkspaces(),
+    ]);
+    if (label === 'startup' || recurring.processed || recurring.created || cards.created) {
+      app.log.info({ recurring, cards, label }, 'Financial compatibility maintenance completed');
+    }
+  }
+
+  void runFinancialMaintenance('startup')
+    .catch((error) => app.log.error(error, 'Financial compatibility startup maintenance failed'));
+
+  let financialMaintenanceRunning = false;
+  const financialMaintenanceTimer = setInterval(() => {
+    if (financialMaintenanceRunning) return;
+    financialMaintenanceRunning = true;
+    void runFinancialMaintenance('periodic')
+      .catch((error) => app.log.error(error, 'Financial compatibility periodic maintenance failed'))
+      .finally(() => { financialMaintenanceRunning = false; });
   }, 6 * 60 * 60 * 1000);
-  recurringMaterializationTimer.unref();
+  financialMaintenanceTimer.unref();
+
   void ensurePrimaryWorkspace()
     .then(async (workspace) => {
       if (!workspace) return null;
