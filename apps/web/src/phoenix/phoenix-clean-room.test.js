@@ -31,23 +31,18 @@ assert.doesNotMatch(readOnlyScreens, /import\s+(?!type\b)[^;]*from\s+['"][^'"]*a
   'Telas Phoenix não podem acessar clientes mutáveis em runtime durante a paridade');
 assert.doesNotMatch(readOnlyScreens, /patchCloudTransactions|createEvent|updateEvent|archiveEvent|createPurchase|payStatement|createReceivable|receive\(|saveBudget|deleteBudget|changeUserAccess|deleteManagedUser/,
   'Telas Phoenix não podem invocar gateways de escrita durante a paridade');
-assert.match(loader, /financeClient\.getSummary\(month\)/);
-assert.match(loader, /financeClient\.getBenefitSummary\(month\)/,
-  'Home Phoenix deve carregar o saldo oficial do benefício separado do caixa monetário');
-assert.match(loader, /financeClient\.listEventsForMonth\(month\)/,
-  'Phoenix deve carregar todos os eventos do mês sem depender da paginação global');
+assert.match(loader, /authenticatedRequest<PhoenixPreviewCoreRead>\(`\/finance\/phoenix-preview\?month=\$\{encodeURIComponent\(month\)\}`\)/,
+  'Núcleo financeiro Phoenix deve vir de um único snapshot mensal somente leitura');
+assert.doesNotMatch(loader, /financeClient\.getSummary\(month\)|financeClient\.getBenefitSummary\(month\)|financeClient\.getAnalytics\(month\)|financeClient\.getCashflow\(month\)|financeClient\.listEventsForMonth\(month\)|cardsClient\.list\(month\)|payablesClient\.list\(month\)/,
+  'Bootstrap Phoenix não deve voltar a fragmentar o núcleo mensal em múltiplas leituras');
 assert.doesNotMatch(loader, /financeClient\.listEvents\(1,\s*100/,
   'Bootstrap Phoenix não pode voltar a usar os primeiros 100 eventos globais');
-assert.match(loader, /financeClient\.getAnalytics\(month\)/);
-assert.match(loader, /financeClient\.getCashflow\(month\)/);
+assert.match(loader, /PHOENIX_PREVIEW_MONTH_MISMATCH/,
+  'Snapshot Phoenix deve falhar fechado se o backend responder outro período');
 assert.match(loader, /financeClient\.listBudgets\(month\)/);
-assert.match(loader, /cardsClient\.list\(month\)/);
-assert.match(loader, /payablesClient\.list\(month\)/);
 assert.match(loader, /receivablesClient\.listCustomers\(\)/);
 assert.match(loader, /receivablesClient\.listReceivables\(\)/);
 assert.match(loader, /normalization-preview/);
-assert.match(loader, /authenticatedRequest<PhoenixFinancialAuditPage>\('\/finance\/audit\?page=1&pageSize=100'\)/,
-  'Histórico Phoenix deve carregar a auditoria financeira estrutural do backend');
 assert.match(loader, /authenticatedRequest<SharedStateRead>\('\/app-state'\)/,
   'Histórico legado deve continuar disponível pela leitura real do AppState');
 assert.match(loader, /app-state-activity-log-legacy/,
