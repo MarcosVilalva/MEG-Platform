@@ -1,5 +1,6 @@
 import { Prisma, prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
+import { recordFinancialAudit } from '../finance/audit';
 import {
   isBenefitPaymentMethod,
   isFutureFinancialDay,
@@ -158,7 +159,16 @@ export async function createRecurringExpense(userId: string, input: RecurringExp
       },
     });
     const materialized = await materializeTemplate(tx, template, horizon);
-    return { ...template, endDate: computedEnd, materialized };
+    const result = { ...template, endDate: computedEnd, materialized };
+    await recordFinancialAudit(tx, {
+      actorId: userId,
+      entity: 'RecurringExpense',
+      entityId: template.id,
+      action: 'RECURRING_EXPENSE_CREATED',
+      after: result,
+      context: { occurrenceCount: input.occurrenceCount ?? null, horizon }
+    });
+    return result;
   });
 }
 
@@ -247,15 +257,34 @@ export async function payPayableProtected(userId: string, payableId: string, inp
       notes: input.notes,
     } });
     const remaining = Math.max(0, open - principal);
-    await tx.payable.update({ where: { id: payableId }, data: { openAmount: remaining, status: remaining === 0 ? 'paid' : 'partial' } });
+    const payableStatus = remaining === 0 ? 'paid' : 'partial';
+    const updatedPayable = await tx.payable.update({ where: { id: payableId }, data: { openAmount: remaining, status: payableStatus } });
     const response = {
       ...payment,
       financialEventId: event.id,
       remaining,
-      payableStatus: remaining === 0 ? 'paid' : 'partial',
+      payableStatus,
       protection,
       idempotentReplay: false,
     };
+
+    await recordFinancialAudit(tx, {
+      actorId: userId,
+      entity: 'Payable',
+      entityId: payableId,
+      action: 'PAYABLE_PAYMENT_CREATED',
+      before: payable,
+      after: updatedPayable,
+      context: {
+        paymentId: payment.id,
+        financialEventId: event.id,
+        principal,
+        interestAmount: input.interestAmount,
+        fineAmount: input.fineAmount,
+        protection,
+        operationId: input.operationId ?? null,
+      }
+    });
 
     if (input.operationId && workspace && requestHash) {
       const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
