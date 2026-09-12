@@ -23,6 +23,10 @@ assert.match(routes, /operationIdSchema/,
   'Criação, recorrência e baixa devem aceitar chave de idempotência.');
 assert.match(routes, /occurrenceCount/,
   'Recorrência deve aceitar término por quantidade de ocorrências.');
+assert.match(createService, /const workspace = await resolveWorkspaceContext\(userId\)/,
+  'Criação parcelada deve resolver o workspace mesmo sem operationId.');
+assert.match(createService, /workspaceId: workspace\.workspaceId/,
+  'Auditoria de criação parcelada deve carregar o workspace resolvido.');
 assert.match(createService, /serializableFinancialTransaction/,
   'Criação parcelada deve executar em transação serializável.');
 assert.match(createService, /cloudMutationReceipt/,
@@ -35,6 +39,10 @@ assert.match(service, /RECURRING_EXPENSE_CREATE/,
   'Recorrência deve registrar recibo de idempotência próprio.');
 assert.match(service, /cloudMutationReceipt/,
   'Recorrência e baixa devem reutilizar recibos de mutação para idempotência.');
+assert.match(service, /const workspace = await resolveWorkspaceContext\(userId\)/,
+  'Recorrência e baixa devem resolver contexto de workspace independentemente da idempotência.');
+assert.match(service, /workspaceId: workspace\.workspaceId/,
+  'Evento financeiro gerado pela baixa deve persistir o workspace.');
 assert.match(service, /serializableFinancialTransaction/,
   'Baixa e recorrência devem reutilizar a política transacional compartilhada.');
 assert.match(monetaryProtection, /TransactionIsolationLevel\.Serializable/,
