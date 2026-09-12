@@ -24,6 +24,7 @@ const shortDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-d
 type PhoenixView = PhoenixRoute;
 type ViewDefinition = { id: PhoenixView; icon: string; label: string };
 type HomeAgendaItem = { id: string; description: string; dueDate: string; amount: number; meta: string; kind: 'VENCIDO' | 'FATURA' | 'PRÓXIMO' };
+type HomeAgendaGroup = { kind: 'VENCIDOS' | 'FATURA' | 'PRÓXIMOS'; title: string; subtitle: string; amount: number; count: number };
 
 const mainViews: ViewDefinition[] = [
   { id: 'home', icon: '⌂', label: 'Início' },
@@ -104,6 +105,13 @@ function financialActionLabel(action: string) {
   return action.replace(/_/g, ' ').toLocaleLowerCase('pt-BR').replace(/^./, (letter) => letter.toUpperCase());
 }
 
+function financialAuditStatus(action: string) {
+  const normalized = action.toUpperCase();
+  if (normalized.includes('UPDATED')) return 'ATUALIZADO';
+  if (normalized.includes('ARCHIVED') || normalized.includes('DELETED')) return 'ARQUIVADO';
+  return 'SINCRONIZADO';
+}
+
 function todayIso() {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit'
@@ -151,33 +159,36 @@ function HomeScreen({ data, month, onNavigate }: { data: PhoenixReadModel; month
       };
     });
 
-  const agenda = (payableAgenda.length ? payableAgenda : eventAgenda)
-    .sort((left, right) => left.dueDate.localeCompare(right.dueDate))
-    .slice(0, 5);
+  const agendaSource = payableAgenda.length ? payableAgenda : eventAgenda;
+  const group = (kind: HomeAgendaItem['kind']) => agendaSource.filter((item) => item.kind === kind);
+  const agendaGroups: HomeAgendaGroup[] = [
+    { kind: 'VENCIDOS', title: 'Compromissos anteriores', subtitle: 'Agrupados por data de vencimento', amount: group('VENCIDO').reduce((sum, item) => sum + item.amount, 0), count: group('VENCIDO').length },
+    { kind: 'FATURA', title: 'Compras do mesmo cartão', subtitle: 'Uma fatura por cartão e vencimento', amount: group('FATURA').reduce((sum, item) => sum + item.amount, 0), count: group('FATURA').length },
+    { kind: 'PRÓXIMOS', title: 'Demais compromissos do período', subtitle: 'Ordenados por vencimento', amount: group('PRÓXIMO').reduce((sum, item) => sum + item.amount, 0), count: group('PRÓXIMO').length }
+  ].filter((item) => item.count > 0);
 
   return <>
-    <div className="px-readonly-banner">Phoenix V15 em modo de leitura. Nenhuma ação desta raiz altera a base financeira.</div>
-    <div className="px-page-head"><div><span className="px-kicker">Visão geral</span><h1>{monthLabel(month)}</h1><p>Leitura do período usando os contratos financeiros reais do MEG.</p><span className="px-updated">Atualizado {new Date(data.loadedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} · {data.normalization.primary && data.normalization.reconciled ? 'dados sincronizados' : 'integridade em verificação'}</span></div></div>
+    <div className="px-page-head"><div><span className="px-kicker">Visão geral</span><h1>{monthLabel(month)}</h1><p>Leitura do mês usando apenas os valores de referência definidos na regra de negócio do MEG.</p><span className="px-updated">Atualizado agora · {data.normalization.primary && data.normalization.reconciled ? 'dados sincronizados' : 'integridade em verificação'}</span></div></div>
 
     <section className="px-dashboard-grid">
       <article className="px-card px-premium-balance"><span className="px-kicker">Saldo monetário realizado</span><h2>{money.format(realizedBalance)}</h2><p>Receita disponível menos despesas monetárias efetivamente pagas.</p><div className="px-balance-stats"><div className="px-balance-stat"><span>Saldo anterior</span><strong>{money.format(data.summary.availableBalance)}</strong></div><div className="px-balance-stat"><span>Receitas do mês</span><strong>{money.format(data.summary.realizedIncome)}</strong></div><div className="px-balance-stat"><span>Receita disponível</span><strong>{money.format(availableRevenue)}</strong></div></div></article>
     </section>
 
     <article className={`px-dashboard-alert ${projectedClosing >= 0 ? 'is-positive' : ''}`}>
-      <div className="px-dashboard-alert-copy"><div className="px-dashboard-alert-icon">{projectedClosing >= 0 ? '✓' : '!'}</div><div><h3>{projectedClosing >= 0 ? 'Mês sob controle' : 'Mês exige atenção'}</h3><p>O diagnóstico principal considera o período selecionado e não é alterado por filtros analíticos.</p></div></div>
+      <div className="px-dashboard-alert-copy"><div className="px-dashboard-alert-icon">{projectedClosing >= 0 ? '✓' : '!'}</div><div><h3>{projectedClosing >= 0 ? 'Mês sob controle' : 'Mês exige atenção'}</h3><p>O diagnóstico principal considera o mês corrente e não pode ser mascarado por filtros analíticos.</p></div></div>
       <div className="px-gap-block"><span>{projectedClosing >= 0 ? 'Saldo projetado para fechar o mês' : 'Falta projetada para fechar o mês'}</span><strong>{money.format(projectedClosing)}</strong></div>
     </article>
 
     <section className="px-metrics">
       <article className="px-card px-metric good"><span>Despesas pagas</span><strong>{money.format(data.summary.realizedExpense)}</strong><small>Reduzem o saldo realizado</small></article>
-      <article className="px-card px-metric bad"><span>Despesas pendentes</span><strong>{money.format(pendingAmount)}</strong><small>{pendingCount} item(ns) ainda não reduzem o realizado</small></article>
+      <article className="px-card px-metric bad"><span>Despesas pendentes</span><strong>{money.format(pendingAmount)}</strong><small>Não reduzem o realizado até a baixa</small></article>
       <article className="px-card px-metric info px-benefit-control"><span>Benefício alimentação · disponível</span><strong>{money.format(data.summary.benefitBalance)}</strong><div className="px-benefit-inline"><div><span>Créditos</span><b>{money.format(data.summary.benefitCredits)}</b></div><div><span>Utilizado</span><b>{money.format(data.summary.benefitUsed)}</b></div><button type="button" onClick={() => onNavigate('movements')}>Ver extrato</button></div></article>
       <article className="px-card px-metric warn"><span>Consolidado realizado</span><strong>{money.format(consolidatedRealized)}</strong><small>Monetário + benefício do período</small></article>
     </section>
 
     <section className="px-bottom-grid">
-      <article className="px-card"><div className="px-panel-head"><div><span>Histórico recente</span><h2>Últimas ações financeiras</h2></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('history')}>Ver histórico completo</button></div><div>{recentAudit.map((item) => <div className="px-dashboard-row" key={item.id}><div className="px-dashboard-row-copy"><strong>{financialActionLabel(item.action)}</strong><small>{shortDate.format(new Date(item.at))} · {item.actor?.name || item.actor?.email || 'Usuário do MEG'}</small></div><span className="px-dashboard-row-value">Auditado</span><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('history')}>Abrir</button></div>)}{recentAudit.length === 0 ? <p className="px-empty">Nenhum evento de auditoria localizado.</p> : null}</div></article>
-      <article className="px-card"><div className="px-panel-head"><div><span>Agenda financeira</span><h2>Vencimentos agrupados</h2></div><strong>{money.format(pendingAmount)}</strong></div><div>{agenda.map((item) => <div className="px-dashboard-row" key={item.id}><span className={`px-due-label ${item.kind === 'VENCIDO' ? 'danger' : ''}`}>{item.kind}</span><div className="px-dashboard-row-copy"><strong>{item.description}</strong><small>{shortDate.format(new Date(item.dueDate))} · {item.meta}</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Detalhes</button></div>)}{agenda.length === 0 ? <p className="px-empty">Nenhum compromisso aberto no período.</p> : null}</div></article>
+      <article className="px-card"><div className="px-panel-head"><div><span>Histórico recente</span><h2>Últimos lançamentos</h2></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('history')}>Ver histórico completo</button></div><div>{recentAudit.map((item) => <div className="px-dashboard-row" key={item.id}><div className="px-dashboard-row-copy"><strong>{financialActionLabel(item.action)}</strong><small>{shortDate.format(new Date(item.at))} · {item.actor?.name || item.actor?.email || 'Usuário do MEG'}</small></div><span className={`px-history-state ${financialAuditStatus(item.action).toLocaleLowerCase('pt-BR')}`}>{financialAuditStatus(item.action)}</span><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('history')}>Abrir</button></div>)}{recentAudit.length === 0 ? <p className="px-empty">Nenhum evento de auditoria localizado.</p> : null}</div></article>
+      <article className="px-card"><div className="px-panel-head"><div><span>Agenda financeira</span><h2>Vencimentos agrupados</h2></div><strong>{money.format(pendingAmount)}</strong></div><div>{agendaGroups.map((item) => <div className="px-dashboard-row" key={item.kind}><span className={`px-due-label ${item.kind === 'VENCIDOS' ? 'danger' : item.kind === 'FATURA' ? 'invoice' : ''}`}>{item.kind}</span><div className="px-dashboard-row-copy"><strong>{item.title}</strong><small>{item.subtitle} · {item.count} item(ns) · {money.format(item.amount)}</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Detalhes</button></div>)}{agendaGroups.length === 0 ? <p className="px-empty">Nenhum compromisso aberto no período.</p> : null}</div></article>
     </section>
   </>;
 }
@@ -257,6 +268,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const currentView = views.find((item) => item.id === view) || mainViews[0];
   const pendingCount = data?.summary.pendingCount || 0;
   const toggleTheme = () => setTheme((value) => value === 'dark' ? 'light' : 'dark');
+  const userInitial = (data?.user.name || 'M').slice(0, 1).toUpperCase();
 
   function navigate(next: PhoenixView) {
     setView(next);
@@ -285,19 +297,20 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
           {mainViews.map((item) => <button key={item.id} className={`px-nav-btn ${view === item.id ? 'active' : ''}`} type="button" onClick={() => navigate(item.id)}><span className="px-nav-icon" aria-hidden="true">{item.icon}</span><span className="px-nav-text">{item.label}</span>{item.id === 'payables' && pendingCount > 0 ? <span className="px-side-badge">{pendingCount > 99 ? '99+' : pendingCount}</span> : null}</button>)}
           <details className="px-side-more" open={webViews.some((item) => item.id === view)}><summary>Web completo</summary>{webViews.map((item) => <button key={item.id} className={`px-nav-btn ${view === item.id ? 'active' : ''}`} type="button" onClick={() => navigate(item.id)}><span className="px-nav-icon" aria-hidden="true">{item.icon}</span><span className="px-nav-text">{item.label}</span></button>)}</details>
         </nav>
-        <div className="px-side-user"><strong>{data?.user.name || 'MEG'}</strong><small>Perfil {data?.user.role || '—'}</small></div>
+        <button className="px-side-exit" type="button" onClick={onLogout}><span>↪</span><strong>Sair</strong></button>
+        <div className="px-side-user"><span className="px-side-user-avatar">{userInitial}</span><div><strong>{data?.user.name || 'MEG'}</strong><small>Perfil {data?.user.role || '—'}</small></div></div>
       </aside>
 
       <main className="px-main">
         <header className="px-topbar">
-          <div className="px-top-left"><button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => { if (window.matchMedia('(max-width:680px)').matches) setMobileOpen((value) => !value); else setCollapsed((value) => !value); }}>☰</button><div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div></div>
+          <div className="px-top-left"><button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => setCollapsed((value) => !value)}>☰</button><div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div></div>
           <div className="px-top-right">
             <button className="px-top-quick-launch" type="button" title="Novo lançamento" aria-label="Novo lançamento" onClick={requestLaunch}>＋</button>
             <div className={`px-period-menu ${periodOpen ? 'is-open' : ''}`} ref={periodRef}>
               <button className="px-period-summary" type="button" title="Selecionar período" aria-label="Selecionar período" onClick={() => setPeriodOpen((value) => !value)}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span className="px-period-active">{shortMonthLabel(month)}</span></button>
               {periodOpen ? <div className="px-period-popover"><span>Período global</span><div className="px-period-presets"><button type="button" onClick={() => chooseMonth(currentMonth())}>Mês atual</button><button type="button" onClick={() => chooseMonth(previousMonth(currentMonth()))}>Mês anterior</button></div><label className="px-period-field"><span>Mês e ano</span><input type="month" value={month} onChange={(event) => chooseMonth(event.target.value)} /></label></div> : null}
             </div>
-            <button className="px-sync" type="button" disabled={loadState.status === 'loading'} onClick={() => setRefreshKey((value) => value + 1)}><span className="px-sync-dot" /><span>{loadState.status === 'loading' ? 'Atualizando dados' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{(data?.user.name || 'M').slice(0, 1).toUpperCase()}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span>⌄</span></button><button className="px-icon-btn" type="button" title="Sair" onClick={onLogout}>↪</button>
+            <button className="px-sync" type="button" disabled={loadState.status === 'loading'} onClick={() => setRefreshKey((value) => value + 1)}><span className="px-sync-dot" /><span>{loadState.status === 'loading' ? 'Atualizando dados' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{userInitial}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span className="px-user-chevron">⌄</span></button><button className="px-icon-btn px-top-exit" type="button" title="Sair" onClick={onLogout}>↪</button>
           </div>
         </header>
 
