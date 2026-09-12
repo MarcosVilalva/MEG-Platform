@@ -147,22 +147,17 @@ export function PhoenixRevenuesGrid({ data }: { data: PhoenixReadModel }) {
   const [sort,setSort] = useState<{key:RevenueKey;direction:PhoenixGridSortDirection}|null>(null);
   const revenues = useMemo(() => data.events.items.filter((event) => event.competence === data.month && event.type === 'income'), [data]);
   const rows = useMemo<RevenueRow[]>(() => revenues.map((event) => ({
-    id:event.id,
-    eventDate:event.date.slice(0,10),
-    description:event.description,
+    id:event.id, eventDate:event.date.slice(0,10), description:event.description,
     scope:revenueBenefit(event) ? 'Benefício alimentação' : 'Monetária',
     category:event.category?.group || event.category?.name || 'Sem classificação',
-    account:event.account?.name || 'Não informada',
-    payment:event.paymentMethod?.name || event.sourceDetails?.paymentMethod || 'Não informada',
-    status:event.status,
-    amount:Number(event.signedAmount || 0),
-    realized:['confirmed','paid','reconciled'].includes(event.status)
+    account:event.account?.name || 'Não informada', payment:event.paymentMethod?.name || event.sourceDetails?.paymentMethod || 'Não informada',
+    status:event.status, amount:Number(event.signedAmount || 0), realized:['confirmed','paid','reconciled'].includes(event.status)
   })), [revenues]);
   const keys = Object.keys(revenueLabels) as RevenueKey[];
   const activeKeys = keys.filter((key) => active(filters[key]));
   const gridOptions = useMemo(() => ({
-    scope:options(rows.map((row)=>row.scope)), category:options(rows.map((row)=>row.category)),
-    account:options(rows.map((row)=>row.account)), payment:options(rows.map((row)=>row.payment)), status:options(rows.map((row)=>row.status))
+    scope:options(rows.map((row)=>row.scope)), category:options(rows.map((row)=>row.category)), account:options(rows.map((row)=>row.account)),
+    payment:options(rows.map((row)=>row.payment)), status:options(rows.map((row)=>row.status))
   }), [rows]);
   const visible = useMemo(() => {
     const needle=normalize(search);
@@ -201,10 +196,14 @@ function initialCashflowFilters():CashflowFilters{return{day:{kind:'date',from:'
 const cashflowLabels:Record<CashflowKey,string>={day:'Data',income:'Entradas',expense:'Saídas',net:'Líquido',realizedBalance:'Saldo realizado',projectedBalance:'Saldo projetado',eventCount:'Eventos'};
 
 export function PhoenixCashflowGrid({data}:{data:PhoenixReadModel}){
-  const cashflow=data.cashflow; const [filters,setFilters]=useState<CashflowFilters>(initialCashflowFilters); const [sort,setSort]=useState<{key:CashflowKey;direction:PhoenixGridSortDirection}|null>(null);
+  const cashflow=data.cashflow;
+  const [filters,setFilters]=useState<CashflowFilters>(initialCashflowFilters);
+  const [sort,setSort]=useState<{key:CashflowKey;direction:PhoenixGridSortDirection}|null>(null);
   const rows=useMemo<CashflowRow[]>(()=>cashflow.days.map((day)=>({day:day.date,income:day.income,expense:day.expense,net:day.net,realizedBalance:day.realizedBalance,projectedBalance:day.projectedBalance,eventCount:day.eventCount})),[cashflow.days]);
-  const keys=Object.keys(cashflowLabels) as CashflowKey[]; const activeKeys=keys.filter((key)=>active(filters[key])); const visible=useMemo(()=>{const filtered=rows.filter((row)=>keys.every((key)=>matches(row[key],filters[key])));if(!sort)return filtered;return[...filtered].sort((a,b)=>compare(a[sort.key],b[sort.key],sort.direction));},[rows,filters,sort]);
-  function header(label:string,key:CashflowKey,kind:PhoenixGridFilterKind){return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} sort={sort?.key===key?sort.direction:null} onSort={(direction)=>setSort({key,direction})} onChange={(value)=>setFilters((current)=>({...current,[key]:value))}/></div>;}
+  const keys=Object.keys(cashflowLabels) as CashflowKey[];
+  const activeKeys=keys.filter((key)=>active(filters[key]));
+  const visible=useMemo(()=>{const filtered=rows.filter((row)=>keys.every((key)=>matches(row[key],filters[key])));if(!sort)return filtered;return[...filtered].sort((a,b)=>compare(a[sort.key],b[sort.key],sort.direction));},[rows,filters,sort]);
+  function header(label:string,key:CashflowKey,kind:PhoenixGridFilterKind){return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} sort={sort?.key===key?sort.direction:null} onSort={(direction)=>setSort({key,direction})} onChange={(value)=>setFilters((current)=>({...current,[key]:value}))}/></div>;}
   return <section className="px-screen"><PageIntro kicker="Fluxo de caixa" title="Fechamento realizado e projetado" text="Saldos e movimentos diários fornecidos pelo serviço oficial de fluxo de caixa." />
     <section className="px-screen-kpis"><article><span>Saldo inicial</span><strong>{money.format(cashflow.openingBalance)}</strong><small>Antes do período</small></article><article><span>Entradas</span><strong>{money.format(cashflow.totalIncome)}</strong><small>Total do período</small></article><article className="danger"><span>Saídas</span><strong>{money.format(cashflow.totalExpense)}</strong><small>Total do período</small></article><article><span>Fechamento projetado</span><strong>{money.format(cashflow.projectedClosing)}</strong><small>Realizado: {money.format(cashflow.realizedClosing)}</small></article></section>
     <section className="px-card px-table-card"><div className="px-panel-head"><div><span>Movimentação diária</span><h2>Realizado x projetado</h2></div><strong>{visible.length} de {rows.length} dia(s)</strong></div>
