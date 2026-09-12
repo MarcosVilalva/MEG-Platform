@@ -23,6 +23,8 @@ assert.match(service, /CARD_PURCHASE_CREATE/,
   'Compra no cartão deve registrar recibo de idempotência próprio.');
 assert.match(service, /CARD_PURCHASE_CREATED/,
   'Compra no cartão deve gerar auditoria financeira estrutural.');
+assert.match(service, /workspaceId: shared\.workspaceId/,
+  'Evento financeiro gerado pelo pagamento da fatura deve persistir o workspace compartilhado.');
 assert.match(service, /monetaryBalanceAt/,
   'Fatura deve usar a política monetária compartilhada.');
 assert.match(service, /serializableFinancialTransaction/,
