@@ -2,12 +2,16 @@ import type { ApiHealth, AuthUser } from '../app/auth-client';
 import type { CreditCard } from '../app/cards-client';
 import type {
   Account,
+  BudgetOverview,
   Category,
   FinanceSummary,
+  FinancialAnalytics,
+  FinancialCashflow,
   FinancialEvent,
   PaymentMethod
 } from '../app/finance-client';
 import type { Payable } from '../app/payables-client';
+import type { Customer, Receivable } from '../app/receivables-client';
 
 export type PhoenixNormalizationPreview = {
   revision: number;
@@ -85,11 +89,16 @@ export type PhoenixReadModel = {
   health: ApiHealth;
   normalization: PhoenixNormalizationPreview;
   summary: FinanceSummary;
+  analytics: FinancialAnalytics;
+  cashflow: FinancialCashflow;
+  budgets: BudgetOverview[];
   accounts: Account[];
   categories: Category[];
   paymentMethods: PaymentMethod[];
   cards: CreditCard[];
   payables: Payable[];
+  customers: Customer[];
+  receivables: Receivable[];
   events: PhoenixEventPage;
   activities: PhoenixActivity[];
   workspaceUsers: PhoenixWorkspaceUsers;
@@ -99,6 +108,10 @@ export type PhoenixReadModel = {
     events: 'finance-domain';
     activities: 'app-state-activity-log';
     users: 'auth-admin-read';
+    receivables: 'receivables-domain';
+    analytics: 'finance-domain';
+    cashflow: 'finance-domain';
+    budgets: 'finance-domain';
     sharedFallback: 'app-state-normalized-read';
     cards: 'cards-domain-with-legacy-compatibility';
     payables: 'payables-domain';
