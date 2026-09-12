@@ -32,6 +32,20 @@ function PhoenixPreviewRoot() {
     return () => { active = false; };
   }, [state]);
 
+  useEffect(() => {
+    if (state !== 'signed-in') return;
+    let stored: string | null = null;
+    try { stored = localStorage.getItem('meg-sidebar-collapsed'); } catch { stored = null; }
+    const shouldCollapse = stored === 'true' || (stored === null && window.matchMedia('(max-width:1100px)').matches);
+    if (!shouldCollapse) return;
+    const frame = window.requestAnimationFrame(() => {
+      const app = document.querySelector('.px-app');
+      const button = document.querySelector<HTMLButtonElement>('.px-collapse');
+      if (app && button && !app.classList.contains('is-collapsed')) button.click();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [state]);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || !email.trim() || !password) return;
