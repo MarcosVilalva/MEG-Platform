@@ -75,6 +75,13 @@ function isBenefitAccount(name?: string | null) {
   return value.includes('benef') || value.includes('verocard') || value.includes('alimentacao');
 }
 
+function isBenefitEvent(event: FinancialEvent) {
+  const accountType = normalizeText(event.account?.type || '');
+  const payment = normalizeText(`${event.paymentMethod?.name || ''} ${event.sourceDetails?.paymentMethod || ''}`);
+  const description = normalizeText(event.description || '');
+  return accountType === 'benefit' || payment.includes('verocard') || description.includes('verocard');
+}
+
 function isCreditMethod(name?: string | null, type?: string | null) {
   const value = normalizeText(`${name || ''} ${type || ''}`);
   return value.includes('credito') || value.includes('cartao');
@@ -111,12 +118,8 @@ function eventStatus(value: string) {
 
 function eventType(value: FinancialEvent['type']) {
   return ({
-    income: 'Receita',
-    expense: 'Despesa',
-    transfer: 'Transferência',
-    investment: 'Investimento',
-    redemption: 'Resgate',
-    adjustment: 'Ajuste'
+    income: 'Receita', expense: 'Despesa', transfer: 'Transferência', investment: 'Investimento',
+    redemption: 'Resgate', adjustment: 'Ajuste'
   } as Record<FinancialEvent['type'], string>)[value] || value;
 }
 
@@ -128,6 +131,25 @@ function launchTypeForEvent(value: FinancialEvent['type']): TxType {
 
 function amountFromEvent(event: FinancialEvent) {
   return Math.abs(Number(event.amount || 0));
+}
+
+function displayEffect(event: FinancialEvent) {
+  const signed = Number(event.signedAmount || 0);
+  const visualType = launchTypeForEvent(event.type);
+  if (visualType === 'income') return signed;
+  if (visualType === 'expense') return -signed;
+  return 0;
+}
+
+function monetaryTotals(events: FinancialEvent[]) {
+  return events.reduce((total, event) => {
+    if (isBenefitEvent(event)) return total;
+    const visualType = launchTypeForEvent(event.type);
+    const effect = displayEffect(event);
+    if (visualType === 'income') total.income += effect;
+    if (visualType === 'expense') total.expense += effect;
+    return total;
+  }, { income: 0, expense: 0 });
 }
 
 function weekday(value: string) {
@@ -171,20 +193,16 @@ function parseBrazilianNumber(value: string) {
 
 function gridRow(event: FinancialEvent) {
   const visualType = launchTypeForEvent(event.type);
-  const isIncome = visualType === 'income';
+  const effect = displayEffect(event);
   return {
-    dueDate: event.date.slice(0, 10),
-    purchaseDate: event.date.slice(0, 10),
+    dueDate: event.date.slice(0, 10), purchaseDate: event.date.slice(0, 10),
     weekday: event.sourceDetails?.weekday || weekday(event.date),
-    type: isIncome ? 'Receita' : visualType === 'transfer' ? 'Transferência' : 'Despesa',
+    type: visualType === 'income' ? 'Receita' : visualType === 'transfer' ? 'Transferência' : 'Despesa',
     description: event.description,
-    income: isIncome ? amountFromEvent(event) : null,
-    classification: sourceClassification(event),
-    group: sourceGroup(event),
-    expense: visualType === 'expense' ? amountFromEvent(event) : null,
-    paymentMethod: sourcePayment(event),
-    status: sourceSituation(event),
-    modality: sourceModality(event)
+    income: visualType === 'income' ? effect : null,
+    classification: sourceClassification(event), group: sourceGroup(event),
+    expense: visualType === 'expense' ? effect : null,
+    paymentMethod: sourcePayment(event), status: sourceSituation(event), modality: sourceModality(event)
   };
 }
 
@@ -232,7 +250,9 @@ function filterSummary(label: string, filter: PhoenixGridFilterValue) {
 }
 
 const gridLabels: Record<GridKey, string> = {
-  dueDate: 'Vencimento', purchaseDate: 'Data da compra', weekday: 'Dia', type: 'Tipo', description: 'Descrição', income: 'Receita', classification: 'Classificação', group: 'Grupo', expense: 'Despesa', paymentMethod: 'Forma de pagamento', status: 'Situação', modality: 'Modalidade'
+  dueDate: 'Vencimento', purchaseDate: 'Data da compra', weekday: 'Dia', type: 'Tipo', description: 'Descrição',
+  income: 'Receita', classification: 'Classificação', group: 'Grupo', expense: 'Despesa',
+  paymentMethod: 'Forma de pagamento', status: 'Situação', modality: 'Modalidade'
 };
 
 export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0 }: { data: PhoenixReadModel; onNavigateHistory?: () => void; launchRequest?: number }) {
@@ -288,16 +308,14 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
       .map(({ event }) => event);
   }, [rows, search, typeFilter, status, account, gridFilters, gridSort]);
 
-  const income = monthEvents.filter((event) => launchTypeForEvent(event.type) === 'income').reduce((sum, event) => sum + amountFromEvent(event), 0);
-  const expense = monthEvents.filter((event) => launchTypeForEvent(event.type) === 'expense').reduce((sum, event) => sum + amountFromEvent(event), 0);
-  const filteredIncome = filtered.filter((event) => launchTypeForEvent(event.type) === 'income').reduce((sum, event) => sum + amountFromEvent(event), 0);
-  const filteredExpense = filtered.filter((event) => launchTypeForEvent(event.type) === 'expense').reduce((sum, event) => sum + amountFromEvent(event), 0);
+  const monthTotals = useMemo(() => monetaryTotals(monthEvents), [monthEvents]);
+  const filteredTotals = useMemo(() => monetaryTotals(filtered), [filtered]);
   const activeGridFilters = (Object.keys(gridFilters) as GridKey[]).filter((key) => filterIsActive(gridFilters[key]));
   const toolbarFilterCount = Number(Boolean(search.trim())) + Number(typeFilter !== 'all') + Number(status !== 'all') + Number(account !== 'all');
   const activeFilterCount = activeGridFilters.length + toolbarFilterCount;
   const hasActiveFilters = activeFilterCount > 0;
-  const displayedIncome = hasActiveFilters ? filteredIncome : income;
-  const displayedExpense = hasActiveFilters ? filteredExpense : expense;
+  const displayedIncome = hasActiveFilters ? filteredTotals.income : monthTotals.income;
+  const displayedExpense = hasActiveFilters ? filteredTotals.expense : monthTotals.expense;
   const displayedResult = displayedIncome - displayedExpense;
 
   const selectedAccount = data.accounts.find((item) => item.id === draft.accountId) || null;
@@ -318,8 +336,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
     const values = new Map<string, string>();
     expenseCategories.forEach((item) => {
       const label = String(item.group || '').trim();
-      if (!label) return;
-      values.set(normalizeText(label), label);
+      if (label) values.set(normalizeText(label), label);
     });
     const all = [...values.values()].sort((left, right) => left.localeCompare(right, 'pt-BR', { sensitivity: 'base' }));
     const specific = all.filter((label) => !['despesas', 'receitas'].includes(normalizeText(label)));
@@ -393,12 +410,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
 
   function changeLaunchType(type: TxType) {
     setDraft((current) => ({
-      ...current,
-      type,
-      classification: '',
-      categoryId: '',
-      paymentMethodId: '',
-      cardId: '',
+      ...current, type, classification: '', categoryId: '', paymentMethodId: '', cardId: '',
       destinationId: type === 'transfer' ? current.destinationId : ''
     }));
     setDirty(true);
@@ -425,24 +437,18 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
       const classification = visualType === 'expense' ? (event.sourceDetails?.expenseClass || event.category?.group || '') : '';
       const groupName = visualType === 'expense' ? (event.sourceDetails?.group || event.category?.name || '') : '';
       const matchedCategory = visualType === 'expense'
-        ? data.categories.find((item) => item.isActive
-          && (!item.type || item.type === 'expense')
+        ? data.categories.find((item) => item.isActive && (!item.type || item.type === 'expense')
           && normalizeText(item.group || '') === normalizeText(classification)
           && normalizeText(item.name) === normalizeText(groupName))
         : null;
       setDraft({
-        ...initialDraft(),
-        type: visualType,
-        description: event.description,
-        accountId: event.accountId || '',
-        eventDate: event.date.slice(0, 10),
-        classification,
-        categoryId: matchedCategory?.id || event.categoryId || '',
-        paymentMethodId: event.paymentMethodId || '',
+        ...initialDraft(), type: visualType, description: event.description,
+        accountId: event.accountId || '', eventDate: event.date.slice(0, 10), classification,
+        categoryId: matchedCategory?.id || event.categoryId || '', paymentMethodId: event.paymentMethodId || '',
         notes: event.notes || ''
       });
       setAmountCents(Math.round(amountFromEvent(event) * 100));
-      setNegative(Number(event.amount) < 0 || Number(event.signedAmount) > 0 && visualType === 'expense');
+      setNegative(Number(event.amount) < 0 || (Number(event.signedAmount) > 0 && visualType === 'expense'));
     } else resetLaunch();
     setDetailEvent(null);
     setLaunchOpen(true);
@@ -474,8 +480,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
   }
 
   function reviewLaunch() {
-    if (missing.length) return;
-    setReviewed(true);
+    if (!missing.length) setReviewed(true);
   }
 
   function updateGridFilter(key: GridKey, value: PhoenixGridFilterValue) {
@@ -499,16 +504,14 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
   return <section className="px-screen px-movements-v15">
     <header className="px-screen-head">
       <div><span className="px-kicker">Lançamentos</span><h1>Controle financeiro</h1><p>Inclua e consulte eventos mantendo o histórico de auditoria separado do formulário.</p></div>
-      <div className="px-launch-head-actions">
-        <details className="px-column-chooser"><summary>Colunas</summary><div><span>Dia</span><span>Classificação</span><span>Grupo</span><span>Forma de pagamento</span><span>Modalidade</span></div></details>
-      </div>
+      <div className="px-launch-head-actions"><details className="px-column-chooser"><summary>Colunas</summary><div><span>Dia</span><span>Classificação</span><span>Grupo</span><span>Forma de pagamento</span><span>Modalidade</span></div></details></div>
     </header>
 
     <section className="px-screen-kpis">
       <article><span>{hasActiveFilters ? 'Lançamentos filtrados' : 'Lançamentos no período'}</span><strong>{hasActiveFilters ? filtered.length : monthEvents.length}</strong><small>{hasActiveFilters ? `Visão filtrada · Total do período ${monthEvents.length}` : 'Quantidade real do mês'}</small></article>
-      <article><span>Receitas</span><strong>{money.format(displayedIncome)}</strong><small>{hasActiveFilters ? `Visão filtrada · Total do período ${money.format(income)}` : 'Movimentação do período'}</small></article>
-      <article><span>Despesas</span><strong>{money.format(displayedExpense)}</strong><small>{hasActiveFilters ? `Visão filtrada · Total do período ${money.format(expense)}` : 'Movimentação do período'}</small></article>
-      <article><span>{hasActiveFilters ? 'Resultado filtrado' : 'Resultado do período'}</span><strong>{money.format(displayedResult)}</strong><small>{hasActiveFilters ? `${activeFilterCount} critério(s) ativo(s)` : 'Receitas menos despesas do período'}</small></article>
+      <article><span>Receitas monetárias</span><strong>{money.format(displayedIncome)}</strong><small>{hasActiveFilters ? `Visão filtrada · Total do período ${money.format(monthTotals.income)}` : 'Benefício alimentação separado'}</small></article>
+      <article><span>Despesas monetárias</span><strong>{money.format(displayedExpense)}</strong><small>{hasActiveFilters ? `Visão filtrada · Total do período ${money.format(monthTotals.expense)}` : 'Estornos reduzem a despesa; benefício separado'}</small></article>
+      <article><span>{hasActiveFilters ? 'Resultado monetário filtrado' : 'Resultado monetário do período'}</span><strong>{money.format(displayedResult)}</strong><small>{hasActiveFilters ? `${activeFilterCount} critério(s) ativo(s)` : 'Receitas monetárias menos despesas monetárias'}</small></article>
     </section>
 
     <section className="px-card px-table-card">
@@ -526,6 +529,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
           <thead><tr><th>{gridHeader('Vencimento', 'dueDate', 'date')}</th><th>{gridHeader('Data da compra', 'purchaseDate', 'date')}</th><th>{gridHeader('Dia', 'weekday', 'multi', gridOptions.weekday)}</th><th>{gridHeader('Tipo', 'type', 'multi', gridOptions.type)}</th><th>{gridHeader('Descrição', 'description', 'text')}</th><th>{gridHeader('Receita', 'income', 'number')}</th><th>{gridHeader('Classificação', 'classification', 'multi', gridOptions.classification)}</th><th>{gridHeader('Grupo', 'group', 'multi', gridOptions.group)}</th><th>{gridHeader('Despesa', 'expense', 'number')}</th><th>{gridHeader('Forma de pagamento', 'paymentMethod', 'multi', gridOptions.paymentMethod)}</th><th>{gridHeader('Situação', 'status', 'multi', gridOptions.status)}</th><th>{gridHeader('Modalidade', 'modality', 'multi', gridOptions.modality)}</th><th>Detalhes</th></tr></thead>
           <tbody>{filtered.map((event) => {
             const visualType = launchTypeForEvent(event.type);
+            const effect = displayEffect(event);
             const isIncome = visualType === 'income';
             return <tr key={event.id}>
               <td data-label="Vencimento">{date.format(new Date(event.date))}</td>
@@ -533,10 +537,10 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
               <td data-label="Dia">{event.sourceDetails?.weekday || weekday(event.date)}</td>
               <td data-label="Tipo"><span className={`px-type-flag ${visualType}`}>{isIncome ? 'RECEITA' : visualType === 'transfer' ? 'TRANSFERÊNCIA' : 'DESPESA'}</span></td>
               <td data-label="Descrição"><strong>{event.description}</strong></td>
-              <td data-label="Receita" className="px-money positive">{isIncome ? money.format(amountFromEvent(event)) : '—'}</td>
+              <td data-label="Receita" className={`px-money ${effect < 0 ? 'negative' : 'positive'}`}>{isIncome ? money.format(effect) : '—'}</td>
               <td data-label="Classificação">{sourceClassification(event)}</td>
               <td data-label="Grupo">{sourceGroup(event)}</td>
-              <td data-label="Despesa" className="px-money negative">{visualType === 'expense' ? money.format(amountFromEvent(event)) : '—'}</td>
+              <td data-label="Despesa" className={`px-money ${effect < 0 ? 'positive' : 'negative'}`}>{visualType === 'expense' ? money.format(effect) : '—'}</td>
               <td data-label="Forma de pagamento">{sourcePayment(event)}</td>
               <td data-label="Situação"><span className={`px-status ${event.status}`}>{sourceSituation(event)}</span></td>
               <td data-label="Modalidade">{sourceModality(event)}</td>
@@ -548,7 +552,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
       </div>
     </section>
 
-    <div className="px-rule-strip"><span>✓ Usuário, conta e sincronização permanecem vinculados.</span><span>✓ Benefício não compõe saldo monetário.</span><span>✓ Histórico de auditoria permanece separado.</span></div>
+    <div className="px-rule-strip"><span>✓ Usuário, conta e sincronização permanecem vinculados.</span><span>✓ Benefício não compõe saldo monetário.</span><span>✓ Estornos preservam efeito reverso.</span></div>
 
     {launchOpen ? <>
       <button className="px-launch-backdrop" type="button" aria-label="Fechar novo lançamento" onClick={requestCloseLaunch} />
@@ -617,7 +621,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
     {detailEvent ? <aside className="px-detail-drawer open" aria-label="Detalhes do lançamento">
       <div className="px-drawer-head"><div><span className="px-kicker">Lançamento</span><h2>Detalhes</h2></div><button className="px-icon-btn" type="button" onClick={() => setDetailEvent(null)}>×</button></div>
       <p className="px-detail-description">{detailEvent.description}</p>
-      <div className="px-detail-grid"><div><span>Data</span><strong>{date.format(new Date(detailEvent.date))}</strong></div><div><span>Situação</span><strong>{eventStatus(detailEvent.status)}</strong></div><div><span>Conta</span><strong>{detailEvent.account?.name || 'Não informada'}</strong></div><div><span>Sincronização</span><strong>Confirmada na leitura atual</strong></div><div><span>Tipo</span><strong>{eventType(detailEvent.type)}</strong></div><div><span>Valor</span><strong>{money.format(amountFromEvent(detailEvent))}</strong></div><div><span>Classificação</span><strong>{sourceClassification(detailEvent)}</strong></div><div><span>Grupo</span><strong>{sourceGroup(detailEvent)}</strong></div><div><span>Forma</span><strong>{detailEvent.paymentMethod?.name || detailEvent.sourceDetails?.paymentMethod || '—'}</strong></div><div><span>Modalidade</span><strong>{detailEvent.sourceDetails?.modality || '—'}</strong></div></div>
+      <div className="px-detail-grid"><div><span>Data</span><strong>{date.format(new Date(detailEvent.date))}</strong></div><div><span>Situação</span><strong>{eventStatus(detailEvent.status)}</strong></div><div><span>Conta</span><strong>{detailEvent.account?.name || 'Não informada'}</strong></div><div><span>Sincronização</span><strong>Confirmada na leitura atual</strong></div><div><span>Tipo</span><strong>{eventType(detailEvent.type)}</strong></div><div><span>Valor</span><strong>{money.format(displayEffect(detailEvent))}</strong></div><div><span>Classificação</span><strong>{sourceClassification(detailEvent)}</strong></div><div><span>Grupo</span><strong>{sourceGroup(detailEvent)}</strong></div><div><span>Forma</span><strong>{detailEvent.paymentMethod?.name || detailEvent.sourceDetails?.paymentMethod || '—'}</strong></div><div><span>Modalidade</span><strong>{detailEvent.sourceDetails?.modality || '—'}</strong></div></div>
       {detailEvent.notes ? <div className="px-notice">{detailEvent.notes}</div> : null}
       <div className="px-notice">A edição permanece em simulação. Quando a escrita for habilitada, qualquer alteração deverá preservar rastreabilidade e histórico.</div>
       <div className="px-detail-actions"><button className="px-primary-action" type="button" onClick={() => openLaunch(detailEvent)}>Preparar edição</button><button className="px-secondary-action" type="button" onClick={() => { setDetailEvent(null); onNavigateHistory?.(); }}>Ver histórico</button></div>
