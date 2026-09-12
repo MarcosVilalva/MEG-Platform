@@ -24,12 +24,13 @@ export type PaymentMethod = {
   isActive: boolean;
 };
 
+export type FinancialEventType = 'income' | 'expense' | 'transfer' | 'investment' | 'redemption' | 'adjustment';
 export type FinancialEventStatus = 'draft' | 'planned' | 'confirmed' | 'paid' | 'reconciled' | 'archived';
 
 export type FinancialEvent = {
   id: string;
   description: string;
-  type: 'income' | 'expense';
+  type: FinancialEventType;
   status: FinancialEventStatus;
   date: string;
   competence: string;
@@ -57,7 +58,7 @@ export type FinancialEvent = {
 
 export type FinancialEventInput = {
   description: string;
-  type: 'income' | 'expense';
+  type: FinancialEventType;
   status: FinancialEventStatus;
   date: string;
   amount: number;
