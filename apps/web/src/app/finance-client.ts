@@ -57,6 +57,13 @@ export type FinancialEvent = {
   idempotentReplay?: boolean;
 };
 
+export type FinancialEventPage = {
+  items: FinancialEvent[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 export type FinancialEventInput = {
   description: string;
   type: FinancialEventType;
@@ -133,6 +140,12 @@ export type FinanceSummary = {
   } | null;
   topCategories: Array<{ name: string; amount: number }>;
 };
+export type BenefitSummary = {
+  month: string;
+  balance: number;
+  credits: number;
+  used: number;
+};
 export const financeClient = {
   getAnalytics: (month: string) =>
     authorizedRequest<FinancialAnalytics>(`/finance/analytics?month=${encodeURIComponent(month)}`),
@@ -146,8 +159,12 @@ export const financeClient = {
     authorizedRequest<FinancialCashflow>(`/finance/cashflow?month=${encodeURIComponent(month)}`),
   getSummary: (month: string) =>
     authorizedRequest<FinanceSummary>(`/finance/summary?month=${encodeURIComponent(month)}`),
+  getBenefitSummary: (month: string) =>
+    authorizedRequest<BenefitSummary>(`/finance/benefit-summary?month=${encodeURIComponent(month)}`),
+  listEventsForMonth: (month: string) =>
+    authorizedRequest<FinancialEventPage>(`/finance/events/month?month=${encodeURIComponent(month)}`),
   listEvents: (page = 1, pageSize = 50, search = '') =>
-    authorizedRequest<{ items: FinancialEvent[]; total: number; page: number; pageSize: number }>(
+    authorizedRequest<FinancialEventPage>(
       `/finance/events?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`
     ),
   createEvent: (data: FinancialEventInput & { operationId?: string }) => authorizedRequest<FinancialEvent>('/finance/events', {
