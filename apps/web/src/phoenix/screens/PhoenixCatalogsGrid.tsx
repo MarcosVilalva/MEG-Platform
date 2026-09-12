@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { CreditCard } from '../../app/cards-client';
-import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterOption, type PhoenixGridFilterValue, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
+import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import { resolvePhoenixCardIdentity } from '../card-identity';
 import type { PhoenixReadModel } from '../contracts';
 import '../phoenix-screens.css';
@@ -143,7 +143,7 @@ function compare(left: string | number | null, right: string | number | null, di
   return direction === 'asc' ? result : -result;
 }
 
-function optionList(rows: CatalogRow[], key: CatalogGridKey): PhoenixGridFilterOption[] {
+function optionList(rows: CatalogRow[], key: CatalogGridKey): PhoenixGridOption[] {
   const values = new Map<string, { label: string; count: number }>();
   rows.forEach((row) => {
     const label = String(row[key] ?? '—');
@@ -267,7 +267,7 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
     setSortByTab((current) => ({ ...current, [tab]: null }));
   }
 
-  function header(label: string, key: CatalogGridKey, kind: PhoenixGridFilterKind, list?: PhoenixGridFilterOption[]) {
+  function header(label: string, key: CatalogGridKey, kind: PhoenixGridFilterKind, list?: PhoenixGridOption[]) {
     return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} options={list} sort={sort?.key === key ? sort.direction : null} onSort={(direction) => setSort(key, direction)} onChange={(value) => updateFilter(key, value)} /></div>;
   }
 
