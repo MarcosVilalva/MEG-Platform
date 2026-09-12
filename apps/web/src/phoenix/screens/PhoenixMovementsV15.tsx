@@ -87,8 +87,21 @@ function eventStatus(value: string) {
   return ({ draft: 'Rascunho', planned: 'Pendente', confirmed: 'Confirmado', paid: 'Pago', reconciled: 'Conciliado', archived: 'Arquivado' } as Record<string, string>)[value] || value;
 }
 
-function eventType(value: string) {
-  return value === 'income' ? 'Receita' : 'Despesa';
+function eventType(value: FinancialEvent['type']) {
+  return ({
+    income: 'Receita',
+    expense: 'Despesa',
+    transfer: 'Transferência',
+    investment: 'Investimento',
+    redemption: 'Resgate',
+    adjustment: 'Ajuste'
+  } as Record<FinancialEvent['type'], string>)[value] || value;
+}
+
+function launchTypeForEvent(value: FinancialEvent['type']): TxType {
+  if (value === 'income' || value === 'redemption') return 'income';
+  if (value === 'transfer') return 'transfer';
+  return 'expense';
 }
 
 function amountFromEvent(event: FinancialEvent) {
@@ -131,14 +144,15 @@ export function PhoenixMovementsV15({ data, onNavigateHistory }: { data: Phoenix
   const monthEvents = useMemo(() => data.events.items.filter((event) => event.competence === data.month), [data]);
   const filtered = useMemo(() => monthEvents.filter((event) => {
     const haystack = `${event.description} ${event.category?.name || ''} ${event.category?.group || ''} ${event.account?.name || ''} ${event.paymentMethod?.name || ''}`.toLocaleLowerCase('pt-BR');
+    const visualType = launchTypeForEvent(event.type);
     return haystack.includes(search.trim().toLocaleLowerCase('pt-BR'))
-      && (typeFilter === 'all' || event.type === typeFilter)
+      && (typeFilter === 'all' || visualType === typeFilter)
       && (status === 'all' || event.status === status)
       && (account === 'all' || event.accountId === account);
   }), [monthEvents, search, typeFilter, status, account]);
 
-  const income = monthEvents.filter((event) => event.type === 'income').reduce((sum, event) => sum + amountFromEvent(event), 0);
-  const expense = monthEvents.filter((event) => event.type === 'expense').reduce((sum, event) => sum + amountFromEvent(event), 0);
+  const income = monthEvents.filter((event) => launchTypeForEvent(event.type) === 'income').reduce((sum, event) => sum + amountFromEvent(event), 0);
+  const expense = monthEvents.filter((event) => launchTypeForEvent(event.type) === 'expense').reduce((sum, event) => sum + amountFromEvent(event), 0);
   const pending = monthEvents.filter((event) => event.status === 'planned').length;
 
   const selectedAccount = data.accounts.find((item) => item.id === draft.accountId) || null;
@@ -213,7 +227,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory }: { data: Phoenix
     if (event) {
       setDraft({
         ...initialDraft(),
-        type: event.type,
+        type: launchTypeForEvent(event.type),
         description: event.description,
         accountId: event.accountId || '',
         eventDate: event.date.slice(0, 10),
@@ -222,7 +236,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory }: { data: Phoenix
         notes: event.notes || ''
       });
       setAmountCents(Math.round(amountFromEvent(event) * 100));
-      setNegative(Number(event.amount) < 0 || Number(event.signedAmount) > 0 && event.type === 'expense');
+      setNegative(Number(event.amount) < 0 || Number(event.signedAmount) > 0 && launchTypeForEvent(event.type) === 'expense');
     } else resetLaunch();
     setDetailEvent(null);
     setLaunchOpen(true);
@@ -286,17 +300,18 @@ export function PhoenixMovementsV15({ data, onNavigateHistory }: { data: Phoenix
         <table className="px-data-table px-v15-launch-table">
           <thead><tr><th>Vencimento</th><th>Data da compra</th><th>Dia</th><th>Tipo</th><th>Descrição</th><th>Receita</th><th>Classificação</th><th>Grupo</th><th>Despesa</th><th>Forma de pagamento</th><th>Situação</th><th>Modalidade</th><th>Detalhes</th></tr></thead>
           <tbody>{filtered.map((event) => {
-            const isIncome = event.type === 'income';
+            const visualType = launchTypeForEvent(event.type);
+            const isIncome = visualType === 'income';
             return <tr key={event.id}>
               <td data-label="Vencimento">{date.format(new Date(event.date))}</td>
               <td data-label="Data da compra">{date.format(new Date(event.date))}</td>
               <td data-label="Dia">{event.sourceDetails?.weekday || weekday(event.date)}</td>
-              <td data-label="Tipo"><span className={`px-type-flag ${event.type}`}>{isIncome ? 'RECEITA' : 'DESPESA'}</span></td>
+              <td data-label="Tipo"><span className={`px-type-flag ${visualType}`}>{isIncome ? 'RECEITA' : visualType === 'transfer' ? 'TRANSFERÊNCIA' : 'DESPESA'}</span></td>
               <td data-label="Descrição"><strong>{event.description}</strong></td>
               <td data-label="Receita" className="px-money positive">{isIncome ? money.format(amountFromEvent(event)) : '—'}</td>
               <td data-label="Classificação">{sourceClassification(event)}</td>
               <td data-label="Grupo">{sourceGroup(event)}</td>
-              <td data-label="Despesa" className="px-money negative">{!isIncome ? money.format(amountFromEvent(event)) : '—'}</td>
+              <td data-label="Despesa" className="px-money negative">{visualType === 'expense' ? money.format(amountFromEvent(event)) : '—'}</td>
               <td data-label="Forma de pagamento">{event.sourceDetails?.paymentMethod || event.paymentMethod?.name || '—'}</td>
               <td data-label="Situação"><span className={`px-status ${event.status}`}>{event.sourceDetails?.situation || eventStatus(event.status)}</span></td>
               <td data-label="Modalidade">{event.sourceDetails?.modality || '—'}</td>
