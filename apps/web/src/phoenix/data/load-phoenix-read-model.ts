@@ -181,7 +181,7 @@ async function fetchPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
     sourcePolicy: {
       mode: 'read-only',
       summary: 'finance-domain',
-      events: 'finance-domain-month-with-source-payload-compatibility',
+      events: 'finance-domain-month',
       financialAudit: 'finance-audit-log',
       activities: 'app-state-activity-log-legacy',
       legacyTransactions: 'app-state-transactions-read-only',
