@@ -9,6 +9,7 @@ import { payablesClient } from '../../app/payables-client';
 import { receivablesClient } from '../../app/receivables-client';
 import type {
   PhoenixActivity,
+  PhoenixFinancialAuditPage,
   PhoenixNormalizationPreview,
   PhoenixReadModel,
   PhoenixWorkspaceUsers
@@ -58,8 +59,8 @@ async function loadWorkspaceUsers(role: string): Promise<PhoenixWorkspaceUsers> 
  * - totais financeiros vêm dos serviços oficiais do backend;
  * - consultas independentes são iniciadas em paralelo;
  * - a normalização é observada explicitamente para evitar esconder fallback;
- * - o histórico operacional é lido do activityLog persistido no AppState,
- *   sem fingir que ele equivale ao AuditLog estrutural do banco;
+ * - auditoria financeira nova vem do contrato /finance/audit;
+ * - activityLog permanece carregado somente como histórico legado anterior à auditoria normalizada;
  * - usuários são consultados pela rota administrativa oficial e nunca alterados aqui;
  * - telas Web completo usam somente endpoints de leitura dos domínios oficiais.
  */
@@ -87,6 +88,7 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
     customers,
     receivables,
     events,
+    financialAudit,
     workspaceUsers
   ] = await Promise.all([
     getApiHealth(),
@@ -104,6 +106,7 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
     receivablesClient.listCustomers(),
     receivablesClient.listReceivables(),
     financeClient.listEvents(1, 100, ''),
+    authenticatedRequest<PhoenixFinancialAuditPage>('/finance/audit?page=1&pageSize=100'),
     loadWorkspaceUsers(session.user.role)
   ]);
 
@@ -131,13 +134,15 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
     customers,
     receivables,
     events,
+    financialAudit,
     activities,
     workspaceUsers,
     sourcePolicy: {
       mode: 'read-only',
       summary: 'finance-domain',
       events: 'finance-domain',
-      activities: 'app-state-activity-log',
+      financialAudit: 'finance-audit-log',
+      activities: 'app-state-activity-log-legacy',
       users: 'auth-admin-read',
       receivables: 'receivables-domain',
       analytics: 'finance-domain',
