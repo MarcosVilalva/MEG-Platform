@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@meg/database';
+import { ReceivableDomainError, receiveReceivableProtected } from './service';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
@@ -33,11 +34,18 @@ const receiptSchema = z.object({
   fineAmount: z.coerce.number().min(0).default(0),
   accountId: z.string().optional().nullable(),
   paymentMethodId: z.string().optional().nullable(),
-  notes: z.string().max(500).optional().nullable()
+  notes: z.string().max(500).optional().nullable(),
+  operationId: z.string().trim().min(8).max(128).optional()
 });
 
 function validationError(reply: FastifyReply, details: unknown) {
   return reply.code(400).send({ error: 'VALIDATION_ERROR', details });
+}
+
+function domainError(reply: FastifyReply, error: unknown) {
+  if (!(error instanceof ReceivableDomainError)) throw error;
+  const status = error.code === 'RECEIVABLE_NOT_FOUND' ? 404 : error.code === 'OPERATION_ID_REUSED' ? 409 : 400;
+  return reply.code(status).send({ error: error.code, ...(error.details || {}) });
 }
 
 export async function receivableRoutes(app: FastifyInstance) {
@@ -104,51 +112,11 @@ export async function receivableRoutes(app: FastifyInstance) {
     const parsed = receiptSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
-    const receivable = await prisma.receivable.findFirst({ where: { id, userId: request.user.sub } });
-    if (!receivable) return reply.code(404).send({ error: 'RECEIVABLE_NOT_FOUND' });
-
-    const principal = Math.abs(parsed.data.amount);
-    const open = Number(receivable.openAmount);
-    if (principal > open) return reply.code(400).send({ error: 'AMOUNT_EXCEEDS_OPEN_BALANCE' });
-
-    return prisma.$transaction(async (tx) => {
-      const event = parsed.data.accountId ? await tx.financialEvent.create({
-        data: {
-          userId: request.user.sub,
-          description: `Recebimento: ${receivable.description}`,
-          type: 'income',
-          status: 'paid',
-          date: new Date(parsed.data.receivedAt),
-          competence: parsed.data.receivedAt.slice(0, 7),
-          amount: principal + parsed.data.interestAmount + parsed.data.fineAmount,
-          signedAmount: principal + parsed.data.interestAmount + parsed.data.fineAmount,
-          accountId: parsed.data.accountId,
-          paymentMethodId: parsed.data.paymentMethodId,
-          notes: parsed.data.notes
-        }
-      }) : null;
-
-      const receipt = await tx.receipt.create({
-        data: {
-          receivableId: id,
-          amount: principal,
-          receivedAt: new Date(parsed.data.receivedAt),
-          interestAmount: parsed.data.interestAmount,
-          fineAmount: parsed.data.fineAmount,
-          accountId: parsed.data.accountId,
-          paymentMethodId: parsed.data.paymentMethodId,
-          financialEventId: event?.id,
-          notes: parsed.data.notes
-        }
-      });
-
-      const remaining = Math.max(0, open - principal);
-      await tx.receivable.update({
-        where: { id },
-        data: { openAmount: remaining, status: remaining === 0 ? 'paid' : 'partial' }
-      });
-
+    try {
+      const receipt = await receiveReceivableProtected(request.user.sub, id, parsed.data);
       return reply.code(201).send(receipt);
-    });
+    } catch (error) {
+      return domainError(reply, error);
+    }
   });
 }
