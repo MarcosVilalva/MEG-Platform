@@ -37,7 +37,7 @@ export async function createPayablesProtected(userId: string, input: CreatePayab
     }
 
     if (input.categoryId) {
-      const category = await tx.category.findFirst({ where: { id: input.categoryId, isActive: true }, select: { id: true } });
+      const category = await tx.category.findFirst({ where: { id: input.categoryId, userId, isActive: true }, select: { id: true } });
       if (!category) throw new PayableDomainError('INVALID_CATEGORY');
     }
 
