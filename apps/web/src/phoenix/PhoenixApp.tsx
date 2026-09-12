@@ -101,7 +101,7 @@ function financialActionLabel(action: string) {
   if (normalized.includes('ARCHIVED') || normalized.includes('DELETED')) return 'Lançamento arquivado';
   if (normalized.includes('PAYMENT') || normalized.includes('PAID')) return 'Pagamento confirmado';
   if (normalized.includes('TRANSFER')) return 'Transferência registrada';
-  return action.replaceAll('_', ' ').toLocaleLowerCase('pt-BR').replace(/^./, (letter) => letter.toUpperCase());
+  return action.replace(/_/g, ' ').toLocaleLowerCase('pt-BR').replace(/^./, (letter) => letter.toUpperCase());
 }
 
 function todayIso() {
@@ -271,6 +271,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   }
 
   function chooseMonth(next: string) {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(next)) return;
     setMonth(next);
     setPeriodOpen(false);
   }
