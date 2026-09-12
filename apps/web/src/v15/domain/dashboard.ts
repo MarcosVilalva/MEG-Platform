@@ -22,7 +22,14 @@ function isRealized(item: { type: string; status: string }) {
 export function deriveDashboard(transactions: LegacyTransaction[], period: PeriodSelection) {
   const events = normalizeEvents(transactions);
   const monetary = events.filter((item) => !isBenefit(item));
-  const before = monetary.filter((item) => day(item.date) < `${period.month}-01` && isRealized(item));
+  const openingBoundary = period.mode === 'month'
+    ? `${period.month}-01`
+    : period.mode === 'range'
+      ? period.start
+      : null;
+  const before = openingBoundary
+    ? monetary.filter((item) => day(item.date) < openingBoundary && isRealized(item))
+    : [];
   const inPeriod = (value: string) => period.mode === 'all'
     || (period.mode === 'range' ? value >= period.start && value <= period.end : value.startsWith(period.month));
 
