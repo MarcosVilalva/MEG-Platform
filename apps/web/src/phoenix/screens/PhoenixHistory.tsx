@@ -50,7 +50,7 @@ function insidePeriod(item: PhoenixActivity, period: PeriodFilter) {
 }
 
 function csvCell(value: unknown) {
-  return `"${String(value ?? '').replaceAll('"', '""')}"`;
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
 }
 
 function exportHistory(items: PhoenixActivity[]) {
