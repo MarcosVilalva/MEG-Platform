@@ -23,6 +23,7 @@ export type FinancialAuditAction =
   | 'CARD_PURCHASE_CREATED'
   | 'CARD_PURCHASE_CANCELLED'
   | 'CARD_STATEMENT_PAID'
+  | 'RECEIVABLE_CREATED'
   | 'RECEIVABLE_RECEIVED';
 
 function jsonValue(value: unknown) {
