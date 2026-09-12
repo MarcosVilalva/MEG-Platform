@@ -71,7 +71,12 @@ export async function repairLegacyImportedEvents() {
     // Reprocessar todas as linhas importadas torna a correção idempotente e
     // também recupera categoria e forma de pagamento de eventos já renomeados.
     where: { eventId: { not: null } },
-    select: { id: true, rawData: true, eventId: true }
+    select: {
+      id: true,
+      rawData: true,
+      eventId: true,
+      event: { select: { userId: true } }
+    }
   });
   if (!rows.length) return { scanned: 0, repaired: 0, issues: 0 };
 
@@ -79,34 +84,42 @@ export async function repairLegacyImportedEvents() {
   const paymentCache = new Map<string, string>();
   let repaired = 0;
   let issues = 0;
-  const prepared: Array<{ eventId: string; data: ReturnType<typeof parseImportedRawRow>; categoryId?: string; paymentMethodId?: string }> = [];
+  const prepared: Array<{ eventId: string; userId: string; data: ReturnType<typeof parseImportedRawRow>; categoryId?: string; paymentMethodId?: string }> = [];
 
   for (const row of rows) {
     if (!row.eventId) continue;
+    const userId = row.event?.userId;
+    // Um evento legado sem proprietário explícito não autoriza atribuição por
+    // inferência. Ele deve permanecer como pendência de migração/revisão.
+    if (!userId) {
+      issues += 1;
+      continue;
+    }
     try {
       const data = parseImportedRawRow(row.rawData);
       let categoryId: string | undefined;
       {
-        const key = `${data.categoryGroup}|${data.categoryName}`;
+        const key = `${userId}|${data.categoryGroup}|${data.categoryName}|${data.type}`;
         categoryId = categoryCache.get(key);
         if (!categoryId) {
-          const category = await prisma.category.findFirst({ where: { name: data.categoryName, group: data.categoryGroup, type: data.type } })
-            ?? await prisma.category.create({ data: { name: data.categoryName, group: data.categoryGroup, type: data.type } });
+          const category = await prisma.category.findFirst({ where: { userId, name: data.categoryName, group: data.categoryGroup, type: data.type } })
+            ?? await prisma.category.create({ data: { userId, name: data.categoryName, group: data.categoryGroup, type: data.type } });
           categoryId = category.id;
           categoryCache.set(key, category.id);
         }
       }
       let paymentMethodId: string | undefined;
       if (data.paymentName && normalize(data.paymentName) !== 'NAO INFORMADO') {
-        paymentMethodId = paymentCache.get(data.paymentName);
+        const key = `${userId}|${data.paymentName}`;
+        paymentMethodId = paymentCache.get(key);
         if (!paymentMethodId) {
-          const payment = await prisma.paymentMethod.findUnique({ where: { name: data.paymentName } })
-            ?? await prisma.paymentMethod.create({ data: { name: data.paymentName, type: 'other' } });
+          const payment = await prisma.paymentMethod.findFirst({ where: { userId, name: data.paymentName } })
+            ?? await prisma.paymentMethod.create({ data: { userId, name: data.paymentName, type: 'other' } });
           paymentMethodId = payment.id;
-          paymentCache.set(data.paymentName, payment.id);
+          paymentCache.set(key, payment.id);
         }
       }
-      prepared.push({ eventId: row.eventId, data, categoryId, paymentMethodId });
+      prepared.push({ eventId: row.eventId, userId, data, categoryId, paymentMethodId });
     } catch {
       issues += 1;
     }
@@ -116,8 +129,8 @@ export async function repairLegacyImportedEvents() {
   // pequenos mantêm a manutenção opcional abaixo desse limite.
   for (let index = 0; index < prepared.length; index += 4) {
     const batch = prepared.slice(index, index + 4);
-    await Promise.all(batch.map(({ eventId, data, categoryId, paymentMethodId }) => prisma.financialEvent.update({
-      where: { id: eventId },
+    await Promise.all(batch.map(({ eventId, userId, data, categoryId, paymentMethodId }) => prisma.financialEvent.updateMany({
+      where: { id: eventId, userId },
       data: {
         description: data.description,
         type: data.type,
@@ -139,7 +152,7 @@ export async function repairLegacyImportedEvents() {
   }
 
   if (rows.length > 0 && repaired === 0) {
-    throw new Error(`IMPORT_REPAIR_ABORTED: ${issues} de ${rows.length} linhas não puderam ser interpretadas.`);
+    throw new Error(`IMPORT_REPAIR_ABORTED: ${issues} de ${rows.length} linhas não puderam ser interpretadas ou não possuem proprietário.`);
   }
   return { scanned: rows.length, repaired, issues };
 }
