@@ -20,13 +20,13 @@ export async function createPayablesProtected(userId: string, input: CreatePayab
   const firstDay = input.dueDate.slice(0, 10);
   const anchor = parseIsoDay(firstDay)?.day;
   if (!anchor) throw new PayableDomainError('INVALID_DUE_DATE');
-  const workspace = input.operationId ? await resolveWorkspaceContext(userId) : null;
+  const workspace = await resolveWorkspaceContext(userId);
   const requestHash = input.operationId
     ? mutationRequestHash({ ...input, operationId: undefined })
     : null;
 
   return serializableFinancialTransaction(async (tx) => {
-    if (input.operationId && workspace && requestHash) {
+    if (input.operationId && requestHash) {
       const previous = await tx.cloudMutationReceipt.findUnique({
         where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
       });
@@ -76,6 +76,7 @@ export async function createPayablesProtected(userId: string, input: CreatePayab
           installmentNo: index + 1,
           installmentQty: input.installmentQty,
           sourceTotalAmount: input.totalAmount,
+          workspaceId: workspace.workspaceId,
         },
       });
     }
@@ -86,7 +87,7 @@ export async function createPayablesProtected(userId: string, input: CreatePayab
       installments: created,
       idempotentReplay: false,
     };
-    if (input.operationId && workspace && requestHash) {
+    if (input.operationId && requestHash) {
       const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
       await tx.cloudMutationReceipt.create({ data: receiptCreateData({
         workspaceId: workspace.workspaceId,
