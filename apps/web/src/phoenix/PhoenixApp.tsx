@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
 import { loadPhoenixReadModel } from './data/load-phoenix-read-model';
 import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalette';
-import { PhoenixCards, PhoenixCatalogs, PhoenixPayables } from './screens/PhoenixReadScreens';
+import { PhoenixCards, PhoenixPayables } from './screens/PhoenixReadScreens';
+import { PhoenixCatalogsGrid } from './screens/PhoenixCatalogsGrid';
 import { PhoenixMovementsV15 } from './screens/PhoenixMovementsV15';
 import { PhoenixHistory } from './screens/PhoenixHistory';
 import { PhoenixUsers } from './screens/PhoenixUsers';
@@ -207,7 +208,7 @@ function ReadScreen({ view, data, month, theme, launchRequest, onToggleTheme, on
   if (view === 'history') return <PhoenixHistory data={data} />;
   if (view === 'payables') return <PhoenixPayables data={data} />;
   if (view === 'cards') return <PhoenixCards data={data} />;
-  if (view === 'catalogs') return <PhoenixCatalogs data={data} />;
+  if (view === 'catalogs') return <PhoenixCatalogsGrid data={data} />;
   if (view === 'users') return <PhoenixUsers data={data} />;
   if (view === 'settings') return <PhoenixSettings data={data} theme={theme} onToggleTheme={onToggleTheme} />;
   if (view === 'receivables') return <PhoenixReceivables data={data} />;
