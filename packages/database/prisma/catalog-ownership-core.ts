@@ -10,15 +10,19 @@ export type CatalogReference = {
 export type CatalogRow = {
   id: string;
   label: string;
+  currentOwnerId?: string | null;
 };
 
 export type CatalogOwnershipPlanItem = {
   catalogId: string;
   label: string;
+  existingOwnerId: string | null;
+  referencedOwners: string[];
   owners: string[];
   primaryOwnerId: string | null;
   cloneOwnerIds: string[];
   unresolved: boolean;
+  ownerConflict: boolean;
   requiresReview: boolean;
   referenceCount: number;
   ownerlessReferenceCount: number;
@@ -32,23 +36,31 @@ export type CatalogOwnershipPlan = {
   singleOwner: number;
   multiOwner: number;
   unresolved: number;
+  ownerConflicts: number;
   requiresReview: number;
   items: CatalogOwnershipPlanItem[];
 };
 
+function cleanOwner(value: string | null | undefined) {
+  const normalized = value?.trim();
+  return normalized || null;
+}
+
 function uniqueSorted(values: Array<string | null | undefined>) {
-  return [...new Set(values.filter((value): value is string => Boolean(value?.trim())).map((value) => value.trim()))].sort();
+  return [...new Set(values.map(cleanOwner).filter((value): value is string => Boolean(value)))].sort();
 }
 
 /**
  * Planeja o backfill sem alterar dados.
  *
  * Regra canônica:
+ * - proprietário já gravado no catálogo é evidência primária e não é descartado;
  * - uma referência pertence ao usuário do domínio que a utiliza;
- * - catálogo usado por um usuário pode manter o ID atual;
+ * - catálogo usado por um único usuário pode manter o ID atual;
  * - catálogo compartilhado entre usuários deve ser clonado por proprietário;
- * - catálogo sem referência não recebe proprietário por adivinhação;
- * - qualquer referência sem userId exige revisão antes de uma migração destrutiva.
+ * - catálogo sem proprietário nem referência não recebe proprietário por adivinhação;
+ * - referência sem userId exige revisão antes de qualquer migração destrutiva;
+ * - proprietário gravado incompatível com todas as referências exige revisão manual.
  */
 export function planCatalogOwnership(
   kind: CatalogKind,
@@ -64,17 +76,27 @@ export function planCatalogOwnership(
 
   const items = catalogs.map((catalog) => {
     const refs = refsByCatalog.get(catalog.id) || [];
-    const owners = uniqueSorted(refs.map((reference) => reference.userId));
-    const ownerlessReferenceCount = refs.filter((reference) => !reference.userId?.trim()).length;
-    const primaryOwnerId = owners[0] || null;
+    const referencedOwners = uniqueSorted(refs.map((reference) => reference.userId));
+    const existingOwnerId = cleanOwner(catalog.currentOwnerId);
+    const ownerlessReferenceCount = refs.filter((reference) => !cleanOwner(reference.userId)).length;
+    const ownerConflict = Boolean(existingOwnerId && referencedOwners.length > 0 && !referencedOwners.includes(existingOwnerId));
+    const primaryOwnerId = existingOwnerId || referencedOwners[0] || null;
+    const cloneOwnerIds = referencedOwners.filter((ownerId) => ownerId !== primaryOwnerId);
+    const owners = uniqueSorted([existingOwnerId, ...referencedOwners]);
+    const unresolved = primaryOwnerId === null;
+    const requiresReview = unresolved || ownerlessReferenceCount > 0 || ownerConflict;
+
     return {
       catalogId: catalog.id,
       label: catalog.label,
+      existingOwnerId,
+      referencedOwners,
       owners,
       primaryOwnerId,
-      cloneOwnerIds: owners.slice(1),
-      unresolved: owners.length === 0,
-      requiresReview: owners.length === 0 || ownerlessReferenceCount > 0,
+      cloneOwnerIds,
+      unresolved,
+      ownerConflict,
+      requiresReview,
       referenceCount: refs.length,
       ownerlessReferenceCount,
       sources: uniqueSorted(refs.map((reference) => reference.source)),
@@ -88,6 +110,7 @@ export function planCatalogOwnership(
     singleOwner: items.filter((item) => item.owners.length === 1).length,
     multiOwner: items.filter((item) => item.owners.length > 1).length,
     unresolved: items.filter((item) => item.unresolved).length,
+    ownerConflicts: items.filter((item) => item.ownerConflict).length,
     requiresReview: items.filter((item) => item.requiresReview).length,
     items,
   };
@@ -115,6 +138,7 @@ export function ownershipPlanSummary(plans: CatalogOwnershipPlan[]) {
     singleOwner: plan.singleOwner,
     multiOwner: plan.multiOwner,
     unresolved: plan.unresolved,
+    ownerConflicts: plan.ownerConflicts,
     requiresReview: plan.requiresReview,
     clonesRequired: plan.items.reduce((sum, item) => sum + item.cloneOwnerIds.length, 0),
     ownerlessReferences: plan.items.reduce((sum, item) => sum + item.ownerlessReferenceCount, 0),
