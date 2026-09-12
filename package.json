@@ -22,7 +22,7 @@
     "check": "npm-run-all test build",
     "test": "npm-run-all test:visual-clean-room test:phoenix-clean-room test:core test:catalog-ownership test:imports test:notifications test:auth test:cors test:commercial test:app-state test:finance test:legacy-finance test:legacy-state-patch test:cloud-write-ahead test:durable-outbox test:cloud-state-properties test:state-recovery test:recovery-center test:activity-log test:currency-mask test:app-update-release test:transaction-editor test:transaction-status-policy test:stable-grid-filters test:negative-expenses",
     "test:visual-clean-room": "node apps/web/src/app/visual-clean-room.test.js",
-    "test:phoenix-clean-room": "node apps/web/src/phoenix/phoenix-clean-room.test.js",
+    "test:phoenix-clean-room": "node apps/web/src/phoenix/phoenix-clean-room.test.js && node apps/web/src/phoenix/phoenix-preview-server.contract.test.js",
     "test:core": "node packages/core/src/tests/core.test.js",
     "test:catalog-ownership": "npm --workspace packages/database run test:catalog-ownership",
     "test:imports": "npm --workspace apps/api run test:imports",
