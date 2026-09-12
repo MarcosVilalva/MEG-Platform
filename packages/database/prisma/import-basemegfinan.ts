@@ -85,7 +85,7 @@ async function main() {
     return;
   }
   const user = await prisma.user.findUnique({ where: { email: userEmail } });
-  if (!user) throw new Error(`Usu�rio ${userEmail} n�o encontrado. Entre no MEG online uma vez antes da importa��o.`);
+  if (!user) throw new Error(`Usuário ${userEmail} não encontrado. Entre no MEG online uma vez antes da importação.`);
 
   const batch = await prisma.importBatch.upsert({
     where: { userId_fileHash: { userId: user.id, fileHash } },
@@ -153,8 +153,8 @@ async function main() {
       const cacheKey = `${categoryGroup}|${categoryName}`;
       categoryId = categoryCache.get(cacheKey);
       if (!categoryId) {
-        const category = await prisma.category.findFirst({ where: { name: categoryName, group: categoryGroup, type } })
-          ?? await prisma.category.create({ data: { name: categoryName, group: categoryGroup, type } });
+        const category = await prisma.category.findFirst({ where: { userId: user.id, name: categoryName, group: categoryGroup, type } })
+          ?? await prisma.category.create({ data: { userId: user.id, name: categoryName, group: categoryGroup, type } });
         categoryId = category.id; categoryCache.set(cacheKey, category.id);
       }
     }
@@ -164,8 +164,8 @@ async function main() {
     if (paymentName) {
       paymentMethodId = paymentCache.get(paymentName);
       if (!paymentMethodId) {
-        const method = await prisma.paymentMethod.findUnique({ where: { name: paymentName } })
-          ?? await prisma.paymentMethod.create({ data: { name: paymentName, type: paymentType(paymentName) } });
+        const method = await prisma.paymentMethod.findFirst({ where: { userId: user.id, name: paymentName } })
+          ?? await prisma.paymentMethod.create({ data: { userId: user.id, name: paymentName, type: paymentType(paymentName) } });
         paymentMethodId = method.id; paymentCache.set(paymentName, method.id);
       }
     }
