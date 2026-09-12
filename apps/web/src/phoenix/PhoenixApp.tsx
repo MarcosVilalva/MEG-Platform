@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
 import { loadPhoenixReadModel } from './data/load-phoenix-read-model';
 import { PhoenixCards, PhoenixCatalogs, PhoenixMovements, PhoenixPayables, PhoenixPlaceholder } from './screens/PhoenixReadScreens';
+import { PhoenixHistory } from './screens/PhoenixHistory';
 import './phoenix-v15.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -86,10 +87,10 @@ function HomeScreen({ data, month }: { data: PhoenixReadModel; month: string }) 
 function ReadScreen({ view, data, month }: { view: PhoenixView; data: PhoenixReadModel; month: string }) {
   if (view === 'home') return <HomeScreen data={data} month={month} />;
   if (view === 'movements') return <PhoenixMovements data={data} />;
+  if (view === 'history') return <PhoenixHistory data={data} />;
   if (view === 'payables') return <PhoenixPayables data={data} />;
   if (view === 'cards') return <PhoenixCards data={data} />;
   if (view === 'catalogs') return <PhoenixCatalogs data={data} />;
-  if (view === 'history') return <PhoenixPlaceholder kicker="Histórico" title="Auditoria financeira" text="O histórico V15 será conectado ao log de atividade/auditoria real, não a uma cópia da tabela de lançamentos." />;
   if (view === 'users') return <PhoenixPlaceholder kicker="Usuários" title="Pessoas, perfis e permissões" text="A camada visual será conectada aos papéis ADMIN, MANAGER, OPERATOR e VIEWER já existentes." />;
   return <PhoenixPlaceholder kicker="Configurações" title="Preferências e integrações" text="WhatsApp, e-mail, notificações, segurança, dispositivos e atualização Android serão ligados aos serviços já auditados." />;
 }
@@ -136,7 +137,7 @@ export function PhoenixApp() {
         </header>
 
         <div className="px-content">
-          {loadState.status === 'error' ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p></section> : data ? <ReadScreen view={view} data={data} month={month} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências e cadastros estão sendo carregados em paralelo.</p></section>}
+          {loadState.status === 'error' ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p></section> : data ? <ReadScreen view={view} data={data} month={month} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico e cadastros estão sendo carregados em paralelo.</p></section>}
         </div>
       </main>
 
