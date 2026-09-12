@@ -75,7 +75,8 @@ export async function signIn(email: string, password: string) {
   return existingLogin(email, password);
 }
 
-export async function signOut(session: AuthSession) {
+export async function signOut(session: AuthSession | null) {
+  if (!session) return;
   return existingLogout(session);
 }
 
