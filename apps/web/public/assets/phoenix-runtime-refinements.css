@@ -1,0 +1,298 @@
+.phoenix-v15 .px-app {
+  transition:grid-template-columns .26s cubic-bezier(.2,.8,.2,1);
+}
+
+.phoenix-v15 .px-sidebar,
+.phoenix-v15 .px-side-brand,
+.phoenix-v15 .px-side-brand img,
+.phoenix-v15 .px-nav-btn,
+.phoenix-v15 .px-nav-icon,
+.phoenix-v15 .px-side-badge,
+.phoenix-v15 .px-content {
+  transition:
+    width .26s cubic-bezier(.2,.8,.2,1),
+    min-height .26s cubic-bezier(.2,.8,.2,1),
+    padding .26s cubic-bezier(.2,.8,.2,1),
+    gap .26s cubic-bezier(.2,.8,.2,1),
+    transform .26s cubic-bezier(.2,.8,.2,1),
+    opacity .18s ease;
+}
+
+.phoenix-v15 .px-nav-btn {
+  position:relative;
+}
+
+.phoenix-v15 .px-nav-icon {
+  min-width:22px;
+  line-height:1;
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-sidebar {
+  padding-inline:10px;
+  gap:13px;
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-side-brand {
+  min-height:58px;
+  padding:0;
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-side-brand img {
+  width:50px;
+  height:50px;
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-search-command {
+  width:44px;
+  height:44px;
+  min-height:44px;
+  margin-inline:auto;
+  padding:0;
+  display:grid;
+  place-items:center;
+  text-align:center;
+  border-radius:13px;
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-search-command::before {
+  line-height:1;
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-nav-btn {
+  width:46px;
+  min-height:46px;
+  margin-inline:auto;
+  padding:0;
+  justify-content:center;
+  border-radius:13px;
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-nav-icon {
+  width:24px;
+  flex:0 0 24px;
+  font-size:17px;
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-side-badge {
+  position:absolute;
+  top:4px;
+  right:2px;
+  margin:0;
+  min-width:17px;
+  height:17px;
+  padding:0 4px;
+  border:2px solid var(--nav2);
+  background:#21d9aa;
+  color:#052019;
+  font-size:8px;
+  line-height:1;
+  box-shadow:0 4px 12px rgba(0,0,0,.28);
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-side-more {
+  display:grid;
+  justify-items:center;
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-side-more summary {
+  width:42px;
+  height:30px;
+  padding:0;
+  display:grid;
+  place-items:center;
+  font-size:0;
+  cursor:pointer;
+  border-radius:10px;
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-side-more summary::before {
+  content:'•••';
+  color:#78aaa2;
+  font-size:12px;
+  letter-spacing:.14em;
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-side-user {
+  padding-inline:0;
+  display:grid;
+  justify-items:center;
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-side-user > div {
+  display:none;
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-side-exit {
+  justify-content:center;
+  gap:0;
+}
+
+.phoenix-v15 .px-app.is-collapsed .px-side-exit strong {
+  display:none;
+}
+
+.phoenix-v15 .px-main,
+.phoenix-v15 .px-content,
+.phoenix-v15 .px-card,
+.phoenix-v15 .px-dashboard-grid,
+.phoenix-v15 .px-metrics,
+.phoenix-v15 .px-bottom-grid {
+  min-width:0;
+}
+
+.phoenix-v15 .px-card {
+  transition:
+    border-color .18s ease,
+    box-shadow .18s ease,
+    transform .18s ease,
+    width .26s cubic-bezier(.2,.8,.2,1);
+}
+
+/* Fallback visual caso uma leitura direta da Phoenix seja necessária fora do bootstrap do login. */
+.phoenix-v15 .px-placeholder {
+  position:relative;
+  width:min(100%,560px);
+  min-height:300px;
+  margin:7vh auto 0;
+  padding:112px 42px 38px;
+  overflow:hidden;
+  text-align:center;
+  border-color:color-mix(in srgb,var(--brand) 22%,var(--line));
+  background:
+    radial-gradient(circle at 50% 0,color-mix(in srgb,var(--brand) 13%,transparent),transparent 44%),
+    linear-gradient(155deg,var(--panel),color-mix(in srgb,var(--panel2) 88%,var(--brand) 12%));
+}
+
+.phoenix-v15 .px-placeholder::before {
+  content:'';
+  position:absolute;
+  top:26px;
+  left:50%;
+  width:74px;
+  height:74px;
+  transform:translateX(-50%);
+  background:url('/brand/meg-finance-system-mark.svg') center/contain no-repeat;
+  filter:drop-shadow(0 14px 26px rgba(0,0,0,.28));
+}
+
+.phoenix-v15 .px-placeholder::after {
+  content:'';
+  position:absolute;
+  left:12%;
+  right:12%;
+  bottom:24px;
+  height:3px;
+  border-radius:999px;
+  background:linear-gradient(90deg,transparent,var(--brand),var(--cyan),transparent);
+  transform-origin:left center;
+  animation:px-runtime-load 1.35s ease-in-out infinite;
+}
+
+.phoenix-v15 .px-placeholder h2 {
+  margin:8px 0 8px;
+  font-size:27px;
+  letter-spacing:-.04em;
+}
+
+.phoenix-v15 .px-placeholder p {
+  max-width:430px;
+  margin:0 auto;
+  color:var(--muted);
+  line-height:1.6;
+}
+
+/* Base visual do futuro Grid MEG: headers fixos e linguagem única em todas as tabelas. */
+.phoenix-v15 .px-table-scroll {
+  scrollbar-width:thin;
+  scrollbar-color:color-mix(in srgb,var(--brand) 35%,var(--line)) transparent;
+}
+
+.phoenix-v15 .px-data-table thead th {
+  position:sticky;
+  top:0;
+  z-index:3;
+  background:color-mix(in srgb,var(--panel) 96%,var(--brand) 4%);
+  backdrop-filter:blur(10px);
+}
+
+.phoenix-v15 .px-grid-filter-trigger {
+  width:28px;
+  height:28px;
+  border:1px solid transparent;
+  border-radius:9px;
+  display:inline-grid;
+  place-items:center;
+  background:transparent;
+  color:var(--muted);
+}
+
+.phoenix-v15 .px-grid-filter-trigger:hover,
+.phoenix-v15 .px-grid-filter-trigger.is-active {
+  border-color:color-mix(in srgb,var(--brand) 34%,var(--line));
+  background:color-mix(in srgb,var(--brand) 10%,var(--panel));
+  color:var(--brand2);
+}
+
+.phoenix-v15 .px-grid-filter-popover {
+  width:min(320px,calc(100vw - 28px));
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:color-mix(in srgb,var(--panel) 96%,transparent);
+  box-shadow:0 22px 60px rgba(0,0,0,.22);
+  backdrop-filter:blur(18px);
+}
+
+.phoenix-v15 .px-grid-filter-search,
+.phoenix-v15 .px-grid-filter-values {
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:var(--panel2);
+}
+
+.phoenix-v15 .px-grid-filter-chip {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-height:28px;
+  padding:0 10px;
+  border:1px solid color-mix(in srgb,var(--brand) 26%,var(--line));
+  border-radius:999px;
+  background:color-mix(in srgb,var(--brand) 8%,var(--panel));
+  color:var(--brand2);
+  font-size:11px;
+  font-weight:800;
+}
+
+@keyframes px-runtime-load {
+  0% { transform:scaleX(.08); opacity:.3; }
+  50% { transform:scaleX(.72); opacity:1; }
+  100% { transform:scaleX(1); opacity:.25; }
+}
+
+@media (max-width:760px) {
+  .phoenix-v15 .px-app.is-collapsed .px-sidebar {
+    padding-inline:14px;
+  }
+  .phoenix-v15 .px-placeholder {
+    margin-top:3vh;
+    padding:104px 22px 34px;
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .phoenix-v15 .px-app,
+  .phoenix-v15 .px-sidebar,
+  .phoenix-v15 .px-side-brand,
+  .phoenix-v15 .px-side-brand img,
+  .phoenix-v15 .px-nav-btn,
+  .phoenix-v15 .px-nav-icon,
+  .phoenix-v15 .px-side-badge,
+  .phoenix-v15 .px-content,
+  .phoenix-v15 .px-card {
+    transition:none!important;
+  }
+  .phoenix-v15 .px-placeholder::after {
+    animation-duration:2.8s;
+  }
+}
