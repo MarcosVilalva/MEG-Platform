@@ -16,6 +16,10 @@ assert.match(mutation, /FINANCIAL_EVENT_CREATE/,
   'Criação de evento deve registrar recibo de idempotência próprio.');
 assert.match(mutation, /FINANCIAL_EVENT_CREATED/,
   'Criação de evento deve registrar auditoria financeira estrutural.');
+assert.match(mutation, /const workspace = await resolveWorkspaceContext\(userId\)/,
+  'Todo novo evento deve resolver o workspace mesmo sem operationId.');
+assert.match(mutation, /workspaceId: workspace\.workspaceId/,
+  'Todo novo evento deve persistir o workspace financeiro resolvido.');
 assert.match(mutation, /TRANSFER_CONTRACT_NOT_READY/,
   'Transferência não pode usar o contrato de evento de uma única perna.');
 assert.match(mutation, /INVALID_ACCOUNT/);
