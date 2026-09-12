@@ -128,7 +128,7 @@ function sourceClassification(event: FinancialEvent) {
   return event.sourceDetails?.expenseClass || event.category?.name || '—';
 }
 
-export function PhoenixMovementsV15({ data, onNavigateHistory }: { data: PhoenixReadModel; onNavigateHistory?: () => void }) {
+export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0 }: { data: PhoenixReadModel; onNavigateHistory?: () => void; launchRequest?: number }) {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [status, setStatus] = useState('all');
@@ -153,7 +153,6 @@ export function PhoenixMovementsV15({ data, onNavigateHistory }: { data: Phoenix
 
   const income = monthEvents.filter((event) => launchTypeForEvent(event.type) === 'income').reduce((sum, event) => sum + amountFromEvent(event), 0);
   const expense = monthEvents.filter((event) => launchTypeForEvent(event.type) === 'expense').reduce((sum, event) => sum + amountFromEvent(event), 0);
-  const pending = monthEvents.filter((event) => event.status === 'planned').length;
 
   const selectedAccount = data.accounts.find((item) => item.id === draft.accountId) || null;
   const selectedDestination = data.accounts.find((item) => item.id === draft.destinationId) || null;
@@ -200,6 +199,10 @@ export function PhoenixMovementsV15({ data, onNavigateHistory }: { data: Phoenix
   }, [data.events.items, draft.description, draft.accountId, draft.eventDate, amountCents]);
 
   useEffect(() => {
+    if (launchRequest > 0) openLaunch();
+  }, [launchRequest]);
+
+  useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       if (detailEvent) setDetailEvent(null);
@@ -207,7 +210,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory }: { data: Phoenix
     };
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
-  });
+  }, [detailEvent, launchOpen, dirty]);
 
   function updateDraft<K extends keyof LaunchDraft>(key: K, value: LaunchDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -277,14 +280,13 @@ export function PhoenixMovementsV15({ data, onNavigateHistory }: { data: Phoenix
       <div><span className="px-kicker">Lançamentos</span><h1>Controle financeiro</h1><p>Inclua e consulte eventos mantendo o histórico de auditoria separado do formulário.</p></div>
       <div className="px-launch-head-actions">
         <details className="px-column-chooser"><summary>Colunas</summary><div><span>Dia</span><span>Classificação</span><span>Grupo</span><span>Forma de pagamento</span><span>Modalidade</span></div></details>
-        <button className="px-primary-action px-new-event" type="button" onClick={() => openLaunch()}>＋ Novo lançamento</button>
       </div>
     </header>
 
     <section className="px-screen-kpis">
+      <article><span>Lançamentos no período</span><strong>{monthEvents.length}</strong><small>Quantidade real do mês</small></article>
       <article><span>Receitas</span><strong>{money.format(income)}</strong><small>Movimentação do período</small></article>
       <article><span>Despesas</span><strong>{money.format(expense)}</strong><small>Movimentação do período</small></article>
-      <article><span>Pendentes</span><strong>{pending}</strong><small>Aguardando efetivação</small></article>
       <article><span>Aguardando sincronização</span><strong>0</strong><small>Leitura confirmada pelo backend</small></article>
     </section>
 
