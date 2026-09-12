@@ -5,6 +5,7 @@ type Tx = Prisma.TransactionClient;
 
 const FINANCIAL_ENTITIES = [
   'FinancialEvent',
+  'FinancialTransfer',
   'Payable',
   'RecurringExpense',
   'CreditCard',
@@ -17,6 +18,7 @@ export type FinancialAuditAction =
   | 'FINANCIAL_EVENT_CREATED'
   | 'FINANCIAL_EVENT_UPDATED'
   | 'FINANCIAL_EVENT_ARCHIVED'
+  | 'FINANCIAL_TRANSFER_CREATED'
   | 'PAYABLE_CREATED'
   | 'PAYABLE_PAYMENT_CREATED'
   | 'RECURRING_EXPENSE_CREATED'
