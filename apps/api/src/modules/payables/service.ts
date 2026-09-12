@@ -141,13 +141,13 @@ export async function createRecurringExpense(userId: string, input: RecurringExp
     : input.endDate?.slice(0, 10) || null;
   if (computedEnd && (!parseIsoDay(computedEnd) || computedEnd < firstDay)) throw new PayableDomainError('INVALID_RECURRENCE_END');
   const horizon = computedEnd || rollingHorizon(firstDay, input.frequency);
-  const workspace = input.operationId ? await resolveWorkspaceContext(userId) : null;
+  const workspace = await resolveWorkspaceContext(userId);
   const requestHash = input.operationId
     ? mutationRequestHash({ ...input, operationId: undefined, computedEnd, horizon })
     : null;
 
   return serializableFinancialTransaction(async (tx) => {
-    if (input.operationId && workspace && requestHash) {
+    if (input.operationId && requestHash) {
       const previous = await tx.cloudMutationReceipt.findUnique({
         where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
       });
@@ -181,10 +181,15 @@ export async function createRecurringExpense(userId: string, input: RecurringExp
       entityId: template.id,
       action: 'RECURRING_EXPENSE_CREATED',
       after: result,
-      context: { occurrenceCount: input.occurrenceCount ?? null, horizon, operationId: input.operationId ?? null }
+      context: {
+        occurrenceCount: input.occurrenceCount ?? null,
+        horizon,
+        operationId: input.operationId ?? null,
+        workspaceId: workspace.workspaceId,
+      }
     });
 
-    if (input.operationId && workspace && requestHash) {
+    if (input.operationId && requestHash) {
       const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
       await tx.cloudMutationReceipt.create({ data: receiptCreateData({
         workspaceId: workspace.workspaceId,
@@ -220,11 +225,11 @@ export async function payPayableProtected(userId: string, payableId: string, inp
   if (isFutureFinancialDay(input.paidAt)) throw new PayableDomainError('FUTURE_PAYMENT_NOT_ALLOWED', { paidAt: input.paidAt.slice(0, 10) });
   const principal = Math.abs(input.amount);
   const paidTotal = principal + input.interestAmount + input.fineAmount;
-  const workspace = input.operationId ? await resolveWorkspaceContext(userId) : null;
+  const workspace = await resolveWorkspaceContext(userId);
   const requestHash = input.operationId ? mutationRequestHash({ payableId, ...input, operationId: undefined }) : null;
 
   return serializableFinancialTransaction(async (tx) => {
-    if (input.operationId && workspace && requestHash) {
+    if (input.operationId && requestHash) {
       const previous = await tx.cloudMutationReceipt.findUnique({
         where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
       });
@@ -260,6 +265,7 @@ export async function payPayableProtected(userId: string, payableId: string, inp
 
     const event = await tx.financialEvent.create({ data: {
       userId,
+      workspaceId: workspace.workspaceId,
       description: `Pagamento: ${payable.description}`,
       type: 'expense',
       status: 'paid',
@@ -310,10 +316,11 @@ export async function payPayableProtected(userId: string, payableId: string, inp
         fineAmount: input.fineAmount,
         protection,
         operationId: input.operationId ?? null,
+        workspaceId: workspace.workspaceId,
       }
     });
 
-    if (input.operationId && workspace && requestHash) {
+    if (input.operationId && requestHash) {
       const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
       await tx.cloudMutationReceipt.create({ data: receiptCreateData({
         workspaceId: workspace.workspaceId,
