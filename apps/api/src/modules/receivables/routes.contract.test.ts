@@ -4,14 +4,20 @@ import { readFileSync } from 'node:fs';
 const routes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
 const service = readFileSync(new URL('./service.ts', import.meta.url), 'utf8');
 
+assert.match(routes, /createReceivableProtected/,
+  'Criação de conta a receber deve passar pelo gateway transacional idempotente.');
 assert.match(routes, /receiveReceivableProtected/,
   'Recebimento deve passar pelo gateway transacional protegido.');
-assert.match(routes, /operationId/,
-  'Recebimento deve aceitar chave de idempotência.');
+assert.match(routes, /operationIdSchema/,
+  'Criação e recebimento devem aceitar chave de idempotência.');
 assert.match(service, /serializableFinancialTransaction/,
-  'Recebimento deve executar em transação serializável.');
+  'Criação e recebimento devem executar em transação serializável.');
 assert.match(service, /cloudMutationReceipt/,
-  'Recebimento deve consultar recibo de idempotência.');
+  'Criação e recebimento devem consultar recibos de idempotência.');
+assert.match(service, /RECEIVABLE_CREATE/,
+  'Criação deve registrar recibo de mutação próprio.');
+assert.match(service, /RECEIVABLE_CREATED/,
+  'Criação deve gerar auditoria financeira estrutural.');
 assert.match(service, /RECEIVABLE_RECEIPT/,
   'Recebimento deve registrar recibo de mutação próprio.');
 assert.match(service, /RECEIVABLE_RECEIVED/,
@@ -22,5 +28,7 @@ assert.match(service, /INVALID_ACCOUNT/,
   'Conta informada precisa estar ativa.');
 assert.match(service, /INVALID_PAYMENT_METHOD/,
   'Forma de pagamento informada precisa estar ativa.');
+assert.match(service, /INVALID_CUSTOMER/,
+  'Cliente informado na criação precisa pertencer ao usuário e estar ativo.');
 
 console.log('Contrato transacional de contas a receber validado.');
