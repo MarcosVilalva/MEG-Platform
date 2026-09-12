@@ -43,6 +43,23 @@ Somar todos os `Account.openingBalance` no cálculo de `monetaryBalanceAt()` pod
 
 Por esse motivo, esta etapa não altera silenciosamente a proteção de saldo.
 
+## Auditoria seca antes da migração
+
+Foi criado um planejador de propriedade que não altera o banco. Ele deriva possíveis proprietários a partir das referências reais já existentes e classifica cada catálogo em:
+
+- proprietário único: pode manter o ID atual;
+- múltiplos proprietários: exige clonagem por usuário e religação das referências;
+- sem proprietário determinável: permanece bloqueado para revisão;
+- referência sem `userId`: permanece bloqueada mesmo quando existe outro proprietário provável.
+
+O comando de diagnóstico é:
+
+`npm run db:audit:catalog-ownership`
+
+Ele consulta `Account`, `Category` e `PaymentMethod` e cruza, conforme o domínio, referências de `FinancialEvent`, `Receipt`, `PayablePayment`, `LedgerEntry`, `CardPurchase`, `Payable` e `RecurringExpense`. O resultado é somente JSON de auditoria (`mode: dry-run`). Se houver catálogo sem proprietário determinável ou referência sem `userId`, o processo termina com código de atenção e **não altera nenhuma linha**.
+
+O algoritmo puro também faz parte do CI por `test:catalog-ownership`, para impedir que a regra de clonagem/revisão seja alterada silenciosamente.
+
 ## Decisão de segurança
 
 Até o backfill de propriedade dos catálogos ser concluído e validado:
@@ -61,12 +78,14 @@ A correção será feita em duas fases.
 
 ### Fase 1 — propriedade explícita
 
-- adicionar `userId` a `Account`, `Category` e `PaymentMethod`;
+- executar primeiro a auditoria seca e conservar o relatório;
+- adicionar `userId` a `Account`, `Category` e `PaymentMethod` de forma inicialmente compatível com o legado;
 - fazer backfill dos registros legados a partir das referências reais já existentes;
 - quando um catálogo legado estiver referenciado por mais de um usuário, duplicar o cadastro por proprietário e religar somente as referências daquele usuário;
 - emitir relatório para qualquer registro sem proprietário determinável;
 - impedir leitura/escrita de catálogo fora do usuário proprietário;
-- manter IDs históricos quando não houver conflito e criar novos IDs apenas nas duplicações necessárias.
+- manter IDs históricos quando não houver conflito e criar novos IDs apenas nas duplicações necessárias;
+- só tornar a propriedade obrigatória depois que a auditoria comprovar zero registros não resolvidos.
 
 ### Fase 2 — saldo inicial
 
