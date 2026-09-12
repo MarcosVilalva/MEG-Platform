@@ -106,14 +106,95 @@ button, input { font:inherit; }
   border-radius:50%;
   animation:px-preview-spin .75s linear infinite;
 }
+
+.px-preview-boot {
+  min-height:290px;
+  gap:12px;
+}
+.px-preview-boot > strong {
+  margin-top:4px;
+  font-size:24px;
+  letter-spacing:-.035em;
+}
+.px-preview-boot > small {
+  max-width:330px;
+  line-height:1.6;
+}
+.px-preview-boot-mark {
+  width:108px;
+  height:108px;
+  margin-bottom:8px;
+  position:relative;
+  display:grid;
+  place-items:center;
+}
+.px-preview-boot-mark::before,
+.px-preview-boot-mark::after {
+  content:'';
+  position:absolute;
+  inset:7px;
+  border:1px solid rgba(120,243,208,.12);
+  border-radius:30px;
+  transform:rotate(45deg);
+}
+.px-preview-boot-mark::after {
+  inset:0;
+  border-color:rgba(91,212,223,.08);
+  animation:px-preview-pulse 2.2s ease-in-out infinite;
+}
+.px-preview-boot-mark img {
+  width:72px;
+  height:72px;
+  position:relative;
+  z-index:2;
+  object-fit:contain;
+  filter:drop-shadow(0 14px 26px rgba(0,0,0,.38));
+}
+.px-preview-boot-mark .px-preview-spinner {
+  position:absolute;
+  inset:2px;
+  width:auto;
+  height:auto;
+  margin:0;
+  border-width:2px;
+  border-color:transparent;
+  border-top-color:#35d4a5;
+  border-right-color:rgba(91,212,223,.55);
+  z-index:1;
+}
+.px-preview-boot-line {
+  width:min(100%,280px);
+  height:4px;
+  margin-top:12px;
+  overflow:hidden;
+  border-radius:999px;
+  background:rgba(255,255,255,.06);
+}
+.px-preview-boot-line span {
+  display:block;
+  width:42%;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,transparent,#35d4a5,#5bd4df,transparent);
+  animation:px-preview-progress 1.35s ease-in-out infinite;
+}
+
 @keyframes px-preview-spin { to { transform:rotate(360deg); } }
+@keyframes px-preview-pulse { 50% { transform:rotate(45deg) scale(1.06); opacity:.42; } }
+@keyframes px-preview-progress {
+  0% { transform:translateX(-115%); }
+  100% { transform:translateX(340%); }
+}
 
 @media (max-width:520px) {
   .px-preview-auth { padding:14px; align-items:stretch; }
   .px-preview-login { align-self:center; padding:22px 18px; border-radius:20px; }
   .px-preview-copy h1 { font-size:30px; }
+  .px-preview-boot { min-height:260px; }
 }
 
 @media (prefers-reduced-motion:reduce) {
   .px-preview-spinner { animation-duration:1.6s; }
+  .px-preview-boot-mark::after,
+  .px-preview-boot-line span { animation-duration:3s; }
 }
