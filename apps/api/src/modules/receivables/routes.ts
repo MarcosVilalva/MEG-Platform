@@ -1,11 +1,12 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@meg/database';
-import { ReceivableDomainError, receiveReceivableProtected } from './service';
+import { ReceivableDomainError, createReceivableProtected, receiveReceivableProtected } from './service';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
+const operationIdSchema = z.string().trim().min(8).max(128).optional();
 
 const customerSchema = z.object({
   name: z.string().min(2).max(120),
@@ -24,7 +25,8 @@ const receivableSchema = z.object({
   installmentQty: z.coerce.number().int().positive().default(1),
   interestRate: z.coerce.number().min(0).default(0),
   fineRate: z.coerce.number().min(0).default(0),
-  notes: z.string().max(500).optional().nullable()
+  notes: z.string().max(500).optional().nullable(),
+  operationId: operationIdSchema
 });
 
 const receiptSchema = z.object({
@@ -35,7 +37,7 @@ const receiptSchema = z.object({
   accountId: z.string().optional().nullable(),
   paymentMethodId: z.string().optional().nullable(),
   notes: z.string().max(500).optional().nullable(),
-  operationId: z.string().trim().min(8).max(128).optional()
+  operationId: operationIdSchema
 });
 
 function validationError(reply: FastifyReply, details: unknown) {
@@ -91,21 +93,12 @@ export async function receivableRoutes(app: FastifyInstance) {
   app.post('/receivables', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = receivableSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    if (parsed.data.customerId) {
-      const customer = await prisma.customer.findFirst({ where: { id: parsed.data.customerId, userId: request.user.sub } });
-      if (!customer) return reply.code(400).send({ error: 'INVALID_CUSTOMER' });
+    try {
+      const receivable = await createReceivableProtected(request.user.sub, parsed.data);
+      return reply.code(201).send(receivable);
+    } catch (error) {
+      return domainError(reply, error);
     }
-    const value = Math.abs(parsed.data.totalAmount);
-    return reply.code(201).send(await prisma.receivable.create({
-      data: {
-        userId: request.user.sub,
-        ...parsed.data,
-        dueDate: new Date(parsed.data.dueDate),
-        totalAmount: value,
-        openAmount: value
-      },
-      include: { customer: true, receipts: true }
-    }));
   });
 
   app.post('/receivables/:id/receipts', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
