@@ -54,6 +54,7 @@ export type FinancialEvent = {
     modality: string;
     observations: string;
   } | null;
+  idempotentReplay?: boolean;
 };
 
 export type FinancialEventInput = {
@@ -149,7 +150,7 @@ export const financeClient = {
     authorizedRequest<{ items: FinancialEvent[]; total: number; page: number; pageSize: number }>(
       `/finance/events?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`
     ),
-  createEvent: (data: FinancialEventInput) => authorizedRequest<FinancialEvent>('/finance/events', {
+  createEvent: (data: FinancialEventInput & { operationId?: string }) => authorizedRequest<FinancialEvent>('/finance/events', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
