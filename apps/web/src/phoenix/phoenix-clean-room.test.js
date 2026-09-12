@@ -4,9 +4,12 @@ import { readFileSync } from 'node:fs';
 const phoenixApp = readFileSync(new URL('./PhoenixApp.tsx', import.meta.url), 'utf8');
 const screens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.meta.url), 'utf8');
 const loader = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.meta.url), 'utf8');
-const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}`;
+const previewMain = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
+const phoenixHtml = readFileSync(new URL('../../phoenix.html', import.meta.url), 'utf8');
+const productionHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
-const phoenixSource = `${phoenixApp}\n${screens}`;
+const phoenixSource = `${phoenixApp}\n${screens}\n${previewMain}`;
 
 for (const forbidden of ['global.css', 'v15-contract.css', 'meg-v15.css']) {
   assert.doesNotMatch(phoenixSource, new RegExp(forbidden.replace('.', '\\.')),
@@ -41,6 +44,18 @@ for (const glyph of ['⌂', '▦', '◷', '▣', '≡', '♙', '⚙']) {
 for (const screen of ['PhoenixMovements', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs']) {
   assert.ok(phoenixApp.includes(screen), `Tela Phoenix não conectada: ${screen}`);
 }
+
+assert.match(phoenixHtml, /src\/phoenix\/preview-main\.tsx/,
+  'Preview Phoenix deve usar sua própria entrada');
+assert.doesNotMatch(phoenixHtml, /src\/app\/main\.tsx/,
+  'Preview Phoenix não deve apontar para a entrada de produção');
+assert.match(productionHtml, /src\/app\/main\.tsx/,
+  'Entrada de produção deve continuar apontando para o sistema atual');
+assert.doesNotMatch(productionHtml, /src\/phoenix\/preview-main\.tsx/,
+  'Produção não deve apontar para o preview Phoenix');
+assert.match(previewMain, /PhoenixApp/);
+assert.match(previewMain, /login\(/,
+  'Preview deve autenticar pelo contrato existente sem reutilizar a tela de login antiga');
 
 assert.doesNotMatch(main, /PhoenixApp/,
   'Phoenix ainda não deve estar ligada à entrada de produção durante a fase somente leitura isolada');
