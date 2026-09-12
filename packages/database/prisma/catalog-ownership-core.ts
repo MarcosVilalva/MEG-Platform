@@ -19,7 +19,9 @@ export type CatalogOwnershipPlanItem = {
   primaryOwnerId: string | null;
   cloneOwnerIds: string[];
   unresolved: boolean;
+  requiresReview: boolean;
   referenceCount: number;
+  ownerlessReferenceCount: number;
   sources: string[];
 };
 
@@ -30,6 +32,7 @@ export type CatalogOwnershipPlan = {
   singleOwner: number;
   multiOwner: number;
   unresolved: number;
+  requiresReview: number;
   items: CatalogOwnershipPlanItem[];
 };
 
@@ -44,7 +47,8 @@ function uniqueSorted(values: Array<string | null | undefined>) {
  * - uma referência pertence ao usuário do domínio que a utiliza;
  * - catálogo usado por um usuário pode manter o ID atual;
  * - catálogo compartilhado entre usuários deve ser clonado por proprietário;
- * - catálogo sem referência não recebe proprietário por adivinhação.
+ * - catálogo sem referência não recebe proprietário por adivinhação;
+ * - qualquer referência sem userId exige revisão antes de uma migração destrutiva.
  */
 export function planCatalogOwnership(
   kind: CatalogKind,
@@ -61,6 +65,7 @@ export function planCatalogOwnership(
   const items = catalogs.map((catalog) => {
     const refs = refsByCatalog.get(catalog.id) || [];
     const owners = uniqueSorted(refs.map((reference) => reference.userId));
+    const ownerlessReferenceCount = refs.filter((reference) => !reference.userId?.trim()).length;
     const primaryOwnerId = owners[0] || null;
     return {
       catalogId: catalog.id,
@@ -69,7 +74,9 @@ export function planCatalogOwnership(
       primaryOwnerId,
       cloneOwnerIds: owners.slice(1),
       unresolved: owners.length === 0,
+      requiresReview: owners.length === 0 || ownerlessReferenceCount > 0,
       referenceCount: refs.length,
+      ownerlessReferenceCount,
       sources: uniqueSorted(refs.map((reference) => reference.source)),
     } satisfies CatalogOwnershipPlanItem;
   });
@@ -81,6 +88,7 @@ export function planCatalogOwnership(
     singleOwner: items.filter((item) => item.owners.length === 1).length,
     multiOwner: items.filter((item) => item.owners.length > 1).length,
     unresolved: items.filter((item) => item.unresolved).length,
+    requiresReview: items.filter((item) => item.requiresReview).length,
     items,
   };
 }
@@ -107,6 +115,8 @@ export function ownershipPlanSummary(plans: CatalogOwnershipPlan[]) {
     singleOwner: plan.singleOwner,
     multiOwner: plan.multiOwner,
     unresolved: plan.unresolved,
+    requiresReview: plan.requiresReview,
     clonesRequired: plan.items.reduce((sum, item) => sum + item.cloneOwnerIds.length, 0),
+    ownerlessReferences: plan.items.reduce((sum, item) => sum + item.ownerlessReferenceCount, 0),
   }));
 }
