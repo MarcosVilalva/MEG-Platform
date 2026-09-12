@@ -8,10 +8,24 @@ import {
   readSession
 } from '../app/auth-client';
 import { PhoenixApp } from './PhoenixApp';
+import { loadPhoenixReadModel } from './data/load-phoenix-read-model';
 import './preview.css';
 import './phoenix-preview-parity.css';
 
 type PreviewState = 'checking' | 'signed-out' | 'signed-in';
+
+function currentMonth() {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit'
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === 'year')?.value || '2026';
+  const month = parts.find((part) => part.type === 'month')?.value || '01';
+  return `${year}-${month}`;
+}
+
+async function preparePhoenixSession() {
+  await loadPhoenixReadModel(currentMonth());
+}
 
 function PhoenixPreviewRoot() {
   const [state, setState] = useState<PreviewState>(() => readSession() ? 'checking' : 'signed-out');
@@ -24,6 +38,7 @@ function PhoenixPreviewRoot() {
     if (state !== 'checking') return;
     let active = true;
     void authenticatedRequest('/auth/me')
+      .then(() => preparePhoenixSession())
       .then(() => { if (active) setState('signed-in'); })
       .catch(() => {
         clearSession();
@@ -53,6 +68,7 @@ function PhoenixPreviewRoot() {
     setError('');
     try {
       await login(email.trim(), password);
+      await preparePhoenixSession();
       setState('signed-in');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'LOGIN_FAILED');
@@ -84,10 +100,11 @@ function PhoenixPreviewRoot() {
         <div><span>PHOENIX V15</span><strong>Preview isolado</strong></div>
       </div>
 
-      {state === 'checking' ? <div className="px-preview-checking">
-        <span className="px-preview-spinner" aria-hidden="true" />
-        <strong>Validando sua sessão</strong>
-        <small>A produção atual permanece separada deste preview.</small>
+      {state === 'checking' ? <div className="px-preview-checking px-preview-boot">
+        <div className="px-preview-boot-mark"><img src="./brand/meg-finance-system-mark.svg" alt="" aria-hidden="true" /><span className="px-preview-spinner" aria-hidden="true" /></div>
+        <strong>Preparando seu MEG</strong>
+        <small>Sessão, visão financeira e módulos principais estão sendo preparados antes da navegação.</small>
+        <div className="px-preview-boot-line" aria-hidden="true"><span /></div>
       </div> : <form onSubmit={submit}>
         <div className="px-preview-copy">
           <span>Ambiente de validação</span>
@@ -98,7 +115,7 @@ function PhoenixPreviewRoot() {
         <label><span>E-mail</span><input type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="seu@email.com" /></label>
         <label><span>Senha</span><input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" /></label>
         {error ? <div className="px-preview-error">{error}</div> : null}
-        <button type="submit" disabled={busy || !email.trim() || !password}>{busy ? 'Entrando…' : 'Entrar no preview V15'}</button>
+        <button type="submit" disabled={busy || !email.trim() || !password}>{busy ? 'Preparando seu MEG…' : 'Entrar no preview V15'}</button>
         <small className="px-preview-footnote">Entrada exclusiva da branch Phoenix. O sistema atual não é substituído por esta página.</small>
       </form>}
     </section>
