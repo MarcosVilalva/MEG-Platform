@@ -94,17 +94,13 @@ export async function financeRoutes(app: FastifyInstance) {
   });
 
   app.get('/cashflow', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
-    const parsed = z.object({
-      month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/)
-    }).safeParse(request.query);
+    const parsed = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     return getCanonicalFinancialCashflow(request.user.sub, parsed.data.month);
   });
 
   app.get('/summary', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
-    const parsed = z.object({
-      month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/)
-    }).safeParse(request.query);
+    const parsed = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     return getCanonicalFinancialSummary(request.user.sub, parsed.data.month);
   });
@@ -160,69 +156,87 @@ export async function financeRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get('/accounts', { preHandler: app.authorize([...readRoles]) }, async () =>
-    prisma.account.findMany({ orderBy: [{ isActive: 'desc' }, { name: 'asc' }] })
+  app.get('/accounts', { preHandler: app.authorize([...readRoles]) }, async (request) =>
+    prisma.account.findMany({ where: { userId: request.user.sub }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] })
   );
 
   app.post('/accounts', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = accountSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return reply.code(201).send(await prisma.account.create({ data: parsed.data }));
+    return reply.code(201).send(await prisma.account.create({ data: { userId: request.user.sub, ...parsed.data } }));
   });
 
   app.patch('/accounts/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = accountSchema.partial().safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
+    const current = await prisma.account.findFirst({ where: { id, userId: request.user.sub } });
+    if (!current) return reply.code(404).send({ error: 'ACCOUNT_NOT_FOUND' });
     return prisma.account.update({ where: { id }, data: parsed.data });
   });
 
-  app.delete('/accounts/:id', { preHandler: app.authorize([...adminRoles]) }, async (request) => {
+  app.delete('/accounts/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const current = await prisma.account.findFirst({ where: { id, userId: request.user.sub } });
+    if (!current) return reply.code(404).send({ error: 'ACCOUNT_NOT_FOUND' });
     return prisma.account.update({ where: { id }, data: { isActive: false } });
   });
 
-  app.get('/categories', { preHandler: app.authorize([...readRoles]) }, async () =>
-    prisma.category.findMany({ orderBy: [{ isActive: 'desc' }, { name: 'asc' }] })
+  app.get('/categories', { preHandler: app.authorize([...readRoles]) }, async (request) =>
+    prisma.category.findMany({ where: { userId: request.user.sub }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] })
   );
 
   app.post('/categories', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = categorySchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return reply.code(201).send(await prisma.category.create({ data: parsed.data }));
+    return reply.code(201).send(await prisma.category.create({ data: { userId: request.user.sub, ...parsed.data } }));
   });
 
   app.patch('/categories/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = categorySchema.partial().safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
+    const current = await prisma.category.findFirst({ where: { id, userId: request.user.sub } });
+    if (!current) return reply.code(404).send({ error: 'CATEGORY_NOT_FOUND' });
     return prisma.category.update({ where: { id }, data: parsed.data });
   });
 
-  app.delete('/categories/:id', { preHandler: app.authorize([...adminRoles]) }, async (request) => {
+  app.delete('/categories/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const current = await prisma.category.findFirst({ where: { id, userId: request.user.sub } });
+    if (!current) return reply.code(404).send({ error: 'CATEGORY_NOT_FOUND' });
     return prisma.category.update({ where: { id }, data: { isActive: false } });
   });
 
-  app.get('/payment-methods', { preHandler: app.authorize([...readRoles]) }, async () =>
-    prisma.paymentMethod.findMany({ orderBy: [{ isActive: 'desc' }, { name: 'asc' }] })
+  app.get('/payment-methods', { preHandler: app.authorize([...readRoles]) }, async (request) =>
+    prisma.paymentMethod.findMany({ where: { userId: request.user.sub }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] })
   );
 
   app.post('/payment-methods', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = paymentMethodSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return reply.code(201).send(await prisma.paymentMethod.create({ data: parsed.data }));
+    const duplicate = await prisma.paymentMethod.findFirst({ where: { userId: request.user.sub, name: parsed.data.name } });
+    if (duplicate) return reply.code(409).send({ error: 'PAYMENT_METHOD_ALREADY_EXISTS' });
+    return reply.code(201).send(await prisma.paymentMethod.create({ data: { userId: request.user.sub, ...parsed.data } }));
   });
 
   app.patch('/payment-methods/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = paymentMethodSchema.partial().safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
+    const current = await prisma.paymentMethod.findFirst({ where: { id, userId: request.user.sub } });
+    if (!current) return reply.code(404).send({ error: 'PAYMENT_METHOD_NOT_FOUND' });
+    if (parsed.data.name) {
+      const duplicate = await prisma.paymentMethod.findFirst({ where: { userId: request.user.sub, name: parsed.data.name, id: { not: id } } });
+      if (duplicate) return reply.code(409).send({ error: 'PAYMENT_METHOD_ALREADY_EXISTS' });
+    }
     return prisma.paymentMethod.update({ where: { id }, data: parsed.data });
   });
 
-  app.delete('/payment-methods/:id', { preHandler: app.authorize([...adminRoles]) }, async (request) => {
+  app.delete('/payment-methods/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const current = await prisma.paymentMethod.findFirst({ where: { id, userId: request.user.sub } });
+    if (!current) return reply.code(404).send({ error: 'PAYMENT_METHOD_NOT_FOUND' });
     return prisma.paymentMethod.update({ where: { id }, data: { isActive: false } });
   });
 
