@@ -9,7 +9,8 @@ import { payablesClient } from '../../app/payables-client';
 import type {
   PhoenixActivity,
   PhoenixNormalizationPreview,
-  PhoenixReadModel
+  PhoenixReadModel,
+  PhoenixWorkspaceUsers
 } from '../contracts';
 
 type SharedStateRead = {
@@ -21,6 +22,33 @@ type SharedStateRead = {
   updatedAt?: string | null;
 };
 
+type ManagedUsersRead = {
+  users?: PhoenixReadModel['workspaceUsers']['users'];
+  workspace?: {
+    id?: string;
+    name?: string;
+    slug?: string;
+  };
+};
+
+async function loadWorkspaceUsers(role: string): Promise<PhoenixWorkspaceUsers> {
+  if (role !== 'ADMIN') return { status: 'restricted', users: [] };
+  try {
+    const result = await authenticatedRequest<ManagedUsersRead>('/auth/users');
+    return {
+      status: 'ready',
+      users: Array.isArray(result.users) ? result.users : [],
+      workspace: result.workspace || null
+    };
+  } catch (error) {
+    return {
+      status: 'error',
+      users: [],
+      error: error instanceof Error ? error.message : 'USERS_READ_FAILED'
+    };
+  }
+}
+
 /**
  * Bootstrap oficial da fase de leitura da Phoenix V15.
  *
@@ -30,7 +58,8 @@ type SharedStateRead = {
  * - consultas independentes são iniciadas em paralelo;
  * - a normalização é observada explicitamente para evitar esconder fallback;
  * - o histórico operacional é lido do activityLog persistido no AppState,
- *   sem fingir que ele equivale ao AuditLog estrutural do banco.
+ *   sem fingir que ele equivale ao AuditLog estrutural do banco;
+ * - usuários são consultados pela rota administrativa oficial e nunca alterados aqui.
  */
 export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
@@ -50,7 +79,8 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
     paymentMethods,
     cards,
     payables,
-    events
+    events,
+    workspaceUsers
   ] = await Promise.all([
     getApiHealth(),
     authenticatedRequest<PhoenixNormalizationPreview>('/app-state/normalization-preview'),
@@ -61,7 +91,8 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
     financeClient.listPaymentMethods(),
     cardsClient.list(month),
     payablesClient.list(month),
-    financeClient.listEvents(1, 100, '')
+    financeClient.listEvents(1, 100, ''),
+    loadWorkspaceUsers(session.user.role)
   ]);
 
   const activities = Array.isArray(sharedState.state?.activityLog)
@@ -84,11 +115,13 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
     payables,
     events,
     activities,
+    workspaceUsers,
     sourcePolicy: {
       mode: 'read-only',
       summary: 'finance-domain',
       events: 'finance-domain',
       activities: 'app-state-activity-log',
+      users: 'auth-admin-read',
       sharedFallback: 'app-state-normalized-read',
       cards: 'cards-domain-with-legacy-compatibility',
       payables: 'payables-domain'
