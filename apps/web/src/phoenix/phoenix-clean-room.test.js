@@ -97,8 +97,14 @@ assert.match(movementScreen, /Transferência/);
 assert.match(movementScreen, /Proteção contra duplicidade/);
 assert.match(movementScreen, /Revisar lançamento · sem gravar/,
   'Drawer Phoenix deve validar o fluxo sem liberar escrita');
-assert.match(movementScreen, /draft\.type === 'income' \? 'Classificação \(opcional\)'/,
-  'Receita não deve exigir classificação ou grupo na Phoenix');
+assert.match(movementScreen, /Classificação da receita \(opcional\)/,
+  'Receita pode manter classificação opcional, sem exigir grupo');
+assert.match(movementScreen, /draft\.type === 'expense' && !draft\.classification/,
+  'Despesa deve exigir classificação antes do grupo');
+assert.match(movementScreen, /Escolha a classificação primeiro/,
+  'Grupo da despesa deve depender da classificação selecionada');
+assert.match(movementScreen, /expenseGroups/,
+  'Grupos disponíveis devem ser derivados da classificação real dos Cadastros');
 assert.match(movementScreen, /cardDueDate/,
   'Drawer deve respeitar fechamento e vencimento reais do cartão');
 assert.match(movementScreen, /purchaseDay > closingDay/,
