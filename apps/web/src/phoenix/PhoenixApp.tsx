@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
 import { loadPhoenixReadModel } from './data/load-phoenix-read-model';
+import { buildPhoenixHomeAgenda } from './home-agenda';
 import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixPayables } from './screens/PhoenixReadScreens';
 import { PhoenixCardsGrid } from './screens/PhoenixCardsGrid';
@@ -23,8 +24,6 @@ const shortDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-d
 
 type PhoenixView = PhoenixRoute;
 type ViewDefinition = { id: PhoenixView; icon: string; label: string };
-type HomeAgendaItem = { id: string; description: string; dueDate: string; amount: number; meta: string; kind: 'VENCIDO' | 'FATURA' | 'PRÓXIMO' };
-type HomeAgendaGroup = { kind: 'VENCIDOS' | 'FATURA' | 'PRÓXIMOS'; title: string; subtitle: string; amount: number; count: number };
 
 const mainViews: ViewDefinition[] = [
   { id: 'home', icon: '⌂', label: 'Início' },
@@ -121,7 +120,6 @@ function todayIso() {
 }
 
 function HomeScreen({ data, month, onNavigate }: { data: PhoenixReadModel; month: string; onNavigate: (view: PhoenixView) => void }) {
-  const pendingCount = data.summary.pendingCount || 0;
   const pendingAmount = data.summary.pendingAmount || 0;
   const realizedBalance = data.summary.availableBalance + data.summary.realizedResult;
   const availableRevenue = data.summary.availableBalance + data.summary.realizedIncome;
@@ -129,43 +127,9 @@ function HomeScreen({ data, month, onNavigate }: { data: PhoenixReadModel; month
   const consolidatedRealized = realizedBalance + data.summary.benefitBalance;
   const recentAudit = data.financialAudit.items.slice(0, 3);
   const today = todayIso();
-
-  const payableAgenda: HomeAgendaItem[] = data.payables
-    .filter((item) => !['paid', 'cancelled'].includes(item.status) && Number(item.openAmount) > 0)
-    .map((item) => ({
-      id: `payable-${item.id}`,
-      description: item.description,
-      dueDate: item.dueDate,
-      amount: Number(item.openAmount || 0),
-      meta: item.category?.name || 'Conta a pagar',
-      kind: item.dueDate.slice(0, 10) < today ? 'VENCIDO' : 'PRÓXIMO'
-    }));
-
-  const eventAgenda: HomeAgendaItem[] = data.events.items
-    .filter((event) => event.status === 'planned'
-      && !['income', 'redemption', 'transfer'].includes(event.type)
-      && event.account?.type !== 'benefit'
-      && event.paymentMethod?.name?.trim().toUpperCase() !== 'VEROCARD')
-    .map((event) => {
-      const due = event.date.slice(0, 10);
-      const card = `${event.paymentMethod?.name || ''} ${event.sourceDetails?.paymentMethod || ''}`.toUpperCase().includes('CARTÃO');
-      return {
-        id: `event-${event.id}`,
-        description: event.description,
-        dueDate: event.date,
-        amount: Math.abs(Number(event.amount || 0)),
-        meta: event.category?.name || event.sourceDetails?.expenseClass || 'Lançamento planejado',
-        kind: due < today ? 'VENCIDO' : card ? 'FATURA' : 'PRÓXIMO'
-      };
-    });
-
-  const agendaSource = payableAgenda.length ? payableAgenda : eventAgenda;
-  const group = (kind: HomeAgendaItem['kind']) => agendaSource.filter((item) => item.kind === kind);
-  const agendaGroups = ([
-    { kind: 'VENCIDOS', title: 'Compromissos anteriores', subtitle: 'Agrupados por data de vencimento', amount: group('VENCIDO').reduce((sum, item) => sum + item.amount, 0), count: group('VENCIDO').length },
-    { kind: 'FATURA', title: 'Compras do mesmo cartão', subtitle: 'Uma fatura por cartão e vencimento', amount: group('FATURA').reduce((sum, item) => sum + item.amount, 0), count: group('FATURA').length },
-    { kind: 'PRÓXIMOS', title: 'Demais compromissos do período', subtitle: 'Ordenados por vencimento', amount: group('PRÓXIMO').reduce((sum, item) => sum + item.amount, 0), count: group('PRÓXIMO').length }
-  ] satisfies HomeAgendaGroup[]).filter((item) => item.count > 0);
+  const agenda = buildPhoenixHomeAgenda(data, today);
+  const agendaGroups = agenda.groups;
+  const agendaAmount = agenda.actionableAmount;
 
   return <>
     <div className="px-page-head"><div><span className="px-kicker">Visão geral</span><h1>{monthLabel(month)}</h1><p>Leitura do mês usando apenas os valores de referência definidos na regra de negócio do MEG.</p><span className="px-updated">Atualizado agora · {data.normalization.primary && data.normalization.reconciled ? 'dados sincronizados' : 'integridade em verificação'}</span></div></div>
@@ -188,7 +152,7 @@ function HomeScreen({ data, month, onNavigate }: { data: PhoenixReadModel; month
 
     <section className="px-bottom-grid">
       <article className="px-card"><div className="px-panel-head"><div><span>Histórico recente</span><h2>Últimos lançamentos</h2></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('history')}>Ver histórico completo</button></div><div>{recentAudit.map((item) => <div className="px-dashboard-row" key={item.id}><div className="px-dashboard-row-copy"><strong>{financialActionLabel(item.action)}</strong><small>{shortDate.format(new Date(item.at))} · {item.actor?.name || item.actor?.email || 'Usuário do MEG'}</small></div><span className={`px-history-state ${financialAuditStatus(item.action).toLocaleLowerCase('pt-BR')}`}>{financialAuditStatus(item.action)}</span><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('history')}>Abrir</button></div>)}{recentAudit.length === 0 ? <p className="px-empty">Nenhum evento de auditoria localizado.</p> : null}</div></article>
-      <article className="px-card"><div className="px-panel-head"><div><span>Agenda financeira</span><h2>Vencimentos agrupados</h2></div><strong>{money.format(pendingAmount)}</strong></div><div>{agendaGroups.map((item) => <div className="px-dashboard-row" key={item.kind}><span className={`px-due-label ${item.kind === 'VENCIDOS' ? 'danger' : item.kind === 'FATURA' ? 'invoice' : ''}`}>{item.kind}</span><div className="px-dashboard-row-copy"><strong>{item.title}</strong><small>{item.subtitle} · {item.count} item(ns) · {money.format(item.amount)}</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Detalhes</button></div>)}{agendaGroups.length === 0 ? <p className="px-empty">Nenhum compromisso aberto no período.</p> : null}</div></article>
+      <article className="px-card"><div className="px-panel-head"><div><span>Agenda financeira</span><h2>Vencimentos acionáveis</h2></div><strong>{money.format(agendaAmount)}</strong></div><div>{agendaGroups.map((item) => <div className="px-dashboard-row" key={item.kind}><span className={`px-due-label ${item.kind === 'VENCIDOS' ? 'danger' : item.kind === 'FATURA' ? 'invoice' : ''}`}>{item.kind}</span><div className="px-dashboard-row-copy"><strong>{item.title}</strong><small>{item.subtitle} · {item.count} item(ns) · {money.format(item.amount)}</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Detalhes</button></div>)}{agendaGroups.length === 0 ? <p className="px-empty">Nenhum compromisso acionável no período.</p> : null}</div></article>
     </section>
   </>;
 }
@@ -304,7 +268,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
 
   const data = loadState.status === 'ready' ? loadState.data : null;
   const currentView = views.find((item) => item.id === view) || mainViews[0];
-  const pendingCount = data?.summary.pendingCount || 0;
+  const pendingCount = data ? buildPhoenixHomeAgenda(data, todayIso()).items.length : 0;
   const toggleTheme = () => setTheme((value) => value === 'dark' ? 'light' : 'dark');
   const userInitial = (data?.user.name || 'M').slice(0, 1).toUpperCase();
 
