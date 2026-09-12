@@ -5,6 +5,8 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
+    "test:catalog-ownership": "tsx prisma/catalog-ownership-core.test.ts",
+    "db:audit:catalog-ownership": "tsx prisma/catalog-ownership-audit.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:push:production": "prisma db push --accept-data-loss",
