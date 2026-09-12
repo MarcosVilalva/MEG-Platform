@@ -16,9 +16,11 @@ for (const forbidden of ['global.css', 'v15-contract.css', 'meg-v15.css']) {
 assert.doesNotMatch(phoenixSource, /\.\.\/modules\//,
   'Phoenix não deve reutilizar componentes visuais da interface antiga');
 assert.doesNotMatch(loader, /method\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/,
-  'Bootstrap Phoenix deve permanecer somente leitura');
-assert.doesNotMatch(screens, /(?:create|update|delete|archive|pay|patchCloudTransactions)\s*\(/,
-  'Telas Phoenix em paridade não podem chamar mutações diretamente');
+  'Bootstrap Phoenix deve permanecer sem mutações explícitas');
+assert.doesNotMatch(screens, /from\s+['"][^'"]*app\/(?:finance-client|cards-client|payables-client|app-state-client)['"]/,
+  'Telas Phoenix não podem acessar clientes mutáveis diretamente durante a paridade');
+assert.doesNotMatch(screens, /patchCloudTransactions|createEvent|updateEvent|archiveEvent|createPurchase|payStatement/,
+  'Telas Phoenix não podem invocar gateways de escrita durante a paridade');
 assert.match(loader, /financeClient\.getSummary\(month\)/);
 assert.match(loader, /cardsClient\.list\(month\)/);
 assert.match(loader, /payablesClient\.list\(month\)/);
