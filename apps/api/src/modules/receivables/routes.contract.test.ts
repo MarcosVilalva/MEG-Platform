@@ -10,6 +10,10 @@ assert.match(routes, /receiveReceivableProtected/,
   'Recebimento deve passar pelo gateway transacional protegido.');
 assert.match(routes, /operationIdSchema/,
   'Criação e recebimento devem aceitar chave de idempotência.');
+assert.match(service, /const workspace = await resolveWorkspaceContext\(userId\)/,
+  'Criação e recebimento devem resolver o workspace mesmo sem operationId.');
+assert.match(service, /workspaceId: workspace\.workspaceId/,
+  'Evento financeiro gerado pelo recebimento deve persistir o workspace.');
 assert.match(service, /serializableFinancialTransaction/,
   'Criação e recebimento devem executar em transação serializável.');
 assert.match(service, /cloudMutationReceipt/,
