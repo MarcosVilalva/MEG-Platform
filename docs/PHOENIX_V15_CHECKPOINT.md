@@ -59,9 +59,36 @@ Telas já usando Grid MEG: Lançamentos, Cadastros, Cartões (fatura/parcelas), 
 ## Dados e compatibilidade
 - Snapshot mensal principal: `/finance/phoenix-preview?month=AAAA-MM`.
 - Pendentes usa `Payable` oficial quando houver registro e complementa, em read-only, com despesas planejadas reais ainda existentes no legado, sem duplicar.
+- No estado atual da base, `Payable`, `CardPurchase` e `CardInstallment` ainda não possuem os registros históricos necessários; por isso a compatibilidade read-only com eventos/AppState permanece necessária até migração controlada.
+- Pendentes usa `signedAmount` como autoridade para o efeito financeiro. Estornos de despesa permanecem ajustes negativos, não viram novas obrigações e não podem ser selecionados para baixa.
 - Cartões preserva domínio novo quando houver compras/parcelas normalizadas e usa a agenda legada real como compatibilidade read-only enquanto a migração não estiver concluída.
 - Benefício/Verocard permanece separado do caixa monetário.
 - Transferência é neutra no patrimônio e backend já possui fluxo atômico de duas pernas, mas Phoenix ainda não grava.
+
+## Política monetária consolidada na UI
+- `signedAmount` é a autoridade para o efeito financeiro de lançamentos normalizados.
+- Despesa normal possui `signedAmount` negativo; na apresentação de despesa o valor é `-signedAmount`.
+- Estorno/reversão de despesa possui efeito oposto e reduz o total de despesas, em vez de ser somado pelo valor absoluto.
+- Benefício/Verocard permanece visível nos lançamentos, mas não integra KPIs de receitas/despesas monetárias.
+- A tela Lançamentos mantém todos os eventos visíveis, mas os KPIs são explicitamente **Receitas monetárias**, **Despesas monetárias** e **Resultado monetário**.
+- Esses KPIs reagem aos filtros da grade e mantêm a referência do total do período.
+- A tela Receitas separa **Receitas monetárias** de **Benefício alimentação**, inclui a coluna/filtro `Escopo` e recalcula seus indicadores quando a grade é filtrada.
+- Fluxo de caixa e Home continuam usando o snapshot canônico do backend como autoridade de saldo realizado/projetado.
+
+## Paridade numérica de referência — setembro/2026
+Snapshot de auditoria direta da base para o usuário principal, usado como referência de homologação (não hardcodar na aplicação):
+- saldo monetário anterior ao mês: `R$ 2.643,56`;
+- receitas monetárias do mês: `R$ 10.581,99`;
+- despesas monetárias do mês, já considerando estornos: `R$ 12.454,42`;
+- despesas monetárias realizadas: `R$ 3.046,67`;
+- despesas monetárias pendentes líquidas: `R$ 9.407,75`;
+- saldo monetário realizado: `R$ 10.178,88`;
+- fechamento monetário projetado: `R$ 771,13`;
+- créditos de benefício no mês: `R$ 2.000,00`;
+- benefício utilizado no mês: `R$ 1.250,83`;
+- saldo de benefício ao fim do mês: `R$ 749,17`.
+
+A discrepância visual anterior de `R$ 14.139,19` em Despesas de Lançamentos vinha de `abs(amount)` e somava benefício + estornos como despesa positiva. Essa lógica foi removida; a UI deve seguir `signedAmount` e a separação monetário/benefício.
 
 ## Classificação e Grupo — regra validada em 12/09/2026
 - O cadastro real usa `Category.group` como **Classificação** e `Category.name` como **Grupo**.
@@ -71,6 +98,7 @@ Telas já usando Grid MEG: Lançamentos, Cadastros, Cartões (fatura/parcelas), 
 - No lançamento de **Receita**, classificação é opcional e Grupo não deve ser exigido.
 - Regra especial de Alimentação/benefício deve permanecer.
 - Leitura de lançamentos existentes: se não houver `sourceDetails`, `category.group` representa Classificação e `category.name` representa Grupo.
+- A mesma semântica Classificação/Grupo deve ser usada em Pendentes e demais telas derivadas.
 
 ## Validações já aceitas pelo usuário
 - Preview isolado e autenticação real.
@@ -81,14 +109,17 @@ Telas já usando Grid MEG: Lançamentos, Cadastros, Cartões (fatura/parcelas), 
 - Atualização silenciosa após primeira carga.
 
 ## Estado técnico atual
-- Último commit deste checkpoint deve ser conferido na PR #243; não confiar em SHA gravado aqui como fonte única.
+- Último commit funcional ao atualizar este checkpoint: `e0778459e74127104c95f95d38e32e239e5c528c`.
+- CI `MEG Platform CI` run **1254** passou integralmente.
+- Deploy correspondente do preview Render ficou **live** antes da atualização documental seguinte.
+- Último commit deste checkpoint deve sempre ser conferido na PR #243; não confiar em SHA gravado aqui como fonte única.
 - CI deve estar verde antes de considerar uma rodada concluída.
 - Preview Render deve estar `live` no commit correspondente.
 
 ## Próximos gates
-1. concluir paridade da área de lançamento, incluindo Classificação -> Grupo e demais regras V15;
+1. validar visualmente no preview a nova hierarquia Classificação -> Grupo e os KPIs monetários corrigidos;
 2. revisar áreas não tabulares para consistência visual e responsividade;
-3. validar numericamente saldo, benefício, despesas, pendentes, faturas e projeções contra a base real;
+3. continuar paridade numérica de saldo, benefício, pendentes, faturas e projeções contra a base real, com atenção especial ao agrupamento líquido das faturas de cartão;
 4. revisar índices/performance e dependências npm sem `npm audit fix --force`;
 5. somente depois começar habilitação seletiva de escrita, um fluxo por vez;
 6. corte da Web atual somente após paridade funcional, numérica e visual suficiente.
