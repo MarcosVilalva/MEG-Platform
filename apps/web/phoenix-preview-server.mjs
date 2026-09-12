@@ -22,6 +22,8 @@ const readPrefixes = [
   '/integrations'
 ];
 const allowedAuthPosts = new Set(['/auth/login', '/auth/refresh', '/auth/logout']);
+const allowedStaticFiles = new Set(['/phoenix.html']);
+const allowedStaticPrefixes = ['/assets/', '/brand/'];
 const hopByHopHeaders = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade', 'host', 'origin', 'referer', 'content-length']);
 
 function isApiPath(pathname) {
@@ -34,6 +36,11 @@ function isAllowedApiRequest(method, pathname) {
     return readPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`));
   }
   return method === 'POST' && allowedAuthPosts.has(pathname);
+}
+
+function isAllowedStaticPath(pathname) {
+  return allowedStaticFiles.has(pathname)
+    || allowedStaticPrefixes.some((prefix) => pathname.startsWith(prefix));
 }
 
 function mimeType(pathname) {
@@ -52,6 +59,16 @@ function mimeType(pathname) {
   }
 }
 
+function securityHeaders() {
+  return {
+    'x-content-type-options': 'nosniff',
+    'x-frame-options': 'DENY',
+    'referrer-policy': 'no-referrer',
+    'permissions-policy': 'camera=(), microphone=(), geolocation=()',
+    'cross-origin-opener-policy': 'same-origin'
+  };
+}
+
 async function readBody(request) {
   const chunks = [];
   let length = 0;
@@ -65,7 +82,11 @@ async function readBody(request) {
 
 async function proxyApi(request, response, url) {
   if (!isAllowedApiRequest(request.method || 'GET', url.pathname)) {
-    response.writeHead(405, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+    response.writeHead(405, {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      ...securityHeaders()
+    });
     response.end(JSON.stringify({ error: 'PREVIEW_READ_ONLY' }));
     return;
   }
@@ -86,6 +107,7 @@ async function proxyApi(request, response, url) {
     if (hopByHopHeaders.has(lower) || lower.startsWith('access-control-')) return;
     responseHeaders[name] = value;
   });
+  Object.assign(responseHeaders, securityHeaders());
   responseHeaders['cache-control'] = 'no-store';
   response.writeHead(upstream.status, responseHeaders);
   if (method === 'HEAD' || upstream.status === 204) {
@@ -101,21 +123,27 @@ function serveStatic(response, pathname) {
   try {
     decoded = decodeURIComponent(requested);
   } catch {
-    response.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
+    response.writeHead(400, { 'content-type': 'text/plain; charset=utf-8', ...securityHeaders() });
     response.end('Bad Request');
     return;
   }
+
+  if (!isAllowedStaticPath(decoded)) {
+    response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', ...securityHeaders() });
+    response.end('Not Found');
+    return;
+  }
+
   const filePath = resolve(distDir, `.${decoded}`);
   if (!filePath.startsWith(resolve(distDir)) || !existsSync(filePath) || !statSync(filePath).isFile()) {
-    response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
+    response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', ...securityHeaders() });
     response.end('Not Found');
     return;
   }
   response.writeHead(200, {
     'content-type': mimeType(filePath),
     'cache-control': decoded === '/phoenix.html' ? 'no-store' : 'public, max-age=31536000, immutable',
-    'x-content-type-options': 'nosniff',
-    'referrer-policy': 'no-referrer'
+    ...securityHeaders()
   });
   createReadStream(filePath).pipe(response);
 }
@@ -124,7 +152,11 @@ const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url || '/', 'http://phoenix-preview.local');
     if (url.pathname === '/preview-health') {
-      response.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+      response.writeHead(200, {
+        'content-type': 'application/json; charset=utf-8',
+        'cache-control': 'no-store',
+        ...securityHeaders()
+      });
       response.end(JSON.stringify({ status: 'ok', mode: 'phoenix-read-only-preview' }));
       return;
     }
@@ -133,14 +165,22 @@ const server = createServer(async (request, response) => {
       return;
     }
     if (!['GET', 'HEAD'].includes(request.method || 'GET')) {
-      response.writeHead(405, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+      response.writeHead(405, {
+        'content-type': 'application/json; charset=utf-8',
+        'cache-control': 'no-store',
+        ...securityHeaders()
+      });
       response.end(JSON.stringify({ error: 'PREVIEW_READ_ONLY' }));
       return;
     }
     serveStatic(response, url.pathname);
   } catch (error) {
     console.error('Phoenix preview request failed:', error instanceof Error ? error.message : 'UNKNOWN');
-    if (!response.headersSent) response.writeHead(502, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+    if (!response.headersSent) response.writeHead(502, {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      ...securityHeaders()
+    });
     response.end(JSON.stringify({ error: 'PREVIEW_PROXY_FAILED' }));
   }
 });
