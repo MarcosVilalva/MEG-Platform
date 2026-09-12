@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('./transfer-service.ts', import.meta.url), 'utf8');
+const routes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
 
 assert.match(source, /serializableFinancialTransaction/, 'Transferência deve ser atômica e serializável.');
 assert.match(source, /workspaceId_operationId/, 'Transferência deve consultar recibo idempotente por workspace + operationId.');
@@ -15,5 +16,8 @@ assert.match(source, /for \(const leg of legs\)/, 'As duas pernas devem ser pers
 assert.match(source, /ledgerEntry\.create/, 'Cada perna realizada deve gerar efeito no ledger da conta.');
 assert.match(source, /FINANCIAL_TRANSFER_CREATED/, 'Transferência deve gerar auditoria própria.');
 assert.match(source, /FINANCIAL_TRANSFER_CREATE/, 'Transferência deve registrar recibo idempotente próprio.');
+assert.match(routes, /app\.post\('\/transfers'/, 'A rota de transferência deve existir somente no domínio financeiro autenticado.');
+assert.match(routes, /transferRequestSchema/, 'A rota deve validar o payload antes de executar a transferência.');
+assert.match(routes, /createFinancialTransfer\(request\.user\.sub/, 'A rota deve usar o usuário autenticado como proprietário financeiro.');
 
 console.log('Contrato transacional de transferência validado.');
