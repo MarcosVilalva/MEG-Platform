@@ -64,6 +64,26 @@ export type PhoenixActivity = {
   } | null;
 };
 
+export type PhoenixFinancialAuditItem = {
+  id: string;
+  at: string;
+  actor?: { id?: string; name?: string; email?: string } | null;
+  entity: string;
+  entityId: string;
+  action: string;
+  schemaVersion: number;
+  before?: unknown;
+  after?: unknown;
+  context?: Record<string, unknown>;
+};
+
+export type PhoenixFinancialAuditPage = {
+  items: PhoenixFinancialAuditItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 export type PhoenixWorkspaceUsers = {
   status: 'ready' | 'restricted' | 'error';
   users: AuthUser[];
@@ -100,13 +120,15 @@ export type PhoenixReadModel = {
   customers: Customer[];
   receivables: Receivable[];
   events: PhoenixEventPage;
+  financialAudit: PhoenixFinancialAuditPage;
   activities: PhoenixActivity[];
   workspaceUsers: PhoenixWorkspaceUsers;
   sourcePolicy: {
     mode: 'read-only';
     summary: 'finance-domain';
     events: 'finance-domain';
-    activities: 'app-state-activity-log';
+    financialAudit: 'finance-audit-log';
+    activities: 'app-state-activity-log-legacy';
     users: 'auth-admin-read';
     receivables: 'receivables-domain';
     analytics: 'finance-domain';
