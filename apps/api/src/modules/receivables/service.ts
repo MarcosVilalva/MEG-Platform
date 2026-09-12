@@ -132,11 +132,11 @@ export async function receiveReceivableProtected(userId: string, receivableId: s
     }
 
     const account = input.accountId
-      ? await tx.account.findFirst({ where: { id: input.accountId, isActive: true }, select: { id: true, name: true } })
+      ? await tx.account.findFirst({ where: { id: input.accountId, userId, isActive: true }, select: { id: true, name: true } })
       : null;
     if (input.accountId && !account) throw new ReceivableDomainError('INVALID_ACCOUNT');
     const paymentMethod = input.paymentMethodId
-      ? await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, isActive: true }, select: { id: true, name: true } })
+      ? await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, userId, isActive: true }, select: { id: true, name: true } })
       : null;
     if (input.paymentMethodId && !paymentMethod) throw new ReceivableDomainError('INVALID_PAYMENT_METHOD');
 
