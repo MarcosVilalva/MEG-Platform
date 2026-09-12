@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@meg/database';
-import { addMonthsClamped, moveWeekendToMonday, parseIsoDay } from './core';
+import { createPayablesProtected } from './create-service';
 import {
   createRecurringExpense,
   listPayables,
@@ -14,6 +14,7 @@ const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
 const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const isoDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}/);
+const operationIdSchema = z.string().trim().min(8).max(128).optional();
 
 const payableSchema = z.object({
   categoryId: z.string().optional().nullable(),
@@ -22,6 +23,7 @@ const payableSchema = z.object({
   dueDate: isoDaySchema,
   installmentQty: z.coerce.number().int().min(1).max(60).default(1),
   notes: z.string().max(500).optional().nullable(),
+  operationId: operationIdSchema,
 });
 
 const paymentSchema = z.object({
@@ -32,7 +34,7 @@ const paymentSchema = z.object({
   accountId: z.string().optional().nullable(),
   paymentMethodId: z.string().optional().nullable(),
   notes: z.string().max(500).optional().nullable(),
-  operationId: z.string().trim().min(8).max(128).optional(),
+  operationId: operationIdSchema,
 });
 
 const recurringSchema = z.object({
@@ -44,6 +46,7 @@ const recurringSchema = z.object({
   endDate: isoDaySchema.optional().nullable(),
   occurrenceCount: z.coerce.number().int().min(2).max(120).optional(),
   notes: z.string().max(500).optional().nullable(),
+  operationId: operationIdSchema,
 });
 
 function validationError(reply: FastifyReply, details: unknown) {
@@ -66,34 +69,12 @@ export async function payableRoutes(app: FastifyInstance) {
   app.post('/', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = payableSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    const firstDay = parsed.data.dueDate.slice(0, 10);
-    const anchor = parseIsoDay(firstDay)?.day;
-    if (!anchor) return validationError(reply, { dueDate: ['Data de vencimento inválida.'] });
-    if (parsed.data.categoryId) {
-      const category = await prisma.category.findFirst({ where: { id: parsed.data.categoryId, isActive: true } });
-      if (!category) return reply.code(400).send({ error: 'INVALID_CATEGORY' });
+    try {
+      const result = await createPayablesProtected(request.user.sub, parsed.data);
+      return reply.code(201).send(result);
+    } catch (error) {
+      return domainError(reply, error);
     }
-    const totalCents = Math.round(parsed.data.totalAmount * 100);
-    const base = Math.floor(totalCents / parsed.data.installmentQty);
-    const remainder = totalCents - base * parsed.data.installmentQty;
-    const rows = Array.from({ length: parsed.data.installmentQty }, (_, index) => {
-      const amount = (base + (index < remainder ? 1 : 0)) / 100;
-      const calendarDay = addMonthsClamped(firstDay, index, anchor);
-      const dueDay = moveWeekendToMonday(calendarDay);
-      return {
-        userId: request.user.sub,
-        categoryId: parsed.data.categoryId,
-        description: parsed.data.installmentQty > 1 ? `${parsed.data.description} ${index + 1}/${parsed.data.installmentQty}` : parsed.data.description,
-        totalAmount: amount,
-        openAmount: amount,
-        dueDate: new Date(`${dueDay}T00:00:00.000Z`),
-        installmentNo: index + 1,
-        installmentQty: parsed.data.installmentQty,
-        notes: parsed.data.notes,
-      };
-    });
-    await prisma.payable.createMany({ data: rows });
-    return reply.code(201).send({ created: rows.length });
   });
 
   app.post('/recurring', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
