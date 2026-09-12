@@ -84,8 +84,10 @@ export async function listFinancialAudit(actorId: string, input: {
   entity?: string;
 }) {
   const workspace = await resolveWorkspaceContext(actorId);
+  // Histórico é imutável: ações de um membro que depois foi bloqueado/inativado
+  // continuam pertencendo ao histórico financeiro do workspace.
   const members = await prisma.workspaceMember.findMany({
-    where: { workspaceId: workspace.workspaceId, isActive: true },
+    where: { workspaceId: workspace.workspaceId },
     select: { userId: true },
   });
   const memberIds = members.map((item) => item.userId);
