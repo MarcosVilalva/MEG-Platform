@@ -3,7 +3,7 @@ import {
   getApiHealth,
   readSession
 } from '../../app/auth-client';
-import { financeClient } from '../../app/finance-client';
+import { financeClient, type FinancialEvent } from '../../app/finance-client';
 import { receivablesClient } from '../../app/receivables-client';
 import type {
   PhoenixActivity,
@@ -53,9 +53,47 @@ type CachedReadModel = {
   storedAt: number;
 };
 
+type FinancialEventWithSourcePayload = FinancialEvent & {
+  sourcePayload?: unknown;
+};
+
 const readModelCache = new Map<string, CachedReadModel>();
 const readModelInFlight = new Map<string, Promise<PhoenixReadModel>>();
 const BOOTSTRAP_CACHE_TTL = 45_000;
+
+function sourcePayloadDetails(event: FinancialEvent) {
+  const payload = (event as FinancialEventWithSourcePayload).sourcePayload;
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return event.sourceDetails || null;
+
+  const source = payload as Record<string, unknown>;
+  const existing = event.sourceDetails;
+  const read = (...keys: string[]) => {
+    for (const key of keys) {
+      const value = source[key];
+      if (value !== null && value !== undefined && String(value).trim()) return String(value).trim();
+    }
+    return '';
+  };
+
+  const details = {
+    weekday: existing?.weekday || read('weekday', 'dayOfWeek'),
+    launchType: existing?.launchType || read('launchType', 'type'),
+    expenseClass: existing?.expenseClass || read('expenseClass', 'classification'),
+    group: existing?.group || read('group', 'category'),
+    paymentMethod: existing?.paymentMethod || read('paymentMethod', 'account'),
+    situation: existing?.situation || read('situation', 'status'),
+    modality: existing?.modality || read('modality'),
+    observations: existing?.observations || read('observations', 'notes')
+  };
+
+  return Object.values(details).some(Boolean) ? details : null;
+}
+
+function hydrateEventSourceDetails(event: FinancialEvent): FinancialEvent {
+  const details = sourcePayloadDetails(event);
+  if (!details) return event;
+  return { ...event, sourceDetails: details };
+}
 
 async function loadWorkspaceUsers(role: string): Promise<PhoenixWorkspaceUsers> {
   if (role !== 'ADMIN') return { status: 'restricted', users: [] };
@@ -113,6 +151,11 @@ async function fetchPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
         .map((item) => ({ ...item }))
     : [];
 
+  const events = {
+    ...previewCore.events,
+    items: previewCore.events.items.map(hydrateEventSourceDetails)
+  };
+
   return {
     month,
     loadedAt: new Date().toISOString(),
@@ -130,7 +173,7 @@ async function fetchPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
     payables: previewCore.payables,
     customers,
     receivables,
-    events: previewCore.events,
+    events,
     financialAudit: previewCore.financialAudit,
     activities,
     legacyTransactions,
@@ -138,7 +181,7 @@ async function fetchPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
     sourcePolicy: {
       mode: 'read-only',
       summary: 'finance-domain',
-      events: 'finance-domain-month',
+      events: 'finance-domain-month-with-source-payload-compatibility',
       financialAudit: 'finance-audit-log',
       activities: 'app-state-activity-log-legacy',
       legacyTransactions: 'app-state-transactions-read-only',
@@ -171,6 +214,7 @@ export function peekPhoenixReadModel(month: string) {
  * - a normalização é observada explicitamente para evitar esconder fallback;
  * - activityLog permanece carregado somente como histórico legado anterior à auditoria normalizada;
  * - transactions permanece disponível somente como compatibilidade de leitura para cartões/pendências legadas;
+ * - sourcePayload do domínio financeiro é usado somente como compatibilidade de leitura para preservar classificação/grupo legados ainda não normalizados em categoryId;
  * - usuários são consultados pela rota administrativa oficial e nunca alterados aqui;
  * - o snapshot pode ser preparado durante a entrada para que a navegação interna não exiba carregamentos repetidos.
  */
