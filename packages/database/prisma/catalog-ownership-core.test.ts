@@ -9,6 +9,7 @@ const accounts = planCatalogOwnership('account', [
   { id: 'a1', label: 'Santander' },
   { id: 'a2', label: 'Caixa' },
   { id: 'a3', label: 'Sem uso' },
+  { id: 'a4', label: 'Conta nova', currentOwnerId: 'u1' },
 ], [
   { catalogId: 'a1', userId: 'u1', source: 'FinancialEvent', referenceId: 'e1' },
   { catalogId: 'a1', userId: 'u1', source: 'LedgerEntry', referenceId: 'l1' },
@@ -17,16 +18,20 @@ const accounts = planCatalogOwnership('account', [
 ]);
 
 assert.equal(assertOwnershipPlanIsDeterministic(accounts), true);
-assert.equal(accounts.singleOwner, 1);
+assert.equal(accounts.singleOwner, 2);
 assert.equal(accounts.multiOwner, 1);
 assert.equal(accounts.unresolved, 1);
+assert.equal(accounts.ownerConflicts, 0);
 assert.equal(accounts.requiresReview, 1);
 assert.deepEqual(accounts.items.find((item) => item.catalogId === 'a1')?.owners, ['u1']);
 assert.deepEqual(accounts.items.find((item) => item.catalogId === 'a2')?.owners, ['u1', 'u2']);
 assert.equal(accounts.items.find((item) => item.catalogId === 'a2')?.primaryOwnerId, 'u1');
 assert.deepEqual(accounts.items.find((item) => item.catalogId === 'a2')?.cloneOwnerIds, ['u2']);
 assert.equal(accounts.items.find((item) => item.catalogId === 'a3')?.unresolved, true,
-  'Catálogo sem referência não pode receber proprietário por adivinhação.');
+  'Catálogo sem proprietário nem referência não pode receber proprietário por adivinhação.');
+assert.equal(accounts.items.find((item) => item.catalogId === 'a4')?.primaryOwnerId, 'u1');
+assert.equal(accounts.items.find((item) => item.catalogId === 'a4')?.requiresReview, false,
+  'Catálogo novo com proprietário explícito deve permanecer válido mesmo antes de receber referências.');
 
 const paymentMethods = planCatalogOwnership('paymentMethod', [
   { id: 'p1', label: 'Pix' },
@@ -48,14 +53,27 @@ assert.equal(mixed.items[0].primaryOwnerId, 'u1');
 assert.equal(mixed.items[0].requiresReview, true,
   'Mesmo com proprietário provável, referência sem userId deve bloquear migração automática.');
 
+const conflicting = planCatalogOwnership('category', [
+  { id: 'c2', label: 'Moradia', currentOwnerId: 'u1' },
+], [
+  { catalogId: 'c2', userId: 'u2', source: 'Payable', referenceId: 'pay1' },
+]);
+assert.equal(conflicting.ownerConflicts, 1);
+assert.equal(conflicting.items[0].primaryOwnerId, 'u1',
+  'Proprietário já persistido nunca deve ser trocado silenciosamente pelo auditor.');
+assert.equal(conflicting.items[0].requiresReview, true,
+  'Referências incompatíveis com o proprietário persistido exigem revisão.');
+assert.deepEqual(conflicting.items[0].cloneOwnerIds, ['u2']);
+
 const summary = ownershipPlanSummary([accounts, paymentMethods]);
 assert.deepEqual(summary[0], {
   kind: 'account',
-  totalCatalogs: 3,
+  totalCatalogs: 4,
   referencedCatalogs: 2,
-  singleOwner: 1,
+  singleOwner: 2,
   multiOwner: 1,
   unresolved: 1,
+  ownerConflicts: 0,
   requiresReview: 1,
   clonesRequired: 1,
   ownerlessReferences: 0,
