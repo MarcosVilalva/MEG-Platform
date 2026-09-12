@@ -12,6 +12,7 @@ import {
 } from './service';
 import { getCanonicalFinancialAnalytics, getCanonicalFinancialCashflow, getCanonicalFinancialSummary } from './read-model';
 import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
+import { FinancialTransferError, createFinancialTransfer } from './transfer-service';
 import { prisma } from '@meg/database';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
@@ -19,6 +20,15 @@ const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
 const operationIdSchema = z.string().trim().min(8).max(128).optional();
 const createEventRequestSchema = createFinancialEventSchema.extend({ operationId: operationIdSchema });
+const transferRequestSchema = z.object({
+  operationId: z.string().trim().min(8).max(128),
+  sourceAccountId: z.string().trim().min(1).max(128),
+  destinationAccountId: z.string().trim().min(1).max(128),
+  amount: z.coerce.number().positive().finite(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  description: z.string().trim().min(2).max(160).optional(),
+  notes: z.string().trim().max(1000).optional(),
+});
 
 const accountSchema = z.object({
   name: z.string().min(2).max(120),
@@ -56,6 +66,12 @@ function eventError(reply: FastifyReply, error: unknown) {
     return reply.code(400).send({ error: error.message });
   }
   throw error;
+}
+
+function transferError(reply: FastifyReply, error: unknown) {
+  if (!(error instanceof FinancialTransferError)) throw error;
+  const status = ['OPERATION_ID_REUSED', 'INSUFFICIENT_SOURCE_ACCOUNT_BALANCE'].includes(error.code) ? 409 : 400;
+  return reply.code(status).send({ error: error.code, ...(error.details || {}) });
 }
 
 export async function financeRoutes(app: FastifyInstance) {
@@ -133,6 +149,16 @@ export async function financeRoutes(app: FastifyInstance) {
       return reply.code(201).send(await createFinancialEventProtected(request.user.sub, parsed.data));
     } catch (error) {
       return eventError(reply, error);
+    }
+  });
+
+  app.post('/transfers', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
+    const parsed = transferRequestSchema.safeParse(request.body);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    try {
+      return reply.code(201).send(await createFinancialTransfer(request.user.sub, parsed.data));
+    } catch (error) {
+      return transferError(reply, error);
     }
   });
 
