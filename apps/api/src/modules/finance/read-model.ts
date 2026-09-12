@@ -2,6 +2,7 @@ import { prisma } from '@meg/database';
 import {
   countsTowardMonetaryBalance,
   isMonetaryFinancialEvent,
+  monetaryOpeningBalance,
   summarizeMonetaryEvents,
 } from './monetary-protection';
 
@@ -20,7 +21,7 @@ function round(value: number) {
 export async function getCanonicalFinancialSummary(userId: string, month: string) {
   const { start, end } = monthRange(month);
   const now = new Date();
-  const [monthEvents, historicalEvents, futureCandidates] = await Promise.all([
+  const [monthEvents, historicalEvents, futureCandidates, openingBalance] = await Promise.all([
     prisma.financialEvent.findMany({
       where: { userId, archivedAt: null, date: { gte: start, lt: end } },
       select: {
@@ -31,6 +32,7 @@ export async function getCanonicalFinancialSummary(userId: string, month: string
         date: true,
         amount: true,
         signedAmount: true,
+        account: { select: { type: true } },
         category: { select: { name: true } },
         paymentMethod: { select: { name: true } },
       },
@@ -42,6 +44,7 @@ export async function getCanonicalFinancialSummary(userId: string, month: string
         type: true,
         status: true,
         signedAmount: true,
+        account: { select: { type: true } },
         paymentMethod: { select: { name: true } },
       },
     }),
@@ -57,15 +60,17 @@ export async function getCanonicalFinancialSummary(userId: string, month: string
         date: true,
         amount: true,
         signedAmount: true,
+        account: { select: { type: true } },
         paymentMethod: { select: { name: true } },
       },
     }),
+    monetaryOpeningBalance(prisma, userId),
   ]);
 
   const summary = summarizeMonetaryEvents(monthEvents);
   const availableBalance = round(historicalEvents
     .filter(countsTowardMonetaryBalance)
-    .reduce((sum, event) => sum + Number(event.signedAmount), 0));
+    .reduce((sum, event) => sum + Number(event.signedAmount), openingBalance));
   const pendingEvents = monthEvents.filter((event) =>
     event.status === 'planned'
     && isMonetaryFinancialEvent(event)
@@ -112,7 +117,7 @@ export async function getCanonicalFinancialSummary(userId: string, month: string
 
 export async function getCanonicalFinancialCashflow(userId: string, month: string) {
   const { start, end } = monthRange(month);
-  const [openingEvents, rawEvents] = await Promise.all([
+  const [openingEvents, rawEvents, accountOpeningBalance] = await Promise.all([
     prisma.financialEvent.findMany({
       where: { userId, archivedAt: null, date: { lt: start } },
       select: {
@@ -120,6 +125,7 @@ export async function getCanonicalFinancialCashflow(userId: string, month: strin
         type: true,
         status: true,
         signedAmount: true,
+        account: { select: { type: true } },
         paymentMethod: { select: { name: true } },
       },
     }),
@@ -134,16 +140,18 @@ export async function getCanonicalFinancialCashflow(userId: string, month: strin
         type: true,
         amount: true,
         signedAmount: true,
+        account: { select: { type: true } },
         category: { select: { name: true } },
         paymentMethod: { select: { name: true } },
       },
     }),
+    monetaryOpeningBalance(prisma, userId),
   ]);
 
   const events = rawEvents.filter(isMonetaryFinancialEvent);
   const openingBalance = round(openingEvents
     .filter(countsTowardMonetaryBalance)
-    .reduce((sum, event) => sum + Number(event.signedAmount), 0));
+    .reduce((sum, event) => sum + Number(event.signedAmount), accountOpeningBalance));
   let projectedBalance = openingBalance;
   let realizedBalance = openingBalance;
   const days = new Map<string, {
@@ -218,6 +226,7 @@ export async function getCanonicalFinancialAnalytics(userId: string, month: stri
         status: true,
         signedAmount: true,
         date: true,
+        account: { select: { type: true } },
         category: { select: { name: true, group: true } },
         paymentMethod: { select: { name: true } },
       },
@@ -230,6 +239,7 @@ export async function getCanonicalFinancialAnalytics(userId: string, month: stri
         type: true,
         status: true,
         signedAmount: true,
+        account: { select: { type: true } },
         paymentMethod: { select: { name: true } },
       },
     }),
