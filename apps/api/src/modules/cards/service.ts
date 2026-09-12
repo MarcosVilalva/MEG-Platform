@@ -223,7 +223,12 @@ export async function createCardPurchaseProtected(userId: string, input: {
       action: 'CARD_PURCHASE_CREATED',
       before: null,
       after: purchase,
-      context: { operationId: input.operationId ?? null, ownerId: shared.ownerId, firstStatementMonth: firstMonth },
+      context: {
+        operationId: input.operationId ?? null,
+        ownerId: shared.ownerId,
+        workspaceId: shared.workspaceId,
+        firstStatementMonth: firstMonth,
+      },
     });
 
     const response = { ...purchase, idempotentReplay: false };
@@ -289,6 +294,7 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
     });
     const event = await tx.financialEvent.create({ data: {
       userId: shared.ownerId,
+      workspaceId: shared.workspaceId,
       description: `Fatura ${card.name} ${month}`,
       type: 'expense',
       status: 'paid',
@@ -308,7 +314,12 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
       action: 'CARD_STATEMENT_PAID',
       before: { card, statementMonth: month, openEntries: entries },
       after: { statementMonth: month, paidEntryIds: entries.map((entry) => entry.id), paidAt: input.paidAt, amount, financialEventId: event.id },
-      context: { protection: response.protection, operationId: input.operationId ?? null, ownerId: shared.ownerId }
+      context: {
+        protection: response.protection,
+        operationId: input.operationId ?? null,
+        ownerId: shared.ownerId,
+        workspaceId: shared.workspaceId,
+      }
     });
 
     if (input.operationId && requestHash) {
