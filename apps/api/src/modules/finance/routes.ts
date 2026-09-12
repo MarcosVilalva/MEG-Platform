@@ -22,7 +22,7 @@ const createEventRequestSchema = createFinancialEventSchema.extend({ operationId
 
 const accountSchema = z.object({
   name: z.string().min(2).max(120),
-  type: z.enum(['checking', 'savings', 'cash', 'investment', 'credit']),
+  type: z.enum(['checking', 'savings', 'cash', 'investment', 'credit', 'benefit']),
   institution: z.string().max(120).optional().nullable(),
   openingBalance: z.coerce.number().finite().default(0),
   isActive: z.boolean().optional()
