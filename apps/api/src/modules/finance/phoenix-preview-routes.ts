@@ -1,0 +1,22 @@
+import type { FastifyInstance, FastifyReply } from 'fastify';
+import { z } from 'zod';
+import { getPhoenixPreviewReadModel } from './phoenix-preview-read';
+
+const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
+const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
+
+function validationError(reply: FastifyReply, details: unknown) {
+  return reply.code(400).send({ error: 'VALIDATION_ERROR', details });
+}
+
+/**
+ * Contrato isolado, estritamente de leitura, usado para validar a Phoenix V15
+ * contra a base real sem alterar os endpoints atuais da produção.
+ */
+export function registerPhoenixPreviewReads(app: FastifyInstance) {
+  app.get('/phoenix-preview', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    const parsed = z.object({ month: monthSchema }).safeParse(request.query);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    return getPhoenixPreviewReadModel(request.user.sub, parsed.data.month);
+  });
+}
