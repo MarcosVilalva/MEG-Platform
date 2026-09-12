@@ -7,7 +7,7 @@
   "scripts": {
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:push:production": "prisma db push --accept-data-loss",
+    "db:push:production": "prisma db push --accept-data-loss && tsx prisma/ensure-performance-indexes.ts",
     "db:prepare:production": "tsx prisma/prepare-production.ts",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
