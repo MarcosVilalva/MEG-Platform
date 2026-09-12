@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@meg/database';
 import {
   CardDomainError,
+  createCardPurchaseProtected,
   listCards,
   payCardStatementProtected,
   sharedCardContext,
@@ -30,6 +31,7 @@ const purchaseSchema = z.object({
   totalAmount: z.coerce.number().positive().finite(),
   purchaseDate: z.string().min(10),
   installments: z.coerce.number().int().min(1).max(48).default(1),
+  operationId: z.string().trim().min(8).max(128).optional(),
 });
 const statementPaymentSchema = z.object({
   accountId: z.string().optional().nullable(),
@@ -46,11 +48,6 @@ function domainError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof CardDomainError)) throw error;
   const status = error.code === 'CARD_NOT_FOUND' ? 404 : error.code === 'OPERATION_ID_REUSED' ? 409 : 400;
   return reply.code(status).send({ error: error.code, ...(error.details || {}) });
-}
-
-function addMonths(month: string, offset: number) {
-  const [year, monthNumber] = month.split('-').map(Number);
-  return new Date(Date.UTC(year, monthNumber - 1 + offset, 1)).toISOString().slice(0, 7);
 }
 
 export async function cardRoutes(app: FastifyInstance) {
@@ -88,41 +85,12 @@ export async function cardRoutes(app: FastifyInstance) {
   app.post('/purchases', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = purchaseSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    const { ownerId } = await sharedCardContext(request.user.sub);
-    const card = await prisma.creditCard.findFirst({ where: { id: parsed.data.cardId, userId: ownerId, isActive: true } });
-    if (!card) return reply.code(400).send({ error: 'INVALID_CARD' });
-    if (parsed.data.categoryId) {
-      const category = await prisma.category.findFirst({ where: { id: parsed.data.categoryId, isActive: true } });
-      if (!category) return reply.code(400).send({ error: 'INVALID_CATEGORY' });
+    try {
+      const purchase = await createCardPurchaseProtected(request.user.sub, parsed.data);
+      return reply.code(201).send(purchase);
+    } catch (error) {
+      return domainError(reply, error);
     }
-
-    const purchaseDate = new Date(parsed.data.purchaseDate);
-    const purchaseMonth = parsed.data.purchaseDate.slice(0, 7);
-    const firstMonth = addMonths(purchaseMonth, purchaseDate.getUTCDate() > card.closingDay ? 1 : 0);
-    const totalCents = Math.round(parsed.data.totalAmount * 100);
-    const baseCents = Math.floor(totalCents / parsed.data.installments);
-    const remainder = totalCents - baseCents * parsed.data.installments;
-
-    const purchase = await prisma.cardPurchase.create({
-      data: {
-        userId: ownerId,
-        cardId: card.id,
-        categoryId: parsed.data.categoryId,
-        description: parsed.data.description,
-        totalAmount: parsed.data.totalAmount,
-        purchaseDate,
-        installments: parsed.data.installments,
-        entries: {
-          create: Array.from({ length: parsed.data.installments }, (_, index) => ({
-            number: index + 1,
-            amount: (baseCents + (index < remainder ? 1 : 0)) / 100,
-            statementMonth: addMonths(firstMonth, index),
-          })),
-        },
-      },
-      include: { entries: true, category: true },
-    });
-    return reply.code(201).send(purchase);
   });
 
   app.delete('/purchases/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
