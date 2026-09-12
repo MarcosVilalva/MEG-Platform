@@ -12,6 +12,7 @@ import {
 } from './service';
 import { getCanonicalFinancialAnalytics, getCanonicalFinancialCashflow, getCanonicalFinancialSummary } from './read-model';
 import { getPhoenixBenefitSummary, listPhoenixFinancialEventsForMonth } from './phoenix-read';
+import { registerPhoenixPreviewReads } from './phoenix-preview-routes';
 import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
 import { FinancialTransferError, createFinancialTransfer } from './transfer-service';
 import { prisma } from '@meg/database';
@@ -77,6 +78,8 @@ function transferError(reply: FastifyReply, error: unknown) {
 }
 
 export async function financeRoutes(app: FastifyInstance) {
+  registerPhoenixPreviewReads(app);
+
   app.get('/analytics', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
