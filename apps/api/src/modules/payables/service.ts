@@ -46,6 +46,7 @@ export type RecurringExpenseInput = {
   endDate?: string | null;
   occurrenceCount?: number;
   notes?: string | null;
+  operationId?: string;
 };
 
 function dateOnly(value: Date | string) {
@@ -140,8 +141,22 @@ export async function createRecurringExpense(userId: string, input: RecurringExp
     : input.endDate?.slice(0, 10) || null;
   if (computedEnd && (!parseIsoDay(computedEnd) || computedEnd < firstDay)) throw new PayableDomainError('INVALID_RECURRENCE_END');
   const horizon = computedEnd || rollingHorizon(firstDay, input.frequency);
+  const workspace = input.operationId ? await resolveWorkspaceContext(userId) : null;
+  const requestHash = input.operationId
+    ? mutationRequestHash({ ...input, operationId: undefined, computedEnd, horizon })
+    : null;
 
-  return prisma.$transaction(async (tx) => {
+  return serializableFinancialTransaction(async (tx) => {
+    if (input.operationId && workspace && requestHash) {
+      const previous = await tx.cloudMutationReceipt.findUnique({
+        where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
+      });
+      if (previous) {
+        if (previous.requestHash !== requestHash) throw new PayableDomainError('OPERATION_ID_REUSED');
+        return previous.response as unknown;
+      }
+    }
+
     if (input.categoryId) {
       const category = await tx.category.findFirst({ where: { id: input.categoryId, isActive: true } });
       if (!category) throw new PayableDomainError('INVALID_CATEGORY');
@@ -159,15 +174,27 @@ export async function createRecurringExpense(userId: string, input: RecurringExp
       },
     });
     const materialized = await materializeTemplate(tx, template, horizon);
-    const result = { ...template, endDate: computedEnd, materialized };
+    const result = { ...template, endDate: computedEnd, materialized, idempotentReplay: false };
     await recordFinancialAudit(tx, {
       actorId: userId,
       entity: 'RecurringExpense',
       entityId: template.id,
       action: 'RECURRING_EXPENSE_CREATED',
       after: result,
-      context: { occurrenceCount: input.occurrenceCount ?? null, horizon }
+      context: { occurrenceCount: input.occurrenceCount ?? null, horizon, operationId: input.operationId ?? null }
     });
+
+    if (input.operationId && workspace && requestHash) {
+      const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
+      await tx.cloudMutationReceipt.create({ data: receiptCreateData({
+        workspaceId: workspace.workspaceId,
+        operationId: input.operationId,
+        requestHash,
+        mutationType: 'RECURRING_EXPENSE_CREATE',
+        revision: state?.revision || 0,
+        response: result,
+      }) });
+    }
     return result;
   });
 }
