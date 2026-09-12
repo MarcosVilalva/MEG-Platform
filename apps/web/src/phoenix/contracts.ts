@@ -60,6 +60,17 @@ export type PhoenixActivity = {
   } | null;
 };
 
+export type PhoenixWorkspaceUsers = {
+  status: 'ready' | 'restricted' | 'error';
+  users: AuthUser[];
+  workspace?: {
+    id?: string;
+    name?: string;
+    slug?: string;
+  } | null;
+  error?: string;
+};
+
 export type PhoenixEventPage = {
   items: FinancialEvent[];
   total: number;
@@ -81,11 +92,13 @@ export type PhoenixReadModel = {
   payables: Payable[];
   events: PhoenixEventPage;
   activities: PhoenixActivity[];
+  workspaceUsers: PhoenixWorkspaceUsers;
   sourcePolicy: {
     mode: 'read-only';
     summary: 'finance-domain';
     events: 'finance-domain';
     activities: 'app-state-activity-log';
+    users: 'auth-admin-read';
     sharedFallback: 'app-state-normalized-read';
     cards: 'cards-domain-with-legacy-compatibility';
     payables: 'payables-domain';
