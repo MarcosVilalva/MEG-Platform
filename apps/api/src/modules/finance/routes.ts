@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { createFinancialEventSchema, updateFinancialEventSchema } from './schemas';
+import { listFinancialAudit } from './audit';
 import {
   createFinancialEvent,
   deleteFinancialEvent,
@@ -45,8 +46,10 @@ function validationError(reply: FastifyReply, details: unknown) {
 }
 
 function eventError(reply: FastifyReply, error: unknown) {
-  if (error instanceof Error && error.message === 'FINANCIAL_EVENT_NOT_FOUND') {
-    return reply.code(404).send({ error: 'FINANCIAL_EVENT_NOT_FOUND' });
+  if (!(error instanceof Error)) throw error;
+  if (error.message === 'FINANCIAL_EVENT_NOT_FOUND') return reply.code(404).send({ error: error.message });
+  if (['INVALID_ACCOUNT', 'INVALID_CATEGORY', 'INVALID_PAYMENT_METHOD'].includes(error.message)) {
+    return reply.code(400).send({ error: error.message });
   }
   throw error;
 }
@@ -85,6 +88,7 @@ export async function financeRoutes(app: FastifyInstance) {
       throw error;
     }
   });
+
   app.get('/cashflow', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({
       month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/)
@@ -92,6 +96,7 @@ export async function financeRoutes(app: FastifyInstance) {
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     return getFinancialCashflow(request.user.sub, parsed.data.month);
   });
+
   app.get('/summary', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({
       month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/)
@@ -99,6 +104,7 @@ export async function financeRoutes(app: FastifyInstance) {
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     return getFinancialSummary(request.user.sub, parsed.data.month);
   });
+
   app.get('/events', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({
       page: z.coerce.number().int().positive().default(1),
@@ -109,10 +115,25 @@ export async function financeRoutes(app: FastifyInstance) {
     return listFinancialEvents(request.user.sub, parsed.data);
   });
 
+  app.get('/audit', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    const parsed = z.object({
+      page: z.coerce.number().int().positive().default(1),
+      pageSize: z.coerce.number().int().min(10).max(100).default(50),
+      action: z.string().trim().max(80).optional(),
+      entity: z.string().trim().max(80).optional(),
+    }).safeParse(request.query);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    return listFinancialAudit(request.user.sub, parsed.data);
+  });
+
   app.post('/events', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = createFinancialEventSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return reply.code(201).send(await createFinancialEvent(request.user.sub, parsed.data));
+    try {
+      return reply.code(201).send(await createFinancialEvent(request.user.sub, parsed.data));
+    } catch (error) {
+      return eventError(reply, error);
+    }
   });
 
   app.patch('/events/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
