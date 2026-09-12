@@ -23,6 +23,10 @@ function statusText(status: string) {
   return ({ open: 'Em aberto', partial: 'Parcial', paid: 'Recebido', overdue: 'Vencido' } as Record<string, string>)[status] || status;
 }
 
+function normalize(value: unknown) {
+  return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('pt-BR');
+}
+
 export function PhoenixReceivables({ data }: { data: PhoenixReadModel }) {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
@@ -66,10 +70,38 @@ export function PhoenixCashflow({ data }: { data: PhoenixReadModel }) {
 
 export function PhoenixAnalytics({ data }: { data: PhoenixReadModel }) {
   const analytics = data.analytics;
-  const maxCategory = Math.max(1, ...analytics.categories.map((item) => Math.abs(item.amount)));
-  return <section className="px-screen"><PageIntro kicker="Análises" title="Tendências e comparações históricas" text="Indicadores calculados pelo backend financeiro; a Phoenix apenas apresenta os resultados." />
-    <section className="px-screen-kpis"><article><span>Receitas</span><strong>{money.format(analytics.summary.income)}</strong><small>Δ {money.format(analytics.delta.income)}</small></article><article className="danger"><span>Despesas</span><strong>{money.format(analytics.summary.expense)}</strong><small>Δ {money.format(analytics.delta.expense)}</small></article><article><span>Média diária</span><strong>{money.format(analytics.dailyAverageExpense)}</strong><small>Despesa diária média</small></article><article><span>Concentração Top 3</span><strong>{analytics.concentrationTop3.toFixed(1)}%</strong><small>Participação das maiores categorias</small></article></section>
-    <div className="px-web-two-columns"><section className="px-card"><div className="px-panel-head"><div><span>Despesas</span><h2>Principais categorias</h2></div></div><div className="px-analytics-bars">{analytics.categories.map((item) => <div className="px-analytics-bar" key={item.name}><div><strong>{item.name}</strong><span>{money.format(item.amount)}</span></div><div className="px-progress"><span style={{ '--px-progress': `${Math.min(100, Math.abs(item.amount) / maxCategory * 100)}%` } as CSSProperties} /></div></div>)}{!analytics.categories.length ? <p className="px-empty">Sem categorias para o período.</p> : null}</div></section>
+  const classifications = useMemo(() => {
+    const totals = new Map<string, number>();
+    data.events.items
+      .filter((event) => event.competence === data.month)
+      .filter((event) => !['income', 'redemption', 'transfer'].includes(event.type))
+      .filter((event) => {
+        const accountType = normalize(event.account?.type);
+        const payment = normalize(`${event.paymentMethod?.name || ''} ${event.sourceDetails?.paymentMethod || ''}`);
+        const description = normalize(event.description);
+        return accountType !== 'benefit' && !payment.includes('verocard') && !description.includes('verocard');
+      })
+      .forEach((event) => {
+        const amount = -Number(event.signedAmount || 0);
+        if (!Number.isFinite(amount) || amount === 0) return;
+        const classification = event.sourceDetails?.expenseClass || event.category?.group || event.category?.name || 'Sem classificação';
+        totals.set(classification, (totals.get(classification) || 0) + amount);
+      });
+    return [...totals.entries()]
+      .map(([name, amount]) => ({ name, amount: Math.round(amount * 100) / 100 }))
+      .filter((item) => Math.abs(item.amount) >= 0.005)
+      .sort((left, right) => right.amount - left.amount)
+      .slice(0, 10);
+  }, [data.events.items, data.month]);
+  const categories = classifications.length ? classifications : analytics.categories;
+  const classificationTotal = categories.reduce((sum, item) => sum + item.amount, 0);
+  const concentrationTop3 = classificationTotal > 0
+    ? Math.min(100, Math.max(0, categories.slice(0, 3).reduce((sum, item) => sum + item.amount, 0) / classificationTotal * 100))
+    : analytics.concentrationTop3;
+  const maxCategory = Math.max(1, ...categories.map((item) => Math.abs(item.amount)));
+  return <section className="px-screen"><PageIntro kicker="Análises" title="Tendências e comparações históricas" text="Indicadores monetários vêm do backend; classificações preservam também a origem legada enquanto categoryId ainda está em normalização." />
+    <section className="px-screen-kpis"><article><span>Receitas</span><strong>{money.format(analytics.summary.income)}</strong><small>Δ {money.format(analytics.delta.income)}</small></article><article className="danger"><span>Despesas</span><strong>{money.format(analytics.summary.expense)}</strong><small>Δ {money.format(analytics.delta.expense)}</small></article><article><span>Média diária</span><strong>{money.format(analytics.dailyAverageExpense)}</strong><small>Despesa diária média</small></article><article><span>Concentração Top 3</span><strong>{concentrationTop3.toFixed(1)}%</strong><small>Participação das maiores classificações</small></article></section>
+    <div className="px-web-two-columns"><section className="px-card"><div className="px-panel-head"><div><span>Despesas</span><h2>Principais classificações</h2></div><small>Classificação → Grupo preservados da origem quando necessário</small></div><div className="px-analytics-bars">{categories.map((item) => <div className="px-analytics-bar" key={item.name}><div><strong>{item.name}</strong><span>{money.format(item.amount)}</span></div><div className="px-progress"><span style={{ '--px-progress': `${Math.min(100, Math.abs(item.amount) / maxCategory * 100)}%` } as CSSProperties} /></div></div>)}{!categories.length ? <p className="px-empty">Sem classificações para o período.</p> : null}</div></section>
       <section className="px-card"><div className="px-panel-head"><div><span>Histórico</span><h2>Evolução mensal</h2></div></div><div className="px-analytics-trend">{analytics.monthlyTrend.map((item) => <div className="px-trend-row" key={item.month}><strong>{item.month}</strong><span>Entradas {money.format(item.income)}</span><span>Saídas {money.format(item.expense)}</span><em>{money.format(item.result)}</em></div>)}{!analytics.monthlyTrend.length ? <p className="px-empty">Sem série histórica disponível.</p> : null}</div></section></div>
   </section>;
 }
