@@ -19,7 +19,17 @@ assert.match(server, /pathname === '\/preview-health'/,
   'Serviço isolado deve ter health check próprio sem depender da API financeira.');
 assert.match(server, /pathname === '\/' \? '\/phoenix\.html'/,
   'Raiz do serviço deve abrir exclusivamente a entrada Phoenix.');
-assert.doesNotMatch(server, /index\.html/,
+assert.doesNotMatch(server, /requested = pathname === '\/' \? '\/index\.html'/,
   'Servidor do preview não deve redirecionar para a interface atual de produção.');
+assert.match(server, /allowedStaticFiles\s*=\s*new Set\(\['\/phoenix\.html'\]\)/,
+  'Preview deve servir somente a entrada Phoenix como HTML navegável.');
+assert.match(server, /allowedStaticPrefixes\s*=\s*\['\/assets\/', '\/brand\/'\]/,
+  'Preview deve limitar arquivos estáticos aos assets e identidade visual necessários.');
+assert.match(server, /if \(!isAllowedStaticPath\(decoded\)\)/,
+  'Arquivos fora da allowlist estática devem ser recusados antes do acesso ao dist.');
+assert.match(server, /x-frame-options[^\n]*DENY/i,
+  'Preview deve impedir incorporação em frames de terceiros.');
+assert.match(server, /permissions-policy[^\n]*camera=\(\), microphone=\(\), geolocation=\(\)/,
+  'Preview deve desabilitar permissões de navegador que não são necessárias para validação.');
 
 console.log('Contrato do servidor Phoenix somente leitura validado.');
