@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { createFinancialEventSchema, updateFinancialEventSchema } from './schemas';
 import { listFinancialAudit } from './audit';
 import {
-  createFinancialEvent,
   deleteFinancialEvent,
   getFinancialSummary,
   getFinancialCashflow,
@@ -14,11 +13,14 @@ import {
   listFinancialEvents,
   updateFinancialEvent
 } from './service';
+import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
 import { prisma } from '@meg/database';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
+const operationIdSchema = z.string().trim().min(8).max(128).optional();
+const createEventRequestSchema = createFinancialEventSchema.extend({ operationId: operationIdSchema });
 
 const accountSchema = z.object({
   name: z.string().min(2).max(120),
@@ -46,6 +48,10 @@ function validationError(reply: FastifyReply, details: unknown) {
 }
 
 function eventError(reply: FastifyReply, error: unknown) {
+  if (error instanceof FinancialEventMutationError) {
+    const status = error.code === 'FINANCIAL_EVENT_NOT_FOUND' ? 404 : error.code === 'OPERATION_ID_REUSED' ? 409 : 400;
+    return reply.code(status).send({ error: error.code, ...(error.details || {}) });
+  }
   if (!(error instanceof Error)) throw error;
   if (error.message === 'FINANCIAL_EVENT_NOT_FOUND') return reply.code(404).send({ error: error.message });
   if (['INVALID_ACCOUNT', 'INVALID_CATEGORY', 'INVALID_PAYMENT_METHOD'].includes(error.message)) {
@@ -127,10 +133,10 @@ export async function financeRoutes(app: FastifyInstance) {
   });
 
   app.post('/events', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
-    const parsed = createFinancialEventSchema.safeParse(request.body);
+    const parsed = createEventRequestSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     try {
-      return reply.code(201).send(await createFinancialEvent(request.user.sub, parsed.data));
+      return reply.code(201).send(await createFinancialEventProtected(request.user.sub, parsed.data));
     } catch (error) {
       return eventError(reply, error);
     }
