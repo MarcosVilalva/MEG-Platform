@@ -161,11 +161,11 @@ function HomeScreen({ data, month, onNavigate }: { data: PhoenixReadModel; month
 
   const agendaSource = payableAgenda.length ? payableAgenda : eventAgenda;
   const group = (kind: HomeAgendaItem['kind']) => agendaSource.filter((item) => item.kind === kind);
-  const agendaGroups: HomeAgendaGroup[] = [
+  const agendaGroups = ([
     { kind: 'VENCIDOS', title: 'Compromissos anteriores', subtitle: 'Agrupados por data de vencimento', amount: group('VENCIDO').reduce((sum, item) => sum + item.amount, 0), count: group('VENCIDO').length },
     { kind: 'FATURA', title: 'Compras do mesmo cartão', subtitle: 'Uma fatura por cartão e vencimento', amount: group('FATURA').reduce((sum, item) => sum + item.amount, 0), count: group('FATURA').length },
     { kind: 'PRÓXIMOS', title: 'Demais compromissos do período', subtitle: 'Ordenados por vencimento', amount: group('PRÓXIMO').reduce((sum, item) => sum + item.amount, 0), count: group('PRÓXIMO').length }
-  ].filter((item) => item.count > 0);
+  ] satisfies HomeAgendaGroup[]).filter((item) => item.count > 0);
 
   return <>
     <div className="px-page-head"><div><span className="px-kicker">Visão geral</span><h1>{monthLabel(month)}</h1><p>Leitura do mês usando apenas os valores de referência definidos na regra de negócio do MEG.</p><span className="px-updated">Atualizado agora · {data.normalization.primary && data.normalization.reconciled ? 'dados sincronizados' : 'integridade em verificação'}</span></div></div>
