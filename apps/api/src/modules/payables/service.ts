@@ -158,7 +158,7 @@ export async function createRecurringExpense(userId: string, input: RecurringExp
     }
 
     if (input.categoryId) {
-      const category = await tx.category.findFirst({ where: { id: input.categoryId, isActive: true } });
+      const category = await tx.category.findFirst({ where: { id: input.categoryId, userId, isActive: true } });
       if (!category) throw new PayableDomainError('INVALID_CATEGORY');
     }
     const template = await tx.recurringExpense.create({
@@ -247,11 +247,11 @@ export async function payPayableProtected(userId: string, payableId: string, inp
     if (principal > open) throw new PayableDomainError('AMOUNT_EXCEEDS_OPEN_BALANCE', { requested: principal, open });
 
     const account = input.accountId
-      ? await tx.account.findFirst({ where: { id: input.accountId, isActive: true }, select: { id: true } })
+      ? await tx.account.findFirst({ where: { id: input.accountId, userId, isActive: true }, select: { id: true } })
       : null;
     if (input.accountId && !account) throw new PayableDomainError('INVALID_ACCOUNT');
     const paymentMethod = input.paymentMethodId
-      ? await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, isActive: true }, select: { id: true, name: true } })
+      ? await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, userId, isActive: true }, select: { id: true, name: true } })
       : null;
     if (input.paymentMethodId && !paymentMethod) throw new PayableDomainError('INVALID_PAYMENT_METHOD');
 
