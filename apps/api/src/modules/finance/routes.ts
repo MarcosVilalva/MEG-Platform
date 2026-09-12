@@ -11,6 +11,7 @@ import {
   updateFinancialEvent
 } from './service';
 import { getCanonicalFinancialAnalytics, getCanonicalFinancialCashflow, getCanonicalFinancialSummary } from './read-model';
+import { getPhoenixBenefitSummary, listPhoenixFinancialEventsForMonth } from './phoenix-read';
 import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
 import { FinancialTransferError, createFinancialTransfer } from './transfer-service';
 import { prisma } from '@meg/database';
@@ -19,6 +20,7 @@ const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
 const operationIdSchema = z.string().trim().min(8).max(128).optional();
+const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const createEventRequestSchema = createFinancialEventSchema.extend({ operationId: operationIdSchema });
 const transferRequestSchema = z.object({
   operationId: z.string().trim().min(8).max(128),
@@ -76,20 +78,20 @@ function transferError(reply: FastifyReply, error: unknown) {
 
 export async function financeRoutes(app: FastifyInstance) {
   app.get('/analytics', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
-    const parsed = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) }).safeParse(request.query);
+    const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     return getCanonicalFinancialAnalytics(request.user.sub, parsed.data.month);
   });
 
   app.get('/budgets', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
-    const parsed = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) }).safeParse(request.query);
+    const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     return listBudgetOverview(request.user.sub, parsed.data.month);
   });
 
   app.put('/budgets', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = z.object({
-      month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+      month: monthSchema,
       group: z.string().trim().min(2).max(120),
       amount: z.coerce.number().positive().finite()
     }).safeParse(request.body);
@@ -110,15 +112,27 @@ export async function financeRoutes(app: FastifyInstance) {
   });
 
   app.get('/cashflow', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
-    const parsed = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) }).safeParse(request.query);
+    const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     return getCanonicalFinancialCashflow(request.user.sub, parsed.data.month);
   });
 
   app.get('/summary', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
-    const parsed = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) }).safeParse(request.query);
+    const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     return getCanonicalFinancialSummary(request.user.sub, parsed.data.month);
+  });
+
+  app.get('/benefit-summary', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    const parsed = z.object({ month: monthSchema }).safeParse(request.query);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    return getPhoenixBenefitSummary(request.user.sub, parsed.data.month);
+  });
+
+  app.get('/events/month', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    const parsed = z.object({ month: monthSchema }).safeParse(request.query);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    return listPhoenixFinancialEventsForMonth(request.user.sub, parsed.data.month);
   });
 
   app.get('/events', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
