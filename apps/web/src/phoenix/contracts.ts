@@ -29,6 +29,37 @@ export type PhoenixNormalizationPreview = {
   };
 };
 
+export type PhoenixActivityTransaction = {
+  id?: string;
+  date?: string;
+  purchaseDate?: string;
+  description?: string;
+  type?: 'income' | 'expense' | string;
+  amount?: number;
+  paymentMethod?: string;
+  group?: string;
+  status?: string;
+  installmentSeriesId?: string;
+  installmentNumber?: number;
+  installmentCount?: number;
+  purchaseTotal?: number;
+};
+
+export type PhoenixActivity = {
+  id: string;
+  at: string;
+  userId?: string;
+  userName?: string;
+  action: 'CREATED' | 'UPDATED' | 'DELETED' | 'RECOVERED' | string;
+  transactionId?: string;
+  transaction?: PhoenixActivityTransaction | null;
+  recovery?: {
+    snapshotId?: string;
+    snapshotCreatedAt?: string;
+    snapshotReason?: string;
+  } | null;
+};
+
 export type PhoenixEventPage = {
   items: FinancialEvent[];
   total: number;
@@ -49,10 +80,12 @@ export type PhoenixReadModel = {
   cards: CreditCard[];
   payables: Payable[];
   events: PhoenixEventPage;
+  activities: PhoenixActivity[];
   sourcePolicy: {
     mode: 'read-only';
     summary: 'finance-domain';
     events: 'finance-domain';
+    activities: 'app-state-activity-log';
     sharedFallback: 'app-state-normalized-read';
     cards: 'cards-domain-with-legacy-compatibility';
     payables: 'payables-domain';
