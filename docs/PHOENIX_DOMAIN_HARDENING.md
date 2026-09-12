@@ -113,6 +113,14 @@ Datas de pagamento, vencimento, materialização, notificações e regras de “
 
 Antes de liberar o primeiro `Salvar` da Phoenix, os cenários de referência do sistema devem ser comparados contra a produção atual, incluindo saldo monetário, Verocard, pendências, faturas, recorrências e parcelas.
 
+### I. Validar referências ativas em todas as mutações
+
+A baixa de pendências já rejeita conta e forma de pagamento inativas. O mesmo padrão deve ser aplicado de forma uniforme a eventos, cartões, recebimentos e demais comandos, evitando que uma API aceite um cadastro desativado apenas porque o ID ainda existe.
+
+### J. Separar previsão de efetivação
+
+Qualquer operação com data futura deve permanecer prevista/programada até a data de efetivação. Nenhuma rota deve criar um evento futuro diretamente como `paid` ou `received`.
+
 ## Gate de liberação
 
 A escrita da Phoenix continua bloqueada enquanto qualquer fluxo crítico depender apenas de proteção de frontend ou possuir duas metodologias concorrentes no backend.
