@@ -46,6 +46,16 @@ export function addMonthsClamped(value: string, offset = 1, anchorDay?: number) 
   return formatIsoDay(targetYear, targetMonth, Math.min(wantedDay, maximum));
 }
 
+export function moveWeekendToMonday(value: string) {
+  const parsed = parseIsoDay(value);
+  if (!parsed) return '';
+  const current = new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day));
+  const weekday = current.getUTCDay();
+  if (weekday === 6) current.setUTCDate(current.getUTCDate() + 2);
+  if (weekday === 0) current.setUTCDate(current.getUTCDate() + 1);
+  return formatIsoDay(current.getUTCFullYear(), current.getUTCMonth() + 1, current.getUTCDate());
+}
+
 export function addRecurringPeriod(value: string, frequency: RecurrenceFrequency, anchorDay?: number) {
   const parsed = parseIsoDay(value);
   if (!parsed) return '';
