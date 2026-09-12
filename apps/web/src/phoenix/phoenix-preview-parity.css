@@ -1,6 +1,9 @@
 /* Paridade responsiva do preview Phoenix com o HTML V15 validado.
    Mantido separado durante o gate visual; não altera contratos financeiros. */
 
+.px-page-head p { font-size:12px; }
+.px-metrics { grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr))!important; }
+
 .px-side-exit {
   width:100%;
   min-height:38px;
@@ -141,7 +144,26 @@
   .px-content { padding-top:13px; padding-bottom:32px; }
 }
 
+@container phoenix-workspace (max-width:860px) {
+  .px-dashboard-alert {
+    grid-template-columns:1fr!important;
+    min-height:230px;
+    align-items:start;
+    padding:22px;
+  }
+  .px-dashboard-alert-copy {
+    flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .px-dashboard-alert > div:last-child { text-align:left; }
+  .px-gap-block { margin-top:16px; }
+  .px-bottom-grid { grid-template-columns:1fr!important; }
+}
+
 @media (max-width:680px) {
+  .px-top-left { gap:6px; }
+  .px-top-title strong { font-size:15px; }
   .px-top-right { gap:2px; }
   .px-top-right .px-sync { display:none!important; }
   .px-top-right .px-user-pill {
@@ -162,8 +184,11 @@
   .px-dashboard-alert { grid-template-columns:1fr; align-items:start; }
   .px-dashboard-alert > div:last-child { text-align:left; }
   .px-bottom-grid { grid-template-columns:1fr; }
-  .px-metrics { grid-template-columns:1fr; }
-  .px-premium-balance h2 { font-size:clamp(44px,13cqw,58px); }
+  .px-premium-balance h2 {
+    font-size:clamp(36px,12cqw,52px);
+    white-space:nowrap;
+    overflow-wrap:normal;
+  }
 }
 
 @media (max-width:520px) {
