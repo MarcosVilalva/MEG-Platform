@@ -13,6 +13,7 @@ import {
   listFinancialEvents,
   updateFinancialEvent
 } from './service';
+import { registerPhoenixPreviewReads } from './phoenix-preview-routes';
 import { prisma } from '@meg/database';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
@@ -52,6 +53,8 @@ function eventError(reply: FastifyReply, error: unknown) {
 }
 
 export async function financeRoutes(app: FastifyInstance) {
+  registerPhoenixPreviewReads(app);
+
   app.get('/analytics', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
