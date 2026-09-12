@@ -40,7 +40,7 @@ export type Receivable = {
 };
 
 export type CreateReceivableInput = {
-  customerId?: string;
+  customerId?: string | null;
   description: string;
   totalAmount: number;
   dueDate: string;
@@ -48,7 +48,7 @@ export type CreateReceivableInput = {
   installmentQty?: number;
   interestRate?: number;
   fineRate?: number;
-  notes?: string;
+  notes?: string | null;
   operationId?: string;
 };
 
@@ -57,9 +57,9 @@ export type ReceiveReceivableInput = {
   receivedAt: string;
   interestAmount?: number;
   fineAmount?: number;
-  accountId?: string;
-  paymentMethodId?: string;
-  notes?: string;
+  accountId?: string | null;
+  paymentMethodId?: string | null;
+  notes?: string | null;
   operationId?: string;
 };
 
