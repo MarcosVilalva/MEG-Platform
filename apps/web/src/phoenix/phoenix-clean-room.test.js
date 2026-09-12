@@ -40,15 +40,24 @@ assert.match(loader, /payablesClient\.list\(month\)/);
 assert.match(loader, /receivablesClient\.listCustomers\(\)/);
 assert.match(loader, /receivablesClient\.listReceivables\(\)/);
 assert.match(loader, /normalization-preview/);
+assert.match(loader, /authenticatedRequest<PhoenixFinancialAuditPage>\('\/finance\/audit\?page=1&pageSize=100'\)/,
+  'Histórico Phoenix deve carregar a auditoria financeira estrutural do backend');
 assert.match(loader, /authenticatedRequest<SharedStateRead>\('\/app-state'\)/,
-  'Histórico Phoenix deve vir da leitura real do AppState');
-assert.match(loader, /activityLog/);
+  'Histórico legado deve continuar disponível pela leitura real do AppState');
+assert.match(loader, /app-state-activity-log-legacy/,
+  'ActivityLog deve permanecer explicitamente marcado como fonte legada');
+assert.match(loader, /finance-audit-log/,
+  'Auditoria normalizada deve ser declarada como fonte principal financeira');
 assert.match(loader, /authenticatedRequest<ManagedUsersRead>\('\/auth\/users'\)/,
   'Usuários Phoenix devem vir da rota administrativa oficial');
+assert.match(history, /Fonte principal:/);
+assert.match(history, /\/finance\/audit/);
 assert.match(history, /AppState\.activityLog/);
+assert.match(history, /Antes \/ depois confirmado pelo backend/,
+  'Histórico Phoenix deve exibir snapshots before/after somente para a auditoria financeira estrutural');
+assert.match(history, /Histórico legado/,
+  'Histórico anterior à auditoria normalizada deve permanecer preservado');
 assert.match(history, /Exportar histórico filtrado/);
-assert.match(history, /não contém um par completo e garantido/,
-  'Phoenix deve deixar explícito que activityLog ainda não é before\/after estrutural');
 assert.match(users, /Somente leitura/);
 assert.match(users, /Gerenciar acesso/);
 assert.match(settings, /Saúde do sistema/);
