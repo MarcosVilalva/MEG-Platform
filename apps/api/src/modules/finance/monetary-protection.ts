@@ -42,6 +42,12 @@ export function isBenefitFinancialEvent(event: { description?: unknown; paymentM
   return isBenefitPaymentMethod(event.paymentMethod?.name) || normalizeText(event.description).includes('VEROCARD');
 }
 
+export function countsTowardMonetaryBalance(event: { type: string; status: string; description?: unknown; paymentMethod?: { name?: unknown } | null }) {
+  if (event.type === 'transfer') return false;
+  if (isBenefitFinancialEvent(event)) return false;
+  return event.status === 'paid' || event.status === 'reconciled' || event.status === 'confirmed';
+}
+
 export function paymentBalanceDecision(available: number, requested: number) {
   const availableCents = Math.round(Number(available || 0) * 100);
   const requestedCents = Math.round(Number(requested || 0) * 100);
@@ -71,10 +77,8 @@ export async function monetaryBalanceAt(tx: Tx, userId: string, effectiveAt: str
       paymentMethod: { select: { name: true } },
     },
   });
-  const posted = new Set(['paid', 'reconciled', 'confirmed']);
   const balance = events
-    .filter((event) => !isBenefitFinancialEvent(event))
-    .filter((event) => posted.has(event.status) || event.type === 'income' || event.type === 'redemption')
+    .filter(countsTowardMonetaryBalance)
     .reduce((sum, event) => sum + Number(event.signedAmount), 0);
   return Math.round(balance * 100) / 100;
 }
