@@ -228,17 +228,55 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const [periodOpen, setPeriodOpen] = useState(false);
   const [launchRequest, setLaunchRequest] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadState, setLoadState] = useState<PhoenixLoadState>({ status: 'idle' });
   const periodRef = useRef<HTMLDivElement>(null);
+  const monthRef = useRef(month);
+  const refreshingRef = useRef(false);
+
+  useEffect(() => {
+    monthRef.current = month;
+  }, [month]);
 
   useEffect(() => {
     let active = true;
+    refreshingRef.current = false;
+    setRefreshing(false);
     setLoadState({ status: 'loading', startedAt: Date.now() });
     void loadPhoenixReadModel(month)
       .then((data) => { if (active) setLoadState({ status: 'ready', data }); })
       .catch((error: unknown) => { if (active) setLoadState({ status: 'error', message: error instanceof Error ? error.message : 'PHOENIX_LOAD_FAILED' }); });
     return () => { active = false; };
   }, [month, refreshKey]);
+
+  async function refreshData() {
+    if (refreshingRef.current || loadState.status !== 'ready') return;
+    const targetMonth = monthRef.current;
+    refreshingRef.current = true;
+    setRefreshing(true);
+    try {
+      const fresh = await loadPhoenixReadModel(targetMonth, { force: true });
+      if (monthRef.current === targetMonth) setLoadState({ status: 'ready', data: fresh });
+    } catch {
+      // Mantém a fotografia válida já exibida. Falhas de atualização em segundo plano não desmontam a tela.
+    } finally {
+      refreshingRef.current = false;
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    if (loadState.status !== 'ready') return;
+    const refreshIfVisible = () => {
+      if (document.visibilityState === 'visible') void refreshData();
+    };
+    const timer = window.setInterval(refreshIfVisible, 120_000);
+    window.addEventListener('focus', refreshIfVisible);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refreshIfVisible);
+    };
+  }, [month, loadState.status]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -310,7 +348,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
               <button className="px-period-summary" type="button" title="Selecionar período" aria-label="Selecionar período" onClick={() => setPeriodOpen((value) => !value)}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span className="px-period-active">{shortMonthLabel(month)}</span></button>
               {periodOpen ? <div className="px-period-popover"><span>Período global</span><div className="px-period-presets"><button type="button" onClick={() => chooseMonth(currentMonth())}>Mês atual</button><button type="button" onClick={() => chooseMonth(previousMonth(currentMonth()))}>Mês anterior</button></div><label className="px-period-field"><span>Mês e ano</span><input type="month" value={month} onChange={(event) => chooseMonth(event.target.value)} /></label></div> : null}
             </div>
-            <button className="px-sync" type="button" disabled={loadState.status === 'loading'} onClick={() => setRefreshKey((value) => value + 1)}><span className="px-sync-dot" /><span>{loadState.status === 'loading' ? 'Atualizando dados' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{userInitial}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span className="px-user-chevron">⌄</span></button><button className="px-icon-btn px-top-exit" type="button" title="Sair" onClick={onLogout}>↪</button>
+            <button className={`px-sync ${refreshing ? 'is-refreshing' : ''}`} type="button" disabled={refreshing || loadState.status !== 'ready'} aria-busy={refreshing} title={refreshing ? 'Atualizando silenciosamente em segundo plano' : 'Atualizar dados'} onClick={() => { void refreshData(); }}><span className="px-sync-dot" /><span>{data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{userInitial}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span className="px-user-chevron">⌄</span></button><button className="px-icon-btn px-top-exit" type="button" title="Sair" onClick={onLogout}>↪</button>
           </div>
         </header>
 
