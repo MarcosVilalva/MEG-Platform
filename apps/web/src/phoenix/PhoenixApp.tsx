@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
 import { loadPhoenixReadModel } from './data/load-phoenix-read-model';
+import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixCards, PhoenixCatalogs, PhoenixMovements, PhoenixPayables } from './screens/PhoenixReadScreens';
 import { PhoenixHistory } from './screens/PhoenixHistory';
 import { PhoenixUsers } from './screens/PhoenixUsers';
@@ -18,22 +19,7 @@ import './phoenix-v15.css';
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const shortDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-type PhoenixView =
-  | 'home'
-  | 'movements'
-  | 'history'
-  | 'payables'
-  | 'cards'
-  | 'catalogs'
-  | 'users'
-  | 'settings'
-  | 'receivables'
-  | 'revenues'
-  | 'cashflow'
-  | 'reconcile'
-  | 'analytics'
-  | 'budgets';
-
+type PhoenixView = PhoenixRoute;
 type ViewDefinition = { id: PhoenixView; icon: string; label: string };
 
 const mainViews: ViewDefinition[] = [
@@ -150,6 +136,8 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [loadState, setLoadState] = useState<PhoenixLoadState>({ status: 'idle' });
 
   useEffect(() => {
@@ -159,20 +147,38 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       .then((data) => { if (active) setLoadState({ status: 'ready', data }); })
       .catch((error: unknown) => { if (active) setLoadState({ status: 'error', message: error instanceof Error ? error.message : 'PHOENIX_LOAD_FAILED' }); });
     return () => { active = false; };
-  }, [month]);
+  }, [month, refreshKey]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setSearchOpen(true);
+      } else if (event.key === 'Escape') {
+        setSearchOpen(false);
+        setMobileOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const data = loadState.status === 'ready' ? loadState.data : null;
   const currentView = views.find((item) => item.id === view) || mainViews[0];
   const pendingCount = data?.summary.pendingCount || 0;
   const toggleTheme = () => setTheme((value) => value === 'dark' ? 'light' : 'dark');
 
-  function navigate(next: PhoenixView) { setView(next); setMobileOpen(false); }
+  function navigate(next: PhoenixView) {
+    setView(next);
+    setMobileOpen(false);
+    setSearchOpen(false);
+  }
 
   return <div className="phoenix-v15" data-theme={theme}>
     <div className={`px-app ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
       <aside className="px-sidebar" aria-label="Navegação principal Phoenix V15">
         <div className="px-side-brand"><img src="./brand/meg-finance-system-mark.svg" alt="MEG Finance System" /></div>
-        <button className="px-search-command" type="button">⌘ Buscar no MEG</button>
+        <button className="px-search-command" type="button" onClick={() => setSearchOpen(true)}>⌘ Buscar no MEG</button>
         <nav className="px-nav-group">
           {mainViews.map((item) => <button key={item.id} className={`px-nav-btn ${view === item.id ? 'active' : ''}`} type="button" onClick={() => navigate(item.id)}><span className="px-nav-icon" aria-hidden="true">{item.icon}</span><span className="px-nav-text">{item.label}</span>{item.id === 'payables' && pendingCount > 0 ? <span className="px-side-badge">{pendingCount > 99 ? '99+' : pendingCount}</span> : null}</button>)}
           <details className="px-side-more" open={webViews.some((item) => item.id === view)}><summary>Web completo</summary>{webViews.map((item) => <button key={item.id} className={`px-nav-btn ${view === item.id ? 'active' : ''}`} type="button" onClick={() => navigate(item.id)}><span className="px-nav-icon" aria-hidden="true">{item.icon}</span><span className="px-nav-text">{item.label}</span></button>)}</details>
@@ -183,15 +189,16 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       <main className="px-main">
         <header className="px-topbar">
           <div className="px-top-left"><button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => { if (window.matchMedia('(max-width:760px)').matches) setMobileOpen((value) => !value); else setCollapsed((value) => !value); }}>☰</button><div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div></div>
-          <div className="px-top-right"><label className="px-period" aria-label="Período global"><span>▣</span><input type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label><button className="px-sync" type="button"><span className="px-sync-dot" /><span>{loadState.status === 'loading' ? 'Atualizando dados' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{(data?.user.name || 'M').slice(0, 1).toUpperCase()}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span>⌄</span></button><button className="px-icon-btn" type="button" title="Sair" onClick={onLogout}>↪</button></div>
+          <div className="px-top-right"><label className="px-period" aria-label="Período global"><span>▣</span><input type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label><button className="px-sync" type="button" disabled={loadState.status === 'loading'} onClick={() => setRefreshKey((value) => value + 1)}><span className="px-sync-dot" /><span>{loadState.status === 'loading' ? 'Atualizando dados' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{(data?.user.name || 'M').slice(0, 1).toUpperCase()}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span>⌄</span></button><button className="px-icon-btn" type="button" title="Sair" onClick={onLogout}>↪</button></div>
         </header>
 
         <div className="px-content">
-          {loadState.status === 'error' ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p></section> : data ? <ReadScreen view={view} data={data} month={month} theme={theme} onToggleTheme={toggleTheme} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
+          {loadState.status === 'error' ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : data ? <ReadScreen view={view} data={data} month={month} theme={theme} onToggleTheme={toggleTheme} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
         </div>
       </main>
 
       <nav className="px-mobile-dock" aria-label="Navegação móvel Phoenix V15"><button className={view === 'home' ? 'active' : ''} type="button" onClick={() => navigate('home')}><strong>⌂</strong><span>Início</span></button><button className={view === 'movements' ? 'active' : ''} type="button" onClick={() => navigate('movements')}><strong>＋</strong><span>Lançar</span></button><button className={view === 'history' ? 'active' : ''} type="button" onClick={() => navigate('history')}><strong>◷</strong><span>Histórico</span></button><button className={view === 'payables' ? 'active' : ''} type="button" onClick={() => navigate('payables')}><strong>◷</strong><span>Pendentes</span></button><button type="button" onClick={() => setMobileOpen(true)}><strong>≡</strong><span>Mais</span></button></nav>
     </div>
+    {searchOpen ? <PhoenixCommandPalette data={data} onClose={() => setSearchOpen(false)} onNavigate={navigate} /> : null}
   </div>;
 }
