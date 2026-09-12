@@ -12,6 +12,7 @@ import { financeRoutes } from './modules/finance/routes';
 import { receivableRoutes } from './modules/receivables/routes';
 import { cardRoutes } from './modules/cards/routes';
 import { payableRoutes } from './modules/payables/routes';
+import { materializeRecurringExpenses } from './modules/payables/service';
 import { repairLegacyImportedEvents } from './modules/imports/repair';
 import { appStateRoutes } from './modules/app-state/routes';
 import { notificationRoutes } from './modules/notifications/routes';
@@ -144,6 +145,21 @@ try {
     ensureCommercialFoundation(),
     refreshCommercialBillingStatuses()
   ]).catch((error) => app.log.error(error, 'Background commercial maintenance failed'));
+  void materializeRecurringExpenses()
+    .then((result) => app.log.info(result, 'Recurring payables startup materialization completed'))
+    .catch((error) => app.log.error(error, 'Recurring payables startup materialization failed'));
+  let recurringMaterializationRunning = false;
+  const recurringMaterializationTimer = setInterval(() => {
+    if (recurringMaterializationRunning) return;
+    recurringMaterializationRunning = true;
+    void materializeRecurringExpenses()
+      .then((result) => {
+        if (result.processed || result.created) app.log.info(result, 'Recurring payables periodic materialization completed');
+      })
+      .catch((error) => app.log.error(error, 'Recurring payables periodic materialization failed'))
+      .finally(() => { recurringMaterializationRunning = false; });
+  }, 6 * 60 * 60 * 1000);
+  recurringMaterializationTimer.unref();
   void ensurePrimaryWorkspace()
     .then(async (workspace) => {
       if (!workspace) return null;
