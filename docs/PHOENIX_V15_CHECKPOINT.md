@@ -54,7 +54,22 @@ Telas já usando Grid MEG: Lançamentos, Cadastros, Cartões (fatura/parcelas), 
 - Cartões conhecidos recebem identidade específica por produto/emissor/bandeira.
 - Cartões novos/desconhecidos recebem template premium determinístico automaticamente, sem depender de criar arte manual.
 - Futuramente, arte oficial validada pode substituir o template genérico; não buscar/aplicar imagem aleatória.
-- Parcelas/faturas devem ser classificadas pela data efetiva de vencimento/fatura, não apenas pela data original da compra.
+- Parcelas/faturas são classificadas pela data efetiva de vencimento/fatura, não apenas pela data original da compra.
+- A fatura do período mostra o valor líquido histórico mesmo quando já estiver paga; o pagamento retira o valor do limite comprometido, mas não apaga o histórico da fatura.
+- Créditos e estornos negativos reduzem a fatura e aparecem explicitamente como `Crédito/estorno`; não podem ser tratados como nova compra positiva.
+- `Total comprometido` considera somente fatura atual ainda em aberto + parcelas futuras ainda em aberto.
+- O seletor lateral exibe a fatura líquida do período; não deve cair em `statementAmount` apenas porque o saldo aberto é zero.
+- Compatibilidade de nomes legados possui aliases controlados para os cartões atuais. Em especial, o cadastro `MELI`/Mercado Livre reconhece `CARTÃO ML` no AppState.
+- O early return que ocorria antes dos hooks em `PhoenixCardsGrid` foi removido da posição inválida; a tela mantém ordem estável de hooks mesmo sem cartão cadastrado.
+
+### Paridade de faturas — setembro/2026
+Auditoria direta do AppState real, usada como referência de homologação e não hardcodada na UI:
+- **AZUL**: fatura líquida `R$ 1.875,52`; compras `R$ 1.937,52`; créditos/estornos `R$ 62,00`; setembro em aberto `R$ 1.875,52`; outubro `R$ 1.685,53`; futuro em aberto após setembro `R$ 5.290,73`.
+- **LATAM PASS**: fatura líquida `R$ 3.422,24`; compras `R$ 3.453,24`; créditos/estornos `R$ 31,00`; setembro em aberto `R$ 3.422,24`; outubro `R$ 1.214,85`; futuro em aberto após setembro `R$ 4.936,31`.
+- **MELI**: fatura líquida `R$ 1.824,02`; compras `R$ 1.943,08`; créditos/estornos `R$ 119,06`; fatura de setembro já paga; outubro `R$ 1.136,91`; futuro em aberto após setembro `R$ 2.608,42`.
+- **RIACHUELO**: fatura líquida `R$ 132,99`; setembro em aberto `R$ 132,99`; outubro `R$ 132,99`; futuro em aberto após setembro `R$ 398,97`.
+
+Para limite comprometido em setembro, a referência é: AZUL `R$ 7.166,25`; LATAM PASS `R$ 8.358,55`; MELI `R$ 2.608,42` (a fatura de setembro já paga não entra); RIACHUELO `R$ 531,96`.
 
 ## Dados e compatibilidade
 - Snapshot mensal principal: `/finance/phoenix-preview?month=AAAA-MM`.
@@ -109,18 +124,18 @@ A discrepância visual anterior de `R$ 14.139,19` em Despesas de Lançamentos vi
 - Atualização silenciosa após primeira carga.
 
 ## Estado técnico atual
-- Último commit funcional ao atualizar este checkpoint: `e0778459e74127104c95f95d38e32e239e5c528c`.
-- CI `MEG Platform CI` run **1254** passou integralmente.
-- Deploy correspondente do preview Render ficou **live** antes da atualização documental seguinte.
+- Último commit funcional antes deste checkpoint: `83da4db9f87e3621507cbe84a938b7a2be171145` (`fix: consolidar faturas líquidas e aliases de cartões`).
+- O build/deploy automático do Render desse commit concluiu `live` no preview.
+- O último CI confirmado antes desta rodada foi o `MEG Platform CI` run **1255**, verde no head documental anterior. No momento deste checkpoint o GitHub ainda não havia emitido um novo run para `83da4db`; não considerar a rodada de cartões totalmente encerrada até o próximo CI verde.
 - Último commit deste checkpoint deve sempre ser conferido na PR #243; não confiar em SHA gravado aqui como fonte única.
 - CI deve estar verde antes de considerar uma rodada concluída.
 - Preview Render deve estar `live` no commit correspondente.
 
 ## Próximos gates
-1. validar visualmente no preview a nova hierarquia Classificação -> Grupo e os KPIs monetários corrigidos;
+1. validar visualmente no preview os totais líquidos e status das quatro faturas de setembro, especialmente MELI paga e estornos AZUL/LATAM;
 2. revisar áreas não tabulares para consistência visual e responsividade;
-3. continuar paridade numérica de saldo, benefício, pendentes, faturas e projeções contra a base real, com atenção especial ao agrupamento líquido das faturas de cartão;
-4. revisar índices/performance e dependências npm sem `npm audit fix --force`;
+3. continuar paridade numérica de projeções e demais visões derivadas contra a base real;
+4. revisar dependências npm e os demais índices sugeridos pelo Supabase somente com medição de uso, sem `npm audit fix --force` e sem indexação indiscriminada;
 5. somente depois começar habilitação seletiva de escrita, um fluxo por vez;
 6. corte da Web atual somente após paridade funcional, numérica e visual suficiente.
 
