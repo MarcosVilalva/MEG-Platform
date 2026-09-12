@@ -12,17 +12,17 @@ Princípio: **UI nova; regras e persistência confirmadas antes de cada escrita.
 
 | Operação | Fonte/rota existente | Estado Phoenix | Motivo |
 | --- | --- | --- | --- |
-| Criar receita/despesa simples | `POST /finance/events` | Preparar, não liberar ainda | Contrato normalizado existe; faltam auditoria financeira e política final de confirmação/idempotência |
+| Criar receita/despesa simples | `POST /finance/events` | Preparar, não liberar ainda | Contrato normalizado existe; faltam auditoria financeira e política uniforme de idempotência |
 | Editar evento simples | `PATCH /finance/events/:id` | Preparar, não liberar ainda | Atualiza apenas o evento selecionado e recompõe ledger; falta trilha financeira consolidada |
 | Arquivar evento simples | `DELETE /finance/events/:id` | Bloqueado | Requer ADMIN/MANAGER e deve preservar auditoria/estorno conforme regra de negócio |
 | Valor negativo/estorno | `financialAmountValues()` | Compatível para cálculo | Sinal reverso é suportado; estorno definitivo deve manter vínculo/rastreabilidade com o original |
 | Transferência entre contas | `type=transfer` aceito em `/finance/events` | **Bloqueado** | O evento possui apenas `accountId` e o ledger cria uma única entrada; não há conta de destino nem par débito/crédito |
-| Compra no cartão | `POST /cards/purchases` | Contrato identificado | Fechamento e parcelamento estão definidos; só liberar após proteção de duplicidade/idempotência e auditoria |
-| Pagamento de fatura | `POST /cards/:id/statements/:month/pay` | **Bloqueado para ação real** | Gera evento e quita parcelas, mas não aplica a proteção global de saldo monetário antes da baixa |
-| Conta a pagar parcelada | `POST /payables` | Contrato parcial | Divide centavos, porém a regra atual de datas não cobre integralmente clamp/fim de semana definido em `BUSINESS_RULES.md` |
-| Despesa recorrente | `POST /payables/recurring` | Contrato parcial | Backend usa `endDate` e materializa horizonte; legado usa quantidade mensal e regras próprias. Necessita unificação |
-| Baixa de conta a pagar | `POST /payables/:id/payments` | **Bloqueado para ação real** | Valida saldo aberto do título, mas não bloqueia pagamento acima do saldo monetário disponível |
-| Crediário | Não há contrato único equivalente à regra V15/legado | **Bloqueado** | Regras de parcela, vencimento, fim de semana e edição precisam de contrato consolidado |
+| Compra no cartão | `POST /cards/purchases` | Contrato identificado | Fechamento e parcelamento estão definidos; só liberar após proteção uniforme de idempotência e auditoria |
+| Pagamento de fatura | `POST /cards/:id/statements/:month/pay` | **Bloqueado para ação real** | Ainda precisa receber a mesma proteção transacional de saldo e idempotência já aplicada às contas a pagar |
+| Conta a pagar parcelada | `POST /payables` | Contrato consolidado | Divide centavos, limita mês curto e move sábado/domingo para segunda-feira |
+| Despesa recorrente | `POST /payables/recurring` | Contrato consolidado no backend | Quantidade, data final e série aberta convergem para uma única metodologia; materialização saiu do GET |
+| Baixa de conta a pagar | `POST /payables/:id/payments` | **Backend protegido; Phoenix ainda bloqueada** | Saldo monetário é verificado na mesma transação, com Verocard separado, data efetiva, idempotência e proteção concorrente |
+| Crediário | Não há contrato único equivalente à regra V15/legado | **Bloqueado** | Regras específicas de crediário e edição granular ainda precisam de contrato próprio |
 | Editar parcela de cartão/conta a pagar | Não há rota específica equivalente | **Bloqueado** | Regra exige alterar somente a parcela selecionada; contrato atual não oferece edição granular completa |
 | Histórico `antes/depois` | `AuditLog` + `AppState.activityLog`, sem contrato financeiro unificado | **Bloqueado** | Não é permitido fabricar before/after na UI |
 
@@ -78,47 +78,59 @@ A Phoenix deve usar essa rota para crédito, e **não** criar simultaneamente um
 
 ### Pagamento de fatura
 
-A rota de pagamento de fatura marca parcelas como pagas e cria um `FinancialEvent` de despesa paga. O contrato, entretanto, não consulta a proteção de saldo monetário definida nas regras de negócio. Portanto o botão real de pagamento permanece bloqueado até a proteção existir no servidor ou em um gateway transacional equivalente.
+A rota de pagamento de fatura marca parcelas como pagas e cria um `FinancialEvent` de despesa paga. O contrato ainda precisa reutilizar a proteção monetária transacional e a política de `operationId` implantadas em contas a pagar. Portanto o botão real de pagamento permanece bloqueado.
 
 ## 4. Parcelamentos e contas a pagar
 
-`POST /payables` divide o valor em parcelas e distribui os centavos. O limite atual é 60 parcelas. A geração mensal usa `Date.setUTCMonth()`.
+`POST /payables` divide o valor em parcelas e distribui os centavos. O limite atual é 60 parcelas.
 
-As regras documentadas do MEG exigem ainda:
+A geração agora usa calendário canônico:
 
-- limitar o dia ao último dia de meses menores;
-- mover vencimentos de sábado/domingo para segunda-feira;
-- manter sufixo `n/total`;
-- edição de uma parcela sem recriar as demais.
+- preserva o dia-base da primeira parcela;
+- limita o dia ao último dia de meses menores;
+- move sábado/domingo para segunda-feira;
+- mantém sufixo `n/total`;
+- não usa mais `Date.setUTCMonth()` para a série.
 
-Antes de usar `/payables` como contrato geral de crediário, essas regras precisam ser consolidadas no backend e testadas.
+Exemplo: uma série iniciada em 31/01 preserva a intenção de dia 31 mesmo ao passar por fevereiro.
+
+A edição granular de uma parcela sem recriar as demais continua como contrato separado a ser implementado antes de liberar crediário completo.
 
 ## 5. Recorrência
 
-Existem dois comportamentos reais hoje:
+A recorrência fixa foi consolidada no backend. `POST /payables/recurring` aceita:
 
-1. Backend `POST /payables/recurring`: suporta semanal, mensal e anual, com `nextDueDate` e `endDate`; materializa contas a pagar no horizonte.
-2. Legado Web `recurring-transactions-core.js`: recorrência mensal por quantidade, normalmente 2–24 ocorrências, com `addMonthsClamped()` e metadados de série.
+- frequência semanal, mensal ou anual;
+- término por quantidade de ocorrências;
+- término por data final;
+- série sem data final.
 
-A Phoenix não deve escolher silenciosamente um deles. O contrato definitivo precisa definir:
+Quantidade é convertida para uma data final determinística. O motor preserva o dia-base em meses curtos (`31/01 → 28/02 → 31/03`, ou 29/02 em ano bissexto).
 
-- recorrência de despesa, receita e/ou ambos;
-- quantidade versus data final;
-- regra de meses curtos;
-- fim de semana;
-- edição de uma ocorrência versus série;
-- cancelamento da série sem apagar histórico;
-- idempotência da materialização.
+A leitura de pendências deixou de materializar recorrências. `GET /payables` é leitura pura. A materialização ocorre na criação da série, no startup da API e periodicamente em background, usando a restrição única `recurrenceId + dueDate` para impedir duplicidade.
 
-Até essa decisão, o drawer pode simular a recorrência, mas não gravá-la.
+Conta mensal de valor variável não deve usar recorrência fixa automática; permanece como fluxo de duplicação manual para o próximo mês.
 
 ## 6. Baixa de pendências e proteção de saldo
 
-`POST /payables/:id/payments` valida que o principal não ultrapasse o saldo aberto do título, cria evento financeiro de despesa paga e atualiza o saldo do título.
+`POST /payables/:id/payments` agora executa o fluxo crítico em transação serializável:
 
-Isso é necessário, mas ainda insuficiente para a regra MEG: **uma despesa monetária não pode ser paga quando exceder o saldo monetário disponível na data atual**. O bloqueio deve ser garantido na mesma operação de servidor para evitar corrida entre dispositivos.
+1. rejeita data futura para um pagamento que nasceria como `paid`;
+2. valida título aberto, conta ativa e forma de pagamento ativa;
+3. soma principal, juros e multa;
+4. separa Verocard do caixa monetário;
+5. recalcula o saldo monetário na data efetiva da baixa;
+6. rejeita a operação inteira quando o disponível for insuficiente;
+7. cria `FinancialEvent`, `PayablePayment` e reduz `openAmount` na mesma transação;
+8. usa retry de conflito serializável para reduzir risco de duas baixas simultâneas consumirem o mesmo saldo.
 
-Consequência: a simulação da Phoenix permanece ativa; a confirmação real continua desabilitada.
+Quando bloqueado por saldo, o servidor devolve `INSUFFICIENT_MONETARY_BALANCE` com disponível, solicitado e faltante. Nada é persistido.
+
+### Idempotência
+
+A rota aceita `operationId`. Quando presente, reutiliza `CloudMutationReceipt`, mecanismo já existente no MEG. O mesmo `operationId` com conteúdo diferente é rejeitado, protegendo contra retry, duplo clique e reenvio de conexão.
+
+A Phoenix continua sem chamar a mutação até terminarmos a validação visual e os demais gates de escrita.
 
 ## 7. Edição, exclusão e auditoria
 
@@ -138,23 +150,30 @@ Antes de liberar edição/arquivamento pela Phoenix, o write gateway deve regist
 
 ## 8. Idempotência e confirmação
 
-A camada antiga de AppState possui mecanismos próprios de confirmação de mutação, recibos/idempotência e recuperação. As rotas normalizadas de eventos/cartões/pendências não apresentam, nos contratos auditados, uma chave uniforme de idempotência fornecida pelo cliente.
+A camada antiga de AppState possui recibos/idempotência e recuperação. A baixa de pendências agora reutiliza esse mecanismo por `operationId + requestHash`.
 
-A Phoenix usa a premissa `lançou → servidor confirmou → UI libera nova ação`. Antes de habilitar gravação em produção, cada operação deve ter uma estratégia explícita para evitar dupla gravação em retry, clique repetido ou conexão instável.
+O próximo endurecimento é tornar esse padrão uniforme para eventos financeiros, compras de cartão, pagamento de fatura, recebimentos e futuras transferências.
 
-## 9. Ordem segura para liberar escrita
+A Phoenix mantém a premissa `lançou → servidor confirmou → UI libera nova ação`.
 
-1. Corrigir/centralizar os tipos compartilhados de `FinancialEvent`.
-2. Criar o gateway Phoenix de mutação com confirmação e idempotência.
-3. Consolidar auditoria financeira consultável.
-4. Liberar receita/despesa simples.
-5. Validar edição simples e estorno reverso.
-6. Liberar compra no cartão pelo domínio de cartões.
-7. Implementar proteção transacional de saldo para baixa/fatura.
-8. Consolidar parcelamento/crediário e recorrência.
-9. Criar contrato atômico de transferência entre contas.
-10. Só então liberar arquivamento, ações em lote e demais operações críticas.
+## 9. Efeitos colaterais em rotas de leitura
+
+`GET /payables` já está puro. A auditoria identificou outro caso a tratar: `GET /cards` ainda pode migrar cartões legados durante a consulta. Essa compatibilidade deve sair do GET e ir para manutenção explícita/background antes do corte definitivo.
+
+## 10. Ordem segura para liberar escrita
+
+1. Aplicar proteção/idempotência equivalentes ao pagamento de fatura.
+2. Remover efeitos colaterais restantes de `GET /cards`.
+3. Corrigir/centralizar os tipos compartilhados de `FinancialEvent`.
+4. Criar gateway Phoenix de mutação com confirmação/idempotência uniforme.
+5. Consolidar auditoria financeira consultável.
+6. Liberar receita/despesa simples.
+7. Validar edição simples e estorno reverso.
+8. Liberar compra no cartão pelo domínio de cartões.
+9. Liberar baixa de contas a pagar usando o contrato protegido já implementado.
+10. Criar contrato atômico de transferência entre contas.
+11. Só então liberar arquivamento, ações em lote e demais operações críticas.
 
 ## Regra de bloqueio
 
-Enquanto um item estiver marcado como **Bloqueado** ou **Contrato parcial**, a Phoenix pode apresentar a interface para validação, porém não deve enviar mutação para a API.
+Enquanto um item estiver marcado como **Bloqueado** ou depender de proteção ainda não uniforme, a Phoenix pode apresentar a interface para validação, porém não deve enviar mutação para a API.
