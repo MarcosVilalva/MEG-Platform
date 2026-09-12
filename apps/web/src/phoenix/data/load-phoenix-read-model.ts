@@ -57,6 +57,8 @@ async function loadWorkspaceUsers(role: string): Promise<PhoenixWorkspaceUsers> 
  * Regras:
  * - nenhuma mutação acontece aqui;
  * - totais financeiros vêm dos serviços oficiais do backend;
+ * - eventos do período vêm de uma leitura mensal completa, sem depender da paginação global;
+ * - benefício é lido separadamente e nunca compõe o saldo monetário;
  * - consultas independentes são iniciadas em paralelo;
  * - a normalização é observada explicitamente para evitar esconder fallback;
  * - auditoria financeira nova vem do contrato /finance/audit;
@@ -76,7 +78,8 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
     health,
     normalization,
     sharedState,
-    summary,
+    summaryBase,
+    benefitSummary,
     analytics,
     cashflow,
     budgets,
@@ -95,6 +98,7 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
     authenticatedRequest<PhoenixNormalizationPreview>('/app-state/normalization-preview'),
     authenticatedRequest<SharedStateRead>('/app-state'),
     financeClient.getSummary(month),
+    financeClient.getBenefitSummary(month),
     financeClient.getAnalytics(month),
     financeClient.getCashflow(month),
     financeClient.listBudgets(month),
@@ -105,7 +109,7 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
     payablesClient.list(month),
     receivablesClient.listCustomers(),
     receivablesClient.listReceivables(),
-    financeClient.listEvents(1, 100, ''),
+    financeClient.listEventsForMonth(month),
     authenticatedRequest<PhoenixFinancialAuditPage>('/finance/audit?page=1&pageSize=100'),
     loadWorkspaceUsers(session.user.role)
   ]);
@@ -115,6 +119,13 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
         .filter((item): item is PhoenixActivity => Boolean(item && item.id && item.at && item.action))
         .sort((left, right) => String(right.at).localeCompare(String(left.at)))
     : [];
+
+  const summary: PhoenixReadModel['summary'] = {
+    ...summaryBase,
+    benefitBalance: benefitSummary.balance,
+    benefitCredits: benefitSummary.credits,
+    benefitUsed: benefitSummary.used
+  };
 
   return {
     month,
@@ -140,7 +151,7 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
     sourcePolicy: {
       mode: 'read-only',
       summary: 'finance-domain',
-      events: 'finance-domain',
+      events: 'finance-domain-month',
       financialAudit: 'finance-audit-log',
       activities: 'app-state-activity-log-legacy',
       users: 'auth-admin-read',
