@@ -35,11 +35,11 @@ export type ReceiveReceivableInput = {
 };
 
 export async function createReceivableProtected(userId: string, input: CreateReceivableInput) {
-  const workspace = input.operationId ? await resolveWorkspaceContext(userId) : null;
+  const workspace = await resolveWorkspaceContext(userId);
   const requestHash = input.operationId ? mutationRequestHash({ ...input, operationId: undefined }) : null;
 
   return serializableFinancialTransaction(async (tx) => {
-    if (input.operationId && workspace && requestHash) {
+    if (input.operationId && requestHash) {
       const previous = await tx.cloudMutationReceipt.findUnique({
         where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
       });
@@ -80,11 +80,11 @@ export async function createReceivableProtected(userId: string, input: CreateRec
       action: 'RECEIVABLE_CREATED',
       before: null,
       after: receivable,
-      context: { operationId: input.operationId ?? null },
+      context: { operationId: input.operationId ?? null, workspaceId: workspace.workspaceId },
     });
 
     const response = { ...receivable, idempotentReplay: false };
-    if (input.operationId && workspace && requestHash) {
+    if (input.operationId && requestHash) {
       const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
       await tx.cloudMutationReceipt.create({ data: receiptCreateData({
         workspaceId: workspace.workspaceId,
@@ -103,13 +103,13 @@ export async function receiveReceivableProtected(userId: string, receivableId: s
   if (isFutureFinancialDay(input.receivedAt)) {
     throw new ReceivableDomainError('FUTURE_RECEIPT_NOT_ALLOWED', { receivedAt: input.receivedAt.slice(0, 10) });
   }
-  const workspace = input.operationId ? await resolveWorkspaceContext(userId) : null;
+  const workspace = await resolveWorkspaceContext(userId);
   const requestHash = input.operationId
     ? mutationRequestHash({ receivableId, ...input, operationId: undefined })
     : null;
 
   return serializableFinancialTransaction(async (tx) => {
-    if (input.operationId && workspace && requestHash) {
+    if (input.operationId && requestHash) {
       const previous = await tx.cloudMutationReceipt.findUnique({
         where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
       });
@@ -144,6 +144,7 @@ export async function receiveReceivableProtected(userId: string, receivableId: s
     const event = input.accountId ? await tx.financialEvent.create({
       data: {
         userId,
+        workspaceId: workspace.workspaceId,
         description: `Recebimento: ${receivable.description}`,
         type: 'income',
         status: 'paid',
@@ -205,10 +206,11 @@ export async function receiveReceivableProtected(userId: string, receivableId: s
         paymentMethod: paymentMethod?.name ?? null,
         financialEventId: event?.id ?? null,
         operationId: input.operationId ?? null,
+        workspaceId: workspace.workspaceId,
       },
     });
 
-    if (input.operationId && workspace && requestHash) {
+    if (input.operationId && requestHash) {
       const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
       await tx.cloudMutationReceipt.create({ data: receiptCreateData({
         workspaceId: workspace.workspaceId,
