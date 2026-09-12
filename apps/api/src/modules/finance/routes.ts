@@ -4,14 +4,13 @@ import { createFinancialEventSchema, updateFinancialEventSchema } from './schema
 import { listFinancialAudit } from './audit';
 import {
   deleteFinancialEvent,
-  getFinancialAnalytics,
   listBudgetOverview,
   upsertBudget,
   deleteBudget,
   listFinancialEvents,
   updateFinancialEvent
 } from './service';
-import { getCanonicalFinancialCashflow, getCanonicalFinancialSummary } from './read-model';
+import { getCanonicalFinancialAnalytics, getCanonicalFinancialCashflow, getCanonicalFinancialSummary } from './read-model';
 import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
 import { prisma } from '@meg/database';
 
@@ -63,7 +62,7 @@ export async function financeRoutes(app: FastifyInstance) {
   app.get('/analytics', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return getFinancialAnalytics(request.user.sub, parsed.data.month);
+    return getCanonicalFinancialAnalytics(request.user.sub, parsed.data.month);
   });
 
   app.get('/budgets', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
