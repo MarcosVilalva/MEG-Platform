@@ -289,7 +289,15 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
 
   const income = monthEvents.filter((event) => launchTypeForEvent(event.type) === 'income').reduce((sum, event) => sum + amountFromEvent(event), 0);
   const expense = monthEvents.filter((event) => launchTypeForEvent(event.type) === 'expense').reduce((sum, event) => sum + amountFromEvent(event), 0);
+  const filteredIncome = filtered.filter((event) => launchTypeForEvent(event.type) === 'income').reduce((sum, event) => sum + amountFromEvent(event), 0);
+  const filteredExpense = filtered.filter((event) => launchTypeForEvent(event.type) === 'expense').reduce((sum, event) => sum + amountFromEvent(event), 0);
   const activeGridFilters = (Object.keys(gridFilters) as GridKey[]).filter((key) => filterIsActive(gridFilters[key]));
+  const toolbarFilterCount = Number(Boolean(search.trim())) + Number(typeFilter !== 'all') + Number(status !== 'all') + Number(account !== 'all');
+  const activeFilterCount = activeGridFilters.length + toolbarFilterCount;
+  const hasActiveFilters = activeFilterCount > 0;
+  const displayedIncome = hasActiveFilters ? filteredIncome : income;
+  const displayedExpense = hasActiveFilters ? filteredExpense : expense;
+  const displayedResult = displayedIncome - displayedExpense;
 
   const selectedAccount = data.accounts.find((item) => item.id === draft.accountId) || null;
   const selectedDestination = data.accounts.find((item) => item.id === draft.destinationId) || null;
@@ -439,10 +447,10 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
     </header>
 
     <section className="px-screen-kpis">
-      <article><span>Lançamentos no período</span><strong>{monthEvents.length}</strong><small>Quantidade real do mês</small></article>
-      <article><span>Receitas</span><strong>{money.format(income)}</strong><small>Movimentação do período</small></article>
-      <article><span>Despesas</span><strong>{money.format(expense)}</strong><small>Movimentação do período</small></article>
-      <article><span>Exibidos após filtros</span><strong>{filtered.length}</strong><small>{activeGridFilters.length ? `${activeGridFilters.length} filtro(s) de coluna ativo(s)` : 'Grade pronta para análise'}</small></article>
+      <article><span>{hasActiveFilters ? 'Lançamentos filtrados' : 'Lançamentos no período'}</span><strong>{hasActiveFilters ? filtered.length : monthEvents.length}</strong><small>{hasActiveFilters ? `Visão filtrada · Total do período ${monthEvents.length}` : 'Quantidade real do mês'}</small></article>
+      <article><span>Receitas</span><strong>{money.format(displayedIncome)}</strong><small>{hasActiveFilters ? `Visão filtrada · Total do período ${money.format(income)}` : 'Movimentação do período'}</small></article>
+      <article><span>Despesas</span><strong>{money.format(displayedExpense)}</strong><small>{hasActiveFilters ? `Visão filtrada · Total do período ${money.format(expense)}` : 'Movimentação do período'}</small></article>
+      <article><span>{hasActiveFilters ? 'Resultado filtrado' : 'Resultado do período'}</span><strong>{money.format(displayedResult)}</strong><small>{hasActiveFilters ? `${activeFilterCount} critério(s) ativo(s)` : 'Receitas menos despesas do período'}</small></article>
     </section>
 
     <section className="px-card px-table-card">
