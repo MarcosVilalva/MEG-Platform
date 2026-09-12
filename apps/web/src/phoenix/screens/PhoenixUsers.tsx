@@ -20,6 +20,13 @@ export function PhoenixUsers({ data }: { data: PhoenixReadModel }) {
   const [role, setRole] = useState('all');
   const [status, setStatus] = useState('all');
   const source = data.workspaceUsers;
+  const users = source.status === 'ready' ? source.users : [];
+  const filtered = useMemo(() => users.filter((item) => {
+    const haystack = `${item.name} ${item.email} ${item.phone || ''}`.toLocaleLowerCase('pt-BR');
+    return haystack.includes(search.trim().toLocaleLowerCase('pt-BR'))
+      && (role === 'all' || item.role === role)
+      && (status === 'all' || item.status === status);
+  }), [users, search, role, status]);
 
   if (source.status === 'restricted') {
     return <section className="px-screen"><header className="px-screen-head"><div><span className="px-kicker">Usuários</span><h1>Pessoas, perfis e permissões</h1><p>Esta área é administrativa.</p></div></header><div className="px-card px-users-message"><strong>Acesso restrito</strong><p>Seu perfil atual é {roleLabel(data.user.role)}. A leitura da lista de usuários permanece protegida pela regra ADMIN do backend.</p></div></section>;
@@ -28,14 +35,6 @@ export function PhoenixUsers({ data }: { data: PhoenixReadModel }) {
   if (source.status === 'error') {
     return <section className="px-screen"><header className="px-screen-head"><div><span className="px-kicker">Usuários</span><h1>Pessoas, perfis e permissões</h1><p>Leitura administrativa oficial.</p></div></header><div className="px-card px-users-message"><strong>Não foi possível carregar os usuários</strong><p>{source.error || 'USERS_READ_FAILED'}</p></div></section>;
   }
-
-  const users = source.users;
-  const filtered = useMemo(() => users.filter((item) => {
-    const haystack = `${item.name} ${item.email} ${item.phone || ''}`.toLocaleLowerCase('pt-BR');
-    return haystack.includes(search.trim().toLocaleLowerCase('pt-BR'))
-      && (role === 'all' || item.role === role)
-      && (status === 'all' || item.status === status);
-  }), [users, search, role, status]);
 
   const active = users.filter((item) => item.status === 'ACTIVE' && item.isActive).length;
   const pending = users.filter((item) => item.status === 'PENDING').length;
