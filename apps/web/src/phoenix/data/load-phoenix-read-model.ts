@@ -3,13 +3,10 @@ import {
   getApiHealth,
   readSession
 } from '../../app/auth-client';
-import { cardsClient } from '../../app/cards-client';
 import { financeClient } from '../../app/finance-client';
-import { payablesClient } from '../../app/payables-client';
 import { receivablesClient } from '../../app/receivables-client';
 import type {
   PhoenixActivity,
-  PhoenixFinancialAuditPage,
   PhoenixNormalizationPreview,
   PhoenixReadModel,
   PhoenixWorkspaceUsers
@@ -31,6 +28,22 @@ type ManagedUsersRead = {
     name?: string;
     slug?: string;
   };
+};
+
+type PhoenixPreviewCoreRead = Pick<
+  PhoenixReadModel,
+  | 'summary'
+  | 'analytics'
+  | 'cashflow'
+  | 'accounts'
+  | 'categories'
+  | 'paymentMethods'
+  | 'cards'
+  | 'payables'
+  | 'events'
+  | 'financialAudit'
+> & {
+  month: string;
 };
 
 async function loadWorkspaceUsers(role: string): Promise<PhoenixWorkspaceUsers> {
@@ -56,15 +69,12 @@ async function loadWorkspaceUsers(role: string): Promise<PhoenixWorkspaceUsers> 
  *
  * Regras:
  * - nenhuma mutação acontece aqui;
- * - totais financeiros vêm dos serviços oficiais do backend;
- * - eventos do período vêm de uma leitura mensal completa, sem depender da paginação global;
- * - benefício é lido separadamente e nunca compõe o saldo monetário;
- * - consultas independentes são iniciadas em paralelo;
+ * - o núcleo financeiro mensal vem de um snapshot único e somente leitura do backend;
+ * - resumo, benefício, eventos, cartões, pendências e auditoria pertencem à mesma fotografia mensal;
+ * - orçamentos e contas a receber permanecem em seus domínios oficiais até entrarem no snapshot;
  * - a normalização é observada explicitamente para evitar esconder fallback;
- * - auditoria financeira nova vem do contrato /finance/audit;
  * - activityLog permanece carregado somente como histórico legado anterior à auditoria normalizada;
- * - usuários são consultados pela rota administrativa oficial e nunca alterados aqui;
- * - telas Web completo usam somente endpoints de leitura dos domínios oficiais.
+ * - usuários são consultados pela rota administrativa oficial e nunca alterados aqui.
  */
 export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
@@ -78,41 +88,23 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
     health,
     normalization,
     sharedState,
-    summaryBase,
-    benefitSummary,
-    analytics,
-    cashflow,
+    previewCore,
     budgets,
-    accounts,
-    categories,
-    paymentMethods,
-    cards,
-    payables,
     customers,
     receivables,
-    events,
-    financialAudit,
     workspaceUsers
   ] = await Promise.all([
     getApiHealth(),
     authenticatedRequest<PhoenixNormalizationPreview>('/app-state/normalization-preview'),
     authenticatedRequest<SharedStateRead>('/app-state'),
-    financeClient.getSummary(month),
-    financeClient.getBenefitSummary(month),
-    financeClient.getAnalytics(month),
-    financeClient.getCashflow(month),
+    authenticatedRequest<PhoenixPreviewCoreRead>(`/finance/phoenix-preview?month=${encodeURIComponent(month)}`),
     financeClient.listBudgets(month),
-    financeClient.listAccounts(),
-    financeClient.listCategories(),
-    financeClient.listPaymentMethods(),
-    cardsClient.list(month),
-    payablesClient.list(month),
     receivablesClient.listCustomers(),
     receivablesClient.listReceivables(),
-    financeClient.listEventsForMonth(month),
-    authenticatedRequest<PhoenixFinancialAuditPage>('/finance/audit?page=1&pageSize=100'),
     loadWorkspaceUsers(session.user.role)
   ]);
+
+  if (previewCore.month !== month) throw new Error('PHOENIX_PREVIEW_MONTH_MISMATCH');
 
   const activities = Array.isArray(sharedState.state?.activityLog)
     ? sharedState.state.activityLog
@@ -120,32 +112,25 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
         .sort((left, right) => String(right.at).localeCompare(String(left.at)))
     : [];
 
-  const summary: PhoenixReadModel['summary'] = {
-    ...summaryBase,
-    benefitBalance: benefitSummary.balance,
-    benefitCredits: benefitSummary.credits,
-    benefitUsed: benefitSummary.used
-  };
-
   return {
     month,
     loadedAt: new Date().toISOString(),
     user: session.user,
     health,
     normalization,
-    summary,
-    analytics,
-    cashflow,
+    summary: previewCore.summary,
+    analytics: previewCore.analytics,
+    cashflow: previewCore.cashflow,
     budgets,
-    accounts,
-    categories,
-    paymentMethods,
-    cards,
-    payables,
+    accounts: previewCore.accounts,
+    categories: previewCore.categories,
+    paymentMethods: previewCore.paymentMethods,
+    cards: previewCore.cards,
+    payables: previewCore.payables,
     customers,
     receivables,
-    events,
-    financialAudit,
+    events: previewCore.events,
+    financialAudit: previewCore.financialAudit,
     activities,
     workspaceUsers,
     sourcePolicy: {
