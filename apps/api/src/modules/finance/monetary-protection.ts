@@ -38,19 +38,40 @@ export function isBenefitPaymentMethod(name: unknown) {
   return normalizeText(name) === 'VEROCARD';
 }
 
-export function isBenefitFinancialEvent(event: { description?: unknown; paymentMethod?: { name?: unknown } | null }) {
-  return isBenefitPaymentMethod(event.paymentMethod?.name) || normalizeText(event.description).includes('VEROCARD');
+export function isMonetaryAccountType(type: unknown) {
+  return ['CHECKING', 'SAVINGS', 'CASH'].includes(normalizeText(type));
+}
+
+export function isBenefitFinancialEvent(event: {
+  description?: unknown;
+  paymentMethod?: { name?: unknown } | null;
+  account?: { type?: unknown } | null;
+}) {
+  return normalizeText(event.account?.type) === 'BENEFIT'
+    || isBenefitPaymentMethod(event.paymentMethod?.name)
+    || normalizeText(event.description).includes('VEROCARD');
 }
 
 export function isPostedFinancialStatus(status: string) {
   return status === 'paid' || status === 'reconciled' || status === 'confirmed';
 }
 
-export function isMonetaryFinancialEvent(event: { type: string; description?: unknown; paymentMethod?: { name?: unknown } | null }) {
+export function isMonetaryFinancialEvent(event: {
+  type: string;
+  description?: unknown;
+  paymentMethod?: { name?: unknown } | null;
+  account?: { type?: unknown } | null;
+}) {
   return event.type !== 'transfer' && !isBenefitFinancialEvent(event);
 }
 
-export function countsTowardMonetaryBalance(event: { type: string; status: string; description?: unknown; paymentMethod?: { name?: unknown } | null }) {
+export function countsTowardMonetaryBalance(event: {
+  type: string;
+  status: string;
+  description?: unknown;
+  paymentMethod?: { name?: unknown } | null;
+  account?: { type?: unknown } | null;
+}) {
   return isMonetaryFinancialEvent(event) && isPostedFinancialStatus(event.status);
 }
 
@@ -60,6 +81,7 @@ export function summarizeMonetaryEvents(events: Array<{
   signedAmount: number | string | { toString(): string };
   description?: unknown;
   paymentMethod?: { name?: unknown } | null;
+  account?: { type?: unknown } | null;
 }>) {
   let income = 0;
   let expense = 0;
@@ -109,21 +131,36 @@ function nextDayExclusive(day: string) {
   return new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day + 1));
 }
 
+export async function monetaryOpeningBalance(tx: Tx, userId: string) {
+  const accounts = await tx.account.findMany({
+    where: { userId },
+    select: { type: true, openingBalance: true },
+  });
+  const balance = accounts
+    .filter((account) => isMonetaryAccountType(account.type))
+    .reduce((sum, account) => sum + Number(account.openingBalance), 0);
+  return Math.round(balance * 100) / 100;
+}
+
 export async function monetaryBalanceAt(tx: Tx, userId: string, effectiveAt: string) {
   const cutoff = nextDayExclusive(effectiveAt.slice(0, 10));
-  const events = await tx.financialEvent.findMany({
-    where: { userId, archivedAt: null, date: { lt: cutoff } },
-    select: {
-      description: true,
-      type: true,
-      status: true,
-      signedAmount: true,
-      paymentMethod: { select: { name: true } },
-    },
-  });
+  const [openingBalance, events] = await Promise.all([
+    monetaryOpeningBalance(tx, userId),
+    tx.financialEvent.findMany({
+      where: { userId, archivedAt: null, date: { lt: cutoff } },
+      select: {
+        description: true,
+        type: true,
+        status: true,
+        signedAmount: true,
+        account: { select: { type: true } },
+        paymentMethod: { select: { name: true } },
+      },
+    }),
+  ]);
   const balance = events
     .filter(countsTowardMonetaryBalance)
-    .reduce((sum, event) => sum + Number(event.signedAmount), 0);
+    .reduce((sum, event) => sum + Number(event.signedAmount), openingBalance);
   return Math.round(balance * 100) / 100;
 }
 
