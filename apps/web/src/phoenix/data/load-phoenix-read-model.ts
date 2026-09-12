@@ -7,6 +7,7 @@ import { financeClient } from '../../app/finance-client';
 import { receivablesClient } from '../../app/receivables-client';
 import type {
   PhoenixActivity,
+  PhoenixLegacyTransaction,
   PhoenixNormalizationPreview,
   PhoenixReadModel,
   PhoenixWorkspaceUsers
@@ -15,6 +16,7 @@ import type {
 type SharedStateRead = {
   state?: {
     activityLog?: PhoenixActivity[];
+    transactions?: PhoenixLegacyTransaction[];
     [key: string]: unknown;
   };
   revision?: number;
@@ -105,6 +107,12 @@ async function fetchPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
         .sort((left, right) => String(right.at).localeCompare(String(left.at)))
     : [];
 
+  const legacyTransactions = Array.isArray(sharedState.state?.transactions)
+    ? sharedState.state.transactions
+        .filter((item): item is PhoenixLegacyTransaction => Boolean(item && typeof item === 'object' && item.id && item.date && item.description))
+        .map((item) => ({ ...item }))
+    : [];
+
   return {
     month,
     loadedAt: new Date().toISOString(),
@@ -125,6 +133,7 @@ async function fetchPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
     events: previewCore.events,
     financialAudit: previewCore.financialAudit,
     activities,
+    legacyTransactions,
     workspaceUsers,
     sourcePolicy: {
       mode: 'read-only',
@@ -132,6 +141,7 @@ async function fetchPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
       events: 'finance-domain-month',
       financialAudit: 'finance-audit-log',
       activities: 'app-state-activity-log-legacy',
+      legacyTransactions: 'app-state-transactions-read-only',
       users: 'auth-admin-read',
       receivables: 'receivables-domain',
       analytics: 'finance-domain',
@@ -160,6 +170,7 @@ export function peekPhoenixReadModel(month: string) {
  * - orçamentos e contas a receber permanecem em seus domínios oficiais até entrarem no snapshot;
  * - a normalização é observada explicitamente para evitar esconder fallback;
  * - activityLog permanece carregado somente como histórico legado anterior à auditoria normalizada;
+ * - transactions permanece disponível somente como compatibilidade de leitura para cartões/pendências legadas;
  * - usuários são consultados pela rota administrativa oficial e nunca alterados aqui;
  * - o snapshot pode ser preparado durante a entrada para que a navegação interna não exiba carregamentos repetidos.
  */
