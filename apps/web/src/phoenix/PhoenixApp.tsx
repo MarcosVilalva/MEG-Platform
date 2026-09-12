@@ -9,13 +9,11 @@ import { PhoenixMovementsV15 } from './screens/PhoenixMovementsV15';
 import { PhoenixHistory } from './screens/PhoenixHistory';
 import { PhoenixUsers } from './screens/PhoenixUsers';
 import { PhoenixSettings } from './screens/PhoenixSettings';
+import { PhoenixCashflowGrid, PhoenixReceivablesGrid, PhoenixRevenuesGrid } from './screens/PhoenixWebGridScreens';
 import {
   PhoenixAnalytics,
   PhoenixBudgets,
-  PhoenixCashflow,
-  PhoenixReceivables,
-  PhoenixReconciliation,
-  PhoenixRevenues
+  PhoenixReconciliation
 } from './screens/PhoenixWebScreens';
 import './phoenix-v15.css';
 import './phoenix-parity-v15.css';
@@ -212,9 +210,9 @@ function ReadScreen({ view, data, month, theme, launchRequest, onToggleTheme, on
   if (view === 'catalogs') return <PhoenixCatalogsGrid data={data} />;
   if (view === 'users') return <PhoenixUsers data={data} />;
   if (view === 'settings') return <PhoenixSettings data={data} theme={theme} onToggleTheme={onToggleTheme} />;
-  if (view === 'receivables') return <PhoenixReceivables data={data} />;
-  if (view === 'revenues') return <PhoenixRevenues data={data} />;
-  if (view === 'cashflow') return <PhoenixCashflow data={data} />;
+  if (view === 'receivables') return <PhoenixReceivablesGrid data={data} />;
+  if (view === 'revenues') return <PhoenixRevenuesGrid data={data} />;
+  if (view === 'cashflow') return <PhoenixCashflowGrid data={data} />;
   if (view === 'reconcile') return <PhoenixReconciliation data={data} />;
   if (view === 'analytics') return <PhoenixAnalytics data={data} />;
   return <PhoenixBudgets data={data} />;
