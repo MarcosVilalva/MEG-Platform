@@ -89,14 +89,10 @@ type ReceivableFilters = Record<ReceivableKey, PhoenixGridFilterValue>;
 
 function initialReceivableFilters(): ReceivableFilters {
   return {
-    dueDate: { kind: 'date', from: '', to: '' },
-    description: { kind: 'text', value: '' },
-    customer: { kind: 'multi', values: [] },
-    installment: { kind: 'multi', values: [] },
-    totalAmount: { kind: 'number', min: '', max: '' },
-    openAmount: { kind: 'number', min: '', max: '' },
-    status: { kind: 'multi', values: [] },
-    receipts: { kind: 'number', min: '', max: '' }
+    dueDate: { kind: 'date', from: '', to: '' }, description: { kind: 'text', value: '' },
+    customer: { kind: 'multi', values: [] }, installment: { kind: 'multi', values: [] },
+    totalAmount: { kind: 'number', min: '', max: '' }, openAmount: { kind: 'number', min: '', max: '' },
+    status: { kind: 'multi', values: [] }, receipts: { kind: 'number', min: '', max: '' }
   };
 }
 
@@ -133,25 +129,68 @@ export function PhoenixReceivablesGrid({ data }: { data: PhoenixReadModel }) {
   </section>;
 }
 
-type RevenueKey = 'eventDate' | 'description' | 'category' | 'account' | 'payment' | 'status' | 'amount';
-type RevenueRow = Record<RevenueKey, string | number> & { id: string };
+type RevenueKey = 'eventDate' | 'description' | 'scope' | 'category' | 'account' | 'payment' | 'status' | 'amount';
+type RevenueRow = Record<RevenueKey, string | number> & { id: string; realized: boolean };
 type RevenueFilters = Record<RevenueKey, PhoenixGridFilterValue>;
-function initialRevenueFilters(): RevenueFilters { return { eventDate:{kind:'date',from:'',to:''}, description:{kind:'text',value:''}, category:{kind:'multi',values:[]}, account:{kind:'multi',values:[]}, payment:{kind:'multi',values:[]}, status:{kind:'multi',values:[]}, amount:{kind:'number',min:'',max:''} }; }
-const revenueLabels: Record<RevenueKey,string> = { eventDate:'Data', description:'Descrição', category:'Classificação', account:'Conta', payment:'Forma', status:'Situação', amount:'Valor' };
+function initialRevenueFilters(): RevenueFilters { return { eventDate:{kind:'date',from:'',to:''}, description:{kind:'text',value:''}, scope:{kind:'multi',values:[]}, category:{kind:'multi',values:[]}, account:{kind:'multi',values:[]}, payment:{kind:'multi',values:[]}, status:{kind:'multi',values:[]}, amount:{kind:'number',min:'',max:''} }; }
+const revenueLabels: Record<RevenueKey,string> = { eventDate:'Data', description:'Descrição', scope:'Escopo', category:'Classificação', account:'Conta', payment:'Forma', status:'Situação', amount:'Valor' };
+
+function revenueBenefit(event: PhoenixReadModel['events']['items'][number]) {
+  return normalize(event.account?.type) === 'benefit'
+    || normalize(`${event.paymentMethod?.name || ''} ${event.sourceDetails?.paymentMethod || ''}`).includes('verocard')
+    || normalize(event.description).includes('verocard');
+}
 
 export function PhoenixRevenuesGrid({ data }: { data: PhoenixReadModel }) {
-  const [search,setSearch] = useState(''); const [filters,setFilters] = useState<RevenueFilters>(initialRevenueFilters); const [sort,setSort] = useState<{key:RevenueKey;direction:PhoenixGridSortDirection}|null>(null);
+  const [search,setSearch] = useState('');
+  const [filters,setFilters] = useState<RevenueFilters>(initialRevenueFilters);
+  const [sort,setSort] = useState<{key:RevenueKey;direction:PhoenixGridSortDirection}|null>(null);
   const revenues = useMemo(() => data.events.items.filter((event) => event.competence === data.month && event.type === 'income'), [data]);
-  const total = revenues.reduce((sum,item) => sum + Math.abs(Number(item.amount || 0)),0); const realized = revenues.filter((item) => ['confirmed','paid','reconciled'].includes(item.status)).reduce((sum,item) => sum + Math.abs(Number(item.amount || 0)),0);
-  const rows = useMemo<RevenueRow[]>(() => revenues.map((event) => ({ id:event.id, eventDate:event.date.slice(0,10), description:event.description, category:event.category?.name || 'Sem classificação', account:event.account?.name || 'Não informada', payment:event.paymentMethod?.name || 'Não informada', status:event.status, amount:Math.abs(Number(event.amount || 0)) })), [revenues]);
-  const keys = Object.keys(revenueLabels) as RevenueKey[]; const activeKeys = keys.filter((key) => active(filters[key])); const gridOptions = useMemo(() => ({ category:options(rows.map((row)=>row.category)), account:options(rows.map((row)=>row.account)), payment:options(rows.map((row)=>row.payment)), status:options(rows.map((row)=>row.status)) }), [rows]);
-  const visible = useMemo(() => { const needle=normalize(search); const filtered=rows.filter((row)=>(!needle || normalize(keys.map((key)=>row[key]).join(' ')).includes(needle)) && keys.every((key)=>matches(row[key],filters[key]))); if(!sort)return filtered; return [...filtered].sort((a,b)=>compare(a[sort.key],b[sort.key],sort.direction)); }, [rows,search,filters,sort]);
+  const rows = useMemo<RevenueRow[]>(() => revenues.map((event) => ({
+    id:event.id,
+    eventDate:event.date.slice(0,10),
+    description:event.description,
+    scope:revenueBenefit(event) ? 'Benefício alimentação' : 'Monetária',
+    category:event.category?.group || event.category?.name || 'Sem classificação',
+    account:event.account?.name || 'Não informada',
+    payment:event.paymentMethod?.name || event.sourceDetails?.paymentMethod || 'Não informada',
+    status:event.status,
+    amount:Number(event.signedAmount || 0),
+    realized:['confirmed','paid','reconciled'].includes(event.status)
+  })), [revenues]);
+  const keys = Object.keys(revenueLabels) as RevenueKey[];
+  const activeKeys = keys.filter((key) => active(filters[key]));
+  const gridOptions = useMemo(() => ({
+    scope:options(rows.map((row)=>row.scope)), category:options(rows.map((row)=>row.category)),
+    account:options(rows.map((row)=>row.account)), payment:options(rows.map((row)=>row.payment)), status:options(rows.map((row)=>row.status))
+  }), [rows]);
+  const visible = useMemo(() => {
+    const needle=normalize(search);
+    const filtered=rows.filter((row)=>(!needle || normalize(keys.map((key)=>row[key]).join(' ')).includes(needle)) && keys.every((key)=>matches(row[key],filters[key])));
+    if(!sort)return filtered;
+    return [...filtered].sort((a,b)=>compare(a[sort.key],b[sort.key],sort.direction));
+  }, [rows,search,filters,sort]);
+  const hasFilters = Boolean(search.trim()) || activeKeys.length > 0;
+  const metricRows = hasFilters ? visible : rows;
+  const monetaryRows = metricRows.filter((row) => row.scope === 'Monetária');
+  const benefitRows = metricRows.filter((row) => row.scope === 'Benefício alimentação');
+  const monetaryTotal = monetaryRows.reduce((sum,row)=>sum+Number(row.amount),0);
+  const benefitTotal = benefitRows.reduce((sum,row)=>sum+Number(row.amount),0);
+  const monetaryRealized = monetaryRows.filter((row)=>row.realized).reduce((sum,row)=>sum+Number(row.amount),0);
+  const periodMonetary = rows.filter((row)=>row.scope==='Monetária').reduce((sum,row)=>sum+Number(row.amount),0);
+  const periodBenefit = rows.filter((row)=>row.scope==='Benefício alimentação').reduce((sum,row)=>sum+Number(row.amount),0);
   function header(label:string,key:RevenueKey,kind:PhoenixGridFilterKind,list?:PhoenixGridOption[]){return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} options={list} sort={sort?.key===key?sort.direction:null} onSort={(direction)=>setSort({key,direction})} onChange={(value)=>setFilters((current)=>({...current,[key]:value}))}/></div>;}
-  return <section className="px-screen"><PageIntro kicker="Receitas" title="Origem e evolução das entradas" text="Entradas financeiras do período carregadas do domínio oficial de eventos." />
-    <section className="px-screen-kpis"><article><span>Receitas do período</span><strong>{money.format(total)}</strong><small>{revenues.length} evento(s)</small></article><article><span>Realizadas</span><strong>{money.format(realized)}</strong><small>Confirmadas, pagas ou conciliadas</small></article><article><span>Resultado realizado</span><strong>{money.format(data.summary.realizedResult)}</strong><small>Receitas menos despesas realizadas</small></article><article><span>Ticket médio</span><strong>{money.format(revenues.length ? total / revenues.length : 0)}</strong><small>Média das entradas</small></article></section>
+  function clearAll(){setSearch('');setFilters(initialRevenueFilters());setSort(null);}
+  return <section className="px-screen"><PageIntro kicker="Receitas" title="Origem e evolução das entradas" text="Receitas monetárias e créditos de benefício permanecem visíveis, porém separados conforme a política financeira do MEG." />
+    <section className="px-screen-kpis">
+      <article><span>Receitas monetárias</span><strong>{money.format(monetaryTotal)}</strong><small>{hasFilters ? `Visão filtrada · Total do período ${money.format(periodMonetary)}` : `${monetaryRows.length} entrada(s)`}</small></article>
+      <article className="info"><span>Benefício alimentação</span><strong>{money.format(benefitTotal)}</strong><small>{hasFilters ? `Visão filtrada · Total do período ${money.format(periodBenefit)}` : 'Fora do caixa monetário'}</small></article>
+      <article><span>Monetárias realizadas</span><strong>{money.format(monetaryRealized)}</strong><small>Confirmadas, pagas ou conciliadas</small></article>
+      <article><span>Ticket médio monetário</span><strong>{money.format(monetaryRows.length ? monetaryTotal / monetaryRows.length : 0)}</strong><small>{hasFilters ? 'Calculado sobre a seleção filtrada' : 'Média das entradas monetárias'}</small></article>
+    </section>
     <section className="px-card px-table-card"><div className="px-toolbar"><label className="px-search-field"><span>⌕</span><input value={search} onChange={(event)=>setSearch(event.target.value)} placeholder="Buscar em todas as colunas"/></label><span className="px-toolbar-note">{visible.length} de {rows.length} exibido(s)</span></div>
-      {activeKeys.length || sort || search ? <div className="px-grid-active-filters"><span>Filtros da grade</span>{search?<span className="px-grid-filter-chip">Busca: {search}<button type="button" onClick={()=>setSearch('')}>×</button></span>:null}{activeKeys.map((key)=><span className="px-grid-filter-chip" key={key}>{summary(revenueLabels[key],filters[key])}<button type="button" onClick={()=>{const fresh=initialRevenueFilters();setFilters((current)=>({...current,[key]:fresh[key]}));}}>×</button></span>)}{sort?<span className="px-grid-filter-chip">Ordenação: {revenueLabels[sort.key]} {sort.direction==='asc'?'↑':'↓'}<button type="button" onClick={()=>setSort(null)}>×</button></span>:null}<button className="px-grid-clear-all" type="button" onClick={()=>{setSearch('');setFilters(initialRevenueFilters());setSort(null);}}>Limpar grade</button></div>:null}
-      <div className="px-table-scroll"><table className="px-data-table"><thead><tr><th>{header('Data','eventDate','date')}</th><th>{header('Descrição','description','text')}</th><th>{header('Classificação','category','multi',gridOptions.category)}</th><th>{header('Conta','account','multi',gridOptions.account)}</th><th>{header('Forma','payment','multi',gridOptions.payment)}</th><th>{header('Situação','status','multi',gridOptions.status)}</th><th>{header('Valor','amount','number')}</th></tr></thead><tbody>{visible.map((row)=><tr key={row.id}><td>{date.format(new Date(`${row.eventDate}T12:00:00Z`))}</td><td><strong>{row.description}</strong></td><td>{row.category}</td><td>{row.account}</td><td>{row.payment}</td><td><span className={`px-status ${row.status}`}>{row.status}</span></td><td className="px-money positive">{money.format(Number(row.amount))}</td></tr>)}</tbody></table>{!visible.length?<p className="px-empty">Nenhuma receita corresponde aos filtros aplicados.</p>:null}</div>
+      {activeKeys.length || sort || search ? <div className="px-grid-active-filters"><span>Filtros da grade</span>{search?<span className="px-grid-filter-chip">Busca: {search}<button type="button" onClick={()=>setSearch('')}>×</button></span>:null}{activeKeys.map((key)=><span className="px-grid-filter-chip" key={key}>{summary(revenueLabels[key],filters[key])}<button type="button" onClick={()=>{const fresh=initialRevenueFilters();setFilters((current)=>({...current,[key]:fresh[key]}));}}>×</button></span>)}{sort?<span className="px-grid-filter-chip">Ordenação: {revenueLabels[sort.key]} {sort.direction==='asc'?'↑':'↓'}<button type="button" onClick={()=>setSort(null)}>×</button></span>:null}<button className="px-grid-clear-all" type="button" onClick={clearAll}>Limpar grade</button></div>:null}
+      <div className="px-table-scroll"><table className="px-data-table"><thead><tr><th>{header('Data','eventDate','date')}</th><th>{header('Descrição','description','text')}</th><th>{header('Escopo','scope','multi',gridOptions.scope)}</th><th>{header('Classificação','category','multi',gridOptions.category)}</th><th>{header('Conta','account','multi',gridOptions.account)}</th><th>{header('Forma','payment','multi',gridOptions.payment)}</th><th>{header('Situação','status','multi',gridOptions.status)}</th><th>{header('Valor','amount','number')}</th></tr></thead><tbody>{visible.map((row)=><tr key={row.id}><td>{date.format(new Date(`${row.eventDate}T12:00:00Z`))}</td><td><strong>{row.description}</strong></td><td><span className={`px-status ${row.scope === 'Monetária' ? 'reconciled' : 'planned'}`}>{row.scope}</span></td><td>{row.category}</td><td>{row.account}</td><td>{row.payment}</td><td><span className={`px-status ${row.status}`}>{row.status}</span></td><td className={`px-money ${Number(row.amount)<0?'negative':'positive'}`}>{money.format(Number(row.amount))}</td></tr>)}</tbody></table>{!visible.length?<p className="px-empty">Nenhuma receita corresponde aos filtros aplicados.</p>:null}</div>
     </section></section>;
 }
 
@@ -165,7 +204,7 @@ export function PhoenixCashflowGrid({data}:{data:PhoenixReadModel}){
   const cashflow=data.cashflow; const [filters,setFilters]=useState<CashflowFilters>(initialCashflowFilters); const [sort,setSort]=useState<{key:CashflowKey;direction:PhoenixGridSortDirection}|null>(null);
   const rows=useMemo<CashflowRow[]>(()=>cashflow.days.map((day)=>({day:day.date,income:day.income,expense:day.expense,net:day.net,realizedBalance:day.realizedBalance,projectedBalance:day.projectedBalance,eventCount:day.eventCount})),[cashflow.days]);
   const keys=Object.keys(cashflowLabels) as CashflowKey[]; const activeKeys=keys.filter((key)=>active(filters[key])); const visible=useMemo(()=>{const filtered=rows.filter((row)=>keys.every((key)=>matches(row[key],filters[key])));if(!sort)return filtered;return[...filtered].sort((a,b)=>compare(a[sort.key],b[sort.key],sort.direction));},[rows,filters,sort]);
-  function header(label:string,key:CashflowKey,kind:PhoenixGridFilterKind){return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} sort={sort?.key===key?sort.direction:null} onSort={(direction)=>setSort({key,direction})} onChange={(value)=>setFilters((current)=>({...current,[key]:value}))}/></div>;}
+  function header(label:string,key:CashflowKey,kind:PhoenixGridFilterKind){return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} sort={sort?.key===key?sort.direction:null} onSort={(direction)=>setSort({key,direction})} onChange={(value)=>setFilters((current)=>({...current,[key]:value))}/></div>;}
   return <section className="px-screen"><PageIntro kicker="Fluxo de caixa" title="Fechamento realizado e projetado" text="Saldos e movimentos diários fornecidos pelo serviço oficial de fluxo de caixa." />
     <section className="px-screen-kpis"><article><span>Saldo inicial</span><strong>{money.format(cashflow.openingBalance)}</strong><small>Antes do período</small></article><article><span>Entradas</span><strong>{money.format(cashflow.totalIncome)}</strong><small>Total do período</small></article><article className="danger"><span>Saídas</span><strong>{money.format(cashflow.totalExpense)}</strong><small>Total do período</small></article><article><span>Fechamento projetado</span><strong>{money.format(cashflow.projectedClosing)}</strong><small>Realizado: {money.format(cashflow.realizedClosing)}</small></article></section>
     <section className="px-card px-table-card"><div className="px-panel-head"><div><span>Movimentação diária</span><h2>Realizado x projetado</h2></div><strong>{visible.length} de {rows.length} dia(s)</strong></div>
