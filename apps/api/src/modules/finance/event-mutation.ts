@@ -33,13 +33,13 @@ export async function createFinancialEventProtected(userId: string, input: Creat
   if (input.type === 'transfer') {
     throw new FinancialEventMutationError('TRANSFER_CONTRACT_NOT_READY');
   }
-  const workspace = input.operationId ? await resolveWorkspaceContext(userId) : null;
+  const workspace = await resolveWorkspaceContext(userId);
   const requestHash = input.operationId
     ? mutationRequestHash({ ...input, operationId: undefined })
     : null;
 
   return serializableFinancialTransaction(async (tx) => {
-    if (input.operationId && workspace && requestHash) {
+    if (input.operationId && requestHash) {
       const previous = await tx.cloudMutationReceipt.findUnique({
         where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
       });
@@ -66,6 +66,7 @@ export async function createFinancialEventProtected(userId: string, input: Creat
     const event = await tx.financialEvent.create({
       data: {
         userId,
+        workspaceId: workspace.workspaceId,
         description: input.description.trim(),
         type: input.type,
         status: input.status,
@@ -107,11 +108,15 @@ export async function createFinancialEventProtected(userId: string, input: Creat
       action: 'FINANCIAL_EVENT_CREATED',
       before: null,
       after: result,
-      context: { operationId: input.operationId ?? null, competence: result.competence },
+      context: {
+        operationId: input.operationId ?? null,
+        competence: result.competence,
+        workspaceId: workspace.workspaceId,
+      },
     });
 
     const response = { ...result, idempotentReplay: false };
-    if (input.operationId && workspace && requestHash) {
+    if (input.operationId && requestHash) {
       const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
       await tx.cloudMutationReceipt.create({ data: receiptCreateData({
         workspaceId: workspace.workspaceId,
