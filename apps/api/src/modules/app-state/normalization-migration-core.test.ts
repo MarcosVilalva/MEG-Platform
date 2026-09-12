@@ -9,8 +9,8 @@ import {
 const context = { workspaceId: 'workspace-1', userId: 'user-1', revision: 12 };
 const state = {
   transactions: [
-    { id: 'income-1', date: '2026-09-01', description: 'Salário', type: 'income', incomeAmount: 5000, status: 'paid' },
-    { id: 'expense-1', date: '2026-09-02', description: 'Aluguel', type: 'expense', expenseAmount: 1200, situation: 'PAGO' },
+    { id: 'income-1', date: '2026-09-01', description: 'Salário', type: 'income', incomeAmount: 5000, status: 'paid', financialAccountId: 'account-monetary-main' },
+    { id: 'expense-1', date: '2026-09-02', description: 'Aluguel', type: 'expense', expenseAmount: 1200, situation: 'PAGO', financialAccountId: 'account-monetary-main' },
     { id: '', date: '2026-09-03', description: 'Inválido', type: 'expense', amount: 10 },
   ],
 };
@@ -28,7 +28,18 @@ const expense = legacyTransactionToFinancialEvent(state.transactions[1], context
 assert.equal(expense?.signedAmount, -1200);
 assert.equal(expense?.status, 'paid');
 assert.equal(expense?.legacyTransactionId, 'expense-1');
+assert.equal(expense?.accountId, 'account-monetary-main');
 assert.deepEqual(financialEventToLegacyTransaction(expense!), state.transactions[1]);
+
+const benefit = legacyTransactionToFinancialEvent({
+  id: 'benefit-1', date: '2026-09-03', description: 'Mercado', type: 'expense', expenseAmount: 200, status: 'paid', financialAccountId: 'account-benefit-verocard-food',
+}, context);
+assert.equal(benefit?.accountId, 'account-benefit-verocard-food');
+
+const withoutAccount = legacyTransactionToFinancialEvent({
+  id: 'legacy-no-account', date: '2026-09-03', description: 'Legado', type: 'expense', expenseAmount: 10, status: 'paid',
+}, context);
+assert.equal(withoutAccount?.accountId, null);
 
 const refund = legacyTransactionToFinancialEvent({
   id: 'refund-1', date: '2026-09-04', description: 'Estorno', type: 'expense', expenseAmount: -62, status: 'paid', group: 'CARTÃO',
