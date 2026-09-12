@@ -78,7 +78,7 @@ function eventItems(data: PhoenixReadModel): PendingItem[] {
         source: 'event' as const,
         description: event.description,
         dueDate: isoDay(event.date),
-        openAmount: Math.abs(Number(event.amount || 0)),
+        openAmount: -Number(event.signedAmount || 0),
         installmentNo: installment.no,
         installmentQty: installment.qty,
         categoryName: event.sourceDetails?.expenseClass || event.category?.group || event.category?.name || 'Sem classificação',
@@ -90,7 +90,7 @@ function eventItems(data: PhoenixReadModel): PendingItem[] {
 }
 
 function signature(item: PendingItem) {
-  return `${normalize(item.description)}|${item.dueDate}|${item.openAmount.toFixed(2)}`;
+  return `${normalize(item.description)}|${item.dueDate}|${Math.abs(item.openAmount).toFixed(2)}`;
 }
 
 export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
@@ -113,16 +113,18 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     return [...official, ...compatibility].sort((left, right) => left.dueDate.localeCompare(right.dueDate) || left.description.localeCompare(right.description, 'pt-BR'));
   }, [data]);
 
-  const overdue = open.filter((item) => item.dueDate < today);
-  const dueToday = open.filter((item) => item.dueDate === today);
-  const upcoming = open.filter((item) => item.dueDate > today);
+  const actionable = open.filter((item) => item.openAmount > 0);
+  const overdue = actionable.filter((item) => item.dueDate < today);
+  const dueToday = actionable.filter((item) => item.dueDate === today);
+  const upcoming = actionable.filter((item) => item.dueDate > today);
   const total = open.reduce((sum, item) => sum + item.openAmount, 0);
 
   const visible = useMemo(() => open.filter((item) => {
+    const actionableItem = item.openAmount > 0;
     const matchesPriority = priority === 'all'
-      || (priority === 'overdue' && item.dueDate < today)
-      || (priority === 'today' && item.dueDate === today)
-      || (priority === 'upcoming' && item.dueDate > today);
+      || (priority === 'overdue' && actionableItem && item.dueDate < today)
+      || (priority === 'today' && actionableItem && item.dueDate === today)
+      || (priority === 'upcoming' && actionableItem && item.dueDate > today);
     const haystack = normalize(`${item.description} ${item.categoryName} ${item.group} ${item.paymentMethod} ${item.modality}`);
     return matchesPriority && haystack.includes(normalize(search));
   }), [open, priority, search, today]);
@@ -132,10 +134,11 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     return acc;
   }, {});
 
-  const selectedItems = open.filter((item) => selected.has(item.id));
+  const selectedItems = actionable.filter((item) => selected.has(item.id));
   const selectedTotal = selectedItems.reduce((sum, item) => sum + item.openAmount, 0);
   const available = data.summary.availableBalance + data.summary.realizedResult;
   const compatibilityCount = open.filter((item) => item.source === 'event').length;
+  const adjustmentCount = open.filter((item) => item.openAmount < 0).length;
 
   function toggle(id: string) {
     setSelected((current) => {
@@ -152,7 +155,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     </header>
 
     <section className="px-screen-kpis">
-      <article><span>Total pendente</span><strong>{money.format(total)}</strong><small>{open.length} compromisso(s)</small></article>
+      <article><span>Total pendente líquido</span><strong>{money.format(total)}</strong><small>{actionable.length} compromisso(s){adjustmentCount ? ` · ${adjustmentCount} ajuste(s)` : ''}</small></article>
       <article className="danger"><span>Vencidos</span><strong>{overdue.length}</strong><small>Prioridade máxima</small></article>
       <article className="warn"><span>Vencem hoje</span><strong>{dueToday.length}</strong><small>Ação imediata</small></article>
       <article><span>Próximos vencimentos</span><strong>{upcoming.length}</strong><small>Agenda ativa</small></article>
@@ -166,18 +169,19 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
           <label className="px-search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar compromisso, grupo ou forma de pagamento" /></label>
           <span className="px-toolbar-note">{visible.length} de {open.length} exibido(s)</span>
         </div>
-        {compatibilityCount > 0 ? <div className="px-history-source-note"><strong>Leitura consolidada:</strong> despesas planejadas do período entram em Pendentes enquanto o domínio novo de contas a pagar é migrado. Classificação, grupo, forma de pagamento e vencimento permanecem vinculados aos dados reais.</div> : null}
+        {compatibilityCount > 0 ? <div className="px-history-source-note"><strong>Leitura consolidada:</strong> despesas planejadas do período entram em Pendentes enquanto o domínio novo de contas a pagar é migrado. Estornos permanecem como ajustes negativos e não ficam disponíveis para baixa.</div> : null}
         {Object.entries(grouped).map(([group, items]) => <section className="px-pending-group" key={group}>
           <header><div><strong>{group}</strong><small>{items.length} item(ns)</small></div><strong>{money.format(items.reduce((sum, item) => sum + item.openAmount, 0))}</strong></header>
           {items.map((item) => {
-            const late = item.dueDate < today ? Math.max(1, Math.floor((new Date(`${today}T12:00:00Z`).getTime() - new Date(`${item.dueDate}T12:00:00Z`).getTime()) / 86400000)) : 0;
+            const adjustment = item.openAmount < 0;
+            const late = adjustment ? 0 : item.dueDate < today ? Math.max(1, Math.floor((new Date(`${today}T12:00:00Z`).getTime() - new Date(`${item.dueDate}T12:00:00Z`).getTime()) / 86400000)) : 0;
             const credit = normalize(item.modality).includes('credito') || normalize(item.paymentMethod).includes('cartao');
-            return <label className="px-pending-row" key={item.id}>
-              <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} />
-              <div className="px-pending-date"><strong>{date.format(new Date(`${item.dueDate}T12:00:00Z`))}</strong><small>{late ? `${late} dia(s) em atraso` : item.dueDate === today ? 'Vence hoje' : 'Programado'}</small></div>
+            return <label className={`px-pending-row ${adjustment ? 'is-adjustment' : ''}`} key={item.id}>
+              <input type="checkbox" disabled={adjustment} checked={!adjustment && selected.has(item.id)} onChange={() => toggle(item.id)} />
+              <div className="px-pending-date"><strong>{date.format(new Date(`${item.dueDate}T12:00:00Z`))}</strong><small>{adjustment ? 'Ajuste de estorno' : late ? `${late} dia(s) em atraso` : item.dueDate === today ? 'Vence hoje' : 'Programado'}</small></div>
               <div className="px-pending-copy"><strong>{item.description}</strong><small>{item.installmentQty > 1 ? `Parcela ${item.installmentNo}/${item.installmentQty}` : 'Pagamento único'} · {item.categoryName} · {item.paymentMethod}</small></div>
-              <strong className="px-pending-amount">{money.format(item.openAmount)}</strong>
-              <span className={`px-status ${late ? 'overdue' : 'planned'}`}>{credit ? 'CARTÃO' : late ? 'VENCIDO' : 'PENDENTE'}</span>
+              <strong className={`px-pending-amount ${adjustment ? 'positive' : ''}`}>{money.format(item.openAmount)}</strong>
+              <span className={`px-status ${adjustment ? 'reconciled' : late ? 'overdue' : 'planned'}`}>{adjustment ? 'ESTORNO' : credit ? 'CARTÃO' : late ? 'VENCIDO' : 'PENDENTE'}</span>
               <button type="button" className="px-detail-btn" aria-label={`Detalhes de ${item.description}`}>↘</button>
             </label>;
           })}
@@ -189,12 +193,12 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
         <div className="px-panel-head"><div><span>Baixa protegida</span><h2>Simulação</h2></div><span className="px-status reconciled">ATIVA</span></div>
         <dl>
           <div><dt>Saldo monetário disponível</dt><dd>{money.format(available)}</dd></div>
-          <div><dt>Total pendente</dt><dd>{money.format(total)}</dd></div>
+          <div><dt>Total pendente líquido</dt><dd>{money.format(total)}</dd></div>
           <div><dt>Itens selecionados</dt><dd>{selected.size}</dd></div>
           <div><dt>Valor selecionado</dt><dd>{money.format(selectedTotal)}</dd></div>
           <div className="emphasis"><dt>Saldo previsto após a baixa</dt><dd>{money.format(available - selectedTotal)}</dd></div>
         </dl>
-        <div className={`px-protection-note ${selectedTotal > available ? 'danger' : ''}`}>{selectedTotal > available ? 'A seleção ultrapassa o saldo monetário disponível. A baixa deverá permanecer bloqueada.' : 'Simulação segura: nenhum valor foi gravado. Benefícios continuam fora do saldo monetário.'}</div>
+        <div className={`px-protection-note ${selectedTotal > available ? 'danger' : ''}`}>{selectedTotal > available ? 'A seleção ultrapassa o saldo monetário disponível. A baixa deverá permanecer bloqueada.' : 'Simulação segura: nenhum valor foi gravado. Benefícios continuam fora do saldo monetário e estornos não podem ser baixados como despesa.'}</div>
         <button className="px-primary-action" type="button" disabled>Revisar e confirmar baixa</button>
         <small className="px-readonly-hint">Gravação desabilitada durante a fase de paridade Phoenix.</small>
       </aside>
