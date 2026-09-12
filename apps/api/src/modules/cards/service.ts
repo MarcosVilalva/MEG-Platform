@@ -41,6 +41,11 @@ function legacyState(value: unknown) {
   };
 }
 
+function addMonths(month: string, offset: number) {
+  const [year, monthNumber] = month.split('-').map(Number);
+  return new Date(Date.UTC(year, monthNumber - 1 + offset, 1)).toISOString().slice(0, 7);
+}
+
 export async function sharedCardContext(userId: string) {
   const context = await resolveWorkspaceContext(userId);
   const saved = await prisma.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { state: true } });
@@ -150,6 +155,90 @@ export async function listCards(userId: string, month: string) {
       statementAmount,
       payableStatementAmount,
     };
+  });
+}
+
+export async function createCardPurchaseProtected(userId: string, input: {
+  cardId: string;
+  categoryId?: string | null;
+  description: string;
+  totalAmount: number;
+  purchaseDate: string;
+  installments: number;
+  operationId?: string;
+}) {
+  const shared = await sharedCardContext(userId);
+  const requestHash = input.operationId ? mutationRequestHash({ ...input, operationId: undefined }) : null;
+
+  return serializableFinancialTransaction(async (tx) => {
+    if (input.operationId && requestHash) {
+      const previous = await tx.cloudMutationReceipt.findUnique({
+        where: { workspaceId_operationId: { workspaceId: shared.workspaceId, operationId: input.operationId } },
+      });
+      if (previous) {
+        if (previous.requestHash !== requestHash) throw new CardDomainError('OPERATION_ID_REUSED');
+        return previous.response as unknown;
+      }
+    }
+
+    const card = await tx.creditCard.findFirst({ where: { id: input.cardId, userId: shared.ownerId, isActive: true } });
+    if (!card) throw new CardDomainError('INVALID_CARD');
+    if (input.categoryId) {
+      const category = await tx.category.findFirst({ where: { id: input.categoryId, isActive: true } });
+      if (!category) throw new CardDomainError('INVALID_CATEGORY');
+    }
+
+    const purchaseDate = new Date(input.purchaseDate);
+    if (Number.isNaN(purchaseDate.getTime())) throw new CardDomainError('INVALID_PURCHASE_DATE');
+    const purchaseMonth = input.purchaseDate.slice(0, 7);
+    const firstMonth = addMonths(purchaseMonth, purchaseDate.getUTCDate() > card.closingDay ? 1 : 0);
+    const totalCents = Math.round(input.totalAmount * 100);
+    const baseCents = Math.floor(totalCents / input.installments);
+    const remainder = totalCents - baseCents * input.installments;
+
+    const purchase = await tx.cardPurchase.create({
+      data: {
+        userId: shared.ownerId,
+        cardId: card.id,
+        categoryId: input.categoryId,
+        description: input.description.trim(),
+        totalAmount: input.totalAmount,
+        purchaseDate,
+        installments: input.installments,
+        entries: {
+          create: Array.from({ length: input.installments }, (_, index) => ({
+            number: index + 1,
+            amount: (baseCents + (index < remainder ? 1 : 0)) / 100,
+            statementMonth: addMonths(firstMonth, index),
+          })),
+        },
+      },
+      include: { entries: true, category: true },
+    });
+
+    await recordFinancialAudit(tx, {
+      actorId: userId,
+      entity: 'CardPurchase',
+      entityId: purchase.id,
+      action: 'CARD_PURCHASE_CREATED',
+      before: null,
+      after: purchase,
+      context: { operationId: input.operationId ?? null, ownerId: shared.ownerId, firstStatementMonth: firstMonth },
+    });
+
+    const response = { ...purchase, idempotentReplay: false };
+    if (input.operationId && requestHash) {
+      const state = await tx.appState.findUnique({ where: { workspaceId: shared.workspaceId }, select: { revision: true } });
+      await tx.cloudMutationReceipt.create({ data: receiptCreateData({
+        workspaceId: shared.workspaceId,
+        operationId: input.operationId,
+        requestHash,
+        mutationType: 'CARD_PURCHASE_CREATE',
+        revision: state?.revision || 0,
+        response,
+      }) });
+    }
+    return response;
   });
 }
 
