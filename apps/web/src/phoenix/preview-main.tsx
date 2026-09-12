@@ -4,6 +4,7 @@ import {
   authenticatedRequest,
   clearSession,
   login,
+  logout,
   readSession
 } from '../app/auth-client';
 import { PhoenixApp } from './PhoenixApp';
@@ -45,7 +46,21 @@ function PhoenixPreviewRoot() {
     }
   }
 
-  if (state === 'signed-in') return <PhoenixApp />;
+  async function signOut() {
+    const session = readSession();
+    try {
+      if (session) await logout(session);
+      else clearSession();
+    } catch {
+      clearSession();
+    } finally {
+      setPassword('');
+      setError('');
+      setState('signed-out');
+    }
+  }
+
+  if (state === 'signed-in') return <PhoenixApp onLogout={() => { void signOut(); }} />;
 
   return <main className="px-preview-auth">
     <section className="px-preview-login">
