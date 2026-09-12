@@ -1,15 +1,18 @@
 import { Prisma, prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
+import {
+  isBenefitPaymentMethod,
+  isFutureFinancialDay,
+  monetaryBalanceAt,
+  paymentBalanceDecision,
+  serializableFinancialTransaction,
+} from '../finance/monetary-protection';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import {
   addMonthsClamped,
   addRecurringPeriod,
   buildRecurringSchedule,
-  isBenefitFinancialEvent,
-  isBenefitPaymentMethod,
-  isFuturePaymentDay,
   parseIsoDay,
-  paymentBalanceDecision,
   recurrenceEndDate,
   type RecurrenceFrequency,
 } from './core';
@@ -49,12 +52,6 @@ function dateOnly(value: Date | string) {
   return String(value).slice(0, 10);
 }
 
-function nextDayExclusive(day: string) {
-  const parsed = parseIsoDay(day);
-  if (!parsed) throw new PayableDomainError('INVALID_PAYMENT_DATE');
-  return new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day + 1));
-}
-
 function rollingHorizon(day: string, frequency: RecurrenceFrequency) {
   if (frequency === 'weekly') {
     let current = day;
@@ -62,42 +59,6 @@ function rollingHorizon(day: string, frequency: RecurrenceFrequency) {
     return current;
   }
   return addMonthsClamped(day, frequency === 'yearly' ? 24 : 6);
-}
-
-function retryableTransaction(error: unknown) {
-  return Boolean(error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'P2034');
-}
-
-async function serializable<T>(work: (tx: Tx) => Promise<T>) {
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    try {
-      return await prisma.$transaction(work, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-    } catch (error) {
-      if (!retryableTransaction(error) || attempt === 3) throw error;
-    }
-  }
-  throw new Error('SERIALIZABLE_TRANSACTION_RETRY_EXHAUSTED');
-}
-
-export async function monetaryBalanceAt(tx: Tx, userId: string, paidAt: string) {
-  const cutoff = nextDayExclusive(paidAt.slice(0, 10));
-  const events = await tx.financialEvent.findMany({
-    where: { userId, archivedAt: null, date: { lt: cutoff } },
-    select: {
-      description: true,
-      type: true,
-      status: true,
-      date: true,
-      signedAmount: true,
-      paymentMethod: { select: { name: true } },
-    },
-  });
-  const posted = new Set(['paid', 'reconciled', 'confirmed']);
-  const balance = events
-    .filter((event) => !isBenefitFinancialEvent(event))
-    .filter((event) => posted.has(event.status) || event.type === 'income' || event.type === 'redemption')
-    .reduce((sum, event) => sum + Number(event.signedAmount), 0);
-  return Math.round(balance * 100) / 100;
 }
 
 export async function listPayables(userId: string, month: string) {
@@ -219,13 +180,13 @@ export async function materializeRecurringExpenses(now = new Date()) {
 }
 
 export async function payPayableProtected(userId: string, payableId: string, input: ProtectedPaymentInput) {
-  if (isFuturePaymentDay(input.paidAt)) throw new PayableDomainError('FUTURE_PAYMENT_NOT_ALLOWED', { paidAt: input.paidAt.slice(0, 10) });
+  if (isFutureFinancialDay(input.paidAt)) throw new PayableDomainError('FUTURE_PAYMENT_NOT_ALLOWED', { paidAt: input.paidAt.slice(0, 10) });
   const principal = Math.abs(input.amount);
   const paidTotal = principal + input.interestAmount + input.fineAmount;
   const workspace = input.operationId ? await resolveWorkspaceContext(userId) : null;
   const requestHash = input.operationId ? mutationRequestHash({ payableId, ...input, operationId: undefined }) : null;
 
-  return serializable(async (tx) => {
+  return serializableFinancialTransaction(async (tx) => {
     if (input.operationId && workspace && requestHash) {
       const previous = await tx.cloudMutationReceipt.findUnique({
         where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
