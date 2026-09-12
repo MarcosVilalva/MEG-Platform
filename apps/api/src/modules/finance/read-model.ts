@@ -199,3 +199,102 @@ export async function getCanonicalFinancialCashflow(userId: string, month: strin
     days: normalizedDays,
   };
 }
+
+export async function getCanonicalFinancialAnalytics(userId: string, month: string) {
+  const { start, end } = monthRange(month);
+  const [year, monthNumber] = month.split('-').map(Number);
+  const previousDate = new Date(Date.UTC(year, monthNumber - 2, 1));
+  const previousMonth = previousDate.toISOString().slice(0, 7);
+  const trendStart = new Date(Date.UTC(year, monthNumber - 12, 1));
+
+  const [current, previous, rawEvents, rawTrendEvents] = await Promise.all([
+    getCanonicalFinancialSummary(userId, month),
+    getCanonicalFinancialSummary(userId, previousMonth),
+    prisma.financialEvent.findMany({
+      where: { userId, archivedAt: null, date: { gte: start, lt: end } },
+      select: {
+        description: true,
+        type: true,
+        status: true,
+        signedAmount: true,
+        date: true,
+        category: { select: { name: true, group: true } },
+        paymentMethod: { select: { name: true } },
+      },
+    }),
+    prisma.financialEvent.findMany({
+      where: { userId, archivedAt: null, date: { gte: trendStart, lt: end } },
+      select: {
+        description: true,
+        date: true,
+        type: true,
+        status: true,
+        signedAmount: true,
+        paymentMethod: { select: { name: true } },
+      },
+    }),
+  ]);
+
+  const events = rawEvents.filter(isMonetaryFinancialEvent);
+  const trendEvents = rawTrendEvents.filter(isMonetaryFinancialEvent);
+  const paymentTotals = new Map<string, number>();
+  const categoryTotals = new Map<string, number>();
+  const expenseDays = new Set<string>();
+
+  for (const event of events) {
+    if (event.type === 'income' || event.type === 'redemption') continue;
+    const amount = -Number(event.signedAmount);
+    const method = event.paymentMethod?.name || 'Não informada';
+    paymentTotals.set(method, (paymentTotals.get(method) || 0) + amount);
+    const category = event.category?.group || event.category?.name || 'Sem categoria';
+    categoryTotals.set(category, (categoryTotals.get(category) || 0) + amount);
+    expenseDays.add(event.date.toISOString().slice(0, 10));
+  }
+
+  const trend = new Map<string, { month: string; income: number; expense: number; result: number }>();
+  for (let offset = 11; offset >= 0; offset -= 1) {
+    const date = new Date(Date.UTC(year, monthNumber - 1 - offset, 1));
+    const key = date.toISOString().slice(0, 7);
+    trend.set(key, { month: key, income: 0, expense: 0, result: 0 });
+  }
+  for (const event of trendEvents) {
+    const point = trend.get(event.date.toISOString().slice(0, 7));
+    if (!point) continue;
+    if (event.type === 'income' || event.type === 'redemption') point.income += Number(event.signedAmount);
+    else point.expense -= Number(event.signedAmount);
+    point.income = round(point.income);
+    point.expense = round(point.expense);
+    point.result = round(point.income - point.expense);
+  }
+
+  const categories = [...categoryTotals.entries()]
+    .map(([name, amount]) => ({ name, amount: round(amount) }))
+    .sort((left, right) => right.amount - left.amount);
+  const totalCategoryExpense = categories.reduce((sum, item) => sum + item.amount, 0);
+
+  return {
+    month,
+    summary: current,
+    previous: {
+      month: previousMonth,
+      income: previous.income,
+      expense: previous.expense,
+      result: previous.projectedResult,
+    },
+    delta: {
+      income: round(current.income - previous.income),
+      expense: round(current.expense - previous.expense),
+      result: round(current.projectedResult - previous.projectedResult),
+    },
+    dailyAverageExpense: expenseDays.size ? round(current.expense / expenseDays.size) : 0,
+    concentrationTop3: totalCategoryExpense > 0
+      ? round(categories.slice(0, 3).reduce((sum, item) => sum + item.amount, 0) / totalCategoryExpense * 100)
+      : 0,
+    categories: categories.slice(0, 10),
+    monthlyTrend: [...trend.values()],
+    paymentMethods: [...paymentTotals.entries()]
+      .map(([name, amount]) => ({ name, amount: round(amount) }))
+      .sort((left, right) => right.amount - left.amount)
+      .slice(0, 6),
+  };
+}
