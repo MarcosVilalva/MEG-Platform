@@ -24,6 +24,16 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, '../../packages/shared/src')
     }
   },
+  build: {
+    rollupOptions: {
+      input: process.env.CAPACITOR_BUILD
+        ? path.resolve(__dirname, 'index.html')
+        : {
+            main: path.resolve(__dirname, 'index.html'),
+            v15: path.resolve(__dirname, 'v15.html')
+          }
+    }
+  },
   server: {
     host: '0.0.0.0',
     allowedHosts: ['terminal.local'],
