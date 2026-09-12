@@ -58,8 +58,8 @@ function payableItem(item: Payable): PendingItem {
     openAmount: Number(item.openAmount || 0),
     installmentNo: item.installmentNo || 1,
     installmentQty: item.installmentQty || 1,
-    categoryName: item.category?.name || 'Sem classificação',
-    group: item.category?.group || item.category?.name || 'Sem classificação',
+    categoryName: item.category?.group || item.category?.name || 'Sem classificação',
+    group: item.category?.name || 'Sem grupo',
     paymentMethod: 'Conta a pagar',
     modality: '—'
   };
@@ -81,8 +81,8 @@ function eventItems(data: PhoenixReadModel): PendingItem[] {
         openAmount: Math.abs(Number(event.amount || 0)),
         installmentNo: installment.no,
         installmentQty: installment.qty,
-        categoryName: event.sourceDetails?.expenseClass || event.category?.name || 'Sem classificação',
-        group: event.sourceDetails?.group || event.category?.group || event.category?.name || 'Sem classificação',
+        categoryName: event.sourceDetails?.expenseClass || event.category?.group || event.category?.name || 'Sem classificação',
+        group: event.sourceDetails?.group || event.category?.name || 'Sem grupo',
         paymentMethod: event.sourceDetails?.paymentMethod || event.paymentMethod?.name || 'Não informada',
         modality: event.sourceDetails?.modality || '—'
       };
@@ -166,7 +166,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
           <label className="px-search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar compromisso, grupo ou forma de pagamento" /></label>
           <span className="px-toolbar-note">{visible.length} de {open.length} exibido(s)</span>
         </div>
-        {compatibilityCount > 0 ? <div className="px-history-source-note"><strong>Leitura consolidada:</strong> despesas planejadas do período entram em Pendentes enquanto o domínio novo de contas a pagar é migrado. Compras em crédito permanecem agrupadas pela forma de pagamento.</div> : null}
+        {compatibilityCount > 0 ? <div className="px-history-source-note"><strong>Leitura consolidada:</strong> despesas planejadas do período entram em Pendentes enquanto o domínio novo de contas a pagar é migrado. Classificação, grupo, forma de pagamento e vencimento permanecem vinculados aos dados reais.</div> : null}
         {Object.entries(grouped).map(([group, items]) => <section className="px-pending-group" key={group}>
           <header><div><strong>{group}</strong><small>{items.length} item(ns)</small></div><strong>{money.format(items.reduce((sum, item) => sum + item.openAmount, 0))}</strong></header>
           {items.map((item) => {
