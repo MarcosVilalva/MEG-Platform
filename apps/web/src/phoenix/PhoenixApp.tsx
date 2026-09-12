@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
 import { loadPhoenixReadModel } from './data/load-phoenix-read-model';
-import { PhoenixCards, PhoenixCatalogs, PhoenixMovements, PhoenixPayables, PhoenixPlaceholder } from './screens/PhoenixReadScreens';
+import { PhoenixCards, PhoenixCatalogs, PhoenixMovements, PhoenixPayables } from './screens/PhoenixReadScreens';
 import { PhoenixHistory } from './screens/PhoenixHistory';
 import { PhoenixUsers } from './screens/PhoenixUsers';
+import { PhoenixSettings } from './screens/PhoenixSettings';
 import './phoenix-v15.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -85,7 +86,7 @@ function HomeScreen({ data, month }: { data: PhoenixReadModel; month: string }) 
   </>;
 }
 
-function ReadScreen({ view, data, month }: { view: PhoenixView; data: PhoenixReadModel; month: string }) {
+function ReadScreen({ view, data, month, theme, onToggleTheme }: { view: PhoenixView; data: PhoenixReadModel; month: string; theme: 'dark' | 'light'; onToggleTheme: () => void }) {
   if (view === 'home') return <HomeScreen data={data} month={month} />;
   if (view === 'movements') return <PhoenixMovements data={data} />;
   if (view === 'history') return <PhoenixHistory data={data} />;
@@ -93,10 +94,10 @@ function ReadScreen({ view, data, month }: { view: PhoenixView; data: PhoenixRea
   if (view === 'cards') return <PhoenixCards data={data} />;
   if (view === 'catalogs') return <PhoenixCatalogs data={data} />;
   if (view === 'users') return <PhoenixUsers data={data} />;
-  return <PhoenixPlaceholder kicker="Configurações" title="Preferências e integrações" text="WhatsApp, e-mail, notificações, segurança, dispositivos e atualização Android serão ligados aos serviços já auditados." />;
+  return <PhoenixSettings data={data} theme={theme} onToggleTheme={onToggleTheme} />;
 }
 
-export function PhoenixApp() {
+export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const [month, setMonth] = useState(currentMonth);
   const [view, setView] = useState<PhoenixView>('home');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -116,6 +117,7 @@ export function PhoenixApp() {
   const data = loadState.status === 'ready' ? loadState.data : null;
   const currentView = views.find((item) => item.id === view) || views[0];
   const pendingCount = data?.summary.pendingCount || 0;
+  const toggleTheme = () => setTheme((value) => value === 'dark' ? 'light' : 'dark');
 
   function navigate(next: PhoenixView) { setView(next); setMobileOpen(false); }
 
@@ -134,11 +136,11 @@ export function PhoenixApp() {
       <main className="px-main">
         <header className="px-topbar">
           <div className="px-top-left"><button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => { if (window.matchMedia('(max-width:760px)').matches) setMobileOpen((value) => !value); else setCollapsed((value) => !value); }}>☰</button><div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div></div>
-          <div className="px-top-right"><label className="px-period" aria-label="Período global"><span>▣</span><input type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label><button className="px-sync" type="button"><span className="px-sync-dot" /><span>{loadState.status === 'loading' ? 'Atualizando dados' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn" type="button" title="Alternar tema" onClick={() => setTheme((value) => value === 'dark' ? 'light' : 'dark')}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{(data?.user.name || 'M').slice(0, 1).toUpperCase()}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span>⌄</span></button><button className="px-icon-btn" type="button" title="Sair">↪</button></div>
+          <div className="px-top-right"><label className="px-period" aria-label="Período global"><span>▣</span><input type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></label><button className="px-sync" type="button"><span className="px-sync-dot" /><span>{loadState.status === 'loading' ? 'Atualizando dados' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{(data?.user.name || 'M').slice(0, 1).toUpperCase()}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span>⌄</span></button><button className="px-icon-btn" type="button" title="Sair" onClick={onLogout}>↪</button></div>
         </header>
 
         <div className="px-content">
-          {loadState.status === 'error' ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p></section> : data ? <ReadScreen view={view} data={data} month={month} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários e cadastros estão sendo carregados em paralelo.</p></section>}
+          {loadState.status === 'error' ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p></section> : data ? <ReadScreen view={view} data={data} month={month} theme={theme} onToggleTheme={toggleTheme} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e cadastros estão sendo carregados em paralelo.</p></section>}
         </div>
       </main>
 
