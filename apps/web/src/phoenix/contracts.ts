@@ -102,13 +102,19 @@ export type PhoenixEventPage = {
   pageSize: number;
 };
 
+export type PhoenixFinanceSummary = FinanceSummary & {
+  benefitBalance: number;
+  benefitCredits: number;
+  benefitUsed: number;
+};
+
 export type PhoenixReadModel = {
   month: string;
   loadedAt: string;
   user: AuthUser;
   health: ApiHealth;
   normalization: PhoenixNormalizationPreview;
-  summary: FinanceSummary;
+  summary: PhoenixFinanceSummary;
   analytics: FinancialAnalytics;
   cashflow: FinancialCashflow;
   budgets: BudgetOverview[];
@@ -126,7 +132,7 @@ export type PhoenixReadModel = {
   sourcePolicy: {
     mode: 'read-only';
     summary: 'finance-domain';
-    events: 'finance-domain';
+    events: 'finance-domain-month';
     financialAudit: 'finance-audit-log';
     activities: 'app-state-activity-log-legacy';
     users: 'auth-admin-read';
