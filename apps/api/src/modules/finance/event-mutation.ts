@@ -3,6 +3,7 @@ import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-re
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
 import { financialAmountValues } from './amount-sign';
+import { assertActiveCatalogReferences } from './catalog-scope';
 import { serializableFinancialTransaction } from './monetary-protection';
 
 export class FinancialEventMutationError extends Error {
@@ -49,17 +50,13 @@ export async function createFinancialEventProtected(userId: string, input: Creat
       }
     }
 
-    if (input.accountId) {
-      const account = await tx.account.findFirst({ where: { id: input.accountId, isActive: true }, select: { id: true } });
-      if (!account) throw new FinancialEventMutationError('INVALID_ACCOUNT');
-    }
-    if (input.categoryId) {
-      const category = await tx.category.findFirst({ where: { id: input.categoryId, isActive: true }, select: { id: true } });
-      if (!category) throw new FinancialEventMutationError('INVALID_CATEGORY');
-    }
-    if (input.paymentMethodId) {
-      const method = await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, isActive: true }, select: { id: true } });
-      if (!method) throw new FinancialEventMutationError('INVALID_PAYMENT_METHOD');
+    try {
+      await assertActiveCatalogReferences(tx, userId, input);
+    } catch (error) {
+      if (error instanceof Error && ['INVALID_ACCOUNT', 'INVALID_CATEGORY', 'INVALID_PAYMENT_METHOD'].includes(error.message)) {
+        throw new FinancialEventMutationError(error.message);
+      }
+      throw error;
     }
 
     const values = financialAmountValues(input.type, input.amount);
