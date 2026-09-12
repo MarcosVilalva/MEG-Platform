@@ -120,11 +120,31 @@ const cardStopWords = new Set(['cartao', 'credito', 'visa', 'mastercard', 'plati
 function cardWords(value: unknown) {
   return normalize(value).replace(/[^a-z0-9 ]/g, ' ').split(' ').filter((word) => word.length >= 2 && !cardStopWords.has(word));
 }
+function cardAliases(card: CreditCard) {
+  const name = normalize(card.name);
+  const issuer = normalize(card.issuer || '');
+  const aliases = new Set<string>([name]);
+  if (name.includes('meli') || issuer.includes('mercado livre')) {
+    aliases.add('cartao ml');
+    aliases.add('mercado livre');
+    aliases.add('mercado pago');
+  }
+  if (name.includes('latam')) {
+    aliases.add('cartao latam pass');
+    aliases.add('latam pass');
+  }
+  if (name.includes('azul')) aliases.add('cartao azul');
+  if (name.includes('riachuelo') || issuer.includes('midway')) {
+    aliases.add('riachuelo');
+    aliases.add('cartao riachuelo');
+  }
+  return [...aliases].filter(Boolean);
+}
 function transactionMatchesCard(tx: PhoenixLegacyTransaction, card: CreditCard) {
   const method = normalize(tx.paymentMethod || tx.account);
   const name = normalize(card.name);
   if (!method || !name) return false;
-  if (method === name || method.includes(name) || name.includes(method)) return true;
+  if (cardAliases(card).some((alias) => method === alias || method.includes(alias))) return true;
   const words = cardWords(card.name);
   if (!words.length) return false;
   const matches = words.filter((word) => method.includes(word));
@@ -134,9 +154,22 @@ function isCredit(tx: PhoenixLegacyTransaction) {
   return normalize(`${tx.modality || ''} ${tx.paymentMethod || ''} ${tx.account || ''}`).includes('credito') || normalize(`${tx.paymentMethod || ''} ${tx.account || ''}`).includes('cartao');
 }
 function isExpense(tx: PhoenixLegacyTransaction) { return normalize(tx.type) === 'expense' || normalize(tx.type) === 'despesa'; }
+function isCancelledStatus(status: string) {
+  return ['cancelled', 'cancelado', 'archived', 'arquivado'].includes(normalize(status));
+}
 function isOpenStatus(status: string) {
   const value = normalize(status);
-  return !['paid', 'pago', 'reconciled', 'conciliado', 'received', 'recebido', 'cancelled', 'cancelado'].includes(value);
+  return !['paid', 'pago', 'reconciled', 'conciliado', 'received', 'recebido', 'cancelled', 'cancelado', 'archived', 'arquivado'].includes(value);
+}
+function rowStatusLabel(row: GridRow) {
+  if (isCancelledStatus(row.status)) return 'Cancelado';
+  if (row.amount < 0) return 'Crédito/estorno';
+  return isOpenStatus(row.status) ? 'Pendente' : 'Pago';
+}
+function rowStatusClass(row: GridRow) {
+  if (isCancelledStatus(row.status)) return 'archived';
+  if (row.amount < 0) return 'reconciled';
+  return isOpenStatus(row.status) ? 'planned' : 'reconciled';
 }
 function legacyRow(tx: PhoenixLegacyTransaction): GridRow | null {
   const dueDate = String(tx.date || '').slice(0, 10);
@@ -161,6 +194,9 @@ function legacyRow(tx: PhoenixLegacyTransaction): GridRow | null {
 function rowSignature(row: GridRow) {
   return `${normalize(row.description)}|${row.statementMonth}|${normalize(row.installment)}|${row.amount.toFixed(2)}`;
 }
+function sumRows(rows: GridRow[]) {
+  return rows.filter((row) => !isCancelledStatus(row.status)).reduce((sum, row) => sum + row.amount, 0);
+}
 
 export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const [selectedId, setSelectedId] = useState(data.cards[0]?.id || '');
@@ -170,10 +206,8 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const [searchState, setSearchState] = useState<GridState<string>>(searchesByMode);
 
   const selected = data.cards.find((card) => card.id === selectedId) || data.cards[0] || null;
-  if (!selected) return <section className="px-screen"><header className="px-screen-head"><div><span className="px-kicker">Cartões de crédito</span><h1>Faturas e compromissos</h1><p>Nenhum cartão ativo foi localizado na base real.</p></div></header><div className="px-card px-empty">Cadastre cartões no sistema atual antes da migração da escrita.</div></section>;
 
-  const identity = resolvePhoenixCardIdentity(selected);
-  const officialRows = useMemo<GridRow[]>(() => selected.purchases.flatMap((purchase) => purchase.entries.map((entry) => ({
+  const officialRows = useMemo<GridRow[]>(() => selected ? selected.purchases.flatMap((purchase) => purchase.entries.map((entry) => ({
     id: entry.id,
     source: 'domain' as const,
     description: purchase.description,
@@ -184,12 +218,12 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     amount: Number(entry.amount || 0),
     status: entry.status,
     statementMonth: entry.statementMonth
-  }))), [selected]);
+  }))) : [], [selected]);
 
-  const legacyRows = useMemo<GridRow[]>(() => data.legacyTransactions
+  const legacyRows = useMemo<GridRow[]>(() => selected ? data.legacyTransactions
     .filter((tx) => isExpense(tx) && isCredit(tx) && transactionMatchesCard(tx, selected))
     .map(legacyRow)
-    .filter((row): row is GridRow => Boolean(row)), [data.legacyTransactions, selected]);
+    .filter((row): row is GridRow => Boolean(row)) : [], [data.legacyTransactions, selected]);
 
   const allRows = useMemo(() => {
     const rows = [...officialRows];
@@ -206,15 +240,23 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
 
   const currentRows = allRows.filter((row) => row.statementMonth === data.month);
   const futureRows = allRows.filter((row) => row.statementMonth > data.month && isOpenStatus(row.status));
-  const currentOpen = currentRows.filter((row) => isOpenStatus(row.status));
+  const currentOpen = currentRows.filter((row) => isOpenStatus(row.status) && !isCancelledStatus(row.status));
   const next = nextMonth(data.month);
-  const currentStatement = currentOpen.reduce((sum, row) => sum + row.amount, 0);
-  const nextStatement = futureRows.filter((row) => row.statementMonth === next).reduce((sum, row) => sum + row.amount, 0);
-  const futureTotal = futureRows.reduce((sum, row) => sum + row.amount, 0);
-  const totalCommitted = currentStatement + futureTotal;
-  const creditLimit = Number(selected.creditLimit || 0);
+  const currentStatement = sumRows(currentRows);
+  const currentPurchases = currentRows.filter((row) => !isCancelledStatus(row.status) && row.amount > 0).reduce((sum, row) => sum + row.amount, 0);
+  const currentCredits = Math.abs(currentRows.filter((row) => !isCancelledStatus(row.status) && row.amount < 0).reduce((sum, row) => sum + row.amount, 0));
+  const currentOutstandingRaw = sumRows(currentOpen);
+  const currentOutstanding = Math.max(0, currentOutstandingRaw);
+  const nextStatement = sumRows(futureRows.filter((row) => row.statementMonth === next));
+  const futureNet = sumRows(futureRows);
+  const futureCommitted = Math.max(0, futureNet);
+  const totalCommitted = currentOutstanding + futureCommitted;
+  const creditLimit = Number(selected?.creditLimit || 0);
   const usage = creditLimit > 0 ? Math.min(100, Math.max(0, totalCommitted / creditLimit * 100)) : 0;
   const availableLimit = creditLimit - totalCommitted;
+  const paidCurrent = currentRows.some((row) => !isOpenStatus(row.status) && !isCancelledStatus(row.status));
+  const currentStatus = !currentRows.length ? 'SEM FATURA' : currentOutstandingRaw > 0 ? (paidCurrent ? 'PARCIAL' : 'EM ABERTO') : currentOpen.some((row) => row.amount < 0) ? 'CRÉDITO' : 'PAGA';
+  const currentStatusClass = currentStatus === 'EM ABERTO' || currentStatus === 'PARCIAL' ? 'planned' : currentStatus === 'PAGA' ? 'reconciled' : 'confirmed';
 
   const mode: GridMode = tab === 'installments' ? 'installments' : 'current';
   const sourceRows = mode === 'current' ? currentRows : futureRows;
@@ -255,6 +297,10 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} options={list} sort={sort?.key === key ? sort.direction : null} onSort={(direction) => setSortState((current) => ({ ...current, [mode]: { key, direction } }))} onChange={(value) => setFilterState((current) => ({ ...current, [mode]: { ...current[mode], [key]: value } }))} /></div>;
   }
 
+  if (!selected) return <section className="px-screen"><header className="px-screen-head"><div><span className="px-kicker">Cartões de crédito</span><h1>Faturas e compromissos</h1><p>Nenhum cartão ativo foi localizado na base real.</p></div></header><div className="px-card px-empty">Cadastre cartões no sistema atual antes da migração da escrita.</div></section>;
+
+  const identity = resolvePhoenixCardIdentity(selected);
+
   return <section className="px-screen">
     <header className="px-screen-head"><div><span className="px-kicker">Cartões de crédito</span><h1>Faturas e compromissos</h1><p>Limites, faturas e compras usando o cadastro real e a agenda financeira já existente no MEG.</p></div><div className="px-screen-head-aside"><button className="px-secondary-action" type="button" disabled>Gerenciar cartões</button></div></header>
 
@@ -264,8 +310,8 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
         {data.cards.map((card) => {
           const cardIdentity = resolvePhoenixCardIdentity(card);
           const txRows = data.legacyTransactions.filter((tx) => isExpense(tx) && isCredit(tx) && transactionMatchesCard(tx, card)).map(legacyRow).filter((row): row is GridRow => Boolean(row));
-          const openMonth = txRows.filter((row) => row.statementMonth === data.month && isOpenStatus(row.status)).reduce((sum, row) => sum + row.amount, 0);
-          const amount = openMonth || Number(card.statementAmount || 0);
+          const monthRows = txRows.filter((row) => row.statementMonth === data.month);
+          const amount = monthRows.length ? sumRows(monthRows) : Number(card.statementAmount || 0);
           return <button key={card.id} type="button" className={`px-card-option ${selected.id === card.id ? 'active' : ''}`} onClick={() => selectCard(card.id)}><span className="px-mini-card" style={{ background: cardIdentity.background }}>{cardIdentity.miniLabel}</span><span><strong>{card.name}</strong><small>{card.issuer || card.brand || 'Cartão cadastrado'} · {money.format(amount)}</small></span><span>›</span></button>;
         })}
       </aside>
@@ -276,9 +322,9 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
             <div className="px-physical-card" style={{ background: identity.background } as CSSProperties}>
               {identity.artwork ? <img src={`${import.meta.env.BASE_URL}${identity.artwork}`} alt={identity.label} /> : <><strong>{identity.label}</strong><span className="px-chip" /><small>{selected.issuer || selected.brand || 'MEG FINANÇAS'}</small>{identity.brandAsset ? <img className="px-brand-asset" src={`${import.meta.env.BASE_URL}assets/card-brands/${identity.brandAsset}.svg`} alt={selected.brand || identity.brandAsset} /> : null}</>}
             </div>
-            <div className="px-card-account"><span className="px-kicker">Cartão selecionado</span><h2>{selected.name}</h2><p>{selected.issuer || 'Cartão cadastrado no MEG'}{selected.lastFour ? ` · final ${selected.lastFour}` : ''}</p><div className="px-cycle-dates"><div><span>Fechamento</span><strong>dia {selected.closingDay}</strong></div><div><span>Vencimento</span><strong>dia {selected.dueDay}</strong></div><span className="px-status planned">EM ABERTO</span></div></div>
+            <div className="px-card-account"><span className="px-kicker">Cartão selecionado</span><h2>{selected.name}</h2><p>{selected.issuer || 'Cartão cadastrado no MEG'}{selected.lastFour ? ` · final ${selected.lastFour}` : ''}</p><div className="px-cycle-dates"><div><span>Fechamento</span><strong>dia {selected.closingDay}</strong></div><div><span>Vencimento</span><strong>dia {selected.dueDay}</strong></div><span className={`px-status ${currentStatusClass}`}>{currentStatus}</span></div></div>
           </div>
-          <div className="px-card-metrics"><div><span>Fatura atual</span><strong>{money.format(currentStatement)}</strong></div><div><span>Próxima fatura</span><strong>{money.format(nextStatement)}</strong></div><div><span>Parcelas futuras</span><strong>{money.format(futureTotal)}</strong></div><div><span>Total comprometido</span><strong>{money.format(totalCommitted)}</strong></div></div>
+          <div className="px-card-metrics"><div><span>Fatura do período</span><strong>{money.format(currentStatement)}</strong><small>Compras {money.format(currentPurchases)} · Créditos {money.format(currentCredits)}</small></div><div><span>Próxima fatura</span><strong>{money.format(nextStatement)}</strong></div><div><span>Parcelas futuras</span><strong>{money.format(futureNet)}</strong></div><div><span>Total comprometido</span><strong>{money.format(totalCommitted)}</strong><small>Somente valores ainda em aberto</small></div></div>
           <div className="px-limit"><div><span>Uso do limite</span><strong>{usage.toFixed(0)}% · {money.format(availableLimit)} disponível</strong></div><progress max="100" value={usage} /></div>
         </article>
 
@@ -291,12 +337,12 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
             {activeKeys.length || sort || search ? <div className="px-grid-active-filters"><span>Filtros da grade</span>{search ? <span className="px-grid-filter-chip">Busca: {search}<button type="button" onClick={() => setSearchState((current) => ({ ...current, [mode]: '' }))}>×</button></span> : null}{activeKeys.map((key) => <span className="px-grid-filter-chip" key={key}>{summary(labels[key], filters[key])}<button type="button" onClick={() => setFilterState((current) => ({ ...current, [mode]: { ...current[mode], [key]: initialFilters()[key] } }))}>×</button></span>)}{sort ? <span className="px-grid-filter-chip">Ordenação: {labels[sort.key]} {sort.direction === 'asc' ? '↑' : '↓'}<button type="button" onClick={() => setSortState((current) => ({ ...current, [mode]: null }))}>×</button></span> : null}<button className="px-grid-clear-all" type="button" onClick={resetGrid}>Limpar grade</button></div> : null}
             <div className="px-table-scroll"><table className="px-data-table"><thead><tr>
               {tab === 'current' ? <><th>{header('Compra','description','text')}</th><th>{header('Data da compra','purchaseDate','date')}</th><th>{header('Parcela','installment','multi',gridOptions.installment)}</th><th>{header('Grupo','group','multi',gridOptions.group)}</th><th>{header('Valor','amount','number')}</th><th>{header('Situação','status','multi',gridOptions.status)}</th><th>Detalhes</th></> : <><th>{header('Compra','description','text')}</th><th>{header('Parcela','installment','multi',gridOptions.installment)}</th><th>{header('Fatura','statementMonth','multi',gridOptions.statementMonth)}</th><th>{header('Valor','amount','number')}</th><th>{header('Situação','status','multi',gridOptions.status)}</th></>}
-            </tr></thead><tbody>{visibleRows.map((row) => <tr key={row.id}>{tab === 'current' ? <><td><strong>{row.description}</strong></td><td>{date.format(new Date(`${row.purchaseDate}T12:00:00Z`))}</td><td>{row.installment}</td><td>{row.group}</td><td className="px-money">{money.format(row.amount)}</td><td><span className={`px-status ${isOpenStatus(row.status) ? 'planned' : 'reconciled'}`}>{isOpenStatus(row.status) ? 'Pendente' : 'Pago'}</span></td><td><button className="px-detail-btn" type="button">↘</button></td></> : <><td>{row.description}</td><td>{row.installment}</td><td>{monthLabel(row.statementMonth)}</td><td className="px-money">{money.format(row.amount)}</td><td><span className="px-status planned">Pendente</span></td></>}</tr>)}</tbody></table>{!visibleRows.length ? <p className="px-empty">Nenhuma movimentação corresponde aos filtros desta aba.</p> : null}</div>
+            </tr></thead><tbody>{visibleRows.map((row) => <tr key={row.id}>{tab === 'current' ? <><td><strong>{row.description}</strong></td><td>{date.format(new Date(`${row.purchaseDate}T12:00:00Z`))}</td><td>{row.installment}</td><td>{row.group}</td><td className={`px-money ${row.amount < 0 ? 'positive' : ''}`}>{money.format(row.amount)}</td><td><span className={`px-status ${rowStatusClass(row)}`}>{rowStatusLabel(row)}</span></td><td><button className="px-detail-btn" type="button">↘</button></td></> : <><td>{row.description}</td><td>{row.installment}</td><td>{monthLabel(row.statementMonth)}</td><td className={`px-money ${row.amount < 0 ? 'positive' : ''}`}>{money.format(row.amount)}</td><td><span className={`px-status ${rowStatusClass(row)}`}>{rowStatusLabel(row)}</span></td></>}</tr>)}</tbody></table>{!visibleRows.length ? <p className="px-empty">Nenhuma movimentação corresponde aos filtros desta aba.</p> : null}</div>
           </> : null}
 
-          {tab === 'future' ? <div className="px-future-grid">{[...new Set(futureRows.map((row) => row.statementMonth))].sort().slice(0, 12).map((month) => { const rows = futureRows.filter((row) => row.statementMonth === month); const value = rows.reduce((sum, row) => sum + row.amount, 0); return <article key={month}><span>{monthLabel(month)}</span><strong>{money.format(value)}</strong><small>{rows.length} parcela(s)</small></article>; })}{!futureRows.length ? <p className="px-empty">Não há faturas futuras em aberto.</p> : null}</div> : null}
+          {tab === 'future' ? <div className="px-future-grid">{[...new Set(futureRows.map((row) => row.statementMonth))].sort().slice(0, 12).map((month) => { const rows = futureRows.filter((row) => row.statementMonth === month); const value = sumRows(rows); const credits = Math.abs(rows.filter((row) => row.amount < 0).reduce((sum, row) => sum + row.amount, 0)); return <article key={month}><span>{monthLabel(month)}</span><strong>{money.format(value)}</strong><small>{rows.length} parcela(s){credits ? ` · créditos ${money.format(credits)}` : ''}</small></article>; })}{!futureRows.length ? <p className="px-empty">Não há faturas futuras em aberto.</p> : null}</div> : null}
 
-          {tab === 'rules' ? <ol className="px-rules-list"><li>A fatura atual usa a data de vencimento/competência do lançamento, e não apenas a data original da compra.</li><li>Parcelas legadas permanecem somente em leitura até a migração definitiva para o domínio de cartões.</li><li>Compras novas do domínio de cartões continuam sendo priorizadas quando existirem, evitando duplicidade com a compatibilidade legada.</li><li>O limite comprometido considera fatura atual e parcelas futuras ainda pendentes.</li><li>A identidade visual é resolvida automaticamente pelo produto, emissor e bandeira cadastrados.</li></ol> : null}
+          {tab === 'rules' ? <ol className="px-rules-list"><li>A fatura do período usa a data efetiva de vencimento/competência do lançamento, e não apenas a data original da compra.</li><li>Compras, créditos e estornos entram pelo valor líquido da fatura; estornos negativos reduzem o total devido.</li><li>Uma fatura já paga continua exibindo seu total histórico, mas deixa de compor o limite comprometido.</li><li>Parcelas legadas permanecem somente em leitura até a migração definitiva para o domínio de cartões.</li><li>Compras novas do domínio de cartões continuam sendo priorizadas quando existirem, evitando duplicidade com a compatibilidade legada.</li><li>O limite comprometido considera somente fatura atual e parcelas futuras ainda em aberto.</li><li>A identidade visual é resolvida automaticamente pelo produto, emissor e bandeira cadastrados.</li></ol> : null}
         </section>
       </div>
     </div>
