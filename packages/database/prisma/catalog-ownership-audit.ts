@@ -97,18 +97,18 @@ async function paymentMethodReferences() {
 
 async function main() {
   const [accounts, categories, paymentMethods, accountRefs, categoryRefs, paymentRefs] = await Promise.all([
-    prisma.account.findMany({ select: { id: true, name: true } }),
-    prisma.category.findMany({ select: { id: true, name: true } }),
-    prisma.paymentMethod.findMany({ select: { id: true, name: true } }),
+    prisma.account.findMany({ select: { id: true, name: true, userId: true } }),
+    prisma.category.findMany({ select: { id: true, name: true, userId: true } }),
+    prisma.paymentMethod.findMany({ select: { id: true, name: true, userId: true } }),
     accountReferences(),
     categoryReferences(),
     paymentMethodReferences(),
   ]);
 
   const plans = [
-    planCatalogOwnership('account', accounts.map((item) => ({ id: item.id, label: item.name })), accountRefs),
-    planCatalogOwnership('category', categories.map((item) => ({ id: item.id, label: item.name })), categoryRefs),
-    planCatalogOwnership('paymentMethod', paymentMethods.map((item) => ({ id: item.id, label: item.name })), paymentRefs),
+    planCatalogOwnership('account', accounts.map((item) => ({ id: item.id, label: item.name, currentOwnerId: item.userId })), accountRefs),
+    planCatalogOwnership('category', categories.map((item) => ({ id: item.id, label: item.name, currentOwnerId: item.userId })), categoryRefs),
+    planCatalogOwnership('paymentMethod', paymentMethods.map((item) => ({ id: item.id, label: item.name, currentOwnerId: item.userId })), paymentRefs),
   ];
   plans.forEach(assertOwnershipPlanIsDeterministic);
 
