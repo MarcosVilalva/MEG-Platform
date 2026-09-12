@@ -20,6 +20,7 @@ assert.equal(assertOwnershipPlanIsDeterministic(accounts), true);
 assert.equal(accounts.singleOwner, 1);
 assert.equal(accounts.multiOwner, 1);
 assert.equal(accounts.unresolved, 1);
+assert.equal(accounts.requiresReview, 1);
 assert.deepEqual(accounts.items.find((item) => item.catalogId === 'a1')?.owners, ['u1']);
 assert.deepEqual(accounts.items.find((item) => item.catalogId === 'a2')?.owners, ['u1', 'u2']);
 assert.equal(accounts.items.find((item) => item.catalogId === 'a2')?.primaryOwnerId, 'u1');
@@ -34,6 +35,18 @@ const paymentMethods = planCatalogOwnership('paymentMethod', [
 ]);
 assert.equal(paymentMethods.unresolved, 1,
   'Referência sem userId não é evidência suficiente para atribuir proprietário.');
+assert.equal(paymentMethods.requiresReview, 1);
+assert.equal(paymentMethods.items[0].ownerlessReferenceCount, 1);
+
+const mixed = planCatalogOwnership('category', [
+  { id: 'c1', label: 'Alimentação' },
+], [
+  { catalogId: 'c1', userId: 'u1', source: 'FinancialEvent', referenceId: 'e3' },
+  { catalogId: 'c1', userId: null, source: 'LegacyEvent', referenceId: 'e4' },
+]);
+assert.equal(mixed.items[0].primaryOwnerId, 'u1');
+assert.equal(mixed.items[0].requiresReview, true,
+  'Mesmo com proprietário provável, referência sem userId deve bloquear migração automática.');
 
 const summary = ownershipPlanSummary([accounts, paymentMethods]);
 assert.deepEqual(summary[0], {
@@ -43,7 +56,10 @@ assert.deepEqual(summary[0], {
   singleOwner: 1,
   multiOwner: 1,
   unresolved: 1,
+  requiresReview: 1,
   clonesRequired: 1,
+  ownerlessReferences: 0,
 });
+assert.equal(summary[1].ownerlessReferences, 1);
 
 console.log('Plano de propriedade dos catálogos financeiros validado.');
