@@ -3,6 +3,7 @@ import { authenticatedRequest } from './auth-client';
 export type CardInstallment = { id: string; number: number; amount: string | number; statementMonth: string; status: string; paidAt?: string | null };
 export type CardPurchase = { id: string; description: string; totalAmount: string | number; purchaseDate: string; installments: number; status: string; category?: { id: string; name: string } | null; entries: CardInstallment[]; legacyOpen?: boolean };
 export type CreditCard = { id: string; name: string; issuer?: string | null; brand?: string | null; lastFour?: string | null; creditLimit: string | number; closingDay: number; dueDay: number; color?: string | null; isActive: boolean; usedLimit: number; availableLimit: number; statementAmount: number; payableStatementAmount?: number; purchases: CardPurchase[] };
+export type CardStatementPaymentResult = { paid: boolean; amount: number; eventId: string; protection?: { monetary?: boolean; allowed?: boolean; available?: number; requested?: number; missing?: number; at?: string }; idempotentReplay?: boolean };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return authenticatedRequest<T>(path, init);
@@ -17,6 +18,6 @@ export const cardsClient = {
     if (!window.confirm('Tem certeza de que deseja excluir esta compra do cartao?\n\nEsta acao nao pode ser desfeita.')) return null;
     return request<CardPurchase>(`/cards/purchases/${id}`, { method: 'DELETE' });
   },
-  payStatement: (id: string, month: string, data: { accountId?: string; paymentMethodId?: string; paidAt: string }) => request<{ paid: boolean; amount: number; eventId: string }>(`/cards/${id}/statements/${month}/pay`, { method: 'POST', body: JSON.stringify(data) }),
+  payStatement: (id: string, month: string, data: { accountId?: string; paymentMethodId?: string; paidAt: string; operationId?: string }) => request<CardStatementPaymentResult>(`/cards/${id}/statements/${month}/pay`, { method: 'POST', body: JSON.stringify(data) }),
   deactivate: (id: string) => request<CreditCard>(`/cards/${id}`, { method: 'DELETE' })
 };
