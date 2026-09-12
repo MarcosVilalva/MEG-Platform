@@ -46,6 +46,15 @@ type PhoenixPreviewCoreRead = Pick<
   month: string;
 };
 
+type CachedReadModel = {
+  data: PhoenixReadModel;
+  storedAt: number;
+};
+
+const readModelCache = new Map<string, CachedReadModel>();
+const readModelInFlight = new Map<string, Promise<PhoenixReadModel>>();
+const BOOTSTRAP_CACHE_TTL = 45_000;
+
 async function loadWorkspaceUsers(role: string): Promise<PhoenixWorkspaceUsers> {
   if (role !== 'ADMIN') return { status: 'restricted', users: [] };
   try {
@@ -64,23 +73,7 @@ async function loadWorkspaceUsers(role: string): Promise<PhoenixWorkspaceUsers> 
   }
 }
 
-/**
- * Bootstrap oficial da fase de leitura da Phoenix V15.
- *
- * Regras:
- * - nenhuma mutação acontece aqui;
- * - o núcleo financeiro mensal vem de um snapshot único e somente leitura do backend;
- * - resumo, benefício, eventos, cartões, pendências e auditoria pertencem à mesma fotografia mensal;
- * - orçamentos e contas a receber permanecem em seus domínios oficiais até entrarem no snapshot;
- * - a normalização é observada explicitamente para evitar esconder fallback;
- * - activityLog permanece carregado somente como histórico legado anterior à auditoria normalizada;
- * - usuários são consultados pela rota administrativa oficial e nunca alterados aqui.
- */
-export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
-    throw new Error('PHOENIX_INVALID_MONTH');
-  }
-
+async function fetchPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
   const session = readSession();
   if (!session) throw new Error('PHOENIX_UNAUTHORIZED');
 
@@ -149,4 +142,58 @@ export async function loadPhoenixReadModel(month: string): Promise<PhoenixReadMo
       payables: 'payables-domain'
     }
   };
+}
+
+export function peekPhoenixReadModel(month: string) {
+  const cached = readModelCache.get(month);
+  if (!cached || Date.now() - cached.storedAt > BOOTSTRAP_CACHE_TTL) return null;
+  return cached.data;
+}
+
+/**
+ * Bootstrap oficial da fase de leitura da Phoenix V15.
+ *
+ * Regras:
+ * - nenhuma mutação acontece aqui;
+ * - o núcleo financeiro mensal vem de um snapshot único e somente leitura do backend;
+ * - resumo, benefício, eventos, cartões, pendências e auditoria pertencem à mesma fotografia mensal;
+ * - orçamentos e contas a receber permanecem em seus domínios oficiais até entrarem no snapshot;
+ * - a normalização é observada explicitamente para evitar esconder fallback;
+ * - activityLog permanece carregado somente como histórico legado anterior à auditoria normalizada;
+ * - usuários são consultados pela rota administrativa oficial e nunca alterados aqui;
+ * - o snapshot pode ser preparado durante a entrada para que a navegação interna não exiba carregamentos repetidos.
+ */
+export async function loadPhoenixReadModel(month: string, options: { force?: boolean } = {}): Promise<PhoenixReadModel> {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+    throw new Error('PHOENIX_INVALID_MONTH');
+  }
+
+  if (!readSession()) throw new Error('PHOENIX_UNAUTHORIZED');
+
+  const cached = readModelCache.get(month);
+  if (!options.force && cached && Date.now() - cached.storedAt <= BOOTSTRAP_CACHE_TTL) {
+    return cached.data;
+  }
+
+  if (!options.force) {
+    const pending = readModelInFlight.get(month);
+    if (pending) return pending;
+  }
+
+  const pending = fetchPhoenixReadModel(month)
+    .then((data) => {
+      readModelCache.set(month, { data, storedAt: Date.now() });
+      return data;
+    })
+    .finally(() => {
+      if (readModelInFlight.get(month) === pending) readModelInFlight.delete(month);
+    });
+
+  readModelInFlight.set(month, pending);
+  return pending;
+}
+
+export function clearPhoenixReadModelCache() {
+  readModelCache.clear();
+  readModelInFlight.clear();
 }
