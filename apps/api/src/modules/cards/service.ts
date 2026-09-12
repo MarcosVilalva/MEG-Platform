@@ -184,7 +184,7 @@ export async function createCardPurchaseProtected(userId: string, input: {
     const card = await tx.creditCard.findFirst({ where: { id: input.cardId, userId: shared.ownerId, isActive: true } });
     if (!card) throw new CardDomainError('INVALID_CARD');
     if (input.categoryId) {
-      const category = await tx.category.findFirst({ where: { id: input.categoryId, isActive: true } });
+      const category = await tx.category.findFirst({ where: { id: input.categoryId, userId: shared.ownerId, isActive: true } });
       if (!category) throw new CardDomainError('INVALID_CATEGORY');
     }
 
@@ -271,11 +271,11 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
     const card = await tx.creditCard.findFirst({ where: { id: cardId, userId: shared.ownerId, isActive: true } });
     if (!card) throw new CardDomainError('CARD_NOT_FOUND');
     const account = input.accountId
-      ? await tx.account.findFirst({ where: { id: input.accountId, isActive: true }, select: { id: true } })
+      ? await tx.account.findFirst({ where: { id: input.accountId, userId: shared.ownerId, isActive: true }, select: { id: true } })
       : null;
     if (input.accountId && !account) throw new CardDomainError('INVALID_ACCOUNT');
     const paymentMethod = input.paymentMethodId
-      ? await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, isActive: true }, select: { id: true } })
+      ? await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, userId: shared.ownerId, isActive: true }, select: { id: true } })
       : null;
     if (input.paymentMethodId && !paymentMethod) throw new CardDomainError('INVALID_PAYMENT_METHOD');
 
