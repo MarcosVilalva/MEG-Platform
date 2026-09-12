@@ -1,0 +1,89 @@
+.px-settings-health {
+  display:inline-flex;
+  align-items:center;
+  min-height:36px;
+  padding:0 12px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+.px-settings-health.ok { background:var(--ok-bg); color:var(--brand2); border:1px solid color-mix(in srgb,var(--brand) 28%,var(--line)); }
+.px-settings-health.warn { background:var(--warn-bg); color:var(--warn); border:1px solid color-mix(in srgb,var(--warn) 24%,var(--line)); }
+
+.px-settings-health-banner {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:13px;
+  background:linear-gradient(135deg,var(--panel),var(--panel2));
+}
+.px-settings-health-banner h2 { margin:5px 0 4px; font-size:22px; }
+.px-settings-health-banner p { margin:0; color:var(--muted); font-size:12px; line-height:1.5; }
+.px-settings-health-chips { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:7px; }
+.px-settings-health-chips span {
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:var(--panel);
+  padding:6px 9px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:850;
+}
+
+.px-settings-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.px-settings-card { min-width:0; }
+.px-settings-card h2 { margin:5px 0 6px; font-size:19px; letter-spacing:-.025em; }
+.px-settings-card > p { margin:0 0 14px; color:var(--muted); font-size:12px; line-height:1.5; }
+.px-settings-row {
+  padding-top:12px;
+  border-top:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.px-settings-row strong,
+.px-settings-row small { display:block; }
+.px-settings-row small { margin-top:3px; color:var(--muted); }
+.px-settings-card button {
+  min-height:38px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:var(--panel2);
+  color:var(--ink);
+  padding:0 12px;
+  font-weight:850;
+}
+.px-settings-card button:disabled { opacity:.45; cursor:not-allowed; }
+.px-settings-card dl { margin:10px 0 0; }
+.px-settings-card dl > div {
+  display:grid;
+  grid-template-columns:minmax(110px,.7fr) minmax(0,1fr);
+  gap:10px;
+  padding:9px 0;
+  border-top:1px solid var(--line);
+}
+.px-settings-card dt { color:var(--muted); font-size:10px; font-weight:850; text-transform:uppercase; letter-spacing:.045em; }
+.px-settings-card dd { margin:0; text-align:right; font-size:12px; font-weight:750; overflow-wrap:anywhere; }
+.px-settings-note { display:block; margin-top:8px; color:var(--muted); font-size:10.5px; }
+.px-settings-status-list { display:grid; gap:7px; }
+.px-settings-status-list span { padding:9px 10px; border:1px solid var(--line); border-radius:10px; background:var(--panel2); color:var(--muted); font-size:11px; font-weight:750; }
+
+@container phoenix-workspace (max-width:850px) {
+  .px-settings-grid { grid-template-columns:1fr; }
+  .px-settings-health-banner { align-items:flex-start; flex-direction:column; }
+  .px-settings-health-chips { justify-content:flex-start; }
+}
+
+@container phoenix-workspace (max-width:620px) {
+  .px-settings-card dl > div { grid-template-columns:1fr; gap:4px; }
+  .px-settings-card dd { text-align:left; }
+  .px-settings-row { align-items:stretch; flex-direction:column; }
+}
