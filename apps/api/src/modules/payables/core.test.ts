@@ -5,6 +5,7 @@ import {
   isBenefitFinancialEvent,
   isBenefitPaymentMethod,
   isFuturePaymentDay,
+  moveWeekendToMonday,
   paymentBalanceDecision,
   recurrenceEndDate,
 } from './core';
@@ -12,6 +13,9 @@ import {
 assert.equal(addMonthsClamped('2026-01-31', 1, 31), '2026-02-28');
 assert.equal(addMonthsClamped('2026-02-28', 1, 31), '2026-03-31');
 assert.equal(addMonthsClamped('2028-01-31', 1, 31), '2028-02-29');
+assert.equal(moveWeekendToMonday('2026-08-15'), '2026-08-17');
+assert.equal(moveWeekendToMonday('2026-08-16'), '2026-08-17');
+assert.equal(moveWeekendToMonday('2026-08-17'), '2026-08-17');
 assert.equal(recurrenceEndDate('2026-01-31', 'monthly', 3), '2026-03-31');
 assert.equal(recurrenceEndDate('2026-01-01', 'weekly', 3), '2026-01-15');
 assert.equal(recurrenceEndDate('2024-02-29', 'yearly', 3), '2026-02-28');
