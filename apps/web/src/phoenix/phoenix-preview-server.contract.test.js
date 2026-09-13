@@ -4,13 +4,19 @@ import { readFileSync } from 'node:fs';
 const server = readFileSync(new URL('../../phoenix-preview-server.mjs', import.meta.url), 'utf8');
 
 assert.match(server, /PREVIEW_READ_ONLY/,
-  'Servidor do preview deve bloquear mutações fora das rotas explícitas de autenticação.');
+  'Servidor do preview deve bloquear mutações fora das capacidades explicitamente habilitadas.');
 assert.match(server, /allowedAuthPosts\s*=\s*new Set\(\[\s*'\/auth\/login',\s*'\/auth\/refresh',\s*'\/auth\/logout',\s*'\/auth\/register',\s*'\/auth\/forgot-password'\s*\]\)/,
-  'Preview deve permitir somente o ciclo explícito de login, sessão, cadastro e recuperação de acesso.');
-assert.match(server, /return method === 'POST' && allowedAuthPosts\.has\(pathname\)/,
-  'POST deve ser recusado fora das operações de autenticação permitidas.');
-assert.doesNotMatch(server, /allowedAuthPosts[\s\S]{0,300}(?:finance|payables|cards|receivables)/,
-  'Preview não pode liberar mutações financeiras pela allowlist de autenticação.');
+  'Preview deve manter o ciclo explícito de login, sessão, cadastro e recuperação de acesso.');
+assert.match(server, /simpleEventWriteEnabled\s*=\s*process\.env\.PHOENIX_SIMPLE_EVENT_WRITE\s*===\s*'enabled'/,
+  'Escrita financeira deve exigir uma flag de ambiente deliberada e permanecer desligada quando ausente.');
+assert.match(server, /allowedFinancialPosts\s*=\s*new Set\(\['\/finance\/events'\]\)/,
+  'A preparação do primeiro writer deve permitir no máximo o endpoint exato de evento simples.');
+assert.match(server, /simpleEventWriteEnabled\s*&&\s*allowedFinancialPosts\.has\(pathname\)/,
+  'POST financeiro deve depender simultaneamente da flag e da allowlist estreita.');
+assert.doesNotMatch(server, /allowedFinancialPosts\s*=\s*new Set\([^)]*(?:payables|cards|receivables|transfers)/,
+  'Primeiro writer não pode liberar outros domínios financeiros.');
+assert.match(server, /capabilities:\s*\{ simpleEventWrite: simpleEventWriteEnabled \}/,
+  'Health do preview deve declarar a capacidade real em vez de esconder o estado do writer.');
 assert.match(server, /hopByHopHeaders[^\n]*'origin'[^\n]*'referer'/,
   'Proxy deve remover Origin e Referer antes da chamada servidor-a-servidor.');
 assert.match(server, /PHOENIX_API_ORIGIN/,
@@ -44,4 +50,4 @@ assert.match(server, /x-frame-options[^\n]*DENY/i,
 assert.match(server, /permissions-policy[^\n]*camera=\(\), microphone=\(\), geolocation=\(\)/,
   'Preview deve desabilitar permissões de navegador que não são necessárias para validação.');
 
-console.log('Contrato do servidor Phoenix com finanças somente leitura validado.');
+console.log('Contrato do servidor Phoenix com escrita simples preparada e desativada por padrão validado.');
