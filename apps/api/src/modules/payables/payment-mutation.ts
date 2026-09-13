@@ -147,13 +147,14 @@ export async function createPayablePaymentProtected(userId: string, input: Creat
 
       await recordFinancialAudit(tx, {
         actorId: userId,
-        entity: 'PayablePayment',
-        entityId: payment.id,
+        entity: 'Payable',
+        entityId: payable.id,
         action: 'PAYABLE_PAYMENT_CREATED',
         before: { payableId: payable.id, openAmount: payable.openAmount, status: payable.status },
         after: { payment, payable: updatedPayable },
         context: {
           operationId: input.operationId ?? null,
+          paymentId: payment.id,
           financialEventId: event.id,
           workspaceId: workspace.workspaceId,
         },
