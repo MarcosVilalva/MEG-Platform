@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
-import { loadPhoenixReadModel } from './data/load-phoenix-read-model';
+import { loadPhoenixAllEvents, loadPhoenixReadModel, peekPhoenixReadModel, prefetchPhoenixReadModel } from './data/load-phoenix-read-model';
 import { buildPhoenixHomeAgenda } from './home-agenda';
 import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixPayables } from './screens/PhoenixReadScreens';
@@ -18,12 +18,14 @@ import {
 } from './screens/PhoenixWebScreens';
 import './phoenix-v15.css';
 import './phoenix-parity-v15.css';
+import './phoenix-period.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const shortDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
 type PhoenixView = PhoenixRoute;
 type ViewDefinition = { id: PhoenixView; icon: string; label: string };
+type PeriodMode = 'month' | 'range' | 'all';
 
 const mainViews: ViewDefinition[] = [
   { id: 'home', icon: '⌂', label: 'Início' },
@@ -73,9 +75,17 @@ function currentMonth() {
   return `${year}-${month}`;
 }
 
-function previousMonth(value: string) {
+function shiftMonth(value: string, offset: number) {
   const [year, month] = value.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 2, 1)).toISOString().slice(0, 7);
+  return new Date(Date.UTC(year, month - 1 + offset, 1)).toISOString().slice(0, 7);
+}
+
+function previousMonth(value: string) {
+  return shiftMonth(value, -1);
+}
+
+function nextMonth(value: string) {
+  return shiftMonth(value, 1);
 }
 
 function monthLabel(value: string) {
@@ -92,6 +102,11 @@ function shortMonthLabel(value: string) {
     .replace('.', '')
     .replace(/^./, (letter) => letter.toUpperCase());
   return `${label}/${year}`;
+}
+
+function formatShortIso(value: string) {
+  const [year, month, day] = value.split('-');
+  return `${day}/${month}/${year}`;
 }
 
 function financialActionLabel(action: string) {
@@ -117,6 +132,23 @@ function todayIso() {
   }).formatToParts(new Date());
   const read = (type: string) => parts.find((item) => item.type === type)?.value || '';
   return `${read('year')}-${read('month')}-${read('day')}`;
+}
+
+function shiftIsoDay(value: string, offset: number) {
+  const [year, month, day] = value.split('-').map(Number);
+  const result = new Date(Date.UTC(year, month - 1, day + offset, 12));
+  return result.toISOString().slice(0, 10);
+}
+
+function monthsBetween(start: string, end: string) {
+  const result: string[] = [];
+  let cursor = start.slice(0, 7);
+  const finish = end.slice(0, 7);
+  for (let guard = 0; guard < 36 && cursor <= finish; guard += 1) {
+    result.push(cursor);
+    cursor = nextMonth(cursor);
+  }
+  return result;
 }
 
 function HomeScreen({ data, month, onNavigate }: { data: PhoenixReadModel; month: string; onNavigate: (view: PhoenixView) => void }) {
@@ -190,12 +222,22 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [periodOpen, setPeriodOpen] = useState(false);
+  const [periodMode, setPeriodMode] = useState<PeriodMode>('month');
+  const [periodDraftMode, setPeriodDraftMode] = useState<PeriodMode>('month');
+  const [periodDraftMonth, setPeriodDraftMonth] = useState(currentMonth);
+  const [periodStart, setPeriodStart] = useState(todayIso);
+  const [periodEnd, setPeriodEnd] = useState(todayIso);
+  const [periodRangeLabel, setPeriodRangeLabel] = useState('');
+  const [movementPeriodData, setMovementPeriodData] = useState<PhoenixReadModel | null>(null);
+  const [periodLoading, setPeriodLoading] = useState(false);
+  const [periodError, setPeriodError] = useState('');
   const [launchRequest, setLaunchRequest] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [loadState, setLoadState] = useState<PhoenixLoadState>({ status: 'idle' });
   const periodRef = useRef<HTMLDivElement>(null);
   const monthRef = useRef(month);
+  const dataRef = useRef<PhoenixReadModel | null>(null);
   const refreshingRef = useRef(false);
 
   useEffect(() => {
@@ -203,24 +245,70 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   }, [month]);
 
   useEffect(() => {
+    if (loadState.status === 'ready') dataRef.current = loadState.data;
+  }, [loadState]);
+
+  useEffect(() => {
     let active = true;
-    refreshingRef.current = false;
-    setRefreshing(false);
-    setLoadState({ status: 'loading', startedAt: Date.now() });
+    const cached = peekPhoenixReadModel(month);
+    if (cached) {
+      dataRef.current = cached;
+      setLoadState({ status: 'ready', data: cached });
+      setRefreshing(false);
+      return () => { active = false; };
+    }
+
+    const hasValidSnapshot = Boolean(dataRef.current);
+    refreshingRef.current = hasValidSnapshot;
+    setRefreshing(hasValidSnapshot);
+    if (!hasValidSnapshot) setLoadState({ status: 'loading', startedAt: Date.now() });
+
     void loadPhoenixReadModel(month)
-      .then((data) => { if (active) setLoadState({ status: 'ready', data }); })
-      .catch((error: unknown) => { if (active) setLoadState({ status: 'error', message: error instanceof Error ? error.message : 'PHOENIX_LOAD_FAILED' }); });
+      .then((data) => {
+        if (!active) return;
+        dataRef.current = data;
+        setLoadState({ status: 'ready', data });
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        if (!dataRef.current) setLoadState({ status: 'error', message: error instanceof Error ? error.message : 'PHOENIX_LOAD_FAILED' });
+      })
+      .finally(() => {
+        if (!active) return;
+        refreshingRef.current = false;
+        setRefreshing(false);
+      });
     return () => { active = false; };
   }, [month, refreshKey]);
 
+  useEffect(() => {
+    if (loadState.status !== 'ready' || loadState.data.month !== month) return;
+    const baseMonth = month;
+    const timer = window.setTimeout(() => {
+      void prefetchPhoenixReadModel(previousMonth(baseMonth)).then(() => prefetchPhoenixReadModel(nextMonth(baseMonth)));
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [month, loadState]);
+
   async function refreshData() {
-    if (refreshingRef.current || loadState.status !== 'ready') return;
+    if (refreshingRef.current || periodLoading || loadState.status !== 'ready') return;
+    if (periodMode === 'range' && periodRangeLabel && view === 'movements') {
+      void applyRangePeriod(periodStart, periodEnd, true);
+      return;
+    }
+    if (periodMode === 'all' && view === 'movements') {
+      void applyAllPeriod(true);
+      return;
+    }
     const targetMonth = monthRef.current;
     refreshingRef.current = true;
     setRefreshing(true);
     try {
       const fresh = await loadPhoenixReadModel(targetMonth, { force: true });
-      if (monthRef.current === targetMonth) setLoadState({ status: 'ready', data: fresh });
+      if (monthRef.current === targetMonth) {
+        dataRef.current = fresh;
+        setLoadState({ status: 'ready', data: fresh });
+      }
     } catch {
       // Mantém a fotografia válida já exibida. Falhas de atualização em segundo plano não desmontam a tela.
     } finally {
@@ -232,7 +320,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   useEffect(() => {
     if (loadState.status !== 'ready') return;
     const refreshIfVisible = () => {
-      if (document.visibilityState === 'visible') void refreshData();
+      if (document.visibilityState === 'visible' && periodMode === 'month') void refreshData();
     };
     const timer = window.setInterval(refreshIfVisible, 120_000);
     window.addEventListener('focus', refreshIfVisible);
@@ -240,7 +328,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       window.clearInterval(timer);
       window.removeEventListener('focus', refreshIfVisible);
     };
-  }, [month, loadState.status]);
+  }, [month, loadState.status, periodMode]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -259,6 +347,9 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
 
   useEffect(() => {
     if (!periodOpen) return;
+    setPeriodDraftMode(periodMode);
+    setPeriodDraftMonth(month);
+    setPeriodError('');
     const closeOutside = (event: PointerEvent) => {
       if (periodRef.current && !periodRef.current.contains(event.target as Node)) setPeriodOpen(false);
     };
@@ -266,13 +357,23 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     return () => window.removeEventListener('pointerdown', closeOutside);
   }, [periodOpen]);
 
-  const data = loadState.status === 'ready' ? loadState.data : null;
+  const data = loadState.status === 'ready' ? loadState.data : dataRef.current;
+  const viewData = view === 'movements' && movementPeriodData ? movementPeriodData : data;
   const currentView = views.find((item) => item.id === view) || mainViews[0];
   const pendingCount = data ? buildPhoenixHomeAgenda(data, todayIso()).items.length : 0;
   const toggleTheme = () => setTheme((value) => value === 'dark' ? 'light' : 'dark');
   const userInitial = (data?.user.name || 'M').slice(0, 1).toUpperCase();
+  const periodActiveLabel = periodMode === 'month' ? shortMonthLabel(month) : periodMode === 'all' ? 'Tudo' : periodRangeLabel || 'Intervalo';
+  const updatingPeriod = refreshing && Boolean(data && data.month !== month);
+
+  function resetSpecialPeriod() {
+    setPeriodMode('month');
+    setMovementPeriodData(null);
+    setPeriodRangeLabel('');
+  }
 
   function navigate(next: PhoenixView) {
+    if (next !== 'movements' && periodMode !== 'month') resetSpecialPeriod();
     setView(next);
     setMobileOpen(false);
     setSearchOpen(false);
@@ -280,14 +381,112 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   }
 
   function requestLaunch() {
-    navigate('movements');
+    if (periodMode !== 'month') resetSpecialPeriod();
+    setView('movements');
+    setMobileOpen(false);
+    setSearchOpen(false);
+    setPeriodOpen(false);
     setLaunchRequest((value) => value + 1);
   }
 
-  function chooseMonth(next: string) {
-    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(next)) return;
-    setMonth(next);
-    setPeriodOpen(false);
+  function presetRange(days: number) {
+    const today = todayIso();
+    setPeriodDraftMode('range');
+    setPeriodStart(shiftIsoDay(today, -(days - 1)));
+    setPeriodEnd(today);
+  }
+
+  function presetMonth(offset: number) {
+    setPeriodDraftMode('month');
+    setPeriodDraftMonth(shiftMonth(currentMonth(), offset));
+  }
+
+  async function applyRangePeriod(start: string, end: string, force = false) {
+    if (!start || !end) {
+      setPeriodError('Informe a data inicial e a data final.');
+      return;
+    }
+    if (start > end) {
+      setPeriodError('A data inicial não pode ser maior que a data final.');
+      return;
+    }
+    const months = monthsBetween(start, end);
+    if (!months.length || months.length > 24) {
+      setPeriodError('Para intervalos acima de 24 meses, use “Tudo”.');
+      return;
+    }
+
+    setPeriodLoading(true);
+    setPeriodError('');
+    try {
+      const models = await Promise.all(months.map((item) => loadPhoenixReadModel(item, force ? { force: true } : {})));
+      const base = models[models.length - 1];
+      const unique = new Map<string, (typeof base.events.items)[number]>();
+      models.forEach((model) => model.events.items.forEach((event) => {
+        const eventDate = String(event.date).slice(0, 10);
+        if (eventDate >= start && eventDate <= end) unique.set(event.id, { ...event, competence: base.month });
+      }));
+      const items = [...unique.values()].sort((left, right) => String(right.date).localeCompare(String(left.date)));
+      setMovementPeriodData({
+        ...base,
+        loadedAt: new Date().toISOString(),
+        events: { ...base.events, items, total: items.length, page: 1, pageSize: items.length }
+      });
+      setMonth(end.slice(0, 7));
+      setPeriodMode('range');
+      setPeriodRangeLabel(`${formatShortIso(start)}–${formatShortIso(end)}`);
+      setView('movements');
+      setMobileOpen(false);
+      setSearchOpen(false);
+      setPeriodOpen(false);
+    } catch (error) {
+      setPeriodError(error instanceof Error ? error.message : 'Não foi possível carregar o intervalo.');
+    } finally {
+      setPeriodLoading(false);
+    }
+  }
+
+  async function applyAllPeriod(force = false) {
+    setPeriodLoading(true);
+    setPeriodError('');
+    try {
+      const base = dataRef.current || await loadPhoenixReadModel(monthRef.current);
+      const events = await loadPhoenixAllEvents({ force });
+      const items = events.items.map((event) => ({ ...event, competence: base.month }));
+      setMovementPeriodData({
+        ...base,
+        loadedAt: new Date().toISOString(),
+        events: { ...events, items, total: items.length, page: 1, pageSize: items.length }
+      });
+      setPeriodMode('all');
+      setPeriodRangeLabel('');
+      setView('movements');
+      setMobileOpen(false);
+      setSearchOpen(false);
+      setPeriodOpen(false);
+    } catch (error) {
+      setPeriodError(error instanceof Error ? error.message : 'Não foi possível carregar todo o histórico.');
+    } finally {
+      setPeriodLoading(false);
+    }
+  }
+
+  function applyPeriod() {
+    if (periodDraftMode === 'month') {
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(periodDraftMonth)) {
+        setPeriodError('Informe um mês válido.');
+        return;
+      }
+      resetSpecialPeriod();
+      setMonth(periodDraftMonth);
+      setPeriodOpen(false);
+      return;
+    }
+    if (periodDraftMode === 'range') {
+      void applyRangePeriod(periodStart, periodEnd);
+      return;
+    }
+    void applyAllPeriod();
   }
 
   return <div className="phoenix-v15" data-theme={theme}>
@@ -309,20 +508,30 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
           <div className="px-top-right">
             <button className="px-top-quick-launch" type="button" title="Novo lançamento" aria-label="Novo lançamento" onClick={requestLaunch}>＋</button>
             <div className={`px-period-menu ${periodOpen ? 'is-open' : ''}`} ref={periodRef}>
-              <button className="px-period-summary" type="button" title="Selecionar período" aria-label="Selecionar período" onClick={() => setPeriodOpen((value) => !value)}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span className="px-period-active">{shortMonthLabel(month)}</span></button>
-              {periodOpen ? <div className="px-period-popover"><span>Período global</span><div className="px-period-presets"><button type="button" onClick={() => chooseMonth(currentMonth())}>Mês atual</button><button type="button" onClick={() => chooseMonth(previousMonth(currentMonth()))}>Mês anterior</button></div><label className="px-period-field"><span>Mês e ano</span><input type="month" value={month} onChange={(event) => chooseMonth(event.target.value)} /></label></div> : null}
+              <button className="px-period-summary" type="button" title="Selecionar período" aria-label="Selecionar período" onClick={() => setPeriodOpen((value) => !value)}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span className="px-period-active">{periodActiveLabel}</span></button>
+              {periodOpen ? <div className="px-period-popover px-period-popover-v15">
+                <span>Período de consulta</span>
+                <div className="px-period-modes"><button type="button" className={periodDraftMode === 'month' ? 'active' : ''} onClick={() => setPeriodDraftMode('month')}>Mês</button><button type="button" className={periodDraftMode === 'range' ? 'active' : ''} onClick={() => setPeriodDraftMode('range')}>Intervalo</button><button type="button" className={periodDraftMode === 'all' ? 'active' : ''} onClick={() => setPeriodDraftMode('all')}>Tudo</button></div>
+                <div className="px-period-presets"><button type="button" onClick={() => presetRange(1)}>Hoje</button><button type="button" onClick={() => presetRange(7)}>7 dias</button><button type="button" onClick={() => presetRange(30)}>30 dias</button><button type="button" onClick={() => presetMonth(0)}>Mês atual</button><button type="button" onClick={() => presetMonth(-1)}>Mês anterior</button></div>
+                {periodDraftMode === 'month' ? <label className="px-period-field"><span>Mês e ano</span><input type="month" value={periodDraftMonth} onChange={(event) => setPeriodDraftMonth(event.target.value)} /></label> : null}
+                {periodDraftMode === 'range' ? <div className="px-period-range"><label className="px-period-field"><span>Data inicial</span><input type="date" value={periodStart} onChange={(event) => setPeriodStart(event.target.value)} /></label><label className="px-period-field"><span>Data final</span><input type="date" value={periodEnd} onChange={(event) => setPeriodEnd(event.target.value)} /></label></div> : null}
+                {periodDraftMode === 'all' ? <div className="px-period-all">Exibe o histórico financeiro normalizado completo em Lançamentos. A leitura é paginada para não sobrecarregar o servidor.</div> : null}
+                {periodDraftMode !== 'month' ? <small className="px-period-scope-note">Intervalo e Tudo abrem Lançamentos. Indicadores globais de Home, Cartões e análises continuam mensais para não misturar conceitos financeiros.</small> : null}
+                {periodError ? <div className="px-period-error">{periodError}</div> : null}
+                <button className="px-period-apply" type="button" disabled={periodLoading} onClick={applyPeriod}>{periodLoading ? 'Carregando período…' : 'Aplicar período'}</button>
+              </div> : null}
             </div>
-            <button className={`px-sync ${refreshing ? 'is-refreshing' : ''}`} type="button" disabled={refreshing || loadState.status !== 'ready'} aria-busy={refreshing} title={refreshing ? 'Atualizando silenciosamente em segundo plano' : 'Atualizar dados'} onClick={() => { void refreshData(); }}><span className="px-sync-dot" /><span>{data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{userInitial}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span className="px-user-chevron">⌄</span></button><button className="px-icon-btn px-top-exit" type="button" title="Sair" onClick={onLogout}>↪</button>
+            <button className={`px-sync ${refreshing || periodLoading ? 'is-refreshing' : ''}`} type="button" disabled={refreshing || periodLoading || !data} aria-busy={refreshing || periodLoading} title={updatingPeriod ? 'Atualizando período sem desmontar a tela' : 'Atualizar dados'} onClick={() => { void refreshData(); }}><span className="px-sync-dot" /><span>{updatingPeriod ? 'Atualizando período…' : periodLoading ? 'Carregando período…' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{userInitial}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span className="px-user-chevron">⌄</span></button><button className="px-icon-btn px-top-exit" type="button" title="Sair" onClick={onLogout}>↪</button>
           </div>
         </header>
 
         <div className="px-content">
-          {loadState.status === 'error' ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : data ? <ReadScreen view={view} data={data} month={month} theme={theme} launchRequest={launchRequest} onToggleTheme={toggleTheme} onNavigate={navigate} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
+          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen view={view} data={viewData} month={viewData.month} theme={theme} launchRequest={launchRequest} onToggleTheme={toggleTheme} onNavigate={navigate} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
         </div>
       </main>
 
       <nav className="px-mobile-dock" aria-label="Navegação móvel Phoenix V15"><button className={view === 'home' ? 'active' : ''} type="button" onClick={() => navigate('home')}><strong>⌂</strong><span>Início</span></button><button className={view === 'movements' ? 'active' : ''} type="button" onClick={requestLaunch}><strong>＋</strong><span>Lançar</span></button><button className={view === 'history' ? 'active' : ''} type="button" onClick={() => navigate('history')}><strong>◷</strong><span>Histórico</span></button><button className={view === 'payables' ? 'active' : ''} type="button" onClick={() => navigate('payables')}><strong>◷</strong><span>Pendentes</span></button><button type="button" onClick={() => setMobileOpen(true)}><strong>≡</strong><span>Mais</span></button></nav>
     </div>
-    {searchOpen ? <PhoenixCommandPalette data={data} onClose={() => setSearchOpen(false)} onNavigate={navigate} /> : null}
+    {searchOpen ? <PhoenixCommandPalette data={viewData} onClose={() => setSearchOpen(false)} onNavigate={navigate} /> : null}
   </div>;
 }
