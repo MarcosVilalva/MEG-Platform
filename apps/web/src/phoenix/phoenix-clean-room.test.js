@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const phoenixApp = readFileSync(new URL('./PhoenixApp.tsx', import.meta.url), 'utf8');
+const sidebar = readFileSync(new URL('./PhoenixSidebar.tsx', import.meta.url), 'utf8');
+const navIcon = readFileSync(new URL('./PhoenixNavIcon.tsx', import.meta.url), 'utf8');
 const commandPalette = readFileSync(new URL('./PhoenixCommandPalette.tsx', import.meta.url), 'utf8');
 const screens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.meta.url), 'utf8');
 const movementScreen = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
@@ -15,10 +17,10 @@ const loader = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.
 const previewMain = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
 const phoenixHtml = readFileSync(new URL('../../phoenix.html', import.meta.url), 'utf8');
 const productionHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
-const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
+const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
-const phoenixSource = `${phoenixApp}\n${commandPalette}\n${screens}\n${movementScreen}\n${homeAllTime}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
-const readOnlyScreens = `${screens}\n${movementScreen}\n${homeAllTime}\n${webScreens}\n${history}\n${users}\n${settings}\n${commandPalette}`;
+const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${commandPalette}\n${screens}\n${movementScreen}\n${homeAllTime}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
+const readOnlyScreens = `${screens}\n${movementScreen}\n${homeAllTime}\n${webScreens}\n${history}\n${users}\n${settings}\n${sidebar}\n${commandPalette}`;
 
 for (const forbidden of ['global.css', 'v15-contract.css', 'meg-v15.css']) {
   assert.doesNotMatch(phoenixSource, new RegExp(forbidden.replace('.', '\\.')),
@@ -161,10 +163,29 @@ assert.match(styles, /@media \(min-width:681px\) and \(max-width:980px\)/,
 assert.match(styles, /\.px-premium-balance/);
 assert.match(styles, /\.px-launch-drawer/);
 assert.match(styles, /\.px-detail-drawer/);
+assert.match(styles, /\.px-side-footer/,
+  'Menu Lateral deve separar navegação do rodapé de usuário e saída');
+assert.match(styles, /overflow-y:auto/,
+  'Menu Lateral deve manter rolagem própria quando houver mais módulos que altura disponível');
 assert.doesNotMatch(styles, /@import/,
   'Contrato Phoenix deve ser autocontido e não importar CSS legado');
 
-assert.match(phoenixApp, /⌘ Buscar no MEG/);
+assert.match(sidebar, /⌘ Buscar no MEG/);
+assert.doesNotMatch(sidebar, /<details/,
+  'Módulos do Menu Lateral não podem voltar a ficar escondidos em um details fechado');
+assert.match(sidebar, /title=\{collapsed \? item\.label/,
+  'Menu Lateral retraído deve expor o nome do módulo por hover nativo');
+assert.match(sidebar, /px-side-footer/,
+  'Configurações e navegação devem ficar separadas do rodapé de usuário e saída');
+for (const label of ['Início', 'Lançamentos', 'Histórico', 'Pendentes', 'Cartões', 'Cadastros', 'Usuários e permissões', 'Contas a receber', 'Receitas', 'Fluxo de caixa', 'Conciliação', 'Análises', 'Orçamentos e metas', 'Configurações']) {
+  assert.ok(sidebar.includes(label), `Módulo ausente no Menu Lateral: ${label}`);
+}
+for (const icon of ['home', 'movements', 'history', 'payables', 'cards', 'catalogs', 'users', 'receivables', 'revenues', 'cashflow', 'reconcile', 'analytics', 'budgets', 'settings', 'logout']) {
+  assert.ok(navIcon.includes(`name === '${icon}'`) || sidebar.includes(`icon: '${icon}'`), `Ícone SVG do Menu Lateral ausente: ${icon}`);
+}
+assert.notEqual(sidebar.indexOf("icon: 'history'"), sidebar.indexOf("icon: 'payables'"),
+  'Histórico e Pendentes devem manter ícones semanticamente distintos');
+
 assert.match(phoenixApp, /px-top-quick-launch/,
   'Topbar Phoenix deve expor o novo lançamento global do V15');
 assert.match(phoenixApp, /requestLaunch/,
@@ -199,10 +220,7 @@ assert.doesNotMatch(phoenixApp, /prefetchPhoenixReadModel/,
   'Shell não deve pré-carregar meses adjacentes enquanto o endpoint mensal continuar custoso');
 assert.doesNotMatch(phoenixApp, /setMonth\(end\.slice\(0,\s*7\)\)/,
   'Intervalo de Lançamentos não pode alterar silenciosamente o mês oficial da Home');
-for (const glyph of ['⌂', '▦', '◷', '▣', '≡', '♙', '⚙']) {
-  assert.ok(phoenixApp.includes(glyph), `Ícone V15 ausente: ${glyph}`);
-}
-for (const screen of ['PhoenixMovementsV15', 'PhoenixHomeAllTime', 'PhoenixHistory', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs', 'PhoenixUsers', 'PhoenixSettings', 'PhoenixReceivables', 'PhoenixRevenues', 'PhoenixCashflow', 'PhoenixReconciliation', 'PhoenixAnalytics', 'PhoenixBudgets', 'PhoenixCommandPalette']) {
+for (const screen of ['PhoenixMovementsV15', 'PhoenixHomeAllTime', 'PhoenixHistory', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs', 'PhoenixUsers', 'PhoenixSettings', 'PhoenixReceivables', 'PhoenixRevenues', 'PhoenixCashflow', 'PhoenixReconciliation', 'PhoenixAnalytics', 'PhoenixBudgets', 'PhoenixCommandPalette', 'PhoenixSidebar']) {
   assert.ok(phoenixApp.includes(screen), `Tela Phoenix não conectada: ${screen}`);
 }
 assert.match(phoenixApp, /onLogout/,
