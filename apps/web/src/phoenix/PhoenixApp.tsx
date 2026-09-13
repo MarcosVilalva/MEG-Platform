@@ -86,14 +86,14 @@ function nextMonth(value: string) {
 
 function monthLabel(value: string) {
   const [year, month] = value.split('-').map(Number);
-  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
+  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
     .format(new Date(Date.UTC(year, month - 1, 1)))
     .replace(/^./, (letter) => letter.toUpperCase());
 }
 
 function shortMonthLabel(value: string) {
   const [year, month] = value.split('-').map(Number);
-  const label = new Intl.DateTimeFormat('pt-BR', { month: 'short' })
+  const label = new Intl.DateTimeFormat('pt-BR', { month: 'short', timeZone: 'UTC' })
     .format(new Date(Date.UTC(year, month - 1, 1)))
     .replace('.', '')
     .replace(/^./, (letter) => letter.toUpperCase());
@@ -548,7 +548,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
                 <div className="px-period-presets"><button type="button" onClick={() => presetRange(1)}>Hoje</button><button type="button" onClick={() => presetRange(7)}>7 dias</button><button type="button" onClick={() => presetRange(30)}>30 dias</button><button type="button" onClick={() => presetMonth(0)}>Mês atual</button><button type="button" onClick={() => presetMonth(-1)}>Mês anterior</button></div>
                 {periodDraftMode === 'month' ? <label className="px-period-field"><span>Mês e ano</span><input type="month" value={periodDraftMonth} onChange={(event) => setPeriodDraftMonth(event.target.value)} /></label> : null}
                 {periodDraftMode === 'range' ? <div className="px-period-range"><label className="px-period-field"><span>Data inicial</span><input type="date" value={periodStart} onChange={(event) => setPeriodStart(event.target.value)} /></label><label className="px-period-field"><span>Data final</span><input type="date" value={periodEnd} onChange={(event) => setPeriodEnd(event.target.value)} /></label></div> : null}
-                {periodDraftMode === 'all' ? <div className="px-period-all">Exibe o histórico financeiro normalizado completo em Lançamentos. A leitura é paginada para não sobrecarregar o servidor.</div> : null}
+                {periodDraftMode === 'all' ? <div className="px-period-all">Exibe o histórico financeiro normalizado completo em Lançamentos. A leitura usa um endpoint dedicado para evitar dezenas de requisições ao servidor.</div> : null}
                 {periodDraftMode !== 'month' ? <small className="px-period-scope-note">Intervalo e Tudo abrem Lançamentos. Indicadores globais de Home, Cartões e análises continuam mensais para não misturar conceitos financeiros.</small> : null}
                 {periodError ? <div className="px-period-error">{periodError}</div> : null}
                 <button className="px-period-apply" type="button" disabled={periodLoading} onClick={applyPeriod}>{periodLoading ? 'Carregando período…' : 'Aplicar período'}</button>
