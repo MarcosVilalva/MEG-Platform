@@ -4,9 +4,9 @@ import { canonicalPhoenixIncomePaymentMethod } from './income-payment-methods';
 import './phoenix-description-autocomplete.css';
 
 type LaunchType = 'income' | 'expense' | 'transfer';
-type SmartSuggestion = {
+type Suggestion = {
   key: string;
-  type: Exclude<LaunchType, 'transfer'>;
+  type: 'income' | 'expense';
   label: string;
   normalized: string;
   occurrences: number;
@@ -19,8 +19,7 @@ type SmartSuggestion = {
   paymentMethodId?: string | null;
   paymentMethodName?: string | null;
 };
-type SmartIndex = { income: SmartSuggestion[]; expense: SmartSuggestion[] };
-
+type Index = { income: Suggestion[]; expense: Suggestion[] };
 type IdleWindow = Window & {
   requestIdleCallback?: (
     callback: (deadline: { didTimeout: boolean; timeRemaining: () => number }) => void,
@@ -31,8 +30,8 @@ type IdleWindow = Window & {
 const MAX_SUGGESTIONS = 7;
 const INPUT_DEBOUNCE_MS = 55;
 const dateLabel = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
-let historyIndex: SmartIndex | null = null;
-let historyPromise: Promise<SmartIndex> | null = null;
+let cachedIndex: Index | null = null;
+let indexPromise: Promise<Index> | null = null;
 let observer: MutationObserver | null = null;
 
 function normalize(value: unknown) {
@@ -58,25 +57,21 @@ function isBenefitEvent(event: FinancialEvent) {
   return accountType === 'benefit' || payment.includes('verocard') || description.includes('verocard');
 }
 
-function eventLaunchType(event: FinancialEvent): Exclude<LaunchType, 'transfer'> | null {
+function suggestionType(event: FinancialEvent): 'income' | 'expense' | null {
   if (event.status === 'archived' || isBenefitEvent(event)) return null;
   if (event.type === 'income') return 'income';
   if (event.type === 'expense') return 'expense';
   return null;
 }
 
-function newer(left: string, right: string) {
-  return String(left || '').slice(0, 10) > String(right || '').slice(0, 10);
-}
-
-function buildIndex(events: FinancialEvent[]): SmartIndex {
+function buildIndex(events: FinancialEvent[]): Index {
   const maps = {
-    income: new Map<string, SmartSuggestion>(),
-    expense: new Map<string, SmartSuggestion>()
+    income: new Map<string, Suggestion>(),
+    expense: new Map<string, Suggestion>()
   };
 
   for (const event of events) {
-    const type = eventLaunchType(event);
+    const type = suggestionType(event);
     if (!type) continue;
     const label = String(event.description || '').trim();
     const normalized = normalize(label);
@@ -84,13 +79,19 @@ function buildIndex(events: FinancialEvent[]): SmartIndex {
 
     const current = maps[type].get(normalized);
     const eventDate = String(event.date || '').slice(0, 10);
-    const suggestion: SmartSuggestion = {
+    const isNewer = !current || eventDate > current.lastDate;
+    if (current && !isNewer) {
+      current.occurrences += 1;
+      continue;
+    }
+
+    maps[type].set(normalized, {
       key: `${type}:${normalized}`,
       type,
       label,
       normalized,
       occurrences: (current?.occurrences || 0) + 1,
-      lastDate: current && !newer(eventDate, current.lastDate) ? current.lastDate : eventDate,
+      lastDate: eventDate,
       accountId: event.accountId,
       accountName: event.account?.name,
       categoryId: event.categoryId,
@@ -98,17 +99,10 @@ function buildIndex(events: FinancialEvent[]): SmartIndex {
       group: event.sourceDetails?.group || event.category?.name || null,
       paymentMethodId: event.paymentMethodId,
       paymentMethodName: event.sourceDetails?.paymentMethod || event.paymentMethod?.name || null
-    };
-
-    if (current && !newer(eventDate, current.lastDate)) {
-      current.occurrences += 1;
-      maps[type].set(normalized, current);
-    } else {
-      maps[type].set(normalized, suggestion);
-    }
+    });
   }
 
-  const sortDefault = (left: SmartSuggestion, right: SmartSuggestion) =>
+  const sortDefault = (left: Suggestion, right: Suggestion) =>
     right.lastDate.localeCompare(left.lastDate)
     || right.occurrences - left.occurrences
     || left.label.localeCompare(right.label, 'pt-BR', { sensitivity: 'base' });
@@ -120,7 +114,7 @@ function buildIndex(events: FinancialEvent[]): SmartIndex {
 }
 
 function buildWhenIdle(events: FinancialEvent[]) {
-  return new Promise<SmartIndex>((resolve) => {
+  return new Promise<Index>((resolve) => {
     const idle = (window as IdleWindow).requestIdleCallback;
     if (idle) {
       idle(() => resolve(buildIndex(events)), { timeout: 180 });
@@ -130,22 +124,22 @@ function buildWhenIdle(events: FinancialEvent[]) {
   });
 }
 
-function ensureHistoryIndex() {
-  if (historyIndex) return Promise.resolve(historyIndex);
-  if (historyPromise) return historyPromise;
-  historyPromise = loadPhoenixAllEvents()
+function ensureIndex() {
+  if (cachedIndex) return Promise.resolve(cachedIndex);
+  if (indexPromise) return indexPromise;
+  indexPromise = loadPhoenixAllEvents()
     .then((page) => buildWhenIdle(page.items))
     .then((index) => {
-      historyIndex = index;
+      cachedIndex = index;
       return index;
     })
     .finally(() => {
-      historyPromise = null;
+      indexPromise = null;
     });
-  return historyPromise;
+  return indexPromise;
 }
 
-function matchScore(item: SmartSuggestion, query: string) {
+function score(item: Suggestion, query: string) {
   if (!query) return 1;
   if (item.normalized === query) return 10_000;
   if (item.normalized.startsWith(query)) return 7_000;
@@ -154,12 +148,11 @@ function matchScore(item: SmartSuggestion, query: string) {
   return 0;
 }
 
-function suggestionsFor(index: SmartIndex, type: LaunchType, rawQuery: string) {
+function suggestions(index: Index, type: LaunchType, rawQuery: string) {
   if (type === 'transfer') return [];
   const query = normalize(rawQuery);
-  const bucket = index[type];
-  return bucket
-    .map((item) => ({ item, score: matchScore(item, query) }))
+  return index[type]
+    .map((item) => ({ item, score: score(item, query) }))
     .filter((entry) => entry.score > 0)
     .sort((left, right) =>
       right.score - left.score
@@ -181,93 +174,76 @@ function selectByLabel(root: ParentNode, startsWith: string) {
   return fieldByLabel(root, startsWith)?.querySelector<HTMLSelectElement>('select') || null;
 }
 
-function inputByLabel(root: ParentNode, startsWith: string) {
-  return fieldByLabel(root, startsWith)?.querySelector<HTMLInputElement>('input') || null;
-}
-
-function setReactInput(input: HTMLInputElement, value: string) {
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-  setter?.call(input, value);
+function setInput(input: HTMLInputElement, value: string) {
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, value);
   input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-function setReactSelect(select: HTMLSelectElement, value: string) {
+function setSelect(select: HTMLSelectElement, value: string) {
   const option = [...select.options].find((item) => item.value === value && !item.disabled && !item.hidden);
   if (!option) return false;
-  const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set;
-  setter?.call(select, value);
+  Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set?.call(select, value);
   select.dispatchEvent(new Event('change', { bubbles: true }));
   return true;
 }
 
 function setSelectByValueOrText(select: HTMLSelectElement | null, value?: string | null, text?: string | null) {
   if (!select) return false;
-  if (value && setReactSelect(select, value)) return true;
+  if (value && setSelect(select, value)) return true;
   const target = normalize(text);
   if (!target) return false;
   const option = [...select.options].find((item) => !item.disabled && !item.hidden && normalize(item.textContent) === target);
-  return option ? setReactSelect(select, option.value) : false;
+  return option ? setSelect(select, option.value) : false;
 }
 
-function activeIncomeMethodAllowed(suggestion: SmartSuggestion) {
-  return !suggestion.paymentMethodName || Boolean(canonicalPhoenixIncomePaymentMethod(suggestion.paymentMethodName));
-}
-
-function fillFromSuggestion(root: HTMLElement, input: HTMLInputElement, suggestion: SmartSuggestion, status: HTMLElement) {
+function fillFromHistory(root: HTMLElement, input: HTMLInputElement, item: Suggestion, status: HTMLElement) {
   const type = launchType(root);
-  if (type === 'transfer' || type !== suggestion.type) return;
-  setReactInput(input, suggestion.label);
+  if (type === 'transfer' || type !== item.type) return;
+  setInput(input, item.label);
 
   const filled: string[] = [];
-  if (setSelectByValueOrText(selectByLabel(root, 'Conta financeira'), suggestion.accountId, suggestion.accountName)) filled.push('conta');
+  if (setSelectByValueOrText(selectByLabel(root, 'Conta financeira'), item.accountId, item.accountName)) filled.push('conta');
 
   if (type === 'income') {
-    if (setSelectByValueOrText(selectByLabel(root, 'Classificação da receita'), suggestion.categoryId, suggestion.group)) filled.push('classificação');
-    if (activeIncomeMethodAllowed(suggestion)
-      && setSelectByValueOrText(selectByLabel(root, 'Forma de recebimento'), suggestion.paymentMethodId, suggestion.paymentMethodName)) {
+    if (setSelectByValueOrText(selectByLabel(root, 'Classificação da receita'), item.categoryId, item.group)) filled.push('classificação');
+    if ((!item.paymentMethodName || canonicalPhoenixIncomePaymentMethod(item.paymentMethodName))
+      && setSelectByValueOrText(selectByLabel(root, 'Forma de recebimento'), item.paymentMethodId, item.paymentMethodName)) {
       filled.push('forma de recebimento');
     }
-  } else {
-    const classification = selectByLabel(root, 'Classificação');
-    if (classification && suggestion.classification) {
-      const option = [...classification.options].find((item) => normalize(item.textContent) === normalize(suggestion.classification));
-      if (option && setReactSelect(classification, option.value)) filled.push('classificação');
-    }
-    window.requestAnimationFrame(() => {
-      if (setSelectByValueOrText(selectByLabel(root, 'Grupo'), suggestion.categoryId, suggestion.group)) {
-        if (!filled.includes('grupo')) filled.push('grupo');
-      }
-      if (setSelectByValueOrText(selectByLabel(root, 'Forma de pagamento'), suggestion.paymentMethodId, suggestion.paymentMethodName)) {
-        if (!filled.includes('forma de pagamento')) filled.push('forma de pagamento');
-      }
-      status.textContent = filled.length
-        ? `Preenchido pelo histórico: ${filled.join(' · ')}. Revise antes de salvar.`
-        : 'Descrição reutilizada do histórico. Revise os demais campos antes de salvar.';
-      status.hidden = false;
-    });
-  }
-
-  if (type === 'income') {
     status.textContent = filled.length
       ? `Preenchido pelo histórico: ${filled.join(' · ')}. Revise antes de salvar.`
       : 'Descrição reutilizada do histórico. Revise os demais campos antes de salvar.';
     status.hidden = false;
+    return;
   }
+
+  const classification = selectByLabel(root, 'Classificação');
+  if (classification && item.classification) {
+    const option = [...classification.options].find((candidate) => normalize(candidate.textContent) === normalize(item.classification));
+    if (option && setSelect(classification, option.value)) filled.push('classificação');
+  }
+
+  window.requestAnimationFrame(() => {
+    if (setSelectByValueOrText(selectByLabel(root, 'Grupo'), item.categoryId, item.group)) filled.push('grupo');
+    if (setSelectByValueOrText(selectByLabel(root, 'Forma de pagamento'), item.paymentMethodId, item.paymentMethodName)) filled.push('forma de pagamento');
+    status.textContent = filled.length
+      ? `Preenchido pelo histórico: ${filled.join(' · ')}. Revise antes de salvar.`
+      : 'Descrição reutilizada do histórico. Revise os demais campos antes de salvar.';
+    status.hidden = false;
+  });
 }
 
 function formatDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
-  return dateLabel.format(new Date(`${value}T12:00:00Z`));
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? dateLabel.format(new Date(`${value}T12:00:00Z`)) : '';
 }
 
-function metaText(item: SmartSuggestion) {
-  const details = [
+function meta(item: Suggestion) {
+  return [
     item.occurrences > 1 ? `Usado ${item.occurrences}x` : 'Usado 1x',
     item.lastDate ? `último ${formatDate(item.lastDate)}` : '',
     item.group || item.classification || '',
     item.paymentMethodName || ''
-  ].filter(Boolean);
-  return details.join(' · ');
+  ].filter(Boolean).join(' · ');
 }
 
 function createPanel(label: HTMLLabelElement) {
@@ -285,18 +261,12 @@ function createPanel(label: HTMLLabelElement) {
   return { panel, status };
 }
 
-function attachAutocomplete() {
-  const root = document.querySelector<HTMLElement>('.px-launch-drawer');
-  if (!root) return;
-  const label = fieldByLabel(root, 'Descrição');
-  const input = label?.querySelector<HTMLInputElement>('input');
-  if (!label || !input || input.dataset.megSmartDescription === 'true') return;
-
+function wireAutocomplete(root: HTMLElement, label: HTMLLabelElement, input: HTMLInputElement) {
   input.dataset.megSmartDescription = 'true';
   input.setAttribute('aria-autocomplete', 'list');
   input.setAttribute('aria-expanded', 'false');
   const { panel, status } = createPanel(label);
-  let current: SmartSuggestion[] = [];
+  let current: Suggestion[] = [];
   let activeIndex = -1;
   let debounce = 0;
   let renderVersion = 0;
@@ -310,14 +280,12 @@ function attachAutocomplete() {
     input.removeAttribute('aria-activedescendant');
   }
 
-  function paint(items: SmartSuggestion[]) {
+  function paint(items: Suggestion[]) {
     current = items;
     activeIndex = -1;
     panel.replaceChildren();
-    if (!items.length) {
-      close();
-      return;
-    }
+    if (!items.length) return close();
+
     items.forEach((item, index) => {
       const button = document.createElement('button');
       button.type = 'button';
@@ -325,6 +293,7 @@ function attachAutocomplete() {
       button.id = `px-description-option-${index}`;
       button.setAttribute('role', 'option');
       button.setAttribute('aria-selected', 'false');
+
       const icon = document.createElement('span');
       icon.className = 'px-description-suggestion-icon';
       icon.textContent = '↺';
@@ -332,23 +301,25 @@ function attachAutocomplete() {
       copy.className = 'px-description-suggestion-copy';
       const title = document.createElement('strong');
       title.textContent = item.label;
-      const meta = document.createElement('small');
-      meta.textContent = metaText(item);
-      copy.append(title, meta);
+      const details = document.createElement('small');
+      details.textContent = meta(item);
+      copy.append(title, details);
       button.append(icon, copy);
+
       button.addEventListener('pointerdown', (event) => event.preventDefault());
       button.addEventListener('click', () => {
-        fillFromSuggestion(root, input, item, status);
+        fillFromHistory(root, input, item, status);
         close();
         input.focus();
       });
       panel.appendChild(button);
     });
+
     panel.hidden = false;
     input.setAttribute('aria-expanded', 'true');
   }
 
-  function paintLoading() {
+  function loading() {
     panel.replaceChildren();
     const node = document.createElement('div');
     node.className = 'px-description-suggestion-loading';
@@ -361,15 +332,13 @@ function attachAutocomplete() {
   function render() {
     const version = ++renderVersion;
     const type = launchType(root);
-    if (type === 'transfer') {
-      close();
-      return;
-    }
-    if (!historyIndex) paintLoading();
-    void ensureHistoryIndex()
+    if (type === 'transfer') return close();
+    if (!cachedIndex) loading();
+
+    void ensureIndex()
       .then((index) => {
         if (version !== renderVersion || !root.isConnected || document.activeElement !== input) return;
-        paint(suggestionsFor(index, type, input.value));
+        paint(suggestions(index, type, input.value));
       })
       .catch(() => {
         if (version !== renderVersion) return;
@@ -407,16 +376,20 @@ function attachAutocomplete() {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       if (panel.hidden) render(); else setActive(activeIndex + 1);
-    } else if (event.key === 'ArrowUp') {
+      return;
+    }
+    if (event.key === 'ArrowUp') {
       event.preventDefault();
       if (panel.hidden) render(); else setActive(activeIndex - 1);
-    } else if (event.key === 'Enter' && activeIndex >= 0 && current[activeIndex]) {
-      event.preventDefault();
-      fillFromSuggestion(root, input, current[activeIndex], status);
-      close();
-    } else if (event.key === 'Escape') {
-      close();
+      return;
     }
+    if (event.key === 'Enter' && activeIndex >= 0 && current[activeIndex]) {
+      event.preventDefault();
+      fillFromHistory(root, input, current[activeIndex], status);
+      close();
+      return;
+    }
+    if (event.key === 'Escape') close();
   });
   input.addEventListener('blur', () => window.setTimeout(close, 120));
 
@@ -427,6 +400,16 @@ function attachAutocomplete() {
       if (document.activeElement === input) window.setTimeout(render, 0);
     });
   });
+}
+
+function attachAutocomplete() {
+  const root = document.querySelector<HTMLElement>('.px-launch-drawer');
+  if (!root) return;
+  const label = fieldByLabel(root, 'Descrição');
+  if (!label) return;
+  const input = label.querySelector<HTMLInputElement>('input');
+  if (!input || input.dataset.megSmartDescription === 'true') return;
+  wireAutocomplete(root, label, input);
 }
 
 function start() {
