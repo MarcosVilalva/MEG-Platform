@@ -37,10 +37,10 @@ assert.doesNotMatch(loader, /financeClient\.getSummary\(month\)|financeClient\.g
   'Bootstrap Phoenix não deve voltar a fragmentar o núcleo mensal em múltiplas leituras');
 assert.match(loader, /fetchAllFinancialEvents/,
   'Modo Tudo deve possuir leitura global explícita e isolada do bootstrap mensal');
-assert.match(loader, /Math\.ceil\(first\.total \/ 100\)/,
-  'Modo Tudo deve calcular todas as páginas em vez de aceitar somente os primeiros 100 eventos');
-assert.match(loader, /for \(let page = 2; page <= pages; page \+= 6\)/,
-  'Histórico completo deve ser paginado em lotes controlados');
+assert.match(loader, /\/finance\/phoenix-preview\/events/,
+  'Modo Tudo deve usar o endpoint dedicado de leitura completa em vez de dezenas de páginas HTTP');
+assert.doesNotMatch(loader, /Math\.ceil\(first\.total \/ 100\)|for \(let page = 2;/,
+  'Histórico completo não deve voltar à paginação HTTP sequencial do cliente');
 assert.match(loader, /STATIC_CACHE_TTL/,
   'Leituras estáticas não devem ser repetidas a cada troca de mês');
 assert.match(loader, /loadStaticContext/,
@@ -163,7 +163,7 @@ assert.match(phoenixApp, /setRefreshKey\(\(value\) => value \+ 1\)/,
 assert.match(phoenixApp, /periodDraftMode === 'range'/,
   'Intervalo V15 deve possuir aplicação real, não somente aparência');
 assert.match(phoenixApp, /loadPhoenixAllEvents/,
-  'Modo Tudo deve usar leitura real paginada');
+  'Modo Tudo deve usar leitura real completa');
 assert.match(phoenixApp, /peekPhoenixReadModel/,
   'Troca de mês deve aproveitar fotografia já carregada');
 assert.match(phoenixApp, /monthlySnapshotMatches/,
