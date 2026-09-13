@@ -6,7 +6,7 @@ const movements = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', impo
 const previewServer = readFileSync(new URL('../../phoenix-preview-server.mjs', import.meta.url), 'utf8');
 
 assert.match(gateway, /simpleEvent:\s*false/,
-  'Writer deve permanecer desabilitado por capacidade enquanto backend/proxy não forem liberados.');
+  'Writer frontend deve permanecer desabilitado por capacidade até a liberação explícita.');
 assert.match(gateway, /existingOperationId\s*\|\|\s*operationId\(\)/,
   'Retry do mesmo comando deve poder reutilizar o mesmo operationId.');
 assert.match(gateway, /operationId:\s*prepared\.operationId/,
@@ -26,10 +26,13 @@ assert.doesNotMatch(movements, /submitPhoenixSimpleEvent|runPhoenixSimpleEventWr
 assert.match(movements, /Revisar lançamento · sem gravar/,
   'CTA visual deve continuar sem gravação nesta fase.');
 
-assert.match(previewServer, /const allowedAuthPosts = new Set/);
-assert.doesNotMatch(previewServer, /allowedFinancialPosts|\/finance\/events['"`]/,
-  'Proxy do preview deve continuar sem allowlist financeira de POST.');
+assert.match(previewServer, /simpleEventWriteEnabled\s*=\s*process\.env\.PHOENIX_SIMPLE_EVENT_WRITE\s*===\s*'enabled'/,
+  'Proxy deve exigir flag explícita além do gate do frontend.');
+assert.match(previewServer, /allowedFinancialPosts\s*=\s*new Set\(\['\/finance\/events'\]\)/,
+  'Proxy preparado deve aceitar somente o endpoint estreito do primeiro writer.');
+assert.match(previewServer, /simpleEventWriteEnabled\s*&&\s*allowedFinancialPosts\.has\(pathname\)/,
+  'Allowlist financeira não pode funcionar com a flag desligada.');
 assert.match(previewServer, /PREVIEW_READ_ONLY/,
   'Mutações não homologadas devem continuar bloqueadas pelo proxy.');
 
-console.log('Gateway do primeiro writer Phoenix preparado e ainda bloqueado com segurança.');
+console.log('Gateway do primeiro writer Phoenix preparado sob duplo gate e ainda bloqueado com segurança.');
