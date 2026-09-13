@@ -98,6 +98,8 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const [priority, setPriority] = useState<Priority>('all');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [detailItem, setDetailItem] = useState<PendingItem | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const open = useMemo(() => {
     const official = data.payables
@@ -148,9 +150,14 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     });
   }
 
+  function clearSelection() {
+    setSelected(new Set());
+    setReviewOpen(false);
+  }
+
   return <section className="px-screen">
     <header className="px-screen-head">
-      <div><span className="px-kicker">Pendentes</span><h1>Prioridades e compromissos</h1><p>Organize o que precisa de ação agora e simule a baixa sem alterar a base.</p></div>
+      <div><span className="px-kicker">Pendentes</span><h1>Prioridades e compromissos</h1><p>Organize o que precisa de ação agora e prepare a baixa em lote sem alterar a base durante a homologação.</p></div>
       <div className="px-screen-head-aside"><span className="px-total-pill">{money.format(total)} pendente</span></div>
     </header>
 
@@ -169,6 +176,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
           <label className="px-search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar compromisso, grupo ou forma de pagamento" /></label>
           <span className="px-toolbar-note">{visible.length} de {open.length} exibido(s)</span>
         </div>
+        {selectedItems.length ? <div className="px-bulk-action-bar"><div><strong>{selectedItems.length} conta(s) selecionada(s)</strong><span>Total {money.format(selectedTotal)} · saldo após baixa {money.format(available - selectedTotal)}</span></div><button type="button" onClick={clearSelection}>Limpar</button><button type="button" className="primary" disabled={selectedTotal > available} onClick={() => setReviewOpen(true)}>Revisar baixa</button></div> : null}
         {compatibilityCount > 0 ? <div className="px-history-source-note"><strong>Leitura consolidada:</strong> despesas planejadas do período entram em Pendentes enquanto o domínio novo de contas a pagar é migrado. Estornos permanecem como ajustes negativos e não ficam disponíveis para baixa.</div> : null}
         {Object.entries(grouped).map(([group, items]) => <section className="px-pending-group" key={group}>
           <header><div><strong>{group}</strong><small>{items.length} item(ns)</small></div><strong>{money.format(items.reduce((sum, item) => sum + item.openAmount, 0))}</strong></header>
@@ -176,32 +184,36 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
             const adjustment = item.openAmount < 0;
             const late = adjustment ? 0 : item.dueDate < today ? Math.max(1, Math.floor((new Date(`${today}T12:00:00Z`).getTime() - new Date(`${item.dueDate}T12:00:00Z`).getTime()) / 86400000)) : 0;
             const credit = normalize(item.modality).includes('credito') || normalize(item.paymentMethod).includes('cartao');
-            return <label className={`px-pending-row ${adjustment ? 'is-adjustment' : ''}`} key={item.id}>
-              <input type="checkbox" disabled={adjustment} checked={!adjustment && selected.has(item.id)} onChange={() => toggle(item.id)} />
+            return <div className={`px-pending-row ${adjustment ? 'is-adjustment' : ''}`} key={item.id}>
+              <input type="checkbox" aria-label={`Selecionar ${item.description}`} disabled={adjustment} checked={!adjustment && selected.has(item.id)} onChange={() => toggle(item.id)} />
               <div className="px-pending-date"><strong>{date.format(new Date(`${item.dueDate}T12:00:00Z`))}</strong><small>{adjustment ? 'Ajuste de estorno' : late ? `${late} dia(s) em atraso` : item.dueDate === today ? 'Vence hoje' : 'Programado'}</small></div>
               <div className="px-pending-copy"><strong>{item.description}</strong><small>{item.installmentQty > 1 ? `Parcela ${item.installmentNo}/${item.installmentQty}` : 'Pagamento único'} · {item.categoryName} · {item.paymentMethod}</small></div>
               <strong className={`px-pending-amount ${adjustment ? 'positive' : ''}`}>{money.format(item.openAmount)}</strong>
               <span className={`px-status ${adjustment ? 'reconciled' : late ? 'overdue' : 'planned'}`}>{adjustment ? 'ESTORNO' : credit ? 'CARTÃO' : late ? 'VENCIDO' : 'PENDENTE'}</span>
-              <button type="button" className="px-detail-btn" aria-label={`Detalhes de ${item.description}`}>↘</button>
-            </label>;
+              <button type="button" className="px-detail-btn" aria-label={`Detalhes de ${item.description}`} onClick={() => setDetailItem(item)}>↘</button>
+            </div>;
           })}
         </section>)}
         {!visible.length ? <p className="px-empty">Nenhum compromisso corresponde ao filtro.</p> : null}
       </section>
 
       <aside className="px-card px-payment-summary">
-        <div className="px-panel-head"><div><span>Baixa protegida</span><h2>Simulação</h2></div><span className="px-status reconciled">ATIVA</span></div>
+        <div className="px-panel-head"><div><span>Baixa protegida</span><h2>Seleção atual</h2></div><span className="px-status reconciled">ATIVA</span></div>
         <dl>
           <div><dt>Saldo monetário disponível</dt><dd>{money.format(available)}</dd></div>
           <div><dt>Total pendente líquido</dt><dd>{money.format(total)}</dd></div>
-          <div><dt>Itens selecionados</dt><dd>{selected.size}</dd></div>
+          <div><dt>Itens selecionados</dt><dd>{selectedItems.length}</dd></div>
           <div><dt>Valor selecionado</dt><dd>{money.format(selectedTotal)}</dd></div>
           <div className="emphasis"><dt>Saldo previsto após a baixa</dt><dd>{money.format(available - selectedTotal)}</dd></div>
         </dl>
-        <div className={`px-protection-note ${selectedTotal > available ? 'danger' : ''}`}>{selectedTotal > available ? 'A seleção ultrapassa o saldo monetário disponível. A baixa deverá permanecer bloqueada.' : 'Simulação segura: nenhum valor foi gravado. Benefícios continuam fora do saldo monetário e estornos não podem ser baixados como despesa.'}</div>
-        <button className="px-primary-action" type="button" disabled>Revisar e confirmar baixa</button>
-        <small className="px-readonly-hint">Gravação desabilitada durante a fase de paridade Phoenix.</small>
+        <div className={`px-protection-note ${selectedTotal > available ? 'danger' : ''}`}>{selectedTotal > available ? 'A seleção ultrapassa o saldo monetário disponível. A baixa permanece bloqueada.' : 'Selecione uma ou várias contas. A revisão em lote já funciona; a gravação continua protegida até o gate financeiro.'}</div>
+        <button className="px-primary-action" type="button" disabled={!selectedItems.length || selectedTotal > available} onClick={() => setReviewOpen(true)}>Revisar e confirmar baixa</button>
+        <small className="px-readonly-hint">A etapa final de gravação continua desabilitada durante a fase de paridade Phoenix.</small>
       </aside>
     </div>
+
+    {detailItem ? <div className="px-pending-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailItem(null); }}><aside className="px-pending-drawer" role="dialog" aria-modal="true" aria-label={`Detalhes de ${detailItem.description}`}><header><div><span className="px-kicker">Detalhes do compromisso</span><h2>{detailItem.description}</h2><p>{date.format(new Date(`${detailItem.dueDate}T12:00:00Z`))}</p></div><button type="button" aria-label="Fechar" onClick={() => setDetailItem(null)}>×</button></header><dl><div><dt>Valor</dt><dd>{money.format(detailItem.openAmount)}</dd></div><div><dt>Classificação</dt><dd>{detailItem.categoryName}</dd></div><div><dt>Grupo</dt><dd>{detailItem.group}</dd></div><div><dt>Forma</dt><dd>{detailItem.paymentMethod}</dd></div><div><dt>Modalidade</dt><dd>{detailItem.modality}</dd></div><div><dt>Parcela</dt><dd>{detailItem.installmentQty > 1 ? `${detailItem.installmentNo}/${detailItem.installmentQty}` : 'Pagamento único'}</dd></div></dl><footer><button type="button" className="px-secondary-action" onClick={() => setDetailItem(null)}>Fechar</button><button type="button" className="px-primary-action" onClick={() => { toggle(detailItem.id); setDetailItem(null); }}>{selected.has(detailItem.id) ? 'Remover da baixa' : 'Selecionar para baixa'}</button></footer></aside></div> : null}
+
+    {reviewOpen ? <div className="px-pending-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setReviewOpen(false); }}><aside className="px-pending-drawer px-pending-review" role="dialog" aria-modal="true" aria-label="Revisar baixa em lote"><header><div><span className="px-kicker">Baixa em lote</span><h2>Revisar {selectedItems.length} conta(s)</h2><p>A baixa será uma única ação protegida quando a escrita financeira for liberada.</p></div><button type="button" aria-label="Fechar" onClick={() => setReviewOpen(false)}>×</button></header><div className="px-pending-review-list">{selectedItems.map((item) => <div key={item.id}><span><strong>{item.description}</strong><small>{date.format(new Date(`${item.dueDate}T12:00:00Z`))} · {item.paymentMethod}</small></span><strong>{money.format(item.openAmount)}</strong></div>)}</div><dl><div><dt>Total da baixa</dt><dd>{money.format(selectedTotal)}</dd></div><div><dt>Saldo antes</dt><dd>{money.format(available)}</dd></div><div><dt>Saldo depois</dt><dd>{money.format(available - selectedTotal)}</dd></div></dl><footer><button type="button" className="px-secondary-action" onClick={() => setReviewOpen(false)}>Voltar</button><button type="button" className="px-primary-action" disabled title="A escrita financeira ainda está bloqueada na Phoenix">Baixar selecionadas</button><small>Fluxo visual consolidado. A confirmação real será conectada somente após validação do gate de escrita, idempotência e auditoria.</small></footer></aside></div> : null}
   </section>;
 }
