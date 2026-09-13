@@ -20,46 +20,76 @@ type PhoenixAvatarStyle = CSSProperties & {
 };
 
 const PHOENIX_AVATAR_SPRITE_URL = '/brand/avatars/people-sprite.webp';
+const PHOENIX_AVATAR_COLUMNS = 6;
+const PHOENIX_AVATAR_ROWS = 6;
 
 export const phoenixAvatarPresets: PhoenixAvatarPreset[] = [
-  { id: 'people-01', label: 'Alex', column: 0, row: 0 },
-  { id: 'people-02', label: 'Noah', column: 1, row: 0 },
-  { id: 'people-03', label: 'Mentor', column: 2, row: 0 },
-  { id: 'people-04', label: 'Luna', column: 3, row: 0 },
-  { id: 'people-05', label: 'Dara', column: 4, row: 0 },
-  { id: 'people-06', label: 'Safira', column: 5, row: 0 },
-  { id: 'people-07', label: 'Ravi', column: 0, row: 1 },
-  { id: 'people-08', label: 'Theo', column: 1, row: 1 },
-  { id: 'people-09', label: 'Cora', column: 2, row: 1 },
-  { id: 'people-10', label: 'Íris', column: 3, row: 1 },
-  { id: 'people-11', label: 'Mei', column: 4, row: 1 },
-  { id: 'people-12', label: 'Bella', column: 5, row: 1 },
-  { id: 'people-13', label: 'Malik', column: 0, row: 2 },
-  { id: 'people-14', label: 'Leo', column: 1, row: 2 },
+  { id: 'people-01', label: 'Aurora', column: 0, row: 0 },
+  { id: 'people-02', label: 'Enzo', column: 1, row: 0 },
+  { id: 'people-03', label: 'Amara', column: 2, row: 0 },
+  { id: 'people-04', label: 'Kenji', column: 3, row: 0 },
+  { id: 'people-05', label: 'Serena', column: 4, row: 0 },
+  { id: 'people-06', label: 'Hugo', column: 5, row: 0 },
+
+  { id: 'people-07', label: 'Theo', column: 0, row: 1 },
+  { id: 'people-08', label: 'Clara', column: 1, row: 1 },
+  { id: 'people-09', label: 'Malik', column: 2, row: 1 },
+  { id: 'people-10', label: 'Maya', column: 3, row: 1 },
+  { id: 'people-11', label: 'Vicente', column: 4, row: 1 },
+  { id: 'people-12', label: 'Ravi', column: 5, row: 1 },
+
+  { id: 'people-13', label: 'Luna', column: 0, row: 2 },
+  { id: 'people-14', label: 'Gael', column: 1, row: 2 },
   { id: 'people-15', label: 'Nina', column: 2, row: 2 },
-  { id: 'people-16', label: 'Maya', column: 3, row: 2 },
-  { id: 'people-17', label: 'Clara', column: 4, row: 2 },
-  { id: 'people-18', label: 'Ben', column: 5, row: 2 },
-  { id: 'people-19', label: 'Caio', column: 0, row: 3 },
-  { id: 'people-20', label: 'Eva', column: 1, row: 3 },
-  { id: 'people-21', label: 'Gael', column: 2, row: 3 },
-  { id: 'people-22', label: 'Lia', column: 3, row: 3 },
-  { id: 'people-23', label: 'Otto', column: 4, row: 3 },
-  { id: 'people-24', label: 'Max', column: 5, row: 3 }
+  { id: 'people-16', label: 'Arthur', column: 3, row: 2 },
+  { id: 'people-17', label: 'Noah', column: 4, row: 2 },
+  { id: 'people-18', label: 'Cora', column: 5, row: 2 },
+
+  { id: 'people-19', label: 'Safira', column: 0, row: 3 },
+  { id: 'people-20', label: 'Ben', column: 1, row: 3 },
+  { id: 'people-21', label: 'Íris', column: 2, row: 3 },
+  { id: 'people-22', label: 'Raul', column: 3, row: 3 },
+  { id: 'people-23', label: 'Leo', column: 4, row: 3 },
+  { id: 'people-24', label: 'Bella', column: 5, row: 3 },
+
+  { id: 'people-25', label: 'Davi', column: 0, row: 4 },
+  { id: 'people-26', label: 'Mel', column: 1, row: 4 },
+  { id: 'people-27', label: 'Lia', column: 2, row: 4 },
+  { id: 'people-28', label: 'Caio', column: 3, row: 4 },
+  { id: 'people-29', label: 'Eva', column: 4, row: 4 },
+  { id: 'people-30', label: 'Otto', column: 5, row: 4 },
+
+  { id: 'people-31', label: 'Zion', column: 0, row: 5 },
+  { id: 'people-32', label: 'Chloe', column: 1, row: 5 },
+  { id: 'people-33', label: 'Jade', column: 2, row: 5 },
+  { id: 'people-34', label: 'Alex', column: 3, row: 5 },
+  { id: 'people-35', label: 'Elisa', column: 4, row: 5 },
+  { id: 'people-36', label: 'Dara', column: 5, row: 5 }
 ];
 
 const LEGACY_PRESET_ALIASES: Record<string, string> = {
-  maya: 'people-01', aurora: 'people-01',
-  theo: 'people-02', oceano: 'people-02',
-  luna: 'people-03', violeta: 'people-03',
-  ravi: 'people-04', grafite: 'people-04',
-  sofia: 'people-05', cobre: 'people-05',
-  noah: 'people-06', esmeralda: 'people-06',
-  nina: 'people-07', solar: 'people-07',
-  caio: 'people-08', ceu: 'people-08',
-  lia: 'people-09', rosa: 'people-09',
-  bento: 'people-10', menta: 'people-10',
-  zoe: 'people-11', leo: 'people-12'
+  maya: 'people-10',
+  aurora: 'people-01',
+  theo: 'people-07',
+  oceano: 'people-04',
+  luna: 'people-13',
+  violeta: 'people-21',
+  ravi: 'people-12',
+  grafite: 'people-06',
+  sofia: 'people-05',
+  cobre: 'people-20',
+  noah: 'people-17',
+  esmeralda: 'people-19',
+  nina: 'people-15',
+  solar: 'people-04',
+  caio: 'people-28',
+  ceu: 'people-32',
+  lia: 'people-27',
+  rosa: 'people-18',
+  bento: 'people-20',
+  menta: 'people-03',
+  zoe: 'people-33',
+  leo: 'people-23'
 };
 
 const keyForUser = (userId: string) => `meg.profile.avatar.${userId}`;
@@ -94,8 +124,12 @@ export function readPhoenixAvatarPreference(userId = currentPhoenixUserId()): Ph
 }
 
 function presetPosition(preset: PhoenixAvatarPreset) {
-  const x = preset.column * 20;
-  const y = preset.row * (100 / 3);
+  const x = PHOENIX_AVATAR_COLUMNS > 1
+    ? (preset.column / (PHOENIX_AVATAR_COLUMNS - 1)) * 100
+    : 0;
+  const y = PHOENIX_AVATAR_ROWS > 1
+    ? (preset.row / (PHOENIX_AVATAR_ROWS - 1)) * 100
+    : 0;
   return `${x}% ${y}%`;
 }
 
@@ -106,7 +140,11 @@ function avatarVisual(preference: PhoenixAvatarPreference) {
   if (preference.kind === 'preset') {
     const preset = findPreset(preference.presetId);
     if (!preset) return null;
-    return { image: PHOENIX_AVATAR_SPRITE_URL, position: presetPosition(preset), size: '600% 400%' };
+    return {
+      image: PHOENIX_AVATAR_SPRITE_URL,
+      position: presetPosition(preset),
+      size: `${PHOENIX_AVATAR_COLUMNS * 100}% ${PHOENIX_AVATAR_ROWS * 100}%`
+    };
   }
   return null;
 }
