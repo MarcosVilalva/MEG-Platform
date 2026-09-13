@@ -15,6 +15,18 @@ assert.match(server, /hopByHopHeaders[^\n]*'origin'[^\n]*'referer'/,
   'Proxy deve remover Origin e Referer antes da chamada servidor-a-servidor.');
 assert.match(server, /PHOENIX_API_ORIGIN/,
   'Destino da API deve ser configurável no ambiente do preview.');
+assert.match(server, /periodEventsPath\s*=\s*'\/finance\/phoenix-preview\/events'/,
+  'Preview deve possuir agregador isolado para o histórico completo de homologação.');
+assert.match(server, /fetchEventPage\(headers, 1\)/,
+  'Agregador deve iniciar pela leitura oficial paginada da API atual.');
+assert.match(server, /page \+= 8/,
+  'Paginação servidor-a-servidor deve usar lotes controlados em vez de disparar tudo sem limite.');
+assert.match(server, /PERIOD_EVENTS_TTL\s*=\s*60_000/,
+  'Histórico agregado deve possuir cache curto por sessão para evitar dezenas de chamadas repetidas.');
+assert.match(server, /createHash\('sha256'\)/,
+  'Chave do cache não deve armazenar token ou cookie em texto puro.');
+assert.match(server, /if \(url\.pathname === periodEventsPath\)/,
+  'Agregador deve ser tratado antes do proxy genérico para não depender de rota inexistente na API principal.');
 assert.match(server, /pathname === '\/preview-health'/,
   'Serviço isolado deve ter health check próprio sem depender da API financeira.');
 assert.match(server, /pathname === '\/' \? '\/phoenix\.html'/,
