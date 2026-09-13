@@ -19,10 +19,6 @@ type PhoenixAvatarStyle = CSSProperties & {
   '--px-profile-avatar-size'?: string;
 };
 
-const PHOENIX_AVATAR_SPRITE_URL = '/brand/avatars/people-sprite.webp';
-const PHOENIX_AVATAR_COLUMNS = 6;
-const PHOENIX_AVATAR_ROWS = 6;
-
 export const phoenixAvatarPresets: PhoenixAvatarPreset[] = [
   { id: 'people-01', label: 'Aurora', column: 0, row: 0 },
   { id: 'people-02', label: 'Enzo', column: 1, row: 0 },
@@ -123,16 +119,6 @@ export function readPhoenixAvatarPreference(userId = currentPhoenixUserId()): Ph
   }
 }
 
-function presetPosition(preset: PhoenixAvatarPreset) {
-  const x = PHOENIX_AVATAR_COLUMNS > 1
-    ? (preset.column / (PHOENIX_AVATAR_COLUMNS - 1)) * 100
-    : 0;
-  const y = PHOENIX_AVATAR_ROWS > 1
-    ? (preset.row / (PHOENIX_AVATAR_ROWS - 1)) * 100
-    : 0;
-  return `${x}% ${y}%`;
-}
-
 function avatarVisual(preference: PhoenixAvatarPreference) {
   if (preference.kind === 'photo') {
     return { image: preference.dataUrl, position: 'center', size: 'cover' };
@@ -140,11 +126,8 @@ function avatarVisual(preference: PhoenixAvatarPreference) {
   if (preference.kind === 'preset') {
     const preset = findPreset(preference.presetId);
     if (!preset) return null;
-    return {
-      image: PHOENIX_AVATAR_SPRITE_URL,
-      position: presetPosition(preset),
-      size: `${PHOENIX_AVATAR_COLUMNS * 100}% ${PHOENIX_AVATAR_ROWS * 100}%`
-    };
+    const image = `/brand/avatars/meg-user-base-v2/${preset.id}.webp`;
+    return { image, position: 'center', size: 'cover' };
   }
   return null;
 }
