@@ -23,6 +23,8 @@ assert.match(mutation, /FINANCIAL_EVENT_CREATE/,
   'Writer deve registrar recibo próprio após sucesso.');
 assert.match(mutation, /OPERATION_ID_REUSED/,
   'Mesmo operationId com conteúdo diferente deve ser rejeitado.');
+assert.match(mutation, /idempotentReplay:\s*true/,
+  'Retry idêntico deve retornar o mesmo comando identificado como replay.');
 assert.match(mutation, /const workspace = await resolveWorkspaceContext\(userId\)/,
   'Todo novo evento deve resolver o workspace financeiro.');
 assert.match(mutation, /workspaceId: workspace\.workspaceId/,
