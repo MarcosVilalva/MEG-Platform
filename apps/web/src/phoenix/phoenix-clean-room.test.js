@@ -8,6 +8,7 @@ const profileAvatar = readFileSync(new URL('./profile-avatar.tsx', import.meta.u
 const commandPalette = readFileSync(new URL('./PhoenixCommandPalette.tsx', import.meta.url), 'utf8');
 const screens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.meta.url), 'utf8');
 const movementScreen = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
+const homeDashboard = readFileSync(new URL('./screens/PhoenixHomeDashboard.tsx', import.meta.url), 'utf8');
 const homeAllTime = readFileSync(new URL('./screens/PhoenixHomeAllTime.tsx', import.meta.url), 'utf8');
 const homePeriodSummary = readFileSync(new URL('./home-period-summary.ts', import.meta.url), 'utf8');
 const webScreens = readFileSync(new URL('./screens/PhoenixWebScreens.tsx', import.meta.url), 'utf8');
@@ -18,10 +19,10 @@ const loader = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.
 const previewMain = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
 const phoenixHtml = readFileSync(new URL('../../phoenix.html', import.meta.url), 'utf8');
 const productionHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
-const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
+const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-home-dashboard.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
-const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${profileAvatar}\n${commandPalette}\n${screens}\n${movementScreen}\n${homeAllTime}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
-const readOnlyScreens = `${screens}\n${movementScreen}\n${homeAllTime}\n${webScreens}\n${history}\n${users}\n${settings}\n${sidebar}\n${commandPalette}`;
+const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${profileAvatar}\n${commandPalette}\n${screens}\n${movementScreen}\n${homeDashboard}\n${homeAllTime}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
+const readOnlyScreens = `${screens}\n${movementScreen}\n${homeDashboard}\n${homeAllTime}\n${webScreens}\n${history}\n${users}\n${settings}\n${sidebar}\n${commandPalette}`;
 
 for (const forbidden of ['global.css', 'v15-contract.css', 'meg-v15.css']) {
   assert.doesNotMatch(phoenixSource, new RegExp(forbidden.replace('.', '\\.')),
@@ -94,6 +95,8 @@ assert.match(profileAvatar, /meg\.profile\.avatar\./,
   'Avatar visual deve ficar isolado por usuário no armazenamento local enquanto não houver contrato backend');
 assert.match(profileAvatar, /imageFileToAvatarDataUrl/,
   'Upload de foto deve normalizar a imagem antes de armazenar a preferência local');
+assert.ok((profileAvatar.match(/id: '/g) || []).length >= 10,
+  'Biblioteca de avatares deve manter variedade suficiente de estilos prontos');
 assert.match(webScreens, /Títulos e recebimentos em aberto/);
 assert.match(webScreens, /Origem e evolução das entradas/);
 assert.match(webScreens, /Fechamento realizado e projetado/);
@@ -147,6 +150,31 @@ assert.match(movementScreen, /Possível duplicidade real encontrada/,
 assert.doesNotMatch(movementScreen, /method\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/,
   'Drawer de lançamento deve permanecer sem escrita nesta etapa');
 
+assert.match(homeDashboard, /Últimos 20 eventos/,
+  'Home corrente deve manter feed recente rolável em vez de depender apenas da auditoria nova');
+assert.match(homeDashboard, /data\.activities/,
+  'Home deve usar o histórico legado como compatibilidade quando necessário');
+assert.match(homeDashboard, /Vencimentos de/,
+  'Agenda da Home deve listar o período selecionado por vencimento');
+assert.match(homeDashboard, /Fatura \$\{item\.cardLabel/,
+  'Cartões devem ser agrupados por identidade e vencimento na agenda');
+assert.match(homeDashboard, /px-home-drawer/,
+  'Detalhes de vencimento devem abrir drawer na própria Home');
+assert.match(homeDashboard, /Revisar pagamento/,
+  'Drawer da Home deve permitir selecionar itens para revisão de pagamento');
+assert.match(homeDashboard, /Benefício alimentação · disponível/,
+  'Home deve preservar o indicador de benefício do V15');
+assert.match(homeDashboard, /Consolidado realizado/,
+  'Home deve preservar o consolidado realizado do V15');
+assert.match(screens, /conta\(s\) selecionada\(s\)/,
+  'Pendentes deve mostrar barra contextual ao selecionar contas');
+assert.match(screens, /Revisar e confirmar baixa/,
+  'Pendentes deve abrir a revisão de baixa em lote');
+assert.match(screens, /Baixar selecionadas/,
+  'Fluxo visual de baixa em lote deve existir antes da liberação da escrita');
+assert.match(screens, /disabled title="A escrita financeira ainda está bloqueada na Phoenix"/,
+  'Confirmação real de baixa deve permanecer bloqueada durante read-only');
+
 assert.match(homeAllTime, /Histórico completo/,
   'Modo Tudo deve possuir uma Home própria para a trajetória completa');
 assert.match(homeAllTime, /Saldo monetário atual/,
@@ -180,14 +208,22 @@ assert.match(styles, /\.px-side-footer/,
   'Menu Lateral deve separar navegação do rodapé de saída');
 assert.match(styles, /overflow-y:(?:auto|scroll)/,
   'Menu Lateral deve manter rolagem própria quando houver mais módulos que altura disponível');
+assert.match(styles, /overflow-x:hidden!important/,
+  'Menu Lateral recolhido não pode criar rolagem horizontal');
 assert.match(styles, /\.px-user-chevron\s*\{\s*display:none!important;/,
   'Topbar não deve exibir chevron sem menu de perfil funcional');
+assert.match(styles, /\.px-home-scroll-list/,
+  'Agenda e histórico da Home devem possuir rolagem interna controlada');
 assert.doesNotMatch(styles, /@import/,
   'Contrato Phoenix deve ser autocontido e não importar CSS legado');
 
 assert.match(sidebar, /Buscar no MEG/);
-assert.match(sidebar, /PhoenixNavIcon name="search"/,
-  'Busca retraída deve usar ícone vetorial centralizado');
+assert.match(sidebar, /px-search-icon[^>]*aria-hidden="true">⌘</,
+  'Busca retraída deve usar um único símbolo de comando centralizado');
+assert.doesNotMatch(sidebar, /PhoenixNavIcon name="search"/,
+  'Busca do rail não deve voltar a duplicar lupa e símbolo de comando');
+assert.doesNotMatch(sidebar, /<kbd>/,
+  'Atalho de teclado não deve ficar exposto visualmente dentro do campo de busca');
 assert.doesNotMatch(sidebar, /<details/,
   'Módulos do Menu Lateral não podem voltar a ficar escondidos em um details fechado');
 assert.doesNotMatch(sidebar, /px-side-user/,
@@ -199,7 +235,7 @@ assert.match(sidebar, /px-side-footer/,
 for (const label of ['Início', 'Lançamentos', 'Histórico', 'Pendentes', 'Cartões', 'Cadastros', 'Usuários e permissões', 'Contas a receber', 'Receitas', 'Fluxo de caixa', 'Conciliação', 'Análises', 'Orçamentos e metas', 'Configurações']) {
   assert.ok(sidebar.includes(label), `Módulo ausente no Menu Lateral: ${label}`);
 }
-for (const icon of ['search', 'home', 'movements', 'history', 'payables', 'cards', 'catalogs', 'users', 'receivables', 'revenues', 'cashflow', 'reconcile', 'analytics', 'budgets', 'settings', 'logout']) {
+for (const icon of ['home', 'movements', 'history', 'payables', 'cards', 'catalogs', 'users', 'receivables', 'revenues', 'cashflow', 'reconcile', 'analytics', 'budgets', 'settings', 'logout']) {
   assert.ok(navIcon.includes(`name === '${icon}'`) || sidebar.includes(`icon: '${icon}'`) || sidebar.includes(`name="${icon}"`), `Ícone SVG do Menu Lateral ausente: ${icon}`);
 }
 assert.notEqual(sidebar.indexOf("icon: 'history'"), sidebar.indexOf("icon: 'payables'"),
@@ -209,10 +245,8 @@ assert.match(phoenixApp, /px-top-quick-launch/,
   'Topbar Phoenix deve expor o novo lançamento global do V15');
 assert.match(phoenixApp, /requestLaunch/,
   'Quick launch e dock móvel devem compartilhar a mesma abertura do drawer');
-assert.match(phoenixApp, /Benefício alimentação · disponível/,
-  'Home deve preservar o indicador de benefício do V15');
-assert.match(phoenixApp, /Consolidado realizado/,
-  'Home deve preservar o consolidado realizado do V15');
+assert.match(phoenixApp, /PhoenixHomeDashboard/,
+  'Home corrente deve usar o dashboard acionável consolidado');
 assert.match(phoenixApp, /ctrlKey \|\| event\.metaKey/,
   'Atalho Ctrl\/Cmd+K deve abrir a busca global');
 assert.match(phoenixApp, /setRefreshKey\(\(value\) => value \+ 1\)/,
@@ -239,7 +273,7 @@ assert.doesNotMatch(phoenixApp, /prefetchPhoenixReadModel/,
   'Shell não deve pré-carregar meses adjacentes enquanto o endpoint mensal continuar custoso');
 assert.doesNotMatch(phoenixApp, /setMonth\(end\.slice\(0,\s*7\)\)/,
   'Intervalo de Lançamentos não pode alterar silenciosamente o mês oficial da Home');
-for (const screen of ['PhoenixMovementsV15', 'PhoenixHomeAllTime', 'PhoenixHistory', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs', 'PhoenixUsers', 'PhoenixSettings', 'PhoenixReceivables', 'PhoenixRevenues', 'PhoenixCashflow', 'PhoenixReconciliation', 'PhoenixAnalytics', 'PhoenixBudgets', 'PhoenixCommandPalette', 'PhoenixSidebar']) {
+for (const screen of ['PhoenixMovementsV15', 'PhoenixHomeDashboard', 'PhoenixHomeAllTime', 'PhoenixHistory', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs', 'PhoenixUsers', 'PhoenixSettings', 'PhoenixReceivables', 'PhoenixRevenues', 'PhoenixCashflow', 'PhoenixReconciliation', 'PhoenixAnalytics', 'PhoenixBudgets', 'PhoenixCommandPalette', 'PhoenixSidebar']) {
   assert.ok(phoenixApp.includes(screen), `Tela Phoenix não conectada: ${screen}`);
 }
 assert.match(phoenixApp, /onLogout/,
@@ -247,6 +281,8 @@ assert.match(phoenixApp, /onLogout/,
 
 assert.match(phoenixHtml, /src\/phoenix\/preview-main\.tsx/,
   'Preview Phoenix deve usar sua própria entrada');
+assert.match(phoenixHtml, /phoenix-home-dashboard\.css/,
+  'Preview deve carregar o refinamento acionável da Home');
 assert.doesNotMatch(phoenixHtml, /src\/app\/main\.tsx/,
   'Preview Phoenix não deve apontar para a entrada de produção');
 assert.match(productionHtml, /src\/app\/main\.tsx/,
