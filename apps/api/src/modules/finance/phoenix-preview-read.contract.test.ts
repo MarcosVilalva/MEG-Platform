@@ -3,14 +3,19 @@ import { readFileSync } from 'node:fs';
 
 const routes = readFileSync(new URL('./phoenix-preview-routes.ts', import.meta.url), 'utf8');
 const readModel = readFileSync(new URL('./phoenix-preview-read.ts', import.meta.url), 'utf8');
+const periodEvents = readFileSync(new URL('./phoenix-preview-events.ts', import.meta.url), 'utf8');
 const financeRoutes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
 
 assert.match(routes, /app\.get\('\/phoenix-preview'/,
   'O preview Phoenix deve ser exposto somente por GET.');
+assert.match(routes, /app\.get\('\/phoenix-preview\/events'/,
+  'O seletor global deve possuir uma leitura dedicada e somente leitura para eventos de período.');
 assert.doesNotMatch(routes, /app\.(?:post|put|patch|delete)\(/,
   'O namespace do preview não pode expor mutações.');
 assert.match(routes, /getPhoenixPreviewReadModel\(request\.user\.sub, parsed\.data\.month\)/,
   'A leitura deve permanecer escopada ao usuário autenticado e ao mês solicitado.');
+assert.match(routes, /listPhoenixPreviewEvents\(request\.user\.sub, parsed\.data\)/,
+  'A leitura de período deve permanecer escopada ao usuário autenticado.');
 
 for (const mutation of [
   /\.create\s*\(/,
@@ -23,11 +28,19 @@ for (const mutation of [
 ]) {
   assert.doesNotMatch(readModel, mutation,
     `O read-model Phoenix não pode executar mutação Prisma: ${mutation}`);
+  assert.doesNotMatch(periodEvents, mutation,
+    `A leitura de eventos por período não pode executar mutação Prisma: ${mutation}`);
 }
 assert.doesNotMatch(readModel, /migrateLegacyCards|materializeRecurring/i,
   'A leitura do preview não pode disparar manutenção ou materialização.');
+assert.doesNotMatch(periodEvents, /migrateLegacyCards|materializeRecurring/i,
+  'A leitura de período não pode disparar manutenção ou materialização.');
 assert.match(readModel, /archivedAt:\s*null/,
   'A projeção financeira do preview deve ignorar a sombra importada arquivada.');
+assert.match(periodEvents, /archivedAt:\s*null/,
+  'A leitura de período deve ignorar a sombra importada arquivada.');
+assert.match(periodEvents, /userId/,
+  'A leitura de período deve ser escopada por proprietário.');
 assert.match(readModel, /where:\s*\{\s*userId\s*\}/,
   'Catálogos do preview devem ser escopados por proprietário.');
 assert.match(readModel, /type:\s*'benefit'/,
