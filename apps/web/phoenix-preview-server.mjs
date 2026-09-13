@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 const port = Number(process.env.PORT || 4173);
 const apiOrigin = process.env.PHOENIX_API_ORIGIN || 'https://meg-platform-api.onrender.com';
 const simpleEventWriteEnabled = process.env.PHOENIX_SIMPLE_EVENT_WRITE === 'enabled';
+const pendingSettlementWriteEnabled = process.env.PHOENIX_PENDING_SETTLEMENT_WRITE === 'enabled';
+const pendingSettlementEventId = String(process.env.PHOENIX_PENDING_SETTLEMENT_EVENT_ID || '').trim();
 const distDir = fileURLToPath(new URL('./dist/', import.meta.url));
 
 const readPrefixes = [
@@ -44,13 +46,20 @@ function isApiPath(pathname) {
     || allowedAuthPosts.has(pathname);
 }
 
+function isAllowedPendingSettlement(pathname) {
+  return pendingSettlementWriteEnabled
+    && Boolean(pendingSettlementEventId)
+    && pathname === `/finance/events/${pendingSettlementEventId}/settle`;
+}
+
 function isAllowedApiRequest(method, pathname) {
   if (method === 'GET' || method === 'HEAD') {
     return readPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`));
   }
   if (method !== 'POST') return false;
   if (allowedAuthPosts.has(pathname)) return true;
-  return simpleEventWriteEnabled && allowedFinancialPosts.has(pathname);
+  if (simpleEventWriteEnabled && allowedFinancialPosts.has(pathname)) return true;
+  return isAllowedPendingSettlement(pathname);
 }
 
 function isAllowedStaticPath(pathname) {
@@ -287,8 +296,15 @@ const server = createServer(async (request, response) => {
       });
       response.end(JSON.stringify({
         status: 'ok',
-        mode: simpleEventWriteEnabled ? 'phoenix-simple-event-write-gated-preview' : 'phoenix-finance-read-only-preview',
-        capabilities: { simpleEventWrite: simpleEventWriteEnabled }
+        mode: pendingSettlementWriteEnabled
+          ? 'phoenix-pending-settlement-gated-preview'
+          : simpleEventWriteEnabled
+            ? 'phoenix-simple-event-write-gated-preview'
+            : 'phoenix-finance-read-only-preview',
+        capabilities: {
+          simpleEventWrite: simpleEventWriteEnabled,
+          pendingSettlementWrite: pendingSettlementWriteEnabled && Boolean(pendingSettlementEventId)
+        }
       }));
       return;
     }
@@ -322,5 +338,7 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(port, '0.0.0.0', () => {
-  console.log(`Phoenix preview listening on :${port} · simpleEventWrite=${simpleEventWriteEnabled ? 'enabled' : 'disabled'}`);
+  console.log(
+    `Phoenix preview listening on :${port} · simpleEventWrite=${simpleEventWriteEnabled ? 'enabled' : 'disabled'} · pendingSettlementWrite=${pendingSettlementWriteEnabled && pendingSettlementEventId ? 'enabled' : 'disabled'}`
+  );
 });
