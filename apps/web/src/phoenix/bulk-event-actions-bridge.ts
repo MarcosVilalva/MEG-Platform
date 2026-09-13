@@ -43,7 +43,7 @@ function centsFromMoney(value: string) {
   return Number.isFinite(number) ? Math.round(Math.abs(number) * 100) : 0;
 }
 
-function eventType(event: FinancialEvent) {
+function visualType(event: FinancialEvent) {
   if (event.type === 'income' || event.type === 'redemption') return 'income';
   if (event.type === 'transfer') return 'transfer';
   return 'expense';
@@ -52,7 +52,7 @@ function eventType(event: FinancialEvent) {
 function signatureFromEvent(event: FinancialEvent) {
   return [
     String(event.date || '').slice(0, 10),
-    eventType(event),
+    visualType(event),
     normalize(event.description),
     Math.round(Math.abs(Number(event.amount || 0)) * 100),
     normalize(event.sourceDetails?.expenseClass || event.category?.group || '—'),
@@ -70,12 +70,11 @@ function signatureFromRow(row: HTMLTableRowElement) {
   const type = typeLabel.includes('receita') ? 'income' : typeLabel.includes('transfer') ? 'transfer' : 'expense';
   const income = rowCell(row, 'Receita')?.textContent || '';
   const expense = rowCell(row, 'Despesa')?.textContent || '';
-  const amount = centsFromMoney(income.includes('R$') ? income : expense);
   return [
     isoFromBrazilianDate((rowCell(row, 'Vencimento')?.textContent || '').trim()),
     type,
     normalize(rowCell(row, 'Descrição')?.textContent || ''),
-    amount,
+    centsFromMoney(income.includes('R$') ? income : expense),
     normalize(rowCell(row, 'Classificação')?.textContent || '—'),
     normalize(rowCell(row, 'Grupo')?.textContent || '—'),
     normalize(rowCell(row, 'Forma de pagamento')?.textContent || '—'),
@@ -92,23 +91,15 @@ function canArchive() {
   return role === 'ADMIN' || role === 'MANAGER';
 }
 
-function bar() {
+function bulkBar() {
   return document.querySelector<HTMLElement>('[data-phoenix-bulk-bar]');
 }
 
-function barStatus(text = '') {
-  const node = bar()?.querySelector<HTMLElement>('[data-phoenix-bulk-status]');
+function setBarStatus(text = '') {
+  const node = bulkBar()?.querySelector<HTMLElement>('[data-phoenix-bulk-status]');
   if (!node) return;
   node.textContent = text;
   node.hidden = !text;
-}
-
-function clearSelection() {
-  selected.clear();
-  pendingOperation = null;
-  document.querySelectorAll<HTMLInputElement>('.px-bulk-checkbox').forEach((checkbox) => { checkbox.checked = false; });
-  document.querySelectorAll<HTMLTableRowElement>('.px-bulk-row-selected').forEach((row) => row.classList.remove('px-bulk-row-selected'));
-  updateBar();
 }
 
 function updateHeaderState() {
@@ -122,12 +113,14 @@ function updateHeaderState() {
 }
 
 function updateBar() {
-  const root = bar();
+  const root = bulkBar();
   if (!root) return;
   const count = selected.size;
   root.hidden = count === 0;
   const counter = root.querySelector<HTMLElement>('[data-phoenix-bulk-count]');
   if (counter) counter.textContent = `${count} lançamento${count === 1 ? '' : 's'} selecionado${count === 1 ? '' : 's'}`;
+  const gate = root.querySelector<HTMLElement>('[data-phoenix-bulk-gate]');
+  if (gate) gate.textContent = PHOENIX_BULK_EVENT_WRITE_ENABLED ? 'Ações protegidas ativas' : 'Seleção pronta · gravação aguardando homologação';
 
   root.querySelectorAll<HTMLButtonElement>('[data-requires-bulk-write]').forEach((button) => {
     button.disabled = !PHOENIX_BULK_EVENT_WRITE_ENABLED;
@@ -138,16 +131,21 @@ function updateBar() {
     deleteButton.disabled = true;
     deleteButton.title = 'Exclusão disponível apenas para ADMIN ou MANAGER.';
   }
-  const gate = root.querySelector<HTMLElement>('[data-phoenix-bulk-gate]');
-  if (gate) gate.textContent = PHOENIX_BULK_EVENT_WRITE_ENABLED ? 'Ações protegidas ativas' : 'Seleção pronta · gravação aguardando homologação';
   updateHeaderState();
+}
+
+function clearSelection() {
+  selected.clear();
+  pendingOperation = null;
+  document.querySelectorAll<HTMLInputElement>('.px-bulk-checkbox').forEach((checkbox) => { checkbox.checked = false; });
+  document.querySelectorAll<HTMLTableRowElement>('.px-bulk-row-selected').forEach((row) => row.classList.remove('px-bulk-row-selected'));
+  updateBar();
 }
 
 function ensureBar(table: HTMLTableElement) {
   const card = table.closest<HTMLElement>('.px-table-card');
   const toolbar = card?.querySelector<HTMLElement>('.px-toolbar');
-  if (!card || !toolbar) return;
-  if (card.querySelector('[data-phoenix-bulk-bar]')) return;
+  if (!card || !toolbar || card.querySelector('[data-phoenix-bulk-bar]')) return;
 
   const root = document.createElement('div');
   root.className = 'px-bulk-action-bar';
@@ -164,7 +162,6 @@ function ensureBar(table: HTMLTableElement) {
     <small class="px-bulk-modal-status" data-phoenix-bulk-status hidden></small>
   `;
   toolbar.insertAdjacentElement('afterend', root);
-
   root.querySelector<HTMLButtonElement>('[data-bulk-clear]')?.addEventListener('click', clearSelection);
   root.querySelector<HTMLButtonElement>('[data-bulk-edit]')?.addEventListener('click', () => void openBulkEditModal());
   root.querySelector<HTMLButtonElement>('[data-bulk-delete]')?.addEventListener('click', () => void confirmArchive([...selected]));
@@ -204,22 +201,25 @@ function rowCheckbox(row: HTMLTableRowElement, eventId: string | null) {
     cell.dataset.phoenixBulkCell = 'true';
     row.insertBefore(cell, row.firstChild);
   }
+
   let checkbox = cell.querySelector<HTMLInputElement>('.px-bulk-checkbox');
   if (!checkbox) {
-    checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'px-bulk-checkbox';
-    checkbox.setAttribute('aria-label', 'Selecionar lançamento');
-    checkbox.addEventListener('change', () => {
-      const id = checkbox?.dataset.eventId || '';
+    const created = document.createElement('input');
+    created.type = 'checkbox';
+    created.className = 'px-bulk-checkbox';
+    created.setAttribute('aria-label', 'Selecionar lançamento');
+    created.addEventListener('change', () => {
+      const id = created.dataset.eventId || '';
       if (!id) return;
-      checkbox.checked ? selected.add(id) : selected.delete(id);
-      row.classList.toggle('px-bulk-row-selected', checkbox.checked);
+      created.checked ? selected.add(id) : selected.delete(id);
+      row.classList.toggle('px-bulk-row-selected', created.checked);
       pendingOperation = null;
       updateBar();
     });
-    cell.appendChild(checkbox);
+    cell.appendChild(created);
+    checkbox = created;
   }
+
   checkbox.dataset.eventId = eventId || '';
   checkbox.disabled = !eventId;
   checkbox.checked = Boolean(eventId && selected.has(eventId));
@@ -238,24 +238,26 @@ function ensureDeleteButton(row: HTMLTableRowElement, eventId: string | null) {
     detail.replaceWith(wrapper);
     wrapper.appendChild(detail);
   }
-  let button = wrapper.querySelector<HTMLButtonElement>('.px-row-delete');
-  if (!button) {
-    button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'px-row-delete';
-    button.textContent = '×';
-    button.setAttribute('aria-label', 'Excluir lançamento');
-    button.addEventListener('click', (click) => {
-      click.preventDefault();
-      click.stopPropagation();
-      const id = button?.dataset.eventId || '';
+  let deleteButton = wrapper.querySelector<HTMLButtonElement>('.px-row-delete');
+  if (!deleteButton) {
+    const created = document.createElement('button');
+    created.type = 'button';
+    created.className = 'px-row-delete';
+    created.textContent = '×';
+    created.setAttribute('aria-label', 'Excluir lançamento');
+    created.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const id = created.dataset.eventId || '';
       if (id) void confirmArchive([id]);
     });
-    wrapper.appendChild(button);
+    wrapper.appendChild(created);
+    deleteButton = created;
   }
-  button.dataset.eventId = eventId || '';
-  button.disabled = !eventId || !PHOENIX_BULK_EVENT_WRITE_ENABLED || !canArchive();
-  button.title = !eventId
+
+  deleteButton.dataset.eventId = eventId || '';
+  deleteButton.disabled = !eventId || !PHOENIX_BULK_EVENT_WRITE_ENABLED || !canArchive();
+  deleteButton.title = !eventId
     ? 'Registro não identificado.'
     : !canArchive()
       ? 'Exclusão disponível apenas para ADMIN ou MANAGER.'
@@ -281,25 +283,24 @@ function refreshAfterMutation(path: string) {
 async function confirmArchive(ids: string[]) {
   if (!ids.length) return;
   if (!PHOENIX_BULK_EVENT_WRITE_ENABLED) {
-    barStatus('A exclusão já está desenhada na tela, mas o gate de gravação ainda está bloqueado até a homologação do backend.');
+    setBarStatus('A exclusão já está desenhada, mas o gate de gravação continua bloqueado até a homologação do backend.');
     return;
   }
   if (!canArchive()) {
-    barStatus('Seu perfil não possui permissão para excluir lançamentos.');
+    setBarStatus('Seu perfil não possui permissão para excluir lançamentos.');
     return;
   }
   const count = ids.length;
-  if (!window.confirm(`Excluir ${count} lançamento${count === 1 ? '' : 's'}?\n\nA operação remove os efeitos dos saldos e do ledger, mas mantém auditoria do arquivamento.`)) return;
+  if (!window.confirm(`Excluir ${count} lançamento${count === 1 ? '' : 's'}?\n\nOs efeitos sairão dos saldos e do ledger, mantendo auditoria do arquivamento.`)) return;
   const ordered = [...ids].sort();
-  const fingerprint = `archive:${ordered.join(',')}`;
-  const operationId = operationIdFor(fingerprint, 'archive');
+  const operationId = operationIdFor(`archive:${ordered.join(',')}`, 'archive');
   try {
-    barStatus('Excluindo e aguardando confirmação do servidor…');
+    setBarStatus('Excluindo e aguardando confirmação do servidor…');
     await archivePhoenixEventsBulk({ ids: ordered, operationId });
     pendingOperation = null;
     refreshAfterMutation('/finance/events/bulk/archive');
   } catch (error) {
-    barStatus(error instanceof Error ? error.message : 'Não foi possível excluir os lançamentos.');
+    setBarStatus(error instanceof Error ? error.message : 'Não foi possível excluir os lançamentos.');
   }
 }
 
@@ -307,7 +308,7 @@ async function openBulkEditModal() {
   const ids = [...selected].sort();
   if (!ids.length) return;
   if (!PHOENIX_BULK_EVENT_WRITE_ENABLED) {
-    barStatus('A alteração em massa já está preparada visualmente, mas o gate de gravação ainda está bloqueado até a homologação do backend.');
+    setBarStatus('A alteração em massa já está preparada, mas o gate de gravação continua bloqueado até a homologação do backend.');
     return;
   }
 
@@ -317,18 +318,17 @@ async function openBulkEditModal() {
   const modal = document.createElement('div');
   modal.className = 'px-bulk-modal';
   backdrop.appendChild(modal);
-
   const accountOptions = accounts.filter((item) => item.isActive).map((item) => `<option value="${item.id}">${item.name}</option>`).join('');
   const methodOptions = methods.filter((item) => item.isActive).map((item) => `<option value="${item.id}">${item.name}</option>`).join('');
   modal.innerHTML = `
     <div class="px-bulk-modal-head">
-      <div><span class="px-kicker">Alteração em massa</span><h3>${ids.length} lançamento${ids.length === 1 ? '' : 's'} selecionado${ids.length === 1 ? '' : 's'}</h3><p>Marque apenas os campos que devem ser substituídos em todos os selecionados. Os demais permanecerão como estão.</p></div>
+      <div><span class="px-kicker">Alteração em massa</span><h3>${ids.length} lançamento${ids.length === 1 ? '' : 's'} selecionado${ids.length === 1 ? '' : 's'}</h3><p>Marque somente os campos que devem substituir os valores atuais de todos os selecionados.</p></div>
       <button type="button" class="px-bulk-modal-close" aria-label="Fechar">×</button>
     </div>
     <label class="px-bulk-field"><input type="checkbox" data-use-date><strong>Alterar vencimento/data do evento</strong><input type="date" data-value-date disabled></label>
     <label class="px-bulk-field"><input type="checkbox" data-use-account><strong>Alterar conta financeira</strong><select data-value-account disabled><option value="">Selecione</option>${accountOptions}</select></label>
     <label class="px-bulk-field"><input type="checkbox" data-use-payment><strong>Alterar forma de pagamento/recebimento</strong><select data-value-payment disabled><option value="">Selecione</option>${methodOptions}</select></label>
-    <div class="px-bulk-modal-status" data-modal-status>As alterações serão aplicadas de forma atômica: ou todos são alterados, ou nenhum é.</div>
+    <div class="px-bulk-modal-status" data-modal-status>Operação atômica: ou todos são alterados, ou nenhum é.</div>
     <div class="px-bulk-modal-actions"><button type="button" data-cancel>Cancelar</button><button type="button" data-confirm>Aplicar alterações</button></div>
   `;
   document.body.appendChild(backdrop);
@@ -338,18 +338,18 @@ async function openBulkEditModal() {
   modal.querySelector<HTMLButtonElement>('[data-cancel]')?.addEventListener('click', close);
   backdrop.addEventListener('click', (event) => { if (event.target === backdrop) close(); });
 
-  const pairs: Array<[string, string]> = [
-    ['[data-use-date]', '[data-value-date]'],
-    ['[data-use-account]', '[data-value-account]'],
-    ['[data-use-payment]', '[data-value-payment]'],
-  ];
-  pairs.forEach(([checkSelector, valueSelector]) => {
+  const connectToggle = (checkSelector: string, valueSelector: string) => {
     const check = modal.querySelector<HTMLInputElement>(checkSelector);
     const value = modal.querySelector<HTMLInputElement | HTMLSelectElement>(valueSelector);
-    check?.addEventListener('change', () => { if (value) value.disabled = !check.checked; });
-  });
+    if (!check || !value) return;
+    check.addEventListener('change', () => { value.disabled = !check.checked; });
+  };
+  connectToggle('[data-use-date]', '[data-value-date]');
+  connectToggle('[data-use-account]', '[data-value-account]');
+  connectToggle('[data-use-payment]', '[data-value-payment]');
 
-  modal.querySelector<HTMLButtonElement>('[data-confirm]')?.addEventListener('click', async () => {
+  const confirmButton = modal.querySelector<HTMLButtonElement>('[data-confirm]');
+  confirmButton?.addEventListener('click', async () => {
     const useDate = Boolean(modal.querySelector<HTMLInputElement>('[data-use-date]')?.checked);
     const useAccount = Boolean(modal.querySelector<HTMLInputElement>('[data-use-account]')?.checked);
     const usePayment = Boolean(modal.querySelector<HTMLInputElement>('[data-use-payment]')?.checked);
@@ -367,9 +367,7 @@ async function openBulkEditModal() {
       return;
     }
 
-    const fingerprint = `update:${ids.join(',')}:${JSON.stringify(changes)}`;
-    const operationId = operationIdFor(fingerprint, 'update');
-    const confirmButton = modal.querySelector<HTMLButtonElement>('[data-confirm]');
+    const operationId = operationIdFor(`update:${ids.join(',')}:${JSON.stringify(changes)}`, 'update');
     try {
       if (confirmButton) confirmButton.disabled = true;
       if (status) status.textContent = 'Aplicando alterações e aguardando confirmação do servidor…';
@@ -387,7 +385,7 @@ async function openBulkEditModal() {
 async function syncTable() {
   if (syncing) return;
   const table = document.querySelector<HTMLTableElement>('.px-v15-launch-table');
-  if (!table) return;
+  if (!table || !table.tBodies[0]) return;
   syncing = true;
   try {
     ensureHeader(table);
@@ -401,9 +399,8 @@ async function syncTable() {
       buckets.set(key, list);
     });
 
-    [...table.tBodies[0]?.rows || []].forEach((row) => {
-      const key = signatureFromRow(row);
-      const match = buckets.get(key)?.shift() || null;
+    [...table.tBodies[0].rows].forEach((row) => {
+      const match = buckets.get(signatureFromRow(row))?.shift() || null;
       rowCheckbox(row, match?.id || null);
       ensureDeleteButton(row, match?.id || null);
     });
