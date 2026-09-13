@@ -45,7 +45,11 @@ export async function createFinancialEventProtected(userId: string, input: Creat
       });
       if (previous) {
         if (previous.requestHash !== requestHash) throw new FinancialEventMutationError('OPERATION_ID_REUSED');
-        return previous.response as unknown;
+        const replay = previous.response;
+        if (replay && typeof replay === 'object' && !Array.isArray(replay)) {
+          return { ...(replay as Record<string, unknown>), idempotentReplay: true };
+        }
+        return replay;
       }
     }
 
