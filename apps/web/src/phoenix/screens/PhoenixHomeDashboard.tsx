@@ -4,6 +4,7 @@ import { buildPhoenixHomeAgenda, type PhoenixHomeAgendaItem } from '../home-agen
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const dateTime = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const whole = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
 
 type HomeRoute = 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs' | 'users' | 'settings' | 'receivables' | 'revenues' | 'cashflow' | 'reconcile' | 'analytics' | 'budgets';
 type AgendaDisplayGroup = {
@@ -136,6 +137,10 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
   const consolidatedRealized = realizedBalance + data.summary.benefitBalance;
   const freeAfterCommitments = realizedBalance - pendingAmount;
   const nextDue = agendaRows.find((item) => item.dueDate >= today) || agendaRows[0];
+  const coverageRaw = pendingAmount > 0 ? (realizedBalance / pendingAmount) * 100 : 100;
+  const coverageBar = Math.max(0, Math.min(100, coverageRaw));
+  const healthy = projectedClosing >= 0 && freeAfterCommitments >= 0;
+  const heroStatus = healthy ? 'Mês sob controle' : projectedClosing >= 0 ? 'Fluxo apertado' : 'Atenção ao fluxo';
 
   function openDetail(group: AgendaDisplayGroup) {
     setDetail(group);
@@ -158,14 +163,32 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
     <div className="px-page-head"><div><span className="px-kicker">Visão geral</span><h1>{monthLabel(month)}</h1><p>Saldo, compromissos e próximos passos reunidos para você trabalhar sem sair da Home.</p><span className="px-updated">Atualizado agora · {data.normalization.primary && data.normalization.reconciled ? 'dados sincronizados' : 'integridade em verificação'}</span></div></div>
 
     <section className="px-dashboard-grid px-home-balance-grid">
-      <article className="px-card px-premium-balance px-home-balance-card">
-        <div className="px-home-balance-main"><span className="px-kicker">Saldo monetário realizado</span><h2>{money.format(realizedBalance)}</h2><p>O que existe hoje no caixa monetário, sem antecipar receitas futuras.</p></div>
-        <div className="px-home-balance-quick">
-          <div><span>Livre após compromissos</span><strong className={freeAfterCommitments < 0 ? 'negative' : ''}>{money.format(freeAfterCommitments)}</strong><small>Saldo atual − pendências líquidas</small></div>
-          <div><span>Próximo vencimento</span><strong>{nextDue ? money.format(nextDue.amount) : '—'}</strong><small>{nextDue ? `${shortDate(nextDue.dueDate)} · ${nextDue.title}` : 'Nenhum compromisso no período'}</small></div>
-          <div><span>Fechamento projetado</span><strong className={projectedClosing < 0 ? 'negative' : ''}>{money.format(projectedClosing)}</strong><small>Projeção do mês selecionado</small></div>
+      <article className={`px-card px-home-hero ${healthy ? 'is-healthy' : 'is-attention'}`}>
+        <div className="px-home-hero-rings" aria-hidden="true"><i /><i /><i /></div>
+        <div className="px-home-hero-primary">
+          <div className="px-home-hero-status"><span className="px-home-hero-status-dot" />{heroStatus}</div>
+          <span className="px-kicker">Saldo monetário realizado</span>
+          <h2>{money.format(realizedBalance)}</h2>
+          <p>Seu caixa de hoje. Receitas futuras continuam fora deste valor até serem efetivamente recebidas.</p>
+          <div className="px-home-coverage">
+            <div><span>Cobertura dos compromissos</span><strong>{whole.format(coverageRaw)}%</strong></div>
+            <div className="px-home-coverage-track"><i style={{ width: `${coverageBar}%` }} /></div>
+          </div>
         </div>
-        <div className="px-balance-stats"><div className="px-balance-stat"><span>Saldo anterior</span><strong>{money.format(data.summary.availableBalance)}</strong></div><div className="px-balance-stat"><span>Receitas realizadas</span><strong>{money.format(data.summary.realizedIncome)}</strong></div><div className="px-balance-stat"><span>Despesas pagas</span><strong>{money.format(data.summary.realizedExpense)}</strong></div><div className="px-balance-stat"><span>Receita disponível</span><strong>{money.format(availableRevenue)}</strong></div></div>
+
+        <div className="px-home-hero-insights">
+          <article className="px-home-insight is-free"><span>Dinheiro livre</span><strong className={freeAfterCommitments < 0 ? 'negative' : ''}>{money.format(freeAfterCommitments)}</strong><small>Saldo atual − compromissos em aberto</small></article>
+          <article className="px-home-insight"><span>Compromissos</span><strong>{money.format(pendingAmount)}</strong><small>{agenda.items.length} obrigação(ões) acionável(is)</small></article>
+          <article className="px-home-insight is-due"><span>Próximo vencimento</span><strong>{nextDue ? money.format(nextDue.amount) : '—'}</strong><small>{nextDue ? `${shortDate(nextDue.dueDate)} · ${nextDue.title}` : 'Nenhum vencimento no período'}</small></article>
+          <article className={`px-home-insight ${projectedClosing < 0 ? 'is-negative' : 'is-projected'}`}><span>Fechamento projetado</span><strong>{money.format(projectedClosing)}</strong><small>{projectedClosing >= 0 ? 'Projeção positiva para o período' : 'Projeção abaixo de zero'}</small></article>
+        </div>
+
+        <div className="px-home-hero-footer">
+          <div><span>Saldo anterior</span><strong>{money.format(data.summary.availableBalance)}</strong></div>
+          <div><span>Receitas realizadas</span><strong>{money.format(data.summary.realizedIncome)}</strong></div>
+          <div><span>Despesas pagas</span><strong>{money.format(data.summary.realizedExpense)}</strong></div>
+          <div><span>Benefício disponível</span><strong>{money.format(data.summary.benefitBalance)}</strong></div>
+        </div>
       </article>
     </section>
 
