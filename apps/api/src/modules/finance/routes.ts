@@ -15,6 +15,7 @@ import {
 } from './service';
 import { registerPhoenixPreviewReads } from './phoenix-preview-routes';
 import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
+import { FinancialEventSettlementError, settleLegacyFinancialEventProtected } from './event-settlement';
 import { prisma } from '@meg/database';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
@@ -22,6 +23,12 @@ const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
 const operationIdSchema = z.string().trim().min(8).max(128).optional();
 const createEventRequestSchema = createFinancialEventSchema.extend({ operationId: operationIdSchema });
+const settleLegacyEventRequestSchema = z.object({
+  paidAt: z.string().min(10),
+  accountId: z.string().trim().min(1),
+  paymentMethodId: z.string().trim().min(1),
+  operationId: z.string().trim().min(8).max(128).regex(/^[A-Za-z0-9._:-]+$/),
+});
 
 const accountSchema = z.object({
   name: z.string().min(2).max(120),
@@ -59,6 +66,12 @@ function eventError(reply: FastifyReply, error: unknown) {
     return reply.code(400).send({ error: error.message });
   }
   throw error;
+}
+
+function settlementError(reply: FastifyReply, error: unknown) {
+  if (!(error instanceof FinancialEventSettlementError)) throw error;
+  const status = error.code === 'FINANCIAL_EVENT_NOT_FOUND' ? 404 : error.code === 'OPERATION_ID_REUSED' ? 409 : 400;
+  return reply.code(status).send({ error: error.code, ...(error.details || {}) });
 }
 
 export async function financeRoutes(app: FastifyInstance) {
@@ -142,6 +155,20 @@ export async function financeRoutes(app: FastifyInstance) {
       return reply.code(201).send(await createFinancialEventProtected(request.user.sub, parsed.data));
     } catch (error) {
       return eventError(reply, error);
+    }
+  });
+
+  app.post('/events/:id/settle', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const parsed = settleLegacyEventRequestSchema.safeParse(request.body);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    try {
+      return reply.code(201).send(await settleLegacyFinancialEventProtected(request.user.sub, {
+        eventId: id,
+        ...parsed.data,
+      }));
+    } catch (error) {
+      return settlementError(reply, error);
     }
   });
 
