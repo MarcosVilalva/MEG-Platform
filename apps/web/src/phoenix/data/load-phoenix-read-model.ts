@@ -53,13 +53,31 @@ type CachedReadModel = {
   storedAt: number;
 };
 
+type StaticReadContext = {
+  key: string;
+  storedAt: number;
+  health: PhoenixReadModel['health'];
+  normalization: PhoenixNormalizationPreview;
+  sharedState: SharedStateRead;
+  customers: PhoenixReadModel['customers'];
+  receivables: PhoenixReadModel['receivables'];
+  workspaceUsers: PhoenixWorkspaceUsers;
+};
+
 type FinancialEventWithSourcePayload = FinancialEvent & {
   sourcePayload?: unknown;
 };
 
 const readModelCache = new Map<string, CachedReadModel>();
 const readModelInFlight = new Map<string, Promise<PhoenixReadModel>>();
-const BOOTSTRAP_CACHE_TTL = 45_000;
+let staticContextCache: StaticReadContext | null = null;
+let staticContextInFlight: Promise<StaticReadContext> | null = null;
+
+// O mês é atualizado em segundo plano a cada dois minutos pelo shell. Uma janela maior aqui
+// permite que meses já visitados ou pré-carregados sejam trocados sem nova espera do servidor.
+const BOOTSTRAP_CACHE_TTL = 5 * 60_000;
+// Catálogos auxiliares, AppState, clientes e usuários não mudam porque o mês mudou.
+const STATIC_CACHE_TTL = 10 * 60_000;
 
 function sourcePayloadDetails(event: FinancialEvent) {
   const payload = (event as FinancialEventWithSourcePayload).sourcePayload;
@@ -113,40 +131,73 @@ async function loadWorkspaceUsers(role: string): Promise<PhoenixWorkspaceUsers> 
   }
 }
 
-async function fetchPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
-  const session = readSession();
-  if (!session) throw new Error('PHOENIX_UNAUTHORIZED');
+function staticContextKey(user: { id?: string; role: string }) {
+  return `${user.id || 'session'}:${user.role}`;
+}
 
-  const [
-    health,
-    normalization,
-    sharedState,
-    previewCore,
-    budgets,
-    customers,
-    receivables,
-    workspaceUsers
-  ] = await Promise.all([
+async function fetchStaticContext(session: NonNullable<ReturnType<typeof readSession>>): Promise<StaticReadContext> {
+  const [health, normalization, sharedState, customers, receivables, workspaceUsers] = await Promise.all([
     getApiHealth(),
     authenticatedRequest<PhoenixNormalizationPreview>('/app-state/normalization-preview'),
     authenticatedRequest<SharedStateRead>('/app-state'),
-    authenticatedRequest<PhoenixPreviewCoreRead>(`/finance/phoenix-preview?month=${encodeURIComponent(month)}`),
-    financeClient.listBudgets(month),
     receivablesClient.listCustomers(),
     receivablesClient.listReceivables(),
     loadWorkspaceUsers(session.user.role)
   ]);
 
+  return {
+    key: staticContextKey(session.user),
+    storedAt: Date.now(),
+    health,
+    normalization,
+    sharedState,
+    customers,
+    receivables,
+    workspaceUsers
+  };
+}
+
+async function loadStaticContext(session: NonNullable<ReturnType<typeof readSession>>, force = false) {
+  const key = staticContextKey(session.user);
+  if (!force && staticContextCache && staticContextCache.key === key && Date.now() - staticContextCache.storedAt <= STATIC_CACHE_TTL) {
+    return staticContextCache;
+  }
+  if (!force && staticContextInFlight) return staticContextInFlight;
+
+  const pending = fetchStaticContext(session)
+    .then((context) => {
+      staticContextCache = context;
+      return context;
+    })
+    .finally(() => {
+      if (staticContextInFlight === pending) staticContextInFlight = null;
+    });
+  staticContextInFlight = pending;
+  return pending;
+}
+
+async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boolean } = {}): Promise<PhoenixReadModel> {
+  const session = readSession();
+  if (!session) throw new Error('PHOENIX_UNAUTHORIZED');
+
+  // Trocar mês não deve repetir AppState, usuários, clientes, saúde e normalização.
+  // O caminho mensal aguarda somente o snapshot financeiro e orçamentos daquele mês.
+  const [staticContext, previewCore, budgets] = await Promise.all([
+    loadStaticContext(session, Boolean(options.forceStatic)),
+    authenticatedRequest<PhoenixPreviewCoreRead>(`/finance/phoenix-preview?month=${encodeURIComponent(month)}`),
+    financeClient.listBudgets(month)
+  ]);
+
   if (previewCore.month !== month) throw new Error('PHOENIX_PREVIEW_MONTH_MISMATCH');
 
-  const activities = Array.isArray(sharedState.state?.activityLog)
-    ? sharedState.state.activityLog
+  const activities = Array.isArray(staticContext.sharedState.state?.activityLog)
+    ? staticContext.sharedState.state.activityLog
         .filter((item): item is PhoenixActivity => Boolean(item && item.id && item.at && item.action))
         .sort((left, right) => String(right.at).localeCompare(String(left.at)))
     : [];
 
-  const legacyTransactions = Array.isArray(sharedState.state?.transactions)
-    ? sharedState.state.transactions
+  const legacyTransactions = Array.isArray(staticContext.sharedState.state?.transactions)
+    ? staticContext.sharedState.state.transactions
         .filter((item): item is PhoenixLegacyTransaction => Boolean(item && typeof item === 'object' && item.id && item.date && item.description))
         .map((item) => ({ ...item }))
     : [];
@@ -160,8 +211,8 @@ async function fetchPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
     month,
     loadedAt: new Date().toISOString(),
     user: session.user,
-    health,
-    normalization,
+    health: staticContext.health,
+    normalization: staticContext.normalization,
     summary: previewCore.summary,
     analytics: previewCore.analytics,
     cashflow: previewCore.cashflow,
@@ -171,13 +222,13 @@ async function fetchPhoenixReadModel(month: string): Promise<PhoenixReadModel> {
     paymentMethods: previewCore.paymentMethods,
     cards: previewCore.cards,
     payables: previewCore.payables,
-    customers,
-    receivables,
+    customers: staticContext.customers,
+    receivables: staticContext.receivables,
     events,
     financialAudit: previewCore.financialAudit,
     activities,
     legacyTransactions,
-    workspaceUsers,
+    workspaceUsers: staticContext.workspaceUsers,
     sourcePolicy: {
       mode: 'read-only',
       summary: 'finance-domain',
@@ -210,15 +261,15 @@ export function peekPhoenixReadModel(month: string) {
  * - nenhuma mutação acontece aqui;
  * - o núcleo financeiro mensal vem de um snapshot único e somente leitura do backend;
  * - resumo, benefício, eventos, cartões, pendências e auditoria pertencem à mesma fotografia mensal;
- * - orçamentos e contas a receber permanecem em seus domínios oficiais até entrarem no snapshot;
+ * - orçamentos são mensais; clientes/contas a receber e demais leituras estáticas são reutilizados entre trocas de mês;
  * - a normalização é observada explicitamente para evitar esconder fallback;
  * - activityLog permanece carregado somente como histórico legado anterior à auditoria normalizada;
  * - transactions permanece disponível somente como compatibilidade de leitura para cartões/pendências legadas;
  * - sourcePayload do domínio financeiro é usado somente como compatibilidade de leitura para preservar classificação/grupo legados ainda não normalizados em categoryId;
  * - usuários são consultados pela rota administrativa oficial e nunca alterados aqui;
- * - o snapshot pode ser preparado durante a entrada para que a navegação interna não exiba carregamentos repetidos.
+ * - o snapshot mensal pode ser pré-carregado para que a troca de período não bloqueie a interface.
  */
-export async function loadPhoenixReadModel(month: string, options: { force?: boolean } = {}): Promise<PhoenixReadModel> {
+export async function loadPhoenixReadModel(month: string, options: { force?: boolean; forceStatic?: boolean } = {}): Promise<PhoenixReadModel> {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
     throw new Error('PHOENIX_INVALID_MONTH');
   }
@@ -235,7 +286,7 @@ export async function loadPhoenixReadModel(month: string, options: { force?: boo
     if (pending) return pending;
   }
 
-  const pending = fetchPhoenixReadModel(month)
+  const pending = fetchPhoenixReadModel(month, { forceStatic: options.forceStatic })
     .then((data) => {
       readModelCache.set(month, { data, storedAt: Date.now() });
       return data;
@@ -248,7 +299,18 @@ export async function loadPhoenixReadModel(month: string, options: { force?: boo
   return pending;
 }
 
+export async function prefetchPhoenixReadModel(month: string) {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !readSession()) return;
+  try {
+    await loadPhoenixReadModel(month);
+  } catch {
+    // Pré-carga nunca desmonta a fotografia atual nem exibe erro ao usuário.
+  }
+}
+
 export function clearPhoenixReadModelCache() {
   readModelCache.clear();
   readModelInFlight.clear();
+  staticContextCache = null;
+  staticContextInFlight = null;
 }
