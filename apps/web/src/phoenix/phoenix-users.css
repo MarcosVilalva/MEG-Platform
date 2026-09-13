@@ -12,6 +12,11 @@
   text-transform:uppercase;
   letter-spacing:.05em;
 }
+.px-users-readonly.has-pending {
+  border-color:color-mix(in srgb,var(--warn) 42%,var(--line));
+  background:var(--warn-bg);
+  color:var(--warn);
+}
 
 .px-users-panel { padding:0; overflow:hidden; }
 .px-users-toolbar {
@@ -34,11 +39,43 @@
   padding:0 11px;
 }
 
+.px-users-groups { display:grid; }
+.px-users-group { min-width:0; border-top:1px solid var(--line); }
+.px-users-group:first-child { border-top:0; }
+.px-users-group-head {
+  min-height:58px;
+  padding:12px 15px 0;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+}
+.px-users-group-head > div { min-width:0; }
+.px-users-group-head span,
+.px-users-group-head small { display:block; }
+.px-users-group-head span { font-size:12px; font-weight:900; color:var(--ink); }
+.px-users-group-head small { margin-top:3px; color:var(--muted); font-size:10px; line-height:1.4; }
+.px-users-group-head > strong {
+  flex:0 0 auto;
+  min-width:28px;
+  height:28px;
+  padding:0 8px;
+  display:grid;
+  place-items:center;
+  border-radius:999px;
+  background:var(--panel2);
+  color:var(--muted);
+  font-size:10px;
+}
+.px-users-group.is-pending .px-users-group-head > strong { background:var(--warn-bg); color:var(--warn); }
+.px-users-group.is-active .px-users-group-head > strong { background:var(--ok-bg); color:var(--brand2); }
+.px-users-group.is-inactive .px-users-group-head > strong { background:var(--danger-bg); color:var(--danger); }
+
 .px-users-grid {
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
   gap:12px;
-  padding:15px;
+  padding:10px 15px 15px;
 }
 .px-user-card {
   min-width:0;
@@ -53,6 +90,7 @@
   box-shadow:0 12px 28px color-mix(in srgb,var(--brand) 7%,transparent);
   transform:translateY(-1px);
 }
+.px-users-group.is-pending .px-user-card { border-color:color-mix(in srgb,var(--warn) 28%,var(--line)); }
 .px-user-card-head {
   min-width:0;
   display:grid;
@@ -133,6 +171,7 @@
   .px-users-screen .px-screen-head-aside { width:100%; }
   .px-users-readonly { width:100%; justify-content:center; }
   .px-users-toolbar { grid-template-columns:1fr; }
+  .px-users-group-head { padding:12px 10px 0; }
   .px-users-grid { padding:10px; gap:10px; }
   .px-user-card { padding:13px; }
   .px-user-card-head { grid-template-columns:40px minmax(0,1fr); }
