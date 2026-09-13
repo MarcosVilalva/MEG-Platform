@@ -9,6 +9,7 @@ import { PhoenixPayables } from './screens/PhoenixReadScreens';
 import { PhoenixCardsGrid } from './screens/PhoenixCardsGrid';
 import { PhoenixCatalogsGrid } from './screens/PhoenixCatalogsGrid';
 import { PhoenixHomeAllTime } from './screens/PhoenixHomeAllTime';
+import { PhoenixHomeDashboard } from './screens/PhoenixHomeDashboard';
 import { PhoenixHomeHorizon } from './screens/PhoenixHomeHorizon';
 import { PhoenixMovementsV15 } from './screens/PhoenixMovementsV15';
 import { PhoenixHistory } from './screens/PhoenixHistory';
@@ -165,41 +166,7 @@ function monthlySnapshotMatches(data: PhoenixReadModel, targetMonth: string) {
 }
 
 function HomeScreen({ data, month, onNavigate }: { data: PhoenixReadModel; month: string; onNavigate: (view: PhoenixView) => void }) {
-  const pendingAmount = data.summary.pendingAmount || 0;
-  const realizedBalance = data.summary.availableBalance + data.summary.realizedResult;
-  const availableRevenue = data.summary.availableBalance + data.summary.realizedIncome;
-  const projectedClosing = data.cashflow.projectedClosing;
-  const consolidatedRealized = realizedBalance + data.summary.benefitBalance;
-  const recentAudit = data.financialAudit.items.slice(0, 3);
-  const today = todayIso();
-  const agenda = buildPhoenixHomeAgenda(data, today);
-  const agendaGroups = agenda.groups;
-  const agendaAmount = agenda.actionableAmount;
-
-  return <>
-    <div className="px-page-head"><div><span className="px-kicker">Visão geral</span><h1>{monthLabel(month)}</h1><p>Leitura do mês usando apenas os valores de referência definidos na regra de negócio do MEG.</p><span className="px-updated">Atualizado agora · {data.normalization.primary && data.normalization.reconciled ? 'dados sincronizados' : 'integridade em verificação'}</span></div></div>
-
-    <section className="px-dashboard-grid">
-      <article className="px-card px-premium-balance"><span className="px-kicker">Saldo monetário realizado</span><h2>{money.format(realizedBalance)}</h2><p>Receita disponível menos despesas monetárias efetivamente pagas.</p><div className="px-balance-stats"><div className="px-balance-stat"><span>Saldo anterior</span><strong>{money.format(data.summary.availableBalance)}</strong></div><div className="px-balance-stat"><span>Receitas do mês</span><strong>{money.format(data.summary.realizedIncome)}</strong></div><div className="px-balance-stat"><span>Receita disponível</span><strong>{money.format(availableRevenue)}</strong></div></div></article>
-    </section>
-
-    <article className={`px-dashboard-alert ${projectedClosing >= 0 ? 'is-positive' : ''}`}>
-      <div className="px-dashboard-alert-copy"><div className="px-dashboard-alert-icon">{projectedClosing >= 0 ? '✓' : '!'}</div><div><h3>{projectedClosing >= 0 ? 'Mês sob controle' : 'Mês exige atenção'}</h3><p>O diagnóstico principal considera o mês corrente e não pode ser mascarado por filtros analíticos.</p></div></div>
-      <div className="px-gap-block"><span>{projectedClosing >= 0 ? 'Saldo projetado para fechar o mês' : 'Falta projetada para fechar o mês'}</span><strong>{money.format(projectedClosing)}</strong></div>
-    </article>
-
-    <section className="px-metrics">
-      <article className="px-card px-metric good"><span>Despesas pagas</span><strong>{money.format(data.summary.realizedExpense)}</strong><small>Reduzem o saldo realizado</small></article>
-      <article className="px-card px-metric bad"><span>Despesas pendentes</span><strong>{money.format(pendingAmount)}</strong><small>Não reduzem o realizado até a baixa</small></article>
-      <article className="px-card px-metric info px-benefit-control"><span>Benefício alimentação · disponível</span><strong>{money.format(data.summary.benefitBalance)}</strong><div className="px-benefit-inline"><div><span>Créditos</span><b>{money.format(data.summary.benefitCredits)}</b></div><div><span>Utilizado</span><b>{money.format(data.summary.benefitUsed)}</b></div><button type="button" onClick={() => onNavigate('movements')}>Ver extrato</button></div></article>
-      <article className="px-card px-metric warn"><span>Consolidado realizado</span><strong>{money.format(consolidatedRealized)}</strong><small>Monetário + benefício do período</small></article>
-    </section>
-
-    <section className="px-bottom-grid">
-      <article className="px-card"><div className="px-panel-head"><div><span>Histórico recente</span><h2>Últimos lançamentos</h2></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('history')}>Ver histórico completo</button></div><div>{recentAudit.map((item) => <div className="px-dashboard-row" key={item.id}><div className="px-dashboard-row-copy"><strong>{financialActionLabel(item.action)}</strong><small>{shortDate.format(new Date(item.at))} · {item.actor?.name || item.actor?.email || 'Usuário do MEG'}</small></div><span className={`px-history-state ${financialAuditStatus(item.action).toLocaleLowerCase('pt-BR')}`}>{financialAuditStatus(item.action)}</span><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('history')}>Abrir</button></div>)}{recentAudit.length === 0 ? <p className="px-empty">Nenhum evento de auditoria localizado.</p> : null}</div></article>
-      <article className="px-card"><div className="px-panel-head"><div><span>Agenda financeira</span><h2>Vencimentos acionáveis</h2></div><strong>{money.format(agendaAmount)}</strong></div><div>{agendaGroups.map((item) => <div className="px-dashboard-row" key={item.kind}><span className={`px-due-label ${item.kind === 'VENCIDOS' ? 'danger' : item.kind === 'FATURA' ? 'invoice' : ''}`}>{item.kind}</span><div className="px-dashboard-row-copy"><strong>{item.title}</strong><small>{item.subtitle} · {item.count} item(ns) · {money.format(item.amount)}</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Detalhes</button></div>)}{agendaGroups.length === 0 ? <p className="px-empty">Nenhum compromisso acionável no período.</p> : null}</div></article>
-    </section>
-  </>;
+  return <PhoenixHomeDashboard data={data} month={month} onNavigate={onNavigate} />;
 }
 
 function ReadScreen({ view, data, month, theme, periodMode, homeHorizonData, launchRequest, onToggleTheme, onNavigate }: {
