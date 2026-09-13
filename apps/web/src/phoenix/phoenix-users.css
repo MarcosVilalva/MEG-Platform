@@ -20,9 +20,12 @@
   gap:10px;
   padding:15px;
   border-bottom:1px solid var(--line);
+  background:var(--panel);
 }
 .px-users-toolbar input,
 .px-users-toolbar select {
+  width:100%;
+  min-width:0;
   min-height:40px;
   border:1px solid var(--line);
   border-radius:11px;
@@ -43,6 +46,12 @@
   border-radius:15px;
   background:linear-gradient(180deg,var(--panel),var(--panel2));
   padding:15px;
+  transition:border-color .18s,box-shadow .18s,transform .18s;
+}
+.px-user-card:hover {
+  border-color:color-mix(in srgb,var(--brand) 26%,var(--line));
+  box-shadow:0 12px 28px color-mix(in srgb,var(--brand) 7%,transparent);
+  transform:translateY(-1px);
 }
 .px-user-card-head {
   min-width:0;
@@ -99,7 +108,7 @@
   justify-content:space-between;
   gap:12px;
 }
-.px-user-card-footer span { color:var(--muted); font-size:10.5px; }
+.px-user-card-footer span { color:var(--muted); font-size:10.5px; line-height:1.45; }
 .px-user-card-footer button {
   min-height:34px;
   border:1px solid var(--line);
@@ -113,15 +122,26 @@
 .px-users-message p { margin:7px 0 0; color:var(--muted); line-height:1.5; }
 .px-users-empty { padding:26px 15px; }
 
-@container phoenix-workspace (max-width:900px) {
+.phoenix-v15[data-theme="light"] .px-users-panel,
+.phoenix-v15[data-theme="light"] .px-user-card { box-shadow:none; }
+
+@container phoenix-workspace (max-width:1040px) {
   .px-users-grid { grid-template-columns:1fr; }
 }
 
-@container phoenix-workspace (max-width:620px) {
+@container phoenix-workspace (max-width:760px) {
+  .px-users-screen .px-screen-head-aside { width:100%; }
+  .px-users-readonly { width:100%; justify-content:center; }
   .px-users-toolbar { grid-template-columns:1fr; }
+  .px-users-grid { padding:10px; gap:10px; }
+  .px-user-card { padding:13px; }
   .px-user-card-head { grid-template-columns:40px minmax(0,1fr); }
+  .px-user-card-avatar { width:40px; height:40px; }
+  .px-user-card-head strong,
+  .px-user-card-head small { white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere; }
   .px-user-status { grid-column:2; justify-self:start; }
   .px-user-card dl > div { grid-template-columns:1fr; gap:4px; }
   .px-user-card dd { text-align:left; }
   .px-user-card-footer { align-items:stretch; flex-direction:column; }
+  .px-user-card-footer button { width:100%; }
 }
