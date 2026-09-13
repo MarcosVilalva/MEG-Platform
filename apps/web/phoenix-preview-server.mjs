@@ -22,7 +22,13 @@ const readPrefixes = [
   '/platform-admin',
   '/integrations'
 ];
-const allowedAuthPosts = new Set(['/auth/login', '/auth/refresh', '/auth/logout']);
+const allowedAuthPosts = new Set([
+  '/auth/login',
+  '/auth/refresh',
+  '/auth/logout',
+  '/auth/register',
+  '/auth/forgot-password'
+]);
 const allowedStaticFiles = new Set(['/phoenix.html']);
 const allowedStaticPrefixes = ['/assets/', '/brand/'];
 const hopByHopHeaders = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade', 'host', 'origin', 'referer', 'content-length']);
@@ -275,7 +281,7 @@ const server = createServer(async (request, response) => {
         'cache-control': 'no-store',
         ...securityHeaders()
       });
-      response.end(JSON.stringify({ status: 'ok', mode: 'phoenix-read-only-preview' }));
+      response.end(JSON.stringify({ status: 'ok', mode: 'phoenix-finance-read-only-preview' }));
       return;
     }
     if (url.pathname === periodEventsPath) {
