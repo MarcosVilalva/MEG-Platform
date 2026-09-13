@@ -272,6 +272,7 @@ function wireAutocomplete(root: HTMLElement, label: HTMLLabelElement, input: HTM
   let renderVersion = 0;
 
   function close() {
+    window.clearTimeout(debounce);
     panel.hidden = true;
     panel.replaceChildren();
     current = [];
