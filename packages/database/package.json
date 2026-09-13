@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "test:catalog-ownership": "tsx prisma/catalog-ownership-core.test.ts",
+    "test:catalog-ownership": "tsx prisma/catalog-ownership-core.test.ts && tsx prisma/income-payment-method-policy.test.ts",
     "db:audit:catalog-ownership": "tsx prisma/catalog-ownership-audit.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
