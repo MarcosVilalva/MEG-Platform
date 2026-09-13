@@ -13,6 +13,12 @@ export type PhoenixAvatarPreset = {
   row: number;
 };
 
+type PhoenixAvatarStyle = CSSProperties & {
+  '--px-profile-avatar-image'?: string;
+  '--px-profile-avatar-position'?: string;
+  '--px-profile-avatar-size'?: string;
+};
+
 const PHOENIX_AVATAR_SPRITE_URL = '/brand/avatars/people-sprite.webp';
 
 export const phoenixAvatarPresets: PhoenixAvatarPreset[] = [
@@ -169,11 +175,17 @@ export async function imageFileToAvatarDataUrl(file: File) {
 export function PhoenixProfileAvatar({ name, preference, className = '' }: { name: string; preference: PhoenixAvatarPreference; className?: string }) {
   const visual = avatarVisual(preference);
   const initial = (name || 'M').trim().slice(0, 1).toUpperCase();
-  const style = visual ? ({
+  const style: PhoenixAvatarStyle | undefined = visual ? {
     backgroundImage: `url("${visual.image}")`,
     backgroundPosition: visual.position,
     backgroundSize: visual.size,
-    backgroundRepeat: 'no-repeat'
-  } satisfies CSSProperties) : undefined;
-  return <span className={`px-profile-avatar ${className} ${visual ? 'has-image' : ''}`} aria-hidden="true" style={style}>{visual ? '' : initial}</span>;
+    backgroundRepeat: 'no-repeat',
+    '--px-profile-avatar-image': `url("${visual.image}")`,
+    '--px-profile-avatar-position': visual.position,
+    '--px-profile-avatar-size': visual.size
+  } : undefined;
+  const imageClass = visual
+    ? preference.kind === 'preset' ? 'has-image has-preset-image' : 'has-image has-photo-image'
+    : '';
+  return <span className={`px-profile-avatar ${className} ${imageClass}`} aria-hidden="true" style={style}>{visual ? '' : initial}</span>;
 }
