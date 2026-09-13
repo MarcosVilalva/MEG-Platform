@@ -3,7 +3,7 @@ import type { PhoenixReadModel } from '../contracts';
 import { clearPhoenixReadModelCache, loadPhoenixReadModel } from './load-phoenix-read-model';
 
 export const PHOENIX_WRITE_CAPABILITIES = {
-  simpleEvent: false,
+  simpleEvent: true,
 } as const;
 
 export type PhoenixWriteStatus = 'idle' | 'saving' | 'confirmed' | 'error';
