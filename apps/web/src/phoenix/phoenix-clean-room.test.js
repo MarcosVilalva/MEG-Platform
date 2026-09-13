@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 const phoenixApp = readFileSync(new URL('./PhoenixApp.tsx', import.meta.url), 'utf8');
 const sidebar = readFileSync(new URL('./PhoenixSidebar.tsx', import.meta.url), 'utf8');
 const navIcon = readFileSync(new URL('./PhoenixNavIcon.tsx', import.meta.url), 'utf8');
+const profileAvatar = readFileSync(new URL('./profile-avatar.tsx', import.meta.url), 'utf8');
 const commandPalette = readFileSync(new URL('./PhoenixCommandPalette.tsx', import.meta.url), 'utf8');
 const screens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.meta.url), 'utf8');
 const movementScreen = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
@@ -19,7 +20,7 @@ const phoenixHtml = readFileSync(new URL('../../phoenix.html', import.meta.url),
 const productionHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
 const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
-const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${commandPalette}\n${screens}\n${movementScreen}\n${homeAllTime}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
+const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${profileAvatar}\n${commandPalette}\n${screens}\n${movementScreen}\n${homeAllTime}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
 const readOnlyScreens = `${screens}\n${movementScreen}\n${homeAllTime}\n${webScreens}\n${history}\n${users}\n${settings}\n${sidebar}\n${commandPalette}`;
 
 for (const forbidden of ['global.css', 'v15-contract.css', 'meg-v15.css']) {
@@ -81,6 +82,18 @@ assert.match(settings, /não consultada/,
 assert.match(settings, /Restaurar backup/);
 assert.match(settings, /disabled/,
   'Restauração deve permanecer bloqueada durante a fase read-only');
+assert.match(settings, /Meu perfil/,
+  'Configurações V15 deve expor uma área clara de perfil pessoal');
+assert.match(settings, /Escolher foto/,
+  'Perfil deve permitir escolher foto sem simular gravação na API');
+assert.match(settings, /Avatares MEG/,
+  'Perfil deve oferecer avatares pré-selecionados');
+assert.match(settings, /Monte sua Home/,
+  'Personalização do dashboard deve permanecer dentro das Configurações V15');
+assert.match(profileAvatar, /meg\.profile\.avatar\./,
+  'Avatar visual deve ficar isolado por usuário no armazenamento local enquanto não houver contrato backend');
+assert.match(profileAvatar, /imageFileToAvatarDataUrl/,
+  'Upload de foto deve normalizar a imagem antes de armazenar a preferência local');
 assert.match(webScreens, /Títulos e recebimentos em aberto/);
 assert.match(webScreens, /Origem e evolução das entradas/);
 assert.match(webScreens, /Fechamento realizado e projetado/);
@@ -164,24 +177,30 @@ assert.match(styles, /\.px-premium-balance/);
 assert.match(styles, /\.px-launch-drawer/);
 assert.match(styles, /\.px-detail-drawer/);
 assert.match(styles, /\.px-side-footer/,
-  'Menu Lateral deve separar navegação do rodapé de usuário e saída');
-assert.match(styles, /overflow-y:auto/,
+  'Menu Lateral deve separar navegação do rodapé de saída');
+assert.match(styles, /overflow-y:(?:auto|scroll)/,
   'Menu Lateral deve manter rolagem própria quando houver mais módulos que altura disponível');
+assert.match(styles, /\.px-user-chevron\s*\{\s*display:none!important;/,
+  'Topbar não deve exibir chevron sem menu de perfil funcional');
 assert.doesNotMatch(styles, /@import/,
   'Contrato Phoenix deve ser autocontido e não importar CSS legado');
 
-assert.match(sidebar, /⌘ Buscar no MEG/);
+assert.match(sidebar, /Buscar no MEG/);
+assert.match(sidebar, /PhoenixNavIcon name="search"/,
+  'Busca retraída deve usar ícone vetorial centralizado');
 assert.doesNotMatch(sidebar, /<details/,
   'Módulos do Menu Lateral não podem voltar a ficar escondidos em um details fechado');
+assert.doesNotMatch(sidebar, /px-side-user/,
+  'Perfil não deve se repetir no rodapé do Menu Lateral');
 assert.match(sidebar, /title=\{collapsed \? item\.label/,
   'Menu Lateral retraído deve expor o nome do módulo por hover nativo');
 assert.match(sidebar, /px-side-footer/,
-  'Configurações e navegação devem ficar separadas do rodapé de usuário e saída');
+  'Navegação deve ficar separada do rodapé de saída');
 for (const label of ['Início', 'Lançamentos', 'Histórico', 'Pendentes', 'Cartões', 'Cadastros', 'Usuários e permissões', 'Contas a receber', 'Receitas', 'Fluxo de caixa', 'Conciliação', 'Análises', 'Orçamentos e metas', 'Configurações']) {
   assert.ok(sidebar.includes(label), `Módulo ausente no Menu Lateral: ${label}`);
 }
-for (const icon of ['home', 'movements', 'history', 'payables', 'cards', 'catalogs', 'users', 'receivables', 'revenues', 'cashflow', 'reconcile', 'analytics', 'budgets', 'settings', 'logout']) {
-  assert.ok(navIcon.includes(`name === '${icon}'`) || sidebar.includes(`icon: '${icon}'`), `Ícone SVG do Menu Lateral ausente: ${icon}`);
+for (const icon of ['search', 'home', 'movements', 'history', 'payables', 'cards', 'catalogs', 'users', 'receivables', 'revenues', 'cashflow', 'reconcile', 'analytics', 'budgets', 'settings', 'logout']) {
+  assert.ok(navIcon.includes(`name === '${icon}'`) || sidebar.includes(`icon: '${icon}'`) || sidebar.includes(`name="${icon}"`), `Ícone SVG do Menu Lateral ausente: ${icon}`);
 }
 assert.notEqual(sidebar.indexOf("icon: 'history'"), sidebar.indexOf("icon: 'payables'"),
   'Histórico e Pendentes devem manter ícones semanticamente distintos');
