@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixNavIcon, type PhoenixNavigationIcon } from './PhoenixNavIcon';
 import { applyPhoenixAvatarPreference, readPhoenixAvatarPreference } from './profile-avatar';
@@ -70,6 +70,8 @@ export function PhoenixSidebar({
   onSearch: () => void;
   onLogout?: () => void;
 }) {
+  const navRef = useRef<HTMLElement>(null);
+
   useEffect(() => {
     const syncAvatar = () => applyPhoenixAvatarPreference(readPhoenixAvatarPreference());
     syncAvatar();
@@ -77,11 +79,19 @@ export function PhoenixSidebar({
     return () => window.removeEventListener('meg:profile-avatar-changed', syncAvatar);
   }, []);
 
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const active = nav.querySelector<HTMLElement>('.px-nav-btn.active');
+    if (!active) return;
+    window.requestAnimationFrame(() => active.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
+  }, [view, collapsed]);
+
   return <aside className="px-sidebar" aria-label="Menu Lateral MEG">
     <div className="px-side-brand"><img src="./brand/meg-finance-system-mark.svg" alt="MEG Finance System" /></div>
     <button className="px-search-command" type="button" title={collapsed ? 'Buscar no MEG · Ctrl/Cmd + K' : 'Atalho: Ctrl/Cmd + K'} aria-label="Buscar no MEG" onClick={onSearch}><span className="px-search-icon" aria-hidden="true">⌘</span><span className="px-search-label">Buscar no MEG</span></button>
 
-    <nav className="px-nav-group" aria-label="Módulos do MEG">
+    <nav ref={navRef} className="px-nav-group" aria-label="Módulos do MEG" tabIndex={0}>
       {sections.map((section) => <section className="px-side-section" key={section.label} aria-label={section.label}>
         <div className="px-side-section-label">{section.label}</div>
         {section.items.map((item) => <button
