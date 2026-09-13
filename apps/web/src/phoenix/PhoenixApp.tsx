@@ -6,6 +6,7 @@ import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalett
 import { PhoenixPayables } from './screens/PhoenixReadScreens';
 import { PhoenixCardsGrid } from './screens/PhoenixCardsGrid';
 import { PhoenixCatalogsGrid } from './screens/PhoenixCatalogsGrid';
+import { PhoenixHomeAllTime } from './screens/PhoenixHomeAllTime';
 import { PhoenixMovementsV15 } from './screens/PhoenixMovementsV15';
 import { PhoenixHistory } from './screens/PhoenixHistory';
 import { PhoenixUsers } from './screens/PhoenixUsers';
@@ -192,16 +193,19 @@ function HomeScreen({ data, month, onNavigate }: { data: PhoenixReadModel; month
   </>;
 }
 
-function ReadScreen({ view, data, month, theme, launchRequest, onToggleTheme, onNavigate }: {
+function ReadScreen({ view, data, month, theme, periodMode, launchRequest, onToggleTheme, onNavigate }: {
   view: PhoenixView;
   data: PhoenixReadModel;
   month: string;
   theme: 'dark' | 'light';
+  periodMode: PeriodMode;
   launchRequest: number;
   onToggleTheme: () => void;
   onNavigate: (view: PhoenixView) => void;
 }) {
-  if (view === 'home') return <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
+  if (view === 'home') return periodMode === 'all'
+    ? <PhoenixHomeAllTime data={data} onNavigate={onNavigate} />
+    : <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
   if (view === 'movements') return <PhoenixMovementsV15 data={data} launchRequest={launchRequest} onNavigateHistory={() => onNavigate('history')} />;
   if (view === 'history') return <PhoenixHistory data={data} />;
   if (view === 'payables') return <PhoenixPayables data={data} />;
@@ -292,7 +296,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       void applyRangePeriod(periodStart, periodEnd, true);
       return;
     }
-    if (periodMode === 'all' && view === 'movements') {
+    if (periodMode === 'all' && (view === 'home' || view === 'movements')) {
       void applyAllPeriod(true);
       return;
     }
@@ -355,7 +359,8 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   }, [periodOpen]);
 
   const data = loadState.status === 'ready' ? loadState.data : dataRef.current;
-  const viewData = view === 'movements' && movementPeriodData ? movementPeriodData : data;
+  const specialView = view === 'movements' || (view === 'home' && periodMode === 'all');
+  const viewData = specialView && movementPeriodData ? movementPeriodData : data;
   const currentView = views.find((item) => item.id === view) || mainViews[0];
   const pendingCount = data ? buildPhoenixHomeAgenda(data, todayIso()).items.length : 0;
   const toggleTheme = () => setTheme((value) => value === 'dark' ? 'light' : 'dark');
@@ -370,7 +375,8 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   }
 
   function navigate(next: PhoenixView) {
-    if (next !== 'movements' && periodMode !== 'month') resetSpecialPeriod();
+    const preservesSpecialPeriod = next === 'movements' || (next === 'home' && periodMode === 'all');
+    if (!preservesSpecialPeriod && periodMode !== 'month') resetSpecialPeriod();
     setView(next);
     setMobileOpen(false);
     setSearchOpen(false);
@@ -486,8 +492,9 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setPeriodLoading(true);
     setPeriodError('');
     try {
-      const base = dataRef.current || await loadPhoenixReadModel(monthRef.current);
-      if (!monthlySnapshotMatches(base, monthRef.current)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
+      const baseMonth = currentMonth();
+      const base = await loadPhoenixReadModel(baseMonth, force ? { force: true } : {});
+      if (!monthlySnapshotMatches(base, baseMonth)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       const events = await loadPhoenixAllEvents({ force });
       const items = events.items.map((event) => ({ ...event, competence: base.month }));
       setMovementPeriodData({
@@ -497,13 +504,13 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       });
       setPeriodMode('all');
       setPeriodRangeLabel('');
-      setView('movements');
+      if (view !== 'home' && view !== 'movements') setView('home');
       setMobileOpen(false);
       setSearchOpen(false);
       setPeriodOpen(false);
     } catch (error) {
       setPeriodError(error instanceof Error && error.message === 'PHOENIX_MONTH_SNAPSHOT_MISMATCH'
-        ? 'A leitura mensal de referência ficou inconsistente. O histórico completo não foi aberto.'
+        ? 'A leitura mensal atual ficou inconsistente. O histórico completo não foi aberto.'
         : error instanceof Error ? error.message : 'Não foi possível carregar todo o histórico.');
     } finally {
       setPeriodLoading(false);
@@ -548,8 +555,9 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
                 <div className="px-period-presets"><button type="button" onClick={() => presetRange(1)}>Hoje</button><button type="button" onClick={() => presetRange(7)}>7 dias</button><button type="button" onClick={() => presetRange(30)}>30 dias</button><button type="button" onClick={() => presetMonth(0)}>Mês atual</button><button type="button" onClick={() => presetMonth(-1)}>Mês anterior</button></div>
                 {periodDraftMode === 'month' ? <label className="px-period-field"><span>Mês e ano</span><input type="month" value={periodDraftMonth} onChange={(event) => setPeriodDraftMonth(event.target.value)} /></label> : null}
                 {periodDraftMode === 'range' ? <div className="px-period-range"><label className="px-period-field"><span>Data inicial</span><input type="date" value={periodStart} onChange={(event) => setPeriodStart(event.target.value)} /></label><label className="px-period-field"><span>Data final</span><input type="date" value={periodEnd} onChange={(event) => setPeriodEnd(event.target.value)} /></label></div> : null}
-                {periodDraftMode === 'all' ? <div className="px-period-all">Exibe o histórico financeiro normalizado completo em Lançamentos. A leitura usa um endpoint dedicado para evitar dezenas de requisições ao servidor.</div> : null}
-                {periodDraftMode !== 'month' ? <small className="px-period-scope-note">Intervalo e Tudo abrem Lançamentos. Indicadores globais de Home, Cartões e análises continuam mensais para não misturar conceitos financeiros.</small> : null}
+                {periodDraftMode === 'all' ? <div className="px-period-all">Exibe toda a trajetória financeira desde o primeiro lançamento. Na Home consolida o histórico completo; em Lançamentos mostra todos os registros normalizados.</div> : null}
+                {periodDraftMode === 'range' ? <small className="px-period-scope-note">Intervalo abre Lançamentos. Home, Cartões e demais indicadores globais permanecem mensais até existir contrato agregado específico.</small> : null}
+                {periodDraftMode === 'all' ? <small className="px-period-scope-note">Tudo permanece ativo entre Home e Lançamentos. O saldo atual continua sendo a fotografia realizada de hoje; eventos futuros entram apenas nos compromissos e projeções.</small> : null}
                 {periodError ? <div className="px-period-error">{periodError}</div> : null}
                 <button className="px-period-apply" type="button" disabled={periodLoading} onClick={applyPeriod}>{periodLoading ? 'Carregando período…' : 'Aplicar período'}</button>
               </div> : null}
@@ -559,7 +567,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
         </header>
 
         <div className="px-content">
-          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen view={view} data={viewData} month={viewData.month} theme={theme} launchRequest={launchRequest} onToggleTheme={toggleTheme} onNavigate={navigate} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
+          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen view={view} data={viewData} month={viewData.month} theme={theme} periodMode={periodMode} launchRequest={launchRequest} onToggleTheme={toggleTheme} onNavigate={navigate} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
         </div>
       </main>
 
