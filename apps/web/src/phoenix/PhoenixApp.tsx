@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
-import { loadPhoenixAllEvents, loadPhoenixReadModel, peekPhoenixReadModel, prefetchPhoenixReadModel } from './data/load-phoenix-read-model';
+import { loadPhoenixAllEvents, loadPhoenixReadModel, peekPhoenixReadModel } from './data/load-phoenix-read-model';
 import { buildPhoenixHomeAgenda } from './home-agenda';
 import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixPayables } from './screens/PhoenixReadScreens';
@@ -80,10 +80,6 @@ function shiftMonth(value: string, offset: number) {
   return new Date(Date.UTC(year, month - 1 + offset, 1)).toISOString().slice(0, 7);
 }
 
-function previousMonth(value: string) {
-  return shiftMonth(value, -1);
-}
-
 function nextMonth(value: string) {
   return shiftMonth(value, 1);
 }
@@ -149,6 +145,13 @@ function monthsBetween(start: string, end: string) {
     cursor = nextMonth(cursor);
   }
   return result;
+}
+
+function monthlySnapshotMatches(data: PhoenixReadModel, targetMonth: string) {
+  return data.month === targetMonth
+    && data.summary.month === targetMonth
+    && data.analytics.month === targetMonth
+    && data.cashflow.month === targetMonth;
 }
 
 function HomeScreen({ data, month, onNavigate }: { data: PhoenixReadModel; month: string; onNavigate: (view: PhoenixView) => void }) {
@@ -239,6 +242,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const monthRef = useRef(month);
   const dataRef = useRef<PhoenixReadModel | null>(null);
   const refreshingRef = useRef(false);
+  const periodRequestRef = useRef(0);
 
   useEffect(() => {
     monthRef.current = month;
@@ -251,7 +255,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   useEffect(() => {
     let active = true;
     const cached = peekPhoenixReadModel(month);
-    if (cached) {
+    if (cached && monthlySnapshotMatches(cached, month)) {
       dataRef.current = cached;
       setLoadState({ status: 'ready', data: cached });
       setRefreshing(false);
@@ -266,6 +270,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     void loadPhoenixReadModel(month)
       .then((data) => {
         if (!active) return;
+        if (!monthlySnapshotMatches(data, month)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
         dataRef.current = data;
         setLoadState({ status: 'ready', data });
       })
@@ -280,15 +285,6 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       });
     return () => { active = false; };
   }, [month, refreshKey]);
-
-  useEffect(() => {
-    if (loadState.status !== 'ready' || loadState.data.month !== month) return;
-    const baseMonth = month;
-    const timer = window.setTimeout(() => {
-      void prefetchPhoenixReadModel(previousMonth(baseMonth)).then(() => prefetchPhoenixReadModel(nextMonth(baseMonth)));
-    }, 900);
-    return () => window.clearTimeout(timer);
-  }, [month, loadState]);
 
   async function refreshData() {
     if (refreshingRef.current || periodLoading || loadState.status !== 'ready') return;
@@ -305,6 +301,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setRefreshing(true);
     try {
       const fresh = await loadPhoenixReadModel(targetMonth, { force: true });
+      if (!monthlySnapshotMatches(fresh, targetMonth)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       if (monthRef.current === targetMonth) {
         dataRef.current = fresh;
         setLoadState({ status: 'ready', data: fresh });
@@ -363,8 +360,8 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const pendingCount = data ? buildPhoenixHomeAgenda(data, todayIso()).items.length : 0;
   const toggleTheme = () => setTheme((value) => value === 'dark' ? 'light' : 'dark');
   const userInitial = (data?.user.name || 'M').slice(0, 1).toUpperCase();
-  const periodActiveLabel = periodMode === 'month' ? shortMonthLabel(month) : periodMode === 'all' ? 'Tudo' : periodRangeLabel || 'Intervalo';
-  const updatingPeriod = refreshing && Boolean(data && data.month !== month);
+  const periodActiveLabel = periodMode === 'month' ? shortMonthLabel(data?.month || month) : periodMode === 'all' ? 'Tudo' : periodRangeLabel || 'Intervalo';
+  const updatingPeriod = periodLoading && periodDraftMode === 'month';
 
   function resetSpecialPeriod() {
     setPeriodMode('month');
@@ -401,6 +398,43 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setPeriodDraftMonth(shiftMonth(currentMonth(), offset));
   }
 
+  async function applyMonthlyPeriod(targetMonth: string) {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(targetMonth)) {
+      setPeriodError('Informe um mês válido.');
+      return;
+    }
+    if (targetMonth === month && data && monthlySnapshotMatches(data, targetMonth)) {
+      resetSpecialPeriod();
+      setPeriodOpen(false);
+      return;
+    }
+
+    const requestId = periodRequestRef.current + 1;
+    periodRequestRef.current = requestId;
+    setPeriodLoading(true);
+    setPeriodError('');
+    try {
+      const fresh = await loadPhoenixReadModel(targetMonth);
+      if (!monthlySnapshotMatches(fresh, targetMonth)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
+      if (periodRequestRef.current !== requestId) return;
+      dataRef.current = fresh;
+      monthRef.current = targetMonth;
+      setLoadState({ status: 'ready', data: fresh });
+      setMonth(targetMonth);
+      setMovementPeriodData(null);
+      setPeriodMode('month');
+      setPeriodRangeLabel('');
+      setPeriodOpen(false);
+    } catch (error) {
+      if (periodRequestRef.current !== requestId) return;
+      setPeriodError(error instanceof Error && error.message === 'PHOENIX_MONTH_SNAPSHOT_MISMATCH'
+        ? 'A leitura retornou dados de outro mês. O período anterior foi mantido por segurança.'
+        : error instanceof Error ? error.message : 'Não foi possível carregar o mês selecionado.');
+    } finally {
+      if (periodRequestRef.current === requestId) setPeriodLoading(false);
+    }
+  }
+
   async function applyRangePeriod(start: string, end: string, force = false) {
     if (!start || !end) {
       setPeriodError('Informe a data inicial e a data final.');
@@ -420,6 +454,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setPeriodError('');
     try {
       const models = await Promise.all(months.map((item) => loadPhoenixReadModel(item, force ? { force: true } : {})));
+      if (models.some((model, index) => !monthlySnapshotMatches(model, months[index]))) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       const base = models[models.length - 1];
       const unique = new Map<string, (typeof base.events.items)[number]>();
       models.forEach((model) => model.events.items.forEach((event) => {
@@ -432,7 +467,6 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
         loadedAt: new Date().toISOString(),
         events: { ...base.events, items, total: items.length, page: 1, pageSize: items.length }
       });
-      setMonth(end.slice(0, 7));
       setPeriodMode('range');
       setPeriodRangeLabel(`${formatShortIso(start)}–${formatShortIso(end)}`);
       setView('movements');
@@ -440,7 +474,9 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       setSearchOpen(false);
       setPeriodOpen(false);
     } catch (error) {
-      setPeriodError(error instanceof Error ? error.message : 'Não foi possível carregar o intervalo.');
+      setPeriodError(error instanceof Error && error.message === 'PHOENIX_MONTH_SNAPSHOT_MISMATCH'
+        ? 'Uma das leituras retornou dados de outro mês. O período atual foi mantido por segurança.'
+        : error instanceof Error ? error.message : 'Não foi possível carregar o intervalo.');
     } finally {
       setPeriodLoading(false);
     }
@@ -451,6 +487,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setPeriodError('');
     try {
       const base = dataRef.current || await loadPhoenixReadModel(monthRef.current);
+      if (!monthlySnapshotMatches(base, monthRef.current)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       const events = await loadPhoenixAllEvents({ force });
       const items = events.items.map((event) => ({ ...event, competence: base.month }));
       setMovementPeriodData({
@@ -465,7 +502,9 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       setSearchOpen(false);
       setPeriodOpen(false);
     } catch (error) {
-      setPeriodError(error instanceof Error ? error.message : 'Não foi possível carregar todo o histórico.');
+      setPeriodError(error instanceof Error && error.message === 'PHOENIX_MONTH_SNAPSHOT_MISMATCH'
+        ? 'A leitura mensal de referência ficou inconsistente. O histórico completo não foi aberto.'
+        : error instanceof Error ? error.message : 'Não foi possível carregar todo o histórico.');
     } finally {
       setPeriodLoading(false);
     }
@@ -473,13 +512,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
 
   function applyPeriod() {
     if (periodDraftMode === 'month') {
-      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(periodDraftMonth)) {
-        setPeriodError('Informe um mês válido.');
-        return;
-      }
-      resetSpecialPeriod();
-      setMonth(periodDraftMonth);
-      setPeriodOpen(false);
+      void applyMonthlyPeriod(periodDraftMonth);
       return;
     }
     if (periodDraftMode === 'range') {
