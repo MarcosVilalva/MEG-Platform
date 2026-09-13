@@ -3,6 +3,8 @@ import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
 import { loadPhoenixAllEvents, loadPhoenixReadModel, peekPhoenixReadModel } from './data/load-phoenix-read-model';
 import { buildPhoenixHomeAgenda } from './home-agenda';
 import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalette';
+import { PhoenixSidebar } from './PhoenixSidebar';
+import { PhoenixNavIcon } from './PhoenixNavIcon';
 import { PhoenixPayables } from './screens/PhoenixReadScreens';
 import { PhoenixCardsGrid } from './screens/PhoenixCardsGrid';
 import { PhoenixCatalogsGrid } from './screens/PhoenixCatalogsGrid';
@@ -21,6 +23,7 @@ import {
 import './phoenix-v15.css';
 import './phoenix-parity-v15.css';
 import './phoenix-period.css';
+import './phoenix-sidebar.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const shortDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -38,7 +41,7 @@ const mainViews: ViewDefinition[] = [
   { id: 'home', icon: '⌂', label: 'Início' },
   { id: 'movements', icon: '▦', label: 'Lançamentos' },
   { id: 'history', icon: '◷', label: 'Histórico' },
-  { id: 'payables', icon: '◷', label: 'Pendentes' },
+  { id: 'payables', icon: '!', label: 'Pendentes' },
   { id: 'cards', icon: '▣', label: 'Cartões' },
   { id: 'catalogs', icon: '≡', label: 'Cadastros' },
   { id: 'users', icon: '♙', label: 'Usuários e permissões' },
@@ -559,16 +562,16 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
 
   return <div className="phoenix-v15" data-theme={theme}>
     <div className={`px-app ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
-      <aside className="px-sidebar" aria-label="Navegação principal Phoenix V15">
-        <div className="px-side-brand"><img src="./brand/meg-finance-system-mark.svg" alt="MEG Finance System" /></div>
-        <button className="px-search-command" type="button" onClick={() => setSearchOpen(true)}>⌘ Buscar no MEG</button>
-        <nav className="px-nav-group">
-          {mainViews.map((item) => <button key={item.id} className={`px-nav-btn ${view === item.id ? 'active' : ''}`} type="button" onClick={() => navigate(item.id)}><span className="px-nav-icon" aria-hidden="true">{item.icon}</span><span className="px-nav-text">{item.label}</span>{item.id === 'payables' && pendingCount > 0 ? <span className="px-side-badge">{pendingCount > 99 ? '99+' : pendingCount}</span> : null}</button>)}
-          <details className="px-side-more" open={webViews.some((item) => item.id === view)}><summary>Web completo</summary>{webViews.map((item) => <button key={item.id} className={`px-nav-btn ${view === item.id ? 'active' : ''}`} type="button" onClick={() => navigate(item.id)}><span className="px-nav-icon" aria-hidden="true">{item.icon}</span><span className="px-nav-text">{item.label}</span></button>)}</details>
-        </nav>
-        <button className="px-side-exit" type="button" onClick={onLogout}><span>↪</span><strong>Sair</strong></button>
-        <div className="px-side-user"><span className="px-side-user-avatar">{userInitial}</span><div><strong>{data?.user.name || 'MEG'}</strong><small>Perfil {data?.user.role || '—'}</small></div></div>
-      </aside>
+      <PhoenixSidebar
+        view={view}
+        collapsed={collapsed}
+        pendingCount={pendingCount}
+        userName={data?.user.name || 'MEG'}
+        userRole={data?.user.role || '—'}
+        onNavigate={navigate}
+        onSearch={() => setSearchOpen(true)}
+        onLogout={onLogout}
+      />
 
       <main className="px-main">
         <header className="px-topbar">
@@ -600,7 +603,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
         </div>
       </main>
 
-      <nav className="px-mobile-dock" aria-label="Navegação móvel Phoenix V15"><button className={view === 'home' ? 'active' : ''} type="button" onClick={() => navigate('home')}><strong>⌂</strong><span>Início</span></button><button className={view === 'movements' ? 'active' : ''} type="button" onClick={requestLaunch}><strong>＋</strong><span>Lançar</span></button><button className={view === 'history' ? 'active' : ''} type="button" onClick={() => navigate('history')}><strong>◷</strong><span>Histórico</span></button><button className={view === 'payables' ? 'active' : ''} type="button" onClick={() => navigate('payables')}><strong>◷</strong><span>Pendentes</span></button><button type="button" onClick={() => setMobileOpen(true)}><strong>≡</strong><span>Mais</span></button></nav>
+      <nav className="px-mobile-dock" aria-label="Navegação móvel Phoenix V15"><button className={view === 'home' ? 'active' : ''} type="button" onClick={() => navigate('home')}><strong><PhoenixNavIcon name="home" /></strong><span>Início</span></button><button className={view === 'movements' ? 'active' : ''} type="button" onClick={requestLaunch}><strong>＋</strong><span>Lançar</span></button><button className={view === 'history' ? 'active' : ''} type="button" onClick={() => navigate('history')}><strong><PhoenixNavIcon name="history" /></strong><span>Histórico</span></button><button className={view === 'payables' ? 'active' : ''} type="button" onClick={() => navigate('payables')}><strong><PhoenixNavIcon name="payables" /></strong><span>Pendentes</span></button><button type="button" onClick={() => setMobileOpen(true)}><strong><PhoenixNavIcon name="more" /></strong><span>Mais</span></button></nav>
     </div>
     {searchOpen ? <PhoenixCommandPalette data={viewData} onClose={() => setSearchOpen(false)} onNavigate={navigate} /> : null}
   </div>;
