@@ -22,6 +22,23 @@ export type PhoenixAllTimeHomeSummary = {
   benefitUsed: number;
 };
 
+export type PhoenixHorizonSummary = {
+  targetMonth: string;
+  cutoffDate: string;
+  currentMonetaryBalance: number;
+  pendingExpense: number;
+  pendingIncome: number;
+  actionableCommitmentCount: number;
+  plannedIncomeCount: number;
+  freeAfterCommitments: number;
+  projectedClosing: number;
+  minimumProjectedBalance: number;
+  minimumProjectedDate: string | null;
+  firstNegativeDate: string | null;
+  overdueExpense: number;
+  overdueCount: number;
+};
+
 function normalize(value: unknown) {
   return String(value ?? '')
     .normalize('NFD')
@@ -45,6 +62,11 @@ function isPosted(event: FinancialEvent) {
 
 function isIncomeLike(event: FinancialEvent) {
   return event.type === 'income' || event.type === 'redemption';
+}
+
+function monthEnd(month: string) {
+  const [year, monthNumber] = month.split('-').map(Number);
+  return new Date(Date.UTC(year, monthNumber, 0)).toISOString().slice(0, 10);
 }
 
 export function isPhoenixBenefitEvent(event: FinancialEvent) {
@@ -133,5 +155,92 @@ export function buildPhoenixAllTimeHomeSummary(data: PhoenixReadModel): PhoenixA
     benefitBalance: round(Number(data.summary.benefitBalance || 0)),
     benefitCredits: round(benefitCredits),
     benefitUsed: round(benefitUsed)
+  };
+}
+
+/**
+ * Horizonte financeiro para um mês futuro.
+ *
+ * O saldo monetário atual permanece a fotografia realizada do mês corrente.
+ * O horizonte agrega somente eventos monetários ainda planejados com vencimento até
+ * o último dia do mês selecionado. Despesas planejadas positivas (estornos/ajustes)
+ * reduzem o compromisso líquido; receitas planejadas só entram na projeção, nunca no
+ * dinheiro livre após compromissos.
+ */
+export function buildPhoenixHorizonSummary(
+  current: PhoenixReadModel,
+  events: FinancialEvent[],
+  targetMonth: string,
+  today: string
+): PhoenixHorizonSummary {
+  const cutoffDate = monthEnd(targetMonth);
+  const currentMonetaryBalance = Number(current.summary.availableBalance || 0) + Number(current.summary.realizedResult || 0);
+  const planned = events
+    .filter(isPhoenixMonetaryEvent)
+    .filter((event) => event.status === 'planned')
+    .filter((event) => String(event.date).slice(0, 10) <= cutoffDate);
+
+  let pendingExpense = 0;
+  let pendingIncome = 0;
+  let actionableCommitmentCount = 0;
+  let plannedIncomeCount = 0;
+  let overdueExpense = 0;
+  let overdueCount = 0;
+  const byDate = new Map<string, number>();
+
+  for (const event of planned) {
+    const signed = signedAmount(event);
+    const date = String(event.date).slice(0, 10);
+    const incomeLike = isIncomeLike(event);
+
+    if (incomeLike) {
+      pendingIncome += signed;
+      if (signed > 0) plannedIncomeCount += 1;
+    } else {
+      pendingExpense += -signed;
+      if (signed < 0) {
+        actionableCommitmentCount += 1;
+        if (date < today) {
+          overdueExpense += -signed;
+          overdueCount += 1;
+        }
+      }
+    }
+
+    const effectiveDate = date < today ? today : date;
+    byDate.set(effectiveDate, (byDate.get(effectiveDate) || 0) + signed);
+  }
+
+  const freeAfterCommitments = currentMonetaryBalance - pendingExpense;
+  const projectedClosing = currentMonetaryBalance + pendingIncome - pendingExpense;
+  let running = currentMonetaryBalance;
+  let minimumProjectedBalance = currentMonetaryBalance;
+  let minimumProjectedDate: string | null = null;
+  let firstNegativeDate: string | null = currentMonetaryBalance < 0 ? today : null;
+
+  for (const [date, delta] of [...byDate.entries()].sort(([left], [right]) => left.localeCompare(right))) {
+    running += delta;
+    if (running < minimumProjectedBalance) {
+      minimumProjectedBalance = running;
+      minimumProjectedDate = date;
+    }
+    if (!firstNegativeDate && running < 0) firstNegativeDate = date;
+  }
+
+  return {
+    targetMonth,
+    cutoffDate,
+    currentMonetaryBalance: round(currentMonetaryBalance),
+    pendingExpense: round(pendingExpense),
+    pendingIncome: round(pendingIncome),
+    actionableCommitmentCount,
+    plannedIncomeCount,
+    freeAfterCommitments: round(freeAfterCommitments),
+    projectedClosing: round(projectedClosing),
+    minimumProjectedBalance: round(minimumProjectedBalance),
+    minimumProjectedDate,
+    firstNegativeDate,
+    overdueExpense: round(overdueExpense),
+    overdueCount
   };
 }
