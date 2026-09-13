@@ -53,6 +53,11 @@ type CachedReadModel = {
   storedAt: number;
 };
 
+type CachedAllEvents = {
+  data: PhoenixReadModel['events'];
+  storedAt: number;
+};
+
 type StaticReadContext = {
   key: string;
   storedAt: number;
@@ -70,12 +75,15 @@ type FinancialEventWithSourcePayload = FinancialEvent & {
 
 const readModelCache = new Map<string, CachedReadModel>();
 const readModelInFlight = new Map<string, Promise<PhoenixReadModel>>();
+let allEventsCache: CachedAllEvents | null = null;
+let allEventsInFlight: Promise<PhoenixReadModel['events']> | null = null;
 let staticContextCache: StaticReadContext | null = null;
 let staticContextInFlight: Promise<StaticReadContext> | null = null;
 
 // O mês é atualizado em segundo plano a cada dois minutos pelo shell. Uma janela maior aqui
 // permite que meses já visitados ou pré-carregados sejam trocados sem nova espera do servidor.
 const BOOTSTRAP_CACHE_TTL = 5 * 60_000;
+const ALL_EVENTS_CACHE_TTL = 5 * 60_000;
 // Catálogos auxiliares, AppState, clientes e usuários não mudam porque o mês mudou.
 const STATIC_CACHE_TTL = 10 * 60_000;
 
@@ -248,6 +256,24 @@ async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boo
   };
 }
 
+async function fetchAllFinancialEvents(): Promise<PhoenixReadModel['events']> {
+  const first = await financeClient.listEvents(1, 100);
+  const pages = Math.max(1, Math.ceil(first.total / 100));
+  const items = [...first.items];
+
+  // Não dispara dezenas de consultas simultâneas. O histórico completo é lido em lotes pequenos,
+  // somente quando o usuário pede explicitamente “Tudo”.
+  for (let page = 2; page <= pages; page += 6) {
+    const batch = Array.from({ length: Math.min(6, pages - page + 1) }, (_, index) => page + index);
+    const results = await Promise.all(batch.map((current) => financeClient.listEvents(current, 100)));
+    results.forEach((result) => items.push(...result.items));
+  }
+
+  const unique = new Map(items.map((event) => [event.id, hydrateEventSourceDetails(event)]));
+  const hydrated = [...unique.values()].sort((left, right) => String(right.date).localeCompare(String(left.date)));
+  return { items: hydrated, total: hydrated.length, page: 1, pageSize: hydrated.length };
+}
+
 export function peekPhoenixReadModel(month: string) {
   const cached = readModelCache.get(month);
   if (!cached || Date.now() - cached.storedAt > BOOTSTRAP_CACHE_TTL) return null;
@@ -308,9 +334,28 @@ export async function prefetchPhoenixReadModel(month: string) {
   }
 }
 
+export async function loadPhoenixAllEvents(options: { force?: boolean } = {}) {
+  if (!readSession()) throw new Error('PHOENIX_UNAUTHORIZED');
+  if (!options.force && allEventsCache && Date.now() - allEventsCache.storedAt <= ALL_EVENTS_CACHE_TTL) return allEventsCache.data;
+  if (!options.force && allEventsInFlight) return allEventsInFlight;
+
+  const pending = fetchAllFinancialEvents()
+    .then((data) => {
+      allEventsCache = { data, storedAt: Date.now() };
+      return data;
+    })
+    .finally(() => {
+      if (allEventsInFlight === pending) allEventsInFlight = null;
+    });
+  allEventsInFlight = pending;
+  return pending;
+}
+
 export function clearPhoenixReadModelCache() {
   readModelCache.clear();
   readModelInFlight.clear();
+  allEventsCache = null;
+  allEventsInFlight = null;
   staticContextCache = null;
   staticContextInFlight = null;
 }
