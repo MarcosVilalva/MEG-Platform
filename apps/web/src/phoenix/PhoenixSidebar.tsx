@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import type { PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixNavIcon, type PhoenixNavigationIcon } from './PhoenixNavIcon';
+import { applyPhoenixAvatarPreference, readPhoenixAvatarPreference } from './profile-avatar';
 
 type SidebarItem = {
   id: PhoenixRoute;
@@ -55,8 +57,6 @@ export function PhoenixSidebar({
   view,
   collapsed,
   pendingCount,
-  userName,
-  userRole,
   onNavigate,
   onSearch,
   onLogout
@@ -70,11 +70,16 @@ export function PhoenixSidebar({
   onSearch: () => void;
   onLogout?: () => void;
 }) {
-  const initial = (userName || 'M').slice(0, 1).toUpperCase();
+  useEffect(() => {
+    const syncAvatar = () => applyPhoenixAvatarPreference(readPhoenixAvatarPreference());
+    syncAvatar();
+    window.addEventListener('meg:profile-avatar-changed', syncAvatar);
+    return () => window.removeEventListener('meg:profile-avatar-changed', syncAvatar);
+  }, []);
 
   return <aside className="px-sidebar" aria-label="Menu Lateral MEG">
     <div className="px-side-brand"><img src="./brand/meg-finance-system-mark.svg" alt="MEG Finance System" /></div>
-    <button className="px-search-command" type="button" title={collapsed ? 'Buscar no MEG' : undefined} aria-label="Buscar no MEG" onClick={onSearch}>⌘ Buscar no MEG</button>
+    <button className="px-search-command" type="button" title={collapsed ? 'Buscar no MEG' : undefined} aria-label="Buscar no MEG" onClick={onSearch}><span className="px-search-icon"><PhoenixNavIcon name="search" /></span><span className="px-search-label">Buscar no MEG</span><kbd>⌘K</kbd></button>
 
     <nav className="px-nav-group" aria-label="Módulos do MEG">
       {sections.map((section) => <section className="px-side-section" key={section.label} aria-label={section.label}>
@@ -95,10 +100,6 @@ export function PhoenixSidebar({
     </nav>
 
     <div className="px-side-footer">
-      <div className="px-side-user" title={collapsed ? `${userName} · Perfil ${userRole}` : undefined}>
-        <span className="px-side-user-avatar">{initial}</span>
-        <div><strong>{userName || 'MEG'}</strong><small>Perfil {userRole || '—'}</small></div>
-      </div>
       <button className="px-side-exit" type="button" title={collapsed ? 'Sair' : undefined} aria-label="Sair" onClick={onLogout}>
         <span className="px-nav-icon"><PhoenixNavIcon name="logout" /></span><strong>Sair</strong>
       </button>
