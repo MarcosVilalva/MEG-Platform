@@ -4,175 +4,184 @@ Fonte persistente para retomar o MEG Phoenix V15. Em um novo chat, consultar pri
 
 ## Segurança e branches
 - Branch de homologação: `phoenix/v15-clean-room`.
-- PR principal: #243 — permanece **draft, aberta e sem merge**.
+- PR principal: #243 — deve permanecer **draft, aberta e sem merge** até autorização explícita.
 - **NÃO mesclar a PR #243 em `main` sem autorização explícita do usuário.**
 - Web/GitHub Pages de produção permanecem intactos durante a homologação.
-- Phoenix continua **read-only para finanças**. Escritas financeiras seguem bloqueadas pelo preview.
-- Exceções de POST no preview são somente do ciclo de autenticação: login, refresh, logout, cadastro e recuperação de acesso.
-- Escrita financeira só será liberada fluxo por fluxo após paridade, idempotência, auditoria e proteção transacional.
-- Links de validação devem sempre usar cache-buster: `?v=<sha>`.
+- Phoenix continua **read-only para finanças**; escrita financeira só será liberada fluxo por fluxo após paridade, idempotência, auditoria e proteção transacional.
+- Exceções de POST do preview são somente do ciclo de autenticação: login, refresh, logout, cadastro e recuperação de acesso.
+- Links de validação devem sempre usar cache-buster `?v=<sha>`.
 
 ## Infraestrutura
 - Preview: `https://meg-phoenix-v15-preview.onrender.com`.
 - Serviço Render: `meg-phoenix-v15-preview` (`srv-daimvbgae00c73f68bfg`).
-- Auto deploy ativo na branch Phoenix; não disparar deploy manual após commit.
-- API consumida pelo preview: `https://meg-platform-api.onrender.com`, via proxy do preview.
-- A API principal Render continua em `main`; alterações backend exclusivas da branch Phoenix não estão ativas até hotfix/PR separado ser explicitamente mesclado.
-- Cold start do Render Free pode mostrar tela de serviço acordando; isso não é UI do MEG.
+- Auto deploy ativo; não disparar deploy manual após commits na branch Phoenix.
+- API do preview: `https://meg-platform-api.onrender.com`, via proxy.
+- API principal Render continua em `main`; alterações backend exclusivas da branch Phoenix não estão ativas até PR/hotfix separado ser explicitamente mesclado.
+- Cold start do Render Free pode mostrar a tela do próprio Render; isso não é UI do MEG.
 
 ## Direção do produto
 - V15 validada é a referência visual/UX oficial.
-- Phoenix é clean-room React ligada aos dados reais, sem reaproveitar o layout legado.
-- Web deve ser completa; Android fica para uma segunda etapa, focado no essencial móvel.
-- Nenhum mock deve substituir dado real ausente.
+- Phoenix é reconstrução clean-room React ligada aos dados reais, sem reaproveitar o layout legado.
+- Web deve ser consolidada primeiro; Android fica para a etapa seguinte, focado no uso móvel essencial.
+- Nenhum mock pode substituir dado real ausente.
 - Objetivo da Fase 4: fechar leitura, projeção, consistência visual, autenticação, performance e paridade antes da escrita seletiva.
 
-## UX consolidada
-- Sidebar esquerda fixa, recolhível e responsiva.
-- Ícones da navegação foram padronizados em SVG; Histórico e Pendentes não usam mais o mesmo símbolo.
-- Menu recolhido possui tooltip por hover/foco com o nome da aba; badges continuam legíveis.
-- Cabeçalhos sticky onde aplicável; filtros/popovers fecham ao clicar fora.
-- Claro/escuro revisados globalmente; Histórico, Usuários e Configurações receberam rodada específica de tela dividida/mobile.
-- Loading institucional MEG fica na entrada; depois da primeira carga a navegação reutiliza snapshot em memória.
-- Atualizações manuais/periódicas/foco mantêm a fotografia válida visível até a nova leitura estar completa.
+## Entrada, cadastro e recuperação
+A entrada Phoenix já foi transformada em experiência de produto:
+- layout premium responsivo;
+- proposta reduzida para evitar repetição;
+- login com mostrar/ocultar senha, estados de erro/carregamento e linguagem humana;
+- `Criar conta` e `Esqueci minha senha` integrados ao mesmo painel.
 
-## Entrada, cadastro e recuperação de acesso
-A entrada Phoenix foi transformada em experiência de produto, não apenas formulário:
-- layout premium em duas áreas no desktop e uma coluna no mobile;
-- texto reduzido para evitar repetição de marca e proposta;
-- lado esquerdo: identidade MEG + mensagem principal + chips compactos `Saldo real / Projeções / Controle`;
-- lado direito: login direto, mostrar/ocultar senha, mensagens humanas de erro e carregamento;
-- links discretos `Criar conta` e `Esqueci minha senha`.
+Cadastro real:
+- `REQUEST_ACCESS`: solicita acesso a um espaço existente e pode ficar `PENDING_APPROVAL`;
+- `CREATE_WORKSPACE`: solicita criação de novo espaço MEG;
+- nome, telefone, e-mail, senha, confirmação e força de senha.
 
-Cadastro:
-- usa o contrato real `register(...)`;
-- permite `REQUEST_ACCESS` (acessar MEG existente) ou `CREATE_WORKSPACE` (criar novo espaço);
-- coleta nome, telefone, e-mail, senha e confirmação;
-- possui indicador de força da senha e validação local;
-- pedidos de acesso podem ficar `PENDING_APPROVAL` e aguardam aprovação do administrador;
-- criação de workspace segue o fluxo comercial/backend existente.
+Recuperação atual:
+- usa `/auth/forgot-password`;
+- backend ainda gera senha temporária, substitui a anterior, revoga sessões e envia a senha por canais configurados;
+- **não testar “Enviar recuperação” na conta principal apenas para conferir UI**;
+- antes do corte final, avaliar migração para token/código de uso único + nova senha escolhida pelo usuário.
 
-Recuperação:
-- usa o contrato real `/auth/forgot-password`;
-- **o backend atual ainda gera e envia senha temporária** por e-mail/WhatsApp e revoga sessões existentes;
-- a UI é transparente sobre isso e não finge fluxo por token;
-- antes do corte de produção, avaliar migração para token/código de uso único com expiração e definição de nova senha.
-
-O preview agora permite apenas os POSTs de autenticação necessários (`login`, `refresh`, `logout`, `register`, `forgot-password`); mutações financeiras continuam bloqueadas.
+## Usuários e permissões
+- Leitura administrativa oficial agrupada em **Aguardando aprovação / Usuários ativos / Bloqueados e inativos**.
+- Cards mostram perfil, telefone, data do cadastro, último acesso e estado da conta.
+- Solicitações pendentes recebem destaque visual.
+- Ações administrativas continuam bloqueadas durante a homologação; nenhuma aprovação/bloqueio é simulada.
 
 ## Seletor global de período
 Padrão V15 restaurado:
-- modos **Mês / Intervalo / Tudo**;
-- atalhos **Hoje / 7 dias / 30 dias / Mês atual / Mês anterior**;
-- Data inicial / Data final;
-- botão Aplicar período;
-- carregamento sem desmontar a tela.
+- **Mês / Intervalo / Tudo**;
+- Hoje / 7 dias / 30 dias / Mês atual / Mês anterior;
+- data inicial/final e Aplicar período;
+- carregamento sem desmontar a fotografia atual.
 
 Regras:
-- Mês troca o snapshot apenas quando a nova leitura estiver completa e coerente.
-- Intervalo abre Lançamentos e aplica filtro real por data.
-- Tudo permanece ativo entre Home e Lançamentos e usa todo o histórico normalizado.
-- Lançamentos diferencia **Vencimento** e **Data da compra**; `purchaseDate` real tem prioridade.
-- Rótulos de mês usam UTC controlado para não retroceder por timezone.
+- Mês troca snapshot somente quando a nova leitura estiver completa/coerente.
+- Intervalo abre Lançamentos com filtro real por data.
+- Tudo permanece ativo entre Home e Lançamentos e usa o histórico normalizado completo.
+- `purchaseDate` real é diferente de vencimento e tem prioridade na coluna Data da compra.
+- Rótulos de mês usam UTC controlado para evitar regressão por timezone.
 
 ## Home — passado, presente, futuro e Tudo
-### Mês atual/passado
-Mantém leitura mensal oficial: saldo realizado, receitas/despesas, pendências, benefício, agenda e fechamento projetado.
-
 ### Mês futuro = horizonte financeiro
-Ao escolher, por exemplo, dezembro/2026, a Home passa a responder **“como estarei até o fim de dezembro”**, e não somente “o que acontece em dezembro”.
+Selecionar um mês futuro significa **até o fim daquele mês**, e não apenas o movimento isolado do mês:
+- saldo monetário atual continua sendo o dinheiro realizado hoje;
+- compromissos pendentes acumulados até o corte;
+- receitas futuras planejadas até o corte;
+- dinheiro livre após compromissos;
+- projeção final;
+- primeira data de saldo negativo e menor saldo previsto, quando aplicável;
+- benefício/Verocard separado do caixa;
+- transferências neutras.
 
-Regra:
-- saldo monetário atual permanece a fotografia realizada de hoje;
-- acumula compromissos pendentes até a data final do período;
-- soma receitas futuras planejadas até a mesma data;
-- calcula dinheiro livre após compromissos;
-- calcula projeção final;
-- identifica primeira data projetada negativa e menor saldo previsto quando aplicável;
-- benefício/Verocard permanece separado do caixa monetário;
-- transferências permanecem neutras.
-
-Referência de auditoria para até dezembro/2026, sem hardcode:
+Referência de auditoria até dezembro/2026, sem hardcode:
 - saldo realizado: `R$ 10.178,88`;
-- compromissos líquidos até 31/12: `R$ 25.297,21`;
+- compromissos líquidos: `R$ 25.297,21`;
 - receitas futuras planejadas encontradas: `R$ 0,00`;
-- obrigações acionáveis: `277`;
-- vencidas: `7 / R$ 2.625,05`;
+- 277 obrigações acionáveis;
+- 7 vencidas / `R$ 2.625,05`;
 - primeira projeção negativa: `05/10/2026`;
-- menor/fechamento projetado no horizonte: `-R$ 15.118,33` em `28/12/2026`.
+- fechamento/mínimo do horizonte: `-R$ 15.118,33` em `28/12/2026`.
 
 ### Tudo
-Home própria de histórico completo:
-- mostra do primeiro ao último lançamento normalizado;
-- saldo monetário atual continua sendo o dinheiro realizado hoje;
-- consolida receitas/despesas registradas e realizadas desde o início;
-- mostra compromissos ainda em aberto, receitas futuras, saldo livre e projeção final da base;
-- benefício permanece separado.
+- Home própria desde o primeiro lançamento normalizado;
+- saldo monetário atual permanece a fotografia realizada de hoje;
+- consolida receitas/despesas registradas e realizadas;
+- mostra compromissos em aberto, receitas futuras, saldo livre e projeção final;
+- benefício separado.
 
-A base observada possui aproximadamente 3.633 eventos ativos normalizados, de 2025-06 a 2028-08.
+Base observada: aproximadamente 3.633 eventos normalizados, de 2025-06 a 2028-08.
 
-## Performance de período
-- Contexto estático (AppState, usuários, clientes, saúde/normalização) é reutilizado entre trocas de mês.
-- Troca mensal é atômica e protege contra resposta atrasada sobrescrever seleção mais recente.
-- Preview possui agregador `/finance/phoenix-preview/events`, com paginação servidor-a-servidor em lotes, deduplicação e cache curto de 60 s por sessão com hash SHA-256.
-- Isso reduziu o custo percebido do modo Tudo.
+## Análises Financeiras — consolidada no nível V15
+Lote funcional consolidado em setembro/2026:
+- KPIs de receitas, despesas, resultado projetado, resultado realizado, média diária e concentração Top 3;
+- classificações continuam derivadas dos dados reais com compatibilidade legada `expenseClass -> category.group/name`;
+- comparação período atual x anterior;
+- evolução mensal;
+- composição por forma de pagamento;
+- bloco `Leitura MEG` com maior classificação, variação de despesas e fechamento projetado;
+- referências V15 **50% Essenciais / 30% Flexíveis / 20% Poupança** são apresentadas explicitamente como referências, sem classificar automaticamente grupos que ainda não foram validados;
+- **Índice MEG 0–100 permanece “Em calibração”**: não exibir nota inventada antes de critérios/pesos transparentes e validados;
+- Análises aprofunda tendência; não deve esconder o diagnóstico de déficit/compromissos da Home.
+
+## Configurações V15 — consolidada
+A tela agora reúne os blocos previstos na V15 e melhorias acordadas:
+- Saúde do sistema;
+- Preferências gerais;
+- Segurança e sessão;
+- Sincronização/integridade;
+- Backup e dados;
+- Dispositivos;
+- Atualização Android;
+- Alertas e destinatários;
+- Automação de alertas;
+- Diagnóstico;
+- Sobre MEG.
+
+Regras de honestidade operacional:
+- recursos nativos não lidos aparecem explicitamente como **não consultados** ou integração pendente;
+- nenhuma versão Android, dispositivo, destinatário ou automação é inventado;
+- horários V15 `06:00 / 12:00 / 19:00`, fuso São Paulo e resumo ampliado a cada 5 dias `06:00` aparecem apenas como referência de produto até existir contrato operacional correspondente;
+- restauração de backup permanece bloqueada durante read-only.
+
+### Personalização funcional da Home
+Melhoria acordada além da estrutura básica da V15:
+- usuário pode mostrar/ocultar `Saldo monetário`, `Diagnóstico e projeção`, `Resumo financeiro`, `Benefício alimentação`, `Histórico recente` e `Agenda financeira`;
+- aplicação é imediata;
+- preferência persiste localmente no navegador em `meg.dashboard.preferences`;
+- `Restaurar padrão` reativa todos os blocos;
+- preferências são reaplicadas antes da montagem do app para evitar piscar a Home padrão;
+- nesta fase a preferência é local/browser, não uma configuração de workspace gravada no backend.
+
+## Performance
+- contexto estático é reutilizado entre trocas mensais;
+- troca mensal é atômica e protege contra resposta atrasada;
+- modo Tudo usa agregador `/finance/phoenix-preview/events` com paginação servidor-a-servidor, deduplicação e cache curto de 60 s por sessão.
 
 ### PR #247 — otimização mensal backend
-Existe PR separada **#247 — Hotfix: consolidar snapshot financeiro Phoenix**:
+PR separada `#247 — Hotfix: consolidar snapshot financeiro Phoenix`:
 - base `main`;
-- branch `hotfix/phoenix-preview-snapshot-performance`;
-- consolida resumo, fluxo, análises e benefício sobre uma leitura financeira compartilhada;
 - somente leitura;
+- consolida resumo/fluxo/análises/benefício sobre leitura compartilhada;
 - CI 1293 verde;
 - permanece draft e sem merge aguardando autorização explícita.
 
-Não afirmar que essa otimização mensal está ativa na API principal antes de merge/deploy.
+Não afirmar que essa otimização está ativa na API principal antes de merge/deploy.
 
 ## Grid MEG
-Padrão obrigatório para tabelas reais:
-- ordenação;
-- filtro por coluna;
-- busca em valores;
-- seleção múltipla/Selecionar tudo;
-- filtros de texto/data/número;
-- Aplicar/Cancelar/Limpar;
-- chips ativos;
-- estado de coluna filtrada;
-- claro/escuro e mobile.
+Padrão obrigatório para tabelas reais: ordenação, filtro por coluna, busca em valores, seleção múltipla, selecionar tudo, filtros de texto/data/número, Aplicar/Cancelar/Limpar, chips ativos, claro/escuro e mobile.
 
 Telas com Grid MEG: Lançamentos, Cadastros, Cartões, Contas a receber, Receitas e Fluxo de caixa. Histórico, Pendentes e Usuários mantêm layouts próprios.
 
 ## Classificação e Grupo
 - `Category.group` = **Classificação**.
 - `Category.name` = **Grupo**.
-- Despesa: Classificação primeiro, depois Grupo vinculado; `categoryId` do Grupo é autoridade.
-- Receita: classificação opcional, sem obrigação de Grupo.
-- Fallback legado: `sourceDetails.expenseClass/group`; depois `category.group/name`.
-- Eventos antigos sem `categoryId` podem recuperar semântica pelo `sourcePayload`.
-- Mesma regra aplicada em Lançamentos, Pendentes e Análises.
+- Despesa: Classificação primeiro, Grupo vinculado depois; `categoryId` é autoridade.
+- Receita: Classificação opcional, sem exigir Grupo.
+- Fallback legado: `sourceDetails.expenseClass/group`, depois `category.group/name`.
+- Mesma semântica em Lançamentos, Pendentes e Análises.
 
-Regra pendente antes da escrita: em Receita, restringir formas aos valores reais equivalentes a **Pix, Dinheiro e Depósito bancário**, após nova conferência dos cadastros ativos.
+Pendente antes da escrita: em Receita, restringir formas aos cadastros reais equivalentes a **Pix, Dinheiro e Depósito bancário**, após conferência dos PaymentMethods ativos.
 
 ## Política monetária e referência setembro/2026
 - `signedAmount` é autoridade.
-- Estornos/reversões reduzem despesa; não usar `abs(amount)` indiscriminadamente.
-- Benefício/Verocard visível, mas fora de receitas/despesas/saldo monetários.
-- Transferência neutra.
+- Estornos/reversões reduzem despesa; nunca somar tudo por `abs(amount)`.
+- Benefício/Verocard fica fora do caixa monetário.
+- Transferência é neutra.
 
-Referência de homologação, não hardcodar:
-- saldo anterior: `R$ 2.643,56`;
-- receitas monetárias: `R$ 10.581,99`;
-- despesas monetárias líquidas: `R$ 12.454,42`;
-- despesas realizadas: `R$ 3.046,67`;
-- pendentes líquidos: `R$ 9.407,75`;
-- saldo realizado: `R$ 10.178,88`;
-- fechamento projetado: `R$ 771,13`;
+Referência, sem hardcode:
+- saldo anterior `R$ 2.643,56`;
+- receitas monetárias `R$ 10.581,99`;
+- despesas monetárias líquidas `R$ 12.454,42`;
+- despesas realizadas `R$ 3.046,67`;
+- pendentes líquidos `R$ 9.407,75`;
+- saldo realizado `R$ 10.178,88`;
+- fechamento projetado `R$ 771,13`;
 - benefício: créditos `R$ 2.000,00`, utilizado `R$ 1.250,83`, saldo `R$ 749,17`.
 
-Agenda de setembro:
-- obrigações acionáveis: `109 / R$ 9.505,66`;
-- ajustes negativos: `-R$ 97,91`;
-- pendente líquido oficial: `R$ 9.407,75`.
+Agenda setembro: 109 obrigações acionáveis / `R$ 9.505,66`; ajustes negativos `-R$ 97,91`; pendente líquido `R$ 9.407,75`.
 
 ## Cartões — referência setembro/2026
 - AZUL: fatura `R$ 1.875,52`, compras `R$ 1.937,52`, créditos `R$ 62,00`, comprometido `R$ 7.166,25`.
@@ -180,32 +189,26 @@ Agenda de setembro:
 - MELI: fatura paga `R$ 1.824,02`, compras `R$ 1.943,08`, créditos `R$ 119,06`, comprometido `R$ 2.608,42`.
 - RIACHUELO: fatura `R$ 132,99`, comprometido `R$ 531,96`.
 
-Fatura paga continua visível no histórico; pagamento remove compromisso aberto, não histórico. Créditos/estornos reduzem a fatura.
-
-## Telas ainda em consolidação
-- **Análises Financeiras** já existe, mas ainda precisa chegar ao nível V15: tendências, comparações, projeções, concentração e inteligência histórica.
-- **Configurações** já possui infraestrutura (tema, sessão, saúde da base, sincronização, diagnóstico, backup, dispositivos e alertas), mas ainda falta a personalização de dashboard no padrão V15.
-- Próxima direção para Configurações: dashboard por blocos configuráveis (`Saldo atual`, `Dinheiro livre`, `Projeção`, `Cartões`, `Agenda`, `Benefício`, `Classificações`, `Alertas`), com ordem e visibilidade por usuário.
-- Usuários e permissões deve evoluir para agrupamentos Pendentes / Ativos / Bloqueados, badge de solicitações e ações administrativas claras.
+## Pendência visual conhecida — navegação
+A validação do código no head atual mostrou que `Histórico` e `Pendentes` ainda usam o mesmo glifo `◷` em `PhoenixApp.tsx`, apesar de uma etapa anterior ter sido considerada concluída. Também é necessário garantir tooltip explícito no rail recolhido. Tratar isso como correção visual aberta; não afirmar que está resolvido antes de novo commit/CI/deploy.
 
 ## Estado técnico atual
-- Head funcional no momento desta atualização: `b30b2ab008b0f197bf2f9ec4f1378c48c8bc962f`.
-- Lote atual: login enxuto + cadastro + recuperação + allowlist de autenticação no preview + teste de contrato atualizado.
-- CI **1308** verde.
-- PR #243 continua draft/aberta/sem merge.
-- Render está em auto deploy desse head; confirmar estado `live` antes de enviar link final de homologação.
+- Head funcional: `6ae08aad4ee236b02a64da4a723748f3f64f10b2` (`fix: preservar contrato nominal das análises V15`).
+- Lote atual: Análises Financeiras V15 + Configurações V15 + personalização funcional da Home.
+- CI **1317** verde.
+- Deploy Render `dep-daj8ga5ckfvc739j7a10` **live** para esse head.
+- PR #243 deve continuar draft, aberta e sem merge.
 
 ## Próximos gates
-1. validar visualmente login enxuto, Criar conta e Recuperar acesso em desktop, tela dividida e mobile;
-2. não testar recuperação em conta real sem necessidade, pois o backend atual altera a senha para uma temporária;
-3. consolidar Análises Financeiras no nível V15;
-4. completar Configurações V15 com personalização real do dashboard;
-5. melhorar Usuários e permissões (Pendentes/Ativos/Bloqueados + badge + ações);
-6. avaliar fluxo seguro por token de recuperação antes do corte de produção;
-7. decidir explicitamente sobre PR #247 para performance mensal;
-8. fechar últimas paridades e dependências sem `npm audit fix --force`;
-9. só depois iniciar escrita financeira seletiva;
-10. corte da Web atual somente após paridade funcional, numérica e visual suficiente.
+1. validar visualmente Análises e Configurações em desktop, tela dividida, mobile, claro e escuro;
+2. validar em Configurações que mostrar/ocultar blocos altera a Home e persiste após recarregar;
+3. corrigir definitivamente ícones/tooltip do rail recolhido, pois o código atual ainda repete `◷` em Histórico/Pendentes;
+4. auditar PaymentMethods ativos e aplicar regra de Receita = Pix/Dinheiro/Depósito bancário;
+5. avaliar fluxo seguro por token para recuperação antes do corte;
+6. decidir explicitamente sobre PR #247 para performance mensal;
+7. fechar últimas paridades/dependências sem `npm audit fix --force`;
+8. somente depois iniciar escrita financeira seletiva;
+9. corte da Web atual apenas após paridade funcional, numérica e visual suficiente.
 
 ## Protocolo de retomada
 Ao aproximar o limite de contexto: parar em commit seguro, garantir CI/deploy, atualizar este arquivo e a PR #243.
