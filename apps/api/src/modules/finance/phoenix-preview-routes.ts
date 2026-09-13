@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { getPhoenixPreviewReadModel } from './phoenix-preview-read';
+import { getPhoenixPreviewSnapshot } from './phoenix-preview-snapshot';
 import { listPhoenixPreviewEvents } from './phoenix-preview-events';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
@@ -19,7 +19,7 @@ export function registerPhoenixPreviewReads(app: FastifyInstance) {
   app.get('/phoenix-preview', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return getPhoenixPreviewReadModel(request.user.sub, parsed.data.month);
+    return getPhoenixPreviewSnapshot(request.user.sub, parsed.data.month);
   });
 
   app.get('/phoenix-preview/events', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
