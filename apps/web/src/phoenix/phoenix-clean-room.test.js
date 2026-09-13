@@ -5,6 +5,8 @@ const phoenixApp = readFileSync(new URL('./PhoenixApp.tsx', import.meta.url), 'u
 const commandPalette = readFileSync(new URL('./PhoenixCommandPalette.tsx', import.meta.url), 'utf8');
 const screens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.meta.url), 'utf8');
 const movementScreen = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
+const homeAllTime = readFileSync(new URL('./screens/PhoenixHomeAllTime.tsx', import.meta.url), 'utf8');
+const homePeriodSummary = readFileSync(new URL('./home-period-summary.ts', import.meta.url), 'utf8');
 const webScreens = readFileSync(new URL('./screens/PhoenixWebScreens.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
@@ -15,8 +17,8 @@ const phoenixHtml = readFileSync(new URL('../../phoenix.html', import.meta.url),
 const productionHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
 const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
-const phoenixSource = `${phoenixApp}\n${commandPalette}\n${screens}\n${movementScreen}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
-const readOnlyScreens = `${screens}\n${movementScreen}\n${webScreens}\n${history}\n${users}\n${settings}\n${commandPalette}`;
+const phoenixSource = `${phoenixApp}\n${commandPalette}\n${screens}\n${movementScreen}\n${homeAllTime}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
+const readOnlyScreens = `${screens}\n${movementScreen}\n${homeAllTime}\n${webScreens}\n${history}\n${users}\n${settings}\n${commandPalette}`;
 
 for (const forbidden of ['global.css', 'v15-contract.css', 'meg-v15.css']) {
   assert.doesNotMatch(phoenixSource, new RegExp(forbidden.replace('.', '\\.')),
@@ -130,6 +132,21 @@ assert.match(movementScreen, /Possível duplicidade real encontrada/,
 assert.doesNotMatch(movementScreen, /method\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/,
   'Drawer de lançamento deve permanecer sem escrita nesta etapa');
 
+assert.match(homeAllTime, /Histórico completo/,
+  'Modo Tudo deve possuir uma Home própria para a trajetória completa');
+assert.match(homeAllTime, /Saldo monetário atual/,
+  'Modo Tudo não pode transformar eventos futuros em saldo disponível hoje');
+assert.match(homeAllTime, /Saldo livre após compromissos/,
+  'Home completa deve explicitar o dinheiro livre depois das obrigações abertas');
+assert.match(homeAllTime, /Projeção final da base/,
+  'Home completa deve mostrar o efeito conjunto de receitas previstas e compromissos');
+assert.match(homePeriodSummary, /event\.status === 'planned'/,
+  'Consolidação histórica deve separar eventos planejados dos realizados');
+assert.match(homePeriodSummary, /event\.type !== 'transfer'/,
+  'Transferências não podem alterar o patrimônio consolidado no modo Tudo');
+assert.match(homePeriodSummary, /VEROCARD/,
+  'Benefício deve permanecer separado do caixa monetário no histórico completo');
+
 assert.match(styles, /--bg:#f3f7f7/);
 assert.match(styles, /--nav:#071727/);
 assert.match(styles, /--brand:#19b990/);
@@ -164,6 +181,12 @@ assert.match(phoenixApp, /periodDraftMode === 'range'/,
   'Intervalo V15 deve possuir aplicação real, não somente aparência');
 assert.match(phoenixApp, /loadPhoenixAllEvents/,
   'Modo Tudo deve usar leitura real completa');
+assert.match(phoenixApp, /view === 'home' && periodMode === 'all'/,
+  'Modo Tudo deve permanecer aplicado na Home principal, não apenas em Lançamentos');
+assert.match(phoenixApp, /const baseMonth = currentMonth\(\)/,
+  'Modo Tudo deve usar o mês atual como base do saldo monetário realizado');
+assert.match(phoenixApp, /Tudo permanece ativo entre Home e Lançamentos/,
+  'O seletor deve explicar o escopo global do modo Tudo');
 assert.match(phoenixApp, /peekPhoenixReadModel/,
   'Troca de mês deve aproveitar fotografia já carregada');
 assert.match(phoenixApp, /monthlySnapshotMatches/,
@@ -179,7 +202,7 @@ assert.doesNotMatch(phoenixApp, /setMonth\(end\.slice\(0,\s*7\)\)/,
 for (const glyph of ['⌂', '▦', '◷', '▣', '≡', '♙', '⚙']) {
   assert.ok(phoenixApp.includes(glyph), `Ícone V15 ausente: ${glyph}`);
 }
-for (const screen of ['PhoenixMovementsV15', 'PhoenixHistory', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs', 'PhoenixUsers', 'PhoenixSettings', 'PhoenixReceivables', 'PhoenixRevenues', 'PhoenixCashflow', 'PhoenixReconciliation', 'PhoenixAnalytics', 'PhoenixBudgets', 'PhoenixCommandPalette']) {
+for (const screen of ['PhoenixMovementsV15', 'PhoenixHomeAllTime', 'PhoenixHistory', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs', 'PhoenixUsers', 'PhoenixSettings', 'PhoenixReceivables', 'PhoenixRevenues', 'PhoenixCashflow', 'PhoenixReconciliation', 'PhoenixAnalytics', 'PhoenixBudgets', 'PhoenixCommandPalette']) {
   assert.ok(phoenixApp.includes(screen), `Tela Phoenix não conectada: ${screen}`);
 }
 assert.match(phoenixApp, /onLogout/,
