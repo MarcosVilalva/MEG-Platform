@@ -14,9 +14,10 @@ async function main() {
 
   const santander = await prisma.account.upsert({
     where: { id: 'account-santander' },
-    update: {},
+    update: { userId: user.id },
     create: {
       id: 'account-santander',
+      userId: user.id,
       name: 'Santander',
       type: 'checking',
       institution: 'Santander',
@@ -24,54 +25,43 @@ async function main() {
     }
   });
 
-  const categories = await Promise.all([
+  await Promise.all([
     prisma.category.upsert({
       where: { id: 'category-renda' },
-      update: {},
-      create: { id: 'category-renda', name: 'Renda', group: 'Receitas', type: 'income' }
+      update: { userId: user.id },
+      create: { id: 'category-renda', userId: user.id, name: 'Renda', group: 'Receitas', type: 'income' }
     }),
     prisma.category.upsert({
       where: { id: 'category-alimentacao' },
-      update: {},
-      create: { id: 'category-alimentacao', name: 'Supermercado', group: 'Alimentação', type: 'expense' }
+      update: { userId: user.id },
+      create: { id: 'category-alimentacao', userId: user.id, name: 'Supermercado', group: 'Alimentação', type: 'expense' }
     }),
     prisma.category.upsert({
       where: { id: 'category-moradia' },
-      update: {},
-      create: { id: 'category-moradia', name: 'Energia', group: 'Moradia', type: 'expense' }
+      update: { userId: user.id },
+      create: { id: 'category-moradia', userId: user.id, name: 'Energia', group: 'Moradia', type: 'expense' }
     }),
     prisma.category.upsert({
       where: { id: 'category-cartao' },
-      update: {},
-      create: { id: 'category-cartao', name: 'Fatura', group: 'Cartão', type: 'expense' }
+      update: { userId: user.id },
+      create: { id: 'category-cartao', userId: user.id, name: 'Fatura', group: 'Cartão', type: 'expense' }
     })
   ]);
 
-  const pix = await prisma.paymentMethod.upsert({
-    where: { name: 'PIX' },
-    update: {},
-    create: { name: 'PIX', type: 'instant' }
-  });
+  async function paymentMethod(name: string, type: string) {
+    const existing = await prisma.paymentMethod.findFirst({ where: { userId: user.id, name } });
+    if (existing) return existing;
+    return prisma.paymentMethod.create({ data: { userId: user.id, name, type } });
+  }
 
-  const boleto = await prisma.paymentMethod.upsert({
-    where: { name: 'Boleto' },
-    update: {},
-    create: { name: 'Boleto', type: 'bill' }
-  });
+  const [pix, boleto, card, transfer] = await Promise.all([
+    paymentMethod('PIX', 'instant'),
+    paymentMethod('Boleto', 'bill'),
+    paymentMethod('Cartão de crédito', 'credit'),
+    paymentMethod('Transferência', 'transfer')
+  ]);
 
-  const card = await prisma.paymentMethod.upsert({
-    where: { name: 'Cartão de crédito' },
-    update: {},
-    create: { name: 'Cartão de crédito', type: 'credit' }
-  });
-
-  const transfer = await prisma.paymentMethod.upsert({
-    where: { name: 'Transferência' },
-    update: {},
-    create: { name: 'Transferência', type: 'transfer' }
-  });
-
-  const existing = await prisma.financialEvent.count();
+  const existing = await prisma.financialEvent.count({ where: { userId: user.id } });
 
   if (existing === 0) {
     await prisma.financialEvent.createMany({

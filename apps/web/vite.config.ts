@@ -12,6 +12,13 @@ const stripEmbeddedApkDownloads = () => ({
   }
 });
 
+const webInputs = process.env.CAPACITOR_BUILD
+  ? { main: path.resolve(__dirname, 'index.html') }
+  : {
+      main: path.resolve(__dirname, 'index.html'),
+      phoenix: path.resolve(__dirname, 'phoenix.html')
+    };
+
 export default defineConfig({
   base: process.env.CAPACITOR_BUILD
     ? './'
@@ -22,6 +29,11 @@ export default defineConfig({
       '@core': path.resolve(__dirname, '../../packages/core/src'),
       '@ui': path.resolve(__dirname, '../../packages/ui/src'),
       '@shared': path.resolve(__dirname, '../../packages/shared/src')
+    }
+  },
+  build: {
+    rollupOptions: {
+      input: webInputs
     }
   },
   server: {

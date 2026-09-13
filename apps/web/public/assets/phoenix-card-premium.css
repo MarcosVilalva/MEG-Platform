@@ -1,0 +1,135 @@
+/* Identidade premium automática dos cartões Phoenix.
+   O cartão LATAM preserva a arte oficial existente; os demais usam o mesmo
+   sistema visual estrutural, resolvido automaticamente por card-identity.ts. */
+
+.phoenix-v15 .px-physical-card:not(:has(> img:first-child)) {
+  display:block;
+  isolation:isolate;
+  padding:0;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:
+    0 24px 44px rgba(0,0,0,.28),
+    inset 0 1px 0 rgba(255,255,255,.08),
+    inset 0 -1px 0 rgba(0,0,0,.24);
+}
+
+.phoenix-v15 .px-physical-card:not(:has(> img:first-child))::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 88% 12%,rgba(255,255,255,.10),transparent 23%),
+    radial-gradient(circle at 74% 86%,rgba(255,255,255,.055),transparent 27%),
+    linear-gradient(115deg,rgba(255,255,255,.055),transparent 28%,transparent 72%,rgba(255,255,255,.025));
+  mix-blend-mode:screen;
+}
+
+.phoenix-v15 .px-physical-card:not(:has(> img:first-child))::after {
+  content:')))';
+  position:absolute;
+  top:21px;
+  right:20px;
+  z-index:2;
+  color:rgba(255,255,255,.82);
+  font:800 14px/1 system-ui,sans-serif;
+  letter-spacing:-4px;
+  transform:rotate(-8deg);
+  text-shadow:0 2px 6px rgba(0,0,0,.24);
+}
+
+.phoenix-v15 .px-physical-card:not(:has(> img:first-child)) > strong {
+  position:absolute;
+  left:20px;
+  bottom:20px;
+  z-index:2;
+  max-width:62%;
+  margin:0;
+  color:#fff;
+  font-size:clamp(24px,3.15cqw,38px);
+  line-height:.92;
+  letter-spacing:-.055em;
+  text-transform:uppercase;
+  text-shadow:0 6px 18px rgba(0,0,0,.34);
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.phoenix-v15 .px-physical-card:not(:has(> img:first-child)) > small {
+  position:absolute;
+  top:20px;
+  left:20px;
+  z-index:2;
+  max-width:62%;
+  color:rgba(255,255,255,.78);
+  font-size:9px;
+  font-weight:850;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.phoenix-v15 .px-physical-card:not(:has(> img:first-child)) > .px-chip {
+  position:absolute;
+  top:58px;
+  left:20px;
+  z-index:2;
+  width:39px;
+  height:29px;
+  border-radius:7px;
+  border:1px solid rgba(255,255,255,.38);
+  background:
+    linear-gradient(90deg,transparent 47%,rgba(75,62,29,.38) 48% 52%,transparent 53%),
+    linear-gradient(0deg,transparent 47%,rgba(75,62,29,.34) 48% 52%,transparent 53%),
+    linear-gradient(135deg,#f2e6b7 0%,#bea966 48%,#f6e7a8 100%);
+  box-shadow:inset 0 0 0 1px rgba(92,72,28,.28),0 4px 10px rgba(0,0,0,.20);
+}
+
+.phoenix-v15 .px-physical-card:not(:has(> img:first-child)) > .px-brand-asset {
+  position:absolute;
+  right:20px;
+  bottom:19px;
+  z-index:2;
+  max-width:62px;
+  max-height:34px;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.30));
+}
+
+/* Miniaturas seguem o mesmo acabamento premium sem exigir arte dedicada. */
+.phoenix-v15 .px-mini-card {
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 8px 18px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.10);
+}
+.phoenix-v15 .px-mini-card::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.13),transparent 34%,transparent 72%,rgba(255,255,255,.04));
+  pointer-events:none;
+}
+
+/* A imagem oficial LATAM continua preenchendo o cartão inteiro. */
+.phoenix-v15 .px-physical-card:has(> img:first-child) {
+  padding:0;
+  border:1px solid rgba(255,255,255,.12);
+  background:#111;
+  box-shadow:0 24px 44px rgba(0,0,0,.28);
+}
+.phoenix-v15 .px-physical-card:has(> img:first-child) > img:first-child {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+@container phoenix-workspace (max-width:760px) {
+  .phoenix-v15 .px-physical-card:not(:has(> img:first-child)) > strong {
+    font-size:clamp(23px,8cqw,34px);
+  }
+}

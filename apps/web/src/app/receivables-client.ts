@@ -19,6 +19,10 @@ export type Receipt = {
   receivedAt: string;
   interestAmount: string | number;
   fineAmount: string | number;
+  financialEventId?: string | null;
+  remaining?: number;
+  receivableStatus?: string;
+  idempotentReplay?: boolean;
 };
 
 export type Receivable = {
@@ -32,6 +36,31 @@ export type Receivable = {
   installmentQty: number;
   customer?: Customer | null;
   receipts: Receipt[];
+  idempotentReplay?: boolean;
+};
+
+export type CreateReceivableInput = {
+  customerId?: string | null;
+  description: string;
+  totalAmount: number;
+  dueDate: string;
+  installmentNo?: number;
+  installmentQty?: number;
+  interestRate?: number;
+  fineRate?: number;
+  notes?: string | null;
+  operationId?: string;
+};
+
+export type ReceiveReceivableInput = {
+  amount: number;
+  receivedAt: string;
+  interestAmount?: number;
+  fineAmount?: number;
+  accountId?: string | null;
+  paymentMethodId?: string | null;
+  notes?: string | null;
+  operationId?: string;
 };
 
 export const receivablesClient = {
@@ -41,11 +70,11 @@ export const receivablesClient = {
     body: JSON.stringify(data)
   }),
   listReceivables: () => request<Receivable[]>('/receivables/receivables'),
-  createReceivable: (data: Record<string, unknown>) => request<Receivable>('/receivables/receivables', {
+  createReceivable: (data: CreateReceivableInput) => request<Receivable>('/receivables/receivables', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
-  receive: (id: string, data: Record<string, unknown>) => request<Receipt>(`/receivables/receivables/${id}/receipts`, {
+  receive: (id: string, data: ReceiveReceivableInput) => request<Receipt>(`/receivables/receivables/${id}/receipts`, {
     method: 'POST',
     body: JSON.stringify(data)
   })

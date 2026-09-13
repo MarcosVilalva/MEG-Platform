@@ -1,0 +1,341 @@
+/* Refinamentos de homologação Phoenix V15.
+   Este arquivo atua somente no preview e não substitui os estilos-base da aplicação. */
+
+body .phoenix-v15:not([data-theme="dark"]) {
+  --bg:#eef5f3;
+  --panel:#ffffff;
+  --panel2:#f5faf8;
+  --ink:#10231d;
+  --muted:#657a72;
+  --line:#d5e4df;
+  --brand:#18b88f;
+  --brand2:#087865;
+  --cyan:#2faec2;
+  --shadow:0 12px 34px rgba(27,78,66,.08);
+}
+
+body .phoenix-v15[data-theme="dark"] {
+  --bg:#06110e;
+  --panel:#0a1d19;
+  --panel2:#0e2822;
+  --ink:#effff9;
+  --muted:#9db8af;
+  --line:#1b4036;
+  --brand:#39d7a9;
+  --brand2:#7ff0d1;
+  --cyan:#62d4df;
+  --shadow:0 16px 44px rgba(0,0,0,.28);
+}
+
+.phoenix-v15 .px-app {
+  transition:grid-template-columns .28s cubic-bezier(.2,.8,.2,1);
+}
+
+.phoenix-v15 .px-main,
+.phoenix-v15 .px-content,
+.phoenix-v15 .px-sidebar,
+.phoenix-v15 .px-side-brand,
+.phoenix-v15 .px-side-brand img,
+.phoenix-v15 .px-nav-btn,
+.phoenix-v15 .px-nav-icon,
+.phoenix-v15 .px-side-badge {
+  transition:
+    width .28s cubic-bezier(.2,.8,.2,1),
+    min-height .28s cubic-bezier(.2,.8,.2,1),
+    padding .28s cubic-bezier(.2,.8,.2,1),
+    gap .28s cubic-bezier(.2,.8,.2,1),
+    transform .28s cubic-bezier(.2,.8,.2,1),
+    opacity .18s ease;
+}
+
+.phoenix-v15 .px-main,
+.phoenix-v15 .px-content,
+.phoenix-v15 .px-card,
+.phoenix-v15 .px-dashboard-grid,
+.phoenix-v15 .px-metrics,
+.phoenix-v15 .px-bottom-grid,
+.phoenix-v15 .px-screen,
+.phoenix-v15 .px-screen-kpis {
+  min-width:0;
+}
+
+/* Workspace deve realmente crescer quando o menu recolhe. */
+.phoenix-v15 .px-content {
+  width:100%!important;
+  max-width:1800px!important;
+  padding-inline:clamp(16px,1.7vw,32px)!important;
+}
+.phoenix-v15 .px-main { width:100%; }
+.phoenix-v15 .px-app.is-collapsed { grid-template-columns:88px minmax(0,1fr)!important; }
+
+.phoenix-v15 .px-card,
+.phoenix-v15 .px-screen-kpis article,
+.phoenix-v15 .px-card-metrics > div,
+.phoenix-v15 .px-cycle-dates > div,
+.phoenix-v15 .px-toolbar select,
+.phoenix-v15 .px-search-field,
+.phoenix-v15 .px-period-popover,
+.phoenix-v15 .px-column-chooser > div {
+  transition:background-color .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+
+.phoenix-v15 .px-card:hover {
+  border-color:color-mix(in srgb,var(--brand) 14%,var(--line));
+}
+
+/* Sidebar recolhida: logo, ícones e badges permanecem legíveis e proporcionais. */
+.phoenix-v15 .px-nav-btn { position:relative; }
+.phoenix-v15 .px-nav-icon { min-width:22px; line-height:1; }
+.phoenix-v15 .px-app.is-collapsed .px-sidebar { padding-inline:10px; gap:13px; }
+.phoenix-v15 .px-app.is-collapsed .px-side-brand { min-height:62px; padding:0; }
+.phoenix-v15 .px-app.is-collapsed .px-side-brand img { width:52px; height:52px; }
+.phoenix-v15 .px-app.is-collapsed .px-search-command {
+  width:48px;
+  height:46px;
+  min-height:46px;
+  margin-inline:auto;
+  padding:0;
+  display:grid;
+  place-items:center;
+  text-align:center;
+  border-radius:13px;
+}
+.phoenix-v15 .px-app.is-collapsed .px-search-command::before { line-height:1; }
+.phoenix-v15 .px-app.is-collapsed .px-nav-btn {
+  width:50px;
+  min-height:48px;
+  margin-inline:auto;
+  padding:0;
+  justify-content:center;
+  border-radius:13px;
+}
+.phoenix-v15 .px-app.is-collapsed .px-nav-icon {
+  width:24px;
+  flex:0 0 24px;
+  font-size:17px;
+}
+.phoenix-v15 .px-app.is-collapsed .px-side-badge {
+  position:absolute;
+  top:3px;
+  right:-2px;
+  margin:0;
+  min-width:18px;
+  height:18px;
+  padding:0 4px;
+  display:grid!important;
+  place-items:center;
+  border:2px solid var(--nav2);
+  background:#2addad;
+  color:#052019;
+  font-size:8px!important;
+  font-weight:950;
+  line-height:1;
+  box-shadow:0 4px 12px rgba(0,0,0,.3);
+}
+.phoenix-v15 .px-app.is-collapsed .px-side-more { display:grid; justify-items:center; }
+.phoenix-v15 .px-app.is-collapsed .px-side-more summary {
+  width:44px;
+  height:30px;
+  padding:0;
+  display:grid;
+  place-items:center;
+  font-size:0;
+  cursor:pointer;
+  border-radius:10px;
+}
+.phoenix-v15 .px-app.is-collapsed .px-side-more summary::before {
+  content:'•••';
+  color:#78aaa2;
+  font-size:12px;
+  letter-spacing:.14em;
+}
+.phoenix-v15 .px-app.is-collapsed .px-side-user { padding-inline:0; display:grid; justify-items:center; }
+.phoenix-v15 .px-app.is-collapsed .px-side-user > div { display:none; }
+.phoenix-v15 .px-app.is-collapsed .px-side-exit { justify-content:center; gap:0; }
+.phoenix-v15 .px-app.is-collapsed .px-side-exit strong { display:none; }
+
+/* Cabeçalho global + cabeçalho da tela permanecem visíveis durante a navegação. */
+@media (min-width:761px) {
+  .phoenix-v15 .px-screen-head,
+  .phoenix-v15 .px-page-head {
+    position:sticky!important;
+    top:64px;
+    z-index:19;
+    padding:12px 2px 11px;
+    margin-bottom:8px!important;
+    background:color-mix(in srgb,var(--bg) 91%,transparent);
+    border-bottom:1px solid color-mix(in srgb,var(--line) 72%,transparent);
+    backdrop-filter:blur(18px) saturate(130%);
+  }
+
+  /* Tabelas passam a funcionar como área de análise: filtros permanecem acima e o cabeçalho da grade fica fixo. */
+  .phoenix-v15 .px-table-card { overflow:visible; }
+  .phoenix-v15 .px-table-scroll {
+    max-height:calc(100vh - 292px);
+    overflow:auto!important;
+    overscroll-behavior:contain;
+    scrollbar-gutter:stable;
+    scrollbar-width:thin;
+    scrollbar-color:color-mix(in srgb,var(--brand) 36%,var(--line)) transparent;
+  }
+  .phoenix-v15 .px-data-table thead th {
+    position:sticky!important;
+    top:0!important;
+    z-index:7!important;
+    background:color-mix(in srgb,var(--panel) 95%,var(--brand) 5%)!important;
+    box-shadow:0 1px 0 var(--line);
+    backdrop-filter:blur(12px);
+  }
+}
+
+/* O Grid MEG e as barras de filtro precisam parecer parte do sistema, não um controle isolado. */
+.phoenix-v15 .px-table-card {
+  border-color:color-mix(in srgb,var(--brand) 8%,var(--line));
+}
+.phoenix-v15 .px-table-card .px-toolbar {
+  margin:-2px -2px 10px;
+  padding:7px 7px 3px;
+  border-radius:12px;
+  background:color-mix(in srgb,var(--panel2) 74%,transparent);
+}
+.phoenix-v15 .px-search-field:focus-within,
+.phoenix-v15 .px-toolbar select:focus {
+  border-color:color-mix(in srgb,var(--brand) 52%,var(--line));
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 10%,transparent);
+  outline:0;
+}
+.phoenix-v15 .px-data-table tbody tr { transition:background-color .13s ease; }
+.phoenix-v15 .px-data-table tbody tr:hover { background:color-mix(in srgb,var(--brand) 4%,var(--panel)); }
+
+/* Reflow natural dos cartões conforme a largura útil do workspace. */
+@container phoenix-workspace (min-width:1150px) {
+  .phoenix-v15 .px-screen-kpis {
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr))!important;
+  }
+  .phoenix-v15 .px-metrics {
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr))!important;
+  }
+  .phoenix-v15 .px-card-metrics {
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr))!important;
+  }
+}
+
+/* Auditoria de tema: superfícies claras e escuras usam a mesma hierarquia visual. */
+body .phoenix-v15:not([data-theme="dark"]) .px-topbar {
+  background:rgba(255,255,255,.9);
+  box-shadow:0 8px 26px rgba(36,82,70,.05);
+}
+body .phoenix-v15:not([data-theme="dark"]) .px-dashboard-alert {
+  border-color:#cbe3dc!important;
+  background:linear-gradient(145deg,#ffffff,#eef7f4 72%)!important;
+  box-shadow:0 14px 36px rgba(36,82,70,.08)!important;
+}
+body .phoenix-v15:not([data-theme="dark"]) .px-dashboard-alert.is-positive {
+  border-color:#b8dfd4!important;
+  background:linear-gradient(145deg,#effaf6,#ffffff 70%)!important;
+}
+body .phoenix-v15:not([data-theme="dark"]) .px-dashboard-alert h3 { color:#17352d!important; }
+body .phoenix-v15:not([data-theme="dark"]) .px-dashboard-alert-icon {
+  background:#e6f6f0!important;
+  color:#087865!important;
+}
+body .phoenix-v15:not([data-theme="dark"]) .px-gap-block strong { color:#087865!important; }
+body .phoenix-v15:not([data-theme="dark"]) .px-mobile-dock {
+  background:rgba(255,255,255,.96)!important;
+  box-shadow:0 -12px 32px rgba(36,82,70,.1)!important;
+}
+
+body .phoenix-v15[data-theme="dark"] .px-topbar {
+  background:rgba(7,24,20,.9);
+  box-shadow:0 8px 28px rgba(0,0,0,.18);
+}
+body .phoenix-v15[data-theme="dark"] .px-card,
+body .phoenix-v15[data-theme="dark"] .px-screen-kpis article {
+  box-shadow:0 15px 42px rgba(0,0,0,.22);
+}
+body .phoenix-v15[data-theme="dark"] .px-dashboard-alert {
+  border-color:#244b42!important;
+  background:linear-gradient(145deg,#102a24,#091713 72%)!important;
+}
+body .phoenix-v15[data-theme="dark"] .px-dashboard-alert.is-positive {
+  border-color:#285f50!important;
+  background:linear-gradient(145deg,#13382f,#091713 72%)!important;
+}
+body .phoenix-v15[data-theme="dark"] input,
+body .phoenix-v15[data-theme="dark"] select,
+body .phoenix-v15[data-theme="dark"] textarea {
+  color-scheme:dark;
+}
+body .phoenix-v15:not([data-theme="dark"]) input,
+body .phoenix-v15:not([data-theme="dark"]) select,
+body .phoenix-v15:not([data-theme="dark"]) textarea {
+  color-scheme:light;
+}
+
+/* Loading de fallback com identidade MEG caso uma leitura direta seja necessária fora do bootstrap. */
+.phoenix-v15 .px-placeholder {
+  position:relative;
+  width:min(100%,560px);
+  min-height:300px;
+  margin:7vh auto 0;
+  padding:112px 42px 38px;
+  overflow:hidden;
+  text-align:center;
+  border-color:color-mix(in srgb,var(--brand) 22%,var(--line));
+  background:
+    radial-gradient(circle at 50% 0,color-mix(in srgb,var(--brand) 13%,transparent),transparent 44%),
+    linear-gradient(155deg,var(--panel),color-mix(in srgb,var(--panel2) 88%,var(--brand) 12%));
+}
+.phoenix-v15 .px-placeholder::before {
+  content:'';
+  position:absolute;
+  top:26px;
+  left:50%;
+  width:74px;
+  height:74px;
+  transform:translateX(-50%);
+  background:url('/brand/meg-finance-system-mark.svg') center/contain no-repeat;
+  filter:drop-shadow(0 14px 26px rgba(0,0,0,.28));
+}
+.phoenix-v15 .px-placeholder::after {
+  content:'';
+  position:absolute;
+  left:12%;
+  right:12%;
+  bottom:24px;
+  height:3px;
+  border-radius:999px;
+  background:linear-gradient(90deg,transparent,var(--brand),var(--cyan),transparent);
+  transform-origin:left center;
+  animation:px-runtime-load 1.35s ease-in-out infinite;
+}
+.phoenix-v15 .px-placeholder h2 { margin:8px 0 8px; font-size:27px; letter-spacing:-.04em; }
+.phoenix-v15 .px-placeholder p { max-width:430px; margin:0 auto; color:var(--muted); line-height:1.6; }
+
+@keyframes px-runtime-load {
+  0% { transform:scaleX(.08); opacity:.3; }
+  50% { transform:scaleX(.72); opacity:1; }
+  100% { transform:scaleX(1); opacity:.25; }
+}
+
+@media (max-width:760px) {
+  .phoenix-v15 .px-content { padding-inline:12px!important; }
+  .phoenix-v15 .px-app.is-collapsed .px-sidebar { padding-inline:14px; }
+  .phoenix-v15 .px-placeholder { margin-top:3vh; padding:104px 22px 34px; }
+  .phoenix-v15 .px-table-scroll { max-height:none; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .phoenix-v15 .px-app,
+  .phoenix-v15 .px-main,
+  .phoenix-v15 .px-sidebar,
+  .phoenix-v15 .px-side-brand,
+  .phoenix-v15 .px-side-brand img,
+  .phoenix-v15 .px-nav-btn,
+  .phoenix-v15 .px-nav-icon,
+  .phoenix-v15 .px-side-badge,
+  .phoenix-v15 .px-content {
+    transition:none!important;
+  }
+  .phoenix-v15 .px-placeholder::after { animation-duration:2.8s; }
+}

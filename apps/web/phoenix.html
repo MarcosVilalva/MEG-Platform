@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#071727" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <link rel="icon" href="./brand/meg-finance-system-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/phoenix-runtime-refinements.css" />
+    <link rel="stylesheet" href="/assets/phoenix-card-premium.css" />
+    <script>
+      (() => {
+        try {
+          const defaults = { balance:true, projection:true, summary:true, benefit:true, history:true, agenda:true };
+          const saved = JSON.parse(localStorage.getItem('meg.dashboard.preferences') || '{}');
+          const preferences = { ...defaults, ...saved };
+          Object.entries(preferences).forEach(([key, enabled]) => {
+            const attribute = 'data-meg-dashboard-' + key.replace(/[A-Z]/g, (letter) => '-' + letter.toLowerCase());
+            document.documentElement.setAttribute(attribute, enabled ? 'on' : 'off');
+          });
+        } catch {
+          /* Preferências locais são opcionais e não bloqueiam a inicialização. */
+        }
+      })();
+    </script>
+    <title>MEG Phoenix V15 — Preview</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/phoenix/preview-main.tsx"></script>
+  </body>
+</html>
