@@ -44,10 +44,39 @@ Recuperação atual:
 - **não testar “Enviar recuperação” na conta principal apenas para conferir UI**;
 - antes do corte final, avaliar migração para token/código de uso único + nova senha escolhida pelo usuário.
 
+## Menu Lateral MEG — consolidado após revisão visual
+O painel lateral passa a ser referido no projeto como **Menu Lateral MEG**.
+
+Regras consolidadas após a validação por screenshots:
+- todos os módulos ficam acessíveis no mesmo fluxo; não existe mais bloco `<details>` escondendo `Web completo`;
+- seções visuais: **Principal / Gestão / Inteligência / Sistema**;
+- o miolo de módulos possui rolagem vertical própria com scrollbar fina e visível, inclusive no modo retraído;
+- busca expandida usa ícone vetorial + `Buscar no MEG` + atalho `⌘K`;
+- busca retraída vira botão **circular de 43×43 px**, com ícone centralizado, sem o contorno quadrado antigo;
+- ícones foram redesenhados em uma única família SVG de linha, com `fill:none` e `stroke:currentColor` protegidos para impedir os artefatos quadrados vistos no navegador;
+- Histórico e Pendentes usam conceitos semanticamente diferentes: histórico = relógio/retorno; pendentes = calendário/alerta;
+- badge de Pendentes fica preso ao canto do botão sem comprimir o ícone;
+- o perfil duplicado foi removido do rodapé do Menu Lateral; perfil fica somente na barra superior;
+- o rodapé lateral contém apenas `Sair`, separado da navegação por divisor;
+- o chevron `v/⌄` da barra superior foi ocultado enquanto não existir um menu de perfil funcional associado;
+- em telas desktop de pouca altura, espaçamentos são compactados sem esconder módulos.
+
+## Perfil, foto e avatares
+O `AuthUser` atual da API **não possui campo de avatar/foto**. Para não inventar persistência em nuvem, a etapa atual implementa uma preferência visual local por usuário/navegador:
+- chave local: `meg.profile.avatar.<userId>`;
+- três modos: iniciais, avatar MEG pré-selecionado ou foto enviada pelo usuário;
+- seis avatares pré-selecionados: Aurora, Oceano, Violeta, Grafite, Cobre e Esmeralda;
+- upload aceita PNG/JPEG/WebP, limita arquivo a 8 MB, centraliza/corta a imagem e normaliza para 320×320 antes de guardar a preferência;
+- a preferência escolhida aparece no avatar da topbar;
+- o usuário logado também vê o mesmo avatar no próprio card em Usuários e permissões;
+- demais usuários continuam usando iniciais até existir campo oficial de avatar no backend;
+- não afirmar que foto/avatar está sincronizado na nuvem até existir contrato/backend específico.
+
 ## Usuários e permissões
 - Leitura administrativa oficial agrupada em **Aguardando aprovação / Usuários ativos / Bloqueados e inativos**.
 - Cards mostram perfil, telefone, data do cadastro, último acesso e estado da conta.
 - Solicitações pendentes recebem destaque visual.
+- O card do usuário autenticado reflete a preferência visual local de foto/avatar escolhida em `Configurações → Meu perfil`.
 - Ações administrativas continuam bloqueadas durante a homologação; nenhuma aprovação/bloqueio é simulada.
 
 ## Seletor global de período
@@ -106,33 +135,24 @@ Lote funcional consolidado em setembro/2026:
 - **Índice MEG 0–100 permanece “Em calibração”**: não exibir nota inventada antes de critérios/pesos transparentes e validados;
 - Análises aprofunda tendência; não deve esconder o diagnóstico de déficit/compromissos da Home.
 
-## Configurações V15 — consolidada
-A tela agora reúne os blocos previstos na V15 e melhorias acordadas:
-- Saúde do sistema;
-- Preferências gerais;
-- Segurança e sessão;
-- Sincronização/integridade;
-- Backup e dados;
-- Dispositivos;
-- Atualização Android;
-- Alertas e destinatários;
-- Automação de alertas;
-- Diagnóstico;
-- Sobre MEG.
+## Configurações V15 — reorganizada no padrão de produto
+A tela deixou de ser uma grade técnica única e passou a funcionar como workspace V15 com quatro áreas:
+1. **Meu perfil** — identidade, foto/avatar e dados oficiais do cadastro;
+2. **Aparência e Home** — tema e composição funcional do dashboard;
+3. **Segurança** — sessão, permissões e recursos de proteção realmente disponíveis/consultados;
+4. **Sistema** — saúde da base, sincronização, backup, dispositivos, alertas, diagnóstico e informações do MEG.
 
 Regras de honestidade operacional:
 - recursos nativos não lidos aparecem explicitamente como **não consultados** ou integração pendente;
 - nenhuma versão Android, dispositivo, destinatário ou automação é inventado;
-- horários V15 `06:00 / 12:00 / 19:00`, fuso São Paulo e resumo ampliado a cada 5 dias `06:00` aparecem apenas como referência de produto até existir contrato operacional correspondente;
-- restauração de backup permanece bloqueada durante read-only.
+- restauração de backup permanece bloqueada durante read-only;
+- foto/avatar fica explicitamente marcada como preferência visual local enquanto o backend não expuser campo oficial.
 
 ### Personalização funcional da Home
-Melhoria acordada além da estrutura básica da V15:
 - usuário pode mostrar/ocultar `Saldo monetário`, `Diagnóstico e projeção`, `Resumo financeiro`, `Benefício alimentação`, `Histórico recente` e `Agenda financeira`;
 - aplicação é imediata;
 - preferência persiste localmente no navegador em `meg.dashboard.preferences`;
 - `Restaurar padrão` reativa todos os blocos;
-- preferências são reaplicadas antes da montagem do app para evitar piscar a Home padrão;
 - nesta fase a preferência é local/browser, não uma configuração de workspace gravada no backend.
 
 ## Performance
@@ -189,26 +209,24 @@ Agenda setembro: 109 obrigações acionáveis / `R$ 9.505,66`; ajustes negativos
 - MELI: fatura paga `R$ 1.824,02`, compras `R$ 1.943,08`, créditos `R$ 119,06`, comprometido `R$ 2.608,42`.
 - RIACHUELO: fatura `R$ 132,99`, comprometido `R$ 531,96`.
 
-## Pendência visual conhecida — navegação
-A validação do código no head atual mostrou que `Histórico` e `Pendentes` ainda usam o mesmo glifo `◷` em `PhoenixApp.tsx`, apesar de uma etapa anterior ter sido considerada concluída. Também é necessário garantir tooltip explícito no rail recolhido. Tratar isso como correção visual aberta; não afirmar que está resolvido antes de novo commit/CI/deploy.
-
 ## Estado técnico atual
-- Head funcional: `6ae08aad4ee236b02a64da4a723748f3f64f10b2` (`fix: preservar contrato nominal das análises V15`).
-- Lote atual: Análises Financeiras V15 + Configurações V15 + personalização funcional da Home.
-- CI **1317** verde.
-- Deploy Render `dep-daj8ga5ckfvc739j7a10` **live** para esse head.
-- PR #243 deve continuar draft, aberta e sem merge.
+- Head funcional/testado antes deste checkpoint documental: `b342531cd89eb85ddea3c72c3b1b259484b7da0a` (`test: atualizar contrato visual do menu e perfil V15`).
+- Lote atual: refinamento completo do Menu Lateral + Configurações V15 por seções + perfil/foto/avatares locais + integração visual na topbar e card do usuário autenticado.
+- CI **1331** verde nesse head.
+- Deploy Render `dep-daj99o5ckfvc739jqb40` **live** nesse head.
+- PR #243 permanece draft, aberta e sem merge.
 
 ## Próximos gates
-1. validar visualmente Análises e Configurações em desktop, tela dividida, mobile, claro e escuro;
-2. validar em Configurações que mostrar/ocultar blocos altera a Home e persiste após recarregar;
-3. corrigir definitivamente ícones/tooltip do rail recolhido, pois o código atual ainda repete `◷` em Histórico/Pendentes;
+1. validar visualmente Menu Lateral aberto/retraído, scrollbar, busca circular, badges, ícones e Sair em desktop/tela dividida;
+2. validar Configurações → Meu perfil: iniciais, seis avatares e upload de foto; conferir reflexo imediato na topbar e no próprio card em Usuários;
+3. validar Configurações em claro/escuro e tamanhos estreitos;
 4. auditar PaymentMethods ativos e aplicar regra de Receita = Pix/Dinheiro/Depósito bancário;
-5. avaliar fluxo seguro por token para recuperação antes do corte;
-6. decidir explicitamente sobre PR #247 para performance mensal;
-7. fechar últimas paridades/dependências sem `npm audit fix --force`;
-8. somente depois iniciar escrita financeira seletiva;
-9. corte da Web atual apenas após paridade funcional, numérica e visual suficiente.
+5. avaliar contrato backend de avatar/foto somente quando formos liberar persistência real em nuvem;
+6. avaliar fluxo seguro por token para recuperação antes do corte;
+7. decidir explicitamente sobre PR #247 para performance mensal;
+8. fechar últimas paridades/dependências sem `npm audit fix --force`;
+9. somente depois iniciar escrita financeira seletiva;
+10. corte da Web atual apenas após paridade funcional, numérica e visual suficiente.
 
 ## Protocolo de retomada
 Ao aproximar o limite de contexto: parar em commit seguro, garantir CI/deploy, atualizar este arquivo e a PR #243.
