@@ -79,7 +79,7 @@ export function PhoenixSidebar({
 
   return <aside className="px-sidebar" aria-label="Menu Lateral MEG">
     <div className="px-side-brand"><img src="./brand/meg-finance-system-mark.svg" alt="MEG Finance System" /></div>
-    <button className="px-search-command" type="button" title={collapsed ? 'Buscar no MEG' : undefined} aria-label="Buscar no MEG" onClick={onSearch}><span className="px-search-icon"><PhoenixNavIcon name="search" /></span><span className="px-search-label">Buscar no MEG</span><kbd>⌘K</kbd></button>
+    <button className="px-search-command" type="button" title={collapsed ? 'Buscar no MEG · Ctrl/Cmd + K' : 'Atalho: Ctrl/Cmd + K'} aria-label="Buscar no MEG" onClick={onSearch}><span className="px-search-icon" aria-hidden="true">⌘</span><span className="px-search-label">Buscar no MEG</span></button>
 
     <nav className="px-nav-group" aria-label="Módulos do MEG">
       {sections.map((section) => <section className="px-side-section" key={section.label} aria-label={section.label}>
