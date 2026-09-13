@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const port = Number(process.env.PORT || 4173);
 const apiOrigin = process.env.PHOENIX_API_ORIGIN || 'https://meg-platform-api.onrender.com';
+const simpleEventWriteEnabled = process.env.PHOENIX_SIMPLE_EVENT_WRITE === 'enabled';
 const distDir = fileURLToPath(new URL('./dist/', import.meta.url));
 
 const readPrefixes = [
@@ -29,6 +30,7 @@ const allowedAuthPosts = new Set([
   '/auth/register',
   '/auth/forgot-password'
 ]);
+const allowedFinancialPosts = new Set(['/finance/events']);
 const allowedStaticFiles = new Set(['/phoenix.html']);
 const allowedStaticPrefixes = ['/assets/', '/brand/'];
 const hopByHopHeaders = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade', 'host', 'origin', 'referer', 'content-length']);
@@ -46,7 +48,9 @@ function isAllowedApiRequest(method, pathname) {
   if (method === 'GET' || method === 'HEAD') {
     return readPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`));
   }
-  return method === 'POST' && allowedAuthPosts.has(pathname);
+  if (method !== 'POST') return false;
+  if (allowedAuthPosts.has(pathname)) return true;
+  return simpleEventWriteEnabled && allowedFinancialPosts.has(pathname);
 }
 
 function isAllowedStaticPath(pathname) {
@@ -281,7 +285,11 @@ const server = createServer(async (request, response) => {
         'cache-control': 'no-store',
         ...securityHeaders()
       });
-      response.end(JSON.stringify({ status: 'ok', mode: 'phoenix-finance-read-only-preview' }));
+      response.end(JSON.stringify({
+        status: 'ok',
+        mode: simpleEventWriteEnabled ? 'phoenix-simple-event-write-gated-preview' : 'phoenix-finance-read-only-preview',
+        capabilities: { simpleEventWrite: simpleEventWriteEnabled }
+      }));
       return;
     }
     if (url.pathname === periodEventsPath) {
@@ -314,5 +322,5 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(port, '0.0.0.0', () => {
-  console.log(`Phoenix read-only preview listening on :${port}`);
+  console.log(`Phoenix preview listening on :${port} · simpleEventWrite=${simpleEventWriteEnabled ? 'enabled' : 'disabled'}`);
 });
