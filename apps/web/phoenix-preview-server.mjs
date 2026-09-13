@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, resolve } from 'node:path';
@@ -25,6 +26,10 @@ const allowedAuthPosts = new Set(['/auth/login', '/auth/refresh', '/auth/logout'
 const allowedStaticFiles = new Set(['/phoenix.html']);
 const allowedStaticPrefixes = ['/assets/', '/brand/'];
 const hopByHopHeaders = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade', 'host', 'origin', 'referer', 'content-length']);
+const periodEventsPath = '/finance/phoenix-preview/events';
+const periodEventsCache = new Map();
+const periodEventsInFlight = new Map();
+const PERIOD_EVENTS_TTL = 60_000;
 
 function isApiPath(pathname) {
   return readPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`))
@@ -69,6 +74,22 @@ function securityHeaders() {
   };
 }
 
+function upstreamHeaders(request) {
+  const headers = new Headers();
+  for (const [name, value] of Object.entries(request.headers)) {
+    if (value === undefined || hopByHopHeaders.has(name.toLowerCase())) continue;
+    if (Array.isArray(value)) value.forEach((item) => headers.append(name, item));
+    else headers.set(name, value);
+  }
+  return headers;
+}
+
+function requestIdentity(request) {
+  const authorization = String(request.headers.authorization || '');
+  const cookie = String(request.headers.cookie || '');
+  return createHash('sha256').update(`${authorization}\n${cookie}`).digest('hex');
+}
+
 async function readBody(request) {
   const chunks = [];
   let length = 0;
@@ -78,6 +99,108 @@ async function readBody(request) {
     chunks.push(chunk);
   }
   return chunks.length ? Buffer.concat(chunks) : undefined;
+}
+
+async function fetchEventPage(headers, page) {
+  const target = new URL(`/finance/events?page=${page}&pageSize=100`, apiOrigin);
+  const upstream = await fetch(target, { method: 'GET', headers, redirect: 'manual', signal: AbortSignal.timeout(45_000) });
+  if (!upstream.ok) {
+    const error = new Error(`PREVIEW_EVENTS_UPSTREAM_${upstream.status}`);
+    error.status = upstream.status;
+    error.body = await upstream.text();
+    throw error;
+  }
+  return upstream.json();
+}
+
+async function fetchAllPreviewEvents(request, force = false) {
+  const cacheKey = requestIdentity(request);
+  const cached = periodEventsCache.get(cacheKey);
+  if (!force && cached && Date.now() - cached.storedAt <= PERIOD_EVENTS_TTL) return cached.data;
+  if (!force && periodEventsInFlight.has(cacheKey)) return periodEventsInFlight.get(cacheKey);
+
+  const headers = upstreamHeaders(request);
+  const pending = (async () => {
+    const first = await fetchEventPage(headers, 1);
+    const pages = Math.max(1, Math.ceil(Number(first.total || 0) / 100));
+    const items = Array.isArray(first.items) ? [...first.items] : [];
+    for (let page = 2; page <= pages; page += 8) {
+      const batch = Array.from({ length: Math.min(8, pages - page + 1) }, (_, index) => page + index);
+      const results = await Promise.all(batch.map((current) => fetchEventPage(headers, current)));
+      for (const result of results) {
+        if (Array.isArray(result.items)) items.push(...result.items);
+      }
+    }
+    const unique = new Map(items.filter((item) => item && item.id).map((item) => [item.id, item]));
+    const data = [...unique.values()].sort((left, right) => {
+      const byDate = String(right.date || '').localeCompare(String(left.date || ''));
+      if (byDate) return byDate;
+      return String(right.createdAt || '').localeCompare(String(left.createdAt || ''));
+    });
+    periodEventsCache.set(cacheKey, { storedAt: Date.now(), data });
+    if (periodEventsCache.size > 20) {
+      const oldest = [...periodEventsCache.entries()].sort((a, b) => a[1].storedAt - b[1].storedAt)[0]?.[0];
+      if (oldest) periodEventsCache.delete(oldest);
+    }
+    return data;
+  })().finally(() => {
+    if (periodEventsInFlight.get(cacheKey) === pending) periodEventsInFlight.delete(cacheKey);
+  });
+  periodEventsInFlight.set(cacheKey, pending);
+  return pending;
+}
+
+async function servePeriodEvents(request, response, url) {
+  const method = request.method || 'GET';
+  if (!['GET', 'HEAD'].includes(method)) {
+    response.writeHead(405, {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      ...securityHeaders()
+    });
+    response.end(JSON.stringify({ error: 'PREVIEW_READ_ONLY' }));
+    return;
+  }
+
+  const from = url.searchParams.get('from') || '';
+  const to = url.searchParams.get('to') || '';
+  if ((from && !/^\d{4}-\d{2}-\d{2}$/.test(from)) || (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)) || (from && to && from > to)) {
+    response.writeHead(400, {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      ...securityHeaders()
+    });
+    response.end(JSON.stringify({ error: 'VALIDATION_ERROR' }));
+    return;
+  }
+
+  try {
+    const all = await fetchAllPreviewEvents(request, url.searchParams.get('refresh') === '1');
+    const items = all.filter((item) => {
+      const day = String(item.date || '').slice(0, 10);
+      if (from && day < from) return false;
+      if (to && day > to) return false;
+      return true;
+    });
+    response.writeHead(200, {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      ...securityHeaders()
+    });
+    if (method === 'HEAD') {
+      response.end();
+      return;
+    }
+    response.end(JSON.stringify({ items, total: items.length, page: 1, pageSize: items.length }));
+  } catch (error) {
+    const status = Number(error?.status || 502);
+    response.writeHead(status, {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      ...securityHeaders()
+    });
+    response.end(error?.body || JSON.stringify({ error: 'PREVIEW_EVENTS_AGGREGATION_FAILED' }));
+  }
 }
 
 async function proxyApi(request, response, url) {
@@ -92,12 +215,7 @@ async function proxyApi(request, response, url) {
   }
 
   const target = new URL(`${url.pathname}${url.search}`, apiOrigin);
-  const headers = new Headers();
-  for (const [name, value] of Object.entries(request.headers)) {
-    if (value === undefined || hopByHopHeaders.has(name.toLowerCase())) continue;
-    if (Array.isArray(value)) value.forEach((item) => headers.append(name, item));
-    else headers.set(name, value);
-  }
+  const headers = upstreamHeaders(request);
   const method = request.method || 'GET';
   const body = method === 'GET' || method === 'HEAD' ? undefined : await readBody(request);
   const upstream = await fetch(target, { method, headers, body, redirect: 'manual', signal: AbortSignal.timeout(45_000) });
@@ -158,6 +276,10 @@ const server = createServer(async (request, response) => {
         ...securityHeaders()
       });
       response.end(JSON.stringify({ status: 'ok', mode: 'phoenix-read-only-preview' }));
+      return;
+    }
+    if (url.pathname === periodEventsPath) {
+      await servePeriodEvents(request, response, url);
       return;
     }
     if (isApiPath(url.pathname)) {
