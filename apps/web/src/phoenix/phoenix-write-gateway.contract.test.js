@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const gateway = readFileSync(new URL('./data/phoenix-write-gateway.ts', import.meta.url), 'utf8');
 const movements = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
-const previewServer = readFileSync(new URL('../phoenix-preview-server.mjs', import.meta.url), 'utf8');
+const previewServer = readFileSync(new URL('../../phoenix-preview-server.mjs', import.meta.url), 'utf8');
 
 assert.match(gateway, /simpleEvent:\s*false/,
   'Writer deve permanecer desabilitado por capacidade enquanto backend/proxy não forem liberados.');
