@@ -51,6 +51,7 @@
     "dev:api": "npm --workspace apps/api run dev",
     "start:api": "npm --workspace apps/api run start",
     "db:audit:catalog-ownership": "npm --workspace packages/database run db:audit:catalog-ownership",
+    "db:audit:income-payment-methods": "npm --workspace packages/database run db:audit:income-payment-methods",
     "db:generate": "npm --workspace packages/database run db:generate",
     "db:push": "npm --workspace packages/database run db:push",
     "db:push:production": "npm --workspace packages/database run db:push:production",
