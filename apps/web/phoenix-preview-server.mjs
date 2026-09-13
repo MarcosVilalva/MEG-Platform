@@ -7,8 +7,7 @@ import { fileURLToPath } from 'node:url';
 const port = Number(process.env.PORT || 4173);
 const apiOrigin = process.env.PHOENIX_API_ORIGIN || 'https://meg-platform-api.onrender.com';
 const simpleEventWriteEnabled = process.env.PHOENIX_SIMPLE_EVENT_WRITE === 'enabled';
-const pendingSettlementWriteEnabled = process.env.PHOENIX_PENDING_SETTLEMENT_WRITE === 'enabled';
-const pendingSettlementEventId = String(process.env.PHOENIX_PENDING_SETTLEMENT_EVENT_ID || '').trim();
+const pendingWriteEnabled = process.env.PHOENIX_PENDING_WRITE === 'enabled';
 const distDir = fileURLToPath(new URL('./dist/', import.meta.url));
 
 const readPrefixes = [
@@ -46,10 +45,10 @@ function isApiPath(pathname) {
     || allowedAuthPosts.has(pathname);
 }
 
-function isAllowedPendingSettlement(pathname) {
-  return pendingSettlementWriteEnabled
-    && Boolean(pendingSettlementEventId)
-    && pathname === `/finance/events/${pendingSettlementEventId}/settle`;
+function isAllowedPendingWrite(pathname) {
+  if (!pendingWriteEnabled) return false;
+  return /^\/finance\/events\/[^/]+\/settle$/.test(pathname)
+    || /^\/payables\/[^/]+\/payments$/.test(pathname);
 }
 
 function isAllowedApiRequest(method, pathname) {
@@ -59,7 +58,7 @@ function isAllowedApiRequest(method, pathname) {
   if (method !== 'POST') return false;
   if (allowedAuthPosts.has(pathname)) return true;
   if (simpleEventWriteEnabled && allowedFinancialPosts.has(pathname)) return true;
-  return isAllowedPendingSettlement(pathname);
+  return isAllowedPendingWrite(pathname);
 }
 
 function isAllowedStaticPath(pathname) {
@@ -296,14 +295,14 @@ const server = createServer(async (request, response) => {
       });
       response.end(JSON.stringify({
         status: 'ok',
-        mode: pendingSettlementWriteEnabled
-          ? 'phoenix-pending-settlement-gated-preview'
+        mode: pendingWriteEnabled
+          ? 'phoenix-pending-write-gated-preview'
           : simpleEventWriteEnabled
             ? 'phoenix-simple-event-write-gated-preview'
             : 'phoenix-finance-read-only-preview',
         capabilities: {
           simpleEventWrite: simpleEventWriteEnabled,
-          pendingSettlementWrite: pendingSettlementWriteEnabled && Boolean(pendingSettlementEventId)
+          pendingWrite: pendingWriteEnabled
         }
       }));
       return;
@@ -339,6 +338,6 @@ const server = createServer(async (request, response) => {
 
 server.listen(port, '0.0.0.0', () => {
   console.log(
-    `Phoenix preview listening on :${port} · simpleEventWrite=${simpleEventWriteEnabled ? 'enabled' : 'disabled'} · pendingSettlementWrite=${pendingSettlementWriteEnabled && pendingSettlementEventId ? 'enabled' : 'disabled'}`
+    `Phoenix preview listening on :${port} · simpleEventWrite=${simpleEventWriteEnabled ? 'enabled' : 'disabled'} · pendingWrite=${pendingWriteEnabled ? 'enabled' : 'disabled'}`
   );
 });
