@@ -1,0 +1,101 @@
+/*
+ * Integração React da V15 Phoenix.
+ *
+ * Regras visuais canônicas permanecem em v15-source.css, extraído sem alteração
+ * do HTML V15 validado. Este arquivo contém somente adaptações necessárias para
+ * a entrada React e estados ainda não existentes no protótipo estático.
+ */
+
+#root {
+  min-height: 100dvh;
+}
+
+body.web-validation {
+  min-width: 320px;
+}
+
+.phoenix-boot {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  min-height: 100dvh;
+  padding: 28px;
+  text-align: center;
+  color: #ecfff9;
+  background:
+    radial-gradient(circle at 65% 25%, #103d43 0, #071727 36%, #030a12 100%);
+}
+
+.phoenix-boot img {
+  width: 96px;
+  height: 96px;
+}
+
+.phoenix-boot strong {
+  font-size: 18px;
+}
+
+.phoenix-boot small {
+  max-width: 420px;
+  color: #9fc3bf;
+  line-height: 1.5;
+}
+
+.phoenix-boot-progress {
+  width: min(230px, 72vw);
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #143941;
+}
+
+.phoenix-boot-progress::after {
+  content: "";
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4bbac7, #53cf8d);
+  animation: phoenixBoot 1s ease-in-out infinite alternate;
+}
+
+@keyframes phoenixBoot {
+  from { transform: translateX(-15%); }
+  to { transform: translateX(155%); }
+}
+
+.phoenix-placeholder {
+  min-height: 180px;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+}
+
+.phoenix-placeholder strong {
+  font-size: 16px;
+}
+
+.phoenix-placeholder p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+body.web-validation .auth {
+  min-height: 100dvh;
+}
+
+body.web-validation .auth .auth-card input {
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phoenix-boot-progress::after {
+    animation: none;
+  }
+}
