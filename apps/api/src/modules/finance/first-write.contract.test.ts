@@ -25,6 +25,12 @@ assert.match(mutation, /OPERATION_ID_REUSED/,
   'Mesmo operationId com conteúdo diferente deve ser rejeitado.');
 assert.match(mutation, /idempotentReplay:\s*true/,
   'Retry idêntico deve retornar o mesmo comando identificado como replay.');
+assert.match(mutation, /P2002/,
+  'Corrida concorrente na unicidade do recibo deve ser tratada explicitamente.');
+assert.match(mutation, /isUniqueConflict\(error\)/,
+  'Conflito concorrente deve reler o recibo vencedor após rollback.');
+assert.match(mutation, /prisma\.cloudMutationReceipt\.findUnique/,
+  'Replay concorrente deve consultar o recibo já confirmado fora da transação revertida.');
 assert.match(mutation, /const workspace = await resolveWorkspaceContext\(userId\)/,
   'Todo novo evento deve resolver o workspace financeiro.');
 assert.match(mutation, /workspaceId: workspace\.workspaceId/,
