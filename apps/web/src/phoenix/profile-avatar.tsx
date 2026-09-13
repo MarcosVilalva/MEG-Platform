@@ -1,6 +1,5 @@
 import type { CSSProperties } from 'react';
 import { readSession } from '../app/auth-client';
-import { PHOENIX_AVATAR_SPRITE_URL, phoenixPeopleAvatarAssets } from './profile-avatar-assets';
 
 export type PhoenixAvatarPreference =
   | { kind: 'initials' }
@@ -14,7 +13,34 @@ export type PhoenixAvatarPreset = {
   row: number;
 };
 
-export const phoenixAvatarPresets: PhoenixAvatarPreset[] = phoenixPeopleAvatarAssets;
+const PHOENIX_AVATAR_SPRITE_URL = '/brand/avatars/people-sprite.webp';
+
+export const phoenixAvatarPresets: PhoenixAvatarPreset[] = [
+  { id: 'people-01', label: 'Alex', column: 0, row: 0 },
+  { id: 'people-02', label: 'Noah', column: 1, row: 0 },
+  { id: 'people-03', label: 'Mentor', column: 2, row: 0 },
+  { id: 'people-04', label: 'Luna', column: 3, row: 0 },
+  { id: 'people-05', label: 'Dara', column: 4, row: 0 },
+  { id: 'people-06', label: 'Safira', column: 5, row: 0 },
+  { id: 'people-07', label: 'Ravi', column: 0, row: 1 },
+  { id: 'people-08', label: 'Theo', column: 1, row: 1 },
+  { id: 'people-09', label: 'Cora', column: 2, row: 1 },
+  { id: 'people-10', label: 'Íris', column: 3, row: 1 },
+  { id: 'people-11', label: 'Mei', column: 4, row: 1 },
+  { id: 'people-12', label: 'Bella', column: 5, row: 1 },
+  { id: 'people-13', label: 'Malik', column: 0, row: 2 },
+  { id: 'people-14', label: 'Leo', column: 1, row: 2 },
+  { id: 'people-15', label: 'Nina', column: 2, row: 2 },
+  { id: 'people-16', label: 'Maya', column: 3, row: 2 },
+  { id: 'people-17', label: 'Clara', column: 4, row: 2 },
+  { id: 'people-18', label: 'Ben', column: 5, row: 2 },
+  { id: 'people-19', label: 'Caio', column: 0, row: 3 },
+  { id: 'people-20', label: 'Eva', column: 1, row: 3 },
+  { id: 'people-21', label: 'Gael', column: 2, row: 3 },
+  { id: 'people-22', label: 'Lia', column: 3, row: 3 },
+  { id: 'people-23', label: 'Otto', column: 4, row: 3 },
+  { id: 'people-24', label: 'Max', column: 5, row: 3 }
+];
 
 const LEGACY_PRESET_ALIASES: Record<string, string> = {
   maya: 'people-01', aurora: 'people-01',
@@ -69,20 +95,12 @@ function presetPosition(preset: PhoenixAvatarPreset) {
 
 function avatarVisual(preference: PhoenixAvatarPreference) {
   if (preference.kind === 'photo') {
-    return {
-      image: preference.dataUrl,
-      position: 'center',
-      size: 'cover'
-    };
+    return { image: preference.dataUrl, position: 'center', size: 'cover' };
   }
   if (preference.kind === 'preset') {
     const preset = findPreset(preference.presetId);
     if (!preset) return null;
-    return {
-      image: PHOENIX_AVATAR_SPRITE_URL,
-      position: presetPosition(preset),
-      size: '600% 400%'
-    };
+    return { image: PHOENIX_AVATAR_SPRITE_URL, position: presetPosition(preset), size: '600% 400%' };
   }
   return null;
 }
@@ -148,15 +166,7 @@ export async function imageFileToAvatarDataUrl(file: File) {
   return canvas.toDataURL('image/jpeg', .84);
 }
 
-export function PhoenixProfileAvatar({
-  name,
-  preference,
-  className = ''
-}: {
-  name: string;
-  preference: PhoenixAvatarPreference;
-  className?: string;
-}) {
+export function PhoenixProfileAvatar({ name, preference, className = '' }: { name: string; preference: PhoenixAvatarPreference; className?: string }) {
   const visual = avatarVisual(preference);
   const initial = (name || 'M').trim().slice(0, 1).toUpperCase();
   const style = visual ? ({
