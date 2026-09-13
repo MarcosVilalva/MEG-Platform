@@ -257,19 +257,8 @@ async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boo
 }
 
 async function fetchAllFinancialEvents(): Promise<PhoenixReadModel['events']> {
-  const first = await financeClient.listEvents(1, 100);
-  const pages = Math.max(1, Math.ceil(first.total / 100));
-  const items = [...first.items];
-
-  // Não dispara dezenas de consultas simultâneas. O histórico completo é lido em lotes pequenos,
-  // somente quando o usuário pede explicitamente “Tudo”.
-  for (let page = 2; page <= pages; page += 6) {
-    const batch = Array.from({ length: Math.min(6, pages - page + 1) }, (_, index) => page + index);
-    const results = await Promise.all(batch.map((current) => financeClient.listEvents(current, 100)));
-    results.forEach((result) => items.push(...result.items));
-  }
-
-  const unique = new Map(items.map((event) => [event.id, hydrateEventSourceDetails(event)]));
+  const result = await authenticatedRequest<PhoenixReadModel['events']>('/finance/phoenix-preview/events');
+  const unique = new Map(result.items.map((event) => [event.id, hydrateEventSourceDetails(event)]));
   const hydrated = [...unique.values()].sort((left, right) => String(right.date).localeCompare(String(left.date)));
   return { items: hydrated, total: hydrated.length, page: 1, pageSize: hydrated.length };
 }
