@@ -11,6 +11,7 @@ type TxType = 'expense' | 'income' | 'transfer';
 type GridKey = 'dueDate' | 'purchaseDate' | 'weekday' | 'type' | 'description' | 'income' | 'classification' | 'group' | 'expense' | 'paymentMethod' | 'status' | 'modality';
 type GridSort = { key: GridKey; direction: PhoenixGridSortDirection } | null;
 type GridFilterMap = Record<GridKey, PhoenixGridFilterValue>;
+type FinancialEventWithSourcePayload = FinancialEvent & { sourcePayload?: unknown };
 type LaunchDraft = {
   type: TxType;
   description: string;
@@ -184,6 +185,20 @@ function sourceModality(event: FinancialEvent) {
   return event.sourceDetails?.modality || '—';
 }
 
+function sourcePurchaseDate(event: FinancialEvent) {
+  const payload = (event as FinancialEventWithSourcePayload).sourcePayload;
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    const value = (payload as Record<string, unknown>).purchaseDate;
+    const normalized = String(value || '').slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized;
+  }
+  return event.date.slice(0, 10);
+}
+
+function formatIsoDate(value: string) {
+  return date.format(new Date(`${value.slice(0, 10)}T12:00:00Z`));
+}
+
 function parseBrazilianNumber(value: string) {
   const normalized = String(value || '').trim().replace(/R\$/gi, '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
   if (!normalized) return null;
@@ -195,7 +210,7 @@ function gridRow(event: FinancialEvent) {
   const visualType = launchTypeForEvent(event.type);
   const effect = displayEffect(event);
   return {
-    dueDate: event.date.slice(0, 10), purchaseDate: event.date.slice(0, 10),
+    dueDate: event.date.slice(0, 10), purchaseDate: sourcePurchaseDate(event),
     weekday: event.sourceDetails?.weekday || weekday(event.date),
     type: visualType === 'income' ? 'Receita' : visualType === 'transfer' ? 'Transferência' : 'Despesa',
     description: event.description,
@@ -532,8 +547,8 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
             const effect = displayEffect(event);
             const isIncome = visualType === 'income';
             return <tr key={event.id}>
-              <td data-label="Vencimento">{date.format(new Date(event.date))}</td>
-              <td data-label="Data da compra">{date.format(new Date(event.date))}</td>
+              <td data-label="Vencimento">{formatIsoDate(event.date)}</td>
+              <td data-label="Data da compra">{formatIsoDate(sourcePurchaseDate(event))}</td>
               <td data-label="Dia">{event.sourceDetails?.weekday || weekday(event.date)}</td>
               <td data-label="Tipo"><span className={`px-type-flag ${visualType}`}>{isIncome ? 'RECEITA' : visualType === 'transfer' ? 'TRANSFERÊNCIA' : 'DESPESA'}</span></td>
               <td data-label="Descrição"><strong>{event.description}</strong></td>
@@ -621,7 +636,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
     {detailEvent ? <aside className="px-detail-drawer open" aria-label="Detalhes do lançamento">
       <div className="px-drawer-head"><div><span className="px-kicker">Lançamento</span><h2>Detalhes</h2></div><button className="px-icon-btn" type="button" onClick={() => setDetailEvent(null)}>×</button></div>
       <p className="px-detail-description">{detailEvent.description}</p>
-      <div className="px-detail-grid"><div><span>Data</span><strong>{date.format(new Date(detailEvent.date))}</strong></div><div><span>Situação</span><strong>{eventStatus(detailEvent.status)}</strong></div><div><span>Conta</span><strong>{detailEvent.account?.name || 'Não informada'}</strong></div><div><span>Sincronização</span><strong>Confirmada na leitura atual</strong></div><div><span>Tipo</span><strong>{eventType(detailEvent.type)}</strong></div><div><span>Valor</span><strong>{money.format(displayEffect(detailEvent))}</strong></div><div><span>Classificação</span><strong>{sourceClassification(detailEvent)}</strong></div><div><span>Grupo</span><strong>{sourceGroup(detailEvent)}</strong></div><div><span>Forma</span><strong>{detailEvent.paymentMethod?.name || detailEvent.sourceDetails?.paymentMethod || '—'}</strong></div><div><span>Modalidade</span><strong>{detailEvent.sourceDetails?.modality || '—'}</strong></div></div>
+      <div className="px-detail-grid"><div><span>Vencimento</span><strong>{formatIsoDate(detailEvent.date)}</strong></div><div><span>Data da compra</span><strong>{formatIsoDate(sourcePurchaseDate(detailEvent))}</strong></div><div><span>Situação</span><strong>{eventStatus(detailEvent.status)}</strong></div><div><span>Conta</span><strong>{detailEvent.account?.name || 'Não informada'}</strong></div><div><span>Sincronização</span><strong>Confirmada na leitura atual</strong></div><div><span>Tipo</span><strong>{eventType(detailEvent.type)}</strong></div><div><span>Valor</span><strong>{money.format(displayEffect(detailEvent))}</strong></div><div><span>Classificação</span><strong>{sourceClassification(detailEvent)}</strong></div><div><span>Grupo</span><strong>{sourceGroup(detailEvent)}</strong></div><div><span>Forma</span><strong>{detailEvent.paymentMethod?.name || detailEvent.sourceDetails?.paymentMethod || '—'}</strong></div><div><span>Modalidade</span><strong>{detailEvent.sourceDetails?.modality || '—'}</strong></div></div>
       {detailEvent.notes ? <div className="px-notice">{detailEvent.notes}</div> : null}
       <div className="px-notice">A edição permanece em simulação. Quando a escrita for habilitada, qualquer alteração deverá preservar rastreabilidade e histórico.</div>
       <div className="px-detail-actions"><button className="px-primary-action" type="button" onClick={() => openLaunch(detailEvent)}>Preparar edição</button><button className="px-secondary-action" type="button" onClick={() => { setDetailEvent(null); onNavigateHistory?.(); }}>Ver histórico</button></div>
