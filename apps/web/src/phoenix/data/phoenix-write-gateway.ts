@@ -1,6 +1,6 @@
 import { financeClient, type FinancialEvent, type FinancialEventInput } from '../../app/finance-client';
 import type { PhoenixReadModel } from '../contracts';
-import { invalidatePhoenixFinancialReadCaches, loadPhoenixReadModel } from './load-phoenix-read-model';
+import { clearPhoenixReadModelCache, loadPhoenixReadModel } from './load-phoenix-read-model';
 
 export const PHOENIX_WRITE_CAPABILITIES = {
   simpleEvent: false,
@@ -99,7 +99,7 @@ export async function submitPhoenixSimpleEvent(
     operationId: prepared.operationId,
   });
 
-  invalidatePhoenixFinancialReadCaches(refreshMonth);
+  clearPhoenixReadModelCache();
   const snapshot = await loadPhoenixReadModel(refreshMonth, { force: true });
   return { event, snapshot };
 }
