@@ -110,7 +110,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme }: PhoenixSettingsP
       <article className="px-card px-settings-card">
         <div className="px-settings-title"><span>◈</span><div><span className="px-kicker">Segurança</span><h2>Sessão e permissões</h2></div></div>
         <dl><div><dt>Usuário</dt><dd>{data.user.name}</dd></div><div><dt>E-mail</dt><dd>{data.user.email}</dd></div><div><dt>Perfil</dt><dd>{data.user.role}</dd></div><div><dt>Status</dt><dd>{data.user.status}</dd></div><div><dt>Último acesso</dt><dd>{data.user.lastLoginAt ? new Date(data.user.lastLoginAt).toLocaleString('pt-BR') : 'Não informado'}</dd></div></dl>
-        <div className="px-settings-status-list"><span>Biometria · depende do módulo nativo Android</span><span>Bloqueio automático · integração pendente</span><span>Outras sessões · ação administrativa ainda bloqueada</span></div>
+        <div className="px-settings-status-list"><span>Biometria · não consultada no módulo nativo Android</span><span>Bloqueio automático · não consultada nesta interface Web</span><span>Outras sessões · ação administrativa ainda bloqueada</span></div>
       </article>
 
       <article className="px-card px-settings-card">
@@ -129,13 +129,13 @@ export function PhoenixSettings({ data, theme, onToggleTheme }: PhoenixSettingsP
       <article className="px-card px-settings-card">
         <div className="px-settings-title"><span>▣</span><div><span className="px-kicker">Dispositivos</span><h2>Web e Android</h2></div></div>
         <p>Não exibimos dispositivos fictícios. O estado real será conectado quando o módulo nativo expuser uma leitura confiável.</p>
-        <div className="px-settings-status-list"><span>Web atual · sessão autenticada</span><span>Android · integração de dispositivo pendente</span><span>Biometria · leitura nativa pendente</span></div>
+        <div className="px-settings-status-list"><span>Web atual · sessão autenticada</span><span>Android · integração de dispositivo pendente</span><span>Biometria · não consultada nesta sessão Web</span></div>
       </article>
 
       <article className="px-card px-settings-card">
         <div className="px-settings-title"><span>⇩</span><div><span className="px-kicker">Atualização</span><h2>Aplicativo Android</h2></div></div>
         <p>A regra final continua sendo atualização assistida pelo próprio aplicativo. Como a Web é o foco atual, nenhum número de versão é inventado aqui.</p>
-        <div className="px-settings-status-list"><span>Canal Android · preservado</span><span>Verificação OTA · conectar após o corte Web</span></div>
+        <div className="px-settings-status-list"><span>Canal Android · preservado</span><span>Verificação OTA · não consultada pela Phoenix Web</span></div>
       </article>
 
       <article className="px-card px-settings-card">
