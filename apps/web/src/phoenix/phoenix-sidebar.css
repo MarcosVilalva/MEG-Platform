@@ -8,7 +8,7 @@
 .px-search-command,
 .px-side-footer { flex:0 0 auto; }
 
-/* Busca V15: o símbolo de comando é a identidade visual; o atalho não fica exposto. */
+/* Busca V15: um único símbolo de comando; o atalho permanece funcional sem poluir a UI. */
 .px-search-command {
   min-height:42px;
   display:flex;
@@ -16,25 +16,23 @@
   gap:9px;
   padding:0 12px;
   border-radius:13px;
-  overflow:visible;
+  overflow:hidden!important;
 }
+.px-search-command::before,
+.px-search-command::after { content:none!important; display:none!important; }
 .px-search-icon {
   flex:0 0 22px;
   width:22px;
   height:22px;
   display:grid;
   place-items:center;
-  font-size:0;
-}
-.px-search-icon svg { display:none!important; }
-.px-search-icon::before {
-  content:'⌘';
-  display:block;
   color:currentColor;
   font-size:18px;
   line-height:1;
   font-weight:700;
 }
+.px-search-icon::before,
+.px-search-icon::after { content:none!important; display:none!important; }
 .px-search-label {
   min-width:0;
   flex:1;
@@ -44,12 +42,12 @@
 }
 .px-search-command kbd { display:none!important; }
 
-/* A navegação é sempre a única área rolável da sidebar. */
+/* A navegação é sempre a única área rolável da sidebar: somente eixo vertical. */
 .px-nav-group {
   flex:1 1 auto;
   min-height:0;
   overflow-y:scroll!important;
-  overflow-x:visible!important;
+  overflow-x:hidden!important;
   padding:0 7px 12px 0;
   margin:0;
   scrollbar-gutter:stable;
@@ -57,12 +55,12 @@
   scrollbar-color:#38d7aa82 #ffffff0a!important;
   overscroll-behavior:contain;
 }
-.px-nav-group::-webkit-scrollbar { width:6px!important; display:block!important; }
+.px-nav-group::-webkit-scrollbar { width:6px!important; height:0!important; display:block!important; }
 .px-nav-group::-webkit-scrollbar-track { background:#ffffff09!important; border-radius:999px; }
 .px-nav-group::-webkit-scrollbar-thumb { background:#38d7aa73!important; border-radius:999px; border:1px solid #38d7aa28; }
 .px-nav-group:hover::-webkit-scrollbar-thumb { background:#4ce8bc9c!important; }
 
-.px-side-section { display:grid; gap:2px; }
+.px-side-section { display:grid; gap:2px; min-width:0; overflow:hidden; }
 .px-side-section + .px-side-section {
   margin-top:9px;
   padding-top:9px;
@@ -82,9 +80,12 @@
   position:relative;
   min-height:40px;
   isolation:isolate;
+  max-width:100%;
 }
+.px-nav-btn::before,
+.px-nav-btn::after { content:none!important; display:none!important; }
 
-/* Um único desenho por item. Remove qualquer resíduo/pseudo-elemento que gerava os quadrados. */
+/* Um único desenho por item. Remove qualquer resíduo/pseudo-elemento que gerava quadrados. */
 .px-nav-icon {
   position:relative;
   display:grid!important;
@@ -100,7 +101,7 @@
   box-shadow:none!important;
   font-size:0!important;
   line-height:0!important;
-  overflow:visible!important;
+  overflow:hidden!important;
 }
 .px-nav-icon::before,
 .px-nav-icon::after { content:none!important; display:none!important; }
@@ -110,7 +111,7 @@
   height:19px!important;
   min-width:19px!important;
   min-height:19px!important;
-  overflow:visible!important;
+  overflow:hidden!important;
   background:transparent!important;
   fill:none!important;
   stroke:currentColor!important;
@@ -131,6 +132,7 @@
   display:grid;
   padding-top:8px;
   border-top:1px solid #ffffff18;
+  overflow:hidden;
 }
 .px-side-footer .px-side-exit {
   min-height:40px;
@@ -144,7 +146,11 @@
   padding:8px 11px;
   text-align:left;
   font-weight:800;
+  max-width:100%;
+  overflow:hidden;
 }
+.px-side-footer .px-side-exit::before,
+.px-side-footer .px-side-exit::after { content:none!important; display:none!important; }
 .px-side-footer .px-side-exit:hover { background:#ffffff0e; color:#fff; border-color:#ffffff20; }
 
 /* O perfil fica somente na barra superior. */
@@ -172,7 +178,7 @@ html[data-meg-user-avatar="image"] .px-user-avatar {
   font-weight:950;
 }
 
-/* Rail retraído: busca redonda, ícones centralizados e scrollbar visível. */
+/* Rail retraído: busca circular, ícones centralizados e somente scrollbar vertical. */
 .px-app.is-collapsed .px-sidebar {
   padding:12px 7px 9px!important;
   gap:9px!important;
@@ -197,6 +203,7 @@ html[data-meg-user-avatar="image"] .px-user-avatar {
   background:#ffffff07!important;
   border:1px solid #ffffff1d!important;
   box-shadow:none!important;
+  overflow:hidden!important;
 }
 .px-app.is-collapsed .px-search-command:hover {
   background:#1dc69a18!important;
@@ -207,8 +214,8 @@ html[data-meg-user-avatar="image"] .px-user-avatar {
   width:22px!important;
   height:22px!important;
   flex:0 0 22px!important;
+  font-size:19px!important;
 }
-.px-app.is-collapsed .px-search-icon::before { font-size:19px; }
 .px-app.is-collapsed .px-search-label,
 .px-app.is-collapsed .px-search-command kbd { display:none!important; }
 
@@ -217,12 +224,12 @@ html[data-meg-user-avatar="image"] .px-user-avatar {
   padding:0 7px 12px 0!important;
   margin:0!important;
   overflow-y:scroll!important;
-  overflow-x:visible!important;
+  overflow-x:hidden!important;
   scrollbar-gutter:stable!important;
   scrollbar-width:thin!important;
   scrollbar-color:#42dfb58f #ffffff0c!important;
 }
-.px-app.is-collapsed .px-nav-group::-webkit-scrollbar { width:6px!important; display:block!important; }
+.px-app.is-collapsed .px-nav-group::-webkit-scrollbar { width:6px!important; height:0!important; display:block!important; }
 .px-app.is-collapsed .px-nav-group::-webkit-scrollbar-track { background:#ffffff0b!important; border-radius:999px; }
 .px-app.is-collapsed .px-nav-group::-webkit-scrollbar-thumb { background:#42dfb583!important; border-radius:999px; }
 
@@ -236,7 +243,7 @@ html[data-meg-user-avatar="image"] .px-user-avatar {
   justify-content:center!important;
   gap:0!important;
   border-radius:12px!important;
-  overflow:visible!important;
+  overflow:hidden!important;
 }
 .px-app.is-collapsed .px-nav-btn.active {
   background:linear-gradient(145deg,#19c79822,#19c7980d)!important;
@@ -252,7 +259,7 @@ html[data-meg-user-avatar="image"] .px-user-avatar {
   position:absolute;
   z-index:3;
   top:-2px;
-  right:-5px;
+  right:-3px;
   margin:0!important;
   min-width:18px;
   height:18px;
@@ -268,35 +275,13 @@ html[data-meg-user-avatar="image"] .px-user-avatar {
   box-shadow:0 4px 12px rgba(0,0,0,.3);
 }
 
-/* Tooltip próprio: só existe no rail retraído. */
-.px-app.is-collapsed .px-nav-btn:hover::after,
-.px-app.is-collapsed .px-nav-btn:focus-visible::after,
-.px-app.is-collapsed .px-side-exit:hover::after,
-.px-app.is-collapsed .px-side-exit:focus-visible::after,
-.px-app.is-collapsed .px-search-command:hover::after,
-.px-app.is-collapsed .px-search-command:focus-visible::after {
-  content:attr(aria-label)!important;
-  position:absolute;
-  z-index:200;
-  left:calc(100% + 11px);
-  top:50%;
-  transform:translateY(-50%);
-  width:max-content;
-  max-width:210px;
-  padding:7px 9px;
-  border:1px solid #ffffff18;
-  border-radius:9px;
-  background:#071713;
-  color:#eafff8;
-  box-shadow:0 12px 30px rgba(0,0,0,.34);
-  font-size:10px;
-  font-weight:800;
-  line-height:1.25;
-  white-space:nowrap;
-  pointer-events:none;
-}
-.px-app.is-collapsed .px-search-command,
-.px-app.is-collapsed .px-side-exit { position:relative; overflow:visible!important; }
+/* Tooltip do rail usa o title nativo. Pseudo-tooltips não podem aumentar a largura rolável. */
+.px-app.is-collapsed .px-nav-btn::after,
+.px-app.is-collapsed .px-nav-btn::before,
+.px-app.is-collapsed .px-side-exit::after,
+.px-app.is-collapsed .px-side-exit::before,
+.px-app.is-collapsed .px-search-command::after,
+.px-app.is-collapsed .px-search-command::before { content:none!important; display:none!important; }
 
 .px-app.is-collapsed .px-side-footer { justify-items:center; }
 .px-app.is-collapsed .px-side-footer .px-side-exit {
@@ -307,6 +292,7 @@ html[data-meg-user-avatar="image"] .px-user-avatar {
   justify-content:center!important;
   border-radius:12px!important;
   background:#ffffff05!important;
+  overflow:hidden!important;
 }
 .px-app.is-collapsed .px-side-footer .px-side-exit strong { display:none!important; }
 
