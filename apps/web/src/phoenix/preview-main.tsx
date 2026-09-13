@@ -32,6 +32,15 @@ async function preparePhoenixSession() {
   await loadPhoenixReadModel(currentMonth());
 }
 
+function isTransientAuthError(cause: unknown) {
+  const message = cause instanceof Error ? cause.message : '';
+  return /HTTP_(?:502|503|504)|network|fetch|timeout|ECONN|upstream/i.test(message);
+}
+
+function waitForService(ms: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+}
+
 function authErrorMessage(cause: unknown) {
   const message = cause instanceof Error ? cause.message : '';
   if (message === 'ACCESS_PENDING') return 'Seu cadastro já existe e ainda aguarda aprovação do administrador.';
@@ -43,7 +52,8 @@ function authErrorMessage(cause: unknown) {
   if (message === 'WORKSPACE_MEMBER_LIMIT_REACHED') return 'O espaço atingiu o limite de usuários do plano atual.';
   if (message === 'WORKSPACE_NOT_FOUND') return 'Não foi possível localizar o espaço solicitado.';
   if (/401|invalid|credential|login|unauthor/i.test(message)) return 'E-mail ou senha não conferem. Revise os dados e tente novamente.';
-  if (/network|fetch|timeout/i.test(message)) return 'Não foi possível falar com o MEG agora. Verifique sua conexão e tente novamente.';
+  if (/HTTP_(?:502|503|504)|upstream/i.test(message)) return 'O MEG está iniciando os serviços. Aguarde alguns segundos e tente novamente.';
+  if (/network|fetch|timeout|ECONN/i.test(message)) return 'Não foi possível falar com o MEG agora. Verifique sua conexão e tente novamente.';
   return 'Não foi possível concluir esta operação agora. Tente novamente em instantes.';
 }
 
@@ -125,9 +135,18 @@ function PhoenixPreviewRoot() {
     setBusy(true);
     setError('');
     setSuccess('');
+    let authenticated = false;
     try {
-      await login(email.trim(), password);
-      await preparePhoenixSession();
+      try {
+        await login(email.trim(), password);
+        authenticated = true;
+        await preparePhoenixSession();
+      } catch (cause) {
+        if (!isTransientAuthError(cause)) throw cause;
+        await waitForService(1400);
+        if (!authenticated) await login(email.trim(), password);
+        await preparePhoenixSession();
+      }
       setState('signed-in');
     } catch (cause) {
       setError(authErrorMessage(cause));
@@ -233,6 +252,7 @@ function PhoenixPreviewRoot() {
       </div>
 
       <div className="px-preview-access">
+        <div className="px-preview-mobile-brand" aria-hidden="true"><img src="./brand/meg-finance-system-mark.svg" alt="" /><div><strong>MEG</strong><span>Finanças</span></div></div>
         {state === 'checking' ? <div className="px-preview-checking px-preview-boot">
           <div className="px-preview-boot-mark"><img src="./brand/meg-finance-system-mark.svg" alt="" aria-hidden="true" /><span className="px-preview-spinner" aria-hidden="true" /></div>
           <strong>Preparando seu MEG</strong>
