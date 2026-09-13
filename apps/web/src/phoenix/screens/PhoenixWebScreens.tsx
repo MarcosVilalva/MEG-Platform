@@ -119,7 +119,7 @@ export function PhoenixAnalytics({ data }: { data: PhoenixReadModel }) {
   };
 
   return <section className="px-screen px-analytics-screen">
-    <PageIntro kicker="Análises" title="Tendência e comparação histórica" text="A análise aprofunda tendências sem substituir o diagnóstico imediato da Home. Déficits e compromissos continuam visíveis na visão principal." aside={<span className={`px-total-pill ${projectedClosing < 0 ? 'is-danger' : 'is-ok'}`}>Fechamento {money.format(projectedClosing)}</span>} />
+    <PageIntro kicker="Análises" title="Tendências e comparações históricas" text="A análise aprofunda tendências sem substituir o diagnóstico imediato da Home. Déficits e compromissos continuam visíveis na visão principal." aside={<span className={`px-total-pill ${projectedClosing < 0 ? 'is-danger' : 'is-ok'}`}>Fechamento {money.format(projectedClosing)}</span>} />
 
     <section className="px-screen-kpis px-analytics-kpis">
       <article><span>Receitas</span><strong>{money.format(analytics.summary.income)}</strong><small>Δ {deltaLabel(Number(analytics.delta.income || 0))}</small></article>
