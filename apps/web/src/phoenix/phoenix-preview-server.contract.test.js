@@ -4,13 +4,13 @@ import { readFileSync } from 'node:fs';
 const server = readFileSync(new URL('../../phoenix-preview-server.mjs', import.meta.url), 'utf8');
 
 assert.match(server, /PREVIEW_READ_ONLY/,
-  'Servidor do preview deve bloquear qualquer mutação fora das rotas explícitas de sessão.');
-assert.match(server, /allowedAuthPosts\s*=\s*new Set\(\['\/auth\/login', '\/auth\/refresh', '\/auth\/logout'\]\)/,
-  'Preview deve permitir POST somente para login, refresh e logout.');
+  'Servidor do preview deve bloquear mutações fora das rotas explícitas de autenticação.');
+assert.match(server, /allowedAuthPosts\s*=\s*new Set\(\[\s*'\/auth\/login',\s*'\/auth\/refresh',\s*'\/auth\/logout',\s*'\/auth\/register',\s*'\/auth\/forgot-password'\s*\]\)/,
+  'Preview deve permitir somente o ciclo explícito de login, sessão, cadastro e recuperação de acesso.');
 assert.match(server, /return method === 'POST' && allowedAuthPosts\.has\(pathname\)/,
-  'POST deve ser recusado fora das operações de sessão permitidas.');
-assert.doesNotMatch(server, /allowedAuthPosts[^\n]*(?:register|forgot-password)/,
-  'Preview não deve liberar cadastro ou recuperação de senha como mutações auxiliares.');
+  'POST deve ser recusado fora das operações de autenticação permitidas.');
+assert.doesNotMatch(server, /allowedAuthPosts[\s\S]{0,300}(?:finance|payables|cards|receivables)/,
+  'Preview não pode liberar mutações financeiras pela allowlist de autenticação.');
 assert.match(server, /hopByHopHeaders[^\n]*'origin'[^\n]*'referer'/,
   'Proxy deve remover Origin e Referer antes da chamada servidor-a-servidor.');
 assert.match(server, /PHOENIX_API_ORIGIN/,
@@ -44,4 +44,4 @@ assert.match(server, /x-frame-options[^\n]*DENY/i,
 assert.match(server, /permissions-policy[^\n]*camera=\(\), microphone=\(\), geolocation=\(\)/,
   'Preview deve desabilitar permissões de navegador que não são necessárias para validação.');
 
-console.log('Contrato do servidor Phoenix somente leitura validado.');
+console.log('Contrato do servidor Phoenix com finanças somente leitura validado.');
