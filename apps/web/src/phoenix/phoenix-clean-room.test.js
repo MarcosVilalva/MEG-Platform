@@ -166,8 +166,16 @@ assert.match(phoenixApp, /loadPhoenixAllEvents/,
   'Modo Tudo deve usar leitura real paginada');
 assert.match(phoenixApp, /peekPhoenixReadModel/,
   'Troca de mês deve aproveitar fotografia já carregada');
-assert.match(phoenixApp, /prefetchPhoenixReadModel/,
-  'Meses adjacentes devem ser preparados silenciosamente');
+assert.match(phoenixApp, /monthlySnapshotMatches/,
+  'Troca mensal deve validar coerência entre mês, resumo, análises e fluxo antes de publicar a fotografia');
+assert.match(phoenixApp, /applyMonthlyPeriod/,
+  'Seleção mensal deve aguardar a fotografia completa antes de trocar o período visível');
+assert.match(phoenixApp, /periodRequestRef/,
+  'Respostas atrasadas de trocas anteriores não podem sobrescrever a seleção mais recente');
+assert.doesNotMatch(phoenixApp, /prefetchPhoenixReadModel/,
+  'Shell não deve pré-carregar meses adjacentes enquanto o endpoint mensal continuar custoso');
+assert.doesNotMatch(phoenixApp, /setMonth\(end\.slice\(0,\s*7\)\)/,
+  'Intervalo de Lançamentos não pode alterar silenciosamente o mês oficial da Home');
 for (const glyph of ['⌂', '▦', '◷', '▣', '≡', '♙', '⚙']) {
   assert.ok(phoenixApp.includes(glyph), `Ícone V15 ausente: ${glyph}`);
 }
