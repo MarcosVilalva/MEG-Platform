@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const routes = readFileSync(new URL('./event-bulk-routes.ts', import.meta.url), 'utf8');
 const mutation = readFileSync(new URL('./event-bulk-mutation.ts', import.meta.url), 'utf8');
+const monetaryProtection = readFileSync(new URL('./monetary-protection.ts', import.meta.url), 'utf8');
 const server = readFileSync(new URL('../../server.ts', import.meta.url), 'utf8');
 
 assert.match(server, /financeBulkMutationRoutes/,
@@ -18,6 +19,10 @@ assert.match(routes, /app\.authorize\(\[\.\.\.adminRoles\]\)/,
 
 assert.match(mutation, /serializableFinancialTransaction/,
   'Alterações em massa devem ser atômicas e serializáveis.');
+assert.match(monetaryProtection, /timeout:\s*options\.timeoutMs\s*\?\?\s*30_000/,
+  'Transações financeiras protegidas precisam suportar o write-back do AppState sem expirar em 5 segundos.');
+assert.match(monetaryProtection, /maxWait:\s*options\.maxWaitMs\s*\?\?\s*10_000/,
+  'Transações financeiras protegidas devem tolerar espera de conexão/lock sem perder atomicidade.');
 assert.match(mutation, /cloudMutationReceipt/,
   'Operações em massa devem ser idempotentes por operationId.');
 assert.match(mutation, /FINANCIAL_EVENT_BULK_UPDATE/);
