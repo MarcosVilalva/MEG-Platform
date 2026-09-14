@@ -3,17 +3,42 @@ import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-re
 import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
+import { financialAmountValues, enteredAmountFromStored } from './amount-sign';
 import { assertActiveCatalogReferences } from './catalog-scope';
 import { serializableFinancialTransaction } from './monetary-protection';
 import { FinancialEventMutationError } from './event-mutation';
 
 type Tx = Prisma.TransactionClient;
+type JsonRecord = Record<string, unknown>;
+
+export type BulkLegacyTransactionPatch = {
+  launchType?: string;
+  situation?: string;
+  account?: string;
+  paymentMethod?: string;
+  group?: string;
+  category?: string;
+  classification?: string;
+  modality?: string;
+  financialAccountId?: string;
+  paymentMethodId?: string;
+  categoryId?: string;
+  incomeAmount?: number;
+  expenseAmount?: number;
+  amount?: number;
+};
 
 export type BulkEventChanges = {
   date?: string;
-  accountId?: string;
-  paymentMethodId?: string;
-  categoryId?: string;
+  description?: string;
+  type?: 'income' | 'expense';
+  status?: 'planned' | 'paid' | 'reconciled';
+  amount?: number;
+  notes?: string | null;
+  accountId?: string | null;
+  paymentMethodId?: string | null;
+  categoryId?: string | null;
+  legacy?: BulkLegacyTransactionPatch;
 };
 
 export type BulkEventUpdateInput = {
@@ -44,6 +69,10 @@ function isUniqueConflict(error: unknown) {
 
 function canonicalIds(ids: string[]) {
   return [...new Set(ids.map((id) => id.trim()).filter(Boolean))].sort();
+}
+
+function jsonRecord(value: unknown): JsonRecord {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as JsonRecord : {};
 }
 
 async function readEditableEvents(tx: Tx, userId: string, ids: string[]) {
@@ -144,7 +173,11 @@ export async function updateFinancialEventsBulkProtected(userId: string, rawInpu
       }
 
       try {
-        await assertActiveCatalogReferences(tx, userId, input.changes);
+        await assertActiveCatalogReferences(tx, userId, {
+          accountId: input.changes.accountId,
+          categoryId: input.changes.categoryId,
+          paymentMethodId: input.changes.paymentMethodId,
+        });
       } catch (error) {
         if (error instanceof Error && ['INVALID_ACCOUNT', 'INVALID_CATEGORY', 'INVALID_PAYMENT_METHOD'].includes(error.message)) {
           throw new FinancialEventMutationError(error.message);
@@ -156,14 +189,31 @@ export async function updateFinancialEventsBulkProtected(userId: string, rawInpu
       const date = input.changes.date ? new Date(input.changes.date) : undefined;
 
       for (const event of before) {
+        const nextType = input.changes.type || event.type;
+        const amountChanged = input.changes.amount !== undefined || input.changes.type !== undefined;
+        const enteredAmount = input.changes.amount !== undefined
+          ? input.changes.amount
+          : enteredAmountFromStored(event.type, Number(event.signedAmount));
+        const amountValues = financialAmountValues(nextType, enteredAmount);
+        const sourcePayload = input.changes.legacy
+          ? { ...jsonRecord(event.sourcePayload), ...input.changes.legacy } as Prisma.InputJsonValue
+          : undefined;
+
         await tx.financialEvent.update({
           where: { id: event.id },
           data: {
             date,
             competence: input.changes.date ? input.changes.date.slice(0, 7) : undefined,
+            description: input.changes.description?.trim(),
+            type: input.changes.type,
+            status: input.changes.status,
+            amount: amountChanged ? amountValues.amount : undefined,
+            signedAmount: amountChanged ? amountValues.signedAmount : undefined,
+            notes: input.changes.notes,
             accountId: input.changes.accountId,
             paymentMethodId: input.changes.paymentMethodId,
             categoryId: input.changes.categoryId,
+            sourcePayload,
           },
         });
       }
