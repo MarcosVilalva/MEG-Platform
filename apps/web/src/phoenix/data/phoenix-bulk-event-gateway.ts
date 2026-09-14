@@ -1,7 +1,10 @@
 import { authenticatedRequest } from '../../app/auth-client';
 import { clearPhoenixReadModelCache } from './load-phoenix-read-model';
 
-export const PHOENIX_BULK_EVENT_WRITE_ENABLED = false;
+// Homologado para o preview Phoenix após Production Smoke #318 verde.
+// O servidor mantém um segundo gate independente (PHOENIX_BULK_EVENT_WRITE),
+// portanto a UI só consegue gravar quando os dois lados estão liberados.
+export const PHOENIX_BULK_EVENT_WRITE_ENABLED = true;
 
 export type PhoenixBulkEventChanges = {
   date?: string;
