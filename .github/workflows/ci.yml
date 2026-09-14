@@ -128,3 +128,48 @@ jobs:
           path: apps/web/dist
           if-no-files-found: error
           retention-days: 3
+
+  financial-e2e:
+    if: github.ref == 'refs/heads/phoenix/v15-clean-room' || (github.event_name == 'pull_request' && github.head_ref == 'phoenix/v15-clean-room')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: meg
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
+      NODE_ENV: test
+      CORS_ORIGINS: http://localhost:5173
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Prepare ephemeral financial database
+        run: npm run db:push
+
+      - name: Run RC1 financial integrity E2E
+        run: npm --workspace apps/api run test:rc1-financial-e2e
