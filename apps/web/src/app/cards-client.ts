@@ -25,7 +25,7 @@ export const cardsClient = {
     if (!window.confirm('Tem certeza de que deseja excluir esta compra do cartao?\n\nEsta acao nao pode ser desfeita.')) return null;
     return request<CardPurchase>(`/cards/purchases/${id}`, { method: 'DELETE' });
   },
-  payStatement: (id: string, month: string, data: { accountId?: string; paymentMethodId?: string; paidAt: string; operationId?: string }) => request<CardStatementPaymentResult>(`/cards/${id}/statements/${month}/pay`, { method: 'POST', body: JSON.stringify(data) }),
+  payStatement: (id: string, month: string, data: { accountId: string; paymentMethodId?: string; paidAt: string; operationId: string }) => request<CardStatementPaymentResult>(`/cards/${id}/statements/${month}/pay`, { method: 'POST', body: JSON.stringify(data) }),
   deactivate: (id: string) => request<CreditCard>(`/cards-management/${id}`, { method: 'DELETE' }),
   reactivate: (id: string) => request<CardReactivationResult>(`/cards-management/${id}/reactivate`, { method: 'POST', body: JSON.stringify({}) })
 };
