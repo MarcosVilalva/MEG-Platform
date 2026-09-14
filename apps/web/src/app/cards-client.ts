@@ -15,8 +15,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const cardsClient = {
   list: (month: string) => request<CreditCard[]>(`/cards?month=${encodeURIComponent(month)}`),
   listManagement: (month: string) => request<CreditCard[]>(`/cards-management?month=${encodeURIComponent(month)}`),
-  create: (data: CreditCardMutationInput) => request<CreditCard>('/cards', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: string, data: Partial<CreditCardMutationInput>) => request<CreditCard>(`/cards/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  create: (data: CreditCardMutationInput) => request<CreditCard>('/cards-management', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<CreditCardMutationInput>) => request<CreditCard>(`/cards-management/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   createPurchase: (data: { cardId: string; categoryId?: string; description: string; totalAmount: number; purchaseDate: string; installments: number; operationId?: string }) => request<CardPurchase>('/cards/purchases', { method: 'POST', body: JSON.stringify(data) }),
   updatePurchase: (id: string, data: CardPurchaseMutationInput) => request<CardPurchase>(`/cards/purchases/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   cancelPurchaseProtected: (id: string, operationId: string) => request<CardPurchase>(`/cards/purchases/${id}`, { method: 'DELETE', body: JSON.stringify({ operationId }) }),
@@ -26,6 +26,6 @@ export const cardsClient = {
     return request<CardPurchase>(`/cards/purchases/${id}`, { method: 'DELETE' });
   },
   payStatement: (id: string, month: string, data: { accountId?: string; paymentMethodId?: string; paidAt: string; operationId?: string }) => request<CardStatementPaymentResult>(`/cards/${id}/statements/${month}/pay`, { method: 'POST', body: JSON.stringify(data) }),
-  deactivate: (id: string) => request<CreditCard>(`/cards/${id}`, { method: 'DELETE' }),
+  deactivate: (id: string) => request<CreditCard>(`/cards-management/${id}`, { method: 'DELETE' }),
   reactivate: (id: string) => request<CardReactivationResult>(`/cards-management/${id}/reactivate`, { method: 'POST', body: JSON.stringify({}) })
 };
