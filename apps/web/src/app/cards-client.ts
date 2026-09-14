@@ -5,6 +5,36 @@ export type CardPurchase = { id: string; description: string; totalAmount: strin
 export type CreditCard = { id: string; name: string; issuer?: string | null; brand?: string | null; lastFour?: string | null; creditLimit: string | number; closingDay: number; dueDay: number; color?: string | null; isActive: boolean; usedLimit: number; availableLimit: number; statementAmount: number; payableStatementAmount?: number; purchases: CardPurchase[] };
 export type CardStatementPaymentResult = { paid: boolean; amount: number; eventId: string; protection?: { monetary?: boolean; allowed?: boolean; available?: number; requested?: number; missing?: number; at?: string }; idempotentReplay?: boolean };
 export type CardStatementReopenResult = { reopened: boolean; amount: number; eventId: string; installments: number; idempotentReplay?: boolean };
+export type CardStatementLifecycleStatus = 'none' | 'open' | 'partial' | 'paid' | 'reopened';
+export type CardStatementLifecycleSnapshot = { id: string | null; name: string | null; type: string | null; institution: string | null };
+export type CardStatementLifecycleActor = { id?: string; name?: string | null; email?: string | null } | null;
+export type CardStatementLifecycle = {
+  cardId: string;
+  cardName: string;
+  month: string;
+  status: CardStatementLifecycleStatus;
+  statementAmount: number;
+  openAmount: number;
+  paidAmount: number;
+  openInstallments: number;
+  paidInstallments: number;
+  lastLifecycleAction: 'CARD_STATEMENT_PAID' | 'CARD_STATEMENT_REOPENED' | null;
+  lastLifecycleAt: string | null;
+  lifecycleAuditId: string | null;
+  lastPayment: {
+    amount: number;
+    paidAt: string | null;
+    account: CardStatementLifecycleSnapshot | null;
+    paymentMethod: CardStatementLifecycleSnapshot | null;
+    event: { id: string; description: string | null; status: string | null; date: string | null; archivedAt: string | null } | null;
+    auditId: string | null;
+    actor: CardStatementLifecycleActor;
+  } | null;
+  reopenedAt: string | null;
+  reopenReason: string | null;
+  reopenedBy: CardStatementLifecycleActor;
+  source: 'audit' | 'installments' | 'none';
+};
 export type CardPurchaseMutationInput = { cardId: string; categoryId?: string; description: string; totalAmount: number; purchaseDate: string; installments: number; operationId: string };
 export type CreditCardMutationInput = { name: string; issuer?: string; brand?: string; lastFour?: string; creditLimit: number; closingDay: number; dueDay: number; color?: string };
 export type CardReactivationResult = { card: CreditCard; reactivated: boolean; idempotentReplay: boolean };
@@ -16,6 +46,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const cardsClient = {
   list: (month: string) => request<CreditCard[]>(`/cards?month=${encodeURIComponent(month)}`),
   listManagement: (month: string) => request<CreditCard[]>(`/cards-management?month=${encodeURIComponent(month)}`),
+  statementLifecycle: (id: string, month: string) => request<CardStatementLifecycle>(`/cards/${id}/statements/${month}/lifecycle`),
   create: (data: CreditCardMutationInput) => request<CreditCard>('/cards-management', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: Partial<CreditCardMutationInput>) => request<CreditCard>(`/cards-management/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   createPurchase: (data: { cardId: string; categoryId?: string; description: string; totalAmount: number; purchaseDate: string; installments: number; operationId?: string }) => request<CardPurchase>('/cards/purchases', { method: 'POST', body: JSON.stringify(data) }),
