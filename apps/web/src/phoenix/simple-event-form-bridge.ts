@@ -52,6 +52,10 @@ function activeType(root: ParentNode): 'income' | 'expense' | 'transfer' {
   return 'expense';
 }
 
+function modalityValue(root: ParentNode) {
+  return normalize(root.querySelector<HTMLSelectElement>('[data-phoenix-modality-select]')?.value || '');
+}
+
 function parseMoney(value: string) {
   const normalized = String(value || '')
     .replace(/R\$/gi, '')
@@ -96,6 +100,17 @@ function paymentSelect(root: HTMLElement) {
   return selectByLabel(root, 'Forma de recebimento') || selectByLabel(root, 'Forma de pagamento');
 }
 
+function benefitSelection(root: HTMLElement) {
+  const accountText = selectByLabel(root, 'Conta financeira')?.selectedOptions[0]?.textContent || '';
+  const paymentText = paymentSelect(root)?.selectedOptions[0]?.textContent || '';
+  const account = normalize(accountText);
+  const payment = normalize(paymentText);
+  return {
+    isBenefit: account.includes('BENEF') || account.includes('VEROCARD') || account.includes('ALIMENTA'),
+    isVerocard: payment.includes('VEROCARD'),
+  };
+}
+
 function restrictIncomePaymentMethods(root: HTMLElement) {
   const select = paymentSelect(root);
   if (!select) return;
@@ -125,11 +140,12 @@ function payloadFromDrawer(root: HTMLElement): PhoenixSimpleEventInput | null {
   const category = type === 'expense' ? selectByLabel(root, 'Grupo') : selectByLabel(root, 'Classificação da receita');
   const payment = paymentSelect(root);
   const notes = textareaByLabel(root, 'Observações opcionais')?.value.trim() || undefined;
+  const benefit = benefitSelection(root);
 
   return {
     description,
     type,
-    status: type === 'income' ? 'paid' : 'planned',
+    status: type === 'income' || (benefit.isBenefit && benefit.isVerocard) ? 'paid' : 'planned',
     date,
     amount,
     accountId: account?.value || undefined,
@@ -147,14 +163,19 @@ function unsupportedReason(root: HTMLElement) {
   if (toggleChecked(root, 'Lançamento recorrente')) return 'Recorrência continua em simulação e ainda não pode ser gravada por este fluxo.';
   if (toggleChecked(root, 'Salvar como modelo')) return 'Modelos ainda não possuem contrato oficial de gravação.';
 
-  const selectedAccount = selectByLabel(root, 'Conta financeira')?.selectedOptions[0]?.textContent || '';
-  const accountName = normalize(selectedAccount);
-  if (accountName.includes('BENEF') || accountName.includes('VEROCARD') || accountName.includes('ALIMENTA')) {
-    return 'Movimentações de benefício continuam fora do primeiro writer monetário.';
-  }
-
   const selectedPayment = paymentSelect(root)?.selectedOptions[0]?.textContent || '';
   const method = normalize(selectedPayment);
+  const benefit = benefitSelection(root);
+  const modality = modalityValue(root);
+
+  if (benefit.isBenefit) {
+    const validBenefitFlow = benefit.isVerocard
+      && (type === 'income' || modality === 'ALIMENTACAO' || modality === 'VEROCARD');
+    if (!validBenefitFlow) {
+      return 'A conta de benefício só pode ser usada pelo fluxo VEROCARD/ALIMENTAÇÃO.';
+    }
+  }
+
   if (type === 'income' && selectedPayment && !canonicalPhoenixIncomePaymentMethod(selectedPayment)) {
     return `Receitas estão liberadas somente para ${PHOENIX_INCOME_PAYMENT_METHODS.join(', ')}.`;
   }
@@ -237,6 +258,13 @@ function syncDrawer() {
 }
 
 async function submit(root: HTMLElement) {
+  if (root.dataset.phoenixEditingEventId) {
+    state.mode = 'save';
+    setFeedback(root, 'Este lançamento existente usa o fluxo de edição protegida. A criação de um novo registro foi bloqueada para evitar duplicidade.', 'warn');
+    setButton(root);
+    return;
+  }
+
   const reason = unsupportedReason(root);
   if (reason) {
     state.mode = 'save';
@@ -280,7 +308,7 @@ async function submit(root: HTMLElement) {
     state.confirmedEventId = result.event.id;
     setFeedback(
       root,
-      `Lançamento confirmado no servidor. ${payload.type === 'income' ? 'Receita recebida' : 'Despesa pendente'} registrada com rastreabilidade e operationId. Atualizando a tela…`,
+      `Lançamento confirmado no servidor. ${payload.type === 'income' ? 'Receita recebida' : payload.status === 'paid' ? 'Despesa realizada' : 'Despesa pendente'} registrada com rastreabilidade e operationId. Atualizando a tela…`,
       'ok'
     );
     setButton(root);
