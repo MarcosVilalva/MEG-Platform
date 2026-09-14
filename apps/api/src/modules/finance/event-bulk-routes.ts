@@ -16,13 +16,38 @@ const idsSchema = z.array(z.string().trim().min(1)).min(1).max(200).superRefine(
   }
 });
 
+const legacyPatchSchema = z.object({
+  launchType: z.string().trim().max(40).optional(),
+  situation: z.string().trim().max(40).optional(),
+  account: z.string().trim().max(160).optional(),
+  paymentMethod: z.string().trim().max(160).optional(),
+  group: z.string().trim().max(160).optional(),
+  category: z.string().trim().max(160).optional(),
+  classification: z.string().trim().max(160).optional(),
+  modality: z.string().trim().max(80).optional(),
+  financialAccountId: z.string().trim().max(160).optional(),
+  paymentMethodId: z.string().trim().max(160).optional(),
+  categoryId: z.string().trim().max(160).optional(),
+  incomeAmount: z.number().finite().optional(),
+  expenseAmount: z.number().finite().optional(),
+  amount: z.number().finite().optional(),
+}).refine((changes) => Object.values(changes).some((value) => value !== undefined), {
+  message: 'Informe ao menos uma alteração legada.',
+});
+
 const updateSchema = z.object({
   ids: idsSchema,
   changes: z.object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-    accountId: z.string().trim().min(1).optional(),
-    paymentMethodId: z.string().trim().min(1).optional(),
-    categoryId: z.string().trim().min(1).optional(),
+    description: z.string().trim().min(1).max(500).optional(),
+    type: z.enum(['income', 'expense']).optional(),
+    status: z.enum(['planned', 'paid', 'reconciled']).optional(),
+    amount: z.number().finite().refine((value) => value !== 0, 'O valor não pode ser zero.').optional(),
+    notes: z.string().max(4000).nullable().optional(),
+    accountId: z.string().trim().min(1).nullable().optional(),
+    paymentMethodId: z.string().trim().min(1).nullable().optional(),
+    categoryId: z.string().trim().min(1).nullable().optional(),
+    legacy: legacyPatchSchema.optional(),
   }).refine((changes) => Object.values(changes).some((value) => value !== undefined), {
     message: 'Informe ao menos uma alteração.',
   }),
