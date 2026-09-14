@@ -169,11 +169,15 @@ assert.match(homeDashboard, /Consolidado realizado/,
 assert.match(screens, /conta\(s\) selecionada\(s\)/,
   'Pendentes deve mostrar barra contextual ao selecionar contas');
 assert.match(screens, /Revisar e confirmar baixa/,
-  'Pendentes deve abrir a revisão de baixa em lote');
-assert.match(screens, /Baixar selecionadas/,
-  'Fluxo visual de baixa em lote deve existir antes da liberação da escrita');
-assert.match(screens, /disabled title="A escrita financeira ainda está bloqueada na Phoenix"/,
-  'Confirmação real de baixa deve permanecer bloqueada durante read-only');
+  'Pendentes deve abrir a revisão protegida da seleção');
+assert.match(screens, /PHOENIX_PENDING_WRITE_ENABLED/,
+  'Writer real de Pendentes deve permanecer protegido por feature flag');
+assert.match(screens, /selectedItems\.length !== 1/,
+  'Confirmação real deve exigir exatamente um compromisso por operação');
+assert.match(screens, /Baixa em lote ainda protegida/,
+  'Seleção múltipla pode ser revisada, mas não pode gerar baixa parcial em lote');
+assert.match(screens, /Confirmar baixa real/,
+  'Writer de baixa deve exigir confirmação explícita antes da gravação');
 
 assert.match(homeAllTime, /Histórico completo/,
   'Modo Tudo deve possuir uma Home própria para a trajetória completa');
