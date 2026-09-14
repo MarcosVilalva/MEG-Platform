@@ -49,6 +49,15 @@ assert.equal(refund?.signedAmount, 62);
 assert.equal(financialEventToLegacyTransaction(refund!).expenseAmount, -62);
 assert.equal(financialEventToLegacyTransaction(refund!).group, 'CARTÃO');
 
+const legacyRefundWithAbsoluteExpense = legacyTransactionToFinancialEvent({
+  id: 'refund-legacy-amount', date: '2026-09-05', description: 'Extorno anuidade', type: 'expense',
+  expenseAmount: 62, amount: -62, status: 'paid', situation: 'PAGO', group: 'CARTÃO',
+}, context);
+assert.equal(legacyRefundWithAbsoluteExpense?.amount, 62);
+assert.equal(legacyRefundWithAbsoluteExpense?.signedAmount, 62);
+assert.equal(financialEventToLegacyTransaction(legacyRefundWithAbsoluteExpense!).expenseAmount, 62);
+assert.equal(financialEventToLegacyTransaction(legacyRefundWithAbsoluteExpense!).amount, -62);
+
 const baseFingerprint = normalizationFingerprint([expense!]);
 assert.notEqual(normalizationFingerprint([{ ...expense!, description: 'Aluguel corrigido' }]), baseFingerprint);
 assert.notEqual(normalizationFingerprint([{ ...expense!, status: 'planned' }]), baseFingerprint);
