@@ -81,6 +81,7 @@ function modalShell(title: string, subtitle: string) {
   modal.className = 'px-bulk-ux-modal';
   modal.setAttribute('role', 'dialog');
   modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('aria-label', title);
   modal.innerHTML = `
     <header class="px-bulk-ux-modal-head">
       <div><span class="px-kicker">Seleção em massa</span><h3>${title}</h3><p>${subtitle}</p></div>
@@ -97,11 +98,17 @@ function modalShell(title: string, subtitle: string) {
   return { backdrop, modal, body: modal.querySelector<HTMLElement>('[data-body]')! };
 }
 
+function triggerProtectedAction(kind: 'edit' | 'delete') {
+  if (!PHOENIX_BULK_EVENT_WRITE_ENABLED) return;
+  const selector = kind === 'edit' ? '[data-bulk-edit]' : '[data-bulk-delete]';
+  document.querySelector<HTMLButtonElement>(`.px-bulk-action-bar ${selector}:not(:disabled)`)?.click();
+}
+
 async function openEditPreview() {
   const count = selectedBoxes().length;
   if (!count) return;
 
-  const { body } = modalShell(
+  const { backdrop, body } = modalShell(
     `Alterar ${count} lançamento${count === 1 ? '' : 's'}`,
     'Somente os campos marcados serão substituídos. Os demais permanecem exatamente como estão.',
   );
@@ -126,11 +133,12 @@ async function openEditPreview() {
       <label class="px-bulk-ux-field"><input type="checkbox" data-toggle="date"><span><strong>Vencimento / data</strong><small>Aplicar a mesma data aos selecionados.</small></span><input type="date" data-value="date" disabled></label>
       <label class="px-bulk-ux-field"><input type="checkbox" data-toggle="account"><span><strong>Conta financeira</strong><small>Trocar somente a conta dos selecionados.</small></span><select data-value="account" disabled><option value="">Selecione</option>${accountOptions}</select></label>
       <label class="px-bulk-ux-field"><input type="checkbox" data-toggle="payment"><span><strong>Forma de pagamento / recebimento</strong><small>Trocar somente a forma dos selecionados.</small></span><select data-value="payment" disabled><option value="">Selecione</option>${methodOptions}</select></label>
-      <div class="px-bulk-ux-review" data-review>Nenhum campo marcado. A prévia não altera seus dados.</div>
+      <div class="px-bulk-ux-review" data-review>Nenhum campo marcado. Esta prévia não altera seus dados.</div>
       <div class="px-bulk-ux-actions">
         <button type="button" data-preview-review>Revisar alteração</button>
-        <button type="button" class="primary" disabled>${PHOENIX_BULK_EVENT_WRITE_ENABLED ? 'Aplicar alterações' : 'Aguardando autorização do writer'}</button>
+        <button type="button" class="primary" data-apply ${PHOENIX_BULK_EVENT_WRITE_ENABLED ? '' : 'disabled'}>${PHOENIX_BULK_EVENT_WRITE_ENABLED ? 'Aplicar alterações' : 'Aguardando liberação'}</button>
       </div>
+      <small class="px-bulk-ux-esc-hint">Esc fecha esta janela.</small>
     `;
 
     const connect = (name: string) => {
@@ -159,6 +167,11 @@ async function openEditPreview() {
         ? `${count} lançamento${count === 1 ? '' : 's'} · ${changes.join(' · ')} · demais campos preservados.`
         : 'Marque ao menos um campo e escolha o novo valor para visualizar o resumo.';
     });
+
+    body.querySelector<HTMLButtonElement>('[data-apply]')?.addEventListener('click', () => {
+      closeModal(backdrop);
+      triggerProtectedAction('edit');
+    });
   } catch {
     body.innerHTML = '<div class="px-bulk-ux-error">Não foi possível carregar os cadastros para esta prévia.</div>';
   }
@@ -179,6 +192,7 @@ async function openTrash() {
           <strong>Nenhum arquivamento auditado encontrado.</strong>
           <span>Os próximos lançamentos excluídos pelo fluxo protegido aparecerão aqui.</span>
         </div>
+        <small class="px-bulk-ux-esc-hint">Esc fecha esta janela.</small>
       `;
       return;
     }
@@ -201,6 +215,7 @@ async function openTrash() {
         }).join('')}
       </div>
       <div class="px-bulk-ux-note">Exibição limitada aos 50 arquivamentos auditados mais recentes. Restaurar continuará bloqueado até existir contrato transacional específico.</div>
+      <small class="px-bulk-ux-esc-hint">Esc fecha esta janela.</small>
     `;
   } catch {
     body.innerHTML = '<div class="px-bulk-ux-error">Não foi possível consultar a lixeira agora.</div>';
@@ -223,10 +238,14 @@ function ensureCommandStrip() {
         <strong>Seleção em massa</strong>
         <small data-bulk-ux-count>Use os checkboxes para selecionar lançamentos.</small>
       </div>
-      <button type="button" data-select-filtered>Selecionar filtrados</button>
-      <button type="button" data-preview-edit>Prévia da alteração</button>
-      <button type="button" data-trash>Lixeira</button>
-      <button type="button" data-clear-filtered>Limpar</button>
+      <div class="px-bulk-ux-buttons">
+        <button type="button" data-select-filtered>Selecionar filtrados</button>
+        <button type="button" data-preview-edit>Prévia</button>
+        <button type="button" class="px-bulk-ux-primary" data-do-edit ${PHOENIX_BULK_EVENT_WRITE_ENABLED ? '' : 'disabled'}>Alterar</button>
+        <button type="button" class="px-bulk-ux-danger" data-do-delete ${PHOENIX_BULK_EVENT_WRITE_ENABLED ? '' : 'disabled'}>Excluir</button>
+        <button type="button" data-trash>Lixeira</button>
+        <button type="button" data-clear-filtered>Limpar</button>
+      </div>
       <span class="px-bulk-ux-gate">${PHOENIX_BULK_EVENT_WRITE_ENABLED ? 'Writer em massa ativo' : 'Alterar/excluir ainda bloqueados'}</span>
     `;
     toolbar.insertAdjacentElement('afterend', strip);
@@ -234,6 +253,8 @@ function ensureCommandStrip() {
     strip.querySelector<HTMLButtonElement>('[data-clear-filtered]')?.addEventListener('click', clearFilteredSelection);
     strip.querySelector<HTMLButtonElement>('[data-preview-edit]')?.addEventListener('click', () => void openEditPreview());
     strip.querySelector<HTMLButtonElement>('[data-trash]')?.addEventListener('click', () => void openTrash());
+    strip.querySelector<HTMLButtonElement>('[data-do-edit]')?.addEventListener('click', () => triggerProtectedAction('edit'));
+    strip.querySelector<HTMLButtonElement>('[data-do-delete]')?.addEventListener('click', () => triggerProtectedAction('delete'));
   }
 
   const total = filteredBoxes().length;
@@ -252,6 +273,26 @@ function ensureCommandStrip() {
   if (previewButton) previewButton.disabled = selected === 0;
   const clearButton = strip.querySelector<HTMLButtonElement>('[data-clear-filtered]');
   if (clearButton) clearButton.disabled = selected === 0;
+  const editButton = strip.querySelector<HTMLButtonElement>('[data-do-edit]');
+  if (editButton) editButton.disabled = selected === 0 || !PHOENIX_BULK_EVENT_WRITE_ENABLED;
+  const deleteButton = strip.querySelector<HTMLButtonElement>('[data-do-delete]');
+  if (deleteButton) deleteButton.disabled = selected === 0 || !PHOENIX_BULK_EVENT_WRITE_ENABLED;
+}
+
+function onEscape(event: KeyboardEvent) {
+  if (event.key !== 'Escape') return;
+  const uxBackdrops = [...document.querySelectorAll<HTMLElement>('.px-bulk-ux-backdrop')];
+  const topUx = uxBackdrops.at(-1);
+  if (topUx) {
+    event.preventDefault();
+    closeModal(topUx);
+    return;
+  }
+  const legacyBackdrop = document.querySelector<HTMLElement>('.px-bulk-modal-backdrop');
+  if (legacyBackdrop) {
+    event.preventDefault();
+    legacyBackdrop.querySelector<HTMLButtonElement>('.px-bulk-modal-close')?.click();
+  }
 }
 
 function sync() {
@@ -264,7 +305,7 @@ function scheduleSync() {
   window.setTimeout(() => {
     scheduled = false;
     sync();
-  }, 40);
+  }, 24);
 }
 
 function start() {
@@ -272,6 +313,7 @@ function start() {
   observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['checked', 'disabled'] });
   document.addEventListener('change', scheduleSync, true);
   window.addEventListener('meg:data-invalidated', scheduleSync as EventListener);
+  window.addEventListener('keydown', onEscape);
   scheduleSync();
 }
 
@@ -283,4 +325,5 @@ export function stopPhoenixBulkEventUxEnhancements() {
   observer = null;
   document.removeEventListener('change', scheduleSync, true);
   window.removeEventListener('meg:data-invalidated', scheduleSync as EventListener);
+  window.removeEventListener('keydown', onEscape);
 }
