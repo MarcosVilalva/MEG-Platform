@@ -28,6 +28,7 @@ export type FinancialEventStatus = 'draft' | 'planned' | 'confirmed' | 'paid' | 
 
 export type FinancialEvent = {
   id: string;
+  legacyTransactionId?: string | null;
   description: string;
   type: 'income' | 'expense';
   status: FinancialEventStatus;
@@ -65,6 +66,36 @@ export type FinancialEventInput = {
   categoryId?: string;
   paymentMethodId?: string;
   notes?: string;
+};
+
+export type BulkLegacyTransactionPatch = {
+  launchType?: string;
+  situation?: string;
+  account?: string;
+  paymentMethod?: string;
+  group?: string;
+  category?: string;
+  classification?: string;
+  modality?: string;
+  financialAccountId?: string;
+  paymentMethodId?: string;
+  categoryId?: string;
+  incomeAmount?: number;
+  expenseAmount?: number;
+  amount?: number;
+};
+
+export type BulkEventChanges = {
+  date?: string;
+  description?: string;
+  type?: 'income' | 'expense';
+  status?: 'planned' | 'paid' | 'reconciled';
+  amount?: number;
+  notes?: string | null;
+  accountId?: string | null;
+  paymentMethodId?: string | null;
+  categoryId?: string | null;
+  legacy?: BulkLegacyTransactionPatch;
 };
 
 async function authorizedRequest<T>(path: string, init?: RequestInit): Promise<T> {
@@ -157,6 +188,16 @@ export const financeClient = {
     body: JSON.stringify(data)
   }),
   archiveEvent: (id: string) => authorizedRequest<{ id: string; archived: boolean }>(`/finance/events/${id}`, { method: 'DELETE' }),
+  bulkUpdateEvents: (data: { ids: string[]; changes: BulkEventChanges; operationId: string }) =>
+    authorizedRequest<{ ids: string[]; updated: number; events: FinancialEvent[]; idempotentReplay: boolean }>('/finance/events/bulk/update', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  bulkArchiveEvents: (data: { ids: string[]; operationId: string }) =>
+    authorizedRequest<{ ids: string[]; archived: number; idempotentReplay: boolean }>('/finance/events/bulk/archive', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
 
   listAccounts: () => authorizedRequest<Account[]>('/finance/accounts'),
   createAccount: (data: Omit<Account, 'id' | 'isActive'>) => authorizedRequest<Account>('/finance/accounts', {
