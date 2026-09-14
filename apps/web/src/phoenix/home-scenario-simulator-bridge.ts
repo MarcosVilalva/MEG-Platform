@@ -216,7 +216,7 @@ function buildProjection(source: CommitmentForecast, selectedMode: ScenarioMode,
     const structuralIncome = item.receivables + item.plannedIncome;
     const moveOnlyDelta = adjustment?.kind === 'move' ? item.whatIfExpense : 0;
     item.totalExpenses = round(Math.max(0, structuralExpenses + moveOnlyDelta));
-    item.totalIncome = round(Math.max(0, structuralIncome + item.whatIfIncome));
+    item.totalIncome = round(Math.max(0, structuralIncome));
     item.net = round(item.totalIncome - item.totalExpenses);
     balance = round(balance + item.net);
     item.projectedBalance = balance;
@@ -236,7 +236,7 @@ function buildProjection(source: CommitmentForecast, selectedMode: ScenarioMode,
     summary: {
       totalExpenses,
       totalIncome,
-      projectedClosing: items.at(-1)?.projectedBalance ?? source.currentBalance,
+      projectedClosing: items.length ? items[items.length - 1].projectedBalance : source.currentBalance,
       minimumProjectedBalance: minimum.balance,
       minimumProjectedMonth: minimum.month,
       firstNegativeMonth: firstNegative,
