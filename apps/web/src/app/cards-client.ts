@@ -8,6 +8,22 @@ export type CardStatementReopenResult = { reopened: boolean; amount: number; eve
 export type CardStatementLifecycleStatus = 'none' | 'open' | 'partial' | 'paid' | 'reopened';
 export type CardStatementLifecycleSnapshot = { id: string | null; name: string | null; type: string | null; institution: string | null };
 export type CardStatementLifecycleActor = { id?: string; name?: string | null; email?: string | null } | null;
+export type CardStatementTimelineKind = 'closing' | 'due' | 'payment' | 'reopen' | 'legacy-payment';
+export type CardStatementTimelineItem = {
+  id: string;
+  kind: CardStatementTimelineKind;
+  at: string;
+  effectiveAt: string | null;
+  title: string;
+  description: string | null;
+  amount: number | null;
+  auditId: string | null;
+  actor: CardStatementLifecycleActor;
+  account: CardStatementLifecycleSnapshot | null;
+  paymentMethod: CardStatementLifecycleSnapshot | null;
+  event: { id: string; description: string | null; status: string | null; date: string | null; archivedAt: string | null } | null;
+  source: 'calculated' | 'audit' | 'installments';
+};
 export type CardStatementLifecycle = {
   cardId: string;
   cardName: string;
@@ -18,6 +34,9 @@ export type CardStatementLifecycle = {
   paidAmount: number;
   openInstallments: number;
   paidInstallments: number;
+  closingDate: string;
+  dueDate: string;
+  timeline: CardStatementTimelineItem[];
   lastLifecycleAction: 'CARD_STATEMENT_PAID' | 'CARD_STATEMENT_REOPENED' | null;
   lastLifecycleAt: string | null;
   lifecycleAuditId: string | null;
