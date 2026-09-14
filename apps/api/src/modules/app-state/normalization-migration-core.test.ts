@@ -5,6 +5,7 @@ import {
   legacyTransactionToFinancialEvent,
   normalizationFingerprint,
 } from './normalization-migration-core';
+import { shouldApplyNormalizationShadow } from './normalization-migration';
 
 const context = { workspaceId: 'workspace-1', userId: 'user-1', revision: 12 };
 const state = {
@@ -48,6 +49,19 @@ assert.equal(refund?.amount, 62);
 assert.equal(refund?.signedAmount, 62);
 assert.equal(financialEventToLegacyTransaction(refund!).expenseAmount, -62);
 assert.equal(financialEventToLegacyTransaction(refund!).group, 'CARTÃO');
+
+const legacyRefundWithAbsoluteExpense = legacyTransactionToFinancialEvent({
+  id: 'refund-legacy-amount', date: '2026-09-05', description: 'Extorno anuidade', type: 'expense',
+  expenseAmount: 62, amount: -62, status: 'paid', situation: 'PAGO', group: 'CARTÃO',
+}, context);
+assert.equal(legacyRefundWithAbsoluteExpense?.amount, 62);
+assert.equal(legacyRefundWithAbsoluteExpense?.signedAmount, 62);
+assert.equal(financialEventToLegacyTransaction(legacyRefundWithAbsoluteExpense!).expenseAmount, 62);
+assert.equal(financialEventToLegacyTransaction(legacyRefundWithAbsoluteExpense!).amount, -62);
+
+assert.equal(shouldApplyNormalizationShadow({}, false), true);
+assert.equal(shouldApplyNormalizationShadow({}, true), false);
+assert.equal(shouldApplyNormalizationShadow({ __megNormalization: { mode: 'normalized-primary' } }, false), false);
 
 const baseFingerprint = normalizationFingerprint([expense!]);
 assert.notEqual(normalizationFingerprint([{ ...expense!, description: 'Aluguel corrigido' }]), baseFingerprint);

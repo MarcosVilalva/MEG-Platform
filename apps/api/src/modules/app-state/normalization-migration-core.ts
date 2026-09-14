@@ -43,6 +43,10 @@ export function legacyTransactionAmount(item: LegacyTransaction): number {
 
 export function legacyTransactionEnteredAmount(item: LegacyTransaction): number {
   const type = text(item.type).toLowerCase() === 'income' ? 'income' : 'expense';
+  // O legado mantém o valor absoluto em expenseAmount, mas usa amount negativo
+  // para representar estornos/créditos de despesa. Preserve esse sinal explícito.
+  const explicitAmount = item.amount == null ? null : number(item.amount);
+  if (type === 'expense' && explicitAmount != null && explicitAmount < 0) return explicitAmount;
   const raw = type === 'income'
     ? item.incomeAmount ?? item.amount
     : item.expenseAmount ?? item.amount;

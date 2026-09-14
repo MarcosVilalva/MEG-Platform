@@ -55,6 +55,12 @@ export function isNormalizedPrimary(state: unknown): boolean {
   return normalizationMetadata(state).mode === NORMALIZATION_MODE;
 }
 
+export function shouldApplyNormalizationShadow(state: unknown, reconciled: boolean): boolean {
+  // Depois que a base normalizada vira primária, FinancialEvent pode possuir
+  // ledger/auditoria. Nunca apague e recrie essa projeção para corrigir drift.
+  return !reconciled && !isNormalizedPrimary(state);
+}
+
 function normalizedItems(workspaceId: string) {
   return prisma.financialEvent.findMany({
     where: { workspaceId, legacyTransactionId: { not: null }, archivedAt: null },
@@ -131,6 +137,7 @@ export async function applyNormalizationShadow(workspaceId: string, userId: stri
   const appState = await prisma.appState.findUnique({ where: { workspaceId }, select: { state: true, revision: true } });
   const revision = appState?.revision || 0;
   if (revision !== expectedRevision) throw new Error('NORMALIZATION_REVISION_CONFLICT');
+  if (isNormalizedPrimary(appState?.state)) throw new Error('NORMALIZATION_PRIMARY_REBUILD_BLOCKED');
   const preview = buildNormalizationPreview(appState?.state, { workspaceId, userId, revision });
   if (preview.summary.invalidCount > 0) throw new Error('NORMALIZATION_INVALID_SOURCE');
 
@@ -152,7 +159,12 @@ export async function activateNormalizationPrimary(workspaceId: string, userId: 
   }
 
   let preview = await normalizationPreview(workspaceId, userId);
-  if (!preview.reconciled) preview = await applyNormalizationShadow(workspaceId, userId, appState.revision);
+  if (!preview.reconciled && isNormalizedPrimary(appState.state)) {
+    throw new Error('NORMALIZATION_PRIMARY_DIVERGENCE');
+  }
+  if (shouldApplyNormalizationShadow(appState.state, preview.reconciled)) {
+    preview = await applyNormalizationShadow(workspaceId, userId, appState.revision);
+  }
   if (!preview.reconciled || preview.source.invalidCount > 0) throw new Error('NORMALIZATION_RECONCILIATION_FAILED');
   if (isNormalizedPrimary(appState.state)) {
     recordNormalizationRuntimeStatus({ status: 'completed', primary: true, reconciled: true, count: preview.normalized.count, reason: null });
