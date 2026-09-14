@@ -24,13 +24,13 @@ export type PaymentMethod = {
   isActive: boolean;
 };
 
-export type FinancialEventType = 'income' | 'expense' | 'transfer' | 'investment' | 'redemption' | 'adjustment';
 export type FinancialEventStatus = 'draft' | 'planned' | 'confirmed' | 'paid' | 'reconciled' | 'archived';
 
 export type FinancialEvent = {
   id: string;
+  legacyTransactionId?: string | null;
   description: string;
-  type: FinancialEventType;
+  type: 'income' | 'expense';
   status: FinancialEventStatus;
   date: string;
   competence: string;
@@ -54,19 +54,11 @@ export type FinancialEvent = {
     modality: string;
     observations: string;
   } | null;
-  idempotentReplay?: boolean;
-};
-
-export type FinancialEventPage = {
-  items: FinancialEvent[];
-  total: number;
-  page: number;
-  pageSize: number;
 };
 
 export type FinancialEventInput = {
   description: string;
-  type: FinancialEventType;
+  type: 'income' | 'expense';
   status: FinancialEventStatus;
   date: string;
   amount: number;
@@ -74,6 +66,36 @@ export type FinancialEventInput = {
   categoryId?: string;
   paymentMethodId?: string;
   notes?: string;
+};
+
+export type BulkLegacyTransactionPatch = {
+  launchType?: string;
+  situation?: string;
+  account?: string;
+  paymentMethod?: string;
+  group?: string;
+  category?: string;
+  classification?: string;
+  modality?: string;
+  financialAccountId?: string;
+  paymentMethodId?: string;
+  categoryId?: string;
+  incomeAmount?: number;
+  expenseAmount?: number;
+  amount?: number;
+};
+
+export type BulkEventChanges = {
+  date?: string;
+  description?: string;
+  type?: 'income' | 'expense';
+  status?: 'planned' | 'paid' | 'reconciled';
+  amount?: number;
+  notes?: string | null;
+  accountId?: string | null;
+  paymentMethodId?: string | null;
+  categoryId?: string | null;
+  legacy?: BulkLegacyTransactionPatch;
 };
 
 async function authorizedRequest<T>(path: string, init?: RequestInit): Promise<T> {
@@ -140,12 +162,6 @@ export type FinanceSummary = {
   } | null;
   topCategories: Array<{ name: string; amount: number }>;
 };
-export type BenefitSummary = {
-  month: string;
-  balance: number;
-  credits: number;
-  used: number;
-};
 export const financeClient = {
   getAnalytics: (month: string) =>
     authorizedRequest<FinancialAnalytics>(`/finance/analytics?month=${encodeURIComponent(month)}`),
@@ -159,15 +175,11 @@ export const financeClient = {
     authorizedRequest<FinancialCashflow>(`/finance/cashflow?month=${encodeURIComponent(month)}`),
   getSummary: (month: string) =>
     authorizedRequest<FinanceSummary>(`/finance/summary?month=${encodeURIComponent(month)}`),
-  getBenefitSummary: (month: string) =>
-    authorizedRequest<BenefitSummary>(`/finance/benefit-summary?month=${encodeURIComponent(month)}`),
-  listEventsForMonth: (month: string) =>
-    authorizedRequest<FinancialEventPage>(`/finance/events/month?month=${encodeURIComponent(month)}`),
   listEvents: (page = 1, pageSize = 50, search = '') =>
-    authorizedRequest<FinancialEventPage>(
+    authorizedRequest<{ items: FinancialEvent[]; total: number; page: number; pageSize: number }>(
       `/finance/events?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`
     ),
-  createEvent: (data: FinancialEventInput & { operationId?: string }) => authorizedRequest<FinancialEvent>('/finance/events', {
+  createEvent: (data: FinancialEventInput) => authorizedRequest<FinancialEvent>('/finance/events', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
@@ -176,6 +188,16 @@ export const financeClient = {
     body: JSON.stringify(data)
   }),
   archiveEvent: (id: string) => authorizedRequest<{ id: string; archived: boolean }>(`/finance/events/${id}`, { method: 'DELETE' }),
+  bulkUpdateEvents: (data: { ids: string[]; changes: BulkEventChanges; operationId: string }) =>
+    authorizedRequest<{ ids: string[]; updated: number; events: FinancialEvent[]; idempotentReplay: boolean }>('/finance/events/bulk/update', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  bulkArchiveEvents: (data: { ids: string[]; operationId: string }) =>
+    authorizedRequest<{ ids: string[]; archived: number; idempotentReplay: boolean }>('/finance/events/bulk/archive', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
 
   listAccounts: () => authorizedRequest<Account[]>('/finance/accounts'),
   createAccount: (data: Omit<Account, 'id' | 'isActive'>) => authorizedRequest<Account>('/finance/accounts', {
