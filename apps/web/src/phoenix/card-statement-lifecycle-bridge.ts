@@ -109,9 +109,10 @@ function overrideReactStatus(item: CardStatementLifecycle) {
   const badge = document.querySelector<HTMLElement>('.px-cycle-dates .px-status');
   if (!badge) return;
   const meta = statusMeta(item.status);
-  badge.textContent = meta.label;
-  badge.className = `px-status ${meta.className}`;
-  badge.dataset.statementLifecycleStatus = item.status;
+  const desiredClass = `px-status ${meta.className}`;
+  if (badge.textContent !== meta.label) badge.textContent = meta.label;
+  if (badge.className !== desiredClass) badge.className = desiredClass;
+  if (badge.dataset.statementLifecycleStatus !== item.status) badge.dataset.statementLifecycleStatus = item.status;
 }
 
 function panelHtml(item: CardStatementLifecycle) {
