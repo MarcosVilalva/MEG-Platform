@@ -10,6 +10,7 @@ import { registerAuth } from './plugins/auth';
 import { authRoutes } from './modules/auth/routes';
 import { financeRoutes } from './modules/finance/routes';
 import { financeBulkMutationRoutes } from './modules/finance/event-bulk-routes';
+import { financeCommitmentForecastRoutes } from './modules/finance/commitment-forecast-routes';
 import { receivableRoutes } from './modules/receivables/routes';
 import { cardRoutes } from './modules/cards/routes';
 import { cardManagementRoutes } from './modules/cards/management-routes';
@@ -124,6 +125,7 @@ app.get('/ready', async (_request, reply) => {
 await app.register(authRoutes, { prefix: '/auth' });
 await app.register(financeRoutes, { prefix: '/finance' });
 await app.register(financeBulkMutationRoutes, { prefix: '/finance' });
+await app.register(financeCommitmentForecastRoutes, { prefix: '/finance' });
 await app.register(receivableRoutes, { prefix: '/receivables' });
 await app.register(cardRoutes, { prefix: '/cards' });
 await app.register(cardStatementReopenRoutes, { prefix: '/cards' });
