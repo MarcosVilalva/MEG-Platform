@@ -59,6 +59,25 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Capture RC1 dependency security inventory
+        if: github.ref == 'refs/heads/phoenix/v15-clean-room'
+        shell: bash
+        run: |
+          npm audit --json > rc1-npm-audit.json || true
+          node scripts/rc1-security-summary.mjs rc1-npm-audit.json > rc1-npm-audit.md
+          cat rc1-npm-audit.md
+
+      - name: Upload RC1 dependency security inventory
+        if: always() && github.ref == 'refs/heads/phoenix/v15-clean-room'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rc1-dependency-security
+          path: |
+            rc1-npm-audit.json
+            rc1-npm-audit.md
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Verify API runtime imports
         working-directory: apps/api
         run: node -e "Promise.all([import('@fastify/swagger'), import('@fastify/swagger-ui')]).then(() => console.log('Dependências runtime da API resolvidas.'))"
