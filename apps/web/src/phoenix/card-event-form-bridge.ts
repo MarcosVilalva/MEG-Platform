@@ -15,12 +15,14 @@ type CardBridgeState = {
   mode: CardBridgeMode;
   fingerprint: string;
   operationId?: string;
+  baselineCaptured: boolean;
   knownMatchingIds: string[];
 };
 
 const state: CardBridgeState = {
   mode: 'idle',
   fingerprint: '',
+  baselineCaptured: false,
   knownMatchingIds: [],
 };
 
@@ -146,6 +148,7 @@ function resetState() {
   state.mode = 'idle';
   state.fingerprint = '';
   state.operationId = undefined;
+  state.baselineCaptured = false;
   state.knownMatchingIds = [];
 }
 
@@ -189,6 +192,7 @@ async function submit(root: HTMLElement, draft: CardDraft) {
   if (state.fingerprint !== nextFingerprint) {
     state.fingerprint = nextFingerprint;
     state.operationId = operationId();
+    state.baselineCaptured = false;
     state.knownMatchingIds = [];
   }
 
@@ -202,8 +206,10 @@ async function submit(root: HTMLElement, draft: CardDraft) {
     setFeedback(root, 'Gravando a compra no cartão e aguardando confirmação do servidor.', 'ok');
 
     const before = await readMatchingPurchases(draft);
-    if (!state.knownMatchingIds.length) state.knownMatchingIds = before.map((item) => item.id);
-    else {
+    if (!state.baselineCaptured) {
+      state.knownMatchingIds = before.map((item) => item.id);
+      state.baselineCaptured = true;
+    } else {
       const newlyConfirmed = before.find((item) => !state.knownMatchingIds.includes(item.id));
       if (newlyConfirmed) {
         markConfirmed(root, newlyConfirmed);
@@ -211,7 +217,7 @@ async function submit(root: HTMLElement, draft: CardDraft) {
       }
     }
 
-    if (before.length && state.knownMatchingIds.length === before.length) {
+    if (before.length) {
       const accepted = window.confirm('Já existe uma compra com a mesma descrição, valor, cartão, data e quantidade de parcelas. Deseja registrar outra mesmo assim?');
       if (!accepted) {
         state.mode = 'reviewed';
@@ -255,6 +261,7 @@ function review(root: HTMLElement) {
   if (state.fingerprint !== nextFingerprint) {
     state.fingerprint = nextFingerprint;
     state.operationId = operationId();
+    state.baselineCaptured = false;
     state.knownMatchingIds = [];
   }
   state.mode = 'reviewed';
