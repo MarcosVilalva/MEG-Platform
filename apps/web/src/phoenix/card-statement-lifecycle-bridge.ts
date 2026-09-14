@@ -69,7 +69,7 @@ function money(value: unknown) {
 
 function brDate(value: string | null | undefined, includeTime = false) {
   if (!value) return '—';
-  const parsed = new Date(value);
+  const parsed = new Date(value.length === 10 ? `${value}T12:00:00Z` : value);
   if (Number.isNaN(parsed.getTime())) return '—';
   return new Intl.DateTimeFormat('pt-BR', {
     timeZone: 'America/Sao_Paulo',
@@ -90,6 +90,16 @@ function statusMeta(value: CardStatementLifecycle['status']) {
     paid: { label: 'PAGA', className: 'reconciled', note: 'As parcelas oficiais desta competência estão quitadas.' },
     reopened: { label: 'REABERTA', className: 'warn', note: 'O pagamento foi estornado de forma auditada e as parcelas voltaram para aberto.' }
   } as const)[value];
+}
+
+function timelineKindMeta(kind: CardStatementLifecycle['timeline'][number]['kind']) {
+  return ({
+    closing: { label: 'FECHAMENTO', className: 'calculated', glyph: 'F' },
+    due: { label: 'VENCIMENTO', className: 'calculated', glyph: 'V' },
+    payment: { label: 'PAGAMENTO', className: 'paid', glyph: 'P' },
+    reopen: { label: 'REABERTURA', className: 'reopened', glyph: 'R' },
+    'legacy-payment': { label: 'PAGAMENTO LEGADO', className: 'legacy', glyph: 'L' }
+  } as const)[kind];
 }
 
 function shortId(value: string | null | undefined) {
@@ -115,6 +125,37 @@ function overrideReactStatus(item: CardStatementLifecycle) {
   if (badge.dataset.statementLifecycleStatus !== item.status) badge.dataset.statementLifecycleStatus = item.status;
 }
 
+function timelineHtml(item: CardStatementLifecycle) {
+  const rows = Array.isArray(item.timeline) ? item.timeline : [];
+  if (!rows.length) return '';
+  return `<section class="px-statement-timeline" aria-label="Linha do tempo da fatura">
+    <div class="px-statement-timeline-head"><div><span>Linha do tempo da fatura</span><strong>${rows.length} marco(s) desta competência</strong></div><small>Fechamento e vencimento vêm das regras do cartão; pagamentos e reaberturas vêm da auditoria real.</small></div>
+    <div class="px-statement-timeline-list">${rows.map((timelineItem) => {
+      const meta = timelineKindMeta(timelineItem.kind);
+      const effectiveLabel = timelineItem.kind === 'payment' || timelineItem.kind === 'legacy-payment'
+        ? `Data efetiva ${brDate(timelineItem.effectiveAt)}`
+        : timelineItem.effectiveAt && timelineItem.effectiveAt !== timelineItem.at
+          ? `Data efetiva ${brDate(timelineItem.effectiveAt)}`
+          : '';
+      const actor = timelineItem.actor ? actorName(timelineItem.actor) : '';
+      const account = timelineItem.account?.name || '';
+      const method = timelineItem.paymentMethod?.name || '';
+      const event = timelineItem.event;
+      const eventState = event ? `${event.archivedAt || event.status === 'archived' ? 'Evento arquivado' : 'Evento ativo'} · ${shortId(event.id)}` : '';
+      const sourceLabel = timelineItem.source === 'audit' ? `AuditLog ${shortId(timelineItem.auditId)}` : timelineItem.source === 'calculated' ? 'Regra do cartão' : 'Parcelas legadas';
+      return `<article class="px-statement-timeline-item ${meta.className}" data-statement-timeline-id="${escapeHtml(timelineItem.id)}">
+        <div class="px-statement-timeline-rail"><span>${meta.glyph}</span></div>
+        <div class="px-statement-timeline-body">
+          <div class="px-statement-timeline-title"><div><span>${meta.label}</span><strong>${escapeHtml(timelineItem.title)}</strong></div>${timelineItem.amount !== null ? `<b>${escapeHtml(money(timelineItem.amount))}</b>` : ''}</div>
+          <div class="px-statement-timeline-date"><strong>${escapeHtml(brDate(timelineItem.at, timelineItem.source === 'audit'))}</strong>${effectiveLabel ? `<span>${escapeHtml(effectiveLabel)}</span>` : ''}<span>${escapeHtml(sourceLabel)}</span></div>
+          ${timelineItem.description ? `<p>${escapeHtml(timelineItem.description)}</p>` : ''}
+          ${(actor || account || method || eventState) ? `<div class="px-statement-timeline-meta">${actor ? `<span>Usuário: <strong>${escapeHtml(actor)}</strong></span>` : ''}${account ? `<span>Conta: <strong>${escapeHtml(account)}</strong></span>` : ''}${method ? `<span>Forma: <strong>${escapeHtml(method)}</strong></span>` : ''}${eventState ? `<span>Lançamento: <strong>${escapeHtml(eventState)}</strong></span>` : ''}</div>` : ''}
+        </div>
+      </article>`;
+    }).join('')}</div>
+  </section>`;
+}
+
 function panelHtml(item: CardStatementLifecycle) {
   const meta = statusMeta(item.status);
   const payment = item.lastPayment;
@@ -136,6 +177,7 @@ function panelHtml(item: CardStatementLifecycle) {
     : '';
   return `<section class="px-statement-lifecycle" data-card-statement-lifecycle>
     <div class="px-statement-life-head"><div><span>Ciclo da fatura</span><strong>${escapeHtml(item.cardName)} · ${escapeHtml(item.month)}</strong><small>${escapeHtml(meta.note)}</small></div><span class="px-status ${meta.className}">${escapeHtml(meta.label)}</span></div>
+    <div class="px-statement-life-cycle-dates"><div><span>Fechamento</span><strong>${escapeHtml(brDate(item.closingDate))}</strong><small>Calculado pelo cadastro do cartão</small></div><div><span>Vencimento</span><strong>${escapeHtml(brDate(item.dueDate))}</strong><small>Calculado pelo cadastro do cartão</small></div></div>
     <div class="px-statement-life-totals">
       <div><span>Fatura oficial</span><strong>${escapeHtml(money(item.statementAmount))}</strong><small>${item.openInstallments + item.paidInstallments} parcela(s)</small></div>
       <div><span>Em aberto</span><strong>${escapeHtml(money(item.openAmount))}</strong><small>${item.openInstallments} parcela(s)</small></div>
@@ -144,6 +186,7 @@ function panelHtml(item: CardStatementLifecycle) {
     ${linkedPayment}
     ${reopen}
     ${eventLink}
+    ${timelineHtml(item)}
     <div class="px-statement-life-footer"><span>${item.lifecycleAuditId ? `Último vínculo de auditoria ${escapeHtml(shortId(item.lifecycleAuditId))}` : 'Sem ação de pagamento/reabertura na auditoria desta competência.'}</span><button type="button" class="px-secondary-action" data-statement-life-open-history>Abrir no Histórico</button></div>
   </section>`;
 }
