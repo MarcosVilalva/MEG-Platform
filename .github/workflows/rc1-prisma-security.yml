@@ -53,6 +53,7 @@ jobs:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
 
       - name: Verify Prisma runtime and CLI versions
+        working-directory: packages/database
         shell: bash
         run: |
           node -e "import('@prisma/client').then((m) => { if (!m.PrismaClient) process.exit(1); console.log('@prisma/client runtime resolvido.'); })"
