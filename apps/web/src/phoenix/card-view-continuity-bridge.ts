@@ -113,10 +113,17 @@ function nativeSetInput(input: HTMLInputElement, value: string) {
   input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-function buttonWithText(selector: string, text: string) {
-  const wanted = normalize(text);
+function cardButton(name: string) {
+  const wanted = normalize(name);
   if (!wanted) return null;
-  return [...document.querySelectorAll<HTMLButtonElement>(selector)]
+  return [...document.querySelectorAll<HTMLButtonElement>('.px-card-option')]
+    .find((button) => normalize(button.querySelector('strong')?.textContent) === wanted) || null;
+}
+
+function tabButton(label: string) {
+  const wanted = normalize(label);
+  if (!wanted) return null;
+  return [...document.querySelectorAll<HTMLButtonElement>('.px-card-movement .px-tabbar button')]
     .find((button) => normalize(button.textContent) === wanted) || null;
 }
 
@@ -147,13 +154,13 @@ function restore(snapshot: CardContinuitySnapshot, markDone = false) {
 
   const currentCard = selectedCardName();
   if (snapshot.cardName && normalize(currentCard) !== normalize(snapshot.cardName)) {
-    buttonWithText('.px-card-option', snapshot.cardName)?.click();
+    cardButton(snapshot.cardName)?.click();
   }
 
   window.requestAnimationFrame(() => {
     const currentTab = activeTabLabel();
     if (snapshot.tabLabel && normalize(currentTab) !== normalize(snapshot.tabLabel)) {
-      buttonWithText('.px-card-movement .px-tabbar button', snapshot.tabLabel)?.click();
+      tabButton(snapshot.tabLabel)?.click();
     }
 
     window.requestAnimationFrame(() => {
@@ -241,7 +248,11 @@ function onScroll(event: Event) {
 }
 
 function restoreOnMount() {
-  if (!cardsPanel() || pending) return;
+  if (!cardsPanel()) {
+    mountedRestoreDoneFor = '';
+    return;
+  }
+  if (pending) return;
   const saved = readPersisted();
   if (!saved || (saved.month && activeMonth() && saved.month !== activeMonth())) return;
   const key = `${saved.month}|${saved.cardName}|${saved.tabLabel}`;
