@@ -158,7 +158,7 @@ export type PhoenixReadModel = {
   sourcePolicy: {
     mode: 'read-only';
     summary: 'finance-domain';
-    events: 'finance-domain-month';
+    events: 'finance-domain-month' | 'finance-domain-month+card-domain-projection';
     financialAudit: 'finance-audit-log';
     activities: 'app-state-activity-log-legacy';
     legacyTransactions: 'app-state-transactions-read-only';
