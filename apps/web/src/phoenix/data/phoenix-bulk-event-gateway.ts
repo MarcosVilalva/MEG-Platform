@@ -1,7 +1,7 @@
 import { authenticatedRequest } from '../../app/auth-client';
 import { clearPhoenixReadModelCache } from './load-phoenix-read-model';
 
-export const PHOENIX_BULK_EVENT_WRITE_ENABLED = false;
+export const PHOENIX_BULK_EVENT_WRITE_ENABLED = true;
 
 export type PhoenixBulkEventChanges = {
   date?: string;
