@@ -70,7 +70,7 @@ function decorateButton() {
   button.dataset.phoenixCardManagement = 'true';
   if (canWrite()) {
     button.disabled = false;
-    button.title = 'Cadastrar, editar e organizar seus cartões';
+    button.title = 'Cadastrar, editar, desativar e reativar cartões';
   } else {
     button.disabled = true;
     button.title = 'Seu perfil não possui permissão para alterar cartões.';
@@ -119,30 +119,63 @@ function parseBrazilianNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function currentEditing() {
-  return cards.find((card) => card.id === editingId) || null;
+function activeCards() {
+  return cards.filter((card) => card.isActive);
 }
 
-function cardListHtml() {
-  if (!cards.length) return '<div class="px-card-management-empty"><strong>Nenhum cartão ativo</strong><span>Cadastre o primeiro cartão para começar a controlar faturas, limites e parcelamentos.</span></div>';
-  return cards.map((card) => {
-    const identity = resolvePhoenixCardIdentity(card);
-    const art = identity.artwork
-      ? `<img src="${escapeHtml(`${import.meta.env.BASE_URL}${identity.artwork}`)}" alt="${escapeHtml(identity.label)}">`
-      : `<strong>${escapeHtml(identity.miniLabel)}</strong>`;
+function inactiveCards() {
+  return cards.filter((card) => !card.isActive);
+}
+
+function currentEditing() {
+  return cards.find((card) => card.id === editingId && card.isActive) || null;
+}
+
+function cardVisual(card: CreditCard) {
+  const identity = resolvePhoenixCardIdentity(card);
+  const art = identity.artwork
+    ? `<img src="${escapeHtml(`${import.meta.env.BASE_URL}${identity.artwork}`)}" alt="${escapeHtml(identity.label)}">`
+    : `<strong>${escapeHtml(identity.miniLabel)}</strong>`;
+  return { identity, art };
+}
+
+function activeCardListHtml() {
+  const items = activeCards();
+  if (!items.length) return '<div class="px-card-management-empty"><strong>Nenhum cartão ativo</strong><span>Cadastre um cartão novo ou reative um cartão abaixo.</span></div>';
+  return items.map((card) => {
+    const { identity, art } = cardVisual(card);
     return `<button type="button" class="px-card-manage-item" data-card-manage-edit="${escapeHtml(card.id)}">
       <span class="px-card-manage-mini" style="background:${escapeHtml(identity.background)}">${art}</span>
-      <span class="px-card-manage-copy"><strong>${escapeHtml(card.name)}</strong><small>${escapeHtml(card.issuer || card.brand || 'Cartão cadastrado')} · limite ${escapeHtml(money(card.creditLimit))}</small><small>Fecha dia ${escapeHtml(card.closingDay)} · vence dia ${escapeHtml(card.dueDay)}${card.lastFour ? ` · final ${escapeHtml(card.lastFour)}` : ''}</small></span>
+      <span class="px-card-manage-copy"><span class="px-card-manage-title"><strong>${escapeHtml(card.name)}</strong><em class="px-card-state is-active">Ativo</em></span><small>${escapeHtml(card.issuer || card.brand || 'Cartão cadastrado')} · limite ${escapeHtml(money(card.creditLimit))}</small><small>Fecha dia ${escapeHtml(card.closingDay)} · vence dia ${escapeHtml(card.dueDay)}${card.lastFour ? ` · final ${escapeHtml(card.lastFour)}` : ''}</small></span>
       <span class="px-card-manage-chevron">›</span>
     </button>`;
   }).join('');
 }
 
+function inactiveCardListHtml() {
+  const items = inactiveCards();
+  if (!items.length) return '<div class="px-card-management-empty is-compact"><strong>Nenhum cartão inativo</strong><span>Cartões desativados aparecerão aqui sem perder o histórico.</span></div>';
+  return items.map((card) => {
+    const { identity, art } = cardVisual(card);
+    const action = canDeactivate()
+      ? `<button type="button" class="px-secondary-action px-card-reactivate" data-card-manage-reactivate="${escapeHtml(card.id)}">Reativar</button>`
+      : '<span class="px-card-reactivate-note">ADMIN/MANAGER</span>';
+    return `<div class="px-card-manage-item is-inactive">
+      <span class="px-card-manage-mini" style="background:${escapeHtml(identity.background)}">${art}</span>
+      <span class="px-card-manage-copy"><span class="px-card-manage-title"><strong>${escapeHtml(card.name)}</strong><em class="px-card-state is-inactive">Inativo</em></span><small>${escapeHtml(card.issuer || card.brand || 'Cartão cadastrado')} · limite ${escapeHtml(money(card.creditLimit))}</small><small>Histórico preservado${card.lastFour ? ` · final ${escapeHtml(card.lastFour)}` : ''}</small></span>
+      <span class="px-card-manage-reactivate-slot">${action}</span>
+    </div>`;
+  }).join('');
+}
+
 function listView() {
+  const active = activeCards();
+  const inactive = inactiveCards();
   return `<div class="px-card-management-body">
-    <div class="px-card-management-toolbar"><div><span>Cartões ativos</span><strong>${cards.length}</strong></div><button class="px-primary-action" type="button" data-card-manage-new>＋ Novo cartão</button></div>
-    <div class="px-card-management-list">${cardListHtml()}</div>
-    <div class="px-notice ok" data-card-management-feedback>As alterações de limite, fechamento e vencimento atualizam as próximas leituras do cartão. Compras já pagas não são reescritas.</div>
+    <div class="px-card-management-toolbar"><div class="px-card-management-counts"><span>Ativos <strong>${active.length}</strong></span><span>Inativos <strong>${inactive.length}</strong></span></div><button class="px-primary-action" type="button" data-card-manage-new>＋ Novo cartão</button></div>
+    <section class="px-card-management-section"><div class="px-card-management-section-head"><div><strong>Cartões ativos</strong><span>Disponíveis para compras, faturas e novos lançamentos.</span></div></div><div class="px-card-management-list">${activeCardListHtml()}</div></section>
+    <section class="px-card-management-section is-inactive"><div class="px-card-management-section-head"><div><strong>Cartões inativos</strong><span>Ficam fora dos novos lançamentos, mas continuam ligados ao histórico original.</span></div></div><div class="px-card-management-list">${inactiveCardListHtml()}</div></section>
+    <div class="px-notice ok" data-card-management-feedback>Desativar não apaga compras nem faturas. Reativar reutiliza o mesmo cartão e o mesmo histórico.</div>
   </div>`;
 }
 
@@ -214,7 +247,7 @@ async function loadCards() {
   if (loading) return;
   loading = true;
   try {
-    cards = (await cardsClient.list(activeMonth())).filter((card) => card.isActive);
+    cards = await cardsClient.listManagement(activeMonth());
   } finally {
     loading = false;
   }
@@ -300,7 +333,9 @@ async function saveCard() {
   }
   const duplicate = cards.find((card) => card.id !== editingId && normalize(card.name) === normalize(draft.name));
   if (duplicate) {
-    feedback(`Já existe um cartão ativo chamado “${duplicate.name}”. Ajuste o nome antes de salvar.`, true);
+    feedback(duplicate.isActive
+      ? `Já existe um cartão ativo chamado “${duplicate.name}”. Ajuste o nome antes de salvar.`
+      : `Já existe um cartão inativo chamado “${duplicate.name}”. Reative esse cartão para preservar o histórico em vez de criar outro.`, true);
     return;
   }
   const button = root()?.querySelector<HTMLButtonElement>('[data-card-manage-save]');
@@ -334,10 +369,35 @@ async function deactivateCard() {
     mode = 'list';
     editingId = '';
     render();
-    feedback('Cartão desativado. O histórico foi preservado; a reativação ainda não está disponível nesta tela.');
+    feedback('Cartão desativado. Ele permanece abaixo em “Cartões inativos” e pode ser reativado sem perder o histórico.');
   } catch (error) {
     feedback(error instanceof Error ? error.message : 'Não foi possível desativar o cartão.', true);
     if (button) { button.disabled = false; button.textContent = 'Desativar cartão'; }
+  }
+}
+
+async function reactivateCard(id: string) {
+  if (!canDeactivate()) return;
+  const card = cards.find((candidate) => candidate.id === id && !candidate.isActive);
+  if (!card) return;
+  if (!window.confirm(`Reativar “${card.name}”?\n\nO mesmo cartão e todo o histórico serão reutilizados. Ele voltará a aparecer nos novos lançamentos.`)) return;
+  const button = [...(root()?.querySelectorAll<HTMLButtonElement>('[data-card-manage-reactivate]') || [])]
+    .find((candidate) => candidate.dataset.cardManageReactivate === id) || null;
+  if (button) { button.disabled = true; button.textContent = 'Reativando…'; }
+  feedback('Reativando o cartão original e preservando todos os vínculos…');
+  try {
+    const result = await cardsClient.reactivate(id);
+    await loadCards();
+    mode = 'list';
+    editingId = '';
+    render();
+    feedback(result.reactivated ? `“${result.card.name}” foi reativado com o histórico preservado.` : `“${result.card.name}” já estava ativo; nenhum registro foi duplicado.`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Não foi possível reativar o cartão.';
+    feedback(message === 'CARD_NAME_ALREADY_ACTIVE'
+      ? 'Não foi possível reativar: já existe outro cartão ativo com o mesmo nome. Ajuste o cartão ativo antes de tentar novamente.'
+      : message, true);
+    if (button) { button.disabled = false; button.textContent = 'Reativar'; }
   }
 }
 
@@ -346,6 +406,7 @@ function bindContent() {
   if (!drawer) return;
   drawer.querySelector('[data-card-manage-new]')?.addEventListener('click', () => { mode = 'create'; editingId = ''; render(); });
   drawer.querySelectorAll<HTMLElement>('[data-card-manage-edit]').forEach((node) => node.addEventListener('click', () => { mode = 'edit'; editingId = node.dataset.cardManageEdit || ''; render(); }));
+  drawer.querySelectorAll<HTMLButtonElement>('[data-card-manage-reactivate]').forEach((node) => node.addEventListener('click', () => void reactivateCard(node.dataset.cardManageReactivate || '')));
   drawer.querySelectorAll('[data-card-manage-back]').forEach((node) => node.addEventListener('click', () => { mode = 'list'; editingId = ''; render(); }));
   drawer.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-card-field]').forEach((node) => node.addEventListener('input', updatePreview));
   drawer.querySelector('[data-card-manage-save]')?.addEventListener('click', () => void saveCard());
