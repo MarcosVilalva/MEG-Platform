@@ -78,6 +78,29 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Generate non-breaking dependency remediation proposal
+        if: github.ref == 'refs/heads/phoenix/v15-clean-room'
+        shell: bash
+        run: |
+          npm audit fix --package-lock-only --ignore-scripts > rc1-audit-safe-fix.log 2>&1 || true
+          cp package-lock.json rc1-package-lock-safe-fix.json
+          npm audit --json > rc1-npm-audit-after-safe-fix.json || true
+          node scripts/rc1-security-summary.mjs rc1-npm-audit-after-safe-fix.json > rc1-npm-audit-after-safe-fix.md
+          cat rc1-npm-audit-after-safe-fix.md
+
+      - name: Upload non-breaking remediation proposal
+        if: always() && github.ref == 'refs/heads/phoenix/v15-clean-room'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rc1-dependency-safe-fix-plan
+          path: |
+            rc1-package-lock-safe-fix.json
+            rc1-npm-audit-after-safe-fix.json
+            rc1-npm-audit-after-safe-fix.md
+            rc1-audit-safe-fix.log
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Verify API runtime imports
         working-directory: apps/api
         run: node -e "Promise.all([import('@fastify/swagger'), import('@fastify/swagger-ui')]).then(() => console.log('Dependências runtime da API resolvidas.'))"
