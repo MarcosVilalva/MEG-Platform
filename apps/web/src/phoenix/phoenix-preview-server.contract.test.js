@@ -7,16 +7,40 @@ assert.match(server, /PREVIEW_READ_ONLY/,
   'Servidor do preview deve bloquear mutações fora das capacidades explicitamente habilitadas.');
 assert.match(server, /allowedAuthPosts\s*=\s*new Set\(\[\s*'\/auth\/login',\s*'\/auth\/refresh',\s*'\/auth\/logout',\s*'\/auth\/register',\s*'\/auth\/forgot-password'\s*\]\)/,
   'Preview deve manter o ciclo explícito de login, sessão, cadastro e recuperação de acesso.');
+
 assert.match(server, /simpleEventWriteEnabled\s*=\s*process\.env\.PHOENIX_SIMPLE_EVENT_WRITE\s*===\s*'enabled'/,
-  'Escrita financeira deve exigir uma flag de ambiente deliberada e permanecer desligada quando ausente.');
+  'Evento financeiro simples deve exigir uma flag de ambiente deliberada.');
+assert.match(server, /pendingWriteEnabled\s*=\s*process\.env\.PHOENIX_PENDING_WRITE\s*===\s*'enabled'/,
+  'Baixa de pendências deve exigir uma flag de ambiente deliberada.');
+assert.match(server, /bulkEventWriteEnabled\s*=\s*process\.env\.PHOENIX_BULK_EVENT_WRITE\s*===\s*'enabled'/,
+  'Ações financeiras em lote devem exigir uma flag de ambiente deliberada.');
+
 assert.match(server, /allowedFinancialPosts\s*=\s*new Set\(\['\/finance\/events'\]\)/,
-  'A preparação do primeiro writer deve permitir no máximo o endpoint exato de evento simples.');
+  'Writer de evento simples deve continuar restrito ao endpoint exato de criação.');
+assert.match(server, /allowedBulkEventPosts\s*=\s*new Set\(\[\s*'\/finance\/events\/bulk\/update',\s*'\/finance\/events\/bulk\/archive'\s*\]\)/,
+  'Writer em lote deve possuir allowlist explícita somente para update e archive protegidos.');
 assert.match(server, /simpleEventWriteEnabled\s*&&\s*allowedFinancialPosts\.has\(pathname\)/,
-  'POST financeiro deve depender simultaneamente da flag e da allowlist estreita.');
+  'POST de evento simples deve depender simultaneamente da flag e da allowlist estreita.');
+assert.match(server, /bulkEventWriteEnabled\s*&&\s*allowedBulkEventPosts\.has\(pathname\)/,
+  'POST em lote deve depender simultaneamente da flag e da allowlist estreita.');
+assert.match(server, /if \(!pendingWriteEnabled\) return false;/,
+  'Rotas de baixa devem falhar fechadas quando a capacidade estiver desligada.');
+assert.match(server, /\^\\\/finance\\\/events\\\/\[\^\/\]\+\\\/settle\$.*\^\\\/payables\\\/\[\^\/\]\+\\\/payments\$/s,
+  'Baixas permitidas devem ficar limitadas a FinancialEvent settle e Payable payments.');
 assert.doesNotMatch(server, /allowedFinancialPosts\s*=\s*new Set\([^)]*(?:payables|cards|receivables|transfers)/,
-  'Primeiro writer não pode liberar outros domínios financeiros.');
-assert.match(server, /capabilities:\s*\{ simpleEventWrite: simpleEventWriteEnabled \}/,
-  'Health do preview deve declarar a capacidade real em vez de esconder o estado do writer.');
+  'Writer simples não pode ampliar implicitamente sua allowlist para outros domínios.');
+
+assert.match(server, /capabilities:\s*\{\s*simpleEventWrite:\s*simpleEventWriteEnabled,\s*pendingWrite:\s*pendingWriteEnabled,\s*bulkEventWrite:\s*bulkEventWriteEnabled\s*\}/s,
+  'Health do preview deve declarar todas as capacidades reais de escrita protegida.');
+assert.match(server, /phoenix-bulk-event-write-gated-preview/,
+  'Health deve distinguir quando o writer de lote está habilitado.');
+assert.match(server, /phoenix-pending-write-gated-preview/,
+  'Health deve distinguir quando o writer de pendências está habilitado.');
+assert.match(server, /phoenix-simple-event-write-gated-preview/,
+  'Health deve distinguir quando somente o writer simples está habilitado.');
+assert.match(server, /phoenix-finance-read-only-preview/,
+  'Health deve manter estado explícito de leitura quando nenhuma capacidade estiver habilitada.');
+
 assert.match(server, /hopByHopHeaders[^\n]*'origin'[^\n]*'referer'/,
   'Proxy deve remover Origin e Referer antes da chamada servidor-a-servidor.');
 assert.match(server, /PHOENIX_API_ORIGIN/,
@@ -50,4 +74,4 @@ assert.match(server, /x-frame-options[^\n]*DENY/i,
 assert.match(server, /permissions-policy[^\n]*camera=\(\), microphone=\(\), geolocation=\(\)/,
   'Preview deve desabilitar permissões de navegador que não são necessárias para validação.');
 
-console.log('Contrato do servidor Phoenix com escrita simples preparada e desativada por padrão validado.');
+console.log('Contrato do servidor Phoenix com writers financeiros protegidos por capacidade validado.');
