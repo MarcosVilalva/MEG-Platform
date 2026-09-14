@@ -183,10 +183,11 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
         paymentMethod: paymentMethodSnapshot,
         event: financialEvent ? {
           id: financialEvent.id,
+          description: financialEvent.description,
           status: financialEvent.status,
           date: isoDate(financialEvent.date),
           archivedAt: isoDate(financialEvent.archivedAt),
-        } : eventId ? { id: eventId, status: null, date: null, archivedAt: null } : null,
+        } : eventId ? { id: eventId, description: null, status: null, date: null, archivedAt: null } : null,
         auditId: latestPayment?.id || null,
         actor: latestPayment?.user || null,
       } : null,
