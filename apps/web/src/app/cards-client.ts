@@ -5,6 +5,7 @@ export type CardPurchase = { id: string; description: string; totalAmount: strin
 export type CreditCard = { id: string; name: string; issuer?: string | null; brand?: string | null; lastFour?: string | null; creditLimit: string | number; closingDay: number; dueDay: number; color?: string | null; isActive: boolean; usedLimit: number; availableLimit: number; statementAmount: number; payableStatementAmount?: number; purchases: CardPurchase[] };
 export type CardStatementPaymentResult = { paid: boolean; amount: number; eventId: string; protection?: { monetary?: boolean; allowed?: boolean; available?: number; requested?: number; missing?: number; at?: string }; idempotentReplay?: boolean };
 export type CardPurchaseMutationInput = { cardId: string; categoryId?: string; description: string; totalAmount: number; purchaseDate: string; installments: number; operationId: string };
+export type CreditCardMutationInput = { name: string; issuer?: string; brand?: string; lastFour?: string; creditLimit: number; closingDay: number; dueDay: number; color?: string };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return authenticatedRequest<T>(path, init);
@@ -12,7 +13,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const cardsClient = {
   list: (month: string) => request<CreditCard[]>(`/cards?month=${encodeURIComponent(month)}`),
-  create: (data: { name: string; issuer?: string; brand?: string; lastFour?: string; creditLimit: number; closingDay: number; dueDay: number; color?: string }) => request<CreditCard>('/cards', { method: 'POST', body: JSON.stringify(data) }),
+  create: (data: CreditCardMutationInput) => request<CreditCard>('/cards', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<CreditCardMutationInput>) => request<CreditCard>(`/cards/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   createPurchase: (data: { cardId: string; categoryId?: string; description: string; totalAmount: number; purchaseDate: string; installments: number; operationId?: string }) => request<CardPurchase>('/cards/purchases', { method: 'POST', body: JSON.stringify(data) }),
   updatePurchase: (id: string, data: CardPurchaseMutationInput) => request<CardPurchase>(`/cards/purchases/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   cancelPurchaseProtected: (id: string, operationId: string) => request<CardPurchase>(`/cards/purchases/${id}`, { method: 'DELETE', body: JSON.stringify({ operationId }) }),
