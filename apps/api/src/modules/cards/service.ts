@@ -3,6 +3,7 @@ import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-re
 import { recordFinancialAudit } from '../finance/audit';
 import {
   isFutureFinancialDay,
+  isMonetaryAccountType,
   monetaryBalanceAt,
   paymentBalanceDecision,
   serializableFinancialTransaction,
@@ -184,7 +185,9 @@ export async function createCardPurchaseProtected(userId: string, input: {
     const card = await tx.creditCard.findFirst({ where: { id: input.cardId, userId: shared.ownerId, isActive: true } });
     if (!card) throw new CardDomainError('INVALID_CARD');
     if (input.categoryId) {
-      const category = await tx.category.findFirst({ where: { id: input.categoryId, userId: shared.ownerId, isActive: true } });
+      const category = await tx.category.findFirst({
+        where: { id: input.categoryId, isActive: true, OR: [{ userId: shared.ownerId }, { userId: null }] },
+      });
       if (!category) throw new CardDomainError('INVALID_CATEGORY');
     }
 
@@ -271,16 +274,32 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
     const card = await tx.creditCard.findFirst({ where: { id: cardId, userId: shared.ownerId, isActive: true } });
     if (!card) throw new CardDomainError('CARD_NOT_FOUND');
     const account = input.accountId
-      ? await tx.account.findFirst({ where: { id: input.accountId, userId: shared.ownerId, isActive: true }, select: { id: true } })
+      ? await tx.account.findFirst({
+        where: { id: input.accountId, userId: shared.ownerId, isActive: true },
+        select: { id: true, name: true, type: true, institution: true },
+      })
       : null;
-    if (input.accountId && !account) throw new CardDomainError('INVALID_ACCOUNT');
+    if (!account) throw new CardDomainError('INVALID_ACCOUNT');
+    if (!isMonetaryAccountType(account.type)) {
+      throw new CardDomainError('ACCOUNT_NOT_MONETARY', { accountId: account.id, accountType: account.type });
+    }
     const paymentMethod = input.paymentMethodId
-      ? await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, userId: shared.ownerId, isActive: true }, select: { id: true } })
+      ? await tx.paymentMethod.findFirst({
+        where: { id: input.paymentMethodId, userId: shared.ownerId, isActive: true },
+        select: { id: true, name: true, type: true },
+      })
       : null;
     if (input.paymentMethodId && !paymentMethod) throw new CardDomainError('INVALID_PAYMENT_METHOD');
+    if (paymentMethod && key(paymentMethod.type) === 'CREDIT') {
+      throw new CardDomainError('INVALID_PAYMENT_METHOD', {
+        paymentMethodId: paymentMethod.id,
+        reason: 'CREDIT_METHOD_NOT_ALLOWED_FOR_STATEMENT_PAYMENT',
+      });
+    }
 
     const entries = await tx.cardInstallment.findMany({
       where: { purchase: { cardId: card.id, userId: shared.ownerId, status: 'active' }, statementMonth: month, status: 'open' },
+      orderBy: { number: 'asc' },
     });
     if (!entries.length) throw new CardDomainError('EMPTY_STATEMENT');
     const amount = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
@@ -288,23 +307,43 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
     const protection = paymentBalanceDecision(available, amount);
     if (!protection.allowed) throw new CardDomainError('INSUFFICIENT_MONETARY_BALANCE', { ...protection, at: input.paidAt.slice(0, 10) });
 
-    await tx.cardInstallment.updateMany({
-      where: { id: { in: entries.map((entry) => entry.id) } },
-      data: { status: 'paid', paidAt: new Date(input.paidAt) },
+    const paidAt = new Date(`${input.paidAt.slice(0, 10)}T12:00:00.000Z`);
+    const updated = await tx.cardInstallment.updateMany({
+      where: { id: { in: entries.map((entry) => entry.id) }, status: 'open' },
+      data: { status: 'paid', paidAt },
     });
+    if (updated.count !== entries.length) {
+      throw new CardDomainError('STATEMENT_CHANGED_RETRY', {
+        expectedInstallments: entries.length,
+        updatedInstallments: updated.count,
+      });
+    }
+
     const event = await tx.financialEvent.create({ data: {
       userId: shared.ownerId,
       workspaceId: shared.workspaceId,
       description: `Fatura ${card.name} ${month}`,
       type: 'expense',
       status: 'paid',
-      date: new Date(input.paidAt),
+      date: paidAt,
       competence: input.paidAt.slice(0, 7),
       amount,
       signedAmount: -amount,
-      accountId: input.accountId,
-      paymentMethodId: input.paymentMethodId,
+      accountId: account.id,
+      paymentMethodId: paymentMethod?.id,
     } });
+
+    await tx.ledgerEntry.create({
+      data: {
+        eventId: event.id,
+        date: paidAt,
+        accountId: account.id,
+        debit: 0,
+        credit: amount,
+        memo: event.description,
+      },
+    });
+
     const response = { paid: true, amount, eventId: event.id, protection: { monetary: true, ...protection, at: input.paidAt.slice(0, 10) }, idempotentReplay: false };
 
     await recordFinancialAudit(tx, {
@@ -313,7 +352,15 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
       entityId: card.id,
       action: 'CARD_STATEMENT_PAID',
       before: { card, statementMonth: month, openEntries: entries },
-      after: { statementMonth: month, paidEntryIds: entries.map((entry) => entry.id), paidAt: input.paidAt, amount, financialEventId: event.id },
+      after: {
+        statementMonth: month,
+        paidEntryIds: entries.map((entry) => entry.id),
+        paidAt: input.paidAt,
+        amount,
+        financialEventId: event.id,
+        account,
+        paymentMethod,
+      },
       context: {
         protection: response.protection,
         operationId: input.operationId ?? null,
