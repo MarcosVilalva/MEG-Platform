@@ -2,6 +2,7 @@ import type { FinancialEvent, FinancialEventStatus } from '@shared';
 
 export interface LegacyTransaction {
   id: string;
+  financialEventId?: string;
   type?: string;
   launchType?: string;
   date: string;
@@ -14,9 +15,13 @@ export interface LegacyTransaction {
   status?: string;
   situation?: string;
   account?: string;
+  financialAccountId?: string;
   paymentMethod?: string;
+  paymentMethodId?: string;
+  modality?: string;
   group?: string;
   category?: string;
+  categoryId?: string;
   classification?: string;
   tags?: string[];
   notes?: string;
