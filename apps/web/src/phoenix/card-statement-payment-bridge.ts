@@ -21,6 +21,7 @@ const monthNumbers: Record<string, string> = {
   nov: '11', novembro: '11',
   dez: '12', dezembro: '12',
 };
+const monetaryAccountTypes = new Set(['checking', 'savings', 'cash', 'investment']);
 
 let observer: MutationObserver | null = null;
 let syncTimer: number | null = null;
@@ -107,9 +108,11 @@ function legacyResidual(card: CreditCard) {
 }
 
 function isMonetaryAccount(account: Account) {
-  if (!account.isActive) return false;
-  const marker = normalize(`${account.type} ${account.name}`);
-  return !marker.includes('benef') && !marker.includes('verocard');
+  return Boolean(account.isActive && monetaryAccountTypes.has(normalize(account.type)));
+}
+
+function isStatementPaymentMethod(method: PaymentMethod) {
+  return Boolean(method.isActive && normalize(method.type) !== 'credit');
 }
 
 function operationId(key: string) {
@@ -278,6 +281,15 @@ function paymentFeedback(text: string, warn = false) {
   node.textContent = text;
 }
 
+function paymentErrorMessage(message: string) {
+  if (message.includes('ACCOUNT_NOT_MONETARY')) return 'A conta selecionada não é monetária. Escolha conta corrente, poupança, dinheiro ou investimento.';
+  if (message.includes('INVALID_ACCOUNT')) return 'A conta selecionada está inativa ou não pertence ao seu ambiente financeiro.';
+  if (message.includes('INVALID_PAYMENT_METHOD')) return 'A forma de pagamento selecionada não é válida para quitar uma fatura. Crédito não pode ser usado para pagar outro cartão.';
+  if (message.includes('OPERATION_ID_REUSED')) return 'A tentativa anterior foi alterada durante o reenvio. Revise os dados e confirme novamente.';
+  if (message.includes('VALIDATION_ERROR')) return 'Os dados do pagamento não passaram pela validação. Confira conta, forma e data.';
+  return message;
+}
+
 async function openPayment() {
   await loadContext(true);
   const item = context;
@@ -296,7 +308,7 @@ async function openPayment() {
     return;
   }
   const accounts = loaded.accounts.filter(isMonetaryAccount);
-  const methods = loaded.methods.filter((method) => method.isActive);
+  const methods = loaded.methods.filter(isStatementPaymentMethod);
   if (!accounts.length) {
     setInlineStatus('Nenhuma conta monetária ativa está disponível. Cadastre ou reative uma conta antes de pagar a fatura.', true);
     return;
@@ -330,7 +342,7 @@ async function openPayment() {
       <label class="px-field"><span>Conta de pagamento *</span><select data-statement-account>${accounts.map((itemAccount) => `<option value="${escapeHtml(itemAccount.id)}"${itemAccount.id === account?.id ? ' selected' : ''}>${escapeHtml(itemAccount.name)}${itemAccount.institution ? ` · ${escapeHtml(itemAccount.institution)}` : ''}</option>`).join('')}</select></label>
       <label class="px-field"><span>Forma de pagamento</span><select data-statement-method><option value="">Não informado</option>${methods.map((itemMethod) => `<option value="${escapeHtml(itemMethod.id)}"${itemMethod.id === method?.id ? ' selected' : ''}>${escapeHtml(itemMethod.name)}</option>`).join('')}</select></label>
       <label class="px-field"><span>Data do pagamento *</span><input type="date" data-statement-paid-at value="${todayIso()}"></label>
-      <div class="px-notice" data-statement-payment-feedback>Revise a conta, a forma e a data. A confirmação registra o pagamento e baixa todas as parcelas abertas desta fatura.</div>
+      <div class="px-notice" data-statement-payment-feedback>Revise a conta, a forma e a data. A confirmação é idempotente: repetir a mesma tentativa não cria outro pagamento.</div>
       <div class="px-statement-payment-actions"><button class="px-secondary-action" type="button" data-statement-payment-close>Cancelar</button><button class="px-primary-action" type="button" data-statement-payment-save>Confirmar pagamento</button></div>
     </div>`;
   document.body.append(backdrop, drawer);
@@ -355,7 +367,7 @@ async function submitPayment(item: StatementContext) {
     button.disabled = true;
     button.textContent = 'Confirmando…';
   }
-  paymentFeedback('Registrando o pagamento e baixando a fatura de forma atômica…');
+  paymentFeedback('Registrando o pagamento, razão e baixa da fatura em uma única operação protegida…');
   try {
     const result = await cardsClient.payStatement(item.card.id, item.month, {
       accountId,
@@ -365,7 +377,9 @@ async function submitPayment(item: StatementContext) {
     });
     paymentOperation = null;
     closePayment();
-    setInlineStatus(`Pagamento confirmado: ${money(Number(result.amount || 0))}. Atualizando fatura, limite e caixa…`);
+    setInlineStatus(result.idempotentReplay
+      ? `Pagamento já estava confirmado: ${money(Number(result.amount || 0))}. Nenhuma duplicidade foi criada.`
+      : `Pagamento confirmado: ${money(Number(result.amount || 0))}. Atualizando fatura, limite e caixa…`);
     loadedKey = '';
     context = null;
     window.dispatchEvent(new CustomEvent('meg:data-invalidated', {
@@ -384,11 +398,22 @@ async function submitPayment(item: StatementContext) {
       }));
       return;
     }
+    if (message.includes('STATEMENT_CHANGED_RETRY')) {
+      paymentOperation = null;
+      closePayment();
+      setInlineStatus('A fatura mudou enquanto o pagamento era confirmado. Nada foi baixado parcialmente; atualizando os valores antes de uma nova tentativa.', true);
+      loadedKey = '';
+      context = null;
+      window.dispatchEvent(new CustomEvent('meg:data-invalidated', {
+        detail: { path: `/cards/${item.card.id}/statements/${item.month}/pay`, method: 'POST', domain: 'cards', source: 'statement-payment-concurrency' }
+      }));
+      return;
+    }
     if (button) {
       button.disabled = false;
       button.textContent = 'Tentar confirmar novamente';
     }
-    paymentFeedback(`${message} Os dados foram mantidos para nova tentativa.`, true);
+    paymentFeedback(`${paymentErrorMessage(message)} Os dados foram mantidos para nova tentativa.`, true);
   }
 }
 
