@@ -40,7 +40,7 @@ function protectionNotice(root: HTMLElement) {
 }
 
 function protect(root: HTMLElement) {
-  const button = root.querySelector<HTMLButtonElement>('.px-detail-actions .px-primary-action');
+  const button = root.querySelector<HTMLButtonElement>('.px-detail-actions .px-primary-action:not([data-card-domain-edit])');
   if (!button) return;
   button.dataset.phoenixCardDomainEdit = 'true';
   button.disabled = true;
