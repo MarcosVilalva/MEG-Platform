@@ -65,6 +65,10 @@ function actionLabel(action: string) {
     FINANCIAL_EVENT_ARCHIVED: 'Arquivamento',
     PAYABLE_PAYMENT_CREATED: 'Baixa',
     RECURRING_EXPENSE_CREATED: 'Recorrência criada',
+    CARD_CREATED: 'Cartão cadastrado',
+    CARD_UPDATED: 'Cadastro do cartão alterado',
+    CARD_DEACTIVATED: 'Cartão desativado',
+    CARD_REACTIVATED: 'Cartão reativado',
     CARD_PURCHASE_CREATED: 'Compra criada',
     CARD_PURCHASE_UPDATED: 'Compra alterada',
     CARD_PURCHASE_CANCELLED: 'Compra cancelada',
@@ -77,8 +81,9 @@ function actionVerb(action: string) {
   return ({
     CREATED: 'incluiu', UPDATED: 'alterou', DELETED: 'excluiu', RECOVERED: 'recuperou',
     FINANCIAL_EVENT_CREATED: 'incluiu', FINANCIAL_EVENT_UPDATED: 'alterou', FINANCIAL_EVENT_ARCHIVED: 'arquivou',
-    PAYABLE_PAYMENT_CREATED: 'baixou', RECURRING_EXPENSE_CREATED: 'criou', CARD_PURCHASE_CREATED: 'incluiu',
-    CARD_PURCHASE_UPDATED: 'alterou', CARD_PURCHASE_CANCELLED: 'cancelou', CARD_STATEMENT_PAID: 'pagou',
+    PAYABLE_PAYMENT_CREATED: 'baixou', RECURRING_EXPENSE_CREATED: 'criou',
+    CARD_CREATED: 'cadastrou', CARD_UPDATED: 'alterou', CARD_DEACTIVATED: 'desativou', CARD_REACTIVATED: 'reativou',
+    CARD_PURCHASE_CREATED: 'incluiu', CARD_PURCHASE_UPDATED: 'alterou', CARD_PURCHASE_CANCELLED: 'cancelou', CARD_STATEMENT_PAID: 'pagou',
     RECEIVABLE_RECEIVED: 'recebeu'
   } as Record<string, string>)[action] || 'atualizou';
 }
@@ -101,9 +106,14 @@ function isCardAction(item: Pick<HistoryRow, 'action' | 'entity'>) {
   return item.action.startsWith('CARD_') || item.entity === 'CardPurchase' || item.entity === 'CreditCard';
 }
 
+function isCardMonetaryAction(action: string) {
+  return action.startsWith('CARD_PURCHASE_') || action === 'CARD_STATEMENT_PAID';
+}
+
 function cardNameFrom(source: Snapshot, context: Record<string, unknown>, data: PhoenixReadModel) {
   const nested = nestedName(source.card);
   if (nested) return nested;
+  if (typeof source.name === 'string' && source.name.trim()) return source.name.trim();
   const cardId = text(source.cardId) || text(context.cardId) || text(context.previousCardId);
   return data.cards.find((card) => card.id === cardId)?.name || '';
 }
@@ -121,7 +131,7 @@ function auditRow(item: PhoenixFinancialAuditItem, data: PhoenixReadModel): Hist
     : String(source.description || source.name || context.description || `${entityLabel(item.entity)} ${item.entityId.slice(0, 8)}`);
   const type = typeof source.type === 'string'
     ? source.type
-    : isCardAction({ action: item.action, entity: item.entity }) ? 'expense' : undefined;
+    : isCardMonetaryAction(item.action) ? 'expense' : undefined;
   return {
     id: `audit-${item.id}`,
     at: item.at,
@@ -220,6 +230,14 @@ function snapshotFields(value: unknown, context: Record<string, unknown>, data: 
   };
 
   add('Descrição', item.description);
+  add('Nome do cartão', item.name);
+  add('Emissor / banco', item.issuer);
+  add('Bandeira', item.brand);
+  add('Final do cartão', item.lastFour);
+  addMoney('Limite', item.creditLimit);
+  add('Dia do fechamento', item.closingDay);
+  add('Dia do vencimento', item.dueDay);
+  if (typeof item.isActive === 'boolean') add('Situação do cartão', item.isActive ? 'Ativo' : 'Inativo');
   add('Tipo', item.type);
   add('Situação', item.status);
   if (item.purchaseDate) add('Data da compra', formatDateValue(item.purchaseDate));
@@ -281,7 +299,14 @@ export function PhoenixHistory({ data }: { data: PhoenixReadModel }) {
   const selectedContext = selected?.context || {};
   const beforeFields = selected?.source === 'audit' ? snapshotFields(selected.before, selectedContext, data) : [];
   const afterFields = selected?.source === 'audit' ? snapshotFields(selected.after, selectedContext, data) : [];
-  const changedFields = selected?.action === 'CARD_PURCHASE_UPDATED' ? changedSnapshotFields(beforeFields, afterFields) : [];
+  const changeTitle = selected?.action === 'CARD_PURCHASE_UPDATED'
+    ? 'O que mudou nesta compra'
+    : selected?.action === 'CARD_UPDATED'
+      ? 'O que mudou no cadastro do cartão'
+      : selected?.action === 'CARD_DEACTIVATED' || selected?.action === 'CARD_REACTIVATED'
+        ? 'Mudança de situação do cartão'
+        : '';
+  const changedFields = changeTitle ? changedSnapshotFields(beforeFields, afterFields) : [];
 
   return <section className="px-screen px-history-screen">
     <header className="px-screen-head">
@@ -289,7 +314,7 @@ export function PhoenixHistory({ data }: { data: PhoenixReadModel }) {
       <div className="px-screen-head-aside"><button className="px-history-export" type="button" disabled={!filtered.length} onClick={() => exportHistory(filtered)}>Exportar histórico filtrado</button></div>
     </header>
 
-    <div className="px-history-source-note"><strong>Fonte principal:</strong> `/finance/audit`, com usuário, ação e snapshots antes/depois. <strong>Cartões:</strong> criação, alteração, cancelamento de compra e pagamento de fatura ficam identificados separadamente. <strong>Compatibilidade:</strong> `AppState.activityLog` permanece somente para preservar ações anteriores à nova auditoria.</div>
+    <div className="px-history-source-note"><strong>Fonte principal:</strong> `/finance/audit`, com usuário, ação e snapshots antes/depois. <strong>Cartões:</strong> cadastro, alteração, desativação, reativação, compras e pagamento de faturas ficam identificados separadamente. <strong>Compatibilidade:</strong> `AppState.activityLog` permanece somente para preservar ações anteriores à nova auditoria.</div>
 
     <section className="px-screen-kpis">
       <article><span>Ações hoje</span><strong>{todayCount}</strong><small>Horário de Brasília</small></article>
@@ -336,7 +361,7 @@ export function PhoenixHistory({ data }: { data: PhoenixReadModel }) {
               {selected.group ? <div><dt>Classificação</dt><dd>{selected.group}</dd></div> : null}
             </dl>
 
-            {changedFields.length ? <div className="px-history-integrity"><strong>O que mudou nesta compra</strong>
+            {changedFields.length ? <div className="px-history-integrity"><strong>{changeTitle}</strong>
               <div className="px-history-snapshot-grid">
                 <div><b>Antes</b>{changedFields.map((item) => <span key={`change-before-${item.label}`}><small>{item.label}</small><strong>{item.before}</strong></span>)}</div>
                 <div><b>Depois</b>{changedFields.map((item) => <span key={`change-after-${item.label}`}><small>{item.label}</small><strong>{item.after}</strong></span>)}</div>
