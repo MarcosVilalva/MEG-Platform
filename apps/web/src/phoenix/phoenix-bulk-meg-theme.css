@@ -1,0 +1,135 @@
+.px-bulk-ux-strip,
+.px-bulk-action-bar {
+  border-color: rgba(52, 211, 153, .18) !important;
+  background: linear-gradient(180deg, rgba(8, 31, 27, .98), rgba(7, 24, 22, .98)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.015);
+}
+
+.px-bulk-ux-copy small,
+.px-bulk-selection-copy small,
+.px-bulk-ux-modal-head p,
+.px-bulk-modal-head p,
+.px-bulk-ux-esc-hint {
+  color: rgba(210, 232, 224, .68) !important;
+}
+
+.px-bulk-ux-strip button,
+.px-bulk-action-bar button,
+.px-bulk-ux-modal button,
+.px-bulk-modal button {
+  border-color: rgba(94, 234, 212, .16) !important;
+  background: rgba(255,255,255,.035) !important;
+  color: rgba(242, 252, 248, .92) !important;
+}
+
+.px-bulk-ux-strip button:hover:not(:disabled),
+.px-bulk-action-bar button:hover:not(:disabled),
+.px-bulk-ux-modal button:hover:not(:disabled),
+.px-bulk-modal button:hover:not(:disabled) {
+  border-color: rgba(52, 211, 153, .34) !important;
+  background: rgba(52, 211, 153, .08) !important;
+}
+
+.px-bulk-ux-strip button:disabled,
+.px-bulk-action-bar button:disabled,
+.px-bulk-ux-modal button:disabled,
+.px-bulk-modal button:disabled {
+  color: rgba(196, 214, 208, .42) !important;
+  border-color: rgba(148, 163, 184, .10) !important;
+  background: rgba(148, 163, 184, .04) !important;
+}
+
+.px-bulk-ux-primary,
+.px-bulk-ux-actions .primary {
+  border-color: rgba(52, 211, 153, .34) !important;
+  background: rgba(52, 211, 153, .12) !important;
+  color: #dffbf1 !important;
+}
+
+.px-bulk-ux-danger,
+.px-bulk-delete,
+.px-row-delete {
+  color: #f08b95 !important;
+}
+
+.px-bulk-ux-gate {
+  border-color: rgba(52, 211, 153, .20) !important;
+  background: rgba(52, 211, 153, .07) !important;
+  color: rgba(201, 245, 230, .82) !important;
+}
+
+.px-bulk-ux-backdrop,
+.px-bulk-modal-backdrop {
+  background: rgba(1, 10, 9, .68) !important;
+  backdrop-filter: blur(7px) saturate(.9) !important;
+}
+
+.px-bulk-ux-modal,
+.px-bulk-modal {
+  border-color: rgba(52, 211, 153, .18) !important;
+  background: linear-gradient(180deg, #0a1b18 0%, #081512 100%) !important;
+  box-shadow: 0 26px 80px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.02) !important;
+}
+
+.px-bulk-ux-modal-head,
+.px-bulk-modal-head {
+  border-bottom-color: rgba(52, 211, 153, .10) !important;
+}
+
+.px-bulk-ux-modal-head .px-kicker,
+.px-bulk-modal-head .px-kicker {
+  color: #63e6bd !important;
+}
+
+.px-bulk-ux-summary,
+.px-bulk-ux-review,
+.px-bulk-ux-note,
+.px-bulk-ux-loading,
+.px-bulk-ux-empty,
+.px-bulk-ux-error,
+.px-bulk-modal-status {
+  border-color: rgba(52, 211, 153, .18) !important;
+  background: rgba(52, 211, 153, .055) !important;
+  color: rgba(232, 248, 242, .90) !important;
+}
+
+.px-bulk-ux-field,
+.px-bulk-field {
+  border-top-color: rgba(52, 211, 153, .095) !important;
+}
+
+.px-bulk-ux-field input[type="date"],
+.px-bulk-ux-field select,
+.px-bulk-field input[type="date"],
+.px-bulk-field select {
+  border-color: rgba(94, 234, 212, .15) !important;
+  background: rgba(255,255,255,.025) !important;
+  color: rgba(242, 252, 248, .90) !important;
+}
+
+.px-bulk-ux-field input[type="date"]:focus,
+.px-bulk-ux-field select:focus,
+.px-bulk-field input[type="date"]:focus,
+.px-bulk-field select:focus {
+  outline: none !important;
+  border-color: rgba(52, 211, 153, .42) !important;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, .08) !important;
+}
+
+.px-bulk-ux-trash-list article {
+  border-color: rgba(52, 211, 153, .12) !important;
+  background: rgba(255,255,255,.018) !important;
+}
+
+.px-bulk-row-selected {
+  background: rgba(52, 211, 153, .055) !important;
+}
+
+.px-bulk-checkbox {
+  accent-color: #34d399 !important;
+}
+
+.px-bulk-checkbox-skeleton {
+  border-color: rgba(52, 211, 153, .22) !important;
+  background: rgba(52, 211, 153, .035) !important;
+}
