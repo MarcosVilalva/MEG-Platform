@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { FinancialEventMutationError } from './event-mutation';
+import { editFinancialEventProtected } from './event-edit';
 import {
   archiveFinancialEventsBulkProtected,
   updateFinancialEventsBulkProtected,
@@ -29,6 +30,20 @@ const updateSchema = z.object({
   operationId: operationIdSchema,
 });
 
+const editSchema = z.object({
+  description: z.string().trim().min(1).max(120).optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  amount: z.number().finite().refine((value) => value !== 0, 'O valor não pode ser zero.').optional(),
+  accountId: z.string().trim().min(1).optional(),
+  paymentMethodId: z.string().trim().min(1).optional(),
+  categoryId: z.string().trim().min(1).optional(),
+  notes: z.string().max(500).optional(),
+  modality: z.enum(['À VISTA', 'CRÉDITO', 'CREDIÁRIO', 'ALIMENTAÇÃO', 'DINHEIRO', 'PIX', 'TRANSFERÊNCIA BANCÁRIA', 'VEROCARD']).optional(),
+  operationId: operationIdSchema,
+}).refine((input) => Object.entries(input).some(([key, value]) => key !== 'operationId' && value !== undefined), {
+  message: 'Informe ao menos uma alteração.',
+});
+
 const archiveSchema = z.object({
   ids: idsSchema,
   operationId: operationIdSchema,
@@ -54,6 +69,22 @@ export async function financeBulkMutationRoutes(app: FastifyInstance) {
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     try {
       return await updateFinancialEventsBulkProtected(request.user.sub, parsed.data);
+    } catch (error) {
+      return mutationError(reply, error);
+    }
+  });
+
+  app.post('/events/:id/update-protected', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
+    const params = z.object({ id: z.string().trim().min(1) }).safeParse(request.params);
+    const parsed = editSchema.safeParse(request.body);
+    if (!params.success || !parsed.success) {
+      return validationError(reply, {
+        params: params.success ? undefined : params.error.flatten(),
+        body: parsed.success ? undefined : parsed.error.flatten(),
+      });
+    }
+    try {
+      return await editFinancialEventProtected(request.user.sub, params.data.id, parsed.data);
     } catch (error) {
       return mutationError(reply, error);
     }
