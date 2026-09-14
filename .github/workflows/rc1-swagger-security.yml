@@ -1,0 +1,106 @@
+name: RC1 Swagger Security Upgrade
+
+on:
+  push:
+    branches:
+      - phoenix/v15-clean-room
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade-swagger-ui:
+    if: contains(github.event.head_commit.message, 'execute swagger security upgrade')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Phoenix candidate
+        uses: actions/checkout@v4
+        with:
+          ref: phoenix/v15-clean-room
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Upgrade Swagger UI outside vulnerable static range
+        shell: bash
+        run: |
+          cp package.json /tmp/root-package.json
+          cp apps/web/package.json /tmp/web-package.json
+          cp packages/database/package.json /tmp/database-package.json
+          npm install --package-lock-only --ignore-scripts --workspace apps/api @fastify/swagger-ui@6.1.1 --save-exact
+          cmp -s package.json /tmp/root-package.json
+          cmp -s apps/web/package.json /tmp/web-package.json
+          cmp -s packages/database/package.json /tmp/database-package.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          const api = JSON.parse(fs.readFileSync('apps/api/package.json', 'utf8'));
+          if (api.dependencies?.['@fastify/swagger-ui'] !== '6.1.1') {
+            console.error('Versão final de @fastify/swagger-ui não ficou fixada em 6.1.1.');
+            process.exit(1);
+          }
+          NODE
+
+      - name: Install upgraded dependency graph
+        run: npm install --ignore-scripts
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
+
+      - name: Verify Swagger UI Fastify compatibility
+        working-directory: apps/api
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import Fastify from 'fastify';
+          import swagger from '@fastify/swagger';
+          import swaggerUi from '@fastify/swagger-ui';
+          const app = Fastify();
+          await app.register(swagger, { openapi: { info: { title: 'MEG RC1 smoke', version: '1.0.0' } } });
+          await app.register(swaggerUi, { routePrefix: '/docs' });
+          await app.ready();
+          const response = await app.inject({ method: 'GET', url: '/docs/' });
+          if (response.statusCode >= 500) {
+            console.error('Swagger UI smoke falhou:', response.statusCode);
+            process.exit(1);
+          }
+          await app.close();
+          console.log('Swagger UI 6 compatível com Fastify atual.');
+          NODE
+
+      - name: Run complete RC1 regression
+        run: npm run check
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
+          NODE_ENV: test
+          CORS_ORIGINS: http://localhost:5173
+
+      - name: Verify Swagger/static audit blockers removed
+        shell: bash
+        run: |
+          npm audit --json > /tmp/swagger-audit.json || true
+          node <<'NODE'
+          const fs = require('node:fs');
+          const audit = JSON.parse(fs.readFileSync('/tmp/swagger-audit.json', 'utf8'));
+          const blocked = ['@fastify/swagger-ui', '@fastify/static'].filter((name) => audit.vulnerabilities?.[name]);
+          if (blocked.length) {
+            console.error('Bloqueadores Swagger/static continuam presentes:', blocked);
+            process.exit(1);
+          }
+          console.log('Bloqueadores Swagger/static removidos do inventário npm audit.');
+          NODE
+
+      - name: Commit verified Swagger security upgrade
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/api/package.json package-lock.json
+          git diff --cached --quiet && { echo 'Nenhuma alteração Swagger para gravar.'; exit 0; }
+          git commit -m 'fix(rc1): upgrade Swagger UI security chain'
+          git push origin HEAD:phoenix/v15-clean-room
