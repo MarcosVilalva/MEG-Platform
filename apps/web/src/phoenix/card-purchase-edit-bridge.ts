@@ -68,8 +68,9 @@ function statusNode(root: HTMLElement) {
 }
 function setStatus(root: HTMLElement, text: string, warn = false) {
   const node = statusNode(root);
-  node.textContent = text;
-  node.className = `px-notice ${warn ? 'warn' : 'ok'}`;
+  if (node.textContent !== text) node.textContent = text;
+  const className = `px-notice ${warn ? 'warn' : 'ok'}`;
+  if (node.className !== className) node.className = className;
 }
 
 function ensureButtons(root: HTMLElement) {
@@ -92,7 +93,9 @@ function ensureButtons(root: HTMLElement) {
     cancel.textContent = 'Cancelar compra';
     actions.append(cancel);
   }
-  setStatus(root, 'A compra pertence ao domínio de cartões/faturas. Edição e cancelamento recalculam somente cartão e parcelas; o caixa monetário permanece intacto.');
+  if (!root.querySelector('[data-card-domain-editor-status]')) {
+    setStatus(root, 'A compra pertence ao domínio de cartões/faturas. Edição e cancelamento recalculam somente cartão e parcelas; o caixa monetário permanece intacto.');
+  }
 }
 
 async function resolvePurchase(root: HTMLElement): Promise<ResolvedPurchase> {
@@ -164,8 +167,9 @@ function updatePreview() {
 function feedback(text: string, warn = false) {
   const node = editorRoot()?.querySelector<HTMLElement>('[data-edit-feedback]');
   if (!node) return;
-  node.textContent = text;
-  node.className = `px-notice ${warn ? 'warn' : 'ok'}`;
+  if (node.textContent !== text) node.textContent = text;
+  const className = `px-notice ${warn ? 'warn' : 'ok'}`;
+  if (node.className !== className) node.className = className;
 }
 
 function openEditor(detail: HTMLElement, item: ResolvedPurchase) {
@@ -278,7 +282,7 @@ function start() {
   document.addEventListener('click', onClick, true);
   document.addEventListener('keydown', onKeydown, true);
   observer = new MutationObserver(schedule);
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+  observer.observe(document.body, { childList: true, subtree: true });
   schedule();
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true }); else start();
