@@ -19,8 +19,8 @@ export async function serializableFinancialTransaction<T>(
     try {
       return await prisma.$transaction(work, {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-        ...(options.maxWaitMs ? { maxWait: options.maxWaitMs } : {}),
-        ...(options.timeoutMs ? { timeout: options.timeoutMs } : {}),
+        maxWait: options.maxWaitMs ?? 10_000,
+        timeout: options.timeoutMs ?? 30_000,
       });
     } catch (error) {
       if (!retryableTransaction(error) || attempt === 3) throw error;
