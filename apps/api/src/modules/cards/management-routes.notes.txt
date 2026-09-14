@@ -1,0 +1,1 @@
+Reativar um cartão deve sempre reutilizar o mesmo registro. Nunca criar um cartão substituto para um cartão desativado, pois o histórico e os vínculos pertencem ao id original.
