@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { prisma } from '@meg/database';
+import { Prisma, prisma } from '@meg/database';
 import { serializableFinancialTransaction } from '../finance/monetary-protection';
 import { resolveWorkspaceContext } from '../workspaces/service';
 
@@ -18,6 +18,8 @@ const cardSchema = z.object({
   dueDay: z.coerce.number().int().min(1).max(31),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
 });
+
+type Tx = Prisma.TransactionClient;
 
 class CardManagementError extends Error {
   constructor(public readonly statusCode: number, public readonly code: string, public readonly details?: unknown) {
@@ -47,7 +49,7 @@ function auditMetadata(input: { before: unknown; after: unknown; workspaceId: st
   });
 }
 
-async function assertUniqueCardName(tx: Parameters<Parameters<typeof serializableFinancialTransaction>[0]>[0], ownerId: string, name: string, ignoreId?: string) {
+async function assertUniqueCardName(tx: Tx, ownerId: string, name: string, ignoreId?: string) {
   const cards = await tx.creditCard.findMany({
     where: { userId: ownerId },
     select: { id: true, name: true, isActive: true },
@@ -62,7 +64,7 @@ async function assertUniqueCardName(tx: Parameters<Parameters<typeof serializabl
   }
 }
 
-async function writeAudit(tx: Parameters<Parameters<typeof serializableFinancialTransaction>[0]>[0], input: {
+async function writeAudit(tx: Tx, input: {
   actorId: string;
   entityId: string;
   action: string;
