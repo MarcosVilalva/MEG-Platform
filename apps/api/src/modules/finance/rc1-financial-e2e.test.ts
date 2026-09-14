@@ -3,6 +3,34 @@ import { Prisma, UserRole, UserStatus, prisma } from '@meg/database';
 import { createFinancialEvent, deleteFinancialEvent, updateFinancialEvent } from './service';
 import { createFinancialTransfer, FinancialTransferError } from './transfer-service';
 
+type FullTransferResult = {
+  transferId: string;
+  sourceEventId: string;
+  destinationEventId: string;
+  sourceAccountId: string;
+  destinationAccountId: string;
+  amount: number;
+  date: string;
+  sourceBalanceBefore: number;
+  sourceBalanceAfter: number;
+  idempotentReplay: boolean;
+};
+
+function assertFullTransferResult(value: unknown): asserts value is FullTransferResult {
+  assert.ok(value && typeof value === 'object', 'Transferência deve retornar payload estruturado.');
+  const result = value as Record<string, unknown>;
+  assert.equal(typeof result.transferId, 'string');
+  assert.equal(typeof result.sourceEventId, 'string');
+  assert.equal(typeof result.destinationEventId, 'string');
+  assert.equal(typeof result.sourceAccountId, 'string');
+  assert.equal(typeof result.destinationAccountId, 'string');
+  assert.equal(typeof result.amount, 'number');
+  assert.equal(typeof result.date, 'string');
+  assert.equal(typeof result.sourceBalanceBefore, 'number');
+  assert.equal(typeof result.sourceBalanceAfter, 'number');
+  assert.equal(typeof result.idempotentReplay, 'boolean');
+}
+
 function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
 }
@@ -117,6 +145,7 @@ async function main() {
     date: effectiveDay,
     description: 'RC1 Transferência homologação',
   });
+  assertFullTransferResult(transfer);
   assert.equal(transfer.idempotentReplay, false);
   assert.equal(transfer.amount, 300);
   assert.equal(transfer.sourceBalanceBefore, 800);
@@ -135,6 +164,7 @@ async function main() {
     date: effectiveDay,
     description: 'RC1 Transferência homologação',
   });
+  assertFullTransferResult(replay);
   assert.equal(replay.idempotentReplay, true, 'Replay idempotente deve reutilizar o recibo da mutação.');
   assert.equal(replay.sourceEventId, transfer.sourceEventId);
   assert.equal(replay.destinationEventId, transfer.destinationEventId);
