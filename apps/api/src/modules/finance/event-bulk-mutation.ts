@@ -1,5 +1,6 @@
 import { Prisma, prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
+import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
 import { assertActiveCatalogReferences } from './catalog-scope';
@@ -169,6 +170,12 @@ export async function updateFinancialEventsBulkProtected(userId: string, rawInpu
 
       await rebuildLedgers(tx, ids);
 
+      const afterBeforeMirror = await tx.financialEvent.findMany({
+        where: { id: { in: ids } },
+        include: { account: true, category: true, paymentMethod: true, ledgerEntries: true },
+      });
+      await writeBackNormalizedEventsToAppState(tx, workspace.workspaceId, afterBeforeMirror);
+
       const after = await tx.financialEvent.findMany({
         where: { id: { in: ids } },
         include: { account: true, category: true, paymentMethod: true, ledgerEntries: true },
@@ -262,6 +269,13 @@ export async function archiveFinancialEventsBulkProtected(userId: string, rawInp
           },
         });
       }
+
+      await writeBackNormalizedEventsToAppState(
+        tx,
+        workspace.workspaceId,
+        [],
+        before.map((event) => event.legacyTransactionId).filter((id): id is string => Boolean(id)),
+      );
 
       const response = { ids, archived: ids.length, idempotentReplay: false };
       await createReceipt(tx, {

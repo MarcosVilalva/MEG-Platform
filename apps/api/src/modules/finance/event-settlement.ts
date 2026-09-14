@@ -1,5 +1,6 @@
 import { prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
+import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
 import { assertActiveCatalogReferences } from './catalog-scope';
@@ -102,6 +103,14 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
           memo: current.description,
         },
       });
+
+      const settledBeforeMirror = await tx.financialEvent.findUnique({
+        where: { id: current.id },
+        include: { account: true, category: true, paymentMethod: true, ledgerEntries: true },
+      });
+      if (!settledBeforeMirror) throw new FinancialEventSettlementError('FINANCIAL_EVENT_NOT_FOUND');
+
+      await writeBackNormalizedEventsToAppState(tx, workspace.workspaceId, [settledBeforeMirror]);
 
       const settled = await tx.financialEvent.findUnique({
         where: { id: current.id },

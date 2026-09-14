@@ -29,6 +29,7 @@ import {
   normalizationPreview,
   recordNormalizationRuntimeStatus,
 } from './modules/app-state/normalization-migration';
+import { reconcilePrimaryAppStateFromNormalized } from './modules/app-state/normalized-primary-writeback';
 
 const app = Fastify({
   bodyLimit: 25 * 1024 * 1024,
@@ -149,6 +150,7 @@ try {
   void ensurePrimaryWorkspace()
     .then(async (workspace) => {
       if (!workspace) return null;
+      await reconcilePrimaryAppStateFromNormalized(workspace.id);
       let result: Awaited<ReturnType<typeof activateNormalizationPrimary>> | null = null;
       for (let attempt = 1; attempt <= 3; attempt += 1) {
         try {
