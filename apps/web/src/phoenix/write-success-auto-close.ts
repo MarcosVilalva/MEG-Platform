@@ -8,7 +8,8 @@ let closeTimer: number | null = null;
 function isLaunchMutation(detail: DataInvalidatedDetail | undefined) {
   const method = String(detail?.method || '').toUpperCase();
   const path = String(detail?.path || '');
-  return ['POST', 'PUT', 'PATCH'].includes(method) && path.startsWith('/finance/events');
+  return ['POST', 'PUT', 'PATCH'].includes(method)
+    && (path.startsWith('/finance/events') || path.startsWith('/cards/purchases'));
 }
 
 function confirmedLaunchDrawer() {
