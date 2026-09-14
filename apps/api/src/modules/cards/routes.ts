@@ -129,11 +129,11 @@ function installmentRows(input: {
   }));
 }
 
-function replayResponse(value: unknown) {
+function replayResponse(value: unknown): JsonRecord {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return { ...(value as JsonRecord), idempotentReplay: true };
   }
-  return value;
+  return { value, idempotentReplay: true };
 }
 
 function isUniqueConflict(error: unknown) {
@@ -163,15 +163,15 @@ async function createMutationReceipt(tx: Tx, input: {
   });
 }
 
-async function protectedCardMutation<T extends JsonRecord>(input: {
+async function protectedCardMutation(input: {
   context: CardMutationContext;
   operationId: string;
   requestHash: string;
   mutationType: string;
-  work: (tx: Tx) => Promise<T>;
-}) {
+  work: (tx: Tx) => Promise<JsonRecord>;
+}): Promise<JsonRecord> {
   try {
-    return await serializableFinancialTransaction(async (tx) => {
+    return await serializableFinancialTransaction<JsonRecord>(async (tx) => {
       const previous = await tx.cloudMutationReceipt.findUnique({
         where: {
           workspaceId_operationId: {
@@ -188,7 +188,7 @@ async function protectedCardMutation<T extends JsonRecord>(input: {
       }
 
       const response = await input.work(tx);
-      const protectedResponse = { ...response, idempotentReplay: false };
+      const protectedResponse: JsonRecord = { ...response, idempotentReplay: false };
       await createMutationReceipt(tx, {
         workspaceId: input.context.workspaceId,
         operationId: input.operationId,
@@ -318,7 +318,7 @@ export async function cardRoutes(app: FastifyInstance) {
     const context = await sharedCardContext(request.user.sub);
     const { operationId, ...purchaseInput } = parsed.data;
 
-    const create = async (tx: Tx) => {
+    const create = async (tx: Tx): Promise<JsonRecord> => {
       const card = await assertCardAndCategory(tx, context.ownerId, purchaseInput.cardId, purchaseInput.categoryId);
       const purchase = await tx.cardPurchase.create({
         data: {
@@ -360,7 +360,7 @@ export async function cardRoutes(app: FastifyInstance) {
           mutationType: 'CARD_PURCHASE_CREATE',
           work: create,
         });
-        return reply.code(201).send({ ...response.purchase as object, idempotentReplay: response.idempotentReplay });
+        return reply.code(201).send({ ...(response.purchase as object), idempotentReplay: Boolean(response.idempotentReplay) });
       }
       const response = await serializableFinancialTransaction(create);
       return reply.code(201).send(response.purchase);
@@ -383,7 +383,7 @@ export async function cardRoutes(app: FastifyInstance) {
         operationId,
         requestHash,
         mutationType: 'CARD_PURCHASE_UPDATE',
-        work: async (tx) => {
+        work: async (tx): Promise<JsonRecord> => {
           const before = await editablePurchase(tx, context.ownerId, id);
           const card = await assertCardAndCategory(tx, context.ownerId, purchaseInput.cardId, purchaseInput.categoryId);
           const after = await tx.cardPurchase.update({
@@ -425,7 +425,7 @@ export async function cardRoutes(app: FastifyInstance) {
           return { purchase: after };
         },
       });
-      return reply.send({ ...response.purchase as object, idempotentReplay: response.idempotentReplay });
+      return reply.send({ ...(response.purchase as object), idempotentReplay: Boolean(response.idempotentReplay) });
     } catch (error) {
       return mutationError(reply, error);
     }
@@ -445,7 +445,7 @@ export async function cardRoutes(app: FastifyInstance) {
         operationId,
         requestHash,
         mutationType: 'CARD_PURCHASE_CANCEL',
-        work: async (tx) => {
+        work: async (tx): Promise<JsonRecord> => {
           const before = await editablePurchase(tx, context.ownerId, id);
           const after = await tx.cardPurchase.update({
             where: { id },
@@ -472,7 +472,7 @@ export async function cardRoutes(app: FastifyInstance) {
           return { purchase: after, cancelled: true };
         },
       });
-      return reply.send({ ...response.purchase as object, cancelled: true, idempotentReplay: response.idempotentReplay });
+      return reply.send({ ...(response.purchase as object), cancelled: true, idempotentReplay: Boolean(response.idempotentReplay) });
     } catch (error) {
       return mutationError(reply, error);
     }
