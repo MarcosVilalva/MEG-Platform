@@ -292,11 +292,17 @@ async function loadHistory(force = false) {
     return;
   }
 
-  if (!anchorMonth || loadedKey.split('|')[0] !== normalize(name)) {
+  const cardChanged = Boolean(loadedKey) && loadedKey.split('|')[0] !== normalize(name);
+  if (!anchorMonth || cardChanged) {
+    selectedCardId = '';
     anchorMonth = month;
     throughMonth = month;
     selectedMonth = '';
     currentDetail = null;
+  } else if (anchorMonth !== month) {
+    const wasAtAnchor = throughMonth === anchorMonth;
+    anchorMonth = month;
+    if (wasAtAnchor) throughMonth = month;
   }
   if (!throughMonth) throughMonth = month;
 
@@ -345,6 +351,7 @@ function invalidate() {
   cache.clear();
   detailCache.clear();
   loadedKey = '';
+  selectedCardId = '';
   currentHistory = null;
   currentDetail = null;
   schedule(true);
