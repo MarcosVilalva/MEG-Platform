@@ -1,4 +1,5 @@
 import { Prisma, prisma } from '@meg/database';
+import { canonical } from './normalization-migration-core';
 
 const NORMALIZATION_METADATA_KEY = '__megNormalization';
 const NORMALIZATION_MODE = 'normalized-primary';
@@ -26,6 +27,10 @@ function record(value: unknown): JsonRecord {
 
 function isNormalizedPrimaryState(state: unknown) {
   return record(record(state)[NORMALIZATION_METADATA_KEY]).mode === NORMALIZATION_MODE;
+}
+
+function stableJson(value: unknown) {
+  return JSON.stringify(canonical(value));
 }
 
 function isoDay(date: Date) {
@@ -73,6 +78,10 @@ export function mirrorFinancialEventToLegacyTransaction(event: NormalizedLegacyM
   return payload;
 }
 
+export function normalizedMirrorNeedsSourceRefresh(event: NormalizedLegacyMirrorEvent, payload: JsonRecord) {
+  return stableJson(event.sourcePayload) !== stableJson(payload);
+}
+
 function legacyId(item: unknown) {
   return String(record(item).id || '').trim();
 }
@@ -117,6 +126,12 @@ export async function writeBackNormalizedEventsToAppState(
     if (!seen.has(id) && !removed.has(id)) nextTransactions.push(replacement.payload);
   }
 
+  const sourceRefresh = [...mirrored.values()].filter(({ event, payload }) => normalizedMirrorNeedsSourceRefresh(event, payload));
+  const transactionsChanged = stableJson(nextTransactions) !== stableJson(transactions);
+  if (!transactionsChanged && sourceRefresh.length === 0) {
+    return { active: true, changed: false, revision: current.revision };
+  }
+
   const nextRevision = current.revision + 1;
   const updated = await tx.appState.updateMany({
     where: { id: current.id, revision: current.revision },
@@ -127,7 +142,7 @@ export async function writeBackNormalizedEventsToAppState(
   });
   if (updated.count !== 1) throw new Error('NORMALIZED_PRIMARY_MIRROR_CONFLICT');
 
-  for (const replacement of mirrored.values()) {
+  for (const replacement of sourceRefresh) {
     await tx.financialEvent.update({
       where: { id: replacement.event.id },
       data: {
@@ -137,7 +152,7 @@ export async function writeBackNormalizedEventsToAppState(
     });
   }
 
-  return { active: true, changed: true, revision: nextRevision };
+  return { active: true, changed: true, revision: nextRevision, refreshedEvents: sourceRefresh.length };
 }
 
 export async function reconcilePrimaryAppStateFromNormalized(workspaceId: string) {

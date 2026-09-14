@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { buildNormalizationPreview, legacyTransactionToFinancialEvent, normalizationFingerprint } from './normalization-migration-core';
-import { mirrorFinancialEventToLegacyTransaction } from './normalized-primary-writeback';
+import { mirrorFinancialEventToLegacyTransaction, normalizedMirrorNeedsSourceRefresh } from './normalized-primary-writeback';
 
 const context = { workspaceId: 'workspace-1', userId: 'user-1', revision: 10 };
 const original = {
@@ -16,7 +16,7 @@ const original = {
 };
 
 const before = legacyTransactionToFinancialEvent(original, context)!;
-const mirrored = mirrorFinancialEventToLegacyTransaction({
+const settledEvent = {
   id: 'event-claro',
   legacyTransactionId: original.id,
   date: new Date('2026-09-13T12:00:00.000Z'),
@@ -28,7 +28,8 @@ const mirrored = mirrorFinancialEventToLegacyTransaction({
   sourcePayload: original,
   accountId: 'account-monetary-main',
   paymentMethod: { name: 'BOLETO' },
-});
+};
+const mirrored = mirrorFinancialEventToLegacyTransaction(settledEvent);
 
 assert.equal(mirrored.date, '2026-09-13');
 assert.equal(mirrored.status, 'paid');
@@ -36,6 +37,9 @@ assert.equal(mirrored.situation, 'PAGO');
 assert.equal(mirrored.expenseAmount, 30.9);
 assert.equal(mirrored.financialAccountId, 'account-monetary-main');
 assert.equal(mirrored.paymentMethod, 'BOLETO');
+assert.equal(normalizedMirrorNeedsSourceRefresh(settledEvent, mirrored), true);
+assert.equal(normalizedMirrorNeedsSourceRefresh({ ...settledEvent, sourcePayload: mirrored }, mirrored), false);
+assert.equal(normalizedMirrorNeedsSourceRefresh({ ...settledEvent, sourcePayload: { ...mirrored, z: 1, a: 2 } }, { ...mirrored, a: 2, z: 1 }), false);
 
 const preview = buildNormalizationPreview({ transactions: [mirrored] }, { ...context, revision: 11 });
 assert.equal(preview.summary.validCount, 1);
