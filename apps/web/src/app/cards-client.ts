@@ -4,6 +4,7 @@ export type CardInstallment = { id: string; number: number; amount: string | num
 export type CardPurchase = { id: string; description: string; totalAmount: string | number; purchaseDate: string; installments: number; status: string; category?: { id: string; name: string } | null; entries: CardInstallment[]; legacyOpen?: boolean; idempotentReplay?: boolean };
 export type CreditCard = { id: string; name: string; issuer?: string | null; brand?: string | null; lastFour?: string | null; creditLimit: string | number; closingDay: number; dueDay: number; color?: string | null; isActive: boolean; usedLimit: number; availableLimit: number; statementAmount: number; payableStatementAmount?: number; purchases: CardPurchase[] };
 export type CardStatementPaymentResult = { paid: boolean; amount: number; eventId: string; protection?: { monetary?: boolean; allowed?: boolean; available?: number; requested?: number; missing?: number; at?: string }; idempotentReplay?: boolean };
+export type CardPurchaseMutationInput = { cardId: string; categoryId?: string; description: string; totalAmount: number; purchaseDate: string; installments: number; operationId: string };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return authenticatedRequest<T>(path, init);
@@ -13,6 +14,8 @@ export const cardsClient = {
   list: (month: string) => request<CreditCard[]>(`/cards?month=${encodeURIComponent(month)}`),
   create: (data: { name: string; issuer?: string; brand?: string; lastFour?: string; creditLimit: number; closingDay: number; dueDay: number; color?: string }) => request<CreditCard>('/cards', { method: 'POST', body: JSON.stringify(data) }),
   createPurchase: (data: { cardId: string; categoryId?: string; description: string; totalAmount: number; purchaseDate: string; installments: number; operationId?: string }) => request<CardPurchase>('/cards/purchases', { method: 'POST', body: JSON.stringify(data) }),
+  updatePurchase: (id: string, data: CardPurchaseMutationInput) => request<CardPurchase>(`/cards/purchases/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  cancelPurchaseProtected: (id: string, operationId: string) => request<CardPurchase>(`/cards/purchases/${id}`, { method: 'DELETE', body: JSON.stringify({ operationId }) }),
   cancelPurchase: async (id: string) => {
     if (id.startsWith('legacy-')) return null;
     if (!window.confirm('Tem certeza de que deseja excluir esta compra do cartao?\n\nEsta acao nao pode ser desfeita.')) return null;
