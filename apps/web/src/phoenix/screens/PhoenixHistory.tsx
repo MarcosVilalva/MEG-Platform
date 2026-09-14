@@ -73,6 +73,7 @@ function actionLabel(action: string) {
     CARD_PURCHASE_UPDATED: 'Compra alterada',
     CARD_PURCHASE_CANCELLED: 'Compra cancelada',
     CARD_STATEMENT_PAID: 'Fatura paga',
+    CARD_STATEMENT_REOPENED: 'Fatura reaberta',
     RECEIVABLE_RECEIVED: 'Recebimento'
   } as Record<string, string>)[action] || action || 'Atualização';
 }
@@ -84,7 +85,7 @@ function actionVerb(action: string) {
     PAYABLE_PAYMENT_CREATED: 'baixou', RECURRING_EXPENSE_CREATED: 'criou',
     CARD_CREATED: 'cadastrou', CARD_UPDATED: 'alterou', CARD_DEACTIVATED: 'desativou', CARD_REACTIVATED: 'reativou',
     CARD_PURCHASE_CREATED: 'incluiu', CARD_PURCHASE_UPDATED: 'alterou', CARD_PURCHASE_CANCELLED: 'cancelou', CARD_STATEMENT_PAID: 'pagou',
-    RECEIVABLE_RECEIVED: 'recebeu'
+    CARD_STATEMENT_REOPENED: 'reabriu', RECEIVABLE_RECEIVED: 'recebeu'
   } as Record<string, string>)[action] || 'atualizou';
 }
 
@@ -128,7 +129,9 @@ function auditRow(item: PhoenixFinancialAuditItem, data: PhoenixReadModel): Hist
   const month = text(source.month) || text(context.month);
   const description = item.action === 'CARD_STATEMENT_PAID'
     ? `Fatura ${cardName || 'do cartão'}${month ? ` ${month}` : ''}`
-    : String(source.description || source.name || context.description || `${entityLabel(item.entity)} ${item.entityId.slice(0, 8)}`);
+    : item.action === 'CARD_STATEMENT_REOPENED'
+      ? `Reabertura da fatura ${cardName || 'do cartão'}${month ? ` ${month}` : ''}`
+      : String(source.description || source.name || context.description || `${entityLabel(item.entity)} ${item.entityId.slice(0, 8)}`);
   const type = typeof source.type === 'string'
     ? source.type
     : isCardMonetaryAction(item.action) ? 'expense' : undefined;
@@ -175,6 +178,7 @@ function legacyRow(item: PhoenixActivity): HistoryRow {
 function amountText(item: HistoryRow) {
   const amount = Math.abs(Number(item.amount || 0));
   if (!amount) return '—';
+  if (item.action === 'CARD_STATEMENT_REOPENED') return money.format(amount);
   return `${item.type === 'income' ? '+' : '−'} ${money.format(amount)}`;
 }
 
@@ -242,12 +246,17 @@ function snapshotFields(value: unknown, context: Record<string, unknown>, data: 
   add('Situação', item.status);
   if (item.purchaseDate) add('Data da compra', formatDateValue(item.purchaseDate));
   else if (item.date) add('Data', formatDateValue(item.date));
+  if (item.paidAt) add('Data do pagamento', formatDateValue(item.paidAt));
   add('Competência', item.competence);
   add('Fatura', item.statementMonth || item.month);
   addMoney('Valor', item.amount);
   addMoney('Valor total', item.totalAmount);
   if (item.openAmount !== undefined) addMoney('Saldo aberto', item.openAmount);
   add('Parcelas', item.installments);
+  add('Parcelas reabertas', item.reopenedInstallments);
+  add('Situação do evento', item.financialEventStatus);
+  add('Situação das parcelas', item.installmentStatus);
+  add('Motivo', item.reason);
   add('Cartão', cardNameFrom(item, context, data));
   add('Conta', nestedName(item.account));
   add('Classificação', nestedName(item.category));
@@ -305,7 +314,9 @@ export function PhoenixHistory({ data }: { data: PhoenixReadModel }) {
       ? 'O que mudou no cadastro do cartão'
       : selected?.action === 'CARD_DEACTIVATED' || selected?.action === 'CARD_REACTIVATED'
         ? 'Mudança de situação do cartão'
-        : '';
+        : selected?.action === 'CARD_STATEMENT_REOPENED'
+          ? 'Efeito da reabertura da fatura'
+          : '';
   const changedFields = changeTitle ? changedSnapshotFields(beforeFields, afterFields) : [];
 
   return <section className="px-screen px-history-screen">
@@ -314,7 +325,7 @@ export function PhoenixHistory({ data }: { data: PhoenixReadModel }) {
       <div className="px-screen-head-aside"><button className="px-history-export" type="button" disabled={!filtered.length} onClick={() => exportHistory(filtered)}>Exportar histórico filtrado</button></div>
     </header>
 
-    <div className="px-history-source-note"><strong>Fonte principal:</strong> `/finance/audit`, com usuário, ação e snapshots antes/depois. <strong>Cartões:</strong> cadastro, alteração, desativação, reativação, compras e pagamento de faturas ficam identificados separadamente. <strong>Compatibilidade:</strong> `AppState.activityLog` permanece somente para preservar ações anteriores à nova auditoria.</div>
+    <div className="px-history-source-note"><strong>Fonte principal:</strong> `/finance/audit`, com usuário, ação e snapshots antes/depois. <strong>Cartões:</strong> cadastro, alteração, desativação, reativação, compras, pagamento e reabertura de faturas ficam identificados separadamente. <strong>Compatibilidade:</strong> `AppState.activityLog` permanece somente para preservar ações anteriores à nova auditoria.</div>
 
     <section className="px-screen-kpis">
       <article><span>Ações hoje</span><strong>{todayCount}</strong><small>Horário de Brasília</small></article>
