@@ -159,7 +159,7 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
       userId: { in: memberIds },
       entity: 'CreditCard',
       entityId: card.id,
-      metadata: { contains: `\\\"month\\\":\\\"${parsed.data.month}\\\"` },
+      metadata: { contains: `\"month\":\"${parsed.data.month}\"` },
     };
     const lifecycleAudits = await prisma.auditLog.findMany({
       where: { ...auditWhere, action: { in: ['CARD_STATEMENT_PAID', 'CARD_STATEMENT_REOPENED'] } },
