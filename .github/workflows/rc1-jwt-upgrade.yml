@@ -47,6 +47,11 @@ jobs:
       - name: Install upgraded dependency graph
         run: npm install --ignore-scripts
 
+      - name: Generate Prisma client for API regression
+        run: npm run db:generate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
+
       - name: Verify JWT runtime import
         working-directory: apps/api
         run: node -e "import('@fastify/jwt').then((m) => { if (!m.default) process.exit(1); console.log('@fastify/jwt 10 runtime resolvido.'); })"
