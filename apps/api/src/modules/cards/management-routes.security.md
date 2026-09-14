@@ -1,1 +1,0 @@
-A listagem administrativa não altera a leitura operacional de cartões. Cartões inativos continuam fora de `/cards`, dos novos lançamentos e do cálculo de fatura. Apenas ADMIN/MANAGER podem reativar, e a API bloqueia colisão com outro cartão ativo de mesmo nome.
