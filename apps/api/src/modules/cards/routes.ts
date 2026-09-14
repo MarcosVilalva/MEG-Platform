@@ -5,6 +5,7 @@ import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-re
 import { recordFinancialAudit } from '../finance/audit';
 import { serializableFinancialTransaction } from '../finance/monetary-protection';
 import { resolveWorkspaceContext } from '../workspaces/service';
+import { listCards } from './service';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
@@ -263,39 +264,7 @@ export async function cardRoutes(app: FastifyInstance) {
   app.get('/', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    const shared = await sharedCardContext(request.user.sub);
-    await migrateLegacyCards(shared.ownerId, shared.legacy.cards);
-    const cards = await prisma.creditCard.findMany({
-      where: { userId: shared.ownerId, isActive: true },
-      orderBy: { createdAt: 'asc' },
-      include: {
-        purchases: {
-          where: { status: 'active' },
-          include: { entries: true, category: true },
-          orderBy: { purchaseDate: 'desc' }
-        }
-      }
-    });
-    return cards.map((card) => {
-      const entries = card.purchases.flatMap((purchase) => purchase.entries);
-      const aliases = new Set([key(card.name), ...shared.legacy.cards.filter((item) => key(item.productName) === key(card.name) || key(item.paymentMethod) === key(card.name)).map((item) => key(item.paymentMethod))]);
-      const legacyPurchases = shared.legacy.transactions.filter((item) => {
-        const method = key(item.paymentMethod || item.account);
-        const modality = key(item.modality);
-        return aliases.has(method) && key(item.type) === 'EXPENSE' && (!modality || modality === 'CREDITO');
-      }).map((item) => {
-        const amount = Math.abs(number(item.expenseAmount || item.amount || item.signedAmount));
-        const purchaseDate = text(item.purchaseDate || item.date);
-        const status = key(item.status || item.situation);
-        return { id: `legacy-${text(item.id)}`, description: text(item.description) || 'Compra no cartão', totalAmount: amount, purchaseDate, installments: number(item.installments || item.installmentQty) || 1, status: 'legacy', category: null, entries: [], legacyOpen: !['PAID', 'PAGO', 'RECEIVED', 'RECEBIDO', 'RECONCILED', 'CONCILIADO'].includes(status) };
-      });
-      const legacyOpen = legacyPurchases.filter((item) => item.legacyOpen);
-      const usedLimit = entries.filter((entry) => entry.status === 'open').reduce((sum, entry) => sum + Number(entry.amount), 0) + legacyOpen.reduce((sum, item) => sum + item.totalAmount, 0);
-      const payableStatementAmount = entries.filter((entry) => entry.statementMonth === parsed.data.month && entry.status === 'open').reduce((sum, entry) => sum + Number(entry.amount), 0);
-      const statementAmount = payableStatementAmount + legacyOpen.filter((item) => item.purchaseDate.startsWith(parsed.data.month)).reduce((sum, item) => sum + item.totalAmount, 0);
-      const periodLegacy = legacyPurchases.filter((item) => item.purchaseDate.startsWith(parsed.data.month));
-      return { ...card, purchases: [...card.purchases, ...periodLegacy].sort((a, b) => String(b.purchaseDate).localeCompare(String(a.purchaseDate))), usedLimit, availableLimit: Number(card.creditLimit) - usedLimit, statementAmount, payableStatementAmount };
-    });
+    return listCards(request.user.sub, parsed.data.month);
   });
 
   app.post('/', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
