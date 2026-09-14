@@ -1,5 +1,4 @@
-import { Prisma } from '@prisma/client';
-import { prisma } from '@meg/database';
+import { Prisma, prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
@@ -40,147 +39,147 @@ async function sourceAccountBalanceAt(
   const events = await tx.financialEvent.findMany({
     where: {
       userId,
-      accountId: account.id,
       archivedAt: null,
+      accountId: account.id,
       date: { lt: cutoff },
-      status: { in: ['paid', 'reconciled', 'confirmed'] },
     },
-    select: { signedAmount: true, status: true },
+    select: { type: true, amount: true, status: true },
   });
-  const balance = events
-    .filter((event) => isPostedFinancialStatus(event.status))
-    .reduce((sum, event) => sum + Number(event.signedAmount), Number(account.openingBalance));
-  return Math.round(balance * 100) / 100;
+
+  return events
+    .filter((event) => isPostedFinancialStatus(event.type, event.status))
+    .reduce((sum, event) => {
+      const amount = Number(event.amount);
+      return event.type === 'INCOME' ? sum + amount : sum - amount;
+    }, Number(account.openingBalance));
 }
 
-export async function createFinancialTransfer(userId: string, input: CreateFinancialTransferInput) {
-  const operationId = input.operationId.trim();
-  if (operationId.length < 8 || operationId.length > 128) throw new FinancialTransferError('INVALID_OPERATION_ID');
-  if (isFutureFinancialDay(input.date)) throw new FinancialTransferError('FUTURE_TRANSFER_NOT_ALLOWED');
+export async function createFinancialTransfer(actorId: string, input: CreateFinancialTransferInput) {
+  const context = await resolveWorkspaceContext(actorId);
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) throw new FinancialTransferError('TRANSFER_AMOUNT_MUST_BE_POSITIVE');
+  if (!input.operationId?.trim()) throw new FinancialTransferError('OPERATION_ID_REQUIRED');
+  if (!input.sourceAccountId || !input.destinationAccountId) throw new FinancialTransferError('TRANSFER_ACCOUNT_REQUIRED');
+  if (input.sourceAccountId === input.destinationAccountId) throw new FinancialTransferError('TRANSFER_ACCOUNTS_MUST_DIFFER');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) throw new FinancialTransferError('INVALID_TRANSFER_DATE');
+  if (isFutureFinancialDay(input.date)) throw new FinancialTransferError('FUTURE_FINANCIAL_DATE');
 
-  let legs;
-  try {
-    legs = buildTransferLegs({
-      transferId: operationId,
-      sourceAccountId: input.sourceAccountId,
-      destinationAccountId: input.destinationAccountId,
-      amount: input.amount,
-      date: input.date,
-      status: 'paid',
+  const requestHash = mutationRequestHash('FINANCIAL_TRANSFER_CREATE', {
+    sourceAccountId: input.sourceAccountId,
+    destinationAccountId: input.destinationAccountId,
+    amount,
+    date: input.date,
+    description: input.description?.trim() || null,
+    notes: input.notes?.trim() || null,
+  });
+
+  return serializableFinancialTransaction(async (tx) => {
+    const existingReceipt = await tx.mutationReceipt.findUnique({
+      where: {
+        workspaceId_operationId: {
+          workspaceId: context.workspaceId,
+          operationId: input.operationId,
+        },
+      },
+    });
+    if (existingReceipt) {
+      if (existingReceipt.requestHash !== requestHash) {
+        throw new FinancialTransferError('OPERATION_ID_REUSED_WITH_DIFFERENT_PAYLOAD');
+      }
+      return existingReceipt.responsePayload as unknown;
+    }
+
+    const accounts = await tx.financialAccount.findMany({
+      where: {
+        userId: context.ownerId,
+        id: { in: [input.sourceAccountId, input.destinationAccountId] },
+      },
+    });
+    const sourceAccount = accounts.find((account) => account.id === input.sourceAccountId);
+    const destinationAccount = accounts.find((account) => account.id === input.destinationAccountId);
+    if (!sourceAccount || !destinationAccount) throw new FinancialTransferError('ACCOUNT_NOT_FOUND');
+    if (!sourceAccount.isActive || !destinationAccount.isActive) throw new FinancialTransferError('ACCOUNT_INACTIVE');
+    if (!isMonetaryAccountType(sourceAccount.type) || !isMonetaryAccountType(destinationAccount.type)) {
+      throw new FinancialTransferError('TRANSFER_ACCOUNT_MUST_BE_MONETARY');
+    }
+
+    const sourceBalance = await sourceAccountBalanceAt(tx, context.ownerId, sourceAccount, input.date);
+    if (sourceBalance + 0.000001 < amount) {
+      throw new FinancialTransferError('INSUFFICIENT_AVAILABLE_BALANCE', { available: sourceBalance, required: amount });
+    }
+
+    const transferGroupId = crypto.randomUUID();
+    const legs = buildTransferLegs({
+      amount,
+      sourceAccountId: sourceAccount.id,
+      destinationAccountId: destinationAccount.id,
       description: input.description,
       notes: input.notes,
     });
-  } catch (error) {
-    if (error instanceof Error) throw new FinancialTransferError(error.message);
-    throw error;
-  }
 
-  const workspace = await resolveWorkspaceContext(userId);
-  const requestHash = mutationRequestHash({ ...input, operationId: undefined });
-
-  return serializableFinancialTransaction(async (tx) => {
-    const previous = await tx.cloudMutationReceipt.findUnique({
-      where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId } },
-    });
-    if (previous) {
-      if (previous.requestHash !== requestHash) throw new FinancialTransferError('OPERATION_ID_REUSED');
-      return { ...(previous.response as Record<string, unknown>), idempotentReplay: true };
-    }
-
-    const accounts = await tx.account.findMany({
-      where: {
-        userId,
-        isActive: true,
-        id: { in: [input.sourceAccountId, input.destinationAccountId] },
-      },
-      select: { id: true, name: true, type: true, openingBalance: true },
-    });
-    const source = accounts.find((account) => account.id === input.sourceAccountId);
-    const destination = accounts.find((account) => account.id === input.destinationAccountId);
-    if (!source) throw new FinancialTransferError('INVALID_SOURCE_ACCOUNT');
-    if (!destination) throw new FinancialTransferError('INVALID_DESTINATION_ACCOUNT');
-    if (!isMonetaryAccountType(source.type)) throw new FinancialTransferError('SOURCE_ACCOUNT_NOT_MONETARY');
-    if (!isMonetaryAccountType(destination.type)) throw new FinancialTransferError('DESTINATION_ACCOUNT_NOT_MONETARY');
-
-    const sourceBalanceBefore = await sourceAccountBalanceAt(tx, userId, source, input.date);
-    const requested = Math.round(Number(input.amount) * 100) / 100;
-    if (requested > sourceBalanceBefore) {
-      throw new FinancialTransferError('INSUFFICIENT_SOURCE_ACCOUNT_BALANCE', {
-        available: sourceBalanceBefore,
-        requested,
-        missing: Math.round((requested - sourceBalanceBefore) * 100) / 100,
-      });
-    }
-
-    const created = [];
+    const eventDate = new Date(`${input.date}T12:00:00.000Z`);
+    const createdEvents = [];
     for (const leg of legs) {
       const event = await tx.financialEvent.create({
         data: {
-          userId,
-          workspaceId: workspace.workspaceId,
-          description: leg.description,
-          type: leg.type,
-          status: leg.status,
-          date: new Date(`${leg.date.slice(0, 10)}T12:00:00.000Z`),
-          competence: leg.competence,
-          amount: leg.amount,
-          signedAmount: leg.signedAmount,
+          userId: context.ownerId,
           accountId: leg.accountId,
+          transferGroupId,
+          type: leg.type,
+          amount: new Prisma.Decimal(leg.amount),
+          date: eventDate,
+          description: leg.description,
+          status: 'PAID',
           notes: leg.notes,
-          sourcePayload: leg.sourcePayload as Prisma.InputJsonValue,
         },
       });
       await tx.ledgerEntry.create({
         data: {
+          userId: context.ownerId,
           eventId: event.id,
-          date: event.date,
           accountId: leg.accountId,
-          debit: leg.signedAmount >= 0 ? leg.amount : 0,
-          credit: leg.signedAmount < 0 ? leg.amount : 0,
-          memo: `${leg.description} · ${leg.leg}`,
+          type: event.type,
+          amount: event.amount,
+          date: event.date,
+          description: event.description,
         },
       });
-      created.push(event);
+      createdEvents.push(event);
     }
 
-    const response = {
-      transferId: operationId,
-      sourceEventId: created[0].id,
-      destinationEventId: created[1].id,
-      sourceAccountId: source.id,
-      destinationAccountId: destination.id,
-      amount: requested,
-      date: input.date.slice(0, 10),
-      sourceBalanceBefore,
-      sourceBalanceAfter: Math.round((sourceBalanceBefore - requested) * 100) / 100,
-      idempotentReplay: false,
-    };
-
     await recordFinancialAudit(tx, {
-      actorId: userId,
-      entity: 'FinancialTransfer',
-      entityId: operationId,
+      actorId,
+      ownerId: context.ownerId,
       action: 'FINANCIAL_TRANSFER_CREATED',
-      after: response,
-      context: {
-        workspaceId: workspace.workspaceId,
-        sourceAccountName: source.name,
-        destinationAccountName: destination.name,
+      entityId: transferGroupId,
+      metadata: {
+        workspaceId: context.workspaceId,
+        transferGroupId,
+        sourceAccountId: sourceAccount.id,
+        destinationAccountId: destinationAccount.id,
+        amount,
+        date: input.date,
+        eventIds: createdEvents.map((event) => event.id),
       },
     });
 
-    const state = await tx.appState.findUnique({
-      where: { workspaceId: workspace.workspaceId },
-      select: { revision: true },
-    });
-    await tx.cloudMutationReceipt.create({
+    const response = {
+      transferGroupId,
+      sourceAccount: { id: sourceAccount.id, name: sourceAccount.name },
+      destinationAccount: { id: destinationAccount.id, name: destinationAccount.name },
+      amount,
+      date: input.date,
+      eventIds: createdEvents.map((event) => event.id),
+    };
+
+    await tx.mutationReceipt.create({
       data: receiptCreateData({
-        workspaceId: workspace.workspaceId,
-        operationId,
+        workspaceId: context.workspaceId,
+        actorId,
+        operationId: input.operationId,
+        action: 'FINANCIAL_TRANSFER_CREATE',
         requestHash,
-        mutationType: 'FINANCIAL_TRANSFER_CREATE',
-        revision: state?.revision || 0,
-        response,
+        responsePayload: response,
       }),
     });
 
