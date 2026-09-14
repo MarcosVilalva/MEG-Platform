@@ -12,6 +12,7 @@ import type {
   PhoenixReadModel,
   PhoenixWorkspaceUsers
 } from '../contracts';
+import { projectCardInstallmentsIntoEvents } from './card-movement-projection';
 
 type SharedStateRead = {
   state?: {
@@ -210,9 +211,16 @@ async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boo
         .map((item) => ({ ...item }))
     : [];
 
+  const hydratedEvents = previewCore.events.items.map(hydrateEventSourceDetails);
+  const cardInstallmentEvents = projectCardInstallmentsIntoEvents(previewCore.cards, previewCore.categories, month);
+  const mergedEvents = [...hydratedEvents, ...cardInstallmentEvents]
+    .sort((left, right) => String(right.date).localeCompare(String(left.date)));
   const events = {
     ...previewCore.events,
-    items: previewCore.events.items.map(hydrateEventSourceDetails)
+    items: mergedEvents,
+    total: mergedEvents.length,
+    page: 1,
+    pageSize: Math.max(previewCore.events.pageSize || 0, mergedEvents.length)
   };
 
   return {
@@ -240,7 +248,7 @@ async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boo
     sourcePolicy: {
       mode: 'read-only',
       summary: 'finance-domain',
-      events: 'finance-domain-month',
+      events: 'finance-domain-month+card-domain-projection',
       financialAudit: 'finance-audit-log',
       activities: 'app-state-activity-log-legacy',
       legacyTransactions: 'app-state-transactions-read-only',
@@ -276,6 +284,7 @@ export function peekPhoenixReadModel(month: string) {
  * - nenhuma mutação acontece aqui;
  * - o núcleo financeiro mensal vem de um snapshot único e somente leitura do backend;
  * - resumo, benefício, eventos, cartões, pendências e auditoria pertencem à mesma fotografia mensal;
+ * - compras de cartão são projetadas somente para leitura na grade, parcela a parcela, sem criar evento monetário duplicado;
  * - orçamentos são mensais; clientes/contas a receber e demais leituras estáticas são reutilizados entre trocas de mês;
  * - a normalização é observada explicitamente para evitar esconder fallback;
  * - activityLog permanece carregado somente como histórico legado anterior à auditoria normalizada;
