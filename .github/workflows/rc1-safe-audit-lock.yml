@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   refresh-lock:
-    if: github.event.head_commit.message == 'chore(rc1): refresh safe dependency lock'
+    if: contains(github.event.head_commit.message, 'refresh safe dependency lock')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
