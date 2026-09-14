@@ -3,7 +3,8 @@ import type { PaymentMethod } from '../app/finance-client';
 export const PHOENIX_INCOME_PAYMENT_METHODS = [
   'PIX',
   'DINHEIRO',
-  'DEPÓSITO BANCÁRIO',
+  'TRANSFERÊNCIA BANCÁRIA',
+  'VEROCARD',
 ] as const;
 
 export type PhoenixIncomePaymentMethodName = typeof PHOENIX_INCOME_PAYMENT_METHODS[number];
@@ -21,7 +22,8 @@ export function canonicalPhoenixIncomePaymentMethod(value: unknown): PhoenixInco
   const normalized = normalize(value);
   if (normalized === 'PIX') return 'PIX';
   if (normalized === 'DINHEIRO') return 'DINHEIRO';
-  if (normalized === 'DEPOSITO BANCARIO') return 'DEPÓSITO BANCÁRIO';
+  if (normalized === 'TRANSFERENCIA BANCARIA' || normalized === 'DEPOSITO BANCARIO') return 'TRANSFERÊNCIA BANCÁRIA';
+  if (normalized.includes('VEROCARD')) return 'VEROCARD';
   return null;
 }
 
