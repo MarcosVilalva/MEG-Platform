@@ -5,6 +5,10 @@ import { resolveWorkspaceContext } from '../workspaces/service';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
+const historyQuerySchema = z.object({
+  through: monthSchema.optional(),
+  months: z.coerce.number().int().min(3).max(24).default(12),
+});
 
 type JsonRecord = Record<string, unknown>;
 
@@ -93,6 +97,10 @@ function monthDay(month: string, day: number) {
   return { date: iso, at: `${iso}T12:00:00.000Z` };
 }
 
+function currentMonth() {
+  return new Date().toISOString().slice(0, 7);
+}
+
 function eventSnapshot(event: {
   id: string;
   description: string;
@@ -108,6 +116,11 @@ function eventSnapshot(event: {
     date: isoDate(event.date),
     archivedAt: isoDate(event.archivedAt),
   };
+}
+
+function auditMonth(metadata: ReturnType<typeof parseAuditMetadata>) {
+  const candidate = text(metadata.after.month) || text(metadata.context.month) || text(metadata.before.month);
+  return monthSchema.safeParse(candidate).success ? candidate : '';
 }
 
 export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
@@ -146,7 +159,7 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
       userId: { in: memberIds },
       entity: 'CreditCard',
       entityId: card.id,
-      metadata: { contains: `\"month\":\"${parsed.data.month}\"` },
+      metadata: { contains: `\\\"month\\\":\\\"${parsed.data.month}\\\"` },
     };
     const lifecycleAudits = await prisma.auditLog.findMany({
       where: { ...auditWhere, action: { in: ['CARD_STATEMENT_PAID', 'CARD_STATEMENT_REOPENED'] } },
@@ -348,6 +361,171 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
       reopenReason,
       reopenedBy: lifecycleAction === 'CARD_STATEMENT_REOPENED' ? latestLifecycle?.user || null : null,
       source: latestLifecycle || latestPayment ? 'audit' : entries.length ? 'installments' : 'none',
+    };
+  });
+
+  app.get('/:id/statements/history', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    const params = z.object({ id: z.string().min(1) }).safeParse(request.params);
+    const query = historyQuerySchema.safeParse(request.query);
+    if (!params.success || !query.success) {
+      return validationError(reply, {
+        params: params.success ? null : params.error.flatten(),
+        query: query.success ? null : query.error.flatten(),
+      });
+    }
+
+    const through = query.data.through || currentMonth();
+    const months = query.data.months;
+    const monthList = Array.from({ length: months }, (_, index) => addMonths(through, index - (months - 1)));
+    const monthSet = new Set(monthList);
+
+    const workspace = await resolveWorkspaceContext(request.user.sub);
+    const ownerId = workspace.workspace.ownerId;
+    const card = await prisma.creditCard.findFirst({
+      where: { id: params.data.id, userId: ownerId },
+      include: {
+        purchases: {
+          where: { status: 'active' },
+          include: { entries: true },
+        },
+      },
+    });
+    if (!card) return reply.code(404).send({ error: 'CARD_NOT_FOUND' });
+
+    const members = await prisma.workspaceMember.findMany({
+      where: { workspaceId: workspace.workspaceId },
+      select: { userId: true },
+    });
+    const memberIds = members.map((item) => item.userId);
+    const lifecycleAudits = await prisma.auditLog.findMany({
+      where: {
+        userId: { in: memberIds },
+        entity: 'CreditCard',
+        entityId: card.id,
+        action: { in: ['CARD_STATEMENT_PAID', 'CARD_STATEMENT_REOPENED'] },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const auditsByMonth = new Map<string, typeof lifecycleAudits>();
+    const metadataByAudit = new Map<string, ReturnType<typeof parseAuditMetadata>>();
+    for (const audit of lifecycleAudits) {
+      const metadata = parseAuditMetadata(audit.metadata);
+      metadataByAudit.set(audit.id, metadata);
+      const month = auditMonth(metadata);
+      if (!month || !monthSet.has(month)) continue;
+      const group = auditsByMonth.get(month) || [];
+      group.push(audit);
+      auditsByMonth.set(month, group);
+    }
+
+    const allEntries = card.purchases.flatMap((purchase) => purchase.entries);
+    const items = monthList.map((month) => {
+      const entries = allEntries.filter((entry) => entry.statementMonth === month);
+      const openEntries = entries.filter((entry) => entry.status === 'open');
+      const paidEntries = entries.filter((entry) => entry.status === 'paid');
+      const audits = auditsByMonth.get(month) || [];
+      const paymentAudits = audits.filter((audit) => audit.action === 'CARD_STATEMENT_PAID');
+      const reopenAudits = audits.filter((audit) => audit.action === 'CARD_STATEMENT_REOPENED');
+      const latestAudit = audits.length ? audits[audits.length - 1] : null;
+      const latestPayment = paymentAudits.length ? paymentAudits[paymentAudits.length - 1] : null;
+      const latestPaymentMetadata = latestPayment ? metadataByAudit.get(latestPayment.id) : null;
+      const latestAuditMetadata = latestAudit ? metadataByAudit.get(latestAudit.id) : null;
+      const auditedAmount = round(
+        number(latestPaymentMetadata?.after.amount)
+        || number(latestAuditMetadata?.after.amount)
+        || 0,
+      );
+      const entryStatementAmount = round(entries.reduce((sum, entry) => sum + Number(entry.amount), 0));
+      const entryOpenAmount = round(openEntries.reduce((sum, entry) => sum + Number(entry.amount), 0));
+      const entryPaidAmount = round(paidEntries.reduce((sum, entry) => sum + Number(entry.amount), 0));
+      const statementAmount = entryStatementAmount || auditedAmount;
+      const latestAction = latestAudit?.action || null;
+      const status = entries.length === 0 && audits.length === 0
+        ? 'none'
+        : latestAction === 'CARD_STATEMENT_REOPENED'
+          ? 'reopened'
+          : openEntries.length > 0 && paidEntries.length > 0
+            ? 'partial'
+            : openEntries.length > 0
+              ? 'open'
+              : paidEntries.length > 0 || paymentAudits.length > 0
+                ? 'paid'
+                : 'none';
+      const openAmount = entryOpenAmount || (status === 'reopened' && !entries.length ? auditedAmount : 0);
+      const paidAmount = entryPaidAmount || (status === 'paid' && !entries.length ? auditedAmount : 0);
+      const lastPaidAtFromEntries = paidEntries
+        .map((entry) => entry.paidAt)
+        .filter((value): value is Date => value instanceof Date)
+        .sort((left, right) => right.getTime() - left.getTime())[0] || null;
+      const lastPaidAt = text(latestPaymentMetadata?.after.paidAt)
+        || isoDate(lastPaidAtFromEntries)
+        || isoDate(latestPayment?.createdAt)
+        || null;
+      const closing = monthDay(month, card.closingDay);
+      const dueMonth = card.dueDay <= card.closingDay ? addMonths(month, 1) : month;
+      const due = monthDay(dueMonth, card.dueDay);
+
+      return {
+        month,
+        status,
+        statementAmount,
+        openAmount,
+        paidAmount,
+        openInstallments: openEntries.length,
+        paidInstallments: paidEntries.length,
+        totalInstallments: entries.length,
+        closingDate: closing.date,
+        dueDate: due.date,
+        paymentCount: paymentAudits.length || (lastPaidAtFromEntries ? 1 : 0),
+        reopenCount: reopenAudits.length,
+        lastPaidAt,
+        lastLifecycleAt: isoDate(latestAudit?.createdAt),
+        source: audits.length ? 'audit' : entries.length ? 'installments' : 'none',
+        deltaAmount: 0,
+        deltaPercent: null as number | null,
+      };
+    });
+
+    for (let index = 1; index < items.length; index += 1) {
+      const previous = items[index - 1];
+      const current = items[index];
+      current.deltaAmount = round(current.statementAmount - previous.statementAmount);
+      current.deltaPercent = previous.statementAmount > 0
+        ? round((current.deltaAmount / previous.statementAmount) * 100)
+        : null;
+    }
+
+    const withStatement = items.filter((item) => item.statementAmount > 0);
+    const highest = withStatement.reduce<{ month: string; amount: number } | null>((best, item) => {
+      if (!best || item.statementAmount > best.amount) return { month: item.month, amount: item.statementAmount };
+      return best;
+    }, null);
+    const statusCounts = items.reduce<Record<string, number>>((counts, item) => {
+      counts[item.status] = (counts[item.status] || 0) + 1;
+      return counts;
+    }, {});
+
+    return {
+      cardId: card.id,
+      cardName: card.name,
+      through,
+      from: monthList[0],
+      months,
+      items,
+      summary: {
+        monthsWithStatement: withStatement.length,
+        totalStatement: round(items.reduce((sum, item) => sum + item.statementAmount, 0)),
+        totalPaid: round(items.reduce((sum, item) => sum + item.paidAmount, 0)),
+        totalOpen: round(items.reduce((sum, item) => sum + item.openAmount, 0)),
+        averageStatement: withStatement.length
+          ? round(withStatement.reduce((sum, item) => sum + item.statementAmount, 0) / withStatement.length)
+          : 0,
+        highestStatement: highest,
+        totalReopens: items.reduce((sum, item) => sum + item.reopenCount, 0),
+        totalPayments: items.reduce((sum, item) => sum + item.paymentCount, 0),
+        statusCounts,
+      },
     };
   });
 }
