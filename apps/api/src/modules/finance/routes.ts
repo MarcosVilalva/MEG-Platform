@@ -4,33 +4,30 @@ import { createFinancialEventSchema, updateFinancialEventSchema } from './schema
 import { listFinancialAudit } from './audit';
 import {
   deleteFinancialEvent,
+  getFinancialSummary,
+  getFinancialCashflow,
+  getFinancialAnalytics,
   listBudgetOverview,
   upsertBudget,
   deleteBudget,
   listFinancialEvents,
   updateFinancialEvent
 } from './service';
-import { getCanonicalFinancialAnalytics, getCanonicalFinancialCashflow, getCanonicalFinancialSummary } from './read-model';
-import { getPhoenixBenefitSummary, listPhoenixFinancialEventsForMonth } from './phoenix-read';
 import { registerPhoenixPreviewReads } from './phoenix-preview-routes';
 import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
-import { FinancialTransferError, createFinancialTransfer } from './transfer-service';
+import { FinancialEventSettlementError, settleLegacyFinancialEventProtected } from './event-settlement';
 import { prisma } from '@meg/database';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
 const operationIdSchema = z.string().trim().min(8).max(128).optional();
-const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const createEventRequestSchema = createFinancialEventSchema.extend({ operationId: operationIdSchema });
-const transferRequestSchema = z.object({
-  operationId: z.string().trim().min(8).max(128),
-  sourceAccountId: z.string().trim().min(1).max(128),
-  destinationAccountId: z.string().trim().min(1).max(128),
-  amount: z.coerce.number().positive().finite(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  description: z.string().trim().min(2).max(160).optional(),
-  notes: z.string().trim().max(1000).optional(),
+const settleLegacyEventRequestSchema = z.object({
+  paidAt: z.string().min(10),
+  accountId: z.string().trim().min(1),
+  paymentMethodId: z.string().trim().min(1),
+  operationId: z.string().trim().min(8).max(128).regex(/^[A-Za-z0-9._:-]+$/),
 });
 
 const accountSchema = z.object({
@@ -71,9 +68,9 @@ function eventError(reply: FastifyReply, error: unknown) {
   throw error;
 }
 
-function transferError(reply: FastifyReply, error: unknown) {
-  if (!(error instanceof FinancialTransferError)) throw error;
-  const status = ['OPERATION_ID_REUSED', 'INSUFFICIENT_SOURCE_ACCOUNT_BALANCE'].includes(error.code) ? 409 : 400;
+function settlementError(reply: FastifyReply, error: unknown) {
+  if (!(error instanceof FinancialEventSettlementError)) throw error;
+  const status = error.code === 'FINANCIAL_EVENT_NOT_FOUND' ? 404 : error.code === 'OPERATION_ID_REUSED' ? 409 : 400;
   return reply.code(status).send({ error: error.code, ...(error.details || {}) });
 }
 
@@ -81,20 +78,20 @@ export async function financeRoutes(app: FastifyInstance) {
   registerPhoenixPreviewReads(app);
 
   app.get('/analytics', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
-    const parsed = z.object({ month: monthSchema }).safeParse(request.query);
+    const parsed = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return getCanonicalFinancialAnalytics(request.user.sub, parsed.data.month);
+    return getFinancialAnalytics(request.user.sub, parsed.data.month);
   });
 
   app.get('/budgets', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
-    const parsed = z.object({ month: monthSchema }).safeParse(request.query);
+    const parsed = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     return listBudgetOverview(request.user.sub, parsed.data.month);
   });
 
   app.put('/budgets', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = z.object({
-      month: monthSchema,
+      month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
       group: z.string().trim().min(2).max(120),
       amount: z.coerce.number().positive().finite()
     }).safeParse(request.body);
@@ -115,27 +112,19 @@ export async function financeRoutes(app: FastifyInstance) {
   });
 
   app.get('/cashflow', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
-    const parsed = z.object({ month: monthSchema }).safeParse(request.query);
+    const parsed = z.object({
+      month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+    }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return getCanonicalFinancialCashflow(request.user.sub, parsed.data.month);
+    return getFinancialCashflow(request.user.sub, parsed.data.month);
   });
 
   app.get('/summary', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
-    const parsed = z.object({ month: monthSchema }).safeParse(request.query);
+    const parsed = z.object({
+      month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+    }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return getCanonicalFinancialSummary(request.user.sub, parsed.data.month);
-  });
-
-  app.get('/benefit-summary', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
-    const parsed = z.object({ month: monthSchema }).safeParse(request.query);
-    if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return getPhoenixBenefitSummary(request.user.sub, parsed.data.month);
-  });
-
-  app.get('/events/month', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
-    const parsed = z.object({ month: monthSchema }).safeParse(request.query);
-    if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return listPhoenixFinancialEventsForMonth(request.user.sub, parsed.data.month);
+    return getFinancialSummary(request.user.sub, parsed.data.month);
   });
 
   app.get('/events', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
@@ -169,13 +158,17 @@ export async function financeRoutes(app: FastifyInstance) {
     }
   });
 
-  app.post('/transfers', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
-    const parsed = transferRequestSchema.safeParse(request.body);
+  app.post('/events/:id/settle', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const parsed = settleLegacyEventRequestSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     try {
-      return reply.code(201).send(await createFinancialTransfer(request.user.sub, parsed.data));
+      return reply.code(201).send(await settleLegacyFinancialEventProtected(request.user.sub, {
+        eventId: id,
+        ...parsed.data,
+      }));
     } catch (error) {
-      return transferError(reply, error);
+      return settlementError(reply, error);
     }
   });
 

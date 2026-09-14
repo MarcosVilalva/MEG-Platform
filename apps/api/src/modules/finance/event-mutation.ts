@@ -30,6 +30,17 @@ function isPosted(status: string) {
   return status === 'paid' || status === 'reconciled' || status === 'confirmed';
 }
 
+function replayResponse(response: unknown) {
+  if (response && typeof response === 'object' && !Array.isArray(response)) {
+    return { ...(response as Record<string, unknown>), idempotentReplay: true };
+  }
+  return response;
+}
+
+function isUniqueConflict(error: unknown) {
+  return Boolean(error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'P2002');
+}
+
 export async function createFinancialEventProtected(userId: string, input: CreateFinancialEventMutationInput) {
   if (input.type === 'transfer') {
     throw new FinancialEventMutationError('TRANSFER_CONTRACT_NOT_READY');
@@ -39,91 +50,107 @@ export async function createFinancialEventProtected(userId: string, input: Creat
     ? mutationRequestHash({ ...input, operationId: undefined })
     : null;
 
-  return serializableFinancialTransaction(async (tx) => {
-    if (input.operationId && requestHash) {
-      const previous = await tx.cloudMutationReceipt.findUnique({
+  try {
+    return await serializableFinancialTransaction(async (tx) => {
+      if (input.operationId && requestHash) {
+        const previous = await tx.cloudMutationReceipt.findUnique({
+          where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
+        });
+        if (previous) {
+          if (previous.requestHash !== requestHash) throw new FinancialEventMutationError('OPERATION_ID_REUSED');
+          return replayResponse(previous.response);
+        }
+      }
+
+      try {
+        await assertActiveCatalogReferences(tx, userId, input);
+      } catch (error) {
+        if (error instanceof Error && ['INVALID_ACCOUNT', 'INVALID_CATEGORY', 'INVALID_PAYMENT_METHOD'].includes(error.message)) {
+          throw new FinancialEventMutationError(error.message);
+        }
+        throw error;
+      }
+
+      const values = financialAmountValues(input.type, input.amount);
+      const event = await tx.financialEvent.create({
+        data: {
+          userId,
+          workspaceId: workspace.workspaceId,
+          description: input.description.trim(),
+          type: input.type,
+          status: input.status,
+          date: new Date(input.date),
+          competence: input.competence || input.date.slice(0, 7),
+          amount: values.amount,
+          signedAmount: values.signedAmount,
+          accountId: input.accountId,
+          categoryId: input.categoryId,
+          paymentMethodId: input.paymentMethodId,
+          notes: input.notes?.trim() || undefined,
+        },
+      });
+
+      if (event.accountId && isPosted(event.status)) {
+        const value = Number(event.amount);
+        await tx.ledgerEntry.create({
+          data: {
+            eventId: event.id,
+            date: event.date,
+            accountId: event.accountId,
+            debit: Number(event.signedAmount) >= 0 ? value : 0,
+            credit: Number(event.signedAmount) < 0 ? value : 0,
+            memo: event.description,
+          },
+        });
+      }
+
+      const result = await tx.financialEvent.findUnique({
+        where: { id: event.id },
+        include: { account: true, category: true, paymentMethod: true, ledgerEntries: true },
+      });
+      if (!result) throw new FinancialEventMutationError('FINANCIAL_EVENT_NOT_FOUND');
+
+      await recordFinancialAudit(tx, {
+        actorId: userId,
+        entity: 'FinancialEvent',
+        entityId: result.id,
+        action: 'FINANCIAL_EVENT_CREATED',
+        before: null,
+        after: result,
+        context: {
+          operationId: input.operationId ?? null,
+          competence: result.competence,
+          workspaceId: workspace.workspaceId,
+        },
+      });
+
+      const response = { ...result, idempotentReplay: false };
+      if (input.operationId && requestHash) {
+        const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
+        await tx.cloudMutationReceipt.create({ data: receiptCreateData({
+          workspaceId: workspace.workspaceId,
+          operationId: input.operationId,
+          requestHash,
+          mutationType: 'FINANCIAL_EVENT_CREATE',
+          revision: state?.revision || 0,
+          response,
+        }) });
+      }
+      return response;
+    });
+  } catch (error) {
+    // Duas requisições iguais podem atravessar simultaneamente a consulta inicial do recibo.
+    // A unicidade workspaceId+operationId faz uma delas reverter inteira; após o rollback,
+    // relê-se o recibo vencedor para transformar o conflito em replay do mesmo comando.
+    if (input.operationId && requestHash && isUniqueConflict(error)) {
+      const previous = await prisma.cloudMutationReceipt.findUnique({
         where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
       });
       if (previous) {
         if (previous.requestHash !== requestHash) throw new FinancialEventMutationError('OPERATION_ID_REUSED');
-        return previous.response as unknown;
+        return replayResponse(previous.response);
       }
     }
-
-    try {
-      await assertActiveCatalogReferences(tx, userId, input);
-    } catch (error) {
-      if (error instanceof Error && ['INVALID_ACCOUNT', 'INVALID_CATEGORY', 'INVALID_PAYMENT_METHOD'].includes(error.message)) {
-        throw new FinancialEventMutationError(error.message);
-      }
-      throw error;
-    }
-
-    const values = financialAmountValues(input.type, input.amount);
-    const event = await tx.financialEvent.create({
-      data: {
-        userId,
-        workspaceId: workspace.workspaceId,
-        description: input.description.trim(),
-        type: input.type,
-        status: input.status,
-        date: new Date(input.date),
-        competence: input.competence || input.date.slice(0, 7),
-        amount: values.amount,
-        signedAmount: values.signedAmount,
-        accountId: input.accountId,
-        categoryId: input.categoryId,
-        paymentMethodId: input.paymentMethodId,
-        notes: input.notes?.trim() || undefined,
-      },
-    });
-
-    if (event.accountId && isPosted(event.status)) {
-      const value = Number(event.amount);
-      await tx.ledgerEntry.create({
-        data: {
-          eventId: event.id,
-          date: event.date,
-          accountId: event.accountId,
-          debit: Number(event.signedAmount) >= 0 ? value : 0,
-          credit: Number(event.signedAmount) < 0 ? value : 0,
-          memo: event.description,
-        },
-      });
-    }
-
-    const result = await tx.financialEvent.findUnique({
-      where: { id: event.id },
-      include: { account: true, category: true, paymentMethod: true, ledgerEntries: true },
-    });
-    if (!result) throw new FinancialEventMutationError('FINANCIAL_EVENT_NOT_FOUND');
-
-    await recordFinancialAudit(tx, {
-      actorId: userId,
-      entity: 'FinancialEvent',
-      entityId: result.id,
-      action: 'FINANCIAL_EVENT_CREATED',
-      before: null,
-      after: result,
-      context: {
-        operationId: input.operationId ?? null,
-        competence: result.competence,
-        workspaceId: workspace.workspaceId,
-      },
-    });
-
-    const response = { ...result, idempotentReplay: false };
-    if (input.operationId && requestHash) {
-      const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
-      await tx.cloudMutationReceipt.create({ data: receiptCreateData({
-        workspaceId: workspace.workspaceId,
-        operationId: input.operationId,
-        requestHash,
-        mutationType: 'FINANCIAL_EVENT_CREATE',
-        revision: state?.revision || 0,
-        response,
-      }) });
-    }
-    return response;
-  });
+    throw error;
+  }
 }

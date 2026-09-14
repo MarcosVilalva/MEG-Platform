@@ -9,11 +9,14 @@ import { isAllowedOrigin } from './cors';
 import { registerAuth } from './plugins/auth';
 import { authRoutes } from './modules/auth/routes';
 import { financeRoutes } from './modules/finance/routes';
+import { financeBulkMutationRoutes } from './modules/finance/event-bulk-routes';
+import { financeCommitmentForecastRoutes } from './modules/finance/commitment-forecast-routes';
 import { receivableRoutes } from './modules/receivables/routes';
 import { cardRoutes } from './modules/cards/routes';
-import { migrateLegacyCardsForAllWorkspaces } from './modules/cards/service';
+import { cardManagementRoutes } from './modules/cards/management-routes';
+import { cardStatementReopenRoutes } from './modules/cards/statement-reopen-routes';
+import { cardStatementLifecycleRoutes } from './modules/cards/statement-lifecycle-routes';
 import { payableRoutes } from './modules/payables/routes';
-import { materializeRecurringExpenses } from './modules/payables/service';
 import { repairLegacyImportedEvents } from './modules/imports/repair';
 import { appStateRoutes } from './modules/app-state/routes';
 import { notificationRoutes } from './modules/notifications/routes';
@@ -30,6 +33,7 @@ import {
   normalizationPreview,
   recordNormalizationRuntimeStatus,
 } from './modules/app-state/normalization-migration';
+import { reconcilePrimaryAppStateFromNormalized } from './modules/app-state/normalized-primary-writeback';
 
 const app = Fastify({
   bodyLimit: 25 * 1024 * 1024,
@@ -120,8 +124,13 @@ app.get('/ready', async (_request, reply) => {
 
 await app.register(authRoutes, { prefix: '/auth' });
 await app.register(financeRoutes, { prefix: '/finance' });
+await app.register(financeBulkMutationRoutes, { prefix: '/finance' });
+await app.register(financeCommitmentForecastRoutes, { prefix: '/finance' });
 await app.register(receivableRoutes, { prefix: '/receivables' });
 await app.register(cardRoutes, { prefix: '/cards' });
+await app.register(cardStatementReopenRoutes, { prefix: '/cards' });
+await app.register(cardStatementLifecycleRoutes, { prefix: '/cards' });
+await app.register(cardManagementRoutes, { prefix: '/cards-management' });
 await app.register(payableRoutes, { prefix: '/payables' });
 await app.register(appStateRoutes, { prefix: '/app-state' });
 await app.register(notificationRoutes, { prefix: '/notifications' });
@@ -146,33 +155,10 @@ try {
     ensureCommercialFoundation(),
     refreshCommercialBillingStatuses()
   ]).catch((error) => app.log.error(error, 'Background commercial maintenance failed'));
-
-  async function runFinancialMaintenance(label: string) {
-    const [recurring, cards] = await Promise.all([
-      materializeRecurringExpenses(),
-      migrateLegacyCardsForAllWorkspaces(),
-    ]);
-    if (label === 'startup' || recurring.processed || recurring.created || cards.created) {
-      app.log.info({ recurring, cards, label }, 'Financial compatibility maintenance completed');
-    }
-  }
-
-  void runFinancialMaintenance('startup')
-    .catch((error) => app.log.error(error, 'Financial compatibility startup maintenance failed'));
-
-  let financialMaintenanceRunning = false;
-  const financialMaintenanceTimer = setInterval(() => {
-    if (financialMaintenanceRunning) return;
-    financialMaintenanceRunning = true;
-    void runFinancialMaintenance('periodic')
-      .catch((error) => app.log.error(error, 'Financial compatibility periodic maintenance failed'))
-      .finally(() => { financialMaintenanceRunning = false; });
-  }, 6 * 60 * 60 * 1000);
-  financialMaintenanceTimer.unref();
-
   void ensurePrimaryWorkspace()
     .then(async (workspace) => {
       if (!workspace) return null;
+      await reconcilePrimaryAppStateFromNormalized(workspace.id);
       let result: Awaited<ReturnType<typeof activateNormalizationPrimary>> | null = null;
       for (let attempt = 1; attempt <= 3; attempt += 1) {
         try {

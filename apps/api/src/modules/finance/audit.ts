@@ -18,13 +18,20 @@ export type FinancialAuditAction =
   | 'FINANCIAL_EVENT_CREATED'
   | 'FINANCIAL_EVENT_UPDATED'
   | 'FINANCIAL_EVENT_ARCHIVED'
+  | 'FINANCIAL_EVENT_SETTLED_COMPAT'
   | 'FINANCIAL_TRANSFER_CREATED'
   | 'PAYABLE_CREATED'
   | 'PAYABLE_PAYMENT_CREATED'
   | 'RECURRING_EXPENSE_CREATED'
+  | 'CARD_CREATED'
+  | 'CARD_UPDATED'
+  | 'CARD_DEACTIVATED'
+  | 'CARD_REACTIVATED'
   | 'CARD_PURCHASE_CREATED'
+  | 'CARD_PURCHASE_UPDATED'
   | 'CARD_PURCHASE_CANCELLED'
   | 'CARD_STATEMENT_PAID'
+  | 'CARD_STATEMENT_REOPENED'
   | 'RECEIVABLE_CREATED'
   | 'RECEIVABLE_RECEIVED';
 
@@ -88,8 +95,6 @@ export async function listFinancialAudit(actorId: string, input: {
   entity?: string;
 }) {
   const workspace = await resolveWorkspaceContext(actorId);
-  // Histórico é imutável: ações de um membro que depois foi bloqueado/inativado
-  // continuam pertencendo ao histórico financeiro do workspace.
   const members = await prisma.workspaceMember.findMany({
     where: { workspaceId: workspace.workspaceId },
     select: { userId: true },
