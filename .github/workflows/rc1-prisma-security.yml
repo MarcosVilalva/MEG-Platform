@@ -1,0 +1,91 @@
+name: RC1 Prisma Security Pin
+
+on:
+  push:
+    branches:
+      - phoenix/v15-clean-room
+
+permissions:
+  contents: write
+
+jobs:
+  pin-prisma:
+    if: contains(github.event.head_commit.message, 'execute prisma security pin')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Phoenix candidate
+        uses: actions/checkout@v4
+        with:
+          ref: phoenix/v15-clean-room
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Pin Prisma pair outside vulnerable range
+        shell: bash
+        run: |
+          cp package.json /tmp/root-package.json
+          cp apps/api/package.json /tmp/api-package.json
+          cp apps/web/package.json /tmp/web-package.json
+          npm install --package-lock-only --ignore-scripts --workspace packages/database prisma@6.12.0 @prisma/client@6.12.0 --save-exact
+          cmp -s package.json /tmp/root-package.json
+          cmp -s apps/api/package.json /tmp/api-package.json
+          cmp -s apps/web/package.json /tmp/web-package.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          const database = JSON.parse(fs.readFileSync('packages/database/package.json', 'utf8'));
+          if (database.dependencies?.['@prisma/client'] !== '6.12.0' || database.devDependencies?.prisma !== '6.12.0') {
+            console.error('Prisma e @prisma/client precisam permanecer no mesmo pin 6.12.0.');
+            process.exit(1);
+          }
+          NODE
+
+      - name: Install pinned dependency graph
+        run: npm install --ignore-scripts
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
+
+      - name: Verify Prisma runtime and CLI versions
+        shell: bash
+        run: |
+          node -e "import('@prisma/client').then((m) => { if (!m.PrismaClient) process.exit(1); console.log('@prisma/client runtime resolvido.'); })"
+          npx prisma -v
+
+      - name: Run complete RC1 regression
+        run: npm run check
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/meg
+          NODE_ENV: test
+          CORS_ORIGINS: http://localhost:5173
+
+      - name: Verify Prisma audit blockers removed
+        shell: bash
+        run: |
+          npm audit --json > /tmp/prisma-audit.json || true
+          node <<'NODE'
+          const fs = require('node:fs');
+          const audit = JSON.parse(fs.readFileSync('/tmp/prisma-audit.json', 'utf8'));
+          const blocked = ['prisma', '@prisma/config', 'deepmerge-ts'].filter((name) => audit.vulnerabilities?.[name]);
+          if (blocked.length) {
+            console.error('Bloqueadores Prisma continuam presentes:', blocked);
+            process.exit(1);
+          }
+          console.log('Bloqueadores Prisma/deepmerge removidos do inventário npm audit.');
+          NODE
+
+      - name: Commit verified Prisma security pin
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add packages/database/package.json package-lock.json
+          git diff --cached --quiet && { echo 'Nenhuma alteração Prisma para gravar.'; exit 0; }
+          git commit -m 'fix(rc1): pin Prisma outside vulnerable range'
+          git push origin HEAD:phoenix/v15-clean-room
