@@ -42,7 +42,7 @@ jobs:
 
           for file in "${conflicts[@]}"; do
             case "$file" in
-              apps/web/*|docs/*|scripts/rc1-*|.github/workflows/ci.yml)
+              apps/api/src/modules/finance/monetary-protection.ts|apps/web/*|docs/*|scripts/rc1-*|.github/workflows/ci.yml)
                 git checkout --ours -- "$file" 2>/dev/null || git rm -f -- "$file"
                 ;;
               *)
@@ -87,6 +87,10 @@ jobs:
           if (!ci.includes("      - 'rc1/**'")) {
             ci = ci.replace("      - 'fix/**'", "      - 'fix/**'\n      - 'rc1/**'");
           }
+          ci = ci.replace(
+            "if: github.ref == 'refs/heads/phoenix/v15-clean-room' || (github.event_name == 'pull_request' && github.head_ref == 'phoenix/v15-clean-room')",
+            "if: github.ref == 'refs/heads/phoenix/v15-clean-room' || startsWith(github.ref, 'refs/heads/rc1/') || (github.event_name == 'pull_request' && (github.head_ref == 'phoenix/v15-clean-room' || startsWith(github.head_ref, 'rc1/')))"
+          );
           fs.writeFileSync(ciPath, ci);
           NODE
           git add package.json apps/api/package.json .github/workflows/ci.yml
