@@ -42,7 +42,7 @@ jobs:
 
           for file in "${conflicts[@]}"; do
             case "$file" in
-              apps/api/src/modules/finance/monetary-protection.ts|apps/web/*|docs/*|scripts/rc1-*|.github/workflows/ci.yml)
+              apps/api/src/modules/finance/monetary-protection.ts|apps/web/*|docs/*|scripts/rc1-*|.github/workflows/*)
                 git checkout --ours -- "$file" 2>/dev/null || git rm -f -- "$file"
                 ;;
               *)
@@ -50,6 +50,11 @@ jobs:
                 ;;
             esac
           done
+
+          # The temporary reconciliation runner is not allowed to publish workflow mutations.
+          # Keep the entire workflow tree byte-for-byte equal to the Phoenix source branch;
+          # CI enablement for rc1/** is applied afterwards through the authorized GitHub connector.
+          git checkout origin/phoenix/v15-clean-room -- .github/workflows
           git add -A
 
           if git diff --name-only --diff-filter=U | grep -q .; then
@@ -81,19 +86,8 @@ jobs:
           api.scripts ||= {};
           api.scripts['test:rc1-financial-e2e'] = 'tsx src/modules/finance/rc1-financial-e2e.test.ts';
           fs.writeFileSync(apiPath, JSON.stringify(api, null, 2) + '\n');
-
-          const ciPath = '.github/workflows/ci.yml';
-          let ci = fs.readFileSync(ciPath, 'utf8');
-          if (!ci.includes("      - 'rc1/**'")) {
-            ci = ci.replace("      - 'fix/**'", "      - 'fix/**'\n      - 'rc1/**'");
-          }
-          ci = ci.replace(
-            "if: github.ref == 'refs/heads/phoenix/v15-clean-room' || (github.event_name == 'pull_request' && github.head_ref == 'phoenix/v15-clean-room')",
-            "if: github.ref == 'refs/heads/phoenix/v15-clean-room' || startsWith(github.ref, 'refs/heads/rc1/') || (github.event_name == 'pull_request' && (github.head_ref == 'phoenix/v15-clean-room' || startsWith(github.head_ref, 'rc1/')))"
-          );
-          fs.writeFileSync(ciPath, ci);
           NODE
-          git add package.json apps/api/package.json .github/workflows/ci.yml
+          git add package.json apps/api/package.json
 
       - name: Reapply verified RC1 dependency pins
         shell: bash
