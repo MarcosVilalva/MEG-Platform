@@ -190,9 +190,7 @@ function optionValue(select: HTMLSelectElement | null, predicates: ((label: stri
 
 function mainAccountValue(root: HTMLElement) {
   const select = selectByLabel(root, 'Conta financeira');
-  return optionValue(select, [
-    (label) => label === 'CONTA MONETARIA PRINCIPAL',
-  ]);
+  return optionValue(select, [(label) => label === 'CONTA MONETARIA PRINCIPAL']);
 }
 
 function benefitAccountValue(root: HTMLElement) {
@@ -257,15 +255,45 @@ function visiblePaymentOptions(select: HTMLSelectElement, modality: string) {
   });
 }
 
+function routeKey(root: HTMLElement, modality: string) {
+  const type = activeType(root);
+  const native = paymentSelect(root);
+  const nativeOptions = native ? [...native.options].map((option) => `${option.value}:${option.textContent || ''}`).join('|') : '';
+  const card = root.querySelector<HTMLSelectElement>('.px-card-box select');
+  const cardOptions = card ? [...card.options].map((option) => `${option.value}:${option.textContent || ''}`).join('|') : 'pending';
+  return `${type}:${normalize(modality)}:${nativeOptions}:${normalize(modality) === 'CREDITO' ? cardOptions : ''}`;
+}
+
 function rebuildNextChoice(root: HTMLElement, modalityField: HTMLElement, modality: string) {
-  root.querySelector('[data-phoenix-modality-next]')?.remove();
   clearNativePaymentVisibility(root);
   const type = activeType(root);
-  if (type !== 'expense') return;
+  const existing = root.querySelector<HTMLElement>('[data-phoenix-modality-next]');
+  if (type !== 'expense') {
+    existing?.remove();
+    return;
+  }
 
+  const nextKey = routeKey(root, modality);
+  if (existing?.dataset.routeKey === nextKey) {
+    const select = existing.querySelector<HTMLSelectElement>('select');
+    if (normalize(modality) === 'CREDITO') {
+      const nativeCard = root.querySelector<HTMLSelectElement>('.px-card-box select');
+      if (select && nativeCard && select.value !== nativeCard.value) select.value = nativeCard.value;
+      root.querySelector('.px-card-box')?.classList.add('px-native-card-routed');
+      paymentSelect(root)?.closest('label')?.classList.add('px-native-payment-routed');
+    } else {
+      const native = paymentSelect(root);
+      if (select && native && !select.disabled && select.value !== native.value) select.value = native.value;
+      native?.closest('label')?.classList.add('px-native-payment-routed');
+    }
+    return;
+  }
+
+  existing?.remove();
   const label = document.createElement('label');
   label.className = 'px-field px-modality-next';
   label.dataset.phoenixModalityNext = 'true';
+  label.dataset.routeKey = nextKey;
   const caption = document.createElement('span');
   const select = document.createElement('select');
   label.append(caption, select);
@@ -303,8 +331,8 @@ function rebuildNextChoice(root: HTMLElement, modalityField: HTMLElement, modali
     .join('');
 
   const forced = normalize(modality) === 'ALIMENTACAO' || normalize(modality) === 'CREDIARIO';
-  const routeValue = paymentValue(root, modality);
-  if (routeValue) setNativeSelect(native, routeValue);
+  const forcedValue = paymentValue(root, modality);
+  if (forcedValue) setNativeSelect(native, forcedValue);
   select.value = native.value;
   if (forced && select.value) select.disabled = true;
   select.addEventListener('change', () => setNativeSelect(native, select.value));
@@ -372,27 +400,29 @@ function ensureModalityField(root: HTMLElement) {
   const select = field.querySelector<HTMLSelectElement>('[data-phoenix-modality-select]');
   const help = field.querySelector<HTMLElement>('[data-phoenix-modality-help]');
   if (!select || !help) return;
-  const key = type;
   const options = type === 'income' ? incomeModalities : expenseModalities;
-  if (root.dataset.phoenixModalityType !== key) {
-    root.dataset.phoenixModalityType = key;
-    const inferred = inferModality(editingEvent, type);
+  if (root.dataset.phoenixModalityType !== type || !select.options.length) {
+    root.dataset.phoenixModalityType = type;
+    const saved = root.dataset.phoenixModality || '';
+    const inferred = saved || inferModality(editingEvent, type);
     select.innerHTML = options.map((item) => `<option value="${item}">${item}</option>`).join('');
     select.value = options.includes(inferred as never) ? inferred : options[0];
     root.dataset.phoenixModality = select.value;
   }
-  help.textContent = type === 'income'
+  const helpText = type === 'income'
     ? 'A modalidade define automaticamente a conta de recebimento: monetária ou benefício.'
     : 'A modalidade filtra a próxima escolha e aplica as regras de pagamento do MEG.';
+  if (help.textContent !== helpText) help.textContent = helpText;
   applyModalityRoute(root, select.value, field);
 }
 
 function currentDuplicateFields(root: HTMLElement) {
-  const description = inputByLabel(root, 'Descrição')?.value.trim() || '';
-  const amount = Math.abs(parseMoney(root.querySelector<HTMLInputElement>('.px-money-mask')?.value || ''));
-  const accountId = selectByLabel(root, 'Conta financeira')?.value || '';
-  const date = inputByLabel(root, 'Data do evento')?.value || '';
-  return { description, amount, accountId, date };
+  return {
+    description: inputByLabel(root, 'Descrição')?.value.trim() || '',
+    amount: Math.abs(parseMoney(root.querySelector<HTMLInputElement>('.px-money-mask')?.value || '')),
+    accountId: selectByLabel(root, 'Conta financeira')?.value || '',
+    date: inputByLabel(root, 'Data do evento')?.value || '',
+  };
 }
 
 async function fixDuplicateRule(root: HTMLElement) {
@@ -409,13 +439,11 @@ async function fixDuplicateRule(root: HTMLElement) {
     && Math.round(Math.abs(Number(event.amount || 0)) * 100) === Math.round(current.amount * 100)
     && event.accountId === current.accountId
     && String(event.date || '').slice(0, 10) === current.date);
-  if (duplicate) {
-    rule.classList.add('duplicate');
-    rule.textContent = `Possível duplicidade encontrada em outro lançamento: ${duplicate.description}. Revise antes de salvar a alteração.`;
-  } else {
-    rule.classList.remove('duplicate');
-    rule.textContent = 'Edição segura: o próprio lançamento foi excluído da verificação de duplicidade e nenhum outro registro igual foi encontrado.';
-  }
+  const text = duplicate
+    ? `Possível duplicidade encontrada em outro lançamento: ${duplicate.description}. Revise antes de salvar a alteração.`
+    : 'Edição segura: o próprio lançamento foi excluído da verificação de duplicidade e nenhum outro registro igual foi encontrado.';
+  rule.classList.toggle('duplicate', Boolean(duplicate));
+  if (rule.textContent !== text) rule.textContent = text;
 }
 
 function scheduleDuplicateCheck(root: HTMLElement) {
@@ -436,7 +464,7 @@ function writerFeedback(root: HTMLElement, text: string, kind: 'warn' | 'ok' = '
     root.querySelector('.px-review-launch')?.insertAdjacentElement('beforebegin', node);
   }
   node.className = `px-notice ${kind}`;
-  node.textContent = text;
+  if (node.textContent !== text) node.textContent = text;
 }
 
 function editPayload(root: HTMLElement, eventId: string): EditPayload | null {
@@ -453,7 +481,10 @@ function editPayload(root: HTMLElement, eventId: string): EditPayload | null {
   if (!description || !date || !amountRaw || !accountId || !paymentMethodId) return null;
   const fingerprint = JSON.stringify({ eventId, description, date, amountRaw, accountId, categoryId, paymentMethodId, notes, modality });
   if (editOperation?.fingerprint !== fingerprint) {
-    editOperation = { fingerprint, operationId: `phoenix-edit:${crypto.randomUUID()}` };
+    const random = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    editOperation = { fingerprint, operationId: `phoenix-edit:${random}` };
   }
   return {
     description,
@@ -605,23 +636,22 @@ function ensureEditDelete(root: HTMLElement) {
   primary.insertAdjacentElement('beforebegin', button);
 }
 
+function setText(node: HTMLElement | null, text: string) {
+  if (node && node.textContent !== text) node.textContent = text;
+}
+
 function updateDrawerCopy(root: HTMLElement) {
   const editId = root.dataset.phoenixEditingEventId || '';
-  const kicker = root.querySelector<HTMLElement>('.px-drawer-head .px-kicker');
-  const title = root.querySelector<HTMLElement>('.px-drawer-head h2');
   if (editId) {
-    if (kicker) kicker.textContent = 'Editar evento';
-    if (title) title.textContent = 'Editar lançamento';
+    setText(root.querySelector<HTMLElement>('.px-drawer-head .px-kicker'), 'Editar evento');
+    setText(root.querySelector<HTMLElement>('.px-drawer-head h2'), 'Editar lançamento');
     root.querySelectorAll<HTMLButtonElement>('.px-segment button').forEach((button) => { button.disabled = true; });
   }
   const preview = root.querySelector<HTMLElement>('.px-preview-box');
   if (preview) {
     [...preview.querySelectorAll('div')].forEach((item) => {
-      const label = normalize(item.querySelector('span')?.textContent || '');
-      if (label === 'SITUACAO INICIAL') {
-        const strong = item.querySelector('strong');
-        if (strong) strong.textContent = editId ? 'Alteração protegida' : 'Pronto para gravação';
-      }
+      if (normalize(item.querySelector('span')?.textContent || '') !== 'SITUACAO INICIAL') return;
+      setText(item.querySelector<HTMLElement>('strong'), editId ? 'Alteração protegida' : 'Pronto para gravação');
     });
   }
 }
@@ -653,13 +683,14 @@ function syncDrawer() {
       editingEvent = null;
       editOperation = null;
       delete root.dataset.phoenixEditingEventId;
+      delete root.dataset.phoenixModality;
+      delete root.dataset.phoenixModalityType;
     }
   }
   if (openingEdit && !root.dataset.phoenixEditingEventId) void attachEditingEvent(root);
   ensureModalityField(root);
   updateDrawerCopy(root);
   ensureEditDelete(root);
-  scheduleDuplicateCheck(root);
 
   if (root.dataset.phoenixEditingEventId) {
     const primary = root.querySelector<HTMLButtonElement>('.px-review-launch');
@@ -751,8 +782,7 @@ function onDocumentInput(event: Event) {
   const target = event.target as HTMLElement | null;
   const root = target?.closest<HTMLElement>('.px-launch-drawer');
   if (!root) return;
-  if (target?.matches('[data-phoenix-modality-select]')) return;
-  scheduleDuplicateCheck(root);
+  if (!target?.matches('[data-phoenix-modality-select]')) scheduleDuplicateCheck(root);
   window.setTimeout(scheduleSync, 0);
 }
 
