@@ -1,9 +1,9 @@
 {
-  "versionCode": 252,
-  "versionName": "1.1.252",
+  "versionCode": 253,
+  "versionName": "1.1.253",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "3cbde1a8d5935adafd96733d02a231572f0d1ee9a055142002dea9de69b5207f",
+  "sha256": "1c5ccae8d9586a00e6976c1a832f336593ab76ea492cd602cda8e6fc22198d7e",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "V15: corrigir menu e responsividade por workspace"
+  "releaseNotes": "Merge PR #257: fluxo inteligente de lançamento Phoenix"
 }
