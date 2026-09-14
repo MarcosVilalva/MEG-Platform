@@ -9,9 +9,14 @@ import { resolveWorkspaceContext } from '../workspaces/service';
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
+const monetaryAccountTypes = new Set(['CHECKING', 'SAVINGS', 'CASH', 'INVESTMENT']);
 
 const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const operationSchema = z.string().trim().min(8).max(180);
+const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
+  const parsed = new Date(`${value}T12:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}, 'INVALID_DATE');
 const cardSchema = z.object({
   name: z.string().trim().min(2).max(80),
   issuer: z.string().trim().max(80).optional().nullable(),
@@ -33,6 +38,12 @@ const purchaseSchema = z.object({
 const purchaseCreateSchema = purchaseSchema.extend({ operationId: operationSchema.optional() });
 const purchaseUpdateSchema = purchaseSchema.extend({ operationId: operationSchema });
 const purchaseCancelSchema = z.object({ operationId: operationSchema.optional() }).optional();
+const statementPaymentSchema = z.object({
+  accountId: z.string().trim().min(1),
+  paymentMethodId: z.string().trim().min(1).optional().nullable(),
+  paidAt: isoDateSchema,
+  operationId: operationSchema,
+});
 
 type Tx = Prisma.TransactionClient;
 type JsonRecord = Record<string, unknown>;
@@ -479,32 +490,134 @@ export async function cardRoutes(app: FastifyInstance) {
   });
 
   app.post('/:id/statements/:month/pay', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
-    const params = z.object({ id: z.string(), month: monthSchema }).safeParse(request.params);
-    const body = z.object({ accountId: z.string().optional().nullable(), paymentMethodId: z.string().optional().nullable(), paidAt: z.string().min(10) }).safeParse(request.body);
-    if (!params.success || !body.success) return validationError(reply, { params: params.success ? null : params.error.flatten(), body: body.success ? null : body.error.flatten() });
-    const context = await sharedCardContext(request.user.sub);
-    const card = await prisma.creditCard.findFirst({ where: { id: params.data.id, userId: context.ownerId } });
-    if (!card) return reply.code(404).send({ error: 'CARD_NOT_FOUND' });
-    const entries = await prisma.cardInstallment.findMany({ where: { purchase: { cardId: card.id, userId: context.ownerId, status: 'active' }, statementMonth: params.data.month, status: 'open' } });
-    if (!entries.length) return reply.code(400).send({ error: 'EMPTY_STATEMENT' });
-    const amount = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
-    return prisma.$transaction(async (tx) => {
-      await tx.cardInstallment.updateMany({ where: { id: { in: entries.map((entry) => entry.id) } }, data: { status: 'paid', paidAt: new Date(body.data.paidAt) } });
-      const event = await tx.financialEvent.create({ data: {
-        userId: context.ownerId,
-        description: `Fatura ${card.name} ${params.data.month}`,
-        type: 'expense', status: 'paid', date: new Date(body.data.paidAt), competence: body.data.paidAt.slice(0, 7),
-        amount, signedAmount: -amount, accountId: body.data.accountId, paymentMethodId: body.data.paymentMethodId
-      } });
-      await recordFinancialAudit(tx, {
-        actorId: request.user.sub,
-        entity: 'CreditCard',
-        entityId: card.id,
-        action: 'CARD_STATEMENT_PAID',
-        after: { amount, eventId: event.id, month: params.data.month },
-        context: { workspaceId: context.workspaceId },
+    const params = z.object({ id: z.string().min(1), month: monthSchema }).safeParse(request.params);
+    const body = statementPaymentSchema.safeParse(request.body);
+    if (!params.success || !body.success) {
+      return validationError(reply, {
+        params: params.success ? null : params.error.flatten(),
+        body: body.success ? null : body.error.flatten(),
       });
-      return { paid: true, amount, eventId: event.id };
-    });
+    }
+
+    const context = await sharedCardContext(request.user.sub);
+    const { operationId, ...payment } = body.data;
+    const requestHash = mutationRequestHash({ cardId: params.data.id, month: params.data.month, ...payment });
+
+    try {
+      const response = await protectedCardMutation({
+        context,
+        operationId,
+        requestHash,
+        mutationType: 'CARD_STATEMENT_PAY',
+        work: async (tx): Promise<JsonRecord> => {
+          const card = await tx.creditCard.findFirst({
+            where: { id: params.data.id, userId: context.ownerId },
+            select: { id: true, name: true, isActive: true },
+          });
+          if (!card) throw new CardMutationError(404, 'CARD_NOT_FOUND');
+
+          const account = await tx.account.findFirst({
+            where: { id: payment.accountId, userId: context.ownerId, isActive: true },
+            select: { id: true, name: true, type: true, institution: true },
+          });
+          if (!account) throw new CardMutationError(400, 'INVALID_ACCOUNT');
+          if (!monetaryAccountTypes.has(key(account.type))) {
+            throw new CardMutationError(400, 'ACCOUNT_NOT_MONETARY', { accountId: account.id, accountType: account.type });
+          }
+
+          const paymentMethod = payment.paymentMethodId
+            ? await tx.paymentMethod.findFirst({
+              where: { id: payment.paymentMethodId, userId: context.ownerId, isActive: true },
+              select: { id: true, name: true, type: true },
+            })
+            : null;
+          if (payment.paymentMethodId && !paymentMethod) throw new CardMutationError(400, 'INVALID_PAYMENT_METHOD');
+          if (paymentMethod && key(paymentMethod.type) === 'CREDIT') {
+            throw new CardMutationError(400, 'INVALID_PAYMENT_METHOD', {
+              paymentMethodId: paymentMethod.id,
+              reason: 'CREDIT_METHOD_NOT_ALLOWED_FOR_STATEMENT_PAYMENT',
+            });
+          }
+
+          const entries = await tx.cardInstallment.findMany({
+            where: {
+              purchase: { cardId: card.id, userId: context.ownerId, status: 'active' },
+              statementMonth: params.data.month,
+              status: 'open',
+            },
+            orderBy: { number: 'asc' },
+          });
+          if (!entries.length) throw new CardMutationError(400, 'EMPTY_STATEMENT');
+
+          const amount = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
+          const paidAt = new Date(`${payment.paidAt}T12:00:00.000Z`);
+          const updated = await tx.cardInstallment.updateMany({
+            where: { id: { in: entries.map((entry) => entry.id) }, status: 'open' },
+            data: { status: 'paid', paidAt },
+          });
+          if (updated.count !== entries.length) {
+            throw new CardMutationError(409, 'STATEMENT_CHANGED_RETRY', {
+              expectedInstallments: entries.length,
+              updatedInstallments: updated.count,
+            });
+          }
+
+          const event = await tx.financialEvent.create({
+            data: {
+              userId: context.ownerId,
+              workspaceId: context.workspaceId,
+              description: `Fatura ${card.name} ${params.data.month}`,
+              type: 'expense',
+              status: 'paid',
+              date: paidAt,
+              competence: payment.paidAt.slice(0, 7),
+              amount,
+              signedAmount: -amount,
+              accountId: account.id,
+              paymentMethodId: paymentMethod?.id,
+            },
+          });
+
+          await tx.ledgerEntry.create({
+            data: {
+              eventId: event.id,
+              date: paidAt,
+              accountId: account.id,
+              debit: 0,
+              credit: amount,
+              memo: event.description,
+            },
+          });
+
+          await recordFinancialAudit(tx, {
+            actorId: request.user.sub,
+            entity: 'CreditCard',
+            entityId: card.id,
+            action: 'CARD_STATEMENT_PAID',
+            after: {
+              amount,
+              eventId: event.id,
+              month: params.data.month,
+              paidAt: payment.paidAt,
+              card: { id: card.id, name: card.name },
+              account,
+              paymentMethod,
+              installmentIds: entries.map((entry) => entry.id),
+            },
+            context: {
+              workspaceId: context.workspaceId,
+              operationId,
+              cardId: card.id,
+              month: params.data.month,
+            },
+          });
+
+          return { paid: true, amount, eventId: event.id };
+        },
+      });
+      return reply.send(response);
+    } catch (error) {
+      return mutationError(reply, error);
+    }
   });
 }
