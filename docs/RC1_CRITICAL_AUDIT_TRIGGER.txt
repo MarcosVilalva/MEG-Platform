@@ -1,0 +1,1 @@
+RC1 critical audit hardening trigger — 2026-09-14
