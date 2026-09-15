@@ -93,8 +93,10 @@ jobs:
           check_blocked '/finance/events'
           check_blocked '/finance/events/bulk/update'
           check_blocked '/finance/events/test-event/settle'
+          check_blocked '/finance/transfers'
+          check_blocked '/payables/recurring'
           check_blocked '/payables/test-payable/payments'
-          echo "Mutações financeiras bloqueadas antes de alcançar a API."
+          echo "Mutações financeiras, incluindo transferência e recorrência, bloqueadas antes de alcançar a API."
 
       - name: RC1 runtime smoke summary
         run: |
