@@ -28,9 +28,9 @@ jobs:
               cat /tmp/preview-health.json | jq .
               STATUS=$(jq -r '.status // ""' /tmp/preview-health.json)
               MODE=$(jq -r '.mode // ""' /tmp/preview-health.json)
-              SIMPLE=$(jq -r '.capabilities.simpleEventWrite // true' /tmp/preview-health.json)
-              PENDING=$(jq -r '.capabilities.pendingWrite // true' /tmp/preview-health.json)
-              BULK=$(jq -r '.capabilities.bulkEventWrite // true' /tmp/preview-health.json)
+              SIMPLE=$(jq -r '.capabilities.simpleEventWrite | if . == null then "missing" else tostring end' /tmp/preview-health.json)
+              PENDING=$(jq -r '.capabilities.pendingWrite | if . == null then "missing" else tostring end' /tmp/preview-health.json)
+              BULK=$(jq -r '.capabilities.bulkEventWrite | if . == null then "missing" else tostring end' /tmp/preview-health.json)
               if [ "$STATUS" = "ok" ] \
                 && [ "$MODE" = "phoenix-finance-read-only-preview" ] \
                 && [ "$SIMPLE" = "false" ] \
