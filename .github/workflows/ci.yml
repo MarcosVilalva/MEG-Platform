@@ -174,3 +174,65 @@ jobs:
 
       - name: Run RC1 financial integrity E2E
         run: npm --workspace apps/api run test:rc1-financial-e2e
+
+  android-rc1:
+    if: startsWith(github.ref, 'refs/heads/rc1/') || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'rc1/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VITE_API_URL: https://meg-platform-api.onrender.com
+      VITE_MOBILE_APP: 'true'
+      CAPACITOR_BUILD: 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Android update contract
+        run: npm run test:app-update-release
+
+      - name: Build mobile web application
+        run: npm run build:web
+
+      - name: Verify APK downloads are not embedded in the Android application
+        run: test ! -d apps/web/dist/downloads
+
+      - name: Synchronize Android project
+        run: npx cap sync android
+
+      - name: Compile Android RC1 debug APK
+        working-directory: android
+        run: chmod +x gradlew && ./gradlew clean assembleDebug
+
+      - name: Verify Android RC1 artifact
+        shell: bash
+        run: |
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          test -n "$AAPT"
+          "$AAPT" dump badging "$APK" | tee android-rc1-badging.txt
+          grep -q "package: name='br.com.meg.financas'" android-rc1-badging.txt
+
+      - name: Upload Android RC1 debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MEG-Financas-RC1-Debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
