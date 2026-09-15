@@ -10,7 +10,9 @@ const storage = readFileSync(new URL('./storage.ts', import.meta.url), 'utf8');
 for (const file of ['../legacy-entry.js', '../legacy-app.js', '../meg-design-system.css', '../meg-visual-contract.css', '../layout-reform.js', '../adaptive-workspace.js']) {
   assert.equal(existsSync(new URL(file, import.meta.url)), false, `resíduo visual encontrado: ${file}`);
 }
-assert.match(index, /src="\/src\/app\/main\.tsx"/);
+assert.match(index, /data-meg-shell="phoenix-v15"/);
+assert.match(index, /src="\/src\/phoenix\/preview-main\.tsx"/);
+assert.doesNotMatch(index, /src="\/src\/app\/main\.tsx"/);
 assert.doesNotMatch(index, /legacy|layout-reform|visual-contract|design-system/i);
 assert.match(shell, /meg-finance-system-mark\.svg/);
 assert.match(shell, /sidebar-collapsed/);
@@ -35,4 +37,4 @@ assert.doesNotMatch(shell, /platform|Gestão comercial/i);
 assert.doesNotMatch(store, /resetDemoData|sample-data/);
 assert.doesNotMatch(storage, /sampleTransactions|sample-data/);
 assert.match(styles, /\.meg-app\.light/);
-console.log('Contrato visual limpo do MEG validado.');
+console.log('Contrato visual limpo do MEG validado com Phoenix V15 como entrada oficial.');
