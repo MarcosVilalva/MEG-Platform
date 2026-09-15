@@ -24,9 +24,13 @@ function check(name, condition, details = '') {
 
 const packageJson = json('package.json');
 const webPackage = json('apps/web/package.json');
+const officialIndex = text('apps/web/index.html');
 const phoenixHtml = text('apps/web/phoenix.html');
 const previewServer = text('apps/web/phoenix-preview-server.mjs');
 const ci = text('.github/workflows/ci.yml');
+const pagesWorkflow = text('.github/workflows/deploy-pages.yml');
+const androidWorkflow = text('.github/workflows/build-android-apk.yml');
+const productionSmoke = text('.github/workflows/production-smoke.yml');
 const cardsClient = text('apps/web/src/app/cards-client.ts');
 const forecastBridge = text('apps/web/src/phoenix/home-commitment-forecast-bridge.ts');
 const scenarioBridge = text('apps/web/src/phoenix/home-scenario-simulator-bridge.ts');
@@ -39,8 +43,12 @@ check('CI acompanha a branch Phoenix V15', ci.includes('phoenix/v15-clean-room')
 check('CI executa a validação completa', ci.includes('npm run check'));
 
 const moduleScripts = [...phoenixHtml.matchAll(/<script\s+type="module"\s+src="([^"]+)"/g)].map((match) => match[1]);
+const officialModuleScripts = [...officialIndex.matchAll(/<script\s+type="module"\s+src="([^"]+)"/g)].map((match) => match[1]);
 check('Phoenix possui scripts de inicialização', moduleScripts.length > 0);
 check('Phoenix não carrega bridge duplicado', new Set(moduleScripts).size === moduleScripts.length);
+check('Entrada oficial declara Phoenix V15', officialIndex.includes('data-meg-shell="phoenix-v15"') && officialIndex.includes('content="phoenix-v15"'));
+check('Entrada oficial usa o mesmo bootstrap modular da Phoenix homologada', JSON.stringify(officialModuleScripts) === JSON.stringify(moduleScripts));
+check('Entrada oficial inicializa Phoenix por último', officialModuleScripts.at(-1) === '/src/phoenix/preview-main.tsx');
 
 for (const src of moduleScripts.filter((value) => value.startsWith('/src/'))) {
   const file = `apps/web${src}`;
@@ -74,6 +82,10 @@ check('Preview nega mutações fora dos gateways permitidos', previewServer.incl
 check('Preview envia proteção contra sniffing', previewServer.includes("'x-content-type-options': 'nosniff'"));
 check('Preview bloqueia framing', previewServer.includes("'x-frame-options': 'DENY'"));
 check('HTML Phoenix não é cacheado', previewServer.includes("decoded === '/phoenix.html' ? 'no-store'"));
+
+check('Pages aguarda API do mesmo commit antes da publicação', pagesWorkflow.includes('RENDER_GIT_COMMIT') && pagesWorkflow.includes('github.sha'));
+check('Android valida marcador Phoenix V15 no artefato Web', androidWorkflow.includes('data-meg-shell="phoenix-v15"'));
+check('Smoke de produção exige marcador Phoenix V15', productionSmoke.includes('data-meg-shell="phoenix-v15"'));
 
 check('Cliente de cartões expõe ciclo de fatura', cardsClient.includes('statementLifecycle:'));
 check('Cliente de cartões expõe pagamento protegido', cardsClient.includes('payStatement:'));
