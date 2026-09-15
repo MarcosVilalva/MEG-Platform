@@ -25,6 +25,7 @@ function check(name, condition, details = '') {
 const packageJson = json('package.json');
 const webPackage = json('apps/web/package.json');
 const officialIndex = text('apps/web/index.html');
+const officialMain = text('apps/web/src/app/main.tsx');
 const phoenixHtml = text('apps/web/phoenix.html');
 const previewServer = text('apps/web/phoenix-preview-server.mjs');
 const ci = text('.github/workflows/ci.yml');
@@ -45,12 +46,11 @@ check('CI acompanha a branch Phoenix V15', ci.includes('phoenix/v15-clean-room')
 check('CI executa a validação completa', ci.includes('npm run check'));
 
 const moduleScripts = [...phoenixHtml.matchAll(/<script\s+type="module"\s+src="([^"]+)"/g)].map((match) => match[1]);
-const officialModuleScripts = [...officialIndex.matchAll(/<script\s+type="module"\s+src="([^"]+)"/g)].map((match) => match[1]);
 check('Phoenix possui scripts de inicialização', moduleScripts.length > 0);
 check('Phoenix não carrega bridge duplicado', new Set(moduleScripts).size === moduleScripts.length);
 check('Entrada oficial declara Phoenix V15', officialIndex.includes('data-meg-shell="phoenix-v15"') && officialIndex.includes('content="phoenix-v15"'));
-check('Entrada oficial usa o mesmo bootstrap modular da Phoenix homologada', JSON.stringify(officialModuleScripts) === JSON.stringify(moduleScripts));
-check('Entrada oficial inicializa Phoenix por último', officialModuleScripts.at(-1) === '/src/phoenix/preview-main.tsx');
+check('Entrada oficial mantém bootstrap único Web/Android', officialIndex.includes('src="/src/app/main.tsx"'));
+check('Bootstrap oficial delega para o runtime Phoenix', officialMain.includes("../phoenix/preview-main"));
 
 for (const src of moduleScripts.filter((value) => value.startsWith('/src/'))) {
   const file = `apps/web${src}`;
@@ -74,8 +74,16 @@ const requiredBridges = [
 for (const bridge of requiredBridges) check(`Bridge crítico ativo: ${bridge}`, moduleScripts.includes(bridge));
 
 const order = requiredBridges.map((bridge) => moduleScripts.indexOf(bridge));
-check('Inicialização crítica respeita ordem declarada', order.every((value) => value >= 0) && order.every((value, index) => index === 0 || value > order[index - 1]));
-check('Aplicação React é inicializada por último entre bridges críticas', moduleScripts.at(-1) === '/src/phoenix/preview-main.tsx');
+check('Inicialização crítica do preview respeita ordem declarada', order.every((value) => value >= 0) && order.every((value, index) => index === 0 || value > order[index - 1]));
+check('Aplicação React é inicializada por último entre bridges críticas do preview', moduleScripts.at(-1) === '/src/phoenix/preview-main.tsx');
+
+const productionImports = requiredBridges.map((bridge) => bridge
+  .replace('/src/phoenix/', '../phoenix/')
+  .replace(/\.(?:ts|tsx)$/, ''));
+for (const target of productionImports) check(`Bootstrap oficial carrega: ${target}`, officialMain.includes(`'${target}'`) || officialMain.includes(`"${target}"`));
+const productionOrder = productionImports.map((target) => officialMain.indexOf(target));
+check('Bootstrap oficial respeita ordem dos bridges críticos', productionOrder.every((value) => value >= 0) && productionOrder.every((value, index) => index === 0 || value > productionOrder[index - 1]));
+check('Bootstrap oficial inicializa React Phoenix por último', officialMain.trim().endsWith("import '../phoenix/preview-main';"));
 
 check('Preview mantém escrita simples protegida por feature flag', previewServer.includes("PHOENIX_SIMPLE_EVENT_WRITE === 'enabled'"));
 check('Preview mantém baixas protegidas por feature flag', previewServer.includes("PHOENIX_PENDING_WRITE === 'enabled'"));
@@ -93,7 +101,7 @@ check('Writer Phoenix libera transferência atômica oficial', simpleWriter.incl
 check('Writer Phoenix libera recorrência oficial de despesas', simpleWriter.includes('payablesClient.createRecurring') && !simpleWriter.includes('Recorrência continua em simulação'));
 check('Writer Phoenix preserva sinal para estornos', simpleWriter.includes('const amount = parseMoney(') && !simpleWriter.includes('Estornos e valores negativos continuam bloqueados'));
 check('Gateway simples aceita valor negativo diferente de zero', simpleGateway.includes('input.amount === 0') && !simpleGateway.includes('input.amount <= 0'));
-check('Modelo sem contrato não é oferecido para gravação', simpleWriter.includes("label.hidden = true") && simpleWriter.includes('SALVAR COMO MODELO'));
+check('Modelo sem contrato não é oferecido para gravação', simpleWriter.includes('label.hidden = true') && simpleWriter.includes('SALVAR COMO MODELO'));
 
 check('Cliente de cartões expõe ciclo de fatura', cardsClient.includes('statementLifecycle:'));
 check('Cliente de cartões expõe pagamento protegido', cardsClient.includes('payStatement:'));
