@@ -227,7 +227,7 @@ jobs:
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
           test -n "$AAPT"
           "$AAPT" dump badging "$APK" | tee android-rc1-badging.txt
-          grep -q "package: name='br.com.meg.financas'" android-rc1-badging.txt
+          grep -q "package: name='br.com.megfinancas.app'" android-rc1-badging.txt
 
       - name: Upload Android RC1 debug APK
         uses: actions/upload-artifact@v4
