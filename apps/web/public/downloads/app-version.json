@@ -1,9 +1,9 @@
 {
-  "versionCode": 253,
-  "versionName": "1.1.253",
+  "versionCode": 254,
+  "versionName": "1.1.254",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "1c5ccae8d9586a00e6976c1a832f336593ab76ea492cd602cda8e6fc22198d7e",
+  "sha256": "1726afbb29a23e4d97099a71be24214d54303520f1d1d458f5add340f33e0d4d",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge PR #257: fluxo inteligente de lançamento Phoenix"
+  "releaseNotes": "Merge pull request #267 from MarcosVilalva/rc1/phoenix-v15-integration"
 }
