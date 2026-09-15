@@ -1,0 +1,114 @@
+.px-period-popover-v15 {
+  width:286px;
+}
+
+.px-period-modes {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:4px;
+  margin-bottom:10px;
+  padding:4px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--panel2);
+}
+
+.px-period-modes button {
+  min-height:31px;
+  border:0;
+  border-radius:6px;
+  background:transparent;
+  color:var(--muted);
+  font-size:9px;
+  font-weight:850;
+}
+
+.px-period-modes button.active {
+  background:color-mix(in srgb,var(--panel) 92%,var(--brand) 8%);
+  color:var(--brand);
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+
+.px-period-range {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+}
+
+.px-period-all {
+  padding:10px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--panel2);
+  color:var(--muted);
+  font-size:9px;
+  line-height:1.5;
+}
+
+.px-period-scope-note {
+  display:block;
+  margin-top:9px;
+  color:var(--muted);
+  font-size:9px;
+  line-height:1.45;
+}
+
+.px-period-error {
+  margin-top:9px;
+  padding:8px 9px;
+  border:1px solid color-mix(in srgb,var(--danger) 34%,var(--line));
+  border-radius:8px;
+  background:var(--danger-bg);
+  color:var(--danger);
+  font-size:9px;
+  line-height:1.4;
+}
+
+.px-period-apply {
+  width:100%;
+  min-height:36px;
+  margin-top:10px;
+  border:1px solid color-mix(in srgb,var(--brand) 42%,var(--line));
+  border-radius:9px;
+  background:color-mix(in srgb,var(--brand) 14%,var(--panel));
+  color:var(--brand2);
+  font-size:10px;
+  font-weight:900;
+}
+
+.px-period-apply:hover:not(:disabled) {
+  border-color:var(--brand);
+  background:color-mix(in srgb,var(--brand) 22%,var(--panel));
+}
+
+.px-period-apply:disabled {
+  cursor:wait;
+  opacity:.62;
+}
+
+.px-sync.is-refreshing .px-sync-dot {
+  animation:px-period-pulse .9s ease-in-out infinite alternate;
+}
+
+@keyframes px-period-pulse {
+  from { opacity:.42; transform:scale(.82); }
+  to { opacity:1; transform:scale(1.15); }
+}
+
+@media(max-width:760px) {
+  .px-period-active { display:none; }
+  .px-period-summary { width:38px; padding:0; grid-template-columns:18px; }
+  .px-period-popover-v15 {
+    position:fixed;
+    left:12px;
+    right:12px;
+    top:70px;
+    width:auto;
+    max-height:calc(100dvh - 84px);
+    overflow:auto;
+  }
+}
+
+@media(max-width:430px) {
+  .px-period-range { grid-template-columns:1fr; }
+}

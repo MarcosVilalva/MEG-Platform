@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#071727" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <link rel="icon" href="./brand/meg-finance-system-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/phoenix-runtime-refinements.css" />
+    <link rel="stylesheet" href="/assets/phoenix-card-premium.css" />
+    <link rel="stylesheet" href="/assets/phoenix-mobile-login-fix.css" />
+    <link rel="stylesheet" href="/assets/phoenix-v15-final-polish.css" />
+    <link rel="stylesheet" href="/src/phoenix/phoenix-home-dashboard.css" />
+    <link rel="stylesheet" href="/src/phoenix/phoenix-home-hero-v2.css" />
+    <link rel="stylesheet" href="/src/phoenix/phoenix-avatar-pack.css" />
+    <link rel="stylesheet" href="/src/phoenix/phoenix-bulk-meg-theme.css" />
+    <link rel="stylesheet" href="/src/phoenix/phoenix-card-view-continuity.css" />
+    <script>
+      (() => {
+        try {
+          const defaults = { balance:true, projection:true, summary:true, benefit:true, history:true, agenda:true };
+          const saved = JSON.parse(localStorage.getItem('meg.dashboard.preferences') || '{}');
+          const preferences = { ...defaults, ...saved };
+          Object.entries(preferences).forEach(([key, enabled]) => {
+            const attribute = 'data-meg-dashboard-' + key.replace(/[A-Z]/g, (letter) => '-' + letter.toLowerCase());
+            document.documentElement.setAttribute(attribute, enabled ? 'on' : 'off');
+          });
+        } catch {
+          /* Preferências locais são opcionais e não bloqueiam a inicialização. */
+        }
+      })();
+    </script>
+    <title>MEG Phoenix V15 — Preview</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/phoenix/description-autocomplete-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/launch-business-rules-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/card-domain-live-refresh-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/card-view-continuity-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/card-management-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/card-statement-payment-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/card-statement-reopen-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/card-statement-lifecycle-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/card-statement-history-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/card-statement-projection-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/home-commitment-forecast-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/home-scenario-simulator-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/home-purchase-decision-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/card-event-form-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/card-purchase-detail-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/card-movement-readonly-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/card-purchase-edit-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/simple-event-form-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/write-success-auto-close.ts"></script>
+    <script type="module" src="/src/phoenix/bulk-checkbox-fastpaint.ts"></script>
+    <script type="module" src="/src/phoenix/bulk-event-actions-bridge.ts"></script>
+    <script type="module" src="/src/phoenix/bulk-event-ux-enhancements.ts"></script>
+    <script type="module" src="/src/phoenix/preview-main.tsx"></script>
+  </body>
+</html>

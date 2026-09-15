@@ -1,0 +1,52 @@
+.px-modality-field {
+  margin-top: 2px;
+}
+
+.px-modality-field > span,
+.px-modality-next > span {
+  color: var(--px-text, #f4fbf8);
+}
+
+.px-modality-field small {
+  color: var(--px-muted, #93aaa3);
+}
+
+.px-modality-next {
+  animation: px-route-in 120ms ease-out;
+}
+
+.px-route-locked select {
+  cursor: default;
+  opacity: .9;
+  border-color: rgba(51, 211, 153, .25);
+  background: rgba(8, 39, 32, .72);
+}
+
+.px-native-payment-routed,
+.px-native-card-routed {
+  display: none !important;
+}
+
+.px-launch-delete-action {
+  width: 100%;
+  margin-top: 6px;
+  border: 1px solid rgba(244, 99, 99, .5) !important;
+  color: #ffb2b2 !important;
+  background: rgba(120, 25, 25, .12) !important;
+}
+
+.px-launch-delete-action:hover {
+  background: rgba(150, 32, 32, .2) !important;
+  border-color: rgba(255, 126, 126, .72) !important;
+}
+
+.px-optimistic-archive {
+  opacity: 0;
+  transform: translateY(-2px);
+  pointer-events: none;
+}
+
+@keyframes px-route-in {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}

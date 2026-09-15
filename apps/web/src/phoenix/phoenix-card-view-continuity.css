@@ -1,0 +1,67 @@
+.px-card-movement {
+  position:relative;
+}
+
+.px-card-continuity-status {
+  min-height:28px;
+  margin-left:auto;
+  padding:0 10px;
+  border:1px solid color-mix(in srgb,var(--brand) 28%,var(--line));
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  background:color-mix(in srgb,var(--brand) 8%,var(--panel));
+  color:var(--brand2);
+  font-size:10px;
+  font-weight:850;
+  white-space:nowrap;
+}
+
+.px-card-continuity-status::before {
+  content:'';
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:var(--brand);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 12%,transparent);
+}
+
+.px-card-continuity-status:not(.is-done)::before {
+  animation:px-card-continuity-pulse 1s ease-in-out infinite;
+}
+
+.px-card-continuity-status.is-done {
+  border-color:color-mix(in srgb,var(--brand) 20%,var(--line));
+  background:color-mix(in srgb,var(--brand) 5%,var(--panel));
+}
+
+.px-card-movement.is-card-domain-refreshing .px-data-table tbody {
+  transition:opacity .18s ease;
+}
+
+.px-card-movement.is-card-domain-refreshing .px-data-table tbody {
+  opacity:.86;
+}
+
+.px-card-movement.is-card-domain-refreshing .px-toolbar,
+.px-card-movement.is-card-domain-refreshing .px-grid-active-filters,
+.px-card-movement.is-card-domain-refreshing .px-tabbar {
+  pointer-events:auto;
+}
+
+@keyframes px-card-continuity-pulse {
+  0%,100% { transform:scale(.86); opacity:.65; }
+  50% { transform:scale(1); opacity:1; }
+}
+
+@media (max-width:760px) {
+  .px-card-continuity-status {
+    width:100%;
+    margin:6px 0 0;
+    justify-content:center;
+  }
+  .px-card-movement > .px-panel-head {
+    flex-wrap:wrap;
+  }
+}

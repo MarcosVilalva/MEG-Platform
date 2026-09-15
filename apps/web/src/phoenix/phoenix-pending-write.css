@@ -1,0 +1,84 @@
+.px-pending-write-banner {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:0 0 14px;
+  padding:12px 14px;
+  border:1px solid color-mix(in srgb,var(--brand) 32%,var(--line));
+  border-radius:14px;
+  background:var(--ok-bg);
+  color:var(--ink);
+}
+
+.px-pending-write-banner strong { color:var(--brand2); }
+.px-pending-write-banner span { color:var(--muted); }
+
+.px-pending-payment-fields {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin-top:4px;
+}
+
+.px-pending-payment-fields label {
+  display:grid;
+  gap:6px;
+  min-width:0;
+}
+
+.px-pending-payment-fields label > span {
+  color:var(--muted);
+  font-size:12px;
+  font-weight:700;
+}
+
+.px-pending-payment-fields input,
+.px-pending-payment-fields select {
+  width:100%;
+  min-width:0;
+  height:42px;
+  padding:0 11px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:var(--panel2);
+  color:var(--ink);
+}
+
+.px-pending-payment-fields input:disabled,
+.px-pending-payment-fields select:disabled {
+  opacity:.62;
+}
+
+.px-pending-write-warning,
+.px-pending-write-error {
+  display:grid;
+  gap:4px;
+  margin-top:12px;
+  padding:11px 12px;
+  border-radius:12px;
+  font-size:12px;
+  line-height:1.45;
+}
+
+.px-pending-write-warning {
+  border:1px solid color-mix(in srgb,var(--warn) 34%,var(--line));
+  background:var(--warn-bg);
+  color:var(--warn);
+}
+
+.px-pending-write-error {
+  border:1px solid color-mix(in srgb,var(--danger) 34%,var(--line));
+  background:var(--danger-bg);
+  color:var(--danger);
+}
+
+.px-pending-write-warning span,
+.px-pending-write-error span {
+  color:inherit;
+  opacity:.92;
+}
+
+@media (max-width:760px) {
+  .px-pending-payment-fields { grid-template-columns:1fr; }
+  .px-pending-write-banner { align-items:flex-start; flex-direction:column; gap:4px; }
+}

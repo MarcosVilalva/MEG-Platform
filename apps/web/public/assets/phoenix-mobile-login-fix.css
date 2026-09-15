@@ -1,0 +1,171 @@
+/* Login Phoenix V15 — correções específicas para celulares.
+   Mantém a entrada em uma única coluna, evita hero cortado e respeita barras do navegador móvel. */
+
+@media (max-width:820px), (max-width:980px) and (pointer:coarse) {
+  .px-preview-auth {
+    min-height:100svh!important;
+    min-height:100dvh!important;
+    padding:0!important;
+    place-items:stretch!important;
+    overflow:auto!important;
+    background:linear-gradient(180deg,#061715 0%,#081a17 100%)!important;
+  }
+
+  .px-preview-shell {
+    width:100%!important;
+    height:auto!important;
+    min-height:100svh!important;
+    min-height:100dvh!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    overflow:visible!important;
+  }
+
+  .px-preview-showcase {
+    display:none!important;
+  }
+
+  .px-preview-access {
+    width:100%!important;
+    min-height:100svh!important;
+    min-height:100dvh!important;
+    padding:max(18px,env(safe-area-inset-top)) 22px max(20px,env(safe-area-inset-bottom))!important;
+    overflow:visible!important;
+    justify-content:center!important;
+    background:
+      radial-gradient(circle at 85% 8%,rgba(53,212,165,.10),transparent 26%),
+      linear-gradient(180deg,#0b211d,#081a17)!important;
+  }
+
+  .px-preview-mobile-brand {
+    display:flex!important;
+    margin:0 auto 26px!important;
+  }
+
+  .px-preview-mobile-brand img {
+    width:58px!important;
+    height:58px!important;
+  }
+
+  .px-preview-form {
+    width:min(100%,480px)!important;
+    max-width:480px!important;
+    margin:0 auto!important;
+    gap:14px!important;
+  }
+
+  .px-preview-copy {
+    margin-bottom:8px!important;
+  }
+
+  .px-preview-copy h2 {
+    font-size:clamp(30px,8.2vw,38px)!important;
+    line-height:1.04!important;
+  }
+
+  .px-preview-copy p {
+    font-size:13px!important;
+    line-height:1.5!important;
+  }
+
+  .px-preview-field > span,
+  .px-preview-field-head > span {
+    font-size:12px!important;
+  }
+
+  .px-preview-field-head button,
+  .px-preview-auth-switch button,
+  .px-preview-back {
+    font-size:11px!important;
+  }
+
+  .px-preview-field input {
+    height:54px!important;
+    border-radius:15px!important;
+    font-size:16px!important;
+  }
+
+  .px-preview-password button {
+    top:7px!important;
+    width:40px!important;
+    height:40px!important;
+  }
+
+  .px-preview-submit {
+    min-height:56px!important;
+    border-radius:16px!important;
+    font-size:16px!important;
+  }
+
+  .px-preview-error,
+  .px-preview-success {
+    border-radius:15px!important;
+    padding:12px 14px!important;
+  }
+
+  .px-preview-error strong,
+  .px-preview-success strong {
+    font-size:12px!important;
+  }
+
+  .px-preview-error small,
+  .px-preview-success small {
+    font-size:11px!important;
+  }
+
+  .px-preview-auth-switch {
+    font-size:11px!important;
+  }
+
+  .px-preview-environment {
+    margin-top:30px!important;
+    font-size:9px!important;
+  }
+
+  .px-preview-environment small {
+    font-size:9px!important;
+  }
+
+  .px-preview-form-register {
+    padding-bottom:24px!important;
+  }
+}
+
+@media (max-width:420px) {
+  .px-preview-access {
+    padding-inline:18px!important;
+  }
+
+  .px-preview-mobile-brand {
+    margin-bottom:20px!important;
+  }
+
+  .px-preview-copy h2 {
+    font-size:30px!important;
+  }
+}
+
+@media (max-height:690px) and (max-width:820px) {
+  .px-preview-access {
+    justify-content:flex-start!important;
+    padding-top:16px!important;
+  }
+
+  .px-preview-mobile-brand {
+    margin-bottom:14px!important;
+  }
+
+  .px-preview-form {
+    gap:10px!important;
+  }
+
+  .px-preview-copy {
+    margin-bottom:2px!important;
+  }
+
+  .px-preview-environment {
+    margin-top:18px!important;
+  }
+}

@@ -1,0 +1,335 @@
+.px-sidebar {
+  gap:10px;
+  padding:14px 10px 10px;
+  overflow:hidden;
+  height:100dvh;
+  max-height:100dvh;
+  min-height:0;
+}
+
+.px-side-brand,
+.px-search-command,
+.px-side-footer { flex:0 0 auto; }
+
+/* Busca V15: um único símbolo de comando; o atalho permanece funcional sem poluir a UI. */
+.px-search-command {
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:0 12px;
+  border-radius:13px;
+  overflow:hidden!important;
+}
+.px-search-command::before,
+.px-search-command::after { content:none!important; display:none!important; }
+.px-search-icon {
+  flex:0 0 22px;
+  width:22px;
+  height:22px;
+  display:grid;
+  place-items:center;
+  color:currentColor;
+  font-size:18px;
+  line-height:1;
+  font-weight:700;
+}
+.px-search-icon::before,
+.px-search-icon::after { content:none!important; display:none!important; }
+.px-search-label {
+  min-width:0;
+  flex:1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.px-search-command kbd { display:none!important; }
+
+/*
+ * A navegação é a única área rolável da sidebar.
+ * flex-basis:0 + min-height:0 evitam que o tamanho intrínseco das seções reduza
+ * artificialmente a caixa de rolagem quando a sidebar está recolhida.
+ */
+.px-nav-group {
+  flex:1 1 0%!important;
+  min-height:0!important;
+  height:0;
+  max-height:none!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  padding:0 7px 12px 0;
+  margin:0;
+  scrollbar-gutter:stable;
+  scrollbar-width:thin!important;
+  scrollbar-color:#38d7aa82 #ffffff0a!important;
+  overscroll-behavior-y:contain;
+  touch-action:pan-y;
+  scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch;
+}
+.px-nav-group::-webkit-scrollbar { width:6px!important; height:0!important; display:block!important; }
+.px-nav-group::-webkit-scrollbar-track { background:#ffffff09!important; border-radius:999px; }
+.px-nav-group::-webkit-scrollbar-thumb { background:#38d7aa73!important; border-radius:999px; border:1px solid #38d7aa28; }
+.px-nav-group:hover::-webkit-scrollbar-thumb { background:#4ce8bc9c!important; }
+
+.px-side-section {
+  display:grid;
+  gap:2px;
+  min-width:0;
+  overflow:visible;
+}
+.px-side-section + .px-side-section {
+  margin-top:9px;
+  padding-top:9px;
+  border-top:1px solid #ffffff10;
+}
+.px-side-section-label {
+  padding:4px 10px 6px;
+  color:#6d9a95;
+  font-size:8.5px;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+  font-weight:900;
+  user-select:none;
+}
+
+.px-nav-btn {
+  position:relative;
+  min-height:40px;
+  isolation:isolate;
+  max-width:100%;
+  flex:0 0 auto;
+}
+.px-nav-btn::before,
+.px-nav-btn::after { content:none!important; display:none!important; }
+
+/* Um único desenho por item. Remove qualquer resíduo/pseudo-elemento que gerava quadrados. */
+.px-nav-icon {
+  position:relative;
+  display:grid!important;
+  place-items:center!important;
+  flex:0 0 22px!important;
+  width:22px!important;
+  height:22px!important;
+  min-width:22px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  font-size:0!important;
+  line-height:0!important;
+  overflow:hidden!important;
+}
+.px-nav-icon::before,
+.px-nav-icon::after { content:none!important; display:none!important; }
+.px-nav-icon svg {
+  display:block!important;
+  width:19px!important;
+  height:19px!important;
+  min-width:19px!important;
+  min-height:19px!important;
+  overflow:hidden!important;
+  background:transparent!important;
+  fill:none!important;
+  stroke:currentColor!important;
+  color:inherit!important;
+}
+.px-nav-icon svg path,
+.px-nav-icon svg circle,
+.px-nav-icon svg rect,
+.px-nav-icon svg line,
+.px-nav-icon svg polyline,
+.px-nav-icon svg polygon {
+  fill:none!important;
+  stroke:currentColor!important;
+  vector-effect:non-scaling-stroke;
+}
+
+.px-side-footer {
+  display:grid;
+  padding-top:8px;
+  border-top:1px solid #ffffff18;
+  overflow:hidden;
+}
+.px-side-footer .px-side-exit {
+  min-height:40px;
+  border:1px solid #ffffff12;
+  border-radius:12px;
+  background:#ffffff06;
+  color:#a9c9c2;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 11px;
+  text-align:left;
+  font-weight:800;
+  max-width:100%;
+  overflow:hidden;
+}
+.px-side-footer .px-side-exit::before,
+.px-side-footer .px-side-exit::after { content:none!important; display:none!important; }
+.px-side-footer .px-side-exit:hover { background:#ffffff0e; color:#fff; border-color:#ffffff20; }
+
+/* O perfil fica somente na barra superior. */
+.px-side-user { display:none!important; }
+.px-user-chevron { display:none!important; }
+
+.px-user-avatar,
+.px-profile-avatar {
+  background-position:center!important;
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+}
+html[data-meg-user-avatar="image"] .px-user-avatar {
+  background-image:var(--meg-user-avatar-image)!important;
+  color:transparent!important;
+  font-size:0!important;
+  border-color:color-mix(in srgb,var(--brand) 45%,var(--line))!important;
+}
+.px-profile-avatar {
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  background:linear-gradient(145deg,var(--brand2),var(--brand));
+  color:#031c16;
+  font-weight:950;
+}
+
+/* Rail retraído: busca circular, ícones centralizados e rolagem vertical real. */
+.px-app.is-collapsed .px-sidebar {
+  padding:12px 7px 9px!important;
+  gap:9px!important;
+  overflow:hidden!important;
+  height:100dvh!important;
+  max-height:100dvh!important;
+}
+.px-app.is-collapsed .px-side-brand { min-height:54px!important; padding:0!important; }
+.px-app.is-collapsed .px-side-brand img { width:48px!important; height:48px!important; }
+.px-app.is-collapsed .px-side-section-label { display:none!important; }
+.px-app.is-collapsed .px-side-section + .px-side-section {
+  margin-top:6px;
+  padding-top:6px;
+}
+.px-app.is-collapsed .px-search-command {
+  width:44px!important;
+  height:44px!important;
+  min-height:44px!important;
+  margin-inline:auto!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:50%!important;
+  background:#ffffff07!important;
+  border:1px solid #ffffff1d!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+}
+.px-app.is-collapsed .px-search-command:hover {
+  background:#1dc69a18!important;
+  border-color:#55e8bf50!important;
+  color:#91f4d8!important;
+}
+.px-app.is-collapsed .px-search-icon {
+  width:22px!important;
+  height:22px!important;
+  flex:0 0 22px!important;
+  font-size:19px!important;
+}
+.px-app.is-collapsed .px-search-label,
+.px-app.is-collapsed .px-search-command kbd { display:none!important; }
+
+.px-app.is-collapsed .px-nav-group {
+  flex:1 1 0%!important;
+  min-height:0!important;
+  height:0!important;
+  max-height:none!important;
+  width:100%;
+  padding:0 4px 12px 0!important;
+  margin:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  scrollbar-gutter:stable!important;
+  scrollbar-width:thin!important;
+  scrollbar-color:#42dfb58f #ffffff0c!important;
+  overscroll-behavior-y:contain!important;
+  touch-action:pan-y!important;
+}
+.px-app.is-collapsed .px-nav-group::-webkit-scrollbar { width:5px!important; height:0!important; display:block!important; }
+.px-app.is-collapsed .px-nav-group::-webkit-scrollbar-track { background:#ffffff0b!important; border-radius:999px; }
+.px-app.is-collapsed .px-nav-group::-webkit-scrollbar-thumb { background:#42dfb583!important; border-radius:999px; min-height:28px; }
+
+.px-app.is-collapsed .px-nav-text { display:none!important; }
+.px-app.is-collapsed .px-nav-btn {
+  width:42px!important;
+  min-height:42px!important;
+  height:42px!important;
+  margin-inline:auto!important;
+  padding:0!important;
+  justify-content:center!important;
+  gap:0!important;
+  border-radius:12px!important;
+  overflow:visible!important;
+  flex:0 0 42px!important;
+}
+.px-app.is-collapsed .px-nav-btn.active {
+  background:linear-gradient(145deg,#19c79822,#19c7980d)!important;
+  box-shadow:inset 0 0 0 1px #4ce8bc25!important;
+}
+.px-app.is-collapsed .px-nav-icon {
+  width:22px!important;
+  height:22px!important;
+  flex:0 0 22px!important;
+}
+.px-app.is-collapsed .px-nav-icon svg { width:20px!important; height:20px!important; }
+.px-app.is-collapsed .px-side-badge {
+  position:absolute;
+  z-index:3;
+  top:-2px;
+  right:-3px;
+  margin:0!important;
+  min-width:18px;
+  height:18px;
+  padding:0 4px;
+  display:grid!important;
+  place-items:center;
+  border:2px solid var(--nav2);
+  background:#2addad;
+  color:#052019;
+  font-size:8px!important;
+  font-weight:950;
+  line-height:1;
+  box-shadow:0 4px 12px rgba(0,0,0,.3);
+}
+
+/* Tooltip do rail usa o title nativo. Pseudo-tooltips não podem aumentar a largura rolável. */
+.px-app.is-collapsed .px-nav-btn::after,
+.px-app.is-collapsed .px-nav-btn::before,
+.px-app.is-collapsed .px-side-exit::after,
+.px-app.is-collapsed .px-side-exit::before,
+.px-app.is-collapsed .px-search-command::after,
+.px-app.is-collapsed .px-search-command::before { content:none!important; display:none!important; }
+
+.px-app.is-collapsed .px-side-footer { justify-items:center; }
+.px-app.is-collapsed .px-side-footer .px-side-exit {
+  width:42px!important;
+  height:42px!important;
+  min-height:42px!important;
+  padding:0!important;
+  justify-content:center!important;
+  border-radius:12px!important;
+  background:#ffffff05!important;
+  overflow:hidden!important;
+}
+.px-app.is-collapsed .px-side-footer .px-side-exit strong { display:none!important; }
+
+@media (max-height:760px) and (min-width:761px) {
+  .px-sidebar { padding-top:9px; gap:7px; }
+  .px-side-brand { min-height:49px; }
+  .px-side-brand img { width:45px; height:45px; }
+  .px-search-command { min-height:38px; }
+  .px-nav-btn { min-height:36px; padding-block:7px; }
+  .px-side-section + .px-side-section { margin-top:5px; padding-top:5px; }
+  .px-side-section-label { padding-block:2px 4px; }
+  .px-app.is-collapsed .px-nav-btn { min-height:38px!important; height:38px!important; flex-basis:38px!important; }
+}

@@ -5,6 +5,9 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
+    "test:catalog-ownership": "tsx prisma/catalog-ownership-core.test.ts && tsx prisma/income-payment-method-policy.test.ts",
+    "db:audit:catalog-ownership": "tsx prisma/catalog-ownership-audit.ts",
+    "db:audit:income-payment-methods": "tsx prisma/income-payment-method-audit.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:push:production": "prisma db push --accept-data-loss && tsx prisma/ensure-performance-indexes.ts",
@@ -16,12 +19,12 @@
     "db:import:basemeg": "tsx prisma/import-basemegfinan.ts"
   },
   "dependencies": {
-    "@prisma/client": "^6.1.0",
+    "@prisma/client": "6.12.0",
     "csv-parse": "^7.0.1",
     "iconv-lite": "^0.7.3"
   },
   "devDependencies": {
-    "prisma": "^6.1.0",
+    "prisma": "6.12.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   },

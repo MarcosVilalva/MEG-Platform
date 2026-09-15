@@ -5,6 +5,7 @@ import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-re
 import { recordFinancialAudit } from '../finance/audit';
 import { serializableFinancialTransaction } from '../finance/monetary-protection';
 import { resolveWorkspaceContext } from '../workspaces/service';
+import { CardDomainError, createCardPurchaseProtected, listCards, payCardStatementProtected } from './service';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
@@ -32,7 +33,7 @@ const purchaseSchema = z.object({
   categoryId: z.string().optional().nullable(),
   description: z.string().trim().min(2).max(160),
   totalAmount: z.coerce.number().positive().finite(),
-  purchaseDate: z.string().min(10),
+  purchaseDate: isoDateSchema,
   installments: z.coerce.number().int().min(1).max(48).default(1)
 });
 const purchaseCreateSchema = purchaseSchema.extend({ operationId: operationSchema.optional() });
@@ -75,6 +76,14 @@ function mutationError(reply: FastifyReply, error: unknown) {
     return reply.code(error.statusCode).send({ error: error.code, details: error.details });
   }
   throw error;
+}
+
+function domainError(reply: FastifyReply, error: unknown) {
+  if (!(error instanceof CardDomainError)) throw error;
+  const status = error.code === 'CARD_NOT_FOUND' ? 404
+    : ['OPERATION_ID_REUSED', 'STATEMENT_CHANGED_RETRY', 'INSUFFICIENT_MONETARY_BALANCE'].includes(error.code) ? 409
+      : 400;
+  return reply.code(status).send({ error: error.code, ...(error.details || {}) });
 }
 
 function addMonths(month: string, offset: number) {
@@ -263,39 +272,7 @@ export async function cardRoutes(app: FastifyInstance) {
   app.get('/', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    const shared = await sharedCardContext(request.user.sub);
-    await migrateLegacyCards(shared.ownerId, shared.legacy.cards);
-    const cards = await prisma.creditCard.findMany({
-      where: { userId: shared.ownerId, isActive: true },
-      orderBy: { createdAt: 'asc' },
-      include: {
-        purchases: {
-          where: { status: 'active' },
-          include: { entries: true, category: true },
-          orderBy: { purchaseDate: 'desc' }
-        }
-      }
-    });
-    return cards.map((card) => {
-      const entries = card.purchases.flatMap((purchase) => purchase.entries);
-      const aliases = new Set([key(card.name), ...shared.legacy.cards.filter((item) => key(item.productName) === key(card.name) || key(item.paymentMethod) === key(card.name)).map((item) => key(item.paymentMethod))]);
-      const legacyPurchases = shared.legacy.transactions.filter((item) => {
-        const method = key(item.paymentMethod || item.account);
-        const modality = key(item.modality);
-        return aliases.has(method) && key(item.type) === 'EXPENSE' && (!modality || modality === 'CREDITO');
-      }).map((item) => {
-        const amount = Math.abs(number(item.expenseAmount || item.amount || item.signedAmount));
-        const purchaseDate = text(item.purchaseDate || item.date);
-        const status = key(item.status || item.situation);
-        return { id: `legacy-${text(item.id)}`, description: text(item.description) || 'Compra no cartão', totalAmount: amount, purchaseDate, installments: number(item.installments || item.installmentQty) || 1, status: 'legacy', category: null, entries: [], legacyOpen: !['PAID', 'PAGO', 'RECEIVED', 'RECEBIDO', 'RECONCILED', 'CONCILIADO'].includes(status) };
-      });
-      const legacyOpen = legacyPurchases.filter((item) => item.legacyOpen);
-      const usedLimit = entries.filter((entry) => entry.status === 'open').reduce((sum, entry) => sum + Number(entry.amount), 0) + legacyOpen.reduce((sum, item) => sum + item.totalAmount, 0);
-      const payableStatementAmount = entries.filter((entry) => entry.statementMonth === parsed.data.month && entry.status === 'open').reduce((sum, entry) => sum + Number(entry.amount), 0);
-      const statementAmount = payableStatementAmount + legacyOpen.filter((item) => item.purchaseDate.startsWith(parsed.data.month)).reduce((sum, item) => sum + item.totalAmount, 0);
-      const periodLegacy = legacyPurchases.filter((item) => item.purchaseDate.startsWith(parsed.data.month));
-      return { ...card, purchases: [...card.purchases, ...periodLegacy].sort((a, b) => String(b.purchaseDate).localeCompare(String(a.purchaseDate))), usedLimit, availableLimit: Number(card.creditLimit) - usedLimit, statementAmount, payableStatementAmount };
-    });
+    return listCards(request.user.sub, parsed.data.month);
   });
 
   app.post('/', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
@@ -326,57 +303,11 @@ export async function cardRoutes(app: FastifyInstance) {
   app.post('/purchases', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = purchaseCreateSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    const context = await sharedCardContext(request.user.sub);
-    const { operationId, ...purchaseInput } = parsed.data;
-
-    const create = async (tx: Tx): Promise<JsonRecord> => {
-      const card = await assertCardAndCategory(tx, context.ownerId, purchaseInput.cardId, purchaseInput.categoryId);
-      const purchase = await tx.cardPurchase.create({
-        data: {
-          userId: context.ownerId,
-          cardId: card.id,
-          categoryId: purchaseInput.categoryId,
-          description: purchaseInput.description,
-          totalAmount: purchaseInput.totalAmount,
-          purchaseDate: new Date(purchaseInput.purchaseDate),
-          installments: purchaseInput.installments,
-          entries: {
-            create: installmentRows({
-              purchaseDate: purchaseInput.purchaseDate,
-              totalAmount: purchaseInput.totalAmount,
-              installments: purchaseInput.installments,
-              closingDay: card.closingDay,
-            })
-          }
-        },
-        include: { entries: true, category: true }
-      });
-      await recordFinancialAudit(tx, {
-        actorId: request.user.sub,
-        entity: 'CardPurchase',
-        entityId: purchase.id,
-        action: 'CARD_PURCHASE_CREATED',
-        after: purchase,
-        context: { workspaceId: context.workspaceId, operationId: operationId || null, cardId: card.id },
-      });
-      return { purchase };
-    };
-
     try {
-      if (operationId) {
-        const response = await protectedCardMutation({
-          context,
-          operationId,
-          requestHash: mutationRequestHash(purchaseInput),
-          mutationType: 'CARD_PURCHASE_CREATE',
-          work: create,
-        });
-        return reply.code(201).send({ ...(response.purchase as object), idempotentReplay: Boolean(response.idempotentReplay) });
-      }
-      const response = await serializableFinancialTransaction(create);
-      return reply.code(201).send(response.purchase);
+      const purchase = await createCardPurchaseProtected(request.user.sub, parsed.data);
+      return reply.code(201).send(purchase);
     } catch (error) {
-      return mutationError(reply, error);
+      return domainError(reply, error);
     }
   });
 
@@ -498,126 +429,11 @@ export async function cardRoutes(app: FastifyInstance) {
         body: body.success ? null : body.error.flatten(),
       });
     }
-
-    const context = await sharedCardContext(request.user.sub);
-    const { operationId, ...payment } = body.data;
-    const requestHash = mutationRequestHash({ cardId: params.data.id, month: params.data.month, ...payment });
-
     try {
-      const response = await protectedCardMutation({
-        context,
-        operationId,
-        requestHash,
-        mutationType: 'CARD_STATEMENT_PAY',
-        work: async (tx): Promise<JsonRecord> => {
-          const card = await tx.creditCard.findFirst({
-            where: { id: params.data.id, userId: context.ownerId },
-            select: { id: true, name: true, isActive: true },
-          });
-          if (!card) throw new CardMutationError(404, 'CARD_NOT_FOUND');
-
-          const account = await tx.account.findFirst({
-            where: { id: payment.accountId, userId: context.ownerId, isActive: true },
-            select: { id: true, name: true, type: true, institution: true },
-          });
-          if (!account) throw new CardMutationError(400, 'INVALID_ACCOUNT');
-          if (!monetaryAccountTypes.has(key(account.type))) {
-            throw new CardMutationError(400, 'ACCOUNT_NOT_MONETARY', { accountId: account.id, accountType: account.type });
-          }
-
-          const paymentMethod = payment.paymentMethodId
-            ? await tx.paymentMethod.findFirst({
-              where: { id: payment.paymentMethodId, userId: context.ownerId, isActive: true },
-              select: { id: true, name: true, type: true },
-            })
-            : null;
-          if (payment.paymentMethodId && !paymentMethod) throw new CardMutationError(400, 'INVALID_PAYMENT_METHOD');
-          if (paymentMethod && key(paymentMethod.type) === 'CREDIT') {
-            throw new CardMutationError(400, 'INVALID_PAYMENT_METHOD', {
-              paymentMethodId: paymentMethod.id,
-              reason: 'CREDIT_METHOD_NOT_ALLOWED_FOR_STATEMENT_PAYMENT',
-            });
-          }
-
-          const entries = await tx.cardInstallment.findMany({
-            where: {
-              purchase: { cardId: card.id, userId: context.ownerId, status: 'active' },
-              statementMonth: params.data.month,
-              status: 'open',
-            },
-            orderBy: { number: 'asc' },
-          });
-          if (!entries.length) throw new CardMutationError(400, 'EMPTY_STATEMENT');
-
-          const amount = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
-          const paidAt = new Date(`${payment.paidAt}T12:00:00.000Z`);
-          const updated = await tx.cardInstallment.updateMany({
-            where: { id: { in: entries.map((entry) => entry.id) }, status: 'open' },
-            data: { status: 'paid', paidAt },
-          });
-          if (updated.count !== entries.length) {
-            throw new CardMutationError(409, 'STATEMENT_CHANGED_RETRY', {
-              expectedInstallments: entries.length,
-              updatedInstallments: updated.count,
-            });
-          }
-
-          const event = await tx.financialEvent.create({
-            data: {
-              userId: context.ownerId,
-              workspaceId: context.workspaceId,
-              description: `Fatura ${card.name} ${params.data.month}`,
-              type: 'expense',
-              status: 'paid',
-              date: paidAt,
-              competence: payment.paidAt.slice(0, 7),
-              amount,
-              signedAmount: -amount,
-              accountId: account.id,
-              paymentMethodId: paymentMethod?.id,
-            },
-          });
-
-          await tx.ledgerEntry.create({
-            data: {
-              eventId: event.id,
-              date: paidAt,
-              accountId: account.id,
-              debit: 0,
-              credit: amount,
-              memo: event.description,
-            },
-          });
-
-          await recordFinancialAudit(tx, {
-            actorId: request.user.sub,
-            entity: 'CreditCard',
-            entityId: card.id,
-            action: 'CARD_STATEMENT_PAID',
-            after: {
-              amount,
-              eventId: event.id,
-              month: params.data.month,
-              paidAt: payment.paidAt,
-              card: { id: card.id, name: card.name },
-              account,
-              paymentMethod,
-              installmentIds: entries.map((entry) => entry.id),
-            },
-            context: {
-              workspaceId: context.workspaceId,
-              operationId,
-              cardId: card.id,
-              month: params.data.month,
-            },
-          });
-
-          return { paid: true, amount, eventId: event.id };
-        },
-      });
-      return reply.send(response);
+      const result = await payCardStatementProtected(request.user.sub, params.data.id, params.data.month, body.data);
+      return reply.code(201).send(result);
     } catch (error) {
-      return mutationError(reply, error);
+      return domainError(reply, error);
     }
   });
 }

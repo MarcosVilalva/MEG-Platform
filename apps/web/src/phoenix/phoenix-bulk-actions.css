@@ -1,0 +1,183 @@
+.px-v15-launch-table .px-bulk-select-col {
+  width: 38px;
+  min-width: 38px;
+  text-align: center;
+  padding-left: 8px;
+  padding-right: 4px;
+}
+
+.px-bulk-checkbox {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  vertical-align: middle;
+  accent-color: currentColor;
+  cursor: pointer;
+}
+
+.px-bulk-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: .36;
+}
+
+.px-bulk-row-selected {
+  background: color-mix(in srgb, var(--px-accent, #3d8bfd) 7%, transparent) !important;
+}
+
+.px-bulk-action-bar {
+  margin: 0 14px 10px;
+  min-height: 48px;
+  border: 1px solid var(--px-border, rgba(148,163,184,.24));
+  border-radius: 12px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: color-mix(in srgb, var(--px-surface, #101b2a) 94%, transparent);
+}
+
+.px-bulk-action-bar[hidden] { display: none !important; }
+
+.px-bulk-selection-copy {
+  display: grid;
+  gap: 1px;
+  margin-right: auto;
+}
+
+.px-bulk-selection-copy strong { font-size: 13px; }
+.px-bulk-selection-copy small { opacity: .72; font-size: 11px; }
+
+.px-bulk-action-bar button,
+.px-bulk-modal button {
+  min-height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--px-border, rgba(148,163,184,.24));
+  padding: 0 11px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--px-surface-strong, rgba(255,255,255,.06));
+  color: inherit;
+}
+
+.px-bulk-action-bar button:disabled,
+.px-bulk-modal button:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+}
+
+.px-bulk-delete,
+.px-row-delete {
+  color: #e35d6a !important;
+}
+
+.px-row-action-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.px-row-delete {
+  width: 29px;
+  height: 29px;
+  padding: 0 !important;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.px-row-delete:hover:not(:disabled) {
+  background: rgba(227,93,106,.1);
+  border-color: rgba(227,93,106,.22);
+}
+
+.px-bulk-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  background: rgba(2,8,18,.54);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.px-bulk-modal {
+  width: min(560px, 100%);
+  max-height: min(720px, calc(100dvh - 32px));
+  overflow: auto;
+  border: 1px solid var(--px-border, rgba(148,163,184,.24));
+  border-radius: 18px;
+  background: var(--px-surface, #0c1726);
+  box-shadow: 0 24px 70px rgba(0,0,0,.34);
+  padding: 18px;
+}
+
+.px-bulk-modal-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.px-bulk-modal-head > div { flex: 1; }
+.px-bulk-modal-head h3 { margin: 2px 0 4px; font-size: 18px; }
+.px-bulk-modal-head p { margin: 0; opacity: .72; font-size: 12px; line-height: 1.45; }
+
+.px-bulk-modal-close {
+  width: 34px;
+  padding: 0 !important;
+  font-size: 18px !important;
+}
+
+.px-bulk-field {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 8px 10px;
+  align-items: center;
+  padding: 11px 0;
+  border-top: 1px solid var(--px-border, rgba(148,163,184,.15));
+}
+
+.px-bulk-field > input[type="checkbox"] { grid-row: 1 / span 2; }
+.px-bulk-field strong { font-size: 13px; }
+.px-bulk-field input[type="date"],
+.px-bulk-field select {
+  width: 100%;
+  min-height: 38px;
+  border-radius: 9px;
+  border: 1px solid var(--px-border, rgba(148,163,184,.24));
+  background: var(--px-surface-strong, rgba(255,255,255,.04));
+  color: inherit;
+  padding: 0 9px;
+}
+
+.px-bulk-field input:disabled,
+.px-bulk-field select:disabled { opacity: .5; }
+
+.px-bulk-modal-status {
+  margin-top: 12px;
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-size: 12px;
+  background: rgba(61,139,253,.08);
+  border: 1px solid rgba(61,139,253,.18);
+}
+
+.px-bulk-modal-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .px-bulk-action-bar { margin-inline: 8px; }
+  .px-bulk-action-bar button { flex: 1 1 auto; }
+  .px-v15-launch-table .px-bulk-select-col { width: 30px; min-width: 30px; }
+}
