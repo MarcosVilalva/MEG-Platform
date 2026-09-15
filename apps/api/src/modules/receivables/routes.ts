@@ -7,6 +7,10 @@ const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
 const operationIdSchema = z.string().trim().min(8).max(128).optional();
+const isoDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
+  const parsed = new Date(`${value}T12:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}, 'INVALID_DATE');
 
 const customerSchema = z.object({
   name: z.string().min(2).max(120),
@@ -20,7 +24,7 @@ const receivableSchema = z.object({
   customerId: z.string().optional().nullable(),
   description: z.string().min(2).max(160),
   totalAmount: z.coerce.number().positive(),
-  dueDate: z.string().min(10),
+  dueDate: isoDaySchema,
   installmentNo: z.coerce.number().int().positive().default(1),
   installmentQty: z.coerce.number().int().positive().default(1),
   interestRate: z.coerce.number().min(0).default(0),
@@ -31,7 +35,7 @@ const receivableSchema = z.object({
 
 const receiptSchema = z.object({
   amount: z.coerce.number().positive(),
-  receivedAt: z.string().min(10),
+  receivedAt: isoDaySchema,
   interestAmount: z.coerce.number().min(0).default(0),
   fineAmount: z.coerce.number().min(0).default(0),
   accountId: z.string().optional().nullable(),

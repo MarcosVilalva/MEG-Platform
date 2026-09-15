@@ -33,7 +33,7 @@ const purchaseSchema = z.object({
   categoryId: z.string().optional().nullable(),
   description: z.string().trim().min(2).max(160),
   totalAmount: z.coerce.number().positive().finite(),
-  purchaseDate: z.string().min(10),
+  purchaseDate: isoDateSchema,
   installments: z.coerce.number().int().min(1).max(48).default(1)
 });
 const purchaseCreateSchema = purchaseSchema.extend({ operationId: operationSchema.optional() });

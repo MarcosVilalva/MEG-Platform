@@ -43,4 +43,8 @@ assert.throws(() => buildTransferLegs({
   transferId: 'transfer-004', sourceAccountId: 'a', destinationAccountId: 'b', amount: 10, date: '12/09/2026'
 }), /INVALID_TRANSFER_DATE/);
 
+assert.throws(() => buildTransferLegs({
+  transferId: 'transfer-005', sourceAccountId: 'a', destinationAccountId: 'b', amount: 10, date: '2026-02-31'
+}), /INVALID_TRANSFER_DATE/);
+
 console.log('Contrato conservativo de transferência validado.');

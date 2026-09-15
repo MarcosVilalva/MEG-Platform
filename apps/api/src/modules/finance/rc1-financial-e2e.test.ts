@@ -97,6 +97,40 @@ async function main() {
     }),
   ]);
 
+  const foreignUser = await prisma.user.create({
+    data: {
+      name: 'RC1 Foreign Catalog Owner',
+      email: `rc1-foreign-${suffix}@meg.local`,
+      passwordHash: 'not-used-in-e2e',
+      role: UserRole.ADMIN,
+      status: UserStatus.ACTIVE,
+      isActive: true,
+      approvedAt: new Date(),
+    },
+  });
+  const foreignAccount = await prisma.account.create({
+    data: {
+      userId: foreignUser.id,
+      name: 'Conta estrangeira RC1',
+      type: 'CHECKING',
+      openingBalance: 9999,
+      isActive: true,
+    },
+  });
+
+  await assert.rejects(
+    () => createFinancialEvent(user.id, {
+      description: 'RC1 tentativa de conta de outro usuário',
+      type: 'expense',
+      status: 'paid',
+      date: `${dayBefore(2)}T12:00:00.000Z`,
+      amount: 1,
+      accountId: foreignAccount.id,
+    }),
+    (error: unknown) => error instanceof Error && error.message === 'INVALID_ACCOUNT',
+    'Evento financeiro não pode usar conta pertencente a outro usuário.',
+  );
+
   const effectiveDay = dayBefore(2);
   const effectiveAt = `${effectiveDay}T12:00:00.000Z`;
 
@@ -181,6 +215,12 @@ async function main() {
       description: 'RC1 Transferência sem saldo',
     }),
     (error: unknown) => error instanceof FinancialTransferError && error.code === 'INSUFFICIENT_SOURCE_ACCOUNT_BALANCE',
+  );
+
+  await assert.rejects(
+    () => updateFinancialEvent(user.id, expense.id, { accountId: foreignAccount.id }),
+    (error: unknown) => error instanceof Error && error.message === 'INVALID_ACCOUNT',
+    'Edição financeira não pode trocar o lançamento para conta de outro usuário.',
   );
 
   const updatedExpense = await updateFinancialEvent(user.id, expense.id, { amount: 250 });

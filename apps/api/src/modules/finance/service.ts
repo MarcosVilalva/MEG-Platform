@@ -40,17 +40,17 @@ function sourceDetails(rawData: unknown) {
   };
 }
 
-async function validateActiveReferences(tx: Tx, input: { accountId?: string; categoryId?: string; paymentMethodId?: string }) {
+async function validateActiveReferences(tx: Tx, userId: string, input: { accountId?: string; categoryId?: string; paymentMethodId?: string }) {
   if (input.accountId) {
-    const account = await tx.account.findFirst({ where: { id: input.accountId, isActive: true }, select: { id: true } });
+    const account = await tx.account.findFirst({ where: { id: input.accountId, userId, isActive: true }, select: { id: true } });
     if (!account) throw new Error('INVALID_ACCOUNT');
   }
   if (input.categoryId) {
-    const category = await tx.category.findFirst({ where: { id: input.categoryId, isActive: true }, select: { id: true } });
+    const category = await tx.category.findFirst({ where: { id: input.categoryId, userId, isActive: true }, select: { id: true } });
     if (!category) throw new Error('INVALID_CATEGORY');
   }
   if (input.paymentMethodId) {
-    const method = await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, isActive: true }, select: { id: true } });
+    const method = await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, userId, isActive: true }, select: { id: true } });
     if (!method) throw new Error('INVALID_PAYMENT_METHOD');
   }
 }
@@ -116,7 +116,7 @@ export async function createFinancialEvent(userId: string, input: CreateFinancia
   const values = financialAmountValues(input.type, input.amount);
 
   return prisma.$transaction(async (tx) => {
-    await validateActiveReferences(tx, input);
+    await validateActiveReferences(tx, userId, input);
     const event = await tx.financialEvent.create({
       data: {
         userId,
@@ -158,7 +158,7 @@ export async function updateFinancialEvent(userId: string, id: string, input: Up
       include: { account: true, category: true, paymentMethod: true, ledgerEntries: true }
     });
     if (!current) throw new Error('FINANCIAL_EVENT_NOT_FOUND');
-    await validateActiveReferences(tx, input);
+    await validateActiveReferences(tx, userId, input);
 
     const nextType = input.type ?? current.type;
     const currentEnteredAmount = enteredAmountFromStored(current.type, Number(current.signedAmount));

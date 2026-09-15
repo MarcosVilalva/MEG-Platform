@@ -40,7 +40,21 @@ function cents(value: number) {
 }
 
 function assertIsoDay(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}/.test(value)) throw new Error('INVALID_TRANSFER_DATE');
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) throw new Error('INVALID_TRANSFER_DATE');
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    !Number.isInteger(year)
+    || month < 1
+    || month > 12
+    || day < 1
+    || parsed.getUTCFullYear() !== year
+    || parsed.getUTCMonth() !== month - 1
+    || parsed.getUTCDate() !== day
+  ) throw new Error('INVALID_TRANSFER_DATE');
 }
 
 export function buildTransferLegs(input: TransferInput): [TransferLegDraft, TransferLegDraft] {
