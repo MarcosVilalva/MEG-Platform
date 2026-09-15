@@ -40,7 +40,7 @@ function operationId() {
 
 function assertSimpleEvent(input: PhoenixSimpleEventInput) {
   if (!input.description.trim()) throw new PhoenixWriteError('PHOENIX_DESCRIPTION_REQUIRED');
-  if (!Number.isFinite(input.amount) || input.amount <= 0) throw new PhoenixWriteError('PHOENIX_POSITIVE_AMOUNT_REQUIRED');
+  if (!Number.isFinite(input.amount) || input.amount === 0) throw new PhoenixWriteError('PHOENIX_POSITIVE_AMOUNT_REQUIRED');
   if (!input.date || !/^\d{4}-\d{2}-\d{2}/.test(input.date)) throw new PhoenixWriteError('PHOENIX_VALID_DATE_REQUIRED');
   if (!input.accountId) throw new PhoenixWriteError('PHOENIX_ACCOUNT_REQUIRED');
   if (!input.paymentMethodId) throw new PhoenixWriteError(input.type === 'income' ? 'PHOENIX_RECEIPT_METHOD_REQUIRED' : 'PHOENIX_PAYMENT_METHOD_REQUIRED');
@@ -65,7 +65,7 @@ export function phoenixWriteMessage(code: string) {
   const messages: Record<string, string> = {
     PHOENIX_WRITE_NOT_ENABLED: 'A gravação financeira da Phoenix ainda não foi liberada neste ambiente.',
     PHOENIX_DESCRIPTION_REQUIRED: 'Informe a descrição do lançamento.',
-    PHOENIX_POSITIVE_AMOUNT_REQUIRED: 'Informe um valor maior que zero. Estornos continuam bloqueados nesta etapa.',
+    PHOENIX_POSITIVE_AMOUNT_REQUIRED: 'Informe um valor diferente de zero.',
     PHOENIX_VALID_DATE_REQUIRED: 'Informe uma data válida.',
     PHOENIX_ACCOUNT_REQUIRED: 'Selecione a conta.',
     PHOENIX_RECEIPT_METHOD_REQUIRED: 'Selecione a forma de recebimento.',
