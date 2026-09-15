@@ -1,8 +1,62 @@
 import { authenticatedRequest } from './auth-client';
 
 export type CardInstallment = { id: string; number: number; amount: string | number; statementMonth: string; status: string; paidAt?: string | null };
-export type CardPurchase = { id: string; description: string; totalAmount: string | number; purchaseDate: string; installments: number; status: string; category?: { id: string; name: string } | null; entries: CardInstallment[]; legacyOpen?: boolean };
+export type CardPurchase = { id: string; description: string; totalAmount: string | number; purchaseDate: string; installments: number; status: string; category?: { id: string; name: string } | null; entries: CardInstallment[]; legacyOpen?: boolean; idempotentReplay?: boolean };
 export type CreditCard = { id: string; name: string; issuer?: string | null; brand?: string | null; lastFour?: string | null; creditLimit: string | number; closingDay: number; dueDay: number; color?: string | null; isActive: boolean; usedLimit: number; availableLimit: number; statementAmount: number; payableStatementAmount?: number; purchases: CardPurchase[] };
+export type CardStatementPaymentResult = { paid: boolean; amount: number; eventId: string; protection?: { monetary?: boolean; allowed?: boolean; available?: number; requested?: number; missing?: number; at?: string }; idempotentReplay?: boolean };
+export type CardStatementReopenResult = { reopened: boolean; amount: number; eventId: string; installments: number; idempotentReplay?: boolean };
+export type CardStatementLifecycleStatus = 'none' | 'open' | 'partial' | 'paid' | 'reopened';
+export type CardStatementLifecycleSnapshot = { id: string | null; name: string | null; type: string | null; institution: string | null };
+export type CardStatementLifecycleActor = { id?: string; name?: string | null; email?: string | null } | null;
+export type CardStatementTimelineKind = 'closing' | 'due' | 'payment' | 'reopen' | 'legacy-payment';
+export type CardStatementTimelineItem = {
+  id: string;
+  kind: CardStatementTimelineKind;
+  at: string;
+  effectiveAt: string | null;
+  title: string;
+  description: string | null;
+  amount: number | null;
+  auditId: string | null;
+  actor: CardStatementLifecycleActor;
+  account: CardStatementLifecycleSnapshot | null;
+  paymentMethod: CardStatementLifecycleSnapshot | null;
+  event: { id: string; description: string | null; status: string | null; date: string | null; archivedAt: string | null } | null;
+  source: 'calculated' | 'audit' | 'installments';
+};
+export type CardStatementLifecycle = {
+  cardId: string;
+  cardName: string;
+  month: string;
+  status: CardStatementLifecycleStatus;
+  statementAmount: number;
+  openAmount: number;
+  paidAmount: number;
+  openInstallments: number;
+  paidInstallments: number;
+  closingDate: string;
+  dueDate: string;
+  timeline: CardStatementTimelineItem[];
+  lastLifecycleAction: 'CARD_STATEMENT_PAID' | 'CARD_STATEMENT_REOPENED' | null;
+  lastLifecycleAt: string | null;
+  lifecycleAuditId: string | null;
+  lastPayment: {
+    amount: number;
+    paidAt: string | null;
+    account: CardStatementLifecycleSnapshot | null;
+    paymentMethod: CardStatementLifecycleSnapshot | null;
+    event: { id: string; description: string | null; status: string | null; date: string | null; archivedAt: string | null } | null;
+    auditId: string | null;
+    actor: CardStatementLifecycleActor;
+  } | null;
+  reopenedAt: string | null;
+  reopenReason: string | null;
+  reopenedBy: CardStatementLifecycleActor;
+  source: 'audit' | 'installments' | 'none';
+};
+export type CardPurchaseMutationInput = { cardId: string; categoryId?: string; description: string; totalAmount: number; purchaseDate: string; installments: number; operationId: string };
+export type CreditCardMutationInput = { name: string; issuer?: string; brand?: string; lastFour?: string; creditLimit: number; closingDay: number; dueDay: number; color?: string };
+export type CardReactivationResult = { card: CreditCard; reactivated: boolean; idempotentReplay: boolean };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return authenticatedRequest<T>(path, init);
@@ -10,13 +64,20 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const cardsClient = {
   list: (month: string) => request<CreditCard[]>(`/cards?month=${encodeURIComponent(month)}`),
-  create: (data: { name: string; issuer?: string; brand?: string; lastFour?: string; creditLimit: number; closingDay: number; dueDay: number; color?: string }) => request<CreditCard>('/cards', { method: 'POST', body: JSON.stringify(data) }),
-  createPurchase: (data: { cardId: string; categoryId?: string; description: string; totalAmount: number; purchaseDate: string; installments: number }) => request<CardPurchase>('/cards/purchases', { method: 'POST', body: JSON.stringify(data) }),
+  listManagement: (month: string) => request<CreditCard[]>(`/cards-management?month=${encodeURIComponent(month)}`),
+  statementLifecycle: (id: string, month: string) => request<CardStatementLifecycle>(`/cards/${id}/statements/${month}/lifecycle`),
+  create: (data: CreditCardMutationInput) => request<CreditCard>('/cards-management', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<CreditCardMutationInput>) => request<CreditCard>(`/cards-management/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  createPurchase: (data: { cardId: string; categoryId?: string; description: string; totalAmount: number; purchaseDate: string; installments: number; operationId?: string }) => request<CardPurchase>('/cards/purchases', { method: 'POST', body: JSON.stringify(data) }),
+  updatePurchase: (id: string, data: CardPurchaseMutationInput) => request<CardPurchase>(`/cards/purchases/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  cancelPurchaseProtected: (id: string, operationId: string) => request<CardPurchase>(`/cards/purchases/${id}`, { method: 'DELETE', body: JSON.stringify({ operationId }) }),
   cancelPurchase: async (id: string) => {
     if (id.startsWith('legacy-')) return null;
     if (!window.confirm('Tem certeza de que deseja excluir esta compra do cartao?\n\nEsta acao nao pode ser desfeita.')) return null;
     return request<CardPurchase>(`/cards/purchases/${id}`, { method: 'DELETE' });
   },
-  payStatement: (id: string, month: string, data: { accountId?: string; paymentMethodId?: string; paidAt: string }) => request<{ paid: boolean; amount: number; eventId: string }>(`/cards/${id}/statements/${month}/pay`, { method: 'POST', body: JSON.stringify(data) }),
-  deactivate: (id: string) => request<CreditCard>(`/cards/${id}`, { method: 'DELETE' })
+  payStatement: (id: string, month: string, data: { accountId: string; paymentMethodId?: string; paidAt: string; operationId: string }) => request<CardStatementPaymentResult>(`/cards/${id}/statements/${month}/pay`, { method: 'POST', body: JSON.stringify(data) }),
+  reopenStatement: (id: string, month: string, data: { reason: string; operationId: string }) => request<CardStatementReopenResult>(`/cards/${id}/statements/${month}/reopen`, { method: 'POST', body: JSON.stringify(data) }),
+  deactivate: (id: string) => request<CreditCard>(`/cards-management/${id}`, { method: 'DELETE' }),
+  reactivate: (id: string) => request<CardReactivationResult>(`/cards-management/${id}/reactivate`, { method: 'POST', body: JSON.stringify({}) })
 };

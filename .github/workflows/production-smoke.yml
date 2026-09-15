@@ -17,7 +17,8 @@ jobs:
           grep -q '"cloud-state"' health.json
           grep -q '"xlsx-import"' health.json
           grep -q '"normalization":{"status":"completed","primary":true,"reconciled":true' health.json
-      - name: Verify web application
+      - name: Verify official Phoenix V15 web application
         run: |
           curl --fail-with-body --retry 3 --retry-delay 10 --max-time 60 https://marcosvilalva.github.io/MEG-Platform/ -o site.html
-          grep -Eq "MEG Finance System|MEG Financas" site.html
+          grep -q 'data-meg-shell="phoenix-v15"' site.html
+          grep -q 'MEG Finanças' site.html

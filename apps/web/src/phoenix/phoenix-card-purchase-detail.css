@@ -1,0 +1,22 @@
+.px-card-purchase-detail-backdrop{position:fixed;inset:0;z-index:138;border:0;background:rgba(2,11,13,.62);backdrop-filter:blur(5px)}
+.px-card-purchase-detail{position:fixed;z-index:140;top:0;right:0;width:min(500px,100vw);height:100dvh;display:flex;flex-direction:column;border-left:1px solid var(--line);background:var(--panel);color:var(--ink);box-shadow:-24px 0 72px rgba(0,0,0,.34);overflow:hidden}
+.px-card-purchase-detail .px-drawer-head{flex:0 0 auto;padding:18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--panel)}
+.px-card-purchase-detail .px-drawer-head h2{margin:4px 0 0;font-size:24px;letter-spacing:-.035em}
+.px-card-purchase-detail-body{min-height:0;overflow:auto;padding:18px;display:grid;gap:14px}
+.px-card-purchase-detail .px-detail-description{padding:14px 15px;border:1px solid var(--line);border-radius:14px;background:var(--panel2);font-size:16px;font-weight:900;line-height:1.35}
+.px-card-purchase-detail .px-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.px-card-purchase-detail .px-detail-grid>div{min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+.px-card-purchase-detail .px-detail-grid span,.px-card-purchase-detail .px-detail-grid strong{display:block}
+.px-card-purchase-detail .px-detail-grid span{color:var(--muted);font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+.px-card-purchase-detail .px-detail-grid strong{margin-top:5px;font-size:11px;overflow-wrap:anywhere}
+.px-card-purchase-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.px-card-purchase-overview>div{padding:11px;border:1px solid color-mix(in srgb,var(--brand) 22%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--brand) 6%,var(--panel2))}
+.px-card-purchase-overview span,.px-card-purchase-overview strong{display:block}
+.px-card-purchase-overview span{color:var(--muted);font-size:8px;font-weight:900;text-transform:uppercase}
+.px-card-purchase-overview strong{margin-top:5px;font-size:11px}
+.px-card-purchase-detail .px-detail-actions{display:flex;gap:8px;align-items:stretch}
+.px-card-purchase-detail .px-detail-actions>button{flex:1 1 0;width:auto;margin-top:0}
+.px-card-movement .px-data-table tbody tr[data-card-row-clickable="true"]{cursor:pointer;transition:background .14s ease,opacity .14s ease}
+.px-card-movement .px-data-table tbody tr[data-card-row-clickable="true"]:hover{background:color-mix(in srgb,var(--brand) 7%,transparent)}
+.px-card-movement .px-data-table tbody tr.is-opening-card-detail{opacity:.58}
+@media(max-width:620px){.px-card-purchase-detail{width:100vw;border-left:0}.px-card-purchase-detail-body{padding:14px}.px-card-purchase-detail .px-detail-grid{grid-template-columns:1fr}.px-card-purchase-overview{grid-template-columns:1fr}.px-card-purchase-detail .px-detail-actions{flex-direction:column}}

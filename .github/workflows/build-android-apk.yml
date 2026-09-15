@@ -67,6 +67,11 @@ jobs:
       - name: Build mobile web application
         run: npm run build:web
 
+      - name: Verify Phoenix V15 is embedded as the Android entry
+        run: |
+          grep -q 'data-meg-shell="phoenix-v15"' apps/web/dist/index.html
+          grep -q 'MEG Finanças' apps/web/dist/index.html
+
       - name: Verify APK downloads are not embedded in the Android application
         run: test ! -d apps/web/dist/downloads
 

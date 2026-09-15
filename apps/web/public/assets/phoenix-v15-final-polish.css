@@ -1,0 +1,140 @@
+/* Polimento final de homologação V15.
+   Regras visuais somente: não alteram contratos financeiros nem habilitam escrita. */
+
+/* HOME — elimina o vazio do primeiro bloco e usa melhor a largura disponível. */
+body .phoenix-v15 .px-dashboard-grid:has(> .px-premium-balance:only-child) {
+  grid-template-columns:minmax(0,1fr)!important;
+}
+body .phoenix-v15 .px-dashboard-grid:has(> .px-premium-balance:only-child) .px-premium-balance {
+  min-height:0!important;
+  padding:18px 20px!important;
+  display:grid!important;
+  grid-template-columns:minmax(250px,.82fr) minmax(0,1.18fr)!important;
+  grid-template-areas:
+    "label stats"
+    "value stats"
+    "copy stats"!important;
+  column-gap:28px!important;
+  row-gap:3px!important;
+  align-items:center!important;
+}
+body .phoenix-v15 .px-premium-balance > .px-kicker { grid-area:label; align-self:end; }
+body .phoenix-v15 .px-premium-balance > h2 {
+  grid-area:value;
+  margin:7px 0 4px!important;
+  font-size:clamp(34px,4.4cqw,52px)!important;
+}
+body .phoenix-v15 .px-premium-balance > p { grid-area:copy; align-self:start; max-width:470px; }
+body .phoenix-v15 .px-premium-balance > .px-balance-stats {
+  grid-area:stats;
+  margin-top:0!important;
+  min-height:100%;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:center;
+  gap:0!important;
+  border:1px solid color-mix(in srgb,var(--brand) 10%,var(--line));
+  border-radius:15px;
+  overflow:hidden;
+  background:color-mix(in srgb,var(--panel2) 82%,transparent);
+}
+body .phoenix-v15 .px-premium-balance .px-balance-stat {
+  min-height:88px;
+  padding:14px!important;
+  border-top:0!important;
+  border-left:1px solid var(--line);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+body .phoenix-v15 .px-premium-balance .px-balance-stat:first-child { border-left:0; }
+
+/* Agenda passa a parecer centro de ação, não apenas lista passiva. */
+body .phoenix-v15 .px-bottom-grid > .px-card:last-child:has(.px-due-label) {
+  border-color:color-mix(in srgb,var(--brand) 18%,var(--line));
+  background:linear-gradient(145deg,color-mix(in srgb,var(--panel) 96%,var(--brand) 4%),var(--panel));
+}
+body .phoenix-v15 .px-bottom-grid .px-dashboard-row {
+  transition:background-color .16s ease,border-color .16s ease,transform .16s ease;
+}
+body .phoenix-v15 .px-bottom-grid .px-dashboard-row:hover {
+  background:color-mix(in srgb,var(--brand) 4%,transparent);
+}
+body .phoenix-v15 .px-due-label {
+  min-width:72px;
+  text-align:center;
+}
+
+/* CONFIGURAÇÕES — resgata a linguagem de botões/microinterações da V15. */
+body .phoenix-v15 .px-settings-nav button,
+body .phoenix-v15 .px-settings-card button,
+body .phoenix-v15 .px-settings-dashboard-toggle,
+body .phoenix-v15 .px-avatar-presets button {
+  transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s ease,border-color .18s ease,background-color .18s ease,color .18s ease!important;
+}
+body .phoenix-v15 .px-settings-nav button:hover,
+body .phoenix-v15 .px-settings-dashboard-toggle:hover,
+body .phoenix-v15 .px-avatar-presets button:hover {
+  transform:translateY(-2px);
+  box-shadow:0 10px 24px color-mix(in srgb,var(--brand) 9%,transparent);
+}
+body .phoenix-v15 .px-settings-nav button:active,
+body .phoenix-v15 .px-settings-dashboard-toggle:active,
+body .phoenix-v15 .px-avatar-presets button:active {
+  transform:translateY(0) scale(.985);
+}
+body .phoenix-v15 .px-settings-nav button.active {
+  box-shadow:inset 3px 0 0 var(--brand),0 8px 20px color-mix(in srgb,var(--brand) 8%,transparent);
+}
+body .phoenix-v15 .px-settings-dashboard-toggle.is-on .px-settings-dashboard-check {
+  animation:px-v15-check .2s ease-out;
+}
+body .phoenix-v15 .px-avatar-presets {
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+}
+body .phoenix-v15 .px-avatar-presets button {
+  min-height:118px!important;
+  border-radius:17px!important;
+}
+body .phoenix-v15 .px-avatar-presets .px-profile-avatar {
+  width:60px!important;
+  height:60px!important;
+  border-radius:19px!important;
+  box-shadow:0 10px 24px rgba(0,0,0,.16);
+}
+body .phoenix-v15 .px-avatar-presets button.selected {
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--brand) 55%,transparent),0 12px 28px color-mix(in srgb,var(--brand) 12%,transparent)!important;
+}
+
+@keyframes px-v15-check {
+  0% { transform:scale(.72); opacity:.2; }
+  70% { transform:scale(1.1); opacity:1; }
+  100% { transform:scale(1); opacity:1; }
+}
+
+@container phoenix-workspace (max-width:980px) {
+  body .phoenix-v15 .px-dashboard-grid:has(> .px-premium-balance:only-child) .px-premium-balance {
+    grid-template-columns:1fr!important;
+    grid-template-areas:"label" "value" "copy" "stats"!important;
+  }
+  body .phoenix-v15 .px-premium-balance > .px-balance-stats { margin-top:12px!important; }
+  body .phoenix-v15 .px-avatar-presets { grid-template-columns:repeat(3,minmax(0,1fr))!important; }
+}
+
+@container phoenix-workspace (max-width:620px) {
+  body .phoenix-v15 .px-premium-balance > .px-balance-stats { grid-template-columns:1fr!important; }
+  body .phoenix-v15 .px-premium-balance .px-balance-stat {
+    min-height:62px;
+    border-left:0;
+    border-top:1px solid var(--line)!important;
+  }
+  body .phoenix-v15 .px-premium-balance .px-balance-stat:first-child { border-top:0!important; }
+  body .phoenix-v15 .px-avatar-presets { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  body .phoenix-v15 .px-settings-nav button,
+  body .phoenix-v15 .px-settings-card button,
+  body .phoenix-v15 .px-settings-dashboard-toggle,
+  body .phoenix-v15 .px-avatar-presets button { transition:none!important; animation:none!important; }
+}

@@ -38,6 +38,33 @@ jobs:
           VITE_PUBLIC_BASE_PATH: /MEG-Platform/
         run: npm run build:web
 
+      - name: Verify Phoenix V15 is the official web entry
+        run: |
+          grep -q 'data-meg-shell="phoenix-v15"' apps/web/dist/index.html
+          grep -q 'MEG Finanças' apps/web/dist/index.html
+
+      - name: Wait for production API from this commit
+        env:
+          API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          # /health.commit is populated from Render's RENDER_GIT_COMMIT.
+          for attempt in {1..36}; do
+            if health=$(curl --silent --show-error --fail --max-time 90 "$API_URL/health"); then
+              actual=$(HEALTH="$health" node --input-type=module -e "const value=JSON.parse(process.env.HEALTH || '{}'); process.stdout.write(String(value.commit || ''))")
+              if [ "$actual" = "$EXPECTED_COMMIT" ]; then
+                echo "Production API is LIVE on $EXPECTED_COMMIT"
+                exit 0
+              fi
+              echo "API commit is ${actual:-unknown}; waiting for $EXPECTED_COMMIT (attempt $attempt/36)"
+            else
+              echo "API not ready yet (attempt $attempt/36)"
+            fi
+            sleep 20
+          done
+          echo "Production API did not reach expected commit $EXPECTED_COMMIT before Pages publication."
+          exit 1
+
       - name: Stage production artifact
         run: |
           rm -rf pages-artifact

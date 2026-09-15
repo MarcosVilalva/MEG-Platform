@@ -1,13 +1,25 @@
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import { AuthenticatedApp } from './AuthenticatedApp';
-import '../styles/meg-v15.css';
-import '../styles/v15-fidelity-fixes.css';
-
-document.body.classList.add('web-validation');
-
-createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <AuthenticatedApp />
-  </React.StrictMode>
-);
+// Entrada oficial de produção. Mantemos um único bootstrap para Web e Android,
+// mas o runtime visual e financeiro pertence integralmente à Phoenix V15.
+import '../phoenix/description-autocomplete-bridge';
+import '../phoenix/launch-business-rules-bridge';
+import '../phoenix/card-domain-live-refresh-bridge';
+import '../phoenix/card-view-continuity-bridge';
+import '../phoenix/card-management-bridge';
+import '../phoenix/card-statement-payment-bridge';
+import '../phoenix/card-statement-reopen-bridge';
+import '../phoenix/card-statement-lifecycle-bridge';
+import '../phoenix/card-statement-history-bridge';
+import '../phoenix/card-statement-projection-bridge';
+import '../phoenix/home-commitment-forecast-bridge';
+import '../phoenix/home-scenario-simulator-bridge';
+import '../phoenix/home-purchase-decision-bridge';
+import '../phoenix/card-event-form-bridge';
+import '../phoenix/card-purchase-detail-bridge';
+import '../phoenix/card-movement-readonly-bridge';
+import '../phoenix/card-purchase-edit-bridge';
+import '../phoenix/simple-event-form-bridge';
+import '../phoenix/write-success-auto-close';
+import '../phoenix/bulk-checkbox-fastpaint';
+import '../phoenix/bulk-event-actions-bridge';
+import '../phoenix/bulk-event-ux-enhancements';
+import '../phoenix/preview-main';

@@ -1,0 +1,405 @@
+.px-statement-lifecycle {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 18px;
+  background: rgba(10, 24, 39, .48);
+  display: grid;
+  gap: 16px;
+}
+
+.px-statement-life-head,
+.px-statement-life-footer,
+.px-statement-life-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.px-statement-life-head > div,
+.px-statement-life-link > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.px-statement-life-head span:first-child,
+.px-statement-life-link span,
+.px-statement-life-payment span,
+.px-statement-life-totals span,
+.px-statement-life-cycle-dates span,
+.px-statement-timeline-head span {
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  opacity: .66;
+}
+
+.px-statement-life-head strong,
+.px-statement-life-link strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.px-statement-life-head small,
+.px-statement-life-link small,
+.px-statement-life-payment small,
+.px-statement-life-totals small,
+.px-statement-life-cycle-dates small,
+.px-statement-life-footer > span {
+  opacity: .65;
+  font-size: 12px;
+}
+
+.px-statement-life-totals,
+.px-statement-life-payment,
+.px-statement-life-cycle-dates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.px-statement-life-cycle-dates {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.px-statement-life-payment {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.px-statement-life-totals > div,
+.px-statement-life-payment > div,
+.px-statement-life-cycle-dates > div,
+.px-statement-life-link,
+.px-statement-life-empty,
+.px-statement-life-reopen,
+.px-statement-timeline {
+  border: 1px solid rgba(148, 163, 184, .13);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .025);
+}
+
+.px-statement-life-totals > div,
+.px-statement-life-payment > div,
+.px-statement-life-cycle-dates > div {
+  min-width: 0;
+  padding: 12px 13px;
+  display: grid;
+  gap: 4px;
+}
+
+.px-statement-life-totals strong,
+.px-statement-life-payment strong,
+.px-statement-life-cycle-dates strong {
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.px-statement-life-reopen {
+  padding: 13px 14px;
+  display: grid;
+  gap: 8px;
+  border-color: rgba(245, 158, 11, .28);
+  background: rgba(245, 158, 11, .07);
+}
+
+.px-statement-life-reopen > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.px-statement-life-reopen p,
+.px-statement-life-empty span {
+  margin: 0;
+  opacity: .76;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.px-statement-life-empty {
+  padding: 14px;
+  display: grid;
+  gap: 5px;
+}
+
+.px-statement-life-link {
+  padding: 12px 13px;
+}
+
+.px-statement-life-archived {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, .12);
+  font-size: 10px !important;
+  font-weight: 700;
+  letter-spacing: .08em !important;
+  opacity: .8 !important;
+}
+
+.px-statement-timeline {
+  padding: 14px;
+  display: grid;
+  gap: 14px;
+}
+
+.px-statement-timeline-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+}
+
+.px-statement-timeline-head > div {
+  display: grid;
+  gap: 4px;
+}
+
+.px-statement-timeline-head > small {
+  max-width: 520px;
+  text-align: right;
+  opacity: .62;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.px-statement-timeline-list {
+  display: grid;
+  gap: 0;
+}
+
+.px-statement-timeline-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 0 14px;
+}
+
+.px-statement-timeline-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 17px;
+  top: 42px;
+  bottom: -2px;
+  width: 1px;
+  background: rgba(148, 163, 184, .18);
+}
+
+.px-statement-timeline-rail {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.px-statement-timeline-rail > span {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(148, 163, 184, .24);
+  background: rgba(15, 23, 42, .92);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+
+.px-statement-timeline-item.paid .px-statement-timeline-rail > span {
+  border-color: rgba(34, 197, 94, .34);
+  background: rgba(34, 197, 94, .12);
+}
+
+.px-statement-timeline-item.reopened .px-statement-timeline-rail > span {
+  border-color: rgba(245, 158, 11, .4);
+  background: rgba(245, 158, 11, .12);
+}
+
+.px-statement-timeline-item.legacy .px-statement-timeline-rail > span {
+  border-style: dashed;
+  opacity: .72;
+}
+
+.px-statement-timeline-body {
+  min-width: 0;
+  padding: 11px 12px;
+  display: grid;
+  gap: 7px;
+  border: 1px solid rgba(148, 163, 184, .1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .02);
+}
+
+.px-statement-timeline-item.paid .px-statement-timeline-body {
+  border-color: rgba(34, 197, 94, .16);
+}
+
+.px-statement-timeline-item.reopened .px-statement-timeline-body {
+  border-color: rgba(245, 158, 11, .22);
+  background: rgba(245, 158, 11, .035);
+}
+
+.px-statement-timeline-title,
+.px-statement-timeline-date,
+.px-statement-timeline-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.px-statement-timeline-title {
+  justify-content: space-between;
+}
+
+.px-statement-timeline-title > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.px-statement-timeline-title span {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  opacity: .6;
+}
+
+.px-statement-timeline-title strong {
+  font-size: 14px;
+}
+
+.px-statement-timeline-title b {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.px-statement-timeline-date {
+  font-size: 11px;
+  opacity: .7;
+}
+
+.px-statement-timeline-date span:not(:last-child)::after,
+.px-statement-timeline-date strong::after {
+  content: '·';
+  margin-left: 10px;
+  opacity: .55;
+}
+
+.px-statement-timeline-body p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  opacity: .76;
+}
+
+.px-statement-timeline-meta {
+  padding-top: 2px;
+  font-size: 11px;
+  opacity: .68;
+}
+
+.px-statement-timeline-meta span {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, .08);
+}
+
+.px-statement-life-footer {
+  padding-top: 2px;
+}
+
+.px-statement-life-footer > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.px-statement-lifecycle .px-status.warn,
+.px-cycle-dates .px-status.warn {
+  background: rgba(245, 158, 11, .13);
+  border-color: rgba(245, 158, 11, .28);
+  color: #fbbf24;
+}
+
+[data-theme="light"] .px-statement-lifecycle {
+  background: rgba(248, 250, 252, .8);
+  border-color: rgba(15, 23, 42, .1);
+}
+
+[data-theme="light"] .px-statement-life-totals > div,
+[data-theme="light"] .px-statement-life-payment > div,
+[data-theme="light"] .px-statement-life-cycle-dates > div,
+[data-theme="light"] .px-statement-life-link,
+[data-theme="light"] .px-statement-life-empty,
+[data-theme="light"] .px-statement-timeline,
+[data-theme="light"] .px-statement-timeline-body {
+  background: rgba(255, 255, 255, .82);
+  border-color: rgba(15, 23, 42, .08);
+}
+
+[data-theme="light"] .px-statement-timeline-rail > span {
+  background: #fff;
+}
+
+@media (max-width: 900px) {
+  .px-statement-life-payment {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .px-statement-lifecycle {
+    margin-top: 14px;
+    padding: 14px;
+  }
+  .px-statement-life-head,
+  .px-statement-life-footer,
+  .px-statement-life-link,
+  .px-statement-life-reopen > div,
+  .px-statement-timeline-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .px-statement-life-head {
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
+  .px-statement-life-totals,
+  .px-statement-life-payment,
+  .px-statement-life-cycle-dates {
+    grid-template-columns: 1fr;
+  }
+  .px-statement-timeline-head > small {
+    text-align: left;
+  }
+  .px-statement-timeline-item {
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .px-statement-timeline-item:not(:last-child)::after {
+    left: 14px;
+  }
+  .px-statement-timeline-rail > span {
+    width: 26px;
+    height: 26px;
+  }
+  .px-statement-timeline-title {
+    align-items: flex-start;
+  }
+  .px-statement-life-footer .px-secondary-action,
+  .px-statement-life-link .px-secondary-action {
+    width: 100%;
+  }
+  .px-statement-life-footer > span {
+    white-space: normal;
+  }
+}
