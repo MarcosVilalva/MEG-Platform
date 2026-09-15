@@ -32,6 +32,8 @@ const pagesWorkflow = text('.github/workflows/deploy-pages.yml');
 const androidWorkflow = text('.github/workflows/build-android-apk.yml');
 const productionSmoke = text('.github/workflows/production-smoke.yml');
 const cardsClient = text('apps/web/src/app/cards-client.ts');
+const simpleWriter = text('apps/web/src/phoenix/simple-event-form-bridge.ts');
+const simpleGateway = text('apps/web/src/phoenix/data/phoenix-write-gateway.ts');
 const forecastBridge = text('apps/web/src/phoenix/home-commitment-forecast-bridge.ts');
 const scenarioBridge = text('apps/web/src/phoenix/home-scenario-simulator-bridge.ts');
 const decisionBridge = text('apps/web/src/phoenix/home-purchase-decision-bridge.ts');
@@ -86,6 +88,12 @@ check('HTML Phoenix não é cacheado', previewServer.includes("decoded === '/pho
 check('Pages aguarda API do mesmo commit antes da publicação', pagesWorkflow.includes('RENDER_GIT_COMMIT') && pagesWorkflow.includes('github.sha'));
 check('Android valida marcador Phoenix V15 no artefato Web', androidWorkflow.includes('data-meg-shell="phoenix-v15"'));
 check('Smoke de produção exige marcador Phoenix V15', productionSmoke.includes('data-meg-shell="phoenix-v15"'));
+
+check('Writer Phoenix libera transferência atômica oficial', simpleWriter.includes("authenticatedRequest('/finance/transfers'") && !simpleWriter.includes('Transferências continuam bloqueadas'));
+check('Writer Phoenix libera recorrência oficial de despesas', simpleWriter.includes('payablesClient.createRecurring') && !simpleWriter.includes('Recorrência continua em simulação'));
+check('Writer Phoenix preserva sinal para estornos', simpleWriter.includes('const amount = parseMoney(') && !simpleWriter.includes('Estornos e valores negativos continuam bloqueados'));
+check('Gateway simples aceita valor negativo diferente de zero', simpleGateway.includes('input.amount === 0') && !simpleGateway.includes('input.amount <= 0'));
+check('Modelo sem contrato não é oferecido para gravação', simpleWriter.includes("label.hidden = true") && simpleWriter.includes('SALVAR COMO MODELO'));
 
 check('Cliente de cartões expõe ciclo de fatura', cardsClient.includes('statementLifecycle:'));
 check('Cliente de cartões expõe pagamento protegido', cardsClient.includes('payStatement:'));
