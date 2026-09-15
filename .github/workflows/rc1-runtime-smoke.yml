@@ -65,11 +65,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --silent --show-error --fail --max-time 90 \
-            "$PREVIEW_URL/health" -o /tmp/api-health.json
-          cat /tmp/api-health.json | jq .
-          grep -q '"cloud-state"' /tmp/api-health.json
-          echo "Proxy de leitura do RC1 alcança a API oficial."
+          for attempt in $(seq 1 10); do
+            status=$(curl --silent --show-error --max-time 90 \
+              -o /tmp/api-health.json -w '%{http_code}' \
+              "$PREVIEW_URL/health" || true)
+            echo "Leitura da API via preview -> HTTP ${status:-erro} (tentativa ${attempt}/10)"
+            if [ "$status" = "200" ] && grep -q '"cloud-state"' /tmp/api-health.json; then
+              cat /tmp/api-health.json | jq .
+              echo "Proxy de leitura do RC1 alcança a API oficial."
+              exit 0
+            fi
+            if [ "$status" = "429" ]; then
+              echo "Rate limit transitório detectado; aguardando antes de repetir."
+            fi
+            sleep $((attempt * 6))
+          done
+          echo "A leitura da API oficial não estabilizou dentro da janela do smoke."
+          cat /tmp/api-health.json 2>/dev/null || true
+          exit 1
 
       - name: Prove financial writes are blocked in preview
         shell: bash
