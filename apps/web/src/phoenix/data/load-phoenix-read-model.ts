@@ -77,6 +77,7 @@ type FinancialEventWithSourcePayload = FinancialEvent & {
 const readModelCache = new Map<string, CachedReadModel>();
 const readModelInFlight = new Map<string, Promise<PhoenixReadModel>>();
 const supplementalInFlight = new Map<string, Promise<void>>();
+const supplementalScheduled = new Set<string>();
 let allEventsCache: CachedAllEvents | null = null;
 let allEventsInFlight: Promise<PhoenixReadModel['events']> | null = null;
 let staticContextCache: StaticReadContext | null = null;
@@ -343,19 +344,35 @@ function startSupplementalHydration(
   supplementalInFlight.set(key, pending);
 }
 
+function scheduleSupplementalHydration(
+  session: NonNullable<ReturnType<typeof readSession>>,
+  month: string,
+  model: PhoenixReadModel,
+  forceStatic = false
+) {
+  const key = `${staticContextKey(session.user)}:${month}`;
+  if (supplementalInFlight.has(key) || supplementalScheduled.has(key)) return;
+  supplementalScheduled.add(key);
+
+  const run = () => {
+    supplementalScheduled.delete(key);
+    startSupplementalHydration(session, month, model, forceStatic);
+  };
+
+  // A Home recebe primeiro a fotografia mensal. Só depois do primeiro paint iniciamos
+  // AppState, usuários, recebíveis, clientes, diagnóstico completo e orçamentos.
+  // Isso evita que leituras secundárias concorram com renderização/navegação inicial.
+  if (typeof window !== 'undefined') {
+    window.setTimeout(run, 450);
+  } else {
+    setTimeout(run, 0);
+  }
+}
+
 async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boolean } = {}): Promise<PhoenixReadModel> {
   const session = readSession();
   if (!session) throw new Error('PHOENIX_UNAUTHORIZED');
 
-  // Caminho crítico da entrada: somente o snapshot financeiro mensal. As leituras
-  // auxiliares (AppState legado, usuários, clientes, recebíveis e orçamentos) são
-  // pré-carregadas logo depois, sem competir com o snapshot que libera a Home.
-  const previewCore = await authenticatedRequest<PhoenixPreviewCoreRead>(`/finance/phoenix-preview?month=${encodeURIComponent(month)}`);
-  if (previewCore.month !== month) throw new Error('PHOENIX_PREVIEW_MONTH_MISMATCH');
-
-  // Health é barato e, consultado depois do snapshot, normalmente já reflete a
-  // checagem de normalização concluída no cold start da API.
-  const health = await getApiHealth();
   const key = staticContextKey(session.user);
   const cachedStatic = !options.forceStatic
     && staticContextCache
@@ -363,10 +380,21 @@ async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boo
     && Date.now() - staticContextCache.storedAt <= STATIC_CACHE_TTL
       ? staticContextCache
       : null;
+
+  // Snapshot e health começam juntos. Antes, o health só era solicitado depois que o
+  // snapshot terminava, acrescentando uma segunda espera ao caminho crítico do login.
+  const previewPromise = authenticatedRequest<PhoenixPreviewCoreRead>(`/finance/phoenix-preview?month=${encodeURIComponent(month)}`);
+  const healthPromise = cachedStatic
+    ? Promise.resolve(cachedStatic.health)
+    : getApiHealth().catch(() => ({ status: 'unavailable' } as PhoenixReadModel['health']));
+  const [previewCore, health] = await Promise.all([previewPromise, healthPromise]);
+
+  if (previewCore.month !== month) throw new Error('PHOENIX_PREVIEW_MONTH_MISMATCH');
+
   const staticContext = cachedStatic || bootstrapStaticContext(session, health);
   const model = buildPhoenixReadModel(session, month, previewCore, staticContext, []);
 
-  startSupplementalHydration(session, month, model, Boolean(options.forceStatic));
+  scheduleSupplementalHydration(session, month, model, Boolean(options.forceStatic));
   return model;
 }
 
@@ -392,7 +420,8 @@ export function peekPhoenixReadModel(month: string) {
  * - resumo, benefício, eventos, cartões, pendências e auditoria pertencem à mesma fotografia mensal;
  * - compras de cartão são projetadas somente para leitura na grade, parcela a parcela, sem criar evento monetário duplicado;
  * - a Home é liberada quando a fotografia financeira mensal está pronta;
- * - AppState legado, usuários, clientes, recebíveis, diagnóstico completo e orçamentos são pré-carregados logo depois;
+ * - AppState legado, usuários, clientes, recebíveis, diagnóstico completo e orçamentos são pré-carregados logo depois do primeiro paint;
+ * - snapshot mensal e health são buscados em paralelo no caminho crítico;
  * - a normalização inicial usa o estado runtime do health e é substituída pelo diagnóstico completo em segundo plano;
  * - activityLog permanece carregado somente como histórico legado anterior à auditoria normalizada;
  * - transactions permanece disponível somente como compatibilidade de leitura para cartões/pendências legadas;
@@ -460,6 +489,7 @@ export function clearPhoenixReadModelCache() {
   readModelCache.clear();
   readModelInFlight.clear();
   supplementalInFlight.clear();
+  supplementalScheduled.clear();
   allEventsCache = null;
   allEventsInFlight = null;
   staticContextCache = null;
