@@ -91,7 +91,7 @@ export function PhoenixLaunchWriteControl({
     try {
       const prepared = preparedRef.current || preparePhoenixSimpleEvent(input);
       preparedRef.current = prepared;
-      const result = await runPhoenixSimpleEventWrite(prepared, input.competence || input.date.slice(0, 7));
+      const result = await runPhoenixSimpleEventWrite(prepared, input.date.slice(0, 7));
       if (result.status === 'confirmed') {
         preparedRef.current = null;
         setCommitState('confirmed');
@@ -100,7 +100,7 @@ export function PhoenixLaunchWriteControl({
         return;
       }
       setCommitState('error');
-      setCommitMessage(result.message);
+      setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível confirmar o lançamento. Tente novamente sem alterar os dados.');
     } catch (error) {
       const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
       setCommitState('error');
