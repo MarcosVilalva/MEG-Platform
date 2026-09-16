@@ -446,7 +446,7 @@ export async function loadPhoenixAllEvents(options: { force?: boolean } = {}) {
 
   const pending = fetchAllFinancialEvents()
     .then((data) => {
-      allEventsCache = { data, storedAt: Date.now() });
+      allEventsCache = { data, storedAt: Date.now() };
       return data;
     })
     .finally(() => {
