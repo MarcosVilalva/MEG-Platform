@@ -215,6 +215,12 @@ export function PhoenixDecisionCenter({ data }: { data: PhoenixReadModel }) {
   const finalImpact = simulated.finalBalance - radar.finalBalance;
   const minImpact = simulated.minimumBalance - radar.minimumBalance;
   const currentMonthRows = radar.months[0];
+  const safeMargin = Math.max(0, radar.minimumBalance);
+  const simulatedSafeMargin = Math.max(0, simulated.minimumBalance);
+  const safeMarginConsumed = scenarioActive && scenarioKind === 'expense' ? Math.max(0, safeMargin - simulatedSafeMargin) : 0;
+  const safeMarginUsage = scenarioActive && scenarioKind === 'expense'
+    ? safeMargin > 0 ? Math.min(100, safeMarginConsumed / safeMargin * 100) : 100
+    : 0;
 
   const assistantTitle = scenarioActive
     ? simulated.firstNegativeMonth
@@ -241,6 +247,21 @@ export function PhoenixDecisionCenter({ data }: { data: PhoenixReadModel }) {
       </div>
       <div className="px-screen-head-aside"><span className="px-total-pill">Base atual {money.format(radar.currentBalance)}</span></div>
     </header>
+
+    <section className={`px-card px-decision-safe-margin ${safeMargin <= 0 ? 'is-danger' : ''}`}>
+      <div className="px-decision-safe-copy">
+        <span>Margem segura · 12 meses</span>
+        <h2>{money.format(safeMargin)}</h2>
+        <p>É o limite de uma nova despesa única assumida agora que, com os compromissos e receitas já cadastrados, ainda preservaria o menor saldo projetado em zero ou acima nos próximos 12 meses.</p>
+      </div>
+      <div className="px-decision-safe-stats">
+        <div><span>Pior ponto do caixa</span><strong>{fullMonthLabel(radar.minimumMonth)}</strong></div>
+        <div><span>Saldo mínimo projetado</span><strong className={radar.minimumBalance < 0 ? 'negative' : ''}>{money.format(radar.minimumBalance)}</strong></div>
+        <div><span>Margem após simulação</span><strong className={scenarioActive && simulatedSafeMargin <= 0 ? 'negative' : ''}>{scenarioActive ? money.format(simulatedSafeMargin) : '—'}</strong></div>
+        <div><span>Consumo da margem</span><strong>{scenarioActive && scenarioKind === 'expense' ? `${safeMarginUsage.toFixed(0)}%` : '—'}</strong></div>
+        {scenarioActive && scenarioKind === 'expense' ? <div className={`px-decision-safe-progress ${safeMarginUsage >= 100 ? 'is-danger' : safeMarginUsage >= 70 ? 'is-warning' : ''}`}><div><span>Margem consumida pela simulação</span><strong>{money.format(safeMarginConsumed)}</strong></div><div className="px-decision-safe-track"><i style={{ width: `${safeMarginUsage}%` }} /></div></div> : null}
+      </div>
+    </section>
 
     <nav className="px-decision-tabs" aria-label="Ferramentas de decisão">
       <button type="button" className={tab === 'radar' ? 'active' : ''} onClick={() => setTab('radar')}>Radar financeiro</button>
@@ -305,7 +326,7 @@ export function PhoenixDecisionCenter({ data }: { data: PhoenixReadModel }) {
         <h2>{assistantTitle}</h2>
         <p>{assistantText}</p>
         <div className="px-decision-assistant-stats">
-          <div><span>Margem mínima</span><strong>{money.format(scenarioActive ? simulated.minimumBalance : radar.minimumBalance)}</strong></div>
+          <div><span>Margem segura atual</span><strong>{money.format(safeMargin)}</strong></div>
           <div><span>Impacto da simulação</span><strong className={finalImpact < 0 ? 'negative' : finalImpact > 0 ? 'positive' : ''}>{scenarioActive ? money.format(finalImpact) : '—'}</strong></div>
           <div><span>Variação do ponto mínimo</span><strong className={minImpact < 0 ? 'negative' : minImpact > 0 ? 'positive' : ''}>{scenarioActive ? money.format(minImpact) : '—'}</strong></div>
         </div>
