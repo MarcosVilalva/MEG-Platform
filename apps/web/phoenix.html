@@ -45,6 +45,21 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      (() => {
+        const root = document.getElementById('root');
+        if (!root) return;
+        const syncAuthLock = () => {
+          const form = document.querySelector('.px-preview-form');
+          if (!form) return;
+          const busy = Boolean(form.querySelector('.px-preview-button-spinner'));
+          form.toggleAttribute('inert', busy);
+          form.setAttribute('aria-busy', busy ? 'true' : 'false');
+        };
+        new MutationObserver(syncAuthLock).observe(root, { childList:true, subtree:true });
+        queueMicrotask(syncAuthLock);
+      })();
+    </script>
     <script type="module" src="/src/phoenix/description-autocomplete-bridge.ts"></script>
     <script type="module" src="/src/phoenix/launch-business-rules-bridge.ts"></script>
     <script type="module" src="/src/phoenix/card-domain-live-refresh-bridge.ts"></script>
