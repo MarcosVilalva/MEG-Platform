@@ -10,6 +10,8 @@ assert.match(server, /allowedAuthPosts\s*=\s*new Set\(\[\s*'\/auth\/login',\s*'\
 
 assert.match(server, /simpleEventWriteEnabled\s*=\s*process\.env\.PHOENIX_SIMPLE_EVENT_WRITE\s*===\s*'enabled'/,
   'Evento financeiro simples deve exigir uma flag de ambiente deliberada.');
+assert.match(server, /cardPurchaseWriteEnabled\s*=\s*process\.env\.PHOENIX_CARD_PURCHASE_WRITE\s*===\s*'enabled'/,
+  'Compra no cartão deve exigir uma flag independente e deliberada.');
 assert.match(server, /pendingWriteEnabled\s*=\s*process\.env\.PHOENIX_PENDING_WRITE\s*===\s*'enabled'/,
   'Baixa de pendências deve exigir uma flag de ambiente deliberada.');
 assert.match(server, /bulkEventWriteEnabled\s*=\s*process\.env\.PHOENIX_BULK_EVENT_WRITE\s*===\s*'enabled'/,
@@ -17,10 +19,14 @@ assert.match(server, /bulkEventWriteEnabled\s*=\s*process\.env\.PHOENIX_BULK_EVE
 
 assert.match(server, /allowedFinancialPosts\s*=\s*new Set\(\['\/finance\/events'\]\)/,
   'Writer de evento simples deve continuar restrito ao endpoint exato de criação.');
+assert.match(server, /allowedCardPurchasePosts\s*=\s*new Set\(\['\/cards\/purchases'\]\)/,
+  'Writer de cartão deve liberar apenas a criação exata de compra, sem abrir gestão, edição, exclusão ou pagamento de fatura.');
 assert.match(server, /allowedBulkEventPosts\s*=\s*new Set\(\[\s*'\/finance\/events\/bulk\/update',\s*'\/finance\/events\/bulk\/archive'\s*\]\)/,
   'Writer em lote deve possuir allowlist explícita somente para update e archive protegidos.');
 assert.match(server, /simpleEventWriteEnabled\s*&&\s*allowedFinancialPosts\.has\(pathname\)/,
   'POST de evento simples deve depender simultaneamente da flag e da allowlist estreita.');
+assert.match(server, /cardPurchaseWriteEnabled\s*&&\s*allowedCardPurchasePosts\.has\(pathname\)/,
+  'POST de compra no cartão deve depender simultaneamente da flag e da allowlist estreita.');
 assert.match(server, /bulkEventWriteEnabled\s*&&\s*allowedBulkEventPosts\.has\(pathname\)/,
   'POST em lote deve depender simultaneamente da flag e da allowlist estreita.');
 assert.match(server, /if \(!pendingWriteEnabled\) return false;/,
@@ -30,12 +36,14 @@ assert.match(server, /\^\\\/finance\\\/events\\\/\[\^\/\]\+\\\/settle\$.*\^\\\/p
 assert.doesNotMatch(server, /allowedFinancialPosts\s*=\s*new Set\([^)]*(?:payables|cards|receivables|transfers)/,
   'Writer simples não pode ampliar implicitamente sua allowlist para outros domínios.');
 
-assert.match(server, /capabilities:\s*\{\s*simpleEventWrite:\s*simpleEventWriteEnabled,\s*pendingWrite:\s*pendingWriteEnabled,\s*bulkEventWrite:\s*bulkEventWriteEnabled\s*\}/s,
+assert.match(server, /capabilities:\s*\{\s*simpleEventWrite:\s*simpleEventWriteEnabled,\s*cardPurchaseWrite:\s*cardPurchaseWriteEnabled,\s*pendingWrite:\s*pendingWriteEnabled,\s*bulkEventWrite:\s*bulkEventWriteEnabled\s*\}/s,
   'Health do preview deve declarar todas as capacidades reais de escrita protegida.');
 assert.match(server, /phoenix-bulk-event-write-gated-preview/,
   'Health deve distinguir quando o writer de lote está habilitado.');
 assert.match(server, /phoenix-pending-write-gated-preview/,
   'Health deve distinguir quando o writer de pendências está habilitado.');
+assert.match(server, /phoenix-card-purchase-write-gated-preview/,
+  'Health deve distinguir quando a criação de compra no cartão está habilitada.');
 assert.match(server, /phoenix-simple-event-write-gated-preview/,
   'Health deve distinguir quando somente o writer simples está habilitado.');
 assert.match(server, /phoenix-finance-read-only-preview/,
