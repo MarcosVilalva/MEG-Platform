@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { PhoenixReadModel } from '../contracts';
 import { buildPhoenixHomeAgenda, type PhoenixHomeAgendaItem } from '../home-agenda';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const whole = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
+const dateTime = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 type HomeRoute = 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs' | 'users' | 'settings' | 'receivables' | 'revenues' | 'cashflow' | 'reconcile' | 'analytics' | 'budgets';
 type AgendaDisplayGroup = {
@@ -13,6 +14,13 @@ type AgendaDisplayGroup = {
   subtitle: string;
   amount: number;
   items: PhoenixHomeAgendaItem[];
+};
+type HistoryFeedItem = {
+  id: string;
+  at: string;
+  title: string;
+  description: string;
+  actor: string;
 };
 
 function todayIso() {
@@ -33,6 +41,43 @@ function monthLabel(value: string) {
 function shortDate(value: string) {
   const [year, month, day] = value.slice(0, 10).split('-');
   return year && month && day ? `${day}/${month}` : value;
+}
+
+function actionLabel(action: string) {
+  const normalized = action.toUpperCase();
+  if (normalized.includes('CREATED')) return 'Lançamento incluído';
+  if (normalized.includes('UPDATED')) return 'Lançamento alterado';
+  if (normalized.includes('ARCHIVED') || normalized.includes('DELETED')) return 'Lançamento arquivado';
+  if (normalized.includes('PAYMENT') || normalized.includes('PAID')) return 'Pagamento confirmado';
+  if (normalized.includes('TRANSFER')) return 'Transferência registrada';
+  return action.replace(/_/g, ' ').toLocaleLowerCase('pt-BR').replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function historyFeed(data: PhoenixReadModel): HistoryFeedItem[] {
+  const audit = data.financialAudit.items.map((item) => ({
+    id: `audit-${item.id}`,
+    at: item.at,
+    title: actionLabel(item.action),
+    description: item.entity ? `${item.entity} · registro ${item.entityId}` : 'Evento financeiro auditado',
+    actor: item.actor?.name || item.actor?.email || 'Usuário do MEG',
+  }));
+  const legacy = data.activities.map((item) => ({
+    id: `activity-${item.id}`,
+    at: item.at,
+    title: actionLabel(item.action),
+    description: item.transaction?.description || 'Atividade financeira preservada',
+    actor: item.userName || 'Usuário do MEG',
+  }));
+  const seen = new Set<string>();
+  return [...audit, ...legacy]
+    .sort((left, right) => String(right.at).localeCompare(String(left.at)))
+    .filter((item) => {
+      const key = `${item.at}|${item.title}|${item.description}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 20);
 }
 
 function agendaDisplayGroups(items: PhoenixHomeAgendaItem[]) {
@@ -67,25 +112,44 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
   const today = todayIso();
   const agenda = useMemo(() => buildPhoenixHomeAgenda(data, today), [data, today]);
   const agendaRows = useMemo(() => agendaDisplayGroups(agenda.items), [agenda.items]);
+  const feed = useMemo(() => historyFeed(data), [data]);
   const visibleAgenda = agendaRows.slice(0, 5);
   const hiddenAgendaCount = Math.max(0, agendaRows.length - visibleAgenda.length);
+  const [extraOpen, setExtraOpen] = useState(false);
+  const [detail, setDetail] = useState<AgendaDisplayGroup | null>(null);
+  const [detailSelected, setDetailSelected] = useState<Set<string>>(() => new Set());
 
   const pendingAmount = data.summary.pendingAmount || 0;
   const realizedBalance = data.summary.availableBalance + data.summary.realizedResult;
   const projectedClosing = data.cashflow.projectedClosing;
   const freeAfterCommitments = realizedBalance - pendingAmount;
+  const consolidatedRealized = realizedBalance + data.summary.benefitBalance;
   const nextDue = agendaRows.find((item) => item.dueDate >= today) || agendaRows[0];
   const coverageRaw = pendingAmount > 0 ? (realizedBalance / pendingAmount) * 100 : 100;
   const coverageBar = Math.max(0, Math.min(100, coverageRaw));
   const healthy = projectedClosing >= 0 && freeAfterCommitments >= 0;
   const heroStatus = healthy ? 'Mês sob controle' : projectedClosing >= 0 ? 'Fluxo apertado' : 'Atenção ao fluxo';
+  const selectedDetailAmount = detail?.items.filter((item) => detailSelected.has(item.id)).reduce((sum, item) => sum + item.amount, 0) || 0;
+
+  function openDetail(group: AgendaDisplayGroup) {
+    setDetail(group);
+    setDetailSelected(new Set());
+  }
+
+  function toggleDetailItem(id: string) {
+    setDetailSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
 
   return <>
     <div className="px-page-head">
       <div>
         <span className="px-kicker">Visão geral</span>
         <h1>{monthLabel(month)}</h1>
-        <p>O essencial para decidir o que fazer agora, sem transformar a Home em um relatório completo.</p>
+        <p>O essencial para decidir o que fazer agora. Detalhes e histórico ficam recolhidos até você pedir.</p>
         <span className="px-updated">Atualizado agora · {data.normalization.primary && data.normalization.reconciled ? 'dados sincronizados' : 'integridade em verificação'}</span>
       </div>
     </div>
@@ -98,10 +162,7 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
           <span className="px-kicker">Saldo monetário atual</span>
           <h2>{money.format(realizedBalance)}</h2>
           <p>Valor efetivamente disponível agora. Receitas futuras só entram quando forem realizadas.</p>
-          <div className="px-home-coverage">
-            <div><span>Cobertura dos compromissos</span><strong>{whole.format(coverageRaw)}%</strong></div>
-            <div className="px-home-coverage-track"><i style={{ width: `${coverageBar}%` }} /></div>
-          </div>
+          <div className="px-home-coverage"><div><span>Cobertura dos compromissos</span><strong>{whole.format(coverageRaw)}%</strong></div><div className="px-home-coverage-track"><i style={{ width: `${coverageBar}%` }} /></div></div>
         </div>
 
         <div className="px-home-hero-insights">
@@ -120,25 +181,17 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
 
     <section className="px-metrics">
       <article className="px-card px-metric bad"><span>Pendências</span><strong>{money.format(pendingAmount)}</strong><small>{agenda.items.length} compromisso(s) acionável(is)</small></article>
-      <article className="px-card px-metric info px-benefit-control"><span>Benefício alimentação</span><strong>{money.format(data.summary.benefitBalance)}</strong><div className="px-benefit-inline"><div><span>Créditos</span><b>{money.format(data.summary.benefitCredits)}</b></div><div><span>Utilizado</span><b>{money.format(data.summary.benefitUsed)}</b></div><button type="button" onClick={() => onNavigate('movements')}>Ver extrato</button></div></article>
+      <article className="px-card px-metric info px-benefit-control"><span>Benefício alimentação · disponível</span><strong>{money.format(data.summary.benefitBalance)}</strong><div className="px-benefit-inline"><div><span>Créditos</span><b>{money.format(data.summary.benefitCredits)}</b></div><div><span>Utilizado</span><b>{money.format(data.summary.benefitUsed)}</b></div><button type="button" onClick={() => onNavigate('movements')}>Ver extrato</button></div></article>
       <article className={`px-card px-metric ${projectedClosing < 0 ? 'bad' : 'good'}`}><span>Fechamento projetado</span><strong>{money.format(projectedClosing)}</strong><small>{projectedClosing >= 0 ? 'Fluxo previsto positivo' : 'Exige atenção no período'}</small></article>
     </section>
 
     <section className="px-bottom-grid px-home-action-grid">
       <article className="px-card px-home-scroll-card px-home-agenda-card">
-        <div className="px-panel-head">
-          <div><span>Prioridades</span><h2>Próximos compromissos</h2></div>
-          <div className="px-home-panel-actions"><strong>{money.format(agenda.actionableAmount)}</strong><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Abrir Pendentes</button></div>
-        </div>
+        <div className="px-panel-head"><div><span>Prioridades</span><h2>Vencimentos de {monthLabel(month)}</h2></div><div className="px-home-panel-actions"><strong>{money.format(agenda.actionableAmount)}</strong><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Abrir Pendentes</button></div></div>
         <div className="px-home-scroll-list">
           {visibleAgenda.map((group) => {
             const status = statusForDate(group.dueDate, today);
-            return <div className="px-dashboard-row px-home-agenda-row" key={group.key}>
-              <div className={`px-home-due-date ${status === 'VENCIDO' ? 'danger' : status === 'HOJE' ? 'today' : ''}`}><strong>{shortDate(group.dueDate)}</strong><small>{status}</small></div>
-              <div className="px-dashboard-row-copy"><strong>{group.title}</strong><small>{group.items.length > 1 ? `${group.items.length} lançamentos agrupados · ` : ''}{group.subtitle}</small></div>
-              <strong className="px-home-row-value">{money.format(group.amount)}</strong>
-              <button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Ver</button>
-            </div>;
+            return <div className="px-dashboard-row px-home-agenda-row" key={group.key}><div className={`px-home-due-date ${status === 'VENCIDO' ? 'danger' : status === 'HOJE' ? 'today' : ''}`}><strong>{shortDate(group.dueDate)}</strong><small>{status}</small></div><div className="px-dashboard-row-copy"><strong>{group.title}</strong><small>{group.items.length > 1 ? `${group.items.length} lançamentos agrupados · ` : ''}{group.subtitle}</small></div><strong className="px-home-row-value">{money.format(group.amount)}</strong><button className="px-dashboard-row-action" type="button" onClick={() => openDetail(group)}>Detalhes</button></div>;
           })}
           {!visibleAgenda.length ? <div className="px-home-empty-state"><strong>Nenhum vencimento acionável</strong><span>Não há compromissos em aberto no período selecionado.</span></div> : null}
         </div>
@@ -151,9 +204,26 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
           <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Lançamentos</strong><small>Incluir, editar, filtrar ou localizar movimentações.</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('movements')}>Abrir</button></div>
           <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Pendentes</strong><small>Selecionar contas e organizar as próximas baixas.</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Abrir</button></div>
           <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Cartões</strong><small>Conferir faturas, limites e compras agrupadas.</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('cards')}>Abrir</button></div>
-          <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Histórico</strong><small>Consultar auditoria e alterações sem ocupar a Home.</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('history')}>Abrir</button></div>
+          <button className="px-dashboard-row-action" type="button" onClick={() => setExtraOpen((value) => !value)}>{extraOpen ? 'Recolher detalhes' : 'Mostrar mais detalhes'}</button>
         </div>
       </article>
     </section>
+
+    {extraOpen ? <section className="px-bottom-grid px-home-action-grid">
+      <article className="px-card px-home-scroll-card">
+        <div className="px-panel-head"><div><span>Histórico recente</span><h2>Últimos 20 eventos</h2></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('history')}>Ver histórico completo</button></div>
+        <div className="px-home-scroll-list">{feed.map((item) => <div className="px-dashboard-row px-home-history-row" key={item.id}><div className="px-dashboard-row-copy"><strong>{item.title}</strong><small>{item.description}</small><small>{dateTime.format(new Date(item.at))} · {item.actor}</small></div></div>)}</div>
+      </article>
+      <article className="px-card px-metric warn"><span>Consolidado realizado</span><strong>{money.format(consolidatedRealized)}</strong><small>Monetário + benefício apresentados separadamente no cálculo principal.</small></article>
+    </section> : null}
+
+    {detail ? <div className="px-home-drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>
+      <aside className="px-home-drawer" role="dialog" aria-modal="true" aria-label={`Detalhes de ${detail.title}`}>
+        <header className="px-home-drawer-head"><div><span className="px-kicker">Vencimento · {shortDate(detail.dueDate)}</span><h2>{detail.title}</h2><p>{detail.items.length} item(ns) · {money.format(detail.amount)}</p></div><button type="button" aria-label="Fechar detalhes" onClick={() => setDetail(null)}>×</button></header>
+        <div className="px-home-drawer-tools"><button type="button" onClick={() => setDetailSelected(new Set(detail.items.map((item) => item.id)))}>Selecionar todos</button><button type="button" onClick={() => setDetailSelected(new Set())}>Limpar</button><span>{detailSelected.size} selecionado(s)</span></div>
+        <div className="px-home-drawer-list">{detail.items.map((item) => <label key={item.id} className="px-home-drawer-item"><input type="checkbox" checked={detailSelected.has(item.id)} onChange={() => toggleDetailItem(item.id)} /><div><strong>{item.description}</strong><small>{item.meta}</small></div><strong>{money.format(item.amount)}</strong></label>)}</div>
+        <footer className="px-home-drawer-footer"><div><span>Total selecionado</span><strong>{money.format(selectedDetailAmount)}</strong></div><button type="button" className="px-secondary-action" onClick={() => { setDetail(null); onNavigate('payables'); }}>Abrir Pendentes</button><button type="button" className="px-primary-action" disabled={!detailSelected.size} onClick={() => { setDetail(null); onNavigate('payables'); }}>Revisar pagamento</button><small>A baixa é concluída na tela Pendentes, onde seleção, conta e forma de pagamento são revisadas.</small></footer>
+      </aside>
+    </div> : null}
   </>;
 }
