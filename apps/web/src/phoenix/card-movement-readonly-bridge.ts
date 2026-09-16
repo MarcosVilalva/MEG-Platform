@@ -41,12 +41,21 @@ function protectionNotice(root: HTMLElement) {
 
 function protect(root: HTMLElement) {
   const button = root.querySelector<HTMLButtonElement>('.px-detail-actions .px-primary-action:not([data-card-domain-edit])');
-  if (!button) return;
-  button.dataset.phoenixCardDomainEdit = 'true';
-  button.disabled = true;
-  button.textContent = 'Editar pela área de Cartões';
-  button.title = 'Esta compra pertence ao domínio de cartões/faturas. O editor financeiro genérico foi bloqueado para evitar duplicidade.';
-  protectionNotice(root).textContent = 'Compra vinculada ao domínio de cartões/faturas. O editor financeiro genérico fica bloqueado para preservar cartão, fatura e parcelamento.';
+  if (button) {
+    button.dataset.phoenixCardDomainEdit = 'true';
+    button.disabled = true;
+    button.hidden = true;
+    button.textContent = 'Editar pela área de Cartões';
+    button.title = 'Esta compra pertence ao domínio de cartões/faturas. O editor financeiro genérico foi bloqueado para evitar duplicidade.';
+  }
+
+  const cancel = root.querySelector<HTMLButtonElement>('[data-card-domain-cancel]');
+  if (cancel) {
+    cancel.textContent = 'Excluir compra';
+    cancel.title = 'Remove as parcelas abertas das faturas e preserva o histórico de auditoria.';
+  }
+
+  protectionNotice(root).textContent = 'Compra vinculada ao domínio de cartões/faturas. Use as ações próprias do cartão para editar ou excluir sem duplicar movimentação financeira.';
 }
 
 function restore(root: HTMLElement) {
@@ -54,6 +63,7 @@ function restore(root: HTMLElement) {
   const button = root.querySelector<HTMLButtonElement>('[data-phoenix-card-domain-edit]');
   if (!button) return;
   delete button.dataset.phoenixCardDomainEdit;
+  button.hidden = false;
   button.disabled = false;
   button.textContent = 'Preparar edição';
   button.removeAttribute('title');
