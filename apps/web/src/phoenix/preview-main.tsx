@@ -14,10 +14,19 @@ import { loadPhoenixReadModel } from './data/load-phoenix-read-model';
 import './preview.css';
 import './phoenix-preview-parity.css';
 import './preview-auth-flow.css';
+import './preview-boot.css';
 
-type PreviewState = 'checking' | 'signed-out' | 'signed-in';
+type PreviewState = 'checking' | 'signed-out' | 'preparing' | 'signed-in';
 type AuthMode = 'login' | 'register' | 'forgot';
 type AccountType = 'REQUEST_ACCESS' | 'CREATE_WORKSPACE';
+type BootStage = 'session' | 'finance' | 'organizing' | 'ready';
+
+const bootStages: Array<{ id: BootStage; label: string; title: string; description: string; progress: number }> = [
+  { id: 'session', label: 'Validando sua sessão', title: 'Validando seu acesso', description: 'Confirmando sua sessão segura no MEG.', progress: 22 },
+  { id: 'finance', label: 'Carregando suas finanças', title: 'Carregando suas finanças', description: 'Buscando saldos, lançamentos, cartões e compromissos.', progress: 55 },
+  { id: 'organizing', label: 'Organizando cartões e pendências', title: 'Organizando sua visão financeira', description: 'Preparando os dados para que as telas já abram prontas.', progress: 82 },
+  { id: 'ready', label: 'Tudo pronto', title: 'Tudo pronto', description: 'Sua visão financeira está preparada.', progress: 100 },
+];
 
 function currentMonth() {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -28,8 +37,17 @@ function currentMonth() {
   return `${year}-${month}`;
 }
 
-async function preparePhoenixSession() {
+function nextPaint() {
+  return new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+}
+
+async function preparePhoenixSession(onStage?: (stage: BootStage) => void) {
+  onStage?.('finance');
   await loadPhoenixReadModel(currentMonth());
+  onStage?.('organizing');
+  await nextPaint();
+  onStage?.('ready');
+  await nextPaint();
 }
 
 function isTransientAuthError(cause: unknown) {
@@ -72,8 +90,27 @@ function passwordScore(value: string) {
   return score;
 }
 
+function PhoenixBootScreen({ stage }: { stage: BootStage }) {
+  const activeIndex = Math.max(0, bootStages.findIndex((item) => item.id === stage));
+  const active = bootStages[activeIndex];
+  return <main className="px-preview-fullscreen-boot" aria-live="polite" aria-busy={stage !== 'ready'}>
+    <section className="px-preview-boot-card" aria-label="Preparando MEG Finanças">
+      <div className="px-preview-boot-logo"><span className="px-preview-boot-orbit" aria-hidden="true" /><img src="./brand/meg-finance-system-mark.svg" alt="MEG Finanças" /></div>
+      <div className="px-preview-boot-copy"><span>MEG FINANÇAS</span><h1>{active.title}</h1><p>{active.description}</p></div>
+      <div className="px-preview-boot-progress" aria-label={`${active.progress}% preparado`}>
+        <div className="px-preview-boot-track"><span style={{ width: `${active.progress}%` }} /></div>
+      </div>
+      <div className="px-preview-boot-steps">
+        {bootStages.map((item, index) => <div key={item.id} className={`px-preview-boot-step ${index < activeIndex ? 'done' : index === activeIndex ? 'active' : ''}`}><i>{index < activeIndex ? '✓' : index + 1}</i><span>{item.label}</span></div>)}
+      </div>
+      <div className="px-preview-boot-foot"><i aria-hidden="true" /><span>Conexão protegida · preparando os dados antes da navegação</span></div>
+    </section>
+  </main>;
+}
+
 function PhoenixPreviewRoot() {
   const [state, setState] = useState<PreviewState>(() => readSession() ? 'checking' : 'signed-out');
+  const [bootStage, setBootStage] = useState<BootStage>('session');
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -96,12 +133,16 @@ function PhoenixPreviewRoot() {
   useEffect(() => {
     if (state !== 'checking') return;
     let active = true;
+    setBootStage('session');
     void authenticatedRequest('/auth/me')
-      .then(() => preparePhoenixSession())
+      .then(() => preparePhoenixSession((stage) => { if (active) setBootStage(stage); }))
       .then(() => { if (active) setState('signed-in'); })
       .catch(() => {
         clearSession();
-        if (active) setState('signed-out');
+        if (active) {
+          setBootStage('session');
+          setState('signed-out');
+        }
       });
     return () => { active = false; };
   }, [state]);
@@ -140,15 +181,27 @@ function PhoenixPreviewRoot() {
       try {
         await login(email.trim(), password);
         authenticated = true;
-        await preparePhoenixSession();
+        setBootStage('finance');
+        setState('preparing');
+        await preparePhoenixSession(setBootStage);
       } catch (cause) {
         if (!isTransientAuthError(cause)) throw cause;
         await waitForService(1400);
-        if (!authenticated) await login(email.trim(), password);
-        await preparePhoenixSession();
+        if (!authenticated) {
+          await login(email.trim(), password);
+          authenticated = true;
+          setBootStage('finance');
+          setState('preparing');
+        }
+        await preparePhoenixSession(setBootStage);
       }
       setState('signed-in');
     } catch (cause) {
+      if (authenticated) {
+        clearSession();
+        setBootStage('session');
+        setState('signed-out');
+      }
       setError(authErrorMessage(cause));
     } finally {
       setBusy(false);
@@ -169,6 +222,7 @@ function PhoenixPreviewRoot() {
     if (accountType === 'CREATE_WORKSPACE' && workspaceName.trim().length < 2) return setError('Informe um nome para o novo espaço MEG.');
 
     setBusy(true);
+    let authenticated = false;
     try {
       const result = await register(
         registerName.trim(),
@@ -185,9 +239,17 @@ function PhoenixPreviewRoot() {
           : 'Solicitação enviada. Um administrador precisa aprovar seu acesso antes do primeiro login.');
         return;
       }
-      await preparePhoenixSession();
+      authenticated = true;
+      setBootStage('finance');
+      setState('preparing');
+      await preparePhoenixSession(setBootStage);
       setState('signed-in');
     } catch (cause) {
+      if (authenticated) {
+        clearSession();
+        setMode('login');
+        setState('signed-out');
+      }
       setError(authErrorMessage(cause));
     } finally {
       setBusy(false);
@@ -224,13 +286,15 @@ function PhoenixPreviewRoot() {
       setError('');
       setSuccess('');
       setMode('login');
+      setBootStage('session');
       setState('signed-out');
     }
   }
 
   if (state === 'signed-in') return <PhoenixApp onLogout={() => { void signOut(); }} />;
+  if (state === 'checking' || state === 'preparing') return <PhoenixBootScreen stage={bootStage} />;
 
-  return <main className={`px-preview-auth ${state === 'checking' ? 'is-checking' : ''}`}>
+  return <main className="px-preview-auth">
     <section className="px-preview-shell" aria-label="Acesso ao MEG Finanças">
       <div className="px-preview-showcase">
         <div className="px-preview-showcase-brand">
@@ -253,12 +317,7 @@ function PhoenixPreviewRoot() {
 
       <div className="px-preview-access">
         <div className="px-preview-mobile-brand" aria-hidden="true"><img src="./brand/meg-finance-system-mark.svg" alt="" /><div><strong>MEG</strong><span>Finanças</span></div></div>
-        {state === 'checking' ? <div className="px-preview-checking px-preview-boot">
-          <div className="px-preview-boot-mark"><img src="./brand/meg-finance-system-mark.svg" alt="" aria-hidden="true" /><span className="px-preview-spinner" aria-hidden="true" /></div>
-          <strong>Preparando seu MEG</strong>
-          <small>Carregando sua visão financeira antes da navegação.</small>
-          <div className="px-preview-boot-line" aria-hidden="true"><span /></div>
-        </div> : mode === 'login' ? <form className="px-preview-form" onSubmit={submitLogin}>
+        {mode === 'login' ? <form className="px-preview-form" onSubmit={submitLogin}>
           <div className="px-preview-copy"><h2>Bem-vindo de volta.</h2><p>Entre na sua conta para acessar o MEG.</p></div>
 
           <label className="px-preview-field"><span>E-mail</span><input type="email" autoComplete="username" inputMode="email" value={email} onChange={(event) => { setEmail(event.target.value); if (error) setError(''); }} placeholder="seu@email.com" autoFocus /></label>
@@ -267,7 +326,7 @@ function PhoenixPreviewRoot() {
           {error ? <div className="px-preview-error" role="alert"><span>!</span><div><strong>Não foi possível entrar</strong><small>{error}</small></div></div> : null}
           {success ? <div className="px-preview-success" role="status"><span>✓</span><div><strong>Pronto</strong><small>{success}</small></div></div> : null}
 
-          <button className="px-preview-submit" type="submit" disabled={busy || !email.trim() || !password}><span>{busy ? 'Preparando seu MEG…' : 'Entrar no MEG'}</span>{!busy ? <span aria-hidden="true">→</span> : <span className="px-preview-button-spinner" aria-hidden="true" />}</button>
+          <button className="px-preview-submit" type="submit" disabled={busy || !email.trim() || !password}><span>{busy ? 'Validando acesso…' : 'Entrar no MEG'}</span>{!busy ? <span aria-hidden="true">→</span> : <span className="px-preview-button-spinner" aria-hidden="true" />}</button>
           <div className="px-preview-auth-switch"><span>Novo por aqui?</span><button type="button" onClick={() => switchMode('register')}>Criar conta</button></div>
         </form> : mode === 'register' ? <form className="px-preview-form px-preview-form-register" onSubmit={submitRegister}>
           <div className="px-preview-copy"><button className="px-preview-back" type="button" onClick={() => switchMode('login')}>← Voltar</button><h2>Crie seu acesso.</h2><p>Cadastre seus dados e escolha como quer começar no MEG.</p></div>
