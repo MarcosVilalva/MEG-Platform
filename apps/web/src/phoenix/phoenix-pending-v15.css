@@ -283,20 +283,21 @@
   min-width:0;
 }
 
-/* Barra contextual: só aparece quando existe ao menos uma conta marcada.
-   Mantém a seleção e a ação visíveis enquanto o usuário percorre os grupos. */
-.px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side {
+/* A barra já nasce apenas quando selectedItems possui itens. Fixá-la diretamente
+   preserva o resumo mesmo quando o grupo que originou a seleção é recolhido. */
+.px-pending-list > .px-bulk-action-bar {
   position:fixed;
   left:50%;
   bottom:16px;
   z-index:70;
   width:min(760px,calc(100vw - 34px));
   min-height:62px;
+  margin:0;
   padding:10px 12px;
   display:grid;
-  grid-template-columns:minmax(120px,.7fr) minmax(220px,1.3fr) auto;
+  grid-template-columns:minmax(0,1fr) auto auto;
   align-items:center;
-  gap:12px;
+  gap:10px;
   transform:translateX(-50%);
   border:1px solid rgba(53,212,165,.28);
   border-radius:14px;
@@ -305,51 +306,31 @@
   backdrop-filter:blur(14px);
 }
 
-.px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side > .px-kicker,
-.px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side > .px-readonly-hint {
-  display:none;
-}
-
-.px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side h2 {
-  margin:0;
-  color:#e9fff8;
-  font-size:12px;
-  white-space:nowrap;
-}
-
-.px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side dl {
-  margin:0;
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:8px;
-}
-
-.px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side dl > div {
+.px-pending-list > .px-bulk-action-bar > div {
   min-width:0;
   display:grid;
   gap:2px;
 }
 
-.px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side dt {
-  color:#789990;
-  font-size:7px;
-  font-weight:800;
-  text-transform:uppercase;
-}
-
-.px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side dd {
-  margin:0;
+.px-pending-list > .px-bulk-action-bar > div strong {
   overflow:hidden;
-  color:#ddf8f0;
-  font-size:10px;
-  font-weight:850;
+  color:#e9fff8;
+  font-size:11px;
   text-overflow:ellipsis;
   white-space:nowrap;
 }
 
-.px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side .px-primary-action {
-  min-height:38px;
-  padding:8px 13px;
+.px-pending-list > .px-bulk-action-bar > div span {
+  overflow:hidden;
+  color:#789990;
+  font-size:8px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.px-pending-list > .px-bulk-action-bar > button {
+  min-height:36px;
+  padding:7px 11px;
   white-space:nowrap;
 }
 
@@ -370,17 +351,6 @@
   .px-pending-date-cluster-chevron {
     grid-column:3;
     grid-row:1 / span 2;
-  }
-  .px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side {
-    grid-template-columns:1fr auto;
-  }
-  .px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side dl {
-    grid-column:1 / -1;
-    grid-row:2;
-  }
-  .px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side .px-primary-action {
-    grid-column:2;
-    grid-row:1;
   }
 }
 
@@ -406,17 +376,15 @@
     grid-column:2;
     grid-row:2 / span 2;
   }
-  .px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side {
+  .px-pending-list > .px-bulk-action-bar {
     bottom:10px;
     width:calc(100vw - 20px);
-    grid-template-columns:1fr;
+    grid-template-columns:1fr auto;
   }
-  .px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side dl,
-  .px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side .px-primary-action {
-    grid-column:1;
-    grid-row:auto;
+  .px-pending-list > .px-bulk-action-bar > div {
+    grid-column:1 / -1;
   }
-  .px-pending-layout:has(input[type='checkbox']:checked) .px-pending-side dl {
-    grid-template-columns:repeat(3,minmax(0,1fr));
+  .px-pending-list > .px-bulk-action-bar > button.primary {
+    justify-self:stretch;
   }
 }
