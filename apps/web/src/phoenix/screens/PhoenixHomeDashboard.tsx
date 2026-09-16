@@ -5,7 +5,6 @@ import '../phoenix-home-now.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const whole = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
-const dateTime = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 type HomeRoute = 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs' | 'users' | 'settings' | 'receivables' | 'revenues' | 'cashflow' | 'reconcile' | 'analytics' | 'decisions' | 'budgets';
 type AgendaDisplayGroup = {
@@ -16,14 +15,6 @@ type AgendaDisplayGroup = {
   amount: number;
   items: PhoenixHomeAgendaItem[];
 };
-type HistoryFeedItem = {
-  id: string;
-  at: string;
-  title: string;
-  description: string;
-  actor: string;
-};
-
 type MegNowSignal = {
   kind: 'ok' | 'warning' | 'danger';
   eyebrow: string;
@@ -33,6 +24,23 @@ type MegNowSignal = {
   action: string;
   route: HomeRoute;
 };
+type IntelligentAlert = {
+  id: string;
+  level: 'warning' | 'danger';
+  title: string;
+  text: string;
+  action: string;
+  route: HomeRoute;
+};
+
+function normalize(value: unknown) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLocaleLowerCase('pt-BR');
+}
 
 function todayIso() {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -57,43 +65,6 @@ function monthLabel(value: string) {
 function shortDate(value: string) {
   const [year, month, day] = value.slice(0, 10).split('-');
   return year && month && day ? `${day}/${month}` : value;
-}
-
-function actionLabel(action: string) {
-  const normalized = action.toUpperCase();
-  if (normalized.includes('CREATED')) return 'Lançamento incluído';
-  if (normalized.includes('UPDATED')) return 'Lançamento alterado';
-  if (normalized.includes('ARCHIVED') || normalized.includes('DELETED')) return 'Lançamento arquivado';
-  if (normalized.includes('PAYMENT') || normalized.includes('PAID')) return 'Pagamento confirmado';
-  if (normalized.includes('TRANSFER')) return 'Transferência registrada';
-  return action.replace(/_/g, ' ').toLocaleLowerCase('pt-BR').replace(/^./, (letter) => letter.toUpperCase());
-}
-
-function historyFeed(data: PhoenixReadModel): HistoryFeedItem[] {
-  const audit = data.financialAudit.items.map((item) => ({
-    id: `audit-${item.id}`,
-    at: item.at,
-    title: actionLabel(item.action),
-    description: item.entity ? `${item.entity} · registro ${item.entityId}` : 'Evento financeiro auditado',
-    actor: item.actor?.name || item.actor?.email || 'Usuário do MEG',
-  }));
-  const legacy = data.activities.map((item) => ({
-    id: `activity-${item.id}`,
-    at: item.at,
-    title: actionLabel(item.action),
-    description: item.transaction?.description || 'Atividade financeira preservada',
-    actor: item.userName || 'Usuário do MEG',
-  }));
-  const seen = new Set<string>();
-  return [...audit, ...legacy]
-    .sort((left, right) => String(right.at).localeCompare(String(left.at)))
-    .filter((item) => {
-      const key = `${item.at}|${item.title}|${item.description}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, 20);
 }
 
 function agendaDisplayGroups(items: PhoenixHomeAgendaItem[]) {
@@ -124,27 +95,114 @@ function statusForDate(dueDate: string, today: string) {
   return 'PRÓXIMO';
 }
 
+function eventIsActive(status: unknown) {
+  return !['archived', 'arquivado', 'cancelled', 'canceled', 'cancelado'].includes(normalize(status));
+}
+
+function cardEntryIsOpen(status: unknown) {
+  return !['paid', 'pago', 'reconciled', 'conciliado', 'cancelled', 'canceled', 'cancelado', 'archived', 'arquivado'].includes(normalize(status));
+}
+
+function buildIntelligentAlerts(data: PhoenixReadModel, month: string): IntelligentAlert[] {
+  const alerts: IntelligentAlert[] = [];
+  const monthEvents = data.events.items.filter((event) => event.competence === month && eventIsActive(event.status));
+
+  const duplicateBuckets = new Map<string, typeof monthEvents>();
+  monthEvents.forEach((event) => {
+    const amount = Math.abs(Number(event.amount || 0));
+    if (!amount || !event.description) return;
+    const key = `${String(event.date).slice(0, 10)}|${event.accountId || ''}|${normalize(event.description)}|${amount.toFixed(2)}`;
+    const current = duplicateBuckets.get(key) || [];
+    current.push(event);
+    duplicateBuckets.set(key, current);
+  });
+  const duplicateGroups = [...duplicateBuckets.values()].filter((items) => items.length > 1);
+  if (duplicateGroups.length) {
+    const first = duplicateGroups[0];
+    const amount = Math.abs(Number(first[0]?.amount || 0));
+    alerts.push({
+      id: 'possible-duplicates',
+      level: 'warning',
+      title: `${duplicateGroups.length} possível(is) duplicidade(s) encontrada(s)`,
+      text: `${first[0]?.description || 'Lançamento'} aparece ${first.length} vezes com mesma data, conta e valor de ${money.format(amount)}.`,
+      action: 'Revisar lançamentos',
+      route: 'movements',
+    });
+  }
+
+  const cardPressure = data.cards
+    .map((card) => {
+      const limit = Number(card.creditLimit || 0);
+      const committed = Math.max(0, (card.purchases || []).flatMap((purchase) => purchase.entries || [])
+        .filter((entry) => cardEntryIsOpen(entry.status))
+        .reduce((sum, entry) => sum + Number(entry.amount || 0), 0));
+      const ratio = limit > 0 ? committed / limit * 100 : 0;
+      return { card, limit, committed, ratio };
+    })
+    .filter((item) => item.limit > 0 && item.ratio >= 80)
+    .sort((left, right) => right.ratio - left.ratio)[0];
+  if (cardPressure) {
+    alerts.push({
+      id: `card-limit-${cardPressure.card.id}`,
+      level: cardPressure.ratio >= 95 ? 'danger' : 'warning',
+      title: `${cardPressure.card.name} está em ${whole.format(cardPressure.ratio)}% do limite`,
+      text: `${money.format(cardPressure.committed)} comprometidos de ${money.format(cardPressure.limit)}.`,
+      action: 'Revisar cartão',
+      route: 'cards',
+    });
+  }
+
+  const unclassified = monthEvents.filter((event) => {
+    if (event.type !== 'expense') return false;
+    if (normalize(event.account?.type) === 'benefit') return false;
+    return !event.categoryId
+      && !event.category?.name
+      && !event.sourceDetails?.expenseClass
+      && !event.sourceDetails?.group;
+  });
+  if (unclassified.length) {
+    alerts.push({
+      id: 'unclassified-expenses',
+      level: 'warning',
+      title: `${unclassified.length} despesa(s) sem classificação`,
+      text: 'Classificar esses lançamentos melhora filtros, relatórios e futuras análises do MEG.',
+      action: 'Classificar agora',
+      route: 'movements',
+    });
+  }
+
+  if (!data.normalization.primary || !data.normalization.reconciled) {
+    alerts.push({
+      id: 'normalization-integrity',
+      level: 'danger',
+      title: 'A leitura financeira precisa de verificação',
+      text: 'A normalização atual ainda não está marcada como primária e reconciliada.',
+      action: 'Ver integridade',
+      route: 'settings',
+    });
+  }
+
+  return alerts.slice(0, 4);
+}
+
 export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: PhoenixReadModel; month: string; onNavigate: (view: HomeRoute) => void }) {
   const today = todayIso();
   const agenda = useMemo(() => buildPhoenixHomeAgenda(data, today), [data, today]);
   const agendaRows = useMemo(() => agendaDisplayGroups(agenda.items), [agenda.items]);
-  const feed = useMemo(() => historyFeed(data), [data]);
+  const alerts = useMemo(() => buildIntelligentAlerts(data, month), [data, month]);
   const visibleAgenda = agendaRows.slice(0, 5);
   const hiddenAgendaCount = Math.max(0, agendaRows.length - visibleAgenda.length);
-  const [extraOpen, setExtraOpen] = useState(false);
   const [detail, setDetail] = useState<AgendaDisplayGroup | null>(null);
   const [detailSelected, setDetailSelected] = useState<Set<string>>(() => new Set());
 
   const pendingAmount = data.summary.pendingAmount || 0;
   const realizedBalance = data.summary.availableBalance + data.summary.realizedResult;
-  const projectedClosing = data.cashflow.projectedClosing;
   const freeAfterCommitments = realizedBalance - pendingAmount;
-  const consolidatedRealized = realizedBalance + data.summary.benefitBalance;
   const nextDue = agendaRows.find((item) => item.dueDate >= today) || agendaRows[0];
   const coverageRaw = pendingAmount > 0 ? (realizedBalance / pendingAmount) * 100 : 100;
   const coverageBar = Math.max(0, Math.min(100, coverageRaw));
-  const healthy = projectedClosing >= 0 && freeAfterCommitments >= 0;
-  const heroStatus = healthy ? 'Mês sob controle' : projectedClosing >= 0 ? 'Fluxo apertado' : 'Atenção ao fluxo';
+  const healthy = freeAfterCommitments >= 0;
+  const heroStatus = healthy ? 'Compromissos cobertos' : 'Caixa pressionado';
   const selectedDetailAmount = detail?.items.filter((item) => detailSelected.has(item.id)).reduce((sum, item) => sum + item.amount, 0) || 0;
 
   const overdueRows = agendaRows.filter((item) => item.dueDate < today);
@@ -161,7 +219,7 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
       kind: 'danger',
       eyebrow: 'Ação imediata',
       title: `${overdueRows.length} vencimento(s) precisam da sua atenção`,
-      text: `Há ${money.format(overdueTotal)} vencidos. Resolva primeiro essas pendências para limpar a agenda e atualizar a leitura do caixa.`,
+      text: `Há ${money.format(overdueTotal)} vencidos. Resolva primeiro essas pendências para limpar a agenda.`,
       metric: `${money.format(overdueTotal)} vencido`,
       action: 'Resolver pendências',
       route: 'payables',
@@ -171,7 +229,7 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
         kind: 'warning',
         eyebrow: 'MEG Agora',
         title: `Hoje vencem ${money.format(todayTotal)}`,
-        text: `${todayRows.length} compromisso(s) vencem hoje. Você pode abrir Pendentes, revisar a seleção e concluir as baixas.`,
+        text: `${todayRows.length} compromisso(s) vencem hoje. Abra Pendentes para revisar e concluir as baixas.`,
         metric: `${todayRows.length} hoje`,
         action: 'Ver vencimentos de hoje',
         route: 'payables',
@@ -181,32 +239,22 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
           kind: 'danger',
           eyebrow: 'Próximos 7 dias',
           title: 'O caixa não cobre todos os próximos compromissos',
-          text: `Faltam ${money.format(Math.abs(sevenDayRemainder))} para cobrir os compromissos já cadastrados até ${shortDate(sevenDayEnd)}.`,
+          text: `Faltam ${money.format(Math.abs(sevenDayRemainder))} para cobrir os compromissos cadastrados até ${shortDate(sevenDayEnd)}.`,
           metric: `${money.format(Math.abs(sevenDayRemainder))} faltando`,
           action: 'Organizar pendências',
           route: 'payables',
         }
-        : projectedClosing < 0
-          ? {
-            kind: 'warning',
-            eyebrow: 'MEG Agora',
-            title: 'Os próximos dias estão cobertos, mas o mês ainda termina pressionado',
-            text: `O fechamento projetado é ${money.format(projectedClosing)}. Use Decisões para localizar o ponto de pressão antes de assumir novo compromisso.`,
-            metric: money.format(projectedClosing),
-            action: 'Analisar cenário',
-            route: 'decisions',
-          }
-          : {
-            kind: 'ok',
-            eyebrow: 'MEG Agora',
-            title: nextSevenRows.length ? 'Próximos 7 dias cobertos' : 'Nenhum compromisso nos próximos 7 dias',
-            text: nextSevenRows.length
-              ? `Depois dos compromissos até ${shortDate(sevenDayEnd)}, permanecem ${money.format(Math.max(0, sevenDayRemainder))} no caixa atual.`
-              : 'Sua agenda imediata está livre. Antes de assumir uma nova despesa, você pode testar o impacto em Decisões.',
-            metric: nextSevenRows.length ? `${money.format(Math.max(0, sevenDayRemainder))} livre` : 'Agenda livre',
-            action: 'Simular uma decisão',
-            route: 'decisions',
-          };
+        : {
+          kind: 'ok',
+          eyebrow: 'MEG Agora',
+          title: nextSevenRows.length ? 'Próximos 7 dias cobertos' : 'Nenhum compromisso nos próximos 7 dias',
+          text: nextSevenRows.length
+            ? `Depois dos compromissos até ${shortDate(sevenDayEnd)}, permanecem ${money.format(Math.max(0, sevenDayRemainder))} no caixa atual.`
+            : 'Sua agenda imediata está livre. Planejamentos e simulações ficam concentrados em Decisões.',
+          metric: nextSevenRows.length ? `${money.format(Math.max(0, sevenDayRemainder))} livre` : 'Agenda livre',
+          action: nextSevenRows.length ? 'Ver pendências' : 'Abrir Decisões',
+          route: nextSevenRows.length ? 'payables' : 'decisions',
+        };
 
   function openDetail(group: AgendaDisplayGroup) {
     setDetail(group);
@@ -226,7 +274,7 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
       <div>
         <span className="px-kicker">Visão geral</span>
         <h1>{monthLabel(month)}</h1>
-        <p>O essencial para decidir o que fazer agora. Detalhes e histórico ficam recolhidos até você pedir.</p>
+        <p>O essencial para decidir o que fazer agora, sem repetir análises que pertencem às outras áreas.</p>
         <span className="px-updated">Atualizado agora · {data.normalization.primary && data.normalization.reconciled ? 'dados sincronizados' : 'integridade em verificação'}</span>
       </div>
     </div>
@@ -235,6 +283,15 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
       <div className="px-meg-now-mark" aria-hidden="true">{megNow.kind === 'danger' ? '!' : megNow.kind === 'warning' ? '↗' : '✓'}</div>
       <div className="px-meg-now-copy"><span>{megNow.eyebrow}</span><h2>{megNow.title}</h2><p>{megNow.text}</p></div>
       <div className="px-meg-now-action"><strong>{megNow.metric}</strong><button type="button" onClick={() => onNavigate(megNow.route)}>{megNow.action}</button></div>
+    </section>
+
+    <section className={`px-smart-alerts ${alerts.length ? 'has-alerts' : 'is-clear'}`} aria-label="Alertas inteligentes">
+      <div className="px-smart-alerts-head">
+        <span className="px-smart-alerts-mark" aria-hidden="true">{alerts.length ? '!' : '✓'}</span>
+        <div><span>Monitoramento inteligente</span><strong>{alerts.length ? `MEG detectou ${alerts.length} ponto(s) de atenção` : 'Nenhuma inconsistência relevante encontrada'}</strong></div>
+        <small>{alerts.length ? 'Somente exceções que merecem revisão.' : 'Duplicidades, classificação, cartões e integridade estão sem alertas.'}</small>
+      </div>
+      {alerts.length ? <div className="px-smart-alerts-list">{alerts.map((alert) => <div className={`px-smart-alert-row ${alert.level === 'danger' ? 'is-danger' : ''}`} key={alert.id}><span className="px-smart-alert-dot" /><div><strong>{alert.title}</strong><small>{alert.text}</small></div><button type="button" onClick={() => onNavigate(alert.route)}>{alert.action}</button></div>)}</div> : null}
     </section>
 
     <section className="px-dashboard-grid px-home-balance-grid">
@@ -251,7 +308,6 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
         <div className="px-home-hero-insights">
           <article className="px-home-insight is-free"><span>Dinheiro livre</span><strong className={freeAfterCommitments < 0 ? 'negative' : ''}>{money.format(freeAfterCommitments)}</strong><small>Saldo atual menos pendências</small></article>
           <article className="px-home-insight is-due"><span>Próximo vencimento</span><strong>{nextDue ? money.format(nextDue.amount) : '—'}</strong><small>{nextDue ? `${shortDate(nextDue.dueDate)} · ${nextDue.title}` : 'Nenhum vencimento no período'}</small></article>
-          <article className={`px-home-insight ${projectedClosing < 0 ? 'is-negative' : 'is-projected'}`}><span>Fechamento projetado</span><strong>{money.format(projectedClosing)}</strong><small>{projectedClosing >= 0 ? 'Projeção positiva' : 'Projeção abaixo de zero'}</small></article>
         </div>
 
         <div className="px-home-hero-footer">
@@ -260,12 +316,6 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
           <div><span>Benefício disponível</span><strong>{money.format(data.summary.benefitBalance)}</strong></div>
         </div>
       </article>
-    </section>
-
-    <section className="px-metrics">
-      <article className="px-card px-metric bad"><span>Pendências</span><strong>{money.format(pendingAmount)}</strong><small>{agenda.items.length} compromisso(s) acionável(is)</small></article>
-      <article className="px-card px-metric info px-benefit-control"><span>Benefício alimentação · disponível</span><strong>{money.format(data.summary.benefitBalance)}</strong><div className="px-benefit-inline"><div><span>Créditos</span><b>{money.format(data.summary.benefitCredits)}</b></div><div><span>Utilizado</span><b>{money.format(data.summary.benefitUsed)}</b></div><button type="button" onClick={() => onNavigate('movements')}>Ver extrato</button></div></article>
-      <article className={`px-card px-metric ${projectedClosing < 0 ? 'bad' : 'good'}`}><span>Fechamento projetado</span><strong>{money.format(projectedClosing)}</strong><small>{projectedClosing >= 0 ? 'Fluxo previsto positivo' : 'Exige atenção no período'}</small></article>
     </section>
 
     <section className="px-bottom-grid px-home-action-grid">
@@ -280,26 +330,7 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
         </div>
         {hiddenAgendaCount ? <div className="px-home-panel-actions"><span className="px-toolbar-note">+ {hiddenAgendaCount} compromisso(s) na agenda</span><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Ver todos</button></div> : null}
       </article>
-
-      <article className="px-card px-home-scroll-card">
-        <div className="px-panel-head"><div><span>Acesso rápido</span><h2>Continuar trabalhando</h2></div></div>
-        <div className="px-home-scroll-list">
-          <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Lançamentos</strong><small>Incluir, editar, filtrar ou localizar movimentações.</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('movements')}>Abrir</button></div>
-          <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Pendentes</strong><small>Selecionar contas e organizar as próximas baixas.</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Abrir</button></div>
-          <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Cartões</strong><small>Conferir faturas, limites e compras agrupadas.</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('cards')}>Abrir</button></div>
-          <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Decisões</strong><small>Margem segura, radar de 12 meses e simulação preditiva.</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('decisions')}>Abrir</button></div>
-          <button className="px-dashboard-row-action" type="button" onClick={() => setExtraOpen((value) => !value)}>{extraOpen ? 'Recolher detalhes' : 'Mostrar mais detalhes'}</button>
-        </div>
-      </article>
     </section>
-
-    {extraOpen ? <section className="px-bottom-grid px-home-action-grid">
-      <article className="px-card px-home-scroll-card">
-        <div className="px-panel-head"><div><span>Histórico recente</span><h2>Últimos 20 eventos</h2></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('history')}>Ver histórico completo</button></div>
-        <div className="px-home-scroll-list">{feed.map((item) => <div className="px-dashboard-row px-home-history-row" key={item.id}><div className="px-dashboard-row-copy"><strong>{item.title}</strong><small>{item.description}</small><small>{dateTime.format(new Date(item.at))} · {item.actor}</small></div></div>)}</div>
-      </article>
-      <article className="px-card px-metric warn"><span>Consolidado realizado</span><strong>{money.format(consolidatedRealized)}</strong><small>Monetário + benefício apresentados separadamente no cálculo principal.</small></article>
-    </section> : null}
 
     {detail ? <div className="px-home-drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>
       <aside className="px-home-drawer" role="dialog" aria-modal="true" aria-label={`Detalhes de ${detail.title}`}>
