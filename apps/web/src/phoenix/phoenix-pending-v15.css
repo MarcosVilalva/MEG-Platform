@@ -261,6 +261,28 @@
   white-space:nowrap;
 }
 
+/* Pendentes operacional: o cabeçalho já informa o total e as abas já filtram
+   prioridade. Removemos os cards e o resumo lateral que repetiam esses dados. */
+.px-screen:has(.px-pending-toolbar-v15) > .px-screen-kpis {
+  display:none;
+}
+
+.px-pending-layout {
+  grid-template-columns:minmax(0,1fr);
+}
+
+.px-pending-side {
+  display:none;
+}
+
+.px-pending-list > .px-history-source-note {
+  display:none;
+}
+
+.px-pending-list {
+  min-width:0;
+}
+
 @media (max-width:900px) {
   .px-pending-toolbar-v15 {
     grid-template-columns:1fr 180px;
