@@ -1,17 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
 import { loadPhoenixAllEvents, loadPhoenixReadModel, peekPhoenixReadModel } from './data/load-phoenix-read-model';
 import { buildPhoenixHomeAgenda } from './home-agenda';
 import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixSidebar } from './PhoenixSidebar';
 import { PhoenixNavIcon } from './PhoenixNavIcon';
-import { PhoenixPayables } from './screens/PhoenixReadScreens';
-import { PhoenixCardsGrid } from './screens/PhoenixCardsGrid';
 import { PhoenixCatalogsGrid } from './screens/PhoenixCatalogsGrid';
 import { PhoenixHomeAllTime } from './screens/PhoenixHomeAllTime';
 import { PhoenixHomeDashboard } from './screens/PhoenixHomeDashboard';
-import { PhoenixMovementsV15 } from './screens/PhoenixMovementsV15';
-import { PhoenixHistory } from './screens/PhoenixHistory';
 import { PhoenixUsers } from './screens/PhoenixUsers';
 import { PhoenixSettings } from './screens/PhoenixSettings';
 import { PhoenixDecisionCenter } from './screens/PhoenixDecisionCenter';
@@ -25,6 +21,25 @@ import './phoenix-v15.css';
 import './phoenix-parity-v15.css';
 import './phoenix-period.css';
 import './phoenix-sidebar.css';
+
+const loadMovementsModule = () => import('./screens/PhoenixMovementsV15');
+const loadPayablesModule = () => import('./screens/PhoenixReadScreens');
+const loadCardsModule = () => import('./screens/PhoenixCardsGrid');
+const loadHistoryModule = () => import('./screens/PhoenixHistory');
+
+const PhoenixMovementsV15 = lazy(async () => ({ default: (await loadMovementsModule()).PhoenixMovementsV15 }));
+const PhoenixPayables = lazy(async () => ({ default: (await loadPayablesModule()).PhoenixPayables }));
+const PhoenixCardsGrid = lazy(async () => ({ default: (await loadCardsModule()).PhoenixCardsGrid }));
+const PhoenixHistory = lazy(async () => ({ default: (await loadHistoryModule()).PhoenixHistory }));
+
+function warmFrequentScreens() {
+  void Promise.allSettled([
+    loadMovementsModule(),
+    loadPayablesModule(),
+    loadCardsModule(),
+    loadHistoryModule()
+  ]);
+}
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const shortDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -174,6 +189,10 @@ function HomeScreen({ data, month, onNavigate }: { data: PhoenixReadModel; month
   return <PhoenixHomeDashboard data={data} month={month} onNavigate={onNavigate} />;
 }
 
+function ScreenWarmFallback({ label }: { label: string }) {
+  return <section className="px-card px-placeholder"><span className="px-kicker">MEG Finanças</span><h2>Abrindo {label}</h2><p>Preparando a tela com os dados que já estão carregados.</p></section>;
+}
+
 function ReadScreen({ view, data, month, theme, periodMode, launchRequest, onToggleTheme, onNavigate }: {
   view: PhoenixView;
   data: PhoenixReadModel;
@@ -188,10 +207,10 @@ function ReadScreen({ view, data, month, theme, periodMode, launchRequest, onTog
     if (periodMode === 'all') return <PhoenixHomeAllTime data={data} onNavigate={onNavigate} />;
     return <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
   }
-  if (view === 'movements') return <PhoenixMovementsV15 data={data} launchRequest={launchRequest} onNavigateHistory={() => onNavigate('history')} />;
-  if (view === 'history') return <PhoenixHistory data={data} />;
-  if (view === 'payables') return <PhoenixPayables data={data} />;
-  if (view === 'cards') return <PhoenixCardsGrid data={data} />;
+  if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} launchRequest={launchRequest} onNavigateHistory={() => onNavigate('history')} /></Suspense>;
+  if (view === 'history') return <Suspense fallback={<ScreenWarmFallback label="Histórico" />}><PhoenixHistory data={data} /></Suspense>;
+  if (view === 'payables') return <Suspense fallback={<ScreenWarmFallback label="Pendentes" />}><PhoenixPayables data={data} /></Suspense>;
+  if (view === 'cards') return <Suspense fallback={<ScreenWarmFallback label="Cartões" />}><PhoenixCardsGrid data={data} /></Suspense>;
   if (view === 'catalogs') return <PhoenixCatalogsGrid data={data} />;
   if (view === 'users') return <PhoenixUsers data={data} />;
   if (view === 'settings') return <PhoenixSettings data={data} theme={theme} onToggleTheme={onToggleTheme} />;
@@ -242,6 +261,12 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   useEffect(() => {
     if (loadState.status === 'ready') dataRef.current = loadState.data;
   }, [loadState]);
+
+  useEffect(() => {
+    if (loadState.status !== 'ready' || view !== 'home') return;
+    const timer = window.setTimeout(warmFrequentScreens, 80);
+    return () => window.clearTimeout(timer);
+  }, [loadState.status, view]);
 
   useEffect(() => {
     let active = true;
