@@ -20,13 +20,21 @@ assert.match(server, /bulkEventWriteEnabled\s*=\s*process\.env\.PHOENIX_BULK_EVE
 assert.match(server, /allowedFinancialPosts\s*=\s*new Set\(\['\/finance\/events'\]\)/,
   'Writer de evento simples deve continuar restrito ao endpoint exato de criação.');
 assert.match(server, /allowedCardPurchasePosts\s*=\s*new Set\(\['\/cards\/purchases'\]\)/,
-  'Writer de cartão deve liberar apenas a criação exata de compra, sem abrir gestão, edição, exclusão ou pagamento de fatura.');
+  'Criação de compra no cartão deve permanecer restrita ao endpoint exato.');
+assert.match(server, /function isAllowedCardPurchaseWrite\(method, pathname\)/,
+  'Mutações de compra no cartão devem passar por gate específico.');
+assert.match(server, /if \(!cardPurchaseWriteEnabled\) return false;/,
+  'Gate de cartão deve falhar fechado quando a capacidade estiver desligada.');
+assert.match(server, /method === 'POST'.*allowedCardPurchasePosts\.has\(pathname\)/s,
+  'POST de cartão deve continuar limitado à criação de compra.');
+assert.match(server, /method === 'PATCH' \|\| method === 'DELETE'.*\^\\\/cards\\\/purchases\\\/\[\^\/\]\+\$/s,
+  'Edição e exclusão de cartão devem ficar limitadas à compra identificada, sem abrir gestão ou faturas.');
 assert.match(server, /allowedBulkEventPosts\s*=\s*new Set\(\[\s*'\/finance\/events\/bulk\/update',\s*'\/finance\/events\/bulk\/archive'\s*\]\)/,
   'Writer em lote deve possuir allowlist explícita somente para update e archive protegidos.');
 assert.match(server, /simpleEventWriteEnabled\s*&&\s*allowedFinancialPosts\.has\(pathname\)/,
   'POST de evento simples deve depender simultaneamente da flag e da allowlist estreita.');
-assert.match(server, /cardPurchaseWriteEnabled\s*&&\s*allowedCardPurchasePosts\.has\(pathname\)/,
-  'POST de compra no cartão deve depender simultaneamente da flag e da allowlist estreita.');
+assert.match(server, /isAllowedCardPurchaseWrite\(method, pathname\)/,
+  'Toda mutação de compra no cartão deve depender do gate estreito do domínio.');
 assert.match(server, /bulkEventWriteEnabled\s*&&\s*allowedBulkEventPosts\.has\(pathname\)/,
   'POST em lote deve depender simultaneamente da flag e da allowlist estreita.');
 assert.match(server, /if \(!pendingWriteEnabled\) return false;/,
@@ -43,7 +51,7 @@ assert.match(server, /phoenix-bulk-event-write-gated-preview/,
 assert.match(server, /phoenix-pending-write-gated-preview/,
   'Health deve distinguir quando o writer de pendências está habilitado.');
 assert.match(server, /phoenix-card-purchase-write-gated-preview/,
-  'Health deve distinguir quando a criação de compra no cartão está habilitada.');
+  'Health deve distinguir quando o writer de compra no cartão está habilitado.');
 assert.match(server, /phoenix-simple-event-write-gated-preview/,
   'Health deve distinguir quando somente o writer simples está habilitado.');
 assert.match(server, /phoenix-finance-read-only-preview/,
