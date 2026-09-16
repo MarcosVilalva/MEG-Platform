@@ -58,16 +58,23 @@ function isAllowedPendingWrite(pathname) {
     || /^\/payables\/[^/]+\/payments$/.test(pathname);
 }
 
+function isAllowedCardPurchaseWrite(method, pathname) {
+  if (!cardPurchaseWriteEnabled) return false;
+  if (method === 'POST') return allowedCardPurchasePosts.has(pathname);
+  if (method === 'PATCH' || method === 'DELETE') return /^\/cards\/purchases\/[^/]+$/.test(pathname);
+  return false;
+}
+
 function isAllowedApiRequest(method, pathname) {
   if (method === 'GET' || method === 'HEAD') {
     return readPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`));
   }
-  if (method !== 'POST') return false;
-  if (allowedAuthPosts.has(pathname)) return true;
-  if (simpleEventWriteEnabled && allowedFinancialPosts.has(pathname)) return true;
-  if (cardPurchaseWriteEnabled && allowedCardPurchasePosts.has(pathname)) return true;
-  if (bulkEventWriteEnabled && allowedBulkEventPosts.has(pathname)) return true;
-  return isAllowedPendingWrite(pathname);
+  if (method === 'POST' && allowedAuthPosts.has(pathname)) return true;
+  if (method === 'POST' && simpleEventWriteEnabled && allowedFinancialPosts.has(pathname)) return true;
+  if (isAllowedCardPurchaseWrite(method, pathname)) return true;
+  if (method === 'POST' && bulkEventWriteEnabled && allowedBulkEventPosts.has(pathname)) return true;
+  if (method === 'POST') return isAllowedPendingWrite(pathname);
+  return false;
 }
 
 function isAllowedStaticPath(pathname) {
