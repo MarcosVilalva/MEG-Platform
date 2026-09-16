@@ -32,6 +32,15 @@
         }
       })();
     </script>
+    <script>
+      (() => {
+        /* Acorda a API enquanto a tela de login ainda está sendo renderizada.
+           No preview o /ready usa o proxy same-origin; falha aqui nunca bloqueia o login. */
+        if (location.hostname.startsWith('meg-phoenix-v15-ux-preview')) {
+          void fetch('/ready', { cache: 'no-store', credentials: 'same-origin' }).catch(() => undefined);
+        }
+      })();
+    </script>
     <title>MEG Phoenix V15 — Preview</title>
   </head>
   <body>
