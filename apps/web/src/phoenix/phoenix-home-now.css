@@ -77,9 +77,33 @@
 .px-meg-now.is-warning .px-meg-now-action button { border-color:rgba(245,177,66,.28); background:rgba(245,177,66,.08); color:#f2d28f; }
 .px-meg-now.is-danger .px-meg-now-action button { border-color:rgba(239,105,112,.30); background:rgba(239,105,112,.08); color:#f5b4b8; }
 
+/* Home enxuta: mantém ação imediata, posição atual e próximos vencimentos.
+   Projeções detalhadas, histórico e atalhos redundantes ficam nas telas próprias. */
+.px-home-balance-grid + .px-metrics {
+  display:none;
+}
+
+.px-home-hero-insights > .is-projected,
+.px-home-hero-insights > .is-negative {
+  display:none;
+}
+
+.px-home-hero-insights {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+
+.px-home-action-grid {
+  grid-template-columns:minmax(0,1fr);
+}
+
+.px-home-action-grid > .px-home-scroll-card:nth-child(2) {
+  display:none;
+}
+
 @media (max-width:760px) {
   .px-meg-now { grid-template-columns:auto minmax(0,1fr); }
   .px-meg-now-action { grid-column:1 / -1; width:100%; min-width:0; grid-template-columns:1fr auto; align-items:center; justify-items:start; }
+  .px-home-hero-insights { grid-template-columns:1fr; }
 }
 
 @media (max-width:480px) {
