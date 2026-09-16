@@ -34,10 +34,11 @@
     </script>
     <script>
       (() => {
-        /* Acorda a API enquanto a tela de login ainda está sendo renderizada.
-           No preview o /ready usa o proxy same-origin; falha aqui nunca bloqueia o login. */
+        /* Acorda apenas a API principal enquanto a tela de login é renderizada.
+           /ready também aquece provedores externos e pode levar dezenas de segundos;
+           isso não pertence ao caminho crítico do login. */
         if (location.hostname.startsWith('meg-phoenix-v15-ux-preview')) {
-          void fetch('/ready', { cache: 'no-store', credentials: 'same-origin' }).catch(() => undefined);
+          void fetch('/health', { cache: 'no-store', credentials: 'same-origin' }).catch(() => undefined);
         }
       })();
     </script>
