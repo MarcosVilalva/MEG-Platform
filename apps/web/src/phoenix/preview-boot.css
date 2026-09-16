@@ -1,0 +1,213 @@
+.px-preview-fullscreen-boot {
+  min-height:100dvh;
+  width:100%;
+  display:grid;
+  place-items:center;
+  padding:28px;
+  overflow:hidden;
+  position:relative;
+  background:
+    radial-gradient(circle at 50% 105%, rgba(53,212,165,.16), transparent 36%),
+    radial-gradient(circle at 82% 12%, rgba(27,125,116,.12), transparent 28%),
+    linear-gradient(145deg,#031519 0%,#06231f 52%,#041a17 100%);
+  color:#e9fff8;
+}
+
+.px-preview-fullscreen-boot::before,
+.px-preview-fullscreen-boot::after {
+  content:'';
+  position:absolute;
+  border:1px solid rgba(111,239,205,.09);
+  border-radius:50%;
+  pointer-events:none;
+}
+
+.px-preview-fullscreen-boot::before {
+  width:620px;
+  height:620px;
+  left:50%;
+  bottom:-450px;
+  transform:translateX(-50%);
+}
+
+.px-preview-fullscreen-boot::after {
+  width:430px;
+  height:430px;
+  left:50%;
+  bottom:-345px;
+  transform:translateX(-50%);
+}
+
+.px-preview-boot-card {
+  width:min(470px,100%);
+  display:grid;
+  justify-items:center;
+  gap:18px;
+  position:relative;
+  z-index:1;
+  text-align:center;
+}
+
+.px-preview-boot-logo {
+  width:96px;
+  height:96px;
+  display:grid;
+  place-items:center;
+  position:relative;
+}
+
+.px-preview-boot-logo img {
+  width:68px;
+  height:68px;
+  object-fit:contain;
+  filter:drop-shadow(0 14px 28px rgba(0,0,0,.3));
+}
+
+.px-preview-boot-orbit {
+  position:absolute;
+  inset:0;
+  border:2px solid rgba(99,236,197,.12);
+  border-top-color:#65efc8;
+  border-right-color:rgba(101,239,200,.48);
+  border-radius:50%;
+  animation:px-meg-boot-spin .9s linear infinite;
+}
+
+@keyframes px-meg-boot-spin { to { transform:rotate(360deg); } }
+
+.px-preview-boot-copy {
+  display:grid;
+  gap:7px;
+}
+
+.px-preview-boot-copy span {
+  color:#6fe7c6;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+}
+
+.px-preview-boot-copy h1 {
+  margin:0;
+  color:#f1fff9;
+  font-size:clamp(25px,4vw,34px);
+  line-height:1.05;
+}
+
+.px-preview-boot-copy p {
+  margin:0;
+  color:#82a99f;
+  font-size:11px;
+  line-height:1.5;
+}
+
+.px-preview-boot-progress {
+  width:min(360px,90vw);
+  display:grid;
+  gap:8px;
+}
+
+.px-preview-boot-track {
+  height:4px;
+  overflow:hidden;
+  border-radius:999px;
+  background:rgba(111,183,165,.12);
+}
+
+.px-preview-boot-track > span {
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#26ba91,#70f3cf);
+  transition:width .28s ease;
+  box-shadow:0 0 18px rgba(75,227,184,.28);
+}
+
+.px-preview-boot-steps {
+  width:min(360px,90vw);
+  display:grid;
+  gap:7px;
+  margin-top:2px;
+  text-align:left;
+}
+
+.px-preview-boot-step {
+  min-height:32px;
+  padding:0 10px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  border:1px solid transparent;
+  border-radius:9px;
+  color:#5f857c;
+  font-size:9px;
+  font-weight:750;
+  transition:.18s ease;
+}
+
+.px-preview-boot-step i {
+  width:16px;
+  height:16px;
+  flex:0 0 16px;
+  display:grid;
+  place-items:center;
+  border:1px solid #2b5148;
+  border-radius:50%;
+  color:#4d786e;
+  font-size:8px;
+  font-style:normal;
+}
+
+.px-preview-boot-step.done {
+  color:#86bbae;
+}
+
+.px-preview-boot-step.done i {
+  border-color:rgba(53,212,165,.38);
+  background:rgba(53,212,165,.1);
+  color:#70f3cf;
+}
+
+.px-preview-boot-step.active {
+  border-color:rgba(53,212,165,.12);
+  background:rgba(53,212,165,.045);
+  color:#dcfff4;
+}
+
+.px-preview-boot-step.active i {
+  border-color:#4fe2bb;
+  box-shadow:0 0 0 4px rgba(53,212,165,.06);
+  color:#70f3cf;
+}
+
+.px-preview-boot-foot {
+  margin-top:4px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:#53766e;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+
+.px-preview-boot-foot i {
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#35d4a5;
+  box-shadow:0 0 0 5px rgba(53,212,165,.07);
+}
+
+@media (max-width:560px) {
+  .px-preview-fullscreen-boot { padding:20px; }
+  .px-preview-boot-card { gap:15px; }
+  .px-preview-boot-logo { width:84px; height:84px; }
+  .px-preview-boot-logo img { width:58px; height:58px; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .px-preview-boot-orbit { animation-duration:2.4s; }
+  .px-preview-boot-track > span { transition:none; }
+}
