@@ -77,16 +77,126 @@
 .px-meg-now.is-warning .px-meg-now-action button { border-color:rgba(245,177,66,.28); background:rgba(245,177,66,.08); color:#f2d28f; }
 .px-meg-now.is-danger .px-meg-now-action button { border-color:rgba(239,105,112,.30); background:rgba(239,105,112,.08); color:#f5b4b8; }
 
-/* Home enxuta: mantém ação imediata, posição atual e próximos vencimentos.
-   Projeções detalhadas, histórico e atalhos redundantes ficam nas telas próprias. */
-.px-home-balance-grid + .px-metrics {
-  display:none;
+.px-smart-alerts {
+  margin-bottom:14px;
+  overflow:hidden;
+  border:1px solid rgba(53,212,165,.16);
+  border-radius:14px;
+  background:rgba(7,23,19,.48);
 }
 
-.px-home-hero-insights > .is-projected,
-.px-home-hero-insights > .is-negative {
-  display:none;
+.px-smart-alerts.is-clear {
+  border-color:rgba(53,212,165,.11);
+  background:rgba(53,212,165,.025);
 }
+
+.px-smart-alerts.has-alerts {
+  border-color:rgba(245,177,66,.22);
+  background:linear-gradient(135deg,rgba(44,35,14,.30),rgba(7,23,19,.62));
+}
+
+.px-smart-alerts-head {
+  min-height:52px;
+  padding:10px 13px;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:11px;
+}
+
+.px-smart-alerts-mark {
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(53,212,165,.22);
+  border-radius:9px;
+  background:rgba(53,212,165,.06);
+  color:#6fe7c6;
+  font-size:12px;
+  font-weight:900;
+}
+
+.px-smart-alerts.has-alerts .px-smart-alerts-mark {
+  border-color:rgba(245,177,66,.26);
+  background:rgba(245,177,66,.07);
+  color:#f0c875;
+}
+
+.px-smart-alerts-head > div {
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+
+.px-smart-alerts-head > div > span {
+  color:#6f9188;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+}
+
+.px-smart-alerts-head > div > strong {
+  color:#dff8f1;
+  font-size:11px;
+}
+
+.px-smart-alerts-head > small {
+  max-width:320px;
+  color:#6f9188;
+  font-size:8px;
+  text-align:right;
+}
+
+.px-smart-alerts-list {
+  border-top:1px solid rgba(130,182,168,.09);
+}
+
+.px-smart-alert-row {
+  min-height:50px;
+  padding:9px 13px;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  border-bottom:1px solid rgba(130,182,168,.07);
+}
+.px-smart-alert-row:last-child { border-bottom:0; }
+
+.px-smart-alert-dot {
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#e0ae53;
+  box-shadow:0 0 0 4px rgba(224,174,83,.08);
+}
+.px-smart-alert-row.is-danger .px-smart-alert-dot {
+  background:#ef6970;
+  box-shadow:0 0 0 4px rgba(239,105,112,.08);
+}
+
+.px-smart-alert-row > div {
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+.px-smart-alert-row > div > strong { color:#e9fbf6; font-size:9px; }
+.px-smart-alert-row > div > small { color:#789990; font-size:8px; line-height:1.35; }
+.px-smart-alert-row > button {
+  min-height:29px;
+  padding:6px 9px;
+  border:1px solid rgba(53,212,165,.20);
+  border-radius:8px;
+  background:rgba(53,212,165,.05);
+  color:#aeeedc;
+  font:inherit;
+  font-size:8px;
+  font-weight:800;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.px-smart-alert-row > button:hover { border-color:#35d4a5; background:rgba(53,212,165,.11); }
 
 .px-home-hero-insights {
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -96,14 +206,17 @@
   grid-template-columns:minmax(0,1fr);
 }
 
-.px-home-action-grid > .px-home-scroll-card:nth-child(2) {
-  display:none;
-}
-
 @media (max-width:760px) {
   .px-meg-now { grid-template-columns:auto minmax(0,1fr); }
   .px-meg-now-action { grid-column:1 / -1; width:100%; min-width:0; grid-template-columns:1fr auto; align-items:center; justify-items:start; }
   .px-home-hero-insights { grid-template-columns:1fr; }
+  .px-smart-alerts-head { grid-template-columns:auto minmax(0,1fr); }
+  .px-smart-alerts-head > small { grid-column:1 / -1; max-width:none; text-align:left; padding-left:41px; }
+}
+
+@media (max-width:560px) {
+  .px-smart-alert-row { grid-template-columns:auto minmax(0,1fr); }
+  .px-smart-alert-row > button { grid-column:2; justify-self:start; }
 }
 
 @media (max-width:480px) {
