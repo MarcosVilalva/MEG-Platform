@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import type { PhoenixReadModel } from '../contracts';
 import { buildPhoenixHomeAgenda, type PhoenixHomeAgendaItem } from '../home-agenda';
+import '../phoenix-home-now.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const whole = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
 const dateTime = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-type HomeRoute = 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs' | 'users' | 'settings' | 'receivables' | 'revenues' | 'cashflow' | 'reconcile' | 'analytics' | 'budgets';
+type HomeRoute = 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs' | 'users' | 'settings' | 'receivables' | 'revenues' | 'cashflow' | 'reconcile' | 'analytics' | 'decisions' | 'budgets';
 type AgendaDisplayGroup = {
   key: string;
   dueDate: string;
@@ -23,12 +24,27 @@ type HistoryFeedItem = {
   actor: string;
 };
 
+type MegNowSignal = {
+  kind: 'ok' | 'warning' | 'danger';
+  eyebrow: string;
+  title: string;
+  text: string;
+  metric: string;
+  action: string;
+  route: HomeRoute;
+};
+
 function todayIso() {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit'
   }).formatToParts(new Date());
   const read = (type: string) => parts.find((item) => item.type === type)?.value || '';
   return `${read('year')}-${read('month')}-${read('day')}`;
+}
+
+function shiftIsoDay(value: string, offset: number) {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day + offset, 12)).toISOString().slice(0, 10);
 }
 
 function monthLabel(value: string) {
@@ -131,6 +147,67 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
   const heroStatus = healthy ? 'Mês sob controle' : projectedClosing >= 0 ? 'Fluxo apertado' : 'Atenção ao fluxo';
   const selectedDetailAmount = detail?.items.filter((item) => detailSelected.has(item.id)).reduce((sum, item) => sum + item.amount, 0) || 0;
 
+  const overdueRows = agendaRows.filter((item) => item.dueDate < today);
+  const todayRows = agendaRows.filter((item) => item.dueDate === today);
+  const sevenDayEnd = shiftIsoDay(today, 6);
+  const nextSevenRows = agendaRows.filter((item) => item.dueDate >= today && item.dueDate <= sevenDayEnd);
+  const overdueTotal = overdueRows.reduce((sum, item) => sum + item.amount, 0);
+  const todayTotal = todayRows.reduce((sum, item) => sum + item.amount, 0);
+  const nextSevenTotal = nextSevenRows.reduce((sum, item) => sum + item.amount, 0);
+  const sevenDayRemainder = realizedBalance - nextSevenTotal;
+
+  const megNow: MegNowSignal = overdueRows.length
+    ? {
+      kind: 'danger',
+      eyebrow: 'Ação imediata',
+      title: `${overdueRows.length} vencimento(s) precisam da sua atenção`,
+      text: `Há ${money.format(overdueTotal)} vencidos. Resolva primeiro essas pendências para limpar a agenda e atualizar a leitura do caixa.`,
+      metric: `${money.format(overdueTotal)} vencido`,
+      action: 'Resolver pendências',
+      route: 'payables',
+    }
+    : todayRows.length
+      ? {
+        kind: 'warning',
+        eyebrow: 'MEG Agora',
+        title: `Hoje vencem ${money.format(todayTotal)}`,
+        text: `${todayRows.length} compromisso(s) vencem hoje. Você pode abrir Pendentes, revisar a seleção e concluir as baixas.`,
+        metric: `${todayRows.length} hoje`,
+        action: 'Ver vencimentos de hoje',
+        route: 'payables',
+      }
+      : nextSevenTotal > realizedBalance
+        ? {
+          kind: 'danger',
+          eyebrow: 'Próximos 7 dias',
+          title: 'O caixa não cobre todos os próximos compromissos',
+          text: `Faltam ${money.format(Math.abs(sevenDayRemainder))} para cobrir os compromissos já cadastrados até ${shortDate(sevenDayEnd)}.`,
+          metric: `${money.format(Math.abs(sevenDayRemainder))} faltando`,
+          action: 'Organizar pendências',
+          route: 'payables',
+        }
+        : projectedClosing < 0
+          ? {
+            kind: 'warning',
+            eyebrow: 'MEG Agora',
+            title: 'Os próximos dias estão cobertos, mas o mês ainda termina pressionado',
+            text: `O fechamento projetado é ${money.format(projectedClosing)}. Use Decisões para localizar o ponto de pressão antes de assumir novo compromisso.`,
+            metric: money.format(projectedClosing),
+            action: 'Analisar cenário',
+            route: 'decisions',
+          }
+          : {
+            kind: 'ok',
+            eyebrow: 'MEG Agora',
+            title: nextSevenRows.length ? 'Próximos 7 dias cobertos' : 'Nenhum compromisso nos próximos 7 dias',
+            text: nextSevenRows.length
+              ? `Depois dos compromissos até ${shortDate(sevenDayEnd)}, permanecem ${money.format(Math.max(0, sevenDayRemainder))} no caixa atual.`
+              : 'Sua agenda imediata está livre. Antes de assumir uma nova despesa, você pode testar o impacto em Decisões.',
+            metric: nextSevenRows.length ? `${money.format(Math.max(0, sevenDayRemainder))} livre` : 'Agenda livre',
+            action: 'Simular uma decisão',
+            route: 'decisions',
+          };
+
   function openDetail(group: AgendaDisplayGroup) {
     setDetail(group);
     setDetailSelected(new Set());
@@ -153,6 +230,12 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
         <span className="px-updated">Atualizado agora · {data.normalization.primary && data.normalization.reconciled ? 'dados sincronizados' : 'integridade em verificação'}</span>
       </div>
     </div>
+
+    <section className={`px-meg-now ${megNow.kind === 'danger' ? 'is-danger' : megNow.kind === 'warning' ? 'is-warning' : ''}`} aria-label="MEG Agora">
+      <div className="px-meg-now-mark" aria-hidden="true">{megNow.kind === 'danger' ? '!' : megNow.kind === 'warning' ? '↗' : '✓'}</div>
+      <div className="px-meg-now-copy"><span>{megNow.eyebrow}</span><h2>{megNow.title}</h2><p>{megNow.text}</p></div>
+      <div className="px-meg-now-action"><strong>{megNow.metric}</strong><button type="button" onClick={() => onNavigate(megNow.route)}>{megNow.action}</button></div>
+    </section>
 
     <section className="px-dashboard-grid px-home-balance-grid">
       <article className={`px-card px-home-hero ${healthy ? 'is-healthy' : 'is-attention'}`}>
@@ -204,6 +287,7 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
           <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Lançamentos</strong><small>Incluir, editar, filtrar ou localizar movimentações.</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('movements')}>Abrir</button></div>
           <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Pendentes</strong><small>Selecionar contas e organizar as próximas baixas.</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Abrir</button></div>
           <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Cartões</strong><small>Conferir faturas, limites e compras agrupadas.</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('cards')}>Abrir</button></div>
+          <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Decisões</strong><small>Margem segura, radar de 12 meses e simulação preditiva.</small></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('decisions')}>Abrir</button></div>
           <button className="px-dashboard-row-action" type="button" onClick={() => setExtraOpen((value) => !value)}>{extraOpen ? 'Recolher detalhes' : 'Mostrar mais detalhes'}</button>
         </div>
       </article>
