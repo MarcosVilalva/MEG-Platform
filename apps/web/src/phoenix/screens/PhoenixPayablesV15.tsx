@@ -50,7 +50,12 @@ type PendingGroup = {
   key: string;
   label: string;
   sortDate: string;
-  kind: 'card' | 'card-legacy' | 'standard';
+  kind: 'date' | 'card' | 'card-legacy' | 'standard';
+  items: PendingItem[];
+};
+type DateRenderBlock = {
+  key: string;
+  kind: 'item' | 'card-legacy';
   items: PendingItem[];
 };
 
@@ -228,7 +233,22 @@ function groupLabel(mode: GroupMode, item: PendingItem) {
 
 function buildGroups(items: PendingItem[], mode: GroupMode): PendingGroup[] {
   const groups = new Map<string, PendingGroup>();
+
   for (const item of items) {
+    if (mode === 'date') {
+      const key = `date:${item.dueDate}`;
+      const current = groups.get(key);
+      if (current) current.items.push(item);
+      else groups.set(key, {
+        key,
+        label: groupLabel('date', item),
+        sortDate: item.dueDate,
+        kind: 'date',
+        items: [item],
+      });
+      continue;
+    }
+
     const card = isCardLike(item);
     const officialCard = item.source === 'card';
     const key = officialCard
@@ -248,11 +268,37 @@ function buildGroups(items: PendingItem[], mode: GroupMode): PendingGroup[] {
     if (current) current.items.push(item);
     else groups.set(key, { key, label, sortDate: item.dueDate, kind, items: [item] });
   }
+
   return [...groups.values()].sort((left, right) => left.sortDate.localeCompare(right.sortDate) || left.label.localeCompare(right.label, 'pt-BR'));
 }
 
 function groupTotal(group: PendingGroup) {
   return group.items.reduce((sum, item) => sum + item.openAmount, 0);
+}
+
+function dateRenderBlocks(group: PendingGroup): DateRenderBlock[] {
+  const blocks: DateRenderBlock[] = [];
+  const legacyCards = new Map<string, PendingItem[]>();
+
+  for (const item of group.items) {
+    if (item.source !== 'card' && isCardLike(item)) {
+      const key = `legacy:${normalize(item.paymentMethod)}:${item.dueDate}`;
+      const current = legacyCards.get(key);
+      if (current) current.push(item); else legacyCards.set(key, [item]);
+      continue;
+    }
+    blocks.push({ key: `item:${item.id}`, kind: 'item', items: [item] });
+  }
+
+  for (const [key, items] of legacyCards) {
+    blocks.push({ key, kind: items.length > 1 ? 'card-legacy' : 'item', items });
+  }
+
+  return blocks.sort((left, right) => {
+    const a = left.items[0];
+    const b = right.items[0];
+    return a.description.localeCompare(b.description, 'pt-BR');
+  });
 }
 
 export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
@@ -262,6 +308,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const [groupMode, setGroupMode] = useState<GroupMode>(savedGroupMode);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
   const [detailItem, setDetailItem] = useState<PendingItem | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [paidAt, setPaidAt] = useState(today);
@@ -277,6 +324,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
 
   useEffect(() => {
     try { localStorage.setItem('meg-pending-group-mode', groupMode); } catch { /* preferência opcional */ }
+    setExpandedGroups(new Set());
   }, [groupMode]);
 
   const open = useMemo(() => {
@@ -339,6 +387,30 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     setSelected((current) => {
       const next = new Set(current);
       if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleGroupExpansion(key: string) {
+    setExpandedGroups((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
+
+  function toggleGroupSelection(group: PendingGroup) {
+    if (saving) return;
+    const eligible = group.items.filter((item) => item.openAmount > 0);
+    if (!eligible.length) return;
+    const allSelected = eligible.every((item) => selected.has(item.id));
+    setSuccessMessage('');
+    resetPrepared();
+    setSelected((current) => {
+      const next = new Set(current);
+      for (const item of eligible) {
+        if (allSelected) next.delete(item.id); else next.add(item.id);
+      }
       return next;
     });
   }
@@ -443,6 +515,57 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     </div>;
   }
 
+  function renderDateGroup(group: PendingGroup) {
+    const eligible = group.items.filter((item) => item.openAmount > 0);
+    const selectedCount = eligible.filter((item) => selected.has(item.id)).length;
+    const allSelected = eligible.length > 0 && selectedCount === eligible.length;
+    const partiallySelected = selectedCount > 0 && !allSelected;
+    const expanded = expandedGroups.has(group.key);
+    const blocks = dateRenderBlocks(group);
+
+    return <section className={`px-pending-date-cluster ${expanded ? 'is-open' : ''}`} key={group.key}>
+      <header
+        className="px-pending-date-cluster-head"
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
+        onClick={() => toggleGroupExpansion(group.key)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            toggleGroupExpansion(group.key);
+          }
+        }}
+      >
+        <label className="px-pending-group-check" onClick={(event) => event.stopPropagation()}>
+          <input
+            type="checkbox"
+            aria-label={`Selecionar todas as pendências de ${group.label}`}
+            disabled={!eligible.length || saving}
+            checked={allSelected}
+            ref={(node) => { if (node) node.indeterminate = partiallySelected; }}
+            onChange={() => toggleGroupSelection(group)}
+          />
+          <span>Selecionar todas</span>
+        </label>
+        <div className="px-pending-date-cluster-copy">
+          <strong>{group.label}</strong>
+          <small>{group.items.length} pendência(s){selectedCount ? ` · ${selectedCount} selecionada(s)` : ''}</small>
+        </div>
+        <strong className="px-pending-date-cluster-total">{money.format(groupTotal(group))}</strong>
+        <span className="px-pending-date-cluster-chevron" aria-hidden="true">⌄</span>
+      </header>
+      {expanded ? <div className="px-pending-date-cluster-body">
+        {blocks.map((block) => block.kind === 'card-legacy'
+          ? <details className="px-pending-card-group px-pending-card-nested" key={block.key}>
+              <summary><div><strong>{block.items[0].paymentMethod}</strong><small>{block.items.length} lançamentos de cartão agrupados</small></div><strong>{money.format(block.items.reduce((sum, item) => sum + item.openAmount, 0))}</strong></summary>
+              <div className="px-pending-card-group-body">{block.items.map(renderRow)}</div>
+            </details>
+          : renderRow(block.items[0]))}
+      </div> : null}
+    </section>;
+  }
+
   return <section className="px-screen">
     <header className="px-screen-head">
       <div><span className="px-kicker">Pendentes</span><h1>Prioridades e compromissos</h1><p>Organize por vencimento ou pela visão que preferir. Faturas de cartão permanecem consolidadas para evitar lançamentos espalhados.</p></div>
@@ -470,15 +593,17 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
         {selectedItems.length ? <div className="px-bulk-action-bar"><div><strong>{selectedItems.length} compromisso(s) selecionado(s)</strong><span>Total {money.format(selectedTotal)} · saldo após baixa {money.format(available - selectedTotal)}</span></div><button type="button" onClick={clearSelection}>Limpar</button><button type="button" className="primary" disabled={selectedItems.length !== 1 || selectedTotal > available} onClick={openReview}>Revisar baixa</button></div> : null}
         {compatibilityCount > 0 ? <div className="px-history-source-note"><strong>Leitura consolidada:</strong> contas, faturas oficiais e compromissos legados ficam na mesma agenda. Faturas usam o writer oficial do cartão; lançamentos legados continuam protegidos individualmente.</div> : null}
 
-        {grouped.map((group) => group.kind === 'card-legacy' && group.items.length > 1
-          ? <details className="px-pending-card-group" key={group.key}>
-              <summary><div><strong>{group.label}</strong><small>{group.items.length} lançamentos de cartão agrupados</small></div><strong>{money.format(groupTotal(group))}</strong></summary>
-              <div className="px-pending-card-group-body">{group.items.map(renderRow)}</div>
-            </details>
-          : <section className={`px-pending-group ${group.kind === 'card' ? 'is-card-group' : ''}`} key={group.key}>
-              <header><div><strong>{group.label}</strong><small>{group.kind === 'card' ? 'Fatura consolidada' : `${group.items.length} item(ns)`}</small></div><strong>{money.format(groupTotal(group))}</strong></header>
-              {group.items.map(renderRow)}
-            </section>)}
+        {grouped.map((group) => group.kind === 'date'
+          ? renderDateGroup(group)
+          : group.kind === 'card-legacy' && group.items.length > 1
+            ? <details className="px-pending-card-group" key={group.key}>
+                <summary><div><strong>{group.label}</strong><small>{group.items.length} lançamentos de cartão agrupados</small></div><strong>{money.format(groupTotal(group))}</strong></summary>
+                <div className="px-pending-card-group-body">{group.items.map(renderRow)}</div>
+              </details>
+            : <section className={`px-pending-group ${group.kind === 'card' ? 'is-card-group' : ''}`} key={group.key}>
+                <header><div><strong>{group.label}</strong><small>{group.kind === 'card' ? 'Fatura consolidada' : `${group.items.length} item(ns)`}</small></div><strong>{money.format(groupTotal(group))}</strong></header>
+                {group.items.map(renderRow)}
+              </section>)}
         {!visible.length ? <p className="px-empty">Nenhum compromisso corresponde ao filtro.</p> : null}
       </section>
 
@@ -493,6 +618,6 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
 
     {detailItem ? <div className="px-pending-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailItem(null); }}><aside className="px-pending-drawer" role="dialog" aria-modal="true" aria-label={`Detalhes de ${detailItem.description}`}><header><div><span className="px-kicker">{detailItem.source === 'card' ? 'Detalhes da fatura' : 'Detalhes do compromisso'}</span><h2>{detailItem.description}</h2><p>{date.format(new Date(`${detailItem.dueDate}T12:00:00Z`))}</p></div><button type="button" aria-label="Fechar" onClick={() => setDetailItem(null)}>×</button></header><dl><div><dt>Valor</dt><dd>{money.format(detailItem.openAmount)}</dd></div><div><dt>Classificação</dt><dd>{detailItem.categoryName}</dd></div><div><dt>Grupo</dt><dd>{detailItem.group}</dd></div><div><dt>Forma prevista</dt><dd>{detailItem.paymentMethod}</dd></div><div><dt>Modalidade</dt><dd>{detailItem.modality}</dd></div><div><dt>Parcela</dt><dd>{detailItem.source === 'card' ? 'Fatura consolidada' : detailItem.installmentQty > 1 ? `${detailItem.installmentNo}/${detailItem.installmentQty}` : 'Pagamento único'}</dd></div></dl>{detailItem.children?.length ? <section className="px-pending-statement-lines"><div className="px-panel-head"><div><span>Lançamentos da fatura</span><strong>{detailItem.children.length} item(ns)</strong></div></div>{detailItem.children.map((child) => <div key={child.id}><span><strong>{child.description}</strong><small>{date.format(new Date(`${child.purchaseDate}T12:00:00Z`))} · parcela {child.installmentNo}/{child.installmentQty}</small></span><strong>{money.format(child.amount)}</strong></div>)}</section> : null}<footer><button type="button" className="px-secondary-action" onClick={() => setDetailItem(null)}>Fechar</button><button type="button" className="px-primary-action" onClick={() => { toggle(detailItem.id); setDetailItem(null); }}>{selected.has(detailItem.id) ? 'Remover da baixa' : detailItem.source === 'card' ? 'Selecionar fatura' : 'Selecionar para baixa'}</button></footer></aside></div> : null}
 
-    {reviewOpen ? <div className="px-pending-overlay" role="presentation" onMouseDown={(event) => { if (!saving && event.target === event.currentTarget) setReviewOpen(false); }}><aside className="px-pending-drawer px-pending-review" role="dialog" aria-modal="true" aria-label="Revisar baixa"><header><div><span className="px-kicker">Baixa protegida</span><h2>{selectedItems.length === 1 ? `Revisar ${selectedItems[0].description}` : `Revisar ${selectedItems.length} compromisso(s)`}</h2><p>Confirme os dados efetivos do pagamento antes de gravar.</p></div><button type="button" aria-label="Fechar" disabled={saving} onClick={() => setReviewOpen(false)}>×</button></header><div className="px-pending-review-list">{selectedItems.map((item) => <div key={item.id}><span><strong>{item.description}</strong><small>{date.format(new Date(`${item.dueDate}T12:00:00Z`))} · previsto: {item.paymentMethod}</small></span><strong>{money.format(item.openAmount)}</strong></div>)}</div><dl><div><dt>Total selecionado</dt><dd>{money.format(selectedTotal)}</dd></div><div><dt>Saldo antes</dt><dd>{money.format(available)}</dd></div><div><dt>Saldo depois</dt><dd>{money.format(available - selectedTotal)}</dd></div></dl><div className="px-pending-payment-fields"><label><span>Data da baixa</span><input type="date" value={paidAt} max={today} disabled={saving} onChange={(event) => updatePaidAt(event.target.value)} /></label><label><span>Conta financeira</span><select value={accountId} disabled={saving} onChange={(event) => updateAccount(event.target.value)}><option value="">Selecione</option>{reviewAccounts.map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}</select></label><label><span>Forma de pagamento</span><select value={paymentMethodId} disabled={saving} onChange={(event) => updatePaymentMethod(event.target.value)}><option value="">Selecione</option>{reviewMethods.map((method) => <option value={method.id} key={method.id}>{method.name}</option>)}</select></label></div>{selectedItems.length > 1 ? <div className="px-pending-write-warning"><strong>Baixa em lote continua protegida.</strong><span>Remova itens até restar apenas um compromisso. Faturas oficiais já são consolidadas em um único compromisso.</span></div> : null}{writeState.status === 'error' ? <div className="px-pending-write-error" role="alert"><strong>Baixa não confirmada</strong><span>{writeState.message}</span></div> : null}<footer><button type="button" className="px-secondary-action" disabled={saving} onClick={() => setReviewOpen(false)}>Voltar</button><button type="button" className="px-primary-action" disabled={!canWrite || saving || selectedItems.length !== 1 || !paidAt || !accountId || !paymentMethodId || selectedTotal > available} onClick={() => { void confirmSettlement(); }}>{saving ? 'Confirmando no servidor…' : selectedItem?.source === 'card' ? 'Confirmar pagamento da fatura' : 'Confirmar baixa real'}</button><small>{selectedItems.length === 1 ? 'O botão só conclui após confirmação do servidor. Reenvios usam o mesmo operationId enquanto os dados não mudarem.' : 'Para segurança financeira, a gravação continua sendo feita um compromisso por vez.'}</small></footer></aside></div> : null}
+    {reviewOpen ? <div className="px-pending-overlay" role="presentation" onMouseDown={(event) => { if (!saving && event.target === event.currentTarget) setReviewOpen(false); }}><aside className="px-pending-drawer px-pending-review" role="dialog" aria-modal="true" aria-label="Revisar baixa"><header><div><span className="px-kicker">Baixa protegida</span><h2>{selectedItems.length === 1 ? `Revisar ${selectedItems[0].description}` : `Revisar ${selectedItems.length} compromisso(s)`}</h2><p>Confirme os dados efetivos do pagamento antes de gravar.</p></div><button type="button" aria-label="Fechar" disabled={saving} onClick={() => setReviewOpen(false)}>×</button></header><div className="px-pending-review-list">{selectedItems.map((item) => <div key={item.id}><span><strong>{item.description}</strong><small>{date.format(new Date(`${item.dueDate}T12:00:00Z`))} · previsto: {item.paymentMethod}</small></span><strong>{money.format(item.openAmount)}</strong></div>)}</div><dl><div><dt>Total selecionado</dt><dd>{money.format(selectedTotal)}</dd></div><div><dt>Saldo antes</dt><dd>{money.format(available)}</dd></div><div><dt>Saldo depois</dt><dd>{money.format(available - selectedTotal)}</dd></div></dl><div className="px-pending-payment-fields"><label><span>Data da baixa</span><input type="date" value={paidAt} max={today} disabled={saving} onChange={(event) => updatePaidAt(event.target.value)} /></label><label><span>Conta financeira</span><select value={accountId} disabled={saving} onChange={(event) => updateAccount(event.target.value)}><option value="">Selecione</option>{reviewAccounts.map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}</select></label><label><span>Forma de pagamento</span><select value={paymentMethodId} disabled={saving} onChange={(event) => updatePaymentMethod(event.target.value)}><option value="">Selecione</option>{reviewMethods.map((method) => <option value={method.id} key={method.id}>{method.name}</option>)}</select></label></div>{selectedItems.length > 1 ? <div className="px-pending-write-warning"><strong>Baixa em lote continua protegida.</strong><span>Você pode montar a seleção completa agora; a gravação múltipla só será liberada com o writer atômico do lote.</span></div> : null}{writeState.status === 'error' ? <div className="px-pending-write-error" role="alert"><strong>Baixa não confirmada</strong><span>{writeState.message}</span></div> : null}<footer><button type="button" className="px-secondary-action" disabled={saving} onClick={() => setReviewOpen(false)}>Voltar</button><button type="button" className="px-primary-action" disabled={!canWrite || saving || selectedItems.length !== 1 || !paidAt || !accountId || !paymentMethodId || selectedTotal > available} onClick={() => { void confirmSettlement(); }}>{saving ? 'Confirmando no servidor…' : selectedItem?.source === 'card' ? 'Confirmar pagamento da fatura' : 'Confirmar baixa real'}</button><small>{selectedItems.length === 1 ? 'O botão só conclui após confirmação do servidor. Reenvios usam o mesmo operationId enquanto os dados não mudarem.' : 'A seleção múltipla já está pronta; a gravação permanece protegida até o endpoint atômico de lote.'}</small></footer></aside></div> : null}
   </section>;
 }
