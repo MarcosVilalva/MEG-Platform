@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const gateway = readFileSync(new URL('./data/phoenix-write-gateway.ts', import.meta.url), 'utf8');
 const movements = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
+const writeControl = readFileSync(new URL('./components/PhoenixLaunchWriteControl.tsx', import.meta.url), 'utf8');
 const bridge = readFileSync(new URL('./simple-event-form-bridge.ts', import.meta.url), 'utf8');
 const previewServer = readFileSync(new URL('../../phoenix-preview-server.mjs', import.meta.url), 'utf8');
 
@@ -27,11 +28,21 @@ assert.match(gateway, /status:\s*'planned'\s*\|\s*'paid'/,
   'Writer simples deve limitar a situação ao contrato explicitamente homologado.');
 assert.match(gateway, /if \(!PHOENIX_WRITE_CAPABILITIES\.simpleEvent\)/,
   'Gateway deve continuar falhando fechado se a capacidade frontend for revogada.');
+assert.match(gateway, /getPhoenixRuntimeWriteCapabilities\(true\)/,
+  'Gateway deve exigir capacidade efetiva do ambiente imediatamente antes do POST.');
 
 assert.doesNotMatch(movements, /submitPhoenixSimpleEvent|runPhoenixSimpleEventWrite/,
-  'Tela React base não deve acionar escrita diretamente; a liberação fica isolada no bridge protegido.');
-assert.match(movements, /Revisar lançamento · sem gravar/,
-  'Primeira etapa visual do drawer permanece revisão; o bridge promove a segunda ação para gravação confirmada.');
+  'Tela React base não deve acionar escrita diretamente; a confirmação fica isolada no controle protegido.');
+assert.match(movements, /PhoenixLaunchWriteControl/,
+  'Primeira etapa visual deve revisar e delegar a segunda etapa ao controle protegido de confirmação.');
+assert.match(writeControl, /getPhoenixRuntimeWriteCapabilities\(true\)/,
+  'Controle de confirmação deve verificar o gate de runtime antes de habilitar a ação final.');
+assert.match(writeControl, /runPhoenixSimpleEventWrite/,
+  'Controle de confirmação deve usar exclusivamente o gateway financeiro protegido.');
+assert.match(writeControl, /duplicateAccepted/,
+  'Possível duplicidade deve exigir aceite explícito antes da confirmação.');
+assert.match(writeControl, /preparedRef/,
+  'Retry após falha incerta deve preservar o comando preparado e o operationId.');
 
 assert.match(bridge, /preparePhoenixSimpleEvent/,
   'Bridge homologado deve preparar o comando antes do envio.');
@@ -64,4 +75,4 @@ assert.match(previewServer, /simpleEventWriteEnabled\s*&&\s*allowedFinancialPost
 assert.match(previewServer, /PREVIEW_READ_ONLY/,
   'Mutações não habilitadas no ambiente isolado devem continuar bloqueadas pelo proxy.');
 
-console.log('Writers Phoenix validados: simples assinado, transferência/recorrência por domínios próprios e preview protegido.');
+console.log('Writers Phoenix validados: confirmação simples protegida, domínios especiais isolados e preview gated.');
