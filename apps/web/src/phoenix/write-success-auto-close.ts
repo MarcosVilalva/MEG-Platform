@@ -9,7 +9,12 @@ function isLaunchMutation(detail: DataInvalidatedDetail | undefined) {
   const method = String(detail?.method || '').toUpperCase();
   const path = String(detail?.path || '');
   return ['POST', 'PUT', 'PATCH'].includes(method)
-    && (path.startsWith('/finance/events') || path.startsWith('/cards/purchases'));
+    && (
+      path.startsWith('/finance/events')
+      || path.startsWith('/cards/purchases')
+      || path.startsWith('/finance/transfers')
+      || path.startsWith('/payables/recurring')
+    );
 }
 
 function confirmedLaunchDrawer() {
@@ -21,7 +26,7 @@ function lockConfirmedDrawer(root: HTMLElement) {
   const button = root.querySelector<HTMLButtonElement>('.px-review-launch');
   if (button) {
     button.disabled = true;
-    button.textContent = 'Salvo · fechando…';
+    button.textContent = 'Salvo · sincronizando…';
   }
 }
 
@@ -37,9 +42,9 @@ function forceCloseConfirmedDrawer(root: HTMLElement) {
   const close = root.querySelector<HTMLButtonElement>('.px-drawer-head .px-icon-btn');
   if (!close) return;
 
-  // Depois da confirmação do servidor não há alterações locais a descartar.
-  // O override existe apenas durante este clique para que o React execute
-  // requestCloseLaunch(), que fecha e também reseta completamente o rascunho.
+  // O writer só emite meg:data-invalidated depois de receber a confirmação do servidor.
+  // Portanto, neste ponto a operação já está persistida na nuvem e o formulário local
+  // pode ser encerrado sem pedir uma segunda confirmação ao usuário.
   const originalConfirm = window.confirm;
   window.confirm = () => true;
   try {
@@ -60,7 +65,10 @@ function onDataInvalidated(event: Event) {
 
   lockConfirmedDrawer(root);
   resetTimer();
-  closeTimer = window.setTimeout(() => forceCloseConfirmedDrawer(root), 120);
+
+  // Os writers atuais publicam este evento em window. Mantemos um pequeno intervalo
+  // apenas para a UI refletir a confirmação/sincronização antes de fechar o drawer.
+  closeTimer = window.setTimeout(() => forceCloseConfirmedDrawer(root), 180);
 }
 
 function blockPostConfirmationSubmit(event: Event) {
@@ -74,11 +82,11 @@ function blockPostConfirmationSubmit(event: Event) {
   event.stopImmediatePropagation();
 }
 
-document.addEventListener('meg:data-invalidated', onDataInvalidated as EventListener);
+window.addEventListener('meg:data-invalidated', onDataInvalidated as EventListener);
 document.addEventListener('click', blockPostConfirmationSubmit, true);
 
 export function stopPhoenixWriteSuccessAutoClose() {
   resetTimer();
-  document.removeEventListener('meg:data-invalidated', onDataInvalidated as EventListener);
+  window.removeEventListener('meg:data-invalidated', onDataInvalidated as EventListener);
   document.removeEventListener('click', blockPostConfirmationSubmit, true);
 }
