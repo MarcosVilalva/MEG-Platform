@@ -16,7 +16,7 @@ import './phoenix-preview-parity.css';
 import './preview-auth-flow.css';
 import './preview-boot.css';
 
-type PreviewState = 'checking' | 'signed-out' | 'preparing' | 'signed-in';
+type PreviewState = 'checking' | 'signed-out' | 'preparing' | 'prepare-error' | 'signed-in';
 type AuthMode = 'login' | 'register' | 'forgot';
 type AccountType = 'REQUEST_ACCESS' | 'CREATE_WORKSPACE';
 type BootStage = 'session' | 'finance' | 'organizing' | 'ready';
@@ -55,6 +55,12 @@ function isTransientAuthError(cause: unknown) {
   return /HTTP_(?:502|503|504)|network|fetch|timeout|ECONN|upstream/i.test(message);
 }
 
+function isUnauthorizedError(cause: unknown) {
+  const status = Number((cause as { status?: number } | null)?.status || 0);
+  const message = cause instanceof Error ? cause.message : '';
+  return status === 401 || /(?:^|_)UNAUTHORIZED$|HTTP_401/i.test(message);
+}
+
 function waitForService(ms: number) {
   return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 }
@@ -73,6 +79,14 @@ function authErrorMessage(cause: unknown) {
   if (/HTTP_(?:502|503|504)|upstream/i.test(message)) return 'O MEG está iniciando os serviços. Aguarde alguns segundos e tente novamente.';
   if (/network|fetch|timeout|ECONN/i.test(message)) return 'Não foi possível falar com o MEG agora. Verifique sua conexão e tente novamente.';
   return 'Não foi possível concluir esta operação agora. Tente novamente em instantes.';
+}
+
+function bootErrorMessage(cause: unknown) {
+  const message = cause instanceof Error ? cause.message : '';
+  if (/HTTP_(?:502|503|504)|network|fetch|timeout|ECONN|upstream/i.test(message)) {
+    return 'Seu acesso foi confirmado, mas o MEG não conseguiu concluir o carregamento dos dados. Tente novamente em instantes.';
+  }
+  return 'Seu acesso foi confirmado. Houve uma falha ao preparar sua visão financeira, sem invalidar sua sessão. Tente carregar novamente.';
 }
 
 function EyeIcon({ visible }: { visible: boolean }) {
@@ -108,9 +122,24 @@ function PhoenixBootScreen({ stage }: { stage: BootStage }) {
   </main>;
 }
 
+function PhoenixBootErrorScreen({ message, busy, onRetry, onLogout }: { message: string; busy: boolean; onRetry: () => void; onLogout: () => void }) {
+  return <main className="px-preview-fullscreen-boot" aria-live="assertive">
+    <section className="px-preview-boot-card px-preview-boot-error" aria-label="Falha ao preparar MEG Finanças">
+      <div className="px-preview-boot-logo"><img src="./brand/meg-finance-system-mark.svg" alt="MEG Finanças" /></div>
+      <div className="px-preview-boot-copy"><span>ACESSO CONFIRMADO</span><h1>Não foi possível carregar seus dados.</h1><p>{message}</p></div>
+      <div className="px-preview-boot-error-actions">
+        <button className="px-preview-submit" type="button" disabled={busy} onClick={onRetry}><span>{busy ? 'Carregando…' : 'Tentar novamente'}</span><span aria-hidden="true">↻</span></button>
+        <button className="px-preview-secondary" type="button" disabled={busy} onClick={onLogout}>Sair</button>
+      </div>
+      <div className="px-preview-boot-foot"><i aria-hidden="true" /><span>Sua autenticação permanece válida enquanto você tenta novamente.</span></div>
+    </section>
+  </main>;
+}
+
 function PhoenixPreviewRoot() {
   const [state, setState] = useState<PreviewState>(() => readSession() ? 'checking' : 'signed-out');
   const [bootStage, setBootStage] = useState<BootStage>('session');
+  const [bootError, setBootError] = useState('');
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -134,15 +163,33 @@ function PhoenixPreviewRoot() {
     if (state !== 'checking') return;
     let active = true;
     setBootStage('session');
+    setBootError('');
     void authenticatedRequest('/auth/me')
-      .then(() => preparePhoenixSession((stage) => { if (active) setBootStage(stage); }))
-      .then(() => { if (active) setState('signed-in'); })
-      .catch(() => {
-        clearSession();
-        if (active) {
+      .then(async () => {
+        if (!active) return;
+        setState('preparing');
+        try {
+          await preparePhoenixSession((stage) => { if (active) setBootStage(stage); });
+          if (active) setState('signed-in');
+        } catch (cause) {
+          console.error('Phoenix bootstrap failed after session validation:', cause instanceof Error ? cause.message : 'UNKNOWN');
+          if (active) {
+            setBootError(bootErrorMessage(cause));
+            setState('prepare-error');
+          }
+        }
+      })
+      .catch((cause) => {
+        if (!active) return;
+        if (isUnauthorizedError(cause)) {
+          clearSession();
           setBootStage('session');
           setState('signed-out');
+          return;
         }
+        console.error('Phoenix session validation unavailable:', cause instanceof Error ? cause.message : 'UNKNOWN');
+        setBootError('Sua sessão continua preservada, mas o MEG não conseguiu validá-la agora. Tente novamente.');
+        setState('prepare-error');
       });
     return () => { active = false; };
   }, [state]);
@@ -170,38 +217,52 @@ function PhoenixPreviewRoot() {
     if (next === 'login' && !email && registerEmail) setEmail(registerEmail);
   }
 
+  async function prepareAuthenticatedSession() {
+    setBootError('');
+    setBootStage('finance');
+    setState('preparing');
+    try {
+      await preparePhoenixSession(setBootStage);
+      setState('signed-in');
+      return true;
+    } catch (cause) {
+      console.error('Phoenix bootstrap failed after authentication:', cause instanceof Error ? cause.message : 'UNKNOWN');
+      setBootError(bootErrorMessage(cause));
+      setState('prepare-error');
+      return false;
+    }
+  }
+
+  async function retryPreparation() {
+    if (busy || !readSession()) {
+      if (!readSession()) setState('signed-out');
+      return;
+    }
+    setBusy(true);
+    try {
+      await prepareAuthenticatedSession();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || !email.trim() || !password) return;
     setBusy(true);
     setError('');
     setSuccess('');
-    let authenticated = false;
     try {
       try {
         await login(email.trim(), password);
-        authenticated = true;
-        setBootStage('finance');
-        setState('preparing');
-        await preparePhoenixSession(setBootStage);
       } catch (cause) {
         if (!isTransientAuthError(cause)) throw cause;
         await waitForService(1400);
-        if (!authenticated) {
-          await login(email.trim(), password);
-          authenticated = true;
-          setBootStage('finance');
-          setState('preparing');
-        }
-        await preparePhoenixSession(setBootStage);
+        await login(email.trim(), password);
       }
-      setState('signed-in');
+      await prepareAuthenticatedSession();
     } catch (cause) {
-      if (authenticated) {
-        clearSession();
-        setBootStage('session');
-        setState('signed-out');
-      }
+      setState('signed-out');
       setError(authErrorMessage(cause));
     } finally {
       setBusy(false);
@@ -222,7 +283,6 @@ function PhoenixPreviewRoot() {
     if (accountType === 'CREATE_WORKSPACE' && workspaceName.trim().length < 2) return setError('Informe um nome para o novo espaço MEG.');
 
     setBusy(true);
-    let authenticated = false;
     try {
       const result = await register(
         registerName.trim(),
@@ -239,17 +299,10 @@ function PhoenixPreviewRoot() {
           : 'Solicitação enviada. Um administrador precisa aprovar seu acesso antes do primeiro login.');
         return;
       }
-      authenticated = true;
-      setBootStage('finance');
-      setState('preparing');
-      await preparePhoenixSession(setBootStage);
-      setState('signed-in');
+      await prepareAuthenticatedSession();
     } catch (cause) {
-      if (authenticated) {
-        clearSession();
-        setMode('login');
-        setState('signed-out');
-      }
+      setMode('login');
+      setState('signed-out');
       setError(authErrorMessage(cause));
     } finally {
       setBusy(false);
@@ -285,6 +338,7 @@ function PhoenixPreviewRoot() {
       setShowPassword(false);
       setError('');
       setSuccess('');
+      setBootError('');
       setMode('login');
       setBootStage('session');
       setState('signed-out');
@@ -293,6 +347,7 @@ function PhoenixPreviewRoot() {
 
   if (state === 'signed-in') return <PhoenixApp onLogout={() => { void signOut(); }} />;
   if (state === 'checking' || state === 'preparing') return <PhoenixBootScreen stage={bootStage} />;
+  if (state === 'prepare-error') return <PhoenixBootErrorScreen message={bootError} busy={busy} onRetry={() => { void retryPreparation(); }} onLogout={() => { void signOut(); }} />;
 
   return <main className="px-preview-auth">
     <section className="px-preview-shell" aria-label="Acesso ao MEG Finanças">
