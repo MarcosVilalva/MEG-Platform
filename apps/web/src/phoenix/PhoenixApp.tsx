@@ -15,6 +15,7 @@ import { PhoenixMovementsV15 } from './screens/PhoenixMovementsV15';
 import { PhoenixHistory } from './screens/PhoenixHistory';
 import { PhoenixUsers } from './screens/PhoenixUsers';
 import { PhoenixSettings } from './screens/PhoenixSettings';
+import { PhoenixDecisionCenter } from './screens/PhoenixDecisionCenter';
 import { PhoenixCashflowGrid, PhoenixReceivablesGrid, PhoenixRevenuesGrid } from './screens/PhoenixWebGridScreens';
 import {
   PhoenixAnalytics,
@@ -53,6 +54,7 @@ const webViews: ViewDefinition[] = [
   { id: 'receivables', icon: '◫', label: 'Contas a receber' },
   { id: 'revenues', icon: '↗', label: 'Receitas' },
   { id: 'cashflow', icon: '↔', label: 'Fluxo de caixa' },
+  { id: 'decisions', icon: '◇', label: 'Decisões' },
   { id: 'reconcile', icon: '✓', label: 'Conciliação' },
   { id: 'analytics', icon: '⌁', label: 'Análises' },
   { id: 'budgets', icon: '◎', label: 'Orçamentos e metas' }
@@ -72,6 +74,7 @@ const subtitles: Record<PhoenixView, string> = {
   receivables: 'Títulos e recebimentos em aberto',
   revenues: 'Origem e evolução das entradas',
   cashflow: 'Fechamento realizado e projetado',
+  decisions: 'Radar, simulação e impacto antes de decidir',
   reconcile: 'Compare o MEG com o saldo real',
   analytics: 'Tendências e comparações históricas',
   budgets: 'Planejamento e metas financeiras'
@@ -197,6 +200,7 @@ function ReadScreen({ view, data, month, theme, periodMode, homeHorizonData, lau
   if (view === 'receivables') return <PhoenixReceivablesGrid data={data} />;
   if (view === 'revenues') return <PhoenixRevenuesGrid data={data} />;
   if (view === 'cashflow') return <PhoenixCashflowGrid data={data} />;
+  if (view === 'decisions') return <PhoenixDecisionCenter data={data} />;
   if (view === 'reconcile') return <PhoenixReconciliation data={data} />;
   if (view === 'analytics') return <PhoenixAnalytics data={data} />;
   return <PhoenixBudgets data={data} />;
