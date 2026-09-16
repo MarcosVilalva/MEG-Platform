@@ -5,6 +5,7 @@ import '../phoenix-home-now.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const whole = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
+const dateTime = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 type HomeRoute = 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs' | 'users' | 'settings' | 'receivables' | 'revenues' | 'cashflow' | 'reconcile' | 'analytics' | 'decisions' | 'budgets';
 type AgendaDisplayGroup = {
@@ -14,6 +15,13 @@ type AgendaDisplayGroup = {
   subtitle: string;
   amount: number;
   items: PhoenixHomeAgendaItem[];
+};
+type HistoryFeedItem = {
+  id: string;
+  at: string;
+  title: string;
+  description: string;
+  actor: string;
 };
 type MegNowSignal = {
   kind: 'ok' | 'warning' | 'danger';
@@ -65,6 +73,43 @@ function monthLabel(value: string) {
 function shortDate(value: string) {
   const [year, month, day] = value.slice(0, 10).split('-');
   return year && month && day ? `${day}/${month}` : value;
+}
+
+function actionLabel(action: string) {
+  const normalized = action.toUpperCase();
+  if (normalized.includes('CREATED')) return 'Lançamento incluído';
+  if (normalized.includes('UPDATED')) return 'Lançamento alterado';
+  if (normalized.includes('ARCHIVED') || normalized.includes('DELETED')) return 'Lançamento arquivado';
+  if (normalized.includes('PAYMENT') || normalized.includes('PAID')) return 'Pagamento confirmado';
+  if (normalized.includes('TRANSFER')) return 'Transferência registrada';
+  return action.replace(/_/g, ' ').toLocaleLowerCase('pt-BR').replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function historyFeed(data: PhoenixReadModel): HistoryFeedItem[] {
+  const audit = data.financialAudit.items.map((item) => ({
+    id: `audit-${item.id}`,
+    at: item.at,
+    title: actionLabel(item.action),
+    description: item.entity ? `${item.entity} · registro ${item.entityId}` : 'Evento financeiro auditado',
+    actor: item.actor?.name || item.actor?.email || 'Usuário do MEG',
+  }));
+  const legacy = data.activities.map((item) => ({
+    id: `activity-${item.id}`,
+    at: item.at,
+    title: actionLabel(item.action),
+    description: item.transaction?.description || 'Atividade financeira preservada',
+    actor: item.userName || 'Usuário do MEG',
+  }));
+  const seen = new Set<string>();
+  return [...audit, ...legacy]
+    .sort((left, right) => String(right.at).localeCompare(String(left.at)))
+    .filter((item) => {
+      const key = `${item.at}|${item.title}|${item.description}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 20);
 }
 
 function agendaDisplayGroups(items: PhoenixHomeAgendaItem[]) {
@@ -190,6 +235,7 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
   const agenda = useMemo(() => buildPhoenixHomeAgenda(data, today), [data, today]);
   const agendaRows = useMemo(() => agendaDisplayGroups(agenda.items), [agenda.items]);
   const alerts = useMemo(() => buildIntelligentAlerts(data, month), [data, month]);
+  const feed = useMemo(() => historyFeed(data), [data]);
   const visibleAgenda = agendaRows.slice(0, 5);
   const hiddenAgendaCount = Math.max(0, agendaRows.length - visibleAgenda.length);
   const [detail, setDetail] = useState<AgendaDisplayGroup | null>(null);
@@ -198,6 +244,7 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
   const pendingAmount = data.summary.pendingAmount || 0;
   const realizedBalance = data.summary.availableBalance + data.summary.realizedResult;
   const freeAfterCommitments = realizedBalance - pendingAmount;
+  const consolidatedRealized = realizedBalance + data.summary.benefitBalance;
   const nextDue = agendaRows.find((item) => item.dueDate >= today) || agendaRows[0];
   const coverageRaw = pendingAmount > 0 ? (realizedBalance / pendingAmount) * 100 : 100;
   const coverageBar = Math.max(0, Math.min(100, coverageRaw));
@@ -331,6 +378,21 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
         {hiddenAgendaCount ? <div className="px-home-panel-actions"><span className="px-toolbar-note">+ {hiddenAgendaCount} compromisso(s) na agenda</span><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Ver todos</button></div> : null}
       </article>
     </section>
+
+    <details className="px-home-secondary-details">
+      <summary>Mostrar detalhes históricos</summary>
+      <div className="px-home-secondary-grid">
+        <article className="px-card px-home-scroll-card">
+          <div className="px-panel-head"><div><span>Histórico recente</span><h2>Últimos 20 eventos</h2></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('history')}>Ver histórico completo</button></div>
+          <div className="px-home-scroll-list">{feed.map((item) => <div className="px-dashboard-row px-home-history-row" key={item.id}><div className="px-dashboard-row-copy"><strong>{item.title}</strong><small>{item.description}</small><small>{dateTime.format(new Date(item.at))} · {item.actor}</small></div></div>)}</div>
+        </article>
+        <article className="px-card px-home-secondary-summary">
+          <div><span>Benefício alimentação · disponível</span><strong>{money.format(data.summary.benefitBalance)}</strong></div>
+          <div><span>Consolidado realizado</span><strong>{money.format(consolidatedRealized)}</strong></div>
+          <small>Informações históricas permanecem disponíveis, mas recolhidas para não competir com a ação do dia.</small>
+        </article>
+      </div>
+    </details>
 
     {detail ? <div className="px-home-drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>
       <aside className="px-home-drawer" role="dialog" aria-modal="true" aria-label={`Detalhes de ${detail.title}`}>
