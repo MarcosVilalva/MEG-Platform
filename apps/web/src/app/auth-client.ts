@@ -36,6 +36,14 @@ let refreshInFlight: Promise<AuthSession | null> | null = null;
 const responseCache = new Map<string, { value: unknown; storedAt: number }>();
 const requestsInFlight = new Map<string, Promise<unknown>>();
 const CACHE_TTL = 5 * 60_000;
+let cacheEpoch = 0;
+
+const stableCacheDomains = [
+  { cachePrefix: '/finance/accounts', mutationPrefix: '/finance/accounts' },
+  { cachePrefix: '/finance/categories', mutationPrefix: '/finance/categories' },
+  { cachePrefix: '/finance/payment-methods', mutationPrefix: '/finance/payment-methods' },
+  { cachePrefix: '/receivables/customers', mutationPrefix: '/receivables/customers' }
+];
 
 export type ApiHealth = {
   status: string;
@@ -52,6 +60,22 @@ function responseError(payload: unknown, status: number) {
     new Error(transientProxyFailure ? `HTTP_${status}` : code || `HTTP_${status}`),
     { status, code: code || undefined }
   );
+}
+
+function stableAcrossMutation(cachePath: string, mutationPath: string) {
+  return stableCacheDomains.some(({ cachePrefix, mutationPrefix }) =>
+    cachePath.startsWith(cachePrefix) && !mutationPath.startsWith(mutationPrefix)
+  );
+}
+
+function invalidateAfterMutation(mutationPath: string) {
+  cacheEpoch += 1;
+  for (const key of [...responseCache.keys()]) {
+    if (!stableAcrossMutation(key, mutationPath)) responseCache.delete(key);
+  }
+  for (const key of [...requestsInFlight.keys()]) {
+    if (!stableAcrossMutation(key, mutationPath)) requestsInFlight.delete(key);
+  }
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -94,37 +118,56 @@ export async function authenticatedRequest<T>(path: string, init?: RequestInit):
   const cached = cacheKey ? responseCache.get(cacheKey) : undefined;
   if (cached && Date.now() - cached.storedAt < CACHE_TTL) return cached.value as T;
   if (cacheKey && requestsInFlight.has(cacheKey)) return requestsInFlight.get(cacheKey) as Promise<T>;
+  const requestEpoch = cacheEpoch;
   const execute = async () => {
-  let session = readSession();
-  if (!session) throw Object.assign(new Error('UNAUTHORIZED'), { status: 401 });
-  const send = (accessToken: string) => fetch(`${API_URL}${path}`, {
-    ...init,
-    cache: 'no-store',
-    signal: init?.signal || AbortSignal.timeout(45_000),
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}`, ...(init?.headers || {}) }
-  });
-  let response = await send(session.accessToken);
-  if (response.status === 401) {
-    session = await refreshAuthSession();
+    let session = readSession();
     if (!session) throw Object.assign(new Error('UNAUTHORIZED'), { status: 401 });
-    response = await send(session.accessToken);
-  }
-  const payload = response.status === 204 ? undefined : await response.json().catch(() => ({}));
-  if (!response.ok) throw responseError(payload, response.status);
-  if (method === 'GET') responseCache.set(path, { value: payload, storedAt: Date.now() });
-  else {
-    responseCache.clear();
-    window.dispatchEvent(new CustomEvent('meg:data-invalidated', { detail: { path, method } }));
-  }
-  return payload as T;
+    const send = (accessToken: string) => fetch(`${API_URL}${path}`, {
+      ...init,
+      cache: 'no-store',
+      signal: init?.signal || AbortSignal.timeout(45_000),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}`, ...(init?.headers || {}) }
+    });
+    let response = await send(session.accessToken);
+    if (response.status === 401) {
+      session = await refreshAuthSession();
+      if (!session) throw Object.assign(new Error('UNAUTHORIZED'), { status: 401 });
+      response = await send(session.accessToken);
+    }
+    const payload = response.status === 204 ? undefined : await response.json().catch(() => ({}));
+    if (!response.ok) throw responseError(payload, response.status);
+    if (method === 'GET') {
+      if (requestEpoch === cacheEpoch) responseCache.set(path, { value: payload, storedAt: Date.now() });
+    } else {
+      invalidateAfterMutation(path);
+      window.dispatchEvent(new CustomEvent('meg:data-invalidated', { detail: { path, method } }));
+    }
+    return payload as T;
   };
   const pending = execute();
   if (cacheKey) requestsInFlight.set(cacheKey, pending);
-  try { return await pending; } finally { if (cacheKey) requestsInFlight.delete(cacheKey); }
+  try { return await pending; } finally { if (cacheKey && requestsInFlight.get(cacheKey) === pending) requestsInFlight.delete(cacheKey); }
 }
 
-export function clearAuthenticatedCache() { responseCache.clear(); requestsInFlight.clear(); }
-export function invalidateAuthenticatedCache(path?: string) { if (path) responseCache.delete(path); else responseCache.clear(); }
+export function clearAuthenticatedCache() {
+  cacheEpoch += 1;
+  responseCache.clear();
+  requestsInFlight.clear();
+}
+export function invalidateAuthenticatedCache(path?: string) {
+  cacheEpoch += 1;
+  if (path) {
+    responseCache.delete(path);
+    requestsInFlight.delete(path);
+  } else {
+    responseCache.clear();
+    requestsInFlight.clear();
+  }
+}
+
+export function primeAuthenticatedCache<T>(path: string, value: T) {
+  responseCache.set(path, { value, storedAt: Date.now() });
+}
 
 export function peekAuthenticatedCache<T>(path: string): T | undefined {
   const cached = responseCache.get(path);
