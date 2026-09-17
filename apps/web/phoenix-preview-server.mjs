@@ -8,6 +8,7 @@ const port = Number(process.env.PORT || 4173);
 const apiOrigin = process.env.PHOENIX_API_ORIGIN || 'https://meg-platform-api.onrender.com';
 const simpleEventWriteEnabled = process.env.PHOENIX_SIMPLE_EVENT_WRITE === 'enabled';
 const cardPurchaseWriteEnabled = process.env.PHOENIX_CARD_PURCHASE_WRITE === 'enabled';
+const benefitWriteEnabled = process.env.PHOENIX_BENEFIT_WRITE === 'enabled';
 const pendingWriteEnabled = process.env.PHOENIX_PENDING_WRITE === 'enabled';
 const bulkEventWriteEnabled = process.env.PHOENIX_BULK_EVENT_WRITE === 'enabled';
 const distDir = fileURLToPath(new URL('./dist/', import.meta.url));
@@ -34,6 +35,7 @@ const allowedAuthPosts = new Set([
   '/auth/forgot-password'
 ]);
 const allowedFinancialPosts = new Set(['/finance/events']);
+const allowedBenefitPosts = new Set(['/finance/benefit-events']);
 const allowedCardPurchasePosts = new Set(['/cards/purchases']);
 const allowedBulkEventPosts = new Set([
   '/finance/events/bulk/update',
@@ -71,6 +73,7 @@ function isAllowedApiRequest(method, pathname) {
   }
   if (method === 'POST' && allowedAuthPosts.has(pathname)) return true;
   if (method === 'POST' && simpleEventWriteEnabled && allowedFinancialPosts.has(pathname)) return true;
+  if (method === 'POST' && benefitWriteEnabled && allowedBenefitPosts.has(pathname)) return true;
   if (isAllowedCardPurchaseWrite(method, pathname)) return true;
   if (method === 'POST' && bulkEventWriteEnabled && allowedBulkEventPosts.has(pathname)) return true;
   if (method === 'POST') return isAllowedPendingWrite(pathname);
@@ -315,14 +318,17 @@ const server = createServer(async (request, response) => {
           ? 'phoenix-bulk-event-write-gated-preview'
           : pendingWriteEnabled
             ? 'phoenix-pending-write-gated-preview'
-            : cardPurchaseWriteEnabled
-              ? 'phoenix-card-purchase-write-gated-preview'
-              : simpleEventWriteEnabled
-                ? 'phoenix-simple-event-write-gated-preview'
-                : 'phoenix-finance-read-only-preview',
+            : benefitWriteEnabled
+              ? 'phoenix-benefit-write-gated-preview'
+              : cardPurchaseWriteEnabled
+                ? 'phoenix-card-purchase-write-gated-preview'
+                : simpleEventWriteEnabled
+                  ? 'phoenix-simple-event-write-gated-preview'
+                  : 'phoenix-finance-read-only-preview',
         capabilities: {
           simpleEventWrite: simpleEventWriteEnabled,
           cardPurchaseWrite: cardPurchaseWriteEnabled,
+          benefitWrite: benefitWriteEnabled,
           pendingWrite: pendingWriteEnabled,
           bulkEventWrite: bulkEventWriteEnabled
         }
@@ -360,6 +366,6 @@ const server = createServer(async (request, response) => {
 
 server.listen(port, '0.0.0.0', () => {
   console.log(
-    `Phoenix preview listening on :${port} · simpleEventWrite=${simpleEventWriteEnabled ? 'enabled' : 'disabled'} · cardPurchaseWrite=${cardPurchaseWriteEnabled ? 'enabled' : 'disabled'} · pendingWrite=${pendingWriteEnabled ? 'enabled' : 'disabled'} · bulkEventWrite=${bulkEventWriteEnabled ? 'enabled' : 'disabled'}`
+    `Phoenix preview listening on :${port} · simpleEventWrite=${simpleEventWriteEnabled ? 'enabled' : 'disabled'} · cardPurchaseWrite=${cardPurchaseWriteEnabled ? 'enabled' : 'disabled'} · benefitWrite=${benefitWriteEnabled ? 'enabled' : 'disabled'} · pendingWrite=${pendingWriteEnabled ? 'enabled' : 'disabled'} · bulkEventWrite=${bulkEventWriteEnabled ? 'enabled' : 'disabled'}`
   );
 });
