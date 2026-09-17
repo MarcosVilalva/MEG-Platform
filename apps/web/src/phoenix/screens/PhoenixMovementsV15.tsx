@@ -9,12 +9,14 @@ const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
 type TxType = 'expense' | 'income' | 'transfer';
+type LaunchStatus = 'planned' | 'paid';
 type GridKey = 'dueDate' | 'purchaseDate' | 'weekday' | 'type' | 'description' | 'income' | 'classification' | 'group' | 'expense' | 'paymentMethod' | 'status' | 'modality';
 type GridSort = { key: GridKey; direction: PhoenixGridSortDirection } | null;
 type GridFilterMap = Record<GridKey, PhoenixGridFilterValue>;
 type FinancialEventWithSourcePayload = FinancialEvent & { sourcePayload?: unknown };
 type LaunchDraft = {
   type: TxType;
+  status: LaunchStatus;
   description: string;
   accountId: string;
   destinationId: string;
@@ -44,7 +46,7 @@ function saoPauloDay() {
 
 function initialDraft(): LaunchDraft {
   return {
-    type: 'expense', description: '', accountId: '', destinationId: '', eventDate: saoPauloDay(),
+    type: 'expense', status: 'planned', description: '', accountId: '', destinationId: '', eventDate: saoPauloDay(),
     classification: '', categoryId: '', paymentMethodId: '', cardId: '', installments: 1, manualDue: false,
     firstDue: '', recurring: false, recurrenceFrequency: 'Mensal', recurrenceCount: 12,
     saveTemplate: false, templateName: '', notes: ''
@@ -72,8 +74,8 @@ function normalizeText(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ');
 }
 
-function isBenefitAccount(name?: string | null) {
-  const value = normalizeText(name || '');
+function isBenefitAccount(name?: string | null, type?: string | null) {
+  const value = normalizeText(`${name || ''} ${type || ''}`);
   return value.includes('benef') || value.includes('verocard') || value.includes('alimentacao');
 }
 
@@ -86,7 +88,7 @@ function isBenefitEvent(event: FinancialEvent) {
 
 function isCreditMethod(name?: string | null, type?: string | null) {
   const value = normalizeText(`${name || ''} ${type || ''}`);
-  return value.includes('credito') || value.includes('cartao');
+  return value.includes('credito') || (value.includes('cartao') && !value.includes('debito'));
 }
 
 function isCrediarioMethod(name?: string | null, type?: string | null) {
@@ -116,6 +118,10 @@ function cardDueDate(purchaseDate: string, closingDay: number, dueDay: number) {
 
 function eventStatus(value: string) {
   return ({ draft: 'Rascunho', planned: 'Pendente', confirmed: 'Confirmado', paid: 'Pago', reconciled: 'Conciliado', archived: 'Arquivado' } as Record<string, string>)[value] || value;
+}
+
+function editableStatus(value: FinancialEvent['status']): LaunchStatus {
+  return value === 'paid' || value === 'reconciled' ? 'paid' : 'planned';
 }
 
 function eventType(value: FinancialEvent['type']) {
@@ -280,13 +286,15 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
   const [gridSort, setGridSort] = useState<GridSort>(null);
   const [launchOpen, setLaunchOpen] = useState(false);
   const [detailEvent, setDetailEvent] = useState<FinancialEvent | null>(null);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [draft, setDraft] = useState<LaunchDraft>(initialDraft);
   const [amountCents, setAmountCents] = useState(0);
   const [negative, setNegative] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [reviewed, setReviewed] = useState(false);
+  const [dataVersion, setDataVersion] = useState(0);
 
-  const monthEvents = useMemo(() => data.events.items.filter((event) => event.competence === data.month), [data]);
+  const monthEvents = useMemo(() => data.events.items.filter((event) => event.competence === data.month), [data, dataVersion]);
   const rows = useMemo(() => monthEvents.map((event) => ({ event, row: gridRow(event) })), [monthEvents]);
 
   const gridOptions = useMemo(() => {
@@ -339,9 +347,10 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
   const selectedCategory = data.categories.find((item) => item.id === draft.categoryId) || null;
   const selectedPayment = data.paymentMethods.find((item) => item.id === draft.paymentMethodId) || null;
   const selectedCard = data.cards.find((item) => item.id === draft.cardId) || null;
-  const benefit = isBenefitAccount(selectedAccount?.name);
+  const benefit = isBenefitAccount(selectedAccount?.name, selectedAccount?.type);
   const credit = isCreditMethod(selectedPayment?.name, selectedPayment?.type);
   const crediario = isCrediarioMethod(selectedPayment?.name, selectedPayment?.type);
+  const effectiveStatus: LaunchStatus = benefit ? 'paid' : credit ? 'planned' : draft.status;
   const calculatedDue = selectedCard ? cardDueDate(draft.eventDate, selectedCard.closingDay, selectedCard.dueDay) : '';
 
   const expenseCategories = useMemo(
@@ -383,7 +392,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
     if (draft.type === 'transfer') {
       if (!draft.destinationId) list.push('conta de destino');
       else if (draft.destinationId === draft.accountId) list.push('destino diferente da origem');
-      if (benefit || isBenefitAccount(selectedDestination?.name)) list.push('contas monetárias válidas');
+      if (benefit || isBenefitAccount(selectedDestination?.name, selectedDestination?.type)) list.push('contas monetárias válidas');
     } else {
       if (draft.type === 'expense' && !draft.classification) list.push('classificação');
       if (draft.type === 'expense' && !draft.categoryId) list.push('grupo');
@@ -393,22 +402,23 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
     if (draft.recurring && draft.recurrenceCount < 2) list.push('quantidade da recorrência');
     if (draft.saveTemplate && !draft.templateName.trim()) list.push('nome do modelo');
     return list;
-  }, [draft, amountCents, benefit, selectedDestination?.name, credit]);
+  }, [draft, amountCents, benefit, selectedDestination?.name, selectedDestination?.type, credit]);
 
   const duplicate = useMemo(() => {
     if (!draft.description.trim() || !amountCents || !draft.accountId || !draft.eventDate) return null;
     const target = normalizeText(draft.description);
-    return data.events.items.find((event) => normalizeText(event.description) === target
+    return data.events.items.find((event) => event.id !== editingEventId
+      && normalizeText(event.description) === target
       && Math.round(amountFromEvent(event) * 100) === amountCents
       && event.accountId === draft.accountId
       && event.date.slice(0, 10) === draft.eventDate) || null;
-  }, [data.events.items, draft.description, draft.accountId, draft.eventDate, amountCents]);
+  }, [data.events.items, editingEventId, draft.description, draft.accountId, draft.eventDate, amountCents, dataVersion]);
 
   const simpleWriteInput = useMemo(() => {
     if (draft.type === 'transfer') return null;
     return {
       type: draft.type,
-      status: draft.type === 'income' ? 'paid' as const : 'planned' as const,
+      status: effectiveStatus,
       description: draft.description,
       date: draft.eventDate,
       competence: draft.eventDate.slice(0, 7),
@@ -418,7 +428,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
       paymentMethodId: draft.paymentMethodId,
       notes: draft.notes || undefined,
     };
-  }, [draft.type, draft.description, draft.eventDate, draft.accountId, draft.categoryId, draft.paymentMethodId, draft.notes, amountCents]);
+  }, [draft.type, draft.description, draft.eventDate, draft.accountId, draft.categoryId, draft.paymentMethodId, draft.notes, effectiveStatus, amountCents]);
 
   const simpleWriteFlow = useMemo(() => ({
     type: draft.type,
@@ -458,7 +468,10 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
 
   function changeLaunchType(type: TxType) {
     setDraft((current) => ({
-      ...current, type, classification: '', categoryId: '', paymentMethodId: '', cardId: '',
+      ...current,
+      type,
+      status: type === 'income' ? 'paid' : 'planned',
+      classification: '', categoryId: '', paymentMethodId: '', cardId: '',
       destinationId: type === 'transfer' ? current.destinationId : ''
     }));
     setDirty(true);
@@ -473,6 +486,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
 
   function resetLaunch() {
     setDraft(initialDraft());
+    setEditingEventId(null);
     setAmountCents(0);
     setNegative(false);
     setDirty(false);
@@ -489,8 +503,9 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
           && normalizeText(item.group || '') === normalizeText(classification)
           && normalizeText(item.name) === normalizeText(groupName))
         : null;
+      setEditingEventId(event.id);
       setDraft({
-        ...initialDraft(), type: visualType, description: event.description,
+        ...initialDraft(), type: visualType, status: editableStatus(event.status), description: event.description,
         accountId: event.accountId || '', eventDate: event.date.slice(0, 10), classification,
         categoryId: matchedCategory?.id || event.categoryId || '', paymentMethodId: event.paymentMethodId || '',
         notes: event.notes || ''
@@ -531,6 +546,13 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
     if (!missing.length) setReviewed(true);
   }
 
+  function applyConfirmedSnapshot(snapshot: PhoenixReadModel) {
+    Object.assign(data, snapshot);
+    setDataVersion((value) => value + 1);
+    setDirty(false);
+    window.dispatchEvent(new CustomEvent('phoenix:financial-data-updated', { detail: { month: snapshot.month, loadedAt: snapshot.loadedAt } }));
+  }
+
   function updateGridFilter(key: GridKey, value: PhoenixGridFilterValue) {
     setGridFilters((current) => ({ ...current, [key]: value }));
   }
@@ -551,7 +573,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
 
   return <section className="px-screen px-movements-v15">
     <header className="px-screen-head">
-      <div><span className="px-kicker">Lançamentos</span><h1>Controle financeiro</h1><p>Inclua e consulte eventos mantendo o histórico de auditoria separado do formulário.</p></div>
+      <div><span className="px-kicker">Lançamentos</span><h1>Controle financeiro</h1><p>Inclua, consulte e edite eventos. Duplo clique em uma linha abre a edição.</p></div>
       <div className="px-launch-head-actions"><details className="px-column-chooser"><summary>Colunas</summary><div><span>Dia</span><span>Classificação</span><span>Grupo</span><span>Forma de pagamento</span><span>Modalidade</span></div></details></div>
     </header>
 
@@ -579,7 +601,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
             const visualType = launchTypeForEvent(event.type);
             const effect = displayEffect(event);
             const isIncome = visualType === 'income';
-            return <tr key={event.id}>
+            return <tr key={event.id} onDoubleClick={() => openLaunch(event)} title="Duplo clique para editar este lançamento">
               <td data-label="Vencimento">{formatIsoDate(event.date)}</td>
               <td data-label="Data da compra">{formatIsoDate(sourcePurchaseDate(event))}</td>
               <td data-label="Dia">{event.sourceDetails?.weekday || weekday(event.date)}</td>
@@ -592,7 +614,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
               <td data-label="Forma de pagamento">{sourcePayment(event)}</td>
               <td data-label="Situação"><span className={`px-status ${event.status}`}>{sourceSituation(event)}</span></td>
               <td data-label="Modalidade">{sourceModality(event)}</td>
-              <td data-label="Detalhes"><button className="px-detail-btn" type="button" onClick={() => setDetailEvent(event)} aria-label={`Detalhes de ${event.description}`}>↘</button></td>
+              <td data-label="Detalhes"><button className="px-detail-btn" type="button" onDoubleClick={(click) => click.stopPropagation()} onClick={(click) => { click.stopPropagation(); setDetailEvent(event); }} aria-label={`Detalhes de ${event.description}`}>↘</button></td>
             </tr>;
           })}</tbody>
         </table>
@@ -600,12 +622,12 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
       </div>
     </section>
 
-    <div className="px-rule-strip"><span>✓ Usuário, conta e sincronização permanecem vinculados.</span><span>✓ Benefício não compõe saldo monetário.</span><span>✓ Estornos preservam efeito reverso.</span></div>
+    <div className="px-rule-strip"><span>✓ Inclusão e alteração refletem na grade após confirmação do servidor.</span><span>✓ Benefício não compõe saldo monetário.</span><span>✓ Crédito sempre nasce pendente.</span></div>
 
     {launchOpen ? <>
-      <button className="px-launch-backdrop" type="button" aria-label="Fechar novo lançamento" onClick={requestCloseLaunch} />
-      <aside className="px-launch-drawer" aria-label="Novo lançamento">
-        <div className="px-drawer-head"><div><span className="px-kicker">Novo evento</span><h2>Lançamento</h2></div><button className="px-icon-btn" type="button" onClick={requestCloseLaunch}>×</button></div>
+      <button className="px-launch-backdrop" type="button" aria-label="Fechar lançamento" onClick={requestCloseLaunch} />
+      <aside className="px-launch-drawer" aria-label={editingEventId ? 'Editar lançamento' : 'Novo lançamento'}>
+        <div className="px-drawer-head"><div><span className="px-kicker">{editingEventId ? 'Edição rápida' : 'Novo evento'}</span><h2>{editingEventId ? 'Editar lançamento' : 'Lançamento'}</h2></div><button className="px-icon-btn" type="button" onClick={requestCloseLaunch}>×</button></div>
         <div className="px-launch-form px-card">
           <div className="px-segment" aria-label="Tipo do lançamento">{(['expense','income','transfer'] as TxType[]).map((item) => <button key={item} type="button" className={draft.type === item ? 'active' : ''} onClick={() => changeLaunchType(item)}>{item === 'expense' ? 'Despesa' : item === 'income' ? 'Receita' : 'Transferência'}</button>)}</div>
           <div className="px-launch-required">Os campos marcados com * são obrigatórios. A Phoenix exibe somente campos compatíveis com o tipo escolhido.</div>
@@ -623,7 +645,7 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
           {draft.type === 'transfer' ? <div className="px-transfer-block"><div className="px-transfer-arrow">Conta de origem ↓ Conta de destino</div><label className="px-field"><span>Conta de destino *</span><select value={draft.destinationId} onChange={(event) => updateDraft('destinationId', event.target.value)}><option value="">Selecione uma conta diferente</option>{accounts.filter((item) => item.id !== draft.accountId).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label></div> : null}
 
           <label className="px-field"><span>Valor total *</span><input className="px-money-mask" inputMode="numeric" value={formatInputMoney(amountCents, negative)} onChange={(event) => onMoneyChange(event.target.value)} onKeyDown={onMoneyKeyDown} /><small>Digite somente os números. Pressione “-” para alternar estorno/reversão.</small></label>
-          {negative && amountCents ? <div className="px-notice warn">Valor negativo identificado. A futura gravação deverá preservar o lançamento original como estorno ou evento reverso.</div> : null}
+          {negative && amountCents ? <div className="px-notice warn">Valor negativo identificado. A gravação deverá preservar o lançamento original como estorno ou evento reverso.</div> : null}
 
           {draft.type !== 'transfer' ? <>
             <div className="px-launch-section-label">{draft.type === 'income' ? 'Recebimento' : 'Classificação da despesa'}</div>
@@ -634,19 +656,22 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
             <div className="px-config-note"><span>{draft.type === 'expense' ? 'A classificação filtra os grupos pertencentes a ela. Ambos vêm da base central de Cadastros.' : 'Receitas não exigem grupo; a classificação é opcional e vem da base central de Cadastros.'}</span><strong>{draft.type === 'expense' ? `${expenseClassifications.length} classificações` : 'Base centralizada'}</strong></div>
 
             <div className="px-launch-section-label">{draft.type === 'income' ? 'Recebimento' : 'Pagamento e vencimento'}</div>
-            <label className="px-field"><span>{draft.type === 'income' ? 'Forma de recebimento *' : 'Forma de pagamento *'}</span><select value={draft.paymentMethodId} onChange={(event) => updateDraft('paymentMethodId', event.target.value)}><option value="">Selecione</option>{paymentMethods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <div className="px-form-row">
+              <label className="px-field"><span>{draft.type === 'income' ? 'Forma de recebimento *' : 'Forma de pagamento *'}</span><select value={draft.paymentMethodId} onChange={(event) => updateDraft('paymentMethodId', event.target.value)}><option value="">Selecione</option>{paymentMethods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+              <label className="px-field"><span>Situação *</span><select value={effectiveStatus} disabled={benefit || credit} onChange={(event) => updateDraft('status', event.target.value as LaunchStatus)}><option value="planned">Pendente</option><option value="paid">Pago</option></select><small>{benefit ? 'Benefício alimentação é sempre registrado como Pago.' : credit ? 'Crédito é sempre registrado como Pendente até a baixa da fatura.' : 'Escolha se o lançamento já foi pago/recebido ou permanece pendente.'}</small></label>
+            </div>
           </> : null}
 
           {credit ? <div className="px-card-box">
             <label className="px-field"><span>Cartão *</span><select value={draft.cardId} onChange={(event) => updateDraft('cardId', event.target.value)}><option value="">Selecione o cartão cadastrado</option>{cards.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
             <div className="px-calculated-due"><span>Vencimento calculado</span><strong>{calculatedDue ? date.format(new Date(`${calculatedDue}T12:00:00Z`)) : 'Definido após selecionar o cartão'}</strong></div>
-            <label className="px-switch"><div><strong>Alterar vencimento manualmente</strong><small>Exceção futura deverá ser registrada no histórico.</small></div><input type="checkbox" checked={draft.manualDue} onChange={(event) => updateDraft('manualDue', event.target.checked)} /></label>
-            <div className="px-rule-box">No crédito, a API usa data da compra e fechamento para definir a fatura. O vencimento considera os dias de fechamento e vencimento cadastrados no cartão.</div>
+            <label className="px-switch"><div><strong>Alterar vencimento manualmente</strong><small>Exceção deverá ser registrada no histórico.</small></div><input type="checkbox" checked={draft.manualDue} onChange={(event) => updateDraft('manualDue', event.target.checked)} /></label>
+            <div className="px-rule-box">No crédito, a situação é Pendente e a API usa data da compra e fechamento para definir a fatura. O vencimento considera os dias cadastrados no cartão.</div>
           </div> : null}
 
-          {(credit || crediario) ? <div className="px-installment-box"><div className="px-form-row"><label className="px-field"><span>Quantidade de parcelas *</span><input type="number" min={1} max={credit ? 48 : 120} value={draft.installments} onChange={(event) => updateDraft('installments', Math.max(1, Number(event.target.value) || 1))} /></label><label className="px-field"><span>Vencimento da 1ª parcela</span><input type="date" disabled={credit && !draft.manualDue} value={draft.manualDue ? draft.firstDue : calculatedDue} onChange={(event) => updateDraft('firstDue', event.target.value)} /></label></div><div className="px-rule-box">No cartão, a divisão em parcelas seguirá o contrato da API: centavos são distribuídos sem perda e a primeira fatura depende da data de fechamento.</div></div> : null}
+          {(credit || crediario) ? <div className="px-installment-box"><div className="px-form-row"><label className="px-field"><span>Quantidade de parcelas *</span><input type="number" min={1} max={credit ? 48 : 120} value={draft.installments} onChange={(event) => updateDraft('installments', Math.max(1, Number(event.target.value) || 1))} /></label><label className="px-field"><span>Vencimento da 1ª parcela</span><input type="date" disabled={credit && !draft.manualDue} value={draft.manualDue ? draft.firstDue : calculatedDue} onChange={(event) => updateDraft('firstDue', event.target.value)} /></label></div><div className="px-rule-box">No cartão, a divisão em parcelas segue o contrato da API: centavos são distribuídos sem perda e a primeira fatura depende da data de fechamento.</div></div> : null}
 
-          {benefit ? <div className="px-notice ok">{draft.type === 'income' ? 'A recarga aumenta somente o saldo do benefício e não compõe o caixa monetário.' : 'Esta movimentação usa o saldo do benefício e não altera o caixa monetário.'}</div> : null}
+          {benefit ? <div className="px-notice ok">{draft.type === 'income' ? 'A recarga aumenta somente o saldo do benefício, é marcada como Paga e não compõe o caixa monetário.' : 'Esta movimentação usa o saldo do benefício, é marcada como Paga e não altera o caixa monetário.'}</div> : null}
 
           <div className="px-launch-section-label">Repetição e observações</div>
           <label className="px-switch"><div><strong>Lançamento recorrente</strong><small>Simule os próximos eventos conforme a periodicidade.</small></div><input type="checkbox" checked={draft.recurring} onChange={(event) => updateDraft('recurring', event.target.checked)} /></label>
@@ -656,9 +681,9 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
           {draft.saveTemplate ? <label className="px-field"><span>Nome do modelo *</span><input maxLength={60} value={draft.templateName} onChange={(event) => updateDraft('templateName', event.target.value)} placeholder="Ex.: Compra mensal" /></label> : null}
           <label className="px-field"><span>Observações opcionais</span><textarea maxLength={500} value={draft.notes} onChange={(event) => updateDraft('notes', event.target.value)} placeholder="Inclua informações úteis para consulta futura" /></label>
 
-          <div className="px-preview-box"><div className="px-launch-section-label">Resumo antes de confirmar</div><div><span>Tipo</span><strong>{draft.type === 'expense' ? 'Despesa' : draft.type === 'income' ? 'Receita' : 'Transferência'}</strong></div><div><span>Escopo</span><strong>{draft.type === 'transfer' && draft.destinationId ? `${labelForAccount(data, draft.accountId)} para ${labelForAccount(data, draft.destinationId)}` : labelForAccount(data, draft.accountId)}</strong></div>{draft.type === 'expense' ? <><div><span>Classificação</span><strong>{draft.classification || '—'}</strong></div><div><span>Grupo</span><strong>{selectedCategory?.name || '—'}</strong></div></> : null}<div><span>Valor</span><strong>{formatInputMoney(amountCents, negative)}</strong></div><div><span>Situação inicial</span><strong>{draft.type === 'income' ? 'Recebido' : draft.type === 'expense' ? 'Pendente' : 'Fluxo próprio'}</strong></div></div>
+          <div className="px-preview-box"><div className="px-launch-section-label">Resumo antes de confirmar</div><div><span>Tipo</span><strong>{draft.type === 'expense' ? 'Despesa' : draft.type === 'income' ? 'Receita' : 'Transferência'}</strong></div><div><span>Escopo</span><strong>{draft.type === 'transfer' && draft.destinationId ? `${labelForAccount(data, draft.accountId)} para ${labelForAccount(data, draft.destinationId)}` : labelForAccount(data, draft.accountId)}</strong></div>{draft.type === 'expense' ? <><div><span>Classificação</span><strong>{draft.classification || '—'}</strong></div><div><span>Grupo</span><strong>{selectedCategory?.name || '—'}</strong></div></> : null}<div><span>Valor</span><strong>{formatInputMoney(amountCents, negative)}</strong></div><div><span>Situação</span><strong>{draft.type === 'transfer' ? 'Fluxo próprio' : effectiveStatus === 'paid' ? 'Pago' : 'Pendente'}</strong></div></div>
 
-          <div className={`px-rule-box ${duplicate ? 'duplicate' : ''}`}>{duplicate ? `Possível duplicidade real encontrada: ${duplicate.description}, ${money.format(amountFromEvent(duplicate))}, em ${date.format(new Date(duplicate.date))}.` : 'Proteção contra duplicidade preparada: descrição, valor, conta e data são comparados com os lançamentos carregados.'}</div>
+          <div className={`px-rule-box ${duplicate ? 'duplicate' : ''}`}>{duplicate ? `Possível duplicidade real encontrada: ${duplicate.description}, ${money.format(amountFromEvent(duplicate))}, em ${date.format(new Date(duplicate.date))}.` : editingEventId ? 'Edição vinculada ao lançamento original. Ao confirmar, a linha e os indicadores são relidos e atualizados.' : 'Proteção contra duplicidade preparada: descrição, valor, conta e data são comparados com os lançamentos carregados.'}</div>
           <div className={`px-notice ${missing.length ? 'warn' : 'ok'}`}>{missing.length ? `Campos pendentes: ${missing.join(', ')}.` : 'Campos principais preenchidos. Revise o resumo antes de confirmar.'}</div>
           <PhoenixLaunchWriteControl
             reviewed={reviewed}
@@ -666,10 +691,10 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
             input={simpleWriteInput}
             flow={simpleWriteFlow}
             duplicateMessage={duplicateMessage}
+            editEventId={editingEventId}
             onReview={reviewLaunch}
-            onCommitted={() => {
-              setDirty(false);
-              window.dispatchEvent(new Event('focus'));
+            onCommitted={(snapshot) => {
+              applyConfirmedSnapshot(snapshot);
             }}
           />
         </div>
@@ -681,8 +706,8 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
       <p className="px-detail-description">{detailEvent.description}</p>
       <div className="px-detail-grid"><div><span>Vencimento</span><strong>{formatIsoDate(detailEvent.date)}</strong></div><div><span>Data da compra</span><strong>{formatIsoDate(sourcePurchaseDate(detailEvent))}</strong></div><div><span>Situação</span><strong>{eventStatus(detailEvent.status)}</strong></div><div><span>Conta</span><strong>{detailEvent.account?.name || 'Não informada'}</strong></div><div><span>Sincronização</span><strong>Confirmada na leitura atual</strong></div><div><span>Tipo</span><strong>{eventType(detailEvent.type)}</strong></div><div><span>Valor</span><strong>{money.format(displayEffect(detailEvent))}</strong></div><div><span>Classificação</span><strong>{sourceClassification(detailEvent)}</strong></div><div><span>Grupo</span><strong>{sourceGroup(detailEvent)}</strong></div><div><span>Forma</span><strong>{detailEvent.paymentMethod?.name || detailEvent.sourceDetails?.paymentMethod || '—'}</strong></div><div><span>Modalidade</span><strong>{detailEvent.sourceDetails?.modality || '—'}</strong></div></div>
       {detailEvent.notes ? <div className="px-notice">{detailEvent.notes}</div> : null}
-      <div className="px-notice">A edição permanece em simulação. Quando a escrita for habilitada, qualquer alteração deverá preservar rastreabilidade e histórico.</div>
-      <div className="px-detail-actions"><button className="px-primary-action" type="button" onClick={() => openLaunch(detailEvent)}>Preparar edição</button><button className="px-secondary-action" type="button" onClick={() => { setDetailEvent(null); onNavigateHistory?.(); }}>Ver histórico</button></div>
+      <div className="px-notice">Você também pode dar duplo clique na linha da grade para abrir este lançamento diretamente em edição.</div>
+      <div className="px-detail-actions"><button className="px-primary-action" type="button" onClick={() => openLaunch(detailEvent)}>Editar lançamento</button><button className="px-secondary-action" type="button" onClick={() => { setDetailEvent(null); onNavigateHistory?.(); }}>Ver histórico</button></div>
     </aside> : null}
   </section>;
 }
