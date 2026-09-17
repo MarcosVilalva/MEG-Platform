@@ -1,6 +1,7 @@
 import { prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { recordFinancialAudit } from '../finance/audit';
+import { buildCanonicalCardStatement, legacyCardStatementEffect } from '../finance/card-statement-canonical';
 import {
   isFutureFinancialDay,
   isMonetaryAccountType,
@@ -106,14 +107,16 @@ function legacyPurchasesForCard(card: { name: string }, legacy: ReturnType<typeo
     const modality = key(item.modality);
     return aliases.has(method) && key(item.type) === 'EXPENSE' && (!modality || modality === 'CREDITO');
   }).map((item) => {
-    const amount = Math.abs(number(item.expenseAmount || item.amount || item.signedAmount));
+    const amount = legacyCardStatementEffect(item);
     const purchaseDate = text(item.purchaseDate || item.date);
+    const statementDate = text(item.date || item.purchaseDate);
     const status = key(item.status || item.situation);
     return {
       id: `legacy-${text(item.id)}`,
       description: text(item.description) || 'Compra no cartão',
       totalAmount: amount,
       purchaseDate,
+      statementDate,
       installments: number(item.installments || item.installmentQty) || 1,
       status: 'legacy',
       category: null,
@@ -125,36 +128,68 @@ function legacyPurchasesForCard(card: { name: string }, legacy: ReturnType<typeo
 
 export async function listCards(userId: string, month: string) {
   const shared = await sharedCardContext(userId);
-  const cards = await prisma.creditCard.findMany({
-    where: { userId: shared.ownerId, isActive: true },
-    orderBy: { createdAt: 'asc' },
-    include: {
-      purchases: {
-        where: { status: 'active' },
-        include: { entries: true, category: true },
-        orderBy: { purchaseDate: 'desc' },
+  const [year, monthNumber] = month.split('-').map(Number);
+  const monthStart = new Date(Date.UTC(year, monthNumber - 1, 1));
+  const monthEnd = new Date(Date.UTC(year, monthNumber, 1));
+  const [cards, events] = await Promise.all([
+    prisma.creditCard.findMany({
+      where: { userId: shared.ownerId, isActive: true },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        purchases: {
+          where: { status: 'active' },
+          include: { entries: true, category: true },
+          orderBy: { purchaseDate: 'desc' },
+        },
       },
-    },
-  });
+    }),
+    prisma.financialEvent.findMany({
+      where: {
+        userId: shared.ownerId,
+        archivedAt: null,
+        date: { gte: monthStart, lt: monthEnd },
+      },
+      orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+      include: { paymentMethod: true },
+    }),
+  ]);
+
   return cards.map((card) => {
+    const aliases = new Set([
+      key(card.name),
+      ...shared.legacy.cards
+        .filter((item) => key(item.productName) === key(card.name) || key(item.paymentMethod) === key(card.name))
+        .flatMap((item) => [key(item.paymentMethod), key(item.productName)])
+        .filter(Boolean),
+    ]);
+    const statement = buildCanonicalCardStatement({
+      month,
+      closingDay: card.closingDay,
+      dueDay: card.dueDay,
+      aliases,
+      events,
+      purchases: card.purchases,
+    });
+
     const entries = card.purchases.flatMap((purchase) => purchase.entries);
     const legacyPurchases = legacyPurchasesForCard(card, shared.legacy);
     const legacyOpen = legacyPurchases.filter((item) => item.legacyOpen);
-    const usedLimit = entries.filter((entry) => entry.status === 'open').reduce((sum, entry) => sum + Number(entry.amount), 0)
-      + legacyOpen.reduce((sum, item) => sum + item.totalAmount, 0);
-    const payableStatementAmount = entries
-      .filter((entry) => entry.statementMonth === month && entry.status === 'open')
+    const officialOpen = entries
+      .filter((entry) => entry.status === 'open')
       .reduce((sum, entry) => sum + Number(entry.amount), 0);
-    const statementAmount = payableStatementAmount
-      + legacyOpen.filter((item) => item.purchaseDate.startsWith(month)).reduce((sum, item) => sum + item.totalAmount, 0);
-    const periodLegacy = legacyPurchases.filter((item) => item.purchaseDate.startsWith(month));
+    const legacyOpenEffect = legacyOpen.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0);
+    const usedLimit = Math.max(0, officialOpen + legacyOpenEffect);
+    const periodLegacy = legacyPurchases.filter((item) => item.statementDate.startsWith(month));
+
     return {
       ...card,
       purchases: [...card.purchases, ...periodLegacy].sort((a, b) => String(b.purchaseDate).localeCompare(String(a.purchaseDate))),
       usedLimit,
-      availableLimit: Number(card.creditLimit) - usedLimit,
-      statementAmount,
-      payableStatementAmount,
+      availableLimit: Math.min(Number(card.creditLimit), Number(card.creditLimit) - usedLimit),
+      statementAmount: statement.netAmount,
+      payableStatementAmount: statement.payableAmount,
+      statementCreditBalance: statement.creditBalance,
+      statement,
     };
   });
 }
