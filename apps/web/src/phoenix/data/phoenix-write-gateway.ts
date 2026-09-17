@@ -1,13 +1,16 @@
+import { cardsClient, type CardPurchase } from '../../app/cards-client';
 import { financeClient, type FinancialEvent, type FinancialEventInput } from '../../app/finance-client';
 import type { PhoenixReadModel } from '../contracts';
 import { clearPhoenixReadModelCache, loadPhoenixReadModel } from './load-phoenix-read-model';
 
 export const PHOENIX_WRITE_CAPABILITIES = {
   simpleEvent: true,
+  cardPurchase: true,
 } as const;
 
 export type PhoenixRuntimeWriteCapabilities = {
   simpleEvent: boolean;
+  cardPurchaseWrite: boolean;
   pendingWrite: boolean;
   bulkEventWrite: boolean;
   source: 'preview-runtime' | 'direct-build' | 'unavailable';
@@ -38,9 +41,24 @@ export type PhoenixSimpleEventInput = Omit<FinancialEventInput, 'type' | 'status
   status: 'planned' | 'paid';
 };
 
+export type PhoenixCardPurchaseInput = {
+  cardId: string;
+  categoryId?: string;
+  description: string;
+  totalAmount: number;
+  purchaseDate: string;
+  installments: number;
+};
+
 export type PreparedPhoenixSimpleEvent = {
   operationId: string;
   payload: PhoenixSimpleEventInput;
+  preparedAt: string;
+};
+
+export type PreparedPhoenixCardPurchase = {
+  operationId: string;
+  payload: PhoenixCardPurchaseInput;
   preparedAt: string;
 };
 
@@ -48,6 +66,12 @@ export type PhoenixWriteState =
   | { status: 'idle' }
   | { status: 'saving'; operationId: string }
   | { status: 'confirmed'; operationId: string; event: FinancialEvent; snapshot: PhoenixReadModel }
+  | { status: 'error'; operationId: string; code: string; message: string };
+
+export type PhoenixCardPurchaseWriteState =
+  | { status: 'idle' }
+  | { status: 'saving'; operationId: string }
+  | { status: 'confirmed'; operationId: string; purchase: CardPurchase; snapshot: PhoenixReadModel }
   | { status: 'error'; operationId: string; code: string; message: string };
 
 export class PhoenixWriteError extends Error {
@@ -85,6 +109,7 @@ function editRequestKey(eventId: string, input: PhoenixSimpleEventInput) {
 function emptyRuntimeCapabilities(source: PhoenixRuntimeWriteCapabilities['source']): PhoenixRuntimeWriteCapabilities {
   return {
     simpleEvent: false,
+    cardPurchaseWrite: false,
     pendingWrite: false,
     bulkEventWrite: false,
     source,
@@ -111,6 +136,7 @@ export async function getPhoenixRuntimeWriteCapabilities(force = false): Promise
   if (!isPhoenixPreviewHost()) {
     runtimeCapabilitiesCache = {
       simpleEvent: import.meta.env.VITE_PHOENIX_SIMPLE_EVENT_WRITE === 'enabled',
+      cardPurchaseWrite: import.meta.env.VITE_PHOENIX_CARD_PURCHASE_WRITE === 'enabled',
       pendingWrite: import.meta.env.VITE_PHOENIX_PENDING_WRITE === 'enabled',
       bulkEventWrite: import.meta.env.VITE_PHOENIX_BULK_EVENT_WRITE === 'enabled',
       source: 'direct-build',
@@ -129,12 +155,14 @@ export async function getPhoenixRuntimeWriteCapabilities(force = false): Promise
     const payload = await response.json() as {
       capabilities?: {
         simpleEventWrite?: unknown;
+        cardPurchaseWrite?: unknown;
         pendingWrite?: unknown;
         bulkEventWrite?: unknown;
       };
     };
     runtimeCapabilitiesCache = {
       simpleEvent: payload.capabilities?.simpleEventWrite === true,
+      cardPurchaseWrite: payload.capabilities?.cardPurchaseWrite === true,
       pendingWrite: payload.capabilities?.pendingWrite === true,
       bulkEventWrite: payload.capabilities?.bulkEventWrite === true,
       source: 'preview-runtime',
@@ -165,6 +193,19 @@ export function getPhoenixSimpleEventEligibility(flow: PhoenixSimpleEventFlow): 
   return { eligible: reasons.length === 0, reasons: [...new Set(reasons)] };
 }
 
+export function getPhoenixCardPurchaseEligibility(flow: PhoenixSimpleEventFlow): PhoenixSimpleEventEligibility {
+  const reasons: string[] = [];
+  if (flow.type !== 'expense' || !flow.credit) reasons.push('PHOENIX_CARD_FLOW_REQUIRED');
+  if (flow.negative) reasons.push('PHOENIX_REVERSAL_NOT_IN_SIMPLE_FLOW');
+  if (flow.benefit) reasons.push('PHOENIX_BENEFIT_NOT_IN_SIMPLE_FLOW');
+  if (flow.crediario) reasons.push('PHOENIX_INSTALLMENT_NOT_IN_SIMPLE_FLOW');
+  if (flow.recurring) reasons.push('PHOENIX_RECURRENCE_NOT_IN_SIMPLE_FLOW');
+  if (flow.saveTemplate) reasons.push('PHOENIX_TEMPLATE_NOT_IN_SIMPLE_FLOW');
+  if (flow.manualDue) reasons.push('PHOENIX_CARD_MANUAL_DUE_NOT_SUPPORTED');
+  if ((flow.installments || 1) < 1 || (flow.installments || 1) > 48) reasons.push('PHOENIX_CARD_INSTALLMENTS_INVALID');
+  return { eligible: reasons.length === 0, reasons: [...new Set(reasons)] };
+}
+
 function assertSimpleEvent(input: PhoenixSimpleEventInput) {
   if (!input.description.trim()) throw new PhoenixWriteError('PHOENIX_DESCRIPTION_REQUIRED');
   if (!Number.isFinite(input.amount) || input.amount === 0) throw new PhoenixWriteError('PHOENIX_POSITIVE_AMOUNT_REQUIRED');
@@ -173,6 +214,15 @@ function assertSimpleEvent(input: PhoenixSimpleEventInput) {
   if (!input.paymentMethodId) throw new PhoenixWriteError(input.type === 'income' ? 'PHOENIX_RECEIPT_METHOD_REQUIRED' : 'PHOENIX_PAYMENT_METHOD_REQUIRED');
   if (input.type === 'expense' && !input.categoryId) throw new PhoenixWriteError('PHOENIX_EXPENSE_CATEGORY_REQUIRED');
   if (!['planned', 'paid'].includes(input.status)) throw new PhoenixWriteError('PHOENIX_SIMPLE_STATUS_NOT_ALLOWED');
+}
+
+function assertCardPurchase(input: PhoenixCardPurchaseInput) {
+  if (!input.description.trim()) throw new PhoenixWriteError('PHOENIX_DESCRIPTION_REQUIRED');
+  if (!Number.isFinite(input.totalAmount) || input.totalAmount <= 0) throw new PhoenixWriteError('PHOENIX_POSITIVE_AMOUNT_REQUIRED');
+  if (!input.purchaseDate || !/^\d{4}-\d{2}-\d{2}$/.test(input.purchaseDate)) throw new PhoenixWriteError('PHOENIX_VALID_DATE_REQUIRED');
+  if (!input.cardId) throw new PhoenixWriteError('PHOENIX_CARD_REQUIRED');
+  if (!input.categoryId) throw new PhoenixWriteError('PHOENIX_EXPENSE_CATEGORY_REQUIRED');
+  if (!Number.isInteger(input.installments) || input.installments < 1 || input.installments > 48) throw new PhoenixWriteError('PHOENIX_CARD_INSTALLMENTS_INVALID');
 }
 
 export function preparePhoenixSimpleEvent(input: PhoenixSimpleEventInput, existingOperationId?: string): PreparedPhoenixSimpleEvent {
@@ -188,15 +238,32 @@ export function preparePhoenixSimpleEvent(input: PhoenixSimpleEventInput, existi
   };
 }
 
+export function preparePhoenixCardPurchase(input: PhoenixCardPurchaseInput, existingOperationId?: string): PreparedPhoenixCardPurchase {
+  assertCardPurchase(input);
+  return {
+    operationId: existingOperationId || operationId('phoenix-card-purchase'),
+    payload: {
+      ...input,
+      description: input.description.trim(),
+    },
+    preparedAt: new Date().toISOString(),
+  };
+}
+
 export function phoenixWriteMessage(code: string) {
   const messages: Record<string, string> = {
     PHOENIX_WRITE_NOT_ENABLED: 'A gravação financeira da Phoenix ainda não foi liberada neste ambiente.',
+    PHOENIX_CARD_WRITE_NOT_ENABLED: 'A gravação de compras no cartão ainda não foi liberada neste ambiente.',
     PHOENIX_EDIT_WRITE_NOT_ENABLED: 'A edição financeira ainda não foi liberada neste ambiente.',
     PHOENIX_EDIT_CONFIRMATION_MISSING: 'O servidor respondeu à edição sem devolver o lançamento confirmado.',
     PHOENIX_DESCRIPTION_REQUIRED: 'Informe a descrição do lançamento.',
-    PHOENIX_POSITIVE_AMOUNT_REQUIRED: 'Informe um valor diferente de zero.',
+    PHOENIX_POSITIVE_AMOUNT_REQUIRED: 'Informe um valor maior que zero.',
     PHOENIX_VALID_DATE_REQUIRED: 'Informe uma data válida.',
     PHOENIX_ACCOUNT_REQUIRED: 'Selecione a conta.',
+    PHOENIX_CARD_REQUIRED: 'Selecione o cartão.',
+    PHOENIX_CARD_FLOW_REQUIRED: 'Este writer é exclusivo para compras no cartão de crédito.',
+    PHOENIX_CARD_INSTALLMENTS_INVALID: 'Informe entre 1 e 48 parcelas para a compra no cartão.',
+    PHOENIX_CARD_MANUAL_DUE_NOT_SUPPORTED: 'O vencimento manual continua protegido. No crédito, use o vencimento calculado pela data de fechamento do cartão.',
     PHOENIX_RECEIPT_METHOD_REQUIRED: 'Selecione a forma de recebimento.',
     PHOENIX_PAYMENT_METHOD_REQUIRED: 'Selecione a forma de pagamento.',
     PHOENIX_EXPENSE_CATEGORY_REQUIRED: 'Selecione a classificação e o grupo da despesa.',
@@ -204,12 +271,14 @@ export function phoenixWriteMessage(code: string) {
     PHOENIX_TRANSFER_NOT_IN_SIMPLE_FLOW: 'Transferências serão liberadas em um fluxo próprio, com origem e destino protegidos.',
     PHOENIX_REVERSAL_NOT_IN_SIMPLE_FLOW: 'Estornos e reversões precisam do vínculo com o lançamento original antes da gravação.',
     PHOENIX_BENEFIT_NOT_IN_SIMPLE_FLOW: 'Movimentações de benefício serão liberadas em um fluxo separado do caixa monetário.',
-    PHOENIX_CARD_NOT_IN_SIMPLE_FLOW: 'Compras no crédito precisam do contrato de cartão e fatura antes da gravação.',
-    PHOENIX_INSTALLMENT_NOT_IN_SIMPLE_FLOW: 'Parcelamentos precisam do contrato de parcelas antes da gravação.',
+    PHOENIX_CARD_NOT_IN_SIMPLE_FLOW: 'Compras no crédito usam o writer protegido de cartões e faturas.',
+    PHOENIX_INSTALLMENT_NOT_IN_SIMPLE_FLOW: 'Parcelamentos fora do cartão precisam do contrato de parcelas antes da gravação.',
     PHOENIX_RECURRENCE_NOT_IN_SIMPLE_FLOW: 'Recorrências precisam de criação atômica da série antes da gravação.',
     PHOENIX_TEMPLATE_NOT_IN_SIMPLE_FLOW: 'Salvar modelos ainda não pertence ao primeiro fluxo de gravação.',
-    PHOENIX_MANUAL_DUE_NOT_IN_SIMPLE_FLOW: 'Vencimento manual de cartão será liberado junto ao contrato de cartão.',
+    PHOENIX_MANUAL_DUE_NOT_IN_SIMPLE_FLOW: 'Vencimento manual de cartão será liberado junto ao contrato de exceção de vencimento.',
     INVALID_ACCOUNT: 'A conta selecionada não está mais disponível.',
+    INVALID_CARD: 'O cartão selecionado não está mais disponível.',
+    INVALID_PURCHASE_DATE: 'A data da compra não é válida.',
     INVALID_CATEGORY: 'A classificação ou grupo selecionado não está mais disponível.',
     INVALID_PAYMENT_METHOD: 'A forma de pagamento ou recebimento não está mais disponível.',
     OPERATION_ID_REUSED: 'A tentativa de reenvio não corresponde ao lançamento original. Revise os dados antes de tentar novamente.',
@@ -245,6 +314,24 @@ export async function submitPhoenixSimpleEvent(
 
   const snapshot = await confirmedSnapshot(refreshMonth);
   return { event, snapshot };
+}
+
+export async function submitPhoenixCardPurchase(
+  prepared: PreparedPhoenixCardPurchase,
+  refreshMonth: string,
+): Promise<{ purchase: CardPurchase; snapshot: PhoenixReadModel }> {
+  if (!PHOENIX_WRITE_CAPABILITIES.cardPurchase) throw new PhoenixWriteError('PHOENIX_CARD_WRITE_NOT_ENABLED');
+  const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
+  if (!runtimeCapabilities.cardPurchaseWrite) throw new PhoenixWriteError('PHOENIX_CARD_WRITE_NOT_ENABLED');
+  assertCardPurchase(prepared.payload);
+
+  const purchase = await cardsClient.createPurchase({
+    ...prepared.payload,
+    operationId: prepared.operationId,
+  });
+
+  const snapshot = await confirmedSnapshot(refreshMonth);
+  return { purchase, snapshot };
 }
 
 export async function runPhoenixSimpleEventEdit(
@@ -296,6 +383,30 @@ export async function runPhoenixSimpleEventWrite(
   } catch (error) {
     const code = writeErrorCode(error);
     const failed: PhoenixWriteState = {
+      status: 'error',
+      operationId: prepared.operationId,
+      code,
+      message: phoenixWriteMessage(code),
+    };
+    onState?.(failed);
+    return failed;
+  }
+}
+
+export async function runPhoenixCardPurchaseWrite(
+  prepared: PreparedPhoenixCardPurchase,
+  refreshMonth: string,
+  onState?: (state: PhoenixCardPurchaseWriteState) => void,
+): Promise<PhoenixCardPurchaseWriteState> {
+  onState?.({ status: 'saving', operationId: prepared.operationId });
+  try {
+    const { purchase, snapshot } = await submitPhoenixCardPurchase(prepared, refreshMonth);
+    const confirmed: PhoenixCardPurchaseWriteState = { status: 'confirmed', operationId: prepared.operationId, purchase, snapshot };
+    onState?.(confirmed);
+    return confirmed;
+  } catch (error) {
+    const code = writeErrorCode(error);
+    const failed: PhoenixCardPurchaseWriteState = {
       status: 'error',
       operationId: prepared.operationId,
       code,
