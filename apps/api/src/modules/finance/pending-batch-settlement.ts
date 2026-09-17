@@ -52,9 +52,6 @@ async function loadEvent(tx: Tx, ownerId: string, eventId: string) {
   if (current.type !== 'expense' || current.status !== 'planned' || Number(current.signedAmount) >= 0) {
     throw new PendingBatchSettlementError('FINANCIAL_EVENT_NOT_PENDING', { eventId });
   }
-  if (!current.legacyTransactionId && !current.sourcePayload) {
-    throw new PendingBatchSettlementError('FINANCIAL_EVENT_NOT_LEGACY_COMPAT', { eventId });
-  }
   if (isBenefitFinancialEvent(current)) {
     throw new PendingBatchSettlementError('BENEFIT_SETTLEMENT_NOT_SUPPORTED', { eventId });
   }
@@ -88,7 +85,12 @@ async function loadCardEntries(tx: Tx, ownerId: string, cardId: string, month: s
 
 async function loadBatchItems(tx: Tx, ownerId: string, items: PendingBatchItemInput[]): Promise<LoadedBatchItem[]> {
   const loaded: LoadedBatchItem[] = [];
+  const unique = new Set<string>();
   for (const item of items) {
+    const key = `${item.source}|${item.sourceId}|${item.statementMonth || ''}`;
+    if (unique.has(key)) throw new PendingBatchSettlementError('PHOENIX_PENDING_DUPLICATE', { sourceId: item.sourceId });
+    unique.add(key);
+
     if (item.source === 'event') {
       const current = await loadEvent(tx, ownerId, item.sourceId);
       const amount = Math.abs(Number(current.amount));
@@ -117,6 +119,7 @@ async function loadBatchItems(tx: Tx, ownerId: string, items: PendingBatchItemIn
 }
 
 export async function settlePendingBatchProtected(actorId: string, input: SettlePendingBatchInput) {
+  if (!input.items.length) throw new PendingBatchSettlementError('PHOENIX_PENDING_REQUIRED');
   if (isFutureFinancialDay(input.paidAt)) {
     throw new PendingBatchSettlementError('FUTURE_PAYMENT_NOT_ALLOWED', { paidAt: input.paidAt.slice(0, 10) });
   }
@@ -151,6 +154,8 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
       throw new PendingBatchSettlementError('INVALID_PAYMENT_METHOD', { paymentMethodId: paymentMethod.id, reason: 'CREDIT_METHOD_NOT_ALLOWED_FOR_SETTLEMENT' });
     }
 
+    // Toda a seleção é carregada e validada antes da primeira gravação. Como a
+    // transação é serializável, qualquer falha posterior desfaz o lote inteiro.
     const loaded = await loadBatchItems(tx, ownerId, input.items);
     const total = Math.round(loaded.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
     const available = await monetaryBalanceAt(tx, ownerId, input.paidAt);
@@ -161,12 +166,12 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
 
     const paidAt = new Date(`${input.paidAt.slice(0, 10)}T12:00:00.000Z`);
     const results: Array<Record<string, unknown>> = [];
-    const legacyBefore = new Map<string, (typeof loaded)[number] & { source: 'event' }>();
-    const legacyUpdatedIds: string[] = [];
+    const eventBefore = new Map<string, (typeof loaded)[number] & { source: 'event' }>();
+    const updatedEventIds: string[] = [];
 
     for (const item of loaded) {
       if (item.source === 'event') {
-        legacyBefore.set(item.sourceId, item);
+        eventBefore.set(item.sourceId, item);
         await tx.ledgerEntry.deleteMany({ where: { eventId: item.sourceId } });
         await tx.financialEvent.update({
           where: { id: item.sourceId },
@@ -181,7 +186,7 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
         await tx.ledgerEntry.create({
           data: { eventId: item.sourceId, date: paidAt, accountId: account.id, debit: 0, credit: item.amount, memo: item.current.description },
         });
-        legacyUpdatedIds.push(item.sourceId);
+        updatedEventIds.push(item.sourceId);
         results.push({ source: 'event', sourceId: item.sourceId, amount: item.amount });
         continue;
       }
@@ -279,29 +284,30 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
       results.push({ source: 'card', sourceId: item.sourceId, statementMonth: item.statementMonth, amount: item.amount, financialEventId: event.id });
     }
 
-    if (legacyUpdatedIds.length) {
+    if (updatedEventIds.length) {
       const beforeMirror = await tx.financialEvent.findMany({
-        where: { id: { in: legacyUpdatedIds } },
+        where: { id: { in: updatedEventIds } },
         include: { paymentMethod: { select: { name: true } } },
       });
       await writeBackNormalizedEventsToAppState(tx, context.workspaceId, beforeMirror);
       const afterMirror = await tx.financialEvent.findMany({
-        where: { id: { in: legacyUpdatedIds } },
+        where: { id: { in: updatedEventIds } },
         include: { account: true, category: true, paymentMethod: true, ledgerEntries: true },
       });
       const afterById = new Map(afterMirror.map((event) => [event.id, event]));
-      for (const eventId of legacyUpdatedIds) {
-        const before = legacyBefore.get(eventId)?.current;
+      for (const eventId of updatedEventIds) {
+        const before = eventBefore.get(eventId)?.current;
         const after = afterById.get(eventId);
         if (!before || !after) throw new PendingBatchSettlementError('FINANCIAL_EVENT_NOT_FOUND', { eventId });
+        const compatibility = Boolean(before.legacyTransactionId || before.sourcePayload);
         await recordFinancialAudit(tx, {
           actorId,
           entity: 'FinancialEvent',
           entityId: eventId,
-          action: 'FINANCIAL_EVENT_SETTLED_COMPAT',
+          action: compatibility ? 'FINANCIAL_EVENT_SETTLED_COMPAT' : 'FINANCIAL_EVENT_SETTLED',
           before,
           after,
-          context: { operationId: input.operationId, batch: true, paidAt: input.paidAt, workspaceId: context.workspaceId },
+          context: { operationId: input.operationId, batch: true, paidAt: input.paidAt, compatibility, workspaceId: context.workspaceId },
         });
       }
     }
