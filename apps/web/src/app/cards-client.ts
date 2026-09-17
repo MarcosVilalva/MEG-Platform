@@ -2,7 +2,33 @@ import { authenticatedRequest } from './auth-client';
 
 export type CardInstallment = { id: string; number: number; amount: string | number; statementMonth: string; status: string; paidAt?: string | null };
 export type CardPurchase = { id: string; description: string; totalAmount: string | number; purchaseDate: string; installments: number; status: string; category?: { id: string; name: string } | null; entries: CardInstallment[]; legacyOpen?: boolean; idempotentReplay?: boolean };
-export type CreditCard = { id: string; name: string; issuer?: string | null; brand?: string | null; lastFour?: string | null; creditLimit: string | number; closingDay: number; dueDay: number; color?: string | null; isActive: boolean; usedLimit: number; availableLimit: number; statementAmount: number; payableStatementAmount?: number; purchases: CardPurchase[] };
+export type CanonicalCardStatementLine = {
+  id: string;
+  source: 'financial-event' | 'card-installment';
+  eventId?: string;
+  purchaseId?: string;
+  installmentId?: string;
+  description: string;
+  effect: number;
+  kind: 'charge' | 'credit';
+  purchaseDate: string;
+  dueDate: string;
+  statementMonth: string;
+  installmentNo: number;
+  installmentQty: number;
+};
+export type CanonicalCardStatement = {
+  month: string;
+  dueDate: string;
+  charges: number;
+  credits: number;
+  netAmount: number;
+  payableAmount: number;
+  creditBalance: number;
+  status: 'empty' | 'open' | 'zero' | 'credit';
+  lines: CanonicalCardStatementLine[];
+};
+export type CreditCard = { id: string; name: string; issuer?: string | null; brand?: string | null; lastFour?: string | null; creditLimit: string | number; closingDay: number; dueDay: number; color?: string | null; isActive: boolean; usedLimit: number; availableLimit: number; statementAmount: number; payableStatementAmount?: number; statementCreditBalance?: number; statement?: CanonicalCardStatement; purchases: CardPurchase[] };
 export type CardStatementPaymentResult = { paid: boolean; amount: number; eventId: string; protection?: { monetary?: boolean; allowed?: boolean; available?: number; requested?: number; missing?: number; at?: string }; idempotentReplay?: boolean };
 export type CardStatementReopenResult = { reopened: boolean; amount: number; eventId: string; installments: number; idempotentReplay?: boolean };
 export type CardStatementLifecycleStatus = 'none' | 'open' | 'partial' | 'paid' | 'reopened';
