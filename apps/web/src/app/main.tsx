@@ -1,5 +1,7 @@
 // Entrada oficial de produção. Mantemos um único bootstrap para Web e Android,
 // mas o runtime visual e financeiro pertence integralmente à Phoenix V15.
+import '../phoenix/phoenix-release-hardening.css';
+import '../phoenix/history-prewarm-bridge';
 import '../phoenix/description-autocomplete-bridge';
 import '../phoenix/launch-business-rules-bridge';
 import '../phoenix/card-domain-live-refresh-bridge';
@@ -22,4 +24,6 @@ import '../phoenix/write-success-auto-close';
 import '../phoenix/bulk-checkbox-fastpaint';
 import '../phoenix/bulk-event-actions-bridge';
 import '../phoenix/bulk-event-ux-enhancements';
+import '../phoenix/action-prewarm-bridge';
+import '../phoenix/avatar-runtime-bridge';
 import '../phoenix/preview-main';
