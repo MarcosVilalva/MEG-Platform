@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const cardsGrid = readFileSync(new URL('./screens/PhoenixCardsGrid.tsx', import.meta.url), 'utf8');
 const payables = readFileSync(new URL('./screens/PhoenixPayablesV15.tsx', import.meta.url), 'utf8');
+const movements = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
 const readScreens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.meta.url), 'utf8');
 
 assert.match(cardsGrid, /tx\.amount !== undefined \? parseNumber\(tx\.amount\) : parseNumber\(tx\.expenseAmount\)/,
@@ -20,6 +21,9 @@ assert.match(payables, /representedEventIds/,
   'Eventos já representados pela fatura oficial não podem ser duplicados em Pendentes');
 assert.match(payables, /openAmount: -Number\(event\.signedAmount \|\| 0\)/,
   'Pendentes legados devem usar signedAmount para preservar compras e estornos');
+
+assert.match(movements, /const signed = Number\(event\.signedAmount \|\| 0\)/,
+  'Lançamentos devem calcular o efeito visual a partir do mesmo signedAmount canônico');
 
 assert.match(readScreens, /creditAwarePendingModel/,
   'Compatibilidade de crédito legado deve continuar ativa durante a transição');
