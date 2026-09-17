@@ -11,7 +11,7 @@ const TOOLBAR_CLASS = 'px-table-export';
 const MANAGED_ATTR = 'data-meg-export-ready';
 const ignoredHeader = /^(ações?|detalhes?|selecionar|opções?)$/i;
 
-function textOf(element: Element | null) {
+function textOf(element: Element | null | undefined) {
   return String(element?.textContent || '').replace(/\s+/g, ' ').trim();
 }
 
@@ -155,7 +155,9 @@ function extractReport(table: HTMLTableElement): PhoenixExportReport | null {
 }
 
 function download(bytes: Uint8Array, type: string, filename: string) {
-  const blob = new Blob([bytes], { type });
+  const payload = new Uint8Array(bytes.byteLength);
+  payload.set(bytes);
+  const blob = new Blob([payload.buffer], { type });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
