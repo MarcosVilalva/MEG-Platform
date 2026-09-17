@@ -69,9 +69,6 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
       if (current.type !== 'expense' || current.status !== 'planned' || Number(current.signedAmount) >= 0) {
         throw new FinancialEventSettlementError('FINANCIAL_EVENT_NOT_PENDING');
       }
-      if (!current.legacyTransactionId && !current.sourcePayload) {
-        throw new FinancialEventSettlementError('FINANCIAL_EVENT_NOT_LEGACY_COMPAT');
-      }
       if (current.account?.type === 'benefit' || normalize(current.description).includes('VEROCARD') || normalize(current.paymentMethod?.name).includes('VEROCARD')) {
         throw new FinancialEventSettlementError('BENEFIT_SETTLEMENT_NOT_SUPPORTED');
       }
@@ -110,6 +107,8 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
       });
       if (!settledBeforeMirror) throw new FinancialEventSettlementError('FINANCIAL_EVENT_NOT_FOUND');
 
+      // Eventos importados continuam refletidos no AppState legado. Eventos nativos
+      // simplesmente não possuem legacyTransactionId e o writeback vira no-op.
       await writeBackNormalizedEventsToAppState(tx, workspace.workspaceId, [settledBeforeMirror]);
 
       const settled = await tx.financialEvent.findUnique({
@@ -118,11 +117,12 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
       });
       if (!settled) throw new FinancialEventSettlementError('FINANCIAL_EVENT_NOT_FOUND');
 
+      const compatibility = Boolean(current.legacyTransactionId || current.sourcePayload);
       await recordFinancialAudit(tx, {
         actorId: userId,
         entity: 'FinancialEvent',
         entityId: settled.id,
-        action: 'FINANCIAL_EVENT_SETTLED_COMPAT',
+        action: compatibility ? 'FINANCIAL_EVENT_SETTLED_COMPAT' : 'FINANCIAL_EVENT_SETTLED',
         before: current,
         after: settled,
         context: {
@@ -130,6 +130,7 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
           originalDueDate,
           paidAt: input.paidAt,
           legacyTransactionId: current.legacyTransactionId,
+          compatibility,
           workspaceId: workspace.workspaceId,
         },
       });
@@ -149,7 +150,7 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
           workspaceId: workspace.workspaceId,
           operationId: input.operationId,
           requestHash,
-          mutationType: 'FINANCIAL_EVENT_SETTLE_COMPAT',
+          mutationType: compatibility ? 'FINANCIAL_EVENT_SETTLE_COMPAT' : 'FINANCIAL_EVENT_SETTLE',
           revision: state?.revision || 0,
           response,
         }),
