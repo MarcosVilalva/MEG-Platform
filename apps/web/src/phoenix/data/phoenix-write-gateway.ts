@@ -1,3 +1,4 @@
+import { authenticatedRequest } from '../../app/auth-client';
 import { cardsClient, type CardPurchase } from '../../app/cards-client';
 import { financeClient, type FinancialEvent, type FinancialEventInput } from '../../app/finance-client';
 import type { PhoenixReadModel } from '../contracts';
@@ -6,11 +7,13 @@ import { clearPhoenixReadModelCache, loadPhoenixReadModel } from './load-phoenix
 export const PHOENIX_WRITE_CAPABILITIES = {
   simpleEvent: true,
   cardPurchase: true,
+  benefitEvent: true,
 } as const;
 
 export type PhoenixRuntimeWriteCapabilities = {
   simpleEvent: boolean;
   cardPurchaseWrite: boolean;
+  benefitWrite: boolean;
   pendingWrite: boolean;
   bulkEventWrite: boolean;
   source: 'preview-runtime' | 'direct-build' | 'unavailable';
@@ -41,6 +44,10 @@ export type PhoenixSimpleEventInput = Omit<FinancialEventInput, 'type' | 'status
   status: 'planned' | 'paid';
 };
 
+export type PhoenixBenefitEventInput = Omit<PhoenixSimpleEventInput, 'status'> & {
+  status: 'paid';
+};
+
 export type PhoenixCardPurchaseInput = {
   cardId: string;
   categoryId?: string;
@@ -53,6 +60,12 @@ export type PhoenixCardPurchaseInput = {
 export type PreparedPhoenixSimpleEvent = {
   operationId: string;
   payload: PhoenixSimpleEventInput;
+  preparedAt: string;
+};
+
+export type PreparedPhoenixBenefitEvent = {
+  operationId: string;
+  payload: PhoenixBenefitEventInput;
   preparedAt: string;
 };
 
@@ -110,6 +123,7 @@ function emptyRuntimeCapabilities(source: PhoenixRuntimeWriteCapabilities['sourc
   return {
     simpleEvent: false,
     cardPurchaseWrite: false,
+    benefitWrite: false,
     pendingWrite: false,
     bulkEventWrite: false,
     source,
@@ -137,6 +151,7 @@ export async function getPhoenixRuntimeWriteCapabilities(force = false): Promise
     runtimeCapabilitiesCache = {
       simpleEvent: import.meta.env.VITE_PHOENIX_SIMPLE_EVENT_WRITE === 'enabled',
       cardPurchaseWrite: import.meta.env.VITE_PHOENIX_CARD_PURCHASE_WRITE === 'enabled',
+      benefitWrite: import.meta.env.VITE_PHOENIX_BENEFIT_WRITE === 'enabled',
       pendingWrite: import.meta.env.VITE_PHOENIX_PENDING_WRITE === 'enabled',
       bulkEventWrite: import.meta.env.VITE_PHOENIX_BULK_EVENT_WRITE === 'enabled',
       source: 'direct-build',
@@ -156,6 +171,7 @@ export async function getPhoenixRuntimeWriteCapabilities(force = false): Promise
       capabilities?: {
         simpleEventWrite?: unknown;
         cardPurchaseWrite?: unknown;
+        benefitWrite?: unknown;
         pendingWrite?: unknown;
         bulkEventWrite?: unknown;
       };
@@ -163,6 +179,7 @@ export async function getPhoenixRuntimeWriteCapabilities(force = false): Promise
     runtimeCapabilitiesCache = {
       simpleEvent: payload.capabilities?.simpleEventWrite === true,
       cardPurchaseWrite: payload.capabilities?.cardPurchaseWrite === true,
+      benefitWrite: payload.capabilities?.benefitWrite === true,
       pendingWrite: payload.capabilities?.pendingWrite === true,
       bulkEventWrite: payload.capabilities?.bulkEventWrite === true,
       source: 'preview-runtime',
@@ -193,6 +210,19 @@ export function getPhoenixSimpleEventEligibility(flow: PhoenixSimpleEventFlow): 
   return { eligible: reasons.length === 0, reasons: [...new Set(reasons)] };
 }
 
+export function getPhoenixBenefitEventEligibility(flow: PhoenixSimpleEventFlow): PhoenixSimpleEventEligibility {
+  const reasons: string[] = [];
+  if (!flow.benefit || !['income', 'expense'].includes(flow.type)) reasons.push('PHOENIX_BENEFIT_FLOW_REQUIRED');
+  if (flow.negative) reasons.push('PHOENIX_BENEFIT_REVERSAL_NOT_SUPPORTED');
+  if (flow.credit) reasons.push('PHOENIX_BENEFIT_PAYMENT_METHOD_REQUIRED');
+  if (flow.crediario) reasons.push('PHOENIX_BENEFIT_PAYMENT_METHOD_REQUIRED');
+  if (flow.recurring) reasons.push('PHOENIX_RECURRENCE_NOT_IN_SIMPLE_FLOW');
+  if (flow.saveTemplate) reasons.push('PHOENIX_TEMPLATE_NOT_IN_SIMPLE_FLOW');
+  if ((flow.installments || 1) > 1) reasons.push('PHOENIX_INSTALLMENT_NOT_IN_SIMPLE_FLOW');
+  if (flow.manualDue) reasons.push('PHOENIX_MANUAL_DUE_NOT_IN_SIMPLE_FLOW');
+  return { eligible: reasons.length === 0, reasons: [...new Set(reasons)] };
+}
+
 export function getPhoenixCardPurchaseEligibility(flow: PhoenixSimpleEventFlow): PhoenixSimpleEventEligibility {
   const reasons: string[] = [];
   if (flow.type !== 'expense' || !flow.credit) reasons.push('PHOENIX_CARD_FLOW_REQUIRED');
@@ -216,6 +246,16 @@ function assertSimpleEvent(input: PhoenixSimpleEventInput) {
   if (!['planned', 'paid'].includes(input.status)) throw new PhoenixWriteError('PHOENIX_SIMPLE_STATUS_NOT_ALLOWED');
 }
 
+function assertBenefitEvent(input: PhoenixBenefitEventInput) {
+  if (!input.description.trim()) throw new PhoenixWriteError('PHOENIX_DESCRIPTION_REQUIRED');
+  if (!Number.isFinite(input.amount) || input.amount <= 0) throw new PhoenixWriteError('PHOENIX_POSITIVE_AMOUNT_REQUIRED');
+  if (!input.date || !/^\d{4}-\d{2}-\d{2}$/.test(input.date)) throw new PhoenixWriteError('PHOENIX_VALID_DATE_REQUIRED');
+  if (!input.accountId) throw new PhoenixWriteError('PHOENIX_BENEFIT_ACCOUNT_REQUIRED');
+  if (!input.paymentMethodId) throw new PhoenixWriteError('PHOENIX_BENEFIT_PAYMENT_METHOD_REQUIRED');
+  if (input.type === 'expense' && !input.categoryId) throw new PhoenixWriteError('PHOENIX_EXPENSE_CATEGORY_REQUIRED');
+  if (input.status !== 'paid') throw new PhoenixWriteError('PHOENIX_BENEFIT_STATUS_REQUIRED');
+}
+
 function assertCardPurchase(input: PhoenixCardPurchaseInput) {
   if (!input.description.trim()) throw new PhoenixWriteError('PHOENIX_DESCRIPTION_REQUIRED');
   if (!Number.isFinite(input.totalAmount) || input.totalAmount <= 0) throw new PhoenixWriteError('PHOENIX_POSITIVE_AMOUNT_REQUIRED');
@@ -229,6 +269,19 @@ export function preparePhoenixSimpleEvent(input: PhoenixSimpleEventInput, existi
   assertSimpleEvent(input);
   return {
     operationId: existingOperationId || operationId(),
+    payload: {
+      ...input,
+      description: input.description.trim(),
+      notes: input.notes?.trim() || undefined,
+    },
+    preparedAt: new Date().toISOString(),
+  };
+}
+
+export function preparePhoenixBenefitEvent(input: PhoenixBenefitEventInput, existingOperationId?: string): PreparedPhoenixBenefitEvent {
+  assertBenefitEvent(input);
+  return {
+    operationId: existingOperationId || operationId('phoenix-benefit'),
     payload: {
       ...input,
       description: input.description.trim(),
@@ -254,6 +307,7 @@ export function phoenixWriteMessage(code: string) {
   const messages: Record<string, string> = {
     PHOENIX_WRITE_NOT_ENABLED: 'A gravação financeira da Phoenix ainda não foi liberada neste ambiente.',
     PHOENIX_CARD_WRITE_NOT_ENABLED: 'A gravação de compras no cartão ainda não foi liberada neste ambiente.',
+    PHOENIX_BENEFIT_WRITE_NOT_ENABLED: 'A gravação do Benefício Alimentação ainda não foi liberada neste ambiente.',
     PHOENIX_EDIT_WRITE_NOT_ENABLED: 'A edição financeira ainda não foi liberada neste ambiente.',
     PHOENIX_EDIT_CONFIRMATION_MISSING: 'O servidor respondeu à edição sem devolver o lançamento confirmado.',
     PHOENIX_DESCRIPTION_REQUIRED: 'Informe a descrição do lançamento.',
@@ -264,13 +318,26 @@ export function phoenixWriteMessage(code: string) {
     PHOENIX_CARD_FLOW_REQUIRED: 'Este writer é exclusivo para compras no cartão de crédito.',
     PHOENIX_CARD_INSTALLMENTS_INVALID: 'Informe entre 1 e 48 parcelas para a compra no cartão.',
     PHOENIX_CARD_MANUAL_DUE_NOT_SUPPORTED: 'O vencimento manual continua protegido. No crédito, use o vencimento calculado pela data de fechamento do cartão.',
+    PHOENIX_BENEFIT_FLOW_REQUIRED: 'Este writer é exclusivo para recargas e despesas do Benefício Alimentação.',
+    PHOENIX_BENEFIT_ACCOUNT_REQUIRED: 'Selecione a conta de Benefício Alimentação.',
+    PHOENIX_BENEFIT_PAYMENT_METHOD_REQUIRED: 'No Benefício Alimentação, utilize a forma de pagamento VEROCARD.',
+    PHOENIX_BENEFIT_STATUS_REQUIRED: 'Movimentações do Benefício Alimentação são registradas sempre como pagas/recebidas.',
+    PHOENIX_BENEFIT_REVERSAL_NOT_SUPPORTED: 'Estornos do Benefício Alimentação precisam de um fluxo próprio vinculado ao lançamento original.',
+    BENEFIT_DESCRIPTION_REQUIRED: 'Informe a descrição da movimentação do benefício.',
+    BENEFIT_POSITIVE_AMOUNT_REQUIRED: 'Informe um valor maior que zero para o benefício.',
+    INVALID_BENEFIT_DATE: 'Informe uma data válida para a movimentação do benefício.',
+    INVALID_BENEFIT_ACCOUNT: 'A conta selecionada não é uma conta ativa de Benefício Alimentação.',
+    INVALID_BENEFIT_PAYMENT_METHOD: 'A forma selecionada não pertence ao Benefício Alimentação. Utilize VEROCARD.',
+    BENEFIT_EXPENSE_CATEGORY_REQUIRED: 'Selecione a classificação e o grupo da despesa do benefício.',
+    BENEFIT_CATEGORY_TYPE_MISMATCH: 'A classificação selecionada não corresponde ao tipo da movimentação do benefício.',
+    INSUFFICIENT_BENEFIT_BALANCE: 'O saldo do Benefício Alimentação é insuficiente para esta despesa.',
     PHOENIX_RECEIPT_METHOD_REQUIRED: 'Selecione a forma de recebimento.',
     PHOENIX_PAYMENT_METHOD_REQUIRED: 'Selecione a forma de pagamento.',
     PHOENIX_EXPENSE_CATEGORY_REQUIRED: 'Selecione a classificação e o grupo da despesa.',
     PHOENIX_SIMPLE_STATUS_NOT_ALLOWED: 'A situação informada não pertence ao primeiro fluxo de gravação.',
     PHOENIX_TRANSFER_NOT_IN_SIMPLE_FLOW: 'Transferências serão liberadas em um fluxo próprio, com origem e destino protegidos.',
     PHOENIX_REVERSAL_NOT_IN_SIMPLE_FLOW: 'Estornos e reversões precisam do vínculo com o lançamento original antes da gravação.',
-    PHOENIX_BENEFIT_NOT_IN_SIMPLE_FLOW: 'Movimentações de benefício serão liberadas em um fluxo separado do caixa monetário.',
+    PHOENIX_BENEFIT_NOT_IN_SIMPLE_FLOW: 'Movimentações de benefício usam o writer protegido do Benefício Alimentação.',
     PHOENIX_CARD_NOT_IN_SIMPLE_FLOW: 'Compras no crédito são gravadas pelo writer protegido de cartões e faturas.',
     PHOENIX_INSTALLMENT_NOT_IN_SIMPLE_FLOW: 'Parcelamentos fora do cartão precisam do contrato de parcelas antes da gravação.',
     PHOENIX_RECURRENCE_NOT_IN_SIMPLE_FLOW: 'Recorrências precisam de criação atômica da série antes da gravação.',
@@ -310,6 +377,25 @@ export async function submitPhoenixSimpleEvent(
   const event = await financeClient.createEvent({
     ...prepared.payload,
     operationId: prepared.operationId,
+  });
+
+  const snapshot = await confirmedSnapshot(refreshMonth);
+  return { event, snapshot };
+}
+
+export async function submitPhoenixBenefitEvent(
+  prepared: PreparedPhoenixBenefitEvent,
+  refreshMonth: string,
+): Promise<{ event: FinancialEvent; snapshot: PhoenixReadModel }> {
+  if (!PHOENIX_WRITE_CAPABILITIES.benefitEvent) throw new PhoenixWriteError('PHOENIX_BENEFIT_WRITE_NOT_ENABLED');
+  const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
+  if (!runtimeCapabilities.benefitWrite) throw new PhoenixWriteError('PHOENIX_BENEFIT_WRITE_NOT_ENABLED');
+  assertBenefitEvent(prepared.payload);
+
+  const { status: _status, competence: _competence, ...payload } = prepared.payload;
+  const event = await authenticatedRequest<FinancialEvent>('/finance/benefit-events', {
+    method: 'POST',
+    body: JSON.stringify({ ...payload, operationId: prepared.operationId }),
   });
 
   const snapshot = await confirmedSnapshot(refreshMonth);
@@ -377,6 +463,30 @@ export async function runPhoenixSimpleEventWrite(
   onState?.({ status: 'saving', operationId: prepared.operationId });
   try {
     const { event, snapshot } = await submitPhoenixSimpleEvent(prepared, refreshMonth);
+    const confirmed: PhoenixWriteState = { status: 'confirmed', operationId: prepared.operationId, event, snapshot };
+    onState?.(confirmed);
+    return confirmed;
+  } catch (error) {
+    const code = writeErrorCode(error);
+    const failed: PhoenixWriteState = {
+      status: 'error',
+      operationId: prepared.operationId,
+      code,
+      message: phoenixWriteMessage(code),
+    };
+    onState?.(failed);
+    return failed;
+  }
+}
+
+export async function runPhoenixBenefitEventWrite(
+  prepared: PreparedPhoenixBenefitEvent,
+  refreshMonth: string,
+  onState?: (state: PhoenixWriteState) => void,
+): Promise<PhoenixWriteState> {
+  onState?.({ status: 'saving', operationId: prepared.operationId });
+  try {
+    const { event, snapshot } = await submitPhoenixBenefitEvent(prepared, refreshMonth);
     const confirmed: PhoenixWriteState = { status: 'confirmed', operationId: prepared.operationId, event, snapshot };
     onState?.(confirmed);
     return confirmed;
