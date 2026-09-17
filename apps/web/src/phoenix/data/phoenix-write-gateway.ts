@@ -392,7 +392,7 @@ export async function submitPhoenixBenefitEvent(
   if (!runtimeCapabilities.benefitWrite) throw new PhoenixWriteError('PHOENIX_BENEFIT_WRITE_NOT_ENABLED');
   assertBenefitEvent(prepared.payload);
 
-  const { status: _status, competence: _competence, ...payload } = prepared.payload;
+  const { status: _status, ...payload } = prepared.payload;
   const event = await authenticatedRequest<FinancialEvent>('/finance/benefit-events', {
     method: 'POST',
     body: JSON.stringify({ ...payload, operationId: prepared.operationId }),
