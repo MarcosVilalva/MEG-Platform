@@ -283,26 +283,24 @@
   min-width:0;
 }
 
-/* A barra já nasce apenas quando selectedItems possui itens. Fixá-la diretamente
-   preserva o resumo mesmo quando o grupo que originou a seleção é recolhido. */
+/* Ações da seleção ficam imediatamente abaixo dos filtros. A barra acompanha
+   a rolagem para que a baixa em lote permaneça sempre evidente e acessível. */
 .px-pending-list > .px-bulk-action-bar {
-  position:fixed;
-  left:50%;
-  bottom:16px;
-  z-index:70;
-  width:min(760px,calc(100vw - 34px));
-  min-height:62px;
-  margin:0;
+  position:sticky;
+  top:72px;
+  z-index:24;
+  width:100%;
+  min-height:58px;
+  margin:0 0 10px;
   padding:10px 12px;
   display:grid;
   grid-template-columns:minmax(0,1fr) auto auto;
   align-items:center;
   gap:10px;
-  transform:translateX(-50%);
-  border:1px solid rgba(53,212,165,.28);
+  border:1px solid rgba(53,212,165,.38);
   border-radius:14px;
-  background:rgba(5,24,20,.96);
-  box-shadow:0 18px 50px rgba(0,0,0,.34);
+  background:rgba(5,24,20,.98);
+  box-shadow:0 12px 34px rgba(0,0,0,.28);
   backdrop-filter:blur(14px);
 }
 
@@ -332,6 +330,13 @@
   min-height:36px;
   padding:7px 11px;
   white-space:nowrap;
+}
+
+.px-pending-list > .px-bulk-action-bar > button.primary {
+  border-color:#35d4a5;
+  background:#35d4a5;
+  color:#062019;
+  font-weight:900;
 }
 
 @media (max-width:900px) {
@@ -377,8 +382,7 @@
     grid-row:2 / span 2;
   }
   .px-pending-list > .px-bulk-action-bar {
-    bottom:10px;
-    width:calc(100vw - 20px);
+    top:64px;
     grid-template-columns:1fr auto;
   }
   .px-pending-list > .px-bulk-action-bar > div {
