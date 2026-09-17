@@ -3,6 +3,10 @@ import { authenticatedRequest, readSession } from '../app/auth-client';
 let warmedKey = '';
 let warmScheduled = false;
 
+type IdleWindow = Window & {
+  requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+};
+
 function currentMonth() {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit'
@@ -38,11 +42,11 @@ function scheduleWarm() {
     warmScheduled = false;
     void warmActionData();
   };
-  if ('requestIdleCallback' in window) {
-    (window as Window & { requestIdleCallback: (callback: () => void, options?: { timeout: number }) => number })
-      .requestIdleCallback(run, { timeout: 2500 });
+  const idle = (window as IdleWindow).requestIdleCallback;
+  if (typeof idle === 'function') {
+    idle.call(window, run, { timeout: 2500 });
   } else {
-    window.setTimeout(run, 1200);
+    globalThis.setTimeout(run, 1200);
   }
 }
 
