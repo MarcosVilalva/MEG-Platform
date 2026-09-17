@@ -86,7 +86,7 @@ const subtitles: Record<PhoenixView, string> = {
   decisions: 'Radar, simulação e impacto antes de decidir',
   reconcile: 'Compare o MEG com o saldo real',
   analytics: 'Tendências e comparações históricas',
-  budgets: 'Planejamento e metas financeiras'
+  budgets: 'Planejamento financeiro'
 };
 
 function currentMonth() {
