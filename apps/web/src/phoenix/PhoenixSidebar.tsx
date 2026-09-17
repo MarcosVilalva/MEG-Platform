@@ -38,6 +38,7 @@ const sections: SidebarSection[] = [
   {
     label: 'Inteligência',
     items: [
+      { id: 'decisions', label: 'Decisões', icon: 'analytics' },
       { id: 'reconcile', label: 'Conciliação', icon: 'reconcile' },
       { id: 'analytics', label: 'Análises', icon: 'analytics' },
       { id: 'budgets', label: 'Orçamentos e metas', icon: 'budgets' }

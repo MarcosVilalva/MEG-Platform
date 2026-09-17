@@ -263,6 +263,74 @@
   color:#78f3d0;
 }
 
+/* Durante a autenticação o formulário fica integralmente travado. A camada abaixo
+   aparece no mesmo frame do spinner do botão e evita a sensação de formulário
+   ainda editável enquanto a API valida as credenciais. */
+.px-preview-form:has(.px-preview-button-spinner) {
+  pointer-events:none;
+  user-select:none;
+}
+
+.px-preview-form:has(.px-preview-button-spinner) input,
+.px-preview-form:has(.px-preview-button-spinner) button {
+  cursor:wait !important;
+}
+
+.px-preview-auth:has(.px-preview-button-spinner) {
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 105%, rgba(53,212,165,.16), transparent 36%),
+    radial-gradient(circle at 82% 12%, rgba(27,125,116,.12), transparent 28%),
+    linear-gradient(145deg,#031519 0%,#06231f 52%,#041a17 100%);
+}
+
+.px-preview-auth:has(.px-preview-button-spinner) .px-preview-shell {
+  opacity:0;
+  transform:scale(.992);
+  pointer-events:none;
+  transition:opacity .14s ease, transform .14s ease;
+}
+
+.px-preview-auth:has(.px-preview-button-spinner)::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  pointer-events:all;
+  background:
+    url('./brand/meg-finance-system-mark.svg') center calc(50% - 74px) / 64px 64px no-repeat,
+    radial-gradient(circle at 50% 105%, rgba(53,212,165,.16), transparent 36%),
+    radial-gradient(circle at 82% 12%, rgba(27,125,116,.12), transparent 28%),
+    linear-gradient(145deg,#031519 0%,#06231f 52%,#041a17 100%);
+}
+
+.px-preview-auth:has(.px-preview-button-spinner)::after {
+  content:'VALIDANDO ACESSO\A Preparando o MEG para carregar seus dados…';
+  white-space:pre-line;
+  position:fixed;
+  left:50%;
+  top:calc(50% + 18px);
+  z-index:1001;
+  width:min(420px,calc(100vw - 48px));
+  transform:translateX(-50%);
+  padding-top:26px;
+  border-top:3px solid rgba(53,212,165,.16);
+  color:#effff9;
+  text-align:center;
+  font-size:18px;
+  font-weight:850;
+  line-height:1.9;
+  letter-spacing:-.01em;
+  background:
+    linear-gradient(90deg,transparent 0%,#70f3cf 48%,#35d4a5 52%,transparent 100%) top / 34% 3px no-repeat;
+  animation:px-preview-auth-progress .9s ease-in-out infinite alternate;
+}
+
+@keyframes px-preview-auth-progress {
+  from { background-position-x:0%; }
+  to { background-position-x:100%; }
+}
+
 @media (max-height:760px) and (min-width:821px) {
   .px-preview-shell {
     height:calc(100dvh - 28px);
@@ -397,4 +465,9 @@
   .px-preview-access { padding-inline:16px; }
   .px-preview-mobile-brand { margin-bottom:12px; }
   .px-preview-copy h2 { font-size:27px; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .px-preview-auth:has(.px-preview-button-spinner) .px-preview-shell { transition:none; }
+  .px-preview-auth:has(.px-preview-button-spinner)::after { animation:none; }
 }

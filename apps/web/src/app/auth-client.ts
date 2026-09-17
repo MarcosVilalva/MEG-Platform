@@ -1,4 +1,7 @@
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3333' : '');
+const configuredApiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3333' : '');
+const previewUsesSameOrigin = typeof window !== 'undefined'
+  && window.location.hostname.startsWith('meg-phoenix-v15-ux-preview');
+const API_URL = previewUsesSameOrigin ? '' : configuredApiUrl;
 
 export type UserRole = 'ADMIN' | 'MANAGER' | 'OPERATOR' | 'VIEWER';
 export type UserStatus = 'PENDING' | 'ACTIVE' | 'REJECTED' | 'BLOCKED';
@@ -40,6 +43,17 @@ export type ApiHealth = {
   normalization?: { status: string; primary: boolean; reconciled: boolean; count: number; reason?: string | null };
 };
 
+function responseError(payload: unknown, status: number) {
+  const code = payload && typeof payload === 'object'
+    ? String((payload as { error?: unknown }).error || '')
+    : '';
+  const transientProxyFailure = code === 'PREVIEW_PROXY_FAILED';
+  return Object.assign(
+    new Error(transientProxyFailure ? `HTTP_${status}` : code || `HTTP_${status}`),
+    { status, code: code || undefined }
+  );
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -50,7 +64,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw Object.assign(new Error(payload.error || `HTTP_${response.status}`), { status: response.status });
+    throw responseError(payload, response.status);
   }
 
   if (response.status === 204) return undefined as T;
@@ -96,7 +110,7 @@ export async function authenticatedRequest<T>(path: string, init?: RequestInit):
     response = await send(session.accessToken);
   }
   const payload = response.status === 204 ? undefined : await response.json().catch(() => ({}));
-  if (!response.ok) throw Object.assign(new Error((payload as { error?: string })?.error || `HTTP_${response.status}`), { status: response.status });
+  if (!response.ok) throw responseError(payload, response.status);
   if (method === 'GET') responseCache.set(path, { value: payload, storedAt: Date.now() });
   else {
     responseCache.clear();

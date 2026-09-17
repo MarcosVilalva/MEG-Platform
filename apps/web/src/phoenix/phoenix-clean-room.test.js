@@ -8,6 +8,7 @@ const profileAvatar = readFileSync(new URL('./profile-avatar.tsx', import.meta.u
 const commandPalette = readFileSync(new URL('./PhoenixCommandPalette.tsx', import.meta.url), 'utf8');
 const screens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.meta.url), 'utf8');
 const movementScreen = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
+const launchWriteControl = readFileSync(new URL('./components/PhoenixLaunchWriteControl.tsx', import.meta.url), 'utf8');
 const homeDashboard = readFileSync(new URL('./screens/PhoenixHomeDashboard.tsx', import.meta.url), 'utf8');
 const homeAllTime = readFileSync(new URL('./screens/PhoenixHomeAllTime.tsx', import.meta.url), 'utf8');
 const homePeriodSummary = readFileSync(new URL('./home-period-summary.ts', import.meta.url), 'utf8');
@@ -123,8 +124,14 @@ assert.match(movementScreen, /Despesa/);
 assert.match(movementScreen, /Receita/);
 assert.match(movementScreen, /Transferência/);
 assert.match(movementScreen, /Proteção contra duplicidade/);
-assert.match(movementScreen, /Revisar lançamento · sem gravar/,
-  'Drawer Phoenix deve validar o fluxo sem liberar escrita');
+assert.match(movementScreen, /PhoenixLaunchWriteControl/,
+  'Drawer Phoenix deve separar revisão visual da confirmação protegida de escrita');
+assert.match(launchWriteControl, /getPhoenixRuntimeWriteCapabilities\(true\)/,
+  'Confirmação financeira deve consultar o gate de runtime antes de gravar');
+assert.match(launchWriteControl, /duplicateAccepted/,
+  'Possível duplicidade deve exigir confirmação explícita antes da escrita');
+assert.match(launchWriteControl, /runPhoenixSimpleEventWrite/,
+  'Escrita simples deve passar exclusivamente pelo gateway protegido e idempotente');
 assert.match(movementScreen, /Classificação da receita \(opcional\)/,
   'Receita pode manter classificação opcional, sem exigir grupo');
 assert.match(movementScreen, /draft\.type === 'expense' && !draft\.classification/,
@@ -148,7 +155,7 @@ assert.match(movementScreen, /max=\{credit \? 48 : 120\}/,
 assert.match(movementScreen, /Possível duplicidade real encontrada/,
   'Proteção de duplicidade deve comparar com dados reais já carregados');
 assert.doesNotMatch(movementScreen, /method\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/,
-  'Drawer de lançamento deve permanecer sem escrita nesta etapa');
+  'Tela de Lançamentos não deve incorporar requisições de escrita diretamente');
 
 assert.match(homeDashboard, /Últimos 20 eventos/,
   'Home corrente deve manter feed recente rolável em vez de depender apenas da auditoria nova');

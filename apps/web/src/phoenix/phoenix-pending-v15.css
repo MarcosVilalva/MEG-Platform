@@ -1,0 +1,390 @@
+.px-pending-toolbar-v15 {
+  display:grid;
+  grid-template-columns:minmax(260px,1fr) auto auto;
+  align-items:end;
+  gap:12px;
+}
+
+.px-pending-group-select {
+  display:grid;
+  gap:5px;
+  min-width:180px;
+}
+
+.px-pending-group-select > span {
+  color:var(--px-muted,#7f9e96);
+  font-size:9px;
+  font-weight:850;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+
+.px-pending-group-select select {
+  height:38px;
+  padding:0 32px 0 11px;
+  border:1px solid var(--px-line,#203f38);
+  border-radius:10px;
+  background:var(--px-surface-strong,#071713);
+  color:var(--px-text,#dff7f0);
+  font:inherit;
+  font-size:10px;
+  outline:none;
+}
+
+.px-pending-group-select select:focus {
+  border-color:#35d4a5;
+  box-shadow:0 0 0 3px rgba(53,212,165,.08);
+}
+
+.px-pending-date-cluster {
+  margin:10px 0;
+  overflow:hidden;
+  border:1px solid rgba(53,212,165,.18);
+  border-radius:14px;
+  background:linear-gradient(180deg,rgba(53,212,165,.045),rgba(53,212,165,.012));
+  transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.px-pending-date-cluster:hover,
+.px-pending-date-cluster.is-open {
+  border-color:rgba(53,212,165,.32);
+  box-shadow:0 10px 28px rgba(0,0,0,.10);
+}
+
+.px-pending-date-cluster-head {
+  min-height:64px;
+  padding:12px 14px;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto auto;
+  align-items:center;
+  gap:14px;
+  cursor:pointer;
+  user-select:none;
+  outline:none;
+}
+
+.px-pending-date-cluster-head:focus-visible {
+  box-shadow:inset 0 0 0 2px rgba(53,212,165,.45);
+}
+
+.px-pending-group-check {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:#86aaa0;
+  font-size:8px;
+  font-weight:800;
+  white-space:nowrap;
+  cursor:pointer;
+}
+
+.px-pending-group-check input {
+  width:16px;
+  height:16px;
+  margin:0;
+  accent-color:#35d4a5;
+  cursor:pointer;
+}
+
+.px-pending-date-cluster-copy {
+  min-width:0;
+  display:grid;
+  gap:3px;
+}
+
+.px-pending-date-cluster-copy strong {
+  color:#bff9e8;
+  font-size:12px;
+  letter-spacing:.01em;
+}
+
+.px-pending-date-cluster-copy small {
+  color:#789990;
+  font-size:9px;
+}
+
+.px-pending-date-cluster-total {
+  color:#e3fbf4;
+  font-size:12px;
+  white-space:nowrap;
+}
+
+.px-pending-date-cluster-chevron {
+  color:#71d8bc;
+  font-size:15px;
+  transition:transform .18s ease;
+}
+
+.px-pending-date-cluster.is-open .px-pending-date-cluster-chevron {
+  transform:rotate(180deg);
+}
+
+.px-pending-date-cluster-body {
+  border-top:1px solid rgba(53,212,165,.12);
+  animation:pxPendingOpen .16s ease-out;
+}
+
+.px-pending-date-cluster-body > .px-pending-row:first-child {
+  border-top:0;
+}
+
+@keyframes pxPendingOpen {
+  from { opacity:0; transform:translateY(-3px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+.px-pending-group.is-card-group,
+.px-pending-card-group {
+  border-color:rgba(53,212,165,.22);
+  background:linear-gradient(180deg,rgba(53,212,165,.045),rgba(53,212,165,.012));
+}
+
+.px-pending-group.is-card-group > header strong:first-child,
+.px-pending-card-group summary > div > strong {
+  color:#bff9e8;
+}
+
+.px-pending-row.is-card-statement {
+  background:rgba(53,212,165,.035);
+}
+
+.px-pending-card-group {
+  margin:10px 0;
+  overflow:hidden;
+  border:1px solid rgba(53,212,165,.18);
+  border-radius:13px;
+}
+
+.px-pending-card-nested {
+  margin:8px 10px;
+  background:rgba(53,212,165,.025);
+}
+
+.px-pending-card-group summary {
+  min-height:58px;
+  padding:12px 14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  cursor:pointer;
+  list-style:none;
+  user-select:none;
+}
+
+.px-pending-card-group summary::-webkit-details-marker { display:none; }
+
+.px-pending-card-group summary::after {
+  content:'⌄';
+  color:#71d8bc;
+  font-size:15px;
+  transition:transform .18s ease;
+}
+
+.px-pending-card-group[open] summary::after { transform:rotate(180deg); }
+
+.px-pending-card-group summary > div {
+  min-width:0;
+  display:grid;
+  gap:3px;
+}
+
+.px-pending-card-group summary > div > strong {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:11px;
+}
+
+.px-pending-card-group summary small {
+  color:#799b92;
+  font-size:9px;
+}
+
+.px-pending-card-group summary > strong {
+  margin-left:auto;
+  color:#e3fbf4;
+  font-size:12px;
+  white-space:nowrap;
+}
+
+.px-pending-card-group-body {
+  border-top:1px solid rgba(53,212,165,.12);
+}
+
+.px-pending-statement-lines {
+  margin:16px 0 4px;
+  overflow:hidden;
+  border:1px solid rgba(53,212,165,.14);
+  border-radius:12px;
+  background:rgba(3,19,22,.18);
+}
+
+.px-pending-statement-lines .px-panel-head {
+  padding:10px 12px;
+  border-bottom:1px solid rgba(53,212,165,.1);
+}
+
+.px-pending-statement-lines > div:not(.px-panel-head) {
+  padding:9px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  border-bottom:1px solid rgba(110,166,152,.08);
+}
+
+.px-pending-statement-lines > div:last-child { border-bottom:0; }
+
+.px-pending-statement-lines > div > span {
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+
+.px-pending-statement-lines > div > span strong {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#dff7f0;
+  font-size:10px;
+}
+
+.px-pending-statement-lines > div > span small {
+  color:#789990;
+  font-size:8px;
+}
+
+.px-pending-statement-lines > div > strong {
+  color:#e8fff8;
+  font-size:10px;
+  white-space:nowrap;
+}
+
+/* Pendentes operacional: o cabeçalho já informa o total e as abas já filtram
+   prioridade. Removemos os cards e o resumo lateral que repetiam esses dados. */
+.px-screen:has(.px-pending-toolbar-v15) > .px-screen-kpis {
+  display:none;
+}
+
+.px-pending-layout {
+  grid-template-columns:minmax(0,1fr);
+}
+
+.px-pending-side {
+  display:none;
+}
+
+.px-pending-list > .px-history-source-note {
+  display:none;
+}
+
+.px-pending-list {
+  min-width:0;
+}
+
+/* A barra já nasce apenas quando selectedItems possui itens. Fixá-la diretamente
+   preserva o resumo mesmo quando o grupo que originou a seleção é recolhido. */
+.px-pending-list > .px-bulk-action-bar {
+  position:fixed;
+  left:50%;
+  bottom:16px;
+  z-index:70;
+  width:min(760px,calc(100vw - 34px));
+  min-height:62px;
+  margin:0;
+  padding:10px 12px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto auto;
+  align-items:center;
+  gap:10px;
+  transform:translateX(-50%);
+  border:1px solid rgba(53,212,165,.28);
+  border-radius:14px;
+  background:rgba(5,24,20,.96);
+  box-shadow:0 18px 50px rgba(0,0,0,.34);
+  backdrop-filter:blur(14px);
+}
+
+.px-pending-list > .px-bulk-action-bar > div {
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+
+.px-pending-list > .px-bulk-action-bar > div strong {
+  overflow:hidden;
+  color:#e9fff8;
+  font-size:11px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.px-pending-list > .px-bulk-action-bar > div span {
+  overflow:hidden;
+  color:#789990;
+  font-size:8px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.px-pending-list > .px-bulk-action-bar > button {
+  min-height:36px;
+  padding:7px 11px;
+  white-space:nowrap;
+}
+
+@media (max-width:900px) {
+  .px-pending-toolbar-v15 {
+    grid-template-columns:1fr 180px;
+  }
+  .px-pending-toolbar-v15 .px-toolbar-note {
+    grid-column:1 / -1;
+  }
+  .px-pending-date-cluster-head {
+    grid-template-columns:auto minmax(0,1fr) auto;
+  }
+  .px-pending-date-cluster-total {
+    grid-column:2;
+    justify-self:start;
+  }
+  .px-pending-date-cluster-chevron {
+    grid-column:3;
+    grid-row:1 / span 2;
+  }
+}
+
+@media (max-width:620px) {
+  .px-pending-toolbar-v15 {
+    grid-template-columns:1fr;
+  }
+  .px-pending-group-select { min-width:0; }
+  .px-pending-card-group summary {
+    align-items:flex-start;
+    flex-wrap:wrap;
+  }
+  .px-pending-date-cluster-head {
+    grid-template-columns:1fr auto;
+    gap:8px 12px;
+  }
+  .px-pending-group-check {
+    grid-column:1 / -1;
+  }
+  .px-pending-date-cluster-copy { grid-column:1; }
+  .px-pending-date-cluster-total { grid-column:1; }
+  .px-pending-date-cluster-chevron {
+    grid-column:2;
+    grid-row:2 / span 2;
+  }
+  .px-pending-list > .px-bulk-action-bar {
+    bottom:10px;
+    width:calc(100vw - 20px);
+    grid-template-columns:1fr auto;
+  }
+  .px-pending-list > .px-bulk-action-bar > div {
+    grid-column:1 / -1;
+  }
+  .px-pending-list > .px-bulk-action-bar > button.primary {
+    justify-self:stretch;
+  }
+}

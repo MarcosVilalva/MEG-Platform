@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FinancialEvent } from '../../app/finance-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import type { PhoenixReadModel } from '../contracts';
+import { PhoenixLaunchWriteControl } from '../components/PhoenixLaunchWriteControl';
 import '../phoenix-launch.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -403,6 +404,38 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
       && event.date.slice(0, 10) === draft.eventDate) || null;
   }, [data.events.items, draft.description, draft.accountId, draft.eventDate, amountCents]);
 
+  const simpleWriteInput = useMemo(() => {
+    if (draft.type === 'transfer') return null;
+    return {
+      type: draft.type,
+      status: draft.type === 'income' ? 'paid' as const : 'planned' as const,
+      description: draft.description,
+      date: draft.eventDate,
+      competence: draft.eventDate.slice(0, 7),
+      amount: amountCents / 100,
+      accountId: draft.accountId,
+      categoryId: draft.categoryId || undefined,
+      paymentMethodId: draft.paymentMethodId,
+      notes: draft.notes || undefined,
+    };
+  }, [draft.type, draft.description, draft.eventDate, draft.accountId, draft.categoryId, draft.paymentMethodId, draft.notes, amountCents]);
+
+  const simpleWriteFlow = useMemo(() => ({
+    type: draft.type,
+    negative,
+    benefit,
+    credit,
+    crediario,
+    recurring: draft.recurring,
+    saveTemplate: draft.saveTemplate,
+    installments: draft.installments,
+    manualDue: draft.manualDue,
+  }), [draft.type, draft.recurring, draft.saveTemplate, draft.installments, draft.manualDue, negative, benefit, credit, crediario]);
+
+  const duplicateMessage = duplicate
+    ? `${duplicate.description}, ${money.format(amountFromEvent(duplicate))}, em ${date.format(new Date(duplicate.date))}.`
+    : null;
+
   useEffect(() => {
     if (launchRequest > 0) openLaunch();
   }, [launchRequest]);
@@ -623,12 +656,22 @@ export function PhoenixMovementsV15({ data, onNavigateHistory, launchRequest = 0
           {draft.saveTemplate ? <label className="px-field"><span>Nome do modelo *</span><input maxLength={60} value={draft.templateName} onChange={(event) => updateDraft('templateName', event.target.value)} placeholder="Ex.: Compra mensal" /></label> : null}
           <label className="px-field"><span>Observações opcionais</span><textarea maxLength={500} value={draft.notes} onChange={(event) => updateDraft('notes', event.target.value)} placeholder="Inclua informações úteis para consulta futura" /></label>
 
-          <div className="px-preview-box"><div className="px-launch-section-label">Resumo antes de confirmar</div><div><span>Tipo</span><strong>{draft.type === 'expense' ? 'Despesa' : draft.type === 'income' ? 'Receita' : 'Transferência'}</strong></div><div><span>Escopo</span><strong>{draft.type === 'transfer' && draft.destinationId ? `${labelForAccount(data, draft.accountId)} para ${labelForAccount(data, draft.destinationId)}` : labelForAccount(data, draft.accountId)}</strong></div>{draft.type === 'expense' ? <><div><span>Classificação</span><strong>{draft.classification || '—'}</strong></div><div><span>Grupo</span><strong>{selectedCategory?.name || '—'}</strong></div></> : null}<div><span>Valor</span><strong>{formatInputMoney(amountCents, negative)}</strong></div><div><span>Situação inicial</span><strong>Gravação ainda bloqueada</strong></div></div>
+          <div className="px-preview-box"><div className="px-launch-section-label">Resumo antes de confirmar</div><div><span>Tipo</span><strong>{draft.type === 'expense' ? 'Despesa' : draft.type === 'income' ? 'Receita' : 'Transferência'}</strong></div><div><span>Escopo</span><strong>{draft.type === 'transfer' && draft.destinationId ? `${labelForAccount(data, draft.accountId)} para ${labelForAccount(data, draft.destinationId)}` : labelForAccount(data, draft.accountId)}</strong></div>{draft.type === 'expense' ? <><div><span>Classificação</span><strong>{draft.classification || '—'}</strong></div><div><span>Grupo</span><strong>{selectedCategory?.name || '—'}</strong></div></> : null}<div><span>Valor</span><strong>{formatInputMoney(amountCents, negative)}</strong></div><div><span>Situação inicial</span><strong>{draft.type === 'income' ? 'Recebido' : draft.type === 'expense' ? 'Pendente' : 'Fluxo próprio'}</strong></div></div>
 
           <div className={`px-rule-box ${duplicate ? 'duplicate' : ''}`}>{duplicate ? `Possível duplicidade real encontrada: ${duplicate.description}, ${money.format(amountFromEvent(duplicate))}, em ${date.format(new Date(duplicate.date))}.` : 'Proteção contra duplicidade preparada: descrição, valor, conta e data são comparados com os lançamentos carregados.'}</div>
           <div className={`px-notice ${missing.length ? 'warn' : 'ok'}`}>{missing.length ? `Campos pendentes: ${missing.join(', ')}.` : 'Campos principais preenchidos. Revise o resumo antes de confirmar.'}</div>
-          {reviewed ? <div className="px-notice ok"><strong>Paridade do formulário validada.</strong> Nenhum dado foi gravado. A escrita só será ligada depois da auditoria dos contratos.</div> : null}
-          <button className="px-primary-action px-review-launch" type="button" disabled={missing.length > 0} onClick={reviewLaunch}>{missing.length ? 'Revisar campos obrigatórios' : 'Revisar lançamento · sem gravar'}</button>
+          <PhoenixLaunchWriteControl
+            reviewed={reviewed}
+            missing={missing}
+            input={simpleWriteInput}
+            flow={simpleWriteFlow}
+            duplicateMessage={duplicateMessage}
+            onReview={reviewLaunch}
+            onCommitted={() => {
+              setDirty(false);
+              window.dispatchEvent(new Event('focus'));
+            }}
+          />
         </div>
       </aside>
     </> : null}

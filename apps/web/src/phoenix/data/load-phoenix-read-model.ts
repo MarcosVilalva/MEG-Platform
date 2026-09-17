@@ -76,6 +76,8 @@ type FinancialEventWithSourcePayload = FinancialEvent & {
 
 const readModelCache = new Map<string, CachedReadModel>();
 const readModelInFlight = new Map<string, Promise<PhoenixReadModel>>();
+const supplementalInFlight = new Map<string, Promise<void>>();
+const supplementalScheduled = new Set<string>();
 let allEventsCache: CachedAllEvents | null = null;
 let allEventsInFlight: Promise<PhoenixReadModel['events']> | null = null;
 let staticContextCache: StaticReadContext | null = null;
@@ -122,6 +124,53 @@ function hydrateEventSourceDetails(event: FinancialEvent): FinancialEvent {
   return { ...event, sourceDetails: details };
 }
 
+function staticContextKey(user: { id?: string; role: string }) {
+  return `${user.id || 'session'}:${user.role}`;
+}
+
+function activitiesFromSharedState(sharedState: SharedStateRead) {
+  return Array.isArray(sharedState.state?.activityLog)
+    ? sharedState.state.activityLog
+        .filter((item): item is PhoenixActivity => Boolean(item && item.id && item.at && item.action))
+        .sort((left, right) => String(right.at).localeCompare(String(left.at)))
+    : [];
+}
+
+function legacyTransactionsFromSharedState(sharedState: SharedStateRead) {
+  return Array.isArray(sharedState.state?.transactions)
+    ? sharedState.state.transactions
+        .filter((item): item is PhoenixLegacyTransaction => Boolean(item && typeof item === 'object' && item.id && item.date && item.description))
+        .map((item) => ({ ...item }))
+    : [];
+}
+
+function normalizationFromHealth(health: PhoenixReadModel['health']): PhoenixNormalizationPreview {
+  const runtime = health.normalization;
+  return {
+    revision: 0,
+    updatedAt: null,
+    primary: Boolean(runtime?.primary),
+    mode: runtime?.status || 'runtime-pending',
+    reconciled: Boolean(runtime?.reconciled),
+    normalized: runtime ? { count: Number(runtime.count || 0) } : undefined
+  };
+}
+
+function bootstrapStaticContext(session: NonNullable<ReturnType<typeof readSession>>, health: PhoenixReadModel['health']): StaticReadContext {
+  return {
+    key: staticContextKey(session.user),
+    storedAt: Date.now(),
+    health,
+    normalization: normalizationFromHealth(health),
+    sharedState: {},
+    customers: [],
+    receivables: [],
+    workspaceUsers: session.user.role === 'ADMIN'
+      ? { status: 'ready', users: [] }
+      : { status: 'restricted', users: [] }
+  };
+}
+
 async function loadWorkspaceUsers(role: string): Promise<PhoenixWorkspaceUsers> {
   if (role !== 'ADMIN') return { status: 'restricted', users: [] };
   try {
@@ -138,10 +187,6 @@ async function loadWorkspaceUsers(role: string): Promise<PhoenixWorkspaceUsers> 
       error: error instanceof Error ? error.message : 'USERS_READ_FAILED'
     };
   }
-}
-
-function staticContextKey(user: { id?: string; role: string }) {
-  return `${user.id || 'session'}:${user.role}`;
 }
 
 async function fetchStaticContext(session: NonNullable<ReturnType<typeof readSession>>): Promise<StaticReadContext> {
@@ -185,32 +230,13 @@ async function loadStaticContext(session: NonNullable<ReturnType<typeof readSess
   return pending;
 }
 
-async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boolean } = {}): Promise<PhoenixReadModel> {
-  const session = readSession();
-  if (!session) throw new Error('PHOENIX_UNAUTHORIZED');
-
-  // Trocar mês não deve repetir AppState, usuários, clientes, saúde e normalização.
-  // O caminho mensal aguarda somente o snapshot financeiro e orçamentos daquele mês.
-  const [staticContext, previewCore, budgets] = await Promise.all([
-    loadStaticContext(session, Boolean(options.forceStatic)),
-    authenticatedRequest<PhoenixPreviewCoreRead>(`/finance/phoenix-preview?month=${encodeURIComponent(month)}`),
-    financeClient.listBudgets(month)
-  ]);
-
-  if (previewCore.month !== month) throw new Error('PHOENIX_PREVIEW_MONTH_MISMATCH');
-
-  const activities = Array.isArray(staticContext.sharedState.state?.activityLog)
-    ? staticContext.sharedState.state.activityLog
-        .filter((item): item is PhoenixActivity => Boolean(item && item.id && item.at && item.action))
-        .sort((left, right) => String(right.at).localeCompare(String(left.at)))
-    : [];
-
-  const legacyTransactions = Array.isArray(staticContext.sharedState.state?.transactions)
-    ? staticContext.sharedState.state.transactions
-        .filter((item): item is PhoenixLegacyTransaction => Boolean(item && typeof item === 'object' && item.id && item.date && item.description))
-        .map((item) => ({ ...item }))
-    : [];
-
+function buildPhoenixReadModel(
+  session: NonNullable<ReturnType<typeof readSession>>,
+  month: string,
+  previewCore: PhoenixPreviewCoreRead,
+  staticContext: StaticReadContext,
+  budgets: PhoenixReadModel['budgets']
+): PhoenixReadModel {
   const hydratedEvents = previewCore.events.items.map(hydrateEventSourceDetails);
   const cardInstallmentEvents = projectCardInstallmentsIntoEvents(previewCore.cards, previewCore.categories, month);
   const mergedEvents = [...hydratedEvents, ...cardInstallmentEvents]
@@ -242,8 +268,8 @@ async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boo
     receivables: staticContext.receivables,
     events,
     financialAudit: previewCore.financialAudit,
-    activities,
-    legacyTransactions,
+    activities: activitiesFromSharedState(staticContext.sharedState),
+    legacyTransactions: legacyTransactionsFromSharedState(staticContext.sharedState),
     workspaceUsers: staticContext.workspaceUsers,
     sourcePolicy: {
       mode: 'read-only',
@@ -262,6 +288,114 @@ async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boo
       payables: 'payables-domain'
     }
   };
+}
+
+function replaceArray<T>(target: T[], source: T[]) {
+  target.splice(0, target.length, ...source);
+}
+
+function enrichReadModel(
+  model: PhoenixReadModel,
+  staticContext: StaticReadContext,
+  budgets: PhoenixReadModel['budgets']
+) {
+  model.health = staticContext.health;
+  Object.assign(model.normalization, staticContext.normalization);
+  replaceArray(model.budgets, budgets);
+  replaceArray(model.customers, staticContext.customers);
+  replaceArray(model.receivables, staticContext.receivables);
+  replaceArray(model.activities, activitiesFromSharedState(staticContext.sharedState));
+  replaceArray(model.legacyTransactions, legacyTransactionsFromSharedState(staticContext.sharedState));
+  model.workspaceUsers.status = staticContext.workspaceUsers.status;
+  model.workspaceUsers.workspace = staticContext.workspaceUsers.workspace;
+  model.workspaceUsers.error = staticContext.workspaceUsers.error;
+  replaceArray(model.workspaceUsers.users, staticContext.workspaceUsers.users);
+  model.loadedAt = new Date().toISOString();
+}
+
+function startSupplementalHydration(
+  session: NonNullable<ReturnType<typeof readSession>>,
+  month: string,
+  model: PhoenixReadModel,
+  forceStatic = false
+) {
+  const key = `${staticContextKey(session.user)}:${month}`;
+  if (supplementalInFlight.has(key)) return;
+
+  const pending = Promise.all([
+    loadStaticContext(session, forceStatic),
+    financeClient.listBudgets(month)
+  ])
+    .then(([staticContext, budgets]) => {
+      enrichReadModel(model, staticContext, budgets);
+      readModelCache.set(month, { data: model, storedAt: Date.now() });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('meg:phoenix-supplemental-ready', { detail: { month } }));
+      }
+    })
+    .catch(() => {
+      // A fotografia financeira principal permanece válida. Leituras auxiliares podem
+      // ser tentadas novamente no refresh sem desmontar a Home nem o período atual.
+    })
+    .finally(() => {
+      if (supplementalInFlight.get(key) === pending) supplementalInFlight.delete(key);
+    });
+
+  supplementalInFlight.set(key, pending);
+}
+
+function scheduleSupplementalHydration(
+  session: NonNullable<ReturnType<typeof readSession>>,
+  month: string,
+  model: PhoenixReadModel,
+  forceStatic = false
+) {
+  const key = `${staticContextKey(session.user)}:${month}`;
+  if (supplementalInFlight.has(key) || supplementalScheduled.has(key)) return;
+  supplementalScheduled.add(key);
+
+  const run = () => {
+    supplementalScheduled.delete(key);
+    startSupplementalHydration(session, month, model, forceStatic);
+  };
+
+  // A Home recebe primeiro a fotografia mensal. Só depois do primeiro paint iniciamos
+  // AppState, usuários, recebíveis, clientes, diagnóstico completo e orçamentos.
+  // Isso evita que leituras secundárias concorram com renderização/navegação inicial.
+  if (typeof window !== 'undefined') {
+    window.setTimeout(run, 450);
+  } else {
+    setTimeout(run, 0);
+  }
+}
+
+async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boolean } = {}): Promise<PhoenixReadModel> {
+  const session = readSession();
+  if (!session) throw new Error('PHOENIX_UNAUTHORIZED');
+
+  const key = staticContextKey(session.user);
+  const cachedStatic = !options.forceStatic
+    && staticContextCache
+    && staticContextCache.key === key
+    && Date.now() - staticContextCache.storedAt <= STATIC_CACHE_TTL
+      ? staticContextCache
+      : null;
+
+  // Snapshot e health começam juntos. Antes, o health só era solicitado depois que o
+  // snapshot terminava, acrescentando uma segunda espera ao caminho crítico do login.
+  const previewPromise = authenticatedRequest<PhoenixPreviewCoreRead>(`/finance/phoenix-preview?month=${encodeURIComponent(month)}`);
+  const healthPromise = cachedStatic
+    ? Promise.resolve(cachedStatic.health)
+    : getApiHealth().catch(() => ({ status: 'unavailable' } as PhoenixReadModel['health']));
+  const [previewCore, health] = await Promise.all([previewPromise, healthPromise]);
+
+  if (previewCore.month !== month) throw new Error('PHOENIX_PREVIEW_MONTH_MISMATCH');
+
+  const staticContext = cachedStatic || bootstrapStaticContext(session, health);
+  const model = buildPhoenixReadModel(session, month, previewCore, staticContext, []);
+
+  scheduleSupplementalHydration(session, month, model, Boolean(options.forceStatic));
+  return model;
 }
 
 async function fetchAllFinancialEvents(): Promise<PhoenixReadModel['events']> {
@@ -285,8 +419,10 @@ export function peekPhoenixReadModel(month: string) {
  * - o núcleo financeiro mensal vem de um snapshot único e somente leitura do backend;
  * - resumo, benefício, eventos, cartões, pendências e auditoria pertencem à mesma fotografia mensal;
  * - compras de cartão são projetadas somente para leitura na grade, parcela a parcela, sem criar evento monetário duplicado;
- * - orçamentos são mensais; clientes/contas a receber e demais leituras estáticas são reutilizados entre trocas de mês;
- * - a normalização é observada explicitamente para evitar esconder fallback;
+ * - a Home é liberada quando a fotografia financeira mensal está pronta;
+ * - AppState legado, usuários, clientes, recebíveis, diagnóstico completo e orçamentos são pré-carregados logo depois do primeiro paint;
+ * - snapshot mensal e health são buscados em paralelo no caminho crítico;
+ * - a normalização inicial usa o estado runtime do health e é substituída pelo diagnóstico completo em segundo plano;
  * - activityLog permanece carregado somente como histórico legado anterior à auditoria normalizada;
  * - transactions permanece disponível somente como compatibilidade de leitura para cartões/pendências legadas;
  * - sourcePayload do domínio financeiro é usado somente como compatibilidade de leitura para preservar classificação/grupo legados ainda não normalizados em categoryId;
@@ -352,6 +488,8 @@ export async function loadPhoenixAllEvents(options: { force?: boolean } = {}) {
 export function clearPhoenixReadModelCache() {
   readModelCache.clear();
   readModelInFlight.clear();
+  supplementalInFlight.clear();
+  supplementalScheduled.clear();
   allEventsCache = null;
   allEventsInFlight = null;
   staticContextCache = null;
