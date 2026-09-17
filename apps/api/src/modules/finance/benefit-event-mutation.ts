@@ -13,6 +13,17 @@ import {
 
 type Tx = Prisma.TransactionClient;
 
+type BenefitLedgerValue = Prisma.Decimal | number | string;
+
+export type BenefitEventMutationResult = {
+  id: string;
+  status: string;
+  signedAmount: BenefitLedgerValue;
+  ledgerEntries: Array<{ debit: BenefitLedgerValue; credit: BenefitLedgerValue }>;
+  idempotentReplay: boolean;
+  [key: string]: unknown;
+};
+
 export type BenefitEventMutationInput = {
   description: string;
   type: 'income' | 'expense';
@@ -35,11 +46,11 @@ function normalizeText(value: unknown) {
   return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
 }
 
-function replayResponse(response: unknown) {
+function replayResponse(response: unknown): BenefitEventMutationResult {
   if (response && typeof response === 'object' && !Array.isArray(response)) {
-    return { ...(response as Record<string, unknown>), idempotentReplay: true };
+    return { ...(response as Record<string, unknown>), idempotentReplay: true } as BenefitEventMutationResult;
   }
-  return response;
+  throw new BenefitEventMutationError('BENEFIT_EVENT_NOT_FOUND');
 }
 
 function isUniqueConflict(error: unknown) {
@@ -87,7 +98,10 @@ function assertBaseInput(input: BenefitEventMutationInput) {
   if (input.type === 'expense' && !input.categoryId) throw new BenefitEventMutationError('BENEFIT_EXPENSE_CATEGORY_REQUIRED');
 }
 
-export async function createBenefitEventProtected(userId: string, input: BenefitEventMutationInput) {
+export async function createBenefitEventProtected(
+  userId: string,
+  input: BenefitEventMutationInput,
+): Promise<BenefitEventMutationResult> {
   assertBaseInput(input);
   const workspace = await resolveWorkspaceContext(userId);
   const requestHash = mutationRequestHash({ contract: 'benefit', ...input, operationId: undefined });
@@ -183,7 +197,7 @@ export async function createBenefitEventProtected(userId: string, input: Benefit
         },
       });
 
-      const response = { ...result, idempotentReplay: false };
+      const response = { ...result, idempotentReplay: false } as BenefitEventMutationResult;
       const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
       await tx.cloudMutationReceipt.create({
         data: receiptCreateData({
