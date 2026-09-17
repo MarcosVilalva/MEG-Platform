@@ -59,11 +59,11 @@ export class PhoenixWriteError extends Error {
 const RUNTIME_CAPABILITY_TTL = 15_000;
 let runtimeCapabilitiesCache: PhoenixRuntimeWriteCapabilities | null = null;
 
-function operationId() {
+function operationId(prefix = 'phoenix-event') {
   const uuid = globalThis.crypto?.randomUUID?.();
-  if (uuid) return `phoenix-event-${uuid}`;
+  if (uuid) return `${prefix}-${uuid}`;
   const random = Math.random().toString(36).slice(2, 14);
-  return `phoenix-event-${Date.now().toString(36)}-${random}`;
+  return `${prefix}-${Date.now().toString(36)}-${random}`;
 }
 
 function emptyRuntimeCapabilities(source: PhoenixRuntimeWriteCapabilities['source']): PhoenixRuntimeWriteCapabilities {
@@ -175,6 +175,8 @@ export function preparePhoenixSimpleEvent(input: PhoenixSimpleEventInput, existi
 export function phoenixWriteMessage(code: string) {
   const messages: Record<string, string> = {
     PHOENIX_WRITE_NOT_ENABLED: 'A gravação financeira da Phoenix ainda não foi liberada neste ambiente.',
+    PHOENIX_EDIT_WRITE_NOT_ENABLED: 'A edição financeira ainda não foi liberada neste ambiente.',
+    PHOENIX_EDIT_CONFIRMATION_MISSING: 'O servidor respondeu à edição sem devolver o lançamento confirmado.',
     PHOENIX_DESCRIPTION_REQUIRED: 'Informe a descrição do lançamento.',
     PHOENIX_POSITIVE_AMOUNT_REQUIRED: 'Informe um valor diferente de zero.',
     PHOENIX_VALID_DATE_REQUIRED: 'Informe uma data válida.',
@@ -234,12 +236,27 @@ export async function runPhoenixSimpleEventEdit(
   input: PhoenixSimpleEventInput,
   refreshMonth: string,
 ): Promise<{ event: FinancialEvent; snapshot: PhoenixReadModel }> {
-  if (!PHOENIX_WRITE_CAPABILITIES.simpleEvent) throw new PhoenixWriteError('PHOENIX_WRITE_NOT_ENABLED');
   const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
-  if (!runtimeCapabilities.simpleEvent) throw new PhoenixWriteError('PHOENIX_WRITE_NOT_ENABLED');
+  if (!runtimeCapabilities.bulkEventWrite) throw new PhoenixWriteError('PHOENIX_EDIT_WRITE_NOT_ENABLED');
   assertSimpleEvent(input);
 
-  const event = await financeClient.updateEvent(eventId, input);
+  const result = await financeClient.bulkUpdateEvents({
+    ids: [eventId],
+    operationId: operationId('phoenix-event-edit'),
+    changes: {
+      date: input.date,
+      description: input.description.trim(),
+      type: input.type,
+      status: input.status,
+      amount: input.amount,
+      notes: input.notes?.trim() || null,
+      accountId: input.accountId || null,
+      paymentMethodId: input.paymentMethodId || null,
+      categoryId: input.categoryId || null,
+    },
+  });
+  const event = result.events[0];
+  if (!event) throw new PhoenixWriteError('PHOENIX_EDIT_CONFIRMATION_MISSING');
   const snapshot = await confirmedSnapshot(refreshMonth);
   return { event, snapshot };
 }
