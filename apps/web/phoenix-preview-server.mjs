@@ -45,7 +45,7 @@ const allowedBulkEventPosts = new Set([
 ]);
 const allowedStaticFiles = new Set(['/phoenix.html']);
 const allowedStaticPrefixes = ['/assets/', '/brand/'];
-const hopByHopHeaders = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade', 'host', 'origin', 'referer', 'content-length']);
+const hopByHopHeaders = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade', 'host', 'origin', 'referer', 'content-length', 'content-encoding']);
 const periodEventsPath = '/finance/phoenix-preview/events';
 const periodEventsCache = new Map();
 const periodEventsInFlight = new Map();
@@ -121,6 +121,7 @@ function upstreamHeaders(request) {
     if (Array.isArray(value)) value.forEach((item) => headers.append(name, item));
     else headers.set(name, value);
   }
+  headers.set('accept-encoding', 'identity');
   return headers;
 }
 
