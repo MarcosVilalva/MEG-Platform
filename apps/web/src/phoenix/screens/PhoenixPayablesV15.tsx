@@ -163,7 +163,9 @@ function isOpenCardStatus(value: unknown) {
 
 function cardStatementItems(data: PhoenixReadModel): PendingItem[] {
   return data.cards.flatMap((card) => {
-    if (card.statement?.month === data.month && card.statement.lines.length) {
+    if (card.statement?.month === data.month
+      && card.statement.lines.length
+      && card.statement.lines.every((line) => line.source === 'card-installment')) {
       const children: PendingChild[] = card.statement.lines.map((line) => ({
         id: line.id,
         description: line.description,
