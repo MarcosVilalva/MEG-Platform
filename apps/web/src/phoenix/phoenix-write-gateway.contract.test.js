@@ -15,6 +15,8 @@ assert.match(gateway, /cardPurchase:\s*true/,
   'Writer frontend de compra no cartão deve refletir a capacidade específica liberada no fluxo Phoenix.');
 assert.match(gateway, /benefitEvent:\s*true/,
   'Writer frontend de benefício deve refletir a capacidade específica liberada no fluxo Phoenix.');
+assert.match(gateway, /transfer:\s*true/,
+  'Fluxo Phoenix deve declarar explicitamente a capacidade de transferência protegida.');
 assert.match(gateway, /existingOperationId\s*\|\|\s*operationId\(\)/,
   'Retry do mesmo comando deve poder reutilizar o mesmo operationId.');
 assert.match(gateway, /operationId:\s*prepared\.operationId/,
@@ -33,10 +35,18 @@ assert.match(gateway, /runtimeCapabilities\.benefitWrite/,
   'Writer do benefício deve exigir capacidade efetiva do ambiente imediatamente antes da mutação.');
 assert.match(gateway, /runtimeCapabilities\.cardPurchaseWrite/,
   'Writer de cartão deve exigir capacidade efetiva do ambiente imediatamente antes da mutação.');
+assert.match(gateway, /transferWrite:\s*import\.meta\.env\.VITE_PHOENIX_TRANSFER_WRITE\s*===\s*'enabled'/,
+  'Transferência em build direto deve depender de gate explícito.');
+assert.match(gateway, /transferWrite:\s*payload\.capabilities\?\.transferWrite\s*===\s*true/,
+  'Transferência em preview deve depender da capacidade publicada pelo servidor isolado.');
+assert.match(gateway, /getPhoenixTransferEligibility/,
+  'Fluxo de transferência deve possuir elegibilidade própria, sem relaxar o writer simples.');
 assert.match(gateway, /getPhoenixBenefitEventEligibility/,
   'Fluxo de benefício deve possuir elegibilidade própria, sem relaxar o writer simples.');
 assert.match(gateway, /getPhoenixCardPurchaseEligibility/,
   'Fluxo de cartão deve possuir elegibilidade própria, sem relaxar as proteções do writer simples.');
+assert.match(gateway, /PHOENIX_TRANSFER_NOT_IN_SIMPLE_FLOW:\s*'Transferências usam o writer atômico de origem e destino\.'/,
+  'Mensagem do writer simples deve encaminhar transferência ao fluxo atômico.');
 assert.match(gateway, /PHOENIX_BENEFIT_NOT_IN_SIMPLE_FLOW:\s*'Movimentações de benefício usam o writer protegido do Benefício Alimentação\.'/,
   'Mensagem do writer simples deve encaminhar benefício ao writer específico já disponível.');
 assert.match(gateway, /PHOENIX_CARD_NOT_IN_SIMPLE_FLOW:\s*'Compras no crédito são gravadas pelo writer protegido de cartões e faturas\.'/,
@@ -80,8 +90,8 @@ assert.match(pendingGateway, /publishCommittedSnapshot\(snapshot\)/,
 assert.match(pendingGateway, /new CustomEvent\(PHOENIX_SNAPSHOT_COMMITTED_EVENT,\s*\{ detail: \{ snapshot \} \}\)/,
   'Evento de commit deve transportar a mesma fotografia já confirmada pelo gateway.');
 
-assert.doesNotMatch(movements, /submitPhoenixSimpleEvent|runPhoenixSimpleEventWrite|cardsClient\.createPurchase|\/finance\/benefit-events/,
-  'Tela React base não deve acionar criação diretamente; a confirmação fica isolada no controle protegido.');
+assert.doesNotMatch(movements, /submitPhoenixSimpleEvent|runPhoenixSimpleEventWrite|cardsClient\.createPurchase|\/finance\/benefit-events|\/finance\/transfers/,
+  'Tela React base não deve acionar criação diretamente; a confirmação fica isolada no controle/bridge protegido.');
 assert.doesNotMatch(movements, /financeClient\.updateEvent|financeClient\.bulkUpdateEvents|clearPhoenixReadModelCache|loadPhoenixReadModel\(data\.month/,
   'Tela de Lançamentos não pode administrar diretamente a mutação e releitura.');
 assert.match(movements, /runPhoenixSimpleEventEdit/,
@@ -114,18 +124,26 @@ assert.match(writeControl, /runPhoenixBenefitEventWrite/,
   'Controle deve rotear conta de benefício para o writer protegido do Benefício Alimentação.');
 assert.match(writeControl, /runPhoenixCardPurchaseWrite/,
   'Controle deve rotear crédito para o writer protegido de cartões.');
+assert.match(writeControl, /capabilities\.transferWrite/,
+  'A confirmação de transferência só pode ser habilitada quando o runtime declarar a capacidade específica.');
 assert.match(writeControl, /capabilities\.benefitWrite/,
   'A ação de benefício só pode ser habilitada quando o runtime declarar a capacidade específica.');
 assert.match(writeControl, /capabilities\.cardPurchaseWrite/,
   'A ação de cartão só pode ser habilitada quando o runtime declarar a capacidade específica.');
-assert.match(writeControl, /const benefitFlow = Boolean\(flow\.benefit\)/,
-  'Conta de benefício deve ter precedência sobre o roteamento de cartão.');
-assert.match(writeControl, /const cardFlow = Boolean\(flow\.credit && !benefitFlow\)/,
-  'Pagamento selecionado por engano não pode desviar uma conta benefit para o domínio de cartões.');
+assert.match(writeControl, /const transferFlow = flow\.type === 'transfer'/,
+  'Transferência deve ter roteamento explícito antes dos demais writers.');
+assert.match(writeControl, /const benefitFlow = Boolean\(flow\.benefit && !transferFlow\)/,
+  'Conta de benefício deve ter precedência sobre o roteamento de cartão, sem interceptar transferência.');
+assert.match(writeControl, /const cardFlow = Boolean\(flow\.credit && !benefitFlow && !transferFlow\)/,
+  'Pagamento selecionado por engano não pode desviar benefício ou transferência para o domínio de cartões.');
+assert.match(writeControl, /data-phoenix-transfer-confirm="true"/,
+  'Transferência revisada deve expor uma confirmação explícita para o bridge atômico já homologado.');
+assert.match(writeControl, /Paridade do formulário validada\. A transferência será gravada como uma operação atômica/,
+  'Bridge só deve capturar a transferência depois da revisão visual concluída.');
 assert.match(writeControl, /projectedCardEvent/,
   'Após confirmação, o controle deve localizar a projeção da parcela no snapshot quando ela pertence ao mês visível.');
 assert.match(writeControl, /benefitFlow \? !benefitInput : cardFlow \? !cardInput : !input/,
-  'O controle não pode entrar em estado saving quando não há comando válido para o fluxo selecionado.');
+  'O controle não pode entrar em estado saving quando não há comando válido para os fluxos de evento, benefício ou cartão.');
 assert.match(writeControl, /duplicateAccepted/,
   'Possível duplicidade deve exigir aceite explícito antes da confirmação.');
 assert.match(writeControl, /preparedBenefitRef/,
@@ -145,6 +163,10 @@ assert.match(bridge, /result\.status !== 'confirmed'/,
   'Bridge não pode tratar a gravação simples como concluída sem confirmação do servidor.');
 assert.match(bridge, /authenticatedRequest\('\/finance\/transfers'/,
   'Transferência deve usar o endpoint atômico oficial, fora do writer simples.');
+assert.match(bridge, /state\.operationId \|\|= newOperationId\('transfer'\)/,
+  'Retry de transferência deve preservar o operationId enquanto o formulário não muda.');
+assert.match(bridge, /sourceAccountId,\s*destinationAccountId,\s*amount,\s*date,\s*description,\s*notes/s,
+  'Bridge de transferência deve enviar origem, destino, valor, data, descrição e observações ao contrato atômico.');
 assert.match(bridge, /payablesClient\.createRecurring/,
   'Recorrência de despesa deve usar o domínio oficial de contas a pagar.');
 assert.match(bridge, /const amount = parseMoney/,
@@ -161,14 +183,20 @@ assert.match(previewServer, /cardPurchaseWriteEnabled\s*=\s*process\.env\.PHOENI
   'Proxy de cartão deve exigir flag própria para liberar criação de compras.');
 assert.match(previewServer, /benefitWriteEnabled\s*=\s*process\.env\.PHOENIX_BENEFIT_WRITE\s*===\s*'enabled'/,
   'Proxy de benefício deve exigir flag própria para liberar movimentações.');
+assert.match(previewServer, /transferWriteEnabled\s*=\s*process\.env\.PHOENIX_TRANSFER_WRITE\s*===\s*'enabled'/,
+  'Proxy de transferência deve exigir flag própria antes de liberar a rota atômica.');
 assert.match(previewServer, /allowedBenefitPosts\s*=\s*new Set\(\['\/finance\/benefit-events'\]\)/,
   'Proxy de benefício deve limitar criação ao endpoint protegido específico.');
+assert.match(previewServer, /allowedTransferPosts\s*=\s*new Set\(\['\/finance\/transfers'\]\)/,
+  'Proxy de transferência deve limitar gravação ao endpoint atômico específico.');
 assert.match(previewServer, /allowedCardPurchasePosts\s*=\s*new Set\(\['\/cards\/purchases'\]\)/,
   'Proxy de cartão deve limitar criação ao endpoint oficial de compras.');
 assert.match(previewServer, /isAllowedCardPurchaseWrite\(method, pathname\)/,
   'POST/PATCH/DELETE de compra devem passar pelo gate específico de cartão.');
 assert.match(previewServer, /benefitWrite:\s*benefitWriteEnabled/,
   'Preview-health deve publicar a capacidade de benefício usada pelo frontend.');
+assert.match(previewServer, /transferWrite:\s*transferWriteEnabled/,
+  'Preview-health deve publicar a capacidade de transferência usada pelo frontend.');
 assert.match(previewServer, /cardPurchaseWrite:\s*cardPurchaseWriteEnabled/,
   'Preview-health deve publicar a capacidade de cartão usada pelo frontend.');
 assert.match(previewServer, /allowedFinancialPosts\s*=\s*new Set\(\['\/finance\/events'\]\)/,
@@ -177,9 +205,11 @@ assert.match(previewServer, /simpleEventWriteEnabled\s*&&\s*allowedFinancialPost
   'Allowlist financeira simples não pode funcionar com a flag do ambiente desligada.');
 assert.match(previewServer, /benefitWriteEnabled\s*&&\s*allowedBenefitPosts\.has\(pathname\)/,
   'Allowlist do benefício não pode funcionar com a flag do ambiente desligada.');
+assert.match(previewServer, /transferWriteEnabled\s*&&\s*allowedTransferPosts\.has\(pathname\)/,
+  'Allowlist da transferência não pode funcionar com a flag do ambiente desligada.');
 assert.match(previewServer, /bulkEventWriteEnabled\s*&&\s*allowedBulkEventPosts\.has\(pathname\)/,
   'Edição no preview deve permanecer atrás da flag bulk explícita.');
 assert.match(previewServer, /PREVIEW_READ_ONLY/,
   'Mutações não habilitadas no ambiente isolado devem continuar bloqueadas pelo proxy.');
 
-console.log('Writers Phoenix validados: criação simples, Benefício Alimentação, compra real no cartão, edição protegida, baixa com snapshot imediato e preview gated.');
+console.log('Writers Phoenix validados: criação simples, Benefício Alimentação, cartão, transferência atômica, edição, baixa e preview gated.');
