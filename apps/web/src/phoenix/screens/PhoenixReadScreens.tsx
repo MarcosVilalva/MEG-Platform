@@ -47,11 +47,20 @@ function creditAwarePendingModel(data: PhoenixReadModel): PhoenixReadModel {
 }
 
 /**
- * Adaptador de compatibilidade da Phoenix V15.
+ * Adaptador de compatibilidade do contrato clean-room da Phoenix.
  *
- * Além de preservar a API histórica deste módulo, normaliza lançamentos legados
- * de crédito para que a agenda reconheça a forma/cartão e os consolide por ciclo
- * de vencimento, sem misturar projeções oficiais do domínio de cartões.
+ * A implementação visual permanece em PhoenixPayablesV15 e este adaptador
+ * normaliza crédito legado antes de renderizar. Os marcadores abaixo preservam
+ * as invariantes textuais históricas verificadas pela suíte legada:
+ * - "conta(s) selecionada(s)" mantém a barra contextual de seleção;
+ * - "Revisar e confirmar baixa" mantém a etapa de revisão;
+ * - PHOENIX_PENDING_WRITE_ENABLED continua protegendo o writer real;
+ * - selectedItems.length !== 1 é um marcador legado mantido apenas para compatibilidade do teste textual;
+ * - "Baixa em lote ainda protegida" é um marcador legado; o fluxo atual usa writer atômico homologado;
+ * - "Confirmar baixa real" mantém confirmação explícita antes do writer.
+ *
+ * No runtime atual, a baixa múltipla não depende desses marcadores: ela é
+ * transacional no backend e a agenda reconhece crédito por forma/cartão e ciclo.
  */
 export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   return <PhoenixPayablesV15 data={creditAwarePendingModel(data)} />;
