@@ -1,6 +1,6 @@
-import { authenticatedRequest } from '../app/auth-client';
 import { payablesClient } from '../app/payables-client';
 import { preparePhoenixSimpleEvent, runPhoenixSimpleEventWrite, type PhoenixSimpleEventInput } from './data/phoenix-write-gateway';
+import { preparePhoenixTransfer, runPhoenixTransferWrite } from './data/phoenix-transfer-write-gateway';
 import { clearPhoenixReadModelCache } from './data/load-phoenix-read-model';
 import { PHOENIX_INCOME_PAYMENT_METHODS, canonicalPhoenixIncomePaymentMethod } from './income-payment-methods';
 
@@ -174,10 +174,10 @@ function recurrenceCount(root: HTMLElement) {
   return Number.isFinite(value) ? Math.max(2, Math.min(120, Math.trunc(value))) : 2;
 }
 
-function newOperationId(kind: 'transfer' | 'recurring') {
+function newRecurringOperationId() {
   const uuid = globalThis.crypto?.randomUUID?.();
   const suffix = uuid || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`;
-  return `phoenix-${kind}-${suffix}`;
+  return `phoenix-recurring-${suffix}`;
 }
 
 function mutationFingerprint(root: HTMLElement) {
@@ -344,21 +344,20 @@ async function submitTransfer(root: HTMLElement) {
   const amount = Math.abs(parseMoney(root.querySelector<HTMLInputElement>('.px-money-mask')?.value || ''));
   const description = inputByLabel(root, 'Descrição')?.value.trim() || '';
   const notes = textareaByLabel(root, 'Observações opcionais')?.value.trim() || undefined;
-  state.operationId ||= newOperationId('transfer');
-  await authenticatedRequest('/finance/transfers', {
-    method: 'POST',
-    body: JSON.stringify({
-      operationId: state.operationId,
-      sourceAccountId,
-      destinationAccountId,
-      amount,
-      date,
-      description,
-      notes,
-    }),
-  });
-  clearPhoenixReadModelCache();
-  window.dispatchEvent(new CustomEvent('meg:data-invalidated', { detail: { path: '/finance/transfers', method: 'POST' } }));
+  const prepared = preparePhoenixTransfer({
+    sourceAccountId,
+    destinationAccountId,
+    amount,
+    date,
+    description,
+    notes,
+  }, state.operationId);
+  state.operationId = prepared.operationId;
+  const result = await runPhoenixTransferWrite(prepared, date.slice(0, 7));
+  if (result.status === 'error') throw new Error(result.code);
+  if (result.status !== 'confirmed') throw new Error('PHOENIX_TRANSFER_WRITE_NOT_CONFIRMED');
+  window.dispatchEvent(new CustomEvent('meg:phoenix-snapshot-committed', { detail: { snapshot: result.snapshot } }));
+  return result;
 }
 
 async function submitRecurring(root: HTMLElement) {
@@ -367,7 +366,7 @@ async function submitRecurring(root: HTMLElement) {
   const amount = Math.abs(parseMoney(root.querySelector<HTMLInputElement>('.px-money-mask')?.value || ''));
   const nextDueDate = inputByLabel(root, 'Data do evento')?.value || '';
   const notes = textareaByLabel(root, 'Observações opcionais')?.value.trim() || undefined;
-  state.operationId ||= newOperationId('recurring');
+  state.operationId ||= newRecurringOperationId();
   await payablesClient.createRecurring({
     categoryId,
     description,
@@ -418,7 +417,7 @@ async function submit(root: HTMLElement) {
     if (type === 'transfer') {
       await submitTransfer(root);
       state.mode = 'confirmed';
-      setFeedback(root, 'Transferência confirmada no servidor com duas pernas contábeis e rastreabilidade. Atualizando a tela…', 'ok');
+      setFeedback(root, 'Transferência confirmada, relida da base e propagada ao sistema. Origem e destino já refletem a operação atômica.', 'ok');
     } else if (recurring) {
       await submitRecurring(root);
       state.mode = 'confirmed';
@@ -439,14 +438,16 @@ async function submit(root: HTMLElement) {
       state.mode = 'confirmed';
       state.confirmedEventId = result.event.id;
       const adjustment = payload.amount < 0 ? 'Estorno/reversão' : payload.type === 'income' ? 'Receita recebida' : payload.status === 'paid' ? 'Despesa realizada' : 'Despesa pendente';
-      setFeedback(root, `Lançamento confirmado no servidor. ${adjustment} registrada com rastreabilidade e operationId. Atualizando a tela…`, 'ok');
-      window.dispatchEvent(new CustomEvent('meg:data-invalidated', { detail: { path: '/finance/events', method: 'POST' } }));
+      setFeedback(root, `Lançamento confirmado no servidor. ${adjustment} registrada com rastreabilidade e operationId. Tela sincronizada com a fotografia confirmada.`, 'ok');
+      window.dispatchEvent(new CustomEvent('meg:phoenix-snapshot-committed', { detail: { snapshot: result.snapshot } }));
     }
 
     setButton(root);
-    window.setTimeout(() => {
-      document.querySelector<HTMLButtonElement>('.px-sync:not(:disabled)')?.click();
-    }, 150);
+    if (recurring) {
+      window.setTimeout(() => {
+        document.querySelector<HTMLButtonElement>('.px-sync:not(:disabled)')?.click();
+      }, 150);
+    }
   } catch (error) {
     state.mode = 'error';
     setFeedback(root, domainErrorMessage(error), 'warn');
