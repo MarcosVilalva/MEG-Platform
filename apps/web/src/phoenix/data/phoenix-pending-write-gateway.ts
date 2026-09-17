@@ -153,29 +153,30 @@ function friendlyMessage(code: string) {
     PHOENIX_PENDING_REQUIRED: 'Selecione um compromisso válido.',
     PHOENIX_PENDING_DUPLICATE: 'Há uma pendência repetida na seleção. Atualize a tela e tente novamente.',
     PHOENIX_PENDING_AMOUNT_REQUIRED: 'O valor do compromisso precisa ser maior que zero.',
+    INVALID_PENDING_AMOUNT: 'Um dos compromissos possui valor inválido para baixa.',
     PHOENIX_PENDING_DATE_REQUIRED: 'Informe a data efetiva do pagamento.',
     PHOENIX_PENDING_ACCOUNT_REQUIRED: 'Selecione a conta financeira usada no pagamento.',
     PHOENIX_PENDING_METHOD_REQUIRED: 'Selecione a forma de pagamento usada na baixa.',
     PHOENIX_PENDING_STATEMENT_REQUIRED: 'A fatura selecionada não possui uma competência válida.',
-    PHOENIX_PENDING_BATCH_PARTIAL: 'Parte da seleção já foi confirmada antes de uma falha. A tela foi atualizada; tente novamente com o que permanecer pendente.',
+    FUTURE_PAYMENT_NOT_ALLOWED: 'A data da baixa não pode estar no futuro.',
     PREVIEW_READ_ONLY: 'A baixa real de Pendentes está temporariamente bloqueada no preview.',
     PAYABLE_NOT_FOUND: 'Uma das contas já foi baixada, cancelada ou não está mais disponível.',
     FINANCIAL_EVENT_NOT_FOUND: 'Um dos compromissos não está mais disponível para baixa.',
     FINANCIAL_EVENT_NOT_PENDING: 'Um dos compromissos já foi baixado ou deixou de estar pendente.',
-    FINANCIAL_EVENT_NOT_LEGACY_COMPAT: 'Um compromisso precisa ser normalizado antes da baixa por compatibilidade.',
+    FINANCIAL_EVENT_NOT_LEGACY_COMPAT: 'Este compromisso exige a versão nova do writer de baixa. Atualize o sistema antes de tentar novamente.',
     BENEFIT_SETTLEMENT_NOT_SUPPORTED: 'Compromissos de benefício não podem ser baixados por este fluxo.',
     CARD_NOT_FOUND: 'Um dos cartões selecionados não está mais disponível.',
     CARD_STATEMENT_ALREADY_PAID: 'Uma das faturas já foi paga ou não possui saldo aberto.',
     CARD_STATEMENT_NOT_PAYABLE: 'Uma das faturas não possui parcelas oficiais abertas para pagamento.',
-    STATEMENT_CHANGED_RETRY: 'A fatura mudou durante a confirmação. Atualize a seleção e tente novamente.',
+    STATEMENT_CHANGED_RETRY: 'A fatura mudou durante a confirmação. Nenhuma baixa do lote foi gravada; atualize e tente novamente.',
     ACCOUNT_NOT_MONETARY: 'A conta selecionada não é monetária. Escolha uma conta financeira válida.',
     INVALID_ACCOUNT: 'A conta selecionada não está mais disponível.',
     INVALID_PAYMENT_METHOD: 'A forma de pagamento selecionada não está mais disponível para esta baixa.',
     AMOUNT_EXCEEDS_OPEN_BALANCE: 'O valor informado ultrapassa o saldo ainda aberto da conta.',
-    INSUFFICIENT_MONETARY_BALANCE: 'O saldo monetário não cobre o total selecionado.',
+    INSUFFICIENT_MONETARY_BALANCE: 'O saldo monetário não cobre o total selecionado. Nenhuma baixa do lote foi gravada.',
     OPERATION_ID_REUSED: 'A tentativa atual não corresponde à baixa original. Revise os dados antes de tentar novamente.',
   };
-  return messages[code] || 'Não foi possível confirmar a baixa. Atualize a seleção e tente novamente.';
+  return messages[code] || 'Não foi possível confirmar a baixa. Nenhuma alteração do lote foi considerada concluída.';
 }
 
 function codeFromError(error: unknown) {
@@ -255,32 +256,25 @@ export async function runPhoenixPendingBatchSettlement(
   onState?: (state: PhoenixPendingWriteState) => void,
 ): Promise<PhoenixPendingWriteState> {
   onState?.({ status: 'saving', operationId: prepared.operationId });
-  let completed = 0;
   try {
     if (!PHOENIX_PENDING_WRITE_ENABLED) throw new PhoenixPendingWriteError('PHOENIX_PENDING_WRITE_NOT_ENABLED');
     assertBatchInput(prepared.payload);
-    const results: unknown[] = [];
-    for (const [index, item] of prepared.payload.items.entries()) {
-      const itemOperationId = `${prepared.operationId}-${String(index + 1).padStart(3, '0')}`;
-      results.push(await submitPendingSettlement({
-        ...item,
+    const result = await authenticatedRequest('/finance/pending/batch/settle', {
+      method: 'POST',
+      body: JSON.stringify({
+        items: prepared.payload.items.map((item) => ({
+          source: item.source,
+          sourceId: item.sourceId,
+          statementMonth: item.statementMonth,
+        })),
         paidAt: prepared.payload.paidAt,
         accountId: prepared.payload.accountId,
         paymentMethodId: prepared.payload.paymentMethodId,
-      }, itemOperationId));
-      completed += 1;
-    }
-    return await refreshConfirmed(prepared.operationId, { items: results, completed }, refreshMonth, onState);
+        operationId: prepared.operationId,
+      }),
+    });
+    return await refreshConfirmed(prepared.operationId, result, refreshMonth, onState);
   } catch (error) {
-    if (completed > 0) {
-      try {
-        const snapshot = await loadPhoenixReadModel(refreshMonth, { force: true });
-        publishCommittedSnapshot(snapshot);
-      } catch {
-        // A falha de releitura não deve esconder que parte do lote já foi confirmada pelo servidor.
-      }
-      return failedState(prepared.operationId, new PhoenixPendingWriteError('PHOENIX_PENDING_BATCH_PARTIAL'), onState);
-    }
     return failedState(prepared.operationId, error, onState);
   }
 }
