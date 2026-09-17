@@ -43,6 +43,44 @@ function projectedCardEvent(snapshot: PhoenixReadModel, purchaseId: string) {
   });
 }
 
+function normalizeLabel(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('pt-BR');
+}
+
+function drawerField(prefix: string) {
+  if (typeof document === 'undefined') return null;
+  const root = document.querySelector<HTMLElement>('.px-launch-drawer');
+  if (!root) return null;
+  const target = normalizeLabel(prefix);
+  return [...root.querySelectorAll<HTMLLabelElement>('label.px-field')]
+    .find((label) => normalizeLabel(label.querySelector('span')?.textContent || '').startsWith(target)) || null;
+}
+
+function parseTransferAmount(value: string) {
+  const normalized = String(value || '')
+    .replace(/R\$/gi, '')
+    .replace(/\s/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.')
+    .replace(/[^0-9.-]/g, '');
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? Math.abs(parsed) : 0;
+}
+
+function readTransferInputFromDrawer(): PhoenixTransferInput | null {
+  if (typeof document === 'undefined') return null;
+  const root = document.querySelector<HTMLElement>('.px-launch-drawer');
+  if (!root) return null;
+  const sourceAccountId = drawerField('Conta de origem')?.querySelector<HTMLSelectElement>('select')?.value || '';
+  const destinationAccountId = drawerField('Conta de destino')?.querySelector<HTMLSelectElement>('select')?.value || '';
+  const date = drawerField('Data do evento')?.querySelector<HTMLInputElement>('input')?.value || '';
+  const description = drawerField('Descrição')?.querySelector<HTMLInputElement>('input')?.value.trim() || '';
+  const notes = drawerField('Observações opcionais')?.querySelector<HTMLTextAreaElement>('textarea')?.value.trim() || undefined;
+  const amount = parseTransferAmount(root.querySelector<HTMLInputElement>('.px-money-mask')?.value || '');
+  if (!sourceAccountId || !destinationAccountId || !date || !description || !amount) return null;
+  return { sourceAccountId, destinationAccountId, amount, date, description, notes };
+}
+
 export function PhoenixLaunchWriteControl({
   reviewed,
   missing,
@@ -120,7 +158,7 @@ export function PhoenixLaunchWriteControl({
   }, [inputKey, reviewed]);
 
   useEffect(() => {
-    const hasInput = transferFlow ? Boolean(transferInput) : benefitFlow ? Boolean(benefitInput) : cardFlow ? Boolean(cardInput) : Boolean(input);
+    const hasInput = transferFlow ? missing.length === 0 : benefitFlow ? Boolean(benefitInput) : cardFlow ? Boolean(cardInput) : Boolean(input);
     if (!reviewed || !eligibility.eligible || !hasInput) {
       setRuntimeState('idle');
       setRuntimeMessage('');
@@ -165,11 +203,12 @@ export function PhoenixLaunchWriteControl({
       }
     });
     return () => { active = false; };
-  }, [reviewed, eligibility.eligible, inputKey, transferFlow, benefitFlow, cardFlow, benefitInput, cardInput, transferInput, input]);
+  }, [reviewed, eligibility.eligible, inputKey, transferFlow, benefitFlow, cardFlow, benefitInput, cardInput, transferInput, input, missing.length]);
 
   async function confirmLaunch() {
     if (!eligibility.eligible || runtimeState !== 'enabled' || commitState === 'saving') return;
-    if (transferFlow ? !transferInput : benefitFlow ? !benefitInput : cardFlow ? !cardInput : !input) return;
+    const missingNonTransferInput = benefitFlow ? !benefitInput : cardFlow ? !cardInput : !input;
+    if (!transferFlow && missingNonTransferInput) return;
     if (duplicateMessage && !duplicateAccepted) return;
 
     setCommitState('saving');
@@ -182,9 +221,11 @@ export function PhoenixLaunchWriteControl({
           : 'Enviando ao MEG e aguardando confirmação da leitura atualizada…');
     try {
       if (transferFlow) {
-        const prepared = preparedTransferRef.current || preparePhoenixTransfer(transferInput!);
+        const resolvedTransferInput = transferInput || readTransferInputFromDrawer();
+        if (!resolvedTransferInput) throw new Error('PHOENIX_TRANSFER_FORM_NOT_READY');
+        const prepared = preparedTransferRef.current || preparePhoenixTransfer(resolvedTransferInput);
         preparedTransferRef.current = prepared;
-        const result = await runPhoenixTransferWrite(prepared, refreshMonth || transferInput!.date.slice(0, 7));
+        const result = await runPhoenixTransferWrite(prepared, refreshMonth || resolvedTransferInput.date.slice(0, 7));
         if (result.status === 'confirmed') {
           preparedTransferRef.current = null;
           setCommitState('confirmed');
