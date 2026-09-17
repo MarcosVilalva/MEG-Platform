@@ -43,6 +43,7 @@ function warmFrequentScreens() {
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const shortDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+const PHOENIX_SNAPSHOT_COMMITTED_EVENT = 'meg:phoenix-snapshot-committed';
 
 type PhoenixView = PhoenixRoute;
 type ViewDefinition = { id: PhoenixView; icon: string; label: string };
@@ -342,8 +343,18 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   }
 
   useEffect(() => {
+    const handleCommittedSnapshot = (event: Event) => {
+      const snapshot = (event as CustomEvent<{ snapshot?: PhoenixReadModel }>).detail?.snapshot;
+      if (snapshot) commitSnapshot(snapshot);
+    };
+    window.addEventListener(PHOENIX_SNAPSHOT_COMMITTED_EVENT, handleCommittedSnapshot as EventListener);
+    return () => window.removeEventListener(PHOENIX_SNAPSHOT_COMMITTED_EVENT, handleCommittedSnapshot as EventListener);
+  }, [periodMode]);
+
+  useEffect(() => {
     if (loadState.status !== 'ready') return;
-    const refreshIfVisible = () => {
+    const refreshIfVisible = (event?: Event) => {
+      if (event?.type === 'focus' && !event.isTrusted) return;
       if (document.visibilityState === 'visible' && periodMode === 'month') void refreshData();
     };
     const timer = window.setInterval(refreshIfVisible, 120_000);
