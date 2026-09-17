@@ -1,7 +1,7 @@
 import { authenticatedRequest, readSession } from '../app/auth-client';
 
 let warmedKey = '';
-let warmTimer = 0;
+let warmScheduled = false;
 
 function currentMonth() {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -32,16 +32,17 @@ async function warmActionData() {
 }
 
 function scheduleWarm() {
-  if (!readSession() || warmedKey || warmTimer) return;
+  if (!readSession() || warmedKey || warmScheduled) return;
+  warmScheduled = true;
   const run = () => {
-    warmTimer = 0;
+    warmScheduled = false;
     void warmActionData();
   };
   if ('requestIdleCallback' in window) {
     (window as Window & { requestIdleCallback: (callback: () => void, options?: { timeout: number }) => number })
       .requestIdleCallback(run, { timeout: 2500 });
   } else {
-    warmTimer = window.setTimeout(run, 1200);
+    window.setTimeout(run, 1200);
   }
 }
 
