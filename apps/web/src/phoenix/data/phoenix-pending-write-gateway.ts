@@ -5,6 +5,7 @@ import type { PhoenixReadModel } from '../contracts';
 import { loadPhoenixReadModel } from './load-phoenix-read-model';
 
 export const PHOENIX_PENDING_WRITE_ENABLED = true as const;
+export const PHOENIX_SNAPSHOT_COMMITTED_EVENT = 'meg:phoenix-snapshot-committed';
 
 export type PhoenixPendingSource = 'payable' | 'event' | 'card';
 
@@ -180,9 +181,15 @@ function codeFromError(error: unknown) {
   return 'PHOENIX_PENDING_WRITE_FAILED';
 }
 
+function publishCommittedSnapshot(snapshot: PhoenixReadModel) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(PHOENIX_SNAPSHOT_COMMITTED_EVENT, { detail: { snapshot } }));
+}
+
 async function refreshConfirmed(operationId: string, result: unknown, refreshMonth: string, onState?: (state: PhoenixPendingWriteState) => void) {
   const snapshot = await loadPhoenixReadModel(refreshMonth, { force: true });
   const confirmed: PhoenixPendingWriteState = { status: 'confirmed', operationId, result, snapshot };
+  publishCommittedSnapshot(snapshot);
   onState?.(confirmed);
   return confirmed;
 }
