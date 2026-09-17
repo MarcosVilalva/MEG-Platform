@@ -354,12 +354,14 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, laun
   const credit = isCreditMethod(selectedPayment?.name, selectedPayment?.type);
   const crediario = isCrediarioMethod(selectedPayment?.name, selectedPayment?.type);
   const calculatedDue = selectedCard ? cardDueDate(draft.eventDate, selectedCard.closingDay, selectedCard.dueDay) : '';
-  const effectiveSituation: LaunchSituation = credit ? 'planned' : benefit ? 'paid' : draft.situation;
-  const situationRule = credit
-    ? 'Compras no crédito ficam sempre pendentes até a baixa da fatura.'
-    : benefit
-      ? 'Benefício alimentação fica sempre como pago e não compõe o caixa monetário.'
-      : '';
+  const effectiveSituation: LaunchSituation = draft.type === 'income' ? 'paid' : credit ? 'planned' : benefit ? 'paid' : draft.situation;
+  const situationRule = draft.type === 'income'
+    ? 'Receitas são registradas sempre como recebidas.'
+    : credit
+      ? 'Compras no crédito ficam sempre pendentes até a baixa da fatura.'
+      : benefit
+        ? 'Benefício alimentação fica sempre como pago e não compõe o caixa monetário.'
+        : '';
 
   const expenseCategories = useMemo(
     () => data.categories.filter((item) => item.isActive && (!item.type || item.type === 'expense')),
@@ -513,7 +515,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, laun
           && normalizeText(item.name) === normalizeText(groupName))
         : null;
       setDraft({
-        ...initialDraft(), type: visualType, situation: event.status === 'planned' ? 'planned' : 'paid', description: event.description,
+        ...initialDraft(), type: visualType, situation: visualType === 'income' ? 'paid' : event.status === 'planned' ? 'planned' : 'paid', description: event.description,
         accountId: event.accountId || '', eventDate: event.date.slice(0, 10), classification,
         categoryId: matchedCategory?.id || event.categoryId || '', paymentMethodId: event.paymentMethodId || '',
         notes: event.notes || ''
@@ -652,7 +654,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, laun
       </div>
     </section>
 
-    <div className="px-rule-strip"><span>✓ Usuário, conta e sincronização permanecem vinculados.</span><span>✓ Benefício não compõe saldo monetário.</span><span>✓ Estornos preservam efeito reverso.</span><span>✓ Duplo clique abre a edição.</span></div>
+    <div className="px-rule-strip"><span>✓ Usuário, conta e sincronização permanecem vinculados.</span><span>✓ Receitas entram sempre como recebidas.</span><span>✓ Benefício não compõe saldo monetário.</span><span>✓ Estornos preservam efeito reverso.</span><span>✓ Duplo clique abre a edição.</span></div>
 
     {launchOpen ? <>
       <button className="px-launch-backdrop" type="button" aria-label="Fechar lançamento" onClick={requestCloseLaunch} />
@@ -688,7 +690,9 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, laun
             <div className="px-launch-section-label">{draft.type === 'income' ? 'Recebimento' : 'Pagamento e vencimento'}</div>
             <div className="px-form-row">
               <label className="px-field"><span>{draft.type === 'income' ? 'Forma de recebimento *' : 'Forma de pagamento *'}</span><select value={draft.paymentMethodId} onChange={(event) => updateDraft('paymentMethodId', event.target.value)}><option value="">Selecione</option>{paymentMethods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-              <label className="px-field"><span>Situação *</span><select value={effectiveSituation} disabled={Boolean(situationRule)} onChange={(event) => updateDraft('situation', event.target.value as LaunchSituation)}><option value="paid">Pago</option><option value="planned">Pendente</option></select><small>{situationRule || 'Nos demais lançamentos você escolhe entre pago e pendente.'}</small></label>
+              {draft.type === 'income'
+                ? <div className="px-field"><span>Situação</span><strong>Recebida</strong><small>Receitas são registradas sempre como recebidas.</small></div>
+                : <label className="px-field"><span>Situação *</span><select value={effectiveSituation} disabled={Boolean(situationRule)} onChange={(event) => updateDraft('situation', event.target.value as LaunchSituation)}><option value="paid">Pago</option><option value="planned">Pendente</option></select><small>{situationRule || 'Escolha se a despesa já foi paga ou permanece pendente.'}</small></label>}
             </div>
           </> : null}
 
@@ -696,12 +700,12 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, laun
             <label className="px-field"><span>Cartão *</span><select value={draft.cardId} onChange={(event) => updateDraft('cardId', event.target.value)}><option value="">Selecione o cartão cadastrado</option>{cards.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
             <div className="px-calculated-due"><span>Vencimento calculado</span><strong>{calculatedDue ? date.format(new Date(`${calculatedDue}T12:00:00Z`)) : 'Definido após selecionar o cartão'}</strong></div>
             <label className="px-switch"><div><strong>Alterar vencimento manualmente</strong><small>Exceção futura deverá ser registrada no histórico.</small></div><input type="checkbox" checked={draft.manualDue} onChange={(event) => updateDraft('manualDue', event.target.checked)} /></label>
-            <div className="px-rule-box">No crédito, a situação é sempre Pendente. A API usa data da compra e fechamento para definir a fatura; a baixa ocorre no pagamento da fatura.</div>
+            <div className="px-rule-box">No crédito, a despesa fica sempre Pendente. A API usa data da compra e fechamento para definir a fatura; a baixa ocorre no pagamento da fatura.</div>
           </div> : null}
 
           {(credit || crediario) ? <div className="px-installment-box"><div className="px-form-row"><label className="px-field"><span>Quantidade de parcelas *</span><input type="number" min={1} max={credit ? 48 : 120} value={draft.installments} onChange={(event) => updateDraft('installments', Math.max(1, Number(event.target.value) || 1))} /></label><label className="px-field"><span>Vencimento da 1ª parcela</span><input type="date" disabled={credit && !draft.manualDue} value={draft.manualDue ? draft.firstDue : calculatedDue} onChange={(event) => updateDraft('firstDue', event.target.value)} /></label></div><div className="px-rule-box">No cartão, a divisão em parcelas seguirá o contrato da API: centavos são distribuídos sem perda e a primeira fatura depende da data de fechamento.</div></div> : null}
 
-          {benefit ? <div className="px-notice ok">Benefício alimentação fica sempre como Pago. {draft.type === 'income' ? 'A recarga aumenta somente o saldo do benefício e não compõe o caixa monetário.' : 'Esta movimentação usa o saldo do benefício e não altera o caixa monetário.'}</div> : null}
+          {benefit ? <div className="px-notice ok">{draft.type === 'income' ? 'A receita do benefício é registrada como recebida; a recarga aumenta somente o saldo do benefício e não compõe o caixa monetário.' : 'Despesa com benefício alimentação fica sempre como Paga. Esta movimentação usa o saldo do benefício e não altera o caixa monetário.'}</div> : null}
 
           <div className="px-launch-section-label">Repetição e observações</div>
           <label className="px-switch"><div><strong>Lançamento recorrente</strong><small>Simule os próximos eventos conforme a periodicidade.</small></div><input type="checkbox" checked={draft.recurring} onChange={(event) => updateDraft('recurring', event.target.checked)} /></label>
@@ -711,7 +715,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, laun
           {draft.saveTemplate ? <label className="px-field"><span>Nome do modelo *</span><input maxLength={60} value={draft.templateName} onChange={(event) => updateDraft('templateName', event.target.value)} placeholder="Ex.: Compra mensal" /></label> : null}
           <label className="px-field"><span>Observações opcionais</span><textarea maxLength={500} value={draft.notes} onChange={(event) => updateDraft('notes', event.target.value)} placeholder="Inclua informações úteis para consulta futura" /></label>
 
-          <div className="px-preview-box"><div className="px-launch-section-label">Resumo antes de confirmar</div><div><span>Tipo</span><strong>{draft.type === 'expense' ? 'Despesa' : draft.type === 'income' ? 'Receita' : 'Transferência'}</strong></div><div><span>Escopo</span><strong>{draft.type === 'transfer' && draft.destinationId ? `${labelForAccount(data, draft.accountId)} para ${labelForAccount(data, draft.destinationId)}` : labelForAccount(data, draft.accountId)}</strong></div>{draft.type === 'expense' ? <><div><span>Classificação</span><strong>{draft.classification || '—'}</strong></div><div><span>Grupo</span><strong>{selectedCategory?.name || '—'}</strong></div></> : null}<div><span>Valor</span><strong>{formatInputMoney(amountCents, negative)}</strong></div><div><span>Situação inicial</span><strong>{draft.type === 'transfer' ? 'Fluxo próprio' : effectiveSituation === 'paid' ? 'Pago' : 'Pendente'}</strong></div></div>
+          <div className="px-preview-box"><div className="px-launch-section-label">Resumo antes de confirmar</div><div><span>Tipo</span><strong>{draft.type === 'expense' ? 'Despesa' : draft.type === 'income' ? 'Receita' : 'Transferência'}</strong></div><div><span>Escopo</span><strong>{draft.type === 'transfer' && draft.destinationId ? `${labelForAccount(data, draft.accountId)} para ${labelForAccount(data, draft.destinationId)}` : labelForAccount(data, draft.accountId)}</strong></div>{draft.type === 'expense' ? <><div><span>Classificação</span><strong>{draft.classification || '—'}</strong></div><div><span>Grupo</span><strong>{selectedCategory?.name || '—'}</strong></div></> : null}<div><span>Valor</span><strong>{formatInputMoney(amountCents, negative)}</strong></div><div><span>Situação inicial</span><strong>{draft.type === 'transfer' ? 'Fluxo próprio' : draft.type === 'income' ? 'Recebida' : effectiveSituation === 'paid' ? 'Pago' : 'Pendente'}</strong></div></div>
 
           <div className={`px-rule-box ${duplicate ? 'duplicate' : ''}`}>{duplicate ? `Possível duplicidade real encontrada: ${duplicate.description}, ${money.format(amountFromEvent(duplicate))}, em ${date.format(new Date(duplicate.date))}.` : editingEventId ? 'Edição vinculada ao lançamento original. Após salvar, a tela aguarda a releitura da base antes de atualizar a grade.' : 'Proteção contra duplicidade preparada: descrição, valor, conta e data são comparados com os lançamentos carregados.'}</div>
           <div className={`px-notice ${missing.length ? 'warn' : 'ok'}`}>{missing.length ? `Campos pendentes: ${missing.join(', ')}.` : 'Campos principais preenchidos. Revise o resumo antes de confirmar.'}</div>
@@ -742,7 +746,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, laun
     {detailEvent ? <aside className="px-detail-drawer open" aria-label="Detalhes do lançamento">
       <div className="px-drawer-head"><div><span className="px-kicker">Lançamento</span><h2>Detalhes</h2></div><button className="px-icon-btn" type="button" onClick={() => setDetailEvent(null)}>×</button></div>
       <p className="px-detail-description">{detailEvent.description}</p>
-      <div className="px-detail-grid"><div><span>Vencimento</span><strong>{formatIsoDate(detailEvent.date)}</strong></div><div><span>Data da compra</span><strong>{formatIsoDate(sourcePurchaseDate(detailEvent))}</strong></div><div><span>Situação</span><strong>{eventStatus(detailEvent.status)}</strong></div><div><span>Conta</span><strong>{detailEvent.account?.name || 'Não informada'}</strong></div><div><span>Sincronização</span><strong>Confirmada na leitura atual</strong></div><div><span>Tipo</span><strong>{eventType(detailEvent.type)}</strong></div><div><span>Valor</span><strong>{money.format(displayEffect(detailEvent))}</strong></div><div><span>Classificação</span><strong>{sourceClassification(detailEvent)}</strong></div><div><span>Grupo</span><strong>{sourceGroup(detailEvent)}</strong></div><div><span>Forma</span><strong>{detailEvent.paymentMethod?.name || detailEvent.sourceDetails?.paymentMethod || '—'}</strong></div><div><span>Modalidade</span><strong>{detailEvent.sourceDetails?.modality || '—'}</strong></div></div>
+      <div className="px-detail-grid"><div><span>Vencimento</span><strong>{formatIsoDate(detailEvent.date)}</strong></div><div><span>Data da compra</span><strong>{formatIsoDate(sourcePurchaseDate(detailEvent))}</strong></div><div><span>Situação</span><strong>{launchTypeForEvent(detailEvent.type) === 'income' ? 'Recebida' : eventStatus(detailEvent.status)}</strong></div><div><span>Conta</span><strong>{detailEvent.account?.name || 'Não informada'}</strong></div><div><span>Sincronização</span><strong>Confirmada na leitura atual</strong></div><div><span>Tipo</span><strong>{eventType(detailEvent.type)}</strong></div><div><span>Valor</span><strong>{money.format(displayEffect(detailEvent))}</strong></div><div><span>Classificação</span><strong>{sourceClassification(detailEvent)}</strong></div><div><span>Grupo</span><strong>{sourceGroup(detailEvent)}</strong></div><div><span>Forma</span><strong>{detailEvent.paymentMethod?.name || detailEvent.sourceDetails?.paymentMethod || '—'}</strong></div><div><span>Modalidade</span><strong>{detailEvent.sourceDetails?.modality || '—'}</strong></div></div>
       {detailEvent.notes ? <div className="px-notice">{detailEvent.notes}</div> : null}
       <div className="px-notice">Duplo clique na linha ou o botão abaixo abre a edição. Alterações simples são relidas da base antes da grade ser atualizada.</div>
       <div className="px-detail-actions"><button className="px-primary-action" type="button" onClick={() => openLaunch(detailEvent)}>Editar lançamento</button><button className="px-secondary-action" type="button" onClick={() => { setDetailEvent(null); onNavigateHistory?.(); }}>Ver histórico</button></div>
