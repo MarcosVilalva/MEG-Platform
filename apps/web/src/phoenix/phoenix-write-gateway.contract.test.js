@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 const gateway = readFileSync(new URL('./data/phoenix-write-gateway.ts', import.meta.url), 'utf8');
 const movements = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
 const writeControl = readFileSync(new URL('./components/PhoenixLaunchWriteControl.tsx', import.meta.url), 'utf8');
+const appShell = readFileSync(new URL('./PhoenixApp.tsx', import.meta.url), 'utf8');
 const bridge = readFileSync(new URL('./simple-event-form-bridge.ts', import.meta.url), 'utf8');
 const previewServer = readFileSync(new URL('../../phoenix-preview-server.mjs', import.meta.url), 'utf8');
 
@@ -30,11 +31,31 @@ assert.match(gateway, /if \(!PHOENIX_WRITE_CAPABILITIES\.simpleEvent\)/,
   'Gateway deve continuar falhando fechado se a capacidade frontend for revogada.');
 assert.match(gateway, /getPhoenixRuntimeWriteCapabilities\(true\)/,
   'Gateway deve exigir capacidade efetiva do ambiente imediatamente antes do POST.');
+assert.match(gateway, /runPhoenixSimpleEventEdit/,
+  'Edição simples deve permanecer encapsulada no gateway protegido da Phoenix.');
+assert.match(gateway, /runtimeCapabilities\.bulkEventWrite/,
+  'Edição deve exigir a capacidade bulk homologada no ambiente.');
+assert.match(gateway, /financeClient\.bulkUpdateEvents/,
+  'Edição deve usar o writer bulk idempotente, e não PATCH direto da tela.');
+assert.match(gateway, /operationId\('phoenix-event-edit'\)/,
+  'Cada edição deve possuir identidade explícita de mutação.');
+assert.match(gateway, /const snapshot = await confirmedSnapshot\(refreshMonth\)/,
+  'Edição só deve atualizar a interface depois da releitura confirmada.');
 
 assert.doesNotMatch(movements, /submitPhoenixSimpleEvent|runPhoenixSimpleEventWrite/,
-  'Tela React base não deve acionar escrita diretamente; a confirmação fica isolada no controle protegido.');
+  'Tela React base não deve acionar criação diretamente; a confirmação fica isolada no controle protegido.');
+assert.doesNotMatch(movements, /financeClient\.updateEvent|financeClient\.bulkUpdateEvents|clearPhoenixReadModelCache|loadPhoenixReadModel\(data\.month/,
+  'Tela de Lançamentos não pode administrar diretamente a mutação e releitura.');
+assert.match(movements, /runPhoenixSimpleEventEdit/,
+  'Tela deve encaminhar a edição ao gateway Phoenix em vez de acessar cliente mutável.');
 assert.match(movements, /PhoenixLaunchWriteControl/,
   'Primeira etapa visual deve revisar e delegar a segunda etapa ao controle protegido de confirmação.');
+assert.match(movements, /onDataCommitted\?\.\(snapshot\)/,
+  'Snapshot confirmado deve ser propagado imediatamente ao shell global.');
+assert.match(appShell, /function commitSnapshot\(snapshot: PhoenixReadModel\)/,
+  'Shell deve incorporar a fotografia confirmada sem exigir nova consulta.');
+assert.match(appShell, /onDataCommitted=\{commitSnapshot\}/,
+  'Lançamentos deve entregar a fotografia confirmada ao shell global.');
 assert.match(writeControl, /getPhoenixRuntimeWriteCapabilities\(true\)/,
   'Controle de confirmação deve verificar o gate de runtime antes de habilitar a ação final.');
 assert.match(writeControl, /runPhoenixSimpleEventWrite/,
@@ -72,7 +93,9 @@ assert.match(previewServer, /allowedFinancialPosts\s*=\s*new Set\(\['\/finance\/
   'Proxy isolado do writer simples deve aceitar somente o endpoint exato de criação quando a flag estiver ligada.');
 assert.match(previewServer, /simpleEventWriteEnabled\s*&&\s*allowedFinancialPosts\.has\(pathname\)/,
   'Allowlist financeira simples não pode funcionar com a flag do ambiente desligada.');
+assert.match(previewServer, /bulkEventWriteEnabled\s*&&\s*allowedBulkEventPosts\.has\(pathname\)/,
+  'Edição no preview deve permanecer atrás da flag bulk explícita.');
 assert.match(previewServer, /PREVIEW_READ_ONLY/,
   'Mutações não habilitadas no ambiente isolado devem continuar bloqueadas pelo proxy.');
 
-console.log('Writers Phoenix validados: confirmação simples protegida, domínios especiais isolados e preview gated.');
+console.log('Writers Phoenix validados: criação, edição protegida, snapshot instantâneo, domínios especiais isolados e preview gated.');
