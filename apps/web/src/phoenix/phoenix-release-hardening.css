@@ -8,8 +8,8 @@
 .phoenix-v15 .px-detail-drawer,
 .phoenix-v15 .px-launch-drawer { overflow-wrap:anywhere; }
 
-.phoenix-v15 .px-main,
-.phoenix-v15 .px-content { overflow-x:clip; }
+.phoenix-v15 .px-detail-drawer,
+.phoenix-v15 .px-launch-drawer { overflow-x:hidden; }
 
 .phoenix-v15 .px-notice,
 .phoenix-v15 .px-rule-box,
