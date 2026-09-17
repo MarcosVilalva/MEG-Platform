@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { financeClient, type FinancialEvent } from '../../app/finance-client';
+import type { FinancialEvent } from '../../app/finance-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import type { PhoenixReadModel } from '../contracts';
 import { PhoenixLaunchWriteControl } from '../components/PhoenixLaunchWriteControl';
-import { clearPhoenixReadModelCache, loadPhoenixReadModel } from '../data/load-phoenix-read-model';
+import { runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
 import '../phoenix-launch.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -570,9 +570,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, laun
     setSavingEdit(true);
     setEditMessage('Salvando alteração e aguardando a releitura sincronizada…');
     try {
-      await financeClient.updateEvent(editingEventId, simpleWriteInput);
-      clearPhoenixReadModelCache();
-      const snapshot = await loadPhoenixReadModel(data.month, { force: true });
+      const { snapshot } = await runPhoenixSimpleEventEdit(editingEventId, simpleWriteInput, data.month);
       setData(snapshot);
       setDirty(false);
       setLaunchOpen(false);
