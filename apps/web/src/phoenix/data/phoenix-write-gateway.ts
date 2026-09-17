@@ -182,7 +182,7 @@ export function phoenixWriteMessage(code: string) {
     PHOENIX_RECEIPT_METHOD_REQUIRED: 'Selecione a forma de recebimento.',
     PHOENIX_PAYMENT_METHOD_REQUIRED: 'Selecione a forma de pagamento.',
     PHOENIX_EXPENSE_CATEGORY_REQUIRED: 'Selecione a classificação e o grupo da despesa.',
-    PHOENIX_SIMPLE_STATUS_NOT_ALLOWED: 'A situação informada não pertence ao primeiro fluxo de gravação.',
+    PHOENIX_SIMPLE_STATUS_NOT_ALLOWED: 'A situação informada não pertence ao fluxo de gravação.',
     PHOENIX_TRANSFER_NOT_IN_SIMPLE_FLOW: 'Transferências serão liberadas em um fluxo próprio, com origem e destino protegidos.',
     PHOENIX_REVERSAL_NOT_IN_SIMPLE_FLOW: 'Estornos e reversões precisam do vínculo com o lançamento original antes da gravação.',
     PHOENIX_BENEFIT_NOT_IN_SIMPLE_FLOW: 'Movimentações de benefício serão liberadas em um fluxo separado do caixa monetário.',
@@ -206,6 +206,11 @@ function writeErrorCode(error: unknown) {
   return 'PHOENIX_WRITE_FAILED';
 }
 
+async function refreshedSnapshot(refreshMonth: string) {
+  clearPhoenixReadModelCache();
+  return loadPhoenixReadModel(refreshMonth, { force: true });
+}
+
 export async function submitPhoenixSimpleEvent(
   prepared: PreparedPhoenixSimpleEvent,
   refreshMonth: string,
@@ -220,9 +225,22 @@ export async function submitPhoenixSimpleEvent(
     operationId: prepared.operationId,
   });
 
-  clearPhoenixReadModelCache();
-  const snapshot = await loadPhoenixReadModel(refreshMonth, { force: true });
-  return { event, snapshot };
+  return { event, snapshot: await refreshedSnapshot(refreshMonth) };
+}
+
+export async function submitPhoenixSimpleEventUpdate(
+  eventId: string,
+  input: PhoenixSimpleEventInput,
+  refreshMonth: string,
+): Promise<{ event: FinancialEvent; snapshot: PhoenixReadModel }> {
+  if (!PHOENIX_WRITE_CAPABILITIES.simpleEvent) throw new PhoenixWriteError('PHOENIX_WRITE_NOT_ENABLED');
+  const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
+  if (!runtimeCapabilities.simpleEvent) throw new PhoenixWriteError('PHOENIX_WRITE_NOT_ENABLED');
+  assertSimpleEvent(input);
+  if (!eventId) throw new PhoenixWriteError('PHOENIX_EVENT_ID_REQUIRED');
+
+  const event = await financeClient.updateEvent(eventId, input);
+  return { event, snapshot: await refreshedSnapshot(refreshMonth) };
 }
 
 export async function runPhoenixSimpleEventWrite(
@@ -241,6 +259,32 @@ export async function runPhoenixSimpleEventWrite(
     const failed: PhoenixWriteState = {
       status: 'error',
       operationId: prepared.operationId,
+      code,
+      message: phoenixWriteMessage(code),
+    };
+    onState?.(failed);
+    return failed;
+  }
+}
+
+export async function runPhoenixSimpleEventUpdate(
+  eventId: string,
+  input: PhoenixSimpleEventInput,
+  refreshMonth: string,
+  onState?: (state: PhoenixWriteState) => void,
+): Promise<PhoenixWriteState> {
+  const updateOperationId = `phoenix-update-${eventId}-${Date.now().toString(36)}`;
+  onState?.({ status: 'saving', operationId: updateOperationId });
+  try {
+    const { event, snapshot } = await submitPhoenixSimpleEventUpdate(eventId, input, refreshMonth);
+    const confirmed: PhoenixWriteState = { status: 'confirmed', operationId: updateOperationId, event, snapshot };
+    onState?.(confirmed);
+    return confirmed;
+  } catch (error) {
+    const code = writeErrorCode(error);
+    const failed: PhoenixWriteState = {
+      status: 'error',
+      operationId: updateOperationId,
       code,
       message: phoenixWriteMessage(code),
     };
