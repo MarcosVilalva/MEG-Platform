@@ -103,19 +103,37 @@ function findPreset(id: string) {
   return phoenixAvatarPresets.find((item) => item.id === normalized);
 }
 
+function defaultPresetForUser(userId: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < userId.length; index += 1) {
+    hash ^= userId.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  const preset = phoenixAvatarPresets[Math.abs(hash >>> 0) % phoenixAvatarPresets.length];
+  return preset?.id || 'people-01';
+}
+
+function publicAsset(path: string) {
+  const configuredBase = import.meta.env.BASE_URL || '/';
+  const base = configuredBase.endsWith('/') ? configuredBase : `${configuredBase}/`;
+  return `${base}${path.replace(/^\/+/, '')}`;
+}
+
 export function readPhoenixAvatarPreference(userId = currentPhoenixUserId()): PhoenixAvatarPreference {
+  const fallback: PhoenixAvatarPreference = { kind: 'preset', presetId: defaultPresetForUser(userId) };
   try {
     const stored = localStorage.getItem(keyForUser(userId));
-    if (!stored) return { kind: 'initials' };
+    if (!stored) return fallback;
     const parsed = JSON.parse(stored) as PhoenixAvatarPreference;
     if (parsed.kind === 'photo' && parsed.dataUrl) return parsed;
     if (parsed.kind === 'preset') {
       const preset = findPreset(parsed.presetId);
-      return preset ? { kind: 'preset', presetId: preset.id } : { kind: 'initials' };
+      return preset ? { kind: 'preset', presetId: preset.id } : fallback;
     }
-    return { kind: 'initials' };
+    if (parsed.kind === 'initials') return parsed;
+    return fallback;
   } catch {
-    return { kind: 'initials' };
+    return fallback;
   }
 }
 
@@ -126,7 +144,7 @@ function avatarVisual(preference: PhoenixAvatarPreference) {
   if (preference.kind === 'preset') {
     const preset = findPreset(preference.presetId);
     if (!preset) return null;
-    const image = `/brand/avatars/meg-user-base-v2/${preset.id}.webp`;
+    const image = publicAsset(`brand/avatars/meg-user-base-v2/${preset.id}.webp`);
     return { image, position: 'center', size: 'cover' };
   }
   return null;

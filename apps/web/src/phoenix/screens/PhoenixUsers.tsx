@@ -31,7 +31,6 @@ export function PhoenixUsers({ data }: { data: PhoenixReadModel }) {
   const [status, setStatus] = useState('all');
   const source = data.workspaceUsers;
   const users = source.status === 'ready' ? source.users : [];
-  const currentAvatar = readPhoenixAvatarPreference(data.user.id);
   const filtered = useMemo(() => users.filter((item) => {
     const haystack = `${item.name} ${item.email} ${item.phone || ''}`.toLocaleLowerCase('pt-BR');
     return haystack.includes(search.trim().toLocaleLowerCase('pt-BR'))
@@ -79,7 +78,7 @@ export function PhoenixUsers({ data }: { data: PhoenixReadModel }) {
           <header className="px-users-group-head"><div><span>{group.title}</span><small>{group.description}</small></div><strong>{group.users.length}</strong></header>
           <div className="px-users-grid">
             {group.users.map((item) => <article className="px-user-card" key={item.id}>
-              <div className="px-user-card-head">{item.id === data.user.id ? <PhoenixProfileAvatar name={item.name} preference={currentAvatar} className="px-user-card-avatar" /> : <span className="px-user-card-avatar">{item.name.slice(0, 1).toUpperCase()}</span>}<div><strong>{item.name}</strong><small>{item.email}</small></div><span className={`px-user-status ${item.status.toLowerCase()}`}>{statusLabel(item.status)}</span></div>
+              <div className="px-user-card-head"><PhoenixProfileAvatar name={item.name} preference={readPhoenixAvatarPreference(item.id)} className="px-user-card-avatar" /><div><strong>{item.name}</strong><small>{item.email}</small></div><span className={`px-user-status ${item.status.toLowerCase()}`}>{statusLabel(item.status)}</span></div>
               <dl><div><dt>Perfil</dt><dd>{roleLabel(item.role)}</dd></div><div><dt>Telefone</dt><dd>{item.phone || 'Não informado'}</dd></div><div><dt>Cadastro</dt><dd>{item.createdAt ? shortDate.format(new Date(item.createdAt)) : 'Não informado'}</dd></div><div><dt>Último acesso</dt><dd>{item.lastLoginAt ? lastLogin.format(new Date(item.lastLoginAt)) : 'Sem acesso registrado'}</dd></div><div><dt>Conta</dt><dd>{item.isActive ? 'Habilitada' : 'Desabilitada'}</dd></div></dl>
               <div className="px-user-card-footer"><span>{item.id === data.user.id ? 'Foto/avatar pode ser alterado em Configurações → Meu perfil.' : item.status === 'PENDING' ? 'A aprovação será habilitada junto com a escrita administrativa.' : 'Alterações continuam bloqueadas nesta fase.'}</span><button type="button" disabled>{actionLabel(item)}</button></div>
             </article>)}
