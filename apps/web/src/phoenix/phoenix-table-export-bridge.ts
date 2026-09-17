@@ -24,7 +24,13 @@ function cleanedCellText(cell: Element) {
 function isVisibleRow(row: HTMLTableRowElement) {
   if (row.hidden || row.getAttribute('aria-hidden') === 'true') return false;
   const style = window.getComputedStyle(row);
-  return style.display !== 'none' && style.visibility !== 'hidden';
+  return style.display !== 'none' && style.visibility !== 'hidden' && row.getClientRects().length > 0;
+}
+
+function isVisibleControl(element: HTMLElement) {
+  if (element.hidden || element.getAttribute('aria-hidden') === 'true') return false;
+  const style = window.getComputedStyle(element);
+  return style.display !== 'none' && style.visibility !== 'hidden' && element.getClientRects().length > 0;
 }
 
 function tableTitle(table: HTMLTableElement) {
@@ -57,6 +63,7 @@ function collectFilters(table: HTMLTableElement) {
 
   screen.querySelectorAll('select').forEach((node) => {
     const select = node as HTMLSelectElement;
+    if (!isVisibleControl(select)) return;
     const value = selectedText(select);
     if (!isGenericChoice(value)) {
       const label = select.getAttribute('aria-label') || select.name || '';
@@ -66,6 +73,7 @@ function collectFilters(table: HTMLTableElement) {
 
   screen.querySelectorAll('input[type="search"], .px-search-field input').forEach((node) => {
     const input = node as HTMLInputElement;
+    if (!isVisibleControl(input)) return;
     if (input.value.trim()) filters.add(`Busca: ${input.value.trim()}`);
   });
 
