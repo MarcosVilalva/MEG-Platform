@@ -6,6 +6,7 @@ const productionHtml = readFileSync(new URL('../../index.html', import.meta.url)
 const previewHtml = readFileSync(new URL('../../phoenix.html', import.meta.url), 'utf8');
 
 for (const runtime of [
+  'auth-fast-entry-bridge',
   'history-prewarm-bridge',
   'description-autocomplete-bridge',
   'action-prewarm-bridge',
