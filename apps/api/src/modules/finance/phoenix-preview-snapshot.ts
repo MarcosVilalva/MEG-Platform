@@ -1,5 +1,6 @@
 import { prisma } from '@meg/database';
 import { resolveWorkspaceContext } from '../workspaces/service';
+import { listCards } from '../cards/service';
 
 function normalizeText(value: unknown) {
   return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
@@ -57,16 +58,22 @@ function countsTowardBalance(event: {
 function sourceDetails(rawData: unknown) {
   if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) return null;
   const values = new Map(Object.entries(rawData as Record<string, unknown>).map(([key, value]) => [normalizeText(key).replace(/[^A-Z0-9]/g, ''), value]));
-  const read = (key: string) => String(values.get(key) ?? '').trim();
+  const read = (...keys: string[]) => {
+    for (const key of keys) {
+      const value = values.get(key);
+      if (value !== undefined && value !== null && String(value).trim()) return String(value).trim();
+    }
+    return '';
+  };
   return {
-    weekday: read('DIASEMANA'),
-    launchType: read('TPLANCAMENTO'),
-    expenseClass: read('CLASSIFICAODADESPESA'),
-    group: read('GRUPO'),
-    paymentMethod: read('FORMADEPAGAMENTO'),
-    situation: read('SITUACAO'),
-    modality: read('MODADLIDADE'),
-    observations: read('OBSERVACOES'),
+    weekday: read('DIASEMANA', 'WEEKDAY'),
+    launchType: read('TPLANCAMENTO', 'LAUNCHTYPE', 'TYPE'),
+    expenseClass: read('CLASSIFICAODADESPESA', 'EXPENSECLASS'),
+    group: read('GRUPO', 'GROUP', 'CATEGORY'),
+    paymentMethod: read('FORMADEPAGAMENTO', 'PAYMENTMETHOD', 'ACCOUNT'),
+    situation: read('SITUACAO', 'SITUATION', 'STATUS'),
+    modality: read('MODADLIDADE', 'MODALIDADE', 'MODALITY'),
+    observations: read('OBSERVACOES', 'OBSERVATIONS', 'NOTES'),
   };
 }
 
@@ -318,7 +325,7 @@ async function monthlyEvents(userId: string, month: string) {
   const mapped = items.map((item) => ({
     ...item,
     sourceRowNumber: item.importedRow?.rowNumber ?? null,
-    sourceDetails: sourceDetails(item.importedRow?.rawData),
+    sourceDetails: sourceDetails(item.importedRow?.rawData ?? item.sourcePayload),
     importedRow: undefined,
   }));
   return { items: mapped, total: mapped.length, page: 1, pageSize: mapped.length };
@@ -519,7 +526,7 @@ export async function getPhoenixPreviewSnapshot(userId: string, month: string) {
   ]);
 
   const [cards, financialAudit] = await Promise.all([
-    cardsReadOnly(context, month),
+    listCards(userId, month),
     financialAuditReadOnly(context),
   ]);
 
