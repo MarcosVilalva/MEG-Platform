@@ -1,0 +1,108 @@
+.phoenix-v15,
+.phoenix-v15 .px-app,
+.phoenix-v15 .px-main,
+.phoenix-v15 .px-content { min-width:0; max-width:100%; }
+
+.phoenix-v15 .px-content,
+.phoenix-v15 .px-card,
+.phoenix-v15 .px-detail-drawer,
+.phoenix-v15 .px-launch-drawer { overflow-wrap:anywhere; }
+
+.phoenix-v15 .px-main,
+.phoenix-v15 .px-content { overflow-x:clip; }
+
+.phoenix-v15 .px-notice,
+.phoenix-v15 .px-rule-box,
+.phoenix-v15 .px-preview-box,
+.phoenix-v15 .px-detail-grid > div,
+.phoenix-v15 .px-card-editor-actions,
+.phoenix-v15 .px-detail-actions { min-width:0; }
+
+.phoenix-v15 .px-notice,
+.phoenix-v15 .px-rule-box {
+  line-height:1.5;
+  word-break:normal;
+  overflow-wrap:anywhere;
+}
+
+.phoenix-v15 .px-detail-actions,
+.phoenix-v15 .px-card-editor-actions,
+.phoenix-v15 .px-form-actions,
+.phoenix-v15 .px-toolbar-actions {
+  flex-wrap:wrap;
+}
+
+.phoenix-v15 .px-detail-actions > button,
+.phoenix-v15 .px-card-editor-actions > button,
+.phoenix-v15 .px-form-actions > button,
+.phoenix-v15 .px-toolbar-actions > button,
+.phoenix-v15 .px-primary-action,
+.phoenix-v15 .px-secondary-action {
+  min-height:44px;
+  min-width:0;
+  max-width:100%;
+  white-space:normal;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+
+.phoenix-v15 table { max-width:100%; }
+.phoenix-v15 .px-data-table,
+.phoenix-v15 .px-v15-launch-table { min-width:100%; }
+.phoenix-v15 .px-table-wrap,
+.phoenix-v15 .px-grid-wrap,
+.phoenix-v15 .px-data-table-wrap { max-width:100%; overflow:auto; overscroll-behavior-inline:contain; }
+
+.phoenix-v15 input,
+.phoenix-v15 select,
+.phoenix-v15 textarea { min-width:0; max-width:100%; }
+.phoenix-v15 textarea { resize:vertical; }
+
+.phoenix-v15 .px-detail-drawer,
+.phoenix-v15 .px-launch-drawer {
+  width:min(560px,100vw);
+  max-width:100vw;
+}
+
+.phoenix-v15 .px-detail-grid strong,
+.phoenix-v15 .px-preview-box strong,
+.phoenix-v15 .px-list-copy strong,
+.phoenix-v15 .px-list-copy small { overflow-wrap:anywhere; }
+
+.phoenix-v15 .px-page-head,
+.phoenix-v15 .px-panel-head { min-width:0; }
+.phoenix-v15 .px-page-head > *,
+.phoenix-v15 .px-panel-head > * { min-width:0; }
+
+@media (max-width:900px) {
+  .phoenix-v15 .px-content { padding:18px; }
+  .phoenix-v15 .px-page-head { align-items:flex-start; flex-direction:column; }
+  .phoenix-v15 .px-topbar { padding-inline:14px; }
+  .phoenix-v15 .px-top-right { gap:6px; }
+}
+
+@media (max-width:620px) {
+  .phoenix-v15 .px-content { padding:12px; }
+  .phoenix-v15 .px-card { border-radius:14px; padding:14px; }
+  .phoenix-v15 .px-detail-drawer,
+  .phoenix-v15 .px-launch-drawer { width:100vw; border-left:0; }
+  .phoenix-v15 .px-detail-actions,
+  .phoenix-v15 .px-card-editor-actions,
+  .phoenix-v15 .px-form-actions,
+  .phoenix-v15 .px-toolbar-actions { display:grid; grid-template-columns:1fr; }
+  .phoenix-v15 .px-detail-actions > button,
+  .phoenix-v15 .px-card-editor-actions > button,
+  .phoenix-v15 .px-form-actions > button,
+  .phoenix-v15 .px-toolbar-actions > button { width:100%; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .phoenix-v15 *,
+  .phoenix-v15 *::before,
+  .phoenix-v15 *::after {
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+}
