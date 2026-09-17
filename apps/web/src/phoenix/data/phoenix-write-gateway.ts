@@ -58,12 +58,28 @@ export class PhoenixWriteError extends Error {
 
 const RUNTIME_CAPABILITY_TTL = 15_000;
 let runtimeCapabilitiesCache: PhoenixRuntimeWriteCapabilities | null = null;
+const pendingEditOperations = new Map<string, string>();
 
 function operationId(prefix = 'phoenix-event') {
   const uuid = globalThis.crypto?.randomUUID?.();
   if (uuid) return `${prefix}-${uuid}`;
   const random = Math.random().toString(36).slice(2, 14);
   return `${prefix}-${Date.now().toString(36)}-${random}`;
+}
+
+function editRequestKey(eventId: string, input: PhoenixSimpleEventInput) {
+  return JSON.stringify({
+    eventId,
+    type: input.type,
+    status: input.status,
+    description: input.description.trim(),
+    date: input.date.slice(0, 10),
+    amount: input.amount,
+    accountId: input.accountId || null,
+    categoryId: input.categoryId || null,
+    paymentMethodId: input.paymentMethodId || null,
+    notes: input.notes?.trim() || null,
+  });
 }
 
 function emptyRuntimeCapabilities(source: PhoenixRuntimeWriteCapabilities['source']): PhoenixRuntimeWriteCapabilities {
@@ -240,9 +256,13 @@ export async function runPhoenixSimpleEventEdit(
   if (!runtimeCapabilities.bulkEventWrite) throw new PhoenixWriteError('PHOENIX_EDIT_WRITE_NOT_ENABLED');
   assertSimpleEvent(input);
 
+  const requestKey = editRequestKey(eventId, input);
+  const editOperationId = pendingEditOperations.get(requestKey) || operationId('phoenix-event-edit');
+  pendingEditOperations.set(requestKey, editOperationId);
+
   const result = await financeClient.bulkUpdateEvents({
     ids: [eventId],
-    operationId: operationId('phoenix-event-edit'),
+    operationId: editOperationId,
     changes: {
       date: input.date,
       description: input.description.trim(),
@@ -258,6 +278,7 @@ export async function runPhoenixSimpleEventEdit(
   const event = result.events[0];
   if (!event) throw new PhoenixWriteError('PHOENIX_EDIT_CONFIRMATION_MISSING');
   const snapshot = await confirmedSnapshot(refreshMonth);
+  pendingEditOperations.delete(requestKey);
   return { event, snapshot };
 }
 
