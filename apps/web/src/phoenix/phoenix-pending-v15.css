@@ -262,7 +262,7 @@
 }
 
 /* Pendentes operacional: o cabeçalho já informa o total e as abas já filtram
-   prioridade. Removemos os cards e o resumo lateral que repetiam esses dados. */
+   prioridade. Removemos os cards e o resumo lateral quando não existe seleção. */
 .px-screen:has(.px-pending-toolbar-v15) > .px-screen-kpis {
   display:none;
 }
@@ -273,6 +273,31 @@
 
 .px-pending-side {
   display:none;
+}
+
+/* Ao selecionar compromissos, o resumo operacional reaparece à direita com a
+   ação de baixa conjunta. Isso usa o botão funcional já ligado ao fluxo protegido. */
+.px-pending-layout:has(.px-pending-group-check input[type="checkbox"]:checked),
+.px-pending-layout:has(.px-pending-row input[type="checkbox"]:checked) {
+  grid-template-columns:minmax(0,1fr) minmax(300px,340px);
+}
+
+.px-pending-layout:has(.px-pending-group-check input[type="checkbox"]:checked) .px-pending-side,
+.px-pending-layout:has(.px-pending-row input[type="checkbox"]:checked) .px-pending-side {
+  display:block;
+  position:sticky;
+  top:80px;
+  align-self:start;
+  border-color:rgba(53,212,165,.34);
+  box-shadow:0 16px 40px rgba(0,0,0,.24);
+}
+
+.px-pending-layout:has(.px-pending-group-check input[type="checkbox"]:checked) .px-pending-side .px-primary-action,
+.px-pending-layout:has(.px-pending-row input[type="checkbox"]:checked) .px-pending-side .px-primary-action {
+  background:#35d4a5;
+  border-color:#35d4a5;
+  color:#062019;
+  font-weight:900;
 }
 
 .px-pending-list > .px-history-source-note {
@@ -337,6 +362,21 @@
   background:#35d4a5;
   color:#062019;
   font-weight:900;
+}
+
+@media (max-width:1100px) {
+  .px-pending-layout:has(.px-pending-group-check input[type="checkbox"]:checked),
+  .px-pending-layout:has(.px-pending-row input[type="checkbox"]:checked) {
+    grid-template-columns:1fr;
+  }
+
+  .px-pending-layout:has(.px-pending-group-check input[type="checkbox"]:checked) .px-pending-side,
+  .px-pending-layout:has(.px-pending-row input[type="checkbox"]:checked) .px-pending-side {
+    position:sticky;
+    bottom:10px;
+    top:auto;
+    z-index:26;
+  }
 }
 
 @media (max-width:900px) {
