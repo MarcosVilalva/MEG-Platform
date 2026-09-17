@@ -1,9 +1,9 @@
 {
-  "versionCode": 254,
-  "versionName": "1.1.254",
+  "versionCode": 255,
+  "versionName": "1.1.255",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "1726afbb29a23e4d97099a71be24214d54303520f1d1d458f5add340f33e0d4d",
+  "sha256": "0254dc3514be4ee94e38656eb37af30bdae27197d20b5ce2286804e46cefb8a5",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #267 from MarcosVilalva/rc1/phoenix-v15-integration"
+  "releaseNotes": "Phoenix V15: primeira versão funcional publicada"
 }
