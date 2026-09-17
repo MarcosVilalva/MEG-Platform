@@ -52,6 +52,10 @@ assert.match(movements, /PhoenixLaunchWriteControl/,
   'Primeira etapa visual deve revisar e delegar a segunda etapa ao controle protegido de confirmação.');
 assert.match(movements, /onDataCommitted\?\.\(snapshot\)/,
   'Snapshot confirmado deve ser propagado imediatamente ao shell global.');
+assert.match(movements, /event\.category\?\.name \|\| event\.sourceDetails\?\.group/,
+  'Grade deve priorizar a categoria normalizada após uma edição confirmada.');
+assert.match(movements, /eventStatus\(event\.status\) \|\| event\.sourceDetails\?\.situation/,
+  'Situação exibida deve priorizar o status normalizado confirmado pelo backend.');
 assert.match(appShell, /function commitSnapshot\(snapshot: PhoenixReadModel\)/,
   'Shell deve incorporar a fotografia confirmada sem exigir nova consulta.');
 assert.match(appShell, /onDataCommitted=\{commitSnapshot\}/,
