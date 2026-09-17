@@ -58,7 +58,8 @@ function isApiPath(pathname) {
 
 function isAllowedPendingWrite(pathname) {
   if (!pendingWriteEnabled) return false;
-  return /^\/finance\/events\/[^/]+\/settle$/.test(pathname)
+  return pathname === '/finance/pending/batch/settle'
+    || /^\/finance\/events\/[^/]+\/settle$/.test(pathname)
     || /^\/payables\/[^/]+\/payments$/.test(pathname)
     || /^\/cards\/[^/]+\/statements\/\d{4}-\d{2}\/pay$/.test(pathname);
 }
