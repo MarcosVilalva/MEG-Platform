@@ -67,7 +67,7 @@ export async function listPhoenixPreviewEvents(
   const mapped = items.map((item) => ({
     ...item,
     sourceRowNumber: item.importedRow?.rowNumber ?? null,
-    sourceDetails: sourceDetails(item.importedRow?.rawData),
+    sourceDetails: sourceDetails(item.importedRow?.rawData ?? item.sourcePayload),
     importedRow: undefined,
   }));
 
