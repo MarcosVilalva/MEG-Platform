@@ -154,4 +154,4 @@ assert.match(previewServer, /bulkEventWriteEnabled\s*&&\s*allowedBulkEventPosts\
 assert.match(previewServer, /PREVIEW_READ_ONLY/,
   'Mutações não habilitadas no ambiente isolado devem continuar bloqueadas pelo proxy.');
 
-console.log('Writers Phoenix validados: criação simples, compra real no cartão, edição protegida, baixa com snapshot imediato, domínios especiais isolados e preview gated.');
+console.log('Writers Phoenix validados: criação simples, compra real no cartão, edição protegida, baixa com snapshot imediato e sem segunda leitura, domínios especiais isolados e preview gated.');
