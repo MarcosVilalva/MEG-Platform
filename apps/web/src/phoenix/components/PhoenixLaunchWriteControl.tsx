@@ -6,6 +6,7 @@ import {
   getPhoenixSimpleEventEligibility,
   phoenixWriteMessage,
   preparePhoenixSimpleEvent,
+  runPhoenixSimpleEventUpdate,
   runPhoenixSimpleEventWrite,
   type PhoenixSimpleEventFlow,
   type PhoenixSimpleEventInput,
@@ -22,6 +23,7 @@ export function PhoenixLaunchWriteControl({
   input,
   flow,
   duplicateMessage,
+  editEventId,
   onReview,
   onCommitted,
 }: {
@@ -30,6 +32,7 @@ export function PhoenixLaunchWriteControl({
   input: PhoenixSimpleEventInput | null;
   flow: PhoenixSimpleEventFlow;
   duplicateMessage?: string | null;
+  editEventId?: string | null;
   onReview: () => void;
   onCommitted?: (snapshot: PhoenixReadModel, event: FinancialEvent) => void;
 }) {
@@ -39,6 +42,7 @@ export function PhoenixLaunchWriteControl({
   const [commitMessage, setCommitMessage] = useState('');
   const [duplicateAccepted, setDuplicateAccepted] = useState(false);
   const preparedRef = useRef<PreparedPhoenixSimpleEvent | null>(null);
+  const editing = Boolean(editEventId);
 
   const eligibility = useMemo(() => getPhoenixSimpleEventEligibility(flow), [
     flow.type,
@@ -51,7 +55,7 @@ export function PhoenixLaunchWriteControl({
     flow.installments,
     flow.manualDue,
   ]);
-  const inputKey = useMemo(() => JSON.stringify(input || null), [input]);
+  const inputKey = useMemo(() => JSON.stringify({ input: input || null, editEventId: editEventId || null }), [input, editEventId]);
 
   useEffect(() => {
     preparedRef.current = null;
@@ -73,34 +77,43 @@ export function PhoenixLaunchWriteControl({
       if (!active) return;
       if (capabilities.simpleEvent) {
         setRuntimeState('enabled');
-        setRuntimeMessage('Gravação simples liberada pelo ambiente. A confirmação será enviada uma única vez com proteção de reenvio.');
+        setRuntimeMessage(editing
+          ? 'Edição liberada. A alteração só será refletida depois da confirmação do servidor e da releitura financeira.'
+          : 'Gravação simples liberada pelo ambiente. A confirmação será enviada uma única vez com proteção de reenvio.');
       } else {
         setRuntimeState('disabled');
         setRuntimeMessage('Este ambiente permanece protegido contra gravação financeira. A revisão pode ser validada sem alterar a base.');
       }
     });
     return () => { active = false; };
-  }, [reviewed, eligibility.eligible, inputKey]);
+  }, [reviewed, eligibility.eligible, inputKey, editing]);
 
   async function confirmLaunch() {
     if (!input || !eligibility.eligible || runtimeState !== 'enabled' || commitState === 'saving') return;
-    if (duplicateMessage && !duplicateAccepted) return;
+    if (!editing && duplicateMessage && !duplicateAccepted) return;
 
     setCommitState('saving');
-    setCommitMessage('Enviando ao MEG e aguardando confirmação da leitura atualizada…');
+    setCommitMessage(editing
+      ? 'Salvando alteração e atualizando a fotografia financeira…'
+      : 'Enviando ao MEG e aguardando confirmação da leitura atualizada…');
     try {
-      const prepared = preparedRef.current || preparePhoenixSimpleEvent(input);
-      preparedRef.current = prepared;
-      const result = await runPhoenixSimpleEventWrite(prepared, input.date.slice(0, 7));
+      const result = editing && editEventId
+        ? await runPhoenixSimpleEventUpdate(editEventId, input, input.date.slice(0, 7))
+        : await runPhoenixSimpleEventWrite(
+            preparedRef.current || (preparedRef.current = preparePhoenixSimpleEvent(input)),
+            input.date.slice(0, 7),
+          );
       if (result.status === 'confirmed') {
         preparedRef.current = null;
         setCommitState('confirmed');
-        setCommitMessage('Lançamento confirmado no servidor e relido na base financeira.');
+        setCommitMessage(editing
+          ? 'Alteração confirmada no servidor e refletida na leitura financeira.'
+          : 'Lançamento confirmado no servidor e relido na base financeira.');
         onCommitted?.(result.snapshot, result.event);
         return;
       }
       setCommitState('error');
-      setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível confirmar o lançamento. Tente novamente sem alterar os dados.');
+      setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível confirmar a operação. Tente novamente sem alterar os dados.');
     } catch (error) {
       const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
       setCommitState('error');
@@ -110,7 +123,7 @@ export function PhoenixLaunchWriteControl({
 
   if (!reviewed) {
     return <button className="px-primary-action px-review-launch" type="button" disabled={missing.length > 0} onClick={onReview}>
-      {missing.length ? 'Revisar campos obrigatórios' : 'Revisar lançamento'}
+      {missing.length ? 'Revisar campos obrigatórios' : editing ? 'Revisar alterações' : 'Revisar lançamento'}
     </button>;
   }
 
@@ -124,11 +137,11 @@ export function PhoenixLaunchWriteControl({
 
   return <div className={`px-launch-write-panel ${commitState === 'confirmed' ? 'is-confirmed' : commitState === 'error' ? 'is-error' : ''}`} aria-live="polite">
     <div className="px-launch-write-status">
-      <strong>{commitState === 'confirmed' ? 'Lançamento confirmado' : 'Revisão concluída'}</strong>
+      <strong>{commitState === 'confirmed' ? (editing ? 'Alteração confirmada' : 'Lançamento confirmado') : 'Revisão concluída'}</strong>
       <span>{commitMessage || runtimeMessage || 'Aguardando verificação do ambiente.'}</span>
     </div>
 
-    {duplicateMessage && commitState !== 'confirmed' ? <label className="px-launch-duplicate-confirm">
+    {!editing && duplicateMessage && commitState !== 'confirmed' ? <label className="px-launch-duplicate-confirm">
       <input type="checkbox" checked={duplicateAccepted} onChange={(event) => setDuplicateAccepted(event.target.checked)} />
       <span><strong>Confirmar possível duplicidade</strong><small>{duplicateMessage}</small></span>
     </label> : null}
@@ -136,11 +149,19 @@ export function PhoenixLaunchWriteControl({
     <button
       className="px-primary-action px-confirm-launch"
       type="button"
-      disabled={runtimeState !== 'enabled' || commitState === 'saving' || commitState === 'confirmed' || Boolean(duplicateMessage && !duplicateAccepted)}
+      disabled={runtimeState !== 'enabled' || commitState === 'saving' || commitState === 'confirmed' || Boolean(!editing && duplicateMessage && !duplicateAccepted)}
       onClick={() => { void confirmLaunch(); }}
       aria-busy={commitState === 'saving'}
     >
-      {commitState === 'saving' ? 'Confirmando lançamento…' : commitState === 'confirmed' ? 'Confirmado e sincronizado' : runtimeState === 'checking' ? 'Verificando ambiente…' : runtimeState === 'disabled' ? 'Gravação protegida neste ambiente' : 'Confirmar lançamento'}
+      {commitState === 'saving'
+        ? (editing ? 'Salvando alteração…' : 'Confirmando lançamento…')
+        : commitState === 'confirmed'
+          ? (editing ? 'Alterado e sincronizado' : 'Confirmado e sincronizado')
+          : runtimeState === 'checking'
+            ? 'Verificando ambiente…'
+            : runtimeState === 'disabled'
+              ? 'Gravação protegida neste ambiente'
+              : editing ? 'Salvar alterações' : 'Confirmar lançamento'}
     </button>
   </div>;
 }
