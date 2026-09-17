@@ -8,12 +8,14 @@ export const PHOENIX_WRITE_CAPABILITIES = {
   simpleEvent: true,
   cardPurchase: true,
   benefitEvent: true,
+  transfer: true,
 } as const;
 
 export type PhoenixRuntimeWriteCapabilities = {
   simpleEvent: boolean;
   cardPurchaseWrite: boolean;
   benefitWrite: boolean;
+  transferWrite: boolean;
   pendingWrite: boolean;
   bulkEventWrite: boolean;
   source: 'preview-runtime' | 'direct-build' | 'unavailable';
@@ -124,6 +126,7 @@ function emptyRuntimeCapabilities(source: PhoenixRuntimeWriteCapabilities['sourc
     simpleEvent: false,
     cardPurchaseWrite: false,
     benefitWrite: false,
+    transferWrite: false,
     pendingWrite: false,
     bulkEventWrite: false,
     source,
@@ -152,6 +155,7 @@ export async function getPhoenixRuntimeWriteCapabilities(force = false): Promise
       simpleEvent: import.meta.env.VITE_PHOENIX_SIMPLE_EVENT_WRITE === 'enabled',
       cardPurchaseWrite: import.meta.env.VITE_PHOENIX_CARD_PURCHASE_WRITE === 'enabled',
       benefitWrite: import.meta.env.VITE_PHOENIX_BENEFIT_WRITE === 'enabled',
+      transferWrite: import.meta.env.VITE_PHOENIX_TRANSFER_WRITE === 'enabled',
       pendingWrite: import.meta.env.VITE_PHOENIX_PENDING_WRITE === 'enabled',
       bulkEventWrite: import.meta.env.VITE_PHOENIX_BULK_EVENT_WRITE === 'enabled',
       source: 'direct-build',
@@ -172,6 +176,7 @@ export async function getPhoenixRuntimeWriteCapabilities(force = false): Promise
         simpleEventWrite?: unknown;
         cardPurchaseWrite?: unknown;
         benefitWrite?: unknown;
+        transferWrite?: unknown;
         pendingWrite?: unknown;
         bulkEventWrite?: unknown;
       };
@@ -180,6 +185,7 @@ export async function getPhoenixRuntimeWriteCapabilities(force = false): Promise
       simpleEvent: payload.capabilities?.simpleEventWrite === true,
       cardPurchaseWrite: payload.capabilities?.cardPurchaseWrite === true,
       benefitWrite: payload.capabilities?.benefitWrite === true,
+      transferWrite: payload.capabilities?.transferWrite === true,
       pendingWrite: payload.capabilities?.pendingWrite === true,
       bulkEventWrite: payload.capabilities?.bulkEventWrite === true,
       source: 'preview-runtime',
@@ -206,6 +212,18 @@ export function getPhoenixSimpleEventEligibility(flow: PhoenixSimpleEventFlow): 
   if (flow.recurring) reasons.push('PHOENIX_RECURRENCE_NOT_IN_SIMPLE_FLOW');
   if (flow.saveTemplate) reasons.push('PHOENIX_TEMPLATE_NOT_IN_SIMPLE_FLOW');
   if ((flow.installments || 1) > 1) reasons.push('PHOENIX_INSTALLMENT_NOT_IN_SIMPLE_FLOW');
+  if (flow.manualDue) reasons.push('PHOENIX_MANUAL_DUE_NOT_IN_SIMPLE_FLOW');
+  return { eligible: reasons.length === 0, reasons: [...new Set(reasons)] };
+}
+
+export function getPhoenixTransferEligibility(flow: PhoenixSimpleEventFlow): PhoenixSimpleEventEligibility {
+  const reasons: string[] = [];
+  if (flow.type !== 'transfer') reasons.push('PHOENIX_TRANSFER_FLOW_REQUIRED');
+  if (flow.negative) reasons.push('PHOENIX_TRANSFER_POSITIVE_AMOUNT_REQUIRED');
+  if (flow.benefit) reasons.push('PHOENIX_TRANSFER_MONETARY_ACCOUNTS_REQUIRED');
+  if (flow.recurring) reasons.push('PHOENIX_TRANSFER_RECURRENCE_NOT_SUPPORTED');
+  if (flow.saveTemplate) reasons.push('PHOENIX_TEMPLATE_NOT_IN_SIMPLE_FLOW');
+  if ((flow.installments || 1) > 1) reasons.push('PHOENIX_TRANSFER_INSTALLMENTS_NOT_SUPPORTED');
   if (flow.manualDue) reasons.push('PHOENIX_MANUAL_DUE_NOT_IN_SIMPLE_FLOW');
   return { eligible: reasons.length === 0, reasons: [...new Set(reasons)] };
 }
@@ -308,6 +326,7 @@ export function phoenixWriteMessage(code: string) {
     PHOENIX_WRITE_NOT_ENABLED: 'A gravação financeira da Phoenix ainda não foi liberada neste ambiente.',
     PHOENIX_CARD_WRITE_NOT_ENABLED: 'A gravação de compras no cartão ainda não foi liberada neste ambiente.',
     PHOENIX_BENEFIT_WRITE_NOT_ENABLED: 'A gravação do Benefício Alimentação ainda não foi liberada neste ambiente.',
+    PHOENIX_TRANSFER_WRITE_NOT_ENABLED: 'A gravação de transferências ainda não foi liberada neste ambiente.',
     PHOENIX_EDIT_WRITE_NOT_ENABLED: 'A edição financeira ainda não foi liberada neste ambiente.',
     PHOENIX_EDIT_CONFIRMATION_MISSING: 'O servidor respondeu à edição sem devolver o lançamento confirmado.',
     PHOENIX_DESCRIPTION_REQUIRED: 'Informe a descrição do lançamento.',
@@ -318,6 +337,11 @@ export function phoenixWriteMessage(code: string) {
     PHOENIX_CARD_FLOW_REQUIRED: 'Este writer é exclusivo para compras no cartão de crédito.',
     PHOENIX_CARD_INSTALLMENTS_INVALID: 'Informe entre 1 e 48 parcelas para a compra no cartão.',
     PHOENIX_CARD_MANUAL_DUE_NOT_SUPPORTED: 'O vencimento manual continua protegido. No crédito, use o vencimento calculado pela data de fechamento do cartão.',
+    PHOENIX_TRANSFER_FLOW_REQUIRED: 'Este writer é exclusivo para transferências entre contas monetárias.',
+    PHOENIX_TRANSFER_POSITIVE_AMOUNT_REQUIRED: 'Transferências usam valor positivo. Para desfazer, registre a operação inversa.',
+    PHOENIX_TRANSFER_MONETARY_ACCOUNTS_REQUIRED: 'Transferências exigem contas monetárias válidas na origem e no destino.',
+    PHOENIX_TRANSFER_RECURRENCE_NOT_SUPPORTED: 'Transferências recorrentes ainda não pertencem ao fluxo protegido.',
+    PHOENIX_TRANSFER_INSTALLMENTS_NOT_SUPPORTED: 'Transferências não aceitam parcelamento.',
     PHOENIX_BENEFIT_FLOW_REQUIRED: 'Este writer é exclusivo para recargas e despesas do Benefício Alimentação.',
     PHOENIX_BENEFIT_ACCOUNT_REQUIRED: 'Selecione a conta de Benefício Alimentação.',
     PHOENIX_BENEFIT_PAYMENT_METHOD_REQUIRED: 'No Benefício Alimentação, utilize a forma de pagamento VEROCARD.',
@@ -335,7 +359,7 @@ export function phoenixWriteMessage(code: string) {
     PHOENIX_PAYMENT_METHOD_REQUIRED: 'Selecione a forma de pagamento.',
     PHOENIX_EXPENSE_CATEGORY_REQUIRED: 'Selecione a classificação e o grupo da despesa.',
     PHOENIX_SIMPLE_STATUS_NOT_ALLOWED: 'A situação informada não pertence ao primeiro fluxo de gravação.',
-    PHOENIX_TRANSFER_NOT_IN_SIMPLE_FLOW: 'Transferências serão liberadas em um fluxo próprio, com origem e destino protegidos.',
+    PHOENIX_TRANSFER_NOT_IN_SIMPLE_FLOW: 'Transferências usam o writer atômico de origem e destino.',
     PHOENIX_REVERSAL_NOT_IN_SIMPLE_FLOW: 'Estornos e reversões precisam do vínculo com o lançamento original antes da gravação.',
     PHOENIX_BENEFIT_NOT_IN_SIMPLE_FLOW: 'Movimentações de benefício usam o writer protegido do Benefício Alimentação.',
     PHOENIX_CARD_NOT_IN_SIMPLE_FLOW: 'Compras no crédito são gravadas pelo writer protegido de cartões e faturas.',
