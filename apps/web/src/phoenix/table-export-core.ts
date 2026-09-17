@@ -37,17 +37,17 @@ export function phoenixExportFilename(report: PhoenixExportReport, extension: 'x
 }
 
 function parseBrazilianNumber(value: string) {
-  let normalized = String(value || '').trim();
-  if (!normalized || normalized === '—' || normalized === '-') return null;
-  const negative = /^\s*[−-]/.test(normalized) || /\([^)]*\)/.test(normalized);
-  normalized = normalized
-    .replace(/R\$/gi, '')
-    .replace(/[()\s]/g, '')
+  const source = String(value || '').trim();
+  if (!source || source === '—' || source === '-') return null;
+  const withoutCurrency = source.replace(/R\$/gi, '').trim();
+  const candidate = withoutCurrency.replace(/^\((.*)\)$/, '$1').trim();
+  if (!/^[−+-]?(?:\d{1,3}(?:\.\d{3})*|\d+)(?:,\d+)?%?$/.test(candidate)) return null;
+  const negative = /^\s*[−-]/.test(candidate) || /^\(.*\)$/.test(withoutCurrency);
+  const normalized = candidate
+    .replace(/%$/, '')
     .replace(/−/g, '-')
     .replace(/\./g, '')
-    .replace(',', '.')
-    .replace(/[^0-9+\-.]/g, '');
-  if (!normalized || normalized === '-' || normalized === '+') return null;
+    .replace(',', '.');
   const parsed = Number(normalized);
   if (!Number.isFinite(parsed)) return null;
   return negative && parsed > 0 ? -parsed : parsed;
@@ -436,7 +436,7 @@ export function buildPhoenixPdf(report: PhoenixExportReport) {
 
     stream += pdfFill(0.10, 0.16, 0.14);
     stream += pdfText(`Período: ${report.period || 'Conforme a visão atual'}`, margin, height - 78, 7.5, true);
-    stream += pdfText(`Filtros: ${report.filters.length ? report.filters.join(' | ') : 'Sem filtros adicionais'}`, margin, height - 91, 7, false);
+    stream += pdfText(truncate(`Filtros: ${report.filters.length ? report.filters.join(' | ') : 'Sem filtros adicionais'}`, usable, 7), margin, height - 91, 7, false);
     stream += pdfText(`Registros: ${report.recordCount}   |   Gerado em: ${report.generatedAt}`, margin, height - 104, 7, false);
 
     let x = margin;
