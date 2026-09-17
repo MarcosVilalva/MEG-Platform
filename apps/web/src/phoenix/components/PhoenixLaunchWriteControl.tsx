@@ -116,6 +116,7 @@ export function PhoenixLaunchWriteControl({
 
   async function confirmLaunch() {
     if (!eligibility.eligible || runtimeState !== 'enabled' || commitState === 'saving') return;
+    if (cardFlow ? !cardInput : !input) return;
     if (duplicateMessage && !duplicateAccepted) return;
 
     setCommitState('saving');
@@ -124,10 +125,9 @@ export function PhoenixLaunchWriteControl({
       : 'Enviando ao MEG e aguardando confirmação da leitura atualizada…');
     try {
       if (cardFlow) {
-        if (!cardInput) return;
-        const prepared = preparedCardRef.current || preparePhoenixCardPurchase(cardInput);
+        const prepared = preparedCardRef.current || preparePhoenixCardPurchase(cardInput!);
         preparedCardRef.current = prepared;
-        const result = await runPhoenixCardPurchaseWrite(prepared, refreshMonth || cardInput.purchaseDate.slice(0, 7));
+        const result = await runPhoenixCardPurchaseWrite(prepared, refreshMonth || cardInput!.purchaseDate.slice(0, 7));
         if (result.status === 'confirmed') {
           preparedCardRef.current = null;
           setCommitState('confirmed');
@@ -140,10 +140,9 @@ export function PhoenixLaunchWriteControl({
         return;
       }
 
-      if (!input) return;
-      const prepared = preparedRef.current || preparePhoenixSimpleEvent(input);
+      const prepared = preparedRef.current || preparePhoenixSimpleEvent(input!);
       preparedRef.current = prepared;
-      const result = await runPhoenixSimpleEventWrite(prepared, refreshMonth || input.date.slice(0, 7));
+      const result = await runPhoenixSimpleEventWrite(prepared, refreshMonth || input!.date.slice(0, 7));
       if (result.status === 'confirmed') {
         preparedRef.current = null;
         setCommitState('confirmed');
