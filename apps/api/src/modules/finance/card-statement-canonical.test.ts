@@ -1,0 +1,85 @@
+import assert from 'node:assert/strict';
+import {
+  buildCanonicalCardStatement,
+  cardStatementEffectFromSignedAmount,
+  canonicalCardStatementTotals,
+  legacyCardStatementEffect,
+} from './card-statement-canonical';
+
+assert.equal(cardStatementEffectFromSignedAmount(-100), 100);
+assert.equal(cardStatementEffectFromSignedAmount(62), -62);
+assert.equal(legacyCardStatementEffect({ amount: -62, expenseAmount: 62 }), -62);
+assert.equal(legacyCardStatementEffect({ signedAmount: 31, expenseAmount: 31 }), -31);
+assert.equal(legacyCardStatementEffect({ expenseAmount: 40 }), 40);
+
+const azul = buildCanonicalCardStatement({
+  month: '2026-09',
+  closingDay: 8,
+  dueDay: 16,
+  aliases: ['AZUL', 'CARTÃO AZUL'],
+  purchases: [],
+  events: [
+    { id: 'base', description: 'COMPRAS', type: 'expense', status: 'planned', date: '2026-09-16', signedAmount: -1875.52, sourcePayload: { paymentMethod: 'CARTÃO AZUL', modality: 'CREDITO' } },
+    { id: 'fee', description: 'ANUIDADE 1/1', type: 'expense', status: 'planned', date: '2026-09-16', signedAmount: -62, sourcePayload: { paymentMethod: 'CARTÃO AZUL', modality: 'CREDITO' } },
+    { id: 'refund', description: 'EXTORNO ANUIDADE 1/1', type: 'expense', status: 'planned', date: '2026-09-16', signedAmount: 62, sourcePayload: { paymentMethod: 'CARTÃO AZUL', modality: 'CREDITO' } },
+  ],
+});
+assert.equal(azul.charges, 1937.52);
+assert.equal(azul.credits, 62);
+assert.equal(azul.netAmount, 1875.52);
+assert.equal(azul.payableAmount, 1875.52);
+assert.equal(azul.creditBalance, 0);
+
+const partialRefund = canonicalCardStatementTotals([
+  { id: 'a', source: 'financial-event', description: 'Compra', effect: 200, kind: 'charge', purchaseDate: '2026-09-01', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1 },
+  { id: 'b', source: 'financial-event', description: 'Estorno parcial', effect: -50, kind: 'credit', purchaseDate: '2026-09-02', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1 },
+]);
+assert.deepEqual(partialRefund, { charges: 200, credits: 50, netAmount: 150, payableAmount: 150, creditBalance: 0 });
+
+const creditStatement = canonicalCardStatementTotals([
+  { id: 'a', source: 'financial-event', description: 'Compra', effect: 50, kind: 'charge', purchaseDate: '2026-09-01', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1 },
+  { id: 'b', source: 'financial-event', description: 'Crédito', effect: -80, kind: 'credit', purchaseDate: '2026-09-02', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1 },
+]);
+assert.equal(creditStatement.netAmount, -30);
+assert.equal(creditStatement.payableAmount, 0);
+assert.equal(creditStatement.creditBalance, 30);
+
+const officialWithCredit = buildCanonicalCardStatement({
+  month: '2026-09',
+  closingDay: 8,
+  dueDay: 16,
+  aliases: ['AZUL'],
+  events: [
+    { id: 'projection', description: 'Compra projetada', type: 'expense', status: 'planned', date: '2026-09-16', signedAmount: -100, sourcePayload: { paymentMethod: 'AZUL', modality: 'CREDITO', purchaseId: 'p1' } },
+  ],
+  purchases: [{
+    id: 'p1',
+    description: 'Compra oficial',
+    purchaseDate: '2026-08-10',
+    installments: 1,
+    status: 'active',
+    entries: [
+      { id: 'i1', number: 1, amount: 100, statementMonth: '2026-09', status: 'open' },
+      { id: 'i2', number: 2, amount: -20, statementMonth: '2026-09', status: 'open' },
+    ],
+  }],
+});
+assert.equal(officialWithCredit.lines.length, 2, 'projeção normalizada não pode duplicar a compra oficial');
+assert.equal(officialWithCredit.netAmount, 80);
+assert.equal(officialWithCredit.credits, 20);
+
+const ignored = buildCanonicalCardStatement({
+  month: '2026-09',
+  closingDay: 8,
+  dueDay: 16,
+  aliases: ['AZUL'],
+  purchases: [],
+  events: [
+    { id: 'paid', description: 'Já pago', type: 'expense', status: 'paid', date: '2026-09-16', signedAmount: -100, sourcePayload: { paymentMethod: 'AZUL', modality: 'CREDITO' } },
+    { id: 'other', description: 'Outro cartão', type: 'expense', status: 'planned', date: '2026-09-16', signedAmount: -200, sourcePayload: { paymentMethod: 'OUTRO', modality: 'CREDITO' } },
+  ],
+});
+assert.equal(ignored.netAmount, 0);
+assert.equal(ignored.status, 'empty');
+
+console.log('Canonical card statement sign rules: OK');
