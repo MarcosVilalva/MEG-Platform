@@ -90,6 +90,8 @@ assert.match(writeControl, /capabilities\.cardPurchaseWrite/,
   'A ação de cartão só pode ser habilitada quando o runtime declarar a capacidade específica.');
 assert.match(writeControl, /projectedCardEvent/,
   'Após confirmação, o controle deve localizar a projeção da parcela no snapshot quando ela pertence ao mês visível.');
+assert.match(writeControl, /if \(cardFlow \? !cardInput : !input\) return;[\s\S]*setCommitState\('saving'\)/,
+  'O controle não pode entrar em estado saving quando não há comando válido para o fluxo selecionado.');
 assert.match(writeControl, /duplicateAccepted/,
   'Possível duplicidade deve exigir aceite explícito antes da confirmação.');
 assert.match(writeControl, /preparedCardRef/,
