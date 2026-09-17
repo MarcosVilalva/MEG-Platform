@@ -271,7 +271,7 @@ export function phoenixWriteMessage(code: string) {
     PHOENIX_TRANSFER_NOT_IN_SIMPLE_FLOW: 'Transferências serão liberadas em um fluxo próprio, com origem e destino protegidos.',
     PHOENIX_REVERSAL_NOT_IN_SIMPLE_FLOW: 'Estornos e reversões precisam do vínculo com o lançamento original antes da gravação.',
     PHOENIX_BENEFIT_NOT_IN_SIMPLE_FLOW: 'Movimentações de benefício serão liberadas em um fluxo separado do caixa monetário.',
-    PHOENIX_CARD_NOT_IN_SIMPLE_FLOW: 'Compras no crédito usam o writer protegido de cartões e faturas.',
+    PHOENIX_CARD_NOT_IN_SIMPLE_FLOW: 'Compras no crédito são gravadas pelo writer protegido de cartões e faturas.',
     PHOENIX_INSTALLMENT_NOT_IN_SIMPLE_FLOW: 'Parcelamentos fora do cartão precisam do contrato de parcelas antes da gravação.',
     PHOENIX_RECURRENCE_NOT_IN_SIMPLE_FLOW: 'Recorrências precisam de criação atômica da série antes da gravação.',
     PHOENIX_TEMPLATE_NOT_IN_SIMPLE_FLOW: 'Salvar modelos ainda não pertence ao primeiro fluxo de gravação.',
