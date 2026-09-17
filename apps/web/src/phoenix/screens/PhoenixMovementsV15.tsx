@@ -448,6 +448,18 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     };
   }, [draft.type, draft.description, draft.eventDate, draft.accountId, draft.categoryId, draft.paymentMethodId, draft.notes, amountCents, effectiveSituation]);
 
+  const cardWriteInput = useMemo(() => {
+    if (draft.type !== 'expense' || !credit) return null;
+    return {
+      cardId: draft.cardId,
+      categoryId: draft.categoryId || undefined,
+      description: draft.description,
+      totalAmount: amountCents / 100,
+      purchaseDate: draft.eventDate,
+      installments: draft.installments,
+    };
+  }, [draft.type, draft.cardId, draft.categoryId, draft.description, draft.eventDate, draft.installments, amountCents, credit]);
+
   const simpleWriteFlow = useMemo(() => ({
     type: draft.type,
     negative,
@@ -746,13 +758,15 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
               reviewed={reviewed}
               missing={missing}
               input={simpleWriteInput}
+              cardInput={cardWriteInput}
               flow={simpleWriteFlow}
+              refreshMonth={data.month}
               duplicateMessage={duplicateMessage}
               onReview={reviewLaunch}
               onCommitted={(snapshot, event) => {
                 setData(snapshot);
                 onDataCommitted?.(snapshot);
-                markRecentlyUpdated(event.id);
+                if (event) markRecentlyUpdated(event.id);
                 setDirty(false);
                 setLaunchOpen(false);
                 resetLaunch();
