@@ -12,6 +12,7 @@ import {
 import '../phoenix-screens.css';
 import '../phoenix-pending-write.css';
 import '../phoenix-pending-v15.css';
+import '../phoenix-pending-quick-settle.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
@@ -440,11 +441,14 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       || '';
   }
 
-  function openReview() {
+  function openReview(item?: PendingItem) {
+    const target = item || selectedItem;
+    if (!target || target.openAmount <= 0 || saving) return;
     setSuccessMessage('');
+    if (item) setSelected(new Set([target.id]));
     setPaidAt(today);
-    setAccountId(suggestedAccount(selectedItem));
-    setPaymentMethodId(suggestedMethod(selectedItem));
+    setAccountId(suggestedAccount(target));
+    setPaymentMethodId(suggestedMethod(target));
     setWriteState({ status: 'idle' });
     setPrepared(null);
     setReviewOpen(true);
@@ -511,6 +515,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       <div className="px-pending-copy"><strong>{item.description}</strong><small>{item.source === 'card' ? `${item.children?.length || 0} lançamento(s) agrupado(s)` : item.installmentQty > 1 ? `Parcela ${item.installmentNo}/${item.installmentQty}` : 'Pagamento único'} · {item.categoryName} · {item.paymentMethod}</small></div>
       <strong className={`px-pending-amount ${adjustment ? 'positive' : ''}`}>{money.format(item.openAmount)}</strong>
       <span className={`px-status ${adjustment ? 'reconciled' : late ? 'overdue' : 'planned'}`}>{adjustment ? 'ESTORNO' : card ? 'CARTÃO' : late ? 'VENCIDO' : 'PENDENTE'}</span>
+      {!adjustment ? <button type="button" className="px-pending-quick-settle" disabled={saving || item.openAmount > available} aria-label={item.source === 'card' ? `Pagar fatura ${item.description}` : `Dar baixa em ${item.description}`} title={item.openAmount > available ? 'Saldo monetário insuficiente para esta baixa.' : 'Abre a revisão protegida antes de gravar.'} onClick={() => openReview(item)}>{item.source === 'card' ? 'Pagar fatura' : 'Dar baixa'}</button> : null}
       <button type="button" className="px-detail-btn" aria-label={`Detalhes de ${item.description}`} onClick={() => setDetailItem(item)}>↘</button>
     </div>;
   }
@@ -590,7 +595,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
           <label className="px-pending-group-select"><span>Agrupar por</span><select value={groupMode} onChange={(event) => setGroupMode(event.target.value as GroupMode)}><option value="date">Data</option><option value="category">Categoria</option><option value="account">Conta</option><option value="payment-method">Forma de pagamento</option><option value="none">Sem agrupamento</option></select></label>
           <span className="px-toolbar-note">{visible.length} de {open.length} exibido(s)</span>
         </div>
-        {selectedItems.length ? <div className="px-bulk-action-bar"><div><strong>{selectedItems.length} compromisso(s) selecionado(s)</strong><span>Total {money.format(selectedTotal)} · saldo após baixa {money.format(available - selectedTotal)}</span></div><button type="button" onClick={clearSelection}>Limpar</button><button type="button" className="primary" disabled={selectedItems.length !== 1 || selectedTotal > available} onClick={openReview}>Revisar baixa</button></div> : null}
+        {selectedItems.length ? <div className="px-bulk-action-bar"><div><strong>{selectedItems.length} compromisso(s) selecionado(s)</strong><span>Total {money.format(selectedTotal)} · saldo após baixa {money.format(available - selectedTotal)}</span></div><button type="button" onClick={clearSelection}>Limpar</button><button type="button" className="primary" disabled={selectedItems.length !== 1 || selectedTotal > available} onClick={() => openReview()}>Revisar baixa</button></div> : null}
         {compatibilityCount > 0 ? <div className="px-history-source-note"><strong>Leitura consolidada:</strong> contas, faturas oficiais e compromissos legados ficam na mesma agenda. Faturas usam o writer oficial do cartão; lançamentos legados continuam protegidos individualmente.</div> : null}
 
         {grouped.map((group) => group.kind === 'date'
@@ -611,7 +616,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
         <span className="px-kicker">Resumo da seleção</span>
         <h2>{selectedItems.length ? `${selectedItems.length} compromisso(s)` : 'Nenhum selecionado'}</h2>
         <dl><div><dt>Total selecionado</dt><dd>{money.format(selectedTotal)}</dd></div><div><dt>Saldo disponível</dt><dd>{money.format(available)}</dd></div><div><dt>Saldo após baixa</dt><dd>{money.format(available - selectedTotal)}</dd></div></dl>
-        <button className="px-primary-action" type="button" disabled={selectedItems.length !== 1 || selectedTotal > available} onClick={openReview}>Revisar e confirmar baixa</button>
+        <button className="px-primary-action" type="button" disabled={selectedItems.length !== 1 || selectedTotal > available} onClick={() => openReview()}>Revisar e confirmar baixa</button>
         <small className="px-readonly-hint">A confirmação real permanece protegida: um compromisso por vez. Uma fatura oficial conta como um único compromisso.</small>
       </aside>
     </div>
