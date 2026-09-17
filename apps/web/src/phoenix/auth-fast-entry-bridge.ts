@@ -3,6 +3,8 @@ import { getApiHealth } from '../app/auth-client';
 void getApiHealth().catch(() => undefined);
 
 const root = document.getElementById('root');
+const publicBase = import.meta.env.BASE_URL || '/';
+const brandMark = `${publicBase.endsWith('/') ? publicBase : `${publicBase}/`}brand/meg-finance-system-mark.svg`;
 
 if (root) {
   let transition: HTMLElement | null = null;
@@ -23,7 +25,7 @@ if (root) {
     transition.style.zIndex = '9999';
     transition.innerHTML = `
       <section class="px-preview-boot-card" aria-label="Validando acesso ao MEG Finanças">
-        <div class="px-preview-boot-logo"><span class="px-preview-boot-orbit" aria-hidden="true"></span><img src="${new URL('../../public/brand/meg-finance-system-mark.svg', import.meta.url).href}" alt="MEG Finanças"></div>
+        <div class="px-preview-boot-logo"><span class="px-preview-boot-orbit" aria-hidden="true"></span><img src="${brandMark}" alt="MEG Finanças"></div>
         <div class="px-preview-boot-copy"><span>MEG FINANÇAS</span><h1>Validando seu acesso</h1><p>Confirmando sua sessão segura para preparar o sistema.</p></div>
         <div class="px-preview-boot-progress" aria-label="22% preparado"><div class="px-preview-boot-track"><span style="width:22%"></span></div></div>
         <div class="px-preview-boot-steps">
