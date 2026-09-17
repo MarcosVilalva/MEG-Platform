@@ -27,6 +27,8 @@ assert.match(gateway, /runtimeCapabilities\.cardPurchaseWrite/,
   'Writer de cartão deve exigir capacidade efetiva do ambiente imediatamente antes da mutação.');
 assert.match(gateway, /getPhoenixCardPurchaseEligibility/,
   'Fluxo de cartão deve possuir elegibilidade própria, sem relaxar as proteções do writer simples.');
+assert.match(gateway, /PHOENIX_CARD_NOT_IN_SIMPLE_FLOW:\s*'Compras no crédito são gravadas pelo writer protegido de cartões e faturas\.'/,
+  'Mensagem do writer simples deve encaminhar crédito ao writer específico já disponível.');
 assert.match(gateway, /flow\.manualDue[\s\S]*PHOENIX_CARD_MANUAL_DUE_NOT_SUPPORTED/,
   'Vencimento manual deve continuar protegido enquanto o contrato do domínio de cartões não suportar a exceção.');
 assert.match(gateway, /input\.installments < 1 \|\| input\.installments > 48/,
