@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FinancialEvent } from '../../app/finance-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import type { PhoenixReadModel } from '../contracts';
 import { PhoenixLaunchWriteControl } from '../components/PhoenixLaunchWriteControl';
 import { phoenixWriteMessage, runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
 import '../phoenix-launch.css';
+import '../phoenix-launch-dynamic.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -182,6 +183,7 @@ function sourcePayment(event: FinancialEvent) {
 }
 
 function sourceSituation(event: FinancialEvent) {
+  if (launchTypeForEvent(event.type) === 'income') return 'Recebida';
   return eventStatus(event.status) || event.sourceDetails?.situation || '—';
 }
 
@@ -292,10 +294,16 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const [negative, setNegative] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [reviewed, setReviewed] = useState(false);
+  const [recentEventId, setRecentEventId] = useState<string | null>(null);
+  const recentTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setData(initialData);
   }, [initialData]);
+
+  useEffect(() => () => {
+    if (recentTimerRef.current !== null) window.clearTimeout(recentTimerRef.current);
+  }, []);
 
   const monthEvents = useMemo(() => data.events.items.filter((event) => event.competence === data.month), [data]);
   const rows = useMemo(() => monthEvents.map((event) => ({ event, row: gridRow(event) })), [monthEvents]);
@@ -470,6 +478,15 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [detailEvent, launchOpen, dirty]);
 
+  function markRecentlyUpdated(eventId: string) {
+    if (recentTimerRef.current !== null) window.clearTimeout(recentTimerRef.current);
+    setRecentEventId(eventId);
+    recentTimerRef.current = window.setTimeout(() => {
+      setRecentEventId((current) => current === eventId ? null : current);
+      recentTimerRef.current = null;
+    }, 3600);
+  }
+
   function updateDraft<K extends keyof LaunchDraft>(key: K, value: LaunchDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
     setDirty(true);
@@ -567,12 +584,14 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       setEditMessage('Esta edição envolve um fluxo protegido. Ajustes simples podem ser gravados; cartão, benefício, recorrência, parcelamento, transferência e estorno permanecem protegidos até o writer específico.');
       return;
     }
+    const committedEventId = editingEventId;
     setSavingEdit(true);
     setEditMessage('Salvando alteração e aguardando a releitura sincronizada…');
     try {
-      const { snapshot } = await runPhoenixSimpleEventEdit(editingEventId, simpleWriteInput, data.month);
+      const { snapshot } = await runPhoenixSimpleEventEdit(committedEventId, simpleWriteInput, data.month);
       setData(snapshot);
       onDataCommitted?.(snapshot);
+      markRecentlyUpdated(committedEventId);
       setDirty(false);
       setLaunchOpen(false);
       resetLaunch();
@@ -632,7 +651,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
             const visualType = launchTypeForEvent(event.type);
             const effect = displayEffect(event);
             const isIncome = visualType === 'income';
-            return <tr key={event.id} onDoubleClick={() => openLaunch(event)} title="Duplo clique para editar">
+            return <tr key={event.id} className={recentEventId === event.id ? 'is-recently-updated' : undefined} onDoubleClick={() => openLaunch(event)} title="Duplo clique para editar">
               <td data-label="Vencimento">{formatIsoDate(event.date)}</td>
               <td data-label="Data da compra">{formatIsoDate(sourcePurchaseDate(event))}</td>
               <td data-label="Dia">{event.sourceDetails?.weekday || weekday(event.date)}</td>
@@ -730,9 +749,10 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
               flow={simpleWriteFlow}
               duplicateMessage={duplicateMessage}
               onReview={reviewLaunch}
-              onCommitted={(snapshot) => {
+              onCommitted={(snapshot, event) => {
                 setData(snapshot);
                 onDataCommitted?.(snapshot);
+                markRecentlyUpdated(event.id);
                 setDirty(false);
                 setLaunchOpen(false);
                 resetLaunch();
