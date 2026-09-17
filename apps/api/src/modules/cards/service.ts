@@ -177,6 +177,9 @@ export async function listCards(userId: string, month: string) {
     const officialOpen = entries
       .filter((entry) => entry.status === 'open')
       .reduce((sum, entry) => sum + Number(entry.amount), 0);
+    const officialStatementOpen = entries
+      .filter((entry) => entry.status === 'open' && entry.statementMonth === month)
+      .reduce((sum, entry) => sum + Number(entry.amount), 0);
     const legacyOpenEffect = legacyOpen.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0);
     const usedLimit = Math.max(0, officialOpen + legacyOpenEffect);
     const periodLegacy = legacyPurchases.filter((item) => item.statementDate.startsWith(month));
@@ -187,7 +190,7 @@ export async function listCards(userId: string, month: string) {
       usedLimit,
       availableLimit: Math.min(Number(card.creditLimit), Number(card.creditLimit) - usedLimit),
       statementAmount: statement.netAmount,
-      payableStatementAmount: statement.payableAmount,
+      payableStatementAmount: Math.max(0, officialStatementOpen),
       statementCreditBalance: statement.creditBalance,
       statement,
     };
