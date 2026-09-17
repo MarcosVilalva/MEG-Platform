@@ -206,6 +206,11 @@ function writeErrorCode(error: unknown) {
   return 'PHOENIX_WRITE_FAILED';
 }
 
+async function confirmedSnapshot(refreshMonth: string) {
+  clearPhoenixReadModelCache();
+  return loadPhoenixReadModel(refreshMonth, { force: true });
+}
+
 export async function submitPhoenixSimpleEvent(
   prepared: PreparedPhoenixSimpleEvent,
   refreshMonth: string,
@@ -220,8 +225,22 @@ export async function submitPhoenixSimpleEvent(
     operationId: prepared.operationId,
   });
 
-  clearPhoenixReadModelCache();
-  const snapshot = await loadPhoenixReadModel(refreshMonth, { force: true });
+  const snapshot = await confirmedSnapshot(refreshMonth);
+  return { event, snapshot };
+}
+
+export async function runPhoenixSimpleEventEdit(
+  eventId: string,
+  input: PhoenixSimpleEventInput,
+  refreshMonth: string,
+): Promise<{ event: FinancialEvent; snapshot: PhoenixReadModel }> {
+  if (!PHOENIX_WRITE_CAPABILITIES.simpleEvent) throw new PhoenixWriteError('PHOENIX_WRITE_NOT_ENABLED');
+  const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
+  if (!runtimeCapabilities.simpleEvent) throw new PhoenixWriteError('PHOENIX_WRITE_NOT_ENABLED');
+  assertSimpleEvent(input);
+
+  const event = await financeClient.updateEvent(eventId, input);
+  const snapshot = await confirmedSnapshot(refreshMonth);
   return { event, snapshot };
 }
 
