@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const gateway = readFileSync(new URL('./data/phoenix-write-gateway.ts', import.meta.url), 'utf8');
+const pendingGateway = readFileSync(new URL('./data/phoenix-pending-write-gateway.ts', import.meta.url), 'utf8');
 const movements = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
 const writeControl = readFileSync(new URL('./components/PhoenixLaunchWriteControl.tsx', import.meta.url), 'utf8');
 const appShell = readFileSync(new URL('./PhoenixApp.tsx', import.meta.url), 'utf8');
@@ -58,6 +59,13 @@ assert.match(gateway, /operationId\('phoenix-event-edit'\)/,
 assert.match(gateway, /const snapshot = await confirmedSnapshot\(refreshMonth\)/,
   'Edição só deve atualizar a interface depois da releitura confirmada.');
 
+assert.match(pendingGateway, /PHOENIX_SNAPSHOT_COMMITTED_EVENT\s*=\s*'meg:phoenix-snapshot-committed'/,
+  'Baixa confirmada deve publicar uma fotografia oficial para o shell sem depender de novo GET.');
+assert.match(pendingGateway, /publishCommittedSnapshot\(snapshot\)/,
+  'Snapshot de Pendentes deve ser publicado somente depois da releitura confirmada.');
+assert.match(pendingGateway, /new CustomEvent\(PHOENIX_SNAPSHOT_COMMITTED_EVENT,\s*\{ detail: \{ snapshot \} \}\)/,
+  'Evento de commit deve transportar a mesma fotografia já confirmada pelo gateway.');
+
 assert.doesNotMatch(movements, /submitPhoenixSimpleEvent|runPhoenixSimpleEventWrite|cardsClient\.createPurchase/,
   'Tela React base não deve acionar criação diretamente; a confirmação fica isolada no controle protegido.');
 assert.doesNotMatch(movements, /financeClient\.updateEvent|financeClient\.bulkUpdateEvents|clearPhoenixReadModelCache|loadPhoenixReadModel\(data\.month/,
@@ -80,6 +88,10 @@ assert.match(appShell, /function commitSnapshot\(snapshot: PhoenixReadModel\)/,
   'Shell deve incorporar a fotografia confirmada sem exigir nova consulta.');
 assert.match(appShell, /onDataCommitted=\{commitSnapshot\}/,
   'Lançamentos deve entregar a fotografia confirmada ao shell global.');
+assert.match(appShell, /addEventListener\(PHOENIX_SNAPSHOT_COMMITTED_EVENT,\s*handleCommittedSnapshot/,
+  'Shell deve incorporar também a fotografia confirmada por baixas em Pendentes.');
+assert.match(appShell, /event\?\.type === 'focus' && !event\.isTrusted/,
+  'Focus sintético legado não pode provocar uma segunda leitura após a baixa já confirmada.');
 assert.match(writeControl, /getPhoenixRuntimeWriteCapabilities\(true\)/,
   'Controle de confirmação deve verificar o gate de runtime antes de habilitar a ação final.');
 assert.match(writeControl, /runPhoenixSimpleEventWrite/,
@@ -140,4 +152,4 @@ assert.match(previewServer, /bulkEventWriteEnabled\s*&&\s*allowedBulkEventPosts\
 assert.match(previewServer, /PREVIEW_READ_ONLY/,
   'Mutações não habilitadas no ambiente isolado devem continuar bloqueadas pelo proxy.');
 
-console.log('Writers Phoenix validados: criação simples, compra real no cartão, edição protegida, snapshot instantâneo, domínios especiais isolados e preview gated.');
+console.log('Writers Phoenix validados: criação simples, compra real no cartão, edição protegida, baixa com snapshot imediato, domínios especiais isolados e preview gated.');
