@@ -2,22 +2,24 @@ name: MEG API Availability
 
 on:
   schedule:
-    # Mantém a API disponível durante o período de uso. O plano grátis do
-    # Render hiberna após 15 minutos sem tráfego; 14 minutos evita cold start
-    # sem manter a instância ativa durante toda a madrugada.
-    - cron: '*/14 0-2,9-23 * * *'
-    # Acorda 10 minutos antes dos alertas de 06:00, 12:00 e 19:00.
+    # Horário de Brasília (UTC-3): 05:50 inicia o prewarm diário.
     - cron: '50 8 * * *'
-    - cron: '50 14 * * *'
-    - cron: '50 21 * * *'
+    # 06:00–20:50 BRT, a cada 10 minutos.
+    - cron: '*/10 9-23 * * *'
+    # 21:00–21:50 BRT, a cada 10 minutos.
+    - cron: '*/10 0 * * *'
   workflow_dispatch:
+
+concurrency:
+  group: meg-api-availability
+  cancel-in-progress: true
 
 jobs:
   warm:
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
-      - name: Warm free API safely
+      - name: Keep MEG API warm during daily use window
         env:
           API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
         run: |
@@ -26,8 +28,8 @@ jobs:
               echo "$response"
               exit 0
             fi
-            echo "Cold start in progress (attempt $attempt/3)"
+            echo "MEG API wake-up in progress (attempt $attempt/3)"
             sleep 10
           done
-          echo "MEG API health check failed"
+          echo "MEG API readiness check failed"
           exit 1
