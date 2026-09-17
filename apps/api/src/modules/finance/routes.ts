@@ -15,6 +15,7 @@ import { getPhoenixBenefitSummary, listPhoenixFinancialEventsForMonth } from './
 import { registerPhoenixPreviewReads } from './phoenix-preview-routes';
 import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
 import { FinancialEventSettlementError, settleLegacyFinancialEventProtected } from './event-settlement';
+import { PendingBatchSettlementError, settlePendingBatchProtected } from './pending-batch-settlement';
 import { FinancialTransferError, createFinancialTransfer } from './transfer-service';
 import { prisma } from '@meg/database';
 
@@ -25,9 +26,20 @@ const operationIdSchema = z.string().trim().min(8).max(128).optional();
 const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const createEventRequestSchema = createFinancialEventSchema.extend({ operationId: operationIdSchema });
 const settleLegacyEventRequestSchema = z.object({
-  paidAt: z.string().min(10),
+  paidAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   accountId: z.string().trim().min(1),
   paymentMethodId: z.string().trim().min(1),
+  operationId: z.string().trim().min(8).max(128).regex(/^[A-Za-z0-9._:-]+$/),
+});
+const pendingBatchRequestSchema = z.object({
+  items: z.array(z.object({
+    source: z.enum(['payable', 'event', 'card']),
+    sourceId: z.string().trim().min(1).max(160),
+    statementMonth: monthSchema.optional(),
+  })).min(1).max(100),
+  paidAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  accountId: z.string().trim().min(1).max(160),
+  paymentMethodId: z.string().trim().min(1).max(160),
   operationId: z.string().trim().min(8).max(128).regex(/^[A-Za-z0-9._:-]+$/),
 });
 const transferRequestSchema = z.object({
@@ -81,6 +93,16 @@ function eventError(reply: FastifyReply, error: unknown) {
 function settlementError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof FinancialEventSettlementError)) throw error;
   const status = error.code === 'FINANCIAL_EVENT_NOT_FOUND' ? 404 : error.code === 'OPERATION_ID_REUSED' ? 409 : 400;
+  return reply.code(status).send({ error: error.code, ...(error.details || {}) });
+}
+
+function pendingBatchError(reply: FastifyReply, error: unknown) {
+  if (!(error instanceof PendingBatchSettlementError)) throw error;
+  const status = ['FINANCIAL_EVENT_NOT_FOUND', 'PAYABLE_NOT_FOUND', 'CARD_NOT_FOUND'].includes(error.code)
+    ? 404
+    : ['OPERATION_ID_REUSED', 'INSUFFICIENT_MONETARY_BALANCE'].includes(error.code)
+      ? 409
+      : 400;
   return reply.code(status).send({ error: error.code, ...(error.details || {}) });
 }
 
@@ -189,6 +211,16 @@ export async function financeRoutes(app: FastifyInstance) {
       return reply.code(201).send(await createFinancialTransfer(request.user.sub, parsed.data));
     } catch (error) {
       return transferError(reply, error);
+    }
+  });
+
+  app.post('/pending/batch/settle', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
+    const parsed = pendingBatchRequestSchema.safeParse(request.body);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    try {
+      return reply.code(201).send(await settlePendingBatchProtected(request.user.sub, parsed.data));
+    } catch (error) {
+      return pendingBatchError(reply, error);
     }
   });
 
