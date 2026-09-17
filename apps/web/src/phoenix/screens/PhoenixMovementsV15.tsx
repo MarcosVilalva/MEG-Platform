@@ -3,7 +3,7 @@ import type { FinancialEvent } from '../../app/finance-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import type { PhoenixReadModel } from '../contracts';
 import { PhoenixLaunchWriteControl } from '../components/PhoenixLaunchWriteControl';
-import { runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
+import { phoenixWriteMessage, runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
 import '../phoenix-launch.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -170,19 +170,19 @@ function formatInputMoney(cents: number, negative: boolean) {
 }
 
 function sourceGroup(event: FinancialEvent) {
-  return event.sourceDetails?.group || event.category?.name || '—';
+  return event.category?.name || event.sourceDetails?.group || '—';
 }
 
 function sourceClassification(event: FinancialEvent) {
-  return event.sourceDetails?.expenseClass || event.category?.group || '—';
+  return event.category?.group || event.sourceDetails?.expenseClass || '—';
 }
 
 function sourcePayment(event: FinancialEvent) {
-  return event.sourceDetails?.paymentMethod || event.paymentMethod?.name || '—';
+  return event.paymentMethod?.name || event.sourceDetails?.paymentMethod || '—';
 }
 
 function sourceSituation(event: FinancialEvent) {
-  return event.sourceDetails?.situation || eventStatus(event.status);
+  return eventStatus(event.status) || event.sourceDetails?.situation || '—';
 }
 
 function sourceModality(event: FinancialEvent) {
@@ -507,8 +507,8 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   function openLaunch(event?: FinancialEvent) {
     if (event) {
       const visualType = launchTypeForEvent(event.type);
-      const classification = visualType === 'expense' ? (event.sourceDetails?.expenseClass || event.category?.group || '') : '';
-      const groupName = visualType === 'expense' ? (event.sourceDetails?.group || event.category?.name || '') : '';
+      const classification = visualType === 'expense' ? (event.category?.group || event.sourceDetails?.expenseClass || '') : '';
+      const groupName = visualType === 'expense' ? (event.category?.name || event.sourceDetails?.group || '') : '';
       const matchedCategory = visualType === 'expense'
         ? data.categories.find((item) => item.isActive && (!item.type || item.type === 'expense')
           && normalizeText(item.group || '') === normalizeText(classification)
@@ -577,7 +577,8 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       setLaunchOpen(false);
       resetLaunch();
     } catch (error) {
-      setEditMessage(error instanceof Error ? error.message : 'Não foi possível salvar a alteração. Os dados foram mantidos para nova tentativa.');
+      const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
+      setEditMessage(phoenixWriteMessage(code));
     } finally {
       setSavingEdit(false);
     }
@@ -717,7 +718,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
           <div className={`px-rule-box ${duplicate ? 'duplicate' : ''}`}>{duplicate ? `Possível duplicidade real encontrada: ${duplicate.description}, ${money.format(amountFromEvent(duplicate))}, em ${date.format(new Date(duplicate.date))}.` : editingEventId ? 'Edição vinculada ao lançamento original. Após salvar, a tela aguarda a releitura da base antes de atualizar a grade.' : 'Proteção contra duplicidade preparada: descrição, valor, conta e data são comparados com os lançamentos carregados.'}</div>
           <div className={`px-notice ${missing.length ? 'warn' : 'ok'}`}>{missing.length ? `Campos pendentes: ${missing.join(', ')}.` : 'Campos principais preenchidos. Revise o resumo antes de confirmar.'}</div>
-          {editMessage ? <div className={`px-notice ${editMessage.includes('protegido') || editMessage.includes('possível') ? 'warn' : 'ok'}`}>{editMessage}</div> : null}
+          {editMessage ? <div className={`px-notice ${editMessage.includes('protegido') || editMessage.includes('liberada') || editMessage.includes('possível') ? 'warn' : 'ok'}`}>{editMessage}</div> : null}
 
           {editingEventId ? !reviewed
             ? <button className="px-primary-action px-review-launch" type="button" disabled={missing.length > 0} onClick={reviewLaunch}>{missing.length ? 'Revisar campos obrigatórios' : 'Revisar alterações'}</button>
@@ -744,7 +745,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     {detailEvent ? <aside className="px-detail-drawer open" aria-label="Detalhes do lançamento">
       <div className="px-drawer-head"><div><span className="px-kicker">Lançamento</span><h2>Detalhes</h2></div><button className="px-icon-btn" type="button" onClick={() => setDetailEvent(null)}>×</button></div>
       <p className="px-detail-description">{detailEvent.description}</p>
-      <div className="px-detail-grid"><div><span>Vencimento</span><strong>{formatIsoDate(detailEvent.date)}</strong></div><div><span>Data da compra</span><strong>{formatIsoDate(sourcePurchaseDate(detailEvent))}</strong></div><div><span>Situação</span><strong>{launchTypeForEvent(detailEvent.type) === 'income' ? 'Recebida' : eventStatus(detailEvent.status)}</strong></div><div><span>Conta</span><strong>{detailEvent.account?.name || 'Não informada'}</strong></div><div><span>Sincronização</span><strong>Confirmada na leitura atual</strong></div><div><span>Tipo</span><strong>{eventType(detailEvent.type)}</strong></div><div><span>Valor</span><strong>{money.format(displayEffect(detailEvent))}</strong></div><div><span>Classificação</span><strong>{sourceClassification(detailEvent)}</strong></div><div><span>Grupo</span><strong>{sourceGroup(detailEvent)}</strong></div><div><span>Forma</span><strong>{detailEvent.paymentMethod?.name || detailEvent.sourceDetails?.paymentMethod || '—'}</strong></div><div><span>Modalidade</span><strong>{detailEvent.sourceDetails?.modality || '—'}</strong></div></div>
+      <div className="px-detail-grid"><div><span>Vencimento</span><strong>{formatIsoDate(detailEvent.date)}</strong></div><div><span>Data da compra</span><strong>{formatIsoDate(sourcePurchaseDate(detailEvent))}</strong></div><div><span>Situação</span><strong>{launchTypeForEvent(detailEvent.type) === 'income' ? 'Recebida' : eventStatus(detailEvent.status)}</strong></div><div><span>Conta</span><strong>{detailEvent.account?.name || 'Não informada'}</strong></div><div><span>Sincronização</span><strong>Confirmada na leitura atual</strong></div><div><span>Tipo</span><strong>{eventType(detailEvent.type)}</strong></div><div><span>Valor</span><strong>{money.format(displayEffect(detailEvent))}</strong></div><div><span>Classificação</span><strong>{sourceClassification(detailEvent)}</strong></div><div><span>Grupo</span><strong>{sourceGroup(detailEvent)}</strong></div><div><span>Forma</span><strong>{sourcePayment(detailEvent)}</strong></div><div><span>Modalidade</span><strong>{detailEvent.sourceDetails?.modality || '—'}</strong></div></div>
       {detailEvent.notes ? <div className="px-notice">{detailEvent.notes}</div> : null}
       <div className="px-notice">Duplo clique na linha ou o botão abaixo abre a edição. Alterações simples são relidas da base antes da grade ser atualizada.</div>
       <div className="px-detail-actions"><button className="px-primary-action" type="button" onClick={() => openLaunch(detailEvent)}>Editar lançamento</button><button className="px-secondary-action" type="button" onClick={() => { setDetailEvent(null); onNavigateHistory?.(); }}>Ver histórico</button></div>
