@@ -274,7 +274,7 @@ const gridLabels: Record<GridKey, string> = {
   paymentMethod: 'Forma de pagamento', status: 'Situação', modality: 'Modalidade'
 };
 
-export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, launchRequest = 0 }: { data: PhoenixReadModel; onNavigateHistory?: () => void; launchRequest?: number }) {
+export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDataCommitted, launchRequest = 0 }: { data: PhoenixReadModel; onNavigateHistory?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; launchRequest?: number }) {
   const [data, setData] = useState(initialData);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -572,10 +572,10 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, laun
     try {
       const { snapshot } = await runPhoenixSimpleEventEdit(editingEventId, simpleWriteInput, data.month);
       setData(snapshot);
+      onDataCommitted?.(snapshot);
       setDirty(false);
       setLaunchOpen(false);
       resetLaunch();
-      window.dispatchEvent(new Event('focus'));
     } catch (error) {
       setEditMessage(error instanceof Error ? error.message : 'Não foi possível salvar a alteração. Os dados foram mantidos para nova tentativa.');
     } finally {
@@ -731,10 +731,10 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, laun
               onReview={reviewLaunch}
               onCommitted={(snapshot) => {
                 setData(snapshot);
+                onDataCommitted?.(snapshot);
                 setDirty(false);
                 setLaunchOpen(false);
                 resetLaunch();
-                window.dispatchEvent(new Event('focus'));
               }}
             />}
         </div>
