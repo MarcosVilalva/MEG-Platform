@@ -30,6 +30,7 @@ type PendingChild = {
   purchaseDate: string;
   installmentNo: number;
   installmentQty: number;
+  sourceEventId?: string;
 };
 type PendingItem = {
   id: string;
@@ -162,14 +163,43 @@ function isOpenCardStatus(value: unknown) {
 
 function cardStatementItems(data: PhoenixReadModel): PendingItem[] {
   return data.cards.flatMap((card) => {
+    if (card.statement?.month === data.month && card.statement.lines.length) {
+      const children: PendingChild[] = card.statement.lines.map((line) => ({
+        id: line.id,
+        description: line.description,
+        amount: Number(line.effect || 0),
+        purchaseDate: line.purchaseDate || line.dueDate,
+        installmentNo: Number(line.installmentNo || 1),
+        installmentQty: Math.max(1, Number(line.installmentQty || 1)),
+        sourceEventId: line.eventId,
+      }));
+      return [{
+        id: `card-statement-${card.id}-${data.month}`,
+        sourceId: card.id,
+        source: 'card' as const,
+        description: `${card.name} · Fatura ${statementLabel(data.month)}`,
+        dueDate: card.statement.dueDate || statementDueIso(card, data.month),
+        openAmount: Number(card.statement.netAmount || 0),
+        installmentNo: 1,
+        installmentQty: 1,
+        categoryName: 'Cartão de crédito',
+        group: 'Fatura de cartão',
+        paymentMethod: card.name,
+        modality: 'CRÉDITO',
+        accountName: card.name,
+        statementMonth: data.month,
+        children,
+      }];
+    }
+
     const children: PendingChild[] = [];
     for (const purchase of card.purchases || []) {
       if (String(purchase.id || '').startsWith('legacy-')) continue;
       if (normalize(purchase.status) === 'cancelled' || normalize(purchase.status) === 'cancelado') continue;
       for (const entry of purchase.entries || []) {
         if (entry.statementMonth !== data.month || !isOpenCardStatus(entry.status)) continue;
-        const amount = Math.abs(Number(entry.amount || 0));
-        if (!Number.isFinite(amount) || amount <= 0) continue;
+        const amount = Number(entry.amount || 0);
+        if (!Number.isFinite(amount) || amount === 0) continue;
         children.push({
           id: entry.id,
           description: purchase.description,
@@ -183,9 +213,9 @@ function cardStatementItems(data: PhoenixReadModel): PendingItem[] {
 
     const childTotal = children.reduce((sum, item) => sum + item.amount, 0);
     const officialOpen = card.payableStatementAmount !== undefined
-      ? Math.max(0, Number(card.payableStatementAmount || 0))
+      ? Number(card.statementAmount ?? card.payableStatementAmount ?? 0)
       : childTotal;
-    if (!Number.isFinite(officialOpen) || officialOpen <= 0) return [];
+    if (!Number.isFinite(officialOpen) || officialOpen === 0) return [];
 
     return [{
       id: `card-statement-${card.id}-${data.month}`,
@@ -337,8 +367,10 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       .filter((item) => !['paid', 'cancelled'].includes(normalize(item.status)) && Number(item.openAmount) > 0)
       .map(payableItem);
     const cards = cardStatementItems(model);
+    const representedEventIds = new Set(cards.flatMap((card) => card.children || []).map((child) => child.sourceEventId).filter(Boolean));
     const seen = new Set(official.map(signature));
     const compatibility = eventItems(model).filter((item) => {
+      if (representedEventIds.has(item.sourceId)) return false;
       const key = signature(item);
       if (seen.has(key)) return false;
       seen.add(key);
