@@ -16,6 +16,7 @@ type LaunchSituation = 'planned' | 'paid';
 type GridKey = 'dueDate' | 'purchaseDate' | 'weekday' | 'type' | 'description' | 'income' | 'classification' | 'group' | 'expense' | 'paymentMethod' | 'status' | 'modality';
 type GridSort = { key: GridKey; direction: PhoenixGridSortDirection } | null;
 type GridFilterMap = Record<GridKey, PhoenixGridFilterValue>;
+type MovementToolPanel = 'search' | 'filters' | 'account' | null;
 type FinancialEventWithSourcePayload = FinancialEvent & { sourcePayload?: unknown };
 type LaunchDraft = {
   type: TxType;
@@ -206,6 +207,11 @@ function formatIsoDate(value: string) {
   return date.format(new Date(`${value.slice(0, 10)}T12:00:00Z`));
 }
 
+function formatMonthLabel(value: string) {
+  const [year, month] = value.split('-');
+  return month && year ? `${month}/${year}` : value;
+}
+
 function parseBrazilianNumber(value: string) {
   const normalized = String(value || '').trim().replace(/R\$/gi, '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
   if (!normalized) return null;
@@ -277,12 +283,13 @@ const gridLabels: Record<GridKey, string> = {
   paymentMethod: 'Forma de pagamento', status: 'Situação', modality: 'Modalidade'
 };
 
-export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDataCommitted, launchRequest = 0 }: { data: PhoenixReadModel; onNavigateHistory?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; launchRequest?: number }) {
+export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDataCommitted, onOpenPeriod, launchRequest = 0 }: { data: PhoenixReadModel; onNavigateHistory?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number }) {
   const [data, setData] = useState(initialData);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [status, setStatus] = useState('all');
   const [account, setAccount] = useState('all');
+  const [toolPanel, setToolPanel] = useState<MovementToolPanel>(null);
   const [gridFilters, setGridFilters] = useState<GridFilterMap>(initialGridFilters);
   const [gridSort, setGridSort] = useState<GridSort>(null);
   const [launchOpen, setLaunchOpen] = useState(false);
@@ -298,10 +305,21 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const [validationVisible, setValidationVisible] = useState(false);
   const [recentEventId, setRecentEventId] = useState<string | null>(null);
   const recentTimerRef = useRef<number | null>(null);
+  const toolsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setData(initialData);
   }, [initialData]);
+
+  useEffect(() => {
+    if (!toolPanel) return;
+    const closeOnOutside = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && !toolsRef.current?.contains(target)) setToolPanel(null);
+    };
+    document.addEventListener('pointerdown', closeOnOutside);
+    return () => document.removeEventListener('pointerdown', closeOnOutside);
+  }, [toolPanel]);
 
   useEffect(() => () => {
     if (recentTimerRef.current !== null) window.clearTimeout(recentTimerRef.current);
@@ -309,6 +327,16 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
   const monthEvents = useMemo(() => data.events.items.filter((event) => event.competence === data.month), [data]);
   const rows = useMemo(() => monthEvents.map((event) => ({ event, row: gridRow(event) })), [monthEvents]);
+  const quickSearchSuggestions = useMemo(() => {
+    const values = new Set<string>();
+    monthEvents.forEach((event) => {
+      const category = event.category?.name?.trim();
+      if (category && category !== '—') values.add(category);
+      const payment = event.paymentMethod?.name?.trim();
+      if (payment && payment !== '—') values.add(payment);
+    });
+    return [...values].slice(0, 5);
+  }, [monthEvents]);
 
   const gridOptions = useMemo(() => {
     const optionKeys: GridKey[] = ['weekday', 'type', 'classification', 'group', 'paymentMethod', 'status', 'modality'];
@@ -650,38 +678,64 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
   return <section className="px-screen px-movements-v15">
     <section className="px-movements-overview">
-      <header className="px-screen-head">
-        <div><span className="px-kicker">Lançamentos</span><h1>Controle financeiro</h1><p>Inclua, filtre e acompanhe seus eventos financeiros.</p></div>
+      <div className="px-movement-hero-row">
+        <header className="px-screen-head">
+          <div><span className="px-kicker">Lançamentos</span><h1>Controle financeiro</h1><p>Inclua e controle seus eventos financeiros.</p></div>
+        </header>
+
+        <section className="px-screen-kpis" aria-label="Resumo do período">
+          <article>
+            <span className="px-kpi-icon is-income" aria-hidden="true">↑</span>
+            <div className="px-kpi-copy"><strong>{money.format(displayedIncome)}</strong><small>Receitas monetárias</small></div>
+          </article>
+          <article>
+            <span className="px-kpi-icon is-expense" aria-hidden="true">↓</span>
+            <div className="px-kpi-copy"><strong>{money.format(displayedExpense)}</strong><small>Despesas monetárias</small></div>
+          </article>
+          <article className={displayedResult < 0 ? 'is-negative' : 'is-positive'}>
+            <span className="px-kpi-icon is-result" aria-hidden="true">▥</span>
+            <div className="px-kpi-copy"><strong>{money.format(displayedResult)}</strong><small>{hasActiveFilters ? `Resultado · ${activeFilterCount} filtro(s)` : 'Resultado do período'}</small></div>
+          </article>
+        </section>
+
         <div className="px-launch-head-actions">
-          <details className="px-launch-help"><summary aria-label="Instruções da tela" title="Instruções">?</summary><div><strong>Instruções rápidas</strong><span>Receitas entram como recebidas.</span><span>Benefício Alimentação fica separado do saldo monetário.</span><span>Estornos preservam o efeito reverso.</span><span>Duplo clique abre a edição.</span></div></details>
+          <details className="px-launch-help"><summary aria-label="Ajuda de Lançamentos" title="Ajuda">?</summary><div><strong>Instruções rápidas</strong><span>Receitas entram como recebidas.</span><span>Benefício Alimentação fica separado do saldo monetário.</span><span>Estornos preservam o efeito reverso.</span><span>Duplo clique abre a edição.</span></div></details>
           <details className="px-column-chooser"><summary>Colunas</summary><div><span>Dia</span><span>Classificação</span><span>Grupo</span><span>Forma de pagamento</span><span>Modalidade</span></div></details>
         </div>
-      </header>
+      </div>
 
-      <section className="px-screen-kpis">
-        <article>
-          <span className="px-kpi-icon" aria-hidden="true">▤</span>
-          <div className="px-kpi-copy"><strong>{hasActiveFilters ? filtered.length : monthEvents.length}</strong><small>{hasActiveFilters ? `de ${monthEvents.length} no período` : 'no período'}</small></div>
-        </article>
-        <article>
-          <span className="px-kpi-icon is-income" aria-hidden="true">↑</span>
-          <div className="px-kpi-copy"><strong>{money.format(displayedIncome)}</strong><small>entradas monetárias</small></div>
-        </article>
-        <article>
-          <span className="px-kpi-icon is-expense" aria-hidden="true">↓</span>
-          <div className="px-kpi-copy"><strong>{money.format(displayedExpense)}</strong><small>saídas monetárias</small></div>
-        </article>
-        <article className={displayedResult < 0 ? 'is-negative' : 'is-positive'}>
-          <span className="px-kpi-icon is-result" aria-hidden="true">▥</span>
-          <div className="px-kpi-copy"><strong>{money.format(displayedResult)}</strong><small>{hasActiveFilters ? `${activeFilterCount} filtro(s) ativo(s)` : 'resultado do período'}</small></div>
-        </article>
-      </section>
+      <div className="px-movement-tools" ref={toolsRef}>
+        <div className="px-movement-tool-buttons">
+          <button className={`px-movement-tool-button ${toolPanel === 'search' || search.trim() ? 'active' : ''}`} type="button" aria-expanded={toolPanel === 'search'} onClick={() => setToolPanel((current) => current === 'search' ? null : 'search')}><span aria-hidden="true">⌕</span><strong>Buscar</strong>{search.trim() ? <small>1</small> : null}<b aria-hidden="true">{toolPanel === 'search' ? '⌃' : '⌄'}</b></button>
+          <button className={`px-movement-tool-button ${toolPanel === 'filters' || typeFilter !== 'all' || status !== 'all' ? 'active' : ''}`} type="button" aria-expanded={toolPanel === 'filters'} onClick={() => setToolPanel((current) => current === 'filters' ? null : 'filters')}><span aria-hidden="true">≡</span><strong>Filtros</strong>{typeFilter !== 'all' || status !== 'all' ? <small>{Number(typeFilter !== 'all') + Number(status !== 'all')}</small> : null}<b aria-hidden="true">{toolPanel === 'filters' ? '⌃' : '⌄'}</b></button>
+          <button className="px-movement-tool-button" type="button" onClick={() => { setToolPanel(null); onOpenPeriod?.(); }}><span aria-hidden="true">▣</span><strong>Período</strong><em>{formatMonthLabel(data.month)}</em><b aria-hidden="true">⌄</b></button>
+          <button className={`px-movement-tool-button ${toolPanel === 'account' || account !== 'all' ? 'active' : ''}`} type="button" aria-expanded={toolPanel === 'account'} onClick={() => setToolPanel((current) => current === 'account' ? null : 'account')}><span aria-hidden="true">▭</span><strong>Conta</strong>{account !== 'all' ? <small>1</small> : null}<b aria-hidden="true">{toolPanel === 'account' ? '⌃' : '⌄'}</b></button>
+        </div>
 
-      <div className="px-toolbar">
-        <label className="px-search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar descrição, grupo ou usuário" /></label>
-        <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option></select>
-        <select value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">Todas as situações</option><option value="planned">Pendente</option><option value="confirmed">Confirmado</option><option value="paid">Pago</option><option value="reconciled">Conciliado</option></select>
-        <select value={account} onChange={(event) => setAccount(event.target.value)}><option value="all">Todas as contas</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
+        {toolPanel === 'search' ? <div className="px-movement-tool-panel px-movement-search-panel">
+          <div className="px-tool-panel-heading"><div><strong>Buscar lançamentos</strong><span>{filtered.length} resultado(s) no filtro atual</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher busca">×</button></div>
+          <div className="px-search-panel-grid">
+            <label className="px-expanded-search"><span aria-hidden="true">⌕</span><input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Digite descrição, grupo, conta ou forma de pagamento..." />{search ? <button type="button" onClick={() => setSearch('')} aria-label="Limpar busca">×</button> : null}</label>
+            {quickSearchSuggestions.length ? <div className="px-search-suggestions"><span>Sugestões</span><div>{quickSearchSuggestions.map((item) => <button type="button" key={item} onClick={() => setSearch(item)}>{item}</button>)}</div></div> : null}
+          </div>
+        </div> : null}
+
+        {toolPanel === 'filters' ? <div className="px-movement-tool-panel">
+          <div className="px-tool-panel-heading"><div><strong>Filtros rápidos</strong><span>Combine tipo e situação sem ocupar espaço quando não estiver usando.</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher filtros">×</button></div>
+          <div className="px-filter-panel-grid">
+            <label><span>Tipo</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option><option value="transfer">Transferências</option></select></label>
+            <label><span>Situação</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">Todas as situações</option><option value="planned">Pendente</option><option value="confirmed">Confirmado</option><option value="paid">Pago</option><option value="reconciled">Conciliado</option></select></label>
+            <button className="px-tool-panel-clear" type="button" disabled={typeFilter === 'all' && status === 'all'} onClick={() => { setTypeFilter('all'); setStatus('all'); }}>Limpar filtros</button>
+          </div>
+        </div> : null}
+
+        {toolPanel === 'account' ? <div className="px-movement-tool-panel">
+          <div className="px-tool-panel-heading"><div><strong>Conta financeira</strong><span>Restrinja a grade a uma conta específica.</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher conta">×</button></div>
+          <div className="px-account-panel-grid">
+            <label><span>Conta</span><select value={account} onChange={(event) => setAccount(event.target.value)}><option value="all">Todas as contas</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <button className="px-tool-panel-clear" type="button" disabled={account === 'all'} onClick={() => setAccount('all')}>Todas as contas</button>
+          </div>
+        </div> : null}
       </div>
     </section>
 
