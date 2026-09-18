@@ -31,10 +31,10 @@ assert.equal(azul.payableAmount, 1875.52);
 assert.equal(azul.creditBalance, 0);
 
 const partialRefund = canonicalCardStatementTotals([
-  { id: 'a', source: 'financial-event', description: 'Compra', effect: 200, kind: 'charge', purchaseDate: '2026-09-01', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1 },
+  { id: 'a', source: 'financial-event', description: 'Compra', effect: 200, kind: 'charge', purchaseDate: '2026-09-01', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1, isOpen: true, sourceStatus: 'planned' },
   { id: 'b', source: 'financial-event', description: 'Estorno parcial', effect: -50, kind: 'credit', purchaseDate: '2026-09-02', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1 },
 ]);
-assert.deepEqual(partialRefund, { charges: 200, credits: 50, netAmount: 150, payableAmount: 150, creditBalance: 0 });
+assert.deepEqual(partialRefund, { charges: 200, credits: 50, netAmount: 150, openCharges: 200, openCredits: 50, openNetAmount: 150, payableAmount: 150, creditBalance: 0 });
 
 const creditStatement = canonicalCardStatementTotals([
   { id: 'a', source: 'financial-event', description: 'Compra', effect: 50, kind: 'charge', purchaseDate: '2026-09-01', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1 },
@@ -66,6 +66,7 @@ const officialWithCredit = buildCanonicalCardStatement({
 });
 assert.equal(officialWithCredit.lines.length, 2, 'projeção normalizada não pode duplicar a compra oficial');
 assert.equal(officialWithCredit.netAmount, 80);
+assert.equal(officialWithCredit.openNetAmount, 80);
 assert.equal(officialWithCredit.credits, 20);
 
 const ignored = buildCanonicalCardStatement({
@@ -80,6 +81,22 @@ const ignored = buildCanonicalCardStatement({
   ],
 });
 assert.equal(ignored.netAmount, 0);
+assert.equal(ignored.openNetAmount, 0);
 assert.equal(ignored.status, 'empty');
+
+const paidHistory = buildCanonicalCardStatement({
+  month: '2026-09',
+  closingDay: 8,
+  dueDay: 16,
+  aliases: ['AZUL'],
+  purchases: [],
+  events: [
+    { id: 'paid-charge', description: 'Compra paga', type: 'expense', status: 'paid', date: '2026-09-16', signedAmount: -100, sourcePayload: { paymentMethod: 'AZUL', modality: 'CREDITO' } },
+    { id: 'paid-refund', description: 'Estorno pago', type: 'expense', status: 'paid', date: '2026-09-16', signedAmount: 20, sourcePayload: { paymentMethod: 'AZUL', modality: 'CREDITO' } },
+  ],
+});
+assert.equal(paidHistory.netAmount, 80, 'histórico da fatura deve preservar valores após a baixa');
+assert.equal(paidHistory.openNetAmount, 0, 'itens pagos não permanecem no saldo aberto');
+assert.equal(paidHistory.status, 'paid');
 
 console.log('Canonical card statement sign rules: OK');
