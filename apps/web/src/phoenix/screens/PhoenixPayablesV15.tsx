@@ -163,10 +163,20 @@ function isOpenCardStatus(value: unknown) {
 
 function cardStatementItems(data: PhoenixReadModel): PendingItem[] {
   return data.cards.flatMap((card) => {
-    if (card.statement?.month === data.month
-      && card.statement.lines.some((line) => line.isOpen)
-      && card.statement.lines.every((line) => line.source === 'card-installment')) {
-      const children: PendingChild[] = card.statement.lines.filter((line) => line.isOpen).map((line) => ({
+    if (card.statement?.month === data.month) {
+      // A fatura canônica pode ser formada por parcelas oficiais, por eventos
+      // normalizados legados ou por ambos. O writer "card" só pode liquidar
+      // CardInstallment; eventos normalizados continuam no writer de eventos.
+      // Nunca transforme o total canônico inteiro em uma fatura oficial, pois
+      // isso duplicaria os mesmos eventos em Pendentes e perderia estornos.
+      const officialLines = card.statement.lines
+        .filter((line) => line.isOpen && line.source === 'card-installment');
+      if (!officialLines.length) return [];
+
+      const officialOpen = officialLines.reduce((sum, line) => sum + Number(line.effect || 0), 0);
+      if (!Number.isFinite(officialOpen) || officialOpen <= 0) return [];
+
+      const children: PendingChild[] = officialLines.map((line) => ({
         id: line.id,
         description: line.description,
         amount: Number(line.effect || 0),
@@ -181,7 +191,7 @@ function cardStatementItems(data: PhoenixReadModel): PendingItem[] {
         source: 'card' as const,
         description: `${card.name} · Fatura ${statementLabel(data.month)}`,
         dueDate: card.statement.dueDate || statementDueIso(card, data.month),
-        openAmount: Number(card.statement.openNetAmount || 0),
+        openAmount: officialOpen,
         installmentNo: 1,
         installmentQty: 1,
         categoryName: 'Cartão de crédito',
@@ -194,6 +204,8 @@ function cardStatementItems(data: PhoenixReadModel): PendingItem[] {
       }];
     }
 
+    // Compatibilidade com APIs anteriores ao contrato canônico: neste fallback
+    // somente parcelas oficiais podem originar um item "card".
     const children: PendingChild[] = [];
     for (const purchase of card.purchases || []) {
       if (String(purchase.id || '').startsWith('legacy-')) continue;
@@ -215,9 +227,9 @@ function cardStatementItems(data: PhoenixReadModel): PendingItem[] {
 
     const childTotal = children.reduce((sum, item) => sum + item.amount, 0);
     const officialOpen = card.payableStatementAmount !== undefined
-      ? Number(card.statementAmount ?? card.payableStatementAmount ?? 0)
+      ? Number(card.payableStatementAmount)
       : childTotal;
-    if (!Number.isFinite(officialOpen) || officialOpen === 0) return [];
+    if (!Number.isFinite(officialOpen) || officialOpen <= 0) return [];
 
     return [{
       id: `card-statement-${card.id}-${data.month}`,
