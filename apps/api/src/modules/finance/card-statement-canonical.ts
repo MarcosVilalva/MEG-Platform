@@ -15,6 +15,8 @@ export type CanonicalCardStatementLine = {
   statementMonth: string;
   installmentNo: number;
   installmentQty: number;
+  isOpen: boolean;
+  sourceStatus: string;
 };
 
 export type CanonicalCardStatement = {
@@ -23,9 +25,12 @@ export type CanonicalCardStatement = {
   charges: number;
   credits: number;
   netAmount: number;
+  openCharges: number;
+  openCredits: number;
+  openNetAmount: number;
   payableAmount: number;
   creditBalance: number;
-  status: 'empty' | 'open' | 'zero' | 'credit';
+  status: 'empty' | 'open' | 'partial' | 'paid' | 'zero' | 'credit';
   lines: CanonicalCardStatementLine[];
 };
 
@@ -129,18 +134,26 @@ export function canonicalCardStatementTotals(lines: CanonicalCardStatementLine[]
   const charges = round(lines.reduce((sum, line) => sum + Math.max(0, line.effect), 0));
   const credits = round(lines.reduce((sum, line) => sum + Math.max(0, -line.effect), 0));
   const netAmount = round(charges - credits);
+  const openLines = lines.filter((line) => line.isOpen !== false);
+  const openCharges = round(openLines.reduce((sum, line) => sum + Math.max(0, line.effect), 0));
+  const openCredits = round(openLines.reduce((sum, line) => sum + Math.max(0, -line.effect), 0));
+  const openNetAmount = round(openCharges - openCredits);
   return {
     charges,
     credits,
     netAmount,
-    payableAmount: round(Math.max(0, netAmount)),
-    creditBalance: round(Math.max(0, -netAmount)),
+    openCharges,
+    openCredits,
+    openNetAmount,
+    payableAmount: round(Math.max(0, openNetAmount)),
+    creditBalance: round(Math.max(0, -openNetAmount)),
   };
 }
 
 function eventMatchesCard(event: FinancialEventLike, aliases: Set<string>) {
   if (!['expense', 'adjustment'].includes(String(event.type || '').toLowerCase())) return false;
-  if (String(event.status || '').toLowerCase() !== 'planned') return false;
+  const status = String(event.status || '').toLowerCase();
+  if (['draft', 'archived', 'cancelled', 'canceled'].includes(status)) return false;
   const paymentMethod = event.paymentMethod?.name
     ?? sourceValue(event, 'paymentMethod')
     ?? sourceValue(event, 'account');
@@ -165,7 +178,8 @@ export function buildCanonicalCardStatement(input: {
   for (const purchase of input.purchases) {
     if (String(purchase.status || '').toLowerCase() === 'cancelled') continue;
     for (const entry of purchase.entries || []) {
-      if (entry.statementMonth !== input.month || String(entry.status || '').toLowerCase() !== 'open') continue;
+      const entryStatus = String(entry.status || '').toLowerCase();
+      if (entry.statementMonth !== input.month || ['cancelled', 'canceled'].includes(entryStatus)) continue;
       const effect = round(numberValue(entry.amount) ?? 0);
       if (!effect) continue;
       lines.push({
@@ -181,6 +195,8 @@ export function buildCanonicalCardStatement(input: {
         statementMonth: input.month,
         installmentNo: Math.max(1, Number(entry.number || 1)),
         installmentQty: Math.max(1, Number(purchase.installments || 1)),
+        isOpen: entryStatus === 'open',
+        sourceStatus: entryStatus || 'open',
       });
     }
   }
@@ -206,6 +222,8 @@ export function buildCanonicalCardStatement(input: {
       statementMonth: input.month,
       installmentNo: installment.no,
       installmentQty: installment.qty,
+      isOpen: String(event.status || '').toLowerCase() === 'planned',
+      sourceStatus: String(event.status || '').toLowerCase(),
     });
   }
 
@@ -215,13 +233,17 @@ export function buildCanonicalCardStatement(input: {
     || left.id.localeCompare(right.id));
 
   const totals = canonicalCardStatementTotals(lines);
+  const hasOpen = lines.some((line) => line.isOpen);
+  const hasClosed = lines.some((line) => !line.isOpen);
   const status: CanonicalCardStatement['status'] = !lines.length
     ? 'empty'
-    : totals.netAmount > 0
-      ? 'open'
-      : totals.netAmount < 0
-        ? 'credit'
-        : 'zero';
+    : totals.openNetAmount < 0
+      ? 'credit'
+      : totals.openNetAmount > 0
+        ? hasClosed ? 'partial' : 'open'
+        : hasOpen
+          ? 'zero'
+          : 'paid';
 
   return { month: input.month, dueDate, ...totals, status, lines };
 }
