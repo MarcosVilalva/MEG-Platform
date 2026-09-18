@@ -659,10 +659,22 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       </header>
 
       <section className="px-screen-kpis">
-        <article><span>{hasActiveFilters ? 'Filtrados' : 'Lançamentos'}</span><strong>{hasActiveFilters ? filtered.length : monthEvents.length}</strong><small>{hasActiveFilters ? `de ${monthEvents.length} no período` : 'no período'}</small></article>
-        <article><span>Receitas</span><strong>{money.format(displayedIncome)}</strong><small>monetárias</small></article>
-        <article><span>Despesas</span><strong>{money.format(displayedExpense)}</strong><small>monetárias</small></article>
-        <article><span>Resultado</span><strong>{money.format(displayedResult)}</strong><small>{hasActiveFilters ? `${activeFilterCount} filtro(s) ativo(s)` : 'do período'}</small></article>
+        <article>
+          <span className="px-kpi-icon" aria-hidden="true">▤</span>
+          <div className="px-kpi-copy"><strong>{hasActiveFilters ? filtered.length : monthEvents.length}</strong><small>{hasActiveFilters ? `de ${monthEvents.length} no período` : 'no período'}</small></div>
+        </article>
+        <article>
+          <span className="px-kpi-icon is-income" aria-hidden="true">↑</span>
+          <div className="px-kpi-copy"><strong>{money.format(displayedIncome)}</strong><small>entradas monetárias</small></div>
+        </article>
+        <article>
+          <span className="px-kpi-icon is-expense" aria-hidden="true">↓</span>
+          <div className="px-kpi-copy"><strong>{money.format(displayedExpense)}</strong><small>saídas monetárias</small></div>
+        </article>
+        <article className={displayedResult < 0 ? 'is-negative' : 'is-positive'}>
+          <span className="px-kpi-icon is-result" aria-hidden="true">▥</span>
+          <div className="px-kpi-copy"><strong>{money.format(displayedResult)}</strong><small>{hasActiveFilters ? `${activeFilterCount} filtro(s) ativo(s)` : 'resultado do período'}</small></div>
+        </article>
       </section>
 
       <div className="px-toolbar">
