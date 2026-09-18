@@ -575,3 +575,30 @@
     grid-column:auto;
   }
 }
+
+
+.px-pending-card-net-action {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 12px;
+  border-bottom:1px solid var(--line);
+  background:color-mix(in srgb,var(--panel2) 94%,var(--brand) 6%);
+}
+.px-pending-card-net-action button {
+  min-height:34px;
+  padding:7px 11px;
+  border:1px solid color-mix(in srgb,var(--brand) 55%,var(--line));
+  border-radius:9px;
+  background:var(--panel);
+  color:var(--brand);
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+.px-pending-card-net-action button:disabled { opacity:.45; cursor:not-allowed; }
+.px-pending-card-net-action span { color:var(--muted); font-size:11px; }
+@media (max-width:720px) {
+  .px-pending-card-net-action { align-items:flex-start; flex-direction:column; }
+}
