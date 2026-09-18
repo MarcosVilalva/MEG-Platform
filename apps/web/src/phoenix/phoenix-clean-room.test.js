@@ -118,12 +118,13 @@ assert.match(commandPalette, /event\.target === event\.currentTarget/,
 assert.match(movementScreen, /Novo lançamento/);
 assert.match(movementScreen, /launchRequest/,
   'Drawer de lançamento deve aceitar abertura controlada pelo shell global');
-assert.match(movementScreen, /Lançamentos no período/,
-  'Resumo de lançamentos deve refletir a quantidade completa do período');
+assert.match(movementScreen, /hasActiveFilters \? 'Filtrados' : 'Lançamentos'/,
+  'Resumo compacto deve continuar distinguindo total do período da visão filtrada');
 assert.match(movementScreen, /Despesa/);
 assert.match(movementScreen, /Receita/);
 assert.match(movementScreen, /Transferência/);
-assert.match(movementScreen, /Proteção contra duplicidade/);
+assert.match(movementScreen, /Possível duplicidade:/,
+  'Alerta de duplicidade deve aparecer somente quando houver correspondência real');
 assert.match(movementScreen, /PhoenixLaunchWriteControl/,
   'Drawer Phoenix deve separar revisão visual da confirmação protegida de escrita');
 assert.match(launchWriteControl, /getPhoenixRuntimeWriteCapabilities\(true\)/,
@@ -152,8 +153,14 @@ assert.match(movementScreen, /dueDay <= closingDay/,
   'Vencimento visual deve respeitar o ciclo cadastrado do cartão');
 assert.match(movementScreen, /max=\{credit \? 48 : 120\}/,
   'Compra no cartão deve respeitar o limite de 48 parcelas do contrato atual da API');
-assert.match(movementScreen, /Possível duplicidade real encontrada/,
-  'Proteção de duplicidade deve comparar com dados reais já carregados');
+assert.match(movementScreen, /data\.events\.items\.find/,
+  'Proteção de duplicidade deve continuar comparando com dados reais já carregados');
+assert.match(movementScreen, /px-launch-help/,
+  'Regras de uso devem permanecer acessíveis por ajuda contextual sem ocupar espaço fixo');
+assert.match(movementScreen, /invalidField\('descrição'\)/,
+  'Campos obrigatórios devem possuir validação inline contextual');
+assert.doesNotMatch(movementScreen, /Os campos marcados com \* são obrigatórios/,
+  'O editor não deve voltar a abrir com instruções fixas ocupando a área de preenchimento');
 assert.doesNotMatch(movementScreen, /method\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/,
   'Tela de Lançamentos não deve incorporar requisições de escrita diretamente');
 
