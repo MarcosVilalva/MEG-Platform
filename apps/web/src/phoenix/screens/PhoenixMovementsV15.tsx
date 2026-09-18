@@ -283,7 +283,7 @@ const gridLabels: Record<GridKey, string> = {
   paymentMethod: 'Forma de pagamento', status: 'Situação', modality: 'Modalidade'
 };
 
-type MovementIconName = 'search' | 'filters' | 'calendar' | 'wallet' | 'income' | 'expense' | 'result' | 'help' | 'columns' | 'close' | 'chevronLeft' | 'chevronRight' | 'chevronsLeft' | 'chevronsRight' | 'expand' | 'collapse';
+type MovementIconName = 'search' | 'filters' | 'calendar' | 'wallet' | 'income' | 'expense' | 'result' | 'close' | 'chevronLeft' | 'chevronRight' | 'chevronsLeft' | 'chevronsRight' | 'expand' | 'collapse';
 
 function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: number }) {
   const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
@@ -294,8 +294,6 @@ function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: numb
   if (name === 'income') return <svg {...common}><path d="M12 19V5M7 10l5-5 5 5"/></svg>;
   if (name === 'expense') return <svg {...common}><path d="M12 5v14M7 14l5 5 5-5"/></svg>;
   if (name === 'result') return <svg {...common}><path d="M5 19V9M10 19V5M15 19v-7M20 19V7"/></svg>;
-  if (name === 'help') return <svg {...common}><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.5 2.5 0 1 1 4.2 1.8c-.9.7-2 1.1-2 2.7M12 17h.01"/></svg>;
-  if (name === 'columns') return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14M15 5v14"/></svg>;
   if (name === 'close') return <svg {...common}><path d="m7 7 10 10M17 7 7 17"/></svg>;
   if (name === 'chevronLeft') return <svg {...common}><path d="m15 18-6-6 6-6"/></svg>;
   if (name === 'chevronRight') return <svg {...common}><path d="m9 18 6-6-6-6"/></svg>;
@@ -741,10 +739,6 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           </article>
         </section>
 
-        <div className="px-launch-head-actions">
-          <details className="px-launch-help"><summary aria-label="Ajuda de Lançamentos" data-tooltip="Ajuda"><MovementIcon name="help" size={17} /></summary><div><strong>Instruções rápidas</strong><span>Receitas entram como recebidas.</span><span>Benefício Alimentação fica separado do saldo monetário.</span><span>Estornos preservam o efeito reverso.</span><span>Duplo clique abre a edição.</span></div></details>
-          <details className="px-column-chooser"><summary aria-label="Escolher colunas" data-tooltip="Colunas"><MovementIcon name="columns" size={17} /></summary><div><span>Dia</span><span>Classificação</span><span>Grupo</span><span>Forma de pagamento</span><span>Modalidade</span></div></details>
-        </div>
       </div>
 
       <div className="px-movement-tools" ref={toolsRef}>
@@ -789,25 +783,25 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
       <div className="px-table-scroll">
         <table className="px-data-table px-v15-launch-table">
-          <thead><tr><th>{gridHeader('Vencimento', 'dueDate', 'date')}</th><th>{gridHeader('Data da compra', 'purchaseDate', 'date')}</th><th>{gridHeader('Dia', 'weekday', 'multi', gridOptions.weekday)}</th><th>{gridHeader('Tipo', 'type', 'multi', gridOptions.type)}</th><th>{gridHeader('Descrição', 'description', 'text')}</th><th>{gridHeader('Receita', 'income', 'number')}</th><th>{gridHeader('Classificação', 'classification', 'multi', gridOptions.classification)}</th><th>{gridHeader('Grupo', 'group', 'multi', gridOptions.group)}</th><th>{gridHeader('Despesa', 'expense', 'number')}</th><th>{gridHeader('Forma de pagamento', 'paymentMethod', 'multi', gridOptions.paymentMethod)}</th><th>{gridHeader('Situação', 'status', 'multi', gridOptions.status)}</th><th>{gridHeader('Modalidade', 'modality', 'multi', gridOptions.modality)}</th><th>Detalhes</th></tr></thead>
+          <thead><tr><th data-col="dueDate">{gridHeader('Vencimento', 'dueDate', 'date')}</th><th data-col="purchaseDate">{gridHeader('Data da compra', 'purchaseDate', 'date')}</th><th data-col="weekday">{gridHeader('Dia', 'weekday', 'multi', gridOptions.weekday)}</th><th data-col="type">{gridHeader('Tipo', 'type', 'multi', gridOptions.type)}</th><th data-col="description">{gridHeader('Descrição', 'description', 'text')}</th><th data-col="income">{gridHeader('Receita', 'income', 'number')}</th><th data-col="classification">{gridHeader('Classificação', 'classification', 'multi', gridOptions.classification)}</th><th data-col="group">{gridHeader('Grupo', 'group', 'multi', gridOptions.group)}</th><th data-col="expense">{gridHeader('Despesa', 'expense', 'number')}</th><th data-col="paymentMethod">{gridHeader('Forma de pagamento', 'paymentMethod', 'multi', gridOptions.paymentMethod)}</th><th data-col="status">{gridHeader('Situação', 'status', 'multi', gridOptions.status)}</th><th data-col="modality">{gridHeader('Modalidade', 'modality', 'multi', gridOptions.modality)}</th><th data-col="details">Detalhes</th></tr></thead>
           <tbody>{visibleEvents.map((event) => {
             const visualType = launchTypeForEvent(event.type);
             const effect = displayEffect(event);
             const isIncome = visualType === 'income';
             return <tr key={event.id} className={recentEventId === event.id ? 'is-recently-updated' : undefined} onDoubleClick={() => openLaunch(event)} title="Duplo clique para editar">
-              <td data-label="Vencimento">{formatIsoDate(event.date)}</td>
-              <td data-label="Data da compra">{formatIsoDate(sourcePurchaseDate(event))}</td>
-              <td data-label="Dia">{event.sourceDetails?.weekday || weekday(event.date)}</td>
-              <td data-label="Tipo"><span className={`px-type-flag ${visualType}`}>{isIncome ? 'RECEITA' : visualType === 'transfer' ? 'TRANSFERÊNCIA' : 'DESPESA'}</span></td>
-              <td data-label="Descrição"><strong>{event.description}</strong></td>
-              <td data-label="Receita" className={`px-money ${effect < 0 ? 'negative' : 'positive'}`}>{isIncome ? money.format(effect) : '—'}</td>
-              <td data-label="Classificação">{sourceClassification(event)}</td>
-              <td data-label="Grupo">{sourceGroup(event)}</td>
-              <td data-label="Despesa" className={`px-money ${effect < 0 ? 'positive' : 'negative'}`}>{visualType === 'expense' ? money.format(effect) : '—'}</td>
-              <td data-label="Forma de pagamento">{sourcePayment(event)}</td>
-              <td data-label="Situação"><span className={`px-status ${event.status}`}>{sourceSituation(event)}</span></td>
-              <td data-label="Modalidade">{sourceModality(event)}</td>
-              <td data-label="Detalhes"><button className="px-detail-btn" type="button" onClick={() => setDetailEvent(event)} aria-label={`Detalhes de ${event.description}`}>↘</button></td>
+              <td data-col="dueDate" data-label="Vencimento">{formatIsoDate(event.date)}</td>
+              <td data-col="purchaseDate" data-label="Data da compra">{formatIsoDate(sourcePurchaseDate(event))}</td>
+              <td data-col="weekday" data-label="Dia">{event.sourceDetails?.weekday || weekday(event.date)}</td>
+              <td data-col="type" data-label="Tipo"><span className={`px-type-flag ${visualType}`}>{isIncome ? 'RECEITA' : visualType === 'transfer' ? 'TRANSFERÊNCIA' : 'DESPESA'}</span></td>
+              <td data-col="description" data-label="Descrição"><strong>{event.description}</strong></td>
+              <td data-col="income" data-label="Receita" className={`px-money ${effect < 0 ? 'negative' : 'positive'}`}>{isIncome ? money.format(effect) : '—'}</td>
+              <td data-col="classification" data-label="Classificação">{sourceClassification(event)}</td>
+              <td data-col="group" data-label="Grupo">{sourceGroup(event)}</td>
+              <td data-col="expense" data-label="Despesa" className={`px-money ${effect < 0 ? 'positive' : 'negative'}`}>{visualType === 'expense' ? money.format(effect) : '—'}</td>
+              <td data-col="paymentMethod" data-label="Forma de pagamento">{sourcePayment(event)}</td>
+              <td data-col="status" data-label="Situação"><span className={`px-status ${event.status}`}>{sourceSituation(event)}</span></td>
+              <td data-col="modality" data-label="Modalidade">{sourceModality(event)}</td>
+              <td data-col="details" data-label="Detalhes"><button className="px-detail-btn" type="button" onClick={() => setDetailEvent(event)} aria-label={`Detalhes de ${event.description}`}>↘</button></td>
             </tr>;
           })}</tbody>
         </table>

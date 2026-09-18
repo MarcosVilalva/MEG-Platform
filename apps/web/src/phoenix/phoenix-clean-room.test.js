@@ -9,6 +9,7 @@ const commandPalette = readFileSync(new URL('./PhoenixCommandPalette.tsx', impor
 const screens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.meta.url), 'utf8');
 const movementScreen = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
 const launchWriteControl = readFileSync(new URL('./components/PhoenixLaunchWriteControl.tsx', import.meta.url), 'utf8');
+const bulkEventUxEnhancements = readFileSync(new URL('./bulk-event-ux-enhancements.ts', import.meta.url), 'utf8');
 const homeDashboard = readFileSync(new URL('./screens/PhoenixHomeDashboard.tsx', import.meta.url), 'utf8');
 const homeAllTime = readFileSync(new URL('./screens/PhoenixHomeAllTime.tsx', import.meta.url), 'utf8');
 const homePeriodSummary = readFileSync(new URL('./home-period-summary.ts', import.meta.url), 'utf8');
@@ -172,8 +173,16 @@ assert.match(movementScreen, /max=\{credit \? 48 : 120\}/,
   'Compra no cartão deve respeitar o limite de 48 parcelas do contrato atual da API');
 assert.match(movementScreen, /data\.events\.items\.find/,
   'Proteção de duplicidade deve continuar comparando com dados reais já carregados');
-assert.match(movementScreen, /px-launch-help/,
-  'Regras de uso devem permanecer acessíveis por ajuda contextual sem ocupar espaço fixo');
+assert.match(bulkEventUxEnhancements, /data-grid-help/,
+  'Ajuda deve permanecer acessível na barra operacional da grade sem ocupar o cabeçalho');
+assert.match(bulkEventUxEnhancements, /data-column-visibility/,
+  'Seletor de colunas deve permanecer integrado à barra operacional');
+assert.match(bulkEventUxEnhancements, /COLUMN_STORAGE_KEY/,
+  'Preferência de visibilidade das colunas deve persistir localmente');
+assert.match(bulkEventUxEnhancements, /eyeOff/,
+  'Seletor de colunas deve usar o padrão visual de olho aberto\/fechado');
+assert.match(movementScreen, /data-col="description"/,
+  'Colunas da grade devem possuir identidade estável para mostrar e ocultar em tempo real');
 assert.match(movementScreen, /invalidField\('descrição'\)/,
   'Campos obrigatórios devem possuir validação inline contextual');
 assert.doesNotMatch(movementScreen, /Os campos marcados com \* são obrigatórios/,
