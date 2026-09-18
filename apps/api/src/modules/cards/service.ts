@@ -395,13 +395,29 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
         reason: 'CREDIT_METHOD_NOT_ALLOWED_FOR_STATEMENT_PAYMENT',
       });
     }
+    const sourceCardMethods = new Set([
+      key(card.name),
+      ...shared.legacy.cards
+        .filter((item) => key(item.productName) === key(card.name) || key(item.paymentMethod) === key(card.name))
+        .flatMap((item) => [key(item.paymentMethod), key(item.productName)])
+        .filter(Boolean),
+    ]);
+    if (paymentMethod && sourceCardMethods.has(key(paymentMethod.name))) {
+      throw new CardDomainError('INVALID_PAYMENT_METHOD', {
+        paymentMethodId: paymentMethod.id,
+        reason: 'SOURCE_CARD_METHOD_NOT_ALLOWED_FOR_STATEMENT_PAYMENT',
+      });
+    }
 
     const entries = await tx.cardInstallment.findMany({
       where: { purchase: { cardId: card.id, userId: shared.ownerId, status: 'active' }, statementMonth: month, status: 'open' },
       orderBy: { number: 'asc' },
     });
     if (!entries.length) throw new CardDomainError('EMPTY_STATEMENT');
-    const amount = entries.reduce((sum, entry) => sum + Number(entry.amount), 0);
+    const amount = Math.round(entries.reduce((sum, entry) => sum + Number(entry.amount), 0) * 100) / 100;
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new CardDomainError('CARD_STATEMENT_NOT_PAYABLE', { cardId, month, amount });
+    }
     const available = await monetaryBalanceAt(tx, shared.ownerId, input.paidAt);
     const protection = paymentBalanceDecision(available, amount);
     if (!protection.allowed) throw new CardDomainError('INSUFFICIENT_MONETARY_BALANCE', { ...protection, at: input.paidAt.slice(0, 10) });
