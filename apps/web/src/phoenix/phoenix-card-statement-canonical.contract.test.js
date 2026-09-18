@@ -14,6 +14,12 @@ assert.match(cardsGrid, /selected\.statement\.charges/,
   'Compras da fatura devem vir do resumo canônico');
 assert.match(cardsGrid, /selected\.statement\.credits/,
   'Créditos e estornos devem vir do resumo canônico');
+assert.match(cardsGrid, /const canonicalRows = useMemo<GridRow\[\]>/,
+  'A grade da fatura atual deve ser materializada pelas mesmas linhas canônicas do resumo');
+assert.match(cardsGrid, /amount: Number\(line\.effect \|\| 0\)/,
+  'Linhas da fatura atual devem preservar o efeito financeiro canônico, inclusive estornos');
+assert.match(cardsGrid, /currentRows = canonicalRows\.length/,
+  'A fatura atual deve preferir linhas canônicas em vez de misturar projeção normalizada e legado');
 
 assert.match(payables, /line\.source === 'card-installment'/,
   'Writer de fatura só pode ser usado quando todas as linhas forem do domínio oficial de cartões');
