@@ -256,6 +256,12 @@ function ensureCommandStrip() {
     strip.querySelector<HTMLButtonElement>('[data-do-delete]')?.addEventListener('click', () => triggerProtectedAction('delete'));
   }
 
+  const exportToolbar = card.querySelector<HTMLElement>('.px-table-export');
+  const copyAnchor = strip.querySelector<HTMLElement>('.px-bulk-ux-copy');
+  if (exportToolbar && copyAnchor && exportToolbar.parentElement !== strip) {
+    copyAnchor.insertAdjacentElement('afterend', exportToolbar);
+  }
+
   const total = filteredBoxes().length;
   const selected = selectedBoxes().length;
   const selectedCopy = strip.querySelector<HTMLElement>('[data-bulk-ux-selected]');
