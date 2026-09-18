@@ -209,16 +209,19 @@ function attach(table: HTMLTableElement) {
   const toolbar = document.createElement('div');
   toolbar.className = TOOLBAR_CLASS;
   toolbar.dataset.forTable = id;
+  toolbar.dataset.megExportToolbar = 'true';
+  toolbar.setAttribute('role', 'group');
+  toolbar.setAttribute('aria-label', 'Exportação da tabela');
   toolbar.innerHTML = `
     <div class="px-export-copy">
       <strong>Exportar tabela</strong>
       <span class="px-export-count">0 registros</span>
     </div>
     <div class="px-export-actions">
-      <button class="px-export-button excel" type="button" title="Exportar para Excel com filtros e totais">
+      <button class="px-export-button excel" type="button" title="Exportar para Excel com filtros e totais" aria-label="Exportar tabela para Excel">
         ${excelIcon()}<span>Excel</span>
       </button>
-      <button class="px-export-button pdf" type="button" title="Exportar relatório em PDF">
+      <button class="px-export-button pdf" type="button" title="Exportar relatório em PDF" aria-label="Exportar tabela para PDF">
         ${pdfIcon()}<span>PDF</span>
       </button>
     </div>
