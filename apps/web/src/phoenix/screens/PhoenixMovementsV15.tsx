@@ -294,6 +294,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const [negative, setNegative] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [reviewed, setReviewed] = useState(false);
+  const [validationVisible, setValidationVisible] = useState(false);
   const [recentEventId, setRecentEventId] = useState<string | null>(null);
   const recentTimerRef = useRef<number | null>(null);
 
@@ -528,6 +529,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setNegative(false);
     setDirty(false);
     setReviewed(false);
+    setValidationVisible(false);
     setEditingEventId(null);
     setSavingEdit(false);
     setEditMessage('');
@@ -587,7 +589,19 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   }
 
   function reviewLaunch() {
-    if (!missing.length) setReviewed(true);
+    if (missing.length) {
+      setValidationVisible(true);
+      window.requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>('.px-launch-drawer .px-field.is-invalid input, .px-launch-drawer .px-field.is-invalid select, .px-launch-drawer .px-field.is-invalid textarea')?.focus();
+      });
+      return;
+    }
+    setValidationVisible(false);
+    setReviewed(true);
+  }
+
+  function invalidField(key: string) {
+    return validationVisible && missing.includes(key);
   }
 
   async function saveEdit() {
@@ -634,25 +648,32 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   }
 
   return <section className="px-screen px-movements-v15">
-    <header className="px-screen-head">
-      <div><span className="px-kicker">Lançamentos</span><h1>Controle financeiro</h1><p>Inclua e consulte eventos mantendo o histórico de auditoria separado do formulário.</p></div>
-      <div className="px-launch-head-actions"><details className="px-column-chooser"><summary>Colunas</summary><div><span>Dia</span><span>Classificação</span><span>Grupo</span><span>Forma de pagamento</span><span>Modalidade</span></div></details></div>
-    </header>
+    <section className="px-movements-overview">
+      <header className="px-screen-head">
+        <div><span className="px-kicker">Lançamentos</span><h1>Controle financeiro</h1><p>Inclua, filtre e acompanhe seus eventos financeiros.</p></div>
+        <div className="px-launch-head-actions">
+          <details className="px-launch-help"><summary aria-label="Instruções da tela" title="Instruções">?</summary><div><strong>Instruções rápidas</strong><span>Receitas entram como recebidas.</span><span>Benefício Alimentação fica separado do saldo monetário.</span><span>Estornos preservam o efeito reverso.</span><span>Duplo clique abre a edição.</span></div></details>
+          <details className="px-column-chooser"><summary>Colunas</summary><div><span>Dia</span><span>Classificação</span><span>Grupo</span><span>Forma de pagamento</span><span>Modalidade</span></div></details>
+        </div>
+      </header>
 
-    <section className="px-screen-kpis">
-      <article><span>{hasActiveFilters ? 'Lançamentos filtrados' : 'Lançamentos no período'}</span><strong>{hasActiveFilters ? filtered.length : monthEvents.length}</strong><small>{hasActiveFilters ? `Visão filtrada · Total do período ${monthEvents.length}` : 'Quantidade real do mês'}</small></article>
-      <article><span>Receitas monetárias</span><strong>{money.format(displayedIncome)}</strong><small>{hasActiveFilters ? `Visão filtrada · Total do período ${money.format(monthTotals.income)}` : 'Benefício alimentação separado'}</small></article>
-      <article><span>Despesas monetárias</span><strong>{money.format(displayedExpense)}</strong><small>{hasActiveFilters ? `Visão filtrada · Total do período ${money.format(monthTotals.expense)}` : 'Estornos reduzem a despesa; benefício separado'}</small></article>
-      <article><span>{hasActiveFilters ? 'Resultado monetário filtrado' : 'Resultado monetário do período'}</span><strong>{money.format(displayedResult)}</strong><small>{hasActiveFilters ? `${activeFilterCount} critério(s) ativo(s)` : 'Receitas monetárias menos despesas monetárias'}</small></article>
-    </section>
+      <section className="px-screen-kpis">
+        <article><span>{hasActiveFilters ? 'Filtrados' : 'Lançamentos'}</span><strong>{hasActiveFilters ? filtered.length : monthEvents.length}</strong><small>{hasActiveFilters ? `de ${monthEvents.length} no período` : 'no período'}</small></article>
+        <article><span>Receitas</span><strong>{money.format(displayedIncome)}</strong><small>monetárias</small></article>
+        <article><span>Despesas</span><strong>{money.format(displayedExpense)}</strong><small>monetárias</small></article>
+        <article><span>Resultado</span><strong>{money.format(displayedResult)}</strong><small>{hasActiveFilters ? `${activeFilterCount} filtro(s) ativo(s)` : 'do período'}</small></article>
+      </section>
 
-    <section className="px-card px-table-card">
       <div className="px-toolbar">
         <label className="px-search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar descrição, grupo ou usuário" /></label>
         <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option></select>
         <select value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">Todas as situações</option><option value="planned">Pendente</option><option value="confirmed">Confirmado</option><option value="paid">Pago</option><option value="reconciled">Conciliado</option></select>
         <select value={account} onChange={(event) => setAccount(event.target.value)}><option value="all">Todas as contas</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
       </div>
+    </section>
+
+    <section className="px-card px-table-card">
+      <div className="px-table-context-slot" data-phoenix-table-context />
 
       {activeGridFilters.length || gridSort ? <div className="px-grid-active-filters"><span>Filtros da grade</span>{activeGridFilters.map((key) => <span className="px-grid-filter-chip" key={key}>{filterSummary(gridLabels[key], gridFilters[key])}<button type="button" onClick={() => clearGridFilter(key)} aria-label={`Remover filtro ${gridLabels[key]}`}>×</button></span>)}{gridSort ? <span className="px-grid-filter-chip">Ordenação: {gridLabels[gridSort.key]} {gridSort.direction === 'asc' ? '↑' : '↓'}<button type="button" onClick={() => setGridSort(null)} aria-label="Remover ordenação">×</button></span> : null}<button className="px-grid-clear-all" type="button" onClick={clearAllGridFilters}>Limpar grade</button></div> : null}
 
@@ -684,18 +705,12 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       </div>
     </section>
 
-    <div className="px-rule-strip"><span>✓ Usuário, conta e sincronização permanecem vinculados.</span><span>✓ Receitas entram sempre como recebidas.</span><span>✓ Benefício não compõe saldo monetário.</span><span>✓ Estornos preservam efeito reverso.</span><span>✓ Duplo clique abre a edição.</span></div>
-
     {launchOpen ? <>
       <button className="px-launch-backdrop" type="button" aria-label="Fechar lançamento" onClick={requestCloseLaunch} />
       <aside className="px-launch-drawer" aria-label={editingEventId ? 'Editar lançamento' : 'Novo lançamento'}>
         <div className="px-drawer-head"><div><span className="px-kicker">{editingEventId ? 'Editar evento' : 'Novo evento'}</span><h2>{editingEventId ? 'Editar lançamento' : 'Lançamento'}</h2></div><button className="px-icon-btn" type="button" onClick={requestCloseLaunch}>×</button></div>
         <div className="px-launch-form px-card">
           <div className="px-segment" aria-label="Tipo do lançamento">{(['expense','income','transfer'] as TxType[]).map((item) => <button key={item} type="button" className={draft.type === item ? 'active' : ''} onClick={() => changeLaunchType(item)}>{item === 'expense' ? 'Despesa' : item === 'income' ? 'Receita' : 'Transferência'}</button>)}</div>
-          <div className="px-launch-required">Os campos marcados com * são obrigatórios. A Phoenix exibe somente campos compatíveis com o tipo escolhido.</div>
-
-          <label className="px-field px-quick-fill"><span>Usar modelo salvo</span><select disabled><option>Preencher manualmente</option></select><small>Modelos ainda não possuem contrato oficial de leitura; nenhum exemplo fictício foi carregado.</small></label>
-
           <div className="px-launch-section-label">Dados principais</div>
           <label className="px-field"><span>Descrição *</span><input value={draft.description} onChange={(event) => updateDraft('description', event.target.value)} maxLength={120} autoComplete="off" placeholder="Ex.: supermercado, salário ou transferência" /></label>
 
@@ -747,12 +762,12 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
           <div className="px-preview-box"><div className="px-launch-section-label">Resumo antes de confirmar</div><div><span>Tipo</span><strong>{draft.type === 'expense' ? 'Despesa' : draft.type === 'income' ? 'Receita' : 'Transferência'}</strong></div><div><span>Escopo</span><strong>{draft.type === 'transfer' && draft.destinationId ? `${labelForAccount(data, draft.accountId)} para ${labelForAccount(data, draft.destinationId)}` : labelForAccount(data, draft.accountId)}</strong></div>{draft.type === 'expense' ? <><div><span>Classificação</span><strong>{draft.classification || '—'}</strong></div><div><span>Grupo</span><strong>{selectedCategory?.name || '—'}</strong></div></> : null}<div><span>Valor</span><strong>{formatInputMoney(amountCents, negative)}</strong></div><div><span>Situação inicial</span><strong>{draft.type === 'transfer' ? 'Fluxo próprio' : draft.type === 'income' ? 'Recebida' : effectiveSituation === 'paid' ? 'Pago' : 'Pendente'}</strong></div></div>
 
-          <div className={`px-rule-box ${duplicate ? 'duplicate' : ''}`}>{duplicate ? `Possível duplicidade real encontrada: ${duplicate.description}, ${money.format(amountFromEvent(duplicate))}, em ${date.format(new Date(duplicate.date))}.` : editingEventId ? 'Edição vinculada ao lançamento original. Após salvar, a tela aguarda a releitura da base antes de atualizar a grade.' : 'Proteção contra duplicidade preparada: descrição, valor, conta e data são comparados com os lançamentos carregados.'}</div>
-          <div className={`px-notice ${missing.length ? 'warn' : 'ok'}`}>{missing.length ? `Campos pendentes: ${missing.join(', ')}.` : 'Campos principais preenchidos. Revise o resumo antes de confirmar.'}</div>
+          {duplicate ? <div className="px-rule-box duplicate">{`Possível duplicidade: ${duplicate.description}, ${money.format(amountFromEvent(duplicate))}, em ${date.format(new Date(duplicate.date))}.`}</div> : null}
+          {validationVisible && missing.length ? <div className="px-form-validation-summary">Revise os campos destacados.</div> : null}
           {editMessage ? <div className={`px-notice ${editMessage.includes('protegido') || editMessage.includes('liberada') || editMessage.includes('possível') ? 'warn' : 'ok'}`}>{editMessage}</div> : null}
 
           {editingEventId ? !reviewed
-            ? <button className="px-primary-action px-review-launch" type="button" disabled={missing.length > 0} onClick={reviewLaunch}>{missing.length ? 'Revisar campos obrigatórios' : 'Revisar alterações'}</button>
+            ? <button className="px-primary-action px-review-launch" type="button" onClick={reviewLaunch}>{missing.length ? 'Salvar alterações' : 'Revisar alterações'}</button>
             : <button className="px-primary-action px-confirm-launch" type="button" disabled={savingEdit || Boolean(duplicate)} onClick={() => { void saveEdit(); }} aria-busy={savingEdit}>{savingEdit ? 'Salvando e sincronizando…' : duplicate ? 'Revise a possível duplicidade' : 'Salvar alterações'}</button>
             : <PhoenixLaunchWriteControl
               reviewed={reviewed}
