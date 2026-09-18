@@ -118,8 +118,8 @@ assert.match(commandPalette, /event\.target === event\.currentTarget/,
 assert.match(movementScreen, /Novo lançamento/);
 assert.match(movementScreen, /launchRequest/,
   'Drawer de lançamento deve aceitar abertura controlada pelo shell global');
-assert.match(movementScreen, /hasActiveFilters \? 'Filtrados' : 'Lançamentos'/,
-  'Resumo compacto deve continuar distinguindo total do período da visão filtrada');
+assert.match(movementScreen, /hasActiveFilters \? filtered\.length : monthEvents\.length/,
+  'Resumo integrado deve continuar distinguindo total do período da visão filtrada');
 assert.match(movementScreen, /Despesa/);
 assert.match(movementScreen, /Receita/);
 assert.match(movementScreen, /Transferência/);
