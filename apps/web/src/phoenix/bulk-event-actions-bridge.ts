@@ -304,20 +304,19 @@ function confirmArchiveDialog(count: number) {
     backdrop.appendChild(modal);
     document.body.appendChild(backdrop);
     let settled = false;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') finish(false);
+    };
     const finish = (accepted: boolean) => {
       if (settled) return;
       settled = true;
+      document.removeEventListener('keydown', onKey);
       backdrop.remove();
       resolve(accepted);
     };
     modal.querySelector<HTMLButtonElement>('[data-cancel]')?.addEventListener('click', () => finish(false));
     modal.querySelector<HTMLButtonElement>('[data-confirm]')?.addEventListener('click', () => finish(true));
     backdrop.addEventListener('click', (event) => { if (event.target === backdrop) finish(false); });
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      document.removeEventListener('keydown', onKey);
-      finish(false);
-    };
     document.addEventListener('keydown', onKey);
     modal.querySelector<HTMLButtonElement>('[data-cancel]')?.focus();
   });
