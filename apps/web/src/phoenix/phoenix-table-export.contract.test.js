@@ -5,9 +5,12 @@ const bridge = readFileSync(new URL('./phoenix-table-export-bridge.ts', import.m
 const core = readFileSync(new URL('./table-export-core.ts', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('./phoenix-table-export.css', import.meta.url), 'utf8');
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
+const preview = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
 
 assert.match(main, /phoenix-table-export-bridge/,
   'Runtime Phoenix deve carregar a exportação global das tabelas');
+assert.match(preview, /phoenix-table-export-bridge/,
+  'Preview Phoenix deve carregar a mesma exportação global usada no runtime oficial');
 
 assert.match(bridge, /\.phoenix-v15 table/,
   'Exportação deve cobrir tabelas da Phoenix sem exigir implementação individual por tela');
