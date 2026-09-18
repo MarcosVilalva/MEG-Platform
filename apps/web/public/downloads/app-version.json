@@ -1,9 +1,9 @@
 {
-  "versionCode": 263,
-  "versionName": "1.1.263",
+  "versionCode": 264,
+  "versionName": "1.1.264",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "562fb9f90343c2d81463254d6f6a4cbb28317dc163a6b4b588c84ffae93fba9c",
+  "sha256": "2187623d1071c0c2958a8ddba41f9336f785c61ad39b33ac81aaf76edc9b50ef",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #279 from MarcosVilalva/feature/phoenix-movements-workspace-final"
+  "releaseNotes": "Merge pull request #280 from MarcosVilalva/feature/phoenix-columns-kpi-refine"
 }
