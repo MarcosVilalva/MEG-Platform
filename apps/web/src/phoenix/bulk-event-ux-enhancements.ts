@@ -426,8 +426,8 @@ function ensureCommandStrip() {
       <button type="button" class="px-bulk-icon-button" data-column-visibility title="Colunas" aria-label="Colunas">${actionIcon('columns')}</button>
     `;
     strip.querySelector<HTMLElement>('.px-bulk-ux-buttons')?.insertAdjacentElement('beforebegin', utilities);
-    utilities.querySelector<HTMLButtonElement>('[data-grid-help]')?.addEventListener('click', (event) => openHelpPopover(event.currentTarget));
-    utilities.querySelector<HTMLButtonElement>('[data-column-visibility]')?.addEventListener('click', (event) => openColumnPopover(event.currentTarget));
+    utilities.querySelector<HTMLButtonElement>('[data-grid-help]')?.addEventListener('click', (event) => openHelpPopover(event.currentTarget as HTMLButtonElement));
+    utilities.querySelector<HTMLButtonElement>('[data-column-visibility]')?.addEventListener('click', (event) => openColumnPopover(event.currentTarget as HTMLButtonElement));
   }
   if (exportToolbar && utilities.previousElementSibling !== exportToolbar) {
     exportToolbar.insertAdjacentElement('afterend', utilities);
