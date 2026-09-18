@@ -30,3 +30,4 @@ import '../phoenix/avatar-runtime-bridge';
 import '../phoenix/phoenix-keyboard-grid-bridge';
 import '../phoenix/phoenix-table-export-bridge';
 import '../phoenix/preview-main';
+import '../phoenix/phoenix-visual-a11y.css';
