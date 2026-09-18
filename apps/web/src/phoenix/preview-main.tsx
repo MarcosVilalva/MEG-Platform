@@ -15,6 +15,9 @@ import './preview.css';
 import './phoenix-preview-parity.css';
 import './preview-auth-flow.css';
 import './preview-boot.css';
+import './phoenix-keyboard-grid-bridge';
+import './phoenix-table-export-bridge';
+import './phoenix-contrast-hardening.css';
 
 type PreviewState = 'checking' | 'signed-out' | 'preparing' | 'prepare-error' | 'signed-in';
 type AuthMode = 'login' | 'register' | 'forgot';

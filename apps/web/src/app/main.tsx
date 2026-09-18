@@ -29,4 +29,5 @@ import '../phoenix/action-prewarm-bridge';
 import '../phoenix/avatar-runtime-bridge';
 import '../phoenix/phoenix-keyboard-grid-bridge';
 import '../phoenix/phoenix-table-export-bridge';
+import '../phoenix/phoenix-contrast-hardening.css';
 import '../phoenix/preview-main';
