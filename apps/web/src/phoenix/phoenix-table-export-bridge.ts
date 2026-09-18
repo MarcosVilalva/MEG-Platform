@@ -254,7 +254,11 @@ function attach(table: HTMLTableElement) {
 
   const tableContainer = table.closest('.px-table-scroll, .px-table-wrap, .px-data-table-wrap') || table.parentElement;
   if (!tableContainer?.parentElement) return;
-  tableContainer.parentElement.insertBefore(toolbar, tableContainer);
+  const contextSlot = table.classList.contains('px-v15-launch-table')
+    ? table.closest<HTMLElement>('.px-table-card')?.querySelector<HTMLElement>('[data-phoenix-table-context]')
+    : null;
+  if (contextSlot) contextSlot.appendChild(toolbar);
+  else tableContainer.parentElement.insertBefore(toolbar, tableContainer);
   updateToolbar(table, toolbar);
 }
 
