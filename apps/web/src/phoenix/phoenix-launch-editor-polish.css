@@ -205,3 +205,47 @@
     grid-template-columns:1fr;
   }
 }
+
+
+/* Formulário financeiro: entrada direta, validação inline e contraste consistente */
+.px-launch-drawer {
+  overflow-x:hidden;
+}
+.px-launch-drawer .px-launch-form {
+  min-width:0;
+  overflow-x:hidden;
+}
+.px-launch-drawer .px-field,
+.px-launch-drawer .px-form-row,
+.px-launch-drawer .px-transfer-block,
+.px-launch-drawer .px-card-box,
+.px-launch-drawer .px-installment-box,
+.px-launch-drawer .px-recurrence-box {
+  max-width:100%;
+  min-width:0;
+}
+.px-launch-drawer .px-field.is-invalid input,
+.px-launch-drawer .px-field.is-invalid select,
+.px-launch-drawer .px-field.is-invalid textarea {
+  border-color:var(--danger)!important;
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--danger) 18%,transparent);
+}
+.px-launch-drawer .px-field .px-field-error {
+  margin-top:5px;
+  color:var(--danger)!important;
+  font-size:10px;
+  font-weight:800;
+  line-height:1.35;
+}
+.px-launch-drawer .px-form-validation-summary {
+  padding:9px 11px;
+  border:1px solid color-mix(in srgb,var(--danger) 42%,var(--line));
+  border-radius:11px;
+  background:color-mix(in srgb,var(--danger-bg) 82%,var(--panel));
+  color:var(--danger);
+  font-size:10px;
+  font-weight:850;
+}
+.px-launch-drawer .px-launch-section-label:first-of-type {
+  margin-top:0;
+}
