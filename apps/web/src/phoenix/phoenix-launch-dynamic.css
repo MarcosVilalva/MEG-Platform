@@ -745,3 +745,64 @@
     font-size:27px;
   }
 }
+
+
+/* Refinamento visual — KPIs auto dimensionados imediatamente após o título */
+@media (min-width:981px) {
+  .px-movements-v15 .px-movement-hero-row {
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:12px;
+  }
+
+  .px-movements-v15 .px-screen-head {
+    flex:0 0 340px;
+    width:340px;
+  }
+
+  .px-movements-v15 .px-screen-kpis {
+    flex:0 0 auto;
+    width:auto;
+    display:flex;
+    align-items:stretch;
+    gap:7px;
+  }
+
+  .px-movements-v15 .px-screen-kpis article {
+    flex:0 0 auto;
+    width:max-content;
+    min-width:158px;
+    max-width:196px;
+    min-height:52px;
+    grid-template-columns:30px auto;
+    padding:7px 10px;
+  }
+
+  .px-movements-v15 .px-kpi-copy strong {
+    font-size:14px;
+  }
+
+  .px-movements-v15 .px-kpi-copy small {
+    font-size:7px;
+  }
+}
+
+@media (min-width:1180px) {
+  .px-movements-v15 .px-screen-head {
+    flex-basis:360px;
+    width:360px;
+  }
+}
+
+@media (max-width:980px) {
+  .px-movements-v15 .px-screen-kpis article {
+    width:auto;
+    max-width:none;
+  }
+}
+
+/* Visibilidade controlada pelo seletor de colunas. */
+.px-movements-v15 .px-v15-launch-table .px-column-hidden {
+  display:none!important;
+}
