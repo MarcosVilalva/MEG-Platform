@@ -71,7 +71,7 @@ function collectFilters(table: HTMLTableElement) {
     }
   });
 
-  screen.querySelectorAll('input[type="search"], .px-search-field input').forEach((node) => {
+  screen.querySelectorAll('input[type="search"], .px-search-field input, .px-expanded-search input').forEach((node) => {
     const input = node as HTMLInputElement;
     if (!isVisibleControl(input)) return;
     if (input.value.trim()) filters.add(`Busca: ${input.value.trim()}`);

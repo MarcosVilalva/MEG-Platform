@@ -166,3 +166,66 @@
     margin-left:0;
   }
 }
+
+
+/* Exportação embutida na barra operacional de Lançamentos */
+.phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export {
+  flex:0 0 auto;
+  min-width:auto;
+  min-height:30px;
+  margin:0;
+  padding:0;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+
+.phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export .px-export-copy {
+  display:none;
+}
+
+.phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export .px-export-actions {
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+
+.phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export .px-export-button {
+  min-height:30px;
+  padding:0 8px;
+  gap:5px;
+  border-radius:8px;
+  border-color:var(--line);
+  background:var(--panel);
+  font-size:8px;
+  box-shadow:none;
+}
+
+.phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export .px-export-icon {
+  width:18px;
+  height:18px;
+  flex-basis:18px;
+}
+
+.phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export .px-export-icon.pdf {
+  width:23px;
+  flex-basis:23px;
+}
+
+@media (max-width:620px) {
+  .phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export {
+    width:auto;
+    flex-direction:row;
+    align-items:center;
+  }
+  .phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export .px-export-actions {
+    width:auto;
+  }
+  .phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export .px-export-button {
+    flex:0 0 auto;
+  }
+}

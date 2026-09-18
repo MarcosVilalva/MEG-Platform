@@ -118,8 +118,14 @@ assert.match(commandPalette, /event\.target === event\.currentTarget/,
 assert.match(movementScreen, /Novo lançamento/);
 assert.match(movementScreen, /launchRequest/,
   'Drawer de lançamento deve aceitar abertura controlada pelo shell global');
-assert.match(movementScreen, /hasActiveFilters \? filtered\.length : monthEvents\.length/,
-  'Resumo integrado deve continuar distinguindo total do período da visão filtrada');
+assert.match(movementScreen, /px-movement-tool-button/,
+  'Busca, filtros, período e conta devem permanecer compactos e expansíveis na tela mais usada');
+assert.match(movementScreen, /toolPanel === 'search'/,
+  'Busca deve abrir sob demanda sem reservar altura fixa');
+assert.match(movementScreen, /closeOnOutside/,
+  'Painéis de consulta devem recolher ao clicar fora');
+assert.match(movementScreen, /filtered\.length} resultado\(s\)/,
+  'Busca expandida deve refletir a quantidade real da visão filtrada');
 assert.match(movementScreen, /Despesa/);
 assert.match(movementScreen, /Receita/);
 assert.match(movementScreen, /Transferência/);
