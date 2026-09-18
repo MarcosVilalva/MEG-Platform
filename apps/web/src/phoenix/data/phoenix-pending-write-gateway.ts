@@ -86,7 +86,10 @@ function assertBatchInput(input: PhoenixPendingBatchSettlementInput) {
   const keys = new Set<string>();
   for (const item of input.items) {
     if (!item.sourceId) throw new PhoenixPendingWriteError('PHOENIX_PENDING_REQUIRED');
-    if (!Number.isFinite(item.amount) || item.amount <= 0) throw new PhoenixPendingWriteError('PHOENIX_PENDING_AMOUNT_REQUIRED');
+    const validAmount = item.source === 'event'
+      ? Number.isFinite(item.amount) && item.amount !== 0
+      : Number.isFinite(item.amount) && item.amount > 0;
+    if (!validAmount) throw new PhoenixPendingWriteError('PHOENIX_PENDING_AMOUNT_REQUIRED');
     if (item.source === 'card' && !/^\d{4}-(0[1-9]|1[0-2])$/.test(item.statementMonth || '')) {
       throw new PhoenixPendingWriteError('PHOENIX_PENDING_STATEMENT_REQUIRED');
     }
@@ -174,6 +177,7 @@ function friendlyMessage(code: string) {
     INVALID_PAYMENT_METHOD: 'A forma de pagamento selecionada não está mais disponível para esta baixa.',
     AMOUNT_EXCEEDS_OPEN_BALANCE: 'O valor informado ultrapassa o saldo ainda aberto da conta.',
     INSUFFICIENT_MONETARY_BALANCE: 'O saldo monetário não cobre o total selecionado. Nenhuma baixa do lote foi gravada.',
+    BATCH_NET_NOT_PAYABLE: 'Os créditos e estornos zeram ou superam o valor do lote. Não há pagamento líquido a registrar.',
     OPERATION_ID_REUSED: 'A tentativa atual não corresponde à baixa original. Revise os dados antes de tentar novamente.',
   };
   return messages[code] || 'Não foi possível confirmar a baixa. Nenhuma alteração do lote foi considerada concluída.';
