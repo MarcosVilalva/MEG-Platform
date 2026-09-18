@@ -36,7 +36,7 @@ export type CanonicalCardStatement = {
 export type CreditCard = { id: string; name: string; issuer?: string | null; brand?: string | null; lastFour?: string | null; creditLimit: string | number; closingDay: number; dueDay: number; color?: string | null; isActive: boolean; usedLimit: number; availableLimit: number; statementAmount: number; payableStatementAmount?: number; statementCreditBalance?: number; statement?: CanonicalCardStatement; purchases: CardPurchase[] };
 export type CardStatementPaymentResult = { paid: boolean; amount: number; eventId: string; protection?: { monetary?: boolean; allowed?: boolean; available?: number; requested?: number; missing?: number; at?: string }; idempotentReplay?: boolean };
 export type CardStatementReopenResult = { reopened: boolean; amount: number; eventId: string; installments: number; idempotentReplay?: boolean };
-export type CardStatementLifecycleStatus = 'none' | 'open' | 'partial' | 'paid' | 'reopened';
+export type CardStatementLifecycleStatus = 'none' | 'open' | 'partial' | 'paid' | 'credit' | 'reopened';
 export type CardStatementLifecycleSnapshot = { id: string | null; name: string | null; type: string | null; institution: string | null };
 export type CardStatementLifecycleActor = { id?: string; name?: string | null; email?: string | null } | null;
 export type CardStatementTimelineKind = 'closing' | 'due' | 'payment' | 'reopen' | 'legacy-payment';
@@ -65,6 +65,9 @@ export type CardStatementLifecycle = {
   paidAmount: number;
   openInstallments: number;
   paidInstallments: number;
+  creditBalance?: number;
+  charges?: number;
+  credits?: number;
   closingDate: string;
   dueDate: string;
   timeline: CardStatementTimelineItem[];
@@ -83,7 +86,7 @@ export type CardStatementLifecycle = {
   reopenedAt: string | null;
   reopenReason: string | null;
   reopenedBy: CardStatementLifecycleActor;
-  source: 'audit' | 'installments' | 'none';
+  source: 'audit' | 'canonical' | 'installments' | 'none';
 };
 export type CardPurchaseMutationInput = { cardId: string; categoryId?: string; description: string; totalAmount: number; purchaseDate: string; installments: number; operationId: string };
 export type CreditCardMutationInput = { name: string; issuer?: string; brand?: string; lastFour?: string; creditLimit: number; closingDay: number; dueDay: number; color?: string };
