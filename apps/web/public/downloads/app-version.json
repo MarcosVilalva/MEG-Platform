@@ -1,9 +1,9 @@
 {
-  "versionCode": 258,
-  "versionName": "1.1.258",
+  "versionCode": 259,
+  "versionName": "1.1.259",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "c94484458cf8b5a7fbe3a8bd41354efb55b2f6a2a9cd00af0d8f8ac05470026c",
+  "sha256": "10cd2f1e99f9af2f162ec08fe2f6ae64f649f36a0aeb9a45c59bff7f48e353ea",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "merge: consolidar Phoenix V15 validado e regras canônicas"
+  "releaseNotes": "Merge pull request #273 from MarcosVilalva/feature/phoenix-export-visual-audit"
 }
