@@ -1,9 +1,9 @@
 {
-  "versionCode": 260,
-  "versionName": "1.1.260",
+  "versionCode": 261,
+  "versionName": "1.1.261",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "da3e86d8e8ecc62468c784db0ea05ffb0db0806959ce80f133daedcf03a90999",
+  "sha256": "637ec18dbd0f79a0816ddb3468ce7eb301e9fee9342beafaf0ef8af2c50f2f19",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #276 from MarcosVilalva/feature/phoenix-movements-ux-polish"
+  "releaseNotes": "Merge pull request #277 from MarcosVilalva/fix/phoenix-movements-header-approved"
 }
