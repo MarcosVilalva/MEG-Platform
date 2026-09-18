@@ -1,0 +1,230 @@
+/*
+ * Phoenix visual guardrails.
+ * Carregado por último para uniformizar contraste, hierarquia e estados de
+ * controles em todas as telas, drawers, modais e grids sem alterar regras.
+ */
+.phoenix-v15 {
+  --px-muted-strong:#50635d;
+  --px-control-border:#b9cbc5;
+  --px-control-bg:#ffffff;
+  --px-control-hover:#edf7f4;
+  --px-subtle-bg:#f1f7f5;
+  --px-subtle-strong:#e4f0ec;
+  --px-danger-strong:#9f241a;
+  --px-danger-surface:#fff1ef;
+  --px-warning-strong:#7b5100;
+  --px-warning-surface:#fff5d6;
+  --px-success-strong:#08624f;
+  --px-success-surface:#e8f7f2;
+}
+
+.phoenix-v15[data-theme="dark"] {
+  --px-muted-strong:#c0d8d1;
+  --px-control-border:#31564d;
+  --px-control-bg:#102a25;
+  --px-control-hover:#163a33;
+  --px-subtle-bg:#102c27;
+  --px-subtle-strong:#173a33;
+  --px-danger-strong:#ffaaa3;
+  --px-danger-surface:#421d19;
+  --px-warning-strong:#ffda8f;
+  --px-warning-surface:#3b2e18;
+  --px-success-strong:#8ef3d2;
+  --px-success-surface:#123b31;
+}
+
+/* Texto auxiliar: nunca usar cinza fraco sobre painel. */
+.phoenix-v15 .px-kicker,
+.phoenix-v15 .px-toolbar-note,
+.phoenix-v15 .px-export-copy span,
+.phoenix-v15 .px-field > span,
+.phoenix-v15 .px-field small,
+.phoenix-v15 .px-form-row small,
+.phoenix-v15 .px-card-management-section-head span,
+.phoenix-v15 .px-card-manage-copy small,
+.phoenix-v15 .px-settings-control-row small,
+.phoenix-v15 .px-preview-box span,
+.phoenix-v15 .px-rule-box span {
+  color:var(--px-muted-strong);
+}
+
+/* Controles secundários e ações: superfície e borda sempre perceptíveis. */
+.phoenix-v15 .px-secondary-action,
+.phoenix-v15 .px-icon-btn,
+.phoenix-v15 .px-tabbar button,
+.phoenix-v15 .px-grid-clear-all,
+.phoenix-v15 .px-settings-control-row button,
+.phoenix-v15 .px-card-management-back,
+.phoenix-v15 .px-card-reactivate {
+  border-color:var(--px-control-border);
+  background:var(--px-control-bg);
+  color:var(--ink);
+}
+
+.phoenix-v15 .px-secondary-action:hover:not(:disabled),
+.phoenix-v15 .px-icon-btn:hover:not(:disabled),
+.phoenix-v15 .px-tabbar button:hover:not(:disabled),
+.phoenix-v15 .px-grid-clear-all:hover:not(:disabled),
+.phoenix-v15 .px-settings-control-row button:hover:not(:disabled),
+.phoenix-v15 .px-card-reactivate:hover:not(:disabled) {
+  background:var(--px-control-hover);
+  border-color:color-mix(in srgb,var(--brand2) 58%,var(--px-control-border));
+  color:var(--ink);
+}
+
+/* Ação principal deve permanecer legível em ambos os temas. */
+.phoenix-v15 .px-primary-action {
+  background:var(--brand2);
+  border-color:var(--brand2);
+  color:#fff;
+  font-weight:900;
+}
+.phoenix-v15[data-theme="dark"] .px-primary-action {
+  background:#1a9f80;
+  border-color:#37c9a7;
+  color:#fff;
+}
+.phoenix-v15 .px-primary-action:hover:not(:disabled) {
+  filter:brightness(1.06);
+}
+
+/* Destrutivas nunca devem parecer ação neutra. */
+.phoenix-v15 .px-card-management-danger,
+.phoenix-v15 .px-card-danger-action,
+.phoenix-v15 [data-card-domain-cancel],
+.phoenix-v15 [data-card-manage-deactivate],
+.phoenix-v15 .px-danger-action {
+  background:var(--px-danger-surface)!important;
+  border-color:color-mix(in srgb,var(--danger) 68%,var(--px-control-border))!important;
+  color:var(--px-danger-strong)!important;
+  font-weight:900;
+}
+
+.phoenix-v15 .px-card-management-danger:hover:not(:disabled),
+.phoenix-v15 .px-card-danger-action:hover:not(:disabled),
+.phoenix-v15 [data-card-domain-cancel]:hover:not(:disabled),
+.phoenix-v15 [data-card-manage-deactivate]:hover:not(:disabled),
+.phoenix-v15 .px-danger-action:hover:not(:disabled) {
+  border-color:var(--danger)!important;
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--danger) 18%,transparent);
+}
+
+/* Prévia, regras e avisos precisam se separar claramente do fundo do drawer. */
+.phoenix-v15 .px-preview-box,
+.phoenix-v15 .px-rule-box,
+.phoenix-v15 [data-edit-preview],
+.phoenix-v15 [data-card-edit-preview] {
+  background:var(--px-subtle-bg);
+  border:1px solid var(--px-control-border);
+  color:var(--ink);
+  border-radius:12px;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--panel) 70%,transparent);
+}
+
+.phoenix-v15 .px-preview-box strong,
+.phoenix-v15 .px-rule-box strong,
+.phoenix-v15 [data-edit-preview] strong,
+.phoenix-v15 [data-card-edit-preview] strong {
+  color:var(--ink);
+}
+
+.phoenix-v15 .px-notice {
+  background:var(--px-subtle-bg);
+  border-color:var(--px-control-border);
+  color:var(--ink);
+}
+.phoenix-v15 .px-notice.ok {
+  background:var(--px-success-surface);
+  border-color:color-mix(in srgb,var(--brand2) 48%,var(--px-control-border));
+  color:var(--px-success-strong);
+}
+.phoenix-v15 .px-notice.warn {
+  background:var(--px-warning-surface);
+  border-color:color-mix(in srgb,var(--warn) 54%,var(--px-control-border));
+  color:var(--px-warning-strong);
+}
+
+/* Inputs, selects e textareas: borda visível mesmo sem foco. */
+.phoenix-v15 .px-field input,
+.phoenix-v15 .px-field select,
+.phoenix-v15 .px-field textarea,
+.phoenix-v15 .px-search-field input,
+.phoenix-v15 .px-card-management-form input,
+.phoenix-v15 .px-card-management-form select {
+  background:var(--px-control-bg);
+  color:var(--ink);
+  border-color:var(--px-control-border);
+}
+.phoenix-v15 input::placeholder,
+.phoenix-v15 textarea::placeholder {
+  color:var(--px-muted-strong);
+  opacity:.78;
+}
+
+/* Botão desabilitado continua legível; apenas perde ênfase. */
+.phoenix-v15 button:disabled {
+  opacity:.66;
+  color:var(--px-muted-strong);
+  cursor:not-allowed;
+}
+.phoenix-v15 .px-primary-action:disabled {
+  color:#fff;
+  opacity:.58;
+}
+
+/* Drawers e modais: separar cabeçalho, corpo e rodapé visualmente. */
+.phoenix-v15 .px-launch-drawer,
+.phoenix-v15 .px-detail-drawer,
+.phoenix-v15 .px-card-management-drawer {
+  background:var(--panel);
+  color:var(--ink);
+  border-left:1px solid var(--px-control-border);
+}
+.phoenix-v15 .px-drawer-head {
+  background:color-mix(in srgb,var(--panel) 88%,var(--brand) 12%);
+  border-bottom:1px solid var(--px-control-border);
+}
+.phoenix-v15 .px-detail-actions,
+.phoenix-v15 .px-card-editor-actions,
+.phoenix-v15 .px-card-management-actions {
+  border-top:1px solid var(--px-control-border);
+}
+
+/* Tabelas: reforça leitura de cabeçalho, linhas e estados de hover. */
+.phoenix-v15 table thead th {
+  color:var(--ink);
+  background:color-mix(in srgb,var(--panel2) 86%,var(--brand) 14%);
+  border-bottom-color:var(--px-control-border);
+}
+.phoenix-v15 table tbody td {
+  color:var(--ink);
+  border-bottom-color:color-mix(in srgb,var(--px-control-border) 72%,transparent);
+}
+.phoenix-v15 table tbody tr:hover td {
+  background:color-mix(in srgb,var(--brand) 8%,var(--panel));
+}
+
+/* Cartões de gerenciamento: conteúdo textual sempre destacado da miniatura. */
+.phoenix-v15 .px-card-manage-item {
+  border-color:var(--px-control-border);
+  background:var(--px-subtle-bg);
+  color:var(--ink);
+}
+.phoenix-v15 .px-card-manage-copy strong,
+.phoenix-v15 .px-card-management-section-head strong {
+  color:var(--ink);
+}
+
+/* Responsividade de ações: evita botões espremidos/ilegíveis. */
+@media (max-width:760px) {
+  .phoenix-v15 .px-detail-actions,
+  .phoenix-v15 .px-card-editor-actions,
+  .phoenix-v15 .px-card-management-actions {
+    gap:10px;
+  }
+  .phoenix-v15 .px-detail-actions > button,
+  .phoenix-v15 .px-card-editor-actions > button,
+  .phoenix-v15 .px-card-management-actions button {
+    min-height:40px;
+  }
+}
