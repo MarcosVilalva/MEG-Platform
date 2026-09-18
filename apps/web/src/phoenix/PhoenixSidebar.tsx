@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixNavIcon, type PhoenixNavigationIcon } from './PhoenixNavIcon';
 import { applyPhoenixAvatarPreference, readPhoenixAvatarPreference } from './profile-avatar';
+import './phoenix-edit-settlement-bridge';
 
 type SidebarItem = {
   id: PhoenixRoute;

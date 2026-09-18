@@ -1,0 +1,5 @@
+.px-v15-launch-table tbody tr{transition:background-color .22s ease,box-shadow .22s ease}.px-v15-launch-table tbody tr.is-recently-updated td{animation:px-launch-row-confirmed 3.6s ease-out}.px-v15-launch-table tbody tr.is-recently-updated td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
+
+@keyframes px-launch-row-confirmed{0%{background:color-mix(in srgb,var(--brand) 24%,var(--panel))}35%{background:color-mix(in srgb,var(--brand) 12%,var(--panel))}100%{background:transparent}}
+
+@media (prefers-reduced-motion:reduce){.px-v15-launch-table tbody tr,.px-v15-launch-table tbody tr.is-recently-updated td{transition:none;animation:none}.px-v15-launch-table tbody tr.is-recently-updated td{background:color-mix(in srgb,var(--brand) 10%,var(--panel))}}

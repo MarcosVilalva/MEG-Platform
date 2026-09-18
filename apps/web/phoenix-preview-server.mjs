@@ -8,6 +8,8 @@ const port = Number(process.env.PORT || 4173);
 const apiOrigin = process.env.PHOENIX_API_ORIGIN || 'https://meg-platform-api.onrender.com';
 const simpleEventWriteEnabled = process.env.PHOENIX_SIMPLE_EVENT_WRITE === 'enabled';
 const cardPurchaseWriteEnabled = process.env.PHOENIX_CARD_PURCHASE_WRITE === 'enabled';
+const benefitWriteEnabled = process.env.PHOENIX_BENEFIT_WRITE === 'enabled';
+const transferWriteEnabled = process.env.PHOENIX_TRANSFER_WRITE === 'enabled';
 const pendingWriteEnabled = process.env.PHOENIX_PENDING_WRITE === 'enabled';
 const bulkEventWriteEnabled = process.env.PHOENIX_BULK_EVENT_WRITE === 'enabled';
 const distDir = fileURLToPath(new URL('./dist/', import.meta.url));
@@ -34,6 +36,8 @@ const allowedAuthPosts = new Set([
   '/auth/forgot-password'
 ]);
 const allowedFinancialPosts = new Set(['/finance/events']);
+const allowedBenefitPosts = new Set(['/finance/benefit-events']);
+const allowedTransferPosts = new Set(['/finance/transfers']);
 const allowedCardPurchasePosts = new Set(['/cards/purchases']);
 const allowedBulkEventPosts = new Set([
   '/finance/events/bulk/update',
@@ -41,7 +45,7 @@ const allowedBulkEventPosts = new Set([
 ]);
 const allowedStaticFiles = new Set(['/phoenix.html']);
 const allowedStaticPrefixes = ['/assets/', '/brand/'];
-const hopByHopHeaders = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade', 'host', 'origin', 'referer', 'content-length']);
+const hopByHopHeaders = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade', 'host', 'origin', 'referer', 'content-length', 'content-encoding']);
 const periodEventsPath = '/finance/phoenix-preview/events';
 const periodEventsCache = new Map();
 const periodEventsInFlight = new Map();
@@ -54,8 +58,10 @@ function isApiPath(pathname) {
 
 function isAllowedPendingWrite(pathname) {
   if (!pendingWriteEnabled) return false;
-  return /^\/finance\/events\/[^/]+\/settle$/.test(pathname)
-    || /^\/payables\/[^/]+\/payments$/.test(pathname);
+  return pathname === '/finance/pending/batch/settle'
+    || /^\/finance\/events\/[^/]+\/settle$/.test(pathname)
+    || /^\/payables\/[^/]+\/payments$/.test(pathname)
+    || /^\/cards\/[^/]+\/statements\/\d{4}-\d{2}\/pay$/.test(pathname);
 }
 
 function isAllowedCardPurchaseWrite(method, pathname) {
@@ -71,6 +77,8 @@ function isAllowedApiRequest(method, pathname) {
   }
   if (method === 'POST' && allowedAuthPosts.has(pathname)) return true;
   if (method === 'POST' && simpleEventWriteEnabled && allowedFinancialPosts.has(pathname)) return true;
+  if (method === 'POST' && benefitWriteEnabled && allowedBenefitPosts.has(pathname)) return true;
+  if (method === 'POST' && transferWriteEnabled && allowedTransferPosts.has(pathname)) return true;
   if (isAllowedCardPurchaseWrite(method, pathname)) return true;
   if (method === 'POST' && bulkEventWriteEnabled && allowedBulkEventPosts.has(pathname)) return true;
   if (method === 'POST') return isAllowedPendingWrite(pathname);
@@ -115,6 +123,7 @@ function upstreamHeaders(request) {
     if (Array.isArray(value)) value.forEach((item) => headers.append(name, item));
     else headers.set(name, value);
   }
+  headers.set('accept-encoding', 'identity');
   return headers;
 }
 
@@ -315,14 +324,20 @@ const server = createServer(async (request, response) => {
           ? 'phoenix-bulk-event-write-gated-preview'
           : pendingWriteEnabled
             ? 'phoenix-pending-write-gated-preview'
-            : cardPurchaseWriteEnabled
-              ? 'phoenix-card-purchase-write-gated-preview'
-              : simpleEventWriteEnabled
-                ? 'phoenix-simple-event-write-gated-preview'
-                : 'phoenix-finance-read-only-preview',
+            : transferWriteEnabled
+              ? 'phoenix-transfer-write-gated-preview'
+              : benefitWriteEnabled
+                ? 'phoenix-benefit-write-gated-preview'
+                : cardPurchaseWriteEnabled
+                  ? 'phoenix-card-purchase-write-gated-preview'
+                  : simpleEventWriteEnabled
+                    ? 'phoenix-simple-event-write-gated-preview'
+                    : 'phoenix-finance-read-only-preview',
         capabilities: {
           simpleEventWrite: simpleEventWriteEnabled,
           cardPurchaseWrite: cardPurchaseWriteEnabled,
+          benefitWrite: benefitWriteEnabled,
+          transferWrite: transferWriteEnabled,
           pendingWrite: pendingWriteEnabled,
           bulkEventWrite: bulkEventWriteEnabled
         }
@@ -360,6 +375,6 @@ const server = createServer(async (request, response) => {
 
 server.listen(port, '0.0.0.0', () => {
   console.log(
-    `Phoenix preview listening on :${port} · simpleEventWrite=${simpleEventWriteEnabled ? 'enabled' : 'disabled'} · cardPurchaseWrite=${cardPurchaseWriteEnabled ? 'enabled' : 'disabled'} · pendingWrite=${pendingWriteEnabled ? 'enabled' : 'disabled'} · bulkEventWrite=${bulkEventWriteEnabled ? 'enabled' : 'disabled'}`
+    `Phoenix preview listening on :${port} · simpleEventWrite=${simpleEventWriteEnabled ? 'enabled' : 'disabled'} · cardPurchaseWrite=${cardPurchaseWriteEnabled ? 'enabled' : 'disabled'} · benefitWrite=${benefitWriteEnabled ? 'enabled' : 'disabled'} · transferWrite=${transferWriteEnabled ? 'enabled' : 'disabled'} · pendingWrite=${pendingWriteEnabled ? 'enabled' : 'disabled'} · bulkEventWrite=${bulkEventWriteEnabled ? 'enabled' : 'disabled'}`
   );
 });

@@ -35,6 +35,9 @@ const productionSmoke = text('.github/workflows/production-smoke.yml');
 const cardsClient = text('apps/web/src/app/cards-client.ts');
 const simpleWriter = text('apps/web/src/phoenix/simple-event-form-bridge.ts');
 const simpleGateway = text('apps/web/src/phoenix/data/phoenix-write-gateway.ts');
+const transferGateway = text('apps/web/src/phoenix/data/phoenix-transfer-write-gateway.ts');
+const writeControl = text('apps/web/src/phoenix/components/PhoenixLaunchWriteControl.tsx');
+const simpleEventAssertion = simpleGateway.match(/function assertSimpleEvent\(input: PhoenixSimpleEventInput\) \{([\s\S]*?)\n\}/)?.[1] || '';
 const forecastBridge = text('apps/web/src/phoenix/home-commitment-forecast-bridge.ts');
 const scenarioBridge = text('apps/web/src/phoenix/home-scenario-simulator-bridge.ts');
 const decisionBridge = text('apps/web/src/phoenix/home-purchase-decision-bridge.ts');
@@ -97,10 +100,21 @@ check('Pages aguarda API do mesmo commit antes da publicação', pagesWorkflow.i
 check('Android valida marcador Phoenix V15 no artefato Web', androidWorkflow.includes('data-meg-shell="phoenix-v15"'));
 check('Smoke de produção exige marcador Phoenix V15', productionSmoke.includes('data-meg-shell="phoenix-v15"'));
 
-check('Writer Phoenix libera transferência atômica oficial', simpleWriter.includes("authenticatedRequest('/finance/transfers'") && !simpleWriter.includes('Transferências continuam bloqueadas'));
-check('Writer Phoenix libera recorrência oficial de despesas', simpleWriter.includes('payablesClient.createRecurring') && !simpleWriter.includes('Recorrência continua em simulação'));
-check('Writer Phoenix preserva sinal para estornos', simpleWriter.includes('const amount = parseMoney(') && !simpleWriter.includes('Estornos e valores negativos continuam bloqueados'));
-check('Gateway simples aceita valor negativo diferente de zero', simpleGateway.includes('input.amount === 0') && !simpleGateway.includes('input.amount <= 0'));
+check('Writer Phoenix libera transferência atômica oficial',
+  transferGateway.includes("authenticatedRequest<PhoenixTransferResult>('/finance/transfers'")
+    && transferGateway.includes('runtimeCapabilities.transferWrite')
+    && writeControl.includes('runPhoenixTransferWrite')
+    && !writeControl.includes('data-phoenix-transfer-confirm'));
+check('Transferência publica snapshot confirmado sem refresh redundante',
+  transferGateway.includes('loadPhoenixReadModel(refreshMonth, { force: true })')
+    && writeControl.includes('onCommitted?.(result.snapshot)'));
+check('Recorrência fora do cartão permanece protegida até o contrato completo',
+  simpleGateway.includes("if (flow.recurring) reasons.push('PHOENIX_RECURRENCE_NOT_IN_SIMPLE_FLOW')")
+    && !writeControl.includes('payablesClient.createRecurring'));
+check('Estorno/reversão permanece protegido até existir vínculo formal com o original',
+  simpleGateway.includes("if (flow.negative) reasons.push('PHOENIX_REVERSAL_NOT_IN_SIMPLE_FLOW')"));
+check('Gateway simples preserva suporte técnico a valor negativo sem liberá-lo no fluxo visual',
+  simpleEventAssertion.includes('input.amount === 0') && !simpleEventAssertion.includes('input.amount <= 0'));
 check('Modelo sem contrato não é oferecido para gravação', simpleWriter.includes('label.hidden = true') && simpleWriter.includes('SALVAR COMO MODELO'));
 
 check('Cliente de cartões expõe ciclo de fatura', cardsClient.includes('statementLifecycle:'));

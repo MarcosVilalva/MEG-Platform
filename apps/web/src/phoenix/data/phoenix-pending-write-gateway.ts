@@ -5,6 +5,7 @@ import type { PhoenixReadModel } from '../contracts';
 import { loadPhoenixReadModel } from './load-phoenix-read-model';
 
 export const PHOENIX_PENDING_WRITE_ENABLED = true as const;
+export const PHOENIX_SNAPSHOT_COMMITTED_EVENT = 'meg:phoenix-snapshot-committed';
 
 export type PhoenixPendingSource = 'payable' | 'event' | 'card';
 
@@ -21,6 +22,7 @@ export type PhoenixPendingSettlementInput = {
 export type PhoenixPendingBatchItem = {
   source: PhoenixPendingSource;
   sourceId: string;
+  amount: number;
   statementMonth?: string;
 };
 
@@ -84,6 +86,10 @@ function assertBatchInput(input: PhoenixPendingBatchSettlementInput) {
   const keys = new Set<string>();
   for (const item of input.items) {
     if (!item.sourceId) throw new PhoenixPendingWriteError('PHOENIX_PENDING_REQUIRED');
+    const validAmount = item.source === 'event'
+      ? Number.isFinite(item.amount) && item.amount !== 0
+      : Number.isFinite(item.amount) && item.amount > 0;
+    if (!validAmount) throw new PhoenixPendingWriteError('PHOENIX_PENDING_AMOUNT_REQUIRED');
     if (item.source === 'card' && !/^\d{4}-(0[1-9]|1[0-2])$/.test(item.statementMonth || '')) {
       throw new PhoenixPendingWriteError('PHOENIX_PENDING_STATEMENT_REQUIRED');
     }
@@ -107,7 +113,7 @@ function fingerprint(input: PhoenixPendingSettlementInput) {
 
 function batchFingerprint(input: PhoenixPendingBatchSettlementInput) {
   return [
-    ...input.items.map((item) => `${item.source}:${item.sourceId}:${item.statementMonth || ''}`).sort(),
+    ...input.items.map((item) => `${item.source}:${item.sourceId}:${item.statementMonth || ''}:${item.amount.toFixed(2)}`).sort(),
     input.paidAt,
     input.accountId,
     input.paymentMethodId,
@@ -150,28 +156,31 @@ function friendlyMessage(code: string) {
     PHOENIX_PENDING_REQUIRED: 'Selecione um compromisso válido.',
     PHOENIX_PENDING_DUPLICATE: 'Há uma pendência repetida na seleção. Atualize a tela e tente novamente.',
     PHOENIX_PENDING_AMOUNT_REQUIRED: 'O valor do compromisso precisa ser maior que zero.',
+    INVALID_PENDING_AMOUNT: 'Um dos compromissos possui valor inválido para baixa.',
     PHOENIX_PENDING_DATE_REQUIRED: 'Informe a data efetiva do pagamento.',
     PHOENIX_PENDING_ACCOUNT_REQUIRED: 'Selecione a conta financeira usada no pagamento.',
     PHOENIX_PENDING_METHOD_REQUIRED: 'Selecione a forma de pagamento usada na baixa.',
     PHOENIX_PENDING_STATEMENT_REQUIRED: 'A fatura selecionada não possui uma competência válida.',
+    FUTURE_PAYMENT_NOT_ALLOWED: 'A data da baixa não pode estar no futuro.',
     PREVIEW_READ_ONLY: 'A baixa real de Pendentes está temporariamente bloqueada no preview.',
     PAYABLE_NOT_FOUND: 'Uma das contas já foi baixada, cancelada ou não está mais disponível.',
     FINANCIAL_EVENT_NOT_FOUND: 'Um dos compromissos não está mais disponível para baixa.',
     FINANCIAL_EVENT_NOT_PENDING: 'Um dos compromissos já foi baixado ou deixou de estar pendente.',
-    FINANCIAL_EVENT_NOT_LEGACY_COMPAT: 'Um compromisso precisa ser normalizado antes da baixa por compatibilidade.',
+    FINANCIAL_EVENT_NOT_LEGACY_COMPAT: 'Este compromisso exige a versão nova do writer de baixa. Atualize o sistema antes de tentar novamente.',
     BENEFIT_SETTLEMENT_NOT_SUPPORTED: 'Compromissos de benefício não podem ser baixados por este fluxo.',
     CARD_NOT_FOUND: 'Um dos cartões selecionados não está mais disponível.',
     CARD_STATEMENT_ALREADY_PAID: 'Uma das faturas já foi paga ou não possui saldo aberto.',
     CARD_STATEMENT_NOT_PAYABLE: 'Uma das faturas não possui parcelas oficiais abertas para pagamento.',
-    STATEMENT_CHANGED_RETRY: 'A fatura mudou durante a confirmação. Nada do lote foi gravado; atualize e tente novamente.',
+    STATEMENT_CHANGED_RETRY: 'A fatura mudou durante a confirmação. Nenhuma baixa do lote foi gravada; atualize e tente novamente.',
     ACCOUNT_NOT_MONETARY: 'A conta selecionada não é monetária. Escolha uma conta financeira válida.',
     INVALID_ACCOUNT: 'A conta selecionada não está mais disponível.',
     INVALID_PAYMENT_METHOD: 'A forma de pagamento selecionada não está mais disponível para esta baixa.',
     AMOUNT_EXCEEDS_OPEN_BALANCE: 'O valor informado ultrapassa o saldo ainda aberto da conta.',
-    INSUFFICIENT_MONETARY_BALANCE: 'O saldo monetário não cobre o total selecionado. Nenhuma baixa foi gravada.',
+    INSUFFICIENT_MONETARY_BALANCE: 'O saldo monetário não cobre o total selecionado. Nenhuma baixa do lote foi gravada.',
+    BATCH_NET_NOT_PAYABLE: 'Os créditos e estornos zeram ou superam o valor do lote. Não há pagamento líquido a registrar.',
     OPERATION_ID_REUSED: 'A tentativa atual não corresponde à baixa original. Revise os dados antes de tentar novamente.',
   };
-  return messages[code] || 'Não foi possível confirmar a baixa. Nenhuma alteração parcial deve ser considerada concluída.';
+  return messages[code] || 'Não foi possível confirmar a baixa. Nenhuma alteração do lote foi considerada concluída.';
 }
 
 function codeFromError(error: unknown) {
@@ -180,9 +189,15 @@ function codeFromError(error: unknown) {
   return 'PHOENIX_PENDING_WRITE_FAILED';
 }
 
+function publishCommittedSnapshot(snapshot: PhoenixReadModel) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(PHOENIX_SNAPSHOT_COMMITTED_EVENT, { detail: { snapshot } }));
+}
+
 async function refreshConfirmed(operationId: string, result: unknown, refreshMonth: string, onState?: (state: PhoenixPendingWriteState) => void) {
   const snapshot = await loadPhoenixReadModel(refreshMonth, { force: true });
   const confirmed: PhoenixPendingWriteState = { status: 'confirmed', operationId, result, snapshot };
+  publishCommittedSnapshot(snapshot);
   onState?.(confirmed);
   return confirmed;
 }
@@ -194,6 +209,36 @@ function failedState(operationId: string, error: unknown, onState?: (state: Phoe
   return failed;
 }
 
+async function submitPendingSettlement(input: PhoenixPendingSettlementInput, operationId: string) {
+  assertInput(input);
+  if (input.source === 'payable') {
+    return payablesClient.pay(input.sourceId, {
+      amount: input.amount,
+      paidAt: input.paidAt,
+      accountId: input.accountId,
+      paymentMethodId: input.paymentMethodId,
+      operationId,
+    });
+  }
+  if (input.source === 'card') {
+    return cardsClient.payStatement(input.sourceId, input.statementMonth!, {
+      accountId: input.accountId,
+      paymentMethodId: input.paymentMethodId,
+      paidAt: input.paidAt,
+      operationId,
+    });
+  }
+  return authenticatedRequest(`/finance/events/${input.sourceId}/settle`, {
+    method: 'POST',
+    body: JSON.stringify({
+      paidAt: input.paidAt,
+      accountId: input.accountId,
+      paymentMethodId: input.paymentMethodId,
+      operationId,
+    }),
+  });
+}
+
 export async function runPhoenixPendingSettlement(
   prepared: PreparedPhoenixPendingSettlement,
   refreshMonth: string,
@@ -202,33 +247,7 @@ export async function runPhoenixPendingSettlement(
   onState?.({ status: 'saving', operationId: prepared.operationId });
   try {
     if (!PHOENIX_PENDING_WRITE_ENABLED) throw new PhoenixPendingWriteError('PHOENIX_PENDING_WRITE_NOT_ENABLED');
-    assertInput(prepared.payload);
-    const input = prepared.payload;
-    const result = input.source === 'payable'
-      ? await payablesClient.pay(input.sourceId, {
-          amount: input.amount,
-          paidAt: input.paidAt,
-          accountId: input.accountId,
-          paymentMethodId: input.paymentMethodId,
-          operationId: prepared.operationId,
-        })
-      : input.source === 'card'
-        ? await cardsClient.payStatement(input.sourceId, input.statementMonth!, {
-            accountId: input.accountId,
-            paymentMethodId: input.paymentMethodId,
-            paidAt: input.paidAt,
-            operationId: prepared.operationId,
-          })
-        : await authenticatedRequest(`/finance/events/${input.sourceId}/settle`, {
-            method: 'POST',
-            body: JSON.stringify({
-              paidAt: input.paidAt,
-              accountId: input.accountId,
-              paymentMethodId: input.paymentMethodId,
-              operationId: prepared.operationId,
-            }),
-          });
-
+    const result = await submitPendingSettlement(prepared.payload, prepared.operationId);
     return await refreshConfirmed(prepared.operationId, result, refreshMonth, onState);
   } catch (error) {
     return failedState(prepared.operationId, error, onState);
@@ -246,7 +265,17 @@ export async function runPhoenixPendingBatchSettlement(
     assertBatchInput(prepared.payload);
     const result = await authenticatedRequest('/finance/pending/batch/settle', {
       method: 'POST',
-      body: JSON.stringify({ ...prepared.payload, operationId: prepared.operationId }),
+      body: JSON.stringify({
+        items: prepared.payload.items.map((item) => ({
+          source: item.source,
+          sourceId: item.sourceId,
+          statementMonth: item.statementMonth,
+        })),
+        paidAt: prepared.payload.paidAt,
+        accountId: prepared.payload.accountId,
+        paymentMethodId: prepared.payload.paymentMethodId,
+        operationId: prepared.operationId,
+      }),
     });
     return await refreshConfirmed(prepared.operationId, result, refreshMonth, onState);
   } catch (error) {

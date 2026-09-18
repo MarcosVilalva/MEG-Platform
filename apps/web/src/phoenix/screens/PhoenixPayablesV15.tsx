@@ -4,14 +4,18 @@ import type { Payable } from '../../app/payables-client';
 import type { PhoenixReadModel } from '../contracts';
 import {
   PHOENIX_PENDING_WRITE_ENABLED,
+  preparePhoenixPendingBatchSettlement,
   preparePhoenixPendingSettlement,
+  runPhoenixPendingBatchSettlement,
   runPhoenixPendingSettlement,
+  type PreparedPhoenixPendingBatchSettlement,
   type PreparedPhoenixPendingSettlement,
   type PhoenixPendingWriteState,
 } from '../data/phoenix-pending-write-gateway';
 import '../phoenix-screens.css';
 import '../phoenix-pending-write.css';
 import '../phoenix-pending-v15.css';
+import '../phoenix-pending-quick-settle.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
@@ -26,6 +30,7 @@ type PendingChild = {
   purchaseDate: string;
   installmentNo: number;
   installmentQty: number;
+  sourceEventId?: string;
 };
 type PendingItem = {
   id: string;
@@ -158,14 +163,57 @@ function isOpenCardStatus(value: unknown) {
 
 function cardStatementItems(data: PhoenixReadModel): PendingItem[] {
   return data.cards.flatMap((card) => {
+    if (card.statement?.month === data.month) {
+      // A fatura canônica pode ser formada por parcelas oficiais, por eventos
+      // normalizados legados ou por ambos. O writer "card" só pode liquidar
+      // CardInstallment; eventos normalizados continuam no writer de eventos.
+      // Nunca transforme o total canônico inteiro em uma fatura oficial, pois
+      // isso duplicaria os mesmos eventos em Pendentes e perderia estornos.
+      const officialLines = card.statement.lines
+        .filter((line) => line.isOpen && line.source === 'card-installment');
+      if (!officialLines.length) return [];
+
+      const officialOpen = officialLines.reduce((sum, line) => sum + Number(line.effect || 0), 0);
+      if (!Number.isFinite(officialOpen) || officialOpen <= 0) return [];
+
+      const children: PendingChild[] = officialLines.map((line) => ({
+        id: line.id,
+        description: line.description,
+        amount: Number(line.effect || 0),
+        purchaseDate: line.purchaseDate || line.dueDate,
+        installmentNo: Number(line.installmentNo || 1),
+        installmentQty: Math.max(1, Number(line.installmentQty || 1)),
+        sourceEventId: line.eventId,
+      }));
+      return [{
+        id: `card-statement-${card.id}-${data.month}`,
+        sourceId: card.id,
+        source: 'card' as const,
+        description: `${card.name} · Fatura ${statementLabel(data.month)}`,
+        dueDate: card.statement.dueDate || statementDueIso(card, data.month),
+        openAmount: officialOpen,
+        installmentNo: 1,
+        installmentQty: 1,
+        categoryName: 'Cartão de crédito',
+        group: 'Fatura de cartão',
+        paymentMethod: card.name,
+        modality: 'CRÉDITO',
+        accountName: card.name,
+        statementMonth: data.month,
+        children,
+      }];
+    }
+
+    // Compatibilidade com APIs anteriores ao contrato canônico: neste fallback
+    // somente parcelas oficiais podem originar um item "card".
     const children: PendingChild[] = [];
     for (const purchase of card.purchases || []) {
       if (String(purchase.id || '').startsWith('legacy-')) continue;
       if (normalize(purchase.status) === 'cancelled' || normalize(purchase.status) === 'cancelado') continue;
       for (const entry of purchase.entries || []) {
         if (entry.statementMonth !== data.month || !isOpenCardStatus(entry.status)) continue;
-        const amount = Math.abs(Number(entry.amount || 0));
-        if (!Number.isFinite(amount) || amount <= 0) continue;
+        const amount = Number(entry.amount || 0);
+        if (!Number.isFinite(amount) || amount === 0) continue;
         children.push({
           id: entry.id,
           description: purchase.description,
@@ -179,7 +227,7 @@ function cardStatementItems(data: PhoenixReadModel): PendingItem[] {
 
     const childTotal = children.reduce((sum, item) => sum + item.amount, 0);
     const officialOpen = card.payableStatementAmount !== undefined
-      ? Math.max(0, Number(card.payableStatementAmount || 0))
+      ? Number(card.payableStatementAmount)
       : childTotal;
     if (!Number.isFinite(officialOpen) || officialOpen <= 0) return [];
 
@@ -276,6 +324,14 @@ function groupTotal(group: PendingGroup) {
   return group.items.reduce((sum, item) => sum + item.openAmount, 0);
 }
 
+function isBatchSelectable(item: PendingItem) {
+  return item.openAmount > 0 || (item.source === 'event' && item.openAmount < 0 && isCardLike(item));
+}
+
+function batchEligible(items: PendingItem[]) {
+  return items.filter(isBatchSelectable);
+}
+
 function dateRenderBlocks(group: PendingGroup): DateRenderBlock[] {
   const blocks: DateRenderBlock[] = [];
   const legacyCards = new Map<string, PendingItem[]>();
@@ -315,6 +371,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const [accountId, setAccountId] = useState('');
   const [paymentMethodId, setPaymentMethodId] = useState('');
   const [prepared, setPrepared] = useState<PreparedPhoenixPendingSettlement | null>(null);
+  const [preparedBatch, setPreparedBatch] = useState<PreparedPhoenixPendingBatchSettlement | null>(null);
   const [writeState, setWriteState] = useState<PhoenixPendingWriteState>({ status: 'idle' });
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -332,8 +389,10 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       .filter((item) => !['paid', 'cancelled'].includes(normalize(item.status)) && Number(item.openAmount) > 0)
       .map(payableItem);
     const cards = cardStatementItems(model);
+    const representedEventIds = new Set(cards.flatMap((card) => card.children || []).map((child) => child.sourceEventId).filter(Boolean));
     const seen = new Set(official.map(signature));
     const compatibility = eventItems(model).filter((item) => {
+      if (representedEventIds.has(item.sourceId)) return false;
       const key = signature(item);
       if (seen.has(key)) return false;
       seen.add(key);
@@ -361,23 +420,27 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   }), [open, priority, search, today]);
 
   const grouped = useMemo(() => buildGroups(visible, groupMode), [visible, groupMode]);
-  const selectedItems = actionable.filter((item) => selected.has(item.id));
+  const selectedItems = open.filter((item) => isBatchSelectable(item) && selected.has(item.id));
   const selectedTotal = selectedItems.reduce((sum, item) => sum + item.openAmount, 0);
   const selectedItem = selectedItems.length === 1 ? selectedItems[0] : null;
+  const batchMode = selectedItems.length > 1;
   const available = model.summary.availableBalance + model.summary.realizedResult;
   const compatibilityCount = open.filter((item) => item.source === 'event').length;
   const adjustmentCount = open.filter((item) => item.openAmount < 0).length;
   const activeAccounts = model.accounts.filter((item) => item.isActive && !['benefit', 'credit'].includes(normalize(item.type)));
   const monetaryAccounts = model.accounts.filter((item) => item.isActive && monetaryAccountTypes.has(normalize(item.type)));
   const activeMethods = model.paymentMethods.filter((item) => item.isActive);
-  const statementMethods = activeMethods.filter((item) => normalize(item.type) !== 'credit');
-  const reviewAccounts = selectedItem?.source === 'card' ? monetaryAccounts : activeAccounts;
-  const reviewMethods = selectedItem?.source === 'card' ? statementMethods : activeMethods;
+  const cardSourceMethodNames = new Set(open.filter(isCardLike).map((item) => normalize(item.paymentMethod)).filter(Boolean));
+  const statementMethods = activeMethods.filter((item) =>
+    normalize(item.type) !== 'credit' && !cardSourceMethodNames.has(normalize(item.name)));
+  const reviewAccounts = batchMode || selectedItem?.source === 'card' ? monetaryAccounts : activeAccounts;
+  const reviewMethods = batchMode || selectedItem?.source === 'card' ? statementMethods : activeMethods;
   const canWrite = PHOENIX_PENDING_WRITE_ENABLED && ['ADMIN', 'MANAGER', 'OPERATOR'].includes(model.user.role);
   const saving = writeState.status === 'saving';
 
   function resetPrepared() {
     setPrepared(null);
+    setPreparedBatch(null);
     if (writeState.status !== 'saving') setWriteState({ status: 'idle' });
   }
 
@@ -401,7 +464,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
 
   function toggleGroupSelection(group: PendingGroup) {
     if (saving) return;
-    const eligible = group.items.filter((item) => item.openAmount > 0);
+    const eligible = batchEligible(group.items);
     if (!eligible.length) return;
     const allSelected = eligible.every((item) => selected.has(item.id));
     setSuccessMessage('');
@@ -420,33 +483,48 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     setSelected(new Set());
     setReviewOpen(false);
     setPrepared(null);
+    setPreparedBatch(null);
     setWriteState({ status: 'idle' });
   }
 
-  function suggestedAccount(item: PendingItem | null) {
-    const accounts = item?.source === 'card' ? monetaryAccounts : activeAccounts;
-    if (item?.accountId && accounts.some((account) => account.id === item.accountId)) return item.accountId;
+  function suggestedAccount(items: PendingItem[]) {
+    const accounts = items.length > 1 || items.some((item) => item.source === 'card') ? monetaryAccounts : activeAccounts;
+    const explicit = items.map((item) => item.accountId).filter(Boolean) as string[];
+    const common = explicit.length === items.length && new Set(explicit).size === 1 ? explicit[0] : '';
+    if (common && accounts.some((account) => account.id === common)) return common;
     return accounts.find((account) => normalize(account.name).includes('principal'))?.id || accounts[0]?.id || '';
   }
 
-  function suggestedMethod(item: PendingItem | null) {
-    const methods = item?.source === 'card' ? statementMethods : activeMethods;
-    if (item?.paymentMethodId && methods.some((method) => method.id === item.paymentMethodId)) return item.paymentMethodId;
-    if (!item) return '';
-    const wanted = normalize(item.paymentMethod);
-    return methods.find((method) => normalize(method.name) === wanted)?.id
-      || methods.find((method) => normalize(method.name).includes('pix'))?.id
+  function suggestedMethod(items: PendingItem[]) {
+    const methods = items.length > 1 || items.some((item) => item.source === 'card') ? statementMethods : activeMethods;
+    const explicit = items.map((item) => item.paymentMethodId).filter(Boolean) as string[];
+    const common = explicit.length === items.length && new Set(explicit).size === 1 ? explicit[0] : '';
+    if (common && methods.some((method) => method.id === common)) return common;
+    const names = items.map((item) => normalize(item.paymentMethod)).filter(Boolean);
+    const commonName = names.length === items.length && new Set(names).size === 1 ? names[0] : '';
+    if (commonName) {
+      const exact = methods.find((method) => normalize(method.name) === commonName);
+      if (exact) return exact.id;
+    }
+    return methods.find((method) => normalize(method.name).includes('pix'))?.id
       || methods[0]?.id
       || '';
   }
 
-  function openReview() {
+  function openReview(item?: PendingItem) {
+    const targets = item ? [item] : selectedItems;
+    const net = targets.reduce((sum, target) => sum + target.openAmount, 0);
+    if (!targets.length || saving) return;
+    if (item && item.openAmount <= 0) return;
+    if (!item && (targets.some((target) => !isBatchSelectable(target)) || net <= 0)) return;
     setSuccessMessage('');
+    if (item) setSelected(new Set([item.id]));
     setPaidAt(today);
-    setAccountId(suggestedAccount(selectedItem));
-    setPaymentMethodId(suggestedMethod(selectedItem));
+    setAccountId(suggestedAccount(targets));
+    setPaymentMethodId(suggestedMethod(targets));
     setWriteState({ status: 'idle' });
     setPrepared(null);
+    setPreparedBatch(null);
     setReviewOpen(true);
   }
 
@@ -455,44 +533,73 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   function updatePaymentMethod(value: string) { setPaymentMethodId(value); resetPrepared(); }
 
   async function confirmSettlement() {
-    if (!selectedItem || saving || !canWrite) return;
+    const targets = selectedItems;
+    if (!targets.length || selectedTotal <= 0 || saving || !canWrite) return;
     const account = reviewAccounts.find((item) => item.id === accountId);
     const method = reviewMethods.find((item) => item.id === paymentMethodId);
+    const operationId = targets.length > 1 ? preparedBatch?.operationId || '' : prepared?.operationId || '';
     if (!account || !method || !paidAt) {
-      setWriteState({ status: 'error', operationId: prepared?.operationId || '', code: 'PHOENIX_PENDING_FORM_INCOMPLETE', message: 'Informe data, conta e forma de pagamento antes de confirmar.' });
+      setWriteState({ status: 'error', operationId, code: 'PHOENIX_PENDING_FORM_INCOMPLETE', message: 'Informe data, conta e forma de pagamento antes de confirmar.' });
       return;
     }
 
-    const title = selectedItem.source === 'card' ? 'CONFIRMAR PAGAMENTO DA FATURA' : 'CONFIRMAR BAIXA REAL';
+    const itemLines = targets.map((item) => `• ${item.description}: ${money.format(item.openAmount)}`).join('\n');
+    const title = targets.length > 1
+      ? `CONFIRMAR BAIXA DE ${targets.length} SELECIONADOS`
+      : targets[0].source === 'card'
+        ? 'CONFIRMAR PAGAMENTO DA FATURA'
+        : 'CONFIRMAR BAIXA REAL';
     const confirmed = window.confirm(
-      `${title}\n\n${selectedItem.description}\nValor: ${money.format(selectedItem.openAmount)}\nVencimento: ${date.format(new Date(`${selectedItem.dueDate}T12:00:00Z`))}\nData da baixa: ${date.format(new Date(`${paidAt}T12:00:00Z`))}\nConta: ${account.name}\nForma: ${method.name}\n\nDeseja registrar esta baixa?`
+      `${title}\n\n${itemLines}\n\nTotal: ${money.format(selectedTotal)}\nData da baixa: ${date.format(new Date(`${paidAt}T12:00:00Z`))}\nConta: ${account.name}\nForma: ${method.name}\n\n${targets.length > 1 ? 'A mesma data, conta e forma serão aplicadas a todos os selecionados.\n\n' : ''}Deseja registrar ${targets.length > 1 ? 'essas baixas' : 'esta baixa'}?`
     );
     if (!confirmed) return;
 
     try {
-      const nextPrepared = preparePhoenixPendingSettlement({
-        source: selectedItem.source,
-        sourceId: selectedItem.sourceId,
-        amount: selectedItem.openAmount,
-        paidAt,
-        accountId,
-        paymentMethodId,
-        statementMonth: selectedItem.statementMonth,
-      }, prepared);
-      setPrepared(nextPrepared);
-      const result = await runPhoenixPendingSettlement(nextPrepared, model.month, setWriteState);
+      const result = targets.length === 1
+        ? await (async () => {
+            const target = targets[0];
+            const nextPrepared = preparePhoenixPendingSettlement({
+              source: target.source,
+              sourceId: target.sourceId,
+              amount: target.openAmount,
+              paidAt,
+              accountId,
+              paymentMethodId,
+              statementMonth: target.statementMonth,
+            }, prepared);
+            setPrepared(nextPrepared);
+            return runPhoenixPendingSettlement(nextPrepared, model.month, setWriteState);
+          })()
+        : await (async () => {
+            const nextPrepared = preparePhoenixPendingBatchSettlement({
+              items: targets.map((target) => ({
+                source: target.source,
+                sourceId: target.sourceId,
+                amount: target.openAmount,
+                statementMonth: target.statementMonth,
+              })),
+              paidAt,
+              accountId,
+              paymentMethodId,
+            }, preparedBatch);
+            setPreparedBatch(nextPrepared);
+            return runPhoenixPendingBatchSettlement(nextPrepared, model.month, setWriteState);
+          })();
       if (result.status !== 'confirmed') return;
 
       setModel(result.snapshot);
       setSelected(new Set());
       setReviewOpen(false);
       setPrepared(null);
-      setSuccessMessage(`${selectedItem.description} baixado em ${date.format(new Date(`${paidAt}T12:00:00Z`))} por ${method.name}.`);
+      setPreparedBatch(null);
+      setSuccessMessage(targets.length > 1
+        ? `${targets.length} compromissos baixados em ${date.format(new Date(`${paidAt}T12:00:00Z`))} por ${method.name}.`
+        : `${targets[0].description} baixado em ${date.format(new Date(`${paidAt}T12:00:00Z`))} por ${method.name}.`);
       window.dispatchEvent(new Event('focus'));
     } catch (error) {
       setWriteState({
         status: 'error',
-        operationId: prepared?.operationId || '',
+        operationId,
         code: error instanceof Error ? error.message : 'PHOENIX_PENDING_WRITE_FAILED',
         message: 'Não foi possível preparar a baixa. Revise os dados e tente novamente.'
       });
@@ -506,17 +613,18 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       : 0;
     const card = isCardLike(item);
     return <div className={`px-pending-row ${adjustment ? 'is-adjustment' : ''} ${item.source === 'card' ? 'is-card-statement' : ''}`} key={item.id}>
-      <input type="checkbox" aria-label={`Selecionar ${item.description}`} disabled={adjustment || saving} checked={!adjustment && selected.has(item.id)} onChange={() => toggle(item.id)} />
+      <input type="checkbox" aria-label={`Selecionar ${item.description}`} disabled={adjustment || saving} checked={selected.has(item.id)} onChange={() => toggle(item.id)} />
       <div className="px-pending-date"><strong>{date.format(new Date(`${item.dueDate}T12:00:00Z`))}</strong><small>{adjustment ? 'Ajuste de estorno' : late ? `${late} dia(s) em atraso` : item.dueDate === today ? 'Vence hoje' : 'Programado'}</small></div>
       <div className="px-pending-copy"><strong>{item.description}</strong><small>{item.source === 'card' ? `${item.children?.length || 0} lançamento(s) agrupado(s)` : item.installmentQty > 1 ? `Parcela ${item.installmentNo}/${item.installmentQty}` : 'Pagamento único'} · {item.categoryName} · {item.paymentMethod}</small></div>
       <strong className={`px-pending-amount ${adjustment ? 'positive' : ''}`}>{money.format(item.openAmount)}</strong>
       <span className={`px-status ${adjustment ? 'reconciled' : late ? 'overdue' : 'planned'}`}>{adjustment ? 'ESTORNO' : card ? 'CARTÃO' : late ? 'VENCIDO' : 'PENDENTE'}</span>
+      {!adjustment ? <button type="button" className="px-pending-quick-settle" disabled={saving || item.openAmount > available} aria-label={item.source === 'card' ? `Pagar fatura ${item.description}` : `Dar baixa em ${item.description}`} title={item.openAmount > available ? 'Saldo monetário insuficiente para esta baixa.' : 'Abre a revisão protegida antes de gravar.'} onClick={() => openReview(item)}>{item.source === 'card' ? 'Pagar fatura' : 'Dar baixa'}</button> : null}
       <button type="button" className="px-detail-btn" aria-label={`Detalhes de ${item.description}`} onClick={() => setDetailItem(item)}>↘</button>
     </div>;
   }
 
   function renderDateGroup(group: PendingGroup) {
-    const eligible = group.items.filter((item) => item.openAmount > 0);
+    const eligible = batchEligible(group.items);
     const selectedCount = eligible.filter((item) => selected.has(item.id)).length;
     const allSelected = eligible.length > 0 && selectedCount === eligible.length;
     const partiallySelected = selectedCount > 0 && !allSelected;
@@ -559,6 +667,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
         {blocks.map((block) => block.kind === 'card-legacy'
           ? <details className="px-pending-card-group px-pending-card-nested" key={block.key}>
               <summary><div><strong>{block.items[0].paymentMethod}</strong><small>{block.items.length} lançamentos de cartão agrupados</small></div><strong>{money.format(block.items.reduce((sum, item) => sum + item.openAmount, 0))}</strong></summary>
+              <div className="px-pending-card-net-action"><button type="button" disabled={saving || block.items.reduce((sum, item) => sum + item.openAmount, 0) <= 0} onClick={() => toggleGroupSelection({ key: block.key, label: block.items[0].paymentMethod, sortDate: block.items[0].dueDate, kind: 'card-legacy', items: block.items })}>Selecionar fatura líquida</button><span>Inclui automaticamente créditos e estornos do cartão.</span></div>
               <div className="px-pending-card-group-body">{block.items.map(renderRow)}</div>
             </details>
           : renderRow(block.items[0]))}
@@ -590,14 +699,15 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
           <label className="px-pending-group-select"><span>Agrupar por</span><select value={groupMode} onChange={(event) => setGroupMode(event.target.value as GroupMode)}><option value="date">Data</option><option value="category">Categoria</option><option value="account">Conta</option><option value="payment-method">Forma de pagamento</option><option value="none">Sem agrupamento</option></select></label>
           <span className="px-toolbar-note">{visible.length} de {open.length} exibido(s)</span>
         </div>
-        {selectedItems.length ? <div className="px-bulk-action-bar"><div><strong>{selectedItems.length} compromisso(s) selecionado(s)</strong><span>Total {money.format(selectedTotal)} · saldo após baixa {money.format(available - selectedTotal)}</span></div><button type="button" onClick={clearSelection}>Limpar</button><button type="button" className="primary" disabled={selectedItems.length !== 1 || selectedTotal > available} onClick={openReview}>Revisar baixa</button></div> : null}
-        {compatibilityCount > 0 ? <div className="px-history-source-note"><strong>Leitura consolidada:</strong> contas, faturas oficiais e compromissos legados ficam na mesma agenda. Faturas usam o writer oficial do cartão; lançamentos legados continuam protegidos individualmente.</div> : null}
+        {selectedItems.length ? <div className="px-bulk-action-bar"><div><strong>{selectedItems.length} compromisso(s) selecionado(s)</strong><span>Total {money.format(selectedTotal)} · saldo após baixa {money.format(available - selectedTotal)}</span></div><button type="button" onClick={clearSelection}>Limpar</button><button type="button" className="primary" disabled={saving || selectedTotal <= 0 || selectedTotal > available} onClick={() => openReview()}>{selectedItems.length > 1 ? `Dar baixa nos selecionados (${selectedItems.length})` : 'Revisar baixa'}</button></div> : null}
+        {compatibilityCount > 0 ? <div className="px-history-source-note"><strong>Leitura consolidada:</strong> contas, faturas oficiais e compromissos legados ficam na mesma agenda. Cada baixa continua usando o writer oficial do respectivo domínio.</div> : null}
 
         {grouped.map((group) => group.kind === 'date'
           ? renderDateGroup(group)
           : group.kind === 'card-legacy' && group.items.length > 1
             ? <details className="px-pending-card-group" key={group.key}>
                 <summary><div><strong>{group.label}</strong><small>{group.items.length} lançamentos de cartão agrupados</small></div><strong>{money.format(groupTotal(group))}</strong></summary>
+                <div className="px-pending-card-net-action"><button type="button" disabled={saving || groupTotal(group) <= 0} onClick={() => toggleGroupSelection(group)}>Selecionar fatura líquida</button><span>Inclui automaticamente créditos e estornos do cartão.</span></div>
                 <div className="px-pending-card-group-body">{group.items.map(renderRow)}</div>
               </details>
             : <section className={`px-pending-group ${group.kind === 'card' ? 'is-card-group' : ''}`} key={group.key}>
@@ -611,13 +721,13 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
         <span className="px-kicker">Resumo da seleção</span>
         <h2>{selectedItems.length ? `${selectedItems.length} compromisso(s)` : 'Nenhum selecionado'}</h2>
         <dl><div><dt>Total selecionado</dt><dd>{money.format(selectedTotal)}</dd></div><div><dt>Saldo disponível</dt><dd>{money.format(available)}</dd></div><div><dt>Saldo após baixa</dt><dd>{money.format(available - selectedTotal)}</dd></div></dl>
-        <button className="px-primary-action" type="button" disabled={selectedItems.length !== 1 || selectedTotal > available} onClick={openReview}>Revisar e confirmar baixa</button>
-        <small className="px-readonly-hint">A confirmação real permanece protegida: um compromisso por vez. Uma fatura oficial conta como um único compromisso.</small>
+        <button className="px-primary-action" type="button" disabled={!selectedItems.length || saving || selectedTotal <= 0 || selectedTotal > available} onClick={() => openReview()}>{selectedItems.length > 1 ? `Dar baixa nos ${selectedItems.length} selecionados` : 'Revisar e confirmar baixa'}</button>
+        <small className="px-readonly-hint">Na seleção múltipla, data, conta e forma de pagamento são confirmadas uma vez e aplicadas a todos os compromissos selecionados.</small>
       </aside>
     </div>
 
     {detailItem ? <div className="px-pending-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailItem(null); }}><aside className="px-pending-drawer" role="dialog" aria-modal="true" aria-label={`Detalhes de ${detailItem.description}`}><header><div><span className="px-kicker">{detailItem.source === 'card' ? 'Detalhes da fatura' : 'Detalhes do compromisso'}</span><h2>{detailItem.description}</h2><p>{date.format(new Date(`${detailItem.dueDate}T12:00:00Z`))}</p></div><button type="button" aria-label="Fechar" onClick={() => setDetailItem(null)}>×</button></header><dl><div><dt>Valor</dt><dd>{money.format(detailItem.openAmount)}</dd></div><div><dt>Classificação</dt><dd>{detailItem.categoryName}</dd></div><div><dt>Grupo</dt><dd>{detailItem.group}</dd></div><div><dt>Forma prevista</dt><dd>{detailItem.paymentMethod}</dd></div><div><dt>Modalidade</dt><dd>{detailItem.modality}</dd></div><div><dt>Parcela</dt><dd>{detailItem.source === 'card' ? 'Fatura consolidada' : detailItem.installmentQty > 1 ? `${detailItem.installmentNo}/${detailItem.installmentQty}` : 'Pagamento único'}</dd></div></dl>{detailItem.children?.length ? <section className="px-pending-statement-lines"><div className="px-panel-head"><div><span>Lançamentos da fatura</span><strong>{detailItem.children.length} item(ns)</strong></div></div>{detailItem.children.map((child) => <div key={child.id}><span><strong>{child.description}</strong><small>{date.format(new Date(`${child.purchaseDate}T12:00:00Z`))} · parcela {child.installmentNo}/{child.installmentQty}</small></span><strong>{money.format(child.amount)}</strong></div>)}</section> : null}<footer><button type="button" className="px-secondary-action" onClick={() => setDetailItem(null)}>Fechar</button><button type="button" className="px-primary-action" onClick={() => { toggle(detailItem.id); setDetailItem(null); }}>{selected.has(detailItem.id) ? 'Remover da baixa' : detailItem.source === 'card' ? 'Selecionar fatura' : 'Selecionar para baixa'}</button></footer></aside></div> : null}
 
-    {reviewOpen ? <div className="px-pending-overlay" role="presentation" onMouseDown={(event) => { if (!saving && event.target === event.currentTarget) setReviewOpen(false); }}><aside className="px-pending-drawer px-pending-review" role="dialog" aria-modal="true" aria-label="Revisar baixa"><header><div><span className="px-kicker">Baixa protegida</span><h2>{selectedItems.length === 1 ? `Revisar ${selectedItems[0].description}` : `Revisar ${selectedItems.length} compromisso(s)`}</h2><p>Confirme os dados efetivos do pagamento antes de gravar.</p></div><button type="button" aria-label="Fechar" disabled={saving} onClick={() => setReviewOpen(false)}>×</button></header><div className="px-pending-review-list">{selectedItems.map((item) => <div key={item.id}><span><strong>{item.description}</strong><small>{date.format(new Date(`${item.dueDate}T12:00:00Z`))} · previsto: {item.paymentMethod}</small></span><strong>{money.format(item.openAmount)}</strong></div>)}</div><dl><div><dt>Total selecionado</dt><dd>{money.format(selectedTotal)}</dd></div><div><dt>Saldo antes</dt><dd>{money.format(available)}</dd></div><div><dt>Saldo depois</dt><dd>{money.format(available - selectedTotal)}</dd></div></dl><div className="px-pending-payment-fields"><label><span>Data da baixa</span><input type="date" value={paidAt} max={today} disabled={saving} onChange={(event) => updatePaidAt(event.target.value)} /></label><label><span>Conta financeira</span><select value={accountId} disabled={saving} onChange={(event) => updateAccount(event.target.value)}><option value="">Selecione</option>{reviewAccounts.map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}</select></label><label><span>Forma de pagamento</span><select value={paymentMethodId} disabled={saving} onChange={(event) => updatePaymentMethod(event.target.value)}><option value="">Selecione</option>{reviewMethods.map((method) => <option value={method.id} key={method.id}>{method.name}</option>)}</select></label></div>{selectedItems.length > 1 ? <div className="px-pending-write-warning"><strong>Baixa em lote continua protegida.</strong><span>Você pode montar a seleção completa agora; a gravação múltipla só será liberada com o writer atômico do lote.</span></div> : null}{writeState.status === 'error' ? <div className="px-pending-write-error" role="alert"><strong>Baixa não confirmada</strong><span>{writeState.message}</span></div> : null}<footer><button type="button" className="px-secondary-action" disabled={saving} onClick={() => setReviewOpen(false)}>Voltar</button><button type="button" className="px-primary-action" disabled={!canWrite || saving || selectedItems.length !== 1 || !paidAt || !accountId || !paymentMethodId || selectedTotal > available} onClick={() => { void confirmSettlement(); }}>{saving ? 'Confirmando no servidor…' : selectedItem?.source === 'card' ? 'Confirmar pagamento da fatura' : 'Confirmar baixa real'}</button><small>{selectedItems.length === 1 ? 'O botão só conclui após confirmação do servidor. Reenvios usam o mesmo operationId enquanto os dados não mudarem.' : 'A seleção múltipla já está pronta; a gravação permanece protegida até o endpoint atômico de lote.'}</small></footer></aside></div> : null}
+    {reviewOpen ? <div className="px-pending-overlay" role="presentation" onMouseDown={(event) => { if (!saving && event.target === event.currentTarget) setReviewOpen(false); }}><aside className="px-pending-drawer px-pending-review" role="dialog" aria-modal="true" aria-label="Revisar baixa"><header><div><span className="px-kicker">Baixa protegida</span><h2>{selectedItems.length === 1 ? `Revisar ${selectedItems[0].description}` : `Revisar ${selectedItems.length} compromisso(s)`}</h2><p>Confirme os dados efetivos do pagamento antes de gravar.</p></div><button type="button" aria-label="Fechar" disabled={saving} onClick={() => setReviewOpen(false)}>×</button></header><div className="px-pending-review-list">{selectedItems.map((item) => <div key={item.id}><span><strong>{item.description}</strong><small>{date.format(new Date(`${item.dueDate}T12:00:00Z`))} · previsto: {item.paymentMethod}</small></span><strong>{money.format(item.openAmount)}</strong></div>)}</div><dl><div><dt>Total selecionado</dt><dd>{money.format(selectedTotal)}</dd></div><div><dt>Saldo antes</dt><dd>{money.format(available)}</dd></div><div><dt>Saldo depois</dt><dd>{money.format(available - selectedTotal)}</dd></div></dl><div className="px-pending-payment-fields"><label><span>Data da baixa</span><input type="date" value={paidAt} max={today} disabled={saving} onChange={(event) => updatePaidAt(event.target.value)} /></label><label><span>Conta financeira</span><select value={accountId} disabled={saving} onChange={(event) => updateAccount(event.target.value)}><option value="">Selecione</option>{reviewAccounts.map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}</select></label><label><span>Forma de pagamento</span><select value={paymentMethodId} disabled={saving} onChange={(event) => updatePaymentMethod(event.target.value)}><option value="">Selecione</option>{reviewMethods.map((method) => <option value={method.id} key={method.id}>{method.name}</option>)}</select></label></div>{selectedItems.length > 1 ? <div className="px-pending-write-warning"><strong>Baixa conjunta dos selecionados.</strong><span>A mesma data, conta e forma serão aplicadas a todos. Cada compromisso é confirmado pelo writer oficial; se houver interrupção, o MEG relê a base e mantém somente o que continuar pendente para nova tentativa.</span></div> : null}{writeState.status === 'error' ? <div className="px-pending-write-error" role="alert"><strong>Baixa não confirmada</strong><span>{writeState.message}</span></div> : null}<footer><button type="button" className="px-secondary-action" disabled={saving} onClick={() => setReviewOpen(false)}>Voltar</button><button type="button" className="px-primary-action" disabled={!canWrite || saving || !selectedItems.length || selectedTotal <= 0 || !paidAt || !accountId || !paymentMethodId || selectedTotal > available} onClick={() => { void confirmSettlement(); }}>{saving ? `Confirmando ${selectedItems.length > 1 ? 'baixas' : 'no servidor'}…` : selectedItems.length > 1 ? `Confirmar baixa de ${selectedItems.length} selecionados` : selectedItem?.source === 'card' ? 'Confirmar pagamento da fatura' : 'Confirmar baixa real'}</button><small>{selectedItems.length > 1 ? 'O lote usa identificadores estáveis por compromisso para que uma nova tentativa não duplique baixas já confirmadas.' : 'O botão só conclui após confirmação do servidor. Reenvios usam o mesmo operationId enquanto os dados não mudarem.'}</small></footer></aside></div> : null}
   </section>;
 }

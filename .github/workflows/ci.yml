@@ -122,7 +122,7 @@ jobs:
           CORS_ORIGINS: http://localhost:5173
 
       - name: Upload Phoenix Web preview
-        if: github.event_name == 'pull_request' && (github.head_ref == 'phoenix/v15-clean-room' || startsWith(github.head_ref, 'rc1/'))
+        if: github.event_name == 'pull_request' && (github.head_ref == 'phoenix/v15-clean-room' || github.head_ref == 'feature/phoenix-launch-dynamic-status' || startsWith(github.head_ref, 'rc1/'))
         uses: actions/upload-artifact@v4
         with:
           name: phoenix-web-preview
@@ -131,7 +131,7 @@ jobs:
           retention-days: 3
 
   financial-e2e:
-    if: github.ref == 'refs/heads/phoenix/v15-clean-room' || startsWith(github.ref, 'refs/heads/rc1/') || (github.event_name == 'pull_request' && (github.head_ref == 'phoenix/v15-clean-room' || startsWith(github.head_ref, 'rc1/')))
+    if: github.ref == 'refs/heads/phoenix/v15-clean-room' || github.ref == 'refs/heads/feature/phoenix-launch-dynamic-status' || startsWith(github.ref, 'refs/heads/rc1/') || (github.event_name == 'pull_request' && (github.head_ref == 'phoenix/v15-clean-room' || github.head_ref == 'feature/phoenix-launch-dynamic-status' || startsWith(github.head_ref, 'rc1/')))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     services:
@@ -176,7 +176,7 @@ jobs:
         run: npm --workspace apps/api run test:rc1-financial-e2e
 
   android-rc1:
-    if: startsWith(github.ref, 'refs/heads/rc1/') || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'rc1/'))
+    if: github.ref == 'refs/heads/feature/phoenix-launch-dynamic-status' || startsWith(github.ref, 'refs/heads/rc1/') || (github.event_name == 'pull_request' && (github.head_ref == 'feature/phoenix-launch-dynamic-status' || startsWith(github.head_ref, 'rc1/')))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:

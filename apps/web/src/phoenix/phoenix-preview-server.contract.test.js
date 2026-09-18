@@ -12,6 +12,10 @@ assert.match(server, /simpleEventWriteEnabled\s*=\s*process\.env\.PHOENIX_SIMPLE
   'Evento financeiro simples deve exigir uma flag de ambiente deliberada.');
 assert.match(server, /cardPurchaseWriteEnabled\s*=\s*process\.env\.PHOENIX_CARD_PURCHASE_WRITE\s*===\s*'enabled'/,
   'Compra no cartão deve exigir uma flag independente e deliberada.');
+assert.match(server, /benefitWriteEnabled\s*=\s*process\.env\.PHOENIX_BENEFIT_WRITE\s*===\s*'enabled'/,
+  'Benefício Alimentação deve exigir uma flag independente e deliberada.');
+assert.match(server, /transferWriteEnabled\s*=\s*process\.env\.PHOENIX_TRANSFER_WRITE\s*===\s*'enabled'/,
+  'Transferência deve exigir uma flag independente e deliberada.');
 assert.match(server, /pendingWriteEnabled\s*=\s*process\.env\.PHOENIX_PENDING_WRITE\s*===\s*'enabled'/,
   'Baixa de pendências deve exigir uma flag de ambiente deliberada.');
 assert.match(server, /bulkEventWriteEnabled\s*=\s*process\.env\.PHOENIX_BULK_EVENT_WRITE\s*===\s*'enabled'/,
@@ -19,6 +23,10 @@ assert.match(server, /bulkEventWriteEnabled\s*=\s*process\.env\.PHOENIX_BULK_EVE
 
 assert.match(server, /allowedFinancialPosts\s*=\s*new Set\(\['\/finance\/events'\]\)/,
   'Writer de evento simples deve continuar restrito ao endpoint exato de criação.');
+assert.match(server, /allowedBenefitPosts\s*=\s*new Set\(\['\/finance\/benefit-events'\]\)/,
+  'Writer do benefício deve possuir allowlist exclusiva para o endpoint protegido.');
+assert.match(server, /allowedTransferPosts\s*=\s*new Set\(\['\/finance\/transfers'\]\)/,
+  'Transferências devem possuir allowlist exclusiva para o endpoint atômico.');
 assert.match(server, /allowedCardPurchasePosts\s*=\s*new Set\(\['\/cards\/purchases'\]\)/,
   'Criação de compra no cartão deve permanecer restrita ao endpoint exato.');
 assert.match(server, /function isAllowedCardPurchaseWrite\(method, pathname\)/,
@@ -33,6 +41,10 @@ assert.match(server, /allowedBulkEventPosts\s*=\s*new Set\(\[\s*'\/finance\/even
   'Writer em lote deve possuir allowlist explícita somente para update e archive protegidos.');
 assert.match(server, /simpleEventWriteEnabled\s*&&\s*allowedFinancialPosts\.has\(pathname\)/,
   'POST de evento simples deve depender simultaneamente da flag e da allowlist estreita.');
+assert.match(server, /benefitWriteEnabled\s*&&\s*allowedBenefitPosts\.has\(pathname\)/,
+  'POST do benefício deve depender simultaneamente da flag própria e da allowlist estreita.');
+assert.match(server, /transferWriteEnabled\s*&&\s*allowedTransferPosts\.has\(pathname\)/,
+  'POST de transferência deve depender simultaneamente da flag própria e da allowlist atômica.');
 assert.match(server, /isAllowedCardPurchaseWrite\(method, pathname\)/,
   'Toda mutação de compra no cartão deve depender do gate estreito do domínio.');
 assert.match(server, /bulkEventWriteEnabled\s*&&\s*allowedBulkEventPosts\.has\(pathname\)/,
@@ -41,15 +53,19 @@ assert.match(server, /if \(!pendingWriteEnabled\) return false;/,
   'Rotas de baixa devem falhar fechadas quando a capacidade estiver desligada.');
 assert.match(server, /\^\\\/finance\\\/events\\\/\[\^\/\]\+\\\/settle\$.*\^\\\/payables\\\/\[\^\/\]\+\\\/payments\$/s,
   'Baixas permitidas devem ficar limitadas a FinancialEvent settle e Payable payments.');
-assert.doesNotMatch(server, /allowedFinancialPosts\s*=\s*new Set\([^)]*(?:payables|cards|receivables|transfers)/,
+assert.doesNotMatch(server, /allowedFinancialPosts\s*=\s*new Set\([^)]*(?:payables|cards|receivables|transfers|benefit-events)/,
   'Writer simples não pode ampliar implicitamente sua allowlist para outros domínios.');
 
-assert.match(server, /capabilities:\s*\{\s*simpleEventWrite:\s*simpleEventWriteEnabled,\s*cardPurchaseWrite:\s*cardPurchaseWriteEnabled,\s*pendingWrite:\s*pendingWriteEnabled,\s*bulkEventWrite:\s*bulkEventWriteEnabled\s*\}/s,
+assert.match(server, /capabilities:\s*\{\s*simpleEventWrite:\s*simpleEventWriteEnabled,\s*cardPurchaseWrite:\s*cardPurchaseWriteEnabled,\s*benefitWrite:\s*benefitWriteEnabled,\s*transferWrite:\s*transferWriteEnabled,\s*pendingWrite:\s*pendingWriteEnabled,\s*bulkEventWrite:\s*bulkEventWriteEnabled\s*\}/s,
   'Health do preview deve declarar todas as capacidades reais de escrita protegida.');
 assert.match(server, /phoenix-bulk-event-write-gated-preview/,
   'Health deve distinguir quando o writer de lote está habilitado.');
 assert.match(server, /phoenix-pending-write-gated-preview/,
   'Health deve distinguir quando o writer de pendências está habilitado.');
+assert.match(server, /phoenix-transfer-write-gated-preview/,
+  'Health deve distinguir quando o writer de transferências está habilitado.');
+assert.match(server, /phoenix-benefit-write-gated-preview/,
+  'Health deve distinguir quando o writer do Benefício Alimentação está habilitado.');
 assert.match(server, /phoenix-card-purchase-write-gated-preview/,
   'Health deve distinguir quando o writer de compra no cartão está habilitado.');
 assert.match(server, /phoenix-simple-event-write-gated-preview/,

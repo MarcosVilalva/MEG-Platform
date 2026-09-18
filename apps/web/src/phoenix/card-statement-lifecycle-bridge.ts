@@ -84,10 +84,11 @@ function actorName(actor: CardStatementLifecycle['reopenedBy']) {
 
 function statusMeta(value: CardStatementLifecycle['status']) {
   return ({
-    none: { label: 'SEM FATURA', className: 'confirmed', note: 'Nenhuma parcela oficial nesta competência.' },
-    open: { label: 'EM ABERTO', className: 'planned', note: 'Há parcelas oficiais aguardando pagamento.' },
-    partial: { label: 'PARCIAL', className: 'planned', note: 'Parte da fatura já foi paga e ainda existe saldo oficial em aberto.' },
-    paid: { label: 'PAGA', className: 'reconciled', note: 'As parcelas oficiais desta competência estão quitadas.' },
+    none: { label: 'SEM FATURA', className: 'confirmed', note: 'Nenhum movimento de fatura nesta competência.' },
+    open: { label: 'EM ABERTO', className: 'planned', note: 'Há saldo da fatura aguardando pagamento.' },
+    partial: { label: 'PARCIAL', className: 'planned', note: 'Parte da fatura já foi baixada e ainda existe saldo em aberto.' },
+    paid: { label: 'PAGA', className: 'reconciled', note: 'A fatura desta competência está quitada.' },
+    credit: { label: 'CRÉDITO', className: 'confirmed', note: 'Os créditos superam o saldo aberto e não há valor a pagar.' },
     reopened: { label: 'REABERTA', className: 'warn', note: 'O pagamento foi estornado de forma auditada e as parcelas voltaram para aberto.' }
   } as const)[value];
 }

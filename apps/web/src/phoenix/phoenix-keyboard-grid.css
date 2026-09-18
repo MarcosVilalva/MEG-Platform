@@ -1,0 +1,29 @@
+.phoenix-v15 [data-px-keyboard-grid="active"] {
+  scroll-behavior:auto;
+}
+
+.phoenix-v15 tr.px-kb-row-active > td,
+.phoenix-v15 [role="row"].px-kb-row-active > [role="gridcell"],
+.phoenix-v15 [role="row"].px-kb-row-active > [role="cell"] {
+  background:color-mix(in srgb,var(--brand) 8%,var(--panel)) !important;
+}
+
+.phoenix-v15 .px-kb-cell-active {
+  position:relative;
+  z-index:1;
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--brand) 78%,transparent);
+}
+
+.phoenix-v15 tr.px-kb-row-active > td:first-child,
+.phoenix-v15 [role="row"].px-kb-row-active > [role="gridcell"]:first-child,
+.phoenix-v15 [role="row"].px-kb-row-active > [role="cell"]:first-child {
+  box-shadow:inset 3px 0 0 var(--brand);
+}
+
+.phoenix-v15 .px-kb-cell-active:first-child {
+  box-shadow:inset 3px 0 0 var(--brand),inset 0 0 0 2px color-mix(in srgb,var(--brand) 78%,transparent);
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .phoenix-v15 [data-px-keyboard-grid="active"] { scroll-behavior:auto; }
+}

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { Prisma, UserRole, UserStatus, prisma } from '@meg/database';
 import { createFinancialEvent, deleteFinancialEvent, updateFinancialEvent } from './service';
 import { createFinancialTransfer, FinancialTransferError } from './transfer-service';
+import { createBenefitEventProtected, BenefitEventMutationError } from './benefit-event-mutation';
 
 type FullTransferResult = {
   transferId: string;
@@ -76,7 +77,7 @@ async function main() {
     },
   });
 
-  const [sourceAccount, destinationAccount] = await Promise.all([
+  const [sourceAccount, destinationAccount, benefitAccount] = await Promise.all([
     prisma.account.create({
       data: {
         userId: user.id,
@@ -92,6 +93,35 @@ async function main() {
         name: 'Conta RC1 Destino',
         type: 'SAVINGS',
         openingBalance: 0,
+        isActive: true,
+      },
+    }),
+    prisma.account.create({
+      data: {
+        userId: user.id,
+        name: 'Benefício Alimentação RC1',
+        type: 'benefit',
+        openingBalance: 0,
+        isActive: true,
+      },
+    }),
+  ]);
+
+  const [benefitCategory, benefitPaymentMethod] = await Promise.all([
+    prisma.category.create({
+      data: {
+        userId: user.id,
+        name: 'Alimentação RC1',
+        group: 'ALIMENTAÇÃO',
+        type: 'expense',
+        isActive: true,
+      },
+    }),
+    prisma.paymentMethod.create({
+      data: {
+        userId: user.id,
+        name: 'VEROCARD',
+        type: 'benefit',
         isActive: true,
       },
     }),
@@ -169,6 +199,76 @@ async function main() {
     accountId: sourceAccount.id,
   });
   assert.equal(planned.ledgerEntries.length, 0, 'Lançamento planejado não pode movimentar o razão.');
+
+  const benefitCreditOperationId = `rc1-benefit-credit-${suffix}`;
+  const benefitCredit = await createBenefitEventProtected(user.id, {
+    description: 'RC1 Recarga benefício',
+    type: 'income',
+    date: effectiveDay,
+    amount: 500,
+    accountId: benefitAccount.id,
+    paymentMethodId: benefitPaymentMethod.id,
+    operationId: benefitCreditOperationId,
+  });
+  assert.equal(benefitCredit.status, 'paid');
+  assert.equal(Number(benefitCredit.signedAmount), 500);
+  assert.equal(benefitCredit.ledgerEntries.length, 1);
+  assert.equal(Number(benefitCredit.ledgerEntries[0].debit), 500);
+  assert.equal(Number(benefitCredit.ledgerEntries[0].credit), 0);
+  assert.equal(benefitCredit.idempotentReplay, false);
+
+  const benefitDebitOperationId = `rc1-benefit-debit-${suffix}`;
+  const benefitDebit = await createBenefitEventProtected(user.id, {
+    description: 'RC1 Despesa benefício',
+    type: 'expense',
+    date: effectiveDay,
+    amount: 120,
+    accountId: benefitAccount.id,
+    categoryId: benefitCategory.id,
+    paymentMethodId: benefitPaymentMethod.id,
+    operationId: benefitDebitOperationId,
+  });
+  assert.equal(benefitDebit.status, 'paid');
+  assert.equal(Number(benefitDebit.signedAmount), -120);
+  assert.equal(Number(benefitDebit.ledgerEntries[0].credit), 120);
+
+  const benefitReplay = await createBenefitEventProtected(user.id, {
+    description: 'RC1 Despesa benefício',
+    type: 'expense',
+    date: effectiveDay,
+    amount: 120,
+    accountId: benefitAccount.id,
+    categoryId: benefitCategory.id,
+    paymentMethodId: benefitPaymentMethod.id,
+    operationId: benefitDebitOperationId,
+  });
+  assert.equal(benefitReplay.id, benefitDebit.id);
+  assert.equal(benefitReplay.idempotentReplay, true, 'Replay de benefício deve reutilizar o recibo original.');
+  assert.equal(await prisma.cloudMutationReceipt.count({
+    where: { workspaceId: workspace.id, operationId: benefitDebitOperationId },
+  }), 1);
+
+  await assert.rejects(
+    () => createBenefitEventProtected(user.id, {
+      description: 'RC1 Benefício sem saldo',
+      type: 'expense',
+      date: effectiveDay,
+      amount: 999,
+      accountId: benefitAccount.id,
+      categoryId: benefitCategory.id,
+      paymentMethodId: benefitPaymentMethod.id,
+      operationId: `rc1-benefit-insufficient-${suffix}`,
+    }),
+    (error: unknown) => error instanceof BenefitEventMutationError && error.code === 'INSUFFICIENT_BENEFIT_BALANCE',
+    'Benefício Alimentação deve bloquear gasto superior ao saldo disponível.',
+  );
+
+  const benefitLedger = await prisma.ledgerEntry.findMany({ where: { accountId: benefitAccount.id } });
+  const benefitLedgerBalance = roundMoney(benefitLedger.reduce(
+    (sum, entry) => sum + Number(entry.debit) - Number(entry.credit),
+    0,
+  ));
+  assert.equal(benefitLedgerBalance, 380, 'Razão do benefício deve fechar em R$ 380,00 sem afetar contas monetárias.');
 
   const operationId = `rc1-transfer-${suffix}`;
   const transfer = await createFinancialTransfer(user.id, {
@@ -252,6 +352,7 @@ async function main() {
     'FINANCIAL_EVENT_UPDATED',
     'FINANCIAL_EVENT_ARCHIVED',
     'FINANCIAL_TRANSFER_CREATED',
+    'BENEFIT_EVENT_CREATED',
   ];
   const audits = await prisma.auditLog.findMany({
     where: { userId: user.id, action: { in: expectedAuditActions } },
@@ -274,8 +375,20 @@ async function main() {
   const sourceBalanceFromEvents = roundMoney(postedSourceEvents.reduce((sum, item) => sum + Number(item.signedAmount), 0));
   assert.equal(sourceBalanceFromEvents, 700, 'Eventos postados e razão devem fechar no mesmo saldo da conta origem.');
 
+  const postedBenefitEvents = await prisma.financialEvent.findMany({
+    where: {
+      userId: user.id,
+      accountId: benefitAccount.id,
+      archivedAt: null,
+      status: { in: ['paid', 'reconciled', 'confirmed'] },
+    },
+    select: { signedAmount: true },
+  });
+  const benefitBalanceFromEvents = roundMoney(postedBenefitEvents.reduce((sum, item) => sum + Number(item.signedAmount), 0));
+  assert.equal(benefitBalanceFromEvents, 380, 'Eventos do benefício e razão do benefício devem fechar no mesmo saldo.');
+
   console.log('RC1 financial E2E: APROVADO.');
-  console.log('Fluxos validados: receita postada, despesa postada/planejada, atualização, arquivamento, razão, transferência atômica, saldo, idempotência e auditoria.');
+  console.log('Fluxos validados: receita postada, despesa postada/planejada, Benefício Alimentação, atualização, arquivamento, razão, transferência atômica, saldo, idempotência e auditoria.');
 }
 
 main()

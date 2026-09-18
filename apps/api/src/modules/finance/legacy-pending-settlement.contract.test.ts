@@ -3,20 +3,27 @@ import { readFileSync } from 'node:fs';
 
 const routes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
 const settlement = readFileSync(new URL('./event-settlement.ts', import.meta.url), 'utf8');
+const batchSettlement = readFileSync(new URL('./pending-batch-settlement.ts', import.meta.url), 'utf8');
 
 assert.match(routes, /app\.post\('\/events\/:id\/settle'/,
-  'Baixa de compatibilidade deve possuir endpoint dedicado.');
+  'Baixa individual deve possuir endpoint dedicado.');
 assert.match(routes, /settleLegacyFinancialEventProtected/,
-  'Endpoint deve usar o gateway protegido.');
+  'Endpoint individual deve usar o gateway protegido.');
+assert.match(routes, /app\.post\('\/pending\/batch\/settle'/,
+  'Baixa múltipla deve possuir endpoint atômico dedicado.');
+assert.match(routes, /settlePendingBatchProtected/,
+  'Endpoint em lote deve usar o writer protegido do domínio financeiro.');
 assert.match(routes, /operationId:\s*z\.string\(\).*min\(8\).*max\(128\)/s,
   'operationId deve ser obrigatório no contrato de baixa.');
 
 assert.match(settlement, /serializableFinancialTransaction/,
-  'Baixa deve ser atômica e serializável.');
+  'Baixa individual deve ser atômica e serializável.');
 assert.match(settlement, /cloudMutationReceipt/,
-  'Baixa deve usar recibo idempotente.');
+  'Baixa individual deve usar recibo idempotente.');
+assert.match(settlement, /FINANCIAL_EVENT_SETTLE/,
+  'Baixa deve registrar mutationType específico para eventos normalizados.');
 assert.match(settlement, /FINANCIAL_EVENT_SETTLE_COMPAT/,
-  'Baixa deve registrar mutationType específico.');
+  'Eventos importados devem preservar mutationType de compatibilidade.');
 assert.match(settlement, /OPERATION_ID_REUSED/,
   'Reuso divergente de operationId deve ser bloqueado.');
 assert.match(settlement, /P2002/,
@@ -31,13 +38,32 @@ assert.match(settlement, /ledgerEntry\.deleteMany/,
   'Writer deve normalizar o ledger antes da confirmação.');
 assert.match(settlement, /ledgerEntry\.create/,
   'Baixa confirmada deve gerar lançamento no ledger.');
+assert.match(settlement, /FINANCIAL_EVENT_SETTLED/,
+  'Evento normalizado deve produzir auditoria estrutural.');
 assert.match(settlement, /FINANCIAL_EVENT_SETTLED_COMPAT/,
-  'Baixa deve produzir auditoria estrutural.');
-assert.match(settlement, /FINANCIAL_EVENT_NOT_LEGACY_COMPAT/,
-  'Endpoint não pode ser usado para eventos fora da camada de compatibilidade.');
+  'Evento legado deve continuar produzindo auditoria de compatibilidade.');
+assert.doesNotMatch(settlement, /throw new FinancialEventSettlementError\('FINANCIAL_EVENT_NOT_LEGACY_COMPAT'/,
+  'Evento normalizado nativo não pode ser rejeitado só por não possuir vínculo legado.');
+assert.match(settlement, /writeBackNormalizedEventsToAppState/,
+  'Eventos importados devem continuar sincronizados com o espelho legado quando aplicável.');
 assert.match(settlement, /BENEFIT_SETTLEMENT_NOT_SUPPORTED/,
   'Benefício não pode cair nesse writer monetário.');
 assert.match(settlement, /assertActiveCatalogReferences/,
   'Conta e forma de pagamento devem ser cadastros ativos do usuário.');
 
-console.log('Contrato da baixa protegida de pendente legado validado.');
+assert.match(batchSettlement, /serializableFinancialTransaction/,
+  'Baixa múltipla deve executar toda a seleção em uma única transação serializável.');
+assert.match(batchSettlement, /const loaded = await loadBatchItems/,
+  'Todos os itens devem ser validados antes da primeira gravação do lote.');
+assert.match(batchSettlement, /PENDING_BATCH_SETTLEMENT/,
+  'Lote deve possuir recibo idempotente próprio.');
+assert.match(batchSettlement, /INSUFFICIENT_MONETARY_BALANCE/,
+  'Proteção de saldo deve validar o total do lote antes de qualquer baixa.');
+assert.match(batchSettlement, /PHOENIX_PENDING_DUPLICATE/,
+  'O mesmo compromisso não pode aparecer duas vezes no lote.');
+assert.doesNotMatch(batchSettlement, /FINANCIAL_EVENT_NOT_LEGACY_COMPAT/,
+  'Lote deve aceitar despesas normalizadas nativas além de itens legados.');
+assert.match(batchSettlement, /writeBackNormalizedEventsToAppState/,
+  'Espelho legado deve ser atualizado dentro da mesma transação quando houver vínculo legado.');
+
+console.log('Contrato da baixa protegida individual e em lote validado.');

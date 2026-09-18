@@ -2,25 +2,93 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FinancialEvent } from '../../app/finance-client';
 import type { PhoenixReadModel } from '../contracts';
 import {
+  getPhoenixBenefitEventEligibility,
+  getPhoenixCardPurchaseEligibility,
   getPhoenixRuntimeWriteCapabilities,
   getPhoenixSimpleEventEligibility,
+  getPhoenixTransferEligibility,
   phoenixWriteMessage,
+  preparePhoenixBenefitEvent,
+  preparePhoenixCardPurchase,
   preparePhoenixSimpleEvent,
+  runPhoenixBenefitEventWrite,
+  runPhoenixCardPurchaseWrite,
   runPhoenixSimpleEventWrite,
+  type PhoenixBenefitEventInput,
+  type PhoenixCardPurchaseInput,
   type PhoenixSimpleEventFlow,
   type PhoenixSimpleEventInput,
+  type PreparedPhoenixBenefitEvent,
+  type PreparedPhoenixCardPurchase,
   type PreparedPhoenixSimpleEvent,
 } from '../data/phoenix-write-gateway';
+import {
+  phoenixTransferWriteMessage,
+  preparePhoenixTransfer,
+  runPhoenixTransferWrite,
+  type PhoenixTransferInput,
+  type PreparedPhoenixTransfer,
+} from '../data/phoenix-transfer-write-gateway';
 import '../phoenix-launch-write.css';
 
 type RuntimeState = 'idle' | 'checking' | 'enabled' | 'disabled';
 type CommitState = 'idle' | 'saving' | 'confirmed' | 'error';
+type EventWithSourcePayload = FinancialEvent & { sourcePayload?: unknown };
+
+function projectedCardEvent(snapshot: PhoenixReadModel, purchaseId: string) {
+  return snapshot.events.items.find((event) => {
+    const payload = (event as EventWithSourcePayload).sourcePayload;
+    return Boolean(payload && typeof payload === 'object' && !Array.isArray(payload)
+      && String((payload as Record<string, unknown>).purchaseId || '') === purchaseId);
+  });
+}
+
+function normalizeLabel(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('pt-BR');
+}
+
+function drawerField(prefix: string) {
+  if (typeof document === 'undefined') return null;
+  const root = document.querySelector<HTMLElement>('.px-launch-drawer');
+  if (!root) return null;
+  const target = normalizeLabel(prefix);
+  return [...root.querySelectorAll<HTMLLabelElement>('label.px-field')]
+    .find((label) => normalizeLabel(label.querySelector('span')?.textContent || '').startsWith(target)) || null;
+}
+
+function parseTransferAmount(value: string) {
+  const normalized = String(value || '')
+    .replace(/R\$/gi, '')
+    .replace(/\s/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.')
+    .replace(/[^0-9.-]/g, '');
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? Math.abs(parsed) : 0;
+}
+
+function readTransferInputFromDrawer(): PhoenixTransferInput | null {
+  if (typeof document === 'undefined') return null;
+  const root = document.querySelector<HTMLElement>('.px-launch-drawer');
+  if (!root) return null;
+  const sourceAccountId = drawerField('Conta de origem')?.querySelector<HTMLSelectElement>('select')?.value || '';
+  const destinationAccountId = drawerField('Conta de destino')?.querySelector<HTMLSelectElement>('select')?.value || '';
+  const date = drawerField('Data do evento')?.querySelector<HTMLInputElement>('input')?.value || '';
+  const description = drawerField('Descrição')?.querySelector<HTMLInputElement>('input')?.value.trim() || '';
+  const notes = drawerField('Observações opcionais')?.querySelector<HTMLTextAreaElement>('textarea')?.value.trim() || undefined;
+  const amount = parseTransferAmount(root.querySelector<HTMLInputElement>('.px-money-mask')?.value || '');
+  if (!sourceAccountId || !destinationAccountId || !date || !description || !amount) return null;
+  return { sourceAccountId, destinationAccountId, amount, date, description, notes };
+}
 
 export function PhoenixLaunchWriteControl({
   reviewed,
   missing,
   input,
+  cardInput,
+  transferInput,
   flow,
+  refreshMonth,
   duplicateMessage,
   onReview,
   onCommitted,
@@ -28,10 +96,13 @@ export function PhoenixLaunchWriteControl({
   reviewed: boolean;
   missing: string[];
   input: PhoenixSimpleEventInput | null;
+  cardInput?: PhoenixCardPurchaseInput | null;
+  transferInput?: PhoenixTransferInput | null;
   flow: PhoenixSimpleEventFlow;
+  refreshMonth?: string;
   duplicateMessage?: string | null;
   onReview: () => void;
-  onCommitted?: (snapshot: PhoenixReadModel, event: FinancialEvent) => void;
+  onCommitted?: (snapshot: PhoenixReadModel, event?: FinancialEvent) => void;
 }) {
   const [runtimeState, setRuntimeState] = useState<RuntimeState>('idle');
   const [runtimeMessage, setRuntimeMessage] = useState('');
@@ -39,8 +110,28 @@ export function PhoenixLaunchWriteControl({
   const [commitMessage, setCommitMessage] = useState('');
   const [duplicateAccepted, setDuplicateAccepted] = useState(false);
   const preparedRef = useRef<PreparedPhoenixSimpleEvent | null>(null);
+  const preparedBenefitRef = useRef<PreparedPhoenixBenefitEvent | null>(null);
+  const preparedCardRef = useRef<PreparedPhoenixCardPurchase | null>(null);
+  const preparedTransferRef = useRef<PreparedPhoenixTransfer | null>(null);
+  const transferFlow = flow.type === 'transfer';
+  const benefitFlow = Boolean(flow.benefit && !transferFlow);
+  const cardFlow = Boolean(flow.credit && !benefitFlow && !transferFlow);
 
-  const eligibility = useMemo(() => getPhoenixSimpleEventEligibility(flow), [
+  const benefitInput = useMemo<PhoenixBenefitEventInput | null>(() => {
+    if (!benefitFlow || !input || input.status !== 'paid') return null;
+    return { ...input, status: 'paid' };
+  }, [benefitFlow, input]);
+
+  const eligibility = useMemo(() => transferFlow
+    ? getPhoenixTransferEligibility(flow)
+    : benefitFlow
+      ? getPhoenixBenefitEventEligibility(flow)
+      : cardFlow
+        ? getPhoenixCardPurchaseEligibility(flow)
+        : getPhoenixSimpleEventEligibility(flow), [
+    transferFlow,
+    benefitFlow,
+    cardFlow,
     flow.type,
     flow.negative,
     flow.benefit,
@@ -51,47 +142,137 @@ export function PhoenixLaunchWriteControl({
     flow.installments,
     flow.manualDue,
   ]);
-  const inputKey = useMemo(() => JSON.stringify(input || null), [input]);
+  const inputKey = useMemo(
+    () => JSON.stringify({ input: input || null, benefitInput: benefitInput || null, cardInput: cardInput || null, transferInput: transferInput || null, transferFlow, benefitFlow, cardFlow }),
+    [input, benefitInput, cardInput, transferInput, transferFlow, benefitFlow, cardFlow],
+  );
 
   useEffect(() => {
     preparedRef.current = null;
+    preparedBenefitRef.current = null;
+    preparedCardRef.current = null;
+    preparedTransferRef.current = null;
     setCommitState('idle');
     setCommitMessage('');
     setDuplicateAccepted(false);
   }, [inputKey, reviewed]);
 
   useEffect(() => {
-    if (!reviewed || !eligibility.eligible || !input) {
+    const hasInput = transferFlow ? missing.length === 0 : benefitFlow ? Boolean(benefitInput) : cardFlow ? Boolean(cardInput) : Boolean(input);
+    if (!reviewed || !eligibility.eligible || !hasInput) {
       setRuntimeState('idle');
       setRuntimeMessage('');
       return;
     }
     let active = true;
     setRuntimeState('checking');
-    setRuntimeMessage('Verificando se este ambiente permite gravação financeira…');
+    setRuntimeMessage(transferFlow
+      ? 'Verificando se este ambiente permite transferências reais entre contas…'
+      : benefitFlow
+        ? 'Verificando se este ambiente permite gravar o Benefício Alimentação…'
+        : cardFlow
+          ? 'Verificando se este ambiente permite gravar compras no cartão…'
+          : 'Verificando se este ambiente permite gravação financeira…');
     void getPhoenixRuntimeWriteCapabilities(true).then((capabilities) => {
       if (!active) return;
-      if (capabilities.simpleEvent) {
+      const enabled = transferFlow
+        ? capabilities.transferWrite
+        : benefitFlow
+          ? capabilities.benefitWrite
+          : cardFlow
+            ? capabilities.cardPurchaseWrite
+            : capabilities.simpleEvent;
+      if (enabled) {
         setRuntimeState('enabled');
-        setRuntimeMessage('Gravação simples liberada pelo ambiente. A confirmação será enviada uma única vez com proteção de reenvio.');
+        setRuntimeMessage(transferFlow
+          ? 'Transferência liberada. Origem e destino serão gravados atomicamente pelo domínio financeiro, com validação do saldo da conta de origem.'
+          : benefitFlow
+            ? 'Writer de benefício liberado. A movimentação será confirmada como paga/recebida, sem alterar o caixa monetário, e o saldo do benefício será relido antes de atualizar a tela.'
+            : cardFlow
+              ? 'Writer de cartão liberado. A compra será criada no domínio de cartões, parcelada pela API e relida no snapshot antes de aparecer no sistema.'
+              : 'Gravação simples liberada pelo ambiente. A confirmação será enviada uma única vez com proteção de reenvio.');
       } else {
         setRuntimeState('disabled');
-        setRuntimeMessage('Este ambiente permanece protegido contra gravação financeira. A revisão pode ser validada sem alterar a base.');
+        setRuntimeMessage(transferFlow
+          ? 'Este ambiente mantém transferências financeiras protegidas. A revisão pode ser validada sem alterar a base.'
+          : benefitFlow
+            ? 'Este ambiente mantém a gravação do Benefício Alimentação protegida. A revisão pode ser validada sem alterar a base.'
+            : cardFlow
+              ? 'Este ambiente mantém a gravação de cartão protegida. A revisão pode ser validada sem alterar a base.'
+              : 'Este ambiente permanece protegido contra gravação financeira. A revisão pode ser validada sem alterar a base.');
       }
     });
     return () => { active = false; };
-  }, [reviewed, eligibility.eligible, inputKey]);
+  }, [reviewed, eligibility.eligible, inputKey, transferFlow, benefitFlow, cardFlow, benefitInput, cardInput, transferInput, input, missing.length]);
 
   async function confirmLaunch() {
-    if (!input || !eligibility.eligible || runtimeState !== 'enabled' || commitState === 'saving') return;
+    if (!eligibility.eligible || runtimeState !== 'enabled' || commitState === 'saving') return;
+    const missingNonTransferInput = benefitFlow ? !benefitInput : cardFlow ? !cardInput : !input;
+    if (!transferFlow && missingNonTransferInput) return;
     if (duplicateMessage && !duplicateAccepted) return;
 
     setCommitState('saving');
-    setCommitMessage('Enviando ao MEG e aguardando confirmação da leitura atualizada…');
+    setCommitMessage(transferFlow
+      ? 'Gravando origem e destino como uma única transferência e aguardando a releitura confirmada…'
+      : benefitFlow
+        ? 'Gravando no saldo do Benefício Alimentação e aguardando a releitura confirmada…'
+        : cardFlow
+          ? 'Gravando a compra no cartão e aguardando a releitura sincronizada das faturas…'
+          : 'Enviando ao MEG e aguardando confirmação da leitura atualizada…');
     try {
-      const prepared = preparedRef.current || preparePhoenixSimpleEvent(input);
+      if (transferFlow) {
+        const resolvedTransferInput = transferInput || readTransferInputFromDrawer();
+        if (!resolvedTransferInput) throw new Error('PHOENIX_TRANSFER_FORM_NOT_READY');
+        const prepared = preparedTransferRef.current || preparePhoenixTransfer(resolvedTransferInput);
+        preparedTransferRef.current = prepared;
+        const result = await runPhoenixTransferWrite(prepared, refreshMonth || resolvedTransferInput.date.slice(0, 7));
+        if (result.status === 'confirmed') {
+          preparedTransferRef.current = null;
+          setCommitState('confirmed');
+          setCommitMessage('Transferência confirmada. As duas pernas financeiras foram relidas da base antes da atualização da tela.');
+          onCommitted?.(result.snapshot);
+          return;
+        }
+        setCommitState('error');
+        setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível confirmar a transferência. Tente novamente sem alterar os dados.');
+        return;
+      }
+
+      if (benefitFlow) {
+        const prepared = preparedBenefitRef.current || preparePhoenixBenefitEvent(benefitInput!);
+        preparedBenefitRef.current = prepared;
+        const result = await runPhoenixBenefitEventWrite(prepared, refreshMonth || benefitInput!.date.slice(0, 7));
+        if (result.status === 'confirmed') {
+          preparedBenefitRef.current = null;
+          setCommitState('confirmed');
+          setCommitMessage('Movimentação do Benefício Alimentação confirmada. O saldo do benefício foi relido sem alterar o caixa monetário.');
+          onCommitted?.(result.snapshot, result.event);
+          return;
+        }
+        setCommitState('error');
+        setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível confirmar a movimentação do benefício. Tente novamente sem alterar os dados.');
+        return;
+      }
+
+      if (cardFlow) {
+        const prepared = preparedCardRef.current || preparePhoenixCardPurchase(cardInput!);
+        preparedCardRef.current = prepared;
+        const result = await runPhoenixCardPurchaseWrite(prepared, refreshMonth || cardInput!.purchaseDate.slice(0, 7));
+        if (result.status === 'confirmed') {
+          preparedCardRef.current = null;
+          setCommitState('confirmed');
+          setCommitMessage('Compra confirmada no cartão. Parcelas e fatura foram relidas da base antes da atualização da tela.');
+          onCommitted?.(result.snapshot, projectedCardEvent(result.snapshot, result.purchase.id));
+          return;
+        }
+        setCommitState('error');
+        setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível confirmar a compra no cartão. Tente novamente sem alterar os dados.');
+        return;
+      }
+
+      const prepared = preparedRef.current || preparePhoenixSimpleEvent(input!);
       preparedRef.current = prepared;
-      const result = await runPhoenixSimpleEventWrite(prepared, input.date.slice(0, 7));
+      const result = await runPhoenixSimpleEventWrite(prepared, refreshMonth || input!.date.slice(0, 7));
       if (result.status === 'confirmed') {
         preparedRef.current = null;
         setCommitState('confirmed');
@@ -104,7 +285,7 @@ export function PhoenixLaunchWriteControl({
     } catch (error) {
       const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
       setCommitState('error');
-      setCommitMessage(phoenixWriteMessage(code));
+      setCommitMessage(transferFlow ? phoenixTransferWriteMessage(code) : phoenixWriteMessage(code));
     }
   }
 
@@ -122,11 +303,17 @@ export function PhoenixLaunchWriteControl({
     </div>;
   }
 
+  const confirmedTitle = transferFlow ? 'Transferência confirmada' : benefitFlow ? 'Benefício Alimentação confirmado' : cardFlow ? 'Compra no cartão confirmada' : 'Lançamento confirmado';
+  const confirmLabel = transferFlow ? 'Confirmar transferência' : benefitFlow ? 'Confirmar movimentação do benefício' : cardFlow ? 'Confirmar compra no cartão' : 'Confirmar lançamento';
+  const savingLabel = transferFlow ? 'Confirmando transferência…' : benefitFlow ? 'Gravando Benefício Alimentação…' : cardFlow ? 'Gravando compra no cartão…' : 'Confirmando lançamento…';
+
   return <div className={`px-launch-write-panel ${commitState === 'confirmed' ? 'is-confirmed' : commitState === 'error' ? 'is-error' : ''}`} aria-live="polite">
     <div className="px-launch-write-status">
-      <strong>{commitState === 'confirmed' ? 'Lançamento confirmado' : 'Revisão concluída'}</strong>
+      <strong>{commitState === 'confirmed' ? confirmedTitle : 'Revisão concluída'}</strong>
       <span>{commitMessage || runtimeMessage || 'Aguardando verificação do ambiente.'}</span>
     </div>
+
+    {transferFlow && commitState !== 'confirmed' ? <div className="px-notice ok">A transferência será gravada como uma única operação atômica entre origem e destino. A tela só será atualizada depois da releitura confirmada.</div> : null}
 
     {duplicateMessage && commitState !== 'confirmed' ? <label className="px-launch-duplicate-confirm">
       <input type="checkbox" checked={duplicateAccepted} onChange={(event) => setDuplicateAccepted(event.target.checked)} />
@@ -140,7 +327,15 @@ export function PhoenixLaunchWriteControl({
       onClick={() => { void confirmLaunch(); }}
       aria-busy={commitState === 'saving'}
     >
-      {commitState === 'saving' ? 'Confirmando lançamento…' : commitState === 'confirmed' ? 'Confirmado e sincronizado' : runtimeState === 'checking' ? 'Verificando ambiente…' : runtimeState === 'disabled' ? 'Gravação protegida neste ambiente' : 'Confirmar lançamento'}
+      {commitState === 'saving'
+        ? savingLabel
+        : commitState === 'confirmed'
+          ? 'Confirmado e sincronizado'
+          : runtimeState === 'checking'
+            ? 'Verificando ambiente…'
+            : runtimeState === 'disabled'
+              ? 'Gravação protegida neste ambiente'
+              : confirmLabel}
     </button>
   </div>;
 }

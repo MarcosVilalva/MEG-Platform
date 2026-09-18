@@ -15,7 +15,7 @@ type GridSort = { key: GridKey; direction: PhoenixGridSortDirection } | null;
 type GridFilterMap = Record<GridKey, PhoenixGridFilterValue>;
 type GridRow = {
   id: string;
-  source: 'domain' | 'legacy';
+  source: 'domain' | 'legacy' | 'canonical';
   description: string;
   purchaseDate: string;
   dueDate: string;
@@ -186,7 +186,7 @@ function legacyRow(tx: PhoenixLegacyTransaction): GridRow | null {
     dueDate,
     installment,
     group: String(tx.group || tx.category || tx.expenseClass || '—'),
-    amount: parseNumber(tx.expenseAmount ?? tx.amount),
+    amount: tx.amount !== undefined ? parseNumber(tx.amount) : parseNumber(tx.expenseAmount),
     status: String(tx.status || tx.situation || 'pending'),
     statementMonth: dueDate.slice(0, 7)
   };
@@ -238,15 +238,39 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     return rows.sort((a, b) => b.dueDate.localeCompare(a.dueDate) || b.purchaseDate.localeCompare(a.purchaseDate));
   }, [officialRows, legacyRows]);
 
-  const currentRows = allRows.filter((row) => row.statementMonth === data.month);
+  // A fatura atual deve usar exatamente as mesmas linhas canônicas que geram
+  // seus totais. Isso impede que o cabeçalho use signedAmount normalizado enquanto
+  // a grade ainda exibe um amount legado divergente por arredondamento ou estorno.
+  const canonicalRows = useMemo<GridRow[]>(() => selected?.statement?.month === data.month
+    ? selected.statement.lines.map((line) => ({
+        id: line.id,
+        source: 'canonical' as const,
+        description: line.description,
+        purchaseDate: line.purchaseDate || line.dueDate,
+        dueDate: line.dueDate,
+        installment: `${line.installmentNo}/${line.installmentQty}`,
+        group: line.kind === 'credit' ? 'Crédito/estorno' : 'Compra',
+        amount: Number(line.effect || 0),
+        status: line.isOpen ? 'open' : line.sourceStatus,
+        statementMonth: line.statementMonth,
+      }))
+    : [], [selected, data.month]);
+
+  const currentRows = canonicalRows.length
+    ? canonicalRows
+    : allRows.filter((row) => row.statementMonth === data.month);
   const futureRows = allRows.filter((row) => row.statementMonth > data.month && isOpenStatus(row.status));
   const currentOpen = currentRows.filter((row) => isOpenStatus(row.status) && !isCancelledStatus(row.status));
   const next = nextMonth(data.month);
-  const currentStatement = sumRows(currentRows);
-  const currentPurchases = currentRows.filter((row) => !isCancelledStatus(row.status) && row.amount > 0).reduce((sum, row) => sum + row.amount, 0);
-  const currentCredits = Math.abs(currentRows.filter((row) => !isCancelledStatus(row.status) && row.amount < 0).reduce((sum, row) => sum + row.amount, 0));
-  const currentOutstandingRaw = sumRows(currentOpen);
-  const currentOutstanding = Math.max(0, currentOutstandingRaw);
+  const currentStatement = selected?.statement?.month === data.month ? selected.statement.netAmount : sumRows(currentRows);
+  const currentPurchases = selected?.statement?.month === data.month
+    ? selected.statement.charges
+    : currentRows.filter((row) => !isCancelledStatus(row.status) && row.amount > 0).reduce((sum, row) => sum + row.amount, 0);
+  const currentCredits = selected?.statement?.month === data.month
+    ? selected.statement.credits
+    : Math.abs(currentRows.filter((row) => !isCancelledStatus(row.status) && row.amount < 0).reduce((sum, row) => sum + row.amount, 0));
+  const currentOutstandingRaw = selected?.statement?.month === data.month ? selected.statement.openNetAmount : sumRows(currentOpen);
+  const currentOutstanding = selected?.statement?.month === data.month ? selected.statement.payableAmount : Math.max(0, currentOutstandingRaw);
   const nextStatement = sumRows(futureRows.filter((row) => row.statementMonth === next));
   const futureNet = sumRows(futureRows);
   const futureCommitted = Math.max(0, futureNet);
@@ -255,7 +279,24 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const usage = creditLimit > 0 ? Math.min(100, Math.max(0, totalCommitted / creditLimit * 100)) : 0;
   const availableLimit = creditLimit - totalCommitted;
   const paidCurrent = currentRows.some((row) => !isOpenStatus(row.status) && !isCancelledStatus(row.status));
-  const currentStatus = !currentRows.length ? 'SEM FATURA' : currentOutstandingRaw > 0 ? (paidCurrent ? 'PARCIAL' : 'EM ABERTO') : currentOpen.some((row) => row.amount < 0) ? 'CRÉDITO' : 'PAGA';
+  const canonicalStatus = selected?.statement?.month === data.month ? selected.statement.status : null;
+  const currentStatus = canonicalStatus === 'credit'
+    ? 'CRÉDITO'
+    : canonicalStatus === 'partial'
+      ? 'PARCIAL'
+      : canonicalStatus === 'paid' || canonicalStatus === 'zero'
+        ? 'PAGA'
+        : canonicalStatus === 'empty'
+          ? 'SEM FATURA'
+          : canonicalStatus === 'open'
+            ? 'EM ABERTO'
+            : !currentRows.length
+              ? 'SEM FATURA'
+              : currentOutstandingRaw > 0
+                ? (paidCurrent ? 'PARCIAL' : 'EM ABERTO')
+                : currentOpen.some((row) => row.amount < 0)
+                  ? 'CRÉDITO'
+                  : 'PAGA';
   const currentStatusClass = currentStatus === 'EM ABERTO' || currentStatus === 'PARCIAL' ? 'planned' : currentStatus === 'PAGA' ? 'reconciled' : 'confirmed';
 
   const mode: GridMode = tab === 'installments' ? 'installments' : 'current';
@@ -311,7 +352,9 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
           const cardIdentity = resolvePhoenixCardIdentity(card);
           const txRows = data.legacyTransactions.filter((tx) => isExpense(tx) && isCredit(tx) && transactionMatchesCard(tx, card)).map(legacyRow).filter((row): row is GridRow => Boolean(row));
           const monthRows = txRows.filter((row) => row.statementMonth === data.month);
-          const amount = monthRows.length ? sumRows(monthRows) : Number(card.statementAmount || 0);
+          const amount = card.statement?.month === data.month
+            ? card.statement.netAmount
+            : monthRows.length ? sumRows(monthRows) : Number(card.statementAmount || 0);
           return <button key={card.id} type="button" className={`px-card-option ${selected.id === card.id ? 'active' : ''}`} onClick={() => selectCard(card.id)}><span className="px-mini-card" style={{ background: cardIdentity.background }}>{cardIdentity.miniLabel}</span><span><strong>{card.name}</strong><small>{card.issuer || card.brand || 'Cartão cadastrado'} · {money.format(amount)}</small></span><span>›</span></button>;
         })}
       </aside>

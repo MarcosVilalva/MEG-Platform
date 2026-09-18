@@ -1,0 +1,136 @@
+.phoenix-v15 .px-table-export {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin:10px 0 8px;
+  padding:10px 12px;
+  border:1px solid color-mix(in srgb,var(--line) 82%,var(--brand) 18%);
+  border-radius:12px;
+  background:color-mix(in srgb,var(--panel2) 92%,var(--brand) 8%);
+}
+
+.phoenix-v15 .px-export-copy {
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  min-width:0;
+}
+
+.phoenix-v15 .px-export-copy strong {
+  color:var(--ink);
+  font-size:12px;
+  font-weight:800;
+}
+
+.phoenix-v15 .px-export-copy span {
+  color:var(--muted);
+  font-size:11px;
+  white-space:nowrap;
+}
+
+.phoenix-v15 .px-export-actions {
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.phoenix-v15 .px-export-button {
+  min-height:36px;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:7px 11px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--panel);
+  color:var(--ink);
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+  transition:transform .16s ease,border-color .16s ease,background .16s ease;
+}
+
+.phoenix-v15 .px-export-button:hover:not(:disabled) {
+  transform:translateY(-1px);
+  border-color:color-mix(in srgb,var(--brand) 56%,var(--line));
+  background:color-mix(in srgb,var(--panel) 92%,var(--brand) 8%);
+}
+
+.phoenix-v15 .px-export-button:disabled {
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+.phoenix-v15 .px-export-button.excel { color:#0f7b4f; }
+.phoenix-v15[data-theme="dark"] .px-export-button.excel { color:#78f3b9; }
+.phoenix-v15 .px-export-button.pdf { color:#a23832; }
+.phoenix-v15[data-theme="dark"] .px-export-button.pdf { color:#ffaaa4; }
+
+.phoenix-v15 .px-export-icon {
+  position:relative;
+  flex:0 0 22px;
+  width:22px;
+  height:22px;
+  display:grid;
+  place-items:center;
+  border-radius:5px;
+  color:#fff;
+  overflow:hidden;
+}
+
+.phoenix-v15 .px-export-icon.excel {
+  background:#107c41;
+  box-shadow:inset -7px 0 0 rgba(255,255,255,.12);
+}
+
+.phoenix-v15 .px-export-icon.excel::after {
+  content:'';
+  position:absolute;
+  right:3px;
+  top:4px;
+  width:6px;
+  height:14px;
+  border-left:1px solid rgba(255,255,255,.65);
+  background:
+    linear-gradient(rgba(255,255,255,.42),rgba(255,255,255,.42)) 0 4px/6px 1px no-repeat,
+    linear-gradient(rgba(255,255,255,.42),rgba(255,255,255,.42)) 0 9px/6px 1px no-repeat;
+}
+
+.phoenix-v15 .px-export-icon.excel b {
+  position:relative;
+  z-index:1;
+  margin-right:7px;
+  font-size:11px;
+  line-height:1;
+}
+
+.phoenix-v15 .px-export-icon.excel i { display:none; }
+
+.phoenix-v15 .px-export-icon.pdf {
+  width:27px;
+  flex-basis:27px;
+  background:#c23b34;
+  border-radius:4px;
+}
+
+.phoenix-v15 .px-export-icon.pdf b {
+  font-size:7px;
+  letter-spacing:.2px;
+}
+
+@media (max-width:620px) {
+  .phoenix-v15 .px-table-export {
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .phoenix-v15 .px-export-actions {
+    width:100%;
+  }
+
+  .phoenix-v15 .px-export-button {
+    flex:1 1 0;
+    justify-content:center;
+  }
+}
