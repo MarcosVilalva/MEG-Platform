@@ -153,7 +153,10 @@ export async function readCanonicalCardStatements(userId: string, cardId: string
       where: {
         userId: shared.ownerId,
         archivedAt: null,
-        date: { gte: rangeStart, lt: rangeEnd },
+        OR: [
+          { date: { gte: rangeStart, lt: rangeEnd } },
+          { competence: { in: uniqueMonths } },
+        ],
       },
       orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
       include: { paymentMethod: true },
@@ -202,7 +205,10 @@ export async function listCards(userId: string, month: string) {
       where: {
         userId: shared.ownerId,
         archivedAt: null,
-        date: { gte: monthStart, lt: monthEnd },
+        OR: [
+          { date: { gte: monthStart, lt: monthEnd } },
+          { competence: month },
+        ],
       },
       orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
       include: { paymentMethod: true },
