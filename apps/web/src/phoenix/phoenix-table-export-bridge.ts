@@ -185,6 +185,10 @@ function pdfIcon() {
   return `<span class="px-export-icon pdf" aria-hidden="true"><b>PDF</b></span>`;
 }
 
+function printIcon() {
+  return `<span class="px-export-icon print" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8V4h10v4M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="6" rx="1"/></svg></span>`;
+}
+
 function updateToolbar(table: HTMLTableElement, toolbar: HTMLElement) {
   const rows = [...table.tBodies].flatMap((body) => [...body.rows]).filter(isVisibleRow);
   const count = toolbar.querySelector<HTMLElement>('.px-export-count');
@@ -232,11 +236,15 @@ function attach(table: HTMLTableElement) {
       <button class="px-export-button pdf" type="button" title="Exportar relatório em PDF" aria-label="Exportar tabela para PDF">
         ${pdfIcon()}<span>PDF</span>
       </button>
+      <button class="px-export-button print" type="button" title="Imprimir visão atual" aria-label="Imprimir visão atual">
+        ${printIcon()}<span>Imprimir</span>
+      </button>
     </div>
   `;
 
   const excel = toolbar.querySelector<HTMLButtonElement>('button.excel');
   const pdf = toolbar.querySelector<HTMLButtonElement>('button.pdf');
+  const print = toolbar.querySelector<HTMLButtonElement>('button.print');
 
   excel?.addEventListener('click', () => {
     const report = extractReport(table);
@@ -251,6 +259,8 @@ function attach(table: HTMLTableElement) {
     const bytes = buildPhoenixPdf(report);
     download(bytes, 'application/pdf', phoenixExportFilename(report, 'pdf'));
   });
+
+  print?.addEventListener('click', () => window.print());
 
   const tableContainer = table.closest('.px-table-scroll, .px-table-wrap, .px-data-table-wrap') || table.parentElement;
   if (!tableContainer?.parentElement) return;

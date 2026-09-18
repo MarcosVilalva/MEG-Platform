@@ -229,3 +229,76 @@
     flex:0 0 auto;
   }
 }
+
+
+/* Lançamentos final: Excel/PDF são ações por ícone com tooltip. */
+.phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export {
+  flex:0 0 auto;
+  width:auto;
+  min-width:0;
+  min-height:30px;
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  box-shadow:none;
+}
+
+.phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export .px-export-copy {
+  display:none;
+}
+
+.phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export .px-export-actions {
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+
+.phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export .px-export-button {
+  flex:0 0 30px;
+  width:30px;
+  height:30px;
+  min-height:30px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--panel);
+  box-shadow:none;
+}
+
+.phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export .px-export-button > span:not(.px-export-icon) {
+  display:none;
+}
+
+.phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export .px-export-icon {
+  width:17px;
+  height:17px;
+  flex-basis:17px;
+  border-radius:4px;
+  box-shadow:none;
+}
+
+.phoenix-v15 .px-movements-v15 .px-bulk-ux-strip > .px-table-export .px-export-icon.pdf {
+  width:21px;
+  flex-basis:21px;
+}
+
+
+.phoenix-v15 .px-export-icon.print {
+  width:17px;
+  height:17px;
+  flex-basis:17px;
+  display:grid;
+  place-items:center;
+  background:transparent;
+  color:currentColor;
+  overflow:visible;
+}
+
+.phoenix-v15 .px-export-icon.print svg {
+  width:16px;
+  height:16px;
+  display:block;
+}

@@ -20,6 +20,18 @@ type AuditPage = {
 let observer: MutationObserver | null = null;
 let scheduled = false;
 
+function actionIcon(name: 'select' | 'preview' | 'edit' | 'delete' | 'trash' | 'clear') {
+  const paths = {
+    select: '<path d="M5 12l4 4L19 6"/><rect x="3" y="3" width="18" height="18" rx="4"/>',
+    preview: '<path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/>',
+    edit: '<path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/><path d="m14.5 7.5 2 2"/>',
+    delete: '<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/>',
+    trash: '<path d="M4 7h16M8 7V4h8v3M6.5 7l1 13h9l1-13"/><path d="M10 11v5M14 11v5"/>',
+    clear: '<path d="m6 6 12 12M18 6 6 18"/>'
+  } as const;
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]}</svg>`;
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
@@ -236,15 +248,15 @@ function ensureCommandStrip() {
     strip.innerHTML = `
       <div class="px-bulk-ux-copy">
         <strong data-bulk-ux-selected>0 selecionados</strong>
-        <small data-bulk-ux-count>0 resultados</small>
+        <small data-bulk-ux-count>0 resultados nesta página</small>
       </div>
-      <div class="px-bulk-ux-buttons">
-        <button type="button" data-select-filtered>Selecionar filtrados</button>
-        <button type="button" data-preview-edit>Prévia</button>
-        <button type="button" class="px-bulk-ux-primary" data-do-edit ${PHOENIX_BULK_EVENT_WRITE_ENABLED ? '' : 'disabled'}>Alterar</button>
-        <button type="button" class="px-bulk-ux-danger" data-do-delete ${PHOENIX_BULK_EVENT_WRITE_ENABLED ? '' : 'disabled'}>Excluir</button>
-        <button type="button" data-trash>Lixeira</button>
-        <button type="button" data-clear-filtered>Limpar</button>
+      <div class="px-bulk-ux-buttons" role="group" aria-label="Ações da seleção">
+        <button type="button" class="px-bulk-icon-button" data-select-filtered title="Selecionar página" aria-label="Selecionar página">${actionIcon('select')}</button>
+        <button type="button" class="px-bulk-icon-button" data-preview-edit title="Prévia" aria-label="Prévia">${actionIcon('preview')}</button>
+        <button type="button" class="px-bulk-icon-button px-bulk-ux-primary" data-do-edit title="Alterar selecionados" aria-label="Alterar selecionados" ${PHOENIX_BULK_EVENT_WRITE_ENABLED ? '' : 'disabled'}>${actionIcon('edit')}</button>
+        <button type="button" class="px-bulk-icon-button px-bulk-ux-danger" data-do-delete title="Excluir selecionados" aria-label="Excluir selecionados" ${PHOENIX_BULK_EVENT_WRITE_ENABLED ? '' : 'disabled'}>${actionIcon('delete')}</button>
+        <button type="button" class="px-bulk-icon-button" data-trash title="Lixeira" aria-label="Lixeira">${actionIcon('trash')}</button>
+        <button type="button" class="px-bulk-icon-button" data-clear-filtered title="Limpar seleção" aria-label="Limpar seleção">${actionIcon('clear')}</button>
       </div>
     `;
     slot.appendChild(strip);
@@ -267,12 +279,13 @@ function ensureCommandStrip() {
   const selectedCopy = strip.querySelector<HTMLElement>('[data-bulk-ux-selected]');
   if (selectedCopy) selectedCopy.textContent = `${selected} selecionado${selected === 1 ? '' : 's'}`;
   const count = strip.querySelector<HTMLElement>('[data-bulk-ux-count]');
-  if (count) count.textContent = `${total} resultado${total === 1 ? '' : 's'}`;
+  if (count) count.textContent = `${total} resultado${total === 1 ? '' : 's'} nesta página`;
 
   const selectButton = strip.querySelector<HTMLButtonElement>('[data-select-filtered]');
   if (selectButton) {
     selectButton.disabled = total === 0 || (selected === total && total > 0);
-    selectButton.textContent = total ? `Selecionar filtrados (${total})` : 'Selecionar filtrados';
+    selectButton.title = total ? `Selecionar página (${total})` : 'Selecionar página';
+    selectButton.setAttribute('aria-label', selectButton.title);
   }
   const previewButton = strip.querySelector<HTMLButtonElement>('[data-preview-edit]');
   if (previewButton) previewButton.disabled = selected === 0;

@@ -580,3 +580,103 @@
     flex:1 1 110px;
   }
 }
+
+
+/* Lançamentos final: ações contextuais somente por ícones, com tooltip nativo. */
+.px-movements-v15 .px-table-context-slot .px-bulk-ux-strip {
+  flex:1 1 100%;
+  width:100%;
+  min-width:0;
+  min-height:36px;
+  margin:0;
+  padding:0;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  flex-wrap:nowrap;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+
+.px-movements-v15 .px-table-context-slot .px-bulk-ux-copy {
+  flex:0 0 auto;
+  min-width:98px;
+  margin:0 2px 0 0;
+  display:grid;
+  gap:0;
+}
+
+.px-movements-v15 .px-table-context-slot .px-bulk-ux-copy strong {
+  color:var(--ink);
+  font-size:8px;
+  line-height:1.1;
+  font-weight:900;
+  white-space:nowrap;
+}
+
+.px-movements-v15 .px-table-context-slot .px-bulk-ux-copy small {
+  color:var(--muted);
+  font-size:7px;
+  line-height:1.1;
+  white-space:nowrap;
+}
+
+.px-movements-v15 .px-table-context-slot .px-bulk-ux-buttons {
+  min-width:0;
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:4px;
+  flex-wrap:nowrap;
+}
+
+.px-movements-v15 .px-table-context-slot .px-bulk-ux-strip .px-bulk-icon-button {
+  flex:0 0 30px;
+  width:30px;
+  height:30px;
+  min-height:30px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--panel);
+  color:var(--muted);
+  box-shadow:none;
+}
+
+.px-movements-v15 .px-table-context-slot .px-bulk-icon-button svg {
+  width:15px;
+  height:15px;
+  display:block;
+}
+
+.px-movements-v15 .px-table-context-slot .px-bulk-icon-button:hover:not(:disabled) {
+  border-color:color-mix(in srgb,var(--brand) 42%,var(--line));
+  background:color-mix(in srgb,var(--brand) 7%,var(--panel));
+  color:var(--brand2);
+}
+
+.px-movements-v15 .px-table-context-slot .px-bulk-ux-primary:not(:disabled) {
+  border-color:color-mix(in srgb,var(--brand) 42%,var(--line))!important;
+  background:color-mix(in srgb,var(--brand) 9%,var(--panel))!important;
+  color:var(--brand2)!important;
+}
+
+.px-movements-v15 .px-table-context-slot .px-bulk-ux-danger:not(:disabled) {
+  border-color:color-mix(in srgb,var(--danger) 34%,var(--line))!important;
+  background:color-mix(in srgb,var(--danger) 7%,var(--panel))!important;
+  color:var(--danger)!important;
+}
+
+@media (max-width:900px) {
+  .px-movements-v15 .px-table-context-slot .px-bulk-ux-strip {
+    flex-wrap:wrap;
+  }
+  .px-movements-v15 .px-table-context-slot .px-bulk-ux-buttons {
+    margin-left:0;
+  }
+}
