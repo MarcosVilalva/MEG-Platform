@@ -249,7 +249,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const currentCredits = selected?.statement?.month === data.month
     ? selected.statement.credits
     : Math.abs(currentRows.filter((row) => !isCancelledStatus(row.status) && row.amount < 0).reduce((sum, row) => sum + row.amount, 0));
-  const currentOutstandingRaw = selected?.statement?.month === data.month ? selected.statement.netAmount : sumRows(currentOpen);
+  const currentOutstandingRaw = selected?.statement?.month === data.month ? selected.statement.openNetAmount : sumRows(currentOpen);
   const currentOutstanding = selected?.statement?.month === data.month ? selected.statement.payableAmount : Math.max(0, currentOutstandingRaw);
   const nextStatement = sumRows(futureRows.filter((row) => row.statementMonth === next));
   const futureNet = sumRows(futureRows);
@@ -262,17 +262,21 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const canonicalStatus = selected?.statement?.month === data.month ? selected.statement.status : null;
   const currentStatus = canonicalStatus === 'credit'
     ? 'CRÉDITO'
-    : canonicalStatus === 'zero'
-      ? 'PAGA'
-      : canonicalStatus === 'empty'
-        ? 'SEM FATURA'
-        : !currentRows.length
+    : canonicalStatus === 'partial'
+      ? 'PARCIAL'
+      : canonicalStatus === 'paid' || canonicalStatus === 'zero'
+        ? 'PAGA'
+        : canonicalStatus === 'empty'
           ? 'SEM FATURA'
-          : currentOutstandingRaw > 0
-            ? (paidCurrent ? 'PARCIAL' : 'EM ABERTO')
-            : currentOpen.some((row) => row.amount < 0)
-              ? 'CRÉDITO'
-              : 'PAGA';
+          : canonicalStatus === 'open'
+            ? 'EM ABERTO'
+            : !currentRows.length
+              ? 'SEM FATURA'
+              : currentOutstandingRaw > 0
+                ? (paidCurrent ? 'PARCIAL' : 'EM ABERTO')
+                : currentOpen.some((row) => row.amount < 0)
+                  ? 'CRÉDITO'
+                  : 'PAGA';
   const currentStatusClass = currentStatus === 'EM ABERTO' || currentStatus === 'PARCIAL' ? 'planned' : currentStatus === 'PAGA' ? 'reconciled' : 'confirmed';
 
   const mode: GridMode = tab === 'installments' ? 'installments' : 'current';
