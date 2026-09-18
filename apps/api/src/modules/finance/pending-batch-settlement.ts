@@ -164,6 +164,23 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
     // Toda a seleção é carregada e validada antes da primeira gravação. Como a
     // transação é serializável, qualquer falha posterior desfaz o lote inteiro.
     const loaded = await loadBatchItems(tx, ownerId, input.items);
+    const sourceCardMethods = new Set(loaded.flatMap((item) => {
+      if (item.source === 'card') return [normalize(item.card.name)];
+      if (item.source !== 'event') return [];
+      const payload = item.current.sourcePayload && typeof item.current.sourcePayload === 'object' && !Array.isArray(item.current.sourcePayload)
+        ? item.current.sourcePayload as Record<string, unknown>
+        : {};
+      const source = normalize(payload.paymentMethod || payload.account || item.current.paymentMethod?.name || '');
+      const modality = normalize(payload.modality || '');
+      return source && (modality.includes('CREDITO') || modality.includes('CARTAO')) ? [source] : [];
+    }));
+    if (sourceCardMethods.has(normalize(paymentMethod.name))) {
+      throw new PendingBatchSettlementError('INVALID_PAYMENT_METHOD', {
+        paymentMethodId: paymentMethod.id,
+        reason: 'SOURCE_CARD_METHOD_NOT_ALLOWED_FOR_SETTLEMENT',
+      });
+    }
+
     const total = Math.round(loaded.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
     if (!Number.isFinite(total) || total <= 0) {
       throw new PendingBatchSettlementError('BATCH_NET_NOT_PAYABLE', { total });
