@@ -126,6 +126,17 @@ assert.match(movementScreen, /closeOnOutside/,
   'Painéis de consulta devem recolher ao clicar fora');
 assert.match(movementScreen, /filtered\.length} resultado\(s\)/,
   'Busca expandida deve refletir a quantidade real da visão filtrada');
+assert.match(movementScreen, /pageSize/,
+  'Lançamentos deve oferecer paginação real sem alongar a página inteira');
+assert.match(movementScreen, /expandedList/,
+  'Usuário deve poder expandir os registros dentro da própria grade');
+assert.match(movementScreen, /visibleEvents\.map/,
+  'A tabela deve renderizar apenas a página ou lista expandida escolhida');
+assert.match(movementScreen, /MovementIcon/,
+  'Comandos principais devem usar uma família vetorial consistente em vez de caracteres soltos');
+assert.match(movementScreen, /px-table-pagination/,
+  'Paginação deve permanecer no rodapé da grade');
+
 assert.match(movementScreen, /Despesa/);
 assert.match(movementScreen, /Receita/);
 assert.match(movementScreen, /Transferência/);
