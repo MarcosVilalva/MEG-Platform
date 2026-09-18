@@ -91,11 +91,11 @@ const paidHistory = buildCanonicalCardStatement({
   aliases: ['AZUL'],
   purchases: [],
   events: [
-    { id: 'paid-charge', description: 'Compra paga', type: 'expense', status: 'paid', date: '2026-09-16', signedAmount: -100, sourcePayload: { paymentMethod: 'AZUL', modality: 'CREDITO' } },
-    { id: 'paid-refund', description: 'Estorno pago', type: 'expense', status: 'paid', date: '2026-09-16', signedAmount: 20, sourcePayload: { paymentMethod: 'AZUL', modality: 'CREDITO' } },
+    { id: 'paid-charge', description: 'Compra paga', type: 'expense', status: 'paid', date: '2026-10-02', competence: '2026-09', signedAmount: -100, sourcePayload: { date: '2026-09-16', paymentMethod: 'AZUL', modality: 'CREDITO' } },
+    { id: 'paid-refund', description: 'Estorno pago', type: 'expense', status: 'paid', date: '2026-10-02', competence: '2026-09', signedAmount: 20, sourcePayload: { date: '2026-09-16', paymentMethod: 'AZUL', modality: 'CREDITO' } },
   ],
 });
-assert.equal(paidHistory.netAmount, 80, 'histórico da fatura deve preservar valores após a baixa');
+assert.equal(paidHistory.netAmount, 80, 'histórico da fatura deve preservar valores após a baixa, mesmo quando o pagamento muda a data do evento');
 assert.equal(paidHistory.openNetAmount, 0, 'itens pagos não permanecem no saldo aberto');
 assert.equal(paidHistory.status, 'paid');
 
