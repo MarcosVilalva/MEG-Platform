@@ -15,6 +15,8 @@ assert.match(source, /credit: item\.amount > 0 \? item\.amount : 0/,
   'Cobrança de cartão deve continuar como crédito contábil de saída');
 assert.match(source, /BATCH_NET_NOT_PAYABLE/,
   'Lotes zerados ou credores não devem registrar pagamento');
+assert.match(source, /SOURCE_CARD_METHOD_NOT_ALLOWED_FOR_SETTLEMENT/,
+  'O cartão que originou a fatura não pode ser reutilizado como forma da própria baixa');
 assert.match(source, /loaded\.reduce\(\(sum, item\) => sum \+ item\.amount, 0\)/,
   'Proteção monetária deve usar o valor líquido do lote, incluindo estornos');
 
