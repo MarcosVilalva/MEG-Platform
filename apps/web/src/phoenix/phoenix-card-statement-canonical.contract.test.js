@@ -21,6 +21,12 @@ assert.match(payables, /representedEventIds/,
   'Eventos já representados pela fatura oficial não podem ser duplicados em Pendentes');
 assert.match(payables, /openAmount: -Number\(event\.signedAmount \|\| 0\)/,
   'Pendentes legados devem usar signedAmount para preservar compras e estornos');
+assert.match(payables, /isBatchSelectable/,
+  'Pendentes deve reconhecer créditos de cartão como parte do lote líquido');
+assert.match(payables, /Selecionar fatura líquida/,
+  'Agrupamento legado de cartão deve permitir selecionar a fatura líquida, incluindo estornos');
+assert.match(payables, /selectedTotal <= 0/,
+  'Faturas zeradas ou credoras não podem gerar pagamento');
 
 assert.match(movements, /const signed = Number\(event\.signedAmount \|\| 0\)/,
   'Lançamentos devem calcular o efeito visual a partir do mesmo signedAmount canônico');
