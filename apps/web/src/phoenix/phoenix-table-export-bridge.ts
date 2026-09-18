@@ -194,9 +194,17 @@ function updateToolbar(table: HTMLTableElement, toolbar: HTMLElement) {
 
 function attach(table: HTMLTableElement) {
   if (table.getAttribute(MANAGED_ATTR) === 'true') {
-    const existing = table.parentElement?.parentElement?.querySelector<HTMLElement>(`.${TOOLBAR_CLASS}[data-for-table="${table.dataset.megExportId || ''}"]`);
-    if (existing) updateToolbar(table, existing);
-    return;
+    const exportId = table.dataset.megExportId || '';
+    const existing = exportId
+      ? document.querySelector<HTMLElement>(`.${TOOLBAR_CLASS}[data-for-table="${CSS.escape(exportId)}"]`)
+      : null;
+    if (existing) {
+      updateToolbar(table, existing);
+      return;
+    }
+    // React pode reconstruir o contêiner e remover a toolbar injetada mantendo
+    // a mesma tabela. Nesse caso, permita a reinstalação automática.
+    table.removeAttribute(MANAGED_ATTR);
   }
 
   if (!table.closest('.phoenix-v15')) return;
