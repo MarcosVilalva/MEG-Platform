@@ -17,6 +17,12 @@ assert.match(cardsGrid, /selected\.statement\.credits/,
 
 assert.match(payables, /line\.source === 'card-installment'/,
   'Writer de fatura só pode ser usado quando todas as linhas forem do domínio oficial de cartões');
+assert.match(payables, /const officialLines = card\.statement\.lines[\s\S]*line\.isOpen && line\.source === 'card-installment'/,
+  'Pendentes deve separar parcelas oficiais de eventos canônicos antes de montar o writer da fatura');
+assert.match(payables, /if \(!officialLines\.length\) return \[\];/,
+  'Fatura canônica composta apenas por eventos não pode virar um item card duplicado em Pendentes');
+assert.doesNotMatch(payables, /Number\(card\.statementAmount \?\? card\.payableStatementAmount/,
+  'Fallback de Pendentes não pode transformar o total canônico inteiro em saldo oficial do cartão');
 assert.match(payables, /representedEventIds/,
   'Eventos já representados pela fatura oficial não podem ser duplicados em Pendentes');
 assert.match(payables, /openAmount: -Number\(event\.signedAmount \|\| 0\)/,
