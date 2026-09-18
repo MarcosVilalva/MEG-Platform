@@ -49,7 +49,13 @@ async function loadEvent(tx: Tx, ownerId: string, eventId: string) {
     include: { account: true, category: true, paymentMethod: true, ledgerEntries: true },
   });
   if (!current) throw new PendingBatchSettlementError('FINANCIAL_EVENT_NOT_FOUND', { eventId });
-  if (current.type !== 'expense' || current.status !== 'planned' || Number(current.signedAmount) >= 0) {
+  const signed = Number(current.signedAmount);
+  const payload = current.sourcePayload && typeof current.sourcePayload === 'object' && !Array.isArray(current.sourcePayload)
+    ? current.sourcePayload as Record<string, unknown>
+    : {};
+  const cardContext = normalize(`${payload.modality || ''} ${payload.paymentMethod || ''} ${payload.account || ''} ${current.paymentMethod?.name || ''}`);
+  const cardCreditAdjustment = signed > 0 && (cardContext.includes('CREDITO') || cardContext.includes('CARTAO'));
+  if (current.type !== 'expense' || current.status !== 'planned' || !Number.isFinite(signed) || signed === 0 || (signed > 0 && !cardCreditAdjustment)) {
     throw new PendingBatchSettlementError('FINANCIAL_EVENT_NOT_PENDING', { eventId });
   }
   if (isBenefitFinancialEvent(current)) {
@@ -93,8 +99,8 @@ async function loadBatchItems(tx: Tx, ownerId: string, items: PendingBatchItemIn
 
     if (item.source === 'event') {
       const current = await loadEvent(tx, ownerId, item.sourceId);
-      const amount = Math.abs(Number(current.amount));
-      if (!Number.isFinite(amount) || amount <= 0) throw new PendingBatchSettlementError('INVALID_PENDING_AMOUNT', { sourceId: item.sourceId });
+      const amount = Math.round((-Number(current.signedAmount)) * 100) / 100;
+      if (!Number.isFinite(amount) || amount === 0) throw new PendingBatchSettlementError('INVALID_PENDING_AMOUNT', { sourceId: item.sourceId });
       loaded.push({ source: 'event', sourceId: item.sourceId, amount, current });
       continue;
     }
@@ -158,6 +164,9 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
     // transação é serializável, qualquer falha posterior desfaz o lote inteiro.
     const loaded = await loadBatchItems(tx, ownerId, input.items);
     const total = Math.round(loaded.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
+    if (!Number.isFinite(total) || total <= 0) {
+      throw new PendingBatchSettlementError('BATCH_NET_NOT_PAYABLE', { total });
+    }
     const available = await monetaryBalanceAt(tx, ownerId, input.paidAt);
     const protection = paymentBalanceDecision(available, total);
     if (!protection.allowed) {
@@ -184,7 +193,14 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
           },
         });
         await tx.ledgerEntry.create({
-          data: { eventId: item.sourceId, date: paidAt, accountId: account.id, debit: 0, credit: item.amount, memo: item.current.description },
+          data: {
+            eventId: item.sourceId,
+            date: paidAt,
+            accountId: account.id,
+            debit: item.amount < 0 ? Math.abs(item.amount) : 0,
+            credit: item.amount > 0 ? item.amount : 0,
+            memo: item.current.description,
+          },
         });
         updatedEventIds.push(item.sourceId);
         results.push({ source: 'event', sourceId: item.sourceId, amount: item.amount });
