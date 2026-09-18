@@ -417,3 +417,69 @@
     flex: 1 1 150px;
   }
 }
+
+
+/* Integração compacta com a tabela de Lançamentos */
+.px-table-context-slot .px-bulk-ux-strip {
+  flex:1 1 680px;
+  min-width:0;
+  min-height:44px;
+  margin:0;
+  padding:7px 9px;
+  gap:8px;
+  border-color:color-mix(in srgb,var(--brand) 26%,var(--line));
+  border-radius:11px;
+  background:var(--panel2);
+  color:var(--ink);
+  box-shadow:none;
+}
+.px-table-context-slot .px-bulk-ux-copy {
+  min-width:150px;
+  gap:0;
+}
+.px-table-context-slot .px-bulk-ux-copy strong { color:var(--ink); font-size:11px; }
+.px-table-context-slot .px-bulk-ux-copy small { color:var(--muted); font-size:9px; }
+.px-table-context-slot .px-bulk-ux-buttons { gap:5px; }
+.px-table-context-slot .px-bulk-ux-strip button {
+  min-height:31px;
+  padding:0 9px;
+  border-color:var(--line);
+  background:var(--panel);
+  color:var(--ink);
+  font-size:10px;
+}
+.px-table-context-slot .px-bulk-ux-strip button:hover:not(:disabled) {
+  background:color-mix(in srgb,var(--brand) 8%,var(--panel));
+  border-color:color-mix(in srgb,var(--brand) 34%,var(--line));
+}
+.px-table-context-slot .px-bulk-ux-gate {
+  padding:4px 7px;
+  border-color:color-mix(in srgb,var(--brand) 24%,var(--line));
+  background:color-mix(in srgb,var(--brand) 8%,var(--panel));
+  color:var(--brand2);
+  font-size:9px;
+}
+
+.px-bulk-ux-modal {
+  max-width:calc(100vw - 24px);
+  overflow-x:hidden;
+  background:var(--panel);
+  color:var(--ink);
+  border-color:color-mix(in srgb,var(--brand) 28%,var(--line));
+}
+.px-bulk-ux-modal * { min-width:0; box-sizing:border-box; }
+.px-bulk-ux-modal-head h3,
+.px-bulk-ux-modal strong { color:var(--ink); }
+.px-bulk-ux-modal-head p,
+.px-bulk-ux-modal span,
+.px-bulk-ux-modal small { color:var(--muted); }
+.px-bulk-ux-modal button {
+  background:var(--panel2);
+  color:var(--ink);
+  border-color:var(--line);
+}
+@media (max-width:760px) {
+  .px-table-context-slot .px-bulk-ux-strip { flex-basis:100%; }
+  .px-table-context-slot .px-bulk-ux-buttons { width:100%; }
+  .px-table-context-slot .px-bulk-ux-strip button { flex:1 1 auto; }
+}
