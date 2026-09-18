@@ -235,8 +235,8 @@ function ensureCommandStrip() {
     strip.dataset.bulkUxStrip = 'true';
     strip.innerHTML = `
       <div class="px-bulk-ux-copy">
-        <strong>Seleção em massa</strong>
-        <small data-bulk-ux-count>Use os checkboxes para selecionar lançamentos.</small>
+        <strong data-bulk-ux-selected>0 selecionados</strong>
+        <small data-bulk-ux-count>0 resultados</small>
       </div>
       <div class="px-bulk-ux-buttons">
         <button type="button" data-select-filtered>Selecionar filtrados</button>
@@ -246,7 +246,6 @@ function ensureCommandStrip() {
         <button type="button" data-trash>Lixeira</button>
         <button type="button" data-clear-filtered>Limpar</button>
       </div>
-      <span class="px-bulk-ux-gate">${PHOENIX_BULK_EVENT_WRITE_ENABLED ? 'Writer em massa ativo' : 'Alterar/excluir ainda bloqueados'}</span>
     `;
     slot.appendChild(strip);
     strip.querySelector<HTMLButtonElement>('[data-select-filtered]')?.addEventListener('click', selectFiltered);
@@ -259,10 +258,10 @@ function ensureCommandStrip() {
 
   const total = filteredBoxes().length;
   const selected = selectedBoxes().length;
+  const selectedCopy = strip.querySelector<HTMLElement>('[data-bulk-ux-selected]');
+  if (selectedCopy) selectedCopy.textContent = `${selected} selecionado${selected === 1 ? '' : 's'}`;
   const count = strip.querySelector<HTMLElement>('[data-bulk-ux-count]');
-  if (count) count.textContent = selected
-    ? `${selected} de ${total} resultado${total === 1 ? '' : 's'} filtrado${total === 1 ? '' : 's'} selecionado${selected === 1 ? '' : 's'}.`
-    : `${total} resultado${total === 1 ? '' : 's'} no filtro atual.`;
+  if (count) count.textContent = `${total} resultado${total === 1 ? '' : 's'}`;
 
   const selectButton = strip.querySelector<HTMLButtonElement>('[data-select-filtered]');
   if (selectButton) {
