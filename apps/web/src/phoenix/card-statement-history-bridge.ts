@@ -2,7 +2,7 @@ import { authenticatedRequest } from '../app/auth-client';
 import { cardsClient, type CardStatementLifecycle } from '../app/cards-client';
 import './phoenix-card-statement-history.css';
 
-type HistoryStatus = 'none' | 'open' | 'partial' | 'paid' | 'reopened';
+type HistoryStatus = 'none' | 'open' | 'partial' | 'paid' | 'credit' | 'reopened';
 type StatementHistoryItem = {
   month: string;
   status: HistoryStatus;
@@ -18,7 +18,7 @@ type StatementHistoryItem = {
   reopenCount: number;
   lastPaidAt: string | null;
   lastLifecycleAt: string | null;
-  source: 'audit' | 'installments' | 'none';
+  source: 'audit' | 'canonical' | 'installments' | 'none';
   deltaAmount: number;
   deltaPercent: number | null;
 };
@@ -132,6 +132,7 @@ function statusMeta(status: HistoryStatus) {
     open: { label: 'EM ABERTO', className: 'open' },
     partial: { label: 'PARCIAL', className: 'partial' },
     paid: { label: 'PAGA', className: 'paid' },
+    credit: { label: 'CRÉDITO', className: 'paid' },
     reopened: { label: 'REABERTA', className: 'reopened' },
   } as const)[status];
 }
