@@ -2,10 +2,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const preview = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
+const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('./phoenix-contrast-hardening.css', import.meta.url), 'utf8');
 
 assert.match(preview, /phoenix-contrast-hardening\.css/,
   'Preview deve carregar a camada global de contraste');
+assert.match(main, /phoenix-contrast-hardening\.css/,
+  'Runtime oficial deve carregar a mesma camada global de contraste');
 assert.match(preview, /phoenix-table-export-bridge/,
   'Preview deve carregar exportação de tabelas');
 assert.match(preview, /phoenix-keyboard-grid-bridge/,
