@@ -283,6 +283,28 @@ const gridLabels: Record<GridKey, string> = {
   paymentMethod: 'Forma de pagamento', status: 'Situação', modality: 'Modalidade'
 };
 
+type MovementIconName = 'search' | 'filters' | 'calendar' | 'wallet' | 'income' | 'expense' | 'result' | 'help' | 'columns' | 'close' | 'chevronLeft' | 'chevronRight' | 'chevronsLeft' | 'chevronsRight' | 'expand' | 'collapse';
+
+function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: number }) {
+  const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
+  if (name === 'search') return <svg {...common}><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>;
+  if (name === 'filters') return <svg {...common}><path d="M4 7h10M18 7h2M10 17h10M4 17h2M8 4v6M16 14v6"/></svg>;
+  if (name === 'calendar') return <svg {...common}><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>;
+  if (name === 'wallet') return <svg {...common}><path d="M4 7.5h14a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12"/><path d="M16 12h4v4h-4a2 2 0 0 1 0-4Z"/></svg>;
+  if (name === 'income') return <svg {...common}><path d="M12 19V5M7 10l5-5 5 5"/></svg>;
+  if (name === 'expense') return <svg {...common}><path d="M12 5v14M7 14l5 5 5-5"/></svg>;
+  if (name === 'result') return <svg {...common}><path d="M5 19V9M10 19V5M15 19v-7M20 19V7"/></svg>;
+  if (name === 'help') return <svg {...common}><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.5 2.5 0 1 1 4.2 1.8c-.9.7-2 1.1-2 2.7M12 17h.01"/></svg>;
+  if (name === 'columns') return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14M15 5v14"/></svg>;
+  if (name === 'close') return <svg {...common}><path d="m7 7 10 10M17 7 7 17"/></svg>;
+  if (name === 'chevronLeft') return <svg {...common}><path d="m15 18-6-6 6-6"/></svg>;
+  if (name === 'chevronRight') return <svg {...common}><path d="m9 18 6-6-6-6"/></svg>;
+  if (name === 'chevronsLeft') return <svg {...common}><path d="m13 18-6-6 6-6M19 18l-6-6 6-6"/></svg>;
+  if (name === 'chevronsRight') return <svg {...common}><path d="m11 18 6-6-6-6M5 18l6-6-6-6"/></svg>;
+  if (name === 'expand') return <svg {...common}><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/></svg>;
+  return <svg {...common}><path d="M8 8H3V3M16 8h5V3M8 16H3v5M21 21v-5h-5"/></svg>;
+}
+
 export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDataCommitted, onOpenPeriod, launchRequest = 0 }: { data: PhoenixReadModel; onNavigateHistory?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number }) {
   const [data, setData] = useState(initialData);
   const [search, setSearch] = useState('');
@@ -290,6 +312,9 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const [status, setStatus] = useState('all');
   const [account, setAccount] = useState('all');
   const [toolPanel, setToolPanel] = useState<MovementToolPanel>(null);
+  const [pageSize, setPageSize] = useState(20);
+  const [page, setPage] = useState(1);
+  const [expandedList, setExpandedList] = useState(false);
   const [gridFilters, setGridFilters] = useState<GridFilterMap>(initialGridFilters);
   const [gridSort, setGridSort] = useState<GridSort>(null);
   const [launchOpen, setLaunchOpen] = useState(false);
@@ -382,6 +407,24 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const displayedIncome = hasActiveFilters ? filteredTotals.income : monthTotals.income;
   const displayedExpense = hasActiveFilters ? filteredTotals.expense : monthTotals.expense;
   const displayedResult = displayedIncome - displayedExpense;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = filtered.length ? (currentPage - 1) * pageSize : 0;
+  const pageEnd = Math.min(pageStart + pageSize, filtered.length);
+  const visibleEvents = expandedList ? filtered : filtered.slice(pageStart, pageEnd);
+  const paginationPages = useMemo(() => {
+    if (pageCount <= 5) return Array.from({ length: pageCount }, (_, index) => index + 1);
+    const start = Math.max(1, Math.min(currentPage - 2, pageCount - 4));
+    return Array.from({ length: 5 }, (_, index) => start + index);
+  }, [currentPage, pageCount]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, typeFilter, status, account, gridFilters, gridSort, pageSize]);
+
+  useEffect(() => {
+    setPage((value) => Math.min(value, pageCount));
+  }, [pageCount]);
 
   const selectedAccount = data.accounts.find((item) => item.id === draft.accountId) || null;
   const selectedDestination = data.accounts.find((item) => item.id === draft.destinationId) || null;
@@ -685,43 +728,43 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
         <section className="px-screen-kpis" aria-label="Resumo do período">
           <article>
-            <span className="px-kpi-icon is-income" aria-hidden="true">↑</span>
+            <span className="px-kpi-icon is-income"><MovementIcon name="income" size={17} /></span>
             <div className="px-kpi-copy"><strong>{money.format(displayedIncome)}</strong><small>Receitas monetárias</small></div>
           </article>
           <article>
-            <span className="px-kpi-icon is-expense" aria-hidden="true">↓</span>
+            <span className="px-kpi-icon is-expense"><MovementIcon name="expense" size={17} /></span>
             <div className="px-kpi-copy"><strong>{money.format(displayedExpense)}</strong><small>Despesas monetárias</small></div>
           </article>
           <article className={displayedResult < 0 ? 'is-negative' : 'is-positive'}>
-            <span className="px-kpi-icon is-result" aria-hidden="true">▥</span>
+            <span className="px-kpi-icon is-result"><MovementIcon name="result" size={17} /></span>
             <div className="px-kpi-copy"><strong>{money.format(displayedResult)}</strong><small>{hasActiveFilters ? `Resultado · ${activeFilterCount} filtro(s)` : 'Resultado do período'}</small></div>
           </article>
         </section>
 
         <div className="px-launch-head-actions">
-          <details className="px-launch-help"><summary aria-label="Ajuda de Lançamentos" title="Ajuda">?</summary><div><strong>Instruções rápidas</strong><span>Receitas entram como recebidas.</span><span>Benefício Alimentação fica separado do saldo monetário.</span><span>Estornos preservam o efeito reverso.</span><span>Duplo clique abre a edição.</span></div></details>
-          <details className="px-column-chooser"><summary>Colunas</summary><div><span>Dia</span><span>Classificação</span><span>Grupo</span><span>Forma de pagamento</span><span>Modalidade</span></div></details>
+          <details className="px-launch-help"><summary aria-label="Ajuda de Lançamentos" data-tooltip="Ajuda"><MovementIcon name="help" size={17} /></summary><div><strong>Instruções rápidas</strong><span>Receitas entram como recebidas.</span><span>Benefício Alimentação fica separado do saldo monetário.</span><span>Estornos preservam o efeito reverso.</span><span>Duplo clique abre a edição.</span></div></details>
+          <details className="px-column-chooser"><summary aria-label="Escolher colunas" data-tooltip="Colunas"><MovementIcon name="columns" size={17} /></summary><div><span>Dia</span><span>Classificação</span><span>Grupo</span><span>Forma de pagamento</span><span>Modalidade</span></div></details>
         </div>
       </div>
 
       <div className="px-movement-tools" ref={toolsRef}>
-        <div className="px-movement-tool-buttons">
-          <button className={`px-movement-tool-button ${toolPanel === 'search' || search.trim() ? 'active' : ''}`} type="button" aria-expanded={toolPanel === 'search'} onClick={() => setToolPanel((current) => current === 'search' ? null : 'search')}><span aria-hidden="true">⌕</span><strong>Buscar</strong>{search.trim() ? <small>1</small> : null}<b aria-hidden="true">{toolPanel === 'search' ? '⌃' : '⌄'}</b></button>
-          <button className={`px-movement-tool-button ${toolPanel === 'filters' || typeFilter !== 'all' || status !== 'all' ? 'active' : ''}`} type="button" aria-expanded={toolPanel === 'filters'} onClick={() => setToolPanel((current) => current === 'filters' ? null : 'filters')}><span aria-hidden="true">≡</span><strong>Filtros</strong>{typeFilter !== 'all' || status !== 'all' ? <small>{Number(typeFilter !== 'all') + Number(status !== 'all')}</small> : null}<b aria-hidden="true">{toolPanel === 'filters' ? '⌃' : '⌄'}</b></button>
-          <button className="px-movement-tool-button" type="button" onClick={() => { setToolPanel(null); onOpenPeriod?.(); }}><span aria-hidden="true">▣</span><strong>Período</strong><em>{formatMonthLabel(data.month)}</em><b aria-hidden="true">⌄</b></button>
-          <button className={`px-movement-tool-button ${toolPanel === 'account' || account !== 'all' ? 'active' : ''}`} type="button" aria-expanded={toolPanel === 'account'} onClick={() => setToolPanel((current) => current === 'account' ? null : 'account')}><span aria-hidden="true">▭</span><strong>Conta</strong>{account !== 'all' ? <small>1</small> : null}<b aria-hidden="true">{toolPanel === 'account' ? '⌃' : '⌄'}</b></button>
+        <div className="px-movement-tool-buttons" aria-label="Ferramentas de consulta">
+          <button className={`px-movement-tool-button ${toolPanel === 'search' || search.trim() ? 'active' : ''}`} type="button" aria-label="Buscar lançamentos" data-tooltip="Buscar" aria-expanded={toolPanel === 'search'} onClick={() => setToolPanel((current) => current === 'search' ? null : 'search')}><MovementIcon name="search" />{search.trim() ? <small>1</small> : null}</button>
+          <button className={`px-movement-tool-button ${toolPanel === 'filters' || typeFilter !== 'all' || status !== 'all' ? 'active' : ''}`} type="button" aria-label="Filtrar lançamentos" data-tooltip="Filtros" aria-expanded={toolPanel === 'filters'} onClick={() => setToolPanel((current) => current === 'filters' ? null : 'filters')}><MovementIcon name="filters" />{typeFilter !== 'all' || status !== 'all' ? <small>{Number(typeFilter !== 'all') + Number(status !== 'all')}</small> : null}</button>
+          <button className="px-movement-tool-button" type="button" aria-label={`Selecionar período atual ${formatMonthLabel(data.month)}`} data-tooltip={`Período · ${formatMonthLabel(data.month)}`} onClick={() => { setToolPanel(null); onOpenPeriod?.(); }}><MovementIcon name="calendar" /></button>
+          <button className={`px-movement-tool-button ${toolPanel === 'account' || account !== 'all' ? 'active' : ''}`} type="button" aria-label="Filtrar por conta" data-tooltip={account === 'all' ? 'Conta' : labelForAccount(data, account)} aria-expanded={toolPanel === 'account'} onClick={() => setToolPanel((current) => current === 'account' ? null : 'account')}><MovementIcon name="wallet" />{account !== 'all' ? <small>1</small> : null}</button>
         </div>
 
         {toolPanel === 'search' ? <div className="px-movement-tool-panel px-movement-search-panel">
-          <div className="px-tool-panel-heading"><div><strong>Buscar lançamentos</strong><span>{filtered.length} resultado(s) no filtro atual</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher busca">×</button></div>
+          <div className="px-tool-panel-heading"><div><strong>Buscar lançamentos</strong><span>{filtered.length} resultado(s) no filtro atual</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher busca"><MovementIcon name="close" size={15} /></button></div>
           <div className="px-search-panel-grid">
-            <label className="px-expanded-search"><span aria-hidden="true">⌕</span><input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Digite descrição, grupo, conta ou forma de pagamento..." />{search ? <button type="button" onClick={() => setSearch('')} aria-label="Limpar busca">×</button> : null}</label>
+            <label className="px-expanded-search"><span><MovementIcon name="search" size={16} /></span><input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Digite descrição, grupo, conta ou forma de pagamento..." />{search ? <button type="button" onClick={() => setSearch('')} aria-label="Limpar busca"><MovementIcon name="close" size={14} /></button> : null}</label>
             {quickSearchSuggestions.length ? <div className="px-search-suggestions"><span>Sugestões</span><div>{quickSearchSuggestions.map((item) => <button type="button" key={item} onClick={() => setSearch(item)}>{item}</button>)}</div></div> : null}
           </div>
         </div> : null}
 
         {toolPanel === 'filters' ? <div className="px-movement-tool-panel">
-          <div className="px-tool-panel-heading"><div><strong>Filtros rápidos</strong><span>Combine tipo e situação sem ocupar espaço quando não estiver usando.</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher filtros">×</button></div>
+          <div className="px-tool-panel-heading"><div><strong>Filtros rápidos</strong><span>Combine tipo e situação sem ocupar espaço quando não estiver usando.</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher filtros"><MovementIcon name="close" size={15} /></button></div>
           <div className="px-filter-panel-grid">
             <label><span>Tipo</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option><option value="transfer">Transferências</option></select></label>
             <label><span>Situação</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">Todas as situações</option><option value="planned">Pendente</option><option value="confirmed">Confirmado</option><option value="paid">Pago</option><option value="reconciled">Conciliado</option></select></label>
@@ -730,7 +773,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
         </div> : null}
 
         {toolPanel === 'account' ? <div className="px-movement-tool-panel">
-          <div className="px-tool-panel-heading"><div><strong>Conta financeira</strong><span>Restrinja a grade a uma conta específica.</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher conta">×</button></div>
+          <div className="px-tool-panel-heading"><div><strong>Conta financeira</strong><span>Restrinja a grade a uma conta específica.</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher conta"><MovementIcon name="close" size={15} /></button></div>
           <div className="px-account-panel-grid">
             <label><span>Conta</span><select value={account} onChange={(event) => setAccount(event.target.value)}><option value="all">Todas as contas</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
             <button className="px-tool-panel-clear" type="button" disabled={account === 'all'} onClick={() => setAccount('all')}>Todas as contas</button>
@@ -747,7 +790,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       <div className="px-table-scroll">
         <table className="px-data-table px-v15-launch-table">
           <thead><tr><th>{gridHeader('Vencimento', 'dueDate', 'date')}</th><th>{gridHeader('Data da compra', 'purchaseDate', 'date')}</th><th>{gridHeader('Dia', 'weekday', 'multi', gridOptions.weekday)}</th><th>{gridHeader('Tipo', 'type', 'multi', gridOptions.type)}</th><th>{gridHeader('Descrição', 'description', 'text')}</th><th>{gridHeader('Receita', 'income', 'number')}</th><th>{gridHeader('Classificação', 'classification', 'multi', gridOptions.classification)}</th><th>{gridHeader('Grupo', 'group', 'multi', gridOptions.group)}</th><th>{gridHeader('Despesa', 'expense', 'number')}</th><th>{gridHeader('Forma de pagamento', 'paymentMethod', 'multi', gridOptions.paymentMethod)}</th><th>{gridHeader('Situação', 'status', 'multi', gridOptions.status)}</th><th>{gridHeader('Modalidade', 'modality', 'multi', gridOptions.modality)}</th><th>Detalhes</th></tr></thead>
-          <tbody>{filtered.map((event) => {
+          <tbody>{visibleEvents.map((event) => {
             const visualType = launchTypeForEvent(event.type);
             const effect = displayEffect(event);
             const isIncome = visualType === 'income';
@@ -770,6 +813,26 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
         </table>
         {!filtered.length ? <p className="px-empty">Nenhum lançamento corresponde aos filtros do período.</p> : null}
       </div>
+
+      <footer className="px-table-pagination" aria-label="Paginação dos lançamentos">
+        <div className="px-pagination-summary">
+          <strong>{filtered.length ? (expandedList ? `1–${filtered.length}` : `${pageStart + 1}–${pageEnd}`) : '0'} de {filtered.length}</strong>
+          <span>{expandedList ? 'lista expandida' : 'lançamentos'}</span>
+        </div>
+        <div className="px-pagination-controls">
+          {!expandedList ? <>
+            <button type="button" aria-label="Primeira página" data-tooltip="Primeira página" disabled={currentPage === 1} onClick={() => setPage(1)}><MovementIcon name="chevronsLeft" size={15} /></button>
+            <button type="button" aria-label="Página anterior" data-tooltip="Página anterior" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}><MovementIcon name="chevronLeft" size={15} /></button>
+            <div className="px-pagination-pages">{paginationPages.map((item) => <button key={item} type="button" className={item === currentPage ? 'active' : ''} aria-current={item === currentPage ? 'page' : undefined} onClick={() => setPage(item)}>{item}</button>)}</div>
+            <button type="button" aria-label="Próxima página" data-tooltip="Próxima página" disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}><MovementIcon name="chevronRight" size={15} /></button>
+            <button type="button" aria-label="Última página" data-tooltip="Última página" disabled={currentPage === pageCount} onClick={() => setPage(pageCount)}><MovementIcon name="chevronsRight" size={15} /></button>
+          </> : null}
+        </div>
+        <div className="px-pagination-options">
+          <label><span>Registros</span><select value={pageSize} disabled={expandedList} onChange={(event) => setPageSize(Number(event.target.value))}>{[10,20,30,50,100].map((size) => <option key={size} value={size}>{size} por página</option>)}</select></label>
+          <button className={expandedList ? 'active' : ''} type="button" aria-label={expandedList ? 'Voltar à paginação' : 'Expandir todos os registros na tabela'} data-tooltip={expandedList ? 'Voltar à paginação' : 'Expandir lista'} onClick={() => setExpandedList((value) => !value)}>{expandedList ? <MovementIcon name="collapse" size={16} /> : <MovementIcon name="expand" size={16} />}</button>
+        </div>
+      </footer>
     </section>
 
     {launchOpen ? <>
