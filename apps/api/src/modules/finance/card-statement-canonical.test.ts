@@ -32,13 +32,13 @@ assert.equal(azul.creditBalance, 0);
 
 const partialRefund = canonicalCardStatementTotals([
   { id: 'a', source: 'financial-event', description: 'Compra', effect: 200, kind: 'charge', purchaseDate: '2026-09-01', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1, isOpen: true, sourceStatus: 'planned' },
-  { id: 'b', source: 'financial-event', description: 'Estorno parcial', effect: -50, kind: 'credit', purchaseDate: '2026-09-02', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1 },
+  { id: 'b', source: 'financial-event', description: 'Estorno parcial', effect: -50, kind: 'credit', purchaseDate: '2026-09-02', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1, isOpen: true, sourceStatus: 'planned' },
 ]);
 assert.deepEqual(partialRefund, { charges: 200, credits: 50, netAmount: 150, openCharges: 200, openCredits: 50, openNetAmount: 150, payableAmount: 150, creditBalance: 0 });
 
 const creditStatement = canonicalCardStatementTotals([
-  { id: 'a', source: 'financial-event', description: 'Compra', effect: 50, kind: 'charge', purchaseDate: '2026-09-01', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1 },
-  { id: 'b', source: 'financial-event', description: 'Crédito', effect: -80, kind: 'credit', purchaseDate: '2026-09-02', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1 },
+  { id: 'a', source: 'financial-event', description: 'Compra', effect: 50, kind: 'charge', purchaseDate: '2026-09-01', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1, isOpen: true, sourceStatus: 'planned' },
+  { id: 'b', source: 'financial-event', description: 'Crédito', effect: -80, kind: 'credit', purchaseDate: '2026-09-02', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1, isOpen: true, sourceStatus: 'planned' },
 ]);
 assert.equal(creditStatement.netAmount, -30);
 assert.equal(creditStatement.payableAmount, 0);
@@ -76,7 +76,7 @@ const ignored = buildCanonicalCardStatement({
   aliases: ['AZUL'],
   purchases: [],
   events: [
-    { id: 'paid', description: 'Já pago', type: 'expense', status: 'paid', date: '2026-09-16', signedAmount: -100, sourcePayload: { paymentMethod: 'AZUL', modality: 'CREDITO' } },
+    { id: 'draft', description: 'Rascunho', type: 'expense', status: 'draft', date: '2026-09-16', signedAmount: -100, sourcePayload: { paymentMethod: 'AZUL', modality: 'CREDITO' } },
     { id: 'other', description: 'Outro cartão', type: 'expense', status: 'planned', date: '2026-09-16', signedAmount: -200, sourcePayload: { paymentMethod: 'OUTRO', modality: 'CREDITO' } },
   ],
 });
