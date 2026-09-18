@@ -3,3 +3,150 @@
 @keyframes px-launch-row-confirmed{0%{background:color-mix(in srgb,var(--brand) 24%,var(--panel))}35%{background:color-mix(in srgb,var(--brand) 12%,var(--panel))}100%{background:transparent}}
 
 @media (prefers-reduced-motion:reduce){.px-v15-launch-table tbody tr,.px-v15-launch-table tbody tr.is-recently-updated td{transition:none;animation:none}.px-v15-launch-table tbody tr.is-recently-updated td{background:color-mix(in srgb,var(--brand) 10%,var(--panel))}}
+
+
+/* Lançamentos V15 — hierarquia compacta e área útil da grade */
+.px-movements-v15 {
+  min-width:0;
+  overflow-x:hidden;
+}
+.px-movements-v15 .px-movements-overview {
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  display:grid;
+  gap:10px;
+  margin-bottom:10px;
+  padding:14px 16px 12px;
+  border:1px solid color-mix(in srgb,var(--brand) 24%,var(--line));
+  border-radius:16px;
+  background:color-mix(in srgb,var(--panel) 96%,var(--brand) 4%);
+}
+.px-movements-v15 .px-screen-head {
+  width:100%;
+  min-width:0;
+  margin:0;
+  padding:0 0 10px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:16px;
+  border-bottom:1px solid color-mix(in srgb,var(--brand) 20%,var(--line));
+}
+.px-movements-v15 .px-screen-head h1 { margin:2px 0 3px; }
+.px-movements-v15 .px-screen-head p { margin:0; }
+.px-movements-v15 .px-launch-head-actions {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+}
+.px-movements-v15 .px-launch-help { position:relative; }
+.px-movements-v15 .px-launch-help > summary {
+  list-style:none;
+  width:36px;
+  height:36px;
+  display:grid;
+  place-items:center;
+  border:1px solid color-mix(in srgb,var(--brand) 34%,var(--line));
+  border-radius:10px;
+  background:var(--panel2);
+  color:var(--ink);
+  font-weight:900;
+  cursor:pointer;
+}
+.px-movements-v15 .px-launch-help > summary::-webkit-details-marker { display:none; }
+.px-movements-v15 .px-launch-help > div {
+  position:absolute;
+  z-index:80;
+  top:calc(100% + 8px);
+  right:0;
+  width:min(320px,calc(100vw - 32px));
+  display:grid;
+  gap:7px;
+  padding:13px 14px;
+  border:1px solid var(--line);
+  border-radius:13px;
+  background:var(--panel);
+  color:var(--ink);
+  box-shadow:var(--shadow);
+}
+.px-movements-v15 .px-launch-help > div strong { font-size:12px; }
+.px-movements-v15 .px-launch-help > div span { color:var(--muted); font-size:11px; line-height:1.4; }
+
+.px-movements-v15 .px-screen-kpis {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin:0;
+}
+.px-movements-v15 .px-screen-kpis article {
+  min-width:0;
+  min-height:64px;
+  padding:10px 12px;
+  border:1px solid color-mix(in srgb,var(--line) 82%,transparent);
+  border-radius:12px;
+  background:var(--panel2);
+  box-shadow:none;
+}
+.px-movements-v15 .px-screen-kpis article span,
+.px-movements-v15 .px-screen-kpis article small {
+  font-size:9px;
+}
+.px-movements-v15 .px-screen-kpis article strong {
+  display:block;
+  margin:3px 0 1px;
+  font-size:17px;
+  line-height:1.15;
+}
+
+.px-movements-v15 .px-toolbar {
+  width:100%;
+  min-width:0;
+  display:grid;
+  grid-template-columns:minmax(220px,1.6fr) repeat(3,minmax(135px,.55fr));
+  gap:8px;
+  margin:0;
+  padding:0;
+  background:transparent;
+  border:0;
+}
+.px-movements-v15 .px-toolbar > * { min-width:0; }
+
+.px-movements-v15 > .px-table-card {
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin:0;
+  overflow:hidden;
+}
+.px-movements-v15 .px-table-context-slot {
+  width:100%;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  padding:8px 10px 0;
+}
+.px-movements-v15 .px-table-scroll {
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow:auto;
+}
+.px-movements-v15 .px-v15-launch-table { max-width:none; }
+.px-movements-v15 .px-rule-strip { display:none!important; }
+
+@media (max-width:900px) {
+  .px-movements-v15 .px-screen-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .px-movements-v15 .px-toolbar { grid-template-columns:1fr 1fr; }
+  .px-movements-v15 .px-search-field { grid-column:1 / -1; }
+}
+@media (max-width:620px) {
+  .px-movements-v15 .px-movements-overview { padding:12px; }
+  .px-movements-v15 .px-screen-head { align-items:flex-start; }
+  .px-movements-v15 .px-screen-kpis { grid-template-columns:1fr 1fr; }
+  .px-movements-v15 .px-toolbar { grid-template-columns:1fr; }
+  .px-movements-v15 .px-search-field { grid-column:auto; }
+}
