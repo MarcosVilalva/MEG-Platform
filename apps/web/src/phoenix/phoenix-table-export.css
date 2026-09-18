@@ -139,3 +139,30 @@
     justify-content:center;
   }
 }
+
+
+/* Lançamentos: exportação compacta ao lado das ações contextuais */
+.phoenix-v15 .px-table-context-slot .px-table-export {
+  flex:0 1 auto;
+  min-width:220px;
+  min-height:44px;
+  margin:0 0 0 auto;
+  padding:7px 9px;
+  gap:8px;
+  border-radius:11px;
+  box-shadow:none;
+  background:var(--panel2);
+}
+.phoenix-v15 .px-table-context-slot .px-export-copy strong { font-size:10px; }
+.phoenix-v15 .px-table-context-slot .px-export-copy span { font-size:9px; }
+.phoenix-v15 .px-table-context-slot .px-export-button {
+  min-height:31px;
+  padding:5px 8px;
+  font-size:9px;
+}
+@media (max-width:900px) {
+  .phoenix-v15 .px-table-context-slot .px-table-export {
+    width:100%;
+    margin-left:0;
+  }
+}
