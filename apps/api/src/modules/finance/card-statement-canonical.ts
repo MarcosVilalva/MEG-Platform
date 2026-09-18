@@ -40,6 +40,7 @@ type FinancialEventLike = {
   type: string;
   status: string;
   date: Date | string;
+  competence?: string | null;
   signedAmount: unknown;
   paymentMethod?: { name?: unknown } | null;
   sourcePayload?: unknown;
@@ -202,9 +203,11 @@ export function buildCanonicalCardStatement(input: {
   }
 
   for (const event of input.events) {
-    const eventDay = isoDay(event.date);
-    if (!eventDay.startsWith(input.month) || !eventMatchesCard(event, aliases)) continue;
     const payload = payloadRecord(event.sourcePayload);
+    const sourceDueDay = isoDay(payload?.date);
+    const eventDay = isoDay(event.date);
+    const statementMonth = sourceDueDay.slice(0, 7) || text(event.competence) || eventDay.slice(0, 7);
+    if (statementMonth !== input.month || !eventMatchesCard(event, aliases)) continue;
     const purchaseId = text(payload?.purchaseId);
     if (purchaseId && officialPurchaseIds.has(purchaseId)) continue;
     const effect = cardStatementEffectFromSignedAmount(event.signedAmount);
@@ -218,7 +221,7 @@ export function buildCanonicalCardStatement(input: {
       effect,
       kind: effect < 0 ? 'credit' : 'charge',
       purchaseDate: isoDay(payload?.purchaseDate) || eventDay,
-      dueDate: eventDay || dueDate,
+      dueDate: sourceDueDay || eventDay || dueDate,
       statementMonth: input.month,
       installmentNo: installment.no,
       installmentQty: installment.qty,
