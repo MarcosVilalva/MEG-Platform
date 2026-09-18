@@ -1,9 +1,9 @@
 {
-  "versionCode": 257,
-  "versionName": "1.1.257",
+  "versionCode": 258,
+  "versionName": "1.1.258",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "5e5b6d6a9ce80065c0fb5b4f27f86ee23d80bf1405a957321847d1fd1c00e6a0",
+  "sha256": "c94484458cf8b5a7fbe3a8bd41354efb55b2f6a2a9cd00af0d8f8ac05470026c",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Phoenix V15: alinhar runtime oficial com versão validada"
+  "releaseNotes": "merge: consolidar Phoenix V15 validado e regras canônicas"
 }
