@@ -3,18 +3,21 @@ import { readFileSync } from 'node:fs';
 
 const routes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
 const settlement = readFileSync(new URL('./event-settlement.ts', import.meta.url), 'utf8');
+const batchRoutes = readFileSync(new URL('./event-bulk-routes.ts', import.meta.url), 'utf8');
 const batchSettlement = readFileSync(new URL('./pending-batch-settlement.ts', import.meta.url), 'utf8');
 
 assert.match(routes, /app\.post\('\/events\/:id\/settle'/,
   'Baixa individual deve possuir endpoint dedicado.');
 assert.match(routes, /settleLegacyFinancialEventProtected/,
   'Endpoint individual deve usar o gateway protegido.');
-assert.match(routes, /app\.post\('\/pending\/batch\/settle'/,
-  'Baixa múltipla deve possuir endpoint atômico dedicado.');
-assert.match(routes, /settlePendingBatchProtected/,
+assert.doesNotMatch(routes, /app\.post\('\/pending\/batch\/settle'/,
+  'Rota de baixa múltipla não pode ser registrada duas vezes no módulo financeiro.');
+assert.match(batchRoutes, /app\.post\('\/pending\/batch\/settle'/,
+  'Baixa múltipla deve possuir endpoint atômico dedicado no módulo de mutações em lote.');
+assert.match(batchRoutes, /settlePendingBatchProtected/,
   'Endpoint em lote deve usar o writer protegido do domínio financeiro.');
-assert.match(routes, /operationId:\s*z\.string\(\).*min\(8\).*max\(128\)/s,
-  'operationId deve ser obrigatório no contrato de baixa.');
+assert.match(batchRoutes, /operationIdSchema[\s\S]*min\(8\).*max\(128\)/,
+  'operationId deve ser obrigatório no contrato de baixa em lote.');
 
 assert.match(settlement, /serializableFinancialTransaction/,
   'Baixa individual deve ser atômica e serializável.');
