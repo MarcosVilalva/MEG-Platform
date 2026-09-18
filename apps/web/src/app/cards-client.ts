@@ -16,6 +16,8 @@ export type CanonicalCardStatementLine = {
   statementMonth: string;
   installmentNo: number;
   installmentQty: number;
+  isOpen: boolean;
+  sourceStatus: string;
 };
 export type CanonicalCardStatement = {
   month: string;
@@ -23,9 +25,12 @@ export type CanonicalCardStatement = {
   charges: number;
   credits: number;
   netAmount: number;
+  openCharges: number;
+  openCredits: number;
+  openNetAmount: number;
   payableAmount: number;
   creditBalance: number;
-  status: 'empty' | 'open' | 'zero' | 'credit';
+  status: 'empty' | 'open' | 'partial' | 'paid' | 'zero' | 'credit';
   lines: CanonicalCardStatementLine[];
 };
 export type CreditCard = { id: string; name: string; issuer?: string | null; brand?: string | null; lastFour?: string | null; creditLimit: string | number; closingDay: number; dueDay: number; color?: string | null; isActive: boolean; usedLimit: number; availableLimit: number; statementAmount: number; payableStatementAmount?: number; statementCreditBalance?: number; statement?: CanonicalCardStatement; purchases: CardPurchase[] };
