@@ -262,3 +262,131 @@
   background:var(--px-danger-surface)!important;
   color:var(--px-danger-strong)!important;
 }
+
+
+/*
+ * Alguns drawers dos bridges são anexados diretamente ao body. Eles não
+ * herdam as variáveis da .phoenix-v15; o bridge replica o tema no body.
+ */
+body[data-phoenix-theme="light"] {
+  --bg:#f3f7f7;
+  --panel:#ffffff;
+  --panel2:#f8fbfb;
+  --ink:#10251f;
+  --muted:#6b7d78;
+  --line:#dce8e4;
+  --brand:#19b990;
+  --brand2:#087c69;
+  --danger:#b42318;
+  --danger-bg:#fff0ee;
+  --warn:#946200;
+  --warn-bg:#fff7df;
+  --ok-bg:#edf9f5;
+  --px-muted-strong:#50635d;
+  --px-control-border:#b9cbc5;
+  --px-control-bg:#ffffff;
+  --px-control-hover:#edf7f4;
+  --px-subtle-bg:#f1f7f5;
+  --px-danger-strong:#9f241a;
+  --px-danger-surface:#fff1ef;
+  --px-warning-strong:#7b5100;
+  --px-warning-surface:#fff5d6;
+  --px-success-strong:#08624f;
+  --px-success-surface:#e8f7f2;
+}
+body[data-phoenix-theme="dark"] {
+  --bg:#07120f;
+  --panel:#0b211d;
+  --panel2:#0d2a25;
+  --ink:#ecfff9;
+  --muted:#a9c3bb;
+  --line:#193b33;
+  --brand:#35d4a5;
+  --brand2:#78f3d0;
+  --danger:#ff8d84;
+  --danger-bg:#3a1714;
+  --warn:#ffd07c;
+  --warn-bg:#332816;
+  --ok-bg:#0d3128;
+  --px-muted-strong:#c0d8d1;
+  --px-control-border:#31564d;
+  --px-control-bg:#102a25;
+  --px-control-hover:#163a33;
+  --px-subtle-bg:#102c27;
+  --px-danger-strong:#ffaaa3;
+  --px-danger-surface:#421d19;
+  --px-warning-strong:#ffda8f;
+  --px-warning-surface:#3b2e18;
+  --px-success-strong:#8ef3d2;
+  --px-success-surface:#123b31;
+}
+
+body[data-phoenix-theme] > .px-launch-drawer,
+body[data-phoenix-theme] > .px-detail-drawer,
+body[data-phoenix-theme] > [data-card-management],
+body[data-phoenix-theme] > [data-card-purchase-editor] {
+  background:var(--panel);
+  color:var(--ink);
+  border-color:var(--px-control-border);
+}
+body[data-phoenix-theme] .px-drawer-head {
+  background:color-mix(in srgb,var(--panel) 88%,var(--brand) 12%);
+  color:var(--ink);
+  border-color:var(--px-control-border);
+}
+body[data-phoenix-theme] .px-drawer-head .px-kicker,
+body[data-phoenix-theme] .px-field > span,
+body[data-phoenix-theme] .px-field small {
+  color:var(--px-muted-strong);
+}
+body[data-phoenix-theme] .px-field input,
+body[data-phoenix-theme] .px-field select,
+body[data-phoenix-theme] .px-field textarea {
+  background:var(--px-control-bg);
+  color:var(--ink);
+  border-color:var(--px-control-border);
+}
+body[data-phoenix-theme] .px-primary-action {
+  background:var(--brand2);
+  border-color:var(--brand2);
+  color:#fff;
+  font-weight:900;
+}
+body[data-phoenix-theme="dark"] .px-primary-action {
+  background:#1a9f80;
+  border-color:#37c9a7;
+}
+body[data-phoenix-theme] .px-secondary-action,
+body[data-phoenix-theme] .px-icon-btn {
+  background:var(--px-control-bg);
+  color:var(--ink);
+  border-color:var(--px-control-border);
+}
+body[data-phoenix-theme] .px-card-danger-action,
+body[data-phoenix-theme] [data-card-domain-cancel],
+body[data-phoenix-theme] [data-card-manage-deactivate] {
+  background:var(--px-danger-surface)!important;
+  color:var(--px-danger-strong)!important;
+  border-color:color-mix(in srgb,var(--danger) 68%,var(--px-control-border))!important;
+}
+body[data-phoenix-theme] .px-preview-box,
+body[data-phoenix-theme] .px-rule-box,
+body[data-phoenix-theme] [data-edit-preview],
+body[data-phoenix-theme] [data-card-edit-preview],
+body[data-phoenix-theme] .px-notice {
+  background:var(--px-subtle-bg);
+  color:var(--ink);
+  border-color:var(--px-control-border);
+}
+body[data-phoenix-theme] .px-notice.ok {
+  background:var(--px-success-surface);
+  color:var(--px-success-strong);
+}
+body[data-phoenix-theme] .px-notice.warn {
+  background:var(--px-warning-surface);
+  color:var(--px-warning-strong);
+}
+body[data-phoenix-theme] button:disabled {
+  opacity:.66;
+  color:var(--px-muted-strong);
+}
