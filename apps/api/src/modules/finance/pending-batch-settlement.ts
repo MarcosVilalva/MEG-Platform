@@ -3,6 +3,7 @@ import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-re
 import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
+import { cardStatementEffectFromSignedAmount } from './card-statement-canonical';
 import {
   isBenefitFinancialEvent,
   isFutureFinancialDay,
@@ -99,7 +100,7 @@ async function loadBatchItems(tx: Tx, ownerId: string, items: PendingBatchItemIn
 
     if (item.source === 'event') {
       const current = await loadEvent(tx, ownerId, item.sourceId);
-      const amount = Math.round((-Number(current.signedAmount)) * 100) / 100;
+      const amount = cardStatementEffectFromSignedAmount(current.signedAmount);
       if (!Number.isFinite(amount) || amount === 0) throw new PendingBatchSettlementError('INVALID_PENDING_AMOUNT', { sourceId: item.sourceId });
       loaded.push({ source: 'event', sourceId: item.sourceId, amount, current });
       continue;
