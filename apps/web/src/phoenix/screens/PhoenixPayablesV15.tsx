@@ -164,9 +164,9 @@ function isOpenCardStatus(value: unknown) {
 function cardStatementItems(data: PhoenixReadModel): PendingItem[] {
   return data.cards.flatMap((card) => {
     if (card.statement?.month === data.month
-      && card.statement.lines.length
+      && card.statement.lines.some((line) => line.isOpen)
       && card.statement.lines.every((line) => line.source === 'card-installment')) {
-      const children: PendingChild[] = card.statement.lines.map((line) => ({
+      const children: PendingChild[] = card.statement.lines.filter((line) => line.isOpen).map((line) => ({
         id: line.id,
         description: line.description,
         amount: Number(line.effect || 0),
@@ -181,7 +181,7 @@ function cardStatementItems(data: PhoenixReadModel): PendingItem[] {
         source: 'card' as const,
         description: `${card.name} · Fatura ${statementLabel(data.month)}`,
         dueDate: card.statement.dueDate || statementDueIso(card, data.month),
-        openAmount: Number(card.statement.netAmount || 0),
+        openAmount: Number(card.statement.openNetAmount || 0),
         installmentNo: 1,
         installmentQty: 1,
         categoryName: 'Cartão de crédito',
