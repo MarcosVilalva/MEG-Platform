@@ -9,6 +9,7 @@ const commandPalette = readFileSync(new URL('./PhoenixCommandPalette.tsx', impor
 const screens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.meta.url), 'utf8');
 const movementScreen = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
 const launchWriteControl = readFileSync(new URL('./components/PhoenixLaunchWriteControl.tsx', import.meta.url), 'utf8');
+const bulkEventUxEnhancements = readFileSync(new URL('./bulk-event-ux-enhancements.ts', import.meta.url), 'utf8');
 const homeDashboard = readFileSync(new URL('./screens/PhoenixHomeDashboard.tsx', import.meta.url), 'utf8');
 const homeAllTime = readFileSync(new URL('./screens/PhoenixHomeAllTime.tsx', import.meta.url), 'utf8');
 const homePeriodSummary = readFileSync(new URL('./home-period-summary.ts', import.meta.url), 'utf8');
