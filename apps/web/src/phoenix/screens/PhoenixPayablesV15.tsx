@@ -418,7 +418,9 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const activeAccounts = model.accounts.filter((item) => item.isActive && !['benefit', 'credit'].includes(normalize(item.type)));
   const monetaryAccounts = model.accounts.filter((item) => item.isActive && monetaryAccountTypes.has(normalize(item.type)));
   const activeMethods = model.paymentMethods.filter((item) => item.isActive);
-  const statementMethods = activeMethods.filter((item) => normalize(item.type) !== 'credit');
+  const cardSourceMethodNames = new Set(open.filter(isCardLike).map((item) => normalize(item.paymentMethod)).filter(Boolean));
+  const statementMethods = activeMethods.filter((item) =>
+    normalize(item.type) !== 'credit' && !cardSourceMethodNames.has(normalize(item.name)));
   const reviewAccounts = batchMode || selectedItem?.source === 'card' ? monetaryAccounts : activeAccounts;
   const reviewMethods = batchMode || selectedItem?.source === 'card' ? statementMethods : activeMethods;
   const canWrite = PHOENIX_PENDING_WRITE_ENABLED && ['ADMIN', 'MANAGER', 'OPERATOR'].includes(model.user.role);
