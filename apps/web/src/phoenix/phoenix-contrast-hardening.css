@@ -352,3 +352,169 @@
     min-height: 42px;
   }
 }
+
+
+/* Auditoria das telas com superfícies historicamente fixas em tons escuros.
+   No tema claro, essas áreas passam a usar os mesmos tokens do restante do MEG. */
+.phoenix-v15[data-theme="light"] .px-decision-safe-margin,
+.phoenix-v15[data-theme="light"] .px-decision-safe-margin.is-danger,
+.phoenix-v15[data-theme="light"] .px-decision-tabs,
+.phoenix-v15[data-theme="light"] .px-decision-month,
+.phoenix-v15[data-theme="light"] .px-decision-sim-summary > div,
+.phoenix-v15[data-theme="light"] .px-decision-assistant-stats > div,
+.phoenix-v15[data-theme="light"] .px-decision-impact-list > div,
+.phoenix-v15[data-theme="light"] .px-decision-form input,
+.phoenix-v15[data-theme="light"] .px-decision-form select {
+  background: var(--panel2) !important;
+  color: var(--ink) !important;
+  border-color: var(--px-control-border) !important;
+}
+
+.phoenix-v15[data-theme="light"] .px-decision-safe-copy h2,
+.phoenix-v15[data-theme="light"] .px-decision-safe-stats strong,
+.phoenix-v15[data-theme="light"] .px-decision-month header strong,
+.phoenix-v15[data-theme="light"] .px-decision-month dd,
+.phoenix-v15[data-theme="light"] .px-decision-sim-summary strong,
+.phoenix-v15[data-theme="light"] .px-decision-assistant-stats strong,
+.phoenix-v15[data-theme="light"] .px-decision-impact-list strong,
+.phoenix-v15[data-theme="light"] .px-decision-assistant h2,
+.phoenix-v15[data-theme="light"] .px-decision-action-list strong,
+.phoenix-v15[data-theme="light"] .px-decision-note strong {
+  color: var(--ink) !important;
+}
+
+.phoenix-v15[data-theme="light"] .px-decision-safe-copy p,
+.phoenix-v15[data-theme="light"] .px-decision-safe-stats span,
+.phoenix-v15[data-theme="light"] .px-decision-safe-progress > div:first-child,
+.phoenix-v15[data-theme="light"] .px-decision-tabs button,
+.phoenix-v15[data-theme="light"] .px-decision-note,
+.phoenix-v15[data-theme="light"] .px-decision-month header span,
+.phoenix-v15[data-theme="light"] .px-decision-month dt,
+.phoenix-v15[data-theme="light"] .px-decision-form label > span,
+.phoenix-v15[data-theme="light"] .px-decision-sim-summary span,
+.phoenix-v15[data-theme="light"] .px-decision-assistant-stats span,
+.phoenix-v15[data-theme="light"] .px-decision-impact-list > div,
+.phoenix-v15[data-theme="light"] .px-decision-assistant p,
+.phoenix-v15[data-theme="light"] .px-decision-assistant > small,
+.phoenix-v15[data-theme="light"] .px-decision-action-list span {
+  color: var(--px-text-secondary) !important;
+}
+
+.phoenix-v15[data-theme="light"] .px-decision-tabs button:hover,
+.phoenix-v15[data-theme="light"] .px-decision-tabs button.active {
+  color: var(--brand2) !important;
+}
+
+.phoenix-v15[data-theme="light"] .px-meg-now,
+.phoenix-v15[data-theme="light"] .px-meg-now.is-warning,
+.phoenix-v15[data-theme="light"] .px-meg-now.is-danger,
+.phoenix-v15[data-theme="light"] .px-smart-alerts,
+.phoenix-v15[data-theme="light"] .px-smart-alerts.has-alerts,
+.phoenix-v15[data-theme="light"] .px-home-secondary-details,
+.phoenix-v15[data-theme="light"] .px-home-secondary-summary {
+  background: var(--panel) !important;
+  border-color: var(--px-control-border) !important;
+}
+
+.phoenix-v15[data-theme="light"] .px-meg-now-copy h2,
+.phoenix-v15[data-theme="light"] .px-meg-now-action strong,
+.phoenix-v15[data-theme="light"] .px-smart-alerts-head > div > strong,
+.phoenix-v15[data-theme="light"] .px-smart-alert-row > div > strong,
+.phoenix-v15[data-theme="light"] .px-home-secondary-summary > div > strong {
+  color: var(--ink) !important;
+}
+
+.phoenix-v15[data-theme="light"] .px-meg-now-copy p,
+.phoenix-v15[data-theme="light"] .px-smart-alerts-head > div > span,
+.phoenix-v15[data-theme="light"] .px-smart-alerts-head > small,
+.phoenix-v15[data-theme="light"] .px-smart-alert-row > div > small,
+.phoenix-v15[data-theme="light"] .px-home-secondary-details > summary,
+.phoenix-v15[data-theme="light"] .px-home-secondary-summary > div > span,
+.phoenix-v15[data-theme="light"] .px-home-secondary-summary > small {
+  color: var(--px-text-secondary) !important;
+}
+
+.phoenix-v15[data-theme="light"] .px-card-statement-projection,
+.phoenix-v15[data-theme="light"] .px-card-projection-method,
+.phoenix-v15[data-theme="light"] .px-card-projection-summary > div,
+.phoenix-v15[data-theme="light"] .px-card-projection-month {
+  background: var(--panel2) !important;
+  border-color: var(--px-control-border) !important;
+}
+
+.phoenix-v15[data-theme="light"] .px-card-projection-head strong,
+.phoenix-v15[data-theme="light"] .px-card-projection-method strong,
+.phoenix-v15[data-theme="light"] .px-card-projection-summary strong,
+.phoenix-v15[data-theme="light"] .px-card-projection-month-head strong {
+  color: var(--ink) !important;
+}
+
+.phoenix-v15[data-theme="light"] .px-card-projection-head > div:first-child > span,
+.phoenix-v15[data-theme="light"] .px-card-projection-method > span,
+.phoenix-v15[data-theme="light"] .px-card-projection-head small,
+.phoenix-v15[data-theme="light"] .px-card-projection-method small,
+.phoenix-v15[data-theme="light"] .px-card-projection-summary span,
+.phoenix-v15[data-theme="light"] .px-card-projection-summary small,
+.phoenix-v15[data-theme="light"] .px-card-projection-legend,
+.phoenix-v15[data-theme="light"] .px-card-projection-month-head > div > span {
+  color: var(--px-text-secondary) !important;
+}
+
+/* Pendentes selecionados: mantém aparência premium sem criar uma ilha escura
+   ilegível quando o restante do sistema estiver no tema claro. */
+.phoenix-v15[data-theme="light"] .px-pending-layout:has(.px-pending-group-check input[type="checkbox"]:checked) .px-pending-side,
+.phoenix-v15[data-theme="light"] .px-pending-layout:has(.px-pending-row input[type="checkbox"]:checked) .px-pending-side,
+.phoenix-v15[data-theme="light"] .px-pending-list > .px-bulk-action-bar {
+  background: var(--panel) !important;
+  border-color: color-mix(in srgb, var(--brand) 34%, var(--line)) !important;
+  color: var(--ink) !important;
+}
+
+.phoenix-v15[data-theme="light"] .px-pending-side > h2,
+.phoenix-v15[data-theme="light"] .px-pending-side dd,
+.phoenix-v15[data-theme="light"] .px-pending-list > .px-bulk-action-bar > div strong {
+  color: var(--ink) !important;
+}
+
+.phoenix-v15[data-theme="light"] .px-pending-side dt,
+.phoenix-v15[data-theme="light"] .px-pending-side .px-readonly-hint,
+.phoenix-v15[data-theme="light"] .px-pending-list > .px-bulk-action-bar > div span {
+  color: var(--px-text-secondary) !important;
+}
+
+/* Componentes de previsão e histórico tinham texto auxiliar abaixo de 50% de
+   opacidade. Mantemos hierarquia visual, mas sem sacrificar leitura. */
+.phoenix-v15 .px-home-forecast-summary small,
+.phoenix-v15 .px-home-forecast-flow span,
+.phoenix-v15 .px-home-forecast-breakdown span,
+.phoenix-v15 .px-home-forecast-breakdown small,
+.phoenix-v15 .px-home-forecast-subhead small,
+.phoenix-v15 .px-home-forecast-card-list small,
+.phoenix-v15 .px-home-forecast-topcards small,
+.phoenix-v15 .px-home-forecast-method span,
+.phoenix-v15 .px-card-history-detail-events small,
+.phoenix-v15 .px-card-history-detail-empty,
+.phoenix-v15 .px-card-history-stats,
+.phoenix-v15 .px-card-history-foot {
+  opacity: 1 !important;
+  color: var(--px-text-secondary) !important;
+}
+
+.phoenix-v15 .px-home-forecast-head > div:first-child > span,
+.phoenix-v15 .px-home-forecast-head > div:first-child > small,
+.phoenix-v15 .px-home-forecast-summary span,
+.phoenix-v15 .px-home-forecast-insight span,
+.phoenix-v15 .px-home-forecast-legend,
+.phoenix-v15 .px-home-forecast-month-foot,
+.phoenix-v15 .px-home-forecast-detail-head span {
+  opacity: .86 !important;
+}
+
+/* Botões operacionais que antes quase desapareciam quando indisponíveis. */
+.phoenix-v15 .px-history-export:disabled,
+.phoenix-v15 .px-pending-quick-settle:disabled,
+.phoenix-v15 .px-pending-card-net-action button:disabled,
+.phoenix-v15 .px-home-drawer-footer .px-primary-action:disabled,
+.phoenix-v15 .px-bulk-checkbox:disabled {
+  opacity: .72 !important;
+}
