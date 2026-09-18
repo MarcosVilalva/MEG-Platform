@@ -225,8 +225,8 @@ async function openTrash() {
 function ensureCommandStrip() {
   const table = launchTable();
   const card = table?.closest<HTMLElement>('.px-table-card');
-  const toolbar = card?.querySelector<HTMLElement>('.px-toolbar');
-  if (!table || !card || !toolbar) return;
+  const slot = card?.querySelector<HTMLElement>('[data-phoenix-table-context]');
+  if (!table || !card || !slot) return;
 
   let strip = card.querySelector<HTMLElement>('[data-bulk-ux-strip]');
   if (!strip) {
@@ -248,7 +248,7 @@ function ensureCommandStrip() {
       </div>
       <span class="px-bulk-ux-gate">${PHOENIX_BULK_EVENT_WRITE_ENABLED ? 'Writer em massa ativo' : 'Alterar/excluir ainda bloqueados'}</span>
     `;
-    toolbar.insertAdjacentElement('afterend', strip);
+    slot.appendChild(strip);
     strip.querySelector<HTMLButtonElement>('[data-select-filtered]')?.addEventListener('click', selectFiltered);
     strip.querySelector<HTMLButtonElement>('[data-clear-filtered]')?.addEventListener('click', clearFilteredSelection);
     strip.querySelector<HTMLButtonElement>('[data-preview-edit]')?.addEventListener('click', () => void openEditPreview());

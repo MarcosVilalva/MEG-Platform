@@ -144,8 +144,8 @@ function clearSelection() {
 
 function ensureBar(table: HTMLTableElement) {
   const card = table.closest<HTMLElement>('.px-table-card');
-  const toolbar = card?.querySelector<HTMLElement>('.px-toolbar');
-  if (!card || !toolbar || card.querySelector('[data-phoenix-bulk-bar]')) return;
+  const slot = card?.querySelector<HTMLElement>('[data-phoenix-table-context]');
+  if (!card || !slot || card.querySelector('[data-phoenix-bulk-bar]')) return;
 
   const root = document.createElement('div');
   root.className = 'px-bulk-action-bar';
@@ -161,7 +161,7 @@ function ensureBar(table: HTMLTableElement) {
     <button type="button" data-bulk-clear>Limpar seleção</button>
     <small class="px-bulk-modal-status" data-phoenix-bulk-status hidden></small>
   `;
-  toolbar.insertAdjacentElement('afterend', root);
+  slot.appendChild(root);
   root.querySelector<HTMLButtonElement>('[data-bulk-clear]')?.addEventListener('click', clearSelection);
   root.querySelector<HTMLButtonElement>('[data-bulk-edit]')?.addEventListener('click', () => void openBulkEditModal());
   root.querySelector<HTMLButtonElement>('[data-bulk-delete]')?.addEventListener('click', () => void confirmArchive([...selected]));
@@ -280,6 +280,48 @@ function refreshAfterMutation(path: string) {
   window.setTimeout(() => document.querySelector<HTMLButtonElement>('.px-sync:not(:disabled)')?.click(), 120);
 }
 
+function confirmArchiveDialog(count: number) {
+  return new Promise<boolean>((resolve) => {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'px-confirm-modal-backdrop';
+    const modal = document.createElement('section');
+    modal.className = 'px-confirm-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Excluir lançamento');
+    modal.innerHTML = `
+      <div class="px-confirm-modal-icon" aria-hidden="true">!</div>
+      <div class="px-confirm-modal-copy">
+        <span class="px-kicker">Confirmar exclusão</span>
+        <h3>Excluir ${count} lançamento${count === 1 ? '' : 's'}?</h3>
+        <p>O efeito será retirado dos saldos após a confirmação do servidor. A auditoria do arquivamento será preservada.</p>
+      </div>
+      <div class="px-confirm-modal-actions">
+        <button type="button" data-cancel>Cancelar</button>
+        <button type="button" class="is-danger" data-confirm>Excluir ${count === 1 ? 'lançamento' : 'lançamentos'}</button>
+      </div>
+    `;
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+    let settled = false;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') finish(false);
+    };
+    const finish = (accepted: boolean) => {
+      if (settled) return;
+      settled = true;
+      document.removeEventListener('keydown', onKey);
+      backdrop.remove();
+      resolve(accepted);
+    };
+    modal.querySelector<HTMLButtonElement>('[data-cancel]')?.addEventListener('click', () => finish(false));
+    modal.querySelector<HTMLButtonElement>('[data-confirm]')?.addEventListener('click', () => finish(true));
+    backdrop.addEventListener('click', (event) => { if (event.target === backdrop) finish(false); });
+    document.addEventListener('keydown', onKey);
+    modal.querySelector<HTMLButtonElement>('[data-cancel]')?.focus();
+  });
+}
+
 async function confirmArchive(ids: string[]) {
   if (!ids.length) return;
   if (!PHOENIX_BULK_EVENT_WRITE_ENABLED) {
@@ -291,7 +333,7 @@ async function confirmArchive(ids: string[]) {
     return;
   }
   const count = ids.length;
-  if (!window.confirm(`Excluir ${count} lançamento${count === 1 ? '' : 's'}?\n\nOs efeitos sairão dos saldos e do ledger, mantendo auditoria do arquivamento.`)) return;
+  if (!(await confirmArchiveDialog(count))) return;
   const ordered = [...ids].sort();
   const operationId = operationIdFor(`archive:${ordered.join(',')}`, 'archive');
   try {
@@ -317,6 +359,9 @@ async function openBulkEditModal() {
   backdrop.className = 'px-bulk-modal-backdrop';
   const modal = document.createElement('div');
   modal.className = 'px-bulk-modal';
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('aria-label', 'Alteração em massa');
   backdrop.appendChild(modal);
   const accountOptions = accounts.filter((item) => item.isActive).map((item) => `<option value="${item.id}">${item.name}</option>`).join('');
   const methodOptions = methods.filter((item) => item.isActive).map((item) => `<option value="${item.id}">${item.name}</option>`).join('');
@@ -328,7 +373,7 @@ async function openBulkEditModal() {
     <label class="px-bulk-field"><input type="checkbox" data-use-date><strong>Alterar vencimento/data do evento</strong><input type="date" data-value-date disabled></label>
     <label class="px-bulk-field"><input type="checkbox" data-use-account><strong>Alterar conta financeira</strong><select data-value-account disabled><option value="">Selecione</option>${accountOptions}</select></label>
     <label class="px-bulk-field"><input type="checkbox" data-use-payment><strong>Alterar forma de pagamento/recebimento</strong><select data-value-payment disabled><option value="">Selecione</option>${methodOptions}</select></label>
-    <div class="px-bulk-modal-status" data-modal-status>Operação atômica: ou todos são alterados, ou nenhum é.</div>
+    <div class="px-bulk-modal-status" data-modal-status>Marque os campos que deseja alterar.</div>
     <div class="px-bulk-modal-actions"><button type="button" data-cancel>Cancelar</button><button type="button" data-confirm>Aplicar alterações</button></div>
   `;
   document.body.appendChild(backdrop);

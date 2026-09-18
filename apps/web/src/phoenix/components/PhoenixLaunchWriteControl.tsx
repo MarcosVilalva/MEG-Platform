@@ -290,8 +290,8 @@ export function PhoenixLaunchWriteControl({
   }
 
   if (!reviewed) {
-    return <button className="px-primary-action px-review-launch" type="button" disabled={missing.length > 0} onClick={onReview}>
-      {missing.length ? 'Revisar campos obrigatórios' : 'Revisar lançamento'}
+    return <button className="px-primary-action px-review-launch" type="button" onClick={onReview}>
+      Continuar
     </button>;
   }
 
