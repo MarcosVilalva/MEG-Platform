@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { prisma } from '@meg/database';
 import { z } from 'zod';
 import { resolveWorkspaceContext } from '../workspaces/service';
+import { readCanonicalCardStatements } from './service';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
@@ -146,9 +147,19 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
       .filter((entry) => entry.statementMonth === parsed.data.month);
     const openEntries = entries.filter((entry) => entry.status === 'open');
     const paidEntries = entries.filter((entry) => entry.status === 'paid');
-    const openAmount = round(openEntries.reduce((sum, entry) => sum + Number(entry.amount), 0));
-    const paidAmount = round(paidEntries.reduce((sum, entry) => sum + Number(entry.amount), 0));
-    const statementAmount = round(entries.reduce((sum, entry) => sum + Number(entry.amount), 0));
+    const canonicalRead = await readCanonicalCardStatements(request.user.sub, card.id, [parsed.data.month]);
+    const canonical = canonicalRead.statements[0];
+    const hasCanonical = Boolean(canonical?.lines.length);
+    const entryOpenAmount = round(openEntries.reduce((sum, entry) => sum + Number(entry.amount), 0));
+    const entryPaidAmount = round(paidEntries.reduce((sum, entry) => sum + Number(entry.amount), 0));
+    const entryStatementAmount = round(entries.reduce((sum, entry) => sum + Number(entry.amount), 0));
+    const statementAmount = hasCanonical ? canonical.netAmount : entryStatementAmount;
+    const openAmount = hasCanonical ? canonical.payableAmount : entryOpenAmount;
+    const paidAmount = hasCanonical
+      ? round(Math.max(0, canonical.netAmount - canonical.openNetAmount))
+      : entryPaidAmount;
+    const openLineCount = hasCanonical ? canonical.lines.filter((line) => line.isOpen).length : openEntries.length;
+    const paidLineCount = hasCanonical ? canonical.lines.filter((line) => !line.isOpen).length : paidEntries.length;
 
     const members = await prisma.workspaceMember.findMany({
       where: { workspaceId: workspace.workspaceId },
@@ -207,15 +218,21 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
     } : nestedSnapshot(paymentAfter.paymentMethod);
 
     const lifecycleAction = latestLifecycle?.action || null;
-    const status = entries.length === 0
-      ? 'none'
-      : lifecycleAction === 'CARD_STATEMENT_REOPENED' && openEntries.length > 0
-        ? 'reopened'
-        : openEntries.length > 0 && paidEntries.length > 0
-          ? 'partial'
-          : openEntries.length > 0
-            ? 'open'
-            : 'paid';
+    const status = lifecycleAction === 'CARD_STATEMENT_REOPENED' && openLineCount > 0
+      ? 'reopened'
+      : hasCanonical
+        ? canonical.status === 'empty'
+          ? 'none'
+          : canonical.status === 'credit' || canonical.status === 'zero'
+            ? 'credit'
+            : canonical.status
+        : entries.length === 0
+          ? 'none'
+          : openEntries.length > 0 && paidEntries.length > 0
+            ? 'partial'
+            : openEntries.length > 0
+              ? 'open'
+              : 'paid';
     const paidAt = text(paymentAfter.paidAt)
       || isoDate(financialEvent?.date)
       || isoDate(lastPaidAtFromEntries);
@@ -334,8 +351,11 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
       statementAmount,
       openAmount,
       paidAmount,
-      openInstallments: openEntries.length,
-      paidInstallments: paidEntries.length,
+      openInstallments: openLineCount,
+      paidInstallments: paidLineCount,
+      creditBalance: hasCanonical ? canonical.creditBalance : 0,
+      charges: hasCanonical ? canonical.charges : Math.max(0, statementAmount),
+      credits: hasCanonical ? canonical.credits : 0,
       closingDate: closing.date,
       dueDate: due.date,
       timeline,
@@ -360,7 +380,7 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
       reopenedAt,
       reopenReason,
       reopenedBy: lifecycleAction === 'CARD_STATEMENT_REOPENED' ? latestLifecycle?.user || null : null,
-      source: latestLifecycle || latestPayment ? 'audit' : entries.length ? 'installments' : 'none',
+      source: latestLifecycle || latestPayment ? 'audit' : hasCanonical ? 'canonical' : entries.length ? 'installments' : 'none',
     };
   });
 
@@ -391,6 +411,9 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
       },
     });
     if (!card) return reply.code(404).send({ error: 'CARD_NOT_FOUND' });
+
+    const canonicalHistory = await readCanonicalCardStatements(request.user.sub, card.id, monthList);
+    const canonicalByMonth = new Map(canonicalHistory.statements.map((statement) => [statement.month, statement]));
 
     const members = await prisma.workspaceMember.findMany({
       where: { workspaceId: workspace.workspaceId },
@@ -439,21 +462,34 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
       const entryStatementAmount = round(entries.reduce((sum, entry) => sum + Number(entry.amount), 0));
       const entryOpenAmount = round(openEntries.reduce((sum, entry) => sum + Number(entry.amount), 0));
       const entryPaidAmount = round(paidEntries.reduce((sum, entry) => sum + Number(entry.amount), 0));
-      const statementAmount = entryStatementAmount || auditedAmount;
+      const canonical = canonicalByMonth.get(month);
+      const hasCanonical = Boolean(canonical?.lines.length);
+      const statementAmount = hasCanonical ? canonical!.netAmount : entryStatementAmount || auditedAmount;
       const latestAction = latestAudit?.action || null;
-      const status = entries.length === 0 && audits.length === 0
-        ? 'none'
-        : latestAction === 'CARD_STATEMENT_REOPENED'
-          ? 'reopened'
-          : openEntries.length > 0 && paidEntries.length > 0
-            ? 'partial'
-            : openEntries.length > 0
-              ? 'open'
-              : paidEntries.length > 0 || paymentAudits.length > 0
-                ? 'paid'
-                : 'none';
-      const openAmount = entryOpenAmount || (status === 'reopened' && !entries.length ? auditedAmount : 0);
-      const paidAmount = entryPaidAmount || (status === 'paid' && !entries.length ? auditedAmount : 0);
+      const canonicalStatus = hasCanonical ? canonical!.status : null;
+      const status = latestAction === 'CARD_STATEMENT_REOPENED' && (canonical?.lines.some((line) => line.isOpen) || openEntries.length)
+        ? 'reopened'
+        : canonicalStatus === 'credit' || canonicalStatus === 'zero'
+          ? 'credit'
+          : canonicalStatus === 'open' || canonicalStatus === 'partial' || canonicalStatus === 'paid'
+            ? canonicalStatus
+            : entries.length === 0 && audits.length === 0
+              ? 'none'
+              : openEntries.length > 0 && paidEntries.length > 0
+                ? 'partial'
+                : openEntries.length > 0
+                  ? 'open'
+                  : paidEntries.length > 0 || paymentAudits.length > 0
+                    ? 'paid'
+                    : 'none';
+      const openAmount = hasCanonical
+        ? canonical!.payableAmount
+        : entryOpenAmount || (status === 'reopened' && !entries.length ? auditedAmount : 0);
+      const paidAmount = hasCanonical
+        ? round(Math.max(0, canonical!.netAmount - canonical!.openNetAmount))
+        : entryPaidAmount || (status === 'paid' && !entries.length ? auditedAmount : 0);
+      const openLineCount = hasCanonical ? canonical!.lines.filter((line) => line.isOpen).length : openEntries.length;
+      const paidLineCount = hasCanonical ? canonical!.lines.filter((line) => !line.isOpen).length : paidEntries.length;
       const lastPaidAtFromEntries = paidEntries
         .map((entry) => entry.paidAt)
         .filter((value): value is Date => value instanceof Date)
@@ -472,16 +508,16 @@ export async function cardStatementLifecycleRoutes(app: FastifyInstance) {
         statementAmount,
         openAmount,
         paidAmount,
-        openInstallments: openEntries.length,
-        paidInstallments: paidEntries.length,
-        totalInstallments: entries.length,
+        openInstallments: openLineCount,
+        paidInstallments: paidLineCount,
+        totalInstallments: hasCanonical ? canonical!.lines.length : entries.length,
         closingDate: closing.date,
         dueDate: due.date,
         paymentCount: paymentAudits.length || (lastPaidAtFromEntries ? 1 : 0),
         reopenCount: reopenAudits.length,
         lastPaidAt,
         lastLifecycleAt: isoDate(latestAudit?.createdAt),
-        source: audits.length ? 'audit' : entries.length ? 'installments' : 'none',
+        source: audits.length ? 'audit' : hasCanonical ? 'canonical' : entries.length ? 'installments' : 'none',
         deltaAmount: 0,
         deltaPercent: null as number | null,
       };
