@@ -284,3 +284,21 @@
   width:21px;
   flex-basis:21px;
 }
+
+
+.phoenix-v15 .px-export-icon.print {
+  width:17px;
+  height:17px;
+  flex-basis:17px;
+  display:grid;
+  place-items:center;
+  background:transparent;
+  color:currentColor;
+  overflow:visible;
+}
+
+.phoenix-v15 .px-export-icon.print svg {
+  width:16px;
+  height:16px;
+  display:block;
+}
