@@ -126,6 +126,61 @@ function legacyPurchasesForCard(card: { name: string }, legacy: ReturnType<typeo
   });
 }
 
+export async function readCanonicalCardStatements(userId: string, cardId: string, months: string[]) {
+  const shared = await sharedCardContext(userId);
+  const uniqueMonths = [...new Set(months)].filter((month) => /^\d{4}-(0[1-9]|1[0-2])$/.test(month)).sort();
+  if (!uniqueMonths.length) throw new CardDomainError('INVALID_STATEMENT_MONTHS');
+
+  const first = uniqueMonths[0];
+  const last = uniqueMonths[uniqueMonths.length - 1];
+  const [firstYear, firstMonth] = first.split('-').map(Number);
+  const [lastYear, lastMonth] = last.split('-').map(Number);
+  const rangeStart = new Date(Date.UTC(firstYear, firstMonth - 1, 1));
+  const rangeEnd = new Date(Date.UTC(lastYear, lastMonth, 1));
+
+  const [card, events] = await Promise.all([
+    prisma.creditCard.findFirst({
+      where: { id: cardId, userId: shared.ownerId },
+      include: {
+        purchases: {
+          where: { status: 'active' },
+          include: { entries: true, category: true },
+          orderBy: { purchaseDate: 'desc' },
+        },
+      },
+    }),
+    prisma.financialEvent.findMany({
+      where: {
+        userId: shared.ownerId,
+        archivedAt: null,
+        date: { gte: rangeStart, lt: rangeEnd },
+      },
+      orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+      include: { paymentMethod: true },
+    }),
+  ]);
+  if (!card) throw new CardDomainError('CARD_NOT_FOUND');
+
+  const aliases = new Set([
+    key(card.name),
+    ...shared.legacy.cards
+      .filter((item) => key(item.productName) === key(card.name) || key(item.paymentMethod) === key(card.name))
+      .flatMap((item) => [key(item.paymentMethod), key(item.productName)])
+      .filter(Boolean),
+  ]);
+
+  const statements = uniqueMonths.map((month) => buildCanonicalCardStatement({
+    month,
+    closingDay: card.closingDay,
+    dueDay: card.dueDay,
+    aliases,
+    events,
+    purchases: card.purchases,
+  }));
+
+  return { card, statements };
+}
+
 export async function listCards(userId: string, month: string) {
   const shared = await sharedCardContext(userId);
   const [year, monthNumber] = month.split('-').map(Number);
