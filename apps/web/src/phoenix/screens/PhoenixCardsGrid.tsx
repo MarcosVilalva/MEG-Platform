@@ -15,7 +15,7 @@ type GridSort = { key: GridKey; direction: PhoenixGridSortDirection } | null;
 type GridFilterMap = Record<GridKey, PhoenixGridFilterValue>;
 type GridRow = {
   id: string;
-  source: 'domain' | 'legacy';
+  source: 'domain' | 'legacy' | 'canonical';
   description: string;
   purchaseDate: string;
   dueDate: string;
@@ -238,7 +238,27 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     return rows.sort((a, b) => b.dueDate.localeCompare(a.dueDate) || b.purchaseDate.localeCompare(a.purchaseDate));
   }, [officialRows, legacyRows]);
 
-  const currentRows = allRows.filter((row) => row.statementMonth === data.month);
+  // A fatura atual deve usar exatamente as mesmas linhas canônicas que geram
+  // seus totais. Isso impede que o cabeçalho use signedAmount normalizado enquanto
+  // a grade ainda exibe um amount legado divergente por arredondamento ou estorno.
+  const canonicalRows = useMemo<GridRow[]>(() => selected?.statement?.month === data.month
+    ? selected.statement.lines.map((line) => ({
+        id: line.id,
+        source: 'canonical' as const,
+        description: line.description,
+        purchaseDate: line.purchaseDate || line.dueDate,
+        dueDate: line.dueDate,
+        installment: `${line.installmentNo}/${line.installmentQty}`,
+        group: line.kind === 'credit' ? 'Crédito/estorno' : 'Compra',
+        amount: Number(line.effect || 0),
+        status: line.isOpen ? 'open' : line.sourceStatus,
+        statementMonth: line.statementMonth,
+      }))
+    : [], [selected, data.month]);
+
+  const currentRows = canonicalRows.length
+    ? canonicalRows
+    : allRows.filter((row) => row.statementMonth === data.month);
   const futureRows = allRows.filter((row) => row.statementMonth > data.month && isOpenStatus(row.status));
   const currentOpen = currentRows.filter((row) => isOpenStatus(row.status) && !isCancelledStatus(row.status));
   const next = nextMonth(data.month);
