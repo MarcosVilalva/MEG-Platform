@@ -521,6 +521,15 @@
   border-width:0 0 1px;
 }
 
+.px-movements-v15 .px-grid-active-filters.is-empty {
+  min-height:0;
+  max-height:0;
+  height:0;
+  padding:0;
+  border:0;
+  overflow:hidden;
+}
+
 .px-movements-v15 .px-table-scroll {
   width:100%;
   min-width:0;
