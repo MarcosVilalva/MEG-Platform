@@ -228,3 +228,37 @@
     min-height:40px;
   }
 }
+
+
+/* Prévia visual de cartão: arte clara ou fotografia nunca pode apagar o texto. */
+.phoenix-v15 .px-card-management-preview {
+  isolation:isolate;
+  border:1px solid color-mix(in srgb,#fff 24%,transparent);
+}
+.phoenix-v15 .px-card-management-preview::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(0,0,0,.10) 0%,rgba(0,0,0,.08) 45%,rgba(0,0,0,.48) 100%);
+}
+.phoenix-v15 .px-card-management-preview > img { z-index:-1; }
+.phoenix-v15 .px-card-management-preview > strong,
+.phoenix-v15 .px-card-management-preview > span {
+  z-index:1;
+  color:#fff;
+  text-shadow:0 1px 3px rgba(0,0,0,.78);
+}
+
+/* Ações do detalhe de compra usadas no exemplo Alterar/Cancelar. */
+.phoenix-v15 [data-card-domain-edit] {
+  background:var(--brand2);
+  border-color:var(--brand2);
+  color:#fff;
+  font-weight:900;
+}
+.phoenix-v15 [data-card-domain-cancel] {
+  background:var(--px-danger-surface)!important;
+  color:var(--px-danger-strong)!important;
+}
