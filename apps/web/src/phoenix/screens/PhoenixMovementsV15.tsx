@@ -283,7 +283,7 @@ const gridLabels: Record<GridKey, string> = {
   paymentMethod: 'Forma de pagamento', status: 'Situação', modality: 'Modalidade'
 };
 
-type MovementIconName = 'search' | 'filters' | 'calendar' | 'wallet' | 'income' | 'expense' | 'result' | 'close' | 'chevronLeft' | 'chevronRight' | 'chevronsLeft' | 'chevronsRight' | 'expand' | 'collapse';
+type MovementIconName = 'search' | 'filters' | 'calendar' | 'wallet' | 'income' | 'expense' | 'result' | 'warning' | 'close' | 'chevronLeft' | 'chevronRight' | 'chevronsLeft' | 'chevronsRight' | 'expand' | 'collapse';
 
 function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: number }) {
   const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
@@ -294,6 +294,7 @@ function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: numb
   if (name === 'income') return <svg {...common}><path d="M12 19V5M7 10l5-5 5 5"/></svg>;
   if (name === 'expense') return <svg {...common}><path d="M12 5v14M7 14l5 5 5-5"/></svg>;
   if (name === 'result') return <svg {...common}><path d="M5 19V9M10 19V5M15 19v-7M20 19V7"/></svg>;
+  if (name === 'warning') return <svg {...common}><path d="M10.3 4.2 2.7 17.3A2 2 0 0 0 4.4 20h15.2a2 2 0 0 0 1.7-2.7L13.7 4.2a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 16.5h.01"/></svg>;
   if (name === 'close') return <svg {...common}><path d="m7 7 10 10M17 7 7 17"/></svg>;
   if (name === 'chevronLeft') return <svg {...common}><path d="m15 18-6-6 6-6"/></svg>;
   if (name === 'chevronRight') return <svg {...common}><path d="m9 18 6-6-6-6"/></svg>;
@@ -316,6 +317,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const [gridFilters, setGridFilters] = useState<GridFilterMap>(initialGridFilters);
   const [gridSort, setGridSort] = useState<GridSort>(null);
   const [launchOpen, setLaunchOpen] = useState(false);
+  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const [detailEvent, setDetailEvent] = useState<FinancialEvent | null>(null);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
@@ -554,12 +556,13 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      if (detailEvent) setDetailEvent(null);
+      if (discardConfirmOpen) setDiscardConfirmOpen(false);
+      else if (detailEvent) setDetailEvent(null);
       else if (launchOpen) requestCloseLaunch();
     };
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
-  }, [detailEvent, launchOpen, dirty]);
+  }, [detailEvent, launchOpen, dirty, discardConfirmOpen]);
 
   function markRecentlyUpdated(eventId: string) {
     if (recentTimerRef.current !== null) window.clearTimeout(recentTimerRef.current);
@@ -603,6 +606,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setEditingEventId(null);
     setSavingEdit(false);
     setEditMessage('');
+    setDiscardConfirmOpen(false);
   }
 
   function openLaunch(event?: FinancialEvent) {
@@ -636,7 +640,16 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   }
 
   function requestCloseLaunch() {
-    if (dirty && !window.confirm('Descartar alterações ainda não gravadas neste lançamento?')) return;
+    if (dirty) {
+      setDiscardConfirmOpen(true);
+      return;
+    }
+    setLaunchOpen(false);
+    resetLaunch();
+  }
+
+  function discardLaunchChanges() {
+    setDiscardConfirmOpen(false);
     setLaunchOpen(false);
     resetLaunch();
   }
@@ -825,7 +838,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           </> : null}
         </div>
         <div className="px-pagination-options">
-          <label><span>Registros</span><select value={pageSize} disabled={expandedList} onChange={(event) => setPageSize(Number(event.target.value))}>{[10,20,30,50,100].map((size) => <option key={size} value={size}>{size} por página</option>)}</select></label>
+          <label><span>Registros</span><select value={expandedList ? 'all' : String(pageSize)} onChange={(event) => { const value = event.target.value; if (value === 'all') { setExpandedList(true); setPage(1); } else { setExpandedList(false); setPageSize(Number(value)); setPage(1); } }}>{[10,20,30,50,100].map((size) => <option key={size} value={String(size)}>{size} por página</option>)}<option value="all">Todos</option></select></label>
           <button className={expandedList ? 'active' : ''} type="button" aria-label={expandedList ? 'Voltar à paginação' : 'Expandir todos os registros na tabela'} data-tooltip={expandedList ? 'Voltar à paginação' : 'Expandir lista'} onClick={() => setExpandedList((value) => !value)}>{expandedList ? <MovementIcon name="collapse" size={16} /> : <MovementIcon name="expand" size={16} />}</button>
         </div>
       </footer>
@@ -916,6 +929,23 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
         </div>
       </aside>
     </> : null}
+
+    {discardConfirmOpen ? <div className="px-meg-confirm-overlay">
+      <button className="px-meg-confirm-backdrop" type="button" aria-label="Continuar editando" onClick={() => setDiscardConfirmOpen(false)} />
+      <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-discard-title" aria-describedby="px-discard-copy">
+        <div className="px-meg-confirm-icon"><MovementIcon name="warning" size={22} /></div>
+        <div className="px-meg-confirm-copy">
+          <span className="px-kicker">Alterações não salvas</span>
+          <h3 id="px-discard-title">Descartar alterações?</h3>
+          <p id="px-discard-copy">As mudanças deste lançamento ainda não foram gravadas. Você pode continuar editando ou descartá-las.</p>
+        </div>
+        <button className="px-meg-confirm-close" type="button" aria-label="Continuar editando" onClick={() => setDiscardConfirmOpen(false)}><MovementIcon name="close" size={16} /></button>
+        <div className="px-meg-confirm-actions">
+          <button className="px-meg-confirm-secondary" type="button" onClick={() => setDiscardConfirmOpen(false)}>Continuar editando</button>
+          <button className="px-meg-confirm-danger" type="button" onClick={discardLaunchChanges}>Descartar alterações</button>
+        </div>
+      </section>
+    </div> : null}
 
     {detailEvent ? <aside className="px-detail-drawer open" aria-label="Detalhes do lançamento">
       <div className="px-drawer-head"><div><span className="px-kicker">Lançamento</span><h2>Detalhes</h2></div><button className="px-icon-btn" type="button" onClick={() => setDetailEvent(null)}>×</button></div>
