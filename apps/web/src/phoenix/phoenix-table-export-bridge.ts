@@ -11,6 +11,20 @@ const TOOLBAR_CLASS = 'px-table-export';
 const MANAGED_ATTR = 'data-meg-export-ready';
 const ignoredHeader = /^(ações?|detalhes?|selecionar|opções?)$/i;
 
+type PhoenixExportRegistryWindow = Window & {
+  __MEG_PHOENIX_EXPORT_DATA__?: Record<string, { rows: Array<Record<string, string>> }>;
+};
+
+function sourceRows(table: HTMLTableElement, headerRow: HTMLTableRowElement, indexes: number[]) {
+  const key = table.dataset.megExportSource || '';
+  if (!key) return null;
+  const source = (window as PhoenixExportRegistryWindow).__MEG_PHOENIX_EXPORT_DATA__?.[key];
+  if (!source?.rows?.length) return null;
+  const columnKeys = indexes.map((index) => (headerRow.cells[index] as HTMLElement | undefined)?.dataset.col || '');
+  if (columnKeys.some((column) => !column)) return null;
+  return source.rows.map((row) => columnKeys.map((column) => String(row[column] ?? '')));
+}
+
 function textOf(element: Element | null | undefined) {
   return String(element?.textContent || '').replace(/\s+/g, ' ').trim();
 }
@@ -145,7 +159,7 @@ function extractReport(table: HTMLTableElement): PhoenixExportReport | null {
   });
   const headers = indexes.map((index) => rawHeaders[index] || `Coluna ${index + 1}`);
   const bodyRows = [...table.tBodies].flatMap((body) => [...body.rows]).filter(isVisibleRow);
-  const rows = bodyRows.map((row) => indexes.map((index) => {
+  const rows = sourceRows(table, headerRow, indexes) || bodyRows.map((row) => indexes.map((index) => {
     const cell = row.cells[index];
     return cell ? cleanedCellText(cell) : '';
   }));
@@ -194,10 +208,13 @@ function printIcon() {
 }
 
 function updateToolbar(table: HTMLTableElement, toolbar: HTMLElement) {
-  const rows = [...table.tBodies].flatMap((body) => [...body.rows]).filter(isVisibleRow);
+  const headerRow = table.tHead?.rows[table.tHead.rows.length - 1];
+  const rawCount = table.dataset.megExportSource
+    ? (window as PhoenixExportRegistryWindow).__MEG_PHOENIX_EXPORT_DATA__?.[table.dataset.megExportSource]?.rows.length || 0
+    : [...table.tBodies].flatMap((body) => [...body.rows]).filter(isVisibleRow).length;
   const count = toolbar.querySelector<HTMLElement>('.px-export-count');
-  if (count) count.textContent = `${rows.length} registro${rows.length === 1 ? '' : 's'}`;
-  toolbar.querySelectorAll<HTMLButtonElement>('button').forEach((button) => { button.disabled = !rows.length; });
+  if (count) count.textContent = `${rawCount} registro${rawCount === 1 ? '' : 's'}`;
+  toolbar.querySelectorAll<HTMLButtonElement>('button').forEach((button) => { button.disabled = !headerRow || !rawCount; });
 }
 
 function attach(table: HTMLTableElement) {
@@ -234,7 +251,7 @@ function attach(table: HTMLTableElement) {
       <span class="px-export-count">0 registros</span>
     </div>
     <div class="px-export-actions">
-      <button class="px-export-button excel" type="button" title="Exportar para Excel com filtros e totais" aria-label="Exportar tabela para Excel">
+      <button class="px-export-button excel" type="button" title="Exportar para Excel no formato de relatório" aria-label="Exportar tabela para Excel">
         ${excelIcon()}<span>Excel</span>
       </button>
       <button class="px-export-button pdf" type="button" title="Exportar relatório em PDF" aria-label="Exportar tabela para PDF">
