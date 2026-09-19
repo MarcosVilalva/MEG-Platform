@@ -14,6 +14,7 @@ const launchDynamicCss = readFileSync(new URL('./phoenix-launch-dynamic.css', im
 const launchWriteControl = readFileSync(new URL('./components/PhoenixLaunchWriteControl.tsx', import.meta.url), 'utf8');
 const bulkEventUxEnhancements = readFileSync(new URL('./bulk-event-ux-enhancements.ts', import.meta.url), 'utf8');
 const homeDashboard = readFileSync(new URL('./screens/PhoenixHomeDashboard.tsx', import.meta.url), 'utf8');
+const homeNowCss = readFileSync(new URL('./phoenix-home-now.css', import.meta.url), 'utf8');
 const homeAllTime = readFileSync(new URL('./screens/PhoenixHomeAllTime.tsx', import.meta.url), 'utf8');
 const homePeriodSummary = readFileSync(new URL('./home-period-summary.ts', import.meta.url), 'utf8');
 const webScreens = readFileSync(new URL('./screens/PhoenixWebScreens.tsx', import.meta.url), 'utf8');
@@ -224,12 +225,12 @@ assert.doesNotMatch(movementScreen, /Os campos marcados com \* são obrigatório
 assert.doesNotMatch(movementScreen, /method\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/,
   'Tela de Lançamentos não deve incorporar requisições de escrita diretamente');
 
-assert.match(homeDashboard, /Últimos 20 eventos/,
-  'Home corrente deve manter feed recente rolável em vez de depender apenas da auditoria nova');
+assert.match(homeDashboard, /Última atividade/,
+  'Home corrente deve preservar uma leitura resumida da atividade financeira recente.');
 assert.match(homeDashboard, /data\.activities/,
   'Home deve usar o histórico legado como compatibilidade quando necessário');
-assert.match(homeDashboard, /Vencimentos de/,
-  'Agenda da Home deve listar o período selecionado por vencimento');
+assert.match(homeDashboard, /Prioridades de agora/,
+  'Agenda da Home deve priorizar compromissos acionáveis do período.');
 assert.match(homeDashboard, /Fatura \$\{item\.cardLabel/,
   'Cartões devem ser agrupados por identidade e vencimento na agenda');
 assert.match(homeDashboard, /px-home-drawer/,
@@ -292,6 +293,21 @@ assert.match(styles, /\.px-user-chevron\s*\{\s*display:none!important;/,
   'Topbar não deve exibir chevron sem menu de perfil funcional');
 assert.match(styles, /\.px-home-scroll-list/,
   'Agenda e histórico da Home devem possuir rolagem interna controlada');
+assert.match(homeDashboard, /data-home-layout="premium-v1"/,
+  'Home deve expor o marcador do cockpit premium.');
+assert.match(homeDashboard, /Seu dinheiro, agora/,
+  'Home deve abrir com uma leitura executiva e imediata.');
+assert.match(homeDashboard, /Saldo disponível/);
+assert.match(homeDashboard, /Pendências abertas/);
+assert.match(homeDashboard, /Próximos 7 dias/);
+assert.match(homeDashboard, /A receber/);
+assert.match(homeDashboard, /Resumo executivo/);
+assert.match(homeNowCss, /grid-template-rows:72px 82px 68px minmax\(0,1fr\)/,
+  'Home desktop deve distribuir hero, KPIs, prioridade e workspace em faixas explícitas.');
+assert.match(homeNowCss, /\.px-home-priority-list[\s\S]*overflow-y:auto/,
+  'Lista de prioridades deve concentrar a rolagem operacional.');
+assert.match(homeNowCss, /\.phoenix-v15 \.px-main-home[\s\S]*height:100dvh/,
+  'Home deve operar como cockpit fixo no desktop.');
 assert.doesNotMatch(styles, /@import/,
   'Contrato Phoenix deve ser autocontido e não importar CSS legado');
 

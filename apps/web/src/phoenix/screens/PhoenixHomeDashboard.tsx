@@ -140,6 +140,24 @@ function statusForDate(dueDate: string, today: string) {
   return 'PRÓXIMO';
 }
 
+
+type HomeGlyphKind = 'home' | 'wallet' | 'pending' | 'calendar' | 'receive' | 'alert' | 'income' | 'expense' | 'benefit' | 'history' | 'launch' | 'decision';
+
+function HomeGlyph({ kind }: { kind: HomeGlyphKind }) {
+  if (kind === 'wallet') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2h11" /><path d="M15 12h5v4h-5a2 2 0 0 1 0-4Z" /></svg>;
+  if (kind === 'pending') return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /><path d="M5.8 4.8 4 6.6" /></svg>;
+  if (kind === 'calendar') return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2.4" /><path d="M8 3.8v4M16 3.8v4M4 9.5h16" /><path d="M8 13h3M13 13h3M8 16h3" /></svg>;
+  if (kind === 'receive') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11" /><path d="m8 10 4 4 4-4" /><path d="M5 17.5h14v3H5z" /></svg>;
+  if (kind === 'alert') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 21 19H3L12 3.5Z" /><path d="M12 8.5v5" /><circle cx="12" cy="16.5" r=".8" /></svg>;
+  if (kind === 'income') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17 11 11l3.5 3.5L20 9" /><path d="M15 9h5v5" /></svg>;
+  if (kind === 'expense') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7 11 13l3.5-3.5L20 15" /><path d="M15 15h5v-5" /></svg>;
+  if (kind === 'benefit') return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="2.5" /><path d="M7 10h6M7 14h3" /></svg>;
+  if (kind === 'history') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6" /><path d="M4 4v4.6h4.6" /><path d="M12 7.5V12l3 2" /></svg>;
+  if (kind === 'launch') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
+  if (kind === 'decision') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 12 12 21 4 12 12 3Z" /><path d="M9 12h6" /></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V20h-5v-5H9v5H4v-8.5Z" /></svg>;
+}
+
 function eventIsActive(status: unknown) {
   return !['archived', 'arquivado', 'cancelled', 'canceled', 'cancelado'].includes(normalize(status));
 }
@@ -236,7 +254,7 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
   const agendaRows = useMemo(() => agendaDisplayGroups(agenda.items), [agenda.items]);
   const alerts = useMemo(() => buildIntelligentAlerts(data, month), [data, month]);
   const feed = useMemo(() => historyFeed(data), [data]);
-  const visibleAgenda = agendaRows.slice(0, 5);
+  const visibleAgenda = agendaRows.slice(0, 4);
   const hiddenAgendaCount = Math.max(0, agendaRows.length - visibleAgenda.length);
   const [detail, setDetail] = useState<AgendaDisplayGroup | null>(null);
   const [detailSelected, setDetailSelected] = useState<Set<string>>(() => new Set());
@@ -245,6 +263,9 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
   const realizedBalance = data.summary.availableBalance + data.summary.realizedResult;
   const freeAfterCommitments = realizedBalance - pendingAmount;
   const consolidatedRealized = realizedBalance + data.summary.benefitBalance;
+  const openReceivables = data.receivables.filter((item) => item.status !== 'paid' && Number(item.openAmount || 0) > 0);
+  const openReceivableAmount = openReceivables.reduce((sum, item) => sum + Number(item.openAmount || 0), 0);
+  const latestActivity = feed[0] || null;
   const nextDue = agendaRows.find((item) => item.dueDate >= today) || agendaRows[0];
   const coverageRaw = pendingAmount > 0 ? (realizedBalance / pendingAmount) * 100 : 100;
   const coverageBar = Math.max(0, Math.min(100, coverageRaw));
@@ -317,82 +338,96 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
   }
 
   return <>
-    <div className="px-page-head">
-      <div>
-        <span className="px-kicker">Visão geral</span>
-        <h1>{monthLabel(month)}</h1>
-        <p>O essencial para decidir o que fazer agora, sem repetir análises que pertencem às outras áreas.</p>
-        <span className="px-updated">Atualizado agora · {data.normalization.primary && data.normalization.reconciled ? 'dados sincronizados' : 'integridade em verificação'}</span>
-      </div>
-    </div>
-
-    <section className={`px-meg-now ${megNow.kind === 'danger' ? 'is-danger' : megNow.kind === 'warning' ? 'is-warning' : ''}`} aria-label="MEG Agora">
-      <div className="px-meg-now-mark" aria-hidden="true">{megNow.kind === 'danger' ? '!' : megNow.kind === 'warning' ? '↗' : '✓'}</div>
-      <div className="px-meg-now-copy"><span>{megNow.eyebrow}</span><h2>{megNow.title}</h2><p>{megNow.text}</p></div>
-      <div className="px-meg-now-action"><strong>{megNow.metric}</strong><button type="button" onClick={() => onNavigate(megNow.route)}>{megNow.action}</button></div>
-    </section>
-
-    <section className={`px-smart-alerts ${alerts.length ? 'has-alerts' : 'is-clear'}`} aria-label="Alertas inteligentes">
-      <div className="px-smart-alerts-head">
-        <span className="px-smart-alerts-mark" aria-hidden="true">{alerts.length ? '!' : '✓'}</span>
-        <div><span>Monitoramento inteligente</span><strong>{alerts.length ? `MEG detectou ${alerts.length} ponto(s) de atenção` : 'Nenhuma inconsistência relevante encontrada'}</strong></div>
-        <small>{alerts.length ? 'Somente exceções que merecem revisão.' : 'Duplicidades, classificação, cartões e integridade estão sem alertas.'}</small>
-      </div>
-      {alerts.length ? <div className="px-smart-alerts-list">{alerts.map((alert) => <div className={`px-smart-alert-row ${alert.level === 'danger' ? 'is-danger' : ''}`} key={alert.id}><span className="px-smart-alert-dot" /><div><strong>{alert.title}</strong><small>{alert.text}</small></div><button type="button" onClick={() => onNavigate(alert.route)}>{alert.action}</button></div>)}</div> : null}
-    </section>
-
-    <section className="px-dashboard-grid px-home-balance-grid">
-      <article className={`px-card px-home-hero ${healthy ? 'is-healthy' : 'is-attention'}`}>
-        <div className="px-home-hero-rings" aria-hidden="true"><i /><i /><i /></div>
-        <div className="px-home-hero-primary">
-          <div className="px-home-hero-status"><span className="px-home-hero-status-dot" />{heroStatus}</div>
-          <span className="px-kicker">Saldo monetário atual</span>
-          <h2>{money.format(realizedBalance)}</h2>
-          <p>Valor efetivamente disponível agora. Receitas futuras só entram quando forem realizadas.</p>
-          <div className="px-home-coverage"><div><span>Cobertura dos compromissos</span><strong>{whole.format(coverageRaw)}%</strong></div><div className="px-home-coverage-track"><i style={{ width: `${coverageBar}%` }} /></div></div>
+    <section className="px-home-cockpit" data-home-layout="premium-v1">
+      <header className="px-home-top-hero">
+        <div className="px-home-top-main">
+          <span className="px-home-top-icon" aria-hidden="true"><HomeGlyph kind="home" /></span>
+          <div>
+            <span className="px-kicker">Início · {monthLabel(month)}</span>
+            <h1>Seu dinheiro, agora</h1>
+            <p>O que está disponível, o que exige ação e o que vem pela frente — sem ruído.</p>
+          </div>
         </div>
-
-        <div className="px-home-hero-insights">
-          <article className="px-home-insight is-free"><span>Dinheiro livre</span><strong className={freeAfterCommitments < 0 ? 'negative' : ''}>{money.format(freeAfterCommitments)}</strong><small>Saldo atual menos pendências</small></article>
-          <article className="px-home-insight is-due"><span>Próximo vencimento</span><strong>{nextDue ? money.format(nextDue.amount) : '—'}</strong><small>{nextDue ? `${shortDate(nextDue.dueDate)} · ${nextDue.title}` : 'Nenhum vencimento no período'}</small></article>
+        <div className="px-home-top-status">
+          <span className={`px-home-health ${healthy ? 'is-ok' : 'is-warning'}`}>{heroStatus}</span>
+          <span className="px-home-sync-state">{data.normalization.primary && data.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span>
         </div>
+      </header>
 
-        <div className="px-home-hero-footer">
-          <div><span>Receitas realizadas</span><strong>{money.format(data.summary.realizedIncome)}</strong></div>
-          <div><span>Despesas pagas</span><strong>{money.format(data.summary.realizedExpense)}</strong></div>
-          <div><span>Benefício disponível</span><strong>{money.format(data.summary.benefitBalance)}</strong></div>
-        </div>
-      </article>
-    </section>
+      <section className="px-home-kpis" aria-label="Indicadores principais">
+        <article className="balance"><span className="px-home-kpi-icon" aria-hidden="true"><HomeGlyph kind="wallet" /></span><div><span>Saldo disponível</span><strong>{money.format(realizedBalance)}</strong><small>Caixa monetário atual</small></div></article>
+        <article className={pendingAmount > 0 ? 'pending' : 'neutral'}><span className="px-home-kpi-icon" aria-hidden="true"><HomeGlyph kind="pending" /></span><div><span>Pendências abertas</span><strong>{money.format(pendingAmount)}</strong><small>{agendaRows.length} compromisso(s) na agenda</small></div></article>
+        <article className={nextSevenTotal > realizedBalance ? 'warning' : 'week'}><span className="px-home-kpi-icon" aria-hidden="true"><HomeGlyph kind="calendar" /></span><div><span>Próximos 7 dias</span><strong>{money.format(nextSevenTotal)}</strong><small>{nextSevenRows.length} compromisso(s) até {shortDate(sevenDayEnd)}</small></div></article>
+        <article className="receive"><span className="px-home-kpi-icon" aria-hidden="true"><HomeGlyph kind="receive" /></span><div><span>A receber</span><strong>{money.format(openReceivableAmount)}</strong><small>{openReceivables.length} título(s) em aberto</small></div></article>
+      </section>
 
-    <section className="px-bottom-grid px-home-action-grid">
-      <article className="px-card px-home-scroll-card px-home-agenda-card">
-        <div className="px-panel-head"><div><span>Prioridades</span><h2>Vencimentos de {monthLabel(month)}</h2></div><div className="px-home-panel-actions"><strong>{money.format(agenda.actionableAmount)}</strong><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Abrir Pendentes</button></div></div>
-        <div className="px-home-scroll-list">
-          {visibleAgenda.map((group) => {
-            const status = statusForDate(group.dueDate, today);
-            return <div className="px-dashboard-row px-home-agenda-row" key={group.key}><div className={`px-home-due-date ${status === 'VENCIDO' ? 'danger' : status === 'HOJE' ? 'today' : ''}`}><strong>{shortDate(group.dueDate)}</strong><small>{status}</small></div><div className="px-dashboard-row-copy"><strong>{group.title}</strong><small>{group.items.length > 1 ? `${group.items.length} lançamentos agrupados · ` : ''}{group.subtitle}</small></div><strong className="px-home-row-value">{money.format(group.amount)}</strong><button className="px-dashboard-row-action" type="button" onClick={() => openDetail(group)}>Detalhes</button></div>;
-          })}
-          {!visibleAgenda.length ? <div className="px-home-empty-state"><strong>Nenhum vencimento acionável</strong><span>Não há compromissos em aberto no período selecionado.</span></div> : null}
-        </div>
-        {hiddenAgendaCount ? <div className="px-home-panel-actions"><span className="px-toolbar-note">+ {hiddenAgendaCount} compromisso(s) na agenda</span><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('payables')}>Ver todos</button></div> : null}
-      </article>
-    </section>
+      <section className={`px-home-priority-strip ${megNow.kind === 'danger' ? 'is-danger' : megNow.kind === 'warning' ? 'is-warning' : 'is-ok'}`} aria-label="Prioridade do momento">
+        <span className="px-home-priority-icon" aria-hidden="true"><HomeGlyph kind={megNow.kind === 'ok' ? 'calendar' : 'alert'} /></span>
+        <div className="px-home-priority-copy"><span>{megNow.eyebrow}</span><strong>{megNow.title}</strong><small>{megNow.text}</small></div>
+        <div className="px-home-priority-action"><b>{megNow.metric}</b><button type="button" onClick={() => onNavigate(megNow.route)}>{megNow.action}</button></div>
+      </section>
 
-    <details className="px-home-secondary-details">
-      <summary>Mostrar detalhes históricos</summary>
-      <div className="px-home-secondary-grid">
-        <article className="px-card px-home-scroll-card">
-          <div className="px-panel-head"><div><span>Histórico recente</span><h2>Últimos 20 eventos</h2></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('history')}>Ver histórico completo</button></div>
-          <div className="px-home-scroll-list">{feed.map((item) => <div className="px-dashboard-row px-home-history-row" key={item.id}><div className="px-dashboard-row-copy"><strong>{item.title}</strong><small>{item.description}</small><small>{dateTime.format(new Date(item.at))} · {item.actor}</small></div></div>)}</div>
+      <section className="px-home-workspace">
+        <article className="px-home-priority-panel">
+          <header className="px-home-panel-head">
+            <div className="px-home-panel-title"><span className="px-home-panel-icon" aria-hidden="true"><HomeGlyph kind="pending" /></span><div><h2>Prioridades de agora</h2><p>Vencimentos de {monthLabel(month)} ordenados para ação rápida.</p></div></div>
+            <div className="px-home-panel-meta"><strong>{money.format(agenda.actionableAmount)}</strong><span>em compromissos</span></div>
+          </header>
+
+          <div className="px-home-priority-list">
+            {visibleAgenda.map((group) => {
+              const status = statusForDate(group.dueDate, today);
+              return <button type="button" className={`px-home-priority-row ${status === 'VENCIDO' ? 'is-danger' : status === 'HOJE' ? 'is-today' : ''}`} key={group.key} onClick={() => openDetail(group)}>
+                <span className="px-home-due-date"><strong>{shortDate(group.dueDate)}</strong><small>{status}</small></span>
+                <span className="px-home-priority-row-copy"><strong>{group.title}</strong><small>{group.items.length > 1 ? `${group.items.length} lançamentos agrupados · ` : ''}{group.subtitle}</small></span>
+                <strong className="px-home-priority-value">{money.format(group.amount)}</strong>
+                <span className="px-home-priority-chevron" aria-hidden="true">›</span>
+              </button>;
+            })}
+            {!visibleAgenda.length ? <div className="px-home-empty-state"><strong>Nenhum compromisso exige ação agora</strong><span>A agenda imediata está livre no período selecionado.</span></div> : null}
+          </div>
+
+          <footer className="px-home-panel-footer">
+            <span>{hiddenAgendaCount ? `+ ${hiddenAgendaCount} compromisso(s) fora da visão rápida` : 'Agenda rápida atualizada'}</span>
+            <button type="button" onClick={() => onNavigate('payables')}>Abrir Pendentes</button>
+          </footer>
         </article>
-        <article className="px-card px-home-secondary-summary">
-          <div><span>Benefício alimentação · disponível</span><strong>{money.format(data.summary.benefitBalance)}</strong></div>
-          <div><span>Consolidado realizado</span><strong>{money.format(consolidatedRealized)}</strong></div>
-          <small>Informações históricas permanecem disponíveis, mas recolhidas para não competir com a ação do dia.</small>
-        </article>
-      </div>
-    </details>
+
+        <aside className="px-home-executive-panel">
+          <header className="px-home-panel-head">
+            <div className="px-home-panel-title"><span className="px-home-panel-icon" aria-hidden="true"><HomeGlyph kind="wallet" /></span><div><h2>Resumo executivo</h2><p>Leitura curta para decidir sem abrir outro módulo.</p></div></div>
+            <span className={`px-home-signal-chip ${alerts.length ? 'has-alerts' : ''}`}>{alerts.length ? `${alerts.length} sinal(is)` : 'Sem alertas'}</span>
+          </header>
+
+          <div className="px-home-executive-balance">
+            <div><span>Dinheiro livre após compromissos</span><strong className={freeAfterCommitments < 0 ? 'negative' : ''}>{money.format(freeAfterCommitments)}</strong><small>{healthy ? 'Caixa cobre as pendências cadastradas.' : 'Pendências superam o caixa disponível.'}</small></div>
+            <div className="px-home-coverage"><div><span>Cobertura</span><strong>{whole.format(coverageRaw)}%</strong></div><div className="px-home-coverage-track"><i style={{ width: `${coverageBar}%` }} /></div></div>
+          </div>
+
+          <div className="px-home-executive-metrics">
+            <div><span className="px-home-mini-icon income" aria-hidden="true"><HomeGlyph kind="income" /></span><div><small>Receitas realizadas</small><strong>{money.format(data.summary.realizedIncome)}</strong></div></div>
+            <div><span className="px-home-mini-icon expense" aria-hidden="true"><HomeGlyph kind="expense" /></span><div><small>Despesas pagas</small><strong>{money.format(data.summary.realizedExpense)}</strong></div></div>
+            <div><span className="px-home-mini-icon benefit" aria-hidden="true"><HomeGlyph kind="benefit" /></span><div><small>Benefício alimentação · disponível</small><strong>{money.format(data.summary.benefitBalance)}</strong></div></div>
+            <div><span className="px-home-mini-icon total" aria-hidden="true"><HomeGlyph kind="wallet" /></span><div><small>Consolidado realizado</small><strong>{money.format(consolidatedRealized)}</strong></div></div>
+          </div>
+
+          {alerts[0] ? <button type="button" className={`px-home-smart-signal ${alerts[0].level === 'danger' ? 'is-danger' : ''}`} onClick={() => onNavigate(alerts[0].route)}>
+            <span aria-hidden="true"><HomeGlyph kind="alert" /></span><div><small>Sinal inteligente</small><strong>{alerts[0].title}</strong><p>{alerts[0].text}</p></div><b>Revisar</b>
+          </button> : <div className="px-home-smart-signal is-clear"><span aria-hidden="true">✓</span><div><small>Sinal inteligente</small><strong>Nenhuma inconsistência relevante</strong><p>Duplicidades, classificação, cartões e integridade estão sem alertas.</p></div></div>}
+
+          {latestActivity ? <button type="button" className="px-home-last-activity" onClick={() => onNavigate('history')}>
+            <span className="px-home-mini-icon" aria-hidden="true"><HomeGlyph kind="history" /></span><div><small>Última atividade</small><strong>{latestActivity.title}</strong><p>{latestActivity.description} · {dateTime.format(new Date(latestActivity.at))}</p></div><b>Histórico</b>
+          </button> : null}
+
+          <div className="px-home-quick-actions" aria-label="Ações rápidas">
+            <button type="button" onClick={() => onNavigate('movements')}><HomeGlyph kind="launch" /><span>Lançamentos</span></button>
+            <button type="button" onClick={() => onNavigate('payables')}><HomeGlyph kind="pending" /><span>Pendentes</span></button>
+            <button type="button" onClick={() => onNavigate('history')}><HomeGlyph kind="history" /><span>Histórico</span></button>
+            <button type="button" onClick={() => onNavigate('decisions')}><HomeGlyph kind="decision" /><span>Decisões</span></button>
+          </div>
+        </aside>
+      </section>
+    </section>
 
     {detail ? <div className="px-home-drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>
       <aside className="px-home-drawer" role="dialog" aria-modal="true" aria-label={`Detalhes de ${detail.title}`}>
@@ -403,4 +438,5 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
       </aside>
     </div> : null}
   </>;
+
 }
