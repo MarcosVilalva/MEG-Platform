@@ -18,7 +18,9 @@ const xmlEscapeMap: Record<string, string> = {
 };
 
 function xml(value: unknown) {
-  return String(value ?? '').replace(/[&<>"']/g, (char) => xmlEscapeMap[char]);
+  return String(value ?? '')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '')
+    .replace(/[&<>"']/g, (char) => xmlEscapeMap[char]);
 }
 
 function fileSafe(value: string) {
@@ -106,7 +108,7 @@ function excelStyles() {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <numFmts count="2">
-    <numFmt numFmtId="164" formatCode="[$R$-pt-BR] #,##0.00;[Red]-[$R$-pt-BR] #,##0.00"/>
+    <numFmt numFmtId="164" formatCode="R$ #,##0.00;[Red]-R$ #,##0.00"/>
     <numFmt numFmtId="165" formatCode="dd/mm/yyyy"/>
   </numFmts>
   <fonts count="4">
@@ -208,27 +210,7 @@ function buildWorksheet(report: PhoenixExportReport) {
   <sheetData>${rows.join('')}</sheetData>
   <mergeCells count="2">${mergeRefs}</mergeCells>
   <autoFilter ref="A${headerRow}:${lastCol}${lastDataRow}"/>
-  <tableParts count="1"><tablePart r:id="rId1"/></tableParts>
 </worksheet>`;
-}
-
-function buildTableXml(report: PhoenixExportReport) {
-  const headers = uniqueHeaders(report.headers);
-  const headerRow = 8;
-  const firstDataRow = 9;
-  const totalRow = firstDataRow + report.rows.length;
-  const lastCol = columnName(headers.length - 1);
-  const tableColumns = headers.map((header, index) => {
-    if (index === 0) return `<tableColumn id="${index + 1}" name="${xml(header)}" totalsRowLabel="TOTAL"/>`;
-    const totals = report.sums[index] !== null ? ' totalsRowFunction="sum"' : '';
-    return `<tableColumn id="${index + 1}" name="${xml(header)}"${totals}/>`;
-  }).join('');
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<table xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" id="1" name="TabelaMEG" displayName="TabelaMEG" ref="A${headerRow}:${lastCol}${totalRow}" totalsRowShown="1">
-  <autoFilter ref="A${headerRow}:${lastCol}${Math.max(headerRow, totalRow - 1)}"/>
-  <tableColumns count="${headers.length}">${tableColumns}</tableColumns>
-  <tableStyleInfo name="TableStyleMedium4" showFirstColumn="0" showLastColumn="0" showRowStripes="1" showColumnStripes="0"/>
-</table>`;
 }
 
 type ZipEntry = { name: string; data: Uint8Array };
@@ -312,7 +294,6 @@ function zipStore(entries: ZipEntry[]) {
 export function buildPhoenixXlsx(report: PhoenixExportReport) {
   const encoder = new TextEncoder();
   const worksheet = buildWorksheet(report);
-  const table = buildTableXml(report);
   const entries: ZipEntry[] = [
     { name: '[Content_Types].xml', data: encoder.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -321,7 +302,6 @@ export function buildPhoenixXlsx(report: PhoenixExportReport) {
   <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
   <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
   <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
-  <Override PartName="/xl/tables/table1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"/>
   <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
   <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
 </Types>`) },
@@ -348,12 +328,7 @@ export function buildPhoenixXlsx(report: PhoenixExportReport) {
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 </Relationships>`) },
     { name: 'xl/styles.xml', data: encoder.encode(excelStyles()) },
-    { name: 'xl/worksheets/sheet1.xml', data: encoder.encode(worksheet) },
-    { name: 'xl/worksheets/_rels/sheet1.xml.rels', data: encoder.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/table" Target="../tables/table1.xml"/>
-</Relationships>`) },
-    { name: 'xl/tables/table1.xml', data: encoder.encode(table) }
+    { name: 'xl/worksheets/sheet1.xml', data: encoder.encode(worksheet) }
   ];
   return zipStore(entries);
 }
