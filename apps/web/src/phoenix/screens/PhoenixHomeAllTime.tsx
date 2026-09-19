@@ -38,6 +38,7 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   const periodClosing = periodContext?.closingBalance ?? Number(data.cashflow.realizedClosing || 0);
   const currentRealBalance = periodContext?.currentRealBalance ?? summary.currentMonetaryBalance;
   const periodResult = periodClosing - periodOpening;
+  const displayedResult = isAll ? summary.realizedResult : periodResult;
   const variationToToday = currentRealBalance - periodClosing;
   const freePositive = summary.freeAfterCommitments >= 0;
   const projectionPositive = summary.projectedAfterPlanned >= 0;
@@ -78,7 +79,7 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
             <b aria-hidden="true">−</b>
             <div className="expense"><span>Despesas realizadas</span><strong>{money.format(summary.realizedExpense)}</strong></div>
             <b aria-hidden="true">=</b>
-            <div className={`result ${signedClass(summary.realizedResult)}`}><span>Resultado do período</span><strong>{summary.realizedResult > 0 ? '+' : ''}{money.format(summary.realizedResult)}</strong></div>
+            <div className={`result ${signedClass(displayedResult)}`}><span>Resultado do período</span><strong>{displayedResult > 0 ? '+' : ''}{money.format(displayedResult)}</strong></div>
           </div>
         </div>
       </article>
