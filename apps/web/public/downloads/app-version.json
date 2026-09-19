@@ -1,9 +1,9 @@
 {
-  "versionCode": 295,
-  "versionName": "1.1.295",
+  "versionCode": 296,
+  "versionName": "1.1.296",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "7a0c35c5f72fcca120433ad3e74d26cd6783475edd677dc55c91088cb25bd0b8",
+  "sha256": "3d13c1cae832da607cbe8847038558e475dc0f11857ffa7c482c16a02aa2f9b8",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Cartões V6: reconstrução visual fiel aos mockups aprovados"
+  "releaseNotes": "Cartões V6.1: dados reais no modal, ESC-only e RWD legível"
 }
