@@ -934,3 +934,185 @@
     margin-left:0;
   }
 }
+
+
+/* Fechamento do workspace: o rodapé acompanha a última linha quando houver espaço.
+   Se a grade exceder o viewport, somente o corpo da tabela rola. */
+@media (min-width:761px) {
+  .px-movements-v15 > .px-table-card {
+    display:flex;
+    flex-direction:column;
+    align-self:start;
+    height:auto;
+    max-height:100%;
+    overflow:hidden;
+  }
+
+  .px-movements-v15 .px-table-toolbar-shell,
+  .px-movements-v15 .px-grid-active-filters,
+  .px-movements-v15 .px-table-pagination {
+    flex:0 0 auto;
+  }
+
+  .px-movements-v15 .px-table-scroll {
+    flex:1 1 auto;
+    width:100%;
+    height:auto;
+    min-height:0;
+    max-height:none;
+    overflow:auto;
+  }
+}
+
+/* Confirmação MEG — substitui alertas nativos do navegador no lançamento. */
+.px-meg-confirm-overlay {
+  position:fixed;
+  inset:0;
+  z-index:3200;
+  display:grid;
+  place-items:center;
+  padding:18px;
+}
+
+.px-meg-confirm-backdrop {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  border:0;
+  background:rgba(1,9,7,.7);
+  backdrop-filter:blur(4px);
+  cursor:default;
+}
+
+.px-meg-confirm-dialog {
+  position:relative;
+  z-index:1;
+  width:min(470px,calc(100vw - 36px));
+  max-height:calc(100dvh - 36px);
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr) 32px;
+  gap:12px;
+  align-items:start;
+  padding:18px;
+  overflow:auto;
+  border:1px solid color-mix(in srgb,var(--danger) 28%,var(--line));
+  border-radius:16px;
+  background:
+    linear-gradient(145deg,color-mix(in srgb,var(--panel) 96%,var(--danger) 4%),var(--panel));
+  color:var(--ink);
+  box-shadow:0 26px 80px rgba(0,0,0,.48);
+}
+
+.px-meg-confirm-icon {
+  width:46px;
+  height:46px;
+  display:grid;
+  place-items:center;
+  border:1px solid color-mix(in srgb,var(--danger) 32%,var(--line));
+  border-radius:13px;
+  background:color-mix(in srgb,var(--danger) 10%,var(--panel2));
+  color:var(--danger);
+}
+
+.px-meg-confirm-copy {
+  min-width:0;
+}
+
+.px-meg-confirm-copy .px-kicker {
+  display:block;
+  margin:1px 0 4px;
+  color:var(--danger);
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+
+.px-meg-confirm-copy h3 {
+  margin:0 0 6px;
+  color:var(--ink);
+  font-size:19px;
+  line-height:1.08;
+  letter-spacing:-.025em;
+}
+
+.px-meg-confirm-copy p {
+  margin:0;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.5;
+}
+
+.px-meg-confirm-close {
+  width:31px;
+  height:31px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--panel2);
+  color:var(--muted);
+}
+
+.px-meg-confirm-close:hover {
+  border-color:color-mix(in srgb,var(--brand) 38%,var(--line));
+  color:var(--ink);
+}
+
+.px-meg-confirm-actions {
+  grid-column:1 / -1;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  padding-top:4px;
+}
+
+.px-meg-confirm-actions button {
+  min-height:37px;
+  padding:0 13px;
+  border-radius:10px;
+  font-size:9px;
+  font-weight:900;
+}
+
+.px-meg-confirm-secondary {
+  border:1px solid var(--line);
+  background:var(--panel2);
+  color:var(--ink);
+}
+
+.px-meg-confirm-danger {
+  border:1px solid color-mix(in srgb,var(--danger) 48%,var(--line));
+  background:color-mix(in srgb,var(--danger) 14%,var(--panel2));
+  color:var(--danger);
+}
+
+.px-meg-confirm-danger:hover {
+  background:color-mix(in srgb,var(--danger) 20%,var(--panel2));
+}
+
+@media (max-width:520px) {
+  .px-meg-confirm-overlay {
+    padding:10px;
+  }
+  .px-meg-confirm-dialog {
+    width:calc(100vw - 20px);
+    max-height:calc(100dvh - 20px);
+    grid-template-columns:40px minmax(0,1fr) 30px;
+    padding:14px;
+  }
+  .px-meg-confirm-icon {
+    width:38px;
+    height:38px;
+  }
+  .px-meg-confirm-actions {
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .px-meg-confirm-actions button {
+    width:100%;
+  }
+}
