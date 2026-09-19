@@ -83,28 +83,28 @@ export function resolvePhoenixCardIdentity(card: CreditCard): PhoenixCardIdentit
     return {
       key: 'latam', label: 'LATAM PASS', miniLabel: 'LATAM',
       background: 'linear-gradient(145deg,#756d62,#403a34)',
-      artwork: 'assets/cards/latam-pass-platinum.webp', brandAsset: asset
+      artwork: 'assets/cards/approved-v6/latam.webp', brandAsset: asset
     };
   }
   if (combined.includes('MERCADO LIVRE') || combined.includes('MERCADO PAGO') || /(^|\s)MELI(\s|$)/.test(combined) || /(^|\s)ML(\s|$)/.test(combined)) {
     return {
       key: 'mercado', label: 'Mercado Pago', miniLabel: 'MELI',
       background: 'linear-gradient(145deg,#252d3a 0%,#171d27 54%,#070a0e 100%)',
-      artwork: 'assets/cards/mercado-pago-visual.svg', brandAsset: asset || 'visa'
+      artwork: 'assets/cards/approved-v6/mercado.webp', brandAsset: asset || 'visa'
     };
   }
   if (name.includes('AZUL')) {
     return {
       key: 'azul', label: 'AZUL', miniLabel: 'AZUL',
       background: 'linear-gradient(145deg,#101a38 0%,#17264e 52%,#080e1d 100%)',
-      artwork: 'assets/cards/azul-platinum-visual.svg', brandAsset: asset || 'mastercard'
+      artwork: 'assets/cards/approved-v6/azul.webp', brandAsset: asset || 'mastercard'
     };
   }
   if (name.includes('RIACHUELO') || issuer.includes('MIDWAY')) {
     return {
       key: 'riachuelo', label: 'RIACHUELO', miniLabel: 'RIACHU',
       background: 'linear-gradient(145deg,#202124 0%,#111214 54%,#050506 100%)',
-      artwork: 'assets/cards/riachuelo-mastercard-visual.svg', brandAsset: asset || 'mastercard'
+      artwork: 'assets/cards/approved-v6/riachuelo.webp', brandAsset: asset || 'mastercard'
     };
   }
   if (combined.includes('NUBANK')) return { key: 'nubank', label: 'Nubank', miniLabel: 'NU', background: 'linear-gradient(145deg,#8a05be,#3f0458)', artwork: 'assets/cards/nubank-visual.svg', brandAsset: asset || 'mastercard' };
