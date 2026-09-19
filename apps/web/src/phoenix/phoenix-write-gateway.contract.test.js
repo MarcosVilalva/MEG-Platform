@@ -180,8 +180,8 @@ assert.match(pendingStyles, /px-pending-agenda-head[\s\S]*min-height:58px/,
   'Cabeçalho da agenda deve manter altura compacta e previsível.');
 assert.match(pendingStyles, /px-pending-date-cluster-head[\s\S]*min-height:60px/,
   'Grupos por data devem manter ritmo vertical consistente.');
-assert.equal((pendingStyles.match(/\.px-main-payables\s*\{/g) || []).length, 2,
-  'Layout canônico deve ter somente as regras desktop e mobile de px-main-payables, sem camadas históricas duplicadas.');
+assert.equal((pendingStyles.match(/\.px-main-payables\s*\{/g) || []).length, 1,
+  'Layout canônico deve ter uma única regra desktop de px-main-payables; mobile apenas neutraliza o comportamento sem duplicar a camada estrutural.');
 assert.doesNotMatch(pendingStyles, /Cockpit de Pendentes|Pendentes em modo cockpit fixo|Refinamento de composição/,
   'Arquivo de Pendentes não pode reter gerações visuais antigas concorrendo na cascata.');
 assert.doesNotMatch(pendingStyles, /\.px-pending-attention(?:\s|\{|\.)/,
