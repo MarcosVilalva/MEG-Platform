@@ -1,9 +1,9 @@
 {
-  "versionCode": 265,
-  "versionName": "1.1.265",
+  "versionCode": 266,
+  "versionName": "1.1.266",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "85ac1282d16636f874273ce2cd95e67cb24c6e3250045c5e802060ceb7f3a1d4",
+  "sha256": "11fa96e5e9b7ccf626125a38bb8c405341456282ab0114b6239155e6c536fcc0",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #281 from MarcosVilalva/feature/phoenix-toolbar-unified-final"
+  "releaseNotes": "Merge pull request #282 from MarcosVilalva/fix/phoenix-column-modal-excel-export"
 }
