@@ -1,9 +1,9 @@
 {
-  "versionCode": 285,
-  "versionName": "1.1.285",
+  "versionCode": 286,
+  "versionName": "1.1.286",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "de3bccf4c822b3b218b86494d4d7d9b51d85193db682f5dbbe43653d6c9a95cd",
+  "sha256": "225d6ef03d1d69762f04a3ef97a7a5f0db99ddd72ef5473a009bd81239660381",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #304 from MarcosVilalva/feat/history-premium-cockpit"
+  "releaseNotes": "Merge pull request #305 from MarcosVilalva/feat/home-premium-cockpit"
 }
