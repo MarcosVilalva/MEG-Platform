@@ -15,6 +15,7 @@ import '../phoenix-screens.css';
 import '../phoenix-cards-premium.css';
 import '../phoenix-cards-wow.css';
 import '../phoenix-cards-fidelity-v6.css';
+import '../phoenix-cards-responsive-v61.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
@@ -229,14 +230,38 @@ function cardAliases(card: CreditCard) {
   return [...aliases].filter(Boolean);
 }
 function transactionMatchesCard(tx: PhoenixLegacyTransaction, card: CreditCard) {
-  const method = normalize(tx.paymentMethod || tx.account);
+  const haystack = normalize([
+    tx.paymentMethod,
+    tx.account,
+    tx.modality,
+    tx.notes
+  ].filter(Boolean).join(' '));
   const name = normalize(card.name);
-  if (!method || !name) return false;
-  if (cardAliases(card).some((alias) => method === alias || method.includes(alias))) return true;
+  if (!haystack || !name) return false;
+  if (cardAliases(card).some((alias) => haystack === alias || haystack.includes(alias))) return true;
   const words = cardWords(card.name);
   if (!words.length) return false;
-  const matches = words.filter((word) => method.includes(word));
+  const matches = words.filter((word) => haystack.includes(word));
   return matches.length >= Math.min(2, words.length) || (words.length === 1 && matches.length === 1);
+}
+function meaningfulStatement(card: CreditCard) {
+  const statement = card.statement;
+  if (!statement?.month) return false;
+  return statement.lines.length > 0
+    || Math.abs(Number(statement.netAmount || 0)) > 0.005
+    || statement.status !== 'empty';
+}
+function resolveActiveCardMonth(card: CreditCard, rows: GridRow[], fallbackMonth: string) {
+  if (meaningfulStatement(card)) return card.statement!.month;
+  if (rows.some((row) => row.statementMonth === fallbackMonth)) return fallbackMonth;
+  const months = [...new Set(rows.map((row) => row.statementMonth).filter(Boolean))].sort();
+  return months.find((month) => month >= fallbackMonth) || months[months.length - 1] || fallbackMonth;
+}
+function dueDateForMonth(month: string, day: number | null | undefined) {
+  if (!day || !/^\d{4}-\d{2}$/.test(month)) return '—';
+  const [year, monthNumber] = month.split('-').map(Number);
+  const safeDay = Math.max(1, Math.min(day, new Date(Date.UTC(year, monthNumber, 0)).getUTCDate()));
+  return longDate.format(new Date(Date.UTC(year, monthNumber - 1, safeDay, 12)));
 }
 function isCredit(tx: PhoenixLegacyTransaction) {
   return normalize(`${tx.modality || ''} ${tx.paymentMethod || ''} ${tx.account || ''}`).includes('credito') || normalize(`${tx.paymentMethod || ''} ${tx.account || ''}`).includes('cartao');
@@ -335,39 +360,39 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     return rows.sort((a, b) => b.dueDate.localeCompare(a.dueDate) || b.purchaseDate.localeCompare(a.purchaseDate));
   }, [officialRows, legacyRows]);
 
-  // A fatura atual deve usar exatamente as mesmas linhas canônicas que geram
-  // seus totais. Isso impede que o cabeçalho use signedAmount normalizado enquanto
-  // a grade ainda exibe um amount legado divergente por arredondamento ou estorno.
-  const canonicalRows = useMemo<GridRow[]>(() => selected?.statement?.month === data.month
-    ? selected.statement.lines.map((line) => ({
-        id: line.id,
-        source: 'canonical' as const,
-        description: line.description,
-        purchaseDate: line.purchaseDate || line.dueDate,
-        dueDate: line.dueDate,
-        installment: `${line.installmentNo}/${line.installmentQty}`,
-        group: line.kind === 'credit' ? 'Crédito/estorno' : 'Compra',
-        amount: Number(line.effect || 0),
-        status: line.isOpen ? 'open' : line.sourceStatus,
-        statementMonth: line.statementMonth,
-      }))
-    : [], [selected, data.month]);
+  // A central segue a competência efetiva da fatura do cartão. Quando o snapshot
+  // mensal solicitado não contém linhas, usa a primeira competência real disponível
+  // daquele cartão em vez de exibir uma grade vazia artificialmente.
+  const canonicalRows = useMemo<GridRow[]>(() => selected?.statement?.lines?.map((line) => ({
+    id: line.id,
+    source: 'canonical' as const,
+    description: line.description,
+    purchaseDate: line.purchaseDate || line.dueDate,
+    dueDate: line.dueDate,
+    installment: `${line.installmentNo}/${line.installmentQty}`,
+    group: line.kind === 'credit' ? 'Crédito/estorno' : 'Compra',
+    amount: Number(line.effect || 0),
+    status: line.isOpen ? 'open' : line.sourceStatus,
+    statementMonth: line.statementMonth,
+  })) || [], [selected]);
 
-  const currentRows = canonicalRows.length
+  const currentCardMonth = selected ? resolveActiveCardMonth(selected, allRows, data.month) : data.month;
+  const currentRows = canonicalRows.length && selected?.statement?.month === currentCardMonth
     ? canonicalRows
-    : allRows.filter((row) => row.statementMonth === data.month);
-  const futureRows = allRows.filter((row) => row.statementMonth > data.month && isOpenStatus(row.status));
+    : allRows.filter((row) => row.statementMonth === currentCardMonth);
+  const futureRows = allRows.filter((row) => row.statementMonth > currentCardMonth && isOpenStatus(row.status));
   const currentOpen = currentRows.filter((row) => isOpenStatus(row.status) && !isCancelledStatus(row.status));
-  const next = nextMonth(data.month);
-  const currentStatement = selected?.statement?.month === data.month ? selected.statement.netAmount : sumRows(currentRows);
-  const currentPurchases = selected?.statement?.month === data.month
-    ? selected.statement.charges
+  const next = nextMonth(currentCardMonth);
+  const hasCanonicalCurrent = Boolean(selected && selected.statement?.month === currentCardMonth && meaningfulStatement(selected));
+  const currentStatement = hasCanonicalCurrent ? selected!.statement!.netAmount : sumRows(currentRows);
+  const currentPurchases = hasCanonicalCurrent
+    ? selected!.statement!.charges
     : currentRows.filter((row) => !isCancelledStatus(row.status) && row.amount > 0).reduce((sum, row) => sum + row.amount, 0);
-  const currentCredits = selected?.statement?.month === data.month
-    ? selected.statement.credits
+  const currentCredits = hasCanonicalCurrent
+    ? selected!.statement!.credits
     : Math.abs(currentRows.filter((row) => !isCancelledStatus(row.status) && row.amount < 0).reduce((sum, row) => sum + row.amount, 0));
-  const currentOutstandingRaw = selected?.statement?.month === data.month ? selected.statement.openNetAmount : sumRows(currentOpen);
-  const currentOutstanding = selected?.statement?.month === data.month ? selected.statement.payableAmount : Math.max(0, currentOutstandingRaw);
+  const currentOutstandingRaw = hasCanonicalCurrent ? selected!.statement!.openNetAmount : sumRows(currentOpen);
+  const currentOutstanding = hasCanonicalCurrent ? selected!.statement!.payableAmount : Math.max(0, currentOutstandingRaw);
   const nextStatement = sumRows(futureRows.filter((row) => row.statementMonth === next));
   const futureNet = sumRows(futureRows);
   const futureCommitted = Math.max(0, futureNet);
@@ -376,7 +401,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const usage = creditLimit > 0 ? Math.min(100, Math.max(0, totalCommitted / creditLimit * 100)) : 0;
   const availableLimit = creditLimit - totalCommitted;
   const paidCurrent = currentRows.some((row) => !isOpenStatus(row.status) && !isCancelledStatus(row.status));
-  const canonicalStatus = selected?.statement?.month === data.month ? selected.statement.status : null;
+  const canonicalStatus = hasCanonicalCurrent ? selected!.statement!.status : null;
   const currentStatus = canonicalStatus === 'credit'
     ? 'CRÉDITO'
     : canonicalStatus === 'partial'
@@ -402,9 +427,9 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const activeFutureAmount = sumRows(activeFutureRows);
   const activeFutureCredits = Math.abs(activeFutureRows.filter((row) => row.amount < 0).reduce((sum, row) => sum + row.amount, 0));
   const bestPurchaseDay = selected?.closingDay ? (selected.closingDay >= 28 ? 1 : selected.closingDay + 1) : null;
-  const statementDueDate = selected?.statement?.month === data.month && selected.statement.dueDate
-    ? longDate.format(new Date(`${selected.statement.dueDate.slice(0, 10)}T12:00:00Z`))
-    : selected?.dueDay ? `dia ${selected.dueDay}` : '—';
+  const statementDueDate = hasCanonicalCurrent && selected!.statement!.dueDate
+    ? longDate.format(new Date(`${selected!.statement!.dueDate.slice(0, 10)}T12:00:00Z`))
+    : dueDateForMonth(currentCardMonth, selected?.dueDay);
   const nextStatementDelta = nextStatement - currentStatement;
   const biggestFuture = [...futureRows].filter((row) => row.amount > 0).sort((left, right) => right.amount - left.amount)[0] || null;
   const commandMonths = [...new Set(allRows.map((row) => row.statementMonth))].sort().reverse();
@@ -524,7 +549,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     const report: PhoenixExportReport = {
       systemName: 'MEG Finanças',
       title: `Cartão ${selected?.name || 'Cartão'} — ${commandTab === 'current' ? 'Fatura atual' : commandTab === 'future' ? 'Próximas faturas' : commandTab === 'installments' ? 'Parcelas' : 'Histórico'}`,
-      period: commandMonth ? monthLabel(commandMonth) : commandTab === 'current' ? monthLabel(data.month) : 'Conforme filtros da central do cartão',
+      period: commandMonth ? monthLabel(commandMonth) : commandTab === 'current' ? monthLabel(currentCardMonth) : 'Conforme filtros da central do cartão',
       filters,
       generatedAt: new Intl.DateTimeFormat('pt-BR', {
         timeZone: 'America/Sao_Paulo',
@@ -587,13 +612,35 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     <div className="px-cards-approved-grid" aria-label="Seus cartões">
       {data.cards.map((card) => {
         const cardIdentity = resolvePhoenixCardIdentity(card);
-        const txRows = data.legacyTransactions
+        const legacyCardRows = data.legacyTransactions
           .filter((tx) => isExpense(tx) && isCredit(tx) && transactionMatchesCard(tx, card))
           .map(legacyRow)
           .filter((row): row is GridRow => Boolean(row));
-        const monthRows = txRows.filter((row) => row.statementMonth === data.month);
-        const statementAmount = card.statement?.month === data.month
-          ? Number(card.statement.netAmount || 0)
+        const domainCardRows: GridRow[] = card.purchases.flatMap((purchase) => purchase.entries.map((entry) => ({
+          id: entry.id,
+          source: 'domain' as const,
+          description: purchase.description,
+          purchaseDate: purchase.purchaseDate.slice(0, 10),
+          dueDate: `${entry.statementMonth}-01`,
+          installment: `${entry.number}/${purchase.installments}`,
+          group: purchase.category?.name || '—',
+          amount: Number(entry.amount || 0),
+          status: entry.status,
+          statementMonth: entry.statementMonth,
+        })));
+        const cardRows = [...domainCardRows];
+        const cardSeen = new Set(cardRows.map(rowSignature));
+        legacyCardRows.forEach((row) => {
+          const signature = rowSignature(row);
+          if (!cardSeen.has(signature)) {
+            cardSeen.add(signature);
+            cardRows.push(row);
+          }
+        });
+        const cardMonth = resolveActiveCardMonth(card, cardRows, data.month);
+        const monthRows = cardRows.filter((row) => row.statementMonth === cardMonth);
+        const statementAmount = card.statement?.month === cardMonth && meaningfulStatement(card)
+          ? Number(card.statement!.netAmount || 0)
           : monthRows.length ? sumRows(monthRows) : Number(card.statementAmount || 0);
         const limit = Number(card.creditLimit || 0);
         const available = Number.isFinite(Number(card.availableLimit))
@@ -601,9 +648,9 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
           : Math.max(0, limit - Number(card.usedLimit || 0));
         const used = Math.max(0, limit - available);
         const cardUsage = limit > 0 ? Math.min(100, Math.max(0, used / limit * 100)) : 0;
-        const due = card.statement?.month === data.month && card.statement.dueDate
-          ? longDate.format(new Date(`${card.statement.dueDate.slice(0, 10)}T12:00:00Z`))
-          : card.dueDay ? `dia ${String(card.dueDay).padStart(2, '0')}` : '—';
+        const due = card.statement?.month === cardMonth && meaningfulStatement(card) && card.statement!.dueDate
+          ? longDate.format(new Date(`${card.statement!.dueDate.slice(0, 10)}T12:00:00Z`))
+          : dueDateForMonth(cardMonth, card.dueDay);
         const displayName = cardDisplayName(card);
         const displayTier = cardDisplayTier(card);
         return <button
@@ -675,7 +722,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
       </div>
       <div className="px-cards-approved-selected-metric">
         <i aria-hidden="true"><CardUiIcon name="calendar" /></i>
-        <span><small>Próx. vencimento</small><strong>{statementDueDate}</strong><em>{monthLabel(data.month)}</em></span>
+        <span><small>Próx. vencimento</small><strong>{statementDueDate}</strong><em>{monthLabel(currentCardMonth)}</em></span>
       </div>
       <div className="px-cards-approved-selected-metric">
         <i aria-hidden="true"><CardUiIcon name="star" /></i>
@@ -683,7 +730,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
       </div>
     </section>
 
-    {cardCommandOpen ? createPortal(<div className="px-card-command-backdrop px-card-command-approved-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setCardCommandOpen(false); }}>
+    {cardCommandOpen ? createPortal(<div className="px-card-command-backdrop px-card-command-approved-backdrop" role="presentation">
       <section className="px-card-command-modal px-card-command-approved" role="dialog" aria-modal="true" aria-label={`Central do cartão ${selected.name}`}>
         <header className="px-card-command-approved-head">
           <div>
@@ -691,7 +738,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
             <h2>{cardDisplayName(selected)}</h2>
             <p>Resumo, faturas, limites e histórico</p>
           </div>
-          <button type="button" aria-label="Fechar central do cartão" onClick={() => setCardCommandOpen(false)}>×</button>
+          <span className="px-card-command-esc-hint" aria-label="Feche a central pressionando Escape">ESC</span>
         </header>
 
         <section className="px-card-command-approved-overview">
@@ -754,7 +801,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
           <div className="px-card-command-approved-filters">
             <label className="search"><span aria-hidden="true"><CardUiIcon name="search" /></span><input value={commandSearch} onChange={(event) => setCommandSearch(event.target.value)} placeholder="Buscar lançamento..." /></label>
             <label><span>Período</span><select value={commandMonth} onChange={(event) => setCommandMonth(event.target.value)}>
-              <option value="">{commandTab === 'current' ? `${compactMonthLabel(data.month)} (Atual)` : 'Todos os períodos'}</option>
+              <option value="">{commandTab === 'current' ? `${compactMonthLabel(currentCardMonth)} (Atual)` : 'Todos os períodos'}</option>
               {commandMonths.map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}
             </select></label>
             <label><span>Situação</span><select value={commandStatus} onChange={(event) => setCommandStatus(event.target.value)}><option value="">Todos</option><option value="open">Pendente</option><option value="paid">Pago</option><option value="credit">Crédito/estorno</option></select></label>
