@@ -741,43 +741,45 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
       </div>
 
-      <div className="px-movement-tools" ref={toolsRef}>
-        <div className="px-movement-tool-buttons" aria-label="Ferramentas de consulta">
-          <button className={`px-movement-tool-button ${toolPanel === 'search' || search.trim() ? 'active' : ''}`} type="button" aria-label="Buscar lançamentos" data-tooltip="Buscar" aria-expanded={toolPanel === 'search'} onClick={() => setToolPanel((current) => current === 'search' ? null : 'search')}><MovementIcon name="search" />{search.trim() ? <small>1</small> : null}</button>
-          <button className={`px-movement-tool-button ${toolPanel === 'filters' || typeFilter !== 'all' || status !== 'all' ? 'active' : ''}`} type="button" aria-label="Filtrar lançamentos" data-tooltip="Filtros" aria-expanded={toolPanel === 'filters'} onClick={() => setToolPanel((current) => current === 'filters' ? null : 'filters')}><MovementIcon name="filters" />{typeFilter !== 'all' || status !== 'all' ? <small>{Number(typeFilter !== 'all') + Number(status !== 'all')}</small> : null}</button>
-          <button className="px-movement-tool-button" type="button" aria-label={`Selecionar período atual ${formatMonthLabel(data.month)}`} data-tooltip={`Período · ${formatMonthLabel(data.month)}`} onClick={() => { setToolPanel(null); onOpenPeriod?.(); }}><MovementIcon name="calendar" /></button>
-          <button className={`px-movement-tool-button ${toolPanel === 'account' || account !== 'all' ? 'active' : ''}`} type="button" aria-label="Filtrar por conta" data-tooltip={account === 'all' ? 'Conta' : labelForAccount(data, account)} aria-expanded={toolPanel === 'account'} onClick={() => setToolPanel((current) => current === 'account' ? null : 'account')}><MovementIcon name="wallet" />{account !== 'all' ? <small>1</small> : null}</button>
-        </div>
-
-        {toolPanel === 'search' ? <div className="px-movement-tool-panel px-movement-search-panel">
-          <div className="px-tool-panel-heading"><div><strong>Buscar lançamentos</strong><span>{filtered.length} resultado(s) no filtro atual</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher busca"><MovementIcon name="close" size={15} /></button></div>
-          <div className="px-search-panel-grid">
-            <label className="px-expanded-search"><span><MovementIcon name="search" size={16} /></span><input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Digite descrição, grupo, conta ou forma de pagamento..." />{search ? <button type="button" onClick={() => setSearch('')} aria-label="Limpar busca"><MovementIcon name="close" size={14} /></button> : null}</label>
-            {quickSearchSuggestions.length ? <div className="px-search-suggestions"><span>Sugestões</span><div>{quickSearchSuggestions.map((item) => <button type="button" key={item} onClick={() => setSearch(item)}>{item}</button>)}</div></div> : null}
-          </div>
-        </div> : null}
-
-        {toolPanel === 'filters' ? <div className="px-movement-tool-panel">
-          <div className="px-tool-panel-heading"><div><strong>Filtros rápidos</strong><span>Combine tipo e situação sem ocupar espaço quando não estiver usando.</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher filtros"><MovementIcon name="close" size={15} /></button></div>
-          <div className="px-filter-panel-grid">
-            <label><span>Tipo</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option><option value="transfer">Transferências</option></select></label>
-            <label><span>Situação</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">Todas as situações</option><option value="planned">Pendente</option><option value="confirmed">Confirmado</option><option value="paid">Pago</option><option value="reconciled">Conciliado</option></select></label>
-            <button className="px-tool-panel-clear" type="button" disabled={typeFilter === 'all' && status === 'all'} onClick={() => { setTypeFilter('all'); setStatus('all'); }}>Limpar filtros</button>
-          </div>
-        </div> : null}
-
-        {toolPanel === 'account' ? <div className="px-movement-tool-panel">
-          <div className="px-tool-panel-heading"><div><strong>Conta financeira</strong><span>Restrinja a grade a uma conta específica.</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher conta"><MovementIcon name="close" size={15} /></button></div>
-          <div className="px-account-panel-grid">
-            <label><span>Conta</span><select value={account} onChange={(event) => setAccount(event.target.value)}><option value="all">Todas as contas</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-            <button className="px-tool-panel-clear" type="button" disabled={account === 'all'} onClick={() => setAccount('all')}>Todas as contas</button>
-          </div>
-        </div> : null}
-      </div>
     </section>
 
     <section className="px-card px-table-card">
-      <div className="px-table-context-slot" data-phoenix-table-context />
+      <div className="px-table-toolbar-shell">
+        <div className="px-table-context-slot" data-phoenix-table-context />
+        <div className="px-movement-tools" ref={toolsRef}>
+        <div className="px-movement-tool-buttons" aria-label="Ferramentas de consulta">
+        <button className={`px-movement-tool-button ${toolPanel === 'search' || search.trim() ? 'active' : ''}`} type="button" aria-label="Buscar lançamentos" data-tooltip="Buscar" aria-expanded={toolPanel === 'search'} onClick={() => setToolPanel((current) => current === 'search' ? null : 'search')}><MovementIcon name="search" />{search.trim() ? <small>1</small> : null}</button>
+        <button className={`px-movement-tool-button ${toolPanel === 'filters' || typeFilter !== 'all' || status !== 'all' ? 'active' : ''}`} type="button" aria-label="Filtrar lançamentos" data-tooltip="Filtros" aria-expanded={toolPanel === 'filters'} onClick={() => setToolPanel((current) => current === 'filters' ? null : 'filters')}><MovementIcon name="filters" />{typeFilter !== 'all' || status !== 'all' ? <small>{Number(typeFilter !== 'all') + Number(status !== 'all')}</small> : null}</button>
+        <button className="px-movement-tool-button" type="button" aria-label={`Selecionar período atual ${formatMonthLabel(data.month)}`} data-tooltip={`Período · ${formatMonthLabel(data.month)}`} onClick={() => { setToolPanel(null); onOpenPeriod?.(); }}><MovementIcon name="calendar" /></button>
+        <button className={`px-movement-tool-button ${toolPanel === 'account' || account !== 'all' ? 'active' : ''}`} type="button" aria-label="Filtrar por conta" data-tooltip={account === 'all' ? 'Conta' : labelForAccount(data, account)} aria-expanded={toolPanel === 'account'} onClick={() => setToolPanel((current) => current === 'account' ? null : 'account')}><MovementIcon name="wallet" />{account !== 'all' ? <small>1</small> : null}</button>
+        </div>
+        
+        {toolPanel === 'search' ? <div className="px-movement-tool-panel px-movement-search-panel">
+        <div className="px-tool-panel-heading"><div><strong>Buscar lançamentos</strong><span>{filtered.length} resultado(s) no filtro atual</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher busca"><MovementIcon name="close" size={15} /></button></div>
+        <div className="px-search-panel-grid">
+        <label className="px-expanded-search"><span><MovementIcon name="search" size={16} /></span><input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Digite descrição, grupo, conta ou forma de pagamento..." />{search ? <button type="button" onClick={() => setSearch('')} aria-label="Limpar busca"><MovementIcon name="close" size={14} /></button> : null}</label>
+        {quickSearchSuggestions.length ? <div className="px-search-suggestions"><span>Sugestões</span><div>{quickSearchSuggestions.map((item) => <button type="button" key={item} onClick={() => setSearch(item)}>{item}</button>)}</div></div> : null}
+        </div>
+        </div> : null}
+        
+        {toolPanel === 'filters' ? <div className="px-movement-tool-panel">
+        <div className="px-tool-panel-heading"><div><strong>Filtros rápidos</strong><span>Combine tipo e situação sem ocupar espaço quando não estiver usando.</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher filtros"><MovementIcon name="close" size={15} /></button></div>
+        <div className="px-filter-panel-grid">
+        <label><span>Tipo</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option><option value="transfer">Transferências</option></select></label>
+        <label><span>Situação</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">Todas as situações</option><option value="planned">Pendente</option><option value="confirmed">Confirmado</option><option value="paid">Pago</option><option value="reconciled">Conciliado</option></select></label>
+        <button className="px-tool-panel-clear" type="button" disabled={typeFilter === 'all' && status === 'all'} onClick={() => { setTypeFilter('all'); setStatus('all'); }}>Limpar filtros</button>
+        </div>
+        </div> : null}
+        
+        {toolPanel === 'account' ? <div className="px-movement-tool-panel">
+        <div className="px-tool-panel-heading"><div><strong>Conta financeira</strong><span>Restrinja a grade a uma conta específica.</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher conta"><MovementIcon name="close" size={15} /></button></div>
+        <div className="px-account-panel-grid">
+        <label><span>Conta</span><select value={account} onChange={(event) => setAccount(event.target.value)}><option value="all">Todas as contas</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+        <button className="px-tool-panel-clear" type="button" disabled={account === 'all'} onClick={() => setAccount('all')}>Todas as contas</button>
+        </div>
+        </div> : null}
+        </div>
+      </div>
 
       <div className={`px-grid-active-filters ${activeGridFilters.length || gridSort ? '' : 'is-empty'}`} aria-hidden={activeGridFilters.length || gridSort ? undefined : true}><span>Filtros da grade</span>{activeGridFilters.map((key) => <span className="px-grid-filter-chip" key={key}>{filterSummary(gridLabels[key], gridFilters[key])}<button type="button" onClick={() => clearGridFilter(key)} aria-label={`Remover filtro ${gridLabels[key]}`}>×</button></span>)}{gridSort ? <span className="px-grid-filter-chip">Ordenação: {gridLabels[gridSort.key]} {gridSort.direction === 'asc' ? '↑' : '↓'}<button type="button" onClick={() => setGridSort(null)} aria-label="Remover ordenação">×</button></span> : null}{activeGridFilters.length || gridSort ? <button className="px-grid-clear-all" type="button" onClick={clearAllGridFilters}>Limpar grade</button> : null}</div>
 
@@ -793,7 +795,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
               <td data-col="purchaseDate" data-label="Data da compra">{formatIsoDate(sourcePurchaseDate(event))}</td>
               <td data-col="weekday" data-label="Dia">{event.sourceDetails?.weekday || weekday(event.date)}</td>
               <td data-col="type" data-label="Tipo"><span className={`px-type-flag ${visualType}`}>{isIncome ? 'RECEITA' : visualType === 'transfer' ? 'TRANSFERÊNCIA' : 'DESPESA'}</span></td>
-              <td data-col="description" data-label="Descrição"><strong>{event.description}</strong></td>
+              <td data-col="description" data-label="Descrição"><strong className="px-description-ellipsis" title={event.description}>{event.description}</strong></td>
               <td data-col="income" data-label="Receita" className={`px-money ${effect < 0 ? 'negative' : 'positive'}`}>{isIncome ? money.format(effect) : '—'}</td>
               <td data-col="classification" data-label="Classificação">{sourceClassification(event)}</td>
               <td data-col="group" data-label="Grupo">{sourceGroup(event)}</td>
