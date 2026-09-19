@@ -149,19 +149,27 @@ function renderColumnRows(popover: HTMLElement, query = '') {
   });
 }
 
-function openColumnPopover(anchor: HTMLElement) {
+function openColumnPopover(_anchor: HTMLElement) {
   closeUtilityPopover();
+  const backdrop = document.createElement('div');
+  backdrop.className = 'px-grid-utility-backdrop';
   const popover = document.createElement('section');
   popover.className = 'px-grid-utility-popover px-column-selector-popover';
+  popover.setAttribute('role', 'dialog');
+  popover.setAttribute('aria-modal', 'true');
+  popover.setAttribute('aria-label', 'Colunas da tabela');
   popover.innerHTML = `
     <header><div><strong>Colunas da tabela</strong><span>Clique no olho para mostrar ou ocultar.</span></div><button type="button" data-close aria-label="Fechar">×</button></header>
     <label class="px-column-search"><span aria-hidden="true">⌕</span><input type="search" data-column-search placeholder="Pesquisar coluna"></label>
     <div class="px-column-eye-list" data-column-list></div>
     <footer><button type="button" data-restore>Restaurar padrão</button></footer>
   `;
-  document.body.appendChild(popover);
-  activeUtilityPopover = popover;
-  positionUtilityPopover(popover, anchor);
+  backdrop.appendChild(popover);
+  document.body.appendChild(backdrop);
+  activeUtilityPopover = backdrop;
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop) closeUtilityPopover();
+  });
   const search = popover.querySelector<HTMLInputElement>('[data-column-search]');
   search?.addEventListener('input', () => renderColumnRows(popover, search.value));
   popover.querySelector<HTMLButtonElement>('[data-restore]')?.addEventListener('click', () => {
