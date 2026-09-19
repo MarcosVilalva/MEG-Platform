@@ -305,6 +305,13 @@ assert.match(cardsWowCss, /\.px-card-command-approved\{[\s\S]*overflow:hidden[\s
   'Modal da central deve permanecer fixo no viewport sem scroll geral.');
 assert.match(cardsWowCss, /\.px-card-command-approved-table-wrap\{[\s\S]*overflow:auto/,
   'Somente a área da tabela do modal deve possuir rolagem.');
+assert.match(cardsGrid, /createPortal\(<div className="px-card-command-backdrop px-card-command-approved-backdrop"[\s\S]*document\.body\)/,
+  'Central do cartão deve sair do container da tela e ocupar o viewport real via portal.');
+assert.match(cardsWowCss, /HOTFIX V5\.1 · CENTRAL EM VIEWPORT REAL/,
+  'A central deve possuir a correção explícita de viewport real.');
+assert.match(cardsWowCss, /\.px-card-command-approved-backdrop\{[\s\S]*position:fixed!important;[\s\S]*width:100vw!important;[\s\S]*height:100dvh!important;/,
+  'Backdrop da central deve cobrir inclusive menu lateral e barra superior.');
+
 assert.match(cardsGrid, /Acesse detalhes, faturas, limites e muito mais\./,
   'Texto de orientação deve reproduzir fielmente o mockup aprovado.');
 assert.match(cardsGrid, /Total da fatura/,
