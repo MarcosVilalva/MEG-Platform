@@ -133,8 +133,18 @@ assert.match(payables, /px-pending-confirm-modal/,
   'Baixa deve usar modal MEG próprio para confirmação financeira.');
 assert.match(payables, /px-pending-success-modal/,
   'Servidor confirmado deve gerar modal visual de sucesso da operação.');
-assert.match(payables, /px-pending-attention/,
-  'Pendentes deve expor a prioridade financeira antes da grade.');
+assert.doesNotMatch(payables, /px-pending-attention/,
+  'Layout definitivo não deve reintroduzir a faixa redundante de atenção entre cabeçalho e KPIs.');
+assert.match(payables, /px-pending-commandbar/,
+  'Busca, filtros de prioridade e agrupamento devem permanecer na mesma barra operacional.');
+assert.match(payables, /px-pending-command-tabs/,
+  'Filtros Todos, Vencidos, Hoje e Próximos devem ficar integrados à barra de busca.');
+assert.match(payables, /px-pending-agenda-head/,
+  'Lista deve possuir cabeçalho próprio Agenda de pendências.');
+assert.match(payables, /Agenda de pendências/,
+  'Módulo operacional deve manter o título definitivo aprovado.');
+assert.doesNotMatch(payables, /Leitura consolidada:/,
+  'Aviso técnico de leitura consolidada não deve ocupar espaço na interface operacional.');
 assert.match(readModel, /forceNetwork:\s*Boolean\(options\.force\)/,
   'Releitura forçada pós-baixa deve atravessar o cache do cliente.');
 assert.match(readModel, /cache:\s*'no-store'/,
@@ -152,6 +162,14 @@ assert.match(persistentSnapshot, /deletePhoenixPersistentSnapshot/,
   'Fotografia IndexedDB anterior à baixa deve ser removível.');
 assert.match(pendingStyles, /px-pending-cockpit[\s\S]*px-pending-kpis/,
   'Tela deve manter o cockpit visual e seus indicadores de prioridade.');
+assert.match(pendingStyles, /px-pending-commandbar[\s\S]*grid-template-columns/,
+  'Toolbar definitiva deve organizar busca, filtros e agrupamento em uma linha de comando.');
+assert.match(pendingStyles, /px-pending-agenda[\s\S]*px-pending-agenda-head/,
+  'Agenda deve possuir container premium e cabeçalho visual próprio.');
+assert.match(pendingStyles, /px-pending-kpi-icon/,
+  'KPIs definitivos devem manter iconografia contextual.');
+assert.match(pendingStyles, /padding:6px 14px 10px !important/,
+  'Pendentes deve eliminar o espaço vertical morto logo abaixo da topbar no desktop.');
 
 assert.match(appShell, /px-main-payables/,
   'Shell deve isolar o viewport apenas quando a aba Pendentes estiver ativa.');

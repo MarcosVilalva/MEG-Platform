@@ -102,6 +102,22 @@ function addDaysIso(value: string, days: number) {
   return dateValue.toISOString().slice(0, 10);
 }
 
+
+type PendingGlyphKind = 'calendar' | 'coins' | 'warning' | 'clock';
+
+function PendingGlyph({ kind }: { kind: PendingGlyphKind }) {
+  if (kind === 'coins') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="6.5" ry="2.8" /><path d="M5.5 6v4c0 1.6 2.9 2.9 6.5 2.9s6.5-1.3 6.5-2.9V6" /><path d="M5.5 10v4c0 1.6 2.9 2.9 6.5 2.9s6.5-1.3 6.5-2.9v-4" /><path d="M5.5 14v3.2c0 1.6 2.9 2.8 6.5 2.8s6.5-1.2 6.5-2.8V14" /></svg>;
+  }
+  if (kind === 'warning') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.4 21 19H3L12 3.4Z" /><path d="M12 8v5.3" /><circle cx="12" cy="16.8" r=".8" /></svg>;
+  }
+  if (kind === 'clock') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.4v5l3.4 2" /></svg>;
+  }
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2.4" /><path d="M8 3.8v4M16 3.8v4M4 9.5h16" /><path d="M8 13h3M13 13h3M8 16h3" /></svg>;
+}
+
 function installmentFromDescription(description: string) {
   const match = description.match(/(?:^|\s)(\d+)\s*\/\s*(\d+)\s*$/);
   if (!match) return { no: 1, qty: 1 };
@@ -512,7 +528,6 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const selectedItem = selectedItems.length === 1 ? selectedItems[0] : null;
   const batchMode = selectedItems.length > 1;
   const available = model.summary.availableBalance + model.summary.realizedResult;
-  const compatibilityCount = open.filter((item) => item.source === 'event').length;
   const adjustmentCount = open.filter((item) => item.openAmount < 0).length;
   const activeAccounts = model.accounts.filter((item) => item.isActive && !['benefit', 'credit'].includes(normalize(item.type)));
   const monetaryAccounts = model.accounts.filter((item) => item.isActive && monetaryAccountTypes.has(normalize(item.type)));
@@ -765,6 +780,11 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
           }
         }}
       >
+        <span className="px-pending-date-icon" aria-hidden="true"><PendingGlyph kind="calendar" /></span>
+        <div className="px-pending-date-cluster-copy">
+          <strong>{group.label}</strong>
+          <small>{blocks.length} compromisso(s){group.items.length !== blocks.length ? ` · ${group.items.length} lançamento(s)` : ''}{selectedCount ? ` · ${selectedCount} selecionado(s)` : ''}</small>
+        </div>
         <label className="px-pending-group-check" onClick={(event) => event.stopPropagation()}>
           <input
             type="checkbox"
@@ -776,10 +796,6 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
           />
           <span>Selecionar todas</span>
         </label>
-        <div className="px-pending-date-cluster-copy">
-          <strong>{group.label}</strong>
-          <small>{blocks.length} compromisso(s){group.items.length !== blocks.length ? ` · ${group.items.length} lançamento(s)` : ''}{selectedCount ? ` · ${selectedCount} selecionado(s)` : ''}</small>
-        </div>
         <strong className="px-pending-date-cluster-total">{money.format(groupTotal(group))}</strong>
         <span className="px-pending-date-cluster-chevron" aria-hidden="true">⌄</span>
       </header>
@@ -797,55 +813,47 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
 
   return <section className="px-screen px-pending-cockpit" onWheel={routeWheelToPendingList}>
     <header className="px-screen-head px-pending-hero">
-      <div><span className="px-kicker">Pendentes</span><h1>Prioridades e compromissos</h1><p>Uma visão de ação: o que venceu, o que exige atenção hoje e o que precisa ser preparado nos próximos dias.</p></div>
+      <div className="px-pending-hero-main">
+        <span className="px-pending-hero-icon" aria-hidden="true"><PendingGlyph kind="calendar" /></span>
+        <div>
+          <span className="px-kicker">Pendentes</span>
+          <h1>Prioridades e compromissos</h1>
+          <p>Uma visão de ação: o que venceu, o que exige atenção hoje e o que precisa ser preparado nos próximos dias.</p>
+        </div>
+      </div>
       <div className="px-screen-head-aside"><span className="px-total-pill">{money.format(total)} pendente</span></div>
     </header>
-
-    <section className={`px-pending-attention ${overdueObligationCount ? 'is-critical' : dueTodayObligationCount ? 'is-today' : 'is-clear'}`}>
-      <div className="px-pending-attention-icon" aria-hidden="true">{overdueObligationCount ? '!' : dueTodayObligationCount ? '•' : '✓'}</div>
-      <div className="px-pending-attention-copy">
-        <span>Atenção agora</span>
-        <strong>{overdueObligationCount
-          ? `${overdueObligationCount} compromisso(s) vencido(s)`
-          : dueTodayObligationCount
-            ? `${dueTodayObligationCount} compromisso(s) vencem hoje`
-            : 'Nenhuma pendência urgente neste momento'}</strong>
-        <small>{overdueObligationCount
-          ? `${money.format(overdueTotal)} exigem prioridade · hoje ainda há ${money.format(dueTodayTotal)} programados.`
-          : dueTodayObligationCount
-            ? `${money.format(dueTodayTotal)} com ação prevista para hoje.`
-            : `${nextSevenObligationCount} compromisso(s) nos próximos 7 dias.`}</small>
-      </div>
-      <div className="px-pending-attention-stats">
-        <div><span>Vencido</span><strong>{money.format(overdueTotal)}</strong></div>
-        <div><span>Hoje</span><strong>{money.format(dueTodayTotal)}</strong></div>
-        <div><span>7 dias</span><strong>{money.format(nextSevenTotal)}</strong></div>
-      </div>
-      {(overdueObligationCount || dueTodayObligationCount) ? <button type="button" onClick={() => setPriority(overdueObligationCount ? 'overdue' : 'today')}>Ver prioridade</button> : null}
-    </section>
 
     {successMessage ? <div className="px-pending-write-banner" role="status"><strong>Baixa confirmada</strong><span>{successMessage}</span></div> : null}
 
     <section className="px-screen-kpis px-pending-kpis">
-      <article className="total"><span>Total pendente líquido</span><strong>{money.format(total)}</strong><small>{actionableObligationCount} compromisso(s){adjustmentCount ? ` · ${adjustmentCount} ajuste(s)` : ''}</small></article>
-      <article className="danger"><span>Vencidos</span><strong>{money.format(overdueTotal)}</strong><small>{overdueObligationCount} compromisso(s) · prioridade máxima</small></article>
-      <article className="warn"><span>Vencem hoje</span><strong>{money.format(dueTodayTotal)}</strong><small>{dueTodayObligationCount} compromisso(s) · ação imediata</small></article>
-      <article className="next"><span>Próximos 7 dias</span><strong>{money.format(nextSevenTotal)}</strong><small>{nextSevenObligationCount} compromisso(s) no radar</small></article>
+      <article className="total"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="coins" /></span><div><span>Total pendente líquido</span><strong>{money.format(total)}</strong><small>{actionableObligationCount} compromisso(s){adjustmentCount ? ` · ${adjustmentCount} ajuste(s)` : ''}</small></div></article>
+      <article className="danger"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="warning" /></span><div><span>Vencidos</span><strong>{money.format(overdueTotal)}</strong><small>{overdueObligationCount} compromisso(s) · prioridade máxima</small></div></article>
+      <article className="warn"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="clock" /></span><div><span>Vencem hoje</span><strong>{money.format(dueTodayTotal)}</strong><small>{dueTodayObligationCount} compromisso(s) · ação imediata</small></div></article>
+      <article className="next"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="calendar" /></span><div><span>Próximos 7 dias</span><strong>{money.format(nextSevenTotal)}</strong><small>{nextSevenObligationCount} compromisso(s) no radar</small></div></article>
     </section>
 
-    <div className="px-priority-tabs">{([['all','Todos'],['overdue','Vencidos'],['today','Hoje'],['upcoming','Próximos']] as const).map(([id,label]) => <button key={id} type="button" className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{label}</button>)}</div>
+    <div className="px-toolbar px-pending-commandbar">
+      <label className="px-search-field px-pending-command-search"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar compromisso, cartão, conta ou forma..." /></label>
+      <div className="px-priority-tabs px-pending-command-tabs">{([['all','Todos'],['overdue','Vencidos'],['today','Hoje'],['upcoming','Próximos']] as const).map(([id,label]) => <button key={id} type="button" className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{label}</button>)}</div>
+      <span className="px-pending-command-separator" aria-hidden="true" />
+      <label className="px-pending-group-select px-pending-command-group"><span>Agrupar por</span><select value={groupMode} onChange={(event) => setGroupMode(event.target.value as GroupMode)}><option value="date">Data</option><option value="category">Categoria</option><option value="account">Conta</option><option value="payment-method">Forma de pagamento</option><option value="none">Sem agrupamento</option></select></label>
+      <span className="px-toolbar-note">{visibleObligationCount} de {openObligationCount} compromisso(s) exibido(s)</span>
+    </div>
 
     <div className="px-pending-layout">
-      <section className="px-card px-pending-list">
-        <div className="px-toolbar px-pending-toolbar-v15">
-          <label className="px-search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar compromisso, cartão, conta ou forma" /></label>
-          <label className="px-pending-group-select"><span>Agrupar por</span><select value={groupMode} onChange={(event) => setGroupMode(event.target.value as GroupMode)}><option value="date">Data</option><option value="category">Categoria</option><option value="account">Conta</option><option value="payment-method">Forma de pagamento</option><option value="none">Sem agrupamento</option></select></label>
-          <span className="px-toolbar-note">{visibleObligationCount} de {openObligationCount} compromisso(s) exibido(s)</span>
-        </div>
-        {selectedItems.length ? <div className="px-bulk-action-bar"><div><strong>{selectedItems.length} compromisso(s) selecionado(s)</strong><span>Total {money.format(selectedTotal)} · saldo após baixa {money.format(available - selectedTotal)}</span></div><button type="button" onClick={clearSelection}>Limpar</button><button type="button" className="primary" disabled={saving || selectedTotal <= 0 || selectedTotal > available} onClick={() => openReview()}>{selectedItems.length > 1 ? `Dar baixa nos selecionados (${selectedItems.length})` : 'Revisar baixa'}</button></div> : null}
-        <div className="px-pending-scroll-region" ref={pendingScrollRef} tabIndex={0} role="region" aria-label="Lista de compromissos pendentes">
-          {compatibilityCount > 0 ? <div className="px-history-source-note"><strong>Leitura consolidada:</strong> contas, faturas oficiais e compromissos legados ficam na mesma agenda. Cada baixa continua usando o writer oficial do respectivo domínio.</div> : null}
+      <section className="px-card px-pending-list px-pending-agenda">
+        <header className="px-pending-agenda-head">
+          <div className="px-pending-agenda-title">
+            <span className="px-pending-agenda-icon" aria-hidden="true"><PendingGlyph kind="calendar" /></span>
+            <div><h2>Agenda de pendências</h2><p>Compromissos do período, organizados para ação rápida e baixa segura.</p></div>
+          </div>
+          <div className="px-pending-agenda-signature"><strong>Disciplina hoje</strong><span>mais liberdade amanhã</span></div>
+        </header>
 
+        {selectedItems.length ? <div className="px-bulk-action-bar"><div><strong>{selectedItems.length} compromisso(s) selecionado(s)</strong><span>Total {money.format(selectedTotal)} · saldo após baixa {money.format(available - selectedTotal)}</span></div><button type="button" onClick={clearSelection}>Limpar</button><button type="button" className="primary" disabled={saving || selectedTotal <= 0 || selectedTotal > available} onClick={() => openReview()}>{selectedItems.length > 1 ? `Dar baixa nos selecionados (${selectedItems.length})` : 'Revisar baixa'}</button></div> : null}
+
+        <div className="px-pending-scroll-region" ref={pendingScrollRef} tabIndex={0} role="region" aria-label="Lista de compromissos pendentes">
           {grouped.map((group) => group.kind === 'date'
             ? renderDateGroup(group)
             : group.kind === 'card-legacy' && group.items.length > 1
