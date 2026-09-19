@@ -18,6 +18,9 @@ type GridSort = { key: GridKey; direction: PhoenixGridSortDirection } | null;
 type GridFilterMap = Record<GridKey, PhoenixGridFilterValue>;
 type MovementToolPanel = 'search' | 'filters' | 'account' | null;
 type FinancialEventWithSourcePayload = FinancialEvent & { sourcePayload?: unknown };
+type PhoenixExportRegistryWindow = Window & {
+  __MEG_PHOENIX_EXPORT_DATA__?: Record<string, { rows: Array<Record<string, string>> }>;
+};
 type LaunchDraft = {
   type: TxType;
   situation: LaunchSituation;
@@ -412,6 +415,23 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const pageStart = filtered.length ? (currentPage - 1) * pageSize : 0;
   const pageEnd = Math.min(pageStart + pageSize, filtered.length);
   const visibleEvents = expandedList ? filtered : filtered.slice(pageStart, pageEnd);
+  const exportRows = useMemo(() => filtered.map((event) => {
+    const row = gridRow(event);
+    return {
+      dueDate: formatIsoDate(String(row.dueDate)),
+      purchaseDate: formatIsoDate(String(row.purchaseDate)),
+      weekday: String(row.weekday ?? ''),
+      type: String(row.type ?? ''),
+      description: String(row.description ?? ''),
+      income: typeof row.income === 'number' ? money.format(row.income) : '—',
+      classification: String(row.classification ?? ''),
+      group: String(row.group ?? ''),
+      expense: typeof row.expense === 'number' ? money.format(row.expense) : '—',
+      paymentMethod: String(row.paymentMethod ?? ''),
+      status: String(row.status ?? ''),
+      modality: String(row.modality ?? ''),
+    };
+  }), [filtered]);
   const paginationPages = useMemo(() => {
     if (pageCount <= 5) return Array.from({ length: pageCount }, (_, index) => index + 1);
     const start = Math.max(1, Math.min(currentPage - 2, pageCount - 4));
@@ -425,6 +445,15 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   useEffect(() => {
     setPage((value) => Math.min(value, pageCount));
   }, [pageCount]);
+
+  useEffect(() => {
+    const target = window as PhoenixExportRegistryWindow;
+    const registry = target.__MEG_PHOENIX_EXPORT_DATA__ || (target.__MEG_PHOENIX_EXPORT_DATA__ = {});
+    registry.movements = { rows: exportRows };
+    return () => {
+      if (registry.movements?.rows === exportRows) delete registry.movements;
+    };
+  }, [exportRows]);
 
   const selectedAccount = data.accounts.find((item) => item.id === draft.accountId) || null;
   const selectedDestination = data.accounts.find((item) => item.id === draft.destinationId) || null;
@@ -797,7 +826,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       <div className={`px-grid-active-filters ${activeGridFilters.length || gridSort ? '' : 'is-empty'}`} aria-hidden={activeGridFilters.length || gridSort ? undefined : true}><span>Filtros da grade</span>{activeGridFilters.map((key) => <span className="px-grid-filter-chip" key={key}>{filterSummary(gridLabels[key], gridFilters[key])}<button type="button" onClick={() => clearGridFilter(key)} aria-label={`Remover filtro ${gridLabels[key]}`}>×</button></span>)}{gridSort ? <span className="px-grid-filter-chip">Ordenação: {gridLabels[gridSort.key]} {gridSort.direction === 'asc' ? '↑' : '↓'}<button type="button" onClick={() => setGridSort(null)} aria-label="Remover ordenação">×</button></span> : null}{activeGridFilters.length || gridSort ? <button className="px-grid-clear-all" type="button" onClick={clearAllGridFilters}>Limpar grade</button> : null}</div>
 
       <div className="px-table-scroll">
-        <table className="px-data-table px-v15-launch-table">
+        <table className="px-data-table px-v15-launch-table" data-meg-export-source="movements">
           <thead><tr><th data-col="dueDate">{gridHeader('Vencimento', 'dueDate', 'date')}</th><th data-col="purchaseDate">{gridHeader('Data da compra', 'purchaseDate', 'date')}</th><th data-col="weekday">{gridHeader('Dia', 'weekday', 'multi', gridOptions.weekday)}</th><th data-col="type">{gridHeader('Tipo', 'type', 'multi', gridOptions.type)}</th><th data-col="description">{gridHeader('Descrição', 'description', 'text')}</th><th data-col="income">{gridHeader('Receita', 'income', 'number')}</th><th data-col="classification">{gridHeader('Classificação', 'classification', 'multi', gridOptions.classification)}</th><th data-col="group">{gridHeader('Grupo', 'group', 'multi', gridOptions.group)}</th><th data-col="expense">{gridHeader('Despesa', 'expense', 'number')}</th><th data-col="paymentMethod">{gridHeader('Forma de pagamento', 'paymentMethod', 'multi', gridOptions.paymentMethod)}</th><th data-col="status">{gridHeader('Situação', 'status', 'multi', gridOptions.status)}</th><th data-col="modality">{gridHeader('Modalidade', 'modality', 'multi', gridOptions.modality)}</th><th data-col="details">Detalhes</th></tr></thead>
           <tbody>{visibleEvents.map((event) => {
             const visualType = launchTypeForEvent(event.type);

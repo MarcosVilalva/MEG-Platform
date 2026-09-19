@@ -32,6 +32,10 @@ assert.doesNotMatch(payables, /Number\(card\.statementAmount \?\? card\.payableS
   'Fallback de Pendentes não pode transformar o total canônico inteiro em saldo oficial do cartão');
 assert.match(payables, /representedEventIds/,
   'Eventos já representados pela fatura oficial não podem ser duplicados em Pendentes');
+assert.match(payables, /const officialSignatures = new Set\(official\.map\(signature\)\)/,
+  'Dedupe de Pendentes deve existir somente contra compromissos oficiais');
+assert.doesNotMatch(payables, /seen\.add\(key\)/,
+  'Pendentes não pode colapsar dois lançamentos reais só porque têm mesma descrição, data e valor');
 assert.match(payables, /openAmount: -Number\(event\.signedAmount \|\| 0\)/,
   'Pendentes legados devem usar signedAmount para preservar compras e estornos');
 assert.match(payables, /isBatchSelectable/,

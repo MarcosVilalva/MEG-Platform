@@ -402,3 +402,63 @@
   }
   .px-bulk-picker-options { max-height:42dvh; }
 }
+
+
+/* Guardrail final de viewport para alteração em massa. */
+.px-bulk-modal-backdrop {
+  padding:12px;
+}
+.px-bulk-modal {
+  width:min(620px,calc(100vw - 24px));
+  height:min(620px,calc(100dvh - 24px));
+  max-height:calc(100dvh - 24px);
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
+  overflow:hidden;
+  padding:16px;
+}
+.px-bulk-modal-head {
+  margin-bottom:0;
+  padding-bottom:12px;
+}
+.px-bulk-modal-body {
+  min-height:0;
+  overflow:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+  padding-right:4px;
+}
+.px-bulk-modal-actions {
+  margin-top:0;
+  padding-top:12px;
+  border-top:1px solid var(--line);
+  background:var(--panel);
+}
+.px-bulk-picker-panel {
+  position:fixed;
+  inset:auto;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  min-width:0;
+  overflow:hidden;
+}
+.px-bulk-picker-panel[hidden] {
+  display:none!important;
+}
+.px-bulk-picker-options {
+  min-height:0;
+  max-height:none;
+  overflow:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+@media (max-height:640px) {
+  .px-bulk-modal {
+    height:calc(100dvh - 16px);
+    max-height:calc(100dvh - 16px);
+    width:min(620px,calc(100vw - 16px));
+    padding:12px;
+  }
+  .px-bulk-modal-backdrop { padding:8px; }
+  .px-bulk-field { padding:8px 0; }
+}

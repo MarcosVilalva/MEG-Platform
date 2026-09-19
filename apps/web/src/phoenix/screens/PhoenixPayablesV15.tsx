@@ -400,13 +400,13 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       .map(payableItem);
     const cards = cardStatementItems(model);
     const representedEventIds = new Set(cards.flatMap((card) => card.children || []).map((child) => child.sourceEventId).filter(Boolean));
-    const seen = new Set(official.map(signature));
+    const officialSignatures = new Set(official.map(signature));
     const compatibility = eventItems(model).filter((item) => {
       if (representedEventIds.has(item.sourceId)) return false;
-      const key = signature(item);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
+      // Duplicidade por assinatura só é usada para evitar espelhar um Payable oficial.
+      // Dois lançamentos reais podem ter mesma descrição, vencimento e valor e ambos
+      // precisam compor a fatura líquida.
+      return !officialSignatures.has(signature(item));
     });
     return [...cards, ...official, ...compatibility]
       .sort((left, right) => left.dueDate.localeCompare(right.dueDate) || left.description.localeCompare(right.description, 'pt-BR'));
