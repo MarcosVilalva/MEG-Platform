@@ -168,11 +168,11 @@ assert.match(pendingStyles, /px-pending-agenda[\s\S]*px-pending-agenda-head/,
   'Agenda deve possuir container premium e cabeçalho visual próprio.');
 assert.match(pendingStyles, /px-pending-kpi-icon/,
   'KPIs definitivos devem manter iconografia contextual.');
-assert.match(pendingStyles, /display:flex;[\s\S]*flex-direction:column;[\s\S]*height:100dvh/,
-  'Workspace de Pendentes deve usar coluna flex para eliminar o vazio estrutural abaixo da topbar.');
+assert.match(pendingStyles, /\.phoenix-v15 \.px-main-payables[\s\S]*position:relative !important[\s\S]*height:100dvh !important/,
+  'Workspace de Pendentes deve possuir âncora geométrica explícita no viewport.');
 assert.match(pendingStyles, /grid-template-rows:72px 82px 54px minmax\(0,1fr\)/,
   'Desktop deve possuir quatro faixas explícitas: hero, KPIs, toolbar e agenda flexível.');
-assert.match(pendingStyles, /padding:8px 16px 10px;/,
+assert.match(pendingStyles, /padding:8px 16px 10px(?: !important)?;/,
   'Conteúdo deve começar imediatamente abaixo da topbar com respiro curto e previsível.');
 assert.match(pendingStyles, /grid-template-columns:minmax\(360px,1fr\) auto 1px minmax\(190px,220px\) auto/,
   'Toolbar deve distribuir busca, filtros, agrupamento e contador em proporções explícitas.');
@@ -186,6 +186,20 @@ assert.doesNotMatch(pendingStyles, /Cockpit de Pendentes|Pendentes em modo cockp
   'Arquivo de Pendentes não pode reter gerações visuais antigas concorrendo na cascata.');
 assert.doesNotMatch(pendingStyles, /\.px-pending-attention(?:\s|\{|\.)/,
   'Faixa de atenção removida não deve permanecer como CSS legado.');
+assert.match(payables, /data-pending-layout="canonical-v3"/,
+  'Tela deve expor o marcador da geometria canônica v3.');
+assert.match(pendingStyles, /\.phoenix-v15 \.px-main-payables > \.px-content-payables[\s\S]*inset:64px 0 0 0 !important/,
+  'Conteúdo de Pendentes deve ficar ancorado exatamente abaixo da topbar.');
+assert.match(pendingStyles, /grid-template-rows:72px 82px 54px minmax\(0,1fr\) !important/,
+  'Hero, KPIs, toolbar e agenda devem ocupar faixas explícitas sem sobreposição.');
+assert.match(pendingStyles, /\.px-pending-hero[\s\S]*grid-row:1 !important/,
+  'Hero deve permanecer exclusivamente na primeira faixa.');
+assert.match(pendingStyles, /\.px-pending-kpis[\s\S]*grid-row:2 !important/,
+  'KPIs devem permanecer exclusivamente na segunda faixa.');
+assert.match(pendingStyles, /\.px-pending-commandbar[\s\S]*grid-row:3 !important/,
+  'Toolbar deve permanecer exclusivamente na terceira faixa.');
+assert.match(pendingStyles, /\.px-pending-layout[\s\S]*grid-row:4 !important/,
+  'Agenda deve ocupar somente a quarta faixa e todo o espaço restante.');
 
 assert.match(appShell, /px-main-payables/,
   'Shell deve isolar o viewport apenas quando a aba Pendentes estiver ativa.');
@@ -199,7 +213,7 @@ assert.match(payables, /ArrowDown[\s\S]*ArrowUp[\s\S]*PageDown[\s\S]*PageUp[\s\S
   'Pendentes deve aceitar setas, Page Up/Down e Home/End na agenda rolável.');
 assert.match(payables, /routeWheelToPendingList/,
   'Rodinha fora da agenda deve ser redirecionada para a lista sem mover a página inteira.');
-assert.match(pendingStyles, /\.px-main-payables\s*\{[\s\S]*height:100dvh;[\s\S]*overflow:hidden;/,
+assert.match(pendingStyles, /\.phoenix-v15 \.px-main-payables\s*\{[\s\S]*height:100dvh !important[\s\S]*overflow:hidden !important/,
   'Desktop de Pendentes deve travar o scroll do workspace inteiro.');
 assert.match(pendingStyles, /\.px-pending-scroll-region\s*\{[\s\S]*overflow-y:auto;[\s\S]*overscroll-behavior:contain;/,
   'Lista de compromissos deve concentrar a rolagem vertical e impedir encadeamento para a página.');
