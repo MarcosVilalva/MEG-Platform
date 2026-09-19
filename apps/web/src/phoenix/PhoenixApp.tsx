@@ -271,6 +271,17 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     return () => window.clearTimeout(timer);
   }, [loadState.status, view]);
 
+
+  useEffect(() => {
+    if (loadState.status !== 'ready') return;
+    const activeMonth = loadState.data.month;
+    const timer = window.setTimeout(() => {
+      void prefetchPhoenixReadModel(shiftMonth(activeMonth, -1));
+      void prefetchPhoenixReadModel(shiftMonth(activeMonth, 1));
+    }, 220);
+    return () => window.clearTimeout(timer);
+  }, [loadState.status, loadState.status === 'ready' ? loadState.data.month : '']);
+
   useEffect(() => {
     let active = true;
     const cached = peekPhoenixReadModel(month);
@@ -553,10 +564,13 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       return;
     }
 
+    const requestId = periodRequestRef.current + 1;
+    periodRequestRef.current = requestId;
     setPeriodLoading(true);
     setPeriodError('');
     try {
       const models = await Promise.all(months.map((item) => loadPhoenixReadModel(item, force ? { force: true } : {})));
+      if (periodRequestRef.current !== requestId) return;
       if (models.some((model, index) => !monthlySnapshotMatches(model, months[index]))) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       const base = models[models.length - 1];
       const unique = new Map<string, (typeof base.events.items)[number]>();
@@ -578,11 +592,12 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       setPeriodOpen(false);
       resetViewport();
     } catch (error) {
+      if (periodRequestRef.current !== requestId) return;
       setPeriodError(error instanceof Error && error.message === 'PHOENIX_MONTH_SNAPSHOT_MISMATCH'
         ? 'Uma das leituras retornou dados de outro mês. O período atual foi mantido por segurança.'
         : error instanceof Error ? error.message : 'Não foi possível carregar o intervalo.');
     } finally {
-      setPeriodLoading(false);
+      if (periodRequestRef.current === requestId) setPeriodLoading(false);
     }
   }
 
