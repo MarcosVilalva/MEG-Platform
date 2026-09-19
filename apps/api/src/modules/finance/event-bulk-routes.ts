@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
+import { prisma } from '@meg/database';
 import { z } from 'zod';
 import { FinancialEventMutationError } from './event-mutation';
 import {
@@ -6,6 +7,7 @@ import {
   updateFinancialEventsBulkProtected,
 } from './event-bulk-mutation';
 import { PendingBatchSettlementError, settlePendingBatchProtected } from './pending-batch-settlement';
+import { resolveWorkspaceContext } from '../workspaces/service';
 
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
@@ -98,13 +100,21 @@ function mutationError(reply: FastifyReply, error: unknown) {
 }
 
 function pendingBatchError(reply: FastifyReply, error: unknown) {
-  if (!(error instanceof PendingBatchSettlementError)) throw error;
-  const status = ['FINANCIAL_EVENT_NOT_FOUND', 'PAYABLE_NOT_FOUND', 'CARD_NOT_FOUND'].includes(error.code)
-    ? 404
-    : ['OPERATION_ID_REUSED', 'STATEMENT_CHANGED_RETRY'].includes(error.code)
-      ? 409
-      : 400;
-  return reply.code(status).send({ error: error.code, ...(error.details || {}) });
+  if (error instanceof PendingBatchSettlementError) {
+    const status = ['FINANCIAL_EVENT_NOT_FOUND', 'PAYABLE_NOT_FOUND', 'CARD_NOT_FOUND'].includes(error.code)
+      ? 404
+      : ['OPERATION_ID_REUSED', 'STATEMENT_CHANGED_RETRY', 'PENDING_CHANGED_RETRY'].includes(error.code)
+        ? 409
+        : 400;
+    return reply.code(status).send({ error: error.code, ...(error.details || {}) });
+  }
+  const prismaCode = error && typeof error === 'object' && 'code' in error
+    ? String((error as { code?: unknown }).code || '')
+    : '';
+  if (prismaCode === 'P2028') {
+    return reply.code(503).send({ error: 'PENDING_BATCH_TIMEOUT' });
+  }
+  throw error;
 }
 
 export async function financeBulkMutationRoutes(app: FastifyInstance) {
@@ -128,12 +138,50 @@ export async function financeBulkMutationRoutes(app: FastifyInstance) {
     }
   });
 
+  app.get('/pending/operations/:operationId', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
+    const parsed = operationIdSchema.safeParse((request.params as { operationId?: string }).operationId);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const context = await resolveWorkspaceContext(request.user.sub);
+    const receipt = await prisma.cloudMutationReceipt.findUnique({
+      where: { workspaceId_operationId: { workspaceId: context.workspaceId, operationId: parsed.data } },
+      select: { mutationType: true, response: true, revision: true, createdAt: true },
+    });
+    const allowed = new Set(['PENDING_BATCH_SETTLEMENT', 'FINANCIAL_EVENT_SETTLE', 'FINANCIAL_EVENT_SETTLE_COMPAT']);
+    if (!receipt || !allowed.has(receipt.mutationType)) {
+      return { confirmed: false, operationId: parsed.data };
+    }
+    return {
+      confirmed: true,
+      operationId: parsed.data,
+      mutationType: receipt.mutationType,
+      revision: receipt.revision,
+      confirmedAt: receipt.createdAt,
+      response: receipt.response,
+    };
+  });
+
   app.post('/pending/batch/settle', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = pendingBatchSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const startedAt = Date.now();
     try {
-      return await settlePendingBatchProtected(request.user.sub, parsed.data);
+      const result = await settlePendingBatchProtected(request.user.sub, parsed.data);
+      const elapsedMs = Date.now() - startedAt;
+      reply.header('Server-Timing', `pending-batch;dur=${elapsedMs}`);
+      request.log.info({
+        operationId: parsed.data.operationId,
+        itemCount: parsed.data.items.length,
+        elapsedMs,
+      }, 'Pending batch settlement confirmed');
+      return result;
     } catch (error) {
+      const elapsedMs = Date.now() - startedAt;
+      request.log.warn({
+        operationId: parsed.data.operationId,
+        itemCount: parsed.data.items.length,
+        elapsedMs,
+        error,
+      }, 'Pending batch settlement failed');
       return pendingBatchError(reply, error);
     }
   });
