@@ -83,7 +83,7 @@ export function resolvePhoenixCardIdentity(card: CreditCard): PhoenixCardIdentit
     return {
       key: 'latam', label: 'LATAM PASS', miniLabel: 'LATAM',
       background: 'linear-gradient(145deg,#756d62,#403a34)',
-      artwork: 'assets/cards/approved-v6/latam.webp', brandAsset: asset
+      artwork: 'assets/cards/latam-user-model-v61.svg', brandAsset: asset
     };
   }
   if (combined.includes('MERCADO LIVRE') || combined.includes('MERCADO PAGO') || /(^|\s)MELI(\s|$)/.test(combined) || /(^|\s)ML(\s|$)/.test(combined)) {
