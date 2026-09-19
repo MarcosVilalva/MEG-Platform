@@ -218,6 +218,7 @@ function updateToolbar(table: HTMLTableElement, toolbar: HTMLElement) {
 }
 
 function attach(table: HTMLTableElement) {
+  if (table.dataset.megExportNative === 'true') return;
   if (table.getAttribute(MANAGED_ATTR) === 'true') {
     const exportId = table.dataset.megExportId || '';
     const existing = exportId
