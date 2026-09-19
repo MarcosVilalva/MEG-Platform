@@ -20,7 +20,7 @@ function dateOffset(value: string, days: number, hour: number, minute = 0) {
 
 function notificationId(key: string, suffix: string) {
   let hash = 0;
-  for (const char of \`\${key}:\${suffix}\`) hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
+  for (const char of `${key}:${suffix}`) hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
   return 100000 + (Math.abs(hash) % 800000);
 }
 
@@ -35,7 +35,7 @@ function todayIso() {
   const year = parts.find((item) => item.type === 'year')?.value || '1970';
   const month = parts.find((item) => item.type === 'month')?.value || '01';
   const day = parts.find((item) => item.type === 'day')?.value || '01';
-  return \`\${year}-\${month}-\${day}\`;
+  return `${year}-${month}-${day}`;
 }
 
 async function performPhoenixNotificationSync(data: PhoenixReadModel) {
@@ -86,8 +86,8 @@ async function performPhoenixNotificationSync(data: PhoenixReadModel) {
     const total = overdue.reduce((sum, item) => sum + item.amount, 0);
     notifications.push({
       id: notificationId(todayIso(), 'overdue-summary'),
-      title: overdue.length === 1 ? 'Conta vencida no MEG' : \`\${overdue.length} contas vencidas no MEG\`,
-      body: \`\${brl(total)} ainda em aberto. Abra Pendentes para revisar.\`,
+      title: overdue.length === 1 ? 'Conta vencida no MEG' : `${overdue.length} contas vencidas no MEG`,
+      body: `${brl(total)} ainda em aberto. Abra Pendentes para revisar.`,
       channelId: CHANNEL_ID,
       schedule: { at, allowWhileIdle: true },
       extra: { managedBy: MANAGED_BY, kind: 'overdue' },
@@ -102,7 +102,7 @@ async function performPhoenixNotificationSync(data: PhoenixReadModel) {
     })
     .slice(0, 30)
     .forEach((item) => {
-      const key = \`\${item.id}:\${item.dueDate}\`;
+      const key = `${item.id}:${item.dueDate}`;
       const schedules = [
         { suffix: 'day-before', at: dateOffset(item.dueDate, -1, 18), title: 'Conta vence amanhã' },
         { suffix: 'due-day', at: localDate(item.dueDate, 8), title: 'Conta vence hoje' },
@@ -112,7 +112,7 @@ async function performPhoenixNotificationSync(data: PhoenixReadModel) {
         notifications.push({
           id: notificationId(key, suffix),
           title,
-          body: \`\${item.description} · \${brl(item.amount)}\`,
+          body: `${item.description} · ${brl(item.amount)}`,
           channelId: CHANNEL_ID,
           schedule: { at, allowWhileIdle: true },
           extra: { managedBy: MANAGED_BY, dueDate: item.dueDate.slice(0, 10), sourceId: item.id },
