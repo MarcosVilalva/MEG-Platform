@@ -294,20 +294,6 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
     });
     return rows;
   }, []);
-  const benefitMax = Math.max(
-    1,
-    benefitOpeningBalance,
-    Number(data.summary.benefitBalance || 0),
-    ...benefitEvolution.map((item) => item.balance)
-  );
-  const benefitSparkPoints = [
-    { balance: benefitOpeningBalance },
-    ...benefitEvolution.map((item) => ({ balance: item.balance }))
-  ].map((item, index, points) => {
-    const x = points.length <= 1 ? 0 : index / (points.length - 1) * 100;
-    const y = 92 - Math.max(0, Math.min(1, item.balance / benefitMax)) * 78;
-    return `${x.toFixed(2)},${y.toFixed(2)}`;
-  }).join(' ');
   const nextDue = agendaRows.find((item) => item.dueDate >= today) || agendaRows[0];
   const coverageRaw = pendingAmount > 0 ? (realizedBalance / pendingAmount) * 100 : 100;
   const coverageBar = Math.max(0, Math.min(100, coverageRaw));
@@ -485,23 +471,16 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
           <button type="button" aria-label="Fechar acompanhamento do benefício" onClick={() => setBenefitOpen(false)}>×</button>
         </header>
 
-        <div className="px-home-benefit-summary">
-          <article><span>Saldo inicial</span><strong>{money.format(benefitOpeningBalance)}</strong><small>Posição antes dos movimentos do período</small></article>
+        <div className="px-home-benefit-summary px-home-benefit-summary-four">
+          <article><span>Saldo inicial</span><strong>{money.format(benefitOpeningBalance)}</strong><small>Posição imediatamente antes do período</small></article>
+          <article className="credit"><span>Créditos no período</span><strong>{money.format(benefitCredits)}</strong><small>{benefitEvolution.filter((item) => item.amount > 0).length} crédito(s) realizado(s)</small></article>
           <article className="spent"><span>Utilizado</span><strong>{money.format(benefitSpent)}</strong><small>{benefitEvolution.filter((item) => item.amount < 0).length} gasto(s) realizado(s)</small></article>
-          <article className="current"><span>Saldo atual</span><strong>{money.format(data.summary.benefitBalance)}</strong><small>{benefitCredits > 0 ? `${money.format(benefitCredits)} creditados no período` : 'Sem novo crédito no período'}</small></article>
+          <article className="current"><span>Saldo final</span><strong>{money.format(data.summary.benefitBalance)}</strong><small>Saldo do benefício ao fim do período selecionado</small></article>
         </div>
 
-        <section className="px-home-benefit-evolution">
-          <div className="px-home-benefit-evolution-head"><div><span>Evolução do período</span><strong>{money.format(benefitOpeningBalance)} → {money.format(data.summary.benefitBalance)}</strong></div><b>{benefitSpent > 0 ? `${money.format(benefitSpent)} utilizados` : 'Sem utilização'}</b></div>
-          <div className="px-home-benefit-chart" aria-label="Evolução visual do saldo do benefício">
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Linha de evolução do saldo">
-              <defs><linearGradient id="benefitAreaGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity=".22" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-              <polyline className="area" points={`0,100 ${benefitSparkPoints} 100,100`} />
-              <polyline className="line" points={benefitSparkPoints || '0,50 100,50'} />
-            </svg>
-            <div className="px-home-benefit-chart-labels"><span>Início</span><span>Agora</span></div>
-          </div>
-        </section>
+        <div className="px-home-benefit-equation" aria-label="Memória de cálculo do benefício">
+          <span>{money.format(benefitOpeningBalance)}</span><b>+</b><span>{money.format(benefitCredits)}</span><b>−</b><span>{money.format(benefitSpent)}</span><b>=</b><strong>{money.format(data.summary.benefitBalance)}</strong>
+        </div>
 
         <section className="px-home-benefit-movements">
           <header><div><span>Movimentações</span><strong>{benefitEvolution.length} registro(s) no período</strong></div><button type="button" onClick={() => { setBenefitOpen(false); onNavigate('movements'); }}>Ver lançamentos</button></header>
