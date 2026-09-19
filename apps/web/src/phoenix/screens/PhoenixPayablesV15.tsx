@@ -707,8 +707,9 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     const partiallySelected = selectedCount > 0 && !allSelected;
     const expanded = expandedGroups.has(group.key);
     const blocks = dateRenderBlocks(group);
+    const urgencyClass = group.sortDate < today ? 'is-overdue' : group.sortDate === today ? 'is-today' : 'is-upcoming';
 
-    return <section className={`px-pending-date-cluster ${expanded ? 'is-open' : ''}`} key={group.key}>
+    return <section className={`px-pending-date-cluster ${urgencyClass} ${expanded ? 'is-open' : ''}`} key={group.key}>
       <header
         className="px-pending-date-cluster-head"
         role="button"
