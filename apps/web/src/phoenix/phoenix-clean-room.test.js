@@ -15,6 +15,10 @@ const cardsFidelityCss = readFileSync(new URL('./phoenix-cards-fidelity-v6.css',
 const cardsResponsiveCss = readFileSync(new URL('./phoenix-cards-responsive-v61.css', import.meta.url), 'utf8');
 const cardIdentity = readFileSync(new URL('./card-identity.ts', import.meta.url), 'utf8');
 const simpleEventBridge = readFileSync(new URL('./simple-event-form-bridge.ts', import.meta.url), 'utf8');
+const launchBusinessRules = readFileSync(new URL('./launch-business-rules-bridge.ts', import.meta.url), 'utf8');
+const operationalHome = readFileSync(new URL('./PhoenixOperationalMobileHome.tsx', import.meta.url), 'utf8');
+const operationalCss = readFileSync(new URL('./phoenix-operational-mobile.css', import.meta.url), 'utf8');
+const nativeNotifications = readFileSync(new URL('./phoenix-native-notifications.ts', import.meta.url), 'utf8');
 const gridFilter = readFileSync(new URL('./PhoenixGridFilter.tsx', import.meta.url), 'utf8');
 const gridCss = readFileSync(new URL('./phoenix-grid.css', import.meta.url), 'utf8');
 const launchDynamicCss = readFileSync(new URL('./phoenix-launch-dynamic.css', import.meta.url), 'utf8');
@@ -33,7 +37,7 @@ const loader = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.
 const previewMain = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
 const phoenixHtml = readFileSync(new URL('../../phoenix.html', import.meta.url), 'utf8');
 const productionHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
-const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-home-dashboard.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-fidelity-v6.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-responsive-v61.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
+const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-home-dashboard.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-fidelity-v6.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-responsive-v61.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-operational-mobile.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
 const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${profileAvatar}\n${commandPalette}\n${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
 const readOnlyScreens = `${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${webScreens}\n${history}\n${users}\n${settings}\n${sidebar}\n${commandPalette}`;
@@ -65,6 +69,17 @@ assert.match(movementScreen, /data-account-type=\{item\.type\}/,
   'Opção de conta deve expor seu tipo canônico para as bridges de compatibilidade.');
 assert.match(simpleEventBridge, /accountType === 'BENEFIT'/,
   'Bridge de gravação deve reconhecer conta de benefício pelo tipo canônico exposto no formulário.');
+assert.match(launchBusinessRules, /option\.dataset\.accountType[\s\S]*=== 'BENEFIT'/,
+  'Modalidade ALIMENTAÇÃO deve localizar a conta pelo tipo canônico benefit, não pelo rótulo.');
+assert.match(launchBusinessRules, /setPaymentLock\(root, verocard, true\)/,
+  'Modalidade ALIMENTAÇÃO deve selecionar e travar VEROCARD automaticamente.');
+assert.match(launchBusinessRules, /setAccountLock\(root, benefitAccount, true\)/,
+  'Modalidade ALIMENTAÇÃO deve selecionar e travar a conta de benefício automaticamente.');
+assert.match(movementScreen, /launchPreset === 'benefit'/,
+  'Aplicativo operacional deve possuir atalho direto para lançamento de Alimentação.');
+assert.match(movementScreen, /canonicalVerocardPayment/,
+  'Drawer React deve reforçar VEROCARD quando a conta canônica é benefit.');
+
 
 assert.match(loader, /const previewPath = `\/finance\/phoenix-preview\?month=\$\{encodeURIComponent\(month\)\}`/,
   'Núcleo financeiro Phoenix deve declarar um único endpoint mensal de snapshot.');
@@ -502,6 +517,23 @@ for (const icon of ['home', 'movements', 'history', 'payables', 'cards', 'catalo
 }
 assert.notEqual(sidebar.indexOf("icon: 'history'"), sidebar.indexOf("icon: 'payables'"),
   'Histórico e Pendentes devem manter ícones semanticamente distintos');
+
+assert.match(phoenixApp, /PhoenixOperationalMobileHome/,
+  'APK deve substituir a home pesada por uma home operacional focada em lançamentos.');
+assert.match(phoenixApp, /syncPhoenixLocalDueNotifications/,
+  'APK deve sincronizar alertas locais após carregar a base real.');
+assert.match(operationalHome, /Alimentação/,
+  'Home operacional deve oferecer atalho protegido para Benefício Alimentação.');
+assert.match(operationalHome, /Despesa[\s\S]*Receita/,
+  'Home operacional deve priorizar receitas e despesas.');
+assert.match(operationalCss, /body\.meg-operational-mobile \.px-launch-drawer[\s\S]*width:100vw!important/,
+  'Drawer Android deve ocupar a tela e se adaptar ao aparelho.');
+assert.match(nativeNotifications, /Contas vencidas|contas vencidas|Conta vencida/,
+  'Notificações Android devem cobrir compromissos vencidos.');
+assert.match(nativeNotifications, /Conta vence amanhã[\s\S]*Conta vence hoje/,
+  'Notificações Android devem cobrir contas a vencer.');
+assert.match(main, /meg-operational-mobile/,
+  'Build móvel deve marcar o runtime operacional antes de montar a Phoenix.');
 
 assert.match(phoenixApp, /px-top-quick-launch/,
   'Topbar Phoenix deve expor o novo lançamento global do V15');
