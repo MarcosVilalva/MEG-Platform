@@ -56,7 +56,7 @@ export function PhoenixGridFilter({ label, kind, value, options = [], sort = nul
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [draft, setDraft] = useState<PhoenixGridFilterValue>(value);
-  const [position, setPosition] = useState({ top: 0, left: 0, width: 360 });
+  const [position, setPosition] = useState({ top: 12, left: 12, width: 360, maxHeight: 560 });
   const count = activeCount(value);
   const [sortAscLabel, sortDescLabel] = sortCopy(kind);
   const portalRoot = typeof document !== 'undefined' ? document.querySelector<HTMLElement>('.phoenix-v15') : null;
@@ -76,12 +76,17 @@ export function PhoenixGridFilter({ label, kind, value, options = [], sort = nul
       const anchor = buttonRef.current;
       if (!anchor) return;
       const rect = anchor.getBoundingClientRect();
-      const width = Math.min(380, window.innerWidth - 24);
-      const left = Math.min(Math.max(12, rect.right - width), window.innerWidth - width - 12);
-      const estimated = 540;
+      const viewportWidth = window.visualViewport?.width || window.innerWidth;
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const width = Math.min(380, Math.max(260, viewportWidth - 24));
+      const maxHeight = Math.max(220, viewportHeight - 24);
+      const estimated = Math.min(kind === 'multi' ? 590 : 520, maxHeight);
+      const left = Math.min(Math.max(12, rect.right - width), Math.max(12, viewportWidth - width - 12));
       const below = rect.bottom + 8;
-      const top = below + estimated <= window.innerHeight - 12 ? below : Math.max(12, rect.top - estimated - 8);
-      setPosition({ top, left, width });
+      const above = rect.top - estimated - 8;
+      const preferred = below + estimated <= viewportHeight - 12 ? below : above;
+      const top = Math.min(Math.max(12, preferred), Math.max(12, viewportHeight - estimated - 12));
+      setPosition({ top, left, width, maxHeight });
     };
     updatePosition();
     const close = (event: PointerEvent) => {
@@ -156,7 +161,7 @@ export function PhoenixGridFilter({ label, kind, value, options = [], sort = nul
         role="dialog"
         aria-modal="true"
         aria-label={`Filtro de ${label}`}
-        style={{ top: position.top, left: position.left, width: position.width }}
+        style={{ top: position.top, left: position.left, width: position.width, maxHeight: position.maxHeight }}
       >
         <header className="px-grid-filter-head">
           <div><small>GRID MEG · FILTRO</small><strong>{label}</strong></div>
