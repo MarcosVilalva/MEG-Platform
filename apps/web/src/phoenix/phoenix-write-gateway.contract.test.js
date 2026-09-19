@@ -170,14 +170,22 @@ assert.match(pendingStyles, /px-pending-kpi-icon/,
   'KPIs definitivos devem manter iconografia contextual.');
 assert.match(pendingStyles, /display:flex;[\s\S]*flex-direction:column;[\s\S]*height:100dvh/,
   'Workspace de Pendentes deve usar coluna flex para eliminar o vazio estrutural abaixo da topbar.');
-assert.match(pendingStyles, /padding:10px 16px 12px !important/,
-  'Conteúdo deve manter respiro uniforme sem recriar espaço morto no topo.');
-assert.match(pendingStyles, /grid-template-columns:minmax\(360px,1\.35fr\) auto 1px minmax\(190px,\.42fr\) auto/,
+assert.match(pendingStyles, /grid-template-rows:72px 82px 54px minmax\(0,1fr\)/,
+  'Desktop deve possuir quatro faixas explícitas: hero, KPIs, toolbar e agenda flexível.');
+assert.match(pendingStyles, /padding:8px 16px 10px;/,
+  'Conteúdo deve começar imediatamente abaixo da topbar com respiro curto e previsível.');
+assert.match(pendingStyles, /grid-template-columns:minmax\(360px,1fr\) auto 1px minmax\(190px,220px\) auto/,
   'Toolbar deve distribuir busca, filtros, agrupamento e contador em proporções explícitas.');
-assert.match(pendingStyles, /px-pending-agenda-head[\s\S]*min-height:66px/,
-  'Cabeçalho da agenda deve manter altura equilibrada e previsível.');
-assert.match(pendingStyles, /px-pending-date-cluster-head[\s\S]*min-height:66px/,
+assert.match(pendingStyles, /px-pending-agenda-head[\s\S]*min-height:58px/,
+  'Cabeçalho da agenda deve manter altura compacta e previsível.');
+assert.match(pendingStyles, /px-pending-date-cluster-head[\s\S]*min-height:60px/,
   'Grupos por data devem manter ritmo vertical consistente.');
+assert.equal((pendingStyles.match(/\.px-main-payables\s*\{/g) || []).length, 1,
+  'Layout canônico deve ter uma única regra desktop de px-main-payables; mobile apenas neutraliza o comportamento sem duplicar a camada estrutural.');
+assert.doesNotMatch(pendingStyles, /Cockpit de Pendentes|Pendentes em modo cockpit fixo|Refinamento de composição/,
+  'Arquivo de Pendentes não pode reter gerações visuais antigas concorrendo na cascata.');
+assert.doesNotMatch(pendingStyles, /\.px-pending-attention(?:\s|\{|\.)/,
+  'Faixa de atenção removida não deve permanecer como CSS legado.');
 
 assert.match(appShell, /px-main-payables/,
   'Shell deve isolar o viewport apenas quando a aba Pendentes estiver ativa.');
