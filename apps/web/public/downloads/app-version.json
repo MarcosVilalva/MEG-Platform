@@ -1,9 +1,9 @@
 {
-  "versionCode": 276,
-  "versionName": "1.1.276",
+  "versionCode": 277,
+  "versionName": "1.1.277",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "04f199d4772ddd44056ac73f29e5801a16080c80147313458d17286d032bb452",
+  "sha256": "600515479e301008692c2e96628c28c4364540caa62e9fd91b49104e0360344b",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #294 from MarcosVilalva/fix/phoenix-pending-confirmation-fastpath"
+  "releaseNotes": "Merge pull request #296 from MarcosVilalva/fix/pending-idempotent-confirmation-race"
 }
