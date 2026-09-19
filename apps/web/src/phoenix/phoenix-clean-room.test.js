@@ -241,24 +241,24 @@ assert.match(homeDashboard, /px-home-drawer/,
   'Detalhes de vencimento devem abrir drawer na própria Home');
 assert.match(homeDashboard, /Revisar pagamento/,
   'Drawer da Home deve permitir selecionar itens para revisão de pagamento');
-assert.match(cardsGrid, /data-cards-layout="command-center-v3"/,
-  'Cartões deve usar a central premium V3 aprovada.');
-assert.match(cardsGrid, /Meus cartões/,
-  'Seleção de cartões deve permanecer visível em uma faixa rápida.');
+assert.match(cardsGrid, /data-cards-layout="approved-v4"/,
+  'Cartões deve usar a composição visual aprovada antes da implementação.');
+assert.match(cardsGrid, /Seus cartões/,
+  'Tela principal deve manter os cartões como protagonistas.');
+assert.match(cardsGrid, /Duplo clique para abrir a central do cartão/,
+  'Tela principal deve explicar o acesso à central por duplo clique.');
 assert.match(cardsGrid, /onDoubleClick=\{\(\) => openCardCommand/,
   'Duplo clique no cartão deve abrir a central detalhada.');
-assert.match(cardsGrid, /Central do cartão/,
+assert.match(cardsGrid, /CENTRAL DO CARTÃO/,
   'Cartões deve oferecer uma central detalhada por cartão.');
-assert.match(cardsGrid, /Limite disponível agora/,
-  'Limite disponível deve ser a leitura principal da tela.');
-assert.match(cardsGrid, /Melhor dia estimado/,
+assert.match(cardsGrid, /Limite total/,
+  'Cada cartão deve exibir o limite total com leitura imediata.');
+assert.match(cardsGrid, /Limite disponível/,
+  'Resumo do cartão selecionado deve destacar o limite disponível.');
+assert.match(cardsGrid, /Melhor dia de compra/,
   'Cartão selecionado deve destacar o melhor dia estimado de compra.');
-assert.match(cardsGrid, /Leitura inteligente/,
-  'Cartões deve oferecer insights operacionais baseados nos dados reais.');
-assert.match(cardsGrid, /Total comprometido/,
-  'Cartões deve destacar o total que efetivamente compromete o limite.');
-assert.match(cardsGrid, /Memória de cálculo do limite/,
-  'Limite disponível deve possuir memória de cálculo explícita.');
+assert.match(cardsGrid, /Memória do limite/,
+  'Central deve manter memória explícita do cálculo do limite.');
 assert.match(cardsGrid, /Próximas faturas/,
   'Cartões deve permitir navegar pelas próximas competências.');
 assert.match(cardsGrid, /commandSearch/,
@@ -269,18 +269,24 @@ assert.match(cardsGrid, /commandStatus/,
   'Central detalhada deve filtrar por situação.');
 assert.match(cardsGrid, /commandGroup/,
   'Central detalhada deve filtrar por grupo.');
+assert.match(cardsGrid, /commandSort/,
+  'Central detalhada deve permitir ordenar a tabela.');
+assert.match(cardsGrid, /exportCardStatement\('xlsx'\)/,
+  'Central do cartão deve exportar a visão filtrada para Excel.');
+assert.match(cardsGrid, /exportCardStatement\('pdf'\)/,
+  'Central do cartão deve exportar a visão filtrada para PDF.');
+assert.match(cardsGrid, /data-meg-export-native="true"/,
+  'Tabela do modal deve usar somente a exportação nativa da central.');
 assert.match(cardsGrid, /setDetailRow/,
   'Movimentações do cartão devem abrir detalhe contextual em vez de botão inerte.');
-assert.match(cardsWowCss, /\.px-cards-carousel/,
-  'Cartões devem usar carrossel visual dedicado.');
-assert.match(cardsWowCss, /\.px-card-command-modal/,
+assert.match(cardsWowCss, /\.px-cards-approved-grid/,
+  'Tela aprovada deve possuir grade visual própria para os cartões.');
+assert.match(cardsWowCss, /\.px-card-command-approved/,
   'Central detalhada deve possuir modal responsivo próprio.');
-assert.match(cardsWowCss, /\.px-card-command-filterbar/,
+assert.match(cardsWowCss, /\.px-card-command-approved-filters/,
   'Filtros da central detalhada devem possuir composição premium.');
-assert.match(cardsWowCss, /\.px-card-usage-ring/,
+assert.match(cardsWowCss, /\.px-cards-approved-progress/,
   'Uso do limite deve possuir leitura visual destacada.');
-assert.match(cardsPremiumCss, /\.px-card-limit-equation/,
-  'Memória visual do limite deve possuir composição própria.');
 assert.match(cardsPremiumCss, /\.px-card-detail-drawer/,
   'Detalhe de compra deve abrir em drawer responsivo.');
 
