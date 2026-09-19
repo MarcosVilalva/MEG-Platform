@@ -2,7 +2,7 @@ import { authenticatedRequest } from '../../app/auth-client';
 import { cardsClient } from '../../app/cards-client';
 import { payablesClient } from '../../app/payables-client';
 import type { PhoenixReadModel } from '../contracts';
-import { loadPhoenixReadModel } from './load-phoenix-read-model';
+import { invalidatePhoenixReadModelMonth, loadPhoenixReadModel } from './load-phoenix-read-model';
 
 export const PHOENIX_PENDING_WRITE_ENABLED = true as const;
 export const PHOENIX_SNAPSHOT_COMMITTED_EVENT = 'meg:phoenix-snapshot-committed';
@@ -260,6 +260,7 @@ async function refreshConfirmed(operationId: string, result: unknown, refreshMon
   const committed: PhoenixPendingWriteState = { status: 'confirmed', operationId, result };
   onState?.(committed);
   try {
+    await invalidatePhoenixReadModelMonth(refreshMonth);
     const snapshot = await loadPhoenixReadModel(refreshMonth, { force: true });
     const confirmed: PhoenixPendingWriteState = { ...committed, snapshot };
     publishCommittedSnapshot(snapshot);

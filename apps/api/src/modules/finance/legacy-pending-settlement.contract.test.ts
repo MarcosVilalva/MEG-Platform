@@ -91,4 +91,11 @@ assert.match(batchSettlement, /P2002/,
 assert.match(batchSettlement, /idempotentReplay:\s*true/,
   'Replay concorrente confirmado deve ser devolvido explicitamente ao cliente.');
 
+assert.match(batchSettlement, /timingsMs/,
+  'Baixa em lote deve registrar a latência interna por fase para diagnóstico real.');
+assert.match(batchSettlement, /markPhase\('legacyMirrorAndAudit'\)/,
+  'Espelho legado e auditoria devem possuir medição específica de latência.');
+assert.match(batchSettlement, /transactionTotal/,
+  'Tempo transacional total deve ser registrado junto das fases.');
+
 console.log('Contrato da baixa protegida individual e em lote validado.');

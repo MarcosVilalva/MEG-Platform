@@ -1,6 +1,7 @@
 import {
   authenticatedRequest,
   getApiHealth,
+  invalidateAuthenticatedCache,
   readSession
 } from '../../app/auth-client';
 import { financeClient, type FinancialEvent } from '../../app/finance-client';
@@ -13,7 +14,11 @@ import type {
   PhoenixWorkspaceUsers
 } from '../contracts';
 import { projectCardInstallmentsIntoEvents } from './card-movement-projection';
-import { readPhoenixPersistentSnapshot, writePhoenixPersistentSnapshot } from './phoenix-persistent-snapshot';
+import {
+  deletePhoenixPersistentSnapshot,
+  readPhoenixPersistentSnapshot,
+  writePhoenixPersistentSnapshot
+} from './phoenix-persistent-snapshot';
 
 type SharedStateRead = {
   state?: {
@@ -80,6 +85,7 @@ const readModelInFlight = new Map<string, Promise<PhoenixReadModel>>();
 const supplementalInFlight = new Map<string, Promise<void>>();
 const supplementalScheduled = new Set<string>();
 const persistentRefreshInFlight = new Map<string, Promise<void>>();
+const readModelGeneration = new Map<string, number>();
 let allEventsCache: CachedAllEvents | null = null;
 let allEventsInFlight: Promise<PhoenixReadModel['events']> | null = null;
 let staticContextCache: StaticReadContext | null = null;
@@ -91,6 +97,16 @@ const BOOTSTRAP_CACHE_TTL = 5 * 60_000;
 const ALL_EVENTS_CACHE_TTL = 5 * 60_000;
 // Catálogos auxiliares, AppState, clientes e usuários não mudam porque o mês mudou.
 const STATIC_CACHE_TTL = 10 * 60_000;
+
+function generationForMonth(month: string) {
+  return readModelGeneration.get(month) || 0;
+}
+
+function bumpGeneration(month: string) {
+  const next = generationForMonth(month) + 1;
+  readModelGeneration.set(month, next);
+  return next;
+}
 
 function sourcePayloadDetails(event: FinancialEvent) {
   const payload = (event as FinancialEventWithSourcePayload).sourcePayload;
@@ -323,12 +339,14 @@ function startSupplementalHydration(
 ) {
   const key = `${staticContextKey(session.user)}:${month}`;
   if (supplementalInFlight.has(key)) return;
+  const generation = generationForMonth(month);
 
   const pending = Promise.all([
     loadStaticContext(session, forceStatic),
     financeClient.listBudgets(month)
   ])
     .then(([staticContext, budgets]) => {
+      if (generation !== generationForMonth(month)) return;
       enrichReadModel(model, staticContext, budgets);
       readModelCache.set(month, { data: model, storedAt: Date.now() });
       void writePhoenixPersistentSnapshot(session.user.id, month, model);
@@ -355,10 +373,12 @@ function scheduleSupplementalHydration(
 ) {
   const key = `${staticContextKey(session.user)}:${month}`;
   if (supplementalInFlight.has(key) || supplementalScheduled.has(key)) return;
+  const generation = generationForMonth(month);
   supplementalScheduled.add(key);
 
   const run = () => {
     supplementalScheduled.delete(key);
+    if (generation !== generationForMonth(month)) return;
     startSupplementalHydration(session, month, model, forceStatic);
   };
 
@@ -372,7 +392,7 @@ function scheduleSupplementalHydration(
   }
 }
 
-async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boolean } = {}): Promise<PhoenixReadModel> {
+async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boolean; forceNetwork?: boolean } = {}): Promise<PhoenixReadModel> {
   const session = readSession();
   if (!session) throw new Error('PHOENIX_UNAUTHORIZED');
 
@@ -386,7 +406,11 @@ async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boo
 
   // Snapshot e health começam juntos. Antes, o health só era solicitado depois que o
   // snapshot terminava, acrescentando uma segunda espera ao caminho crítico do login.
-  const previewPromise = authenticatedRequest<PhoenixPreviewCoreRead>(`/finance/phoenix-preview?month=${encodeURIComponent(month)}`);
+  const previewPath = `/finance/phoenix-preview?month=${encodeURIComponent(month)}`;
+  const previewPromise = authenticatedRequest<PhoenixPreviewCoreRead>(
+    previewPath,
+    options.forceNetwork ? { method: 'GET', cache: 'no-store' } : undefined
+  );
   const healthPromise = cachedStatic
     ? Promise.resolve(cachedStatic.health)
     : getApiHealth().catch(() => ({ status: 'unavailable' } as PhoenixReadModel['health']));
@@ -415,8 +439,10 @@ function schedulePersistentRevalidation(
   if (persistentRefreshInFlight.has(key)) return;
 
   const run = () => {
+    const generation = generationForMonth(month);
     const pending = fetchPhoenixReadModel(month, { forceStatic })
       .then((data) => {
+        if (generation !== generationForMonth(month)) return;
         readModelCache.set(month, { data, storedAt: Date.now() });
         void writePhoenixPersistentSnapshot(session.user.id, month, data);
         publishRevalidatedSnapshot(data);
@@ -486,18 +512,24 @@ export async function loadPhoenixReadModel(month: string, options: { force?: boo
   }
 
   const pending = (async () => {
+    const generation = generationForMonth(month);
     if (!options.force) {
       const persistent = await readPhoenixPersistentSnapshot(session.user.id, month);
-      if (persistent) {
+      if (persistent && generation === generationForMonth(month)) {
         readModelCache.set(month, { data: persistent.data, storedAt: Date.now() });
         schedulePersistentRevalidation(session, month, Boolean(options.forceStatic));
         return persistent.data;
       }
     }
 
-    const data = await fetchPhoenixReadModel(month, { forceStatic: options.forceStatic });
-    readModelCache.set(month, { data, storedAt: Date.now() });
-    void writePhoenixPersistentSnapshot(session.user.id, month, data);
+    const data = await fetchPhoenixReadModel(month, {
+      forceStatic: options.forceStatic,
+      forceNetwork: Boolean(options.force),
+    });
+    if (generation === generationForMonth(month)) {
+      readModelCache.set(month, { data, storedAt: Date.now() });
+      void writePhoenixPersistentSnapshot(session.user.id, month, data);
+    }
     return data;
   })().finally(() => {
     if (readModelInFlight.get(month) === pending) readModelInFlight.delete(month);
@@ -533,8 +565,27 @@ export async function loadPhoenixAllEvents(options: { force?: boolean } = {}) {
   return pending;
 }
 
+export async function invalidatePhoenixReadModelMonth(month: string) {
+  bumpGeneration(month);
+  readModelCache.delete(month);
+  readModelInFlight.delete(month);
+  for (const key of [...persistentRefreshInFlight.keys()]) {
+    if (key.endsWith(`:${month}`)) persistentRefreshInFlight.delete(key);
+  }
+  for (const key of [...supplementalScheduled]) {
+    if (key.endsWith(`:${month}`)) supplementalScheduled.delete(key);
+  }
+  const previewPath = `/finance/phoenix-preview?month=${encodeURIComponent(month)}`;
+  invalidateAuthenticatedCache(previewPath);
+  const session = readSession();
+  if (session?.user?.id) {
+    await deletePhoenixPersistentSnapshot(session.user.id, month);
+  }
+}
+
 export function clearPhoenixReadModelCache() {
   readModelCache.clear();
+  readModelGeneration.clear();
   readModelInFlight.clear();
   supplementalInFlight.clear();
   supplementalScheduled.clear();
