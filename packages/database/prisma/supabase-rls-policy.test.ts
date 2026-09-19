@@ -21,8 +21,14 @@ for (const model of models) {
   );
 }
 
-assert.match(sql, /FROM anon, authenticated;/,
-  'anon e authenticated devem ser bloqueados no Data API');
+assert.match(sql, /FROM anon, authenticated, service_role;/,
+  'anon, authenticated e service_role devem ficar sem acesso direto às tabelas');
+assert.match(sql, /REVOKE EXECUTE ON FUNCTIONS[\s\S]*FROM anon, authenticated, service_role;/,
+  'funções futuras não podem nascer executáveis pelas roles do Data API');
+assert.match(sql, /REVOKE USAGE, SELECT ON SEQUENCES[\s\S]*FROM anon, authenticated, service_role;/,
+  'sequências futuras não podem nascer acessíveis pelas roles do Data API');
+assert.match(sql, /REVOKE EXECUTE ON FUNCTIONS[\s\S]*FROM PUBLIC;/,
+  'funções futuras não podem herdar EXECUTE público');
 assert.match(sql, /ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public/,
   'futuras tabelas criadas pelo Prisma devem nascer sem grants diretos ao Data API');
 assert.doesNotMatch(executableSql, /FORCE ROW LEVEL SECURITY/,
