@@ -597,6 +597,8 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     }
 
     const targetIds = targets.map((target) => target.id);
+    const confirmedTotal = selectedTotal;
+    const balanceBefore = available;
     let reflected = false;
     const reflectConfirmedWrite = () => {
       if (reflected) return;
@@ -610,6 +612,15 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       setReviewOpen(false);
       setPrepared(null);
       setPreparedBatch(null);
+      setSettlementReceipt({
+        count: targets.length,
+        total: confirmedTotal,
+        paidAt,
+        accountName: account.name,
+        paymentMethodName: method.name,
+        balanceBefore,
+        balanceAfter: balanceBefore - confirmedTotal,
+      });
       setSuccessMessage(targets.length > 1
         ? `${targets.length} compromissos baixados em ${date.format(new Date(`${paidAt}T12:00:00Z`))} por ${method.name}.`
         : `${targets[0].description} baixado em ${date.format(new Date(`${paidAt}T12:00:00Z`))} por ${method.name}.`);
@@ -651,7 +662,14 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       reflectConfirmedWrite();
       if (result.snapshot) {
         setModel(result.snapshot);
-        setLocallySettled(new Set());
+        const snapshotOpenIds = new Set<string>([
+          ...result.snapshot.payables
+            .filter((item) => !['paid', 'cancelled'].includes(normalize(item.status)) && Number(item.openAmount) > 0)
+            .map((item) => `payable-${item.id}`),
+          ...cardStatementItems(result.snapshot).map((item) => item.id),
+          ...eventItems(result.snapshot).map((item) => item.id),
+        ]);
+        setLocallySettled((current) => new Set([...current].filter((id) => snapshotOpenIds.has(id))));
       }
       window.dispatchEvent(new Event('focus'));
     } catch (error) {
@@ -734,19 +752,42 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     </section>;
   }
 
-  return <section className="px-screen">
-    <header className="px-screen-head">
-      <div><span className="px-kicker">Pendentes</span><h1>Prioridades e compromissos</h1><p>Organize por vencimento ou pela visão que preferir. Faturas de cartão permanecem consolidadas para evitar lançamentos espalhados.</p></div>
+  return <section className="px-screen px-pending-cockpit">
+    <header className="px-screen-head px-pending-hero">
+      <div><span className="px-kicker">Pendentes</span><h1>Prioridades e compromissos</h1><p>Uma visão de ação: o que venceu, o que exige atenção hoje e o que precisa ser preparado nos próximos dias.</p></div>
       <div className="px-screen-head-aside"><span className="px-total-pill">{money.format(total)} pendente</span></div>
     </header>
 
+    <section className={`px-pending-attention ${overdueObligationCount ? 'is-critical' : dueTodayObligationCount ? 'is-today' : 'is-clear'}`}>
+      <div className="px-pending-attention-icon" aria-hidden="true">{overdueObligationCount ? '!' : dueTodayObligationCount ? '•' : '✓'}</div>
+      <div className="px-pending-attention-copy">
+        <span>Atenção agora</span>
+        <strong>{overdueObligationCount
+          ? `${overdueObligationCount} compromisso(s) vencido(s)`
+          : dueTodayObligationCount
+            ? `${dueTodayObligationCount} compromisso(s) vencem hoje`
+            : 'Nenhuma pendência urgente neste momento'}</strong>
+        <small>{overdueObligationCount
+          ? `${money.format(overdueTotal)} exigem prioridade · hoje ainda há ${money.format(dueTodayTotal)} programados.`
+          : dueTodayObligationCount
+            ? `${money.format(dueTodayTotal)} com ação prevista para hoje.`
+            : `${nextSevenObligationCount} compromisso(s) nos próximos 7 dias.`}</small>
+      </div>
+      <div className="px-pending-attention-stats">
+        <div><span>Vencido</span><strong>{money.format(overdueTotal)}</strong></div>
+        <div><span>Hoje</span><strong>{money.format(dueTodayTotal)}</strong></div>
+        <div><span>7 dias</span><strong>{money.format(nextSevenTotal)}</strong></div>
+      </div>
+      {(overdueObligationCount || dueTodayObligationCount) ? <button type="button" onClick={() => setPriority(overdueObligationCount ? 'overdue' : 'today')}>Ver prioridade</button> : null}
+    </section>
+
     {successMessage ? <div className="px-pending-write-banner" role="status"><strong>Baixa confirmada</strong><span>{successMessage}</span></div> : null}
 
-    <section className="px-screen-kpis">
-      <article><span>Total pendente líquido</span><strong>{money.format(total)}</strong><small>{actionableObligationCount} compromisso(s){adjustmentCount ? ` · ${adjustmentCount} ajuste(s)` : ''}</small></article>
-      <article className="danger"><span>Vencidos</span><strong>{overdueObligationCount}</strong><small>Prioridade máxima</small></article>
-      <article className="warn"><span>Vencem hoje</span><strong>{dueTodayObligationCount}</strong><small>Ação imediata</small></article>
-      <article><span>Próximos vencimentos</span><strong>{upcomingObligationCount}</strong><small>Agenda ativa</small></article>
+    <section className="px-screen-kpis px-pending-kpis">
+      <article className="total"><span>Total pendente líquido</span><strong>{money.format(total)}</strong><small>{actionableObligationCount} compromisso(s){adjustmentCount ? ` · ${adjustmentCount} ajuste(s)` : ''}</small></article>
+      <article className="danger"><span>Vencidos</span><strong>{money.format(overdueTotal)}</strong><small>{overdueObligationCount} compromisso(s) · prioridade máxima</small></article>
+      <article className="warn"><span>Vencem hoje</span><strong>{money.format(dueTodayTotal)}</strong><small>{dueTodayObligationCount} compromisso(s) · ação imediata</small></article>
+      <article className="next"><span>Próximos 7 dias</span><strong>{money.format(nextSevenTotal)}</strong><small>{nextSevenObligationCount} compromisso(s) no radar</small></article>
     </section>
 
     <div className="px-priority-tabs">{([['all','Todos'],['overdue','Vencidos'],['today','Hoje'],['upcoming','Próximos']] as const).map(([id,label]) => <button key={id} type="button" className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{label}</button>)}</div>
@@ -787,6 +828,8 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
 
     {detailItem ? <div className="px-pending-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailItem(null); }}><aside className="px-pending-drawer" role="dialog" aria-modal="true" aria-label={`Detalhes de ${detailItem.description}`}><header><div><span className="px-kicker">{detailItem.source === 'card' ? 'Detalhes da fatura' : 'Detalhes do compromisso'}</span><h2>{detailItem.description}</h2><p>{date.format(new Date(`${detailItem.dueDate}T12:00:00Z`))}</p></div><button type="button" aria-label="Fechar" onClick={() => setDetailItem(null)}>×</button></header><dl><div><dt>Valor</dt><dd>{money.format(detailItem.openAmount)}</dd></div><div><dt>Classificação</dt><dd>{detailItem.categoryName}</dd></div><div><dt>Grupo</dt><dd>{detailItem.group}</dd></div><div><dt>Forma prevista</dt><dd>{detailItem.paymentMethod}</dd></div><div><dt>Modalidade</dt><dd>{detailItem.modality}</dd></div><div><dt>Parcela</dt><dd>{detailItem.source === 'card' ? 'Fatura consolidada' : detailItem.installmentQty > 1 ? `${detailItem.installmentNo}/${detailItem.installmentQty}` : 'Pagamento único'}</dd></div></dl>{detailItem.children?.length ? <section className="px-pending-statement-lines"><div className="px-panel-head"><div><span>Lançamentos da fatura</span><strong>{detailItem.children.length} item(ns)</strong></div></div>{detailItem.children.map((child) => <div key={child.id}><span><strong>{child.description}</strong><small>{date.format(new Date(`${child.purchaseDate}T12:00:00Z`))} · parcela {child.installmentNo}/{child.installmentQty}</small></span><strong>{money.format(child.amount)}</strong></div>)}</section> : null}<footer><button type="button" className="px-secondary-action" onClick={() => setDetailItem(null)}>Fechar</button><button type="button" className="px-primary-action" onClick={() => { toggle(detailItem.id); setDetailItem(null); }}>{selected.has(detailItem.id) ? 'Remover da baixa' : detailItem.source === 'card' ? 'Selecionar fatura' : 'Selecionar para baixa'}</button></footer></aside></div> : null}
 
-    {reviewOpen ? <div className="px-pending-overlay" role="presentation" onMouseDown={(event) => { if (!saving && event.target === event.currentTarget) setReviewOpen(false); }}><aside className="px-pending-drawer px-pending-review" role="dialog" aria-modal="true" aria-label="Revisar baixa"><header><div><span className="px-kicker">Baixa protegida</span><h2>{selectedItems.length === 1 ? `Revisar ${selectedItems[0].description}` : `Revisar ${selectedItems.length} compromisso(s)`}</h2><p>Confirme os dados efetivos do pagamento antes de gravar.</p></div><button type="button" aria-label="Fechar" disabled={saving} onClick={() => setReviewOpen(false)}>×</button></header><div className="px-pending-review-list">{selectedItems.map((item) => <div key={item.id}><span><strong>{item.description}</strong><small>{date.format(new Date(`${item.dueDate}T12:00:00Z`))} · previsto: {item.paymentMethod}</small></span><strong>{money.format(item.openAmount)}</strong></div>)}</div><dl><div><dt>Total selecionado</dt><dd>{money.format(selectedTotal)}</dd></div><div><dt>Saldo antes</dt><dd>{money.format(available)}</dd></div><div><dt>Saldo depois</dt><dd>{money.format(available - selectedTotal)}</dd></div></dl><div className="px-pending-payment-fields"><label><span>Data da baixa</span><input type="date" value={paidAt} max={today} disabled={saving} onChange={(event) => updatePaidAt(event.target.value)} /></label><label><span>Conta financeira</span><select value={accountId} disabled={saving} onChange={(event) => updateAccount(event.target.value)}><option value="">Selecione</option>{reviewAccounts.map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}</select></label><label><span>Forma de pagamento</span><select value={paymentMethodId} disabled={saving} onChange={(event) => updatePaymentMethod(event.target.value)}><option value="">Selecione</option>{reviewMethods.map((method) => <option value={method.id} key={method.id}>{method.name}</option>)}</select></label></div>{selectedItems.length > 1 ? <div className="px-pending-write-warning"><strong>Baixa conjunta dos selecionados.</strong><span>A mesma data, conta e forma serão aplicadas a todos. Cada compromisso é confirmado pelo writer oficial; se houver interrupção, o MEG relê a base e mantém somente o que continuar pendente para nova tentativa.</span></div> : null}{writeState.status === 'error' ? <div className="px-pending-write-error" role="alert"><strong>Baixa não confirmada</strong><span>{writeState.message}</span></div> : null}<footer><button type="button" className="px-secondary-action" disabled={saving} onClick={() => setReviewOpen(false)}>Voltar</button><button type="button" className="px-primary-action" disabled={!canWrite || saving || !selectedItems.length || selectedTotal <= 0 || !paidAt || !accountId || !paymentMethodId || selectedTotal > available} onClick={() => { void confirmSettlement(); }}>{saving ? `Confirmando ${selectedItems.length > 1 ? 'baixas' : 'no servidor'}…` : selectedItems.length > 1 ? `Registrar baixa de ${selectedItems.length} compromissos` : selectedItem?.source === 'card' ? 'Registrar pagamento da fatura' : 'Registrar baixa'}</button><small>{selectedItems.length > 1 ? 'O lote usa identificadores estáveis por compromisso para que uma nova tentativa não duplique baixas já confirmadas.' : 'O botão só conclui após confirmação do servidor. Reenvios usam o mesmo operationId enquanto os dados não mudarem.'}</small></footer></aside></div> : null}
+    {reviewOpen ? <div className="px-pending-overlay px-pending-confirm-overlay" role="presentation" onMouseDown={(event) => { if (!saving && event.target === event.currentTarget) setReviewOpen(false); }}><section className="px-pending-confirm-modal" role="dialog" aria-modal="true" aria-label="Confirmar baixa" aria-busy={saving}><header><div><span className="px-kicker">Confirmação financeira</span><h2>{selectedItems.length === 1 ? 'Confirmar baixa do compromisso' : `Confirmar baixa de ${selectedItems.length} compromissos`}</h2><p>Revise os dados abaixo. A operação só será apresentada como concluída depois da confirmação real do servidor.</p></div><button type="button" aria-label="Fechar" disabled={saving} onClick={() => setReviewOpen(false)}>×</button></header><div className="px-pending-confirm-highlight"><span>Total da operação</span><strong>{money.format(selectedTotal)}</strong><small>{selectedItems.length} compromisso(s) selecionado(s)</small></div><dl><div><dt>Saldo antes</dt><dd>{money.format(available)}</dd></div><div><dt>Saldo depois</dt><dd>{money.format(available - selectedTotal)}</dd></div></dl><div className="px-pending-payment-fields"><label><span>Data da baixa</span><input type="date" value={paidAt} max={today} disabled={saving} onChange={(event) => updatePaidAt(event.target.value)} /></label><label><span>Conta financeira</span><select value={accountId} disabled={saving} onChange={(event) => updateAccount(event.target.value)}><option value="">Selecione</option>{reviewAccounts.map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}</select></label><label><span>Forma de pagamento</span><select value={paymentMethodId} disabled={saving} onChange={(event) => updatePaymentMethod(event.target.value)}><option value="">Selecione</option>{reviewMethods.map((method) => <option value={method.id} key={method.id}>{method.name}</option>)}</select></label></div><details className="px-pending-confirm-items"><summary>Ver {selectedItems.length} compromisso(s) da operação</summary><div className="px-pending-review-list">{selectedItems.map((item) => <div key={item.id}><span><strong>{item.description}</strong><small>{date.format(new Date(`${item.dueDate}T12:00:00Z`))} · previsto: {item.paymentMethod}</small></span><strong>{money.format(item.openAmount)}</strong></div>)}</div></details>{selectedItems.length > 1 ? <div className="px-pending-write-warning"><strong>Baixa conjunta protegida.</strong><span>A mesma data, conta e forma serão aplicadas a todos. O lote é atômico e usa identificador idempotente para impedir duplicidade.</span></div> : null}{saving ? <div className="px-pending-confirm-progress" role="status"><span className="px-pending-spinner" aria-hidden="true" /><div><strong>Confirmando a operação</strong><small>Aguarde a confirmação do servidor. Não feche nem repita a baixa.</small></div></div> : null}{writeState.status === 'error' ? <div className="px-pending-write-error" role="alert"><strong>Baixa não confirmada</strong><span>{writeState.message}</span></div> : null}<footer><button type="button" className="px-secondary-action" disabled={saving} onClick={() => setReviewOpen(false)}>Voltar</button><button type="button" className="px-primary-action" disabled={!canWrite || saving || !selectedItems.length || selectedTotal <= 0 || !paidAt || !accountId || !paymentMethodId || selectedTotal > available} onClick={() => { void confirmSettlement(); }}>{saving ? 'Confirmando…' : selectedItems.length > 1 ? `Confirmar baixa de ${selectedItems.length}` : selectedItem?.source === 'card' ? 'Confirmar pagamento da fatura' : 'Confirmar baixa'}</button><small>Após o clique, a tela só libera a operação quando houver confirmação efetiva do servidor ou do recibo idempotente.</small></footer></section></div> : null}
+
+    {settlementReceipt ? <div className="px-pending-overlay px-pending-success-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSettlementReceipt(null); }}><section className="px-pending-success-modal" role="dialog" aria-modal="true" aria-label="Baixa confirmada"><div className="px-pending-success-check" aria-hidden="true">✓</div><span className="px-kicker">Operação concluída</span><h2>Baixa confirmada</h2><p>{settlementReceipt.count} compromisso(s) foram confirmados pelo servidor e retirados das pendências.</p><div className="px-pending-success-total"><span>Valor baixado</span><strong>{money.format(settlementReceipt.total)}</strong></div><dl><div><dt>Data</dt><dd>{date.format(new Date(`${settlementReceipt.paidAt}T12:00:00Z`))}</dd></div><div><dt>Conta</dt><dd>{settlementReceipt.accountName}</dd></div><div><dt>Forma</dt><dd>{settlementReceipt.paymentMethodName}</dd></div><div><dt>Saldo após baixa</dt><dd>{money.format(settlementReceipt.balanceAfter)}</dd></div></dl><footer><button type="button" className="px-primary-action" onClick={() => setSettlementReceipt(null)}>Concluir</button></footer></section></div> : null}
   </section>;
 }
