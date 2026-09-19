@@ -179,12 +179,22 @@ function friendlyMessage(code: string) {
     INSUFFICIENT_MONETARY_BALANCE: 'O saldo monetário não cobre o total selecionado. Nenhuma baixa do lote foi gravada.',
     BATCH_NET_NOT_PAYABLE: 'Os créditos e estornos zeram ou superam o valor do lote. Não há pagamento líquido a registrar.',
     OPERATION_ID_REUSED: 'A tentativa atual não corresponde à baixa original. Revise os dados antes de tentar novamente.',
+    PHOENIX_PENDING_CONNECTION_INTERRUPTED: 'A conexão foi interrompida antes da confirmação do servidor. O mesmo lote pode ser reenviado com segurança; o MEG reutiliza o identificador da tentativa para não duplicar baixas.',
   };
   return messages[code] || 'Não foi possível confirmar a baixa. Nenhuma alteração do lote foi considerada concluída.';
 }
 
 function codeFromError(error: unknown) {
   if (error instanceof PhoenixPendingWriteError) return error.code;
+  if (error instanceof DOMException && ['AbortError', 'TimeoutError'].includes(error.name)) {
+    return 'PHOENIX_PENDING_CONNECTION_INTERRUPTED';
+  }
+  if (error instanceof TypeError && /fetch|network|failed/i.test(error.message)) {
+    return 'PHOENIX_PENDING_CONNECTION_INTERRUPTED';
+  }
+  if (error instanceof Error && /timeout|timed out|abort|premature close/i.test(error.message)) {
+    return 'PHOENIX_PENDING_CONNECTION_INTERRUPTED';
+  }
   if (error instanceof Error && error.message) return error.message;
   return 'PHOENIX_PENDING_WRITE_FAILED';
 }
@@ -265,6 +275,7 @@ export async function runPhoenixPendingBatchSettlement(
     assertBatchInput(prepared.payload);
     const result = await authenticatedRequest('/finance/pending/batch/settle', {
       method: 'POST',
+      signal: AbortSignal.timeout(105_000),
       body: JSON.stringify({
         items: prepared.payload.items.map((item) => ({
           source: item.source,
