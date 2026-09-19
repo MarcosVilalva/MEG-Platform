@@ -17,7 +17,7 @@ export function PhoenixHomeAllTime({ data, onNavigate }: {
   const freePositive = summary.freeAfterCommitments >= 0;
   const projectionPositive = summary.projectedAfterPlanned >= 0;
 
-  return <>
+  return <section className="px-home-alltime" data-home-alltime-layout="compact-scroll-v1">
     <div className="px-page-head">
       <div>
         <span className="px-kicker">Visão geral · Tudo</span>
@@ -78,5 +78,5 @@ export function PhoenixHomeAllTime({ data, onNavigate }: {
         <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Benefício alimentação atual</strong><small>Créditos realizados desde o início: {money.format(summary.benefitCredits)} · utilizado: {money.format(summary.benefitUsed)}</small></div><strong>{money.format(summary.benefitBalance)}</strong></div>
       </article>
     </section>
-  </>;
+  </section>;
 }

@@ -304,7 +304,22 @@ assert.match(homeDashboard, /A receber/);
 assert.match(homeDashboard, /Resumo executivo/);
 assert.match(homeDashboard, /px-home-benefit-chip/,
   'Home deve mostrar o saldo do benefício no hero sem criar um quinto KPI.');
-assert.match(homeDashboard, /Saldo do benefício separado do caixa monetário/,
+assert.match(homeDashboard, /setBenefitOpen\(true\)/,
+  'Chip do benefício deve abrir o acompanhamento detalhado.');
+assert.match(homeDashboard, /Evolução do saldo/,
+  'Modal de benefício deve mostrar evolução de saldo.');
+assert.match(homeDashboard, /Saldo inicial/);
+assert.match(homeDashboard, /Utilizado/);
+assert.match(homeDashboard, /Movimentações/);
+assert.match(homeNowCss, /\.px-home-benefit-modal/,
+  'Acompanhamento do benefício deve possuir modal dedicado.');
+assert.match(homeAllTime, /data-home-alltime-layout="compact-scroll-v1"/,
+  'Home Tudo deve usar layout próprio para períodos extensos.');
+assert.match(homeNowCss, /\.px-main-home-all[\s\S]*overflow:hidden/,
+  'Home Tudo deve manter o shell estável.');
+assert.match(homeNowCss, /\.px-content-home\.px-content-home-all[\s\S]*overflow-y:auto !important/,
+  'Home Tudo deve permitir rolagem vertical do conteúdo extenso.');
+assert.match(homeDashboard, /benefício permanece separado do saldo monetário/i,
   'Benefício deve permanecer visualmente separado do saldo monetário.');
 assert.match(homeNowCss, /\.px-home-benefit-chip/,
   'Chip de benefício deve possuir estilo próprio no hero.');

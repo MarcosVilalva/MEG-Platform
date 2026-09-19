@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { PhoenixReadModel } from '../contracts';
 import { buildPhoenixHomeAgenda, type PhoenixHomeAgendaItem } from '../home-agenda';
+import { isPhoenixBenefitEvent } from '../home-period-summary';
 import '../phoenix-home-now.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -258,6 +259,7 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
   const hiddenAgendaCount = Math.max(0, agendaRows.length - visibleAgenda.length);
   const [detail, setDetail] = useState<AgendaDisplayGroup | null>(null);
   const [detailSelected, setDetailSelected] = useState<Set<string>>(() => new Set());
+  const [benefitOpen, setBenefitOpen] = useState(false);
 
   const pendingAmount = data.summary.pendingAmount || 0;
   const realizedBalance = data.summary.availableBalance + data.summary.realizedResult;
@@ -266,6 +268,46 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
   const openReceivables = data.receivables.filter((item) => item.status !== 'paid' && Number(item.openAmount || 0) > 0);
   const openReceivableAmount = openReceivables.reduce((sum, item) => sum + Number(item.openAmount || 0), 0);
   const latestActivity = feed[0] || null;
+  const benefitEvents = data.events.items
+    .filter(isPhoenixBenefitEvent)
+    .filter((event) => ['paid', 'reconciled', 'confirmed'].includes(event.status))
+    .sort((left, right) => String(left.date).localeCompare(String(right.date)));
+  const benefitCredits = benefitEvents.reduce((sum, event) => {
+    const signed = Number(event.signedAmount || 0);
+    return signed > 0 ? sum + signed : sum;
+  }, 0);
+  const benefitSpent = benefitEvents.reduce((sum, event) => {
+    const signed = Number(event.signedAmount || 0);
+    return signed < 0 ? sum + Math.abs(signed) : sum;
+  }, 0);
+  const benefitPeriodNet = benefitEvents.reduce((sum, event) => sum + Number(event.signedAmount || 0), 0);
+  const benefitOpeningBalance = Number(data.summary.benefitBalance || 0) - benefitPeriodNet;
+  const benefitEvolution = benefitEvents.reduce<Array<{ id: string; date: string; description: string; amount: number; balance: number }>>((rows, event) => {
+    const amount = Number(event.signedAmount || 0);
+    const previous = rows.length ? rows[rows.length - 1].balance : benefitOpeningBalance;
+    rows.push({
+      id: event.id,
+      date: String(event.date).slice(0, 10),
+      description: event.description || (amount >= 0 ? 'Crédito de benefício' : 'Uso do benefício'),
+      amount,
+      balance: previous + amount
+    });
+    return rows;
+  }, []);
+  const benefitMax = Math.max(
+    1,
+    benefitOpeningBalance,
+    Number(data.summary.benefitBalance || 0),
+    ...benefitEvolution.map((item) => item.balance)
+  );
+  const benefitSparkPoints = [
+    { balance: benefitOpeningBalance },
+    ...benefitEvolution.map((item) => ({ balance: item.balance }))
+  ].map((item, index, points) => {
+    const x = points.length <= 1 ? 0 : index / (points.length - 1) * 100;
+    const y = 92 - Math.max(0, Math.min(1, item.balance / benefitMax)) * 78;
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(' ');
   const nextDue = agendaRows.find((item) => item.dueDate >= today) || agendaRows[0];
   const coverageRaw = pendingAmount > 0 ? (realizedBalance / pendingAmount) * 100 : 100;
   const coverageBar = Math.max(0, Math.min(100, coverageRaw));
@@ -350,11 +392,11 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
         </div>
         <div className="px-home-top-status">
           <span className={`px-home-health ${healthy ? 'is-ok' : 'is-warning'}`}>{heroStatus}</span>
-          <span className="px-home-benefit-chip" title="Saldo do benefício separado do caixa monetário">
+          <button className="px-home-benefit-chip" type="button" title="Abrir acompanhamento do benefício" onClick={() => setBenefitOpen(true)}>
             <HomeGlyph kind="benefit" />
             <span>Benefício</span>
             <strong>{money.format(data.summary.benefitBalance)}</strong>
-          </span>
+          </button>
         </div>
       </header>
 
@@ -432,6 +474,50 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
         </aside>
       </section>
     </section>
+
+    {benefitOpen ? <div className="px-home-benefit-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setBenefitOpen(false); }}>
+      <section className="px-home-benefit-modal" role="dialog" aria-modal="true" aria-label="Acompanhamento do benefício alimentação">
+        <header className="px-home-benefit-modal-head">
+          <div className="px-home-benefit-modal-title">
+            <span className="px-home-benefit-modal-icon" aria-hidden="true"><HomeGlyph kind="benefit" /></span>
+            <div><span className="px-kicker">Benefício alimentação · {monthLabel(month)}</span><h2>Evolução do saldo</h2><p>Créditos, utilização e saldo disponível do período, separados do caixa monetário.</p></div>
+          </div>
+          <button type="button" aria-label="Fechar acompanhamento do benefício" onClick={() => setBenefitOpen(false)}>×</button>
+        </header>
+
+        <div className="px-home-benefit-summary">
+          <article><span>Saldo inicial</span><strong>{money.format(benefitOpeningBalance)}</strong><small>Posição antes dos movimentos do período</small></article>
+          <article className="spent"><span>Utilizado</span><strong>{money.format(benefitSpent)}</strong><small>{benefitEvolution.filter((item) => item.amount < 0).length} gasto(s) realizado(s)</small></article>
+          <article className="current"><span>Saldo atual</span><strong>{money.format(data.summary.benefitBalance)}</strong><small>{benefitCredits > 0 ? `${money.format(benefitCredits)} creditados no período` : 'Sem novo crédito no período'}</small></article>
+        </div>
+
+        <section className="px-home-benefit-evolution">
+          <div className="px-home-benefit-evolution-head"><div><span>Evolução do período</span><strong>{money.format(benefitOpeningBalance)} → {money.format(data.summary.benefitBalance)}</strong></div><b>{benefitSpent > 0 ? `${money.format(benefitSpent)} utilizados` : 'Sem utilização'}</b></div>
+          <div className="px-home-benefit-chart" aria-label="Evolução visual do saldo do benefício">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Linha de evolução do saldo">
+              <defs><linearGradient id="benefitAreaGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity=".22" /><stop offset="100%" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
+              <polyline className="area" points={`0,100 ${benefitSparkPoints} 100,100`} />
+              <polyline className="line" points={benefitSparkPoints || '0,50 100,50'} />
+            </svg>
+            <div className="px-home-benefit-chart-labels"><span>Início</span><span>Agora</span></div>
+          </div>
+        </section>
+
+        <section className="px-home-benefit-movements">
+          <header><div><span>Movimentações</span><strong>{benefitEvolution.length} registro(s) no período</strong></div><button type="button" onClick={() => { setBenefitOpen(false); onNavigate('movements'); }}>Ver lançamentos</button></header>
+          <div className="px-home-benefit-list">
+            {[...benefitEvolution].reverse().map((item) => <div className="px-home-benefit-row" key={item.id}>
+              <span className={`px-home-benefit-row-icon ${item.amount >= 0 ? 'credit' : 'debit'}`} aria-hidden="true">{item.amount >= 0 ? '↗' : '↘'}</span>
+              <div><strong>{item.description}</strong><small>{shortDate(item.date)} · saldo após movimento {money.format(item.balance)}</small></div>
+              <strong className={item.amount >= 0 ? 'credit' : 'debit'}>{item.amount >= 0 ? '+' : '−'} {money.format(Math.abs(item.amount))}</strong>
+            </div>)}
+            {!benefitEvolution.length ? <div className="px-home-benefit-empty"><strong>Nenhuma movimentação de benefício neste período</strong><span>O saldo atual continua disponível para consulta.</span></div> : null}
+          </div>
+        </section>
+
+        <footer className="px-home-benefit-footer"><span>O benefício permanece separado do saldo monetário da Home.</span><button type="button" onClick={() => { setBenefitOpen(false); onNavigate('history'); }}>Abrir Histórico</button><button type="button" className="primary" onClick={() => setBenefitOpen(false)}>Fechar</button></footer>
+      </section>
+    </div> : null}
 
     {detail ? <div className="px-home-drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>
       <aside className="px-home-drawer" role="dialog" aria-modal="true" aria-label={`Detalhes de ${detail.title}`}>
