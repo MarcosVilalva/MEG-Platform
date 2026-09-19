@@ -61,13 +61,13 @@ jobs:
         run: npm install
 
       - name: Enforce dependency security gate
-        run: npm audit --audit-level=high
+        run: node scripts/npm-security-audit.mjs --audit-level=high
 
       - name: Capture RC1 dependency security inventory
         if: github.ref == 'refs/heads/phoenix/v15-clean-room' || startsWith(github.ref, 'refs/heads/rc1/')
         shell: bash
         run: |
-          npm audit --json > rc1-npm-audit.json || true
+          node scripts/npm-security-audit.mjs --json --audit-level=low > rc1-npm-audit.json || true
           node scripts/rc1-security-summary.mjs rc1-npm-audit.json > rc1-npm-audit.md
           cat rc1-npm-audit.md
 
@@ -86,9 +86,9 @@ jobs:
         if: github.ref == 'refs/heads/phoenix/v15-clean-room' || startsWith(github.ref, 'refs/heads/rc1/')
         shell: bash
         run: |
-          npm audit fix --package-lock-only --ignore-scripts > rc1-audit-safe-fix.log 2>&1 || true
+          npm update --package-lock-only --ignore-scripts --audit=false > rc1-audit-safe-fix.log 2>&1 || true
           cp package-lock.json rc1-package-lock-safe-fix.json
-          npm audit --json > rc1-npm-audit-after-safe-fix.json || true
+          node scripts/npm-security-audit.mjs --json --audit-level=low > rc1-npm-audit-after-safe-fix.json || true
           node scripts/rc1-security-summary.mjs rc1-npm-audit-after-safe-fix.json > rc1-npm-audit-after-safe-fix.md
           cat rc1-npm-audit-after-safe-fix.md
 
