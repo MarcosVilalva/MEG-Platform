@@ -49,7 +49,7 @@ ON TABLE
   public."Payable",
   public."PayablePayment",
   public."RecurringExpense"
-FROM anon, authenticated;
+FROM anon, authenticated, service_role;
 
 ALTER TABLE public."User" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public."AppState" ENABLE ROW LEVEL SECURITY;
@@ -84,9 +84,24 @@ ALTER TABLE public."Payable" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public."PayablePayment" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public."RecurringExpense" ENABLE ROW LEVEL SECURITY;
 
--- Guarda para futuras tabelas criadas pelo mesmo owner usado pelo Prisma.
+-- Guarda para futuras tabelas, funções e sequências criadas pelo mesmo owner usado pelo Prisma.
+-- Como o MEG não usa o Data API do Supabase, nenhuma role de API recebe acesso implícito.
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
 REVOKE SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLES
-FROM anon, authenticated;
+FROM anon, authenticated, service_role;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+REVOKE EXECUTE ON FUNCTIONS
+FROM anon, authenticated, service_role;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+REVOKE USAGE, SELECT ON SEQUENCES
+FROM anon, authenticated, service_role;
+
+-- PostgreSQL concede EXECUTE de funções a PUBLIC por padrão; removemos esse default
+-- para evitar uma futura RPC pública por acidente.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+REVOKE EXECUTE ON FUNCTIONS
+FROM PUBLIC;
 
 COMMIT;
