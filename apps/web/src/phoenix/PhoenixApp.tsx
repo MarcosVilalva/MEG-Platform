@@ -393,6 +393,36 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     return () => window.removeEventListener('pointerdown', closeOutside);
   }, [periodOpen]);
 
+
+  useEffect(() => {
+    if (!periodOpen) return;
+    const months = new Set<string>([
+      month,
+      periodDraftMonth,
+      shiftMonth(periodDraftMonth, -1),
+      shiftMonth(periodDraftMonth, 1)
+    ]);
+    const timer = window.setTimeout(() => {
+      months.forEach((target) => { void prefetchPhoenixReadModel(target); });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [periodOpen, month, periodDraftMonth]);
+
+  useEffect(() => {
+    if (!periodOpen || periodDraftMode !== 'range' || !periodStart || !periodEnd || periodStart > periodEnd) return;
+    const months = monthsBetween(periodStart, periodEnd).slice(0, 6);
+    const timer = window.setTimeout(() => {
+      months.forEach((target) => { void prefetchPhoenixReadModel(target); });
+    }, 140);
+    return () => window.clearTimeout(timer);
+  }, [periodOpen, periodDraftMode, periodStart, periodEnd]);
+
+  useEffect(() => {
+    if (!periodOpen || periodDraftMode !== 'all') return;
+    const timer = window.setTimeout(() => { void loadPhoenixAllEvents(); }, 120);
+    return () => window.clearTimeout(timer);
+  }, [periodOpen, periodDraftMode]);
+
   const data = loadState.status === 'ready' ? loadState.data : dataRef.current;
   const specialView = view === 'movements' || (view === 'home' && periodMode === 'all');
   const viewData = specialView && movementPeriodData ? movementPeriodData : data;
@@ -401,6 +431,11 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const toggleTheme = () => setTheme((value) => value === 'dark' ? 'light' : 'dark');
   const userInitial = (data?.user.name || 'M').slice(0, 1).toUpperCase();
   const periodActiveLabel = periodMode === 'month' ? shortMonthLabel(data?.month || month) : periodMode === 'all' ? 'Tudo' : periodRangeLabel || 'Intervalo';
+  const periodDraftLabel = periodDraftMode === 'month'
+    ? monthLabel(periodDraftMonth)
+    : periodDraftMode === 'all'
+      ? 'Histórico completo'
+      : periodStart && periodEnd ? `${formatShortIso(periodStart)} → ${formatShortIso(periodEnd)}` : 'Defina o intervalo';
   const updatingPeriod = periodLoading && periodDraftMode === 'month';
 
   function resetSpecialPeriod() {
@@ -439,6 +474,28 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   function presetMonth(offset: number) {
     setPeriodDraftMode('month');
     setPeriodDraftMonth(shiftMonth(currentMonth(), offset));
+  }
+
+
+  function stepDraftMonth(offset: number) {
+    setPeriodDraftMode('month');
+    setPeriodDraftMonth((value) => shiftMonth(value || currentMonth(), offset));
+  }
+
+  function quickRange(days: number) {
+    const today = todayIso();
+    const start = shiftIsoDay(today, -(days - 1));
+    setPeriodDraftMode('range');
+    setPeriodStart(start);
+    setPeriodEnd(today);
+    void applyRangePeriod(start, today);
+  }
+
+  function quickMonth(offset: number) {
+    const target = shiftMonth(currentMonth(), offset);
+    setPeriodDraftMode('month');
+    setPeriodDraftMonth(target);
+    void applyMonthlyPeriod(target);
   }
 
   async function applyMonthlyPeriod(targetMonth: string, force = false) {
@@ -530,13 +587,18 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   }
 
   async function applyAllPeriod(force = false) {
+    const requestId = periodRequestRef.current + 1;
+    periodRequestRef.current = requestId;
     setPeriodLoading(true);
     setPeriodError('');
     try {
       const baseMonth = currentMonth();
-      const base = await loadPhoenixReadModel(baseMonth, force ? { force: true } : {});
+      const [base, events] = await Promise.all([
+        loadPhoenixReadModel(baseMonth, force ? { force: true } : {}),
+        loadPhoenixAllEvents({ force })
+      ]);
       if (!monthlySnapshotMatches(base, baseMonth)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
-      const events = await loadPhoenixAllEvents({ force });
+      if (periodRequestRef.current !== requestId) return;
       const items = events.items.map((event) => ({ ...event, competence: base.month }));
       setMovementPeriodData({
         ...base,
@@ -551,11 +613,12 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       setPeriodOpen(false);
       resetViewport();
     } catch (error) {
+      if (periodRequestRef.current !== requestId) return;
       setPeriodError(error instanceof Error && error.message === 'PHOENIX_MONTH_SNAPSHOT_MISMATCH'
         ? 'A leitura mensal atual ficou inconsistente. O histórico completo não foi aberto.'
         : error instanceof Error ? error.message : 'Não foi possível carregar todo o histórico.');
     } finally {
-      setPeriodLoading(false);
+      if (periodRequestRef.current === requestId) setPeriodLoading(false);
     }
   }
 
