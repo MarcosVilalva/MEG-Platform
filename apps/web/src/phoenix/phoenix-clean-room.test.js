@@ -535,6 +535,15 @@ assert.match(operationalHome, /Despesa[\s\S]*Receita/,
   'Home operacional deve priorizar receitas e despesas.');
 assert.match(operationalCss, /body\.meg-operational-mobile \.px-launch-drawer[\s\S]*width:100vw!important/,
   'Drawer Android deve ocupar a tela e se adaptar ao aparelho.');
+assert.match(operationalCss, /body\.meg-operational-mobile \.px-app\.is-collapsed[\s\S]*display:block!important[\s\S]*grid-template-columns:none!important/,
+  'APK operacional não pode herdar a coluna residual do shell desktop recolhido.');
+assert.match(operationalCss, /body\.meg-operational-mobile \.px-main[\s\S]*width:100%!important[\s\S]*margin:0!important/,
+  'Workspace Android deve ocupar toda a largura disponível.');
+assert.match(operationalCss, /\.px-mobile-dock button:nth-child\(2\)[\s\S]*width:auto!important[\s\S]*margin:0!important/,
+  'Botão central do dock não pode herdar o FAB gigante da paridade antiga.');
+assert.match(operationalCss, /word-break:normal!important[\s\S]*overflow-wrap:normal!important/,
+  'Textos operacionais não podem quebrar letra por letra em telas móveis.');
+
 assert.match(nativeNotifications, /Contas vencidas|contas vencidas|Conta vencida/,
   'Notificações Android devem cobrir compromissos vencidos.');
 assert.match(nativeNotifications, /Conta vence amanhã[\s\S]*Conta vence hoje/,
