@@ -105,6 +105,12 @@ assert.match(pendingGateway, /PHOENIX_PENDING_CONNECTION_INTERRUPTED/,
   'Falha de transporte deve orientar retry idempotente em vez de erro genérico.');
 assert.match(pendingGateway, /recoverPendingConfirmation/,
   'Falha incerta deve consultar o recibo idempotente antes de declarar a baixa como não confirmada.');
+assert.match(pendingGateway, /maxWaitMs = 20_000/,
+  'Recuperação deve cobrir a janela transacional restante antes de declarar o lote não confirmado.');
+assert.match(pendingGateway, /PENDING_CHANGED_RETRY/,
+  'Mudança concorrente de pendência deve consultar o recibo da tentativa antes de exibir falha.');
+assert.match(pendingGateway, /FINANCIAL_EVENT_NOT_PENDING/,
+  'Retry concorrente de evento já baixado deve permitir recuperar a confirmação original.');
 assert.match(pendingGateway, /\/finance\/pending\/operations\//,
   'Confirmação de baixa deve possuir endpoint de consulta por operationId.');
 assert.match(pendingGateway, /cache:\s*'no-store'/,
