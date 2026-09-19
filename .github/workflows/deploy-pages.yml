@@ -80,6 +80,9 @@ jobs:
           curl --fail --location --retry 3 --retry-all-errors \
             --output pages-artifact/downloads/MEG-Financas.apk \
             https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output pages-artifact/downloads/app-version.json \
+            https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/app-version.json
           node --input-type=module - <<'NODE'
           import crypto from 'node:crypto';
           import fs from 'node:fs';
