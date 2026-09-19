@@ -138,7 +138,11 @@ function extractReport(table: HTMLTableElement): PhoenixExportReport | null {
     ) excluded.add(index);
   });
 
-  const indexes = rawHeaders.map((_, index) => index).filter((index) => !excluded.has(index));
+  const indexes = rawHeaders.map((_, index) => index).filter((index) => {
+    if (excluded.has(index)) return false;
+    const cell = headerRow.cells[index] as HTMLElement | undefined;
+    return cell ? isVisibleControl(cell) : false;
+  });
   const headers = indexes.map((index) => rawHeaders[index] || `Coluna ${index + 1}`);
   const bodyRows = [...table.tBodies].flatMap((body) => [...body.rows]).filter(isVisibleRow);
   const rows = bodyRows.map((row) => indexes.map((index) => {
@@ -174,7 +178,7 @@ function download(bytes: Uint8Array, type: string, filename: string) {
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+  window.setTimeout(() => URL.revokeObjectURL(url), 15000);
 }
 
 function excelIcon() {

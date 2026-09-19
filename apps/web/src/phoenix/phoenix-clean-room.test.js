@@ -189,6 +189,8 @@ assert.match(bulkEventUxEnhancements, /COLUMN_STORAGE_KEY/,
   'Preferência de visibilidade das colunas deve persistir localmente');
 assert.match(bulkEventUxEnhancements, /eyeOff/,
   'Seletor de colunas deve usar o padrão visual de olho aberto\/fechado');
+assert.match(bulkEventUxEnhancements, /px-grid-utility-backdrop/,
+  'Seletor de colunas deve abrir como modal contido no viewport, como os filtros da grade');
 assert.match(movementScreen, /data-col="description"/,
   'Colunas da grade devem possuir identidade estável para mostrar e ocultar em tempo real');
 assert.match(movementScreen, /invalidField\('descrição'\)/,
