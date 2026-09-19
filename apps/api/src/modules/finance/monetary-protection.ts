@@ -152,7 +152,13 @@ export async function monetaryBalanceAt(tx: Tx, userId: string, effectiveAt: str
   const [openingBalance, events] = await Promise.all([
     monetaryOpeningBalance(tx, userId),
     tx.financialEvent.findMany({
-      where: { userId, archivedAt: null, date: { lt: cutoff } },
+      where: {
+        userId,
+        archivedAt: null,
+        date: { lt: cutoff },
+        status: { in: ['paid', 'reconciled', 'confirmed'] },
+        type: { not: 'transfer' },
+      },
       select: {
         description: true,
         type: true,
