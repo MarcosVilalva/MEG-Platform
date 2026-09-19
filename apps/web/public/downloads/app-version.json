@@ -1,9 +1,9 @@
 {
-  "versionCode": 283,
-  "versionName": "1.1.283",
+  "versionCode": 284,
+  "versionName": "1.1.284",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "6eeedcbb2ef48176e43775bae1a0b233013c97cd2593c1b63fcd025365e1b513",
+  "sha256": "3821f2b29c763f5e6ec9fcaa9ba6898016782fb6c4185544761d1cc742545aeb",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #302 from MarcosVilalva/fix/pendentes-geometry-anchor"
+  "releaseNotes": "Merge pull request #303 from MarcosVilalva/fix/pendentes-icon-centering"
 }
