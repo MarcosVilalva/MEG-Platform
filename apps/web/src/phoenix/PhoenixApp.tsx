@@ -584,7 +584,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
         onLogout={onLogout}
       />
 
-      <main className="px-main">
+      <main className={`px-main ${view === 'payables' ? 'px-main-payables' : ''}`}>
         <header className="px-topbar">
           <div className="px-top-left"><button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => setCollapsed((value) => !value)}>☰</button><div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div></div>
           <div className="px-top-right">
