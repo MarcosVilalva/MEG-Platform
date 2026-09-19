@@ -56,6 +56,15 @@ assert.match(simpleEventBridge, /benefit\.isBenefit && benefit\.isVerocard/,
   'Conta Benefício + VEROCARD deve ser reconhecida diretamente sem modalidade legada.');
 assert.doesNotMatch(simpleEventBridge, /modalidade|modality === 'ALIMENTACAO'|fluxo VEROCARD\/ALIMENTAÇÃO/,
   'Fluxo atual do benefício não pode depender da modalidade legada que causava o bloqueio indevido.');
+assert.match(movementScreen, /selectedAccount\?\.type === 'benefit' \|\| isBenefitAccount\(selectedAccount\?\.name\)/,
+  'Benefício Alimentação deve ser reconhecido pelo tipo canônico da conta, não apenas pelo nome visível.');
+assert.match(movementScreen, /data-account-type=\{item\.type\}/,
+  'Opção de conta deve expor seu tipo canônico para as bridges de compatibilidade.');
+assert.match(simpleEventBridge, /accountType === 'BENEFIT'/,
+  'Bridge de gravação deve reconhecer conta de benefício pelo tipo canônico exposto no formulário.');
+assert.match(simpleEventBridge, /runPhoenixBenefitEventWrite/,
+  'Despesa VEROCARD deve continuar roteada para o writer protegido do benefício.');
+
 
 assert.match(loader, /const previewPath = `\/finance\/phoenix-preview\?month=\$\{encodeURIComponent\(month\)\}`/,
   'Núcleo financeiro Phoenix deve declarar um único endpoint mensal de snapshot.');
