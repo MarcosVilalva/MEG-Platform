@@ -460,7 +460,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const selectedCategory = data.categories.find((item) => item.id === draft.categoryId) || null;
   const selectedPayment = data.paymentMethods.find((item) => item.id === draft.paymentMethodId) || null;
   const selectedCard = data.cards.find((item) => item.id === draft.cardId) || null;
-  const benefit = isBenefitAccount(selectedAccount?.name);
+  const benefit = selectedAccount?.type === 'benefit' || isBenefitAccount(selectedAccount?.name);
   const credit = isCreditMethod(selectedPayment?.name, selectedPayment?.type);
   const crediario = isCrediarioMethod(selectedPayment?.name, selectedPayment?.type);
   const calculatedDue = selectedCard ? cardDueDate(draft.eventDate, selectedCard.closingDay, selectedCard.dueDay) : '';
@@ -512,7 +512,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     if (draft.type === 'transfer') {
       if (!draft.destinationId) list.push('conta de destino');
       else if (draft.destinationId === draft.accountId) list.push('destino diferente da origem');
-      if (benefit || isBenefitAccount(selectedDestination?.name)) list.push('contas monetárias válidas');
+      if (benefit || selectedDestination?.type === 'benefit' || isBenefitAccount(selectedDestination?.name)) list.push('contas monetárias válidas');
     } else {
       if (draft.type === 'expense' && !draft.classification) list.push('classificação');
       if (draft.type === 'expense' && !draft.categoryId) list.push('grupo');
@@ -816,7 +816,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
         {toolPanel === 'account' ? <div className="px-movement-tool-panel">
         <div className="px-tool-panel-heading"><div><strong>Conta financeira</strong><span>Restrinja a grade a uma conta específica.</span></div><button type="button" onClick={() => setToolPanel(null)} aria-label="Recolher conta"><MovementIcon name="close" size={15} /></button></div>
         <div className="px-account-panel-grid">
-        <label><span>Conta</span><select value={account} onChange={(event) => setAccount(event.target.value)}><option value="all">Todas as contas</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+        <label><span>Conta</span><select value={account} onChange={(event) => setAccount(event.target.value)}><option value="all">Todas as contas</option>{accounts.map((item) => <option key={item.id} value={item.id} data-account-type={item.type}>{item.name}</option>)}</select></label>
         <button className="px-tool-panel-clear" type="button" disabled={account === 'all'} onClick={() => setAccount('all')}>Todas as contas</button>
         </div>
         </div> : null}
@@ -887,7 +887,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
             <label className={`px-field ${invalidField('data') ? 'is-invalid' : ''}`}><span>Data do evento *</span><input type="date" value={draft.eventDate} onChange={(event) => updateDraft('eventDate', event.target.value)} />{invalidField('data') ? <small className="px-field-error">Informe a data.</small> : null}</label>
           </div>
 
-          {draft.type === 'transfer' ? <div className="px-transfer-block"><div className="px-transfer-arrow">Conta de origem ↓ Conta de destino</div><label className={`px-field ${invalidField('conta de destino') || invalidField('destino diferente da origem') || invalidField('contas monetárias válidas') ? 'is-invalid' : ''}`}><span>Conta de destino *</span><select value={draft.destinationId} onChange={(event) => updateDraft('destinationId', event.target.value)}><option value="">Selecione uma conta diferente</option>{accounts.filter((item) => item.id !== draft.accountId).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>{invalidField('conta de destino') ? <small className="px-field-error">Selecione a conta de destino.</small> : invalidField('destino diferente da origem') ? <small className="px-field-error">Origem e destino devem ser diferentes.</small> : invalidField('contas monetárias válidas') ? <small className="px-field-error">Use duas contas monetárias válidas.</small> : null}</label></div> : null}
+          {draft.type === 'transfer' ? <div className="px-transfer-block"><div className="px-transfer-arrow">Conta de origem ↓ Conta de destino</div><label className={`px-field ${invalidField('conta de destino') || invalidField('destino diferente da origem') || invalidField('contas monetárias válidas') ? 'is-invalid' : ''}`}><span>Conta de destino *</span><select value={draft.destinationId} onChange={(event) => updateDraft('destinationId', event.target.value)}><option value="">Selecione uma conta diferente</option>{accounts.filter((item) => item.id !== draft.accountId).map((item) => <option key={item.id} value={item.id} data-account-type={item.type}>{item.name}</option>)}</select>{invalidField('conta de destino') ? <small className="px-field-error">Selecione a conta de destino.</small> : invalidField('destino diferente da origem') ? <small className="px-field-error">Origem e destino devem ser diferentes.</small> : invalidField('contas monetárias válidas') ? <small className="px-field-error">Use duas contas monetárias válidas.</small> : null}</label></div> : null}
 
           <label className={`px-field ${invalidField('valor') ? 'is-invalid' : ''}`}><span>Valor total *</span><input className="px-money-mask" inputMode="numeric" value={formatInputMoney(amountCents, negative)} onChange={(event) => onMoneyChange(event.target.value)} onKeyDown={onMoneyKeyDown} />{invalidField('valor') ? <small className="px-field-error">Informe um valor maior que zero.</small> : <small>Digite somente os números. Pressione “-” para alternar estorno/reversão.</small>}</label>
           {negative && amountCents ? <div className="px-notice warn">Valor negativo identificado. A futura gravação deverá preservar o lançamento original como estorno ou evento reverso.</div> : null}
