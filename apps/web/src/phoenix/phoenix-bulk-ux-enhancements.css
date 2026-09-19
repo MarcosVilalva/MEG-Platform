@@ -914,3 +914,61 @@
   font-size:8px;
   line-height:1.4;
 }
+
+
+/* Seletor de colunas segue o mesmo princípio dos filtros da grade:
+   sempre contido no viewport e com rolagem apenas na lista interna. */
+.px-grid-utility-backdrop {
+  position:fixed;
+  inset:0;
+  z-index:2190;
+  display:grid;
+  place-items:center;
+  padding:16px;
+  background:rgba(1,10,8,.54);
+  backdrop-filter:blur(3px);
+}
+
+.px-grid-utility-backdrop .px-column-selector-popover {
+  position:relative;
+  inset:auto;
+  width:min(420px,calc(100vw - 32px))!important;
+  max-width:100%;
+  height:min(560px,calc(100dvh - 32px));
+  max-height:calc(100dvh - 32px);
+  grid-template-rows:auto auto minmax(0,1fr) auto;
+  margin:0;
+  transform:none;
+}
+
+.px-grid-utility-backdrop .px-column-eye-list {
+  min-height:0;
+  max-height:none;
+  overflow:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+
+@media (max-height:620px) {
+  .px-grid-utility-backdrop {
+    padding:10px;
+  }
+  .px-grid-utility-backdrop .px-column-selector-popover {
+    width:min(420px,calc(100vw - 20px))!important;
+    height:calc(100dvh - 20px);
+    max-height:calc(100dvh - 20px);
+    padding:10px;
+  }
+}
+
+@media (max-width:480px) {
+  .px-grid-utility-backdrop {
+    padding:8px;
+  }
+  .px-grid-utility-backdrop .px-column-selector-popover {
+    width:calc(100vw - 16px)!important;
+    height:calc(100dvh - 16px);
+    max-height:calc(100dvh - 16px);
+    border-radius:11px;
+  }
+}
