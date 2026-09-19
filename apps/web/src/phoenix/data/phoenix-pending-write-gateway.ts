@@ -179,7 +179,8 @@ function friendlyMessage(code: string) {
     INSUFFICIENT_MONETARY_BALANCE: 'O saldo monetário não cobre o total selecionado. Nenhuma baixa do lote foi gravada.',
     BATCH_NET_NOT_PAYABLE: 'Os créditos e estornos zeram ou superam o valor do lote. Não há pagamento líquido a registrar.',
     OPERATION_ID_REUSED: 'A tentativa atual não corresponde à baixa original. Revise os dados antes de tentar novamente.',
-    PHOENIX_PENDING_CONNECTION_INTERRUPTED: 'A conexão foi interrompida antes da confirmação do servidor. O mesmo lote pode ser reenviado com segurança; o MEG reutiliza o identificador da tentativa para não duplicar baixas.',
+    PHOENIX_PENDING_CONNECTION_INTERRUPTED: 'A conexão foi interrompida antes da confirmação do servidor. O MEG verificou o recibo idempotente e não encontrou confirmação; a mesma tentativa pode ser reenviada com segurança.',
+    PENDING_BATCH_TIMEOUT: 'O servidor interrompeu a baixa porque ela excedeu a janela de segurança. Nenhum lote foi tratado como confirmado.',
   };
   return messages[code] || 'Não foi possível confirmar a baixa. Nenhuma alteração do lote foi considerada concluída.';
 }
@@ -197,6 +198,50 @@ function codeFromError(error: unknown) {
   }
   if (error instanceof Error && error.message) return error.message;
   return 'PHOENIX_PENDING_WRITE_FAILED';
+}
+
+
+type PendingOperationConfirmation = {
+  confirmed: boolean;
+  response?: unknown;
+};
+
+function uncertainCommit(error: unknown) {
+  const code = codeFromError(error);
+  if (code === 'PENDING_BATCH_TIMEOUT') return false;
+  if (code === 'PHOENIX_PENDING_CONNECTION_INTERRUPTED') return true;
+  const status = error && typeof error === 'object' && 'status' in error
+    ? Number((error as { status?: unknown }).status || 0)
+    : 0;
+  return status >= 500;
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function recoverPendingConfirmation(operationId: string, maxWaitMs = 8_000) {
+  const deadline = Date.now() + maxWaitMs;
+  let attempt = 0;
+  while (Date.now() < deadline) {
+    try {
+      const status = await authenticatedRequest<PendingOperationConfirmation>(
+        `/finance/pending/operations/${encodeURIComponent(operationId)}`,
+        {
+          method: 'GET',
+          cache: 'no-store',
+          signal: AbortSignal.timeout(2_500),
+        },
+      );
+      if (status.confirmed) return { confirmed: true as const, response: status.response };
+    } catch {
+      // A consulta de recibo é somente recuperação. Enquanto houver janela,
+      // uma falha transitória não deve substituir a tentativa original.
+    }
+    attempt += 1;
+    await delay(Math.min(300 + attempt * 40, 600));
+  }
+  return { confirmed: false as const };
 }
 
 function publishCommittedSnapshot(snapshot: PhoenixReadModel) {
@@ -286,7 +331,7 @@ export async function runPhoenixPendingBatchSettlement(
     assertBatchInput(prepared.payload);
     const result = await authenticatedRequest('/finance/pending/batch/settle', {
       method: 'POST',
-      signal: AbortSignal.timeout(105_000),
+      signal: AbortSignal.timeout(10_000),
       body: JSON.stringify({
         items: prepared.payload.items.map((item) => ({
           source: item.source,
@@ -302,6 +347,13 @@ export async function runPhoenixPendingBatchSettlement(
     onCommitted?.(result);
     return await refreshConfirmed(prepared.operationId, result, refreshMonth, onState);
   } catch (error) {
+    if (uncertainCommit(error)) {
+      const recovered = await recoverPendingConfirmation(prepared.operationId);
+      if (recovered.confirmed) {
+        onCommitted?.(recovered.response);
+        return await refreshConfirmed(prepared.operationId, recovered.response, refreshMonth, onState);
+      }
+    }
     return failedState(prepared.operationId, error, onState);
   }
 }
