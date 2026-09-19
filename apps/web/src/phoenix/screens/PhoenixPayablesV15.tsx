@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type WheelEvent } from 'react';
 import type { CreditCard } from '../../app/cards-client';
 import type { Payable } from '../../app/payables-client';
 import type { PhoenixReadModel } from '../contracts';
@@ -717,7 +717,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     }
   }
 
-  function routeWheelToPendingList(event: React.WheelEvent<HTMLElement>) {
+  function routeWheelToPendingList(event: WheelEvent<HTMLElement>) {
     if (reviewOpen || detailItem || settlementReceipt) return;
     const scroller = pendingScrollRef.current;
     if (!scroller || scroller.contains(event.target as Node) || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
