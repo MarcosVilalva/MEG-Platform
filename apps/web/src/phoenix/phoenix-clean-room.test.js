@@ -11,6 +11,7 @@ const movementScreen = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx',
 const cardsGrid = readFileSync(new URL('./screens/PhoenixCardsGrid.tsx', import.meta.url), 'utf8');
 const cardsPremiumCss = readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8');
 const cardsWowCss = readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8');
+const simpleEventBridge = readFileSync(new URL('./simple-event-form-bridge.ts', import.meta.url), 'utf8');
 const gridFilter = readFileSync(new URL('./PhoenixGridFilter.tsx', import.meta.url), 'utf8');
 const gridCss = readFileSync(new URL('./phoenix-grid.css', import.meta.url), 'utf8');
 const launchDynamicCss = readFileSync(new URL('./phoenix-launch-dynamic.css', import.meta.url), 'utf8');
@@ -47,6 +48,15 @@ assert.doesNotMatch(readOnlyScreens, /import\s+(?!type\b)[^;]*from\s+['"][^'"]*a
   'Telas Phoenix não podem acessar clientes mutáveis em runtime durante a paridade');
 assert.doesNotMatch(readOnlyScreens, /patchCloudTransactions|createEvent|updateEvent|archiveEvent|createPurchase|payStatement|createReceivable|receive\(|saveBudget|deleteBudget|changeUserAccess|deleteManagedUser/,
   'Telas Phoenix não podem invocar gateways de escrita durante a paridade');
+assert.match(simpleEventBridge, /preparePhoenixBenefitEvent/,
+  'Drawer de lançamento deve preparar conta de Benefício Alimentação pelo writer específico.');
+assert.match(simpleEventBridge, /runPhoenixBenefitEventWrite/,
+  'Drawer de lançamento deve confirmar Benefício Alimentação pelo writer protegido.');
+assert.match(simpleEventBridge, /benefit\.isBenefit && benefit\.isVerocard/,
+  'Conta Benefício + VEROCARD deve ser reconhecida diretamente sem modalidade legada.');
+assert.doesNotMatch(simpleEventBridge, /modalidade|modality === 'ALIMENTACAO'|fluxo VEROCARD\/ALIMENTAÇÃO/,
+  'Fluxo atual do benefício não pode depender da modalidade legada que causava o bloqueio indevido.');
+
 assert.match(loader, /const previewPath = `\/finance\/phoenix-preview\?month=\$\{encodeURIComponent\(month\)\}`/,
   'Núcleo financeiro Phoenix deve declarar um único endpoint mensal de snapshot.');
 assert.match(loader, /authenticatedRequest<PhoenixPreviewCoreRead>\([\s\S]*previewPath/,
@@ -241,7 +251,7 @@ assert.match(homeDashboard, /px-home-drawer/,
   'Detalhes de vencimento devem abrir drawer na própria Home');
 assert.match(homeDashboard, /Revisar pagamento/,
   'Drawer da Home deve permitir selecionar itens para revisão de pagamento');
-assert.match(cardsGrid, /data-cards-layout="approved-v4"/,
+assert.match(cardsGrid, /data-cards-layout="approved-v5"/,
   'Cartões deve usar a composição visual aprovada antes da implementação.');
 assert.match(cardsGrid, /Seus cartões/,
   'Tela principal deve manter os cartões como protagonistas.');
@@ -289,6 +299,17 @@ assert.match(cardsWowCss, /\.px-cards-approved-progress/,
   'Uso do limite deve possuir leitura visual destacada.');
 assert.match(cardsPremiumCss, /\.px-card-detail-drawer/,
   'Detalhe de compra deve abrir em drawer responsivo.');
+assert.match(cardsWowCss, /\.px-main-cards\{[\s\S]*height:100dvh[\s\S]*overflow:hidden/,
+  'Tela principal de Cartões deve permanecer travada no viewport sem rolagem vertical.');
+assert.match(cardsWowCss, /\.px-card-command-approved\{[\s\S]*overflow:hidden[\s\S]*grid-template-rows:auto auto auto minmax\(0,1fr\)/,
+  'Modal da central deve permanecer fixo no viewport sem scroll geral.');
+assert.match(cardsWowCss, /\.px-card-command-approved-table-wrap\{[\s\S]*overflow:auto/,
+  'Somente a área da tabela do modal deve possuir rolagem.');
+assert.match(cardsGrid, /Acesse detalhes, faturas, limites e muito mais\./,
+  'Texto de orientação deve reproduzir fielmente o mockup aprovado.');
+assert.match(cardsGrid, /Total da fatura/,
+  'Resumo do modal deve usar o texto aprovado Total da fatura.');
+
 
 assert.match(homeDashboard, /Benefício alimentação · disponível/,
   'Home deve preservar o indicador de benefício do V15');

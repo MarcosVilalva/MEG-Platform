@@ -1,5 +1,11 @@
 import { payablesClient } from '../app/payables-client';
-import { preparePhoenixSimpleEvent, runPhoenixSimpleEventWrite, type PhoenixSimpleEventInput } from './data/phoenix-write-gateway';
+import {
+  preparePhoenixBenefitEvent,
+  preparePhoenixSimpleEvent,
+  runPhoenixBenefitEventWrite,
+  runPhoenixSimpleEventWrite,
+  type PhoenixSimpleEventInput,
+} from './data/phoenix-write-gateway';
 import { preparePhoenixTransfer, runPhoenixTransferWrite } from './data/phoenix-transfer-write-gateway';
 import { clearPhoenixReadModelCache } from './data/load-phoenix-read-model';
 import { PHOENIX_INCOME_PAYMENT_METHODS, canonicalPhoenixIncomePaymentMethod } from './income-payment-methods';
@@ -53,10 +59,6 @@ function activeType(root: ParentNode): 'income' | 'expense' | 'transfer' {
   if (label === 'RECEITA') return 'income';
   if (label.includes('TRANSFER')) return 'transfer';
   return 'expense';
-}
-
-function modalityValue(root: ParentNode) {
-  return normalize(root.querySelector<HTMLSelectElement>('[data-phoenix-modality-select]')?.value || '');
 }
 
 function parseMoney(value: string) {
@@ -209,14 +211,9 @@ function unsupportedReason(root: HTMLElement) {
   const selectedPayment = paymentSelect(root)?.selectedOptions[0]?.textContent || '';
   const method = normalize(selectedPayment);
   const benefit = benefitSelection(root);
-  const modality = modalityValue(root);
 
-  if (benefit.isBenefit && type !== 'transfer') {
-    const validBenefitFlow = benefit.isVerocard
-      && (type === 'income' || modality === 'ALIMENTACAO' || modality === 'VEROCARD');
-    if (!validBenefitFlow) {
-      return 'A conta de benefício só pode ser usada pelo fluxo VEROCARD/ALIMENTAÇÃO.';
-    }
+  if (benefit.isBenefit && type !== 'transfer' && !benefit.isVerocard) {
+    return 'A conta de benefício só pode ser usada com a forma de pagamento VEROCARD.';
   }
 
   if (type === 'income' && selectedPayment && !canonicalPhoenixIncomePaymentMethod(selectedPayment)) {
@@ -425,9 +422,14 @@ async function submit(root: HTMLElement) {
     } else {
       const payload = payloadFromDrawer(root);
       if (!payload) throw new Error('PHOENIX_WRITE_NOT_READY');
-      const prepared = preparePhoenixSimpleEvent(payload, state.operationId);
+      const benefit = benefitSelection(root);
+      const prepared = benefit.isBenefit && benefit.isVerocard
+        ? preparePhoenixBenefitEvent({ ...payload, status: 'paid' }, state.operationId)
+        : preparePhoenixSimpleEvent(payload, state.operationId);
       state.operationId = prepared.operationId;
-      const result = await runPhoenixSimpleEventWrite(prepared, payload.date.slice(0, 7));
+      const result = benefit.isBenefit && benefit.isVerocard
+        ? await runPhoenixBenefitEventWrite(prepared as ReturnType<typeof preparePhoenixBenefitEvent>, payload.date.slice(0, 7))
+        : await runPhoenixSimpleEventWrite(prepared as ReturnType<typeof preparePhoenixSimpleEvent>, payload.date.slice(0, 7));
       if (result.status === 'error') {
         state.mode = 'error';
         setFeedback(root, result.message, 'warn');
@@ -437,7 +439,11 @@ async function submit(root: HTMLElement) {
       if (result.status !== 'confirmed') throw new Error('PHOENIX_WRITE_NOT_CONFIRMED');
       state.mode = 'confirmed';
       state.confirmedEventId = result.event.id;
-      const adjustment = payload.amount < 0 ? 'Estorno/reversão' : payload.type === 'income' ? 'Receita recebida' : payload.status === 'paid' ? 'Despesa realizada' : 'Despesa pendente';
+      const adjustment = benefit.isBenefit && benefit.isVerocard
+        ? payload.type === 'income' ? 'Crédito do Benefício Alimentação' : 'Despesa do Benefício Alimentação'
+        : payload.amount < 0 ? 'Estorno/reversão'
+          : payload.type === 'income' ? 'Receita recebida'
+            : payload.status === 'paid' ? 'Despesa realizada' : 'Despesa pendente';
       setFeedback(root, `Lançamento confirmado no servidor. ${adjustment} registrada com rastreabilidade e operationId. Tela sincronizada com a fotografia confirmada.`, 'ok');
       window.dispatchEvent(new CustomEvent('meg:phoenix-snapshot-committed', { detail: { snapshot: result.snapshot } }));
     }
