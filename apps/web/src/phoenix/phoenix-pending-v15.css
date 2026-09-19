@@ -1242,3 +1242,311 @@
     grid-column:auto;
   }
 }
+
+
+/* Pendentes em modo cockpit fixo: topo estável e rolagem exclusiva da agenda. */
+@media (min-width:761px) {
+  .px-main-payables {
+    height:100dvh;
+    overflow:hidden;
+  }
+
+  .px-main-payables > .px-topbar {
+    flex:0 0 64px;
+  }
+
+  .px-content-payables {
+    height:calc(100dvh - 64px);
+    overflow:hidden;
+    padding:10px 16px 12px;
+  }
+
+  .px-content-payables > .px-pending-cockpit {
+    height:100%;
+    min-height:0;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  .px-content-payables .px-pending-hero,
+  .px-content-payables .px-pending-attention,
+  .px-content-payables .px-pending-kpis,
+  .px-content-payables .px-priority-tabs,
+  .px-content-payables .px-pending-write-banner {
+    flex:0 0 auto;
+  }
+
+  .px-content-payables .px-pending-hero {
+    min-height:68px;
+    padding:10px 14px;
+    border-radius:18px;
+  }
+
+  .px-content-payables .px-pending-hero h1 {
+    margin:2px 0;
+    font-size:clamp(25px,2.6cqw,31px);
+    line-height:1;
+  }
+
+  .px-content-payables .px-pending-hero p {
+    font-size:9px;
+    line-height:1.35;
+  }
+
+  .px-content-payables .px-pending-hero .px-total-pill {
+    min-height:34px;
+    padding:0 13px;
+    font-size:10px;
+  }
+
+  .px-content-payables .px-pending-attention {
+    min-height:76px;
+    padding:10px 14px;
+    gap:12px;
+    border-radius:17px;
+  }
+
+  .px-content-payables .px-pending-attention-icon {
+    width:42px;
+    height:42px;
+    border-radius:13px;
+    font-size:20px;
+  }
+
+  .px-content-payables .px-pending-attention-copy {
+    gap:2px;
+  }
+
+  .px-content-payables .px-pending-attention-copy > strong {
+    font-size:clamp(15px,1.35cqw,18px);
+  }
+
+  .px-content-payables .px-pending-attention-copy > small {
+    font-size:8px;
+    line-height:1.35;
+  }
+
+  .px-content-payables .px-pending-attention-stats {
+    gap:6px;
+  }
+
+  .px-content-payables .px-pending-attention-stats > div {
+    min-width:82px;
+    padding:8px 10px;
+    border-radius:11px;
+  }
+
+  .px-content-payables .px-pending-attention-stats span {
+    font-size:8px;
+  }
+
+  .px-content-payables .px-pending-attention-stats strong {
+    margin-top:2px;
+    font-size:10px;
+  }
+
+  .px-content-payables .px-pending-attention > button {
+    min-height:34px;
+    padding:0 12px;
+    border-radius:10px;
+    font-size:9px;
+  }
+
+  .px-content-payables .px-pending-kpis {
+    gap:8px;
+  }
+
+  .px-content-payables .px-pending-kpis article {
+    min-height:76px;
+    padding:10px 13px;
+    border-radius:14px;
+  }
+
+  .px-content-payables .px-pending-kpis article::after {
+    left:12px;
+    right:12px;
+  }
+
+  .px-content-payables .px-pending-kpis span {
+    font-size:8px;
+  }
+
+  .px-content-payables .px-pending-kpis strong {
+    margin:6px 0 4px;
+    font-size:clamp(18px,1.8cqw,23px);
+  }
+
+  .px-content-payables .px-pending-kpis small {
+    font-size:8px;
+    line-height:1.25;
+  }
+
+  .px-content-payables .px-priority-tabs {
+    position:relative;
+    top:auto;
+    z-index:20;
+    padding:4px;
+    min-height:36px;
+    border-radius:11px;
+    box-shadow:0 6px 20px rgba(0,0,0,.13);
+  }
+
+  .px-content-payables .px-priority-tabs button {
+    min-height:30px;
+    padding:0 12px;
+    border-radius:8px;
+    font-size:10px;
+  }
+
+  .px-content-payables .px-pending-layout {
+    flex:1 1 auto;
+    min-height:0;
+    overflow:hidden;
+    align-items:stretch;
+    gap:10px;
+  }
+
+  .px-content-payables .px-pending-list {
+    height:100%;
+    min-height:0;
+    overflow:hidden;
+    padding:10px 11px 0;
+    display:flex;
+    flex-direction:column;
+    border-radius:17px;
+  }
+
+  .px-content-payables .px-pending-toolbar-v15 {
+    flex:0 0 auto;
+    margin:0 0 8px;
+  }
+
+  .px-content-payables .px-pending-toolbar-v15 .px-search-field,
+  .px-content-payables .px-pending-toolbar-v15 select {
+    height:36px;
+  }
+
+  .px-content-payables .px-pending-list > .px-bulk-action-bar {
+    position:relative;
+    top:auto;
+    flex:0 0 auto;
+    min-height:52px;
+    margin:0 0 8px;
+    padding:8px 10px;
+  }
+
+  .px-content-payables .px-pending-scroll-region {
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior:contain;
+    scrollbar-gutter:stable;
+    scroll-behavior:auto;
+    padding:0 5px 12px 0;
+    outline:none;
+  }
+
+  .px-content-payables .px-pending-scroll-region:focus-visible {
+    box-shadow:inset 0 0 0 1px rgba(67,221,176,.34);
+    border-radius:12px;
+  }
+
+  .px-content-payables .px-pending-scroll-region::-webkit-scrollbar {
+    width:9px;
+  }
+
+  .px-content-payables .px-pending-scroll-region::-webkit-scrollbar-track {
+    background:rgba(255,255,255,.018);
+    border-radius:999px;
+  }
+
+  .px-content-payables .px-pending-scroll-region::-webkit-scrollbar-thumb {
+    background:linear-gradient(180deg,rgba(67,221,176,.48),rgba(67,221,176,.18));
+    border:2px solid transparent;
+    border-radius:999px;
+    background-clip:padding-box;
+  }
+
+  .px-content-payables .px-pending-scroll-region::-webkit-scrollbar-thumb:hover {
+    background:linear-gradient(180deg,rgba(67,221,176,.68),rgba(67,221,176,.30));
+    border:2px solid transparent;
+    background-clip:padding-box;
+  }
+
+  .px-content-payables .px-pending-date-cluster-head {
+    min-height:58px;
+    padding:10px 13px 10px 15px;
+  }
+
+  .px-content-payables .px-pending-row {
+    padding:9px 8px;
+  }
+
+  .px-content-payables .px-pending-side {
+    max-height:100%;
+    overflow:auto;
+  }
+
+  .px-content-payables .px-pending-layout:has(.px-pending-group-check input[type="checkbox"]:checked) .px-pending-side,
+  .px-content-payables .px-pending-layout:has(.px-pending-row input[type="checkbox"]:checked) .px-pending-side {
+    position:static;
+    align-self:stretch;
+    max-height:100%;
+    overflow:auto;
+    padding:16px;
+  }
+}
+
+@media (min-width:761px) and (max-height:760px) {
+  .px-content-payables {
+    padding-top:7px;
+    padding-bottom:8px;
+  }
+
+  .px-content-payables > .px-pending-cockpit {
+    gap:6px;
+  }
+
+  .px-content-payables .px-pending-hero {
+    min-height:58px;
+    padding:8px 12px;
+  }
+
+  .px-content-payables .px-pending-hero p {
+    display:none;
+  }
+
+  .px-content-payables .px-pending-attention {
+    min-height:66px;
+    padding:8px 12px;
+  }
+
+  .px-content-payables .px-pending-kpis article {
+    min-height:66px;
+    padding:8px 11px;
+  }
+
+  .px-content-payables .px-pending-kpis strong {
+    margin:4px 0 2px;
+    font-size:18px;
+  }
+
+  .px-content-payables .px-pending-kpis small {
+    font-size:7px;
+  }
+}
+
+@media (max-width:760px) {
+  .px-content-payables,
+  .px-main-payables {
+    height:auto;
+    overflow:visible;
+  }
+
+  .px-pending-scroll-region {
+    overflow:visible;
+  }
+}
