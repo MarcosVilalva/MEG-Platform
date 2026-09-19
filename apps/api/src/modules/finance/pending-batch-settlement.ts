@@ -2,7 +2,7 @@ import { Prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
 import { resolveWorkspaceContext } from '../workspaces/service';
-import { recordFinancialAudit } from './audit';
+import { financialAuditMetadata, recordFinancialAudit } from './audit';
 import { cardStatementEffectFromSignedAmount } from './card-statement-canonical';
 import {
   isBenefitFinancialEvent,
@@ -90,6 +90,45 @@ async function loadCardEntries(tx: Tx, ownerId: string, cardId: string, month: s
   return entries;
 }
 
+async function loadEventBatch(tx: Tx, ownerId: string, items: PendingBatchItemInput[]): Promise<LoadedBatchItem[]> {
+  const unique = new Set<string>();
+  const ids: string[] = [];
+  for (const item of items) {
+    const key = `${item.source}|${item.sourceId}|${item.statementMonth || ''}`;
+    if (unique.has(key)) throw new PendingBatchSettlementError('PHOENIX_PENDING_DUPLICATE', { sourceId: item.sourceId });
+    unique.add(key);
+    ids.push(item.sourceId);
+  }
+
+  const rows = await tx.financialEvent.findMany({
+    where: { id: { in: ids }, userId: ownerId, archivedAt: null },
+    include: { account: true, category: true, paymentMethod: true, ledgerEntries: true },
+  });
+  const byId = new Map(rows.map((row) => [row.id, row]));
+
+  return items.map((item) => {
+    const current = byId.get(item.sourceId);
+    if (!current) throw new PendingBatchSettlementError('FINANCIAL_EVENT_NOT_FOUND', { eventId: item.sourceId });
+    const signed = Number(current.signedAmount);
+    const payload = current.sourcePayload && typeof current.sourcePayload === 'object' && !Array.isArray(current.sourcePayload)
+      ? current.sourcePayload as Record<string, unknown>
+      : {};
+    const cardContext = normalize(`${payload.modality || ''} ${payload.paymentMethod || ''} ${payload.account || ''} ${current.paymentMethod?.name || ''}`);
+    const cardCreditAdjustment = signed > 0 && (cardContext.includes('CREDITO') || cardContext.includes('CARTAO'));
+    if (current.type !== 'expense' || current.status !== 'planned' || !Number.isFinite(signed) || signed === 0 || (signed > 0 && !cardCreditAdjustment)) {
+      throw new PendingBatchSettlementError('FINANCIAL_EVENT_NOT_PENDING', { eventId: item.sourceId });
+    }
+    if (isBenefitFinancialEvent(current)) {
+      throw new PendingBatchSettlementError('BENEFIT_SETTLEMENT_NOT_SUPPORTED', { eventId: item.sourceId });
+    }
+    const amount = cardStatementEffectFromSignedAmount(current.signedAmount);
+    if (!Number.isFinite(amount) || amount === 0) {
+      throw new PendingBatchSettlementError('INVALID_PENDING_AMOUNT', { sourceId: item.sourceId });
+    }
+    return { source: 'event' as const, sourceId: item.sourceId, amount, current };
+  });
+}
+
 async function loadBatchItems(tx: Tx, ownerId: string, items: PendingBatchItemInput[]): Promise<LoadedBatchItem[]> {
   const loaded: LoadedBatchItem[] = [];
   const unique = new Set<string>();
@@ -163,7 +202,9 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
 
     // Toda a seleção é carregada e validada antes da primeira gravação. Como a
     // transação é serializável, qualquer falha posterior desfaz o lote inteiro.
-    const loaded = await loadBatchItems(tx, ownerId, input.items);
+    const loaded = input.items.every((item) => item.source === 'event')
+      ? await loadEventBatch(tx, ownerId, input.items)
+      : await loadBatchItems(tx, ownerId, input.items);
     const sourceCardMethods = new Set(loaded.flatMap((item) => {
       if (item.source === 'card') return [normalize(item.card.name)];
       if (item.source !== 'event') return [];
@@ -195,35 +236,46 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
     const results: Array<Record<string, unknown>> = [];
     const eventBefore = new Map<string, (typeof loaded)[number] & { source: 'event' }>();
     const updatedEventIds: string[] = [];
+    const eventItems = loaded.filter((item): item is Extract<LoadedBatchItem, { source: 'event' }> => item.source === 'event');
+
+    if (eventItems.length) {
+      const eventIds = eventItems.map((item) => item.sourceId);
+      for (const item of eventItems) eventBefore.set(item.sourceId, item);
+
+      await tx.ledgerEntry.deleteMany({ where: { eventId: { in: eventIds } } });
+      const updated = await tx.financialEvent.updateMany({
+        where: { id: { in: eventIds }, userId: ownerId, archivedAt: null, status: 'planned' },
+        data: {
+          status: 'paid',
+          date: paidAt,
+          accountId: account.id,
+          paymentMethodId: paymentMethod.id,
+          workspaceId: context.workspaceId,
+        },
+      });
+      if (updated.count !== eventIds.length) {
+        throw new PendingBatchSettlementError('PENDING_CHANGED_RETRY', {
+          expectedEvents: eventIds.length,
+          updatedEvents: updated.count,
+        });
+      }
+
+      await tx.ledgerEntry.createMany({
+        data: eventItems.map((item) => ({
+          eventId: item.sourceId,
+          date: paidAt,
+          accountId: account.id,
+          debit: item.amount < 0 ? Math.abs(item.amount) : 0,
+          credit: item.amount > 0 ? item.amount : 0,
+          memo: item.current.description,
+        })),
+      });
+      updatedEventIds.push(...eventIds);
+      results.push(...eventItems.map((item) => ({ source: 'event', sourceId: item.sourceId, amount: item.amount })));
+    }
 
     for (const item of loaded) {
-      if (item.source === 'event') {
-        eventBefore.set(item.sourceId, item);
-        await tx.ledgerEntry.deleteMany({ where: { eventId: item.sourceId } });
-        await tx.financialEvent.update({
-          where: { id: item.sourceId },
-          data: {
-            status: 'paid',
-            date: paidAt,
-            accountId: account.id,
-            paymentMethodId: paymentMethod.id,
-            workspaceId: context.workspaceId,
-          },
-        });
-        await tx.ledgerEntry.create({
-          data: {
-            eventId: item.sourceId,
-            date: paidAt,
-            accountId: account.id,
-            debit: item.amount < 0 ? Math.abs(item.amount) : 0,
-            credit: item.amount > 0 ? item.amount : 0,
-            memo: item.current.description,
-          },
-        });
-        updatedEventIds.push(item.sourceId);
-        results.push({ source: 'event', sourceId: item.sourceId, amount: item.amount });
-        continue;
-      }
+      if (item.source === 'event') continue;
 
       if (item.source === 'payable') {
         const event = await tx.financialEvent.create({
@@ -329,21 +381,24 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
         include: { account: true, category: true, paymentMethod: true, ledgerEntries: true },
       });
       const afterById = new Map(afterMirror.map((event) => [event.id, event]));
-      for (const eventId of updatedEventIds) {
+      const auditRows = updatedEventIds.map((eventId) => {
         const before = eventBefore.get(eventId)?.current;
         const after = afterById.get(eventId);
         if (!before || !after) throw new PendingBatchSettlementError('FINANCIAL_EVENT_NOT_FOUND', { eventId });
         const compatibility = Boolean(before.legacyTransactionId || before.sourcePayload);
-        await recordFinancialAudit(tx, {
-          actorId,
+        return {
+          userId: actorId,
           entity: 'FinancialEvent',
           entityId: eventId,
           action: compatibility ? 'FINANCIAL_EVENT_SETTLED_COMPAT' : 'FINANCIAL_EVENT_SETTLED',
-          before,
-          after,
-          context: { operationId: input.operationId, batch: true, paidAt: input.paidAt, compatibility, workspaceId: context.workspaceId },
-        });
-      }
+          metadata: financialAuditMetadata({
+            before,
+            after,
+            context: { operationId: input.operationId, batch: true, paidAt: input.paidAt, compatibility, workspaceId: context.workspaceId },
+          }),
+        };
+      });
+      if (auditRows.length) await tx.auditLog.createMany({ data: auditRows });
     }
 
     const response = {

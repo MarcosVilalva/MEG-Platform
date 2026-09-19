@@ -56,7 +56,7 @@ assert.match(settlement, /assertActiveCatalogReferences/,
 
 assert.match(batchSettlement, /serializableFinancialTransaction/,
   'Baixa múltipla deve executar toda a seleção em uma única transação serializável.');
-assert.match(batchSettlement, /const loaded = await loadBatchItems/,
+assert.match(batchSettlement, /const loaded = input\.items\.every/,
   'Todos os itens devem ser validados antes da primeira gravação do lote.');
 assert.match(batchSettlement, /PENDING_BATCH_SETTLEMENT/,
   'Lote deve possuir recibo idempotente próprio.');
@@ -72,5 +72,13 @@ assert.match(batchSettlement, /timeoutMs:\s*90_000/,
   'Lote suportado de até 100 compromissos deve ter janela transacional compatível.');
 assert.match(batchSettlement, /maxWaitMs:\s*15_000/,
   'Baixa em lote deve tolerar espera de aquisição da transação sem falhar precocemente.');
+assert.match(batchSettlement, /loadEventBatch/,
+  'Lote composto por eventos deve carregar pendências em consulta agrupada.');
+assert.match(batchSettlement, /financialEvent\.updateMany/,
+  'Lote de eventos deve atualizar estados em operação agrupada.');
+assert.match(batchSettlement, /ledgerEntry\.createMany/,
+  'Lote de eventos deve gravar o razão em operação agrupada.');
+assert.match(batchSettlement, /auditLog\.createMany/,
+  'Auditoria do lote de eventos deve ser persistida em bloco.');
 
 console.log('Contrato da baixa protegida individual e em lote validado.');

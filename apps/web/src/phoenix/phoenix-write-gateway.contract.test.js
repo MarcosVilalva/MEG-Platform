@@ -103,6 +103,12 @@ assert.match(pendingGateway, /AbortSignal\.timeout\(105_000\)/,
   'Baixa em lote deve suportar processamento maior sem expirar no timeout padrão de 45 segundos.');
 assert.match(pendingGateway, /PHOENIX_PENDING_CONNECTION_INTERRUPTED/,
   'Falha de transporte deve orientar retry idempotente em vez de erro genérico.');
+assert.match(pendingGateway, /onCommitted\?\.\(result\)/,
+  'Baixa deve refletir na interface assim que o servidor confirmar, antes da releitura completa.');
+assert.match(pendingGateway, /status:\s*'confirmed'.*result/s,
+  'Confirmação do servidor deve existir mesmo se a releitura posterior falhar.');
+assert.match(payables, /locallySettled/,
+  'Pendentes confirmados devem sair imediatamente da grade enquanto a releitura ocorre em segundo plano.');
 
 assert.doesNotMatch(movements, /submitPhoenixSimpleEvent|runPhoenixSimpleEventWrite|cardsClient\.createPurchase|\/finance\/benefit-events/,
   'Tela React base não deve acionar criação diretamente; a confirmação fica isolada no controle protegido.');

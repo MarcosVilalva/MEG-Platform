@@ -384,6 +384,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const [preparedBatch, setPreparedBatch] = useState<PreparedPhoenixPendingBatchSettlement | null>(null);
   const [writeState, setWriteState] = useState<PhoenixPendingWriteState>({ status: 'idle' });
   const [successMessage, setSuccessMessage] = useState('');
+  const [locallySettled, setLocallySettled] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     setModel(data);
@@ -409,8 +410,9 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       return !officialSignatures.has(signature(item));
     });
     return [...cards, ...official, ...compatibility]
+      .filter((item) => !locallySettled.has(item.id))
       .sort((left, right) => left.dueDate.localeCompare(right.dueDate) || left.description.localeCompare(right.description, 'pt-BR'));
-  }, [model]);
+  }, [model, locallySettled]);
 
   const actionable = open.filter((item) => item.openAmount > 0);
   const overdue = actionable.filter((item) => item.dueDate < today);
@@ -559,6 +561,25 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       return;
     }
 
+    const targetIds = targets.map((target) => target.id);
+    let reflected = false;
+    const reflectConfirmedWrite = () => {
+      if (reflected) return;
+      reflected = true;
+      setLocallySettled((current) => {
+        const next = new Set(current);
+        for (const id of targetIds) next.add(id);
+        return next;
+      });
+      setSelected(new Set());
+      setReviewOpen(false);
+      setPrepared(null);
+      setPreparedBatch(null);
+      setSuccessMessage(targets.length > 1
+        ? `${targets.length} compromissos baixados em ${date.format(new Date(`${paidAt}T12:00:00Z`))} por ${method.name}.`
+        : `${targets[0].description} baixado em ${date.format(new Date(`${paidAt}T12:00:00Z`))} por ${method.name}.`);
+    };
+
     try {
       const result = targets.length === 1
         ? await (async () => {
@@ -573,7 +594,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
               statementMonth: target.statementMonth,
             }, prepared);
             setPrepared(nextPrepared);
-            return runPhoenixPendingSettlement(nextPrepared, model.month, setWriteState);
+            return runPhoenixPendingSettlement(nextPrepared, model.month, setWriteState, reflectConfirmedWrite);
           })()
         : await (async () => {
             const nextPrepared = preparePhoenixPendingBatchSettlement({
@@ -588,20 +609,18 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
               paymentMethodId,
             }, preparedBatch);
             setPreparedBatch(nextPrepared);
-            return runPhoenixPendingBatchSettlement(nextPrepared, model.month, setWriteState);
+            return runPhoenixPendingBatchSettlement(nextPrepared, model.month, setWriteState, reflectConfirmedWrite);
           })();
       if (result.status !== 'confirmed') return;
 
-      setModel(result.snapshot);
-      setSelected(new Set());
-      setReviewOpen(false);
-      setPrepared(null);
-      setPreparedBatch(null);
-      setSuccessMessage(targets.length > 1
-        ? `${targets.length} compromissos baixados em ${date.format(new Date(`${paidAt}T12:00:00Z`))} por ${method.name}.`
-        : `${targets[0].description} baixado em ${date.format(new Date(`${paidAt}T12:00:00Z`))} por ${method.name}.`);
+      reflectConfirmedWrite();
+      if (result.snapshot) {
+        setModel(result.snapshot);
+        setLocallySettled(new Set());
+      }
       window.dispatchEvent(new Event('focus'));
     } catch (error) {
+      if (reflected) return;
       setWriteState({
         status: 'error',
         operationId,

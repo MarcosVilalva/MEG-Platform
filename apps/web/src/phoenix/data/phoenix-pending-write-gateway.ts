@@ -50,7 +50,7 @@ export type PreparedPhoenixPendingBatchSettlement = {
 export type PhoenixPendingWriteState =
   | { status: 'idle' }
   | { status: 'saving'; operationId: string }
-  | { status: 'confirmed'; operationId: string; result: unknown; snapshot: PhoenixReadModel }
+  | { status: 'confirmed'; operationId: string; result: unknown; snapshot?: PhoenixReadModel }
   | { status: 'error'; operationId: string; code: string; message: string };
 
 export class PhoenixPendingWriteError extends Error {
@@ -205,11 +205,19 @@ function publishCommittedSnapshot(snapshot: PhoenixReadModel) {
 }
 
 async function refreshConfirmed(operationId: string, result: unknown, refreshMonth: string, onState?: (state: PhoenixPendingWriteState) => void) {
-  const snapshot = await loadPhoenixReadModel(refreshMonth, { force: true });
-  const confirmed: PhoenixPendingWriteState = { status: 'confirmed', operationId, result, snapshot };
-  publishCommittedSnapshot(snapshot);
-  onState?.(confirmed);
-  return confirmed;
+  const committed: PhoenixPendingWriteState = { status: 'confirmed', operationId, result };
+  onState?.(committed);
+  try {
+    const snapshot = await loadPhoenixReadModel(refreshMonth, { force: true });
+    const confirmed: PhoenixPendingWriteState = { ...committed, snapshot };
+    publishCommittedSnapshot(snapshot);
+    onState?.(confirmed);
+    return confirmed;
+  } catch {
+    // A gravação já foi confirmada pelo servidor. Falha na releitura não pode
+    // transformar uma baixa concluída em erro nem induzir o usuário a reenviar.
+    return committed;
+  }
 }
 
 function failedState(operationId: string, error: unknown, onState?: (state: PhoenixPendingWriteState) => void) {
@@ -253,11 +261,13 @@ export async function runPhoenixPendingSettlement(
   prepared: PreparedPhoenixPendingSettlement,
   refreshMonth: string,
   onState?: (state: PhoenixPendingWriteState) => void,
+  onCommitted?: (result: unknown) => void,
 ): Promise<PhoenixPendingWriteState> {
   onState?.({ status: 'saving', operationId: prepared.operationId });
   try {
     if (!PHOENIX_PENDING_WRITE_ENABLED) throw new PhoenixPendingWriteError('PHOENIX_PENDING_WRITE_NOT_ENABLED');
     const result = await submitPendingSettlement(prepared.payload, prepared.operationId);
+    onCommitted?.(result);
     return await refreshConfirmed(prepared.operationId, result, refreshMonth, onState);
   } catch (error) {
     return failedState(prepared.operationId, error, onState);
@@ -268,6 +278,7 @@ export async function runPhoenixPendingBatchSettlement(
   prepared: PreparedPhoenixPendingBatchSettlement,
   refreshMonth: string,
   onState?: (state: PhoenixPendingWriteState) => void,
+  onCommitted?: (result: unknown) => void,
 ): Promise<PhoenixPendingWriteState> {
   onState?.({ status: 'saving', operationId: prepared.operationId });
   try {
@@ -288,6 +299,7 @@ export async function runPhoenixPendingBatchSettlement(
         operationId: prepared.operationId,
       }),
     });
+    onCommitted?.(result);
     return await refreshConfirmed(prepared.operationId, result, refreshMonth, onState);
   } catch (error) {
     return failedState(prepared.operationId, error, onState);
