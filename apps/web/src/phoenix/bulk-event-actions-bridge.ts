@@ -393,6 +393,26 @@ function closeBulkPickers(modal: HTMLElement, except?: HTMLElement | null) {
   });
 }
 
+function positionBulkPickerPanel(trigger: HTMLElement, panel: HTMLElement) {
+  const viewportWidth = window.visualViewport?.width || window.innerWidth;
+  const viewportHeight = window.visualViewport?.height || window.innerHeight;
+  const rect = trigger.getBoundingClientRect();
+  const margin = 10;
+  const width = Math.min(Math.max(rect.width, 260), viewportWidth - margin * 2);
+  const left = Math.min(Math.max(margin, rect.left), Math.max(margin, viewportWidth - width - margin));
+  const below = Math.max(0, viewportHeight - rect.bottom - margin);
+  const above = Math.max(0, rect.top - margin);
+  const openBelow = below >= 190 || below >= above;
+  const available = Math.max(150, Math.min(340, openBelow ? below : above));
+  panel.style.position = 'fixed';
+  panel.style.left = `${left}px`;
+  panel.style.width = `${width}px`;
+  panel.style.maxHeight = `${available}px`;
+  panel.style.top = openBelow
+    ? `${Math.min(viewportHeight - available - margin, rect.bottom + 6)}px`
+    : `${Math.max(margin, rect.top - available - 6)}px`;
+}
+
 function wireBulkPicker(modal: HTMLElement, name: string): BulkPickerController {
   const picker = modal.querySelector<HTMLElement>(`[data-bulk-picker="${name}"]`);
   if (!picker) throw new Error(`BULK_PICKER_${name.toUpperCase()}_MISSING`);
@@ -414,6 +434,7 @@ function wireBulkPicker(modal: HTMLElement, name: string): BulkPickerController 
     panel.hidden = !opening;
     trigger.setAttribute('aria-expanded', opening ? 'true' : 'false');
     if (opening) {
+      positionBulkPickerPanel(trigger, panel);
       search.value = '';
       options.forEach((option) => { option.hidden = false; });
       window.requestAnimationFrame(() => search.focus());
@@ -475,21 +496,32 @@ async function openBulkEditModal() {
       <div><span class="px-kicker">Alteração em massa</span><h3>${ids.length} lançamento${ids.length === 1 ? '' : 's'} selecionado${ids.length === 1 ? '' : 's'}</h3><p>Marque somente os campos que devem substituir os valores atuais de todos os selecionados.</p></div>
       <button type="button" class="px-bulk-modal-close" aria-label="Fechar">×</button>
     </div>
-    <label class="px-bulk-field"><input type="checkbox" data-use-date><strong>Alterar vencimento/data do evento</strong><input type="date" data-value-date disabled></label>
-    <div class="px-bulk-field px-bulk-picker-field">
-      <label class="px-bulk-picker-check"><input type="checkbox" data-use-account><strong>Alterar conta financeira</strong></label>
-      ${bulkPickerMarkup('account', 'Selecione a conta', accountOptions)}
+    <div class="px-bulk-modal-body" data-bulk-modal-body>
+      <label class="px-bulk-field"><input type="checkbox" data-use-date><strong>Alterar vencimento/data do evento</strong><input type="date" data-value-date disabled></label>
+      <div class="px-bulk-field px-bulk-picker-field">
+        <label class="px-bulk-picker-check"><input type="checkbox" data-use-account><strong>Alterar conta financeira</strong></label>
+        ${bulkPickerMarkup('account', 'Selecione a conta', accountOptions)}
+      </div>
+      <div class="px-bulk-field px-bulk-picker-field">
+        <label class="px-bulk-picker-check"><input type="checkbox" data-use-payment><strong>Alterar forma de pagamento/recebimento</strong></label>
+        ${bulkPickerMarkup('payment', 'Selecione a forma', methodOptions)}
+      </div>
+      <div class="px-bulk-modal-status" data-modal-status>Marque os campos que deseja alterar.</div>
     </div>
-    <div class="px-bulk-field px-bulk-picker-field">
-      <label class="px-bulk-picker-check"><input type="checkbox" data-use-payment><strong>Alterar forma de pagamento/recebimento</strong></label>
-      ${bulkPickerMarkup('payment', 'Selecione a forma', methodOptions)}
-    </div>
-    <div class="px-bulk-modal-status" data-modal-status>Marque os campos que deseja alterar.</div>
     <div class="px-bulk-modal-actions"><button type="button" data-cancel>Cancelar</button><button type="button" data-confirm>Aplicar alterações</button></div>
   `;
   document.body.appendChild(backdrop);
 
-  const close = () => backdrop.remove();
+  const close = () => {
+    closeBulkPickers(modal);
+    window.removeEventListener('resize', closeBulkPickersOnViewport);
+    window.visualViewport?.removeEventListener('resize', closeBulkPickersOnViewport);
+    backdrop.remove();
+  };
+  const closeBulkPickersOnViewport = () => closeBulkPickers(modal);
+  window.addEventListener('resize', closeBulkPickersOnViewport);
+  window.visualViewport?.addEventListener('resize', closeBulkPickersOnViewport);
+  modal.querySelector<HTMLElement>('[data-bulk-modal-body]')?.addEventListener('scroll', closeBulkPickersOnViewport, { passive: true });
   modal.querySelector<HTMLButtonElement>('.px-bulk-modal-close')?.addEventListener('click', close);
   modal.querySelector<HTMLButtonElement>('[data-cancel]')?.addEventListener('click', close);
   backdrop.addEventListener('click', (event) => { if (event.target === backdrop) close(); });
