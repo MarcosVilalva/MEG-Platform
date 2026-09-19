@@ -54,8 +54,8 @@ assert.match(simpleEventBridge, /runPhoenixBenefitEventWrite/,
   'Drawer de lançamento deve confirmar Benefício Alimentação pelo writer protegido.');
 assert.match(simpleEventBridge, /benefit\.isBenefit && benefit\.isVerocard/,
   'Conta Benefício + VEROCARD deve ser reconhecida diretamente sem modalidade legada.');
-assert.doesNotMatch(simpleEventBridge, /modalidade|modality === 'ALIMENTACAO'|fluxo VEROCARD\/ALIMENTAÇÃO/,
-  'Fluxo atual do benefício não pode depender da modalidade legada que causava o bloqueio indevido.');
+assert.doesNotMatch(simpleEventBridge, /benefit\.isVerocard[\s\S]{0,180}modality === 'ALIMENTACAO'/,
+  'Fluxo do benefício pode usar modalidade apenas como sinal auxiliar; nunca como requisito para liberar VEROCARD.');
 assert.match(movementScreen, /selectedAccount\?\.type === 'benefit' \|\| isBenefitAccount\(selectedAccount\?\.name\)/,
   'Benefício Alimentação deve ser reconhecido pelo tipo canônico da conta, não apenas pelo nome visível.');
 assert.match(movementScreen, /data-account-type=\{item\.type\}/,
