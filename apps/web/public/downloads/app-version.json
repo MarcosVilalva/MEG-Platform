@@ -1,9 +1,9 @@
 {
-  "versionCode": 289,
-  "versionName": "1.1.289",
+  "versionCode": 290,
+  "versionName": "1.1.290",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "04ba1c90f085be40e82a4b7e507e071c9a5f1343b2e99340a179b4d0d2bd9210",
+  "sha256": "2774648364b2f31a0330fc74cc9b67c1490669c52146eba2ab8e92a44acb839c",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #308 from MarcosVilalva/feat/period-center-performance"
+  "releaseNotes": "Home: padronizar leitura por período e ancorar saldo histórico"
 }
