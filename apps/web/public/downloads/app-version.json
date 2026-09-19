@@ -1,9 +1,9 @@
 {
-  "versionCode": 291,
-  "versionName": "1.1.291",
+  "versionCode": 292,
+  "versionName": "1.1.292",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "ba93b3bb38e8a2a8d33777f6d7517fa4f05828543988feeeb682dbd895975013",
+  "sha256": "0ed53366915761d572a518ebd76ef24d5d9597d33cce8c31c1ab67df24b2cfd9",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Cartões: cockpit premium de faturas, limite e parcelas"
+  "releaseNotes": "Cartões V4: visão aprovada com central completa por cartão"
 }
