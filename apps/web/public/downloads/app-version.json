@@ -1,9 +1,9 @@
 {
-  "versionCode": 277,
-  "versionName": "1.1.277",
+  "versionCode": 278,
+  "versionName": "1.1.278",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "600515479e301008692c2e96628c28c4364540caa62e9fd91b49104e0360344b",
+  "sha256": "9928ce4f7c79702c3277e681aa3c82e906d5b2d73a248975a3d64cf9cb70f63d",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #296 from MarcosVilalva/fix/pending-idempotent-confirmation-race"
+  "releaseNotes": "Merge pull request #297 from MarcosVilalva/feat/pendentes-live-wow"
 }
