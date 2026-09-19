@@ -195,6 +195,11 @@ function mainAccountValue(root: HTMLElement) {
 
 function benefitAccountValue(root: HTMLElement) {
   const select = selectByLabel(root, 'Conta financeira');
+  if (!select) return '';
+  const canonical = [...select.options].find((option) =>
+    option.value && normalize(option.dataset.accountType || '') === 'BENEFIT'
+  );
+  if (canonical) return canonical.value;
   return optionValue(select, [
     (label) => label.includes('VEROCARD') && label.includes('ALIMENTA'),
     (label) => label.includes('VEROCARD'),
@@ -234,7 +239,28 @@ function setAccountLock(root: HTMLElement, targetValue: string, locked: boolean)
   if (!account) return;
   if (targetValue) setNativeSelect(account, targetValue);
   account.disabled = locked;
+  account.setAttribute('aria-readonly', locked ? 'true' : 'false');
   account.closest('label')?.classList.toggle('px-route-locked', locked);
+}
+
+function setPaymentLock(root: HTMLElement, targetValue: string, locked: boolean) {
+  const payment = paymentSelect(root);
+  if (!payment) return;
+  if (targetValue) setNativeSelect(payment, targetValue);
+  payment.disabled = locked;
+  payment.setAttribute('aria-readonly', locked ? 'true' : 'false');
+  payment.closest('label')?.classList.toggle('px-route-locked', locked);
+}
+
+function unlockBenefitRoute(root: HTMLElement) {
+  const account = selectByLabel(root, 'Conta financeira');
+  const currentAccountType = normalize(account?.selectedOptions[0]?.dataset.accountType || '');
+  if (currentAccountType === 'BENEFIT') {
+    const monetary = mainAccountValue(root);
+    if (monetary) setNativeSelect(account, monetary);
+  }
+  setAccountLock(root, '', false);
+  setPaymentLock(root, '', false);
 }
 
 function clearNativePaymentVisibility(root: HTMLElement) {
@@ -334,7 +360,11 @@ function rebuildNextChoice(root: HTMLElement, modalityField: HTMLElement, modali
   const forcedValue = paymentValue(root, modality);
   if (forcedValue) setNativeSelect(native, forcedValue);
   select.value = native.value;
-  if (forced && select.value) select.disabled = true;
+  if (forced && select.value) {
+    select.disabled = true;
+    select.setAttribute('aria-readonly', 'true');
+    if (normalize(modality) === 'ALIMENTACAO') caption.textContent = 'Forma de pagamento automática';
+  }
   select.addEventListener('change', () => setNativeSelect(native, select.value));
   native.closest('label')?.classList.add('px-native-payment-routed');
 }
@@ -347,24 +377,30 @@ function applyModalityRoute(root: HTMLElement, modality: string, modalityField: 
 
   if (type === 'income') {
     if (normalized === 'VEROCARD') {
-      setAccountLock(root, benefitAccountValue(root), true);
-      setNativeSelect(payment, paymentValue(root, 'VEROCARD'));
+      const benefitAccount = benefitAccountValue(root);
+      const verocard = paymentValue(root, 'VEROCARD');
+      setAccountLock(root, benefitAccount, true);
+      setPaymentLock(root, verocard, true);
+      root.dataset.phoenixBenefitRoute = 'locked';
     } else {
+      setPaymentLock(root, '', false);
       setAccountLock(root, mainAccountValue(root), true);
       setNativeSelect(payment, paymentValue(root, modality));
+      delete root.dataset.phoenixBenefitRoute;
     }
     rebuildNextChoice(root, modalityField, modality);
     return;
   }
 
   if (type === 'expense' && normalized === 'ALIMENTACAO') {
-    setAccountLock(root, benefitAccountValue(root), true);
-    setNativeSelect(payment, paymentValue(root, 'ALIMENTAÇÃO'));
+    const benefitAccount = benefitAccountValue(root);
+    const verocard = paymentValue(root, 'ALIMENTAÇÃO');
+    setAccountLock(root, benefitAccount, true);
+    setPaymentLock(root, verocard, true);
+    root.dataset.phoenixBenefitRoute = 'locked';
   } else {
-    if (account) {
-      account.disabled = false;
-      account.closest('label')?.classList.remove('px-route-locked');
-    }
+    unlockBenefitRoute(root);
+    delete root.dataset.phoenixBenefitRoute;
     if (normalized === 'CREDITO') setNativeSelect(payment, paymentValue(root, 'CRÉDITO'));
     if (normalized === 'CREDIARIO') setNativeSelect(payment, paymentValue(root, 'CREDIÁRIO'));
   }
