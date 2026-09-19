@@ -16,6 +16,12 @@ assert.match(batchRoutes, /app\.post\('\/pending\/batch\/settle'/,
   'Baixa múltipla deve possuir endpoint atômico dedicado no módulo de mutações em lote.');
 assert.match(batchRoutes, /settlePendingBatchProtected/,
   'Endpoint em lote deve usar o writer protegido do domínio financeiro.');
+assert.match(batchRoutes, /app\.get\('\/pending\/operations\/:operationId'/,
+  'Baixa deve possuir consulta de confirmação por recibo idempotente.');
+assert.match(batchRoutes, /Pending batch settlement confirmed/,
+  'Backend deve registrar a latência da baixa confirmada para diagnóstico.');
+assert.match(batchRoutes, /PENDING_BATCH_TIMEOUT/,
+  'Timeout transacional deve retornar código explícito e nunca parecer confirmação.');
 assert.match(batchRoutes, /operationIdSchema[\s\S]*min\(8\).*max\(128\)/,
   'operationId deve ser obrigatório no contrato de baixa em lote.');
 
@@ -68,10 +74,10 @@ assert.doesNotMatch(batchSettlement, /FINANCIAL_EVENT_NOT_LEGACY_COMPAT/,
   'Lote deve aceitar despesas normalizadas nativas além de itens legados.');
 assert.match(batchSettlement, /writeBackNormalizedEventsToAppState/,
   'Espelho legado deve ser atualizado dentro da mesma transação quando houver vínculo legado.');
-assert.match(batchSettlement, /timeoutMs:\s*90_000/,
-  'Lote suportado de até 100 compromissos deve ter janela transacional compatível.');
-assert.match(batchSettlement, /maxWaitMs:\s*15_000/,
-  'Baixa em lote deve tolerar espera de aquisição da transação sem falhar precocemente.');
+assert.match(batchSettlement, /timeoutMs:\s*30_000/,
+  'Lote otimizado deve falhar fechado antes de uma espera excessiva.');
+assert.match(batchSettlement, /maxWaitMs:\s*5_000/,
+  'Aquisição da transação deve possuir limite curto para preservar responsividade.');
 assert.match(batchSettlement, /loadEventBatch/,
   'Lote composto por eventos deve carregar pendências em consulta agrupada.');
 assert.match(batchSettlement, /financialEvent\.updateMany/,
