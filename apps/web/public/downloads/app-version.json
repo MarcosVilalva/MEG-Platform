@@ -1,9 +1,9 @@
 {
-  "versionCode": 281,
-  "versionName": "1.1.281",
+  "versionCode": 282,
+  "versionName": "1.1.282",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "8e2172e7d4af34f1e2adbf1c46f9bb5c05374b9b0831a6bc805bff14d448ad5f",
+  "sha256": "ed61d46a24501c1a3794832692d4d5cf143cc5cdafafb9740ac680da2c5c483e",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #300 from MarcosVilalva/fix/pendentes-spacing-pass"
+  "releaseNotes": "Merge pull request #301 from MarcosVilalva/fix/pendentes-canonical-layout"
 }
