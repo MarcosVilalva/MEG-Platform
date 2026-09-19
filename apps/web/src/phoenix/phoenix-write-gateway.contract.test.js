@@ -172,7 +172,7 @@ assert.match(pendingStyles, /display:flex;[\s\S]*flex-direction:column;[\s\S]*he
   'Workspace de Pendentes deve usar coluna flex para eliminar o vazio estrutural abaixo da topbar.');
 assert.match(pendingStyles, /grid-template-rows:72px 82px 54px minmax\(0,1fr\)/,
   'Desktop deve possuir quatro faixas explícitas: hero, KPIs, toolbar e agenda flexível.');
-assert.match(pendingStyles, /padding:8px 16px 10px;/,
+assert.match(pendingStyles, /padding:8px 16px 10px(?: !important)?;/,
   'Conteúdo deve começar imediatamente abaixo da topbar com respiro curto e previsível.');
 assert.match(pendingStyles, /grid-template-columns:minmax\(360px,1fr\) auto 1px minmax\(190px,220px\) auto/,
   'Toolbar deve distribuir busca, filtros, agrupamento e contador em proporções explícitas.');
