@@ -933,7 +933,8 @@
   box-shadow:inset 0 0 0 1px rgba(67,221,176,.10);
 }
 
-.px-pending-overlay {
+.px-pending-confirm-overlay,
+.px-pending-success-overlay {
   position:fixed;
   inset:0;
   z-index:1000;
