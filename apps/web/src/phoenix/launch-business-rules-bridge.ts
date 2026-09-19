@@ -75,7 +75,9 @@ function textareaByLabel(root: ParentNode, startsWith: string) {
 }
 
 function paymentSelect(root: ParentNode) {
-  return selectByLabel(root, 'Forma de recebimento') || selectByLabel(root, 'Forma de pagamento');
+  return root.querySelector<HTMLSelectElement>('[data-phoenix-payment-method-select]')
+    || selectByLabel(root, 'Forma de recebimento')
+    || selectByLabel(root, 'Forma de pagamento');
 }
 
 function parseMoney(value: string) {
