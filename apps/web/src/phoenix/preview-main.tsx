@@ -202,7 +202,7 @@ function PhoenixPreviewRoot() {
     let active = true;
     void (async () => {
       try {
-        // @ts-expect-error módulo JS nativo carregado somente no APK.
+        // @ts-ignore módulo JS nativo carregado somente no APK.
         const biometric = await import('../native-biometric-login.js');
         const status = await biometric.getBiometricLoginStatus();
         if (!active || !status?.available || !status?.enabled) return;
@@ -230,10 +230,12 @@ function PhoenixPreviewRoot() {
     nativeLifecycleStartedRef.current = true;
     void (async () => {
       try {
-        // @ts-expect-error módulos JS nativos carregados somente no APK.
         const [biometric, updater, stableUi] = await Promise.all([
+          // @ts-ignore módulo JS nativo carregado somente no APK.
           import('../native-biometric-login.js'),
+          // @ts-ignore módulo JS nativo carregado somente no APK.
           import('../android-update-controller.js'),
+          // @ts-ignore módulo JS nativo carregado somente no APK.
           import('../native-app-update.js'),
         ]);
         await biometric.initializeAndroidBiometricLifecycle({
