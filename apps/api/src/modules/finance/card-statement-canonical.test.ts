@@ -30,6 +30,22 @@ assert.equal(azul.netAmount, 1875.52);
 assert.equal(azul.payableAmount, 1875.52);
 assert.equal(azul.creditBalance, 0);
 
+const latam = buildCanonicalCardStatement({
+  month: '2026-09',
+  closingDay: 8,
+  dueDay: 16,
+  aliases: ['LATAM', 'CARTÃO LATAM PASS'],
+  purchases: [],
+  events: [
+    { id: 'latam-base', description: 'COMPRAS', type: 'expense', status: 'planned', date: '2026-09-16', signedAmount: -3453.24, sourcePayload: { paymentMethod: 'CARTÃO LATAM PASS', modality: 'CREDITO' } },
+    { id: 'latam-refund', description: 'EXTORNO ANUIDADE 1/1', type: 'expense', status: 'planned', date: '2026-09-16', signedAmount: 31, sourcePayload: { paymentMethod: 'CARTÃO LATAM PASS', modality: 'CREDITO' } },
+  ],
+});
+assert.equal(latam.charges, 3453.24);
+assert.equal(latam.credits, 31);
+assert.equal(latam.netAmount, 3422.24);
+assert.equal(latam.payableAmount, 3422.24);
+
 const partialRefund = canonicalCardStatementTotals([
   { id: 'a', source: 'financial-event', description: 'Compra', effect: 200, kind: 'charge', purchaseDate: '2026-09-01', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1, isOpen: true, sourceStatus: 'planned' },
   { id: 'b', source: 'financial-event', description: 'Estorno parcial', effect: -50, kind: 'credit', purchaseDate: '2026-09-02', dueDate: '2026-09-16', statementMonth: '2026-09', installmentNo: 1, installmentQty: 1, isOpen: true, sourceStatus: 'planned' },

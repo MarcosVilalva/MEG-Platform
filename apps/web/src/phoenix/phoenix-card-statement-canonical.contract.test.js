@@ -5,6 +5,7 @@ const cardsGrid = readFileSync(new URL('./screens/PhoenixCardsGrid.tsx', import.
 const payables = readFileSync(new URL('./screens/PhoenixPayablesV15.tsx', import.meta.url), 'utf8');
 const movements = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
 const readScreens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.meta.url), 'utf8');
+const cardProjection = readFileSync(new URL('./data/card-movement-projection.ts', import.meta.url), 'utf8');
 
 assert.match(cardsGrid, /tx\.amount !== undefined \? parseNumber\(tx\.amount\) : parseNumber\(tx\.expenseAmount\)/,
   'Cartões devem preservar o sinal do amount legado antes do expenseAmount absoluto');
@@ -42,6 +43,12 @@ assert.match(payables, /selectedTotal <= 0/,
 
 assert.match(movements, /const signed = Number\(event\.signedAmount \|\| 0\)/,
   'Lançamentos devem calcular o efeito visual a partir do mesmo signedAmount canônico');
+assert.match(cardProjection, /const statementEffect = Number\(entry\.amount \|\| 0\)/,
+  'Projeção de parcelas deve preservar o efeito assinado da linha da fatura');
+assert.match(cardProjection, /signedAmount: -statementEffect/,
+  'Créditos de cartão devem virar signedAmount positivo em Lançamentos');
+assert.doesNotMatch(cardProjection, /const amount = Math\.abs\(Number\(entry\.amount/,
+  'Projeção não pode destruir o sinal do estorno antes de montar signedAmount');
 
 assert.match(readScreens, /creditAwarePendingModel/,
   'Compatibilidade de crédito legado deve continuar ativa durante a transição');

@@ -1,5 +1,4 @@
 import { authenticatedRequest } from '../app/auth-client';
-import { financeClient } from '../app/finance-client';
 import { PHOENIX_BULK_EVENT_WRITE_ENABLED } from './data/phoenix-bulk-event-gateway';
 import './phoenix-bulk-ux-enhancements.css';
 
@@ -246,7 +245,7 @@ function modalShell(title: string, subtitle: string) {
   modal.setAttribute('aria-label', title);
   modal.innerHTML = `
     <header class="px-bulk-ux-modal-head">
-      <div><span class="px-kicker">Seleção em massa</span><h3>${title}</h3><p>${subtitle}</p></div>
+      <div><span class="px-kicker">Lançamentos</span><h3>${title}</h3><p>${subtitle}</p></div>
       <button type="button" data-close aria-label="Fechar">×</button>
     </header>
     <div data-body></div>
@@ -264,79 +263,6 @@ function triggerProtectedAction(kind: 'edit' | 'delete') {
   if (!PHOENIX_BULK_EVENT_WRITE_ENABLED) return;
   const selector = kind === 'edit' ? '[data-bulk-edit]' : '[data-bulk-delete]';
   document.querySelector<HTMLButtonElement>(`.px-bulk-action-bar ${selector}:not(:disabled)`)?.click();
-}
-
-async function openEditPreview() {
-  const count = selectedBoxes().length;
-  if (!count) return;
-
-  const { backdrop, body } = modalShell(
-    `Alterar ${count} lançamento${count === 1 ? '' : 's'}`,
-    'Somente os campos marcados serão substituídos. Os demais permanecem exatamente como estão.',
-  );
-  body.innerHTML = '<div class="px-bulk-ux-loading">Carregando cadastros da base…</div>';
-
-  try {
-    const [accounts, methods] = await Promise.all([financeClient.listAccounts(), financeClient.listPaymentMethods()]);
-    const accountOptions = accounts
-      .filter((item) => item.isActive)
-      .map((item) => `<option>${text(item.name)}</option>`)
-      .join('');
-    const methodOptions = methods
-      .filter((item) => item.isActive)
-      .map((item) => `<option>${text(item.name)}</option>`)
-      .join('');
-
-    body.innerHTML = `
-      <div class="px-bulk-ux-summary">
-        <strong>${count} selecionado${count === 1 ? '' : 's'}</strong>
-        <span>Operação em lote prevista como atômica: ou todos são alterados, ou nenhum.</span>
-      </div>
-      <label class="px-bulk-ux-field"><input type="checkbox" data-toggle="date"><span><strong>Vencimento / data</strong><small>Aplicar a mesma data aos selecionados.</small></span><input type="date" data-value="date" disabled></label>
-      <label class="px-bulk-ux-field"><input type="checkbox" data-toggle="account"><span><strong>Conta financeira</strong><small>Trocar somente a conta dos selecionados.</small></span><select data-value="account" disabled><option value="">Selecione</option>${accountOptions}</select></label>
-      <label class="px-bulk-ux-field"><input type="checkbox" data-toggle="payment"><span><strong>Forma de pagamento / recebimento</strong><small>Trocar somente a forma dos selecionados.</small></span><select data-value="payment" disabled><option value="">Selecione</option>${methodOptions}</select></label>
-      <div class="px-bulk-ux-review" data-review>Nenhum campo marcado. Esta prévia não altera seus dados.</div>
-      <div class="px-bulk-ux-actions">
-        <button type="button" data-preview-review>Revisar alteração</button>
-        <button type="button" class="primary" data-apply ${PHOENIX_BULK_EVENT_WRITE_ENABLED ? '' : 'disabled'}>${PHOENIX_BULK_EVENT_WRITE_ENABLED ? 'Aplicar alterações' : 'Aguardando liberação'}</button>
-      </div>
-      <small class="px-bulk-ux-esc-hint">Esc fecha esta janela.</small>
-    `;
-
-    const connect = (name: string) => {
-      const toggle = body.querySelector<HTMLInputElement>(`[data-toggle="${name}"]`);
-      const value = body.querySelector<HTMLInputElement | HTMLSelectElement>(`[data-value="${name}"]`);
-      if (!toggle || !value) return;
-      toggle.addEventListener('change', () => { value.disabled = !toggle.checked; });
-    };
-    connect('date');
-    connect('account');
-    connect('payment');
-
-    body.querySelector<HTMLButtonElement>('[data-preview-review]')?.addEventListener('click', () => {
-      const changes: string[] = [];
-      const dateToggle = body.querySelector<HTMLInputElement>('[data-toggle="date"]');
-      const accountToggle = body.querySelector<HTMLInputElement>('[data-toggle="account"]');
-      const paymentToggle = body.querySelector<HTMLInputElement>('[data-toggle="payment"]');
-      const dateValue = body.querySelector<HTMLInputElement>('[data-value="date"]')?.value || '';
-      const accountValue = body.querySelector<HTMLSelectElement>('[data-value="account"]')?.selectedOptions[0]?.textContent || '';
-      const paymentValue = body.querySelector<HTMLSelectElement>('[data-value="payment"]')?.selectedOptions[0]?.textContent || '';
-      if (dateToggle?.checked && dateValue) changes.push(`Vencimento/data → ${formatDate(dateValue)}`);
-      if (accountToggle?.checked && accountValue && accountValue !== 'Selecione') changes.push(`Conta → ${accountValue}`);
-      if (paymentToggle?.checked && paymentValue && paymentValue !== 'Selecione') changes.push(`Forma → ${paymentValue}`);
-      const review = body.querySelector<HTMLElement>('[data-review]');
-      if (review) review.textContent = changes.length
-        ? `${count} lançamento${count === 1 ? '' : 's'} · ${changes.join(' · ')} · demais campos preservados.`
-        : 'Marque ao menos um campo e escolha o novo valor para visualizar o resumo.';
-    });
-
-    body.querySelector<HTMLButtonElement>('[data-apply]')?.addEventListener('click', () => {
-      closeModal(backdrop);
-      triggerProtectedAction('edit');
-    });
-  } catch {
-    body.innerHTML = '<div class="px-bulk-ux-error">Não foi possível carregar os cadastros para esta prévia.</div>';
-  }
 }
 
 async function openTrash() {
@@ -402,7 +328,6 @@ function ensureCommandStrip() {
       </div>
       <div class="px-bulk-ux-buttons" role="group" aria-label="Ações da seleção">
         <button type="button" class="px-bulk-icon-button" data-select-filtered title="Selecionar página" aria-label="Selecionar página">${actionIcon('select')}</button>
-        <button type="button" class="px-bulk-icon-button" data-preview-edit title="Prévia" aria-label="Prévia">${actionIcon('preview')}</button>
         <button type="button" class="px-bulk-icon-button px-bulk-ux-primary" data-do-edit title="Alterar selecionados" aria-label="Alterar selecionados" ${PHOENIX_BULK_EVENT_WRITE_ENABLED ? '' : 'disabled'}>${actionIcon('edit')}</button>
         <button type="button" class="px-bulk-icon-button px-bulk-ux-danger" data-do-delete title="Excluir selecionados" aria-label="Excluir selecionados" ${PHOENIX_BULK_EVENT_WRITE_ENABLED ? '' : 'disabled'}>${actionIcon('delete')}</button>
         <button type="button" class="px-bulk-icon-button" data-trash title="Lixeira" aria-label="Lixeira">${actionIcon('trash')}</button>
@@ -412,7 +337,6 @@ function ensureCommandStrip() {
     slot.appendChild(strip);
     strip.querySelector<HTMLButtonElement>('[data-select-filtered]')?.addEventListener('click', selectFiltered);
     strip.querySelector<HTMLButtonElement>('[data-clear-filtered]')?.addEventListener('click', clearFilteredSelection);
-    strip.querySelector<HTMLButtonElement>('[data-preview-edit]')?.addEventListener('click', () => void openEditPreview());
     strip.querySelector<HTMLButtonElement>('[data-trash]')?.addEventListener('click', () => void openTrash());
     strip.querySelector<HTMLButtonElement>('[data-do-edit]')?.addEventListener('click', () => triggerProtectedAction('edit'));
     strip.querySelector<HTMLButtonElement>('[data-do-delete]')?.addEventListener('click', () => triggerProtectedAction('delete'));
@@ -455,8 +379,6 @@ function ensureCommandStrip() {
     selectButton.title = total ? `Selecionar página (${total})` : 'Selecionar página';
     selectButton.setAttribute('aria-label', selectButton.title);
   }
-  const previewButton = strip.querySelector<HTMLButtonElement>('[data-preview-edit]');
-  if (previewButton) previewButton.disabled = selected === 0;
   const clearButton = strip.querySelector<HTMLButtonElement>('[data-clear-filtered]');
   if (clearButton) clearButton.disabled = selected === 0;
   const editButton = strip.querySelector<HTMLButtonElement>('[data-do-edit]');
