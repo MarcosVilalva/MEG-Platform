@@ -6,6 +6,8 @@ const exportBridge = readFileSync(new URL('./phoenix-table-export-bridge.ts', im
 const exportCss = readFileSync(new URL('./phoenix-table-export.css', import.meta.url), 'utf8');
 const visualCss = readFileSync(new URL('./phoenix-visual-a11y.css', import.meta.url), 'utf8');
 const overlayTheme = readFileSync(new URL('./phoenix-overlay-theme-bridge.ts', import.meta.url), 'utf8');
+const historyScreen = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
+const historyCss = readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8');
 
 const screens = [
   './screens/PhoenixCardsGrid.tsx',
@@ -41,6 +43,23 @@ assert.match(exportCss, /px-export-button\.pdf/, 'Ação PDF deve ter identidade
 for (const token of ['--px-muted-strong','--px-control-border','.px-secondary-action','.px-primary-action','.px-card-management-danger','.px-preview-box','.px-rule-box','.px-notice','table thead th','button:disabled']) {
   assert.ok(visualCss.includes(token), `Guardrail visual ausente: ${token}`);
 }
+
+assert.match(historyScreen, /data-history-layout="premium-v1"/,
+  'Histórico deve expor o marcador do cockpit premium.');
+assert.doesNotMatch(historyScreen, /px-history-source-note/,
+  'Aviso técnico de fonte não deve ocupar o fluxo principal do Histórico.');
+assert.match(historyScreen, /Linha do tempo financeira/,
+  'Histórico deve possuir módulo principal de linha do tempo.');
+assert.match(historyScreen, /px-history-commandbar/,
+  'Busca e filtros devem permanecer integrados em uma única barra operacional.');
+assert.match(historyCss, /grid-template-rows:72px 82px 54px minmax\(0,1fr\)/,
+  'Histórico desktop deve distribuir hero, KPIs, filtros e workspace em faixas explícitas.');
+assert.match(historyCss, /\.px-history-feed[\s\S]*overflow-y:auto/,
+  'Feed do Histórico deve concentrar sua própria rolagem no desktop.');
+assert.match(historyCss, /\.px-history-detail[\s\S]*overflow-y:auto/,
+  'Detalhes da auditoria devem possuir rolagem interna independente.');
+assert.match(historyCss, /\.phoenix-v15 \.px-main-history[\s\S]*height:100dvh/,
+  'Histórico deve operar como cockpit fixo no desktop.');
 
 for (const screen of screens) {
   const content = readFileSync(new URL(screen, import.meta.url), 'utf8');
