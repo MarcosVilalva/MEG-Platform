@@ -514,7 +514,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
 
   const identity = resolvePhoenixCardIdentity(selected);
 
-  return <section className="px-screen px-cards-premium px-cards-wow px-cards-approved" data-cards-layout="approved-v4">
+  return <section className="px-screen px-cards-premium px-cards-wow px-cards-approved" data-cards-layout="approved-v5">
     <header className="px-cards-approved-head">
       <div className="px-cards-approved-heading">
         <span className="px-kicker">CARTÕES · VISÃO GERAL</span>
