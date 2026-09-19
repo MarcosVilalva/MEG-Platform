@@ -79,6 +79,13 @@ assert.match(movementScreen, /launchPreset === 'benefit'/,
   'Aplicativo operacional deve possuir atalho direto para lançamento de Alimentação.');
 assert.match(movementScreen, /canonicalVerocardPayment/,
   'Drawer React deve reforçar VEROCARD quando a conta canônica é benefit.');
+assert.match(movementScreen, /accountId: canonicalBenefitAccount\?\.id \|\| ''/,
+  'Atalho Alimentação deve entrar no drawer com a conta benefit já aplicada.');
+assert.match(movementScreen, /paymentMethodId: canonicalVerocardPayment\?\.id \|\| ''/,
+  'Atalho Alimentação deve entrar no drawer com VEROCARD já aplicado.');
+assert.match(movementScreen, /requestAnimationFrame\(applyBenefitModality\)/,
+  'Atalho Alimentação deve sincronizar também a modalidade visual quando o bridge estiver montado.');
+
 
 
 assert.match(loader, /const previewPath = `\/finance\/phoenix-preview\?month=\$\{encodeURIComponent\(month\)\}`/,
