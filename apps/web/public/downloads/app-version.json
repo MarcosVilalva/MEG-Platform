@@ -1,9 +1,9 @@
 {
-  "versionCode": 269,
-  "versionName": "1.1.269",
+  "versionCode": 270,
+  "versionName": "1.1.270",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "f5dafc7f526d630e5234de8c50dcefd42db47636374babc7380fff5987f68d7b",
+  "sha256": "86117da5747605c6e5d944af8fca5381d772763671c69627a86f33a4970d4c53",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #285 from MarcosVilalva/security/supabase-rls-deny-direct-api"
+  "releaseNotes": "Merge pull request #286 from MarcosVilalva/fix/android-release-pair-pages"
 }
