@@ -373,10 +373,12 @@ function scheduleSupplementalHydration(
 ) {
   const key = `${staticContextKey(session.user)}:${month}`;
   if (supplementalInFlight.has(key) || supplementalScheduled.has(key)) return;
+  const generation = generationForMonth(month);
   supplementalScheduled.add(key);
 
   const run = () => {
     supplementalScheduled.delete(key);
+    if (generation !== generationForMonth(month)) return;
     startSupplementalHydration(session, month, model, forceStatic);
   };
 
@@ -569,6 +571,9 @@ export async function invalidatePhoenixReadModelMonth(month: string) {
   readModelInFlight.delete(month);
   for (const key of [...persistentRefreshInFlight.keys()]) {
     if (key.endsWith(`:${month}`)) persistentRefreshInFlight.delete(key);
+  }
+  for (const key of [...supplementalScheduled]) {
+    if (key.endsWith(`:${month}`)) supplementalScheduled.delete(key);
   }
   const previewPath = `/finance/phoenix-preview?month=${encodeURIComponent(month)}`;
   invalidateAuthenticatedCache(previewPath);
