@@ -255,7 +255,7 @@ function resolveActiveCardMonth(card: CreditCard, rows: GridRow[], fallbackMonth
   if (meaningfulStatement(card)) return card.statement!.month;
   if (rows.some((row) => row.statementMonth === fallbackMonth)) return fallbackMonth;
   const months = [...new Set(rows.map((row) => row.statementMonth).filter(Boolean))].sort();
-  return months.find((month) => month >= fallbackMonth) || months.at(-1) || fallbackMonth;
+  return months.find((month) => month >= fallbackMonth) || months[months.length - 1] || fallbackMonth;
 }
 function dueDateForMonth(month: string, day: number | null | undefined) {
   if (!day || !/^\d{4}-\d{2}$/.test(month)) return '—';
@@ -383,7 +383,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const futureRows = allRows.filter((row) => row.statementMonth > currentCardMonth && isOpenStatus(row.status));
   const currentOpen = currentRows.filter((row) => isOpenStatus(row.status) && !isCancelledStatus(row.status));
   const next = nextMonth(currentCardMonth);
-  const hasCanonicalCurrent = selected?.statement?.month === currentCardMonth && meaningfulStatement(selected);
+  const hasCanonicalCurrent = Boolean(selected && selected.statement?.month === currentCardMonth && meaningfulStatement(selected));
   const currentStatement = hasCanonicalCurrent ? selected!.statement!.netAmount : sumRows(currentRows);
   const currentPurchases = hasCanonicalCurrent
     ? selected!.statement!.charges
