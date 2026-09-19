@@ -43,7 +43,7 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate }: Pro
         <h1>Lançar ficou simples.</h1>
         <p>Receitas, despesas e Benefício Alimentação com as mesmas regras da sua base financeira.</p>
       </div>
-      <span className="px-operational-sync" title={\`Dados carregados em \${data.loadedAt}\`}><i />Sincronizado</span>
+      <span className="px-operational-sync" title={`Dados carregados em ${data.loadedAt}`}><i />Sincronizado</span>
     </header>
 
     <div className="px-operational-launch-grid">
@@ -86,7 +86,7 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate }: Pro
           const amount = eventAmount(event);
           return <button key={event.id} type="button" onClick={() => onNavigate('movements')}>
             <span className={amount >= 0 ? 'income' : 'expense'} aria-hidden="true">{amount >= 0 ? '↗' : '↘'}</span>
-            <span><strong>{event.description}</strong><small>{eventTypeLabel(event.type)} · {shortDate.format(new Date(\`\${event.date.slice(0,10)}T12:00:00Z\`))}</small></span>
+            <span><strong>{event.description}</strong><small>{eventTypeLabel(event.type)} · {shortDate.format(new Date(`${event.date.slice(0,10)}T12:00:00Z`))}</small></span>
             <b className={amount >= 0 ? 'income' : 'expense'}>{money.format(amount)}</b>
           </button>;
         }) : <p>Nenhum lançamento disponível nesta competência.</p>}
