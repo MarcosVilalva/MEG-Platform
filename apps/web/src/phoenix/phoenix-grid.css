@@ -72,7 +72,9 @@
   --grid-accent-contrast:#032019;
   position:fixed;
   z-index:120;
-  max-height:min(590px,calc(100vh - 24px));
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr) auto;
+  max-height:min(590px,calc(100dvh - 24px));
   overflow:hidden;
   box-sizing:border-box;
   border:1px solid var(--grid-border);
@@ -209,9 +211,11 @@
 .px-grid-filter-body {
   min-width:0;
   min-height:0;
-  max-height:350px;
+  max-height:none;
   overflow-y:auto;
   overflow-x:hidden;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
   padding:13px;
   background:var(--grid-bg);
   scrollbar-width:thin;
@@ -449,12 +453,48 @@
     width:auto!important;
     top:auto!important;
     bottom:12px;
-    max-height:min(80vh,620px);
+    max-height:calc(100dvh - 24px)!important;
     border-radius:20px;
   }
-  .px-grid-filter-body { max-height:46vh; }
+  .px-grid-filter-body { max-height:none; }
   .px-grid-range { grid-template-columns:1fr; }
   .px-grid-filter-actions { align-items:stretch; }
   .px-grid-filter-actions > div { flex:1; }
   .px-grid-filter-actions > div button { flex:1; }
+}
+
+
+/* Guardrail final: cabeçalho, ordenação e ações sempre visíveis.
+   Somente o conteúdo do filtro rola, mesmo com zoom ou janela reduzida. */
+@media (min-width:761px) {
+  .px-grid-filter-popover {
+    height:min(590px,calc(100dvh - 24px));
+  }
+}
+
+@media (max-height:620px) and (min-width:761px) {
+  .px-grid-filter-head {
+    min-height:58px;
+    padding:10px 12px;
+  }
+  .px-grid-sort-block {
+    padding:9px 11px 10px;
+  }
+  .px-grid-sort-row {
+    grid-template-columns:1fr 1fr;
+  }
+  .px-grid-sort-row button {
+    min-height:36px;
+    padding:0 8px;
+  }
+  .px-grid-filter-body {
+    padding:10px 11px;
+  }
+  .px-grid-filter-actions {
+    min-height:54px;
+    padding:8px 11px;
+  }
+  .px-grid-filter-actions button {
+    min-height:34px;
+  }
 }
