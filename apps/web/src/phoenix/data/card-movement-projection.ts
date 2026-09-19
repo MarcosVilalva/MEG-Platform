@@ -77,8 +77,9 @@ export function projectCardInstallmentsIntoEvents(
 
         const installmentNumber = Number(entry.number || 1);
         const installmentCount = Math.max(1, Number(purchase.installments || 1));
-        const amount = Math.abs(Number(entry.amount || 0));
-        if (!Number.isFinite(amount) || amount <= 0) continue;
+        const statementEffect = Number(entry.amount || 0);
+        if (!Number.isFinite(statementEffect) || statementEffect === 0) continue;
+        const amount = Math.abs(statementEffect);
 
         const dueDate = dueDateForStatement(card, entry.statementMonth);
         const installmentLabel = `${installmentNumber}/${installmentCount}`;
@@ -100,7 +101,7 @@ export function projectCardInstallmentsIntoEvents(
           date: `${dueDate}T12:00:00.000Z`,
           competence: entry.statementMonth,
           amount,
-          signedAmount: -amount,
+          signedAmount: -statementEffect,
           notes: observations,
           accountId: null,
           categoryId: category?.id || purchase.category?.id || null,
@@ -135,6 +136,8 @@ export function projectCardInstallmentsIntoEvents(
             situation,
             modality: 'CRÉDITO',
             observations,
+            statementEffect,
+            statementLineKind: statementEffect < 0 ? 'credit' : 'charge',
           },
           sourcePayload: {
             cardDomain: true,
