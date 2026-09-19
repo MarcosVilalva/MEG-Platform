@@ -501,10 +501,10 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     [data.categories]
   );
   const paymentMethods = data.paymentMethods.filter((item) => item.isActive);
+  const accounts = data.accounts.filter((item) => item.isActive);
   const canonicalBenefitAccount = accounts.find((item) => item.type === 'benefit') || null;
   const canonicalVerocardPayment = paymentMethods.find((item) => normalizeText(item.name).includes('verocard')) || null;
   const cards = data.cards.filter((item) => item.isActive);
-  const accounts = data.accounts.filter((item) => item.isActive);
 
   const missing = useMemo(() => {
     const list: string[] = [];
