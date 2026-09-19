@@ -16,7 +16,8 @@
     "db:studio": "prisma studio",
     "db:generate:legacy": "prisma generate --schema prisma/schema.sqlite.prisma",
     "db:migrate:supabase": "tsx prisma/migrate-sqlite-to-postgres.ts",
-    "db:import:basemeg": "tsx prisma/import-basemegfinan.ts"
+    "db:import:basemeg": "tsx prisma/import-basemegfinan.ts",
+    "test:supabase-rls": "tsx prisma/supabase-rls-policy.test.ts"
   },
   "dependencies": {
     "@prisma/client": "6.12.0",

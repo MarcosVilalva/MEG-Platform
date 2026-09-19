@@ -20,7 +20,7 @@
     "build:web": "npm --workspace apps/web run build",
     "build:api": "npm --workspace apps/api run build",
     "check": "npm-run-all test build",
-    "test": "npm-run-all test:visual-clean-room test:phoenix-clean-room test:rc1-gate test:core test:catalog-ownership test:imports test:notifications test:auth test:cors test:commercial test:app-state test:finance test:legacy-finance test:legacy-state-patch test:cloud-write-ahead test:durable-outbox test:cloud-state-properties test:state-recovery test:recovery-center test:activity-log test:currency-mask test:app-update-release test:transaction-editor test:transaction-status-policy test:stable-grid-filters test:negative-expenses",
+    "test": "npm-run-all test:visual-clean-room test:phoenix-clean-room test:rc1-gate test:core test:catalog-ownership test:supabase-rls test:imports test:notifications test:auth test:cors test:commercial test:app-state test:finance test:legacy-finance test:legacy-state-patch test:cloud-write-ahead test:durable-outbox test:cloud-state-properties test:state-recovery test:recovery-center test:activity-log test:currency-mask test:app-update-release test:transaction-editor test:transaction-status-policy test:stable-grid-filters test:negative-expenses",
     "test:visual-clean-room": "node apps/web/src/app/visual-clean-room.test.js",
     "test:phoenix-clean-room": "node apps/web/src/phoenix/phoenix-clean-room.test.js && node apps/web/src/phoenix/phoenix-preview-server.contract.test.js && node apps/web/src/phoenix/phoenix-write-gateway.contract.test.js && node apps/web/src/phoenix/phoenix-transfer-direct.contract.test.js && node apps/web/src/phoenix/phoenix-keyboard-grid.contract.test.js && node apps/web/src/phoenix/phoenix-table-export.contract.test.js && node apps/web/src/phoenix/phoenix-visual-export-audit.contract.test.js && node apps/web/src/phoenix/phoenix-card-statement-canonical.contract.test.js",
     "test:rc1-gate": "node scripts/rc1-readiness-gate.mjs",
@@ -64,7 +64,8 @@
     "db:import:basemeg": "npm --workspace packages/database run db:import:basemeg --",
     "phoenix:setup": "npm install && npm run db:generate && npm run db:push && npm run db:seed",
     "android:sync": "npx cap sync android",
-    "android:open": "npx cap open android"
+    "android:open": "npx cap open android",
+    "test:supabase-rls": "npm --workspace packages/database run test:supabase-rls"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
