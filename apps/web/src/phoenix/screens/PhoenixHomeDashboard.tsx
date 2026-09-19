@@ -350,7 +350,11 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
         </div>
         <div className="px-home-top-status">
           <span className={`px-home-health ${healthy ? 'is-ok' : 'is-warning'}`}>{heroStatus}</span>
-          <span className="px-home-sync-state">{data.normalization.primary && data.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span>
+          <span className="px-home-benefit-chip" title="Saldo do benefício separado do caixa monetário">
+            <HomeGlyph kind="benefit" />
+            <span>Benefício</span>
+            <strong>{money.format(data.summary.benefitBalance)}</strong>
+          </span>
         </div>
       </header>
 
