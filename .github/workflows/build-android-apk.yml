@@ -136,7 +136,7 @@ jobs:
         run: |
           gh release view android-latest >/dev/null 2>&1 || \
             gh release create android-latest --title "MEG Finanças Android" --notes "Canal estável de atualização do aplicativo Android."
-          gh release upload android-latest MEG-Financas.apk --clobber
+          gh release upload android-latest MEG-Financas.apk app-version.json --clobber
 
       - name: Publish latest update manifest on the website
         if: github.actor != 'github-actions[bot]'
