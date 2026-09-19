@@ -528,7 +528,6 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const selectedItem = selectedItems.length === 1 ? selectedItems[0] : null;
   const batchMode = selectedItems.length > 1;
   const available = model.summary.availableBalance + model.summary.realizedResult;
-  const compatibilityCount = open.filter((item) => item.source === 'event').length;
   const adjustmentCount = open.filter((item) => item.openAmount < 0).length;
   const activeAccounts = model.accounts.filter((item) => item.isActive && !['benefit', 'credit'].includes(normalize(item.type)));
   const monetaryAccounts = model.accounts.filter((item) => item.isActive && monetaryAccountTypes.has(normalize(item.type)));
