@@ -74,8 +74,8 @@ const temp = mkdtempSync(join(tmpdir(), 'meg-xlsx-'));
 const filename = join(temp, 'controle-financeiro.xlsx');
 try {
   writeFileSync(filename, Buffer.from(bytes));
-  const workbookRows = await readXlsxFile(filename);
-  console.log('Phoenix XLSX smoke rows:', JSON.stringify(workbookRows));
+  const workbook = await readXlsxFile(filename);
+  const workbookRows = Array.isArray(workbook) && workbook[0]?.data ? workbook[0].data : workbook;
   const workbookValues = workbookRows.flat().filter((value) => value !== null && value !== undefined);
   assert.ok(workbookRows.length > 0, 'Excel gerado deve conter linhas legíveis');
   assert.ok(workbookValues.includes('Vencimento'),
