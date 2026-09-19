@@ -10,15 +10,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Wait for deployments
-        run: sleep 240
+        run: sleep 60
       - name: Verify API
         run: |
-          curl --fail-with-body --retry 5 --retry-delay 20 --max-time 90 https://meg-platform-api.onrender.com/health -o health.json
-          grep -q '"cloud-state"' health.json
-          grep -q '"xlsx-import"' health.json
-          grep -q '"normalization":{"status":"completed","primary":true,"reconciled":true' health.json
+          set -euo pipefail
+          for attempt in $(seq 1 30); do
+            if curl --fail-with-body --silent --show-error --max-time 20 https://meg-platform-api.onrender.com/health -o health.json               && grep -q '"cloud-state"' health.json               && grep -q '"xlsx-import"' health.json               && grep -q '"normalization":{"status":"completed","primary":true,"reconciled":true' health.json; then
+              echo "API pronta e normalização confirmada na tentativa $attempt."
+              exit 0
+            fi
+            echo "API ainda inicializando/normalizando (tentativa $attempt/30)."
+            sleep 10
+          done
+          echo "API não atingiu estado financeiro pronto no prazo."
+          cat health.json || true
+          exit 1
       - name: Verify official Phoenix V15 web application
         run: |
-          curl --fail-with-body --retry 3 --retry-delay 10 --max-time 60 https://marcosvilalva.github.io/MEG-Platform/ -o site.html
-          grep -q 'data-meg-shell="phoenix-v15"' site.html
-          grep -q 'MEG Finanças' site.html
+          set -euo pipefail
+          for attempt in $(seq 1 24); do
+            if curl --fail-with-body --silent --show-error --max-time 20 https://marcosvilalva.github.io/MEG-Platform/ -o site.html               && grep -q 'data-meg-shell="phoenix-v15"' site.html               && grep -q 'MEG Finanças' site.html; then
+              echo "Phoenix V15 publicada na tentativa $attempt."
+              exit 0
+            fi
+            echo "GitHub Pages ainda propagando (tentativa $attempt/24)."
+            sleep 10
+          done
+          echo "Phoenix V15 não ficou disponível no prazo."
+          exit 1
