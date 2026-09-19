@@ -10,6 +10,9 @@ const writeControl = readFileSync(new URL('./components/PhoenixLaunchWriteContro
 const appShell = readFileSync(new URL('./PhoenixApp.tsx', import.meta.url), 'utf8');
 const bridge = readFileSync(new URL('./simple-event-form-bridge.ts', import.meta.url), 'utf8');
 const previewServer = readFileSync(new URL('../../phoenix-preview-server.mjs', import.meta.url), 'utf8');
+const readModel = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.meta.url), 'utf8');
+const persistentSnapshot = readFileSync(new URL('./data/phoenix-persistent-snapshot.ts', import.meta.url), 'utf8');
+const pendingStyles = readFileSync(new URL('./phoenix-pending-v15.css', import.meta.url), 'utf8');
 
 assert.match(gateway, /simpleEvent:\s*true/,
   'Writer frontend de receita/despesa simples deve refletir a capacidade liberada no fluxo Phoenix.');
@@ -97,8 +100,8 @@ assert.match(pendingGateway, /new CustomEvent\(PHOENIX_SNAPSHOT_COMMITTED_EVENT,
   'Evento de commit deve transportar a mesma fotografia já confirmada pelo gateway.');
 assert.doesNotMatch(payables, /window\.confirm|window\.alert/,
   'Pendentes não pode usar confirmação nativa do navegador depois da revisão MEG.');
-assert.match(payables, /Registrar baixa de \$\{selectedItems\.length\} compromissos/,
-  'Drawer de revisão deve ser a confirmação final do lote.');
+assert.match(payables, /Confirmar baixa de \$\{selectedItems\.length\}/,
+  'Modal de revisão deve exigir confirmação explícita antes de enviar o lote.');
 assert.match(pendingGateway, /AbortSignal\.timeout\(10_000\)/,
   'Baixa em lote deve limitar a espera direta e migrar para confirmação por recibo quando necessário.');
 assert.match(pendingGateway, /PHOENIX_PENDING_CONNECTION_INTERRUPTED/,
@@ -121,6 +124,27 @@ assert.match(pendingGateway, /status:\s*'confirmed'.*result/s,
   'Confirmação do servidor deve existir mesmo se a releitura posterior falhar.');
 assert.match(payables, /locallySettled/,
   'Pendentes confirmados devem sair imediatamente da grade enquanto a releitura ocorre em segundo plano.');
+
+assert.doesNotMatch(payables, /setLocallySettled\(new Set\(\)\)/,
+  'Snapshot posterior não pode liberar imediatamente a proteção local e ressuscitar pendências já confirmadas.');
+assert.match(payables, /snapshotOpenIds/,
+  'Proteção local deve ser reconciliada somente quando a fotografia autoritativa deixar de listar os itens.');
+assert.match(payables, /px-pending-confirm-modal/,
+  'Baixa deve usar modal MEG próprio para confirmação financeira.');
+assert.match(payables, /px-pending-success-modal/,
+  'Servidor confirmado deve gerar modal visual de sucesso da operação.');
+assert.match(payables, /px-pending-attention/,
+  'Pendentes deve expor a prioridade financeira antes da grade.');
+assert.match(readModel, /forceNetwork:\s*Boolean\(options\.force\)/,
+  'Releitura forçada pós-baixa deve atravessar o cache do cliente.');
+assert.match(readModel, /cache:\s*'no-store'/,
+  'Snapshot pós-baixa deve consultar a API sem cache.');
+assert.match(readModel, /invalidatePhoenixReadModelMonth/,
+  'Mês alterado deve possuir invalidação explícita de cache.');
+assert.match(persistentSnapshot, /deletePhoenixPersistentSnapshot/,
+  'Fotografia IndexedDB anterior à baixa deve ser removível.');
+assert.match(pendingStyles, /px-pending-cockpit[\s\S]*px-pending-kpis/,
+  'Tela deve manter o cockpit visual e seus indicadores de prioridade.');
 
 assert.doesNotMatch(movements, /submitPhoenixSimpleEvent|runPhoenixSimpleEventWrite|cardsClient\.createPurchase|\/finance\/benefit-events/,
   'Tela React base não deve acionar criação diretamente; a confirmação fica isolada no controle protegido.');
