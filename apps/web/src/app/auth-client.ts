@@ -136,9 +136,9 @@ export async function authenticatedRequest<T>(path: string, init?: RequestInit):
     }
     const payload = response.status === 204 ? undefined : await response.json().catch(() => ({}));
     if (!response.ok) throw responseError(payload, response.status);
-    if (method === 'GET') {
-      if (requestEpoch === cacheEpoch) responseCache.set(path, { value: payload, storedAt: Date.now() });
-    } else {
+    if (cacheKey) {
+      if (requestEpoch === cacheEpoch) responseCache.set(cacheKey, { value: payload, storedAt: Date.now() });
+    } else if (method !== 'GET') {
       invalidateAfterMutation(path);
       window.dispatchEvent(new CustomEvent('meg:data-invalidated', { detail: { path, method } }));
     }
