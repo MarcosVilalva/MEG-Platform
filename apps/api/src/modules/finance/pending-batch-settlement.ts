@@ -1,4 +1,4 @@
-import { Prisma } from '@meg/database';
+import { Prisma, prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
 import { resolveWorkspaceContext } from '../workspaces/service';
@@ -38,6 +38,17 @@ export class PendingBatchSettlementError extends Error {
   constructor(public code: string, public details?: Record<string, unknown>) {
     super(code);
   }
+}
+
+function replayResponse(response: unknown) {
+  if (response && typeof response === 'object' && !Array.isArray(response)) {
+    return { ...(response as Record<string, unknown>), idempotentReplay: true };
+  }
+  return response;
+}
+
+function isUniqueConflict(error: unknown) {
+  return Boolean(error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'P2002');
 }
 
 function normalize(value: unknown) {
@@ -173,7 +184,8 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
   const ownerId = context.workspace.ownerId;
   const requestHash = mutationRequestHash({ ...input, operationId: undefined });
 
-  return serializableFinancialTransaction(async (tx) => {
+  try {
+    return await serializableFinancialTransaction(async (tx) => {
     const previous = await tx.cloudMutationReceipt.findUnique({
       where: { workspaceId_operationId: { workspaceId: context.workspaceId, operationId: input.operationId } },
     });
@@ -425,5 +437,17 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
       }),
     });
     return response;
-  }, { timeoutMs: 30_000, maxWaitMs: 5_000 });
+    }, { timeoutMs: 30_000, maxWaitMs: 5_000 });
+  } catch (error) {
+    if (isUniqueConflict(error)) {
+      const previous = await prisma.cloudMutationReceipt.findUnique({
+        where: { workspaceId_operationId: { workspaceId: context.workspaceId, operationId: input.operationId } },
+      });
+      if (previous) {
+        if (previous.requestHash !== requestHash) throw new PendingBatchSettlementError('OPERATION_ID_REUSED');
+        return replayResponse(previous.response);
+      }
+    }
+    throw error;
+  }
 }
