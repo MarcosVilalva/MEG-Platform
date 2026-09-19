@@ -1550,3 +1550,599 @@
     overflow:visible;
   }
 }
+
+
+/* -------------------------------------------------------------------------- */
+/* Pendentes definitivo — referência visual aprovada em 19/09/2026.          */
+/* -------------------------------------------------------------------------- */
+
+.px-pending-hero-main {
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+
+.px-pending-hero-icon,
+.px-pending-kpi-icon,
+.px-pending-agenda-icon,
+.px-pending-date-icon {
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  color:#52e6bc;
+}
+
+.px-pending-hero-icon {
+  width:48px;
+  height:48px;
+  border:1px solid rgba(71,231,186,.35);
+  border-radius:14px;
+  background:linear-gradient(145deg,rgba(49,202,157,.17),rgba(49,202,157,.045));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 10px 24px rgba(0,0,0,.16);
+}
+
+.px-pending-hero-icon svg,
+.px-pending-kpi-icon svg,
+.px-pending-agenda-icon svg,
+.px-pending-date-icon svg {
+  width:22px;
+  height:22px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.px-pending-hero {
+  isolation:isolate;
+  border-color:rgba(59,220,173,.32);
+  background:
+    radial-gradient(ellipse at 78% -35%,rgba(30,211,158,.14),transparent 43%),
+    linear-gradient(145deg,rgba(5,29,24,.97),rgba(3,18,15,.99));
+}
+
+.px-pending-hero::before {
+  content:'';
+  position:absolute;
+  z-index:-1;
+  right:-2%;
+  bottom:-52px;
+  width:48%;
+  height:120px;
+  opacity:.28;
+  transform:skewY(-8deg);
+  background:
+    repeating-linear-gradient(174deg,transparent 0 8px,rgba(50,224,176,.16) 9px 10px);
+  mask-image:linear-gradient(90deg,transparent,#000 38%,#000);
+  pointer-events:none;
+}
+
+.px-pending-hero .px-total-pill {
+  border-color:rgba(66,222,178,.28);
+  background:rgba(4,28,23,.74);
+  color:#f4fffb;
+}
+
+.px-pending-kpis article {
+  display:flex;
+  align-items:center;
+  gap:13px;
+  border-width:1px;
+}
+
+.px-pending-kpis article > div {
+  min-width:0;
+}
+
+.px-pending-kpi-icon {
+  width:42px;
+  height:42px;
+  border:1px solid rgba(67,221,176,.22);
+  border-radius:12px;
+  background:rgba(53,212,165,.08);
+}
+
+.px-pending-kpis article.total {
+  border-color:rgba(55,224,174,.56);
+  box-shadow:0 0 0 1px rgba(55,224,174,.10),0 13px 34px rgba(0,0,0,.16);
+}
+
+.px-pending-kpis article.danger {
+  border-color:rgba(255,83,101,.50);
+  box-shadow:0 0 0 1px rgba(255,83,101,.06),0 13px 34px rgba(0,0,0,.16);
+}
+
+.px-pending-kpis article.danger .px-pending-kpi-icon {
+  color:#ff6978;
+  border-color:rgba(255,83,101,.32);
+  background:rgba(255,83,101,.10);
+}
+
+.px-pending-kpis article.warn {
+  border-color:rgba(239,183,65,.44);
+  box-shadow:0 0 0 1px rgba(239,183,65,.05),0 13px 34px rgba(0,0,0,.16);
+}
+
+.px-pending-kpis article.warn .px-pending-kpi-icon {
+  color:#f3c154;
+  border-color:rgba(239,183,65,.30);
+  background:rgba(239,183,65,.095);
+}
+
+.px-pending-kpis article.next {
+  border-color:rgba(38,188,225,.48);
+  box-shadow:0 0 0 1px rgba(38,188,225,.06),0 13px 34px rgba(0,0,0,.16);
+}
+
+.px-pending-kpis article.next .px-pending-kpi-icon {
+  color:#42c8e9;
+  border-color:rgba(38,188,225,.30);
+  background:rgba(38,188,225,.09);
+}
+
+.px-pending-commandbar {
+  min-width:0;
+  display:grid;
+  grid-template-columns:minmax(320px,1fr) auto auto auto auto;
+  align-items:center;
+  gap:10px;
+  margin:0;
+  padding:9px 11px;
+  border:1px solid rgba(58,218,173,.25);
+  border-radius:16px;
+  background:
+    radial-gradient(circle at 12% 0%,rgba(49,207,161,.08),transparent 36%),
+    linear-gradient(145deg,rgba(7,31,26,.97),rgba(4,20,17,.98));
+  box-shadow:0 12px 34px rgba(0,0,0,.15),inset 0 1px 0 rgba(255,255,255,.022);
+}
+
+.px-pending-command-search {
+  min-width:0;
+  height:39px;
+  margin:0;
+  border-color:rgba(75,176,151,.24);
+  background:rgba(11,46,39,.82);
+}
+
+.px-pending-command-search:focus-within {
+  border-color:rgba(67,221,176,.60);
+  box-shadow:0 0 0 3px rgba(67,221,176,.07);
+}
+
+.px-pending-command-tabs {
+  position:static;
+  top:auto;
+  z-index:auto;
+  width:auto;
+  max-width:none;
+  margin:0;
+  padding:0;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  border:0;
+  background:transparent;
+  box-shadow:none;
+  backdrop-filter:none;
+}
+
+.px-pending-command-tabs button {
+  min-height:36px;
+  padding:0 12px;
+  border:1px solid rgba(83,164,144,.22);
+  border-radius:10px;
+  background:rgba(4,24,20,.76);
+  color:#bdd5ce;
+  font-size:9px;
+  font-weight:900;
+}
+
+.px-pending-command-tabs button:hover {
+  border-color:rgba(67,221,176,.36);
+  color:#e9fff8;
+}
+
+.px-pending-command-tabs button.active {
+  border-color:rgba(67,230,183,.72);
+  background:linear-gradient(135deg,rgba(48,213,165,.22),rgba(31,141,112,.12));
+  color:#dbfff3;
+  box-shadow:0 0 0 2px rgba(67,221,176,.065),inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+.px-pending-command-separator {
+  width:1px;
+  height:27px;
+  background:rgba(105,166,151,.18);
+}
+
+.px-pending-command-group {
+  min-width:156px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.px-pending-command-group > span {
+  flex:0 0 auto;
+  color:#99b8b0;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.045em;
+  text-transform:uppercase;
+}
+
+.px-pending-command-group select {
+  min-width:104px;
+  height:36px;
+  border-color:rgba(83,164,144,.22);
+  background:rgba(4,24,20,.78);
+}
+
+.px-pending-commandbar .px-toolbar-note {
+  margin:0;
+  color:#93aaa4;
+  font-size:8px;
+  white-space:nowrap;
+}
+
+.px-pending-agenda {
+  position:relative;
+  isolation:isolate;
+  border:1px solid rgba(45,225,172,.34);
+  background:
+    radial-gradient(ellipse at 82% 0%,rgba(32,212,159,.10),transparent 34%),
+    linear-gradient(155deg,rgba(6,31,26,.98),rgba(3,18,15,.995));
+  box-shadow:0 20px 58px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+.px-pending-agenda::before {
+  content:'';
+  position:absolute;
+  z-index:-1;
+  top:0;
+  right:0;
+  width:42%;
+  height:82px;
+  opacity:.26;
+  clip-path:polygon(18% 0,100% 0,100% 100%,0 100%);
+  background:
+    linear-gradient(145deg,transparent 0 30%,rgba(38,213,161,.11) 30% 54%,transparent 54% 66%,rgba(38,213,161,.07) 66%);
+  pointer-events:none;
+}
+
+.px-pending-agenda-head {
+  flex:0 0 auto;
+  min-height:70px;
+  padding:12px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  border-bottom:1px solid rgba(69,185,155,.16);
+}
+
+.px-pending-agenda-title {
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.px-pending-agenda-icon {
+  width:42px;
+  height:42px;
+  border:1px solid rgba(56,224,176,.27);
+  border-radius:12px;
+  background:rgba(52,207,161,.085);
+}
+
+.px-pending-agenda-title h2 {
+  margin:0;
+  color:#f0fff9;
+  font-size:18px;
+  line-height:1.08;
+  letter-spacing:-.025em;
+}
+
+.px-pending-agenda-title p {
+  margin:4px 0 0;
+  color:#86a89f;
+  font-size:9px;
+  line-height:1.35;
+}
+
+.px-pending-agenda-signature {
+  flex:0 0 auto;
+  display:grid;
+  justify-items:end;
+  gap:2px;
+  padding-right:18px;
+  color:#55e3ba;
+  font-size:8px;
+  font-style:italic;
+  font-weight:850;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+}
+
+.px-pending-agenda-signature::after {
+  content:'';
+  width:32px;
+  height:1px;
+  margin-top:3px;
+  background:#4ee5bb;
+  box-shadow:0 0 9px rgba(78,229,187,.36);
+}
+
+.px-pending-date-cluster {
+  margin:9px 4px;
+  border-color:rgba(75,172,147,.25);
+  background:
+    radial-gradient(circle at 0 50%,rgba(52,214,165,.055),transparent 22%),
+    linear-gradient(180deg,rgba(255,255,255,.019),rgba(4,26,22,.40));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.014);
+}
+
+.px-pending-date-cluster:hover,
+.px-pending-date-cluster.is-open {
+  border-color:rgba(61,225,177,.42);
+  box-shadow:0 10px 28px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.02);
+}
+
+.px-pending-date-cluster::before {
+  inset:9px auto 9px 0;
+  width:3px;
+}
+
+.px-pending-date-cluster-head {
+  grid-template-columns:auto minmax(170px,1fr) auto auto auto;
+  gap:13px;
+}
+
+.px-pending-date-icon {
+  width:34px;
+  height:34px;
+  border:1px solid rgba(67,221,176,.20);
+  border-radius:10px;
+  background:rgba(67,221,176,.065);
+}
+
+.px-pending-date-icon svg {
+  width:17px;
+  height:17px;
+}
+
+.px-pending-date-cluster.is-overdue .px-pending-date-icon {
+  color:#ff6574;
+  border-color:rgba(255,91,107,.26);
+  background:rgba(255,91,107,.085);
+}
+
+.px-pending-date-cluster.is-today .px-pending-date-icon {
+  color:#efbc55;
+  border-color:rgba(239,188,85,.26);
+  background:rgba(239,188,85,.08);
+}
+
+.px-pending-date-cluster-copy strong {
+  font-size:12px;
+  color:#ecfff9;
+}
+
+.px-pending-date-cluster-copy small {
+  color:#789b91;
+}
+
+.px-pending-group-check {
+  min-width:104px;
+  justify-content:flex-start;
+}
+
+.px-pending-date-cluster-total {
+  min-width:90px;
+  text-align:right;
+  font-size:13px;
+  color:#f4fffb;
+}
+
+.px-pending-date-cluster-chevron {
+  width:24px;
+  display:grid;
+  place-items:center;
+  color:#55e5bb;
+}
+
+@media (min-width:761px) {
+  .px-content-payables {
+    padding:6px 14px 10px !important;
+  }
+
+  .px-content-payables > .px-pending-cockpit {
+    gap:8px;
+    margin:0 !important;
+    padding:0 !important;
+  }
+
+  .px-content-payables .px-pending-hero {
+    min-height:72px;
+    padding:10px 16px;
+  }
+
+  .px-content-payables .px-pending-hero h1 {
+    margin:2px 0 3px;
+    font-size:clamp(23px,2.35cqw,29px);
+  }
+
+  .px-content-payables .px-pending-hero p {
+    font-size:8px;
+    line-height:1.25;
+  }
+
+  .px-content-payables .px-pending-kpis {
+    gap:8px;
+  }
+
+  .px-content-payables .px-pending-kpis article {
+    min-height:78px;
+    padding:10px 12px;
+  }
+
+  .px-content-payables .px-pending-kpis strong {
+    margin:4px 0 3px;
+    font-size:clamp(17px,1.7cqw,21px);
+  }
+
+  .px-content-payables .px-pending-layout {
+    flex:1 1 auto;
+    min-height:0;
+  }
+
+  .px-content-payables .px-pending-list {
+    padding:0;
+  }
+
+  .px-content-payables .px-pending-list > .px-bulk-action-bar {
+    margin:8px 10px 0;
+  }
+
+  .px-content-payables .px-pending-scroll-region {
+    padding:0 5px 10px 5px;
+  }
+}
+
+@media (min-width:761px) and (max-width:1220px) {
+  .px-pending-commandbar {
+    grid-template-columns:minmax(260px,1fr) auto auto;
+  }
+
+  .px-pending-command-separator {
+    display:none;
+  }
+
+  .px-pending-command-group {
+    grid-column:2;
+    grid-row:2;
+  }
+
+  .px-pending-commandbar .px-toolbar-note {
+    grid-column:3;
+    grid-row:2;
+    justify-self:end;
+  }
+
+  .px-pending-command-search {
+    grid-column:1;
+    grid-row:1 / span 2;
+    align-self:stretch;
+    height:auto;
+    min-height:78px;
+  }
+
+  .px-pending-command-tabs {
+    grid-column:2 / 4;
+    justify-self:end;
+  }
+}
+
+@media (max-width:900px) {
+  .px-pending-agenda-signature {
+    display:none;
+  }
+
+  .px-pending-date-cluster-head {
+    grid-template-columns:auto minmax(0,1fr) auto;
+  }
+
+  .px-pending-group-check {
+    grid-column:2;
+    grid-row:2;
+  }
+
+  .px-pending-date-cluster-total {
+    grid-column:3;
+    grid-row:1;
+  }
+
+  .px-pending-date-cluster-chevron {
+    grid-column:3;
+    grid-row:2;
+    justify-self:end;
+  }
+}
+
+@media (max-width:760px) {
+  .px-pending-hero-main {
+    align-items:flex-start;
+  }
+
+  .px-pending-hero-icon {
+    width:42px;
+    height:42px;
+  }
+
+  .px-pending-kpis article {
+    align-items:flex-start;
+  }
+
+  .px-pending-commandbar {
+    grid-template-columns:1fr;
+    align-items:stretch;
+  }
+
+  .px-pending-command-tabs {
+    width:100%;
+    overflow-x:auto;
+    padding-bottom:2px;
+  }
+
+  .px-pending-command-tabs button {
+    flex:0 0 auto;
+  }
+
+  .px-pending-command-separator {
+    display:none;
+  }
+
+  .px-pending-command-group {
+    min-width:0;
+    justify-content:space-between;
+  }
+
+  .px-pending-command-group select {
+    flex:1 1 auto;
+  }
+
+  .px-pending-commandbar .px-toolbar-note {
+    justify-self:start;
+  }
+
+  .px-pending-agenda-head {
+    padding:12px;
+  }
+
+  .px-pending-agenda-signature {
+    display:none;
+  }
+
+  .px-pending-date-cluster-head {
+    grid-template-columns:auto minmax(0,1fr) auto;
+  }
+
+  .px-pending-group-check {
+    grid-column:2;
+    grid-row:2;
+  }
+
+  .px-pending-date-cluster-total {
+    grid-column:3;
+    grid-row:1;
+  }
+
+  .px-pending-date-cluster-chevron {
+    grid-column:3;
+    grid-row:2;
+    justify-self:end;
+  }
+}
