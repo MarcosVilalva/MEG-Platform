@@ -110,12 +110,19 @@ function paymentSelect(root: HTMLElement) {
 }
 
 function benefitSelection(root: HTMLElement) {
-  const accountText = sourceAccountSelect(root)?.selectedOptions[0]?.textContent || '';
-  const paymentText = paymentSelect(root)?.selectedOptions[0]?.textContent || '';
-  const account = normalize(accountText);
-  const payment = normalize(paymentText);
+  const accountOption = sourceAccountSelect(root)?.selectedOptions[0];
+  const paymentOption = paymentSelect(root)?.selectedOptions[0];
+  const account = normalize(accountOption?.textContent || '');
+  const accountType = normalize(accountOption?.dataset.accountType || '');
+  const payment = normalize(paymentOption?.textContent || '');
+  const modality = normalize(root.querySelector<HTMLSelectElement>('[data-phoenix-modality-select]')?.value || '');
   return {
-    isBenefit: account.includes('BENEF') || account.includes('VEROCARD') || account.includes('ALIMENTA'),
+    isBenefit: accountType === 'BENEFIT'
+      || account.includes('BENEF')
+      || account.includes('VEROCARD')
+      || account.includes('ALIMENTA')
+      || modality === 'ALIMENTACAO'
+      || modality === 'VEROCARD',
     isVerocard: payment.includes('VEROCARD'),
   };
 }
