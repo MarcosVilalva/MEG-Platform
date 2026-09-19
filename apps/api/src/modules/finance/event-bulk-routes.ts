@@ -172,6 +172,9 @@ export async function financeBulkMutationRoutes(app: FastifyInstance) {
         operationId: parsed.data.operationId,
         itemCount: parsed.data.items.length,
         elapsedMs,
+        timingsMs: result && typeof result === 'object' && 'timingsMs' in result
+          ? (result as { timingsMs?: unknown }).timingsMs
+          : undefined,
       }, 'Pending batch settlement confirmed');
       return result;
     } catch (error) {
