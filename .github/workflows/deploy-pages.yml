@@ -38,7 +38,7 @@ jobs:
           VITE_PUBLIC_BASE_PATH: /MEG-Platform/
           VITE_PHOENIX_SIMPLE_EVENT_WRITE: enabled
           VITE_PHOENIX_CARD_PURCHASE_WRITE: enabled
-          VITE_PHOENIX_BENEFIT_WRITE: ${{ vars.VITE_PHOENIX_BENEFIT_WRITE || 'disabled' }}
+          VITE_PHOENIX_BENEFIT_WRITE: enabled
           VITE_PHOENIX_TRANSFER_WRITE: disabled
           VITE_PHOENIX_PENDING_WRITE: enabled
           VITE_PHOENIX_BULK_EVENT_WRITE: enabled
