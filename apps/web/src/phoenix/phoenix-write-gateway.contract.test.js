@@ -141,6 +141,13 @@ assert.match(readModel, /cache:\s*'no-store'/,
   'Snapshot pós-baixa deve consultar a API sem cache.');
 assert.match(readModel, /invalidatePhoenixReadModelMonth/,
   'Mês alterado deve possuir invalidação explícita de cache.');
+
+assert.match(readModel, /readModelGeneration/,
+  'Fotografias em segundo plano devem usar geração para não sobrescrever uma baixa posterior.');
+assert.match(readModel, /generation !== generationForMonth\(month\)/,
+  'Revalidação antiga deve ser descartada quando uma mutação financeira avançar a geração do mês.');
+assert.match(readModel, /supplementalScheduled/,
+  'Hidratação auxiliar agendada deve participar da invalidação pós-baixa.');
 assert.match(persistentSnapshot, /deletePhoenixPersistentSnapshot/,
   'Fotografia IndexedDB anterior à baixa deve ser removível.');
 assert.match(pendingStyles, /px-pending-cockpit[\s\S]*px-pending-kpis/,
