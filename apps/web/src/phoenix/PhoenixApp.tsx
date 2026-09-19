@@ -447,7 +447,6 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     : periodDraftMode === 'all'
       ? 'Histórico completo'
       : periodStart && periodEnd ? `${formatShortIso(periodStart)} → ${formatShortIso(periodEnd)}` : 'Defina o intervalo';
-  const updatingPeriod = periodLoading && periodDraftMode === 'month';
 
   function resetSpecialPeriod() {
     setPeriodMode('month');
@@ -473,18 +472,6 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setSearchOpen(false);
     setPeriodOpen(false);
     setLaunchRequest((value) => value + 1);
-  }
-
-  function presetRange(days: number) {
-    const today = todayIso();
-    setPeriodDraftMode('range');
-    setPeriodStart(shiftIsoDay(today, -(days - 1)));
-    setPeriodEnd(today);
-  }
-
-  function presetMonth(offset: number) {
-    setPeriodDraftMode('month');
-    setPeriodDraftMonth(shiftMonth(currentMonth(), offset));
   }
 
 
