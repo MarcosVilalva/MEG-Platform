@@ -38,6 +38,15 @@ assert.match(payables, /isBatchSelectable/,
   'Pendentes deve reconhecer créditos de cartão como parte do lote líquido');
 assert.match(payables, /Selecionar fatura líquida/,
   'Agrupamento legado de cartão deve permitir selecionar a fatura líquida, incluindo estornos');
+assert.match(payables, /function pendingObligationCount\(items: PendingItem\[\]\)/,
+  'Pendentes deve contar faturas legadas como um compromisso, não como dezenas de parcelas');
+assert.match(payables, /const legacyCards = new Set/,
+  'Contagem de compromissos deve consolidar cartão legado por forma e vencimento');
+assert.match(payables, /\{blocks\.length\} compromisso\(s\)/,
+  'Cabeçalho por data deve mostrar quantidade de compromissos visuais consolidados');
+assert.match(payables, /Fatura · \{block\.items\[0\]\.paymentMethod\}/,
+  'Grupo legado deve ser identificado visualmente como fatura líquida');
+
 assert.match(payables, /selectedTotal <= 0/,
   'Faturas zeradas ou credoras não podem gerar pagamento');
 

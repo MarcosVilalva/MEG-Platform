@@ -332,6 +332,16 @@ function batchEligible(items: PendingItem[]) {
   return items.filter(isBatchSelectable);
 }
 
+function pendingObligationCount(items: PendingItem[]) {
+  const standalone = items.filter((item) => item.source === 'card' || !isCardLike(item)).length;
+  const legacyCards = new Set(
+    items
+      .filter((item) => item.source !== 'card' && isCardLike(item))
+      .map((item) => `${normalize(item.paymentMethod)}|${item.dueDate}`)
+  );
+  return standalone + legacyCards.size;
+}
+
 function dateRenderBlocks(group: PendingGroup): DateRenderBlock[] {
   const blocks: DateRenderBlock[] = [];
   const legacyCards = new Map<string, PendingItem[]>();
@@ -407,6 +417,11 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const dueToday = actionable.filter((item) => item.dueDate === today);
   const upcoming = actionable.filter((item) => item.dueDate > today);
   const total = open.reduce((sum, item) => sum + item.openAmount, 0);
+  const openObligationCount = pendingObligationCount(open);
+  const actionableObligationCount = pendingObligationCount(actionable);
+  const overdueObligationCount = pendingObligationCount(overdue);
+  const dueTodayObligationCount = pendingObligationCount(dueToday);
+  const upcomingObligationCount = pendingObligationCount(upcoming);
 
   const visible = useMemo(() => open.filter((item) => {
     const actionableItem = item.openAmount > 0;
@@ -420,6 +435,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   }), [open, priority, search, today]);
 
   const grouped = useMemo(() => buildGroups(visible, groupMode), [visible, groupMode]);
+  const visibleObligationCount = pendingObligationCount(visible);
   const selectedItems = open.filter((item) => isBatchSelectable(item) && selected.has(item.id));
   const selectedTotal = selectedItems.reduce((sum, item) => sum + item.openAmount, 0);
   const selectedItem = selectedItems.length === 1 ? selectedItems[0] : null;
@@ -658,7 +674,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
         </label>
         <div className="px-pending-date-cluster-copy">
           <strong>{group.label}</strong>
-          <small>{group.items.length} pendência(s){selectedCount ? ` · ${selectedCount} selecionada(s)` : ''}</small>
+          <small>{blocks.length} compromisso(s){group.items.length !== blocks.length ? ` · ${group.items.length} lançamento(s)` : ''}{selectedCount ? ` · ${selectedCount} selecionado(s)` : ''}</small>
         </div>
         <strong className="px-pending-date-cluster-total">{money.format(groupTotal(group))}</strong>
         <span className="px-pending-date-cluster-chevron" aria-hidden="true">⌄</span>
@@ -666,7 +682,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       {expanded ? <div className="px-pending-date-cluster-body">
         {blocks.map((block) => block.kind === 'card-legacy'
           ? <details className="px-pending-card-group px-pending-card-nested" key={block.key}>
-              <summary><div><strong>{block.items[0].paymentMethod}</strong><small>{block.items.length} lançamentos de cartão agrupados</small></div><strong>{money.format(block.items.reduce((sum, item) => sum + item.openAmount, 0))}</strong></summary>
+              <summary><div><strong>Fatura · {block.items[0].paymentMethod}</strong><small>{block.items.length} lançamentos agrupados · valor líquido</small></div><strong>{money.format(block.items.reduce((sum, item) => sum + item.openAmount, 0))}</strong></summary>
               <div className="px-pending-card-net-action"><button type="button" disabled={saving || block.items.reduce((sum, item) => sum + item.openAmount, 0) <= 0} onClick={() => toggleGroupSelection({ key: block.key, label: block.items[0].paymentMethod, sortDate: block.items[0].dueDate, kind: 'card-legacy', items: block.items })}>Selecionar fatura líquida</button><span>Inclui automaticamente créditos e estornos do cartão.</span></div>
               <div className="px-pending-card-group-body">{block.items.map(renderRow)}</div>
             </details>
@@ -684,10 +700,10 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     {successMessage ? <div className="px-pending-write-banner" role="status"><strong>Baixa confirmada</strong><span>{successMessage}</span></div> : null}
 
     <section className="px-screen-kpis">
-      <article><span>Total pendente líquido</span><strong>{money.format(total)}</strong><small>{actionable.length} compromisso(s){adjustmentCount ? ` · ${adjustmentCount} ajuste(s)` : ''}</small></article>
-      <article className="danger"><span>Vencidos</span><strong>{overdue.length}</strong><small>Prioridade máxima</small></article>
-      <article className="warn"><span>Vencem hoje</span><strong>{dueToday.length}</strong><small>Ação imediata</small></article>
-      <article><span>Próximos vencimentos</span><strong>{upcoming.length}</strong><small>Agenda ativa</small></article>
+      <article><span>Total pendente líquido</span><strong>{money.format(total)}</strong><small>{actionableObligationCount} compromisso(s){adjustmentCount ? ` · ${adjustmentCount} ajuste(s)` : ''}</small></article>
+      <article className="danger"><span>Vencidos</span><strong>{overdueObligationCount}</strong><small>Prioridade máxima</small></article>
+      <article className="warn"><span>Vencem hoje</span><strong>{dueTodayObligationCount}</strong><small>Ação imediata</small></article>
+      <article><span>Próximos vencimentos</span><strong>{upcomingObligationCount}</strong><small>Agenda ativa</small></article>
     </section>
 
     <div className="px-priority-tabs">{([['all','Todos'],['overdue','Vencidos'],['today','Hoje'],['upcoming','Próximos']] as const).map(([id,label]) => <button key={id} type="button" className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{label}</button>)}</div>
@@ -697,7 +713,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
         <div className="px-toolbar px-pending-toolbar-v15">
           <label className="px-search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar compromisso, cartão, conta ou forma" /></label>
           <label className="px-pending-group-select"><span>Agrupar por</span><select value={groupMode} onChange={(event) => setGroupMode(event.target.value as GroupMode)}><option value="date">Data</option><option value="category">Categoria</option><option value="account">Conta</option><option value="payment-method">Forma de pagamento</option><option value="none">Sem agrupamento</option></select></label>
-          <span className="px-toolbar-note">{visible.length} de {open.length} exibido(s)</span>
+          <span className="px-toolbar-note">{visibleObligationCount} de {openObligationCount} compromisso(s) exibido(s)</span>
         </div>
         {selectedItems.length ? <div className="px-bulk-action-bar"><div><strong>{selectedItems.length} compromisso(s) selecionado(s)</strong><span>Total {money.format(selectedTotal)} · saldo após baixa {money.format(available - selectedTotal)}</span></div><button type="button" onClick={clearSelection}>Limpar</button><button type="button" className="primary" disabled={saving || selectedTotal <= 0 || selectedTotal > available} onClick={() => openReview()}>{selectedItems.length > 1 ? `Dar baixa nos selecionados (${selectedItems.length})` : 'Revisar baixa'}</button></div> : null}
         {compatibilityCount > 0 ? <div className="px-history-source-note"><strong>Leitura consolidada:</strong> contas, faturas oficiais e compromissos legados ficam na mesma agenda. Cada baixa continua usando o writer oficial do respectivo domínio.</div> : null}
@@ -706,7 +722,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
           ? renderDateGroup(group)
           : group.kind === 'card-legacy' && group.items.length > 1
             ? <details className="px-pending-card-group" key={group.key}>
-                <summary><div><strong>{group.label}</strong><small>{group.items.length} lançamentos de cartão agrupados</small></div><strong>{money.format(groupTotal(group))}</strong></summary>
+                <summary><div><strong>Fatura · {group.label}</strong><small>{group.items.length} lançamentos agrupados · valor líquido</small></div><strong>{money.format(groupTotal(group))}</strong></summary>
                 <div className="px-pending-card-net-action"><button type="button" disabled={saving || groupTotal(group) <= 0} onClick={() => toggleGroupSelection(group)}>Selecionar fatura líquida</button><span>Inclui automaticamente créditos e estornos do cartão.</span></div>
                 <div className="px-pending-card-group-body">{group.items.map(renderRow)}</div>
               </details>
