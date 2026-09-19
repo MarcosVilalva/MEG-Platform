@@ -445,7 +445,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     if (commandSearch.trim()) filters.push(`Busca: ${commandSearch.trim()}`);
     const report: PhoenixExportReport = {
       systemName: 'MEG Finanças',
-      title: `Cartão ${selected.name} — ${commandTab === 'current' ? 'Fatura atual' : commandTab === 'future' ? 'Próximas faturas' : commandTab === 'installments' ? 'Parcelas' : 'Histórico'}`,
+      title: `Cartão ${selected?.name || 'Cartão'} — ${commandTab === 'current' ? 'Fatura atual' : commandTab === 'future' ? 'Próximas faturas' : commandTab === 'installments' ? 'Parcelas' : 'Histórico'}`,
       period: commandMonth ? monthLabel(commandMonth) : commandTab === 'current' ? monthLabel(data.month) : 'Conforme filtros da central do cartão',
       filters,
       generatedAt: new Intl.DateTimeFormat('pt-BR', {
