@@ -21,6 +21,9 @@ for (const model of models) {
   );
 }
 
+assert.match(sql, /REVOKE SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER, MAINTAIN/,
+  'PostgreSQL 17: MAINTAIN também deve ser revogado das roles do Data API');
+
 assert.match(sql, /FROM anon, authenticated, service_role;/,
   'anon, authenticated e service_role devem ficar sem acesso direto às tabelas');
 assert.match(sql, /REVOKE EXECUTE ON FUNCTIONS[\s\S]*FROM anon, authenticated, service_role;/,
