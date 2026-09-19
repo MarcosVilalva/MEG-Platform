@@ -39,6 +39,19 @@ type GridRow = {
 };
 type GridState<T> = Record<GridMode, T>;
 
+type CardMetricIconName = 'limit' | 'available' | 'used' | 'invoice' | 'calendar' | 'star';
+
+function CardMetricIcon({ name, size = 16 }: { name: CardMetricIconName; size?: number }) {
+  return <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    {name === 'limit' ? <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M3 10h18M7 15h4" /></> : null}
+    {name === 'available' ? <><circle cx="12" cy="12" r="8" /><path d="m8.5 12 2.2 2.2 4.8-5" /></> : null}
+    {name === 'used' ? <><path d="M12 3a9 9 0 1 0 9 9h-9z" /><path d="M14 3.2A9 9 0 0 1 20.8 10H14z" /></> : null}
+    {name === 'invoice' ? <><path d="M6 3h10l2 2v16l-3-1.5L12 21l-3-1.5L6 21z" /><path d="M9 8h6M9 12h6M9 16h4" /></> : null}
+    {name === 'calendar' ? <><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2" /></> : null}
+    {name === 'star' ? <path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" /> : null}
+  </svg>;
+}
+
 const labels: Record<GridKey, string> = {
   description: 'Compra', purchaseDate: 'Data', installment: 'Parcela', group: 'Grupo', amount: 'Valor', status: 'Situação', statementMonth: 'Fatura'
 };
@@ -615,19 +628,19 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
         </span>
       </div>
       <div className="px-cards-approved-selected-metric">
-        <i aria-hidden="true">◉</i>
+        <i aria-hidden="true"><CardMetricIcon name="available" /></i>
         <span><small>Limite disponível</small><strong>{money.format(availableLimit)}</strong><em>de {money.format(creditLimit)}</em></span>
       </div>
       <div className="px-cards-approved-selected-metric">
-        <i aria-hidden="true">▤</i>
+        <i aria-hidden="true"><CardMetricIcon name="invoice" /></i>
         <span><small>Fatura atual</small><strong>{money.format(currentStatement)}</strong><em>{currentStatus}</em></span>
       </div>
       <div className="px-cards-approved-selected-metric">
-        <i aria-hidden="true">▦</i>
+        <i aria-hidden="true"><CardMetricIcon name="calendar" /></i>
         <span><small>Próx. vencimento</small><strong>{statementDueDate}</strong><em>{monthLabel(data.month)}</em></span>
       </div>
       <div className="px-cards-approved-selected-metric">
-        <i aria-hidden="true">☆</i>
+        <i aria-hidden="true"><CardMetricIcon name="star" /></i>
         <span><small>Melhor dia de compra</small><strong>{bestPurchaseDay ? `Dia ${bestPurchaseDay}` : '—'}</strong><em>estimado pelo fechamento</em></span>
       </div>
     </section>
@@ -663,12 +676,12 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
           </div>
 
           <div className="px-card-command-approved-kpis">
-            <div><span>Limite total</span><strong>{money.format(creditLimit)}</strong><small><i style={{ width: `${usage}%` }} />{usage.toFixed(0)}%</small></div>
-            <div><span>Disponível</span><strong>{money.format(availableLimit)}</strong><small>livre para uso</small></div>
-            <div><span>Utilizado</span><strong>{money.format(Math.max(0, creditLimit - availableLimit))}</strong><small>compromisso atual</small></div>
-            <div><span>Fatura atual</span><strong>{money.format(currentStatement)}</strong><small>{currentStatus}</small></div>
-            <div className="icon-kpi"><i aria-hidden="true">▦</i><span><small>Próximo vencimento</small><strong>{statementDueDate}</strong></span></div>
-            <div className="icon-kpi"><i aria-hidden="true">☆</i><span><small>Melhor dia de compra</small><strong>{bestPurchaseDay ? `Dia ${bestPurchaseDay}` : '—'}</strong></span></div>
+            <div className="icon-kpi"><i aria-hidden="true"><CardMetricIcon name="limit" /></i><span><small>Limite total</small><strong>{money.format(creditLimit)}</strong><em className="px-card-command-kpi-progress"><b style={{ width: `${usage}%` }} /><span>{usage.toFixed(0)}%</span></em></span></div>
+            <div className="icon-kpi"><i aria-hidden="true"><CardMetricIcon name="available" /></i><span><small>Disponível</small><strong>{money.format(availableLimit)}</strong><em>livre para uso</em></span></div>
+            <div className="icon-kpi"><i aria-hidden="true"><CardMetricIcon name="used" /></i><span><small>Utilizado</small><strong>{money.format(Math.max(0, creditLimit - availableLimit))}</strong><em>compromisso atual</em></span></div>
+            <div className="icon-kpi"><i aria-hidden="true"><CardMetricIcon name="invoice" /></i><span><small>Fatura atual</small><strong>{money.format(currentStatement)}</strong><em>{currentStatus}</em></span></div>
+            <div className="icon-kpi"><i aria-hidden="true"><CardMetricIcon name="calendar" /></i><span><small>Próximo vencimento</small><strong>{statementDueDate}</strong></span></div>
+            <div className="icon-kpi"><i aria-hidden="true"><CardMetricIcon name="star" /></i><span><small>Melhor dia de compra</small><strong>{bestPurchaseDay ? `Dia ${bestPurchaseDay}` : '—'}</strong></span></div>
           </div>
         </section>
 
