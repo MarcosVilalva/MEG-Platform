@@ -85,6 +85,7 @@ const readModelInFlight = new Map<string, Promise<PhoenixReadModel>>();
 const supplementalInFlight = new Map<string, Promise<void>>();
 const supplementalScheduled = new Set<string>();
 const persistentRefreshInFlight = new Map<string, Promise<void>>();
+const readModelGeneration = new Map<string, number>();
 let allEventsCache: CachedAllEvents | null = null;
 let allEventsInFlight: Promise<PhoenixReadModel['events']> | null = null;
 let staticContextCache: StaticReadContext | null = null;
@@ -96,6 +97,16 @@ const BOOTSTRAP_CACHE_TTL = 5 * 60_000;
 const ALL_EVENTS_CACHE_TTL = 5 * 60_000;
 // Catálogos auxiliares, AppState, clientes e usuários não mudam porque o mês mudou.
 const STATIC_CACHE_TTL = 10 * 60_000;
+
+function generationForMonth(month: string) {
+  return readModelGeneration.get(month) || 0;
+}
+
+function bumpGeneration(month: string) {
+  const next = generationForMonth(month) + 1;
+  readModelGeneration.set(month, next);
+  return next;
+}
 
 function sourcePayloadDetails(event: FinancialEvent) {
   const payload = (event as FinancialEventWithSourcePayload).sourcePayload;
@@ -328,12 +339,14 @@ function startSupplementalHydration(
 ) {
   const key = `${staticContextKey(session.user)}:${month}`;
   if (supplementalInFlight.has(key)) return;
+  const generation = generationForMonth(month);
 
   const pending = Promise.all([
     loadStaticContext(session, forceStatic),
     financeClient.listBudgets(month)
   ])
     .then(([staticContext, budgets]) => {
+      if (generation !== generationForMonth(month)) return;
       enrichReadModel(model, staticContext, budgets);
       readModelCache.set(month, { data: model, storedAt: Date.now() });
       void writePhoenixPersistentSnapshot(session.user.id, month, model);
@@ -424,8 +437,10 @@ function schedulePersistentRevalidation(
   if (persistentRefreshInFlight.has(key)) return;
 
   const run = () => {
+    const generation = generationForMonth(month);
     const pending = fetchPhoenixReadModel(month, { forceStatic })
       .then((data) => {
+        if (generation !== generationForMonth(month)) return;
         readModelCache.set(month, { data, storedAt: Date.now() });
         void writePhoenixPersistentSnapshot(session.user.id, month, data);
         publishRevalidatedSnapshot(data);
@@ -495,9 +510,10 @@ export async function loadPhoenixReadModel(month: string, options: { force?: boo
   }
 
   const pending = (async () => {
+    const generation = generationForMonth(month);
     if (!options.force) {
       const persistent = await readPhoenixPersistentSnapshot(session.user.id, month);
-      if (persistent) {
+      if (persistent && generation === generationForMonth(month)) {
         readModelCache.set(month, { data: persistent.data, storedAt: Date.now() });
         schedulePersistentRevalidation(session, month, Boolean(options.forceStatic));
         return persistent.data;
@@ -508,8 +524,10 @@ export async function loadPhoenixReadModel(month: string, options: { force?: boo
       forceStatic: options.forceStatic,
       forceNetwork: Boolean(options.force),
     });
-    readModelCache.set(month, { data, storedAt: Date.now() });
-    void writePhoenixPersistentSnapshot(session.user.id, month, data);
+    if (generation === generationForMonth(month)) {
+      readModelCache.set(month, { data, storedAt: Date.now() });
+      void writePhoenixPersistentSnapshot(session.user.id, month, data);
+    }
     return data;
   })().finally(() => {
     if (readModelInFlight.get(month) === pending) readModelInFlight.delete(month);
@@ -546,6 +564,7 @@ export async function loadPhoenixAllEvents(options: { force?: boolean } = {}) {
 }
 
 export async function invalidatePhoenixReadModelMonth(month: string) {
+  bumpGeneration(month);
   readModelCache.delete(month);
   readModelInFlight.delete(month);
   for (const key of [...persistentRefreshInFlight.keys()]) {
@@ -561,6 +580,7 @@ export async function invalidatePhoenixReadModelMonth(month: string) {
 
 export function clearPhoenixReadModelCache() {
   readModelCache.clear();
+  readModelGeneration.clear();
   readModelInFlight.clear();
   supplementalInFlight.clear();
   supplementalScheduled.clear();
