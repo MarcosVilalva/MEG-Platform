@@ -42,7 +42,9 @@ assert.doesNotMatch(readOnlyScreens, /import\s+(?!type\b)[^;]*from\s+['"][^'"]*a
   'Telas Phoenix não podem acessar clientes mutáveis em runtime durante a paridade');
 assert.doesNotMatch(readOnlyScreens, /patchCloudTransactions|createEvent|updateEvent|archiveEvent|createPurchase|payStatement|createReceivable|receive\(|saveBudget|deleteBudget|changeUserAccess|deleteManagedUser/,
   'Telas Phoenix não podem invocar gateways de escrita durante a paridade');
-assert.match(loader, /authenticatedRequest<PhoenixPreviewCoreRead>\(`\/finance\/phoenix-preview\?month=\$\{encodeURIComponent\(month\)\}`\)/,
+assert.match(loader, /const previewPath = `\/finance\/phoenix-preview\?month=\$\{encodeURIComponent\(month\)\}`/,
+  'Núcleo financeiro Phoenix deve declarar um único endpoint mensal de snapshot.');
+assert.match(loader, /authenticatedRequest<PhoenixPreviewCoreRead>\([\s\S]*previewPath/,
   'Núcleo financeiro Phoenix deve vir de um único snapshot mensal somente leitura');
 assert.doesNotMatch(loader, /financeClient\.getSummary\(month\)|financeClient\.getBenefitSummary\(month\)|financeClient\.getAnalytics\(month\)|financeClient\.getCashflow\(month\)|financeClient\.listEventsForMonth\(month\)|cardsClient\.list\(month\)|payablesClient\.list\(month\)/,
   'Bootstrap Phoenix não deve voltar a fragmentar o núcleo mensal em múltiplas leituras');
