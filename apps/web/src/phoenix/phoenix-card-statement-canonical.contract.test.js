@@ -9,18 +9,18 @@ const cardProjection = readFileSync(new URL('./data/card-movement-projection.ts'
 
 assert.match(cardsGrid, /tx\.amount !== undefined \? parseNumber\(tx\.amount\) : parseNumber\(tx\.expenseAmount\)/,
   'Cartões devem preservar o sinal do amount legado antes do expenseAmount absoluto');
-assert.match(cardsGrid, /selected\.statement\.netAmount/,
-  'Fatura atual deve preferir o total canônico devolvido pelo backend');
-assert.match(cardsGrid, /selected\.statement\.charges/,
-  'Compras da fatura devem vir do resumo canônico');
-assert.match(cardsGrid, /selected\.statement\.credits/,
-  'Créditos e estornos devem vir do resumo canônico');
+assert.match(cardsGrid, /hasCanonicalCurrent \? selected!\.statement!\.netAmount/,
+  'Fatura atual deve preferir o total canônico devolvido pelo backend na competência efetiva do cartão');
+assert.match(cardsGrid, /hasCanonicalCurrent[\s\S]*selected!\.statement!\.charges/,
+  'Compras da fatura devem vir do resumo canônico quando a competência efetiva possui statement oficial');
+assert.match(cardsGrid, /hasCanonicalCurrent[\s\S]*selected!\.statement!\.credits/,
+  'Créditos e estornos devem vir do resumo canônico quando a competência efetiva possui statement oficial');
 assert.match(cardsGrid, /const canonicalRows = useMemo<GridRow\[\]>/,
   'A grade da fatura atual deve ser materializada pelas mesmas linhas canônicas do resumo');
 assert.match(cardsGrid, /amount: Number\(line\.effect \|\| 0\)/,
   'Linhas da fatura atual devem preservar o efeito financeiro canônico, inclusive estornos');
-assert.match(cardsGrid, /currentRows = canonicalRows\.length/,
-  'A fatura atual deve preferir linhas canônicas em vez de misturar projeção normalizada e legado');
+assert.match(cardsGrid, /currentRows = canonicalRows\.length && selected\?\.statement\?\.month === currentCardMonth/,
+  'A fatura atual deve preferir linhas canônicas quando elas pertencem à competência efetiva do cartão');
 
 assert.match(payables, /line\.source === 'card-installment'/,
   'Writer de fatura só pode ser usado quando todas as linhas forem do domínio oficial de cartões');
