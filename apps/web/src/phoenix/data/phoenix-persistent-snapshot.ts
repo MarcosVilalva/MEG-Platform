@@ -77,3 +77,19 @@ export async function writePhoenixPersistentSnapshot(userId: string, month: stri
     // Cache persistente é otimização de inicialização. Falha nunca bloqueia a operação financeira.
   }
 }
+
+export async function deletePhoenixPersistentSnapshot(userId: string, month: string) {
+  if (!supported() || !userId) return;
+  try {
+    const database = await openDatabase();
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction(STORE_NAME, 'readwrite');
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error || new Error('INDEXED_DB_DELETE_FAILED'));
+      transaction.objectStore(STORE_NAME).delete(snapshotKey(userId, month));
+    });
+    database.close();
+  } catch {
+    // Invalidação de cache nunca pode bloquear uma gravação financeira confirmada.
+  }
+}
