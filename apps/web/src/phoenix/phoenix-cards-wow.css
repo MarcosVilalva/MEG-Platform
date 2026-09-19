@@ -2320,3 +2320,120 @@
   .px-card-command-approved-table .px-detail-btn{width:20px!important;height:20px!important;font-size:9px!important}
   .px-card-command-approved-table-foot{min-height:23px!important;padding:0 7px!important;font-size:5.7px!important}
 }
+
+
+/* Percentuais e iconografia premium ------------------------------------------------ */
+.px-cards-approved-progress>b{
+  left:auto!important;
+  right:-36px!important;
+  width:32px!important;
+  min-width:32px!important;
+  white-space:nowrap!important;
+  word-break:keep-all!important;
+  overflow-wrap:normal!important;
+  text-align:right!important;
+  writing-mode:horizontal-tb!important;
+}
+
+.px-cards-approved-selected-metric>i svg,
+.px-card-command-approved-kpis .icon-kpi>i svg{
+  display:block;
+  width:16px;
+  height:16px;
+}
+
+.px-card-command-approved-kpis .icon-kpi{
+  grid-template-columns:34px minmax(0,1fr);
+  align-items:center;
+  gap:10px;
+}
+
+.px-card-command-approved-kpis .icon-kpi>i{
+  width:34px;
+  height:34px;
+  border:1px solid rgba(29,240,227,.15);
+  background:
+    radial-gradient(circle at 35% 30%,rgba(29,240,227,.16),transparent 60%),
+    rgba(29,240,227,.055);
+  color:#20eee2;
+  box-shadow:
+    inset 0 0 0 1px rgba(29,240,227,.025),
+    0 0 16px rgba(29,240,227,.055);
+}
+
+.px-card-command-approved-kpis .icon-kpi>span{
+  min-width:0;
+}
+
+.px-card-command-approved-kpis .icon-kpi>span>small,
+.px-card-command-approved-kpis .icon-kpi>span>strong,
+.px-card-command-approved-kpis .icon-kpi>span>em{
+  display:block;
+}
+
+.px-card-command-approved-kpis .icon-kpi>span>small{
+  color:#9eb6b4;
+  font-size:6.6px;
+}
+
+.px-card-command-approved-kpis .icon-kpi>span>strong{
+  margin-top:3px;
+  color:#fff;
+  font-size:13px;
+  line-height:1.05;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.px-card-command-approved-kpis .icon-kpi>span>em{
+  margin-top:4px;
+  color:#89a9a6;
+  font-size:5.7px;
+  font-style:normal;
+}
+
+.px-card-command-kpi-progress{
+  position:relative;
+  height:5px;
+  margin-right:28px;
+  border-radius:999px;
+  background:rgba(93,184,180,.18);
+}
+.px-card-command-kpi-progress>b{
+  position:absolute;
+  inset:0 auto 0 0;
+  max-width:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg,#1df0e3,#38d8cf);
+  box-shadow:0 0 10px rgba(29,240,227,.18);
+}
+.px-card-command-kpi-progress>span{
+  position:absolute;
+  top:-3px;
+  right:-29px;
+  width:25px;
+  color:#d9eeee;
+  font-size:5.8px;
+  font-weight:850;
+  text-align:right;
+  white-space:nowrap;
+}
+
+@media (min-width:761px) and (max-height:620px){
+  .px-card-command-approved-kpis .icon-kpi{
+    grid-template-columns:23px minmax(0,1fr)!important;
+    gap:5px!important;
+  }
+  .px-card-command-approved-kpis .icon-kpi>i{
+    width:23px!important;
+    height:23px!important;
+  }
+  .px-card-command-approved-kpis .icon-kpi>i svg{
+    width:12px!important;
+    height:12px!important;
+  }
+  .px-card-command-approved-kpis .icon-kpi>span>small{font-size:5.3px!important}
+  .px-card-command-approved-kpis .icon-kpi>span>strong{font-size:8.4px!important}
+  .px-card-command-approved-kpis .icon-kpi>span>em{font-size:4.8px!important}
+}
