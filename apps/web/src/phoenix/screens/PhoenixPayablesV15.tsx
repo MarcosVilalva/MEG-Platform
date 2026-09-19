@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CreditCard } from '../../app/cards-client';
 import type { Payable } from '../../app/payables-client';
 import type { PhoenixReadModel } from '../contracts';
@@ -402,6 +402,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const [successMessage, setSuccessMessage] = useState('');
   const [settlementReceipt, setSettlementReceipt] = useState<SettlementReceipt | null>(null);
   const [locallySettled, setLocallySettled] = useState<Set<string>>(() => new Set());
+  const pendingScrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setModel(data);
@@ -423,6 +424,40 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     try { localStorage.setItem('meg-pending-group-mode', groupMode); } catch { /* preferência opcional */ }
     setExpandedGroups(new Set());
   }, [groupMode]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (reviewOpen || detailItem || settlementReceipt) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && target.closest('input, textarea, select, button, [contenteditable="true"], [role="dialog"]')) return;
+      const scroller = pendingScrollRef.current;
+      if (!scroller) return;
+
+      const page = Math.max(160, Math.floor(scroller.clientHeight * 0.82));
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        scroller.scrollBy({ top: 72, behavior: 'auto' });
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        scroller.scrollBy({ top: -72, behavior: 'auto' });
+      } else if (event.key === 'PageDown') {
+        event.preventDefault();
+        scroller.scrollBy({ top: page, behavior: 'auto' });
+      } else if (event.key === 'PageUp') {
+        event.preventDefault();
+        scroller.scrollBy({ top: -page, behavior: 'auto' });
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        scroller.scrollTo({ top: 0, behavior: 'auto' });
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'auto' });
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [reviewOpen, detailItem, settlementReceipt]);
 
   const open = useMemo(() => {
     const official = model.payables
@@ -682,6 +717,14 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     }
   }
 
+  function routeWheelToPendingList(event: React.WheelEvent<HTMLElement>) {
+    if (reviewOpen || detailItem || settlementReceipt) return;
+    const scroller = pendingScrollRef.current;
+    if (!scroller || scroller.contains(event.target as Node) || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    event.preventDefault();
+    scroller.scrollTop += event.deltaY;
+  }
+
   function renderRow(item: PendingItem) {
     const adjustment = item.openAmount < 0;
     const late = adjustment ? 0 : item.dueDate < today
@@ -752,7 +795,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     </section>;
   }
 
-  return <section className="px-screen px-pending-cockpit">
+  return <section className="px-screen px-pending-cockpit" onWheel={routeWheelToPendingList}>
     <header className="px-screen-head px-pending-hero">
       <div><span className="px-kicker">Pendentes</span><h1>Prioridades e compromissos</h1><p>Uma visão de ação: o que venceu, o que exige atenção hoje e o que precisa ser preparado nos próximos dias.</p></div>
       <div className="px-screen-head-aside"><span className="px-total-pill">{money.format(total)} pendente</span></div>
@@ -800,21 +843,23 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
           <span className="px-toolbar-note">{visibleObligationCount} de {openObligationCount} compromisso(s) exibido(s)</span>
         </div>
         {selectedItems.length ? <div className="px-bulk-action-bar"><div><strong>{selectedItems.length} compromisso(s) selecionado(s)</strong><span>Total {money.format(selectedTotal)} · saldo após baixa {money.format(available - selectedTotal)}</span></div><button type="button" onClick={clearSelection}>Limpar</button><button type="button" className="primary" disabled={saving || selectedTotal <= 0 || selectedTotal > available} onClick={() => openReview()}>{selectedItems.length > 1 ? `Dar baixa nos selecionados (${selectedItems.length})` : 'Revisar baixa'}</button></div> : null}
-        {compatibilityCount > 0 ? <div className="px-history-source-note"><strong>Leitura consolidada:</strong> contas, faturas oficiais e compromissos legados ficam na mesma agenda. Cada baixa continua usando o writer oficial do respectivo domínio.</div> : null}
+        <div className="px-pending-scroll-region" ref={pendingScrollRef} tabIndex={0} role="region" aria-label="Lista de compromissos pendentes">
+          {compatibilityCount > 0 ? <div className="px-history-source-note"><strong>Leitura consolidada:</strong> contas, faturas oficiais e compromissos legados ficam na mesma agenda. Cada baixa continua usando o writer oficial do respectivo domínio.</div> : null}
 
-        {grouped.map((group) => group.kind === 'date'
-          ? renderDateGroup(group)
-          : group.kind === 'card-legacy' && group.items.length > 1
-            ? <details className="px-pending-card-group" key={group.key}>
-                <summary><div><strong>Fatura · {group.label}</strong><small>{group.items.length} lançamentos agrupados · valor líquido</small></div><strong>{money.format(groupTotal(group))}</strong></summary>
-                <div className="px-pending-card-net-action"><button type="button" disabled={saving || groupTotal(group) <= 0} onClick={() => toggleGroupSelection(group)}>Selecionar fatura líquida</button><span>Inclui automaticamente créditos e estornos do cartão.</span></div>
-                <div className="px-pending-card-group-body">{group.items.map(renderRow)}</div>
-              </details>
-            : <section className={`px-pending-group ${group.kind === 'card' ? 'is-card-group' : ''}`} key={group.key}>
-                <header><div><strong>{group.label}</strong><small>{group.kind === 'card' ? 'Fatura consolidada' : `${group.items.length} item(ns)`}</small></div><strong>{money.format(groupTotal(group))}</strong></header>
-                {group.items.map(renderRow)}
-              </section>)}
-        {!visible.length ? <p className="px-empty">Nenhum compromisso corresponde ao filtro.</p> : null}
+          {grouped.map((group) => group.kind === 'date'
+            ? renderDateGroup(group)
+            : group.kind === 'card-legacy' && group.items.length > 1
+              ? <details className="px-pending-card-group" key={group.key}>
+                  <summary><div><strong>Fatura · {group.label}</strong><small>{group.items.length} lançamentos agrupados · valor líquido</small></div><strong>{money.format(groupTotal(group))}</strong></summary>
+                  <div className="px-pending-card-net-action"><button type="button" disabled={saving || groupTotal(group) <= 0} onClick={() => toggleGroupSelection(group)}>Selecionar fatura líquida</button><span>Inclui automaticamente créditos e estornos do cartão.</span></div>
+                  <div className="px-pending-card-group-body">{group.items.map(renderRow)}</div>
+                </details>
+              : <section className={`px-pending-group ${group.kind === 'card' ? 'is-card-group' : ''}`} key={group.key}>
+                  <header><div><strong>{group.label}</strong><small>{group.kind === 'card' ? 'Fatura consolidada' : `${group.items.length} item(ns)`}</small></div><strong>{money.format(groupTotal(group))}</strong></header>
+                  {group.items.map(renderRow)}
+                </section>)}
+          {!visible.length ? <p className="px-empty">Nenhum compromisso corresponde ao filtro.</p> : null}
+        </div>
       </section>
 
       <aside className="px-card px-pending-side">
