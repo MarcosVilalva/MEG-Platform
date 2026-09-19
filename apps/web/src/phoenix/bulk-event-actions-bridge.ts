@@ -346,6 +346,111 @@ async function confirmArchive(ids: string[]) {
   }
 }
 
+
+type BulkPickerOption = { id: string; label: string };
+type BulkPickerController = {
+  setEnabled: (enabled: boolean) => void;
+  value: () => string;
+  close: () => void;
+};
+
+function escapeHtml(value: unknown) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function bulkPickerMarkup(name: string, placeholder: string, options: BulkPickerOption[]) {
+  return `
+    <div class="px-bulk-picker is-disabled" data-bulk-picker="${name}" data-value="">
+      <button type="button" class="px-bulk-picker-trigger" data-picker-trigger disabled aria-haspopup="listbox" aria-expanded="false">
+        <span data-picker-label>${escapeHtml(placeholder)}</span>
+        <span class="px-bulk-picker-chevron" aria-hidden="true">⌄</span>
+      </button>
+      <div class="px-bulk-picker-panel" data-picker-panel hidden>
+        <label class="px-bulk-picker-search">
+          <span aria-hidden="true">⌕</span>
+          <input type="search" data-picker-search placeholder="Pesquisar" autocomplete="off">
+        </label>
+        <div class="px-bulk-picker-options" data-picker-options role="listbox">
+          ${options.map((item) => `<button type="button" role="option" data-picker-value="${escapeHtml(item.id)}" data-picker-option-label="${escapeHtml(item.label)}">${escapeHtml(item.label)}</button>`).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function closeBulkPickers(modal: HTMLElement, except?: HTMLElement | null) {
+  modal.querySelectorAll<HTMLElement>('[data-bulk-picker]').forEach((picker) => {
+    if (except && picker === except) return;
+    const panel = picker.querySelector<HTMLElement>('[data-picker-panel]');
+    const trigger = picker.querySelector<HTMLButtonElement>('[data-picker-trigger]');
+    if (panel) panel.hidden = true;
+    trigger?.setAttribute('aria-expanded', 'false');
+  });
+}
+
+function wireBulkPicker(modal: HTMLElement, name: string): BulkPickerController {
+  const picker = modal.querySelector<HTMLElement>(`[data-bulk-picker="${name}"]`);
+  if (!picker) throw new Error(`BULK_PICKER_${name.toUpperCase()}_MISSING`);
+  const trigger = picker.querySelector<HTMLButtonElement>('[data-picker-trigger]')!;
+  const panel = picker.querySelector<HTMLElement>('[data-picker-panel]')!;
+  const label = picker.querySelector<HTMLElement>('[data-picker-label]')!;
+  const search = picker.querySelector<HTMLInputElement>('[data-picker-search]')!;
+  const options = [...picker.querySelectorAll<HTMLButtonElement>('[data-picker-value]')];
+
+  const close = () => {
+    panel.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+  };
+
+  trigger.addEventListener('click', () => {
+    if (trigger.disabled) return;
+    const opening = panel.hidden;
+    closeBulkPickers(modal, picker);
+    panel.hidden = !opening;
+    trigger.setAttribute('aria-expanded', opening ? 'true' : 'false');
+    if (opening) {
+      search.value = '';
+      options.forEach((option) => { option.hidden = false; });
+      window.requestAnimationFrame(() => search.focus());
+    }
+  });
+
+  search.addEventListener('input', () => {
+    const query = normalize(search.value);
+    options.forEach((option) => {
+      option.hidden = Boolean(query && !normalize(option.dataset.pickerOptionLabel || option.textContent || '').includes(query));
+    });
+  });
+
+  options.forEach((option) => {
+    option.addEventListener('click', () => {
+      const value = option.dataset.pickerValue || '';
+      const optionLabel = option.dataset.pickerOptionLabel || option.textContent || '';
+      picker.dataset.value = value;
+      label.textContent = optionLabel;
+      options.forEach((item) => item.classList.toggle('is-selected', item === option));
+      close();
+    });
+  });
+
+  return {
+    setEnabled(enabled: boolean) {
+      picker.classList.toggle('is-disabled', !enabled);
+      trigger.disabled = !enabled;
+      if (!enabled) close();
+    },
+    value() {
+      return picker.dataset.value || '';
+    },
+    close,
+  };
+}
+
 async function openBulkEditModal() {
   const ids = [...selected].sort();
   if (!ids.length) return;
@@ -363,16 +468,22 @@ async function openBulkEditModal() {
   modal.setAttribute('aria-modal', 'true');
   modal.setAttribute('aria-label', 'Alteração em massa');
   backdrop.appendChild(modal);
-  const accountOptions = accounts.filter((item) => item.isActive).map((item) => `<option value="${item.id}">${item.name}</option>`).join('');
-  const methodOptions = methods.filter((item) => item.isActive).map((item) => `<option value="${item.id}">${item.name}</option>`).join('');
+  const accountOptions: BulkPickerOption[] = accounts.filter((item) => item.isActive).map((item) => ({ id: item.id, label: item.name }));
+  const methodOptions: BulkPickerOption[] = methods.filter((item) => item.isActive).map((item) => ({ id: item.id, label: item.name }));
   modal.innerHTML = `
     <div class="px-bulk-modal-head">
       <div><span class="px-kicker">Alteração em massa</span><h3>${ids.length} lançamento${ids.length === 1 ? '' : 's'} selecionado${ids.length === 1 ? '' : 's'}</h3><p>Marque somente os campos que devem substituir os valores atuais de todos os selecionados.</p></div>
       <button type="button" class="px-bulk-modal-close" aria-label="Fechar">×</button>
     </div>
     <label class="px-bulk-field"><input type="checkbox" data-use-date><strong>Alterar vencimento/data do evento</strong><input type="date" data-value-date disabled></label>
-    <label class="px-bulk-field"><input type="checkbox" data-use-account><strong>Alterar conta financeira</strong><select data-value-account disabled><option value="">Selecione</option>${accountOptions}</select></label>
-    <label class="px-bulk-field"><input type="checkbox" data-use-payment><strong>Alterar forma de pagamento/recebimento</strong><select data-value-payment disabled><option value="">Selecione</option>${methodOptions}</select></label>
+    <div class="px-bulk-field px-bulk-picker-field">
+      <label class="px-bulk-picker-check"><input type="checkbox" data-use-account><strong>Alterar conta financeira</strong></label>
+      ${bulkPickerMarkup('account', 'Selecione a conta', accountOptions)}
+    </div>
+    <div class="px-bulk-field px-bulk-picker-field">
+      <label class="px-bulk-picker-check"><input type="checkbox" data-use-payment><strong>Alterar forma de pagamento/recebimento</strong></label>
+      ${bulkPickerMarkup('payment', 'Selecione a forma', methodOptions)}
+    </div>
     <div class="px-bulk-modal-status" data-modal-status>Marque os campos que deseja alterar.</div>
     <div class="px-bulk-modal-actions"><button type="button" data-cancel>Cancelar</button><button type="button" data-confirm>Aplicar alterações</button></div>
   `;
@@ -383,15 +494,16 @@ async function openBulkEditModal() {
   modal.querySelector<HTMLButtonElement>('[data-cancel]')?.addEventListener('click', close);
   backdrop.addEventListener('click', (event) => { if (event.target === backdrop) close(); });
 
-  const connectToggle = (checkSelector: string, valueSelector: string) => {
-    const check = modal.querySelector<HTMLInputElement>(checkSelector);
-    const value = modal.querySelector<HTMLInputElement | HTMLSelectElement>(valueSelector);
-    if (!check || !value) return;
-    check.addEventListener('change', () => { value.disabled = !check.checked; });
-  };
-  connectToggle('[data-use-date]', '[data-value-date]');
-  connectToggle('[data-use-account]', '[data-value-account]');
-  connectToggle('[data-use-payment]', '[data-value-payment]');
+  const dateCheck = modal.querySelector<HTMLInputElement>('[data-use-date]');
+  const dateValue = modal.querySelector<HTMLInputElement>('[data-value-date]');
+  dateCheck?.addEventListener('change', () => { if (dateValue) dateValue.disabled = !dateCheck.checked; });
+
+  const accountPicker = wireBulkPicker(modal, 'account');
+  const paymentPicker = wireBulkPicker(modal, 'payment');
+  const accountCheck = modal.querySelector<HTMLInputElement>('[data-use-account]');
+  const paymentCheck = modal.querySelector<HTMLInputElement>('[data-use-payment]');
+  accountCheck?.addEventListener('change', () => accountPicker.setEnabled(Boolean(accountCheck.checked)));
+  paymentCheck?.addEventListener('change', () => paymentPicker.setEnabled(Boolean(paymentCheck.checked)));
 
   const confirmButton = modal.querySelector<HTMLButtonElement>('[data-confirm]');
   confirmButton?.addEventListener('click', async () => {
@@ -399,8 +511,8 @@ async function openBulkEditModal() {
     const useAccount = Boolean(modal.querySelector<HTMLInputElement>('[data-use-account]')?.checked);
     const usePayment = Boolean(modal.querySelector<HTMLInputElement>('[data-use-payment]')?.checked);
     const date = modal.querySelector<HTMLInputElement>('[data-value-date]')?.value || '';
-    const accountId = modal.querySelector<HTMLSelectElement>('[data-value-account]')?.value || '';
-    const paymentMethodId = modal.querySelector<HTMLSelectElement>('[data-value-payment]')?.value || '';
+    const accountId = accountPicker.value();
+    const paymentMethodId = paymentPicker.value();
     const changes: PhoenixBulkEventChanges = {};
     if (useDate && date) changes.date = date;
     if (useAccount && accountId) changes.accountId = accountId;
