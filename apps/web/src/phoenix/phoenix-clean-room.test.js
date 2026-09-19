@@ -15,6 +15,7 @@ const launchWriteControl = readFileSync(new URL('./components/PhoenixLaunchWrite
 const bulkEventUxEnhancements = readFileSync(new URL('./bulk-event-ux-enhancements.ts', import.meta.url), 'utf8');
 const homeDashboard = readFileSync(new URL('./screens/PhoenixHomeDashboard.tsx', import.meta.url), 'utf8');
 const homeNowCss = readFileSync(new URL('./phoenix-home-now.css', import.meta.url), 'utf8');
+const periodCss = readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8');
 const homeAllTime = readFileSync(new URL('./screens/PhoenixHomeAllTime.tsx', import.meta.url), 'utf8');
 const homePeriodSummary = readFileSync(new URL('./home-period-summary.ts', import.meta.url), 'utf8');
 const webScreens = readFileSync(new URL('./screens/PhoenixWebScreens.tsx', import.meta.url), 'utf8');
@@ -278,6 +279,14 @@ assert.match(styles, /\.px-top-quick-launch/,
   'Shell Phoenix deve preservar o quick launch do V15');
 assert.match(styles, /\.px-period-modes/,
   'Seletor de período deve preservar os modos Mês, Intervalo e Tudo do V15');
+assert.match(periodCss, /\.px-period-head/,
+  'Seletor de período deve usar cabeçalho contextual premium.');
+assert.match(periodCss, /\.px-period-month-stepper/,
+  'Seleção mensal deve permitir navegação interativa por competência.');
+assert.match(periodCss, /\.px-period-popover-v15[\s\S]*animation:px-period-enter/,
+  'Seletor de período deve ter entrada visual fluida.');
+assert.match(periodCss, /\.px-period-progress/,
+  'Carregamento de período deve ser comunicado dentro do próprio seletor.');
 assert.match(styles, /@media \(min-width:681px\) and \(max-width:980px\)/,
   'Web estreito deve manter sidebar em vez de assumir navegação móvel');
 assert.match(styles, /\.px-premium-balance/);
@@ -319,6 +328,10 @@ assert.match(homeNowCss, /\.px-main-home-all[\s\S]*overflow:hidden/,
   'Home Tudo deve manter o shell estável.');
 assert.match(homeNowCss, /\.px-content-home\.px-content-home-all[\s\S]*overflow-y:auto !important/,
   'Home Tudo deve permitir rolagem vertical do conteúdo extenso.');
+assert.match(homeNowCss, /\.px-main-home-all > \.px-content-home\.px-content-home-all[\s\S]*inset:64px 0 0 0 !important/,
+  'Home Tudo deve começar imediatamente abaixo da topbar, sem compensação vertical duplicada.');
+assert.match(homeNowCss, /\.px-home-alltime > \.px-page-head[\s\S]*padding:0 2px 2px !important/,
+  'Cabeçalho da Home Tudo não deve reservar faixa vazia no topo.');
 assert.match(homeDashboard, /benefício permanece separado do saldo monetário/i,
   'Benefício deve permanecer visualmente separado do saldo monetário.');
 assert.match(homeNowCss, /\.px-home-benefit-chip/,
@@ -374,8 +387,8 @@ assert.match(phoenixApp, /view === 'home' && periodMode === 'all'/,
   'Modo Tudo deve permanecer aplicado na Home principal, não apenas em Lançamentos');
 assert.match(phoenixApp, /const baseMonth = currentMonth\(\)/,
   'Modo Tudo deve usar o mês atual como base do saldo monetário realizado');
-assert.match(phoenixApp, /Tudo permanece ativo entre Home e Lançamentos/,
-  'O seletor deve explicar o escopo global do modo Tudo');
+assert.match(phoenixApp, /Histórico completo/,
+  'O seletor deve explicar claramente o escopo global do modo Tudo');
 assert.match(phoenixApp, /peekPhoenixReadModel/,
   'Troca de mês deve aproveitar fotografia já carregada');
 assert.match(phoenixApp, /monthlySnapshotMatches/,
@@ -384,8 +397,16 @@ assert.match(phoenixApp, /applyMonthlyPeriod/,
   'Seleção mensal deve aguardar a fotografia completa antes de trocar o período visível');
 assert.match(phoenixApp, /periodRequestRef/,
   'Respostas atrasadas de trocas anteriores não podem sobrescrever a seleção mais recente');
-assert.doesNotMatch(phoenixApp, /prefetchPhoenixReadModel/,
-  'Shell não deve pré-carregar meses adjacentes enquanto o endpoint mensal continuar custoso');
+assert.match(phoenixApp, /prefetchPhoenixReadModel/,
+  'Shell deve pré-aquecer o mês escolhido e meses vizinhos para reduzir a espera percebida.');
+assert.match(phoenixApp, /Promise\.all\(\[\s*loadPhoenixReadModel\(baseMonth[\s\S]*loadPhoenixAllEvents/,
+  'Modo Tudo deve carregar snapshot-base e eventos completos em paralelo.');
+assert.match(phoenixApp, /quickRange/,
+  'Atalhos de intervalo devem aplicar o período em um clique.');
+assert.match(phoenixApp, /quickMonth/,
+  'Atalhos mensais devem aplicar o período em um clique.');
+assert.match(phoenixApp, /px-period-progress/,
+  'Troca de período deve exibir progresso contextual sem desmontar a tela.');
 assert.doesNotMatch(phoenixApp, /setMonth\(end\.slice\(0,\s*7\)\)/,
   'Intervalo de Lançamentos não pode alterar silenciosamente o mês oficial da Home');
 for (const screen of ['PhoenixMovementsV15', 'PhoenixHomeDashboard', 'PhoenixHomeAllTime', 'PhoenixHistory', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs', 'PhoenixUsers', 'PhoenixSettings', 'PhoenixReceivables', 'PhoenixRevenues', 'PhoenixCashflow', 'PhoenixReconciliation', 'PhoenixAnalytics', 'PhoenixBudgets', 'PhoenixCommandPalette', 'PhoenixSidebar']) {

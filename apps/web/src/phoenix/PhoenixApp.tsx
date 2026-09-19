@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
-import { loadPhoenixAllEvents, loadPhoenixReadModel, peekPhoenixReadModel } from './data/load-phoenix-read-model';
+import { loadPhoenixAllEvents, loadPhoenixReadModel, peekPhoenixReadModel, prefetchPhoenixReadModel } from './data/load-phoenix-read-model';
 import { buildPhoenixHomeAgenda } from './home-agenda';
 import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixSidebar } from './PhoenixSidebar';
@@ -271,6 +271,17 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     return () => window.clearTimeout(timer);
   }, [loadState.status, view]);
 
+
+  useEffect(() => {
+    if (loadState.status !== 'ready') return;
+    const activeMonth = loadState.data.month;
+    const timer = window.setTimeout(() => {
+      void prefetchPhoenixReadModel(shiftMonth(activeMonth, -1));
+      void prefetchPhoenixReadModel(shiftMonth(activeMonth, 1));
+    }, 220);
+    return () => window.clearTimeout(timer);
+  }, [loadState.status, loadState.status === 'ready' ? loadState.data.month : '']);
+
   useEffect(() => {
     let active = true;
     const cached = peekPhoenixReadModel(month);
@@ -393,6 +404,36 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     return () => window.removeEventListener('pointerdown', closeOutside);
   }, [periodOpen]);
 
+
+  useEffect(() => {
+    if (!periodOpen) return;
+    const months = new Set<string>([
+      month,
+      periodDraftMonth,
+      shiftMonth(periodDraftMonth, -1),
+      shiftMonth(periodDraftMonth, 1)
+    ]);
+    const timer = window.setTimeout(() => {
+      months.forEach((target) => { void prefetchPhoenixReadModel(target); });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [periodOpen, month, periodDraftMonth]);
+
+  useEffect(() => {
+    if (!periodOpen || periodDraftMode !== 'range' || !periodStart || !periodEnd || periodStart > periodEnd) return;
+    const months = monthsBetween(periodStart, periodEnd).slice(0, 6);
+    const timer = window.setTimeout(() => {
+      months.forEach((target) => { void prefetchPhoenixReadModel(target); });
+    }, 140);
+    return () => window.clearTimeout(timer);
+  }, [periodOpen, periodDraftMode, periodStart, periodEnd]);
+
+  useEffect(() => {
+    if (!periodOpen || periodDraftMode !== 'all') return;
+    const timer = window.setTimeout(() => { void loadPhoenixAllEvents(); }, 120);
+    return () => window.clearTimeout(timer);
+  }, [periodOpen, periodDraftMode]);
+
   const data = loadState.status === 'ready' ? loadState.data : dataRef.current;
   const specialView = view === 'movements' || (view === 'home' && periodMode === 'all');
   const viewData = specialView && movementPeriodData ? movementPeriodData : data;
@@ -401,7 +442,11 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const toggleTheme = () => setTheme((value) => value === 'dark' ? 'light' : 'dark');
   const userInitial = (data?.user.name || 'M').slice(0, 1).toUpperCase();
   const periodActiveLabel = periodMode === 'month' ? shortMonthLabel(data?.month || month) : periodMode === 'all' ? 'Tudo' : periodRangeLabel || 'Intervalo';
-  const updatingPeriod = periodLoading && periodDraftMode === 'month';
+  const periodDraftLabel = periodDraftMode === 'month'
+    ? monthLabel(periodDraftMonth)
+    : periodDraftMode === 'all'
+      ? 'Histórico completo'
+      : periodStart && periodEnd ? `${formatShortIso(periodStart)} → ${formatShortIso(periodEnd)}` : 'Defina o intervalo';
 
   function resetSpecialPeriod() {
     setPeriodMode('month');
@@ -429,16 +474,26 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setLaunchRequest((value) => value + 1);
   }
 
-  function presetRange(days: number) {
-    const today = todayIso();
-    setPeriodDraftMode('range');
-    setPeriodStart(shiftIsoDay(today, -(days - 1)));
-    setPeriodEnd(today);
+
+  function stepDraftMonth(offset: number) {
+    setPeriodDraftMode('month');
+    setPeriodDraftMonth((value) => shiftMonth(value || currentMonth(), offset));
   }
 
-  function presetMonth(offset: number) {
+  function quickRange(days: number) {
+    const today = todayIso();
+    const start = shiftIsoDay(today, -(days - 1));
+    setPeriodDraftMode('range');
+    setPeriodStart(start);
+    setPeriodEnd(today);
+    void applyRangePeriod(start, today);
+  }
+
+  function quickMonth(offset: number) {
+    const target = shiftMonth(currentMonth(), offset);
     setPeriodDraftMode('month');
-    setPeriodDraftMonth(shiftMonth(currentMonth(), offset));
+    setPeriodDraftMonth(target);
+    void applyMonthlyPeriod(target);
   }
 
   async function applyMonthlyPeriod(targetMonth: string, force = false) {
@@ -496,10 +551,13 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       return;
     }
 
+    const requestId = periodRequestRef.current + 1;
+    periodRequestRef.current = requestId;
     setPeriodLoading(true);
     setPeriodError('');
     try {
       const models = await Promise.all(months.map((item) => loadPhoenixReadModel(item, force ? { force: true } : {})));
+      if (periodRequestRef.current !== requestId) return;
       if (models.some((model, index) => !monthlySnapshotMatches(model, months[index]))) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       const base = models[models.length - 1];
       const unique = new Map<string, (typeof base.events.items)[number]>();
@@ -521,22 +579,28 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       setPeriodOpen(false);
       resetViewport();
     } catch (error) {
+      if (periodRequestRef.current !== requestId) return;
       setPeriodError(error instanceof Error && error.message === 'PHOENIX_MONTH_SNAPSHOT_MISMATCH'
         ? 'Uma das leituras retornou dados de outro mês. O período atual foi mantido por segurança.'
         : error instanceof Error ? error.message : 'Não foi possível carregar o intervalo.');
     } finally {
-      setPeriodLoading(false);
+      if (periodRequestRef.current === requestId) setPeriodLoading(false);
     }
   }
 
   async function applyAllPeriod(force = false) {
+    const requestId = periodRequestRef.current + 1;
+    periodRequestRef.current = requestId;
     setPeriodLoading(true);
     setPeriodError('');
     try {
       const baseMonth = currentMonth();
-      const base = await loadPhoenixReadModel(baseMonth, force ? { force: true } : {});
+      const [base, events] = await Promise.all([
+        loadPhoenixReadModel(baseMonth, force ? { force: true } : {}),
+        loadPhoenixAllEvents({ force })
+      ]);
       if (!monthlySnapshotMatches(base, baseMonth)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
-      const events = await loadPhoenixAllEvents({ force });
+      if (periodRequestRef.current !== requestId) return;
       const items = events.items.map((event) => ({ ...event, competence: base.month }));
       setMovementPeriodData({
         ...base,
@@ -551,11 +615,12 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       setPeriodOpen(false);
       resetViewport();
     } catch (error) {
+      if (periodRequestRef.current !== requestId) return;
       setPeriodError(error instanceof Error && error.message === 'PHOENIX_MONTH_SNAPSHOT_MISMATCH'
         ? 'A leitura mensal atual ficou inconsistente. O histórico completo não foi aberto.'
         : error instanceof Error ? error.message : 'Não foi possível carregar todo o histórico.');
     } finally {
-      setPeriodLoading(false);
+      if (periodRequestRef.current === requestId) setPeriodLoading(false);
     }
   }
 
@@ -590,22 +655,72 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
           <div className="px-top-right">
             <button className="px-top-quick-launch" type="button" title="Novo lançamento" aria-label="Novo lançamento" onClick={requestLaunch}>＋</button>
             <div className={`px-period-menu ${periodOpen ? 'is-open' : ''}`} ref={periodRef}>
-              <button className="px-period-summary" type="button" title="Selecionar período" aria-label="Selecionar período" onClick={() => setPeriodOpen((value) => !value)}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span className="px-period-active">{periodActiveLabel}</span></button>
-              {periodOpen ? <div className="px-period-popover px-period-popover-v15">
-                <span>Período de consulta</span>
-                <div className="px-period-modes"><button type="button" className={periodDraftMode === 'month' ? 'active' : ''} onClick={() => setPeriodDraftMode('month')}>Mês</button><button type="button" className={periodDraftMode === 'range' ? 'active' : ''} onClick={() => setPeriodDraftMode('range')}>Intervalo</button><button type="button" className={periodDraftMode === 'all' ? 'active' : ''} onClick={() => setPeriodDraftMode('all')}>Tudo</button></div>
-                <div className="px-period-presets"><button type="button" onClick={() => presetRange(1)}>Hoje</button><button type="button" onClick={() => presetRange(7)}>7 dias</button><button type="button" onClick={() => presetRange(30)}>30 dias</button><button type="button" onClick={() => presetMonth(0)}>Mês atual</button><button type="button" onClick={() => presetMonth(-1)}>Mês anterior</button></div>
-                {periodDraftMode === 'month' ? <label className="px-period-field"><span>Mês e ano</span><input type="month" value={periodDraftMonth} onChange={(event) => setPeriodDraftMonth(event.target.value)} /></label> : null}
-                {periodDraftMode === 'range' ? <div className="px-period-range"><label className="px-period-field"><span>Data inicial</span><input type="date" value={periodStart} onChange={(event) => setPeriodStart(event.target.value)} /></label><label className="px-period-field"><span>Data final</span><input type="date" value={periodEnd} onChange={(event) => setPeriodEnd(event.target.value)} /></label></div> : null}
-                {periodDraftMode === 'all' ? <div className="px-period-all">Exibe toda a trajetória financeira desde o primeiro lançamento. Na Home consolida o histórico completo; em Lançamentos mostra todos os registros normalizados.</div> : null}
-                {periodDraftMode === 'range' ? <small className="px-period-scope-note">Intervalo abre Lançamentos. Home, Cartões e demais indicadores globais permanecem mensais até existir contrato agregado específico.</small> : null}
-                {periodDraftMode === 'month' && periodDraftMonth > currentMonth() ? <small className="px-period-scope-note">Mês futuro troca a competência exibida. Radar, simulações e projeções de 12 meses permanecem exclusivamente em Decisões.</small> : null}
-                {periodDraftMode === 'all' ? <small className="px-period-scope-note">Tudo permanece ativo entre Home e Lançamentos. O saldo atual continua sendo a fotografia realizada de hoje; eventos futuros entram apenas nos compromissos e projeções.</small> : null}
+              <button className={`px-period-summary ${periodLoading ? 'is-loading' : ''}`} type="button" title="Selecionar período" aria-label="Selecionar período" aria-busy={periodLoading} onClick={() => setPeriodOpen((value) => !value)}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span className="px-period-active">{periodActiveLabel}</span></button>
+              {periodOpen ? <div className={`px-period-popover px-period-popover-v15 ${periodLoading ? 'is-loading' : ''}`}>
+                <header className="px-period-head">
+                  <div className="px-period-head-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg></div>
+                  <div><span>Período de consulta</span><strong>{periodDraftLabel}</strong><small>Troque a visão sem desmontar a tela atual.</small></div>
+                  <button className="px-period-close" type="button" aria-label="Fechar seletor de período" onClick={() => setPeriodOpen(false)}>×</button>
+                </header>
+
+                <div className="px-period-modes" role="tablist" aria-label="Modo do período">
+                  <button type="button" className={periodDraftMode === 'month' ? 'active' : ''} onClick={() => setPeriodDraftMode('month')}><span>Mês</span><small>Competência</small></button>
+                  <button type="button" className={periodDraftMode === 'range' ? 'active' : ''} onClick={() => setPeriodDraftMode('range')}><span>Intervalo</span><small>Datas livres</small></button>
+                  <button type="button" className={periodDraftMode === 'all' ? 'active' : ''} onClick={() => setPeriodDraftMode('all')}><span>Tudo</span><small>Base completa</small></button>
+                </div>
+
+                <div className="px-period-quick">
+                  <span>Acesso rápido</span>
+                  <div>
+                    <button type="button" disabled={periodLoading} onClick={() => quickRange(1)}>Hoje</button>
+                    <button type="button" disabled={periodLoading} onClick={() => quickRange(7)}>7 dias</button>
+                    <button type="button" disabled={periodLoading} onClick={() => quickRange(30)}>30 dias</button>
+                    <button type="button" disabled={periodLoading} onClick={() => quickMonth(0)}>Mês atual</button>
+                    <button type="button" disabled={periodLoading} onClick={() => quickMonth(-1)}>Anterior</button>
+                  </div>
+                </div>
+
+                {periodDraftMode === 'month' ? <section className="px-period-month-panel">
+                  <span>Competência</span>
+                  <div className="px-period-month-stepper">
+                    <button type="button" aria-label="Mês anterior" onClick={() => stepDraftMonth(-1)}>‹</button>
+                    <div><small>Selecionado</small><strong>{monthLabel(periodDraftMonth)}</strong></div>
+                    <button type="button" aria-label="Próximo mês" onClick={() => stepDraftMonth(1)}>›</button>
+                  </div>
+                  <label className="px-period-field px-period-native-month"><span>Escolher outro mês</span><input type="month" value={periodDraftMonth} onChange={(event) => setPeriodDraftMonth(event.target.value)} /></label>
+                </section> : null}
+
+                {periodDraftMode === 'range' ? <section className="px-period-range-panel">
+                  <span>Intervalo personalizado</span>
+                  <div className="px-period-range">
+                    <label className="px-period-field"><span>Data inicial</span><input type="date" value={periodStart} onChange={(event) => setPeriodStart(event.target.value)} /></label>
+                    <span className="px-period-range-arrow" aria-hidden="true">→</span>
+                    <label className="px-period-field"><span>Data final</span><input type="date" value={periodEnd} onChange={(event) => setPeriodEnd(event.target.value)} /></label>
+                  </div>
+                  <small className="px-period-scope-note">Intervalos abrem Lançamentos com os registros compreendidos entre as duas datas.</small>
+                </section> : null}
+
+                {periodDraftMode === 'all' ? <section className="px-period-all">
+                  <div className="px-period-all-icon" aria-hidden="true">∞</div>
+                  <div><strong>Histórico completo</strong><p>Consolida a trajetória financeira inteira. O saldo disponível continua sendo a fotografia realizada de hoje.</p></div>
+                  <button type="button" disabled={periodLoading} onClick={() => { void applyAllPeriod(); }}>Abrir Tudo</button>
+                </section> : null}
+
+                {periodDraftMode === 'month' && periodDraftMonth > currentMonth() ? <small className="px-period-scope-note">Mês futuro troca a competência exibida. Projeções permanecem concentradas em Decisões.</small> : null}
                 {periodError ? <div className="px-period-error">{periodError}</div> : null}
-                <button className="px-period-apply" type="button" disabled={periodLoading} onClick={applyPeriod}>{periodLoading ? 'Carregando período…' : 'Aplicar período'}</button>
+
+                {periodLoading ? <div className="px-period-progress" role="status" aria-live="polite">
+                  <span className="px-period-spinner" aria-hidden="true" />
+                  <div><strong>Preparando {periodDraftLabel}</strong><small>A tela atual permanece disponível enquanto os dados são confirmados.</small></div>
+                </div> : null}
+
+                <footer className="px-period-footer">
+                  <div><span>Nova visão</span><strong>{periodDraftLabel}</strong></div>
+                  <button className="px-period-apply" type="button" disabled={periodLoading} onClick={applyPeriod}>{periodLoading ? 'Carregando…' : 'Aplicar'}</button>
+                </footer>
               </div> : null}
             </div>
-            <button className={`px-sync ${refreshing || periodLoading ? 'is-refreshing' : ''}`} type="button" disabled={refreshing || periodLoading || !data} aria-busy={refreshing || periodLoading} title={updatingPeriod ? 'Atualizando período sem desmontar a tela' : 'Atualizar dados'} onClick={() => { void refreshData(); }}><span className="px-sync-dot" /><span>{updatingPeriod ? 'Atualizando período…' : periodLoading ? 'Carregando período…' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{userInitial}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span className="px-user-chevron">⌄</span></button><button className="px-icon-btn px-top-exit" type="button" title="Sair" onClick={onLogout}>↪</button>
+            <button className={`px-sync ${refreshing ? 'is-refreshing' : ''}`} type="button" disabled={refreshing || periodLoading || !data} aria-busy={refreshing} title="Atualizar dados" onClick={() => { void refreshData(); }}><span className="px-sync-dot" /><span>{refreshing ? 'Atualizando dados…' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{userInitial}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span className="px-user-chevron">⌄</span></button><button className="px-icon-btn px-top-exit" type="button" title="Sair" onClick={onLogout}>↪</button>
           </div>
         </header>
 
