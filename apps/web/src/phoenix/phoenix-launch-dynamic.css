@@ -806,3 +806,131 @@
 .px-movements-v15 .px-v15-launch-table .px-column-hidden {
   display:none!important;
 }
+
+
+/* Lançamentos — toolbar única: consulta + exportação + utilidades + seleção */
+.px-movements-v15 .px-movements-overview {
+  padding-bottom:6px;
+}
+
+.px-movements-v15 .px-table-toolbar-shell {
+  min-width:0;
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  flex-wrap:wrap;
+  padding:6px 8px;
+  border-bottom:1px solid var(--line);
+  background:color-mix(in srgb,var(--panel2) 74%,transparent);
+}
+
+.px-movements-v15 .px-table-toolbar-shell > .px-table-context-slot,
+.px-movements-v15 .px-table-toolbar-shell > .px-movement-tools,
+.px-movements-v15 .px-table-toolbar-shell .px-bulk-ux-strip {
+  display:contents!important;
+}
+
+.px-movements-v15 .px-table-toolbar-shell .px-bulk-ux-copy {
+  order:1;
+  flex:0 0 auto;
+  min-width:98px;
+}
+
+.px-movements-v15 .px-table-toolbar-shell .px-table-export {
+  order:2;
+}
+
+.px-movements-v15 .px-table-toolbar-shell .px-grid-utilities {
+  order:3;
+}
+
+.px-movements-v15 .px-table-toolbar-shell .px-movement-tool-buttons {
+  order:4;
+  display:flex;
+  align-items:center;
+  gap:4px;
+  padding-left:7px;
+  margin-left:2px;
+  border-left:1px solid color-mix(in srgb,var(--line) 88%,transparent);
+}
+
+.px-movements-v15 .px-table-toolbar-shell .px-movement-tool-button {
+  flex:0 0 30px;
+  width:30px;
+  height:30px;
+  min-height:30px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border-radius:8px;
+}
+
+.px-movements-v15 .px-table-toolbar-shell .px-movement-tool-button svg {
+  width:15px;
+  height:15px;
+}
+
+.px-movements-v15 .px-table-toolbar-shell .px-bulk-ux-buttons {
+  order:5;
+  margin-left:auto;
+  padding-left:7px;
+  border-left:1px solid color-mix(in srgb,var(--line) 88%,transparent);
+}
+
+.px-movements-v15 .px-table-toolbar-shell .px-movement-tool-panel {
+  order:20;
+  flex:1 0 100%;
+  width:100%;
+  max-height:170px;
+  margin-top:1px;
+}
+
+.px-movements-v15 .px-table-context-slot {
+  padding:0;
+  border:0;
+  background:transparent;
+}
+
+.px-movements-v15 .px-table-context-slot + .px-movement-tools {
+  min-width:0;
+}
+
+/* Descrição compacta: uma linha com elipse e conteúdo completo no tooltip nativo. */
+.px-movements-v15 .px-v15-launch-table th[data-col="description"],
+.px-movements-v15 .px-v15-launch-table td[data-col="description"] {
+  width:220px;
+  max-width:220px;
+}
+
+.px-movements-v15 .px-description-ellipsis {
+  display:block;
+  width:220px;
+  max-width:220px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+@media (max-width:1180px) {
+  .px-movements-v15 .px-v15-launch-table th[data-col="description"],
+  .px-movements-v15 .px-v15-launch-table td[data-col="description"] {
+    width:190px;
+    max-width:190px;
+  }
+
+  .px-movements-v15 .px-description-ellipsis {
+    width:190px;
+    max-width:190px;
+  }
+}
+
+@media (max-width:900px) {
+  .px-movements-v15 .px-table-toolbar-shell {
+    align-items:flex-start;
+  }
+
+  .px-movements-v15 .px-table-toolbar-shell .px-bulk-ux-buttons {
+    margin-left:0;
+  }
+}
