@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
 import readXlsxFile from 'read-excel-file/node';
 
@@ -23,6 +24,8 @@ assert.match(bridge, /collectFilters/,
   'Exportação deve registrar os filtros ativos da visão');
 assert.match(bridge, /collectPeriod/,
   'Exportação deve registrar o período correspondente aos dados visíveis');
+assert.match(bridge, /sourceRows\(table, headerRow, indexes\)/,
+  'Lançamentos deve exportar toda a visão filtrada, não apenas a página visível');
 assert.match(bridge, /recordCount: rows\.length/,
   'Quantidade exportada deve refletir as linhas filtradas presentes na tabela');
 
@@ -30,10 +33,14 @@ assert.match(core, /openxmlformats-officedocument\.spreadsheetml\.sheet/,
   'Excel deve usar pacote OpenXML XLSX');
 assert.match(core, /<autoFilter ref=/,
   'Planilha deve abrir com autofiltro habilitado');
-assert.match(core, /SUBTOTAL\(109,/,
-  'Totais do Excel devem recalcular ao filtrar a planilha');
-assert.doesNotMatch(core, /xl\/tables\/table1\.xml/,
-  'XLSX compatível não deve depender do relacionamento de tabela que o Excel estava reparando');
+assert.match(core, /zipSync\(files, \{ level: 6 \}\)/,
+  'XLSX deve usar uma implementação de ZIP consolidada em vez do empacotador manual');
+assert.match(core, /const headerRow = 7/,
+  'Excel deve seguir o padrão tabular do relatório de referência, com cabeçalho na linha 7');
+assert.match(core, /sharedStringCell\('A4', 'Período'/,
+  'Excel deve trazer os critérios acima da tabela, como no relatório de referência');
+assert.doesNotMatch(core, /type ZipEntry|function zipStore/,
+  'Exportação não pode voltar ao ZIP manual que causava incompatibilidade no Excel');
 assert.match(core, /\\u0000-\\u0008/,
   'Conteúdo exportado deve remover caracteres de controle inválidos para XML');
 assert.match(core, /MEG Finanças/,
@@ -49,8 +56,9 @@ assert.match(styles, /px-export-icon\.pdf/,
 const transpiled = ts.transpileModule(core, {
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 }
 }).outputText;
-const moduleUrl = `data:text/javascript;base64,${Buffer.from(transpiled).toString('base64')}`;
-const exportCore = await import(moduleUrl);
+const moduleFile = join(process.cwd(), 'apps/web/src/phoenix/.tmp-table-export-core.mjs');
+writeFileSync(moduleFile, transpiled);
+const exportCore = await import(`${pathToFileURL(moduleFile).href}?v=${Date.now()}`);
 const sample = {
   systemName: 'MEG Finanças',
   title: 'Controle financeiro',
@@ -78,12 +86,17 @@ try {
   const workbookRows = Array.isArray(workbook) && workbook[0]?.data ? workbook[0].data : workbook;
   const workbookValues = workbookRows.flat().filter((value) => value !== null && value !== undefined);
   assert.ok(workbookRows.length > 0, 'Excel gerado deve conter linhas legíveis');
+  assert.ok(workbookValues.includes('Controle financeiro'),
+    'Excel deve abrir com o título do relatório');
+  assert.ok(workbookValues.includes('Período'),
+    'Excel deve trazer o critério de período acima da tabela');
   assert.ok(workbookValues.includes('Vencimento'),
     'Excel gerado deve preservar o cabeçalho da tabela');
   assert.ok(workbookValues.includes('TV E STREAMING'),
     'Excel gerado deve preservar os dados reais da tabela');
 } finally {
   rmSync(temp, { recursive: true, force: true });
+  rmSync(moduleFile, { force: true });
 }
 
 console.log('Phoenix table export contract: OK');
