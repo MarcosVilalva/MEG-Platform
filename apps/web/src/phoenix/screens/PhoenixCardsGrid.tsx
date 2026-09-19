@@ -3,6 +3,13 @@ import type { CreditCard } from '../../app/cards-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import { resolvePhoenixCardIdentity } from '../card-identity';
 import type { PhoenixLegacyTransaction, PhoenixReadModel } from '../contracts';
+import {
+  buildPhoenixPdf,
+  buildPhoenixXlsx,
+  detectPhoenixColumnKinds,
+  phoenixExportFilename,
+  type PhoenixExportReport,
+} from '../table-export-core';
 import '../phoenix-screens.css';
 import '../phoenix-cards-premium.css';
 import '../phoenix-cards-wow.css';
@@ -215,6 +222,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const [commandMonth, setCommandMonth] = useState('');
   const [commandStatus, setCommandStatus] = useState('');
   const [commandGroup, setCommandGroup] = useState('');
+  const [commandSort, setCommandSort] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc' | 'description'>('date-desc');
 
   const selected = data.cards.find((card) => card.id === selectedId) || data.cards[0] || null;
 
@@ -339,6 +347,12 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
       if (commandStatus === 'credit' && label !== 'credito/estorno') return false;
     }
     return true;
+  }).sort((left, right) => {
+    if (commandSort === 'date-asc') return left.purchaseDate.localeCompare(right.purchaseDate);
+    if (commandSort === 'amount-desc') return right.amount - left.amount;
+    if (commandSort === 'amount-asc') return left.amount - right.amount;
+    if (commandSort === 'description') return left.description.localeCompare(right.description, 'pt-BR', { sensitivity: 'base' });
+    return right.purchaseDate.localeCompare(left.purchaseDate);
   });
   const commandRowsTotal = sumRows(commandRows);
   const topCurrentRows = [...currentRows].filter((row) => row.amount > 0 && !isCancelledStatus(row.status)).sort((left, right) => right.amount - left.amount).slice(0, 5);
@@ -383,11 +397,12 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
 
   function openCardCommand(cardId?: string) {
     if (cardId && cardId !== selected?.id) selectCard(cardId);
-    setCommandTab('summary');
+    setCommandTab('current');
     setCommandSearch('');
     setCommandMonth('');
     setCommandStatus('');
     setCommandGroup('');
+    setCommandSort('date-desc');
     setCardCommandOpen(true);
   }
 
@@ -407,7 +422,62 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     setCommandMonth('');
     setCommandStatus('');
     setCommandGroup('');
+    setCommandSort('date-desc');
   }
+  function exportCardStatement(extension: 'xlsx' | 'pdf') {
+    const headers = ['Data', 'Descrição', 'Grupo', 'Parcela', 'Fatura', 'Situação', 'Valor'];
+    const rows = commandRows.map((row) => [
+      date.format(new Date(`${row.purchaseDate}T12:00:00Z`)),
+      row.description,
+      row.group,
+      row.installment,
+      monthLabel(row.statementMonth),
+      rowStatusLabel(row),
+      money.format(row.amount),
+    ]);
+    const detected = detectPhoenixColumnKinds(headers, rows);
+    const filters: string[] = [
+      `Visão: ${commandTab === 'current' ? 'Fatura atual' : commandTab === 'future' ? 'Próximas faturas' : commandTab === 'installments' ? 'Parcelas' : commandTab === 'history' ? 'Histórico' : 'Resumo'}`,
+    ];
+    if (commandMonth) filters.push(`Competência: ${monthLabel(commandMonth)}`);
+    if (commandStatus) filters.push(`Situação: ${commandStatus === 'open' ? 'Pendente' : commandStatus === 'paid' ? 'Pago' : 'Crédito/estorno'}`);
+    if (commandGroup) filters.push(`Grupo: ${commandGroup}`);
+    if (commandSearch.trim()) filters.push(`Busca: ${commandSearch.trim()}`);
+    const report: PhoenixExportReport = {
+      systemName: 'MEG Finanças',
+      title: `Cartão ${selected.name} — ${commandTab === 'current' ? 'Fatura atual' : commandTab === 'future' ? 'Próximas faturas' : commandTab === 'installments' ? 'Parcelas' : 'Histórico'}`,
+      period: commandMonth ? monthLabel(commandMonth) : commandTab === 'current' ? monthLabel(data.month) : 'Conforme filtros da central do cartão',
+      filters,
+      generatedAt: new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      }).format(new Date()),
+      recordCount: rows.length,
+      headers,
+      rows,
+      kinds: detected.kinds,
+      sums: detected.sums,
+    };
+    const bytes = extension === 'xlsx' ? buildPhoenixXlsx(report) : buildPhoenixPdf(report);
+    const copy = new Uint8Array(bytes.byteLength);
+    copy.set(bytes);
+    const blob = new Blob([copy.buffer], {
+      type: extension === 'xlsx'
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'application/pdf',
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = phoenixExportFilename(report, extension);
+    anchor.rel = 'noopener';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 15000);
+  }
+
   function header(label: string, key: GridKey, kind: PhoenixGridFilterKind, list?: PhoenixGridOption[]) {
     return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} options={list} sort={sort?.key === key ? sort.direction : null} onSort={(direction) => setSortState((current) => ({ ...current, [mode]: { key, direction } }))} onChange={(value) => setFilterState((current) => ({ ...current, [mode]: { ...current[mode], [key]: value } }))} /></div>;
   }
