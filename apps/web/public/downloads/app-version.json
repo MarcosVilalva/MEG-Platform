@@ -1,9 +1,9 @@
 {
-  "versionCode": 286,
-  "versionName": "1.1.286",
+  "versionCode": 287,
+  "versionName": "1.1.287",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "225d6ef03d1d69762f04a3ef97a7a5f0db99ddd72ef5473a009bd81239660381",
+  "sha256": "3fe3214f82b6dcfbe320c8e1b54d68de3f20ab48816ecc0fb13d73aefe55ceb5",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #305 from MarcosVilalva/feat/home-premium-cockpit"
+  "releaseNotes": "Merge pull request #306 from MarcosVilalva/feat/home-benefit-balance-chip"
 }
