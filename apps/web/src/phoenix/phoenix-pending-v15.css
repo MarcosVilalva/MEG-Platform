@@ -1828,3 +1828,168 @@
   }
 }
 
+
+
+/* ==========================================================================
+   PENDENTES — ÂNCORA GEOMÉTRICA
+   Corrige definitivamente o deslocamento abaixo da topbar e qualquer
+   sobreposição entre Hero, KPIs, Toolbar e Agenda.
+   ========================================================================== */
+@media (min-width:761px) {
+  .phoenix-v15 .px-main-payables {
+    position:relative !important;
+    display:block !important;
+    height:100dvh !important;
+    min-height:100dvh !important;
+    overflow:hidden !important;
+  }
+
+  .phoenix-v15 .px-main-payables > .px-topbar {
+    position:absolute !important;
+    inset:0 0 auto 0 !important;
+    width:100% !important;
+    height:64px !important;
+    min-height:64px !important;
+    margin:0 !important;
+    z-index:40 !important;
+  }
+
+  .phoenix-v15 .px-main-payables > .px-content-payables {
+    position:absolute !important;
+    inset:64px 0 0 0 !important;
+    width:auto !important;
+    max-width:none !important;
+    height:auto !important;
+    min-height:0 !important;
+    margin:0 !important;
+    padding:8px 16px 10px !important;
+    overflow:hidden !important;
+  }
+
+  .phoenix-v15 .px-content-payables > .px-pending-cockpit {
+    position:relative !important;
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) !important;
+    grid-template-rows:72px 82px 54px minmax(0,1fr) !important;
+    align-content:stretch !important;
+    justify-content:stretch !important;
+    align-items:stretch !important;
+    justify-items:stretch !important;
+    gap:10px !important;
+    width:100% !important;
+    height:100% !important;
+    min-height:0 !important;
+    margin:0 !important;
+    padding:0 !important;
+    overflow:hidden !important;
+  }
+
+  .phoenix-v15 .px-content-payables .px-pending-hero {
+    grid-row:1 !important;
+    position:relative !important;
+    top:auto !important;
+    left:auto !important;
+    right:auto !important;
+    bottom:auto !important;
+    width:100% !important;
+    height:72px !important;
+    min-height:72px !important;
+    max-height:72px !important;
+    margin:0 !important;
+    padding:10px 16px !important;
+    transform:none !important;
+    overflow:hidden !important;
+    z-index:4 !important;
+  }
+
+  .phoenix-v15 .px-content-payables .px-pending-kpis {
+    grid-row:2 !important;
+    position:relative !important;
+    top:auto !important;
+    width:100% !important;
+    height:82px !important;
+    min-height:82px !important;
+    max-height:82px !important;
+    margin:0 !important;
+    padding:0 !important;
+    display:grid !important;
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    gap:10px !important;
+    overflow:visible !important;
+    z-index:3 !important;
+  }
+
+  .phoenix-v15 .px-content-payables .px-pending-kpis > article {
+    position:relative !important;
+    width:auto !important;
+    height:82px !important;
+    min-height:0 !important;
+    max-height:82px !important;
+    margin:0 !important;
+    padding:11px 13px !important;
+    transform:none !important;
+    overflow:hidden !important;
+  }
+
+  .phoenix-v15 .px-content-payables .px-pending-commandbar {
+    grid-row:3 !important;
+    position:relative !important;
+    top:auto !important;
+    width:100% !important;
+    height:54px !important;
+    min-height:54px !important;
+    max-height:54px !important;
+    margin:0 !important;
+    padding:7px 10px !important;
+    transform:none !important;
+    overflow:visible !important;
+    z-index:5 !important;
+  }
+
+  .phoenix-v15 .px-content-payables .px-pending-layout {
+    grid-row:4 !important;
+    position:relative !important;
+    top:auto !important;
+    width:100% !important;
+    height:100% !important;
+    min-height:0 !important;
+    margin:0 !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    transform:none !important;
+    z-index:1 !important;
+  }
+
+  .phoenix-v15 .px-content-payables .px-pending-agenda {
+    position:relative !important;
+    width:100% !important;
+    height:100% !important;
+    min-height:0 !important;
+    margin:0 !important;
+    overflow:hidden !important;
+  }
+
+  .phoenix-v15 .px-content-payables .px-pending-agenda-head {
+    height:58px !important;
+    min-height:58px !important;
+    max-height:58px !important;
+    margin:0 !important;
+  }
+
+  .phoenix-v15 .px-content-payables .px-pending-scroll-region {
+    min-height:0 !important;
+    overflow-y:auto !important;
+    overscroll-behavior:contain !important;
+  }
+
+  .phoenix-v15 .px-content-payables .px-pending-write-banner {
+    position:absolute !important;
+    top:6px !important;
+    left:50% !important;
+    width:min(720px,calc(100% - 32px)) !important;
+    margin:0 !important;
+    transform:translateX(-50%) !important;
+    z-index:80 !important;
+    box-shadow:0 18px 50px rgba(0,0,0,.34) !important;
+  }
+}
