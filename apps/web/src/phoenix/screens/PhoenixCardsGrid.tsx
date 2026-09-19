@@ -16,6 +16,7 @@ import '../phoenix-cards-wow.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+const longDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long', timeZone: 'UTC' });
 
 type CardTab = 'current' | 'future' | 'installments' | 'rules';
 type CardCommandTab = 'summary' | 'current' | 'future' | 'installments' | 'history';
@@ -77,6 +78,33 @@ function monthLabel(value: string) {
   const [year, month] = value.split('-').map(Number);
   return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date(Date.UTC(year, month - 1, 1))).replace(/^./, (letter) => letter.toUpperCase());
 }
+function compactMonthLabel(value: string) {
+  const [year, month] = value.split('-').map(Number);
+  const label = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(year, month - 1, 1)))
+    .replace('.', '');
+  return label.replace(/^./, (letter) => letter.toUpperCase());
+}
+function cardDisplayName(card: CreditCard) {
+  const identity = resolvePhoenixCardIdentity(card);
+  if (identity.key === 'latam') return 'LATAM PASS Itaú Mastercard';
+  if (identity.key === 'mercado') return 'Mercado Pago Visa';
+  if (identity.key === 'azul') return 'Azul Visa';
+  if (identity.key === 'riachuelo') return 'Riachuelo Midway';
+  return card.name;
+}
+function cardDisplayTier(card: CreditCard) {
+  const key = resolvePhoenixCardIdentity(card).key;
+  if (key === 'latam' || key === 'mercado' || key === 'azul') return 'Platinum';
+  return card.brand || card.issuer || '';
+}
+function modalStatusLabel(row: GridRow) {
+  if (isCancelledStatus(row.status)) return 'Cancelado';
+  if (row.amount < 0 && normalize(row.description).includes('ESTORNO')) return 'Estornado';
+  if (row.amount < 0) return 'Crédito';
+  return isOpenStatus(row.status) ? 'Pendente' : 'Confirmado';
+}
+
 function nextMonth(value: string) {
   const [year, month] = value.split('-').map(Number);
   return new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 7);
@@ -325,7 +353,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const activeFutureCredits = Math.abs(activeFutureRows.filter((row) => row.amount < 0).reduce((sum, row) => sum + row.amount, 0));
   const bestPurchaseDay = selected?.closingDay ? (selected.closingDay >= 28 ? 1 : selected.closingDay + 1) : null;
   const statementDueDate = selected?.statement?.month === data.month && selected.statement.dueDate
-    ? date.format(new Date(`${selected.statement.dueDate.slice(0, 10)}T12:00:00Z`))
+    ? longDate.format(new Date(`${selected.statement.dueDate.slice(0, 10)}T12:00:00Z`))
     : selected?.dueDay ? `dia ${selected.dueDay}` : '—';
   const nextStatementDelta = nextStatement - currentStatement;
   const biggestFuture = [...futureRows].filter((row) => row.amount > 0).sort((left, right) => right.amount - left.amount)[0] || null;
@@ -500,7 +528,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
       </div>
       <div className="px-cards-approved-hint">
         <span className="px-cards-approved-mouse" aria-hidden="true"><i /></span>
-        <div><strong>Duplo clique para abrir a central do cartão</strong><small>Acesse detalhes, faturas, limites e histórico.</small></div>
+        <div><strong>Duplo clique para abrir a central do cartão</strong><small>Acesse detalhes, faturas, limites e muito mais.</small></div>
       </div>
     </header>
 
@@ -522,12 +550,14 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
         const used = Math.max(0, limit - available);
         const cardUsage = limit > 0 ? Math.min(100, Math.max(0, used / limit * 100)) : 0;
         const due = card.statement?.month === data.month && card.statement.dueDate
-          ? date.format(new Date(`${card.statement.dueDate.slice(0, 10)}T12:00:00Z`))
+          ? longDate.format(new Date(`${card.statement.dueDate.slice(0, 10)}T12:00:00Z`))
           : card.dueDay ? `dia ${String(card.dueDay).padStart(2, '0')}` : '—';
+        const displayName = cardDisplayName(card);
+        const displayTier = cardDisplayTier(card);
         return <button
           key={card.id}
           type="button"
-          className={`px-cards-approved-tile ${selected.id === card.id ? 'active' : ''}`}
+          className={`px-cards-approved-tile px-card-product-${cardIdentity.key} ${selected.id === card.id ? 'active' : ''}`}
           onClick={() => selectCard(card.id)}
           onDoubleClick={() => openCardCommand(card.id)}
           aria-label={`${card.name}. Limite ${money.format(limit)}. Disponível ${money.format(available)}. Fatura atual ${money.format(statementAmount)}.`}
@@ -544,7 +574,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
           </span>
 
           <span className="px-cards-approved-name">
-            <span><strong>{card.name}</strong><small>{card.brand || card.issuer || cardIdentity.label}</small></span>
+            <span><strong>{displayName}</strong>{displayTier ? <small>{displayTier}</small> : null}</span>
             <b aria-hidden="true">›</b>
           </span>
 
@@ -573,11 +603,13 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
             ? <img src={`${import.meta.env.BASE_URL}${identity.artwork}`} alt="" />
             : <strong>{identity.miniLabel}</strong>}
         </span>
-        <span><strong>{selected.name}</strong><small>{selected.brand || selected.issuer || identity.label}</small>
+        <span><strong>{cardDisplayName(selected)}</strong>{cardDisplayTier(selected) ? <small>{cardDisplayTier(selected)}</small> : null}
           <span className="px-cards-approved-tags">
-            {identity.brandAsset ? <i>{selected.brand || identity.brandAsset}</i> : null}
-            {selected.issuer ? <i>{selected.issuer}</i> : null}
-            <i>{identity.label}</i>
+            {identity.key === 'latam' ? <><i>Mastercard</i><i>Itaú</i><i>LATAM Pass</i></> : <>
+              {identity.brandAsset ? <i>{selected.brand || identity.brandAsset}</i> : null}
+              {selected.issuer ? <i>{selected.issuer}</i> : null}
+              <i>{identity.label}</i>
+            </>}
           </span>
         </span>
       </div>
@@ -604,7 +636,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
         <header className="px-card-command-approved-head">
           <div>
             <span className="px-kicker">CENTRAL DO CARTÃO</span>
-            <h2>{selected.name}</h2>
+            <h2>{cardDisplayName(selected)}</h2>
             <p>Resumo, faturas, limites e histórico</p>
           </div>
           <button type="button" aria-label="Fechar central do cartão" onClick={() => setCardCommandOpen(false)}>×</button>
@@ -623,9 +655,9 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
               <span className="px-card-wow-gloss" />
             </div>
             <div className="px-card-command-approved-cardcopy">
-              <strong>{selected.name}</strong>
-              <small>{selected.brand || selected.issuer || identity.label}</small>
-              <span>{identity.brandAsset ? <i>{selected.brand || identity.brandAsset}</i> : null}{selected.issuer ? <i>{selected.issuer}</i> : null}<i>{identity.label}</i></span>
+              <strong>{cardDisplayName(selected)}</strong>
+              {cardDisplayTier(selected) ? <small>{cardDisplayTier(selected)}</small> : null}
+              <span>{identity.key === 'latam' ? <><i>Mastercard</i><i>Itaú</i><i>LATAM Pass</i></> : <>{identity.brandAsset ? <i>{selected.brand || identity.brandAsset}</i> : null}{selected.issuer ? <i>{selected.issuer}</i> : null}<i>{identity.label}</i></>}</span>
             </div>
           </div>
 
@@ -670,7 +702,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
           <div className="px-card-command-approved-filters">
             <label className="search"><span aria-hidden="true">⌕</span><input value={commandSearch} onChange={(event) => setCommandSearch(event.target.value)} placeholder="Buscar lançamento..." /></label>
             <label><span>Período</span><select value={commandMonth} onChange={(event) => setCommandMonth(event.target.value)}>
-              <option value="">{commandTab === 'current' ? monthLabel(data.month) : 'Todas as competências'}</option>
+              <option value="">{commandTab === 'current' ? `${compactMonthLabel(data.month)} (Atual)` : 'Todos os períodos'}</option>
               {commandMonths.map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}
             </select></label>
             <label><span>Situação</span><select value={commandStatus} onChange={(event) => setCommandStatus(event.target.value)}><option value="">Todos</option><option value="open">Pendente</option><option value="paid">Pago</option><option value="credit">Crédito/estorno</option></select></label>
@@ -680,7 +712,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
 
           <div className="px-card-command-approved-summarybar">
             <div><i aria-hidden="true">◉</i><span><strong>{commandRows.length} lançamentos</strong><small>{commandTab === 'current' ? 'na fatura atual' : 'na visão filtrada'}</small></span></div>
-            <div><i aria-hidden="true">▤</i><span><small>Total da visão</small><strong>{money.format(commandRowsTotal)}</strong></span></div>
+            <div><i aria-hidden="true">▤</i><span><small>Total da fatura</small><strong>{money.format(commandRowsTotal)}</strong></span></div>
             <div><i aria-hidden="true">◷</i><span><small>Em aberto</small><strong>{money.format(commandRows.filter((row) => isOpenStatus(row.status)).reduce((sum, row) => sum + row.amount, 0))}</strong></span></div>
             <div className="px-card-command-approved-export">
               <button type="button" disabled={!commandRows.length} onClick={() => exportCardStatement('xlsx')}><span aria-hidden="true">▦</span>Exportar Excel</button>
@@ -696,7 +728,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
                 <td><strong>{row.description}</strong><small>{monthLabel(row.statementMonth)}</small></td>
                 <td>{row.group}</td>
                 <td>{row.installment}</td>
-                <td><span className={`px-status ${rowStatusClass(row)}`}>{rowStatusLabel(row)}</span></td>
+                <td><span className={`px-status ${rowStatusClass(row)}`}>{modalStatusLabel(row)}</span></td>
                 <td className={`px-money ${row.amount < 0 ? 'positive' : ''}`}>{money.format(row.amount)}</td>
                 <td><button className="px-detail-btn" type="button" aria-label={`Ver detalhes de ${row.description}`} onClick={() => setDetailRow(row)}>›</button></td>
               </tr>)}</tbody>
