@@ -1,9 +1,9 @@
 {
-  "versionCode": 294,
-  "versionName": "1.1.294",
+  "versionCode": 295,
+  "versionName": "1.1.295",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "c58573004a65435a2ea140d2d88ea688c9825bc6fb21ea7a21191c1be5a19ef8",
+  "sha256": "7a0c35c5f72fcca120433ad3e74d26cd6783475edd677dc55c91088cb25bd0b8",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Hotfix Alimentação: reconhecer conta benefit pelo tipo canônico"
+  "releaseNotes": "Cartões V6: reconstrução visual fiel aos mockups aprovados"
 }
