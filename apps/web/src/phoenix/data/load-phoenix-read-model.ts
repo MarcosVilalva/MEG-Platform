@@ -548,7 +548,9 @@ export async function loadPhoenixAllEvents(options: { force?: boolean } = {}) {
 export async function invalidatePhoenixReadModelMonth(month: string) {
   readModelCache.delete(month);
   readModelInFlight.delete(month);
-  persistentRefreshInFlight.delete(month);
+  for (const key of [...persistentRefreshInFlight.keys()]) {
+    if (key.endsWith(`:${month}`)) persistentRefreshInFlight.delete(key);
+  }
   const previewPath = `/finance/phoenix-preview?month=${encodeURIComponent(month)}`;
   invalidateAuthenticatedCache(previewPath);
   const session = readSession();
