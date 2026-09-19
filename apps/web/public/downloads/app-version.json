@@ -1,9 +1,9 @@
 {
-  "versionCode": 266,
-  "versionName": "1.1.266",
+  "versionCode": 267,
+  "versionName": "1.1.267",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "11fa96e5e9b7ccf626125a38bb8c405341456282ab0114b6239155e6c536fcc0",
+  "sha256": "d6a24faca30cdfecdf2d030ee4694d9567910cd96f0b7f5230e0d40129933c9a",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #282 from MarcosVilalva/fix/phoenix-column-modal-excel-export"
+  "releaseNotes": "Merge pull request #283 from MarcosVilalva/fix/phoenix-layout-final-pass"
 }
