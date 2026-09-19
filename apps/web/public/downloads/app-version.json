@@ -1,9 +1,9 @@
 {
-  "versionCode": 290,
-  "versionName": "1.1.290",
+  "versionCode": 291,
+  "versionName": "1.1.291",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "2774648364b2f31a0330fc74cc9b67c1490669c52146eba2ab8e92a44acb839c",
+  "sha256": "ba93b3bb38e8a2a8d33777f6d7517fa4f05828543988feeeb682dbd895975013",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Home: padronizar leitura por período e ancorar saldo histórico"
+  "releaseNotes": "Cartões: cockpit premium de faturas, limite e parcelas"
 }
