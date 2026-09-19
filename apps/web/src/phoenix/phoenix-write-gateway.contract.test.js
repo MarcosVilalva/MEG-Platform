@@ -99,10 +99,16 @@ assert.doesNotMatch(payables, /window\.confirm|window\.alert/,
   'Pendentes não pode usar confirmação nativa do navegador depois da revisão MEG.');
 assert.match(payables, /Registrar baixa de \$\{selectedItems\.length\} compromissos/,
   'Drawer de revisão deve ser a confirmação final do lote.');
-assert.match(pendingGateway, /AbortSignal\.timeout\(105_000\)/,
-  'Baixa em lote deve suportar processamento maior sem expirar no timeout padrão de 45 segundos.');
+assert.match(pendingGateway, /AbortSignal\.timeout\(10_000\)/,
+  'Baixa em lote deve limitar a espera direta e migrar para confirmação por recibo quando necessário.');
 assert.match(pendingGateway, /PHOENIX_PENDING_CONNECTION_INTERRUPTED/,
   'Falha de transporte deve orientar retry idempotente em vez de erro genérico.');
+assert.match(pendingGateway, /recoverPendingConfirmation/,
+  'Falha incerta deve consultar o recibo idempotente antes de declarar a baixa como não confirmada.');
+assert.match(pendingGateway, /\/finance\/pending\/operations\//,
+  'Confirmação de baixa deve possuir endpoint de consulta por operationId.');
+assert.match(pendingGateway, /cache:\s*'no-store'/,
+  'Polling de confirmação não pode reutilizar resposta GET em cache.');
 assert.match(pendingGateway, /onCommitted\?\.\(result\)/,
   'Baixa deve refletir na interface assim que o servidor confirmar, antes da releitura completa.');
 assert.match(pendingGateway, /status:\s*'confirmed'.*result/s,
