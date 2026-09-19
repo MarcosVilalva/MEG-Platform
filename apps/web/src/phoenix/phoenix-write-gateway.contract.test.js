@@ -168,8 +168,16 @@ assert.match(pendingStyles, /px-pending-agenda[\s\S]*px-pending-agenda-head/,
   'Agenda deve possuir container premium e cabeçalho visual próprio.');
 assert.match(pendingStyles, /px-pending-kpi-icon/,
   'KPIs definitivos devem manter iconografia contextual.');
-assert.match(pendingStyles, /padding:6px 14px 10px !important/,
-  'Pendentes deve eliminar o espaço vertical morto logo abaixo da topbar no desktop.');
+assert.match(pendingStyles, /display:flex;[\s\S]*flex-direction:column;[\s\S]*height:100dvh/,
+  'Workspace de Pendentes deve usar coluna flex para eliminar o vazio estrutural abaixo da topbar.');
+assert.match(pendingStyles, /padding:10px 16px 12px !important/,
+  'Conteúdo deve manter respiro uniforme sem recriar espaço morto no topo.');
+assert.match(pendingStyles, /grid-template-columns:minmax\(360px,1\.35fr\) auto 1px minmax\(190px,\.42fr\) auto/,
+  'Toolbar deve distribuir busca, filtros, agrupamento e contador em proporções explícitas.');
+assert.match(pendingStyles, /px-pending-agenda-head[\s\S]*min-height:66px/,
+  'Cabeçalho da agenda deve manter altura equilibrada e previsível.');
+assert.match(pendingStyles, /px-pending-date-cluster-head[\s\S]*min-height:66px/,
+  'Grupos por data devem manter ritmo vertical consistente.');
 
 assert.match(appShell, /px-main-payables/,
   'Shell deve isolar o viewport apenas quando a aba Pendentes estiver ativa.');
