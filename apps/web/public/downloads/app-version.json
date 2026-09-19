@@ -1,9 +1,9 @@
 {
-  "versionCode": 287,
-  "versionName": "1.1.287",
+  "versionCode": 288,
+  "versionName": "1.1.288",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "3fe3214f82b6dcfbe320c8e1b54d68de3f20ab48816ecc0fb13d73aefe55ceb5",
+  "sha256": "74de66c397c572da4be9141cc650c754b4c3d4d500619394e694222093a04ddb",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #306 from MarcosVilalva/feat/home-benefit-balance-chip"
+  "releaseNotes": "Merge pull request #307 from MarcosVilalva/feat/home-benefit-evolution-and-alltime"
 }
