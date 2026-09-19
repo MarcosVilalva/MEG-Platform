@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   countsTowardMonetaryBalance,
   isBenefitFinancialEvent,
@@ -66,5 +67,11 @@ const monetaryOpening = openingFixture
   .reduce((sum, account) => sum + account.openingBalance, 0);
 assert.equal(monetaryOpening, 1300,
   'Benefício, crédito e investimento não podem inflar o caixa monetário disponível.');
+
+const source = readFileSync(new URL('./monetary-protection.ts', import.meta.url), 'utf8');
+assert.match(source, /status:\s*\{\s*in:\s*\['paid', 'reconciled', 'confirmed'\]\s*\}/,
+  'Consulta do saldo deve buscar somente eventos já realizados.');
+assert.match(source, /type:\s*\{\s*not:\s*'transfer'\s*\}/,
+  'Transferências devem ser excluídas ainda no banco para reduzir o volume lido.');
 
 console.log('Política de saldo monetário disponível validada.');

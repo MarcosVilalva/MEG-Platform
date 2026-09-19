@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { buildNormalizationPreview, legacyTransactionToFinancialEvent, normalizationFingerprint } from './normalization-migration-core';
 import { mirrorFinancialEventToLegacyTransaction, normalizedMirrorNeedsSourceRefresh } from './normalized-primary-writeback';
 
@@ -52,5 +53,15 @@ const normalizedMirror = {
 };
 assert.equal(normalizationFingerprint([normalizedMirror]), preview.summary.fingerprint);
 assert.notEqual(normalizationFingerprint([before]), preview.summary.fingerprint);
+
+const source = readFileSync(new URL('./normalized-primary-writeback.ts', import.meta.url), 'utf8');
+assert.match(source, /tx\.\$executeRaw/,
+  'Atualização de sourcePayload em lote deve evitar um UPDATE por compromisso.');
+assert.match(source, /Prisma\.join\(values\)/,
+  'Payloads distintos do espelho devem ser enviados em uma única operação parametrizada.');
+assert.doesNotMatch(source, /for \(const replacement of sourceRefresh\)[\s\S]*financialEvent\.update/,
+  'Writeback não pode reintroduzir N+1 de updates por evento.');
+assert.doesNotMatch(source, /stableJson\(nextTransactions\)\s*!==\s*stableJson\(transactions\)/,
+  'Detecção de mudança não deve serializar as 3 mil+ transações inteiras duas vezes.');
 
 console.log('normalized primary writeback tests passed');

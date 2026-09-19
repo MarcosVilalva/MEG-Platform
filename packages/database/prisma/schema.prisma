@@ -407,6 +407,9 @@ model LedgerEntry {
 
   event     FinancialEvent @relation(fields: [eventId], references: [id])
   account   Account        @relation(fields: [accountId], references: [id])
+
+  @@index([eventId])
+  @@index([accountId])
 }
 
 model Customer {

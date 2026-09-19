@@ -425,5 +425,5 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
       }),
     });
     return response;
-  }, { timeoutMs: 90_000, maxWaitMs: 15_000 });
+  }, { timeoutMs: 30_000, maxWaitMs: 5_000 });
 }

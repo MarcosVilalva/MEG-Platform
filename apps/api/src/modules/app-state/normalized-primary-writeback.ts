@@ -110,24 +110,33 @@ export async function writeBackNormalizedEventsToAppState(
   const transactions = Array.isArray(state.transactions) ? state.transactions : [];
   const seen = new Set<string>();
   const nextTransactions: unknown[] = [];
+  let transactionsChanged = false;
 
   for (const item of transactions) {
     const id = legacyId(item);
-    if (id && removed.has(id)) continue;
+    if (id && removed.has(id)) {
+      transactionsChanged = true;
+      continue;
+    }
     const replacement = id ? mirrored.get(id) : undefined;
     if (replacement) {
       nextTransactions.push(replacement.payload);
       seen.add(id);
+      if (!transactionsChanged && stableJson(item) !== stableJson(replacement.payload)) {
+        transactionsChanged = true;
+      }
     } else {
       nextTransactions.push(item);
     }
   }
   for (const [id, replacement] of mirrored) {
-    if (!seen.has(id) && !removed.has(id)) nextTransactions.push(replacement.payload);
+    if (!seen.has(id) && !removed.has(id)) {
+      nextTransactions.push(replacement.payload);
+      transactionsChanged = true;
+    }
   }
 
   const sourceRefresh = [...mirrored.values()].filter(({ event, payload }) => normalizedMirrorNeedsSourceRefresh(event, payload));
-  const transactionsChanged = stableJson(nextTransactions) !== stableJson(transactions);
   if (!transactionsChanged && sourceRefresh.length === 0) {
     return { active: true, changed: false, revision: current.revision };
   }
@@ -142,14 +151,20 @@ export async function writeBackNormalizedEventsToAppState(
   });
   if (updated.count !== 1) throw new Error('NORMALIZED_PRIMARY_MIRROR_CONFLICT');
 
-  for (const replacement of sourceRefresh) {
-    await tx.financialEvent.update({
-      where: { id: replacement.event.id },
-      data: {
-        sourcePayload: replacement.payload as Prisma.InputJsonValue,
-        sourceRevision: nextRevision,
-      },
-    });
+  if (sourceRefresh.length) {
+    const values = sourceRefresh.map(({ event, payload }) => Prisma.sql`(
+      CAST(${event.id} AS text),
+      CAST(${JSON.stringify(payload)} AS jsonb),
+      ${nextRevision}
+    )`);
+    await tx.$executeRaw(Prisma.sql`
+      UPDATE "FinancialEvent" AS event
+      SET "sourcePayload" = incoming.payload,
+          "sourceRevision" = incoming.revision,
+          "updatedAt" = NOW()
+      FROM (VALUES ${Prisma.join(values)}) AS incoming(id, payload, revision)
+      WHERE event.id = incoming.id
+    `);
   }
 
   return { active: true, changed: true, revision: nextRevision, refreshedEvents: sourceRefresh.length };

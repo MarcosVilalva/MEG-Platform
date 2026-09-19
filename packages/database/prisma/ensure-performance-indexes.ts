@@ -37,6 +37,16 @@ const indexes = [
     sql: `CREATE INDEX IF NOT EXISTS "FinancialEvent_paymentMethodId_idx"
           ON "FinancialEvent" ("paymentMethodId")`,
   },
+  {
+    name: 'LedgerEntry_eventId_idx',
+    sql: `CREATE INDEX IF NOT EXISTS "LedgerEntry_eventId_idx"
+          ON "LedgerEntry" ("eventId")`,
+  },
+  {
+    name: 'LedgerEntry_accountId_idx',
+    sql: `CREATE INDEX IF NOT EXISTS "LedgerEntry_accountId_idx"
+          ON "LedgerEntry" ("accountId")`,
+  },
 ] as const;
 
 try {
@@ -48,7 +58,6 @@ try {
     SELECT indexname
     FROM pg_indexes
     WHERE schemaname = 'public'
-      AND tablename = 'FinancialEvent'
       AND indexname IN (${indexes.map((item) => `'${item.name}'`).join(', ')})
     ORDER BY indexname
   `);
@@ -60,7 +69,7 @@ try {
   }
 
   console.log(JSON.stringify({
-    step: 'ensure-financial-event-indexes',
+    step: 'ensure-financial-performance-indexes',
     installed: indexes.map((item) => item.name),
   }));
 } finally {
