@@ -388,6 +388,18 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
 
   useEffect(() => {
     setModel(data);
+    setLocallySettled((current) => {
+      if (!current.size) return current;
+      const openIds = new Set<string>([
+        ...data.payables
+          .filter((item) => !['paid', 'cancelled'].includes(normalize(item.status)) && Number(item.openAmount) > 0)
+          .map((item) => `payable-${item.id}`),
+        ...cardStatementItems(data).map((item) => item.id),
+        ...eventItems(data).map((item) => item.id),
+      ]);
+      const next = new Set([...current].filter((id) => openIds.has(id)));
+      return next.size === current.size ? current : next;
+    });
   }, [data]);
 
   useEffect(() => {
