@@ -39,13 +39,17 @@ export function phoenixExportFilename(report: PhoenixExportReport, extension: 'x
   return `MEG_${fileSafe(report.title)}_${date}.${extension}`;
 }
 
-function parseBrazilianNumber(value: string) {
+export function parseBrazilianNumber(value: string) {
   const source = String(value || '').trim();
   if (!source || source === '—' || source === '-') return null;
-  const withoutCurrency = source.replace(/R\$/gi, '').trim();
+  const withoutCurrency = source
+    .replace(/R\$/gi, '')
+    .replace(/[\u00A0\u202F\s]+/g, '')
+    .trim();
+  const accountingNegative = /^\(.*\)$/.test(withoutCurrency);
   const candidate = withoutCurrency.replace(/^\((.*)\)$/, '$1').trim();
   if (!/^[−+-]?(?:\d{1,3}(?:\.\d{3})*|\d+)(?:,\d+)?%?$/.test(candidate)) return null;
-  const negative = /^\s*[−-]/.test(candidate) || /^\(.*\)$/.test(withoutCurrency);
+  const negative = /^[−-]/.test(candidate) || accountingNegative;
   const normalized = candidate
     .replace(/%$/, '')
     .replace(/−/g, '-')
@@ -432,11 +436,12 @@ export function buildPhoenixPdf(report: PhoenixExportReport) {
 export function detectPhoenixColumnKinds(headers: string[], rows: string[][]) {
   const kinds: PhoenixExportColumnKind[] = headers.map((header, index) => {
     const values = rows.map((row) => String(row[index] || '').trim()).filter(Boolean).slice(0, 120);
+    const meaningfulValues = values.filter((value) => value !== '—' && value !== '-');
     const label = header.toLocaleLowerCase('pt-BR');
-    if (/data|vencimento|compra|pagamento/.test(label) && values.length && values.every((value) => excelDateSerial(value) !== null)) return 'date';
-    const numericCount = values.filter((value) => parseBrazilianNumber(value) !== null).length;
-    if (values.length && numericCount / values.length >= 0.85) {
-      if (/valor|receita|despesa|saldo|fatura|limite|total|aberto|pago|pagamento/.test(label) || values.some((value) => /R\$/.test(value))) return 'money';
+    if (/data|vencimento|compra|pagamento/.test(label) && meaningfulValues.length && meaningfulValues.every((value) => excelDateSerial(value) !== null)) return 'date';
+    const numericCount = meaningfulValues.filter((value) => parseBrazilianNumber(value) !== null).length;
+    if (meaningfulValues.length && numericCount / meaningfulValues.length >= 0.85) {
+      if (/valor|receita|despesa|saldo|fatura|limite|total|aberto|pago|pagamento/.test(label) || meaningfulValues.some((value) => /R\$/.test(value))) return 'money';
       return 'number';
     }
     return 'text';
