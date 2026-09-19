@@ -136,8 +136,6 @@ export function projectCardInstallmentsIntoEvents(
             situation,
             modality: 'CRÉDITO',
             observations,
-            statementEffect,
-            statementLineKind: statementEffect < 0 ? 'credit' : 'charge',
           },
           sourcePayload: {
             cardDomain: true,
@@ -155,6 +153,8 @@ export function projectCardInstallmentsIntoEvents(
             paymentMethod: paymentLabel,
             situation,
             observations,
+            statementEffect,
+            statementLineKind: statementEffect < 0 ? 'credit' : 'charge',
           },
         });
       }
