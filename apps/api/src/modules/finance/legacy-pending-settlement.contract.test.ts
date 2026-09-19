@@ -68,5 +68,9 @@ assert.doesNotMatch(batchSettlement, /FINANCIAL_EVENT_NOT_LEGACY_COMPAT/,
   'Lote deve aceitar despesas normalizadas nativas além de itens legados.');
 assert.match(batchSettlement, /writeBackNormalizedEventsToAppState/,
   'Espelho legado deve ser atualizado dentro da mesma transação quando houver vínculo legado.');
+assert.match(batchSettlement, /timeoutMs:\s*90_000/,
+  'Lote suportado de até 100 compromissos deve ter janela transacional compatível.');
+assert.match(batchSettlement, /maxWaitMs:\s*15_000/,
+  'Baixa em lote deve tolerar espera de aquisição da transação sem falhar precocemente.');
 
 console.log('Contrato da baixa protegida individual e em lote validado.');

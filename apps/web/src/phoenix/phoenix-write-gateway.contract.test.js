@@ -5,6 +5,7 @@ const gateway = readFileSync(new URL('./data/phoenix-write-gateway.ts', import.m
 const transferGateway = readFileSync(new URL('./data/phoenix-transfer-write-gateway.ts', import.meta.url), 'utf8');
 const pendingGateway = readFileSync(new URL('./data/phoenix-pending-write-gateway.ts', import.meta.url), 'utf8');
 const movements = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
+const payables = readFileSync(new URL('./screens/PhoenixPayablesV15.tsx', import.meta.url), 'utf8');
 const writeControl = readFileSync(new URL('./components/PhoenixLaunchWriteControl.tsx', import.meta.url), 'utf8');
 const appShell = readFileSync(new URL('./PhoenixApp.tsx', import.meta.url), 'utf8');
 const bridge = readFileSync(new URL('./simple-event-form-bridge.ts', import.meta.url), 'utf8');
@@ -94,6 +95,14 @@ assert.match(pendingGateway, /publishCommittedSnapshot\(snapshot\)/,
   'Snapshot de Pendentes deve ser publicado somente depois da releitura confirmada.');
 assert.match(pendingGateway, /new CustomEvent\(PHOENIX_SNAPSHOT_COMMITTED_EVENT,\s*\{ detail: \{ snapshot \} \}\)/,
   'Evento de commit deve transportar a mesma fotografia já confirmada pelo gateway.');
+assert.doesNotMatch(payables, /window\.confirm|window\.alert/,
+  'Pendentes não pode usar confirmação nativa do navegador depois da revisão MEG.');
+assert.match(payables, /Registrar baixa de \$\{selectedItems\.length\} compromissos/,
+  'Drawer de revisão deve ser a confirmação final do lote.');
+assert.match(pendingGateway, /AbortSignal\.timeout\(105_000\)/,
+  'Baixa em lote deve suportar processamento maior sem expirar no timeout padrão de 45 segundos.');
+assert.match(pendingGateway, /PHOENIX_PENDING_CONNECTION_INTERRUPTED/,
+  'Falha de transporte deve orientar retry idempotente em vez de erro genérico.');
 
 assert.doesNotMatch(movements, /submitPhoenixSimpleEvent|runPhoenixSimpleEventWrite|cardsClient\.createPurchase|\/finance\/benefit-events/,
   'Tela React base não deve acionar criação diretamente; a confirmação fica isolada no controle protegido.');
