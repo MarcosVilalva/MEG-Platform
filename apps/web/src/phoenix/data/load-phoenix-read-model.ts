@@ -1,6 +1,7 @@
 import {
   authenticatedRequest,
   getApiHealth,
+  invalidateAuthenticatedCache,
   readSession
 } from '../../app/auth-client';
 import { financeClient, type FinancialEvent } from '../../app/finance-client';
@@ -13,7 +14,11 @@ import type {
   PhoenixWorkspaceUsers
 } from '../contracts';
 import { projectCardInstallmentsIntoEvents } from './card-movement-projection';
-import { readPhoenixPersistentSnapshot, writePhoenixPersistentSnapshot } from './phoenix-persistent-snapshot';
+import {
+  deletePhoenixPersistentSnapshot,
+  readPhoenixPersistentSnapshot,
+  writePhoenixPersistentSnapshot
+} from './phoenix-persistent-snapshot';
 
 type SharedStateRead = {
   state?: {
@@ -372,7 +377,7 @@ function scheduleSupplementalHydration(
   }
 }
 
-async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boolean } = {}): Promise<PhoenixReadModel> {
+async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boolean; forceNetwork?: boolean } = {}): Promise<PhoenixReadModel> {
   const session = readSession();
   if (!session) throw new Error('PHOENIX_UNAUTHORIZED');
 
@@ -386,7 +391,11 @@ async function fetchPhoenixReadModel(month: string, options: { forceStatic?: boo
 
   // Snapshot e health começam juntos. Antes, o health só era solicitado depois que o
   // snapshot terminava, acrescentando uma segunda espera ao caminho crítico do login.
-  const previewPromise = authenticatedRequest<PhoenixPreviewCoreRead>(`/finance/phoenix-preview?month=${encodeURIComponent(month)}`);
+  const previewPath = `/finance/phoenix-preview?month=${encodeURIComponent(month)}`;
+  const previewPromise = authenticatedRequest<PhoenixPreviewCoreRead>(
+    previewPath,
+    options.forceNetwork ? { method: 'GET', cache: 'no-store' } : undefined
+  );
   const healthPromise = cachedStatic
     ? Promise.resolve(cachedStatic.health)
     : getApiHealth().catch(() => ({ status: 'unavailable' } as PhoenixReadModel['health']));
@@ -495,7 +504,10 @@ export async function loadPhoenixReadModel(month: string, options: { force?: boo
       }
     }
 
-    const data = await fetchPhoenixReadModel(month, { forceStatic: options.forceStatic });
+    const data = await fetchPhoenixReadModel(month, {
+      forceStatic: options.forceStatic,
+      forceNetwork: Boolean(options.force),
+    });
     readModelCache.set(month, { data, storedAt: Date.now() });
     void writePhoenixPersistentSnapshot(session.user.id, month, data);
     return data;
@@ -531,6 +543,18 @@ export async function loadPhoenixAllEvents(options: { force?: boolean } = {}) {
     });
   allEventsInFlight = pending;
   return pending;
+}
+
+export async function invalidatePhoenixReadModelMonth(month: string) {
+  readModelCache.delete(month);
+  readModelInFlight.delete(month);
+  persistentRefreshInFlight.delete(month);
+  const previewPath = `/finance/phoenix-preview?month=${encodeURIComponent(month)}`;
+  invalidateAuthenticatedCache(previewPath);
+  const session = readSession();
+  if (session?.user?.id) {
+    await deletePhoenixPersistentSnapshot(session.user.id, month);
+  }
 }
 
 export function clearPhoenixReadModelCache() {
