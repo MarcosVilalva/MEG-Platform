@@ -85,6 +85,21 @@ assert.match(movementScreen, /paymentMethodId: canonicalVerocardPayment\?\.id \|
   'Atalho Alimentação deve entrar no drawer com VEROCARD já aplicado.');
 assert.match(movementScreen, /requestAnimationFrame\(applyBenefitModality\)/,
   'Atalho Alimentação deve sincronizar também a modalidade visual quando o bridge estiver montado.');
+assert.match(movementScreen, /data-phoenix-account-select="source"/,
+  'Drawer deve marcar explicitamente o select React da conta financeira para evitar colisão com campos roteados.');
+assert.match(movementScreen, /data-phoenix-payment-method-select/,
+  'Drawer deve marcar explicitamente o select React da forma de pagamento para evitar colisão com o seletor visual automático.');
+assert.match(simpleEventBridge, /\[data-phoenix-payment-method-select\]/,
+  'Writer deve ler a forma de pagamento do select React canônico, nunca do campo visual roteado.');
+assert.match(launchBusinessRules, /\[data-phoenix-payment-method-select\]/,
+  'Regras de modalidade devem atualizar o select React canônico de pagamento.');
+assert.match(simpleEventBridge, /function reconcileBenefitRoute/,
+  'Writer deve autorreparar Benefício + VEROCARD antes de validar e gravar.');
+assert.match(simpleEventBridge, /find\(\(option\) => option\.value && normalize\(option\.textContent \|\| ''\)\.includes\('VEROCARD'\)\)/,
+  'Autorreparo do benefício deve localizar VEROCARD pela opção canônica disponível.');
+assert.match(simpleEventBridge, /reconcileBenefitRoute\(root\);[\s\S]*const reason = unsupportedReason\(root\)/,
+  'Validação não pode emitir o aviso de VEROCARD antes de reconciliar a rota de benefício.');
+
 
 
 
