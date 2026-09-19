@@ -114,7 +114,7 @@ export async function refreshAuthSession(): Promise<AuthSession | null> {
 
 export async function authenticatedRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const method = String(init?.method || 'GET').toUpperCase();
-  const cacheKey = method === 'GET' ? path : '';
+  const cacheKey = method === 'GET' && init?.cache !== 'no-store' ? path : '';
   const cached = cacheKey ? responseCache.get(cacheKey) : undefined;
   if (cached && Date.now() - cached.storedAt < CACHE_TTL) return cached.value as T;
   if (cacheKey && requestsInFlight.has(cacheKey)) return requestsInFlight.get(cacheKey) as Promise<T>;
