@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import type { CreditCard } from '../../app/cards-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import { resolvePhoenixCardIdentity } from '../card-identity';
@@ -631,7 +632,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
       </div>
     </section>
 
-    {cardCommandOpen ? <div className="px-card-command-backdrop px-card-command-approved-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setCardCommandOpen(false); }}>
+    {cardCommandOpen ? createPortal(<div className="px-card-command-backdrop px-card-command-approved-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setCardCommandOpen(false); }}>
       <section className="px-card-command-modal px-card-command-approved" role="dialog" aria-modal="true" aria-label={`Central do cartão ${selected.name}`}>
         <header className="px-card-command-approved-head">
           <div>
@@ -742,7 +743,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
           </footer>
         </div>}
       </section>
-    </div> : null}
+    </div>, document.body) : null}
 
     {detailRow ? <div className="px-card-detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailRow(null); }}>
       <aside className="px-card-detail-drawer" role="dialog" aria-modal="true" aria-label={`Detalhes de ${detailRow.description}`}>
