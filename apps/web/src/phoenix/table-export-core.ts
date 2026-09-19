@@ -92,7 +92,52 @@ function uniqueHeaders(headers: string[]) {
   });
 }
 
-function cellXml(ref: string, value: string, kind: PhoenixExportColumnKind, style: number) {
+type SharedStringCatalog = {
+  values: string[];
+  indexByValue: Map<string, number>;
+};
+
+function createSharedStrings(report: PhoenixExportReport): SharedStringCatalog {
+  const values: string[] = [];
+  const indexByValue = new Map<string, number>();
+  const add = (value: unknown) => {
+    const text = String(value ?? '');
+    if (!indexByValue.has(text)) {
+      indexByValue.set(text, values.length);
+      values.push(text);
+    }
+  };
+  add('');
+  add(report.systemName);
+  add(report.title);
+  add('Período');
+  add(report.period || 'Conforme a visão atual');
+  add('Filtros');
+  add(report.filters.length ? report.filters.join(' | ') : 'Sem filtros adicionais');
+  add('Registros');
+  add('Gerado em');
+  add(report.generatedAt);
+  add('TOTAL');
+  uniqueHeaders(report.headers).forEach(add);
+  report.rows.forEach((row) => row.forEach(add));
+  return { values, indexByValue };
+}
+
+function sharedStringCell(ref: string, value: unknown, style: number, shared: SharedStringCatalog) {
+  const text = String(value ?? '');
+  const index = shared.indexByValue.get(text);
+  if (index === undefined) throw new Error(`Shared string ausente para ${ref}`);
+  return `<c r="${ref}" s="${style}" t="s"><v>${index}</v></c>`;
+}
+
+function buildSharedStringsXml(shared: SharedStringCatalog) {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="${shared.values.length}" uniqueCount="${shared.values.length}">
+  ${shared.values.map((value) => `<si><t xml:space="preserve">${xml(value)}</t></si>`).join('')}
+</sst>`;
+}
+
+function cellXml(ref: string, value: string, kind: PhoenixExportColumnKind, style: number, shared: SharedStringCatalog) {
   if (kind === 'date') {
     const serial = excelDateSerial(value);
     if (serial !== null) return `<c r="${ref}" s="${style}"><v>${serial}</v></c>`;
@@ -101,7 +146,7 @@ function cellXml(ref: string, value: string, kind: PhoenixExportColumnKind, styl
     const numeric = parseBrazilianNumber(value);
     if (numeric !== null) return `<c r="${ref}" s="${style}"><v>${numeric}</v></c>`;
   }
-  return `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${xml(value)}</t></is></c>`;
+  return sharedStringCell(ref, value, style, shared);
 }
 
 function excelStyles() {
@@ -151,7 +196,7 @@ function excelStyles() {
 </styleSheet>`;
 }
 
-function buildWorksheet(report: PhoenixExportReport) {
+function buildWorksheet(report: PhoenixExportReport, shared: SharedStringCatalog) {
   const headers = uniqueHeaders(report.headers);
   const columns = headers.length;
   const lastCol = columnName(columns - 1);
@@ -161,15 +206,15 @@ function buildWorksheet(report: PhoenixExportReport) {
   const totalRow = firstDataRow + report.rows.length;
 
   const rows: string[] = [];
-  rows.push(`<row r="1" ht="28" customHeight="1"><c r="A1" s="1" t="inlineStr"><is><t>${xml(report.systemName)}</t></is></c></row>`);
-  rows.push(`<row r="2" ht="22" customHeight="1"><c r="A2" s="2" t="inlineStr"><is><t>${xml(report.title)}</t></is></c></row>`);
-  rows.push(`<row r="3"><c r="A3" s="3" t="inlineStr"><is><t>Período</t></is></c><c r="B3" s="3" t="inlineStr"><is><t>${xml(report.period || 'Conforme a visão atual')}</t></is></c></row>`);
-  rows.push(`<row r="4"><c r="A4" s="3" t="inlineStr"><is><t>Filtros</t></is></c><c r="B4" s="3" t="inlineStr"><is><t>${xml(report.filters.length ? report.filters.join(' | ') : 'Sem filtros adicionais')}</t></is></c></row>`);
-  rows.push(`<row r="5"><c r="A5" s="3" t="inlineStr"><is><t>Registros</t></is></c><c r="B5" s="3"><v>${report.recordCount}</v></c></row>`);
-  rows.push(`<row r="6"><c r="A6" s="3" t="inlineStr"><is><t>Gerado em</t></is></c><c r="B6" s="3" t="inlineStr"><is><t>${xml(report.generatedAt)}</t></is></c></row>`);
+  rows.push(`<row r="1" ht="28" customHeight="1">${sharedStringCell('A1', report.systemName, 1, shared)}</row>`);
+  rows.push(`<row r="2" ht="22" customHeight="1">${sharedStringCell('A2', report.title, 2, shared)}</row>`);
+  rows.push(`<row r="3">${sharedStringCell('A3', 'Período', 3, shared)}${sharedStringCell('B3', report.period || 'Conforme a visão atual', 3, shared)}</row>`);
+  rows.push(`<row r="4">${sharedStringCell('A4', 'Filtros', 3, shared)}${sharedStringCell('B4', report.filters.length ? report.filters.join(' | ') : 'Sem filtros adicionais', 3, shared)}</row>`);
+  rows.push(`<row r="5">${sharedStringCell('A5', 'Registros', 3, shared)}<c r="B5" s="3"><v>${report.recordCount}</v></c></row>`);
+  rows.push(`<row r="6">${sharedStringCell('A6', 'Gerado em', 3, shared)}${sharedStringCell('B6', report.generatedAt, 3, shared)}</row>`);
 
   rows.push(`<row r="${headerRow}" ht="24" customHeight="1">${headers.map((header, index) =>
-    `<c r="${columnName(index)}${headerRow}" s="4" t="inlineStr"><is><t>${xml(header)}</t></is></c>`
+    sharedStringCell(`${columnName(index)}${headerRow}`, header, 4, shared)
   ).join('')}</row>`);
 
   report.rows.forEach((row, rowIndex) => {
@@ -177,21 +222,21 @@ function buildWorksheet(report: PhoenixExportReport) {
     const cells = headers.map((_, colIndex) => {
       const kind = report.kinds[colIndex] || 'text';
       const style = kind === 'date' ? 5 : kind === 'money' ? 6 : kind === 'number' ? 7 : 3;
-      return cellXml(`${columnName(colIndex)}${excelRow}`, row[colIndex] || '', kind, style);
+      return cellXml(`${columnName(colIndex)}${excelRow}`, row[colIndex] || '', kind, style, shared);
     }).join('');
     rows.push(`<row r="${excelRow}">${cells}</row>`);
   });
 
   const totalCells = headers.map((_, colIndex) => {
     const ref = `${columnName(colIndex)}${totalRow}`;
-    if (colIndex === 0) return `<c r="${ref}" s="8" t="inlineStr"><is><t>TOTAL</t></is></c>`;
+    if (colIndex === 0) return sharedStringCell(ref, 'TOTAL', 8, shared);
     if (report.sums[colIndex] !== null) {
       const first = `${columnName(colIndex)}${firstDataRow}`;
       const last = `${columnName(colIndex)}${lastDataRow}`;
       const style = report.kinds[colIndex] === 'money' ? 9 : 8;
       return `<c r="${ref}" s="${style}"><f>SUBTOTAL(109,${first}:${last})</f><v>${report.sums[colIndex] || 0}</v></c>`;
     }
-    return `<c r="${ref}" s="8" t="inlineStr"><is><t></t></is></c>`;
+    return sharedStringCell(ref, '', 8, shared);
   }).join('');
   rows.push(`<row r="${totalRow}">${totalCells}</row>`);
 
@@ -203,7 +248,8 @@ function buildWorksheet(report: PhoenixExportReport) {
 
   const mergeRefs = [1, 2].map((row) => `<mergeCell ref="A${row}:${lastCol}${row}"/>`).join('');
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <dimension ref="A1:${lastCol}${totalRow}"/>
   <sheetViews><sheetView workbookViewId="0"><pane ySplit="${headerRow}" topLeftCell="A${firstDataRow}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
   <sheetFormatPr defaultRowHeight="15"/>
   <cols>${widths}</cols>
@@ -293,7 +339,9 @@ function zipStore(entries: ZipEntry[]) {
 
 export function buildPhoenixXlsx(report: PhoenixExportReport) {
   const encoder = new TextEncoder();
-  const worksheet = buildWorksheet(report);
+  const shared = createSharedStrings(report);
+  const worksheet = buildWorksheet(report, shared);
+  const sharedStrings = buildSharedStringsXml(shared);
   const entries: ZipEntry[] = [
     { name: '[Content_Types].xml', data: encoder.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -302,6 +350,7 @@ export function buildPhoenixXlsx(report: PhoenixExportReport) {
   <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
   <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
   <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+  <Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>
   <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
   <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
 </Types>`) },
@@ -326,8 +375,10 @@ export function buildPhoenixXlsx(report: PhoenixExportReport) {
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>
 </Relationships>`) },
     { name: 'xl/styles.xml', data: encoder.encode(excelStyles()) },
+    { name: 'xl/sharedStrings.xml', data: encoder.encode(sharedStrings) },
     { name: 'xl/worksheets/sheet1.xml', data: encoder.encode(worksheet) }
   ];
   return zipStore(entries);
