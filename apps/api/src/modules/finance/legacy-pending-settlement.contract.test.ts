@@ -86,5 +86,9 @@ assert.match(batchSettlement, /ledgerEntry\.createMany/,
   'Lote de eventos deve gravar o razão em operação agrupada.');
 assert.match(batchSettlement, /auditLog\.createMany/,
   'Auditoria do lote de eventos deve ser persistida em bloco.');
+assert.match(batchSettlement, /P2002/,
+  'Corrida idempotente do lote deve recuperar o recibo vencedor em vez de retornar erro.');
+assert.match(batchSettlement, /idempotentReplay:\s*true/,
+  'Replay concorrente confirmado deve ser devolvido explicitamente ao cliente.');
 
 console.log('Contrato da baixa protegida individual e em lote validado.');
