@@ -381,7 +381,8 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     };
   }, [cardCommandOpen]);
 
-  function openCardCommand() {
+  function openCardCommand(cardId?: string) {
+    if (cardId && cardId !== selected?.id) selectCard(cardId);
     setCommandTab('summary');
     setCommandSearch('');
     setCommandMonth('');
@@ -428,12 +429,15 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
       </div>
     </header>
 
-    <section className="px-cards-rail-shell" aria-label="Meus cartões">
-      <div className="px-cards-rail-head">
-        <div><span>Meus cartões</span><strong>Escolha um cartão para atualizar todo o painel</strong></div>
-        <small>Fatura do período · limite disponível</small>
-      </div>
-      <div className="px-cards-rail">
+    <section className="px-cards-showcase" aria-label="Meus cartões">
+      <header className="px-cards-showcase-head">
+        <div>
+          <span className="px-kicker">Meus cartões</span>
+          <strong>Escolha o cartão. Duplo clique abre a central completa.</strong>
+        </div>
+        <small>Fatura · limite · disponível</small>
+      </header>
+      <div className="px-cards-carousel">
         {data.cards.map((card) => {
           const cardIdentity = resolvePhoenixCardIdentity(card);
           const txRows = data.legacyTransactions
@@ -446,16 +450,39 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
             : monthRows.length ? sumRows(monthRows) : Number(card.statementAmount || 0);
           const limit = Number(card.creditLimit || 0);
           const available = Number.isFinite(Number(card.availableLimit)) ? Number(card.availableLimit) : Math.max(0, limit - Number(card.usedLimit || 0));
-          return <button key={card.id} type="button" className={`px-cards-rail-item ${selected.id === card.id ? 'active' : ''}`} onClick={() => selectCard(card.id)}>
-            <span className="px-cards-rail-card" style={{ background: cardIdentity.background }}>
-              {cardIdentity.artwork ? <img src={`${import.meta.env.BASE_URL}${cardIdentity.artwork}`} alt="" /> : <strong>{cardIdentity.miniLabel}</strong>}
+          const used = Math.max(0, limit - available);
+          const cardUsage = limit > 0 ? Math.min(100, Math.max(0, used / limit * 100)) : 0;
+          return <button
+            key={card.id}
+            type="button"
+            className={`px-card-showcase-item ${selected.id === card.id ? 'active' : ''}`}
+            onClick={() => selectCard(card.id)}
+            onDoubleClick={() => openCardCommand(card.id)}
+            aria-label={`${card.name}. Fatura ${money.format(amount)}. Limite disponível ${money.format(available)}.`}
+          >
+            <span className="px-card-showcase-visual" style={{ background: cardIdentity.background }}>
+              {cardIdentity.artwork
+                ? <img src={`${import.meta.env.BASE_URL}${cardIdentity.artwork}`} alt="" />
+                : <>
+                    <b>{cardIdentity.label}</b>
+                    <i className="px-chip" />
+                    {cardIdentity.brandAsset ? <img className="px-brand-asset" src={`${import.meta.env.BASE_URL}assets/card-brands/${cardIdentity.brandAsset}.svg`} alt="" /> : null}
+                  </>}
+              <span className="px-card-showcase-gloss" />
             </span>
-            <span className="px-cards-rail-copy">
-              <strong>{card.name}</strong>
-              <small>{card.lastFour ? `Final ${card.lastFour} · ` : ''}{card.issuer || card.brand || 'Cartão cadastrado'}</small>
-              <span><b>{money.format(amount)}</b><em>{money.format(available)} livre</em></span>
+            <span className="px-card-showcase-copy">
+              <span className="px-card-showcase-title">
+                <span><strong>{card.name}</strong><small>{card.lastFour ? `Final ${card.lastFour} · ` : ''}{card.issuer || card.brand || 'Cartão cadastrado'}</small></span>
+                <i>{selected.id === card.id ? 'Selecionado' : 'Selecionar'}</i>
+              </span>
+              <span className="px-card-showcase-metrics">
+                <span><small>Fatura</small><strong>{money.format(amount)}</strong></span>
+                <span><small>Limite</small><strong>{money.format(limit)}</strong></span>
+                <span className="available"><small>Disponível</small><strong>{money.format(available)}</strong></span>
+              </span>
+              <span className="px-card-showcase-usage"><i style={{ width: `${cardUsage}%` }} /><small>{cardUsage.toFixed(0)}% utilizado</small></span>
+              <span className="px-card-showcase-hint">Duplo clique para abrir detalhes, filtros e histórico</span>
             </span>
-            <span className="px-cards-rail-check" aria-hidden="true">{selected.id === card.id ? '✓' : '›'}</span>
           </button>;
         })}
       </div>
