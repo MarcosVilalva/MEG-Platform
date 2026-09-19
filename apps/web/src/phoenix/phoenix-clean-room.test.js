@@ -320,10 +320,20 @@ assert.match(homeDashboard, /Evolução do saldo/,
 assert.match(homeDashboard, /Saldo inicial/);
 assert.match(homeDashboard, /Utilizado/);
 assert.match(homeDashboard, /Movimentações/);
+assert.match(homeDashboard, /Créditos no período/,
+  'Modal de benefício deve separar crédito, utilização e saldo final sem depender de gráfico.');
+assert.doesNotMatch(homeDashboard, /px-home-benefit-chart/,
+  'Gráfico do benefício não deve voltar a ocupar espaço sem acrescentar leitura operacional.');
 assert.match(homeNowCss, /\.px-home-benefit-modal/,
   'Acompanhamento do benefício deve possuir modal dedicado.');
-assert.match(homeAllTime, /data-home-alltime-layout="compact-scroll-v1"/,
-  'Home Tudo deve usar layout próprio para períodos extensos.');
+assert.match(homeAllTime, /data-home-alltime-layout="period-intelligence-v2"/,
+  'Home analítica deve compartilhar um layout próprio para Tudo e períodos históricos.');
+assert.match(homeAllTime, /Comparação com o saldo real/,
+  'Períodos históricos devem ser comparados explicitamente com o saldo monetário real de hoje.');
+assert.match(homeAllTime, /Saldo inicial/,
+  'Leitura histórica deve explicitar a posição imediatamente anterior ao recorte.');
+assert.match(homeAllTime, /Saldo final do período/,
+  'Leitura histórica deve explicitar como o período terminou.');
 assert.match(homeNowCss, /\.px-main-home-all[\s\S]*overflow:hidden/,
   'Home Tudo deve manter o shell estável.');
 assert.match(homeNowCss, /\.px-content-home\.px-content-home-all[\s\S]*overflow-y:auto !important/,
@@ -383,8 +393,12 @@ assert.match(phoenixApp, /periodDraftMode === 'range'/,
   'Intervalo V15 deve possuir aplicação real, não somente aparência');
 assert.match(phoenixApp, /loadPhoenixAllEvents/,
   'Modo Tudo deve usar leitura real completa');
-assert.match(phoenixApp, /view === 'home' && periodMode === 'all'/,
-  'Modo Tudo deve permanecer aplicado na Home principal, não apenas em Lançamentos');
+assert.match(phoenixApp, /view === 'home' && periodMode !== 'month'/,
+  'Intervalo e Tudo devem permanecer aplicados na Home principal em modo analítico.');
+assert.match(phoenixApp, /analyticalMonth = periodMode === 'month' && month !== currentMonth\(\)/,
+  'Somente o mês atual deve usar a Home operacional; outros meses devem abrir a leitura analítica.');
+assert.match(phoenixApp, /realizedPeriodBounds/,
+  'Saldo histórico deve ser reconstruído a partir do saldo real atual e dos movimentos realizados.');
 assert.match(phoenixApp, /const baseMonth = currentMonth\(\)/,
   'Modo Tudo deve usar o mês atual como base do saldo monetário realizado');
 assert.match(phoenixApp, /Histórico completo/,

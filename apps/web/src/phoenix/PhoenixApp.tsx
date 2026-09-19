@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
 import { loadPhoenixAllEvents, loadPhoenixReadModel, peekPhoenixReadModel, prefetchPhoenixReadModel } from './data/load-phoenix-read-model';
 import { buildPhoenixHomeAgenda } from './home-agenda';
+import { isPhoenixMonetaryEvent } from './home-period-summary';
 import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixSidebar } from './PhoenixSidebar';
 import { PhoenixNavIcon } from './PhoenixNavIcon';
@@ -48,6 +49,14 @@ const PHOENIX_SNAPSHOT_COMMITTED_EVENT = 'meg:phoenix-snapshot-committed';
 type PhoenixView = PhoenixRoute;
 type ViewDefinition = { id: PhoenixView; icon: string; label: string };
 type PeriodMode = 'month' | 'range' | 'all';
+type HomePeriodContext = {
+  label: string;
+  startDate: string;
+  endDate: string;
+  openingBalance: number;
+  closingBalance: number;
+  currentRealBalance: number;
+};
 
 const mainViews: ViewDefinition[] = [
   { id: 'home', icon: '⌂', label: 'Início' },
@@ -171,6 +180,59 @@ function monthsBetween(start: string, end: string) {
   return result;
 }
 
+function monthBounds(value: string) {
+  const [year, month] = value.split('-').map(Number);
+  const startDate = `${value}-01`;
+  const endDate = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+  return { startDate, endDate };
+}
+
+function canonicalCurrentBalance(data: PhoenixReadModel) {
+  return Number(data.summary.availableBalance || 0) + Number(data.summary.realizedResult || 0);
+}
+
+function realizedPeriodBounds(
+  currentRealBalance: number,
+  events: PhoenixReadModel['events']['items'],
+  startDate: string,
+  endDate: string
+) {
+  const today = todayIso();
+  const realizedEnd = endDate < today ? endDate : today;
+  const posted = events.filter((event) =>
+    isPhoenixMonetaryEvent(event)
+    && ['paid', 'reconciled', 'confirmed'].includes(event.status)
+  );
+  const signed = (event: (typeof posted)[number]) => {
+    const value = Number(event.signedAmount || 0);
+    return Number.isFinite(value) ? value : 0;
+  };
+
+  if (startDate > today) {
+    return { openingBalance: currentRealBalance, closingBalance: currentRealBalance };
+  }
+
+  const afterPeriod = posted
+    .filter((event) => {
+      const date = String(event.date).slice(0, 10);
+      return date > realizedEnd && date <= today;
+    })
+    .reduce((sum, event) => sum + signed(event), 0);
+
+  const closingBalance = currentRealBalance - afterPeriod;
+  const periodDelta = posted
+    .filter((event) => {
+      const date = String(event.date).slice(0, 10);
+      return date >= startDate && date <= realizedEnd;
+    })
+    .reduce((sum, event) => sum + signed(event), 0);
+
+  return {
+    openingBalance: closingBalance - periodDelta,
+    closingBalance
+  };
+}
+
 function monthlySnapshotMatches(data: PhoenixReadModel, targetMonth: string) {
   return data.month === targetMonth
     && data.summary.month === targetMonth
@@ -194,12 +256,14 @@ function ScreenWarmFallback({ label }: { label: string }) {
   return <section className="px-card px-placeholder"><span className="px-kicker">MEG Finanças</span><h2>Abrindo {label}</h2><p>Preparando a tela com os dados que já estão carregados.</p></section>;
 }
 
-function ReadScreen({ view, data, month, theme, periodMode, launchRequest, onToggleTheme, onNavigate, onDataCommitted, onOpenPeriod }: {
+function ReadScreen({ view, data, month, theme, periodMode, periodContext, periodRangeLabel, launchRequest, onToggleTheme, onNavigate, onDataCommitted, onOpenPeriod }: {
   view: PhoenixView;
   data: PhoenixReadModel;
   month: string;
   theme: 'dark' | 'light';
   periodMode: PeriodMode;
+  periodContext: HomePeriodContext | null;
+  periodRangeLabel: string;
   launchRequest: number;
   onToggleTheme: () => void;
   onNavigate: (view: PhoenixView) => void;
@@ -207,7 +271,16 @@ function ReadScreen({ view, data, month, theme, periodMode, launchRequest, onTog
   onOpenPeriod: () => void;
 }) {
   if (view === 'home') {
-    if (periodMode === 'all') return <PhoenixHomeAllTime data={data} onNavigate={onNavigate} />;
+    const analyticalMonth = periodMode === 'month' && month !== currentMonth();
+    if (periodMode === 'all' || periodMode === 'range' || analyticalMonth) {
+      return <PhoenixHomeAllTime
+        data={data}
+        mode={periodMode}
+        periodLabel={periodMode === 'all' ? 'Tudo' : periodMode === 'range' ? (periodRangeLabel || 'Intervalo') : monthLabel(month)}
+        periodContext={periodContext}
+        onNavigate={onNavigate}
+      />;
+    }
     return <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
   }
   if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} launchRequest={launchRequest} onNavigateHistory={() => onNavigate('history')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
@@ -241,6 +314,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const [periodEnd, setPeriodEnd] = useState(todayIso);
   const [periodRangeLabel, setPeriodRangeLabel] = useState('');
   const [movementPeriodData, setMovementPeriodData] = useState<PhoenixReadModel | null>(null);
+  const [homePeriodContext, setHomePeriodContext] = useState<HomePeriodContext | null>(null);
   const [periodLoading, setPeriodLoading] = useState(false);
   const [periodError, setPeriodError] = useState('');
   const [launchRequest, setLaunchRequest] = useState(0);
@@ -318,7 +392,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
 
   async function refreshData() {
     if (refreshingRef.current || periodLoading || loadState.status !== 'ready') return;
-    if (periodMode === 'range' && periodRangeLabel && view === 'movements') {
+    if (periodMode === 'range' && periodRangeLabel && (view === 'home' || view === 'movements')) {
       void applyRangePeriod(periodStart, periodEnd, true);
       return;
     }
@@ -327,6 +401,10 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       return;
     }
     const targetMonth = monthRef.current;
+    if (view === 'home' && periodMode === 'month' && targetMonth !== currentMonth()) {
+      void applyMonthlyPeriod(targetMonth, true);
+      return;
+    }
     refreshingRef.current = true;
     setRefreshing(true);
     try {
@@ -435,7 +513,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   }, [periodOpen, periodDraftMode]);
 
   const data = loadState.status === 'ready' ? loadState.data : dataRef.current;
-  const specialView = view === 'movements' || (view === 'home' && periodMode === 'all');
+  const specialView = view === 'movements' || (view === 'home' && periodMode !== 'month');
   const viewData = specialView && movementPeriodData ? movementPeriodData : data;
   const currentView = views.find((item) => item.id === view) || mainViews[0];
   const pendingCount = data ? buildPhoenixHomeAgenda(data, todayIso()).items.length : 0;
@@ -452,11 +530,12 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setPeriodMode('month');
     setMovementPeriodData(null);
     setPeriodRangeLabel('');
+    setHomePeriodContext(null);
   }
 
   function navigate(next: PhoenixView) {
     resetViewport();
-    const preservesSpecialPeriod = next === 'movements' || (next === 'home' && periodMode === 'all');
+    const preservesSpecialPeriod = (next === 'movements' || next === 'home') && periodMode !== 'month';
     if (!preservesSpecialPeriod && periodMode !== 'month') resetSpecialPeriod();
     setView(next);
     setMobileOpen(false);
@@ -502,7 +581,10 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       return;
     }
     if (!force && targetMonth === month && data && monthlySnapshotMatches(data, targetMonth)) {
-      resetSpecialPeriod();
+      setPeriodMode('month');
+      setMovementPeriodData(null);
+      setPeriodRangeLabel('');
+      if (targetMonth === currentMonth()) setHomePeriodContext(null);
       setPeriodOpen(false);
       resetViewport();
       return;
@@ -513,8 +595,14 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setPeriodLoading(true);
     setPeriodError('');
     try {
-      const fresh = await loadPhoenixReadModel(targetMonth, force ? { force: true } : {});
+      const needsHistoricalContext = targetMonth !== currentMonth();
+      const [fresh, currentSnapshot, allEvents] = await Promise.all([
+        loadPhoenixReadModel(targetMonth, force ? { force: true } : {}),
+        needsHistoricalContext ? loadPhoenixReadModel(currentMonth(), force ? { force: true } : {}) : Promise.resolve(null),
+        needsHistoricalContext ? loadPhoenixAllEvents({ force }) : Promise.resolve(null)
+      ]);
       if (!monthlySnapshotMatches(fresh, targetMonth)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
+      if (currentSnapshot && !monthlySnapshotMatches(currentSnapshot, currentMonth())) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       if (periodRequestRef.current !== requestId) return;
 
       dataRef.current = fresh;
@@ -524,6 +612,22 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       setMovementPeriodData(null);
       setPeriodMode('month');
       setPeriodRangeLabel('');
+
+      if (needsHistoricalContext && currentSnapshot && allEvents) {
+        const { startDate, endDate } = monthBounds(targetMonth);
+        const currentRealBalance = canonicalCurrentBalance(currentSnapshot);
+        const bounds = realizedPeriodBounds(currentRealBalance, allEvents.items, startDate, endDate);
+        setHomePeriodContext({
+          label: monthLabel(targetMonth),
+          startDate,
+          endDate,
+          currentRealBalance,
+          ...bounds
+        });
+      } else {
+        setHomePeriodContext(null);
+      }
+
       setPeriodOpen(false);
       resetViewport();
     } catch (error) {
@@ -556,9 +660,15 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setPeriodLoading(true);
     setPeriodError('');
     try {
-      const models = await Promise.all(months.map((item) => loadPhoenixReadModel(item, force ? { force: true } : {})));
+      const [models, currentSnapshot, allEvents] = await Promise.all([
+        Promise.all(months.map((item) => loadPhoenixReadModel(item, force ? { force: true } : {}))),
+        loadPhoenixReadModel(currentMonth(), force ? { force: true } : {}),
+        loadPhoenixAllEvents({ force })
+      ]);
       if (periodRequestRef.current !== requestId) return;
       if (models.some((model, index) => !monthlySnapshotMatches(model, months[index]))) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
+      if (!monthlySnapshotMatches(currentSnapshot, currentMonth())) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
+
       const base = models[models.length - 1];
       const unique = new Map<string, (typeof base.events.items)[number]>();
       models.forEach((model) => model.events.items.forEach((event) => {
@@ -566,14 +676,25 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
         if (eventDate >= start && eventDate <= end) unique.set(event.id, { ...event, competence: base.month });
       }));
       const items = [...unique.values()].sort((left, right) => String(right.date).localeCompare(String(left.date)));
-      setMovementPeriodData({
+      const rangeData = {
         ...base,
         loadedAt: new Date().toISOString(),
         events: { ...base.events, items, total: items.length, page: 1, pageSize: items.length }
+      };
+      const currentRealBalance = canonicalCurrentBalance(currentSnapshot);
+      const bounds = realizedPeriodBounds(currentRealBalance, allEvents.items, start, end);
+
+      setMovementPeriodData(rangeData);
+      setHomePeriodContext({
+        label: `${formatShortIso(start)}–${formatShortIso(end)}`,
+        startDate: start,
+        endDate: end,
+        currentRealBalance,
+        ...bounds
       });
       setPeriodMode('range');
       setPeriodRangeLabel(`${formatShortIso(start)}–${formatShortIso(end)}`);
-      setView('movements');
+      if (view !== 'home') setView('movements');
       setMobileOpen(false);
       setSearchOpen(false);
       setPeriodOpen(false);
@@ -609,6 +730,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       });
       setPeriodMode('all');
       setPeriodRangeLabel('');
+      setHomePeriodContext(null);
       if (view !== 'home' && view !== 'movements') setView('home');
       setMobileOpen(false);
       setSearchOpen(false);
@@ -636,6 +758,8 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     void applyAllPeriod();
   }
 
+  const homeAnalytical = view === 'home' && (periodMode !== 'month' || month !== currentMonth());
+
   return <div className="phoenix-v15" data-theme={theme}>
     <div className={`px-app ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
       <PhoenixSidebar
@@ -649,7 +773,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
         onLogout={onLogout}
       />
 
-      <main className={`px-main ${view === 'home' ? 'px-main-home' : ''} ${view === 'home' && periodMode === 'all' ? 'px-main-home-all' : ''} ${view === 'payables' ? 'px-main-payables' : ''} ${view === 'history' ? 'px-main-history' : ''}`}>
+      <main className={`px-main ${view === 'home' ? 'px-main-home' : ''} ${homeAnalytical ? 'px-main-home-all' : ''} ${view === 'payables' ? 'px-main-payables' : ''} ${view === 'history' ? 'px-main-history' : ''}`}>
         <header className="px-topbar">
           <div className="px-top-left"><button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => setCollapsed((value) => !value)}>☰</button><div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div></div>
           <div className="px-top-right">
@@ -724,8 +848,8 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
           </div>
         </header>
 
-        <div className={`px-content ${view === 'home' ? 'px-content-home' : ''} ${view === 'home' && periodMode === 'all' ? 'px-content-home-all' : ''} ${view === 'movements' ? 'px-content-movements' : ''} ${view === 'payables' ? 'px-content-payables' : ''} ${view === 'history' ? 'px-content-history' : ''}`}>
-          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen key={`${view}:${periodMode}:${viewData.month}`} view={view} data={viewData} month={viewData.month} theme={theme} periodMode={periodMode} launchRequest={launchRequest} onToggleTheme={toggleTheme} onNavigate={navigate} onDataCommitted={commitSnapshot} onOpenPeriod={() => setPeriodOpen(true)} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
+        <div className={`px-content ${view === 'home' ? 'px-content-home' : ''} ${homeAnalytical ? 'px-content-home-all' : ''} ${view === 'movements' ? 'px-content-movements' : ''} ${view === 'payables' ? 'px-content-payables' : ''} ${view === 'history' ? 'px-content-history' : ''}`}>
+          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen key={`${view}:${periodMode}:${viewData.month}:${periodRangeLabel}`} view={view} data={viewData} month={viewData.month} theme={theme} periodMode={periodMode} periodContext={homePeriodContext} periodRangeLabel={periodRangeLabel} launchRequest={launchRequest} onToggleTheme={toggleTheme} onNavigate={navigate} onDataCommitted={commitSnapshot} onOpenPeriod={() => setPeriodOpen(true)} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
         </div>
       </main>
 
