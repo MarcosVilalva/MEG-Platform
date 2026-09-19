@@ -1,9 +1,9 @@
 {
-  "versionCode": 284,
-  "versionName": "1.1.284",
+  "versionCode": 285,
+  "versionName": "1.1.285",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "3821f2b29c763f5e6ec9fcaa9ba6898016782fb6c4185544761d1cc742545aeb",
+  "sha256": "de3bccf4c822b3b218b86494d4d7d9b51d85193db682f5dbbe43653d6c9a95cd",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #303 from MarcosVilalva/fix/pendentes-icon-centering"
+  "releaseNotes": "Merge pull request #304 from MarcosVilalva/feat/history-premium-cockpit"
 }
