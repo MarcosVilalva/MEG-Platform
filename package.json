@@ -42,7 +42,7 @@
     "test:recovery-center": "node apps/web/src/recovery-center-core.test.js",
     "test:activity-log": "node apps/web/src/activity-log-core.test.js",
     "test:currency-mask": "node apps/web/src/currency-input-mask.test.js",
-    "test:app-update-release": "node apps/web/src/app-update-release-core.test.js",
+    "test:app-update-release": "node apps/web/src/app-update-release-core.test.js && node apps/web/src/app-update-release-workflow.contract.test.js",
     "test:transaction-editor": "node apps/web/src/transaction-editor.test.js",
     "test:transaction-status-policy": "node apps/web/src/transaction-status-policy.test.js",
     "test:stable-grid-filters": "node apps/web/src/stable-grid-filters.test.js",
