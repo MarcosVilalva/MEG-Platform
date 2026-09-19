@@ -1,15 +1,24 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { CreditCard } from '../../app/cards-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import { resolvePhoenixCardIdentity } from '../card-identity';
 import type { PhoenixLegacyTransaction, PhoenixReadModel } from '../contracts';
+import {
+  buildPhoenixPdf,
+  buildPhoenixXlsx,
+  detectPhoenixColumnKinds,
+  phoenixExportFilename,
+  type PhoenixExportReport,
+} from '../table-export-core';
 import '../phoenix-screens.css';
 import '../phoenix-cards-premium.css';
+import '../phoenix-cards-wow.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
 
 type CardTab = 'current' | 'future' | 'installments' | 'rules';
+type CardCommandTab = 'summary' | 'current' | 'future' | 'installments' | 'history';
 type GridMode = 'current' | 'installments';
 type GridKey = 'description' | 'purchaseDate' | 'installment' | 'group' | 'amount' | 'status' | 'statementMonth';
 type GridSort = { key: GridKey; direction: PhoenixGridSortDirection } | null;
@@ -207,6 +216,13 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const [searchState, setSearchState] = useState<GridState<string>>(searchesByMode);
   const [detailRow, setDetailRow] = useState<GridRow | null>(null);
   const [selectedFutureMonth, setSelectedFutureMonth] = useState('');
+  const [cardCommandOpen, setCardCommandOpen] = useState(false);
+  const [commandTab, setCommandTab] = useState<CardCommandTab>('summary');
+  const [commandSearch, setCommandSearch] = useState('');
+  const [commandMonth, setCommandMonth] = useState('');
+  const [commandStatus, setCommandStatus] = useState('');
+  const [commandGroup, setCommandGroup] = useState('');
+  const [commandSort, setCommandSort] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc' | 'description'>('date-desc');
 
   const selected = data.cards.find((card) => card.id === selectedId) || data.cards[0] || null;
 
@@ -307,6 +323,39 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const activeFutureRows = activeFutureMonth ? futureRows.filter((row) => row.statementMonth === activeFutureMonth) : [];
   const activeFutureAmount = sumRows(activeFutureRows);
   const activeFutureCredits = Math.abs(activeFutureRows.filter((row) => row.amount < 0).reduce((sum, row) => sum + row.amount, 0));
+  const bestPurchaseDay = selected?.closingDay ? (selected.closingDay >= 28 ? 1 : selected.closingDay + 1) : null;
+  const statementDueDate = selected?.statement?.month === data.month && selected.statement.dueDate
+    ? date.format(new Date(`${selected.statement.dueDate.slice(0, 10)}T12:00:00Z`))
+    : selected?.dueDay ? `dia ${selected.dueDay}` : '—';
+  const nextStatementDelta = nextStatement - currentStatement;
+  const biggestFuture = [...futureRows].filter((row) => row.amount > 0).sort((left, right) => right.amount - left.amount)[0] || null;
+  const commandMonths = [...new Set(allRows.map((row) => row.statementMonth))].sort().reverse();
+  const commandGroups = [...new Set(allRows.map((row) => row.group).filter((group) => group && group !== '—'))].sort((left, right) => left.localeCompare(right, 'pt-BR'));
+  const commandBaseRows = commandTab === 'current'
+    ? currentRows
+    : commandTab === 'future' || commandTab === 'installments'
+      ? futureRows
+      : allRows;
+  const commandRows = commandBaseRows.filter((row) => {
+    if (commandSearch && !normalize(`${row.description} ${row.group} ${row.installment} ${row.statementMonth}`).includes(normalize(commandSearch))) return false;
+    if (commandMonth && row.statementMonth !== commandMonth) return false;
+    if (commandGroup && row.group !== commandGroup) return false;
+    if (commandStatus) {
+      const label = normalize(rowStatusLabel(row));
+      if (commandStatus === 'open' && label !== 'pendente') return false;
+      if (commandStatus === 'paid' && label !== 'pago') return false;
+      if (commandStatus === 'credit' && label !== 'credito/estorno') return false;
+    }
+    return true;
+  }).sort((left, right) => {
+    if (commandSort === 'date-asc') return left.purchaseDate.localeCompare(right.purchaseDate);
+    if (commandSort === 'amount-desc') return right.amount - left.amount;
+    if (commandSort === 'amount-asc') return left.amount - right.amount;
+    if (commandSort === 'description') return left.description.localeCompare(right.description, 'pt-BR', { sensitivity: 'base' });
+    return right.purchaseDate.localeCompare(left.purchaseDate);
+  });
+  const commandRowsTotal = sumRows(commandRows);
+  const topCurrentRows = [...currentRows].filter((row) => row.amount > 0 && !isCancelledStatus(row.status)).sort((left, right) => right.amount - left.amount).slice(0, 5);
 
   const mode: GridMode = tab === 'installments' ? 'installments' : 'current';
   const sourceRows = mode === 'current' ? currentRows : futureRows;
@@ -332,6 +381,31 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     return [...filtered].sort((left, right) => compare(left[sort.key], right[sort.key], sort.direction));
   }, [sourceRows, search, keys, filters, sort]);
 
+  useEffect(() => {
+    if (!cardCommandOpen) return undefined;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setCardCommandOpen(false);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [cardCommandOpen]);
+
+  function openCardCommand(cardId?: string) {
+    if (cardId && cardId !== selected?.id) selectCard(cardId);
+    setCommandTab('current');
+    setCommandSearch('');
+    setCommandMonth('');
+    setCommandStatus('');
+    setCommandGroup('');
+    setCommandSort('date-desc');
+    setCardCommandOpen(true);
+  }
+
   function resetGrid() {
     setFilterState((current) => ({ ...current, [mode]: initialFilters() }));
     setSortState((current) => ({ ...current, [mode]: null }));
@@ -344,7 +418,66 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     setSearchState(searchesByMode());
     setSelectedFutureMonth('');
     setDetailRow(null);
+    setCommandSearch('');
+    setCommandMonth('');
+    setCommandStatus('');
+    setCommandGroup('');
+    setCommandSort('date-desc');
   }
+  function exportCardStatement(extension: 'xlsx' | 'pdf') {
+    const headers = ['Data', 'Descrição', 'Grupo', 'Parcela', 'Fatura', 'Situação', 'Valor'];
+    const rows = commandRows.map((row) => [
+      date.format(new Date(`${row.purchaseDate}T12:00:00Z`)),
+      row.description,
+      row.group,
+      row.installment,
+      monthLabel(row.statementMonth),
+      rowStatusLabel(row),
+      money.format(row.amount),
+    ]);
+    const detected = detectPhoenixColumnKinds(headers, rows);
+    const filters: string[] = [
+      `Visão: ${commandTab === 'current' ? 'Fatura atual' : commandTab === 'future' ? 'Próximas faturas' : commandTab === 'installments' ? 'Parcelas' : commandTab === 'history' ? 'Histórico' : 'Resumo'}`,
+    ];
+    if (commandMonth) filters.push(`Competência: ${monthLabel(commandMonth)}`);
+    if (commandStatus) filters.push(`Situação: ${commandStatus === 'open' ? 'Pendente' : commandStatus === 'paid' ? 'Pago' : 'Crédito/estorno'}`);
+    if (commandGroup) filters.push(`Grupo: ${commandGroup}`);
+    if (commandSearch.trim()) filters.push(`Busca: ${commandSearch.trim()}`);
+    const report: PhoenixExportReport = {
+      systemName: 'MEG Finanças',
+      title: `Cartão ${selected?.name || 'Cartão'} — ${commandTab === 'current' ? 'Fatura atual' : commandTab === 'future' ? 'Próximas faturas' : commandTab === 'installments' ? 'Parcelas' : 'Histórico'}`,
+      period: commandMonth ? monthLabel(commandMonth) : commandTab === 'current' ? monthLabel(data.month) : 'Conforme filtros da central do cartão',
+      filters,
+      generatedAt: new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      }).format(new Date()),
+      recordCount: rows.length,
+      headers,
+      rows,
+      kinds: detected.kinds,
+      sums: detected.sums,
+    };
+    const bytes = extension === 'xlsx' ? buildPhoenixXlsx(report) : buildPhoenixPdf(report);
+    const copy = new Uint8Array(bytes.byteLength);
+    copy.set(bytes);
+    const blob = new Blob([copy.buffer], {
+      type: extension === 'xlsx'
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'application/pdf',
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = phoenixExportFilename(report, extension);
+    anchor.rel = 'noopener';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 15000);
+  }
+
   function header(label: string, key: GridKey, kind: PhoenixGridFilterKind, list?: PhoenixGridOption[]) {
     return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} options={list} sort={sort?.key === key ? sort.direction : null} onSort={(direction) => setSortState((current) => ({ ...current, [mode]: { key, direction } }))} onChange={(value) => setFilterState((current) => ({ ...current, [mode]: { ...current[mode], [key]: value } }))} /></div>;
   }
@@ -353,171 +486,231 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
 
   const identity = resolvePhoenixCardIdentity(selected);
 
-  return <section className="px-screen px-cards-premium" data-cards-layout="cockpit-v2">
-    <header className="px-screen-head px-cards-page-head">
-      <div>
-        <span className="px-kicker">Cartões de crédito · {monthLabel(data.month)}</span>
-        <h1>Cartões, faturas e limite</h1>
-        <p>Uma leitura rápida do que já fechou, do que ainda compromete o limite e de como as próximas faturas estão se formando.</p>
+  return <section className="px-screen px-cards-premium px-cards-wow px-cards-approved" data-cards-layout="approved-v4">
+    <header className="px-cards-approved-head">
+      <div className="px-cards-approved-heading">
+        <span className="px-kicker">CARTÕES · VISÃO GERAL</span>
+        <div className="px-cards-approved-title-row">
+          <span className="px-cards-approved-title-icon" aria-hidden="true"><i /></span>
+          <div>
+            <h1>Seus cartões</h1>
+            <p>Seus principais meios de pagamento em um só lugar.</p>
+          </div>
+        </div>
       </div>
-      <div className="px-screen-head-aside">
-        <span className="px-cards-head-count">{data.cards.length} cartão(ões) ativo(s)</span>
-        <button className="px-secondary-action" type="button" disabled>Gerenciar cartões</button>
+      <div className="px-cards-approved-hint">
+        <span className="px-cards-approved-mouse" aria-hidden="true"><i /></span>
+        <div><strong>Duplo clique para abrir a central do cartão</strong><small>Acesse detalhes, faturas, limites e histórico.</small></div>
       </div>
     </header>
 
-    <section className="px-cards-rail-shell" aria-label="Meus cartões">
-      <div className="px-cards-rail-head">
-        <div><span>Meus cartões</span><strong>Escolha um cartão para atualizar todo o painel</strong></div>
-        <small>Fatura do período · limite disponível</small>
-      </div>
-      <div className="px-cards-rail">
-        {data.cards.map((card) => {
-          const cardIdentity = resolvePhoenixCardIdentity(card);
-          const txRows = data.legacyTransactions
-            .filter((tx) => isExpense(tx) && isCredit(tx) && transactionMatchesCard(tx, card))
-            .map(legacyRow)
-            .filter((row): row is GridRow => Boolean(row));
-          const monthRows = txRows.filter((row) => row.statementMonth === data.month);
-          const amount = card.statement?.month === data.month
-            ? card.statement.netAmount
-            : monthRows.length ? sumRows(monthRows) : Number(card.statementAmount || 0);
-          const limit = Number(card.creditLimit || 0);
-          const available = Number.isFinite(Number(card.availableLimit)) ? Number(card.availableLimit) : Math.max(0, limit - Number(card.usedLimit || 0));
-          return <button key={card.id} type="button" className={`px-cards-rail-item ${selected.id === card.id ? 'active' : ''}`} onClick={() => selectCard(card.id)}>
-            <span className="px-cards-rail-card" style={{ background: cardIdentity.background }}>
-              {cardIdentity.artwork ? <img src={`${import.meta.env.BASE_URL}${cardIdentity.artwork}`} alt="" /> : <strong>{cardIdentity.miniLabel}</strong>}
+    <div className="px-cards-approved-grid" aria-label="Seus cartões">
+      {data.cards.map((card) => {
+        const cardIdentity = resolvePhoenixCardIdentity(card);
+        const txRows = data.legacyTransactions
+          .filter((tx) => isExpense(tx) && isCredit(tx) && transactionMatchesCard(tx, card))
+          .map(legacyRow)
+          .filter((row): row is GridRow => Boolean(row));
+        const monthRows = txRows.filter((row) => row.statementMonth === data.month);
+        const statementAmount = card.statement?.month === data.month
+          ? Number(card.statement.netAmount || 0)
+          : monthRows.length ? sumRows(monthRows) : Number(card.statementAmount || 0);
+        const limit = Number(card.creditLimit || 0);
+        const available = Number.isFinite(Number(card.availableLimit))
+          ? Number(card.availableLimit)
+          : Math.max(0, limit - Number(card.usedLimit || 0));
+        const used = Math.max(0, limit - available);
+        const cardUsage = limit > 0 ? Math.min(100, Math.max(0, used / limit * 100)) : 0;
+        const due = card.statement?.month === data.month && card.statement.dueDate
+          ? date.format(new Date(`${card.statement.dueDate.slice(0, 10)}T12:00:00Z`))
+          : card.dueDay ? `dia ${String(card.dueDay).padStart(2, '0')}` : '—';
+        return <button
+          key={card.id}
+          type="button"
+          className={`px-cards-approved-tile ${selected.id === card.id ? 'active' : ''}`}
+          onClick={() => selectCard(card.id)}
+          onDoubleClick={() => openCardCommand(card.id)}
+          aria-label={`${card.name}. Limite ${money.format(limit)}. Disponível ${money.format(available)}. Fatura atual ${money.format(statementAmount)}.`}
+        >
+          <span className="px-cards-approved-art" style={{ background: cardIdentity.background }}>
+            {cardIdentity.artwork
+              ? <img src={`${import.meta.env.BASE_URL}${cardIdentity.artwork}`} alt={cardIdentity.label} />
+              : <>
+                  <span className="px-cards-approved-brand">{cardIdentity.label}</span>
+                  <i className="px-chip" />
+                  {cardIdentity.brandAsset ? <img className="px-brand-asset" src={`${import.meta.env.BASE_URL}assets/card-brands/${cardIdentity.brandAsset}.svg`} alt="" /> : null}
+                </>}
+            <span className="px-card-wow-gloss" />
+          </span>
+
+          <span className="px-cards-approved-name">
+            <span><strong>{card.name}</strong><small>{card.brand || card.issuer || cardIdentity.label}</small></span>
+            <b aria-hidden="true">›</b>
+          </span>
+
+          <span className="px-cards-approved-limit">
+            <small>Limite total</small>
+            <strong>{money.format(limit)}</strong>
+            <span className="px-cards-approved-progress"><i style={{ width: `${cardUsage}%` }} /><b>{cardUsage.toFixed(0)}%</b></span>
+            <span className="px-cards-approved-split">
+              <span><small>Disponível</small><strong>{money.format(available)}</strong></span>
+              <span><small>Fatura atual</small><strong>{money.format(statementAmount)}</strong></span>
             </span>
-            <span className="px-cards-rail-copy">
-              <strong>{card.name}</strong>
-              <small>{card.lastFour ? `Final ${card.lastFour} · ` : ''}{card.issuer || card.brand || 'Cartão cadastrado'}</small>
-              <span><b>{money.format(amount)}</b><em>{money.format(available)} livre</em></span>
-            </span>
-            <span className="px-cards-rail-check" aria-hidden="true">{selected.id === card.id ? '✓' : '›'}</span>
-          </button>;
-        })}
+          </span>
+
+          <span className="px-cards-approved-due">
+            <i aria-hidden="true">▦</i>
+            <span><small>Vencimento</small><strong>{due}</strong></span>
+          </span>
+        </button>;
+      })}
+    </div>
+
+    <section className="px-cards-approved-selected" aria-label="Resumo do cartão selecionado">
+      <div className="px-cards-approved-selected-id">
+        <span className="px-cards-approved-selected-art" style={{ background: identity.background }}>
+          {identity.artwork
+            ? <img src={`${import.meta.env.BASE_URL}${identity.artwork}`} alt="" />
+            : <strong>{identity.miniLabel}</strong>}
+        </span>
+        <span><strong>{selected.name}</strong><small>{selected.brand || selected.issuer || identity.label}</small>
+          <span className="px-cards-approved-tags">
+            {identity.brandAsset ? <i>{selected.brand || identity.brandAsset}</i> : null}
+            {selected.issuer ? <i>{selected.issuer}</i> : null}
+            <i>{identity.label}</i>
+          </span>
+        </span>
+      </div>
+      <div className="px-cards-approved-selected-metric">
+        <i aria-hidden="true">◉</i>
+        <span><small>Limite disponível</small><strong>{money.format(availableLimit)}</strong><em>de {money.format(creditLimit)}</em></span>
+      </div>
+      <div className="px-cards-approved-selected-metric">
+        <i aria-hidden="true">▤</i>
+        <span><small>Fatura atual</small><strong>{money.format(currentStatement)}</strong><em>{currentStatus}</em></span>
+      </div>
+      <div className="px-cards-approved-selected-metric">
+        <i aria-hidden="true">▦</i>
+        <span><small>Próx. vencimento</small><strong>{statementDueDate}</strong><em>{monthLabel(data.month)}</em></span>
+      </div>
+      <div className="px-cards-approved-selected-metric">
+        <i aria-hidden="true">☆</i>
+        <span><small>Melhor dia de compra</small><strong>{bestPurchaseDay ? `Dia ${bestPurchaseDay}` : '—'}</strong><em>estimado pelo fechamento</em></span>
       </div>
     </section>
 
-    <section className="px-card-focus">
-      <article className="px-card px-card-focus-visual">
-        <div className="px-physical-card px-physical-card-premium" style={{ background: identity.background } as CSSProperties}>
-          {identity.artwork ? <img src={`${import.meta.env.BASE_URL}${identity.artwork}`} alt={identity.label} /> : <>
-            <div className="px-card-face-top"><strong>{identity.label}</strong><span>{selected.lastFour ? `•••• ${selected.lastFour}` : 'MEG FINANÇAS'}</span></div>
-            <span className="px-chip" />
-            <small>{selected.issuer || selected.brand || 'MEG FINANÇAS'}</small>
-            {identity.brandAsset ? <img className="px-brand-asset" src={`${import.meta.env.BASE_URL}assets/card-brands/${identity.brandAsset}.svg`} alt={selected.brand || identity.brandAsset} /> : null}
-          </>}
-        </div>
-        <div className="px-card-focus-meta">
-          <span>Cartão selecionado</span>
-          <strong>{selected.name}</strong>
-          <small>{selected.issuer || 'Cartão cadastrado no MEG'}{selected.lastFour ? ` · final ${selected.lastFour}` : ''}</small>
+    {cardCommandOpen ? <div className="px-card-command-backdrop px-card-command-approved-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setCardCommandOpen(false); }}>
+      <section className="px-card-command-modal px-card-command-approved" role="dialog" aria-modal="true" aria-label={`Central do cartão ${selected.name}`}>
+        <header className="px-card-command-approved-head">
           <div>
-            <span><small>Fechamento</small><b>dia {selected.closingDay}</b></span>
-            <span><small>Vencimento</small><b>dia {selected.dueDay}</b></span>
+            <span className="px-kicker">CENTRAL DO CARTÃO</span>
+            <h2>{selected.name}</h2>
+            <p>Resumo, faturas, limites e histórico</p>
           </div>
-        </div>
-      </article>
+          <button type="button" aria-label="Fechar central do cartão" onClick={() => setCardCommandOpen(false)}>×</button>
+        </header>
 
-      <article className="px-card px-card-focus-financial">
-        <div className="px-card-statement-head">
-          <div>
-            <span>Fatura de {monthLabel(data.month)}</span>
-            <strong>{money.format(currentStatement)}</strong>
-            <small>Compras {money.format(currentPurchases)} · créditos/estornos {money.format(currentCredits)}</small>
+        <section className="px-card-command-approved-overview">
+          <div className="px-card-command-approved-cardbox">
+            <div className="px-card-command-approved-art" style={{ background: identity.background } as CSSProperties}>
+              {identity.artwork
+                ? <img src={`${import.meta.env.BASE_URL}${identity.artwork}`} alt={identity.label} />
+                : <>
+                    <strong>{identity.label}</strong>
+                    <i className="px-chip" />
+                    {identity.brandAsset ? <img className="px-brand-asset" src={`${import.meta.env.BASE_URL}assets/card-brands/${identity.brandAsset}.svg`} alt="" /> : null}
+                  </>}
+              <span className="px-card-wow-gloss" />
+            </div>
+            <div className="px-card-command-approved-cardcopy">
+              <strong>{selected.name}</strong>
+              <small>{selected.brand || selected.issuer || identity.label}</small>
+              <span>{identity.brandAsset ? <i>{selected.brand || identity.brandAsset}</i> : null}{selected.issuer ? <i>{selected.issuer}</i> : null}<i>{identity.label}</i></span>
+            </div>
           </div>
-          <span className={`px-status ${currentStatusClass}`}>{currentStatus}</span>
-        </div>
 
-        <div className="px-card-executive-strip">
-          <div><span>Em aberto agora</span><strong>{money.format(currentOutstanding)}</strong><small>Valor que ainda compromete o caixa</small></div>
-          <div><span>Próxima fatura</span><strong>{money.format(nextStatement)}</strong><small>{monthLabel(next)}</small></div>
-          <div><span>Parcelas futuras</span><strong>{money.format(futureNet)}</strong><small>{futureRows.length} parcela(s) em aberto</small></div>
-          <div className="emphasis"><span>Total comprometido</span><strong>{money.format(totalCommitted)}</strong><small>Fatura em aberto + futuro</small></div>
-        </div>
-
-        <div className={`px-card-limit-panel ${usageTone}`}>
-          <div className="px-card-limit-title">
-            <div><span>Uso do limite</span><strong>{usage.toFixed(0)}%</strong></div>
-            <div><span>Limite disponível</span><strong>{money.format(availableLimit)}</strong></div>
+          <div className="px-card-command-approved-kpis">
+            <div><span>Limite total</span><strong>{money.format(creditLimit)}</strong><small><i style={{ width: `${usage}%` }} />{usage.toFixed(0)}%</small></div>
+            <div><span>Disponível</span><strong>{money.format(availableLimit)}</strong><small>livre para uso</small></div>
+            <div><span>Utilizado</span><strong>{money.format(Math.max(0, creditLimit - availableLimit))}</strong><small>compromisso atual</small></div>
+            <div><span>Fatura atual</span><strong>{money.format(currentStatement)}</strong><small>{currentStatus}</small></div>
+            <div className="icon-kpi"><i aria-hidden="true">▦</i><span><small>Próximo vencimento</small><strong>{statementDueDate}</strong></span></div>
+            <div className="icon-kpi"><i aria-hidden="true">☆</i><span><small>Melhor dia de compra</small><strong>{bestPurchaseDay ? `Dia ${bestPurchaseDay}` : '—'}</strong></span></div>
           </div>
-          <progress max="100" value={usage} />
-          <div className="px-card-limit-equation" aria-label="Memória de cálculo do limite">
-            <span>{money.format(creditLimit)} <small>limite</small></span>
-            <b>−</b>
-            <span>{money.format(currentOutstanding)} <small>fatura aberta</small></span>
-            <b>−</b>
-            <span>{money.format(futureCommitted)} <small>parcelas futuras</small></span>
-            <b>=</b>
-            <strong>{money.format(availableLimit)} <small>disponível</small></strong>
+        </section>
+
+        <nav className="px-card-command-approved-tabs" aria-label="Visões do cartão">
+          <button className={commandTab === 'summary' ? 'active' : ''} type="button" onClick={() => setCommandTab('summary')}><span>▣</span>Resumo</button>
+          <button className={commandTab === 'current' ? 'active' : ''} type="button" onClick={() => { setCommandTab('current'); setCommandMonth(''); }}><span>▤</span>Fatura atual</button>
+          <button className={commandTab === 'future' ? 'active' : ''} type="button" onClick={() => setCommandTab('future')}><span>▦</span>Próximas faturas</button>
+          <button className={commandTab === 'installments' ? 'active' : ''} type="button" onClick={() => setCommandTab('installments')}><span>▱</span>Parcelas</button>
+          <button className={commandTab === 'history' ? 'active' : ''} type="button" onClick={() => setCommandTab('history')}><span>◷</span>Histórico</button>
+        </nav>
+
+        {commandTab === 'summary' ? <div className="px-card-command-approved-summary">
+          <article><span>Limite disponível agora</span><strong>{money.format(availableLimit)}</strong><small>{usage.toFixed(0)}% do limite comprometido</small></article>
+          <article><span>Em aberto na fatura atual</span><strong>{money.format(currentOutstanding)}</strong><small>{currentOpen.length} lançamento(s) em aberto</small></article>
+          <article><span>Parcelas futuras</span><strong>{money.format(futureCommitted)}</strong><small>{futureRows.length} parcela(s) no horizonte</small></article>
+          <article><span>Próxima fatura</span><strong>{money.format(nextStatement)}</strong><small>{monthLabel(next)}</small></article>
+          <section className="px-card-command-approved-equation">
+            <span>Memória do limite</span>
+            <div><b>{money.format(creditLimit)}</b><i>−</i><b>{money.format(currentOutstanding)}</b><i>−</i><b>{money.format(futureCommitted)}</b><i>=</i><strong>{money.format(availableLimit)}</strong></div>
+            <small>Limite total − fatura aberta − parcelas futuras = disponível</small>
+          </section>
+          <section className="px-card-command-approved-timeline">
+            <header><span>Próximas competências</span><strong>Como as faturas estão se formando</strong></header>
+            <div>{futureMonths.map((month) => {
+              const rows = futureRows.filter((row) => row.statementMonth === month);
+              return <button key={month} type="button" onClick={() => { setCommandTab('future'); setCommandMonth(month); }}>
+                <span>{monthLabel(month)}</span><strong>{money.format(sumRows(rows))}</strong><small>{rows.length} parcela(s)</small>
+              </button>;
+            })}{!futureMonths.length ? <p className="px-empty">Sem faturas futuras em aberto.</p> : null}</div>
+          </section>
+        </div> : <div className="px-card-command-approved-data">
+          <div className="px-card-command-approved-filters">
+            <label className="search"><span aria-hidden="true">⌕</span><input value={commandSearch} onChange={(event) => setCommandSearch(event.target.value)} placeholder="Buscar lançamento..." /></label>
+            <label><span>Período</span><select value={commandMonth} onChange={(event) => setCommandMonth(event.target.value)}>
+              <option value="">{commandTab === 'current' ? monthLabel(data.month) : 'Todas as competências'}</option>
+              {commandMonths.map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}
+            </select></label>
+            <label><span>Situação</span><select value={commandStatus} onChange={(event) => setCommandStatus(event.target.value)}><option value="">Todos</option><option value="open">Pendente</option><option value="paid">Pago</option><option value="credit">Crédito/estorno</option></select></label>
+            <label><span>Grupo</span><select value={commandGroup} onChange={(event) => setCommandGroup(event.target.value)}><option value="">Todos</option>{commandGroups.map((group) => <option key={group} value={group}>{group}</option>)}</select></label>
+            <label><span>Ordenar por</span><select value={commandSort} onChange={(event) => setCommandSort(event.target.value as typeof commandSort)}><option value="date-desc">Data (mais recente)</option><option value="date-asc">Data (mais antiga)</option><option value="amount-desc">Valor (maior)</option><option value="amount-asc">Valor (menor)</option><option value="description">Descrição</option></select></label>
           </div>
-        </div>
-      </article>
-    </section>
 
-    <section className="px-card px-card-movement px-table-card px-card-workspace">
-      <header className="px-card-workspace-head">
-        <div>
-          <span className="px-kicker">Movimentações do cartão</span>
-          <h2>{selected.name}</h2>
-          <p>A fatura, as próximas competências e as parcelas usam a mesma base real que forma os totais acima.</p>
-        </div>
-        <button className="px-secondary-action" type="button" disabled>Revisar pagamento da fatura</button>
-      </header>
-
-      <div className="px-tabbar px-card-tabs">
-        <button className={tab === 'current' ? 'active' : ''} onClick={() => setTab('current')}>Fatura atual <small>{currentRows.length}</small></button>
-        <button className={tab === 'future' ? 'active' : ''} onClick={() => setTab('future')}>Próximas faturas <small>{futureMonths.length}</small></button>
-        <button className={tab === 'installments' ? 'active' : ''} onClick={() => setTab('installments')}>Parcelas futuras <small>{futureRows.length}</small></button>
-        <button className={tab === 'rules' ? 'active' : ''} onClick={() => setTab('rules')}>Regras</button>
-      </div>
-
-      {(tab === 'current' || tab === 'installments') ? <>
-        <div className="px-toolbar px-card-toolbar">
-          <label className="px-search-field"><span>⌕</span><input value={search} onChange={(event) => setSearchState((current) => ({ ...current, [mode]: event.target.value }))} placeholder={tab === 'current' ? 'Buscar na fatura atual' : 'Buscar nas parcelas futuras'} /></label>
-          <span className="px-toolbar-note">{visibleRows.length} de {sourceRows.length} exibido(s)</span>
-        </div>
-        {activeKeys.length || sort || search ? <div className="px-grid-active-filters"><span>Filtros da grade</span>{search ? <span className="px-grid-filter-chip">Busca: {search}<button type="button" onClick={() => setSearchState((current) => ({ ...current, [mode]: '' }))}>×</button></span> : null}{activeKeys.map((key) => <span className="px-grid-filter-chip" key={key}>{summary(labels[key], filters[key])}<button type="button" onClick={() => setFilterState((current) => ({ ...current, [mode]: { ...current[mode], [key]: initialFilters()[key] } }))}>×</button></span>)}{sort ? <span className="px-grid-filter-chip">Ordenação: {labels[sort.key]} {sort.direction === 'asc' ? '↑' : '↓'}<button type="button" onClick={() => setSortState((current) => ({ ...current, [mode]: null }))}>×</button></span> : null}<button className="px-grid-clear-all" type="button" onClick={resetGrid}>Limpar grade</button></div> : null}
-        <div className="px-table-scroll px-card-table-scroll"><table className="px-data-table"><thead><tr>
-          {tab === 'current' ? <><th>{header('Compra','description','text')}</th><th>{header('Data da compra','purchaseDate','date')}</th><th>{header('Parcela','installment','multi',gridOptions.installment)}</th><th>{header('Grupo','group','multi',gridOptions.group)}</th><th>{header('Valor','amount','number')}</th><th>{header('Situação','status','multi',gridOptions.status)}</th><th>Detalhes</th></> : <><th>{header('Compra','description','text')}</th><th>{header('Parcela','installment','multi',gridOptions.installment)}</th><th>{header('Fatura','statementMonth','multi',gridOptions.statementMonth)}</th><th>{header('Valor','amount','number')}</th><th>{header('Situação','status','multi',gridOptions.status)}</th><th>Detalhes</th></>}
-        </tr></thead><tbody>{visibleRows.map((row) => <tr key={row.id}>{tab === 'current' ? <><td><strong>{row.description}</strong></td><td>{date.format(new Date(`${row.purchaseDate}T12:00:00Z`))}</td><td>{row.installment}</td><td>{row.group}</td><td className={`px-money ${row.amount < 0 ? 'positive' : ''}`}>{money.format(row.amount)}</td><td><span className={`px-status ${rowStatusClass(row)}`}>{rowStatusLabel(row)}</span></td><td><button className="px-detail-btn" type="button" aria-label={`Ver detalhes de ${row.description}`} onClick={() => setDetailRow(row)}>↗</button></td></> : <><td><strong>{row.description}</strong></td><td>{row.installment}</td><td>{monthLabel(row.statementMonth)}</td><td className={`px-money ${row.amount < 0 ? 'positive' : ''}`}>{money.format(row.amount)}</td><td><span className={`px-status ${rowStatusClass(row)}`}>{rowStatusLabel(row)}</span></td><td><button className="px-detail-btn" type="button" aria-label={`Ver detalhes de ${row.description}`} onClick={() => setDetailRow(row)}>↗</button></td></>}</tr>)}</tbody></table>{!visibleRows.length ? <p className="px-empty">Nenhuma movimentação corresponde aos filtros desta aba.</p> : null}</div>
-      </> : null}
-
-      {tab === 'future' ? <div className="px-card-future-workspace">
-        <div className="px-card-future-timeline" aria-label="Próximas faturas">
-          {futureMonths.map((month) => {
-            const rows = futureRows.filter((row) => row.statementMonth === month);
-            const value = sumRows(rows);
-            return <button key={month} type="button" className={activeFutureMonth === month ? 'active' : ''} onClick={() => setSelectedFutureMonth(month)}>
-              <span>{monthLabel(month)}</span>
-              <strong>{money.format(value)}</strong>
-              <small>{rows.length} parcela(s)</small>
-            </button>;
-          })}
-          {!futureMonths.length ? <div className="px-empty">Não há faturas futuras em aberto.</div> : null}
-        </div>
-
-        {activeFutureMonth ? <div className="px-card-future-detail">
-          <header>
-            <div><span>Fatura selecionada</span><h3>{monthLabel(activeFutureMonth)}</h3></div>
-            <div><span>Total previsto</span><strong>{money.format(activeFutureAmount)}</strong><small>{activeFutureCredits ? `Créditos/estornos ${money.format(activeFutureCredits)}` : 'Sem créditos/estornos'}</small></div>
-          </header>
-          <div className="px-card-future-list">
-            {activeFutureRows.map((row) => <button type="button" key={row.id} onClick={() => setDetailRow(row)}>
-              <span><strong>{row.description}</strong><small>{row.installment} · {row.group}</small></span>
-              <b>{money.format(row.amount)}</b>
-              <em>›</em>
-            </button>)}
+          <div className="px-card-command-approved-summarybar">
+            <div><i aria-hidden="true">◉</i><span><strong>{commandRows.length} lançamentos</strong><small>{commandTab === 'current' ? 'na fatura atual' : 'na visão filtrada'}</small></span></div>
+            <div><i aria-hidden="true">▤</i><span><small>Total da visão</small><strong>{money.format(commandRowsTotal)}</strong></span></div>
+            <div><i aria-hidden="true">◷</i><span><small>Em aberto</small><strong>{money.format(commandRows.filter((row) => isOpenStatus(row.status)).reduce((sum, row) => sum + row.amount, 0))}</strong></span></div>
+            <div className="px-card-command-approved-export">
+              <button type="button" disabled={!commandRows.length} onClick={() => exportCardStatement('xlsx')}><span aria-hidden="true">▦</span>Exportar Excel</button>
+              <button type="button" disabled={!commandRows.length} onClick={() => exportCardStatement('pdf')}><span aria-hidden="true">▤</span>Exportar PDF</button>
+            </div>
           </div>
-        </div> : null}
-      </div> : null}
 
-      {tab === 'rules' ? <div className="px-card-rules">
-        <div className="px-card-rules-head"><span>Como o MEG lê seus cartões</span><strong>Regras que protegem os totais de fatura e limite</strong></div>
-        <ol className="px-rules-list"><li>A fatura do período usa a data efetiva de vencimento/competência do lançamento, e não apenas a data original da compra.</li><li>Compras, créditos e estornos entram pelo valor líquido da fatura; estornos negativos reduzem o total devido.</li><li>Uma fatura já paga continua exibindo seu total histórico, mas deixa de compor o limite comprometido.</li><li>Parcelas legadas permanecem somente em leitura até a migração definitiva para o domínio de cartões.</li><li>Compras novas do domínio de cartões continuam sendo priorizadas quando existirem, evitando duplicidade com a compatibilidade legada.</li><li>O limite comprometido considera somente fatura atual e parcelas futuras ainda em aberto.</li><li>A identidade visual é resolvida automaticamente pelo produto, emissor e bandeira cadastrados.</li></ol>
-      </div> : null}
-    </section>
+          <div className="px-card-command-approved-table-wrap">
+            <table className="px-data-table px-card-command-approved-table" data-meg-export-native="true">
+              <thead><tr><th>Data</th><th>Descrição</th><th>Grupo</th><th>Parcela</th><th>Situação</th><th>Valor</th><th /></tr></thead>
+              <tbody>{commandRows.map((row) => <tr key={row.id} onDoubleClick={() => setDetailRow(row)} title="Duplo clique para abrir os detalhes">
+                <td>{date.format(new Date(`${row.purchaseDate}T12:00:00Z`))}</td>
+                <td><strong>{row.description}</strong><small>{monthLabel(row.statementMonth)}</small></td>
+                <td>{row.group}</td>
+                <td>{row.installment}</td>
+                <td><span className={`px-status ${rowStatusClass(row)}`}>{rowStatusLabel(row)}</span></td>
+                <td className={`px-money ${row.amount < 0 ? 'positive' : ''}`}>{money.format(row.amount)}</td>
+                <td><button className="px-detail-btn" type="button" aria-label={`Ver detalhes de ${row.description}`} onClick={() => setDetailRow(row)}>›</button></td>
+              </tr>)}</tbody>
+            </table>
+            {!commandRows.length ? <p className="px-empty">Nenhum lançamento corresponde aos filtros selecionados.</p> : null}
+          </div>
+
+          <footer className="px-card-command-approved-table-foot">
+            <span>Mostrando {commandRows.length} lançamento(s)</span>
+            <strong>{money.format(commandRowsTotal)}</strong>
+          </footer>
+        </div>}
+      </section>
+    </div> : null}
 
     {detailRow ? <div className="px-card-detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailRow(null); }}>
       <aside className="px-card-detail-drawer" role="dialog" aria-modal="true" aria-label={`Detalhes de ${detailRow.description}`}>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1010 638">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#17233f"/><stop offset=".55" stop-color="#0c1730"/><stop offset="1" stop-color="#050a14"/></linearGradient>
+    <linearGradient id="chip" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d7d8da"/><stop offset=".5" stop-color="#8d9198"/><stop offset="1" stop-color="#eef0f2"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="16" stdDeviation="20" flood-opacity=".28"/></filter>
+  </defs>
+  <rect width="1010" height="638" rx="54" fill="url(#g)"/>
+  <circle cx="852" cy="92" r="180" fill="#274873" opacity=".16"/>
+  <path d="M0 510 C260 430 492 560 1010 410 V638 H0Z" fill="#10294e" opacity=".35"/>
+  <text x="68" y="115" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="66" font-weight="700">AZUL</text>
+  <text x="69" y="160" fill="#b9c6da" font-family="Arial,Helvetica,sans-serif" font-size="24" letter-spacing="6">PLATINUM</text>
+  <rect x="72" y="242" width="128" height="96" rx="18" fill="url(#chip)"/>
+  <path d="M94 242v96M136 242v96M178 242v96M72 274h128M72 306h128" stroke="#6d7279" stroke-width="5" opacity=".75"/>
+  <path d="M238 274c26 20 26 42 0 62M254 260c39 29 39 61 0 90M270 246c53 38 53 80 0 118" fill="none" stroke="#d9e0ea" stroke-width="7" stroke-linecap="round"/>
+  <text x="70" y="548" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="600">AZUL • ITAÚ</text>
+  <g transform="translate(790 500)" filter="url(#shadow)">
+    <circle cx="58" cy="58" r="58" fill="#eb001b"/>
+    <circle cx="126" cy="58" r="58" fill="#f79e1b" opacity=".93"/>
+  </g>
+</svg>

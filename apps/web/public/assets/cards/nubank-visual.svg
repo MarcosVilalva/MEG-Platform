@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1010 638">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8a05be"/><stop offset=".55" stop-color="#68038e"/><stop offset="1" stop-color="#3b0452"/></linearGradient>
+    <linearGradient id="chip" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d7d8da"/><stop offset=".5" stop-color="#8d9198"/><stop offset="1" stop-color="#eef0f2"/></linearGradient>
+  </defs>
+  <rect width="1010" height="638" rx="54" fill="url(#g)"/>
+  <circle cx="900" cy="-50" r="330" fill="#fff" opacity=".055"/>
+  <text x="72" y="148" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="82" font-weight="800">nu</text>
+  <rect x="72" y="260" width="128" height="96" rx="18" fill="url(#chip)"/>
+  <path d="M94 260v96M136 260v96M178 260v96M72 292h128M72 324h128" stroke="#6d7279" stroke-width="5" opacity=".75"/>
+  <path d="M238 292c26 20 26 42 0 62M254 278c39 29 39 61 0 90M270 264c53 38 53 80 0 118" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".9"/>
+  <g transform="translate(790 470)"><circle cx="62" cy="62" r="62" fill="#eb001b"/><circle cx="134" cy="62" r="62" fill="#f79e1b" opacity=".93"/></g>
+</svg>

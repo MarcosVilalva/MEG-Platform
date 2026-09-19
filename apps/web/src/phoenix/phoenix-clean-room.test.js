@@ -10,6 +10,7 @@ const screens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.
 const movementScreen = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
 const cardsGrid = readFileSync(new URL('./screens/PhoenixCardsGrid.tsx', import.meta.url), 'utf8');
 const cardsPremiumCss = readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8');
+const cardsWowCss = readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8');
 const gridFilter = readFileSync(new URL('./PhoenixGridFilter.tsx', import.meta.url), 'utf8');
 const gridCss = readFileSync(new URL('./phoenix-grid.css', import.meta.url), 'utf8');
 const launchDynamicCss = readFileSync(new URL('./phoenix-launch-dynamic.css', import.meta.url), 'utf8');
@@ -28,10 +29,10 @@ const loader = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.
 const previewMain = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
 const phoenixHtml = readFileSync(new URL('../../phoenix.html', import.meta.url), 'utf8');
 const productionHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
-const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-home-dashboard.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
+const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-home-dashboard.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
 const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${profileAvatar}\n${commandPalette}\n${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
-const readOnlyScreens = `${screens}\n${movementScreen}\n${homeDashboard}\n${homeAllTime}\n${webScreens}\n${history}\n${users}\n${settings}\n${sidebar}\n${commandPalette}`;
+const readOnlyScreens = `${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${webScreens}\n${history}\n${users}\n${settings}\n${sidebar}\n${commandPalette}`;
 
 for (const forbidden of ['global.css', 'v15-contract.css', 'meg-v15.css']) {
   assert.doesNotMatch(phoenixSource, new RegExp(forbidden.replace('.', '\\.')),
@@ -240,22 +241,52 @@ assert.match(homeDashboard, /px-home-drawer/,
   'Detalhes de vencimento devem abrir drawer na própria Home');
 assert.match(homeDashboard, /Revisar pagamento/,
   'Drawer da Home deve permitir selecionar itens para revisão de pagamento');
-assert.match(cardsGrid, /data-cards-layout="cockpit-v2"/,
-  'Cartões deve usar o cockpit premium aprovado.');
-assert.match(cardsGrid, /Meus cartões/,
-  'Seleção de cartões deve permanecer visível em uma faixa rápida.');
-assert.match(cardsGrid, /Total comprometido/,
-  'Cartões deve destacar o total que efetivamente compromete o limite.');
-assert.match(cardsGrid, /Memória de cálculo do limite/,
-  'Limite disponível deve possuir memória de cálculo explícita.');
+assert.match(cardsGrid, /data-cards-layout="approved-v4"/,
+  'Cartões deve usar a composição visual aprovada antes da implementação.');
+assert.match(cardsGrid, /Seus cartões/,
+  'Tela principal deve manter os cartões como protagonistas.');
+assert.match(cardsGrid, /Duplo clique para abrir a central do cartão/,
+  'Tela principal deve explicar o acesso à central por duplo clique.');
+assert.match(cardsGrid, /onDoubleClick=\{\(\) => openCardCommand/,
+  'Duplo clique no cartão deve abrir a central detalhada.');
+assert.match(cardsGrid, /CENTRAL DO CARTÃO/,
+  'Cartões deve oferecer uma central detalhada por cartão.');
+assert.match(cardsGrid, /Limite total/,
+  'Cada cartão deve exibir o limite total com leitura imediata.');
+assert.match(cardsGrid, /Limite disponível/,
+  'Resumo do cartão selecionado deve destacar o limite disponível.');
+assert.match(cardsGrid, /Melhor dia de compra/,
+  'Cartão selecionado deve destacar o melhor dia estimado de compra.');
+assert.match(cardsGrid, /Memória do limite/,
+  'Central deve manter memória explícita do cálculo do limite.');
 assert.match(cardsGrid, /Próximas faturas/,
   'Cartões deve permitir navegar pelas próximas competências.');
+assert.match(cardsGrid, /commandSearch/,
+  'Central detalhada deve possuir busca própria.');
+assert.match(cardsGrid, /commandMonth/,
+  'Central detalhada deve filtrar por competência.');
+assert.match(cardsGrid, /commandStatus/,
+  'Central detalhada deve filtrar por situação.');
+assert.match(cardsGrid, /commandGroup/,
+  'Central detalhada deve filtrar por grupo.');
+assert.match(cardsGrid, /commandSort/,
+  'Central detalhada deve permitir ordenar a tabela.');
+assert.match(cardsGrid, /exportCardStatement\('xlsx'\)/,
+  'Central do cartão deve exportar a visão filtrada para Excel.');
+assert.match(cardsGrid, /exportCardStatement\('pdf'\)/,
+  'Central do cartão deve exportar a visão filtrada para PDF.');
+assert.match(cardsGrid, /data-meg-export-native="true"/,
+  'Tabela do modal deve usar somente a exportação nativa da central.');
 assert.match(cardsGrid, /setDetailRow/,
   'Movimentações do cartão devem abrir detalhe contextual em vez de botão inerte.');
-assert.match(cardsPremiumCss, /\.px-cards-rail/,
-  'Faixa horizontal de cartões deve possuir estilo dedicado.');
-assert.match(cardsPremiumCss, /\.px-card-limit-equation/,
-  'Memória visual do limite deve possuir composição própria.');
+assert.match(cardsWowCss, /\.px-cards-approved-grid/,
+  'Tela aprovada deve possuir grade visual própria para os cartões.');
+assert.match(cardsWowCss, /\.px-card-command-approved/,
+  'Central detalhada deve possuir modal responsivo próprio.');
+assert.match(cardsWowCss, /\.px-card-command-approved-filters/,
+  'Filtros da central detalhada devem possuir composição premium.');
+assert.match(cardsWowCss, /\.px-cards-approved-progress/,
+  'Uso do limite deve possuir leitura visual destacada.');
 assert.match(cardsPremiumCss, /\.px-card-detail-drawer/,
   'Detalhe de compra deve abrir em drawer responsivo.');
 
