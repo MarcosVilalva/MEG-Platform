@@ -488,29 +488,59 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
       </div>
     </section>
 
-    <section className="px-card-focus">
-      <article className="px-card px-card-focus-visual">
-        <div className="px-physical-card px-physical-card-premium" style={{ background: identity.background } as CSSProperties}>
-          {identity.artwork ? <img src={`${import.meta.env.BASE_URL}${identity.artwork}`} alt={identity.label} /> : <>
-            <div className="px-card-face-top"><strong>{identity.label}</strong><span>{selected.lastFour ? `•••• ${selected.lastFour}` : 'MEG FINANÇAS'}</span></div>
-            <span className="px-chip" />
-            <small>{selected.issuer || selected.brand || 'MEG FINANÇAS'}</small>
-            {identity.brandAsset ? <img className="px-brand-asset" src={`${import.meta.env.BASE_URL}assets/card-brands/${identity.brandAsset}.svg`} alt={selected.brand || identity.brandAsset} /> : null}
-          </>}
+    <section className="px-card-focus px-card-command-focus">
+      <article className="px-card px-card-focus-visual px-card-focus-visual-wow">
+        <div
+          className="px-card-visual-stage"
+          role="button"
+          tabIndex={0}
+          aria-label={`Abrir central do cartão ${selected.name}`}
+          onDoubleClick={() => openCardCommand()}
+          onKeyDown={(event) => { if (event.key === 'Enter') openCardCommand(); }}
+        >
+          <div className="px-physical-card px-physical-card-premium px-physical-card-wow" style={{ background: identity.background } as CSSProperties}>
+            {identity.artwork ? <img src={`${import.meta.env.BASE_URL}${identity.artwork}`} alt={identity.label} /> : <>
+              <div className="px-card-face-top"><strong>{identity.label}</strong><span>{selected.lastFour ? `•••• ${selected.lastFour}` : 'MEG FINANÇAS'}</span></div>
+              <span className="px-chip" />
+              <small>{selected.issuer || selected.brand || 'MEG FINANÇAS'}</small>
+              {identity.brandAsset ? <img className="px-brand-asset" src={`${import.meta.env.BASE_URL}assets/card-brands/${identity.brandAsset}.svg`} alt={selected.brand || identity.brandAsset} /> : null}
+            </>}
+            <span className="px-card-wow-gloss" />
+          </div>
+          <span className="px-card-double-click-hint">Duplo clique para abrir a central completa</span>
         </div>
-        <div className="px-card-focus-meta">
+
+        <div className="px-card-focus-meta px-card-focus-meta-wow">
           <span>Cartão selecionado</span>
           <strong>{selected.name}</strong>
           <small>{selected.issuer || 'Cartão cadastrado no MEG'}{selected.lastFour ? ` · final ${selected.lastFour}` : ''}</small>
-          <div>
-            <span><small>Fechamento</small><b>dia {selected.closingDay}</b></span>
-            <span><small>Vencimento</small><b>dia {selected.dueDay}</b></span>
+          <div className="px-card-primary-facts">
+            <span><small>Fechamento</small><b>dia {selected.closingDay || '—'}</b></span>
+            <span><small>Vencimento</small><b>{statementDueDate}</b></span>
+            <span><small>Melhor dia estimado</small><b>{bestPurchaseDay ? `dia ${bestPurchaseDay}` : '—'}</b></span>
+            <span className="available"><small>Limite livre</small><b>{money.format(availableLimit)}</b></span>
           </div>
+          <button className="px-card-open-command" type="button" onClick={() => openCardCommand()}>
+            <span>Explorar cartão</span>
+            <small>Resumo, faturas, parcelas, histórico e filtros</small>
+            <b>↗</b>
+          </button>
         </div>
       </article>
 
-      <article className="px-card px-card-focus-financial">
-        <div className="px-card-statement-head">
+      <article className="px-card px-card-focus-financial px-card-focus-financial-wow">
+        <div className="px-card-limit-hero">
+          <div>
+            <span>Limite disponível agora</span>
+            <strong>{money.format(availableLimit)}</strong>
+            <small>de {money.format(creditLimit)} · {money.format(totalCommitted)} comprometidos</small>
+          </div>
+          <div className={`px-card-usage-ring ${usageTone}`} style={{ '--card-usage': `${usage}%` } as CSSProperties}>
+            <span><strong>{usage.toFixed(0)}%</strong><small>utilizado</small></span>
+          </div>
+        </div>
+
+        <div className="px-card-statement-head px-card-statement-wow">
           <div>
             <span>Fatura de {monthLabel(data.month)}</span>
             <strong>{money.format(currentStatement)}</strong>
@@ -519,19 +549,32 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
           <span className={`px-status ${currentStatusClass}`}>{currentStatus}</span>
         </div>
 
-        <div className="px-card-executive-strip">
-          <div><span>Em aberto agora</span><strong>{money.format(currentOutstanding)}</strong><small>Valor que ainda compromete o caixa</small></div>
+        <div className="px-card-executive-strip px-card-executive-wow">
+          <div><span>Em aberto agora</span><strong>{money.format(currentOutstanding)}</strong><small>impacta caixa e limite</small></div>
           <div><span>Próxima fatura</span><strong>{money.format(nextStatement)}</strong><small>{monthLabel(next)}</small></div>
-          <div><span>Parcelas futuras</span><strong>{money.format(futureNet)}</strong><small>{futureRows.length} parcela(s) em aberto</small></div>
-          <div className="emphasis"><span>Total comprometido</span><strong>{money.format(totalCommitted)}</strong><small>Fatura em aberto + futuro</small></div>
+          <div><span>Parcelas futuras</span><strong>{money.format(futureNet)}</strong><small>{futureRows.length} parcela(s)</small></div>
+          <div className="emphasis"><span>Total comprometido</span><strong>{money.format(totalCommitted)}</strong><small>agora + futuro</small></div>
         </div>
 
-        <div className={`px-card-limit-panel ${usageTone}`}>
-          <div className="px-card-limit-title">
-            <div><span>Uso do limite</span><strong>{usage.toFixed(0)}%</strong></div>
-            <div><span>Limite disponível</span><strong>{money.format(availableLimit)}</strong></div>
+        <div className="px-card-intelligence" aria-label="Leitura inteligente do cartão">
+          <div>
+            <span>Pressão no limite</span>
+            <strong>{usage >= 90 ? 'Crítica' : usage >= 75 ? 'Atenção' : 'Controlada'}</strong>
+            <small>{money.format(availableLimit)} ainda disponíveis</small>
           </div>
-          <progress max="100" value={usage} />
+          <div>
+            <span>Próxima fatura</span>
+            <strong>{nextStatementDelta === 0 ? 'Sem variação' : `${money.format(Math.abs(nextStatementDelta))} ${nextStatementDelta > 0 ? 'acima' : 'abaixo'}`}</strong>
+            <small>comparada à fatura atual</small>
+          </div>
+          <div>
+            <span>Maior compromisso futuro</span>
+            <strong>{biggestFuture ? money.format(biggestFuture.amount) : 'Nenhum'}</strong>
+            <small>{biggestFuture ? `${biggestFuture.description} · ${biggestFuture.installment}` : 'Sem parcelas futuras em aberto'}</small>
+          </div>
+        </div>
+
+        <div className={`px-card-limit-panel px-card-limit-panel-wow ${usageTone}`}>
           <div className="px-card-limit-equation" aria-label="Memória de cálculo do limite">
             <span>{money.format(creditLimit)} <small>limite</small></span>
             <b>−</b>
