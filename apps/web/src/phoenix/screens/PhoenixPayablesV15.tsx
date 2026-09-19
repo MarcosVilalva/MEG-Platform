@@ -64,6 +64,16 @@ type DateRenderBlock = {
   items: PendingItem[];
 };
 
+type SettlementReceipt = {
+  count: number;
+  total: number;
+  paidAt: string;
+  accountName: string;
+  paymentMethodName: string;
+  balanceBefore: number;
+  balanceAfter: number;
+};
+
 function normalize(value: unknown) {
   return String(value ?? '')
     .normalize('NFD')
@@ -84,6 +94,12 @@ function todaySaoPaulo() {
   }).formatToParts(new Date());
   const read = (type: string) => parts.find((item) => item.type === type)?.value || '';
   return `${read('year')}-${read('month')}-${read('day')}`;
+}
+
+function addDaysIso(value: string, days: number) {
+  const dateValue = new Date(`${value}T12:00:00Z`);
+  dateValue.setUTCDate(dateValue.getUTCDate() + days);
+  return dateValue.toISOString().slice(0, 10);
 }
 
 function installmentFromDescription(description: string) {
@@ -384,6 +400,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const [preparedBatch, setPreparedBatch] = useState<PreparedPhoenixPendingBatchSettlement | null>(null);
   const [writeState, setWriteState] = useState<PhoenixPendingWriteState>({ status: 'idle' });
   const [successMessage, setSuccessMessage] = useState('');
+  const [settlementReceipt, setSettlementReceipt] = useState<SettlementReceipt | null>(null);
   const [locallySettled, setLocallySettled] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
@@ -430,12 +447,18 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const overdue = actionable.filter((item) => item.dueDate < today);
   const dueToday = actionable.filter((item) => item.dueDate === today);
   const upcoming = actionable.filter((item) => item.dueDate > today);
+  const nextSevenLimit = addDaysIso(today, 7);
+  const nextSeven = upcoming.filter((item) => item.dueDate <= nextSevenLimit);
+  const overdueTotal = overdue.reduce((sum, item) => sum + item.openAmount, 0);
+  const dueTodayTotal = dueToday.reduce((sum, item) => sum + item.openAmount, 0);
+  const nextSevenTotal = nextSeven.reduce((sum, item) => sum + item.openAmount, 0);
   const total = open.reduce((sum, item) => sum + item.openAmount, 0);
   const openObligationCount = pendingObligationCount(open);
   const actionableObligationCount = pendingObligationCount(actionable);
   const overdueObligationCount = pendingObligationCount(overdue);
   const dueTodayObligationCount = pendingObligationCount(dueToday);
   const upcomingObligationCount = pendingObligationCount(upcoming);
+  const nextSevenObligationCount = pendingObligationCount(nextSeven);
 
   const visible = useMemo(() => open.filter((item) => {
     const actionableItem = item.openAmount > 0;
