@@ -117,7 +117,7 @@
 }
 
 .px-home-health,
-.px-home-sync-state {
+.px-home-benefit-chip {
   min-height:34px;
   display:inline-flex;
   align-items:center;
@@ -140,10 +140,45 @@
   color:#eec05b;
 }
 
-.px-home-sync-state {
-  border:1px solid rgba(105,166,151,.16);
-  background:rgba(255,255,255,.022);
-  color:#8eaaa2;
+.px-home-benefit-chip {
+  min-height:34px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:0 10px;
+  border:1px solid rgba(62,188,225,.26);
+  border-radius:999px;
+  background:rgba(62,188,225,.065);
+  color:#a9dff0;
+  font-size:8px;
+  font-weight:900;
+  white-space:nowrap;
+}
+
+.px-home-benefit-chip svg {
+  width:14px;
+  height:14px;
+  flex:0 0 auto;
+  color:#5bc9e8;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.px-home-benefit-chip > span {
+  color:#7da8b4;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+
+.px-home-benefit-chip > strong {
+  color:#d9f6ff;
+  font-size:9px;
+  font-variant-numeric:tabular-nums;
 }
 
 .px-home-kpis {
@@ -1136,7 +1171,7 @@ button.px-home-last-activity {
     grid-template-columns:minmax(0,1.12fr) minmax(330px,.88fr);
   }
 
-  .px-home-top-status .px-home-sync-state {
+  .px-home-benefit-chip > span {
     display:none;
   }
 

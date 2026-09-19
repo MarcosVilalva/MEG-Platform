@@ -302,6 +302,12 @@ assert.match(homeDashboard, /Pendências abertas/);
 assert.match(homeDashboard, /Próximos 7 dias/);
 assert.match(homeDashboard, /A receber/);
 assert.match(homeDashboard, /Resumo executivo/);
+assert.match(homeDashboard, /px-home-benefit-chip/,
+  'Home deve mostrar o saldo do benefício no hero sem criar um quinto KPI.');
+assert.match(homeDashboard, /Saldo do benefício separado do caixa monetário/,
+  'Benefício deve permanecer visualmente separado do saldo monetário.');
+assert.match(homeNowCss, /\.px-home-benefit-chip/,
+  'Chip de benefício deve possuir estilo próprio no hero.');
 assert.match(homeNowCss, /grid-template-rows:72px 82px 68px minmax\(0,1fr\)/,
   'Home desktop deve distribuir hero, KPIs, prioridade e workspace em faixas explícitas.');
 assert.match(homeNowCss, /\.px-home-priority-list[\s\S]*overflow-y:auto/,
