@@ -168,6 +168,12 @@ assert.match(pendingStyles, /px-pending-agenda[\s\S]*px-pending-agenda-head/,
   'Agenda deve possuir container premium e cabeçalho visual próprio.');
 assert.match(pendingStyles, /px-pending-kpi-icon/,
   'KPIs definitivos devem manter iconografia contextual.');
+assert.match(pendingStyles, /\.px-pending-kpis \.px-pending-kpi-icon[\s\S]*display:grid/,
+  'Badge de KPI deve preservar grid próprio mesmo diante da regra genérica de spans.');
+assert.match(pendingStyles, /place-items:center;[\s\S]*place-content:center;/,
+  'Badges de ícones devem centralizar o glifo nos dois eixos.');
+assert.match(pendingStyles, /px-pending-kpi-icon > svg[\s\S]*display:block/,
+  'SVG dos badges deve sair do baseline inline para centralização óptica estável.');
 assert.match(pendingStyles, /\.phoenix-v15 \.px-main-payables[\s\S]*position:relative !important[\s\S]*height:100dvh !important/,
   'Workspace de Pendentes deve possuir âncora geométrica explícita no viewport.');
 assert.match(pendingStyles, /grid-template-rows:72px 82px 54px minmax\(0,1fr\)/,
