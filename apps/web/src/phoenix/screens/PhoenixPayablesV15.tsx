@@ -811,7 +811,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     </section>;
   }
 
-  return <section className="px-screen px-pending-cockpit" onWheel={routeWheelToPendingList}>
+  return <section className="px-screen px-pending-cockpit" data-pending-layout="canonical-v3" onWheel={routeWheelToPendingList}>
     <header className="px-screen-head px-pending-hero">
       <div className="px-pending-hero-main">
         <span className="px-pending-hero-icon" aria-hidden="true"><PendingGlyph kind="calendar" /></span>
