@@ -31,4 +31,31 @@ import '../phoenix/phoenix-keyboard-grid-bridge';
 import '../phoenix/phoenix-table-export-bridge';
 import '../phoenix/phoenix-overlay-theme-bridge';
 import '../phoenix/phoenix-visual-a11y.css';
-import '../phoenix/preview-main';
+import { clearSession } from './auth-client';
+
+const nativeOperationalBuild = import.meta.env.VITE_MOBILE_APP === 'true';
+
+if (nativeOperationalBuild) {
+  document.body.classList.add('native-mobile', 'meg-operational-mobile');
+  document.body.dataset.megOperational = 'android-v2';
+}
+
+async function bootMegRuntime() {
+  if (nativeOperationalBuild) {
+    try {
+      // @ts-expect-error módulo JS nativo existente, carregado somente no APK.
+      const biometric = await import('../native-biometric-login.js');
+      const startup = await biometric.prepareAndroidBiometricStartup();
+      if (startup?.required && !startup?.authenticated) {
+        // Não permite que uma sessão web já existente contorne a validação biométrica.
+        clearSession();
+      }
+    } catch (cause) {
+      console.warn('MEG Android biometric startup unavailable', cause);
+    }
+  }
+
+  await import('../phoenix/preview-main');
+}
+
+void bootMegRuntime();
