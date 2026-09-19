@@ -153,6 +153,25 @@ assert.match(persistentSnapshot, /deletePhoenixPersistentSnapshot/,
 assert.match(pendingStyles, /px-pending-cockpit[\s\S]*px-pending-kpis/,
   'Tela deve manter o cockpit visual e seus indicadores de prioridade.');
 
+assert.match(appShell, /px-main-payables/,
+  'Shell deve isolar o viewport apenas quando a aba Pendentes estiver ativa.');
+assert.match(appShell, /px-content-payables/,
+  'Conteúdo de Pendentes deve possuir classe própria para travar o scroll global sem afetar outras telas.');
+assert.match(payables, /px-pending-scroll-region/,
+  'Somente a agenda de compromissos deve possuir região própria de rolagem.');
+assert.match(payables, /pendingScrollRef/,
+  'A rolagem operacional deve possuir referência explícita para mouse e teclado.');
+assert.match(payables, /ArrowDown[\s\S]*ArrowUp[\s\S]*PageDown[\s\S]*PageUp[\s\S]*Home[\s\S]*End/,
+  'Pendentes deve aceitar setas, Page Up/Down e Home/End na agenda rolável.');
+assert.match(payables, /routeWheelToPendingList/,
+  'Rodinha fora da agenda deve ser redirecionada para a lista sem mover a página inteira.');
+assert.match(pendingStyles, /\.px-main-payables\s*\{[\s\S]*height:100dvh;[\s\S]*overflow:hidden;/,
+  'Desktop de Pendentes deve travar o scroll do workspace inteiro.');
+assert.match(pendingStyles, /\.px-pending-scroll-region\s*\{[\s\S]*overflow-y:auto;[\s\S]*overscroll-behavior:contain;/,
+  'Lista de compromissos deve concentrar a rolagem vertical e impedir encadeamento para a página.');
+assert.match(pendingStyles, /@media \(max-width:760px\)[\s\S]*\.px-main-payables[\s\S]*overflow:visible/,
+  'Mobile deve manter rolagem natural para evitar aprisionamento do viewport.');
+
 assert.doesNotMatch(movements, /submitPhoenixSimpleEvent|runPhoenixSimpleEventWrite|cardsClient\.createPurchase|\/finance\/benefit-events/,
   'Tela React base não deve acionar criação diretamente; a confirmação fica isolada no controle protegido.');
 assert.doesNotMatch(movements, /financeClient\.updateEvent|financeClient\.bulkUpdateEvents|clearPhoenixReadModelCache|loadPhoenixReadModel\(data\.month/,
