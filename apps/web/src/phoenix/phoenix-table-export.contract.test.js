@@ -69,11 +69,29 @@ const sample = {
   headers: ['Vencimento', 'Descrição', 'Despesa'],
   rows: [
     ['20/09/2026', 'TV E STREAMING', 'R$ 67,50'],
-    ['28/09/2026', 'BV SOLAR\u000B', 'R$ 82,83']
+    ['28/09/2026', 'BV SOLAR\u000B', '-R$ 82,83']
   ],
   kinds: ['date', 'text', 'money'],
-  sums: [null, null, 150.33]
+  sums: [null, null, -15.33]
 };
+assert.equal(exportCore.parseBrazilianNumber('-R$ 2.041,32'), -2041.32);
+assert.equal(exportCore.parseBrazilianNumber('− R$ 62,00'), -62);
+assert.equal(exportCore.parseBrazilianNumber('R$ -31,00'), -31);
+assert.equal(exportCore.parseBrazilianNumber('(R$ 110,25)'), -110.25);
+
+const mixedKinds = exportCore.detectPhoenixColumnKinds(
+  ['Receita', 'Despesa', 'Resultado'],
+  [
+    ['—', 'R$ 100,00', '-R$ 25,00'],
+    ['R$ 50,00', '—', 'R$ 10,00'],
+    ['—', 'R$ 30,00', '− R$ 5,00'],
+  ],
+);
+assert.deepEqual(mixedKinds.kinds, ['money', 'money', 'money'],
+  'Traços visuais não podem transformar colunas monetárias em texto');
+assert.equal(mixedKinds.sums[2], -20,
+  'Valores negativos devem permanecer numéricos e participar das somas');
+
 const bytes = exportCore.buildPhoenixXlsx(sample);
 assert.equal(bytes[0], 0x50, 'XLSX deve iniciar como pacote ZIP PK');
 assert.equal(bytes[1], 0x4b, 'XLSX deve iniciar como pacote ZIP PK');
