@@ -1,9 +1,9 @@
 {
-  "versionCode": 271,
-  "versionName": "1.1.271",
+  "versionCode": 272,
+  "versionName": "1.1.272",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "800c214770b924cd700236d1c9e599ab15b840c7c3e28ac8b384caa2baf2026b",
+  "sha256": "31e0d72f814c9fb1c4f8e768fbd9d10355ddb13ac3e783930433167c474a83e6",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #289 from MarcosVilalva/fix/phoenix-pending-obligation-counts"
+  "releaseNotes": "Merge pull request #290 from MarcosVilalva/fix/phoenix-pending-bulk-excel-final"
 }
