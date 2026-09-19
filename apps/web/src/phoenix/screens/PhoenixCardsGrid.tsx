@@ -598,7 +598,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
 
     <section className="px-cards-approved-selected" aria-label="Resumo do cartão selecionado">
       <div className="px-cards-approved-selected-id">
-        <span className="px-cards-approved-selected-art" style={{ background: identity.background }}>
+        <span className={`px-cards-approved-selected-art px-card-product-${identity.key}`} style={{ background: identity.background }}>
           {identity.artwork
             ? <img src={`${import.meta.env.BASE_URL}${identity.artwork}`} alt="" />
             : <strong>{identity.miniLabel}</strong>}
@@ -644,7 +644,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
 
         <section className="px-card-command-approved-overview">
           <div className="px-card-command-approved-cardbox">
-            <div className="px-card-command-approved-art" style={{ background: identity.background } as CSSProperties}>
+            <div className={`px-card-command-approved-art px-card-product-${identity.key}`} style={{ background: identity.background } as CSSProperties}>
               {identity.artwork
                 ? <img src={`${import.meta.env.BASE_URL}${identity.artwork}`} alt={identity.label} />
                 : <>
