@@ -89,24 +89,25 @@ export function resolvePhoenixCardIdentity(card: CreditCard): PhoenixCardIdentit
   if (combined.includes('MERCADO LIVRE') || combined.includes('MERCADO PAGO') || /(^|\s)MELI(\s|$)/.test(combined) || /(^|\s)ML(\s|$)/.test(combined)) {
     return {
       key: 'mercado', label: 'Mercado Pago', miniLabel: 'MELI',
-      background: 'linear-gradient(145deg,#252d3a 0%,#171d27 54%,#070a0e 100%)', brandAsset: asset || 'visa'
+      background: 'linear-gradient(145deg,#252d3a 0%,#171d27 54%,#070a0e 100%)',
+      artwork: 'assets/cards/mercado-pago-visual.svg', brandAsset: asset || 'visa'
     };
   }
   if (name.includes('AZUL')) {
     return {
       key: 'azul', label: 'AZUL', miniLabel: 'AZUL',
       background: 'linear-gradient(145deg,#101a38 0%,#17264e 52%,#080e1d 100%)',
-      brandAsset: asset || 'mastercard'
+      artwork: 'assets/cards/azul-platinum-visual.svg', brandAsset: asset || 'mastercard'
     };
   }
   if (name.includes('RIACHUELO') || issuer.includes('MIDWAY')) {
     return {
       key: 'riachuelo', label: 'RIACHUELO', miniLabel: 'RIACHU',
       background: 'linear-gradient(145deg,#202124 0%,#111214 54%,#050506 100%)',
-      brandAsset: asset || 'mastercard'
+      artwork: 'assets/cards/riachuelo-mastercard-visual.svg', brandAsset: asset || 'mastercard'
     };
   }
-  if (combined.includes('NUBANK')) return { key: 'nubank', label: 'Nubank', miniLabel: 'NU', background: 'linear-gradient(145deg,#8a05be,#3f0458)', brandAsset: asset || 'mastercard' };
+  if (combined.includes('NUBANK')) return { key: 'nubank', label: 'Nubank', miniLabel: 'NU', background: 'linear-gradient(145deg,#8a05be,#3f0458)', artwork: 'assets/cards/nubank-visual.svg', brandAsset: asset || 'mastercard' };
   if (combined.includes('SANTANDER')) return { key: 'santander', label: 'Santander', miniLabel: 'SANT', background: 'linear-gradient(145deg,#a40f18 0%,#5b0b12 54%,#180508 100%)', brandAsset: asset };
   if (combined.includes('BANCO DO BRASIL') || /(^|\s)BB(\s|$)/.test(combined)) return { key: 'bb', label: 'Ourocard', miniLabel: 'BB', background: 'linear-gradient(145deg,#d6b914 0%,#284a77 52%,#0d1d32 100%)', brandAsset: asset };
   if (combined.includes('CAIXA')) return { key: 'caixa', label: 'CAIXA', miniLabel: 'CAIXA', background: 'linear-gradient(145deg,#0f6292 0%,#0d4267 54%,#071726 100%)', brandAsset: asset };
