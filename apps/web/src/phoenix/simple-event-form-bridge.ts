@@ -80,7 +80,9 @@ function toggleChecked(root: ParentNode, title: string) {
 }
 
 function sourceAccountSelect(root: HTMLElement) {
-  return selectByLabel(root, 'Conta de origem') || selectByLabel(root, 'Conta financeira');
+  return root.querySelector<HTMLSelectElement>('[data-phoenix-account-select="source"]')
+    || selectByLabel(root, 'Conta de origem')
+    || selectByLabel(root, 'Conta financeira');
 }
 
 function feedback(root: HTMLElement) {
@@ -106,7 +108,53 @@ function clearFeedback(root: HTMLElement) {
 }
 
 function paymentSelect(root: HTMLElement) {
-  return selectByLabel(root, 'Forma de recebimento') || selectByLabel(root, 'Forma de pagamento');
+  return root.querySelector<HTMLSelectElement>('[data-phoenix-payment-method-select]')
+    || selectByLabel(root, 'Forma de recebimento')
+    || selectByLabel(root, 'Forma de pagamento');
+}
+
+function setControlledSelect(select: HTMLSelectElement | null, value: string) {
+  if (!select || !value || select.value === value) return false;
+  select.value = value;
+  select.dispatchEvent(new Event('input', { bubbles: true }));
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+}
+
+function reconcileBenefitRoute(root: HTMLElement) {
+  if (activeType(root) === 'transfer') return false;
+
+  const account = sourceAccountSelect(root);
+  const currentAccount = account?.selectedOptions[0];
+  const modality = normalize(root.querySelector<HTMLSelectElement>('[data-phoenix-modality-select]')?.value || '');
+  const accountLabel = normalize(currentAccount?.textContent || '');
+  const accountType = normalize(currentAccount?.dataset.accountType || '');
+  const benefitIntent = accountType === 'BENEFIT'
+    || accountLabel.includes('BENEF')
+    || accountLabel.includes('VEROCARD')
+    || accountLabel.includes('ALIMENTA')
+    || modality === 'ALIMENTACAO'
+    || modality === 'VEROCARD';
+
+  if (!benefitIntent) return false;
+
+  let changed = false;
+  const benefitAccount = account
+    ? [...account.options].find((option) => option.value && normalize(option.dataset.accountType || '') === 'BENEFIT')
+      || [...account.options].find((option) => {
+        const label = normalize(option.textContent || '');
+        return option.value && (label.includes('BENEF') || label.includes('VEROCARD') || label.includes('ALIMENTA'));
+      })
+    : null;
+  if (benefitAccount?.value) changed = setControlledSelect(account, benefitAccount.value) || changed;
+
+  const payment = paymentSelect(root);
+  const verocard = payment
+    ? [...payment.options].find((option) => option.value && normalize(option.textContent || '').includes('VEROCARD'))
+    : null;
+  if (verocard?.value) changed = setControlledSelect(payment, verocard.value) || changed;
+
+  return changed;
 }
 
 function benefitSelection(root: HTMLElement) {
@@ -313,6 +361,7 @@ function syncDrawer() {
   }
   syncing = true;
   try {
+    reconcileBenefitRoute(root);
     restrictIncomePaymentMethods(root);
     hideUnsupportedTemplate(root);
     refreshWriterCopy(root);
@@ -393,6 +442,7 @@ async function submit(root: HTMLElement) {
     return;
   }
 
+  reconcileBenefitRoute(root);
   const reason = unsupportedReason(root);
   if (reason) {
     state.mode = 'save';
@@ -509,6 +559,7 @@ function onClick(event: MouseEvent) {
     return;
   }
 
+  reconcileBenefitRoute(root);
   const reason = unsupportedReason(root);
   if (reason) {
     event.preventDefault();
