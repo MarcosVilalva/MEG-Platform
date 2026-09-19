@@ -324,8 +324,10 @@ assert.match(cardsGrid, /<CardMetricIcon name="limit"/,
   'Modal deve exibir ícone dedicado para limite total.');
 assert.match(cardsGrid, /<CardMetricIcon name="available"/,
   'Modal e resumo devem exibir ícone dedicado para limite disponível.');
-assert.match(cardsWowCss, /\.px-cards-approved-progress>b\{[\s\S]*white-space:nowrap!important;[\s\S]*width:32px!important;/,
+assert.match(cardsWowCss, /\.px-cards-approved-progress>b\{[\s\S]*white-space:nowrap!important;/,
   'Percentual do cartão não pode quebrar em várias linhas.');
+assert.match(cardsWowCss, /\.px-cards-approved-progress>b\{[\s\S]*width:32px!important;/,
+  'Percentual do cartão deve reservar largura suficiente para permanecer horizontal.');
 
 assert.match(cardsWowCss, /\.px-card-command-approved-backdrop\{[\s\S]*position:fixed!important;[\s\S]*width:100vw!important;[\s\S]*height:100dvh!important;/,
   'Backdrop da central deve cobrir inclusive menu lateral e barra superior.');
