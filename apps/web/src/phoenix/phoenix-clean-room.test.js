@@ -318,6 +318,15 @@ assert.match(cardsGrid, /createPortal\(<div className="px-card-command-backdrop 
   'Central do cartão deve sair do container da tela e ocupar o viewport real via portal.');
 assert.match(cardsWowCss, /HOTFIX V5\.1 · CENTRAL EM VIEWPORT REAL/,
   'A central deve possuir a correção explícita de viewport real.');
+assert.match(cardsGrid, /function CardMetricIcon/,
+  'KPIs de cartões devem usar iconografia vetorial própria, não glifos soltos.');
+assert.match(cardsGrid, /<CardMetricIcon name="limit"/,
+  'Modal deve exibir ícone dedicado para limite total.');
+assert.match(cardsGrid, /<CardMetricIcon name="available"/,
+  'Modal e resumo devem exibir ícone dedicado para limite disponível.');
+assert.match(cardsWowCss, /\.px-cards-approved-progress>b\{[\s\S]*white-space:nowrap!important;[\s\S]*width:32px!important;/,
+  'Percentual do cartão não pode quebrar em várias linhas.');
+
 assert.match(cardsWowCss, /\.px-card-command-approved-backdrop\{[\s\S]*position:fixed!important;[\s\S]*width:100vw!important;[\s\S]*height:100dvh!important;/,
   'Backdrop da central deve cobrir inclusive menu lateral e barra superior.');
 
