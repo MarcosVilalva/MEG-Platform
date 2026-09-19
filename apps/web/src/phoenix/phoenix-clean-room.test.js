@@ -74,14 +74,15 @@ assert.match(loader, /finance-domain-month/,
   'Fonte de lançamentos Phoenix deve declarar a leitura mensal completa');
 assert.match(loader, /authenticatedRequest<ManagedUsersRead>\('\/auth\/users'\)/,
   'Usuários Phoenix devem vir da rota administrativa oficial');
-assert.match(history, /Fonte principal:/);
-assert.match(history, /\/finance\/audit/);
+assert.match(history, /Trilha protegida/,
+  'Histórico deve comunicar auditoria protegida sem expor detalhes técnicos na interface principal.');
+assert.match(history, /Finance AuditLog/);
 assert.match(history, /AppState\.activityLog/);
-assert.match(history, /Antes \/ depois confirmado pelo backend/,
+assert.match(history, /Integridade confirmada pelo backend/,
   'Histórico Phoenix deve exibir snapshots before/after somente para a auditoria financeira estrutural');
 assert.match(history, /Histórico legado/,
   'Histórico anterior à auditoria normalizada deve permanecer preservado');
-assert.match(history, /Exportar histórico filtrado/);
+assert.match(history, /Exportar filtrado/);
 assert.match(users, /Somente leitura/);
 assert.match(users, /Gerenciar acesso/);
 assert.match(settings, /Saúde do sistema/);
