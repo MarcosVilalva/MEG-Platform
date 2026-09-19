@@ -186,6 +186,15 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
 
   try {
     return await serializableFinancialTransaction(async (tx) => {
+    const transactionStartedAt = Date.now();
+    let phaseStartedAt = transactionStartedAt;
+    const timingsMs: Record<string, number> = {};
+    const markPhase = (name: string) => {
+      const now = Date.now();
+      timingsMs[name] = now - phaseStartedAt;
+      phaseStartedAt = now;
+    };
+
     const previous = await tx.cloudMutationReceipt.findUnique({
       where: { workspaceId_operationId: { workspaceId: context.workspaceId, operationId: input.operationId } },
     });
@@ -211,6 +220,7 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
     if (normalize(paymentMethod.type) === 'CREDIT') {
       throw new PendingBatchSettlementError('INVALID_PAYMENT_METHOD', { paymentMethodId: paymentMethod.id, reason: 'CREDIT_METHOD_NOT_ALLOWED_FOR_SETTLEMENT' });
     }
+    markPhase('receiptAccountMethod');
 
     // Toda a seleção é carregada e validada antes da primeira gravação. Como a
     // transação é serializável, qualquer falha posterior desfaz o lote inteiro.
@@ -233,6 +243,7 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
         reason: 'SOURCE_CARD_METHOD_NOT_ALLOWED_FOR_SETTLEMENT',
       });
     }
+    markPhase('loadAndValidateItems');
 
     const total = Math.round(loaded.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
     if (!Number.isFinite(total) || total <= 0) {
@@ -243,6 +254,7 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
     if (!protection.allowed) {
       throw new PendingBatchSettlementError('INSUFFICIENT_MONETARY_BALANCE', { ...protection, at: input.paidAt.slice(0, 10) });
     }
+    markPhase('balanceProtection');
 
     const paidAt = new Date(`${input.paidAt.slice(0, 10)}T12:00:00.000Z`);
     const results: Array<Record<string, unknown>> = [];
@@ -382,6 +394,8 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
       results.push({ source: 'card', sourceId: item.sourceId, statementMonth: item.statementMonth, amount: item.amount, financialEventId: event.id });
     }
 
+    markPhase('canonicalWrites');
+
     if (updatedEventIds.length) {
       const beforeMirror = await tx.financialEvent.findMany({
         where: { id: { in: updatedEventIds } },
@@ -412,6 +426,7 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
       });
       if (auditRows.length) await tx.auditLog.createMany({ data: auditRows });
     }
+    markPhase('legacyMirrorAndAudit');
 
     const response = {
       settled: true,
@@ -423,6 +438,7 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
       protection: { monetary: true, ...protection, at: input.paidAt.slice(0, 10) },
       items: results,
       idempotentReplay: false,
+      timingsMs,
     };
 
     const state = await tx.appState.findUnique({ where: { workspaceId: context.workspaceId }, select: { revision: true } });
@@ -436,6 +452,8 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
         response,
       }),
     });
+    markPhase('receiptWrite');
+    timingsMs.transactionTotal = Date.now() - transactionStartedAt;
     return response;
     }, { timeoutMs: 30_000, maxWaitMs: 5_000 });
   } catch (error) {
