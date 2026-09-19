@@ -1,9 +1,9 @@
 {
-  "versionCode": 273,
-  "versionName": "1.1.273",
+  "versionCode": 274,
+  "versionName": "1.1.274",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "b5c0693071da0b8beaa8dbc87bad83e42fcfc409ebbe6cad692c5454624c7883",
+  "sha256": "d2e28428977b566a73344690db5830df06bcb9ad3b82141e64edf43c475135c9",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #291 from MarcosVilalva/fix/phoenix-excel-negative-numbers"
+  "releaseNotes": "Merge pull request #292 from MarcosVilalva/fix/phoenix-pending-settlement-final"
 }
