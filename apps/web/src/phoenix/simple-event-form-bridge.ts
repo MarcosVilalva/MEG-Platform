@@ -209,13 +209,13 @@ function unsupportedReason(root: HTMLElement) {
   const selectedPayment = paymentSelect(root)?.selectedOptions[0]?.textContent || '';
   const method = normalize(selectedPayment);
   const benefit = benefitSelection(root);
-  const modality = modalityValue(root);
 
   if (benefit.isBenefit && type !== 'transfer') {
-    const validBenefitFlow = benefit.isVerocard
-      && (type === 'income' || modality === 'ALIMENTACAO' || modality === 'VEROCARD');
-    if (!validBenefitFlow) {
-      return 'A conta de benefício só pode ser usada pelo fluxo VEROCARD/ALIMENTAÇÃO.';
+    // O drawer Phoenix atual não depende mais de "Modalidade" para identificar
+    // Benefício Alimentação. A combinação canônica é conta de benefício + VEROCARD;
+    // a gravação real é então encaminhada pelo writer protegido de benefício.
+    if (!benefit.isVerocard) {
+      return 'A conta de benefício só pode ser usada com a forma de pagamento VEROCARD.';
     }
   }
 
