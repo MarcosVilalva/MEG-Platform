@@ -2011,3 +2011,58 @@ button.px-home-benefit-chip:active {
     gap:12px;
   }
 }
+
+
+/* --------------------------------------------------------------------------
+   Home · Tudo — compactação definitiva do topo.
+   A topbar ocupa 64px uma única vez; o conteúdo começa logo abaixo dela.
+   -------------------------------------------------------------------------- */
+@media (min-width:761px) {
+  .phoenix-v15 .px-main-home-all > .px-topbar {
+    position:absolute !important;
+    inset:0 0 auto 0 !important;
+    height:64px !important;
+    min-height:64px !important;
+    margin:0 !important;
+  }
+
+  .phoenix-v15 .px-main-home-all > .px-content-home.px-content-home-all {
+    position:absolute !important;
+    inset:64px 0 0 0 !important;
+    width:auto !important;
+    max-width:none !important;
+    height:auto !important;
+    min-height:0 !important;
+    margin:0 !important;
+    padding:4px 16px 24px !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+  }
+
+  .phoenix-v15 .px-content-home-all > .px-home-alltime {
+    display:grid !important;
+    align-content:start !important;
+    align-items:start !important;
+    width:100% !important;
+    min-height:0 !important;
+    margin:0 !important;
+    padding:0 0 8px !important;
+    gap:10px !important;
+    transform:none !important;
+  }
+
+  .phoenix-v15 .px-content-home-all .px-home-alltime > .px-page-head {
+    position:relative !important;
+    top:auto !important;
+    min-height:0 !important;
+    margin:0 !important;
+    padding:0 2px 2px !important;
+    transform:none !important;
+  }
+
+  .phoenix-v15 .px-content-home-all .px-home-alltime > .px-page-head > div {
+    min-height:0 !important;
+    margin:0 !important;
+    padding:0 !important;
+  }
+}
