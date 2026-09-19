@@ -27,16 +27,16 @@ jobs:
       VITE_API_URL: https://meg-platform-api.onrender.com
       VITE_MOBILE_APP: 'true'
       CAPACITOR_BUILD: 'true'
-      VITE_PHOENIX_SIMPLE_EVENT_WRITE: ${{ vars.VITE_PHOENIX_SIMPLE_EVENT_WRITE || 'disabled' }}
-      VITE_PHOENIX_CARD_PURCHASE_WRITE: ${{ vars.VITE_PHOENIX_CARD_PURCHASE_WRITE || 'disabled' }}
-      VITE_PHOENIX_BENEFIT_WRITE: ${{ vars.VITE_PHOENIX_BENEFIT_WRITE || 'disabled' }}
-      VITE_PHOENIX_TRANSFER_WRITE: ${{ vars.VITE_PHOENIX_TRANSFER_WRITE || 'disabled' }}
-      VITE_PHOENIX_PENDING_WRITE: ${{ vars.VITE_PHOENIX_PENDING_WRITE || 'disabled' }}
-      VITE_PHOENIX_BULK_EVENT_WRITE: ${{ vars.VITE_PHOENIX_BULK_EVENT_WRITE || 'disabled' }}
+      VITE_PHOENIX_SIMPLE_EVENT_WRITE: enabled
+      VITE_PHOENIX_CARD_PURCHASE_WRITE: enabled
+      VITE_PHOENIX_BENEFIT_WRITE: enabled
+      VITE_PHOENIX_TRANSFER_WRITE: disabled
+      VITE_PHOENIX_PENDING_WRITE: enabled
+      VITE_PHOENIX_BULK_EVENT_WRITE: enabled
       MEG_VERSION_CODE: ${{ github.run_number }}
-      MEG_VERSION_NAME: 1.1.${{ github.run_number }}
+      MEG_VERSION_NAME: 2.0.${{ github.run_number }}
       VITE_ANDROID_VERSION_CODE: ${{ github.run_number }}
-      VITE_ANDROID_VERSION_NAME: 1.1.${{ github.run_number }}
+      VITE_ANDROID_VERSION_NAME: 2.0.${{ github.run_number }}
       ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/app/meg-release.jks
       ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}

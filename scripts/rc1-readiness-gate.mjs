@@ -86,7 +86,13 @@ const productionImports = requiredBridges.map((bridge) => bridge
 for (const target of productionImports) check(`Bootstrap oficial carrega: ${target}`, officialMain.includes(`'${target}'`) || officialMain.includes(`"${target}"`));
 const productionOrder = productionImports.map((target) => officialMain.indexOf(target));
 check('Bootstrap oficial respeita ordem dos bridges críticos', productionOrder.every((value) => value >= 0) && productionOrder.every((value, index) => index === 0 || value > productionOrder[index - 1]));
-check('Bootstrap oficial inicializa React Phoenix por último', officialMain.trim().endsWith("import '../phoenix/preview-main';"));
+check('Bootstrap oficial inicializa React Phoenix por último', (
+  officialMain.trim().endsWith("import '../phoenix/preview-main';")
+  || (
+    officialMain.includes("await import('../phoenix/preview-main')")
+    && officialMain.lastIndexOf("../phoenix/preview-main") > officialMain.lastIndexOf("../phoenix/phoenix-overlay-theme-bridge")
+  )
+));
 
 check('Preview mantém escrita simples protegida por feature flag', previewServer.includes("PHOENIX_SIMPLE_EVENT_WRITE === 'enabled'"));
 check('Preview mantém baixas protegidas por feature flag', previewServer.includes("PHOENIX_PENDING_WRITE === 'enabled'"));

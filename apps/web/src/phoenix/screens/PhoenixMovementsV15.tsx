@@ -12,6 +12,7 @@ const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
 type TxType = 'expense' | 'income' | 'transfer';
+type LaunchPreset = 'expense' | 'income' | 'benefit';
 type LaunchSituation = 'planned' | 'paid';
 type GridKey = 'dueDate' | 'purchaseDate' | 'weekday' | 'type' | 'description' | 'income' | 'classification' | 'group' | 'expense' | 'paymentMethod' | 'status' | 'modality';
 type GridSort = { key: GridKey; direction: PhoenixGridSortDirection } | null;
@@ -307,7 +308,7 @@ function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: numb
   return <svg {...common}><path d="M8 8H3V3M16 8h5V3M8 16H3v5M21 21v-5h-5"/></svg>;
 }
 
-export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDataCommitted, onOpenPeriod, launchRequest = 0 }: { data: PhoenixReadModel; onNavigateHistory?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number }) {
+export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDataCommitted, onOpenPeriod, launchRequest = 0, launchPreset = 'expense' }: { data: PhoenixReadModel; onNavigateHistory?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number; launchPreset?: LaunchPreset }) {
   const [data, setData] = useState(initialData);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -500,8 +501,10 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     [data.categories]
   );
   const paymentMethods = data.paymentMethods.filter((item) => item.isActive);
-  const cards = data.cards.filter((item) => item.isActive);
   const accounts = data.accounts.filter((item) => item.isActive);
+  const canonicalBenefitAccount = accounts.find((item) => item.type === 'benefit') || null;
+  const canonicalVerocardPayment = paymentMethods.find((item) => normalizeText(item.name).includes('verocard')) || null;
+  const cards = data.cards.filter((item) => item.isActive);
 
   const missing = useMemo(() => {
     const list: string[] = [];
@@ -579,8 +582,36 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     : null;
 
   useEffect(() => {
-    if (launchRequest > 0) openLaunch();
-  }, [launchRequest]);
+    if (launchRequest <= 0) return;
+    openLaunch();
+    if (launchPreset === 'income') {
+      setDraft({ ...initialDraft(), type: 'income', situation: 'paid' });
+      setDirty(false);
+      return;
+    }
+    if (launchPreset === 'benefit') {
+      setDraft({ ...initialDraft(), type: 'expense', situation: 'paid' });
+      setDirty(false);
+      window.setTimeout(() => {
+        const select = document.querySelector<HTMLSelectElement>('.px-launch-drawer [data-phoenix-modality-select]');
+        if (!select) return;
+        select.value = 'ALIMENTAÇÃO';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }, 0);
+    }
+  }, [launchRequest, launchPreset]);
+
+  useEffect(() => {
+    if (draft.type === 'transfer' || !canonicalBenefitAccount || !canonicalVerocardPayment) return;
+    const selected = data.accounts.find((item) => item.id === draft.accountId);
+    if (selected?.type !== 'benefit') return;
+    if (draft.paymentMethodId === canonicalVerocardPayment.id && draft.situation === 'paid') return;
+    setDraft((current) => ({
+      ...current,
+      paymentMethodId: canonicalVerocardPayment.id,
+      situation: 'paid',
+    }));
+  }, [draft.type, draft.accountId, draft.paymentMethodId, draft.situation, canonicalBenefitAccount?.id, canonicalVerocardPayment?.id, data.accounts]);
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -883,7 +914,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           <label className={`px-field ${invalidField('descrição') ? 'is-invalid' : ''}`}><span>Descrição *</span><input value={draft.description} onChange={(event) => updateDraft('description', event.target.value)} maxLength={120} autoComplete="off" placeholder="Ex.: supermercado, salário ou transferência" />{invalidField('descrição') ? <small className="px-field-error">Preencha a descrição.</small> : null}</label>
 
           <div className="px-form-row">
-            <label className={`px-field ${invalidField(draft.type === 'transfer' ? 'conta de origem' : 'conta') ? 'is-invalid' : ''}`}><span>{draft.type === 'transfer' ? 'Conta de origem *' : 'Conta financeira *'}</span><select value={draft.accountId} onChange={(event) => updateDraft('accountId', event.target.value)}><option value="">Selecione</option>{accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>{invalidField(draft.type === 'transfer' ? 'conta de origem' : 'conta') ? <small className="px-field-error">Selecione a conta.</small> : null}</label>
+            <label className={`px-field ${invalidField(draft.type === 'transfer' ? 'conta de origem' : 'conta') ? 'is-invalid' : ''}`}><span>{draft.type === 'transfer' ? 'Conta de origem *' : 'Conta financeira *'}</span><select value={draft.accountId} onChange={(event) => updateDraft('accountId', event.target.value)}><option value="">Selecione</option>{accounts.map((item) => <option key={item.id} value={item.id} data-account-type={item.type}>{item.name}</option>)}</select>{invalidField(draft.type === 'transfer' ? 'conta de origem' : 'conta') ? <small className="px-field-error">Selecione a conta.</small> : null}</label>
             <label className={`px-field ${invalidField('data') ? 'is-invalid' : ''}`}><span>Data do evento *</span><input type="date" value={draft.eventDate} onChange={(event) => updateDraft('eventDate', event.target.value)} />{invalidField('data') ? <small className="px-field-error">Informe a data.</small> : null}</label>
           </div>
 
@@ -918,7 +949,9 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
           {(credit || crediario) ? <div className="px-installment-box"><div className="px-form-row"><label className="px-field"><span>Quantidade de parcelas *</span><input type="number" min={1} max={credit ? 48 : 120} value={draft.installments} onChange={(event) => updateDraft('installments', Math.max(1, Number(event.target.value) || 1))} /></label><label className="px-field"><span>Vencimento da 1ª parcela</span><input type="date" disabled={credit && !draft.manualDue} value={draft.manualDue ? draft.firstDue : calculatedDue} onChange={(event) => updateDraft('firstDue', event.target.value)} /></label></div><div className="px-rule-box">No cartão, a divisão em parcelas seguirá o contrato da API: centavos são distribuídos sem perda e a primeira fatura depende da data de fechamento.</div></div> : null}
 
-          {benefit ? <div className="px-notice ok">{draft.type === 'income' ? 'A receita do benefício é registrada como recebida; a recarga aumenta somente o saldo do benefício e não compõe o caixa monetário.' : 'Despesa com benefício alimentação fica sempre como Paga. Esta movimentação usa o saldo do benefício e não altera o caixa monetário.'}</div> : null}
+          {benefit ? <div className="px-notice ok">{draft.type === 'income'
+            ? 'A receita do benefício é registrada como recebida; a recarga aumenta somente o saldo do benefício e não compõe o caixa monetário.'
+            : 'ALIMENTAÇÃO ATIVA: a conta Benefício e a forma VEROCARD são aplicadas automaticamente e permanecem travadas. A despesa fica sempre como Paga e não altera o caixa monetário.'}</div> : null}
 
           <div className="px-launch-section-label">Repetição e observações</div>
           <label className="px-switch"><div><strong>Lançamento recorrente</strong><small>Simule os próximos eventos conforme a periodicidade.</small></div><input type="checkbox" checked={draft.recurring} onChange={(event) => updateDraft('recurring', event.target.checked)} /></label>

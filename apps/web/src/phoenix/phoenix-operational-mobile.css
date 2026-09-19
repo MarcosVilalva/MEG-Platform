@@ -1,0 +1,438 @@
+/* MEG Operacional Android
+   A camada nativa mantém a identidade Phoenix, mas prioriza lançamento rápido,
+   leitura em telas pequenas e interação por toque. */
+
+body.meg-operational-mobile{
+  background:#031f21;
+  overscroll-behavior:none;
+}
+
+body.meg-operational-mobile .phoenix-v15,
+body.meg-operational-mobile .px-app{
+  width:100%;
+  min-width:0;
+  min-height:100dvh;
+  background:
+    radial-gradient(circle at 88% -8%,rgba(17,236,221,.08),transparent 32%),
+    linear-gradient(165deg,#063638 0%,#02292b 48%,#011f21 100%);
+}
+
+body.meg-operational-mobile .px-sidebar{display:none!important}
+body.meg-operational-mobile .px-main{
+  width:100%!important;
+  min-width:0!important;
+  min-height:100dvh!important;
+  margin:0!important;
+  padding-bottom:calc(74px + env(safe-area-inset-bottom))!important;
+}
+body.meg-operational-mobile .px-topbar{
+  position:sticky!important;
+  top:0!important;
+  z-index:60!important;
+  min-height:58px!important;
+  padding:calc(7px + env(safe-area-inset-top)) 12px 7px!important;
+  background:rgba(2,35,37,.94)!important;
+  border-bottom:1px solid rgba(39,214,203,.14)!important;
+  backdrop-filter:blur(18px)!important;
+}
+body.meg-operational-mobile .px-collapse{display:none!important}
+body.meg-operational-mobile .px-top-title strong{font-size:14px!important}
+body.meg-operational-mobile .px-top-title small{font-size:9px!important}
+body.meg-operational-mobile .px-top-right{gap:6px!important}
+body.meg-operational-mobile .px-top-quick-launch{
+  width:40px!important;
+  height:40px!important;
+  min-width:40px!important;
+}
+body.meg-operational-mobile .px-period-summary{
+  min-height:40px!important;
+  padding:0 10px!important;
+}
+body.meg-operational-mobile .px-sync{display:none!important}
+body.meg-operational-mobile .px-user-pill{
+  width:38px!important;
+  min-width:38px!important;
+  height:38px!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-user-pill .px-user-copy{display:none!important}
+
+body.meg-operational-mobile .px-content{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:12px!important;
+  overflow-x:hidden!important;
+}
+
+body.meg-operational-mobile .px-mobile-dock{
+  position:fixed!important;
+  z-index:90!important;
+  left:8px!important;
+  right:8px!important;
+  bottom:calc(8px + env(safe-area-inset-bottom))!important;
+  height:62px!important;
+  display:grid!important;
+  grid-template-columns:repeat(5,1fr)!important;
+  padding:5px!important;
+  border:1px solid rgba(48,203,195,.20)!important;
+  border-radius:18px!important;
+  background:rgba(2,31,34,.96)!important;
+  box-shadow:0 16px 44px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.025)!important;
+  backdrop-filter:blur(20px)!important;
+}
+body.meg-operational-mobile .px-mobile-dock button{
+  min-width:0!important;
+  border-radius:13px!important;
+  color:#8fa9a7!important;
+}
+body.meg-operational-mobile .px-mobile-dock button.active{
+  background:rgba(17,236,221,.10)!important;
+  color:#20eee1!important;
+}
+body.meg-operational-mobile .px-mobile-dock strong{font-size:18px!important}
+body.meg-operational-mobile .px-mobile-dock span{font-size:8px!important}
+
+/* Home operacional */
+.px-operational-mobile-home{
+  width:min(920px,100%);
+  margin:0 auto;
+  display:grid;
+  gap:14px;
+  color:#f4fbfb;
+}
+.px-operational-hero{
+  min-height:126px;
+  padding:18px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  border:1px solid rgba(35,215,204,.18);
+  border-radius:20px;
+  background:
+    radial-gradient(circle at 90% 0%,rgba(20,239,224,.10),transparent 35%),
+    linear-gradient(145deg,rgba(5,57,59,.98),rgba(2,38,40,.96));
+  box-shadow:0 16px 36px rgba(0,10,12,.18);
+}
+.px-operational-hero .px-kicker{
+  color:#6ce5dd;
+  font-size:9px;
+  letter-spacing:.18em;
+}
+.px-operational-hero h1{
+  margin:7px 0 5px;
+  color:#fff;
+  font-size:clamp(28px,8vw,46px);
+  line-height:.98;
+  letter-spacing:-.045em;
+}
+.px-operational-hero p{
+  max-width:580px;
+  margin:0;
+  color:#afc5c3;
+  font-size:clamp(11px,3vw,14px);
+  line-height:1.45;
+}
+.px-operational-sync{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:7px 9px;
+  border:1px solid rgba(63,199,191,.16);
+  border-radius:999px;
+  color:#a6c0bd;
+  font-size:9px;
+  white-space:nowrap;
+}
+.px-operational-sync>i{
+  width:7px;height:7px;border-radius:50%;
+  background:#28e0ba;
+  box-shadow:0 0 10px rgba(40,224,186,.5);
+}
+
+.px-operational-launch-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+.px-operational-launch{
+  min-height:118px;
+  padding:14px;
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) 26px;
+  align-items:center;
+  gap:11px;
+  text-align:left;
+  border:1px solid rgba(59,201,194,.18);
+  border-radius:18px;
+  background:linear-gradient(150deg,rgba(5,53,55,.98),rgba(2,35,37,.98));
+  color:#fff;
+  box-shadow:0 12px 28px rgba(0,9,11,.16);
+}
+.px-operational-launch:active{transform:scale(.985)}
+.px-operational-launch.expense{border-color:rgba(244,124,131,.28)}
+.px-operational-launch.income{border-color:rgba(89,225,163,.28)}
+.px-operational-launch.benefit{
+  border-color:rgba(22,239,225,.46);
+  background:
+    radial-gradient(circle at 90% 10%,rgba(22,239,225,.09),transparent 35%),
+    linear-gradient(150deg,rgba(5,57,59,.99),rgba(2,35,37,.98));
+}
+.px-operational-launch-icon{
+  width:42px;height:42px;
+  display:grid;place-items:center;
+  border-radius:13px;
+  background:rgba(255,255,255,.045);
+  font-size:21px;
+}
+.px-operational-launch.expense .px-operational-launch-icon{color:#ff9299}
+.px-operational-launch.income .px-operational-launch-icon{color:#65e6a8}
+.px-operational-launch.benefit .px-operational-launch-icon{color:#19efe1}
+.px-operational-launch small{
+  display:block;
+  color:#789c99;
+  font-size:7px;
+  letter-spacing:.10em;
+}
+.px-operational-launch strong{
+  display:block;
+  margin-top:3px;
+  font-size:18px;
+}
+.px-operational-launch em{
+  display:block;
+  margin-top:5px;
+  color:#9bb4b2;
+  font-size:9px;
+  font-style:normal;
+  line-height:1.3;
+}
+.px-operational-launch>b{
+  color:#20eee2;
+  font-size:21px;
+  font-weight:400;
+}
+
+.px-operational-status-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:9px;
+}
+.px-operational-status-grid>button{
+  min-width:0;
+  min-height:92px;
+  padding:12px;
+  display:grid;
+  align-content:center;
+  gap:3px;
+  text-align:left;
+  border:1px solid rgba(63,190,185,.16);
+  border-radius:16px;
+  background:rgba(1,33,35,.74);
+  color:#fff;
+}
+.px-operational-status-grid>button.danger{border-color:rgba(246,111,121,.34)}
+.px-operational-status-grid span{color:#93afac;font-size:9px}
+.px-operational-status-grid strong{font-size:23px;line-height:1}
+.px-operational-status-grid em{color:#b9ccca;font-size:9px;font-style:normal}
+
+.px-operational-recent{
+  overflow:hidden;
+  border:1px solid rgba(62,190,184,.16);
+  border-radius:19px;
+  background:rgba(1,31,33,.72);
+}
+.px-operational-recent>header{
+  padding:14px 16px 10px;
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:10px;
+}
+.px-operational-recent .px-kicker{font-size:7px;color:#6ccfc9;letter-spacing:.14em}
+.px-operational-recent h2{margin:3px 0 0;font-size:17px;color:#fff}
+.px-operational-recent>header>button{
+  min-height:32px;
+  padding:0 10px;
+  border:1px solid rgba(27,236,222,.22);
+  border-radius:9px;
+  background:rgba(20,238,224,.04);
+  color:#6be0d8;
+  font-size:9px;
+}
+.px-operational-recent-list{display:grid}
+.px-operational-recent-list>button{
+  min-height:58px;
+  padding:10px 14px;
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  text-align:left;
+  border:0;
+  border-top:1px solid rgba(66,168,164,.10);
+  background:transparent;
+  color:#fff;
+}
+.px-operational-recent-list>button>span:first-child{
+  width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:rgba(255,255,255,.035);
+}
+.px-operational-recent-list .income{color:#63e3a5}
+.px-operational-recent-list .expense{color:#ff8c94}
+.px-operational-recent-list>button>span:nth-child(2){min-width:0}
+.px-operational-recent-list strong{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:11px;
+}
+.px-operational-recent-list small{display:block;margin-top:3px;color:#829d9a;font-size:8px}
+.px-operational-recent-list b{font-size:10px;white-space:nowrap}
+.px-operational-recent-list>p{padding:18px;color:#8ea9a6;font-size:11px}
+
+/* Lançamento nativo: fullscreen, toque confortável e sem campos microscópicos. */
+body.meg-operational-mobile .px-launch-backdrop{
+  display:none!important;
+}
+body.meg-operational-mobile .px-launch-drawer{
+  position:fixed!important;
+  inset:0!important;
+  z-index:120!important;
+  width:100vw!important;
+  max-width:none!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  border:0!important;
+  border-radius:0!important;
+  background:linear-gradient(165deg,#063638,#02282a 48%,#011f21)!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  padding-bottom:calc(24px + env(safe-area-inset-bottom))!important;
+}
+body.meg-operational-mobile .px-launch-drawer .px-drawer-head{
+  position:sticky!important;
+  top:0!important;
+  z-index:5!important;
+  min-height:62px!important;
+  padding:calc(10px + env(safe-area-inset-top)) 14px 10px!important;
+  background:rgba(2,36,38,.96)!important;
+  border-bottom:1px solid rgba(40,207,198,.14)!important;
+  backdrop-filter:blur(18px)!important;
+}
+body.meg-operational-mobile .px-launch-drawer .px-drawer-head h2{font-size:20px!important}
+body.meg-operational-mobile .px-launch-form{
+  width:min(680px,100%)!important;
+  margin:0 auto!important;
+  padding:14px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+body.meg-operational-mobile .px-launch-form .px-segment{
+  position:sticky!important;
+  top:64px!important;
+  z-index:4!important;
+  padding:4px!important;
+  border-radius:13px!important;
+  background:#042f31!important;
+  box-shadow:0 9px 18px rgba(0,0,0,.16)!important;
+}
+body.meg-operational-mobile .px-launch-form .px-segment button{
+  min-height:42px!important;
+  font-size:11px!important;
+}
+body.meg-operational-mobile .px-launch-form .px-form-row{
+  grid-template-columns:1fr!important;
+  gap:10px!important;
+}
+body.meg-operational-mobile .px-launch-form .px-field{
+  min-width:0!important;
+}
+body.meg-operational-mobile .px-launch-form .px-field>span{
+  font-size:10px!important;
+}
+body.meg-operational-mobile .px-launch-form input,
+body.meg-operational-mobile .px-launch-form select,
+body.meg-operational-mobile .px-launch-form textarea{
+  min-height:48px!important;
+  padding:11px 12px!important;
+  border-radius:11px!important;
+  font-size:16px!important;
+}
+body.meg-operational-mobile .px-launch-form textarea{min-height:92px!important}
+body.meg-operational-mobile .px-launch-section-label{
+  margin-top:15px!important;
+  font-size:9px!important;
+}
+body.meg-operational-mobile .px-config-note,
+body.meg-operational-mobile .px-rule-box,
+body.meg-operational-mobile .px-notice{
+  font-size:10px!important;
+  line-height:1.45!important;
+}
+body.meg-operational-mobile .px-primary-action,
+body.meg-operational-mobile .px-secondary-action{
+  min-height:52px!important;
+  font-size:13px!important;
+}
+body.meg-operational-mobile .px-route-locked{
+  opacity:1!important;
+}
+body.meg-operational-mobile .px-route-locked select{
+  border-color:rgba(20,238,224,.38)!important;
+  background:rgba(9,75,73,.40)!important;
+  color:#dff9f6!important;
+  -webkit-text-fill-color:#dff9f6!important;
+}
+body.meg-operational-mobile .px-route-locked>span::after{
+  content:" · automático";
+  color:#26e4d8;
+  font-weight:700;
+}
+
+/* Telas de apoio permanecem úteis no telefone. */
+body.meg-operational-mobile .px-page-head{
+  gap:10px!important;
+}
+body.meg-operational-mobile .px-page-head h1{
+  font-size:clamp(24px,7vw,34px)!important;
+}
+body.meg-operational-mobile .px-table-wrap,
+body.meg-operational-mobile .px-grid-wrap,
+body.meg-operational-mobile .px-data-table-wrap{
+  max-width:100%!important;
+  overflow:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+
+@media (max-width:720px){
+  .px-operational-launch-grid{grid-template-columns:1fr!important}
+  .px-operational-launch{min-height:92px!important}
+  .px-operational-status-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+
+@media (max-width:430px){
+  body.meg-operational-mobile .px-content{padding:9px!important}
+  .px-operational-mobile-home{gap:10px}
+  .px-operational-hero{min-height:112px;padding:14px;border-radius:17px}
+  .px-operational-hero h1{font-size:30px}
+  .px-operational-sync{display:none}
+  .px-operational-launch{grid-template-columns:38px minmax(0,1fr) 22px;padding:12px}
+  .px-operational-launch-icon{width:38px;height:38px}
+  .px-operational-status-grid{gap:6px}
+  .px-operational-status-grid>button{min-height:80px;padding:9px}
+  .px-operational-status-grid span{font-size:8px}
+  .px-operational-status-grid strong{font-size:20px}
+  .px-operational-status-grid em{font-size:7.5px}
+  .px-operational-recent-list>button{padding-inline:11px}
+}
+
+@media (min-width:721px) and (max-width:1100px){
+  body.meg-operational-mobile .px-content{padding:18px!important}
+  .px-operational-launch-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}

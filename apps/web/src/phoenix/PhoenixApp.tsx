@@ -6,6 +6,8 @@ import { isPhoenixMonetaryEvent } from './home-period-summary';
 import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixSidebar } from './PhoenixSidebar';
 import { PhoenixNavIcon } from './PhoenixNavIcon';
+import { PhoenixOperationalMobileHome } from './PhoenixOperationalMobileHome';
+import { syncPhoenixLocalDueNotifications } from './phoenix-native-notifications';
 import { PhoenixCatalogsGrid } from './screens/PhoenixCatalogsGrid';
 import { PhoenixHomeAllTime } from './screens/PhoenixHomeAllTime';
 import { PhoenixHomeDashboard } from './screens/PhoenixHomeDashboard';
@@ -22,6 +24,7 @@ import './phoenix-v15.css';
 import './phoenix-parity-v15.css';
 import './phoenix-period.css';
 import './phoenix-sidebar.css';
+import './phoenix-operational-mobile.css';
 
 const loadMovementsModule = () => import('./screens/PhoenixMovementsV15');
 const loadPayablesModule = () => import('./screens/PhoenixReadScreens');
@@ -49,6 +52,7 @@ const PHOENIX_SNAPSHOT_COMMITTED_EVENT = 'meg:phoenix-snapshot-committed';
 type PhoenixView = PhoenixRoute;
 type ViewDefinition = { id: PhoenixView; icon: string; label: string };
 type PeriodMode = 'month' | 'range' | 'all';
+type LaunchPreset = 'expense' | 'income' | 'benefit';
 type HomePeriodContext = {
   label: string;
   startDate: string;
@@ -256,7 +260,7 @@ function ScreenWarmFallback({ label }: { label: string }) {
   return <section className="px-card px-placeholder"><span className="px-kicker">MEG Finanças</span><h2>Abrindo {label}</h2><p>Preparando a tela com os dados que já estão carregados.</p></section>;
 }
 
-function ReadScreen({ view, data, month, theme, periodMode, periodContext, periodRangeLabel, launchRequest, onToggleTheme, onNavigate, onDataCommitted, onOpenPeriod }: {
+function ReadScreen({ view, data, month, theme, periodMode, periodContext, periodRangeLabel, launchRequest, launchPreset, nativeOperational, onToggleTheme, onNavigate, onLaunch, onDataCommitted, onOpenPeriod }: {
   view: PhoenixView;
   data: PhoenixReadModel;
   month: string;
@@ -265,8 +269,11 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   periodContext: HomePeriodContext | null;
   periodRangeLabel: string;
   launchRequest: number;
+  launchPreset: LaunchPreset;
+  nativeOperational: boolean;
   onToggleTheme: () => void;
   onNavigate: (view: PhoenixView) => void;
+  onLaunch: (preset: LaunchPreset) => void;
   onDataCommitted: (snapshot: PhoenixReadModel) => void;
   onOpenPeriod: () => void;
 }) {
@@ -281,9 +288,10 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
         onNavigate={onNavigate}
       />;
     }
+    if (nativeOperational) return <PhoenixOperationalMobileHome data={data} onLaunch={onLaunch} onNavigate={onNavigate} />;
     return <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
   }
-  if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} launchRequest={launchRequest} onNavigateHistory={() => onNavigate('history')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
+  if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} launchRequest={launchRequest} launchPreset={launchPreset} onNavigateHistory={() => onNavigate('history')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
   if (view === 'history') return <Suspense fallback={<ScreenWarmFallback label="Histórico" />}><PhoenixHistory data={data} /></Suspense>;
   if (view === 'payables') return <Suspense fallback={<ScreenWarmFallback label="Pendentes" />}><PhoenixPayables data={data} /></Suspense>;
   if (view === 'cards') return <Suspense fallback={<ScreenWarmFallback label="Cartões" />}><PhoenixCardsGrid data={data} /></Suspense>;
@@ -300,6 +308,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
 }
 
 export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
+  const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
   const [month, setMonth] = useState(currentMonth);
   const [view, setView] = useState<PhoenixView>('home');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -318,6 +327,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const [periodLoading, setPeriodLoading] = useState(false);
   const [periodError, setPeriodError] = useState('');
   const [launchRequest, setLaunchRequest] = useState(0);
+  const [launchPreset, setLaunchPreset] = useState<LaunchPreset>('expense');
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [loadState, setLoadState] = useState<PhoenixLoadState>({ status: 'idle' });
@@ -338,6 +348,11 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   useEffect(() => {
     if (loadState.status === 'ready') dataRef.current = loadState.data;
   }, [loadState]);
+
+  useEffect(() => {
+    if (!nativeOperational || loadState.status !== 'ready') return;
+    syncPhoenixLocalDueNotifications(loadState.data);
+  }, [nativeOperational, loadState]);
 
   useEffect(() => {
     if (loadState.status !== 'ready' || view !== 'home') return;
@@ -543,9 +558,10 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setPeriodOpen(false);
   }
 
-  function requestLaunch() {
+  function requestLaunch(preset: LaunchPreset = 'expense') {
     resetViewport();
     if (periodMode !== 'month') resetSpecialPeriod();
+    setLaunchPreset(preset);
     setView('movements');
     setMobileOpen(false);
     setSearchOpen(false);
@@ -777,7 +793,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
         <header className="px-topbar">
           <div className="px-top-left"><button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => setCollapsed((value) => !value)}>☰</button><div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div></div>
           <div className="px-top-right">
-            <button className="px-top-quick-launch" type="button" title="Novo lançamento" aria-label="Novo lançamento" onClick={requestLaunch}>＋</button>
+            <button className="px-top-quick-launch" type="button" title="Nova despesa" aria-label="Nova despesa" onClick={() => requestLaunch('expense')}>＋</button>
             <div className={`px-period-menu ${periodOpen ? 'is-open' : ''}`} ref={periodRef}>
               <button className={`px-period-summary ${periodLoading ? 'is-loading' : ''}`} type="button" title="Selecionar período" aria-label="Selecionar período" aria-busy={periodLoading} onClick={() => setPeriodOpen((value) => !value)}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span className="px-period-active">{periodActiveLabel}</span></button>
               {periodOpen ? <div className={`px-period-popover px-period-popover-v15 ${periodLoading ? 'is-loading' : ''}`}>
@@ -849,11 +865,11 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
         </header>
 
         <div className={`px-content ${view === 'home' ? 'px-content-home' : ''} ${homeAnalytical ? 'px-content-home-all' : ''} ${view === 'movements' ? 'px-content-movements' : ''} ${view === 'payables' ? 'px-content-payables' : ''} ${view === 'history' ? 'px-content-history' : ''} ${view === 'cards' ? 'px-content-cards' : ''}`}>
-          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen key={`${view}:${periodMode}:${viewData.month}:${periodRangeLabel}`} view={view} data={viewData} month={viewData.month} theme={theme} periodMode={periodMode} periodContext={homePeriodContext} periodRangeLabel={periodRangeLabel} launchRequest={launchRequest} onToggleTheme={toggleTheme} onNavigate={navigate} onDataCommitted={commitSnapshot} onOpenPeriod={() => setPeriodOpen(true)} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
+          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen key={`${view}:${periodMode}:${viewData.month}:${periodRangeLabel}`} view={view} data={viewData} month={viewData.month} theme={theme} periodMode={periodMode} periodContext={homePeriodContext} periodRangeLabel={periodRangeLabel} launchRequest={launchRequest} launchPreset={launchPreset} nativeOperational={nativeOperational} onToggleTheme={toggleTheme} onNavigate={navigate} onLaunch={requestLaunch} onDataCommitted={commitSnapshot} onOpenPeriod={() => setPeriodOpen(true)} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
         </div>
       </main>
 
-      <nav className="px-mobile-dock" aria-label="Navegação móvel Phoenix V15"><button className={view === 'home' ? 'active' : ''} type="button" onClick={() => navigate('home')}><strong><PhoenixNavIcon name="home" /></strong><span>Início</span></button><button className={view === 'movements' ? 'active' : ''} type="button" onClick={requestLaunch}><strong>＋</strong><span>Lançar</span></button><button className={view === 'history' ? 'active' : ''} type="button" onClick={() => navigate('history')}><strong><PhoenixNavIcon name="history" /></strong><span>Histórico</span></button><button className={view === 'payables' ? 'active' : ''} type="button" onClick={() => navigate('payables')}><strong><PhoenixNavIcon name="payables" /></strong><span>Pendentes</span></button><button type="button" onClick={() => setMobileOpen(true)}><strong><PhoenixNavIcon name="more" /></strong><span>Mais</span></button></nav>
+      <nav className="px-mobile-dock" aria-label="Navegação móvel Phoenix V15"><button className={view === 'home' ? 'active' : ''} type="button" onClick={() => navigate('home')}><strong><PhoenixNavIcon name="home" /></strong><span>Início</span></button><button className={view === 'movements' ? 'active' : ''} type="button" onClick={() => requestLaunch('expense')}><strong>＋</strong><span>Lançar</span></button><button className={view === 'history' ? 'active' : ''} type="button" onClick={() => navigate('history')}><strong><PhoenixNavIcon name="history" /></strong><span>Histórico</span></button><button className={view === 'payables' ? 'active' : ''} type="button" onClick={() => navigate('payables')}><strong><PhoenixNavIcon name="payables" /></strong><span>Pendentes</span></button><button type="button" onClick={() => setMobileOpen(true)}><strong><PhoenixNavIcon name="more" /></strong><span>Mais</span></button></nav>
     </div>
     {searchOpen ? <PhoenixCommandPalette data={viewData} onClose={() => setSearchOpen(false)} onNavigate={navigate} /> : null}
   </div>;

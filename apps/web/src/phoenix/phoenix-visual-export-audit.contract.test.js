@@ -28,7 +28,7 @@ const screens = [
 
 assert.match(main, /phoenix-table-export-bridge/, 'Runtime oficial deve carregar exportação global.');
 assert.match(main, /phoenix-overlay-theme-bridge/, 'Runtime deve sincronizar o tema dos drawers anexados fora da raiz Phoenix.');
-assert.match(main, /phoenix-visual-a11y\.css'[\s\S]*preview-main';\s*$/, 'Guardrails visuais devem carregar imediatamente antes do bootstrap React final.');
+assert.match(main, /phoenix-visual-a11y\.css'[\s\S]*await import\('\.\.\/phoenix\/preview-main'\)/, 'Guardrails visuais devem carregar antes do bootstrap React final, inclusive quando o Android usa bootstrap assíncrono para biometria.');
 assert.match(exportBridge, /querySelectorAll<HTMLTableElement>\('\.phoenix-v15 table'\)/, 'Toda tabela Phoenix deve entrar na descoberta global.');
 assert.match(exportBridge, /dataset\.megExportToolbar = 'true'/, 'Barra de exportação deve possuir marcador explícito.');
 assert.match(exportBridge, /Exportação da tabela/, 'Controles de exportação devem ter nome acessível.');

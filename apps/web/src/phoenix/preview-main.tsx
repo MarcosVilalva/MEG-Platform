@@ -1,4 +1,4 @@
-import React, { FormEvent, useEffect, useMemo, useState } from 'react';
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   authenticatedRequest,
@@ -156,6 +156,8 @@ function PhoenixPreviewRoot() {
   const [showRegisterConfirm, setShowRegisterConfirm] = useState(false);
   const [accountType, setAccountType] = useState<AccountType>('REQUEST_ACCESS');
   const [workspaceName, setWorkspaceName] = useState('');
+  const nativeBiometricAttemptedRef = useRef(false);
+  const nativeLifecycleStartedRef = useRef(false);
 
   const registerStrength = useMemo(() => passwordScore(registerPassword), [registerPassword]);
 
@@ -192,6 +194,62 @@ function PhoenixPreviewRoot() {
         setState('prepare-error');
       });
     return () => { active = false; };
+  }, [state]);
+
+  useEffect(() => {
+    if (state !== 'signed-out' || import.meta.env.VITE_MOBILE_APP !== 'true' || nativeBiometricAttemptedRef.current) return;
+    nativeBiometricAttemptedRef.current = true;
+    let active = true;
+    void (async () => {
+      try {
+        // @ts-ignore módulo JS nativo carregado somente no APK.
+        const biometric = await import('../native-biometric-login.js');
+        const status = await biometric.getBiometricLoginStatus();
+        if (!active || !status?.available || !status?.enabled) return;
+        const credentials = await biometric.requestBiometricLogin();
+        if (!active || !credentials?.email || !credentials?.password) return;
+        setBusy(true);
+        setError('');
+        try {
+          await login(credentials.email, credentials.password);
+          if (active) await prepareAuthenticatedSession();
+        } catch (cause) {
+          if (active) setError(authErrorMessage(cause));
+        } finally {
+          if (active) setBusy(false);
+        }
+      } catch (cause) {
+        console.warn('MEG biometric login unavailable', cause);
+      }
+    })();
+    return () => { active = false; };
+  }, [state]);
+
+  useEffect(() => {
+    if (state !== 'signed-in' || import.meta.env.VITE_MOBILE_APP !== 'true' || nativeLifecycleStartedRef.current) return;
+    nativeLifecycleStartedRef.current = true;
+    void (async () => {
+      try {
+        const [biometric, updater] = await Promise.all([
+          // @ts-ignore módulo JS nativo carregado somente no APK.
+          import('../native-biometric-login.js'),
+          // @ts-ignore módulo JS nativo carregado somente no APK.
+          import('../android-update-controller.js'),
+        ]);
+        await biometric.initializeAndroidBiometricLifecycle({
+          onAuthenticationFailed: async () => {
+            clearSession();
+            window.location.reload();
+          },
+        });
+        updater.initializeAndroidUpdateController();
+        await updater.markAndroidUpdateUiReady();
+        await updater.initializeAndroidUpdateLifecycle();
+        void updater.checkForAppUpdate();
+      } catch (cause) {
+        console.warn('MEG Android authenticated lifecycle unavailable', cause);
+      }
+    })();
   }, [state]);
 
   useEffect(() => {
