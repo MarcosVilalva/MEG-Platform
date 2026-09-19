@@ -8,6 +8,9 @@ const profileAvatar = readFileSync(new URL('./profile-avatar.tsx', import.meta.u
 const commandPalette = readFileSync(new URL('./PhoenixCommandPalette.tsx', import.meta.url), 'utf8');
 const screens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.meta.url), 'utf8');
 const movementScreen = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
+const gridFilter = readFileSync(new URL('./PhoenixGridFilter.tsx', import.meta.url), 'utf8');
+const gridCss = readFileSync(new URL('./phoenix-grid.css', import.meta.url), 'utf8');
+const launchDynamicCss = readFileSync(new URL('./phoenix-launch-dynamic.css', import.meta.url), 'utf8');
 const launchWriteControl = readFileSync(new URL('./components/PhoenixLaunchWriteControl.tsx', import.meta.url), 'utf8');
 const bulkEventUxEnhancements = readFileSync(new URL('./bulk-event-ux-enhancements.ts', import.meta.url), 'utf8');
 const homeDashboard = readFileSync(new URL('./screens/PhoenixHomeDashboard.tsx', import.meta.url), 'utf8');
@@ -145,6 +148,24 @@ assert.match(movementScreen, /px-description-ellipsis/,
   'Descrição deve permanecer compacta com elipse para preservar espaço horizontal');
 assert.match(movementScreen, /title=\{event\.description\}/,
   'Descrição completa deve continuar acessível ao passar o mouse');
+assert.match(movementScreen, /<option value="all">Todos<\/option>/,
+  'Paginação deve oferecer a opção Todos sem criar scroll da página');
+assert.doesNotMatch(movementScreen, /window\.confirm|window\.alert/,
+  'Fluxo de Lançamentos não pode voltar a usar alertas nativos do navegador');
+assert.match(movementScreen, /px-meg-confirm-dialog/,
+  'Alterações não salvas devem usar confirmação visual MEG');
+assert.match(gridFilter, /visualViewport/,
+  'Filtros da grade devem calcular posição com base no viewport real do navegador');
+assert.match(gridFilter, /maxHeight: position\.maxHeight/,
+  'Filtros da grade devem receber limite explícito de altura do viewport');
+assert.match(gridCss, /grid-template-rows:auto auto minmax\(0,1fr\) auto/,
+  'Filtro deve manter cabeçalho, ordenação e rodapé fixos com conteúdo rolável');
+assert.match(gridCss, /px-grid-filter-body[\s\S]*overscroll-behavior:contain/,
+  'Somente o conteúdo interno dos filtros deve rolar');
+assert.match(launchDynamicCss, /px-meg-confirm-overlay/,
+  'Confirmação MEG precisa possuir overlay próprio');
+assert.match(launchDynamicCss, /align-self:start[\s\S]*max-height:100%/,
+  'Grade deve eliminar área morta e limitar-se ao espaço disponível');
 
 assert.match(movementScreen, /Despesa/);
 assert.match(movementScreen, /Receita/);
