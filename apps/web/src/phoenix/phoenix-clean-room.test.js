@@ -319,7 +319,7 @@ assert.match(homeNowCss, /\.px-main-home-all[\s\S]*overflow:hidden/,
   'Home Tudo deve manter o shell estável.');
 assert.match(homeNowCss, /\.px-content-home\.px-content-home-all[\s\S]*overflow-y:auto !important/,
   'Home Tudo deve permitir rolagem vertical do conteúdo extenso.');
-assert.match(homeDashboard, /Saldo do benefício separado do caixa monetário/,
+assert.match(homeDashboard, /benefício permanece separado do saldo monetário/i,
   'Benefício deve permanecer visualmente separado do saldo monetário.');
 assert.match(homeNowCss, /\.px-home-benefit-chip/,
   'Chip de benefício deve possuir estilo próprio no hero.');
