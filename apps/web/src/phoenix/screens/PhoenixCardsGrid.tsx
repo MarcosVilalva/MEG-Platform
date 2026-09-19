@@ -1,15 +1,17 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { CreditCard } from '../../app/cards-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import { resolvePhoenixCardIdentity } from '../card-identity';
 import type { PhoenixLegacyTransaction, PhoenixReadModel } from '../contracts';
 import '../phoenix-screens.css';
 import '../phoenix-cards-premium.css';
+import '../phoenix-cards-wow.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
 
 type CardTab = 'current' | 'future' | 'installments' | 'rules';
+type CardCommandTab = 'summary' | 'current' | 'future' | 'installments' | 'history';
 type GridMode = 'current' | 'installments';
 type GridKey = 'description' | 'purchaseDate' | 'installment' | 'group' | 'amount' | 'status' | 'statementMonth';
 type GridSort = { key: GridKey; direction: PhoenixGridSortDirection } | null;
@@ -207,6 +209,12 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const [searchState, setSearchState] = useState<GridState<string>>(searchesByMode);
   const [detailRow, setDetailRow] = useState<GridRow | null>(null);
   const [selectedFutureMonth, setSelectedFutureMonth] = useState('');
+  const [cardCommandOpen, setCardCommandOpen] = useState(false);
+  const [commandTab, setCommandTab] = useState<CardCommandTab>('summary');
+  const [commandSearch, setCommandSearch] = useState('');
+  const [commandMonth, setCommandMonth] = useState('');
+  const [commandStatus, setCommandStatus] = useState('');
+  const [commandGroup, setCommandGroup] = useState('');
 
   const selected = data.cards.find((card) => card.id === selectedId) || data.cards[0] || null;
 
@@ -307,6 +315,33 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const activeFutureRows = activeFutureMonth ? futureRows.filter((row) => row.statementMonth === activeFutureMonth) : [];
   const activeFutureAmount = sumRows(activeFutureRows);
   const activeFutureCredits = Math.abs(activeFutureRows.filter((row) => row.amount < 0).reduce((sum, row) => sum + row.amount, 0));
+  const bestPurchaseDay = selected?.closingDay ? (selected.closingDay >= 28 ? 1 : selected.closingDay + 1) : null;
+  const statementDueDate = selected?.statement?.month === data.month && selected.statement.dueDate
+    ? date.format(new Date(`${selected.statement.dueDate.slice(0, 10)}T12:00:00Z`))
+    : selected?.dueDay ? `dia ${selected.dueDay}` : '—';
+  const nextStatementDelta = nextStatement - currentStatement;
+  const biggestFuture = [...futureRows].filter((row) => row.amount > 0).sort((left, right) => right.amount - left.amount)[0] || null;
+  const commandMonths = [...new Set(allRows.map((row) => row.statementMonth))].sort().reverse();
+  const commandGroups = [...new Set(allRows.map((row) => row.group).filter((group) => group && group !== '—'))].sort((left, right) => left.localeCompare(right, 'pt-BR'));
+  const commandBaseRows = commandTab === 'current'
+    ? currentRows
+    : commandTab === 'future' || commandTab === 'installments'
+      ? futureRows
+      : allRows;
+  const commandRows = commandBaseRows.filter((row) => {
+    if (commandSearch && !normalize(`${row.description} ${row.group} ${row.installment} ${row.statementMonth}`).includes(normalize(commandSearch))) return false;
+    if (commandMonth && row.statementMonth !== commandMonth) return false;
+    if (commandGroup && row.group !== commandGroup) return false;
+    if (commandStatus) {
+      const label = normalize(rowStatusLabel(row));
+      if (commandStatus === 'open' && label !== 'pendente') return false;
+      if (commandStatus === 'paid' && label !== 'pago') return false;
+      if (commandStatus === 'credit' && label !== 'credito/estorno') return false;
+    }
+    return true;
+  });
+  const commandRowsTotal = sumRows(commandRows);
+  const topCurrentRows = [...currentRows].filter((row) => row.amount > 0 && !isCancelledStatus(row.status)).sort((left, right) => right.amount - left.amount).slice(0, 5);
 
   const mode: GridMode = tab === 'installments' ? 'installments' : 'current';
   const sourceRows = mode === 'current' ? currentRows : futureRows;
@@ -332,6 +367,29 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     return [...filtered].sort((left, right) => compare(left[sort.key], right[sort.key], sort.direction));
   }, [sourceRows, search, keys, filters, sort]);
 
+  useEffect(() => {
+    if (!cardCommandOpen) return undefined;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setCardCommandOpen(false);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [cardCommandOpen]);
+
+  function openCardCommand() {
+    setCommandTab('summary');
+    setCommandSearch('');
+    setCommandMonth('');
+    setCommandStatus('');
+    setCommandGroup('');
+    setCardCommandOpen(true);
+  }
+
   function resetGrid() {
     setFilterState((current) => ({ ...current, [mode]: initialFilters() }));
     setSortState((current) => ({ ...current, [mode]: null }));
@@ -344,6 +402,10 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     setSearchState(searchesByMode());
     setSelectedFutureMonth('');
     setDetailRow(null);
+    setCommandSearch('');
+    setCommandMonth('');
+    setCommandStatus('');
+    setCommandGroup('');
   }
   function header(label: string, key: GridKey, kind: PhoenixGridFilterKind, list?: PhoenixGridOption[]) {
     return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} options={list} sort={sort?.key === key ? sort.direction : null} onSort={(direction) => setSortState((current) => ({ ...current, [mode]: { key, direction } }))} onChange={(value) => setFilterState((current) => ({ ...current, [mode]: { ...current[mode], [key]: value } }))} /></div>;
@@ -353,7 +415,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
 
   const identity = resolvePhoenixCardIdentity(selected);
 
-  return <section className="px-screen px-cards-premium" data-cards-layout="cockpit-v2">
+  return <section className="px-screen px-cards-premium px-cards-wow" data-cards-layout="command-center-v3">
     <header className="px-screen-head px-cards-page-head">
       <div>
         <span className="px-kicker">Cartões de crédito · {monthLabel(data.month)}</span>
