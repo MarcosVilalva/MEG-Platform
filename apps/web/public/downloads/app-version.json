@@ -1,9 +1,9 @@
 {
-  "versionCode": 274,
-  "versionName": "1.1.274",
+  "versionCode": 275,
+  "versionName": "1.1.275",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "d2e28428977b566a73344690db5830df06bcb9ad3b82141e64edf43c475135c9",
+  "sha256": "57d62613e2c87a26a18c2ca29a85a24bd9345cd25a6997f2a1abf3c20e99d251",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #292 from MarcosVilalva/fix/phoenix-pending-settlement-final"
+  "releaseNotes": "Merge pull request #293 from MarcosVilalva/fix/phoenix-pending-batch-performance"
 }
