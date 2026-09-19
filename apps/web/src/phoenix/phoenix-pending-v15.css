@@ -1956,3 +1956,47 @@
     box-shadow:0 18px 50px rgba(0,0,0,.34) !important;
   }
 }
+
+
+/* --------------------------------------------------------------------------
+   Polimento final: centralização óptica da iconografia de Pendentes.
+   O seletor genérico ".px-pending-kpis span" não pode desmontar o grid
+   usado pelo badge dos ícones.
+   -------------------------------------------------------------------------- */
+.px-pending-hero-icon,
+.px-pending-agenda-icon,
+.px-pending-date-icon,
+.px-pending-kpis .px-pending-kpi-icon {
+  display:grid;
+  place-items:center;
+  place-content:center;
+  box-sizing:border-box;
+  padding:0;
+  line-height:0;
+  text-align:center;
+}
+
+.px-pending-hero-icon > svg,
+.px-pending-agenda-icon > svg,
+.px-pending-date-icon > svg,
+.px-pending-kpis .px-pending-kpi-icon > svg {
+  display:block;
+  margin:0;
+  flex:none;
+  transform:none;
+  transform-origin:center;
+}
+
+.px-pending-kpis .px-pending-kpi-icon {
+  display:grid;
+}
+
+@media (min-width:761px) {
+  .px-content-payables .px-pending-hero-icon,
+  .px-content-payables .px-pending-agenda-icon,
+  .px-content-payables .px-pending-date-icon,
+  .px-content-payables .px-pending-kpis .px-pending-kpi-icon {
+    align-self:center;
+    justify-self:center;
+  }
+}
