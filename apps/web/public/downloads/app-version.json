@@ -1,9 +1,9 @@
 {
-  "versionCode": 279,
-  "versionName": "1.1.279",
+  "versionCode": 280,
+  "versionName": "1.1.280",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "402f4ea5a33f69f0af3a8050be860a888eaf80095588119c3a7dec8dab626252",
+  "sha256": "31340b642d2e55b0685bf8c9a4c2633704ff5c082c2bcc3e21b913c2806ec1bd",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #298 from MarcosVilalva/feat/pendentes-fixed-workspace-scroll"
+  "releaseNotes": "Merge pull request #299 from MarcosVilalva/feat/pendentes-definitive-layout"
 }
