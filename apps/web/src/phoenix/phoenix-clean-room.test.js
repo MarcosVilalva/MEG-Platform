@@ -11,6 +11,8 @@ const movementScreen = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx',
 const cardsGrid = readFileSync(new URL('./screens/PhoenixCardsGrid.tsx', import.meta.url), 'utf8');
 const cardsPremiumCss = readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8');
 const cardsWowCss = readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8');
+const cardsFidelityCss = readFileSync(new URL('./phoenix-cards-fidelity-v6.css', import.meta.url), 'utf8');
+const cardIdentity = readFileSync(new URL('./card-identity.ts', import.meta.url), 'utf8');
 const simpleEventBridge = readFileSync(new URL('./simple-event-form-bridge.ts', import.meta.url), 'utf8');
 const gridFilter = readFileSync(new URL('./PhoenixGridFilter.tsx', import.meta.url), 'utf8');
 const gridCss = readFileSync(new URL('./phoenix-grid.css', import.meta.url), 'utf8');
@@ -30,7 +32,7 @@ const loader = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.
 const previewMain = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
 const phoenixHtml = readFileSync(new URL('../../phoenix.html', import.meta.url), 'utf8');
 const productionHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
-const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-home-dashboard.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
+const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-home-dashboard.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-fidelity-v6.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
 const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${profileAvatar}\n${commandPalette}\n${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
 const readOnlyScreens = `${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${webScreens}\n${history}\n${users}\n${settings}\n${sidebar}\n${commandPalette}`;
@@ -257,8 +259,8 @@ assert.match(homeDashboard, /px-home-drawer/,
   'Detalhes de vencimento devem abrir drawer na própria Home');
 assert.match(homeDashboard, /Revisar pagamento/,
   'Drawer da Home deve permitir selecionar itens para revisão de pagamento');
-assert.match(cardsGrid, /data-cards-layout="approved-v5"/,
-  'Cartões deve usar a composição visual aprovada antes da implementação.');
+assert.match(cardsGrid, /data-cards-layout="fidelity-v6"/,
+  'Cartões deve usar a composição V6 baseada diretamente no mockup aprovado.');
 assert.match(cardsGrid, /Seus cartões/,
   'Tela principal deve manter os cartões como protagonistas.');
 assert.match(cardsGrid, /Duplo clique para abrir a central do cartão/,
@@ -315,6 +317,29 @@ assert.match(cardsGrid, /Acesse detalhes, faturas, limites e muito mais\./,
   'Texto de orientação deve reproduzir fielmente o mockup aprovado.');
 assert.match(cardsGrid, /Total da fatura/,
   'Resumo do modal deve usar o texto aprovado Total da fatura.');
+assert.match(cardsGrid, /createPortal\(<div className="px-card-command-backdrop px-card-command-approved-backdrop"[\s\S]*document\.body\)/,
+  'Central do cartão deve ocupar o viewport real por portal, fora do container da tela.');
+assert.match(cardsGrid, /function CardUiIcon/,
+  'Cartões V6 deve usar iconografia vetorial consistente em vez de glifos soltos.');
+assert.match(cardsGrid, /px-cards-approved-progress-row/,
+  'Percentual de uso deve estar em uma linha estrutural própria e nunca quebrar verticalmente.');
+assert.match(cardsGrid, /px-card-command-group/,
+  'Tabela da central deve recuperar iconografia visual por grupo.');
+assert.match(cardIdentity, /assets\/cards\/approved-v6\/latam\.webp/,
+  'LATAM deve usar a arte recortada diretamente do mockup aprovado.');
+assert.match(cardIdentity, /assets\/cards\/approved-v6\/mercado\.webp/,
+  'Mercado Pago deve usar a arte do mockup aprovado.');
+assert.match(cardIdentity, /assets\/cards\/approved-v6\/azul\.webp/,
+  'Azul deve usar a arte do mockup aprovado.');
+assert.match(cardIdentity, /assets\/cards\/approved-v6\/riachuelo\.webp/,
+  'Riachuelo deve usar a arte do mockup aprovado.');
+assert.match(cardsFidelityCss, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)!important/,
+  'Desktop deve manter os quatro cartões protagonistas em uma única linha.');
+assert.match(cardsFidelityCss, /\.px-card-command-approved-table-wrap[\s\S]*overflow:auto!important/,
+  'Na central V6 somente a área da tabela deve rolar.');
+assert.match(cardsFidelityCss, /\.px-card-command-approved-table-foot\{display:none!important\}/,
+  'Rodapé técnico da tabela não deve aparecer no modal fiel ao mockup.');
+
 
 
 assert.match(homeDashboard, /Benefício alimentação · disponível/,
