@@ -209,7 +209,14 @@ type PendingOperationConfirmation = {
 function uncertainCommit(error: unknown) {
   const code = codeFromError(error);
   if (code === 'PENDING_BATCH_TIMEOUT') return false;
-  if (code === 'PHOENIX_PENDING_CONNECTION_INTERRUPTED') return true;
+  if ([
+    'PHOENIX_PENDING_CONNECTION_INTERRUPTED',
+    'PENDING_CHANGED_RETRY',
+    'FINANCIAL_EVENT_NOT_PENDING',
+    'PAYABLE_NOT_FOUND',
+    'CARD_STATEMENT_NOT_PAYABLE',
+    'STATEMENT_CHANGED_RETRY',
+  ].includes(code)) return true;
   const status = error && typeof error === 'object' && 'status' in error
     ? Number((error as { status?: unknown }).status || 0)
     : 0;
@@ -220,7 +227,7 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function recoverPendingConfirmation(operationId: string, maxWaitMs = 8_000) {
+async function recoverPendingConfirmation(operationId: string, maxWaitMs = 20_000) {
   const deadline = Date.now() + maxWaitMs;
   let attempt = 0;
   while (Date.now() < deadline) {
