@@ -15,7 +15,7 @@
 
 BEGIN;
 
-REVOKE SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+REVOKE SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER, MAINTAIN
 ON TABLE
   public."User",
   public."AppState",
@@ -87,7 +87,7 @@ ALTER TABLE public."RecurringExpense" ENABLE ROW LEVEL SECURITY;
 -- Guarda para futuras tabelas, funções e sequências criadas pelo mesmo owner usado pelo Prisma.
 -- Como o MEG não usa o Data API do Supabase, nenhuma role de API recebe acesso implícito.
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
-REVOKE SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLES
+REVOKE SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER, MAINTAIN ON TABLES
 FROM anon, authenticated, service_role;
 
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
