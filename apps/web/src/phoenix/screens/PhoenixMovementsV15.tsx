@@ -590,16 +590,33 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       return;
     }
     if (launchPreset === 'benefit') {
-      setDraft({ ...initialDraft(), type: 'expense', situation: 'paid' });
+      setDraft({
+        ...initialDraft(),
+        type: 'expense',
+        situation: 'paid',
+        accountId: canonicalBenefitAccount?.id || '',
+        paymentMethodId: canonicalVerocardPayment?.id || '',
+      });
       setDirty(false);
-      window.setTimeout(() => {
+
+      let frame = 0;
+      let attempts = 0;
+      const applyBenefitModality = () => {
         const select = document.querySelector<HTMLSelectElement>('.px-launch-drawer [data-phoenix-modality-select]');
-        if (!select) return;
-        select.value = 'ALIMENTAÇÃO';
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-      }, 0);
+        if (select) {
+          if (select.value !== 'ALIMENTAÇÃO') {
+            select.value = 'ALIMENTAÇÃO';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          return;
+        }
+        attempts += 1;
+        if (attempts < 12) frame = window.requestAnimationFrame(applyBenefitModality);
+      };
+      frame = window.requestAnimationFrame(applyBenefitModality);
+      return () => window.cancelAnimationFrame(frame);
     }
-  }, [launchRequest, launchPreset]);
+  }, [launchRequest, launchPreset, canonicalBenefitAccount?.id, canonicalVerocardPayment?.id]);
 
   useEffect(() => {
     if (draft.type === 'transfer' || !canonicalBenefitAccount || !canonicalVerocardPayment) return;
