@@ -230,13 +230,11 @@ function PhoenixPreviewRoot() {
     nativeLifecycleStartedRef.current = true;
     void (async () => {
       try {
-        const [biometric, updater, stableUi] = await Promise.all([
+        const [biometric, updater] = await Promise.all([
           // @ts-ignore módulo JS nativo carregado somente no APK.
           import('../native-biometric-login.js'),
           // @ts-ignore módulo JS nativo carregado somente no APK.
           import('../android-update-controller.js'),
-          // @ts-ignore módulo JS nativo carregado somente no APK.
-          import('../native-app-update.js'),
         ]);
         await biometric.initializeAndroidBiometricLifecycle({
           onAuthenticationFailed: async () => {
@@ -248,7 +246,6 @@ function PhoenixPreviewRoot() {
         await updater.markAndroidUpdateUiReady();
         await updater.initializeAndroidUpdateLifecycle();
         void updater.checkForAppUpdate();
-        void stableUi.initializeStableUiFeatures();
       } catch (cause) {
         console.warn('MEG Android authenticated lifecycle unavailable', cause);
       }
