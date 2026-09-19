@@ -1,9 +1,9 @@
 {
-  "versionCode": 275,
-  "versionName": "1.1.275",
+  "versionCode": 276,
+  "versionName": "1.1.276",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "57d62613e2c87a26a18c2ca29a85a24bd9345cd25a6997f2a1abf3c20e99d251",
+  "sha256": "04f199d4772ddd44056ac73f29e5801a16080c80147313458d17286d032bb452",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #293 from MarcosVilalva/fix/phoenix-pending-batch-performance"
+  "releaseNotes": "Merge pull request #294 from MarcosVilalva/fix/phoenix-pending-confirmation-fastpath"
 }
