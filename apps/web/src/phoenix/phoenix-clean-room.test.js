@@ -137,6 +137,14 @@ assert.match(movementScreen, /MovementIcon/,
   'Comandos principais devem usar uma família vetorial consistente em vez de caracteres soltos');
 assert.match(movementScreen, /px-table-pagination/,
   'Paginação deve permanecer no rodapé da grade');
+assert.match(movementScreen, /px-table-toolbar-shell/,
+  'Comandos de consulta devem compartilhar a mesma toolbar das ações da grade');
+assert.doesNotMatch(movementScreen, /px-movements-overview[\s\S]*px-movement-tools[\s\S]*<\/section>\s*<section className="px-card px-table-card">/,
+  'Cabeçalho financeiro não deve reservar uma segunda faixa só para consulta');
+assert.match(movementScreen, /px-description-ellipsis/,
+  'Descrição deve permanecer compacta com elipse para preservar espaço horizontal');
+assert.match(movementScreen, /title=\{event\.description\}/,
+  'Descrição completa deve continuar acessível ao passar o mouse');
 
 assert.match(movementScreen, /Despesa/);
 assert.match(movementScreen, /Receita/);
