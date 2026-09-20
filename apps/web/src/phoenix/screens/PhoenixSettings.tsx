@@ -6,6 +6,7 @@ import {
   phoenixAvatarPresets,
   readPhoenixAvatarPreference,
   savePhoenixAvatarPreference,
+  savePhoenixAvatarPreferenceCloud,
   type PhoenixAvatarPreference
 } from '../profile-avatar';
 import '../phoenix-settings.css';
@@ -87,6 +88,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme }: PhoenixSettingsP
     setAvatar(next);
     setAvatarError('');
     savePhoenixAvatarPreference(next, data.user.id);
+    void savePhoenixAvatarPreferenceCloud(next, data.user.id);
   }
 
   async function choosePhoto(file?: File) {
