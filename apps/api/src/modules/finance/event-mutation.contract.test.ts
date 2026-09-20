@@ -8,6 +8,12 @@ assert.match(routes, /createFinancialEventProtected/,
   'Criação de evento deve passar pelo gateway transacional idempotente.');
 assert.match(routes, /operationIdSchema/,
   'Criação de evento deve aceitar chave de idempotência.');
+assert.match(routes, /\/sync-status/,
+  'API financeira deve expor pulso leve para detectar alterações em outros dispositivos.');
+assert.match(routes, /cloudMutationReceipt\.findFirst/,
+  'Pulso de sincronização deve usar recibos autoritativos do workspace.');
+assert.match(routes, /orderBy:\s*\[\{ createdAt: 'desc' \}, \{ id: 'desc' \}\]/,
+  'Pulso deve apontar sempre para a mutação confirmada mais recente.');
 assert.match(mutation, /serializableFinancialTransaction/,
   'Criação de evento deve executar em transação serializável.');
 assert.match(mutation, /cloudMutationReceipt/,
