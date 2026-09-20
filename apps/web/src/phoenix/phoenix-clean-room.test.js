@@ -36,6 +36,8 @@ const settings = readFileSync(new URL('./screens/PhoenixSettings.tsx', import.me
 const loader = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.meta.url), 'utf8');
 const previewMain = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
 const previewBootCss = readFileSync(new URL('./preview-boot.css', import.meta.url), 'utf8');
+const previewAuthCss = readFileSync(new URL('./preview-auth-flow.css', import.meta.url), 'utf8');
+const nativeBiometric = readFileSync(new URL('../native-biometric-login.js', import.meta.url), 'utf8');
 const mainActivity = readFileSync(new URL('../../../../android/app/src/main/java/br/com/megfinancas/app/MainActivity.java', import.meta.url), 'utf8');
 const nativeShellPlugin = readFileSync(new URL('../../../../android/app/src/main/java/br/com/megfinancas/app/MegNativeShellPlugin.java', import.meta.url), 'utf8');
 const phoenixHtml = readFileSync(new URL('../../phoenix.html', import.meta.url), 'utf8');
@@ -573,8 +575,10 @@ assert.match(phoenixApp, /snapshot\.month !== visibleMonth[\s\S]{0,500}loadPhoen
   'Snapshot de outro mês não pode empurrar o período visível do APK.');
 assert.match(operationalHome, /px-operational-period-chip[\s\S]*periodLabel/,
   'Período do APK deve ficar no contexto da Home, e não flutuando na topbar.');
-assert.match(phoenixApp, /px-period-menu-mobile-host/,
-  'Android deve hospedar o período fora da topbar visual, pronto para abrir como sheet.');
+assert.match(phoenixApp, /createPortal\([\s\S]*px-period-mobile-portal[\s\S]*document\.body/,
+  'Android deve renderizar o filtro de período em portal no body, fora da topbar fixa.');
+assert.doesNotMatch(phoenixApp, /px-period-menu-mobile-host/,
+  'Filtro móvel não pode continuar preso ao host da topbar.');
 assert.match(phoenixApp, /px-period-mobile-backdrop/,
   'Período Android deve abrir com backdrop próprio.');
 assert.match(periodCss, /\.px-period-popover-v15\.is-mobile-sheet[\s\S]*bottom:max/,
@@ -653,6 +657,22 @@ assert.match(previewBootCss, /\.px-preview-fullscreen-boot[\s\S]*position:fixed!
   'Loading deve cobrir o WebView inteiro, sem deixar a tela de login aparecer por trás.');
 assert.match(previewBootCss, /background-color:#021819!important/,
   'Loading deve possuir fundo opaco próprio, independente da tela anterior.');
+assert.match(main, /import '\.\.\/phoenix\/preview-boot\.css';/,
+  'Android deve carregar o CSS do boot antes de abrir a biometria.');
+assert.match(nativeBiometric, /nativeBiometricLoadingOverlay/,
+  'Biometria reconhecida deve criar uma cobertura premium antes do React montar.');
+assert.match(nativeBiometric, /beginAuthenticatedLoadingTransition\(\)[\s\S]*px-preview-fullscreen-boot/,
+  'Transição biométrica deve reutilizar a identidade visual do loading premium.');
+assert.match(nativeBiometric, /cacheCredentials\(credentials\);[\s\S]*beginAuthenticatedLoadingTransition\(\)/,
+  'Após reconhecer a biometria, o login deve desaparecer imediatamente.');
+assert.match(previewMain, /'authenticating'/,
+  'Preview deve possuir estado dedicado de autenticação sem formulário visível.');
+assert.match(previewMain, /setState\('authenticating'\)[\s\S]{0,500}login\(credentials\.email, credentials\.password\)/,
+  'Login biométrico deve trocar para o boot antes de chamar a API.');
+assert.match(previewMain, /state === 'checking' \|\| state === 'authenticating' \|\| state === 'preparing'/,
+  'Estados de autenticação e preparação devem renderizar somente o boot premium.');
+assert.match(previewAuthCss, /\.px-preview-auth:has\(\.px-preview-button-spinner\)::before,[\s\S]*display:none!important/,
+  'Android não pode reexibir a antiga camada de loading sobre o formulário.');
 assert.match(operationalCss, /body\.meg-operational-mobile \.px-topbar[\s\S]*position:fixed!important/,
   'Cabeçalho MEG deve permanecer fixo em qualquer tela do Android.');
 assert.match(operationalCss, /body\.meg-operational-mobile \.px-main[\s\S]*padding-top:var\(--px-mobile-shell-header\)!important/,
