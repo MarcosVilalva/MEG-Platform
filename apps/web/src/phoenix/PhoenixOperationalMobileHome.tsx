@@ -34,47 +34,68 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate }: Pro
   const upcoming = agenda.items.filter((item) => item.kind !== 'VENCIDO');
   const recent = [...data.events.items]
     .sort((left, right) => String(right.date).localeCompare(String(left.date)))
-    .slice(0, 6);
+    .slice(0, 5);
+  const currentBalance = Number(data.summary.availableBalance || 0) + Number(data.summary.realizedResult || 0);
+  const firstName = String(data.user.name || 'MEG').trim().split(/\s+/)[0] || 'MEG';
+  const pendingAmount = agenda.items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
   return <section className="px-operational-mobile-home" aria-label="MEG Operacional">
-    <header className="px-operational-hero">
-      <div>
+    <header className="px-operational-hero px-operational-hero-v2">
+      <div className="px-operational-hero-copy">
         <span className="px-kicker">MEG OPERACIONAL</span>
-        <h1>Lançar ficou simples.</h1>
-        <p>Receitas, despesas e Benefício Alimentação com as mesmas regras da sua base financeira.</p>
+        <h1>Olá, {firstName}.</h1>
+        <p>Seu financeiro de hoje, com acesso rápido ao que precisa ser lançado ou resolvido.</p>
       </div>
-      <span className="px-operational-sync" title={`Dados carregados em ${data.loadedAt}`}><i />Sincronizado</span>
+      <span className="px-operational-sync" title={`Dados carregados em ${data.loadedAt}`}><i />Atualizado</span>
     </header>
 
-    <div className="px-operational-launch-grid">
-      <button className="px-operational-launch expense" type="button" onClick={() => onLaunch('expense')}>
-        <span className="px-operational-launch-icon" aria-hidden="true">↘</span>
-        <span><small>NOVO LANÇAMENTO</small><strong>Despesa</strong><em>À vista, crédito, crediário ou recorrente</em></span>
-        <b aria-hidden="true">＋</b>
-      </button>
-      <button className="px-operational-launch income" type="button" onClick={() => onLaunch('income')}>
-        <span className="px-operational-launch-icon" aria-hidden="true">↗</span>
-        <span><small>NOVO LANÇAMENTO</small><strong>Receita</strong><em>Recebimento rápido e já confirmado</em></span>
-        <b aria-hidden="true">＋</b>
-      </button>
-      <button className="px-operational-launch benefit" type="button" onClick={() => onLaunch('benefit')}>
-        <span className="px-operational-launch-icon" aria-hidden="true">◈</span>
-        <span><small>ATALHO PROTEGIDO</small><strong>Alimentação</strong><em>Benefício + VEROCARD automáticos e travados</em></span>
-        <b aria-hidden="true">＋</b>
-      </button>
-    </div>
+    <section className="px-operational-balance" aria-label="Resumo financeiro atual">
+      <div className="px-operational-balance-main">
+        <span>Saldo disponível hoje</span>
+        <strong>{money.format(currentBalance)}</strong>
+        <small>Saldo monetário realizado. Benefício Alimentação é acompanhado separadamente.</small>
+      </div>
+      <div className="px-operational-balance-meta">
+        <div><span>Entradas realizadas</span><strong>{money.format(Number(data.summary.realizedIncome || 0))}</strong></div>
+        <div><span>Saídas realizadas</span><strong>{money.format(Number(data.summary.realizedExpense || 0))}</strong></div>
+      </div>
+    </section>
 
-    <div className="px-operational-status-grid">
-      <button type="button" className={overdue.length ? 'danger' : ''} onClick={() => onNavigate('payables')}>
-        <span>Vencidas</span><strong>{overdue.length}</strong><em>{money.format(overdue.reduce((sum, item) => sum + item.amount, 0))}</em>
-      </button>
-      <button type="button" onClick={() => onNavigate('payables')}>
-        <span>A vencer</span><strong>{upcoming.length}</strong><em>{money.format(upcoming.reduce((sum, item) => sum + item.amount, 0))}</em>
-      </button>
-      <button type="button" onClick={() => onNavigate('movements')}>
-        <span>Lançamentos</span><strong>{data.events.total}</strong><em>{data.month}</em>
-      </button>
-    </div>
+    <section className="px-operational-section">
+      <header className="px-operational-section-head"><div><span className="px-kicker">LANÇAMENTO RÁPIDO</span><h2>O que você quer registrar?</h2></div></header>
+      <div className="px-operational-launch-grid px-operational-launch-grid-v2">
+        <button className="px-operational-launch expense" type="button" onClick={() => onLaunch('expense')}>
+          <span className="px-operational-launch-icon" aria-hidden="true">↘</span>
+          <span><strong>Despesa</strong><em>Pagamento, crédito ou recorrente</em></span>
+          <b aria-hidden="true">＋</b>
+        </button>
+        <button className="px-operational-launch income" type="button" onClick={() => onLaunch('income')}>
+          <span className="px-operational-launch-icon" aria-hidden="true">↗</span>
+          <span><strong>Receita</strong><em>Entrada recebida ou a receber</em></span>
+          <b aria-hidden="true">＋</b>
+        </button>
+        <button className="px-operational-launch benefit" type="button" onClick={() => onLaunch('benefit')}>
+          <span className="px-operational-launch-icon" aria-hidden="true">◈</span>
+          <span><strong>Alimentação</strong><em>Benefício + VEROCARD automáticos</em></span>
+          <b aria-hidden="true">＋</b>
+        </button>
+      </div>
+    </section>
+
+    <section className="px-operational-section">
+      <header className="px-operational-section-head"><div><span className="px-kicker">PRIORIDADES</span><h2>O que precisa de atenção</h2></div></header>
+      <div className="px-operational-status-grid px-operational-status-grid-v2">
+        <button type="button" className={overdue.length ? 'danger priority' : 'priority'} onClick={() => onNavigate('payables')}>
+          <span>Pendentes</span><strong>{agenda.items.length}</strong><em>{money.format(pendingAmount)}</em><small>{overdue.length ? `${overdue.length} vencida(s)` : 'Nenhuma vencida'}</small>
+        </button>
+        <button type="button" onClick={() => onNavigate('payables')}>
+          <span>A vencer</span><strong>{upcoming.length}</strong><em>{money.format(upcoming.reduce((sum, item) => sum + item.amount, 0))}</em><small>Ver compromissos</small>
+        </button>
+        <button type="button" className="benefit" onClick={() => onLaunch('benefit')}>
+          <span>Benefício</span><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong><em>saldo atual</em><small>Registrar alimentação</small>
+        </button>
+      </div>
+    </section>
 
     <section className="px-operational-recent">
       <header>
