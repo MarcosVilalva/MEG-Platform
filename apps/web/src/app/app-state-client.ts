@@ -30,3 +30,15 @@ export async function patchCloudTransactions(upserts: LegacyTransaction[], delet
   }
   throw new Error('STATE_CONFLICT');
 }
+
+
+export async function patchCloudStateProperties(
+  properties: Record<string, unknown>,
+  expectedRevision: number,
+  operationId = crypto.randomUUID()
+) {
+  return request<{ revision: number; changed: boolean; updatedAt?: string | null }>('/app-state/properties', {
+    method: 'PATCH',
+    body: JSON.stringify({ operationId, expectedRevision, properties })
+  });
+}
