@@ -1,9 +1,9 @@
 {
-  "versionCode": 313,
-  "versionName": "2.0.313",
+  "versionCode": 314,
+  "versionName": "2.0.314",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "f9aa0c397b3a5864cddd43860a10929e3756c51f3796d2ae93c648becb3606f8",
+  "sha256": "0eac7fb47c010a00f1bd14b46b34f30bf03473d09e90631c03f3f03de312de1d",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Android: histórico humano, cabeçalho fixo e loading premium"
+  "releaseNotes": "Período: corrigir Fechar e adicionar Cancelar no Android"
 }
