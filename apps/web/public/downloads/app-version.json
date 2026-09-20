@@ -1,9 +1,9 @@
 {
-  "versionCode": 317,
-  "versionName": "2.0.317",
+  "versionCode": 318,
+  "versionName": "2.0.318",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "01b1cec2e76db6445cddac05b6cbce70063f494edb46b41e9c6e25b576410067",
+  "sha256": "1fbcd88e497b204094e3872c3b66a5fcdd1dc281bfd118f57520aef6dbf2eabc",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #342 from MarcosVilalva/feat/launch-edit-delete-operational-v2"
+  "releaseNotes": "Merge PR #343: biometria persistente e base compartilhada"
 }
