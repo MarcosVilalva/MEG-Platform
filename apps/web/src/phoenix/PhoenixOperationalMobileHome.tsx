@@ -1,12 +1,14 @@
+import { useEffect, useState } from 'react';
 import type { PhoenixReadModel } from './contracts';
 import { buildPhoenixHomeAgenda } from './home-agenda';
+import { PhoenixProfileAvatar, hydratePhoenixAvatarPreference, readPhoenixAvatarPreference, type PhoenixAvatarPreference } from './profile-avatar';
 
 type LaunchPreset = 'expense' | 'income' | 'benefit';
 
 type Props = {
   data: PhoenixReadModel;
   onLaunch: (preset: LaunchPreset) => void;
-  onNavigate: (view: 'movements' | 'history' | 'payables') => void;
+  onNavigate: (view: 'movements' | 'history' | 'payables' | 'settings') => void;
   onOpenPeriod?: () => void;
 };
 
@@ -30,6 +32,21 @@ function eventAmount(event: PhoenixReadModel['events']['items'][number]) {
 }
 
 export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate, onOpenPeriod }: Props) {
+  const [avatar, setAvatar] = useState<PhoenixAvatarPreference>(() => readPhoenixAvatarPreference(data.user.id));
+
+  useEffect(() => {
+    let active = true;
+    const syncAvatar = () => setAvatar(readPhoenixAvatarPreference(data.user.id));
+    void hydratePhoenixAvatarPreference(data.user.id).then((preference) => {
+      if (active) setAvatar(preference);
+    });
+    window.addEventListener('meg:profile-avatar-changed', syncAvatar);
+    return () => {
+      active = false;
+      window.removeEventListener('meg:profile-avatar-changed', syncAvatar);
+    };
+  }, [data.user.id]);
+
   const agenda = buildPhoenixHomeAgenda(data, todayIso());
   const overdue = agenda.items.filter((item) => item.kind === 'VENCIDO');
   const upcoming = agenda.items.filter((item) => item.kind !== 'VENCIDO');
@@ -48,7 +65,12 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate, onOpe
     <header className="px-operational-hero px-operational-hero-v2">
       <div className="px-operational-hero-copy">
         <span className="px-kicker">MEG OPERACIONAL</span>
-        <h1>Olá, {firstName}.</h1>
+        <div className="px-operational-greeting">
+          <button className="px-operational-avatar-button" type="button" aria-label="Abrir meu perfil" onClick={() => onNavigate('settings')}>
+            <PhoenixProfileAvatar name={data.user.name} preference={avatar} className="px-operational-home-avatar" />
+          </button>
+          <div><h1>Olá, {firstName}.</h1><small>{data.user.name}</small></div>
+        </div>
         <p>Seu financeiro de hoje, com acesso rápido ao que precisa ser lançado ou resolvido.</p>
         {onOpenPeriod ? <button className="px-operational-period-chip" type="button" onClick={onOpenPeriod} aria-label={`Alterar período atual ${periodLabel}`}><span aria-hidden="true">▣</span><strong>Período</strong><em>{periodLabel}</em></button> : null}
       </div>
