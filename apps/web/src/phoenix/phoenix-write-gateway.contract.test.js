@@ -71,8 +71,16 @@ assert.match(gateway, /if \(!PHOENIX_WRITE_CAPABILITIES\.cardPurchase\)/,
   'Gateway de cartão deve falhar fechado se a capacidade frontend for revogada.');
 assert.match(gateway, /runPhoenixSimpleEventEdit/,
   'Edição simples deve permanecer encapsulada no gateway protegido da Phoenix.');
+assert.match(gateway, /expectedUpdatedAtById:\s*expectedUpdatedAt \? \{ \[eventId\]: expectedUpdatedAt \} : undefined/,
+  'Edição deve enviar ao servidor a versão que estava aberta no dispositivo.');
+assert.match(gateway, /FINANCIAL_EVENT_STALE_VERSION/,
+  'Gateway deve explicar conflito concorrente sem sobrescrever silenciosamente.');
+assert.match(gateway, /editRequestKey\(eventId, input, expectedUpdatedAt\)/,
+  'Retry idempotente da edição deve ser separado pela versão esperada.');
 assert.match(gateway, /runPhoenixSimpleEventArchive/,
   'Exclusão individual deve permanecer encapsulada no gateway protegido da Phoenix.');
+assert.match(gateway, /archiveRequestKey = \`\$\{eventId\}:\$\{expectedUpdatedAt \|\| 'unknown'\}\`/,
+  'Retry idempotente da exclusão deve respeitar a versão aberta no dispositivo.');
 assert.match(gateway, /financeClient\.bulkArchiveEvents/,
   'Exclusão deve usar o endpoint idempotente de arquivamento, sem DELETE direto da tela.');
 assert.match(gateway, /operationId\('phoenix-event-archive'\)/,
@@ -242,6 +250,10 @@ assert.doesNotMatch(movements, /financeClient\.updateEvent|financeClient\.bulkUp
   'Tela de Lançamentos não pode administrar diretamente a mutação e releitura.');
 assert.match(movements, /runPhoenixSimpleEventEdit/,
   'Tela deve encaminhar a edição ao gateway Phoenix em vez de acessar cliente mutável.');
+assert.match(movements, /editingEventUpdatedAt/,
+  'Editor deve preservar a versão do lançamento carregado antes de permitir salvar ou excluir.');
+assert.match(movements, /event\.updatedAt \|\| null/,
+  'Versão inicial da edição deve vir do updatedAt real do servidor.');
 assert.match(movements, /runPhoenixSimpleEventArchive/,
   'Editor deve encaminhar a exclusão ao gateway protegido.');
 assert.match(movements, /Excluir lançamento/,

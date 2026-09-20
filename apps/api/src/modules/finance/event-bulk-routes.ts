@@ -38,8 +38,11 @@ const legacyPatchSchema = z.object({
   message: 'Informe ao menos uma alteração legada.',
 });
 
+const eventVersionMapSchema = z.record(z.string().trim().min(1), z.string().datetime());
+
 const updateSchema = z.object({
   ids: idsSchema,
+  expectedUpdatedAtById: eventVersionMapSchema.optional(),
   changes: z.object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     description: z.string().trim().min(1).max(500).optional(),
@@ -59,6 +62,7 @@ const updateSchema = z.object({
 
 const archiveSchema = z.object({
   ids: idsSchema,
+  expectedUpdatedAtById: eventVersionMapSchema.optional(),
   operationId: operationIdSchema,
 });
 
@@ -93,7 +97,7 @@ function mutationError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof FinancialEventMutationError)) throw error;
   const status = error.code === 'FINANCIAL_EVENT_NOT_FOUND'
     ? 404
-    : error.code === 'OPERATION_ID_REUSED'
+    : ['OPERATION_ID_REUSED', 'FINANCIAL_EVENT_STALE_VERSION'].includes(error.code)
       ? 409
       : 400;
   return reply.code(status).send({ error: error.code, ...(error.details || {}) });

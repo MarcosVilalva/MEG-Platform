@@ -55,6 +55,8 @@ export type FinancialEvent = {
     modality: string;
     observations: string;
   } | null;
+  createdAt?: string;
+  updatedAt?: string;
   idempotentReplay?: boolean;
 };
 
@@ -194,6 +196,8 @@ export const financeClient = {
     authorizedRequest<BenefitSummary>(`/finance/benefit-summary?month=${encodeURIComponent(month)}`),
   listEventsForMonth: (month: string) =>
     authorizedRequest<FinancialEventPage>(`/finance/events/month?month=${encodeURIComponent(month)}`),
+  getSyncStatus: () =>
+    authorizedRequest<{ token: string; changedAt: string | null; mutationType: string | null }>('/finance/sync-status', { cache: 'no-store' }),
   listEvents: (page = 1, pageSize = 50, search = '') =>
     authorizedRequest<FinancialEventPage>(
       `/finance/events?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`
@@ -207,12 +211,12 @@ export const financeClient = {
     body: JSON.stringify(data)
   }),
   archiveEvent: (id: string) => authorizedRequest<{ id: string; archived: boolean }>(`/finance/events/${id}`, { method: 'DELETE' }),
-  bulkUpdateEvents: (data: { ids: string[]; changes: BulkEventChanges; operationId: string }) =>
+  bulkUpdateEvents: (data: { ids: string[]; changes: BulkEventChanges; operationId: string; expectedUpdatedAtById?: Record<string, string> }) =>
     authorizedRequest<{ ids: string[]; updated: number; events: FinancialEvent[]; idempotentReplay: boolean }>('/finance/events/bulk/update', {
       method: 'POST',
       body: JSON.stringify(data)
     }),
-  bulkArchiveEvents: (data: { ids: string[]; operationId: string }) =>
+  bulkArchiveEvents: (data: { ids: string[]; operationId: string; expectedUpdatedAtById?: Record<string, string> }) =>
     authorizedRequest<{ ids: string[]; archived: number; idempotentReplay: boolean }>('/finance/events/bulk/archive', {
       method: 'POST',
       body: JSON.stringify(data)

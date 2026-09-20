@@ -44,11 +44,13 @@ export type BulkEventChanges = {
 export type BulkEventUpdateInput = {
   ids: string[];
   changes: BulkEventChanges;
+  expectedUpdatedAtById?: Record<string, string>;
   operationId: string;
 };
 
 export type BulkEventArchiveInput = {
   ids: string[];
+  expectedUpdatedAtById?: Record<string, string>;
   operationId: string;
 };
 
@@ -73,6 +75,25 @@ function canonicalIds(ids: string[]) {
 
 function jsonRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as JsonRecord : {};
+}
+
+function assertExpectedEventVersions(
+  events: Array<{ id: string; updatedAt: Date }>,
+  expectedUpdatedAtById?: Record<string, string>,
+) {
+  if (!expectedUpdatedAtById) return;
+  for (const event of events) {
+    const expected = expectedUpdatedAtById[event.id];
+    if (!expected) continue;
+    const current = event.updatedAt.toISOString();
+    if (current !== expected) {
+      throw new FinancialEventMutationError('FINANCIAL_EVENT_STALE_VERSION', {
+        id: event.id,
+        expectedUpdatedAt: expected,
+        currentUpdatedAt: current,
+      });
+    }
+  }
 }
 
 async function readEditableEvents(tx: Tx, userId: string, ids: string[]) {
@@ -160,7 +181,7 @@ export async function updateFinancialEventsBulkProtected(userId: string, rawInpu
   const ids = canonicalIds(rawInput.ids);
   const input = { ...rawInput, ids };
   const workspace = await resolveWorkspaceContext(userId);
-  const requestHash = mutationRequestHash({ ids, changes: input.changes });
+  const requestHash = mutationRequestHash({ ids, changes: input.changes, expectedUpdatedAtById: input.expectedUpdatedAtById || null });
 
   try {
     return await serializableFinancialTransaction(async (tx) => {
@@ -186,6 +207,7 @@ export async function updateFinancialEventsBulkProtected(userId: string, rawInpu
       }
 
       const before = await readEditableEvents(tx, userId, ids);
+      assertExpectedEventVersions(before, input.expectedUpdatedAtById);
       const date = input.changes.date ? new Date(input.changes.date) : undefined;
 
       for (const event of before) {
@@ -283,7 +305,7 @@ export async function archiveFinancialEventsBulkProtected(userId: string, rawInp
   const ids = canonicalIds(rawInput.ids);
   const input = { ...rawInput, ids };
   const workspace = await resolveWorkspaceContext(userId);
-  const requestHash = mutationRequestHash({ ids, archive: true });
+  const requestHash = mutationRequestHash({ ids, archive: true, expectedUpdatedAtById: input.expectedUpdatedAtById || null });
 
   try {
     return await serializableFinancialTransaction(async (tx) => {
@@ -296,6 +318,7 @@ export async function archiveFinancialEventsBulkProtected(userId: string, rawInp
       }
 
       const before = await readEditableEvents(tx, userId, ids);
+      assertExpectedEventVersions(before, input.expectedUpdatedAtById);
       const archivedAt = new Date();
       await tx.ledgerEntry.deleteMany({ where: { eventId: { in: ids } } });
 

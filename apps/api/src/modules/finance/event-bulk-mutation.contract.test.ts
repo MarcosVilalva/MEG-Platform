@@ -37,6 +37,16 @@ assert.match(mutation, /rebuildLedgers/,
   'Mudanças de data ou conta devem reconstruir o ledger dentro da mesma transação.');
 assert.match(mutation, /OPERATION_ID_REUSED/,
   'Reuso divergente do operationId deve ser rejeitado.');
+assert.match(routes, /expectedUpdatedAtById/,
+  'API deve aceitar a versão conhecida pelo cliente antes de editar ou excluir.');
+assert.match(routes, /FINANCIAL_EVENT_STALE_VERSION/,
+  'Conflito de versão deve retornar 409 em vez de sobrescrever silenciosamente.');
+assert.match(mutation, /assertExpectedEventVersions/,
+  'Mutação deve validar a versão do lançamento dentro da transação serializável.');
+assert.match(mutation, /event\.updatedAt\.toISOString\(\)/,
+  'Versão concorrente deve usar updatedAt autoritativo do banco.');
+assert.match(mutation, /expectedUpdatedAtById: input\.expectedUpdatedAtById \|\| null/,
+  'Idempotência deve incluir a versão esperada no hash do comando.');
 assert.match(mutation, /P2002/,
   'Corrida concorrente de recibos deve ser tratada.');
 

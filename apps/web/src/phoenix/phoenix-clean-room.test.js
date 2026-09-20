@@ -544,6 +544,14 @@ assert.match(phoenixApp, /PhoenixOperationalMobileHome/,
   'APK deve substituir a home pesada por uma home operacional focada em lançamentos.');
 assert.match(phoenixApp, /syncPhoenixLocalDueNotifications/,
   'APK deve sincronizar alertas locais após carregar a base real.');
+assert.match(phoenixApp, /financeClient\.getSyncStatus\(\)/,
+  'Shell deve consultar um pulso leve do workspace para detectar mudanças de outro dispositivo.');
+assert.match(phoenixApp, /window\.setInterval\(\(\) => \{ void checkWorkspaceChanges\(\); \}, 6_000\)/,
+  'Pulso entre dispositivos deve rodar em intervalo curto enquanto a tela estiver visível.');
+assert.match(phoenixApp, /previous && previous !== status\.token[\s\S]{0,180}refreshData\(\)/,
+  'Mutação confirmada em outro dispositivo deve disparar releitura oficial.');
+assert.match(phoenixApp, /document\.addEventListener\('visibilitychange', onVisible\)/,
+  'Ao voltar ao app, alterações externas devem ser conferidas imediatamente.');
 assert.match(operationalHome, /Alimentação/,
   'Home operacional deve oferecer atalho protegido para Benefício Alimentação.');
 assert.match(operationalHome, /Despesa[\s\S]*Receita/,
