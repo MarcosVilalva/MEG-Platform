@@ -431,17 +431,19 @@ async function financialAuditReadOnly(userId: string) {
 }
 
 export async function getPhoenixPreviewReadModel(userId: string, month: string) {
+  const context = await resolveWorkspaceContext(userId);
+  const dataOwnerId = context.workspace.ownerId;
   const [summaryBase, benefit, analytics, cashflow, accounts, categories, paymentMethods, events, cards, payables, financialAudit] = await Promise.all([
-    canonicalSummary(userId, month),
-    benefitSummary(userId, month),
-    canonicalAnalytics(userId, month),
-    canonicalCashflow(userId, month),
-    prisma.account.findMany({ where: { userId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] }),
-    prisma.category.findMany({ where: { userId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] }),
-    prisma.paymentMethod.findMany({ where: { userId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] }),
-    monthlyEvents(userId, month),
+    canonicalSummary(dataOwnerId, month),
+    benefitSummary(dataOwnerId, month),
+    canonicalAnalytics(dataOwnerId, month),
+    canonicalCashflow(dataOwnerId, month),
+    prisma.account.findMany({ where: { userId: dataOwnerId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] }),
+    prisma.category.findMany({ where: { userId: dataOwnerId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] }),
+    prisma.paymentMethod.findMany({ where: { userId: dataOwnerId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] }),
+    monthlyEvents(dataOwnerId, month),
     cardsReadOnly(userId, month),
-    payablesReadOnly(userId, month),
+    payablesReadOnly(dataOwnerId, month),
     financialAuditReadOnly(userId),
   ]);
   return {

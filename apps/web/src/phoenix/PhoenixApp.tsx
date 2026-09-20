@@ -349,7 +349,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   return <PhoenixBudgets data={data} />;
 }
 
-export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
+export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClose?: () => void }) {
   const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
   const [month, setMonth] = useState(currentMonth);
   const [view, setView] = useState<PhoenixView>('home');
@@ -689,14 +689,18 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   }
 
   function requestLogout() {
-    if (nativeOperational) {
-      setMobileOpen(false);
-      setSearchOpen(false);
-      setPeriodOpen(false);
-      setExitConfirmOpen(true);
+    onLogout?.();
+  }
+
+  function requestClose() {
+    if (!nativeOperational) {
+      onLogout?.();
       return;
     }
-    onLogout?.();
+    setMobileOpen(false);
+    setSearchOpen(false);
+    setPeriodOpen(false);
+    setExitConfirmOpen(true);
   }
 
   function requestLaunch(preset: LaunchPreset = 'expense') {
@@ -750,7 +754,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
           applyNavigation('home');
           return;
         }
-        requestLogout();
+        requestClose();
       });
       if (!active) await handle.remove();
       else listener = handle;
@@ -1075,7 +1079,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
               {!nativeOperational ? <button className={`px-period-summary ${periodLoading ? 'is-loading' : ''}`} type="button" title="Selecionar período" aria-label="Selecionar período" aria-busy={periodLoading} onClick={() => periodOpen ? closePeriodSelector() : openPeriodSelector()}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span className="px-period-active">{periodActiveLabel}</span></button> : null}
               {!nativeOperational ? periodSelector : null}
             </div>
-            <button className={`px-sync ${refreshing ? 'is-refreshing' : ''}`} type="button" disabled={refreshing || periodLoading || !data} aria-busy={refreshing} title="Atualizar dados" onClick={() => { void refreshData(); }}><span className="px-sync-dot" /><span>{refreshing ? 'Atualizando dados…' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn px-theme-toggle" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{userInitial}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span className="px-user-chevron">⌄</span></button><button className="px-icon-btn px-top-exit" type="button" title="Sair" onClick={requestLogout}>↪</button>
+            <button className={`px-sync ${refreshing ? 'is-refreshing' : ''}`} type="button" disabled={refreshing || periodLoading || !data} aria-busy={refreshing} title="Atualizar dados" onClick={() => { void refreshData(); }}><span className="px-sync-dot" /><span>{refreshing ? 'Atualizando dados…' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn px-theme-toggle" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{userInitial}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span className="px-user-chevron">⌄</span></button><button className="px-icon-btn px-top-exit" type="button" title={nativeOperational ? 'Fechar aplicativo' : 'Sair'} onClick={nativeOperational ? requestClose : requestLogout}>↪</button>
           </div>
         </header>
 
@@ -1100,7 +1104,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
               </button>;
             })}
           </div>
-          <footer className="px-mobile-menu-footer"><button type="button" onClick={requestLogout}>Sair e fechar o MEG</button></footer>
+          <footer className="px-mobile-menu-footer"><button type="button" onClick={requestClose}>Fechar o MEG</button></footer>
         </section>
       </div> : null}
 
@@ -1119,13 +1123,13 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
         <div className="px-meg-confirm-icon" aria-hidden="true">↪</div>
         <div className="px-meg-confirm-copy">
           <span className="px-kicker">MEG Finanças</span>
-          <h3 id="px-exit-title">Deseja sair do aplicativo?</h3>
-          <p id="px-exit-copy">Sua sessão será encerrada e o MEG será fechado, retornando ao Android.</p>
+          <h3 id="px-exit-title">Deseja fechar o aplicativo?</h3>
+          <p id="px-exit-copy">O MEG será fechado. Sua conta continuará protegida e, se a biometria estiver ativada, ela será usada no próximo acesso.</p>
         </div>
         <button className="px-meg-confirm-close" type="button" aria-label="Não sair" onClick={() => setExitConfirmOpen(false)}>×</button>
         <div className="px-meg-confirm-actions">
           <button className="px-meg-confirm-secondary" type="button" onClick={() => setExitConfirmOpen(false)}>Não</button>
-          <button className="px-meg-confirm-danger" type="button" onClick={() => { setExitConfirmOpen(false); onLogout?.(); }}>Sim, sair</button>
+          <button className="px-meg-confirm-danger" type="button" onClick={() => { setExitConfirmOpen(false); onClose?.(); }}>Sim, fechar</button>
         </div>
       </section>
     </div> : null}

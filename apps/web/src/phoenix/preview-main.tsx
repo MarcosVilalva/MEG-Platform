@@ -86,6 +86,39 @@ async function loginWithServiceRetry(email: string, password: string) {
   }
 }
 
+function biometricEnrollmentDeclinedKey(email: string) {
+  return `meg.biometric.enrollment.declined:${email.trim().toLowerCase()}`;
+}
+
+async function offerAndroidBiometricEnrollment(email: string, password: string) {
+  if (import.meta.env.VITE_MOBILE_APP !== 'true' || !email.trim() || !password) return;
+  const normalizedEmail = email.trim().toLowerCase();
+  try {
+    // @ts-ignore módulo JS nativo carregado somente no APK.
+    const biometric = await import('../native-biometric-login.js');
+    const status = await biometric.getBiometricLoginStatus();
+    if (!status?.available || status?.enabled) return;
+    if (localStorage.getItem(biometricEnrollmentDeclinedKey(normalizedEmail)) === '1') return;
+
+    const accepted = window.confirm(
+      'Deseja usar a biometria neste dispositivo nos próximos acessos ao MEG?\n\nSe ativar, fechar o aplicativo não removerá a biometria. Você poderá desativá-la depois em Configurações.'
+    );
+    if (!accepted) {
+      localStorage.setItem(biometricEnrollmentDeclinedKey(normalizedEmail), '1');
+      return;
+    }
+
+    const saved = await biometric.saveBiometricLogin({ email: normalizedEmail, password });
+    if (saved?.saved) {
+      localStorage.removeItem(biometricEnrollmentDeclinedKey(normalizedEmail));
+      return;
+    }
+    console.warn('MEG biometric enrollment was not persisted', saved?.reason || 'SAVE_FAILED');
+  } catch (cause) {
+    console.warn('MEG biometric enrollment unavailable', cause);
+  }
+}
+
 function authErrorMessage(cause: unknown) {
   const message = cause instanceof Error ? cause.message : '';
   if (message === 'ACCESS_PENDING') return 'Seu cadastro já existe e ainda aguarda aprovação do administrador.';
@@ -363,7 +396,9 @@ function PhoenixPreviewRoot() {
     setState('authenticating');
     setBusy(true);
     try {
-      await loginWithServiceRetry(email.trim(), password);
+      const loginEmail = email.trim();
+      await loginWithServiceRetry(loginEmail, password);
+      await offerAndroidBiometricEnrollment(loginEmail, password);
       await prepareAuthenticatedSession();
     } catch (cause) {
       setState('signed-out');
@@ -403,6 +438,7 @@ function PhoenixPreviewRoot() {
           : 'Solicitação enviada. Um administrador precisa aprovar seu acesso antes do primeiro login.');
         return;
       }
+      await offerAndroidBiometricEnrollment(registerEmail.trim(), registerPassword);
       await prepareAuthenticatedSession();
     } catch (cause) {
       setMode('login');
@@ -449,9 +485,11 @@ function PhoenixPreviewRoot() {
     }
   }
 
-  async function signOutAndExitNative() {
-    await signOut();
-    if (import.meta.env.VITE_MOBILE_APP !== 'true') return;
+  async function closeNativeApp() {
+    if (import.meta.env.VITE_MOBILE_APP !== 'true') {
+      await signOut();
+      return;
+    }
     try {
       const { registerPlugin } = await import('@capacitor/core');
       const NativeShell = registerPlugin<{ exitAndRemoveTask: () => Promise<void> }>('MegNativeShell');
@@ -468,7 +506,7 @@ function PhoenixPreviewRoot() {
     }
   }
 
-  if (state === 'signed-in') return <PhoenixApp onLogout={() => { void signOutAndExitNative(); }} />;
+  if (state === 'signed-in') return <PhoenixApp onLogout={() => { void signOut(); }} onClose={() => { void closeNativeApp(); }} />;
   if (state === 'checking' || state === 'authenticating' || state === 'preparing') return <PhoenixBootScreen stage={bootStage} />;
   if (state === 'prepare-error') return <PhoenixBootErrorScreen message={bootError} busy={busy} onRetry={() => { void retryPreparation(); }} onLogout={() => { void signOut(); }} />;
 
