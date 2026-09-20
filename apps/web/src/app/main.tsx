@@ -47,8 +47,12 @@ async function bootMegRuntime() {
       // @ts-expect-error módulo JS nativo existente, carregado somente no APK.
       const biometric = await import('../native-biometric-login.js');
       const startup = await biometric.prepareAndroidBiometricStartup();
-      if (startup?.required && !startup?.authenticated) {
-        // Não permite que uma sessão web já existente contorne a validação biométrica.
+      if (startup?.required) {
+        // A biometria é a fonte de verdade no APK. Mesmo quando reconhecida,
+        // descartamos qualquer sessão web anterior para impedir que o preview
+        // fique preso validando um token antigo em 22%. As credenciais
+        // biométricas já foram mantidas em memória e serão consumidas pelo
+        // login nativo logo após o preview montar.
         clearSession();
       }
     } catch (cause) {
