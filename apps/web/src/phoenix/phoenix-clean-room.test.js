@@ -140,8 +140,8 @@ assert.match(loader, /authenticatedRequest<ManagedUsersRead>\('\/auth\/users'\)/
   'Usuários Phoenix devem vir da rota administrativa oficial');
 assert.match(history, /Trilha protegida/,
   'Histórico deve comunicar auditoria protegida sem expor detalhes técnicos na interface principal.');
-assert.match(history, /Finance AuditLog/);
-assert.match(history, /AppState\.activityLog/);
+assert.match(history, /Auditoria segura do MEG/);
+assert.match(history, /Histórico anterior do MEG/);
 assert.match(history, /Integridade confirmada pelo backend/,
   'Histórico Phoenix deve exibir snapshots before/after somente para a auditoria financeira estrutural');
 assert.match(history, /Histórico legado/,
