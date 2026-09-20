@@ -342,6 +342,19 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   }, [month]);
 
   useEffect(() => {
+    if (!nativeOperational) return;
+    const monthNow = currentMonth();
+    monthRef.current = monthNow;
+    setMonth(monthNow);
+    setPeriodMode('month');
+    setPeriodDraftMode('month');
+    setPeriodDraftMonth(monthNow);
+    setMovementPeriodData(null);
+    setPeriodRangeLabel('');
+    setHomePeriodContext(null);
+  }, [nativeOperational]);
+
+  useEffect(() => {
     resetViewport();
   }, [view]);
 
@@ -439,6 +452,23 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
 
   function commitSnapshot(snapshot: PhoenixReadModel) {
     if (!monthlySnapshotMatches(snapshot, snapshot.month)) return;
+
+    const visibleMonth = monthRef.current;
+    if (nativeOperational && snapshot.month !== visibleMonth) {
+      void loadPhoenixReadModel(visibleMonth, { force: true })
+        .then((fresh) => {
+          if (monthRef.current !== visibleMonth || !monthlySnapshotMatches(fresh, visibleMonth)) return;
+          dataRef.current = fresh;
+          setLoadState({ status: 'ready', data: fresh });
+          if (periodMode === 'month') setMovementPeriodData(null);
+          setRefreshing(false);
+        })
+        .catch(() => {
+          // O APK preserva o período visível; uma releitura falha não pode trocar o mês sozinho.
+        });
+      return;
+    }
+
     dataRef.current = snapshot;
     monthRef.current = snapshot.month;
     setLoadState({ status: 'ready', data: snapshot });
@@ -534,7 +564,12 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const pendingCount = data ? buildPhoenixHomeAgenda(data, todayIso()).items.length : 0;
   const toggleTheme = () => setTheme((value) => value === 'dark' ? 'light' : 'dark');
   const userInitial = (data?.user.name || 'M').slice(0, 1).toUpperCase();
-  const periodActiveLabel = periodMode === 'month' ? shortMonthLabel(data?.month || month) : periodMode === 'all' ? 'Tudo' : periodRangeLabel || 'Intervalo';
+  const activePeriodMonth = data?.month || month;
+  const periodActiveLabel = periodMode === 'month'
+    ? nativeOperational && activePeriodMonth === currentMonth()
+      ? `Atual · ${shortMonthLabel(activePeriodMonth)}`
+      : shortMonthLabel(activePeriodMonth)
+    : periodMode === 'all' ? 'Tudo' : periodRangeLabel || 'Intervalo';
   const periodDraftLabel = periodDraftMode === 'month'
     ? monthLabel(periodDraftMonth)
     : periodDraftMode === 'all'
@@ -886,9 +921,9 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
 
       <nav className="px-mobile-dock" aria-label="Navegação móvel Phoenix V15">
         <button className={view === 'home' ? 'active' : ''} type="button" onClick={() => navigate('home')}><strong><PhoenixNavIcon name="home" /></strong><span>Início</span></button>
-        <button className={view === 'movements' ? 'active' : ''} type="button" onClick={() => requestLaunch('expense')}><strong>＋</strong><span>Lançar</span></button>
+        <button className={view === 'movements' ? 'active' : ''} type="button" onClick={() => navigate('movements')}><strong><PhoenixNavIcon name="movements" /></strong><span>Lançamentos</span></button>
+        <button className="px-dock-new" type="button" onClick={() => requestLaunch('expense')} aria-label="Novo lançamento"><strong>＋</strong><span>Novo</span></button>
         <button className={view === 'payables' ? 'active' : ''} type="button" onClick={() => navigate('payables')}><strong className="px-dock-icon-wrap"><PhoenixNavIcon name="payables" />{pendingCount > 0 ? <b className="px-dock-badge">{pendingCount > 99 ? '99+' : pendingCount}</b> : null}</strong><span>Pendentes</span></button>
-        <button className={view === 'cards' ? 'active' : ''} type="button" onClick={() => navigate('cards')}><strong><PhoenixNavIcon name="cards" /></strong><span>Cartões</span></button>
         <button className={mobileOpen ? 'active' : ''} type="button" onClick={() => setMobileOpen(true)}><strong><PhoenixNavIcon name="more" /></strong><span>Menu</span></button>
       </nav>
     </div>

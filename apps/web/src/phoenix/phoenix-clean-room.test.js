@@ -558,13 +558,23 @@ assert.doesNotMatch(phoenixApp, /function quickRange[\s\S]{0,350}void applyRange
   'Atalho de período móvel não deve trocar a tela antes de o usuário tocar em Aplicar.');
 assert.doesNotMatch(phoenixApp, /function quickMonth[\s\S]{0,280}void applyMonthlyPeriod/,
   'Atalho de mês móvel não deve aplicar e navegar sozinho.');
+assert.match(phoenixApp, /snapshot\.month !== visibleMonth[\s\S]{0,500}loadPhoenixReadModel\(visibleMonth, \{ force: true \}\)/,
+  'Snapshot de outro mês não pode empurrar o período visível do APK.');
+assert.match(phoenixApp, /Atual · \$\{shortMonthLabel\(activePeriodMonth\)\}/,
+  'Período atual do APK deve ficar explicitamente identificado no topo.');
+assert.match(phoenixApp, /navigate\('movements'\)[\s\S]{0,220}px-dock-new[\s\S]{0,220}>Novo</,
+  'Dock Android deve separar Lançamentos da ação Novo.');
+assert.match(movementScreen, /data-phoenix-refresh-month=\{data\.month\}/,
+  'Drawer deve fixar o mês visível usado para a releitura após gravação.');
+assert.match(simpleEventBridge, /visibleRefreshMonth\(root, payload\.date\)/,
+  'Bridge legado não pode usar o mês da data digitada para trocar a competência visível.');
 assert.match(operationalCss, /body\.meg-operational-mobile \.px-launch-drawer[\s\S]*width:100vw!important/,
   'Drawer Android deve ocupar a tela e se adaptar ao aparelho.');
 assert.match(operationalCss, /body\.meg-operational-mobile \.px-app\.is-collapsed[\s\S]*display:block!important[\s\S]*grid-template-columns:none!important/,
   'APK operacional não pode herdar a coluna residual do shell desktop recolhido.');
 assert.match(operationalCss, /body\.meg-operational-mobile \.px-main[\s\S]*width:100%!important[\s\S]*margin:0!important/,
   'Workspace Android deve ocupar toda a largura disponível.');
-assert.match(operationalCss, /\.px-mobile-dock button:nth-child\(2\)[\s\S]*width:auto!important[\s\S]*margin:0!important/,
+assert.match(operationalCss, /\.px-mobile-dock \.px-dock-new[\s\S]*width:auto!important[\s\S]*margin:0!important/,
   'Botão central do dock não pode herdar o FAB gigante da paridade antiga.');
 assert.match(operationalCss, /word-break:normal!important[\s\S]*overflow-wrap:normal!important/,
   'Textos operacionais não podem quebrar letra por letra em telas móveis.');

@@ -36,6 +36,11 @@ function drawer() {
   return document.querySelector<HTMLElement>('.px-launch-drawer');
 }
 
+function visibleRefreshMonth(root: HTMLElement, fallbackDate: string) {
+  const pinned = String(root.dataset.phoenixRefreshMonth || '').trim();
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(pinned) ? pinned : fallbackDate.slice(0, 7);
+}
+
 function fieldByLabel(root: ParentNode, startsWith: string) {
   const target = normalize(startsWith);
   return [...root.querySelectorAll<HTMLLabelElement>('label.px-field')]
@@ -406,7 +411,7 @@ async function submitTransfer(root: HTMLElement) {
     notes,
   }, state.operationId);
   state.operationId = prepared.operationId;
-  const result = await runPhoenixTransferWrite(prepared, date.slice(0, 7));
+  const result = await runPhoenixTransferWrite(prepared, visibleRefreshMonth(root, date));
   if (result.status === 'error') throw new Error(result.code);
   if (result.status !== 'confirmed') throw new Error('PHOENIX_TRANSFER_WRITE_NOT_CONFIRMED');
   window.dispatchEvent(new CustomEvent('meg:phoenix-snapshot-committed', { detail: { snapshot: result.snapshot } }));
@@ -485,8 +490,8 @@ async function submit(root: HTMLElement) {
         : preparePhoenixSimpleEvent(payload, state.operationId);
       state.operationId = prepared.operationId;
       const result = benefit.isBenefit && benefit.isVerocard
-        ? await runPhoenixBenefitEventWrite(prepared as ReturnType<typeof preparePhoenixBenefitEvent>, payload.date.slice(0, 7))
-        : await runPhoenixSimpleEventWrite(prepared as ReturnType<typeof preparePhoenixSimpleEvent>, payload.date.slice(0, 7));
+        ? await runPhoenixBenefitEventWrite(prepared as ReturnType<typeof preparePhoenixBenefitEvent>, visibleRefreshMonth(root, payload.date))
+        : await runPhoenixSimpleEventWrite(prepared as ReturnType<typeof preparePhoenixSimpleEvent>, visibleRefreshMonth(root, payload.date));
       if (result.status === 'error') {
         state.mode = 'error';
         setFeedback(root, result.message, 'warn');
