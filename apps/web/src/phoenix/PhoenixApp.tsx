@@ -316,7 +316,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
         onNavigate={onNavigate}
       />;
     }
-    if (nativeOperational) return <PhoenixOperationalMobileHome data={data} onLaunch={onLaunch} onNavigate={onNavigate} />;
+    if (nativeOperational) return <PhoenixOperationalMobileHome data={data} onLaunch={onLaunch} onNavigate={onNavigate} onOpenPeriod={onOpenPeriod} />;
     return <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
   }
   if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} launchRequest={launchRequest} launchPreset={launchPreset} onNavigateHistory={() => onNavigate('history')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
@@ -928,7 +928,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
           <div className="px-top-left">{nativeOperational ? <button className="px-mobile-menu-trigger" type="button" aria-label="Abrir menu" onClick={() => setMobileOpen(true)}>☰</button> : <button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => setCollapsed((value) => !value)}>☰</button>}<div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div></div>
           <div className="px-top-right">
             <button className="px-top-quick-launch" type="button" title="Nova despesa" aria-label="Nova despesa" onClick={() => requestLaunch('expense')}>＋</button>
-            {(!nativeOperational || view === 'home' || view === 'movements') ? <div className={`px-period-menu ${periodOpen ? 'is-open' : ''}`} ref={periodRef}>
+            {!nativeOperational ? <div className={`px-period-menu ${periodOpen ? 'is-open' : ''}`} ref={periodRef}>
               <button className={`px-period-summary ${periodLoading ? 'is-loading' : ''}`} type="button" title="Selecionar período" aria-label="Selecionar período" aria-busy={periodLoading} onClick={() => setPeriodOpen((value) => !value)}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span className="px-period-active">{periodActiveLabel}</span></button>
               {periodOpen ? <div className={`px-period-popover px-period-popover-v15 ${periodLoading ? 'is-loading' : ''}`}>
                 <header className="px-period-head">
