@@ -25,12 +25,13 @@ function signedClass(value: number) {
   return 'is-neutral';
 }
 
-export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', periodContext, onNavigate }: {
+export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', periodContext, onNavigate, onOpenPeriod }: {
   data: PhoenixReadModel;
   mode?: PeriodMode;
   periodLabel?: string;
   periodContext?: HomePeriodContext | null;
   onNavigate: (view: 'home' | 'movements' | 'history' | 'payables') => void;
+  onOpenPeriod?: () => void;
 }) {
   const summary = buildPhoenixAllTimeHomeSummary(data);
   const isAll = mode === 'all';
@@ -58,6 +59,7 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
         <span className="px-updated">
           {formatIso(firstDate)} → {formatIso(lastDate)} · {summary.eventCount.toLocaleString('pt-BR')} lançamento(s)
         </span>
+        {onOpenPeriod ? <button className="px-home-period-edit" type="button" onClick={onOpenPeriod}>Alterar período · {periodLabel}</button> : null}
       </div>
     </div>
 

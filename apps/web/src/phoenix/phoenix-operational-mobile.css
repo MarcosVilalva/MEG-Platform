@@ -2059,3 +2059,325 @@ body.meg-operational-mobile .px-mobile-dock button>span{
     min-width:50px!important;
   }
 }
+
+
+/* ==========================================================================
+   MEG Operacional 2.5 · shell nativo premium
+   Identidade, cabeçalhos fixos, ações persistentes e confirmações sem scroll.
+   ========================================================================== */
+body.meg-operational-mobile .px-top-left{
+  min-width:0!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:9px!important;
+}
+body.meg-operational-mobile .px-mobile-menu-trigger{display:none!important}
+body.meg-operational-mobile .px-mobile-brand-home{
+  width:40px!important;
+  height:40px!important;
+  flex:0 0 40px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:5px!important;
+  border:1px solid rgba(63,226,213,.24)!important;
+  border-radius:12px!important;
+  background:linear-gradient(145deg,rgba(23,211,196,.10),rgba(5,52,53,.70))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+body.meg-operational-mobile .px-mobile-brand-home img{
+  width:28px!important;
+  height:28px!important;
+  display:block!important;
+  object-fit:contain!important;
+  filter:drop-shadow(0 5px 12px rgba(0,0,0,.24))!important;
+}
+body.meg-operational-mobile .px-mobile-brand-home>span{display:none!important}
+body.meg-operational-mobile .px-top-title{min-width:0!important}
+body.meg-operational-mobile .px-top-title small{display:none!important}
+body.meg-operational-mobile .px-top-title strong{
+  font-size:15px!important;
+  line-height:1!important;
+}
+
+/* Saudação pessoal: identidade do usuário visível logo na Home. */
+body.meg-operational-mobile .px-operational-greeting{
+  display:flex!important;
+  align-items:center!important;
+  gap:11px!important;
+  margin:7px 0 5px!important;
+}
+body.meg-operational-mobile .px-operational-avatar-button{
+  width:48px!important;
+  height:48px!important;
+  flex:0 0 48px!important;
+  padding:0!important;
+  border:1px solid rgba(76,229,214,.25)!important;
+  border-radius:16px!important;
+  background:rgba(19,181,169,.08)!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-operational-home-avatar{
+  width:100%!important;
+  height:100%!important;
+  border-radius:15px!important;
+  font-size:16px!important;
+}
+body.meg-operational-mobile .px-operational-greeting>div{min-width:0!important}
+body.meg-operational-mobile .px-operational-greeting h1{
+  margin:0!important;
+  font-size:clamp(25px,7vw,34px)!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.meg-operational-mobile .px-operational-greeting small{
+  display:block!important;
+  max-width:100%!important;
+  margin-top:4px!important;
+  color:#76a49f!important;
+  font-size:8px!important;
+  font-weight:750!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.meg-operational-mobile .px-operational-hero-copy>p{margin-top:6px!important}
+
+/* Lançamento fullscreen: o cabeçalho nunca rola; somente o formulário. */
+body.meg-operational-mobile .px-launch-drawer{
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
+  overflow:hidden!important;
+  padding:0!important;
+}
+body.meg-operational-mobile .px-launch-drawer .px-drawer-head{
+  position:relative!important;
+  top:auto!important;
+  z-index:12!important;
+  margin:0!important;
+  min-height:64px!important;
+  padding:calc(10px + env(safe-area-inset-top)) 14px 10px!important;
+  background:#022d2f!important;
+  border-bottom:1px solid rgba(40,207,198,.17)!important;
+  box-shadow:0 10px 26px rgba(0,0,0,.18)!important;
+  backdrop-filter:none!important;
+}
+body.meg-operational-mobile .px-launch-drawer .px-drawer-head>div{
+  min-width:0!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-launch-drawer .px-drawer-head .px-kicker{
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .px-launch-drawer .px-drawer-head h2{
+  max-width:calc(100vw - 86px)!important;
+  margin:2px 0 0!important;
+  font-size:19px!important;
+  line-height:1.05!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.meg-operational-mobile .px-launch-form{
+  min-height:0!important;
+  height:100%!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  padding:12px 14px calc(132px + env(safe-area-inset-bottom))!important;
+  scroll-padding-top:58px!important;
+  scrollbar-width:none!important;
+}
+body.meg-operational-mobile .px-launch-form::-webkit-scrollbar{display:none!important}
+body.meg-operational-mobile .px-launch-form .px-segment{
+  position:sticky!important;
+  top:0!important;
+  z-index:8!important;
+  margin:-2px -2px 8px!important;
+  background:#042f31!important;
+  box-shadow:0 9px 22px rgba(0,0,0,.22)!important;
+}
+body.meg-operational-mobile .px-launch-form .px-segment::before{
+  content:''!important;
+  position:absolute!important;
+  z-index:-1!important;
+  left:-14px!important;
+  right:-14px!important;
+  top:-12px!important;
+  height:calc(100% + 18px)!important;
+  background:linear-gradient(180deg,#02292b 72%,rgba(2,41,43,0))!important;
+  pointer-events:none!important;
+}
+body.meg-operational-mobile .px-edit-launch-actions,
+body.meg-operational-mobile .px-launch-write-panel,
+body.meg-operational-mobile .px-launch-form > .px-review-launch{
+  position:fixed!important;
+  z-index:132!important;
+  left:10px!important;
+  right:10px!important;
+  bottom:calc(8px + env(safe-area-inset-bottom))!important;
+  margin:0!important;
+  padding:9px!important;
+  border:1px solid rgba(48,203,195,.20)!important;
+  border-radius:15px!important;
+  background:rgba(2,39,41,.97)!important;
+  box-shadow:0 -12px 36px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.025)!important;
+  backdrop-filter:blur(18px)!important;
+}
+body.meg-operational-mobile .px-edit-launch-actions{
+  grid-template-columns:1fr!important;
+}
+body.meg-operational-mobile .px-launch-form > .px-review-launch{
+  width:auto!important;
+  min-height:48px!important;
+  border-color:rgba(53,222,211,.42)!important;
+  background:linear-gradient(135deg,#23cdbd,#15aa9d)!important;
+  color:#012a28!important;
+  font-weight:950!important;
+}
+body.meg-operational-mobile .px-launch-write-panel{
+  max-height:36dvh!important;
+  overflow:auto!important;
+}
+body.meg-operational-mobile .px-edit-launch-actions button,
+body.meg-operational-mobile .px-launch-write-panel .px-primary-action{
+  min-height:48px!important;
+}
+
+/* Drawers de consulta também preservam o cabeçalho acima do conteúdo. */
+body.meg-operational-mobile .px-detail-drawer .px-drawer-head{
+  position:sticky!important;
+  top:-18px!important;
+  z-index:6!important;
+  margin:-18px -18px 12px!important;
+  padding:calc(12px + env(safe-area-inset-top)) 18px 12px!important;
+  background:#022d2f!important;
+  border-bottom:1px solid rgba(40,207,198,.15)!important;
+}
+
+/* Confirmação e resposta: o viewport inteiro é a composição; sem scroll do modal. */
+body.meg-operational-mobile .px-pending-confirm-overlay,
+body.meg-operational-mobile .px-pending-success-overlay{
+  padding:max(8px,env(safe-area-inset-top)) 10px max(8px,env(safe-area-inset-bottom))!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-pending-success-modal{
+  width:min(480px,100%)!important;
+  max-height:calc(100dvh - max(16px,env(safe-area-inset-top)) - max(16px,env(safe-area-inset-bottom)))!important;
+  overflow:hidden!important;
+  display:grid!important;
+  align-content:center!important;
+  gap:7px!important;
+  padding:14px!important;
+  border-radius:20px!important;
+}
+body.meg-operational-mobile .px-pending-success-check{
+  width:52px!important;
+  height:52px!important;
+  margin:0 auto 4px!important;
+  border-radius:17px!important;
+  font-size:25px!important;
+}
+body.meg-operational-mobile .px-pending-success-modal>.px-kicker{
+  margin-top:1px!important;
+  font-size:8px!important;
+}
+body.meg-operational-mobile .px-pending-success-modal h2{
+  margin:0!important;
+  font-size:clamp(22px,6.2vw,28px)!important;
+}
+body.meg-operational-mobile .px-pending-success-modal>p{
+  max-width:330px!important;
+  margin:0 auto!important;
+  font-size:9px!important;
+  line-height:1.35!important;
+}
+body.meg-operational-mobile .px-pending-success-total{
+  margin:5px 0 2px!important;
+  padding:11px!important;
+  border-radius:14px!important;
+}
+body.meg-operational-mobile .px-pending-success-total span{font-size:7px!important}
+body.meg-operational-mobile .px-pending-success-total strong{
+  margin-top:4px!important;
+  font-size:clamp(26px,8vw,34px)!important;
+}
+body.meg-operational-mobile .px-pending-success-modal>dl{
+  margin:2px 0!important;
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+body.meg-operational-mobile .px-pending-success-modal>dl>div{
+  min-width:0!important;
+  padding:8px 9px!important;
+  border-radius:11px!important;
+}
+body.meg-operational-mobile .px-pending-success-modal>dl>div:last-child{grid-column:1/-1!important}
+body.meg-operational-mobile .px-pending-success-modal dt{font-size:6.5px!important}
+body.meg-operational-mobile .px-pending-success-modal dd{
+  margin-top:3px!important;
+  max-width:100%!important;
+  font-size:9px!important;
+  line-height:1.18!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .px-pending-success-modal>footer{
+  margin-top:4px!important;
+}
+body.meg-operational-mobile .px-pending-success-modal>footer .px-primary-action{
+  width:100%!important;
+  min-height:44px!important;
+}
+body.meg-operational-mobile .px-pending-confirm-modal{
+  width:min(560px,100%)!important;
+  max-height:calc(100dvh - max(16px,env(safe-area-inset-top)) - max(16px,env(safe-area-inset-bottom)))!important;
+  overflow:hidden!important;
+  display:flex!important;
+  flex-direction:column!important;
+  padding:14px!important;
+}
+body.meg-operational-mobile .px-pending-confirm-modal>header{flex:0 0 auto!important;margin-bottom:8px!important}
+body.meg-operational-mobile .px-pending-confirm-highlight{flex:0 0 auto!important;margin:6px 0!important;padding:11px!important}
+body.meg-operational-mobile .px-pending-confirm-modal>dl{
+  flex:0 0 auto!important;
+  margin:5px 0!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+body.meg-operational-mobile .px-pending-confirm-modal>dl>div{padding:8px!important}
+body.meg-operational-mobile .px-pending-confirm-items{
+  min-height:0!important;
+  max-height:150px!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-pending-confirm-items .px-pending-review-list{
+  max-height:108px!important;
+  overflow:auto!important;
+}
+body.meg-operational-mobile .px-pending-confirm-modal>footer{
+  flex:0 0 auto!important;
+  margin-top:8px!important;
+  padding-top:8px!important;
+}
+
+/* Confirmações pequenas do MEG também respeitam o viewport real. */
+body.meg-operational-mobile .px-meg-confirm-overlay{
+  padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom))!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-meg-confirm-dialog{
+  max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+  overflow:hidden!important;
+}
+
+@media(max-height:680px){
+  body.meg-operational-mobile .px-pending-success-modal{gap:4px!important;padding:10px!important}
+  body.meg-operational-mobile .px-pending-success-check{width:44px!important;height:44px!important;font-size:22px!important}
+  body.meg-operational-mobile .px-pending-success-modal>p{display:none!important}
+  body.meg-operational-mobile .px-pending-success-modal>dl>div{padding:6px 8px!important}
+  body.meg-operational-mobile .px-pending-success-modal>footer .px-primary-action{min-height:40px!important}
+}
