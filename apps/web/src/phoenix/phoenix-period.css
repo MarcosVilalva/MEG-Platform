@@ -662,3 +662,124 @@
   from { opacity:0; transform:translateY(12px) scale(.985); }
   to { opacity:1; transform:translateY(0) scale(1); }
 }
+
+
+/* Android: o período abre como bottom sheet real, com cabeçalho e ação fixos. */
+.px-period-menu-mobile-host{
+  position:static!important;
+  width:0!important;
+  min-width:0!important;
+  height:0!important;
+}
+.px-period-mobile-backdrop{
+  position:fixed!important;
+  inset:0!important;
+  z-index:198!important;
+  border:0!important;
+  background:rgba(0,10,11,.68)!important;
+  backdrop-filter:blur(8px)!important;
+}
+@media(max-width:760px){
+  .px-period-popover-v15.is-mobile-sheet{
+    z-index:199!important;
+    left:8px!important;
+    right:8px!important;
+    bottom:max(8px,env(safe-area-inset-bottom))!important;
+    width:auto!important;
+    max-height:calc(100dvh - max(20px,env(safe-area-inset-top)) - max(18px,env(safe-area-inset-bottom)))!important;
+    padding:12px!important;
+    border-radius:22px!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain!important;
+    scrollbar-width:none!important;
+    background:
+      radial-gradient(circle at 92% -6%,rgba(42,222,205,.11),transparent 30%),
+      linear-gradient(165deg,#073638 0%,#02292b 58%,#011f21 100%)!important;
+    box-shadow:0 -24px 70px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.035)!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet::-webkit-scrollbar{display:none!important}
+  .px-period-popover-v15.is-mobile-sheet .px-period-head{
+    position:sticky!important;
+    top:-12px!important;
+    z-index:4!important;
+    margin:-12px -12px 10px!important;
+    padding:14px 12px 11px!important;
+    background:#043032!important;
+    border-bottom:1px solid rgba(66,222,209,.14)!important;
+    box-shadow:0 9px 24px rgba(0,0,0,.18)!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-head strong{
+    font-size:13px!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-head small{
+    font-size:8px!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-modes{
+    position:relative!important;
+    z-index:1!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:6px!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-modes button{
+    min-width:0!important;
+    min-height:48px!important;
+    padding:7px 5px!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-quick{
+    margin-top:9px!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-quick>div{
+    display:grid!important;
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    gap:5px!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-quick button{
+    min-width:0!important;
+    padding:7px 3px!important;
+    font-size:7px!important;
+    white-space:nowrap!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-range{
+    grid-template-columns:1fr 18px 1fr!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-all{
+    grid-template-columns:34px minmax(0,1fr)!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-footer{
+    position:sticky!important;
+    z-index:4!important;
+    bottom:-12px!important;
+    margin:10px -12px -12px!important;
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom))!important;
+    background:linear-gradient(0deg,#032b2d 86%,rgba(3,43,45,.92) 94%,rgba(3,43,45,0))!important;
+    border-top:1px solid rgba(66,222,209,.14)!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-apply{
+    min-height:46px!important;
+  }
+}
+@media(max-width:430px){
+  .px-period-popover-v15.is-mobile-sheet .px-period-range{
+    grid-template-columns:1fr!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-quick>div{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-footer{
+    grid-template-columns:minmax(0,1fr) auto!important;
+    align-items:center!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-footer>div{
+    min-width:0!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-footer strong{
+    display:block!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+  .px-period-popover-v15.is-mobile-sheet .px-period-apply{
+    width:auto!important;
+    min-width:100px!important;
+  }
+}
