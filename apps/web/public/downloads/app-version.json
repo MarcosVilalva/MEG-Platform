@@ -1,9 +1,9 @@
 {
-  "versionCode": 300,
-  "versionName": "2.0.300",
+  "versionCode": 301,
+  "versionName": "2.0.301",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "9bea01bfe97709783e2f078f55c3b95a2167968259bda6972763b5193d320a39",
+  "sha256": "ce00d147f503bb5ca5c7ed83a18957b8f379c40978b583d0e1a3d84853f5d5d3",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Alimentação: eliminar falso bloqueio VEROCARD no writer"
+  "releaseNotes": "Android: atualização automática sem toque no MEG"
 }
