@@ -65,6 +65,12 @@ assert.doesNotMatch(source, /stableJson\(nextTransactions\)\s*!==\s*stableJson\(
   'Detecção de mudança não deve serializar as 3 mil+ transações inteiras duas vezes.');
 assert.match(source, /archivedAt:\s*\{ not: null \}/,
   'Reconciliação de startup deve localizar eventos arquivados que ainda existam no AppState.');
+assert.match(source, /const activeLegacyIds = new Set/,
+  'Reconciliação deve conhecer o conjunto canônico de IDs legados ativos.');
+assert.match(source, /const orphanLegacyIds = sourceTransactions[\s\S]*!activeLegacyIds\.has\(id\)/,
+  'Transações legadas sem evento normalizado ativo devem ser tratadas como espelho órfão.');
+assert.match(source, /new Set\(\[\.\.\.archivedLegacyIds, \.\.\.orphanLegacyIds\]\)/,
+  'Arquivados e órfãos devem ser removidos em uma única reconciliação idempotente.');
 assert.match(source, /removedLegacyIds[\s\S]*writeBackNormalizedEventsToAppState\(tx, workspaceId, events, removedLegacyIds\)/,
   'IDs legados arquivados devem ser removidos do espelho para evitar divergência permanente.');
 assert.doesNotMatch(source, /if \(!events\.length\) return \{ active: true, changed: false/,
