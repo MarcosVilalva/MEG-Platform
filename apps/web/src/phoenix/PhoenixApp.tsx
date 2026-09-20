@@ -260,7 +260,7 @@ function ScreenWarmFallback({ label }: { label: string }) {
   return <section className="px-card px-placeholder"><span className="px-kicker">MEG Finanças</span><h2>Abrindo {label}</h2><p>Preparando a tela com os dados que já estão carregados.</p></section>;
 }
 
-function ReadScreen({ view, data, month, theme, periodMode, periodContext, periodRangeLabel, launchRequest, launchPreset, nativeOperational, onToggleTheme, onNavigate, onLaunch, onDataCommitted, onOpenPeriod }: {
+function ReadScreen({ view, data, month, theme, periodMode, periodContext, periodRangeLabel, launchRequest, launchPreset, nativeOperational, onToggleTheme, onNavigate, onLaunch, onDataCommitted, onOpenPeriod, onLogoutRequest }: {
   view: PhoenixView;
   data: PhoenixReadModel;
   month: string;
@@ -276,6 +276,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   onLaunch: (preset: LaunchPreset) => void;
   onDataCommitted: (snapshot: PhoenixReadModel) => void;
   onOpenPeriod: () => void;
+  onLogoutRequest: () => void;
 }) {
   if (view === 'home') {
     const analyticalMonth = periodMode === 'month' && month !== currentMonth();
@@ -297,7 +298,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   if (view === 'cards') return <Suspense fallback={<ScreenWarmFallback label="Cartões" />}><PhoenixCardsGrid data={data} /></Suspense>;
   if (view === 'catalogs') return <PhoenixCatalogsGrid data={data} />;
   if (view === 'users') return <PhoenixUsers data={data} />;
-  if (view === 'settings') return <PhoenixSettings data={data} theme={theme} onToggleTheme={onToggleTheme} />;
+  if (view === 'settings') return <PhoenixSettings data={data} theme={theme} onToggleTheme={onToggleTheme} onLogoutRequest={onLogoutRequest} />;
   if (view === 'receivables') return <PhoenixReceivablesGrid data={data} />;
   if (view === 'revenues') return <PhoenixRevenuesGrid data={data} />;
   if (view === 'cashflow') return <PhoenixCashflowGrid data={data} />;
@@ -316,6 +317,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [periodOpen, setPeriodOpen] = useState(false);
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [periodMode, setPeriodMode] = useState<PeriodMode>('month');
   const [periodDraftMode, setPeriodDraftMode] = useState<PeriodMode>('month');
   const [periodDraftMonth, setPeriodDraftMonth] = useState(currentMonth);
@@ -336,6 +338,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const dataRef = useRef<PhoenixReadModel | null>(null);
   const refreshingRef = useRef(false);
   const periodRequestRef = useRef(0);
+  const navigationHistoryRef = useRef<PhoenixView[]>([]);
 
   useEffect(() => {
     monthRef.current = month;
@@ -583,7 +586,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setHomePeriodContext(null);
   }
 
-  function navigate(next: PhoenixView) {
+  function applyNavigation(next: PhoenixView) {
     resetViewport();
     const preservesSpecialPeriod = (next === 'movements' || next === 'home') && periodMode !== 'month';
     if (!preservesSpecialPeriod && periodMode !== 'month') resetSpecialPeriod();
@@ -593,9 +596,32 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setPeriodOpen(false);
   }
 
+  function navigate(next: PhoenixView, resetHistory = false) {
+    if (nativeOperational) {
+      if (resetHistory || next === 'home') {
+        navigationHistoryRef.current = [];
+      } else if (next !== view) {
+        navigationHistoryRef.current.push(view);
+      }
+    }
+    applyNavigation(next);
+  }
+
+  function requestLogout() {
+    if (nativeOperational) {
+      setMobileOpen(false);
+      setSearchOpen(false);
+      setPeriodOpen(false);
+      setExitConfirmOpen(true);
+      return;
+    }
+    onLogout?.();
+  }
+
   function requestLaunch(preset: LaunchPreset = 'expense') {
     resetViewport();
     if (periodMode !== 'month') resetSpecialPeriod();
+    if (nativeOperational && view !== 'movements') navigationHistoryRef.current.push(view);
     setLaunchPreset(preset);
     setView('movements');
     setMobileOpen(false);
@@ -604,6 +630,56 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setLaunchRequest((value) => value + 1);
   }
 
+
+  useEffect(() => {
+    if (!nativeOperational) return;
+    let active = true;
+    let listener: { remove: () => Promise<void> } | null = null;
+
+    void import('@capacitor/app').then(async ({ App }) => {
+      const handle = await App.addListener('backButton', () => {
+        if (!active) return;
+        if (exitConfirmOpen) {
+          setExitConfirmOpen(false);
+          return;
+        }
+        if (searchOpen) {
+          setSearchOpen(false);
+          return;
+        }
+        if (mobileOpen) {
+          setMobileOpen(false);
+          return;
+        }
+        if (periodOpen) {
+          setPeriodOpen(false);
+          return;
+        }
+
+        const childBack = new CustomEvent('meg:android-back', { cancelable: true });
+        window.dispatchEvent(childBack);
+        if (childBack.defaultPrevented) return;
+
+        const previous = navigationHistoryRef.current.pop();
+        if (previous) {
+          applyNavigation(previous);
+          return;
+        }
+        if (view !== 'home') {
+          applyNavigation('home');
+          return;
+        }
+        requestLogout();
+      });
+      if (!active) await handle.remove();
+      else listener = handle;
+    }).catch((cause) => console.warn('MEG Android back navigation unavailable', cause));
+
+    return () => {
+      active = false;
+      void listener?.remove();
+    };
+  }, [nativeOperational, exitConfirmOpen, searchOpen, mobileOpen, periodOpen, view, periodMode]);
 
   function stepDraftMonth(offset: number) {
     setPeriodDraftMode('month');
@@ -817,7 +893,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
         userRole={data?.user.role || '—'}
         onNavigate={navigate}
         onSearch={() => setSearchOpen(true)}
-        onLogout={onLogout}
+        onLogout={requestLogout}
       />
 
       <main className={`px-main ${view === 'home' ? 'px-main-home' : ''} ${homeAnalytical ? 'px-main-home-all' : ''} ${view === 'payables' ? 'px-main-payables' : ''} ${view === 'history' ? 'px-main-history' : ''} ${view === 'cards' ? 'px-main-cards' : ''}`}>
@@ -891,12 +967,12 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
                 </footer>
               </div> : null}
             </div> : null}
-            <button className={`px-sync ${refreshing ? 'is-refreshing' : ''}`} type="button" disabled={refreshing || periodLoading || !data} aria-busy={refreshing} title="Atualizar dados" onClick={() => { void refreshData(); }}><span className="px-sync-dot" /><span>{refreshing ? 'Atualizando dados…' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn px-theme-toggle" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{userInitial}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span className="px-user-chevron">⌄</span></button><button className="px-icon-btn px-top-exit" type="button" title="Sair" onClick={onLogout}>↪</button>
+            <button className={`px-sync ${refreshing ? 'is-refreshing' : ''}`} type="button" disabled={refreshing || periodLoading || !data} aria-busy={refreshing} title="Atualizar dados" onClick={() => { void refreshData(); }}><span className="px-sync-dot" /><span>{refreshing ? 'Atualizando dados…' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn px-theme-toggle" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{userInitial}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span className="px-user-chevron">⌄</span></button><button className="px-icon-btn px-top-exit" type="button" title="Sair" onClick={requestLogout}>↪</button>
           </div>
         </header>
 
         <div className={`px-content ${view === 'home' ? 'px-content-home' : ''} ${homeAnalytical ? 'px-content-home-all' : ''} ${view === 'movements' ? 'px-content-movements' : ''} ${view === 'payables' ? 'px-content-payables' : ''} ${view === 'history' ? 'px-content-history' : ''} ${view === 'cards' ? 'px-content-cards' : ''}`}>
-          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen key={`${view}:${periodMode}:${viewData.month}:${periodRangeLabel}`} view={view} data={viewData} month={viewData.month} theme={theme} periodMode={periodMode} periodContext={homePeriodContext} periodRangeLabel={periodRangeLabel} launchRequest={launchRequest} launchPreset={launchPreset} nativeOperational={nativeOperational} onToggleTheme={toggleTheme} onNavigate={navigate} onLaunch={requestLaunch} onDataCommitted={commitSnapshot} onOpenPeriod={() => setPeriodOpen(true)} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
+          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen key={`${view}:${periodMode}:${viewData.month}:${periodRangeLabel}`} view={view} data={viewData} month={viewData.month} theme={theme} periodMode={periodMode} periodContext={homePeriodContext} periodRangeLabel={periodRangeLabel} launchRequest={launchRequest} launchPreset={launchPreset} nativeOperational={nativeOperational} onToggleTheme={toggleTheme} onNavigate={navigate} onLaunch={requestLaunch} onDataCommitted={commitSnapshot} onOpenPeriod={() => setPeriodOpen(true)} onLogoutRequest={requestLogout} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
         </div>
       </main>
 
@@ -908,19 +984,19 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
             {(['home','movements','payables','cards','history','catalogs','receivables','revenues','cashflow','analytics','budgets','settings'] as PhoenixView[]).map((itemId) => {
               const item = views.find((candidate) => candidate.id === itemId);
               if (!item) return null;
-              return <button key={item.id} className={`${view === item.id ? 'active' : ''} ${item.id === 'payables' ? 'payables' : ''}`} type="button" onClick={() => navigate(item.id)}>
+              return <button key={item.id} className={`${view === item.id ? 'active' : ''} ${item.id === 'payables' ? 'payables' : ''}`} type="button" onClick={() => navigate(item.id, item.id === 'home')}>
                 <span className="px-mobile-menu-icon" aria-hidden="true">{item.icon}</span>
                 <span><strong>{item.label}</strong><small>{subtitles[item.id]}</small></span>
                 {item.id === 'payables' && pendingCount > 0 ? <b>{pendingCount > 99 ? '99+' : pendingCount}</b> : null}
               </button>;
             })}
           </div>
-          <footer className="px-mobile-menu-footer"><button type="button" onClick={() => { setMobileOpen(false); onLogout?.(); }}>Sair do MEG</button></footer>
+          <footer className="px-mobile-menu-footer"><button type="button" onClick={requestLogout}>Sair e fechar o MEG</button></footer>
         </section>
       </div> : null}
 
       <nav className="px-mobile-dock" aria-label="Navegação móvel Phoenix V15">
-        <button className={view === 'home' ? 'active' : ''} type="button" onClick={() => navigate('home')}><strong><PhoenixNavIcon name="home" /></strong><span>Início</span></button>
+        <button className={view === 'home' ? 'active' : ''} type="button" onClick={() => navigate('home', true)}><strong><PhoenixNavIcon name="home" /></strong><span>Início</span></button>
         <button className={view === 'movements' ? 'active' : ''} type="button" onClick={() => navigate('movements')}><strong><PhoenixNavIcon name="movements" /></strong><span>Lançamentos</span></button>
         <button className="px-dock-new" type="button" onClick={() => requestLaunch('expense')} aria-label="Novo lançamento"><strong>＋</strong><span>Novo</span></button>
         <button className={view === 'payables' ? 'active' : ''} type="button" onClick={() => navigate('payables')}><strong className="px-dock-icon-wrap"><PhoenixNavIcon name="payables" />{pendingCount > 0 ? <b className="px-dock-badge">{pendingCount > 99 ? '99+' : pendingCount}</b> : null}</strong><span>Pendentes</span></button>
@@ -928,5 +1004,21 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       </nav>
     </div>
     {searchOpen ? <PhoenixCommandPalette data={viewData} onClose={() => setSearchOpen(false)} onNavigate={navigate} /> : null}
+    {exitConfirmOpen ? <div className="px-meg-confirm-overlay px-app-exit-confirm">
+      <button className="px-meg-confirm-backdrop" type="button" aria-label="Não sair" onClick={() => setExitConfirmOpen(false)} />
+      <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-exit-title" aria-describedby="px-exit-copy">
+        <div className="px-meg-confirm-icon" aria-hidden="true">↪</div>
+        <div className="px-meg-confirm-copy">
+          <span className="px-kicker">MEG Finanças</span>
+          <h3 id="px-exit-title">Deseja sair do aplicativo?</h3>
+          <p id="px-exit-copy">Sua sessão será encerrada e o MEG será fechado, retornando ao Android.</p>
+        </div>
+        <button className="px-meg-confirm-close" type="button" aria-label="Não sair" onClick={() => setExitConfirmOpen(false)}>×</button>
+        <div className="px-meg-confirm-actions">
+          <button className="px-meg-confirm-secondary" type="button" onClick={() => setExitConfirmOpen(false)}>Não</button>
+          <button className="px-meg-confirm-danger" type="button" onClick={() => { setExitConfirmOpen(false); onLogout?.(); }}>Sim, sair</button>
+        </div>
+      </section>
+    </div> : null}
   </div>;
 }
