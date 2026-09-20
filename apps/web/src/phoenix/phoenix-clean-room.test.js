@@ -597,8 +597,8 @@ assert.match(periodCss, /\.px-period-footer-actions[\s\S]*\.px-period-cancel/,
   'Ações Cancelar e Aplicar devem permanecer visíveis e responsivas no rodapé móvel.');
 assert.match(phoenixApp, /navigate\('movements'\)[\s\S]{0,220}px-dock-new[\s\S]{0,220}>Novo</,
   'Dock Android deve separar Lançamentos da ação Novo.');
-assert.match(phoenixApp, /App\.addListener\('backButton'[\s\S]*meg:android-back[\s\S]*requestLogout\(\)/,
-  'Botão Voltar do Android deve fechar camadas, voltar pela navegação e pedir saída somente na raiz.');
+assert.match(phoenixApp, /App\.addListener\('backButton'[\s\S]*meg:android-back[\s\S]*requestClose\(\)/,
+  'Botão Voltar do Android deve fechar camadas, voltar pela navegação e pedir fechamento somente na raiz.');
 assert.match(movementScreen, /addEventListener\('meg:android-back'/,
   'Lançamentos deve ouvir o evento de retorno nativo do Android.');
 assert.match(movementScreen, /handleAndroidBack[\s\S]*requestCloseLaunch\(\)/,
@@ -609,12 +609,12 @@ assert.match(movementScreen, /px-delete-launch[\s\S]*Excluir lançamento/,
   'Editor móvel deve oferecer exclusão explícita quando o perfil tiver permissão.');
 assert.match(styles, /\.px-edit-launch-actions[\s\S]*@media\(max-width:760px\)[\s\S]*\.px-delete-launch/,
   'Ações de salvar e excluir devem se reorganizar verticalmente no Android.');
-assert.match(phoenixApp, /Deseja sair do aplicativo\?/,
-  'APK deve pedir confirmação explícita antes de encerrar.');
-assert.match(phoenixApp, />Não<[\s\S]*>Sim, sair</,
-  'Confirmação de saída deve oferecer Não e Sim de forma explícita.');
-assert.match(settings, /Sair do aplicativo[\s\S]*Sair e fechar/,
-  'Configurações deve oferecer saída e fechamento do APK.');
+assert.match(phoenixApp, /Deseja fechar o aplicativo\?/,
+  'APK deve pedir confirmação explícita antes de fechar.');
+assert.match(phoenixApp, />Não<[\s\S]*>Sim, fechar</,
+  'Confirmação de fechamento deve oferecer Não e Sim de forma explícita.');
+assert.match(settings, /Sair da conta[\s\S]*remove o acesso biométrico salvo/,
+  'Configurações deve separar logout real do simples fechamento do APK.');
 assert.match(previewMain, /MegNativeShell/,
   'Saída do APK deve usar o shell nativo dedicado antes do fallback padrão.');
 assert.match(nativeShellPlugin, /finishAndRemoveTask\(\)/,
