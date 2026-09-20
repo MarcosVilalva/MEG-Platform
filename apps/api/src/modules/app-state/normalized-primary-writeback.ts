@@ -190,9 +190,23 @@ export async function reconcilePrimaryAppStateFromNormalized(workspaceId: string
         select: { legacyTransactionId: true },
       }),
     ]);
-    const removedLegacyIds = archived
+
+    const activeLegacyIds = new Set(
+      events.map((event) => String(event.legacyTransactionId || '').trim()).filter(Boolean),
+    );
+    const archivedLegacyIds = archived
       .map((event) => String(event.legacyTransactionId || '').trim())
       .filter(Boolean);
+    const state = record(current.state);
+    const sourceTransactions = Array.isArray(state.transactions) ? state.transactions : [];
+    const orphanLegacyIds = sourceTransactions
+      .map((item) => legacyId(item))
+      .filter((id) => Boolean(id) && !activeLegacyIds.has(id));
+
+    // Em normalized-primary, FinancialEvent é a fonte autoritativa. Qualquer
+    // transação legada que não possua mais evento ativo é apenas um espelho
+    // obsoleto (por exemplo, exclusão antiga que não deixou linha arquivada).
+    const removedLegacyIds = [...new Set([...archivedLegacyIds, ...orphanLegacyIds])];
 
     if (!events.length && !removedLegacyIds.length) {
       return { active: true, changed: false, revision: current.revision };
