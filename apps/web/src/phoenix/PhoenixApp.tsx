@@ -326,6 +326,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
         periodLabel={periodMode === 'all' ? 'Tudo' : periodMode === 'range' ? (periodRangeLabel || 'Intervalo') : monthLabel(month)}
         periodContext={periodContext}
         onNavigate={onNavigate}
+        onOpenPeriod={onOpenPeriod}
       />;
     }
     if (nativeOperational) return <PhoenixOperationalMobileHome data={data} onLaunch={onLaunch} onNavigate={onNavigate} onOpenPeriod={onOpenPeriod} />;
