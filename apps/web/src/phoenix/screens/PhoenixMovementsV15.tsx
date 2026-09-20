@@ -107,6 +107,12 @@ function isCrediarioMethod(name?: string | null, type?: string | null) {
   return normalizeText(`${name || ''} ${type || ''}`).includes('crediario');
 }
 
+function isCardDomainEvent(event: FinancialEvent) {
+  const modality = normalizeText(event.sourceDetails?.modality || '');
+  const payment = normalizeText(`${event.paymentMethod?.name || ''} ${event.sourceDetails?.paymentMethod || ''}`);
+  return modality.includes('credito') || payment.includes('cartao') || payment.includes('credito');
+}
+
 function monthPlus(month: string, offset: number) {
   const [year, monthNumber] = month.split('-').map(Number);
   return new Date(Date.UTC(year, monthNumber - 1 + offset, 1)).toISOString().slice(0, 7);
@@ -775,6 +781,15 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setEditMessage('');
   }
 
+  function openEventForEdit(event: FinancialEvent) {
+    if (isCardDomainEvent(event)) {
+      setDetailEvent(event);
+      setEditMessage('');
+      return;
+    }
+    openLaunch(event);
+  }
+
   function requestCloseLaunch() {
     if (dirty) {
       setDiscardConfirmOpen(true);
@@ -1036,7 +1051,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
             const visualType = launchTypeForEvent(event.type);
             const effect = displayEffect(event);
             const isIncome = visualType === 'income';
-            return <tr key={event.id} className={recentEventId === event.id ? 'is-recently-updated' : undefined} onDoubleClick={() => openLaunch(event)} title="Duplo clique para editar">
+            return <tr key={event.id} className={recentEventId === event.id ? 'is-recently-updated' : undefined} onDoubleClick={() => openEventForEdit(event)} title="Duplo clique para editar">
               <td data-col="dueDate" data-label="Vencimento">{formatIsoDate(event.date)}</td>
               <td data-col="purchaseDate" data-label="Data da compra">{formatIsoDate(sourcePurchaseDate(event))}</td>
               <td data-col="weekday" data-label="Dia">{event.sourceDetails?.weekday || weekday(event.date)}</td>
@@ -1233,7 +1248,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       <div className="px-detail-grid"><div><span>Vencimento</span><strong>{formatIsoDate(detailEvent.date)}</strong></div><div><span>Data da compra</span><strong>{formatIsoDate(sourcePurchaseDate(detailEvent))}</strong></div><div><span>Situação</span><strong>{launchTypeForEvent(detailEvent.type) === 'income' ? 'Recebida' : eventStatus(detailEvent.status)}</strong></div><div><span>Conta</span><strong>{detailEvent.account?.name || 'Não informada'}</strong></div><div><span>Sincronização</span><strong>Confirmada na leitura atual</strong></div><div><span>Tipo</span><strong>{eventType(detailEvent.type)}</strong></div><div><span>Valor</span><strong>{money.format(displayEffect(detailEvent))}</strong></div><div><span>Classificação</span><strong>{sourceClassification(detailEvent)}</strong></div><div><span>Grupo</span><strong>{sourceGroup(detailEvent)}</strong></div><div><span>Forma</span><strong>{sourcePayment(detailEvent)}</strong></div><div><span>Modalidade</span><strong>{detailEvent.sourceDetails?.modality || '—'}</strong></div></div>
       {detailEvent.notes ? <div className="px-notice">{detailEvent.notes}</div> : null}
       <div className="px-notice">Duplo clique na linha ou o botão abaixo abre a edição. Alterações simples são relidas da base antes da grade ser atualizada.</div>
-      <div className="px-detail-actions"><button className="px-primary-action" data-phoenix-generic-edit type="button" onClick={() => openLaunch(detailEvent)}>Editar lançamento</button>{canArchiveEvent ? <button className="px-delete-launch" data-phoenix-generic-delete type="button" onClick={() => requestDeleteEvent(detailEvent)}>Excluir lançamento</button> : null}<button className="px-secondary-action" type="button" onClick={() => { setDetailEvent(null); onNavigateHistory?.(); }}>Ver histórico</button></div>
+      <div className="px-detail-actions">{!isCardDomainEvent(detailEvent) ? <button className="px-primary-action" data-phoenix-generic-edit type="button" onClick={() => openLaunch(detailEvent)}>Editar lançamento</button> : null}{canArchiveEvent && !isCardDomainEvent(detailEvent) ? <button className="px-delete-launch" data-phoenix-generic-delete type="button" onClick={() => requestDeleteEvent(detailEvent)}>Excluir lançamento</button> : null}<button className="px-secondary-action" type="button" onClick={() => { setDetailEvent(null); onNavigateHistory?.(); }}>Ver histórico</button></div>
     </aside> : null}
   </section>;
 }
