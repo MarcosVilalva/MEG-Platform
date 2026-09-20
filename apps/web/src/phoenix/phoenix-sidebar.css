@@ -195,6 +195,30 @@ html[data-meg-user-avatar="image"] .px-user-avatar {
   color:#031c16;
   font-weight:950;
 }
+.px-profile-avatar > img {
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+  object-position:center;
+  border-radius:inherit;
+}
+.px-profile-avatar .px-profile-avatar-fallback {
+  grid-area:1 / 1;
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+}
+.px-profile-avatar.has-image .px-profile-avatar-fallback {
+  display:none;
+}
+.px-profile-avatar.has-image.image-error > img {
+  display:none!important;
+}
+.px-profile-avatar.has-image.image-error .px-profile-avatar-fallback {
+  display:grid;
+}
 
 /* Rail retraído: busca circular, ícones centralizados e rolagem vertical real. */
 .px-app.is-collapsed .px-sidebar {
