@@ -29,8 +29,8 @@ assert.match(mutation, /updateBenefitEventProtected/,
   'Vale Alimentação deve possuir writer próprio para alteração.');
 assert.match(mutation, /before\.updatedAt\.toISOString\(\) !== input\.expectedUpdatedAt/,
   'Edição do benefício deve impedir sobrescrita silenciosa de uma versão alterada em outro aparelho.');
-assert.match(mutation, /benefitBalanceAt\(tx, userId, input\.date, eventId\)/,
-  'Ao alterar uma despesa do benefício, o saldo deve ser recalculado excluindo o próprio lançamento antigo.');
+assert.match(mutation, /benefitBalanceAt\(tx, dataOwnerId, input\.date, eventId\)/,
+  'Ao alterar uma despesa do benefício, o saldo compartilhado deve ser recalculado excluindo o próprio lançamento antigo.');
 assert.match(mutation, /writeBackNormalizedEventsToAppState\(tx, workspace\.workspaceId, \[result\]\)/,
   'Edição do benefício deve refletir o lançamento normalizado no espelho compartilhado.');
 assert.match(mutation, /action: 'BENEFIT_EVENT_UPDATED'/,
