@@ -63,5 +63,11 @@ assert.doesNotMatch(source, /for \(const replacement of sourceRefresh\)[\s\S]*fi
   'Writeback não pode reintroduzir N+1 de updates por evento.');
 assert.doesNotMatch(source, /stableJson\(nextTransactions\)\s*!==\s*stableJson\(transactions\)/,
   'Detecção de mudança não deve serializar as 3 mil+ transações inteiras duas vezes.');
+assert.match(source, /archivedAt:\s*\{ not: null \}/,
+  'Reconciliação de startup deve localizar eventos arquivados que ainda existam no AppState.');
+assert.match(source, /removedLegacyIds[\s\S]*writeBackNormalizedEventsToAppState\(tx, workspaceId, events, removedLegacyIds\)/,
+  'IDs legados arquivados devem ser removidos do espelho para evitar divergência permanente.');
+assert.doesNotMatch(source, /if \(!events\.length\) return \{ active: true, changed: false/,
+  'Reconciliação não pode ignorar exclusões só porque não restaram eventos ativos.');
 
 console.log('normalized primary writeback tests passed');

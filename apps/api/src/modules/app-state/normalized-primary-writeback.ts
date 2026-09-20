@@ -180,12 +180,24 @@ export async function reconcilePrimaryAppStateFromNormalized(workspaceId: string
       return { active: false, changed: false, revision: current?.revision || 0 };
     }
 
-    const events = await tx.financialEvent.findMany({
-      where: { workspaceId, legacyTransactionId: { not: null }, archivedAt: null },
-      include: { paymentMethod: { select: { name: true } } },
-    });
-    if (!events.length) return { active: true, changed: false, revision: current.revision };
+    const [events, archived] = await Promise.all([
+      tx.financialEvent.findMany({
+        where: { workspaceId, legacyTransactionId: { not: null }, archivedAt: null },
+        include: { paymentMethod: { select: { name: true } } },
+      }),
+      tx.financialEvent.findMany({
+        where: { workspaceId, legacyTransactionId: { not: null }, archivedAt: { not: null } },
+        select: { legacyTransactionId: true },
+      }),
+    ]);
+    const removedLegacyIds = archived
+      .map((event) => String(event.legacyTransactionId || '').trim())
+      .filter(Boolean);
 
-    return writeBackNormalizedEventsToAppState(tx, workspaceId, events);
+    if (!events.length && !removedLegacyIds.length) {
+      return { active: true, changed: false, revision: current.revision };
+    }
+
+    return writeBackNormalizedEventsToAppState(tx, workspaceId, events, removedLegacyIds);
   }, { maxWait: 10_000, timeout: 120_000 });
 }
