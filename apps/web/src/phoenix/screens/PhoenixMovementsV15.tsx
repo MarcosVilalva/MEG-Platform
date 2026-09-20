@@ -328,6 +328,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const [deletingEvent, setDeletingEvent] = useState(false);
   const [detailEvent, setDetailEvent] = useState<FinancialEvent | null>(null);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [editingEventUpdatedAt, setEditingEventUpdatedAt] = useState<string | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [editMessage, setEditMessage] = useState('');
   const [draft, setDraft] = useState<LaunchDraft>(initialDraft);
@@ -714,6 +715,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setReviewed(false);
     setValidationVisible(false);
     setEditingEventId(null);
+    setEditingEventUpdatedAt(null);
     setSavingEdit(false);
     setEditMessage('');
     setDiscardConfirmOpen(false);
@@ -740,9 +742,11 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       setAmountCents(Math.round(amountFromEvent(event) * 100));
       setNegative(displayEffect(event) < 0);
       setEditingEventId(event.id);
+      setEditingEventUpdatedAt(event.updatedAt || null);
     } else {
       resetLaunch();
       setEditingEventId(null);
+      setEditingEventUpdatedAt(null);
     }
     setDetailEvent(null);
     setLaunchOpen(true);
@@ -815,7 +819,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setSavingEdit(true);
     setEditMessage('Salvando alteração e aguardando a releitura sincronizada…');
     try {
-      const { snapshot } = await runPhoenixSimpleEventEdit(committedEventId, simpleWriteInput, data.month);
+      const { snapshot } = await runPhoenixSimpleEventEdit(committedEventId, simpleWriteInput, data.month, editingEventUpdatedAt || undefined);
       setData(snapshot);
       onDataCommitted?.(snapshot);
       markRecentlyUpdated(committedEventId);
@@ -836,7 +840,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setDeletingEvent(true);
     setEditMessage('');
     try {
-      const { snapshot } = await runPhoenixSimpleEventArchive(eventId, data.month);
+      const { snapshot } = await runPhoenixSimpleEventArchive(eventId, data.month, editingEventUpdatedAt || undefined);
       setData(snapshot);
       onDataCommitted?.(snapshot);
       setDeleteConfirmOpen(false);
