@@ -977,22 +977,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
 
   const homeAnalytical = view === 'home' && (periodMode !== 'month' || month !== currentMonth());
 
-  const periodSelector = {periodOpen ? <div className={`px-period-popover px-period-popover-v15 ${nativeOperational ? 'is-mobile-sheet' : ''} ${periodLoading ? 'is-loading' : ''}`} role={nativeOperational ? 'dialog' : undefined} aria-modal={nativeOperational ? true : undefined} aria-label={nativeOperational ? 'Filtro de período' : undefined} ref={nativeOperational ? periodRef : undefined} onPointerDown={(event) => event.stopPropagation()}>
-                <header className="px-period-head">
-                  <div className="px-period-head-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg></div>
-                  <div><span>Período de consulta</span><strong>{periodDraftLabel}</strong><small>Troque a visão sem desmontar a tela atual.</small></div>
-                  <button className="px-period-close" type="button" aria-label="Cancelar e fechar seletor de período" disabled={periodLoading} onPointerDown={(event) => event.stopPropagation()} onClick={closePeriodSelector}>×</button>
-                </header>
-
-                <div className="px-period-modes" role="tablist" aria-label="Modo do período">
-                  <button type="button" className={periodDraftMode === 'month' ? 'active' : ''} onClick={() => setPeriodDraftMode('month')}><span>Mês</span><small>Competência</small></button>
-                  <button type="button" className={periodDraftMode === 'range' ? 'active' : ''} onClick={() => setPeriodDraftMode('range')}><span>Int            <div className={`px-period-menu ${periodOpen ? 'is-open' : ''}`} ref={!nativeOperational ? periodRef : undefined}>
-              {!nativeOperational ? <button className={`px-period-summary ${periodLoading ? 'is-loading' : ''}`} type="button" title="Selecionar período" aria-label="Selecionar período" aria-busy={periodLoading} onClick={() => periodOpen ? closePeriodSelector() : openPeriodSelector()}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span className="px-period-active">{periodActiveLabel}</span></button> : null}
-              {!nativeOperational ? periodSelector : null}
-            </div>
-lse) : openPeriodSelector()}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span className="px-period-active">{periodActiveLabel}</span></button> : null}
-              {periodOpen && nativeOperational ? <button className="px-period-mobile-backdrop" type="button" aria-label="Cancelar filtro de período" onClick={closePeriodSelector} /> : null}
-              {periodOpen ? <div className={`px-period-popover px-period-popover-v15 ${nativeOperational ? 'is-mobile-sheet' : ''} ${periodLoading ? 'is-loading' : ''}`} role={nativeOperational ? 'dialog' : undefined} aria-modal={nativeOperational ? true : undefined} aria-label={nativeOperational ? 'Filtro de período' : undefined} onPointerDown={(event) => event.stopPropagation()}>
+  const periodSelector = periodOpen ? <div className={`px-period-popover px-period-popover-v15 ${nativeOperational ? 'is-mobile-sheet' : ''} ${periodLoading ? 'is-loading' : ''}`} role={nativeOperational ? 'dialog' : undefined} aria-modal={nativeOperational ? true : undefined} aria-label={nativeOperational ? 'Filtro de período' : undefined} ref={nativeOperational ? periodRef : undefined} onPointerDown={(event) => event.stopPropagation()}>
                 <header className="px-period-head">
                   <div className="px-period-head-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg></div>
                   <div><span>Período de consulta</span><strong>{periodDraftLabel}</strong><small>Troque a visão sem desmontar a tela atual.</small></div>
@@ -1056,7 +1041,39 @@ lse) : openPeriodSelector()}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x
                     <button className="px-period-apply" type="button" disabled={periodLoading} onClick={applyPeriod}>{periodLoading ? 'Carregando…' : 'Aplicar'}</button>
                   </div>
                 </footer>
-              </div> : null}
+              </div> : null;
+
+  const mobilePeriodPortal = nativeOperational && periodOpen && typeof document !== 'undefined'
+    ? createPortal(
+      <div className="px-period-mobile-portal" data-meg-overlay="period">
+        <button className="px-period-mobile-backdrop" type="button" aria-label="Cancelar filtro de período" onClick={closePeriodSelector} />
+        {periodSelector}
+      </div>,
+      document.body,
+    )
+    : null;
+
+  return <div className="phoenix-v15" data-theme={theme}>
+    <div className={`px-app ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
+      <PhoenixSidebar
+        view={view}
+        collapsed={collapsed}
+        pendingCount={pendingCount}
+        userName={data?.user.name || 'MEG'}
+        userRole={data?.user.role || '—'}
+        onNavigate={navigate}
+        onSearch={() => setSearchOpen(true)}
+        onLogout={requestLogout}
+      />
+
+      <main className={`px-main ${view === 'home' ? 'px-main-home' : ''} ${homeAnalytical ? 'px-main-home-all' : ''} ${view === 'payables' ? 'px-main-payables' : ''} ${view === 'history' ? 'px-main-history' : ''} ${view === 'cards' ? 'px-main-cards' : ''}`}>
+        <header className="px-topbar">
+          <div className="px-top-left">{nativeOperational ? <button className="px-mobile-brand-home" type="button" aria-label="Ir para o início" onClick={() => navigate('home', true)}><img src={phoenixBrandAsset('brand/meg-finance-system-mark.svg')} alt="" /><span>MEG</span></button> : <button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => setCollapsed((value) => !value)}>☰</button>}<div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div></div>
+          <div className="px-top-right">
+            <button className="px-top-quick-launch" type="button" title="Nova despesa" aria-label="Nova despesa" onClick={() => requestLaunch('expense')}>＋</button>
+            <div className={`px-period-menu ${periodOpen ? 'is-open' : ''}`} ref={!nativeOperational ? periodRef : undefined}>
+              {!nativeOperational ? <button className={`px-period-summary ${periodLoading ? 'is-loading' : ''}`} type="button" title="Selecionar período" aria-label="Selecionar período" aria-busy={periodLoading} onClick={() => periodOpen ? closePeriodSelector() : openPeriodSelector()}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span className="px-period-active">{periodActiveLabel}</span></button> : null}
+              {!nativeOperational ? periodSelector : null}
             </div>
             <button className={`px-sync ${refreshing ? 'is-refreshing' : ''}`} type="button" disabled={refreshing || periodLoading || !data} aria-busy={refreshing} title="Atualizar dados" onClick={() => { void refreshData(); }}><span className="px-sync-dot" /><span>{refreshing ? 'Atualizando dados…' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn px-theme-toggle" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{userInitial}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span className="px-user-chevron">⌄</span></button><button className="px-icon-btn px-top-exit" type="button" title="Sair" onClick={requestLogout}>↪</button>
           </div>
