@@ -71,6 +71,12 @@ assert.match(gateway, /if \(!PHOENIX_WRITE_CAPABILITIES\.cardPurchase\)/,
   'Gateway de cartão deve falhar fechado se a capacidade frontend for revogada.');
 assert.match(gateway, /runPhoenixSimpleEventEdit/,
   'Edição simples deve permanecer encapsulada no gateway protegido da Phoenix.');
+assert.match(gateway, /runPhoenixBenefitEventEdit/,
+  'Edição do Vale Alimentação deve permanecer encapsulada no gateway protegido da Phoenix.');
+assert.match(gateway, /\/finance\/benefit-events\/\$\{eventId\}/,
+  'Alteração do benefício deve usar endpoint próprio do domínio.');
+assert.match(gateway, /operationId\('phoenix-benefit-edit'\)/,
+  'Retry de edição do benefício deve conservar identidade própria.');
 assert.match(gateway, /expectedUpdatedAtById:\s*expectedUpdatedAt \? \{ \[eventId\]: expectedUpdatedAt \} : undefined/,
   'Edição deve enviar ao servidor a versão que estava aberta no dispositivo.');
 assert.match(gateway, /FINANCIAL_EVENT_STALE_VERSION/,
@@ -260,6 +266,20 @@ assert.match(movements, /Excluir lançamento/,
   'Editor deve expor a ação de excluir o lançamento.');
 assert.match(movements, /Deseja excluir este lançamento\?/,
   'Exclusão financeira deve exigir confirmação explícita.');
+assert.match(movements, /Deseja realmente baixar a pendência\?/,
+  'Troca de Pendente para Pago deve exigir confirmação explícita antes da baixa.');
+assert.match(movements, /editingEvent\.status === 'planned' && effectiveSituation === 'paid'/,
+  'Confirmação de baixa deve ser acionada somente quando uma pendência existente passa a Pago.');
+assert.match(movements, /isPixMethod[\s\S]*Pagamento via Pix é imediato e fica como Pago\./,
+  'Despesa paga por Pix deve assumir situação Paga automaticamente.');
+assert.match(movements, /runPhoenixBenefitEventEdit/,
+  'Edição do Vale Alimentação deve usar seu writer protegido.');
+assert.match(movements, /data-phoenix-generic-delete[\s\S]*Excluir lançamento/,
+  'Detalhes do lançamento devem permitir exclusão direta sem obrigar a entrada no editor.');
+assert.match(movements, />Cancelar<\//,
+  'Editor deve expor cancelamento explícito além de salvar e excluir.');
+assert.match(movements, /isCardDomainEvent\(detailEvent\)/,
+  'Lançamentos de cartão devem ser encaminhados ao domínio próprio em vez de permitir mutação genérica.');
 assert.match(movements, /data\.user\.role === 'ADMIN' \|\| data\.user\.role === 'MANAGER'/,
   'Ação de exclusão deve respeitar a mesma permissão administrativa da API.');
 assert.doesNotMatch(movements, /financeClient\.bulkArchiveEvents|financeClient\.archiveEvent/,

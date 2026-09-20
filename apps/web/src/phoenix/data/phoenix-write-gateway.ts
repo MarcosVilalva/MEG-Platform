@@ -98,6 +98,7 @@ export class PhoenixWriteError extends Error {
 const RUNTIME_CAPABILITY_TTL = 15_000;
 let runtimeCapabilitiesCache: PhoenixRuntimeWriteCapabilities | null = null;
 const pendingEditOperations = new Map<string, string>();
+const pendingBenefitEditOperations = new Map<string, string>();
 const pendingArchiveOperations = new Map<string, string>();
 
 function operationId(prefix = 'phoenix-event') {
@@ -356,6 +357,7 @@ export function phoenixWriteMessage(code: string) {
     PHOENIX_BENEFIT_STATUS_REQUIRED: 'Movimentações do Benefício Alimentação são registradas sempre como pagas/recebidas.',
     PHOENIX_BENEFIT_REVERSAL_NOT_SUPPORTED: 'Estornos do Benefício Alimentação precisam de um fluxo próprio vinculado ao lançamento original.',
     BENEFIT_DESCRIPTION_REQUIRED: 'Informe a descrição da movimentação do benefício.',
+    BENEFIT_EVENT_DOMAIN_MISMATCH: 'Este lançamento não pertence mais ao Vale Alimentação. Reabra o lançamento para carregar a versão atual.',
     BENEFIT_POSITIVE_AMOUNT_REQUIRED: 'Informe um valor maior que zero para o benefício.',
     INVALID_BENEFIT_DATE: 'Informe uma data válida para a movimentação do benefício.',
     INVALID_BENEFIT_ACCOUNT: 'A conta selecionada não é uma conta ativa de Benefício Alimentação.',
@@ -487,6 +489,38 @@ export async function runPhoenixSimpleEventEdit(
   const snapshot = await confirmedSnapshot(refreshMonth);
   pendingEditOperations.delete(requestKey);
   return { event, snapshot };
+}
+
+export async function runPhoenixBenefitEventEdit(
+  eventId: string,
+  input: PhoenixBenefitEventInput,
+  refreshMonth: string,
+  expectedUpdatedAt?: string,
+): Promise<{ event: FinancialEvent; snapshot: PhoenixReadModel }> {
+  const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
+  if (!runtimeCapabilities.benefitWrite) throw new PhoenixWriteError('PHOENIX_BENEFIT_WRITE_NOT_ENABLED');
+  assertBenefitEvent(input);
+
+  const requestKey = editRequestKey(eventId, input, expectedUpdatedAt);
+  const editOperationId = pendingBenefitEditOperations.get(requestKey) || operationId('phoenix-benefit-edit');
+  pendingBenefitEditOperations.set(requestKey, editOperationId);
+
+  try {
+    const { status: _status, ...payload } = input;
+    const event = await authenticatedRequest<FinancialEvent>(`/finance/benefit-events/${eventId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        ...payload,
+        expectedUpdatedAt: expectedUpdatedAt || undefined,
+        operationId: editOperationId,
+      }),
+    });
+    const snapshot = await confirmedSnapshot(refreshMonth);
+    pendingBenefitEditOperations.delete(requestKey);
+    return { event, snapshot };
+  } catch (error) {
+    throw error;
+  }
 }
 
 export async function runPhoenixSimpleEventArchive(

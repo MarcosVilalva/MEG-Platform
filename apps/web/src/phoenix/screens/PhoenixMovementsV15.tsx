@@ -3,7 +3,7 @@ import type { FinancialEvent } from '../../app/finance-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import type { PhoenixReadModel } from '../contracts';
 import { PhoenixLaunchWriteControl } from '../components/PhoenixLaunchWriteControl';
-import { phoenixWriteMessage, runPhoenixSimpleEventArchive, runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
+import { phoenixWriteMessage, runPhoenixBenefitEventEdit, runPhoenixSimpleEventArchive, runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
 import '../phoenix-launch.css';
 import '../phoenix-launch-dynamic.css';
 import '../phoenix-launch-editor-polish.css';
@@ -99,8 +99,18 @@ function isCreditMethod(name?: string | null, type?: string | null) {
   return value.includes('credito') || value.includes('cartao');
 }
 
+function isPixMethod(name?: string | null, type?: string | null) {
+  return normalizeText(`${name || ''} ${type || ''}`).includes('pix');
+}
+
 function isCrediarioMethod(name?: string | null, type?: string | null) {
   return normalizeText(`${name || ''} ${type || ''}`).includes('crediario');
+}
+
+function isCardDomainEvent(event: FinancialEvent) {
+  const modality = normalizeText(event.sourceDetails?.modality || '');
+  const payment = normalizeText(`${event.paymentMethod?.name || ''} ${event.sourceDetails?.paymentMethod || ''}`);
+  return modality.includes('credito') || payment.includes('cartao') || payment.includes('credito');
 }
 
 function monthPlus(month: string, offset: number) {
@@ -324,7 +334,9 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const [gridSort, setGridSort] = useState<GridSort>(null);
   const [launchOpen, setLaunchOpen] = useState(false);
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
+  const [settlementConfirmOpen, setSettlementConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTargetEvent, setDeleteTargetEvent] = useState<FinancialEvent | null>(null);
   const [deletingEvent, setDeletingEvent] = useState(false);
   const [detailEvent, setDetailEvent] = useState<FinancialEvent | null>(null);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
@@ -467,18 +479,23 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const selectedCategory = data.categories.find((item) => item.id === draft.categoryId) || null;
   const selectedPayment = data.paymentMethods.find((item) => item.id === draft.paymentMethodId) || null;
   const selectedCard = data.cards.find((item) => item.id === draft.cardId) || null;
-  const benefit = selectedAccount?.type === 'benefit' || isBenefitAccount(selectedAccount?.name);
+  const editingEvent = editingEventId ? data.events.items.find((item) => item.id === editingEventId) || null : null;
+  const editingBenefit = Boolean(editingEvent && isBenefitEvent(editingEvent));
+  const benefit = editingBenefit || selectedAccount?.type === 'benefit' || isBenefitAccount(selectedAccount?.name);
   const credit = isCreditMethod(selectedPayment?.name, selectedPayment?.type);
+  const pix = draft.type === 'expense' && isPixMethod(selectedPayment?.name, selectedPayment?.type);
   const crediario = isCrediarioMethod(selectedPayment?.name, selectedPayment?.type);
   const calculatedDue = selectedCard ? cardDueDate(draft.eventDate, selectedCard.closingDay, selectedCard.dueDay) : '';
-  const effectiveSituation: LaunchSituation = draft.type === 'income' ? 'paid' : credit ? 'planned' : benefit ? 'paid' : draft.situation;
+  const effectiveSituation: LaunchSituation = draft.type === 'income' ? 'paid' : credit ? 'planned' : benefit ? 'paid' : pix ? 'paid' : draft.situation;
   const situationRule = draft.type === 'income'
     ? 'Receitas são registradas sempre como recebidas.'
     : credit
       ? 'Compras no crédito ficam sempre pendentes até a baixa da fatura.'
       : benefit
         ? 'Benefício alimentação fica sempre como pago e não compõe o caixa monetário.'
-        : '';
+        : pix
+          ? 'Pagamento via Pix é imediato e fica como Pago.'
+          : '';
 
   const expenseCategories = useMemo(
     () => data.categories.filter((item) => item.isActive && (!item.type || item.type === 'expense')),
@@ -639,20 +656,27 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      if (deleteConfirmOpen) setDeleteConfirmOpen(false);
+      if (settlementConfirmOpen) setSettlementConfirmOpen(false);
+      else if (deleteConfirmOpen) { setDeleteConfirmOpen(false); setDeleteTargetEvent(null); }
       else if (discardConfirmOpen) setDiscardConfirmOpen(false);
       else if (detailEvent) setDetailEvent(null);
       else if (launchOpen) requestCloseLaunch();
     };
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
-  }, [detailEvent, launchOpen, dirty, discardConfirmOpen, deleteConfirmOpen]);
+  }, [detailEvent, launchOpen, dirty, discardConfirmOpen, deleteConfirmOpen, settlementConfirmOpen]);
 
   useEffect(() => {
     const handleAndroidBack = (event: Event) => {
+      if (settlementConfirmOpen) {
+        event.preventDefault();
+        setSettlementConfirmOpen(false);
+        return;
+      }
       if (deleteConfirmOpen) {
         event.preventDefault();
         setDeleteConfirmOpen(false);
+        setDeleteTargetEvent(null);
         return;
       }
       if (discardConfirmOpen) {
@@ -672,7 +696,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     };
     window.addEventListener('meg:android-back', handleAndroidBack);
     return () => window.removeEventListener('meg:android-back', handleAndroidBack);
-  }, [detailEvent, launchOpen, dirty, discardConfirmOpen, deleteConfirmOpen]);
+  }, [detailEvent, launchOpen, dirty, discardConfirmOpen, deleteConfirmOpen, settlementConfirmOpen]);
 
   function markRecentlyUpdated(eventId: string) {
     if (recentTimerRef.current !== null) window.clearTimeout(recentTimerRef.current);
@@ -692,7 +716,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
   function changeLaunchType(type: TxType) {
     setDraft((current) => ({
-      ...current, type, situation: type === 'income' ? 'paid' : 'planned', classification: '', categoryId: '', paymentMethodId: '', cardId: '',
+      ...current, type, situation: type === 'income' ? 'paid' : 'planned', classification: '', categoryId: '', paymentMethodId: editingBenefit ? current.paymentMethodId : '', cardId: '',
       destinationId: type === 'transfer' ? current.destinationId : ''
     }));
     if (type === 'transfer') setNegative(false);
@@ -719,7 +743,9 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setSavingEdit(false);
     setEditMessage('');
     setDiscardConfirmOpen(false);
+    setSettlementConfirmOpen(false);
     setDeleteConfirmOpen(false);
+    setDeleteTargetEvent(null);
     setDeletingEvent(false);
   }
 
@@ -753,6 +779,15 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setDirty(false);
     setReviewed(false);
     setEditMessage('');
+  }
+
+  function openEventForEdit(event: FinancialEvent) {
+    if (isCardDomainEvent(event)) {
+      setDetailEvent(event);
+      setEditMessage('');
+      return;
+    }
+    openLaunch(event);
   }
 
   function requestCloseLaunch() {
@@ -811,15 +846,28 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
   async function saveEdit() {
     if (!editingEventId || !simpleWriteInput || missing.length || savingEdit) return;
-    if (draft.type === 'transfer' || benefit || credit || crediario || draft.recurring || draft.saveTemplate || draft.installments > 1 || draft.manualDue) {
-      setEditMessage('Esta edição envolve um fluxo protegido. Ajustes simples, inclusive troca de sinal positivo/negativo, podem ser gravados; cartão, benefício, recorrência, parcelamento e transferência continuam no writer específico.');
+    if (draft.type === 'transfer' || credit || crediario || draft.recurring || draft.saveTemplate || draft.installments > 1 || draft.manualDue) {
+      setEditMessage('Esta edição envolve um fluxo protegido. Cartão, recorrência, parcelamento e transferência usam seus editores próprios para preservar faturas, parcelas e vínculos.');
+      return;
+    }
+    if (editingBenefit && negative) {
+      setEditMessage('No Vale Alimentação, correções negativas precisam ser feitas por exclusão do lançamento incorreto ou por um fluxo próprio de estorno.');
       return;
     }
     const committedEventId = editingEventId;
     setSavingEdit(true);
+    setSettlementConfirmOpen(false);
     setEditMessage('Salvando alteração e aguardando a releitura sincronizada…');
     try {
-      const { snapshot } = await runPhoenixSimpleEventEdit(committedEventId, simpleWriteInput, data.month, editingEventUpdatedAt || undefined);
+      const result = editingBenefit
+        ? await runPhoenixBenefitEventEdit(
+            committedEventId,
+            { ...simpleWriteInput, status: 'paid', amount: Math.abs(simpleWriteInput.amount) },
+            data.month,
+            editingEventUpdatedAt || undefined,
+          )
+        : await runPhoenixSimpleEventEdit(committedEventId, simpleWriteInput, data.month, editingEventUpdatedAt || undefined);
+      const { snapshot } = result;
       setData(snapshot);
       onDataCommitted?.(snapshot);
       markRecentlyUpdated(committedEventId);
@@ -834,22 +882,42 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     }
   }
 
-  async function deleteEditedEvent() {
-    if (!editingEventId || deletingEvent || !canArchiveEvent) return;
-    const eventId = editingEventId;
+  function requestDeleteEvent(event?: FinancialEvent | null) {
+    if (!canArchiveEvent) return;
+    const target = event || editingEvent;
+    if (!target) return;
+    setDeleteTargetEvent(target);
+    setDeleteConfirmOpen(true);
+  }
+
+  function requestSaveEdit() {
+    if (!editingEvent || savingEdit) return;
+    if (editingEvent.status === 'planned' && effectiveSituation === 'paid') {
+      setSettlementConfirmOpen(true);
+      return;
+    }
+    void saveEdit();
+  }
+
+  async function deleteSelectedEvent() {
+    const target = deleteTargetEvent || editingEvent;
+    if (!target || deletingEvent || !canArchiveEvent) return;
     setDeletingEvent(true);
     setEditMessage('');
     try {
-      const { snapshot } = await runPhoenixSimpleEventArchive(eventId, data.month, editingEventUpdatedAt || undefined);
+      const { snapshot } = await runPhoenixSimpleEventArchive(target.id, data.month, target.updatedAt || undefined);
       setData(snapshot);
       onDataCommitted?.(snapshot);
       setDeleteConfirmOpen(false);
+      setDeleteTargetEvent(null);
+      setDetailEvent(null);
       setDirty(false);
       setLaunchOpen(false);
       resetLaunch();
     } catch (error) {
       const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
       setDeleteConfirmOpen(false);
+      setDeleteTargetEvent(null);
       setEditMessage(phoenixWriteMessage(code));
     } finally {
       setDeletingEvent(false);
@@ -983,7 +1051,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
             const visualType = launchTypeForEvent(event.type);
             const effect = displayEffect(event);
             const isIncome = visualType === 'income';
-            return <tr key={event.id} className={recentEventId === event.id ? 'is-recently-updated' : undefined} onDoubleClick={() => openLaunch(event)} title="Duplo clique para editar">
+            return <tr key={event.id} className={recentEventId === event.id ? 'is-recently-updated' : undefined} onDoubleClick={() => openEventForEdit(event)} title="Duplo clique para editar">
               <td data-col="dueDate" data-label="Vencimento">{formatIsoDate(event.date)}</td>
               <td data-col="purchaseDate" data-label="Data da compra">{formatIsoDate(sourcePurchaseDate(event))}</td>
               <td data-col="weekday" data-label="Dia">{event.sourceDetails?.weekday || weekday(event.date)}</td>
@@ -1034,7 +1102,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           <label className={`px-field ${invalidField('descrição') ? 'is-invalid' : ''}`}><span>Descrição *</span><input value={draft.description} onChange={(event) => updateDraft('description', event.target.value)} maxLength={120} autoComplete="off" placeholder="Ex.: supermercado, salário ou transferência" />{invalidField('descrição') ? <small className="px-field-error">Preencha a descrição.</small> : null}</label>
 
           <div className="px-form-row">
-            <label className={`px-field ${invalidField(draft.type === 'transfer' ? 'conta de origem' : 'conta') ? 'is-invalid' : ''}`}><span>{draft.type === 'transfer' ? 'Conta de origem *' : 'Conta financeira *'}</span><select data-phoenix-account-select="source" value={draft.accountId} onChange={(event) => updateDraft('accountId', event.target.value)}><option value="">Selecione</option>{accounts.map((item) => <option key={item.id} value={item.id} data-account-type={item.type}>{item.name}</option>)}</select>{invalidField(draft.type === 'transfer' ? 'conta de origem' : 'conta') ? <small className="px-field-error">Selecione a conta.</small> : null}</label>
+            <label className={`px-field ${invalidField(draft.type === 'transfer' ? 'conta de origem' : 'conta') ? 'is-invalid' : ''}`}><span>{draft.type === 'transfer' ? 'Conta de origem *' : 'Conta financeira *'}</span><select data-phoenix-account-select="source" value={draft.accountId} disabled={benefit} onChange={(event) => updateDraft('accountId', event.target.value)}><option value="">Selecione</option>{accounts.map((item) => <option key={item.id} value={item.id} data-account-type={item.type}>{item.name}</option>)}</select>{invalidField(draft.type === 'transfer' ? 'conta de origem' : 'conta') ? <small className="px-field-error">Selecione a conta.</small> : null}</label>
             <label className={`px-field ${invalidField('data') ? 'is-invalid' : ''}`}><span>Data do evento *</span><input type="date" value={draft.eventDate} onChange={(event) => updateDraft('eventDate', event.target.value)} />{invalidField('data') ? <small className="px-field-error">Informe a data.</small> : null}</label>
           </div>
 
@@ -1059,7 +1127,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
             <div className="px-launch-section-label">{draft.type === 'income' ? 'Recebimento' : 'Pagamento e vencimento'}</div>
             <div className="px-form-row">
-              <label className={`px-field ${invalidField(draft.type === 'income' ? 'forma de recebimento' : 'forma de pagamento') ? 'is-invalid' : ''}`}><span>{draft.type === 'income' ? 'Forma de recebimento *' : 'Forma de pagamento *'}</span><select data-phoenix-payment-method-select value={draft.paymentMethodId} onChange={(event) => updateDraft('paymentMethodId', event.target.value)}><option value="">Selecione</option>{paymentMethods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>{invalidField(draft.type === 'income' ? 'forma de recebimento' : 'forma de pagamento') ? <small className="px-field-error">Selecione a forma.</small> : null}</label>
+              <label className={`px-field ${invalidField(draft.type === 'income' ? 'forma de recebimento' : 'forma de pagamento') ? 'is-invalid' : ''}`}><span>{draft.type === 'income' ? 'Forma de recebimento *' : 'Forma de pagamento *'}</span><select data-phoenix-payment-method-select value={draft.paymentMethodId} disabled={benefit} onChange={(event) => updateDraft('paymentMethodId', event.target.value)}><option value="">Selecione</option>{paymentMethods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>{invalidField(draft.type === 'income' ? 'forma de recebimento' : 'forma de pagamento') ? <small className="px-field-error">Selecione a forma.</small> : null}</label>
               {draft.type === 'income'
                 ? <div className="px-field"><span>Situação</span><strong>Recebida</strong><small>Receitas são registradas sempre como recebidas.</small></div>
                 : <label className="px-field"><span>Situação *</span><select value={effectiveSituation} disabled={Boolean(situationRule)} onChange={(event) => updateDraft('situation', event.target.value as LaunchSituation)}><option value="paid">Pago</option><option value="planned">Pendente</option></select><small>{situationRule || 'Escolha se a despesa já foi paga ou permanece pendente.'}</small></label>}
@@ -1096,8 +1164,9 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           {editingEventId ? <div className="px-edit-launch-actions">
             {!reviewed
               ? <button className="px-primary-action px-review-launch" type="button" onClick={reviewLaunch}>{missing.length ? 'Salvar alterações' : 'Revisar alterações'}</button>
-              : <button className="px-primary-action px-confirm-launch" type="button" disabled={savingEdit || deletingEvent || Boolean(duplicate)} onClick={() => { void saveEdit(); }} aria-busy={savingEdit}>{savingEdit ? 'Salvando e sincronizando…' : duplicate ? 'Revise a possível duplicidade' : 'Salvar alterações'}</button>}
-            {canArchiveEvent ? <button className="px-delete-launch" type="button" disabled={savingEdit || deletingEvent} onClick={() => setDeleteConfirmOpen(true)}>Excluir lançamento</button> : null}
+              : <button className="px-primary-action px-confirm-launch" type="button" disabled={savingEdit || deletingEvent || Boolean(duplicate)} onClick={requestSaveEdit} aria-busy={savingEdit}>{savingEdit ? 'Salvando e sincronizando…' : duplicate ? 'Revise a possível duplicidade' : 'Salvar alterações'}</button>}
+            <button className="px-secondary-action px-cancel-launch" type="button" disabled={savingEdit || deletingEvent} onClick={requestCloseLaunch}>Cancelar</button>
+            {canArchiveEvent ? <button className="px-delete-launch" type="button" disabled={savingEdit || deletingEvent} onClick={() => requestDeleteEvent()}>Excluir lançamento</button> : null}
           </div>
             : <PhoenixLaunchWriteControl
               reviewed={reviewed}
@@ -1138,20 +1207,37 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       </section>
     </div> : null}
 
-    {deleteConfirmOpen && editingEventId ? <div className="px-meg-confirm-overlay px-delete-event-confirm">
-      <button className="px-meg-confirm-backdrop" type="button" aria-label="Cancelar exclusão" onClick={() => setDeleteConfirmOpen(false)} />
+    {settlementConfirmOpen && editingEvent ? <div className="px-meg-confirm-overlay px-settlement-confirm">
+      <button className="px-meg-confirm-backdrop" type="button" aria-label="Não baixar a pendência" onClick={() => setSettlementConfirmOpen(false)} />
+      <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-settlement-title" aria-describedby="px-settlement-copy">
+        <div className="px-meg-confirm-icon"><MovementIcon name="warning" size={22} /></div>
+        <div className="px-meg-confirm-copy">
+          <span className="px-kicker">Baixa de pendência</span>
+          <h3 id="px-settlement-title">Deseja realmente baixar a pendência?</h3>
+          <p id="px-settlement-copy"><strong>{draft.description || editingEvent.description}</strong> · {formatInputMoney(amountCents, negative)}. Ao confirmar, o status será Pago e o MEG registrará a baixa financeira.</p>
+        </div>
+        <button className="px-meg-confirm-close" type="button" aria-label="Não baixar a pendência" onClick={() => setSettlementConfirmOpen(false)}><MovementIcon name="close" size={16} /></button>
+        <div className="px-meg-confirm-actions">
+          <button className="px-meg-confirm-secondary" type="button" disabled={savingEdit} onClick={() => setSettlementConfirmOpen(false)}>Não</button>
+          <button className="px-meg-confirm-danger" type="button" disabled={savingEdit} aria-busy={savingEdit} onClick={() => { void saveEdit(); }}>{savingEdit ? 'Baixando…' : 'Sim, baixar'}</button>
+        </div>
+      </section>
+    </div> : null}
+
+    {deleteConfirmOpen && (deleteTargetEvent || editingEvent) ? <div className="px-meg-confirm-overlay px-delete-event-confirm">
+      <button className="px-meg-confirm-backdrop" type="button" aria-label="Cancelar exclusão" onClick={() => { setDeleteConfirmOpen(false); setDeleteTargetEvent(null); }} />
       <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-delete-event-title" aria-describedby="px-delete-event-copy">
         <div className="px-meg-confirm-icon"><MovementIcon name="warning" size={22} /></div>
         <div className="px-meg-confirm-copy">
           <span className="px-kicker">Excluir lançamento</span>
           <h3 id="px-delete-event-title">Deseja excluir este lançamento?</h3>
-          <p id="px-delete-event-copy"><strong>{draft.description || 'Lançamento selecionado'}</strong> · {formatInputMoney(amountCents, negative)}. A exclusão retira o lançamento dos saldos e da listagem, mantendo o registro de auditoria.</p>
-          {dirty ? <p>As alterações ainda não salvas deste formulário serão descartadas.</p> : null}
+          <p id="px-delete-event-copy"><strong>{(deleteTargetEvent || editingEvent)?.description || draft.description || 'Lançamento selecionado'}</strong> · {money.format(displayEffect((deleteTargetEvent || editingEvent)!))}. A exclusão retira o lançamento dos saldos e da listagem, mantendo o registro de auditoria.</p>
+          {dirty && editingEventId === (deleteTargetEvent || editingEvent)?.id ? <p>As alterações ainda não salvas deste formulário serão descartadas.</p> : null}
         </div>
-        <button className="px-meg-confirm-close" type="button" aria-label="Cancelar exclusão" onClick={() => setDeleteConfirmOpen(false)}><MovementIcon name="close" size={16} /></button>
+        <button className="px-meg-confirm-close" type="button" aria-label="Cancelar exclusão" onClick={() => { setDeleteConfirmOpen(false); setDeleteTargetEvent(null); }}><MovementIcon name="close" size={16} /></button>
         <div className="px-meg-confirm-actions">
-          <button className="px-meg-confirm-secondary" type="button" disabled={deletingEvent} onClick={() => setDeleteConfirmOpen(false)}>Cancelar</button>
-          <button className="px-meg-confirm-danger" type="button" disabled={deletingEvent} aria-busy={deletingEvent} onClick={() => { void deleteEditedEvent(); }}>{deletingEvent ? 'Excluindo e sincronizando…' : 'Sim, excluir'}</button>
+          <button className="px-meg-confirm-secondary" type="button" disabled={deletingEvent} onClick={() => { setDeleteConfirmOpen(false); setDeleteTargetEvent(null); }}>Cancelar</button>
+          <button className="px-meg-confirm-danger" type="button" disabled={deletingEvent} aria-busy={deletingEvent} onClick={() => { void deleteSelectedEvent(); }}>{deletingEvent ? 'Excluindo e sincronizando…' : 'Sim, excluir'}</button>
         </div>
       </section>
     </div> : null}
@@ -1161,8 +1247,10 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       <p className="px-detail-description">{detailEvent.description}</p>
       <div className="px-detail-grid"><div><span>Vencimento</span><strong>{formatIsoDate(detailEvent.date)}</strong></div><div><span>Data da compra</span><strong>{formatIsoDate(sourcePurchaseDate(detailEvent))}</strong></div><div><span>Situação</span><strong>{launchTypeForEvent(detailEvent.type) === 'income' ? 'Recebida' : eventStatus(detailEvent.status)}</strong></div><div><span>Conta</span><strong>{detailEvent.account?.name || 'Não informada'}</strong></div><div><span>Sincronização</span><strong>Confirmada na leitura atual</strong></div><div><span>Tipo</span><strong>{eventType(detailEvent.type)}</strong></div><div><span>Valor</span><strong>{money.format(displayEffect(detailEvent))}</strong></div><div><span>Classificação</span><strong>{sourceClassification(detailEvent)}</strong></div><div><span>Grupo</span><strong>{sourceGroup(detailEvent)}</strong></div><div><span>Forma</span><strong>{sourcePayment(detailEvent)}</strong></div><div><span>Modalidade</span><strong>{detailEvent.sourceDetails?.modality || '—'}</strong></div></div>
       {detailEvent.notes ? <div className="px-notice">{detailEvent.notes}</div> : null}
-      <div className="px-notice">Duplo clique na linha ou o botão abaixo abre a edição. Alterações simples são relidas da base antes da grade ser atualizada.</div>
-      <div className="px-detail-actions"><button className="px-primary-action" type="button" onClick={() => openLaunch(detailEvent)}>Editar lançamento</button><button className="px-secondary-action" type="button" onClick={() => { setDetailEvent(null); onNavigateHistory?.(); }}>Ver histórico</button></div>
+      {isCardDomainEvent(detailEvent)
+        ? <div className="px-notice ok">DOMÍNIO DE CARTÕES/FATURAS. Esta compra usa edição e exclusão próprias para recalcular parcelas e faturas sem duplicar o caixa monetário.</div>
+        : <div className="px-notice">Duplo clique na linha ou o botão abaixo abre a edição. Alterações simples são relidas da base antes da grade ser atualizada.</div>}
+      <div className="px-detail-actions">{!isCardDomainEvent(detailEvent) ? <button className="px-primary-action" data-phoenix-generic-edit type="button" onClick={() => openLaunch(detailEvent)}>Editar lançamento</button> : null}{canArchiveEvent && !isCardDomainEvent(detailEvent) ? <button className="px-delete-launch" data-phoenix-generic-delete type="button" onClick={() => requestDeleteEvent(detailEvent)}>Excluir lançamento</button> : null}<button className="px-secondary-action" type="button" onClick={() => { setDetailEvent(null); onNavigateHistory?.(); }}>Ver histórico</button></div>
     </aside> : null}
   </section>;
 }
