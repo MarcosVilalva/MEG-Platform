@@ -1,9 +1,9 @@
 {
-  "versionCode": 301,
-  "versionName": "2.0.301",
+  "versionCode": 302,
+  "versionName": "2.0.302",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "ce00d147f503bb5ca5c7ed83a18957b8f379c40978b583d0e1a3d84853f5d5d3",
+  "sha256": "afc69f646274b0a59dd7019866739923e87ea2e6a4d2e6ee245bbbdd49b92d68",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Android: atualização automática sem toque no MEG"
+  "releaseNotes": "Android: corrigir navegação, menu, Pendentes e Home"
 }
