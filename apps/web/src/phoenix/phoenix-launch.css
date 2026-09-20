@@ -27,3 +27,26 @@
   .px-sign-toggle{gap:5px}
   .px-sign-toggle button{min-height:42px;padding:0 7px;font-size:9px}
 }
+
+
+/* Edição financeira: exclusão lógica protegida, compartilhada entre Web e Android. */
+.px-edit-launch-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch}
+.px-edit-launch-actions .px-primary-action{min-width:0}
+.px-delete-launch{
+  min-height:40px;
+  padding:0 13px;
+  border:1px solid color-mix(in srgb,var(--danger,#ff6676) 48%,var(--line));
+  border-radius:10px;
+  background:color-mix(in srgb,var(--danger-bg,#3a151b) 72%,var(--panel2));
+  color:var(--danger,#ff7f8b);
+  font-size:10px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.px-delete-launch:hover{border-color:color-mix(in srgb,var(--danger,#ff6676) 72%,var(--line));filter:brightness(1.05)}
+.px-delete-launch:disabled{opacity:.5;cursor:not-allowed}
+.px-delete-event-confirm .px-meg-confirm-copy p strong{color:var(--ink)}
+@media(max-width:760px){
+  .px-edit-launch-actions{grid-template-columns:1fr}
+  .px-delete-launch{min-height:44px;width:100%;font-size:10px}
+}
