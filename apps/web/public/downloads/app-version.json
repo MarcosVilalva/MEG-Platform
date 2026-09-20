@@ -1,9 +1,9 @@
 {
-  "versionCode": 314,
-  "versionName": "2.0.314",
+  "versionCode": 315,
+  "versionName": "2.0.315",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "0eac7fb47c010a00f1bd14b46b34f30bf03473d09e90631c03f3f03de312de1d",
+  "sha256": "d4348fc0b4b0d2e98d585ad37b56b28bd17dae847bff5a9b2670bb5f45596f88",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Período: corrigir Fechar e adicionar Cancelar no Android"
+  "releaseNotes": "Android: corrigir modal de período e transição biométrica"
 }
