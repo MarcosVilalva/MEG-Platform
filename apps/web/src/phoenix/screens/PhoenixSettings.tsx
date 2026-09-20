@@ -87,7 +87,6 @@ export function PhoenixSettings({ data, theme, onToggleTheme }: PhoenixSettingsP
   function updateAvatar(next: PhoenixAvatarPreference) {
     setAvatar(next);
     setAvatarError('');
-    savePhoenixAvatarPreference(next, data.user.id);
     void savePhoenixAvatarPreferenceCloud(next, data.user.id);
   }
 
