@@ -49,10 +49,9 @@ public class MainActivity extends BridgeActivity {
     }
 
     public void onBiometricAuthenticationSucceeded() {
-        // A biometria libera apenas a autenticação. O atualizador será liberado
-        // pela WebView depois que a base, o Dashboard e os alertas iniciais
-        // estiverem concluídos, evitando diálogos concorrentes no início.
-        updateHandler.removeCallbacks(updateCheck);
+        // Após a biometria, refazemos a verificação nativa. O atualizador não
+        // depende mais da WebView para descobrir uma versão nova.
+        scheduleUpdateCheck();
     }
 
     @Override
