@@ -7,6 +7,7 @@ type Props = {
   data: PhoenixReadModel;
   onLaunch: (preset: LaunchPreset) => void;
   onNavigate: (view: 'movements' | 'history' | 'payables') => void;
+  onOpenPeriod?: () => void;
 };
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -28,7 +29,7 @@ function eventAmount(event: PhoenixReadModel['events']['items'][number]) {
   return -Math.abs(signed || Number(event.amount || 0));
 }
 
-export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate }: Props) {
+export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate, onOpenPeriod }: Props) {
   const agenda = buildPhoenixHomeAgenda(data, todayIso());
   const overdue = agenda.items.filter((item) => item.kind === 'VENCIDO');
   const upcoming = agenda.items.filter((item) => item.kind !== 'VENCIDO');
@@ -38,6 +39,10 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate }: Pro
   const currentBalance = Number(data.summary.availableBalance || 0) + Number(data.summary.realizedResult || 0);
   const firstName = String(data.user.name || 'MEG').trim().split(/\s+/)[0] || 'MEG';
   const pendingAmount = agenda.items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const periodLabel = (() => {
+    const [year, month] = String(data.month || '').split('-');
+    return month && year ? `${month}/${year}` : data.month;
+  })();
 
   return <section className="px-operational-mobile-home" aria-label="MEG Operacional">
     <header className="px-operational-hero px-operational-hero-v2">
@@ -45,6 +50,7 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate }: Pro
         <span className="px-kicker">MEG OPERACIONAL</span>
         <h1>Olá, {firstName}.</h1>
         <p>Seu financeiro de hoje, com acesso rápido ao que precisa ser lançado ou resolvido.</p>
+        {onOpenPeriod ? <button className="px-operational-period-chip" type="button" onClick={onOpenPeriod} aria-label={`Alterar período atual ${periodLabel}`}><span aria-hidden="true">▣</span><strong>Período</strong><em>{periodLabel}</em></button> : null}
       </div>
       <span className="px-operational-sync" title={`Dados carregados em ${data.loadedAt}`}><i />Atualizado</span>
     </header>
