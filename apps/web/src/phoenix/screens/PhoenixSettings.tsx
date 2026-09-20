@@ -14,6 +14,7 @@ type PhoenixSettingsProps = {
   data: PhoenixReadModel;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
+  onLogoutRequest?: () => void;
 };
 
 type SettingsSection = 'profile' | 'home' | 'security' | 'system';
@@ -68,7 +69,7 @@ function DashboardToggle({ checked, label, description, onChange }: { checked: b
   </button>;
 }
 
-export function PhoenixSettings({ data, theme, onToggleTheme }: PhoenixSettingsProps) {
+export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }: PhoenixSettingsProps) {
   const normalizationOk = Boolean(data.normalization.primary && data.normalization.reconciled);
   const repair = data.health.dataRepair;
   const healthNormalization = data.health.normalization;
@@ -166,7 +167,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme }: PhoenixSettingsP
 
         {section === 'security' ? <section className="px-settings-grid">
           <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Segurança</span><h2>Sessão e permissões</h2><p>Identidade autenticada e estado atual do acesso.</p></div></div><dl><div><dt>Usuário</dt><dd>{data.user.name}</dd></div><div><dt>Perfil</dt><dd>{data.user.role}</dd></div><div><dt>Status</dt><dd>{data.user.status}</dd></div></dl><div className="px-settings-status-list"><span>Biometria · não consultada no módulo nativo Android</span><span>Bloqueio automático · não consultada nesta interface Web</span><span>Outras sessões · ação administrativa ainda bloqueada</span></div></article>
-          <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Acesso</span><h2>Proteção da conta</h2><p>A Phoenix ainda não libera alterações administrativas de credenciais.</p></div></div><div className="px-settings-control-row"><div><strong>Recuperação de acesso</strong><small>Fluxo existe na entrada do MEG.</small></div><span className="px-settings-value">Disponível no login</span></div><div className="px-settings-control-row"><div><strong>Alterar senha</strong><small>Será habilitado com contrato seguro dedicado.</small></div><button type="button" disabled>Alterar senha</button></div></article>
+          <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Acesso</span><h2>Proteção da conta</h2><p>A Phoenix ainda não libera alterações administrativas de credenciais.</p></div></div><div className="px-settings-control-row"><div><strong>Recuperação de acesso</strong><small>Fluxo existe na entrada do MEG.</small></div><span className="px-settings-value">Disponível no login</span></div><div className="px-settings-control-row"><div><strong>Alterar senha</strong><small>Será habilitado com contrato seguro dedicado.</small></div><button type="button" disabled>Alterar senha</button></div>{onLogoutRequest ? <div className="px-settings-control-row px-settings-exit-row"><div><strong>Sair do aplicativo</strong><small>Encerra sua sessão e fecha o MEG no Android.</small></div><button type="button" onClick={onLogoutRequest}>Sair e fechar</button></div> : null}</article>
         </section> : null}
 
         {section === 'system' ? <>
