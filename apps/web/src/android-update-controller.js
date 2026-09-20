@@ -201,6 +201,20 @@ function removeUpdateUi() {
   delete document.body.dataset.availableAppVersion;
 }
 
+function mountUpdateSurface(element) {
+  const topbar = document.querySelector('.px-topbar, .topbar');
+  if (topbar) {
+    topbar.insertAdjacentElement('afterend', element);
+    return;
+  }
+  const content = document.querySelector('.px-content, main.content');
+  if (content) {
+    content.prepend(element);
+    return;
+  }
+  document.body.prepend(element);
+}
+
 function publishWarning(message) {
   let warning = document.querySelector('#appUpdateCheckWarning');
   if (!warning) {
@@ -208,9 +222,7 @@ function publishWarning(message) {
     warning.id = 'appUpdateCheckWarning';
     warning.className = 'app-update-check-warning';
     warning.setAttribute('role', 'status');
-    const topbar = document.querySelector('.topbar');
-    if (topbar) topbar.insertAdjacentElement('afterend', warning);
-    else document.querySelector('main.content')?.prepend(warning);
+    mountUpdateSurface(warning);
   }
   warning.innerHTML = `<div><strong>Não foi possível verificar atualizações</strong><span>${escapeHtml(message || 'Confira a internet e tente novamente.')}</span></div><button type="button">Tentar novamente</button>`;
   warning.querySelector('button')?.addEventListener('click', () => checkForAppUpdate({ notifyIfCurrent: true }));
@@ -241,9 +253,7 @@ function ensureAutomaticUpdateStatus(release, message) {
     banner.className = 'app-update-banner';
     banner.setAttribute('role', 'status');
     banner.setAttribute('aria-live', 'polite');
-    const topbar = document.querySelector('.topbar');
-    if (topbar) topbar.insertAdjacentElement('afterend', banner);
-    else document.querySelector('main.content')?.prepend(banner);
+    mountUpdateSurface(banner);
   }
   banner.innerHTML = `<div class="app-update-banner-icon" aria-hidden="true">↻</div><div class="app-update-banner-copy"><small>ATUALIZAÇÃO AUTOMÁTICA</small><strong>MEG ${escapeHtml(release.versionName || release.versionCode)}</strong><span data-auto-update-status>${escapeHtml(message)}</span></div>`;
   return banner.querySelector('[data-auto-update-status]');
@@ -337,9 +347,7 @@ function ensureUpdateBanner(release, installed, AppUpdater) {
     banner.id = 'appUpdateBanner';
     banner.className = 'app-update-banner';
     banner.setAttribute('role', 'status');
-    const topbar = document.querySelector('.topbar');
-    if (topbar) topbar.insertAdjacentElement('afterend', banner);
-    else document.querySelector('main.content')?.prepend(banner);
+    mountUpdateSurface(banner);
   }
   banner.innerHTML = `<div class="app-update-banner-icon" aria-hidden="true">↻</div><div class="app-update-banner-copy"><small>ATUALIZAÇÃO DISPONÍVEL</small><strong>MEG ${escapeHtml(release.versionName || release.versionCode)}</strong><span>Uma versão mais recente está pronta para instalar.</span></div><button type="button" class="primary-button">Atualizar agora</button>`;
   banner.querySelector('button')?.addEventListener('click', () => showUpdateDialog(release, installed, AppUpdater));
@@ -505,7 +513,7 @@ export async function initializeAndroidUpdateLifecycle() {
     if (resumeTimer) window.clearTimeout(resumeTimer);
     resumeTimer = window.setTimeout(() => {
       resumeTimer = null;
-      checkForAppUpdate().catch(() => undefined);
+      checkForAppUpdate({ automatic: true }).catch(() => undefined);
     }, RESUME_DELAY_MS);
   });
   return true;
