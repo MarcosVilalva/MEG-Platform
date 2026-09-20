@@ -309,6 +309,7 @@ function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: numb
 }
 
 export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDataCommitted, onOpenPeriod, launchRequest = 0, launchPreset = 'expense' }: { data: PhoenixReadModel; onNavigateHistory?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number; launchPreset?: LaunchPreset }) {
+  const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
   const [data, setData] = useState(initialData);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -893,6 +894,42 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       </div>
 
       <div className={`px-grid-active-filters ${activeGridFilters.length || gridSort ? '' : 'is-empty'}`} aria-hidden={activeGridFilters.length || gridSort ? undefined : true}><span>Filtros da grade</span>{activeGridFilters.map((key) => <span className="px-grid-filter-chip" key={key}>{filterSummary(gridLabels[key], gridFilters[key])}<button type="button" onClick={() => clearGridFilter(key)} aria-label={`Remover filtro ${gridLabels[key]}`}>×</button></span>)}{gridSort ? <span className="px-grid-filter-chip">Ordenação: {gridLabels[gridSort.key]} {gridSort.direction === 'asc' ? '↑' : '↓'}<button type="button" onClick={() => setGridSort(null)} aria-label="Remover ordenação">×</button></span> : null}{activeGridFilters.length || gridSort ? <button className="px-grid-clear-all" type="button" onClick={clearAllGridFilters}>Limpar grade</button> : null}</div>
+
+      {nativeOperational ? <div className="px-mobile-movement-list" aria-label="Lançamentos do período">
+        <header className="px-mobile-movement-list-head">
+          <div><strong>{filtered.length} lançamento{filtered.length === 1 ? '' : 's'}</strong><span>{formatMonthLabel(data.month)} · toque para abrir</span></div>
+          <button type="button" onClick={() => openLaunch()}><MovementIcon name="plus" size={15} /> Novo</button>
+        </header>
+        {visibleEvents.map((event) => {
+          const visualType = launchTypeForEvent(event.type);
+          const isIncome = visualType === 'income';
+          const rawSigned = Number(event.signedAmount || (isIncome ? Math.abs(Number(event.amount || 0)) : visualType === 'expense' ? -Math.abs(Number(event.amount || 0)) : 0));
+          const group = sourceGroup(event);
+          const accountName = event.account?.name || 'Conta não informada';
+          const payment = sourcePayment(event);
+          const purchaseDate = sourcePurchaseDate(event);
+          return <button
+            className={`px-mobile-movement-card ${visualType} ${recentEventId === event.id ? 'is-recently-updated' : ''}`}
+            type="button"
+            key={event.id}
+            onClick={() => setDetailEvent(event)}
+            aria-label={`${event.description}, ${money.format(rawSigned)}, ${sourceSituation(event)}`}
+          >
+            <span className={`px-mobile-movement-type ${visualType}`} aria-hidden="true"><MovementIcon name={isIncome ? 'income' : visualType === 'expense' ? 'expense' : 'result'} size={17} /></span>
+            <span className="px-mobile-movement-main">
+              <span className="px-mobile-movement-topline"><small>{formatIsoDate(purchaseDate)} · {event.sourceDetails?.weekday || weekday(event.date)}</small><em className={`px-mobile-movement-status ${event.status}`}>{sourceSituation(event)}</em></span>
+              <strong title={event.description}>{event.description}</strong>
+              <span className="px-mobile-movement-meta"><b>{group !== '—' ? group : sourceClassification(event)}</b><i>·</i><span>{accountName}</span></span>
+              <span className="px-mobile-movement-submeta">{payment !== '—' ? payment : sourceModality(event)}</span>
+            </span>
+            <span className={`px-mobile-movement-value ${rawSigned < 0 ? 'negative' : rawSigned > 0 ? 'positive' : ''}`}>
+              <strong>{money.format(rawSigned)}</strong>
+              <small>›</small>
+            </span>
+          </button>;
+        })}
+        {!filtered.length ? <div className="px-mobile-movement-empty"><strong>Nenhum lançamento</strong><span>Revise os filtros ou inclua um novo lançamento.</span></div> : null}
+      </div> : null}
 
       <div className="px-table-scroll">
         <table className="px-data-table px-v15-launch-table" data-meg-export-source="movements">
