@@ -1036,8 +1036,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
 
                 {periodDraftMode === 'all' ? <section className="px-period-all">
                   <div className="px-period-all-icon" aria-hidden="true">∞</div>
-                  <div><strong>Histórico completo</strong><p>Consolida a trajetória financeira inteira. O saldo disponível continua sendo a fotografia realizada de hoje.</p></div>
-                  <button type="button" disabled={periodLoading} onClick={() => { void applyAllPeriod(); }}>Abrir Tudo</button>
+                  <div><strong>Histórico completo</strong><p>Consolida a trajetória financeira inteira. A mudança só será aplicada quando você confirmar no rodapé.</p></div>
                 </section> : null}
 
                 {periodDraftMode === 'month' && periodDraftMonth > currentMonth() ? <small className="px-period-scope-note">Mês futuro troca a competência exibida. Projeções permanecem concentradas em Decisões.</small> : null}
