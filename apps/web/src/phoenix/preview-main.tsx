@@ -16,7 +16,7 @@ import './phoenix-preview-parity.css';
 import './preview-auth-flow.css';
 import './preview-boot.css';
 
-type PreviewState = 'checking' | 'signed-out' | 'preparing' | 'prepare-error' | 'signed-in';
+type PreviewState = 'checking' | 'authenticating' | 'signed-out' | 'preparing' | 'prepare-error' | 'signed-in';
 type AuthMode = 'login' | 'register' | 'forgot';
 type AccountType = 'REQUEST_ACCESS' | 'CREATE_WORKSPACE';
 type BootStage = 'session' | 'finance' | 'organizing' | 'ready';
@@ -184,6 +184,17 @@ function PhoenixPreviewRoot() {
   const registerStrength = useMemo(() => passwordScore(registerPassword), [registerPassword]);
 
   useEffect(() => {
+    if (state === 'signed-out') return;
+    const legacyNativeOverlay = document.querySelector('#nativeBiometricLoadingOverlay');
+    legacyNativeOverlay?.remove();
+    const authRoot = document.querySelector<HTMLElement>('.px-preview-auth');
+    if (authRoot) {
+      authRoot.style.visibility = '';
+      authRoot.style.pointerEvents = '';
+    }
+  }, [state]);
+
+  useEffect(() => {
     if (state !== 'checking') return;
     let active = true;
     setBootStage('session');
@@ -230,13 +241,19 @@ function PhoenixPreviewRoot() {
         if (!active || !status?.available || !status?.enabled) return;
         const credentials = await biometric.requestBiometricLogin();
         if (!active || !credentials?.email || !credentials?.password) return;
-        setBusy(true);
+        setBootStage('session');
+        setBootError('');
         setError('');
+        setState('authenticating');
+        setBusy(true);
         try {
           await login(credentials.email, credentials.password);
           if (active) await prepareAuthenticatedSession();
         } catch (cause) {
-          if (active) setError(authErrorMessage(cause));
+          if (active) {
+            setState('signed-out');
+            setError(authErrorMessage(cause));
+          }
         } finally {
           if (active) setBusy(false);
         }
@@ -329,9 +346,12 @@ function PhoenixPreviewRoot() {
   async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || !email.trim() || !password) return;
-    setBusy(true);
+    setBootStage('session');
+    setBootError('');
     setError('');
     setSuccess('');
+    setState('authenticating');
+    setBusy(true);
     try {
       try {
         await login(email.trim(), password);
@@ -445,7 +465,7 @@ function PhoenixPreviewRoot() {
   }
 
   if (state === 'signed-in') return <PhoenixApp onLogout={() => { void signOutAndExitNative(); }} />;
-  if (state === 'checking' || state === 'preparing') return <PhoenixBootScreen stage={bootStage} />;
+  if (state === 'checking' || state === 'authenticating' || state === 'preparing') return <PhoenixBootScreen stage={bootStage} />;
   if (state === 'prepare-error') return <PhoenixBootErrorScreen message={bootError} busy={busy} onRetry={() => { void retryPreparation(); }} onLogout={() => { void signOut(); }} />;
 
   return <main className="px-preview-auth">

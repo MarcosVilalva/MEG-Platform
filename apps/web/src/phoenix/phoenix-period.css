@@ -879,3 +879,37 @@
     min-width:0!important;
   }
 }
+
+
+/* Período 2.2 · portal Android fora da topbar fixa.
+   Evita que backdrop-filter/position do cabeçalho transforme o bottom sheet
+   em um popover preso ao topo da aplicação. */
+.px-period-mobile-portal{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147482500!important;
+  pointer-events:none!important;
+}
+.px-period-mobile-portal .px-period-mobile-backdrop{
+  z-index:1!important;
+  pointer-events:auto!important;
+}
+.px-period-mobile-portal .px-period-popover-v15.is-mobile-sheet{
+  position:fixed!important;
+  z-index:2!important;
+  top:auto!important;
+  left:8px!important;
+  right:8px!important;
+  bottom:max(8px,env(safe-area-inset-bottom))!important;
+  margin:0!important;
+  width:auto!important;
+  max-height:min(82dvh,calc(100dvh - max(24px,env(safe-area-inset-top)) - max(18px,env(safe-area-inset-bottom))))!important;
+  pointer-events:auto!important;
+}
+@media(max-width:430px){
+  .px-period-mobile-portal .px-period-popover-v15.is-mobile-sheet{
+    left:6px!important;
+    right:6px!important;
+    max-height:min(86dvh,calc(100dvh - max(18px,env(safe-area-inset-top)) - max(14px,env(safe-area-inset-bottom))))!important;
+  }
+}

@@ -83,18 +83,60 @@ function delay(milliseconds) {
 }
 
 function beginAuthenticatedLoadingTransition() {
-  const authShell = document.querySelector('#authShell');
-  if (!authShell) return;
-  authShell.style.display = 'none';
-  let overlay = document.querySelector('#cloudLoadingOverlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'cloudLoadingOverlay';
-    overlay.className = 'cloud-loading-overlay';
-    overlay.innerHTML = '<div class="cloud-loading-card"><span>M</span><strong>Biometria reconhecida</strong><small>Carregando seus dados financeiros...</small></div>';
-    document.body.appendChild(overlay);
+  if (typeof document === 'undefined') return;
+  const authRoot = document.querySelector('.px-preview-auth');
+  if (authRoot instanceof HTMLElement) {
+    authRoot.style.visibility = 'hidden';
+    authRoot.style.pointerEvents = 'none';
   }
-  overlay.classList.remove('hidden');
+
+  let overlay = document.querySelector('#nativeBiometricLoadingOverlay');
+  if (overlay) return;
+
+  const asset = (path) => {
+    try {
+      return new URL(path.replace(/^\/+/, ''), document.baseURI).href;
+    } catch {
+      return path;
+    }
+  };
+
+  overlay = document.createElement('main');
+  overlay.id = 'nativeBiometricLoadingOverlay';
+  overlay.className = 'px-preview-fullscreen-boot px-preview-native-biometric-boot';
+  overlay.setAttribute('aria-live', 'polite');
+  overlay.setAttribute('aria-busy', 'true');
+  overlay.innerHTML = `
+    <section class="px-preview-boot-card" aria-label="Biometria reconhecida. Preparando o MEG Finanças">
+      <div class="px-preview-boot-brand">
+        <div class="px-preview-boot-logo">
+          <span class="px-preview-boot-halo" aria-hidden="true"></span>
+          <span class="px-preview-boot-orbit" aria-hidden="true"></span>
+          <span class="px-preview-boot-orbit is-secondary" aria-hidden="true"></span>
+          <img src="${asset('brand/meg-finance-system-mark.svg')}" alt="">
+          <strong class="px-preview-boot-percent">22%</strong>
+        </div>
+        <img class="px-preview-boot-wordmark" src="${asset('brand/meg-finance-system-lockup-light.svg')}" alt="MEG Finance System">
+        <div class="px-preview-boot-trust"><span>MEG CLOUD</span><i aria-hidden="true"></i><span>Biometria reconhecida</span></div>
+      </div>
+      <div class="px-preview-boot-copy">
+        <span class="px-preview-boot-stage-label"><i aria-hidden="true"></i>VALIDANDO ACESSO</span>
+        <h1>Preparando seu MEG</h1>
+        <p>Sua identidade foi confirmada. Estamos carregando os dados antes de abrir o sistema.</p>
+      </div>
+      <div class="px-preview-boot-progress" aria-label="22% preparado">
+        <div class="px-preview-boot-track"><span style="width:22%"></span></div>
+        <div class="px-preview-boot-progress-meta"><span>Iniciando ambiente seguro</span><strong>22%</strong></div>
+      </div>
+      <div class="px-preview-boot-steps">
+        <div class="px-preview-boot-step active"><i>1</i><span>Acesso</span></div>
+        <div class="px-preview-boot-step"><i>2</i><span>Finanças</span></div>
+        <div class="px-preview-boot-step"><i>3</i><span>Organizando</span></div>
+        <div class="px-preview-boot-step"><i>4</i><span>Pronto</span></div>
+      </div>
+      <div class="px-preview-boot-foot"><i aria-hidden="true"></i><span>Conexão protegida · nenhum formulário de login fica exposto</span></div>
+    </section>`;
+  document.body.appendChild(overlay);
 }
 
 function cacheCredentials(credentials) {
@@ -237,6 +279,7 @@ export async function prepareAndroidBiometricStartup() {
     return { native: true, required: true, authenticated: false, available: true, enabled: true };
   }
   cacheCredentials(credentials);
+  beginAuthenticatedLoadingTransition();
   return { native: true, required: true, authenticated: true, available: true, enabled: true };
 }
 

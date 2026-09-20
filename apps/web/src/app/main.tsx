@@ -1,6 +1,7 @@
 // Entrada oficial de produção. Mantemos um único bootstrap para Web e Android,
 // mas o runtime visual e financeiro pertence integralmente à Phoenix V15.
 import '../phoenix/phoenix-release-hardening.css';
+import '../phoenix/preview-boot.css';
 import '../phoenix/auth-fast-entry-bridge';
 import '../phoenix/history-prewarm-bridge';
 import '../phoenix/description-autocomplete-bridge';
