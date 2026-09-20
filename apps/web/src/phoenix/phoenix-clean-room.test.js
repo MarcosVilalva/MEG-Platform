@@ -560,8 +560,10 @@ assert.doesNotMatch(phoenixApp, /function quickMonth[\s\S]{0,280}void applyMonth
   'Atalho de mês móvel não deve aplicar e navegar sozinho.');
 assert.match(phoenixApp, /snapshot\.month !== visibleMonth[\s\S]{0,500}loadPhoenixReadModel\(visibleMonth, \{ force: true \}\)/,
   'Snapshot de outro mês não pode empurrar o período visível do APK.');
-assert.match(phoenixApp, /Atual · \$\{shortMonthLabel\(activePeriodMonth\)\}/,
-  'Período atual do APK deve ficar explicitamente identificado no topo.');
+assert.match(operationalHome, /px-operational-period-chip[\s\S]*periodLabel/,
+  'Período do APK deve ficar no contexto da Home, e não flutuando na topbar.');
+assert.match(phoenixApp, /\{!nativeOperational \? <div className=\{\`px-period-menu/,
+  'Topbar do APK não deve manter o seletor global de período.');
 assert.match(phoenixApp, /navigate\('movements'\)[\s\S]{0,220}px-dock-new[\s\S]{0,220}>Novo</,
   'Dock Android deve separar Lançamentos da ação Novo.');
 assert.match(phoenixApp, /App\.addListener\('backButton'[\s\S]*meg:android-back[\s\S]*requestLogout\(\)/,
@@ -606,6 +608,20 @@ assert.match(profileAvatar, /profileAvatars[\s\S]*savePhoenixAvatarPreferenceClo
   'Avatar deve ser sincronizado por usuário para migração entre Web e Android.');
 assert.match(sidebar, /hydratePhoenixAvatarPreference/,
   'Web deve hidratar e migrar o avatar do usuário sem depender de abrir Configurações.');
+assert.match(profileAvatar, /migrationKeyForUser[\s\S]*!nativeOperational && storedLocal && !avatarMigrationCompleted/,
+  'Avatar legado da Web deve migrar uma única vez e prevalecer sobre fallback criado pelo Android.');
+assert.match(profileAvatar, /new URL\(relative, document\.baseURI\)/,
+  'Assets de avatar devem usar URL absoluta válida também dentro do Capacitor.');
+assert.match(profileAvatar, /<img[\s\S]*onError=/,
+  'Avatar deve renderizar imagem real com fallback de iniciais se o asset falhar.');
+assert.match(operationalCss, /\.px-pending-kpis article>div>strong[\s\S]*white-space:nowrap!important/,
+  'Valores de Pendentes não podem quebrar em duas linhas no telefone.');
+assert.match(operationalCss, /\.px-pending-command-tabs[\s\S]*repeat\(4,minmax\(0,1fr\)\)/,
+  'Filtros rápidos de Pendentes devem caber na largura do telefone sem rolagem lateral.');
+assert.match(operationalCss, /\.px-main > \.px-content[\s\S]*112px \+ env\(safe-area-inset-bottom\)/,
+  'Conteúdo móvel deve reservar espaço suficiente para o dock e a navegação do Android.');
+assert.match(operationalCss, /\.px-settings-profile-main[\s\S]*grid-template-columns:58px minmax\(0,1fr\)/,
+  'Perfil Android deve manter cabeçalho compacto e responsivo.');
 
 assert.match(nativeNotifications, /Contas vencidas|contas vencidas|Conta vencida/,
   'Notificações Android devem cobrir compromissos vencidos.');
