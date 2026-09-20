@@ -121,12 +121,20 @@ function PhoenixBootScreen({ stage }: { stage: BootStage }) {
   return <main className="px-preview-fullscreen-boot" aria-live="polite" aria-busy={stage !== 'ready'}>
     <section className="px-preview-boot-card" aria-label="Preparando MEG Finanças">
       <div className="px-preview-boot-brand">
-        <div className="px-preview-boot-logo"><span className="px-preview-boot-halo" aria-hidden="true" /><span className="px-preview-boot-orbit" aria-hidden="true" /><img src={previewBrandAsset('brand/meg-finance-system-mark.svg')} alt="" /></div>
+        <div className="px-preview-boot-logo">
+          <span className="px-preview-boot-halo" aria-hidden="true" />
+          <span className="px-preview-boot-orbit" aria-hidden="true" />
+          <span className="px-preview-boot-orbit is-secondary" aria-hidden="true" />
+          <img src={previewBrandAsset('brand/meg-finance-system-mark.svg')} alt="" />
+          <strong className="px-preview-boot-percent">{active.progress}%</strong>
+        </div>
         <img className="px-preview-boot-wordmark" src={previewBrandAsset('brand/meg-finance-system-lockup-light.svg')} alt="MEG Finance System" />
+        <div className="px-preview-boot-trust"><span>MEG CLOUD</span><i aria-hidden="true" /><span>Sessão protegida</span></div>
       </div>
       <div className="px-preview-boot-copy"><span className="px-preview-boot-stage-label"><i aria-hidden="true" />{active.label}</span><h1>{active.title}</h1><p>{active.description}</p></div>
       <div className="px-preview-boot-progress" aria-label={`${active.progress}% preparado`}>
         <div className="px-preview-boot-track"><span style={{ width: `${active.progress}%` }} /></div>
+        <div className="px-preview-boot-progress-meta"><span>Preparando seu ambiente</span><strong>{active.progress}%</strong></div>
       </div>
       <div className="px-preview-boot-steps">
         {bootStages.map((item, index) => <div key={item.id} className={`px-preview-boot-step ${index < activeIndex ? 'done' : index === activeIndex ? 'active' : ''}`}><i>{index < activeIndex ? '✓' : index + 1}</i><span>{item.label}</span></div>)}
