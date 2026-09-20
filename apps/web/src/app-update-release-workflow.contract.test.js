@@ -46,7 +46,7 @@ assert.match(
 );
 assert.match(
   nativeUpdater,
-  /activity\.runOnUiThread\(\(\) => installAvailableUpdateNatively\(downloadUrl, sha256\)\);/,
+  /activity\.runOnUiThread\(\(\) -> installAvailableUpdateNatively\(downloadUrl, sha256\)\);/,
   'Fallback nativo deve iniciar a atualização automaticamente quando detectar versão superior',
 );
 assert.match(
