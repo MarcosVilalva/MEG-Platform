@@ -564,6 +564,18 @@ assert.match(phoenixApp, /Atual · \$\{shortMonthLabel\(activePeriodMonth\)\}/,
   'Período atual do APK deve ficar explicitamente identificado no topo.');
 assert.match(phoenixApp, /navigate\('movements'\)[\s\S]{0,220}px-dock-new[\s\S]{0,220}>Novo</,
   'Dock Android deve separar Lançamentos da ação Novo.');
+assert.match(phoenixApp, /App\.addListener\('backButton'[\s\S]*meg:android-back[\s\S]*requestLogout\(\)/,
+  'Botão Voltar do Android deve fechar camadas, voltar pela navegação e pedir saída somente na raiz.');
+assert.match(movementScreen, /addEventListener\('meg:android-back'[\s\S]*event\.preventDefault\(\)[\s\S]*requestCloseLaunch\(\)/,
+  'Botão Voltar deve fechar detalhes e drawer de lançamento antes de sair da tela.');
+assert.match(phoenixApp, /Deseja sair do aplicativo\?/,
+  'APK deve pedir confirmação explícita antes de encerrar.');
+assert.match(phoenixApp, />Não<[\s\S]*>Sim, sair</,
+  'Confirmação de saída deve oferecer Não e Sim de forma explícita.');
+assert.match(settings, /Sair do aplicativo[\s\S]*Sair e fechar/,
+  'Configurações deve oferecer saída e fechamento do APK.');
+assert.match(previewMain, /App\.exitApp\(\)/,
+  'Após confirmar a saída, o APK deve encerrar a Activity e retornar ao Android.');
 assert.match(movementScreen, /data-phoenix-refresh-month=\{data\.month\}/,
   'Drawer deve fixar o mês visível usado para a releitura após gravação.');
 assert.match(simpleEventBridge, /visibleRefreshMonth\(root, payload\.date\)/,
