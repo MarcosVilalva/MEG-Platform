@@ -1,9 +1,9 @@
 {
-  "versionCode": 315,
-  "versionName": "2.0.315",
+  "versionCode": 316,
+  "versionName": "2.0.316",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "d4348fc0b4b0d2e98d585ad37b56b28bd17dae847bff5a9b2670bb5f45596f88",
+  "sha256": "e42202c4f3d7c5594d78e65798ab0769b46ad63509e59740fcdeb3cdf40519a7",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Android: corrigir modal de período e transição biométrica"
+  "releaseNotes": "Android: corrigir loading biométrico preso em 22%"
 }
