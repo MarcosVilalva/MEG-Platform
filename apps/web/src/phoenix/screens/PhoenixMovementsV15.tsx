@@ -3,7 +3,7 @@ import type { FinancialEvent } from '../../app/finance-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import type { PhoenixReadModel } from '../contracts';
 import { PhoenixLaunchWriteControl } from '../components/PhoenixLaunchWriteControl';
-import { phoenixWriteMessage, runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
+import { phoenixWriteMessage, runPhoenixSimpleEventArchive, runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
 import '../phoenix-launch.css';
 import '../phoenix-launch-dynamic.css';
 import '../phoenix-launch-editor-polish.css';
@@ -324,6 +324,8 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const [gridSort, setGridSort] = useState<GridSort>(null);
   const [launchOpen, setLaunchOpen] = useState(false);
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletingEvent, setDeletingEvent] = useState(false);
   const [detailEvent, setDetailEvent] = useState<FinancialEvent | null>(null);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
@@ -413,6 +415,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const displayedIncome = hasActiveFilters ? filteredTotals.income : monthTotals.income;
   const displayedExpense = hasActiveFilters ? filteredTotals.expense : monthTotals.expense;
   const displayedResult = displayedIncome - displayedExpense;
+  const canArchiveEvent = data.user.role === 'ADMIN' || data.user.role === 'MANAGER';
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount);
   const pageStart = filtered.length ? (currentPage - 1) * pageSize : 0;
@@ -635,16 +638,22 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      if (discardConfirmOpen) setDiscardConfirmOpen(false);
+      if (deleteConfirmOpen) setDeleteConfirmOpen(false);
+      else if (discardConfirmOpen) setDiscardConfirmOpen(false);
       else if (detailEvent) setDetailEvent(null);
       else if (launchOpen) requestCloseLaunch();
     };
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
-  }, [detailEvent, launchOpen, dirty, discardConfirmOpen]);
+  }, [detailEvent, launchOpen, dirty, discardConfirmOpen, deleteConfirmOpen]);
 
   useEffect(() => {
     const handleAndroidBack = (event: Event) => {
+      if (deleteConfirmOpen) {
+        event.preventDefault();
+        setDeleteConfirmOpen(false);
+        return;
+      }
       if (discardConfirmOpen) {
         event.preventDefault();
         setDiscardConfirmOpen(false);
@@ -662,7 +671,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     };
     window.addEventListener('meg:android-back', handleAndroidBack);
     return () => window.removeEventListener('meg:android-back', handleAndroidBack);
-  }, [detailEvent, launchOpen, dirty, discardConfirmOpen]);
+  }, [detailEvent, launchOpen, dirty, discardConfirmOpen, deleteConfirmOpen]);
 
   function markRecentlyUpdated(eventId: string) {
     if (recentTimerRef.current !== null) window.clearTimeout(recentTimerRef.current);
@@ -708,6 +717,8 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setSavingEdit(false);
     setEditMessage('');
     setDiscardConfirmOpen(false);
+    setDeleteConfirmOpen(false);
+    setDeletingEvent(false);
   }
 
   function openLaunch(event?: FinancialEvent) {
@@ -816,6 +827,28 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       setEditMessage(phoenixWriteMessage(code));
     } finally {
       setSavingEdit(false);
+    }
+  }
+
+  async function deleteEditedEvent() {
+    if (!editingEventId || deletingEvent || !canArchiveEvent) return;
+    const eventId = editingEventId;
+    setDeletingEvent(true);
+    setEditMessage('');
+    try {
+      const { snapshot } = await runPhoenixSimpleEventArchive(eventId, data.month);
+      setData(snapshot);
+      onDataCommitted?.(snapshot);
+      setDeleteConfirmOpen(false);
+      setDirty(false);
+      setLaunchOpen(false);
+      resetLaunch();
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
+      setDeleteConfirmOpen(false);
+      setEditMessage(phoenixWriteMessage(code));
+    } finally {
+      setDeletingEvent(false);
     }
   }
 
@@ -1056,9 +1089,12 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           {validationVisible && missing.length ? <div className="px-form-validation-summary">Revise os campos destacados.</div> : null}
           {editMessage ? <div className={`px-notice ${editMessage.includes('protegido') || editMessage.includes('liberada') || editMessage.includes('possível') ? 'warn' : 'ok'}`}>{editMessage}</div> : null}
 
-          {editingEventId ? !reviewed
-            ? <button className="px-primary-action px-review-launch" type="button" onClick={reviewLaunch}>{missing.length ? 'Salvar alterações' : 'Revisar alterações'}</button>
-            : <button className="px-primary-action px-confirm-launch" type="button" disabled={savingEdit || Boolean(duplicate)} onClick={() => { void saveEdit(); }} aria-busy={savingEdit}>{savingEdit ? 'Salvando e sincronizando…' : duplicate ? 'Revise a possível duplicidade' : 'Salvar alterações'}</button>
+          {editingEventId ? <div className="px-edit-launch-actions">
+            {!reviewed
+              ? <button className="px-primary-action px-review-launch" type="button" onClick={reviewLaunch}>{missing.length ? 'Salvar alterações' : 'Revisar alterações'}</button>
+              : <button className="px-primary-action px-confirm-launch" type="button" disabled={savingEdit || deletingEvent || Boolean(duplicate)} onClick={() => { void saveEdit(); }} aria-busy={savingEdit}>{savingEdit ? 'Salvando e sincronizando…' : duplicate ? 'Revise a possível duplicidade' : 'Salvar alterações'}</button>}
+            {canArchiveEvent ? <button className="px-delete-launch" type="button" disabled={savingEdit || deletingEvent} onClick={() => setDeleteConfirmOpen(true)}>Excluir lançamento</button> : null}
+          </div>
             : <PhoenixLaunchWriteControl
               reviewed={reviewed}
               missing={missing}
@@ -1094,6 +1130,24 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
         <div className="px-meg-confirm-actions">
           <button className="px-meg-confirm-secondary" type="button" onClick={() => setDiscardConfirmOpen(false)}>Continuar editando</button>
           <button className="px-meg-confirm-danger" type="button" onClick={discardLaunchChanges}>Descartar alterações</button>
+        </div>
+      </section>
+    </div> : null}
+
+    {deleteConfirmOpen && editingEventId ? <div className="px-meg-confirm-overlay px-delete-event-confirm">
+      <button className="px-meg-confirm-backdrop" type="button" aria-label="Cancelar exclusão" onClick={() => setDeleteConfirmOpen(false)} />
+      <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-delete-event-title" aria-describedby="px-delete-event-copy">
+        <div className="px-meg-confirm-icon"><MovementIcon name="warning" size={22} /></div>
+        <div className="px-meg-confirm-copy">
+          <span className="px-kicker">Excluir lançamento</span>
+          <h3 id="px-delete-event-title">Deseja excluir este lançamento?</h3>
+          <p id="px-delete-event-copy"><strong>{draft.description || 'Lançamento selecionado'}</strong> · {formatInputMoney(amountCents, negative)}. A exclusão retira o lançamento dos saldos e da listagem, mantendo o registro de auditoria.</p>
+          {dirty ? <p>As alterações ainda não salvas deste formulário serão descartadas.</p> : null}
+        </div>
+        <button className="px-meg-confirm-close" type="button" aria-label="Cancelar exclusão" onClick={() => setDeleteConfirmOpen(false)}><MovementIcon name="close" size={16} /></button>
+        <div className="px-meg-confirm-actions">
+          <button className="px-meg-confirm-secondary" type="button" disabled={deletingEvent} onClick={() => setDeleteConfirmOpen(false)}>Cancelar</button>
+          <button className="px-meg-confirm-danger" type="button" disabled={deletingEvent} aria-busy={deletingEvent} onClick={() => { void deleteEditedEvent(); }}>{deletingEvent ? 'Excluindo e sincronizando…' : 'Sim, excluir'}</button>
         </div>
       </section>
     </div> : null}
