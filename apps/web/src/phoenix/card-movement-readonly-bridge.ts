@@ -49,6 +49,13 @@ function protect(root: HTMLElement) {
     button.title = 'Esta compra pertence ao domínio de cartões/faturas. O editor financeiro genérico foi bloqueado para evitar duplicidade.';
   }
 
+  const genericDelete = root.querySelector<HTMLButtonElement>('[data-phoenix-generic-delete]');
+  if (genericDelete) {
+    genericDelete.hidden = true;
+    genericDelete.disabled = true;
+    genericDelete.title = 'Compras no cartão são excluídas pelo fluxo próprio de cartões/faturas.';
+  }
+
   const cancel = root.querySelector<HTMLButtonElement>('[data-card-domain-cancel]');
   if (cancel) {
     cancel.textContent = 'Excluir compra';
@@ -60,12 +67,18 @@ function protect(root: HTMLElement) {
 
 function restore(root: HTMLElement) {
   root.querySelector('[data-phoenix-card-readonly-notice]')?.remove();
+  const genericDelete = root.querySelector<HTMLButtonElement>('[data-phoenix-generic-delete]');
+  if (genericDelete) {
+    genericDelete.hidden = false;
+    genericDelete.disabled = false;
+    genericDelete.removeAttribute('title');
+  }
   const button = root.querySelector<HTMLButtonElement>('[data-phoenix-card-domain-edit]');
   if (!button) return;
   delete button.dataset.phoenixCardDomainEdit;
   button.hidden = false;
   button.disabled = false;
-  button.textContent = 'Preparar edição';
+  button.textContent = 'Editar lançamento';
   button.removeAttribute('title');
 }
 
