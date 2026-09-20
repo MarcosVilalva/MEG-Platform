@@ -783,3 +783,26 @@
     min-width:100px!important;
   }
 }
+
+
+.px-home-period-edit{
+  width:max-content;
+  max-width:100%;
+  min-height:34px;
+  margin-top:10px;
+  padding:0 11px;
+  border:1px solid color-mix(in srgb,var(--brand) 30%,var(--line));
+  border-radius:999px;
+  background:color-mix(in srgb,var(--brand) 7%,var(--panel));
+  color:var(--brand2);
+  font-size:9px;
+  font-weight:850;
+  white-space:nowrap;
+}
+@media(max-width:760px){
+  .px-home-period-edit{
+    min-height:32px;
+    padding:0 9px;
+    font-size:8px;
+  }
+}
