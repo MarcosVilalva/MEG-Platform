@@ -2185,7 +2185,7 @@ body.meg-operational-mobile .px-launch-form{
   overflow-y:auto!important;
   overscroll-behavior:contain!important;
   -webkit-overflow-scrolling:touch!important;
-  padding:12px 14px calc(96px + env(safe-area-inset-bottom))!important;
+  padding:12px 14px calc(132px + env(safe-area-inset-bottom))!important;
   scroll-padding-top:58px!important;
   scrollbar-width:none!important;
 }
@@ -2231,6 +2231,14 @@ body.meg-operational-mobile .px-edit-launch-actions{
 body.meg-operational-mobile .px-launch-form > .px-review-launch{
   width:auto!important;
   min-height:48px!important;
+  border-color:rgba(53,222,211,.42)!important;
+  background:linear-gradient(135deg,#23cdbd,#15aa9d)!important;
+  color:#012a28!important;
+  font-weight:950!important;
+}
+body.meg-operational-mobile .px-launch-write-panel{
+  max-height:36dvh!important;
+  overflow:auto!important;
 }
 body.meg-operational-mobile .px-edit-launch-actions button,
 body.meg-operational-mobile .px-launch-write-panel .px-primary-action{
