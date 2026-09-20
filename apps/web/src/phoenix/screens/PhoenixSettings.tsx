@@ -5,7 +5,9 @@ import {
   imageFileToAvatarDataUrl,
   phoenixAvatarPresets,
   readPhoenixAvatarPreference,
+  hydratePhoenixAvatarPreference,
   savePhoenixAvatarPreference,
+  savePhoenixAvatarPreferenceCloud,
   type PhoenixAvatarPreference
 } from '../profile-avatar';
 import '../phoenix-settings.css';
@@ -84,10 +86,21 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
     try { localStorage.setItem(DASHBOARD_PREFS_KEY, JSON.stringify(dashboardPreferences)); } catch { /* preferência local opcional */ }
   }, [dashboardPreferences]);
 
+  useEffect(() => {
+    let active = true;
+    void hydratePhoenixAvatarPreference(data.user.id).then((preference) => {
+      if (active) setAvatar(preference);
+    });
+    return () => { active = false; };
+  }, [data.user.id]);
+
   function updateAvatar(next: PhoenixAvatarPreference) {
-    setAvatar(next);
+    const normalized = savePhoenixAvatarPreference(next, data.user.id);
+    setAvatar(normalized);
     setAvatarError('');
-    savePhoenixAvatarPreference(next, data.user.id);
+    void savePhoenixAvatarPreferenceCloud(normalized, data.user.id).then((result) => {
+      if (!result.synced) setAvatarError('Avatar aplicado neste aparelho. A sincronização com os outros dispositivos será tentada novamente quando a nuvem estiver disponível.');
+    });
   }
 
   async function choosePhoto(file?: File) {
