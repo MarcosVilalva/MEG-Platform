@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { readSession } from '../app/auth-client';
+import { patchCloudStateProperties, readCloudState } from '../app/app-state-client';
 
 export type PhoenixAvatarPreference =
   | { kind: 'initials' }
@@ -119,19 +120,27 @@ function publicAsset(path: string) {
   return `${base}${path.replace(/^\/+/, '')}`;
 }
 
+function normalizeAvatarPreference(value: unknown, userId: string): PhoenixAvatarPreference | null {
+  const fallback: PhoenixAvatarPreference = { kind: 'preset', presetId: defaultPresetForUser(userId) };
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const parsed = value as Partial<PhoenixAvatarPreference> & { kind?: string; presetId?: string; dataUrl?: string };
+  if (parsed.kind === 'photo' && typeof parsed.dataUrl === 'string' && parsed.dataUrl.startsWith('data:image/') && parsed.dataUrl.length < 500_000) {
+    return { kind: 'photo', dataUrl: parsed.dataUrl };
+  }
+  if (parsed.kind === 'preset' && typeof parsed.presetId === 'string') {
+    const preset = findPreset(parsed.presetId);
+    return preset ? { kind: 'preset', presetId: preset.id } : fallback;
+  }
+  if (parsed.kind === 'initials') return { kind: 'initials' };
+  return null;
+}
+
 export function readPhoenixAvatarPreference(userId = currentPhoenixUserId()): PhoenixAvatarPreference {
   const fallback: PhoenixAvatarPreference = { kind: 'preset', presetId: defaultPresetForUser(userId) };
   try {
     const stored = localStorage.getItem(keyForUser(userId));
     if (!stored) return fallback;
-    const parsed = JSON.parse(stored) as PhoenixAvatarPreference;
-    if (parsed.kind === 'photo' && parsed.dataUrl) return parsed;
-    if (parsed.kind === 'preset') {
-      const preset = findPreset(parsed.presetId);
-      return preset ? { kind: 'preset', presetId: preset.id } : fallback;
-    }
-    if (parsed.kind === 'initials') return parsed;
-    return fallback;
+    return normalizeAvatarPreference(JSON.parse(stored), userId) || fallback;
   } catch {
     return fallback;
   }
@@ -171,12 +180,56 @@ export function applyPhoenixAvatarPreference(preference: PhoenixAvatarPreference
 }
 
 export function savePhoenixAvatarPreference(preference: PhoenixAvatarPreference, userId = currentPhoenixUserId()) {
-  const normalized = preference.kind === 'preset'
-    ? { kind: 'preset' as const, presetId: normalizePresetId(preference.presetId) }
-    : preference;
+  const normalized = normalizeAvatarPreference(preference, userId)
+    || { kind: 'preset' as const, presetId: defaultPresetForUser(userId) };
   try { localStorage.setItem(keyForUser(userId), JSON.stringify(normalized)); } catch { /* preferência visual local */ }
   applyPhoenixAvatarPreference(normalized);
   window.dispatchEvent(new CustomEvent('meg:profile-avatar-changed', { detail: { userId, preference: normalized } }));
+  return normalized;
+}
+
+function cloudAvatarMap(state: Record<string, unknown> | null | undefined) {
+  const raw = state?.profileAvatars;
+  return raw && typeof raw === 'object' && !Array.isArray(raw)
+    ? raw as Record<string, unknown>
+    : {};
+}
+
+export async function hydratePhoenixAvatarPreference(userId = currentPhoenixUserId()) {
+  const local = readPhoenixAvatarPreference(userId);
+  try {
+    const cloud = await readCloudState();
+    const remote = normalizeAvatarPreference(cloudAvatarMap(cloud.state)[userId], userId);
+    if (!remote) {
+      applyPhoenixAvatarPreference(local);
+      return local;
+    }
+    savePhoenixAvatarPreference(remote, userId);
+    return remote;
+  } catch {
+    applyPhoenixAvatarPreference(local);
+    return local;
+  }
+}
+
+export async function savePhoenixAvatarPreferenceCloud(preference: PhoenixAvatarPreference, userId = currentPhoenixUserId()) {
+  const normalized = savePhoenixAvatarPreference(preference, userId);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const cloud = await readCloudState();
+      const current = cloudAvatarMap(cloud.state);
+      await patchCloudStateProperties(
+        { profileAvatars: { ...current, [userId]: normalized } },
+        cloud.revision,
+      );
+      return { preference: normalized, synced: true };
+    } catch (error) {
+      const status = (error as { status?: number }).status;
+      if (status === 409 && attempt < 2) continue;
+      return { preference: normalized, synced: false };
+    }
+  }
+  return { preference: normalized, synced: false };
 }
 
 export async function imageFileToAvatarDataUrl(file: File) {
