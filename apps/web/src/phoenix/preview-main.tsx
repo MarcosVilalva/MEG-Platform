@@ -473,16 +473,24 @@ function PhoenixPreviewRoot() {
       else clearSession();
     } catch {
       clearSession();
-    } finally {
-      setPassword('');
-      setShowPassword(false);
-      setError('');
-      setSuccess('');
-      setBootError('');
-      setMode('login');
-      setBootStage('session');
-      setState('signed-out');
     }
+    if (import.meta.env.VITE_MOBILE_APP === 'true') {
+      try {
+        // @ts-ignore módulo JS nativo carregado somente no APK.
+        const biometric = await import('../native-biometric-login.js');
+        await biometric.clearBiometricLogin();
+      } catch (cause) {
+        console.warn('MEG biometric logout cleanup unavailable', cause);
+      }
+    }
+    setPassword('');
+    setShowPassword(false);
+    setError('');
+    setSuccess('');
+    setBootError('');
+    setMode('login');
+    setBootStage('session');
+    setState('signed-out');
   }
 
   async function closeNativeApp() {
