@@ -35,13 +35,16 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate }: Pro
   const recent = [...data.events.items]
     .sort((left, right) => String(right.date).localeCompare(String(left.date)))
     .slice(0, 6);
+  const monetaryBalance = Number(data.summary.availableBalance || 0) + Number(data.summary.realizedResult || 0);
+  const pendingAmount = Number(data.summary.pendingAmount || 0);
+  const benefitBalance = Number(data.summary.benefitBalance || 0);
 
   return <section className="px-operational-mobile-home" aria-label="MEG Operacional">
     <header className="px-operational-hero">
       <div>
         <span className="px-kicker">MEG OPERACIONAL</span>
-        <h1>Lançar ficou simples.</h1>
-        <p>Receitas, despesas e Benefício Alimentação com as mesmas regras da sua base financeira.</p>
+        <h1>Seu financeiro na mão.</h1>
+        <p>Saldo, pendências e lançamentos rápidos sem sair da tela.</p>
       </div>
       <span className="px-operational-sync" title={`Dados carregados em ${data.loadedAt}`}><i />Sincronizado</span>
     </header>
@@ -64,15 +67,15 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate }: Pro
       </button>
     </div>
 
-    <div className="px-operational-status-grid">
+    <div className="px-operational-finance-grid" aria-label="Resumo financeiro">
+      <button type="button" className="balance" onClick={() => onNavigate('movements')}>
+        <span>Saldo monetário</span><strong>{money.format(monetaryBalance)}</strong><em>Atualizado com os lançamentos realizados</em>
+      </button>
       <button type="button" className={overdue.length ? 'danger' : ''} onClick={() => onNavigate('payables')}>
-        <span>Vencidas</span><strong>{overdue.length}</strong><em>{money.format(overdue.reduce((sum, item) => sum + item.amount, 0))}</em>
+        <span>Despesas pendentes</span><strong>{money.format(pendingAmount)}</strong><em>{overdue.length} vencida(s) · {upcoming.length} a vencer</em>
       </button>
-      <button type="button" onClick={() => onNavigate('payables')}>
-        <span>A vencer</span><strong>{upcoming.length}</strong><em>{money.format(upcoming.reduce((sum, item) => sum + item.amount, 0))}</em>
-      </button>
-      <button type="button" onClick={() => onNavigate('movements')}>
-        <span>Lançamentos</span><strong>{data.events.total}</strong><em>{data.month}</em>
+      <button type="button" className="benefit" onClick={() => onLaunch('benefit')}>
+        <span>Saldo do benefício</span><strong>{money.format(benefitBalance)}</strong><em>Alimentação · toque para lançar</em>
       </button>
     </div>
 

@@ -308,7 +308,7 @@ function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: numb
   return <svg {...common}><path d="M8 8H3V3M16 8h5V3M8 16H3v5M21 21v-5h-5"/></svg>;
 }
 
-export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDataCommitted, onOpenPeriod, launchRequest = 0, launchPreset = 'expense' }: { data: PhoenixReadModel; onNavigateHistory?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number; launchPreset?: LaunchPreset }) {
+export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDataCommitted, onOpenPeriod, launchRequest = 0, launchPreset = 'expense', nativeOperational = false }: { data: PhoenixReadModel; onNavigateHistory?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number; launchPreset?: LaunchPreset; nativeOperational?: boolean }) {
   const [data, setData] = useState(initialData);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -416,6 +416,9 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const pageStart = filtered.length ? (currentPage - 1) * pageSize : 0;
   const pageEnd = Math.min(pageStart + pageSize, filtered.length);
   const visibleEvents = expandedList ? filtered : filtered.slice(pageStart, pageEnd);
+  const mobileMonetaryBalance = Number(data.summary.availableBalance || 0) + Number(data.summary.realizedResult || 0);
+  const mobilePendingAmount = Number(data.summary.pendingAmount || 0);
+  const mobileBenefitBalance = Number(data.summary.benefitBalance || 0);
   const exportRows = useMemo(() => filtered.map((event) => {
     const row = gridRow(event);
     return {
@@ -716,6 +719,38 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setEditMessage('');
   }
 
+  function openBenefitLaunch() {
+    setDraft({
+      ...initialDraft(),
+      type: 'expense',
+      situation: 'paid',
+      accountId: canonicalBenefitAccount?.id || '',
+      paymentMethodId: canonicalVerocardPayment?.id || ''
+    });
+    setAmountCents(0);
+    setNegative(false);
+    setEditingEventId(null);
+    setDetailEvent(null);
+    setLaunchOpen(true);
+    setDirty(false);
+    setReviewed(false);
+    setEditMessage('');
+    let attempts = 0;
+    const syncModality = () => {
+      const select = document.querySelector<HTMLSelectElement>('.px-launch-drawer [data-phoenix-modality-select]');
+      if (select) {
+        if (select.value !== 'ALIMENTAÇÃO') {
+          select.value = 'ALIMENTAÇÃO';
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return;
+      }
+      attempts += 1;
+      if (attempts < 12) window.requestAnimationFrame(syncModality);
+    };
+    window.requestAnimationFrame(syncModality);
+  }
+
   function requestCloseLaunch() {
     if (dirty) {
       setDiscardConfirmOpen(true);
@@ -807,7 +842,12 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={gridFilters[key]} options={options} sort={gridSort?.key === key ? gridSort.direction : null} onSort={(direction) => setGridSort({ key, direction })} onChange={(value) => updateGridFilter(key, value)} /></div>;
   }
 
-  return <section className="px-screen px-movements-v15">
+  return <section className={`px-screen px-movements-v15 ${nativeOperational ? 'px-movements-native' : ''}`}>
+    {nativeOperational ? <section className="px-mobile-money-strip" aria-label="Resumo financeiro rápido">
+      <button type="button" onClick={() => setToolPanel(null)}><span>Saldo monetário</span><strong>{money.format(mobileMonetaryBalance)}</strong><small>realizado</small></button>
+      <button type="button" className={mobilePendingAmount > 0 ? 'warn' : ''} onClick={() => setStatus('planned')}><span>Pendentes</span><strong>{money.format(mobilePendingAmount)}</strong><small>{data.summary.pendingCount} lançamento(s)</small></button>
+      <button type="button" className="benefit" onClick={openBenefitLaunch}><span>Benefício</span><strong>{money.format(mobileBenefitBalance)}</strong><small>toque para lançar</small></button>
+    </section> : null}
     <section className="px-movements-overview">
       <div className="px-movement-hero-row">
         <header className="px-screen-head">
@@ -873,7 +913,34 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
       <div className={`px-grid-active-filters ${activeGridFilters.length || gridSort ? '' : 'is-empty'}`} aria-hidden={activeGridFilters.length || gridSort ? undefined : true}><span>Filtros da grade</span>{activeGridFilters.map((key) => <span className="px-grid-filter-chip" key={key}>{filterSummary(gridLabels[key], gridFilters[key])}<button type="button" onClick={() => clearGridFilter(key)} aria-label={`Remover filtro ${gridLabels[key]}`}>×</button></span>)}{gridSort ? <span className="px-grid-filter-chip">Ordenação: {gridLabels[gridSort.key]} {gridSort.direction === 'asc' ? '↑' : '↓'}<button type="button" onClick={() => setGridSort(null)} aria-label="Remover ordenação">×</button></span> : null}{activeGridFilters.length || gridSort ? <button className="px-grid-clear-all" type="button" onClick={clearAllGridFilters}>Limpar grade</button> : null}</div>
 
-      <div className="px-table-scroll">
+      {nativeOperational ? <div className="px-mobile-event-list" aria-label="Lançamentos">
+        {visibleEvents.map((event) => {
+          const visualType = launchTypeForEvent(event.type);
+          const effect = displayEffect(event);
+          const accountName = event.account?.name || labelForAccount(data, event.accountId || '');
+          const paymentName = sourcePayment(event);
+          return <article key={event.id} className={`px-mobile-event-card ${recentEventId === event.id ? 'is-recently-updated' : ''}`}>
+            <button type="button" className="px-mobile-event-main" onClick={() => setDetailEvent(event)}>
+              <span className={`px-mobile-event-icon ${visualType}`} aria-hidden="true"><MovementIcon name={visualType === 'income' ? 'income' : visualType === 'expense' ? 'expense' : 'result'} size={18} /></span>
+              <span className="px-mobile-event-copy">
+                <strong>{event.description}</strong>
+                <small>{sourceGroup(event)} · {formatIsoDate(event.date)}</small>
+              </span>
+              <span className={`px-mobile-event-value ${visualType}`}>{money.format(effect)}</span>
+            </button>
+            <div className="px-mobile-event-meta">
+              <span className={`px-status ${event.status}`}>{sourceSituation(event)}</span>
+              <span>{accountName}</span>
+              {paymentName && paymentName !== '—' ? <span>{paymentName}</span> : null}
+            </div>
+            <div className="px-mobile-event-actions">
+              <button type="button" onClick={() => setDetailEvent(event)}>Detalhes</button>
+              <button type="button" className="primary" onClick={() => openLaunch(event)}>Editar</button>
+            </div>
+          </article>;
+        })}
+        {!filtered.length ? <p className="px-empty">Nenhum lançamento corresponde aos filtros do período.</p> : null}
+      </div> : <div className="px-table-scroll">
         <table className="px-data-table px-v15-launch-table" data-meg-export-source="movements">
           <thead><tr><th data-col="dueDate">{gridHeader('Vencimento', 'dueDate', 'date')}</th><th data-col="purchaseDate">{gridHeader('Data da compra', 'purchaseDate', 'date')}</th><th data-col="weekday">{gridHeader('Dia', 'weekday', 'multi', gridOptions.weekday)}</th><th data-col="type">{gridHeader('Tipo', 'type', 'multi', gridOptions.type)}</th><th data-col="description">{gridHeader('Descrição', 'description', 'text')}</th><th data-col="income">{gridHeader('Receita', 'income', 'number')}</th><th data-col="classification">{gridHeader('Classificação', 'classification', 'multi', gridOptions.classification)}</th><th data-col="group">{gridHeader('Grupo', 'group', 'multi', gridOptions.group)}</th><th data-col="expense">{gridHeader('Despesa', 'expense', 'number')}</th><th data-col="paymentMethod">{gridHeader('Forma de pagamento', 'paymentMethod', 'multi', gridOptions.paymentMethod)}</th><th data-col="status">{gridHeader('Situação', 'status', 'multi', gridOptions.status)}</th><th data-col="modality">{gridHeader('Modalidade', 'modality', 'multi', gridOptions.modality)}</th><th data-col="details">Detalhes</th></tr></thead>
           <tbody>{visibleEvents.map((event) => {
@@ -898,9 +965,9 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           })}</tbody>
         </table>
         {!filtered.length ? <p className="px-empty">Nenhum lançamento corresponde aos filtros do período.</p> : null}
-      </div>
+      </div>}
 
-      <footer className="px-table-pagination" aria-label="Paginação dos lançamentos">
+      <footer className={`px-table-pagination ${nativeOperational ? 'px-mobile-pagination' : ''}`} aria-label="Paginação dos lançamentos">
         <div className="px-pagination-summary">
           <strong>{filtered.length ? (expandedList ? `1–${filtered.length}` : `${pageStart + 1}–${pageEnd}`) : '0'} de {filtered.length}</strong>
           <span>{expandedList ? 'lista expandida' : 'lançamentos'}</span>
@@ -966,9 +1033,11 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
           {(credit || crediario) ? <div className="px-installment-box"><div className="px-form-row"><label className="px-field"><span>Quantidade de parcelas *</span><input type="number" min={1} max={credit ? 48 : 120} value={draft.installments} onChange={(event) => updateDraft('installments', Math.max(1, Number(event.target.value) || 1))} /></label><label className="px-field"><span>Vencimento da 1ª parcela</span><input type="date" disabled={credit && !draft.manualDue} value={draft.manualDue ? draft.firstDue : calculatedDue} onChange={(event) => updateDraft('firstDue', event.target.value)} /></label></div><div className="px-rule-box">No cartão, a divisão em parcelas seguirá o contrato da API: centavos são distribuídos sem perda e a primeira fatura depende da data de fechamento.</div></div> : null}
 
-          {benefit ? <div className="px-notice ok">{draft.type === 'income'
-            ? 'A receita do benefício é registrada como recebida; a recarga aumenta somente o saldo do benefício e não compõe o caixa monetário.'
-            : 'ALIMENTAÇÃO ATIVA: a conta Benefício e a forma VEROCARD são aplicadas automaticamente e permanecem travadas. A despesa fica sempre como Paga e não altera o caixa monetário.'}</div> : null}
+          {benefit ? nativeOperational
+            ? <div className="px-mobile-benefit-locks" aria-label="Regras automáticas do benefício"><span>Benefício</span><span>VEROCARD</span><span>Pago</span></div>
+            : <div className="px-notice ok">{draft.type === 'income'
+              ? 'A receita do benefício é registrada como recebida; a recarga aumenta somente o saldo do benefício e não compõe o caixa monetário.'
+              : 'ALIMENTAÇÃO ATIVA: a conta Benefício e a forma VEROCARD são aplicadas automaticamente e permanecem travadas. A despesa fica sempre como Paga e não altera o caixa monetário.'}</div> : null}
 
           <div className="px-launch-section-label">Repetição e observações</div>
           <label className="px-switch"><div><strong>Lançamento recorrente</strong><small>Simule os próximos eventos conforme a periodicidade.</small></div><input type="checkbox" checked={draft.recurring} onChange={(event) => updateDraft('recurring', event.target.checked)} /></label>

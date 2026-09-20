@@ -7,6 +7,8 @@ import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalett
 import { PhoenixSidebar } from './PhoenixSidebar';
 import { PhoenixNavIcon } from './PhoenixNavIcon';
 import { PhoenixOperationalMobileHome } from './PhoenixOperationalMobileHome';
+import { PhoenixMobileMenu } from './PhoenixMobileMenu';
+import { PhoenixProfileAvatar, readPhoenixAvatarPreference, syncPhoenixAvatarPreference, type PhoenixAvatarPreference } from './profile-avatar';
 import { syncPhoenixLocalDueNotifications } from './phoenix-native-notifications';
 import { PhoenixCatalogsGrid } from './screens/PhoenixCatalogsGrid';
 import { PhoenixHomeAllTime } from './screens/PhoenixHomeAllTime';
@@ -291,7 +293,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
     if (nativeOperational) return <PhoenixOperationalMobileHome data={data} onLaunch={onLaunch} onNavigate={onNavigate} />;
     return <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
   }
-  if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} launchRequest={launchRequest} launchPreset={launchPreset} onNavigateHistory={() => onNavigate('history')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
+  if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} launchRequest={launchRequest} launchPreset={launchPreset} nativeOperational={nativeOperational} onNavigateHistory={() => onNavigate('history')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
   if (view === 'history') return <Suspense fallback={<ScreenWarmFallback label="Histórico" />}><PhoenixHistory data={data} /></Suspense>;
   if (view === 'payables') return <Suspense fallback={<ScreenWarmFallback label="Pendentes" />}><PhoenixPayables data={data} /></Suspense>;
   if (view === 'cards') return <Suspense fallback={<ScreenWarmFallback label="Cartões" />}><PhoenixCardsGrid data={data} /></Suspense>;
@@ -312,6 +314,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const [month, setMonth] = useState(currentMonth);
   const [view, setView] = useState<PhoenixView>('home');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [avatarPreference, setAvatarPreference] = useState<PhoenixAvatarPreference>(() => readPhoenixAvatarPreference());
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -348,6 +351,16 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   useEffect(() => {
     if (loadState.status === 'ready') dataRef.current = loadState.data;
   }, [loadState]);
+
+  useEffect(() => {
+    const userId = loadState.status === 'ready' ? loadState.data.user.id : dataRef.current?.user.id;
+    if (!userId) return;
+    const refreshAvatar = () => setAvatarPreference(readPhoenixAvatarPreference(userId));
+    refreshAvatar();
+    void syncPhoenixAvatarPreference(userId).then((next) => setAvatarPreference(next));
+    window.addEventListener('meg:profile-avatar-changed', refreshAvatar);
+    return () => window.removeEventListener('meg:profile-avatar-changed', refreshAvatar);
+  }, [loadState.status, loadState.status === 'ready' ? loadState.data.user.id : '']);
 
   useEffect(() => {
     if (!nativeOperational || loadState.status !== 'ready') return;
@@ -533,7 +546,6 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const currentView = views.find((item) => item.id === view) || mainViews[0];
   const pendingCount = data ? buildPhoenixHomeAgenda(data, todayIso()).items.length : 0;
   const toggleTheme = () => setTheme((value) => value === 'dark' ? 'light' : 'dark');
-  const userInitial = (data?.user.name || 'M').slice(0, 1).toUpperCase();
   const periodActiveLabel = periodMode === 'month' ? shortMonthLabel(data?.month || month) : periodMode === 'all' ? 'Tudo' : periodRangeLabel || 'Intervalo';
   const periodDraftLabel = periodDraftMode === 'month'
     ? monthLabel(periodDraftMonth)
@@ -860,7 +872,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
                 </footer>
               </div> : null}
             </div>
-            <button className={`px-sync ${refreshing ? 'is-refreshing' : ''}`} type="button" disabled={refreshing || periodLoading || !data} aria-busy={refreshing} title="Atualizar dados" onClick={() => { void refreshData(); }}><span className="px-sync-dot" /><span>{refreshing ? 'Atualizando dados…' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil do usuário"><span className="px-user-avatar">{userInitial}</span><span className="px-user-name">{data?.user.name || 'MEG'}</span><span className="px-user-chevron">⌄</span></button><button className="px-icon-btn px-top-exit" type="button" title="Sair" onClick={onLogout}>↪</button>
+            <button className={`px-sync ${refreshing ? 'is-refreshing' : ''}`} type="button" disabled={refreshing || periodLoading || !data} aria-busy={refreshing} title="Atualizar dados" onClick={() => { void refreshData(); }}><span className="px-sync-dot" /><span>{refreshing ? 'Atualizando dados…' : data?.normalization.reconciled ? 'Dados sincronizados' : 'Verificar integridade'}</span></button><button className="px-icon-btn" type="button" title="Alternar tema" onClick={toggleTheme}>◐</button><button className="px-user-pill" type="button" title="Perfil e menu" onClick={() => nativeOperational ? setMobileOpen(true) : navigate('settings')}><PhoenixProfileAvatar name={data?.user.name || 'MEG'} preference={avatarPreference} className="px-user-avatar" /><span className="px-user-name">{data?.user.name || 'MEG'}</span><span className="px-user-chevron">⌄</span></button><button className="px-icon-btn px-top-exit" type="button" title="Sair" onClick={onLogout}>↪</button>
           </div>
         </header>
 
@@ -869,8 +881,21 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
         </div>
       </main>
 
-      <nav className="px-mobile-dock" aria-label="Navegação móvel Phoenix V15"><button className={view === 'home' ? 'active' : ''} type="button" onClick={() => navigate('home')}><strong><PhoenixNavIcon name="home" /></strong><span>Início</span></button><button className={view === 'movements' ? 'active' : ''} type="button" onClick={() => requestLaunch('expense')}><strong>＋</strong><span>Lançar</span></button><button className={view === 'history' ? 'active' : ''} type="button" onClick={() => navigate('history')}><strong><PhoenixNavIcon name="history" /></strong><span>Histórico</span></button><button className={view === 'payables' ? 'active' : ''} type="button" onClick={() => navigate('payables')}><strong><PhoenixNavIcon name="payables" /></strong><span>Pendentes</span></button><button type="button" onClick={() => setMobileOpen(true)}><strong><PhoenixNavIcon name="more" /></strong><span>Mais</span></button></nav>
+      <nav className="px-mobile-dock" aria-label="Navegação móvel Phoenix V15"><button className={view === 'home' ? 'active' : ''} type="button" onClick={() => navigate('home')}><strong><PhoenixNavIcon name="home" /></strong><span>Início</span></button><button className={view === 'movements' ? 'active' : ''} type="button" onClick={() => requestLaunch('expense')}><strong>＋</strong><span>Lançar</span></button><button className={view === 'cards' ? 'active' : ''} type="button" onClick={() => navigate('cards')}><strong><PhoenixNavIcon name="cards" /></strong><span>Cartões</span></button><button className={view === 'payables' ? 'active' : ''} type="button" onClick={() => navigate('payables')}><strong><PhoenixNavIcon name="payables" /></strong><span>Pendentes</span></button><button className={mobileOpen ? 'active' : ''} type="button" onClick={() => setMobileOpen(true)}><strong><PhoenixNavIcon name="more" /></strong><span>Mais</span></button></nav>
     </div>
+    {nativeOperational && data ? <PhoenixMobileMenu
+      open={mobileOpen}
+      userName={data.user.name || 'MEG'}
+      userRole={data.user.role || '—'}
+      avatar={avatarPreference}
+      currentView={view}
+      refreshing={refreshing}
+      onClose={() => setMobileOpen(false)}
+      onNavigate={navigate}
+      onSearch={() => setSearchOpen(true)}
+      onRefresh={() => { void refreshData(); }}
+      onLogout={onLogout}
+    /> : null}
     {searchOpen ? <PhoenixCommandPalette data={viewData} onClose={() => setSearchOpen(false)} onNavigate={navigate} /> : null}
   </div>;
 }

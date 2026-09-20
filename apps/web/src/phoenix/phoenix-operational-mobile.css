@@ -728,3 +728,571 @@ body.meg-operational-mobile .px-mobile-dock button>span{
     padding:8px!important;
   }
 }
+
+
+/* ==========================================================================
+   MEG Operacional 2.2 · navegação, lista móvel, formulário enxuto e cartões
+   ========================================================================== */
+
+body.meg-operational-mobile .px-operational-finance-grid{
+  display:grid!important;
+  grid-template-columns:1.15fr .85fr .85fr!important;
+  gap:8px!important;
+}
+body.meg-operational-mobile .px-operational-finance-grid>button{
+  min-width:0!important;
+  min-height:92px!important;
+  padding:12px!important;
+  display:grid!important;
+  align-content:center!important;
+  gap:4px!important;
+  text-align:left!important;
+  border:1px solid rgba(63,190,185,.18)!important;
+  border-radius:16px!important;
+  background:linear-gradient(150deg,rgba(4,48,50,.96),rgba(1,31,33,.92))!important;
+  color:#fff!important;
+}
+body.meg-operational-mobile .px-operational-finance-grid>button.balance{
+  border-color:rgba(39,232,217,.34)!important;
+  box-shadow:inset 0 0 0 1px rgba(39,232,217,.03)!important;
+}
+body.meg-operational-mobile .px-operational-finance-grid>button.danger{
+  border-color:rgba(255,129,137,.34)!important;
+}
+body.meg-operational-mobile .px-operational-finance-grid>button.benefit{
+  border-color:rgba(41,221,183,.32)!important;
+}
+body.meg-operational-mobile .px-operational-finance-grid span{
+  color:#91aaa8!important;
+  font-size:8px!important;
+  font-weight:750!important;
+}
+body.meg-operational-mobile .px-operational-finance-grid strong{
+  overflow:hidden!important;
+  color:#fff!important;
+  font-size:clamp(15px,4.3vw,21px)!important;
+  line-height:1.05!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .px-operational-finance-grid em{
+  color:#87a3a0!important;
+  font-size:7px!important;
+  line-height:1.25!important;
+  font-style:normal!important;
+}
+
+/* Menu Mais independente da sidebar desktop. */
+.px-mobile-more-layer{
+  position:fixed;
+  inset:0;
+  z-index:140;
+  display:grid;
+  align-items:end;
+}
+.px-mobile-more-backdrop{
+  position:absolute;
+  inset:0;
+  border:0;
+  background:rgba(0,12,14,.68);
+  backdrop-filter:blur(8px);
+}
+.px-mobile-more-sheet{
+  position:relative;
+  z-index:1;
+  width:min(680px,100%);
+  max-height:min(82dvh,760px);
+  margin:0 auto;
+  padding:14px 14px calc(16px + env(safe-area-inset-bottom));
+  overflow:auto;
+  border:1px solid rgba(38,220,208,.25);
+  border-bottom:0;
+  border-radius:22px 22px 0 0;
+  background:linear-gradient(160deg,#06383a,#02292b 50%,#011f21);
+  box-shadow:0 -24px 70px rgba(0,0,0,.42);
+}
+.px-mobile-more-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:2px 2px 13px;
+}
+.px-mobile-more-profile{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:11px;
+}
+.px-mobile-more-avatar{
+  width:46px!important;
+  height:46px!important;
+  flex:0 0 46px!important;
+  border-radius:50%!important;
+  border:1px solid rgba(55,226,213,.30)!important;
+}
+.px-mobile-more-profile>div{min-width:0}
+.px-mobile-more-profile strong,
+.px-mobile-more-profile small{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.px-mobile-more-profile strong{font-size:14px;color:#fff}
+.px-mobile-more-profile small{margin-top:3px;font-size:8px;color:#8fa9a7}
+.px-mobile-more-close{
+  width:38px;
+  height:38px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(65,194,188,.20);
+  border-radius:12px;
+  background:rgba(255,255,255,.035);
+  color:#d8e7e5;
+  font-size:20px;
+}
+.px-mobile-more-primary{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-bottom:9px;
+}
+.px-mobile-more-primary>button{
+  min-width:0;
+  min-height:64px;
+  padding:10px;
+  display:grid;
+  grid-template-columns:32px minmax(0,1fr);
+  align-items:center;
+  gap:9px;
+  text-align:left;
+  border:1px solid rgba(58,196,190,.18);
+  border-radius:14px;
+  background:rgba(2,40,42,.82);
+  color:#fff;
+}
+.px-mobile-more-primary>button>span{
+  width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:rgba(31,227,214,.07);color:#2ce8dc;font-size:18px
+}
+.px-mobile-more-primary>button>span svg{width:17px;height:17px}
+.px-mobile-more-primary strong,
+.px-mobile-more-primary small{display:block}
+.px-mobile-more-primary strong{font-size:10px}
+.px-mobile-more-primary small{margin-top:3px;color:#839f9d;font-size:7px;line-height:1.25}
+.px-mobile-more-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.px-mobile-more-grid>button{
+  min-width:0;
+  min-height:92px;
+  padding:11px;
+  display:grid;
+  grid-template-columns:32px minmax(0,1fr);
+  grid-template-areas:"icon title" "icon copy";
+  align-content:center;
+  column-gap:9px;
+  text-align:left;
+  border:1px solid rgba(58,190,185,.15);
+  border-radius:15px;
+  background:rgba(1,31,33,.72);
+  color:#fff;
+}
+.px-mobile-more-grid>button.active{
+  border-color:rgba(33,235,221,.36);
+  background:rgba(15,86,83,.31);
+}
+.px-mobile-more-grid>button>span{grid-area:icon;width:32px;height:32px;display:grid;place-items:center;color:#2ae4d8}
+.px-mobile-more-grid>button>span svg{width:18px;height:18px}
+.px-mobile-more-grid>button>strong{grid-area:title;font-size:10px}
+.px-mobile-more-grid>button>small{grid-area:copy;color:#839e9c;font-size:7px;line-height:1.28}
+.px-mobile-more-footer{
+  margin-top:10px;
+  padding-top:10px;
+  display:flex;
+  gap:8px;
+  border-top:1px solid rgba(70,181,177,.12);
+}
+.px-mobile-more-footer>button{
+  flex:1;
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  border:1px solid rgba(63,190,185,.15);
+  border-radius:12px;
+  background:rgba(255,255,255,.025);
+  color:#a9c1bf;
+  font-size:9px;
+}
+.px-mobile-more-footer svg{width:15px;height:15px}
+
+/* Avatar nunca cai para círculo vazio: componente carrega preferência local/cloud. */
+body.meg-operational-mobile .px-user-pill .px-user-avatar{
+  width:34px!important;
+  height:34px!important;
+  min-width:34px!important;
+  border-radius:50%!important;
+  overflow:hidden!important;
+  background-color:#53778f!important;
+}
+body.meg-operational-mobile .px-user-pill .px-user-name,
+body.meg-operational-mobile .px-user-pill .px-user-chevron{
+  display:none!important;
+}
+
+/* Lançamentos no Android: lista visual, não tabela comprimida. */
+body.meg-operational-mobile .px-movements-native .px-movements-overview{
+  display:none!important;
+}
+body.meg-operational-mobile .px-mobile-money-strip{
+  display:grid!important;
+  grid-template-columns:1.15fr .9fr .9fr!important;
+  gap:7px!important;
+  margin-bottom:9px!important;
+}
+body.meg-operational-mobile .px-mobile-money-strip>button{
+  min-width:0!important;
+  min-height:70px!important;
+  padding:9px 10px!important;
+  display:grid!important;
+  align-content:center!important;
+  gap:3px!important;
+  text-align:left!important;
+  border:1px solid rgba(61,188,182,.17)!important;
+  border-radius:14px!important;
+  background:rgba(2,41,43,.74)!important;
+  color:#fff!important;
+}
+body.meg-operational-mobile .px-mobile-money-strip>button.warn{border-color:rgba(245,151,91,.32)!important}
+body.meg-operational-mobile .px-mobile-money-strip>button.benefit{border-color:rgba(37,225,181,.31)!important}
+body.meg-operational-mobile .px-mobile-money-strip span{color:#8ea9a6!important;font-size:7px!important}
+body.meg-operational-mobile .px-mobile-money-strip strong{
+  overflow:hidden!important;
+  font-size:clamp(11px,3.6vw,16px)!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .px-mobile-money-strip small{color:#779694!important;font-size:6px!important}
+
+body.meg-operational-mobile .px-movements-native .px-table-card{
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+body.meg-operational-mobile .px-movements-native .px-table-toolbar-shell{
+  position:sticky!important;
+  top:58px!important;
+  z-index:20!important;
+  margin:0 -2px 8px!important;
+  padding:7px!important;
+  border:1px solid rgba(54,194,187,.15)!important;
+  border-radius:14px!important;
+  background:rgba(2,37,39,.94)!important;
+  backdrop-filter:blur(16px)!important;
+}
+body.meg-operational-mobile .px-movements-native .px-table-context-slot{
+  display:none!important;
+}
+body.meg-operational-mobile .px-movements-native .px-movement-tools{
+  width:100%!important;
+}
+body.meg-operational-mobile .px-movements-native .px-movement-tool-buttons{
+  width:100%!important;
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+body.meg-operational-mobile .px-movements-native .px-movement-tool-button{
+  width:100%!important;
+  min-width:0!important;
+  height:40px!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:11px!important;
+}
+body.meg-operational-mobile .px-movements-native .px-grid-active-filters{
+  margin:0 0 8px!important;
+}
+body.meg-operational-mobile .px-movements-native .px-grid-active-filters.is-empty{
+  display:none!important;
+}
+
+body.meg-operational-mobile .px-mobile-event-list{
+  display:grid!important;
+  gap:8px!important;
+  padding:0 0 4px!important;
+}
+body.meg-operational-mobile .px-mobile-event-card{
+  overflow:hidden!important;
+  border:1px solid rgba(58,186,181,.15)!important;
+  border-radius:16px!important;
+  background:linear-gradient(145deg,rgba(4,47,49,.94),rgba(1,31,33,.92))!important;
+  box-shadow:0 8px 22px rgba(0,8,10,.12)!important;
+}
+body.meg-operational-mobile .px-mobile-event-card.is-recently-updated{
+  border-color:rgba(34,235,220,.54)!important;
+  box-shadow:0 0 0 1px rgba(34,235,220,.12),0 8px 22px rgba(0,8,10,.15)!important;
+}
+body.meg-operational-mobile .px-mobile-event-main{
+  width:100%!important;
+  min-height:68px!important;
+  padding:11px!important;
+  display:grid!important;
+  grid-template-columns:36px minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:9px!important;
+  text-align:left!important;
+  border:0!important;
+  background:transparent!important;
+  color:#fff!important;
+}
+body.meg-operational-mobile .px-mobile-event-icon{
+  width:34px!important;
+  height:34px!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:11px!important;
+  background:rgba(255,255,255,.035)!important;
+}
+body.meg-operational-mobile .px-mobile-event-icon.income{color:#5de2a1!important}
+body.meg-operational-mobile .px-mobile-event-icon.expense{color:#ff8b94!important}
+body.meg-operational-mobile .px-mobile-event-icon.transfer{color:#6ed7ee!important}
+body.meg-operational-mobile .px-mobile-event-copy{min-width:0!important}
+body.meg-operational-mobile .px-mobile-event-copy strong,
+body.meg-operational-mobile .px-mobile-event-copy small{
+  display:block!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .px-mobile-event-copy strong{font-size:11px!important;color:#f6ffff!important}
+body.meg-operational-mobile .px-mobile-event-copy small{margin-top:4px!important;color:#809d9a!important;font-size:7.5px!important}
+body.meg-operational-mobile .px-mobile-event-value{
+  font-size:11px!important;
+  font-weight:850!important;
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .px-mobile-event-value.income{color:#64e2a4!important}
+body.meg-operational-mobile .px-mobile-event-value.expense{color:#ff939a!important}
+body.meg-operational-mobile .px-mobile-event-value.transfer{color:#7cd5e9!important}
+body.meg-operational-mobile .px-mobile-event-meta{
+  padding:0 11px 9px!important;
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:5px!important;
+}
+body.meg-operational-mobile .px-mobile-event-meta>span{
+  min-height:21px!important;
+  padding:4px 7px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  border:1px solid rgba(62,178,174,.13)!important;
+  border-radius:999px!important;
+  background:rgba(0,23,25,.38)!important;
+  color:#90aaa7!important;
+  font-size:6.5px!important;
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .px-mobile-event-actions{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  border-top:1px solid rgba(58,165,161,.10)!important;
+}
+body.meg-operational-mobile .px-mobile-event-actions>button{
+  min-height:34px!important;
+  border:0!important;
+  background:transparent!important;
+  color:#8fb0ad!important;
+  font-size:8px!important;
+}
+body.meg-operational-mobile .px-mobile-event-actions>button+button{
+  border-left:1px solid rgba(58,165,161,.10)!important;
+}
+body.meg-operational-mobile .px-mobile-event-actions>button.primary{
+  color:#27e5d8!important;
+}
+body.meg-operational-mobile .px-mobile-pagination{
+  margin-top:8px!important;
+  padding:8px!important;
+  display:grid!important;
+  grid-template-columns:1fr auto!important;
+  align-items:center!important;
+  gap:6px!important;
+  border:1px solid rgba(55,177,172,.12)!important;
+  border-radius:13px!important;
+  background:rgba(1,31,33,.60)!important;
+}
+body.meg-operational-mobile .px-mobile-pagination .px-pagination-pages{
+  display:none!important;
+}
+body.meg-operational-mobile .px-mobile-pagination .px-pagination-options{
+  display:none!important;
+}
+body.meg-operational-mobile .px-mobile-pagination .px-pagination-summary strong{font-size:8px!important}
+body.meg-operational-mobile .px-mobile-pagination .px-pagination-summary span{font-size:7px!important}
+body.meg-operational-mobile .px-mobile-pagination .px-pagination-controls{
+  display:flex!important;
+  gap:4px!important;
+}
+body.meg-operational-mobile .px-mobile-pagination .px-pagination-controls>button{
+  width:32px!important;
+  height:32px!important;
+}
+
+/* Formulário móvel: mostra ação e campos; explicações só quando necessárias. */
+body.meg-operational-mobile .px-launch-form .px-config-note,
+body.meg-operational-mobile .px-launch-form .px-rule-box:not(.duplicate),
+body.meg-operational-mobile .px-launch-form .px-field>small:not(.px-field-error),
+body.meg-operational-mobile .px-launch-form .px-switch small{
+  display:none!important;
+}
+body.meg-operational-mobile .px-launch-form{
+  gap:9px!important;
+}
+body.meg-operational-mobile .px-launch-section-label{
+  margin-top:8px!important;
+  font-size:8px!important;
+}
+body.meg-operational-mobile .px-launch-form .px-field{
+  gap:4px!important;
+}
+body.meg-operational-mobile .px-launch-form .px-field>span{
+  font-size:9px!important;
+}
+body.meg-operational-mobile .px-launch-form input,
+body.meg-operational-mobile .px-launch-form select{
+  min-height:46px!important;
+}
+body.meg-operational-mobile .px-launch-form textarea{
+  min-height:68px!important;
+}
+body.meg-operational-mobile .px-mobile-benefit-locks{
+  display:flex!important;
+  gap:6px!important;
+  flex-wrap:wrap!important;
+  padding:2px 0!important;
+}
+body.meg-operational-mobile .px-mobile-benefit-locks>span{
+  min-height:28px!important;
+  padding:6px 10px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  border:1px solid rgba(35,229,215,.28)!important;
+  border-radius:999px!important;
+  background:rgba(14,99,91,.25)!important;
+  color:#69ede2!important;
+  font-size:8px!important;
+  font-weight:800!important;
+}
+body.meg-operational-mobile .px-launch-drawer .px-preview-box{
+  grid-template-columns:1fr 1fr!important;
+  gap:6px!important;
+  padding:8px!important;
+  border-radius:12px!important;
+}
+body.meg-operational-mobile .px-launch-drawer .px-preview-box>.px-launch-section-label{
+  grid-column:1/-1!important;
+  margin:0!important;
+}
+body.meg-operational-mobile .px-launch-drawer .px-preview-box>div:not(.px-launch-section-label){
+  min-height:52px!important;
+  padding:8px!important;
+  display:grid!important;
+  align-content:center!important;
+  gap:3px!important;
+  border:1px solid rgba(60,178,173,.11)!important;
+  border-radius:10px!important;
+  background:rgba(1,35,37,.38)!important;
+}
+body.meg-operational-mobile .px-launch-drawer .px-preview-box>div:not(.px-launch-section-label)>span,
+body.meg-operational-mobile .px-launch-drawer .px-preview-box>div:not(.px-launch-section-label)>strong{
+  display:block!important;
+  margin:0!important;
+  text-align:left!important;
+}
+body.meg-operational-mobile .px-launch-drawer .px-preview-box>div:not(.px-launch-section-label)>span{font-size:6.5px!important}
+body.meg-operational-mobile .px-launch-drawer .px-preview-box>div:not(.px-launch-section-label)>strong{
+  overflow:hidden!important;
+  font-size:9px!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+/* Cartões no app: acesso direto pelo dock e leitura por swipe, sem grade esmagada. */
+body.meg-operational-mobile .px-main-cards,
+body.meg-operational-mobile .px-content-cards{
+  min-height:0!important;
+  height:auto!important;
+  overflow:visible!important;
+}
+body.meg-operational-mobile .px-content-cards{
+  padding-bottom:calc(86px + env(safe-area-inset-bottom))!important;
+}
+body.meg-operational-mobile .px-cards-approved[data-cards-layout="fidelity-v6"]{
+  height:auto!important;
+  min-height:calc(100dvh - 150px)!important;
+  overflow:visible!important;
+  grid-template-rows:auto auto auto!important;
+}
+body.meg-operational-mobile .px-cards-approved[data-cards-layout="fidelity-v6"] .px-cards-approved-head{
+  min-height:auto!important;
+}
+body.meg-operational-mobile .px-cards-approved[data-cards-layout="fidelity-v6"] .px-cards-approved-hint{
+  display:none!important;
+}
+body.meg-operational-mobile .px-cards-approved[data-cards-layout="fidelity-v6"] .px-cards-approved-grid{
+  height:auto!important;
+  display:grid!important;
+  grid-template-columns:none!important;
+  grid-auto-flow:column!important;
+  grid-auto-columns:minmax(255px,78vw)!important;
+  gap:10px!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  scroll-snap-type:x mandatory!important;
+  padding-bottom:5px!important;
+}
+body.meg-operational-mobile .px-cards-approved[data-cards-layout="fidelity-v6"] .px-cards-approved-tile{
+  min-height:330px!important;
+  scroll-snap-align:start!important;
+}
+body.meg-operational-mobile .px-cards-approved[data-cards-layout="fidelity-v6"] .px-cards-approved-selected{
+  min-height:auto!important;
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+}
+body.meg-operational-mobile .px-cards-approved[data-cards-layout="fidelity-v6"] .px-cards-approved-selected-id{
+  grid-column:1/-1!important;
+}
+body.meg-operational-mobile .px-cards-approved[data-cards-layout="fidelity-v6"] .px-cards-approved-selected>div{
+  min-height:72px!important;
+}
+body.meg-operational-mobile .px-card-command-approved{
+  width:100vw!important;
+  height:100dvh!important;
+  max-width:none!important;
+  max-height:none!important;
+  border-radius:0!important;
+}
+
+/* Ajustes de telefone */
+@media (max-width:720px){
+  body.meg-operational-mobile .px-operational-finance-grid{
+    grid-template-columns:1fr 1fr!important;
+  }
+  body.meg-operational-mobile .px-operational-finance-grid>button.balance{
+    grid-column:1/-1!important;
+    min-height:84px!important;
+  }
+  body.meg-operational-mobile .px-mobile-money-strip{
+    grid-template-columns:1fr 1fr!important;
+  }
+  body.meg-operational-mobile .px-mobile-money-strip>button:first-child{
+    grid-column:1/-1!important;
+  }
+}
