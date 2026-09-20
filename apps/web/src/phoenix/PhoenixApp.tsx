@@ -7,6 +7,7 @@ import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalett
 import { PhoenixSidebar } from './PhoenixSidebar';
 import { PhoenixNavIcon } from './PhoenixNavIcon';
 import { PhoenixOperationalMobileHome } from './PhoenixOperationalMobileHome';
+import { PhoenixProfileAvatar, hydratePhoenixAvatarPreference, readPhoenixAvatarPreference, type PhoenixAvatarPreference } from './profile-avatar';
 import { syncPhoenixLocalDueNotifications } from './phoenix-native-notifications';
 import { PhoenixCatalogsGrid } from './screens/PhoenixCatalogsGrid';
 import { PhoenixHomeAllTime } from './screens/PhoenixHomeAllTime';
@@ -258,6 +259,32 @@ function HomeScreen({ data, month, onNavigate }: { data: PhoenixReadModel; month
 
 function ScreenWarmFallback({ label }: { label: string }) {
   return <section className="px-card px-placeholder"><span className="px-kicker">MEG Finanças</span><h2>Abrindo {label}</h2><p>Preparando a tela com os dados que já estão carregados.</p></section>;
+}
+
+function MobileMenuIdentity({ data }: { data: PhoenixReadModel }) {
+  const [avatar, setAvatar] = useState<PhoenixAvatarPreference>(() => readPhoenixAvatarPreference(data.user.id));
+
+  useEffect(() => {
+    let active = true;
+    const syncLocal = (event?: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string }>)?.detail;
+      if (detail?.userId && detail.userId !== data.user.id) return;
+      setAvatar(readPhoenixAvatarPreference(data.user.id));
+    };
+    void hydratePhoenixAvatarPreference(data.user.id).then((preference) => {
+      if (active) setAvatar(preference);
+    });
+    window.addEventListener('meg:profile-avatar-changed', syncLocal);
+    return () => {
+      active = false;
+      window.removeEventListener('meg:profile-avatar-changed', syncLocal);
+    };
+  }, [data.user.id]);
+
+  return <div className="px-mobile-menu-identity">
+    <PhoenixProfileAvatar name={data.user.name} preference={avatar} className="px-mobile-menu-avatar" />
+    <span><small>MEG OPERACIONAL</small><strong>{data.user.name}</strong><em>{data.user.role}</em></span>
+  </div>;
 }
 
 function ReadScreen({ view, data, month, theme, periodMode, periodContext, periodRangeLabel, launchRequest, launchPreset, nativeOperational, onToggleTheme, onNavigate, onLaunch, onDataCommitted, onOpenPeriod, onLogoutRequest }: {
@@ -978,7 +1005,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
 
       {nativeOperational && mobileOpen ? <div className="px-mobile-menu-backdrop" role="presentation" onClick={() => setMobileOpen(false)}>
         <section className="px-mobile-menu-sheet" role="dialog" aria-modal="true" aria-label="Menu do MEG" onClick={(event) => event.stopPropagation()}>
-          <header className="px-mobile-menu-head"><div><span>MEG OPERACIONAL</span><strong>Menu</strong></div><button type="button" aria-label="Fechar menu" onClick={() => setMobileOpen(false)}>×</button></header>
+          <header className="px-mobile-menu-head">{data ? <MobileMenuIdentity data={data} /> : <div><span>MEG OPERACIONAL</span><strong>Menu</strong></div>}<button type="button" aria-label="Fechar menu" onClick={() => setMobileOpen(false)}>×</button></header>
           <button className="px-mobile-menu-search" type="button" onClick={() => { setMobileOpen(false); setSearchOpen(true); }}><span>⌕</span><div><strong>Buscar no MEG</strong><small>Localize telas e funções</small></div></button>
           <div className="px-mobile-menu-grid">
             {(['home','movements','payables','cards','history','catalogs','receivables','revenues','cashflow','analytics','budgets','settings'] as PhoenixView[]).map((itemId) => {
