@@ -41,6 +41,16 @@ assert.match(
 );
 assert.match(
   controller,
+  /checkForAppUpdate\(\{ automatic: true \}\)\.catch/,
+  'Ao retomar o APK, a verificação deve continuar automática e não apenas criar aviso invisível',
+);
+assert.match(
+  controller,
+  /\.px-topbar, \.topbar[\s\S]*\.px-content, main\.content[\s\S]*document\.body\.prepend/,
+  'Avisos do atualizador devem montar também no shell Phoenix e possuir fallback no body',
+);
+assert.match(
+  controller,
   /Autorize “Permitir desta fonte”\. Ao voltar, o MEG continuará sozinho\./,
   'Fluxo automático deve retomar sozinho após a permissão de instalação',
 );
