@@ -403,7 +403,18 @@ function PhoenixPreviewRoot() {
     }
   }
 
-  if (state === 'signed-in') return <PhoenixApp onLogout={() => { void signOut(); }} />;
+  async function signOutAndExitNative() {
+    await signOut();
+    if (import.meta.env.VITE_MOBILE_APP !== 'true') return;
+    try {
+      const { App } = await import('@capacitor/app');
+      await App.exitApp();
+    } catch (cause) {
+      console.warn('MEG Android exit unavailable', cause);
+    }
+  }
+
+  if (state === 'signed-in') return <PhoenixApp onLogout={() => { void signOutAndExitNative(); }} />;
   if (state === 'checking' || state === 'preparing') return <PhoenixBootScreen stage={bootStage} />;
   if (state === 'prepare-error') return <PhoenixBootErrorScreen message={bootError} busy={busy} onRetry={() => { void retryPreparation(); }} onLogout={() => { void signOut(); }} />;
 
