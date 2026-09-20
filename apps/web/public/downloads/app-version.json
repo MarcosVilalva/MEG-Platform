@@ -1,9 +1,9 @@
 {
-  "versionCode": 306,
-  "versionName": "2.0.306",
-  "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "28e7b1144b8ea47ceffc7c0ab9d5d515c9fb584690922e5caeca6463b6b5580f",
+  "versionCode": 307,
+  "versionName": "2.0.307",
+  "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
+  "sha256": "318329ebcdd4fa372e3818e979713d685619d4b3d1f620c4427a4b90f6bd7073",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Android: Lançamentos em lista responsiva e avatar por usuário"
+  "releaseNotes": "Android: tornar atualizador independente da WebView"
 }
