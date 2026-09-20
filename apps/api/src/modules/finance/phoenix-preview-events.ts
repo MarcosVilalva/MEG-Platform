@@ -1,4 +1,5 @@
 import { prisma } from '@meg/database';
+import { resolveWorkspaceContext } from '../workspaces/service';
 
 function normalizeText(value: unknown) {
   return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
@@ -42,6 +43,8 @@ export async function listPhoenixPreviewEvents(
   userId: string,
   input: { from?: string; to?: string }
 ) {
+  const context = await resolveWorkspaceContext(userId);
+  const dataOwnerId = context.workspace.ownerId;
   const date = input.from || input.to
     ? {
         ...(input.from ? { gte: startOfDay(input.from) } : {}),
@@ -51,7 +54,7 @@ export async function listPhoenixPreviewEvents(
 
   const items = await prisma.financialEvent.findMany({
     where: {
-      userId,
+      userId: dataOwnerId,
       archivedAt: null,
       ...(date ? { date } : {}),
     },

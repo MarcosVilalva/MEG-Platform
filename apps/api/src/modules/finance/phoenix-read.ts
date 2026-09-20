@@ -1,4 +1,5 @@
 import { prisma } from '@meg/database';
+import { resolveWorkspaceContext } from '../workspaces/service';
 import { isBenefitFinancialEvent, isPostedFinancialStatus } from './monetary-protection';
 
 function normalizeText(value: unknown) {
@@ -50,8 +51,10 @@ function round(value: number) {
 
 export async function listPhoenixFinancialEventsForMonth(userId: string, month: string) {
   const { start, end } = monthRange(month);
+  const context = await resolveWorkspaceContext(userId);
+  const dataOwnerId = context.workspace.ownerId;
   const items = await prisma.financialEvent.findMany({
-    where: { userId, archivedAt: null, date: { gte: start, lt: end } },
+    where: { userId: dataOwnerId, archivedAt: null, date: { gte: start, lt: end } },
     orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
     include: {
       account: true,
@@ -73,13 +76,15 @@ export async function listPhoenixFinancialEventsForMonth(userId: string, month: 
 
 export async function getPhoenixBenefitSummary(userId: string, month: string) {
   const { start, end } = monthRange(month);
+  const context = await resolveWorkspaceContext(userId);
+  const dataOwnerId = context.workspace.ownerId;
   const [accounts, allEvents, monthEvents] = await Promise.all([
     prisma.account.findMany({
-      where: { userId, type: 'benefit' },
+      where: { userId: dataOwnerId, type: 'benefit' },
       select: { openingBalance: true }
     }),
     prisma.financialEvent.findMany({
-      where: { userId, archivedAt: null, date: { lt: end } },
+      where: { userId: dataOwnerId, archivedAt: null, date: { lt: end } },
       select: {
         description: true,
         type: true,
@@ -90,7 +95,7 @@ export async function getPhoenixBenefitSummary(userId: string, month: string) {
       }
     }),
     prisma.financialEvent.findMany({
-      where: { userId, archivedAt: null, date: { gte: start, lt: end } },
+      where: { userId: dataOwnerId, archivedAt: null, date: { gte: start, lt: end } },
       select: {
         description: true,
         type: true,
