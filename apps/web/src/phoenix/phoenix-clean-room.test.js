@@ -566,7 +566,9 @@ assert.match(phoenixApp, /navigate\('movements'\)[\s\S]{0,220}px-dock-new[\s\S]{
   'Dock Android deve separar Lançamentos da ação Novo.');
 assert.match(phoenixApp, /App\.addListener\('backButton'[\s\S]*meg:android-back[\s\S]*requestLogout\(\)/,
   'Botão Voltar do Android deve fechar camadas, voltar pela navegação e pedir saída somente na raiz.');
-assert.match(movementScreen, /addEventListener\('meg:android-back'[\s\S]*event\.preventDefault\(\)[\s\S]*requestCloseLaunch\(\)/,
+assert.match(movementScreen, /addEventListener\('meg:android-back'/,
+  'Lançamentos deve ouvir o evento de retorno nativo do Android.');
+assert.match(movementScreen, /handleAndroidBack[\s\S]*requestCloseLaunch\(\)/,
   'Botão Voltar deve fechar detalhes e drawer de lançamento antes de sair da tela.');
 assert.match(phoenixApp, /Deseja sair do aplicativo\?/,
   'APK deve pedir confirmação explícita antes de encerrar.');
