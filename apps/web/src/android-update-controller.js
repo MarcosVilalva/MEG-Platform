@@ -13,6 +13,7 @@ let appPluginPromise = null;
 let lifecycleStarted = false;
 let updateCheckPromise = null;
 let resumeTimer = null;
+let automaticUpdateAttemptedVersion = -1;
 
 function delay(milliseconds) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
@@ -221,6 +222,111 @@ function escapeHtml(value) {
   })[char]);
 }
 
+function secureDownloadUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    if (url.protocol !== 'https:') return '';
+    url.hash = '';
+    return url.toString();
+  } catch {
+    return '';
+  }
+}
+
+function ensureAutomaticUpdateStatus(release, message) {
+  let banner = document.querySelector('#appUpdateBanner');
+  if (!banner) {
+    banner = document.createElement('section');
+    banner.id = 'appUpdateBanner';
+    banner.className = 'app-update-banner';
+    banner.setAttribute('role', 'status');
+    banner.setAttribute('aria-live', 'polite');
+    const topbar = document.querySelector('.topbar');
+    if (topbar) topbar.insertAdjacentElement('afterend', banner);
+    else document.querySelector('main.content')?.prepend(banner);
+  }
+  banner.innerHTML = `<div class="app-update-banner-icon" aria-hidden="true">↻</div><div class="app-update-banner-copy"><small>ATUALIZAÇÃO AUTOMÁTICA</small><strong>MEG ${escapeHtml(release.versionName || release.versionCode)}</strong><span data-auto-update-status>${escapeHtml(message)}</span></div>`;
+  return banner.querySelector('[data-auto-update-status]');
+}
+
+async function startAutomaticUpdate(release, installed, AppUpdater) {
+  const releaseCode = Number(release?.versionCode);
+  if (!Number.isFinite(releaseCode) || releaseCode <= 0) throw new Error('UPDATE_VERSION_INVALID');
+  if (automaticUpdateAttemptedVersion === releaseCode) return { accepted: true, duplicate: true };
+
+  const downloadUrl = secureDownloadUrl(release?.downloadUrl);
+  if (!downloadUrl) throw new Error('UPDATE_DOWNLOAD_URL_INVALID');
+  if (!String(release?.sha256 || '').trim()) throw new Error('UPDATE_SHA256_MISSING');
+  if (!AppUpdater) throw new Error('UPDATE_PLUGIN_UNAVAILABLE');
+
+  automaticUpdateAttemptedVersion = releaseCode;
+  window.MEG_AVAILABLE_APP_UPDATE = { release, installed, source: 'android-auto-update' };
+  document.body.dataset.availableAppVersion = String(release.versionName || releaseCode);
+  const status = ensureAutomaticUpdateStatus(release, 'Preparando download seguro…');
+
+  AppUpdater.suppressNativePrompt?.({ versionCode: releaseCode }).catch(() => undefined);
+
+  let stateListener = null;
+  if (typeof AppUpdater.addListener === 'function') {
+    stateListener = await AppUpdater.addListener('appUpdateState', (event) => {
+      if (!status?.isConnected) return;
+      if (event?.state === 'waiting-permission') {
+        status.textContent = 'Autorize “Permitir desta fonte”. Ao voltar, o MEG continuará sozinho.';
+      } else if (event?.state === 'downloading') {
+        const percent = Number(event.percent);
+        status.textContent = Number.isFinite(percent) && percent > 0
+          ? `Baixando atualização… ${Math.min(100, Math.round(percent))}%`
+          : 'Baixando atualização…';
+      } else if (event?.state === 'validating') {
+        status.textContent = 'Validando integridade e assinatura do APK…';
+      } else if (event?.state === 'installer-launched') {
+        status.textContent = 'Atualização validada. Confirme a instalação na tela do Android.';
+        Promise.resolve(stateListener?.remove?.()).catch(() => undefined);
+      } else if (event?.state === 'failed') {
+        status.textContent = 'A atualização automática falhou. Use “Verificar atualização” para tentar novamente.';
+        automaticUpdateAttemptedVersion = -1;
+        Promise.resolve(stateListener?.remove?.()).catch(() => undefined);
+      }
+    });
+  }
+
+  try {
+    if (typeof AppUpdater.startDownloadAndInstall === 'function') {
+      const accepted = await withDeadline(
+        AppUpdater.startDownloadAndInstall({ url: downloadUrl, sha256: release.sha256 }),
+        BRIDGE_TIMEOUT_MS * 2,
+        'UPDATE_AUTOMATIC_START_TIMEOUT',
+      );
+      if (status?.isConnected) {
+        status.textContent = accepted?.permissionRequired
+          ? 'Autorize “Permitir desta fonte”. Ao voltar, o MEG continuará sozinho.'
+          : 'Download automático iniciado. Aguarde a validação e o instalador do Android.';
+      }
+      return { accepted: true, permissionRequired: Boolean(accepted?.permissionRequired) };
+    }
+
+    try {
+      if (status?.isConnected) status.textContent = 'Baixando e validando a atualização…';
+      await withDeadline(
+        AppUpdater.downloadAndInstall({ url: downloadUrl, sha256: release.sha256 }),
+        140000,
+        'UPDATE_DOWNLOAD_TIMEOUT',
+      );
+      if (status?.isConnected) status.textContent = 'Atualização validada. Confirme a instalação na tela do Android.';
+      return { accepted: true, legacyBridge: true };
+    } catch (cause) {
+      if (!String(cause?.message || cause).includes('INSTALL_PERMISSION_REQUIRED')) throw cause;
+      if (status?.isConnected) status.textContent = 'Autorize “Permitir desta fonte”. Ao voltar, o MEG continuará sozinho.';
+      await withDeadline(AppUpdater.requestInstallPermission(), BRIDGE_TIMEOUT_MS, 'INSTALL_PERMISSION_REQUEST_TIMEOUT');
+      return { accepted: true, permissionRequired: true, legacyBridge: true };
+    }
+  } catch (cause) {
+    automaticUpdateAttemptedVersion = -1;
+    Promise.resolve(stateListener?.remove?.()).catch(() => undefined);
+    throw cause;
+  }
+}
+
 function ensureUpdateBanner(release, installed, AppUpdater) {
   window.MEG_AVAILABLE_APP_UPDATE = { release, installed, source: 'android-update-controller' };
   document.body.dataset.availableAppVersion = String(release.versionName || release.versionCode);
@@ -322,7 +428,7 @@ function showUpdateDialog(release, installed, AppUpdater) {
   return decisionPromise;
 }
 
-export async function checkForAppUpdate({ notifyIfCurrent = false } = {}) {
+export async function checkForAppUpdate({ notifyIfCurrent = false, automatic = false } = {}) {
   if (!isAndroidRuntime() || navigator.onLine === false) return { available: false };
   bindManualCheck();
   if (updateCheckPromise) return updateCheckPromise;
@@ -339,8 +445,19 @@ export async function checkForAppUpdate({ notifyIfCurrent = false } = {}) {
       const available = updateIsAvailable(installed, release);
       document.querySelector('#appUpdateCheckWarning')?.remove();
       if (available) {
+        if (automatic) {
+          try {
+            const automaticResult = await startAutomaticUpdate(release, installed, AppUpdater);
+            return { available, installed, release, automatic: true, automaticResult };
+          } catch (automaticError) {
+            console.warn('MEG automatic update start failed', automaticError);
+            ensureUpdateBanner(release, installed, AppUpdater);
+            showUpdateDialog(release, installed, AppUpdater);
+            return { available, installed, release, automatic: false, automaticError };
+          }
+        }
         ensureUpdateBanner(release, installed, AppUpdater);
-        showUpdateDialog(release, installed, AppUpdater);
+        if (notifyIfCurrent) showUpdateDialog(release, installed, AppUpdater);
       } else {
         removeUpdateUi();
         if (notifyIfCurrent) window.MEG_APP?.showToast?.('MEG atualizado', `Você já está usando a versão ${installed.versionName}.`, 'success');

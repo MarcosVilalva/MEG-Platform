@@ -57,6 +57,7 @@ public class AppUpdaterPlugin extends Plugin {
     private final AtomicBoolean installRunning = new AtomicBoolean(false);
     private volatile boolean authenticatedUiReady = false;
     private volatile long suppressedNativePromptVersion = -1;
+    private volatile long automaticAttemptedVersion = -1;
     private volatile String pendingInstallSource = null;
     private volatile String pendingInstallSha256 = "";
 
@@ -180,25 +181,26 @@ public class AppUpdaterPlugin extends Plugin {
     }
 
     public void checkForAvailableUpdateNative() {
-        if (!authenticatedUiReady || nativePromptVisible.get() || !nativeCheckRunning.compareAndSet(false, true)) return;
+        if (!authenticatedUiReady || installRunning.get() || !nativeCheckRunning.compareAndSet(false, true)) return;
         executor.execute(() -> {
             try {
                 JSObject release = fetchNewestReleaseManifest();
                 PackageInfo installed = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0);
                 long installedCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? installed.getLongVersionCode() : installed.versionCode;
                 long releaseCode = release.getLong("versionCode");
-                if (releaseCode <= installedCode || releaseCode <= suppressedNativePromptVersion) return;
+                if (releaseCode <= installedCode || releaseCode <= suppressedNativePromptVersion || releaseCode <= automaticAttemptedVersion) return;
 
-                String releaseName = release.optString("versionName", String.valueOf(releaseCode));
-                String releaseNotes = release.optString("releaseNotes", "Uma nova versão do MEG está pronta para instalar.");
                 String downloadUrl = release.optString("downloadUrl", "");
                 String sha256 = release.optString("sha256", "");
                 if (!downloadUrl.startsWith("https://")) throw new IllegalStateException("Endereço do APK inválido.");
+                if (sha256 == null || sha256.trim().isEmpty()) throw new IllegalStateException("Manifesto sem SHA-256 da atualização.");
 
                 Activity activity = getActivity();
                 if (activity == null) throw new IllegalStateException("Tela do aplicativo indisponível.");
-                activity.runOnUiThread(() -> showNativeUpdatePrompt(activity, installed.versionName, releaseName, releaseNotes, releaseCode, downloadUrl, sha256));
+                automaticAttemptedVersion = releaseCode;
+                activity.runOnUiThread(() -> installAvailableUpdateNatively(downloadUrl, sha256));
             } catch (Exception error) {
+                automaticAttemptedVersion = -1;
                 Log.w(TAG, "Falha na verificação nativa de atualização", error);
             } finally {
                 nativeCheckRunning.set(false);
@@ -352,6 +354,7 @@ public class AppUpdaterPlugin extends Plugin {
 
             @Override
             public void onError(Exception error) {
+                automaticAttemptedVersion = -1;
                 Log.e(TAG, "Falha ao instalar atualização", error);
                 notifyUpdateState("failed", -1, error.getMessage());
                 showToast("Não foi possível instalar a atualização: " + error.getMessage());

@@ -245,7 +245,7 @@ function PhoenixPreviewRoot() {
         updater.initializeAndroidUpdateController();
         await updater.markAndroidUpdateUiReady();
         await updater.initializeAndroidUpdateLifecycle();
-        void updater.checkForAppUpdate();
+        void updater.checkForAppUpdate({ automatic: true });
       } catch (cause) {
         console.warn('MEG Android authenticated lifecycle unavailable', cause);
       }
