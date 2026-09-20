@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixNavIcon, type PhoenixNavigationIcon } from './PhoenixNavIcon';
-import { applyPhoenixAvatarPreference, readPhoenixAvatarPreference } from './profile-avatar';
+import { applyPhoenixAvatarPreference, hydratePhoenixAvatarPreference, readPhoenixAvatarPreference } from './profile-avatar';
 import './phoenix-edit-settlement-bridge';
 
 type SidebarItem = {
@@ -77,6 +77,7 @@ export function PhoenixSidebar({
   useEffect(() => {
     const syncAvatar = () => applyPhoenixAvatarPreference(readPhoenixAvatarPreference());
     syncAvatar();
+    void hydratePhoenixAvatarPreference();
     window.addEventListener('meg:profile-avatar-changed', syncAvatar);
     return () => window.removeEventListener('meg:profile-avatar-changed', syncAvatar);
   }, []);

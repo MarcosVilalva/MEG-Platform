@@ -592,6 +592,20 @@ assert.match(operationalCss, /\.px-mobile-dock \.px-dock-new[\s\S]*width:auto!im
   'Botão central do dock não pode herdar o FAB gigante da paridade antiga.');
 assert.match(operationalCss, /word-break:normal!important[\s\S]*overflow-wrap:normal!important/,
   'Textos operacionais não podem quebrar letra por letra em telas móveis.');
+assert.match(movementScreen, /px-mobile-movement-list[\s\S]*px-mobile-movement-card/,
+  'APK deve usar lista própria de lançamentos, sem depender da tabela desktop comprimida.');
+assert.match(operationalCss, /\.px-content-movements \.px-table-scroll[\s\S]*display:none!important/,
+  'Tabela desktop de Lançamentos deve ficar oculta no APK.');
+assert.match(operationalCss, /\.px-mobile-movement-card[\s\S]*grid-template-columns:34px minmax\(0,1fr\) auto/,
+  'Cartões de lançamentos devem responder à largura real do telefone.');
+assert.match(operationalCss, /\.px-content-movements \.px-screen-kpis[\s\S]*repeat\(3,minmax\(0,1fr\)\)/,
+  'Resumo de receitas, despesas e resultado deve permanecer compacto no Android.');
+assert.match(phoenixApp, /MobileMenuIdentity[\s\S]*PhoenixProfileAvatar/,
+  'Menu Android deve mostrar a identidade visual do usuário autenticado.');
+assert.match(profileAvatar, /profileAvatars[\s\S]*savePhoenixAvatarPreferenceCloud/,
+  'Avatar deve ser sincronizado por usuário para migração entre Web e Android.');
+assert.match(sidebar, /hydratePhoenixAvatarPreference/,
+  'Web deve hidratar e migrar o avatar do usuário sem depender de abrir Configurações.');
 
 assert.match(nativeNotifications, /Contas vencidas|contas vencidas|Conta vencida/,
   'Notificações Android devem cobrir compromissos vencidos.');
