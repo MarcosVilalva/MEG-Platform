@@ -21,6 +21,17 @@ type AuthMode = 'login' | 'register' | 'forgot';
 type AccountType = 'REQUEST_ACCESS' | 'CREATE_WORKSPACE';
 type BootStage = 'session' | 'finance' | 'organizing' | 'ready';
 
+function previewBrandAsset(path: string) {
+  const configuredBase = import.meta.env.BASE_URL || '/';
+  const base = configuredBase.endsWith('/') ? configuredBase : `${configuredBase}/`;
+  const relative = `${base}${path.replace(/^\/+/, '')}`;
+  try {
+    return typeof document !== 'undefined' ? new URL(relative, document.baseURI).href : relative;
+  } catch {
+    return relative;
+  }
+}
+
 const bootStages: Array<{ id: BootStage; label: string; title: string; description: string; progress: number }> = [
   { id: 'session', label: 'Validando sua sessão', title: 'Validando seu acesso', description: 'Confirmando sua sessão segura no MEG.', progress: 22 },
   { id: 'finance', label: 'Carregando suas finanças', title: 'Carregando suas finanças', description: 'Buscando saldos, lançamentos, cartões e compromissos.', progress: 55 },
@@ -109,8 +120,11 @@ function PhoenixBootScreen({ stage }: { stage: BootStage }) {
   const active = bootStages[activeIndex];
   return <main className="px-preview-fullscreen-boot" aria-live="polite" aria-busy={stage !== 'ready'}>
     <section className="px-preview-boot-card" aria-label="Preparando MEG Finanças">
-      <div className="px-preview-boot-logo"><span className="px-preview-boot-orbit" aria-hidden="true" /><img src="./brand/meg-finance-system-mark.svg" alt="MEG Finanças" /></div>
-      <div className="px-preview-boot-copy"><span>MEG FINANÇAS</span><h1>{active.title}</h1><p>{active.description}</p></div>
+      <div className="px-preview-boot-brand">
+        <div className="px-preview-boot-logo"><span className="px-preview-boot-halo" aria-hidden="true" /><span className="px-preview-boot-orbit" aria-hidden="true" /><img src={previewBrandAsset('brand/meg-finance-system-mark.svg')} alt="" /></div>
+        <img className="px-preview-boot-wordmark" src={previewBrandAsset('brand/meg-finance-system-lockup-light.svg')} alt="MEG Finance System" />
+      </div>
+      <div className="px-preview-boot-copy"><span className="px-preview-boot-stage-label"><i aria-hidden="true" />{active.label}</span><h1>{active.title}</h1><p>{active.description}</p></div>
       <div className="px-preview-boot-progress" aria-label={`${active.progress}% preparado`}>
         <div className="px-preview-boot-track"><span style={{ width: `${active.progress}%` }} /></div>
       </div>
@@ -125,7 +139,7 @@ function PhoenixBootScreen({ stage }: { stage: BootStage }) {
 function PhoenixBootErrorScreen({ message, busy, onRetry, onLogout }: { message: string; busy: boolean; onRetry: () => void; onLogout: () => void }) {
   return <main className="px-preview-fullscreen-boot" aria-live="assertive">
     <section className="px-preview-boot-card px-preview-boot-error" aria-label="Falha ao preparar MEG Finanças">
-      <div className="px-preview-boot-logo"><img src="./brand/meg-finance-system-mark.svg" alt="MEG Finanças" /></div>
+      <div className="px-preview-boot-logo"><img src={previewBrandAsset('brand/meg-finance-system-mark.svg')} alt="MEG Finanças" /></div>
       <div className="px-preview-boot-copy"><span>ACESSO CONFIRMADO</span><h1>Não foi possível carregar seus dados.</h1><p>{message}</p></div>
       <div className="px-preview-boot-error-actions">
         <button className="px-preview-submit" type="button" disabled={busy} onClick={onRetry}><span>{busy ? 'Carregando…' : 'Tentar novamente'}</span><span aria-hidden="true">↻</span></button>
@@ -406,6 +420,14 @@ function PhoenixPreviewRoot() {
   async function signOutAndExitNative() {
     await signOut();
     if (import.meta.env.VITE_MOBILE_APP !== 'true') return;
+    try {
+      const { registerPlugin } = await import('@capacitor/core');
+      const NativeShell = registerPlugin<{ exitAndRemoveTask: () => Promise<void> }>('MegNativeShell');
+      await NativeShell.exitAndRemoveTask();
+      return;
+    } catch (cause) {
+      console.warn('MEG Android task removal unavailable; using standard exit', cause);
+    }
     try {
       const { App } = await import('@capacitor/app');
       await App.exitApp();
