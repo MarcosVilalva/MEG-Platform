@@ -840,7 +840,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
         <div className="px-movement-tool-buttons" aria-label="Ferramentas de consulta">
         <button className={`px-movement-tool-button ${toolPanel === 'search' || search.trim() ? 'active' : ''}`} type="button" aria-label="Buscar lançamentos" data-tooltip="Buscar" aria-expanded={toolPanel === 'search'} onClick={() => setToolPanel((current) => current === 'search' ? null : 'search')}><MovementIcon name="search" />{search.trim() ? <small>1</small> : null}</button>
         <button className={`px-movement-tool-button ${toolPanel === 'filters' || typeFilter !== 'all' || status !== 'all' ? 'active' : ''}`} type="button" aria-label="Filtrar lançamentos" data-tooltip="Filtros" aria-expanded={toolPanel === 'filters'} onClick={() => setToolPanel((current) => current === 'filters' ? null : 'filters')}><MovementIcon name="filters" />{typeFilter !== 'all' || status !== 'all' ? <small>{Number(typeFilter !== 'all') + Number(status !== 'all')}</small> : null}</button>
-        <button className="px-movement-tool-button" type="button" aria-label={`Selecionar período atual ${formatMonthLabel(data.month)}`} data-tooltip={`Período · ${formatMonthLabel(data.month)}`} onClick={() => { setToolPanel(null); onOpenPeriod?.(); }}><MovementIcon name="calendar" /></button>
+        <button className="px-movement-tool-button px-movement-period-button" type="button" aria-label={`Selecionar período atual ${formatMonthLabel(data.month)}`} data-tooltip={`Período · ${formatMonthLabel(data.month)}`} onClick={() => { setToolPanel(null); onOpenPeriod?.(); }}><MovementIcon name="calendar" /><span>{formatMonthLabel(data.month)}</span></button>
         <button className={`px-movement-tool-button ${toolPanel === 'account' || account !== 'all' ? 'active' : ''}`} type="button" aria-label="Filtrar por conta" data-tooltip={account === 'all' ? 'Conta' : labelForAccount(data, account)} aria-expanded={toolPanel === 'account'} onClick={() => setToolPanel((current) => current === 'account' ? null : 'account')}><MovementIcon name="wallet" />{account !== 'all' ? <small>1</small> : null}</button>
         </div>
         
@@ -923,7 +923,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
     {launchOpen ? <>
       <button className="px-launch-backdrop" type="button" aria-label="Fechar lançamento" onClick={requestCloseLaunch} />
-      <aside className="px-launch-drawer" aria-label={editingEventId ? 'Editar lançamento' : 'Novo lançamento'}>
+      <aside className="px-launch-drawer" data-phoenix-refresh-month={data.month} aria-label={editingEventId ? 'Editar lançamento' : 'Novo lançamento'}>
         <div className="px-drawer-head"><div><span className="px-kicker">{editingEventId ? 'Editar evento' : 'Novo evento'}</span><h2>{editingEventId ? 'Editar lançamento' : 'Lançamento'}</h2></div><button className="px-icon-btn" type="button" onClick={requestCloseLaunch}>×</button></div>
         <div className="px-launch-form px-card">
           <div className="px-segment" aria-label="Tipo do lançamento">{(['expense','income','transfer'] as TxType[]).map((item) => <button key={item} type="button" className={draft.type === item ? 'active' : ''} onClick={() => changeLaunchType(item)}>{item === 'expense' ? 'Despesa' : item === 'income' ? 'Receita' : 'Transferência'}</button>)}</div>
