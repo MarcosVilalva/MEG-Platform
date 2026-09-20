@@ -17,7 +17,9 @@ const cardIdentity = readFileSync(new URL('./card-identity.ts', import.meta.url)
 const simpleEventBridge = readFileSync(new URL('./simple-event-form-bridge.ts', import.meta.url), 'utf8');
 const launchBusinessRules = readFileSync(new URL('./launch-business-rules-bridge.ts', import.meta.url), 'utf8');
 const operationalHome = readFileSync(new URL('./PhoenixOperationalMobileHome.tsx', import.meta.url), 'utf8');
+const mobileMenu = readFileSync(new URL('./PhoenixMobileMenu.tsx', import.meta.url), 'utf8');
 const operationalCss = readFileSync(new URL('./phoenix-operational-mobile.css', import.meta.url), 'utf8');
+const appStateClient = readFileSync(new URL('../app/app-state-client.ts', import.meta.url), 'utf8');
 const nativeNotifications = readFileSync(new URL('./phoenix-native-notifications.ts', import.meta.url), 'utf8');
 const gridFilter = readFileSync(new URL('./PhoenixGridFilter.tsx', import.meta.url), 'utf8');
 const gridCss = readFileSync(new URL('./phoenix-grid.css', import.meta.url), 'utf8');
@@ -99,6 +101,38 @@ assert.match(simpleEventBridge, /find\(\(option\) => option\.value && normalize\
   'Autorreparo do benefício deve localizar VEROCARD pela opção canônica disponível.');
 assert.match(simpleEventBridge, /reconcileBenefitRoute\(root\);[\s\S]*const reason = unsupportedReason\(root\)/,
   'Validação não pode emitir o aviso de VEROCARD antes de reconciliar a rota de benefício.');
+
+assert.match(phoenixApp, /<PhoenixMobileMenu/,
+  'APK deve possuir menu Mais próprio e não depender da sidebar desktop escondida.');
+assert.match(phoenixApp, /navigate\('cards'\)/,
+  'Dock móvel deve expor Cartões como destino direto.');
+assert.match(mobileMenu, /Histórico[\s\S]*Cartões[\s\S]*Cadastros[\s\S]*Configurações/,
+  'Menu Mais deve concentrar destinos secundários sem poluir o dock.');
+assert.match(phoenixApp, /syncPhoenixAvatarPreference/,
+  'Shell deve migrar a preferência de avatar entre Web e Android.');
+assert.match(profileAvatar, /CLOUD_AVATAR_KEY = 'profileAvatar'/,
+  'Avatar deve possuir chave compartilhada na base de preferências.');
+assert.match(profileAvatar, /patchCloudProperties/,
+  'Avatar escolhido deve poder ser persistido na base compartilhada.');
+assert.match(appStateClient, /export async function patchCloudProperties/,
+  'Cliente AppState deve oferecer patch seguro de preferências leves.');
+assert.match(operationalHome, /Saldo monetário[\s\S]*Despesas pendentes[\s\S]*Saldo do benefício/,
+  'Home Android deve destacar saldo monetário, pendências e benefício.');
+assert.match(movementScreen, /px-mobile-event-list/,
+  'Lançamentos Android devem usar lista de cartões em vez da tabela desktop comprimida.');
+assert.match(movementScreen, /px-mobile-event-actions[\s\S]*Detalhes[\s\S]*Editar/,
+  'Cada lançamento móvel deve oferecer detalhes e edição de forma direta.');
+assert.match(movementScreen, /px-mobile-money-strip/,
+  'Tela de lançamentos deve repetir o pulso financeiro sem exigir retorno à Home.');
+assert.match(operationalCss, /\.px-mobile-more-sheet/,
+  'Menu móvel deve ser apresentado como sheet nativo.');
+assert.match(operationalCss, /\.px-mobile-event-card/,
+  'Lista de lançamentos deve possuir cards próprios para toque.');
+assert.match(operationalCss, /\.px-launch-form \.px-config-note[\s\S]*display:none!important/,
+  'Formulário Android deve esconder textos explicativos não essenciais.');
+assert.match(operationalCss, /px-cards-approved-grid[\s\S]*scroll-snap-type:x mandatory/,
+  'Cartões no Android devem usar navegação horizontal adaptada em vez de grade esmagada.');
+
 
 
 
