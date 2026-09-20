@@ -1566,3 +1566,58 @@ body.meg-operational-mobile .px-mobile-dock button>span{
     font-size:9.5px!important;
   }
 }
+
+
+/* Identidade do usuário no menu móvel */
+body.meg-operational-mobile .px-mobile-menu-identity{
+  min-width:0;
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  align-items:center;
+  gap:10px;
+}
+body.meg-operational-mobile .px-mobile-menu-avatar{
+  width:42px!important;
+  height:42px!important;
+  min-width:42px!important;
+  border:1px solid rgba(66,226,215,.34)!important;
+  border-radius:13px!important;
+  background-color:rgba(255,255,255,.04)!important;
+  box-shadow:0 8px 18px rgba(0,0,0,.18)!important;
+}
+body.meg-operational-mobile .px-mobile-menu-identity>span{
+  min-width:0!important;
+  display:block!important;
+  color:inherit!important;
+  font-size:inherit!important;
+  letter-spacing:normal!important;
+}
+body.meg-operational-mobile .px-mobile-menu-identity small{
+  display:block!important;
+  color:#5fcfc7!important;
+  font-size:7px!important;
+  font-weight:850!important;
+  letter-spacing:.13em!important;
+}
+body.meg-operational-mobile .px-mobile-menu-identity strong{
+  display:block!important;
+  max-width:100%!important;
+  margin-top:2px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  color:#fff!important;
+  font-size:12px!important;
+  line-height:1.15!important;
+}
+body.meg-operational-mobile .px-mobile-menu-identity em{
+  display:block!important;
+  margin-top:2px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  color:#789794!important;
+  font-size:7px!important;
+  font-style:normal!important;
+  text-transform:capitalize!important;
+}
