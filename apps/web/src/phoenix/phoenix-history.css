@@ -1098,3 +1098,37 @@
 .phoenix-v15[data-theme="light"] .px-history-commandbar {
   box-shadow:none;
 }
+
+
+/* Histórico 2.0 · linguagem de negócio em vez de códigos técnicos. */
+.px-history-title em{
+  max-width:100%;
+  padding:4px 7px;
+  border-color:rgba(77,220,204,.18);
+  background:rgba(47,205,190,.055);
+  color:#92bbb4;
+  font-size:7px;
+  font-weight:850;
+  letter-spacing:.025em;
+  text-transform:none;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.px-history-human-action{
+  color:#9bb8b2!important;
+  line-height:1.35!important;
+}
+.px-history-human-action::first-letter{
+  text-transform:uppercase;
+}
+@media(max-width:760px){
+  .px-history-title em{
+    width:max-content;
+    max-width:100%;
+    font-size:7.4px;
+  }
+  .px-history-human-action{
+    font-size:9px!important;
+  }
+}
