@@ -35,6 +35,9 @@ const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url
 const settings = readFileSync(new URL('./screens/PhoenixSettings.tsx', import.meta.url), 'utf8');
 const loader = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.meta.url), 'utf8');
 const previewMain = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
+const previewBootCss = readFileSync(new URL('./preview-boot.css', import.meta.url), 'utf8');
+const mainActivity = readFileSync(new URL('../../../../android/app/src/main/java/br/com/megfinancas/app/MainActivity.java', import.meta.url), 'utf8');
+const nativeShellPlugin = readFileSync(new URL('../../../../android/app/src/main/java/br/com/megfinancas/app/MegNativeShellPlugin.java', import.meta.url), 'utf8');
 const phoenixHtml = readFileSync(new URL('../../phoenix.html', import.meta.url), 'utf8');
 const productionHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
 const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-home-dashboard.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-fidelity-v6.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-responsive-v61.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-operational-mobile.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
@@ -570,8 +573,14 @@ assert.match(phoenixApp, /snapshot\.month !== visibleMonth[\s\S]{0,500}loadPhoen
   'Snapshot de outro mês não pode empurrar o período visível do APK.');
 assert.match(operationalHome, /px-operational-period-chip[\s\S]*periodLabel/,
   'Período do APK deve ficar no contexto da Home, e não flutuando na topbar.');
-assert.match(phoenixApp, /\{!nativeOperational \? <div className=\{\`px-period-menu/,
-  'Topbar do APK não deve manter o seletor global de período.');
+assert.match(phoenixApp, /px-period-menu-mobile-host/,
+  'Android deve hospedar o período fora da topbar visual, pronto para abrir como sheet.');
+assert.match(phoenixApp, /px-period-mobile-backdrop/,
+  'Período Android deve abrir com backdrop próprio.');
+assert.match(periodCss, /\.px-period-popover-v15\.is-mobile-sheet[\s\S]*bottom:max/,
+  'Filtro de período do Android deve ser um bottom sheet preso ao viewport.');
+assert.doesNotMatch(phoenixApp, /px-period-all[\s\S]{0,500}void applyAllPeriod\(\)/,
+  'Tudo não pode ser aplicado antes de o usuário tocar em Aplicar.');
 assert.match(phoenixApp, /navigate\('movements'\)[\s\S]{0,220}px-dock-new[\s\S]{0,220}>Novo</,
   'Dock Android deve separar Lançamentos da ação Novo.');
 assert.match(phoenixApp, /App\.addListener\('backButton'[\s\S]*meg:android-back[\s\S]*requestLogout\(\)/,
@@ -592,14 +601,42 @@ assert.match(phoenixApp, />Não<[\s\S]*>Sim, sair</,
   'Confirmação de saída deve oferecer Não e Sim de forma explícita.');
 assert.match(settings, /Sair do aplicativo[\s\S]*Sair e fechar/,
   'Configurações deve oferecer saída e fechamento do APK.');
+assert.match(previewMain, /MegNativeShell/,
+  'Saída do APK deve usar o shell nativo dedicado antes do fallback padrão.');
+assert.match(nativeShellPlugin, /finishAndRemoveTask\(\)/,
+  'Sair deve remover a tarefa do MEG da tela de aplicativos recentes.');
 assert.match(previewMain, /App\.exitApp\(\)/,
-  'Após confirmar a saída, o APK deve encerrar a Activity e retornar ao Android.');
+  'Fallback de saída padrão deve continuar disponível caso o shell nativo não responda.');
+assert.match(mainActivity, /BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE/,
+  'Android moderno deve esconder a barra de navegação e revelá-la temporariamente por gesto.');
+assert.match(mainActivity, /SYSTEM_UI_FLAG_IMMERSIVE_STICKY/,
+  'Android legado deve manter navegação imersiva compatível.');
 assert.match(movementScreen, /data-phoenix-refresh-month=\{data\.month\}/,
   'Drawer deve fixar o mês visível usado para a releitura após gravação.');
 assert.match(simpleEventBridge, /visibleRefreshMonth\(root, payload\.date\)/,
   'Bridge legado não pode usar o mês da data digitada para trocar a competência visível.');
 assert.match(operationalCss, /body\.meg-operational-mobile \.px-launch-drawer[\s\S]*width:100vw!important/,
   'Drawer Android deve ocupar a tela e se adaptar ao aparelho.');
+assert.match(operationalCss, /\.px-launch-drawer[\s\S]*grid-template-rows:auto minmax\(0,1fr\)/,
+  'Cabeçalho de lançamento deve ficar fora da região rolável do formulário.');
+assert.match(operationalCss, /\.px-launch-form[\s\S]*overflow-y:auto!important/,
+  'Somente o conteúdo do formulário deve rolar no Android.');
+assert.match(operationalCss, /\.px-edit-launch-actions,[\s\S]*position:fixed!important/,
+  'Salvar e excluir devem permanecer visíveis no rodapé do lançamento.');
+assert.match(operationalCss, /\.px-pending-success-modal[\s\S]*overflow:hidden!important[\s\S]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/,
+  'Resposta de baixa deve caber no viewport sem rolagem geral.');
+assert.match(phoenixApp, /px-mobile-brand-home[\s\S]*meg-finance-system-mark\.svg/,
+  'Topbar móvel deve usar a marca MEG no lugar do menu duplicado.');
+assert.doesNotMatch(phoenixApp, /nativeOperational \? <button className="px-mobile-menu-trigger"/,
+  'Topbar Android não deve reintroduzir o botão hambúrguer quando o dock já possui Menu.');
+assert.match(operationalHome, /PhoenixProfileAvatar[\s\S]*px-operational-home-avatar/,
+  'Home Android deve mostrar o avatar sincronizado ao lado da saudação.');
+assert.match(operationalHome, /onNavigate\('settings'\)/,
+  'Avatar da Home deve abrir o perfil do usuário.');
+assert.match(previewMain, /meg-finance-system-lockup-light\.svg/,
+  'Loading deve exibir a identidade completa MEG.');
+assert.match(previewBootCss, /px-preview-boot-halo[\s\S]*px-meg-boot-breathe/,
+  'Loading deve usar animação própria da marca em vez de uma tela estática.');
 assert.match(operationalCss, /body\.meg-operational-mobile \.px-app\.is-collapsed[\s\S]*display:block!important[\s\S]*grid-template-columns:none!important/,
   'APK operacional não pode herdar a coluna residual do shell desktop recolhido.');
 assert.match(operationalCss, /body\.meg-operational-mobile \.px-main[\s\S]*width:100%!important[\s\S]*margin:0!important/,
