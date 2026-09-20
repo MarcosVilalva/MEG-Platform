@@ -56,37 +56,63 @@ function text(value: unknown) {
 
 function actionLabel(action: string) {
   return ({
-    CREATED: 'Inclusão',
-    UPDATED: 'Alteração',
-    DELETED: 'Exclusão',
-    RECOVERED: 'Recuperação',
-    FINANCIAL_EVENT_CREATED: 'Inclusão',
-    FINANCIAL_EVENT_UPDATED: 'Alteração',
-    FINANCIAL_EVENT_ARCHIVED: 'Arquivamento',
-    PAYABLE_PAYMENT_CREATED: 'Baixa',
+    CREATED: 'Lançamento incluído',
+    UPDATED: 'Lançamento alterado',
+    DELETED: 'Lançamento excluído',
+    RECOVERED: 'Registro recuperado',
+    FINANCIAL_EVENT_CREATED: 'Lançamento registrado',
+    BENEFIT_EVENT_CREATED: 'Movimentação do benefício',
+    FINANCIAL_EVENT_UPDATED: 'Lançamento alterado',
+    FINANCIAL_EVENT_ARCHIVED: 'Lançamento excluído',
+    FINANCIAL_EVENT_SETTLED: 'Conta baixada',
+    FINANCIAL_EVENT_SETTLED_COMPAT: 'Conta baixada',
+    FINANCIAL_TRANSFER_CREATED: 'Transferência realizada',
+    PAYABLE_CREATED: 'Conta a pagar criada',
+    PAYABLE_PAYMENT_CREATED: 'Pagamento confirmado',
     RECURRING_EXPENSE_CREATED: 'Recorrência criada',
     CARD_CREATED: 'Cartão cadastrado',
-    CARD_UPDATED: 'Cadastro do cartão alterado',
+    CARD_UPDATED: 'Cartão alterado',
     CARD_DEACTIVATED: 'Cartão desativado',
     CARD_REACTIVATED: 'Cartão reativado',
-    CARD_PURCHASE_CREATED: 'Compra criada',
+    CARD_PURCHASE_CREATED: 'Compra registrada',
     CARD_PURCHASE_UPDATED: 'Compra alterada',
     CARD_PURCHASE_CANCELLED: 'Compra cancelada',
     CARD_STATEMENT_PAID: 'Fatura paga',
     CARD_STATEMENT_REOPENED: 'Fatura reaberta',
-    RECEIVABLE_RECEIVED: 'Recebimento'
-  } as Record<string, string>)[action] || action || 'Atualização';
+    RECEIVABLE_CREATED: 'Conta a receber criada',
+    RECEIVABLE_RECEIVED: 'Recebimento confirmado'
+  } as Record<string, string>)[action] || 'Atualização registrada';
 }
 
-function actionVerb(action: string) {
-  return ({
-    CREATED: 'incluiu', UPDATED: 'alterou', DELETED: 'excluiu', RECOVERED: 'recuperou',
-    FINANCIAL_EVENT_CREATED: 'incluiu', FINANCIAL_EVENT_UPDATED: 'alterou', FINANCIAL_EVENT_ARCHIVED: 'arquivou',
-    PAYABLE_PAYMENT_CREATED: 'baixou', RECURRING_EXPENSE_CREATED: 'criou',
-    CARD_CREATED: 'cadastrou', CARD_UPDATED: 'alterou', CARD_DEACTIVATED: 'desativou', CARD_REACTIVATED: 'reativou',
-    CARD_PURCHASE_CREATED: 'incluiu', CARD_PURCHASE_UPDATED: 'alterou', CARD_PURCHASE_CANCELLED: 'cancelou', CARD_STATEMENT_PAID: 'pagou',
-    CARD_STATEMENT_REOPENED: 'reabriu', RECEIVABLE_RECEIVED: 'recebeu'
-  } as Record<string, string>)[action] || 'atualizou';
+function actionSentence(action: string, actor: string) {
+  const sentences: Record<string, string> = {
+    CREATED: `${actor} incluiu este lançamento`,
+    UPDATED: `${actor} alterou este lançamento`,
+    DELETED: `${actor} excluiu este lançamento`,
+    RECOVERED: `${actor} recuperou este registro`,
+    FINANCIAL_EVENT_CREATED: `${actor} registrou este lançamento`,
+    BENEFIT_EVENT_CREATED: `${actor} registrou uma movimentação do benefício`,
+    FINANCIAL_EVENT_UPDATED: `${actor} alterou este lançamento`,
+    FINANCIAL_EVENT_ARCHIVED: `${actor} excluiu este lançamento`,
+    FINANCIAL_EVENT_SETTLED: `${actor} deu baixa neste compromisso`,
+    FINANCIAL_EVENT_SETTLED_COMPAT: `${actor} deu baixa neste compromisso`,
+    FINANCIAL_TRANSFER_CREATED: `${actor} realizou esta transferência`,
+    PAYABLE_CREATED: `${actor} criou esta conta a pagar`,
+    PAYABLE_PAYMENT_CREATED: `${actor} confirmou o pagamento desta conta`,
+    RECURRING_EXPENSE_CREATED: `${actor} criou esta recorrência`,
+    CARD_CREATED: `${actor} cadastrou este cartão`,
+    CARD_UPDATED: `${actor} alterou este cartão`,
+    CARD_DEACTIVATED: `${actor} desativou este cartão`,
+    CARD_REACTIVATED: `${actor} reativou este cartão`,
+    CARD_PURCHASE_CREATED: `${actor} registrou esta compra`,
+    CARD_PURCHASE_UPDATED: `${actor} alterou esta compra`,
+    CARD_PURCHASE_CANCELLED: `${actor} cancelou esta compra`,
+    CARD_STATEMENT_PAID: `${actor} pagou esta fatura`,
+    CARD_STATEMENT_REOPENED: `${actor} reabriu esta fatura`,
+    RECEIVABLE_CREATED: `${actor} criou esta conta a receber`,
+    RECEIVABLE_RECEIVED: `${actor} confirmou este recebimento`,
+  };
+  return sentences[action] || `${actor} atualizou este registro`;
 }
 
 function entityLabel(entity: string) {
@@ -380,7 +406,7 @@ export function PhoenixHistory({ data }: { data: PhoenixReadModel }) {
             const cardAudit = item.source === 'audit' && isCardAction(item);
             return <button key={item.id} type="button" role="listitem" className={`px-history-item ${selected?.id === item.id ? 'active' : ''}`} onClick={() => setSelectedId(item.id)}>
               <span className={`px-history-marker ${income ? 'income' : 'expense'} ${item.source === 'legacy' ? 'legacy' : ''}`}>{income ? '↗' : cardAudit ? '▣' : item.source === 'audit' ? '✓' : '↘'}</span>
-              <span className="px-history-copy"><span className="px-history-title"><strong>{item.description}</strong><em>{actionLabel(item.action)}</em></span><span><b>{item.actor}</b> {actionVerb(item.action)} este registro</span><small>{dateTime.format(new Date(item.at))} · {item.source === 'audit' ? entityLabel(item.entity) : 'Histórico legado'}{item.paymentMethod ? ` · ${item.paymentMethod}` : ''}</small></span>
+              <span className="px-history-copy"><span className="px-history-title"><strong>{item.description}</strong><em>{actionLabel(item.action)}</em></span><span className="px-history-human-action">{actionSentence(item.action, item.actor)}</span><small>{dateTime.format(new Date(item.at))} · {item.source === 'audit' ? entityLabel(item.entity) : 'Histórico legado'}{item.paymentMethod ? ` · ${item.paymentMethod}` : ''}</small></span>
               <span className="px-history-item-end"><strong className={`px-history-value ${income ? 'income' : 'expense'}`}>{amountText(item)}</strong><small>{item.source === 'audit' ? 'Auditado' : 'Legado'}</small></span>
             </button>;
           })}
@@ -397,7 +423,7 @@ export function PhoenixHistory({ data }: { data: PhoenixReadModel }) {
             <dl className="px-history-detail-grid">
               <div><dt>Data e hora</dt><dd>{dateTime.format(new Date(selected.at))}</dd></div>
               <div><dt>Usuário</dt><dd>{selected.actor}</dd></div>
-              <div><dt>Origem</dt><dd>{selected.source === 'audit' ? 'Finance AuditLog' : 'AppState.activityLog'}</dd></div>
+              <div><dt>Origem</dt><dd>{selected.source === 'audit' ? 'Auditoria segura do MEG' : 'Histórico anterior do MEG'}</dd></div>
               <div><dt>Domínio</dt><dd>{entityLabel(selected.entity)}</dd></div>
               <div><dt>ID do registro</dt><dd>{selected.entityId}</dd></div>
               <div><dt>Valor</dt><dd>{amountText(selected)}</dd></div>
