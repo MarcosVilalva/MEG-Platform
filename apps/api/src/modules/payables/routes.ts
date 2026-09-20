@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@meg/database';
 import { createPayablesProtected } from './create-service';
+import { resolveWorkspaceContext } from '../workspaces/service';
 import {
   createRecurringExpense,
   listPayables,
@@ -105,8 +106,9 @@ export async function payableRoutes(app: FastifyInstance) {
 
   app.delete('/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const context = await resolveWorkspaceContext(request.user.sub);
     const result = await prisma.payable.updateMany({
-      where: { id, userId: request.user.sub, status: { not: 'paid' } },
+      where: { id, userId: context.workspace.ownerId, status: { not: 'paid' } },
       data: { status: 'cancelled' },
     });
     if (!result.count) return reply.code(404).send({ error: 'PAYABLE_NOT_FOUND' });
