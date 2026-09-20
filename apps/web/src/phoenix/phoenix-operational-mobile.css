@@ -2381,3 +2381,74 @@ body.meg-operational-mobile .px-meg-confirm-dialog{
   body.meg-operational-mobile .px-pending-success-modal>dl>div{padding:6px 8px!important}
   body.meg-operational-mobile .px-pending-success-modal>footer .px-primary-action{min-height:40px!important}
 }
+
+
+/* ==========================================================================
+   MEG Operacional 2.6 · cabeçalho permanente do aplicativo
+   A marca e o nome da tela permanecem visíveis em qualquer rolagem.
+   ========================================================================== */
+body.meg-operational-mobile{
+  --px-mobile-shell-header:calc(58px + env(safe-area-inset-top));
+}
+body.meg-operational-mobile .px-topbar{
+  position:fixed!important;
+  z-index:120!important;
+  top:0!important;
+  left:0!important;
+  right:0!important;
+  width:100%!important;
+  min-height:var(--px-mobile-shell-header)!important;
+  padding:max(7px,env(safe-area-inset-top)) clamp(10px,3vw,18px) 7px!important;
+  background:rgba(2,35,37,.985)!important;
+  border-bottom:1px solid rgba(55,222,210,.16)!important;
+  box-shadow:0 9px 26px rgba(0,0,0,.18)!important;
+  backdrop-filter:blur(22px)!important;
+  -webkit-backdrop-filter:blur(22px)!important;
+}
+body.meg-operational-mobile .px-main{
+  padding-top:var(--px-mobile-shell-header)!important;
+}
+body.meg-operational-mobile .px-main > .px-content{
+  padding-top:12px!important;
+  scroll-padding-top:calc(var(--px-mobile-shell-header) + 10px)!important;
+}
+body.meg-operational-mobile .px-mobile-brand-home{
+  position:relative!important;
+  z-index:1!important;
+}
+body.meg-operational-mobile .px-top-title strong{
+  color:#f1fffd!important;
+  font-size:15px!important;
+  font-weight:900!important;
+  letter-spacing:-.015em!important;
+}
+body.meg-operational-mobile .px-topbar::after{
+  content:''!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  bottom:-1px!important;
+  height:1px!important;
+  background:linear-gradient(90deg,transparent,rgba(63,231,216,.24),transparent)!important;
+  pointer-events:none!important;
+}
+
+/* O shell fixo não interfere em drawers/modais fullscreen, que ficam acima dele. */
+body.meg-operational-mobile .px-launch-backdrop,
+body.meg-operational-mobile .px-launch-drawer,
+body.meg-operational-mobile .px-detail-drawer,
+body.meg-operational-mobile .px-meg-confirm-overlay,
+body.meg-operational-mobile .px-pending-confirm-overlay,
+body.meg-operational-mobile .px-pending-success-overlay,
+body.meg-operational-mobile .px-period-mobile-backdrop,
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet{
+  z-index:130!important;
+}
+body.meg-operational-mobile .px-launch-drawer,
+body.meg-operational-mobile .px-detail-drawer,
+body.meg-operational-mobile .px-meg-confirm-dialog,
+body.meg-operational-mobile .px-pending-confirm-modal,
+body.meg-operational-mobile .px-pending-success-modal,
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet{
+  z-index:131!important;
+}
