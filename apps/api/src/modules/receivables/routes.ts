@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@meg/database';
 import { ReceivableDomainError, createReceivableProtected, receiveReceivableProtected } from './service';
+import { resolveWorkspaceContext } from '../workspaces/service';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
@@ -56,8 +57,9 @@ function domainError(reply: FastifyReply, error: unknown) {
 
 export async function receivableRoutes(app: FastifyInstance) {
   app.get('/customers', { preHandler: app.authorize([...readRoles]) }, async (request) => {
+    const context = await resolveWorkspaceContext(request.user.sub);
     return prisma.customer.findMany({
-      where: { userId: request.user.sub },
+      where: { userId: context.workspace.ownerId },
       orderBy: [{ isActive: 'desc' }, { name: 'asc' }]
     });
   });
@@ -65,8 +67,9 @@ export async function receivableRoutes(app: FastifyInstance) {
   app.post('/customers', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = customerSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const context = await resolveWorkspaceContext(request.user.sub);
     return reply.code(201).send(await prisma.customer.create({
-      data: { userId: request.user.sub, ...parsed.data }
+      data: { userId: context.workspace.ownerId, ...parsed.data }
     }));
   });
 
@@ -74,21 +77,24 @@ export async function receivableRoutes(app: FastifyInstance) {
     const parsed = customerSchema.partial().safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
-    const existing = await prisma.customer.findFirst({ where: { id, userId: request.user.sub } });
+    const context = await resolveWorkspaceContext(request.user.sub);
+    const existing = await prisma.customer.findFirst({ where: { id, userId: context.workspace.ownerId } });
     if (!existing) return reply.code(404).send({ error: 'CUSTOMER_NOT_FOUND' });
     return prisma.customer.update({ where: { id }, data: parsed.data });
   });
 
   app.delete('/customers/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const existing = await prisma.customer.findFirst({ where: { id, userId: request.user.sub } });
+    const context = await resolveWorkspaceContext(request.user.sub);
+    const existing = await prisma.customer.findFirst({ where: { id, userId: context.workspace.ownerId } });
     if (!existing) return reply.code(404).send({ error: 'CUSTOMER_NOT_FOUND' });
     return prisma.customer.update({ where: { id }, data: { isActive: false } });
   });
 
   app.get('/receivables', { preHandler: app.authorize([...readRoles]) }, async (request) => {
+    const context = await resolveWorkspaceContext(request.user.sub);
     return prisma.receivable.findMany({
-      where: { userId: request.user.sub },
+      where: { userId: context.workspace.ownerId },
       orderBy: [{ status: 'asc' }, { dueDate: 'asc' }],
       include: { customer: true, receipts: { orderBy: { receivedAt: 'desc' } } }
     });

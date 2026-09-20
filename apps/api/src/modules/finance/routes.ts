@@ -117,13 +117,15 @@ export async function financeRoutes(app: FastifyInstance) {
   app.get('/analytics', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return getCanonicalFinancialAnalytics(request.user.sub, parsed.data.month);
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return getCanonicalFinancialAnalytics(dataOwnerId, parsed.data.month);
   });
 
   app.get('/budgets', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return listBudgetOverview(request.user.sub, parsed.data.month);
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return listBudgetOverview(dataOwnerId, parsed.data.month);
   });
 
   app.put('/budgets', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
@@ -133,13 +135,15 @@ export async function financeRoutes(app: FastifyInstance) {
       amount: z.coerce.number().positive().finite()
     }).safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return upsertBudget(request.user.sub, parsed.data);
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return upsertBudget(dataOwnerId, parsed.data);
   });
 
   app.delete('/budgets/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const { id } = request.params as { id: string };
     try {
-      return await deleteBudget(request.user.sub, id);
+      const dataOwnerId = await financialDataOwnerId(request.user.sub);
+      return await deleteBudget(dataOwnerId, id);
     } catch (error) {
       if (error instanceof Error && error.message === 'BUDGET_NOT_FOUND') {
         return reply.code(404).send({ error: 'BUDGET_NOT_FOUND' });
@@ -151,13 +155,15 @@ export async function financeRoutes(app: FastifyInstance) {
   app.get('/cashflow', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return getCanonicalFinancialCashflow(request.user.sub, parsed.data.month);
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return getCanonicalFinancialCashflow(dataOwnerId, parsed.data.month);
   });
 
   app.get('/summary', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return getCanonicalFinancialSummary(request.user.sub, parsed.data.month);
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return getCanonicalFinancialSummary(dataOwnerId, parsed.data.month);
   });
 
   app.get('/benefit-summary', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
@@ -179,7 +185,8 @@ export async function financeRoutes(app: FastifyInstance) {
       search: z.string().trim().max(120).optional()
     }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return listFinancialEvents(request.user.sub, parsed.data);
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return listFinancialEvents(dataOwnerId, parsed.data);
   });
 
   app.get('/audit', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {

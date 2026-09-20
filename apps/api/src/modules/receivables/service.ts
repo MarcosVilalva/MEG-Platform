@@ -36,6 +36,7 @@ export type ReceiveReceivableInput = {
 
 export async function createReceivableProtected(userId: string, input: CreateReceivableInput) {
   const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = input.operationId ? mutationRequestHash({ ...input, operationId: undefined }) : null;
 
   return serializableFinancialTransaction(async (tx) => {
@@ -50,7 +51,7 @@ export async function createReceivableProtected(userId: string, input: CreateRec
     }
 
     if (input.customerId) {
-      const customer = await tx.customer.findFirst({ where: { id: input.customerId, userId, isActive: true }, select: { id: true } });
+      const customer = await tx.customer.findFirst({ where: { id: input.customerId, userId: dataOwnerId, isActive: true }, select: { id: true } });
       if (!customer) throw new ReceivableDomainError('INVALID_CUSTOMER');
     }
     const dueDate = new Date(input.dueDate);
@@ -58,7 +59,7 @@ export async function createReceivableProtected(userId: string, input: CreateRec
     const value = Math.abs(input.totalAmount);
     const receivable = await tx.receivable.create({
       data: {
-        userId,
+        userId: dataOwnerId,
         customerId: input.customerId,
         description: input.description.trim(),
         totalAmount: value,
@@ -104,6 +105,7 @@ export async function receiveReceivableProtected(userId: string, receivableId: s
     throw new ReceivableDomainError('FUTURE_RECEIPT_NOT_ALLOWED', { receivedAt: input.receivedAt.slice(0, 10) });
   }
   const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = input.operationId
     ? mutationRequestHash({ receivableId, ...input, operationId: undefined })
     : null;
@@ -120,7 +122,7 @@ export async function receiveReceivableProtected(userId: string, receivableId: s
     }
 
     const receivable = await tx.receivable.findFirst({
-      where: { id: receivableId, userId, status: { not: 'paid' } },
+      where: { id: receivableId, userId: dataOwnerId, status: { not: 'paid' } },
       include: { customer: true },
     });
     if (!receivable) throw new ReceivableDomainError('RECEIVABLE_NOT_FOUND');
@@ -132,18 +134,18 @@ export async function receiveReceivableProtected(userId: string, receivableId: s
     }
 
     const account = input.accountId
-      ? await tx.account.findFirst({ where: { id: input.accountId, userId, isActive: true }, select: { id: true, name: true } })
+      ? await tx.account.findFirst({ where: { id: input.accountId, userId: dataOwnerId, isActive: true }, select: { id: true, name: true } })
       : null;
     if (input.accountId && !account) throw new ReceivableDomainError('INVALID_ACCOUNT');
     const paymentMethod = input.paymentMethodId
-      ? await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, userId, isActive: true }, select: { id: true, name: true } })
+      ? await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, userId: dataOwnerId, isActive: true }, select: { id: true, name: true } })
       : null;
     if (input.paymentMethodId && !paymentMethod) throw new ReceivableDomainError('INVALID_PAYMENT_METHOD');
 
     const receivedTotal = principal + input.interestAmount + input.fineAmount;
     const event = input.accountId ? await tx.financialEvent.create({
       data: {
-        userId,
+        userId: dataOwnerId,
         workspaceId: workspace.workspaceId,
         description: `Recebimento: ${receivable.description}`,
         type: 'income',
