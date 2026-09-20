@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { financeClient } from '../app/finance-client';
 import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
 import { loadPhoenixAllEvents, loadPhoenixReadModel, peekPhoenixReadModel, prefetchPhoenixReadModel } from './data/load-phoenix-read-model';
 import { buildPhoenixHomeAgenda } from './home-agenda';
@@ -364,6 +365,8 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
   const monthRef = useRef(month);
   const dataRef = useRef<PhoenixReadModel | null>(null);
   const refreshingRef = useRef(false);
+  const workspaceSyncTokenRef = useRef<string | null>(null);
+  const workspaceSyncCheckingRef = useRef(false);
   const periodRequestRef = useRef(0);
   const navigationHistoryRef = useRef<PhoenixView[]>([]);
 
@@ -529,6 +532,44 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       window.removeEventListener('focus', refreshIfVisible);
     };
   }, [month, loadState.status, periodMode]);
+
+  useEffect(() => {
+    if (loadState.status !== 'ready' || periodMode !== 'month') return;
+    let active = true;
+
+    const checkWorkspaceChanges = async () => {
+      if (!active || document.visibilityState !== 'visible' || workspaceSyncCheckingRef.current) return;
+      workspaceSyncCheckingRef.current = true;
+      try {
+        const status = await financeClient.getSyncStatus();
+        if (!active) return;
+        const previous = workspaceSyncTokenRef.current;
+        workspaceSyncTokenRef.current = status.token;
+        if (previous && previous !== status.token) {
+          void refreshData();
+        }
+      } catch {
+        // Pulso de sincronização é auxiliar; falha temporária não desmonta a fotografia válida.
+      } finally {
+        workspaceSyncCheckingRef.current = false;
+      }
+    };
+
+    void checkWorkspaceChanges();
+    const timer = window.setInterval(() => { void checkWorkspaceChanges(); }, 6_000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void checkWorkspaceChanges();
+    };
+    window.addEventListener('focus', checkWorkspaceChanges);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', checkWorkspaceChanges);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [month, loadState.status, periodMode]);
+
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
