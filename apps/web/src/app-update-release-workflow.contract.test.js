@@ -6,11 +6,17 @@ const pages = readFileSync(new URL('../../../.github/workflows/deploy-pages.yml'
 const controller = readFileSync(new URL('./android-update-controller.js', import.meta.url), 'utf8');
 const preview = readFileSync(new URL('./phoenix/preview-main.tsx', import.meta.url), 'utf8');
 const nativeUpdater = readFileSync(new URL('../../../android/app/src/main/java/br/com/megfinancas/app/AppUpdaterPlugin.java', import.meta.url), 'utf8');
+const mainActivity = readFileSync(new URL('../../../android/app/src/main/java/br/com/megfinancas/app/MainActivity.java', import.meta.url), 'utf8');
 
 assert.match(
   android,
   /gh release upload android-latest MEG-Financas\.apk app-version\.json --clobber/,
   'Android deve publicar APK e manifesto juntos no release estável',
+);
+assert.match(
+  android,
+  /downloadUrl: 'https:\/\/github\.com\/MarcosVilalva\/MEG-Platform\/releases\/download\/android-latest\/MEG-Financas\.apk'/,
+  'Manifesto deve apontar diretamente para o APK do release estável, sem depender do Pages',
 );
 
 assert.match(
@@ -58,6 +64,21 @@ assert.match(
   nativeUpdater,
   /activity\.runOnUiThread\(\(\) -> installAvailableUpdateNatively\(downloadUrl, sha256\)\);/,
   'Fallback nativo deve iniciar a atualização automaticamente quando detectar versão superior',
+);
+assert.doesNotMatch(
+  nativeUpdater,
+  /if \(!authenticatedUiReady \|\| installRunning\.get\(\)/,
+  'Verificação nativa não pode depender da WebView autenticada para descobrir uma versão nova',
+);
+assert.match(
+  nativeUpdater,
+  /releases\/download\/android-latest\/app-version\.json/,
+  'Atualizador nativo deve consultar o manifesto do release estável como fonte primária',
+);
+assert.match(
+  mainActivity,
+  /onBiometricAuthenticationSucceeded\(\)[\s\S]*scheduleUpdateCheck\(\)/,
+  'Após a biometria o Android deve refazer a verificação de atualização',
 );
 assert.match(
   nativeUpdater,

@@ -48,6 +48,7 @@ public class AppUpdaterPlugin extends Plugin {
     private static final String PENDING_SHA256_KEY = "pending-sha256";
     private static final int MAX_DOWNLOAD_REDIRECTS = 6;
     private static final String[] RELEASE_MANIFEST_URLS = {
+        "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/app-version.json",
         "https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json",
         "https://raw.githubusercontent.com/MarcosVilalva/MEG-Platform/main/apps/web/public/downloads/app-version.json"
     };
@@ -181,7 +182,7 @@ public class AppUpdaterPlugin extends Plugin {
     }
 
     public void checkForAvailableUpdateNative() {
-        if (!authenticatedUiReady || installRunning.get() || !nativeCheckRunning.compareAndSet(false, true)) return;
+        if (installRunning.get() || !nativeCheckRunning.compareAndSet(false, true)) return;
         executor.execute(() -> {
             try {
                 JSObject release = fetchNewestReleaseManifest();
