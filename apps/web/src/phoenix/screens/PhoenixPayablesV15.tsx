@@ -400,6 +400,7 @@ function dateRenderBlocks(group: PendingGroup): DateRenderBlock[] {
 }
 
 export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
+  const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
   const [model, setModel] = useState(data);
   const today = todaySaoPaulo();
   const [priority, setPriority] = useState<Priority>('all');
@@ -834,7 +835,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     </section>
 
     <div className="px-toolbar px-pending-commandbar">
-      <label className="px-search-field px-pending-command-search"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar compromisso, cartão, conta ou forma..." /></label>
+      <label className="px-search-field px-pending-command-search"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={nativeOperational ? 'Buscar pendência, cartão ou conta...' : 'Buscar compromisso, cartão, conta ou forma...'} /></label>
       <div className="px-priority-tabs px-pending-command-tabs">{([['all','Todos'],['overdue','Vencidos'],['today','Hoje'],['upcoming','Próximos']] as const).map(([id,label]) => <button key={id} type="button" className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{label}</button>)}</div>
       <span className="px-pending-command-separator" aria-hidden="true" />
       <label className="px-pending-group-select px-pending-command-group"><span>Agrupar por</span><select value={groupMode} onChange={(event) => setGroupMode(event.target.value as GroupMode)}><option value="date">Data</option><option value="category">Categoria</option><option value="account">Conta</option><option value="payment-method">Forma de pagamento</option><option value="none">Sem agrupamento</option></select></label>

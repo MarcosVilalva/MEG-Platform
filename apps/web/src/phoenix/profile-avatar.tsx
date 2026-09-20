@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import { readSession } from '../app/auth-client';
 import { patchCloudStateProperties, readCloudState } from '../app/app-state-client';
 
@@ -12,12 +11,6 @@ export type PhoenixAvatarPreset = {
   label: string;
   column: number;
   row: number;
-};
-
-type PhoenixAvatarStyle = CSSProperties & {
-  '--px-profile-avatar-image'?: string;
-  '--px-profile-avatar-position'?: string;
-  '--px-profile-avatar-size'?: string;
 };
 
 export const phoenixAvatarPresets: PhoenixAvatarPreset[] = [
@@ -90,6 +83,7 @@ const LEGACY_PRESET_ALIASES: Record<string, string> = {
 };
 
 const keyForUser = (userId: string) => `meg.profile.avatar.${userId}`;
+const migrationKeyForUser = (userId: string) => `meg.profile.avatar.migrated.${userId}`;
 
 export function currentPhoenixUserId() {
   return readSession()?.user.id || 'local-user';
@@ -117,7 +111,12 @@ function defaultPresetForUser(userId: string) {
 function publicAsset(path: string) {
   const configuredBase = import.meta.env.BASE_URL || '/';
   const base = configuredBase.endsWith('/') ? configuredBase : `${configuredBase}/`;
-  return `${base}${path.replace(/^\/+/, '')}`;
+  const relative = `${base}${path.replace(/^\/+/, '')}`;
+  try {
+    return typeof document !== 'undefined' ? new URL(relative, document.baseURI).href : relative;
+  } catch {
+    return relative;
+  }
 }
 
 function normalizeAvatarPreference(value: unknown, userId: string): PhoenixAvatarPreference | null {
@@ -135,15 +134,26 @@ function normalizeAvatarPreference(value: unknown, userId: string): PhoenixAvata
   return null;
 }
 
-export function readPhoenixAvatarPreference(userId = currentPhoenixUserId()): PhoenixAvatarPreference {
-  const fallback: PhoenixAvatarPreference = { kind: 'preset', presetId: defaultPresetForUser(userId) };
+function readStoredAvatarPreference(userId: string): PhoenixAvatarPreference | null {
   try {
     const stored = localStorage.getItem(keyForUser(userId));
-    if (!stored) return fallback;
-    return normalizeAvatarPreference(JSON.parse(stored), userId) || fallback;
+    return stored ? normalizeAvatarPreference(JSON.parse(stored), userId) : null;
   } catch {
-    return fallback;
+    return null;
   }
+}
+
+function avatarMigrationCompleted(userId: string) {
+  try { return localStorage.getItem(migrationKeyForUser(userId)) === '1'; } catch { return false; }
+}
+
+function markAvatarMigrationCompleted(userId: string) {
+  try { localStorage.setItem(migrationKeyForUser(userId), '1'); } catch { /* marcador local opcional */ }
+}
+
+export function readPhoenixAvatarPreference(userId = currentPhoenixUserId()): PhoenixAvatarPreference {
+  return readStoredAvatarPreference(userId)
+    || { kind: 'preset', presetId: defaultPresetForUser(userId) };
 }
 
 function avatarVisual(preference: PhoenixAvatarPreference) {
@@ -196,17 +206,32 @@ function cloudAvatarMap(state: Record<string, unknown> | null | undefined) {
 }
 
 export async function hydratePhoenixAvatarPreference(userId = currentPhoenixUserId()) {
-  const local = readPhoenixAvatarPreference(userId);
+  const storedLocal = readStoredAvatarPreference(userId);
+  const local = storedLocal || { kind: 'preset' as const, presetId: defaultPresetForUser(userId) };
+  const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
+
   try {
     const cloud = await readCloudState();
     const remote = normalizeAvatarPreference(cloudAvatarMap(cloud.state)[userId], userId);
-    if (!remote) {
-      applyPhoenixAvatarPreference(local);
-      void savePhoenixAvatarPreferenceCloud(local, userId);
-      return local;
+
+    // Migração única: a Web antiga já possuía a escolha real do usuário em
+    // localStorage. Na primeira execução da versão nova, essa preferência
+    // prevalece uma única vez e passa a ser a origem compartilhada.
+    if (!nativeOperational && storedLocal && !avatarMigrationCompleted(userId)) {
+      applyPhoenixAvatarPreference(storedLocal);
+      const migrated = await savePhoenixAvatarPreferenceCloud(storedLocal, userId);
+      if (migrated.synced) markAvatarMigrationCompleted(userId);
+      return storedLocal;
     }
-    savePhoenixAvatarPreference(remote, userId);
-    return remote;
+
+    if (remote) {
+      savePhoenixAvatarPreference(remote, userId);
+      if (!nativeOperational) markAvatarMigrationCompleted(userId);
+      return remote;
+    }
+
+    applyPhoenixAvatarPreference(local);
+    return local;
   } catch {
     applyPhoenixAvatarPreference(local);
     return local;
@@ -268,17 +293,20 @@ export async function imageFileToAvatarDataUrl(file: File) {
 export function PhoenixProfileAvatar({ name, preference, className = '' }: { name: string; preference: PhoenixAvatarPreference; className?: string }) {
   const visual = avatarVisual(preference);
   const initial = (name || 'M').trim().slice(0, 1).toUpperCase();
-  const style: PhoenixAvatarStyle | undefined = visual ? {
-    backgroundImage: `url("${visual.image}")`,
-    backgroundPosition: visual.position,
-    backgroundSize: visual.size,
-    backgroundRepeat: 'no-repeat',
-    '--px-profile-avatar-image': `url("${visual.image}")`,
-    '--px-profile-avatar-position': visual.position,
-    '--px-profile-avatar-size': visual.size
-  } : undefined;
   const imageClass = visual
     ? preference.kind === 'preset' ? 'has-image has-preset-image' : 'has-image has-photo-image'
     : '';
-  return <span className={`px-profile-avatar ${className} ${imageClass}`} aria-hidden="true" style={style}>{visual ? '' : initial}</span>;
+  return <span className={`px-profile-avatar ${className} ${imageClass}`} aria-hidden="true">
+    {visual ? <img
+      src={visual.image}
+      alt=""
+      draggable={false}
+      loading="eager"
+      onError={(event) => {
+        event.currentTarget.hidden = true;
+        event.currentTarget.parentElement?.classList.add('image-error');
+      }}
+    /> : null}
+    <span className="px-profile-avatar-fallback">{initial}</span>
+  </span>;
 }
