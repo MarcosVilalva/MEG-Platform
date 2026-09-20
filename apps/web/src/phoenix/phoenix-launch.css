@@ -30,8 +30,10 @@
 
 
 /* Edição financeira: exclusão lógica protegida, compartilhada entre Web e Android. */
-.px-edit-launch-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch}
+.px-edit-launch-actions{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:stretch}
 .px-edit-launch-actions .px-primary-action{min-width:0}
+.px-cancel-launch{min-height:40px;padding-inline:14px;white-space:nowrap}
+.px-settlement-confirm .px-meg-confirm-danger{min-width:118px}
 .px-delete-launch{
   min-height:40px;
   padding:0 13px;
@@ -48,5 +50,6 @@
 .px-delete-event-confirm .px-meg-confirm-copy p strong{color:var(--ink)}
 @media(max-width:760px){
   .px-edit-launch-actions{grid-template-columns:1fr}
-  .px-delete-launch{min-height:44px;width:100%;font-size:10px}
+  .px-cancel-launch,.px-delete-launch{min-height:44px;width:100%;font-size:10px}
+  .px-detail-actions [data-phoenix-generic-delete]{width:100%}
 }
