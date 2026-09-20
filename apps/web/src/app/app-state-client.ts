@@ -30,3 +30,23 @@ export async function patchCloudTransactions(upserts: LegacyTransaction[], delet
   }
   throw new Error('STATE_CONFLICT');
 }
+
+
+export async function patchCloudProperties(properties: Record<string, unknown>) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const current = await readCloudState();
+    try {
+      return await request<{ revision: number; changed?: boolean; propertyNames?: string[] }>('/app-state/properties', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          operationId: crypto.randomUUID(),
+          expectedRevision: current.revision,
+          properties
+        })
+      });
+    } catch (error) {
+      if ((error as { status?: number }).status !== 409 || attempt === 1) throw error;
+    }
+  }
+  throw new Error('STATE_CONFLICT');
+}
