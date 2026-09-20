@@ -202,6 +202,7 @@ export async function hydratePhoenixAvatarPreference(userId = currentPhoenixUser
     const remote = normalizeAvatarPreference(cloudAvatarMap(cloud.state)[userId], userId);
     if (!remote) {
       applyPhoenixAvatarPreference(local);
+      void savePhoenixAvatarPreferenceCloud(local, userId);
       return local;
     }
     savePhoenixAvatarPreference(remote, userId);
