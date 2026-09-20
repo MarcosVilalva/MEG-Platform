@@ -107,9 +107,10 @@ function operationId(prefix = 'phoenix-event') {
   return `${prefix}-${Date.now().toString(36)}-${random}`;
 }
 
-function editRequestKey(eventId: string, input: PhoenixSimpleEventInput) {
+function editRequestKey(eventId: string, input: PhoenixSimpleEventInput, expectedUpdatedAt?: string) {
   return JSON.stringify({
     eventId,
+    expectedUpdatedAt: expectedUpdatedAt || null,
     type: input.type,
     status: input.status,
     description: input.description.trim(),
@@ -461,7 +462,7 @@ export async function runPhoenixSimpleEventEdit(
   if (!runtimeCapabilities.bulkEventWrite) throw new PhoenixWriteError('PHOENIX_EDIT_WRITE_NOT_ENABLED');
   assertSimpleEvent(input);
 
-  const requestKey = editRequestKey(eventId, input);
+  const requestKey = editRequestKey(eventId, input, expectedUpdatedAt);
   const editOperationId = pendingEditOperations.get(requestKey) || operationId('phoenix-event-edit');
   pendingEditOperations.set(requestKey, editOperationId);
 
@@ -496,8 +497,9 @@ export async function runPhoenixSimpleEventArchive(
   const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
   if (!runtimeCapabilities.bulkEventWrite) throw new PhoenixWriteError('PHOENIX_ARCHIVE_WRITE_NOT_ENABLED');
 
-  const archiveOperationId = pendingArchiveOperations.get(eventId) || operationId('phoenix-event-archive');
-  pendingArchiveOperations.set(eventId, archiveOperationId);
+  const archiveRequestKey = `${eventId}:${expectedUpdatedAt || 'unknown'}`;
+  const archiveOperationId = pendingArchiveOperations.get(archiveRequestKey) || operationId('phoenix-event-archive');
+  pendingArchiveOperations.set(archiveRequestKey, archiveOperationId);
 
   await financeClient.bulkArchiveEvents({
     ids: [eventId],
@@ -506,7 +508,7 @@ export async function runPhoenixSimpleEventArchive(
   });
 
   const snapshot = await confirmedSnapshot(refreshMonth);
-  pendingArchiveOperations.delete(eventId);
+  pendingArchiveOperations.delete(archiveRequestKey);
   return { snapshot };
 }
 
