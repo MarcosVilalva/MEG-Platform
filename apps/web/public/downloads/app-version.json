@@ -1,9 +1,9 @@
 {
-  "versionCode": 303,
-  "versionName": "2.0.303",
+  "versionCode": 304,
+  "versionName": "2.0.304",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "8dfb49f46d3f15de8d1a3e119ca087e1fd2eabe129eac0189b1ea7f1a44adcb2",
+  "sha256": "195e194662946255aedb62224c493e561b35a5e552ede63b9f64a37d45130213",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Android: período estável e Lançamentos explícitos"
+  "releaseNotes": "Android: corrigir atualização automática ao retomar o app"
 }
