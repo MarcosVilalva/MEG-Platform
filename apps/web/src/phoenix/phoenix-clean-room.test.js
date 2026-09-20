@@ -667,8 +667,14 @@ assert.match(nativeBiometric, /cacheCredentials\(credentials\);[\s\S]*beginAuthe
   'Após reconhecer a biometria, o login deve desaparecer imediatamente.');
 assert.match(previewMain, /'authenticating'/,
   'Preview deve possuir estado dedicado de autenticação sem formulário visível.');
-assert.match(previewMain, /setState\('authenticating'\)[\s\S]{0,500}login\(credentials\.email, credentials\.password\)/,
+assert.match(previewMain, /setState\('authenticating'\)[\s\S]{0,700}loginWithServiceRetry\(credentials\.email, credentials\.password\)/,
   'Login biométrico deve trocar para o boot antes de chamar a API.');
+assert.match(main, /if \(startup\?\.required\)[\s\S]{0,500}clearSession\(\)/,
+  'Após o gate biométrico, o APK deve descartar sessão web anterior e usar as credenciais recém-confirmadas.');
+assert.match(previewMain, /authenticatedRequest\('\/auth\/me', \{ signal: AbortSignal\.timeout\(12_000\) \}\)/,
+  'Validação de sessão não pode manter o loading preso indefinidamente em 22%.');
+assert.match(previewMain, /loginWithServiceRetry[\s\S]*AbortSignal\.timeout\(12_000\)[\s\S]*waitForService\(900\)[\s\S]*AbortSignal\.timeout\(15_000\)/,
+  'Login deve ter timeout e uma única repetição controlada para acordar o serviço.');
 assert.match(previewMain, /state === 'checking' \|\| state === 'authenticating' \|\| state === 'preparing'/,
   'Estados de autenticação e preparação devem renderizar somente o boot premium.');
 assert.match(previewAuthCss, /\.px-preview-auth:has\(\.px-preview-button-spinner\)::before,[\s\S]*display:none!important/,
