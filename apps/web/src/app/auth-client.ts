@@ -218,8 +218,12 @@ export function clearSession() {
   localStorage.removeItem(SESSION_KEY);
 }
 
-export async function login(email: string, password: string) {
-  const session = await request<AuthSession>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+export async function login(email: string, password: string, options?: { signal?: AbortSignal }) {
+  const session = await request<AuthSession>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+    signal: options?.signal,
+  });
   saveSession(session);
   return session;
 }
