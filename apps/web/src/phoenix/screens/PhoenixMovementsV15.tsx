@@ -641,6 +641,27 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [detailEvent, launchOpen, dirty, discardConfirmOpen]);
 
+  useEffect(() => {
+    const handleAndroidBack = (event: Event) => {
+      if (discardConfirmOpen) {
+        event.preventDefault();
+        setDiscardConfirmOpen(false);
+        return;
+      }
+      if (detailEvent) {
+        event.preventDefault();
+        setDetailEvent(null);
+        return;
+      }
+      if (launchOpen) {
+        event.preventDefault();
+        requestCloseLaunch();
+      }
+    };
+    window.addEventListener('meg:android-back', handleAndroidBack);
+    return () => window.removeEventListener('meg:android-back', handleAndroidBack);
+  }, [detailEvent, launchOpen, dirty, discardConfirmOpen]);
+
   function markRecentlyUpdated(eventId: string) {
     if (recentTimerRef.current !== null) window.clearTimeout(recentTimerRef.current);
     setRecentEventId(eventId);
