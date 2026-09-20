@@ -7,7 +7,7 @@ const routes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
 assert.match(source, /serializableFinancialTransaction/, 'Transferência deve ser atômica e serializável.');
 assert.match(source, /workspaceId_operationId/, 'Transferência deve consultar recibo idempotente por workspace + operationId.');
 assert.match(source, /OPERATION_ID_REUSED/, 'Reuso de operationId com payload diferente deve ser bloqueado.');
-assert.match(source, /userId,\s*isActive:\s*true/, 'Contas devem pertencer ao usuário e estar ativas.');
+assert.match(source, /userId:\s*dataOwnerId,\s*isActive:\s*true/, 'Contas devem pertencer à base financeira compartilhada do workspace e estar ativas.');
 assert.match(source, /SOURCE_ACCOUNT_NOT_MONETARY/, 'Conta de origem não monetária deve ser bloqueada.');
 assert.match(source, /DESTINATION_ACCOUNT_NOT_MONETARY/, 'Conta de destino não monetária deve ser bloqueada.');
 assert.match(source, /INSUFFICIENT_SOURCE_ACCOUNT_BALANCE/, 'Saldo insuficiente da conta de origem deve bloquear a operação.');
@@ -18,6 +18,6 @@ assert.match(source, /FINANCIAL_TRANSFER_CREATED/, 'Transferência deve gerar au
 assert.match(source, /FINANCIAL_TRANSFER_CREATE/, 'Transferência deve registrar recibo idempotente próprio.');
 assert.match(routes, /app\.post\('\/transfers'/, 'A rota de transferência deve existir somente no domínio financeiro autenticado.');
 assert.match(routes, /transferRequestSchema/, 'A rota deve validar o payload antes de executar a transferência.');
-assert.match(routes, /createFinancialTransfer\(request\.user\.sub/, 'A rota deve usar o usuário autenticado como proprietário financeiro.');
+assert.match(routes, /createFinancialTransfer\(request\.user\.sub/, 'A rota deve preservar o usuário autenticado como ator; o serviço resolve o proprietário financeiro do workspace.');
 
 console.log('Contrato transacional de transferência validado.');
