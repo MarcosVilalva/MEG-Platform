@@ -245,3 +245,195 @@
   .px-preview-boot-orbit { animation-duration:2.4s; }
   .px-preview-boot-track > span { transition:none; }
 }
+
+
+/* MEG Boot 2.0 · abertura nativa com identidade forte e sem aparência de tela estática. */
+.px-preview-fullscreen-boot{
+  height:100dvh!important;
+  min-height:100dvh!important;
+  padding:max(18px,env(safe-area-inset-top)) 18px max(18px,env(safe-area-inset-bottom))!important;
+  overflow:hidden!important;
+  background:
+    radial-gradient(circle at 50% 35%,rgba(42,220,192,.12),transparent 24%),
+    radial-gradient(circle at 20% 110%,rgba(34,117,126,.18),transparent 34%),
+    radial-gradient(circle at 95% 0%,rgba(31,191,175,.10),transparent 28%),
+    linear-gradient(160deg,#021112 0%,#052a27 52%,#021d1c 100%)!important;
+}
+.px-preview-fullscreen-boot::before{
+  width:min(92vw,560px)!important;
+  height:min(92vw,560px)!important;
+  left:50%!important;
+  bottom:auto!important;
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  border-color:rgba(103,239,208,.055)!important;
+  box-shadow:
+    0 0 0 68px rgba(53,212,165,.012),
+    0 0 0 136px rgba(53,212,165,.008)!important;
+}
+.px-preview-fullscreen-boot::after{
+  width:min(70vw,420px)!important;
+  height:min(70vw,420px)!important;
+  left:50%!important;
+  bottom:auto!important;
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  border-color:rgba(103,239,208,.075)!important;
+}
+.px-preview-boot-card{
+  width:min(440px,100%)!important;
+  max-height:100%!important;
+  gap:14px!important;
+}
+.px-preview-boot-brand{
+  display:grid;
+  justify-items:center;
+  gap:10px;
+}
+.px-preview-boot-logo{
+  width:104px!important;
+  height:104px!important;
+  border-radius:32px;
+  background:
+    radial-gradient(circle at 35% 28%,rgba(105,244,211,.16),transparent 36%),
+    rgba(7,57,51,.30);
+  box-shadow:
+    0 18px 48px rgba(0,0,0,.24),
+    inset 0 0 0 1px rgba(112,243,207,.10);
+}
+.px-preview-boot-logo img{
+  width:66px!important;
+  height:66px!important;
+  position:relative;
+  z-index:2;
+}
+.px-preview-boot-halo{
+  position:absolute;
+  inset:13px;
+  border-radius:26px;
+  background:rgba(73,225,185,.10);
+  filter:blur(12px);
+  animation:px-meg-boot-breathe 1.7s ease-in-out infinite alternate;
+}
+.px-preview-boot-orbit{
+  inset:-4px!important;
+  border:1px solid rgba(105,244,211,.14)!important;
+  border-top-color:#6ff0cb!important;
+  border-right-color:rgba(111,240,203,.42)!important;
+  animation-duration:2.1s!important;
+}
+.px-preview-boot-wordmark{
+  width:min(215px,58vw);
+  max-height:32px;
+  display:block;
+  object-fit:contain;
+  opacity:.96;
+  filter:drop-shadow(0 8px 18px rgba(0,0,0,.20));
+}
+.px-preview-boot-copy{
+  width:100%;
+  gap:6px!important;
+}
+.px-preview-boot-stage-label{
+  display:inline-flex!important;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  color:#75e9ca!important;
+  font-size:8px!important;
+  letter-spacing:.14em!important;
+}
+.px-preview-boot-stage-label i{
+  width:6px;
+  height:6px;
+  border-radius:999px;
+  background:#65edc7;
+  box-shadow:0 0 0 5px rgba(101,237,199,.08);
+  animation:px-meg-boot-stage 1s ease-in-out infinite alternate;
+}
+.px-preview-boot-copy h1{
+  font-size:clamp(23px,6.8vw,32px)!important;
+  letter-spacing:-.035em;
+}
+.px-preview-boot-copy p{
+  max-width:330px;
+  margin:0 auto!important;
+  color:#87aaa1!important;
+  font-size:10px!important;
+}
+.px-preview-boot-progress{
+  width:min(330px,84vw)!important;
+  gap:6px!important;
+}
+.px-preview-boot-track{
+  height:5px!important;
+  padding:1px;
+  border:1px solid rgba(108,233,201,.08);
+  background:rgba(4,44,39,.72)!important;
+}
+.px-preview-boot-track>span{
+  background:linear-gradient(90deg,#28bd98,#70f3cf,#41dabb)!important;
+  background-size:180% 100%!important;
+  animation:px-meg-boot-flow 1.25s linear infinite!important;
+}
+.px-preview-boot-steps{
+  width:min(330px,84vw)!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:5px!important;
+  text-align:center!important;
+}
+.px-preview-boot-step{
+  min-width:0;
+  min-height:42px!important;
+  padding:6px 3px!important;
+  display:grid!important;
+  justify-items:center!important;
+  align-content:center!important;
+  gap:4px!important;
+  border-radius:10px!important;
+  font-size:6.5px!important;
+  line-height:1.1!important;
+}
+.px-preview-boot-step i{
+  width:15px!important;
+  height:15px!important;
+  flex-basis:15px!important;
+  font-size:7px!important;
+}
+.px-preview-boot-step span{
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.px-preview-boot-foot{
+  margin-top:0!important;
+  font-size:7px!important;
+  letter-spacing:.02em!important;
+}
+@keyframes px-meg-boot-breathe{
+  from{opacity:.45;transform:scale(.92)}
+  to{opacity:1;transform:scale(1.08)}
+}
+@keyframes px-meg-boot-stage{
+  from{opacity:.5;transform:scale(.82)}
+  to{opacity:1;transform:scale(1.12)}
+}
+@keyframes px-meg-boot-flow{
+  from{background-position:0 0}
+  to{background-position:180% 0}
+}
+@media(max-width:560px){
+  .px-preview-boot-card{gap:12px!important}
+  .px-preview-boot-logo{width:92px!important;height:92px!important;border-radius:28px!important}
+  .px-preview-boot-logo img{width:58px!important;height:58px!important}
+  .px-preview-boot-wordmark{width:min(190px,56vw)}
+}
+@media(max-height:650px){
+  .px-preview-boot-logo{width:76px!important;height:76px!important}
+  .px-preview-boot-logo img{width:48px!important;height:48px!important}
+  .px-preview-boot-wordmark{max-height:25px}
+  .px-preview-boot-copy p{display:none}
+  .px-preview-boot-step{min-height:34px!important}
+  .px-preview-boot-foot{display:none!important}
+}
