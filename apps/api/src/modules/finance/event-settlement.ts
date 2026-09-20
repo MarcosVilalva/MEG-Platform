@@ -37,6 +37,7 @@ function normalize(value: unknown) {
 
 export async function settleLegacyFinancialEventProtected(userId: string, input: SettleLegacyFinancialEventInput) {
   const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = mutationRequestHash({ ...input, operationId: undefined });
 
   try {
@@ -50,7 +51,7 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
       }
 
       try {
-        await assertActiveCatalogReferences(tx, userId, {
+        await assertActiveCatalogReferences(tx, dataOwnerId, {
           accountId: input.accountId,
           paymentMethodId: input.paymentMethodId,
         });
@@ -62,7 +63,7 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
       }
 
       const current = await tx.financialEvent.findFirst({
-        where: { id: input.eventId, userId, archivedAt: null },
+        where: { id: input.eventId, userId: dataOwnerId, archivedAt: null },
         include: { account: true, paymentMethod: true, ledgerEntries: true },
       });
       if (!current) throw new FinancialEventSettlementError('FINANCIAL_EVENT_NOT_FOUND');

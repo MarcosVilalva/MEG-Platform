@@ -75,6 +75,7 @@ export async function createFinancialTransfer(userId: string, input: CreateFinan
   }
 
   const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = mutationRequestHash({ ...input, operationId: undefined });
 
   return serializableFinancialTransaction(async (tx) => {
@@ -88,7 +89,7 @@ export async function createFinancialTransfer(userId: string, input: CreateFinan
 
     const accounts = await tx.account.findMany({
       where: {
-        userId,
+        userId: dataOwnerId,
         isActive: true,
         id: { in: [input.sourceAccountId, input.destinationAccountId] },
       },
@@ -101,7 +102,7 @@ export async function createFinancialTransfer(userId: string, input: CreateFinan
     if (!isMonetaryAccountType(source.type)) throw new FinancialTransferError('SOURCE_ACCOUNT_NOT_MONETARY');
     if (!isMonetaryAccountType(destination.type)) throw new FinancialTransferError('DESTINATION_ACCOUNT_NOT_MONETARY');
 
-    const sourceBalanceBefore = await sourceAccountBalanceAt(tx, userId, source, input.date);
+    const sourceBalanceBefore = await sourceAccountBalanceAt(tx, dataOwnerId, source, input.date);
     const requested = Math.round(Number(input.amount) * 100) / 100;
     if (requested > sourceBalanceBefore) {
       throw new FinancialTransferError('INSUFFICIENT_SOURCE_ACCOUNT_BALANCE', {
@@ -115,7 +116,7 @@ export async function createFinancialTransfer(userId: string, input: CreateFinan
     for (const leg of legs) {
       const event = await tx.financialEvent.create({
         data: {
-          userId,
+          userId: dataOwnerId,
           workspaceId: workspace.workspaceId,
           description: leg.description,
           type: leg.type,
