@@ -548,6 +548,16 @@ assert.match(operationalHome, /Alimentação/,
   'Home operacional deve oferecer atalho protegido para Benefício Alimentação.');
 assert.match(operationalHome, /Despesa[\s\S]*Receita/,
   'Home operacional deve priorizar receitas e despesas.');
+assert.match(operationalHome, /Saldo disponível hoje/,
+  'Home operacional deve abrir com resumo financeiro legível antes dos atalhos.');
+assert.match(phoenixApp, /px-mobile-menu-sheet/,
+  'Android deve possuir menu móvel próprio, independente da sidebar desktop oculta.');
+assert.match(phoenixApp, /px-dock-badge/,
+  'Pendentes deve ficar visível no dock móvel com contador quando houver itens.');
+assert.doesNotMatch(phoenixApp, /function quickRange[\s\S]{0,350}void applyRangePeriod/,
+  'Atalho de período móvel não deve trocar a tela antes de o usuário tocar em Aplicar.');
+assert.doesNotMatch(phoenixApp, /function quickMonth[\s\S]{0,280}void applyMonthlyPeriod/,
+  'Atalho de mês móvel não deve aplicar e navegar sozinho.');
 assert.match(operationalCss, /body\.meg-operational-mobile \.px-launch-drawer[\s\S]*width:100vw!important/,
   'Drawer Android deve ocupar a tela e se adaptar ao aparelho.');
 assert.match(operationalCss, /body\.meg-operational-mobile \.px-app\.is-collapsed[\s\S]*display:block!important[\s\S]*grid-template-columns:none!important/,

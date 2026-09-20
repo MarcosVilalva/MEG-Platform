@@ -728,3 +728,331 @@ body.meg-operational-mobile .px-mobile-dock button>span{
     padding:8px!important;
   }
 }
+
+
+/* ==========================================================================
+   MEG Operacional 2.1 · navegação estável e home compacta
+   ========================================================================== */
+body.meg-operational-mobile .px-mobile-menu-trigger{
+  width:38px!important;
+  min-width:38px!important;
+  height:38px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  border:1px solid rgba(57,211,201,.18)!important;
+  border-radius:11px!important;
+  background:rgba(255,255,255,.035)!important;
+  color:#d8efed!important;
+  font-size:18px!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-quick-launch{display:none!important}
+body.meg-operational-mobile .px-theme-toggle,
+body.meg-operational-mobile .px-top-exit,
+body.meg-operational-mobile .px-user-pill{display:none!important}
+
+body.meg-operational-mobile .px-operational-hero-v2{
+  min-height:auto!important;
+  align-items:center!important;
+  padding:14px 16px!important;
+}
+body.meg-operational-mobile .px-operational-hero-v2 h1{
+  margin:5px 0 4px!important;
+  font-size:clamp(24px,7vw,34px)!important;
+}
+body.meg-operational-mobile .px-operational-hero-v2 p{
+  max-width:520px!important;
+  font-size:11px!important;
+}
+body.meg-operational-mobile .px-operational-balance{
+  display:grid;
+  grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);
+  gap:10px;
+  padding:16px;
+  border:1px solid rgba(48,205,195,.20);
+  border-radius:19px;
+  background:linear-gradient(145deg,rgba(5,55,57,.96),rgba(1,31,33,.96));
+  box-shadow:0 14px 32px rgba(0,8,10,.16);
+}
+body.meg-operational-mobile .px-operational-balance-main>span,
+body.meg-operational-mobile .px-operational-balance-meta span{
+  display:block;
+  color:#8faeaa;
+  font-size:9px;
+  font-weight:700;
+}
+body.meg-operational-mobile .px-operational-balance-main>strong{
+  display:block;
+  margin:5px 0 4px;
+  color:#fff;
+  font-size:clamp(28px,8vw,42px);
+  line-height:1;
+  letter-spacing:-.035em;
+}
+body.meg-operational-mobile .px-operational-balance-main>small{
+  display:block;
+  max-width:430px;
+  color:#799793;
+  font-size:8.5px;
+  line-height:1.4;
+}
+body.meg-operational-mobile .px-operational-balance-meta{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  align-content:stretch;
+}
+body.meg-operational-mobile .px-operational-balance-meta>div{
+  display:grid;
+  align-content:center;
+  gap:4px;
+  min-width:0;
+  padding:10px;
+  border:1px solid rgba(57,180,174,.12);
+  border-radius:13px;
+  background:rgba(255,255,255,.025);
+}
+body.meg-operational-mobile .px-operational-balance-meta strong{
+  color:#dff8f5;
+  font-size:12px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+body.meg-operational-mobile .px-operational-section{
+  display:grid;
+  gap:8px;
+}
+body.meg-operational-mobile .px-operational-section-head{
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  padding:0 2px;
+}
+body.meg-operational-mobile .px-operational-section-head .px-kicker{
+  color:#66d8d0;
+  font-size:7px;
+  letter-spacing:.15em;
+}
+body.meg-operational-mobile .px-operational-section-head h2{
+  margin:3px 0 0;
+  color:#f6fbfb;
+  font-size:16px;
+}
+body.meg-operational-mobile .px-operational-launch-grid-v2 .px-operational-launch{
+  min-height:86px!important;
+}
+body.meg-operational-mobile .px-operational-launch-grid-v2 .px-operational-launch small{display:none!important}
+body.meg-operational-mobile .px-operational-status-grid-v2>button{
+  min-height:100px!important;
+  align-content:start!important;
+}
+body.meg-operational-mobile .px-operational-status-grid-v2>button.priority{
+  border-color:rgba(255,133,141,.38)!important;
+  background:linear-gradient(145deg,rgba(86,34,39,.27),rgba(1,33,35,.82))!important;
+}
+body.meg-operational-mobile .px-operational-status-grid-v2>button.benefit{
+  border-color:rgba(31,234,219,.30)!important;
+}
+body.meg-operational-mobile .px-operational-status-grid-v2 small{
+  margin-top:3px;
+  color:#6e8e8b;
+  font-size:7.5px;
+}
+
+body.meg-operational-mobile .px-dock-icon-wrap{
+  position:relative!important;
+  overflow:visible!important;
+}
+body.meg-operational-mobile .px-dock-badge{
+  position:absolute;
+  top:-8px;
+  right:-12px;
+  min-width:18px;
+  height:18px;
+  display:grid;
+  place-items:center;
+  padding:0 4px;
+  border:2px solid #021f22;
+  border-radius:999px;
+  background:#ff737d;
+  color:#fff;
+  font-size:8px;
+  line-height:1;
+  font-weight:900;
+}
+body.meg-operational-mobile .px-mobile-dock button>span{
+  font-size:9px!important;
+  font-weight:700!important;
+}
+
+body.meg-operational-mobile .px-mobile-menu-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:180;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding-top:env(safe-area-inset-top);
+  background:rgba(0,11,13,.68);
+  backdrop-filter:blur(6px);
+}
+body.meg-operational-mobile .px-mobile-menu-sheet{
+  width:100%;
+  max-height:88dvh;
+  overflow:auto;
+  overscroll-behavior:contain;
+  padding:14px 14px calc(18px + env(safe-area-inset-bottom));
+  border:1px solid rgba(49,211,201,.20);
+  border-bottom:0;
+  border-radius:24px 24px 0 0;
+  background:linear-gradient(165deg,#07383a 0%,#02292b 52%,#011f21 100%);
+  box-shadow:0 -20px 60px rgba(0,0,0,.42);
+}
+body.meg-operational-mobile .px-mobile-menu-head{
+  position:sticky;
+  top:-14px;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:-14px -14px 12px;
+  padding:16px 16px 12px;
+  background:rgba(3,43,45,.96);
+  border-bottom:1px solid rgba(49,211,201,.12);
+  backdrop-filter:blur(16px);
+}
+body.meg-operational-mobile .px-mobile-menu-head span{
+  display:block;
+  color:#5fcfc7;
+  font-size:8px;
+  letter-spacing:.14em;
+}
+body.meg-operational-mobile .px-mobile-menu-head strong{
+  display:block;
+  margin-top:2px;
+  color:#fff;
+  font-size:20px;
+}
+body.meg-operational-mobile .px-mobile-menu-head>button{
+  width:38px;
+  height:38px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:11px;
+  background:rgba(255,255,255,.04);
+  color:#dceeed;
+  font-size:22px;
+}
+body.meg-operational-mobile .px-mobile-menu-search{
+  width:100%;
+  min-height:58px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 12px;
+  border:1px solid rgba(52,205,196,.18);
+  border-radius:15px;
+  background:rgba(255,255,255,.035);
+  color:#effafa;
+  text-align:left;
+}
+body.meg-operational-mobile .px-mobile-menu-search>span{
+  width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:rgba(31,232,219,.08);color:#28e7db;font-size:18px;
+}
+body.meg-operational-mobile .px-mobile-menu-search strong{display:block;font-size:12px}
+body.meg-operational-mobile .px-mobile-menu-search small{display:block;margin-top:2px;color:#799c98;font-size:8px}
+body.meg-operational-mobile .px-mobile-menu-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin-top:10px;
+}
+body.meg-operational-mobile .px-mobile-menu-grid>button{
+  position:relative;
+  min-width:0;
+  min-height:70px;
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr);
+  align-items:center;
+  gap:9px;
+  padding:10px;
+  border:1px solid rgba(58,181,175,.13);
+  border-radius:14px;
+  background:rgba(255,255,255,.025);
+  color:#eaf7f6;
+  text-align:left;
+}
+body.meg-operational-mobile .px-mobile-menu-grid>button.active{
+  border-color:rgba(31,232,219,.40);
+  background:rgba(31,232,219,.08);
+}
+body.meg-operational-mobile .px-mobile-menu-grid>button.payables{
+  border-color:rgba(255,122,132,.24);
+}
+body.meg-operational-mobile .px-mobile-menu-icon{
+  width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:rgba(255,255,255,.04);color:#52dfd5;font-size:16px;
+}
+body.meg-operational-mobile .px-mobile-menu-grid strong{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:10px;
+}
+body.meg-operational-mobile .px-mobile-menu-grid small{
+  display:block;
+  margin-top:3px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#73928f;
+  font-size:7px;
+}
+body.meg-operational-mobile .px-mobile-menu-grid b{
+  position:absolute;
+  top:7px;
+  right:7px;
+  min-width:19px;
+  height:19px;
+  display:grid;
+  place-items:center;
+  padding:0 4px;
+  border-radius:999px;
+  background:#ff727d;
+  color:#fff;
+  font-size:8px;
+}
+body.meg-operational-mobile .px-mobile-menu-footer{
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px solid rgba(255,255,255,.08);
+}
+body.meg-operational-mobile .px-mobile-menu-footer button{
+  width:100%;
+  min-height:46px;
+  border:1px solid rgba(255,126,136,.17);
+  border-radius:13px;
+  background:rgba(255,88,102,.05);
+  color:#ff9ba2;
+  font-weight:800;
+}
+
+@media (max-width:560px){
+  body.meg-operational-mobile .px-operational-balance{grid-template-columns:1fr}
+  body.meg-operational-mobile .px-operational-balance-meta{grid-template-columns:1fr 1fr}
+  body.meg-operational-mobile .px-operational-status-grid-v2{grid-template-columns:1fr!important}
+  body.meg-operational-mobile .px-operational-status-grid-v2>button{
+    min-height:74px!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    align-items:center!important;
+  }
+  body.meg-operational-mobile .px-operational-status-grid-v2>button span,
+  body.meg-operational-mobile .px-operational-status-grid-v2>button em,
+  body.meg-operational-mobile .px-operational-status-grid-v2>button small{grid-column:1}
+  body.meg-operational-mobile .px-operational-status-grid-v2>button strong{
+    grid-column:2;
+    grid-row:1 / span 3;
+    align-self:center;
+    font-size:18px!important;
+  }
+}
