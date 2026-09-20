@@ -23,6 +23,20 @@ assert.match(mutation, /action: 'BENEFIT_EVENT_CREATED'/,
   'Movimentação do benefício deve entrar na auditoria financeira.');
 assert.match(routes, /app\.post\('\/benefit-events'/,
   'Benefício deve possuir endpoint próprio em vez de reutilizar o writer genérico.');
+assert.match(routes, /app\.patch\('\/benefit-events\/:eventId'/,
+  'Benefício deve possuir edição protegida no mesmo domínio, sem cair no editor financeiro genérico.');
+assert.match(mutation, /updateBenefitEventProtected/,
+  'Vale Alimentação deve possuir writer próprio para alteração.');
+assert.match(mutation, /before\.updatedAt\.toISOString\(\) !== input\.expectedUpdatedAt/,
+  'Edição do benefício deve impedir sobrescrita silenciosa de uma versão alterada em outro aparelho.');
+assert.match(mutation, /benefitBalanceAt\(tx, userId, input\.date, eventId\)/,
+  'Ao alterar uma despesa do benefício, o saldo deve ser recalculado excluindo o próprio lançamento antigo.');
+assert.match(mutation, /writeBackNormalizedEventsToAppState\(tx, workspace\.workspaceId, \[result\]\)/,
+  'Edição do benefício deve refletir o lançamento normalizado no espelho compartilhado.');
+assert.match(mutation, /action: 'BENEFIT_EVENT_UPDATED'/,
+  'Alteração do Vale Alimentação deve permanecer auditável.');
+assert.match(mutation, /mutationType: 'BENEFIT_EVENT_UPDATE'/,
+  'Retry de alteração do benefício deve possuir recibo idempotente próprio.');
 assert.match(routes, /z\.enum\(\['income', 'expense'\]\)/,
   'Contrato deve limitar benefício a recarga e despesa.');
 assert.match(routes, /amount: z\.coerce\.number\(\)\.positive\(\)\.finite\(\)/,
