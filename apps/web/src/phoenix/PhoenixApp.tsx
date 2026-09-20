@@ -591,7 +591,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
       } else if (event.key === 'Escape') {
         setSearchOpen(false);
         setMobileOpen(false);
-        setPeriodOpen(false);
+        closePeriodSelector();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -732,7 +732,7 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
           return;
         }
         if (periodOpen) {
-          setPeriodOpen(false);
+          closePeriodSelector();
           return;
         }
 
@@ -956,6 +956,12 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
     setPeriodOpen(true);
   }
 
+  function closePeriodSelector() {
+    if (periodLoading) return;
+    setPeriodError('');
+    setPeriodOpen(false);
+  }
+
   function applyPeriod() {
     if (periodDraftMode === 'month') {
       void applyMonthlyPeriod(periodDraftMonth);
@@ -990,12 +996,12 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
             <button className="px-top-quick-launch" type="button" title="Nova despesa" aria-label="Nova despesa" onClick={() => requestLaunch('expense')}>＋</button>
             <div className={`px-period-menu ${nativeOperational ? 'px-period-menu-mobile-host' : ''} ${periodOpen ? 'is-open' : ''}`} ref={periodRef}>
               {!nativeOperational ? <button className={`px-period-summary ${periodLoading ? 'is-loading' : ''}`} type="button" title="Selecionar período" aria-label="Selecionar período" aria-busy={periodLoading} onClick={() => periodOpen ? setPeriodOpen(false) : openPeriodSelector()}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span className="px-period-active">{periodActiveLabel}</span></button> : null}
-              {periodOpen && nativeOperational ? <button className="px-period-mobile-backdrop" type="button" aria-label="Fechar filtro de período" onClick={() => setPeriodOpen(false)} /> : null}
-              {periodOpen ? <div className={`px-period-popover px-period-popover-v15 ${nativeOperational ? 'is-mobile-sheet' : ''} ${periodLoading ? 'is-loading' : ''}`} role={nativeOperational ? 'dialog' : undefined} aria-modal={nativeOperational ? true : undefined} aria-label={nativeOperational ? 'Filtro de período' : undefined}>
+              {periodOpen && nativeOperational ? <button className="px-period-mobile-backdrop" type="button" aria-label="Cancelar filtro de período" onClick={closePeriodSelector} /> : null}
+              {periodOpen ? <div className={`px-period-popover px-period-popover-v15 ${nativeOperational ? 'is-mobile-sheet' : ''} ${periodLoading ? 'is-loading' : ''}`} role={nativeOperational ? 'dialog' : undefined} aria-modal={nativeOperational ? true : undefined} aria-label={nativeOperational ? 'Filtro de período' : undefined} onPointerDown={(event) => event.stopPropagation()}>
                 <header className="px-period-head">
                   <div className="px-period-head-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg></div>
                   <div><span>Período de consulta</span><strong>{periodDraftLabel}</strong><small>Troque a visão sem desmontar a tela atual.</small></div>
-                  <button className="px-period-close" type="button" aria-label="Fechar seletor de período" onClick={() => setPeriodOpen(false)}>×</button>
+                  <button className="px-period-close" type="button" aria-label="Cancelar e fechar seletor de período" disabled={periodLoading} onPointerDown={(event) => event.stopPropagation()} onClick={closePeriodSelector}>×</button>
                 </header>
 
                 <div className="px-period-modes" role="tablist" aria-label="Modo do período">
@@ -1050,7 +1056,10 @@ export function PhoenixApp({ onLogout }: { onLogout?: () => void }) {
 
                 <footer className="px-period-footer">
                   <div><span>Nova visão</span><strong>{periodDraftLabel}</strong></div>
-                  <button className="px-period-apply" type="button" disabled={periodLoading} onClick={applyPeriod}>{periodLoading ? 'Carregando…' : 'Aplicar'}</button>
+                  <div className="px-period-footer-actions">
+                    <button className="px-period-cancel" type="button" disabled={periodLoading} onClick={closePeriodSelector}>Cancelar</button>
+                    <button className="px-period-apply" type="button" disabled={periodLoading} onClick={applyPeriod}>{periodLoading ? 'Carregando…' : 'Aplicar'}</button>
+                  </div>
                 </footer>
               </div> : null}
             </div>
