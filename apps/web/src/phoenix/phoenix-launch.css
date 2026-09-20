@@ -14,3 +14,16 @@
 
 @container phoenix-workspace (max-width:980px){.px-launch-head-actions{align-items:stretch;flex-direction:column}.px-launch-head-actions>.px-primary-action,.px-column-chooser,.px-column-chooser>summary{width:100%}.px-v15-launch-table table{min-width:0}.px-v15-launch-table thead{display:none}.px-v15-launch-table tbody{display:grid;gap:8px}.px-v15-launch-table tr{display:grid;grid-template-columns:1fr 1fr;padding:9px;border:1px solid var(--line);border-radius:11px;background:var(--panel2)}.px-v15-launch-table td{display:block;padding:5px 7px;border:0}.px-v15-launch-table td:before{content:attr(data-label);display:block;margin-bottom:3px;color:var(--muted);font-size:8px;font-weight:900;text-transform:uppercase}.px-v15-launch-table td:nth-child(5),.px-v15-launch-table td:last-child{grid-column:1/-1}.px-v15-launch-table td:last-child{border-top:1px solid var(--line);padding-top:8px}}
 @container phoenix-workspace (max-width:620px){.px-form-row{grid-template-columns:1fr}.px-launch-drawer{padding:14px}.px-launch-form{padding:13px}.px-detail-grid{grid-template-columns:1fr}.px-v15-launch-table tr{grid-template-columns:1fr}.px-v15-launch-table td{grid-column:1!important}.px-detail-actions{flex-direction:column}}
+
+
+/* Sinal explícito do valor: compartilhado entre Web e Android. */
+.px-amount-entry{display:grid;gap:8px;min-width:0}
+.px-sign-toggle{display:grid;grid-template-columns:1fr 1fr;gap:7px;min-width:0;padding:4px;border:1px solid var(--line);border-radius:11px;background:var(--panel2)}
+.px-sign-toggle button{min-width:0;min-height:36px;padding:0 9px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--muted);font-size:10px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.px-sign-toggle button.active{background:var(--panel);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.px-sign-toggle button.active.positive{border-color:color-mix(in srgb,var(--brand) 38%,var(--line));color:var(--brand2)}
+.px-sign-toggle button.active.negative{border-color:color-mix(in srgb,var(--warn) 42%,var(--line));background:var(--warn-bg);color:var(--warn)}
+@media(max-width:760px){
+  .px-sign-toggle{gap:5px}
+  .px-sign-toggle button{min-height:42px;padding:0 7px;font-size:9px}
+}

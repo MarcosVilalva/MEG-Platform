@@ -57,6 +57,8 @@ assert.match(gateway, /loadPhoenixReadModel\(refreshMonth,\s*\{ force: true \}\)
   'Snapshot só deve ser recarregado depois da confirmação do servidor.');
 assert.match(gateway, /input\.amount\s*===\s*0/,
   'Writer simples deve rejeitar zero e preservar valores negativos usados para estorno/reversão.');
+assert.doesNotMatch(gateway, /getPhoenixSimpleEventEligibility[\s\S]{0,600}PHOENIX_REVERSAL_NOT_IN_SIMPLE_FLOW/,
+  'Receita/despesa simples deve aceitar valor negativo; somente fluxos especializados mantêm proteção própria.');
 assert.match(gateway, /type:\s*'income'\s*\|\s*'expense'/,
   'Gateway simples deve continuar restrito a receita/despesa; transferência usa contrato atômico próprio.');
 assert.match(gateway, /status:\s*'planned'\s*\|\s*'paid'/,
@@ -232,6 +234,16 @@ assert.doesNotMatch(movements, /financeClient\.updateEvent|financeClient\.bulkUp
   'Tela de Lançamentos não pode administrar diretamente a mutação e releitura.');
 assert.match(movements, /runPhoenixSimpleEventEdit/,
   'Tela deve encaminhar a edição ao gateway Phoenix em vez de acessar cliente mutável.');
+assert.match(movements, /amount:\s*\(negative \? -1 : 1\) \* amountCents \/ 100/,
+  'Edição/criação simples deve enviar o sinal escolhido ao domínio financeiro.');
+assert.match(movements, /px-sign-toggle[\s\S]*\+ Positivo[\s\S]*Negativo \/ estorno/,
+  'Web e Android devem oferecer controle explícito para trocar o sinal do lançamento.');
+assert.match(movements, /setNegative\(value\.includes\('-'\)\)/,
+  'Remover o sinal negativo no campo deve realmente voltar o lançamento para positivo.');
+assert.match(movements, /setNegative\(displayEffect\(event\) < 0\)/,
+  'Ao editar, o sinal inicial deve ser derivado do efeito financeiro armazenado.');
+assert.doesNotMatch(movements, /draft\.type === 'transfer' \|\| negative \|\| benefit/,
+  'Troca de sinal em receita/despesa simples não pode ser bloqueada pela edição protegida.');
 assert.match(movements, /PhoenixLaunchWriteControl/,
   'Primeira etapa visual deve revisar e delegar a segunda etapa ao controle protegido de confirmação.');
 assert.match(movements, /cardInput=\{cardWriteInput\}/,

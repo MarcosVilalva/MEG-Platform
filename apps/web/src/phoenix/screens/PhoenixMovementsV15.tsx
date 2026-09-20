@@ -534,10 +534,10 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     const target = normalizeText(draft.description);
     return data.events.items.find((event) => event.id !== editingEventId
       && normalizeText(event.description) === target
-      && Math.round(amountFromEvent(event) * 100) === amountCents
+      && Math.round(displayEffect(event) * 100) === (negative ? -amountCents : amountCents)
       && event.accountId === draft.accountId
       && event.date.slice(0, 10) === draft.eventDate) || null;
-  }, [data.events.items, editingEventId, draft.description, draft.accountId, draft.eventDate, amountCents]);
+  }, [data.events.items, editingEventId, draft.description, draft.accountId, draft.eventDate, amountCents, negative]);
 
   const simpleWriteInput = useMemo(() => {
     if (draft.type === 'transfer') return null;
@@ -547,13 +547,13 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       description: draft.description,
       date: draft.eventDate,
       competence: draft.eventDate.slice(0, 7),
-      amount: amountCents / 100,
+      amount: (negative ? -1 : 1) * amountCents / 100,
       accountId: draft.accountId,
       categoryId: draft.categoryId || undefined,
       paymentMethodId: draft.paymentMethodId,
       notes: draft.notes || undefined,
     };
-  }, [draft.type, draft.description, draft.eventDate, draft.accountId, draft.categoryId, draft.paymentMethodId, draft.notes, amountCents, effectiveSituation]);
+  }, [draft.type, draft.description, draft.eventDate, draft.accountId, draft.categoryId, draft.paymentMethodId, draft.notes, amountCents, negative, effectiveSituation]);
 
   const cardWriteInput = useMemo(() => {
     if (draft.type !== 'expense' || !credit) return null;
@@ -685,6 +685,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       ...current, type, situation: type === 'income' ? 'paid' : 'planned', classification: '', categoryId: '', paymentMethodId: '', cardId: '',
       destinationId: type === 'transfer' ? current.destinationId : ''
     }));
+    if (type === 'transfer') setNegative(false);
     setDirty(true);
     setReviewed(false);
     setEditMessage('');
@@ -726,7 +727,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
         notes: event.notes || ''
       });
       setAmountCents(Math.round(amountFromEvent(event) * 100));
-      setNegative(Number(event.amount) < 0 || (Number(event.signedAmount) > 0 && visualType === 'expense'));
+      setNegative(displayEffect(event) < 0);
       setEditingEventId(event.id);
     } else {
       resetLaunch();
@@ -757,17 +758,23 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   function onMoneyChange(value: string) {
     const digits = value.replace(/\D/g, '');
     setAmountCents(Math.min(999999999999, Number(digits || 0)));
-    setNegative(value.includes('-') ? true : negative);
+    setNegative(value.includes('-'));
     setDirty(true);
     setReviewed(false);
+  }
+
+  function changeAmountSign(nextNegative: boolean) {
+    if (draft.type === 'transfer') return;
+    setNegative(nextNegative);
+    setDirty(true);
+    setReviewed(false);
+    setEditMessage('');
   }
 
   function onMoneyKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === '-') {
       event.preventDefault();
-      setNegative((value) => !value);
-      setDirty(true);
-      setReviewed(false);
+      changeAmountSign(!negative);
     }
   }
 
@@ -789,8 +796,8 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
   async function saveEdit() {
     if (!editingEventId || !simpleWriteInput || missing.length || savingEdit) return;
-    if (draft.type === 'transfer' || negative || benefit || credit || crediario || draft.recurring || draft.saveTemplate || draft.installments > 1 || draft.manualDue) {
-      setEditMessage('Esta edição envolve um fluxo protegido. Ajustes simples podem ser gravados; cartão, benefício, recorrência, parcelamento, transferência e estorno permanecem protegidos até o writer específico.');
+    if (draft.type === 'transfer' || benefit || credit || crediario || draft.recurring || draft.saveTemplate || draft.installments > 1 || draft.manualDue) {
+      setEditMessage('Esta edição envolve um fluxo protegido. Ajustes simples, inclusive troca de sinal positivo/negativo, podem ser gravados; cartão, benefício, recorrência, parcelamento e transferência continuam no writer específico.');
       return;
     }
     const committedEventId = editingEventId;
@@ -996,8 +1003,14 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
           {draft.type === 'transfer' ? <div className="px-transfer-block"><div className="px-transfer-arrow">Conta de origem ↓ Conta de destino</div><label className={`px-field ${invalidField('conta de destino') || invalidField('destino diferente da origem') || invalidField('contas monetárias válidas') ? 'is-invalid' : ''}`}><span>Conta de destino *</span><select value={draft.destinationId} onChange={(event) => updateDraft('destinationId', event.target.value)}><option value="">Selecione uma conta diferente</option>{accounts.filter((item) => item.id !== draft.accountId).map((item) => <option key={item.id} value={item.id} data-account-type={item.type}>{item.name}</option>)}</select>{invalidField('conta de destino') ? <small className="px-field-error">Selecione a conta de destino.</small> : invalidField('destino diferente da origem') ? <small className="px-field-error">Origem e destino devem ser diferentes.</small> : invalidField('contas monetárias válidas') ? <small className="px-field-error">Use duas contas monetárias válidas.</small> : null}</label></div> : null}
 
-          <label className={`px-field ${invalidField('valor') ? 'is-invalid' : ''}`}><span>Valor total *</span><input className="px-money-mask" inputMode="numeric" value={formatInputMoney(amountCents, negative)} onChange={(event) => onMoneyChange(event.target.value)} onKeyDown={onMoneyKeyDown} />{invalidField('valor') ? <small className="px-field-error">Informe um valor maior que zero.</small> : <small>Digite somente os números. Pressione “-” para alternar estorno/reversão.</small>}</label>
-          {negative && amountCents ? <div className="px-notice warn">Valor negativo identificado. A futura gravação deverá preservar o lançamento original como estorno ou evento reverso.</div> : null}
+          <div className="px-amount-entry">
+            <label className={`px-field ${invalidField('valor') ? 'is-invalid' : ''}`}><span>Valor total *</span><input className="px-money-mask" inputMode="decimal" value={formatInputMoney(amountCents, negative)} onChange={(event) => onMoneyChange(event.target.value)} onKeyDown={onMoneyKeyDown} />{invalidField('valor') ? <small className="px-field-error">Informe um valor diferente de zero.</small> : <small>Informe o valor e escolha abaixo se ele é positivo ou negativo.</small>}</label>
+            {draft.type !== 'transfer' ? <div className="px-sign-toggle" role="group" aria-label="Sinal do valor">
+              <button type="button" className={!negative ? 'active positive' : ''} aria-pressed={!negative} onClick={() => changeAmountSign(false)}>+ Positivo</button>
+              <button type="button" className={negative ? 'active negative' : ''} aria-pressed={negative} onClick={() => changeAmountSign(true)}>− Negativo / estorno</button>
+            </div> : null}
+          </div>
+          {negative && amountCents ? <div className="px-notice warn">Valor negativo identificado. O lançamento será gravado preservando o sinal como estorno/reversão.</div> : null}
 
           {draft.type !== 'transfer' ? <>
             <div className="px-launch-section-label">{draft.type === 'income' ? 'Recebimento' : 'Classificação da despesa'}</div>

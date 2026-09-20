@@ -205,7 +205,8 @@ export function clearPhoenixRuntimeWriteCapabilities() {
 export function getPhoenixSimpleEventEligibility(flow: PhoenixSimpleEventFlow): PhoenixSimpleEventEligibility {
   const reasons: string[] = [];
   if (flow.type === 'transfer') reasons.push('PHOENIX_TRANSFER_NOT_IN_SIMPLE_FLOW');
-  if (flow.negative) reasons.push('PHOENIX_REVERSAL_NOT_IN_SIMPLE_FLOW');
+  // Receita/despesa simples aceita valor negativo como estorno/reversão.
+  // Fluxos especializados (cartão, benefício e transferência) mantêm suas próprias proteções.
   if (flow.benefit) reasons.push('PHOENIX_BENEFIT_NOT_IN_SIMPLE_FLOW');
   if (flow.credit) reasons.push('PHOENIX_CARD_NOT_IN_SIMPLE_FLOW');
   if (flow.crediario) reasons.push('PHOENIX_INSTALLMENT_NOT_IN_SIMPLE_FLOW');

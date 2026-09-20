@@ -622,6 +622,10 @@ assert.match(operationalCss, /\.px-main > \.px-content[\s\S]*112px \+ env\(safe-
   'Conteúdo móvel deve reservar espaço suficiente para o dock e a navegação do Android.');
 assert.match(operationalCss, /\.px-settings-profile-main[\s\S]*grid-template-columns:58px minmax\(0,1fr\)/,
   'Perfil Android deve manter cabeçalho compacto e responsivo.');
+assert.match(styles, /\.px-sign-toggle[\s\S]*grid-template-columns:1fr 1fr/,
+  'Seletor de sinal deve ser responsivo e compartilhado entre Web e Android.');
+assert.match(movementScreen, /changeAmountSign\(false\)[\s\S]*changeAmountSign\(true\)/,
+  'Formulário de lançamento deve permitir alternância explícita entre positivo e negativo.');
 
 assert.match(nativeNotifications, /Contas vencidas|contas vencidas|Conta vencida/,
   'Notificações Android devem cobrir compromissos vencidos.');
