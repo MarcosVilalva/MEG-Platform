@@ -1,9 +1,9 @@
 {
-  "versionCode": 316,
-  "versionName": "2.0.316",
+  "versionCode": 317,
+  "versionName": "2.0.317",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "e42202c4f3d7c5594d78e65798ab0769b46ad63509e59740fcdeb3cdf40519a7",
+  "sha256": "01b1cec2e76db6445cddac05b6cbce70063f494edb46b41e9c6e25b576410067",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Android: corrigir loading biométrico preso em 22%"
+  "releaseNotes": "Merge pull request #342 from MarcosVilalva/feat/launch-edit-delete-operational-v2"
 }
