@@ -76,6 +76,16 @@ function waitForService(ms: number) {
   return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 }
 
+async function loginWithServiceRetry(email: string, password: string) {
+  try {
+    return await login(email, password, { signal: AbortSignal.timeout(12_000) });
+  } catch (cause) {
+    if (!isTransientAuthError(cause)) throw cause;
+    await waitForService(900);
+    return login(email, password, { signal: AbortSignal.timeout(15_000) });
+  }
+}
+
 function authErrorMessage(cause: unknown) {
   const message = cause instanceof Error ? cause.message : '';
   if (message === 'ACCESS_PENDING') return 'Seu cadastro já existe e ainda aguarda aprovação do administrador.';
@@ -199,7 +209,7 @@ function PhoenixPreviewRoot() {
     let active = true;
     setBootStage('session');
     setBootError('');
-    void authenticatedRequest('/auth/me')
+    void authenticatedRequest('/auth/me', { signal: AbortSignal.timeout(12_000) })
       .then(async () => {
         if (!active) return;
         setState('preparing');
@@ -247,7 +257,7 @@ function PhoenixPreviewRoot() {
         setState('authenticating');
         setBusy(true);
         try {
-          await login(credentials.email, credentials.password);
+          await loginWithServiceRetry(credentials.email, credentials.password);
           if (active) await prepareAuthenticatedSession();
         } catch (cause) {
           if (active) {
@@ -353,13 +363,7 @@ function PhoenixPreviewRoot() {
     setState('authenticating');
     setBusy(true);
     try {
-      try {
-        await login(email.trim(), password);
-      } catch (cause) {
-        if (!isTransientAuthError(cause)) throw cause;
-        await waitForService(1400);
-        await login(email.trim(), password);
-      }
+      await loginWithServiceRetry(email.trim(), password);
       await prepareAuthenticatedSession();
     } catch (cause) {
       setState('signed-out');
