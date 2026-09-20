@@ -637,6 +637,22 @@ assert.match(previewMain, /meg-finance-system-lockup-light\.svg/,
   'Loading deve exibir a identidade completa MEG.');
 assert.match(previewBootCss, /px-preview-boot-halo[\s\S]*px-meg-boot-breathe/,
   'Loading deve usar animação própria da marca em vez de uma tela estática.');
+assert.match(previewMain, /px-preview-boot-trust[\s\S]*MEG CLOUD[\s\S]*Sessão protegida/,
+  'Loading premium deve reforçar a identidade e a segurança do ambiente.');
+assert.match(previewBootCss, /\.px-preview-fullscreen-boot[\s\S]*position:fixed!important[\s\S]*z-index:2147483000!important/,
+  'Loading deve cobrir o WebView inteiro, sem deixar a tela de login aparecer por trás.');
+assert.match(previewBootCss, /background-color:#021819!important/,
+  'Loading deve possuir fundo opaco próprio, independente da tela anterior.');
+assert.match(operationalCss, /body\.meg-operational-mobile \.px-topbar[\s\S]*position:fixed!important/,
+  'Cabeçalho MEG deve permanecer fixo em qualquer tela do Android.');
+assert.match(operationalCss, /body\.meg-operational-mobile \.px-main[\s\S]*padding-top:var\(--px-mobile-shell-header\)!important/,
+  'Conteúdo móvel deve começar abaixo do cabeçalho fixo.');
+assert.match(history, /FINANCIAL_EVENT_SETTLED_COMPAT:\s*'Conta baixada'/,
+  'Histórico não pode exibir o código técnico de baixa ao usuário.');
+assert.match(history, /FINANCIAL_EVENT_SETTLED_COMPAT:\s*\`\$\{actor\} deu baixa neste compromisso\`/,
+  'Linha do tempo deve explicar a baixa em linguagem natural.');
+assert.match(history, /Auditoria segura do MEG/,
+  'Detalhes do histórico devem traduzir a origem técnica da auditoria.');
 assert.match(operationalCss, /body\.meg-operational-mobile \.px-app\.is-collapsed[\s\S]*display:block!important[\s\S]*grid-template-columns:none!important/,
   'APK operacional não pode herdar a coluna residual do shell desktop recolhido.');
 assert.match(operationalCss, /body\.meg-operational-mobile \.px-main[\s\S]*width:100%!important[\s\S]*margin:0!important/,
