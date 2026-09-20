@@ -181,6 +181,7 @@ export async function updateFinancialEventsBulkProtected(userId: string, rawInpu
   const ids = canonicalIds(rawInput.ids);
   const input = { ...rawInput, ids };
   const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = mutationRequestHash({ ids, changes: input.changes, expectedUpdatedAtById: input.expectedUpdatedAtById || null });
 
   try {
@@ -194,7 +195,7 @@ export async function updateFinancialEventsBulkProtected(userId: string, rawInpu
       }
 
       try {
-        await assertActiveCatalogReferences(tx, userId, {
+        await assertActiveCatalogReferences(tx, dataOwnerId, {
           accountId: input.changes.accountId,
           categoryId: input.changes.categoryId,
           paymentMethodId: input.changes.paymentMethodId,
@@ -206,7 +207,7 @@ export async function updateFinancialEventsBulkProtected(userId: string, rawInpu
         throw error;
       }
 
-      const before = await readEditableEvents(tx, userId, ids);
+      const before = await readEditableEvents(tx, dataOwnerId, ids);
       assertExpectedEventVersions(before, input.expectedUpdatedAtById);
       const date = input.changes.date ? new Date(input.changes.date) : undefined;
 
@@ -305,6 +306,7 @@ export async function archiveFinancialEventsBulkProtected(userId: string, rawInp
   const ids = canonicalIds(rawInput.ids);
   const input = { ...rawInput, ids };
   const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = mutationRequestHash({ ids, archive: true, expectedUpdatedAtById: input.expectedUpdatedAtById || null });
 
   try {
@@ -317,7 +319,7 @@ export async function archiveFinancialEventsBulkProtected(userId: string, rawInp
         return replayResponse(previous.response);
       }
 
-      const before = await readEditableEvents(tx, userId, ids);
+      const before = await readEditableEvents(tx, dataOwnerId, ids);
       assertExpectedEventVersions(before, input.expectedUpdatedAtById);
       const archivedAt = new Date();
       await tx.ledgerEntry.deleteMany({ where: { eventId: { in: ids } } });

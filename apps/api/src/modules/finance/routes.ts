@@ -91,6 +91,11 @@ function transferError(reply: FastifyReply, error: unknown) {
   return reply.code(status).send({ error: error.code, ...(error.details || {}) });
 }
 
+async function financialDataOwnerId(userId: string) {
+  const context = await resolveWorkspaceContext(userId);
+  return context.workspace.ownerId;
+}
+
 export async function financeRoutes(app: FastifyInstance) {
   registerPhoenixPreviewReads(app);
 
@@ -112,13 +117,15 @@ export async function financeRoutes(app: FastifyInstance) {
   app.get('/analytics', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return getCanonicalFinancialAnalytics(request.user.sub, parsed.data.month);
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return getCanonicalFinancialAnalytics(dataOwnerId, parsed.data.month);
   });
 
   app.get('/budgets', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return listBudgetOverview(request.user.sub, parsed.data.month);
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return listBudgetOverview(dataOwnerId, parsed.data.month);
   });
 
   app.put('/budgets', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
@@ -128,13 +135,15 @@ export async function financeRoutes(app: FastifyInstance) {
       amount: z.coerce.number().positive().finite()
     }).safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return upsertBudget(request.user.sub, parsed.data);
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return upsertBudget(dataOwnerId, parsed.data);
   });
 
   app.delete('/budgets/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const { id } = request.params as { id: string };
     try {
-      return await deleteBudget(request.user.sub, id);
+      const dataOwnerId = await financialDataOwnerId(request.user.sub);
+      return await deleteBudget(dataOwnerId, id);
     } catch (error) {
       if (error instanceof Error && error.message === 'BUDGET_NOT_FOUND') {
         return reply.code(404).send({ error: 'BUDGET_NOT_FOUND' });
@@ -146,13 +155,15 @@ export async function financeRoutes(app: FastifyInstance) {
   app.get('/cashflow', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return getCanonicalFinancialCashflow(request.user.sub, parsed.data.month);
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return getCanonicalFinancialCashflow(dataOwnerId, parsed.data.month);
   });
 
   app.get('/summary', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return getCanonicalFinancialSummary(request.user.sub, parsed.data.month);
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return getCanonicalFinancialSummary(dataOwnerId, parsed.data.month);
   });
 
   app.get('/benefit-summary', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
@@ -174,7 +185,8 @@ export async function financeRoutes(app: FastifyInstance) {
       search: z.string().trim().max(120).optional()
     }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return listFinancialEvents(request.user.sub, parsed.data);
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return listFinancialEvents(dataOwnerId, parsed.data);
   });
 
   app.get('/audit', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
@@ -242,78 +254,89 @@ export async function financeRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get('/accounts', { preHandler: app.authorize([...readRoles]) }, async (request) =>
-    prisma.account.findMany({ where: { userId: request.user.sub }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] })
-  );
+  app.get('/accounts', { preHandler: app.authorize([...readRoles]) }, async (request) => {
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return prisma.account.findMany({ where: { userId: dataOwnerId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] });
+  });
 
   app.post('/accounts', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = accountSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return reply.code(201).send(await prisma.account.create({ data: { userId: request.user.sub, ...parsed.data } }));
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return reply.code(201).send(await prisma.account.create({ data: { userId: dataOwnerId, ...parsed.data } }));
   });
 
   app.patch('/accounts/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = accountSchema.partial().safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
-    const current = await prisma.account.findFirst({ where: { id, userId: request.user.sub } });
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    const current = await prisma.account.findFirst({ where: { id, userId: dataOwnerId } });
     if (!current) return reply.code(404).send({ error: 'ACCOUNT_NOT_FOUND' });
     return prisma.account.update({ where: { id }, data: parsed.data });
   });
 
   app.delete('/accounts/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const current = await prisma.account.findFirst({ where: { id, userId: request.user.sub } });
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    const current = await prisma.account.findFirst({ where: { id, userId: dataOwnerId } });
     if (!current) return reply.code(404).send({ error: 'ACCOUNT_NOT_FOUND' });
     return prisma.account.update({ where: { id }, data: { isActive: false } });
   });
 
-  app.get('/categories', { preHandler: app.authorize([...readRoles]) }, async (request) =>
-    prisma.category.findMany({ where: { userId: request.user.sub }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] })
-  );
+  app.get('/categories', { preHandler: app.authorize([...readRoles]) }, async (request) => {
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return prisma.category.findMany({ where: { userId: dataOwnerId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] });
+  });
 
   app.post('/categories', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = categorySchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    return reply.code(201).send(await prisma.category.create({ data: { userId: request.user.sub, ...parsed.data } }));
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return reply.code(201).send(await prisma.category.create({ data: { userId: dataOwnerId, ...parsed.data } }));
   });
 
   app.patch('/categories/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = categorySchema.partial().safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
-    const current = await prisma.category.findFirst({ where: { id, userId: request.user.sub } });
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    const current = await prisma.category.findFirst({ where: { id, userId: dataOwnerId } });
     if (!current) return reply.code(404).send({ error: 'CATEGORY_NOT_FOUND' });
     return prisma.category.update({ where: { id }, data: parsed.data });
   });
 
   app.delete('/categories/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const current = await prisma.category.findFirst({ where: { id, userId: request.user.sub } });
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    const current = await prisma.category.findFirst({ where: { id, userId: dataOwnerId } });
     if (!current) return reply.code(404).send({ error: 'CATEGORY_NOT_FOUND' });
     return prisma.category.update({ where: { id }, data: { isActive: false } });
   });
 
-  app.get('/payment-methods', { preHandler: app.authorize([...readRoles]) }, async (request) =>
-    prisma.paymentMethod.findMany({ where: { userId: request.user.sub }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] })
-  );
+  app.get('/payment-methods', { preHandler: app.authorize([...readRoles]) }, async (request) => {
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return prisma.paymentMethod.findMany({ where: { userId: dataOwnerId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] });
+  });
 
   app.post('/payment-methods', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = paymentMethodSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    const duplicate = await prisma.paymentMethod.findFirst({ where: { userId: request.user.sub, name: parsed.data.name } });
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    const duplicate = await prisma.paymentMethod.findFirst({ where: { userId: dataOwnerId, name: parsed.data.name } });
     if (duplicate) return reply.code(409).send({ error: 'PAYMENT_METHOD_ALREADY_EXISTS' });
-    return reply.code(201).send(await prisma.paymentMethod.create({ data: { userId: request.user.sub, ...parsed.data } }));
+    return reply.code(201).send(await prisma.paymentMethod.create({ data: { userId: dataOwnerId, ...parsed.data } }));
   });
 
   app.patch('/payment-methods/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = paymentMethodSchema.partial().safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
-    const current = await prisma.paymentMethod.findFirst({ where: { id, userId: request.user.sub } });
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    const current = await prisma.paymentMethod.findFirst({ where: { id, userId: dataOwnerId } });
     if (!current) return reply.code(404).send({ error: 'PAYMENT_METHOD_NOT_FOUND' });
     if (parsed.data.name) {
-      const duplicate = await prisma.paymentMethod.findFirst({ where: { userId: request.user.sub, name: parsed.data.name, id: { not: id } } });
+      const duplicate = await prisma.paymentMethod.findFirst({ where: { userId: dataOwnerId, name: parsed.data.name, id: { not: id } } });
       if (duplicate) return reply.code(409).send({ error: 'PAYMENT_METHOD_ALREADY_EXISTS' });
     }
     return prisma.paymentMethod.update({ where: { id }, data: parsed.data });
@@ -321,16 +344,18 @@ export async function financeRoutes(app: FastifyInstance) {
 
   app.delete('/payment-methods/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const current = await prisma.paymentMethod.findFirst({ where: { id, userId: request.user.sub } });
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    const current = await prisma.paymentMethod.findFirst({ where: { id, userId: dataOwnerId } });
     if (!current) return reply.code(404).send({ error: 'PAYMENT_METHOD_NOT_FOUND' });
     return prisma.paymentMethod.update({ where: { id }, data: { isActive: false } });
   });
 
-  app.get('/ledger', { preHandler: app.authorize([...readRoles]) }, async (request) =>
-    prisma.ledgerEntry.findMany({
-      where: { event: { userId: request.user.sub } },
+  app.get('/ledger', { preHandler: app.authorize([...readRoles]) }, async (request) => {
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    return prisma.ledgerEntry.findMany({
+      where: { event: { userId: dataOwnerId } },
       orderBy: { date: 'desc' },
       include: { account: true, event: true }
-    })
-  );
+    });
+  });
 }

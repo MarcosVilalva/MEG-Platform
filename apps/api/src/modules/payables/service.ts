@@ -64,11 +64,13 @@ function rollingHorizon(day: string, frequency: RecurrenceFrequency) {
 }
 
 export async function listPayables(userId: string, month: string) {
+  const context = await resolveWorkspaceContext(userId);
+  const dataOwnerId = context.workspace.ownerId;
   const [year, monthNumber] = month.split('-').map(Number);
   const start = new Date(Date.UTC(year, monthNumber - 1, 1));
   const end = new Date(Date.UTC(year, monthNumber, 1));
   return prisma.payable.findMany({
-    where: { userId, dueDate: { gte: start, lt: end }, status: { not: 'cancelled' } },
+    where: { userId: dataOwnerId, dueDate: { gte: start, lt: end }, status: { not: 'cancelled' } },
     orderBy: { dueDate: 'asc' },
     include: { category: true, payments: { orderBy: { paidAt: 'desc' } } },
   });
@@ -142,6 +144,7 @@ export async function createRecurringExpense(userId: string, input: RecurringExp
   if (computedEnd && (!parseIsoDay(computedEnd) || computedEnd < firstDay)) throw new PayableDomainError('INVALID_RECURRENCE_END');
   const horizon = computedEnd || rollingHorizon(firstDay, input.frequency);
   const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = input.operationId
     ? mutationRequestHash({ ...input, operationId: undefined, computedEnd, horizon })
     : null;
@@ -158,12 +161,12 @@ export async function createRecurringExpense(userId: string, input: RecurringExp
     }
 
     if (input.categoryId) {
-      const category = await tx.category.findFirst({ where: { id: input.categoryId, userId, isActive: true } });
+      const category = await tx.category.findFirst({ where: { id: input.categoryId, userId: dataOwnerId, isActive: true } });
       if (!category) throw new PayableDomainError('INVALID_CATEGORY');
     }
     const template = await tx.recurringExpense.create({
       data: {
-        userId,
+        userId: dataOwnerId,
         categoryId: input.categoryId,
         description: input.description.trim(),
         amount: input.amount,
@@ -226,6 +229,7 @@ export async function payPayableProtected(userId: string, payableId: string, inp
   const principal = Math.abs(input.amount);
   const paidTotal = principal + input.interestAmount + input.fineAmount;
   const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = input.operationId ? mutationRequestHash({ payableId, ...input, operationId: undefined }) : null;
 
   return serializableFinancialTransaction(async (tx) => {
@@ -240,31 +244,31 @@ export async function payPayableProtected(userId: string, payableId: string, inp
     }
 
     const payable = await tx.payable.findFirst({
-      where: { id: payableId, userId, status: { notIn: ['paid', 'cancelled'] } },
+      where: { id: payableId, userId: dataOwnerId, status: { notIn: ['paid', 'cancelled'] } },
     });
     if (!payable) throw new PayableDomainError('PAYABLE_NOT_FOUND');
     const open = Number(payable.openAmount);
     if (principal > open) throw new PayableDomainError('AMOUNT_EXCEEDS_OPEN_BALANCE', { requested: principal, open });
 
     const account = input.accountId
-      ? await tx.account.findFirst({ where: { id: input.accountId, userId, isActive: true }, select: { id: true } })
+      ? await tx.account.findFirst({ where: { id: input.accountId, userId: dataOwnerId, isActive: true }, select: { id: true } })
       : null;
     if (input.accountId && !account) throw new PayableDomainError('INVALID_ACCOUNT');
     const paymentMethod = input.paymentMethodId
-      ? await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, userId, isActive: true }, select: { id: true, name: true } })
+      ? await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, userId: dataOwnerId, isActive: true }, select: { id: true, name: true } })
       : null;
     if (input.paymentMethodId && !paymentMethod) throw new PayableDomainError('INVALID_PAYMENT_METHOD');
 
     let protection: Record<string, unknown> = { monetary: false, allowed: true };
     if (!isBenefitPaymentMethod(paymentMethod?.name)) {
-      const available = await monetaryBalanceAt(tx, userId, input.paidAt);
+      const available = await monetaryBalanceAt(tx, dataOwnerId, input.paidAt);
       const decision = paymentBalanceDecision(available, paidTotal);
       protection = { monetary: true, ...decision, at: input.paidAt.slice(0, 10) };
       if (!decision.allowed) throw new PayableDomainError('INSUFFICIENT_MONETARY_BALANCE', protection);
     }
 
     const event = await tx.financialEvent.create({ data: {
-      userId,
+      userId: dataOwnerId,
       workspaceId: workspace.workspaceId,
       description: `Pagamento: ${payable.description}`,
       type: 'expense',

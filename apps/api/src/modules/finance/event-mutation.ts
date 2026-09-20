@@ -46,6 +46,7 @@ export async function createFinancialEventProtected(userId: string, input: Creat
     throw new FinancialEventMutationError('TRANSFER_CONTRACT_NOT_READY');
   }
   const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = input.operationId
     ? mutationRequestHash({ ...input, operationId: undefined })
     : null;
@@ -63,7 +64,7 @@ export async function createFinancialEventProtected(userId: string, input: Creat
       }
 
       try {
-        await assertActiveCatalogReferences(tx, userId, input);
+        await assertActiveCatalogReferences(tx, dataOwnerId, input);
       } catch (error) {
         if (error instanceof Error && ['INVALID_ACCOUNT', 'INVALID_CATEGORY', 'INVALID_PAYMENT_METHOD'].includes(error.message)) {
           throw new FinancialEventMutationError(error.message);
@@ -74,7 +75,7 @@ export async function createFinancialEventProtected(userId: string, input: Creat
       const values = financialAmountValues(input.type, input.amount);
       const event = await tx.financialEvent.create({
         data: {
-          userId,
+          userId: dataOwnerId,
           workspaceId: workspace.workspaceId,
           description: input.description.trim(),
           type: input.type,

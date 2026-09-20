@@ -21,6 +21,7 @@ export async function createPayablesProtected(userId: string, input: CreatePayab
   const anchor = parseIsoDay(firstDay)?.day;
   if (!anchor) throw new PayableDomainError('INVALID_DUE_DATE');
   const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = input.operationId
     ? mutationRequestHash({ ...input, operationId: undefined })
     : null;
@@ -37,7 +38,7 @@ export async function createPayablesProtected(userId: string, input: CreatePayab
     }
 
     if (input.categoryId) {
-      const category = await tx.category.findFirst({ where: { id: input.categoryId, userId, isActive: true }, select: { id: true } });
+      const category = await tx.category.findFirst({ where: { id: input.categoryId, userId: dataOwnerId, isActive: true }, select: { id: true } });
       if (!category) throw new PayableDomainError('INVALID_CATEGORY');
     }
 
@@ -52,7 +53,7 @@ export async function createPayablesProtected(userId: string, input: CreatePayab
       const dueDay = moveWeekendToMonday(calendarDay);
       const payable = await tx.payable.create({
         data: {
-          userId,
+          userId: dataOwnerId,
           categoryId: input.categoryId,
           description: input.installmentQty > 1 ? `${input.description.trim()} ${index + 1}/${input.installmentQty}` : input.description.trim(),
           totalAmount: amount,

@@ -110,6 +110,7 @@ export async function updateBenefitEventProtected(
 ): Promise<BenefitEventMutationResult> {
   assertBaseInput(input);
   const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = mutationRequestHash({
     contract: 'benefit-update',
     eventId,
@@ -129,7 +130,7 @@ export async function updateBenefitEventProtected(
       }
 
       const before = await tx.financialEvent.findFirst({
-        where: { id: eventId, userId, archivedAt: null },
+        where: { id: eventId, userId: dataOwnerId, archivedAt: null },
         include: { account: true, category: true, paymentMethod: true, ledgerEntries: true },
       });
       if (!before) throw new BenefitEventMutationError('BENEFIT_EVENT_NOT_FOUND');
@@ -143,9 +144,9 @@ export async function updateBenefitEventProtected(
       }
 
       const [account, paymentMethod, category] = await Promise.all([
-        activeAccountForUser(tx, userId, input.accountId),
-        activePaymentMethodForUser(tx, userId, input.paymentMethodId),
-        input.categoryId ? activeCategoryForUser(tx, userId, input.categoryId) : Promise.resolve(null),
+        activeAccountForUser(tx, dataOwnerId, input.accountId),
+        activePaymentMethodForUser(tx, dataOwnerId, input.paymentMethodId),
+        input.categoryId ? activeCategoryForUser(tx, dataOwnerId, input.categoryId) : Promise.resolve(null),
       ]);
       if (!account || normalizeText(account.type) !== 'BENEFIT') throw new BenefitEventMutationError('INVALID_BENEFIT_ACCOUNT');
       if (!paymentMethod || !isBenefitPaymentMethod(paymentMethod.name)) throw new BenefitEventMutationError('INVALID_BENEFIT_PAYMENT_METHOD');
@@ -154,7 +155,7 @@ export async function updateBenefitEventProtected(
 
       let balanceBefore: number | null = null;
       if (input.type === 'expense') {
-        balanceBefore = await benefitBalanceAt(tx, userId, input.date, eventId);
+        balanceBefore = await benefitBalanceAt(tx, dataOwnerId, input.date, eventId);
         const availableCents = Math.round(balanceBefore * 100);
         const requestedCents = Math.round(input.amount * 100);
         if (requestedCents > availableCents) {
@@ -254,6 +255,7 @@ export async function createBenefitEventProtected(
 ): Promise<BenefitEventMutationResult> {
   assertBaseInput(input);
   const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = mutationRequestHash({ contract: 'benefit', ...input, operationId: undefined });
 
   try {
@@ -267,9 +269,9 @@ export async function createBenefitEventProtected(
       }
 
       const [account, paymentMethod, category] = await Promise.all([
-        activeAccountForUser(tx, userId, input.accountId),
-        activePaymentMethodForUser(tx, userId, input.paymentMethodId),
-        input.categoryId ? activeCategoryForUser(tx, userId, input.categoryId) : Promise.resolve(null),
+        activeAccountForUser(tx, dataOwnerId, input.accountId),
+        activePaymentMethodForUser(tx, dataOwnerId, input.paymentMethodId),
+        input.categoryId ? activeCategoryForUser(tx, dataOwnerId, input.categoryId) : Promise.resolve(null),
       ]);
 
       if (!account || normalizeText(account.type) !== 'BENEFIT') {
@@ -283,7 +285,7 @@ export async function createBenefitEventProtected(
 
       let balanceBefore: number | null = null;
       if (input.type === 'expense') {
-        balanceBefore = await benefitBalanceAt(tx, userId, input.date);
+        balanceBefore = await benefitBalanceAt(tx, dataOwnerId, input.date);
         const availableCents = Math.round(balanceBefore * 100);
         const requestedCents = Math.round(input.amount * 100);
         if (requestedCents > availableCents) {
@@ -298,7 +300,7 @@ export async function createBenefitEventProtected(
       const values = financialAmountValues(input.type, input.amount);
       const event = await tx.financialEvent.create({
         data: {
-          userId,
+          userId: dataOwnerId,
           workspaceId: workspace.workspaceId,
           description: input.description.trim(),
           type: input.type,

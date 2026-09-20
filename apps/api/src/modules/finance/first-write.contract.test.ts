@@ -41,23 +41,25 @@ assert.match(mutation, /TRANSFER_CONTRACT_NOT_READY/,
   'Transferência não pode cair no contrato simples de uma perna.');
 
 assert.match(catalogScope, /where: \{ id, userId, isActive: true \}/,
-  'Referências devem ser ativas e pertencer ao usuário.');
+  'Referências devem ser ativas e pertencer ao proprietário financeiro já resolvido do workspace.');
 assert.match(catalogScope, /INVALID_ACCOUNT/);
 assert.match(catalogScope, /INVALID_CATEGORY/);
 assert.match(catalogScope, /INVALID_PAYMENT_METHOD/);
 
-assert.match(routes, /prisma\.account\.findMany\(\{ where: \{ userId: request\.user\.sub \}/,
-  'Leitura de contas deve ser isolada pelo usuário autenticado.');
-assert.match(routes, /prisma\.category\.findMany\(\{ where: \{ userId: request\.user\.sub \}/,
-  'Leitura de categorias deve ser isolada pelo usuário autenticado.');
-assert.match(routes, /prisma\.paymentMethod\.findMany\(\{ where: \{ userId: request\.user\.sub \}/,
-  'Leitura de formas de pagamento deve ser isolada pelo usuário autenticado.');
-assert.match(routes, /prisma\.account\.create\(\{ data: \{ userId: request\.user\.sub/,
-  'Novas contas devem nascer vinculadas ao usuário autenticado.');
-assert.match(routes, /prisma\.category\.create\(\{ data: \{ userId: request\.user\.sub/,
-  'Novas categorias devem nascer vinculadas ao usuário autenticado.');
-assert.match(routes, /prisma\.paymentMethod\.create\(\{ data: \{ userId: request\.user\.sub/,
-  'Novas formas de pagamento devem nascer vinculadas ao usuário autenticado.');
+assert.match(routes, /async function financialDataOwnerId\(userId: string\)[\s\S]*context\.workspace\.ownerId/,
+  'Rotas financeiras devem resolver explicitamente a base compartilhada do workspace.');
+assert.match(routes, /prisma\.account\.findMany\(\{ where: \{ userId: dataOwnerId \}/,
+  'Leitura de contas deve ser isolada pela base financeira do workspace.');
+assert.match(routes, /prisma\.category\.findMany\(\{ where: \{ userId: dataOwnerId \}/,
+  'Leitura de categorias deve ser isolada pela base financeira do workspace.');
+assert.match(routes, /prisma\.paymentMethod\.findMany\(\{ where: \{ userId: dataOwnerId \}/,
+  'Leitura de formas de pagamento deve ser isolada pela base financeira do workspace.');
+assert.match(routes, /prisma\.account\.create\(\{ data: \{ userId: dataOwnerId/,
+  'Novas contas devem nascer vinculadas ao proprietário financeiro do workspace.');
+assert.match(routes, /prisma\.category\.create\(\{ data: \{ userId: dataOwnerId/,
+  'Novas categorias devem nascer vinculadas ao proprietário financeiro do workspace.');
+assert.match(routes, /prisma\.paymentMethod\.create\(\{ data: \{ userId: dataOwnerId/,
+  'Novas formas de pagamento devem nascer vinculadas ao proprietário financeiro do workspace.');
 
 assert.match(audit, /schemaVersion:\s*1/);
 assert.match(audit, /resolveWorkspaceContext/,
