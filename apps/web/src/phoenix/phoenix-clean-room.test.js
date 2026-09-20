@@ -581,6 +581,16 @@ assert.match(periodCss, /\.px-period-popover-v15\.is-mobile-sheet[\s\S]*bottom:m
   'Filtro de período do Android deve ser um bottom sheet preso ao viewport.');
 assert.doesNotMatch(phoenixApp, /px-period-all[\s\S]{0,500}void applyAllPeriod\(\)/,
   'Tudo não pode ser aplicado antes de o usuário tocar em Aplicar.');
+assert.match(phoenixApp, /function closePeriodSelector\(\)[\s\S]*setPeriodOpen\(false\)/,
+  'Filtro de período deve possuir fechamento explícito sem aplicar a seleção.');
+assert.match(phoenixApp, /px-period-cancel[\s\S]*Cancelar/,
+  'Rodapé do filtro deve oferecer Cancelar além de Aplicar.');
+assert.match(phoenixApp, /px-period-close[\s\S]*onClick=\{closePeriodSelector\}/,
+  'Botão X do filtro deve executar o mesmo cancelamento confiável.');
+assert.match(phoenixApp, /px-period-mobile-backdrop[\s\S]*onClick=\{closePeriodSelector\}/,
+  'Toque fora do sheet deve cancelar e fechar o filtro.');
+assert.match(periodCss, /\.px-period-footer-actions[\s\S]*\.px-period-cancel/,
+  'Ações Cancelar e Aplicar devem permanecer visíveis e responsivas no rodapé móvel.');
 assert.match(phoenixApp, /navigate\('movements'\)[\s\S]{0,220}px-dock-new[\s\S]{0,220}>Novo</,
   'Dock Android deve separar Lançamentos da ação Novo.');
 assert.match(phoenixApp, /App\.addListener\('backButton'[\s\S]*meg:android-back[\s\S]*requestLogout\(\)/,
