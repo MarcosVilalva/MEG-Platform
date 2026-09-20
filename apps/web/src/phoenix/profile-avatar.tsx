@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { readSession } from '../app/auth-client';
+import { patchCloudProperties, readCloudState } from '../app/app-state-client';
 
 export type PhoenixAvatarPreference =
   | { kind: 'initials' }
@@ -89,6 +90,7 @@ const LEGACY_PRESET_ALIASES: Record<string, string> = {
 };
 
 const keyForUser = (userId: string) => `meg.profile.avatar.${userId}`;
+const CLOUD_AVATAR_KEY = 'profileAvatar';
 
 export function currentPhoenixUserId() {
   return readSession()?.user.id || 'local-user';
@@ -119,22 +121,31 @@ function publicAsset(path: string) {
   return `${base}${path.replace(/^\/+/, '')}`;
 }
 
-export function readPhoenixAvatarPreference(userId = currentPhoenixUserId()): PhoenixAvatarPreference {
-  const fallback: PhoenixAvatarPreference = { kind: 'preset', presetId: defaultPresetForUser(userId) };
+function normalizeAvatarPreference(value: unknown, fallback?: PhoenixAvatarPreference): PhoenixAvatarPreference | null {
+  if (!value || typeof value !== 'object') return fallback || null;
+  const parsed = value as PhoenixAvatarPreference;
+  if (parsed.kind === 'photo' && parsed.dataUrl) return parsed;
+  if (parsed.kind === 'preset') {
+    const preset = findPreset(parsed.presetId);
+    return preset ? { kind: 'preset', presetId: preset.id } : fallback || null;
+  }
+  if (parsed.kind === 'initials') return parsed;
+  return fallback || null;
+}
+
+export function readStoredPhoenixAvatarPreference(userId = currentPhoenixUserId()): PhoenixAvatarPreference | null {
   try {
     const stored = localStorage.getItem(keyForUser(userId));
-    if (!stored) return fallback;
-    const parsed = JSON.parse(stored) as PhoenixAvatarPreference;
-    if (parsed.kind === 'photo' && parsed.dataUrl) return parsed;
-    if (parsed.kind === 'preset') {
-      const preset = findPreset(parsed.presetId);
-      return preset ? { kind: 'preset', presetId: preset.id } : fallback;
-    }
-    if (parsed.kind === 'initials') return parsed;
-    return fallback;
+    if (!stored) return null;
+    return normalizeAvatarPreference(JSON.parse(stored));
   } catch {
-    return fallback;
+    return null;
   }
+}
+
+export function readPhoenixAvatarPreference(userId = currentPhoenixUserId()): PhoenixAvatarPreference {
+  const fallback: PhoenixAvatarPreference = { kind: 'preset', presetId: defaultPresetForUser(userId) };
+  return readStoredPhoenixAvatarPreference(userId) || fallback;
 }
 
 function avatarVisual(preference: PhoenixAvatarPreference) {
@@ -177,6 +188,37 @@ export function savePhoenixAvatarPreference(preference: PhoenixAvatarPreference,
   try { localStorage.setItem(keyForUser(userId), JSON.stringify(normalized)); } catch { /* preferência visual local */ }
   applyPhoenixAvatarPreference(normalized);
   window.dispatchEvent(new CustomEvent('meg:profile-avatar-changed', { detail: { userId, preference: normalized } }));
+}
+
+
+export async function savePhoenixAvatarPreferenceCloud(preference: PhoenixAvatarPreference, userId = currentPhoenixUserId()) {
+  savePhoenixAvatarPreference(preference, userId);
+  try {
+    await patchCloudProperties({ [CLOUD_AVATAR_KEY]: preference });
+  } catch {
+    // Preferência local continua válida mesmo se a rede estiver indisponível.
+  }
+}
+
+export async function syncPhoenixAvatarPreference(userId = currentPhoenixUserId()) {
+  const local = readStoredPhoenixAvatarPreference(userId);
+  try {
+    const cloud = await readCloudState();
+    const remote = normalizeAvatarPreference(cloud.state?.[CLOUD_AVATAR_KEY]);
+    if (remote) {
+      savePhoenixAvatarPreference(remote, userId);
+      return remote;
+    }
+    if (local) {
+      await patchCloudProperties({ [CLOUD_AVATAR_KEY]: local });
+      return local;
+    }
+  } catch {
+    // O app deve continuar exibindo a preferência local/default sem depender da nuvem.
+  }
+  const fallback = readPhoenixAvatarPreference(userId);
+  applyPhoenixAvatarPreference(fallback);
+  return fallback;
 }
 
 export async function imageFileToAvatarDataUrl(file: File) {
