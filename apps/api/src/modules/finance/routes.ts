@@ -17,6 +17,7 @@ import { FinancialEventMutationError, createFinancialEventProtected } from './ev
 import { FinancialEventSettlementError, settleLegacyFinancialEventProtected } from './event-settlement';
 import { FinancialTransferError, createFinancialTransfer } from './transfer-service';
 import { prisma } from '@meg/database';
+import { resolveWorkspaceContext } from '../workspaces/service';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
@@ -92,6 +93,21 @@ function transferError(reply: FastifyReply, error: unknown) {
 
 export async function financeRoutes(app: FastifyInstance) {
   registerPhoenixPreviewReads(app);
+
+  app.get('/sync-status', { preHandler: app.authorize([...readRoles]) }, async (request) => {
+    const context = await resolveWorkspaceContext(request.user.sub);
+    const latest = await prisma.cloudMutationReceipt.findFirst({
+      where: { workspaceId: context.workspaceId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: { id: true, operationId: true, mutationType: true, createdAt: true },
+    });
+    return {
+      token: latest ? `${latest.createdAt.toISOString()}:${latest.id}` : 'empty',
+      changedAt: latest?.createdAt.toISOString() || null,
+      mutationType: latest?.mutationType || null,
+    };
+  });
+
 
   app.get('/analytics', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
