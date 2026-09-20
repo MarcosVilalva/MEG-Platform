@@ -98,6 +98,7 @@ export class PhoenixWriteError extends Error {
 const RUNTIME_CAPABILITY_TTL = 15_000;
 let runtimeCapabilitiesCache: PhoenixRuntimeWriteCapabilities | null = null;
 const pendingEditOperations = new Map<string, string>();
+const pendingArchiveOperations = new Map<string, string>();
 
 function operationId(prefix = 'phoenix-event') {
   const uuid = globalThis.crypto?.randomUUID?.();
@@ -329,7 +330,11 @@ export function phoenixWriteMessage(code: string) {
     PHOENIX_BENEFIT_WRITE_NOT_ENABLED: 'A gravação do Benefício Alimentação ainda não foi liberada neste ambiente.',
     PHOENIX_TRANSFER_WRITE_NOT_ENABLED: 'A gravação de transferências ainda não foi liberada neste ambiente.',
     PHOENIX_EDIT_WRITE_NOT_ENABLED: 'A edição financeira ainda não foi liberada neste ambiente.',
+    PHOENIX_ARCHIVE_WRITE_NOT_ENABLED: 'A exclusão financeira ainda não foi liberada neste ambiente.',
     PHOENIX_EDIT_CONFIRMATION_MISSING: 'O servidor respondeu à edição sem devolver o lançamento confirmado.',
+    FINANCIAL_EVENT_LINKED_DOMAIN: 'Este lançamento pertence a outro fluxo financeiro e não pode ser excluído por aqui. Abra o domínio de origem para desfazer corretamente.',
+    FINANCIAL_EVENT_NOT_FOUND: 'Este lançamento não está mais disponível.',
+    FORBIDDEN: 'Seu perfil não possui permissão para excluir lançamentos financeiros.',
     PHOENIX_DESCRIPTION_REQUIRED: 'Informe a descrição do lançamento.',
     PHOENIX_POSITIVE_AMOUNT_REQUIRED: 'Informe um valor maior que zero.',
     PHOENIX_VALID_DATE_REQUIRED: 'Informe uma data válida.',
@@ -478,6 +483,26 @@ export async function runPhoenixSimpleEventEdit(
   const snapshot = await confirmedSnapshot(refreshMonth);
   pendingEditOperations.delete(requestKey);
   return { event, snapshot };
+}
+
+export async function runPhoenixSimpleEventArchive(
+  eventId: string,
+  refreshMonth: string,
+): Promise<{ snapshot: PhoenixReadModel }> {
+  const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
+  if (!runtimeCapabilities.bulkEventWrite) throw new PhoenixWriteError('PHOENIX_ARCHIVE_WRITE_NOT_ENABLED');
+
+  const archiveOperationId = pendingArchiveOperations.get(eventId) || operationId('phoenix-event-archive');
+  pendingArchiveOperations.set(eventId, archiveOperationId);
+
+  await financeClient.bulkArchiveEvents({
+    ids: [eventId],
+    operationId: archiveOperationId,
+  });
+
+  const snapshot = await confirmedSnapshot(refreshMonth);
+  pendingArchiveOperations.delete(eventId);
+  return { snapshot };
 }
 
 export async function runPhoenixSimpleEventWrite(

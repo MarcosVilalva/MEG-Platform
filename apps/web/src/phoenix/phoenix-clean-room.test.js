@@ -572,6 +572,12 @@ assert.match(movementScreen, /addEventListener\('meg:android-back'/,
   'Lançamentos deve ouvir o evento de retorno nativo do Android.');
 assert.match(movementScreen, /handleAndroidBack[\s\S]*requestCloseLaunch\(\)/,
   'Botão Voltar deve fechar detalhes e drawer de lançamento antes de sair da tela.');
+assert.match(movementScreen, /deleteConfirmOpen[\s\S]*setDeleteConfirmOpen\(false\)/,
+  'Botão Voltar do Android deve cancelar primeiro a confirmação de exclusão.');
+assert.match(movementScreen, /px-delete-launch[\s\S]*Excluir lançamento/,
+  'Editor móvel deve oferecer exclusão explícita quando o perfil tiver permissão.');
+assert.match(styles, /\.px-edit-launch-actions[\s\S]*@media\(max-width:760px\)[\s\S]*\.px-delete-launch/,
+  'Ações de salvar e excluir devem se reorganizar verticalmente no Android.');
 assert.match(phoenixApp, /Deseja sair do aplicativo\?/,
   'APK deve pedir confirmação explícita antes de encerrar.');
 assert.match(phoenixApp, />Não<[\s\S]*>Sim, sair</,
