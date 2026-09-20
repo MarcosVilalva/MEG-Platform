@@ -2210,7 +2210,8 @@ body.meg-operational-mobile .px-launch-form .px-segment::before{
   pointer-events:none!important;
 }
 body.meg-operational-mobile .px-edit-launch-actions,
-body.meg-operational-mobile .px-launch-write-panel{
+body.meg-operational-mobile .px-launch-write-panel,
+body.meg-operational-mobile .px-launch-form > .px-review-launch{
   position:fixed!important;
   z-index:132!important;
   left:10px!important;
@@ -2226,6 +2227,10 @@ body.meg-operational-mobile .px-launch-write-panel{
 }
 body.meg-operational-mobile .px-edit-launch-actions{
   grid-template-columns:1fr!important;
+}
+body.meg-operational-mobile .px-launch-form > .px-review-launch{
+  width:auto!important;
+  min-height:48px!important;
 }
 body.meg-operational-mobile .px-edit-launch-actions button,
 body.meg-operational-mobile .px-launch-write-panel .px-primary-action{
