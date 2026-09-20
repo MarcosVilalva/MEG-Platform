@@ -287,7 +287,7 @@ const gridLabels: Record<GridKey, string> = {
   paymentMethod: 'Forma de pagamento', status: 'Situação', modality: 'Modalidade'
 };
 
-type MovementIconName = 'search' | 'filters' | 'calendar' | 'wallet' | 'income' | 'expense' | 'result' | 'warning' | 'close' | 'chevronLeft' | 'chevronRight' | 'chevronsLeft' | 'chevronsRight' | 'expand' | 'collapse';
+type MovementIconName = 'search' | 'filters' | 'calendar' | 'wallet' | 'income' | 'expense' | 'result' | 'warning' | 'close' | 'plus' | 'chevronLeft' | 'chevronRight' | 'chevronsLeft' | 'chevronsRight' | 'expand' | 'collapse';
 
 function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: number }) {
   const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
@@ -300,6 +300,7 @@ function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: numb
   if (name === 'result') return <svg {...common}><path d="M5 19V9M10 19V5M15 19v-7M20 19V7"/></svg>;
   if (name === 'warning') return <svg {...common}><path d="M10.3 4.2 2.7 17.3A2 2 0 0 0 4.4 20h15.2a2 2 0 0 0 1.7-2.7L13.7 4.2a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 16.5h.01"/></svg>;
   if (name === 'close') return <svg {...common}><path d="m7 7 10 10M17 7 7 17"/></svg>;
+  if (name === 'plus') return <svg {...common}><path d="M12 5v14M5 12h14"/></svg>;
   if (name === 'chevronLeft') return <svg {...common}><path d="m15 18-6-6 6-6"/></svg>;
   if (name === 'chevronRight') return <svg {...common}><path d="m9 18 6-6-6-6"/></svg>;
   if (name === 'chevronsLeft') return <svg {...common}><path d="m13 18-6-6 6-6M19 18l-6-6 6-6"/></svg>;
