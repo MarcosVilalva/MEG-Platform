@@ -586,7 +586,7 @@ body.meg-operational-mobile .px-mobile-dock{
 }
 
 body.meg-operational-mobile .px-mobile-dock button,
-body.meg-operational-mobile .px-mobile-dock button:nth-child(2){
+body.meg-operational-mobile .px-mobile-dock .px-dock-new{
   width:auto!important;
   min-width:0!important;
   height:auto!important;
@@ -611,11 +611,11 @@ body.meg-operational-mobile .px-mobile-dock button.active{
   color:#22eee1!important;
 }
 
-body.meg-operational-mobile .px-mobile-dock button:nth-child(2){
+body.meg-operational-mobile .px-mobile-dock .px-dock-new{
   color:#22eee1!important;
 }
 
-body.meg-operational-mobile .px-mobile-dock button:nth-child(2)>strong{
+body.meg-operational-mobile .px-mobile-dock .px-dock-new>strong{
   width:30px!important;
   height:30px!important;
   display:grid!important;
@@ -675,8 +675,15 @@ body.meg-operational-mobile .px-mobile-dock button>span{
   }
   body.meg-operational-mobile .px-period-summary{
     width:auto!important;
-    min-width:38px!important;
-    max-width:112px!important;
+    min-width:92px!important;
+    max-width:132px!important;
+  }
+  body.meg-operational-mobile .px-period-active{
+    display:block!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    font-size:9px!important;
   }
   body.meg-operational-mobile .px-operational-hero{
     min-height:auto!important;
@@ -717,7 +724,8 @@ body.meg-operational-mobile .px-mobile-dock button>span{
     display:none!important;
   }
   body.meg-operational-mobile .px-period-summary{
-    max-width:42px!important;
+    min-width:86px!important;
+    max-width:112px!important;
     padding-inline:8px!important;
   }
   body.meg-operational-mobile .px-operational-status-grid{
@@ -746,7 +754,7 @@ body.meg-operational-mobile .px-mobile-menu-trigger{
   color:#d8efed!important;
   font-size:18px!important;
 }
-body.meg-operational-mobile .px-main-home .px-top-quick-launch{display:none!important}
+body.meg-operational-mobile .px-top-quick-launch{display:none!important}
 body.meg-operational-mobile .px-theme-toggle,
 body.meg-operational-mobile .px-top-exit,
 body.meg-operational-mobile .px-user-pill{display:none!important}
@@ -1054,5 +1062,57 @@ body.meg-operational-mobile .px-mobile-menu-footer button{
     grid-row:1 / span 3;
     align-self:center;
     font-size:18px!important;
+  }
+}
+
+
+/* MEG Operacional 2.2 · período previsível e Lançamentos explícitos */
+body.meg-operational-mobile .px-mobile-dock .px-dock-new{
+  position:relative!important;
+  z-index:2!important;
+}
+body.meg-operational-mobile .px-mobile-dock .px-dock-new>strong{
+  width:32px!important;
+  height:32px!important;
+  display:grid!important;
+  place-items:center!important;
+  margin:0!important;
+  border:1px solid rgba(34,238,225,.42)!important;
+  border-radius:11px!important;
+  background:rgba(34,238,225,.11)!important;
+  box-shadow:0 6px 18px rgba(16,212,199,.10)!important;
+  color:#22eee1!important;
+  font-size:20px!important;
+  line-height:1!important;
+}
+body.meg-operational-mobile .px-mobile-dock .px-dock-new>span{
+  color:#79ded7!important;
+}
+body.meg-operational-mobile .px-movement-period-button{
+  width:auto!important;
+  min-width:76px!important;
+  padding-inline:10px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:6px!important;
+}
+body.meg-operational-mobile .px-movement-period-button>span{
+  display:inline!important;
+  color:#b9d8d4!important;
+  font-size:9px!important;
+  font-weight:800!important;
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .px-content-movements .px-screen-head p{
+  max-width:320px!important;
+}
+@media (max-width:430px){
+  body.meg-operational-mobile .px-movement-period-button{
+    min-width:70px!important;
+    padding-inline:8px!important;
+  }
+  body.meg-operational-mobile .px-movement-period-button>span{
+    font-size:8px!important;
   }
 }
