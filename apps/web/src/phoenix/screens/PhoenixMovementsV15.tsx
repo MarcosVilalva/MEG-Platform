@@ -719,6 +719,38 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setEditMessage('');
   }
 
+  function openBenefitLaunch() {
+    setDraft({
+      ...initialDraft(),
+      type: 'expense',
+      situation: 'paid',
+      accountId: canonicalBenefitAccount?.id || '',
+      paymentMethodId: canonicalVerocardPayment?.id || ''
+    });
+    setAmountCents(0);
+    setNegative(false);
+    setEditingEventId(null);
+    setDetailEvent(null);
+    setLaunchOpen(true);
+    setDirty(false);
+    setReviewed(false);
+    setEditMessage('');
+    let attempts = 0;
+    const syncModality = () => {
+      const select = document.querySelector<HTMLSelectElement>('.px-launch-drawer [data-phoenix-modality-select]');
+      if (select) {
+        if (select.value !== 'ALIMENTAÇÃO') {
+          select.value = 'ALIMENTAÇÃO';
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return;
+      }
+      attempts += 1;
+      if (attempts < 12) window.requestAnimationFrame(syncModality);
+    };
+    window.requestAnimationFrame(syncModality);
+  }
+
   function requestCloseLaunch() {
     if (dirty) {
       setDiscardConfirmOpen(true);
@@ -814,7 +846,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     {nativeOperational ? <section className="px-mobile-money-strip" aria-label="Resumo financeiro rápido">
       <button type="button" onClick={() => setToolPanel(null)}><span>Saldo monetário</span><strong>{money.format(mobileMonetaryBalance)}</strong><small>realizado</small></button>
       <button type="button" className={mobilePendingAmount > 0 ? 'warn' : ''} onClick={() => setStatus('planned')}><span>Pendentes</span><strong>{money.format(mobilePendingAmount)}</strong><small>{data.summary.pendingCount} lançamento(s)</small></button>
-      <button type="button" className="benefit" onClick={() => { setLaunchOpen(false); window.setTimeout(() => document.querySelector<HTMLButtonElement>('.px-top-quick-launch')?.focus(), 0); }}><span>Benefício</span><strong>{money.format(mobileBenefitBalance)}</strong><small>alimentação</small></button>
+      <button type="button" className="benefit" onClick={openBenefitLaunch}><span>Benefício</span><strong>{money.format(mobileBenefitBalance)}</strong><small>toque para lançar</small></button>
     </section> : null}
     <section className="px-movements-overview">
       <div className="px-movement-hero-row">
