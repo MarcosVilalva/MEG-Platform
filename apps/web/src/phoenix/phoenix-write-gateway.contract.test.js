@@ -71,6 +71,14 @@ assert.match(gateway, /if \(!PHOENIX_WRITE_CAPABILITIES\.cardPurchase\)/,
   'Gateway de cartão deve falhar fechado se a capacidade frontend for revogada.');
 assert.match(gateway, /runPhoenixSimpleEventEdit/,
   'Edição simples deve permanecer encapsulada no gateway protegido da Phoenix.');
+assert.match(gateway, /runPhoenixSimpleEventArchive/,
+  'Exclusão individual deve permanecer encapsulada no gateway protegido da Phoenix.');
+assert.match(gateway, /financeClient\.bulkArchiveEvents/,
+  'Exclusão deve usar o endpoint idempotente de arquivamento, sem DELETE direto da tela.');
+assert.match(gateway, /operationId\('phoenix-event-archive'\)/,
+  'Exclusão deve possuir identidade explícita de mutação para permitir retry seguro.');
+assert.match(gateway, /const snapshot = await confirmedSnapshot\(refreshMonth\)/,
+  'Após excluir, a interface só pode atualizar depois da releitura confirmada.');
 assert.match(gateway, /runtimeCapabilities\.bulkEventWrite/,
   'Edição deve exigir a capacidade bulk homologada no ambiente.');
 assert.match(gateway, /financeClient\.bulkUpdateEvents/,
@@ -234,6 +242,16 @@ assert.doesNotMatch(movements, /financeClient\.updateEvent|financeClient\.bulkUp
   'Tela de Lançamentos não pode administrar diretamente a mutação e releitura.');
 assert.match(movements, /runPhoenixSimpleEventEdit/,
   'Tela deve encaminhar a edição ao gateway Phoenix em vez de acessar cliente mutável.');
+assert.match(movements, /runPhoenixSimpleEventArchive/,
+  'Editor deve encaminhar a exclusão ao gateway protegido.');
+assert.match(movements, /Excluir lançamento/,
+  'Editor deve expor a ação de excluir o lançamento.');
+assert.match(movements, /Deseja excluir este lançamento\?/,
+  'Exclusão financeira deve exigir confirmação explícita.');
+assert.match(movements, /data\.user\.role === 'ADMIN' \|\| data\.user\.role === 'MANAGER'/,
+  'Ação de exclusão deve respeitar a mesma permissão administrativa da API.');
+assert.doesNotMatch(movements, /financeClient\.bulkArchiveEvents|financeClient\.archiveEvent/,
+  'Tela não pode acessar cliente mutável diretamente para excluir.');
 assert.match(movements, /amount:\s*\(negative \? -1 : 1\) \* amountCents \/ 100/,
   'Edição/criação simples deve enviar o sinal escolhido ao domínio financeiro.');
 assert.match(movements, /px-sign-toggle[\s\S]*\+ Positivo[\s\S]*Negativo \/ estorno/,
