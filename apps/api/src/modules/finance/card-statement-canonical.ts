@@ -119,6 +119,16 @@ export function legacyCardStatementEffect(transaction: Record<string, unknown>) 
   return 0;
 }
 
+export function nextWeekdayDueDate(isoDay: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDay)) return isoDay;
+  const date = new Date(`${isoDay}T12:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return isoDay;
+  const weekday = date.getUTCDay();
+  if (weekday === 6) date.setUTCDate(date.getUTCDate() + 2);
+  else if (weekday === 0) date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
 export function cardStatementDueDate(month: string, closingDay: number, dueDay: number) {
   const addMonth = (value: string, offset: number) => {
     const [year, monthNumber] = value.split('-').map(Number);
@@ -128,7 +138,7 @@ export function cardStatementDueDate(month: string, closingDay: number, dueDay: 
   const [year, monthNumber] = dueMonth.split('-').map(Number);
   const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
   const day = Math.max(1, Math.min(lastDay, Number(dueDay || 1)));
-  return `${dueMonth}-${String(day).padStart(2, '0')}`;
+  return nextWeekdayDueDate(`${dueMonth}-${String(day).padStart(2, '0')}`);
 }
 
 export function canonicalCardStatementTotals(lines: CanonicalCardStatementLine[]) {
