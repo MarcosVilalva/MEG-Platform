@@ -3,7 +3,7 @@ import type { FinancialEvent } from '../../app/finance-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import type { PhoenixReadModel } from '../contracts';
 import { PhoenixLaunchWriteControl } from '../components/PhoenixLaunchWriteControl';
-import { phoenixWriteMessage, runPhoenixBenefitEventEdit, runPhoenixSimpleEventArchive, runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
+import { phoenixWriteMessage, runPhoenixBenefitEventEdit, runPhoenixCardPurchaseCancel, runPhoenixCardPurchaseEdit, runPhoenixSimpleEventArchive, runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
 import '../phoenix-launch.css';
 import '../phoenix-launch-dynamic.css';
 import '../phoenix-launch-editor-polish.css';
@@ -19,6 +19,54 @@ type GridSort = { key: GridKey; direction: PhoenixGridSortDirection } | null;
 type GridFilterMap = Record<GridKey, PhoenixGridFilterValue>;
 type MovementToolPanel = 'search' | 'filters' | 'account' | null;
 type FinancialEventWithSourcePayload = FinancialEvent & { sourcePayload?: unknown };
+type ProjectedCardMeta = {
+  cardId: string;
+  purchaseId: string;
+  installmentId: string;
+  installmentNumber: number;
+  installmentCount: number;
+  statementMonth: string;
+  purchaseDate: string;
+};
+
+function sourcePayloadRecord(event: FinancialEvent) {
+  const payload = (event as FinancialEventWithSourcePayload).sourcePayload;
+  return payload && typeof payload === 'object' && !Array.isArray(payload)
+    ? payload as Record<string, unknown>
+    : null;
+}
+
+function projectedCardMeta(event: FinancialEvent): ProjectedCardMeta | null {
+  const payload = sourcePayloadRecord(event);
+  if (!payload || payload.cardDomain !== true) return null;
+  const cardId = String(payload.cardId || '').trim();
+  const purchaseId = String(payload.purchaseId || '').trim();
+  if (!cardId || !purchaseId) return null;
+  return {
+    cardId,
+    purchaseId,
+    installmentId: String(payload.installmentId || '').trim(),
+    installmentNumber: Math.max(1, Number(payload.installmentNumber || 1)),
+    installmentCount: Math.max(1, Number(payload.installmentCount || 1)),
+    statementMonth: String(payload.statementMonth || '').trim(),
+    purchaseDate: String(payload.purchaseDate || '').slice(0, 10),
+  };
+}
+
+function projectedCardPurchase(data: PhoenixReadModel, event: FinancialEvent) {
+  const meta = projectedCardMeta(event);
+  if (!meta) return null;
+  const card = data.cards.find((item) => item.id === meta.cardId) || null;
+  const purchase = card?.purchases.find((item) => item.id === meta.purchaseId) || null;
+  return card && purchase ? { meta, card, purchase } : null;
+}
+
+function cardPaymentMethodId(data: PhoenixReadModel, cardName: string) {
+  const active = data.paymentMethods.filter((item) => item.isActive);
+  const exact = active.find((item) => normalizeText(item.name) === normalizeText(cardName) && isCreditMethod(item.name, item.type));
+  return exact?.id || active.find((item) => isCreditMethod(item.name, item.type))?.id || '';
+}
+
 type PhoenixExportRegistryWindow = Window & {
   __MEG_PHOENIX_EXPORT_DATA__?: Record<string, { rows: Array<Record<string, string>> }>;
 };
@@ -108,9 +156,7 @@ function isCrediarioMethod(name?: string | null, type?: string | null) {
 }
 
 function isCardDomainEvent(event: FinancialEvent) {
-  const modality = normalizeText(event.sourceDetails?.modality || '');
-  const payment = normalizeText(`${event.paymentMethod?.name || ''} ${event.sourceDetails?.paymentMethod || ''}`);
-  return modality.includes('credito') || payment.includes('cartao') || payment.includes('credito');
+  return Boolean(projectedCardMeta(event));
 }
 
 function monthPlus(month: string, offset: number) {
@@ -481,9 +527,10 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const selectedPayment = data.paymentMethods.find((item) => item.id === draft.paymentMethodId) || null;
   const selectedCard = data.cards.find((item) => item.id === draft.cardId) || null;
   const editingEvent = editingEventId ? data.events.items.find((item) => item.id === editingEventId) || null : null;
+  const editingCardPurchase = editingEvent ? projectedCardPurchase(data, editingEvent) : null;
   const editingBenefit = Boolean(editingEvent && isBenefitEvent(editingEvent));
   const benefit = editingBenefit || selectedAccount?.type === 'benefit' || isBenefitAccount(selectedAccount?.name);
-  const credit = isCreditMethod(selectedPayment?.name, selectedPayment?.type);
+  const credit = Boolean(editingCardPurchase) || isCreditMethod(selectedPayment?.name, selectedPayment?.type);
   const pix = draft.type === 'expense' && isPixMethod(selectedPayment?.name, selectedPayment?.type);
   const crediario = isCrediarioMethod(selectedPayment?.name, selectedPayment?.type);
   const calculatedDue = selectedCard ? cardDueDate(draft.eventDate, selectedCard.closingDay, selectedCard.dueDay) : '';
@@ -533,7 +580,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const missing = useMemo(() => {
     const list: string[] = [];
     if (!draft.description.trim()) list.push('descrição');
-    if (!draft.accountId) list.push(draft.type === 'transfer' ? 'conta de origem' : 'conta');
+    if (!draft.accountId && (draft.type === 'transfer' || !credit)) list.push(draft.type === 'transfer' ? 'conta de origem' : 'conta');
     if (!draft.eventDate) list.push('data');
     if (!amountCents) list.push('valor');
     if (draft.type === 'transfer') {
@@ -543,7 +590,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     } else {
       if (draft.type === 'expense' && !draft.classification) list.push('classificação');
       if (draft.type === 'expense' && !draft.categoryId) list.push('grupo');
-      if (!draft.paymentMethodId) list.push(draft.type === 'income' ? 'forma de recebimento' : 'forma de pagamento');
+      if (!draft.paymentMethodId && !editingCardPurchase) list.push(draft.type === 'income' ? 'forma de recebimento' : 'forma de pagamento');
       if (credit && !draft.cardId) list.push('cartão');
     }
     if (draft.recurring && draft.recurrenceCount < 2) list.push('quantidade da recorrência');
@@ -753,6 +800,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
   function openLaunch(event?: FinancialEvent) {
     if (event) {
+      const cardLink = projectedCardPurchase(data, event);
       const visualType = launchTypeForEvent(event.type);
       const classification = visualType === 'expense' ? (event.category?.group || event.sourceDetails?.expenseClass || '') : '';
       const groupName = visualType === 'expense' ? (event.category?.name || event.sourceDetails?.group || '') : '';
@@ -761,14 +809,23 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           && normalizeText(item.group || '') === normalizeText(classification)
           && normalizeText(item.name) === normalizeText(groupName))
         : null;
+      const purchaseDate = cardLink ? String(cardLink.purchase.purchaseDate).slice(0, 10) : event.date.slice(0, 10);
       setDraft({
-        ...initialDraft(), type: visualType, situation: visualType === 'income' ? 'paid' : event.status === 'planned' ? 'planned' : 'paid', description: event.description,
-        accountId: event.accountId || '', eventDate: event.date.slice(0, 10), classification,
-        categoryId: matchedCategory?.id || event.categoryId || '', paymentMethodId: event.paymentMethodId || '',
-        notes: event.notes || ''
+        ...initialDraft(),
+        type: visualType,
+        situation: visualType === 'income' ? 'paid' : event.status === 'planned' ? 'planned' : 'paid',
+        description: cardLink ? cardLink.purchase.description : event.description,
+        accountId: cardLink ? '' : event.accountId || '',
+        eventDate: purchaseDate,
+        classification,
+        categoryId: cardLink?.purchase.category?.id || matchedCategory?.id || event.categoryId || '',
+        paymentMethodId: cardLink ? cardPaymentMethodId(data, cardLink.card.name) : event.paymentMethodId || '',
+        cardId: cardLink?.card.id || '',
+        installments: cardLink ? Math.max(1, Number(cardLink.purchase.installments || 1)) : 1,
+        notes: cardLink ? '' : event.notes || ''
       });
-      setAmountCents(Math.round(amountFromEvent(event) * 100));
-      setNegative(displayEffect(event) < 0);
+      setAmountCents(Math.round((cardLink ? Math.abs(Number(cardLink.purchase.totalAmount || 0)) : amountFromEvent(event)) * 100));
+      setNegative(cardLink ? false : displayEffect(event) < 0);
       setEditingEventId(event.id);
       setEditingEventUpdatedAt(event.updatedAt || null);
     } else {
@@ -784,11 +841,6 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   }
 
   function openEventForEdit(event: FinancialEvent) {
-    if (isCardDomainEvent(event)) {
-      setDetailEvent(event);
-      setEditMessage('');
-      return;
-    }
     openLaunch(event);
   }
 
@@ -851,9 +903,45 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   }
 
   async function saveEdit() {
-    if (!editingEventId || !simpleWriteInput || missing.length || savingEdit) return;
+    if (!editingEventId || !editingEvent || missing.length || savingEdit) return;
+
+    if (editingCardPurchase) {
+      if (!cardWriteInput || draft.type !== 'expense' || !credit || draft.recurring || draft.saveTemplate || draft.manualDue) {
+        setEditMessage('No cartão, mantenha a modalidade Crédito. A data da compra define automaticamente a fatura e o vencimento.');
+        return;
+      }
+      setSavingEdit(true);
+      setSettlementConfirmOpen(false);
+      setEditMessage('Salvando alteração e recalculando a fatura correspondente…');
+      try {
+        const { snapshot } = await runPhoenixCardPurchaseEdit(
+          editingCardPurchase.purchase.id,
+          cardWriteInput,
+          data.month,
+          () => {
+            setDirty(false);
+            setLaunchOpen(false);
+            resetLaunch();
+          },
+        );
+        if (snapshot) {
+          setData(snapshot);
+          onDataCommitted?.(snapshot);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'CARD_PURCHASE_UPDATE_FAILED';
+        setEditMessage(message.includes('CARD_PURCHASE_ALREADY_PAID')
+          ? 'Esta compra possui parcela já paga e foi protegida contra alteração.'
+          : `${message}. Os dados foram mantidos para nova tentativa.`);
+      } finally {
+        setSavingEdit(false);
+      }
+      return;
+    }
+
+    if (!simpleWriteInput) return;
     if (draft.type === 'transfer' || credit || crediario || draft.recurring || draft.saveTemplate || draft.installments > 1 || draft.manualDue) {
-      setEditMessage('Esta edição envolve um fluxo protegido. Cartão, recorrência, parcelamento e transferência usam seus editores próprios para preservar faturas, parcelas e vínculos.');
+      setEditMessage('Esta edição envolve um fluxo protegido ainda não normalizado como compra de cartão. Os dados foram mantidos sem alteração.');
       return;
     }
     if (editingBenefit && negative) {
@@ -920,9 +1008,38 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   async function deleteSelectedEvent() {
     const target = deleteTargetEvent || editingEvent;
     if (!target || deletingEvent || !canArchiveEvent) return;
+    const cardLink = projectedCardPurchase(data, target);
     setDeletingEvent(true);
     setEditMessage('');
     try {
+      if (cardLink) {
+        const purchaseId = cardLink.purchase.id;
+        const { snapshot } = await runPhoenixCardPurchaseCancel(
+          purchaseId,
+          data.month,
+          () => {
+            setData((current) => ({
+              ...current,
+              events: {
+                ...current.events,
+                items: current.events.items.filter((event) => projectedCardMeta(event)?.purchaseId !== purchaseId),
+              },
+            }));
+            setDeleteConfirmOpen(false);
+            setDeleteTargetEvent(null);
+            setDetailEvent(null);
+            setDirty(false);
+            setLaunchOpen(false);
+            resetLaunch();
+          },
+        );
+        if (snapshot) {
+          setData(snapshot);
+          onDataCommitted?.(snapshot);
+        }
+        return;
+      }
+
       const { snapshot } = await runPhoenixSimpleEventArchive(
         target.id,
         data.month,
@@ -945,10 +1062,12 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
         onDataCommitted?.(snapshot);
       }
     } catch (error) {
-      const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
+      const message = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
       setDeleteConfirmOpen(false);
       setDeleteTargetEvent(null);
-      setEditMessage(phoenixWriteMessage(code));
+      setEditMessage(message.includes('CARD_PURCHASE_ALREADY_PAID')
+        ? 'Esta compra possui parcela já paga e foi protegida contra exclusão.'
+        : phoenixWriteMessage(message));
     } finally {
       setDeletingEvent(false);
     }
@@ -1167,11 +1286,10 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           {credit ? <div className="px-card-box">
             <label className={`px-field ${invalidField('cartão') ? 'is-invalid' : ''}`}><span>Cartão *</span><select value={draft.cardId} onChange={(event) => updateDraft('cardId', event.target.value)}><option value="">Selecione o cartão cadastrado</option>{cards.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>{invalidField('cartão') ? <small className="px-field-error">Selecione o cartão.</small> : null}</label>
             <div className="px-calculated-due"><span>Vencimento calculado</span><strong>{calculatedDue ? date.format(new Date(`${calculatedDue}T12:00:00Z`)) : 'Definido após selecionar o cartão'}</strong></div>
-            <label className="px-switch"><div><strong>Alterar vencimento manualmente</strong><small>Exceção futura deverá ser registrada no histórico.</small></div><input type="checkbox" checked={draft.manualDue} onChange={(event) => updateDraft('manualDue', event.target.checked)} /></label>
-            <div className="px-rule-box">No crédito, a despesa fica sempre Pendente. A API usa data da compra e fechamento para definir a fatura; a baixa ocorre no pagamento da fatura.</div>
+            <div className="px-rule-box">No crédito, a compra continua sendo um lançamento comum. A data da compra e o fechamento do cartão definem automaticamente a fatura e o vencimento; a baixa ocorre no pagamento da fatura.</div>
           </div> : null}
 
-          {(credit || crediario) ? <div className="px-installment-box"><div className="px-form-row"><label className="px-field"><span>Quantidade de parcelas *</span><input type="number" min={1} max={credit ? 48 : 120} value={draft.installments} onChange={(event) => updateDraft('installments', Math.max(1, Number(event.target.value) || 1))} /></label><label className="px-field"><span>Vencimento da 1ª parcela</span><input type="date" disabled={credit && !draft.manualDue} value={draft.manualDue ? draft.firstDue : calculatedDue} onChange={(event) => updateDraft('firstDue', event.target.value)} /></label></div><div className="px-rule-box">No cartão, a divisão em parcelas seguirá o contrato da API: centavos são distribuídos sem perda e a primeira fatura depende da data de fechamento.</div></div> : null}
+          {(credit || crediario) ? <div className="px-installment-box"><div className="px-form-row"><label className="px-field"><span>Quantidade de parcelas *</span><input type="number" min={1} max={credit ? 48 : 120} value={draft.installments} onChange={(event) => updateDraft('installments', Math.max(1, Number(event.target.value) || 1))} /></label><label className="px-field"><span>Vencimento da 1ª parcela</span><input type="date" disabled={credit} value={credit ? calculatedDue : draft.firstDue} onChange={(event) => updateDraft('firstDue', event.target.value)} /></label></div><div className="px-rule-box">No cartão, a divisão em parcelas seguirá o contrato da API: centavos são distribuídos sem perda e a primeira fatura depende da data de fechamento.</div></div> : null}
 
           {benefit ? <div className="px-notice ok">{draft.type === 'income'
             ? 'A receita do benefício é registrada como recebida; a recarga aumenta somente o saldo do benefício e não compõe o caixa monetário.'
@@ -1284,9 +1402,9 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       <div className="px-detail-grid"><div><span>Vencimento</span><strong>{formatIsoDate(detailEvent.date)}</strong></div><div><span>Data da compra</span><strong>{formatIsoDate(sourcePurchaseDate(detailEvent))}</strong></div><div><span>Situação</span><strong>{launchTypeForEvent(detailEvent.type) === 'income' ? 'Recebida' : eventStatus(detailEvent.status)}</strong></div><div><span>Conta</span><strong>{detailEvent.account?.name || 'Não informada'}</strong></div><div><span>Sincronização</span><strong>Confirmada na leitura atual</strong></div><div><span>Tipo</span><strong>{eventType(detailEvent.type)}</strong></div><div><span>Valor</span><strong>{money.format(displayEffect(detailEvent))}</strong></div><div><span>Classificação</span><strong>{sourceClassification(detailEvent)}</strong></div><div><span>Grupo</span><strong>{sourceGroup(detailEvent)}</strong></div><div><span>Forma</span><strong>{sourcePayment(detailEvent)}</strong></div><div><span>Modalidade</span><strong>{detailEvent.sourceDetails?.modality || '—'}</strong></div></div>
       {detailEvent.notes ? <div className="px-notice">{detailEvent.notes}</div> : null}
       {isCardDomainEvent(detailEvent)
-        ? <div className="px-notice ok">DOMÍNIO DE CARTÕES/FATURAS. Esta compra usa edição e exclusão próprias para recalcular parcelas e faturas sem duplicar o caixa monetário.</div>
+        ? <div className="px-notice ok">Compra no cartão: a data da compra define a fatura conforme o fechamento. Editar ou excluir usa o mesmo fluxo de lançamentos e atualiza as parcelas vinculadas automaticamente.</div>
         : <div className="px-notice">Duplo clique na linha ou o botão abaixo abre a edição. Alterações simples são relidas da base antes da grade ser atualizada.</div>}
-      <div className="px-detail-actions">{!isCardDomainEvent(detailEvent) ? <button className="px-primary-action" data-phoenix-generic-edit type="button" onClick={() => openLaunch(detailEvent)}>Editar lançamento</button> : null}{canArchiveEvent && !isCardDomainEvent(detailEvent) ? <button className="px-delete-launch" data-phoenix-generic-delete type="button" onClick={() => requestDeleteEvent(detailEvent)}>Excluir lançamento</button> : null}<button className="px-secondary-action" type="button" onClick={() => { setDetailEvent(null); onNavigateHistory?.(); }}>Ver histórico</button></div>
+      <div className="px-detail-actions"><button className="px-primary-action" data-phoenix-generic-edit type="button" onClick={() => openLaunch(detailEvent)}>Editar lançamento</button>{canArchiveEvent ? <button className="px-delete-launch" data-phoenix-generic-delete type="button" onClick={() => requestDeleteEvent(detailEvent)}>Excluir lançamento</button> : null}<button className="px-secondary-action" type="button" onClick={() => { setDetailEvent(null); onNavigateHistory?.(); }}>Ver histórico</button></div>
     </aside> : null}
   </section>;
 }

@@ -13,6 +13,8 @@ const previewServer = readFileSync(new URL('../../phoenix-preview-server.mjs', i
 const readModel = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.meta.url), 'utf8');
 const persistentSnapshot = readFileSync(new URL('./data/phoenix-persistent-snapshot.ts', import.meta.url), 'utf8');
 const pendingStyles = readFileSync(new URL('./phoenix-pending-v15.css', import.meta.url), 'utf8');
+const mainEntry = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
+const cardProjection = readFileSync(new URL('./data/card-movement-projection.ts', import.meta.url), 'utf8');
 
 assert.match(gateway, /simpleEvent:\s*true/,
   'Writer frontend de receita/despesa simples deve refletir a capacidade liberada no fluxo Phoenix.');
@@ -28,6 +30,12 @@ assert.match(gateway, /financeClient\.createEvent/,
   'Writer simples deve usar o domínio financeiro oficial.');
 assert.match(gateway, /cardsClient\.createPurchase/,
   'Compra no crédito deve usar o domínio oficial de cartões, e não criar despesa monetária comum.');
+assert.match(gateway, /export async function runPhoenixCardPurchaseEdit[\s\S]*cardsClient\.updatePurchase/,
+  'Edição visual comum de cartão deve continuar recalculando parcelas pelo backend oficial de cartões.');
+assert.match(gateway, /export async function runPhoenixCardPurchaseCancel[\s\S]*cardsClient\.cancelPurchaseProtected/,
+  'Exclusão visual comum deve cancelar a compra pelo backend oficial, sem arquivar evento sintético.');
+assert.match(gateway, /cardEditRequestKey[\s\S]*pendingCardEditOperations/,
+  'Retry de edição do cartão deve manter operationId estável para o mesmo conteúdo.');
 assert.match(gateway, /authenticatedRequest<FinancialEvent>\('\/finance\/benefit-events'/,
   'Benefício deve usar endpoint próprio em vez de cair no writer simples.');
 assert.match(gateway, /operationId\('phoenix-benefit'\)/,
@@ -299,7 +307,23 @@ assert.match(movements, /data-phoenix-generic-delete[\s\S]*Excluir lançamento/,
 assert.match(movements, />Cancelar<\//,
   'Editor deve expor cancelamento explícito além de salvar e excluir.');
 assert.match(movements, /isCardDomainEvent\(detailEvent\)/,
-  'Lançamentos de cartão devem ser encaminhados ao domínio próprio em vez de permitir mutação genérica.');
+  'A tela deve reconhecer apenas a projeção técnica do cartão para atualizar parcelas vinculadas.');
+assert.match(movements, /function openEventForEdit\(event: FinancialEvent\) \{[\s\S]*openLaunch\(event\);/,
+  'Cartão deve abrir o mesmo editor visual usado pelos lançamentos comuns.');
+assert.match(movements, /runPhoenixCardPurchaseEdit/,
+  'Salvar um lançamento projetado de cartão deve usar o writer protegido que recalcula a fatura.');
+assert.match(movements, /runPhoenixCardPurchaseCancel/,
+  'Excluir um lançamento projetado de cartão deve cancelar a compra e suas parcelas vinculadas.');
+assert.match(movements, /cardPaymentMethodId[\s\S]*cardId: cardLink\?\.card\.id[\s\S]*installments:/,
+  'Editor comum deve recuperar cartão, forma de pagamento e parcelamento da compra projetada.');
+assert.doesNotMatch(movements, /DOMÍNIO DE CARTÕES\/FATURAS|Editar compra no cartão/,
+  'Lançamentos não devem expor um editor ou linguagem de domínio paralelo para cartões.');
+assert.doesNotMatch(mainEntry, /card-event-form-bridge|card-purchase-edit-bridge|card-movement-readonly-bridge/,
+  'Runtime oficial não deve carregar bridges legados que interceptam cartões com telas paralelas.');
+assert.doesNotMatch(cardProjection, /Domínio de cartões\/faturas/,
+  'A projeção mensal do cartão deve aparecer ao usuário como lançamento comum.');
+assert.match(cardProjection, /cardId:[\s\S]*purchaseId:[\s\S]*purchaseDate/,
+  'A projeção deve preservar IDs técnicos para que o editor comum atualize a compra correta.');
 assert.match(movements, /data\.user\.role === 'ADMIN' \|\| data\.user\.role === 'MANAGER'/,
   'Ação de exclusão deve respeitar a mesma permissão administrativa da API.');
 assert.doesNotMatch(movements, /financeClient\.bulkArchiveEvents|financeClient\.archiveEvent/,
@@ -310,8 +334,8 @@ assert.match(movements, /px-sign-toggle[\s\S]*\+ Positivo[\s\S]*Negativo \/ esto
   'Web e Android devem oferecer controle explícito para trocar o sinal do lançamento.');
 assert.match(movements, /setNegative\(value\.includes\('-'\)\)/,
   'Remover o sinal negativo no campo deve realmente voltar o lançamento para positivo.');
-assert.match(movements, /setNegative\(displayEffect\(event\) < 0\)/,
-  'Ao editar, o sinal inicial deve ser derivado do efeito financeiro armazenado.');
+assert.match(movements, /setNegative\(cardLink \? false : displayEffect\(event\) < 0\)/,
+  'Ao editar, o sinal inicial deve vir do efeito financeiro; compras de cartão permanecem positivas e alocadas na fatura.');
 assert.doesNotMatch(movements, /draft\.type === 'transfer' \|\| negative \|\| benefit/,
   'Troca de sinal em receita/despesa simples não pode ser bloqueada pela edição protegida.');
 assert.match(movements, /PhoenixLaunchWriteControl/,

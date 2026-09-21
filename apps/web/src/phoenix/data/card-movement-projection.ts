@@ -42,10 +42,10 @@ function weekday(value: string) {
 /**
  * Projeção somente de leitura para a grade de Lançamentos.
  *
- * Compras em cartão pertencem ao domínio de cartões/faturas e, por isso, não
- * criam uma despesa monetária comum no momento da compra. Cada parcela é
- * projetada como uma linha visual no mês da fatura, preservando data da compra,
- * vencimento, cartão, parcela e modalidade CRÉDITO.
+ * Compras em cartão aparecem na grade como lançamentos comuns. Internamente,
+ * cada parcela continua vinculada ao cartão/fatura para preservar data da compra,
+ * vencimento calculado, cartão, parcela e modalidade CRÉDITO sem movimentar
+ * o caixa monetário antes do pagamento da fatura.
  *
  * O account.type="benefit" abaixo é apenas o sentinela já reconhecido pela
  * tela V15 para excluir movimentos não monetários dos KPIs de caixa. Nada desta
@@ -89,7 +89,7 @@ export function projectCardInstallmentsIntoEvents(
           ? `${purchase.description} · ${installmentLabel}`
           : purchase.description;
         const situation = status === 'paid' ? 'Pago' : 'Pendente';
-        const observations = `Domínio de cartões/faturas · ${faturaLabel} · Parcela ${installmentLabel}`;
+        const observations = `${faturaLabel} · Parcela ${installmentLabel}`;
         const virtualScopeId = `card:${card.id}`;
 
         projected.push({
