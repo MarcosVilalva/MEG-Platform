@@ -306,7 +306,7 @@ function MobileMenuIdentity({ data }: { data: PhoenixReadModel }) {
   </div>;
 }
 
-function ReadScreen({ view, data, month, theme, periodMode, periodContext, periodRangeLabel, launchRequest, launchPreset, nativeOperational, onToggleTheme, onNavigate, onLaunch, onDataCommitted, onOpenPeriod, onLogoutRequest }: {
+function ReadScreen({ view, data, month, theme, periodMode, periodContext, periodRangeLabel, launchRequest, launchPreset, nativeOperational, onToggleTheme, onNavigate, onLaunch, onDataCommitted, onOpenPeriod, onLogoutRequest, onPendingMonthChange }: {
   view: PhoenixView;
   data: PhoenixReadModel;
   month: string;
@@ -323,6 +323,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   onDataCommitted: (snapshot: PhoenixReadModel) => void;
   onOpenPeriod: () => void;
   onLogoutRequest: () => void;
+  onPendingMonthChange: (month: string) => void;
 }) {
   if (view === 'home') {
     const nowMonth = currentMonth();
@@ -361,7 +362,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   }
   if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} launchRequest={launchRequest} launchPreset={launchPreset} onNavigateHistory={() => onNavigate('history')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
   if (view === 'history') return <Suspense fallback={<ScreenWarmFallback label="Histórico" />}><PhoenixHistory data={data} /></Suspense>;
-  if (view === 'payables') return <Suspense fallback={<ScreenWarmFallback label="Pendentes" />}><PhoenixPayables data={data} /></Suspense>;
+  if (view === 'payables') return <Suspense fallback={<ScreenWarmFallback label="Pendentes" />}><PhoenixPayables data={data} onMonthChange={onPendingMonthChange} /></Suspense>;
   if (view === 'cards') return <Suspense fallback={<ScreenWarmFallback label="Cartões" />}><PhoenixCardsGrid data={data} /></Suspense>;
   if (view === 'catalogs') return <PhoenixCatalogsGrid data={data} onDataCommitted={onDataCommitted} />;
   if (view === 'users') return <PhoenixUsers data={data} />;
@@ -1136,7 +1137,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         </header>
 
         <div className={`px-content ${view === 'home' ? 'px-content-home' : ''} ${homeAnalytical ? 'px-content-home-all' : ''} ${view === 'movements' ? 'px-content-movements' : ''} ${view === 'payables' ? 'px-content-payables' : ''} ${view === 'history' ? 'px-content-history' : ''} ${view === 'cards' ? 'px-content-cards' : ''}`}>
-          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen key={`${view}:${periodMode}:${viewData.month}:${periodRangeLabel}`} view={view} data={viewData} month={viewData.month} theme={theme} periodMode={periodMode} periodContext={homePeriodContext} periodRangeLabel={periodRangeLabel} launchRequest={launchRequest} launchPreset={launchPreset} nativeOperational={nativeOperational} onToggleTheme={toggleTheme} onNavigate={navigate} onLaunch={requestLaunch} onDataCommitted={commitSnapshot} onOpenPeriod={openPeriodSelector} onLogoutRequest={requestLogout} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
+          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen key={`${view}:${periodMode}:${viewData.month}:${periodRangeLabel}`} view={view} data={viewData} month={viewData.month} theme={theme} periodMode={periodMode} periodContext={homePeriodContext} periodRangeLabel={periodRangeLabel} launchRequest={launchRequest} launchPreset={launchPreset} nativeOperational={nativeOperational} onToggleTheme={toggleTheme} onNavigate={navigate} onLaunch={requestLaunch} onDataCommitted={commitSnapshot} onOpenPeriod={openPeriodSelector} onLogoutRequest={requestLogout} onPendingMonthChange={(targetMonth) => { void applyMonthlyPeriod(targetMonth); }} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
         </div>
       </main>
 
