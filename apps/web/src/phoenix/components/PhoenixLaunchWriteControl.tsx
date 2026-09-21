@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FinancialEvent } from '../../app/finance-client';
 import type { PhoenixReadModel } from '../contracts';
+import { megAlert } from '../meg-confirm';
 import {
   getPhoenixBenefitEventEligibility,
   getPhoenixCardPurchaseEligibility,
@@ -113,6 +114,17 @@ export function PhoenixLaunchWriteControl({
   const [commitState, setCommitState] = useState<CommitState>('idle');
   const [commitMessage, setCommitMessage] = useState('');
   const [duplicateAccepted, setDuplicateAccepted] = useState(false);
+  const reportCommitError = (message: string) => {
+    setCommitState('error');
+    setCommitMessage(message);
+    void megAlert({
+      kicker: 'Erro de gravação',
+      title: 'Não foi possível concluir a operação',
+      message,
+      danger: true,
+      buttonLabel: 'Entendi',
+    });
+  };
   const preparedRef = useRef<PreparedPhoenixSimpleEvent | null>(null);
   const preparedBenefitRef = useRef<PreparedPhoenixBenefitEvent | null>(null);
   const preparedCardRef = useRef<PreparedPhoenixCardPurchase | null>(null);
@@ -253,8 +265,7 @@ export function PhoenixLaunchWriteControl({
           return;
         }
         if (result.status === 'accepted') return;
-        setCommitState('error');
-        setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível concluir a transferência.');
+        reportCommitError(result.status === 'error' ? result.message : 'Não foi possível concluir a transferência.');
         return;
       }
 
@@ -280,8 +291,7 @@ export function PhoenixLaunchWriteControl({
           return;
         }
         if (result.status === 'accepted') return;
-        setCommitState('error');
-        setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível concluir a movimentação do benefício.');
+        reportCommitError(result.status === 'error' ? result.message : 'Não foi possível concluir a movimentação do benefício.');
         return;
       }
 
@@ -307,8 +317,7 @@ export function PhoenixLaunchWriteControl({
           return;
         }
         if (result.status === 'accepted') return;
-        setCommitState('error');
-        setCommitMessage(result.status === 'error'
+        reportCommitError(result.status === 'error'
           ? result.message
           : 'Não foi possível concluir a confirmação visual da compra. A operação não será reenviada automaticamente.');
         return;
@@ -335,12 +344,10 @@ export function PhoenixLaunchWriteControl({
         return;
       }
       if (result.status === 'accepted') return;
-      setCommitState('error');
-      setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível concluir o lançamento.');
+      reportCommitError(result.status === 'error' ? result.message : 'Não foi possível concluir o lançamento.');
     } catch (error) {
       const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
-      setCommitState('error');
-      setCommitMessage(transferFlow ? phoenixTransferWriteMessage(code) : phoenixWriteMessage(code));
+      reportCommitError(transferFlow ? phoenixTransferWriteMessage(code) : phoenixWriteMessage(code));
     }
   }
 
