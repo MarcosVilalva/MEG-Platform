@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { cardsClient } from '../../app/cards-client';
 import type { FinancialEvent } from '../../app/finance-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import type { PhoenixReadModel } from '../contracts';
 import { PhoenixLaunchWriteControl } from '../components/PhoenixLaunchWriteControl';
-import { phoenixWriteMessage, runPhoenixBenefitEventEdit, runPhoenixSimpleEventArchive, runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
+import { phoenixWriteMessage, runPhoenixBenefitEventEdit, runPhoenixCardPurchaseCancel, runPhoenixCardPurchaseEdit, runPhoenixSimpleEventArchive, runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
 import '../phoenix-launch.css';
 import '../phoenix-launch-dynamic.css';
 import '../phoenix-launch-editor-polish.css';
@@ -68,10 +67,6 @@ function cardPaymentMethodId(data: PhoenixReadModel, cardName: string) {
   return exact?.id || active.find((item) => isCreditMethod(item.name, item.type))?.id || '';
 }
 
-function clientOperationId(prefix: string) {
-  const uuid = globalThis.crypto?.randomUUID?.();
-  return `${prefix}:${uuid || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
-}
 type PhoenixExportRegistryWindow = Window & {
   __MEG_PHOENIX_EXPORT_DATA__?: Record<string, { rows: Array<Record<string, string>> }>;
 };
@@ -404,8 +399,6 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const [recentEventId, setRecentEventId] = useState<string | null>(null);
   const recentTimerRef = useRef<number | null>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
-  const cardEditOperationRef = useRef<{ fingerprint: string; operationId: string } | null>(null);
-  const cardCancelOperationRef = useRef<{ purchaseId: string; operationId: string } | null>(null);
 
   useEffect(() => {
     setData(initialData);
@@ -803,8 +796,6 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setDeleteTargetEvent(null);
     setDeletingEvent(false);
     setLaunchWriteBusy(false);
-    cardEditOperationRef.current = null;
-    cardCancelOperationRef.current = null;
   }
 
   function openLaunch(event?: FinancialEvent) {
@@ -919,29 +910,24 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
         setEditMessage('No cartão, mantenha a modalidade Crédito. A data da compra define automaticamente a fatura e o vencimento.');
         return;
       }
-      const fingerprint = JSON.stringify({
-        purchaseId: editingCardPurchase.purchase.id,
-        ...cardWriteInput,
-        totalAmount: Math.round(cardWriteInput.totalAmount * 100),
-      });
-      if (!cardEditOperationRef.current || cardEditOperationRef.current.fingerprint !== fingerprint) {
-        cardEditOperationRef.current = { fingerprint, operationId: clientOperationId('phoenix-card-common-edit') };
-      }
       setSavingEdit(true);
       setSettlementConfirmOpen(false);
       setEditMessage('Salvando alteração e recalculando a fatura correspondente…');
       try {
-        await cardsClient.updatePurchase(editingCardPurchase.purchase.id, {
-          ...cardWriteInput,
-          operationId: cardEditOperationRef.current.operationId,
-        });
-        cardEditOperationRef.current = null;
-        setDirty(false);
-        setLaunchOpen(false);
-        resetLaunch();
-        window.dispatchEvent(new CustomEvent('meg:data-invalidated', {
-          detail: { path: `/cards/purchases/${editingCardPurchase.purchase.id}`, method: 'PATCH', reason: 'card-common-edit' },
-        }));
+        const { snapshot } = await runPhoenixCardPurchaseEdit(
+          editingCardPurchase.purchase.id,
+          cardWriteInput,
+          data.month,
+          () => {
+            setDirty(false);
+            setLaunchOpen(false);
+            resetLaunch();
+          },
+        );
+        if (snapshot) {
+          setData(snapshot);
+          onDataCommitted?.(snapshot);
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'CARD_PURCHASE_UPDATE_FAILED';
         setEditMessage(message.includes('CARD_PURCHASE_ALREADY_PAID')
@@ -1027,31 +1013,30 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setEditMessage('');
     try {
       if (cardLink) {
-        if (!cardCancelOperationRef.current || cardCancelOperationRef.current.purchaseId !== cardLink.purchase.id) {
-          cardCancelOperationRef.current = {
-            purchaseId: cardLink.purchase.id,
-            operationId: clientOperationId('phoenix-card-common-delete'),
-          };
-        }
-        await cardsClient.cancelPurchaseProtected(cardLink.purchase.id, cardCancelOperationRef.current.operationId);
         const purchaseId = cardLink.purchase.id;
-        setData((current) => ({
-          ...current,
-          events: {
-            ...current.events,
-            items: current.events.items.filter((event) => projectedCardMeta(event)?.purchaseId !== purchaseId),
+        const { snapshot } = await runPhoenixCardPurchaseCancel(
+          purchaseId,
+          data.month,
+          () => {
+            setData((current) => ({
+              ...current,
+              events: {
+                ...current.events,
+                items: current.events.items.filter((event) => projectedCardMeta(event)?.purchaseId !== purchaseId),
+              },
+            }));
+            setDeleteConfirmOpen(false);
+            setDeleteTargetEvent(null);
+            setDetailEvent(null);
+            setDirty(false);
+            setLaunchOpen(false);
+            resetLaunch();
           },
-        }));
-        cardCancelOperationRef.current = null;
-        setDeleteConfirmOpen(false);
-        setDeleteTargetEvent(null);
-        setDetailEvent(null);
-        setDirty(false);
-        setLaunchOpen(false);
-        resetLaunch();
-        window.dispatchEvent(new CustomEvent('meg:data-invalidated', {
-          detail: { path: `/cards/purchases/${purchaseId}`, method: 'DELETE', reason: 'card-common-delete' },
-        }));
+        );
+        if (snapshot) {
+          setData(snapshot);
+          onDataCommitted?.(snapshot);
+        }
         return;
       }
 
