@@ -681,7 +681,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
           type="button"
           className={`px-cards-approved-tile px-card-product-${cardIdentity.key} ${selected.id === card.id ? 'active' : ''}`}
           onClick={() => { if (nativeOperational) openCardCommand(card.id); else selectCard(card.id); }}
-          onDoubleClick={() => { if (!nativeOperational) openCardCommand(card.id); }}
+          onDoubleClick={() => openCardCommand(card.id)}
           aria-label={`${card.name}. Limite ${money.format(limit)}. Disponível ${money.format(available)}. Fatura atual ${money.format(statementAmount)}.`}
         >
           <span className="px-cards-approved-art" style={{ background: cardIdentity.background }}>
