@@ -16,6 +16,15 @@ import { registerPhoenixPreviewReads } from './phoenix-preview-routes';
 import { FinancialEventMutationError, createFinancialEventProtected } from './event-mutation';
 import { FinancialEventSettlementError, settleLegacyFinancialEventProtected } from './event-settlement';
 import { FinancialTransferError, createFinancialTransfer } from './transfer-service';
+import {
+  CatalogMutationError,
+  createAccountCatalog,
+  updateAccountCatalog,
+  createCategoryCatalog,
+  updateCategoryCatalog,
+  createPaymentMethodCatalog,
+  updatePaymentMethodCatalog,
+} from './catalog-mutation';
 import { prisma } from '@meg/database';
 import { resolveWorkspaceContext } from '../workspaces/service';
 
@@ -41,26 +50,56 @@ const transferRequestSchema = z.object({
   notes: z.string().trim().max(1000).optional(),
 });
 
-const accountSchema = z.object({
-  name: z.string().min(2).max(120),
+const expectedUpdatedAtSchema = z.string().datetime({ offset: true }).optional();
+
+const accountCreateSchema = z.object({
+  name: z.string().trim().min(2).max(120),
   type: z.enum(['checking', 'savings', 'cash', 'investment', 'credit', 'benefit']),
-  institution: z.string().max(120).optional().nullable(),
+  institution: z.string().trim().max(120).optional().nullable(),
   openingBalance: z.coerce.number().finite().default(0),
-  isActive: z.boolean().optional()
+  isActive: z.boolean().optional(),
+  operationId: operationIdSchema,
 });
+const accountUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(120).optional(),
+  institution: z.string().trim().max(120).optional().nullable(),
+  isActive: z.boolean().optional(),
+  expectedUpdatedAt: expectedUpdatedAtSchema,
+  operationId: operationIdSchema,
+}).strict();
 
-const categorySchema = z.object({
-  name: z.string().min(2).max(120),
-  group: z.string().max(120).optional().nullable(),
+const categoryCreateSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  group: z.string().trim().max(120).optional().nullable(),
   type: z.enum(['income', 'expense']).optional().nullable(),
-  isActive: z.boolean().optional()
+  isActive: z.boolean().optional(),
+  operationId: operationIdSchema,
 });
+const categoryUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(120).optional(),
+  group: z.string().trim().max(120).optional().nullable(),
+  isActive: z.boolean().optional(),
+  expectedUpdatedAt: expectedUpdatedAtSchema,
+  operationId: operationIdSchema,
+}).strict();
 
-const paymentMethodSchema = z.object({
-  name: z.string().min(2).max(120),
+const paymentMethodCreateSchema = z.object({
+  name: z.string().trim().min(2).max(120),
   type: z.enum(['instant', 'bill', 'credit', 'debit', 'transfer', 'cash', 'other']).optional().nullable(),
-  isActive: z.boolean().optional()
+  isActive: z.boolean().optional(),
+  operationId: operationIdSchema,
 });
+const paymentMethodUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(120).optional(),
+  isActive: z.boolean().optional(),
+  expectedUpdatedAt: expectedUpdatedAtSchema,
+  operationId: operationIdSchema,
+}).strict();
+
+const catalogDeactivateSchema = z.object({
+  expectedUpdatedAt: expectedUpdatedAtSchema,
+  operationId: operationIdSchema,
+}).strict();
 
 function validationError(reply: FastifyReply, details: unknown) {
   return reply.code(400).send({ error: 'VALIDATION_ERROR', details });
@@ -89,6 +128,19 @@ function transferError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof FinancialTransferError)) throw error;
   const status = ['OPERATION_ID_REUSED', 'INSUFFICIENT_SOURCE_ACCOUNT_BALANCE'].includes(error.code) ? 409 : 400;
   return reply.code(status).send({ error: error.code, ...(error.details || {}) });
+}
+
+function catalogError(reply: FastifyReply, error: unknown) {
+  if (!(error instanceof CatalogMutationError)) throw error;
+  const notFound = ['ACCOUNT_NOT_FOUND', 'CATEGORY_NOT_FOUND', 'PAYMENT_METHOD_NOT_FOUND'].includes(error.code);
+  const conflict = [
+    'ACCOUNT_ALREADY_EXISTS',
+    'CATEGORY_ALREADY_EXISTS',
+    'PAYMENT_METHOD_ALREADY_EXISTS',
+    'CATALOG_STALE_VERSION',
+    'OPERATION_ID_REUSED',
+  ].includes(error.code);
+  return reply.code(notFound ? 404 : conflict ? 409 : 400).send({ error: error.code, ...(error.details || {}) });
 }
 
 async function financialDataOwnerId(userId: string) {
@@ -310,28 +362,35 @@ export async function financeRoutes(app: FastifyInstance) {
   });
 
   app.post('/accounts', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
-    const parsed = accountSchema.safeParse(request.body);
+    const parsed = accountCreateSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    const dataOwnerId = await financialDataOwnerId(request.user.sub);
-    return reply.code(201).send(await prisma.account.create({ data: { userId: dataOwnerId, ...parsed.data } }));
+    try {
+      return reply.code(201).send(await createAccountCatalog(request.user.sub, parsed.data));
+    } catch (error) {
+      return catalogError(reply, error);
+    }
   });
 
   app.patch('/accounts/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
-    const parsed = accountSchema.partial().safeParse(request.body);
+    const parsed = accountUpdateSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
-    const dataOwnerId = await financialDataOwnerId(request.user.sub);
-    const current = await prisma.account.findFirst({ where: { id, userId: dataOwnerId } });
-    if (!current) return reply.code(404).send({ error: 'ACCOUNT_NOT_FOUND' });
-    return prisma.account.update({ where: { id }, data: parsed.data });
+    try {
+      return await updateAccountCatalog(request.user.sub, id, parsed.data);
+    } catch (error) {
+      return catalogError(reply, error);
+    }
   });
 
   app.delete('/accounts/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
+    const parsed = catalogDeactivateSchema.safeParse(request.body || {});
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
-    const dataOwnerId = await financialDataOwnerId(request.user.sub);
-    const current = await prisma.account.findFirst({ where: { id, userId: dataOwnerId } });
-    if (!current) return reply.code(404).send({ error: 'ACCOUNT_NOT_FOUND' });
-    return prisma.account.update({ where: { id }, data: { isActive: false } });
+    try {
+      return await updateAccountCatalog(request.user.sub, id, { ...parsed.data, isActive: false });
+    } catch (error) {
+      return catalogError(reply, error);
+    }
   });
 
   app.get('/categories', { preHandler: app.authorize([...readRoles]) }, async (request) => {
@@ -340,28 +399,35 @@ export async function financeRoutes(app: FastifyInstance) {
   });
 
   app.post('/categories', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
-    const parsed = categorySchema.safeParse(request.body);
+    const parsed = categoryCreateSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    const dataOwnerId = await financialDataOwnerId(request.user.sub);
-    return reply.code(201).send(await prisma.category.create({ data: { userId: dataOwnerId, ...parsed.data } }));
+    try {
+      return reply.code(201).send(await createCategoryCatalog(request.user.sub, parsed.data));
+    } catch (error) {
+      return catalogError(reply, error);
+    }
   });
 
   app.patch('/categories/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
-    const parsed = categorySchema.partial().safeParse(request.body);
+    const parsed = categoryUpdateSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
-    const dataOwnerId = await financialDataOwnerId(request.user.sub);
-    const current = await prisma.category.findFirst({ where: { id, userId: dataOwnerId } });
-    if (!current) return reply.code(404).send({ error: 'CATEGORY_NOT_FOUND' });
-    return prisma.category.update({ where: { id }, data: parsed.data });
+    try {
+      return await updateCategoryCatalog(request.user.sub, id, parsed.data);
+    } catch (error) {
+      return catalogError(reply, error);
+    }
   });
 
   app.delete('/categories/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
+    const parsed = catalogDeactivateSchema.safeParse(request.body || {});
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
-    const dataOwnerId = await financialDataOwnerId(request.user.sub);
-    const current = await prisma.category.findFirst({ where: { id, userId: dataOwnerId } });
-    if (!current) return reply.code(404).send({ error: 'CATEGORY_NOT_FOUND' });
-    return prisma.category.update({ where: { id }, data: { isActive: false } });
+    try {
+      return await updateCategoryCatalog(request.user.sub, id, { ...parsed.data, isActive: false });
+    } catch (error) {
+      return catalogError(reply, error);
+    }
   });
 
   app.get('/payment-methods', { preHandler: app.authorize([...readRoles]) }, async (request) => {
@@ -370,34 +436,35 @@ export async function financeRoutes(app: FastifyInstance) {
   });
 
   app.post('/payment-methods', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
-    const parsed = paymentMethodSchema.safeParse(request.body);
+    const parsed = paymentMethodCreateSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    const dataOwnerId = await financialDataOwnerId(request.user.sub);
-    const duplicate = await prisma.paymentMethod.findFirst({ where: { userId: dataOwnerId, name: parsed.data.name } });
-    if (duplicate) return reply.code(409).send({ error: 'PAYMENT_METHOD_ALREADY_EXISTS' });
-    return reply.code(201).send(await prisma.paymentMethod.create({ data: { userId: dataOwnerId, ...parsed.data } }));
+    try {
+      return reply.code(201).send(await createPaymentMethodCatalog(request.user.sub, parsed.data));
+    } catch (error) {
+      return catalogError(reply, error);
+    }
   });
 
   app.patch('/payment-methods/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
-    const parsed = paymentMethodSchema.partial().safeParse(request.body);
+    const parsed = paymentMethodUpdateSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
-    const dataOwnerId = await financialDataOwnerId(request.user.sub);
-    const current = await prisma.paymentMethod.findFirst({ where: { id, userId: dataOwnerId } });
-    if (!current) return reply.code(404).send({ error: 'PAYMENT_METHOD_NOT_FOUND' });
-    if (parsed.data.name) {
-      const duplicate = await prisma.paymentMethod.findFirst({ where: { userId: dataOwnerId, name: parsed.data.name, id: { not: id } } });
-      if (duplicate) return reply.code(409).send({ error: 'PAYMENT_METHOD_ALREADY_EXISTS' });
+    try {
+      return await updatePaymentMethodCatalog(request.user.sub, id, parsed.data);
+    } catch (error) {
+      return catalogError(reply, error);
     }
-    return prisma.paymentMethod.update({ where: { id }, data: parsed.data });
   });
 
   app.delete('/payment-methods/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
+    const parsed = catalogDeactivateSchema.safeParse(request.body || {});
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
-    const dataOwnerId = await financialDataOwnerId(request.user.sub);
-    const current = await prisma.paymentMethod.findFirst({ where: { id, userId: dataOwnerId } });
-    if (!current) return reply.code(404).send({ error: 'PAYMENT_METHOD_NOT_FOUND' });
-    return prisma.paymentMethod.update({ where: { id }, data: { isActive: false } });
+    try {
+      return await updatePaymentMethodCatalog(request.user.sub, id, { ...parsed.data, isActive: false });
+    } catch (error) {
+      return catalogError(reply, error);
+    }
   });
 
   app.get('/ledger', { preHandler: app.authorize([...readRoles]) }, async (request) => {
