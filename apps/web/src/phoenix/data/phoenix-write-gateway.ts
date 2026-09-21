@@ -80,6 +80,7 @@ export type PreparedPhoenixCardPurchase = {
 export type PhoenixWriteState =
   | { status: 'idle' }
   | { status: 'saving'; operationId: string }
+  | { status: 'accepted'; operationId: string; event: FinancialEvent }
   | { status: 'confirmed'; operationId: string; event: FinancialEvent; snapshot: PhoenixReadModel }
   | { status: 'error'; operationId: string; code: string; message: string };
 
@@ -400,20 +401,50 @@ async function confirmedSnapshot(refreshMonth: string) {
   return loadPhoenixReadModel(refreshMonth, { force: true });
 }
 
-export async function submitPhoenixSimpleEvent(
-  prepared: PreparedPhoenixSimpleEvent,
-  refreshMonth: string,
-): Promise<{ event: FinancialEvent; snapshot: PhoenixReadModel }> {
+async function snapshotAfterAccepted(refreshMonth: string, reason: string, timeoutMs = 12_000) {
+  try {
+    return await Promise.race([
+      confirmedSnapshot(refreshMonth),
+      new Promise<never>((_, reject) => window.setTimeout(() => reject(new PhoenixWriteError('PHOENIX_REFRESH_TIMEOUT')), timeoutMs)),
+    ]);
+  } catch {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('meg:data-invalidated', {
+        detail: { path: '/finance', method: 'MUTATION', reason },
+      }));
+    }
+    return null;
+  }
+}
+
+async function createPhoenixSimpleEvent(prepared: PreparedPhoenixSimpleEvent) {
   if (!PHOENIX_WRITE_CAPABILITIES.simpleEvent) throw new PhoenixWriteError('PHOENIX_WRITE_NOT_ENABLED');
   const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
   if (!runtimeCapabilities.simpleEvent) throw new PhoenixWriteError('PHOENIX_WRITE_NOT_ENABLED');
   assertSimpleEvent(prepared.payload);
-
-  const event = await financeClient.createEvent({
+  return financeClient.createEvent({
     ...prepared.payload,
     operationId: prepared.operationId,
   });
+}
 
+async function createPhoenixBenefitEvent(prepared: PreparedPhoenixBenefitEvent) {
+  if (!PHOENIX_WRITE_CAPABILITIES.benefitEvent) throw new PhoenixWriteError('PHOENIX_BENEFIT_WRITE_NOT_ENABLED');
+  const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
+  if (!runtimeCapabilities.benefitWrite) throw new PhoenixWriteError('PHOENIX_BENEFIT_WRITE_NOT_ENABLED');
+  assertBenefitEvent(prepared.payload);
+  const { status: _status, ...payload } = prepared.payload;
+  return authenticatedRequest<FinancialEvent>('/finance/benefit-events', {
+    method: 'POST',
+    body: JSON.stringify({ ...payload, operationId: prepared.operationId }),
+  });
+}
+
+export async function submitPhoenixSimpleEvent(
+  prepared: PreparedPhoenixSimpleEvent,
+  refreshMonth: string,
+): Promise<{ event: FinancialEvent; snapshot: PhoenixReadModel }> {
+  const event = await createPhoenixSimpleEvent(prepared);
   const snapshot = await confirmedSnapshot(refreshMonth);
   return { event, snapshot };
 }
@@ -422,17 +453,7 @@ export async function submitPhoenixBenefitEvent(
   prepared: PreparedPhoenixBenefitEvent,
   refreshMonth: string,
 ): Promise<{ event: FinancialEvent; snapshot: PhoenixReadModel }> {
-  if (!PHOENIX_WRITE_CAPABILITIES.benefitEvent) throw new PhoenixWriteError('PHOENIX_BENEFIT_WRITE_NOT_ENABLED');
-  const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
-  if (!runtimeCapabilities.benefitWrite) throw new PhoenixWriteError('PHOENIX_BENEFIT_WRITE_NOT_ENABLED');
-  assertBenefitEvent(prepared.payload);
-
-  const { status: _status, ...payload } = prepared.payload;
-  const event = await authenticatedRequest<FinancialEvent>('/finance/benefit-events', {
-    method: 'POST',
-    body: JSON.stringify({ ...payload, operationId: prepared.operationId }),
-  });
-
+  const event = await createPhoenixBenefitEvent(prepared);
   const snapshot = await confirmedSnapshot(refreshMonth);
   return { event, snapshot };
 }
@@ -556,11 +577,9 @@ export async function runPhoenixSimpleEventWrite(
   onState?: (state: PhoenixWriteState) => void,
 ): Promise<PhoenixWriteState> {
   onState?.({ status: 'saving', operationId: prepared.operationId });
+  let event: FinancialEvent;
   try {
-    const { event, snapshot } = await submitPhoenixSimpleEvent(prepared, refreshMonth);
-    const confirmed: PhoenixWriteState = { status: 'confirmed', operationId: prepared.operationId, event, snapshot };
-    onState?.(confirmed);
-    return confirmed;
+    event = await createPhoenixSimpleEvent(prepared);
   } catch (error) {
     const code = writeErrorCode(error);
     const failed: PhoenixWriteState = {
@@ -572,6 +591,14 @@ export async function runPhoenixSimpleEventWrite(
     onState?.(failed);
     return failed;
   }
+
+  const accepted: PhoenixWriteState = { status: 'accepted', operationId: prepared.operationId, event };
+  onState?.(accepted);
+  const snapshot = await snapshotAfterAccepted(refreshMonth, 'simple-event-refresh-pending');
+  if (!snapshot) return accepted;
+  const confirmed: PhoenixWriteState = { status: 'confirmed', operationId: prepared.operationId, event, snapshot };
+  onState?.(confirmed);
+  return confirmed;
 }
 
 export async function runPhoenixBenefitEventWrite(
@@ -580,11 +607,9 @@ export async function runPhoenixBenefitEventWrite(
   onState?: (state: PhoenixWriteState) => void,
 ): Promise<PhoenixWriteState> {
   onState?.({ status: 'saving', operationId: prepared.operationId });
+  let event: FinancialEvent;
   try {
-    const { event, snapshot } = await submitPhoenixBenefitEvent(prepared, refreshMonth);
-    const confirmed: PhoenixWriteState = { status: 'confirmed', operationId: prepared.operationId, event, snapshot };
-    onState?.(confirmed);
-    return confirmed;
+    event = await createPhoenixBenefitEvent(prepared);
   } catch (error) {
     const code = writeErrorCode(error);
     const failed: PhoenixWriteState = {
@@ -596,6 +621,14 @@ export async function runPhoenixBenefitEventWrite(
     onState?.(failed);
     return failed;
   }
+
+  const accepted: PhoenixWriteState = { status: 'accepted', operationId: prepared.operationId, event };
+  onState?.(accepted);
+  const snapshot = await snapshotAfterAccepted(refreshMonth, 'benefit-event-refresh-pending');
+  if (!snapshot) return accepted;
+  const confirmed: PhoenixWriteState = { status: 'confirmed', operationId: prepared.operationId, event, snapshot };
+  onState?.(confirmed);
+  return confirmed;
 }
 
 export async function runPhoenixCardPurchaseWrite(
