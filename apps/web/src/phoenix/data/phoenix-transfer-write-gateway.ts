@@ -36,6 +36,7 @@ export type PhoenixTransferResult = {
 export type PhoenixTransferWriteState =
   | { status: 'idle' }
   | { status: 'saving'; operationId: string }
+  | { status: 'accepted'; operationId: string; result: PhoenixTransferResult }
   | { status: 'confirmed'; operationId: string; result: PhoenixTransferResult; snapshot: PhoenixReadModel }
   | { status: 'error'; operationId: string; code: string; message: string };
 
@@ -102,19 +103,39 @@ async function confirmedSnapshot(refreshMonth: string) {
   return loadPhoenixReadModel(refreshMonth, { force: true });
 }
 
-export async function submitPhoenixTransfer(
-  prepared: PreparedPhoenixTransfer,
-  refreshMonth: string,
-): Promise<{ result: PhoenixTransferResult; snapshot: PhoenixReadModel }> {
+async function createPhoenixTransfer(prepared: PreparedPhoenixTransfer) {
   if (!PHOENIX_TRANSFER_WRITE_ENABLED) throw new PhoenixTransferWriteError('PHOENIX_TRANSFER_WRITE_NOT_ENABLED');
   const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
   if (!runtimeCapabilities.transferWrite) throw new PhoenixTransferWriteError('PHOENIX_TRANSFER_WRITE_NOT_ENABLED');
   assertTransfer(prepared.payload);
 
-  const result = await authenticatedRequest<PhoenixTransferResult>('/finance/transfers', {
+  return authenticatedRequest<PhoenixTransferResult>('/finance/transfers', {
     method: 'POST',
     body: JSON.stringify({ ...prepared.payload, operationId: prepared.operationId }),
   });
+}
+
+async function snapshotAfterAccepted(refreshMonth: string) {
+  try {
+    return await Promise.race([
+      confirmedSnapshot(refreshMonth),
+      new Promise<never>((_, reject) => window.setTimeout(() => reject(new PhoenixTransferWriteError('PHOENIX_TRANSFER_REFRESH_TIMEOUT')), 12_000)),
+    ]);
+  } catch {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('meg:data-invalidated', {
+        detail: { path: '/finance/transfers', method: 'POST', reason: 'transfer-refresh-pending' },
+      }));
+    }
+    return null;
+  }
+}
+
+export async function submitPhoenixTransfer(
+  prepared: PreparedPhoenixTransfer,
+  refreshMonth: string,
+): Promise<{ result: PhoenixTransferResult; snapshot: PhoenixReadModel }> {
+  const result = await createPhoenixTransfer(prepared);
   const snapshot = await confirmedSnapshot(refreshMonth);
   return { result, snapshot };
 }
@@ -125,11 +146,9 @@ export async function runPhoenixTransferWrite(
   onState?: (state: PhoenixTransferWriteState) => void,
 ): Promise<PhoenixTransferWriteState> {
   onState?.({ status: 'saving', operationId: prepared.operationId });
+  let result: PhoenixTransferResult;
   try {
-    const { result, snapshot } = await submitPhoenixTransfer(prepared, refreshMonth);
-    const confirmed: PhoenixTransferWriteState = { status: 'confirmed', operationId: prepared.operationId, result, snapshot };
-    onState?.(confirmed);
-    return confirmed;
+    result = await createPhoenixTransfer(prepared);
   } catch (error) {
     const code = transferErrorCode(error);
     const failed: PhoenixTransferWriteState = {
@@ -141,4 +160,12 @@ export async function runPhoenixTransferWrite(
     onState?.(failed);
     return failed;
   }
+
+  const accepted: PhoenixTransferWriteState = { status: 'accepted', operationId: prepared.operationId, result };
+  onState?.(accepted);
+  const snapshot = await snapshotAfterAccepted(refreshMonth);
+  if (!snapshot) return accepted;
+  const confirmed: PhoenixTransferWriteState = { status: 'confirmed', operationId: prepared.operationId, result, snapshot };
+  onState?.(confirmed);
+  return confirmed;
 }
