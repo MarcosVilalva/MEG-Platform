@@ -152,8 +152,8 @@ assert.match(history, /Exportar filtrado/);
 assert.match(users, /Somente leitura/);
 assert.match(users, /Gerenciar acesso/);
 assert.match(settings, /Saúde do sistema/);
-assert.match(settings, /não consultada/,
-  'Configurações Phoenix não pode inventar estado de recursos nativos não consultados');
+assert.match(settings, /getBiometricLoginStatus/,
+  'Configurações Phoenix deve consultar o estado real da biometria no APK em vez de inventar disponibilidade.');
 assert.match(settings, /Restaurar backup/);
 assert.match(settings, /disabled/,
   'Restauração deve permanecer bloqueada durante a fase read-only');
@@ -613,7 +613,7 @@ assert.match(phoenixApp, /Deseja fechar o aplicativo\?/,
   'APK deve pedir confirmação explícita antes de fechar.');
 assert.match(phoenixApp, />Não<[\s\S]*>Sim, fechar</,
   'Confirmação de fechamento deve oferecer Não e Sim de forma explícita.');
-assert.match(settings, /Sair da conta[\s\S]*remove o acesso biométrico salvo/,
+assert.match(settings, /Sair da conta[\s\S]*remove a credencial biométrica deste aparelho/,
   'Configurações deve separar logout real do simples fechamento do APK.');
 assert.match(previewMain, /MegNativeShell/,
   'Saída do APK deve usar o shell nativo dedicado antes do fallback padrão.');

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { authenticatedRequest } from '../../app/auth-client';
 import type { PhoenixReadModel } from '../contracts';
 import {
   PhoenixProfileAvatar,
@@ -19,7 +20,16 @@ type PhoenixSettingsProps = {
   onLogoutRequest?: () => void;
 };
 
-type SettingsSection = 'profile' | 'home' | 'security' | 'system';
+type SettingsSection = 'profile' | 'home' | 'security' | 'notifications' | 'system';
+
+type BiometricStatus = { available: boolean; enabled: boolean; reason?: string | null; email?: string | null };
+type NotificationStatus = {
+  email?: { configured?: boolean; provider?: string; mode?: string; readyForAllUsers?: boolean; sender?: string };
+  whatsapp?: { configured?: boolean; defaultRecipient?: string | null };
+  alexa?: { configured?: boolean; announcementsConfigured?: boolean; skillConfigured?: boolean; schedule?: string };
+  automation?: { configured?: boolean; schedule?: string };
+};
+type DeliverySummary = { sentLast24Hours?: number; failedLast24Hours?: number; lastSuccessAt?: string | null; lastFailureAt?: string | null };
 type DashboardPreferences = {
   balance: boolean;
   projection: boolean;
@@ -80,6 +90,20 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
   const [avatar, setAvatar] = useState<PhoenixAvatarPreference>(() => readPhoenixAvatarPreference(data.user.id));
   const [avatarError, setAvatarError] = useState('');
   const [dashboardPreferences, setDashboardPreferences] = useState<DashboardPreferences>(() => readDashboardPreferences());
+  const [avatarsExpanded, setAvatarsExpanded] = useState(false);
+  const [biometricStatus, setBiometricStatus] = useState<BiometricStatus | null>(null);
+  const [biometricBusy, setBiometricBusy] = useState(false);
+  const [notificationStatus, setNotificationStatus] = useState<NotificationStatus | null>(null);
+  const [deliverySummary, setDeliverySummary] = useState<DeliverySummary | null>(null);
+  const [appVersion, setAppVersion] = useState<string>('Consultando…');
+
+  const visibleAvatarPresets = useMemo(() => {
+    if (avatarsExpanded) return phoenixAvatarPresets;
+    const first = phoenixAvatarPresets.slice(0, 12);
+    if (avatar.kind !== 'preset' || first.some((item) => item.id === avatar.presetId)) return first;
+    const selected = phoenixAvatarPresets.find((item) => item.id === avatar.presetId);
+    return selected ? [...first.slice(0, 11), selected] : first;
+  }, [avatar, avatarsExpanded]);
 
   useEffect(() => {
     applyDashboardPreferences(dashboardPreferences);
@@ -93,6 +117,45 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
     });
     return () => { active = false; };
   }, [data.user.id]);
+
+  useEffect(() => {
+    let active = true;
+    const base = import.meta.env.BASE_URL || '/';
+    const versionUrl = `${base.endsWith('/') ? base : `${base}/`}downloads/app-version.json`;
+    void fetch(versionUrl, { cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('VERSION_UNAVAILABLE')))
+      .then((payload) => { if (active) setAppVersion(payload?.versionName ? `Android ${payload.versionName}` : 'Versão não informada'); })
+      .catch(() => { if (active) setAppVersion(import.meta.env.VITE_MOBILE_APP === 'true' ? 'Android · versão não informada' : 'Web Phoenix V15'); });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    if (import.meta.env.VITE_MOBILE_APP !== 'true') {
+      setBiometricStatus({ available: false, enabled: false, reason: 'WEB_RUNTIME' });
+      return () => { active = false; };
+    }
+    // @ts-ignore módulo JS nativo carregado apenas no APK.
+    void import('../../native-biometric-login.js')
+      .then((module) => module.getBiometricLoginStatus())
+      .then((status) => { if (active) setBiometricStatus(status); })
+      .catch(() => { if (active) setBiometricStatus({ available: false, enabled: false, reason: 'PLUGIN_UNAVAILABLE' }); });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    if (data.user.role !== 'ADMIN') return () => { active = false; };
+    void Promise.allSettled([
+      authenticatedRequest<NotificationStatus>('/notifications/status', { cache: 'no-store' }),
+      authenticatedRequest<{ summary?: DeliverySummary }>('/notifications/deliveries', { cache: 'no-store' })
+    ]).then(([statusResult, deliveriesResult]) => {
+      if (!active) return;
+      if (statusResult.status === 'fulfilled') setNotificationStatus(statusResult.value);
+      if (deliveriesResult.status === 'fulfilled') setDeliverySummary(deliveriesResult.value.summary || null);
+    });
+    return () => { active = false; };
+  }, [data.user.role]);
 
   function updateAvatar(next: PhoenixAvatarPreference) {
     const normalized = savePhoenixAvatarPreference(next, data.user.id);
@@ -113,6 +176,18 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
     }
   }
 
+  async function refreshBiometricStatus() {
+    if (import.meta.env.VITE_MOBILE_APP !== 'true') return;
+    setBiometricBusy(true);
+    try {
+      // @ts-ignore módulo JS nativo carregado apenas no APK.
+      const biometric = await import('../../native-biometric-login.js');
+      setBiometricStatus(await biometric.getBiometricLoginStatus());
+    } finally {
+      setBiometricBusy(false);
+    }
+  }
+
   function toggleDashboardPreference(key: keyof DashboardPreferences) {
     setDashboardPreferences((current) => ({ ...current, [key]: !current[key] }));
   }
@@ -124,8 +199,9 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
       <nav className="px-settings-nav" aria-label="Seções das configurações">
         <button type="button" className={section === 'profile' ? 'active' : ''} onClick={() => setSection('profile')}><span>01</span><div><strong>Meu perfil</strong><small>Foto, avatar e identidade</small></div></button>
         <button type="button" className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}><span>02</span><div><strong>Aparência e Home</strong><small>Tema e dashboard</small></div></button>
-        <button type="button" className={section === 'security' ? 'active' : ''} onClick={() => setSection('security')}><span>03</span><div><strong>Segurança</strong><small>Sessão e permissões</small></div></button>
-        <button type="button" className={section === 'system' ? 'active' : ''} onClick={() => setSection('system')}><span>04</span><div><strong>Sistema</strong><small>Dados, sincronização e diagnóstico</small></div></button>
+        <button type="button" className={section === 'security' ? 'active' : ''} onClick={() => setSection('security')}><span>03</span><div><strong>Segurança</strong><small>Biometria e sessão</small></div></button>
+        <button type="button" className={section === 'notifications' ? 'active' : ''} onClick={() => setSection('notifications')}><span>04</span><div><strong>Notificações</strong><small>E-mail, WhatsApp e Alexa</small></div></button>
+        <button type="button" className={section === 'system' ? 'active' : ''} onClick={() => setSection('system')}><span>05</span><div><strong>Sistema</strong><small>Versão, dados e diagnóstico</small></div></button>
       </nav>
 
       <div className="px-settings-workspace">
@@ -141,14 +217,15 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
           <section className="px-card px-settings-card">
             <div className="px-settings-card-head"><div><span className="px-kicker">Avatares MEG</span><h2>Escolha um estilo pronto</h2><p>Você pode usar uma foto sua, um avatar pré-selecionado ou manter somente suas iniciais.</p></div></div>
             <div className="px-avatar-presets">
-              {phoenixAvatarPresets.map((preset) => {
+              {visibleAvatarPresets.map((preset) => {
                 const preference: PhoenixAvatarPreference = { kind: 'preset', presetId: preset.id };
                 const selected = avatar.kind === 'preset' && avatar.presetId === preset.id;
                 return <button key={preset.id} type="button" className={selected ? 'selected' : ''} onClick={() => updateAvatar(preference)}><PhoenixProfileAvatar name={data.user.name} preference={preference} /><span>{preset.label}</span>{selected ? <b>✓</b> : null}</button>;
               })}
             </div>
+            <div className="px-avatar-presets-actions"><button type="button" onClick={() => setAvatarsExpanded((value) => !value)}>{avatarsExpanded ? 'Recolher avatares' : `Ver todos (${phoenixAvatarPresets.length})`}</button></div>
             {avatarError ? <div className="px-settings-avatar-error">{avatarError}</div> : null}
-            <p className="px-settings-profile-note">A imagem é uma preferência visual deste usuário neste navegador. O cadastro oficial ainda não possui campo de avatar na API; não simulamos gravação em nuvem.</p>
+            <p className="px-settings-profile-note">O avatar é individual por usuário. A escolha fica neste aparelho e também é sincronizada na base do MEG para acompanhar o mesmo usuário em outros dispositivos.</p>
           </section>
 
           <section className="px-card px-settings-card">
@@ -179,19 +256,23 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
         </> : null}
 
         {section === 'security' ? <section className="px-settings-grid">
-          <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Segurança</span><h2>Sessão e permissões</h2><p>Identidade autenticada e estado atual do acesso.</p></div></div><dl><div><dt>Usuário</dt><dd>{data.user.name}</dd></div><div><dt>Perfil</dt><dd>{data.user.role}</dd></div><div><dt>Status</dt><dd>{data.user.status}</dd></div></dl><div className="px-settings-status-list"><span>Biometria · não consultada no módulo nativo Android</span><span>Bloqueio automático · não consultada nesta interface Web</span><span>Outras sessões · ação administrativa ainda bloqueada</span></div></article>
-          <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Acesso</span><h2>Proteção da conta</h2><p>A Phoenix ainda não libera alterações administrativas de credenciais.</p></div></div><div className="px-settings-control-row"><div><strong>Recuperação de acesso</strong><small>Fluxo existe na entrada do MEG.</small></div><span className="px-settings-value">Disponível no login</span></div><div className="px-settings-control-row"><div><strong>Alterar senha</strong><small>Será habilitado com contrato seguro dedicado.</small></div><button type="button" disabled>Alterar senha</button></div>{onLogoutRequest ? <div className="px-settings-control-row px-settings-exit-row"><div><strong>Sair da conta</strong><small>Encerra a sessão neste aparelho e remove o acesso biométrico salvo. Use esta opção para trocar de usuário.</small></div><button type="button" onClick={onLogoutRequest}>Sair da conta</button></div> : null}</article>
+          <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Segurança</span><h2>Biometria neste aparelho</h2><p>Fechar o MEG não remove a biometria. Sair da conta continua sendo uma ação diferente.</p></div><button type="button" onClick={() => { void refreshBiometricStatus(); }} disabled={biometricBusy || import.meta.env.VITE_MOBILE_APP !== 'true'}>{biometricBusy ? 'Verificando…' : 'Atualizar status'}</button></div><div className="px-settings-status-list"><span>Ambiente · {import.meta.env.VITE_MOBILE_APP === 'true' ? 'Aplicativo Android' : 'Navegador Web'}</span><span>Biometria · {biometricStatus?.enabled ? 'Ativada e pronta para o próximo acesso' : biometricStatus?.available ? 'Disponível, ainda não ativada para esta conta' : import.meta.env.VITE_MOBILE_APP === 'true' ? 'Indisponível neste aparelho' : 'Gerenciada apenas no aplicativo Android'}</span><span>Credencial · {biometricStatus?.email || (biometricStatus?.enabled ? data.user.email : 'Nenhuma credencial biométrica salva')}</span></div></article>
+          <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Acesso</span><h2>Conta e sessão</h2><p>Seu perfil define o que pode ser feito na base financeira compartilhada.</p></div></div><dl><div><dt>Usuário</dt><dd>{data.user.name}</dd></div><div><dt>Perfil</dt><dd>{data.user.role}</dd></div><div><dt>Status</dt><dd>{data.user.status}</dd></div></dl><div className="px-settings-control-row"><div><strong>Recuperação de acesso</strong><small>Disponível na tela de login.</small></div><span className="px-settings-value">Ativa</span></div>{onLogoutRequest ? <div className="px-settings-control-row px-settings-exit-row"><div><strong>Sair da conta</strong><small>Encerra a sessão e remove a credencial biométrica deste aparelho para permitir troca de usuário.</small></div><button type="button" onClick={onLogoutRequest}>Sair da conta</button></div> : null}</article>
         </section> : null}
+
+        {section === 'notifications' ? <>
+          <section className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Notificações</span><h2>Canais do MEG</h2><p>Status real das integrações. Nenhuma chave ou segredo é exibido nesta tela.</p></div></div>{data.user.role !== 'ADMIN' ? <p>O administrador da base controla integrações e agendas de envio.</p> : <div className="px-settings-channel-grid"><article><strong>E-mail</strong><span>{notificationStatus?.email?.configured ? 'Configurado' : 'Não configurado'}</span><small>{notificationStatus?.email?.provider ? `Provedor: ${notificationStatus.email.provider}` : 'Provedor não informado'}</small></article><article><strong>WhatsApp</strong><span>{notificationStatus?.whatsapp?.configured ? 'Configurado' : 'Não configurado'}</span><small>{notificationStatus?.whatsapp?.defaultRecipient ? `Destino padrão: ${notificationStatus.whatsapp.defaultRecipient}` : 'Sem destino padrão'}</small></article><article><strong>Alexa</strong><span>{notificationStatus?.alexa?.configured ? 'Configurada' : 'Não configurada'}</span><small>{notificationStatus?.alexa?.schedule || 'Agenda não informada'}</small></article><article><strong>Automação</strong><span>{notificationStatus?.automation?.configured ? 'Ativa' : 'Não configurada'}</span><small>{notificationStatus?.automation?.schedule || 'Agenda não informada'}</small></article></div>}</section>
+          {data.user.role === 'ADMIN' ? <section className="px-settings-grid"><article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Entrega</span><h2>Últimas 24 horas</h2></div></div><dl><div><dt>Enviadas</dt><dd>{deliverySummary?.sentLast24Hours ?? '—'}</dd></div><div><dt>Falhas</dt><dd>{deliverySummary?.failedLast24Hours ?? '—'}</dd></div><div><dt>Último sucesso</dt><dd>{deliverySummary?.lastSuccessAt ? new Date(deliverySummary.lastSuccessAt).toLocaleString('pt-BR') : 'Não informado'}</dd></div><div><dt>Última falha</dt><dd>{deliverySummary?.lastFailureAt ? new Date(deliverySummary.lastFailureAt).toLocaleString('pt-BR') : 'Nenhuma registrada'}</dd></div></dl></article><article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Agenda</span><h2>Horários atuais</h2><p>Os horários abaixo vêm da configuração ativa do servidor.</p></div></div><div className="px-settings-status-list"><span>Alertas · {notificationStatus?.automation?.schedule || 'Não informado'}</span><span>Alexa · {notificationStatus?.alexa?.schedule || 'Não informado'}</span></div><p className="px-settings-note">A próxima etapa desta tela será permitir editar essas agendas e o período silencioso sem expor credenciais.</p></article></section> : null}
+        </> : null}
 
         {section === 'system' ? <>
           <section className="px-card px-settings-health-banner"><div className="px-settings-health-copy"><span className="px-settings-health-icon" aria-hidden="true">{normalizationOk ? '✓' : '!'}</span><div><span className="px-kicker">Saúde do sistema</span><h2>{normalizationOk ? 'Sistema funcionando normalmente' : 'Sistema requer verificação'}</h2><p>Status construído apenas com indicadores reais expostos pela API.</p></div></div><div className="px-settings-health-chips"><span>API · {stateLabel(data.health.status)}</span><span>Banco · {data.normalization.primary ? 'Primário' : 'Verificar'}</span><span>Normalização · {normalizationOk ? 'OK' : 'Pendente'}</span><span>Modo · {data.normalization.mode || '—'}</span></div></section>
           <section className="px-settings-grid">
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Sincronização</span><h2>Integridade da base</h2></div></div><div className={`px-settings-sync-banner ${normalizationOk ? 'ok' : 'warn'}`}><strong>{normalizationOk ? 'Tudo reconciliado' : 'Verificação necessária'}</strong><small>{data.normalization.updatedAt ? `Atualização: ${new Date(data.normalization.updatedAt).toLocaleString('pt-BR')}` : 'Horário de atualização não informado'}</small></div><dl><div><dt>Base primária</dt><dd>{data.normalization.primary ? 'Sim' : 'Não'}</dd></div><div><dt>Revisão</dt><dd>{data.normalization.revision}</dd></div><div><dt>Eventos normalizados</dt><dd>{data.normalization.normalized?.count ?? '—'}</dd></div></dl></article>
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Backup e dados</span><h2>Proteção da base</h2></div></div><p>A restauração continua bloqueada para impedir mutações durante a homologação.</p><button type="button" disabled>Restaurar backup</button><small className="px-settings-note">Bloqueado propositalmente até o gate de escrita.</small></article>
-            <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Dispositivos</span><h2>Web e Android</h2></div></div><div className="px-settings-status-list"><span>Web atual · sessão autenticada</span><span>Android · integração de dispositivo pendente</span><span>Biometria · não consultada nesta sessão Web</span></div></article>
-            <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Alertas</span><h2>Canais e automações</h2></div></div><div className="px-settings-status-list"><span>E-mail · infraestrutura existente</span><span>WhatsApp · infraestrutura existente</span><span>Destinatários · leitura a conectar</span><span>Rotinas · não afirmadas como ativas sem contrato oficial</span></div></article>
+            <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Dispositivos</span><h2>Web e Android</h2></div></div><div className="px-settings-status-list"><span>Sessão atual · autenticada</span><span>Aplicativo · biometria persistente por dispositivo</span><span>Base financeira · compartilhada entre membros autorizados do mesmo espaço</span></div></article>
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Diagnóstico</span><h2>Reparo e normalização</h2></div></div><dl><div><dt>Reparo</dt><dd>{repair ? stateLabel(repair.status) : 'Não informado'}</dd></div><div><dt>Itens verificados</dt><dd>{repair?.scanned ?? '—'}</dd></div><div><dt>Itens reparados</dt><dd>{repair?.repaired ?? '—'}</dd></div><div><dt>Ocorrências</dt><dd>{repair?.issues ?? '—'}</dd></div><div><dt>Normalização API</dt><dd>{healthNormalization ? stateLabel(healthNormalization.status) : 'Não informado'}</dd></div></dl></article>
-            <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Sobre</span><h2>MEG Finance System</h2></div></div><p>Meu Equilíbrio Gerencial · Phoenix V15 em homologação controlada.</p><dl><div><dt>Modo</dt><dd>{data.sourcePolicy.mode}</dd></div><div><dt>Eventos</dt><dd>{data.sourcePolicy.events}</dd></div><div><dt>Usuários</dt><dd>{data.sourcePolicy.users}</dd></div></dl></article>
+            <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Sobre</span><h2>MEG Finance System</h2></div></div><p>Meu Equilíbrio Gerencial · Phoenix V15.</p><dl><div><dt>Aplicativo</dt><dd>{appVersion}</dd></div><div><dt>Perfil de dados</dt><dd>Base oficial do workspace</dd></div><div><dt>Usuários</dt><dd>{data.sourcePolicy.users}</dd></div></dl><details className="px-settings-advanced"><summary>Diagnóstico avançado</summary><dl><div><dt>Modo</dt><dd>{data.sourcePolicy.mode}</dd></div><div><dt>Eventos</dt><dd>{data.sourcePolicy.events}</dd></div><div><dt>Revisão</dt><dd>{data.normalization.revision}</dd></div></dl></details></article>
           </section>
         </> : null}
       </div>
