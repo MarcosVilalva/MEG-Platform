@@ -91,6 +91,7 @@ export function PhoenixLaunchWriteControl({
   refreshMonth,
   duplicateMessage,
   onReview,
+  onBusyChange,
   onAccepted,
   onCommitted,
 }: {
@@ -103,6 +104,7 @@ export function PhoenixLaunchWriteControl({
   refreshMonth?: string;
   duplicateMessage?: string | null;
   onReview: () => void;
+  onBusyChange?: (busy: boolean) => void;
   onAccepted?: () => void;
   onCommitted?: (snapshot: PhoenixReadModel, event?: FinancialEvent) => void;
 }) {
@@ -160,6 +162,11 @@ export function PhoenixLaunchWriteControl({
   }, [inputKey, reviewed]);
 
   useEffect(() => {
+    onBusyChange?.(commitState === 'saving');
+    return () => onBusyChange?.(false);
+  }, [commitState, onBusyChange]);
+
+  useEffect(() => {
     const hasInput = transferFlow ? missing.length === 0 : benefitFlow ? Boolean(benefitInput) : cardFlow ? Boolean(cardInput) : Boolean(input);
     if (!reviewed || !eligibility.eligible || !hasInput) {
       setRuntimeState('idle');
@@ -187,12 +194,12 @@ export function PhoenixLaunchWriteControl({
       if (enabled) {
         setRuntimeState('enabled');
         setRuntimeMessage(transferFlow
-          ? 'Transferência liberada. Origem e destino serão gravados atomicamente pelo domínio financeiro, com validação do saldo da conta de origem.'
+          ? 'Transferência liberada. Origem e destino serão gravados atomicamente; após o aceite do servidor, a tela será liberada enquanto os saldos são relidos.'
           : benefitFlow
-            ? 'Writer de benefício liberado. A movimentação será confirmada como paga/recebida, sem alterar o caixa monetário, e o saldo do benefício será relido antes de atualizar a tela.'
+            ? 'Writer de benefício liberado. A movimentação será gravada sem alterar o caixa monetário; a tela será liberada após o aceite do servidor.'
             : cardFlow
-              ? 'Writer de cartão liberado. A compra será criada no domínio de cartões, parcelada pela API e relida no snapshot antes de aparecer no sistema.'
-              : 'Gravação simples liberada pelo ambiente. A confirmação será enviada uma única vez com proteção de reenvio.');
+              ? 'Writer de cartão liberado. A compra será criada no domínio de cartões; a tela será liberada assim que a API aceitar a operação.'
+              : 'Gravação simples liberada. Após o aceite do servidor, a interface fecha e a atualização continua em segundo plano, sem reenviar a operação.');
       } else {
         setRuntimeState('disabled');
         setRuntimeMessage(transferFlow
@@ -227,32 +234,54 @@ export function PhoenixLaunchWriteControl({
         if (!resolvedTransferInput) throw new Error('PHOENIX_TRANSFER_FORM_NOT_READY');
         const prepared = preparedTransferRef.current || preparePhoenixTransfer(resolvedTransferInput);
         preparedTransferRef.current = prepared;
-        const result = await runPhoenixTransferWrite(prepared, refreshMonth || resolvedTransferInput.date.slice(0, 7));
+        const result = await runPhoenixTransferWrite(
+          prepared,
+          refreshMonth || resolvedTransferInput.date.slice(0, 7),
+          (state) => {
+            if (state.status !== 'accepted') return;
+            preparedTransferRef.current = null;
+            setCommitState('confirmed');
+            setCommitMessage('Transferência salva. A atualização das contas continua em segundo plano.');
+            onAccepted?.();
+          },
+        );
         if (result.status === 'confirmed') {
           preparedTransferRef.current = null;
           setCommitState('confirmed');
-          setCommitMessage('Transferência confirmada. As duas pernas financeiras foram relidas da base antes da atualização da tela.');
+          setCommitMessage('Transferência confirmada. As duas contas foram relidas da base.');
           onCommitted?.(result.snapshot);
           return;
         }
+        if (result.status === 'accepted') return;
         setCommitState('error');
-        setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível confirmar a transferência. Tente novamente sem alterar os dados.');
+        setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível concluir a transferência.');
         return;
       }
 
       if (benefitFlow) {
         const prepared = preparedBenefitRef.current || preparePhoenixBenefitEvent(benefitInput!);
         preparedBenefitRef.current = prepared;
-        const result = await runPhoenixBenefitEventWrite(prepared, refreshMonth || benefitInput!.date.slice(0, 7));
+        const result = await runPhoenixBenefitEventWrite(
+          prepared,
+          refreshMonth || benefitInput!.date.slice(0, 7),
+          (state) => {
+            if (state.status !== 'accepted') return;
+            preparedBenefitRef.current = null;
+            setCommitState('confirmed');
+            setCommitMessage('Movimentação do benefício salva. O saldo será atualizado em segundo plano.');
+            onAccepted?.();
+          },
+        );
         if (result.status === 'confirmed') {
           preparedBenefitRef.current = null;
           setCommitState('confirmed');
-          setCommitMessage('Movimentação do Benefício Alimentação confirmada. O saldo do benefício foi relido sem alterar o caixa monetário.');
+          setCommitMessage('Movimentação do Benefício Alimentação confirmada e relida da base.');
           onCommitted?.(result.snapshot, result.event);
           return;
         }
+        if (result.status === 'accepted') return;
         setCommitState('error');
-        setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível confirmar a movimentação do benefício. Tente novamente sem alterar os dados.');
+        setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível concluir a movimentação do benefício.');
         return;
       }
 
@@ -287,7 +316,17 @@ export function PhoenixLaunchWriteControl({
 
       const prepared = preparedRef.current || preparePhoenixSimpleEvent(input!);
       preparedRef.current = prepared;
-      const result = await runPhoenixSimpleEventWrite(prepared, refreshMonth || input!.date.slice(0, 7));
+      const result = await runPhoenixSimpleEventWrite(
+        prepared,
+        refreshMonth || input!.date.slice(0, 7),
+        (state) => {
+          if (state.status !== 'accepted') return;
+          preparedRef.current = null;
+          setCommitState('confirmed');
+          setCommitMessage('Lançamento salvo. O MEG atualizará saldos e grade em segundo plano.');
+          onAccepted?.();
+        },
+      );
       if (result.status === 'confirmed') {
         preparedRef.current = null;
         setCommitState('confirmed');
@@ -295,8 +334,9 @@ export function PhoenixLaunchWriteControl({
         onCommitted?.(result.snapshot, result.event);
         return;
       }
+      if (result.status === 'accepted') return;
       setCommitState('error');
-      setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível confirmar o lançamento. Tente novamente sem alterar os dados.');
+      setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível concluir o lançamento.');
     } catch (error) {
       const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
       setCommitState('error');
@@ -328,7 +368,7 @@ export function PhoenixLaunchWriteControl({
       <span>{commitMessage || runtimeMessage || 'Aguardando verificação do ambiente.'}</span>
     </div>
 
-    {transferFlow && commitState !== 'confirmed' ? <div className="px-notice ok">A transferência será gravada como uma única operação atômica entre origem e destino. A tela só será atualizada depois da releitura confirmada.</div> : null}
+    {transferFlow && commitState !== 'confirmed' ? <div className="px-notice ok">A transferência é atômica entre origem e destino. Após o aceite do servidor, este formulário fecha e a releitura continua sem bloquear o uso do MEG.</div> : null}
 
     {duplicateMessage && commitState !== 'confirmed' ? <label className="px-launch-duplicate-confirm">
       <input type="checkbox" checked={duplicateAccepted} onChange={(event) => setDuplicateAccepted(event.target.checked)} />
