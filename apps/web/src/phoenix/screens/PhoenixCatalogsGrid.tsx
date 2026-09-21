@@ -186,7 +186,7 @@ function PageIntro() {
   </header>;
 }
 
-export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
+export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixReadModel; onDataCommitted?: (snapshot: PhoenixReadModel) => void }) {
   const [tab, setTab] = useState<CatalogTab>('accounts');
   const [filtersByTab, setFiltersByTab] = useState<CatalogState<CatalogFilterMap>>(initialFiltersByTab);
   const [sortByTab, setSortByTab] = useState<CatalogState<CatalogSort>>(initialSortByTab);
@@ -346,6 +346,19 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
     setEditor((current) => current ? { ...current, draft: { ...current.draft, [key]: value } } : current);
   }
 
+  function commitCatalogSnapshot(nextAccounts: Account[], nextCategories: Category[], nextPayments: PaymentMethod[]) {
+    onDataCommitted?.({
+      ...data,
+      accounts: nextAccounts.map((item) => ({ ...item })),
+      categories: nextCategories.map((item) => ({ ...item })),
+      paymentMethods: nextPayments.map((item) => ({ ...item })),
+    });
+  }
+
+  function replaceCatalogItem<T extends { id: string }>(items: T[], saved: T, create: boolean) {
+    return create ? [...items, saved] : items.map((item) => item.id === saved.id ? saved : item);
+  }
+
   function mutationError(error: unknown) {
     const message = error instanceof Error ? error.message : 'Não foi possível atualizar o cadastro.';
     if (/VALIDATION_ERROR/i.test(message)) return 'Confira os campos informados antes de salvar.';
@@ -357,8 +370,9 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
     if (!editor || mutationBusy) return;
     const name = editor.draft.name.trim();
     if (name.length < 2) return setMutationMessage('Informe um nome com pelo menos 2 caracteres.');
+    const creating = editor.mode === 'create';
     setMutationBusy(true);
-    setMutationMessage('Salvando…');
+    setMutationMessage(creating ? 'Cadastrando…' : 'Salvando alteração…');
     try {
       if (editor.tab === 'accounts') {
         const payload = {
@@ -367,24 +381,30 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
           institution: editor.draft.institution.trim() || null,
           openingBalance: parseBrazilianNumber(editor.draft.openingBalance) ?? 0
         };
-        const saved = editor.mode === 'create'
+        const saved = creating
           ? await financeClient.createAccount(payload)
           : await financeClient.updateAccount(editor.id!, payload);
-        setAccounts((current) => editor.mode === 'create' ? [...current, saved] : current.map((item) => item.id === saved.id ? saved : item));
+        const nextAccounts = replaceCatalogItem(accounts, saved, creating);
+        setAccounts(nextAccounts);
+        commitCatalogSnapshot(nextAccounts, categories, payments);
       } else if (editor.tab === 'categories') {
         const payload = { name, group: editor.draft.group.trim() || null, type: (editor.draft.type || null) as Category['type'] };
-        const saved = editor.mode === 'create'
+        const saved = creating
           ? await financeClient.createCategory(payload)
           : await financeClient.updateCategory(editor.id!, payload);
-        setCategories((current) => editor.mode === 'create' ? [...current, saved] : current.map((item) => item.id === saved.id ? saved : item));
+        const nextCategories = replaceCatalogItem(categories, saved, creating);
+        setCategories(nextCategories);
+        commitCatalogSnapshot(accounts, nextCategories, payments);
       } else {
         const payload = { name, type: (editor.draft.type || null) as PaymentMethod['type'] };
-        const saved = editor.mode === 'create'
+        const saved = creating
           ? await financeClient.createPaymentMethod(payload)
           : await financeClient.updatePaymentMethod(editor.id!, payload);
-        setPayments((current) => editor.mode === 'create' ? [...current, saved] : current.map((item) => item.id === saved.id ? saved : item));
+        const nextPayments = replaceCatalogItem(payments, saved, creating);
+        setPayments(nextPayments);
+        commitCatalogSnapshot(accounts, categories, nextPayments);
       }
-      setMutationMessage('');
+      setMutationMessage(creating ? 'Cadastro criado e confirmado pelo servidor.' : 'Alteração salva e confirmada pelo servidor.');
       setEditor(null);
     } catch (error) {
       setMutationMessage(mutationError(error));
@@ -411,13 +431,19 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
     try {
       if (tab === 'accounts') {
         const saved = active ? await financeClient.updateAccount(row.id, { isActive: true }) : await financeClient.deactivateAccount(row.id);
-        setAccounts((current) => current.map((item) => item.id === saved.id ? saved : item));
+        const nextAccounts = replaceCatalogItem(accounts, saved, false);
+        setAccounts(nextAccounts);
+        commitCatalogSnapshot(nextAccounts, categories, payments);
       } else if (tab === 'categories') {
         const saved = active ? await financeClient.updateCategory(row.id, { isActive: true }) : await financeClient.deactivateCategory(row.id);
-        setCategories((current) => current.map((item) => item.id === saved.id ? saved : item));
+        const nextCategories = replaceCatalogItem(categories, saved, false);
+        setCategories(nextCategories);
+        commitCatalogSnapshot(accounts, nextCategories, payments);
       } else {
         const saved = active ? await financeClient.updatePaymentMethod(row.id, { isActive: true }) : await financeClient.deactivatePaymentMethod(row.id);
-        setPayments((current) => current.map((item) => item.id === saved.id ? saved : item));
+        const nextPayments = replaceCatalogItem(payments, saved, false);
+        setPayments(nextPayments);
+        commitCatalogSnapshot(accounts, categories, nextPayments);
       }
       setMutationMessage(active ? 'Cadastro reativado com o histórico preservado.' : 'Cadastro desativado. Nenhum histórico foi apagado.');
       setActiveConfirm(null);
