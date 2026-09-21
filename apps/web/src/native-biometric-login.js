@@ -1,9 +1,10 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
 const BiometricAuth = registerPlugin('BiometricAuth');
-const CACHED_CREDENTIALS_MS = 8_000;
-const BIOMETRIC_BRIDGE_ATTEMPTS = 12;
+const CACHED_CREDENTIALS_MS = 30_000;
+const BIOMETRIC_BRIDGE_ATTEMPTS = 8;
 const BIOMETRIC_BRIDGE_RETRY_MS = 180;
+const BIOMETRIC_BRIDGE_CALL_TIMEOUT_MS = 900;
 
 let biometricAuthenticationPromise = null;
 let cachedCredentials = null;
@@ -80,6 +81,18 @@ function isNativeAndroid() {
 
 function delay(milliseconds) {
   return new Promise((resolve) => globalThis.setTimeout(resolve, milliseconds));
+}
+
+function bridgeCallWithTimeout(promise, milliseconds = BIOMETRIC_BRIDGE_CALL_TIMEOUT_MS) {
+  let timer = null;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise((_, reject) => {
+      timer = globalThis.setTimeout(() => reject(new Error('BIOMETRIC_BRIDGE_TIMEOUT')), milliseconds);
+    }),
+  ]).finally(() => {
+    if (timer !== null) globalThis.clearTimeout(timer);
+  });
 }
 
 function beginAuthenticatedLoadingTransition() {
@@ -203,7 +216,7 @@ export async function getBiometricLoginStatus() {
   let lastCause = null;
   for (let attempt = 1; attempt <= BIOMETRIC_BRIDGE_ATTEMPTS; attempt += 1) {
     try {
-      const status = await BiometricAuth.isAvailable();
+      const status = await bridgeCallWithTimeout(BiometricAuth.isAvailable());
       if (status && typeof status.available === 'boolean') {
         document.body?.classList?.add('native-mobile');
         document.body.dataset.nativeRuntime = 'android-biometric-plugin';
