@@ -6,6 +6,7 @@ const cards = readFileSync(new URL('./card-management-bridge.ts', import.meta.ur
 const styles = readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8');
 const confirm = readFileSync(new URL('./meg-confirm.ts', import.meta.url), 'utf8');
 const financeClient = readFileSync(new URL('../app/finance-client.ts', import.meta.url), 'utf8');
+const cardsClient = readFileSync(new URL('../app/cards-client.ts', import.meta.url), 'utf8');
 
 for (const writer of [
   'financeClient.createAccount',
@@ -76,5 +77,15 @@ assert.match(financeClient, /deactivateAccount:[\s\S]*body: JSON\.stringify\(met
   'Desativação deve transportar operationId e versão para o backend.');
 assert.match(financeClient, /updatedAt\?: string/,
   'Cliente deve preservar a versão do cadastro devolvida pelo servidor.');
+assert.match(cards, /mutationOperationId/,
+  'Gerenciador de cartões deve preservar operationId durante retry do mesmo comando.');
+assert.match(cards, /expectedUpdatedAt: current\?\.updatedAt/,
+  'Edição do cartão deve enviar a versão originalmente carregada.');
+assert.match(cards, /CARD_STALE_VERSION/,
+  'Conflito de cartão entre dispositivos deve ser tratado sem sobrescrita silenciosa.');
+assert.match(cardsClient, /deactivate: \(id: string, meta:[\s\S]*JSON\.stringify\(meta\)/,
+  'Desativação de cartão deve transportar versionamento/idempotência.');
+assert.match(cardsClient, /updatedAt\?: string/,
+  'Cliente de cartões deve preservar versão de concorrência do cadastro.');
 
 console.log('Contrato de cadastros operacionais Web/Android validado.');
