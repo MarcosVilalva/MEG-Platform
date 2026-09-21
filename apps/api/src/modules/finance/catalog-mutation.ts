@@ -34,9 +34,9 @@ function sameDecimal(left: unknown, right: unknown) {
   return Math.round(Number(left) * 100) === Math.round(Number(right) * 100);
 }
 
-async function runCatalogMutation<T>(
+async function runCatalogMutation<T, I extends MutationMeta>(
   actorId: string,
-  input: MutationMeta & Record<string, unknown>,
+  input: I,
   mutationType: string,
   work: (tx: Tx, context: { workspaceId: string; dataOwnerId: string }) => Promise<T>,
 ) {
