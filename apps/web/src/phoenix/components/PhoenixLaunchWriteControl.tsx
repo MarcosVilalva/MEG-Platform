@@ -279,7 +279,9 @@ export function PhoenixLaunchWriteControl({
         }
         if (result.status === 'accepted') return;
         setCommitState('error');
-        setCommitMessage(result.message);
+        setCommitMessage(result.status === 'error'
+          ? result.message
+          : 'Não foi possível concluir a confirmação visual da compra. A operação não será reenviada automaticamente.');
         return;
       }
 
