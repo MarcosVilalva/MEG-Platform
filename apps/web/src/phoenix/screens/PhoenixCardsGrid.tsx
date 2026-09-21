@@ -417,21 +417,47 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     return rows.sort((a, b) => b.dueDate.localeCompare(a.dueDate) || b.purchaseDate.localeCompare(a.purchaseDate));
   }, [officialRows, legacyRows]);
 
-  const selectedMetrics = selected ? cardViewMetrics(selected, allRows, data.month) : null;
-  const currentCardMonth = selectedMetrics?.currentMonth || data.month;
-  const currentRows = selectedMetrics?.currentRows || [];
-  const futureRows = selectedMetrics?.futureRows || [];
-  const currentOpen = selectedMetrics?.currentOpen || [];
+  // A central segue a competência efetiva da fatura do cartão. Quando o snapshot
+  // mensal solicitado não contém linhas, usa a primeira competência real disponível
+  // daquele cartão em vez de exibir uma grade vazia artificialmente.
+  const canonicalRows = useMemo<GridRow[]>(() => selected?.statement?.lines?.map((line) => ({
+    id: line.id,
+    source: 'canonical' as const,
+    description: line.description,
+    purchaseDate: line.purchaseDate || line.dueDate,
+    dueDate: line.dueDate,
+    installment: `${line.installmentNo}/${line.installmentQty}`,
+    group: line.kind === 'credit' ? 'Crédito/estorno' : 'Compra',
+    amount: Number(line.effect || 0),
+    status: line.isOpen ? 'open' : line.sourceStatus,
+    statementMonth: line.statementMonth,
+  })) || [], [selected]);
+
+  const currentCardMonth = selected ? resolveActiveCardMonth(selected, allRows, data.month) : data.month;
+  const currentRows = canonicalRows.length && selected?.statement?.month === currentCardMonth
+    ? canonicalRows
+    : allRows.filter((row) => row.statementMonth === currentCardMonth);
+  const futureRows = allRows.filter((row) => row.statementMonth > currentCardMonth && isOpenStatus(row.status));
+  const currentOpen = currentRows.filter((row) => isOpenStatus(row.status) && !isCancelledStatus(row.status));
   const next = nextMonth(currentCardMonth);
-  const hasCanonicalCurrent = Boolean(selectedMetrics?.hasCanonical);
-  const currentStatement = selectedMetrics?.currentStatement || 0;
-  const currentOutstandingRaw = selectedMetrics?.currentOutstandingRaw || 0;
-  const currentOutstanding = selectedMetrics?.currentOutstanding || 0;
+  const hasCanonicalCurrent = Boolean(selected && selected.statement?.month === currentCardMonth && meaningfulStatement(selected));
+  const currentStatement = hasCanonicalCurrent ? selected!.statement!.netAmount : sumRows(currentRows);
+  const currentPurchases = hasCanonicalCurrent
+    ? selected!.statement!.charges
+    : currentRows.filter((row) => !isCancelledStatus(row.status) && row.amount > 0).reduce((sum, row) => sum + row.amount, 0);
+  const currentCredits = hasCanonicalCurrent
+    ? selected!.statement!.credits
+    : Math.abs(currentRows.filter((row) => !isCancelledStatus(row.status) && row.amount < 0).reduce((sum, row) => sum + row.amount, 0));
+  const currentOutstandingRaw = hasCanonicalCurrent ? selected!.statement!.openNetAmount : sumRows(currentOpen);
+  const currentOutstanding = hasCanonicalCurrent ? selected!.statement!.payableAmount : Math.max(0, currentOutstandingRaw);
   const nextStatement = sumRows(futureRows.filter((row) => row.statementMonth === next));
-  const futureCommitted = selectedMetrics?.futureCommitted || 0;
-  const creditLimit = selectedMetrics?.creditLimit || 0;
-  const usage = selectedMetrics?.usage || 0;
-  const availableLimit = selectedMetrics?.availableLimit || 0;
+  const futureNet = sumRows(futureRows);
+  const futureCommitted = Math.max(0, futureNet);
+  const totalCommitted = currentOutstanding + futureCommitted;
+  const creditLimit = Number(selected?.creditLimit || 0);
+  const usage = creditLimit > 0 ? Math.min(100, Math.max(0, totalCommitted / creditLimit * 100)) : 0;
+  const availableLimit = Math.max(0, creditLimit - totalCommitted);
+  const selectedMetrics = selected ? cardViewMetrics(selected, allRows, data.month) : null;
   const paidCurrent = currentRows.some((row) => !isOpenStatus(row.status) && !isCancelledStatus(row.status));
   const canonicalStatus = hasCanonicalCurrent ? selected!.statement!.status : null;
   const currentStatus = canonicalStatus === 'credit'
