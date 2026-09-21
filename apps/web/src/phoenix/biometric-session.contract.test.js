@@ -10,6 +10,12 @@ assert.match(preview, /offerAndroidBiometricEnrollment/,
   'APK deve oferecer habilitação biométrica depois do primeiro login válido.');
 assert.match(preview, /getBiometricLoginStatus\(\)[\s\S]*saveBiometricLogin/,
   'Habilitação deve conferir disponibilidade antes de persistir a credencial biométrica.');
+assert.match(preview, /consumePreparedAndroidBiometricCredentials[\s\S]*if \(!credentials\)[\s\S]*getBiometricLoginStatus/,
+  'Boot Android deve consumir primeiro as credenciais já autenticadas pelo bootstrap nativo e só consultar a ponte novamente como fallback.');
+assert.match(nativeBiometric, /CACHED_CREDENTIALS_MS\s*=\s*30_000/,
+  'Handoff biométrico em memória deve sobreviver ao carregamento inicial do bundle sem persistir senha no WebView.');
+assert.match(nativeBiometric, /BIOMETRIC_BRIDGE_CALL_TIMEOUT_MS[\s\S]*bridgeCallWithTimeout\(BiometricAuth\.isAvailable\(\)\)/,
+  'Consulta de disponibilidade biométrica deve ter timeout para nunca prender o boot em 22%.');
 assert.match(preview, /Deseja usar a biometria neste dispositivo nos próximos acessos ao MEG\?/,
   'Primeiro login deve perguntar explicitamente se o usuário deseja biometria.');
 assert.match(preview, /biometricEnrollmentDeclinedKey[\s\S]*localStorage\.setItem/,
