@@ -100,7 +100,10 @@ export async function notificationRoutes(app: FastifyInstance) {
       const rows = deliveries.filter((item: any) => String(item.channel || '').toLowerCase().includes(channel));
       if (!rows.length) return { status: 'not-sent', detail: 'Nenhuma entrega registrada para este canal.' };
       const failed = rows.find((item: any) => item.status === 'failed');
-      return failed ? { status: 'failed', detail: failed.detail || 'Falha no provedor.' } : { status: 'sent', detail: rows[0]?.detail || 'Entrega registrada.' };
+      const failedDetail = failed && 'detail' in failed ? failed.detail : undefined;
+      const first = rows[0];
+      const firstDetail = first && 'detail' in first ? first.detail : undefined;
+      return failed ? { status: 'failed', detail: failedDetail || 'Falha no provedor.' } : { status: 'sent', detail: firstDetail || 'Entrega registrada.' };
     };
     return {
       testedAt: referenceDate.toISOString(),
