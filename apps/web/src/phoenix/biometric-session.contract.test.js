@@ -13,6 +13,10 @@ assert.match(preview, /getBiometricLoginStatus\(\)[\s\S]*saveBiometricLogin/,
   'Habilitação deve conferir disponibilidade antes de persistir a credencial biométrica.');
 assert.match(preview, /consumePreparedAndroidBiometricCredentials[\s\S]*if \(!credentials\)[\s\S]*getBiometricLoginStatus/,
   'Boot Android deve consumir primeiro as credenciais já autenticadas pelo bootstrap nativo e só consultar a ponte novamente como fallback.');
+assert.match(preview, /state !== 'signed-out'[\s\S]*Executa apenas no mount[\s\S]*\}, \[\]\);/,
+  'Efeito de login biométrico deve executar somente no mount para não ser cancelado pela própria transição para authenticating.');
+assert.match(preview, /setState\('authenticating'\)[\s\S]*await loginWithServiceRetry[\s\S]*if \(active\) await prepareAuthenticatedSession\(\)/,
+  'Depois do login biométrico aceito, o bootstrap financeiro deve continuar até finance/organizing/ready.');
 assert.match(nativeBiometric, /CACHED_CREDENTIALS_MS\s*=\s*30_000/,
   'Handoff biométrico em memória deve sobreviver ao carregamento inicial do bundle sem persistir senha no WebView.');
 assert.match(nativeBiometric, /BIOMETRIC_BRIDGE_CALL_TIMEOUT_MS[\s\S]*bridgeCallWithTimeout\(BiometricAuth\.isAvailable\(\)\)/,

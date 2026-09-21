@@ -282,6 +282,10 @@ function PhoenixPreviewRoot() {
   }, [state]);
 
   useEffect(() => {
+    // Este fluxo pertence somente ao primeiro boot do WebView Android.
+    // Não pode depender de `state`: ao trocar para "authenticating", o cleanup
+    // do próprio efeito marcava `active=false` antes do /auth/login terminar,
+    // impedindo prepareAuthenticatedSession() e congelando a tela em 22%.
     if (state !== 'signed-out' || import.meta.env.VITE_MOBILE_APP !== 'true' || nativeBiometricAttemptedRef.current) return;
     nativeBiometricAttemptedRef.current = true;
     let active = true;
@@ -329,7 +333,9 @@ function PhoenixPreviewRoot() {
       }
     })();
     return () => { active = false; };
-  }, [state]);
+    // Executa apenas no mount. O bootstrap nativo já decidiu se haverá biometria.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (state !== 'signed-in' || import.meta.env.VITE_MOBILE_APP !== 'true' || nativeLifecycleStartedRef.current) return;
