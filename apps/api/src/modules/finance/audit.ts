@@ -12,6 +12,9 @@ const FINANCIAL_ENTITIES = [
   'CardPurchase',
   'Receivable',
   'Receipt',
+  'Account',
+  'Category',
+  'PaymentMethod',
 ] as const;
 
 export type FinancialAuditAction =
@@ -36,7 +39,19 @@ export type FinancialAuditAction =
   | 'CARD_STATEMENT_PAID'
   | 'CARD_STATEMENT_REOPENED'
   | 'RECEIVABLE_CREATED'
-  | 'RECEIVABLE_RECEIVED';
+  | 'RECEIVABLE_RECEIVED'
+  | 'ACCOUNT_CREATED'
+  | 'ACCOUNT_UPDATED'
+  | 'ACCOUNT_DEACTIVATED'
+  | 'ACCOUNT_REACTIVATED'
+  | 'CATEGORY_CREATED'
+  | 'CATEGORY_UPDATED'
+  | 'CATEGORY_DEACTIVATED'
+  | 'CATEGORY_REACTIVATED'
+  | 'PAYMENT_METHOD_CREATED'
+  | 'PAYMENT_METHOD_UPDATED'
+  | 'PAYMENT_METHOD_DEACTIVATED'
+  | 'PAYMENT_METHOD_REACTIVATED';
 
 function jsonValue(value: unknown) {
   if (value === undefined) return null;
