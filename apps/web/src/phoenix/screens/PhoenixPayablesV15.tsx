@@ -23,6 +23,7 @@ const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit'
 const monetaryAccountTypes = new Set(['checking', 'savings', 'cash', 'investment']);
 
 type Priority = 'all' | 'overdue' | 'today' | 'upcoming';
+type PendingPeriodMode = 'month' | 'all';
 type GroupMode = 'date' | 'category' | 'account' | 'payment-method' | 'none';
 type PendingChild = {
   id: string;
@@ -117,6 +118,18 @@ function monthRangeIso(value: string) {
   return { from: `${month}-01`, to: `${month}-${String(lastDay).padStart(2, '0')}` };
 }
 
+
+function pendingMonthLabel(value: string) {
+  const [year, month] = value.split('-').map(Number);
+  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(year, month - 1, 1)))
+    .replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function shiftPendingMonth(value: string, offset: number) {
+  const [year, month] = value.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1 + offset, 1)).toISOString().slice(0, 7);
+}
 
 type PendingGlyphKind = 'calendar' | 'coins' | 'warning' | 'clock';
 
@@ -421,6 +434,9 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const [priority, setPriority] = useState<Priority>('all');
   const [groupMode, setGroupMode] = useState<GroupMode>(savedGroupMode);
   const [search, setSearch] = useState('');
+  const [periodMode, setPeriodMode] = useState<PendingPeriodMode>('month');
+  const [selectedMonth, setSelectedMonth] = useState(() => today.slice(0, 7));
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
@@ -530,7 +546,20 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const dueTodayObligationCount = pendingObligationCount(dueToday);
   const nextSevenObligationCount = pendingObligationCount(nextSeven);
 
-  const visible = useMemo(() => open.filter((item) => {
+  const periodItems = useMemo(() => open.filter((item) =>
+    periodMode === 'all' || item.dueDate.slice(0, 7) === selectedMonth
+  ), [open, periodMode, selectedMonth]);
+
+  const periodActionable = periodItems.filter((item) => item.openAmount > 0);
+  const periodTotal = periodItems.reduce((sum, item) => sum + item.openAmount, 0);
+  const periodOverdue = periodActionable.filter((item) => item.dueDate < today);
+  const periodToday = periodActionable.filter((item) => item.dueDate === today);
+  const periodUpcoming = periodActionable.filter((item) => item.dueDate > today);
+  const periodOverdueTotal = periodOverdue.reduce((sum, item) => sum + item.openAmount, 0);
+  const periodTodayTotal = periodToday.reduce((sum, item) => sum + item.openAmount, 0);
+  const periodUpcomingTotal = periodUpcoming.reduce((sum, item) => sum + item.openAmount, 0);
+
+  const visible = useMemo(() => periodItems.filter((item) => {
     const actionableItem = item.openAmount > 0;
     const matchesPriority = priority === 'all'
       || (priority === 'overdue' && actionableItem && item.dueDate < today)
@@ -541,7 +570,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
     const childText = item.children?.map((child) => child.description).join(' ') || '';
     const haystack = normalize(`${item.description} ${item.categoryName} ${item.group} ${item.paymentMethod} ${item.modality} ${item.accountName} ${childText}`);
     return matchesPriority && matchesDateFrom && matchesDateTo && haystack.includes(searchNeedle);
-  }), [open, priority, dateFrom, dateTo, searchNeedle, today]);
+  }), [periodItems, priority, dateFrom, dateTo, searchNeedle, today]);
 
   const grouped = useMemo(() => buildGroups(visible, groupMode), [visible, groupMode]);
   const visibleObligationCount = pendingObligationCount(visible);
@@ -865,20 +894,28 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
         <span className="px-pending-hero-icon" aria-hidden="true"><PendingGlyph kind="calendar" /></span>
         <div>
           <span className="px-kicker">Pendentes</span>
-          <h1>Prioridades e compromissos</h1>
-          <p>Uma visão de ação: o que venceu, o que exige atenção hoje e o que precisa ser preparado nos próximos dias.</p>
+          <h1>Seus compromissos em um só lugar</h1>
+          <p>Veja o que vence no mês escolhido ou consulte toda a carteira de pendências.</p>
         </div>
       </div>
-      <div className="px-screen-head-aside"><span className="px-total-pill">{money.format(total)} pendente</span></div>
+      <div className="px-screen-head-aside"><span className="px-total-pill">{money.format(periodTotal)} no período</span></div>
     </header>
+
+    <nav className="px-pending-month-nav" aria-label="Período das pendências">
+      <button type="button" className="px-pending-month-step" aria-label="Mês anterior" onClick={() => { setPeriodMode('month'); setSelectedMonth((value) => shiftPendingMonth(value, -1)); }}>‹</button>
+      <button type="button" className={`px-pending-month-current ${periodMode === 'month' ? 'active' : ''}`} onClick={() => setPeriodMode('month')}><PendingGlyph kind="calendar" /><strong>{pendingMonthLabel(selectedMonth)}</strong></button>
+      <button type="button" className="px-pending-month-step" aria-label="Próximo mês" onClick={() => { setPeriodMode('month'); setSelectedMonth((value) => shiftPendingMonth(value, 1)); }}>›</button>
+      <button type="button" className="px-pending-month-shortcut" onClick={() => { setPeriodMode('month'); setSelectedMonth(today.slice(0, 7)); setPriority('all'); }}>Hoje</button>
+      <button type="button" className={`px-pending-month-shortcut ${periodMode === 'all' ? 'active' : ''}`} onClick={() => { setPeriodMode('all'); setPriority('all'); }}>∞ <span>Tudo</span></button>
+    </nav>
 
     {successMessage ? <div className="px-pending-write-banner" role="status"><strong>Baixa confirmada</strong><span>{successMessage}</span></div> : null}
 
     <section className="px-screen-kpis px-pending-kpis">
-      <article className="total"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="coins" /></span><div><span>Total pendente líquido</span><strong>{money.format(total)}</strong><small>{actionableObligationCount} compromisso(s){adjustmentCount ? ` · ${adjustmentCount} ajuste(s)` : ''}</small></div></article>
-      <article className="danger"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="warning" /></span><div><span>Vencidos</span><strong>{money.format(overdueTotal)}</strong><small>{overdueObligationCount} compromisso(s) · prioridade máxima</small></div></article>
-      <article className="warn"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="clock" /></span><div><span>Vencem hoje</span><strong>{money.format(dueTodayTotal)}</strong><small>{dueTodayObligationCount} compromisso(s) · ação imediata</small></div></article>
-      <article className="next"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="calendar" /></span><div><span>Próximos 7 dias</span><strong>{money.format(nextSevenTotal)}</strong><small>{nextSevenObligationCount} compromisso(s) no radar</small></div></article>
+      <article className="total"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="coins" /></span><div><span>Total a vencer</span><strong>{money.format(periodTotal)}</strong><small>{pendingObligationCount(periodActionable)} pendência(s) no período</small></div></article>
+      <article className="danger"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="warning" /></span><div><span>Vencidos</span><strong>{money.format(periodOverdueTotal)}</strong><small>{pendingObligationCount(periodOverdue)} pendência(s)</small></div></article>
+      <article className="warn"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="clock" /></span><div><span>Vence hoje</span><strong>{money.format(periodTodayTotal)}</strong><small>{pendingObligationCount(periodToday)} pendência(s)</small></div></article>
+      <article className="next"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="calendar" /></span><div><span>Próximos</span><strong>{money.format(periodUpcomingTotal)}</strong><small>{pendingObligationCount(periodUpcoming)} pendência(s)</small></div></article>
     </section>
 
     <div className="px-toolbar px-pending-commandbar">
@@ -886,7 +923,8 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       <div className="px-priority-tabs px-pending-command-tabs">{([['all','Todos'],['overdue','Vencidos'],['today','Hoje'],['upcoming','Próximos']] as const).map(([id,label]) => <button key={id} type="button" className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{label}</button>)}</div>
       <span className="px-pending-command-separator" aria-hidden="true" />
       <label className="px-pending-group-select px-pending-command-group"><span>Agrupar por</span><select value={groupMode} onChange={(event) => setGroupMode(event.target.value as GroupMode)}><option value="date">Data</option><option value="category">Categoria</option><option value="account">Conta</option><option value="payment-method">Forma de pagamento</option><option value="none">Sem agrupamento</option></select></label>
-      <div className="px-pending-date-filter" aria-label="Filtrar pendências por intervalo de vencimento">
+      <button type="button" className={`px-pending-filter-toggle ${filtersOpen ? 'active' : ''}`} onClick={() => setFiltersOpen((value) => !value)}>☷ <span>Filtros</span></button>
+      {filtersOpen ? <div className="px-pending-date-filter" aria-label="Filtros avançados por vencimento">
         <div className="px-pending-date-range">
           <label><span>De</span><input type="date" value={dateFrom} onChange={(event) => updateDateFrom(event.target.value)} /></label>
           <label><span>Até</span><input type="date" value={dateTo} onChange={(event) => updateDateTo(event.target.value)} /></label>
@@ -897,7 +935,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
           <button type="button" onClick={() => applyDatePreset('month')}>Este mês</button>
           <button type="button" className="clear" disabled={!dateFrom && !dateTo} onClick={() => applyDatePreset('clear')}>Limpar</button>
         </div>
-      </div>
+      </div> : null}
       <span className="px-toolbar-note">{visibleObligationCount} de {openObligationCount} compromisso(s) exibido(s)</span>
     </div>
 
