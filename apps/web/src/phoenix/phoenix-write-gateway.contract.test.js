@@ -15,6 +15,8 @@ const persistentSnapshot = readFileSync(new URL('./data/phoenix-persistent-snaps
 const pendingStyles = readFileSync(new URL('./phoenix-pending-v15.css', import.meta.url), 'utf8');
 const mainEntry = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
 const cardProjection = readFileSync(new URL('./data/card-movement-projection.ts', import.meta.url), 'utf8');
+const cardDates = readFileSync(new URL('./data/card-dates.ts', import.meta.url), 'utf8');
+const operationalCss = readFileSync(new URL('./phoenix-operational-mobile.css', import.meta.url), 'utf8');
 
 assert.match(gateway, /simpleEvent:\s*true/,
   'Writer frontend de receita/despesa simples deve refletir a capacidade liberada no fluxo Phoenix.');
@@ -314,6 +316,24 @@ assert.match(movements, /runPhoenixCardPurchaseEdit/,
   'Salvar um lançamento projetado de cartão deve usar o writer protegido que recalcula a fatura.');
 assert.match(movements, /runPhoenixCardPurchaseCancel/,
   'Excluir um lançamento projetado de cartão deve cancelar a compra e suas parcelas vinculadas.');
+assert.match(movements, /patchCardPurchaseInReadModel/,
+  'Edição do cartão deve aplicar o retorno confirmado imediatamente antes da releitura completa.');
+assert.match(movements, /removeCardPurchaseFromReadModel/,
+  'Exclusão de cartão deve retirar a compra da projeção imediatamente após aceite do servidor.');
+assert.match(movements, /Somente no pagamento da fatura/,
+  'Compra no cartão não deve exigir uma conta monetária no momento da compra.');
+assert.match(movements, /Data da compra \*/,
+  'Formulário de cartão deve distinguir explicitamente data da compra de vencimento.');
+assert.match(movements, /Competência nos Lançamentos/,
+  'Editor deve mostrar a competência calculada pelo vencimento antes de salvar.');
+assert.match(movements, /Salvar alterações/,
+  'Edição deve possuir uma ação direta de salvar sem etapa obrigatória de revisão.');
+assert.doesNotMatch(movements, /Revisar alterações/,
+  'Edição não deve exigir ciclo redundante Revisar alterações → Salvar alterações.');
+assert.match(operationalCss, /\.px-edit-launch-actions\{[\s\S]*position:sticky!important/,
+  'Ações da edição mobile devem acompanhar o formulário sem cobrir permanentemente os campos.');
+assert.doesNotMatch(operationalCss, /\.px-edit-launch-actions,\s*\nbody\.meg-operational-mobile \.px-launch-write-panel/,
+  'Rodapé de edição não pode voltar ao mesmo bloco fixed usado pelo writer de criação.');
 assert.match(movements, /cardPaymentMethodId[\s\S]*cardId: cardLink\?\.card\.id[\s\S]*installments:/,
   'Editor comum deve recuperar cartão, forma de pagamento e parcelamento da compra projetada.');
 assert.doesNotMatch(movements, /DOMÍNIO DE CARTÕES\/FATURAS|Editar compra no cartão/,
@@ -324,6 +344,10 @@ assert.doesNotMatch(cardProjection, /Domínio de cartões\/faturas/,
   'A projeção mensal do cartão deve aparecer ao usuário como lançamento comum.');
 assert.match(cardProjection, /cardId:[\s\S]*purchaseId:[\s\S]*purchaseDate/,
   'A projeção deve preservar IDs técnicos para que o editor comum atualize a compra correta.');
+assert.match(cardProjection, /dueCompetence = cardCompetenceFromDueDate\(dueDate\)/,
+  'Competência do lançamento de cartão deve vir do vencimento final.');
+assert.match(cardDates, /nextWeekdayCardDueDate/,
+  'Regra visual deve compartilhar o ajuste de fim de semana do vencimento.');
 assert.match(movements, /data\.user\.role === 'ADMIN' \|\| data\.user\.role === 'MANAGER'/,
   'Ação de exclusão deve respeitar a mesma permissão administrativa da API.');
 assert.doesNotMatch(movements, /financeClient\.bulkArchiveEvents|financeClient\.archiveEvent/,
@@ -421,8 +445,10 @@ assert.match(bridge, /payablesClient\.createRecurring/,
   'Recorrência de despesa deve usar o domínio oficial de contas a pagar.');
 assert.match(bridge, /const amount = parseMoney/,
   'Receita/despesa simples deve preservar o sinal digitado para estornos.');
-assert.match(bridge, /Cartão e crediário usam o writer específico do domínio de faturas/,
-  'Cartão e crediário devem permanecer nos writers específicos de seus domínios.');
+assert.match(bridge, /const cardFlow = Boolean\(root\.querySelector\('\.px-card-box'\)\)[\s\S]*if \(editing \|\| cardFlow\) return;/,
+  'Bridge legado não pode interceptar edição nem criação de cartão já controladas pela Phoenix React.');
+assert.doesNotMatch(bridge, /Cartão e crediário usam o writer específico do domínio de faturas/,
+  'Interface não deve expor linguagem técnica de writer/domínio para o usuário.');
 assert.match(bridge, /SALVAR COMO MODELO/);
 assert.match(bridge, /label\.hidden\s*=\s*true/,
   'Função sem contrato backend não deve ser oferecida como gravação disponível.');

@@ -23,6 +23,7 @@ const gridFilter = readFileSync(new URL('./PhoenixGridFilter.tsx', import.meta.u
 const gridCss = readFileSync(new URL('./phoenix-grid.css', import.meta.url), 'utf8');
 const launchDynamicCss = readFileSync(new URL('./phoenix-launch-dynamic.css', import.meta.url), 'utf8');
 const launchWriteControl = readFileSync(new URL('./components/PhoenixLaunchWriteControl.tsx', import.meta.url), 'utf8');
+const cardDates = readFileSync(new URL('./data/card-dates.ts', import.meta.url), 'utf8');
 const layersCss = readFileSync(new URL('./phoenix-layers.css', import.meta.url), 'utf8');
 const cardPurchaseEdit = readFileSync(new URL('./card-purchase-edit-bridge.ts', import.meta.url), 'utf8');
 const cardManagement = readFileSync(new URL('./card-management-bridge.ts', import.meta.url), 'utf8');
@@ -229,6 +230,10 @@ assert.match(movementScreen, /<option value="all">Todos<\/option>/,
   'Paginação deve oferecer a opção Todos sem criar scroll da página');
 assert.doesNotMatch(movementScreen, /window\.confirm|window\.alert/,
   'Fluxo de Lançamentos não pode voltar a usar alertas nativos do navegador');
+assert.doesNotMatch(movementScreen, /Revisar alterações/,
+  'Edição comum deve salvar diretamente sem revisão intermediária redundante.');
+assert.match(movementScreen, /Somente no pagamento da fatura/,
+  'Compra no cartão deve deixar explícito que não movimenta conta monetária na compra.');
 assert.match(movementScreen, /px-meg-confirm-dialog/,
   'Alterações não salvas devem usar confirmação visual MEG');
 assert.match(gridFilter, /visualViewport/,
@@ -285,12 +290,16 @@ assert.match(movementScreen, /sourcePurchaseDate/,
   'Data da compra deve usar purchaseDate real quando o sourcePayload possuir a informação');
 assert.match(movementScreen, /purchaseDate: sourcePurchaseDate\(event\)/,
   'Filtro da coluna Data da compra não pode reutilizar o vencimento');
-assert.match(movementScreen, /cardDueDate/,
-  'Drawer deve respeitar fechamento e vencimento reais do cartão');
-assert.match(movementScreen, /purchaseDay > closingDay/,
-  'Fechamento da fatura deve seguir a mesma regra da API de cartões');
-assert.match(movementScreen, /dueDay <= closingDay/,
-  'Vencimento visual deve respeitar o ciclo cadastrado do cartão');
+assert.match(movementScreen, /cardDueDateForPurchase/,
+  'Drawer deve usar a regra compartilhada de fechamento e vencimento do cartão.');
+assert.match(cardDates, /purchaseDay > closingDay/,
+  'Fechamento da fatura deve seguir a mesma regra da API de cartões.');
+assert.match(cardDates, /dueDay <= closingDay/,
+  'Vencimento visual deve respeitar o ciclo cadastrado do cartão.');
+assert.match(cardDates, /nextWeekdayCardDueDate/,
+  'Vencimento no fim de semana deve ser prorrogado pelo utilitário compartilhado.');
+assert.match(movementScreen, /Competência nos Lançamentos/,
+  'Compra no cartão deve exibir o mês em que aparecerá na grade.');
 assert.match(movementScreen, /max=\{credit \? 48 : 120\}/,
   'Compra no cartão deve respeitar o limite de 48 parcelas do contrato atual da API');
 assert.match(movementScreen, /data\.events\.items\.find/,
@@ -659,8 +668,10 @@ assert.match(operationalCss, /\.px-launch-drawer[\s\S]*grid-template-rows:auto m
   'Cabeçalho de lançamento deve ficar fora da região rolável do formulário.');
 assert.match(operationalCss, /\.px-launch-form[\s\S]*overflow-y:auto!important/,
   'Somente o conteúdo do formulário deve rolar no Android.');
-assert.match(operationalCss, /\.px-edit-launch-actions,[\s\S]*position:fixed!important/,
-  'Salvar e excluir devem permanecer visíveis no rodapé do lançamento.');
+assert.match(operationalCss, /body\.meg-operational-mobile \.px-edit-launch-actions\{[\s\S]*position:sticky!important/,
+  'Salvar e excluir devem permanecer acessíveis sem cobrir os campos do formulário móvel.');
+assert.doesNotMatch(operationalCss, /\.px-edit-launch-actions,[\s\S]{0,180}position:fixed!important/,
+  'Ações da edição não podem voltar ao overlay fixo que cobria o formulário.');
 assert.match(operationalCss, /\.px-pending-success-modal[\s\S]*overflow:hidden!important[\s\S]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/,
   'Resposta de baixa deve caber no viewport sem rolagem geral.');
 assert.match(phoenixApp, /px-mobile-brand-home[\s\S]*meg-finance-system-mark\.svg/,

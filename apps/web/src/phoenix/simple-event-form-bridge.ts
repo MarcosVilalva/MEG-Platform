@@ -280,7 +280,7 @@ function unsupportedReason(root: HTMLElement) {
     return `Receitas estão liberadas somente para ${PHOENIX_INCOME_PAYMENT_METHODS.join(', ')}.`;
   }
   if (method.includes('CARTAO') || method.includes('CREDITO') || method.includes('CREDIARIO')) {
-    return 'Cartão e crediário usam o writer específico do domínio de faturas.';
+    return 'Compras no cartão são salvas pelo fluxo padrão do MEG com atualização automática da fatura e das parcelas.';
   }
   return '';
 }
@@ -545,6 +545,12 @@ function onClick(event: MouseEvent) {
   if (!button) return;
   const root = drawer();
   if (!root) return;
+
+  // A Phoenix V15 já possui writer React próprio para edição e compras no cartão.
+  // Este bridge legado fica restrito aos fluxos especiais que ainda dependem dele.
+  const editing = root.getAttribute('aria-label') === 'Editar lançamento';
+  const cardFlow = Boolean(root.querySelector('.px-card-box'));
+  if (editing || cardFlow) return;
 
   if (state.mode === 'confirmed') {
     event.preventDefault();

@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CardPurchase } from '../../app/cards-client';
 import type { FinancialEvent } from '../../app/finance-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import type { PhoenixReadModel } from '../contracts';
 import { PhoenixLaunchWriteControl } from '../components/PhoenixLaunchWriteControl';
+import { cardDueDateForPurchase } from '../data/card-dates';
+import { projectCardInstallmentsIntoEvents } from '../data/card-movement-projection';
 import { phoenixWriteMessage, runPhoenixBenefitEventEdit, runPhoenixCardPurchaseCancel, runPhoenixCardPurchaseEdit, runPhoenixSimpleEventArchive, runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
 import '../phoenix-launch.css';
 import '../phoenix-launch-dynamic.css';
@@ -65,6 +68,41 @@ function cardPaymentMethodId(data: PhoenixReadModel, cardName: string) {
   const active = data.paymentMethods.filter((item) => item.isActive);
   const exact = active.find((item) => normalizeText(item.name) === normalizeText(cardName) && isCreditMethod(item.name, item.type));
   return exact?.id || active.find((item) => isCreditMethod(item.name, item.type))?.id || '';
+}
+
+function patchCardPurchaseInReadModel(data: PhoenixReadModel, purchase: CardPurchase, cardId: string) {
+  const nextCards = data.cards.map((card) => {
+    const withoutPurchase = card.purchases.filter((item) => item.id !== purchase.id);
+    if (card.id !== cardId) return withoutPurchase.length === card.purchases.length ? card : { ...card, purchases: withoutPurchase };
+    return { ...card, purchases: [purchase, ...withoutPurchase].sort((left, right) => String(right.purchaseDate).localeCompare(String(left.purchaseDate))) };
+  });
+  const nonCardEvents = data.events.items.filter((event) => !projectedCardMeta(event));
+  const projected = projectCardInstallmentsIntoEvents(nextCards, data.categories, data.month);
+  return {
+    ...data,
+    cards: nextCards,
+    events: {
+      ...data.events,
+      items: [...nonCardEvents, ...projected].sort((left, right) => String(right.date).localeCompare(String(left.date))),
+    },
+  };
+}
+
+function removeCardPurchaseFromReadModel(data: PhoenixReadModel, purchaseId: string) {
+  const nextCards = data.cards.map((card) => ({
+    ...card,
+    purchases: card.purchases.filter((purchase) => purchase.id !== purchaseId),
+  }));
+  const nonCardEvents = data.events.items.filter((event) => !projectedCardMeta(event));
+  const projected = projectCardInstallmentsIntoEvents(nextCards, data.categories, data.month);
+  return {
+    ...data,
+    cards: nextCards,
+    events: {
+      ...data.events,
+      items: [...nonCardEvents, ...projected].sort((left, right) => String(right.date).localeCompare(String(left.date))),
+    },
+  };
 }
 
 type PhoenixExportRegistryWindow = Window & {
@@ -157,27 +195,6 @@ function isCrediarioMethod(name?: string | null, type?: string | null) {
 
 function isCardDomainEvent(event: FinancialEvent) {
   return Boolean(projectedCardMeta(event));
-}
-
-function monthPlus(month: string, offset: number) {
-  const [year, monthNumber] = month.split('-').map(Number);
-  return new Date(Date.UTC(year, monthNumber - 1 + offset, 1)).toISOString().slice(0, 7);
-}
-
-function validDayInMonth(month: string, day: number) {
-  const [year, monthNumber] = month.split('-').map(Number);
-  const last = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
-  return Math.min(day, last);
-}
-
-function cardDueDate(purchaseDate: string, closingDay: number, dueDay: number) {
-  if (!purchaseDate) return '';
-  const purchaseMonth = purchaseDate.slice(0, 7);
-  const purchaseDay = Number(purchaseDate.slice(8, 10));
-  const statementMonth = monthPlus(purchaseMonth, purchaseDay > closingDay ? 1 : 0);
-  const dueMonth = monthPlus(statementMonth, dueDay <= closingDay ? 1 : 0);
-  const safeDay = validDayInMonth(dueMonth, dueDay);
-  return `${dueMonth}-${String(safeDay).padStart(2, '0')}`;
 }
 
 function eventStatus(value: string) {
@@ -533,7 +550,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const credit = Boolean(editingCardPurchase) || isCreditMethod(selectedPayment?.name, selectedPayment?.type);
   const pix = draft.type === 'expense' && isPixMethod(selectedPayment?.name, selectedPayment?.type);
   const crediario = isCrediarioMethod(selectedPayment?.name, selectedPayment?.type);
-  const calculatedDue = selectedCard ? cardDueDate(draft.eventDate, selectedCard.closingDay, selectedCard.dueDay) : '';
+  const calculatedDue = selectedCard ? cardDueDateForPurchase(draft.eventDate, selectedCard.closingDay, selectedCard.dueDay) : '';
   const effectiveSituation: LaunchSituation = draft.type === 'income' ? 'paid' : credit ? 'planned' : benefit ? 'paid' : pix ? 'paid' : draft.situation;
   const situationRule = draft.type === 'income'
     ? 'Receitas são registradas sempre como recebidas.'
@@ -599,14 +616,26 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   }, [draft, amountCents, benefit, selectedDestination?.name, credit]);
 
   const duplicate = useMemo(() => {
-    if (!draft.description.trim() || !amountCents || !draft.accountId || !draft.eventDate) return null;
+    if (!draft.description.trim() || !amountCents || !draft.eventDate) return null;
     const target = normalizeText(draft.description);
+    if (credit) {
+      return data.events.items.find((event) => {
+        if (event.id === editingEventId) return false;
+        const link = projectedCardPurchase(data, event);
+        if (!link || link.purchase.id === editingCardPurchase?.purchase.id) return false;
+        return normalizeText(link.purchase.description) === target
+          && link.card.id === draft.cardId
+          && String(link.purchase.purchaseDate).slice(0, 10) === draft.eventDate
+          && Math.round(Math.abs(Number(link.purchase.totalAmount || 0)) * 100) === amountCents;
+      }) || null;
+    }
+    if (!draft.accountId) return null;
     return data.events.items.find((event) => event.id !== editingEventId
       && normalizeText(event.description) === target
       && Math.round(displayEffect(event) * 100) === (negative ? -amountCents : amountCents)
       && event.accountId === draft.accountId
       && event.date.slice(0, 10) === draft.eventDate) || null;
-  }, [data.events.items, editingEventId, draft.description, draft.accountId, draft.eventDate, amountCents, negative]);
+  }, [data, editingEventId, editingCardPurchase?.purchase.id, draft.description, draft.accountId, draft.cardId, draft.eventDate, amountCents, negative, credit]);
 
   const simpleWriteInput = useMemo(() => {
     if (draft.type === 'transfer') return null;
@@ -918,7 +947,10 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           editingCardPurchase.purchase.id,
           cardWriteInput,
           data.month,
-          () => {
+          (purchase) => {
+            const patched = patchCardPurchaseInReadModel(data, purchase, cardWriteInput.cardId);
+            setData(patched);
+            onDataCommitted?.(patched);
             setDirty(false);
             setLaunchOpen(false);
             resetLaunch();
@@ -998,7 +1030,14 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
   function requestSaveEdit() {
     if (!editingEvent || savingEdit) return;
-    if (editingEvent.status === 'planned' && effectiveSituation === 'paid') {
+    if (missing.length) {
+      setValidationVisible(true);
+      window.requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>('.px-launch-drawer .px-field.is-invalid input, .px-launch-drawer .px-field.is-invalid select, .px-launch-drawer .px-field.is-invalid textarea')?.focus();
+      });
+      return;
+    }
+    if (editingEvent.status === 'planned' && effectiveSituation === 'paid' && !editingCardPurchase) {
       setSettlementConfirmOpen(true);
       return;
     }
@@ -1018,13 +1057,9 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           purchaseId,
           data.month,
           () => {
-            setData((current) => ({
-              ...current,
-              events: {
-                ...current.events,
-                items: current.events.items.filter((event) => projectedCardMeta(event)?.purchaseId !== purchaseId),
-              },
-            }));
+            const patched = removeCardPurchaseFromReadModel(data, purchaseId);
+            setData(patched);
+            onDataCommitted?.(patched);
             setDeleteConfirmOpen(false);
             setDeleteTargetEvent(null);
             setDetailEvent(null);
@@ -1251,8 +1286,8 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           <label className={`px-field ${invalidField('descrição') ? 'is-invalid' : ''}`}><span>Descrição *</span><input value={draft.description} onChange={(event) => updateDraft('description', event.target.value)} maxLength={120} autoComplete="off" placeholder="Ex.: supermercado, salário ou transferência" />{invalidField('descrição') ? <small className="px-field-error">Preencha a descrição.</small> : null}</label>
 
           <div className="px-form-row">
-            <label className={`px-field ${invalidField(draft.type === 'transfer' ? 'conta de origem' : 'conta') ? 'is-invalid' : ''}`}><span>{draft.type === 'transfer' ? 'Conta de origem *' : 'Conta financeira *'}</span><select data-phoenix-account-select="source" value={draft.accountId} disabled={benefit} onChange={(event) => updateDraft('accountId', event.target.value)}><option value="">Selecione</option>{accounts.map((item) => <option key={item.id} value={item.id} data-account-type={item.type}>{item.name}</option>)}</select>{invalidField(draft.type === 'transfer' ? 'conta de origem' : 'conta') ? <small className="px-field-error">Selecione a conta.</small> : null}</label>
-            <label className={`px-field ${invalidField('data') ? 'is-invalid' : ''}`}><span>Data do evento *</span><input type="date" value={draft.eventDate} onChange={(event) => updateDraft('eventDate', event.target.value)} />{invalidField('data') ? <small className="px-field-error">Informe a data.</small> : null}</label>
+            {!credit ? <label className={`px-field ${invalidField(draft.type === 'transfer' ? 'conta de origem' : 'conta') ? 'is-invalid' : ''}`}><span>{draft.type === 'transfer' ? 'Conta de origem *' : 'Conta financeira *'}</span><select data-phoenix-account-select="source" value={draft.accountId} disabled={benefit} onChange={(event) => updateDraft('accountId', event.target.value)}><option value="">Selecione</option>{accounts.map((item) => <option key={item.id} value={item.id} data-account-type={item.type}>{item.name}</option>)}</select>{invalidField(draft.type === 'transfer' ? 'conta de origem' : 'conta') ? <small className="px-field-error">Selecione a conta.</small> : null}</label> : <div className="px-field px-card-cash-scope"><span>Impacto no caixa</span><strong>Somente no pagamento da fatura</strong><small>A compra no cartão não movimenta uma conta monetária neste momento.</small></div>}
+            <label className={`px-field ${invalidField('data') ? 'is-invalid' : ''}`}><span>{credit ? 'Data da compra *' : 'Data do evento *'}</span><input type="date" value={draft.eventDate} onChange={(event) => updateDraft('eventDate', event.target.value)} />{invalidField('data') ? <small className="px-field-error">Informe a data.</small> : null}</label>
           </div>
 
           {draft.type === 'transfer' ? <div className="px-transfer-block"><div className="px-transfer-arrow">Conta de origem ↓ Conta de destino</div><label className={`px-field ${invalidField('conta de destino') || invalidField('destino diferente da origem') || invalidField('contas monetárias válidas') ? 'is-invalid' : ''}`}><span>Conta de destino *</span><select value={draft.destinationId} onChange={(event) => updateDraft('destinationId', event.target.value)}><option value="">Selecione uma conta diferente</option>{accounts.filter((item) => item.id !== draft.accountId).map((item) => <option key={item.id} value={item.id} data-account-type={item.type}>{item.name}</option>)}</select>{invalidField('conta de destino') ? <small className="px-field-error">Selecione a conta de destino.</small> : invalidField('destino diferente da origem') ? <small className="px-field-error">Origem e destino devem ser diferentes.</small> : invalidField('contas monetárias válidas') ? <small className="px-field-error">Use duas contas monetárias válidas.</small> : null}</label></div> : null}
@@ -1285,11 +1320,11 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
           {credit ? <div className="px-card-box">
             <label className={`px-field ${invalidField('cartão') ? 'is-invalid' : ''}`}><span>Cartão *</span><select value={draft.cardId} onChange={(event) => updateDraft('cardId', event.target.value)}><option value="">Selecione o cartão cadastrado</option>{cards.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>{invalidField('cartão') ? <small className="px-field-error">Selecione o cartão.</small> : null}</label>
-            <div className="px-calculated-due"><span>Vencimento calculado</span><strong>{calculatedDue ? date.format(new Date(`${calculatedDue}T12:00:00Z`)) : 'Definido após selecionar o cartão'}</strong></div>
-            <div className="px-rule-box">No crédito, a compra continua sendo um lançamento comum. A data da compra e o fechamento do cartão definem automaticamente a fatura e o vencimento; a baixa ocorre no pagamento da fatura.</div>
+            <div className="px-calculated-due"><span>Vencimento calculado</span><strong>{calculatedDue ? date.format(new Date(`${calculatedDue}T12:00:00Z`)) : 'Definido após selecionar o cartão'}</strong></div>{calculatedDue ? <div className="px-calculated-due"><span>Competência nos Lançamentos</span><strong>{formatMonthLabel(calculatedDue.slice(0, 7))}</strong></div> : null}
+            <div className="px-rule-box">No crédito, a compra continua sendo um lançamento comum. A data da compra define a fatura; o vencimento é levado ao próximo dia útil quando cair no fim de semana e o mês desse vencimento define a competência da grade.</div>
           </div> : null}
 
-          {(credit || crediario) ? <div className="px-installment-box"><div className="px-form-row"><label className="px-field"><span>Quantidade de parcelas *</span><input type="number" min={1} max={credit ? 48 : 120} value={draft.installments} onChange={(event) => updateDraft('installments', Math.max(1, Number(event.target.value) || 1))} /></label><label className="px-field"><span>Vencimento da 1ª parcela</span><input type="date" disabled={credit} value={credit ? calculatedDue : draft.firstDue} onChange={(event) => updateDraft('firstDue', event.target.value)} /></label></div><div className="px-rule-box">No cartão, a divisão em parcelas seguirá o contrato da API: centavos são distribuídos sem perda e a primeira fatura depende da data de fechamento.</div></div> : null}
+          {(credit || crediario) ? <div className="px-installment-box"><div className="px-form-row"><label className="px-field"><span>Quantidade de parcelas *</span><input type="number" min={1} max={credit ? 48 : 120} value={draft.installments} onChange={(event) => updateDraft('installments', Math.max(1, Number(event.target.value) || 1))} /></label><label className="px-field"><span>Vencimento da 1ª parcela</span><input type="date" disabled={credit} value={credit ? calculatedDue : draft.firstDue} onChange={(event) => updateDraft('firstDue', event.target.value)} /></label></div><div className="px-rule-box">No cartão, cada parcela preserva data da compra, fatura e vencimento. Nos Lançamentos, a competência é o mês do vencimento final da parcela.</div></div> : null}
 
           {benefit ? <div className="px-notice ok">{draft.type === 'income'
             ? 'A receita do benefício é registrada como recebida; a recarga aumenta somente o saldo do benefício e não compõe o caixa monetário.'
@@ -1303,16 +1338,14 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           {draft.saveTemplate ? <label className={`px-field ${invalidField('nome do modelo') ? 'is-invalid' : ''}`}><span>Nome do modelo *</span><input maxLength={60} value={draft.templateName} onChange={(event) => updateDraft('templateName', event.target.value)} placeholder="Ex.: Compra mensal" />{invalidField('nome do modelo') ? <small className="px-field-error">Informe um nome para o modelo.</small> : null}</label> : null}
           <label className="px-field"><span>Observações opcionais</span><textarea maxLength={500} value={draft.notes} onChange={(event) => updateDraft('notes', event.target.value)} placeholder="Inclua informações úteis para consulta futura" /></label>
 
-          <div className="px-preview-box"><div className="px-launch-section-label">Resumo antes de confirmar</div><div><span>Tipo</span><strong>{draft.type === 'expense' ? 'Despesa' : draft.type === 'income' ? 'Receita' : 'Transferência'}</strong></div><div><span>Escopo</span><strong>{draft.type === 'transfer' && draft.destinationId ? `${labelForAccount(data, draft.accountId)} para ${labelForAccount(data, draft.destinationId)}` : labelForAccount(data, draft.accountId)}</strong></div>{draft.type === 'expense' ? <><div><span>Classificação</span><strong>{draft.classification || '—'}</strong></div><div><span>Grupo</span><strong>{selectedCategory?.name || '—'}</strong></div></> : null}<div><span>Valor</span><strong>{formatInputMoney(amountCents, negative)}</strong></div><div><span>Situação inicial</span><strong>{draft.type === 'transfer' ? 'Fluxo próprio' : draft.type === 'income' ? 'Recebida' : effectiveSituation === 'paid' ? 'Pago' : 'Pendente'}</strong></div></div>
+          <div className="px-preview-box"><div className="px-launch-section-label">Resumo antes de confirmar</div><div><span>Tipo</span><strong>{draft.type === 'expense' ? 'Despesa' : draft.type === 'income' ? 'Receita' : 'Transferência'}</strong></div><div><span>Escopo</span><strong>{credit ? `Cartão ${selectedCard?.name || 'não selecionado'} · venc. ${calculatedDue ? formatIsoDate(calculatedDue) : 'a calcular'}` : draft.type === 'transfer' && draft.destinationId ? `${labelForAccount(data, draft.accountId)} para ${labelForAccount(data, draft.destinationId)}` : labelForAccount(data, draft.accountId)}</strong></div>{draft.type === 'expense' ? <><div><span>Classificação</span><strong>{draft.classification || '—'}</strong></div><div><span>Grupo</span><strong>{selectedCategory?.name || '—'}</strong></div></> : null}<div><span>Valor</span><strong>{formatInputMoney(amountCents, negative)}</strong></div><div><span>Situação inicial</span><strong>{draft.type === 'transfer' ? 'Fluxo próprio' : draft.type === 'income' ? 'Recebida' : effectiveSituation === 'paid' ? 'Pago' : 'Pendente'}</strong></div></div>
 
           {duplicate ? <div className="px-rule-box duplicate">{`Possível duplicidade: ${duplicate.description}, ${money.format(amountFromEvent(duplicate))}, em ${date.format(new Date(duplicate.date))}.`}</div> : null}
           {validationVisible && missing.length ? <div className="px-form-validation-summary">Revise os campos destacados.</div> : null}
           {editMessage ? <div className={`px-notice ${editMessage.includes('protegido') || editMessage.includes('liberada') || editMessage.includes('possível') ? 'warn' : 'ok'}`}>{editMessage}</div> : null}
 
           {editingEventId ? <div className="px-edit-launch-actions">
-            {!reviewed
-              ? <button className="px-primary-action px-review-launch" type="button" onClick={reviewLaunch}>{missing.length ? 'Salvar alterações' : 'Revisar alterações'}</button>
-              : <button className="px-primary-action px-confirm-launch" type="button" disabled={savingEdit || deletingEvent || Boolean(duplicate)} onClick={requestSaveEdit} aria-busy={savingEdit}>{savingEdit ? 'Salvando e sincronizando…' : duplicate ? 'Revise a possível duplicidade' : 'Salvar alterações'}</button>}
+            <button className="px-primary-action px-confirm-launch" type="button" disabled={savingEdit || deletingEvent || Boolean(duplicate)} onClick={requestSaveEdit} aria-busy={savingEdit}>{savingEdit ? 'Salvando…' : duplicate ? 'Revise a possível duplicidade' : 'Salvar alterações'}</button>
             <button className="px-secondary-action px-cancel-launch" type="button" disabled={savingEdit || deletingEvent} onClick={requestCloseLaunch}>Cancelar</button>
             {canArchiveEvent ? <button className="px-delete-launch" type="button" disabled={savingEdit || deletingEvent} onClick={() => requestDeleteEvent()}>Excluir lançamento</button> : null}
           </div>
@@ -1402,7 +1435,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       <div className="px-detail-grid"><div><span>Vencimento</span><strong>{formatIsoDate(detailEvent.date)}</strong></div><div><span>Data da compra</span><strong>{formatIsoDate(sourcePurchaseDate(detailEvent))}</strong></div><div><span>Situação</span><strong>{launchTypeForEvent(detailEvent.type) === 'income' ? 'Recebida' : eventStatus(detailEvent.status)}</strong></div><div><span>Conta</span><strong>{detailEvent.account?.name || 'Não informada'}</strong></div><div><span>Sincronização</span><strong>Confirmada na leitura atual</strong></div><div><span>Tipo</span><strong>{eventType(detailEvent.type)}</strong></div><div><span>Valor</span><strong>{money.format(displayEffect(detailEvent))}</strong></div><div><span>Classificação</span><strong>{sourceClassification(detailEvent)}</strong></div><div><span>Grupo</span><strong>{sourceGroup(detailEvent)}</strong></div><div><span>Forma</span><strong>{sourcePayment(detailEvent)}</strong></div><div><span>Modalidade</span><strong>{detailEvent.sourceDetails?.modality || '—'}</strong></div></div>
       {detailEvent.notes ? <div className="px-notice">{detailEvent.notes}</div> : null}
       {isCardDomainEvent(detailEvent)
-        ? <div className="px-notice ok">Compra no cartão: a data da compra define a fatura conforme o fechamento. Editar ou excluir usa o mesmo fluxo de lançamentos e atualiza as parcelas vinculadas automaticamente.</div>
+        ? <div className="px-notice ok">Compra no cartão: a data da compra define a fatura; o mês do vencimento final define a competência da grade. Editar ou excluir atualiza automaticamente todas as parcelas vinculadas.</div>
         : <div className="px-notice">Duplo clique na linha ou o botão abaixo abre a edição. Alterações simples são relidas da base antes da grade ser atualizada.</div>}
       <div className="px-detail-actions"><button className="px-primary-action" data-phoenix-generic-edit type="button" onClick={() => openLaunch(detailEvent)}>Editar lançamento</button>{canArchiveEvent ? <button className="px-delete-launch" data-phoenix-generic-delete type="button" onClick={() => requestDeleteEvent(detailEvent)}>Excluir lançamento</button> : null}<button className="px-secondary-action" type="button" onClick={() => { setDetailEvent(null); onNavigateHistory?.(); }}>Ver histórico</button></div>
     </aside> : null}

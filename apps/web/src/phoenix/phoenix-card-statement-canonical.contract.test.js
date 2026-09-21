@@ -6,6 +6,7 @@ const payables = readFileSync(new URL('./screens/PhoenixPayablesV15.tsx', import
 const movements = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
 const readScreens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.meta.url), 'utf8');
 const cardProjection = readFileSync(new URL('./data/card-movement-projection.ts', import.meta.url), 'utf8');
+const cardDates = readFileSync(new URL('./data/card-dates.ts', import.meta.url), 'utf8');
 
 assert.match(cardsGrid, /tx\.amount !== undefined \? parseNumber\(tx\.amount\) : parseNumber\(tx\.expenseAmount\)/,
   'Cartões devem preservar o sinal do amount legado antes do expenseAmount absoluto');
@@ -62,6 +63,18 @@ assert.match(cardProjection, /signedAmount: -statementEffect/,
   'Créditos de cartão devem virar signedAmount positivo em Lançamentos');
 assert.doesNotMatch(cardProjection, /const amount = Math\.abs\(Number\(entry\.amount/,
   'Projeção não pode destruir o sinal do estorno antes de montar signedAmount');
+assert.match(cardProjection, /const dueDate = cardDueDateForStatement\(entry\.statementMonth, card\.closingDay, card\.dueDay\)/,
+  'Projeção deve calcular o vencimento final de cada parcela antes de decidir em qual mês ela aparece.');
+assert.match(cardProjection, /const dueCompetence = cardCompetenceFromDueDate\(dueDate\)[\s\S]*if \(dueCompetence !== month\) continue/,
+  'Grade de Lançamentos deve filtrar cartão pela competência do vencimento, não pelo statementMonth.');
+assert.match(cardProjection, /competence: dueCompetence/,
+  'Evento projetado do cartão deve carregar a competência do vencimento final.');
+assert.doesNotMatch(cardProjection, /if \(entry\.statementMonth !== month\) continue/,
+  'Fatura interna não pode voltar a determinar diretamente a competência visual.');
+assert.match(cardDates, /weekday === 6[\s\S]*setUTCDate\(date\.getUTCDate\(\) \+ 2\)[\s\S]*weekday === 0[\s\S]*\+ 1/,
+  'Regra compartilhada deve prorrogar sábado e domingo para a segunda-feira seguinte.');
+assert.match(cardDates, /cardCompetenceFromDueDate[\s\S]*dueDate\.slice\(0, 7\)/,
+  'Competência visual deve ser derivada do vencimento final já ajustado.');
 
 assert.match(readScreens, /creditAwarePendingModel/,
   'Compatibilidade de crédito legado deve continuar ativa durante a transição');

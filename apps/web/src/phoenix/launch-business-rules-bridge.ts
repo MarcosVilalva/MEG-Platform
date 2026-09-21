@@ -442,7 +442,17 @@ function ensureModalityField(root: HTMLElement) {
   if (root.dataset.phoenixModalityType !== type || !select.options.length) {
     root.dataset.phoenixModalityType = type;
     const saved = root.dataset.phoenixModality || '';
-    const inferred = saved || inferModality(editingEvent, type);
+    const nativePayment = normalize(paymentSelect(root)?.selectedOptions[0]?.textContent || '');
+    const routedFromForm = type === 'expense'
+      ? nativePayment.includes('VEROCARD') ? 'ALIMENTAÇÃO'
+        : nativePayment.includes('CREDIARIO') ? 'CREDIÁRIO'
+          : (nativePayment.includes('CREDITO') || nativePayment.includes('CARTAO')) ? 'CRÉDITO'
+            : ''
+      : nativePayment.includes('VEROCARD') ? 'VEROCARD'
+        : nativePayment.includes('DINHEIRO') ? 'DINHEIRO'
+          : nativePayment.includes('TRANSFERENCIA') || nativePayment.includes('DEPOSITO') ? 'TRANSFERÊNCIA BANCÁRIA'
+            : nativePayment.includes('PIX') ? 'PIX' : '';
+    const inferred = saved || routedFromForm || inferModality(editingEvent, type);
     select.innerHTML = options.map((item) => `<option value="${item}">${item}</option>`).join('');
     select.value = options.includes(inferred as never) ? inferred : options[0];
     root.dataset.phoenixModality = select.value;
@@ -558,7 +568,7 @@ async function submitProtectedEdit(root: HTMLElement) {
   }
   const modality = normalize(root.querySelector<HTMLSelectElement>('[data-phoenix-modality-select]')?.value || '');
   if (modality === 'CREDITO' || modality === 'CREDIARIO') {
-    writerFeedback(root, 'A edição de cartão/crediário exige o writer específico do domínio de faturas e permanece protegida nesta etapa.');
+    writerFeedback(root, 'Compras no cartão são editadas pelo formulário padrão do MEG e atualizam automaticamente fatura e parcelas.');
     return;
   }
   const payload = editPayload(root, eventId);
@@ -803,6 +813,7 @@ function onDocumentClick(event: MouseEvent) {
   }
 
   const root = target.closest<HTMLElement>('.px-launch-drawer');
+  if (root?.getAttribute('aria-label') === 'Editar lançamento') return;
   const primary = target.closest<HTMLButtonElement>('.px-review-launch');
   if (root && primary && root.dataset.phoenixEditingEventId) {
     const reviewed = [...root.querySelectorAll<HTMLElement>('.px-notice.ok')]
