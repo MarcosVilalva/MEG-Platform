@@ -91,6 +91,7 @@ export function PhoenixLaunchWriteControl({
   refreshMonth,
   duplicateMessage,
   onReview,
+  onAccepted,
   onCommitted,
 }: {
   reviewed: boolean;
@@ -102,6 +103,7 @@ export function PhoenixLaunchWriteControl({
   refreshMonth?: string;
   duplicateMessage?: string | null;
   onReview: () => void;
+  onAccepted?: () => void;
   onCommitted?: (snapshot: PhoenixReadModel, event?: FinancialEvent) => void;
 }) {
   const [runtimeState, setRuntimeState] = useState<RuntimeState>('idle');
@@ -257,7 +259,17 @@ export function PhoenixLaunchWriteControl({
       if (cardFlow) {
         const prepared = preparedCardRef.current || preparePhoenixCardPurchase(cardInput!);
         preparedCardRef.current = prepared;
-        const result = await runPhoenixCardPurchaseWrite(prepared, refreshMonth || cardInput!.purchaseDate.slice(0, 7));
+        const result = await runPhoenixCardPurchaseWrite(
+          prepared,
+          refreshMonth || cardInput!.purchaseDate.slice(0, 7),
+          (state) => {
+            if (state.status !== 'accepted') return;
+            preparedCardRef.current = null;
+            setCommitState('confirmed');
+            setCommitMessage('Compra salva no cartão. O formulário pode ser fechado enquanto o MEG atualiza fatura e parcelas em segundo plano.');
+            onAccepted?.();
+          },
+        );
         if (result.status === 'confirmed') {
           preparedCardRef.current = null;
           setCommitState('confirmed');
@@ -265,8 +277,9 @@ export function PhoenixLaunchWriteControl({
           onCommitted?.(result.snapshot, projectedCardEvent(result.snapshot, result.purchase.id));
           return;
         }
+        if (result.status === 'accepted') return;
         setCommitState('error');
-        setCommitMessage(result.status === 'error' ? result.message : 'Não foi possível confirmar a compra no cartão. Tente novamente sem alterar os dados.');
+        setCommitMessage(result.message);
         return;
       }
 
