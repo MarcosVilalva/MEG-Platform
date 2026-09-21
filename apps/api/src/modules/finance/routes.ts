@@ -101,15 +101,65 @@ export async function financeRoutes(app: FastifyInstance) {
 
   app.get('/sync-status', { preHandler: app.authorize([...readRoles]) }, async (request) => {
     const context = await resolveWorkspaceContext(request.user.sub);
-    const latest = await prisma.cloudMutationReceipt.findFirst({
-      where: { workspaceId: context.workspaceId },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      select: { id: true, operationId: true, mutationType: true, createdAt: true },
-    });
+    const dataOwnerId = context.workspace.ownerId;
+    const [latestMutation, latestAccount, latestCategory, latestPaymentMethod, latestCard] = await Promise.all([
+      prisma.cloudMutationReceipt.findFirst({
+        where: { workspaceId: context.workspaceId },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: { id: true, mutationType: true, createdAt: true },
+      }),
+      prisma.account.findFirst({
+        where: { userId: dataOwnerId },
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        select: { id: true, updatedAt: true },
+      }),
+      prisma.category.findFirst({
+        where: { userId: dataOwnerId },
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        select: { id: true, updatedAt: true },
+      }),
+      prisma.paymentMethod.findFirst({
+        where: { userId: dataOwnerId },
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        select: { id: true, updatedAt: true },
+      }),
+      prisma.creditCard.findFirst({
+        where: { userId: dataOwnerId },
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        select: { id: true, updatedAt: true },
+      }),
+    ]);
+
+    const catalogSources = [
+      ['account', latestAccount] as const,
+      ['category', latestCategory] as const,
+      ['payment-method', latestPaymentMethod] as const,
+      ['card', latestCard] as const,
+    ];
+    const catalogToken = catalogSources
+      .map(([kind, item]) => item ? `${kind}:${item.updatedAt.toISOString()}:${item.id}` : `${kind}:empty`)
+      .join('|');
+    const latestCatalog = catalogSources.reduce<{ kind: string; item: { id: string; updatedAt: Date } } | null>(
+      (latest, [kind, item]) => {
+        if (!item) return latest;
+        if (!latest || item.updatedAt > latest.item.updatedAt) return { kind, item };
+        return latest;
+      },
+      null,
+    );
+    const mutationToken = latestMutation
+      ? `mutation:${latestMutation.createdAt.toISOString()}:${latestMutation.id}`
+      : 'mutation:empty';
+    const changedAtDate = latestMutation && latestCatalog
+      ? (latestMutation.createdAt >= latestCatalog.item.updatedAt ? latestMutation.createdAt : latestCatalog.item.updatedAt)
+      : latestMutation?.createdAt || latestCatalog?.item.updatedAt || null;
+    const catalogIsNewest = Boolean(latestCatalog && (!latestMutation || latestCatalog.item.updatedAt > latestMutation.createdAt));
+
     return {
-      token: latest ? `${latest.createdAt.toISOString()}:${latest.id}` : 'empty',
-      changedAt: latest?.createdAt.toISOString() || null,
-      mutationType: latest?.mutationType || null,
+      token: `${mutationToken}|${catalogToken}`,
+      changedAt: changedAtDate?.toISOString() || null,
+      mutationType: catalogIsNewest ? 'CATALOG_SYNC' : latestMutation?.mutationType || null,
+      catalogChangedAt: latestCatalog?.item.updatedAt.toISOString() || null,
     };
   });
 

@@ -48,6 +48,12 @@ assert.match(routes, /prisma\.category\.findMany\(\{ where: \{ userId: dataOwner
   'Categorias devem ser compartilhadas entre membros autorizados.');
 assert.match(routes, /prisma\.paymentMethod\.findMany\(\{ where: \{ userId: dataOwnerId \}/,
   'Formas de pagamento devem ser compartilhadas entre membros autorizados.');
+assert.match(routes, /app\.get\('\/sync-status'[\s\S]*Promise\.all\(\[[\s\S]*prisma\.account\.findFirst[\s\S]*prisma\.category\.findFirst[\s\S]*prisma\.paymentMethod\.findFirst[\s\S]*prisma\.creditCard\.findFirst/,
+  'Pulso de sincronização deve detectar alterações de contas, categorias, formas de pagamento e cartões mesmo sem mutation receipt.');
+assert.match(routes, /token: `\$\{mutationToken\}\|\$\{catalogToken\}`/,
+  'Token de sincronização deve combinar mutações financeiras protegidas com o estado mais recente dos cadastros.');
+assert.match(routes, /mutationType: catalogIsNewest \? 'CATALOG_SYNC'/,
+  'Outro dispositivo deve conseguir identificar que a mudança mais recente veio de um cadastro.');
 
 assert.match(payable, /listPayables[\s\S]*const dataOwnerId = context\.workspace\.ownerId/,
   'Pendentes devem ser lidos da base do workspace.');
