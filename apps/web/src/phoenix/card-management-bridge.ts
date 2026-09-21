@@ -1,6 +1,7 @@
 import { readSession } from '../app/auth-client';
 import { cardsClient, type CreditCard, type CreditCardMutationInput } from '../app/cards-client';
 import { resolvePhoenixCardIdentity } from './card-identity';
+import { megConfirm } from './meg-confirm';
 import './phoenix-card-management.css';
 
 type Mode = 'list' | 'create' | 'edit';
@@ -359,7 +360,14 @@ async function deactivateCard() {
   if (!canDeactivate() || !editingId) return;
   const card = currentEditing();
   if (!card) return;
-  if (!window.confirm(`Desativar “${card.name}”?\n\nEle deixará de aparecer nas telas de cartões e nos novos lançamentos. O histórico existente será preservado.`)) return;
+  if (!await megConfirm({
+    kicker: 'Cadastro de cartão',
+    title: 'Desativar cartão?',
+    message: `“${card.name}” deixará de aparecer em novos lançamentos, mas todo o histórico existente será preservado.`,
+    confirmLabel: 'Desativar cartão',
+    cancelLabel: 'Manter ativo',
+    danger: true,
+  })) return;
   const button = root()?.querySelector<HTMLButtonElement>('[data-card-manage-deactivate]');
   if (button) { button.disabled = true; button.textContent = 'Desativando…'; }
   feedback('Desativando cartão sem apagar o histórico…');
@@ -380,7 +388,13 @@ async function reactivateCard(id: string) {
   if (!canDeactivate()) return;
   const card = cards.find((candidate) => candidate.id === id && !candidate.isActive);
   if (!card) return;
-  if (!window.confirm(`Reativar “${card.name}”?\n\nO mesmo cartão e todo o histórico serão reutilizados. Ele voltará a aparecer nos novos lançamentos.`)) return;
+  if (!await megConfirm({
+    kicker: 'Cadastro de cartão',
+    title: 'Reativar cartão?',
+    message: `“${card.name}” será reativado usando o mesmo cadastro e todo o histórico já existente.`,
+    confirmLabel: 'Reativar cartão',
+    cancelLabel: 'Cancelar',
+  })) return;
   const button = [...(root()?.querySelectorAll<HTMLButtonElement>('[data-card-manage-reactivate]') || [])]
     .find((candidate) => candidate.dataset.cardManageReactivate === id) || null;
   if (button) { button.disabled = true; button.textContent = 'Reativando…'; }
