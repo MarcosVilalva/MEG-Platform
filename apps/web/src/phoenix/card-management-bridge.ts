@@ -8,7 +8,7 @@ type Mode = 'list' | 'create' | 'edit';
 
 let observer: MutationObserver | null = null;
 let scheduled = false;
-let loading = false;
+let loadingPromise: Promise<CreditCard[]> | null = null;
 let cards: CreditCard[] = [];
 let mode: Mode = 'list';
 let editingId = '';
@@ -245,13 +245,33 @@ function render() {
 }
 
 async function loadCards() {
-  if (loading) return;
-  loading = true;
-  try {
-    cards = await cardsClient.listManagement(activeMonth());
-  } finally {
-    loading = false;
-  }
+  if (loadingPromise) return loadingPromise;
+  const pending = cardsClient.listManagement(activeMonth())
+    .then((loaded) => {
+      cards = loaded;
+      return loaded;
+    })
+    .finally(() => {
+      if (loadingPromise === pending) loadingPromise = null;
+    });
+  loadingPromise = pending;
+  return pending;
+}
+
+function replaceCard(saved: CreditCard) {
+  const index = cards.findIndex((card) => card.id === saved.id);
+  if (index < 0) cards = [...cards, saved];
+  else cards = cards.map((card) => card.id === saved.id ? saved : card);
+}
+
+function refreshCardsInBackground() {
+  void loadCards()
+    .then(() => {
+      if (root() && mode === 'list') render();
+    })
+    .catch(() => {
+      // O resultado confirmado pelo servidor permanece visível; uma releitura futura tenta novamente.
+    });
 }
 
 async function openDrawer() {
@@ -343,13 +363,18 @@ async function saveCard() {
   if (button) { button.disabled = true; button.textContent = mode === 'create' ? 'Cadastrando…' : 'Salvando…'; }
   feedback(mode === 'create' ? 'Cadastrando cartão…' : 'Atualizando cadastro do cartão…');
   try {
-    if (mode === 'create') await cardsClient.create(draft);
-    else if (editingId) await cardsClient.update(editingId, draft);
-    await loadCards();
+    const saved = mode === 'create'
+      ? await cardsClient.create(draft)
+      : editingId
+        ? await cardsClient.update(editingId, draft)
+        : null;
+    if (!saved) throw new Error('CARD_SAVE_TARGET_MISSING');
+    replaceCard(saved);
     mode = 'list';
     editingId = '';
     render();
-    feedback('Cadastro de cartões atualizado. A tela principal será sincronizada automaticamente.');
+    feedback('Cadastro de cartões atualizado. A confirmação do servidor já foi aplicada; a sincronização completa continua em segundo plano.');
+    refreshCardsInBackground();
   } catch (error) {
     feedback(error instanceof Error ? error.message : 'Não foi possível salvar o cartão.', true);
     if (button) { button.disabled = false; button.textContent = mode === 'create' ? 'Cadastrar cartão' : 'Salvar alterações'; }
@@ -372,12 +397,13 @@ async function deactivateCard() {
   if (button) { button.disabled = true; button.textContent = 'Desativando…'; }
   feedback('Desativando cartão sem apagar o histórico…');
   try {
-    await cardsClient.deactivate(card.id);
-    await loadCards();
+    const saved = await cardsClient.deactivate(card.id);
+    replaceCard(saved);
     mode = 'list';
     editingId = '';
     render();
-    feedback('Cartão desativado. Ele permanece abaixo em “Cartões inativos” e pode ser reativado sem perder o histórico.');
+    feedback('Cartão desativado. A alteração confirmada já foi aplicada e o histórico permanece preservado.');
+    refreshCardsInBackground();
   } catch (error) {
     feedback(error instanceof Error ? error.message : 'Não foi possível desativar o cartão.', true);
     if (button) { button.disabled = false; button.textContent = 'Desativar cartão'; }
@@ -401,11 +427,12 @@ async function reactivateCard(id: string) {
   feedback('Reativando o cartão original e preservando todos os vínculos…');
   try {
     const result = await cardsClient.reactivate(id);
-    await loadCards();
+    replaceCard(result.card);
     mode = 'list';
     editingId = '';
     render();
     feedback(result.reactivated ? `“${result.card.name}” foi reativado com o histórico preservado.` : `“${result.card.name}” já estava ativo; nenhum registro foi duplicado.`);
+    refreshCardsInBackground();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Não foi possível reativar o cartão.';
     feedback(message === 'CARD_NAME_ALREADY_ACTIVE'
