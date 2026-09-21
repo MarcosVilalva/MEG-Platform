@@ -3,11 +3,14 @@ import { z } from 'zod';
 import { Prisma, prisma } from '@meg/database';
 import { serializableFinancialTransaction } from '../finance/monetary-protection';
 import { resolveWorkspaceContext } from '../workspaces/service';
+import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
 const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
+const operationIdSchema = z.string().trim().min(8).max(128).regex(/^[A-Za-z0-9._:-]+$/).optional();
+const expectedUpdatedAtSchema = z.string().datetime({ offset: true }).optional();
 const cardSchema = z.object({
   name: z.string().trim().min(2).max(80),
   issuer: z.string().trim().max(80).optional().nullable(),
@@ -18,6 +21,15 @@ const cardSchema = z.object({
   dueDay: z.coerce.number().int().min(1).max(31),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
 });
+const cardCreateSchema = cardSchema.extend({ operationId: operationIdSchema });
+const cardUpdateSchema = cardSchema.partial().extend({
+  operationId: operationIdSchema,
+  expectedUpdatedAt: expectedUpdatedAtSchema,
+}).strict();
+const cardMutationMetaSchema = z.object({
+  operationId: operationIdSchema,
+  expectedUpdatedAt: expectedUpdatedAtSchema,
+}).strict();
 
 type Tx = Prisma.TransactionClient;
 
@@ -29,6 +41,73 @@ class CardManagementError extends Error {
 
 function validationError(reply: FastifyReply, details: unknown) {
   return reply.code(400).send({ error: 'VALIDATION_ERROR', details });
+}
+
+function isUniqueConflict(error: unknown) {
+  return Boolean(error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'P2002');
+}
+
+function assertFreshCard(updatedAt: Date, expectedUpdatedAt?: string) {
+  if (!expectedUpdatedAt) return;
+  const expected = new Date(expectedUpdatedAt);
+  if (Number.isNaN(expected.getTime()) || updatedAt.getTime() !== expected.getTime()) {
+    throw new CardManagementError(409, 'CARD_STALE_VERSION', { currentUpdatedAt: updatedAt.toISOString() });
+  }
+}
+
+function replayResponse<T>(response: unknown): T {
+  return JSON.parse(JSON.stringify(response)) as T;
+}
+
+async function runProtectedCardManagement<T>(input: {
+  actorId: string;
+  workspaceId: string;
+  operationId?: string;
+  request: unknown;
+  mutationType: string;
+  work: (tx: Tx) => Promise<T>;
+}) {
+  const requestHash = input.operationId ? mutationRequestHash(input.request) : null;
+  try {
+    return await serializableFinancialTransaction(async (tx) => {
+      if (input.operationId && requestHash) {
+        const previous = await tx.cloudMutationReceipt.findUnique({
+          where: { workspaceId_operationId: { workspaceId: input.workspaceId, operationId: input.operationId } },
+        });
+        if (previous) {
+          if (previous.requestHash !== requestHash) throw new CardManagementError(409, 'OPERATION_ID_REUSED');
+          return replayResponse<T>(previous.response);
+        }
+      }
+
+      const result = await input.work(tx);
+      if (input.operationId && requestHash) {
+        const state = await tx.appState.findUnique({ where: { workspaceId: input.workspaceId }, select: { revision: true } });
+        await tx.cloudMutationReceipt.create({
+          data: receiptCreateData({
+            workspaceId: input.workspaceId,
+            operationId: input.operationId,
+            requestHash,
+            mutationType: input.mutationType,
+            revision: state?.revision || 0,
+            response: result,
+          }),
+        });
+      }
+      return result;
+    });
+  } catch (error) {
+    if (input.operationId && requestHash && isUniqueConflict(error)) {
+      const previous = await prisma.cloudMutationReceipt.findUnique({
+        where: { workspaceId_operationId: { workspaceId: input.workspaceId, operationId: input.operationId } },
+      });
+      if (previous) {
+        if (previous.requestHash !== requestHash) throw new CardManagementError(409, 'OPERATION_ID_REUSED');
+        return replayResponse<T>(previous.response);
+      }
+    }
+    throw error;
+  }
 }
 
 function key(value: unknown) {
@@ -121,24 +200,32 @@ export async function cardManagementRoutes(app: FastifyInstance) {
   });
 
   app.post('/', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
-    const parsed = cardSchema.safeParse(request.body);
+    const parsed = cardCreateSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const context = await resolveWorkspaceContext(request.user.sub);
     const ownerId = context.workspace.ownerId;
+    const { operationId, ...cardData } = parsed.data;
 
     try {
-      const result = await serializableFinancialTransaction(async (tx) => {
-        await assertUniqueCardName(tx, ownerId, parsed.data.name);
-        const card = await tx.creditCard.create({ data: { userId: ownerId, ...parsed.data } });
-        await writeAudit(tx, {
-          actorId: request.user.sub,
-          entityId: card.id,
-          action: 'CARD_CREATED',
-          before: null,
-          after: card,
-          workspaceId: context.workspaceId,
-        });
-        return card;
+      const result = await runProtectedCardManagement({
+        actorId: request.user.sub,
+        workspaceId: context.workspaceId,
+        operationId,
+        request: { action: 'create', card: cardData },
+        mutationType: 'CARD_MANAGEMENT_CREATE',
+        work: async (tx) => {
+          await assertUniqueCardName(tx, ownerId, cardData.name);
+          const card = await tx.creditCard.create({ data: { userId: ownerId, ...cardData } });
+          await writeAudit(tx, {
+            actorId: request.user.sub,
+            entityId: card.id,
+            action: 'CARD_CREATED',
+            before: null,
+            after: card,
+            workspaceId: context.workspaceId,
+          });
+          return card;
+        },
       });
       return reply.code(201).send(result);
     } catch (error) {
@@ -149,28 +236,37 @@ export async function cardManagementRoutes(app: FastifyInstance) {
 
   app.patch('/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const params = z.object({ id: z.string().min(1) }).safeParse(request.params);
-    const body = cardSchema.partial().safeParse(request.body);
+    const body = cardUpdateSchema.safeParse(request.body);
     if (!params.success || !body.success) {
       return validationError(reply, { params: params.success ? null : params.error.flatten(), body: body.success ? null : body.error.flatten() });
     }
     const context = await resolveWorkspaceContext(request.user.sub);
     const ownerId = context.workspace.ownerId;
+    const { operationId, expectedUpdatedAt, ...changes } = body.data;
 
     try {
-      const result = await serializableFinancialTransaction(async (tx) => {
-        const before = await tx.creditCard.findFirst({ where: { id: params.data.id, userId: ownerId } });
-        if (!before) throw new CardManagementError(404, 'CARD_NOT_FOUND');
-        if (body.data.name) await assertUniqueCardName(tx, ownerId, body.data.name, before.id);
-        const after = await tx.creditCard.update({ where: { id: before.id }, data: body.data });
-        await writeAudit(tx, {
-          actorId: request.user.sub,
-          entityId: before.id,
-          action: 'CARD_UPDATED',
-          before,
-          after,
-          workspaceId: context.workspaceId,
-        });
-        return after;
+      const result = await runProtectedCardManagement({
+        actorId: request.user.sub,
+        workspaceId: context.workspaceId,
+        operationId,
+        request: { action: 'update', id: params.data.id, expectedUpdatedAt, changes },
+        mutationType: 'CARD_MANAGEMENT_UPDATE',
+        work: async (tx) => {
+          const before = await tx.creditCard.findFirst({ where: { id: params.data.id, userId: ownerId } });
+          if (!before) throw new CardManagementError(404, 'CARD_NOT_FOUND');
+          assertFreshCard(before.updatedAt, expectedUpdatedAt);
+          if (changes.name) await assertUniqueCardName(tx, ownerId, changes.name, before.id);
+          const after = await tx.creditCard.update({ where: { id: before.id }, data: changes });
+          await writeAudit(tx, {
+            actorId: request.user.sub,
+            entityId: before.id,
+            action: 'CARD_UPDATED',
+            before,
+            after,
+            workspaceId: context.workspaceId,
+          });
+          return after;
+        },
       });
       return reply.send(result);
     } catch (error) {
@@ -180,26 +276,38 @@ export async function cardManagementRoutes(app: FastifyInstance) {
   });
 
   app.delete('/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
-    const parsed = z.object({ id: z.string().min(1) }).safeParse(request.params);
-    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const params = z.object({ id: z.string().min(1) }).safeParse(request.params);
+    const body = cardMutationMetaSchema.safeParse(request.body || {});
+    if (!params.success || !body.success) {
+      return validationError(reply, { params: params.success ? null : params.error.flatten(), body: body.success ? null : body.error.flatten() });
+    }
     const context = await resolveWorkspaceContext(request.user.sub);
     const ownerId = context.workspace.ownerId;
+    const { operationId, expectedUpdatedAt } = body.data;
 
     try {
-      const result = await serializableFinancialTransaction(async (tx) => {
-        const before = await tx.creditCard.findFirst({ where: { id: parsed.data.id, userId: ownerId } });
-        if (!before) throw new CardManagementError(404, 'CARD_NOT_FOUND');
-        if (!before.isActive) return { ...before, idempotentReplay: true };
-        const after = await tx.creditCard.update({ where: { id: before.id }, data: { isActive: false } });
-        await writeAudit(tx, {
-          actorId: request.user.sub,
-          entityId: before.id,
-          action: 'CARD_DEACTIVATED',
-          before,
-          after,
-          workspaceId: context.workspaceId,
-        });
-        return after;
+      const result = await runProtectedCardManagement({
+        actorId: request.user.sub,
+        workspaceId: context.workspaceId,
+        operationId,
+        request: { action: 'deactivate', id: params.data.id, expectedUpdatedAt },
+        mutationType: 'CARD_MANAGEMENT_DEACTIVATE',
+        work: async (tx) => {
+          const before = await tx.creditCard.findFirst({ where: { id: params.data.id, userId: ownerId } });
+          if (!before) throw new CardManagementError(404, 'CARD_NOT_FOUND');
+          assertFreshCard(before.updatedAt, expectedUpdatedAt);
+          if (!before.isActive) return { ...before, idempotentReplay: true };
+          const after = await tx.creditCard.update({ where: { id: before.id }, data: { isActive: false } });
+          await writeAudit(tx, {
+            actorId: request.user.sub,
+            entityId: before.id,
+            action: 'CARD_DEACTIVATED',
+            before,
+            after,
+            workspaceId: context.workspaceId,
+          });
+          return after;
+        },
       });
       return reply.send(result);
     } catch (error) {
@@ -209,47 +317,57 @@ export async function cardManagementRoutes(app: FastifyInstance) {
   });
 
   app.post('/:id/reactivate', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
-    const parsed = z.object({ id: z.string().min(1) }).safeParse(request.params);
-    if (!parsed.success) return validationError(reply, parsed.error.flatten());
-
+    const params = z.object({ id: z.string().min(1) }).safeParse(request.params);
+    const body = cardMutationMetaSchema.safeParse(request.body || {});
+    if (!params.success || !body.success) {
+      return validationError(reply, { params: params.success ? null : params.error.flatten(), body: body.success ? null : body.error.flatten() });
+    }
     const context = await resolveWorkspaceContext(request.user.sub);
     const ownerId = context.workspace.ownerId;
+    const { operationId, expectedUpdatedAt } = body.data;
 
     try {
-      const result = await serializableFinancialTransaction(async (tx) => {
-        const card = await tx.creditCard.findFirst({ where: { id: parsed.data.id, userId: ownerId } });
-        if (!card) throw new CardManagementError(404, 'CARD_NOT_FOUND');
-        if (card.isActive) return { card, reactivated: false, idempotentReplay: true };
+      const result = await runProtectedCardManagement({
+        actorId: request.user.sub,
+        workspaceId: context.workspaceId,
+        operationId,
+        request: { action: 'reactivate', id: params.data.id, expectedUpdatedAt },
+        mutationType: 'CARD_MANAGEMENT_REACTIVATE',
+        work: async (tx) => {
+          const card = await tx.creditCard.findFirst({ where: { id: params.data.id, userId: ownerId } });
+          if (!card) throw new CardManagementError(404, 'CARD_NOT_FOUND');
+          assertFreshCard(card.updatedAt, expectedUpdatedAt);
+          if (card.isActive) return { card, reactivated: false, idempotentReplay: true };
 
-        const activeCards = await tx.creditCard.findMany({
-          where: { userId: ownerId, isActive: true },
-          select: { id: true, name: true },
-        });
-        const conflict = activeCards.find((candidate) => candidate.id !== card.id && key(candidate.name) === key(card.name));
-        if (conflict) {
-          throw new CardManagementError(409, 'CARD_NAME_ALREADY_ACTIVE', {
-            conflictingCardId: conflict.id,
-            conflictingCardName: conflict.name,
+          const activeCards = await tx.creditCard.findMany({
+            where: { userId: ownerId, isActive: true },
+            select: { id: true, name: true },
           });
-        }
+          const conflict = activeCards.find((candidate) => candidate.id !== card.id && key(candidate.name) === key(card.name));
+          if (conflict) {
+            throw new CardManagementError(409, 'CARD_NAME_ALREADY_ACTIVE', {
+              conflictingCardId: conflict.id,
+              conflictingCardName: conflict.name,
+            });
+          }
 
-        const updated = await tx.creditCard.update({ where: { id: card.id }, data: { isActive: true } });
-        await writeAudit(tx, {
-          actorId: request.user.sub,
-          entityId: card.id,
-          action: 'CARD_REACTIVATED',
-          before: card,
-          after: updated,
-          workspaceId: context.workspaceId,
-        });
-
-        return { card: updated, reactivated: true, idempotentReplay: false };
+          const updated = await tx.creditCard.update({ where: { id: card.id }, data: { isActive: true } });
+          await writeAudit(tx, {
+            actorId: request.user.sub,
+            entityId: card.id,
+            action: 'CARD_REACTIVATED',
+            before: card,
+            after: updated,
+            workspaceId: context.workspaceId,
+          });
+          return { card: updated, reactivated: true, idempotentReplay: false };
+        },
       });
-
       return reply.send(result);
     } catch (error) {
       if (error instanceof CardManagementError) return reply.code(error.statusCode).send({ error: error.code, details: error.details });
       throw error;
     }
   });
+
 }
