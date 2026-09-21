@@ -5,6 +5,7 @@ export type MegConfirmOptions = {
   cancelLabel?: string;
   danger?: boolean;
   kicker?: string;
+  singleAction?: boolean;
 };
 
 let activeLayer: HTMLElement | null = null;
@@ -46,7 +47,7 @@ export function megConfirm(options: MegConfirmOptions): Promise<boolean> {
       </div>
       <button class="px-meg-confirm-close" type="button" aria-label="${escapeHtml(options.cancelLabel || 'Cancelar')}">×</button>
       <div class="px-meg-confirm-actions">
-        <button class="px-meg-confirm-secondary" type="button" data-meg-confirm-cancel>${escapeHtml(options.cancelLabel || 'Cancelar')}</button>
+${options.singleAction ? '' : `<button class="px-meg-confirm-secondary" type="button" data-meg-confirm-cancel>${escapeHtml(options.cancelLabel || 'Cancelar')}</button>`}
         <button class="${options.danger ? 'px-meg-confirm-danger' : 'px-primary-action'}" type="button" data-meg-confirm-ok>${escapeHtml(options.confirmLabel || 'Confirmar')}</button>
       </div>
     </section>
@@ -74,4 +75,18 @@ export function megConfirm(options: MegConfirmOptions): Promise<boolean> {
 
   window.requestAnimationFrame(() => layer.querySelector<HTMLButtonElement>('[data-meg-confirm-ok]')?.focus());
   return new Promise<boolean>((resolve) => { activeResolve = resolve; });
+}
+
+
+export type MegAlertOptions = Omit<MegConfirmOptions, 'confirmLabel' | 'cancelLabel' | 'singleAction'> & {
+  buttonLabel?: string;
+};
+
+export async function megAlert(options: MegAlertOptions): Promise<void> {
+  await megConfirm({
+    ...options,
+    confirmLabel: options.buttonLabel || 'Entendi',
+    cancelLabel: 'Fechar',
+    singleAction: true,
+  });
 }
