@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { CardPurchase } from '../../app/cards-client';
 import type { FinancialEvent } from '../../app/finance-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
@@ -1377,7 +1378,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       </aside>
     </> : null}
 
-    {discardConfirmOpen ? <div className="px-meg-confirm-overlay">
+    {discardConfirmOpen && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay">
       <button className="px-meg-confirm-backdrop" type="button" aria-label="Continuar editando" onClick={() => setDiscardConfirmOpen(false)} />
       <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-discard-title" aria-describedby="px-discard-copy">
         <div className="px-meg-confirm-icon"><MovementIcon name="warning" size={22} /></div>
@@ -1392,9 +1393,9 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           <button className="px-meg-confirm-danger" type="button" onClick={discardLaunchChanges}>Descartar alterações</button>
         </div>
       </section>
-    </div> : null}
+    </div>, document.body) : null}
 
-    {settlementConfirmOpen && editingEvent ? <div className="px-meg-confirm-overlay px-settlement-confirm">
+    {settlementConfirmOpen && editingEvent && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay px-settlement-confirm">
       <button className="px-meg-confirm-backdrop" type="button" aria-label="Não baixar a pendência" onClick={() => setSettlementConfirmOpen(false)} />
       <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-settlement-title" aria-describedby="px-settlement-copy">
         <div className="px-meg-confirm-icon"><MovementIcon name="warning" size={22} /></div>
@@ -1409,9 +1410,9 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           <button className="px-meg-confirm-danger" type="button" disabled={savingEdit} aria-busy={savingEdit} onClick={() => { void saveEdit(); }}>{savingEdit ? 'Baixando…' : 'Sim, baixar'}</button>
         </div>
       </section>
-    </div> : null}
+    </div>, document.body) : null}
 
-    {deleteConfirmOpen && (deleteTargetEvent || editingEvent) ? <div className="px-meg-confirm-overlay px-delete-event-confirm">
+    {deleteConfirmOpen && (deleteTargetEvent || editingEvent) && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay px-delete-event-confirm">
       <button className="px-meg-confirm-backdrop" type="button" aria-label="Cancelar exclusão" onClick={() => { setDeleteConfirmOpen(false); setDeleteTargetEvent(null); }} />
       <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-delete-event-title" aria-describedby="px-delete-event-copy">
         <div className="px-meg-confirm-icon"><MovementIcon name="warning" size={22} /></div>
@@ -1427,7 +1428,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           <button className="px-meg-confirm-danger" type="button" disabled={deletingEvent} aria-busy={deletingEvent} onClick={() => { void deleteSelectedEvent(); }}>{deletingEvent ? 'Excluindo e sincronizando…' : 'Sim, excluir'}</button>
         </div>
       </section>
-    </div> : null}
+    </div>, document.body) : null}
 
     {detailEvent ? <aside className="px-detail-drawer open" aria-label="Detalhes do lançamento">
       <div className="px-drawer-head"><div><span className="px-kicker">Lançamento</span><h2>Detalhes</h2></div><button className="px-icon-btn" type="button" onClick={() => setDetailEvent(null)}>×</button></div>
