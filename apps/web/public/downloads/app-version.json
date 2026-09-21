@@ -1,9 +1,9 @@
 {
-  "versionCode": 319,
-  "versionName": "2.0.319",
+  "versionCode": 320,
+  "versionName": "2.0.320",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "a5d6be8746e235aa883232f68c1fb67d036efb064e0d9e19d410bf36ee544de9",
+  "sha256": "844db0ae2f7c8fb7898b8ed3c2282eb0f9884e222bd08cec6b817503c40b7642",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge PR #344: configurações operacionais"
+  "releaseNotes": "Merge PR #345: cadastros operacionais"
 }
