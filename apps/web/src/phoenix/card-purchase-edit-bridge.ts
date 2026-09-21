@@ -1,6 +1,7 @@
 import { readSession } from '../app/auth-client';
 import { cardsClient, type CardPurchase, type CreditCard } from '../app/cards-client';
 import { financeClient, type Category } from '../app/finance-client';
+import { megConfirm } from './meg-confirm';
 import './phoenix-card-purchase-editor.css';
 
 type ResolvedPurchase = { card: CreditCard; purchase: CardPurchase; statementMonth: string; installmentNumber: number };
@@ -232,7 +233,14 @@ async function save(detail: HTMLElement, item: ResolvedPurchase) {
 
 async function cancel(detail: HTMLElement, item: ResolvedPurchase) {
   if (paidPurchase(item.purchase)) { setStatus(detail, 'Esta compra possui parcela paga e não pode ser cancelada.', true); return; }
-  if (!window.confirm(`Cancelar “${item.purchase.description}” e remover as parcelas abertas das faturas?`)) return;
+  if (!await megConfirm({
+    kicker: 'Compra no cartão',
+    title: 'Cancelar esta compra?',
+    message: `“${item.purchase.description}” será cancelada e as parcelas abertas serão retiradas das faturas. O histórico de auditoria será preservado.`,
+    confirmLabel: 'Sim, cancelar compra',
+    cancelLabel: 'Manter compra',
+    danger: true,
+  })) return;
   if (!cancelOperationId) cancelOperationId = newOperationId('phoenix-card-cancel');
   const rows = hideRows(item);
   setStatus(detail, 'Cancelando compra e registrando a operação na auditoria…');
