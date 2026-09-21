@@ -1,9 +1,9 @@
 {
-  "versionCode": 329,
-  "versionName": "2.0.329",
+  "versionCode": 330,
+  "versionName": "2.0.330",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "63c830eac14413ca3189725996709c4698bc2fa918674aa9ddc5274306ca83ed",
+  "sha256": "f645a7ad12e9fdc2281d970cbc2e08931e2febc53a135b2741c69bdc2fe1982b",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge PR #355: dashboard móvel em três tempos"
+  "releaseNotes": "Merge PR #356: loading, Pendentes e Cartões no APK"
 }
