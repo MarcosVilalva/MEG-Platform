@@ -43,7 +43,7 @@ assert.match(catalogs, /px-meg-confirm-overlay px-catalog-active-confirm/,
   'Ativação e desativação devem usar confirmação MEG prioritária.');
 assert.match(cards, /megConfirm/,
   'Gestão de cartões deve reutilizar a confirmação MEG central.');
-assert.match(confirm, /role="alertdialog"[\s\S]*px-meg-confirm-overlay/,
+assert.match(confirm, /px-meg-confirm-overlay[\s\S]*role="alertdialog"/,
   'Confirmação compartilhada deve ser modal acessível e usar a camada crítica.');
 
 console.log('Contrato de cadastros operacionais Web/Android validado.');
