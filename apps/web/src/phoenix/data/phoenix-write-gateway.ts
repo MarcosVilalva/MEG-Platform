@@ -484,7 +484,8 @@ export async function runPhoenixSimpleEventEdit(
   input: PhoenixSimpleEventInput,
   refreshMonth: string,
   expectedUpdatedAt?: string,
-): Promise<{ event: FinancialEvent; snapshot: PhoenixReadModel }> {
+  onAccepted?: (event: FinancialEvent) => void,
+): Promise<{ event: FinancialEvent; snapshot: PhoenixReadModel | null }> {
   const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
   if (!runtimeCapabilities.bulkEventWrite) throw new PhoenixWriteError('PHOENIX_EDIT_WRITE_NOT_ENABLED');
   assertSimpleEvent(input);
@@ -511,7 +512,8 @@ export async function runPhoenixSimpleEventEdit(
   });
   const event = result.events[0];
   if (!event) throw new PhoenixWriteError('PHOENIX_EDIT_CONFIRMATION_MISSING');
-  const snapshot = await confirmedSnapshot(refreshMonth);
+  onAccepted?.(event);
+  const snapshot = await snapshotAfterAccepted(refreshMonth, 'event-edit-refresh-pending');
   pendingEditOperations.delete(requestKey);
   return { event, snapshot };
 }
@@ -521,7 +523,8 @@ export async function runPhoenixBenefitEventEdit(
   input: PhoenixBenefitEventInput,
   refreshMonth: string,
   expectedUpdatedAt?: string,
-): Promise<{ event: FinancialEvent; snapshot: PhoenixReadModel }> {
+  onAccepted?: (event: FinancialEvent) => void,
+): Promise<{ event: FinancialEvent; snapshot: PhoenixReadModel | null }> {
   const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
   if (!runtimeCapabilities.benefitWrite) throw new PhoenixWriteError('PHOENIX_BENEFIT_WRITE_NOT_ENABLED');
   assertBenefitEvent(input);
@@ -540,7 +543,8 @@ export async function runPhoenixBenefitEventEdit(
         operationId: editOperationId,
       }),
     });
-    const snapshot = await confirmedSnapshot(refreshMonth);
+    onAccepted?.(event);
+    const snapshot = await snapshotAfterAccepted(refreshMonth, 'benefit-edit-refresh-pending');
     pendingBenefitEditOperations.delete(requestKey);
     return { event, snapshot };
   } catch (error) {
@@ -552,7 +556,8 @@ export async function runPhoenixSimpleEventArchive(
   eventId: string,
   refreshMonth: string,
   expectedUpdatedAt?: string,
-): Promise<{ snapshot: PhoenixReadModel }> {
+  onAccepted?: () => void,
+): Promise<{ snapshot: PhoenixReadModel | null }> {
   const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
   if (!runtimeCapabilities.bulkEventWrite) throw new PhoenixWriteError('PHOENIX_ARCHIVE_WRITE_NOT_ENABLED');
 
@@ -566,7 +571,8 @@ export async function runPhoenixSimpleEventArchive(
     expectedUpdatedAtById: expectedUpdatedAt ? { [eventId]: expectedUpdatedAt } : undefined,
   });
 
-  const snapshot = await confirmedSnapshot(refreshMonth);
+  onAccepted?.();
+  const snapshot = await snapshotAfterAccepted(refreshMonth, 'event-archive-refresh-pending');
   pendingArchiveOperations.delete(archiveRequestKey);
   return { snapshot };
 }
