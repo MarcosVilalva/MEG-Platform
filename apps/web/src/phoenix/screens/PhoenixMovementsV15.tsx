@@ -8,6 +8,7 @@ import { PhoenixLaunchWriteControl } from '../components/PhoenixLaunchWriteContr
 import { cardDueDateForPurchase } from '../data/card-dates';
 import { projectCardInstallmentsIntoEvents } from '../data/card-movement-projection';
 import { phoenixWriteMessage, runPhoenixBenefitEventEdit, runPhoenixCardPurchaseCancel, runPhoenixCardPurchaseEdit, runPhoenixSimpleEventArchive, runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
+import { megAlert } from '../meg-confirm';
 import '../phoenix-launch.css';
 import '../phoenix-launch-dynamic.css';
 import '../phoenix-launch-editor-polish.css';
@@ -196,6 +197,16 @@ function isCrediarioMethod(name?: string | null, type?: string | null) {
 
 function isCardDomainEvent(event: FinancialEvent) {
   return Boolean(projectedCardMeta(event));
+}
+
+function showMovementWriteError(message: string) {
+  void megAlert({
+    kicker: 'Erro de gravação',
+    title: 'A alteração não foi concluída',
+    message,
+    danger: true,
+    buttonLabel: 'Entendi',
+  });
 }
 
 function eventStatus(value: string) {
@@ -963,9 +974,11 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'CARD_PURCHASE_UPDATE_FAILED';
-        setEditMessage(message.includes('CARD_PURCHASE_ALREADY_PAID')
+        const displayMessage = message.includes('CARD_PURCHASE_ALREADY_PAID')
           ? 'Esta compra possui parcela já paga e foi protegida contra alteração.'
-          : `${message}. Os dados foram mantidos para nova tentativa.`);
+          : `${message}. Os dados foram mantidos para nova tentativa.`;
+        setEditMessage(displayMessage);
+        showMovementWriteError(displayMessage);
       } finally {
         setSavingEdit(false);
       }
@@ -1015,7 +1028,9 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       }
     } catch (error) {
       const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
-      setEditMessage(phoenixWriteMessage(code));
+      const displayMessage = phoenixWriteMessage(code);
+      setEditMessage(displayMessage);
+      showMovementWriteError(displayMessage);
     } finally {
       setSavingEdit(false);
     }
@@ -1099,11 +1114,13 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
+      const displayMessage = message.includes('CARD_PURCHASE_ALREADY_PAID')
+        ? 'Esta compra possui parcela já paga e foi protegida contra exclusão.'
+        : phoenixWriteMessage(message);
       setDeleteConfirmOpen(false);
       setDeleteTargetEvent(null);
-      setEditMessage(message.includes('CARD_PURCHASE_ALREADY_PAID')
-        ? 'Esta compra possui parcela já paga e foi protegida contra exclusão.'
-        : phoenixWriteMessage(message));
+      setEditMessage(displayMessage);
+      showMovementWriteError(displayMessage);
     } finally {
       setDeletingEvent(false);
     }
