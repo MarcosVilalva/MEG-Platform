@@ -333,6 +333,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const [gridFilters, setGridFilters] = useState<GridFilterMap>(initialGridFilters);
   const [gridSort, setGridSort] = useState<GridSort>(null);
   const [launchOpen, setLaunchOpen] = useState(false);
+  const [launchWriteBusy, setLaunchWriteBusy] = useState(false);
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const [settlementConfirmOpen, setSettlementConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -747,6 +748,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setDeleteConfirmOpen(false);
     setDeleteTargetEvent(null);
     setDeletingEvent(false);
+    setLaunchWriteBusy(false);
   }
 
   function openLaunch(event?: FinancialEvent) {
@@ -791,6 +793,10 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   }
 
   function requestCloseLaunch() {
+    if (launchWriteBusy || savingEdit || deletingEvent) {
+      setEditMessage('A operação já foi enviada e ainda aguarda a confirmação do servidor. O MEG fechará esta tela automaticamente assim que houver aceite.');
+      return;
+    }
     if (dirty) {
       setDiscardConfirmOpen(true);
       return;
@@ -857,7 +863,13 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     const committedEventId = editingEventId;
     setSavingEdit(true);
     setSettlementConfirmOpen(false);
-    setEditMessage('Salvando alteração e aguardando a releitura sincronizada…');
+    setEditMessage('Salvando alteração. Assim que o servidor aceitar, esta tela será liberada e a releitura continuará em segundo plano…');
+    const accepted = () => {
+      setDirty(false);
+      setSettlementConfirmOpen(false);
+      setLaunchOpen(false);
+      resetLaunch();
+    };
     try {
       const result = editingBenefit
         ? await runPhoenixBenefitEventEdit(
@@ -865,15 +877,21 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
             { ...simpleWriteInput, status: 'paid', amount: Math.abs(simpleWriteInput.amount) },
             data.month,
             editingEventUpdatedAt || undefined,
+            accepted,
           )
-        : await runPhoenixSimpleEventEdit(committedEventId, simpleWriteInput, data.month, editingEventUpdatedAt || undefined);
+        : await runPhoenixSimpleEventEdit(
+            committedEventId,
+            simpleWriteInput,
+            data.month,
+            editingEventUpdatedAt || undefined,
+            accepted,
+          );
       const { snapshot } = result;
-      setData(snapshot);
-      onDataCommitted?.(snapshot);
-      markRecentlyUpdated(committedEventId);
-      setDirty(false);
-      setLaunchOpen(false);
-      resetLaunch();
+      if (snapshot) {
+        setData(snapshot);
+        onDataCommitted?.(snapshot);
+        markRecentlyUpdated(committedEventId);
+      }
     } catch (error) {
       const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
       setEditMessage(phoenixWriteMessage(code));
@@ -905,15 +923,27 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setDeletingEvent(true);
     setEditMessage('');
     try {
-      const { snapshot } = await runPhoenixSimpleEventArchive(target.id, data.month, target.updatedAt || undefined);
-      setData(snapshot);
-      onDataCommitted?.(snapshot);
-      setDeleteConfirmOpen(false);
-      setDeleteTargetEvent(null);
-      setDetailEvent(null);
-      setDirty(false);
-      setLaunchOpen(false);
-      resetLaunch();
+      const { snapshot } = await runPhoenixSimpleEventArchive(
+        target.id,
+        data.month,
+        target.updatedAt || undefined,
+        () => {
+          setData((current) => ({
+            ...current,
+            events: { ...current.events, items: current.events.items.filter((event) => event.id !== target.id) },
+          }));
+          setDeleteConfirmOpen(false);
+          setDeleteTargetEvent(null);
+          setDetailEvent(null);
+          setDirty(false);
+          setLaunchOpen(false);
+          resetLaunch();
+        },
+      );
+      if (snapshot) {
+        setData(snapshot);
+        onDataCommitted?.(snapshot);
+      }
     } catch (error) {
       const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
       setDeleteConfirmOpen(false);
@@ -1177,6 +1207,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
               refreshMonth={data.month}
               duplicateMessage={duplicateMessage}
               onReview={reviewLaunch}
+              onBusyChange={setLaunchWriteBusy}
               onAccepted={() => {
                 setDirty(false);
                 setLaunchOpen(false);
