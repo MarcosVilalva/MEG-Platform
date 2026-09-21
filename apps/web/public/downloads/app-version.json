@@ -1,9 +1,9 @@
 {
-  "versionCode": 325,
-  "versionName": "2.0.325",
+  "versionCode": 326,
+  "versionName": "2.0.326",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "50f98831bdbe3fbf8f72717a627fe0b1c3ab7223e090dc1fd207296351112a0a",
+  "sha256": "31b2a4e4d84472c72afae1b40bc3884f75765ea049c724baf41e0ab44757d201",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge PR #350: unificar cartão ao fluxo comum de lançamentos"
+  "releaseNotes": "Merge PR #351: corrigir loop ao alterar cadastros"
 }
