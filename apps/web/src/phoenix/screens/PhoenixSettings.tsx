@@ -135,6 +135,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
       setBiometricStatus({ available: false, enabled: false, reason: 'WEB_RUNTIME' });
       return () => { active = false; };
     }
+    // @ts-ignore módulo JS nativo carregado apenas no APK.
     void import('../../native-biometric-login.js')
       .then((module) => module.getBiometricLoginStatus())
       .then((status) => { if (active) setBiometricStatus(status); })
@@ -179,6 +180,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
     if (import.meta.env.VITE_MOBILE_APP !== 'true') return;
     setBiometricBusy(true);
     try {
+      // @ts-ignore módulo JS nativo carregado apenas no APK.
       const biometric = await import('../../native-biometric-login.js');
       setBiometricStatus(await biometric.getBiometricLoginStatus());
     } finally {
