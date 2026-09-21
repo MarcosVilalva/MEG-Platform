@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 const preview = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
 const app = readFileSync(new URL('./PhoenixApp.tsx', import.meta.url), 'utf8');
 const settings = readFileSync(new URL('./screens/PhoenixSettings.tsx', import.meta.url), 'utf8');
+const auth = readFileSync(new URL('../app/auth-client.ts', import.meta.url), 'utf8');
 
 assert.match(preview, /offerAndroidBiometricEnrollment/,
   'APK deve oferecer habilitação biométrica depois do primeiro login válido.');
@@ -43,5 +44,12 @@ assert.match(settings, /\/notifications\/status[\s\S]*\/notifications\/deliverie
   'Configurações deve consultar o estado real dos canais e entregas.');
 assert.match(settings, /downloads\/app-version\.json/,
   'Configurações deve exibir a versão publicada do aplicativo sem valor fixo.');
+
+assert.match(auth, /AUTH_REFRESH_TIMEOUT_MS\s*=\s*15_000/,
+  'Renovação da sessão deve possuir timeout curto para não prender o boot.');
+assert.match(auth, /status === 401 \|\| status === 403[\s\S]*clearSession\(\)/,
+  'Somente rejeição real da credencial deve limpar a sessão durante o refresh.');
+assert.match(auth, /cacheKey = method === 'GET'[\s\S]*!init\?\.signal/,
+  'Leituras com timeout próprio não podem herdar um GET anterior preso em voo.');
 
 console.log('Contrato de biometria persistente e fechamento seguro do APK validado.');
