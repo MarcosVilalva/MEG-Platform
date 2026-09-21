@@ -41,3 +41,70 @@
   position:relative;
   z-index:calc(var(--meg-z-critical) + 1)!important;
 }
+
+
+/* Contrato responsivo único para confirmações/alertas críticos da Phoenix. */
+.px-meg-confirm-overlay,.px-global-confirm-overlay{
+  position:fixed!important;inset:0!important;
+  display:grid!important;place-items:center!important;
+  box-sizing:border-box!important;
+  padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))!important;
+  overflow:hidden!important;
+}
+.px-meg-confirm-backdrop{
+  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+  border:0!important;background:rgba(1,15,16,.76)!important;
+  backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important;
+}
+.px-meg-confirm-dialog{
+  width:min(620px,calc(100vw - 32px))!important;
+  max-width:100%!important;
+  max-height:calc(100dvh - max(32px,env(safe-area-inset-top) + env(safe-area-inset-bottom)))!important;
+  box-sizing:border-box!important;
+  overflow:auto!important;overscroll-behavior:contain!important;
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr) auto!important;
+  grid-template-areas:"icon copy close" "actions actions actions"!important;
+  gap:18px!important;
+  padding:24px!important;
+  border-radius:24px!important;
+}
+.px-meg-confirm-icon{grid-area:icon!important;align-self:start!important}
+.px-meg-confirm-copy{grid-area:copy!important;min-width:0!important;overflow-wrap:anywhere!important}
+.px-meg-confirm-copy h3,.px-meg-confirm-copy p{max-width:100%!important;overflow-wrap:anywhere!important}
+.px-meg-confirm-close{grid-area:close!important;align-self:start!important}
+.px-meg-confirm-actions{
+  grid-area:actions!important;min-width:0!important;
+  display:grid!important;grid-template-columns:1fr!important;gap:10px!important;
+}
+.px-meg-confirm-actions>button{width:100%!important;max-width:100%!important;min-width:0!important}
+
+@media(max-width:620px){
+  .px-meg-confirm-overlay,.px-global-confirm-overlay{
+    place-items:center!important;
+    padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))!important;
+  }
+  .px-meg-confirm-dialog{
+    width:100%!important;
+    max-height:calc(100dvh - max(24px,env(safe-area-inset-top) + env(safe-area-inset-bottom)))!important;
+    grid-template-columns:54px minmax(0,1fr) 42px!important;
+    gap:12px!important;padding:18px!important;border-radius:22px!important;
+  }
+  .px-meg-confirm-icon{width:54px!important;height:54px!important;min-width:54px!important}
+  .px-meg-confirm-copy h3{font-size:clamp(24px,8vw,36px)!important;line-height:1.06!important}
+  .px-meg-confirm-copy p{font-size:clamp(14px,4vw,17px)!important;line-height:1.55!important}
+  .px-meg-confirm-close{width:42px!important;height:42px!important;min-width:42px!important}
+}
+@media(max-width:390px){
+  .px-meg-confirm-dialog{
+    grid-template-columns:44px minmax(0,1fr) 38px!important;
+    gap:10px!important;padding:15px!important;border-radius:19px!important;
+  }
+  .px-meg-confirm-icon{width:44px!important;height:44px!important;min-width:44px!important}
+  .px-meg-confirm-close{width:38px!important;height:38px!important;min-width:38px!important}
+}
+@media(max-height:560px){
+  .px-meg-confirm-overlay,.px-global-confirm-overlay{place-items:center!important;padding:8px!important}
+  .px-meg-confirm-dialog{max-height:calc(100dvh - 16px)!important;padding:14px!important;gap:10px!important}
+  .px-meg-confirm-copy p{margin-block:6px!important}
+}
