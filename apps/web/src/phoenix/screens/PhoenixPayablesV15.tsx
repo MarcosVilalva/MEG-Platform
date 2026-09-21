@@ -103,6 +103,20 @@ function addDaysIso(value: string, days: number) {
   return dateValue.toISOString().slice(0, 10);
 }
 
+function weekRangeIso(value: string) {
+  const dateValue = new Date(`${value}T12:00:00Z`);
+  const mondayOffset = (dateValue.getUTCDay() + 6) % 7;
+  const from = addDaysIso(value, -mondayOffset);
+  return { from, to: addDaysIso(from, 6) };
+}
+
+function monthRangeIso(value: string) {
+  const month = value.slice(0, 7);
+  const [year, monthNumber] = month.split('-').map(Number);
+  const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+  return { from: `${month}-01`, to: `${month}-${String(lastDay).padStart(2, '0')}` };
+}
+
 
 type PendingGlyphKind = 'calendar' | 'coins' | 'warning' | 'clock';
 
@@ -407,7 +421,8 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const [priority, setPriority] = useState<Priority>('all');
   const [groupMode, setGroupMode] = useState<GroupMode>(savedGroupMode);
   const [search, setSearch] = useState('');
-  const [periodMonth, setPeriodMonth] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
   const [detailItem, setDetailItem] = useState<PendingItem | null>(null);
@@ -497,9 +512,6 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       .sort((left, right) => left.dueDate.localeCompare(right.dueDate) || left.description.localeCompare(right.description, 'pt-BR'));
   }, [model, locallySettled]);
 
-  const availablePeriodMonths = useMemo(() => [...new Set(open
-    .map((item) => item.dueDate.slice(0, 7))
-    .filter((month) => /^\\d{4}-\\d{2}$/.test(month)))].sort(), [open]);
   const searchNeedle = useMemo(() => normalize(search), [search]);
 
   const actionable = open.filter((item) => item.openAmount > 0);
@@ -524,11 +536,12 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       || (priority === 'overdue' && actionableItem && item.dueDate < today)
       || (priority === 'today' && actionableItem && item.dueDate === today)
       || (priority === 'upcoming' && actionableItem && item.dueDate > today);
-    const matchesPeriod = !periodMonth || item.dueDate.slice(0, 7) === periodMonth;
+    const matchesDateFrom = !dateFrom || item.dueDate >= dateFrom;
+    const matchesDateTo = !dateTo || item.dueDate <= dateTo;
     const childText = item.children?.map((child) => child.description).join(' ') || '';
     const haystack = normalize(`${item.description} ${item.categoryName} ${item.group} ${item.paymentMethod} ${item.modality} ${item.accountName} ${childText}`);
-    return matchesPriority && matchesPeriod && haystack.includes(searchNeedle);
-  }), [open, priority, periodMonth, searchNeedle, today]);
+    return matchesPriority && matchesDateFrom && matchesDateTo && haystack.includes(searchNeedle);
+  }), [open, priority, dateFrom, dateTo, searchNeedle, today]);
 
   const grouped = useMemo(() => buildGroups(visible, groupMode), [visible, groupMode]);
   const visibleObligationCount = pendingObligationCount(visible);
@@ -548,6 +561,32 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const reviewMethods = batchMode || selectedItem?.source === 'card' ? statementMethods : activeMethods;
   const canWrite = PHOENIX_PENDING_WRITE_ENABLED && ['ADMIN', 'MANAGER', 'OPERATOR'].includes(model.user.role);
   const saving = writeState.status === 'saving';
+
+  function applyDatePreset(preset: 'today' | 'week' | 'month' | 'clear') {
+    if (preset === 'clear') {
+      setDateFrom('');
+      setDateTo('');
+      return;
+    }
+    if (preset === 'today') {
+      setDateFrom(today);
+      setDateTo(today);
+      return;
+    }
+    const range = preset === 'week' ? weekRangeIso(today) : monthRangeIso(today);
+    setDateFrom(range.from);
+    setDateTo(range.to);
+  }
+
+  function updateDateFrom(value: string) {
+    setDateFrom(value);
+    if (value && dateTo && value > dateTo) setDateTo(value);
+  }
+
+  function updateDateTo(value: string) {
+    setDateTo(value);
+    if (value && dateFrom && value < dateFrom) setDateFrom(value);
+  }
 
   function resetPrepared() {
     setPrepared(null);
@@ -847,7 +886,18 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       <div className="px-priority-tabs px-pending-command-tabs">{([['all','Todos'],['overdue','Vencidos'],['today','Hoje'],['upcoming','Próximos']] as const).map(([id,label]) => <button key={id} type="button" className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{label}</button>)}</div>
       <span className="px-pending-command-separator" aria-hidden="true" />
       <label className="px-pending-group-select px-pending-command-group"><span>Agrupar por</span><select value={groupMode} onChange={(event) => setGroupMode(event.target.value as GroupMode)}><option value="date">Data</option><option value="category">Categoria</option><option value="account">Conta</option><option value="payment-method">Forma de pagamento</option><option value="none">Sem agrupamento</option></select></label>
-      <label className="px-pending-period-filter"><span>Período</span><select value={periodMonth} onChange={(event) => setPeriodMonth(event.target.value)} aria-label="Filtrar pendências por mês de vencimento"><option value="">Todos os vencimentos</option>{availablePeriodMonths.map((month) => <option value={month} key={month}>{statementLabel(month)}</option>)}</select></label>
+      <div className="px-pending-date-filter" aria-label="Filtrar pendências por intervalo de vencimento">
+        <div className="px-pending-date-range">
+          <label><span>De</span><input type="date" value={dateFrom} onChange={(event) => updateDateFrom(event.target.value)} /></label>
+          <label><span>Até</span><input type="date" value={dateTo} onChange={(event) => updateDateTo(event.target.value)} /></label>
+        </div>
+        <div className="px-pending-date-presets" aria-label="Atalhos de data">
+          <button type="button" className={dateFrom === today && dateTo === today ? 'active' : ''} onClick={() => applyDatePreset('today')}>Hoje</button>
+          <button type="button" onClick={() => applyDatePreset('week')}>Esta semana</button>
+          <button type="button" onClick={() => applyDatePreset('month')}>Este mês</button>
+          <button type="button" className="clear" disabled={!dateFrom && !dateTo} onClick={() => applyDatePreset('clear')}>Limpar</button>
+        </div>
+      </div>
       <span className="px-toolbar-note">{visibleObligationCount} de {openObligationCount} compromisso(s) exibido(s)</span>
     </div>
 
