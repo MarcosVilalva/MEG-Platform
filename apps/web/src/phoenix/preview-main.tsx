@@ -227,6 +227,15 @@ function PhoenixPreviewRoot() {
   const registerStrength = useMemo(() => passwordScore(registerPassword), [registerPassword]);
 
   useEffect(() => {
+    if (state !== 'checking') return;
+    const timer = window.setTimeout(() => {
+      setBootError('A validação da sessão demorou mais do que o esperado. Sua sessão foi preservada; tente carregar novamente.');
+      setState('prepare-error');
+    }, 18_000);
+    return () => window.clearTimeout(timer);
+  }, [state]);
+
+  useEffect(() => {
     if (state === 'signed-out') return;
     const legacyNativeOverlay = document.querySelector('#nativeBiometricLoadingOverlay');
     legacyNativeOverlay?.remove();
@@ -242,7 +251,7 @@ function PhoenixPreviewRoot() {
     let active = true;
     setBootStage('session');
     setBootError('');
-    void authenticatedRequest('/auth/me', { signal: AbortSignal.timeout(12_000) })
+    void authenticatedRequest('/auth/me', { signal: AbortSignal.timeout(12_000), cache: 'no-store' })
       .then(async () => {
         if (!active) return;
         setState('preparing');

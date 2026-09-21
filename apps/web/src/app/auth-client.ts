@@ -33,6 +33,7 @@ export type RegistrationResult = AuthSession | {
 
 const SESSION_KEY = 'meg.auth.session';
 let refreshInFlight: Promise<AuthSession | null> | null = null;
+const AUTH_REFRESH_TIMEOUT_MS = 15_000;
 const responseCache = new Map<string, { value: unknown; storedAt: number }>();
 const requestsInFlight = new Map<string, Promise<unknown>>();
 const CACHE_TTL = 5 * 60_000;
@@ -101,20 +102,25 @@ export async function refreshAuthSession(): Promise<AuthSession | null> {
   if (!current?.refreshToken) return null;
   refreshInFlight = request<AuthSession>('/auth/refresh', {
     method: 'POST',
-    body: JSON.stringify({ refreshToken: current.refreshToken })
+    body: JSON.stringify({ refreshToken: current.refreshToken }),
+    signal: AbortSignal.timeout(AUTH_REFRESH_TIMEOUT_MS)
   }).then((next) => {
     saveSession(next);
     return next;
-  }).catch(() => {
-    clearSession();
-    return null;
+  }).catch((error: unknown) => {
+    const status = Number((error as { status?: number } | null)?.status || 0);
+    if (status === 401 || status === 403) {
+      clearSession();
+      return null;
+    }
+    throw error;
   }).finally(() => { refreshInFlight = null; });
   return refreshInFlight;
 }
 
 export async function authenticatedRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const method = String(init?.method || 'GET').toUpperCase();
-  const cacheKey = method === 'GET' && init?.cache !== 'no-store' ? path : '';
+  const cacheKey = method === 'GET' && init?.cache !== 'no-store' && !init?.signal ? path : '';
   const cached = cacheKey ? responseCache.get(cacheKey) : undefined;
   if (cached && Date.now() - cached.storedAt < CACHE_TTL) return cached.value as T;
   if (cacheKey && requestsInFlight.has(cacheKey)) return requestsInFlight.get(cacheKey) as Promise<T>;

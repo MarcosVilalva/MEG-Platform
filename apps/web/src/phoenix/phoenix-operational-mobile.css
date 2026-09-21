@@ -2452,3 +2452,17 @@ body.meg-operational-mobile .px-pending-success-modal,
 body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet{
   z-index:131!important;
 }
+
+
+/* Prioridade visual global no APK: nenhum drawer pode esconder uma confirmação/alerta. */
+body.meg-operational-mobile .px-meg-confirm-overlay,
+body.meg-operational-mobile .px-pending-confirm-overlay,
+body.meg-operational-mobile .px-pending-success-overlay{
+  z-index:5200!important;
+  isolation:isolate!important;
+}
+body.meg-operational-mobile .px-meg-confirm-dialog,
+body.meg-operational-mobile .px-pending-confirm-modal,
+body.meg-operational-mobile .px-pending-success-modal{
+  z-index:5201!important;
+}

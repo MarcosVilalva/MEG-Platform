@@ -547,6 +547,30 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
   }, [month, loadState.status, periodMode]);
 
   useEffect(() => {
+    if (loadState.status !== 'ready') return;
+    let timer: number | null = null;
+    let attempts = 0;
+    const refreshAfterMutation = () => {
+      if (timer !== null) window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        timer = null;
+        if (refreshingRef.current && attempts < 4) {
+          attempts += 1;
+          refreshAfterMutation();
+          return;
+        }
+        attempts = 0;
+        void refreshData();
+      }, attempts ? 450 : 180);
+    };
+    window.addEventListener('meg:data-invalidated', refreshAfterMutation);
+    return () => {
+      if (timer !== null) window.clearTimeout(timer);
+      window.removeEventListener('meg:data-invalidated', refreshAfterMutation);
+    };
+  }, [loadState.status, month, periodMode, view]);
+
+  useEffect(() => {
     if (loadState.status !== 'ready' || periodMode !== 'month') return;
     let active = true;
 

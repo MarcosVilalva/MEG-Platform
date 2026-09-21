@@ -340,6 +340,20 @@ assert.match(writeControl, /preparedBenefitRef/,
   'Retry de benefício após falha incerta deve preservar o comando preparado e o operationId.');
 assert.match(writeControl, /preparedCardRef/,
   'Retry de cartão após falha incerta deve preservar o comando preparado e o operationId.');
+assert.match(gateway, /status:\s*'accepted'/,
+  'Compra no cartão deve distinguir aceite autoritativo da releitura posterior da tela.');
+assert.match(gateway, /onState\?\.\(accepted\)/,
+  'Writer de cartão deve avisar a interface assim que a API aceitar a compra.');
+assert.match(gateway, /PHOENIX_CARD_REFRESH_TIMEOUT/,
+  'Releitura de cartão deve possuir limite para não prender o modal indefinidamente.');
+assert.match(gateway, /reason:\s*'card-refresh-pending'/,
+  'Compra aceita deve solicitar atualização em segundo plano se a releitura imediata atrasar.');
+assert.match(writeControl, /state\.status !== 'accepted'[\s\S]*onAccepted\?\.\(\)/,
+  'Controle de lançamento deve permitir fechar o drawer após aceite real do cartão.');
+assert.match(movements, /onAccepted=\{\(\) => \{[\s\S]*setLaunchOpen\(false\)/,
+  'Drawer deve fechar após a compra ser aceita, sem aguardar a fotografia completa.');
+assert.match(appShell, /addEventListener\('meg:data-invalidated', refreshAfterMutation\)/,
+  'Shell deve reagir às mutações confirmadas e atualizar a fotografia em segundo plano.');
 assert.match(writeControl, /preparedRef/,
   'Retry após falha incerta deve preservar o comando preparado e o operationId.');
 

@@ -233,6 +233,10 @@ assert.match(gridCss, /px-grid-filter-body[\s\S]*overscroll-behavior:contain/,
   'Somente o conteúdo interno dos filtros deve rolar');
 assert.match(launchDynamicCss, /px-meg-confirm-overlay/,
   'Confirmação MEG precisa possuir overlay próprio');
+assert.match(launchDynamicCss, /px-meg-confirm-overlay[\s\S]*z-index:5200!important/,
+  'Confirmações críticas precisam ficar acima de qualquer drawer.');
+assert.match(operationalCss, /px-meg-confirm-overlay[\s\S]*z-index:5200!important/,
+  'APK não pode rebaixar a confirmação crítica para a mesma camada do drawer.');
 assert.match(launchDynamicCss, /align-self:start[\s\S]*max-height:100%/,
   'Grade deve eliminar área morta e limitar-se ao espaço disponível');
 
@@ -671,8 +675,10 @@ assert.match(previewMain, /setState\('authenticating'\)[\s\S]{0,700}loginWithSer
   'Login biométrico deve trocar para o boot antes de chamar a API.');
 assert.match(main, /if \(startup\?\.required\)[\s\S]{0,500}clearSession\(\)/,
   'Após o gate biométrico, o APK deve descartar sessão web anterior e usar as credenciais recém-confirmadas.');
-assert.match(previewMain, /authenticatedRequest\('\/auth\/me', \{ signal: AbortSignal\.timeout\(12_000\) \}\)/,
-  'Validação de sessão não pode manter o loading preso indefinidamente em 22%.');
+assert.match(previewMain, /authenticatedRequest\('\/auth\/me', \{ signal: AbortSignal\.timeout\(12_000\), cache: 'no-store' \}\)/,
+  'Validação de sessão deve ser limitada e não pode reutilizar uma leitura antiga presa em 22%.');
+assert.match(previewMain, /state !== 'checking'[\s\S]*18_000[\s\S]*setState\('prepare-error'\)/,
+  'Bootstrap deve possuir watchdog visual para sair do estágio de 22% em falha transitória.');
 assert.match(previewMain, /loginWithServiceRetry[\s\S]*AbortSignal\.timeout\(12_000\)[\s\S]*waitForService\(900\)[\s\S]*AbortSignal\.timeout\(15_000\)/,
   'Login deve ter timeout e uma única repetição controlada para acordar o serviço.');
 assert.match(previewMain, /state === 'checking' \|\| state === 'authenticating' \|\| state === 'preparing'/,
