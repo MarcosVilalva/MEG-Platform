@@ -39,6 +39,7 @@ type NormalizationPreview = {
   source: { sourceCount: number; validCount: number; invalidCount: number; fingerprint: string };
   normalized: { count: number; fingerprint: string };
 };
+type DeviceSession = { id: string; userId: string; userName: string; deviceName: string; platform: string; createdAt: string; expiresAt: string; lastLoginAt?: string | null; active: boolean; revokedAt?: string | null };
 type DashboardPreferences = {
   balance: boolean;
   projection: boolean;
@@ -108,6 +109,8 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
   const [normalizationPreviewError, setNormalizationPreviewError] = useState('');
   const [normalizationPreviewBusy, setNormalizationPreviewBusy] = useState(false);
   const [appVersion, setAppVersion] = useState<string>('Consultando…');
+  const [deviceSessions, setDeviceSessions] = useState<DeviceSession[]>([]);
+  const [deviceSessionsBusy, setDeviceSessionsBusy] = useState(false);
 
   const visibleAvatarPresets = useMemo(() => {
     if (avatarsExpanded) return phoenixAvatarPresets;
@@ -200,6 +203,14 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
     }
   }
 
+  async function refreshDeviceSessions() {
+    setDeviceSessionsBusy(true);
+    try {
+      const result = await authenticatedRequest<{ sessions: DeviceSession[] }>('/auth/sessions', { cache: 'no-store' });
+      setDeviceSessions(result.sessions || []);
+    } finally { setDeviceSessionsBusy(false); }
+  }
+
   async function inspectNormalization() {
     if (normalizationPreviewBusy) return;
     setNormalizationPreviewBusy(true);
@@ -213,6 +224,10 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
       setNormalizationPreviewBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (section === 'system' || section === 'security') void refreshDeviceSessions();
+  }, [section]);
 
   function toggleDashboardPreference(key: keyof DashboardPreferences) {
     setDashboardPreferences((current) => ({ ...current, [key]: !current[key] }));
@@ -296,7 +311,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
           <section className="px-settings-grid">
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Sincronização</span><h2>Integridade da base</h2></div></div><div className={`px-settings-sync-banner ${normalizationOk ? 'ok' : 'warn'}`}><strong>{normalizationOk ? 'Tudo reconciliado' : 'Verificação necessária'}</strong><small>{data.normalization.updatedAt ? `Atualização: ${new Date(data.normalization.updatedAt).toLocaleString('pt-BR')}` : 'Horário de atualização não informado'}</small></div><dl><div><dt>Base primária</dt><dd>{data.normalization.primary ? 'Sim' : 'Não'}</dd></div><div><dt>Revisão</dt><dd>{data.normalization.revision}</dd></div><div><dt>Eventos normalizados</dt><dd>{data.normalization.normalized?.count ?? '—'}</dd></div></dl></article>
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Backup e dados</span><h2>Proteção da base</h2></div></div><p>A restauração continua bloqueada para impedir mutações durante a homologação.</p><button type="button" disabled>Restaurar backup</button><small className="px-settings-note">Bloqueado propositalmente até o gate de escrita.</small></article>
-            <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Dispositivos</span><h2>Web e Android</h2></div></div><div className="px-settings-status-list"><span>Sessão atual · autenticada</span><span>Aplicativo · biometria persistente por dispositivo</span><span>Base financeira · compartilhada entre membros autorizados do mesmo espaço</span></div></article>
+            <article className="px-card px-settings-card px-settings-devices"><div className="px-settings-card-head"><div><span className="px-kicker">Dispositivos e sessões</span><h2>{data.user.role === 'ADMIN' ? 'Acessos ao MEG' : 'Meus aparelhos'}</h2><p>{data.user.role === 'ADMIN' ? 'Sessões registradas para os usuários deste workspace.' : 'Aparelhos usados pela sua conta.'}</p></div><button type="button" onClick={() => { void refreshDeviceSessions(); }} disabled={deviceSessionsBusy}>{deviceSessionsBusy ? 'Atualizando…' : 'Atualizar'}</button></div><div className="px-settings-device-list">{deviceSessions.length ? deviceSessions.map((session) => <div className="px-settings-device-row" key={session.id}><div><strong>{session.deviceName}</strong><small>{data.user.role === 'ADMIN' ? session.userName + ' · ' : ''}{session.platform} · {session.active ? 'Sessão ativa' : 'Sessão encerrada'}</small></div><span><b>{session.lastLoginAt ? new Date(session.lastLoginAt).toLocaleString('pt-BR') : new Date(session.createdAt).toLocaleString('pt-BR')}</b><small>Último login</small></span></div>) : <p>Nenhuma sessão registrada.</p>}</div><small className="px-settings-note">A identificação automática depende das informações fornecidas pelo aparelho. A base financeira permanece única entre Web e Android.</small></article>
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Diagnóstico</span><h2>Reparo e normalização</h2></div><button type="button" disabled={normalizationPreviewBusy} onClick={() => { void inspectNormalization(); }}>{normalizationPreviewBusy ? 'Comparando…' : 'Comparar fontes'}</button></div><dl><div><dt>Reparo</dt><dd>{repair ? stateLabel(repair.status) : 'Não informado'}</dd></div><div><dt>Itens verificados</dt><dd>{repair?.scanned ?? '—'}</dd></div><div><dt>Itens reparados</dt><dd>{repair?.repaired ?? '—'}</dd></div><div><dt>Ocorrências</dt><dd>{repair?.issues ?? '—'}</dd></div><div><dt>Normalização API</dt><dd>{healthNormalization ? stateLabel(healthNormalization.status) : 'Não informado'}</dd></div></dl>{normalizationPreview ? <div className={`px-settings-sync-banner ${normalizationPreview.reconciled ? 'ok' : 'warn'}`}><strong>{normalizationPreview.reconciled ? 'Fontes reconciliadas' : 'Divergência confirmada em modo somente leitura'}</strong><small>AppState: {normalizationPreview.source.validCount} válidos · Normalizada: {normalizationPreview.normalized.count} · Inválidos na origem: {normalizationPreview.source.invalidCount} · Revisão {normalizationPreview.revision}. Nenhum reparo foi executado por esta consulta.</small></div> : null}{normalizationPreviewError ? <div className="px-settings-sync-banner warn"><strong>Não foi possível concluir a comparação</strong><small>{normalizationPreviewError}</small></div> : null}</article>
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Sobre</span><h2>MEG Finance System</h2></div></div><p>Meu Equilíbrio Gerencial · Phoenix V15.</p><dl><div><dt>Aplicativo</dt><dd>{appVersion}</dd></div><div><dt>Perfil de dados</dt><dd>Base oficial do workspace</dd></div><div><dt>Usuários</dt><dd>{data.sourcePolicy.users}</dd></div></dl><details className="px-settings-advanced"><summary>Diagnóstico avançado</summary><dl><div><dt>Modo</dt><dd>{data.sourcePolicy.mode}</dd></div><div><dt>Eventos</dt><dd>{data.sourcePolicy.events}</dd></div><div><dt>Revisão</dt><dd>{data.normalization.revision}</dd></div></dl></details></article>
           </section>
