@@ -435,7 +435,7 @@ export function PhoenixPayables({ data, onMonthChange }: { data: PhoenixReadMode
   const [groupMode, setGroupMode] = useState<GroupMode>(savedGroupMode);
   const [search, setSearch] = useState('');
   const [periodMode, setPeriodMode] = useState<PendingPeriodMode>('month');
-  const [selectedMonth, setSelectedMonth] = useState(() => today.slice(0, 7));
+  const [selectedMonth, setSelectedMonth] = useState(() => data.month);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
@@ -913,9 +913,9 @@ export function PhoenixPayables({ data, onMonthChange }: { data: PhoenixReadMode
     </header>
 
     <nav className="px-pending-month-nav" aria-label="Período das pendências">
-      <button type="button" className="px-pending-month-step" aria-label="Mês anterior" onClick={() => { setPeriodMode('month'); setSelectedMonth((value) => shiftPendingMonth(value, -1)); }}>‹</button>
-      <button type="button" className={`px-pending-month-current ${periodMode === 'month' ? 'active' : ''}`} onClick={() => setPeriodMode('month')}><PendingGlyph kind="calendar" /><strong>{pendingMonthLabel(selectedMonth)}</strong></button>
-      <button type="button" className="px-pending-month-step" aria-label="Próximo mês" onClick={() => { setPeriodMode('month'); setSelectedMonth((value) => shiftPendingMonth(value, 1)); }}>›</button>
+      <button type="button" className="px-pending-month-step" aria-label="Mês anterior" onClick={() => selectPendingMonth(shiftPendingMonth(selectedMonth, -1))}>‹</button>
+      <button type="button" className={`px-pending-month-current ${periodMode === 'month' ? 'active' : ''}`} onClick={() => selectPendingMonth(selectedMonth)}><PendingGlyph kind="calendar" /><strong>{pendingMonthLabel(selectedMonth)}</strong></button>
+      <button type="button" className="px-pending-month-step" aria-label="Próximo mês" onClick={() => selectPendingMonth(shiftPendingMonth(selectedMonth, 1))}>›</button>
       <button type="button" className="px-pending-month-shortcut" onClick={() => { selectPendingMonth(today.slice(0, 7)); }}>Hoje</button>
       <button type="button" className={`px-pending-month-shortcut ${periodMode === 'all' ? 'active' : ''}`} onClick={() => { setPeriodMode('all'); setPriority('all'); }}>∞ <span>Tudo</span></button>
     </nav>
