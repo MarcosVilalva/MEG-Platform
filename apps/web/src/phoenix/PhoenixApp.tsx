@@ -14,6 +14,8 @@ import { syncPhoenixLocalDueNotifications } from './phoenix-native-notifications
 import { PhoenixCatalogsGrid } from './screens/PhoenixCatalogsGrid';
 import { PhoenixHomeAllTime } from './screens/PhoenixHomeAllTime';
 import { PhoenixHomeDashboard } from './screens/PhoenixHomeDashboard';
+import { PhoenixHomeHorizon } from './screens/PhoenixHomeHorizon';
+import { PhoenixHomePastMonth } from './screens/PhoenixHomePastMonth';
 import { PhoenixUsers } from './screens/PhoenixUsers';
 import { PhoenixSettings } from './screens/PhoenixSettings';
 import { PhoenixDecisionCenter } from './screens/PhoenixDecisionCenter';
@@ -28,6 +30,7 @@ import './phoenix-parity-v15.css';
 import './phoenix-period.css';
 import './phoenix-sidebar.css';
 import './phoenix-operational-mobile.css';
+import './phoenix-home-period-mobile.css';
 import './phoenix-layers.css';
 
 const loadMovementsModule = () => import('./screens/PhoenixMovementsV15');
@@ -75,6 +78,7 @@ type HomePeriodContext = {
   openingBalance: number;
   closingBalance: number;
   currentRealBalance: number;
+  projectionEvents?: PhoenixReadModel['events']['items'];
 };
 
 const mainViews: ViewDefinition[] = [
@@ -320,13 +324,33 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   onLogoutRequest: () => void;
 }) {
   if (view === 'home') {
-    const analyticalMonth = periodMode === 'month' && month !== currentMonth();
-    if (periodMode === 'all' || periodMode === 'range' || analyticalMonth) {
+    const nowMonth = currentMonth();
+    if (periodMode === 'all' || periodMode === 'range') {
       return <PhoenixHomeAllTime
         data={data}
         mode={periodMode}
-        periodLabel={periodMode === 'all' ? 'Tudo' : periodMode === 'range' ? (periodRangeLabel || 'Intervalo') : monthLabel(month)}
+        periodLabel={periodMode === 'all' ? 'Tudo' : periodRangeLabel || 'Intervalo'}
         periodContext={periodContext}
+        onNavigate={onNavigate}
+        onOpenPeriod={onOpenPeriod}
+      />;
+    }
+    if (month < nowMonth) {
+      return <PhoenixHomePastMonth
+        data={data}
+        month={month}
+        periodContext={periodContext}
+        onNavigate={onNavigate}
+        onOpenPeriod={onOpenPeriod}
+      />;
+    }
+    if (month > nowMonth) {
+      return <PhoenixHomeHorizon
+        current={data}
+        events={periodContext?.projectionEvents || data.events.items}
+        targetMonth={month}
+        today={todayIso()}
+        currentRealBalance={periodContext?.currentRealBalance}
         onNavigate={onNavigate}
         onOpenPeriod={onOpenPeriod}
       />;
@@ -857,7 +881,8 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
           startDate,
           endDate,
           currentRealBalance,
-          ...bounds
+          ...bounds,
+          projectionEvents: targetMonth > currentMonth() ? allEvents.items : undefined
         });
       } else {
         setHomePeriodContext(null);
@@ -1055,7 +1080,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
                   <div><strong>Histórico completo</strong><p>Consolida a trajetória financeira inteira. A mudança só será aplicada quando você confirmar no rodapé.</p></div>
                 </section> : null}
 
-                {periodDraftMode === 'month' && periodDraftMonth > currentMonth() ? <small className="px-period-scope-note">Mês futuro troca a competência exibida. Projeções permanecem concentradas em Decisões.</small> : null}
+                {periodDraftMode === 'month' && periodDraftMonth > currentMonth() ? <small className="px-period-scope-note">Mês futuro abre uma projeção operacional com saldo inicial projetado, receitas, compromissos, faturas e pendências do período.</small> : null}
                 {periodError ? <div className="px-period-error">{periodError}</div> : null}
 
                 {periodLoading ? <div className="px-period-progress" role="status" aria-live="polite">
