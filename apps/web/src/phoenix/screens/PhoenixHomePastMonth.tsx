@@ -1,5 +1,5 @@
 import type { PhoenixReadModel } from '../contracts';
-import { isPhoenixBenefitEvent } from '../home-period-summary';
+import { isPhoenixMonetaryEvent } from '../home-period-summary';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -44,7 +44,7 @@ export function PhoenixHomePastMonth({ data, month, periodContext, onNavigate, o
   const realized = data.events.items
     .filter((event) => String(event.competence || event.date.slice(0, 7)) === month)
     .filter((event) => posted(event.status))
-    .filter((event) => !isPhoenixBenefitEvent(event));
+    .filter(isPhoenixMonetaryEvent);
 
   let realizedIncome = 0;
   let realizedExpense = 0;
