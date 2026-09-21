@@ -369,6 +369,59 @@ export async function revokeRefreshSession(rawToken: string) {
   await prisma.authSession.update({ where: { id: session.id }, data: { revokedAt: new Date() } });
 }
 
+function sessionDeviceLabel(userAgent?: string | null) {
+  const ua = String(userAgent || '');
+  const android = ua.match(/Android\s+[\d.]+;\s*([^;)]+)/i)?.[1]?.trim();
+  if (android) return android.replace(/\s+Build\/.*$/i, '').trim();
+  if (/iPhone/i.test(ua)) return 'iPhone';
+  if (/iPad/i.test(ua)) return 'iPad';
+  if (/Windows/i.test(ua)) return 'Computador Windows';
+  if (/Macintosh|Mac OS X/i.test(ua)) return 'Mac';
+  if (/Linux/i.test(ua)) return 'Computador Linux';
+  return /Mobile/i.test(ua) ? 'Dispositivo móvel' : 'Navegador Web';
+}
+
+export async function listAuthSessions(actorId: string) {
+  const context = await resolveWorkspaceContext(actorId);
+  const actor = await prisma.user.findUnique({ where: { id: actorId }, select: { role: true } });
+  const admin = actor?.role === UserRole.ADMIN;
+  const sessions = await prisma.authSession.findMany({
+    where: admin
+      ? { user: { workspaceMemberships: { some: { workspaceId: context.workspaceId } } } }
+      : { userId: actorId },
+    include: { user: { select: { id: true, name: true, email: true, lastLoginAt: true } } },
+    orderBy: { createdAt: 'desc' },
+    take: admin ? 100 : 20
+  });
+  const now = Date.now();
+  return {
+    sessions: sessions.map((session) => ({
+      id: session.id,
+      userId: session.userId,
+      userName: session.user.name,
+      deviceName: sessionDeviceLabel(session.userAgent),
+      platform: /Android/i.test(session.userAgent || '') ? 'Android' : /iPhone|iPad/i.test(session.userAgent || '') ? 'iOS' : 'Web',
+      createdAt: session.createdAt,
+      expiresAt: session.expiresAt,
+      lastLoginAt: session.user.lastLoginAt,
+      active: !session.revokedAt && session.expiresAt.getTime() > now,
+      revokedAt: session.revokedAt,
+      userAgent: admin ? session.userAgent : undefined
+    }))
+  };
+}
+
+export async function revokeAuthSession(actorId: string, sessionId: string) {
+  const context = await resolveWorkspaceContext(actorId);
+  const actor = await prisma.user.findUnique({ where: { id: actorId }, select: { role: true } });
+  const target = await prisma.authSession.findUnique({ where: { id: sessionId }, include: { user: { select: { id: true, workspaceMemberships: true } } } });
+  if (!target) throw new Error('SESSION_NOT_FOUND');
+  const sameWorkspace = target.user.workspaceMemberships.some((member) => member.workspaceId === context.workspaceId);
+  if (target.userId !== actorId && (actor?.role !== UserRole.ADMIN || !sameWorkspace)) throw new Error('SESSION_NOT_FOUND');
+  await prisma.authSession.update({ where: { id: sessionId }, data: { revokedAt: new Date() } });
+  return { revoked: true };
+}
+
 export async function getUserById(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },

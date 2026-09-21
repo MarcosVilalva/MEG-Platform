@@ -273,3 +273,5 @@ html[data-meg-dashboard-history="off"][data-meg-dashboard-agenda="off"] .px-bott
   .px-settings-channel-grid { grid-template-columns:1fr; }
   .px-settings-health-chips span { text-align:center; white-space:normal; }
 }
+
+.px-settings-device-list{display:grid;gap:10px;margin-top:10px}.px-settings-device-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:12px 14px;border:1px solid rgba(255,255,255,.08);border-radius:14px}.px-settings-device-row>div,.px-settings-device-row>span{display:grid;gap:3px;min-width:0}.px-settings-device-row strong,.px-settings-device-row b{overflow-wrap:anywhere}.px-settings-device-row>span{text-align:right}.px-settings-device-row small{opacity:.68}@media(max-width:620px){.px-settings-device-row{grid-template-columns:1fr}.px-settings-device-row>span{text-align:left}}

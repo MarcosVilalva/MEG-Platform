@@ -8,6 +8,8 @@ import {
   deleteUserAccess,
   getUserById,
   listUsers,
+  listAuthSessions,
+  revokeAuthSession,
   registerUser,
   requestPasswordReset,
   resetUserPassword,
@@ -134,6 +136,17 @@ export async function authRoutes(app: FastifyInstance) {
     if (!parsed.success) return reply.status(400).send({ error: 'VALIDATION_ERROR' });
     await revokeRefreshSession(parsed.data.refreshToken);
     return reply.status(204).send();
+  });
+
+  app.get('/sessions', { preHandler: app.authenticate }, async (request) => listAuthSessions(request.user.sub));
+
+  app.delete('/sessions/:id', { preHandler: app.authenticate }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    try { return await revokeAuthSession(request.user.sub, id); }
+    catch (error) {
+      if (error instanceof Error && error.message === 'SESSION_NOT_FOUND') return reply.status(404).send({ error: 'SESSION_NOT_FOUND' });
+      throw error;
+    }
   });
 
   app.get('/me', { preHandler: app.authenticate }, async (request, reply) => {
