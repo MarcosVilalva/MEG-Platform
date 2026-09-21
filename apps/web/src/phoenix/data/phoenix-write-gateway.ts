@@ -86,6 +86,7 @@ export type PhoenixWriteState =
 export type PhoenixCardPurchaseWriteState =
   | { status: 'idle' }
   | { status: 'saving'; operationId: string }
+  | { status: 'accepted'; operationId: string; purchase: CardPurchase }
   | { status: 'confirmed'; operationId: string; purchase: CardPurchase; snapshot: PhoenixReadModel }
   | { status: 'error'; operationId: string; code: string; message: string };
 
@@ -436,20 +437,23 @@ export async function submitPhoenixBenefitEvent(
   return { event, snapshot };
 }
 
-export async function submitPhoenixCardPurchase(
-  prepared: PreparedPhoenixCardPurchase,
-  refreshMonth: string,
-): Promise<{ purchase: CardPurchase; snapshot: PhoenixReadModel }> {
+async function createPhoenixCardPurchase(prepared: PreparedPhoenixCardPurchase) {
   if (!PHOENIX_WRITE_CAPABILITIES.cardPurchase) throw new PhoenixWriteError('PHOENIX_CARD_WRITE_NOT_ENABLED');
   const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
   if (!runtimeCapabilities.cardPurchaseWrite) throw new PhoenixWriteError('PHOENIX_CARD_WRITE_NOT_ENABLED');
   assertCardPurchase(prepared.payload);
 
-  const purchase = await cardsClient.createPurchase({
+  return cardsClient.createPurchase({
     ...prepared.payload,
     operationId: prepared.operationId,
   });
+}
 
+export async function submitPhoenixCardPurchase(
+  prepared: PreparedPhoenixCardPurchase,
+  refreshMonth: string,
+): Promise<{ purchase: CardPurchase; snapshot: PhoenixReadModel }> {
+  const purchase = await createPhoenixCardPurchase(prepared);
   const snapshot = await confirmedSnapshot(refreshMonth);
   return { purchase, snapshot };
 }
@@ -600,11 +604,9 @@ export async function runPhoenixCardPurchaseWrite(
   onState?: (state: PhoenixCardPurchaseWriteState) => void,
 ): Promise<PhoenixCardPurchaseWriteState> {
   onState?.({ status: 'saving', operationId: prepared.operationId });
+  let purchase: CardPurchase;
   try {
-    const { purchase, snapshot } = await submitPhoenixCardPurchase(prepared, refreshMonth);
-    const confirmed: PhoenixCardPurchaseWriteState = { status: 'confirmed', operationId: prepared.operationId, purchase, snapshot };
-    onState?.(confirmed);
-    return confirmed;
+    purchase = await createPhoenixCardPurchase(prepared);
   } catch (error) {
     const code = writeErrorCode(error);
     const failed: PhoenixCardPurchaseWriteState = {
@@ -615,5 +617,25 @@ export async function runPhoenixCardPurchaseWrite(
     };
     onState?.(failed);
     return failed;
+  }
+
+  const accepted: PhoenixCardPurchaseWriteState = { status: 'accepted', operationId: prepared.operationId, purchase };
+  onState?.(accepted);
+
+  try {
+    const snapshot = await Promise.race([
+      confirmedSnapshot(refreshMonth),
+      new Promise<never>((_, reject) => window.setTimeout(() => reject(new PhoenixWriteError('PHOENIX_CARD_REFRESH_TIMEOUT')), 12_000)),
+    ]);
+    const confirmed: PhoenixCardPurchaseWriteState = { status: 'confirmed', operationId: prepared.operationId, purchase, snapshot };
+    onState?.(confirmed);
+    return confirmed;
+  } catch {
+    // A compra já foi aceita pela API. Falha/lentidão da releitura não pode manter
+    // o formulário preso nem sugerir que o usuário deva gravar a compra novamente.
+    window.dispatchEvent(new CustomEvent('meg:data-invalidated', {
+      detail: { path: '/cards/purchases', method: 'POST', reason: 'card-refresh-pending' },
+    }));
+    return accepted;
   }
 }
