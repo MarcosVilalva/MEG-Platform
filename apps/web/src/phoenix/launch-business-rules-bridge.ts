@@ -558,7 +558,7 @@ async function submitProtectedEdit(root: HTMLElement) {
   }
   const modality = normalize(root.querySelector<HTMLSelectElement>('[data-phoenix-modality-select]')?.value || '');
   if (modality === 'CREDITO' || modality === 'CREDIARIO') {
-    writerFeedback(root, 'A edição de cartão/crediário exige o writer específico do domínio de faturas e permanece protegida nesta etapa.');
+    writerFeedback(root, 'Compras no cartão são editadas pelo formulário padrão do MEG e atualizam automaticamente fatura e parcelas.');
     return;
   }
   const payload = editPayload(root, eventId);
@@ -803,6 +803,7 @@ function onDocumentClick(event: MouseEvent) {
   }
 
   const root = target.closest<HTMLElement>('.px-launch-drawer');
+  if (root?.getAttribute('aria-label') === 'Editar lançamento') return;
   const primary = target.closest<HTMLButtonElement>('.px-review-launch');
   if (root && primary && root.dataset.phoenixEditingEventId) {
     const reviewed = [...root.querySelectorAll<HTMLElement>('.px-notice.ok')]
