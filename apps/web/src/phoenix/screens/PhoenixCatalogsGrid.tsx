@@ -197,6 +197,7 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
   const [editor, setEditor] = useState<CatalogEditor>(null);
   const [mutationBusy, setMutationBusy] = useState(false);
   const [mutationMessage, setMutationMessage] = useState('');
+  const [activeConfirm, setActiveConfirm] = useState<{ row: CatalogRow; active: boolean } | null>(null);
   const role = readSession()?.user.role;
   const canWrite = role === 'ADMIN' || role === 'MANAGER' || role === 'OPERATOR';
   const canDeactivate = role === 'ADMIN' || role === 'MANAGER';
@@ -392,15 +393,19 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
     }
   }
 
-  async function changeActive(row: CatalogRow, active: boolean) {
+  function changeActive(row: CatalogRow, active: boolean) {
     if (mutationBusy || tab === 'cards') return;
     if (!active && !canDeactivate) {
       setMutationMessage('Somente ADMIN ou MANAGER pode desativar cadastros.');
       return;
     }
     if (active && !canWrite) return;
-    const verb = active ? 'reativar' : 'desativar';
-    if (!window.confirm(`Deseja ${verb} “${row.name}”?\n\nO histórico financeiro existente será preservado.`)) return;
+    setActiveConfirm({ row, active });
+  }
+
+  async function confirmChangeActive() {
+    if (!activeConfirm || mutationBusy) return;
+    const { row, active } = activeConfirm;
     setMutationBusy(true);
     setMutationMessage(active ? 'Reativando cadastro…' : 'Desativando cadastro…');
     try {
@@ -415,6 +420,7 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
         setPayments((current) => current.map((item) => item.id === saved.id ? saved : item));
       }
       setMutationMessage(active ? 'Cadastro reativado com o histórico preservado.' : 'Cadastro desativado. Nenhum histórico foi apagado.');
+      setActiveConfirm(null);
     } catch (error) {
       setMutationMessage(mutationError(error));
     } finally {
@@ -482,6 +488,25 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
         </article>)}
       </div>
     </section>
+
+    {activeConfirm ? <div className="px-meg-confirm-overlay px-catalog-active-confirm">
+      <button className="px-meg-confirm-backdrop" type="button" aria-label="Cancelar" disabled={mutationBusy} onClick={() => setActiveConfirm(null)} />
+      <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-catalog-active-title">
+        <div className="px-meg-confirm-icon" aria-hidden="true">!</div>
+        <div className="px-meg-confirm-copy">
+          <span className="px-kicker">Cadastro operacional</span>
+          <h3 id="px-catalog-active-title">{activeConfirm.active ? 'Reativar cadastro?' : 'Desativar cadastro?'}</h3>
+          <p><strong>{activeConfirm.row.name}</strong> · O histórico financeiro existente será preservado. {activeConfirm.active ? 'O item voltará a aparecer nos novos lançamentos.' : 'O item deixará de aparecer para novos usos.'}</p>
+        </div>
+        <button className="px-meg-confirm-close" type="button" aria-label="Cancelar" disabled={mutationBusy} onClick={() => setActiveConfirm(null)}>×</button>
+        <div className="px-meg-confirm-actions">
+          <button className="px-meg-confirm-secondary" type="button" disabled={mutationBusy} onClick={() => setActiveConfirm(null)}>Cancelar</button>
+          <button className={activeConfirm.active ? 'px-primary-action' : 'px-meg-confirm-danger'} type="button" disabled={mutationBusy} aria-busy={mutationBusy} onClick={() => { void confirmChangeActive(); }}>
+            {mutationBusy ? 'Confirmando…' : activeConfirm.active ? 'Reativar' : 'Desativar'}
+          </button>
+        </div>
+      </section>
+    </div> : null}
 
     {editor ? <div className="px-catalog-editor-layer">
       <button type="button" className="px-catalog-editor-backdrop" aria-label="Fechar cadastro" onClick={() => !mutationBusy && setEditor(null)} />

@@ -34,6 +34,16 @@ assert.match(gateway, /operationId\('phoenix-benefit'\)/,
   'Movimentação do benefício deve nascer com operationId próprio para retry idempotente.');
 assert.match(gateway, /operationId\('phoenix-card-purchase'\)/,
   'Compra no cartão deve nascer com operationId próprio para retry idempotente.');
+assert.match(gateway, /status:\s*'accepted'; operationId: string; event: FinancialEvent/,
+  'Receita, despesa e benefício devem distinguir aceite do servidor da releitura visual.');
+assert.match(gateway, /snapshotAfterAccepted\(refreshMonth, 'simple-event-refresh-pending'\)/,
+  'Lançamento simples não pode manter o formulário bloqueado esperando snapshot indefinidamente.');
+assert.match(gateway, /snapshotAfterAccepted\(refreshMonth, 'benefit-event-refresh-pending'\)/,
+  'Benefício deve liberar a interface após aceite e reler o saldo em segundo plano.');
+assert.match(gateway, /onAccepted\?\.\(event\)/,
+  'Edição deve possuir callback explícito de aceite antes da releitura.');
+assert.match(gateway, /onAccepted\?\.\(\)/,
+  'Exclusão deve possuir callback explícito de aceite antes da releitura.');
 assert.match(gateway, /runtimeCapabilities\.benefitWrite/,
   'Writer do benefício deve exigir capacidade efetiva do ambiente imediatamente antes da mutação.');
 assert.match(gateway, /runtimeCapabilities\.cardPurchaseWrite/,
@@ -112,6 +122,16 @@ assert.match(transferGateway, /input\.sourceAccountId === input\.destinationAcco
   'Writer deve rejeitar transferência para a mesma conta.');
 assert.match(transferGateway, /prepared\.operationId/,
   'Retry de transferência deve preservar o operationId preparado.');
+assert.match(transferGateway, /status:\s*'accepted'; operationId: string; result: PhoenixTransferResult/,
+  'Transferência deve distinguir aceite atômico da releitura visual.');
+assert.match(transferGateway, /PHOENIX_TRANSFER_REFRESH_TIMEOUT/,
+  'Transferência não pode manter o drawer preso se a releitura posterior atrasar.');
+assert.match(writeControl, /state\.status !== 'accepted'[\s\S]*onAccepted\?\.\(\)/,
+  'Controle de lançamento deve fechar após aceite de qualquer writer especializado.');
+assert.match(writeControl, /onBusyChange\?\.\(commitState === 'saving'\)/,
+  'Drawer deve saber quando a mutação está realmente em voo para impedir descarte acidental.');
+assert.match(movements, /launchWriteBusy[\s\S]*aguarda a confirmação do servidor/,
+  'Fechamento durante uma mutação em voo deve explicar o bloqueio sem perder o rascunho.');
 assert.match(transferGateway, /clearPhoenixReadModelCache\(\)/);
 assert.match(transferGateway, /loadPhoenixReadModel\(refreshMonth,\s*\{ force: true \}\)/,
   'Transferência deve reler o snapshot real antes de ser tratada como concluída.');

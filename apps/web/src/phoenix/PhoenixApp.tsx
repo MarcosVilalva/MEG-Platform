@@ -28,6 +28,7 @@ import './phoenix-parity-v15.css';
 import './phoenix-period.css';
 import './phoenix-sidebar.css';
 import './phoenix-operational-mobile.css';
+import './phoenix-layers.css';
 
 const loadMovementsModule = () => import('./screens/PhoenixMovementsV15');
 const loadPayablesModule = () => import('./screens/PhoenixReadScreens');
