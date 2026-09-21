@@ -38,12 +38,12 @@ export function megConfirm(options: MegConfirmOptions): Promise<boolean> {
   layer.dataset.megPriorityLayer = 'critical-confirm';
   layer.innerHTML = `
     <button class="px-meg-confirm-backdrop" type="button" aria-label="${escapeHtml(options.cancelLabel || 'Cancelar')}"></button>
-    <section class="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-global-confirm-title">
+    <section class="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-global-confirm-title" aria-describedby="px-global-confirm-message">
       <div class="px-meg-confirm-icon" aria-hidden="true">!</div>
       <div class="px-meg-confirm-copy">
         <span class="px-kicker">${escapeHtml(options.kicker || 'Confirmação')}</span>
         <h3 id="px-global-confirm-title">${escapeHtml(options.title)}</h3>
-        <p>${escapeHtml(options.message)}</p>
+        <p id="px-global-confirm-message">${escapeHtml(options.message)}</p>
       </div>
       <button class="px-meg-confirm-close" type="button" aria-label="${escapeHtml(options.cancelLabel || 'Cancelar')}">×</button>
       <div class="px-meg-confirm-actions">
