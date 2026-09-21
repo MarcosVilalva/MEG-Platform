@@ -817,8 +817,8 @@ assert.match(phoenixApp, /loadPhoenixAllEvents/,
   'Modo Tudo deve usar leitura real completa');
 assert.match(phoenixApp, /view === 'home' && periodMode !== 'month'/,
   'Intervalo e Tudo devem permanecer aplicados na Home principal em modo analítico.');
-assert.match(phoenixApp, /analyticalMonth = periodMode === 'month' && month !== currentMonth\(\)/,
-  'Somente o mês atual deve usar a Home operacional; outros meses devem abrir a leitura analítica.');
+assert.match(phoenixApp, /month < nowMonth[\s\S]*month > nowMonth/,
+  'Somente o mês atual deve usar a Home operacional; passado e futuro devem ter leituras próprias.');
 assert.match(phoenixApp, /realizedPeriodBounds/,
   'Saldo histórico deve ser reconstruído a partir do saldo real atual e dos movimentos realizados.');
 assert.match(phoenixApp, /const baseMonth = currentMonth\(\)/,
@@ -845,7 +845,7 @@ assert.match(phoenixApp, /px-period-progress/,
   'Troca de período deve exibir progresso contextual sem desmontar a tela.');
 assert.doesNotMatch(phoenixApp, /setMonth\(end\.slice\(0,\s*7\)\)/,
   'Intervalo de Lançamentos não pode alterar silenciosamente o mês oficial da Home');
-for (const screen of ['PhoenixMovementsV15', 'PhoenixHomeDashboard', 'PhoenixHomeAllTime', 'PhoenixHistory', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs', 'PhoenixUsers', 'PhoenixSettings', 'PhoenixReceivables', 'PhoenixRevenues', 'PhoenixCashflow', 'PhoenixReconciliation', 'PhoenixAnalytics', 'PhoenixBudgets', 'PhoenixCommandPalette', 'PhoenixSidebar']) {
+for (const screen of ['PhoenixMovementsV15', 'PhoenixHomeDashboard', 'PhoenixHomeAllTime', 'PhoenixHomePastMonth', 'PhoenixHomeHorizon', 'PhoenixHistory', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs', 'PhoenixUsers', 'PhoenixSettings', 'PhoenixReceivables', 'PhoenixRevenues', 'PhoenixCashflow', 'PhoenixReconciliation', 'PhoenixAnalytics', 'PhoenixBudgets', 'PhoenixCommandPalette', 'PhoenixSidebar']) {
   assert.ok(phoenixApp.includes(screen), `Tela Phoenix não conectada: ${screen}`);
 }
 assert.match(phoenixApp, /onLogout/,
