@@ -1,25 +1,10 @@
 import type { CreditCard } from '../../app/cards-client';
 import type { Category, FinancialEvent, FinancialEventStatus } from '../../app/finance-client';
+import { cardCompetenceFromDueDate, cardDueDateForStatement } from './card-dates';
 
 type ProjectedFinancialEvent = FinancialEvent & {
   sourcePayload: Record<string, unknown>;
 };
-
-function monthPlus(month: string, offset: number) {
-  const [year, monthNumber] = month.split('-').map(Number);
-  return new Date(Date.UTC(year, monthNumber - 1 + offset, 1)).toISOString().slice(0, 7);
-}
-
-function validDayInMonth(month: string, day: number) {
-  const [year, monthNumber] = month.split('-').map(Number);
-  const last = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
-  return Math.min(Math.max(1, day), last);
-}
-
-function dueDateForStatement(card: CreditCard, statementMonth: string) {
-  const dueMonth = monthPlus(statementMonth, card.dueDay <= card.closingDay ? 1 : 0);
-  return `${dueMonth}-${String(validDayInMonth(dueMonth, card.dueDay)).padStart(2, '0')}`;
-}
 
 function statementLabel(month: string) {
   const [year, monthNumber] = month.split('-').map(Number);
@@ -44,7 +29,7 @@ function weekday(value: string) {
  *
  * Compras em cartão aparecem na grade como lançamentos comuns. Internamente,
  * cada parcela continua vinculada ao cartão/fatura para preservar data da compra,
- * vencimento calculado, cartão, parcela e modalidade CRÉDITO sem movimentar
+ * vencimento calculado, competência pelo mês do vencimento, cartão, parcela e modalidade CRÉDITO sem movimentar
  * o caixa monetário antes do pagamento da fatura.
  *
  * O account.type="benefit" abaixo é apenas o sentinela já reconhecido pela
@@ -71,7 +56,10 @@ export function projectCardInstallmentsIntoEvents(
         : null;
 
       for (const entry of purchase.entries || []) {
-        if (entry.statementMonth !== month) continue;
+        const dueDate = cardDueDateForStatement(entry.statementMonth, card.closingDay, card.dueDay);
+        const dueCompetence = cardCompetenceFromDueDate(dueDate);
+        if (dueCompetence !== month) continue;
+
         const status = statusForInstallment(entry.status);
         if (status === 'archived') continue;
 
@@ -80,8 +68,6 @@ export function projectCardInstallmentsIntoEvents(
         const statementEffect = Number(entry.amount || 0);
         if (!Number.isFinite(statementEffect) || statementEffect === 0) continue;
         const amount = Math.abs(statementEffect);
-
-        const dueDate = dueDateForStatement(card, entry.statementMonth);
         const installmentLabel = `${installmentNumber}/${installmentCount}`;
         const faturaLabel = `Fatura ${statementLabel(entry.statementMonth)}`;
         const paymentLabel = `${card.name} · ${faturaLabel}`;
@@ -99,7 +85,7 @@ export function projectCardInstallmentsIntoEvents(
           type: 'expense',
           status,
           date: `${dueDate}T12:00:00.000Z`,
-          competence: entry.statementMonth,
+          competence: dueCompetence,
           amount,
           signedAmount: -statementEffect,
           notes: observations,
@@ -147,6 +133,7 @@ export function projectCardInstallmentsIntoEvents(
             installmentNumber,
             installmentCount,
             statementMonth: entry.statementMonth,
+            dueCompetence,
             purchaseDate,
             dueDate,
             modality: 'CRÉDITO',
