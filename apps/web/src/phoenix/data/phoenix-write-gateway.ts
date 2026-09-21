@@ -102,6 +102,8 @@ let runtimeCapabilitiesCache: PhoenixRuntimeWriteCapabilities | null = null;
 const pendingEditOperations = new Map<string, string>();
 const pendingBenefitEditOperations = new Map<string, string>();
 const pendingArchiveOperations = new Map<string, string>();
+const pendingCardEditOperations = new Map<string, string>();
+const pendingCardCancelOperations = new Map<string, string>();
 
 function operationId(prefix = 'phoenix-event') {
   const uuid = globalThis.crypto?.randomUUID?.();
@@ -123,6 +125,18 @@ function editRequestKey(eventId: string, input: PhoenixSimpleEventInput, expecte
     categoryId: input.categoryId || null,
     paymentMethodId: input.paymentMethodId || null,
     notes: input.notes?.trim() || null,
+  });
+}
+
+function cardEditRequestKey(purchaseId: string, input: PhoenixCardPurchaseInput) {
+  return JSON.stringify({
+    purchaseId,
+    cardId: input.cardId,
+    categoryId: input.categoryId || null,
+    description: input.description.trim(),
+    totalCents: Math.round(input.totalAmount * 100),
+    purchaseDate: input.purchaseDate.slice(0, 10),
+    installments: input.installments,
   });
 }
 
@@ -476,6 +490,50 @@ export async function submitPhoenixCardPurchase(
 ): Promise<{ purchase: CardPurchase; snapshot: PhoenixReadModel }> {
   const purchase = await createPhoenixCardPurchase(prepared);
   const snapshot = await confirmedSnapshot(refreshMonth);
+  return { purchase, snapshot };
+}
+
+export async function runPhoenixCardPurchaseEdit(
+  purchaseId: string,
+  input: PhoenixCardPurchaseInput,
+  refreshMonth: string,
+  onAccepted?: (purchase: CardPurchase) => void,
+): Promise<{ purchase: CardPurchase; snapshot: PhoenixReadModel | null }> {
+  if (!PHOENIX_WRITE_CAPABILITIES.cardPurchase) throw new PhoenixWriteError('PHOENIX_CARD_WRITE_NOT_ENABLED');
+  const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
+  if (!runtimeCapabilities.cardPurchaseWrite) throw new PhoenixWriteError('PHOENIX_CARD_WRITE_NOT_ENABLED');
+  assertCardPurchase(input);
+
+  const requestKey = cardEditRequestKey(purchaseId, input);
+  const editOperationId = pendingCardEditOperations.get(requestKey) || operationId('phoenix-card-common-edit');
+  pendingCardEditOperations.set(requestKey, editOperationId);
+
+  const purchase = await cardsClient.updatePurchase(purchaseId, {
+    ...input,
+    description: input.description.trim(),
+    operationId: editOperationId,
+  });
+  onAccepted?.(purchase);
+  const snapshot = await snapshotAfterAccepted(refreshMonth, 'card-edit-refresh-pending');
+  pendingCardEditOperations.delete(requestKey);
+  return { purchase, snapshot };
+}
+
+export async function runPhoenixCardPurchaseCancel(
+  purchaseId: string,
+  refreshMonth: string,
+  onAccepted?: (purchase: CardPurchase) => void,
+): Promise<{ purchase: CardPurchase; snapshot: PhoenixReadModel | null }> {
+  if (!PHOENIX_WRITE_CAPABILITIES.cardPurchase) throw new PhoenixWriteError('PHOENIX_CARD_WRITE_NOT_ENABLED');
+  const runtimeCapabilities = await getPhoenixRuntimeWriteCapabilities(true);
+  if (!runtimeCapabilities.cardPurchaseWrite) throw new PhoenixWriteError('PHOENIX_CARD_WRITE_NOT_ENABLED');
+
+  const cancelOperationId = pendingCardCancelOperations.get(purchaseId) || operationId('phoenix-card-common-delete');
+  pendingCardCancelOperations.set(purchaseId, cancelOperationId);
+  const purchase = await cardsClient.cancelPurchaseProtected(purchaseId, cancelOperationId);
+  onAccepted?.(purchase);
+  const snapshot = await snapshotAfterAccepted(refreshMonth, 'card-delete-refresh-pending');
+  pendingCardCancelOperations.delete(purchaseId);
   return { purchase, snapshot };
 }
 
