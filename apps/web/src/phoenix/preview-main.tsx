@@ -289,9 +289,23 @@ function PhoenixPreviewRoot() {
       try {
         // @ts-ignore módulo JS nativo carregado somente no APK.
         const biometric = await import('../native-biometric-login.js');
-        const status = await biometric.getBiometricLoginStatus();
-        if (!active || !status?.available || !status?.enabled) return;
-        const credentials = await biometric.requestBiometricLogin();
+        const startup = (window as Window & { MEG_BIOMETRIC_STARTUP?: { required?: boolean; authenticated?: boolean; enabled?: boolean } }).MEG_BIOMETRIC_STARTUP;
+
+        // O bootstrap nativo já consultou o plugin e, quando a digital foi aceita,
+        // deixou as credenciais somente em memória. Consumimos esse handoff primeiro:
+        // repetir isAvailable() aqui podia deixar o WebView preso no overlay fixo de 22%.
+        let credentials = biometric.consumePreparedAndroidBiometricCredentials?.() || null;
+
+        if (!credentials && startup?.required && !startup?.authenticated) {
+          return;
+        }
+
+        if (!credentials) {
+          const status = await biometric.getBiometricLoginStatus();
+          if (!active || !status?.available || !status?.enabled) return;
+          credentials = await biometric.requestBiometricLogin();
+        }
+
         if (!active || !credentials?.email || !credentials?.password) return;
         setBootStage('session');
         setBootError('');
@@ -311,6 +325,7 @@ function PhoenixPreviewRoot() {
         }
       } catch (cause) {
         console.warn('MEG biometric login unavailable', cause);
+        document.querySelector('#nativeBiometricLoadingOverlay')?.remove();
       }
     })();
     return () => { active = false; };
