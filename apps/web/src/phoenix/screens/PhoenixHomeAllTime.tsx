@@ -65,6 +65,7 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   }, []);
 
   return <>
+  <section className="px-home-alltime" data-home-alltime-layout="period-intelligence-v3">
     <div className="px-page-head">
       <div>
         <span className="px-kicker">{kicker}</span>
@@ -183,7 +184,7 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   </section>
   {benefitOpen ? <div className="px-home-benefit-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setBenefitOpen(false); }}>
     <section className="px-home-benefit-modal" role="dialog" aria-modal="true" aria-label="Acompanhamento do benefício alimentação">
-      <header className="px-home-benefit-modal-head"><div className="px-home-benefit-modal-title"><div><span className="px-kicker">Benefício alimentação · ${periodLabel}</span><h2>Evolução do saldo</h2><p>Benefício separado do caixa monetário, preservando a leitura do período.</p></div></div><button type="button" aria-label="Fechar" onClick={() => setBenefitOpen(false)}>×</button></header>
+      <header className="px-home-benefit-modal-head"><div className="px-home-benefit-modal-title"><div><span className="px-kicker">Benefício alimentação · {periodLabel}</span><h2>Evolução do saldo</h2><p>Benefício separado do caixa monetário, preservando a leitura do período.</p></div></div><button type="button" aria-label="Fechar" onClick={() => setBenefitOpen(false)}>×</button></header>
       <div className="px-home-benefit-summary px-home-benefit-summary-four">
         <article><span>Saldo inicial</span><strong>{money.format(benefitOpening)}</strong></article>
         <article className="credit"><span>Créditos</span><strong>{money.format(benefitCredits)}</strong></article>
