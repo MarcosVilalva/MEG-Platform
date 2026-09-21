@@ -35,8 +35,10 @@ assert.match(settings, /Sair da conta[\s\S]*remove a credencial biométrica dest
   'Configurações deve manter uma ação distinta para sair da conta e trocar usuário.');
 assert.match(settings, /Biometria neste aparelho[\s\S]*Fechar o MEG não remove a biometria/,
   'Configurações deve explicar que fechar o APK preserva a biometria.');
-assert.match(settings, /Ver todos \(\$\{phoenixAvatarPresets\.length\}\)[\s\S]*Recolher avatares/,
-  'Lista de avatares deve ser expansível e recolhível.');
+assert.match(settings, /Ver todos \(\$\{phoenixAvatarPresets\.length\}\)/,
+  'Lista de avatares deve oferecer expansão explícita.');
+assert.match(settings, /Recolher avatares/,
+  'Lista de avatares deve poder ser recolhida depois da expansão.');
 assert.match(settings, /\/notifications\/status[\s\S]*\/notifications\/deliveries/,
   'Configurações deve consultar o estado real dos canais e entregas.');
 assert.match(settings, /downloads\/app-version\.json/,
