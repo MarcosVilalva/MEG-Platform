@@ -110,11 +110,10 @@ function buildRows(events: EventItem[]) {
     .sort((left, right) => left.date.localeCompare(right.date) || left.title.localeCompare(right.title, 'pt-BR'));
 }
 
-export function PhoenixHomeHorizon({ current, events, targetMonth, today, currentRealBalance, currentBenefitBalance, onNavigate, onOpenPeriod }: {
+export function PhoenixHomeHorizon({ current, events, targetMonth, currentRealBalance, currentBenefitBalance, onNavigate, onOpenPeriod }: {
   current: PhoenixReadModel;
   events: PhoenixReadModel['events']['items'];
   targetMonth: string;
-  today: string;
   currentRealBalance?: number;
   currentBenefitBalance?: number;
   onNavigate: (view: 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs' | 'users' | 'settings' | 'receivables' | 'revenues' | 'cashflow' | 'reconcile' | 'analytics' | 'decisions' | 'budgets') => void;
