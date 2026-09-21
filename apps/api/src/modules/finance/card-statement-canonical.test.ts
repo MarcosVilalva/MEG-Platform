@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   buildCanonicalCardStatement,
+  cardStatementDueDate,
   cardStatementEffectFromSignedAmount,
   canonicalCardStatementTotals,
   legacyCardStatementEffect,
@@ -11,6 +12,9 @@ assert.equal(cardStatementEffectFromSignedAmount(62), -62);
 assert.equal(legacyCardStatementEffect({ amount: -62, expenseAmount: 62 }), -62);
 assert.equal(legacyCardStatementEffect({ signedAmount: 31, expenseAmount: 31 }), -31);
 assert.equal(legacyCardStatementEffect({ expenseAmount: 40 }), 40);
+assert.equal(cardStatementDueDate('2026-09', 28, 3), '2026-10-05', 'sábado 03/10/2026 deve ir para segunda 05/10/2026');
+assert.equal(cardStatementDueDate('2026-09', 28, 4), '2026-10-05', 'domingo 04/10/2026 deve ir para segunda 05/10/2026');
+assert.equal(cardStatementDueDate('2026-09', 28, 5), '2026-10-05', 'dia útil deve permanecer inalterado');
 
 const azul = buildCanonicalCardStatement({
   month: '2026-09',
