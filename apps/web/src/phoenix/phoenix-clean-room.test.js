@@ -668,8 +668,10 @@ assert.match(operationalCss, /\.px-launch-drawer[\s\S]*grid-template-rows:auto m
   'Cabeçalho de lançamento deve ficar fora da região rolável do formulário.');
 assert.match(operationalCss, /\.px-launch-form[\s\S]*overflow-y:auto!important/,
   'Somente o conteúdo do formulário deve rolar no Android.');
-assert.match(operationalCss, /\.px-edit-launch-actions,[\s\S]*position:fixed!important/,
-  'Salvar e excluir devem permanecer visíveis no rodapé do lançamento.');
+assert.match(operationalCss, /body\.meg-operational-mobile \.px-edit-launch-actions\{[\s\S]*position:sticky!important/,
+  'Salvar e excluir devem permanecer acessíveis sem cobrir os campos do formulário móvel.');
+assert.doesNotMatch(operationalCss, /\.px-edit-launch-actions,[\s\S]{0,180}position:fixed!important/,
+  'Ações da edição não podem voltar ao overlay fixo que cobria o formulário.');
 assert.match(operationalCss, /\.px-pending-success-modal[\s\S]*overflow:hidden!important[\s\S]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/,
   'Resposta de baixa deve caber no viewport sem rolagem geral.');
 assert.match(phoenixApp, /px-mobile-brand-home[\s\S]*meg-finance-system-mark\.svg/,
