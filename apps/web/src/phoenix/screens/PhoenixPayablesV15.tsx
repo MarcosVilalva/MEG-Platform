@@ -407,6 +407,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
   const [priority, setPriority] = useState<Priority>('all');
   const [groupMode, setGroupMode] = useState<GroupMode>(savedGroupMode);
   const [search, setSearch] = useState('');
+  const [periodMonth, setPeriodMonth] = useState('');
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
   const [detailItem, setDetailItem] = useState<PendingItem | null>(null);
@@ -496,6 +497,11 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       .sort((left, right) => left.dueDate.localeCompare(right.dueDate) || left.description.localeCompare(right.description, 'pt-BR'));
   }, [model, locallySettled]);
 
+  const availablePeriodMonths = useMemo(() => [...new Set(open
+    .map((item) => item.dueDate.slice(0, 7))
+    .filter((month) => /^\\d{4}-\\d{2}$/.test(month)))].sort(), [open]);
+  const searchNeedle = useMemo(() => normalize(search), [search]);
+
   const actionable = open.filter((item) => item.openAmount > 0);
   const overdue = actionable.filter((item) => item.dueDate < today);
   const dueToday = actionable.filter((item) => item.dueDate === today);
@@ -518,10 +524,11 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       || (priority === 'overdue' && actionableItem && item.dueDate < today)
       || (priority === 'today' && actionableItem && item.dueDate === today)
       || (priority === 'upcoming' && actionableItem && item.dueDate > today);
+    const matchesPeriod = !periodMonth || item.dueDate.slice(0, 7) === periodMonth;
     const childText = item.children?.map((child) => child.description).join(' ') || '';
     const haystack = normalize(`${item.description} ${item.categoryName} ${item.group} ${item.paymentMethod} ${item.modality} ${item.accountName} ${childText}`);
-    return matchesPriority && haystack.includes(normalize(search));
-  }), [open, priority, search, today]);
+    return matchesPriority && matchesPeriod && haystack.includes(searchNeedle);
+  }), [open, priority, periodMonth, searchNeedle, today]);
 
   const grouped = useMemo(() => buildGroups(visible, groupMode), [visible, groupMode]);
   const visibleObligationCount = pendingObligationCount(visible);
@@ -840,6 +847,7 @@ export function PhoenixPayables({ data }: { data: PhoenixReadModel }) {
       <div className="px-priority-tabs px-pending-command-tabs">{([['all','Todos'],['overdue','Vencidos'],['today','Hoje'],['upcoming','Próximos']] as const).map(([id,label]) => <button key={id} type="button" className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{label}</button>)}</div>
       <span className="px-pending-command-separator" aria-hidden="true" />
       <label className="px-pending-group-select px-pending-command-group"><span>Agrupar por</span><select value={groupMode} onChange={(event) => setGroupMode(event.target.value as GroupMode)}><option value="date">Data</option><option value="category">Categoria</option><option value="account">Conta</option><option value="payment-method">Forma de pagamento</option><option value="none">Sem agrupamento</option></select></label>
+      <label className="px-pending-period-filter"><span>Período</span><select value={periodMonth} onChange={(event) => setPeriodMonth(event.target.value)} aria-label="Filtrar pendências por mês de vencimento"><option value="">Todos os vencimentos</option>{availablePeriodMonths.map((month) => <option value={month} key={month}>{statementLabel(month)}</option>)}</select></label>
       <span className="px-toolbar-note">{visibleObligationCount} de {openObligationCount} compromisso(s) exibido(s)</span>
     </div>
 

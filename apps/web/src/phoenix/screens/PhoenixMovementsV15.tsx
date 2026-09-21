@@ -1442,7 +1442,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
         <button className="px-meg-confirm-close" type="button" aria-label="Cancelar exclusão" onClick={() => { setDeleteConfirmOpen(false); setDeleteTargetEvent(null); }}><MovementIcon name="close" size={16} /></button>
         <div className="px-meg-confirm-actions">
           <button className="px-meg-confirm-secondary" type="button" disabled={deletingEvent} onClick={() => { setDeleteConfirmOpen(false); setDeleteTargetEvent(null); }}>Cancelar</button>
-          <button className="px-meg-confirm-danger" type="button" disabled={deletingEvent} aria-busy={deletingEvent} onClick={() => { void deleteSelectedEvent(); }}>{deletingEvent ? 'Excluindo e sincronizando…' : 'Sim, excluir'}</button>
+          <button className="px-meg-confirm-danger" type="button" disabled={deletingEvent} aria-busy={deletingEvent} onClick={() => { void deleteSelectedEvent(); }}>{deletingEvent ? 'Confirmando exclusão…' : 'Sim, excluir'}</button>
         </div>
       </section>
     </div>, document.body) : null}
