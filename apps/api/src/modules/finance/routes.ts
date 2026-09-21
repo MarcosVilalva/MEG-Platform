@@ -139,22 +139,27 @@ export async function financeRoutes(app: FastifyInstance) {
     const catalogToken = catalogSources
       .map(([kind, item]) => item ? `${kind}:${item.updatedAt.toISOString()}:${item.id}` : `${kind}:empty`)
       .join('|');
-    const latestCatalog = catalogSources
-      .filter((entry): entry is readonly [string, { id: string; updatedAt: Date }] => Boolean(entry[1]))
-      .sort((left, right) => right[1].updatedAt.valueOf() - left[1].updatedAt.valueOf())[0] || null;
+    const latestCatalog = catalogSources.reduce<{ kind: string; item: { id: string; updatedAt: Date } } | null>(
+      (latest, [kind, item]) => {
+        if (!item) return latest;
+        if (!latest || item.updatedAt > latest.item.updatedAt) return { kind, item };
+        return latest;
+      },
+      null,
+    );
     const mutationToken = latestMutation
       ? `mutation:${latestMutation.createdAt.toISOString()}:${latestMutation.id}`
       : 'mutation:empty';
-    const changedAtDate = [latestMutation?.createdAt, latestCatalog?.[1].updatedAt]
-      .filter((value): value is Date => Boolean(value))
-      .sort((left, right) => right.valueOf() - left.valueOf())[0] || null;
-    const catalogIsNewest = Boolean(latestCatalog && (!latestMutation || latestCatalog[1].updatedAt > latestMutation.createdAt));
+    const changedAtDate = latestMutation && latestCatalog
+      ? (latestMutation.createdAt >= latestCatalog.item.updatedAt ? latestMutation.createdAt : latestCatalog.item.updatedAt)
+      : latestMutation?.createdAt || latestCatalog?.item.updatedAt || null;
+    const catalogIsNewest = Boolean(latestCatalog && (!latestMutation || latestCatalog.item.updatedAt > latestMutation.createdAt));
 
     return {
       token: `${mutationToken}|${catalogToken}`,
       changedAt: changedAtDate?.toISOString() || null,
       mutationType: catalogIsNewest ? 'CATALOG_SYNC' : latestMutation?.mutationType || null,
-      catalogChangedAt: latestCatalog?.[1].updatedAt.toISOString() || null,
+      catalogChangedAt: latestCatalog?.item.updatedAt.toISOString() || null,
     };
   });
 
