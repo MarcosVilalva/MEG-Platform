@@ -1,5 +1,5 @@
 import type { PhoenixReadModel } from '../contracts';
-import { isPhoenixBenefitEvent, isPhoenixMonetaryEvent } from '../home-period-summary';
+import { isPhoenixMonetaryEvent } from '../home-period-summary';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
