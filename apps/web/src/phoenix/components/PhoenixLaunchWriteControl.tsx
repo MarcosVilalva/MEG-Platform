@@ -196,10 +196,10 @@ export function PhoenixLaunchWriteControl({
         setRuntimeMessage(transferFlow
           ? 'Transferência liberada. Origem e destino serão gravados atomicamente; após o aceite do servidor, a tela será liberada enquanto os saldos são relidos.'
           : benefitFlow
-            ? 'Writer de benefício liberado. A movimentação será gravada sem alterar o caixa monetário; a tela será liberada após o aceite do servidor.'
+            ? 'Movimentação do benefício pronta para salvar. Ela altera somente o saldo do benefício e a tela será liberada após a confirmação do servidor.'
             : cardFlow
-              ? 'Writer de cartão liberado. A compra será criada no domínio de cartões; a tela será liberada assim que a API aceitar a operação.'
-              : 'Gravação simples liberada. Após o aceite do servidor, a interface fecha e a atualização continua em segundo plano, sem reenviar a operação.');
+              ? 'Compra no cartão pronta para salvar. O MEG calculará automaticamente fatura, parcelas, vencimentos e competências.'
+              : 'Lançamento pronto para salvar. Após a confirmação do servidor, a tela fecha e a atualização continua em segundo plano.');
       } else {
         setRuntimeState('disabled');
         setRuntimeMessage(transferFlow
@@ -226,7 +226,7 @@ export function PhoenixLaunchWriteControl({
       : benefitFlow
         ? 'Gravando no saldo do Benefício Alimentação e aguardando a releitura confirmada…'
         : cardFlow
-          ? 'Gravando a compra no cartão e aguardando a releitura sincronizada das faturas…'
+          ? 'Salvando a compra e atualizando fatura e parcelas…'
           : 'Enviando ao MEG e aguardando confirmação da leitura atualizada…');
     try {
       if (transferFlow) {
@@ -295,14 +295,14 @@ export function PhoenixLaunchWriteControl({
             if (state.status !== 'accepted') return;
             preparedCardRef.current = null;
             setCommitState('confirmed');
-            setCommitMessage('Compra salva no cartão. O formulário pode ser fechado enquanto o MEG atualiza fatura e parcelas em segundo plano.');
+            setCommitMessage('Compra salva. Fatura e parcelas serão atualizadas em segundo plano.');
             onAccepted?.();
           },
         );
         if (result.status === 'confirmed') {
           preparedCardRef.current = null;
           setCommitState('confirmed');
-          setCommitMessage('Compra confirmada no cartão. Parcelas e fatura foram relidas da base antes da atualização da tela.');
+          setCommitMessage('Compra salva e confirmada. Fatura e parcelas foram atualizadas.');
           onCommitted?.(result.snapshot, projectedCardEvent(result.snapshot, result.purchase.id));
           return;
         }
