@@ -530,7 +530,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const editingCardPurchase = editingEvent ? projectedCardPurchase(data, editingEvent) : null;
   const editingBenefit = Boolean(editingEvent && isBenefitEvent(editingEvent));
   const benefit = editingBenefit || selectedAccount?.type === 'benefit' || isBenefitAccount(selectedAccount?.name);
-  const credit = isCreditMethod(selectedPayment?.name, selectedPayment?.type);
+  const credit = Boolean(editingCardPurchase) || isCreditMethod(selectedPayment?.name, selectedPayment?.type);
   const pix = draft.type === 'expense' && isPixMethod(selectedPayment?.name, selectedPayment?.type);
   const crediario = isCrediarioMethod(selectedPayment?.name, selectedPayment?.type);
   const calculatedDue = selectedCard ? cardDueDate(draft.eventDate, selectedCard.closingDay, selectedCard.dueDay) : '';
@@ -590,7 +590,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     } else {
       if (draft.type === 'expense' && !draft.classification) list.push('classificação');
       if (draft.type === 'expense' && !draft.categoryId) list.push('grupo');
-      if (!draft.paymentMethodId) list.push(draft.type === 'income' ? 'forma de recebimento' : 'forma de pagamento');
+      if (!draft.paymentMethodId && !editingCardPurchase) list.push(draft.type === 'income' ? 'forma de recebimento' : 'forma de pagamento');
       if (credit && !draft.cardId) list.push('cartão');
     }
     if (draft.recurring && draft.recurrenceCount < 2) list.push('quantidade da recorrência');
