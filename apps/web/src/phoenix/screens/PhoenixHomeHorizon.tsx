@@ -110,23 +110,23 @@ function buildRows(events: EventItem[]) {
     .sort((left, right) => left.date.localeCompare(right.date) || left.title.localeCompare(right.title, 'pt-BR'));
 }
 
-export function PhoenixHomeHorizon({ current, events, targetMonth, today, currentRealBalance, onNavigate, onOpenPeriod }: {
+export function PhoenixHomeHorizon({ current, events, targetMonth, today, currentRealBalance, currentBenefitBalance, onNavigate, onOpenPeriod }: {
   current: PhoenixReadModel;
   events: PhoenixReadModel['events']['items'];
   targetMonth: string;
   today: string;
   currentRealBalance?: number;
+  currentBenefitBalance?: number;
   onNavigate: (view: 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs' | 'users' | 'settings' | 'receivables' | 'revenues' | 'cashflow' | 'reconcile' | 'analytics' | 'decisions' | 'budgets') => void;
   onOpenPeriod?: () => void;
 }) {
   const { start, end } = monthBounds(targetMonth);
-  const baseBalance = Number.isFinite(currentRealBalance)
-    ? Number(currentRealBalance)
+  const baseBalance = typeof currentRealBalance === 'number' && Number.isFinite(currentRealBalance)
+    ? currentRealBalance
     : Number(current.summary.availableBalance || 0) + Number(current.summary.realizedResult || 0);
 
   const planned = events
     .filter(isOpenPlanned)
-    .filter((event) => String(event.date).slice(0, 10) >= today)
     .filter((event) => String(event.date).slice(0, 10) <= end);
 
   const beforeMonth = planned.filter((event) => String(event.date).slice(0, 10) < start);
@@ -152,7 +152,9 @@ export function PhoenixHomeHorizon({ current, events, targetMonth, today, curren
   const otherRows = rows.filter((item) => item.kind === 'pending');
   const cardAmount = cardRows.reduce((sum, item) => sum + item.amount, 0);
   const otherAmount = otherRows.reduce((sum, item) => sum + item.amount, 0);
-  const benefitBalance = Number(current.summary.benefitBalance || 0);
+  const benefitBalance = typeof currentBenefitBalance === 'number' && Number.isFinite(currentBenefitBalance)
+    ? currentBenefitBalance
+    : Number(current.summary.benefitBalance || 0);
 
   return <section className="px-home-future" aria-label={`Projeção financeira de ${monthLabel(targetMonth)}`}>
     <header className="px-period-mobile-head">
@@ -177,7 +179,7 @@ export function PhoenixHomeHorizon({ current, events, targetMonth, today, curren
     </section>
 
     <article className="px-future-benefit-card">
-      <div><span>Benefício Alimentação</span><strong>Fora do caixa monetário</strong><small>Continua acompanhado separadamente da projeção.</small></div>
+      <div><span>Benefício Alimentação</span><strong>Fora do caixa monetário</strong><small>Saldo atual de referência, acompanhado separadamente da projeção monetária.</small></div>
       <b>{money.format(benefitBalance)}</b>
     </article>
 
