@@ -159,6 +159,22 @@ function passwordScore(value: string) {
 }
 
 function PhoenixBootScreen({ stage }: { stage: BootStage }) {
+  useEffect(() => {
+    const root = document.documentElement;
+    const syncViewportHeight = () => {
+      const measured = Math.max(320, Math.round(window.visualViewport?.height || window.innerHeight));
+      root.style.setProperty('--meg-viewport-height', `${measured}px`);
+    };
+    syncViewportHeight();
+    window.addEventListener('resize', syncViewportHeight);
+    window.visualViewport?.addEventListener('resize', syncViewportHeight);
+    return () => {
+      window.removeEventListener('resize', syncViewportHeight);
+      window.visualViewport?.removeEventListener('resize', syncViewportHeight);
+      root.style.removeProperty('--meg-viewport-height');
+    };
+  }, []);
+
   const activeIndex = Math.max(0, bootStages.findIndex((item) => item.id === stage));
   const active = bootStages[activeIndex];
   return <main className="px-preview-fullscreen-boot" aria-live="polite" aria-busy={stage !== 'ready'}>
