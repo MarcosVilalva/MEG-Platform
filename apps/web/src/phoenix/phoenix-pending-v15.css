@@ -2293,3 +2293,12 @@
     grid-template-columns:repeat(2,minmax(0,1fr))!important;
   }
 }
+
+/* Pendentes 2.3 · navegação mensal profissional */
+.px-pending-month-nav{display:grid;grid-template-columns:44px minmax(210px,1fr) 44px auto auto;gap:8px;align-items:center;padding:8px 10px;border:1px solid rgba(72,213,179,.18);border-radius:16px;background:linear-gradient(145deg,rgba(5,49,45,.92),rgba(2,34,33,.96))}
+.px-pending-month-nav button{height:42px;border:1px solid rgba(83,164,144,.26);border-radius:12px;background:rgba(3,29,27,.78);color:#dffbf3;font-weight:850;cursor:pointer}
+.px-pending-month-step{font-size:22px;color:#55e7c0!important}.px-pending-month-current{display:flex;align-items:center;justify-content:center;gap:9px;padding:0 14px;font-size:12px}.px-pending-month-current svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}
+.px-pending-month-current.active,.px-pending-month-shortcut.active{border-color:rgba(57,230,181,.68);background:linear-gradient(135deg,rgba(27,168,130,.22),rgba(3,45,39,.92));box-shadow:inset 0 0 0 1px rgba(57,230,181,.08)}
+.px-pending-month-shortcut{min-width:92px;padding:0 15px;font-size:10px}.px-pending-filter-toggle{min-height:36px;padding:0 11px;border:1px solid rgba(83,164,144,.22);border-radius:10px;background:rgba(4,24,20,.78);color:#bdd5ce;font-size:8px;font-weight:900}.px-pending-filter-toggle.active{border-color:rgba(67,230,183,.6);color:#eafff8;background:rgba(48,213,165,.14)}
+@media(max-width:760px){.px-pending-month-nav{grid-template-columns:38px minmax(0,1fr) 38px repeat(2,minmax(68px,.55fr));gap:5px;padding:6px;border-radius:13px}.px-pending-month-nav button{height:38px;min-width:0}.px-pending-month-current{padding:0 7px;font-size:9px;gap:5px}.px-pending-month-current svg{width:14px;height:14px}.px-pending-month-shortcut{min-width:0!important;padding:0 7px!important;font-size:8px!important}.px-pending-commandbar{grid-template-columns:minmax(0,1fr) auto!important}.px-pending-command-search,.px-pending-command-tabs{grid-column:1/-1!important}.px-pending-command-group{grid-column:1!important}.px-pending-filter-toggle{grid-column:2!important;align-self:end;height:34px}.px-pending-date-filter{grid-column:1/-1!important}}
+@media(max-width:430px){.px-pending-month-nav{grid-template-columns:34px minmax(0,1fr) 34px}.px-pending-month-shortcut{grid-row:2}.px-pending-month-shortcut:nth-last-child(2){grid-column:1/3}.px-pending-month-shortcut:last-child{grid-column:3}}
