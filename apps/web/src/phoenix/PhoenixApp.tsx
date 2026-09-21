@@ -78,6 +78,7 @@ type HomePeriodContext = {
   openingBalance: number;
   closingBalance: number;
   currentRealBalance: number;
+  currentBenefitBalance?: number;
   projectionEvents?: PhoenixReadModel['events']['items'];
 };
 
@@ -351,6 +352,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
         targetMonth={month}
         today={todayIso()}
         currentRealBalance={periodContext?.currentRealBalance}
+        currentBenefitBalance={periodContext?.currentBenefitBalance}
         onNavigate={onNavigate}
         onOpenPeriod={onOpenPeriod}
       />;
@@ -881,6 +883,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
           startDate,
           endDate,
           currentRealBalance,
+          currentBenefitBalance: Number(currentSnapshot.summary.benefitBalance || 0),
           ...bounds,
           projectionEvents: targetMonth > currentMonth() ? allEvents.items : undefined
         });
