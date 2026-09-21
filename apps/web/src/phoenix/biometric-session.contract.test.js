@@ -5,6 +5,7 @@ const preview = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'ut
 const app = readFileSync(new URL('./PhoenixApp.tsx', import.meta.url), 'utf8');
 const settings = readFileSync(new URL('./screens/PhoenixSettings.tsx', import.meta.url), 'utf8');
 const auth = readFileSync(new URL('../app/auth-client.ts', import.meta.url), 'utf8');
+const nativeBiometric = readFileSync(new URL('../native-biometric-login.js', import.meta.url), 'utf8');
 
 assert.match(preview, /offerAndroidBiometricEnrollment/,
   'APK deve oferecer habilitação biométrica depois do primeiro login válido.');
