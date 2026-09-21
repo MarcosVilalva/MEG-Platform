@@ -6,6 +6,7 @@ import { resolveWorkspaceContext } from '../workspaces/service';
 import {
   createRecurringExpense,
   listPayables,
+  listOpenPayables,
   payPayableProtected,
   PayableDomainError,
 } from './service';
@@ -64,6 +65,8 @@ function domainError(reply: FastifyReply, error: unknown) {
 }
 
 export async function payableRoutes(app: FastifyInstance) {
+  app.get('/open', { preHandler: app.authorize([...readRoles]) }, async (request) => listOpenPayables(request.user.sub));
+
   app.get('/', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
