@@ -335,6 +335,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
         periodContext={periodContext}
         onNavigate={onNavigate}
         onOpenPeriod={onOpenPeriod}
+        onLaunch={onLaunch}
       />;
     }
     if (month < nowMonth) {
