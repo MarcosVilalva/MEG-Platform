@@ -76,6 +76,19 @@ export async function listPayables(userId: string, month: string) {
   });
 }
 
+export async function listOpenPayables(userId: string) {
+  const context = await resolveWorkspaceContext(userId);
+  return prisma.payable.findMany({
+    where: {
+      userId: context.workspace.ownerId,
+      status: { notIn: ['paid', 'cancelled'] },
+      openAmount: { gt: 0 },
+    },
+    orderBy: { dueDate: 'asc' },
+    include: { category: true, payments: { orderBy: { paidAt: 'desc' } } },
+  });
+}
+
 async function materializeTemplate(tx: Tx, template: {
   id: string;
   userId: string;

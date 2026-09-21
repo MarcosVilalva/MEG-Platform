@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type WheelEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { CreditCard } from '../../app/cards-client';
-import type { Payable } from '../../app/payables-client';
+import { payablesClient, type Payable } from '../../app/payables-client';
+import { loadPhoenixAllEvents } from '../data/load-phoenix-read-model';
 import type { PhoenixReadModel } from '../contracts';
 import {
   PHOENIX_PENDING_WRITE_ENABLED,
@@ -170,9 +171,9 @@ function payableItem(item: Payable): PendingItem {
   };
 }
 
-function eventItems(data: PhoenixReadModel): PendingItem[] {
+function eventItems(data: PhoenixReadModel, allMode = false): PendingItem[] {
   return data.events.items
-    .filter((event) => event.competence === data.month)
+    .filter((event) => allMode || event.competence === data.month)
     .filter((event) => event.type === 'expense' && event.status === 'planned')
     .filter((event) => normalize(event.account?.type) !== 'benefit')
     .filter((event) => !normalize(`${event.paymentMethod?.name || ''} ${event.sourceDetails?.paymentMethod || ''} ${event.description}`).includes('verocard'))
@@ -221,8 +222,32 @@ function isOpenCardStatus(value: unknown) {
   return !['paid', 'pago', 'cancelled', 'canceled', 'cancelado', 'archived', 'arquivado'].includes(status);
 }
 
-function cardStatementItems(data: PhoenixReadModel): PendingItem[] {
+function cardStatementItems(data: PhoenixReadModel, allMode = false): PendingItem[] {
   return data.cards.flatMap((card) => {
+    if (allMode) {
+      const byMonth = new Map<string, PendingChild[]>();
+      for (const purchase of card.purchases || []) {
+        if (String(purchase.id || '').startsWith('legacy-')) continue;
+        if (normalize(purchase.status) === 'cancelled' || normalize(purchase.status) === 'cancelado') continue;
+        for (const entry of purchase.entries || []) {
+          if (!entry.statementMonth || !isOpenCardStatus(entry.status)) continue;
+          const amount = Number(entry.amount || 0);
+          if (!Number.isFinite(amount) || amount === 0) continue;
+          const children = byMonth.get(entry.statementMonth) || [];
+          children.push({ id: entry.id, description: purchase.description, amount, purchaseDate: isoDay(purchase.purchaseDate), installmentNo: Number(entry.number || 1), installmentQty: Math.max(1, Number(purchase.installments || 1)) });
+          byMonth.set(entry.statementMonth, children);
+        }
+      }
+      return [...byMonth.entries()].map(([statementMonth, children]) => ({
+        id: `card-statement-${card.id}-${statementMonth}`,
+        sourceId: card.id,
+        source: 'card' as const,
+        description: `${card.name} · Fatura ${statementLabel(statementMonth)}`,
+        dueDate: statementDueIso(card, statementMonth),
+        openAmount: children.reduce((sum, child) => sum + child.amount, 0),
+        installmentNo: 1, installmentQty: 1, categoryName: 'Cartão de crédito', group: 'Fatura de cartão', paymentMethod: card.name, modality: 'CRÉDITO', accountName: card.name, statementMonth, children,
+      })).filter((item) => item.openAmount > 0);
+    }
     if (card.statement?.month === data.month) {
       // A fatura canônica pode ser formada por parcelas oficiais, por eventos
       // normalizados legados ou por ambos. O writer "card" só pode liquidar
@@ -437,6 +462,8 @@ export function PhoenixPayables({ data, onMonthChange }: { data: PhoenixReadMode
   const [periodMode, setPeriodMode] = useState<PendingPeriodMode>('month');
   const [selectedMonth, setSelectedMonth] = useState(() => data.month);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [allPortfolio, setAllPortfolio] = useState<PhoenixReadModel | null>(null);
+  const [portfolioLoading, setPortfolioLoading] = useState(false);
 
   useEffect(() => {
     setSelectedMonth(data.month);
@@ -447,6 +474,19 @@ export function PhoenixPayables({ data, onMonthChange }: { data: PhoenixReadMode
     setSelectedMonth(targetMonth);
     setPriority('all');
     onMonthChange?.(targetMonth);
+  };
+
+  const selectAllPending = async () => {
+    setPeriodMode('all');
+    setPriority('all');
+    if (allPortfolio) return;
+    setPortfolioLoading(true);
+    try {
+      const [events, payables] = await Promise.all([loadPhoenixAllEvents({ force: true }), payablesClient.listOpen()]);
+      setAllPortfolio({ ...model, events, payables });
+    } finally {
+      setPortfolioLoading(false);
+    }
   };
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -521,13 +561,14 @@ export function PhoenixPayables({ data, onMonthChange }: { data: PhoenixReadMode
   }, [reviewOpen, detailItem, settlementReceipt]);
 
   const open = useMemo(() => {
-    const official = model.payables
+    const sourceModel = periodMode === 'all' && allPortfolio ? allPortfolio : model;
+    const official = sourceModel.payables
       .filter((item) => !['paid', 'cancelled'].includes(normalize(item.status)) && Number(item.openAmount) > 0)
       .map(payableItem);
-    const cards = cardStatementItems(model);
+    const cards = cardStatementItems(sourceModel, periodMode === 'all');
     const representedEventIds = new Set(cards.flatMap((card) => card.children || []).map((child) => child.sourceEventId).filter(Boolean));
     const officialSignatures = new Set(official.map(signature));
-    const compatibility = eventItems(model).filter((item) => {
+    const compatibility = eventItems(sourceModel, periodMode === 'all').filter((item) => {
       if (representedEventIds.has(item.sourceId)) return false;
       // Duplicidade por assinatura só é usada para evitar espelhar um Payable oficial.
       // Dois lançamentos reais podem ter mesma descrição, vencimento e valor e ambos
@@ -537,7 +578,7 @@ export function PhoenixPayables({ data, onMonthChange }: { data: PhoenixReadMode
     return [...cards, ...official, ...compatibility]
       .filter((item) => !locallySettled.has(item.id))
       .sort((left, right) => left.dueDate.localeCompare(right.dueDate) || left.description.localeCompare(right.description, 'pt-BR'));
-  }, [model, locallySettled]);
+  }, [model, allPortfolio, periodMode, locallySettled]);
 
   const searchNeedle = useMemo(() => normalize(search), [search]);
 
@@ -917,8 +958,10 @@ export function PhoenixPayables({ data, onMonthChange }: { data: PhoenixReadMode
       <button type="button" className={`px-pending-month-current ${periodMode === 'month' ? 'active' : ''}`} onClick={() => selectPendingMonth(selectedMonth)}><PendingGlyph kind="calendar" /><strong>{pendingMonthLabel(selectedMonth)}</strong></button>
       <button type="button" className="px-pending-month-step" aria-label="Próximo mês" onClick={() => selectPendingMonth(shiftPendingMonth(selectedMonth, 1))}>›</button>
       <button type="button" className="px-pending-month-shortcut" onClick={() => { selectPendingMonth(today.slice(0, 7)); }}>Hoje</button>
-      <button type="button" className={`px-pending-month-shortcut ${periodMode === 'all' ? 'active' : ''}`} onClick={() => { setPeriodMode('all'); setPriority('all'); }}>∞ <span>Tudo</span></button>
+      <button type="button" className={`px-pending-month-shortcut ${periodMode === 'all' ? 'active' : ''}`} onClick={() => { void selectAllPending(); }} title="Todas as pendências" aria-label="Todas as pendências">∞</button>
     </nav>
+
+    {portfolioLoading ? <div className="px-pending-loading" role="status" aria-live="polite"><span className="px-pending-loading-spinner" aria-hidden="true" /><span>Atualizando pendências…</span></div> : null}
 
     {successMessage ? <div className="px-pending-write-banner" role="status"><strong>Baixa confirmada</strong><span>{successMessage}</span></div> : null}
 
