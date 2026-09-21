@@ -33,7 +33,7 @@ export type CanonicalCardStatement = {
   status: 'empty' | 'open' | 'partial' | 'paid' | 'zero' | 'credit';
   lines: CanonicalCardStatementLine[];
 };
-export type CreditCard = { id: string; name: string; issuer?: string | null; brand?: string | null; lastFour?: string | null; creditLimit: string | number; closingDay: number; dueDay: number; color?: string | null; isActive: boolean; usedLimit: number; availableLimit: number; statementAmount: number; payableStatementAmount?: number; statementCreditBalance?: number; statement?: CanonicalCardStatement; purchases: CardPurchase[] };
+export type CreditCard = { id: string; name: string; issuer?: string | null; brand?: string | null; lastFour?: string | null; creditLimit: string | number; closingDay: number; dueDay: number; color?: string | null; isActive: boolean; createdAt?: string; updatedAt?: string; usedLimit: number; availableLimit: number; statementAmount: number; payableStatementAmount?: number; statementCreditBalance?: number; statement?: CanonicalCardStatement; purchases: CardPurchase[] };
 export type CardStatementPaymentResult = { paid: boolean; amount: number; eventId: string; protection?: { monetary?: boolean; allowed?: boolean; available?: number; requested?: number; missing?: number; at?: string }; idempotentReplay?: boolean };
 export type CardStatementReopenResult = { reopened: boolean; amount: number; eventId: string; installments: number; idempotentReplay?: boolean };
 export type CardStatementLifecycleStatus = 'none' | 'open' | 'partial' | 'paid' | 'credit' | 'reopened';
@@ -89,7 +89,7 @@ export type CardStatementLifecycle = {
   source: 'audit' | 'canonical' | 'installments' | 'none';
 };
 export type CardPurchaseMutationInput = { cardId: string; categoryId?: string; description: string; totalAmount: number; purchaseDate: string; installments: number; operationId: string };
-export type CreditCardMutationInput = { name: string; issuer?: string; brand?: string; lastFour?: string; creditLimit: number; closingDay: number; dueDay: number; color?: string };
+export type CreditCardMutationInput = { name: string; issuer?: string; brand?: string; lastFour?: string; creditLimit: number; closingDay: number; dueDay: number; color?: string; operationId?: string; expectedUpdatedAt?: string };
 export type CardReactivationResult = { card: CreditCard; reactivated: boolean; idempotentReplay: boolean };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -112,6 +112,6 @@ export const cardsClient = {
   },
   payStatement: (id: string, month: string, data: { accountId: string; paymentMethodId?: string; paidAt: string; operationId: string }) => request<CardStatementPaymentResult>(`/cards/${id}/statements/${month}/pay`, { method: 'POST', body: JSON.stringify(data) }),
   reopenStatement: (id: string, month: string, data: { reason: string; operationId: string }) => request<CardStatementReopenResult>(`/cards/${id}/statements/${month}/reopen`, { method: 'POST', body: JSON.stringify(data) }),
-  deactivate: (id: string) => request<CreditCard>(`/cards-management/${id}`, { method: 'DELETE' }),
-  reactivate: (id: string) => request<CardReactivationResult>(`/cards-management/${id}/reactivate`, { method: 'POST', body: JSON.stringify({}) })
+  deactivate: (id: string, meta: { operationId?: string; expectedUpdatedAt?: string } = {}) => request<CreditCard>(`/cards-management/${id}`, { method: 'DELETE', body: JSON.stringify(meta) }),
+  reactivate: (id: string, meta: { operationId?: string; expectedUpdatedAt?: string } = {}) => request<CardReactivationResult>(`/cards-management/${id}/reactivate`, { method: 'POST', body: JSON.stringify(meta) })
 };
