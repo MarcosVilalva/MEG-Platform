@@ -5,6 +5,7 @@ const catalogs = readFileSync(new URL('./screens/PhoenixCatalogsGrid.tsx', impor
 const cards = readFileSync(new URL('./card-management-bridge.ts', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8');
 const confirm = readFileSync(new URL('./meg-confirm.ts', import.meta.url), 'utf8');
+const financeClient = readFileSync(new URL('../app/finance-client.ts', import.meta.url), 'utf8');
 
 for (const writer of [
   'financeClient.createAccount',
@@ -55,5 +56,25 @@ assert.match(cards, /megConfirm/,
   'Gestão de cartões deve reutilizar a confirmação MEG central.');
 assert.match(confirm, /px-meg-confirm-overlay[\s\S]*role="alertdialog"/,
   'Confirmação compartilhada deve ser modal acessível e usar a camada crítica.');
+assert.match(catalogs, /mutationOperationId/,
+  'Retry do cadastro deve preservar operationId enquanto o mesmo comando estiver pendente.');
+assert.match(catalogs, /expectedUpdatedAt: editor\.expectedUpdatedAt/,
+  'Edição deve enviar a versão originalmente carregada para detectar concorrência.');
+assert.match(catalogs, /CATALOG_STALE_VERSION/,
+  'Conflito entre dispositivos deve ser explicado ao usuário sem sobrescrever silenciosamente.');
+assert.match(catalogs, /ACCOUNT_ALREADY_EXISTS[\s\S]*CATEGORY_ALREADY_EXISTS[\s\S]*PAYMENT_METHOD_ALREADY_EXISTS/,
+  'Duplicidades dos três catálogos devem possuir mensagens operacionais claras.');
+assert.match(catalogs, /disabled=\{editor\.mode === 'edit'\}[\s\S]*natureza financeira da conta/,
+  'Tipo da conta deve ficar protegido depois da criação.');
+assert.match(catalogs, /Saldo inicial[\s\S]*disabled=\{editor\.mode === 'edit'\}[\s\S]*Ajustes de saldo devem ocorrer por lançamento/,
+  'Saldo inicial não pode ser reescrito em uma conta existente.');
+assert.match(catalogs, /Tipo protegido para não reclassificar lançamentos antigos silenciosamente/,
+  'Tipo da classificação deve permanecer estrutural após a criação.');
+assert.match(catalogs, /Tipo protegido depois da criação para manter as regras de pagamento consistentes/,
+  'Tipo da forma de pagamento deve permanecer estrutural após a criação.');
+assert.match(financeClient, /deactivateAccount:[\s\S]*body: JSON\.stringify\(meta\)/,
+  'Desativação deve transportar operationId e versão para o backend.');
+assert.match(financeClient, /updatedAt\?: string/,
+  'Cliente deve preservar a versão do cadastro devolvida pelo servidor.');
 
 console.log('Contrato de cadastros operacionais Web/Android validado.');
