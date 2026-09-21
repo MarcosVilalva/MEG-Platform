@@ -23,6 +23,10 @@ const gridFilter = readFileSync(new URL('./PhoenixGridFilter.tsx', import.meta.u
 const gridCss = readFileSync(new URL('./phoenix-grid.css', import.meta.url), 'utf8');
 const launchDynamicCss = readFileSync(new URL('./phoenix-launch-dynamic.css', import.meta.url), 'utf8');
 const launchWriteControl = readFileSync(new URL('./components/PhoenixLaunchWriteControl.tsx', import.meta.url), 'utf8');
+const layersCss = readFileSync(new URL('./phoenix-layers.css', import.meta.url), 'utf8');
+const cardPurchaseEdit = readFileSync(new URL('./card-purchase-edit-bridge.ts', import.meta.url), 'utf8');
+const cardManagement = readFileSync(new URL('./card-management-bridge.ts', import.meta.url), 'utf8');
+const megConfirm = readFileSync(new URL('./meg-confirm.ts', import.meta.url), 'utf8');
 const bulkEventUxEnhancements = readFileSync(new URL('./bulk-event-ux-enhancements.ts', import.meta.url), 'utf8');
 const homeDashboard = readFileSync(new URL('./screens/PhoenixHomeDashboard.tsx', import.meta.url), 'utf8');
 const homeNowCss = readFileSync(new URL('./phoenix-home-now.css', import.meta.url), 'utf8');
@@ -152,6 +156,10 @@ assert.match(history, /Exportar filtrado/);
 assert.match(users, /Somente leitura/);
 assert.match(users, /Gerenciar acesso/);
 assert.match(settings, /Saúde do sistema/);
+assert.match(settings, /\/app-state\/normalization-preview/,
+  'Diagnóstico deve comparar as fontes em modo somente leitura.');
+assert.match(settings, /Nenhum reparo foi executado por esta consulta/,
+  'Tela de integridade não pode sugerir que a comparação alterou a base.');
 assert.match(settings, /getBiometricLoginStatus/,
   'Configurações Phoenix deve consultar o estado real da biometria no APK em vez de inventar disponibilidade.');
 assert.match(settings, /Restaurar backup/);
@@ -233,6 +241,18 @@ assert.match(gridCss, /px-grid-filter-body[\s\S]*overscroll-behavior:contain/,
   'Somente o conteúdo interno dos filtros deve rolar');
 assert.match(launchDynamicCss, /px-meg-confirm-overlay/,
   'Confirmação MEG precisa possuir overlay próprio');
+assert.match(phoenixApp, /import '\.\/phoenix-layers\.css'/,
+  'Shell deve importar por último a escala única de camadas.');
+assert.match(layersCss, /--meg-z-drawer:2000[\s\S]*--meg-z-modal:3200[\s\S]*--meg-z-critical:5200/,
+  'Hierarquia global deve separar drawer, modal e confirmação crítica.');
+assert.match(layersCss, /px-meg-confirm-overlay[\s\S]*var\(--meg-z-critical\)/,
+  'Notificação decisória deve sempre usar a camada crítica.');
+assert.doesNotMatch(cardPurchaseEdit, /window\.confirm|window\.alert/,
+  'Compra de cartão não pode usar confirmação nativa.');
+assert.doesNotMatch(cardManagement, /window\.confirm|window\.alert/,
+  'Gerenciador de cartões não pode usar confirmação nativa.');
+assert.match(megConfirm, /data-meg-priority-layer|dataset\.megPriorityLayer/,
+  'Confirmação compartilhada deve identificar explicitamente a prioridade crítica.');
 assert.match(launchDynamicCss, /px-meg-confirm-overlay[\s\S]*z-index:5200!important/,
   'Confirmações críticas precisam ficar acima de qualquer drawer.');
 assert.match(operationalCss, /px-meg-confirm-overlay[\s\S]*z-index:5200!important/,
