@@ -1030,7 +1030,14 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
   function requestSaveEdit() {
     if (!editingEvent || savingEdit) return;
-    if (editingEvent.status === 'planned' && effectiveSituation === 'paid') {
+    if (missing.length) {
+      setValidationVisible(true);
+      window.requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>('.px-launch-drawer .px-field.is-invalid input, .px-launch-drawer .px-field.is-invalid select, .px-launch-drawer .px-field.is-invalid textarea')?.focus();
+      });
+      return;
+    }
+    if (editingEvent.status === 'planned' && effectiveSituation === 'paid' && !editingCardPurchase) {
       setSettlementConfirmOpen(true);
       return;
     }
@@ -1313,7 +1320,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
 
           {credit ? <div className="px-card-box">
             <label className={`px-field ${invalidField('cartão') ? 'is-invalid' : ''}`}><span>Cartão *</span><select value={draft.cardId} onChange={(event) => updateDraft('cardId', event.target.value)}><option value="">Selecione o cartão cadastrado</option>{cards.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>{invalidField('cartão') ? <small className="px-field-error">Selecione o cartão.</small> : null}</label>
-            <div className="px-calculated-due"><span>Vencimento calculado</span><strong>{calculatedDue ? date.format(new Date(`${calculatedDue}T12:00:00Z`)) : 'Definido após selecionar o cartão'}</strong></div>
+            <div className="px-calculated-due"><span>Vencimento calculado</span><strong>{calculatedDue ? date.format(new Date(`${calculatedDue}T12:00:00Z`)) : 'Definido após selecionar o cartão'}</strong></div>{calculatedDue ? <div className="px-calculated-due"><span>Competência nos Lançamentos</span><strong>{formatMonthLabel(calculatedDue.slice(0, 7))}</strong></div> : null}
             <div className="px-rule-box">No crédito, a compra continua sendo um lançamento comum. A data da compra define a fatura; o vencimento é levado ao próximo dia útil quando cair no fim de semana e o mês desse vencimento define a competência da grade.</div>
           </div> : null}
 
@@ -1338,9 +1345,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
           {editMessage ? <div className={`px-notice ${editMessage.includes('protegido') || editMessage.includes('liberada') || editMessage.includes('possível') ? 'warn' : 'ok'}`}>{editMessage}</div> : null}
 
           {editingEventId ? <div className="px-edit-launch-actions">
-            {!reviewed
-              ? <button className="px-primary-action px-review-launch" type="button" onClick={reviewLaunch}>{missing.length ? 'Salvar alterações' : 'Revisar alterações'}</button>
-              : <button className="px-primary-action px-confirm-launch" type="button" disabled={savingEdit || deletingEvent || Boolean(duplicate)} onClick={requestSaveEdit} aria-busy={savingEdit}>{savingEdit ? 'Salvando e sincronizando…' : duplicate ? 'Revise a possível duplicidade' : 'Salvar alterações'}</button>}
+            <button className="px-primary-action px-confirm-launch" type="button" disabled={savingEdit || deletingEvent || Boolean(duplicate)} onClick={requestSaveEdit} aria-busy={savingEdit}>{savingEdit ? 'Salvando…' : duplicate ? 'Revise a possível duplicidade' : 'Salvar alterações'}</button>
             <button className="px-secondary-action px-cancel-launch" type="button" disabled={savingEdit || deletingEvent} onClick={requestCloseLaunch}>Cancelar</button>
             {canArchiveEvent ? <button className="px-delete-launch" type="button" disabled={savingEdit || deletingEvent} onClick={() => requestDeleteEvent()}>Excluir lançamento</button> : null}
           </div>
