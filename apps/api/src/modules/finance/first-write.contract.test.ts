@@ -6,6 +6,7 @@ const mutation = readFileSync(new URL('./event-mutation.ts', import.meta.url), '
 const audit = readFileSync(new URL('./audit.ts', import.meta.url), 'utf8');
 const catalogScope = readFileSync(new URL('./catalog-scope.ts', import.meta.url), 'utf8');
 const protection = readFileSync(new URL('./monetary-protection.ts', import.meta.url), 'utf8');
+const catalogMutation = readFileSync(new URL('./catalog-mutation.ts', import.meta.url), 'utf8');
 
 assert.match(routes, /createFinancialEventProtected/,
   'POST de evento deve usar o gateway protegido.');
@@ -54,12 +55,14 @@ assert.match(routes, /prisma\.category\.findMany\(\{ where: \{ userId: dataOwner
   'Leitura de categorias deve ser isolada pela base financeira do workspace.');
 assert.match(routes, /prisma\.paymentMethod\.findMany\(\{ where: \{ userId: dataOwnerId \}/,
   'Leitura de formas de pagamento deve ser isolada pela base financeira do workspace.');
-assert.match(routes, /prisma\.account\.create\(\{ data: \{ userId: dataOwnerId/,
+assert.match(catalogMutation, /tx\.account\.create\([\s\S]*userId: context\.dataOwnerId/,
   'Novas contas devem nascer vinculadas ao proprietário financeiro do workspace.');
-assert.match(routes, /prisma\.category\.create\(\{ data: \{ userId: dataOwnerId/,
+assert.match(catalogMutation, /tx\.category\.create\([\s\S]*userId: context\.dataOwnerId/,
   'Novas categorias devem nascer vinculadas ao proprietário financeiro do workspace.');
-assert.match(routes, /prisma\.paymentMethod\.create\(\{ data: \{ userId: dataOwnerId/,
+assert.match(catalogMutation, /tx\.paymentMethod\.create\([\s\S]*userId: context\.dataOwnerId/,
   'Novas formas de pagamento devem nascer vinculadas ao proprietário financeiro do workspace.');
+assert.match(routes, /createAccountCatalog[\s\S]*createCategoryCatalog[\s\S]*createPaymentMethodCatalog/,
+  'Rotas de cadastro devem delegar as escritas ao gateway protegido.');
 
 assert.match(audit, /schemaVersion:\s*1/);
 assert.match(audit, /resolveWorkspaceContext/,
