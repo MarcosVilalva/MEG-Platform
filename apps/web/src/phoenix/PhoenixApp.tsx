@@ -338,7 +338,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   if (view === 'history') return <Suspense fallback={<ScreenWarmFallback label="Histórico" />}><PhoenixHistory data={data} /></Suspense>;
   if (view === 'payables') return <Suspense fallback={<ScreenWarmFallback label="Pendentes" />}><PhoenixPayables data={data} /></Suspense>;
   if (view === 'cards') return <Suspense fallback={<ScreenWarmFallback label="Cartões" />}><PhoenixCardsGrid data={data} /></Suspense>;
-  if (view === 'catalogs') return <PhoenixCatalogsGrid data={data} />;
+  if (view === 'catalogs') return <PhoenixCatalogsGrid data={data} onDataCommitted={onDataCommitted} />;
   if (view === 'users') return <PhoenixUsers data={data} />;
   if (view === 'settings') return <PhoenixSettings data={data} theme={theme} onToggleTheme={onToggleTheme} onLogoutRequest={onLogoutRequest} />;
   if (view === 'receivables') return <PhoenixReceivablesGrid data={data} />;

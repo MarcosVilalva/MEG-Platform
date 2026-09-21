@@ -41,6 +41,16 @@ assert.doesNotMatch(cards, /window\.confirm|window\.alert/,
   'Gestão de cartões não pode usar confirmação nativa do navegador.');
 assert.match(catalogs, /px-meg-confirm-overlay px-catalog-active-confirm/,
   'Ativação e desativação devem usar confirmação MEG prioritária.');
+assert.match(catalogs, /onDataCommitted/,
+  'Alteração confirmada de cadastro deve atualizar imediatamente o snapshot global, sem esperar releitura completa.');
+assert.match(catalogs, /Alteração salva e confirmada pelo servidor/,
+  'Editor deve sair do estado de salvamento assim que a API confirmar a alteração.');
+assert.match(cards, /replaceCard\(saved\)[\s\S]*refreshCardsInBackground\(\)/,
+  'Cadastro de cartão deve aplicar o retorno confirmado antes da releitura em segundo plano.');
+assert.doesNotMatch(cards, /await loadCards\(\);[\s\S]{0,220}mode = 'list'/,
+  'Salvar, desativar ou reativar cartão não pode prender a interface aguardando uma segunda leitura.');
+assert.match(cards, /loadingPromise/,
+  'Leituras concorrentes do cadastro de cartões devem ser coalescidas em uma única promise.');
 assert.match(cards, /megConfirm/,
   'Gestão de cartões deve reutilizar a confirmação MEG central.');
 assert.match(confirm, /px-meg-confirm-overlay[\s\S]*role="alertdialog"/,
