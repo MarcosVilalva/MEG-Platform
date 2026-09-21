@@ -1,9 +1,9 @@
 {
-  "versionCode": 331,
-  "versionName": "2.0.331",
+  "versionCode": 332,
+  "versionName": "2.0.332",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "61160fe212730a5c808ad4459e2c24e665c145e0a705fccc65c194e09ae06440",
+  "sha256": "ef98f3e2f86cf6d8df54586f3da8857a9eaac967b856e805608b4f370bf097c3",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge PR #357: filtro real de datas em Pendentes"
+  "releaseNotes": "moderniza Pendentes com navegação mensal e visão Tudo"
 }
