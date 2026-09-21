@@ -322,7 +322,7 @@ assert.doesNotMatch(mainEntry, /card-event-form-bridge|card-purchase-edit-bridge
   'Runtime oficial não deve carregar bridges legados que interceptam cartões com telas paralelas.');
 assert.doesNotMatch(cardProjection, /Domínio de cartões\/faturas/,
   'A projeção mensal do cartão deve aparecer ao usuário como lançamento comum.');
-assert.match(cardProjection, /purchaseId:[\s\S]*cardId:[\s\S]*purchaseDate/,
+assert.match(cardProjection, /cardId:[\s\S]*purchaseId:[\s\S]*purchaseDate/,
   'A projeção deve preservar IDs técnicos para que o editor comum atualize a compra correta.');
 assert.match(movements, /data\.user\.role === 'ADMIN' \|\| data\.user\.role === 'MANAGER'/,
   'Ação de exclusão deve respeitar a mesma permissão administrativa da API.');
