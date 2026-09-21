@@ -1095,7 +1095,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     {launchOpen ? <>
       <button className="px-launch-backdrop" type="button" aria-label="Fechar lançamento" onClick={requestCloseLaunch} />
       <aside className="px-launch-drawer" data-phoenix-refresh-month={data.month} aria-label={editingEventId ? 'Editar lançamento' : 'Novo lançamento'}>
-        <div className="px-drawer-head"><div><span className="px-kicker">{editingEventId ? 'Editar evento' : 'Novo evento'}</span><h2>{editingEventId ? 'Editar lançamento' : 'Lançamento'}</h2></div><button className="px-icon-btn" type="button" onClick={requestCloseLaunch}>×</button></div>
+        <div className="px-drawer-head"><div><span className="px-kicker">{editingEventId ? 'Editar evento' : 'Novo evento'}</span><h2>{editingEventId ? 'Editar lançamento' : 'Lançamento'}</h2></div><button className="px-icon-btn" type="button" aria-label="Fechar lançamento" title="Fechar lançamento" onClick={requestCloseLaunch}>×</button></div>
         <div className="px-launch-form px-card">
           <div className="px-segment" aria-label="Tipo do lançamento">{(['expense','income','transfer'] as TxType[]).map((item) => <button key={item} type="button" className={draft.type === item ? 'active' : ''} onClick={() => changeLaunchType(item)}>{item === 'expense' ? 'Despesa' : item === 'income' ? 'Receita' : 'Transferência'}</button>)}</div>
           <div className="px-launch-section-label">Dados principais</div>
