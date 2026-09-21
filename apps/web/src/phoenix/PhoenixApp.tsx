@@ -350,7 +350,6 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
         current={data}
         events={periodContext?.projectionEvents || data.events.items}
         targetMonth={month}
-        today={todayIso()}
         currentRealBalance={periodContext?.currentRealBalance}
         currentBenefitBalance={periodContext?.currentBenefitBalance}
         onNavigate={onNavigate}
@@ -1170,7 +1169,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
       </nav>
     </div>
     {searchOpen ? <PhoenixCommandPalette data={viewData} onClose={() => setSearchOpen(false)} onNavigate={navigate} /> : null}
-    {exitConfirmOpen ? <div className="px-meg-confirm-overlay px-app-exit-confirm">
+    {exitConfirmOpen && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay px-app-exit-confirm">
       <button className="px-meg-confirm-backdrop" type="button" aria-label="Não sair" onClick={() => setExitConfirmOpen(false)} />
       <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-exit-title" aria-describedby="px-exit-copy">
         <div className="px-meg-confirm-icon" aria-hidden="true">↪</div>
@@ -1185,6 +1184,6 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
           <button className="px-meg-confirm-danger" type="button" onClick={() => { setExitConfirmOpen(false); onClose?.(); }}>Sim, fechar</button>
         </div>
       </section>
-    </div> : null}
+    </div>, document.body) : null}
   </div>;
 }
