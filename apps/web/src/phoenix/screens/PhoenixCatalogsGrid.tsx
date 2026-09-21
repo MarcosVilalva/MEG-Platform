@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { financeClient, type Account, type Category, type PaymentMethod } from '../../app/finance-client';
+import { readSession } from '../../app/auth-client';
 import type { CreditCard } from '../../app/cards-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import { resolvePhoenixCardIdentity } from '../card-identity';
@@ -28,6 +30,27 @@ type CatalogRow = {
 };
 
 type CatalogState<T> = Record<CatalogTab, T>;
+type EditableCatalogTab = Exclude<CatalogTab, 'cards'>;
+type CatalogDraft = {
+  name: string;
+  type: string;
+  institution: string;
+  openingBalance: string;
+  group: string;
+};
+type CatalogEditor = { mode: 'create' | 'edit'; tab: EditableCatalogTab; id?: string; draft: CatalogDraft } | null;
+
+const emptyDraft = (): CatalogDraft => ({ name: '', type: '', institution: '', openingBalance: '0,00', group: '' });
+
+const accountTypes = [
+  ['checking', 'Conta corrente'], ['savings', 'Poupança'], ['cash', 'Dinheiro'],
+  ['investment', 'Investimento'], ['credit', 'Crédito'], ['benefit', 'Benefício']
+] as const;
+const categoryTypes = [['expense', 'Despesa'], ['income', 'Receita']] as const;
+const paymentTypes = [
+  ['instant', 'Instantâneo / Pix'], ['bill', 'Boleto'], ['credit', 'Crédito'], ['debit', 'Débito'],
+  ['transfer', 'Transferência'], ['cash', 'Dinheiro'], ['other', 'Outro']
+] as const;
 
 const tabKeys: Record<CatalogTab, CatalogGridKey[]> = {
   accounts: ['name', 'type', 'institution', 'openingBalance', 'status'],
@@ -168,13 +191,26 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
   const [filtersByTab, setFiltersByTab] = useState<CatalogState<CatalogFilterMap>>(initialFiltersByTab);
   const [sortByTab, setSortByTab] = useState<CatalogState<CatalogSort>>(initialSortByTab);
   const [searchByTab, setSearchByTab] = useState<CatalogState<string>>(initialSearchByTab);
+  const [accounts, setAccounts] = useState<Account[]>(() => data.accounts.map((item) => ({ ...item })));
+  const [categories, setCategories] = useState<Category[]>(() => data.categories.map((item) => ({ ...item })));
+  const [payments, setPayments] = useState<PaymentMethod[]>(() => data.paymentMethods.map((item) => ({ ...item })));
+  const [editor, setEditor] = useState<CatalogEditor>(null);
+  const [mutationBusy, setMutationBusy] = useState(false);
+  const [mutationMessage, setMutationMessage] = useState('');
+  const role = readSession()?.user.role;
+  const canWrite = role === 'ADMIN' || role === 'MANAGER' || role === 'OPERATOR';
+  const canDeactivate = role === 'ADMIN' || role === 'MANAGER';
 
-  const activeAccounts = data.accounts.filter((item) => item.isActive);
-  const activeCategories = data.categories.filter((item) => item.isActive);
-  const activePayments = data.paymentMethods.filter((item) => item.isActive);
+  useEffect(() => { setAccounts(data.accounts.map((item) => ({ ...item }))); }, [data.accounts]);
+  useEffect(() => { setCategories(data.categories.map((item) => ({ ...item }))); }, [data.categories]);
+  useEffect(() => { setPayments(data.paymentMethods.map((item) => ({ ...item }))); }, [data.paymentMethods]);
+
+  const activeAccounts = accounts.filter((item) => item.isActive);
+  const activeCategories = categories.filter((item) => item.isActive);
+  const activePayments = payments.filter((item) => item.isActive);
 
   const rows = useMemo<CatalogRow[]>(() => {
-    if (tab === 'accounts') return data.accounts.map((item) => ({
+    if (tab === 'accounts') return accounts.map((item) => ({
       id: item.id,
       name: item.name,
       type: item.type || '—',
@@ -184,7 +220,7 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
       status: item.isActive ? 'Ativa' : 'Inativa',
       issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null
     }));
-    if (tab === 'categories') return data.categories.map((item) => ({
+    if (tab === 'categories') return categories.map((item) => ({
       id: item.id,
       name: item.name,
       type: item.type || '—',
@@ -193,7 +229,7 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
       status: item.isActive ? 'Ativa' : 'Inativa',
       issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null
     }));
-    if (tab === 'payments') return data.paymentMethods.map((item) => ({
+    if (tab === 'payments') return payments.map((item) => ({
       id: item.id,
       name: item.name,
       type: item.type || '—',
@@ -212,7 +248,7 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
       dueDay: Number(item.dueDay || 0),
       card: item
     }));
-  }, [data, tab]);
+  }, [accounts, categories, payments, data.cards, tab]);
 
   const filters = filtersByTab[tab];
   const sort = sortByTab[tab];
@@ -271,6 +307,121 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
     return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} options={list} sort={sort?.key === key ? sort.direction : null} onSort={(direction) => setSort(key, direction)} onChange={(value) => updateFilter(key, value)} /></div>;
   }
 
+  function draftForRow(row: CatalogRow): CatalogDraft {
+    return {
+      name: row.name === '—' ? '' : row.name,
+      type: row.type === '—' ? '' : row.type,
+      institution: row.institution === '—' ? '' : row.institution,
+      openingBalance: Number(row.openingBalance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      group: row.group === '—' ? '' : row.group
+    };
+  }
+
+  function openNew() {
+    setMutationMessage('');
+    if (tab === 'cards') {
+      window.dispatchEvent(new CustomEvent('meg:open-card-management'));
+      return;
+    }
+    if (!canWrite) return;
+    const draft = emptyDraft();
+    if (tab === 'accounts') draft.type = 'checking';
+    if (tab === 'categories') draft.type = 'expense';
+    if (tab === 'payments') draft.type = 'instant';
+    setEditor({ mode: 'create', tab, draft });
+  }
+
+  function openEdit(row: CatalogRow) {
+    setMutationMessage('');
+    if (tab === 'cards') {
+      window.dispatchEvent(new CustomEvent('meg:open-card-management'));
+      return;
+    }
+    if (!canWrite) return;
+    setEditor({ mode: 'edit', tab, id: row.id, draft: draftForRow(row) });
+  }
+
+  function updateDraft(key: keyof CatalogDraft, value: string) {
+    setEditor((current) => current ? { ...current, draft: { ...current.draft, [key]: value } } : current);
+  }
+
+  function mutationError(error: unknown) {
+    const message = error instanceof Error ? error.message : 'Não foi possível atualizar o cadastro.';
+    if (/VALIDATION_ERROR/i.test(message)) return 'Confira os campos informados antes de salvar.';
+    if (/403|FORBIDDEN/i.test(message)) return 'Seu perfil não possui permissão para esta alteração.';
+    return message;
+  }
+
+  async function saveEditor() {
+    if (!editor || mutationBusy) return;
+    const name = editor.draft.name.trim();
+    if (name.length < 2) return setMutationMessage('Informe um nome com pelo menos 2 caracteres.');
+    setMutationBusy(true);
+    setMutationMessage('Salvando…');
+    try {
+      if (editor.tab === 'accounts') {
+        const payload = {
+          name,
+          type: editor.draft.type as Account['type'],
+          institution: editor.draft.institution.trim() || null,
+          openingBalance: parseBrazilianNumber(editor.draft.openingBalance) ?? 0
+        };
+        const saved = editor.mode === 'create'
+          ? await financeClient.createAccount(payload)
+          : await financeClient.updateAccount(editor.id!, payload);
+        setAccounts((current) => editor.mode === 'create' ? [...current, saved] : current.map((item) => item.id === saved.id ? saved : item));
+      } else if (editor.tab === 'categories') {
+        const payload = { name, group: editor.draft.group.trim() || null, type: (editor.draft.type || null) as Category['type'] };
+        const saved = editor.mode === 'create'
+          ? await financeClient.createCategory(payload)
+          : await financeClient.updateCategory(editor.id!, payload);
+        setCategories((current) => editor.mode === 'create' ? [...current, saved] : current.map((item) => item.id === saved.id ? saved : item));
+      } else {
+        const payload = { name, type: (editor.draft.type || null) as PaymentMethod['type'] };
+        const saved = editor.mode === 'create'
+          ? await financeClient.createPaymentMethod(payload)
+          : await financeClient.updatePaymentMethod(editor.id!, payload);
+        setPayments((current) => editor.mode === 'create' ? [...current, saved] : current.map((item) => item.id === saved.id ? saved : item));
+      }
+      setMutationMessage('');
+      setEditor(null);
+    } catch (error) {
+      setMutationMessage(mutationError(error));
+    } finally {
+      setMutationBusy(false);
+    }
+  }
+
+  async function changeActive(row: CatalogRow, active: boolean) {
+    if (mutationBusy || tab === 'cards') return;
+    if (!active && !canDeactivate) {
+      setMutationMessage('Somente ADMIN ou MANAGER pode desativar cadastros.');
+      return;
+    }
+    if (active && !canWrite) return;
+    const verb = active ? 'reativar' : 'desativar';
+    if (!window.confirm(`Deseja ${verb} “${row.name}”?\n\nO histórico financeiro existente será preservado.`)) return;
+    setMutationBusy(true);
+    setMutationMessage(active ? 'Reativando cadastro…' : 'Desativando cadastro…');
+    try {
+      if (tab === 'accounts') {
+        const saved = active ? await financeClient.updateAccount(row.id, { isActive: true }) : await financeClient.deactivateAccount(row.id);
+        setAccounts((current) => current.map((item) => item.id === saved.id ? saved : item));
+      } else if (tab === 'categories') {
+        const saved = active ? await financeClient.updateCategory(row.id, { isActive: true }) : await financeClient.deactivateCategory(row.id);
+        setCategories((current) => current.map((item) => item.id === saved.id ? saved : item));
+      } else {
+        const saved = active ? await financeClient.updatePaymentMethod(row.id, { isActive: true }) : await financeClient.deactivatePaymentMethod(row.id);
+        setPayments((current) => current.map((item) => item.id === saved.id ? saved : item));
+      }
+      setMutationMessage(active ? 'Cadastro reativado com o histórico preservado.' : 'Cadastro desativado. Nenhum histórico foi apagado.');
+    } catch (error) {
+      setMutationMessage(mutationError(error));
+    } finally {
+      setMutationBusy(false);
+    }
+  }
+
   return <section className="px-screen">
     <PageIntro />
     <section className="px-screen-kpis">
@@ -288,7 +439,8 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
     </div>
 
     <section className="px-card px-catalog-panel px-table-card">
-      <div className="px-panel-head"><div><span>Base real</span><h2>{tab === 'accounts' ? 'Contas' : tab === 'categories' ? 'Classificações' : tab === 'payments' ? 'Formas de pagamento' : 'Cartões'}</h2></div><button className="px-secondary-action" type="button" disabled>Novo cadastro</button></div>
+      <div className="px-panel-head"><div><span>Base real</span><h2>{tab === 'accounts' ? 'Contas' : tab === 'categories' ? 'Classificações' : tab === 'payments' ? 'Formas de pagamento' : 'Cartões'}</h2></div><button className="px-secondary-action" type="button" disabled={!canWrite} onClick={openNew}>{tab === 'cards' ? 'Gerenciar cartões' : '＋ Novo cadastro'}</button></div>
+      {mutationMessage ? <div className={`px-catalog-feedback ${/não|erro|confira|permissão/i.test(mutationMessage) ? 'warn' : 'ok'}`}>{mutationMessage}</div> : null}
 
       <div className="px-toolbar px-catalog-grid-toolbar">
         <label className="px-search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar em todas as colunas deste cadastro" /></label>
@@ -306,21 +458,52 @@ export function PhoenixCatalogsGrid({ data }: { data: PhoenixReadModel }) {
       <div className="px-table-scroll">
         <table className="px-data-table">
           <thead><tr>
-            {tab === 'accounts' ? <><th>{header('Conta', 'name', 'text')}</th><th>{header('Tipo', 'type', 'multi', options.type)}</th><th>{header('Instituição', 'institution', 'multi', options.institution)}</th><th>{header('Saldo inicial', 'openingBalance', 'number')}</th><th>{header('Status', 'status', 'multi', options.status)}</th></> : null}
-            {tab === 'categories' ? <><th>{header('Classificação', 'name', 'text')}</th><th>{header('Grupo', 'group', 'multi', options.group)}</th><th>{header('Tipo', 'type', 'multi', options.type)}</th><th>{header('Status', 'status', 'multi', options.status)}</th></> : null}
-            {tab === 'payments' ? <><th>{header('Forma', 'name', 'text')}</th><th>{header('Tipo', 'type', 'multi', options.type)}</th><th>{header('Status', 'status', 'multi', options.status)}</th></> : null}
-            {tab === 'cards' ? <><th>{header('Cartão', 'name', 'text')}</th><th>{header('Emissor', 'issuer', 'multi', options.issuer)}</th><th>{header('Bandeira', 'brand', 'multi', options.brand)}</th><th>{header('Limite', 'creditLimit', 'number')}</th><th>{header('Fechamento', 'closingDay', 'number')}</th><th>{header('Vencimento', 'dueDay', 'number')}</th></> : null}
+            {tab === 'accounts' ? <><th>{header('Conta', 'name', 'text')}</th><th>{header('Tipo', 'type', 'multi', options.type)}</th><th>{header('Instituição', 'institution', 'multi', options.institution)}</th><th>{header('Saldo inicial', 'openingBalance', 'number')}</th><th>{header('Status', 'status', 'multi', options.status)}</th><th>Ações</th></> : null}
+            {tab === 'categories' ? <><th>{header('Classificação', 'name', 'text')}</th><th>{header('Grupo', 'group', 'multi', options.group)}</th><th>{header('Tipo', 'type', 'multi', options.type)}</th><th>{header('Status', 'status', 'multi', options.status)}</th><th>Ações</th></> : null}
+            {tab === 'payments' ? <><th>{header('Forma', 'name', 'text')}</th><th>{header('Tipo', 'type', 'multi', options.type)}</th><th>{header('Status', 'status', 'multi', options.status)}</th><th>Ações</th></> : null}
+            {tab === 'cards' ? <><th>{header('Cartão', 'name', 'text')}</th><th>{header('Emissor', 'issuer', 'multi', options.issuer)}</th><th>{header('Bandeira', 'brand', 'multi', options.brand)}</th><th>{header('Limite', 'creditLimit', 'number')}</th><th>{header('Fechamento', 'closingDay', 'number')}</th><th>{header('Vencimento', 'dueDay', 'number')}</th><th>Ações</th></> : null}
           </tr></thead>
           <tbody>{visibleRows.map((row) => {
-            if (tab === 'accounts') return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.type}</td><td>{row.institution}</td><td className="px-money">{money.format(row.openingBalance || 0)}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td></tr>;
-            if (tab === 'categories') return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.group}</td><td>{row.type}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td></tr>;
-            if (tab === 'payments') return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.type}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td></tr>;
+            if (tab === 'accounts') return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.type}</td><td>{row.institution}</td><td className="px-money">{money.format(row.openingBalance || 0)}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
+            if (tab === 'categories') return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.group}</td><td>{row.type}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
+            if (tab === 'payments') return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.type}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
             const identity = row.card ? resolvePhoenixCardIdentity(row.card) : null;
-            return <tr key={row.id}><td><span className="px-catalog-card-name"><span className="px-mini-card" style={{ background: identity?.background }}>{identity?.miniLabel || row.name.slice(0, 6).toUpperCase()}</span><strong>{row.name}</strong></span></td><td>{row.issuer}</td><td>{row.brand}</td><td className="px-money">{money.format(row.creditLimit || 0)}</td><td>dia {row.closingDay}</td><td>dia {row.dueDay}</td></tr>;
+            return <tr key={row.id}><td><span className="px-catalog-card-name"><span className="px-mini-card" style={{ background: identity?.background }}>{identity?.miniLabel || row.name.slice(0, 6).toUpperCase()}</span><strong>{row.name}</strong></span></td><td>{row.issuer}</td><td>{row.brand}</td><td className="px-money">{money.format(row.creditLimit || 0)}</td><td>dia {row.closingDay}</td><td>dia {row.dueDay}</td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Gerenciar</button></div></td></tr>;
           })}</tbody>
         </table>
         {!visibleRows.length ? <p className="px-empty">Nenhum cadastro corresponde aos filtros aplicados.</p> : null}
       </div>
+
+      <div className="px-catalog-mobile-list" aria-label="Cadastros">
+        {visibleRows.map((row) => <article key={row.id} className="px-catalog-mobile-item">
+          <div><strong>{row.name}</strong><small>{tab === 'accounts' ? `${row.type} · ${row.institution}` : tab === 'categories' ? `${row.group} · ${row.type}` : tab === 'payments' ? row.type : `${row.issuer} · ${row.brand}`}</small></div>
+          {tab !== 'cards' ? <span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span> : <span className="px-status reconciled">Cartão</span>}
+          <div className="px-catalog-mobile-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>{tab === 'cards' ? 'Gerenciar' : 'Editar'}</button>{tab !== 'cards' ? <button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button> : null}</div>
+        </article>)}
+      </div>
     </section>
+
+    {editor ? <div className="px-catalog-editor-layer">
+      <button type="button" className="px-catalog-editor-backdrop" aria-label="Fechar cadastro" onClick={() => !mutationBusy && setEditor(null)} />
+      <aside className="px-catalog-editor" role="dialog" aria-modal="true" aria-label={editor.mode === 'create' ? 'Novo cadastro' : 'Editar cadastro'}>
+        <header><div><span className="px-kicker">{editor.mode === 'create' ? 'Novo cadastro' : 'Editar cadastro'}</span><h2>{editor.tab === 'accounts' ? 'Conta' : editor.tab === 'categories' ? 'Classificação' : 'Forma de pagamento'}</h2></div><button type="button" onClick={() => setEditor(null)} disabled={mutationBusy}>×</button></header>
+        <div className="px-catalog-editor-body">
+          <label><span>Nome *</span><input value={editor.draft.name} maxLength={120} onChange={(event) => updateDraft('name', event.target.value)} /></label>
+          {editor.tab === 'accounts' ? <>
+            <label><span>Tipo *</span><select value={editor.draft.type} onChange={(event) => updateDraft('type', event.target.value)}>{accountTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+            <label><span>Instituição</span><input value={editor.draft.institution} maxLength={120} onChange={(event) => updateDraft('institution', event.target.value)} /></label>
+            <label><span>Saldo inicial</span><input inputMode="decimal" value={editor.draft.openingBalance} onChange={(event) => updateDraft('openingBalance', event.target.value)} /></label>
+          </> : null}
+          {editor.tab === 'categories' ? <>
+            <label><span>Grupo</span><input value={editor.draft.group} maxLength={120} onChange={(event) => updateDraft('group', event.target.value)} /></label>
+            <label><span>Tipo</span><select value={editor.draft.type} onChange={(event) => updateDraft('type', event.target.value)}>{categoryTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+          </> : null}
+          {editor.tab === 'payments' ? <label><span>Tipo</span><select value={editor.draft.type} onChange={(event) => updateDraft('type', event.target.value)}>{paymentTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label> : null}
+          <p>Alterar o cadastro não apaga lançamentos anteriores. Desativação apenas impede novos usos quando aplicável.</p>
+          {mutationMessage ? <div className="px-catalog-feedback warn">{mutationMessage}</div> : null}
+        </div>
+        <footer><button type="button" onClick={() => setEditor(null)} disabled={mutationBusy}>Cancelar</button><button type="button" className="px-primary-action" onClick={() => void saveEditor()} disabled={mutationBusy}>{mutationBusy ? 'Salvando…' : 'Salvar'}</button></footer>
+      </aside>
+    </div> : null}
   </section>;
 }
