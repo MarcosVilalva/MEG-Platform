@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { financeClient, type Account, type Category, type PaymentMethod } from '../../app/finance-client';
 import { readSession } from '../../app/auth-client';
 import type { CreditCard } from '../../app/cards-client';
@@ -584,7 +585,7 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       </div>
     </section>
 
-    {activeConfirm ? <div className="px-meg-confirm-overlay px-catalog-active-confirm">
+    {activeConfirm && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay px-catalog-active-confirm">
       <button className="px-meg-confirm-backdrop" type="button" aria-label="Cancelar" disabled={mutationBusy} onClick={() => setActiveConfirm(null)} />
       <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-catalog-active-title">
         <div className="px-meg-confirm-icon" aria-hidden="true">!</div>
@@ -601,7 +602,7 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
           </button>
         </div>
       </section>
-    </div> : null}
+    </div>, document.body) : null}
 
     {editor ? <div className="px-catalog-editor-layer">
       <button type="button" className="px-catalog-editor-backdrop" aria-label="Fechar cadastro" onClick={() => !mutationBusy && setEditor(null)} />

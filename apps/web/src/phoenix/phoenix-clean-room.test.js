@@ -33,6 +33,9 @@ const homeDashboard = readFileSync(new URL('./screens/PhoenixHomeDashboard.tsx',
 const homeNowCss = readFileSync(new URL('./phoenix-home-now.css', import.meta.url), 'utf8');
 const periodCss = readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8');
 const homeAllTime = readFileSync(new URL('./screens/PhoenixHomeAllTime.tsx', import.meta.url), 'utf8');
+const homePastMonth = readFileSync(new URL('./screens/PhoenixHomePastMonth.tsx', import.meta.url), 'utf8');
+const homeHorizon = readFileSync(new URL('./screens/PhoenixHomeHorizon.tsx', import.meta.url), 'utf8');
+const periodMobileCss = readFileSync(new URL('./phoenix-home-period-mobile.css', import.meta.url), 'utf8');
 const homePeriodSummary = readFileSync(new URL('./home-period-summary.ts', import.meta.url), 'utf8');
 const webScreens = readFileSync(new URL('./screens/PhoenixWebScreens.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
@@ -49,8 +52,8 @@ const phoenixHtml = readFileSync(new URL('../../phoenix.html', import.meta.url),
 const productionHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
 const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-home-dashboard.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-fidelity-v6.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-responsive-v61.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-operational-mobile.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
-const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${profileAvatar}\n${commandPalette}\n${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
-const readOnlyScreens = `${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${webScreens}\n${history}\n${users}\n${settings}\n${sidebar}\n${commandPalette}`;
+const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${profileAvatar}\n${commandPalette}\n${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${homePastMonth}\n${homeHorizon}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
+const readOnlyScreens = `${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${homePastMonth}\n${homeHorizon}\n${webScreens}\n${history}\n${users}\n${settings}\n${sidebar}\n${commandPalette}`;
 
 for (const forbidden of ['global.css', 'v15-contract.css', 'meg-v15.css']) {
   assert.doesNotMatch(phoenixSource, new RegExp(forbidden.replace('.', '\\.')),
@@ -642,6 +645,26 @@ assert.match(movementScreen, /px-delete-launch[\s\S]*Excluir lançamento/,
   'Editor móvel deve oferecer exclusão explícita quando o perfil tiver permissão.');
 assert.match(styles, /\.px-edit-launch-actions[\s\S]*@media\(max-width:760px\)[\s\S]*\.px-delete-launch/,
   'Ações de salvar e excluir devem se reorganizar verticalmente no Android.');
+assert.match(phoenixApp, /month < nowMonth[\s\S]*PhoenixHomePastMonth/,
+  'Home deve encaminhar mês passado ao resumo histórico compacto.');
+assert.match(phoenixApp, /month > nowMonth[\s\S]*PhoenixHomeHorizon/,
+  'Home deve encaminhar mês futuro à projeção operacional.');
+assert.match(homePastMonth, /Saldo inicial[\s\S]*Saldo final[\s\S]*Receitas realizadas[\s\S]*Despesas realizadas[\s\S]*Resultado do mês[\s\S]*Contas pagas/,
+  'Resumo passado deve mostrar somente a fotografia financeira essencial do mês.');
+assert.match(homePastMonth, /Benefício Alimentação[\s\S]*Separado do caixa monetário/,
+  'Benefício deve permanecer separado do caixa no histórico.');
+assert.match(homeHorizon, /Saldo inicial projetado[\s\S]*Receitas previstas[\s\S]*Total de compromissos[\s\S]*Faturas de cartões[\s\S]*Outras pendências/,
+  'Mês futuro deve mostrar projeção, faturas e pendências em vez de histórico zerado.');
+assert.match(homeHorizon, /event\.status === 'planned'/,
+  'Projeção futura deve usar compromissos ainda abertos.');
+assert.match(periodMobileCss, /\.px-home-past,[\s\S]*\.px-home-future/,
+  'Passado e futuro devem compartilhar uma composição móvel compacta.');
+assert.doesNotMatch(periodMobileCss, /position\s*:\s*(?:fixed|sticky)/,
+  'Dashboard de período não deve criar novos elementos flutuantes sobre o conteúdo.');
+assert.match(movementScreen, /createPortal\(<div className="px-meg-confirm-overlay"[\s\S]*document\.body\)/,
+  'Confirmações de lançamento devem sair do stacking context do drawer.');
+assert.match(phoenixApp, /createPortal\(<div className="px-meg-confirm-overlay px-app-exit-confirm"[\s\S]*document\.body\)/,
+  'Confirmação de saída também deve usar a camada global.');
 assert.match(phoenixApp, /Deseja fechar o aplicativo\?/,
   'APK deve pedir confirmação explícita antes de fechar.');
 assert.match(phoenixApp, />Não<[\s\S]*>Sim, fechar</,
@@ -668,10 +691,14 @@ assert.match(operationalCss, /\.px-launch-drawer[\s\S]*grid-template-rows:auto m
   'Cabeçalho de lançamento deve ficar fora da região rolável do formulário.');
 assert.match(operationalCss, /\.px-launch-form[\s\S]*overflow-y:auto!important/,
   'Somente o conteúdo do formulário deve rolar no Android.');
-assert.match(operationalCss, /body\.meg-operational-mobile \.px-edit-launch-actions\{[\s\S]*position:sticky!important/,
-  'Salvar e excluir devem permanecer acessíveis sem cobrir os campos do formulário móvel.');
-assert.doesNotMatch(operationalCss, /\.px-edit-launch-actions,[\s\S]{0,180}position:fixed!important/,
-  'Ações da edição não podem voltar ao overlay fixo que cobria o formulário.');
+assert.match(operationalCss, /body\.meg-operational-mobile \.px-edit-launch-actions\{[\s\S]*position:relative!important/,
+  'Salvar, cancelar e excluir devem permanecer no fluxo normal ao final do formulário móvel.');
+assert.doesNotMatch(operationalCss, /body\.meg-operational-mobile \.px-edit-launch-actions\{[\s\S]{0,220}position:(?:fixed|sticky)!important/,
+  'Ações da edição não podem voltar a flutuar sobre os campos do formulário.');
+assert.match(operationalCss, /body\.meg-operational-mobile \.px-launch-write-panel,[\s\S]*position:relative!important/,
+  'Controle de gravação de novos lançamentos também deve permanecer no fluxo normal.');
+assert.match(operationalCss, /\.px-main > \.px-content\{[\s\S]*padding-bottom:calc\(132px \+ env\(safe-area-inset-bottom\)\)!important/,
+  'Conteúdo móvel deve reservar área real abaixo do dock fixo.');
 assert.match(operationalCss, /\.px-pending-success-modal[\s\S]*overflow:hidden!important[\s\S]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/,
   'Resposta de baixa deve caber no viewport sem rolagem geral.');
 assert.match(phoenixApp, /px-mobile-brand-home[\s\S]*meg-finance-system-mark\.svg/,
@@ -790,8 +817,8 @@ assert.match(phoenixApp, /loadPhoenixAllEvents/,
   'Modo Tudo deve usar leitura real completa');
 assert.match(phoenixApp, /view === 'home' && periodMode !== 'month'/,
   'Intervalo e Tudo devem permanecer aplicados na Home principal em modo analítico.');
-assert.match(phoenixApp, /analyticalMonth = periodMode === 'month' && month !== currentMonth\(\)/,
-  'Somente o mês atual deve usar a Home operacional; outros meses devem abrir a leitura analítica.');
+assert.match(phoenixApp, /month < nowMonth[\s\S]*month > nowMonth/,
+  'Somente o mês atual deve usar a Home operacional; passado e futuro devem ter leituras próprias.');
 assert.match(phoenixApp, /realizedPeriodBounds/,
   'Saldo histórico deve ser reconstruído a partir do saldo real atual e dos movimentos realizados.');
 assert.match(phoenixApp, /const baseMonth = currentMonth\(\)/,
@@ -818,7 +845,7 @@ assert.match(phoenixApp, /px-period-progress/,
   'Troca de período deve exibir progresso contextual sem desmontar a tela.');
 assert.doesNotMatch(phoenixApp, /setMonth\(end\.slice\(0,\s*7\)\)/,
   'Intervalo de Lançamentos não pode alterar silenciosamente o mês oficial da Home');
-for (const screen of ['PhoenixMovementsV15', 'PhoenixHomeDashboard', 'PhoenixHomeAllTime', 'PhoenixHistory', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs', 'PhoenixUsers', 'PhoenixSettings', 'PhoenixReceivables', 'PhoenixRevenues', 'PhoenixCashflow', 'PhoenixReconciliation', 'PhoenixAnalytics', 'PhoenixBudgets', 'PhoenixCommandPalette', 'PhoenixSidebar']) {
+for (const screen of ['PhoenixMovementsV15', 'PhoenixHomeDashboard', 'PhoenixHomeAllTime', 'PhoenixHomePastMonth', 'PhoenixHomeHorizon', 'PhoenixHistory', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs', 'PhoenixUsers', 'PhoenixSettings', 'PhoenixReceivables', 'PhoenixRevenues', 'PhoenixCashflow', 'PhoenixReconciliation', 'PhoenixAnalytics', 'PhoenixBudgets', 'PhoenixCommandPalette', 'PhoenixSidebar']) {
   assert.ok(phoenixApp.includes(screen), `Tela Phoenix não conectada: ${screen}`);
 }
 assert.match(phoenixApp, /onLogout/,
