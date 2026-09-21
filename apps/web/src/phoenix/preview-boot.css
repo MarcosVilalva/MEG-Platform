@@ -701,3 +701,62 @@
   .px-preview-boot-copy p{display:none!important}
   .px-preview-boot-step{min-height:36px!important}
 }
+
+
+/* ==========================================================================
+   MEG Boot 3.1 · trava de viewport real para APK
+   O WebView Android pode reportar 100dvh maior que a área visual útil.
+   A altura medida por visualViewport/innerHeight é publicada em
+   --meg-viewport-height pelo PhoenixBootScreen e prevalece aqui.
+   ========================================================================== */
+.px-preview-fullscreen-boot{
+  box-sizing:border-box!important;
+  width:100%!important;
+  height:var(--meg-viewport-height,100svh)!important;
+  min-height:var(--meg-viewport-height,100svh)!important;
+  max-height:var(--meg-viewport-height,100svh)!important;
+  padding:max(10px,env(safe-area-inset-top)) 12px max(10px,env(safe-area-inset-bottom))!important;
+  place-items:center!important;
+}
+.px-preview-boot-card{
+  box-sizing:border-box!important;
+  width:min(400px,100%)!important;
+  max-height:calc(var(--meg-viewport-height,100svh) - max(20px,env(safe-area-inset-top)) - max(20px,env(safe-area-inset-bottom)))!important;
+  overflow:hidden!important;
+  align-content:center!important;
+}
+@media(max-width:560px){
+  .px-preview-boot-card{
+    width:min(370px,100%)!important;
+    padding:14px 13px 12px!important;
+    gap:9px!important;
+    border-radius:22px!important;
+  }
+  .px-preview-boot-brand{gap:6px!important}
+  .px-preview-boot-logo{width:84px!important;height:84px!important;border-radius:26px!important}
+  .px-preview-boot-logo img{width:52px!important;height:52px!important}
+  .px-preview-boot-wordmark{width:min(174px,52vw)!important;max-height:25px!important}
+  .px-preview-boot-copy h1{font-size:clamp(21px,6vw,27px)!important}
+  .px-preview-boot-copy p{font-size:8.8px!important;line-height:1.35!important}
+  .px-preview-boot-progress,.px-preview-boot-steps{width:min(300px,82vw)!important}
+  .px-preview-boot-step{min-height:36px!important}
+}
+@media(max-height:640px){
+  .px-preview-fullscreen-boot{padding:max(7px,env(safe-area-inset-top)) 10px max(7px,env(safe-area-inset-bottom))!important}
+  .px-preview-boot-card{padding:9px 12px!important;gap:6px!important}
+  .px-preview-boot-logo{width:68px!important;height:68px!important;border-radius:22px!important}
+  .px-preview-boot-logo img{width:42px!important;height:42px!important}
+  .px-preview-boot-wordmark{width:min(155px,48vw)!important;max-height:21px!important}
+  .px-preview-boot-trust,.px-preview-boot-foot,.px-preview-boot-copy p{display:none!important}
+  .px-preview-boot-stage-label{min-height:20px!important;padding:0 7px!important}
+  .px-preview-boot-copy h1{font-size:21px!important}
+  .px-preview-boot-progress{gap:4px!important}
+  .px-preview-boot-step{min-height:30px!important;padding:4px 2px!important}
+}
+@media(max-height:520px){
+  .px-preview-boot-card{gap:5px!important}
+  .px-preview-boot-logo{width:58px!important;height:58px!important}
+  .px-preview-boot-logo img{width:36px!important;height:36px!important}
+  .px-preview-boot-steps{display:none!important}
+  .px-preview-boot-copy h1{font-size:19px!important}
+}
