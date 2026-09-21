@@ -421,6 +421,11 @@ function handleOpen(event: MouseEvent) {
   void openDrawer();
 }
 
+function handleExternalOpen() {
+  if (!canWrite()) return;
+  void openDrawer();
+}
+
 function handleKeyDown(event: KeyboardEvent) {
   if (event.key === 'Escape' && root()) closeDrawer();
 }
@@ -428,6 +433,7 @@ function handleKeyDown(event: KeyboardEvent) {
 function start() {
   document.addEventListener('click', handleOpen);
   document.addEventListener('keydown', handleKeyDown);
+  window.addEventListener('meg:open-card-management', handleExternalOpen);
   observer = new MutationObserver(scheduleDecorate);
   observer.observe(document.body, { childList: true, subtree: true });
   scheduleDecorate();
@@ -441,5 +447,6 @@ export function stopPhoenixCardManagementBridge() {
   observer = null;
   document.removeEventListener('click', handleOpen);
   document.removeEventListener('keydown', handleKeyDown);
+  window.removeEventListener('meg:open-card-management', handleExternalOpen);
   closeDrawer();
 }
