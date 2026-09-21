@@ -1116,3 +1116,18 @@
     width:100%;
   }
 }
+
+
+/* Camada crítica: confirmações e alertas de decisão sempre ficam acima de drawers, menus e cabeçalhos. */
+.px-meg-confirm-overlay,
+.px-pending-confirm-overlay,
+.px-pending-success-overlay{
+  z-index:5200!important;
+  isolation:isolate;
+}
+.px-meg-confirm-dialog,
+.px-pending-confirm-modal,
+.px-pending-success-modal{
+  position:relative;
+  z-index:5201!important;
+}
