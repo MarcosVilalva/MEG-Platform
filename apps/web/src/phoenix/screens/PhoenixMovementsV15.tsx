@@ -1177,6 +1177,11 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
               refreshMonth={data.month}
               duplicateMessage={duplicateMessage}
               onReview={reviewLaunch}
+              onAccepted={() => {
+                setDirty(false);
+                setLaunchOpen(false);
+                resetLaunch();
+              }}
               onCommitted={(snapshot, event) => {
                 setData(snapshot);
                 onDataCommitted?.(snapshot);
