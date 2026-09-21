@@ -1,0 +1,43 @@
+:root{
+  --meg-z-header:120;
+  --meg-z-popover:900;
+  --meg-z-drawer-backdrop:1990;
+  --meg-z-drawer:2000;
+  --meg-z-modal-backdrop:3190;
+  --meg-z-modal:3200;
+  --meg-z-critical-backdrop:5190;
+  --meg-z-critical:5200;
+}
+
+/* Uma única escala evita que alertas fiquem atrás de drawers ou cabeçalhos. */
+.px-topbar{z-index:var(--meg-z-header)!important}
+.px-launch-backdrop{z-index:var(--meg-z-drawer-backdrop)!important}
+.px-launch-drawer,
+.px-detail-drawer,
+.px-card-management-drawer{z-index:var(--meg-z-drawer)!important}
+.px-card-purchase-editor{z-index:calc(var(--meg-z-drawer) + 20)!important}
+.px-card-purchase-editor + .px-launch-backdrop{z-index:calc(var(--meg-z-drawer) + 10)!important}
+
+.px-command-backdrop,
+.px-catalog-editor-layer,
+.px-pending-overlay,
+.px-period-mobile-backdrop{z-index:var(--meg-z-modal-backdrop)!important}
+.px-command-panel,
+.px-catalog-editor,
+.px-pending-drawer,
+.px-period-popover-v15.is-mobile-sheet{z-index:var(--meg-z-modal)!important}
+
+/* Confirmações financeiras e avisos decisórios sempre têm prioridade máxima. */
+.px-meg-confirm-overlay,
+.px-global-confirm-overlay,
+.px-pending-confirm-overlay,
+.px-pending-success-overlay{
+  z-index:var(--meg-z-critical)!important;
+  isolation:isolate!important;
+}
+.px-meg-confirm-dialog,
+.px-pending-confirm-modal,
+.px-pending-success-modal{
+  position:relative;
+  z-index:calc(var(--meg-z-critical) + 1)!important;
+}
