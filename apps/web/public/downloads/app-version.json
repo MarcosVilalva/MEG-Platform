@@ -1,9 +1,9 @@
 {
-  "versionCode": 332,
-  "versionName": "2.0.332",
+  "versionCode": 333,
+  "versionName": "2.0.333",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "ef98f3e2f86cf6d8df54586f3da8857a9eaac967b856e805608b4f370bf097c3",
+  "sha256": "5840d698c34b031f25dc7a3609aaca7409331124d63c8546fae2a9e5a66af292",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "moderniza Pendentes com navegação mensal e visão Tudo"
+  "releaseNotes": "sincroniza Pendentes ao trocar o mês"
 }
