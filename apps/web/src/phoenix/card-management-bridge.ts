@@ -12,6 +12,19 @@ let loadingPromise: Promise<CreditCard[]> | null = null;
 let cards: CreditCard[] = [];
 let mode: Mode = 'list';
 let editingId = '';
+let pendingMutation: { fingerprint: string; operationId: string } | null = null;
+
+function mutationOperationId(fingerprint: string) {
+  if (pendingMutation?.fingerprint === fingerprint) return pendingMutation.operationId;
+  const random = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const operationId = `card-management:${random}`;
+  pendingMutation = { fingerprint, operationId };
+  return operationId;
+}
+
+function clearMutationOperation() {
+  pendingMutation = null;
+}
 
 function normalize(value: unknown) {
   return String(value ?? '')
@@ -89,6 +102,7 @@ function closeDrawer() {
   document.querySelector('[data-card-management-backdrop]')?.remove();
   mode = 'list';
   editingId = '';
+  clearMutationOperation();
 }
 
 function root() {
@@ -363,20 +377,29 @@ async function saveCard() {
   if (button) { button.disabled = true; button.textContent = mode === 'create' ? 'Cadastrando…' : 'Salvando…'; }
   feedback(mode === 'create' ? 'Cadastrando cartão…' : 'Atualizando cadastro do cartão…');
   try {
+    const current = mode === 'edit' && editingId ? cards.find((card) => card.id === editingId) || null : null;
+    const fingerprint = JSON.stringify({ action: mode, id: editingId || null, updatedAt: current?.updatedAt || null, draft });
+    const operationId = mutationOperationId(fingerprint);
     const saved = mode === 'create'
-      ? await cardsClient.create(draft)
+      ? await cardsClient.create({ ...draft, operationId })
       : editingId
-        ? await cardsClient.update(editingId, draft)
+        ? await cardsClient.update(editingId, { ...draft, operationId, expectedUpdatedAt: current?.updatedAt })
         : null;
     if (!saved) throw new Error('CARD_SAVE_TARGET_MISSING');
     replaceCard(saved);
+    clearMutationOperation();
     mode = 'list';
     editingId = '';
     render();
     feedback('Cadastro de cartões atualizado. A confirmação do servidor já foi aplicada; a sincronização completa continua em segundo plano.');
     refreshCardsInBackground();
   } catch (error) {
-    feedback(error instanceof Error ? error.message : 'Não foi possível salvar o cartão.', true);
+    const message = error instanceof Error ? error.message : 'Não foi possível salvar o cartão.';
+    feedback(message.includes('CARD_STALE_VERSION')
+      ? 'Este cartão foi alterado em outro dispositivo. Volte à lista, aguarde a sincronização e abra novamente antes de salvar.'
+      : message.includes('OPERATION_ID_REUSED')
+        ? 'Os dados mudaram depois de uma tentativa anterior. Revise o cartão e tente novamente.'
+        : message, true);
     if (button) { button.disabled = false; button.textContent = mode === 'create' ? 'Cadastrar cartão' : 'Salvar alterações'; }
   }
 }
@@ -397,8 +420,10 @@ async function deactivateCard() {
   if (button) { button.disabled = true; button.textContent = 'Desativando…'; }
   feedback('Desativando cartão sem apagar o histórico…');
   try {
-    const saved = await cardsClient.deactivate(card.id);
+    const operationId = mutationOperationId(JSON.stringify({ action: 'deactivate', id: card.id, updatedAt: card.updatedAt || null }));
+    const saved = await cardsClient.deactivate(card.id, { operationId, expectedUpdatedAt: card.updatedAt });
     replaceCard(saved);
+    clearMutationOperation();
     mode = 'list';
     editingId = '';
     render();
@@ -426,8 +451,10 @@ async function reactivateCard(id: string) {
   if (button) { button.disabled = true; button.textContent = 'Reativando…'; }
   feedback('Reativando o cartão original e preservando todos os vínculos…');
   try {
-    const result = await cardsClient.reactivate(id);
+    const operationId = mutationOperationId(JSON.stringify({ action: 'reactivate', id: card.id, updatedAt: card.updatedAt || null }));
+    const result = await cardsClient.reactivate(id, { operationId, expectedUpdatedAt: card.updatedAt });
     replaceCard(result.card);
+    clearMutationOperation();
     mode = 'list';
     editingId = '';
     render();
@@ -445,10 +472,10 @@ async function reactivateCard(id: string) {
 function bindContent() {
   const drawer = root();
   if (!drawer) return;
-  drawer.querySelector('[data-card-manage-new]')?.addEventListener('click', () => { mode = 'create'; editingId = ''; render(); });
-  drawer.querySelectorAll<HTMLElement>('[data-card-manage-edit]').forEach((node) => node.addEventListener('click', () => { mode = 'edit'; editingId = node.dataset.cardManageEdit || ''; render(); }));
+  drawer.querySelector('[data-card-manage-new]')?.addEventListener('click', () => { clearMutationOperation(); mode = 'create'; editingId = ''; render(); });
+  drawer.querySelectorAll<HTMLElement>('[data-card-manage-edit]').forEach((node) => node.addEventListener('click', () => { clearMutationOperation(); mode = 'edit'; editingId = node.dataset.cardManageEdit || ''; render(); }));
   drawer.querySelectorAll<HTMLButtonElement>('[data-card-manage-reactivate]').forEach((node) => node.addEventListener('click', () => void reactivateCard(node.dataset.cardManageReactivate || '')));
-  drawer.querySelectorAll('[data-card-manage-back]').forEach((node) => node.addEventListener('click', () => { mode = 'list'; editingId = ''; render(); }));
+  drawer.querySelectorAll('[data-card-manage-back]').forEach((node) => node.addEventListener('click', () => { clearMutationOperation(); mode = 'list'; editingId = ''; render(); }));
   drawer.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-card-field]').forEach((node) => node.addEventListener('input', updatePreview));
   drawer.querySelector('[data-card-manage-save]')?.addEventListener('click', () => void saveCard());
   drawer.querySelector('[data-card-manage-deactivate]')?.addEventListener('click', () => void deactivateCard());

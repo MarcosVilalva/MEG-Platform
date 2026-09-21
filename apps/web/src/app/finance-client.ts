@@ -7,6 +7,8 @@ export type Account = {
   institution?: string | null;
   openingBalance: string | number;
   isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type Category = {
@@ -15,6 +17,8 @@ export type Category = {
   group?: string | null;
   type?: 'income' | 'expense' | null;
   isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type PaymentMethod = {
@@ -22,6 +26,8 @@ export type PaymentMethod = {
   name: string;
   type?: string | null;
   isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type FinancialEventType = 'income' | 'expense' | 'transfer' | 'investment' | 'redemption' | 'adjustment';
@@ -223,35 +229,44 @@ export const financeClient = {
     }),
 
   listAccounts: () => authorizedRequest<Account[]>('/finance/accounts'),
-  createAccount: (data: Omit<Account, 'id' | 'isActive'>) => authorizedRequest<Account>('/finance/accounts', {
+  createAccount: (data: Omit<Account, 'id' | 'isActive' | 'createdAt' | 'updatedAt'> & { operationId?: string }) => authorizedRequest<Account>('/finance/accounts', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
-  updateAccount: (id: string, data: Partial<Account>) => authorizedRequest<Account>(`/finance/accounts/${id}`, {
+  updateAccount: (id: string, data: Pick<Partial<Account>, 'name' | 'institution' | 'isActive'> & { operationId?: string; expectedUpdatedAt?: string }) => authorizedRequest<Account>(`/finance/accounts/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data)
   }),
-  deactivateAccount: (id: string) => authorizedRequest<Account>(`/finance/accounts/${id}`, { method: 'DELETE' }),
+  deactivateAccount: (id: string, meta: { operationId?: string; expectedUpdatedAt?: string } = {}) => authorizedRequest<Account>(`/finance/accounts/${id}`, {
+    method: 'DELETE',
+    body: JSON.stringify(meta),
+  }),
 
   listCategories: () => authorizedRequest<Category[]>('/finance/categories'),
-  createCategory: (data: Omit<Category, 'id' | 'isActive'>) => authorizedRequest<Category>('/finance/categories', {
+  createCategory: (data: Omit<Category, 'id' | 'isActive' | 'createdAt' | 'updatedAt'> & { operationId?: string }) => authorizedRequest<Category>('/finance/categories', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
-  updateCategory: (id: string, data: Partial<Category>) => authorizedRequest<Category>(`/finance/categories/${id}`, {
+  updateCategory: (id: string, data: Pick<Partial<Category>, 'name' | 'group' | 'isActive'> & { operationId?: string; expectedUpdatedAt?: string }) => authorizedRequest<Category>(`/finance/categories/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data)
   }),
-  deactivateCategory: (id: string) => authorizedRequest<Category>(`/finance/categories/${id}`, { method: 'DELETE' }),
+  deactivateCategory: (id: string, meta: { operationId?: string; expectedUpdatedAt?: string } = {}) => authorizedRequest<Category>(`/finance/categories/${id}`, {
+    method: 'DELETE',
+    body: JSON.stringify(meta),
+  }),
 
   listPaymentMethods: () => authorizedRequest<PaymentMethod[]>('/finance/payment-methods'),
-  createPaymentMethod: (data: Omit<PaymentMethod, 'id' | 'isActive'>) => authorizedRequest<PaymentMethod>('/finance/payment-methods', {
+  createPaymentMethod: (data: Omit<PaymentMethod, 'id' | 'isActive' | 'createdAt' | 'updatedAt'> & { operationId?: string }) => authorizedRequest<PaymentMethod>('/finance/payment-methods', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
-  updatePaymentMethod: (id: string, data: Partial<PaymentMethod>) => authorizedRequest<PaymentMethod>(`/finance/payment-methods/${id}`, {
+  updatePaymentMethod: (id: string, data: Pick<Partial<PaymentMethod>, 'name' | 'isActive'> & { operationId?: string; expectedUpdatedAt?: string }) => authorizedRequest<PaymentMethod>(`/finance/payment-methods/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data)
   }),
-  deactivatePaymentMethod: (id: string) => authorizedRequest<PaymentMethod>(`/finance/payment-methods/${id}`, { method: 'DELETE' })
+  deactivatePaymentMethod: (id: string, meta: { operationId?: string; expectedUpdatedAt?: string } = {}) => authorizedRequest<PaymentMethod>(`/finance/payment-methods/${id}`, {
+    method: 'DELETE',
+    body: JSON.stringify(meta),
+  })
 };

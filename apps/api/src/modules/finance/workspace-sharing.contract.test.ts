@@ -9,6 +9,8 @@ const benefitMutation = readFileSync(new URL('./benefit-event-mutation.ts', impo
 const transfer = readFileSync(new URL('./transfer-service.ts', import.meta.url), 'utf8');
 const bulk = readFileSync(new URL('./event-bulk-mutation.ts', import.meta.url), 'utf8');
 const routes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
+const catalogMutation = readFileSync(new URL('./catalog-mutation.ts', import.meta.url), 'utf8');
+const audit = readFileSync(new URL('./audit.ts', import.meta.url), 'utf8');
 const payable = readFileSync(new URL('../payables/service.ts', import.meta.url), 'utf8');
 const payableCreate = readFileSync(new URL('../payables/create-service.ts', import.meta.url), 'utf8');
 const receivable = readFileSync(new URL('../receivables/service.ts', import.meta.url), 'utf8');
@@ -68,5 +70,28 @@ for (const source of [eventMutation, benefitMutation, transfer, payable, payable
   assert.match(source, /actorId: userId/,
     'Auditoria deve continuar registrando quem executou a operação, mesmo com dados compartilhados.');
 }
+
+assert.match(routes, /accountUpdateSchema[\s\S]*expectedUpdatedAt[\s\S]*operationId[\s\S]*\.strict\(\)/,
+  'Alteração de conta deve aceitar metadados de concorrência/idempotência e rejeitar campos estruturais desconhecidos.');
+assert.doesNotMatch(routes, /const accountUpdateSchema = z\.object\(\{[\s\S]{0,600}openingBalance/,
+  'Saldo inicial não pode permanecer mutável pela rota de edição de conta.');
+assert.match(catalogMutation, /ACCOUNT_ALREADY_EXISTS/,
+  'Contas duplicadas devem ser recusadas pelo serviço protegido.');
+assert.match(catalogMutation, /CATEGORY_ALREADY_EXISTS/,
+  'Classificação+grupo+tipo duplicados devem ser recusados.');
+assert.match(catalogMutation, /CATALOG_STALE_VERSION/,
+  'Cadastros devem detectar edição concorrente em outro aparelho.');
+assert.match(catalogMutation, /cloudMutationReceipt\.findUnique[\s\S]*receiptCreateData/,
+  'Mutação de cadastro deve possuir replay idempotente por operationId.');
+assert.match(catalogMutation, /serializableFinancialTransaction/,
+  'Cadastro deve ser alterado dentro de transação serializável.');
+assert.match(catalogMutation, /recordFinancialAudit/,
+  'Toda mutação protegida de cadastro deve registrar auditoria.');
+assert.match(audit, /'Account'[\s\S]*'Category'[\s\S]*'PaymentMethod'/,
+  'Entidades de cadastros devem fazer parte da auditoria financeira.');
+assert.match(audit, /'ACCOUNT_UPDATED'[\s\S]*'CATEGORY_UPDATED'[\s\S]*'PAYMENT_METHOD_UPDATED'/,
+  'Auditoria deve distinguir alterações de cada catálogo.');
+assert.match(routes, /createAccountCatalog[\s\S]*updateAccountCatalog/,
+  'Rotas oficiais devem usar o serviço protegido em vez de Prisma direto.');
 
 console.log('Contrato de base financeira compartilhada por workspace validado.');

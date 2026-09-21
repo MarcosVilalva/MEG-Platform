@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 const routes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
 const service = readFileSync(new URL('./service.ts', import.meta.url), 'utf8');
 const server = readFileSync(new URL('../../server.ts', import.meta.url), 'utf8');
+const management = readFileSync(new URL('./management-routes.ts', import.meta.url), 'utf8');
 
 const getStart = routes.indexOf("app.get('/',");
 const createStart = routes.indexOf("app.post('/',", getStart);
@@ -37,5 +38,17 @@ assert.match(service, /migrateLegacyCardsForAllWorkspaces/,
   'Compatibilidade de cartões legados deve existir fora da rota GET.');
 assert.match(server, /migrateLegacyCardsForAllWorkspaces/,
   'Migração legada de cartões deve ser acionada por manutenção de servidor.');
+assert.match(management, /runProtectedCardManagement/,
+  'Cadastro de cartões deve usar gateway transacional próprio.');
+assert.match(management, /mutationRequestHash[\s\S]*receiptCreateData/,
+  'Cadastro de cartões deve possuir replay idempotente por operationId.');
+assert.match(management, /CARD_STALE_VERSION/,
+  'Edição de cartão deve detectar alteração concorrente em outro dispositivo.');
+assert.match(management, /expectedUpdatedAtSchema/,
+  'Rotas de cartão devem aceitar a versão originalmente carregada.');
+assert.match(management, /assertUniqueCardName/,
+  'Nome de cartão deve continuar protegido contra duplicidade.');
+assert.match(management, /serializableFinancialTransaction/,
+  'Cadastro de cartões deve permanecer em transação serializável.');
 
 console.log('Contrato transacional e de leitura de cartões validado.');

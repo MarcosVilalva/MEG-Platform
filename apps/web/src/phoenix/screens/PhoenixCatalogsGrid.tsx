@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { financeClient, type Account, type Category, type PaymentMethod } from '../../app/finance-client';
 import { readSession } from '../../app/auth-client';
 import type { CreditCard } from '../../app/cards-client';
@@ -26,6 +26,7 @@ type CatalogRow = {
   creditLimit: number | null;
   closingDay: number | null;
   dueDay: number | null;
+  updatedAt?: string;
   card?: CreditCard;
 };
 
@@ -38,7 +39,7 @@ type CatalogDraft = {
   openingBalance: string;
   group: string;
 };
-type CatalogEditor = { mode: 'create' | 'edit'; tab: EditableCatalogTab; id?: string; draft: CatalogDraft } | null;
+type CatalogEditor = { mode: 'create' | 'edit'; tab: EditableCatalogTab; id?: string; expectedUpdatedAt?: string; draft: CatalogDraft } | null;
 
 const emptyDraft = (): CatalogDraft => ({ name: '', type: '', institution: '', openingBalance: '0,00', group: '' });
 
@@ -198,9 +199,22 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
   const [mutationBusy, setMutationBusy] = useState(false);
   const [mutationMessage, setMutationMessage] = useState('');
   const [activeConfirm, setActiveConfirm] = useState<{ row: CatalogRow; active: boolean } | null>(null);
+  const mutationOperationRef = useRef<{ fingerprint: string; operationId: string } | null>(null);
   const role = readSession()?.user.role;
   const canWrite = role === 'ADMIN' || role === 'MANAGER' || role === 'OPERATOR';
   const canDeactivate = role === 'ADMIN' || role === 'MANAGER';
+
+  function mutationOperationId(fingerprint: string) {
+    if (mutationOperationRef.current?.fingerprint === fingerprint) return mutationOperationRef.current.operationId;
+    const random = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const operationId = `catalog:${random}`;
+    mutationOperationRef.current = { fingerprint, operationId };
+    return operationId;
+  }
+
+  function clearMutationOperation() {
+    mutationOperationRef.current = null;
+  }
 
   useEffect(() => { setAccounts(data.accounts.map((item) => ({ ...item }))); }, [data.accounts]);
   useEffect(() => { setCategories(data.categories.map((item) => ({ ...item }))); }, [data.categories]);
@@ -219,7 +233,8 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       openingBalance: Number(item.openingBalance || 0),
       group: '',
       status: item.isActive ? 'Ativa' : 'Inativa',
-      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null
+      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null,
+      updatedAt: item.updatedAt
     }));
     if (tab === 'categories') return categories.map((item) => ({
       id: item.id,
@@ -228,7 +243,8 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       institution: '', openingBalance: null,
       group: item.group || '—',
       status: item.isActive ? 'Ativa' : 'Inativa',
-      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null
+      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null,
+      updatedAt: item.updatedAt
     }));
     if (tab === 'payments') return payments.map((item) => ({
       id: item.id,
@@ -236,7 +252,8 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       type: item.type || '—',
       institution: '', openingBalance: null, group: '',
       status: item.isActive ? 'Ativa' : 'Inativa',
-      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null
+      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null,
+      updatedAt: item.updatedAt
     }));
     return data.cards.map((item) => ({
       id: item.id,
@@ -320,6 +337,7 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
 
   function openNew() {
     setMutationMessage('');
+    clearMutationOperation();
     if (tab === 'cards') {
       window.dispatchEvent(new CustomEvent('meg:open-card-management'));
       return;
@@ -334,12 +352,13 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
 
   function openEdit(row: CatalogRow) {
     setMutationMessage('');
+    clearMutationOperation();
     if (tab === 'cards') {
       window.dispatchEvent(new CustomEvent('meg:open-card-management'));
       return;
     }
     if (!canWrite) return;
-    setEditor({ mode: 'edit', tab, id: row.id, draft: draftForRow(row) });
+    setEditor({ mode: 'edit', tab, id: row.id, expectedUpdatedAt: row.updatedAt, draft: draftForRow(row) });
   }
 
   function updateDraft(key: keyof CatalogDraft, value: string) {
@@ -361,7 +380,12 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
 
   function mutationError(error: unknown) {
     const message = error instanceof Error ? error.message : 'Não foi possível atualizar o cadastro.';
-    if (/VALIDATION_ERROR/i.test(message)) return 'Confira os campos informados antes de salvar.';
+    if (/ACCOUNT_ALREADY_EXISTS/i.test(message)) return 'Já existe uma conta com este nome. Edite ou reative o cadastro existente.';
+    if (/CATEGORY_ALREADY_EXISTS/i.test(message)) return 'Já existe esta combinação de classificação, grupo e tipo. Edite ou reative o cadastro existente.';
+    if (/PAYMENT_METHOD_ALREADY_EXISTS/i.test(message)) return 'Já existe uma forma de pagamento com este nome. Edite ou reative o cadastro existente.';
+    if (/CATALOG_STALE_VERSION/i.test(message)) return 'Este cadastro foi alterado em outro dispositivo. Feche a edição, aguarde a sincronização e abra novamente antes de salvar.';
+    if (/OPERATION_ID_REUSED/i.test(message)) return 'Os dados mudaram depois de uma tentativa anterior. Revise o cadastro e tente salvar novamente.';
+    if (/VALIDATION_ERROR/i.test(message)) return 'Confira os campos informados. Tipo e saldo inicial ficam protegidos depois que o cadastro é criado.';
     if (/403|FORBIDDEN/i.test(message)) return 'Seu perfil não possui permissão para esta alteração.';
     return message;
   }
@@ -371,39 +395,69 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
     const name = editor.draft.name.trim();
     if (name.length < 2) return setMutationMessage('Informe um nome com pelo menos 2 caracteres.');
     const creating = editor.mode === 'create';
+    const fingerprint = JSON.stringify({
+      action: creating ? 'create' : 'update',
+      tab: editor.tab,
+      id: editor.id || null,
+      expectedUpdatedAt: editor.expectedUpdatedAt || null,
+      draft: editor.draft,
+    });
+    const operationId = mutationOperationId(fingerprint);
     setMutationBusy(true);
     setMutationMessage(creating ? 'Cadastrando…' : 'Salvando alteração…');
     try {
       if (editor.tab === 'accounts') {
-        const payload = {
-          name,
-          type: editor.draft.type as Account['type'],
-          institution: editor.draft.institution.trim() || null,
-          openingBalance: parseBrazilianNumber(editor.draft.openingBalance) ?? 0
-        };
         const saved = creating
-          ? await financeClient.createAccount(payload)
-          : await financeClient.updateAccount(editor.id!, payload);
+          ? await financeClient.createAccount({
+              name,
+              type: editor.draft.type as Account['type'],
+              institution: editor.draft.institution.trim() || null,
+              openingBalance: parseBrazilianNumber(editor.draft.openingBalance) ?? 0,
+              operationId,
+            })
+          : await financeClient.updateAccount(editor.id!, {
+              name,
+              institution: editor.draft.institution.trim() || null,
+              expectedUpdatedAt: editor.expectedUpdatedAt,
+              operationId,
+            });
         const nextAccounts = replaceCatalogItem(accounts, saved, creating);
         setAccounts(nextAccounts);
         commitCatalogSnapshot(nextAccounts, categories, payments);
       } else if (editor.tab === 'categories') {
-        const payload = { name, group: editor.draft.group.trim() || null, type: (editor.draft.type || null) as Category['type'] };
         const saved = creating
-          ? await financeClient.createCategory(payload)
-          : await financeClient.updateCategory(editor.id!, payload);
+          ? await financeClient.createCategory({
+              name,
+              group: editor.draft.group.trim() || null,
+              type: (editor.draft.type || null) as Category['type'],
+              operationId,
+            })
+          : await financeClient.updateCategory(editor.id!, {
+              name,
+              group: editor.draft.group.trim() || null,
+              expectedUpdatedAt: editor.expectedUpdatedAt,
+              operationId,
+            });
         const nextCategories = replaceCatalogItem(categories, saved, creating);
         setCategories(nextCategories);
         commitCatalogSnapshot(accounts, nextCategories, payments);
       } else {
-        const payload = { name, type: (editor.draft.type || null) as PaymentMethod['type'] };
         const saved = creating
-          ? await financeClient.createPaymentMethod(payload)
-          : await financeClient.updatePaymentMethod(editor.id!, payload);
+          ? await financeClient.createPaymentMethod({
+              name,
+              type: (editor.draft.type || null) as PaymentMethod['type'],
+              operationId,
+            })
+          : await financeClient.updatePaymentMethod(editor.id!, {
+              name,
+              expectedUpdatedAt: editor.expectedUpdatedAt,
+              operationId,
+            });
         const nextPayments = replaceCatalogItem(payments, saved, creating);
         setPayments(nextPayments);
         commitCatalogSnapshot(accounts, categories, nextPayments);
       }
+      clearMutationOperation();
       setMutationMessage(creating ? 'Cadastro criado e confirmado pelo servidor.' : 'Alteração salva e confirmada pelo servidor.');
       setEditor(null);
     } catch (error) {
@@ -420,31 +474,46 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       return;
     }
     if (active && !canWrite) return;
+    clearMutationOperation();
     setActiveConfirm({ row, active });
   }
 
   async function confirmChangeActive() {
     if (!activeConfirm || mutationBusy) return;
     const { row, active } = activeConfirm;
+    const operationId = mutationOperationId(JSON.stringify({
+      action: active ? 'reactivate' : 'deactivate',
+      tab,
+      id: row.id,
+      expectedUpdatedAt: row.updatedAt || null,
+    }));
+    const meta = { operationId, expectedUpdatedAt: row.updatedAt };
     setMutationBusy(true);
     setMutationMessage(active ? 'Reativando cadastro…' : 'Desativando cadastro…');
     try {
       if (tab === 'accounts') {
-        const saved = active ? await financeClient.updateAccount(row.id, { isActive: true }) : await financeClient.deactivateAccount(row.id);
+        const saved = active
+          ? await financeClient.updateAccount(row.id, { isActive: true, ...meta })
+          : await financeClient.deactivateAccount(row.id, meta);
         const nextAccounts = replaceCatalogItem(accounts, saved, false);
         setAccounts(nextAccounts);
         commitCatalogSnapshot(nextAccounts, categories, payments);
       } else if (tab === 'categories') {
-        const saved = active ? await financeClient.updateCategory(row.id, { isActive: true }) : await financeClient.deactivateCategory(row.id);
+        const saved = active
+          ? await financeClient.updateCategory(row.id, { isActive: true, ...meta })
+          : await financeClient.deactivateCategory(row.id, meta);
         const nextCategories = replaceCatalogItem(categories, saved, false);
         setCategories(nextCategories);
         commitCatalogSnapshot(accounts, nextCategories, payments);
       } else {
-        const saved = active ? await financeClient.updatePaymentMethod(row.id, { isActive: true }) : await financeClient.deactivatePaymentMethod(row.id);
+        const saved = active
+          ? await financeClient.updatePaymentMethod(row.id, { isActive: true, ...meta })
+          : await financeClient.deactivatePaymentMethod(row.id, meta);
         const nextPayments = replaceCatalogItem(payments, saved, false);
         setPayments(nextPayments);
         commitCatalogSnapshot(accounts, categories, nextPayments);
       }
+      clearMutationOperation();
       setMutationMessage(active ? 'Cadastro reativado com o histórico preservado.' : 'Cadastro desativado. Nenhum histórico foi apagado.');
       setActiveConfirm(null);
     } catch (error) {
@@ -541,16 +610,16 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
         <div className="px-catalog-editor-body">
           <label><span>Nome *</span><input value={editor.draft.name} maxLength={120} onChange={(event) => updateDraft('name', event.target.value)} /></label>
           {editor.tab === 'accounts' ? <>
-            <label><span>Tipo *</span><select value={editor.draft.type} onChange={(event) => updateDraft('type', event.target.value)}>{accountTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+            <label><span>Tipo *</span><select value={editor.draft.type} disabled={editor.mode === 'edit'} onChange={(event) => updateDraft('type', event.target.value)}>{accountTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>{editor.mode === 'edit' ? <small>Protegido após a criação para não alterar a natureza financeira da conta.</small> : null}</label>
             <label><span>Instituição</span><input value={editor.draft.institution} maxLength={120} onChange={(event) => updateDraft('institution', event.target.value)} /></label>
-            <label><span>Saldo inicial</span><input inputMode="decimal" value={editor.draft.openingBalance} onChange={(event) => updateDraft('openingBalance', event.target.value)} /></label>
+            <label><span>Saldo inicial</span><input inputMode="decimal" value={editor.draft.openingBalance} disabled={editor.mode === 'edit'} onChange={(event) => updateDraft('openingBalance', event.target.value)} />{editor.mode === 'edit' ? <small>Protegido após a criação. Ajustes de saldo devem ocorrer por lançamento, preservando o histórico.</small> : null}</label>
           </> : null}
           {editor.tab === 'categories' ? <>
             <label><span>Grupo</span><input value={editor.draft.group} maxLength={120} onChange={(event) => updateDraft('group', event.target.value)} /></label>
-            <label><span>Tipo</span><select value={editor.draft.type} onChange={(event) => updateDraft('type', event.target.value)}>{categoryTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+            <label><span>Tipo</span><select value={editor.draft.type} disabled={editor.mode === 'edit'} onChange={(event) => updateDraft('type', event.target.value)}>{categoryTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>{editor.mode === 'edit' ? <small>Tipo protegido para não reclassificar lançamentos antigos silenciosamente.</small> : null}</label>
           </> : null}
-          {editor.tab === 'payments' ? <label><span>Tipo</span><select value={editor.draft.type} onChange={(event) => updateDraft('type', event.target.value)}>{paymentTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label> : null}
-          <p>Alterar o cadastro não apaga lançamentos anteriores. Desativação apenas impede novos usos quando aplicável.</p>
+          {editor.tab === 'payments' ? <label><span>Tipo</span><select value={editor.draft.type} disabled={editor.mode === 'edit'} onChange={(event) => updateDraft('type', event.target.value)}>{paymentTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>{editor.mode === 'edit' ? <small>Tipo protegido depois da criação para manter as regras de pagamento consistentes.</small> : null}</label> : null}
+          <p>Alterar nome ou instituição não apaga o histórico. Campos estruturais ficam protegidos após a criação; desativar impede novos usos sem excluir lançamentos anteriores.</p>
           {mutationMessage ? <div className="px-catalog-feedback warn">{mutationMessage}</div> : null}
         </div>
         <footer><button type="button" onClick={() => setEditor(null)} disabled={mutationBusy}>Cancelar</button><button type="button" className="px-primary-action" onClick={() => void saveEditor()} disabled={mutationBusy}>{mutationBusy ? 'Salvando…' : 'Salvar'}</button></footer>
