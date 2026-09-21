@@ -621,12 +621,12 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     if (credit) {
       return data.events.items.find((event) => {
         if (event.id === editingEventId) return false;
-        const meta = projectedCardMeta(event);
-        const baseDescription = normalizeText(event.description.replace(/\s*·\s*\d+\/\d+\s*$/, ''));
-        return Boolean(meta
-          && baseDescription === target
-          && meta.cardId === draft.cardId
-          && meta.purchaseDate === draft.eventDate);
+        const link = projectedCardPurchase(data, event);
+        if (!link || link.purchase.id === editingCardPurchase?.purchase.id) return false;
+        return normalizeText(link.purchase.description) === target
+          && link.card.id === draft.cardId
+          && String(link.purchase.purchaseDate).slice(0, 10) === draft.eventDate
+          && Math.round(Math.abs(Number(link.purchase.totalAmount || 0)) * 100) === amountCents;
       }) || null;
     }
     if (!draft.accountId) return null;
@@ -635,7 +635,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
       && Math.round(displayEffect(event) * 100) === (negative ? -amountCents : amountCents)
       && event.accountId === draft.accountId
       && event.date.slice(0, 10) === draft.eventDate) || null;
-  }, [data.events.items, editingEventId, draft.description, draft.accountId, draft.cardId, draft.eventDate, amountCents, negative, credit]);
+  }, [data, editingEventId, editingCardPurchase?.purchase.id, draft.description, draft.accountId, draft.cardId, draft.eventDate, amountCents, negative, credit]);
 
   const simpleWriteInput = useMemo(() => {
     if (draft.type === 'transfer') return null;
