@@ -259,12 +259,6 @@ function resolveActiveCardMonth(card: CreditCard, rows: GridRow[], fallbackMonth
   const months = [...new Set(rows.map((row) => row.statementMonth).filter(Boolean))].sort();
   return months.find((month) => month >= fallbackMonth) || months[months.length - 1] || fallbackMonth;
 }
-function dueDateForMonth(month: string, day: number | null | undefined) {
-  if (!day || !/^\d{4}-\d{2}$/.test(month)) return '—';
-  const [year, monthNumber] = month.split('-').map(Number);
-  const safeDay = Math.max(1, Math.min(day, new Date(Date.UTC(year, monthNumber, 0)).getUTCDate()));
-  return longDate.format(new Date(Date.UTC(year, monthNumber - 1, safeDay, 12)));
-}
 function isCredit(tx: PhoenixLegacyTransaction) {
   return normalize(`${tx.modality || ''} ${tx.paymentMethod || ''} ${tx.account || ''}`).includes('credito') || normalize(`${tx.paymentMethod || ''} ${tx.account || ''}`).includes('cartao');
 }
@@ -423,22 +417,6 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     return rows.sort((a, b) => b.dueDate.localeCompare(a.dueDate) || b.purchaseDate.localeCompare(a.purchaseDate));
   }, [officialRows, legacyRows]);
 
-  // A central segue a competência efetiva da fatura do cartão. Quando o snapshot
-  // mensal solicitado não contém linhas, usa a primeira competência real disponível
-  // daquele cartão em vez de exibir uma grade vazia artificialmente.
-  const canonicalRows = useMemo<GridRow[]>(() => selected?.statement?.lines?.map((line) => ({
-    id: line.id,
-    source: 'canonical' as const,
-    description: line.description,
-    purchaseDate: line.purchaseDate || line.dueDate,
-    dueDate: line.dueDate,
-    installment: `${line.installmentNo}/${line.installmentQty}`,
-    group: line.kind === 'credit' ? 'Crédito/estorno' : 'Compra',
-    amount: Number(line.effect || 0),
-    status: line.isOpen ? 'open' : line.sourceStatus,
-    statementMonth: line.statementMonth,
-  })) || [], [selected]);
-
   const selectedMetrics = selected ? cardViewMetrics(selected, allRows, data.month) : null;
   const currentCardMonth = selectedMetrics?.currentMonth || data.month;
   const currentRows = selectedMetrics?.currentRows || [];
@@ -447,17 +425,10 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const next = nextMonth(currentCardMonth);
   const hasCanonicalCurrent = Boolean(selectedMetrics?.hasCanonical);
   const currentStatement = selectedMetrics?.currentStatement || 0;
-  const currentPurchases = hasCanonicalCurrent
-    ? selected!.statement!.charges
-    : currentRows.filter((row) => !isCancelledStatus(row.status) && row.amount > 0).reduce((sum, row) => sum + row.amount, 0);
-  const currentCredits = hasCanonicalCurrent
-    ? selected!.statement!.credits
-    : Math.abs(currentRows.filter((row) => !isCancelledStatus(row.status) && row.amount < 0).reduce((sum, row) => sum + row.amount, 0));
   const currentOutstandingRaw = selectedMetrics?.currentOutstandingRaw || 0;
   const currentOutstanding = selectedMetrics?.currentOutstanding || 0;
   const nextStatement = sumRows(futureRows.filter((row) => row.statementMonth === next));
   const futureCommitted = selectedMetrics?.futureCommitted || 0;
-  const totalCommitted = selectedMetrics?.totalCommitted || 0;
   const creditLimit = selectedMetrics?.creditLimit || 0;
   const usage = selectedMetrics?.usage || 0;
   const availableLimit = selectedMetrics?.availableLimit || 0;
