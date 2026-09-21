@@ -442,7 +442,17 @@ function ensureModalityField(root: HTMLElement) {
   if (root.dataset.phoenixModalityType !== type || !select.options.length) {
     root.dataset.phoenixModalityType = type;
     const saved = root.dataset.phoenixModality || '';
-    const inferred = saved || inferModality(editingEvent, type);
+    const nativePayment = normalize(paymentSelect(root)?.selectedOptions[0]?.textContent || '');
+    const routedFromForm = type === 'expense'
+      ? nativePayment.includes('VEROCARD') ? 'ALIMENTAÇÃO'
+        : nativePayment.includes('CREDIARIO') ? 'CREDIÁRIO'
+          : (nativePayment.includes('CREDITO') || nativePayment.includes('CARTAO')) ? 'CRÉDITO'
+            : ''
+      : nativePayment.includes('VEROCARD') ? 'VEROCARD'
+        : nativePayment.includes('DINHEIRO') ? 'DINHEIRO'
+          : nativePayment.includes('TRANSFERENCIA') || nativePayment.includes('DEPOSITO') ? 'TRANSFERÊNCIA BANCÁRIA'
+            : nativePayment.includes('PIX') ? 'PIX' : '';
+    const inferred = saved || routedFromForm || inferModality(editingEvent, type);
     select.innerHTML = options.map((item) => `<option value="${item}">${item}</option>`).join('');
     select.value = options.includes(inferred as never) ? inferred : options[0];
     root.dataset.phoenixModality = select.value;
