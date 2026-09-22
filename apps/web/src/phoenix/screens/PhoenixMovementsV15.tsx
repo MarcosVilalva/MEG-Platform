@@ -231,10 +231,14 @@ function amountFromEvent(event: FinancialEvent) {
 }
 
 function displayEffect(event: FinancialEvent) {
-  const signed = Number(event.signedAmount || 0);
   const visualType = launchTypeForEvent(event.type);
-  if (visualType === 'income') return signed;
-  if (visualType === 'expense') return -signed;
+  const rawSigned = Number(event.signedAmount);
+  const amount = Math.abs(Number(event.amount || 0));
+  const signed = Number.isFinite(rawSigned) && rawSigned !== 0
+    ? rawSigned
+    : visualType === 'income' ? amount : visualType === 'expense' ? -amount : 0;
+  if (visualType === 'income') return Math.abs(signed);
+  if (visualType === 'expense') return -Math.abs(signed);
   return 0;
 }
 
