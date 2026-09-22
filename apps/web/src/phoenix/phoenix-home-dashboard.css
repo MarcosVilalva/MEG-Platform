@@ -25,3 +25,45 @@
   body.meg-operational-mobile .px-alltime-quick-actions small{font-size:8px}
 }
 @media(max-width:390px){body.meg-operational-mobile .px-alltime-quick-actions{grid-template-columns:1fr}body.meg-operational-mobile .px-alltime-quick-actions button{min-height:52px}}
+
+/* Home mobile aprovada · fidelidade visual v4 */
+@media(max-width:760px){
+ body.meg-operational-mobile .px-home-approved{gap:12px;padding-bottom:20px}
+ body.meg-operational-mobile .px-home-approved .px-page-head{margin:0;padding:0;background:transparent;border:0}
+ body.meg-operational-mobile .px-home-approved .px-page-head>div{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+ body.meg-operational-mobile .px-home-approved .px-page-head .px-kicker{display:none}
+ body.meg-operational-mobile .px-home-approved .px-approved-period-title{margin:0!important;padding:13px 15px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--panel2) 92%,transparent);font-size:17px!important;line-height:1.1}
+ body.meg-operational-mobile .px-home-approved .px-home-period-edit{margin:0;padding:12px 15px;min-height:44px;border-radius:14px;font-size:0}
+ body.meg-operational-mobile .px-home-approved .px-home-period-edit:after{content:"Tudo";font-size:13px;font-weight:900}
+ body.meg-operational-mobile .px-home-approved .px-alltime-quick-actions{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px;margin:0}
+ body.meg-operational-mobile .px-home-approved .px-alltime-quick-actions button{min-height:78px!important;padding:10px!important;grid-template-columns:32px minmax(0,1fr)!important;border-radius:15px!important}
+ body.meg-operational-mobile .px-home-approved .px-alltime-quick-actions button>span{width:32px;height:32px;font-size:18px}
+ body.meg-operational-mobile .px-home-approved .px-alltime-quick-actions strong{font-size:12px}
+ body.meg-operational-mobile .px-home-approved .px-alltime-quick-actions small{font-size:8px;white-space:normal}
+ body.meg-operational-mobile .px-home-approved .px-alltime-quick-actions button:first-child{border-color:color-mix(in srgb,var(--danger) 55%,var(--line));background:color-mix(in srgb,var(--danger) 12%,var(--panel))}
+ body.meg-operational-mobile .px-home-approved .px-alltime-quick-actions button:nth-child(2){border-color:color-mix(in srgb,var(--brand) 55%,var(--line));background:color-mix(in srgb,var(--brand) 11%,var(--panel))}
+ body.meg-operational-mobile .px-home-approved .px-alltime-quick-actions button.benefit{border-color:color-mix(in srgb,#168be8 58%,var(--line));background:color-mix(in srgb,#168be8 13%,var(--panel))}
+ body.meg-operational-mobile .px-home-approved .px-dashboard-grid{display:block}
+ body.meg-operational-mobile .px-home-approved .px-period-balance-card{display:block!important;padding:16px!important;border-radius:16px}
+ body.meg-operational-mobile .px-home-approved .px-period-balance-primary .px-kicker{font-size:13px;text-transform:none;letter-spacing:0}
+ body.meg-operational-mobile .px-home-approved .px-period-balance-primary h2{font-size:clamp(34px,10vw,46px)!important;margin:8px 0!important;color:var(--brand2)}
+ body.meg-operational-mobile .px-home-approved .px-period-balance-primary p,.px-home-approved .px-period-opening-chip{display:none}
+ body.meg-operational-mobile .px-home-approved .px-period-summary-inline{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+ body.meg-operational-mobile .px-home-approved .px-period-summary-inline header{display:none}
+ body.meg-operational-mobile .px-home-approved .px-period-summary-equation{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:0!important}
+ body.meg-operational-mobile .px-home-approved .px-period-summary-equation>b{display:none}
+ body.meg-operational-mobile .px-home-approved .px-period-summary-equation>div{padding:8px 5px!important;border:0!important;border-radius:0!important;background:transparent!important;text-align:center}
+ body.meg-operational-mobile .px-home-approved .px-period-summary-equation>div+div{border-left:1px solid var(--line)!important}
+ body.meg-operational-mobile .px-home-approved .px-period-summary-equation span{font-size:9px}
+ body.meg-operational-mobile .px-home-approved .px-period-summary-equation strong{font-size:14px}
+ body.meg-operational-mobile .px-home-approved>.px-dashboard-alert,.px-home-approved>.px-metrics{display:none!important}
+ body.meg-operational-mobile .px-home-approved .px-bottom-grid{display:block!important}
+ body.meg-operational-mobile .px-home-approved .px-bottom-grid>article:first-child{display:none}
+ body.meg-operational-mobile .px-home-approved .px-bottom-grid>article:last-child{padding:13px;border-radius:16px}
+ body.meg-operational-mobile .px-home-approved .px-bottom-grid .px-panel-head{display:none}
+ body.meg-operational-mobile .px-home-approved .px-bottom-grid .px-dashboard-row:not(.px-alltime-benefit-row){display:none}
+ body.meg-operational-mobile .px-home-approved .px-alltime-benefit-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;padding:12px!important;border:1px solid color-mix(in srgb,var(--brand) 30%,var(--line));border-radius:14px;background:color-mix(in srgb,var(--brand) 7%,var(--panel2))}
+ body.meg-operational-mobile .px-home-approved .px-alltime-benefit-row .px-dashboard-row-copy strong{font-size:14px}
+ body.meg-operational-mobile .px-home-approved .px-alltime-benefit-row .px-dashboard-row-copy small{font-size:9px}
+ body.meg-operational-mobile .px-home-approved .px-alltime-benefit-row>strong{font-size:22px;color:#63c8ff}
+}
