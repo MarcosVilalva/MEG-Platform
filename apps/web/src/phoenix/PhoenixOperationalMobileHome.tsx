@@ -61,85 +61,38 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate, onOpe
     return month && year ? `${month}/${year}` : data.month;
   })();
 
-  return <section className="px-operational-mobile-home" aria-label="MEG Operacional">
-    <header className="px-operational-hero px-operational-hero-v2">
-      <div className="px-operational-hero-copy">
-        <span className="px-kicker">MEG OPERACIONAL</span>
-        <div className="px-operational-greeting">
-          <button className="px-operational-avatar-button" type="button" aria-label="Abrir meu perfil" onClick={() => onNavigate('settings')}>
-            <PhoenixProfileAvatar name={data.user.name} preference={avatar} className="px-operational-home-avatar" />
-          </button>
-          <div><h1>Olá, {firstName}.</h1><small>{data.user.name}</small></div>
-        </div>
-        <p>Seu financeiro de hoje, com acesso rápido ao que precisa ser lançado ou resolvido.</p>
-        {onOpenPeriod ? <button className="px-operational-period-chip" type="button" onClick={onOpenPeriod} aria-label={`Alterar período atual ${periodLabel}`}><span aria-hidden="true">▣</span><strong>Período</strong><em>{periodLabel}</em></button> : null}
-      </div>
-      <span className="px-operational-sync" title={`Dados carregados em ${data.loadedAt}`}><i />Atualizado</span>
+  return <section className="px-operational-mobile-home px-operational-approved-home" aria-label="MEG Finanças">
+    <header className="px-approved-mobile-head">
+      <button className="px-approved-profile" type="button" onClick={() => onNavigate('settings')} aria-label="Abrir meu perfil">
+        <PhoenixProfileAvatar name={data.user.name} preference={avatar} className="px-operational-home-avatar" />
+        <span><strong>{data.user.name}</strong><small>MEG Finanças</small></span>
+      </button>
+      {onOpenPeriod ? <button className="px-approved-period" type="button" onClick={onOpenPeriod}><span>▣</span><strong>{periodLabel}</strong><em>⌄</em></button> : null}
     </header>
 
-    <section className="px-operational-balance" aria-label="Resumo financeiro atual">
-      <div className="px-operational-balance-main">
-        <span>Saldo disponível hoje</span>
-        <strong>{money.format(currentBalance)}</strong>
-        <small>Saldo monetário realizado. Benefício Alimentação é acompanhado separadamente.</small>
-      </div>
-      <div className="px-operational-balance-meta">
-        <div><span>Entradas realizadas</span><strong>{money.format(Number(data.summary.realizedIncome || 0))}</strong></div>
-        <div><span>Saídas realizadas</span><strong>{money.format(Number(data.summary.realizedExpense || 0))}</strong></div>
+    <section className="px-approved-launch-grid" aria-label="Lançamento rápido">
+      <button className="expense" type="button" onClick={() => onLaunch('expense')}><span>↘</span><strong>Despesa</strong><small>Novo lançamento</small><b>›</b></button>
+      <button className="income" type="button" onClick={() => onLaunch('income')}><span>↗</span><strong>Receita</strong><small>Novo lançamento</small><b>›</b></button>
+      <button className="benefit" type="button" onClick={() => onLaunch('benefit')}><span>▣</span><strong>Alimentação</strong><small>Lançar no benefício</small><b>›</b></button>
+    </section>
+
+    <section className="px-approved-balance" aria-label="Resumo financeiro atual">
+      <div className="px-approved-balance-main"><span>Saldo Atual</span><strong>{money.format(currentBalance)}</strong></div>
+      <div className="px-approved-summary">
+        <div><span>Receitas</span><strong>{money.format(Number(data.summary.realizedIncome || 0))}</strong></div>
+        <div className="expense"><span>Despesas</span><strong>{money.format(Number(data.summary.realizedExpense || 0))}</strong></div>
+        <div><span>Resultado</span><strong>{money.format(Number(data.summary.realizedResult || 0))}</strong></div>
       </div>
     </section>
 
-    <section className="px-operational-section">
-      <header className="px-operational-section-head"><div><span className="px-kicker">LANÇAMENTO RÁPIDO</span><h2>O que você quer registrar?</h2></div></header>
-      <div className="px-operational-launch-grid px-operational-launch-grid-v2">
-        <button className="px-operational-launch expense" type="button" onClick={() => onLaunch('expense')}>
-          <span className="px-operational-launch-icon" aria-hidden="true">↘</span>
-          <span><strong>Despesa</strong><em>Pagamento, crédito ou recorrente</em></span>
-          <b aria-hidden="true">＋</b>
-        </button>
-        <button className="px-operational-launch income" type="button" onClick={() => onLaunch('income')}>
-          <span className="px-operational-launch-icon" aria-hidden="true">↗</span>
-          <span><strong>Receita</strong><em>Entrada recebida ou a receber</em></span>
-          <b aria-hidden="true">＋</b>
-        </button>
-        <button className="px-operational-launch benefit" type="button" onClick={() => onLaunch('benefit')}>
-          <span className="px-operational-launch-icon" aria-hidden="true">◈</span>
-          <span><strong>Alimentação</strong><em>Benefício + VEROCARD automáticos</em></span>
-          <b aria-hidden="true">＋</b>
-        </button>
-      </div>
-    </section>
+    <button className="px-approved-benefit" type="button" onClick={() => onLaunch('benefit')}>
+      <span className="icon">▣</span><span><small>Benefício Alimentação</small><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong><em>Saldo disponível</em></span><b>›</b>
+    </button>
 
-    <section className="px-operational-section">
-      <header className="px-operational-section-head"><div><span className="px-kicker">PRIORIDADES</span><h2>O que precisa de atenção</h2></div></header>
-      <div className="px-operational-status-grid px-operational-status-grid-v2">
-        <button type="button" className={overdue.length ? 'danger priority' : 'priority'} onClick={() => onNavigate('payables')}>
-          <span>Pendentes</span><strong>{agenda.items.length}</strong><em>{money.format(pendingAmount)}</em><small>{overdue.length ? `${overdue.length} vencida(s)` : 'Nenhuma vencida'}</small>
-        </button>
-        <button type="button" onClick={() => onNavigate('payables')}>
-          <span>A vencer</span><strong>{upcoming.length}</strong><em>{money.format(upcoming.reduce((sum, item) => sum + item.amount, 0))}</em><small>Ver compromissos</small>
-        </button>
-        <button type="button" className="benefit" onClick={() => onLaunch('benefit')}>
-          <span>Benefício</span><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong><em>saldo atual</em><small>Registrar alimentação</small>
-        </button>
-      </div>
-    </section>
-
-    <section className="px-operational-recent">
-      <header>
-        <div><span className="px-kicker">ATIVIDADE</span><h2>Últimos lançamentos</h2></div>
-        <button type="button" onClick={() => onNavigate('history')}>Ver histórico</button>
-      </header>
-      <div className="px-operational-recent-list">
-        {recent.length ? recent.map((event) => {
-          const amount = eventAmount(event);
-          return <button key={event.id} type="button" onClick={() => onNavigate('movements')}>
-            <span className={amount >= 0 ? 'income' : 'expense'} aria-hidden="true">{amount >= 0 ? '↗' : '↘'}</span>
-            <span><strong>{event.description}</strong><small>{eventTypeLabel(event.type)} · {shortDate.format(new Date(`${event.date.slice(0,10)}T12:00:00Z`))}</small></span>
-            <b className={amount >= 0 ? 'income' : 'expense'}>{money.format(amount)}</b>
-          </button>;
-        }) : <p>Nenhum lançamento disponível nesta competência.</p>}
-      </div>
+    <section className="px-approved-commitments">
+      <header><div><span>▣</span><strong>Próximos Compromissos</strong></div><button type="button" onClick={() => onNavigate('payables')}>Ver todos ›</button></header>
+      <div>{agenda.items.slice(0,3).map((item) => <button type="button" key={item.id} onClick={() => onNavigate('payables')}><span className="date"><strong>{String(item.date || '').slice(8,10)}</strong><small>{shortDate.format(new Date(`${String(item.date || '').slice(0,10)}T12:00:00Z`)).replace(/^\\d{2} de /,'').slice(0,3).toUpperCase()}</small></span><span className="copy"><strong>{item.description}</strong><small>{item.kind === 'VENCIDO' ? 'Vencido' : 'A vencer'}</small></span><b>{money.format(item.amount)}</b><em>›</em></button>)}</div>
+      {!agenda.items.length ? <p>Nenhum compromisso em aberto.</p> : null}
     </section>
   </section>;
 }
