@@ -2769,3 +2769,30 @@ body.meg-operational-mobile .px-approved-commitments>div>button>b{
   body.meg-operational-mobile .px-approved-benefit{padding:12px!important}
   body.meg-operational-mobile .px-approved-commitments{padding:10px!important}
 }
+
+
+/* MEG Operacional 2.8 · lançamento compacto e revisão mobile */
+body.meg-operational-mobile .px-launch-advanced-toggle{
+  width:100%;min-height:54px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  border:1px solid rgba(50,190,182,.18);border-radius:14px;background:rgba(255,255,255,.025);color:#fff;text-align:left;
+}
+body.meg-operational-mobile .px-launch-advanced-toggle span,
+body.meg-operational-mobile .px-launch-advanced-toggle strong,
+body.meg-operational-mobile .px-launch-advanced-toggle small{display:block}
+body.meg-operational-mobile .px-launch-advanced-toggle small{margin-top:2px;color:#8fa9a6;font-size:11px}
+body.meg-operational-mobile .px-launch-advanced-toggle b{color:#54dfd5;font-size:22px;font-weight:500}
+body.meg-operational-mobile .px-launch-advanced-panel{display:grid;gap:10px}
+body.meg-operational-mobile .px-preview-box{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important;padding:10px!important;
+}
+body.meg-operational-mobile .px-preview-box>.px-launch-section-label{grid-column:1/-1!important;margin:0 0 2px!important}
+body.meg-operational-mobile .px-preview-box>div:not(.px-launch-section-label){min-width:0!important;padding:8px!important}
+body.meg-operational-mobile .px-preview-box>div:not(.px-launch-section-label)>span{font-size:9px!important}
+body.meg-operational-mobile .px-preview-box>div:not(.px-launch-section-label)>strong{
+  margin-top:3px!important;font-size:12px!important;line-height:1.2!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+body.meg-operational-mobile .px-launch-drawer .px-launch-body{padding-bottom:calc(84px + env(safe-area-inset-bottom))!important}
+body.meg-operational-mobile .px-launch-write-actions{
+  position:sticky!important;bottom:0!important;z-index:8!important;margin-inline:-2px!important;padding:8px 2px max(8px,env(safe-area-inset-bottom))!important;
+  background:linear-gradient(180deg,rgba(2,35,37,0),rgba(2,35,37,.98) 18%,rgba(2,35,37,1))!important;
+}
