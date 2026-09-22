@@ -608,15 +608,6 @@ export function PhoenixPayables({ data, onMonthChange }: { data: PhoenixReadMode
     periodMode === 'all' || item.dueDate.slice(0, 7) === selectedMonth
   ), [open, periodMode, selectedMonth]);
 
-  const periodActionable = periodItems.filter((item) => item.openAmount > 0);
-  const periodTotal = periodItems.reduce((sum, item) => sum + item.openAmount, 0);
-  const periodOverdue = periodActionable.filter((item) => item.dueDate < today);
-  const periodToday = periodActionable.filter((item) => item.dueDate === today);
-  const periodUpcoming = periodActionable.filter((item) => item.dueDate > today);
-  const periodOverdueTotal = periodOverdue.reduce((sum, item) => sum + item.openAmount, 0);
-  const periodTodayTotal = periodToday.reduce((sum, item) => sum + item.openAmount, 0);
-  const periodUpcomingTotal = periodUpcoming.reduce((sum, item) => sum + item.openAmount, 0);
-
   const filteredScope = useMemo(() => periodItems.filter((item) => {
     const matchesDateFrom = !dateFrom || item.dueDate >= dateFrom;
     const matchesDateTo = !dateTo || item.dueDate <= dateTo;
