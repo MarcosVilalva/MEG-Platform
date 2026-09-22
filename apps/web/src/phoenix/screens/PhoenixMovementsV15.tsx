@@ -5,7 +5,7 @@ import type { FinancialEvent } from '../../app/finance-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import type { PhoenixReadModel } from '../contracts';
 import { PhoenixLaunchWriteControl } from '../components/PhoenixLaunchWriteControl';
-import { cardDueDateForPurchase } from '../data/card-dates';
+import { cardDueDateForPurchase, cardDueDateForStatement, cardMonthPlus, cardStatementMonthForPurchase } from '../data/card-dates';
 import { projectCardInstallmentsIntoEvents } from '../data/card-movement-projection';
 import { phoenixWriteMessage, runPhoenixBenefitEventEdit, runPhoenixCardPurchaseCancel, runPhoenixCardPurchaseEdit, runPhoenixSimpleEventArchive, runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
 import { megAlert } from '../meg-confirm';
@@ -415,6 +415,8 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const [launchWriteBusy, setLaunchWriteBusy] = useState(false);
   const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const [settlementConfirmOpen, setSettlementConfirmOpen] = useState(false);
+  const [installmentPreviewOpen, setInstallmentPreviewOpen] = useState(false);
+  const [installmentInput, setInstallmentInput] = useState('1');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTargetEvent, setDeleteTargetEvent] = useState<FinancialEvent | null>(null);
   const [deletingEvent, setDeletingEvent] = useState(false);
@@ -567,6 +569,28 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   const pix = draft.type === 'expense' && isPixMethod(selectedPayment?.name, selectedPayment?.type);
   const crediario = isCrediarioMethod(selectedPayment?.name, selectedPayment?.type);
   const calculatedDue = selectedCard ? cardDueDateForPurchase(draft.eventDate, selectedCard.closingDay, selectedCard.dueDay) : '';
+  const installmentPreview = useMemo(() => {
+    const qty = Math.max(1, Number(draft.installments || 1));
+    const totalCents = Math.max(0, Math.round(amountCents));
+    const baseCents = Math.floor(totalCents / qty);
+    const remainder = totalCents - baseCents * qty;
+    const firstStatement = selectedCard ? cardStatementMonthForPurchase(draft.eventDate, selectedCard.closingDay) : '';
+    return Array.from({ length: qty }, (_, index) => {
+      const cents = baseCents + (index < remainder ? 1 : 0);
+      let dueDate = '';
+      if (credit && selectedCard && firstStatement) {
+        dueDate = cardDueDateForStatement(cardMonthPlus(firstStatement, index), selectedCard.closingDay, selectedCard.dueDay);
+      } else if (draft.firstDue) {
+        const firstMonth = draft.firstDue.slice(0, 7);
+        const day = Number(draft.firstDue.slice(8, 10));
+        const month = cardMonthPlus(firstMonth, index);
+        const [year, monthNumber] = month.split('-').map(Number);
+        const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+        dueDate = `${month}-${String(Math.min(day, lastDay)).padStart(2, '0')}`;
+      }
+      return { number: index + 1, cents, dueDate };
+    });
+  }, [draft.installments, draft.firstDue, draft.eventDate, amountCents, credit, selectedCard]);
   const effectiveSituation: LaunchSituation = draft.type === 'income' ? 'paid' : credit ? 'planned' : benefit ? 'paid' : pix ? 'paid' : draft.situation;
   const situationRule = draft.type === 'income'
     ? 'Receitas são registradas sempre como recebidas.'
@@ -837,6 +861,8 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     setEditMessage('');
     setDiscardConfirmOpen(false);
     setSettlementConfirmOpen(false);
+    setInstallmentPreviewOpen(false);
+    setInstallmentInput('1');
     setDeleteConfirmOpen(false);
     setDeleteTargetEvent(null);
     setDeletingEvent(false);
@@ -1346,7 +1372,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
             <div className="px-rule-box">No crédito, a compra continua sendo um lançamento comum. A data da compra define a fatura; o vencimento é levado ao próximo dia útil quando cair no fim de semana e o mês desse vencimento define a competência da grade.</div>
           </div> : null}
 
-          {(credit || crediario) ? <div className="px-installment-box"><div className="px-form-row"><label className="px-field"><span>Quantidade de parcelas *</span><input type="number" min={1} max={credit ? 48 : 120} value={draft.installments} onChange={(event) => updateDraft('installments', Math.max(1, Number(event.target.value) || 1))} /></label><label className="px-field"><span>Vencimento da 1ª parcela</span><input type="date" disabled={credit} value={credit ? calculatedDue : draft.firstDue} onChange={(event) => updateDraft('firstDue', event.target.value)} /></label></div><div className="px-rule-box">No cartão, cada parcela preserva data da compra, fatura e vencimento. Nos Lançamentos, a competência é o mês do vencimento final da parcela.</div></div> : null}
+          {(credit || crediario) ? <div className="px-installment-box"><div className="px-form-row"><label className="px-field"><span>Quantidade de parcelas *</span><div className="px-installment-stepper"><button type="button" aria-label="Diminuir parcelas" disabled={draft.installments <= 1} onClick={() => { const next = Math.max(1, draft.installments - 1); setInstallmentInput(String(next)); updateDraft('installments', next); }}>−</button><input type="number" inputMode="numeric" min={1} max={credit ? 48 : 120} value={installmentInput} onFocus={(event) => event.currentTarget.select()} onChange={(event) => { const raw = event.target.value; setInstallmentInput(raw); if (raw === '') return; const max = credit ? 48 : 120; const next = Math.min(max, Math.max(1, Number(raw) || 1)); updateDraft('installments', next); }} onBlur={() => { const max = credit ? 48 : 120; const next = Math.min(max, Math.max(1, Number(installmentInput) || 1)); setInstallmentInput(String(next)); updateDraft('installments', next); }} /><button type="button" aria-label="Aumentar parcelas" disabled={draft.installments >= (credit ? 48 : 120)} onClick={() => { const next = Math.min(credit ? 48 : 120, Math.max(1, draft.installments + 1)); setInstallmentInput(String(next)); updateDraft('installments', next); }}>+</button></div></label><label className="px-field"><span>Vencimento da 1ª parcela</span><input type="date" disabled={credit} value={credit ? calculatedDue : draft.firstDue} onChange={(event) => updateDraft('firstDue', event.target.value)} /></label></div>{draft.installments > 1 && amountCents > 0 ? <div className="px-installment-summary"><div><strong>{draft.installments}x · {money.format(installmentPreview[0]?.cents / 100 || 0)}{installmentPreview.some((item) => item.cents !== installmentPreview[0]?.cents) ? ' (valores ajustados nos centavos)' : ''}</strong><small>Total parcelado: {money.format(installmentPreview.reduce((sum, item) => sum + item.cents, 0) / 100)}</small></div><button type="button" onClick={() => setInstallmentPreviewOpen(true)}>Visualizar parcelas</button></div> : null}<div className="px-rule-box">No cartão, cada parcela preserva data da compra, fatura e vencimento. Nos Lançamentos, a competência é o mês do vencimento final da parcela.</div></div> : null}
 
           {benefit ? <div className="px-notice ok">{draft.type === 'income'
             ? 'A receita do benefício é registrada como recebida; a recarga aumenta somente o saldo do benefício e não compõe o caixa monetário.'
@@ -1398,6 +1424,17 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
         </div>
       </aside>
     </> : null}
+
+    {installmentPreviewOpen && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay px-installment-preview-overlay">
+      <button className="px-meg-confirm-backdrop" type="button" aria-label="Fechar visualização das parcelas" onClick={() => setInstallmentPreviewOpen(false)} />
+      <section className="px-meg-confirm-dialog px-installment-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="px-installment-preview-title">
+        <div className="px-meg-confirm-copy"><span className="px-kicker">Parcelamento</span><h3 id="px-installment-preview-title">{draft.installments} parcelas da compra</h3><p>{draft.description || 'Nova despesa'} · total {money.format(amountCents / 100)}</p></div>
+        <button className="px-meg-confirm-close" type="button" aria-label="Fechar" onClick={() => setInstallmentPreviewOpen(false)}><MovementIcon name="close" size={16} /></button>
+        <div className="px-installment-preview-list">{installmentPreview.map((item) => <div key={item.number}><span><strong>{item.number}/{draft.installments}</strong><small>{item.dueDate ? `Vencimento ${formatIsoDate(item.dueDate)}` : 'Vencimento a definir'}</small></span><strong>{money.format(item.cents / 100)}</strong></div>)}</div>
+        <div className="px-installment-preview-total"><span>Total conferido</span><strong>{money.format(installmentPreview.reduce((sum, item) => sum + item.cents, 0) / 100)}</strong></div>
+        <div className="px-meg-confirm-actions"><button className="px-meg-confirm-secondary" type="button" onClick={() => setInstallmentPreviewOpen(false)}>Fechar</button></div>
+      </section>
+    </div>, document.body) : null}
 
     {discardConfirmOpen && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay">
       <button className="px-meg-confirm-backdrop" type="button" aria-label="Continuar editando" onClick={() => setDiscardConfirmOpen(false)} />
