@@ -440,6 +440,10 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   }, [initialData]);
 
   useEffect(() => {
+    setInstallmentInput(String(Math.max(1, draft.installments || 1)));
+  }, [draft.installments]);
+
+  useEffect(() => {
     if (!toolPanel) return;
     const closeOnOutside = (event: PointerEvent) => {
       const target = event.target;
@@ -773,7 +777,8 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      if (settlementConfirmOpen) setSettlementConfirmOpen(false);
+      if (installmentPreviewOpen) setInstallmentPreviewOpen(false);
+      else if (settlementConfirmOpen) setSettlementConfirmOpen(false);
       else if (deleteConfirmOpen) { setDeleteConfirmOpen(false); setDeleteTargetEvent(null); }
       else if (discardConfirmOpen) setDiscardConfirmOpen(false);
       else if (detailEvent) setDetailEvent(null);
@@ -781,7 +786,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onDa
     };
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
-  }, [detailEvent, launchOpen, dirty, discardConfirmOpen, deleteConfirmOpen, settlementConfirmOpen]);
+  }, [detailEvent, launchOpen, dirty, discardConfirmOpen, deleteConfirmOpen, settlementConfirmOpen, installmentPreviewOpen]);
 
   useEffect(() => {
     const handleAndroidBack = (event: Event) => {
