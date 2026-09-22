@@ -104,7 +104,7 @@ type FutureCandidate = {
 };
 
 function effectiveSignedAmount(event: { type: string; amount: unknown; signedAmount: unknown }) {
-  const stored = effectiveSignedAmount(event);
+  const stored = Number(event.signedAmount);
   if (Number.isFinite(stored) && stored !== 0) return stored;
   const amount = Math.abs(Number(event.amount || 0));
   if (!Number.isFinite(amount) || amount === 0) return 0;
