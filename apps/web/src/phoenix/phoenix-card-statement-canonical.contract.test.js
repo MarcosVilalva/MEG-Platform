@@ -63,7 +63,7 @@ assert.match(movements, /const rawSigned = Number\(event\.signedAmount\);/,
   'Lançamentos devem ler o signedAmount canônico antes do fallback');
 assert.match(movements, /rawSigned !== 0/,
   'Lançamentos devem detectar signedAmount zerado como dado legado incompleto');
-assert.match(movements, /visualType === 'expense' \\? -amount/,
+assert.match(movements, /visualType === 'expense' \? -amount/,
   'Lançamentos devem recuperar o sinal da despesa legada pelo amount');
 assert.match(cardProjection, /const statementEffect = Number\(entry\.amount \|\| 0\)/,
   'Projeção de parcelas deve preservar o efeito assinado da linha da fatura');
