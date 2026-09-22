@@ -1,9 +1,9 @@
 {
-  "versionCode": 336,
-  "versionName": "2.0.336",
+  "versionCode": 337,
+  "versionName": "2.0.337",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "2d0999d2fb4445039539ebd54198fc1780f996bcd0ea83e87800cbe4adfb8aa3",
+  "sha256": "15741d5b8516bc2d5324e2813d331979303b2314abfd86ab4c745db01d08c8f0",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "diagnóstico de dispositivos e sessões"
+  "releaseNotes": "evolui Home consolidada, benefício e testes de notificações"
 }
