@@ -88,6 +88,31 @@ export async function notificationRoutes(app: FastifyInstance) {
     return deliverDailyFinancialSummary(request.user.sub, { force: true, slot: 'manual' });
   });
 
+  app.post('/test-channels', { preHandler: app.authorize(['ADMIN']) }, async (request) => {
+    const referenceDate = new Date();
+    const [messaging, alexa] = await Promise.allSettled([
+      deliverNotifications(request.user.sub, { referenceDate, mode: 'open-summary', slot: 'manual-test', force: true }),
+      deliverAlexaNextDuePreview(request.user.sub, referenceDate, true)
+    ]);
+    const messagingValue = messaging.status === 'fulfilled' ? messaging.value : null;
+    const deliveries = messagingValue?.deliveries || [];
+    const channelResult = (channel: string) => {
+      const rows = deliveries.filter((item: any) => String(item.channel || '').toLowerCase().includes(channel));
+      if (!rows.length) return { status: 'not-sent', detail: 'Nenhuma entrega registrada para este canal.' };
+      const failed = rows.find((item: any) => item.status === 'failed');
+      const failedDetail = failed && 'detail' in failed ? failed.detail : undefined;
+      const first = rows[0];
+      const firstDetail = first && 'detail' in first ? first.detail : undefined;
+      return failed ? { status: 'failed', detail: failedDetail || 'Falha no provedor.' } : { status: 'sent', detail: firstDetail || 'Entrega registrada.' };
+    };
+    return {
+      testedAt: referenceDate.toISOString(),
+      email: channelResult('email'),
+      whatsapp: channelResult('whatsapp'),
+      alexa: alexa.status === 'fulfilled' ? { status: 'sent', detail: alexa.value } : { status: 'failed', detail: alexa.reason instanceof Error ? alexa.reason.message : 'Falha no anúncio Alexa.' }
+    };
+  });
+
   app.post('/cron', async (request, reply) => {
     if (!config.notificationCronSecret || request.headers['x-cron-secret'] !== config.notificationCronSecret) {
       return reply.status(401).send({ error: 'INVALID_CRON_SECRET' });

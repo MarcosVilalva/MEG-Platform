@@ -1,5 +1,6 @@
+import { useMemo, useState } from 'react';
 import type { PhoenixReadModel } from '../contracts';
-import { buildPhoenixAllTimeHomeSummary } from '../home-period-summary';
+import { buildPhoenixAllTimeHomeSummary, isPhoenixBenefitEvent } from '../home-period-summary';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -25,13 +26,14 @@ function signedClass(value: number) {
   return 'is-neutral';
 }
 
-export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', periodContext, onNavigate, onOpenPeriod }: {
+export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', periodContext, onNavigate, onOpenPeriod, onLaunch }: {
   data: PhoenixReadModel;
   mode?: PeriodMode;
   periodLabel?: string;
   periodContext?: HomePeriodContext | null;
   onNavigate: (view: 'home' | 'movements' | 'history' | 'payables') => void;
   onOpenPeriod?: () => void;
+  onLaunch?: (preset: 'expense' | 'income' | 'benefit') => void;
 }) {
   const summary = buildPhoenixAllTimeHomeSummary(data);
   const isAll = mode === 'all';
@@ -47,8 +49,23 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   const lastDate = periodContext?.endDate ?? summary.lastDate;
   const title = isAll ? 'Histórico completo' : 'Resumo do período';
   const kicker = isAll ? 'Visão geral · Tudo' : `Visão geral · ${periodLabel}`;
+  const [benefitOpen, setBenefitOpen] = useState(false);
+  const benefitEvents = useMemo(() => data.events.items
+    .filter(isPhoenixBenefitEvent)
+    .filter((event) => ['paid', 'reconciled', 'confirmed'].includes(String(event.status)))
+    .sort((left, right) => String(left.date).localeCompare(String(right.date))), [data.events.items]);
+  const benefitCredits = benefitEvents.reduce((sum, event) => Math.max(0, Number(event.signedAmount || 0)) + sum, 0);
+  const benefitSpent = benefitEvents.reduce((sum, event) => Math.max(0, -Number(event.signedAmount || 0)) + sum, 0);
+  const benefitOpening = Number(summary.benefitBalance || 0) - benefitCredits + benefitSpent;
+  const benefitEvolution = benefitEvents.reduce<Array<{ id: string; date: string; description: string; amount: number; balance: number }>>((rows, event) => {
+    const amount = Number(event.signedAmount || 0);
+    const previous = rows.length ? rows[rows.length - 1].balance : benefitOpening;
+    rows.push({ id: event.id, date: String(event.date).slice(0, 10), description: event.description || 'Movimentação do benefício', amount, balance: previous + amount });
+    return rows;
+  }, []);
 
-  return <section className="px-home-alltime" data-home-alltime-layout="period-intelligence-v2">
+  return <>
+  <section className="px-home-alltime" data-home-alltime-layout="period-intelligence-v3">
     <div className="px-page-head">
       <div>
         <span className="px-kicker">{kicker}</span>
@@ -62,6 +79,12 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
         {onOpenPeriod ? <button className="px-home-period-edit" type="button" onClick={onOpenPeriod}>Alterar período · {periodLabel}</button> : null}
       </div>
     </div>
+
+    <section className="px-alltime-quick-actions" aria-label="Lançamentos rápidos">
+      <button type="button" onClick={() => onLaunch?.('expense')}><span>↘</span><strong>Despesa</strong><small>Novo pagamento</small></button>
+      <button type="button" onClick={() => onLaunch?.('income')}><span>↗</span><strong>Receita</strong><small>Nova entrada</small></button>
+      <button type="button" className="benefit" onClick={() => onLaunch?.('benefit')}><span>◈</span><strong>Alimentação</strong><small>Benefício + Verocard</small></button>
+    </section>
 
     <section className="px-dashboard-grid">
       <article className="px-card px-premium-balance px-period-balance-card">
@@ -139,7 +162,7 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
         <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Primeiro lançamento</strong><small>{formatIso(summary.firstDate)}</small></div></div>
         <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Último lançamento cadastrado</strong><small>{formatIso(summary.lastDate)}</small></div></div>
         <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Eventos monetários</strong><small>{summary.monetaryEventCount.toLocaleString('pt-BR')} de {summary.eventCount.toLocaleString('pt-BR')} eventos</small></div></div>
-        <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Benefício alimentação atual</strong><small>Créditos realizados desde o início: {money.format(summary.benefitCredits)} · utilizado: {money.format(summary.benefitUsed)}</small></div><strong>{money.format(summary.benefitBalance)}</strong></div>
+        <button type="button" className="px-dashboard-row px-alltime-benefit-row" onClick={() => setBenefitOpen(true)}><div className="px-dashboard-row-copy"><strong>Benefício alimentação atual</strong><small>Toque para acompanhar créditos, consumo e saldo após cada movimento</small></div><strong>{money.format(summary.benefitBalance)}</strong></button>
       </article>
     </section> : <section className="px-bottom-grid px-period-bottom-grid">
       <article className="px-card">
@@ -158,5 +181,19 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
         <div className="px-history-state sincronizado">SALDO HISTÓRICO ANCORADO NO SALDO REAL</div>
       </article>
     </section>}
-  </section>;
+  </section>
+  {benefitOpen ? <div className="px-home-benefit-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setBenefitOpen(false); }}>
+    <section className="px-home-benefit-modal" role="dialog" aria-modal="true" aria-label="Acompanhamento do benefício alimentação">
+      <header className="px-home-benefit-modal-head"><div className="px-home-benefit-modal-title"><div><span className="px-kicker">Benefício alimentação · {periodLabel}</span><h2>Evolução do saldo</h2><p>Benefício separado do caixa monetário, preservando a leitura do período.</p></div></div><button type="button" aria-label="Fechar" onClick={() => setBenefitOpen(false)}>×</button></header>
+      <div className="px-home-benefit-summary px-home-benefit-summary-four">
+        <article><span>Saldo inicial</span><strong>{money.format(benefitOpening)}</strong></article>
+        <article className="credit"><span>Créditos</span><strong>{money.format(benefitCredits)}</strong></article>
+        <article className="spent"><span>Consumo</span><strong>{money.format(benefitSpent)}</strong></article>
+        <article className="current"><span>Saldo atual</span><strong>{money.format(summary.benefitBalance)}</strong></article>
+      </div>
+      <section className="px-home-benefit-movements"><header><div><span>Movimentações</span><strong>{benefitEvolution.length} registro(s)</strong></div><button type="button" onClick={() => { setBenefitOpen(false); onNavigate('movements'); }}>Ver lançamentos</button></header><div className="px-home-benefit-list">{[...benefitEvolution].reverse().slice(0, 30).map((item) => <div className="px-home-benefit-row" key={item.id}><span className={`px-home-benefit-row-icon ${item.amount >= 0 ? 'credit' : 'debit'}`} aria-hidden="true">{item.amount >= 0 ? '↗' : '↘'}</span><div><strong>{item.description}</strong><small>{formatIso(item.date)} · saldo {money.format(item.balance)}</small></div><strong className={item.amount >= 0 ? 'credit' : 'debit'}>{item.amount >= 0 ? '+' : '−'} {money.format(Math.abs(item.amount))}</strong></div>)}</div></section>
+      <footer className="px-home-benefit-footer"><span>O benefício não altera o saldo monetário da Home.</span><button type="button" className="primary" onClick={() => setBenefitOpen(false)}>Fechar</button></footer>
+    </section>
+  </div> : null}
+  </>;
 }
