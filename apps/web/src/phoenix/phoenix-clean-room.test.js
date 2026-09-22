@@ -611,7 +611,7 @@ assert.doesNotMatch(phoenixApp, /function quickMonth[\s\S]{0,280}void applyMonth
   'Atalho de mês móvel não deve aplicar e navegar sozinho.');
 assert.match(phoenixApp, /snapshot\.month !== visibleMonth[\s\S]{0,500}loadPhoenixReadModel\(visibleMonth, \{ force: true \}\)/,
   'Snapshot de outro mês não pode empurrar o período visível do APK.');
-assert.match(operationalHome, /px-approved-period[\\s\\S]*periodLabel/,
+assert.match(operationalHome, /px-approved-period[\\s\\S]{0,300}periodLabel/,
   'Home operacional deve manter o seletor de período no cabeçalho aprovado.');
 assert.match(phoenixApp, /createPortal\([\s\S]*px-period-mobile-portal[\s\S]*document\.body/,
   'Android deve renderizar o filtro de período em portal no body, fora da topbar fixa.');
