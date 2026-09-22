@@ -1,9 +1,9 @@
 {
-  "versionCode": 341,
-  "versionName": "2.0.341",
+  "versionCode": 342,
+  "versionName": "2.0.342",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "9cfd6731ce42472b827db2350b9f3500d44173283670fb5e69794d1576371ee0",
+  "sha256": "75c37591aca4774f6578334698fa82bfe690c2737f96707d7168451effa45713",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "consolida Home mobile, avatar e período"
+  "releaseNotes": "corrige responsividade horizontal da Home Android"
 }
