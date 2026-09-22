@@ -37,11 +37,11 @@ assert.match(payables, /const officialSignatures = new Set\(official\.map\(signa
   'Dedupe de Pendentes deve existir somente contra compromissos oficiais');
 assert.doesNotMatch(payables, /seen\.add\(key\)/,
   'Pendentes não pode colapsar dois lançamentos reais só porque têm mesma descrição, data e valor');
-assert.match(payables, /const rawSigned = Number\\(event\\.signedAmount\\);/,
+assert.match(payables, /const rawSigned = Number\(event\.signedAmount\);/,
   'Pendentes legados devem ler o signedAmount canônico antes do fallback');
 assert.match(payables, /rawSigned !== 0/,
   'Pendentes legados devem detectar signedAmount zerado como dado legado incompleto');
-assert.match(payables, /-Math\\.abs\\(Number\\(event\\.amount \\|\\| 0\\)\\)/,
+assert.match(payables, /-Math\.abs\(Number\(event\.amount \|\| 0\)\)/,
   'Pendentes legados devem recuperar despesas antigas pelo amount quando signedAmount estiver zerado');
 assert.match(payables, /isBatchSelectable/,
   'Pendentes deve reconhecer créditos de cartão como parte do lote líquido');
@@ -59,7 +59,7 @@ assert.match(payables, /Fatura · \{block\.items\[0\]\.paymentMethod\}/,
 assert.match(payables, /selectedTotal <= 0/,
   'Faturas zeradas ou credoras não podem gerar pagamento');
 
-assert.match(movements, /const rawSigned = Number\\(event\\.signedAmount\\);/,
+assert.match(movements, /const rawSigned = Number\(event\.signedAmount\);/,
   'Lançamentos devem ler o signedAmount canônico antes do fallback');
 assert.match(movements, /rawSigned !== 0/,
   'Lançamentos devem detectar signedAmount zerado como dado legado incompleto');
