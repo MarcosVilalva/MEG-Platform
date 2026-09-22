@@ -65,25 +65,20 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   }, []);
 
   return <>
-  <section className="px-home-alltime" data-home-alltime-layout="period-intelligence-v3">
+  <section className="px-home-alltime px-home-approved" data-home-alltime-layout="approved-mobile-v4">
     <div className="px-page-head">
       <div>
         <span className="px-kicker">{kicker}</span>
         <h1>{title}</h1>
-        <p>{isAll
-          ? 'Do primeiro ao último lançamento normalizado, preservando o saldo monetário atual como referência de hoje.'
-          : 'Uma fotografia do período selecionado, reconstruída a partir do saldo real e dos movimentos realizados.'}</p>
-        <span className="px-updated">
-          {formatIso(firstDate)} → {formatIso(lastDate)} · {summary.eventCount.toLocaleString('pt-BR')} lançamento(s)
-        </span>
+        
         {onOpenPeriod ? <button className="px-home-period-edit" type="button" onClick={onOpenPeriod}>Alterar período · {periodLabel}</button> : null}
       </div>
     </div>
 
     <section className="px-alltime-quick-actions" aria-label="Lançamentos rápidos">
-      <button type="button" onClick={() => onLaunch?.('expense')}><span>↘</span><strong>Despesa</strong><small>Novo pagamento</small></button>
-      <button type="button" onClick={() => onLaunch?.('income')}><span>↗</span><strong>Receita</strong><small>Nova entrada</small></button>
-      <button type="button" className="benefit" onClick={() => onLaunch?.('benefit')}><span>◈</span><strong>Alimentação</strong><small>Benefício + Verocard</small></button>
+      <button type="button" onClick={() => onLaunch?.('expense')}><span>↘</span><strong>Despesa</strong><small>Novo lançamento</small></button>
+      <button type="button" onClick={() => onLaunch?.('income')}><span>↗</span><strong>Receita</strong><small>Novo lançamento</small></button>
+      <button type="button" className="benefit" onClick={() => onLaunch?.('benefit')}><span>◈</span><strong>Alimentação</strong><small>Lançar no benefício</small></button>
     </section>
 
     <section className="px-dashboard-grid">
