@@ -48,7 +48,8 @@ function warmFrequentScreens() {
     loadMovementsModule(),
     loadPayablesModule(),
     loadCardsModule(),
-    loadHistoryModule()
+    loadHistoryModule(),
+    loadPhoenixAllEvents()
   ]);
 }
 
