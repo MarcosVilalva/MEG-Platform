@@ -53,7 +53,10 @@ function round(value: number) {
 
 function signedAmount(event: FinancialEvent) {
   const value = Number(event.signedAmount);
-  return Number.isFinite(value) ? value : 0;
+  if (Number.isFinite(value) && value !== 0) return value;
+  const amount = Math.abs(Number(event.amount || 0));
+  if (!Number.isFinite(amount) || amount === 0) return 0;
+  return isIncomeLike(event) ? amount : -amount;
 }
 
 function isPosted(event: FinancialEvent) {

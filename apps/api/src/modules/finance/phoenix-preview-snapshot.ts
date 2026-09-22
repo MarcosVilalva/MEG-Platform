@@ -103,6 +103,14 @@ type FutureCandidate = {
   paymentMethod: { name: string } | null;
 };
 
+function effectiveSignedAmount(event: { type: string; amount: unknown; signedAmount: unknown }) {
+  const stored = Number(event.signedAmount);
+  if (Number.isFinite(stored) && stored !== 0) return stored;
+  const amount = Math.abs(Number(event.amount || 0));
+  if (!Number.isFinite(amount) || amount === 0) return 0;
+  return event.type === 'income' || event.type === 'redemption' ? amount : -amount;
+}
+
 function monetaryOpeningBalance(accounts: Array<{ type: string; openingBalance: unknown }>) {
   return round(accounts
     .filter((account) => isMonetaryAccountType(account.type))
@@ -125,7 +133,7 @@ function periodTotals(events: CoreEvent[]) {
 
   for (const event of events) {
     if (!isMonetaryEvent(event)) continue;
-    const signed = Number(event.signedAmount);
+    const signed = effectiveSignedAmount(event);
     if (!Number.isFinite(signed)) continue;
     eventCount += 1;
     const incomeLike = event.type === 'income' || event.type === 'redemption';
@@ -166,7 +174,7 @@ function buildSummary(
   const totals = periodTotals(monthEvents);
   const availableBalance = round(historicalEvents
     .filter(countsTowardBalance)
-    .reduce((sum, event) => sum + Number(event.signedAmount), openingBalance));
+    .reduce((sum, event) => sum + effectiveSignedAmount(event), openingBalance));
   const pendingEvents = monthEvents.filter((event) => event.status === 'planned'
     && isMonetaryEvent(event)
     && event.type !== 'income'
@@ -190,7 +198,7 @@ function buildSummary(
     realizedResult: totals.realizedResult,
     eventCount: totals.eventCount,
     pendingCount: pendingEvents.length,
-    pendingAmount: round(pendingEvents.reduce((sum, event) => sum - Number(event.signedAmount), 0)),
+    pendingAmount: round(pendingEvents.reduce((sum, event) => sum - effectiveSignedAmount(event), 0)),
     nextDue: nextDue ? { id: nextDue.id, description: nextDue.description, date: nextDue.date, amount: nextDue.amount, type: nextDue.type } : null,
     topCategories,
   };
@@ -204,7 +212,7 @@ function buildCashflow(month: string, monthEvents: CoreEvent[], openingBalance: 
 
   for (const event of events) {
     const date = event.date.toISOString().slice(0, 10);
-    const signed = Number(event.signedAmount);
+    const signed = effectiveSignedAmount(event);
     const incomeLike = event.type === 'income' || event.type === 'redemption';
     projectedBalance += signed;
     if (countsTowardBalance(event)) realizedBalance += signed;
@@ -254,7 +262,7 @@ function buildAnalytics(month: string, currentSummary: ReturnType<typeof buildSu
 
   for (const event of events) {
     if (event.type === 'income' || event.type === 'redemption') continue;
-    const amount = -Number(event.signedAmount);
+    const amount = -effectiveSignedAmount(event);
     const method = event.paymentMethod?.name || 'Não informada';
     paymentTotals.set(method, (paymentTotals.get(method) || 0) + amount);
     const category = event.category?.group || event.category?.name || 'Sem categoria';
@@ -271,8 +279,8 @@ function buildAnalytics(month: string, currentSummary: ReturnType<typeof buildSu
   for (const event of trendEvents) {
     const point = trend.get(event.date.toISOString().slice(0, 7));
     if (!point) continue;
-    if (event.type === 'income' || event.type === 'redemption') point.income += Number(event.signedAmount);
-    else point.expense -= Number(event.signedAmount);
+    if (event.type === 'income' || event.type === 'redemption') point.income += effectiveSignedAmount(event);
+    else point.expense -= effectiveSignedAmount(event);
     point.income = round(point.income);
     point.expense = round(point.expense);
     point.result = round(point.income - point.expense);
@@ -309,9 +317,9 @@ function buildBenefitSummary(month: string, allEvents: CoreEvent[], monthEvents:
   const realizedMonth = monthEvents.filter((event) => isBenefitEvent(event) && isPosted(event.status));
   return {
     month,
-    balance: round(realized.reduce((sum, event) => sum + Number(event.signedAmount), openingBalance)),
-    credits: round(realizedMonth.reduce((sum, event) => sum + Math.max(0, Number(event.signedAmount)), 0)),
-    used: round(realizedMonth.reduce((sum, event) => sum + Math.max(0, -Number(event.signedAmount)), 0)),
+    balance: round(realized.reduce((sum, event) => sum + effectiveSignedAmount(event), openingBalance)),
+    credits: round(realizedMonth.reduce((sum, event) => sum + Math.max(0, effectiveSignedAmount(event)), 0)),
+    used: round(realizedMonth.reduce((sum, event) => sum + Math.max(0, -effectiveSignedAmount(event)), 0)),
   };
 }
 
