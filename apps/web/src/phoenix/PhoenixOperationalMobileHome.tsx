@@ -91,7 +91,7 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate, onOpe
 
     <section className="px-approved-commitments">
       <header><div><span>▣</span><strong>Próximos Compromissos</strong></div><button type="button" onClick={() => onNavigate('payables')}>Ver todos ›</button></header>
-      <div>{agenda.items.slice(0,3).map((item) => <button type="button" key={item.id} onClick={() => onNavigate('payables')}><span className="date"><strong>{String(item.date || '').slice(8,10)}</strong><small>{shortDate.format(new Date(`${String(item.date || '').slice(0,10)}T12:00:00Z`)).replace(/^\\d{2} de /,'').slice(0,3).toUpperCase()}</small></span><span className="copy"><strong>{item.description}</strong><small>{item.kind === 'VENCIDO' ? 'Vencido' : 'A vencer'}</small></span><b>{money.format(item.amount)}</b><em>›</em></button>)}</div>
+      <div>{agenda.items.slice(0,3).map((item) => <button type="button" key={item.id} onClick={() => onNavigate('payables')}><span className="date"><strong>{String(item.dueDate || '').slice(8,10)}</strong><small>{shortDate.format(new Date(`${String(item.dueDate || '').slice(0,10)}T12:00:00Z`)).replace(/^\\d{2} de /,'').slice(0,3).toUpperCase()}</small></span><span className="copy"><strong>{item.description}</strong><small>{item.kind === 'VENCIDO' ? 'Vencido' : 'A vencer'}</small></span><b>{money.format(item.amount)}</b><em>›</em></button>)}</div>
       {!agenda.items.length ? <p>Nenhum compromisso em aberto.</p> : null}
     </section>
   </section>;
