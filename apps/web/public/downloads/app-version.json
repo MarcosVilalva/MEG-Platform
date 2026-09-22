@@ -1,9 +1,9 @@
 {
-  "versionCode": 338,
-  "versionName": "2.0.338",
+  "versionCode": 339,
+  "versionName": "2.0.339",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "19d9ca0784f20f8b90447272a92f3913c8a2aa0c9f73dcc47ccb6024ed6ebd46",
+  "sha256": "f69de9332178ed405bde808c2257f97f238a28e0c80787de107e1a3db20deb87",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "estabiliza cálculos financeiros e parcelamento"
+  "releaseNotes": "aplica visual aprovado da Home mobile"
 }
