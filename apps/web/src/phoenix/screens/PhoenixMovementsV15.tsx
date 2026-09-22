@@ -430,6 +430,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNa
   const [negative, setNegative] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [reviewed, setReviewed] = useState(false);
+  const [advancedLaunchOpen, setAdvancedLaunchOpen] = useState(false);
   const [validationVisible, setValidationVisible] = useState(false);
   const [recentEventId, setRecentEventId] = useState<string | null>(null);
   const recentTimerRef = useRef<number | null>(null);
@@ -1383,13 +1384,17 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNa
             ? 'A receita do benefício é registrada como recebida; a recarga aumenta somente o saldo do benefício e não compõe o caixa monetário.'
             : 'ALIMENTAÇÃO ATIVA: a conta Benefício e a forma VEROCARD são aplicadas automaticamente e permanecem travadas. A despesa fica sempre como Paga e não altera o caixa monetário.'}</div> : null}
 
-          <div className="px-launch-section-label">Repetição e observações</div>
-          <label className="px-switch"><div><strong>Lançamento recorrente</strong><small>Simule os próximos eventos conforme a periodicidade.</small></div><input type="checkbox" checked={draft.recurring} onChange={(event) => updateDraft('recurring', event.target.checked)} /></label>
-          {draft.recurring ? <div className="px-recurrence-box"><div className="px-form-row"><label className="px-field"><span>Periodicidade *</span><select value={draft.recurrenceFrequency} onChange={(event) => updateDraft('recurrenceFrequency', event.target.value as LaunchDraft['recurrenceFrequency'])}><option>Mensal</option><option>Semanal</option><option>Anual</option></select></label><label className={`px-field ${invalidField('quantidade da recorrência') ? 'is-invalid' : ''}`}><span>Quantidade *</span><input type="number" min={2} max={120} value={draft.recurrenceCount} onChange={(event) => updateDraft('recurrenceCount', Number(event.target.value) || 0)} />{invalidField('quantidade da recorrência') ? <small className="px-field-error">Informe ao menos 2 ocorrências.</small> : null}</label></div><div className="px-calculated-due"><span>Eventos que seriam criados</span><strong>{draft.recurrenceCount} lançamentos {draft.recurrenceFrequency.toLocaleLowerCase('pt-BR')}</strong></div></div> : null}
-
-          <label className="px-switch"><div><strong>Salvar como modelo</strong><small>Validação visual apenas nesta etapa.</small></div><input type="checkbox" checked={draft.saveTemplate} onChange={(event) => updateDraft('saveTemplate', event.target.checked)} /></label>
-          {draft.saveTemplate ? <label className={`px-field ${invalidField('nome do modelo') ? 'is-invalid' : ''}`}><span>Nome do modelo *</span><input maxLength={60} value={draft.templateName} onChange={(event) => updateDraft('templateName', event.target.value)} placeholder="Ex.: Compra mensal" />{invalidField('nome do modelo') ? <small className="px-field-error">Informe um nome para o modelo.</small> : null}</label> : null}
-          <label className="px-field"><span>Observações opcionais</span><textarea maxLength={500} value={draft.notes} onChange={(event) => updateDraft('notes', event.target.value)} placeholder="Inclua informações úteis para consulta futura" /></label>
+          <button className="px-launch-advanced-toggle" type="button" aria-expanded={advancedLaunchOpen} onClick={() => setAdvancedLaunchOpen((value) => !value)}>
+            <span><strong>Mais opções</strong><small>Recorrência, modelo e observações</small></span><b>{advancedLaunchOpen ? '−' : '+'}</b>
+          </button>
+          {advancedLaunchOpen ? <div className="px-launch-advanced-panel">
+            <div className="px-launch-section-label">Repetição e observações</div>
+            <label className="px-switch"><div><strong>Lançamento recorrente</strong><small>Simule os próximos eventos conforme a periodicidade.</small></div><input type="checkbox" checked={draft.recurring} onChange={(event) => updateDraft('recurring', event.target.checked)} /></label>
+            {draft.recurring ? <div className="px-recurrence-box"><div className="px-form-row"><label className="px-field"><span>Periodicidade *</span><select value={draft.recurrenceFrequency} onChange={(event) => updateDraft('recurrenceFrequency', event.target.value as LaunchDraft['recurrenceFrequency'])}><option>Mensal</option><option>Semanal</option><option>Anual</option></select></label><label className={`px-field ${invalidField('quantidade da recorrência') ? 'is-invalid' : ''}`}><span>Quantidade *</span><input type="number" min={2} max={120} value={draft.recurrenceCount} onChange={(event) => updateDraft('recurrenceCount', Number(event.target.value) || 0)} />{invalidField('quantidade da recorrência') ? <small className="px-field-error">Informe ao menos 2 ocorrências.</small> : null}</label></div><div className="px-calculated-due"><span>Eventos que seriam criados</span><strong>{draft.recurrenceCount} lançamentos {draft.recurrenceFrequency.toLocaleLowerCase('pt-BR')}</strong></div></div> : null}
+            <label className="px-switch"><div><strong>Salvar como modelo</strong><small>Validação visual apenas nesta etapa.</small></div><input type="checkbox" checked={draft.saveTemplate} onChange={(event) => updateDraft('saveTemplate', event.target.checked)} /></label>
+            {draft.saveTemplate ? <label className={`px-field ${invalidField('nome do modelo') ? 'is-invalid' : ''}`}><span>Nome do modelo *</span><input maxLength={60} value={draft.templateName} onChange={(event) => updateDraft('templateName', event.target.value)} placeholder="Ex.: Compra mensal" />{invalidField('nome do modelo') ? <small className="px-field-error">Informe um nome para o modelo.</small> : null}</label> : null}
+            <label className="px-field"><span>Observações opcionais</span><textarea maxLength={500} value={draft.notes} onChange={(event) => updateDraft('notes', event.target.value)} placeholder="Inclua informações úteis para consulta futura" /></label>
+          </div> : null}
 
           <div className="px-preview-box"><div className="px-launch-section-label">Resumo antes de confirmar</div><div><span>Tipo</span><strong>{draft.type === 'expense' ? 'Despesa' : draft.type === 'income' ? 'Receita' : 'Transferência'}</strong></div><div><span>Escopo</span><strong>{credit ? `Cartão ${selectedCard?.name || 'não selecionado'} · venc. ${calculatedDue ? formatIsoDate(calculatedDue) : 'a calcular'}` : draft.type === 'transfer' && draft.destinationId ? `${labelForAccount(data, draft.accountId)} para ${labelForAccount(data, draft.destinationId)}` : labelForAccount(data, draft.accountId)}</strong></div>{draft.type === 'expense' ? <><div><span>Classificação</span><strong>{draft.classification || '—'}</strong></div><div><span>Grupo</span><strong>{selectedCategory?.name || '—'}</strong></div></> : null}<div><span>Valor</span><strong>{formatInputMoney(amountCents, negative)}</strong></div><div><span>Situação inicial</span><strong>{draft.type === 'transfer' ? 'Fluxo próprio' : draft.type === 'income' ? 'Recebida' : effectiveSituation === 'paid' ? 'Pago' : 'Pendente'}</strong></div></div>
 
@@ -1413,9 +1418,11 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNa
               onReview={reviewLaunch}
               onBusyChange={setLaunchWriteBusy}
               onAccepted={() => {
-                setDirty(false);
-                setLaunchOpen(false);
-                resetLaunch();
+                if (!nativeOperational) {
+                  setDirty(false);
+                  setLaunchOpen(false);
+                  resetLaunch();
+                }
               }}
               onCommitted={(snapshot, event) => {
                 setData(snapshot);
