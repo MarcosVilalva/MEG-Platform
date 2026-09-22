@@ -37,8 +37,8 @@ assert.match(payables, /const officialSignatures = new Set\(official\.map\(signa
   'Dedupe de Pendentes deve existir somente contra compromissos oficiais');
 assert.doesNotMatch(payables, /seen\.add\(key\)/,
   'Pendentes não pode colapsar dois lançamentos reais só porque têm mesma descrição, data e valor');
-assert.match(payables, /openAmount: -Number\(event\.signedAmount \|\| 0\)/,
-  'Pendentes legados devem usar signedAmount para preservar compras e estornos');
+assert.match(payables, /const rawSigned = Number\\(event\\.signedAmount\\);[\\s\\S]*rawSigned !== 0[\\s\\S]*-Math\\.abs\\(Number\\(event\\.amount \\|\\| 0\\)\\)/,
+  'Pendentes legados devem preservar signedAmount válido e recuperar despesas antigas quando ele estiver zerado');
 assert.match(payables, /isBatchSelectable/,
   'Pendentes deve reconhecer créditos de cartão como parte do lote líquido');
 assert.match(payables, /Selecionar fatura líquida/,
@@ -55,8 +55,8 @@ assert.match(payables, /Fatura · \{block\.items\[0\]\.paymentMethod\}/,
 assert.match(payables, /selectedTotal <= 0/,
   'Faturas zeradas ou credoras não podem gerar pagamento');
 
-assert.match(movements, /const signed = Number\(event\.signedAmount \|\| 0\)/,
-  'Lançamentos devem calcular o efeito visual a partir do mesmo signedAmount canônico');
+assert.match(movements, /const rawSigned = Number\\(event\\.signedAmount\\);[\\s\\S]*rawSigned !== 0[\\s\\S]*visualType === 'expense' \\? -amount/,
+  'Lançamentos devem usar signedAmount canônico e recuperar o sinal da despesa legada quando ele estiver zerado');
 assert.match(cardProjection, /const statementEffect = Number\(entry\.amount \|\| 0\)/,
   'Projeção de parcelas deve preservar o efeito assinado da linha da fatura');
 assert.match(cardProjection, /signedAmount: -statementEffect/,
