@@ -185,7 +185,13 @@ function eventItems(data: PhoenixReadModel, allMode = false): PendingItem[] {
         source: 'event' as const,
         description: event.description,
         dueDate: isoDay(event.date),
-        openAmount: -Number(event.signedAmount || 0),
+        openAmount: (() => {
+          const rawSigned = Number(event.signedAmount);
+          const effectiveSigned = Number.isFinite(rawSigned) && rawSigned !== 0
+            ? rawSigned
+            : -Math.abs(Number(event.amount || 0));
+          return -effectiveSigned;
+        })(),
         installmentNo: installment.no,
         installmentQty: installment.qty,
         categoryName: event.sourceDetails?.expenseClass || event.category?.group || event.category?.name || 'Sem classificação',
@@ -611,18 +617,26 @@ export function PhoenixPayables({ data, onMonthChange }: { data: PhoenixReadMode
   const periodTodayTotal = periodToday.reduce((sum, item) => sum + item.openAmount, 0);
   const periodUpcomingTotal = periodUpcoming.reduce((sum, item) => sum + item.openAmount, 0);
 
-  const visible = useMemo(() => periodItems.filter((item) => {
-    const actionableItem = item.openAmount > 0;
-    const matchesPriority = priority === 'all'
-      || (priority === 'overdue' && actionableItem && item.dueDate < today)
-      || (priority === 'today' && actionableItem && item.dueDate === today)
-      || (priority === 'upcoming' && actionableItem && item.dueDate > today);
+  const filteredScope = useMemo(() => periodItems.filter((item) => {
     const matchesDateFrom = !dateFrom || item.dueDate >= dateFrom;
     const matchesDateTo = !dateTo || item.dueDate <= dateTo;
     const childText = item.children?.map((child) => child.description).join(' ') || '';
     const haystack = normalize(`${item.description} ${item.categoryName} ${item.group} ${item.paymentMethod} ${item.modality} ${item.accountName} ${childText}`);
-    return matchesPriority && matchesDateFrom && matchesDateTo && haystack.includes(searchNeedle);
-  }), [periodItems, priority, dateFrom, dateTo, searchNeedle, today]);
+    return matchesDateFrom && matchesDateTo && haystack.includes(searchNeedle);
+  }), [periodItems, dateFrom, dateTo, searchNeedle]);
+
+  const visible = useMemo(() => filteredScope.filter((item) => {
+    const actionableItem = item.openAmount > 0;
+    return priority === 'all'
+      || (priority === 'overdue' && actionableItem && item.dueDate < today)
+      || (priority === 'today' && actionableItem && item.dueDate === today)
+      || (priority === 'upcoming' && actionableItem && item.dueDate > today);
+  }), [filteredScope, priority, today]);
+  const filteredActionable = filteredScope.filter((item) => item.openAmount > 0);
+  const filteredTotal = filteredScope.reduce((sum, item) => sum + item.openAmount, 0);
+  const filteredOverdue = filteredActionable.filter((item) => item.dueDate < today);
+  const filteredToday = filteredActionable.filter((item) => item.dueDate === today);
+  const filteredUpcoming = filteredActionable.filter((item) => item.dueDate > today);
 
   const grouped = useMemo(() => buildGroups(visible, groupMode), [visible, groupMode]);
   const visibleObligationCount = pendingObligationCount(visible);
@@ -950,7 +964,7 @@ export function PhoenixPayables({ data, onMonthChange }: { data: PhoenixReadMode
           <p>Veja o que vence no mês escolhido ou consulte toda a carteira de pendências.</p>
         </div>
       </div>
-      <div className="px-screen-head-aside"><span className="px-total-pill">{money.format(periodTotal)} no período</span></div>
+      <div className="px-screen-head-aside"><span className="px-total-pill">{money.format(filteredTotal)} no filtro</span></div>
     </header>
 
     <nav className="px-pending-month-nav" aria-label="Período das pendências">
@@ -966,10 +980,10 @@ export function PhoenixPayables({ data, onMonthChange }: { data: PhoenixReadMode
     {successMessage ? <div className="px-pending-write-banner" role="status"><strong>Baixa confirmada</strong><span>{successMessage}</span></div> : null}
 
     <section className="px-screen-kpis px-pending-kpis">
-      <article className="total"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="coins" /></span><div><span>Total a vencer</span><strong>{money.format(periodTotal)}</strong><small>{pendingObligationCount(periodActionable)} pendência(s) no período</small></div></article>
-      <article className="danger"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="warning" /></span><div><span>Vencidos</span><strong>{money.format(periodOverdueTotal)}</strong><small>{pendingObligationCount(periodOverdue)} pendência(s)</small></div></article>
-      <article className="warn"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="clock" /></span><div><span>Vence hoje</span><strong>{money.format(periodTodayTotal)}</strong><small>{pendingObligationCount(periodToday)} pendência(s)</small></div></article>
-      <article className="next"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="calendar" /></span><div><span>Próximos</span><strong>{money.format(periodUpcomingTotal)}</strong><small>{pendingObligationCount(periodUpcoming)} pendência(s)</small></div></article>
+      <article className="total"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="coins" /></span><div><span>Total a vencer</span><strong>{money.format(filteredTotal)}</strong><small>{pendingObligationCount(filteredActionable)} pendência(s) no filtro</small></div></article>
+      <article className="danger"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="warning" /></span><div><span>Vencidos</span><strong>{money.format(filteredOverdue.reduce((sum, item) => sum + item.openAmount, 0))}</strong><small>{pendingObligationCount(filteredOverdue)} pendência(s)</small></div></article>
+      <article className="warn"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="clock" /></span><div><span>Vence hoje</span><strong>{money.format(filteredToday.reduce((sum, item) => sum + item.openAmount, 0))}</strong><small>{pendingObligationCount(filteredToday)} pendência(s)</small></div></article>
+      <article className="next"><span className="px-pending-kpi-icon" aria-hidden="true"><PendingGlyph kind="calendar" /></span><div><span>Próximos</span><strong>{money.format(filteredUpcoming.reduce((sum, item) => sum + item.openAmount, 0))}</strong><small>{pendingObligationCount(filteredUpcoming)} pendência(s)</small></div></article>
     </section>
 
     <div className="px-toolbar px-pending-commandbar">
