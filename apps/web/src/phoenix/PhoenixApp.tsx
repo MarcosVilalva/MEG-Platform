@@ -48,7 +48,8 @@ function warmFrequentScreens() {
     loadMovementsModule(),
     loadPayablesModule(),
     loadCardsModule(),
-    loadHistoryModule()
+    loadHistoryModule(),
+    loadPhoenixAllEvents()
   ]);
 }
 
@@ -361,7 +362,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
     if (nativeOperational) return <PhoenixOperationalMobileHome data={data} onLaunch={onLaunch} onNavigate={onNavigate} onOpenPeriod={onOpenPeriod} />;
     return <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
   }
-  if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} launchRequest={launchRequest} launchPreset={launchPreset} onNavigateHistory={() => onNavigate('history')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
+  if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} launchRequest={launchRequest} launchPreset={launchPreset} onNavigateHistory={() => onNavigate('history')} onNavigateHome={() => onNavigate('home')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
   if (view === 'history') return <Suspense fallback={<ScreenWarmFallback label="Histórico" />}><PhoenixHistory data={data} /></Suspense>;
   if (view === 'payables') return <Suspense fallback={<ScreenWarmFallback label="Pendentes" />}><PhoenixPayables data={data} onMonthChange={onPendingMonthChange} /></Suspense>;
   if (view === 'cards') return <Suspense fallback={<ScreenWarmFallback label="Cartões" />}><PhoenixCardsGrid data={data} /></Suspense>;
