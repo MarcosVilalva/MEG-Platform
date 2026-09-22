@@ -1131,3 +1131,18 @@
   position:relative;
   z-index:5201!important;
 }
+
+/* Parcelamento: controle compacto e conferência sem poluir o formulário. */
+.px-installment-stepper{display:grid;grid-template-columns:44px minmax(72px,1fr) 44px;align-items:stretch;gap:8px}
+.px-installment-stepper button{min-height:44px;border:1px solid var(--px-line,#2a4a49);border-radius:12px;background:rgba(13,44,43,.72);color:inherit;font-size:1.35rem;font-weight:800;cursor:pointer}
+.px-installment-stepper button:disabled{opacity:.38;cursor:not-allowed}
+.px-installment-stepper input{text-align:center;font-weight:800}
+.px-installment-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:12px 14px;border:1px solid rgba(112,230,203,.22);border-radius:14px;background:rgba(38,104,94,.13)}
+.px-installment-summary>div{display:grid;gap:3px}.px-installment-summary small{opacity:.72}
+.px-installment-summary button{border:0;background:transparent;color:#8ee8d2;font-weight:800;cursor:pointer;white-space:nowrap}
+.px-installment-preview-dialog{width:min(560px,calc(100vw - 28px))}
+.px-installment-preview-list{grid-column:1/-1;display:grid;gap:7px;max-height:min(48dvh,420px);overflow:auto;padding-right:3px}
+.px-installment-preview-list>div{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 12px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.025)}
+.px-installment-preview-list span{display:grid;gap:2px}.px-installment-preview-list small{opacity:.68}
+.px-installment-preview-total{grid-column:1/-1;display:flex;justify-content:space-between;gap:16px;padding:12px 2px 2px;border-top:1px solid rgba(255,255,255,.1)}
+@media(max-width:520px){.px-installment-summary{align-items:flex-start;flex-direction:column}.px-installment-summary button{padding:4px 0}.px-installment-preview-list{max-height:44dvh}}
