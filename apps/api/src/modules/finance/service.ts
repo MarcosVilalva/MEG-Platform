@@ -2,6 +2,8 @@ import { Prisma, prisma } from '@meg/database';
 import { createFinancialEventSchema, updateFinancialEventSchema } from './schemas';
 import { enteredAmountFromStored, financialAmountValues } from './amount-sign';
 import { recordFinancialAudit } from './audit';
+import { resolveWorkspaceContext } from '../workspaces/service';
+import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-primary-writeback';
 import type { z } from 'zod';
 
 type CreateFinancialEventInput = z.infer<typeof createFinancialEventSchema>;
@@ -152,13 +154,15 @@ export async function createFinancialEvent(userId: string, input: CreateFinancia
 }
 
 export async function updateFinancialEvent(userId: string, id: string, input: UpdateFinancialEventInput) {
+  const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
   return prisma.$transaction(async (tx) => {
     const current = await tx.financialEvent.findFirst({
-      where: { id, userId, archivedAt: null },
+      where: { id, userId: dataOwnerId, archivedAt: null },
       include: { account: true, category: true, paymentMethod: true, ledgerEntries: true }
     });
     if (!current) throw new Error('FINANCIAL_EVENT_NOT_FOUND');
-    await validateActiveReferences(tx, userId, input);
+    await validateActiveReferences(tx, dataOwnerId, input);
 
     const nextType = input.type ?? current.type;
     const currentEnteredAmount = enteredAmountFromStored(current.type, Number(current.signedAmount));
@@ -174,11 +178,18 @@ export async function updateFinancialEvent(userId: string, id: string, input: Up
         competence: input.competence || (input.date ? competenceFromDate(input.date) : undefined),
         amount: input.amount === undefined ? undefined : nextValues.amount,
         signedAmount: nextValues.signedAmount,
-        notes: input.notes?.trim()
+        notes: input.notes?.trim(),
+        workspaceId: workspace.workspaceId
       }
     });
 
     await syncLedger(tx, id);
+    const resultBeforeMirror = await tx.financialEvent.findUnique({
+      where: { id },
+      include: { account: true, category: true, paymentMethod: true, ledgerEntries: true }
+    });
+    if (!resultBeforeMirror) throw new Error('FINANCIAL_EVENT_NOT_FOUND');
+    await writeBackNormalizedEventsToAppState(tx, workspace.workspaceId, [resultBeforeMirror]);
     const result = await tx.financialEvent.findUnique({
       where: { id },
       include: { account: true, category: true, paymentMethod: true, ledgerEntries: true }
@@ -191,33 +202,42 @@ export async function updateFinancialEvent(userId: string, id: string, input: Up
       action: 'FINANCIAL_EVENT_UPDATED',
       before: current,
       after: result,
-      context: { changedFields: Object.keys(input) }
+      context: { changedFields: Object.keys(input), workspaceId: workspace.workspaceId, dataOwnerId }
     });
     return result;
   });
 }
 
 export async function deleteFinancialEvent(userId: string, id: string) {
+  const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
   return prisma.$transaction(async (tx) => {
     const current = await tx.financialEvent.findFirst({
-      where: { id, userId, archivedAt: null },
+      where: { id, userId: dataOwnerId, archivedAt: null },
       include: { account: true, category: true, paymentMethod: true, ledgerEntries: true }
     });
     if (!current) throw new Error('FINANCIAL_EVENT_NOT_FOUND');
 
     const archived = await tx.financialEvent.update({
       where: { id },
-      data: { status: 'archived', archivedAt: new Date() },
+      data: { status: 'archived', archivedAt: new Date(), workspaceId: workspace.workspaceId },
       include: { account: true, category: true, paymentMethod: true, ledgerEntries: true }
     });
     await tx.ledgerEntry.deleteMany({ where: { eventId: id } });
+    await writeBackNormalizedEventsToAppState(
+      tx,
+      workspace.workspaceId,
+      [],
+      current.legacyTransactionId ? [current.legacyTransactionId] : [],
+    );
     await recordFinancialAudit(tx, {
       actorId: userId,
       entity: 'FinancialEvent',
       entityId: id,
       action: 'FINANCIAL_EVENT_ARCHIVED',
       before: current,
-      after: { ...archived, ledgerEntries: [] }
+      after: { ...archived, ledgerEntries: [] },
+      context: { workspaceId: workspace.workspaceId, dataOwnerId }
     });
     return { id, archived: true };
   });
