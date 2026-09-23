@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { PhoenixReadModel } from '../contracts';
 import { buildPhoenixAllTimeHomeSummary, isPhoenixBenefitEvent } from '../home-period-summary';
+import { PhoenixProfileAvatar, hydratePhoenixAvatarPreference, readPhoenixAvatarPreference, type PhoenixAvatarPreference } from '../profile-avatar';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -50,6 +51,17 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   const title = isAll ? 'Histórico completo' : 'Resumo do período';
   const kicker = isAll ? 'Visão geral · Tudo' : `Visão geral · ${periodLabel}`;
   const [benefitOpen, setBenefitOpen] = useState(false);
+  const [avatar, setAvatar] = useState<PhoenixAvatarPreference>(() => readPhoenixAvatarPreference(data.user.id));
+  useEffect(() => {
+    let active = true;
+    const syncAvatar = () => setAvatar(readPhoenixAvatarPreference(data.user.id));
+    void hydratePhoenixAvatarPreference(data.user.id).then((preference) => { if (active) setAvatar(preference); });
+    window.addEventListener('meg:profile-avatar-changed', syncAvatar);
+    return () => { active = false; window.removeEventListener('meg:profile-avatar-changed', syncAvatar); };
+  }, [data.user.id]);
+  const displayNameParts = String(data.user.name || 'MEG').trim().split(/\\s+/);
+  const displayName = displayNameParts.length > 1 ? displayNameParts[0] + ' ' + displayNameParts[displayNameParts.length - 1] : displayNameParts[0];
+  const openExpenses = useMemo(() => data.events.items.filter((event) => event.type === 'expense' && !isPhoenixBenefitEvent(event) && !['paid', 'reconciled', 'confirmed', 'cancelled'].includes(String(event.status))).sort((a, b) => String(a.date).localeCompare(String(b.date))), [data.events.items]);
   const benefitEvents = useMemo(() => data.events.items
     .filter(isPhoenixBenefitEvent)
     .filter((event) => ['paid', 'reconciled', 'confirmed'].includes(String(event.status)))
@@ -65,16 +77,12 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   }, []);
 
   return <>
-  <section className="px-home-alltime px-home-approved" data-home-alltime-layout="approved-mobile-v4">
-    <div className="px-page-head">
-      <div>
-        <span className="px-kicker">{kicker}</span>
-        <h1>{title}</h1>
-        
-        {onOpenPeriod ? <button className="px-home-period-edit" type="button" onClick={onOpenPeriod}>Alterar período · {periodLabel}</button> : null}
-      </div>
-    </div>
-
+  <section className={"px-home-alltime px-home-approved " + (isAll ? "is-modern-all" : "is-period-range")} data-home-alltime-layout="approved-mobile-v5">
+    <header className="px-alltime-profile-head">
+      <div className="px-alltime-profile"><PhoenixProfileAvatar preference={avatar} name={data.user.name} className="px-alltime-profile-avatar" /><span><small>MEG Finanças</small><strong>{displayName}</strong></span></div>
+      {onOpenPeriod ? <button className="px-home-period-edit" type="button" onClick={onOpenPeriod}>{periodLabel}⌄</button> : null}
+    </header>
+    <div className="px-page-head px-alltime-title"><div><span className="px-kicker">{kicker}</span><h1>{title}</h1></div></div>
     <section className="px-alltime-quick-actions" aria-label="Lançamentos rápidos">
       <button type="button" onClick={() => onLaunch?.('expense')}><span>↘</span><strong>Despesa</strong><small>Novo lançamento</small></button>
       <button type="button" onClick={() => onLaunch?.('income')}><span>↗</span><strong>Receita</strong><small>Novo lançamento</small></button>
@@ -141,6 +149,13 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
         <article className={`px-card px-metric ${periodResult >= 0 ? 'good' : 'bad'}`}><span>Resultado do período</span><strong>{periodResult > 0 ? '+' : ''}{money.format(periodResult)}</strong><small>Saldo final menos saldo inicial</small></article>
       </>}
     </section>
+
+    {isAll ? <section className="px-alltime-open-expenses px-card">
+      <header><div><span>DESPESAS EM ABERTO</span><strong>{openExpenses.length} lançamento(s)</strong></div><button type="button" onClick={() => onNavigate('payables')}>Ver todas</button></header>
+      <div className="px-alltime-open-scroll">
+        {openExpenses.length ? openExpenses.map((event) => <button type="button" className="px-alltime-open-row" key={event.id} onClick={() => onNavigate('payables')}><span className="date">{formatIso(String(event.date).slice(0, 10))}</span><span className="copy"><strong>{event.description || 'Despesa em aberto'}</strong><small>{String(event.status || 'Pendente')}</small></span><strong className="value">{money.format(Math.abs(Number(event.signedAmount || event.amount || 0)))}</strong></button>) : <div className="px-alltime-open-empty">Nenhuma despesa em aberto na base.</div>}
+      </div>
+    </section> : null}
 
     {isAll ? <section className="px-bottom-grid">
       <article className="px-card">

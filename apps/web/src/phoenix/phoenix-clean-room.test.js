@@ -528,8 +528,8 @@ assert.doesNotMatch(homeDashboard, /px-home-benefit-chart/,
   'Gráfico do benefício não deve voltar a ocupar espaço sem acrescentar leitura operacional.');
 assert.match(homeNowCss, /\.px-home-benefit-modal/,
   'Acompanhamento do benefício deve possuir modal dedicado.');
-assert.match(homeAllTime, /data-home-alltime-layout="approved-mobile-v4"/,
-  'Home analítica deve usar o layout mobile aprovado para Tudo e períodos históricos.');
+assert.match(homeAllTime, /data-home-alltime-layout="approved-mobile-v5"/,
+  'Home analítica deve usar o layout mobile v5 aprovado para Tudo e períodos históricos.');
 assert.match(homeAllTime, /Comparação com o saldo real/,
   'Períodos históricos devem ser comparados explicitamente com o saldo monetário real de hoje.');
 assert.match(homeAllTime, /Saldo inicial/,
