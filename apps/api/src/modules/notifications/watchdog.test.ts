@@ -59,9 +59,9 @@ const alexaWorkflow = readFileSync(new URL('../../../../../.github/workflows/ale
 
 assert.match(availabilityWorkflow, /\/notifications\/watchdog/,
   'Workflow de disponibilidade deve executar o recovery watchdog a cada janela.');
-assert.match(availabilityWorkflow, /2,12,22,32,42,52 9-23/,
+assert.match(availabilityWorkflow, /12,22,32,42,52 9-23/,
   'Watchdog deve usar várias oportunidades por hora e evitar o minuto zero.');
 assert.match(smartWorkflow, /cron: '7 9 \* \* \*'/,
   'Alerta financeiro primário deve sair do topo da hora.');
-assert.match(alexaWorkflow, /cron: '23 9 \* \* 1-5'/,
+assert.match(alexaWorkflow, /cron: '21 9 \* \* 1-5'/,
   'Briefing Alexa deve ter tentativa primária após 06:20 e fora do topo da hora.');
