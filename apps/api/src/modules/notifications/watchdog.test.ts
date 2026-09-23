@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { alexaCycleForSlot, messagingCycleForSlot, notificationWatchdogPlan } from './watchdog';
 
 function keys(value: Date) {
@@ -50,3 +51,17 @@ assert.equal(alexaCycleForSlot(new Date('2026-09-26T15:00:00Z'), '12:00')?.task,
 assert.equal(alexaCycleForSlot(new Date('2026-09-26T15:00:00Z'), '18:00'), null);
 
 console.log('notification watchdog scheduling tests passed');
+
+
+const availabilityWorkflow = readFileSync(new URL('../../../../../.github/workflows/keep-api-responsive.yml', import.meta.url), 'utf8');
+const smartWorkflow = readFileSync(new URL('../../../../../.github/workflows/daily-notifications.yml', import.meta.url), 'utf8');
+const alexaWorkflow = readFileSync(new URL('../../../../../.github/workflows/alexa-reminders.yml', import.meta.url), 'utf8');
+
+assert.match(availabilityWorkflow, /\/notifications\/watchdog/,
+  'Workflow de disponibilidade deve executar o recovery watchdog a cada janela.');
+assert.match(availabilityWorkflow, /2,12,22,32,42,52 9-23/,
+  'Watchdog deve usar várias oportunidades por hora e evitar o minuto zero.');
+assert.match(smartWorkflow, /cron: '7 9 \* \* \*'/,
+  'Alerta financeiro primário deve sair do topo da hora.');
+assert.match(alexaWorkflow, /cron: '23 9 \* \* 1-5'/,
+  'Briefing Alexa deve ter tentativa primária após 06:20 e fora do topo da hora.');
