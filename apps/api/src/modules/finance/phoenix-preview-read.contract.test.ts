@@ -41,14 +41,14 @@ assert.match(periodEvents, /archivedAt:\s*null/,
   'A leitura de período deve ignorar a sombra importada arquivada.');
 assert.match(periodEvents, /userId/,
   'A leitura de período deve ser escopada por proprietário.');
-assert.match(snapshot, /prisma\.account\.findMany\(\{ where: \{ userId \}/,
-  'Catálogos e contas do snapshot devem ser escopados por proprietário.');
+assert.match(snapshot, /prisma\.account\.findMany\(\{ where: \{ userId: dataOwnerId \}/,
+  'Catálogos e contas do snapshot devem ser escopados pelo proprietário canônico do workspace.');
 assert.match(snapshot, /single-core-event-read/,
   'Resumo, análises, fluxo e benefício devem declarar a agregação consolidada.');
 assert.match(snapshot, /benefitOpeningBalance/,
   'Benefício deve permanecer separado do caixa monetário.');
-assert.match(snapshot, /loadCoreEvents\(userId, end\)/,
-  'O snapshot deve reutilizar uma única leitura histórica mínima para os cálculos derivados.');
+assert.match(snapshot, /loadCoreEvents\(dataOwnerId, end\)/,
+  'O snapshot deve reutilizar uma única leitura histórica mínima da base canônica do workspace.');
 assert.doesNotMatch(snapshot, /canonicalSummary\(|canonicalCashflow\(|canonicalAnalytics\(/,
   'O snapshot consolidado não pode reintroduzir cálculos canônicos independentes e repetidos.');
 assert.match(financeRoutes, /registerPhoenixPreviewReads\(app\)/,
