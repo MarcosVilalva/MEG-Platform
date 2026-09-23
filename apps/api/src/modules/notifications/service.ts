@@ -270,6 +270,10 @@ async function fetchWithTimeout(input: string, init: RequestInit, timeoutMs = 30
   return fetch(input, { ...init, signal: AbortSignal.timeout(timeoutMs) });
 }
 
+function wait(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
 function escapeHtml(value: unknown) {
   return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 }
@@ -303,16 +307,13 @@ async function sendEmail(to: string, subject: string, text: string, branding: Em
   const replyToEmail = branding.replyToEmail?.trim().replace(/[?？]+$/u, '').toLowerCase() || config.adminEmail;
   const brandedFrom = senderName ? `${senderName} <${senderAddress}>` : config.notificationEmailFrom;
   const usesResendTestDomain = senderAddress.trim().toLowerCase().endsWith('@resend.dev');
+  const brevoReady = Boolean(config.brevoApiKey && config.brevoSenderEmail);
   const canUseResend = Boolean(config.resendApiKey) && (!usesResendTestDomain || recipient === config.adminEmail.trim().toLowerCase());
-  if (canUseResend) {
-    const response = await fetchWithTimeout('https://api.resend.com/emails', {
-      method: 'POST', headers: { Authorization: `Bearer ${config.resendApiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: brandedFrom, to: [recipient], reply_to: replyToEmail, subject, text, html })
-    });
-    if (!response.ok) throw new Error(`E-mail Resend recusado (${response.status}): ${await response.text()}`);
-    return { status: 'sent', provider: 'resend', detail: await response.text() };
-  }
-  if (config.brevoApiKey && config.brevoSenderEmail) {
+
+  // Quando existe um provedor SMTP de produção, ele precisa ser a rota principal
+  // para todos os destinatários. Antes, o endereço administrativo podia cair no
+  // domínio de teste do Resend mesmo com Brevo configurado.
+  if (brevoReady) {
     const response = await fetchWithTimeout('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: { 'api-key': config.brevoApiKey, accept: 'application/json', 'Content-Type': 'application/json' },
@@ -325,9 +326,21 @@ async function sendEmail(to: string, subject: string, text: string, branding: Em
         htmlContent: html
       })
     });
-    if (!response.ok) throw new Error(`E-mail Brevo recusado (${response.status}): ${await response.text()}`);
-    return { status: 'sent', provider: 'brevo', detail: await response.text() };
+    const detail = await response.text();
+    if (!response.ok) throw new Error(`E-mail Brevo recusado (${response.status}): ${detail}`);
+    return { status: 'sent', provider: 'brevo', detail };
   }
+
+  if (canUseResend) {
+    const response = await fetchWithTimeout('https://api.resend.com/emails', {
+      method: 'POST', headers: { Authorization: `Bearer ${config.resendApiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: brandedFrom, to: [recipient], reply_to: replyToEmail, subject, text, html })
+    });
+    const detail = await response.text();
+    if (!response.ok) throw new Error(`E-mail Resend recusado (${response.status}): ${detail}`);
+    return { status: 'sent', provider: 'resend', detail };
+  }
+
   const reason = usesResendTestDomain && recipient !== config.adminEmail.trim().toLowerCase()
     ? 'Resend em modo de teste e Brevo não configurado para outros destinatários.'
     : 'Nenhum provedor de e-mail configurado.';
@@ -339,13 +352,37 @@ export async function sendSystemEmail(to: string, subject: string, text: string)
 }
 
 async function sendWhatsApp(number: string, text: string) {
-  if (!config.evolutionApiUrl || !config.evolutionApiKey || !config.evolutionInstance || !number) return { status: 'skipped', detail: 'Evolution API não configurada' };
-  const response = await fetchWithTimeout(`${config.evolutionApiUrl.replace(/\/$/, '')}/message/sendText/${encodeURIComponent(config.evolutionInstance)}`, {
-    method: 'POST', headers: { apikey: config.evolutionApiKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ number: number.replace(/\D/g, ''), text })
-  }, 45_000);
-  if (!response.ok) throw new Error(`WhatsApp recusado (${response.status}): ${await response.text()}`);
-  return { status: 'sent', detail: await response.text() };
+  if (!config.evolutionApiUrl || !config.evolutionApiKey || !config.evolutionInstance || !number) {
+    return { status: 'skipped', detail: 'Evolution API não configurada' };
+  }
+
+  const normalizedNumber = number.replace(/\D/g, '');
+  const url = `${config.evolutionApiUrl.replace(/\/$/, '')}/message/sendText/${encodeURIComponent(config.evolutionInstance)}`;
+  const retryDelays = [0, 2_500, 7_000];
+  let lastFailure = 'Falha desconhecida';
+
+  for (let attempt = 0; attempt < retryDelays.length; attempt += 1) {
+    if (retryDelays[attempt]) await wait(retryDelays[attempt]);
+    const response = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers: { apikey: config.evolutionApiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number: normalizedNumber, text })
+    }, 45_000);
+    const detail = await response.text();
+    if (response.ok) {
+      return {
+        status: 'sent',
+        detail,
+        attempts: attempt + 1
+      };
+    }
+
+    lastFailure = `WhatsApp recusado (${response.status}): ${detail}`;
+    const retryable = response.status === 408 || response.status === 425 || response.status === 429 || response.status >= 500;
+    if (!retryable || attempt === retryDelays.length - 1) break;
+  }
+
+  throw new Error(lastFailure);
 }
 
 export async function sendSystemWhatsApp(number: string, text: string) {
