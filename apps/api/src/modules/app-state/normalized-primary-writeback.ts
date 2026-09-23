@@ -15,6 +15,7 @@ export type NormalizedLegacyMirrorEvent = {
   type: string;
   status: string;
   amount: unknown;
+  signedAmount: unknown;
   notes: string | null;
   sourcePayload: unknown;
   accountId?: string | null;
@@ -51,6 +52,8 @@ export function mirrorFinancialEventToLegacyTransaction(event: NormalizedLegacyM
   if (!event.legacyTransactionId) return payload;
 
   const amount = Math.abs(Number(event.amount || 0));
+  const signedAmount = Number(event.signedAmount || 0);
+  const expenseEnteredAmount = event.type === 'expense' && signedAmount > 0 ? -amount : amount;
   const status = legacyStatus(event.status, event.type);
   payload.id = event.legacyTransactionId;
   payload.date = isoDay(event.date);
@@ -64,7 +67,7 @@ export function mirrorFinancialEventToLegacyTransaction(event: NormalizedLegacyM
     else if (Object.prototype.hasOwnProperty.call(payload, 'amount')) payload.amount = amount;
   } else {
     if (Object.prototype.hasOwnProperty.call(payload, 'expenseAmount')) payload.expenseAmount = amount;
-    else if (Object.prototype.hasOwnProperty.call(payload, 'amount')) payload.amount = amount;
+    if (Object.prototype.hasOwnProperty.call(payload, 'amount')) payload.amount = expenseEnteredAmount;
   }
 
   if (Object.prototype.hasOwnProperty.call(payload, 'notes') || event.notes) payload.notes = event.notes || '';

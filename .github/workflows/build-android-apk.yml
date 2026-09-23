@@ -134,9 +134,24 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           gh release view android-latest >/dev/null 2>&1 || \
             gh release create android-latest --title "MEG Finanças Android" --notes "Canal estável de atualização do aplicativo Android."
-          gh release upload android-latest MEG-Financas.apk app-version.json --clobber
+
+          # O GitHub pode devolver uma lista de assets momentaneamente defasada
+          # durante o --clobber. Uma segunda tentativa é segura porque o upload
+          # usa sempre os mesmos dois nomes canônicos do canal estável.
+          for attempt in 1 2 3; do
+            if gh release upload android-latest MEG-Financas.apk app-version.json --clobber; then
+              echo "Release Android publicada na tentativa $attempt."
+              exit 0
+            fi
+            echo "Publicação do release falhou na tentativa $attempt/3; aguardando consistência dos assets..."
+            sleep $((attempt * 5))
+          done
+
+          echo "Não foi possível publicar o canal estável Android após 3 tentativas."
+          exit 1
 
       - name: Publish latest update manifest on the website
         if: github.actor != 'github-actions[bot]'

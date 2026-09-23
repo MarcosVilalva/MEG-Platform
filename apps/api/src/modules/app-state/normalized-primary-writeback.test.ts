@@ -25,6 +25,7 @@ const settledEvent = {
   type: 'expense',
   status: 'paid',
   amount: 30.9,
+  signedAmount: -30.9,
   notes: null,
   sourcePayload: original,
   accountId: 'account-monetary-main',
@@ -53,6 +54,34 @@ const normalizedMirror = {
 };
 assert.equal(normalizationFingerprint([normalizedMirror]), preview.summary.fingerprint);
 assert.notEqual(normalizationFingerprint([before]), preview.summary.fingerprint);
+
+const reversalSource = {
+  id: 'legacy-estorno',
+  date: '2026-09-14',
+  description: 'ESTORNO DESPESA',
+  type: 'expense',
+  amount: -12.34,
+  status: 'paid',
+};
+const reversalEvent = legacyTransactionToFinancialEvent(reversalSource, context)!;
+assert.equal(reversalEvent.signedAmount, 12.34, 'Estorno de despesa deve permanecer positivo no evento normalizado.');
+const reversalMirrored = mirrorFinancialEventToLegacyTransaction({
+  ...reversalEvent,
+  id: 'event-estorno',
+  sourcePayload: reversalSource,
+});
+assert.equal(reversalMirrored.amount, -12.34, 'Writeback deve preservar o sinal negativo do valor digitado no legado.');
+const reversalPreview = buildNormalizationPreview({ transactions: [reversalMirrored] }, { ...context, revision: 11 });
+assert.equal(reversalPreview.events[0]?.signedAmount, 12.34);
+const reversalNormalizedMirror = {
+  ...reversalPreview.events[0]!,
+  sourcePayload: reversalMirrored,
+};
+assert.equal(
+  normalizationFingerprint([reversalNormalizedMirror]),
+  reversalPreview.summary.fingerprint,
+  'Reconciliação de startup não pode divergir ao espelhar estorno de despesa.',
+);
 
 const source = readFileSync(new URL('./normalized-primary-writeback.ts', import.meta.url), 'utf8');
 assert.match(source, /tx\.\$executeRaw/,
