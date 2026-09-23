@@ -4,7 +4,7 @@ on:
   schedule:
     # America/Sao_Paulo (UTC-3). Minutos deslocados do topo da hora.
     # O watchdog do workflow de disponibilidade cobre atrasos e tentativas perdidas.
-    - cron: '23 9 * * 1-5'
+    - cron: '21 9 * * 1-5'
     - cron: '7 21 * * 1-5'
     - cron: '7 0 * * 2-6'
     - cron: '7 15 * * 0,6'
@@ -51,7 +51,7 @@ jobs:
         run: |
           test -n "$CRON_SECRET" || { echo "NOTIFICATION_CRON_SECRET is not configured"; exit 1; }
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then SLOT="$MANUAL_SLOT"; MODE="$MANUAL_MODE"; FORCE=true
-          elif [ "$SCHEDULE" = "23 9 * * 1-5" ]; then SLOT="06:20"; FORCE=false
+          elif [ "$SCHEDULE" = "21 9 * * 1-5" ]; then SLOT="06:20"; FORCE=false
           elif [ "$SCHEDULE" = "7 21 * * 1-5" ]; then SLOT="18:00"; FORCE=false
           elif [ "$SCHEDULE" = "7 0 * * 2-6" ]; then SLOT="21:00"; FORCE=false
           else SLOT="12:00"; FORCE=false; fi
