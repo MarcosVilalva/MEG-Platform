@@ -65,3 +65,14 @@ assert.match(smartWorkflow, /cron: '7 9 \* \* \*'/,
   'Alerta financeiro primário deve sair do topo da hora.');
 assert.match(alexaWorkflow, /cron: '21 9 \* \* 1-5'/,
   'Briefing Alexa deve ter tentativa primária após 06:20 e fora do topo da hora.');
+
+
+const notificationRoutes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
+assert.match(notificationRoutes, /app\.post\('\/watchdog'/,
+  'API deve expor endpoint autenticado por segredo para recuperação dos ciclos.');
+assert.match(notificationRoutes, /runMessagingCycle/,
+  'Cron principal e watchdog devem compartilhar a mesma trava idempotente de ciclo.');
+assert.match(notificationRoutes, /runAlexaCycle/,
+  'Cron Alexa e watchdog devem compartilhar a mesma trava idempotente de ciclo.');
+assert.match(notificationRoutes, /!item\.channel\.startsWith\('watchdog:'\)/,
+  'Marcadores internos do watchdog não podem inflar a contagem de mensagens entregues ao usuário.');
