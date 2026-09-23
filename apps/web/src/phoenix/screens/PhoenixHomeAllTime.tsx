@@ -45,7 +45,6 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   const displayedResult = isAll ? summary.realizedResult : periodResult;
   const variationToToday = currentRealBalance - periodClosing;
   const freePositive = summary.freeAfterCommitments >= 0;
-  const projectionPositive = summary.projectedAfterPlanned >= 0;
   const firstDate = periodContext?.startDate ?? summary.firstDate;
   const lastDate = periodContext?.endDate ?? summary.lastDate;
   const title = isAll ? 'Histórico completo' : 'Resumo do período';
@@ -66,18 +65,22 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
     .filter(isPhoenixBenefitEvent)
     .filter((event) => ['paid', 'reconciled', 'confirmed'].includes(String(event.status)))
     .sort((left, right) => String(left.date).localeCompare(String(right.date))), [data.events.items]);
-  const benefitCredits = benefitEvents.reduce((sum, event) => Math.max(0, Number(event.signedAmount || 0)) + sum, 0);
-  const benefitSpent = benefitEvents.reduce((sum, event) => Math.max(0, -Number(event.signedAmount || 0)) + sum, 0);
+  const benefitCredits = summary.benefitCredits;
+  const benefitSpent = summary.benefitUsed;
   const benefitOpening = Number(summary.benefitBalance || 0) - benefitCredits + benefitSpent;
   const benefitEvolution = benefitEvents.reduce<Array<{ id: string; date: string; description: string; amount: number; balance: number }>>((rows, event) => {
-    const amount = Number(event.signedAmount || 0);
+    const rawSigned = Number(event.signedAmount);
+    const fallbackAmount = Math.abs(Number(event.amount || 0));
+    const amount = Number.isFinite(rawSigned) && rawSigned !== 0
+      ? rawSigned
+      : event.type === 'income' || event.type === 'redemption' ? fallbackAmount : -fallbackAmount;
     const previous = rows.length ? rows[rows.length - 1].balance : benefitOpening;
     rows.push({ id: event.id, date: String(event.date).slice(0, 10), description: event.description || 'Movimentação do benefício', amount, balance: previous + amount });
     return rows;
   }, []);
 
   return <>
-  <section className={"px-home-alltime px-home-approved " + (isAll ? "is-modern-all" : "is-period-range")} data-home-alltime-layout="approved-mobile-v5">
+  <section className={"px-home-alltime px-home-approved " + (isAll ? "is-modern-all" : "is-period-range")} data-home-alltime-layout="compact-command-v7">
     <header className="px-alltime-profile-head">
       <div className="px-alltime-profile"><PhoenixProfileAvatar preference={avatar} name={data.user.name} className="px-alltime-profile-avatar" /><span><small>MEG Finanças</small><strong>{displayName}</strong></span></div>
       {onOpenPeriod ? <button className="px-home-period-edit" type="button" onClick={onOpenPeriod}>{periodLabel}⌄</button> : null}
@@ -89,29 +92,42 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
       <button type="button" className="benefit" onClick={() => onLaunch?.('benefit')}><span>◈</span><strong>Alimentação</strong><small>Lançar no benefício</small></button>
     </section>
 
-    <section className="px-dashboard-grid">
+    {isAll ? <section className="px-alltime-overview-v7">
+      <div className="px-alltime-balance-v7">
+        <span>Saldo atual</span>
+        <strong>{money.format(summary.currentMonetaryBalance)}</strong>
+        <small>Caixa realizado · sem somar previsões futuras</small>
+      </div>
+      <div className="px-alltime-flow-v7">
+        <article><span>Entradas</span><strong>{money.format(summary.realizedIncome)}</strong></article>
+        <article><span>Saídas</span><strong>{money.format(summary.realizedExpense)}</strong></article>
+        <article className={signedClass(summary.realizedResult)}><span>Movimento líquido</span><strong>{summary.realizedResult > 0 ? '+' : ''}{money.format(summary.realizedResult)}</strong></article>
+      </div>
+      <button type="button" className={`px-alltime-commitments-v7 ${freePositive ? 'is-positive' : 'is-negative'}`} onClick={() => onNavigate('payables')}>
+        <span><small>Compromissos em aberto</small><strong>{money.format(summary.plannedExpense)}</strong></span>
+        <span><small>Saldo livre depois deles</small><strong>{money.format(summary.freeAfterCommitments)}</strong></span>
+        <b>›</b>
+      </button>
+    </section> : <section className="px-dashboard-grid">
       <article className="px-card px-premium-balance px-period-balance-card">
         <div className="px-period-balance-primary">
-          <span className="px-kicker">{isAll ? 'Saldo monetário atual' : 'Saldo final do período'}</span>
-          <h2>{money.format(isAll ? summary.currentMonetaryBalance : periodClosing)}</h2>
-          <p>{isAll
-            ? 'Fotografia realizada de hoje. Eventos futuros não são transformados em saldo disponível.'
-            : `O período começou com ${money.format(periodOpening)} e terminou em ${money.format(periodClosing)}.`}</p>
-          {!isAll ? <div className="px-period-opening-chip"><span>Saldo inicial</span><strong>{money.format(periodOpening)}</strong></div> : null}
+          <span className="px-kicker">Saldo final do período</span>
+          <h2>{money.format(periodClosing)}</h2>
+          <p>{`O período começou com ${money.format(periodOpening)} e terminou em ${money.format(periodClosing)}.`}</p>
+          <div className="px-period-opening-chip"><span>Saldo inicial</span><strong>{money.format(periodOpening)}</strong></div>
         </div>
-
         <div className="px-period-summary-inline">
-          <header><span>Resumo do período</span><strong>{isAll ? 'Trajetória realizada' : periodLabel}</strong></header>
+          <header><span>Resumo do período</span><strong>{periodLabel}</strong></header>
           <div className="px-period-summary-equation">
-            <div className="income"><span>{isAll ? 'Entradas realizadas' : 'Receitas realizadas'}</span><strong>{money.format(summary.realizedIncome)}</strong></div>
+            <div className="income"><span>Receitas realizadas</span><strong>{money.format(summary.realizedIncome)}</strong></div>
             <b aria-hidden="true">−</b>
-            <div className="expense"><span>{isAll ? 'Saídas realizadas' : 'Despesas realizadas'}</span><strong>{money.format(summary.realizedExpense)}</strong></div>
+            <div className="expense"><span>Despesas realizadas</span><strong>{money.format(summary.realizedExpense)}</strong></div>
             <b aria-hidden="true">=</b>
             <div className={`result ${signedClass(displayedResult)}`}><span>Movimento líquido</span><strong>{displayedResult > 0 ? '+' : ''}{money.format(displayedResult)}</strong></div>
           </div>
         </div>
       </article>
-    </section>
+    </section>}
 
     {!isAll ? <article className="px-period-real-compare">
       <div className="px-period-real-copy">
@@ -125,30 +141,14 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
         <div><span>Saldo real hoje</span><strong>{money.format(currentRealBalance)}</strong></div>
         <div className={`delta ${signedClass(variationToToday)}`}><span>Variação até hoje</span><strong>{variationToToday > 0 ? '+' : ''}{money.format(variationToToday)}</strong></div>
       </div>
-    </article> : <article className={`px-dashboard-alert ${freePositive ? 'is-positive' : ''}`}>
-      <div className="px-dashboard-alert-copy">
-        <div className="px-dashboard-alert-icon">{freePositive ? '✓' : '!'}</div>
-        <div>
-          <h3>{freePositive ? 'Compromissos cobertos pelo saldo atual' : 'Compromissos superam o saldo atual'}</h3>
-          <p>Considera todas as despesas monetárias ainda planejadas, inclusive vencidas e futuras, com estornos reduzindo o compromisso líquido.</p>
-        </div>
-      </div>
-      <div className="px-gap-block"><span>Saldo livre após compromissos</span><strong>{money.format(summary.freeAfterCommitments)}</strong></div>
-    </article>}
+    </article> : null}
 
-    <section className="px-metrics">
-      {isAll ? <>
-        <article className="px-card px-metric good"><span>Receitas registradas</span><strong>{money.format(summary.recordedIncome)}</strong><small>Toda a base, realizadas + planejadas</small></article>
-        <article className="px-card px-metric bad"><span>Despesas registradas</span><strong>{money.format(summary.recordedExpense)}</strong><small>Líquidas de estornos em toda a base</small></article>
-        <article className="px-card px-metric warn"><span>Compromissos em aberto</span><strong>{money.format(summary.plannedExpense)}</strong><small>{summary.actionableCommitmentCount.toLocaleString('pt-BR')} obrigação(ões) com efeito de saída</small></article>
-        <article className="px-card px-metric info"><span>Receitas previstas em aberto</span><strong>{money.format(summary.plannedIncome)}</strong><small>Ainda não integram o saldo atual</small></article>
-      </> : <>
-        <article className="px-card px-metric info"><span>Saldo inicial</span><strong>{money.format(periodOpening)}</strong><small>Posição imediatamente antes do recorte</small></article>
-        <article className="px-card px-metric good"><span>Receitas realizadas</span><strong>{money.format(summary.realizedIncome)}</strong><small>Entradas efetivamente realizadas no período</small></article>
-        <article className="px-card px-metric bad"><span>Despesas realizadas</span><strong>{money.format(summary.realizedExpense)}</strong><small>Saídas efetivamente realizadas no período</small></article>
-        <article className={`px-card px-metric ${periodResult >= 0 ? 'good' : 'bad'}`}><span>Resultado do período</span><strong>{periodResult > 0 ? '+' : ''}{money.format(periodResult)}</strong><small>Saldo final menos saldo inicial</small></article>
-      </>}
-    </section>
+    {!isAll ? <section className="px-metrics">
+      <article className="px-card px-metric info"><span>Saldo inicial</span><strong>{money.format(periodOpening)}</strong><small>Posição imediatamente antes do recorte</small></article>
+      <article className="px-card px-metric good"><span>Receitas realizadas</span><strong>{money.format(summary.realizedIncome)}</strong><small>Entradas efetivamente realizadas no período</small></article>
+      <article className="px-card px-metric bad"><span>Despesas realizadas</span><strong>{money.format(summary.realizedExpense)}</strong><small>Saídas efetivamente realizadas no período</small></article>
+      <article className={`px-card px-metric ${periodResult >= 0 ? 'good' : 'bad'}`}><span>Resultado do período</span><strong>{periodResult > 0 ? '+' : ''}{money.format(periodResult)}</strong><small>Saldo final menos saldo inicial</small></article>
+    </section> : null}
 
     {isAll ? <button type="button" className="px-alltime-benefit-spotlight" onClick={() => setBenefitOpen(true)}><span className="icon">▣</span><span className="copy"><small>BENEFÍCIO ALIMENTAÇÃO</small><strong>{money.format(summary.benefitBalance)}</strong><em>Saldo disponível · acompanhar evolução</em></span><b>›</b></button> : null}
 
@@ -159,24 +159,16 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
       </div>
     </section> : null}
 
-    {isAll ? <section className="px-bottom-grid">
-      <article className="px-card">
-        <div className="px-panel-head"><div><span>Horizonte completo</span><h2>Posição após tudo que já está previsto</h2></div></div>
-        <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Saldo monetário atual</strong><small>Ponto de partida realizado</small></div><strong>{money.format(summary.currentMonetaryBalance)}</strong></div>
-        <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>+ Receitas previstas</strong><small>Eventos de receita ainda planejados</small></div><strong>{money.format(summary.plannedIncome)}</strong></div>
-        <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>− Compromissos em aberto</strong><small>Despesas planejadas líquidas</small></div><strong>{money.format(summary.plannedExpense)}</strong></div>
-        <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Projeção final da base</strong><small>Depois de todos os eventos atualmente planejados</small></div><strong>{money.format(summary.projectedAfterPlanned)}</strong></div>
-        <div className={`px-history-state ${projectionPositive ? 'sincronizado' : 'arquivado'}`}>{projectionPositive ? 'PROJEÇÃO POSITIVA' : 'PROJEÇÃO NEGATIVA'}</div>
-      </article>
-
-      <article className="px-card">
-        <div className="px-panel-head"><div><span>Base completa</span><h2>Desde quando começamos</h2></div><button className="px-dashboard-row-action" type="button" onClick={() => onNavigate('movements')}>Ver todos os lançamentos</button></div>
-        <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Primeiro lançamento</strong><small>{formatIso(summary.firstDate)}</small></div></div>
-        <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Último lançamento cadastrado</strong><small>{formatIso(summary.lastDate)}</small></div></div>
-        <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Eventos monetários</strong><small>{summary.monetaryEventCount.toLocaleString('pt-BR')} de {summary.eventCount.toLocaleString('pt-BR')} eventos</small></div></div>
-        <button type="button" className="px-dashboard-row px-alltime-benefit-row" onClick={() => setBenefitOpen(true)}><div className="px-dashboard-row-copy"><strong>Benefício alimentação atual</strong><small>Toque para acompanhar créditos, consumo e saldo após cada movimento</small></div><strong>{money.format(summary.benefitBalance)}</strong></button>
-      </article>
-    </section> : <section className="px-bottom-grid px-period-bottom-grid">
+    {isAll ? <details className="px-alltime-details-v7">
+      <summary>Detalhes da base completa</summary>
+      <div className="px-alltime-details-grid-v7">
+        <div><span>Receitas previstas</span><strong>{money.format(summary.plannedIncome)}</strong></div>
+        <div><span>Projeção final</span><strong>{money.format(summary.projectedAfterPlanned)}</strong></div>
+        <div><span>Primeiro lançamento</span><strong>{formatIso(summary.firstDate)}</strong></div>
+        <div><span>Eventos monetários</span><strong>{summary.monetaryEventCount.toLocaleString('pt-BR')}</strong></div>
+      </div>
+      <button type="button" onClick={() => onNavigate('movements')}>Ver todos os lançamentos</button>
+    </details> : <section className="px-bottom-grid px-period-bottom-grid">
       <article className="px-card">
         <div className="px-panel-head"><div><span>Memória do período</span><h2>Como o saldo foi formado</h2></div></div>
         <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Saldo inicial</strong><small>{formatIso(firstDate)}</small></div><strong>{money.format(periodOpening)}</strong></div>

@@ -459,12 +459,12 @@ assert.match(screens, /Confirmar baixa real/,
 
 assert.match(homeAllTime, /Histórico completo/,
   'Modo Tudo deve possuir uma Home própria para a trajetória completa');
-assert.match(homeAllTime, /Saldo monetário atual/,
+assert.match(homeAllTime, /Saldo atual/,
   'Modo Tudo não pode transformar eventos futuros em saldo disponível hoje');
-assert.match(homeAllTime, /Saldo livre após compromissos/,
+assert.match(homeAllTime, /Saldo livre depois deles/,
   'Home completa deve explicitar o dinheiro livre depois das obrigações abertas');
-assert.match(homeAllTime, /Projeção final da base/,
-  'Home completa deve mostrar o efeito conjunto de receitas previstas e compromissos');
+assert.match(homeAllTime, /Projeção final/,
+  'Home completa deve manter a projeção consolidada acessível nos detalhes da base.');
 assert.match(homePeriodSummary, /event\.status === 'planned'/,
   'Consolidação histórica deve separar eventos planejados dos realizados');
 assert.match(homePeriodSummary, /event\.type !== 'transfer'/,
@@ -528,8 +528,14 @@ assert.doesNotMatch(homeDashboard, /px-home-benefit-chart/,
   'Gráfico do benefício não deve voltar a ocupar espaço sem acrescentar leitura operacional.');
 assert.match(homeNowCss, /\.px-home-benefit-modal/,
   'Acompanhamento do benefício deve possuir modal dedicado.');
-assert.match(homeAllTime, /data-home-alltime-layout="approved-mobile-v5"/,
-  'Home analítica deve usar o layout mobile v5 aprovado para Tudo e períodos históricos.');
+assert.match(homeAllTime, /data-home-alltime-layout="compact-command-v7"/,
+  'Home Tudo deve usar o cockpit compacto v7, sem retornar ao hero gigante anterior.');
+assert.match(homeAllTime, /px-alltime-overview-v7/,
+  'Home Tudo deve concentrar saldo, fluxo realizado e compromissos em um único bloco compacto.');
+assert.match(homeAllTime, /px-alltime-details-v7/,
+  'Detalhes extensos da base completa devem permanecer recolhíveis em vez de ocupar a Home inteira.');
+assert.match(periodMobileCss, /\.px-alltime-overview-v7/,
+  'Layout compacto da Home Tudo deve possuir contrato visual mobile dedicado.');
 assert.match(homeAllTime, /Comparação com o saldo real/,
   'Períodos históricos devem ser comparados explicitamente com o saldo monetário real de hoje.');
 assert.match(homeAllTime, /Saldo inicial/,
@@ -583,6 +589,16 @@ assert.notEqual(sidebar.indexOf("icon: 'history'"), sidebar.indexOf("icon: 'paya
 
 assert.match(phoenixApp, /PhoenixOperationalMobileHome/,
   'APK deve substituir a home pesada por uma home operacional focada em lançamentos.');
+assert.match(movementScreen, /const saveAcceptedRef = useRef\(false\)/,
+  'Fluxo mobile deve memorizar o aceite do servidor para não exibir falso aviso de alterações não salvas.');
+assert.match(movementScreen, /function requestCloseLaunch\(\)[\s\S]{0,500}saveAcceptedRef\.current[\s\S]{0,500}setLaunchOpen\(false\)/,
+  'Fechamento após aceite deve ignorar o dirty local residual e nunca pedir descarte de operação já gravada.');
+assert.match(movementScreen, /onAccepted=\{\(\) => \{[\s\S]{0,700}saveAcceptedRef\.current = true[\s\S]{0,900}onNavigateHome\?\.\(\)/,
+  'Novo lançamento no Android deve voltar à Home imediatamente após o aceite da API.');
+assert.match(phoenixApp, /const cached = !force \? peekPhoenixReadModel\(targetMonth\) : null/,
+  'Troca de mês deve aproveitar fotografia mensal já carregada antes de consultar novamente a rede.');
+assert.match(phoenixApp, /void Promise\.all\(\[[\s\S]{0,400}loadPhoenixReadModel\(currentMonth\(\)[\s\S]{0,400}loadPhoenixAllEvents/,
+  'Contexto histórico completo deve ser enriquecido em segundo plano e não bloquear a fotografia do mês selecionado.');
 assert.match(phoenixApp, /syncPhoenixLocalDueNotifications/,
   'APK deve sincronizar alertas locais após carregar a base real.');
 assert.match(phoenixApp, /financeClient\.getSyncStatus\(\)/,

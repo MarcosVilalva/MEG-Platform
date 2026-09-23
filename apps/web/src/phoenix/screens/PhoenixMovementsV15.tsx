@@ -439,6 +439,9 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNa
   const [recentEventId, setRecentEventId] = useState<string | null>(null);
   const recentTimerRef = useRef<number | null>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
+  // Evita que o botão Voltar/fechamento do Android interprete um lançamento
+  // já aceito pela API como alteração não salva durante a troca de tela.
+  const saveAcceptedRef = useRef(false);
 
   useEffect(() => {
     setData(initialData);
@@ -880,6 +883,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNa
   }
 
   function openLaunch(event?: FinancialEvent) {
+    saveAcceptedRef.current = false;
     if (event) {
       const cardLink = projectedCardPurchase(data, event);
       const visualType = launchTypeForEvent(event.type);
@@ -926,6 +930,11 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNa
   }
 
   function requestCloseLaunch() {
+    if (saveAcceptedRef.current) {
+      setDiscardConfirmOpen(false);
+      setLaunchOpen(false);
+      return;
+    }
     if (launchWriteBusy || savingEdit || deletingEvent) {
       setEditMessage('A operação já foi enviada e ainda aguarda a confirmação do servidor. O MEG fechará esta tela automaticamente assim que houver aceite.');
       return;
@@ -1000,12 +1009,15 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNa
           cardWriteInput,
           data.month,
           (purchase) => {
+            saveAcceptedRef.current = true;
             const patched = patchCardPurchaseInReadModel(data, purchase, cardWriteInput.cardId);
             setData(patched);
             onDataCommitted?.(patched);
             setDirty(false);
+            setDiscardConfirmOpen(false);
             setLaunchOpen(false);
             resetLaunch();
+            if (nativeOperational) onNavigateHome?.();
           },
         );
         if (snapshot) {
@@ -1039,10 +1051,13 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNa
     setSettlementConfirmOpen(false);
     setEditMessage('Salvando alteração. Assim que o servidor aceitar, esta tela será liberada e a releitura continuará em segundo plano…');
     const accepted = () => {
+      saveAcceptedRef.current = true;
       setDirty(false);
+      setDiscardConfirmOpen(false);
       setSettlementConfirmOpen(false);
       setLaunchOpen(false);
       resetLaunch();
+      if (nativeOperational) onNavigateHome?.();
     };
     try {
       const result = editingBenefit
@@ -1422,20 +1437,22 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNa
               onReview={reviewLaunch}
               onBusyChange={setLaunchWriteBusy}
               onAccepted={() => {
-                if (!nativeOperational) {
-                  setDirty(false);
-                  setLaunchOpen(false);
-                  resetLaunch();
-                }
+                saveAcceptedRef.current = true;
+                setDirty(false);
+                setDiscardConfirmOpen(false);
+                setLaunchOpen(false);
+                resetLaunch();
+                if (nativeOperational) onNavigateHome?.();
               }}
               onCommitted={(snapshot, event) => {
                 setData(snapshot);
                 onDataCommitted?.(snapshot);
                 if (event) markRecentlyUpdated(event.id);
                 setDirty(false);
+                setDiscardConfirmOpen(false);
                 setLaunchOpen(false);
                 resetLaunch();
-                if (nativeOperational) onNavigateHome?.();
+                if (nativeOperational && !saveAcceptedRef.current) onNavigateHome?.();
               }}
             />}
         </div>
