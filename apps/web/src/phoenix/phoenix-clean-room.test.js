@@ -459,12 +459,12 @@ assert.match(screens, /Confirmar baixa real/,
 
 assert.match(homeAllTime, /Histórico completo/,
   'Modo Tudo deve possuir uma Home própria para a trajetória completa');
-assert.match(homeAllTime, /Saldo monetário atual/,
+assert.match(homeAllTime, /Saldo atual/,
   'Modo Tudo não pode transformar eventos futuros em saldo disponível hoje');
-assert.match(homeAllTime, /Saldo livre após compromissos/,
+assert.match(homeAllTime, /Saldo livre depois deles/,
   'Home completa deve explicitar o dinheiro livre depois das obrigações abertas');
-assert.match(homeAllTime, /Projeção final da base/,
-  'Home completa deve mostrar o efeito conjunto de receitas previstas e compromissos');
+assert.match(homeAllTime, /Projeção final/,
+  'Home completa deve manter a projeção consolidada acessível nos detalhes da base.');
 assert.match(homePeriodSummary, /event\.status === 'planned'/,
   'Consolidação histórica deve separar eventos planejados dos realizados');
 assert.match(homePeriodSummary, /event\.type !== 'transfer'/,
