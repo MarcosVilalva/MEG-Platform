@@ -45,7 +45,6 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   const displayedResult = isAll ? summary.realizedResult : periodResult;
   const variationToToday = currentRealBalance - periodClosing;
   const freePositive = summary.freeAfterCommitments >= 0;
-  const projectionPositive = summary.projectedAfterPlanned >= 0;
   const firstDate = periodContext?.startDate ?? summary.firstDate;
   const lastDate = periodContext?.endDate ?? summary.lastDate;
   const title = isAll ? 'Histórico completo' : 'Resumo do período';
