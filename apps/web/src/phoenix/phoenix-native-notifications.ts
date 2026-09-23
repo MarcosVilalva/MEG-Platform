@@ -51,7 +51,7 @@ async function performPhoenixNotificationSync(data: PhoenixReadModel) {
     await LocalNotifications.createChannel({
       id: CHANNEL_ID,
       name: 'MEG Operacional · Vencimentos',
-      description: 'Alertas de contas vencidas e próximas do vencimento',
+      description: 'Alertas financeiros do MEG para contas vencidas e próximas do vencimento',
       importance: 5,
       visibility: 1,
       vibration: true,
@@ -104,8 +104,12 @@ async function performPhoenixNotificationSync(data: PhoenixReadModel) {
     .forEach((item) => {
       const key = `${item.id}:${item.dueDate}`;
       const schedules = [
+        { suffix: 'five-days', at: dateOffset(item.dueDate, -5, 8, 30), title: 'Conta vence em 5 dias' },
+        { suffix: 'three-days', at: dateOffset(item.dueDate, -3, 8, 30), title: 'Conta vence em 3 dias' },
         { suffix: 'day-before', at: dateOffset(item.dueDate, -1, 18), title: 'Conta vence amanhã' },
-        { suffix: 'due-day', at: localDate(item.dueDate, 8), title: 'Conta vence hoje' },
+        { suffix: 'due-day-morning', at: localDate(item.dueDate, 8), title: 'Conta vence hoje' },
+        { suffix: 'due-day-noon', at: localDate(item.dueDate, 12), title: 'Pagamento pendente hoje' },
+        { suffix: 'due-day-evening', at: localDate(item.dueDate, 19), title: 'Último alerta do vencimento' },
       ];
       schedules.forEach(({ suffix, at, title }) => {
         if (at <= now) return;
