@@ -88,7 +88,7 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate, onOpe
       <div className="px-approved-summary">
         <div><span>Receitas</span><strong>{money.format(Number(data.summary.realizedIncome || 0))}</strong></div>
         <div className="expense"><span>Despesas</span><strong>{money.format(Number(data.summary.realizedExpense || 0))}</strong></div>
-        <div><span>Resultado</span><strong>{money.format(Number(data.summary.realizedResult || 0))}</strong></div>
+        <div><span>Movimento líquido</span><strong>{Number(data.summary.realizedResult || 0) > 0 ? '+' : ''}{money.format(Number(data.summary.realizedResult || 0))}</strong></div>
       </div>
     </section>
 
