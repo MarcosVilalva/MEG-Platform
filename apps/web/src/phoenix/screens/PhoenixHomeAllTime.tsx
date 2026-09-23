@@ -150,6 +150,13 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
       </>}
     </section>
 
+    {isAll ? <section className="px-alltime-open-expenses px-card">
+      <header><div><span>DESPESAS EM ABERTO</span><strong>{openExpenses.length} lançamento(s)</strong></div><button type="button" onClick={() => onNavigate('payables')}>Ver todas</button></header>
+      <div className="px-alltime-open-scroll">
+        {openExpenses.length ? openExpenses.map((event) => <button type="button" className="px-alltime-open-row" key={event.id} onClick={() => onNavigate('payables')}><span className="date">{formatIso(String(event.date).slice(0, 10))}</span><span className="copy"><strong>{event.description || 'Despesa em aberto'}</strong><small>{String(event.status || 'Pendente')}</small></span><strong className="value">{money.format(Math.abs(Number(event.signedAmount || event.amount || 0)))}</strong></button>) : <div className="px-alltime-open-empty">Nenhuma despesa em aberto na base.</div>}
+      </div>
+    </section> : null}
+
     {isAll ? <section className="px-bottom-grid">
       <article className="px-card">
         <div className="px-panel-head"><div><span>Horizonte completo</span><h2>Posição após tudo que já está previsto</h2></div></div>
