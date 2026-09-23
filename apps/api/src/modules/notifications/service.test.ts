@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { alexaAutomationSlot, automationSlot, buildAlexaAnnouncement, buildAlexaFinancialPanorama, buildNotificationDigest, buildNotificationEmailHtml, buildNotificationWhatsAppText } from './service';
 
 const transactions = [
@@ -155,3 +156,21 @@ assert.equal(onDate.data.count, 2);
 assert.equal(onDate.data.total, 650);
 
 console.log('MEG notification digest tests passed.');
+
+
+const notificationServiceSource = readFileSync(new URL('./service.ts', import.meta.url), 'utf8');
+const brevoIndex = notificationServiceSource.indexOf("if (brevoReady)");
+const resendIndex = notificationServiceSource.indexOf("if (canUseResend)");
+assert.ok(brevoIndex >= 0 && resendIndex > brevoIndex,
+  'Brevo de produção deve ser priorizado antes do Resend quando ambos estiverem configurados.');
+assert.match(notificationServiceSource, /retryDelays = \[0, 2_500, 7_000\]/,
+  'WhatsApp deve retentar falhas transitórias em vez de desistir no primeiro 429.');
+assert.match(notificationServiceSource, /response\.status === 429/,
+  'Evolution API deve tratar rate limit 429 como falha transitória retentável.');
+
+
+const notificationRoutesSource = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
+assert.match(notificationRoutesSource, /\['sent', 'already-sent'\]\.includes/,
+  'Teste de canais não pode declarar Alexa enviada apenas porque a Promise foi resolvida.');
+assert.match(notificationRoutesSource, /=== 'skipped' \? 'not-sent'/,
+  'Teste manual deve distinguir anúncio Alexa ignorado de anúncio realmente aceito.');

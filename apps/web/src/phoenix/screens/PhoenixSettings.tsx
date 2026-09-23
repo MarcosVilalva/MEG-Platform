@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { authenticatedRequest } from '../../app/auth-client';
 import type { PhoenixReadModel } from '../contracts';
+import { getPhoenixLocalNotificationStatus } from '../phoenix-native-notifications';
 import {
   PhoenixProfileAvatar,
   imageFileToAvatarDataUrl,
@@ -30,6 +31,7 @@ type NotificationStatus = {
   automation?: { configured?: boolean; schedule?: string };
 };
 type DeliverySummary = { sentLast24Hours?: number; failedLast24Hours?: number; lastSuccessAt?: string | null; lastFailureAt?: string | null };
+type LocalNotificationStatus = { native: boolean; permission: string; scheduled: number; platform: string };
 type NormalizationPreview = {
   revision: number;
   primary: boolean;
@@ -113,6 +115,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
   const [deviceSessionsBusy, setDeviceSessionsBusy] = useState(false);
   const [notificationTestBusy, setNotificationTestBusy] = useState(false);
   const [notificationTestResult, setNotificationTestResult] = useState<Record<string, { status?: string; detail?: unknown }> | null>(null);
+  const [localNotificationStatus, setLocalNotificationStatus] = useState<LocalNotificationStatus | null>(null);
 
   const visibleAvatarPresets = useMemo(() => {
     if (avatarsExpanded) return phoenixAvatarPresets;
@@ -173,6 +176,14 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
     });
     return () => { active = false; };
   }, [data.user.role]);
+
+  useEffect(() => {
+    let active = true;
+    void getPhoenixLocalNotificationStatus()
+      .then((status) => { if (active) setLocalNotificationStatus(status); })
+      .catch(() => { if (active) setLocalNotificationStatus(null); });
+    return () => { active = false; };
+  }, [section]);
 
   function updateAvatar(next: PhoenixAvatarPreference) {
     const normalized = savePhoenixAvatarPreference(next, data.user.id);
@@ -317,7 +328,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
         </section> : null}
 
         {section === 'notifications' ? <>
-          <section className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Notificações</span><h2>Canais do MEG</h2><p>Status real das integrações. Nenhuma chave ou segredo é exibido nesta tela.</p></div></div>{data.user.role !== 'ADMIN' ? <p>O administrador da base controla integrações e agendas de envio.</p> : <><div className="px-settings-channel-grid"><article><strong>E-mail</strong><span>{notificationStatus?.email?.configured ? 'Configurado' : 'Não configurado'}</span><small>{notificationStatus?.email?.provider ? `Provedor: ${notificationStatus.email.provider}` : 'Provedor não informado'}</small></article><article><strong>WhatsApp</strong><span>{notificationStatus?.whatsapp?.configured ? 'Configurado' : 'Não configurado'}</span><small>{notificationStatus?.whatsapp?.defaultRecipient ? `Destino padrão: ${notificationStatus.whatsapp.defaultRecipient}` : 'Sem destino padrão'}</small></article><article><strong>Alexa</strong><span>{notificationStatus?.alexa?.configured ? 'Configurada' : 'Não configurada'}</span><small>{notificationStatus?.alexa?.schedule || 'Agenda não informada'}</small></article><article><strong>Automação</strong><span>{notificationStatus?.automation?.configured ? 'Ativa' : 'Não configurada'}</span><small>{notificationStatus?.automation?.schedule || 'Agenda não informada'}</small></article></div><div className="px-settings-notification-test"><button type="button" onClick={() => { void testNotificationChannels(); }} disabled={notificationTestBusy}>{notificationTestBusy ? 'Testando canais…' : 'Testar canais agora'}</button><small>Dispara um teste real pelos provedores configurados. Nenhuma credencial é exibida.</small>{notificationTestResult ? <div className="px-settings-test-results">{['email','whatsapp','alexa'].map((channel) => { const item = notificationTestResult[channel]; return <span key={channel} className={item?.status === 'sent' ? 'ok' : 'warn'}><strong>{channel === 'email' ? 'E-mail' : channel === 'whatsapp' ? 'WhatsApp' : 'Alexa'}</strong><b>{item?.status === 'sent' ? 'Enviado' : item?.status === 'failed' ? 'Falhou' : 'Não enviado'}</b></span>; })}</div> : null}</div></>}</section>
+          <section className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Notificações</span><h2>Canais do MEG</h2><p>Status real das integrações. Nenhuma chave ou segredo é exibido nesta tela.</p></div></div>{data.user.role !== 'ADMIN' ? <p>O administrador da base controla integrações e agendas de envio.</p> : <><div className="px-settings-channel-grid"><article><strong>E-mail</strong><span>{notificationStatus?.email?.configured ? 'Configurado' : 'Não configurado'}</span><small>{notificationStatus?.email?.provider ? `Provedor: ${notificationStatus.email.provider}` : 'Provedor não informado'}</small></article><article><strong>WhatsApp</strong><span>{notificationStatus?.whatsapp?.configured ? 'Configurado' : 'Não configurado'}</span><small>{notificationStatus?.whatsapp?.defaultRecipient ? `Destino padrão: ${notificationStatus.whatsapp.defaultRecipient}` : 'Sem destino padrão'}</small></article><article><strong>Alexa</strong><span>{notificationStatus?.alexa?.configured ? 'Configurada' : 'Não configurada'}</span><small>{notificationStatus?.alexa?.schedule || 'Agenda não informada'}</small></article><article><strong>Android</strong><span>{localNotificationStatus?.native ? localNotificationStatus.permission === 'granted' ? 'Permitido' : 'Permissão necessária' : 'Somente no aplicativo'}</span><small>{localNotificationStatus?.native ? `${localNotificationStatus.scheduled} alerta(s) agendado(s) neste aparelho` : 'Abra esta tela no Android para diagnosticar'}</small></article><article><strong>Automação</strong><span>{notificationStatus?.automation?.configured ? 'Ativa' : 'Não configurada'}</span><small>{notificationStatus?.automation?.schedule || 'Agenda não informada'}</small></article></div><div className="px-settings-notification-test"><button type="button" onClick={() => { void testNotificationChannels(); }} disabled={notificationTestBusy}>{notificationTestBusy ? 'Testando canais…' : 'Testar canais agora'}</button><small>Dispara um teste real pelos provedores configurados. Nenhuma credencial é exibida.</small>{notificationTestResult ? <div className="px-settings-test-results">{['email','whatsapp','alexa'].map((channel) => { const item = notificationTestResult[channel]; return <span key={channel} className={item?.status === 'sent' ? 'ok' : 'warn'}><strong>{channel === 'email' ? 'E-mail' : channel === 'whatsapp' ? 'WhatsApp' : 'Alexa'}</strong><b>{item?.status === 'sent' ? 'Enviado' : item?.status === 'failed' ? 'Falhou' : 'Não enviado'}</b></span>; })}</div> : null}</div></>}</section>
           {data.user.role === 'ADMIN' ? <section className="px-settings-grid"><article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Entrega</span><h2>Últimas 24 horas</h2></div></div><dl><div><dt>Enviadas</dt><dd>{deliverySummary?.sentLast24Hours ?? '—'}</dd></div><div><dt>Falhas</dt><dd>{deliverySummary?.failedLast24Hours ?? '—'}</dd></div><div><dt>Último sucesso</dt><dd>{deliverySummary?.lastSuccessAt ? new Date(deliverySummary.lastSuccessAt).toLocaleString('pt-BR') : 'Não informado'}</dd></div><div><dt>Última falha</dt><dd>{deliverySummary?.lastFailureAt ? new Date(deliverySummary.lastFailureAt).toLocaleString('pt-BR') : 'Nenhuma registrada'}</dd></div></dl></article><article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Agenda</span><h2>Horários atuais</h2><p>Os horários abaixo vêm da configuração ativa do servidor.</p></div></div><div className="px-settings-status-list"><span>Alertas · {notificationStatus?.automation?.schedule || 'Não informado'}</span><span>Alexa · {notificationStatus?.alexa?.schedule || 'Não informado'}</span></div><p className="px-settings-note">A próxima etapa desta tela será permitir editar essas agendas e o período silencioso sem expor credenciais.</p></article></section> : null}
         </> : null}
 

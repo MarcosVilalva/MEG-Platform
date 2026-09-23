@@ -166,6 +166,12 @@ assert.match(settings, /Nenhum reparo foi executado por esta consulta/,
   'Tela de integridade não pode sugerir que a comparação alterou a base.');
 assert.match(settings, /getBiometricLoginStatus/,
   'Configurações Phoenix deve consultar o estado real da biometria no APK em vez de inventar disponibilidade.');
+assert.match(settings, /getPhoenixLocalNotificationStatus/,
+  'Configurações deve diagnosticar permissão e quantidade de alertas locais agendados no Android.');
+assert.match(settings, /alerta\(s\) agendado\(s\) neste aparelho/,
+  'Tela de notificações precisa mostrar ao usuário se o aparelho realmente possui alertas agendados.');
+assert.match(nativeNotifications, /getPhoenixLocalNotificationStatus/,
+  'Camada nativa deve expor diagnóstico verificável das notificações locais.');
 assert.match(settings, /Restaurar backup/);
 assert.match(settings, /disabled/,
   'Restauração deve permanecer bloqueada durante a fase read-only');
@@ -601,6 +607,14 @@ assert.match(phoenixApp, /void Promise\.all\(\[[\s\S]{0,400}loadPhoenixReadModel
   'Contexto histórico completo deve ser enriquecido em segundo plano e não bloquear a fotografia do mês selecionado.');
 assert.match(phoenixApp, /syncPhoenixLocalDueNotifications/,
   'APK deve sincronizar alertas locais após carregar a base real.');
+assert.match(nativeNotifications, /five-days/,
+  'Alertas locais devem começar com antecedência suficiente para o usuário se organizar.');
+assert.match(nativeNotifications, /three-days/,
+  'Agenda local deve reforçar vencimentos três dias antes.');
+assert.match(nativeNotifications, /due-day-noon/,
+  'Vencimento do dia deve ter reforço ao meio-dia enquanto permanecer pendente.');
+assert.match(nativeNotifications, /due-day-evening/,
+  'Vencimento do dia deve ter último reforço no período da noite.');
 assert.match(phoenixApp, /financeClient\.getSyncStatus\(\)/,
   'Shell deve consultar um pulso leve do workspace para detectar mudanças de outro dispositivo.');
 assert.match(phoenixApp, /window\.setInterval\(\(\) => \{ void checkWorkspaceChanges\(\); \}, 6_000\)/,

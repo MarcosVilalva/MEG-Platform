@@ -109,7 +109,14 @@ export async function notificationRoutes(app: FastifyInstance) {
       testedAt: referenceDate.toISOString(),
       email: channelResult('email'),
       whatsapp: channelResult('whatsapp'),
-      alexa: alexa.status === 'fulfilled' ? { status: 'sent', detail: alexa.value } : { status: 'failed', detail: alexa.reason instanceof Error ? alexa.reason.message : 'Falha no anúncio Alexa.' }
+      alexa: alexa.status === 'fulfilled'
+        ? {
+            status: ['sent', 'already-sent'].includes(String((alexa.value as any)?.status || '')) ? 'sent'
+              : String((alexa.value as any)?.status || '') === 'skipped' ? 'not-sent'
+                : 'failed',
+            detail: alexa.value
+          }
+        : { status: 'failed', detail: alexa.reason instanceof Error ? alexa.reason.message : 'Falha no anúncio Alexa.' }
     };
   });
 
