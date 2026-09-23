@@ -348,3 +348,50 @@
     width:27px;height:27px;border-radius:8px;
   }
 }
+
+
+/* MEG · Tudo v5 — mesma identidade visual da Home operacional */
+body.meg-operational-mobile .px-home-alltime.is-modern-all{
+  width:100%;max-width:100%;min-width:0;display:grid;gap:10px;overflow-x:hidden;
+}
+body.meg-operational-mobile .px-alltime-profile-head{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:9px;
+}
+body.meg-operational-mobile .px-alltime-profile{
+  min-width:0;display:flex;align-items:center;gap:9px;
+}
+body.meg-operational-mobile .px-alltime-profile>span{min-width:0;display:grid;gap:1px}
+body.meg-operational-mobile .px-alltime-profile small{color:#739a96;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+body.meg-operational-mobile .px-alltime-profile strong{color:#effffc;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.meg-operational-mobile .px-alltime-profile-head .px-home-period-edit{margin:0;min-height:34px;padding:0 10px;white-space:nowrap}
+body.meg-operational-mobile .px-home-alltime.is-modern-all .px-alltime-title{display:none}
+body.meg-operational-mobile .px-home-alltime.is-modern-all .px-alltime-quick-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+body.meg-operational-mobile .px-home-alltime.is-modern-all .px-alltime-quick-actions>button{min-width:0;min-height:68px;padding:8px}
+body.meg-operational-mobile .px-home-alltime.is-modern-all .px-period-balance-card{min-height:0;padding:14px}
+body.meg-operational-mobile .px-home-alltime.is-modern-all .px-period-balance-primary h2{font-size:clamp(30px,9vw,42px);white-space:nowrap}
+body.meg-operational-mobile .px-home-alltime.is-modern-all .px-period-balance-primary p{display:none}
+body.meg-operational-mobile .px-home-alltime.is-modern-all .px-period-summary-inline{margin-top:10px;padding-top:10px}
+body.meg-operational-mobile .px-home-alltime.is-modern-all .px-dashboard-alert,
+body.meg-operational-mobile .px-home-alltime.is-modern-all .px-metrics,
+body.meg-operational-mobile .px-home-alltime.is-modern-all .px-bottom-grid{display:none}
+body.meg-operational-mobile .px-alltime-open-expenses{
+  min-width:0;padding:0;overflow:hidden;border-radius:16px;
+}
+body.meg-operational-mobile .px-alltime-open-expenses>header{
+  min-height:54px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid rgba(89,220,209,.10);
+}
+body.meg-operational-mobile .px-alltime-open-expenses>header>div{min-width:0;display:grid;gap:2px}
+body.meg-operational-mobile .px-alltime-open-expenses>header span{color:#6f9894;font-size:9px;font-weight:900;letter-spacing:.06em}
+body.meg-operational-mobile .px-alltime-open-expenses>header strong{color:#eafffb;font-size:12px}
+body.meg-operational-mobile .px-alltime-open-expenses>header button{border:0;background:transparent;color:#48ded2;font-size:10px;font-weight:850;white-space:nowrap}
+body.meg-operational-mobile .px-alltime-open-scroll{max-height:220px;overflow-y:auto;overscroll-behavior:contain}
+body.meg-operational-mobile .px-alltime-open-row{
+  width:100%;min-width:0;min-height:52px;padding:8px 10px;display:grid;grid-template-columns:54px minmax(0,1fr) auto;align-items:center;gap:8px;
+  border:0;border-bottom:1px solid rgba(89,220,209,.07);background:transparent;color:inherit;text-align:left;
+}
+body.meg-operational-mobile .px-alltime-open-row .date{color:#80a5a1;font-size:9px;white-space:nowrap}
+body.meg-operational-mobile .px-alltime-open-row .copy{min-width:0;display:grid;gap:2px}
+body.meg-operational-mobile .px-alltime-open-row .copy strong{color:#eafffb;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.meg-operational-mobile .px-alltime-open-row .copy small{color:#739a96;font-size:8px;text-transform:uppercase}
+body.meg-operational-mobile .px-alltime-open-row .value{color:#ff9a9a;font-size:11px;white-space:nowrap}
+body.meg-operational-mobile .px-alltime-open-empty{padding:20px 12px;color:#789d98;font-size:10px;text-align:center}
