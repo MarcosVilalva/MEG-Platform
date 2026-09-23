@@ -129,6 +129,22 @@ async function performPhoenixNotificationSync(data: PhoenixReadModel) {
   }
 }
 
+export async function getPhoenixLocalNotificationStatus() {
+  if (!Capacitor.isNativePlatform()) {
+    return { native: false, permission: 'web', scheduled: 0, platform: Capacitor.getPlatform() };
+  }
+
+  const permission = await LocalNotifications.checkPermissions();
+  const pending = await LocalNotifications.getPending();
+  const managed = pending.notifications.filter((item) => item.extra?.managedBy === MANAGED_BY);
+  return {
+    native: true,
+    permission: permission.display,
+    scheduled: managed.length,
+    platform: Capacitor.getPlatform(),
+  };
+}
+
 export function syncPhoenixLocalDueNotifications(data: PhoenixReadModel) {
   if (syncTimer !== null) window.clearTimeout(syncTimer);
   syncTimer = window.setTimeout(() => {
