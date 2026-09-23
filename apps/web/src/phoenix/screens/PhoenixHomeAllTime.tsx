@@ -103,11 +103,11 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
         <div className="px-period-summary-inline">
           <header><span>Resumo do período</span><strong>{isAll ? 'Trajetória realizada' : periodLabel}</strong></header>
           <div className="px-period-summary-equation">
-            <div className="income"><span>Receitas realizadas</span><strong>{money.format(summary.realizedIncome)}</strong></div>
+            <div className="income"><span>{isAll ? 'Entradas realizadas' : 'Receitas realizadas'}</span><strong>{money.format(summary.realizedIncome)}</strong></div>
             <b aria-hidden="true">−</b>
-            <div className="expense"><span>Despesas realizadas</span><strong>{money.format(summary.realizedExpense)}</strong></div>
+            <div className="expense"><span>{isAll ? 'Saídas realizadas' : 'Despesas realizadas'}</span><strong>{money.format(summary.realizedExpense)}</strong></div>
             <b aria-hidden="true">=</b>
-            <div className={`result ${signedClass(displayedResult)}`}><span>Resultado do período</span><strong>{displayedResult > 0 ? '+' : ''}{money.format(displayedResult)}</strong></div>
+            <div className={`result ${signedClass(displayedResult)}`}><span>Movimento líquido</span><strong>{displayedResult > 0 ? '+' : ''}{money.format(displayedResult)}</strong></div>
           </div>
         </div>
       </article>
