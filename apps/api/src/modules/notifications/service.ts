@@ -307,7 +307,9 @@ async function sendEmail(to: string, subject: string, text: string, branding: Em
   const replyToEmail = branding.replyToEmail?.trim().replace(/[?？]+$/u, '').toLowerCase() || config.adminEmail;
   const brandedFrom = senderName ? `${senderName} <${senderAddress}>` : config.notificationEmailFrom;
   const usesResendTestDomain = senderAddress.trim().toLowerCase().endsWith('@resend.dev');
-  const brevoReady = Boolean(config.brevoApiKey && config.brevoSenderEmail);
+  const brevoApiKey = config.brevoApiKey;
+  const brevoSenderEmail = config.brevoSenderEmail;
+  const brevoReady = Boolean(brevoApiKey && brevoSenderEmail);
   const canUseResend = Boolean(config.resendApiKey) && (!usesResendTestDomain || recipient === config.adminEmail.trim().toLowerCase());
 
   // Quando existe um provedor SMTP de produção, ele precisa ser a rota principal
@@ -316,9 +318,9 @@ async function sendEmail(to: string, subject: string, text: string, branding: Em
   if (brevoReady) {
     const response = await fetchWithTimeout('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
-      headers: { 'api-key': config.brevoApiKey, accept: 'application/json', 'Content-Type': 'application/json' },
+      headers: { 'api-key': brevoApiKey!, accept: 'application/json', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        sender: { name: senderName || config.brevoSenderName, email: config.brevoSenderEmail },
+        sender: { name: senderName || config.brevoSenderName, email: brevoSenderEmail! },
         to: [{ email: recipient }],
         replyTo: { email: replyToEmail, name: senderName || 'Administrador MEG' },
         subject,
