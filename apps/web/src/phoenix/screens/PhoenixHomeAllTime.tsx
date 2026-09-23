@@ -77,16 +77,12 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   }, []);
 
   return <>
-  <section className="px-home-alltime px-home-approved" data-home-alltime-layout="approved-mobile-v4">
-    <div className="px-page-head">
-      <div>
-        <span className="px-kicker">{kicker}</span>
-        <h1>{title}</h1>
-        
-        {onOpenPeriod ? <button className="px-home-period-edit" type="button" onClick={onOpenPeriod}>Alterar período · {periodLabel}</button> : null}
-      </div>
-    </div>
-
+  <section className={"px-home-alltime px-home-approved " + (isAll ? "is-modern-all" : "is-period-range")} data-home-alltime-layout="approved-mobile-v5">
+    <header className="px-alltime-profile-head">
+      <div className="px-alltime-profile"><PhoenixProfileAvatar preference={avatar} name={data.user.name} size="sm" /><span><small>MEG Finanças</small><strong>{displayName}</strong></span></div>
+      {onOpenPeriod ? <button className="px-home-period-edit" type="button" onClick={onOpenPeriod}>{periodLabel}⌄</button> : null}
+    </header>
+    <div className="px-page-head px-alltime-title"><div><span className="px-kicker">{kicker}</span><h1>{title}</h1></div></div>
     <section className="px-alltime-quick-actions" aria-label="Lançamentos rápidos">
       <button type="button" onClick={() => onLaunch?.('expense')}><span>↘</span><strong>Despesa</strong><small>Novo lançamento</small></button>
       <button type="button" onClick={() => onLaunch?.('income')}><span>↗</span><strong>Receita</strong><small>Novo lançamento</small></button>
