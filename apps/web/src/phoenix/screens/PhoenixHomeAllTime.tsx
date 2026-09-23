@@ -150,6 +150,8 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
       </>}
     </section>
 
+    {isAll ? <button type="button" className="px-alltime-benefit-spotlight" onClick={() => setBenefitOpen(true)}><span className="icon">▣</span><span className="copy"><small>BENEFÍCIO ALIMENTAÇÃO</small><strong>{money.format(summary.benefitBalance)}</strong><em>Saldo disponível · acompanhar evolução</em></span><b>›</b></button> : null}
+
     {isAll ? <section className="px-alltime-open-expenses px-card">
       <header><div><span>DESPESAS EM ABERTO</span><strong>{openExpenses.length} lançamento(s)</strong></div><button type="button" onClick={() => onNavigate('payables')}>Ver todas</button></header>
       <div className="px-alltime-open-scroll">
