@@ -51,6 +51,17 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   const title = isAll ? 'Histórico completo' : 'Resumo do período';
   const kicker = isAll ? 'Visão geral · Tudo' : `Visão geral · ${periodLabel}`;
   const [benefitOpen, setBenefitOpen] = useState(false);
+  const [avatar, setAvatar] = useState<PhoenixAvatarPreference>(() => readPhoenixAvatarPreference(data.user.id));
+  useEffect(() => {
+    let active = true;
+    const syncAvatar = () => setAvatar(readPhoenixAvatarPreference(data.user.id));
+    void hydratePhoenixAvatarPreference(data.user.id).then((preference) => { if (active) setAvatar(preference); });
+    window.addEventListener('meg:profile-avatar-changed', syncAvatar);
+    return () => { active = false; window.removeEventListener('meg:profile-avatar-changed', syncAvatar); };
+  }, [data.user.id]);
+  const displayNameParts = String(data.user.name || 'MEG').trim().split(/\\s+/);
+  const displayName = displayNameParts.length > 1 ? displayNameParts[0] + ' ' + displayNameParts[displayNameParts.length - 1] : displayNameParts[0];
+  const openExpenses = useMemo(() => data.events.items.filter((event) => event.type === 'expense' && !isPhoenixBenefitEvent(event) && !['paid', 'reconciled', 'confirmed', 'cancelled'].includes(String(event.status))).sort((a, b) => String(a.date).localeCompare(String(b.date))), [data.events.items]);
   const benefitEvents = useMemo(() => data.events.items
     .filter(isPhoenixBenefitEvent)
     .filter((event) => ['paid', 'reconciled', 'confirmed'].includes(String(event.status)))
