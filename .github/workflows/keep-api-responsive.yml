@@ -4,10 +4,10 @@ on:
   schedule:
     # Horário de Brasília (UTC-3): 05:52 inicia o prewarm diário.
     - cron: '52 8 * * *'
-    # 06:02–20:52 BRT, a cada 10 minutos, fora do topo da hora.
-    - cron: '2,12,22,32,42,52 9-23 * * *'
-    # 21:02–21:52 BRT, a cada 10 minutos.
-    - cron: '2,12,22,32,42,52 0 * * *'
+    # 06:12–20:52 BRT, a cada 10 minutos, fora do topo da hora.
+    - cron: '12,22,32,42,52 9-23 * * *'
+    # 21:12–21:52 BRT, a cada 10 minutos.
+    - cron: '12,22,32,42,52 0 * * *'
   workflow_dispatch:
 
 concurrency:
