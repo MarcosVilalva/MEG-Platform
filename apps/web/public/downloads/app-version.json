@@ -1,9 +1,9 @@
 {
-  "versionCode": 345,
-  "versionName": "2.0.345",
+  "versionCode": 346,
+  "versionName": "2.0.346",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "ebc15258271fac2075d515c3e9094503588a689e85a9e8442b5f1f2b776a6264",
+  "sha256": "75b03f73ef6df74460056d3bc0f7c01516f8d6ccc277716eeb2f0eba34c58031",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "unifica movimento líquido e refina Home Tudo"
+  "releaseNotes": "estabiliza publicação Android e reconciliação financeira"
 }
