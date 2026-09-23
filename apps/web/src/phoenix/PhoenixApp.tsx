@@ -857,15 +857,17 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     periodRequestRef.current = requestId;
     setPeriodLoading(true);
     setPeriodError('');
+    const needsHistoricalContext = targetMonth !== currentMonth();
+
     try {
-      const needsHistoricalContext = targetMonth !== currentMonth();
-      const [fresh, currentSnapshot, allEvents] = await Promise.all([
-        loadPhoenixReadModel(targetMonth, force ? { force: true } : {}),
-        needsHistoricalContext ? loadPhoenixReadModel(currentMonth(), force ? { force: true } : {}) : Promise.resolve(null),
-        needsHistoricalContext ? loadPhoenixAllEvents({ force }) : Promise.resolve(null)
-      ]);
+      // Troca de mês depende apenas da fotografia daquele mês. O contexto histórico
+      // completo (saldo atual + base inteira) é enriquecimento e não deve travar a navegação.
+      const cached = !force ? peekPhoenixReadModel(targetMonth) : null;
+      const fresh = cached && monthlySnapshotMatches(cached, targetMonth)
+        ? cached
+        : await loadPhoenixReadModel(targetMonth, force ? { force: true } : {});
+
       if (!monthlySnapshotMatches(fresh, targetMonth)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
-      if (currentSnapshot && !monthlySnapshotMatches(currentSnapshot, currentMonth())) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       if (periodRequestRef.current !== requestId) return;
 
       dataRef.current = fresh;
@@ -875,26 +877,39 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
       setMovementPeriodData(null);
       setPeriodMode('month');
       setPeriodRangeLabel('');
-
-      if (needsHistoricalContext && currentSnapshot && allEvents) {
-        const { startDate, endDate } = monthBounds(targetMonth);
-        const currentRealBalance = canonicalCurrentBalance(currentSnapshot);
-        const bounds = realizedPeriodBounds(currentRealBalance, allEvents.items, startDate, endDate);
-        setHomePeriodContext({
-          label: monthLabel(targetMonth),
-          startDate,
-          endDate,
-          currentRealBalance,
-          currentBenefitBalance: Number(currentSnapshot.summary.benefitBalance || 0),
-          ...bounds,
-          projectionEvents: targetMonth > currentMonth() ? allEvents.items : undefined
-        });
-      } else {
-        setHomePeriodContext(null);
-      }
-
+      setHomePeriodContext(null);
       setPeriodOpen(false);
+      setPeriodLoading(false);
       resetViewport();
+
+      // Mantém os meses vizinhos quentes para a próxima navegação.
+      void prefetchPhoenixReadModel(shiftMonth(targetMonth, -1));
+      void prefetchPhoenixReadModel(shiftMonth(targetMonth, 1));
+
+      if (needsHistoricalContext) {
+        void Promise.all([
+          loadPhoenixReadModel(currentMonth(), force ? { force: true } : {}),
+          loadPhoenixAllEvents({ force })
+        ]).then(([currentSnapshot, allEvents]) => {
+          if (periodRequestRef.current !== requestId || monthRef.current !== targetMonth) return;
+          if (!monthlySnapshotMatches(currentSnapshot, currentMonth())) return;
+          const { startDate, endDate } = monthBounds(targetMonth);
+          const currentRealBalance = canonicalCurrentBalance(currentSnapshot);
+          const bounds = realizedPeriodBounds(currentRealBalance, allEvents.items, startDate, endDate);
+          setHomePeriodContext({
+            label: monthLabel(targetMonth),
+            startDate,
+            endDate,
+            currentRealBalance,
+            currentBenefitBalance: Number(currentSnapshot.summary.benefitBalance || 0),
+            ...bounds,
+            projectionEvents: targetMonth > currentMonth() ? allEvents.items : undefined
+          });
+        }).catch(() => {
+          // A fotografia mensal já está disponível. Contexto histórico falho não volta
+          // a bloquear a troca de mês; uma nova abertura/refresh tentará enriquecer de novo.
+        });
+      }
     } catch (error) {
       if (periodRequestRef.current !== requestId) return;
       setPeriodError(error instanceof Error && error.message === 'PHOENIX_MONTH_SNAPSHOT_MISMATCH'
