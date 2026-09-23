@@ -151,8 +151,16 @@ export async function notificationRoutes(app: FastifyInstance) {
   });
 
   app.post('/watchdog', async (request, reply) => {
-    if (!config.notificationCronSecret || request.headers['x-cron-secret'] !== config.notificationCronSecret) {
-      return reply.status(401).send({ error: 'INVALID_CRON_SECRET' });
+    const providedCron = Array.isArray(request.headers['x-cron-secret'])
+      ? request.headers['x-cron-secret'][0]
+      : request.headers['x-cron-secret'];
+    const providedWatchdog = Array.isArray(request.headers['x-watchdog-secret'])
+      ? request.headers['x-watchdog-secret'][0]
+      : request.headers['x-watchdog-secret'];
+    const authorizedByCron = Boolean(config.notificationCronSecret && providedCron === config.notificationCronSecret);
+    const authorizedByWatchdog = alexaSecretsMatch(providedWatchdog, config.notificationWatchdogSecret);
+    if (!authorizedByCron && !authorizedByWatchdog) {
+      return reply.status(401).send({ error: 'INVALID_WATCHDOG_SECRET' });
     }
     const body = (request.body || {}) as { force?: boolean };
     return runNotificationWatchdog(new Date(), Boolean(body.force));

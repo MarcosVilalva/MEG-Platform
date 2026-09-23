@@ -77,3 +77,12 @@ assert.match(notificationRoutes, /runAlexaCycle/,
   'Cron Alexa e watchdog devem compartilhar a mesma trava idempotente de ciclo.');
 assert.match(notificationRoutes, /!item\.channel\.startsWith\('watchdog:'\)/,
   'Marcadores internos do watchdog não podem inflar a contagem de mensagens entregues ao usuário.');
+
+
+const apiConfig = readFileSync(new URL('../../config.ts', import.meta.url), 'utf8');
+assert.match(apiConfig, /NOTIFICATION_WATCHDOG_SECRET/,
+  'Failsafe externo deve usar segredo próprio sem compartilhar a credencial principal do cron.');
+assert.match(notificationRoutes, /x-watchdog-secret/,
+  'Endpoint de recovery deve aceitar a credencial isolada do scheduler secundário.');
+assert.match(notificationRoutes, /authorizedByCron[\s\S]*authorizedByWatchdog/,
+  'GitHub deve continuar autorizado enquanto o scheduler secundário usa segredo independente.');
