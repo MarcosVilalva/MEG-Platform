@@ -73,8 +73,12 @@ const reversalMirrored = mirrorFinancialEventToLegacyTransaction({
 assert.equal(reversalMirrored.amount, -12.34, 'Writeback deve preservar o sinal negativo do valor digitado no legado.');
 const reversalPreview = buildNormalizationPreview({ transactions: [reversalMirrored] }, { ...context, revision: 11 });
 assert.equal(reversalPreview.events[0]?.signedAmount, 12.34);
+const reversalNormalizedMirror = {
+  ...reversalPreview.events[0]!,
+  sourcePayload: reversalMirrored,
+};
 assert.equal(
-  normalizationFingerprint([{ ...reversalEvent, sourcePayload: reversalMirrored }]),
+  normalizationFingerprint([reversalNormalizedMirror]),
   reversalPreview.summary.fingerprint,
   'Reconciliação de startup não pode divergir ao espelhar estorno de despesa.',
 );
