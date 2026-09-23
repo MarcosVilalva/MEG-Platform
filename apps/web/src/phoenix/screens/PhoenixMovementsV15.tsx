@@ -242,13 +242,17 @@ function displayEffect(event: FinancialEvent) {
   return 0;
 }
 
+function isRealizedMovement(event: FinancialEvent) {
+  return ['paid', 'reconciled', 'confirmed'].includes(String(event.status));
+}
+
 function monetaryTotals(events: FinancialEvent[]) {
   return events.reduce((total, event) => {
-    if (isBenefitEvent(event)) return total;
+    if (isBenefitEvent(event) || !isRealizedMovement(event)) return total;
     const visualType = launchTypeForEvent(event.type);
     const effect = displayEffect(event);
     if (visualType === 'income') total.income += effect;
-    if (visualType === 'expense') total.expense += effect;
+    if (visualType === 'expense') total.expense += Math.abs(effect);
     return total;
   }, { income: 0, expense: 0 });
 }
@@ -1190,15 +1194,15 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNa
         <section className="px-screen-kpis" aria-label="Resumo do período">
           <article>
             <span className="px-kpi-icon is-income"><MovementIcon name="income" size={17} /></span>
-            <div className="px-kpi-copy"><strong>{money.format(displayedIncome)}</strong><small>Receitas monetárias</small></div>
+            <div className="px-kpi-copy"><strong>{money.format(displayedIncome)}</strong><small>Receitas realizadas</small></div>
           </article>
           <article>
             <span className="px-kpi-icon is-expense"><MovementIcon name="expense" size={17} /></span>
-            <div className="px-kpi-copy"><strong>{money.format(displayedExpense)}</strong><small>Despesas monetárias</small></div>
+            <div className="px-kpi-copy"><strong>{money.format(displayedExpense)}</strong><small>Despesas realizadas</small></div>
           </article>
           <article className={displayedResult < 0 ? 'is-negative' : 'is-positive'}>
             <span className="px-kpi-icon is-result"><MovementIcon name="result" size={17} /></span>
-            <div className="px-kpi-copy"><strong>{money.format(displayedResult)}</strong><small>{hasActiveFilters ? `Resultado · ${activeFilterCount} filtro(s)` : 'Resultado do período'}</small></div>
+            <div className="px-kpi-copy"><strong>{displayedResult > 0 ? '+' : ''}{money.format(displayedResult)}</strong><small>{hasActiveFilters ? `Movimento líquido · ${activeFilterCount} filtro(s)` : 'Movimento líquido'}</small></div>
           </article>
         </section>
 
