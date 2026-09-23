@@ -5,6 +5,7 @@ const preview = readFileSync(new URL('./phoenix-preview-read.ts', import.meta.ur
 const previewEvents = readFileSync(new URL('./phoenix-preview-events.ts', import.meta.url), 'utf8');
 const phoenixRead = readFileSync(new URL('./phoenix-read.ts', import.meta.url), 'utf8');
 const eventMutation = readFileSync(new URL('./event-mutation.ts', import.meta.url), 'utf8');
+const financeService = readFileSync(new URL('./service.ts', import.meta.url), 'utf8');
 const benefitMutation = readFileSync(new URL('./benefit-event-mutation.ts', import.meta.url), 'utf8');
 const transfer = readFileSync(new URL('./transfer-service.ts', import.meta.url), 'utf8');
 const bulk = readFileSync(new URL('./event-bulk-mutation.ts', import.meta.url), 'utf8');
@@ -35,6 +36,18 @@ assert.match(eventMutation, /assertActiveCatalogReferences\(tx, dataOwnerId, inp
   'Novo lançamento deve validar os catálogos compartilhados.');
 assert.match(eventMutation, /userId: dataOwnerId,[\s\S]*workspaceId: workspace\.workspaceId/,
   'Novo lançamento deve permanecer na base oficial do workspace.');
+assert.match(financeService, /updateFinancialEvent[\s\S]*const workspace = await resolveWorkspaceContext\(userId\);[\s\S]*const dataOwnerId = workspace\.workspace\.ownerId;/,
+  'Edição individual deve resolver o proprietário da base compartilhada.');
+assert.match(financeService, /updateFinancialEvent[\s\S]*where: \{ id, userId: dataOwnerId, archivedAt: null \}/,
+  'Membro autorizado deve conseguir editar lançamento pertencente ao proprietário do workspace.');
+assert.match(financeService, /validateActiveReferences\(tx, dataOwnerId, input\)/,
+  'Edição individual deve validar contas, categorias e formas de pagamento da base compartilhada.');
+assert.match(financeService, /updateFinancialEvent[\s\S]*writeBackNormalizedEventsToAppState\(tx, workspace\.workspaceId, \[resultBeforeMirror\]\)/,
+  'Edição de lançamento legado deve manter AppState e base normalizada reconciliados.');
+assert.match(financeService, /deleteFinancialEvent[\s\S]*where: \{ id, userId: dataOwnerId, archivedAt: null \}/,
+  'Membro administrador do workspace deve conseguir arquivar lançamento da base oficial.');
+assert.match(financeService, /deleteFinancialEvent[\s\S]*writeBackNormalizedEventsToAppState/,
+  'Exclusão individual deve remover o espelho legado para evitar divergência da base normalizada.');
 assert.match(benefitMutation, /benefitBalanceAt\(tx, dataOwnerId,/,
   'Saldo do Vale Alimentação deve ser único por base compartilhada.');
 assert.match(transfer, /sourceAccountBalanceAt\(tx, dataOwnerId,/,
