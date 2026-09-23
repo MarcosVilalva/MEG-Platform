@@ -2,12 +2,12 @@ name: MEG API Availability
 
 on:
   schedule:
-    # Horário de Brasília (UTC-3): 05:50 inicia o prewarm diário.
-    - cron: '50 8 * * *'
-    # 06:00–20:50 BRT, a cada 10 minutos.
-    - cron: '*/10 9-23 * * *'
-    # 21:00–21:50 BRT, a cada 10 minutos.
-    - cron: '*/10 0 * * *'
+    # Horário de Brasília (UTC-3): 05:52 inicia o prewarm diário.
+    - cron: '52 8 * * *'
+    # 06:02–20:52 BRT, a cada 10 minutos, fora do topo da hora.
+    - cron: '2,12,22,32,42,52 9-23 * * *'
+    # 21:02–21:52 BRT, a cada 10 minutos.
+    - cron: '2,12,22,32,42,52 0 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -33,3 +33,18 @@ jobs:
           done
           echo "MEG API readiness check failed"
           exit 1
+
+      - name: Recover due notification cycles
+        env:
+          API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
+          CRON_SECRET: ${{ secrets.NOTIFICATION_CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET" || { echo "NOTIFICATION_CRON_SECRET is not configured"; exit 1; }
+          RESPONSE=$(curl --fail-with-body --retry 3 --retry-all-errors --retry-delay 5 --max-time 150 \
+            -X POST "$API_URL/notifications/watchdog" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --data '{"force":false}')
+          echo "$RESPONSE" | jq .
+          FAILED=$(echo "$RESPONSE" | jq -r '.failed // 0')
+          test "$FAILED" -eq 0 || { echo "$FAILED notification watchdog cycle(s) failed"; exit 1; }
