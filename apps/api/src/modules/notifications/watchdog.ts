@@ -157,8 +157,12 @@ async function claimCycle(userId: string, cycle: NotificationWatchdogCycle, refe
       },
     });
     return { claimed: true as const, channel, reference };
-  } catch {
-    return { claimed: false as const, reason: 'race-lost', channel, reference };
+  } catch (error) {
+    const concurrent = await prisma.notificationDelivery.findUnique({
+      where: { userId_channel_reference: { userId, channel, reference } },
+    });
+    if (concurrent) return { claimed: false as const, reason: 'race-lost', channel, reference };
+    throw error;
   }
 }
 
@@ -218,7 +222,7 @@ function alexaResultIsSuccessful(result: any) {
   if (status === 'sent' || status === 'already-sent') return true;
   if (status !== 'skipped') return false;
   const reason = String(result?.reason || '');
-  return /nenhum vencimento|proprietário da alexa não encontrado/i.test(reason);
+  return /nenhum vencimento/i.test(reason);
 }
 
 export async function runAlexaCycle(
