@@ -79,7 +79,7 @@ assert.match(notificationRoutes, /!item\.channel\.startsWith\('watchdog:'\)/,
   'Marcadores internos do watchdog não podem inflar a contagem de mensagens entregues ao usuário.');
 
 
-const apiConfig = readFileSync(new URL('../../../config.ts', import.meta.url), 'utf8');
+const apiConfig = readFileSync(new URL('../../config.ts', import.meta.url), 'utf8');
 assert.match(apiConfig, /NOTIFICATION_WATCHDOG_SECRET/,
   'Failsafe externo deve usar segredo próprio sem compartilhar a credencial principal do cron.');
 assert.match(notificationRoutes, /x-watchdog-secret/,
