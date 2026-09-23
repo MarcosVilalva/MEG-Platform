@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { PhoenixReadModel } from '../contracts';
 import { buildPhoenixAllTimeHomeSummary, isPhoenixBenefitEvent } from '../home-period-summary';
+import { PhoenixProfileAvatar, hydratePhoenixAvatarPreference, readPhoenixAvatarPreference, type PhoenixAvatarPreference } from '../profile-avatar';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
