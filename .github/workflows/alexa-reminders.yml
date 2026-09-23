@@ -2,11 +2,12 @@ name: MEG Alexa Due Reminders
 
 on:
   schedule:
-    # America/Sao_Paulo (UTC-3). 21:00 local ocorre 00:00 UTC do dia seguinte.
-    - cron: '20 9 * * 1-5'
-    - cron: '0 21 * * 1-5'
-    - cron: '0 0 * * 2-6'
-    - cron: '0 15 * * 0,6'
+    # America/Sao_Paulo (UTC-3). Minutos deslocados do topo da hora.
+    # O watchdog do workflow de disponibilidade cobre atrasos e tentativas perdidas.
+    - cron: '21 9 * * 1-5'
+    - cron: '7 21 * * 1-5'
+    - cron: '7 0 * * 2-6'
+    - cron: '7 15 * * 0,6'
   workflow_dispatch:
     inputs:
       mode:
@@ -50,9 +51,9 @@ jobs:
         run: |
           test -n "$CRON_SECRET" || { echo "NOTIFICATION_CRON_SECRET is not configured"; exit 1; }
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then SLOT="$MANUAL_SLOT"; MODE="$MANUAL_MODE"; FORCE=true
-          elif [ "$SCHEDULE" = "20 9 * * 1-5" ]; then SLOT="06:20"; FORCE=false
-          elif [ "$SCHEDULE" = "0 21 * * 1-5" ]; then SLOT="18:00"; FORCE=false
-          elif [ "$SCHEDULE" = "0 0 * * 2-6" ]; then SLOT="21:00"; FORCE=false
+          elif [ "$SCHEDULE" = "21 9 * * 1-5" ]; then SLOT="06:20"; FORCE=false
+          elif [ "$SCHEDULE" = "7 21 * * 1-5" ]; then SLOT="18:00"; FORCE=false
+          elif [ "$SCHEDULE" = "7 0 * * 2-6" ]; then SLOT="21:00"; FORCE=false
           else SLOT="12:00"; FORCE=false; fi
           MODE="${MODE:-scheduled}"
           RESPONSE=$(curl --fail-with-body --retry 5 --retry-all-errors --retry-delay 10 --max-time 120 \

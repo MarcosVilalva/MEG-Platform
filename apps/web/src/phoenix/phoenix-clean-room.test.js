@@ -168,6 +168,8 @@ assert.match(settings, /getBiometricLoginStatus/,
   'Configurações Phoenix deve consultar o estado real da biometria no APK em vez de inventar disponibilidade.');
 assert.match(settings, /getPhoenixLocalNotificationStatus/,
   'Configurações deve diagnosticar permissão e quantidade de alertas locais agendados no Android.');
+assert.match(settings, /Watchdog/,
+  'Central de notificações deve mostrar a saúde da recuperação automática dos ciclos.');
 assert.match(settings, /alerta\(s\) agendado\(s\) neste aparelho/,
   'Tela de notificações precisa mostrar ao usuário se o aparelho realmente possui alertas agendados.');
 assert.match(nativeNotifications, /getPhoenixLocalNotificationStatus/,

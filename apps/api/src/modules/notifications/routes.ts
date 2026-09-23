@@ -2,19 +2,22 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '@meg/database';
 import { config } from '../../config';
 import { alexaSecretsMatch } from './alexa-auth';
-import { alexaAutomationSlot, alexaFinancialPanorama, automationSlot, deliverAlexaAnnouncement, deliverAlexaNextDuePreview, deliverNotifications, notificationDigest, notificationIntegrationStatus, type AlexaSkillIntent, type AlexaSkillQuery } from './service';
-import { deliverAlexaDailyBriefing, deliverDailyFinancialSummary } from './daily-summary';
+import { alexaFinancialPanorama, deliverAlexaNextDuePreview, deliverNotifications, notificationDigest, notificationIntegrationStatus, type AlexaSkillIntent, type AlexaSkillQuery } from './service';
+import { deliverDailyFinancialSummary } from './daily-summary';
+import { alexaCycleForSlot, messagingCycleForSlot, runAlexaCycle, runMessagingCycle, runNotificationWatchdog } from './watchdog';
 
 export async function notificationRoutes(app: FastifyInstance) {
   app.get('/status', { preHandler: app.authorize(['ADMIN']) }, async () => notificationIntegrationStatus());
 
   app.get('/deliveries', { preHandler: app.authorize(['ADMIN']) }, async (request) => {
-    const deliveries = await prisma.notificationDelivery.findMany({
+    const allDeliveries = await prisma.notificationDelivery.findMany({
       where: { userId: request.user.sub },
       orderBy: { deliveredAt: 'desc' },
-      take: 100,
+      take: 150,
       select: { id: true, channel: true, reference: true, status: true, detail: true, deliveredAt: true }
     });
+    const deliveries = allDeliveries.filter((item) => !item.channel.startsWith('watchdog:')).slice(0, 100);
+    const watchdogCycles = allDeliveries.filter((item) => item.channel.startsWith('watchdog:')).slice(0, 30);
     const last24Hours = Date.now() - 86_400_000;
     return {
       generatedAt: new Date().toISOString(),
@@ -23,9 +26,16 @@ export async function notificationRoutes(app: FastifyInstance) {
         sentLast24Hours: deliveries.filter((item) => item.status === 'sent' && item.deliveredAt.valueOf() >= last24Hours).length,
         failedLast24Hours: deliveries.filter((item) => item.status === 'failed' && item.deliveredAt.valueOf() >= last24Hours).length,
         lastSuccessAt: deliveries.find((item) => item.status === 'sent')?.deliveredAt ?? null,
-        lastFailureAt: deliveries.find((item) => item.status === 'failed')?.deliveredAt ?? null
+        lastFailureAt: deliveries.find((item) => item.status === 'failed')?.deliveredAt ?? null,
+        watchdog: {
+          lastCheckAt: watchdogCycles[0]?.deliveredAt ?? null,
+          failedLast24Hours: watchdogCycles.filter((item) => item.status === 'failed' && item.deliveredAt.valueOf() >= last24Hours).length,
+          processing: watchdogCycles.filter((item) => item.status === 'processing').length,
+          status: watchdogCycles.some((item) => item.status === 'failed' && item.deliveredAt.valueOf() >= last24Hours) ? 'attention' : 'ok'
+        }
       },
-      deliveries
+      deliveries,
+      watchdogCycles
     };
   });
 
@@ -126,20 +136,26 @@ export async function notificationRoutes(app: FastifyInstance) {
     }
     const now = new Date();
     const body = (request.body || {}) as { slot?: string; force?: boolean };
-    const slot = automationSlot(now, body.slot);
-    if (!slot) return { skipped: true, reason: 'Fora dos horários automáticos de 06:00, 12:00 e 19:00 (São Paulo).' };
+    const cycle = messagingCycleForSlot(String(body.slot || ''));
+    if (!cycle) return { skipped: true, reason: 'Slot de notificação inválido.' };
     const users = await prisma.user.findMany({
       where: { isActive: true, status: 'ACTIVE', ownedWorkspace: { isActive: true } },
       select: { id: true, email: true }
     });
     const results = [];
     for (const user of users) {
-      const delivery = slot.hour === 6
-        ? await deliverDailyFinancialSummary(user.id, { referenceDate: now, slot: slot.slot, force: Boolean(body.force) })
-        : await deliverNotifications(user.id, { referenceDate: now, mode: slot.mode, slot: slot.slot, force: Boolean(body.force) });
-      results.push({ email: user.email, deliveries: [delivery] });
+      const execution = await runMessagingCycle(user.id, cycle, now, Boolean(body.force));
+      results.push({ email: user.email, status: execution.status, deliveries: 'delivery' in execution ? [execution.delivery] : [] });
     }
-    return { users: results.length, results };
+    return { users: results.length, slot: cycle.slot, results };
+  });
+
+  app.post('/watchdog', async (request, reply) => {
+    if (!config.notificationCronSecret || request.headers['x-cron-secret'] !== config.notificationCronSecret) {
+      return reply.status(401).send({ error: 'INVALID_CRON_SECRET' });
+    }
+    const body = (request.body || {}) as { force?: boolean };
+    return runNotificationWatchdog(new Date(), Boolean(body.force));
   });
 
   app.post('/alexa/cron', async (request, reply) => {
@@ -154,13 +170,10 @@ export async function notificationRoutes(app: FastifyInstance) {
       const result = await deliverAlexaNextDuePreview(owner.id, now, Boolean(body.force));
       return { owner: owner.email, mode: body.mode, result };
     }
-    const slot = alexaAutomationSlot(now, body.slot);
-    if (!slot) return { skipped: true, reason: 'Fora da agenda de voz da Alexa.' };
-    const isMorningBriefing = slot.slot === '06:20' || ((slot.weekday === 0 || slot.weekday === 6) && slot.slot === '12:00');
-    const result = isMorningBriefing
-      ? await deliverAlexaDailyBriefing(now, slot.slot, Boolean(body.force))
-      : await deliverAlexaAnnouncement(owner.id, now, slot.slot, slot.includeTomorrow, Boolean(body.force));
-    return { owner: owner.email, slot: slot.slot, mode: isMorningBriefing ? 'daily-briefing' : 'scheduled', result };
+    const cycle = alexaCycleForSlot(now, String(body.slot || ''));
+    if (!cycle) return { skipped: true, reason: 'Slot fora da agenda de voz da Alexa.' };
+    const result = await runAlexaCycle(owner.id, cycle, now, Boolean(body.force));
+    return { owner: owner.email, slot: cycle.slot, mode: cycle.task === 'alexa-daily-briefing' ? 'daily-briefing' : 'scheduled', result };
   });
 
   app.post('/alexa/skill', async (request, reply) => {
