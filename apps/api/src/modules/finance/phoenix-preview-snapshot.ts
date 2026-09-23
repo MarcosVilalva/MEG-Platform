@@ -519,22 +519,24 @@ async function loadFutureCandidates(userId: string): Promise<FutureCandidate[]> 
  */
 export async function getPhoenixPreviewSnapshot(userId: string, month: string) {
   const { start, end } = monthRange(month);
-  const workspacePromise = resolveWorkspaceContext(userId);
-  const accountsPromise = prisma.account.findMany({ where: { userId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] });
+  const context = await resolveWorkspaceContext(userId);
+  // A base financeira do workspace é canônica e pertence ao owner. Qualquer membro
+  // autorizado deve ler exatamente a mesma fotografia, inclusive em instalação nova.
+  const dataOwnerId = context.workspace.ownerId;
+  const accountsPromise = prisma.account.findMany({ where: { userId: dataOwnerId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] });
 
-  const [allEvents, futureCandidates, accounts, categories, paymentMethods, events, payables, context] = await Promise.all([
-    loadCoreEvents(userId, end),
-    loadFutureCandidates(userId),
+  const [allEvents, futureCandidates, accounts, categories, paymentMethods, events, payables] = await Promise.all([
+    loadCoreEvents(dataOwnerId, end),
+    loadFutureCandidates(dataOwnerId),
     accountsPromise,
-    prisma.category.findMany({ where: { userId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] }),
-    prisma.paymentMethod.findMany({ where: { userId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] }),
-    monthlyEvents(userId, month),
-    payablesReadOnly(userId, month),
-    workspacePromise,
+    prisma.category.findMany({ where: { userId: dataOwnerId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] }),
+    prisma.paymentMethod.findMany({ where: { userId: dataOwnerId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] }),
+    monthlyEvents(dataOwnerId, month),
+    payablesReadOnly(dataOwnerId, month),
   ]);
 
   const [cards, financialAudit] = await Promise.all([
-    listCards(userId, month),
+    listCards(dataOwnerId, month),
     financialAuditReadOnly(context),
   ]);
 
