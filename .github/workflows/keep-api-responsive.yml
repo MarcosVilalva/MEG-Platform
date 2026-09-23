@@ -17,7 +17,7 @@ concurrency:
 jobs:
   warm:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 8
     steps:
       - name: Keep MEG API warm during daily use window
         env:
