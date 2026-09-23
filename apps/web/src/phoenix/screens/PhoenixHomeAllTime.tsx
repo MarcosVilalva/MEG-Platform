@@ -79,7 +79,7 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   return <>
   <section className={"px-home-alltime px-home-approved " + (isAll ? "is-modern-all" : "is-period-range")} data-home-alltime-layout="approved-mobile-v5">
     <header className="px-alltime-profile-head">
-      <div className="px-alltime-profile"><PhoenixProfileAvatar preference={avatar} name={data.user.name} size="sm" /><span><small>MEG Finanças</small><strong>{displayName}</strong></span></div>
+      <div className="px-alltime-profile"><PhoenixProfileAvatar preference={avatar} name={data.user.name} className="px-alltime-profile-avatar" /><span><small>MEG Finanças</small><strong>{displayName}</strong></span></div>
       {onOpenPeriod ? <button className="px-home-period-edit" type="button" onClick={onOpenPeriod}>{periodLabel}⌄</button> : null}
     </header>
     <div className="px-page-head px-alltime-title"><div><span className="px-kicker">{kicker}</span><h1>{title}</h1></div></div>
