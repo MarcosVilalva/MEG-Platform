@@ -30,8 +30,9 @@ assert.deepEqual(keys(new Date('2026-09-23T22:02:00Z')), [
 ], '19:02 BRT deve executar o alerta das 19h e ainda recuperar a Alexa das 18h.');
 
 assert.deepEqual(keys(new Date('2026-09-24T00:02:00Z')), [
+  'messaging:19:00:due-now',
   'alexa:21:00:alexa-due',
-], '00:02 UTC ainda é 21:02 do dia anterior em São Paulo e deve recuperar a Alexa das 21h.');
+], '00:02 UTC ainda é 21:02 do dia anterior em São Paulo e deve recuperar tanto o ciclo das 19h quanto a Alexa das 21h.');
 
 assert.deepEqual(keys(new Date('2026-09-26T15:02:00Z')), [
   'messaging:12:00:due-now',
