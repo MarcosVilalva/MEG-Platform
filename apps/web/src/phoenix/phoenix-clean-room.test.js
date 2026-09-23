@@ -166,6 +166,12 @@ assert.match(settings, /Nenhum reparo foi executado por esta consulta/,
   'Tela de integridade não pode sugerir que a comparação alterou a base.');
 assert.match(settings, /getBiometricLoginStatus/,
   'Configurações Phoenix deve consultar o estado real da biometria no APK em vez de inventar disponibilidade.');
+assert.match(settings, /getPhoenixLocalNotificationStatus/,
+  'Configurações deve diagnosticar permissão e quantidade de alertas locais agendados no Android.');
+assert.match(settings, /alerta\(s\) agendado\(s\) neste aparelho/,
+  'Tela de notificações precisa mostrar ao usuário se o aparelho realmente possui alertas agendados.');
+assert.match(nativeNotifications, /getPhoenixLocalNotificationStatus/,
+  'Camada nativa deve expor diagnóstico verificável das notificações locais.');
 assert.match(settings, /Restaurar backup/);
 assert.match(settings, /disabled/,
   'Restauração deve permanecer bloqueada durante a fase read-only');
