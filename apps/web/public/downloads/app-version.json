@@ -1,9 +1,9 @@
 {
-  "versionCode": 348,
-  "versionName": "2.0.348",
+  "versionCode": 349,
+  "versionName": "2.0.349",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "cab38d5cbea1a5fa38ec97cfeb94fd8d4b578a3a5be39c687058c3284fc36d74",
+  "sha256": "90a03813b551deb26ab56aa9beab3cde341eb9066493797abad8aa3a7b44a055",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "reforça notificações Android, e-mail, WhatsApp e Alexa"
+  "releaseNotes": "adiciona watchdog redundante às notificações"
 }
