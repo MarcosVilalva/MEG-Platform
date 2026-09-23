@@ -601,6 +601,14 @@ assert.match(phoenixApp, /void Promise\.all\(\[[\s\S]{0,400}loadPhoenixReadModel
   'Contexto histórico completo deve ser enriquecido em segundo plano e não bloquear a fotografia do mês selecionado.');
 assert.match(phoenixApp, /syncPhoenixLocalDueNotifications/,
   'APK deve sincronizar alertas locais após carregar a base real.');
+assert.match(nativeNotifications, /five-days/,
+  'Alertas locais devem começar com antecedência suficiente para o usuário se organizar.');
+assert.match(nativeNotifications, /three-days/,
+  'Agenda local deve reforçar vencimentos três dias antes.');
+assert.match(nativeNotifications, /due-day-noon/,
+  'Vencimento do dia deve ter reforço ao meio-dia enquanto permanecer pendente.');
+assert.match(nativeNotifications, /due-day-evening/,
+  'Vencimento do dia deve ter último reforço no período da noite.');
 assert.match(phoenixApp, /financeClient\.getSyncStatus\(\)/,
   'Shell deve consultar um pulso leve do workspace para detectar mudanças de outro dispositivo.');
 assert.match(phoenixApp, /window\.setInterval\(\(\) => \{ void checkWorkspaceChanges\(\); \}, 6_000\)/,
