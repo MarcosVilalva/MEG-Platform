@@ -116,12 +116,15 @@ export async function listFinancialEvents(userId: string, input: { page: number;
 export async function createFinancialEvent(userId: string, input: CreateFinancialEventInput) {
   const competence = input.competence || competenceFromDate(input.date);
   const values = financialAmountValues(input.type, input.amount);
+  const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
 
   return prisma.$transaction(async (tx) => {
-    await validateActiveReferences(tx, userId, input);
+    await validateActiveReferences(tx, dataOwnerId, input);
     const event = await tx.financialEvent.create({
       data: {
-        userId,
+        userId: dataOwnerId,
+        workspaceId: workspace.workspaceId,
         description: input.description.trim(),
         type: input.type,
         status: input.status,
@@ -147,7 +150,7 @@ export async function createFinancialEvent(userId: string, input: CreateFinancia
       entityId: result.id,
       action: 'FINANCIAL_EVENT_CREATED',
       after: result,
-      context: { competence: result.competence }
+      context: { competence: result.competence, workspaceId: workspace.workspaceId, dataOwnerId }
     });
     return result;
   });
