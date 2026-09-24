@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { alexaCycleForSlot, messagingCycleForSlot, notificationWatchdogHealth, notificationWatchdogPlan } from './watchdog';
+import { alexaCycleForSlot, messagingCycleForSlot, notificationCycleIsActive, notificationWatchdogHealth, notificationWatchdogPlan } from './watchdog';
 
 function keys(value: Date) {
   return notificationWatchdogPlan(value).cycles.map((cycle) => `${cycle.kind}:${cycle.slot}:${cycle.task}`);
@@ -50,6 +50,12 @@ assert.equal(messagingCycleForSlot('07:00'), null);
 assert.equal(alexaCycleForSlot(new Date('2026-09-23T12:00:00Z'), '06:20')?.task, 'alexa-daily-briefing');
 assert.equal(alexaCycleForSlot(new Date('2026-09-26T15:00:00Z'), '12:00')?.task, 'alexa-daily-briefing');
 assert.equal(alexaCycleForSlot(new Date('2026-09-26T15:00:00Z'), '18:00'), null);
+
+const weekdayEveningCycle = alexaCycleForSlot(new Date('2026-09-23T21:05:00Z'), '18:00')!;
+assert.equal(notificationCycleIsActive(new Date('2026-09-23T21:05:00Z'), weekdayEveningCycle), true,
+  '18:05 BRT deve estar dentro da janela do ciclo das 18h.');
+assert.equal(notificationCycleIsActive(new Date('2026-09-24T04:38:00Z'), weekdayEveningCycle), false,
+  'Cron atrasado para 01:38 BRT jamais pode fingir um ciclo das 18h/21h.');
 
 
 const beforeFirstCycle = notificationWatchdogHealth([], new Date('2026-09-24T08:00:00Z'));
@@ -130,3 +136,15 @@ assert.match(supabaseFailsafeSql, /revoke all on function public\.meg_run_notifi
   'Função de failsafe não pode permanecer exposta ao papel anon.');
 assert.doesNotMatch(supabaseFailsafeSql, /kSliamhUddM0GwS12zp40bYOwLo0ZQ49/,
   'Segredos reais jamais podem ser versionados no SQL operacional.');
+
+
+assert.match(smartWorkflow, /Scheduled pulse: watchdog decides/,
+  'Execução agendada de mensagens deve delegar o relógio real ao watchdog.');
+assert.match(smartWorkflow, /\/notifications\/watchdog/,
+  'Cron agendado não deve criar marcador futuro a partir de slot nominal atrasado.');
+assert.match(alexaWorkflow, /Scheduled Alexa pulse: watchdog uses the real São Paulo clock/,
+  'Alexa agendada deve obedecer o relógio real do watchdog quando o GitHub atrasar.');
+assert.match(alexaWorkflow, /\/notifications\/watchdog/,
+  'Alexa agendada deve usar o watchdog em vez de executar slot futuro diretamente.');
+assert.match(notificationRoutes, /!body\.force && !notificationCycleIsActive\(now, cycle\)/,
+  'API deve rejeitar crons automáticos fora da janela, mesmo que um workflow antigo ainda os invoque.');
