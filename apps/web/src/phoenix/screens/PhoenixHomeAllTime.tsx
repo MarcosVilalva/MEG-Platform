@@ -119,6 +119,67 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
     return rows;
   }, []);
 
+  if (isAll) {
+    return <>
+      <section className="meg-home-v12 meg-home-v12-all" data-home-fidelity="approved-v12" aria-label="Histórico financeiro completo">
+        <header className="meg-home-v12-heading">
+          <span>VISÃO GERAL</span>
+          <h1>Histórico completo</h1>
+          <p>Resumo de toda a sua vida financeira.</p>
+        </header>
+
+        <article className="meg-home-v12-all-balance">
+          <span>Saldo atual consolidado</span>
+          <strong>{money.format(summary.currentMonetaryBalance)}</strong>
+          <small>Fotografia real de hoje, sem misturar compromissos futuros.</small>
+        </article>
+
+        <section className="meg-home-v12-current-flow meg-home-v12-all-flow" aria-label="Movimentação acumulada">
+          <article className="income"><span>Total de receitas</span><strong>{money.format(summary.realizedIncome)}</strong></article>
+          <article className="expense"><span>Total de despesas</span><strong>{money.format(summary.realizedExpense)}</strong></article>
+        </section>
+
+        <article className={`meg-home-v12-all-result ${summary.realizedResult >= 0 ? 'positive' : 'negative'}`}>
+          <span>Resultado consolidado</span>
+          <strong>{summary.realizedResult > 0 ? '+' : ''}{money.format(summary.realizedResult)}</strong>
+        </article>
+
+        <section className="meg-home-v12-all-metrics" aria-label="Indicadores históricos">
+          <article><span>Total de lançamentos</span><strong>{summary.monetaryEventCount.toLocaleString('pt-BR')}</strong></article>
+          <article className="income"><span>Média mensal de receita</span><strong>{money.format(averageMonthlyIncome)}</strong></article>
+          <article className="expense"><span>Média mensal de despesa</span><strong>{money.format(averageMonthlyExpense)}</strong></article>
+        </section>
+
+        <button className="meg-home-v12-wide-action" type="button" onClick={() => onNavigate('movements')}>
+          <span>Ver detalhamento do histórico</span><b aria-hidden="true">›</b>
+        </button>
+
+        <button className="meg-home-v12-benefit" type="button" onClick={() => setBenefitOpen(true)}>
+          <span><small>BENEFÍCIO ALIMENTAÇÃO</small><strong>Saldo atual</strong></span>
+          <b>{money.format(summary.benefitBalance)}</b>
+          <em aria-hidden="true">›</em>
+        </button>
+      </section>
+
+      {benefitOpen ? <div className="meg-home-v12-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setBenefitOpen(false); }}>
+        <section className="meg-home-v12-modal" role="dialog" aria-modal="true" aria-label="Acompanhamento do benefício alimentação">
+          <header><div><small>BENEFÍCIO ALIMENTAÇÃO</small><strong>Evolução do saldo</strong></div><button type="button" aria-label="Fechar" onClick={() => setBenefitOpen(false)}>×</button></header>
+          <div className="meg-home-v12-modal-stats">
+            <article><span>Saldo inicial</span><strong>{money.format(benefitOpening)}</strong></article>
+            <article className="income"><span>Créditos</span><strong>{money.format(benefitCredits)}</strong></article>
+            <article className="expense"><span>Consumo</span><strong>{money.format(benefitSpent)}</strong></article>
+            <article><span>Saldo atual</span><strong>{money.format(summary.benefitBalance)}</strong></article>
+          </div>
+          <div className="meg-home-v12-modal-list">
+            {[...benefitEvolution].reverse().slice(0, 10).map((item) => <div key={item.id}><span><strong>{item.description}</strong><small>{formatIso(item.date)}</small></span><b className={item.amount >= 0 ? 'income' : 'expense'}>{item.amount >= 0 ? '+' : '−'} {money.format(Math.abs(item.amount))}</b></div>)}
+            {!benefitEvolution.length ? <p>Nenhuma movimentação de benefício registrada.</p> : null}
+          </div>
+          <footer><button type="button" onClick={() => { setBenefitOpen(false); onNavigate('movements'); }}>Ver lançamentos</button><button type="button" className="primary" onClick={() => setBenefitOpen(false)}>Fechar</button></footer>
+        </section>
+      </div> : null}
+    </>;
+  }
+
   return <>
   <section className={"px-home-alltime px-home-approved " + (isAll ? "is-modern-all" : "is-period-range")} data-home-alltime-layout="mock-fidelity-v9">
     <header className="px-alltime-profile-head">
