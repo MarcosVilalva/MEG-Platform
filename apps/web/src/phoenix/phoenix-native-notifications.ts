@@ -28,6 +28,18 @@ function brl(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
+async function ensurePhoenixNotificationChannel() {
+  if (Capacitor.getPlatform() !== 'android') return;
+  await LocalNotifications.createChannel({
+    id: CHANNEL_ID,
+    name: 'MEG Operacional · Vencimentos',
+    description: 'Alertas financeiros do MEG para contas vencidas e próximas do vencimento',
+    importance: 5,
+    visibility: 1,
+    vibration: true,
+  });
+}
+
 function todayIso() {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit'
@@ -47,16 +59,7 @@ async function performPhoenixNotificationSync(data: PhoenixReadModel) {
   }
   if (permission.display !== 'granted') return;
 
-  if (Capacitor.getPlatform() === 'android') {
-    await LocalNotifications.createChannel({
-      id: CHANNEL_ID,
-      name: 'MEG Operacional · Vencimentos',
-      description: 'Alertas financeiros do MEG para contas vencidas e próximas do vencimento',
-      importance: 5,
-      visibility: 1,
-      vibration: true,
-    });
-  }
+  await ensurePhoenixNotificationChannel();
 
   const pending = await LocalNotifications.getPending();
   const managed = pending.notifications
@@ -127,6 +130,42 @@ async function performPhoenixNotificationSync(data: PhoenixReadModel) {
   if (notifications.length) {
     await LocalNotifications.schedule({ notifications });
   }
+}
+
+export async function testPhoenixLocalNotification() {
+  if (!Capacitor.isNativePlatform()) {
+    return { native: false, status: 'not-sent', permission: 'web', platform: Capacitor.getPlatform(), detail: 'Teste disponível somente no aplicativo.' };
+  }
+
+  let permission = await LocalNotifications.checkPermissions();
+  if (permission.display === 'prompt' || permission.display === 'prompt-with-rationale') {
+    permission = await LocalNotifications.requestPermissions();
+  }
+  if (permission.display !== 'granted') {
+    return { native: true, status: 'failed', permission: permission.display, platform: Capacitor.getPlatform(), detail: 'Permissão de notificações não concedida.' };
+  }
+
+  await ensurePhoenixNotificationChannel();
+  const at = new Date(Date.now() + 3_500);
+  const id = notificationId(`test:${Date.now()}`, 'android-local');
+  await LocalNotifications.schedule({
+    notifications: [{
+      id,
+      title: 'MEG Finanças · teste Android',
+      body: 'Notificações ativas. O MEG pode avisar você sobre vencimentos neste aparelho.',
+      channelId: CHANNEL_ID,
+      schedule: { at, allowWhileIdle: true },
+      extra: { managedBy: 'MEG_PHOENIX_TEST', kind: 'diagnostic' },
+    }],
+  });
+  return {
+    native: true,
+    status: 'sent',
+    permission: permission.display,
+    platform: Capacitor.getPlatform(),
+    scheduledAt: at.toISOString(),
+    detail: 'Notificação local agendada para aparecer em alguns segundos.'
+  };
 }
 
 export async function getPhoenixLocalNotificationStatus() {
