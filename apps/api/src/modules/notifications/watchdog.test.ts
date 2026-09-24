@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { alexaCycleForSlot, messagingCycleForSlot, notificationWatchdogPlan } from './watchdog';
+import { alexaCycleForSlot, messagingCycleForSlot, notificationCycleIsActive, notificationWatchdogHealth, notificationWatchdogPlan } from './watchdog';
 
 function keys(value: Date) {
   return notificationWatchdogPlan(value).cycles.map((cycle) => `${cycle.kind}:${cycle.slot}:${cycle.task}`);
@@ -51,6 +51,45 @@ assert.equal(alexaCycleForSlot(new Date('2026-09-23T12:00:00Z'), '06:20')?.task,
 assert.equal(alexaCycleForSlot(new Date('2026-09-26T15:00:00Z'), '12:00')?.task, 'alexa-daily-briefing');
 assert.equal(alexaCycleForSlot(new Date('2026-09-26T15:00:00Z'), '18:00'), null);
 
+const weekdayEveningCycle = alexaCycleForSlot(new Date('2026-09-23T21:05:00Z'), '18:00')!;
+assert.equal(notificationCycleIsActive(new Date('2026-09-23T21:05:00Z'), weekdayEveningCycle), true,
+  '18:05 BRT deve estar dentro da janela do ciclo das 18h.');
+assert.equal(notificationCycleIsActive(new Date('2026-09-24T04:38:00Z'), weekdayEveningCycle), false,
+  'Cron atrasado para 01:38 BRT jamais pode fingir um ciclo das 18h/21h.');
+
+
+const beforeFirstCycle = notificationWatchdogHealth([], new Date('2026-09-24T08:00:00Z'));
+assert.equal(beforeFirstCycle.status, 'waiting',
+  'Antes da primeira janela diária a ausência de marcador não deve gerar alarme falso.');
+
+const missingMorning = notificationWatchdogHealth([], new Date('2026-09-24T09:40:00Z'));
+assert.equal(missingMorning.status, 'attention',
+  'Após a tolerância do ciclo das 06h, ausência de marcador deve aparecer como atenção.');
+assert.equal(missingMorning.expected[0]?.slot, '06:00');
+assert.equal(missingMorning.expected[0]?.state, 'missing');
+
+const healthyMorning = notificationWatchdogHealth([
+  {
+    channel: 'watchdog:notifications',
+    reference: '2026-09-24:06:00:daily-summary',
+    status: 'sent',
+    deliveredAt: new Date('2026-09-24T09:17:10Z'),
+  },
+], new Date('2026-09-24T09:40:00Z'));
+assert.equal(healthyMorning.status, 'ok');
+assert.equal(healthyMorning.expected[0]?.state, 'ok');
+
+const staleProcessing = notificationWatchdogHealth([
+  {
+    channel: 'watchdog:notifications',
+    reference: '2026-09-24:06:00:daily-summary',
+    status: 'processing',
+    deliveredAt: new Date('2026-09-24T09:15:00Z'),
+  },
+], new Date('2026-09-24T09:40:00Z'));
+assert.equal(staleProcessing.status, 'attention');
+assert.equal(staleProcessing.expected[0]?.state, 'stale');
+
 console.log('notification watchdog scheduling tests passed');
 
 
@@ -86,3 +125,26 @@ assert.match(notificationRoutes, /x-watchdog-secret/,
   'Endpoint de recovery deve aceitar a credencial isolada do scheduler secundário.');
 assert.match(notificationRoutes, /authorizedByCron[\s\S]*authorizedByWatchdog/,
   'GitHub deve continuar autorizado enquanto o scheduler secundário usa segredo independente.');
+
+
+const supabaseFailsafeSql = readFileSync(new URL('../../../../../ops/supabase/notification-watchdog-failsafe.sql', import.meta.url), 'utf8');
+assert.match(supabaseFailsafeSql, /meg-notification-watchdog-backup-day/,
+  'Failsafe Supabase deve ficar versionado no repositório.');
+assert.match(supabaseFailsafeSql, /17,27,37,47,57 9-23/,
+  'Scheduler secundário deve usar minutos diferentes do watchdog GitHub.');
+assert.match(supabaseFailsafeSql, /revoke all on function public\.meg_run_notification_watchdog\(\) from anon/,
+  'Função de failsafe não pode permanecer exposta ao papel anon.');
+assert.doesNotMatch(supabaseFailsafeSql, /kSliamhUddM0GwS12zp40bYOwLo0ZQ49/,
+  'Segredos reais jamais podem ser versionados no SQL operacional.');
+
+
+assert.match(smartWorkflow, /Scheduled pulse: watchdog decides/,
+  'Execução agendada de mensagens deve delegar o relógio real ao watchdog.');
+assert.match(smartWorkflow, /\/notifications\/watchdog/,
+  'Cron agendado não deve criar marcador futuro a partir de slot nominal atrasado.');
+assert.match(alexaWorkflow, /Scheduled Alexa pulse: watchdog uses the real São Paulo clock/,
+  'Alexa agendada deve obedecer o relógio real do watchdog quando o GitHub atrasar.');
+assert.match(alexaWorkflow, /\/notifications\/watchdog/,
+  'Alexa agendada deve usar o watchdog em vez de executar slot futuro diretamente.');
+assert.match(notificationRoutes, /!body\.force && !notificationCycleIsActive\(now, cycle\)/,
+  'API deve rejeitar crons automáticos fora da janela, mesmo que um workflow antigo ainda os invoque.');
