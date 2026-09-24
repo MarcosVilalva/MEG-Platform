@@ -39,21 +39,29 @@ jobs:
         env:
           API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
           CRON_SECRET: ${{ secrets.NOTIFICATION_CRON_SECRET }}
-          SCHEDULE: ${{ github.event.schedule }}
           MANUAL_SLOT: ${{ inputs.slot }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           test -n "$CRON_SECRET" || { echo "NOTIFICATION_CRON_SECRET is not configured"; exit 1; }
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then SLOT="$MANUAL_SLOT"; FORCE=true
-          elif [ "$SCHEDULE" = "7 9 * * *" ]; then SLOT="06:00"; FORCE=false
-          elif [ "$SCHEDULE" = "7 15 * * *" ]; then SLOT="12:00"; FORCE=false
-          else SLOT="19:00"; FORCE=false; fi
-          echo "Triggering MEG notification slot $SLOT (force=$FORCE)"
-          RESPONSE=$(curl --fail-with-body --retry 5 --retry-all-errors --retry-delay 10 --max-time 120 \
-            -X POST "$API_URL/notifications/cron" \
-            -H "x-cron-secret: $CRON_SECRET" \
-            -H "Content-Type: application/json" \
-            --data "{\"slot\":\"$SLOT\",\"force\":$FORCE}")
-          echo "$RESPONSE" | jq .
-          FAILED=$(echo "$RESPONSE" | jq '[.. | objects | select(.status? == "failed")] | length')
-          test "$FAILED" -eq 0 || { echo "$FAILED delivery channel(s) failed"; exit 1; }
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "Manual notification test for logical slot $MANUAL_SLOT"
+            RESPONSE=$(curl --fail-with-body --retry 5 --retry-all-errors --retry-delay 10 --max-time 120 \
+              -X POST "$API_URL/notifications/cron" \
+              -H "x-cron-secret: $CRON_SECRET" \
+              -H "Content-Type: application/json" \
+              --data "{\"slot\":\"$MANUAL_SLOT\",\"force\":true}")
+            echo "$RESPONSE" | jq .
+            FAILED=$(echo "$RESPONSE" | jq '[.. | objects | select(.status? == "failed")] | length')
+          else
+            echo "Scheduled pulse: watchdog decides the valid São Paulo cycle from current time"
+            RESPONSE=$(curl --fail-with-body --retry 5 --retry-all-errors --retry-delay 10 --max-time 150 \
+              -X POST "$API_URL/notifications/watchdog" \
+              -H "x-cron-secret: $CRON_SECRET" \
+              -H "Content-Type: application/json" \
+              --data '{"force":false}')
+            echo "$RESPONSE" | jq .
+            FAILED=$(echo "$RESPONSE" | jq -r '.failed // 0')
+          fi
+
+          test "$FAILED" -eq 0 || { echo "$FAILED delivery/watchdog cycle(s) failed"; exit 1; }
