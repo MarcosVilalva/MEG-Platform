@@ -4,7 +4,7 @@ import { config } from '../../config';
 import { alexaSecretsMatch } from './alexa-auth';
 import { alexaFinancialPanorama, deliverAlexaNextDuePreview, deliverNotifications, notificationDigest, notificationIntegrationStatus, type AlexaSkillIntent, type AlexaSkillQuery } from './service';
 import { deliverDailyFinancialSummary } from './daily-summary';
-import { alexaCycleForSlot, messagingCycleForSlot, notificationWatchdogHealth, runAlexaCycle, runMessagingCycle, runNotificationWatchdog } from './watchdog';
+import { alexaCycleForSlot, messagingCycleForSlot, notificationCycleIsActive, notificationWatchdogHealth, runAlexaCycle, runMessagingCycle, runNotificationWatchdog } from './watchdog';
 
 export async function notificationRoutes(app: FastifyInstance) {
   app.get('/status', { preHandler: app.authorize(['ADMIN']) }, async () => notificationIntegrationStatus());
@@ -138,6 +138,9 @@ export async function notificationRoutes(app: FastifyInstance) {
     const body = (request.body || {}) as { slot?: string; force?: boolean };
     const cycle = messagingCycleForSlot(String(body.slot || ''));
     if (!cycle) return { skipped: true, reason: 'Slot de notificação inválido.' };
+    if (!body.force && !notificationCycleIsActive(now, cycle)) {
+      return { skipped: true, reason: 'Execução automática recebida fora da janela lógica do slot.' };
+    }
     const users = await prisma.user.findMany({
       where: { isActive: true, status: 'ACTIVE', ownedWorkspace: { isActive: true } },
       select: { id: true, email: true }
@@ -180,6 +183,9 @@ export async function notificationRoutes(app: FastifyInstance) {
     }
     const cycle = alexaCycleForSlot(now, String(body.slot || ''));
     if (!cycle) return { skipped: true, reason: 'Slot fora da agenda de voz da Alexa.' };
+    if (!body.force && !notificationCycleIsActive(now, cycle)) {
+      return { skipped: true, reason: 'Execução automática da Alexa recebida fora da janela lógica do slot.' };
+    }
     const result = await runAlexaCycle(owner.id, cycle, now, Boolean(body.force));
     return { owner: owner.email, slot: cycle.slot, mode: cycle.task === 'alexa-daily-briefing' ? 'daily-briefing' : 'scheduled', result };
   });
