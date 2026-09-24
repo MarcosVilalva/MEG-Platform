@@ -467,12 +467,18 @@ assert.match(screens, /Confirmar baixa real/,
 
 assert.match(homeAllTime, /Histórico completo/,
   'Modo Tudo deve possuir uma Home própria para a trajetória completa');
-assert.match(homeAllTime, /Saldo atual/,
-  'Modo Tudo não pode transformar eventos futuros em saldo disponível hoje');
-assert.match(homeAllTime, /Saldo livre depois deles/,
-  'Home completa deve explicitar o dinheiro livre depois das obrigações abertas');
-assert.match(homeAllTime, /Projeção final/,
-  'Home completa deve manter a projeção consolidada acessível nos detalhes da base.');
+assert.match(homeAllTime, /SALDO MONETÁRIO ATUAL/,
+  'Modo Tudo deve preservar o saldo monetário atual sem misturar previsões futuras');
+assert.match(homeAllTime, /Em aberto agora/,
+  'Home completa deve separar obrigações já abertas do histórico futuro');
+assert.match(homeAllTime, /Próximo mês/,
+  'Home completa deve apresentar compromissos futuros separadamente do saldo atual');
+assert.doesNotMatch(homeAllTime, /Saldo livre depois deles/,
+  'Modo Tudo não deve subtrair toda a agenda futura do caixa monetário atual');
+assert.match(homeAllTime, /RESUMO HISTÓRICO/,
+  'Home completa deve manter uma síntese executiva da base completa.');
+assert.match(phoenixApp, /px-native-home-period/,
+  'Home móvel deve manter o filtro de período fixo no cabeçalho.');
 assert.match(homePeriodSummary, /event\.status === 'planned'/,
   'Consolidação histórica deve separar eventos planejados dos realizados');
 assert.match(homePeriodSummary, /event\.type !== 'transfer'/,
