@@ -73,7 +73,7 @@ assert.match(modernDailyWhatsapp, /Demais débitos · R\$\s*319,90/);
 assert.match(modernDailyWhatsapp, /INTERNET/);
 assert.match(modernDailyWhatsapp, /ACADEMIA/);
 assert.match(modernDailyWhatsapp, /ENERGIA/);
-assert.match(modernDailyWhatsapp, /ÁGUA/);
+assert.match(modernDailyWhatsapp, /AGUA/);
 assert.match(modernDailyWhatsapp, /SEGURO CASA/);
 assert.match(modernDailyWhatsapp, /TOTAL DO MÊS · R\$\s*569,90/);
 
