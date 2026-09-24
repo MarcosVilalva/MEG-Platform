@@ -135,6 +135,18 @@ function monthKey(value: string) {
   return value.slice(0, 7);
 }
 
+function followingMonthKey(currentMonth: string) {
+  const [year, month] = currentMonth.split('-').map(Number);
+  const next = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
+  return `${next.year}-${String(next.month).padStart(2, '0')}`;
+}
+
+function monthLabelFromKey(value: string) {
+  const [year, month] = value.split('-').map(Number);
+  const names = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+  return `${names[Math.max(0, Math.min(11, month - 1))]} ${year}`;
+}
+
 function priority(days: number, dueDate: string, currentMonth: string): DigestItem['priority'] {
   if (monthKey(dueDate) < currentMonth) return 'MÁXIMA';
   if (days < 0) return 'CRÍTICA';
@@ -199,9 +211,12 @@ export function buildNotificationDigest(transactions: LegacyTransaction[], refer
   const selected = selectForMode(grouped, mode, currentMonth);
   const currentScope = grouped.filter((item) => monthKey(item.dueDate) <= currentMonth);
   const futureScope = grouped.filter((item) => monthKey(item.dueDate) > currentMonth);
+  const nextMonth = followingMonthKey(currentMonth);
+  const nextMonthScope = grouped.filter((item) => monthKey(item.dueDate) === nextMonth);
   const totalAmount = selected.reduce((sum, item) => sum + item.value, 0);
   const openAmount = currentScope.reduce((sum, item) => sum + item.value, 0);
   const futureAmount = futureScope.reduce((sum, item) => sum + item.value, 0);
+  const nextMonthAmount = nextMonthScope.reduce((sum, item) => sum + item.value, 0);
   const maximumPriority = selected.filter((item) => item.priority === 'MÁXIMA');
   const overdue = selected.filter((item) => item.priority === 'CRÍTICA');
   const today = selected.filter((item) => item.daysUntilDue === 0);
@@ -253,6 +268,11 @@ export function buildNotificationDigest(transactions: LegacyTransaction[], refer
     openAmount,
     futureCount: futureScope.length,
     futureAmount,
+    nextMonthKey: nextMonth,
+    nextMonthLabel: monthLabelFromKey(nextMonth),
+    nextMonthItems: nextMonthScope,
+    nextMonthCount: nextMonthScope.length,
+    nextMonthAmount,
     mode
   };
 }

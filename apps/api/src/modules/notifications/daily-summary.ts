@@ -16,18 +16,86 @@ function localParts(referenceDate: Date) {
   };
 }
 
+const MONTHS_SHORT = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+
+function compactDateTag(iso: string) {
+  const [, month, day] = iso.split('-').map(Number);
+  return `${String(day).padStart(2, '0')} ${MONTHS_SHORT[Math.max(0, Math.min(11, month - 1))]}`;
+}
+
+function shortDueDate(iso: string) {
+  const [, month, day] = iso.split('-');
+  return `${day}/${month}`;
+}
+
+function commitmentLabel(count: number) {
+  return count === 1 ? '1 compromisso' : `${count} compromissos`;
+}
+
+function whatsappStatus(digest: Awaited<ReturnType<typeof notificationDigest>>) {
+  if (digest.maximumPriority.length || digest.overdue.length) {
+    return {
+      headline: '🔴 *Ação necessária*',
+      detail: `${money(digest.totalAmount)} em ${commitmentLabel(digest.totalCount)} exigem atenção agora.`
+    };
+  }
+  if (digest.totalCount) {
+    return {
+      headline: '🟡 *Atenção nos próximos dias*',
+      detail: `${money(digest.totalAmount)} em ${commitmentLabel(digest.totalCount)} estão no radar imediato.`
+    };
+  }
+  return {
+    headline: '🟢 *Tudo sob controle*',
+    detail: 'Nenhum pagamento exige ação agora.'
+  };
+}
+
+function nextMonthWhatsappLines(digest: Awaited<ReturnType<typeof notificationDigest>>) {
+  const lines = [
+    `*${digest.nextMonthLabel} • PRÓXIMO MÊS*`,
+    digest.nextMonthCount
+      ? `💰 Previsto · *${money(digest.nextMonthAmount)}* · ${commitmentLabel(digest.nextMonthCount)}`
+      : '💰 Nenhum compromisso previsto até o momento.'
+  ];
+  if (!digest.nextMonthCount) return lines;
+
+  const cards = digest.nextMonthItems.filter((item) => item.isCard).slice(0, 6);
+  const others = digest.nextMonthItems.filter((item) => !item.isCard).slice(0, 4);
+  if (cards.length) {
+    lines.push('', '💳 *Cartões*');
+    cards.forEach((item) => {
+      const entries = item.entries > 1 ? ` · ${item.entries} compras` : '';
+      lines.push(`• ${item.payment} · *${money(item.value)}* · ${shortDueDate(item.dueDate)}${entries}`);
+    });
+  }
+  if (others.length) {
+    lines.push('', '📋 *Outros compromissos*');
+    others.forEach((item) => lines.push(`• ${item.label} · *${money(item.value)}* · ${shortDueDate(item.dueDate)}`));
+  }
+  const shown = cards.length + others.length;
+  if (digest.nextMonthCount > shown) {
+    lines.push(`↳ + ${commitmentLabel(digest.nextMonthCount - shown)} no MEG`);
+  }
+  return lines;
+}
+
 export function buildDailyFinancialSummaryText(digest: Awaited<ReturnType<typeof notificationDigest>>, referenceDate = new Date()) {
   const local = localParts(referenceDate);
   const attention = digest.totalCount > 0
-    ? `Há ${digest.totalCount} obrigação(ões) exigindo atenção, somando ${money(digest.totalAmount)}.`
+    ? `Há ${commitmentLabel(digest.totalCount)} exigindo atenção, somando ${money(digest.totalAmount)}.`
     : 'Nenhuma conta exige pagamento imediato neste momento.';
   const lines = [
     'MEG FINANÇAS | RESUMO DIÁRIO',
     `Consulta: ${local.iso.split('-').reverse().join('/')} às ${local.time}`,
     '',
     attention,
-    `Em aberto até o mês atual: ${money(digest.openAmount)} em ${digest.openCount} obrigação(ões).`,
-    `Compromissos após este mês: ${money(digest.futureAmount)} em ${digest.futureCount} obrigação(ões).`,
+    `Em aberto até o mês atual: ${money(digest.openAmount)} em ${commitmentLabel(digest.openCount)}.`,
+    '',
+    `${digest.nextMonthLabel} | PRÓXIMO MÊS`,
+    digest.nextMonthCount
+      ? `Previsto: ${money(digest.nextMonthAmount)} em ${commitmentLabel(digest.nextMonthCount)}.`
+      : 'Nenhum compromisso previsto até o momento.'
   ];
 
   if (digest.items.length) {
@@ -35,32 +103,46 @@ export function buildDailyFinancialSummaryText(digest: Awaited<ReturnType<typeof
     digest.items.slice(0, 6).forEach((item) => {
       lines.push(`${item.label}: ${money(item.value)} em ${item.dueDate.split('-').reverse().join('/')}.`);
     });
-    if (digest.items.length > 6) lines.push(`Mais ${digest.items.length - 6} item(ns) no painel MEG.`);
-  } else {
-    lines.push('', 'Agenda financeira imediata sob controle. O MEG continuará acompanhando os próximos vencimentos.');
+  }
+
+  if (digest.nextMonthItems.length) {
+    lines.push('', 'Próximo mês — cartões e compromissos:');
+    digest.nextMonthItems.slice(0, 10).forEach((item) => {
+      const grouped = item.isCard && item.entries > 1 ? ` (${item.entries} compras agrupadas)` : '';
+      lines.push(`${item.label}: ${money(item.value)} em ${item.dueDate.split('-').reverse().join('/')}${grouped}.`);
+    });
+    if (digest.nextMonthItems.length > 10) lines.push(`Mais ${digest.nextMonthItems.length - 10} compromisso(s) no painel MEG.`);
   }
 
   lines.push('', 'MEG Finanças, seu copiloto financeiro.');
   return lines.join('\n');
 }
 
-function buildDailyWhatsappText(digest: Awaited<ReturnType<typeof notificationDigest>>, referenceDate: Date) {
+export function buildDailyWhatsappText(digest: Awaited<ReturnType<typeof notificationDigest>>, referenceDate: Date) {
   const local = localParts(referenceDate);
+  const status = whatsappStatus(digest);
   const lines = [
-    '*MEG FINANÇAS | RESUMO DIÁRIO*',
-    `📅 ${local.iso.split('-').reverse().join('/')} às ${local.time}`,
+    '*MEG FINANÇAS*',
+    `\`RESUMO • ${compactDateTag(local.iso)} • ${local.time}\``,
     '',
-    digest.totalCount
-      ? `⚠️ *Em atenção agora:* ${money(digest.totalAmount)} em ${digest.totalCount} obrigação(ões)`
-      : '✅ *Nenhuma conta exige pagamento imediato agora*',
-    `📌 *Em aberto até o mês atual:* ${money(digest.openAmount)}`,
-    `🔭 *Compromissos futuros:* ${money(digest.futureAmount)} em ${digest.futureCount} obrigação(ões)`,
+    status.headline,
+    status.detail,
+    '',
+    '*AGORA*',
+    `📌 Em aberto · *${money(digest.openAmount)}* · ${commitmentLabel(digest.openCount)}`,
+    '',
+    ...nextMonthWhatsappLines(digest)
   ];
+
   if (digest.items.length) {
-    lines.push('', '*Prioridades:*');
-    digest.items.slice(0, 6).forEach((item) => lines.push(`• ${item.label} · ${money(item.value)} · ${item.dueDate.split('-').reverse().join('/')}`));
+    lines.push('', '⚡ *Prioridades agora*');
+    digest.items.slice(0, 4).forEach((item) => {
+      lines.push(`• ${item.label} · *${money(item.value)}* · ${shortDueDate(item.dueDate)}`);
+    });
+    if (digest.items.length > 4) lines.push(`↳ + ${commitmentLabel(digest.items.length - 4)} no MEG`);
   }
-  lines.push('', '_MEG Finanças, seu copiloto financeiro_');
+
+  lines.push('', '_MEG • seu copiloto financeiro_');
   return lines.join('\n');
 }
 
@@ -94,8 +176,8 @@ export async function deliverDailyFinancialSummary(userId: string, options: Dail
   const text = buildDailyFinancialSummaryText(digest, referenceDate);
   const whatsappText = buildDailyWhatsappText(digest, referenceDate);
   const subject = digest.totalCount
-    ? `MEG Finanças: resumo diário, ${digest.totalCount} obrigação(ões) em atenção`
-    : `MEG Finanças: resumo diário, agenda imediata sob controle`;
+    ? `MEG Finanças · ${commitmentLabel(digest.totalCount)} em atenção`
+    : 'MEG Finanças · resumo diário · tudo sob controle';
   const local = localParts(referenceDate);
   const reference = `${local.iso}:${options.slot || '06:00'}:daily-summary`;
   const channels = [
