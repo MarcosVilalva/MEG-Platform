@@ -163,10 +163,16 @@ const brevoIndex = notificationServiceSource.indexOf("if (brevoReady)");
 const resendIndex = notificationServiceSource.indexOf("if (canUseResend)");
 assert.ok(brevoIndex >= 0 && resendIndex > brevoIndex,
   'Brevo de produção deve ser priorizado antes do Resend quando ambos estiverem configurados.');
-assert.match(notificationServiceSource, /retryDelays = \[0, 2_500, 7_000\]/,
-  'WhatsApp deve retentar falhas transitórias em vez de desistir no primeiro 429.');
-assert.match(notificationServiceSource, /response\.status === 429/,
-  'Evolution API deve tratar rate limit 429 como falha transitória retentável.');
+assert.match(notificationServiceSource, /WHATSAPP_RATE_LIMIT_COOLDOWN_MS = 15 \* 60_000/,
+  'WhatsApp deve entrar em cooldown persistente no processo quando a Evolution responder 429.');
+assert.match(notificationServiceSource, /WHATSAPP_MIN_INTERVAL_MS = 4_000/,
+  'Envios consecutivos de WhatsApp precisam ser espaçados para evitar burst contra a Evolution.');
+assert.match(notificationServiceSource, /retryDelays = \[0, 5_000\]/,
+  'Falhas transitórias não relacionadas a rate limit podem ter uma única retentativa curta.');
+assert.match(notificationServiceSource, /if \(response\.status === 429\)/,
+  'Evolution API deve tratar 429 separadamente, sem repetir imediatamente a mesma chamada.');
+assert.match(notificationServiceSource, /whatsappRetryAfterMs\(response\)/,
+  'Cooldown deve respeitar Retry-After do provedor quando ele estiver presente.');
 
 
 const notificationRoutesSource = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
