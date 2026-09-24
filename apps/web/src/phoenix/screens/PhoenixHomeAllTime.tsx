@@ -124,20 +124,23 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
     <header className="px-alltime-profile-head">
       <div className="px-alltime-profile"><PhoenixProfileAvatar preference={avatar} name={data.user.name} className="px-alltime-profile-avatar" /><span><small>MEG FINANÇAS</small><strong>{data.user.name || displayName}</strong></span></div>
     </header>
-    <div className="px-page-head px-alltime-title"><div><span className="px-kicker">{kicker}</span><h1>{title}</h1></div></div>
+    {!isAll ? <div className="px-page-head px-alltime-title"><div><span className="px-kicker">{kicker}</span><h1>{title}</h1></div></div> : null}
     <section className="px-alltime-quick-actions" aria-label="Lançamentos rápidos">
       <button type="button" onClick={() => onLaunch?.('expense')}><span>↘</span><strong>Despesa</strong><small>Novo lançamento</small></button>
       <button type="button" onClick={() => onLaunch?.('income')}><span>↗</span><strong>Receita</strong><small>Novo lançamento</small></button>
       <button type="button" className="benefit" onClick={() => onLaunch?.('benefit')}><span>◈</span><strong>Alimentação</strong><small>Lançar no benefício</small></button>
     </section>
 
-    {isAll ? <section className="px-alltime-overview-v7">
-      <div className="px-alltime-balance-v7">
-        <span>SALDO MONETÁRIO ATUAL</span>
-        <strong>{money.format(summary.currentMonetaryBalance)}</strong>
-        <small>Resultado da sua jornada financeira completa</small>
+    {isAll ? <section className="px-alltime-overview-v8">
+      <div className="px-alltime-balance-v8">
+        <div className="px-alltime-balance-copy">
+          <span>SALDO MONETÁRIO ATUAL</span>
+          <strong>{money.format(summary.currentMonetaryBalance)}</strong>
+          <small>Fotografia real de hoje · sem misturar compromissos futuros</small>
+        </div>
+        <div className="px-alltime-balance-art" aria-hidden="true"><i /><i /><i /><b>◉</b></div>
       </div>
-      <div className="px-alltime-flow-v7">
+      <div className="px-alltime-flow-v8">
         <article><span>Entradas acumuladas</span><strong>{money.format(summary.realizedIncome)}</strong></article>
         <article><span>Saídas acumuladas</span><strong>{money.format(summary.realizedExpense)}</strong></article>
         <article className={signedClass(summary.realizedResult)}><span>Resultado acumulado</span><strong>{summary.realizedResult > 0 ? '+' : ''}{money.format(summary.realizedResult)}</strong></article>
@@ -184,14 +187,14 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
       <article className={`px-card px-metric ${periodResult >= 0 ? 'good' : 'bad'}`}><span>Resultado do período</span><strong>{periodResult > 0 ? '+' : ''}{money.format(periodResult)}</strong><small>Saldo final menos saldo inicial</small></article>
     </section> : null}
 
-    {isAll ? <section className="px-alltime-commitment-board">
-      <header><span>COMPROMISSOS</span></header>
+    {isAll ? <section className="px-alltime-commitment-board px-alltime-commitment-board-v8">
+      <header><span>COMPROMISSOS</span><small>O que ainda exige atenção a partir de hoje</small></header>
       <div className="px-alltime-commitment-grid">
-        <article><small>Em aberto agora</small><strong>{money.format(openNowAmount)}</strong></article>
-        <article><small>Próximo vencimento</small><strong>{nextDue ? formatIso(String(nextDue.date).slice(0, 10)) : '—'}</strong><span>{nextDue?.description || 'Nenhum vencimento futuro'}</span><b>{nextDue ? money.format(openEventAmount(nextDue)) : '—'}</b></article>
-        <article><small>Próximo mês</small><strong>{money.format(nextMonthAmount)}</strong><span>{nextMonthExpenses.length} compromisso(s)</span></article>
+        <article><span className="icon">▤</span><div><small>Em aberto agora</small><strong>{money.format(openNowAmount)}</strong></div></article>
+        <article><span className="icon due">▣</span><div><small>Próximo vencimento</small><strong>{nextDue ? formatIso(String(nextDue.date).slice(0, 10)) : '—'}</strong><span>{nextDue?.description || 'Nenhum vencimento futuro'}</span><b>{nextDue ? money.format(openEventAmount(nextDue)) : '—'}</b></div></article>
+        <article><span className="icon next">◔</span><div><small>Próximo mês</small><strong>{money.format(nextMonthAmount)}</strong><span>{nextMonthExpenses.length} compromisso(s)</span></div></article>
       </div>
-      <button type="button" onClick={() => onNavigate('payables')}>▤ <span>Ver todos os compromissos</span><b>›</b></button>
+      <button type="button" onClick={() => onNavigate('payables')}><span className="icon">▤</span><span>Ver todos os compromissos</span><b>›</b></button>
     </section> : null}
 
     {isAll ? <button type="button" className="px-alltime-benefit-spotlight" onClick={() => setBenefitOpen(true)}><span className="icon">▣</span><span className="copy"><small>BENEFÍCIO ALIMENTAÇÃO</small><strong>{money.format(summary.benefitBalance)}</strong><em>Saldo disponível · acompanhar evolução</em></span><b>›</b></button> : null}
