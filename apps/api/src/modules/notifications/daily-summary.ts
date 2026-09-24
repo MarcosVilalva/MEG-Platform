@@ -75,7 +75,9 @@ function summarizeNextMonth(digest: DailyDigest) {
   });
 
   const cards = [...cardMap.values()].sort((a, b) => a.dueDates[0].localeCompare(b.dueDates[0]) || b.value - a.value);
-  return { cards, others, count: cards.length + others.length };
+  const cardsTotal = cards.reduce((sum, item) => sum + item.value, 0);
+  const othersTotal = others.reduce((sum, item) => sum + item.value, 0);
+  return { cards, others, count: cards.length + others.length, cardsTotal, othersTotal };
 }
 
 function dueDatesLabel(values: string[]) {
@@ -92,23 +94,19 @@ function nextMonthWhatsappLines(digest: DailyDigest) {
   ];
   if (!summary.count) return lines;
 
-  const cards = summary.cards.slice(0, 6);
-  const others = summary.others.slice(0, 4);
+  const cards = summary.cards;
+  const others = summary.others;
   if (cards.length) {
-    lines.push('', '💳 *Cartões*');
+    lines.push('', `💳 *Cartões · ${money(summary.cardsTotal)}*`);
     cards.forEach((item) => {
-      const entries = item.entries > 1 ? ` · ${item.entries} compras` : '';
-      lines.push(`• ${item.payment} · *${money(item.value)}* · ${dueDatesLabel(item.dueDates)}${entries}`);
+      lines.push(`• ${item.payment} · *${money(item.value)}* · ${dueDatesLabel(item.dueDates)}`);
     });
   }
   if (others.length) {
-    lines.push('', '📋 *Outros compromissos*');
+    lines.push('', `📋 *Demais débitos · ${money(summary.othersTotal)}*`);
     others.forEach((item) => lines.push(`• ${item.label} · *${money(item.value)}* · ${shortDueDate(item.dueDate)}`));
   }
-  const shown = cards.length + others.length;
-  if (summary.count > shown) {
-    lines.push(`↳ + ${commitmentLabel(summary.count - shown)} no MEG`);
-  }
+  lines.push('', `💰 *TOTAL DO MÊS · ${money(digest.nextMonthAmount)}*`);
   return lines;
 }
 
@@ -140,24 +138,15 @@ export function buildDailyFinancialSummaryText(digest: Awaited<ReturnType<typeof
 
   if (nextMonth.count) {
     lines.push('', 'Próximo mês — cartões e compromissos:');
-    const consolidated = [
-      ...nextMonth.cards.map((item) => ({
-        label: `FATURA ${item.payment}`,
-        value: item.value,
-        due: dueDatesLabel(item.dueDates),
-        grouped: item.entries > 1 ? ` (${item.entries} compras agrupadas)` : '',
-      })),
-      ...nextMonth.others.map((item) => ({
-        label: item.label,
-        value: item.value,
-        due: shortDueDate(item.dueDate),
-        grouped: '',
-      })),
-    ];
-    consolidated.slice(0, 10).forEach((item) => {
-      lines.push(`${item.label}: ${money(item.value)} em ${item.due}${item.grouped}.`);
+    lines.push(`Cartões: ${money(nextMonth.cardsTotal)}.`);
+    nextMonth.cards.forEach((item) => {
+      lines.push(`FATURA ${item.payment}: ${money(item.value)} em ${dueDatesLabel(item.dueDates)}.`);
     });
-    if (consolidated.length > 10) lines.push(`Mais ${consolidated.length - 10} compromisso(s) no painel MEG.`);
+    lines.push(`Demais débitos: ${money(nextMonth.othersTotal)}.`);
+    nextMonth.others.forEach((item) => {
+      lines.push(`${item.label}: ${money(item.value)} em ${shortDueDate(item.dueDate)}.`);
+    });
+    lines.push(`TOTAL DO MÊS: ${money(digest.nextMonthAmount)}.`);
   }
 
   lines.push('', 'MEG Finanças, seu copiloto financeiro.');

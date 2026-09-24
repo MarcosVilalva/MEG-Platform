@@ -48,12 +48,16 @@ const nextMonthDigest = buildNotificationDigest([
   { type: 'expense', date: '2026-08-10', description: 'COMPRA B', expenseAmount: 80, status: 'pending', paymentMethod: 'CARTÃO AZUL', modality: 'CREDITO' },
   { type: 'expense', date: '2026-08-12', description: 'COMPRA C', expenseAmount: 50, status: 'pending', paymentMethod: 'CARTÃO AZUL', modality: 'CREDITO' },
   { type: 'expense', date: '2026-08-18', description: 'INTERNET', expenseAmount: 99.90, status: 'pending', paymentMethod: 'PIX' },
+  { type: 'expense', date: '2026-08-20', description: 'ACADEMIA', expenseAmount: 40, status: 'pending', paymentMethod: 'PIX' },
+  { type: 'expense', date: '2026-08-21', description: 'ENERGIA', expenseAmount: 50, status: 'pending', paymentMethod: 'BOLETO' },
+  { type: 'expense', date: '2026-08-22', description: 'ÁGUA', expenseAmount: 60, status: 'pending', paymentMethod: 'BOLETO' },
+  { type: 'expense', date: '2026-08-23', description: 'SEGURO CASA', expenseAmount: 70, status: 'pending', paymentMethod: 'DÉBITO AUTOMÁTICO' },
   { type: 'expense', date: '2026-09-05', description: 'SEGURO', expenseAmount: 300, status: 'pending', paymentMethod: 'BOLETO' },
 ], new Date('2026-07-20T15:00:00Z'));
 assert.equal(nextMonthDigest.nextMonthKey, '2026-08');
 assert.equal(nextMonthDigest.nextMonthLabel, 'AGOSTO 2026');
-assert.equal(nextMonthDigest.nextMonthCount, 3, 'digest operacional preserva vencimentos distintos do mesmo cartão');
-assert.equal(nextMonthDigest.nextMonthAmount, 349.9);
+assert.equal(nextMonthDigest.nextMonthCount, 7, 'digest operacional preserva vencimentos distintos do mesmo cartão e todos os demais débitos');
+assert.equal(nextMonthDigest.nextMonthAmount, 569.9);
 assert.equal(nextMonthDigest.nextMonthItems.filter((item) => item.isCard).reduce((sum, item) => sum + item.entries, 0), 3);
 assert.equal(nextMonthDigest.nextMonthItems.filter((item) => item.isCard).reduce((sum, item) => sum + item.value, 0), 250);
 const modernDailyWhatsapp = buildDailyWhatsappText(nextMonthDigest, new Date('2026-07-20T15:00:00Z'));
@@ -62,9 +66,16 @@ assert.match(modernDailyWhatsapp, /AGOSTO 2026 • PRÓXIMO MÊS/);
 assert.match(modernDailyWhatsapp, /CARTAO AZUL/);
 assert.match(modernDailyWhatsapp, /R\$\s*250,00/);
 assert.match(modernDailyWhatsapp, /10\/08 e 12\/08/);
-assert.match(modernDailyWhatsapp, /3 compras/);
+assert.doesNotMatch(modernDailyWhatsapp, /\d+ compras/, 'resumo mensal não deve informar quantidade de compras do cartão');
 assert.equal((modernDailyWhatsapp.match(/CARTAO AZUL/g) || []).length, 1, 'resumo mensal deve exibir uma única linha por cartão');
 assert.doesNotMatch(modernDailyWhatsapp, /COMPRA A|COMPRA B|COMPRA C/, 'resumo diário não deve listar compras individuais do cartão');
+assert.match(modernDailyWhatsapp, /Demais débitos · R\$\s*319,90/);
+assert.match(modernDailyWhatsapp, /INTERNET/);
+assert.match(modernDailyWhatsapp, /ACADEMIA/);
+assert.match(modernDailyWhatsapp, /ENERGIA/);
+assert.match(modernDailyWhatsapp, /AGUA/);
+assert.match(modernDailyWhatsapp, /SEGURO CASA/);
+assert.match(modernDailyWhatsapp, /TOTAL DO MÊS · R\$\s*569,90/);
 
 const dueNow = buildNotificationDigest(transactions, new Date('2026-07-12T15:00:00Z'), 'due-now');
 assert.equal(dueNow.totalCount, 3, 'meio-dia e 19h incluem pendências anteriores, vencidas e vencendo hoje');
