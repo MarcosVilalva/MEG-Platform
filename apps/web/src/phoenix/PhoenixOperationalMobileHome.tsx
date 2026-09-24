@@ -94,10 +94,19 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate }: Pro
           </svg>
         </div>
       </div>
-      <div className="px-approved-summary">
-        <div className="income"><span className="metric-icon" aria-hidden="true">↓</span><span className="metric-copy"><span>Entradas</span><strong>{money.format(Number(data.summary.realizedIncome || 0))}</strong></span></div>
-        <div className="expense"><span className="metric-icon" aria-hidden="true">↑</span><span className="metric-copy"><span>Saídas</span><strong>{money.format(Number(data.summary.realizedExpense || 0))}</strong></span></div>
-        <div className={Number(data.summary.realizedResult || 0) >= 0 ? 'result-positive' : 'result-negative'}><span className="metric-icon" aria-hidden="true">▥</span><span className="metric-copy"><span>Movimento líquido</span><strong>{Number(data.summary.realizedResult || 0) > 0 ? '+' : ''}{money.format(Number(data.summary.realizedResult || 0))}</strong></span></div>
+      <div className="px-approved-summary px-approved-summary-v11">
+        <div className="income">
+          <span className="metric-head"><span className="metric-icon" aria-hidden="true">↓</span><span>Receitas</span></span>
+          <strong>{money.format(Number(data.summary.realizedIncome || 0))}</strong>
+        </div>
+        <div className="expense">
+          <span className="metric-head"><span className="metric-icon" aria-hidden="true">↑</span><span>Despesas</span></span>
+          <strong>{money.format(Number(data.summary.realizedExpense || 0))}</strong>
+        </div>
+        <div className={Number(data.summary.realizedResult || 0) >= 0 ? 'result-positive' : 'result-negative'}>
+          <span className="metric-head"><span className="metric-icon" aria-hidden="true">▥</span><span>Saldo líquido</span></span>
+          <strong>{Number(data.summary.realizedResult || 0) > 0 ? '+' : ''}{money.format(Number(data.summary.realizedResult || 0))}</strong>
+        </div>
       </div>
     </section>
 
