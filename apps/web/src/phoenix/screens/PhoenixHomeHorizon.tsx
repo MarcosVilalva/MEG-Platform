@@ -110,7 +110,7 @@ function buildRows(events: EventItem[]) {
     .sort((left, right) => left.date.localeCompare(right.date) || left.title.localeCompare(right.title, 'pt-BR'));
 }
 
-export function PhoenixHomeHorizon({ current, events, targetMonth, currentRealBalance, currentBenefitBalance, onNavigate, onOpenPeriod }: {
+export function PhoenixHomeHorizon({ current, events, targetMonth, currentRealBalance, currentBenefitBalance, onNavigate }: {
   current: PhoenixReadModel;
   events: PhoenixReadModel['events']['items'];
   targetMonth: string;
@@ -155,51 +155,52 @@ export function PhoenixHomeHorizon({ current, events, targetMonth, currentRealBa
     ? currentBenefitBalance
     : Number(current.summary.benefitBalance || 0);
 
-  return <section className="px-home-future" aria-label={`Projeção financeira de ${monthLabel(targetMonth)}`}>
-    <header className="px-period-mobile-head">
-      <div>
-        <span className="px-kicker">Projeção mensal</span>
-        <h1>{monthLabel(targetMonth)}</h1>
-        <p>O que já está previsto para comprometer ou reforçar seu caixa neste mês.</p>
-      </div>
-      {onOpenPeriod ? <button type="button" onClick={onOpenPeriod}>Alterar período</button> : null}
+  return <section className="meg-home-v12 meg-home-v12-future" data-home-fidelity="approved-v12" aria-label={`Projeção financeira de ${monthLabel(targetMonth)}`}>
+    <header className="meg-home-v12-heading">
+      <span>PROJEÇÃO MENSAL</span>
+      <h1>{monthLabel(targetMonth)}</h1>
+      <p>O que já está previsto para comprometer ou reforçar seu caixa neste mês.</p>
     </header>
 
-    <article className="px-future-balance-card">
-      <div><span>Saldo inicial projetado</span><strong>{money.format(projectedOpening)}</strong><small>Saldo real atual após os compromissos previstos antes deste mês.</small></div>
-      <div className={projectedClosing >= 0 ? 'closing positive' : 'closing negative'}><span>Saldo após compromissos</span><strong>{money.format(projectedClosing)}</strong><small>Inclui receitas e despesas previstas do período.</small></div>
+    <article className="meg-home-v12-projection-balance">
+      <div>
+        <span>Saldo inicial projetado</span>
+        <strong>{money.format(projectedOpening)}</strong>
+        <small>Saldo real atual após os compromissos previstos antes deste mês.</small>
+      </div>
+      <div className={projectedClosing >= 0 ? 'positive' : 'negative'}>
+        <span>Saldo após compromissos</span>
+        <strong>{money.format(projectedClosing)}</strong>
+        <small>Inclui receitas e despesas previstas do período.</small>
+      </div>
     </article>
 
-    <section className="px-future-kpis" aria-label="Projeção do mês">
-      <article className="income"><span>Receitas previstas</span><strong>{money.format(expectedIncome)}</strong><small>{monthEvents.filter(isIncome).length.toLocaleString('pt-BR')} entrada(s)</small></article>
-      <article className="expense"><span>Total de compromissos</span><strong>{money.format(totalCommitments)}</strong><small>{rows.length.toLocaleString('pt-BR')} compromisso(s)</small></article>
-      <article className="card"><span>Faturas de cartões</span><strong>{money.format(cardAmount)}</strong><small>{cardRows.length.toLocaleString('pt-BR')} fatura(s) no mês</small></article>
-      <article className="pending"><span>Outras pendências</span><strong>{money.format(otherAmount)}</strong><small>{otherRows.length.toLocaleString('pt-BR')} item(ns)</small></article>
+    <section className="meg-home-v12-grid meg-home-v12-future-grid" aria-label="Projeção do mês">
+      <article className="meg-home-v12-metric income"><span>Receitas previstas</span><strong>{money.format(expectedIncome)}</strong><small>{monthEvents.filter(isIncome).length.toLocaleString('pt-BR')} entrada(s)</small></article>
+      <article className="meg-home-v12-metric expense"><span>Total de compromissos</span><strong>{money.format(totalCommitments)}</strong><small>{rows.length.toLocaleString('pt-BR')} compromisso(s)</small></article>
+      <article className="meg-home-v12-metric card"><span>Faturas de cartões</span><strong>{money.format(cardAmount)}</strong><small>{cardRows.length.toLocaleString('pt-BR')} fatura(s) no mês</small></article>
+      <article className="meg-home-v12-metric pending"><span>Outras pendências</span><strong>{money.format(otherAmount)}</strong><small>{otherRows.length.toLocaleString('pt-BR')} item(ns)</small></article>
     </section>
 
-    <article className="px-future-benefit-card">
-      <div><span>Benefício Alimentação</span><strong>Fora do caixa monetário</strong><small>Saldo atual de referência, acompanhado separadamente da projeção monetária.</small></div>
+    <article className="meg-home-v12-benefit meg-home-v12-benefit-static">
+      <span><small>BENEFÍCIO ALIMENTAÇÃO</small><strong>Fora do caixa monetário</strong></span>
       <b>{money.format(benefitBalance)}</b>
     </article>
 
-    <section className="px-future-pending-board">
+    <section className="meg-home-v12-list-card">
       <header>
-        <div><span className="px-kicker">Pendências do mês</span><h2>Compromissos previstos</h2></div>
+        <div><span>PENDÊNCIAS DO MÊS</span><h2>Compromissos previstos</h2></div>
         <button type="button" onClick={() => onNavigate('payables')}>Abrir Pendentes</button>
       </header>
-      <div className="px-future-pending-list">
-        {rows.slice(0, 8).map((item) => <button key={item.key} type="button" onClick={() => onNavigate(item.kind === 'card' ? 'cards' : 'payables')}>
-          <span className={item.kind} aria-hidden="true">{item.kind === 'card' ? '▣' : '!'}</span>
-          <div><strong>{item.title}</strong><small>{shortDate(item.date)} · {item.subtitle}</small></div>
+      <div className="meg-home-v12-list">
+        {rows.slice(0, 6).map((item) => <button key={item.key} type="button" onClick={() => onNavigate(item.kind === 'card' ? 'cards' : 'payables')}>
+          <span className={`meg-home-v12-list-icon ${item.kind}`} aria-hidden="true">{item.kind === 'card' ? '▣' : '!'}</span>
+          <span className="meg-home-v12-list-copy"><strong>{item.title}</strong><small>{shortDate(item.date)} · {item.subtitle}</small></span>
           <b>{money.format(item.amount)}</b>
         </button>)}
-        {!rows.length ? <div className="px-future-empty"><strong>Nenhum compromisso previsto neste mês</strong><span>A projeção será atualizada assim que novos lançamentos ou faturas forem cadastrados.</span></div> : null}
+        {!rows.length ? <div className="meg-home-v12-empty"><strong>Nenhum compromisso previsto neste mês</strong><span>A projeção será atualizada quando houver novos lançamentos ou faturas.</span></div> : null}
       </div>
-      {rows.length > 8 ? <footer><button type="button" onClick={() => onNavigate('payables')}>Ver todos os {rows.length.toLocaleString('pt-BR')} compromissos</button></footer> : null}
+      {rows.length > 6 ? <footer><button type="button" onClick={() => onNavigate('payables')}>Ver todos os {rows.length.toLocaleString('pt-BR')} compromissos</button></footer> : null}
     </section>
-
-    <button className="px-period-open-movements" type="button" onClick={() => onNavigate('movements')}>
-      Abrir lançamentos de {monthLabel(targetMonth)}
-    </button>
   </section>;
 }
