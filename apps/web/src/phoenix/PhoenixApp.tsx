@@ -1066,16 +1066,22 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
   const homeAnalytical = view === 'home' && (periodMode !== 'month' || month !== currentMonth());
 
   const periodSelector = periodOpen ? <div className={`px-period-popover px-period-popover-v15 ${nativeOperational ? 'is-mobile-sheet' : ''} ${periodLoading ? 'is-loading' : ''}`} role={nativeOperational ? 'dialog' : undefined} aria-modal={nativeOperational ? true : undefined} aria-label={nativeOperational ? 'Filtro de período' : undefined} ref={nativeOperational ? periodRef : undefined} onPointerDown={(event) => event.stopPropagation()}>
-                <header className="px-period-head">
+                <header className="px-period-head px-period-head-v9">
                   <div className="px-period-head-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg></div>
-                  <div><span>Período de consulta</span><strong>{periodDraftLabel}</strong><small>Troque a visão sem desmontar a tela atual.</small></div>
+                  <div><strong>Período de consulta</strong><small>Selecione o período dos seus lançamentos</small></div>
                   <button className="px-period-close" type="button" aria-label="Cancelar e fechar seletor de período" disabled={periodLoading} onPointerDown={(event) => event.stopPropagation()} onClick={closePeriodSelector}>×</button>
                 </header>
 
-                <div className="px-period-modes" role="tablist" aria-label="Modo do período">
-                  <button type="button" className={periodDraftMode === 'month' ? 'active' : ''} onClick={() => setPeriodDraftMode('month')}><span>Mês</span><small>Competência</small></button>
-                  <button type="button" className={periodDraftMode === 'range' ? 'active' : ''} onClick={() => setPeriodDraftMode('range')}><span>Intervalo</span><small>Datas livres</small></button>
-                  <button type="button" className={periodDraftMode === 'all' ? 'active' : ''} onClick={() => setPeriodDraftMode('all')}><span>Tudo</span><small>Base completa</small></button>
+                <button className="px-period-current-v9" type="button" onClick={() => setPeriodDraftMode(periodMode)} aria-label="Usar o filtro atual">
+                  <span className="px-period-current-icon" aria-hidden="true">{periodMode === 'all' ? '∞' : '▣'}</span>
+                  <span><small>Filtro atual:</small><strong>{nativeHomePeriodTitle}</strong></span>
+                  <b aria-hidden="true">›</b>
+                </button>
+
+                <div className="px-period-modes px-period-modes-v9" role="tablist" aria-label="Modo do período">
+                  <button type="button" className={periodDraftMode === 'month' ? 'active' : ''} onClick={() => setPeriodDraftMode('month')}><i aria-hidden="true">▣</i><span>Mês</span><small>Competência</small></button>
+                  <button type="button" className={periodDraftMode === 'range' ? 'active' : ''} onClick={() => setPeriodDraftMode('range')}><i aria-hidden="true">▣</i><span>Intervalo</span><small>Datas livres</small></button>
+                  <button type="button" className={periodDraftMode === 'all' ? 'active' : ''} onClick={() => setPeriodDraftMode('all')}><i aria-hidden="true">∞</i><span>Tudo</span><small>Base completa</small></button>
                 </div>
 
                 <div className="px-period-quick">
@@ -1115,6 +1121,14 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
                 </section> : null}
 
                 {periodDraftMode === 'month' && periodDraftMonth > currentMonth() ? <small className="px-period-scope-note">Mês futuro abre uma projeção operacional com saldo inicial projetado, receitas, compromissos, faturas e pendências do período.</small> : null}
+
+                <section className="px-period-preview-v9" aria-label="Prévia do filtro">
+                  <span>SERÁ APLICADO NA HOME</span>
+                  <div>
+                    <b aria-hidden="true">{periodDraftMode === 'all' ? '∞' : '▣'}</b>
+                    <span><strong>{periodDraftLabel}</strong><small>{periodDraftMode === 'all' ? 'Todos os lançamentos da sua conta' : periodDraftMode === 'range' ? 'Somente os lançamentos do intervalo escolhido' : 'Competência mensal selecionada'}</small></span>
+                  </div>
+                </section>
                 {periodError ? <div className="px-period-error">{periodError}</div> : null}
 
                 {periodLoading ? <div className="px-period-progress" role="status" aria-live="polite">
@@ -1122,11 +1136,10 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
                   <div><strong>Preparando {periodDraftLabel}</strong><small>A tela atual permanece disponível enquanto os dados são confirmados.</small></div>
                 </div> : null}
 
-                <footer className="px-period-footer">
-                  <div><span>Nova visão</span><strong>{periodDraftLabel}</strong></div>
+                <footer className="px-period-footer px-period-footer-v9">
                   <div className="px-period-footer-actions">
                     <button className="px-period-cancel" type="button" disabled={periodLoading} onClick={closePeriodSelector}>Cancelar</button>
-                    <button className="px-period-apply" type="button" disabled={periodLoading} onClick={applyPeriod}>{periodLoading ? 'Carregando…' : 'Aplicar'}</button>
+                    <button className="px-period-apply" type="button" disabled={periodLoading} onClick={applyPeriod}>{periodLoading ? 'Carregando…' : '✓ Aplicar filtro'}</button>
                   </div>
                 </footer>
               </div> : null;
