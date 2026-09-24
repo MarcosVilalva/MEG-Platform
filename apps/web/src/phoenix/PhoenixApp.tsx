@@ -712,6 +712,20 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     : periodDraftMode === 'all'
       ? 'Histórico completo'
       : periodStart && periodEnd ? `${formatShortIso(periodStart)} → ${formatShortIso(periodEnd)}` : 'Defina o intervalo';
+  const nativeHomePeriodTitle = periodMode === 'all'
+    ? 'Histórico completo'
+    : periodMode === 'range'
+      ? 'Intervalo personalizado'
+      : monthLabel(activePeriodMonth);
+  const nativeHomePeriodSubtitle = periodMode === 'all'
+    ? 'Base completa'
+    : periodMode === 'range'
+      ? periodRangeLabel || 'Datas livres'
+      : activePeriodMonth === currentMonth()
+        ? 'Mês atual'
+        : activePeriodMonth < currentMonth()
+          ? 'Mês encerrado'
+          : 'Mês futuro';
 
   function resetSpecialPeriod() {
     setPeriodMode('month');
@@ -1142,7 +1156,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
 
       <main className={`px-main ${view === 'home' ? 'px-main-home' : ''} ${homeAnalytical ? 'px-main-home-all' : ''} ${view === 'payables' ? 'px-main-payables' : ''} ${view === 'history' ? 'px-main-history' : ''} ${view === 'cards' ? 'px-main-cards' : ''}`}>
         <header className="px-topbar">
-          <div className="px-top-left">{nativeOperational ? <button className="px-mobile-brand-home" type="button" aria-label="Ir para o início" onClick={() => navigate('home', true)}><img src={phoenixBrandAsset('brand/meg-finance-system-mark.svg')} alt="" /><span>MEG</span></button> : <button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => setCollapsed((value) => !value)}>☰</button>}<div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div></div>
+          <div className="px-top-left">{nativeOperational ? <button className="px-mobile-brand-home" type="button" aria-label="Ir para o início" onClick={() => navigate('home', true)}><img src={phoenixBrandAsset('brand/meg-finance-system-mark.svg')} alt="" /><span>MEG</span></button> : <button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => setCollapsed((value) => !value)}>☰</button>}<div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div>{nativeOperational && view === 'home' ? <button className="px-native-home-period" type="button" aria-label="Alterar período da Home" onClick={() => periodOpen ? closePeriodSelector() : openPeriodSelector()}><span className="px-native-home-period-icon" aria-hidden="true">{periodMode === 'all' ? '∞' : <svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg>}</span><span className="px-native-home-period-copy"><strong>{nativeHomePeriodTitle}</strong><small>{nativeHomePeriodSubtitle}</small></span><b aria-hidden="true">⌄</b></button> : null}</div>
           <div className="px-top-right">
             <button className="px-top-quick-launch" type="button" title="Nova despesa" aria-label="Nova despesa" onClick={() => requestLaunch('expense')}>＋</button>
             <div className={`px-period-menu ${periodOpen ? 'is-open' : ''}`} ref={!nativeOperational ? periodRef : undefined}>
