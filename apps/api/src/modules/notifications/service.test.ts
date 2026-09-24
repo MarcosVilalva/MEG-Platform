@@ -46,21 +46,25 @@ assert.match(emailHtml, /Pagamentos baixados deixam de aparecer/);
 const nextMonthDigest = buildNotificationDigest([
   { type: 'expense', date: '2026-08-10', description: 'COMPRA A', expenseAmount: 120, status: 'pending', paymentMethod: 'CARTÃO AZUL', modality: 'CREDITO' },
   { type: 'expense', date: '2026-08-10', description: 'COMPRA B', expenseAmount: 80, status: 'pending', paymentMethod: 'CARTÃO AZUL', modality: 'CREDITO' },
+  { type: 'expense', date: '2026-08-12', description: 'COMPRA C', expenseAmount: 50, status: 'pending', paymentMethod: 'CARTÃO AZUL', modality: 'CREDITO' },
   { type: 'expense', date: '2026-08-18', description: 'INTERNET', expenseAmount: 99.90, status: 'pending', paymentMethod: 'PIX' },
   { type: 'expense', date: '2026-09-05', description: 'SEGURO', expenseAmount: 300, status: 'pending', paymentMethod: 'BOLETO' },
 ], new Date('2026-07-20T15:00:00Z'));
 assert.equal(nextMonthDigest.nextMonthKey, '2026-08');
 assert.equal(nextMonthDigest.nextMonthLabel, 'AGOSTO 2026');
-assert.equal(nextMonthDigest.nextMonthCount, 2, 'compras do mesmo cartão e vencimento devem formar uma única fatura no próximo mês');
-assert.equal(nextMonthDigest.nextMonthAmount, 299.9);
-assert.equal(nextMonthDigest.nextMonthItems.find((item) => item.isCard)?.entries, 2);
-assert.equal(nextMonthDigest.nextMonthItems.find((item) => item.isCard)?.value, 200);
+assert.equal(nextMonthDigest.nextMonthCount, 3, 'digest operacional preserva vencimentos distintos do mesmo cartão');
+assert.equal(nextMonthDigest.nextMonthAmount, 349.9);
+assert.equal(nextMonthDigest.nextMonthItems.filter((item) => item.isCard).reduce((sum, item) => sum + item.entries, 0), 3);
+assert.equal(nextMonthDigest.nextMonthItems.filter((item) => item.isCard).reduce((sum, item) => sum + item.value, 0), 250);
 const modernDailyWhatsapp = buildDailyWhatsappText(nextMonthDigest, new Date('2026-07-20T15:00:00Z'));
 assert.match(modernDailyWhatsapp, /MEG FINANÇAS/);
 assert.match(modernDailyWhatsapp, /AGOSTO 2026 • PRÓXIMO MÊS/);
 assert.match(modernDailyWhatsapp, /CARTAO AZUL/);
-assert.match(modernDailyWhatsapp, /2 compras/);
-assert.doesNotMatch(modernDailyWhatsapp, /COMPRA A|COMPRA B/, 'resumo diário não deve listar compras individuais do cartão');
+assert.match(modernDailyWhatsapp, /R\$\s*250,00/);
+assert.match(modernDailyWhatsapp, /10\/08 e 12\/08/);
+assert.match(modernDailyWhatsapp, /3 compras/);
+assert.equal((modernDailyWhatsapp.match(/CARTAO AZUL/g) || []).length, 1, 'resumo mensal deve exibir uma única linha por cartão');
+assert.doesNotMatch(modernDailyWhatsapp, /COMPRA A|COMPRA B|COMPRA C/, 'resumo diário não deve listar compras individuais do cartão');
 
 const dueNow = buildNotificationDigest(transactions, new Date('2026-07-12T15:00:00Z'), 'due-now');
 assert.equal(dueNow.totalCount, 3, 'meio-dia e 19h incluem pendências anteriores, vencidas e vencendo hoje');
