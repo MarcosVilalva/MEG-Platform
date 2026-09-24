@@ -44,23 +44,29 @@ jobs:
         env:
           API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
           CRON_SECRET: ${{ secrets.NOTIFICATION_CRON_SECRET }}
-          SCHEDULE: ${{ github.event.schedule }}
           MANUAL_SLOT: ${{ inputs.slot }}
           MANUAL_MODE: ${{ inputs.mode }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           test -n "$CRON_SECRET" || { echo "NOTIFICATION_CRON_SECRET is not configured"; exit 1; }
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then SLOT="$MANUAL_SLOT"; MODE="$MANUAL_MODE"; FORCE=true
-          elif [ "$SCHEDULE" = "21 9 * * 1-5" ]; then SLOT="06:20"; FORCE=false
-          elif [ "$SCHEDULE" = "7 21 * * 1-5" ]; then SLOT="18:00"; FORCE=false
-          elif [ "$SCHEDULE" = "7 0 * * 2-6" ]; then SLOT="21:00"; FORCE=false
-          else SLOT="12:00"; FORCE=false; fi
-          MODE="${MODE:-scheduled}"
-          RESPONSE=$(curl --fail-with-body --retry 5 --retry-all-errors --retry-delay 10 --max-time 120 \
-            -X POST "$API_URL/notifications/alexa/cron" \
-            -H "x-cron-secret: $CRON_SECRET" \
-            -H "Content-Type: application/json" \
-            --data "{\"slot\":\"$SLOT\",\"mode\":\"$MODE\",\"force\":$FORCE}")
-          echo "$RESPONSE" | jq .
-          STATUS=$(echo "$RESPONSE" | jq -r '.result.status // "unknown"')
-          case "$STATUS" in sent|already-sent|no-due-items|skipped) exit 0 ;; *) echo "Alexa announcement status: $STATUS"; exit 1 ;; esac
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            RESPONSE=$(curl --fail-with-body --retry 5 --retry-all-errors --retry-delay 10 --max-time 120 \
+              -X POST "$API_URL/notifications/alexa/cron" \
+              -H "x-cron-secret: $CRON_SECRET" \
+              -H "Content-Type: application/json" \
+              --data "{\"slot\":\"$MANUAL_SLOT\",\"mode\":\"$MANUAL_MODE\",\"force\":true}")
+            echo "$RESPONSE" | jq .
+            STATUS=$(echo "$RESPONSE" | jq -r '.result.status // "unknown"')
+            case "$STATUS" in sent|already-sent|no-due-items|skipped) exit 0 ;; *) echo "Alexa announcement status: $STATUS"; exit 1 ;; esac
+          else
+            echo "Scheduled Alexa pulse: watchdog uses the real São Paulo clock and refuses future-slot markers"
+            RESPONSE=$(curl --fail-with-body --retry 5 --retry-all-errors --retry-delay 10 --max-time 150 \
+              -X POST "$API_URL/notifications/watchdog" \
+              -H "x-cron-secret: $CRON_SECRET" \
+              -H "Content-Type: application/json" \
+              --data '{"force":false}')
+            echo "$RESPONSE" | jq .
+            FAILED=$(echo "$RESPONSE" | jq -r '.failed // 0')
+            test "$FAILED" -eq 0 || { echo "$FAILED watchdog cycle(s) failed"; exit 1; }
+          fi
