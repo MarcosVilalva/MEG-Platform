@@ -578,6 +578,12 @@ assert.match(operationalCss, /px-period-popover-v15\.is-mobile-sheet[\s\S]*grid-
   'Modal de período deve manter cabeçalho e rodapé visíveis enquanto somente o miolo rola.');
 assert.match(operationalCss, /px-period-scroll-v10[\s\S]*overflow-y:auto!important/,
   'Somente o corpo do filtro de período deve rolar no aparelho.');
+assert.match(operationalCss, /px-period-footer-v9>\.px-period-footer-actions:first-child[\s\S]*display:grid!important/,
+  'Rodapé atual do filtro não pode ser ocultado pela regra herdada do resumo antigo.');
+assert.match(operationalHome, /px-approved-summary-v11[\s\S]*Receitas[\s\S]*Despesas[\s\S]*Saldo líquido/,
+  'KPIs financeiros da Home devem usar a composição v11 aprovada.');
+assert.match(operationalCss, /px-approved-summary-v11[\s\S]*grid-template-rows:auto auto!important[\s\S]*overflow:visible!important[\s\S]*text-overflow:clip!important/,
+  'Valores de Receitas, Despesas e Saldo líquido devem ocupar linha própria e nunca usar reticências.');
 assert.match(homeAllTime, /Comparação com o saldo real/,
   'Períodos históricos devem ser comparados explicitamente com o saldo monetário real de hoje.');
 assert.match(homeAllTime, /Saldo inicial/,
