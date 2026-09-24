@@ -27,6 +27,31 @@ function signedClass(value: number) {
   return 'is-neutral';
 }
 
+function todayIso() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date());
+}
+
+function currentMonthKey() {
+  return todayIso().slice(0, 7);
+}
+
+function monthEnd(value: string) {
+  const [year, month] = value.split('-').map(Number);
+  return new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+}
+
+function nextMonthKey(value: string) {
+  const [year, month] = value.split('-').map(Number);
+  return new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 7);
+}
+
+function openEventAmount(event: PhoenixReadModel['events']['items'][number]) {
+  const signed = Number(event.signedAmount || 0);
+  return Math.abs(Number.isFinite(signed) && signed !== 0 ? signed : Number(event.amount || 0));
+}
+
 export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', periodContext, onNavigate, onOpenPeriod, onLaunch }: {
   data: PhoenixReadModel;
   mode?: PeriodMode;
@@ -44,7 +69,6 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   const periodResult = periodClosing - periodOpening;
   const displayedResult = isAll ? summary.realizedResult : periodResult;
   const variationToToday = currentRealBalance - periodClosing;
-  const freePositive = summary.freeAfterCommitments >= 0;
   const firstDate = periodContext?.startDate ?? summary.firstDate;
   const lastDate = periodContext?.endDate ?? summary.lastDate;
   const title = isAll ? 'Histórico completo' : 'Resumo do período';
@@ -61,6 +85,15 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   const displayNameParts = String(data.user.name || 'MEG').trim().split(/\\s+/);
   const displayName = displayNameParts.length > 1 ? displayNameParts[0] + ' ' + displayNameParts[displayNameParts.length - 1] : displayNameParts[0];
   const openExpenses = useMemo(() => data.events.items.filter((event) => event.type === 'expense' && !isPhoenixBenefitEvent(event) && !['paid', 'reconciled', 'confirmed', 'cancelled'].includes(String(event.status))).sort((a, b) => String(a.date).localeCompare(String(b.date))), [data.events.items]);
+  const today = todayIso();
+  const thisMonth = currentMonthKey();
+  const thisMonthEnd = monthEnd(thisMonth);
+  const nextMonth = nextMonthKey(thisMonth);
+  const openNow = openExpenses.filter((event) => String(event.date).slice(0, 10) <= thisMonthEnd);
+  const openNowAmount = openNow.reduce((sum, event) => sum + openEventAmount(event), 0);
+  const nextDue = openExpenses.find((event) => String(event.date).slice(0, 10) >= today) || null;
+  const nextMonthExpenses = openExpenses.filter((event) => String(event.date).slice(0, 7) === nextMonth);
+  const nextMonthAmount = nextMonthExpenses.reduce((sum, event) => sum + openEventAmount(event), 0);
   const benefitEvents = useMemo(() => data.events.items
     .filter(isPhoenixBenefitEvent)
     .filter((event) => ['paid', 'reconciled', 'confirmed'].includes(String(event.status)))
@@ -68,6 +101,13 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   const benefitCredits = summary.benefitCredits;
   const benefitSpent = summary.benefitUsed;
   const benefitOpening = Number(summary.benefitBalance || 0) - benefitCredits + benefitSpent;
+  const historyStartMonth = summary.firstDate ? summary.firstDate.slice(0, 7) : thisMonth;
+  const historyEndMonth = summary.lastDate ? summary.lastDate.slice(0, 7) : thisMonth;
+  const [historyStartYear, historyStartMonthNumber] = historyStartMonth.split('-').map(Number);
+  const [historyEndYear, historyEndMonthNumber] = historyEndMonth.split('-').map(Number);
+  const historyMonthCount = Math.max(1, (historyEndYear - historyStartYear) * 12 + historyEndMonthNumber - historyStartMonthNumber + 1);
+  const averageMonthlyIncome = summary.realizedIncome / historyMonthCount;
+  const averageMonthlyExpense = summary.realizedExpense / historyMonthCount;
   const benefitEvolution = benefitEvents.reduce<Array<{ id: string; date: string; description: string; amount: number; balance: number }>>((rows, event) => {
     const rawSigned = Number(event.signedAmount);
     const fallbackAmount = Math.abs(Number(event.amount || 0));
@@ -82,8 +122,7 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   return <>
   <section className={"px-home-alltime px-home-approved " + (isAll ? "is-modern-all" : "is-period-range")} data-home-alltime-layout="compact-command-v7">
     <header className="px-alltime-profile-head">
-      <div className="px-alltime-profile"><PhoenixProfileAvatar preference={avatar} name={data.user.name} className="px-alltime-profile-avatar" /><span><small>MEG Finanças</small><strong>{displayName}</strong></span></div>
-      {onOpenPeriod ? <button className="px-home-period-edit" type="button" onClick={onOpenPeriod}>{periodLabel}⌄</button> : null}
+      <div className="px-alltime-profile"><PhoenixProfileAvatar preference={avatar} name={data.user.name} className="px-alltime-profile-avatar" /><span><small>MEG FINANÇAS</small><strong>{data.user.name || displayName}</strong></span></div>
     </header>
     <div className="px-page-head px-alltime-title"><div><span className="px-kicker">{kicker}</span><h1>{title}</h1></div></div>
     <section className="px-alltime-quick-actions" aria-label="Lançamentos rápidos">
@@ -94,20 +133,15 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
 
     {isAll ? <section className="px-alltime-overview-v7">
       <div className="px-alltime-balance-v7">
-        <span>Saldo atual</span>
+        <span>SALDO MONETÁRIO ATUAL</span>
         <strong>{money.format(summary.currentMonetaryBalance)}</strong>
-        <small>Caixa realizado · sem somar previsões futuras</small>
+        <small>Resultado da sua jornada financeira completa</small>
       </div>
       <div className="px-alltime-flow-v7">
-        <article><span>Entradas</span><strong>{money.format(summary.realizedIncome)}</strong></article>
-        <article><span>Saídas</span><strong>{money.format(summary.realizedExpense)}</strong></article>
-        <article className={signedClass(summary.realizedResult)}><span>Movimento líquido</span><strong>{summary.realizedResult > 0 ? '+' : ''}{money.format(summary.realizedResult)}</strong></article>
+        <article><span>Entradas acumuladas</span><strong>{money.format(summary.realizedIncome)}</strong></article>
+        <article><span>Saídas acumuladas</span><strong>{money.format(summary.realizedExpense)}</strong></article>
+        <article className={signedClass(summary.realizedResult)}><span>Resultado acumulado</span><strong>{summary.realizedResult > 0 ? '+' : ''}{money.format(summary.realizedResult)}</strong></article>
       </div>
-      <button type="button" className={`px-alltime-commitments-v7 ${freePositive ? 'is-positive' : 'is-negative'}`} onClick={() => onNavigate('payables')}>
-        <span><small>Compromissos em aberto</small><strong>{money.format(summary.plannedExpense)}</strong></span>
-        <span><small>Saldo livre depois deles</small><strong>{money.format(summary.freeAfterCommitments)}</strong></span>
-        <b>›</b>
-      </button>
     </section> : <section className="px-dashboard-grid">
       <article className="px-card px-premium-balance px-period-balance-card">
         <div className="px-period-balance-primary">
@@ -150,25 +184,27 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
       <article className={`px-card px-metric ${periodResult >= 0 ? 'good' : 'bad'}`}><span>Resultado do período</span><strong>{periodResult > 0 ? '+' : ''}{money.format(periodResult)}</strong><small>Saldo final menos saldo inicial</small></article>
     </section> : null}
 
-    {isAll ? <button type="button" className="px-alltime-benefit-spotlight" onClick={() => setBenefitOpen(true)}><span className="icon">▣</span><span className="copy"><small>BENEFÍCIO ALIMENTAÇÃO</small><strong>{money.format(summary.benefitBalance)}</strong><em>Saldo disponível · acompanhar evolução</em></span><b>›</b></button> : null}
-
-    {isAll ? <section className="px-alltime-open-expenses px-card">
-      <header><div><span>DESPESAS EM ABERTO</span><strong>{openExpenses.length} lançamento(s)</strong></div><button type="button" onClick={() => onNavigate('payables')}>Ver todas</button></header>
-      <div className="px-alltime-open-scroll">
-        {openExpenses.length ? openExpenses.map((event) => <button type="button" className="px-alltime-open-row" key={event.id} onClick={() => onNavigate('payables')}><span className="date">{formatIso(String(event.date).slice(0, 10))}</span><span className="copy"><strong>{event.description || 'Despesa em aberto'}</strong><small>{String(event.status || 'Pendente')}</small></span><strong className="value">{money.format(Math.abs(Number(event.signedAmount || event.amount || 0)))}</strong></button>) : <div className="px-alltime-open-empty">Nenhuma despesa em aberto na base.</div>}
+    {isAll ? <section className="px-alltime-commitment-board">
+      <header><span>COMPROMISSOS</span></header>
+      <div className="px-alltime-commitment-grid">
+        <article><small>Em aberto agora</small><strong>{money.format(openNowAmount)}</strong></article>
+        <article><small>Próximo vencimento</small><strong>{nextDue ? formatIso(String(nextDue.date).slice(0, 10)) : '—'}</strong><span>{nextDue?.description || 'Nenhum vencimento futuro'}</span><b>{nextDue ? money.format(openEventAmount(nextDue)) : '—'}</b></article>
+        <article><small>Próximo mês</small><strong>{money.format(nextMonthAmount)}</strong><span>{nextMonthExpenses.length} compromisso(s)</span></article>
       </div>
+      <button type="button" onClick={() => onNavigate('payables')}>▤ <span>Ver todos os compromissos</span><b>›</b></button>
     </section> : null}
 
-    {isAll ? <details className="px-alltime-details-v7">
-      <summary>Detalhes da base completa</summary>
-      <div className="px-alltime-details-grid-v7">
-        <div><span>Receitas previstas</span><strong>{money.format(summary.plannedIncome)}</strong></div>
-        <div><span>Projeção final</span><strong>{money.format(summary.projectedAfterPlanned)}</strong></div>
-        <div><span>Primeiro lançamento</span><strong>{formatIso(summary.firstDate)}</strong></div>
-        <div><span>Eventos monetários</span><strong>{summary.monetaryEventCount.toLocaleString('pt-BR')}</strong></div>
+    {isAll ? <button type="button" className="px-alltime-benefit-spotlight" onClick={() => setBenefitOpen(true)}><span className="icon">▣</span><span className="copy"><small>BENEFÍCIO ALIMENTAÇÃO</small><strong>{money.format(summary.benefitBalance)}</strong><em>Saldo disponível · acompanhar evolução</em></span><b>›</b></button> : null}
+
+    {isAll ? <section className="px-alltime-history-summary">
+      <header><div><span className="icon">▥</span><span><small>RESUMO HISTÓRICO</small><strong>Visão geral da sua vida financeira</strong></span></div><button type="button" onClick={() => onNavigate('movements')}>›</button></header>
+      <div>
+        <article><small>Total de lançamentos</small><strong>{summary.monetaryEventCount.toLocaleString('pt-BR')}</strong></article>
+        <article><small>Período</small><strong>{formatIso(summary.firstDate)}<br/>a {formatIso(summary.lastDate)}</strong></article>
+        <article><small>Média mensal de despesa</small><strong className="expense">{money.format(averageMonthlyExpense)}</strong></article>
+        <article><small>Média mensal de receita</small><strong className="income">{money.format(averageMonthlyIncome)}</strong></article>
       </div>
-      <button type="button" onClick={() => onNavigate('movements')}>Ver todos os lançamentos</button>
-    </details> : <section className="px-bottom-grid px-period-bottom-grid">
+    </section> : <section className="px-bottom-grid px-period-bottom-grid">
       <article className="px-card">
         <div className="px-panel-head"><div><span>Memória do período</span><h2>Como o saldo foi formado</h2></div></div>
         <div className="px-dashboard-row"><div className="px-dashboard-row-copy"><strong>Saldo inicial</strong><small>{formatIso(firstDate)}</small></div><strong>{money.format(periodOpening)}</strong></div>
