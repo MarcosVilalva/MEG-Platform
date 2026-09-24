@@ -4,7 +4,7 @@ import { config } from '../../config';
 import { alexaSecretsMatch } from './alexa-auth';
 import { alexaFinancialPanorama, deliverAlexaNextDuePreview, deliverNotifications, notificationDigest, notificationIntegrationStatus, type AlexaSkillIntent, type AlexaSkillQuery } from './service';
 import { deliverDailyFinancialSummary } from './daily-summary';
-import { alexaCycleForSlot, messagingCycleForSlot, runAlexaCycle, runMessagingCycle, runNotificationWatchdog } from './watchdog';
+import { alexaCycleForSlot, messagingCycleForSlot, notificationWatchdogHealth, runAlexaCycle, runMessagingCycle, runNotificationWatchdog } from './watchdog';
 
 export async function notificationRoutes(app: FastifyInstance) {
   app.get('/status', { preHandler: app.authorize(['ADMIN']) }, async () => notificationIntegrationStatus());
@@ -19,6 +19,7 @@ export async function notificationRoutes(app: FastifyInstance) {
     const deliveries = allDeliveries.filter((item) => !item.channel.startsWith('watchdog:')).slice(0, 100);
     const watchdogCycles = allDeliveries.filter((item) => item.channel.startsWith('watchdog:')).slice(0, 30);
     const last24Hours = Date.now() - 86_400_000;
+    const watchdogHealth = notificationWatchdogHealth(watchdogCycles, new Date());
     return {
       generatedAt: new Date().toISOString(),
       summary: {
@@ -28,10 +29,9 @@ export async function notificationRoutes(app: FastifyInstance) {
         lastSuccessAt: deliveries.find((item) => item.status === 'sent')?.deliveredAt ?? null,
         lastFailureAt: deliveries.find((item) => item.status === 'failed')?.deliveredAt ?? null,
         watchdog: {
-          lastCheckAt: watchdogCycles[0]?.deliveredAt ?? null,
+          ...watchdogHealth,
           failedLast24Hours: watchdogCycles.filter((item) => item.status === 'failed' && item.deliveredAt.valueOf() >= last24Hours).length,
-          processing: watchdogCycles.filter((item) => item.status === 'processing').length,
-          status: watchdogCycles.some((item) => item.status === 'failed' && item.deliveredAt.valueOf() >= last24Hours) ? 'attention' : 'ok'
+          processing: watchdogCycles.filter((item) => item.status === 'processing').length
         }
       },
       deliveries,
