@@ -99,10 +99,11 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate }: Pro
         <div className="expense"><span className="metric-icon" aria-hidden="true">↑</span><span className="metric-copy"><span>Saídas</span><strong>{money.format(Number(data.summary.realizedExpense || 0))}</strong></span></div>
         <div className={Number(data.summary.realizedResult || 0) >= 0 ? 'result-positive' : 'result-negative'}><span className="metric-icon" aria-hidden="true">▥</span><span className="metric-copy"><span>Movimento líquido</span><strong>{Number(data.summary.realizedResult || 0) > 0 ? '+' : ''}{money.format(Number(data.summary.realizedResult || 0))}</strong></span></div>
       </div>
-      <div className="px-approved-balance-bottom">
-        <div><span className="icon">▤</span><span><small>Em aberto agora</small><strong>{money.format(pendingAmount)}</strong></span></div>
-        <button type="button" onClick={() => onNavigate('payables')}><span className="icon">◔</span><span><small>Saldo livre após pendências</small><strong className={freeAfterPending >= 0 ? 'positive' : 'negative'}>{money.format(freeAfterPending)}</strong></span><b>›</b></button>
-      </div>
+    </section>
+
+    <section className="px-approved-position-strip" aria-label="Situação operacional">
+      <div><span className="icon">▤</span><span><small>Em aberto agora</small><strong>{money.format(pendingAmount)}</strong></span></div>
+      <button type="button" onClick={() => onNavigate('payables')}><span className="icon">◔</span><span><small>Saldo livre após pendências</small><strong className={freeAfterPending >= 0 ? 'positive' : 'negative'}>{money.format(freeAfterPending)}</strong></span><b>›</b></button>
     </section>
 
     <button className="px-approved-benefit" type="button" onClick={() => setBenefitOpen(true)}>
