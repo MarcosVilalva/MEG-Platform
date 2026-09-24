@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { alexaCycleForSlot, messagingCycleForSlot, notificationWatchdogPlan } from './watchdog';
+import { alexaCycleForSlot, messagingCycleForSlot, notificationWatchdogHealth, notificationWatchdogPlan } from './watchdog';
 
 function keys(value: Date) {
   return notificationWatchdogPlan(value).cycles.map((cycle) => `${cycle.kind}:${cycle.slot}:${cycle.task}`);
@@ -51,6 +51,39 @@ assert.equal(alexaCycleForSlot(new Date('2026-09-23T12:00:00Z'), '06:20')?.task,
 assert.equal(alexaCycleForSlot(new Date('2026-09-26T15:00:00Z'), '12:00')?.task, 'alexa-daily-briefing');
 assert.equal(alexaCycleForSlot(new Date('2026-09-26T15:00:00Z'), '18:00'), null);
 
+
+const beforeFirstCycle = notificationWatchdogHealth([], new Date('2026-09-24T08:00:00Z'));
+assert.equal(beforeFirstCycle.status, 'waiting',
+  'Antes da primeira janela diária a ausência de marcador não deve gerar alarme falso.');
+
+const missingMorning = notificationWatchdogHealth([], new Date('2026-09-24T09:40:00Z'));
+assert.equal(missingMorning.status, 'attention',
+  'Após a tolerância do ciclo das 06h, ausência de marcador deve aparecer como atenção.');
+assert.equal(missingMorning.expected[0]?.slot, '06:00');
+assert.equal(missingMorning.expected[0]?.state, 'missing');
+
+const healthyMorning = notificationWatchdogHealth([
+  {
+    channel: 'watchdog:notifications',
+    reference: '2026-09-24:06:00:daily-summary',
+    status: 'sent',
+    deliveredAt: new Date('2026-09-24T09:17:10Z'),
+  },
+], new Date('2026-09-24T09:40:00Z'));
+assert.equal(healthyMorning.status, 'ok');
+assert.equal(healthyMorning.expected[0]?.state, 'ok');
+
+const staleProcessing = notificationWatchdogHealth([
+  {
+    channel: 'watchdog:notifications',
+    reference: '2026-09-24:06:00:daily-summary',
+    status: 'processing',
+    deliveredAt: new Date('2026-09-24T09:15:00Z'),
+  },
+], new Date('2026-09-24T09:40:00Z'));
+assert.equal(staleProcessing.status, 'attention');
+assert.equal(staleProcessing.expected[0]?.state, 'stale');
+
 console.log('notification watchdog scheduling tests passed');
 
 
@@ -86,3 +119,14 @@ assert.match(notificationRoutes, /x-watchdog-secret/,
   'Endpoint de recovery deve aceitar a credencial isolada do scheduler secundário.');
 assert.match(notificationRoutes, /authorizedByCron[\s\S]*authorizedByWatchdog/,
   'GitHub deve continuar autorizado enquanto o scheduler secundário usa segredo independente.');
+
+
+const supabaseFailsafeSql = readFileSync(new URL('../../../../../ops/supabase/notification-watchdog-failsafe.sql', import.meta.url), 'utf8');
+assert.match(supabaseFailsafeSql, /meg-notification-watchdog-backup-day/,
+  'Failsafe Supabase deve ficar versionado no repositório.');
+assert.match(supabaseFailsafeSql, /17,27,37,47,57 9-23/,
+  'Scheduler secundário deve usar minutos diferentes do watchdog GitHub.');
+assert.match(supabaseFailsafeSql, /revoke all on function public\.meg_run_notification_watchdog\(\) from anon/,
+  'Função de failsafe não pode permanecer exposta ao papel anon.');
+assert.doesNotMatch(supabaseFailsafeSql, /kSliamhUddM0GwS12zp40bYOwLo0ZQ49/,
+  'Segredos reais jamais podem ser versionados no SQL operacional.');
