@@ -29,3 +29,5 @@ jobs:
           echo "WhatsApp sent=$WA_SENT failed=$WA_FAILED"
           test "$WA_SENT" -gt 0 || { echo "No WhatsApp delivery was accepted by the provider"; exit 1; }
           test "$WA_FAILED" -eq 0 || { echo "At least one WhatsApp delivery failed"; exit 1; }
+
+# retry after outbound-profile tuning
