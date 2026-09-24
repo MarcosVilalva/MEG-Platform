@@ -51,22 +51,54 @@ function whatsappStatus(digest: Awaited<ReturnType<typeof notificationDigest>>) 
   };
 }
 
-function nextMonthWhatsappLines(digest: Awaited<ReturnType<typeof notificationDigest>>) {
+type DailyDigest = Awaited<ReturnType<typeof notificationDigest>>;
+
+function summarizeNextMonth(digest: DailyDigest) {
+  const cardMap = new Map<string, { payment: string; value: number; entries: number; dueDates: string[] }>();
+  const others = digest.nextMonthItems.filter((item) => !item.isCard);
+
+  digest.nextMonthItems.filter((item) => item.isCard).forEach((item) => {
+    const current = cardMap.get(item.payment);
+    if (current) {
+      current.value += item.value;
+      current.entries += item.entries;
+      if (!current.dueDates.includes(item.dueDate)) current.dueDates.push(item.dueDate);
+      current.dueDates.sort();
+    } else {
+      cardMap.set(item.payment, {
+        payment: item.payment,
+        value: item.value,
+        entries: item.entries,
+        dueDates: [item.dueDate],
+      });
+    }
+  });
+
+  const cards = [...cardMap.values()].sort((a, b) => a.dueDates[0].localeCompare(b.dueDates[0]) || b.value - a.value);
+  return { cards, others, count: cards.length + others.length };
+}
+
+function dueDatesLabel(values: string[]) {
+  return values.map(shortDueDate).join(values.length === 2 ? ' e ' : ', ');
+}
+
+function nextMonthWhatsappLines(digest: DailyDigest) {
+  const summary = summarizeNextMonth(digest);
   const lines = [
     `*${digest.nextMonthLabel} • PRÓXIMO MÊS*`,
-    digest.nextMonthCount
-      ? `💰 Previsto · *${money(digest.nextMonthAmount)}* · ${commitmentLabel(digest.nextMonthCount)}`
+    summary.count
+      ? `💰 Previsto · *${money(digest.nextMonthAmount)}* · ${commitmentLabel(summary.count)}`
       : '💰 Nenhum compromisso previsto até o momento.'
   ];
-  if (!digest.nextMonthCount) return lines;
+  if (!summary.count) return lines;
 
-  const cards = digest.nextMonthItems.filter((item) => item.isCard).slice(0, 6);
-  const others = digest.nextMonthItems.filter((item) => !item.isCard).slice(0, 4);
+  const cards = summary.cards.slice(0, 6);
+  const others = summary.others.slice(0, 4);
   if (cards.length) {
     lines.push('', '💳 *Cartões*');
     cards.forEach((item) => {
       const entries = item.entries > 1 ? ` · ${item.entries} compras` : '';
-      lines.push(`• ${item.payment} · *${money(item.value)}* · ${shortDueDate(item.dueDate)}${entries}`);
+      lines.push(`• ${item.payment} · *${money(item.value)}* · ${dueDatesLabel(item.dueDates)}${entries}`);
     });
   }
   if (others.length) {
@@ -74,8 +106,8 @@ function nextMonthWhatsappLines(digest: Awaited<ReturnType<typeof notificationDi
     others.forEach((item) => lines.push(`• ${item.label} · *${money(item.value)}* · ${shortDueDate(item.dueDate)}`));
   }
   const shown = cards.length + others.length;
-  if (digest.nextMonthCount > shown) {
-    lines.push(`↳ + ${commitmentLabel(digest.nextMonthCount - shown)} no MEG`);
+  if (summary.count > shown) {
+    lines.push(`↳ + ${commitmentLabel(summary.count - shown)} no MEG`);
   }
   return lines;
 }
@@ -85,6 +117,7 @@ export function buildDailyFinancialSummaryText(digest: Awaited<ReturnType<typeof
   const attention = digest.totalCount > 0
     ? `Há ${commitmentLabel(digest.totalCount)} exigindo atenção, somando ${money(digest.totalAmount)}.`
     : 'Nenhuma conta exige pagamento imediato neste momento.';
+  const nextMonth = summarizeNextMonth(digest);
   const lines = [
     'MEG FINANÇAS | RESUMO DIÁRIO',
     `Consulta: ${local.iso.split('-').reverse().join('/')} às ${local.time}`,
@@ -93,8 +126,8 @@ export function buildDailyFinancialSummaryText(digest: Awaited<ReturnType<typeof
     `Em aberto até o mês atual: ${money(digest.openAmount)} em ${commitmentLabel(digest.openCount)}.`,
     '',
     `${digest.nextMonthLabel} | PRÓXIMO MÊS`,
-    digest.nextMonthCount
-      ? `Previsto: ${money(digest.nextMonthAmount)} em ${commitmentLabel(digest.nextMonthCount)}.`
+    nextMonth.count
+      ? `Previsto: ${money(digest.nextMonthAmount)} em ${commitmentLabel(nextMonth.count)}.`
       : 'Nenhum compromisso previsto até o momento.'
   ];
 
@@ -105,13 +138,26 @@ export function buildDailyFinancialSummaryText(digest: Awaited<ReturnType<typeof
     });
   }
 
-  if (digest.nextMonthItems.length) {
+  if (nextMonth.count) {
     lines.push('', 'Próximo mês — cartões e compromissos:');
-    digest.nextMonthItems.slice(0, 10).forEach((item) => {
-      const grouped = item.isCard && item.entries > 1 ? ` (${item.entries} compras agrupadas)` : '';
-      lines.push(`${item.label}: ${money(item.value)} em ${item.dueDate.split('-').reverse().join('/')}${grouped}.`);
+    const consolidated = [
+      ...nextMonth.cards.map((item) => ({
+        label: `FATURA ${item.payment}`,
+        value: item.value,
+        due: dueDatesLabel(item.dueDates),
+        grouped: item.entries > 1 ? ` (${item.entries} compras agrupadas)` : '',
+      })),
+      ...nextMonth.others.map((item) => ({
+        label: item.label,
+        value: item.value,
+        due: shortDueDate(item.dueDate),
+        grouped: '',
+      })),
+    ];
+    consolidated.slice(0, 10).forEach((item) => {
+      lines.push(`${item.label}: ${money(item.value)} em ${item.due}${item.grouped}.`);
     });
-    if (digest.nextMonthItems.length > 10) lines.push(`Mais ${digest.nextMonthItems.length - 10} compromisso(s) no painel MEG.`);
+    if (consolidated.length > 10) lines.push(`Mais ${consolidated.length - 10} compromisso(s) no painel MEG.`);
   }
 
   lines.push('', 'MEG Finanças, seu copiloto financeiro.');
