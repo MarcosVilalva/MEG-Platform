@@ -542,8 +542,8 @@ assert.doesNotMatch(homeDashboard, /px-home-benefit-chart/,
   'Gráfico do benefício não deve voltar a ocupar espaço sem acrescentar leitura operacional.');
 assert.match(homeNowCss, /\.px-home-benefit-modal/,
   'Acompanhamento do benefício deve possuir modal dedicado.');
-assert.match(homeAllTime, /data-home-alltime-layout="premium-history-v8"/,
-  'Home Tudo deve usar o cockpit Premium v8, sem retornar ao hero gigante anterior.');
+assert.match(homeAllTime, /data-home-alltime-layout="mock-fidelity-v9"/,
+  'Home Tudo deve usar o layout v9 reconstruído a partir do mock aprovado.');
 assert.match(homeAllTime, /px-alltime-overview-v8/,
   'Home Tudo deve concentrar saldo real e fluxo realizado em um bloco Premium compacto.');
 assert.match(homeAllTime, /px-alltime-commitment-board/,
@@ -554,12 +554,20 @@ assert.doesNotMatch(homeAllTime, /px-alltime-open-expenses/,
   'Home Tudo não deve voltar a renderizar centenas de despesas individuais na tela principal.');
 assert.doesNotMatch(homeAllTime, /px-alltime-details-v7/,
   'Detalhes extensos antigos devem ser substituídos pela síntese histórica compacta.');
-assert.match(periodMobileCss, /\.px-alltime-overview-v8/,
-  'Layout Premium v8 da Home Tudo deve possuir contrato visual mobile dedicado.');
+assert.match(periodMobileCss, /mock-fidelity-v9[\s\S]*\.px-alltime-overview-v8/,
+  'Layout v9 da Home Tudo deve possuir contrato visual dedicado e isolado da distribuição antiga.');
 assert.match(periodMobileCss, /\.px-alltime-commitment-board/,
   'Quadro executivo de compromissos deve possuir estilo responsivo próprio.');
 assert.match(periodMobileCss, /\.px-alltime-history-summary/,
   'Resumo histórico compacto deve possuir estilo responsivo próprio.');
+assert.match(periodMobileCss, /mock-fidelity-v9[\s\S]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)!important/,
+  'Resumo histórico v9 deve preservar os quatro indicadores na mesma linha em aparelhos estreitos.');
+assert.match(periodMobileCss, /mock-fidelity-v9[\s\S]*\.px-alltime-commitment-grid[\s\S]*repeat\(3,minmax\(0,1fr\)\)!important/,
+  'Compromissos v9 não podem voltar a ser empilhados pela regra antiga de telas estreitas.');
+assert.match(operationalCss, /px-period-current-v9[\s\S]*px-period-preview-v9[\s\S]*px-period-footer-v9/,
+  'Seletor v9 deve mostrar filtro atual, prévia aplicada e rodapé dedicado conforme o mock.');
+assert.match(operationalHome, /px-home-current-v9[\s\S]*px-home-ref-actions-current/,
+  'Home do mês atual deve compartilhar a linguagem visual reconstruída da Home v9.');
 assert.match(homeAllTime, /Comparação com o saldo real/,
   'Períodos históricos devem ser comparados explicitamente com o saldo monetário real de hoje.');
 assert.match(homeAllTime, /Saldo inicial/,

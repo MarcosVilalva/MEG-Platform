@@ -3099,3 +3099,477 @@ body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-ap
   color:#032522!important;
   font-weight:950!important;
 }
+
+
+/* ==========================================================================
+   MEG Home v9 · seletor de período fiel ao mock aprovado
+   Estrutura própria, sem reaproveitar a distribuição antiga do popover.
+   ========================================================================== */
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet{
+  width:min(520px,calc(100vw - 8px))!important;
+  max-height:min(90dvh,760px)!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border:1px solid rgba(56,226,205,.30)!important;
+  border-radius:24px 24px 0 0!important;
+  background:
+    radial-gradient(circle at 90% 6%,rgba(40,235,207,.08),transparent 24%),
+    linear-gradient(165deg,#073a3b,#022b2d 58%,#011f21)!important;
+  box-shadow:0 -20px 54px rgba(0,0,0,.35)!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-head-v9{
+  min-height:70px!important;
+  padding:12px 13px 10px!important;
+  display:grid!important;
+  grid-template-columns:46px minmax(0,1fr) 36px!important;
+  align-items:center!important;
+  gap:10px!important;
+  border-bottom:0!important;
+  background:transparent!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-head-v9 .px-period-head-icon{
+  width:46px!important;height:46px!important;
+  display:grid!important;place-items:center!important;
+  border:1px solid rgba(63,231,212,.38)!important;
+  border-radius:14px!important;
+  background:rgba(32,218,195,.08)!important;
+  color:#43e5d3!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-head-v9 .px-period-head-icon svg{
+  width:23px!important;height:23px!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-head-v9>div:nth-child(2){
+  min-width:0!important;
+  display:grid!important;
+  gap:3px!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-head-v9 strong{
+  display:block!important;
+  color:#f7fffd!important;
+  font-size:17px!important;
+  line-height:1.05!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-head-v9 small{
+  display:block!important;
+  color:#90aaa7!important;
+  font-size:8px!important;
+  line-height:1.2!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-close{
+  width:34px!important;height:34px!important;
+  border-radius:50%!important;
+  border:1px solid rgba(255,255,255,.14)!important;
+  background:rgba(255,255,255,.04)!important;
+  color:#b8c7c5!important;
+  font-size:18px!important;
+}
+
+body.meg-operational-mobile .px-period-current-v9{
+  width:calc(100% - 24px)!important;
+  min-height:58px!important;
+  margin:0 12px 8px!important;
+  padding:8px 10px!important;
+  display:grid!important;
+  grid-template-columns:38px minmax(0,1fr) 18px!important;
+  align-items:center!important;
+  gap:9px!important;
+  border:1px solid rgba(58,223,201,.23)!important;
+  border-radius:14px!important;
+  background:rgba(2,38,40,.60)!important;
+  color:#f0fffc!important;
+  text-align:left!important;
+}
+body.meg-operational-mobile .px-period-current-v9 .px-period-current-icon{
+  width:38px!important;height:38px!important;
+  display:grid!important;place-items:center!important;
+  border-radius:11px!important;
+  background:rgba(37,222,200,.08)!important;
+  color:#4ce7d3!important;
+  font-size:22px!important;
+  font-weight:900!important;
+}
+body.meg-operational-mobile .px-period-current-v9>span:nth-child(2){
+  min-width:0!important;
+  display:grid!important;
+  gap:2px!important;
+}
+body.meg-operational-mobile .px-period-current-v9 small{
+  color:#799b97!important;
+  font-size:7px!important;
+}
+body.meg-operational-mobile .px-period-current-v9 strong{
+  color:#f1fffc!important;
+  font-size:11px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.meg-operational-mobile .px-period-current-v9>b{
+  color:#d9eeeb!important;
+  font-size:22px!important;
+  font-weight:400!important;
+}
+
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-modes-v9{
+  margin:0 12px 8px!important;
+  padding:5px!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:5px!important;
+  border:1px solid rgba(63,188,181,.12)!important;
+  border-radius:14px!important;
+  background:rgba(1,31,33,.40)!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-modes-v9>button{
+  min-width:0!important;
+  min-height:58px!important;
+  padding:7px 4px!important;
+  display:grid!important;
+  grid-template-columns:24px minmax(0,1fr)!important;
+  grid-template-rows:auto auto!important;
+  align-items:center!important;
+  column-gap:5px!important;
+  border:1px solid transparent!important;
+  border-radius:11px!important;
+  background:transparent!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-modes-v9>button>i{
+  grid-row:1/3!important;
+  width:24px!important;height:24px!important;
+  display:grid!important;place-items:center!important;
+  border-radius:8px!important;
+  background:rgba(255,255,255,.035)!important;
+  color:#9fb4b1!important;
+  font-size:12px!important;
+  font-style:normal!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-modes-v9>button>span{
+  color:#e7f7f4!important;
+  font-size:9.5px!important;
+  font-weight:850!important;
+  text-align:left!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-modes-v9>button>small{
+  display:block!important;
+  color:#748f8c!important;
+  font-size:6.5px!important;
+  text-align:left!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-modes-v9>button.active{
+  border-color:rgba(58,230,205,.55)!important;
+  background:linear-gradient(145deg,rgba(19,151,132,.28),rgba(4,57,56,.75))!important;
+  box-shadow:inset 0 0 0 1px rgba(44,223,201,.06)!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-modes-v9>button.active>i{
+  color:#53ead6!important;
+  background:rgba(36,217,194,.10)!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-quick{
+  display:none!important;
+}
+
+/* Conteúdo do modo Tudo: um único hero, como na referência. */
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-all{
+  position:relative!important;
+  min-height:82px!important;
+  margin:0 12px 8px!important;
+  padding:12px 112px 12px 12px!important;
+  display:grid!important;
+  grid-template-columns:40px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:9px!important;
+  overflow:hidden!important;
+  border:1px solid rgba(51,220,198,.27)!important;
+  border-radius:14px!important;
+  background:
+    radial-gradient(circle at 90% 45%,rgba(43,229,199,.13),transparent 28%),
+    linear-gradient(145deg,rgba(6,61,58,.90),rgba(3,43,45,.96))!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-all::before,
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-all::after{
+  content:''!important;
+  position:absolute!important;
+  right:20px!important;
+  border:2px solid rgba(52,230,204,.62)!important;
+  border-radius:50%!important;
+  background:rgba(27,191,168,.12)!important;
+  box-shadow:0 7px 0 rgba(27,191,168,.10),0 14px 0 rgba(27,191,168,.08)!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-all::before{
+  width:38px!important;height:16px!important;top:28px!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-all::after{
+  width:27px!important;height:12px!important;right:58px!important;top:43px!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-all-icon{
+  width:40px!important;height:40px!important;
+  display:grid!important;place-items:center!important;
+  border-radius:11px!important;
+  background:rgba(36,216,194,.09)!important;
+  color:#52ead5!important;
+  font-size:26px!important;
+  font-weight:900!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-all strong{
+  display:block!important;
+  color:#f2fffc!important;
+  font-size:11px!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-all p{
+  max-width:230px!important;
+  margin:4px 0 0!important;
+  color:#88a4a0!important;
+  font-size:7px!important;
+  line-height:1.35!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-month-panel,
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-range-panel{
+  margin:0 12px 8px!important;
+  border-radius:14px!important;
+}
+
+body.meg-operational-mobile .px-period-preview-v9{
+  margin:0 12px 8px!important;
+  display:grid!important;
+  gap:5px!important;
+}
+body.meg-operational-mobile .px-period-preview-v9>span{
+  padding-left:5px!important;
+  color:#718f8b!important;
+  font-size:6.5px!important;
+  font-weight:900!important;
+  letter-spacing:.08em!important;
+}
+body.meg-operational-mobile .px-period-preview-v9>div{
+  min-height:54px!important;
+  padding:8px 10px!important;
+  display:grid!important;
+  grid-template-columns:34px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:8px!important;
+  border:1px solid rgba(54,223,201,.20)!important;
+  border-radius:13px!important;
+  background:rgba(20,163,145,.10)!important;
+}
+body.meg-operational-mobile .px-period-preview-v9>div>b{
+  width:34px!important;height:34px!important;
+  display:grid!important;place-items:center!important;
+  border-radius:10px!important;
+  background:rgba(44,221,199,.08)!important;
+  color:#4ce5d1!important;
+  font-size:20px!important;
+}
+body.meg-operational-mobile .px-period-preview-v9>div>span{
+  min-width:0!important;
+  display:grid!important;
+  gap:2px!important;
+}
+body.meg-operational-mobile .px-period-preview-v9 strong{
+  color:#f0fffc!important;
+  font-size:10px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.meg-operational-mobile .px-period-preview-v9 small{
+  display:block!important;
+  color:#7f9c98!important;
+  font-size:6.7px!important;
+}
+
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-progress{
+  margin:0 12px 8px!important;
+}
+body.meg-operational-mobile .px-period-footer-v9{
+  padding:8px 12px max(10px,env(safe-area-inset-bottom))!important;
+  border-top:1px solid rgba(65,190,183,.12)!important;
+  background:rgba(2,35,37,.97)!important;
+}
+body.meg-operational-mobile .px-period-footer-v9>div:first-child{display:none!important}
+body.meg-operational-mobile .px-period-footer-v9 .px-period-footer-actions{
+  width:100%!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,.95fr) minmax(0,1.35fr)!important;
+  gap:8px!important;
+}
+body.meg-operational-mobile .px-period-footer-v9 .px-period-cancel,
+body.meg-operational-mobile .px-period-footer-v9 .px-period-apply{
+  width:100%!important;
+  min-height:46px!important;
+  margin:0!important;
+  border-radius:13px!important;
+  font-size:10px!important;
+  font-weight:900!important;
+}
+body.meg-operational-mobile .px-period-footer-v9 .px-period-cancel{
+  border:1px solid rgba(102,176,170,.22)!important;
+  background:rgba(1,30,32,.70)!important;
+  color:#e0eeec!important;
+}
+body.meg-operational-mobile .px-period-footer-v9 .px-period-apply{
+  border:0!important;
+  background:linear-gradient(90deg,#27dccd,#42e7a5)!important;
+  color:#032421!important;
+  box-shadow:0 8px 20px rgba(38,217,194,.16)!important;
+}
+
+
+/* ==========================================================================
+   MEG Home atual v9 · mesma proporção do mock aprovado
+   ========================================================================== */
+body.meg-operational-mobile .px-home-current-v9{
+  gap:10px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-home-ref-actions-current{
+  width:100%!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:7px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-home-ref-actions-current>button{
+  width:100%!important;
+  min-width:0!important;
+  min-height:58px!important;
+  padding:7px 8px!important;
+  display:grid!important;
+  grid-template-columns:30px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:6px!important;
+  border-radius:14px!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-home-ref-actions-current>button>span{
+  width:30px!important;height:30px!important;
+  display:grid!important;place-items:center!important;
+  border-radius:10px!important;
+  font-size:17px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-home-ref-actions-current>button>strong{
+  min-width:0!important;
+  font-size:clamp(9.5px,2.8vw,11.5px)!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-premium{
+  padding:13px!important;
+  border-radius:18px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-hero{
+  min-height:108px!important;
+  grid-template-columns:minmax(0,1fr) 104px!important;
+  gap:8px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-main span{
+  font-size:8.5px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-main strong{
+  margin-top:4px!important;
+  font-size:clamp(35px,10.7vw,46px)!important;
+  line-height:.98!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-main small{
+  display:block!important;
+  max-width:240px!important;
+  margin-top:4px!important;
+  color:#91aaa7!important;
+  font-size:7.5px!important;
+  line-height:1.35!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-art{
+  width:104px!important;height:86px!important;
+  display:grid!important;place-items:center!important;
+  opacity:.72!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-art svg{
+  width:100%!important;height:100%!important;overflow:visible!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-art .bar{
+  fill:#0aa797!important;opacity:.55!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-art .coins{
+  fill:rgba(27,194,166,.22)!important;stroke:#24d8bf!important;stroke-width:2!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-art .coins.front{
+  fill:rgba(26,218,183,.24)!important;stroke:#3ee7cd!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary{
+  margin-top:6px!important;
+  padding-top:0!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:6px!important;
+  border-top:0!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary>div{
+  min-width:0!important;
+  min-height:62px!important;
+  padding:7px 8px!important;
+  display:grid!important;
+  grid-template-columns:26px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:6px!important;
+  border:1px solid rgba(91,190,181,.14)!important;
+  border-radius:11px!important;
+  background:rgba(1,29,31,.34)!important;
+  text-align:left!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary>div+div{
+  border-left:1px solid rgba(91,190,181,.14)!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .metric-icon{
+  width:26px!important;height:26px!important;
+  display:grid!important;place-items:center!important;
+  border-radius:50%!important;
+  background:rgba(20,203,181,.08)!important;
+  color:#54ead5!important;
+  font-size:13px!important;
+  font-weight:900!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .expense .metric-icon{
+  color:#ff7d84!important;background:rgba(255,105,113,.08)!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .result-positive .metric-icon,
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .result-negative .metric-icon{
+  color:#50e6b3!important;background:rgba(80,230,179,.08)!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .metric-copy{
+  min-width:0!important;
+  display:grid!important;
+  gap:3px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .metric-copy>span{
+  color:#87a6a2!important;
+  font-size:6.8px!important;
+  line-height:1.15!important;
+  white-space:normal!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .metric-copy>strong{
+  color:#f4fffc!important;
+  font-size:clamp(9px,2.55vw,11px)!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .expense .metric-copy>strong{color:#ff8b91!important}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .result-positive .metric-copy>strong{color:#4de8b1!important}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .result-negative .metric-copy>strong{color:#ff8b91!important}
+
+@media(max-width:390px){
+  body.meg-operational-mobile .px-home-current-v9 .px-home-ref-actions-current{gap:5px!important}
+  body.meg-operational-mobile .px-home-current-v9 .px-home-ref-actions-current>button{
+    grid-template-columns:27px minmax(0,1fr)!important;
+    gap:5px!important;
+    padding-inline:6px!important;
+  }
+  body.meg-operational-mobile .px-home-current-v9 .px-home-ref-actions-current>button>span{
+    width:27px!important;height:27px!important;
+  }
+  body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-hero{
+    grid-template-columns:minmax(0,1fr) 84px!important;
+  }
+  body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-art{
+    width:84px!important;
+  }
+}

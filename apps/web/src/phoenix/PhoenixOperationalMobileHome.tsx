@@ -67,7 +67,7 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate }: Pro
   const nextDue = agenda.items.find((item) => String(item.dueDate || '').slice(0, 10) >= today) || agenda.items[0] || null;
   const nextDueDate = nextDue ? String(nextDue.dueDate || '').slice(0, 10).split('-').reverse().join('/') : '—';
 
-  return <section className="px-operational-mobile-home px-operational-approved-home" aria-label="MEG Finanças">
+  return <section className="px-operational-mobile-home px-operational-approved-home px-home-current-v9" aria-label="MEG Finanças">
     <header className="px-approved-mobile-head">
       <button className="px-approved-profile" type="button" onClick={() => onNavigate('settings')} aria-label="Abrir meu perfil">
         <PhoenixProfileAvatar name={data.user.name} preference={avatar} className="px-operational-home-avatar" />
@@ -75,7 +75,7 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate }: Pro
       </button>
     </header>
 
-    <section className="px-approved-launch-grid" aria-label="Lançamento rápido">
+    <section className="px-approved-launch-grid px-home-ref-actions-current" aria-label="Lançamento rápido">
       <button className="expense" type="button" onClick={() => onLaunch('expense')}><span>↘</span><strong>Despesa</strong></button>
       <button className="income" type="button" onClick={() => onLaunch('income')}><span>↗</span><strong>Receita</strong></button>
       <button className="benefit" type="button" onClick={() => onLaunch('benefit')}><span>◇</span><strong>Alimentação</strong></button>
@@ -84,12 +84,20 @@ export function PhoenixOperationalMobileHome({ data, onLaunch, onNavigate }: Pro
     <section className="px-approved-balance px-approved-balance-premium" aria-label="Resumo financeiro atual">
       <div className="px-approved-balance-hero">
         <div className="px-approved-balance-main"><span>SALDO ATUAL</span><strong>{money.format(currentBalance)}</strong><small>Caixa realizado · sem somar previsões futuras</small></div>
-        <div className="px-approved-balance-art" aria-hidden="true"><span>▥</span><span>●</span></div>
+        <div className="px-approved-balance-art" aria-hidden="true">
+          <svg viewBox="0 0 120 88" focusable="false">
+            <rect className="bar bar-1" x="6" y="48" width="10" height="30" rx="3" />
+            <rect className="bar bar-2" x="21" y="35" width="10" height="43" rx="3" />
+            <rect className="bar bar-3" x="36" y="21" width="10" height="57" rx="3" />
+            <g className="coins back"><ellipse cx="84" cy="31" rx="22" ry="8" /><path d="M62 31v26c0 4.5 9.8 8 22 8s22-3.5 22-8V31" /><ellipse cx="84" cy="44" rx="22" ry="8" /><ellipse cx="84" cy="57" rx="22" ry="8" /></g>
+            <g className="coins front"><ellipse cx="63" cy="52" rx="17" ry="6.5" /><path d="M46 52v18c0 3.6 7.6 6.5 17 6.5s17-2.9 17-6.5V52" /><ellipse cx="63" cy="61" rx="17" ry="6.5" /><ellipse cx="63" cy="70" rx="17" ry="6.5" /></g>
+          </svg>
+        </div>
       </div>
       <div className="px-approved-summary">
-        <div><span>Entradas</span><strong>{money.format(Number(data.summary.realizedIncome || 0))}</strong></div>
-        <div className="expense"><span>Saídas</span><strong>{money.format(Number(data.summary.realizedExpense || 0))}</strong></div>
-        <div className={Number(data.summary.realizedResult || 0) >= 0 ? 'result-positive' : 'result-negative'}><span>Movimento líquido</span><strong>{Number(data.summary.realizedResult || 0) > 0 ? '+' : ''}{money.format(Number(data.summary.realizedResult || 0))}</strong></div>
+        <div className="income"><span className="metric-icon" aria-hidden="true">↓</span><span className="metric-copy"><span>Entradas</span><strong>{money.format(Number(data.summary.realizedIncome || 0))}</strong></span></div>
+        <div className="expense"><span className="metric-icon" aria-hidden="true">↑</span><span className="metric-copy"><span>Saídas</span><strong>{money.format(Number(data.summary.realizedExpense || 0))}</strong></span></div>
+        <div className={Number(data.summary.realizedResult || 0) >= 0 ? 'result-positive' : 'result-negative'}><span className="metric-icon" aria-hidden="true">▥</span><span className="metric-copy"><span>Movimento líquido</span><strong>{Number(data.summary.realizedResult || 0) > 0 ? '+' : ''}{money.format(Number(data.summary.realizedResult || 0))}</strong></span></div>
       </div>
       <div className="px-approved-balance-bottom">
         <div><span className="icon">▤</span><span><small>Em aberto agora</small><strong>{money.format(pendingAmount)}</strong></span></div>
