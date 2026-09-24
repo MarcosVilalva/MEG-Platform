@@ -568,6 +568,16 @@ assert.match(operationalCss, /px-period-current-v9[\s\S]*px-period-preview-v9[\s
   'Seletor v9 deve mostrar filtro atual, prévia aplicada e rodapé dedicado conforme o mock.');
 assert.match(operationalHome, /px-home-current-v9[\s\S]*px-home-ref-actions-current/,
   'Home do mês atual deve compartilhar a linguagem visual reconstruída da Home v9.');
+assert.match(operationalHome, /px-approved-position-strip/,
+  'Situação operacional deve ficar fora do hero principal para preservar a proporção aprovada.');
+assert.match(operationalCss, /px-approved-summary[\s\S]*metric-copy>strong[\s\S]*overflow:visible!important[\s\S]*text-overflow:clip!important/,
+  'Valores monetários dos KPIs da Home não podem ser abreviados com reticências.');
+assert.match(phoenixApp, /px-period-scroll-v10[\s\S]*px-period-footer-v10/,
+  'Seletor móvel deve separar conteúdo rolável do rodapé persistente.');
+assert.match(operationalCss, /px-period-popover-v15\.is-mobile-sheet[\s\S]*grid-template-rows:auto minmax\(0,1fr\) auto!important/,
+  'Modal de período deve manter cabeçalho e rodapé visíveis enquanto somente o miolo rola.');
+assert.match(operationalCss, /px-period-scroll-v10[\s\S]*overflow-y:auto!important/,
+  'Somente o corpo do filtro de período deve rolar no aparelho.');
 assert.match(homeAllTime, /Comparação com o saldo real/,
   'Períodos históricos devem ser comparados explicitamente com o saldo monetário real de hoje.');
 assert.match(homeAllTime, /Saldo inicial/,
