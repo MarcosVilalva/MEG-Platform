@@ -290,7 +290,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
         <button type="button" className={section === 'profile' ? 'active' : ''} onClick={() => setSection('profile')}><span>01</span><div><strong>Meu perfil</strong><small>Foto, avatar e identidade</small></div></button>
         <button type="button" className={section === 'home' ? 'active' : ''} onClick={() => setSection('home')}><span>02</span><div><strong>Aparência e Home</strong><small>Tema e dashboard</small></div></button>
         <button type="button" className={section === 'security' ? 'active' : ''} onClick={() => setSection('security')}><span>03</span><div><strong>Segurança</strong><small>Biometria e sessão</small></div></button>
-        <button type="button" className={section === 'notifications' ? 'active' : ''} onClick={() => setSection('notifications')}><span>04</span><div><strong>Notificações</strong><small>E-mail, WhatsApp e Alexa</small></div></button>
+        <button type="button" className={section === 'notifications' ? 'active' : ''} onClick={() => setSection('notifications')}><span>04</span><div><strong>Notificações</strong><small>E-mail, WhatsApp, Android e Alexa</small></div></button>
         <button type="button" className={section === 'system' ? 'active' : ''} onClick={() => setSection('system')}><span>05</span><div><strong>Sistema</strong><small>Versão, dados e diagnóstico</small></div></button>
       </nav>
 
