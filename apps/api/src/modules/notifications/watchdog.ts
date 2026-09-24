@@ -81,6 +81,11 @@ export function notificationWatchdogPlan(referenceDate = new Date()) {
   };
 }
 
+export function notificationCycleIsActive(referenceDate: Date, cycle: NotificationWatchdogCycle) {
+  const local = localClock(referenceDate);
+  return local.minuteOfDay >= cycle.dueMinute && local.minuteOfDay <= cycle.expiresMinute;
+}
+
 export function messagingCycleForSlot(slot: string): NotificationWatchdogCycle | null {
   if (slot === '06:00') return { kind: 'messaging', slot, task: 'daily-summary', dueMinute: min(6), expiresMinute: min(9) };
   if (slot === '12:00') return { kind: 'messaging', slot, task: 'due-now', dueMinute: min(12), expiresMinute: min(15) };
