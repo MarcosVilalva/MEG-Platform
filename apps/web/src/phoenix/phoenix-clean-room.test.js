@@ -37,6 +37,7 @@ const homePastMonth = readFileSync(new URL('./screens/PhoenixHomePastMonth.tsx',
 const homeHorizon = readFileSync(new URL('./screens/PhoenixHomeHorizon.tsx', import.meta.url), 'utf8');
 const periodMobileCss = readFileSync(new URL('./phoenix-home-period-mobile.css', import.meta.url), 'utf8');
 const homeFidelityV12Css = readFileSync(new URL('./phoenix-home-fidelity-v12.css', import.meta.url), 'utf8');
+const homeFidelityV13Css = readFileSync(new URL('./phoenix-home-fidelity-v13.css', import.meta.url), 'utf8');
 const homePeriodSummary = readFileSync(new URL('./home-period-summary.ts', import.meta.url), 'utf8');
 const webScreens = readFileSync(new URL('./screens/PhoenixWebScreens.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
@@ -567,16 +568,24 @@ assert.match(periodMobileCss, /mock-fidelity-v9[\s\S]*\.px-alltime-commitment-gr
   'Compromissos v9 não podem voltar a ser empilhados pela regra antiga de telas estreitas.');
 assert.match(operationalCss, /px-period-current-v9[\s\S]*px-period-preview-v9[\s\S]*px-period-footer-v9/,
   'Seletor v9 deve mostrar filtro atual, prévia aplicada e rodapé dedicado conforme o mock.');
-assert.match(operationalHome, /data-home-fidelity="approved-v12"/,
-  'Home do mês atual deve usar o layout v12 isolado e fiel ao mock aprovado.');
-assert.match(operationalHome, /meg-home-v12-current-balance[\s\S]*Entradas no mês[\s\S]*Saídas no mês[\s\S]*Resultado do mês/,
-  'Mês atual deve priorizar saldo, entradas, saídas e resultado com leitura executiva.');
+assert.match(operationalHome, /data-home-fidelity="reference-v13"/,
+  'Home do mês atual deve usar o checkpoint v13 reconstruído diretamente da referência aprovada.');
+assert.match(operationalHome, /meg-current-v13-balance[\s\S]*Entradas no mês[\s\S]*Saídas no mês[\s\S]*Resultado do mês/,
+  'Mês atual deve reproduzir a hierarquia visual do mock: saldo, fluxo realizado e resultado.');
 assert.match(operationalHome, /Contas a pagar[\s\S]*Faturas de cartões[\s\S]*Outras pendências[\s\S]*Contas pagas/,
-  'Mês atual deve manter os quatro indicadores operacionais aprovados.');
-assert.match(homeFidelityV12Css, /\.meg-home-v12-metric\{[\s\S]*text-align:center/,
-  'Cards v12 devem centralizar os números para leitura rápida.');
-assert.match(homeFidelityV12Css, /\.meg-home-v12-metric>strong\{[\s\S]*white-space:nowrap;[\s\S]*text-overflow:clip;/,
-  'Valores monetários v12 devem permanecer inteiros, sem reticências.');
+  'Mês atual deve manter os quatro indicadores operacionais na ordem aprovada.');
+assert.match(operationalHome, /openPayables\.length[\s\S]*cardItems\.length[\s\S]*otherItems\.length[\s\S]*paidExpenses\.length/,
+  'Cards operacionais devem usar contagem como número principal e valor monetário como apoio.');
+assert.doesNotMatch(operationalHome, /meg-home-v12-current|meg-home-v12-wide-action/,
+  'Mês atual não pode reutilizar a estrutura visual v12 nem inserir ação larga ausente do mock.');
+assert.match(homeFidelityV13Css, /\.meg-home-v13-current[\s\S]*padding:0 0 4px!important/,
+  'Home v13 não pode somar padding próprio ao padding de 12px do shell móvel.');
+assert.match(homeFidelityV13Css, /\.meg-current-v13-balance[\s\S]*grid-template-columns:54px minmax\(0,1fr\)!important/,
+  'Saldo disponível deve manter ícone lateral e leitura à esquerda, como na referência.');
+assert.match(homeFidelityV13Css, /\.meg-current-v13-stats[\s\S]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)!important/,
+  'Indicadores operacionais do mês atual devem permanecer em quatro colunas.');
+assert.match(homeFidelityV13Css, /\.meg-current-v13-balance>div>strong[\s\S]*white-space:nowrap!important[\s\S]*text-overflow:clip!important/,
+  'Saldo atual deve permanecer completo e nunca usar reticências.');
 assert.match(phoenixApp, /px-period-scroll-v10[\s\S]*px-period-footer-v10/,
   'Seletor móvel deve separar conteúdo rolável do rodapé persistente.');
 assert.match(phoenixApp, /is-mobile-sheet meg-period-v12[\s\S]*data-period-fidelity=\{nativeOperational \? 'approved-v12'/,
@@ -670,7 +679,7 @@ assert.match(phoenixApp, /previous && previous !== status\.token[\s\S]{0,180}ref
   'Mutação confirmada em outro dispositivo deve disparar releitura oficial.');
 assert.match(phoenixApp, /document\.addEventListener\('visibilitychange', onVisible\)/,
   'Ao voltar ao app, alterações externas devem ser conferidas imediatamente.');
-assert.match(operationalHome, /BENEFÍCIO ALIMENTAÇÃO/,
+assert.match(operationalHome, /Benefício Alimentação/,
   'Home operacional deve manter o Benefício Alimentação separado do caixa monetário.');
 assert.match(operationalHome, /Entradas no mês[\s\S]*Saídas no mês/,
   'Home operacional deve priorizar receitas e despesas realizadas.');
