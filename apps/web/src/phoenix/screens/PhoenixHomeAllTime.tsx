@@ -120,7 +120,7 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   }, []);
 
   return <>
-  <section className={"px-home-alltime px-home-approved " + (isAll ? "is-modern-all" : "is-period-range")} data-home-alltime-layout="compact-command-v7">
+  <section className={"px-home-alltime px-home-approved " + (isAll ? "is-modern-all" : "is-period-range")} data-home-alltime-layout="premium-history-v8">
     <header className="px-alltime-profile-head">
       <div className="px-alltime-profile"><PhoenixProfileAvatar preference={avatar} name={data.user.name} className="px-alltime-profile-avatar" /><span><small>MEG FINANÇAS</small><strong>{data.user.name || displayName}</strong></span></div>
     </header>
