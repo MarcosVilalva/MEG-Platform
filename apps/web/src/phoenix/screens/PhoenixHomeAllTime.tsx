@@ -120,15 +120,15 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
   }, []);
 
   return <>
-  <section className={"px-home-alltime px-home-approved " + (isAll ? "is-modern-all" : "is-period-range")} data-home-alltime-layout="premium-history-v8">
+  <section className={"px-home-alltime px-home-approved " + (isAll ? "is-modern-all" : "is-period-range")} data-home-alltime-layout="mock-fidelity-v9">
     <header className="px-alltime-profile-head">
       <div className="px-alltime-profile"><PhoenixProfileAvatar preference={avatar} name={data.user.name} className="px-alltime-profile-avatar" /><span><small>MEG FINANÇAS</small><strong>{data.user.name || displayName}</strong></span></div>
     </header>
     {!isAll ? <div className="px-page-head px-alltime-title"><div><span className="px-kicker">{kicker}</span><h1>{title}</h1></div></div> : null}
-    <section className="px-alltime-quick-actions" aria-label="Lançamentos rápidos">
-      <button type="button" onClick={() => onLaunch?.('expense')}><span>↘</span><strong>Despesa</strong><small>Novo lançamento</small></button>
-      <button type="button" onClick={() => onLaunch?.('income')}><span>↗</span><strong>Receita</strong><small>Novo lançamento</small></button>
-      <button type="button" className="benefit" onClick={() => onLaunch?.('benefit')}><span>◈</span><strong>Alimentação</strong><small>Lançar no benefício</small></button>
+    <section className="px-alltime-quick-actions px-home-ref-actions" aria-label="Lançamentos rápidos">
+      <button className="expense" type="button" onClick={() => onLaunch?.('expense')}><span aria-hidden="true">↘</span><strong>Despesa</strong></button>
+      <button className="income" type="button" onClick={() => onLaunch?.('income')}><span aria-hidden="true">↗</span><strong>Receita</strong></button>
+      <button className="benefit" type="button" onClick={() => onLaunch?.('benefit')}><span aria-hidden="true">◇</span><strong>Alimentação</strong></button>
     </section>
 
     {isAll ? <section className="px-alltime-overview-v8">
@@ -138,12 +138,30 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
           <strong>{money.format(summary.currentMonetaryBalance)}</strong>
           <small>Fotografia real de hoje · sem misturar compromissos futuros</small>
         </div>
-        <div className="px-alltime-balance-art" aria-hidden="true"><i /><i /><i /><b>◉</b></div>
+        <div className="px-alltime-balance-art" aria-hidden="true">
+          <svg viewBox="0 0 120 88" focusable="false">
+            <rect className="bar bar-1" x="6" y="48" width="10" height="30" rx="3" />
+            <rect className="bar bar-2" x="21" y="35" width="10" height="43" rx="3" />
+            <rect className="bar bar-3" x="36" y="21" width="10" height="57" rx="3" />
+            <g className="coins back">
+              <ellipse cx="84" cy="31" rx="22" ry="8" />
+              <path d="M62 31v26c0 4.5 9.8 8 22 8s22-3.5 22-8V31" />
+              <ellipse cx="84" cy="44" rx="22" ry="8" />
+              <ellipse cx="84" cy="57" rx="22" ry="8" />
+            </g>
+            <g className="coins front">
+              <ellipse cx="63" cy="52" rx="17" ry="6.5" />
+              <path d="M46 52v18c0 3.6 7.6 6.5 17 6.5s17-2.9 17-6.5V52" />
+              <ellipse cx="63" cy="61" rx="17" ry="6.5" />
+              <ellipse cx="63" cy="70" rx="17" ry="6.5" />
+            </g>
+          </svg>
+        </div>
       </div>
       <div className="px-alltime-flow-v8">
-        <article><span>Entradas acumuladas</span><strong>{money.format(summary.realizedIncome)}</strong></article>
-        <article><span>Saídas acumuladas</span><strong>{money.format(summary.realizedExpense)}</strong></article>
-        <article className={signedClass(summary.realizedResult)}><span>Resultado acumulado</span><strong>{summary.realizedResult > 0 ? '+' : ''}{money.format(summary.realizedResult)}</strong></article>
+        <article className="income"><span className="metric-icon" aria-hidden="true">↓</span><div><span>Entradas acumuladas</span><strong>{money.format(summary.realizedIncome)}</strong></div></article>
+        <article className="expense"><span className="metric-icon" aria-hidden="true">↑</span><div><span>Saídas acumuladas</span><strong>{money.format(summary.realizedExpense)}</strong></div></article>
+        <article className={`result ${signedClass(summary.realizedResult)}`}><span className="metric-icon" aria-hidden="true">▥</span><div><span>Resultado acumulado</span><strong>{summary.realizedResult > 0 ? '+' : ''}{money.format(summary.realizedResult)}</strong></div></article>
       </div>
     </section> : <section className="px-dashboard-grid">
       <article className="px-card px-premium-balance px-period-balance-card">
@@ -201,11 +219,11 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
 
     {isAll ? <section className="px-alltime-history-summary">
       <header><div><span className="icon">▥</span><span><small>RESUMO HISTÓRICO</small><strong>Visão geral da sua vida financeira</strong></span></div><button type="button" onClick={() => onNavigate('movements')}>›</button></header>
-      <div>
-        <article><small>Total de lançamentos</small><strong>{summary.monetaryEventCount.toLocaleString('pt-BR')}</strong></article>
-        <article><small>Período</small><strong>{formatIso(summary.firstDate)}<br/>a {formatIso(summary.lastDate)}</strong></article>
-        <article><small>Média mensal de despesa</small><strong className="expense">{money.format(averageMonthlyExpense)}</strong></article>
-        <article><small>Média mensal de receita</small><strong className="income">{money.format(averageMonthlyIncome)}</strong></article>
+      <div className="px-history-metrics-v9">
+        <article><span className="metric-icon" aria-hidden="true">→</span><div><small>Total de lançamentos</small><strong>{summary.monetaryEventCount.toLocaleString('pt-BR')}</strong></div></article>
+        <article><span className="metric-icon" aria-hidden="true">▣</span><div><small>Período</small><strong>{formatIso(summary.firstDate)}<br/>a {formatIso(summary.lastDate)}</strong></div></article>
+        <article><span className="metric-icon" aria-hidden="true">▥</span><div><small>Média mensal de despesa</small><strong className="expense">{money.format(averageMonthlyExpense)}</strong></div></article>
+        <article><span className="metric-icon" aria-hidden="true">▥</span><div><small>Média mensal de receita</small><strong className="income">{money.format(averageMonthlyIncome)}</strong></div></article>
       </div>
     </section> : <section className="px-bottom-grid px-period-bottom-grid">
       <article className="px-card">
