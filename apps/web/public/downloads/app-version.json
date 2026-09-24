@@ -1,9 +1,9 @@
 {
-  "versionCode": 354,
-  "versionName": "2.0.354",
+  "versionCode": 355,
+  "versionName": "2.0.355",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "b7e17291df8b1a76b2ed665f9d480dc0fbd3d0ce4edf7eb47685ad2d4a46e639",
+  "sha256": "97bbb6d00c7e485dd8ab9a3bc8654c06a55891556b9b65d1c7d4966ac96531ff",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "reconstrói Home com fidelidade ao mock aprovado"
+  "releaseNotes": "finaliza responsividade da Home e filtro de período"
 }
