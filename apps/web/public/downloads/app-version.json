@@ -1,9 +1,9 @@
 {
-  "versionCode": 351,
-  "versionName": "2.0.351",
+  "versionCode": 352,
+  "versionName": "2.0.352",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "78dc7ee48b66f8b9980e0a5e5c5d11872de723d85654039a2310d107585edf67",
+  "sha256": "2c0098e78e0183625ffb044129b2a19ce93e498fdb15588de7b13a03d6e4a373",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "moderniza resumo financeiro e testa notificações Android"
+  "releaseNotes": "implementa Home Premium com filtro fixo e visão Tudo executiva"
 }
