@@ -545,11 +545,21 @@ assert.match(homeNowCss, /\.px-home-benefit-modal/,
 assert.match(homeAllTime, /data-home-alltime-layout="compact-command-v7"/,
   'Home Tudo deve usar o cockpit compacto v7, sem retornar ao hero gigante anterior.');
 assert.match(homeAllTime, /px-alltime-overview-v7/,
-  'Home Tudo deve concentrar saldo, fluxo realizado e compromissos em um único bloco compacto.');
-assert.match(homeAllTime, /px-alltime-details-v7/,
-  'Detalhes extensos da base completa devem permanecer recolhíveis em vez de ocupar a Home inteira.');
+  'Home Tudo deve concentrar saldo e fluxo realizado em um bloco compacto.');
+assert.match(homeAllTime, /px-alltime-commitment-board/,
+  'Compromissos do modo Tudo devem ficar separados do saldo monetário atual.');
+assert.match(homeAllTime, /px-alltime-history-summary/,
+  'Resumo histórico deve permanecer compacto e visível sem reabrir a lista extensa da base.');
+assert.doesNotMatch(homeAllTime, /px-alltime-open-expenses/,
+  'Home Tudo não deve voltar a renderizar centenas de despesas individuais na tela principal.');
+assert.doesNotMatch(homeAllTime, /px-alltime-details-v7/,
+  'Detalhes extensos antigos devem ser substituídos pela síntese histórica compacta.');
 assert.match(periodMobileCss, /\.px-alltime-overview-v7/,
   'Layout compacto da Home Tudo deve possuir contrato visual mobile dedicado.');
+assert.match(periodMobileCss, /\.px-alltime-commitment-board/,
+  'Quadro executivo de compromissos deve possuir estilo responsivo próprio.');
+assert.match(periodMobileCss, /\.px-alltime-history-summary/,
+  'Resumo histórico compacto deve possuir estilo responsivo próprio.');
 assert.match(homeAllTime, /Comparação com o saldo real/,
   'Períodos históricos devem ser comparados explicitamente com o saldo monetário real de hoje.');
 assert.match(homeAllTime, /Saldo inicial/,
