@@ -3573,3 +3573,221 @@ body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .result-neg
     width:84px!important;
   }
 }
+
+
+/* ==========================================================================
+   MEG Home v10 · acabamento responsivo final
+   Dinheiro nunca é truncado; modal mantém rodapé fixo; hero mais leve.
+   ========================================================================== */
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary>div{
+  grid-template-columns:22px minmax(0,1fr)!important;
+  gap:5px!important;
+  padding:7px 6px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .metric-icon{
+  width:22px!important;
+  height:22px!important;
+  font-size:11px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .metric-copy{
+  overflow:visible!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .metric-copy>span{
+  min-height:16px!important;
+  font-size:6.4px!important;
+  line-height:1.12!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .metric-copy>strong{
+  width:max-content!important;
+  max-width:none!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  white-space:nowrap!important;
+  font-size:clamp(8px,2.18vw,9.6px)!important;
+  letter-spacing:-.045em!important;
+  font-variant-numeric:tabular-nums!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .result-positive .metric-copy>strong,
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .result-negative .metric-copy>strong{
+  font-size:clamp(7.7px,2.05vw,9.2px)!important;
+}
+
+/* Situação operacional fora do hero principal. */
+body.meg-operational-mobile .px-approved-position-strip{
+  width:100%!important;
+  min-width:0!important;
+  min-height:70px!important;
+  display:grid!important;
+  grid-template-columns:1fr 1.15fr!important;
+  overflow:hidden!important;
+  border:1px solid rgba(61,211,194,.22)!important;
+  border-radius:16px!important;
+  background:linear-gradient(145deg,rgba(4,48,49,.94),rgba(2,36,39,.98))!important;
+}
+body.meg-operational-mobile .px-approved-position-strip>div,
+body.meg-operational-mobile .px-approved-position-strip>button{
+  min-width:0!important;
+  min-height:70px!important;
+  padding:10px 11px!important;
+  display:grid!important;
+  grid-template-columns:32px minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:8px!important;
+  border:0!important;
+  background:transparent!important;
+  color:#effffb!important;
+  text-align:left!important;
+}
+body.meg-operational-mobile .px-approved-position-strip>button{
+  border-left:1px solid rgba(74,189,177,.14)!important;
+}
+body.meg-operational-mobile .px-approved-position-strip .icon{
+  width:32px!important;
+  height:32px!important;
+  display:grid!important;
+  place-items:center!important;
+  border:1px solid rgba(68,221,201,.18)!important;
+  border-radius:10px!important;
+  background:rgba(44,220,198,.05)!important;
+  color:#58e1d0!important;
+}
+body.meg-operational-mobile .px-approved-position-strip>div>span:last-child,
+body.meg-operational-mobile .px-approved-position-strip>button>span:nth-child(2){
+  min-width:0!important;
+  display:grid!important;
+  gap:3px!important;
+}
+body.meg-operational-mobile .px-approved-position-strip small{
+  color:#86a6a2!important;
+  font-size:7px!important;
+  line-height:1.15!important;
+}
+body.meg-operational-mobile .px-approved-position-strip strong{
+  color:#f5fffd!important;
+  font-size:13px!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+  font-variant-numeric:tabular-nums!important;
+}
+body.meg-operational-mobile .px-approved-position-strip strong.positive{color:#4ce8b1!important}
+body.meg-operational-mobile .px-approved-position-strip strong.negative{color:#ff8d94!important}
+body.meg-operational-mobile .px-approved-position-strip b{
+  color:#55dcd2!important;
+  font-size:20px!important;
+}
+
+/* Modal: cabeçalho e rodapé imóveis; somente o miolo rola. */
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet{
+  height:min(90dvh,760px)!important;
+  max-height:min(90dvh,760px)!important;
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr) auto!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-period-popover-v15.is-mobile-sheet .px-period-head-v9{
+  grid-row:1!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10{
+  grid-row:2!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  scrollbar-width:none!important;
+  padding:0 0 8px!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10::-webkit-scrollbar{display:none!important}
+body.meg-operational-mobile .px-period-footer-v10{
+  grid-row:3!important;
+  position:relative!important;
+  z-index:3!important;
+  margin:0!important;
+  box-shadow:0 -10px 24px rgba(0,0,0,.18)!important;
+}
+
+/* Competência mensal compacta para caber sem empurrar o rodapé. */
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-month-panel{
+  margin:0 12px 7px!important;
+  padding:9px 10px!important;
+  display:grid!important;
+  gap:7px!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-month-panel>span{
+  font-size:7.5px!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-month-stepper{
+  min-height:52px!important;
+  margin:0!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-month-stepper>button{
+  width:38px!important;
+  height:38px!important;
+  min-height:38px!important;
+  border-radius:11px!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-month-stepper>div{
+  min-height:42px!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-month-stepper small{
+  font-size:6.5px!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-month-stepper strong{
+  font-size:12px!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-native-month{
+  gap:5px!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-native-month>span{
+  font-size:7px!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-native-month input{
+  min-height:42px!important;
+  padding:0 10px!important;
+  border-radius:11px!important;
+  font-size:10px!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-current-v9{
+  min-height:52px!important;
+  margin-bottom:7px!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-modes-v9{
+  margin-bottom:7px!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-modes-v9>button{
+  min-height:54px!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-preview-v9{
+  margin-bottom:2px!important;
+}
+body.meg-operational-mobile .px-period-scroll-v10 .px-period-preview-v9>div{
+  min-height:48px!important;
+}
+
+@media(max-width:390px){
+  body.meg-operational-mobile .px-home-current-v9 .px-approved-summary>div{
+    grid-template-columns:19px minmax(0,1fr)!important;
+    gap:4px!important;
+    padding-inline:5px!important;
+  }
+  body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .metric-icon{
+    width:19px!important;height:19px!important;font-size:9px!important;
+  }
+  body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .metric-copy>strong{
+    font-size:clamp(7.4px,2vw,8.7px)!important;
+  }
+  body.meg-operational-mobile .px-approved-position-strip{
+    grid-template-columns:1fr 1.08fr!important;
+  }
+  body.meg-operational-mobile .px-approved-position-strip>div,
+  body.meg-operational-mobile .px-approved-position-strip>button{
+    padding-inline:8px!important;
+    grid-template-columns:27px minmax(0,1fr) auto!important;
+    gap:6px!important;
+  }
+  body.meg-operational-mobile .px-approved-position-strip .icon{
+    width:27px!important;height:27px!important;
+  }
+  body.meg-operational-mobile .px-approved-position-strip strong{
+    font-size:11px!important;
+  }
+}
