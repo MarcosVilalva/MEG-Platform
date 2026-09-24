@@ -645,8 +645,8 @@ assert.match(operationalHome, /Alimentação/,
   'Home operacional deve oferecer atalho protegido para Benefício Alimentação.');
 assert.match(operationalHome, /Despesa[\s\S]*Receita/,
   'Home operacional deve priorizar receitas e despesas.');
-assert.match(operationalHome, /Saldo Atual/,
-  'Home operacional deve exibir o saldo atual no layout mobile aprovado.');
+assert.match(operationalHome, /SALDO ATUAL/,
+  'Home operacional deve exibir o saldo atual no layout mobile Premium aprovado.');
 assert.match(operationalHome, /px-approved-launch-grid[\s\S]*Despesa[\s\S]*Receita[\s\S]*Alimentação/,
   'Home operacional deve manter os três atalhos compactos do layout aprovado.');
 assert.match(phoenixApp, /px-mobile-menu-sheet/,
@@ -659,8 +659,10 @@ assert.doesNotMatch(phoenixApp, /function quickMonth[\s\S]{0,280}void applyMonth
   'Atalho de mês móvel não deve aplicar e navegar sozinho.');
 assert.match(phoenixApp, /snapshot\.month !== visibleMonth[\s\S]{0,500}loadPhoenixReadModel\(visibleMonth, \{ force: true \}\)/,
   'Snapshot de outro mês não pode empurrar o período visível do APK.');
-assert.match(operationalHome, /px-approved-period[\s\S]{0,300}periodLabel/,
-  'Home operacional deve manter o seletor de período no cabeçalho aprovado.');
+assert.match(phoenixApp, /px-native-home-period[\s\S]{0,500}nativeHomePeriodTitle[\s\S]{0,500}nativeHomePeriodSubtitle/,
+  'Home operacional deve manter o seletor de período fixo no cabeçalho global aprovado.');
+assert.doesNotMatch(operationalHome, /px-approved-period/,
+  'Home operacional não deve duplicar o seletor de período dentro do conteúdo.');
 assert.match(phoenixApp, /createPortal\([\s\S]*px-period-mobile-portal[\s\S]*document\.body/,
   'Android deve renderizar o filtro de período em portal no body, fora da topbar fixa.');
 assert.doesNotMatch(phoenixApp, /px-period-menu-mobile-host/,
