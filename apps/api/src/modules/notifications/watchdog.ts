@@ -56,10 +56,9 @@ function localClock(referenceDate = new Date()): LocalClock {
 
 const min = (hour: number, minute = 0) => hour * 60 + minute;
 
-export function notificationWatchdogPlan(referenceDate = new Date()) {
-  const local = localClock(referenceDate);
-  const weekend = local.weekday === 0 || local.weekday === 6;
-  const cycles: NotificationWatchdogCycle[] = [
+function scheduledCyclesForWeekday(weekday: number): NotificationWatchdogCycle[] {
+  const weekend = weekday === 0 || weekday === 6;
+  return [
     { kind: 'messaging', slot: '06:00', task: 'daily-summary', dueMinute: min(6), expiresMinute: min(9) },
     { kind: 'messaging', slot: '12:00', task: 'due-now', dueMinute: min(12), expiresMinute: min(15) },
     { kind: 'messaging', slot: '19:00', task: 'due-now', dueMinute: min(19), expiresMinute: min(21, 59) },
@@ -71,7 +70,11 @@ export function notificationWatchdogPlan(referenceDate = new Date()) {
           { kind: 'alexa', slot: '21:00', task: 'alexa-due', dueMinute: min(21), expiresMinute: min(21, 59), includeTomorrow: true } satisfies NotificationWatchdogCycle,
         ]),
   ];
+}
 
+export function notificationWatchdogPlan(referenceDate = new Date()) {
+  const local = localClock(referenceDate);
+  const cycles = scheduledCyclesForWeekday(local.weekday);
   return {
     local,
     cycles: cycles.filter((cycle) => local.minuteOfDay >= cycle.dueMinute && local.minuteOfDay <= cycle.expiresMinute),
@@ -110,6 +113,73 @@ function markerChannel(cycle: NotificationWatchdogCycle) {
 
 function markerReference(referenceDate: Date, cycle: NotificationWatchdogCycle) {
   return `${localClock(referenceDate).iso}:${cycle.slot}:${cycle.task}`;
+}
+
+export type WatchdogHealthRow = {
+  channel: string;
+  reference: string;
+  status: string;
+  deliveredAt: Date | string;
+};
+
+export function notificationWatchdogHealth(
+  rows: WatchdogHealthRow[],
+  referenceDate = new Date(),
+  graceMinutes = 35,
+) {
+  const local = localClock(referenceDate);
+  const due = scheduledCyclesForWeekday(local.weekday)
+    .filter((cycle) => local.minuteOfDay >= cycle.dueMinute + graceMinutes);
+
+  const latestByKind = (['messaging', 'alexa'] as const)
+    .map((kind) => due.filter((cycle) => cycle.kind === kind).sort((a, b) => b.dueMinute - a.dueMinute)[0])
+    .filter((cycle): cycle is NotificationWatchdogCycle => Boolean(cycle));
+
+  const expected = latestByKind.map((cycle) => {
+    const channel = markerChannel(cycle);
+    const reference = markerReference(referenceDate, cycle);
+    const marker = rows.find((row) => row.channel === channel && row.reference === reference);
+    const markerTime = marker ? new Date(marker.deliveredAt).valueOf() : NaN;
+    const processingStale = marker?.status === 'processing'
+      && (!Number.isFinite(markerTime) || referenceDate.valueOf() - markerTime > 10 * 60_000);
+    const state = !marker
+      ? 'missing'
+      : marker.status === 'sent'
+        ? 'ok'
+        : marker.status === 'processing' && !processingStale
+          ? 'processing'
+          : marker.status === 'processing'
+            ? 'stale'
+            : marker.status === 'failed'
+              ? 'failed'
+              : 'unknown';
+
+    return {
+      kind: cycle.kind,
+      slot: cycle.slot,
+      task: cycle.task,
+      reference,
+      state,
+      deliveredAt: marker?.deliveredAt ?? null,
+    };
+  });
+
+  const lastCheckAt = rows
+    .map((row) => new Date(row.deliveredAt))
+    .filter((value) => Number.isFinite(value.valueOf()))
+    .sort((a, b) => b.valueOf() - a.valueOf())[0] ?? null;
+
+  const attention = expected.some((item) => ['missing', 'failed', 'stale', 'unknown'].includes(item.state));
+  const processing = !attention && expected.some((item) => item.state === 'processing');
+  const status = attention ? 'attention' : processing ? 'processing' : expected.length ? 'ok' : 'waiting';
+
+  return {
+    status,
+    localDate: local.iso,
+    localTime: `${String(local.hour).padStart(2, '0')}:${String(local.minute).padStart(2, '0')}`,
+    lastCheckAt,
+    expected,
+  };
 }
 
 async function claimCycle(userId: string, cycle: NotificationWatchdogCycle, referenceDate: Date, force = false) {
