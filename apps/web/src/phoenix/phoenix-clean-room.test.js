@@ -36,6 +36,7 @@ const homeAllTime = readFileSync(new URL('./screens/PhoenixHomeAllTime.tsx', imp
 const homePastMonth = readFileSync(new URL('./screens/PhoenixHomePastMonth.tsx', import.meta.url), 'utf8');
 const homeHorizon = readFileSync(new URL('./screens/PhoenixHomeHorizon.tsx', import.meta.url), 'utf8');
 const periodMobileCss = readFileSync(new URL('./phoenix-home-period-mobile.css', import.meta.url), 'utf8');
+const homeFidelityV12Css = readFileSync(new URL('./phoenix-home-fidelity-v12.css', import.meta.url), 'utf8');
 const homePeriodSummary = readFileSync(new URL('./home-period-summary.ts', import.meta.url), 'utf8');
 const webScreens = readFileSync(new URL('./screens/PhoenixWebScreens.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
@@ -566,24 +567,28 @@ assert.match(periodMobileCss, /mock-fidelity-v9[\s\S]*\.px-alltime-commitment-gr
   'Compromissos v9 não podem voltar a ser empilhados pela regra antiga de telas estreitas.');
 assert.match(operationalCss, /px-period-current-v9[\s\S]*px-period-preview-v9[\s\S]*px-period-footer-v9/,
   'Seletor v9 deve mostrar filtro atual, prévia aplicada e rodapé dedicado conforme o mock.');
-assert.match(operationalHome, /px-home-current-v9[\s\S]*px-home-ref-actions-current/,
-  'Home do mês atual deve compartilhar a linguagem visual reconstruída da Home v9.');
-assert.match(operationalHome, /px-approved-position-strip/,
-  'Situação operacional deve ficar fora do hero principal para preservar a proporção aprovada.');
-assert.match(operationalCss, /px-approved-summary[\s\S]*metric-copy>strong[\s\S]*overflow:visible!important[\s\S]*text-overflow:clip!important/,
-  'Valores monetários dos KPIs da Home não podem ser abreviados com reticências.');
+assert.match(operationalHome, /data-home-fidelity="approved-v12"/,
+  'Home do mês atual deve usar o layout v12 isolado e fiel ao mock aprovado.');
+assert.match(operationalHome, /meg-home-v12-current-balance[\s\S]*Entradas no mês[\s\S]*Saídas no mês[\s\S]*Resultado do mês/,
+  'Mês atual deve priorizar saldo, entradas, saídas e resultado com leitura executiva.');
+assert.match(operationalHome, /Contas a pagar[\s\S]*Faturas de cartões[\s\S]*Outras pendências[\s\S]*Contas pagas/,
+  'Mês atual deve manter os quatro indicadores operacionais aprovados.');
+assert.match(homeFidelityV12Css, /\.meg-home-v12-metric\{[\s\S]*text-align:center/,
+  'Cards v12 devem centralizar os números para leitura rápida.');
+assert.match(homeFidelityV12Css, /\.meg-home-v12-metric>strong\{[\s\S]*white-space:nowrap;[\s\S]*text-overflow:clip;/,
+  'Valores monetários v12 devem permanecer inteiros, sem reticências.');
 assert.match(phoenixApp, /px-period-scroll-v10[\s\S]*px-period-footer-v10/,
   'Seletor móvel deve separar conteúdo rolável do rodapé persistente.');
-assert.match(operationalCss, /px-period-popover-v15\.is-mobile-sheet[\s\S]*grid-template-rows:auto minmax\(0,1fr\) auto!important/,
-  'Modal de período deve manter cabeçalho e rodapé visíveis enquanto somente o miolo rola.');
-assert.match(operationalCss, /px-period-scroll-v10[\s\S]*overflow-y:auto!important/,
-  'Somente o corpo do filtro de período deve rolar no aparelho.');
-assert.match(operationalCss, /px-period-footer-v9>\.px-period-footer-actions:first-child[\s\S]*display:grid!important/,
-  'Rodapé atual do filtro não pode ser ocultado pela regra herdada do resumo antigo.');
-assert.match(operationalHome, /px-approved-summary-v11[\s\S]*Receitas[\s\S]*Despesas[\s\S]*Saldo líquido/,
-  'KPIs financeiros da Home devem usar a composição v11 aprovada.');
-assert.match(operationalCss, /px-approved-summary-v11[\s\S]*grid-template-rows:auto auto!important[\s\S]*overflow:visible!important[\s\S]*text-overflow:clip!important/,
-  'Valores de Receitas, Despesas e Saldo líquido devem ocupar linha própria e nunca usar reticências.');
+assert.match(phoenixApp, /is-mobile-sheet meg-period-v12[\s\S]*data-period-fidelity=\{nativeOperational \? 'approved-v12'/,
+  'Filtro móvel deve usar composição v12 própria, sem depender da distribuição antiga.');
+assert.match(homeFidelityV12Css, /\.meg-period-v12 \.px-period-scroll-v10[\s\S]*overflow-y:auto!important/,
+  'Somente o corpo do filtro v12 deve rolar quando necessário.');
+assert.match(homeFidelityV12Css, /\.meg-period-v12 \.px-period-footer-actions[\s\S]*grid-template-columns:\.85fr 1\.35fr!important/,
+  'Cancelar e Aplicar devem permanecer visíveis no rodapé compacto v12.');
+assert.match(phoenixApp, /!nativeOperational \? <button className="px-period-current-v9"/,
+  'Android não deve renderizar o card redundante de filtro atual.');
+assert.match(phoenixApp, /!nativeOperational \? <section className="px-period-preview-v9"/,
+  'Android não deve renderizar a prévia documental redundante do filtro.');
 assert.match(homeAllTime, /Comparação com o saldo real/,
   'Períodos históricos devem ser comparados explicitamente com o saldo monetário real de hoje.');
 assert.match(homeAllTime, /Saldo inicial/,
@@ -665,14 +670,12 @@ assert.match(phoenixApp, /previous && previous !== status\.token[\s\S]{0,180}ref
   'Mutação confirmada em outro dispositivo deve disparar releitura oficial.');
 assert.match(phoenixApp, /document\.addEventListener\('visibilitychange', onVisible\)/,
   'Ao voltar ao app, alterações externas devem ser conferidas imediatamente.');
-assert.match(operationalHome, /Alimentação/,
-  'Home operacional deve oferecer atalho protegido para Benefício Alimentação.');
-assert.match(operationalHome, /Despesa[\s\S]*Receita/,
-  'Home operacional deve priorizar receitas e despesas.');
-assert.match(operationalHome, /SALDO ATUAL/,
-  'Home operacional deve exibir o saldo atual no layout mobile Premium aprovado.');
-assert.match(operationalHome, /px-approved-launch-grid[\s\S]*Despesa[\s\S]*Receita[\s\S]*Alimentação/,
-  'Home operacional deve manter os três atalhos compactos do layout aprovado.');
+assert.match(operationalHome, /BENEFÍCIO ALIMENTAÇÃO/,
+  'Home operacional deve manter o Benefício Alimentação separado do caixa monetário.');
+assert.match(operationalHome, /Entradas no mês[\s\S]*Saídas no mês/,
+  'Home operacional deve priorizar receitas e despesas realizadas.');
+assert.match(operationalHome, /Saldo disponível/,
+  'Home operacional deve exibir o saldo atual no layout v12 aprovado.');
 assert.match(phoenixApp, /px-mobile-menu-sheet/,
   'Android deve possuir menu móvel próprio, independente da sidebar desktop oculta.');
 assert.match(phoenixApp, /px-dock-badge/,
@@ -725,14 +728,22 @@ assert.match(phoenixApp, /month < nowMonth[\s\S]*PhoenixHomePastMonth/,
   'Home deve encaminhar mês passado ao resumo histórico compacto.');
 assert.match(phoenixApp, /month > nowMonth[\s\S]*PhoenixHomeHorizon/,
   'Home deve encaminhar mês futuro à projeção operacional.');
-assert.match(homePastMonth, /Saldo inicial[\s\S]*Saldo final[\s\S]*Receitas realizadas[\s\S]*Despesas realizadas[\s\S]*Resultado do mês[\s\S]*Contas pagas/,
-  'Resumo passado deve mostrar somente a fotografia financeira essencial do mês.');
-assert.match(homePastMonth, /Benefício Alimentação[\s\S]*Separado do caixa monetário/,
-  'Benefício deve permanecer separado do caixa no histórico.');
+assert.match(homePastMonth, /data-home-fidelity="approved-v12"[\s\S]*Receitas realizadas[\s\S]*Despesas realizadas[\s\S]*Resultado do mês[\s\S]*Saldo inicial[\s\S]*Saldo final[\s\S]*Contas pagas/,
+  'Resumo passado deve seguir a fotografia financeira v12 aprovada.');
+assert.match(homePastMonth, /BENEFÍCIO ALIMENTAÇÃO[\s\S]*Saldo final do mês/,
+  'Benefício deve permanecer em card próprio no histórico.');
 assert.match(homeHorizon, /Saldo inicial projetado[\s\S]*Receitas previstas[\s\S]*Total de compromissos[\s\S]*Faturas de cartões[\s\S]*Outras pendências/,
   'Mês futuro deve mostrar projeção, faturas e pendências em vez de histórico zerado.');
 assert.match(homeHorizon, /event\.status === 'planned'/,
   'Projeção futura deve usar compromissos ainda abertos.');
+assert.match(homeHorizon, /data-home-fidelity="approved-v12"/,
+  'Mês futuro deve usar o layout v12 aprovado.');
+assert.match(homeAllTime, /meg-home-v12-all[\s\S]*Saldo atual consolidado[\s\S]*Total de receitas[\s\S]*Total de despesas[\s\S]*Resultado consolidado/,
+  'Tudo deve ser um resumo executivo v12, com números grandes e poucos indicadores.');
+assert.match(homeAllTime, /meg-home-v12-all-metrics[\s\S]*Total de lançamentos[\s\S]*Média mensal de receita[\s\S]*Média mensal de despesa/,
+  'Tudo deve limitar o histórico aos três indicadores executivos aprovados.');
+assert.match(homeFidelityV12Css, /\.meg-home-v12-all-metrics\{[\s\S]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/,
+  'Indicadores do Tudo devem ficar distribuídos sem comprimir valores monetários.');
 assert.match(periodMobileCss, /\.px-home-past,[\s\S]*\.px-home-future/,
   'Passado e futuro devem compartilhar uma composição móvel compacta.');
 assert.doesNotMatch(periodMobileCss, /position\s*:\s*(?:fixed|sticky)/,
@@ -781,10 +792,8 @@ assert.match(phoenixApp, /px-mobile-brand-home[\s\S]*meg-finance-system-mark\.sv
   'Topbar móvel deve usar a marca MEG no lugar do menu duplicado.');
 assert.doesNotMatch(phoenixApp, /nativeOperational \? <button className="px-mobile-menu-trigger"/,
   'Topbar Android não deve reintroduzir o botão hambúrguer quando o dock já possui Menu.');
-assert.match(operationalHome, /PhoenixProfileAvatar[\s\S]*px-operational-home-avatar/,
-  'Home Android deve mostrar o avatar sincronizado ao lado da saudação.');
-assert.match(operationalHome, /onNavigate\('settings'\)/,
-  'Avatar da Home deve abrir o perfil do usuário.');
+assert.doesNotMatch(operationalHome, /PhoenixProfileAvatar|px-operational-home-avatar/,
+  'Home v12 não deve duplicar identidade ou avatar dentro do conteúdo abaixo da topbar global.');
 assert.match(previewMain, /meg-finance-system-lockup-light\.svg/,
   'Loading deve exibir a identidade completa MEG.');
 assert.match(previewBootCss, /px-preview-boot-halo[\s\S]*px-meg-boot-breathe/,
