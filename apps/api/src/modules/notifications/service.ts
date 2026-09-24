@@ -353,14 +353,41 @@ export async function sendSystemEmail(to: string, subject: string, text: string)
   return sendEmail(to, subject, text);
 }
 
+const WHATSAPP_RATE_LIMIT_COOLDOWN_MS = 15 * 60_000;
+const WHATSAPP_MIN_INTERVAL_MS = 4_000;
+let whatsappRateLimitedUntil = 0;
+let whatsappNextRequestAt = 0;
+
+function whatsappRetryAfterMs(response: Response) {
+  const raw = response.headers.get('retry-after')?.trim();
+  if (!raw) return 0;
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, 60 * 60_000);
+  const absolute = Date.parse(raw);
+  if (!Number.isFinite(absolute)) return 0;
+  return Math.max(0, Math.min(absolute - Date.now(), 60 * 60_000));
+}
+
 async function sendWhatsApp(number: string, text: string) {
   if (!config.evolutionApiUrl || !config.evolutionApiKey || !config.evolutionInstance || !number) {
     return { status: 'skipped', detail: 'Evolution API não configurada' };
   }
 
+  const now = Date.now();
+  if (whatsappRateLimitedUntil > now) {
+    const remainingSeconds = Math.max(1, Math.ceil((whatsappRateLimitedUntil - now) / 1000));
+    throw new Error(`WhatsApp em cooldown após rate limit (429); nova tentativa liberada em aproximadamente ${remainingSeconds}s.`);
+  }
+
+  const spacing = whatsappNextRequestAt - Date.now();
+  if (spacing > 0) await wait(spacing);
+
   const normalizedNumber = number.replace(/\D/g, '');
   const url = `${config.evolutionApiUrl.replace(/\/$/, '')}/message/sendText/${encodeURIComponent(config.evolutionInstance)}`;
-  const retryDelays = [0, 2_500, 7_000];
+  // O watchdog já repete ciclos incompletos. Aqui mantemos somente uma
+  // segunda tentativa curta para 408/425/5xx; 429 entra em cooldown e não
+  // deve gerar uma rajada de chamadas contra a mesma instância Evolution.
+  const retryDelays = [0, 5_000];
   let lastFailure = 'Falha desconhecida';
 
   for (let attempt = 0; attempt < retryDelays.length; attempt += 1) {
@@ -371,7 +398,10 @@ async function sendWhatsApp(number: string, text: string) {
       body: JSON.stringify({ number: normalizedNumber, text })
     }, 45_000);
     const detail = await response.text();
+
     if (response.ok) {
+      whatsappRateLimitedUntil = 0;
+      whatsappNextRequestAt = Date.now() + WHATSAPP_MIN_INTERVAL_MS;
       return {
         status: 'sent',
         detail,
@@ -380,7 +410,16 @@ async function sendWhatsApp(number: string, text: string) {
     }
 
     lastFailure = `WhatsApp recusado (${response.status}): ${detail}`;
-    const retryable = response.status === 408 || response.status === 425 || response.status === 429 || response.status >= 500;
+    if (response.status === 429) {
+      const providerDelay = whatsappRetryAfterMs(response);
+      const cooldown = Math.max(providerDelay, WHATSAPP_RATE_LIMIT_COOLDOWN_MS);
+      whatsappRateLimitedUntil = Date.now() + cooldown;
+      whatsappNextRequestAt = whatsappRateLimitedUntil;
+      throw new Error(`${lastFailure} Cooldown aplicado por ${Math.ceil(cooldown / 60_000)} minuto(s).`);
+    }
+
+    whatsappNextRequestAt = Date.now() + WHATSAPP_MIN_INTERVAL_MS;
+    const retryable = response.status === 408 || response.status === 425 || response.status >= 500;
     if (!retryable || attempt === retryDelays.length - 1) break;
   }
 
