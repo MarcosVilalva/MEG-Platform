@@ -542,10 +542,10 @@ assert.doesNotMatch(homeDashboard, /px-home-benefit-chart/,
   'Gráfico do benefício não deve voltar a ocupar espaço sem acrescentar leitura operacional.');
 assert.match(homeNowCss, /\.px-home-benefit-modal/,
   'Acompanhamento do benefício deve possuir modal dedicado.');
-assert.match(homeAllTime, /data-home-alltime-layout="compact-command-v7"/,
-  'Home Tudo deve usar o cockpit compacto v7, sem retornar ao hero gigante anterior.');
-assert.match(homeAllTime, /px-alltime-overview-v7/,
-  'Home Tudo deve concentrar saldo e fluxo realizado em um bloco compacto.');
+assert.match(homeAllTime, /data-home-alltime-layout="premium-history-v8"/,
+  'Home Tudo deve usar o cockpit Premium v8, sem retornar ao hero gigante anterior.');
+assert.match(homeAllTime, /px-alltime-overview-v8/,
+  'Home Tudo deve concentrar saldo real e fluxo realizado em um bloco Premium compacto.');
 assert.match(homeAllTime, /px-alltime-commitment-board/,
   'Compromissos do modo Tudo devem ficar separados do saldo monetário atual.');
 assert.match(homeAllTime, /px-alltime-history-summary/,
@@ -554,8 +554,8 @@ assert.doesNotMatch(homeAllTime, /px-alltime-open-expenses/,
   'Home Tudo não deve voltar a renderizar centenas de despesas individuais na tela principal.');
 assert.doesNotMatch(homeAllTime, /px-alltime-details-v7/,
   'Detalhes extensos antigos devem ser substituídos pela síntese histórica compacta.');
-assert.match(periodMobileCss, /\.px-alltime-overview-v7/,
-  'Layout compacto da Home Tudo deve possuir contrato visual mobile dedicado.');
+assert.match(periodMobileCss, /\.px-alltime-overview-v8/,
+  'Layout Premium v8 da Home Tudo deve possuir contrato visual mobile dedicado.');
 assert.match(periodMobileCss, /\.px-alltime-commitment-board/,
   'Quadro executivo de compromissos deve possuir estilo responsivo próprio.');
 assert.match(periodMobileCss, /\.px-alltime-history-summary/,
