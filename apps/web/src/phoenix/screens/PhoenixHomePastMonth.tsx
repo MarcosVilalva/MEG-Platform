@@ -34,7 +34,7 @@ function isIncome(event: PhoenixReadModel['events']['items'][number]) {
   return event.type === 'income' || event.type === 'redemption';
 }
 
-export function PhoenixHomePastMonth({ data, month, periodContext, onNavigate, onOpenPeriod }: {
+export function PhoenixHomePastMonth({ data, month, periodContext, onNavigate }: {
   data: PhoenixReadModel;
   month: string;
   periodContext: HomePeriodContext | null;
@@ -69,36 +69,30 @@ export function PhoenixHomePastMonth({ data, month, periodContext, onNavigate, o
   const result = realizedIncome - realizedExpense;
   const benefitBalance = Number(data.summary.benefitBalance || 0);
 
-  return <section className="px-home-past" aria-label={`Resumo financeiro de ${monthLabel(month)}`}>
-    <header className="px-period-mobile-head">
-      <div>
-        <span className="px-kicker">Mês encerrado</span>
-        <h1>{monthLabel(month)}</h1>
-        <p>Fotografia simples do que aconteceu no mês.</p>
-      </div>
-      {onOpenPeriod ? <button type="button" onClick={onOpenPeriod}>Alterar período</button> : null}
+  return <section className="meg-home-v12 meg-home-v12-past" data-home-fidelity="approved-v12" aria-label={`Resumo financeiro de ${monthLabel(month)}`}>
+    <header className="meg-home-v12-heading">
+      <span>RESUMO DO MÊS</span>
+      <h1>{monthLabel(month)}</h1>
+      <p>Veja como foi o seu mês em uma visão simples.</p>
     </header>
 
-    <article className="px-past-balance-card">
-      <div><span>Saldo inicial</span><strong>{money.format(openingBalance)}</strong></div>
-      <span className="px-past-balance-arrow" aria-hidden="true">→</span>
-      <div className="closing"><span>Saldo final</span><strong>{money.format(closingBalance)}</strong></div>
-    </article>
-
-    <section className="px-past-kpis" aria-label="Resumo do mês">
-      <article className="income"><span>Receitas realizadas</span><strong>{money.format(realizedIncome)}</strong></article>
-      <article className="expense"><span>Despesas realizadas</span><strong>{money.format(realizedExpense)}</strong></article>
-      <article className={result >= 0 ? 'result positive' : 'result negative'}><span>Resultado do mês</span><strong>{result > 0 ? '+' : ''}{money.format(result)}</strong></article>
-      <article className="paid"><span>Contas pagas</span><strong>{money.format(paidAmount)}</strong><small>{paidCount.toLocaleString('pt-BR')} lançamento(s) pago(s)</small></article>
+    <section className="meg-home-v12-grid meg-home-v12-past-grid" aria-label="Resumo do mês">
+      <article className="meg-home-v12-metric income"><span>Receitas realizadas</span><strong>{money.format(realizedIncome)}</strong></article>
+      <article className="meg-home-v12-metric expense"><span>Despesas realizadas</span><strong>{money.format(realizedExpense)}</strong></article>
+      <article className={`meg-home-v12-metric result ${result >= 0 ? 'positive' : 'negative'}`}><span>Resultado do mês</span><strong>{result > 0 ? '+' : ''}{money.format(result)}</strong></article>
+      <article className="meg-home-v12-metric neutral"><span>Saldo inicial</span><strong>{money.format(openingBalance)}</strong></article>
+      <article className="meg-home-v12-metric balance"><span>Saldo final</span><strong>{money.format(closingBalance)}</strong></article>
+      <article className="meg-home-v12-metric paid"><span>Contas pagas</span><strong>{paidCount.toLocaleString('pt-BR')} contas</strong><small>{money.format(paidAmount)}</small></article>
     </section>
 
-    <article className="px-past-benefit-card">
-      <div><span>Benefício Alimentação</span><strong>Saldo final do mês</strong><small>Separado do caixa monetário.</small></div>
+    <button className="meg-home-v12-benefit" type="button" onClick={() => onNavigate('movements')}>
+      <span><small>BENEFÍCIO ALIMENTAÇÃO</small><strong>Saldo final do mês</strong></span>
       <b>{money.format(benefitBalance)}</b>
-    </article>
+      <em aria-hidden="true">›</em>
+    </button>
 
-    <button className="px-period-open-movements" type="button" onClick={() => onNavigate('movements')}>
-      Abrir lançamentos de {monthLabel(month)}
+    <button className="meg-home-v12-wide-action" type="button" onClick={() => onNavigate('movements')}>
+      <span>Ver lançamentos de {monthLabel(month)}</span><b aria-hidden="true">›</b>
     </button>
   </section>;
 }
