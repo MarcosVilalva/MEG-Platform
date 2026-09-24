@@ -3412,3 +3412,164 @@ body.meg-operational-mobile .px-period-footer-v9 .px-period-apply{
   color:#032421!important;
   box-shadow:0 8px 20px rgba(38,217,194,.16)!important;
 }
+
+
+/* ==========================================================================
+   MEG Home atual v9 · mesma proporção do mock aprovado
+   ========================================================================== */
+body.meg-operational-mobile .px-home-current-v9{
+  gap:10px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-home-ref-actions-current{
+  width:100%!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:7px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-home-ref-actions-current>button{
+  width:100%!important;
+  min-width:0!important;
+  min-height:58px!important;
+  padding:7px 8px!important;
+  display:grid!important;
+  grid-template-columns:30px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:6px!important;
+  border-radius:14px!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-home-ref-actions-current>button>span{
+  width:30px!important;height:30px!important;
+  display:grid!important;place-items:center!important;
+  border-radius:10px!important;
+  font-size:17px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-home-ref-actions-current>button>strong{
+  min-width:0!important;
+  font-size:clamp(9.5px,2.8vw,11.5px)!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-premium{
+  padding:13px!important;
+  border-radius:18px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-hero{
+  min-height:108px!important;
+  grid-template-columns:minmax(0,1fr) 104px!important;
+  gap:8px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-main span{
+  font-size:8.5px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-main strong{
+  margin-top:4px!important;
+  font-size:clamp(35px,10.7vw,46px)!important;
+  line-height:.98!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-main small{
+  display:block!important;
+  max-width:240px!important;
+  margin-top:4px!important;
+  color:#91aaa7!important;
+  font-size:7.5px!important;
+  line-height:1.35!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-art{
+  width:104px!important;height:86px!important;
+  display:grid!important;place-items:center!important;
+  opacity:.72!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-art svg{
+  width:100%!important;height:100%!important;overflow:visible!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-art .bar{
+  fill:#0aa797!important;opacity:.55!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-art .coins{
+  fill:rgba(27,194,166,.22)!important;stroke:#24d8bf!important;stroke-width:2!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-art .coins.front{
+  fill:rgba(26,218,183,.24)!important;stroke:#3ee7cd!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary{
+  margin-top:6px!important;
+  padding-top:0!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:6px!important;
+  border-top:0!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary>div{
+  min-width:0!important;
+  min-height:62px!important;
+  padding:7px 8px!important;
+  display:grid!important;
+  grid-template-columns:26px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:6px!important;
+  border:1px solid rgba(91,190,181,.14)!important;
+  border-radius:11px!important;
+  background:rgba(1,29,31,.34)!important;
+  text-align:left!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary>div+div{
+  border-left:1px solid rgba(91,190,181,.14)!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .metric-icon{
+  width:26px!important;height:26px!important;
+  display:grid!important;place-items:center!important;
+  border-radius:50%!important;
+  background:rgba(20,203,181,.08)!important;
+  color:#54ead5!important;
+  font-size:13px!important;
+  font-weight:900!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .expense .metric-icon{
+  color:#ff7d84!important;background:rgba(255,105,113,.08)!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .result-positive .metric-icon,
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .result-negative .metric-icon{
+  color:#50e6b3!important;background:rgba(80,230,179,.08)!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .metric-copy{
+  min-width:0!important;
+  display:grid!important;
+  gap:3px!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .metric-copy>span{
+  color:#87a6a2!important;
+  font-size:6.8px!important;
+  line-height:1.15!important;
+  white-space:normal!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .metric-copy>strong{
+  color:#f4fffc!important;
+  font-size:clamp(9px,2.55vw,11px)!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .expense .metric-copy>strong{color:#ff8b91!important}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .result-positive .metric-copy>strong{color:#4de8b1!important}
+body.meg-operational-mobile .px-home-current-v9 .px-approved-summary .result-negative .metric-copy>strong{color:#ff8b91!important}
+
+@media(max-width:390px){
+  body.meg-operational-mobile .px-home-current-v9 .px-home-ref-actions-current{gap:5px!important}
+  body.meg-operational-mobile .px-home-current-v9 .px-home-ref-actions-current>button{
+    grid-template-columns:27px minmax(0,1fr)!important;
+    gap:5px!important;
+    padding-inline:6px!important;
+  }
+  body.meg-operational-mobile .px-home-current-v9 .px-home-ref-actions-current>button>span{
+    width:27px!important;height:27px!important;
+  }
+  body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-hero{
+    grid-template-columns:minmax(0,1fr) 84px!important;
+  }
+  body.meg-operational-mobile .px-home-current-v9 .px-approved-balance-art{
+    width:84px!important;
+  }
+}
