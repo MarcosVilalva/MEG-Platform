@@ -1072,3 +1072,365 @@ body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-lay
     border-left:0!important;border-top:1px solid rgba(79,192,177,.15)!important;
   }
 }
+
+
+/* ==========================================================================
+   MEG Home v9 · mock aprovado é a fonte de verdade visual
+   Layout dedicado: não herda a distribuição antiga da Home Tudo.
+   ========================================================================== */
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"]{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  gap:10px!important;
+  padding-bottom:20px!important;
+  overflow-x:clip!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-profile-head{
+  min-height:52px!important;
+  margin:0!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-profile-avatar{
+  width:48px!important;height:48px!important;flex:0 0 48px!important;
+  border-radius:6px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-profile strong{
+  font-size:13px!important;
+  line-height:1.08!important;
+}
+
+/* Ações rápidas: três botões leves, proporcionais e sem truncamento. */
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-home-ref-actions{
+  width:100%!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:7px!important;
+  margin:0!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-home-ref-actions>button{
+  width:100%!important;
+  min-width:0!important;
+  min-height:58px!important;
+  padding:7px 8px!important;
+  display:grid!important;
+  grid-template-columns:30px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:6px!important;
+  border-radius:14px!important;
+  text-align:left!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-home-ref-actions>button>span{
+  width:30px!important;height:30px!important;
+  display:grid!important;place-items:center!important;
+  border-radius:10px!important;
+  font-size:17px!important;
+  line-height:1!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-home-ref-actions>button>strong{
+  min-width:0!important;
+  font-size:clamp(9.5px,2.8vw,11.5px)!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-home-ref-actions .expense{
+  border-color:rgba(246,122,128,.68)!important;
+  background:linear-gradient(145deg,rgba(92,35,38,.50),rgba(5,43,44,.98))!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-home-ref-actions .expense>span{
+  color:#54ead5!important;background:rgba(5,54,53,.84)!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-home-ref-actions .income{
+  border-color:rgba(49,225,165,.54)!important;
+  background:linear-gradient(145deg,rgba(9,72,54,.54),rgba(4,45,43,.98))!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-home-ref-actions .income>span{
+  color:#57efc1!important;background:rgba(5,63,54,.72)!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-home-ref-actions .benefit{
+  border-color:rgba(55,151,239,.66)!important;
+  background:linear-gradient(145deg,rgba(9,58,91,.58),rgba(4,42,48,.98))!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-home-ref-actions .benefit>span{
+  color:#63d9dc!important;background:rgba(4,59,58,.70)!important;
+}
+
+/* Saldo: proporção igual ao mock, arte integrada e KPIs horizontais. */
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-overview-v8{
+  width:100%!important;
+  overflow:hidden!important;
+  border:1px solid rgba(53,226,204,.50)!important;
+  border-radius:18px!important;
+  background:
+    radial-gradient(circle at 88% 9%,rgba(36,238,207,.13),transparent 27%),
+    linear-gradient(145deg,rgba(6,62,58,.98),rgba(2,38,40,.99))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 14px 30px rgba(0,0,0,.18)!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-balance-v8{
+  min-height:118px!important;
+  padding:14px 14px 10px!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 104px!important;
+  align-items:center!important;
+  gap:8px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-balance-copy{
+  min-width:0!important;
+  display:grid!important;
+  gap:4px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-balance-copy>span{
+  color:#8daca8!important;
+  font-size:8.5px!important;
+  font-weight:900!important;
+  letter-spacing:.08em!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-balance-copy>strong{
+  color:#fff!important;
+  font-size:clamp(35px,10.7vw,46px)!important;
+  line-height:.98!important;
+  letter-spacing:-.055em!important;
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-balance-copy>small{
+  max-width:240px!important;
+  color:#92aaa7!important;
+  font-size:7.5px!important;
+  line-height:1.35!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-balance-art{
+  width:104px!important;height:86px!important;
+  display:grid!important;place-items:center!important;
+  opacity:.72!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-balance-art svg{
+  width:100%!important;height:100%!important;
+  overflow:visible!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-balance-art .bar{
+  fill:#0aa797!important;
+  opacity:.55!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-balance-art .coins{
+  fill:rgba(27,194,166,.22)!important;
+  stroke:#24d8bf!important;
+  stroke-width:2!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-balance-art .coins.front{
+  fill:rgba(26,218,183,.24)!important;
+  stroke:#3ee7cd!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-flow-v8{
+  padding:0 10px 11px!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-flow-v8>article{
+  min-width:0!important;
+  min-height:62px!important;
+  padding:7px 8px!important;
+  display:grid!important;
+  grid-template-columns:26px minmax(0,1fr)!important;
+  align-items:center!important;
+  align-content:center!important;
+  gap:6px!important;
+  border:1px solid rgba(91,190,181,.14)!important;
+  border-radius:11px!important;
+  background:rgba(1,29,31,.34)!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-flow-v8 .metric-icon{
+  width:26px!important;height:26px!important;
+  display:grid!important;place-items:center!important;
+  border-radius:50%!important;
+  background:rgba(20,203,181,.08)!important;
+  color:#54ead5!important;
+  font-size:13px!important;
+  font-weight:900!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-flow-v8 .expense .metric-icon{
+  color:#ff7d84!important;background:rgba(255,105,113,.08)!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-flow-v8 .result .metric-icon{
+  color:#50e6b3!important;background:rgba(80,230,179,.08)!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-flow-v8 article>div{
+  min-width:0!important;
+  display:grid!important;
+  gap:3px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-flow-v8 article>div>span{
+  color:#87a6a2!important;
+  font-size:6.8px!important;
+  line-height:1.15!important;
+  white-space:normal!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-flow-v8 article>div>strong{
+  color:#f4fffc!important;
+  font-size:clamp(9px,2.55vw,11px)!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-flow-v8 .result.is-positive article>div>strong,
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-flow-v8 .result.is-positive strong{
+  color:#4de8b1!important;
+}
+
+/* Compromissos: sempre compacto, inclusive nos aparelhos estreitos. */
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-commitment-board-v8{
+  border-radius:17px!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-commitment-board-v8>header{
+  padding:11px 12px 6px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-commitment-grid{
+  padding:7px 8px 9px!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:0!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-commitment-grid article{
+  min-width:0!important;
+  min-height:88px!important;
+  padding:7px!important;
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  justify-items:start!important;
+  align-content:center!important;
+  gap:5px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-commitment-grid article+article{
+  border-left:1px solid rgba(79,192,177,.15)!important;
+  border-top:0!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-commitment-grid article>.icon{
+  width:28px!important;height:28px!important;
+  border-radius:9px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-commitment-grid article>div{
+  min-width:0!important;
+  width:100%!important;
+  display:grid!important;
+  gap:2px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-commitment-grid article>div>small{
+  font-size:6.8px!important;
+  white-space:normal!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-commitment-grid article>div>strong{
+  font-size:clamp(9px,2.6vw,11px)!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-commitment-grid article>div>span{
+  font-size:7px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-commitment-grid article>div>b{
+  font-size:9.5px!important;
+}
+
+/* Resumo histórico: quatro indicadores na mesma linha, como no mock. */
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-history-summary{
+  border-radius:15px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-history-summary>header{
+  min-height:48px!important;
+  padding:8px 10px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-history-summary>header>div{
+  grid-template-columns:30px minmax(0,1fr)!important;
+  gap:7px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-history-summary .icon{
+  width:30px!important;height:30px!important;border-radius:9px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-history-summary>header small{
+  font-size:7px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-history-summary>header strong{
+  font-size:8.5px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-history-metrics-v9{
+  padding:7px!important;
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:5px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-history-metrics-v9 article{
+  min-width:0!important;
+  min-height:68px!important;
+  padding:6px!important;
+  display:grid!important;
+  grid-template-columns:18px minmax(0,1fr)!important;
+  align-items:start!important;
+  align-content:center!important;
+  gap:4px!important;
+  border-radius:10px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-history-metrics-v9 .metric-icon{
+  width:18px!important;height:18px!important;
+  display:grid!important;place-items:center!important;
+  border-radius:50%!important;
+  background:rgba(57,222,199,.08)!important;
+  color:#54e4d2!important;
+  font-size:8px!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-history-metrics-v9 article>div{
+  min-width:0!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-history-metrics-v9 small{
+  display:block!important;
+  color:#849f9c!important;
+  font-size:5.8px!important;
+  line-height:1.15!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-history-metrics-v9 strong{
+  display:block!important;
+  margin-top:3px!important;
+  font-size:clamp(7px,2.05vw,9px)!important;
+  line-height:1.18!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-history-metrics-v9 strong.expense{color:#ff8f95!important}
+body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-history-metrics-v9 strong.income{color:#4de2c2!important}
+
+@media(max-width:390px){
+  body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-home-ref-actions{
+    gap:5px!important;
+  }
+  body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-home-ref-actions>button{
+    padding-inline:6px!important;
+    grid-template-columns:27px minmax(0,1fr)!important;
+    gap:5px!important;
+  }
+  body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-home-ref-actions>button>span{
+    width:27px!important;height:27px!important;
+  }
+  body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-balance-v8{
+    grid-template-columns:minmax(0,1fr) 84px!important;
+  }
+  body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-balance-art{
+    width:84px!important;
+    transform:none!important;
+  }
+  body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-commitment-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+  body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-alltime-commitment-grid article+article{
+    border-left:1px solid rgba(79,192,177,.15)!important;
+    border-top:0!important;
+  }
+  body.meg-operational-mobile .px-home-alltime.is-modern-all[data-home-alltime-layout="mock-fidelity-v9"] .px-history-metrics-v9{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  }
+}
