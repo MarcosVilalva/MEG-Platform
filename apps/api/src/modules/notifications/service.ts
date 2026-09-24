@@ -213,6 +213,9 @@ export function buildNotificationDigest(transactions: LegacyTransaction[], refer
   const futureScope = grouped.filter((item) => monthKey(item.dueDate) > currentMonth);
   const nextMonth = followingMonthKey(currentMonth);
   const nextMonthScope = grouped.filter((item) => monthKey(item.dueDate) === nextMonth);
+  const nextDueDate = grouped.find((item) => item.daysUntilDue >= 0)?.dueDate || null;
+  const nextDueItems = nextDueDate ? grouped.filter((item) => item.dueDate === nextDueDate) : [];
+  const nextDueTotal = nextDueItems.reduce((sum, item) => sum + item.value, 0);
   const totalAmount = selected.reduce((sum, item) => sum + item.value, 0);
   const openAmount = currentScope.reduce((sum, item) => sum + item.value, 0);
   const futureAmount = futureScope.reduce((sum, item) => sum + item.value, 0);
@@ -273,6 +276,9 @@ export function buildNotificationDigest(transactions: LegacyTransaction[], refer
     nextMonthItems: nextMonthScope,
     nextMonthCount: nextMonthScope.length,
     nextMonthAmount,
+    nextDueDate,
+    nextDueItems,
+    nextDueTotal,
     mode
   };
 }

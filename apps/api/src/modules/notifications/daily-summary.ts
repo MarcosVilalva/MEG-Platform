@@ -1,6 +1,7 @@
 import { prisma } from '@meg/database';
 import { config } from '../../config';
 import { resolveWorkspaceContext } from '../workspaces/service';
+import { getPhoenixPreviewSnapshot } from '../finance/phoenix-preview-snapshot';
 import { alexaFinancialPanorama, notificationDigest, sendSystemEmail, sendSystemWhatsApp } from './service';
 
 const money = (value: number) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -35,23 +36,42 @@ function commitmentLabel(count: number) {
 function whatsappStatus(digest: Awaited<ReturnType<typeof notificationDigest>>) {
   if (digest.maximumPriority.length || digest.overdue.length) {
     return {
-      headline: '🔴 *Ação necessária*',
+      headline: '🔴 *AÇÃO NECESSÁRIA*',
       detail: `${money(digest.totalAmount)} em ${commitmentLabel(digest.totalCount)} exigem atenção agora.`
     };
   }
   if (digest.totalCount) {
     return {
-      headline: '🟡 *Atenção nos próximos dias*',
+      headline: '🟡 *MÊS EM ATENÇÃO*',
       detail: `${money(digest.totalAmount)} em ${commitmentLabel(digest.totalCount)} estão no radar imediato.`
     };
   }
   return {
-    headline: '🟢 *Tudo sob controle*',
-    detail: 'Nenhum pagamento exige ação agora.'
+    headline: '🟢 *MÊS SOB CONTROLE*',
+    detail: 'Nenhum pagamento exige ação imediata neste momento.'
   };
 }
 
 type DailyDigest = Awaited<ReturnType<typeof notificationDigest>>;
+type DailyFinancialStatus = {
+  currentMonetaryBalance: number | null;
+  benefitBalance: number | null;
+};
+
+function statusMoney(value: number | null) {
+  return value === null ? '_Indisponível nesta leitura_' : `*${money(value)}*`;
+}
+
+function nextDueLine(digest: DailyDigest) {
+  if (!digest.nextDueDate) return '_Nenhum vencimento futuro cadastrado._';
+  const items = digest.nextDueItems || [];
+  const label = items.length === 1
+    ? items[0].label
+    : items.length > 1
+      ? `${items.length} compromissos`
+      : 'Compromisso financeiro';
+  return `*${shortDueDate(digest.nextDueDate)}* · ${label} · *${money(digest.nextDueTotal)}*`;
+}
 
 function summarizeNextMonth(digest: DailyDigest) {
   const cardMap = new Map<string, { payment: string; value: number; entries: number; dueDates: string[] }>();
@@ -86,31 +106,40 @@ function dueDatesLabel(values: string[]) {
 
 function nextMonthWhatsappLines(digest: DailyDigest) {
   const summary = summarizeNextMonth(digest);
+  const monthName = digest.nextMonthLabel.replace(/\s+\d{4}$/u, '');
   const lines = [
-    `*${digest.nextMonthLabel} • PRÓXIMO MÊS*`,
-    summary.count
-      ? `💰 Previsto · *${money(digest.nextMonthAmount)}* · ${commitmentLabel(summary.count)}`
-      : '💰 Nenhum compromisso previsto até o momento.'
+    '═════════════',
+    `*PRÓXIMO MÊS · ${digest.nextMonthLabel}*`,
+    '',
+    '💰 *Previsão total*',
+    `*${money(digest.nextMonthAmount)}*`
   ];
-  if (!summary.count) return lines;
+  if (!summary.count) {
+    lines.push('', '_Nenhum compromisso previsto até o momento._');
+    return lines;
+  }
 
   const cards = summary.cards;
   const others = summary.others;
   if (cards.length) {
-    lines.push('', `💳 *Cartões · ${money(summary.cardsTotal)}*`);
+    lines.push('', '💳 *FATURAS DE CARTÃO*', `\`Subtotal • ${money(summary.cardsTotal)}\``, '');
     cards.forEach((item) => {
-      lines.push(`• ${item.payment} · *${money(item.value)}* · ${dueDatesLabel(item.dueDates)}`);
+      lines.push(`• ${item.payment} — *${money(item.value)}* — *${dueDatesLabel(item.dueDates)}*`);
     });
   }
   if (others.length) {
-    lines.push('', `📋 *Demais débitos · ${money(summary.othersTotal)}*`);
-    others.forEach((item) => lines.push(`• ${item.label} · *${money(item.value)}* · ${shortDueDate(item.dueDate)}`));
+    lines.push('', '📋 *CONTAS E COMPROMISSOS*', `\`Subtotal • ${money(summary.othersTotal)}\``, '');
+    others.forEach((item) => lines.push(`*${shortDueDate(item.dueDate)}* · ${item.label} — *${money(item.value)}*`));
   }
-  lines.push('', `💰 *TOTAL DO MÊS · ${money(digest.nextMonthAmount)}*`);
+  lines.push('', '═════════════', `💰 *TOTAL PREVISTO PARA ${monthName}*`, `*${money(digest.nextMonthAmount)}*`);
   return lines;
 }
 
-export function buildDailyFinancialSummaryText(digest: Awaited<ReturnType<typeof notificationDigest>>, referenceDate = new Date()) {
+export function buildDailyFinancialSummaryText(
+  digest: Awaited<ReturnType<typeof notificationDigest>>,
+  referenceDate = new Date(),
+  financialStatus: DailyFinancialStatus = { currentMonetaryBalance: null, benefitBalance: null }
+) {
   const local = localParts(referenceDate);
   const attention = digest.totalCount > 0
     ? `Há ${commitmentLabel(digest.totalCount)} exigindo atenção, somando ${money(digest.totalAmount)}.`
@@ -121,7 +150,12 @@ export function buildDailyFinancialSummaryText(digest: Awaited<ReturnType<typeof
     `Consulta: ${local.iso.split('-').reverse().join('/')} às ${local.time}`,
     '',
     attention,
+    `Saldo monetário atual: ${financialStatus.currentMonetaryBalance === null ? 'indisponível nesta leitura' : money(financialStatus.currentMonetaryBalance)}.`,
+    `Saldo do Benefício Alimentação: ${financialStatus.benefitBalance === null ? 'indisponível nesta leitura' : money(financialStatus.benefitBalance)}.`,
     `Em aberto até o mês atual: ${money(digest.openAmount)} em ${commitmentLabel(digest.openCount)}.`,
+    digest.nextDueDate
+      ? `Próximo vencimento: ${shortDueDate(digest.nextDueDate)} — ${digest.nextDueItems.length === 1 ? digest.nextDueItems[0].label : `${digest.nextDueItems.length} compromissos`} — ${money(digest.nextDueTotal)}.`
+      : 'Próximo vencimento: nenhum.',
     '',
     `${digest.nextMonthLabel} | PRÓXIMO MÊS`,
     nextMonth.count
@@ -153,31 +187,42 @@ export function buildDailyFinancialSummaryText(digest: Awaited<ReturnType<typeof
   return lines.join('\n');
 }
 
-export function buildDailyWhatsappText(digest: Awaited<ReturnType<typeof notificationDigest>>, referenceDate: Date) {
+export function buildDailyWhatsappText(
+  digest: Awaited<ReturnType<typeof notificationDigest>>,
+  referenceDate: Date,
+  financialStatus: DailyFinancialStatus = { currentMonetaryBalance: null, benefitBalance: null }
+) {
   const local = localParts(referenceDate);
   const status = whatsappStatus(digest);
   const lines = [
-    '*MEG FINANÇAS*',
-    `\`RESUMO • ${compactDateTag(local.iso)} • ${local.time}\``,
+    '*✦ MEG FINANÇAS*',
+    `\`VISÃO FINANCEIRA • ${compactDateTag(local.iso)} • ${local.time}\``,
     '',
     status.headline,
     status.detail,
     '',
-    '*AGORA*',
-    `📌 Em aberto · *${money(digest.openAmount)}* · ${commitmentLabel(digest.openCount)}`,
+    '💵 *Saldo monetário atual*',
+    statusMoney(financialStatus.currentMonetaryBalance),
     '',
-    ...nextMonthWhatsappLines(digest)
+    '🍽️ *Benefício Alimentação*',
+    statusMoney(financialStatus.benefitBalance),
+    '',
+    '📌 *Em aberto*',
+    `*${money(digest.openAmount)}*`,
+    '',
+    '⏳ *Próximo vencimento*',
+    nextDueLine(digest)
   ];
 
   if (digest.items.length) {
-    lines.push('', '⚡ *Prioridades agora*');
+    lines.push('', '⚡ *PRIORIDADES DE AGORA*');
     digest.items.slice(0, 4).forEach((item) => {
-      lines.push(`• ${item.label} · *${money(item.value)}* · ${shortDueDate(item.dueDate)}`);
+      lines.push(`• *${shortDueDate(item.dueDate)}* · ${item.label} — *${money(item.value)}*`);
     });
     if (digest.items.length > 4) lines.push(`↳ + ${commitmentLabel(digest.items.length - 4)} no MEG`);
   }
 
-  lines.push('', '_MEG • seu copiloto financeiro_');
+  lines.push('', ...nextMonthWhatsappLines(digest), '', '_MEG • inteligência para cuidar das suas finanças_');
   return lines.join('\n');
 }
 
@@ -189,7 +234,18 @@ type DailySummaryOptions = {
 
 export async function deliverDailyFinancialSummary(userId: string, options: DailySummaryOptions = {}) {
   const referenceDate = options.referenceDate || new Date();
-  const digest = await notificationDigest(userId, referenceDate, 'upcoming');
+  const local = localParts(referenceDate);
+  const currentMonth = local.iso.slice(0, 7);
+  const [digest, snapshot] = await Promise.all([
+    notificationDigest(userId, referenceDate, 'upcoming'),
+    getPhoenixPreviewSnapshot(userId, currentMonth).catch(() => null),
+  ]);
+  const financialStatus: DailyFinancialStatus = snapshot
+    ? {
+        currentMonetaryBalance: Number(snapshot.summary.availableBalance || 0) + Number(snapshot.summary.realizedResult || 0),
+        benefitBalance: Number(snapshot.summary.benefitBalance || 0),
+      }
+    : { currentMonetaryBalance: null, benefitBalance: null };
   const context = await resolveWorkspaceContext(userId);
   const notificationConfig = await prisma.workspaceNotificationConfig.findUnique({ where: { workspaceId: context.workspaceId } });
   const [phones, emails, owner] = await Promise.all([
@@ -208,12 +264,11 @@ export async function deliverDailyFinancialSummary(userId: string, options: Dail
     ? []
     : emails.length ? emails : owner?.email ? [{ id: 'workspace-owner', name: owner.name || 'Responsável', email: owner.email }] : [];
 
-  const text = buildDailyFinancialSummaryText(digest, referenceDate);
-  const whatsappText = buildDailyWhatsappText(digest, referenceDate);
+  const text = buildDailyFinancialSummaryText(digest, referenceDate, financialStatus);
+  const whatsappText = buildDailyWhatsappText(digest, referenceDate, financialStatus);
   const subject = digest.totalCount
     ? `MEG Finanças · ${commitmentLabel(digest.totalCount)} em atenção`
     : 'MEG Finanças · resumo diário · tudo sob controle';
-  const local = localParts(referenceDate);
   const reference = `${local.iso}:${options.slot || '06:00'}:daily-summary`;
   const channels = [
     ...emailTargets.map((recipient) => ({
