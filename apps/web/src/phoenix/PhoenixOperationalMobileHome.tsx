@@ -39,8 +39,8 @@ export function PhoenixOperationalMobileHome({ data, onNavigate }: Props) {
   const agenda = buildPhoenixHomeAgenda(data, today);
   const currentBalance = Number(data.summary.availableBalance || 0) + Number(data.summary.realizedResult || 0);
 
-  const cardItems = agenda.items.filter((item) => item.kind === 'FATURA');
-  const otherItems = agenda.items.filter((item) => item.kind !== 'FATURA');
+  const cardItems = agenda.items.filter((item) => item.kind === 'FATURA' || Boolean(item.cardLabel));
+  const otherItems = agenda.items.filter((item) => item.kind !== 'FATURA' && !item.cardLabel);
   const cardAmount = cardItems.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const otherAmount = otherItems.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const pendingAmount = Number(data.summary.pendingAmount || 0);
