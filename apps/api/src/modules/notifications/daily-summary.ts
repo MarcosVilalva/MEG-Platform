@@ -176,8 +176,8 @@ export async function deliverDailyFinancialSummary(userId: string, options: Dail
   const text = buildDailyFinancialSummaryText(digest, referenceDate);
   const whatsappText = buildDailyWhatsappText(digest, referenceDate);
   const subject = digest.totalCount
-    ? `MEG Finanças: resumo diário, ${digest.totalCount} obrigação(ões) em atenção`
-    : `MEG Finanças: resumo diário, agenda imediata sob controle`;
+    ? `MEG Finanças · ${commitmentLabel(digest.totalCount)} em atenção`
+    : 'MEG Finanças · resumo diário · tudo sob controle';
   const local = localParts(referenceDate);
   const reference = `${local.iso}:${options.slot || '06:00'}:daily-summary`;
   const channels = [
