@@ -1,0 +1,432 @@
+/* ==========================================================================
+   MEG Home v13 · checkpoint de fidelidade visual
+   Referência oficial: composição aprovada da Home em 24/09/2026.
+   Este arquivo NÃO reaproveita a distribuição visual da Home v12.
+   ========================================================================== */
+
+body.meg-operational-mobile .meg-home-v13-current{
+  --meg13-bg:#012525;
+  --meg13-panel:#022f2f;
+  --meg13-panel-deep:#022829;
+  --meg13-border:rgba(56,205,193,.24);
+  --meg13-border-strong:rgba(53,224,210,.40);
+  --meg13-text:#f2fbfa;
+  --meg13-muted:#8fa7a4;
+  --meg13-teal:#48e5d6;
+  --meg13-green:#4ee2a8;
+  --meg13-rose:#ff7e8d;
+  --meg13-blue:#62b9ff;
+  --meg13-amber:#efbf59;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0 0 4px!important;
+  display:grid!important;
+  gap:9px!important;
+  color:var(--meg13-text)!important;
+  background:transparent!important;
+  box-sizing:border-box!important;
+}
+body.meg-operational-mobile .meg-home-v13-current *,
+body.meg-operational-mobile .meg-home-v13-current *::before,
+body.meg-operational-mobile .meg-home-v13-current *::after{box-sizing:border-box!important}
+body.meg-operational-mobile .meg-home-v13-current button{
+  font:inherit!important;
+  color:inherit!important;
+  -webkit-tap-highlight-color:transparent!important;
+}
+
+/* Cabeçalho do conteúdo: compacto, igual à referência. */
+body.meg-operational-mobile .meg-current-v13-heading{
+  min-width:0!important;
+  min-height:72px!important;
+  padding:0 4px 1px!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 48px!important;
+  align-items:start!important;
+  gap:8px!important;
+}
+body.meg-operational-mobile .meg-current-v13-heading>div{
+  min-width:0!important;
+  display:grid!important;
+  gap:2px!important;
+}
+body.meg-operational-mobile .meg-current-v13-heading>div>span{
+  color:#d6e0de!important;
+  font-size:12px!important;
+  line-height:1.1!important;
+  font-weight:850!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+}
+body.meg-operational-mobile .meg-current-v13-heading h1{
+  margin:0!important;
+  color:#fff!important;
+  font-size:27px!important;
+  line-height:1.02!important;
+  font-weight:850!important;
+  letter-spacing:-.035em!important;
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .meg-current-v13-heading p{
+  max-width:none!important;
+  margin:1px 0 0!important;
+  color:#9eb1ae!important;
+  font-size:10px!important;
+  line-height:1.25!important;
+  font-weight:500!important;
+}
+body.meg-operational-mobile .meg-current-v13-heading-icon{
+  width:45px!important;
+  height:45px!important;
+  margin-top:1px!important;
+  border:1px solid rgba(57,219,207,.16)!important;
+  border-radius:0!important;
+  background:
+    radial-gradient(circle at 50% 50%,rgba(38,232,215,.08),transparent 68%),
+    rgba(0,44,44,.28)!important;
+  display:grid!important;
+  place-items:center!important;
+  color:#31e0d2!important;
+}
+body.meg-operational-mobile .meg-current-v13-heading-icon svg{
+  width:34px!important;
+  height:34px!important;
+  fill:none!important;
+  stroke:currentColor!important;
+  stroke-width:1.7!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+  filter:drop-shadow(0 0 7px rgba(36,224,208,.18))!important;
+}
+
+/* Saldo disponível: conteúdo alinhado à esquerda, não centralizado. */
+body.meg-operational-mobile .meg-current-v13-balance{
+  min-width:0!important;
+  min-height:96px!important;
+  padding:13px 14px!important;
+  border:1px solid var(--meg13-border)!important;
+  border-radius:16px!important;
+  background:
+    radial-gradient(circle at 8% 10%,rgba(27,225,203,.09),transparent 30%),
+    linear-gradient(145deg,rgba(2,50,50,.98),rgba(1,41,42,.98))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.018)!important;
+  display:grid!important;
+  grid-template-columns:54px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:11px!important;
+}
+body.meg-operational-mobile .meg-current-v13-balance>div{
+  min-width:0!important;
+  display:grid!important;
+  align-content:center!important;
+  gap:3px!important;
+  text-align:left!important;
+}
+body.meg-operational-mobile .meg-current-v13-balance>div>span{
+  color:#e8f1ef!important;
+  font-size:11px!important;
+  line-height:1.1!important;
+  font-weight:700!important;
+  text-transform:none!important;
+  letter-spacing:0!important;
+}
+body.meg-operational-mobile .meg-current-v13-balance>div>strong{
+  min-width:0!important;
+  max-width:100%!important;
+  color:var(--meg13-teal)!important;
+  font-size:29px!important;
+  line-height:1!important;
+  font-weight:800!important;
+  letter-spacing:-.035em!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  font-variant-numeric:tabular-nums!important;
+}
+body.meg-operational-mobile .meg-current-v13-balance>div>small{
+  color:#8fa7a3!important;
+  font-size:8.5px!important;
+  line-height:1.2!important;
+  white-space:normal!important;
+}
+body.meg-operational-mobile .meg-current-v13-icon{
+  width:37px!important;
+  height:37px!important;
+  border-radius:12px!important;
+  display:grid!important;
+  place-items:center!important;
+  flex:0 0 auto!important;
+}
+body.meg-operational-mobile .meg-current-v13-icon.wallet{
+  width:54px!important;
+  height:54px!important;
+  border:1px solid rgba(47,223,207,.18)!important;
+  border-radius:13px!important;
+  background:rgba(8,84,75,.44)!important;
+  color:#4ce8d8!important;
+}
+body.meg-operational-mobile .meg-current-v13-icon svg,
+body.meg-operational-mobile .meg-current-v13-stat-icon svg,
+body.meg-operational-mobile .meg-current-v13-benefit-icon svg{
+  width:22px!important;
+  height:22px!important;
+  fill:none!important;
+  stroke:currentColor!important;
+  stroke-width:1.8!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+body.meg-operational-mobile .meg-current-v13-icon.wallet svg{width:28px!important;height:28px!important}
+
+/* Entradas e saídas: dois cards baixos, ícone lateral e valor completo. */
+body.meg-operational-mobile .meg-current-v13-flow{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+body.meg-operational-mobile .meg-current-v13-flow>article{
+  min-width:0!important;
+  min-height:66px!important;
+  padding:9px 10px!important;
+  border:1px solid rgba(57,191,183,.19)!important;
+  border-radius:15px!important;
+  background:linear-gradient(145deg,rgba(2,47,48,.97),rgba(1,38,40,.98))!important;
+  display:grid!important;
+  grid-template-columns:38px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:8px!important;
+  text-align:left!important;
+}
+body.meg-operational-mobile .meg-current-v13-flow>article.income .meg-current-v13-icon{
+  color:#40e2b2!important;
+  background:rgba(19,133,105,.22)!important;
+}
+body.meg-operational-mobile .meg-current-v13-flow>article.expense .meg-current-v13-icon{
+  color:#ff8391!important;
+  background:rgba(151,62,71,.24)!important;
+}
+body.meg-operational-mobile .meg-current-v13-flow>article>div{
+  min-width:0!important;
+  display:grid!important;
+  gap:3px!important;
+}
+body.meg-operational-mobile .meg-current-v13-flow>article>div>span{
+  color:#dbe7e5!important;
+  font-size:9.5px!important;
+  line-height:1.15!important;
+  font-weight:600!important;
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .meg-current-v13-flow>article>div>strong{
+  min-width:0!important;
+  max-width:100%!important;
+  font-size:16px!important;
+  line-height:1!important;
+  font-weight:800!important;
+  letter-spacing:-.025em!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  font-variant-numeric:tabular-nums!important;
+}
+body.meg-operational-mobile .meg-current-v13-flow>article.income>div>strong{color:#4de0a9!important}
+body.meg-operational-mobile .meg-current-v13-flow>article.expense>div>strong{color:#ff8995!important}
+
+/* Resultado: largura total, mesma altura visual da referência. */
+body.meg-operational-mobile .meg-current-v13-result{
+  min-width:0!important;
+  min-height:69px!important;
+  padding:10px 13px!important;
+  border:1px solid rgba(57,191,183,.19)!important;
+  border-radius:15px!important;
+  background:linear-gradient(145deg,rgba(2,47,48,.97),rgba(1,38,40,.98))!important;
+  display:grid!important;
+  grid-template-columns:39px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:9px!important;
+  text-align:left!important;
+}
+body.meg-operational-mobile .meg-current-v13-result .meg-current-v13-icon{
+  color:#4be6b0!important;
+  background:rgba(16,121,96,.22)!important;
+}
+body.meg-operational-mobile .meg-current-v13-result>div{
+  min-width:0!important;
+  display:grid!important;
+  gap:3px!important;
+}
+body.meg-operational-mobile .meg-current-v13-result>div>span{
+  color:#deebe8!important;
+  font-size:10px!important;
+  line-height:1.1!important;
+  font-weight:600!important;
+}
+body.meg-operational-mobile .meg-current-v13-result>div>strong{
+  max-width:100%!important;
+  font-size:20px!important;
+  line-height:1!important;
+  font-weight:850!important;
+  letter-spacing:-.03em!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  font-variant-numeric:tabular-nums!important;
+}
+body.meg-operational-mobile .meg-current-v13-result.positive>div>strong{color:#4ce0aa!important}
+body.meg-operational-mobile .meg-current-v13-result.negative>div>strong{color:#ff8995!important}
+
+/* Quatro indicadores operacionais: contagem é o número principal, valor é secundário. */
+body.meg-operational-mobile .meg-current-v13-stats{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:7px!important;
+}
+body.meg-operational-mobile .meg-current-v13-stats>article{
+  min-width:0!important;
+  min-height:101px!important;
+  padding:8px 4px 7px!important;
+  border:1px solid rgba(55,180,173,.17)!important;
+  border-radius:14px!important;
+  background:linear-gradient(155deg,rgba(2,44,45,.98),rgba(1,34,36,.99))!important;
+  display:grid!important;
+  grid-template-rows:28px 29px 18px 15px!important;
+  place-items:center!important;
+  align-content:start!important;
+  text-align:center!important;
+  gap:2px!important;
+}
+body.meg-operational-mobile .meg-current-v13-stat-icon{
+  width:28px!important;
+  height:28px!important;
+  border-radius:9px!important;
+  display:grid!important;
+  place-items:center!important;
+}
+body.meg-operational-mobile .meg-current-v13-stat-icon svg{width:16px!important;height:16px!important}
+body.meg-operational-mobile .meg-current-v13-stats .rose .meg-current-v13-stat-icon{color:#ff8a98!important;background:rgba(153,64,75,.22)!important}
+body.meg-operational-mobile .meg-current-v13-stats .blue .meg-current-v13-stat-icon{color:#68baff!important;background:rgba(62,111,174,.24)!important}
+body.meg-operational-mobile .meg-current-v13-stats .amber .meg-current-v13-stat-icon{color:#f1c55f!important;background:rgba(161,121,43,.22)!important}
+body.meg-operational-mobile .meg-current-v13-stats .green .meg-current-v13-stat-icon{color:#50e0ad!important;background:rgba(25,126,101,.22)!important}
+body.meg-operational-mobile .meg-current-v13-stat-label{
+  min-width:0!important;
+  max-width:100%!important;
+  color:#d6e2e0!important;
+  font-size:8px!important;
+  line-height:1.1!important;
+  font-weight:600!important;
+  display:grid!important;
+  place-items:center!important;
+  word-break:normal!important;
+  overflow-wrap:normal!important;
+}
+body.meg-operational-mobile .meg-current-v13-stats>article>strong{
+  color:#f5fbfa!important;
+  font-size:14px!important;
+  line-height:1!important;
+  font-weight:850!important;
+  font-variant-numeric:tabular-nums!important;
+}
+body.meg-operational-mobile .meg-current-v13-stats>article>small{
+  max-width:100%!important;
+  font-size:7.5px!important;
+  line-height:1!important;
+  font-weight:800!important;
+  letter-spacing:-.025em!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  font-variant-numeric:tabular-nums!important;
+}
+body.meg-operational-mobile .meg-current-v13-stats .rose>small{color:#ff8794!important}
+body.meg-operational-mobile .meg-current-v13-stats .blue>small{color:#66b7ff!important}
+body.meg-operational-mobile .meg-current-v13-stats .amber>small{color:#efbf59!important}
+body.meg-operational-mobile .meg-current-v13-stats .green>small{color:#4adba7!important}
+
+/* Benefício: último bloco da Home atual antes do dock. */
+body.meg-operational-mobile .meg-current-v13-benefit{
+  width:100%!important;
+  min-width:0!important;
+  min-height:91px!important;
+  padding:11px 12px!important;
+  border:1px solid rgba(55,208,190,.22)!important;
+  border-radius:16px!important;
+  background:
+    radial-gradient(circle at 6% 20%,rgba(24,223,190,.08),transparent 31%),
+    linear-gradient(145deg,rgba(2,54,51,.98),rgba(1,39,40,.99))!important;
+  box-shadow:none!important;
+  appearance:none!important;
+  display:grid!important;
+  grid-template-columns:50px minmax(0,1fr) 18px!important;
+  align-items:center!important;
+  gap:10px!important;
+  text-align:left!important;
+  cursor:pointer!important;
+}
+body.meg-operational-mobile .meg-current-v13-benefit-icon{
+  width:50px!important;
+  height:50px!important;
+  border:1px solid rgba(56,219,190,.17)!important;
+  border-radius:13px!important;
+  background:rgba(10,94,75,.34)!important;
+  display:grid!important;
+  place-items:center!important;
+  color:#55e6bc!important;
+}
+body.meg-operational-mobile .meg-current-v13-benefit-icon svg{width:29px!important;height:29px!important}
+body.meg-operational-mobile .meg-current-v13-benefit-copy{
+  min-width:0!important;
+  display:grid!important;
+  gap:2px!important;
+}
+body.meg-operational-mobile .meg-current-v13-benefit-copy>small{
+  color:#edf6f4!important;
+  font-size:10.5px!important;
+  line-height:1.05!important;
+  font-weight:700!important;
+  text-transform:none!important;
+  letter-spacing:0!important;
+}
+body.meg-operational-mobile .meg-current-v13-benefit-copy>span{
+  color:#9aafab!important;
+  font-size:9px!important;
+  line-height:1.1!important;
+}
+body.meg-operational-mobile .meg-current-v13-benefit-copy>strong{
+  color:#50e0af!important;
+  font-size:17px!important;
+  line-height:1.05!important;
+  font-weight:850!important;
+  letter-spacing:-.025em!important;
+  white-space:nowrap!important;
+  font-variant-numeric:tabular-nums!important;
+}
+body.meg-operational-mobile .meg-current-v13-benefit>b{
+  color:#ebfffb!important;
+  font-size:28px!important;
+  line-height:1!important;
+  font-weight:400!important;
+}
+
+/* O fundo do conteúdo segue exatamente a família teal escura da referência. */
+body.meg-operational-mobile .px-content:has(.meg-home-v13-current){
+  background:
+    radial-gradient(circle at 90% 7%,rgba(6,103,92,.14),transparent 30%),
+    linear-gradient(180deg,#012928 0%,#012322 46%,#011f20 100%)!important;
+}
+
+/* Telefones muito estreitos: reduz apenas texto secundário, nunca valores monetários. */
+@media(max-width:360px){
+  body.meg-operational-mobile .meg-current-v13-heading h1{font-size:25px!important}
+  body.meg-operational-mobile .meg-current-v13-balance{grid-template-columns:49px minmax(0,1fr)!important;padding-inline:11px!important}
+  body.meg-operational-mobile .meg-current-v13-icon.wallet{width:49px!important;height:49px!important}
+  body.meg-operational-mobile .meg-current-v13-balance>div>strong{font-size:26px!important}
+  body.meg-operational-mobile .meg-current-v13-flow>article{padding-inline:7px!important;gap:6px!important}
+  body.meg-operational-mobile .meg-current-v13-flow>article>div>strong{font-size:14px!important}
+  body.meg-operational-mobile .meg-current-v13-stats{gap:5px!important}
+  body.meg-operational-mobile .meg-current-v13-stats>article{padding-inline:2px!important}
+  body.meg-operational-mobile .meg-current-v13-stat-label{font-size:7.4px!important}
+  body.meg-operational-mobile .meg-current-v13-stats>article>small{font-size:6.8px!important}
+}
