@@ -467,12 +467,18 @@ assert.match(screens, /Confirmar baixa real/,
 
 assert.match(homeAllTime, /Histórico completo/,
   'Modo Tudo deve possuir uma Home própria para a trajetória completa');
-assert.match(homeAllTime, /Saldo atual/,
-  'Modo Tudo não pode transformar eventos futuros em saldo disponível hoje');
-assert.match(homeAllTime, /Saldo livre depois deles/,
-  'Home completa deve explicitar o dinheiro livre depois das obrigações abertas');
-assert.match(homeAllTime, /Projeção final/,
-  'Home completa deve manter a projeção consolidada acessível nos detalhes da base.');
+assert.match(homeAllTime, /SALDO MONETÁRIO ATUAL/,
+  'Modo Tudo deve preservar o saldo monetário atual sem misturar previsões futuras');
+assert.match(homeAllTime, /Em aberto agora/,
+  'Home completa deve separar obrigações já abertas do histórico futuro');
+assert.match(homeAllTime, /Próximo mês/,
+  'Home completa deve apresentar compromissos futuros separadamente do saldo atual');
+assert.doesNotMatch(homeAllTime, /Saldo livre depois deles/,
+  'Modo Tudo não deve subtrair toda a agenda futura do caixa monetário atual');
+assert.match(homeAllTime, /RESUMO HISTÓRICO/,
+  'Home completa deve manter uma síntese executiva da base completa.');
+assert.match(phoenixApp, /px-native-home-period/,
+  'Home móvel deve manter o filtro de período fixo no cabeçalho.');
 assert.match(homePeriodSummary, /event\.status === 'planned'/,
   'Consolidação histórica deve separar eventos planejados dos realizados');
 assert.match(homePeriodSummary, /event\.type !== 'transfer'/,
@@ -539,11 +545,21 @@ assert.match(homeNowCss, /\.px-home-benefit-modal/,
 assert.match(homeAllTime, /data-home-alltime-layout="compact-command-v7"/,
   'Home Tudo deve usar o cockpit compacto v7, sem retornar ao hero gigante anterior.');
 assert.match(homeAllTime, /px-alltime-overview-v7/,
-  'Home Tudo deve concentrar saldo, fluxo realizado e compromissos em um único bloco compacto.');
-assert.match(homeAllTime, /px-alltime-details-v7/,
-  'Detalhes extensos da base completa devem permanecer recolhíveis em vez de ocupar a Home inteira.');
+  'Home Tudo deve concentrar saldo e fluxo realizado em um bloco compacto.');
+assert.match(homeAllTime, /px-alltime-commitment-board/,
+  'Compromissos do modo Tudo devem ficar separados do saldo monetário atual.');
+assert.match(homeAllTime, /px-alltime-history-summary/,
+  'Resumo histórico deve permanecer compacto e visível sem reabrir a lista extensa da base.');
+assert.doesNotMatch(homeAllTime, /px-alltime-open-expenses/,
+  'Home Tudo não deve voltar a renderizar centenas de despesas individuais na tela principal.');
+assert.doesNotMatch(homeAllTime, /px-alltime-details-v7/,
+  'Detalhes extensos antigos devem ser substituídos pela síntese histórica compacta.');
 assert.match(periodMobileCss, /\.px-alltime-overview-v7/,
   'Layout compacto da Home Tudo deve possuir contrato visual mobile dedicado.');
+assert.match(periodMobileCss, /\.px-alltime-commitment-board/,
+  'Quadro executivo de compromissos deve possuir estilo responsivo próprio.');
+assert.match(periodMobileCss, /\.px-alltime-history-summary/,
+  'Resumo histórico compacto deve possuir estilo responsivo próprio.');
 assert.match(homeAllTime, /Comparação com o saldo real/,
   'Períodos históricos devem ser comparados explicitamente com o saldo monetário real de hoje.');
 assert.match(homeAllTime, /Saldo inicial/,
@@ -629,8 +645,8 @@ assert.match(operationalHome, /Alimentação/,
   'Home operacional deve oferecer atalho protegido para Benefício Alimentação.');
 assert.match(operationalHome, /Despesa[\s\S]*Receita/,
   'Home operacional deve priorizar receitas e despesas.');
-assert.match(operationalHome, /Saldo Atual/,
-  'Home operacional deve exibir o saldo atual no layout mobile aprovado.');
+assert.match(operationalHome, /SALDO ATUAL/,
+  'Home operacional deve exibir o saldo atual no layout mobile Premium aprovado.');
 assert.match(operationalHome, /px-approved-launch-grid[\s\S]*Despesa[\s\S]*Receita[\s\S]*Alimentação/,
   'Home operacional deve manter os três atalhos compactos do layout aprovado.');
 assert.match(phoenixApp, /px-mobile-menu-sheet/,
@@ -643,8 +659,10 @@ assert.doesNotMatch(phoenixApp, /function quickMonth[\s\S]{0,280}void applyMonth
   'Atalho de mês móvel não deve aplicar e navegar sozinho.');
 assert.match(phoenixApp, /snapshot\.month !== visibleMonth[\s\S]{0,500}loadPhoenixReadModel\(visibleMonth, \{ force: true \}\)/,
   'Snapshot de outro mês não pode empurrar o período visível do APK.');
-assert.match(operationalHome, /px-approved-period[\s\S]{0,300}periodLabel/,
-  'Home operacional deve manter o seletor de período no cabeçalho aprovado.');
+assert.match(phoenixApp, /px-native-home-period[\s\S]{0,500}nativeHomePeriodTitle[\s\S]{0,500}nativeHomePeriodSubtitle/,
+  'Home operacional deve manter o seletor de período fixo no cabeçalho global aprovado.');
+assert.doesNotMatch(operationalHome, /px-approved-period/,
+  'Home operacional não deve duplicar o seletor de período dentro do conteúdo.');
 assert.match(phoenixApp, /createPortal\([\s\S]*px-period-mobile-portal[\s\S]*document\.body/,
   'Android deve renderizar o filtro de período em portal no body, fora da topbar fixa.');
 assert.doesNotMatch(phoenixApp, /px-period-menu-mobile-host/,
