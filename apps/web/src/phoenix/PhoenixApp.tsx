@@ -1072,6 +1072,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
                   <button className="px-period-close" type="button" aria-label="Cancelar e fechar seletor de período" disabled={periodLoading} onPointerDown={(event) => event.stopPropagation()} onClick={closePeriodSelector}>×</button>
                 </header>
 
+                <div className="px-period-scroll-v10">
                 <button className="px-period-current-v9" type="button" onClick={() => setPeriodDraftMode(periodMode)} aria-label="Usar o filtro atual">
                   <span className="px-period-current-icon" aria-hidden="true">{periodMode === 'all' ? '∞' : '▣'}</span>
                   <span><small>Filtro atual:</small><strong>{nativeHomePeriodTitle}</strong></span>
@@ -1135,8 +1136,9 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
                   <span className="px-period-spinner" aria-hidden="true" />
                   <div><strong>Preparando {periodDraftLabel}</strong><small>A tela atual permanece disponível enquanto os dados são confirmados.</small></div>
                 </div> : null}
+                </div>
 
-                <footer className="px-period-footer px-period-footer-v9">
+                <footer className="px-period-footer px-period-footer-v9 px-period-footer-v10">
                   <div className="px-period-footer-actions">
                     <button className="px-period-cancel" type="button" disabled={periodLoading} onClick={closePeriodSelector}>Cancelar</button>
                     <button className="px-period-apply" type="button" disabled={periodLoading} onClick={applyPeriod}>{periodLoading ? 'Carregando…' : '✓ Aplicar filtro'}</button>
