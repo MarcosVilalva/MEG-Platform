@@ -649,11 +649,11 @@ assert.match(homeFidelityV13Css, /Home v14\.5[\s\S]*\.px-home-user-identity>span
   'Primeiro nome deve permanecer visível nas larguras normais do aparelho.');
 assert.match(homeFidelityV13Css, /@media\(max-width:330px\)[\s\S]*\.px-home-user-identity>span:not\(\.px-profile-avatar\)\{[\s\S]*display:none!important/,
   'Somente telas realmente estreitas devem esconder o primeiro nome.');
-assert.doesNotMatch(operationalHome, /meg-current-v14-quick[\\s\\S]*Ações rápidas/,
+assert.doesNotMatch(operationalHome, /meg-current-v14-quick[\s\S]*Ações rápidas/,
   'Home aprovada de 25/09 não deve reintroduzir o bloco antigo de ações rápidas.');
-assert.match(operationalHome, /meg-reference-home[\\s\\S]*meg-ref-month-bills[\\s\\S]*meg-ref-cards[\\s\\S]*meg-ref-today/,
+assert.match(operationalHome, /meg-reference-home[\s\S]*meg-ref-month-bills[\s\S]*meg-ref-cards[\s\S]*meg-ref-today/,
   'Home aprovada deve ocupar a área útil com resumo mensal, cartões e pendências de hoje.');
-assert.match(operationalCss, /Referência mobile aprovada · 25\/09\/2026[\\s\\S]*\\.meg-reference-home[\\s\\S]*\\.meg-ref-balance-row/,
+assert.match(operationalCss, /Referência mobile aprovada · 25\/09\/2026[\s\S]*\.meg-reference-home[\s\S]*\.meg-ref-balance-row/,
   'Composição mobile aprovada deve possuir contrato visual dedicado.');
 assert.match(homeFidelityV13Css, /@media\(max-width:390px\)[\s\S]*px-home-user-identity/,
   'Cabeçalho com avatar deve se adaptar a larguras estreitas sem perder a identidade do usuário.');
