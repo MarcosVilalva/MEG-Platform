@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PhoenixReadModel } from '../phoenix/contracts';
+import { hydratePhoenixAvatarPreference } from '../phoenix/profile-avatar';
 import './meg-mobile-final.css';
 
 type MobileView = 'home' | 'cards' | 'payables';
@@ -451,6 +452,9 @@ function PeriodSheet({ data, initialMode, loading = false, error = '', onClose, 
 export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, periodMode, periodLabel, periodLoading, periodError, onSelectMonth, onSelectRange, onSelectAll, onLogout, onClose }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [periodOpen, setPeriodOpen] = useState(false);
+  useEffect(() => {
+    void hydratePhoenixAvatarPreference(data.user.id);
+  }, [data.user.id]);
   const pendingCount = data.payables.filter((item) => openStatus(item.status) && Number(item.openAmount || 0) > 0).length
     + data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned').length;
 
