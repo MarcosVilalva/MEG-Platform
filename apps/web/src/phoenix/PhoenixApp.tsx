@@ -1214,11 +1214,16 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         onNavigate={navigate}
         onLaunch={requestLaunch}
         onEditEvent={requestEditEvent}
-        onOpenPeriod={openPeriodSelector}
+        periodMode={periodMode}
+        periodLabel={periodMode === 'range' ? periodRangeLabel : periodMode === 'all' ? 'Tudo' : shortMonthLabel(viewData.month)}
+        periodLoading={periodLoading}
+        periodError={periodError}
+        onSelectMonth={(targetMonth) => applyMonthlyPeriod(targetMonth)}
+        onSelectRange={(start, end) => applyRangePeriod(start, end)}
+        onSelectAll={() => applyAllPeriod()}
         onLogout={onLogout}
         onClose={onClose}
       />
-      {mobilePeriodPortal}
     </>;
   }
 
