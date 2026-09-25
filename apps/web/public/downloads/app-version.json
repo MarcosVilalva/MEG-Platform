@@ -1,9 +1,9 @@
 {
-  "versionCode": 380,
-  "versionName": "2.0.380",
+  "versionCode": 384,
+  "versionName": "2.0.384",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "aa48f37f8de1b1317fcd3d023ce10b528431a7feb1e35f407eb53f9291c2ad8f",
+  "sha256": "1854ecd380b6cf94485430bf2db0a12e9e31d1b8aae5255183d42d7adeb836c9",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "feat(pendentes): finalizar layout mobile responsivo e modal de detalhes"
+  "releaseNotes": "fix(pendentes): propagar ação de edição pelo adaptador"
 }
