@@ -23,7 +23,7 @@ const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
 const monetaryAccountTypes = new Set(['checking', 'savings', 'cash', 'investment']);
 
-type Priority = 'all' | 'overdue' | 'today' | 'upcoming';
+type Priority = 'all' | 'overdue' | 'today' | 'upcoming' | 'paid';
 type PendingPeriodMode = 'month' | 'all';
 type GroupMode = 'date' | 'category' | 'account' | 'payment-method' | 'none';
 type PendingChild = {
@@ -604,9 +604,27 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent }: { data: Ph
   const dueTodayObligationCount = pendingObligationCount(dueToday);
   const nextSevenObligationCount = pendingObligationCount(nextSeven);
 
-  const periodItems = useMemo(() => open.filter((item) =>
+  const paidEvents = useMemo(() => model.events.items
+    .filter((event) => event.type === 'expense' && ['paid', 'reconciled', 'confirmed'].includes(normalize(event.status)))
+    .filter((event) => periodMode === 'all' || event.competence === selectedMonth)
+    .map((event) => ({
+      id: `paid-${event.id}`,
+      sourceId: event.id,
+      source: 'event' as const,
+      description: event.description,
+      dueDate: isoDay(event.date),
+      openAmount: 0,
+      categoryName: event.category?.name || 'Despesa',
+      group: event.sourceDetails?.group || '',
+      paymentMethod: event.paymentMethod?.name || event.sourceDetails?.paymentMethod || '',
+      modality: '',
+      accountName: event.account?.name || '',
+      children: [],
+    } as PendingItem)), [model.events.items, periodMode, selectedMonth]);
+
+  const periodItems = useMemo(() => (priority === 'paid' ? paidEvents : open).filter((item) =>
     periodMode === 'all' || item.dueDate.slice(0, 7) === selectedMonth
-  ), [open, periodMode, selectedMonth]);
+  ), [open, paidEvents, periodMode, selectedMonth, priority]);
 
   const filteredScope = useMemo(() => periodItems.filter((item) => {
     const matchesDateFrom = !dateFrom || item.dueDate >= dateFrom;
@@ -621,7 +639,8 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent }: { data: Ph
     return priority === 'all'
       || (priority === 'overdue' && actionableItem && item.dueDate < today)
       || (priority === 'today' && actionableItem && item.dueDate === today)
-      || (priority === 'upcoming' && actionableItem && item.dueDate > today);
+      || (priority === 'upcoming' && actionableItem && item.dueDate > today)
+      || (priority === 'paid' && !actionableItem);
   }), [filteredScope, priority, today]);
   const filteredActionable = filteredScope.filter((item) => item.openAmount > 0);
   const filteredTotal = filteredScope.reduce((sum, item) => sum + item.openAmount, 0);
@@ -979,7 +998,7 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent }: { data: Ph
 
     <div className="px-toolbar px-pending-commandbar">
       <label className="px-search-field px-pending-command-search"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={nativeOperational ? 'Buscar pendência, cartão ou conta...' : 'Buscar compromisso, cartão, conta ou forma...'} /></label>
-      <div className="px-priority-tabs px-pending-command-tabs">{([['all','Todas'],['upcoming','A pagar'],['today','Hoje'],['overdue','Vencidas']] as const).map(([id,label]) => <button key={id} type="button" className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{label}</button>)}</div>
+      <div className="px-priority-tabs px-pending-command-tabs">{([['all','Todas'],['upcoming','A pagar'],['paid','Pagas'],['overdue','Vencidas']] as const).map(([id,label]) => <button key={id} type="button" className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{label}</button>)}</div>
       <span className="px-pending-command-separator" aria-hidden="true" />
       <label className="px-pending-group-select px-pending-command-group"><span>Agrupar por</span><select value={groupMode} onChange={(event) => setGroupMode(event.target.value as GroupMode)}><option value="date">Data</option><option value="category">Categoria</option><option value="account">Conta</option><option value="payment-method">Forma de pagamento</option><option value="none">Sem agrupamento</option></select></label>
       <button type="button" className={`px-pending-filter-toggle ${filtersOpen ? 'active' : ''}`} onClick={() => setFiltersOpen((value) => !value)}>☷ <span>Filtros</span></button>
