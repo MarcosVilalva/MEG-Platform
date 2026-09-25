@@ -2250,3 +2250,82 @@ body.meg-operational-mobile .px-main-home .px-top-left-home-compact .px-home-use
     display:none!important;
   }
 }
+
+
+/* ==========================================================================
+   Home v14.4 · correção de especificidade do cabeçalho
+   Corrige regressão real observada no aparelho:
+   regras legadas com :has() estavam vencendo a grade v14.3 e forçando 4 colunas.
+   ========================================================================== */
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity){
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  flex:1 1 100%!important;
+  display:grid!important;
+  grid-template-columns:40px minmax(0,1fr) 88px!important;
+  align-items:center!important;
+  gap:8px!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-native-home-period{
+  width:min(100%,178px)!important;
+  min-width:132px!important;
+  max-width:178px!important;
+  margin-left:0!important;
+  justify-self:center!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-native-home-period-copy{
+  display:grid!important;
+  min-width:0!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-native-home-period-copy strong,
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-native-home-period-copy small{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-home-user-identity{
+  width:88px!important;
+  min-width:88px!important;
+  max-width:88px!important;
+  display:grid!important;
+  grid-template-columns:36px minmax(0,1fr)!important;
+  gap:6px!important;
+  justify-self:end!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-home-user-identity>.px-profile-avatar{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-home-user-identity>span:not(.px-profile-avatar){
+  display:block!important;
+}
+
+/* O avatar é um <span>; nunca esconder todo span direto da identidade. */
+@media(max-width:365px){
+  body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity){
+    grid-template-columns:36px minmax(0,1fr) 36px!important;
+    gap:6px!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-native-home-period{
+    width:min(100%,168px)!important;
+    min-width:132px!important;
+    max-width:168px!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-home-user-identity{
+    width:36px!important;
+    min-width:36px!important;
+    max-width:36px!important;
+    grid-template-columns:36px!important;
+    gap:0!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-home-user-identity>.px-profile-avatar{
+    display:block!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-home-user-identity>span:not(.px-profile-avatar){
+    display:none!important;
+  }
+}
