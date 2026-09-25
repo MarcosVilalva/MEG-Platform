@@ -636,8 +636,16 @@ assert.match(phoenixApp, /px-top-left px-top-left-home-compact[\s\S]*px-mobile-b
   'Ordem do cabeçalho deve ser logo, período e perfil.');
 assert.match(homeFidelityV13Css, /\.px-top-left-home-compact \.px-home-user-identity\{[\s\S]*grid-template-columns:36px minmax\(0,1fr\)!important/,
   'Perfil deve preservar avatar e primeiro nome em telas normais.');
-assert.match(homeFidelityV13Css, /@media\(max-width:365px\)[\s\S]*\.px-home-user-identity>span\{[\s\S]*display:none!important/,
-  'Em telas estreitas o primeiro nome deve sumir antes do avatar ou período.');
+assert.match(homeFidelityV13Css, /Home v14\.5 · acabamento final validado[\s\S]*grid-template-columns:48px minmax\(0,1fr\) 84px!important/,
+  'Home v14.5 deve manter logo maior, período central e perfil com primeiro nome.');
+assert.match(homeFidelityV13Css, /\.px-mobile-brand-home\{[\s\S]*width:48px!important[\s\S]*height:48px!important[\s\S]*place-items:center!important/,
+  'Marca MEG deve ganhar presença visual sem desalinhamento.');
+assert.match(homeFidelityV13Css, /\.px-mobile-brand-home img\{[\s\S]*width:39px!important[\s\S]*height:39px!important/,
+  'Arte interna da marca deve acompanhar o aumento do tile.');
+assert.match(homeFidelityV13Css, /Home v14\.5[\s\S]*\.px-home-user-identity>span:not\(\.px-profile-avatar\)\{[\s\S]*display:block!important/,
+  'Primeiro nome deve permanecer visível nas larguras normais do aparelho.');
+assert.match(homeFidelityV13Css, /@media\(max-width:330px\)[\s\S]*\.px-home-user-identity>span:not\(\.px-profile-avatar\)\{[\s\S]*display:none!important/,
+  'Somente telas realmente estreitas devem esconder o primeiro nome.');
 assert.match(operationalHome, /meg-current-v14-quick[\s\S]*Ações rápidas[\s\S]*Cartões[\s\S]*Pagar conta[\s\S]*Fluxo de caixa[\s\S]*Ver relatórios/,
   'Home v14 deve preencher a área útil com as quatro ações rápidas aprovadas.');
 assert.doesNotMatch(operationalHome, /meg-current-v14-quick[\s\S]*Novo lançamento/,
