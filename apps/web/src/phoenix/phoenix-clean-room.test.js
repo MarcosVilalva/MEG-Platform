@@ -424,11 +424,11 @@ assert.match(cardsGrid, /px-card-command-group/,
   'Tabela da central deve recuperar iconografia visual por grupo.');
 assert.match(cardIdentity, /assets\/cards\/latam-user-model-v61\.svg/,
   'LATAM deve usar a arte baseada diretamente no modelo enviado pelo usuário.');
-assert.match(cardIdentity, /assets\/cards\/approved-v6\/mercado\.webp/,
+assert.match(cardIdentity, /assets\/cards\/mercado-pago-visual\.svg/,
   'Mercado Pago deve usar a arte do mockup aprovado.');
-assert.match(cardIdentity, /assets\/cards\/approved-v6\/azul\.webp/,
+assert.match(cardIdentity, /assets\/cards\/azul-platinum-visual\.svg/,
   'Azul deve usar a arte do mockup aprovado.');
-assert.match(cardIdentity, /assets\/cards\/approved-v6\/riachuelo\.webp/,
+assert.match(cardIdentity, /assets\/cards\/riachuelo-mastercard-visual\.svg/,
   'Riachuelo deve usar a arte do mockup aprovado.');
 assert.match(cardsFidelityCss, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)!important/,
   'Desktop deve manter os quatro cartões protagonistas em uma única linha.');
