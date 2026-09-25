@@ -622,6 +622,14 @@ assert.match(homeFidelityV13Css, /@media\(max-width:370px\)[\s\S]*\.px-home-user
   'Em telas estreitas o nome deve ceder espaço antes de sacrificar o período.');
 assert.match(homeFidelityV13Css, /Home v14\.3 · cabeçalho equilibrado[\s\S]*grid-template-columns:40px minmax\(0,1fr\) 88px!important/,
   'Home v14.3 deve organizar logo, período central e perfil à direita.');
+assert.match(homeFidelityV13Css, /Home v14\.4 · correção de especificidade do cabeçalho[\s\S]*\.px-top-left\.px-top-left-home-compact:has\(\.px-home-user-identity\)[\s\S]*grid-template-columns:40px minmax\(0,1fr\) 88px!important/,
+  'Home v14.4 deve vencer regras legadas com :has e manter exatamente três colunas.');
+assert.match(homeFidelityV13Css, /\.px-home-user-identity>\.px-profile-avatar\{[\s\S]*display:block!important/,
+  'Avatar real deve permanecer visível mesmo quando o breakpoint esconde o nome.');
+assert.match(homeFidelityV13Css, /span:not\(\.px-profile-avatar\)[\s\S]*display:none!important/,
+  'Breakpoint estreito deve esconder apenas o nome, nunca o avatar.');
+assert.match(homeFidelityV13Css, /\.px-native-home-period-copy\{[\s\S]*visibility:visible!important[\s\S]*opacity:1!important/,
+  'Texto do período deve permanecer explicitamente visível no cabeçalho.');
 assert.match(phoenixApp, /const nativeHomePeriodCompactTitle = periodMode === 'all'[\s\S]*shortMonthLabel\(activePeriodMonth\)/,
   'Cabeçalho deve usar mês abreviado no modo mensal.');
 assert.match(phoenixApp, /px-top-left px-top-left-home-compact[\s\S]*px-mobile-brand-home[\s\S]*px-native-home-period[\s\S]*HomeHeaderIdentity/,
