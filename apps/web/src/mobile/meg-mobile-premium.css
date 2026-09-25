@@ -547,3 +547,26 @@ body.meg-operational-mobile .meg-update-dialog.is-mandatory .primary-button{bord
   body.meg-operational-mobile .meg-update-orbit::before,
   body.meg-operational-mobile .meg-update-orbit::after{animation:none!important}
 }
+
+
+body.meg-operational-mobile .meg-update-success-toast{
+  position:fixed!important;z-index:2147482000!important;
+  top:calc(max(9px,env(safe-area-inset-top)) + 2px)!important;left:50%!important;transform:translateX(-50%)!important;
+  width:min(calc(100vw - 20px),500px)!important;min-height:58px!important;
+  display:grid!important;grid-template-columns:38px minmax(0,1fr) 30px!important;align-items:center!important;gap:8px!important;
+  padding:8px 9px!important;border:1px solid rgba(67,239,193,.6)!important;border-radius:14px!important;
+  background:linear-gradient(145deg,rgba(5,91,78,.98),rgba(2,53,51,.99))!important;
+  color:#fff!important;box-shadow:0 0 25px rgba(67,239,193,.17),0 12px 30px rgba(0,0,0,.28)!important;
+}
+body.meg-operational-mobile .meg-update-success-toast>span{
+  width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+  background:var(--meg-premium-green)!important;color:#06362d!important;font-size:21px!important;font-weight:1000!important;
+  box-shadow:0 0 18px rgba(67,239,193,.24)!important
+}
+body.meg-operational-mobile .meg-update-success-toast>div{display:grid!important;min-width:0!important}
+body.meg-operational-mobile .meg-update-success-toast strong{font-size:11px!important}
+body.meg-operational-mobile .meg-update-success-toast small{color:#b9ddcf!important;font-size:8px!important}
+body.meg-operational-mobile .meg-update-success-toast button{
+  width:29px;height:29px;border-radius:9px;border:1px solid rgba(160,255,222,.22);
+  background:rgba(255,255,255,.035);color:#eafff8;font-size:18px
+}
