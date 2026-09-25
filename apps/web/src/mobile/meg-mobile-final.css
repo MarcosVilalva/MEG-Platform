@@ -64,6 +64,7 @@
   box-shadow:0 0 0 2px rgba(23,224,213,.18)
 }
 .meg2-user strong{font-size:11px;letter-spacing:.02em}
+html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:none}
 
 .meg2-scroll{min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:none}
 .meg2-scroll::-webkit-scrollbar{display:none}
