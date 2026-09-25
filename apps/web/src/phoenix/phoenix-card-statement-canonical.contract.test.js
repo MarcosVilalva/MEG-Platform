@@ -119,6 +119,25 @@ assert.match(cardsMobileV8, /\.px-card-command-approved-table-wrap\{[\s\S]*overf
   'Somente a lista detalhada de lançamentos da Central pode rolar verticalmente.');
 assert.match(cardsMobileV8, /\.px-card-command-approved-tabs\{[\s\S]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/,
   'As cinco abas da Central devem permanecer visíveis simultaneamente.');
+assert.match(cardsGrid, /function cycleNativeCard\(direction: -1 \| 1\)[\s\S]*% data\.cards\.length/,
+  'Carrossel móvel deve avançar e retroceder de forma cíclica.');
+assert.match(cardsGrid, /rawIndex < 0 \|\| rawIndex >= data\.cards\.length/,
+  'Extremos do carrossel devem detectar retorno circular sem travar no primeiro ou último cartão.');
+assert.match(cardsGrid, /onPointerDown[\s\S]*onPointerUp[\s\S]*cycleNativeCard/,
+  'Arraste horizontal deve controlar a troca de cartões.');
+assert.match(cardsGrid, /recentCurrentRows = \[\.\.\.currentRows\][\s\S]*sort\([\s\S]*\);/,
+  'Tela principal deve manter todos os lançamentos disponíveis para a área rolável.');
+assert.doesNotMatch(cardsGrid, /recentCurrentRows[\s\S]{0,220}slice\(0, 4\)/,
+  'Lista principal não deve voltar a limitar os lançamentos a quatro itens.');
+assert.match(cardsMobileV8, /Cartões V8\.1 · refinamento final validado[\s\S]*\.px-cards-v8-recent-list\{[\s\S]*overflow-y:auto!important/,
+  'Somente a lista de lançamentos deve possuir rolagem vertical na tela principal.');
+assert.match(cardsMobileV8, /\.px-main-cards[\s\S]*\.px-content-cards[\s\S]*\.px-cards-native-v8[\s\S]*overflow:hidden!important/,
+  'Viewport principal de Cartões deve permanecer verticalmente fixo.');
+assert.match(cardsMobileV8, /\.px-cards-v8-carousel\{[\s\S]*touch-action:pan-x!important[\s\S]*scroll-snap-type:x mandatory!important/,
+  'Carrossel deve continuar livre para gesto horizontal enquanto a página fica fixa.');
+assert.match(cardsMobileV8, /\.px-cards-v8-art\{[\s\S]*place-items:center!important[\s\S]*padding:2px!important/,
+  'Moldura do cartão deve centralizar opticamente a arte.');
+
 
 assert.match(readScreens, /creditAwarePendingModel/,
   'Compatibilidade de crédito legado deve continuar ativa durante a transição');
