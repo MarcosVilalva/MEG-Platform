@@ -15,8 +15,8 @@ assert.match(
 );
 assert.match(
   android,
-  /downloadUrl: 'https:\/\/github\.com\/MarcosVilalva\/MEG-Platform\/releases\/download\/android-latest\/MEG-Financas-' \+ process\.env\.MEG_VERSION_CODE \+ '\.apk'/,
-  'Manifesto deve apontar para o APK imutável da própria versão no release estável',
+  /downloadUrl: 'https:\/\/marcosvilalva\.github\.io\/MEG-Platform\/downloads\/MEG-Financas\.apk'/,
+  'Manifesto deve apontar para o APK validado e publicado no canal estável do Pages',
 );
 
 assert.match(
