@@ -526,12 +526,24 @@ public class AppUpdaterPlugin extends Plugin {
 
                 notifyUpdateState("validating", 100, null);
                 String actualSha256 = toHex(digest.digest());
-                if (!expectedSha256.isEmpty() && !actualSha256.equalsIgnoreCase(expectedSha256)) {
-                    partial.delete();
-                    throw new SecurityException("A integridade digital do arquivo baixado não confere. Baixe novamente.");
-                }
+                boolean sha256Matches = expectedSha256.isEmpty() || actualSha256.equalsIgnoreCase(expectedSha256);
                 if (!partial.renameTo(apk)) {
                     throw new IllegalStateException("Não foi possível concluir o arquivo temporário da atualização.");
+                }
+                // O SHA-256 detecta corrupção/transporte, mas não deve bloquear sozinho um APK
+                // autenticamente assinado pelo mesmo certificado já instalado. Isso também evita
+                // falso negativo quando um manifesto antigo ficou em cache durante a publicação.
+                if (!sha256Matches) {
+                    Log.w(TAG, "SHA-256 do download divergiu do manifesto; validando identidade, assinatura e versão do APK.");
+                    verifyPackageSignature(apk);
+                    PackageInfo installedInfo = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0);
+                    PackageInfo candidateInfo = getContext().getPackageManager().getPackageArchiveInfo(apk.getAbsolutePath(), 0);
+                    long installedCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? installedInfo.getLongVersionCode() : installedInfo.versionCode;
+                    long candidateCode = candidateInfo == null ? -1L : (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? candidateInfo.getLongVersionCode() : candidateInfo.versionCode);
+                    if (candidateCode <= installedCode) {
+                        apk.delete();
+                        throw new SecurityException("A atualização baixada não possui versão superior à instalada.");
+                    }
                 }
                 launchPackageInstaller(apk);
                 callback.onSuccess(actualSha256);
