@@ -8,11 +8,12 @@ type LaunchPreset = 'expense' | 'income' | 'benefit';
 type Props = {
   data: PhoenixReadModel;
   onLaunch: (preset: LaunchPreset) => void;
-  onNavigate: (view: 'movements' | 'history' | 'payables' | 'settings') => void;
+  onNavigate: (view: 'movements' | 'history' | 'payables' | 'settings' | 'cards' | 'cashflow' | 'analytics') => void;
   onOpenPeriod?: () => void;
+  onOpenMenu?: () => void;
 };
 
-type CurrentGlyphKind = 'trend' | 'wallet' | 'income' | 'expense' | 'result' | 'payable' | 'card' | 'pending' | 'paid' | 'benefit';
+type CurrentGlyphKind = 'trend' | 'wallet' | 'income' | 'expense' | 'result' | 'payable' | 'card' | 'pending' | 'paid' | 'benefit' | 'quick' | 'cashflow' | 'analytics';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -45,10 +46,13 @@ function CurrentHomeGlyph({ kind }: { kind: CurrentGlyphKind }) {
   if (kind === 'card') return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="M3 9h18M7 15h4" /></svg>;
   if (kind === 'pending') return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="16" rx="2" /><path d="M9 8h6M9 12h6M9 16h3" /></svg>;
   if (kind === 'paid') return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="m8.5 12 2.2 2.3 4.9-5" /></svg>;
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 3v7.2M5.8 3v7.2M11.2 3v7.2M5.8 7.2h5.4M8.5 10.2V21M16 3v18M16 3c2.8 1.8 3.5 5.9 0 8.2" /></svg>;
+  if (kind === 'benefit') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 3v7.2M5.8 3v7.2M11.2 3v7.2M5.8 7.2h5.4M8.5 10.2V21M16 3v18M16 3c2.8 1.8 3.5 5.9 0 8.2" /></svg>;
+  if (kind === 'quick') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13.5 2-7 11h5l-1 9 7-12h-5z" /></svg>;
+  if (kind === 'cashflow') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h14" /><path d="m14 4 4 4-4 4" /><path d="M20 16H6" /><path d="m10 12-4 4 4 4" /></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="14" width="3" height="6" rx="1" /><rect x="10.5" y="10" width="3" height="10" rx="1" /><rect x="17" y="5" width="3" height="15" rx="1" /></svg>;
 }
 
-export function PhoenixOperationalMobileHome({ data, onNavigate }: Props) {
+export function PhoenixOperationalMobileHome({ data, onNavigate, onOpenMenu }: Props) {
   const [benefitOpen, setBenefitOpen] = useState(false);
   const today = todayIso();
   const agenda = buildPhoenixHomeAgenda(data, today);
@@ -136,6 +140,28 @@ export function PhoenixOperationalMobileHome({ data, onNavigate }: Props) {
         <span className="meg-current-v13-benefit-copy"><small>Benefício Alimentação</small><span>Saldo disponível</span><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong></span>
         <b aria-hidden="true">›</b>
       </button>
+
+      <section className="meg-current-v14-quick" aria-label="Ações rápidas">
+        <header>
+          <span className="meg-current-v14-quick-title-icon" aria-hidden="true"><CurrentHomeGlyph kind="quick" /></span>
+          <span className="meg-current-v14-quick-copy"><strong>Ações rápidas</strong><small>Acesse as principais funcionalidades.</small></span>
+          <button type="button" onClick={onOpenMenu}>Ver todas <b aria-hidden="true">›</b></button>
+        </header>
+        <div className="meg-current-v14-quick-grid">
+          <button type="button" onClick={() => onNavigate('cards')}>
+            <span className="blue" aria-hidden="true"><CurrentHomeGlyph kind="card" /></span><strong>Cartões</strong>
+          </button>
+          <button type="button" onClick={() => onNavigate('payables')}>
+            <span className="cyan" aria-hidden="true"><CurrentHomeGlyph kind="payable" /></span><strong>Pagar conta</strong>
+          </button>
+          <button type="button" onClick={() => onNavigate('cashflow')}>
+            <span className="teal" aria-hidden="true"><CurrentHomeGlyph kind="cashflow" /></span><strong>Fluxo de caixa</strong>
+          </button>
+          <button type="button" onClick={() => onNavigate('analytics')}>
+            <span className="green" aria-hidden="true"><CurrentHomeGlyph kind="analytics" /></span><strong>Ver relatórios</strong>
+          </button>
+        </div>
+      </section>
     </section>
 
     {benefitOpen ? <div className="px-approved-benefit-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setBenefitOpen(false); }}>
