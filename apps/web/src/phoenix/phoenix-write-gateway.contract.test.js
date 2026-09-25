@@ -192,9 +192,9 @@ assert.doesNotMatch(payables, /px-pending-attention/,
 assert.match(payables, /px-pending-commandbar/,
   'Busca, filtros de prioridade e agrupamento devem permanecer na mesma barra operacional.');
 assert.match(payables, /px-pending-command-tabs/,
-  'Filtros Todos, Vencidos, Hoje e Próximos devem ficar integrados à barra de busca.');
+  'Filtros rápidos de Pendentes devem permanecer integrados à barra de busca.');
 assert.match(payables, /px-pending-agenda-head/,
-  'Lista deve possuir cabeçalho próprio Agenda de pendências.');
+  'Lista deve possuir cabeçalho próprio para os lançamentos pendentes.');
 assert.match(payables, /Lançamentos pendentes/,
   'Módulo operacional deve manter o título definitivo aprovado.');
 assert.doesNotMatch(payables, /Leitura consolidada:/,
