@@ -1,4 +1,4 @@
-import { selectNewestRelease, updateIsAvailable } from './app-update-release-core.js';
+import { updateIsAvailable } from './app-update-release-core.js';
 
 const MANIFEST_URLS = [
   'https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/app-version.json',
@@ -171,27 +171,28 @@ async function fetchManifestWeb(url) {
 }
 
 async function newestRelease() {
-  const webResults = await Promise.allSettled(MANIFEST_URLS.map(fetchManifestWeb));
-  const webReleases = webResults.filter((item) => item.status === 'fulfilled').map((item) => item.value);
-  let release = selectNewestRelease(webReleases);
-  if (release) return release;
+  // O release Android é a fonte canônica. Pages/raw são apenas fallback:
+  // nunca misturamos manifests de publicações diferentes com o mesmo APK mutável.
+  for (const url of MANIFEST_URLS) {
+    try {
+      const release = await fetchManifestWeb(url);
+      if (release && Number.isFinite(Number(release.versionCode))) return release;
+    } catch {}
+  }
 
   const AppUpdater = await getAppUpdater();
   if (!AppUpdater) throw new Error('UPDATE_MANIFEST_UNAVAILABLE');
-  const nativeResults = [];
   for (const url of MANIFEST_URLS) {
     try {
-      const item = await withDeadline(
+      const release = await withDeadline(
         AppUpdater.getReleaseManifest({ url: `${url}?nativeWeb=${Date.now()}-${Math.random().toString(36).slice(2)}` }),
         FETCH_TIMEOUT_MS + 1500,
         'UPDATE_MANIFEST_BRIDGE_TIMEOUT',
       );
-      nativeResults.push(item);
+      if (release && Number.isFinite(Number(release.versionCode))) return release;
     } catch {}
   }
-  release = selectNewestRelease(nativeResults);
-  if (!release) throw new Error('UPDATE_MANIFEST_UNAVAILABLE');
-  return release;
+  throw new Error('UPDATE_MANIFEST_UNAVAILABLE');
 }
 
 function removeUpdateUi() {
