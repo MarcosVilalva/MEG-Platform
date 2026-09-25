@@ -1,9 +1,9 @@
 {
-  "versionCode": 409,
-  "versionName": "2.0.409",
+  "versionCode": 410,
+  "versionName": "2.0.410",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "b10c40ce6d8f70350f63990ae587f67e12ed7884e6446b28ad3dc30c99e0d9b6",
+  "sha256": "c65c35450c5ccb1899305b12c1a70dbc6cf384dc09bdcd7c1dac85c3a63528e3",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "test(ota): cobrir fallback ordenado e versão pendente"
+  "releaseNotes": "test(ota): corrigir expressão do fallback nativo"
 }
