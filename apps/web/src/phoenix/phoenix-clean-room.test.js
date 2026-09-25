@@ -581,12 +581,12 @@ assert.match(operationalCss, /px-period-current-v9[\s\S]*px-period-preview-v9[\s
   'Seletor v9 deve mostrar filtro atual, prévia aplicada e rodapé dedicado conforme o mock.');
 assert.match(operationalHome, /data-home-fidelity="reference-v14"/,
   'Home do mês atual deve usar o checkpoint v14 adaptativo validado no aparelho.');
-assert.match(operationalHome, /meg-current-v13-balance[\s\S]*Entradas no mês[\s\S]*Saídas no mês[\s\S]*Resultado do mês/,
-  'Mês atual deve reproduzir a hierarquia visual do mock: saldo, fluxo realizado e resultado.');
-assert.match(operationalHome, /Contas a pagar[\s\S]*Faturas de cartões[\s\S]*Outras pendências[\s\S]*Contas pagas/,
-  'Mês atual deve manter os quatro indicadores operacionais na ordem aprovada.');
-assert.match(operationalHome, /openPayables\.length[\s\S]*cardItems\.length[\s\S]*otherItems\.length[\s\S]*paidExpenses\.length/,
-  'Cards operacionais devem usar contagem como número principal e valor monetário como apoio.');
+assert.match(operationalHome, /meg-ref-balance-row[\s\S]*Receitas[\s\S]*Despesas[\s\S]*Resultado/,
+  'Mês atual deve reproduzir a hierarquia aprovada: saldo, benefício e fluxo realizado compacto.');
+assert.match(operationalHome, /Contas do mês[\s\S]*Total[\s\S]*Pagas[\s\S]*Pendentes[\s\S]*Em aberto/,
+  'Mês atual deve manter o resumo de contas aprovado na referência de 25/09.');
+assert.match(operationalHome, /Meus cartões[\s\S]*Pendentes de hoje/,
+  'Home atual deve expor cartões e pendências diretamente, sem o bloco antigo de ações rápidas.');
 assert.doesNotMatch(operationalHome, /meg-home-v12-current|meg-home-v12-wide-action/,
   'Mês atual não pode reutilizar a estrutura visual v12 nem inserir ação larga ausente do mock.');
 assert.match(homeFidelityV13Css, /\.meg-home-v13-current[\s\S]*padding:0 0 4px!important/,
