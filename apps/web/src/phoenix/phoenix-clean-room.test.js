@@ -52,6 +52,13 @@ const mainActivity = readFileSync(new URL('../../../../android/app/src/main/java
 const nativeShellPlugin = readFileSync(new URL('../../../../android/app/src/main/java/br/com/megfinancas/app/MegNativeShellPlugin.java', import.meta.url), 'utf8');
 const phoenixHtml = readFileSync(new URL('../../phoenix.html', import.meta.url), 'utf8');
 const productionHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+const brandMark = readFileSync(new URL('../../public/brand/meg-finance-system-mark.svg', import.meta.url), 'utf8');
+const androidLauncherForeground = readFileSync(new URL('../../../../android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml', import.meta.url), 'utf8');
+const androidLauncherBackground = readFileSync(new URL('../../../../android/app/src/main/res/drawable/ic_launcher_background.xml', import.meta.url), 'utf8');
+const androidLauncherAdaptive = readFileSync(new URL('../../../../android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml', import.meta.url), 'utf8');
+const androidLauncherMonochrome = readFileSync(new URL('../../../../android/app/src/main/res/drawable/ic_launcher_monochrome.xml', import.meta.url), 'utf8');
+const androidLaunchStyles = readFileSync(new URL('../../../../android/app/src/main/res/values/styles.xml', import.meta.url), 'utf8');
+const androidStrings = readFileSync(new URL('../../../../android/app/src/main/res/values/strings.xml', import.meta.url), 'utf8');
 const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-home-dashboard.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-fidelity-v6.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-responsive-v61.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-operational-mobile.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
 const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${profileAvatar}\n${commandPalette}\n${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${homePastMonth}\n${homeHorizon}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
@@ -653,6 +660,26 @@ assert.notEqual(sidebar.indexOf("icon: 'history'"), sidebar.indexOf("icon: 'paya
 
 assert.match(phoenixApp, /PhoenixOperationalMobileHome/,
   'APK deve substituir a home pesada por uma home operacional focada em lançamentos.');
+assert.match(phoenixApp, /brand\/meg-finance-system-mark\.svg/,
+  'Topbar do APK deve usar a marca MEG oficial.');
+assert.match(brandMark, /<text[^>]*>MEG<\/text>/,
+  'Marca principal deve preservar o monograma MEG.');
+assert.doesNotMatch(brandMark, /FINANCE SYSTEM/,
+  'Marca pequena não deve carregar subtítulo ilegível no topo do aplicativo.');
+assert.match(androidLauncherForeground, /M44,54C55,52 63,44 71,35/,
+  'Launcher Android deve usar a seta de crescimento simplificada da marca nova.');
+assert.match(androidLauncherBackground, /#FF0A4A4C[\s\S]*#FF063437[\s\S]*#FF041D24/,
+  'Launcher Android deve usar o gradiente teal escuro da identidade aprovada.');
+assert.match(androidLauncherAdaptive, /@drawable\/ic_launcher_background[\s\S]*@drawable\/ic_launcher_foreground/,
+  'Adaptive icon deve combinar o novo fundo vetorial com o novo foreground.');
+assert.match(androidLauncherMonochrome, /M24,82L24,58/,
+  'Android 13+ deve receber versão monocromática coerente do monograma.');
+assert.match(androidLaunchStyles, /@drawable\/meg_splash[\s\S]*windowSplashScreenAnimatedIcon[^\n]*@drawable\/ic_launcher_foreground/,
+  'Splash nativo deve usar a mesma identidade do launcher.');
+assert.match(androidStrings, /<string name="app_name">MEG<\/string>/,
+  'Nome sob o ícone Android deve ser curto e não truncar como MEG Operacional.');
+assert.match(productionHtml, /theme-color" content="#063437"/,
+  'Chrome do navegador deve seguir o teal escuro da nova identidade.');
 assert.match(movementScreen, /const saveAcceptedRef = useRef\(false\)/,
   'Fluxo mobile deve memorizar o aceite do servidor para não exibir falso aviso de alterações não salvas.');
 assert.match(movementScreen, /function requestCloseLaunch\(\)[\s\S]{0,500}saveAcceptedRef\.current[\s\S]{0,500}setLaunchOpen\(false\)/,
