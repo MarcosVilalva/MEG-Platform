@@ -463,6 +463,8 @@ assert.match(homeDashboard, /Benefício alimentação · disponível/,
   'Home deve preservar o indicador de benefício do V15');
 assert.match(homeDashboard, /Consolidado realizado/,
   'Home deve preservar o consolidado realizado do V15');
+assert.match(payablesScreen, /Lançamentos pendentes/,
+  'Pendentes deve usar o título canônico aprovado para a agenda mobile.');
 assert.match(screens, /conta\(s\) selecionada\(s\)/,
   'Pendentes deve mostrar barra contextual ao selecionar contas');
 assert.match(screens, /Revisar e confirmar baixa/,
