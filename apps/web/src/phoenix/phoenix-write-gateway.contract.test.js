@@ -195,7 +195,7 @@ assert.match(payables, /px-pending-command-tabs/,
   'Filtros Todos, Vencidos, Hoje e Próximos devem ficar integrados à barra de busca.');
 assert.match(payables, /px-pending-agenda-head/,
   'Lista deve possuir cabeçalho próprio Agenda de pendências.');
-assert.match(payables, /Agenda de pendências/,
+assert.match(payables, /Lançamentos pendentes/,
   'Módulo operacional deve manter o título definitivo aprovado.');
 assert.doesNotMatch(payables, /Leitura consolidada:/,
   'Aviso técnico de leitura consolidada não deve ocupar espaço na interface operacional.');
