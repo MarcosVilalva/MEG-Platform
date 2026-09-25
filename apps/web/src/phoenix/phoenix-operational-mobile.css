@@ -3953,3 +3953,37 @@ body.meg-operational-mobile .px-home-current-v9 .px-approved-summary-v11 .result
     min-height:50px!important;margin-top:-1px!important;padding-top:6px!important;padding-bottom:6px!important;
   }
 }
+
+
+/* APP final · carregamento interno pós-login */
+@media (max-width:760px){
+  body.meg-operational-mobile .px-app-loading{
+    min-height:calc(100dvh - 150px);display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:9px;padding:28px;text-align:center;background:transparent;border:0;
+  }
+  body.meg-operational-mobile .px-app-loading-mark{
+    position:relative;width:86px;height:86px;display:grid;place-items:center;margin-bottom:8px;
+  }
+  body.meg-operational-mobile .px-app-loading-mark img{
+    position:relative;z-index:2;width:70px;height:70px;object-fit:contain;filter:drop-shadow(0 10px 24px rgba(18,214,199,.18));
+  }
+  body.meg-operational-mobile .px-app-loading-pulse{
+    position:absolute;inset:4px;border:1px solid rgba(52,224,207,.34);border-radius:24px;
+    animation:megAppLoadingPulse 1.7s ease-in-out infinite;
+  }
+  body.meg-operational-mobile .px-app-loading strong{font-size:18px;line-height:1.2;color:#f4fffd;letter-spacing:-.02em}
+  body.meg-operational-mobile .px-app-loading small{font-size:11px;color:rgba(213,239,235,.62)}
+  body.meg-operational-mobile .px-app-loading-track{
+    width:min(210px,64vw);height:4px;margin-top:9px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.08);
+  }
+  body.meg-operational-mobile .px-app-loading-track i{
+    display:block;width:42%;height:100%;border-radius:inherit;background:currentColor;color:#39d6cb;
+    animation:megAppLoadingBar 1.35s ease-in-out infinite;
+  }
+}
+@keyframes megAppLoadingPulse{0%,100%{transform:scale(.92);opacity:.35}50%{transform:scale(1.08);opacity:1}}
+@keyframes megAppLoadingBar{0%{transform:translateX(-110%)}50%{transform:translateX(85%)}100%{transform:translateX(245%)}}
+@media (prefers-reduced-motion:reduce){
+  body.meg-operational-mobile .px-app-loading-pulse,
+  body.meg-operational-mobile .px-app-loading-track i{animation:none!important}
+}
