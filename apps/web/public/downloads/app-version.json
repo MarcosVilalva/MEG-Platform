@@ -1,9 +1,9 @@
 {
-  "versionCode": 378,
-  "versionName": "2.0.378",
+  "versionCode": 379,
+  "versionName": "2.0.379",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "c0cfae92056937f1baf74b8496a08f6db6fd68e424e602b5b3488543d1d764d3",
+  "sha256": "e1ccc7c8e0a405043b4cf295d8b17b03fed38f2a761e005cff9f89f188c48d5a",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "fix(cards): usar artes normalizadas sem margens internas no carrossel"
+  "releaseNotes": "feat(app): padronizar cabeçalho compacto e composição final da Home"
 }
