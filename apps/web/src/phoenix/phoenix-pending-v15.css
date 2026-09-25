@@ -2362,3 +2362,28 @@
  body.meg-operational-mobile .px-pending-drawer>.px-pending-statement-lines{overflow:auto!important;margin:8px 15px!important}
  body.meg-operational-mobile .px-pending-drawer>footer{position:sticky!important;bottom:0!important;flex:0 0 auto!important;padding:11px 15px calc(11px + env(safe-area-inset-bottom))!important;background:rgba(3,24,22,.98)!important}
 }
+
+
+/* Pendentes APP final · composição canônica aprovada */
+@media (max-width:760px){
+ body.meg-operational-mobile .px-pending-cockpit{gap:7px!important}
+ body.meg-operational-mobile .px-pending-hero{padding:7px 3px 4px!important;background:transparent!important;border:0!important;box-shadow:none!important}
+ body.meg-operational-mobile .px-pending-hero-main{gap:8px!important}
+ body.meg-operational-mobile .px-pending-hero-icon{width:34px!important;height:34px!important}
+ body.meg-operational-mobile .px-pending-hero .px-kicker{display:none!important}
+ body.meg-operational-mobile .px-pending-hero h1{font-size:20px!important;line-height:1.05!important}
+ body.meg-operational-mobile .px-pending-hero p{font-size:9px!important;max-width:290px!important;margin-top:3px!important}
+ body.meg-operational-mobile .px-pending-month-nav{display:none!important}
+ body.meg-operational-mobile .px-pending-kpis{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
+ body.meg-operational-mobile .px-pending-kpis>article{min-height:58px!important;padding:7px!important}
+ body.meg-operational-mobile .px-pending-kpis>article:nth-child(3){display:none!important}
+ body.meg-operational-mobile .px-pending-kpis>article strong{font-size:12px!important}
+ body.meg-operational-mobile .px-pending-kpis>article small{display:none!important}
+ body.meg-operational-mobile .px-pending-commandbar{display:flex!important;flex-direction:column!important;padding:6px!important;gap:6px!important}
+ body.meg-operational-mobile .px-pending-command-tabs{order:1!important}
+ body.meg-operational-mobile .px-pending-command-search{order:2!important;width:100%!important}
+ body.meg-operational-mobile .px-pending-filter-toggle{order:3!important;align-self:flex-end!important}
+ body.meg-operational-mobile .px-pending-agenda-head{padding:8px 10px!important}
+ body.meg-operational-mobile .px-pending-agenda-title p{font-size:8px!important}
+ body.meg-operational-mobile .px-pending-row{min-height:64px!important;border-radius:11px!important;margin:4px 5px!important;background:rgba(255,255,255,.025)!important}
+}
