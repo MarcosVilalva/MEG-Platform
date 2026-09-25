@@ -311,6 +311,7 @@ function MobileMenuIdentity({ data }: { data: PhoenixReadModel }) {
 
 function HomeHeaderIdentity({ data }: { data: PhoenixReadModel }) {
   const [avatar, setAvatar] = useState<PhoenixAvatarPreference>(() => readPhoenixAvatarPreference(data.user.id));
+  const firstName = data.user.name.trim().split(/\s+/)[0] || data.user.name;
 
   useEffect(() => {
     let active = true;
@@ -331,7 +332,7 @@ function HomeHeaderIdentity({ data }: { data: PhoenixReadModel }) {
 
   return <div className="px-home-user-identity" title={data.user.name}>
     <PhoenixProfileAvatar name={data.user.name} preference={avatar} className="px-home-user-avatar" />
-    <span><strong>{data.user.name}</strong><small>{data.user.role}</small></span>
+    <span><strong>{firstName}</strong><small>{data.user.role}</small></span>
   </div>;
 }
 
