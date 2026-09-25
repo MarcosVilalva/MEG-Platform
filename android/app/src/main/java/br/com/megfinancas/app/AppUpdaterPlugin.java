@@ -59,6 +59,7 @@ public class AppUpdaterPlugin extends Plugin {
     private volatile boolean authenticatedUiReady = false;
     private volatile long suppressedNativePromptVersion = -1;
     private volatile long automaticAttemptedVersion = -1;
+    private volatile long pendingInstallVersionCode = -1;
     private volatile String pendingInstallSource = null;
     private volatile String pendingInstallSha256 = "";
 
@@ -199,6 +200,7 @@ public class AppUpdaterPlugin extends Plugin {
                 Activity activity = getActivity();
                 if (activity == null) throw new IllegalStateException("Tela do aplicativo indisponível.");
                 automaticAttemptedVersion = releaseCode;
+                pendingInstallVersionCode = releaseCode;
                 activity.runOnUiThread(() -> installAvailableUpdateNatively(downloadUrl, sha256));
             } catch (Exception error) {
                 automaticAttemptedVersion = -1;
@@ -243,6 +245,8 @@ public class AppUpdaterPlugin extends Plugin {
     @PluginMethod
     public void startDownloadAndInstall(PluginCall call) {
         String source = call.getString("url");
+        Long requestedVersionCode = call.getLong("versionCode");
+        pendingInstallVersionCode = requestedVersionCode == null ? -1L : requestedVersionCode;
         String expectedSha256 = call.getString("sha256", "");
         if (source == null || !source.startsWith("https://")) {
             call.reject("A atualização precisa usar um endereço HTTPS válido.");
@@ -335,6 +339,17 @@ public class AppUpdaterPlugin extends Plugin {
     }
 
     private void installAvailableUpdateNatively(String source, String expectedSha256) {
+        try {
+            PackageInfo installed = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0);
+            long installedCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? installed.getLongVersionCode() : installed.versionCode;
+            if (pendingInstallVersionCode > 0 && pendingInstallVersionCode <= installedCode) {
+                clearPendingInstall();
+                Log.i(TAG, "Atualização ignorada: versão remota não é superior à instalada.");
+                return;
+            }
+        } catch (Exception error) {
+            Log.w(TAG, "Não foi possível confirmar a versão antes da instalação.", error);
+        }
         rememberPendingInstall(source, expectedSha256);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !getContext().getPackageManager().canRequestPackageInstalls()) {
             notifyUpdateState("waiting-permission", -1, null);
@@ -513,7 +528,7 @@ public class AppUpdaterPlugin extends Plugin {
                 String actualSha256 = toHex(digest.digest());
                 if (!expectedSha256.isEmpty() && !actualSha256.equalsIgnoreCase(expectedSha256)) {
                     partial.delete();
-                    throw new SecurityException("A assinatura digital do arquivo baixado não confere.");
+                    throw new SecurityException("A integridade digital do arquivo baixado não confere. Baixe novamente.");
                 }
                 if (!partial.renameTo(apk)) {
                     throw new IllegalStateException("Não foi possível concluir o arquivo temporário da atualização.");
