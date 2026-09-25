@@ -67,7 +67,12 @@ function openStatus(status: unknown) {
 function asset(path: string) {
   const configuredBase = import.meta.env.BASE_URL || '/';
   const base = configuredBase.endsWith('/') ? configuredBase : configuredBase + '/';
-  return base + path.replace(/^\/+/, '');
+  const relative = base + path.replace(/^\/+/, '');
+  try {
+    return typeof document !== 'undefined' ? new URL(relative, document.baseURI).href : relative;
+  } catch {
+    return relative;
+  }
 }
 
 function cardArt(name: string) {
@@ -488,7 +493,8 @@ function MenuSheet({ onClose, onNavigate, onLogout, onCloseApp }: { onClose: () 
   const go = (view: TargetView) => { onClose(); onNavigate(view); };
   return <div className="meg2-overlay" onClick={onClose}>
     <section className="meg2-menu-sheet" onClick={(event) => event.stopPropagation()}>
-      <header><div><small>MEG FINANÇAS</small><h2>Menu</h2></div><button onClick={onClose}>×</button></header>
+      <div className="meg2-menu-aura" aria-hidden="true"/>
+      <header><div className="meg2-menu-brand"><img src={asset('brand/meg-finance-system-mark.svg')} alt=""/><span><small>MEG FINANÇAS</small><h2>Menu</h2></span></div><button onClick={onClose}>×</button></header>
       <div className="meg2-menu-grid">
         <button onClick={() => go('home')}><Icon name="home"/><span>Início</span></button>
         <button onClick={() => go('movements')}><Icon name="file"/><span>Lançamentos</span></button>
@@ -579,7 +585,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, 
     + data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned').length;
 
   return <div className="meg2-app" data-meg-mobile-final="true">
-    <div className="meg2-shell">
+    <div className={'meg2-shell meg2-view-' + view}>
       <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={() => setPeriodOpen(true)} onOpenMenu={() => setMenuOpen(true)}/>
       <div className="meg2-scroll">
         {view === 'home' ? <Home data={data} periodMode={periodMode} periodLabel={periodLabel} homePeriodContext={homePeriodContext} onNavigate={onNavigate}/> : null}
