@@ -925,7 +925,21 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
           <button className={commandTab === 'history' ? 'active' : ''} type="button" onClick={() => setCommandTab('history')}><span><CardUiIcon name="history" /></span>Histórico</button>
         </nav>
 
-        {commandTab === 'summary' ? <div className="px-card-command-approved-summary">
+        {commandTab === 'summary' ? (nativeOperational ? <section className="px-cards-v8-command-recent" aria-label="Lançamentos recentes">
+          <header><div><strong>Lançamentos recentes</strong><small>{cardDisplayName(selected)}</small></div><button type="button" onClick={() => setCommandTab('current')}>Ver todos <b>›</b></button></header>
+          <div className="px-cards-v8-command-list">
+            {recentCurrentRows.map((row) => {
+              const presentation = cardRowPresentation(row);
+              return <button key={row.id} type="button" className="px-cards-v8-command-row" onClick={() => setDetailRow(row)}>
+                <i className={`tone-${presentation.tone}`} aria-hidden="true"><CardUiIcon name={presentation.icon} /></i>
+                <span><strong>{presentation.label}</strong><small>{row.description} · {date.format(new Date(`${row.purchaseDate}T12:00:00Z`))}</small>{row.installment !== 'Única' ? <em>Em {row.installment}</em> : null}</span>
+                <b className={row.amount < 0 ? 'credit' : ''}>{money.format(row.amount)}</b>
+                <u aria-hidden="true">›</u>
+              </button>;
+            })}
+            {!recentCurrentRows.length ? <p className="px-empty">Nenhum lançamento nesta fatura.</p> : null}
+          </div>
+        </section> : <div className="px-card-command-approved-summary">
           <article><span>Limite disponível agora</span><strong>{money.format(availableLimit)}</strong><small>{usage.toFixed(0)}% do limite comprometido</small></article>
           <article><span>Em aberto na fatura atual</span><strong>{money.format(currentOutstanding)}</strong><small>{currentOpen.length} lançamento(s) em aberto</small></article>
           <article><span>Parcelas futuras</span><strong>{money.format(futureCommitted)}</strong><small>{futureRows.length} parcela(s) no horizonte</small></article>
@@ -944,7 +958,8 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
               </button>;
             })}{!futureMonths.length ? <p className="px-empty">Sem faturas futuras em aberto.</p> : null}</div>
           </section>
-        </div> : <div className="px-card-command-approved-data">
+        </div>) : <div className="px-card-command-approved-data">
+          {nativeOperational ? <header className="px-cards-v8-command-data-head"><div><strong>{commandTab === 'current' ? 'Lançamentos da fatura' : commandTab === 'future' ? 'Próximas faturas' : commandTab === 'installments' ? 'Parcelas' : 'Histórico'}</strong><small>{commandRows.length} lançamento(s)</small></div></header> : null}
           <div className="px-card-command-approved-filters">
             <label className="search"><span aria-hidden="true"><CardUiIcon name="search" /></span><input value={commandSearch} onChange={(event) => setCommandSearch(event.target.value)} placeholder="Buscar lançamento..." /></label>
             <label><span>Período</span><select value={commandMonth} onChange={(event) => setCommandMonth(event.target.value)}>
@@ -969,15 +984,25 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
           <div className="px-card-command-approved-table-wrap">
             <table className="px-data-table px-card-command-approved-table" data-meg-export-native="true">
               <thead><tr><th>Data</th><th>Descrição</th><th>Grupo</th><th>Parcela</th><th>Situação</th><th>Valor</th><th /></tr></thead>
-              <tbody>{commandRows.map((row) => <tr key={row.id} onDoubleClick={() => setDetailRow(row)} title="Duplo clique para abrir os detalhes">
-                <td>{date.format(new Date(`${row.purchaseDate}T12:00:00Z`))}</td>
-                <td><strong>{row.description}</strong><small>{monthLabel(row.statementMonth)}</small></td>
-                <td><span className="px-card-command-group"><i><CardUiIcon name={cardGroupIcon(row.group)} /></i>{row.group}</span></td>
-                <td>{row.installment}</td>
-                <td><span className={`px-status ${rowStatusClass(row)}`}>{modalStatusLabel(row)}</span></td>
-                <td className={`px-money ${row.amount < 0 ? 'positive' : ''}`}>{money.format(row.amount)}</td>
-                <td><button className="px-detail-btn" type="button" aria-label={`Ver detalhes de ${row.description}`} onClick={() => setDetailRow(row)}>›</button></td>
-              </tr>)}</tbody>
+              <tbody>{commandRows.map((row) => {
+                const presentation = cardRowPresentation(row);
+                return nativeOperational
+                  ? <tr className="px-cards-v8-command-table-row" key={row.id} onClick={() => setDetailRow(row)}>
+                      <td className="px-cards-v8-command-table-icon"><i className={`tone-${presentation.tone}`}><CardUiIcon name={presentation.icon} /></i></td>
+                      <td className="px-cards-v8-command-table-copy"><strong>{presentation.label}</strong><small>{row.description} · {date.format(new Date(`${row.purchaseDate}T12:00:00Z`))}</small>{row.installment !== 'Única' ? <em>Em {row.installment}</em> : null}</td>
+                      <td className={`px-cards-v8-command-table-amount ${row.amount < 0 ? 'credit' : ''}`}>{money.format(row.amount)}</td>
+                      <td className="px-cards-v8-command-table-arrow">›</td>
+                    </tr>
+                  : <tr key={row.id} onDoubleClick={() => setDetailRow(row)} title="Duplo clique para abrir os detalhes">
+                      <td>{date.format(new Date(`${row.purchaseDate}T12:00:00Z`))}</td>
+                      <td><strong>{row.description}</strong><small>{monthLabel(row.statementMonth)}</small></td>
+                      <td><span className="px-card-command-group"><i><CardUiIcon name={cardGroupIcon(row.group)} /></i>{row.group}</span></td>
+                      <td>{row.installment}</td>
+                      <td><span className={`px-status ${rowStatusClass(row)}`}>{modalStatusLabel(row)}</span></td>
+                      <td className={`px-money ${row.amount < 0 ? 'positive' : ''}`}>{money.format(row.amount)}</td>
+                      <td><button className="px-detail-btn" type="button" aria-label={`Ver detalhes de ${row.description}`} onClick={() => setDetailRow(row)}>›</button></td>
+                    </tr>;
+              })}</tbody>
             </table>
             {!commandRows.length ? <p className="px-empty">Nenhum lançamento corresponde aos filtros selecionados.</p> : null}
           </div>
