@@ -979,7 +979,7 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent }: { data: Ph
 
     <div className="px-toolbar px-pending-commandbar">
       <label className="px-search-field px-pending-command-search"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={nativeOperational ? 'Buscar pendência, cartão ou conta...' : 'Buscar compromisso, cartão, conta ou forma...'} /></label>
-      <div className="px-priority-tabs px-pending-command-tabs">{([['all','Todas'],['upcoming','A pagar'],['today','Pagas'],['overdue','Vencidas']] as const).map(([id,label]) => <button key={id} type="button" className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{label}</button>)}</div>
+      <div className="px-priority-tabs px-pending-command-tabs">{([['all','Todas'],['upcoming','A pagar'],['today','Hoje'],['overdue','Vencidas']] as const).map(([id,label]) => <button key={id} type="button" className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{label}</button>)}</div>
       <span className="px-pending-command-separator" aria-hidden="true" />
       <label className="px-pending-group-select px-pending-command-group"><span>Agrupar por</span><select value={groupMode} onChange={(event) => setGroupMode(event.target.value as GroupMode)}><option value="date">Data</option><option value="category">Categoria</option><option value="account">Conta</option><option value="payment-method">Forma de pagamento</option><option value="none">Sem agrupamento</option></select></label>
       <button type="button" className={`px-pending-filter-toggle ${filtersOpen ? 'active' : ''}`} onClick={() => setFiltersOpen((value) => !value)}>☷ <span>Filtros</span></button>
