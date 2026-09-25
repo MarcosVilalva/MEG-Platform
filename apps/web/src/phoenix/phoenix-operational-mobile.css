@@ -4002,3 +4002,21 @@ body.meg-operational-mobile .px-home-current-v9 .px-approved-summary-v11 .result
  body.meg-operational-mobile .px-top-left-home-compact>.px-home-header-identity{justify-self:end!important}
  body.meg-operational-mobile .px-top-right{display:none!important}
 }
+
+
+/* APP · identidade canônica do cabeçalho em todas as abas */
+@media (max-width:760px){
+ body.meg-operational-mobile .px-top-left-home-compact>.px-home-user-identity{
+   justify-self:end!important;display:flex!important;align-items:center!important;justify-content:flex-end!important;
+   gap:6px!important;min-width:0!important;max-width:118px!important;padding:2px!important;border:0!important;background:transparent!important;
+ }
+ body.meg-operational-mobile .px-top-left-home-compact>.px-home-user-identity .px-home-user-avatar{
+   display:grid!important;width:38px!important;height:38px!important;min-width:38px!important;border-radius:12px!important;overflow:hidden!important;
+ }
+ body.meg-operational-mobile .px-top-left-home-compact>.px-home-user-identity>span{
+   display:block!important;min-width:0!important;max-width:68px!important;overflow:hidden!important;
+ }
+ body.meg-operational-mobile .px-top-left-home-compact>.px-home-user-identity>span>strong{
+   display:block!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:9px!important;text-transform:uppercase!important;
+ }
+}
