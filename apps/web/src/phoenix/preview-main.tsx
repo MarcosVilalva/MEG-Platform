@@ -177,44 +177,24 @@ function PhoenixBootScreen({ stage }: { stage: BootStage }) {
 
   const activeIndex = Math.max(0, bootStages.findIndex((item) => item.id === stage));
   const active = bootStages[activeIndex];
-  return <main className="px-preview-fullscreen-boot" data-boot-fidelity="approved-v4" aria-live="polite" aria-busy={stage !== 'ready'}>
-    <section className="px-preview-boot-card" aria-label="Preparando MEG Finanças">
-      <div className="px-preview-boot-brand">
-        <div className="px-preview-boot-logo">
-          <span className="px-preview-boot-halo" aria-hidden="true" />
-          <span className="px-preview-boot-orbit" aria-hidden="true" />
-          <span className="px-preview-boot-orbit is-secondary" aria-hidden="true" />
-          <img src={previewBrandAsset('brand/meg-finance-system-mark.svg')} alt="MEG" />
-          <strong className="px-preview-boot-percent">{active.progress}%</strong>
-        </div>
-        <div className="px-preview-boot-trust">
-          <svg className="px-preview-boot-cloud-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 18.5h11.2a4.4 4.4 0 0 0 .6-8.8A6.7 6.7 0 0 0 5.4 8.2 4.9 4.9 0 0 0 6.4 18.5Z"/></svg>
-          <span>MEG CLOUD</span><i aria-hidden="true" /><span>Sessão protegida</span>
-        </div>
+  const visualStyle = { '--boot-progress': `${active.progress}%` } as React.CSSProperties;
+
+  return <main className="px-preview-fullscreen-boot" data-boot-fidelity="approved-v5" aria-live="polite" aria-busy={stage !== 'ready'}>
+    <section className="px-preview-boot-v5" aria-label={`Carregando seu ambiente. ${active.progress}% concluído. ${active.label}.`}>
+      <div className="px-preview-boot-v5-visual" style={visualStyle}>
+        <span className="px-preview-boot-v5-ring" aria-hidden="true" />
+        <span className="px-preview-boot-v5-ring-soft" aria-hidden="true" />
+        <img src={previewBrandAsset('brand/meg-finance-system-mark.svg')} alt="MEG" />
       </div>
 
-      <div className="px-preview-boot-copy">
-        <span className="px-preview-boot-stage-label"><i aria-hidden="true" />{active.label}</span>
-        <h1>{active.title}</h1>
-        <p>{active.description}</p>
+      <div className="px-preview-boot-v5-progress" aria-label={`${active.progress}% preparado`}>
+        <div className="px-preview-boot-v5-track"><span style={{ width: `${active.progress}%` }} /></div>
+        <strong>{active.progress}%</strong>
       </div>
 
-      <div className="px-preview-boot-progress" aria-label={`${active.progress}% preparado`}>
-        <div className="px-preview-boot-track"><span style={{ width: `${active.progress}%` }} /></div>
-        <div className="px-preview-boot-progress-meta"><span>Preparando seu ambiente</span><strong>{active.progress}%</strong></div>
-      </div>
-
-      <div className="px-preview-boot-steps">
-        {bootStages.map((item, index) => <div key={item.id} className={`px-preview-boot-step ${index < activeIndex ? 'done' : index === activeIndex ? 'active' : ''}`}>
-          <i>{index < activeIndex ? '✓' : index + 1}</i>
-          <span>{item.label}</span>
-        </div>)}
-      </div>
-
-      <div className="px-preview-boot-foot">
-        <svg className="px-preview-boot-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-        <i aria-hidden="true" />
-        <span>Conexão protegida · preparando os dados antes da navegação</span>
+      <div className="px-preview-boot-v5-copy">
+        <strong>Carregando seu ambiente</strong>
+        <span className="px-preview-boot-v5-stage">{active.label}</span>
       </div>
     </section>
   </main>;
