@@ -3987,3 +3987,18 @@ body.meg-operational-mobile .px-home-current-v9 .px-approved-summary-v11 .result
   body.meg-operational-mobile .px-app-loading-pulse,
   body.meg-operational-mobile .px-app-loading-track i{animation:none!important}
 }
+
+
+/* APP final · cabeçalho compacto equilibrado */
+@media (max-width:760px){
+ body.meg-operational-mobile .px-topbar{min-height:54px!important;padding:calc(5px + env(safe-area-inset-top)) 9px 5px!important}
+ body.meg-operational-mobile .px-top-left-home-compact{width:100%!important;display:grid!important;grid-template-columns:44px minmax(104px,128px) 1fr!important;gap:7px!important}
+ body.meg-operational-mobile .px-mobile-brand-home{width:44px!important;height:44px!important;min-width:44px!important;border-radius:12px!important}
+ body.meg-operational-mobile .px-mobile-brand-home img{width:38px!important;height:38px!important}
+ body.meg-operational-mobile .px-native-home-period{width:100%!important;max-width:128px!important;min-height:40px!important;padding:3px 7px!important;border-radius:12px!important}
+ body.meg-operational-mobile .px-native-home-period-icon{width:28px!important;height:28px!important;min-width:28px!important}
+ body.meg-operational-mobile .px-native-home-period-copy strong{font-size:10.5px!important}
+ body.meg-operational-mobile .px-native-home-period-copy small{font-size:7px!important;opacity:.66!important}
+ body.meg-operational-mobile .px-top-left-home-compact>.px-home-header-identity{justify-self:end!important}
+ body.meg-operational-mobile .px-top-right{display:none!important}
+}
