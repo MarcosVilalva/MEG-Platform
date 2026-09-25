@@ -602,7 +602,7 @@ assert.match(homeFidelityV13Css, /\.px-main-home>\.px-content-home:has\(\.meg-ho
   'Conteúdo deve manter respiro visível sob a linha do cabeçalho sem habilitar rolagem.');
 assert.match(homeFidelityV13Css, /\.meg-current-v13-heading\{[\s\S]*min-height:62px!important/,
   'Cabeçalho financeiro deve usar a escala compacta v13.1 validada no aparelho.');
-assert.match(phoenixApp, /function HomeHeaderIdentity[\s\S]*PhoenixProfileAvatar[\s\S]*px-home-user-identity/,
+assert.match(phoenixApp, /function HomeHeaderIdentity[\s\S]*px-home-user-identity[\s\S]*PhoenixProfileAvatar/,
   'Home Android deve exibir o avatar sincronizado do usuário no cabeçalho.');
 assert.match(phoenixApp, /HomeHeaderIdentity data=\{data\}[\s\S]*px-native-home-period/,
   'Avatar do usuário deve ficar integrado ao topo antes do seletor de período.');
