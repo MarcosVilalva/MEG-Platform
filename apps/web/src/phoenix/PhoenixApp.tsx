@@ -309,7 +309,33 @@ function MobileMenuIdentity({ data }: { data: PhoenixReadModel }) {
   </div>;
 }
 
-function ReadScreen({ view, data, month, theme, periodMode, periodContext, periodRangeLabel, launchRequest, launchPreset, nativeOperational, onToggleTheme, onNavigate, onLaunch, onDataCommitted, onOpenPeriod, onLogoutRequest, onPendingMonthChange }: {
+function HomeHeaderIdentity({ data }: { data: PhoenixReadModel }) {
+  const [avatar, setAvatar] = useState<PhoenixAvatarPreference>(() => readPhoenixAvatarPreference(data.user.id));
+
+  useEffect(() => {
+    let active = true;
+    const syncLocal = (event?: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string }>)?.detail;
+      if (detail?.userId && detail.userId !== data.user.id) return;
+      setAvatar(readPhoenixAvatarPreference(data.user.id));
+    };
+    void hydratePhoenixAvatarPreference(data.user.id).then((preference) => {
+      if (active) setAvatar(preference);
+    });
+    window.addEventListener('meg:profile-avatar-changed', syncLocal);
+    return () => {
+      active = false;
+      window.removeEventListener('meg:profile-avatar-changed', syncLocal);
+    };
+  }, [data.user.id]);
+
+  return <div className="px-home-user-identity" title={data.user.name}>
+    <PhoenixProfileAvatar name={data.user.name} preference={avatar} className="px-home-user-avatar" />
+    <span><strong>{data.user.name}</strong><small>{data.user.role}</small></span>
+  </div>;
+}
+
+function ReadScreen({ view, data, month, theme, periodMode, periodContext, periodRangeLabel, launchRequest, launchPreset, nativeOperational, onToggleTheme, onNavigate, onLaunch, onDataCommitted, onOpenPeriod, onOpenMenu, onLogoutRequest, onPendingMonthChange }: {
   view: PhoenixView;
   data: PhoenixReadModel;
   month: string;
@@ -325,6 +351,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   onLaunch: (preset: LaunchPreset) => void;
   onDataCommitted: (snapshot: PhoenixReadModel) => void;
   onOpenPeriod: () => void;
+  onOpenMenu: () => void;
   onLogoutRequest: () => void;
   onPendingMonthChange: (month: string) => void;
 }) {
@@ -361,7 +388,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
         onOpenPeriod={onOpenPeriod}
       />;
     }
-    if (nativeOperational) return <PhoenixOperationalMobileHome data={data} onLaunch={onLaunch} onNavigate={onNavigate} onOpenPeriod={onOpenPeriod} />;
+    if (nativeOperational) return <PhoenixOperationalMobileHome data={data} onLaunch={onLaunch} onNavigate={onNavigate} onOpenPeriod={onOpenPeriod} onOpenMenu={onOpenMenu} />;
     return <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
   }
   if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} periodMode={periodMode} periodLabel={periodMode === 'all' ? 'Tudo' : periodMode === 'range' ? periodRangeLabel || 'Intervalo' : monthLabel(data.month)} launchRequest={launchRequest} launchPreset={launchPreset} onNavigateHistory={() => onNavigate('history')} onNavigateHome={() => onNavigate('home')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
@@ -1173,7 +1200,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
 
       <main className={`px-main ${view === 'home' ? 'px-main-home' : ''} ${homeAnalytical ? 'px-main-home-all' : ''} ${view === 'payables' ? 'px-main-payables' : ''} ${view === 'history' ? 'px-main-history' : ''} ${view === 'cards' ? 'px-main-cards' : ''}`}>
         <header className="px-topbar">
-          <div className="px-top-left">{nativeOperational ? <button className="px-mobile-brand-home" type="button" aria-label="Ir para o início" onClick={() => navigate('home', true)}><img src={phoenixBrandAsset('brand/meg-finance-system-mark.svg')} alt="" /><span>MEG</span></button> : <button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => setCollapsed((value) => !value)}>☰</button>}<div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div>{nativeOperational && view === 'home' ? <button className="px-native-home-period" type="button" aria-label="Alterar período da Home" onClick={() => periodOpen ? closePeriodSelector() : openPeriodSelector()}><span className="px-native-home-period-icon" aria-hidden="true">{periodMode === 'all' ? '∞' : <svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg>}</span><span className="px-native-home-period-copy"><strong>{nativeHomePeriodTitle}</strong><small>{nativeHomePeriodSubtitle}</small></span><b aria-hidden="true">⌄</b></button> : null}</div>
+          <div className="px-top-left">{nativeOperational ? <button className="px-mobile-brand-home" type="button" aria-label="Ir para o início" onClick={() => navigate('home', true)}><img src={phoenixBrandAsset('brand/meg-finance-system-mark.svg')} alt="" /><span>MEG</span></button> : <button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => setCollapsed((value) => !value)}>☰</button>}<div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div>{nativeOperational && view === 'home' && data ? <HomeHeaderIdentity data={data} /> : null}{nativeOperational && view === 'home' ? <button className="px-native-home-period" type="button" aria-label="Alterar período da Home" onClick={() => periodOpen ? closePeriodSelector() : openPeriodSelector()}><span className="px-native-home-period-icon" aria-hidden="true">{periodMode === 'all' ? '∞' : <svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg>}</span><span className="px-native-home-period-copy"><strong>{nativeHomePeriodTitle}</strong><small>{nativeHomePeriodSubtitle}</small></span><b aria-hidden="true">⌄</b></button> : null}</div>
           <div className="px-top-right">
             <button className="px-top-quick-launch" type="button" title="Nova despesa" aria-label="Nova despesa" onClick={() => requestLaunch('expense')}>＋</button>
             <div className={`px-period-menu ${periodOpen ? 'is-open' : ''}`} ref={!nativeOperational ? periodRef : undefined}>
@@ -1185,7 +1212,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         </header>
 
         <div className={`px-content ${view === 'home' ? 'px-content-home' : ''} ${homeAnalytical ? 'px-content-home-all' : ''} ${view === 'movements' ? 'px-content-movements' : ''} ${view === 'payables' ? 'px-content-payables' : ''} ${view === 'history' ? 'px-content-history' : ''} ${view === 'cards' ? 'px-content-cards' : ''}`}>
-          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen key={`${view}:${periodMode}:${viewData.month}:${periodRangeLabel}`} view={view} data={viewData} month={viewData.month} theme={theme} periodMode={periodMode} periodContext={homePeriodContext} periodRangeLabel={periodRangeLabel} launchRequest={launchRequest} launchPreset={launchPreset} nativeOperational={nativeOperational} onToggleTheme={toggleTheme} onNavigate={navigate} onLaunch={requestLaunch} onDataCommitted={commitSnapshot} onOpenPeriod={openPeriodSelector} onLogoutRequest={requestLogout} onPendingMonthChange={(targetMonth) => { void applyMonthlyPeriod(targetMonth); }} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
+          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen key={`${view}:${periodMode}:${viewData.month}:${periodRangeLabel}`} view={view} data={viewData} month={viewData.month} theme={theme} periodMode={periodMode} periodContext={homePeriodContext} periodRangeLabel={periodRangeLabel} launchRequest={launchRequest} launchPreset={launchPreset} nativeOperational={nativeOperational} onToggleTheme={toggleTheme} onNavigate={navigate} onLaunch={requestLaunch} onDataCommitted={commitSnapshot} onOpenPeriod={openPeriodSelector} onOpenMenu={() => setMobileOpen(true)} onLogoutRequest={requestLogout} onPendingMonthChange={(targetMonth) => { void applyMonthlyPeriod(targetMonth); }} /> : <section className="px-card px-placeholder"><span className="px-kicker">Phoenix V15</span><h2>Carregando base real</h2><p>Resumo, lançamentos, cartões, pendências, histórico, usuários, configurações e relatórios estão sendo carregados em paralelo.</p></section>}
         </div>
       </main>
 
