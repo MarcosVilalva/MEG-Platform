@@ -402,7 +402,7 @@ function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: numb
   return <svg {...common}><path d="M8 8H3V3M16 8h5V3M8 16H3v5M21 21v-5h-5"/></svg>;
 }
 
-export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', periodLabel = '', onNavigateHistory, onNavigateHome, onDataCommitted, onOpenPeriod, launchRequest = 0, launchPreset = 'expense' }: { data: PhoenixReadModel; periodMode?: 'month' | 'range' | 'all'; periodLabel?: string; onNavigateHistory?: () => void; onNavigateHome?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number; launchPreset?: LaunchPreset }) {
+export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', periodLabel = '', onNavigateHistory, onNavigateHome, onDataCommitted, onOpenPeriod, launchRequest = 0, launchPreset = 'expense', editEventRequest = '' }: { data: PhoenixReadModel; periodMode?: 'month' | 'range' | 'all'; periodLabel?: string; onNavigateHistory?: () => void; onNavigateHome?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number; launchPreset?: LaunchPreset; editEventRequest?: string }) {
   const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
   const [data, setData] = useState(initialData);
   const [search, setSearch] = useState('');
@@ -938,6 +938,12 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
   function openEventForEdit(event: FinancialEvent) {
     openLaunch(event);
   }
+
+  useEffect(() => {
+    if (!editEventRequest) return;
+    const event = data.events.items.find((item) => item.id === editEventRequest);
+    if (event) openLaunch(event);
+  }, [editEventRequest]);
 
   function requestCloseLaunch() {
     if (saveAcceptedRef.current) {
