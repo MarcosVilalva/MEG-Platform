@@ -965,3 +965,51 @@
     display:grid!important;
   }
 }
+
+
+/* Cartões V8.2 · correção estrutural do carrossel mobile */
+@media (max-width:760px){
+  body.meg-operational-mobile .px-cards-v8-carousel-shell{
+    width:100%!important;
+    min-width:0!important;
+    overflow:hidden!important;
+  }
+  body.meg-operational-mobile .px-cards-v8-carousel{
+    width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+    padding:3px 11vw 4px!important;
+    gap:10px!important;
+    box-sizing:border-box!important;
+    scroll-padding-inline:11vw!important;
+  }
+  body.meg-operational-mobile .px-cards-v8-slide{
+    flex:0 0 78%!important;
+    transform-origin:center center!important;
+  }
+  body.meg-operational-mobile .px-cards-v8-art{
+    width:100%!important;
+    aspect-ratio:1.586/1!important;
+    padding:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+  }
+  body.meg-operational-mobile .px-cards-v8-art>img:not(.px-brand-asset){
+    width:100%!important;
+    height:100%!important;
+    max-width:100%!important;
+    max-height:100%!important;
+    object-fit:contain!important;
+    object-position:center center!important;
+    transform:none!important;
+    inset:auto!important;
+  }
+  body.meg-operational-mobile .px-cards-v8-row[aria-disabled="true"]{
+    cursor:default!important;
+  }
+  body.meg-operational-mobile .px-cards-v8-row-spacer{
+    width:8px!important;
+    min-width:8px!important;
+  }
+}
