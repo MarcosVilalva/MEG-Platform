@@ -878,3 +878,90 @@
     font-size:5.1px!important;
   }
 }
+
+
+/* ==========================================================================
+   Cartões V8.1 · refinamento final validado
+   - página verticalmente fixa;
+   - carrossel continua horizontal e cíclico;
+   - cartão ativo centralizado no viewport;
+   - somente lançamentos têm rolagem vertical.
+   ========================================================================== */
+@media (max-width:760px){
+  body.meg-operational-mobile .px-main-cards,
+  body.meg-operational-mobile .px-main-cards>.px-content-cards,
+  body.meg-operational-mobile .px-cards-native-v8{
+    overflow:hidden!important;
+    overscroll-behavior:none!important;
+  }
+
+  body.meg-operational-mobile .px-cards-v8-carousel{
+    touch-action:pan-x!important;
+    scroll-snap-type:x mandatory!important;
+    scroll-padding-inline:11vw!important;
+    overscroll-behavior-x:contain!important;
+    overscroll-behavior-y:none!important;
+  }
+
+  body.meg-operational-mobile .px-cards-v8-slide{
+    scroll-snap-align:center!important;
+    scroll-snap-stop:always!important;
+  }
+
+  /* Moldura e arte usam o mesmo centro óptico. */
+  body.meg-operational-mobile .px-cards-v8-art{
+    display:grid!important;
+    place-items:center!important;
+    padding:2px!important;
+    box-sizing:border-box!important;
+  }
+  body.meg-operational-mobile .px-cards-v8-art>img:not(.px-brand-asset){
+    width:100%!important;
+    height:100%!important;
+    margin:0!important;
+    object-fit:contain!important;
+    object-position:50% 50%!important;
+    align-self:center!important;
+    justify-self:center!important;
+  }
+
+  /* A área de lançamentos é o único scroll vertical da tela principal. */
+  body.meg-operational-mobile .px-cards-v8-recent{
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  body.meg-operational-mobile .px-cards-v8-recent-list{
+    min-height:0!important;
+    height:100%!important;
+    display:grid!important;
+    grid-template-rows:none!important;
+    grid-auto-rows:minmax(58px,auto)!important;
+    align-content:start!important;
+    gap:4px!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    overscroll-behavior-y:contain!important;
+    overscroll-behavior-x:none!important;
+    touch-action:pan-y!important;
+    scrollbar-width:none!important;
+    padding-right:1px!important;
+  }
+  body.meg-operational-mobile .px-cards-v8-recent-list::-webkit-scrollbar{
+    display:none!important;
+  }
+  body.meg-operational-mobile .px-cards-v8-row{
+    min-height:58px!important;
+    flex:0 0 auto!important;
+  }
+}
+
+@media (max-width:760px) and (max-height:740px){
+  body.meg-operational-mobile .px-cards-v8-recent-list{
+    grid-template-rows:none!important;
+    grid-auto-rows:minmax(54px,auto)!important;
+    overflow-y:auto!important;
+  }
+  body.meg-operational-mobile .px-cards-v8-recent-list>.px-cards-v8-row:nth-child(n+4){
+    display:grid!important;
+  }
+}
