@@ -42,8 +42,8 @@ assert.match(
 );
 assert.match(
   controller,
-  /AppUpdater\.startDownloadAndInstall\(\{ url: downloadUrl, sha256: release\.sha256 \}\)/,
-  'Fluxo Phoenix deve iniciar download e instalação sem exigir o botão Atualizar agora',
+  /AppUpdater\.startDownloadAndInstall\(\{\s*url:\s*downloadUrl,\s*sha256:\s*release\.sha256,\s*versionCode:\s*releaseCode\s*\}\)/,
+  'Fluxo Phoenix deve iniciar download automático informando URL, hash e versionCode ao instalador nativo',
 );
 assert.match(
   controller,
