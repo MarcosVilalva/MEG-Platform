@@ -1,9 +1,9 @@
 {
-  "versionCode": 360,
-  "versionName": "2.0.360",
+  "versionCode": 361,
+  "versionName": "2.0.361",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "150bdc0d64f29e29b0e1b9067c639c90f51e589b07355bd802311b4e49ab76bb",
+  "sha256": "bae007210fbaf7a2d850bd6f07f08ad20e4f53e3a7c4edb069eaf508e06d33ef",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "moderniza identidade e ícone MEG"
+  "releaseNotes": "corrige KPIs de Lançamentos em Tudo e Intervalo"
 }
