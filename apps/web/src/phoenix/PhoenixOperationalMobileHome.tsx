@@ -95,7 +95,7 @@ export function PhoenixOperationalMobileHome({ data, onNavigate, onOpenMenu }: P
   })();
 
   return <>
-    <section className="meg-reference-home" data-home-fidelity="approved-25-09" aria-label="Resumo financeiro">
+    <section className="meg-reference-home" data-home-fidelity="reference-v14" aria-label="Resumo financeiro">
       <header className="meg-ref-home-head">
         <div><small>Olá, Marcos</small><strong>Seu resumo financeiro</strong></div>
         <button type="button" className="meg-ref-period" aria-label="Selecionar período">{compactMonth}</button>
