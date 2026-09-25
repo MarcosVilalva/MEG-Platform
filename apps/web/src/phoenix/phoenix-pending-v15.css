@@ -2309,3 +2309,56 @@
 .px-pending-loading-spinner{width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:px-pending-spin .7s linear infinite}
 @keyframes px-pending-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.px-pending-loading-spinner{animation:none}}
+
+
+/* Pendentes APP final · referência mobile aprovada */
+@media (max-width:760px){
+ body.meg-operational-mobile .px-content-payables{padding:8px 10px 10px!important}
+ body.meg-operational-mobile .px-pending-cockpit{display:flex!important;flex-direction:column!important;gap:8px!important;min-height:0!important}
+ body.meg-operational-mobile .px-pending-hero{padding:10px 12px!important;border-radius:15px!important}
+ body.meg-operational-mobile .px-pending-hero-icon{width:36px!important;height:36px!important;border-radius:11px!important}
+ body.meg-operational-mobile .px-pending-hero h1{font-size:18px!important}
+ body.meg-operational-mobile .px-pending-hero p{font-size:8px!important}
+ body.meg-operational-mobile .px-pending-month-nav{min-height:42px!important;padding:4px 6px!important;gap:5px!important;border-radius:13px!important}
+ body.meg-operational-mobile .px-pending-month-current{min-width:0!important;flex:1!important}
+ body.meg-operational-mobile .px-pending-month-current strong{font-size:10px!important}
+ body.meg-operational-mobile .px-pending-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:6px!important}
+ body.meg-operational-mobile .px-pending-kpis>article{min-height:62px!important;padding:8px 9px!important;border-radius:13px!important}
+ body.meg-operational-mobile .px-pending-kpis>article strong{font-size:14px!important}
+ body.meg-operational-mobile .px-pending-kpis>article small{font-size:7.5px!important}
+ body.meg-operational-mobile .px-pending-commandbar{padding:7px!important;gap:6px!important;border-radius:13px!important}
+ body.meg-operational-mobile .px-pending-command-search{min-height:38px!important}
+ body.meg-operational-mobile .px-pending-command-tabs{width:100%!important;display:grid!important;grid-template-columns:repeat(4,1fr)!important}
+ body.meg-operational-mobile .px-pending-command-tabs button{min-width:0!important;padding:7px 3px!important;font-size:8px!important}
+ body.meg-operational-mobile .px-pending-command-group,
+ body.meg-operational-mobile .px-pending-command-separator,
+ body.meg-operational-mobile .px-toolbar-note{display:none!important}
+ body.meg-operational-mobile .px-pending-filter-toggle{min-height:34px!important}
+ body.meg-operational-mobile .px-pending-agenda{border-radius:15px!important;min-height:0!important}
+ body.meg-operational-mobile .px-pending-agenda-head{padding:10px 11px!important}
+ body.meg-operational-mobile .px-pending-agenda-signature{display:none!important}
+ body.meg-operational-mobile .px-pending-scroll-region{max-height:none!important;overflow:auto!important}
+ body.meg-operational-mobile .px-pending-date-cluster{margin:6px!important;border-radius:12px!important}
+ body.meg-operational-mobile .px-pending-date-cluster-head{padding:9px 10px!important;min-height:54px!important}
+ body.meg-operational-mobile .px-pending-row{
+   position:relative!important;grid-template-columns:22px minmax(0,1fr) auto!important;
+   gap:7px!important;padding:10px!important;min-height:70px!important;cursor:pointer!important
+ }
+ body.meg-operational-mobile .px-pending-row>.px-pending-date{grid-column:2!important}
+ body.meg-operational-mobile .px-pending-row>.px-pending-copy{grid-column:2!important}
+ body.meg-operational-mobile .px-pending-row>.px-pending-amount{grid-column:3!important;grid-row:1!important}
+ body.meg-operational-mobile .px-pending-row>.px-status{grid-column:3!important;grid-row:2!important;justify-self:end!important}
+ body.meg-operational-mobile .px-pending-row>.px-pending-quick-settle{grid-column:2 / 4!important;width:100%!important;min-height:32px!important}
+ body.meg-operational-mobile .px-pending-row>.px-detail-btn{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;opacity:0!important;z-index:1!important}
+ body.meg-operational-mobile .px-pending-row>input,
+ body.meg-operational-mobile .px-pending-row>.px-pending-quick-settle{position:relative!important;z-index:2!important}
+ body.meg-operational-mobile .px-pending-overlay{padding:10px!important;align-items:center!important}
+ body.meg-operational-mobile .px-pending-drawer{
+   width:min(100%,440px)!important;max-width:440px!important;max-height:calc(100dvh - 92px)!important;
+   margin:auto!important;border-radius:20px!important;overflow:hidden!important;display:flex!important;flex-direction:column!important
+ }
+ body.meg-operational-mobile .px-pending-drawer>header{flex:0 0 auto!important;padding:15px!important}
+ body.meg-operational-mobile .px-pending-drawer>dl{overflow:auto!important;margin:0!important;padding:12px 15px!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body.meg-operational-mobile .px-pending-drawer>.px-pending-statement-lines{overflow:auto!important;margin:8px 15px!important}
+ body.meg-operational-mobile .px-pending-drawer>footer{position:sticky!important;bottom:0!important;flex:0 0 auto!important;padding:11px 15px calc(11px + env(safe-area-inset-bottom))!important;background:rgba(3,24,22,.98)!important}
+}
