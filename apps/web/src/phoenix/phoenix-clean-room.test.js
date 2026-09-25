@@ -649,18 +649,12 @@ assert.match(homeFidelityV13Css, /Home v14\.5[\s\S]*\.px-home-user-identity>span
   'Primeiro nome deve permanecer visível nas larguras normais do aparelho.');
 assert.match(homeFidelityV13Css, /@media\(max-width:330px\)[\s\S]*\.px-home-user-identity>span:not\(\.px-profile-avatar\)\{[\s\S]*display:none!important/,
   'Somente telas realmente estreitas devem esconder o primeiro nome.');
-assert.match(operationalHome, /meg-current-v14-quick[\s\S]*Ações rápidas[\s\S]*Cartões[\s\S]*Pagar conta[\s\S]*Fluxo de caixa[\s\S]*Ver relatórios/,
-  'Home v14 deve preencher a área útil com as quatro ações rápidas aprovadas.');
-assert.doesNotMatch(operationalHome, /meg-current-v14-quick[\s\S]*Novo lançamento/,
-  'Ações rápidas não deve duplicar o botão Novo já presente no dock.');
-assert.doesNotMatch(operationalHome, /meg-current-v14-quick[\s\S]*Transferência/,
-  'Ações rápidas não deve reintroduzir Transferência no lugar do Fluxo de caixa aprovado.');
-assert.match(homeFidelityV13Css, /Home v14 · composição adaptativa aprovada[\s\S]*\.meg-home-v13-current\{[\s\S]*height:100%!important[\s\S]*display:flex!important/,
-  'Home v14 deve ocupar toda a altura útil e distribuir seus blocos verticalmente.');
-assert.match(homeFidelityV13Css, /\.meg-current-v14-quick\{[\s\S]*flex:1 1 118px!important/,
-  'Ações rápidas deve absorver a altura excedente para eliminar a faixa vazia antes do dock.');
-assert.match(homeFidelityV13Css, /@media\(max-height:650px\)[\s\S]*overflow-y:auto!important/,
-  'Somente telas realmente baixas podem ativar rolagem na Home.');
+assert.doesNotMatch(operationalHome, /meg-current-v14-quick[\\s\\S]*Ações rápidas/,
+  'Home aprovada de 25/09 não deve reintroduzir o bloco antigo de ações rápidas.');
+assert.match(operationalHome, /meg-reference-home[\\s\\S]*meg-ref-month-bills[\\s\\S]*meg-ref-cards[\\s\\S]*meg-ref-today/,
+  'Home aprovada deve ocupar a área útil com resumo mensal, cartões e pendências de hoje.');
+assert.match(operationalCss, /Referência mobile aprovada · 25\/09\/2026[\\s\\S]*\\.meg-reference-home[\\s\\S]*\\.meg-ref-balance-row/,
+  'Composição mobile aprovada deve possuir contrato visual dedicado.');
 assert.match(homeFidelityV13Css, /@media\(max-width:390px\)[\s\S]*px-home-user-identity/,
   'Cabeçalho com avatar deve se adaptar a larguras estreitas sem perder a identidade do usuário.');
 assert.match(phoenixApp, /px-period-scroll-v10[\s\S]*px-period-footer-v10/,
