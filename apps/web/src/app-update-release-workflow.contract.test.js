@@ -131,5 +131,15 @@ assert.match(
   /window\.addEventListener\('online'[\s\S]*checkForAppUpdate\(\{ automatic: true \}\)/,
   'Ao recuperar internet, o APK deve retomar a checagem automática sem ação manual.',
 );
+assert.match(
+  controller,
+  /PENDING_UPDATE_STORAGE_KEY[\s\S]*rememberPendingUpdateSuccess[\s\S]*showInstalledUpdateSuccess/,
+  'Fluxo OTA deve preservar a versão esperada e confirmar visualmente após a instalação.',
+);
+assert.match(
+  controller,
+  /Atualizado com sucesso![\s\S]*versão v/,
+  'Após reiniciar na nova versão, o APK deve informar que a atualização foi concluída.',
+);
 
 console.log('Android/Page release-pair + automatic update contract: OK');
