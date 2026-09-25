@@ -77,7 +77,7 @@ assert.match(
 );
 assert.match(
   nativeUpdater,
-  /for \(int index = 0; index < RELEASE_MANIFEST_URLS\.length; index \+= 1\)[\s\S]*return fetchReleaseManifest\(source \+ "\\?native="/,
+  /for \(int index = 0; index < RELEASE_MANIFEST_URLS\.length; index \+= 1\)[\s\S]*return fetchReleaseManifest\(source \+ "\?native="/,
   'Atualizador nativo deve tratar canais de manifesto como fallbacks ordenados, sem misturar versões entre canais',
 );
 assert.match(
