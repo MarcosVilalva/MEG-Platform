@@ -385,3 +385,233 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   .meg2-card-art,.meg2-dots span{transition:none}
   .meg2-carousel{scroll-behavior:auto}
 }
+
+
+/* =========================================================
+   MEG PREMIUM MOBILE — referência visual aprovada 25/09/2026
+   Esta camada pertence somente à árvore mobile nova (.meg2-*).
+   ========================================================= */
+.meg2-app{
+  --meg2-glow:0 0 0 1px rgba(26,246,237,.16),0 0 18px rgba(21,229,219,.11),inset 0 1px 0 rgba(255,255,255,.035);
+  --meg2-glow-strong:0 0 0 1px rgba(25,245,235,.36),0 0 24px rgba(22,231,222,.2),inset 0 0 22px rgba(15,201,195,.08);
+}
+.meg2-shell{
+  isolation:isolate;
+  background:
+    radial-gradient(circle at 88% 4%,rgba(17,236,226,.095),transparent 24%),
+    radial-gradient(circle at 10% 32%,rgba(0,136,143,.10),transparent 28%),
+    linear-gradient(180deg,#003b3d 0%,#002d30 47%,#001f23 100%);
+}
+.meg2-shell::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;
+  background:
+    linear-gradient(135deg,transparent 0 18%,rgba(30,225,217,.028) 18.2% 18.55%,transparent 18.8% 100%),
+    linear-gradient(45deg,transparent 0 71%,rgba(30,225,217,.025) 71.2% 71.5%,transparent 71.8% 100%);
+}
+.meg2-header{
+  min-height:70px;
+  grid-template-columns:48px minmax(0,1fr) auto;
+  gap:7px;padding-inline:10px;
+  box-shadow:0 8px 25px rgba(0,0,0,.16);
+}
+.meg2-brand{width:46px;height:46px;border-radius:12px;box-shadow:var(--meg2-glow-strong)}
+.meg2-period{min-height:46px;grid-template-columns:34px minmax(0,1fr) 14px;gap:6px;padding:4px 7px}
+.meg2-period-icon{width:32px;height:32px;border-radius:9px}
+.meg2-period strong{font-size:clamp(12px,3.4vw,15px)}
+.meg2-period small{font-size:8px}
+.meg2-user{max-width:86px;gap:5px;overflow:hidden}
+.meg2-avatar{width:37px;height:37px;flex:0 0 37px}
+.meg2-user strong{
+  display:block!important;
+  max-width:44px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:9px!important;
+}
+.meg2-main{padding:9px 10px 18px}
+.meg2-title{padding:0 2px 7px}
+.meg2-title>span{font-size:10px}
+.meg2-title h1{font-size:clamp(26px,7.4vw,35px);line-height:1}
+.meg2-title p,.meg2-page-title p{font-size:9px}
+.meg2-title>i,.meg2-page-title>span{
+  width:43px;height:43px;border-radius:10px;
+  box-shadow:var(--meg2-glow);
+}
+.meg2-balance,.meg2-flow article,.meg2-summary article,.meg2-benefit,.meg2-quick,
+.meg2-card-metrics article,.meg2-statement,.meg2-pending-metrics article,.meg2-pending-list>button{
+  box-shadow:var(--meg2-glow);
+}
+.meg2-balance{min-height:82px;padding:8px 10px;border-radius:14px;grid-template-columns:48px minmax(0,1fr)}
+.meg2-balance>span{width:46px;height:46px}
+.meg2-balance small{font-size:10px}
+.meg2-balance strong{
+  min-width:0;max-width:100%;overflow:hidden;
+  font-size:clamp(25px,7.4vw,34px);white-space:nowrap;
+}
+.meg2-balance p{font-size:8px}
+.meg2-flow{gap:5px;margin-top:5px}
+.meg2-flow article{min-width:0;min-height:59px;padding:6px;grid-template-columns:36px minmax(0,1fr);gap:5px}
+.meg2-flow article>span{width:35px;height:35px;border-radius:9px}
+.meg2-flow article>div{min-width:0;overflow:hidden}
+.meg2-flow small{font-size:8px}
+.meg2-flow strong{
+  display:block;max-width:100%;overflow:hidden;
+  font-size:clamp(13px,3.75vw,18px)!important;
+  letter-spacing:-.035em;white-space:nowrap;
+}
+.meg2-summary{gap:4px;margin-top:6px}
+.meg2-summary article{min-width:0;min-height:106px;padding:6px 2px;border-radius:12px}
+.meg2-summary article>span{width:32px;height:32px;margin-bottom:2px}
+.meg2-summary small{min-height:25px;font-size:7px}
+.meg2-summary b{font-size:16px}
+.meg2-summary em{
+  max-width:100%;overflow:hidden;text-overflow:clip;
+  font-size:clamp(7px,2.15vw,9px);
+}
+.meg2-benefit{min-height:67px;margin-top:6px;padding:6px 9px;grid-template-columns:45px minmax(0,1fr) 20px}
+.meg2-benefit>span{width:43px;height:43px}
+.meg2-benefit small{font-size:9px}.meg2-benefit em{font-size:8px}.meg2-benefit strong{font-size:19px}
+.meg2-quick{margin-top:6px;padding:6px;border-radius:13px}
+.meg2-quick header{margin-bottom:5px}
+.meg2-quick header>div>span{width:30px;height:30px}
+.meg2-quick header b{font-size:9px}.meg2-quick header small{font-size:7px}
+.meg2-quick>div{gap:4px}
+.meg2-quick>div button{min-height:55px;border-radius:10px}
+.meg2-quick>div button span{width:30px;height:26px}
+.meg2-quick>div button small{font-size:7px}
+
+/* A Home corrente é uma tela fechada: ela se comprime ao aparelho, não cria rolagem. */
+.meg2-view-home .meg2-scroll{overflow:hidden}
+.meg2-view-home .meg2-home{
+  min-height:100%;height:100%;
+  display:grid;align-content:start;
+  grid-template-rows:auto auto auto auto auto auto;
+}
+.meg2-view-home .meg2-home>*{min-width:0}
+
+/* Cartões reais e carrossel premium */
+.meg2-card-art{
+  background-color:#052d33!important;
+  background-repeat:no-repeat!important;
+  background-position:center!important;
+  background-size:cover!important;
+  border-color:rgba(31,244,234,.34);
+  box-shadow:0 12px 26px rgba(0,0,0,.28),0 0 16px rgba(24,229,219,.08);
+}
+.meg2-card-art.active{
+  border-color:#29f3e9;
+  box-shadow:0 0 0 2px rgba(31,239,230,.63),0 0 28px rgba(24,229,219,.24),0 14px 34px rgba(0,0,0,.32);
+}
+.meg2-card-metrics article{min-width:0}
+.meg2-card-metrics strong{
+  max-width:100%;overflow:hidden;
+  font-size:clamp(8px,2.45vw,11px)!important;
+}
+.meg2-statement-list>button{box-shadow:inset 0 0 15px rgba(22,229,220,.025)}
+
+/* Pendentes: contraste/neon da referência aprovada */
+.meg2-tabs,.meg2-search label,.meg2-search>button{
+  box-shadow:0 0 0 1px rgba(30,239,230,.08),inset 0 0 15px rgba(21,217,209,.025);
+}
+.meg2-tabs button.active{
+  box-shadow:inset 0 0 0 1px #25eee4,0 0 18px rgba(24,229,219,.19);
+}
+.meg2-pending-list>button{
+  position:relative;overflow:hidden;
+  background:
+    linear-gradient(90deg,rgba(10,93,91,.30),transparent 26%),
+    linear-gradient(145deg,rgba(5,74,74,.88),rgba(2,47,51,.96));
+}
+.meg2-pending-list>button::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(110deg,transparent 0 73%,rgba(31,235,225,.035) 74% 76%,transparent 77%);
+}
+.meg2-pending-icon{box-shadow:0 0 18px rgba(24,225,216,.12)}
+.meg2-pending-list>button.late .meg2-pending-icon{box-shadow:0 0 18px rgba(255,80,105,.15)}
+
+/* Menu premium: preserva o conceito antigo, com profundidade e brilho. */
+.meg2-menu-sheet{
+  overflow:hidden;
+  border-color:rgba(35,245,235,.62);
+  background:
+    radial-gradient(circle at 88% 7%,rgba(26,242,231,.13),transparent 23%),
+    linear-gradient(180deg,#075153 0%,#03383b 44%,#022b2f 100%);
+  box-shadow:0 0 0 1px rgba(30,231,222,.18),0 -18px 60px rgba(0,0,0,.45),0 0 36px rgba(16,224,215,.16);
+}
+.meg2-menu-aura{
+  position:absolute;inset:-50% -20% auto 44%;height:270px;pointer-events:none;
+  background:radial-gradient(circle,rgba(23,246,235,.17),transparent 64%);
+  filter:blur(12px);
+}
+.meg2-menu-sheet>header{position:relative;z-index:1}
+.meg2-menu-brand{display:flex;align-items:center;gap:10px}
+.meg2-menu-brand>img{
+  width:44px;height:44px;padding:5px;border-radius:12px;
+  border:1px solid rgba(37,244,234,.42);
+  background:rgba(1,48,51,.72);
+  box-shadow:0 0 22px rgba(22,233,223,.19)
+}
+.meg2-menu-brand>span{display:block}
+.meg2-menu-grid{position:relative;z-index:1}
+.meg2-menu-grid button{
+  position:relative;overflow:hidden;
+  border-color:rgba(35,239,230,.31);
+  background:
+    radial-gradient(circle at 10% 10%,rgba(24,224,214,.10),transparent 38%),
+    linear-gradient(145deg,rgba(4,86,86,.73),rgba(1,45,49,.86));
+  box-shadow:inset 0 0 18px rgba(15,202,195,.04),0 0 14px rgba(14,218,209,.04);
+}
+.meg2-menu-grid button::after{
+  content:"";position:absolute;right:-35px;top:-35px;width:85px;height:85px;border-radius:50%;
+  background:rgba(26,236,226,.055);filter:blur(9px)
+}
+.meg2-menu-grid button:hover,.meg2-menu-grid button:active{
+  border-color:#27eee4;box-shadow:0 0 20px rgba(24,229,219,.16),inset 0 0 18px rgba(21,218,209,.07)
+}
+.meg2-menu-grid button>svg{filter:drop-shadow(0 0 8px rgba(25,237,228,.32))}
+.meg2-menu-sheet footer{position:relative;z-index:1}
+.meg2-menu-sheet footer button{border-color:rgba(38,233,225,.27)}
+.meg2-menu-sheet footer .danger{box-shadow:0 0 18px rgba(255,78,105,.08)}
+
+/* Período e confirmações seguem a mesma linguagem neon. */
+.meg2-period-sheet,.meg2-confirm>div{
+  box-shadow:0 0 0 1px rgba(29,243,233,.14),0 0 32px rgba(17,225,216,.13),0 18px 52px rgba(0,0,0,.42);
+}
+.meg2-period-modes button.active,.meg2-period-sheet>footer .apply{
+  box-shadow:0 0 18px rgba(24,229,219,.16),inset 0 0 16px rgba(26,230,221,.06)
+}
+
+/* Densidade por altura: evita qualquer estouro/scroll na Home. */
+@media (max-height:850px){
+  .meg2-header{min-height:64px;padding-top:max(7px,env(safe-area-inset-top));padding-bottom:7px}
+  .meg2-main{padding-top:6px}
+  .meg2-title h1{font-size:clamp(24px,6.8vw,31px)}
+  .meg2-balance{min-height:72px}
+  .meg2-balance strong{font-size:clamp(23px,6.8vw,31px)}
+  .meg2-flow article{min-height:52px}
+  .meg2-summary article{min-height:93px}
+  .meg2-benefit{min-height:59px}
+  .meg2-quick>div button{min-height:47px}
+  .meg2-dock{min-height:67px}
+}
+@media (max-height:760px){
+  .meg2-title{padding-bottom:4px}.meg2-title p{display:none}
+  .meg2-balance{min-height:64px}.meg2-balance p{display:none}
+  .meg2-flow article{min-height:47px}
+  .meg2-summary article{min-height:82px}.meg2-summary article>span{width:28px;height:28px}
+  .meg2-benefit{min-height:54px}
+  .meg2-quick header small{display:none}.meg2-quick>div button{min-height:42px}
+}
+@media (max-width:390px){
+  .meg2-header{grid-template-columns:44px minmax(0,1fr) auto;padding-inline:8px;gap:5px}
+  .meg2-brand{width:43px;height:43px}
+  .meg2-period{grid-template-columns:31px minmax(0,1fr) 12px;padding-inline:5px}
+  .meg2-period-icon{width:29px;height:29px}
+  .meg2-user{max-width:74px}
+  .meg2-avatar{width:34px;height:34px;flex-basis:34px}
+  .meg2-user strong{max-width:35px;font-size:8px!important}
+  .meg2-flow strong{font-size:clamp(12px,3.65vw,16px)!important}
+}
+@media (max-width:340px){
+  .meg2-user{max-width:62px}.meg2-user strong{max-width:26px;font-size:7px!important}
+  .meg2-flow strong{font-size:12px!important}
+}
