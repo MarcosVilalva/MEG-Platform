@@ -304,7 +304,7 @@ async function startAutomaticUpdate(release, installed, AppUpdater) {
   try {
     if (typeof AppUpdater.startDownloadAndInstall === 'function') {
       const accepted = await withDeadline(
-        AppUpdater.startDownloadAndInstall({ url: downloadUrl, sha256: release.sha256 }),
+        AppUpdater.startDownloadAndInstall({ url: downloadUrl, sha256: release.sha256, versionCode: releaseCode }),
         BRIDGE_TIMEOUT_MS * 2,
         'UPDATE_AUTOMATIC_START_TIMEOUT',
       );
