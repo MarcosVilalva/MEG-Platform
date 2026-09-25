@@ -946,6 +946,16 @@ assert.match(phoenixApp, /periodDraftMode === 'range'/,
   'Intervalo V15 deve possuir aplicação real, não somente aparência');
 assert.match(phoenixApp, /loadPhoenixAllEvents/,
   'Modo Tudo deve usar leitura real completa');
+assert.match(phoenixApp, /PhoenixMovementsV15 data=\{data\} periodMode=\{periodMode\} periodLabel=/,
+  'Lançamentos deve receber explicitamente o modo de período aplicado na Home.');
+assert.doesNotMatch(phoenixApp, /competence:\s*base\.month/,
+  'Tudo e Intervalo devem preservar a competência real de cada lançamento.');
+assert.match(movementScreen, /periodMode === 'month'[\s\S]*data\.events\.items\.filter\(\(event\) => event\.competence === data\.month\)[\s\S]*:\s*data\.events\.items/,
+  'Lançamentos deve filtrar por competência somente no modo Mês e usar a base completa nos modos Tudo e Intervalo.');
+assert.match(movementScreen, /const periodTotals = useMemo\(\(\) => monetaryTotals\(periodEvents\)/,
+  'KPIs de receitas e despesas em Lançamentos devem ser calculados sobre o período realmente selecionado.');
+assert.match(movementScreen, /periodMode === 'all'[\s\S]*'Tudo'[\s\S]*periodMode === 'range'/,
+  'Cabeçalho de Lançamentos deve comunicar Tudo ou Intervalo em vez de fingir uma competência mensal.');
 assert.match(phoenixApp, /view === 'home' && periodMode !== 'month'/,
   'Intervalo e Tudo devem permanecer aplicados na Home principal em modo analítico.');
 assert.match(phoenixApp, /month < nowMonth[\s\S]*month > nowMonth/,

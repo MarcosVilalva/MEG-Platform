@@ -364,7 +364,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
     if (nativeOperational) return <PhoenixOperationalMobileHome data={data} onLaunch={onLaunch} onNavigate={onNavigate} onOpenPeriod={onOpenPeriod} />;
     return <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
   }
-  if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} launchRequest={launchRequest} launchPreset={launchPreset} onNavigateHistory={() => onNavigate('history')} onNavigateHome={() => onNavigate('home')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
+  if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} periodMode={periodMode} periodLabel={periodMode === 'all' ? 'Tudo' : periodMode === 'range' ? periodRangeLabel || 'Intervalo' : monthLabel(data.month)} launchRequest={launchRequest} launchPreset={launchPreset} onNavigateHistory={() => onNavigate('history')} onNavigateHome={() => onNavigate('home')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
   if (view === 'history') return <Suspense fallback={<ScreenWarmFallback label="Histórico" />}><PhoenixHistory data={data} /></Suspense>;
   if (view === 'payables') return <Suspense fallback={<ScreenWarmFallback label="Pendentes" />}><PhoenixPayables data={data} onMonthChange={onPendingMonthChange} /></Suspense>;
   if (view === 'cards') return <Suspense fallback={<ScreenWarmFallback label="Cartões" />}><PhoenixCardsGrid data={data} /></Suspense>;
@@ -969,7 +969,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
       const unique = new Map<string, (typeof base.events.items)[number]>();
       models.forEach((model) => model.events.items.forEach((event) => {
         const eventDate = String(event.date).slice(0, 10);
-        if (eventDate >= start && eventDate <= end) unique.set(event.id, { ...event, competence: base.month });
+        if (eventDate >= start && eventDate <= end) unique.set(event.id, { ...event });
       }));
       const items = [...unique.values()].sort((left, right) => String(right.date).localeCompare(String(left.date)));
       const rangeData = {
@@ -1017,7 +1017,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
       ]);
       if (!monthlySnapshotMatches(base, baseMonth)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       if (periodRequestRef.current !== requestId) return;
-      const items = events.items.map((event) => ({ ...event, competence: base.month }));
+      const items = events.items.map((event) => ({ ...event }));
       setMovementPeriodData({
         ...base,
         loadedAt: new Date().toISOString(),
