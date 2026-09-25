@@ -2329,3 +2329,117 @@ body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:
     display:none!important;
   }
 }
+
+
+/* ==========================================================================
+   Home v14.5 · acabamento final validado
+   - marca MEG com mais presença sem aumentar a altura do cabeçalho;
+   - primeiro nome visível ao lado do avatar nesta largura de aparelho;
+   - somente telas realmente estreitas ocultam o nome.
+   ========================================================================== */
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity){
+  grid-template-columns:48px minmax(0,1fr) 84px!important;
+  gap:8px!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-mobile-brand-home{
+  width:48px!important;
+  height:48px!important;
+  min-width:48px!important;
+  min-height:48px!important;
+  max-width:48px!important;
+  max-height:48px!important;
+  padding:0!important;
+  margin:0!important;
+  display:grid!important;
+  place-items:center!important;
+  justify-self:start!important;
+  align-self:center!important;
+  box-sizing:border-box!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-mobile-brand-home img{
+  width:39px!important;
+  height:39px!important;
+  min-width:39px!important;
+  min-height:39px!important;
+  max-width:39px!important;
+  max-height:39px!important;
+  margin:0!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  transform:translate3d(0,-.5px,0)!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-native-home-period{
+  width:min(100%,176px)!important;
+  min-width:132px!important;
+  max-width:176px!important;
+  justify-self:center!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-home-user-identity{
+  width:84px!important;
+  min-width:84px!important;
+  max-width:84px!important;
+  height:40px!important;
+  min-height:40px!important;
+  grid-template-columns:36px minmax(0,1fr)!important;
+  gap:6px!important;
+  padding:0!important;
+  justify-self:end!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-home-user-identity>span:not(.px-profile-avatar){
+  display:block!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-home-user-identity strong{
+  display:block!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  color:#eef9f7!important;
+  font-size:9.3px!important;
+  line-height:1!important;
+  font-weight:850!important;
+  text-align:left!important;
+}
+
+/* Só aqui o primeiro nome cede espaço. Logo, período e avatar permanecem. */
+@media(max-width:330px){
+  body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity){
+    grid-template-columns:42px minmax(0,1fr) 36px!important;
+    gap:6px!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-mobile-brand-home{
+    width:42px!important;
+    height:42px!important;
+    min-width:42px!important;
+    min-height:42px!important;
+    max-width:42px!important;
+    max-height:42px!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-mobile-brand-home img{
+    width:34px!important;
+    height:34px!important;
+    min-width:34px!important;
+    min-height:34px!important;
+    max-width:34px!important;
+    max-height:34px!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-native-home-period{
+    width:min(100%,164px)!important;
+    min-width:128px!important;
+    max-width:164px!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-home-user-identity{
+    width:36px!important;
+    min-width:36px!important;
+    max-width:36px!important;
+    grid-template-columns:36px!important;
+    gap:0!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-top-left.px-top-left-home-compact:has(.px-home-user-identity) .px-home-user-identity>span:not(.px-profile-avatar){
+    display:none!important;
+  }
+}
