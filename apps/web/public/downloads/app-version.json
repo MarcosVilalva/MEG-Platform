@@ -1,9 +1,9 @@
 {
-  "versionCode": 377,
-  "versionName": "2.0.377",
+  "versionCode": 378,
+  "versionName": "2.0.378",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "9f383e483a0dde84bdf3bbe9350a9328332500e7ebf434bfc66f29579bbafa6e",
+  "sha256": "c0cfae92056937f1baf74b8496a08f6db6fd68e424e602b5b3488543d1d764d3",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "fix(cards): travar centralização absoluta da arte no mobile V8.3"
+  "releaseNotes": "fix(cards): usar artes normalizadas sem margens internas no carrossel"
 }
