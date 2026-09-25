@@ -8,6 +8,7 @@ const MANIFEST_URLS = [
 const BRIDGE_TIMEOUT_MS = 3500;
 const FETCH_TIMEOUT_MS = 8000;
 const RESUME_DELAY_MS = 1200;
+const PENDING_UPDATE_STORAGE_KEY = 'meg.pending-app-update.v1';
 
 let appUpdaterPromise = null;
 let appPluginPromise = null;
@@ -94,6 +95,43 @@ function publishInstalledVersion(installed) {
     label.dataset.versionSource = installed.source || 'native';
   }
   window.dispatchEvent(new CustomEvent('meg:installed-app-version', { detail: installed }));
+  showInstalledUpdateSuccess(installed);
+}
+
+function rememberPendingUpdateSuccess(release) {
+  try {
+    localStorage.setItem(PENDING_UPDATE_STORAGE_KEY, JSON.stringify({
+      versionCode: Number(release?.versionCode || 0),
+      versionName: String(release?.versionName || ''),
+      storedAt: Date.now(),
+    }));
+  } catch {}
+}
+
+function showInstalledUpdateSuccess(installed) {
+  let pending = null;
+  try {
+    pending = JSON.parse(localStorage.getItem(PENDING_UPDATE_STORAGE_KEY) || 'null');
+  } catch {}
+  if (!pending || Number(pending.versionCode) <= 0) return;
+  if (Date.now() - Number(pending.storedAt || 0) > 7 * 24 * 60 * 60 * 1000) {
+    try { localStorage.removeItem(PENDING_UPDATE_STORAGE_KEY); } catch {}
+    return;
+  }
+  if (Number(installed?.versionCode || 0) < Number(pending.versionCode)) return;
+  try { localStorage.removeItem(PENDING_UPDATE_STORAGE_KEY); } catch {}
+
+  document.querySelector('#megUpdateSuccessToast')?.remove();
+  const toast = document.createElement('section');
+  toast.id = 'megUpdateSuccessToast';
+  toast.className = 'meg-update-success-toast';
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
+  toast.innerHTML = `<span aria-hidden="true">✓</span><div><strong>Atualizado com sucesso!</strong><small>Agora você está usando a versão v${escapeHtml(installed.versionName || pending.versionName)}.</small></div><button type="button" aria-label="Fechar">×</button>`;
+  document.body.append(toast);
+  const close = () => toast.remove();
+  toast.querySelector('button')?.addEventListener('click', close);
+  window.setTimeout(close, 6500);
 }
 
 function publishVersionUnavailable() {
@@ -292,6 +330,7 @@ async function startAutomaticUpdate(release, installed, AppUpdater) {
   if (!AppUpdater) throw new Error('UPDATE_PLUGIN_UNAVAILABLE');
 
   automaticUpdateAttemptedVersion = releaseCode;
+  rememberPendingUpdateSuccess(release);
   window.MEG_AVAILABLE_APP_UPDATE = { release, installed, source: 'android-auto-update' };
   document.body.dataset.availableAppVersion = String(release.versionName || releaseCode);
   const updateUi = ensureAutomaticUpdateStatus(release, installed, 'Preparando download seguro…');
