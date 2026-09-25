@@ -59,6 +59,7 @@ const androidLauncherAdaptive = readFileSync(new URL('../../../../android/app/sr
 const androidLauncherMonochrome = readFileSync(new URL('../../../../android/app/src/main/res/drawable/ic_launcher_monochrome.xml', import.meta.url), 'utf8');
 const androidLaunchStyles = readFileSync(new URL('../../../../android/app/src/main/res/values/styles.xml', import.meta.url), 'utf8');
 const androidStrings = readFileSync(new URL('../../../../android/app/src/main/res/values/strings.xml', import.meta.url), 'utf8');
+const capacitorConfig = readFileSync(new URL('../../../../capacitor.config.ts', import.meta.url), 'utf8');
 const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-home-dashboard.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-fidelity-v6.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-responsive-v61.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-operational-mobile.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
 const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${profileAvatar}\n${commandPalette}\n${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${homePastMonth}\n${homeHorizon}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
@@ -670,22 +671,28 @@ assert.match(phoenixApp, /PhoenixOperationalMobileHome/,
   'APK deve substituir a home pesada por uma home operacional focada em lançamentos.');
 assert.match(phoenixApp, /brand\/meg-finance-system-mark\.svg/,
   'Topbar do APK deve usar a marca MEG oficial.');
-assert.match(brandMark, /<text[^>]*>MEG<\/text>/,
-  'Marca principal deve preservar o monograma MEG.');
+assert.match(brandMark, /<text[^>]*fill="#F8FCFF"[^>]*>M<\/text>[\s\S]*<text[^>]*fill="url\(#e\)"[^>]*>E<\/text>[\s\S]*<text[^>]*fill="url\(#g\)"[^>]*>G<\/text>/,
+  'Marca opção 2 deve preservar M branco, E ciano e G verde com leitura independente.');
+assert.match(brandMark, /M47 105c27-3 49-17 68-37/,
+  'Marca opção 2 deve manter a seta ascendente ampla sobre o monograma.');
 assert.doesNotMatch(brandMark, /FINANCE SYSTEM/,
   'Marca pequena não deve carregar subtítulo ilegível no topo do aplicativo.');
-assert.match(androidLauncherForeground, /M44,54C55,52 63,44 71,35/,
-  'Launcher Android deve usar a seta de crescimento simplificada da marca nova.');
+assert.match(androidLauncherForeground, /M36,56C49,55 60,48 69,38/,
+  'Launcher Android deve usar a seta de crescimento da opção 2 aprovada.');
+assert.match(androidLauncherForeground, /android:fillColor="#FFF8FCFF"[\s\S]*M23,82L23,59/,
+  'Launcher opção 2 deve manter o M branco para máxima legibilidade.');
 assert.match(androidLauncherBackground, /#FF0A4A4C[\s\S]*#FF063437[\s\S]*#FF041D24/,
   'Launcher Android deve usar o gradiente teal escuro da identidade aprovada.');
 assert.match(androidLauncherAdaptive, /@drawable\/ic_launcher_background[\s\S]*@drawable\/ic_launcher_foreground/,
   'Adaptive icon deve combinar o novo fundo vetorial com o novo foreground.');
-assert.match(androidLauncherMonochrome, /M24,82L24,58/,
-  'Android 13+ deve receber versão monocromática coerente do monograma.');
+assert.match(androidLauncherMonochrome, /M23,82L23,59/,
+  'Android 13+ deve receber versão monocromática coerente da opção 2.');
 assert.match(androidLaunchStyles, /@drawable\/meg_splash[\s\S]*windowSplashScreenAnimatedIcon[^\n]*@drawable\/ic_launcher_foreground/,
   'Splash nativo deve usar a mesma identidade do launcher.');
 assert.match(androidStrings, /<string name="app_name">MEG<\/string>/,
   'Nome sob o ícone Android deve ser curto e não truncar como MEG Operacional.');
+assert.match(capacitorConfig, /appName:\s*'MEG'/,
+  'Capacitor deve manter MEG como nome nativo canônico nas próximas sincronizações.');
 assert.match(productionHtml, /theme-color" content="#063437"/,
   'Chrome do navegador deve seguir o teal escuro da nova identidade.');
 assert.match(movementScreen, /const saveAcceptedRef = useRef\(false\)/,
@@ -848,12 +855,20 @@ assert.doesNotMatch(phoenixApp, /nativeOperational \? <button className="px-mobi
   'Topbar Android não deve reintroduzir o botão hambúrguer quando o dock já possui Menu.');
 assert.doesNotMatch(operationalHome, /PhoenixProfileAvatar|px-operational-home-avatar/,
   'Home v12 não deve duplicar identidade ou avatar dentro do conteúdo abaixo da topbar global.');
-assert.match(previewMain, /meg-finance-system-lockup-light\.svg/,
-  'Loading deve exibir a identidade completa MEG.');
-assert.match(previewBootCss, /px-preview-boot-halo[\s\S]*px-meg-boot-breathe/,
-  'Loading deve usar animação própria da marca em vez de uma tela estática.');
-assert.match(previewMain, /px-preview-boot-trust[\s\S]*MEG CLOUD[\s\S]*Sessão protegida/,
-  'Loading premium deve reforçar a identidade e a segurança do ambiente.');
+assert.match(previewMain, /data-boot-fidelity="approved-v4"/,
+  'Loading autenticado deve usar a referência visual v4 validada.');
+assert.doesNotMatch(previewMain, /px-preview-boot-wordmark[\s\S]*meg-finance-system-lockup-light\.svg/,
+  'Loading v4 não deve duplicar a marca com um wordmark pequeno sob o ícone.');
+assert.match(previewMain, /px-preview-boot-trust[\s\S]*px-preview-boot-cloud-icon[\s\S]*MEG CLOUD[\s\S]*Sessão protegida/,
+  'Loading v4 deve exibir MEG Cloud e sessão protegida conforme a prévia aprovada.');
+assert.match(previewMain, /Carregando preferências[\s\S]*Organizando painel[\s\S]*Tudo pronto/,
+  'Etapas visíveis do loading devem seguir os rótulos aprovados.');
+assert.match(previewMain, /px-preview-boot-lock[\s\S]*Conexão protegida · preparando os dados antes da navegação/,
+  'Rodapé do loading deve comunicar conexão protegida com ícone dedicado.');
+assert.match(previewBootCss, /MEG Boot 4\.0[\s\S]*data-boot-fidelity="approved-v4"/,
+  'CSS deve possuir contrato visual isolado para o loading v4.');
+assert.match(previewBootCss, /data-boot-fidelity="approved-v4"[\s\S]*\.px-preview-boot-step span[\s\S]*white-space:normal!important/,
+  'Etapas da tela aprovada devem quebrar em duas linhas e nunca usar reticências.');
 assert.match(previewBootCss, /\.px-preview-fullscreen-boot[\s\S]*position:fixed!important[\s\S]*z-index:2147483000!important/,
   'Loading deve cobrir o WebView inteiro, sem deixar a tela de login aparecer por trás.');
 assert.match(previewBootCss, /background-color:#021819!important/,
@@ -862,6 +877,10 @@ assert.match(main, /import '\.\.\/phoenix\/preview-boot\.css';/,
   'Android deve carregar o CSS do boot antes de abrir a biometria.');
 assert.match(nativeBiometric, /nativeBiometricLoadingOverlay/,
   'Biometria reconhecida deve criar uma cobertura premium antes do React montar.');
+assert.match(nativeBiometric, /dataset\.bootFidelity = 'approved-v4'/,
+  'Transição biométrica deve usar exatamente o contrato visual do loading v4 aprovado.');
+assert.doesNotMatch(nativeBiometric, /px-preview-boot-wordmark/,
+  'Transição biométrica não deve reintroduzir o wordmark antigo sob a marca principal.');
 assert.match(nativeBiometric, /beginAuthenticatedLoadingTransition\(\)[\s\S]*px-preview-fullscreen-boot/,
   'Transição biométrica deve reutilizar a identidade visual do loading premium.');
 assert.match(nativeBiometric, /cacheCredentials\(credentials\);[\s\S]*beginAuthenticatedLoadingTransition\(\)/,

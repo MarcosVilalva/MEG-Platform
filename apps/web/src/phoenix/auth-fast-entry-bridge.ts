@@ -23,18 +23,41 @@ if (root) {
     transition.style.position = 'fixed';
     transition.style.inset = '0';
     transition.style.zIndex = '9999';
+    transition.dataset.bootFidelity = 'approved-v4';
     transition.innerHTML = `
       <section class="px-preview-boot-card" aria-label="Validando acesso ao MEG Finanças">
-        <div class="px-preview-boot-logo"><span class="px-preview-boot-orbit" aria-hidden="true"></span><img src="${brandMark}" alt="MEG Finanças"></div>
-        <div class="px-preview-boot-copy"><span>MEG FINANÇAS</span><h1>Validando seu acesso</h1><p>Confirmando sua sessão segura para preparar o sistema.</p></div>
-        <div class="px-preview-boot-progress" aria-label="22% preparado"><div class="px-preview-boot-track"><span style="width:22%"></span></div></div>
+        <div class="px-preview-boot-brand">
+          <div class="px-preview-boot-logo">
+            <span class="px-preview-boot-halo" aria-hidden="true"></span>
+            <span class="px-preview-boot-orbit" aria-hidden="true"></span>
+            <span class="px-preview-boot-orbit is-secondary" aria-hidden="true"></span>
+            <img src="${brandMark}" alt="MEG">
+            <strong class="px-preview-boot-percent">22%</strong>
+          </div>
+          <div class="px-preview-boot-trust">
+            <svg class="px-preview-boot-cloud-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 18.5h11.2a4.4 4.4 0 0 0 .6-8.8A6.7 6.7 0 0 0 5.4 8.2 4.9 4.9 0 0 0 6.4 18.5Z"></path></svg>
+            <span>MEG CLOUD</span><i aria-hidden="true"></i><span>Sessão protegida</span>
+          </div>
+        </div>
+        <div class="px-preview-boot-copy">
+          <span class="px-preview-boot-stage-label"><i aria-hidden="true"></i>Validando sua sessão</span>
+          <h1>Validando seu acesso</h1>
+          <p>Confirmando sua sessão segura no MEG.</p>
+        </div>
+        <div class="px-preview-boot-progress" aria-label="22% preparado">
+          <div class="px-preview-boot-track"><span style="width:22%"></span></div>
+          <div class="px-preview-boot-progress-meta"><span>Preparando seu ambiente</span><strong>22%</strong></div>
+        </div>
         <div class="px-preview-boot-steps">
           <div class="px-preview-boot-step active"><i>1</i><span>Validando sua sessão</span></div>
-          <div class="px-preview-boot-step"><i>2</i><span>Carregando suas finanças</span></div>
-          <div class="px-preview-boot-step"><i>3</i><span>Organizando cartões e pendências</span></div>
+          <div class="px-preview-boot-step"><i>2</i><span>Carregando preferências</span></div>
+          <div class="px-preview-boot-step"><i>3</i><span>Organizando painel</span></div>
           <div class="px-preview-boot-step"><i>4</i><span>Tudo pronto</span></div>
         </div>
-        <div class="px-preview-boot-foot"><i aria-hidden="true"></i><span>Conexão protegida · preparando o MEG</span></div>
+        <div class="px-preview-boot-foot">
+          <svg class="px-preview-boot-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
+          <i aria-hidden="true"></i><span>Conexão protegida · preparando os dados antes da navegação</span>
+        </div>
       </section>`;
     document.body.appendChild(transition);
   };

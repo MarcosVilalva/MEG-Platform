@@ -117,6 +117,7 @@ function beginAuthenticatedLoadingTransition() {
   overlay = document.createElement('main');
   overlay.id = 'nativeBiometricLoadingOverlay';
   overlay.className = 'px-preview-fullscreen-boot px-preview-native-biometric-boot';
+  overlay.dataset.bootFidelity = 'approved-v4';
   overlay.setAttribute('aria-live', 'polite');
   overlay.setAttribute('aria-busy', 'true');
   overlay.innerHTML = `
@@ -126,28 +127,33 @@ function beginAuthenticatedLoadingTransition() {
           <span class="px-preview-boot-halo" aria-hidden="true"></span>
           <span class="px-preview-boot-orbit" aria-hidden="true"></span>
           <span class="px-preview-boot-orbit is-secondary" aria-hidden="true"></span>
-          <img src="${asset('brand/meg-finance-system-mark.svg')}" alt="">
+          <img src="${asset('brand/meg-finance-system-mark.svg')}" alt="MEG">
           <strong class="px-preview-boot-percent">22%</strong>
         </div>
-        <img class="px-preview-boot-wordmark" src="${asset('brand/meg-finance-system-lockup-light.svg')}" alt="MEG Finance System">
-        <div class="px-preview-boot-trust"><span>MEG CLOUD</span><i aria-hidden="true"></i><span>Biometria reconhecida</span></div>
+        <div class="px-preview-boot-trust">
+          <svg class="px-preview-boot-cloud-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 18.5h11.2a4.4 4.4 0 0 0 .6-8.8A6.7 6.7 0 0 0 5.4 8.2 4.9 4.9 0 0 0 6.4 18.5Z"></path></svg>
+          <span>MEG CLOUD</span><i aria-hidden="true"></i><span>Sessão protegida</span>
+        </div>
       </div>
       <div class="px-preview-boot-copy">
-        <span class="px-preview-boot-stage-label"><i aria-hidden="true"></i>VALIDANDO ACESSO</span>
-        <h1>Preparando seu MEG</h1>
-        <p>Sua identidade foi confirmada. Estamos carregando os dados antes de abrir o sistema.</p>
+        <span class="px-preview-boot-stage-label"><i aria-hidden="true"></i>Validando sua sessão</span>
+        <h1>Validando seu acesso</h1>
+        <p>Confirmando sua sessão segura no MEG.</p>
       </div>
       <div class="px-preview-boot-progress" aria-label="22% preparado">
         <div class="px-preview-boot-track"><span style="width:22%"></span></div>
-        <div class="px-preview-boot-progress-meta"><span>Iniciando ambiente seguro</span><strong>22%</strong></div>
+        <div class="px-preview-boot-progress-meta"><span>Preparando seu ambiente</span><strong>22%</strong></div>
       </div>
       <div class="px-preview-boot-steps">
-        <div class="px-preview-boot-step active"><i>1</i><span>Acesso</span></div>
-        <div class="px-preview-boot-step"><i>2</i><span>Finanças</span></div>
-        <div class="px-preview-boot-step"><i>3</i><span>Organizando</span></div>
-        <div class="px-preview-boot-step"><i>4</i><span>Pronto</span></div>
+        <div class="px-preview-boot-step active"><i>1</i><span>Validando sua sessão</span></div>
+        <div class="px-preview-boot-step"><i>2</i><span>Carregando preferências</span></div>
+        <div class="px-preview-boot-step"><i>3</i><span>Organizando painel</span></div>
+        <div class="px-preview-boot-step"><i>4</i><span>Tudo pronto</span></div>
       </div>
-      <div class="px-preview-boot-foot"><i aria-hidden="true"></i><span>Conexão protegida · nenhum formulário de login fica exposto</span></div>
+      <div class="px-preview-boot-foot">
+        <svg class="px-preview-boot-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
+        <i aria-hidden="true"></i><span>Conexão protegida · preparando os dados antes da navegação</span>
+      </div>
     </section>`;
   document.body.appendChild(overlay);
 }
