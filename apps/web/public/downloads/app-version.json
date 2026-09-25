@@ -1,9 +1,9 @@
 {
-  "versionCode": 370,
-  "versionName": "2.0.370",
+  "versionCode": 371,
+  "versionName": "2.0.371",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "0718f279cb15c40d335292fe101bda4fdd6c2686c878f2e12f55d63ae2d2dad1",
+  "sha256": "143d03a67573e8a77fc9c34d958a3a1376cee77ad13b3714c1572ccceb37d10d",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Cartões V8 com carrossel bancário e lançamentos visuais"
+  "releaseNotes": "Cartões V8.1 com carrossel cíclico e scroll isolado"
 }
