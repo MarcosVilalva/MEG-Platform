@@ -18,6 +18,21 @@ assert.match(
   /downloadUrl: 'https:\/\/marcosvilalva\.github\.io\/MEG-Platform\/downloads\/MEG-Financas\.apk'/,
   'Manifesto deve apontar para o APK validado e publicado no canal estável do Pages',
 );
+assert.match(
+  android,
+  /mandatory_update:[\s\S]*type: boolean/,
+  'Publicação manual deve permitir marcar uma versão crítica como atualização obrigatória.',
+);
+assert.match(
+  android,
+  /MEG_UPDATE_MANDATORY:[\s\S]*inputs\.mandatory_update/,
+  'Flag de atualização obrigatória deve chegar à geração do manifesto.',
+);
+assert.match(
+  android,
+  /mandatory: String\(process\.env\.MEG_UPDATE_MANDATORY[\s\S]*=== 'true'/,
+  'Manifesto Android deve serializar a flag mandatory a partir da publicação.',
+);
 
 assert.match(
   pages,
