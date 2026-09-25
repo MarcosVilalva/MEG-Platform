@@ -277,6 +277,42 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-confirm button{min-height:42px;border:1px solid var(--meg2-line);border-radius:11px;background:rgba(255,255,255,.04)}
 
 
+.meg2-period-home .meg2-title{padding-bottom:12px}
+.meg2-period-balance-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:4px}
+.meg2-period-balance-grid article{
+  min-height:108px;border:1px solid var(--meg2-line);border-radius:15px;
+  background:linear-gradient(145deg,rgba(5,74,74,.84),rgba(2,49,52,.94));
+  padding:11px;display:grid;align-content:center;gap:4px
+}
+.meg2-period-balance-grid article>span{width:37px;height:37px;border-radius:9px;display:grid;place-items:center;color:var(--meg2-cyan);background:rgba(13,151,149,.15)}
+.meg2-period-balance-grid small{font-size:9px;color:#d4e5e5}
+.meg2-period-balance-grid strong{font-size:clamp(17px,5.3vw,23px);white-space:nowrap}
+.meg2-period-balance-grid article.accent strong{color:var(--meg2-cyan)}
+.meg2-period-balance-grid article.danger{border-color:rgba(255,98,120,.35)}
+.meg2-period-balance-grid article.danger strong{color:var(--meg2-red)}
+.meg2-period-kpis{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
+.meg2-period-kpis article{
+  min-height:105px;border:1px solid var(--meg2-line);border-radius:14px;
+  background:linear-gradient(145deg,rgba(5,74,74,.84),rgba(2,49,52,.94));
+  padding:10px;display:grid;align-content:center;gap:3px
+}
+.meg2-period-kpis article>svg{color:var(--meg2-cyan);width:23px;height:23px;margin-bottom:2px}
+.meg2-period-kpis article.expense>svg,.meg2-period-kpis article.expense strong,.meg2-period-kpis article.result.negative strong{color:var(--meg2-red)}
+.meg2-period-kpis article.income strong,.meg2-period-kpis article.result.positive strong{color:var(--meg2-cyan)}
+.meg2-period-kpis small{font-size:9px;color:#d4e5e5}
+.meg2-period-kpis strong{font-size:clamp(14px,4.5vw,20px);white-space:nowrap}
+.meg2-period-kpis em{font-style:normal;color:var(--meg2-muted);font-size:8px}
+.meg2-period-action{
+  width:100%;min-height:64px;margin-top:8px;border:1px solid var(--meg2-line);border-radius:14px;
+  background:linear-gradient(145deg,rgba(5,74,74,.84),rgba(2,49,52,.94));
+  display:grid;grid-template-columns:42px minmax(0,1fr) 20px;align-items:center;gap:8px;padding:8px 10px;text-align:left
+}
+.meg2-period-action>svg{width:38px;height:38px;padding:8px;border-radius:10px;color:var(--meg2-cyan);background:rgba(13,151,149,.15)}
+.meg2-period-action>span{display:grid;gap:2px}
+.meg2-period-action strong{font-size:10px}
+.meg2-period-action small{color:var(--meg2-muted);font-size:8px}
+.meg2-period-action>b{font-size:25px;color:var(--meg2-cyan);font-weight:300}
+
 .meg2-infinity{font-size:24px;line-height:1;color:var(--meg2-cyan)}
 .meg2-period-overlay{z-index:620}
 .meg2-period-sheet{
