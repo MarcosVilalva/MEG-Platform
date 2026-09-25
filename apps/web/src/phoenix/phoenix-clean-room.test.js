@@ -593,6 +593,14 @@ assert.match(homeFidelityV13Css, /\.meg-current-v13-stats[\s\S]*grid-template-co
   'Indicadores operacionais do mês atual devem permanecer em quatro colunas.');
 assert.match(homeFidelityV13Css, /\.meg-current-v13-balance>div>strong[\s\S]*white-space:nowrap!important[\s\S]*text-overflow:clip!important/,
   'Saldo atual deve permanecer completo e nunca usar reticências.');
+assert.match(homeFidelityV13Css, /\.px-main-home\{[\s\S]*--px-mobile-shell-header:calc\(66px \+ env\(safe-area-inset-top\)\)!important[\s\S]*overflow:hidden!important/,
+  'Home atual deve sincronizar a reserva do shell com a altura real do cabeçalho e permanecer fixa.');
+assert.match(homeFidelityV13Css, /body\.meg-operational-mobile:has\(\.meg-home-v13-current\)[\s\S]*overflow:hidden!important[\s\S]*overscroll-behavior:none!important/,
+  'Home atual não deve arrastar ou produzir rolagem fantasma no Android.');
+assert.match(homeFidelityV13Css, /\.px-main-home>\.px-content-home:has\(\.meg-home-v13-current\)[\s\S]*padding:16px[\s\S]*overflow:hidden!important/,
+  'Conteúdo deve manter respiro visível sob a linha do cabeçalho sem habilitar rolagem.');
+assert.match(homeFidelityV13Css, /\.meg-current-v13-heading\{[\s\S]*min-height:62px!important/,
+  'Cabeçalho financeiro deve usar a escala compacta v13.1 validada no aparelho.');
 assert.match(phoenixApp, /px-period-scroll-v10[\s\S]*px-period-footer-v10/,
   'Seletor móvel deve separar conteúdo rolável do rodapé persistente.');
 assert.match(phoenixApp, /is-mobile-sheet meg-period-v13[\s\S]*data-period-fidelity=\{nativeOperational \? 'reference-v13'/,

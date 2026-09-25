@@ -1161,3 +1161,291 @@ body.meg-operational-mobile .meg-period-v13 .px-period-apply{
   background:linear-gradient(120deg,#2edfd2,#45e6a0)!important;
   color:#043433!important;
 }
+
+
+/* ==========================================================================
+   Home v13.1 · lapidação final validada no aparelho
+   - Home atual fixa, sem arraste/rolagem fantasma
+   - offset do conteúdo sincronizado com a altura real do cabeçalho
+   - escala geral ~8–12% mais compacta
+   - bordas mais discretas e respiro correto sob a linha do topo
+   ========================================================================== */
+
+/* O cabeçalho da Home tinha 72px, mas o shell ainda reservava 58px.
+   Isso fazia "Situação atual" subir demais e praticamente encostar na linha. */
+body.meg-operational-mobile .px-main-home{
+  --px-mobile-shell-header:calc(66px + env(safe-area-inset-top))!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  max-height:100dvh!important;
+  padding-top:var(--px-mobile-shell-header)!important;
+  padding-bottom:0!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-main-home .px-topbar{
+  min-height:var(--px-mobile-shell-header)!important;
+  padding:calc(6px + env(safe-area-inset-top)) 11px 6px!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-left{
+  gap:9px!important;
+}
+body.meg-operational-mobile .px-main-home .px-mobile-brand-home{
+  width:38px!important;
+  height:38px!important;
+  flex-basis:38px!important;
+}
+body.meg-operational-mobile .px-main-home .px-mobile-brand-home img{
+  width:34px!important;
+  height:34px!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-title strong{
+  font-size:16px!important;
+}
+body.meg-operational-mobile .px-native-home-period{
+  min-height:46px!important;
+  padding:4px 8px 4px 5px!important;
+  grid-template-columns:34px minmax(0,1fr) 14px!important;
+  gap:6px!important;
+  border-color:rgba(52,232,209,.34)!important;
+  border-radius:16px!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.028),0 6px 16px rgba(0,0,0,.13)!important;
+}
+body.meg-operational-mobile .px-native-home-period-icon{
+  width:34px!important;
+  height:34px!important;
+  border-radius:11px!important;
+  font-size:21px!important;
+}
+body.meg-operational-mobile .px-native-home-period-icon svg{
+  width:18px!important;
+  height:18px!important;
+}
+body.meg-operational-mobile .px-native-home-period-copy{
+  gap:1px!important;
+}
+body.meg-operational-mobile .px-native-home-period-copy strong{
+  font-size:10.5px!important;
+}
+body.meg-operational-mobile .px-native-home-period-copy small{
+  font-size:7.5px!important;
+}
+body.meg-operational-mobile .px-native-home-period>b{
+  font-size:15px!important;
+}
+
+/* Home atual é uma tela-cockpit: cabe inteira entre topbar e dock e não deve "arrastar". */
+body.meg-operational-mobile:has(.meg-home-v13-current){
+  height:100dvh!important;
+  max-height:100dvh!important;
+  overflow:hidden!important;
+  overscroll-behavior:none!important;
+}
+body.meg-operational-mobile:has(.meg-home-v13-current) #root,
+body.meg-operational-mobile:has(.meg-home-v13-current) .phoenix-v15,
+body.meg-operational-mobile:has(.meg-home-v13-current) .px-app{
+  height:100dvh!important;
+  max-height:100dvh!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-main-home>.px-content-home:has(.meg-home-v13-current){
+  height:calc(100dvh - var(--px-mobile-shell-header))!important;
+  min-height:0!important;
+  max-height:calc(100dvh - var(--px-mobile-shell-header))!important;
+  padding:16px clamp(10px,3vw,18px) calc(78px + env(safe-area-inset-bottom))!important;
+  overflow:hidden!important;
+  overscroll-behavior:none!important;
+  touch-action:manipulation!important;
+  box-sizing:border-box!important;
+}
+
+/* Compactação fina da composição atual. */
+body.meg-operational-mobile .meg-home-v13-current{
+  gap:7px!important;
+  padding-bottom:0!important;
+}
+body.meg-operational-mobile .meg-current-v13-heading{
+  min-height:62px!important;
+  padding:0 4px 0!important;
+  grid-template-columns:minmax(0,1fr) 43px!important;
+  gap:7px!important;
+}
+body.meg-operational-mobile .meg-current-v13-heading>div{
+  gap:3px!important;
+}
+body.meg-operational-mobile .meg-current-v13-heading>div>span{
+  font-size:11px!important;
+  line-height:1.05!important;
+}
+body.meg-operational-mobile .meg-current-v13-heading h1{
+  font-size:25px!important;
+  line-height:1!important;
+}
+body.meg-operational-mobile .meg-current-v13-heading p{
+  margin-top:0!important;
+  font-size:9px!important;
+  line-height:1.22!important;
+}
+body.meg-operational-mobile .meg-current-v13-heading-icon{
+  width:41px!important;
+  height:41px!important;
+  border-color:rgba(57,219,207,.10)!important;
+  background:radial-gradient(circle at 50% 50%,rgba(38,232,215,.055),transparent 70%),rgba(0,44,44,.20)!important;
+}
+body.meg-operational-mobile .meg-current-v13-heading-icon svg{
+  width:30px!important;
+  height:30px!important;
+}
+
+body.meg-operational-mobile .meg-current-v13-balance{
+  min-height:86px!important;
+  padding:11px 12px!important;
+  grid-template-columns:49px minmax(0,1fr)!important;
+  gap:10px!important;
+  border-color:rgba(56,205,193,.18)!important;
+  border-radius:15px!important;
+}
+body.meg-operational-mobile .meg-current-v13-icon.wallet{
+  width:49px!important;
+  height:49px!important;
+  border-radius:12px!important;
+}
+body.meg-operational-mobile .meg-current-v13-icon.wallet svg{
+  width:25px!important;
+  height:25px!important;
+}
+body.meg-operational-mobile .meg-current-v13-balance>div{
+  gap:2px!important;
+}
+body.meg-operational-mobile .meg-current-v13-balance>div>span{
+  font-size:10px!important;
+}
+body.meg-operational-mobile .meg-current-v13-balance>div>strong{
+  font-size:27px!important;
+}
+body.meg-operational-mobile .meg-current-v13-balance>div>small{
+  font-size:8px!important;
+}
+
+body.meg-operational-mobile .meg-current-v13-flow{
+  gap:7px!important;
+}
+body.meg-operational-mobile .meg-current-v13-flow>article{
+  min-height:59px!important;
+  padding:8px 9px!important;
+  grid-template-columns:34px minmax(0,1fr)!important;
+  gap:7px!important;
+  border-color:rgba(57,191,183,.14)!important;
+  border-radius:14px!important;
+}
+body.meg-operational-mobile .meg-current-v13-flow .meg-current-v13-icon{
+  width:34px!important;
+  height:34px!important;
+  border-radius:10px!important;
+}
+body.meg-operational-mobile .meg-current-v13-flow .meg-current-v13-icon svg{
+  width:19px!important;
+  height:19px!important;
+}
+body.meg-operational-mobile .meg-current-v13-flow>article>div>span{
+  font-size:8.8px!important;
+}
+body.meg-operational-mobile .meg-current-v13-flow>article>div>strong{
+  font-size:15px!important;
+}
+
+body.meg-operational-mobile .meg-current-v13-result{
+  min-height:59px!important;
+  padding:8px 11px!important;
+  grid-template-columns:35px minmax(0,1fr)!important;
+  gap:8px!important;
+  border-color:rgba(57,191,183,.14)!important;
+  border-radius:14px!important;
+}
+body.meg-operational-mobile .meg-current-v13-result .meg-current-v13-icon{
+  width:35px!important;
+  height:35px!important;
+  border-radius:10px!important;
+}
+body.meg-operational-mobile .meg-current-v13-result>div>span{
+  font-size:9px!important;
+}
+body.meg-operational-mobile .meg-current-v13-result>div>strong{
+  font-size:18px!important;
+}
+
+body.meg-operational-mobile .meg-current-v13-stats{
+  gap:6px!important;
+}
+body.meg-operational-mobile .meg-current-v13-stats>article{
+  min-height:90px!important;
+  padding:7px 3px 6px!important;
+  grid-template-rows:25px 26px 17px 13px!important;
+  border-color:rgba(55,180,173,.12)!important;
+  border-radius:13px!important;
+}
+body.meg-operational-mobile .meg-current-v13-stat-icon{
+  width:25px!important;
+  height:25px!important;
+  border-radius:8px!important;
+}
+body.meg-operational-mobile .meg-current-v13-stat-icon svg{
+  width:14px!important;
+  height:14px!important;
+}
+body.meg-operational-mobile .meg-current-v13-stat-label{
+  font-size:7.4px!important;
+  line-height:1.08!important;
+}
+body.meg-operational-mobile .meg-current-v13-stats>article>strong{
+  font-size:13px!important;
+}
+body.meg-operational-mobile .meg-current-v13-stats>article>small{
+  font-size:7px!important;
+}
+
+body.meg-operational-mobile .meg-current-v13-benefit{
+  min-height:76px!important;
+  padding:9px 11px!important;
+  grid-template-columns:44px minmax(0,1fr) 17px!important;
+  gap:9px!important;
+  border-color:rgba(55,208,190,.16)!important;
+  border-radius:15px!important;
+}
+body.meg-operational-mobile .meg-current-v13-benefit-icon{
+  width:44px!important;
+  height:44px!important;
+  border-radius:11px!important;
+}
+body.meg-operational-mobile .meg-current-v13-benefit-icon svg{
+  width:25px!important;
+  height:25px!important;
+}
+body.meg-operational-mobile .meg-current-v13-benefit-copy>small{
+  font-size:9.8px!important;
+}
+body.meg-operational-mobile .meg-current-v13-benefit-copy>span{
+  font-size:8.4px!important;
+}
+body.meg-operational-mobile .meg-current-v13-benefit-copy>strong{
+  font-size:16px!important;
+}
+body.meg-operational-mobile .meg-current-v13-benefit>b{
+  font-size:25px!important;
+}
+
+/* Em telas muito baixas, compacta só espaço/apoio; valores continuam completos. */
+@media(max-height:700px){
+  body.meg-operational-mobile .px-main-home>.px-content-home:has(.meg-home-v13-current){
+    padding-top:12px!important;
+  }
+  body.meg-operational-mobile .meg-home-v13-current{gap:5px!important}
+  body.meg-operational-mobile .meg-current-v13-heading{min-height:56px!important}
+  body.meg-operational-mobile .meg-current-v13-heading h1{font-size:23px!important}
+  body.meg-operational-mobile .meg-current-v13-balance{min-height:80px!important}
+  body.meg-operational-mobile .meg-current-v13-flow>article{min-height:54px!important}
+  body.meg-operational-mobile .meg-current-v13-result{min-height:54px!important}
+  body.meg-operational-mobile .meg-current-v13-stats>article{min-height:84px!important}
+  body.meg-operational-mobile .meg-current-v13-benefit{min-height:70px!important}
+}
