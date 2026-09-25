@@ -605,6 +605,13 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     setCommandGroup('');
     setCommandSort('date-desc');
   }
+  function focusNativeCard(id: string) {
+    selectCard(id);
+    if (typeof window === 'undefined') return;
+    window.requestAnimationFrame(() => {
+      document.getElementById(`meg-card-v8-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    });
+  }
   function exportCardStatement(extension: 'xlsx' | 'pdf') {
     const headers = ['Data', 'Descrição', 'Grupo', 'Parcela', 'Fatura', 'Situação', 'Valor'];
     const rows = commandRows.map((row) => [
@@ -667,7 +674,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
 
   const identity = resolvePhoenixCardIdentity(selected);
 
-  return <section className={`px-screen px-cards-premium px-cards-wow px-cards-approved ${nativeOperational ? 'px-cards-native-v7' : ''}`} data-cards-layout="fidelity-v6" data-native-operational={nativeOperational ? 'true' : undefined}>
+  return <section className={`px-screen px-cards-premium px-cards-wow px-cards-approved ${nativeOperational ? 'px-cards-native-v8' : ''}`} data-cards-layout="fidelity-v6" data-native-operational={nativeOperational ? 'true' : undefined}>
     <header className="px-cards-approved-head">
       <div className="px-cards-approved-heading">
         <span className="px-kicker">CARTÕES · VISÃO GERAL</span>
@@ -685,6 +692,72 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
       </div>
     </header>
 
+    {nativeOperational ? <>
+      <div className="px-cards-v8-carousel-shell" aria-label="Carrossel de cartões">
+        <div className="px-cards-v8-carousel">
+          {data.cards.map((card) => {
+            const cardIdentity = resolvePhoenixCardIdentity(card);
+            const activeCard = selected.id === card.id;
+            return <button
+              id={`meg-card-v8-${card.id}`}
+              key={card.id}
+              type="button"
+              className={`px-cards-v8-slide px-card-product-${cardIdentity.key} ${activeCard ? 'active' : ''}`}
+              aria-current={activeCard ? 'true' : undefined}
+              aria-label={`Selecionar ${cardDisplayName(card)}`}
+              onClick={() => focusNativeCard(card.id)}
+            >
+              <span className="px-cards-v8-art" style={{ background: cardIdentity.background }}>
+                {cardIdentity.artwork
+                  ? <img src={`${import.meta.env.BASE_URL}${cardIdentity.artwork}`} alt={cardIdentity.label} />
+                  : <>
+                      <span className="px-cards-approved-brand">{cardIdentity.label}</span>
+                      <i className="px-chip" />
+                      {cardIdentity.brandAsset ? <img className="px-brand-asset" src={`${import.meta.env.BASE_URL}assets/card-brands/${cardIdentity.brandAsset}.svg`} alt="" /> : null}
+                    </>}
+                <span className="px-card-wow-gloss" />
+              </span>
+            </button>;
+          })}
+        </div>
+        <div className="px-cards-v8-dots" aria-label="Selecionar cartão">
+          {data.cards.map((card, index) => <button
+            key={card.id}
+            type="button"
+            className={selected.id === card.id ? 'active' : ''}
+            aria-label={`Cartão ${index + 1}: ${cardDisplayName(card)}`}
+            onClick={() => focusNativeCard(card.id)}
+          />)}
+        </div>
+      </div>
+
+      <section className="px-cards-v8-kpis" aria-label="Resumo do cartão selecionado">
+        <article><i aria-hidden="true"><CardUiIcon name="limit" /></i><span><small>Limite total</small><strong>{money.format(creditLimit)}</strong></span></article>
+        <article><i aria-hidden="true"><CardUiIcon name="available" /></i><span><small>Disponível</small><strong>{money.format(availableLimit)}</strong></span></article>
+        <article><i aria-hidden="true"><CardUiIcon name="invoice" /></i><span><small>Fatura atual</small><strong>{money.format(currentStatement)}</strong></span></article>
+        <article><i aria-hidden="true"><CardUiIcon name="calendar" /></i><span><small>Vencimento</small><strong>{statementDueDate}</strong></span></article>
+      </section>
+
+      <section className="px-cards-v8-recent" aria-label="Lançamentos da fatura">
+        <header><div><strong>Lançamentos da fatura</strong><small>{cardDisplayName(selected)}</small></div><button type="button" onClick={() => openCardCommand(selected.id)}>Ver todos <b>›</b></button></header>
+        <div className="px-cards-v8-recent-list">
+          {recentCurrentRows.map((row) => {
+            const presentation = cardRowPresentation(row);
+            return <button key={row.id} type="button" className="px-cards-v8-row" onClick={() => setDetailRow(row)}>
+              <i className={`tone-${presentation.tone}`} aria-hidden="true"><CardUiIcon name={presentation.icon} /></i>
+              <span><strong>{presentation.label}</strong><small>{row.description} · {date.format(new Date(`${row.purchaseDate}T12:00:00Z`))}</small>{row.installment !== 'Única' ? <em>Parcela {row.installment}</em> : null}</span>
+              <b className={row.amount < 0 ? 'credit' : ''}>{money.format(row.amount)}</b>
+              <u aria-hidden="true">›</u>
+            </button>;
+          })}
+          {!recentCurrentRows.length ? <p className="px-empty">Nenhum lançamento nesta fatura.</p> : null}
+        </div>
+      </section>
+
+      <button className="px-cards-v8-open" type="button" onClick={() => openCardCommand(selected.id)}>
+        <span><CardUiIcon name="card" /></span><strong>Abrir central do cartão</strong><b aria-hidden="true">›</b>
+      </button>
+    </> : <>
     <aside className="px-cards-approved-mantra" aria-hidden="true"><span>MAIS</span><strong>CONTROLE</strong><span>MAIS</span><strong>LIBERDADE</strong></aside>
 
     <div className="px-cards-approved-grid" aria-label="Seus cartões">
@@ -800,6 +873,9 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
         <span><small>Melhor dia de compra</small><strong>{bestPurchaseDay ? `Dia ${bestPurchaseDay}` : '—'}</strong><em>estimado pelo fechamento</em></span>
       </div>
     </section>
+
+
+    </>}
 
     {cardCommandOpen ? createPortal(<div className="px-card-command-backdrop px-card-command-approved-backdrop" role="presentation">
       <section className="px-card-command-modal px-card-command-approved" role="dialog" aria-modal="true" aria-label={`Central do cartão ${selected.name}`}>
