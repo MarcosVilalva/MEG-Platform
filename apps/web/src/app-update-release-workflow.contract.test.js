@@ -10,13 +10,13 @@ const mainActivity = readFileSync(new URL('../../../android/app/src/main/java/br
 
 assert.match(
   android,
-  /gh release upload android-latest MEG-Financas\.apk app-version\.json --clobber/,
-  'Android deve publicar APK e manifesto juntos no release estável',
+  /gh release upload android-latest "MEG-Financas-\$\{MEG_VERSION_CODE\}\.apk" MEG-Financas\.apk --clobber[\s\S]*gh release upload android-latest app-version\.json --clobber/,
+  'Android deve publicar primeiro o APK imutável e somente depois o manifesto do release estável',
 );
 assert.match(
   android,
-  /downloadUrl: 'https:\/\/github\.com\/MarcosVilalva\/MEG-Platform\/releases\/download\/android-latest\/MEG-Financas\.apk'/,
-  'Manifesto deve apontar diretamente para o APK do release estável, sem depender do Pages',
+  /downloadUrl: 'https:\/\/github\.com\/MarcosVilalva\/MEG-Platform\/releases\/download\/android-latest\/MEG-Financas-' \+ process\.env\.MEG_VERSION_CODE \+ '\.apk'/,
+  'Manifesto deve apontar para o APK imutável da própria versão no release estável',
 );
 
 assert.match(
