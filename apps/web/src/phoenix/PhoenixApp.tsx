@@ -1216,6 +1216,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         onEditEvent={requestEditEvent}
         periodMode={periodMode}
         periodLabel={periodMode === 'range' ? periodRangeLabel : periodMode === 'all' ? 'Tudo' : shortMonthLabel(viewData.month)}
+        homePeriodContext={homePeriodContext}
         periodLoading={periodLoading}
         periodError={periodError}
         onSelectMonth={(targetMonth) => applyMonthlyPeriod(targetMonth)}
