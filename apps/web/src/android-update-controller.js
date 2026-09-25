@@ -1,6 +1,7 @@
 import { selectNewestRelease, updateIsAvailable } from './app-update-release-core.js';
 
 const MANIFEST_URLS = [
+  'https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/app-version.json',
   'https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json',
   'https://raw.githubusercontent.com/MarcosVilalva/MEG-Platform/main/apps/web/public/downloads/app-version.json',
 ];
