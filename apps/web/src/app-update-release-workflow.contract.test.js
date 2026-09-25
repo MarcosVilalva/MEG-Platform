@@ -76,6 +76,17 @@ assert.match(
   'Atualizador nativo deve consultar o manifesto do release estável como fonte primária',
 );
 assert.match(
+  nativeUpdater,
+  /for \(int index = 0; index < RELEASE_MANIFEST_URLS\.length; index \+= 1\)[\s\S]*return fetchReleaseManifest\(source \+ "\\?native="/,
+  'Atualizador nativo deve tratar canais de manifesto como fallbacks ordenados, sem misturar versões entre canais',
+);
+assert.match(
+  nativeUpdater,
+  /putLong\(PENDING_VERSION_CODE_KEY, pendingInstallVersionCode\)/,
+  'Atualizador nativo deve persistir a versão pendente junto com URL e SHA-256',
+);
+
+assert.match(
   mainActivity,
   /onBiometricAuthenticationSucceeded\(\)[\s\S]*scheduleUpdateCheck\(\)/,
   'Após a biometria o Android deve refazer a verificação de atualização',
