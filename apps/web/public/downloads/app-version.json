@@ -1,9 +1,9 @@
 {
-  "versionCode": 363,
-  "versionName": "2.0.363",
+  "versionCode": 364,
+  "versionName": "2.0.364",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "9b0dfc3efcbef73b13a37e015df566fcfd9a9093d70c87d9efb71c012c07c8f7",
+  "sha256": "eec332656dd52f46cbdca6c7c95cdef3ed2106684dd1698549cfd28aa8dc9e42",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "aplica ícone opção 2 e loading v4 aprovados"
+  "releaseNotes": "finaliza Home v14 adaptativa com avatar e ações rápidas"
 }
