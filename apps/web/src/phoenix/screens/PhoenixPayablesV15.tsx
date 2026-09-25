@@ -951,8 +951,8 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent }: { data: Ph
         <span className="px-pending-hero-icon" aria-hidden="true"><PendingGlyph kind="calendar" /></span>
         <div>
           <span className="px-kicker">Pendentes</span>
-          <h1>Seus compromissos em um só lugar</h1>
-          <p>Veja o que vence no mês escolhido ou consulte toda a carteira de pendências.</p>
+          <h1>Pendentes</h1>
+          <p>Acompanhe seus compromissos e abra qualquer lançamento para ver, editar ou baixar.</p>
         </div>
       </div>
       <div className="px-screen-head-aside"><span className="px-total-pill">{money.format(filteredTotal)} no filtro</span></div>
@@ -979,7 +979,7 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent }: { data: Ph
 
     <div className="px-toolbar px-pending-commandbar">
       <label className="px-search-field px-pending-command-search"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={nativeOperational ? 'Buscar pendência, cartão ou conta...' : 'Buscar compromisso, cartão, conta ou forma...'} /></label>
-      <div className="px-priority-tabs px-pending-command-tabs">{([['all','Todos'],['overdue','Vencidos'],['today','Hoje'],['upcoming','Próximos']] as const).map(([id,label]) => <button key={id} type="button" className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{label}</button>)}</div>
+      <div className="px-priority-tabs px-pending-command-tabs">{([['all','Todas'],['upcoming','A pagar'],['today','Hoje'],['overdue','Vencidas']] as const).map(([id,label]) => <button key={id} type="button" className={priority === id ? 'active' : ''} onClick={() => setPriority(id)}>{label}</button>)}</div>
       <span className="px-pending-command-separator" aria-hidden="true" />
       <label className="px-pending-group-select px-pending-command-group"><span>Agrupar por</span><select value={groupMode} onChange={(event) => setGroupMode(event.target.value as GroupMode)}><option value="date">Data</option><option value="category">Categoria</option><option value="account">Conta</option><option value="payment-method">Forma de pagamento</option><option value="none">Sem agrupamento</option></select></label>
       <button type="button" className={`px-pending-filter-toggle ${filtersOpen ? 'active' : ''}`} onClick={() => setFiltersOpen((value) => !value)}>☷ <span>Filtros</span></button>
@@ -1003,7 +1003,7 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent }: { data: Ph
         <header className="px-pending-agenda-head">
           <div className="px-pending-agenda-title">
             <span className="px-pending-agenda-icon" aria-hidden="true"><PendingGlyph kind="calendar" /></span>
-            <div><h2>Agenda de pendências</h2><p>Compromissos do período, organizados para ação rápida e baixa segura.</p></div>
+            <div><h2>Lançamentos pendentes</h2><p>Toque em um lançamento para consultar os detalhes.</p></div>
           </div>
           <div className="px-pending-agenda-signature"><strong>Disciplina hoje</strong><span>mais liberdade amanhã</span></div>
         </header>
