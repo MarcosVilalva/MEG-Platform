@@ -18,6 +18,7 @@ import '../phoenix-cards-wow.css';
 import '../phoenix-cards-fidelity-v6.css';
 import '../phoenix-cards-responsive-v61.css';
 import '../phoenix-cards-mobile-v2.css';
+import '../phoenix-cards-mobile-v7.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
@@ -646,7 +647,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
 
   const identity = resolvePhoenixCardIdentity(selected);
 
-  return <section className="px-screen px-cards-premium px-cards-wow px-cards-approved" data-cards-layout="fidelity-v6">
+  return <section className={`px-screen px-cards-premium px-cards-wow px-cards-approved ${nativeOperational ? 'px-cards-native-v7' : ''}`} data-cards-layout="fidelity-v6" data-native-operational={nativeOperational ? 'true' : undefined}>
     <header className="px-cards-approved-head">
       <div className="px-cards-approved-heading">
         <span className="px-kicker">CARTÕES · VISÃO GERAL</span>
@@ -659,8 +660,8 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
         </div>
       </div>
       <div className="px-cards-approved-hint">
-        <span className="px-cards-approved-mouse" aria-hidden="true"><CardUiIcon name="mouse" size={18} /></span>
-        <div><strong>Duplo clique para abrir a central do cartão</strong><small>Acesse detalhes, faturas, limites e muito mais.</small></div>
+        <span className="px-cards-approved-mouse" aria-hidden="true"><CardUiIcon name={nativeOperational ? 'card' : 'mouse'} size={18} /></span>
+        <div><strong>{nativeOperational ? 'Toque para selecionar o cartão' : 'Duplo clique para abrir a central do cartão'}</strong><small>{nativeOperational ? 'Abra a central pelo resumo inferior.' : 'Acesse detalhes, faturas, limites e muito mais.'}</small></div>
       </div>
     </header>
 
@@ -706,7 +707,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
           key={card.id}
           type="button"
           className={`px-cards-approved-tile px-card-product-${cardIdentity.key} ${selected.id === card.id ? 'active' : ''}`}
-          onClick={() => { if (nativeOperational) openCardCommand(card.id); else selectCard(card.id); }}
+          onClick={() => selectCard(card.id)}
           onDoubleClick={() => openCardCommand(card.id)}
           aria-label={`${card.name}. Limite ${money.format(limit)}. Disponível ${money.format(available)}. Fatura atual ${money.format(statementAmount)}.`}
         >
@@ -760,6 +761,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
             </>}
           </span>
         </span>
+        {nativeOperational ? <button className="px-cards-approved-open" type="button" onClick={() => openCardCommand(selected.id)}>Abrir central</button> : null}
       </div>
       <div className="px-cards-approved-selected-metric">
         <i aria-hidden="true"><CardUiIcon name="available" /></i>
