@@ -608,8 +608,8 @@ assert.match(phoenixApp, /HomeHeaderIdentity data=\{data\}[\s\S]*px-native-home-
   'Avatar do usuário deve ficar integrado ao topo antes do seletor de período.');
 assert.match(phoenixApp, /function HomeHeaderIdentity\(\{ data, onOpenMenu \}[\s\S]*aria-label=\{\`Abrir perfil de \$\{data\.user\.name\}\`\}[\s\S]*onClick=\{onOpenMenu\}/,
   'Avatar da Home deve permanecer visível e funcionar como acesso ao perfil/menu.');
-assert.doesNotMatch(phoenixApp, /function HomeHeaderIdentity[\s\S]{0,1800}const firstName/,
-  'Cabeçalho não deve voltar a consumir largura com o nome do usuário ao lado do avatar.');
+assert.match(phoenixApp, /function HomeHeaderIdentity[\s\S]*const firstName = data\.user\.name\.trim\(\)\.split\(\/\\s\+\/\)\[0\][\s\S]*<strong>\{firstName\}<\/strong>/,
+  'Cabeçalho deve exibir somente o primeiro nome ao lado do avatar.');
 assert.match(homeFidelityV13Css, /Home v14\.1 · acabamento óptico do cabeçalho[\s\S]*\.px-mobile-brand-home\{[\s\S]*place-items:center!important[\s\S]*padding:0!important/,
   'Tile da marca deve centralizar fisicamente o logo sem padding residual.');
 assert.match(homeFidelityV13Css, /\.px-mobile-brand-home img\{[\s\S]*object-position:50% 50%!important[\s\S]*translate3d\(0,-\.75px,0\)!important/,
@@ -620,12 +620,16 @@ assert.match(homeFidelityV13Css, /\.px-native-home-period-copy strong\{[\s\S]*wh
   'Competência principal não deve ser truncada com reticências no cabeçalho.');
 assert.match(homeFidelityV13Css, /@media\(max-width:370px\)[\s\S]*\.px-home-user-identity>span\{[\s\S]*display:none!important/,
   'Em telas estreitas o nome deve ceder espaço antes de sacrificar o período.');
-assert.match(homeFidelityV13Css, /Home v14\.2 · avatar persistente no cabeçalho[\s\S]*grid-template-columns:38px 54px 36px minmax\(150px,1fr\)!important/,
-  'Home v14.2 deve reservar coluna fixa para o avatar e prioridade de largura para o período.');
-assert.match(homeFidelityV13Css, /\.px-home-user-identity\{[\s\S]*width:36px!important[\s\S]*place-items:center!important/,
-  'Avatar deve ocupar um botão próprio e centralizado no cabeçalho.');
-assert.match(homeFidelityV13Css, /@media\(max-width:330px\)[\s\S]*grid-template-columns:34px 46px 32px minmax\(138px,1fr\)!important/,
-  'Cabeçalho deve compactar sem remover avatar nem período em telas muito estreitas.');
+assert.match(homeFidelityV13Css, /Home v14\.3 · cabeçalho equilibrado[\s\S]*grid-template-columns:40px minmax\(0,1fr\) 88px!important/,
+  'Home v14.3 deve organizar logo, período central e perfil à direita.');
+assert.match(phoenixApp, /const nativeHomePeriodCompactTitle = periodMode === 'all'[\s\S]*shortMonthLabel\(activePeriodMonth\)/,
+  'Cabeçalho deve usar mês abreviado no modo mensal.');
+assert.match(phoenixApp, /px-top-left px-top-left-home-compact[\s\S]*px-mobile-brand-home[\s\S]*px-native-home-period[\s\S]*HomeHeaderIdentity/,
+  'Ordem do cabeçalho deve ser logo, período e perfil.');
+assert.match(homeFidelityV13Css, /\.px-top-left-home-compact \.px-home-user-identity\{[\s\S]*grid-template-columns:36px minmax\(0,1fr\)!important/,
+  'Perfil deve preservar avatar e primeiro nome em telas normais.');
+assert.match(homeFidelityV13Css, /@media\(max-width:365px\)[\s\S]*\.px-home-user-identity>span\{[\s\S]*display:none!important/,
+  'Em telas estreitas o primeiro nome deve sumir antes do avatar ou período.');
 assert.match(operationalHome, /meg-current-v14-quick[\s\S]*Ações rápidas[\s\S]*Cartões[\s\S]*Pagar conta[\s\S]*Fluxo de caixa[\s\S]*Ver relatórios/,
   'Home v14 deve preencher a área útil com as quatro ações rápidas aprovadas.');
 assert.doesNotMatch(operationalHome, /meg-current-v14-quick[\s\S]*Novo lançamento/,
