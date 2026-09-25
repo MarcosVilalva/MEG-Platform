@@ -576,8 +576,8 @@ assert.match(periodMobileCss, /mock-fidelity-v9[\s\S]*\.px-alltime-commitment-gr
   'Compromissos v9 não podem voltar a ser empilhados pela regra antiga de telas estreitas.');
 assert.match(operationalCss, /px-period-current-v9[\s\S]*px-period-preview-v9[\s\S]*px-period-footer-v9/,
   'Seletor v9 deve mostrar filtro atual, prévia aplicada e rodapé dedicado conforme o mock.');
-assert.match(operationalHome, /data-home-fidelity="reference-v13"/,
-  'Home do mês atual deve usar o checkpoint v13 reconstruído diretamente da referência aprovada.');
+assert.match(operationalHome, /data-home-fidelity="reference-v14"/,
+  'Home do mês atual deve usar o checkpoint v14 adaptativo validado no aparelho.');
 assert.match(operationalHome, /meg-current-v13-balance[\s\S]*Entradas no mês[\s\S]*Saídas no mês[\s\S]*Resultado do mês/,
   'Mês atual deve reproduzir a hierarquia visual do mock: saldo, fluxo realizado e resultado.');
 assert.match(operationalHome, /Contas a pagar[\s\S]*Faturas de cartões[\s\S]*Outras pendências[\s\S]*Contas pagas/,
@@ -602,6 +602,24 @@ assert.match(homeFidelityV13Css, /\.px-main-home>\.px-content-home:has\(\.meg-ho
   'Conteúdo deve manter respiro visível sob a linha do cabeçalho sem habilitar rolagem.');
 assert.match(homeFidelityV13Css, /\.meg-current-v13-heading\{[\s\S]*min-height:62px!important/,
   'Cabeçalho financeiro deve usar a escala compacta v13.1 validada no aparelho.');
+assert.match(phoenixApp, /function HomeHeaderIdentity[\s\S]*PhoenixProfileAvatar[\s\S]*px-home-user-identity/,
+  'Home Android deve exibir o avatar sincronizado do usuário no cabeçalho.');
+assert.match(phoenixApp, /HomeHeaderIdentity data=\{data\}[\s\S]*px-native-home-period/,
+  'Avatar do usuário deve ficar integrado ao topo antes do seletor de período.');
+assert.match(operationalHome, /meg-current-v14-quick[\s\S]*Ações rápidas[\s\S]*Cartões[\s\S]*Pagar conta[\s\S]*Fluxo de caixa[\s\S]*Ver relatórios/,
+  'Home v14 deve preencher a área útil com as quatro ações rápidas aprovadas.');
+assert.doesNotMatch(operationalHome, /meg-current-v14-quick[\s\S]*Novo lançamento/,
+  'Ações rápidas não deve duplicar o botão Novo já presente no dock.');
+assert.doesNotMatch(operationalHome, /meg-current-v14-quick[\s\S]*Transferência/,
+  'Ações rápidas não deve reintroduzir Transferência no lugar do Fluxo de caixa aprovado.');
+assert.match(homeFidelityV13Css, /Home v14 · composição adaptativa aprovada[\s\S]*\.meg-home-v13-current\{[\s\S]*height:100%!important[\s\S]*display:flex!important/,
+  'Home v14 deve ocupar toda a altura útil e distribuir seus blocos verticalmente.');
+assert.match(homeFidelityV13Css, /\.meg-current-v14-quick\{[\s\S]*flex:1 1 118px!important/,
+  'Ações rápidas deve absorver a altura excedente para eliminar a faixa vazia antes do dock.');
+assert.match(homeFidelityV13Css, /@media\(max-height:650px\)[\s\S]*overflow-y:auto!important/,
+  'Somente telas realmente baixas podem ativar rolagem na Home.');
+assert.match(homeFidelityV13Css, /@media\(max-width:390px\)[\s\S]*px-home-user-identity/,
+  'Cabeçalho com avatar deve se adaptar a larguras estreitas sem perder a identidade do usuário.');
 assert.match(phoenixApp, /px-period-scroll-v10[\s\S]*px-period-footer-v10/,
   'Seletor móvel deve separar conteúdo rolável do rodapé persistente.');
 assert.match(phoenixApp, /is-mobile-sheet meg-period-v13[\s\S]*data-period-fidelity=\{nativeOperational \? 'reference-v13'/,
