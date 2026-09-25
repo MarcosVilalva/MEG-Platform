@@ -5,6 +5,7 @@ import './meg-mobile-final.css';
 type MobileView = 'home' | 'cards' | 'payables';
 type TargetView = 'home' | 'movements' | 'payables' | 'cards' | 'cashflow' | 'analytics' | 'history' | 'settings';
 type LaunchPreset = 'expense' | 'income' | 'benefit';
+type PeriodMode = 'month' | 'range' | 'all';
 
 type Props = {
   data: PhoenixReadModel;
@@ -12,7 +13,13 @@ type Props = {
   onNavigate: (view: TargetView) => void;
   onLaunch: (preset: LaunchPreset) => void;
   onEditEvent: (eventId: string) => void;
-  onOpenPeriod: () => void;
+  periodMode: PeriodMode;
+  periodLabel?: string;
+  periodLoading?: boolean;
+  periodError?: string;
+  onSelectMonth: (month: string) => Promise<void>;
+  onSelectRange: (start: string, end: string) => Promise<void>;
+  onSelectAll: () => Promise<void>;
   onLogout?: () => void;
   onClose?: () => void;
 };
@@ -112,13 +119,15 @@ function Icon({ name, size = 22 }: { name: string; size?: number }) {
   return <svg {...base}><circle cx="12" cy="12" r="8"/></svg>;
 }
 
-function Header({ data, onOpenPeriod, onOpenMenu }: { data: PhoenixReadModel; onOpenPeriod: () => void; onOpenMenu: () => void }) {
+function Header({ data, periodMode, periodLabel, onOpenPeriod, onOpenMenu }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; onOpenPeriod: () => void; onOpenMenu: () => void }) {
   const firstName = data.user.name.trim().split(/\s+/)[0] || 'MEG';
+  const mainLabel = periodMode === 'all' ? '∞' : periodMode === 'range' ? (periodLabel || 'Intervalo') : compactMonth(data.month);
+  const subLabel = periodMode === 'all' ? 'Todos os períodos' : periodMode === 'range' ? 'Intervalo personalizado' : data.month === todayIso().slice(0, 7) ? 'Mês atual' : 'Período selecionado';
   return <header className="meg2-header">
     <div className="meg2-brand"><img src={asset('brand/meg-finance-system-mark.svg')} alt="MEG"/></div>
     <button className="meg2-period" type="button" onClick={onOpenPeriod}>
-      <span className="meg2-period-icon"><Icon name="calendar" size={19}/></span>
-      <span><strong>{compactMonth(data.month)}</strong><small>{data.month === todayIso().slice(0, 7) ? 'Mês atual' : 'Período selecionado'}</small></span>
+      <span className="meg2-period-icon">{periodMode === 'all' ? <b className="meg2-infinity">∞</b> : <Icon name="calendar" size={19}/>}</span>
+      <span><strong>{mainLabel}</strong><small>{subLabel}</small></span>
       <b>⌄</b>
     </button>
     <button className="meg2-user" type="button" onClick={onOpenMenu}>
@@ -375,14 +384,79 @@ function MenuSheet({ onClose, onNavigate, onLogout, onCloseApp }: { onClose: () 
   </div>;
 }
 
-export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, onOpenPeriod, onLogout, onClose }: Props) {
+function PeriodSheet({ data, initialMode, loading = false, error = '', onClose, onSelectMonth, onSelectRange, onSelectAll }: {
+  data: PhoenixReadModel;
+  initialMode: PeriodMode;
+  loading?: boolean;
+  error?: string;
+  onClose: () => void;
+  onSelectMonth: Props['onSelectMonth'];
+  onSelectRange: Props['onSelectRange'];
+  onSelectAll: Props['onSelectAll'];
+}) {
+  const [mode, setMode] = useState<PeriodMode>(initialMode);
+  const [month, setMonth] = useState(data.month);
+  const [start, setStart] = useState(todayIso());
+  const [end, setEnd] = useState(todayIso());
+
+  function shift(offset: number) {
+    const parts = month.split('-').map(Number);
+    setMonth(new Date(Date.UTC(parts[0], parts[1] - 1 + offset, 1)).toISOString().slice(0, 7));
+  }
+
+  async function apply() {
+    if (loading) return;
+    if (mode === 'month') await onSelectMonth(month);
+    else if (mode === 'range') await onSelectRange(start, end);
+    else await onSelectAll();
+    onClose();
+  }
+
+  return <div className="meg2-overlay meg2-period-overlay" onClick={loading ? undefined : onClose}>
+    <section className="meg2-period-sheet" role="dialog" aria-modal="true" aria-label="Selecionar período" onClick={(event) => event.stopPropagation()}>
+      <header>
+        <span><Icon name="calendar" size={22}/></span>
+        <div><h2>Selecionar período</h2><small>Escolha como deseja visualizar seus dados.</small></div>
+        <button type="button" aria-label="Fechar" disabled={loading} onClick={onClose}>×</button>
+      </header>
+      <div className="meg2-period-modes">
+        <button className={mode === 'month' ? 'active' : ''} onClick={() => setMode('month')} disabled={loading}><Icon name="calendar"/><b>Mês</b><small>Competência</small></button>
+        <button className={mode === 'range' ? 'active' : ''} onClick={() => setMode('range')} disabled={loading}><Icon name="calendar"/><b>Intervalo</b><small>Datas livres</small></button>
+        <button className={mode === 'all' ? 'active' : ''} onClick={() => setMode('all')} disabled={loading}><span>∞</span><b>Tudo</b><small>Base completa</small></button>
+      </div>
+      {mode === 'month' ? <div className="meg2-period-month">
+        <small>Competência selecionada</small>
+        <div className="meg2-month-stepper">
+          <button onClick={() => shift(-1)} disabled={loading}>‹</button>
+          <strong>{monthLabel(month)}</strong>
+          <button onClick={() => shift(1)} disabled={loading}>›</button>
+        </div>
+        <label><span>Escolher outro mês</span><input type="month" value={month} disabled={loading} onChange={(event) => setMonth(event.target.value)}/></label>
+      </div> : null}
+      {mode === 'range' ? <div className="meg2-period-range">
+        <label><span>Data inicial</span><input type="date" value={start} disabled={loading} onChange={(event) => setStart(event.target.value)}/></label>
+        <i>→</i>
+        <label><span>Data final</span><input type="date" value={end} disabled={loading} onChange={(event) => setEnd(event.target.value)}/></label>
+      </div> : null}
+      {mode === 'all' ? <div className="meg2-period-all"><span>∞</span><div><strong>Todo o histórico</strong><small>Exibe a base completa do MEG, sem limitar por mês.</small></div></div> : null}
+      {error ? <div className="meg2-period-error">{error}</div> : null}
+      <footer>
+        <button className="secondary" disabled={loading} onClick={onClose}>Cancelar</button>
+        <button className="apply" disabled={loading} onClick={() => void apply()}>{loading ? 'Carregando…' : 'Aplicar filtro'}</button>
+      </footer>
+    </section>
+  </div>;
+}
+
+export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, periodMode, periodLabel, periodLoading, periodError, onSelectMonth, onSelectRange, onSelectAll, onLogout, onClose }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [periodOpen, setPeriodOpen] = useState(false);
   const pendingCount = data.payables.filter((item) => openStatus(item.status) && Number(item.openAmount || 0) > 0).length
     + data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned').length;
 
   return <div className="meg2-app" data-meg-mobile-final="true">
     <div className="meg2-shell">
-      <Header data={data} onOpenPeriod={onOpenPeriod} onOpenMenu={() => setMenuOpen(true)}/>
+      <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={() => setPeriodOpen(true)} onOpenMenu={() => setMenuOpen(true)}/>
       <div className="meg2-scroll">
         {view === 'home' ? <Home data={data} onNavigate={onNavigate}/> : null}
         {view === 'cards' ? <Cards data={data}/> : null}
@@ -391,5 +465,6 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, 
       <Dock view={view} pendingCount={pendingCount} onNavigate={onNavigate} onLaunch={onLaunch} onMenu={() => setMenuOpen(true)}/>
     </div>
     {menuOpen ? <MenuSheet onClose={() => setMenuOpen(false)} onNavigate={onNavigate} onLogout={onLogout} onCloseApp={onClose}/> : null}
+    {periodOpen ? <PeriodSheet data={data} initialMode={periodMode} loading={periodLoading} error={periodError} onClose={() => setPeriodOpen(false)} onSelectMonth={onSelectMonth} onSelectRange={onSelectRange} onSelectAll={onSelectAll}/> : null}
   </div>;
 }
