@@ -102,7 +102,7 @@ check('Preview envia proteção contra sniffing', previewServer.includes("'x-con
 check('Preview bloqueia framing', previewServer.includes("'x-frame-options': 'DENY'"));
 check('HTML Phoenix não é cacheado', previewServer.includes("decoded === '/phoenix.html' ? 'no-store'"));
 
-check('Pages aguarda API do mesmo commit antes da publicação', pagesWorkflow.includes('RENDER_GIT_COMMIT') && pagesWorkflow.includes('github.sha'));
+check('Pages valida saúde da API antes da publicação', pagesWorkflow.includes('Verify production API availability') && pagesWorkflow.includes('/health'));
 check('Android valida marcador Phoenix V15 no artefato Web', androidWorkflow.includes('data-meg-shell="phoenix-v15"'));
 check('Smoke de produção exige marcador Phoenix V15', productionSmoke.includes('data-meg-shell="phoenix-v15"'));
 
