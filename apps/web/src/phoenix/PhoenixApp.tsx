@@ -309,9 +309,8 @@ function MobileMenuIdentity({ data }: { data: PhoenixReadModel }) {
   </div>;
 }
 
-function HomeHeaderIdentity({ data }: { data: PhoenixReadModel }) {
+function HomeHeaderIdentity({ data, onOpenMenu }: { data: PhoenixReadModel; onOpenMenu: () => void }) {
   const [avatar, setAvatar] = useState<PhoenixAvatarPreference>(() => readPhoenixAvatarPreference(data.user.id));
-  const firstName = data.user.name.trim().split(/\s+/)[0] || data.user.name;
 
   useEffect(() => {
     let active = true;
@@ -330,10 +329,9 @@ function HomeHeaderIdentity({ data }: { data: PhoenixReadModel }) {
     };
   }, [data.user.id]);
 
-  return <div className="px-home-user-identity" title={data.user.name}>
+  return <button className="px-home-user-identity" type="button" title={data.user.name} aria-label={`Abrir perfil de ${data.user.name}`} onClick={onOpenMenu}>
     <PhoenixProfileAvatar name={data.user.name} preference={avatar} className="px-home-user-avatar" />
-    <span><strong>{firstName}</strong><small>{data.user.role}</small></span>
-  </div>;
+  </button>;
 }
 
 function ReadScreen({ view, data, month, theme, periodMode, periodContext, periodRangeLabel, launchRequest, launchPreset, nativeOperational, onToggleTheme, onNavigate, onLaunch, onDataCommitted, onOpenPeriod, onOpenMenu, onLogoutRequest, onPendingMonthChange }: {
@@ -1201,7 +1199,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
 
       <main className={`px-main ${view === 'home' ? 'px-main-home' : ''} ${homeAnalytical ? 'px-main-home-all' : ''} ${view === 'payables' ? 'px-main-payables' : ''} ${view === 'history' ? 'px-main-history' : ''} ${view === 'cards' ? 'px-main-cards' : ''}`}>
         <header className="px-topbar">
-          <div className="px-top-left">{nativeOperational ? <button className="px-mobile-brand-home" type="button" aria-label="Ir para o início" onClick={() => navigate('home', true)}><img src={phoenixBrandAsset('brand/meg-finance-system-mark.svg')} alt="" /><span>MEG</span></button> : <button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => setCollapsed((value) => !value)}>☰</button>}<div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div>{nativeOperational && view === 'home' && data ? <HomeHeaderIdentity data={data} /> : null}{nativeOperational && view === 'home' ? <button className="px-native-home-period" type="button" aria-label="Alterar período da Home" onClick={() => periodOpen ? closePeriodSelector() : openPeriodSelector()}><span className="px-native-home-period-icon" aria-hidden="true">{periodMode === 'all' ? '∞' : <svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg>}</span><span className="px-native-home-period-copy"><strong>{nativeHomePeriodTitle}</strong><small>{nativeHomePeriodSubtitle}</small></span><b aria-hidden="true">⌄</b></button> : null}</div>
+          <div className="px-top-left">{nativeOperational ? <button className="px-mobile-brand-home" type="button" aria-label="Ir para o início" onClick={() => navigate('home', true)}><img src={phoenixBrandAsset('brand/meg-finance-system-mark.svg')} alt="" /><span>MEG</span></button> : <button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => setCollapsed((value) => !value)}>☰</button>}<div className="px-top-title"><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div>{nativeOperational && view === 'home' && data ? <HomeHeaderIdentity data={data} onOpenMenu={() => setMobileOpen(true)} /> : null}{nativeOperational && view === 'home' ? <button className="px-native-home-period" type="button" aria-label="Alterar período da Home" onClick={() => periodOpen ? closePeriodSelector() : openPeriodSelector()}><span className="px-native-home-period-icon" aria-hidden="true">{periodMode === 'all' ? '∞' : <svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg>}</span><span className="px-native-home-period-copy"><strong>{nativeHomePeriodTitle}</strong><small>{nativeHomePeriodSubtitle}</small></span><b aria-hidden="true">⌄</b></button> : null}</div>
           <div className="px-top-right">
             <button className="px-top-quick-launch" type="button" title="Nova despesa" aria-label="Nova despesa" onClick={() => requestLaunch('expense')}>＋</button>
             <div className={`px-period-menu ${periodOpen ? 'is-open' : ''}`} ref={!nativeOperational ? periodRef : undefined}>
