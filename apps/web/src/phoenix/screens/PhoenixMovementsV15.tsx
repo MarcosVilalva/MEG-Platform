@@ -402,7 +402,7 @@ function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: numb
   return <svg {...common}><path d="M8 8H3V3M16 8h5V3M8 16H3v5M21 21v-5h-5"/></svg>;
 }
 
-export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNavigateHome, onDataCommitted, onOpenPeriod, launchRequest = 0, launchPreset = 'expense' }: { data: PhoenixReadModel; onNavigateHistory?: () => void; onNavigateHome?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number; launchPreset?: LaunchPreset }) {
+export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', periodLabel = '', onNavigateHistory, onNavigateHome, onDataCommitted, onOpenPeriod, launchRequest = 0, launchPreset = 'expense' }: { data: PhoenixReadModel; periodMode?: 'month' | 'range' | 'all'; periodLabel?: string; onNavigateHistory?: () => void; onNavigateHome?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number; launchPreset?: LaunchPreset }) {
   const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
   const [data, setData] = useState(initialData);
   const [search, setSearch] = useState('');
@@ -465,18 +465,28 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNa
     if (recentTimerRef.current !== null) window.clearTimeout(recentTimerRef.current);
   }, []);
 
-  const monthEvents = useMemo(() => data.events.items.filter((event) => event.competence === data.month), [data]);
-  const rows = useMemo(() => monthEvents.map((event) => ({ event, row: gridRow(event) })), [monthEvents]);
+  const periodEvents = useMemo(
+    () => periodMode === 'month'
+      ? data.events.items.filter((event) => event.competence === data.month)
+      : data.events.items,
+    [data, periodMode]
+  );
+  const movementPeriodLabel = periodMode === 'all'
+    ? 'Tudo'
+    : periodMode === 'range'
+      ? periodLabel || 'Intervalo'
+      : formatMonthLabel(data.month);
+  const rows = useMemo(() => periodEvents.map((event) => ({ event, row: gridRow(event) })), [periodEvents]);
   const quickSearchSuggestions = useMemo(() => {
     const values = new Set<string>();
-    monthEvents.forEach((event) => {
+    periodEvents.forEach((event) => {
       const category = event.category?.name?.trim();
       if (category && category !== '—') values.add(category);
       const payment = event.paymentMethod?.name?.trim();
       if (payment && payment !== '—') values.add(payment);
     });
     return [...values].slice(0, 5);
-  }, [monthEvents]);
+  }, [periodEvents]);
 
   const gridOptions = useMemo(() => {
     const optionKeys: GridKey[] = ['weekday', 'type', 'classification', 'group', 'paymentMethod', 'status', 'modality'];
@@ -513,14 +523,14 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNa
       .map(({ event }) => event);
   }, [rows, search, typeFilter, status, account, gridFilters, gridSort]);
 
-  const monthTotals = useMemo(() => monetaryTotals(monthEvents), [monthEvents]);
+  const periodTotals = useMemo(() => monetaryTotals(periodEvents), [periodEvents]);
   const filteredTotals = useMemo(() => monetaryTotals(filtered), [filtered]);
   const activeGridFilters = (Object.keys(gridFilters) as GridKey[]).filter((key) => filterIsActive(gridFilters[key]));
   const toolbarFilterCount = Number(Boolean(search.trim())) + Number(typeFilter !== 'all') + Number(status !== 'all') + Number(account !== 'all');
   const activeFilterCount = activeGridFilters.length + toolbarFilterCount;
   const hasActiveFilters = activeFilterCount > 0;
-  const displayedIncome = hasActiveFilters ? filteredTotals.income : monthTotals.income;
-  const displayedExpense = hasActiveFilters ? filteredTotals.expense : monthTotals.expense;
+  const displayedIncome = hasActiveFilters ? filteredTotals.income : periodTotals.income;
+  const displayedExpense = hasActiveFilters ? filteredTotals.expense : periodTotals.expense;
   const displayedResult = displayedIncome - displayedExpense;
   const canArchiveEvent = data.user.role === 'ADMIN' || data.user.role === 'MANAGER';
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -1232,7 +1242,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNa
         <div className="px-movement-tool-buttons" aria-label="Ferramentas de consulta">
         <button className={`px-movement-tool-button ${toolPanel === 'search' || search.trim() ? 'active' : ''}`} type="button" aria-label="Buscar lançamentos" data-tooltip="Buscar" aria-expanded={toolPanel === 'search'} onClick={() => setToolPanel((current) => current === 'search' ? null : 'search')}><MovementIcon name="search" />{search.trim() ? <small>1</small> : null}</button>
         <button className={`px-movement-tool-button ${toolPanel === 'filters' || typeFilter !== 'all' || status !== 'all' ? 'active' : ''}`} type="button" aria-label="Filtrar lançamentos" data-tooltip="Filtros" aria-expanded={toolPanel === 'filters'} onClick={() => setToolPanel((current) => current === 'filters' ? null : 'filters')}><MovementIcon name="filters" />{typeFilter !== 'all' || status !== 'all' ? <small>{Number(typeFilter !== 'all') + Number(status !== 'all')}</small> : null}</button>
-        <button className="px-movement-tool-button px-movement-period-button" type="button" aria-label={`Selecionar período atual ${formatMonthLabel(data.month)}`} data-tooltip={`Período · ${formatMonthLabel(data.month)}`} onClick={() => { setToolPanel(null); onOpenPeriod?.(); }}><MovementIcon name="calendar" /><span>{formatMonthLabel(data.month)}</span></button>
+        <button className="px-movement-tool-button px-movement-period-button" type="button" aria-label={`Selecionar período atual ${movementPeriodLabel}`} data-tooltip={`Período · ${movementPeriodLabel}`} onClick={() => { setToolPanel(null); onOpenPeriod?.(); }}><MovementIcon name="calendar" /><span>{movementPeriodLabel}</span></button>
         <button className={`px-movement-tool-button ${toolPanel === 'account' || account !== 'all' ? 'active' : ''}`} type="button" aria-label="Filtrar por conta" data-tooltip={account === 'all' ? 'Conta' : labelForAccount(data, account)} aria-expanded={toolPanel === 'account'} onClick={() => setToolPanel((current) => current === 'account' ? null : 'account')}><MovementIcon name="wallet" />{account !== 'all' ? <small>1</small> : null}</button>
         </div>
         
@@ -1267,7 +1277,7 @@ export function PhoenixMovementsV15({ data: initialData, onNavigateHistory, onNa
 
       {nativeOperational ? <div className="px-mobile-movement-list" aria-label="Lançamentos do período">
         <header className="px-mobile-movement-list-head">
-          <div><strong>{filtered.length} lançamento{filtered.length === 1 ? '' : 's'}</strong><span>{formatMonthLabel(data.month)} · toque para abrir</span></div>
+          <div><strong>{filtered.length} lançamento{filtered.length === 1 ? '' : 's'}</strong><span>{movementPeriodLabel} · toque para abrir</span></div>
           <button type="button" onClick={() => openLaunch()}><MovementIcon name="plus" size={15} /> Novo</button>
         </header>
         {visibleEvents.map((event) => {
