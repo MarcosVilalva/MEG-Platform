@@ -96,5 +96,25 @@ assert.match(
   /if \(sha256 == null \|\| sha256\.trim\(\)\.isEmpty\(\)\) throw new IllegalStateException\("Manifesto sem SHA-256 da atualização\."\);/,
   'Atualização automática nativa deve exigir SHA-256 antes do download',
 );
+assert.match(
+  controller,
+  /meg-update-overlay[\s\S]*data-auto-update-progress[\s\S]*data-auto-update-percent/,
+  'Atualização automática deve mostrar progresso visual premium e percentual real.',
+);
+assert.match(
+  controller,
+  /release\?\.mandatory === true[\s\S]*ATUALIZAÇÃO OBRIGATÓRIA/,
+  'Manifesto mandatory=true deve produzir fluxo obrigatório explícito.',
+);
+assert.match(
+  controller,
+  /addEventListener\('cancel'[\s\S]*mandatory[\s\S]*preventDefault/,
+  'Atualização obrigatória não pode ser dispensada fechando o modal.',
+);
+assert.match(
+  controller,
+  /window\.addEventListener\('online'[\s\S]*checkForAppUpdate\(\{ automatic: true \}\)/,
+  'Ao recuperar internet, o APK deve retomar a checagem automática sem ação manual.',
+);
 
 console.log('Android/Page release-pair + automatic update contract: OK');
