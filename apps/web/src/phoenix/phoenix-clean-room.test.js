@@ -8,6 +8,7 @@ const profileAvatar = readFileSync(new URL('./profile-avatar.tsx', import.meta.u
 const commandPalette = readFileSync(new URL('./PhoenixCommandPalette.tsx', import.meta.url), 'utf8');
 const screens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', import.meta.url), 'utf8');
 const movementScreen = readFileSync(new URL('./screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
+const payablesScreen = readFileSync(new URL('./screens/PhoenixPayablesV15.tsx', import.meta.url), 'utf8');
 const cardsGrid = readFileSync(new URL('./screens/PhoenixCardsGrid.tsx', import.meta.url), 'utf8');
 const cardsPremiumCss = readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8');
 const cardsWowCss = readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8');
