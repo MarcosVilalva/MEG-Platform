@@ -46,6 +46,7 @@ public class AppUpdaterPlugin extends Plugin {
     private static final String UPDATE_PREFERENCES = "meg-secure-app-update";
     private static final String PENDING_SOURCE_KEY = "pending-source";
     private static final String PENDING_SHA256_KEY = "pending-sha256";
+    private static final String PENDING_VERSION_CODE_KEY = "pending-version-code";
     private static final int MAX_DOWNLOAD_REDIRECTS = 6;
     private static final String[] RELEASE_MANIFEST_URLS = {
         "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/app-version.json",
@@ -149,6 +150,7 @@ public class AppUpdaterPlugin extends Plugin {
             .edit()
             .putString(PENDING_SOURCE_KEY, pendingInstallSource)
             .putString(PENDING_SHA256_KEY, pendingInstallSha256)
+            .putLong(PENDING_VERSION_CODE_KEY, pendingInstallVersionCode)
             .apply();
         Log.i(TAG, "Atualização guardada para retomar após permissão de instalação.");
     }
@@ -158,16 +160,19 @@ public class AppUpdaterPlugin extends Plugin {
         SharedPreferences preferences = getContext().getSharedPreferences(UPDATE_PREFERENCES, android.content.Context.MODE_PRIVATE);
         pendingInstallSource = preferences.getString(PENDING_SOURCE_KEY, null);
         pendingInstallSha256 = preferences.getString(PENDING_SHA256_KEY, "");
+        pendingInstallVersionCode = preferences.getLong(PENDING_VERSION_CODE_KEY, -1L);
         return pendingInstallSource;
     }
 
     private void clearPendingInstall() {
         pendingInstallSource = null;
         pendingInstallSha256 = "";
+        pendingInstallVersionCode = -1L;
         getContext().getSharedPreferences(UPDATE_PREFERENCES, android.content.Context.MODE_PRIVATE)
             .edit()
             .remove(PENDING_SOURCE_KEY)
             .remove(PENDING_SHA256_KEY)
+            .remove(PENDING_VERSION_CODE_KEY)
             .apply();
     }
 
@@ -266,25 +271,21 @@ public class AppUpdaterPlugin extends Plugin {
 
     private JSObject fetchNewestReleaseManifest() throws Exception {
         Exception lastError = null;
-        JSObject newest = null;
-        long newestCode = -1L;
         long nonce = System.currentTimeMillis();
 
+        // Os canais são fallbacks, não concorrentes. Misturar o manifesto mais novo
+        // entre Release/Pages/raw pode combinar metadados de uma publicação com o APK
+        // de outra durante a janela de deploy.
         for (int index = 0; index < RELEASE_MANIFEST_URLS.length; index += 1) {
             String source = RELEASE_MANIFEST_URLS[index];
             try {
-                JSObject release = fetchReleaseManifest(source + "?native=" + nonce + "-" + index);
-                long code = release.optLong("versionCode", -1L);
-                if (code > newestCode) {
-                    newest = release;
-                    newestCode = code;
-                }
+                return fetchReleaseManifest(source + "?native=" + nonce + "-" + index);
             } catch (Exception error) {
                 lastError = error;
+                Log.w(TAG, "Canal de manifesto indisponível: " + source, error);
             }
         }
 
-        if (newest != null && newestCode > 0) return newest;
         throw lastError != null ? lastError : new IllegalStateException("Manifesto de atualização indisponível.");
     }
 
