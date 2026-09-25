@@ -581,12 +581,12 @@ assert.match(operationalCss, /px-period-current-v9[\s\S]*px-period-preview-v9[\s
   'Seletor v9 deve mostrar filtro atual, prévia aplicada e rodapé dedicado conforme o mock.');
 assert.match(operationalHome, /data-home-fidelity="reference-v14"/,
   'Home do mês atual deve usar o checkpoint v14 adaptativo validado no aparelho.');
-assert.match(operationalHome, /meg-ref-balance-row[\s\S]*Receitas[\s\S]*Despesas[\s\S]*Resultado/,
-  'Mês atual deve reproduzir a hierarquia aprovada: saldo, benefício e fluxo realizado compacto.');
-assert.match(operationalHome, /Contas do mês[\s\S]*Total[\s\S]*Pagas[\s\S]*Pendentes[\s\S]*Em aberto/,
-  'Mês atual deve manter o resumo de contas aprovado na referência de 25/09.');
-assert.match(operationalHome, /Meus cartões[\s\S]*Pendentes de hoje/,
-  'Home atual deve expor cartões e pendências diretamente, sem o bloco antigo de ações rápidas.');
+assert.match(operationalHome, /meg-current-v13-balance[\s\S]*Entradas no mês[\s\S]*Saídas no mês[\s\S]*Resultado do mês/,
+  'Mês atual deve reproduzir a hierarquia visual do mock: saldo, fluxo realizado e resultado.');
+assert.match(operationalHome, /Contas a pagar[\s\S]*Faturas de cartões[\s\S]*Outras pendências[\s\S]*Contas pagas/,
+  'Mês atual deve manter os quatro indicadores operacionais na ordem aprovada.');
+assert.match(operationalHome, /openPayables\.length[\s\S]*cardItems\.length[\s\S]*otherItems\.length[\s\S]*paidExpenses\.length/,
+  'Cards operacionais devem usar contagem como número principal e valor monetário como apoio.');
 assert.doesNotMatch(operationalHome, /meg-home-v12-current|meg-home-v12-wide-action/,
   'Mês atual não pode reutilizar a estrutura visual v12 nem inserir ação larga ausente do mock.');
 assert.match(homeFidelityV13Css, /\.meg-home-v13-current[\s\S]*padding:0 0 4px!important/,
@@ -649,12 +649,18 @@ assert.match(homeFidelityV13Css, /Home v14\.5[\s\S]*\.px-home-user-identity>span
   'Primeiro nome deve permanecer visível nas larguras normais do aparelho.');
 assert.match(homeFidelityV13Css, /@media\(max-width:330px\)[\s\S]*\.px-home-user-identity>span:not\(\.px-profile-avatar\)\{[\s\S]*display:none!important/,
   'Somente telas realmente estreitas devem esconder o primeiro nome.');
-assert.doesNotMatch(operationalHome, /meg-current-v14-quick[\s\S]*Ações rápidas/,
-  'Home aprovada de 25/09 não deve reintroduzir o bloco antigo de ações rápidas.');
-assert.match(operationalHome, /meg-reference-home[\s\S]*meg-ref-month-bills[\s\S]*meg-ref-cards[\s\S]*meg-ref-today/,
-  'Home aprovada deve ocupar a área útil com resumo mensal, cartões e pendências de hoje.');
-assert.match(operationalCss, /Referência mobile aprovada · 25\/09\/2026[\s\S]*\.meg-reference-home[\s\S]*\.meg-ref-balance-row/,
-  'Composição mobile aprovada deve possuir contrato visual dedicado.');
+assert.match(operationalHome, /meg-current-v14-quick[\s\S]*Ações rápidas[\s\S]*Cartões[\s\S]*Pagar conta[\s\S]*Fluxo de caixa[\s\S]*Ver relatórios/,
+  'Home v14 deve preencher a área útil com as quatro ações rápidas aprovadas.');
+assert.doesNotMatch(operationalHome, /meg-current-v14-quick[\s\S]*Novo lançamento/,
+  'Ações rápidas não deve duplicar o botão Novo já presente no dock.');
+assert.doesNotMatch(operationalHome, /meg-current-v14-quick[\s\S]*Transferência/,
+  'Ações rápidas não deve reintroduzir Transferência no lugar do Fluxo de caixa aprovado.');
+assert.match(homeFidelityV13Css, /Home v14 · composição adaptativa aprovada[\s\S]*\.meg-home-v13-current\{[\s\S]*height:100%!important[\s\S]*display:flex!important/,
+  'Home v14 deve ocupar toda a altura útil e distribuir seus blocos verticalmente.');
+assert.match(homeFidelityV13Css, /\.meg-current-v14-quick\{[\s\S]*flex:1 1 118px!important/,
+  'Ações rápidas deve absorver a altura excedente para eliminar a faixa vazia antes do dock.');
+assert.match(homeFidelityV13Css, /@media\(max-height:650px\)[\s\S]*overflow-y:auto!important/,
+  'Somente telas realmente baixas podem ativar rolagem na Home.');
 assert.match(homeFidelityV13Css, /@media\(max-width:390px\)[\s\S]*px-home-user-identity/,
   'Cabeçalho com avatar deve se adaptar a larguras estreitas sem perder a identidade do usuário.');
 assert.match(phoenixApp, /px-period-scroll-v10[\s\S]*px-period-footer-v10/,
@@ -780,10 +786,10 @@ assert.match(phoenixApp, /document\.addEventListener\('visibilitychange', onVisi
   'Ao voltar ao app, alterações externas devem ser conferidas imediatamente.');
 assert.match(operationalHome, /Benefício Alimentação/,
   'Home operacional deve manter o Benefício Alimentação separado do caixa monetário.');
-assert.match(operationalHome, /Receitas[\s\S]*Despesas[\s\S]*Resultado/,
-  'Home operacional deve priorizar receitas, despesas e resultado realizados.');
-assert.match(operationalHome, /Saldo atual/,
-  'Home operacional deve exibir o saldo atual na referência mobile aprovada.');
+assert.match(operationalHome, /Entradas no mês[\s\S]*Saídas no mês/,
+  'Home operacional deve priorizar receitas e despesas realizadas.');
+assert.match(operationalHome, /Saldo disponível/,
+  'Home operacional deve exibir o saldo atual no layout v12 aprovado.');
 assert.match(phoenixApp, /px-mobile-menu-sheet/,
   'Android deve possuir menu móvel próprio, independente da sidebar desktop oculta.');
 assert.match(phoenixApp, /px-dock-badge/,
