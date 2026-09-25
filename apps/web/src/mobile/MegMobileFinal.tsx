@@ -149,17 +149,24 @@ function Dock({ view, pendingCount, onNavigate, onLaunch, onMenu }: { view: Mobi
   </nav>;
 }
 
-function Home({ data, onNavigate }: { data: PhoenixReadModel; onNavigate: Props['onNavigate'] }) {
+function Home({ data, periodMode, periodLabel, onNavigate }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; onNavigate: Props['onNavigate'] }) {
   const openPayables = data.payables.filter((item) => openStatus(item.status) && Number(item.openAmount || 0) > 0);
   const planned = data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned');
   const paid = data.events.items.filter((item) => item.type === 'expense' && ['paid', 'reconciled', 'confirmed'].includes(String(item.status)));
   const cardOpen = data.cards.reduce((sum, card) => sum + Number(card.statement?.payableAmount ?? card.payableStatementAmount ?? card.statementAmount ?? 0), 0);
   const balance = Number(data.summary.availableBalance || 0) + Number(data.summary.realizedResult || 0);
+  const posted = data.events.items.filter((item) => ['paid', 'reconciled', 'confirmed'].includes(String(item.status)));
+  const specialIncome = posted.filter((item) => item.type === 'income').reduce((sum, item) => sum + Math.abs(Number(item.signedAmount || item.amount || 0)), 0);
+  const specialExpense = posted.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Math.abs(Number(item.signedAmount || item.amount || 0)), 0);
+  const income = periodMode === 'month' ? Number(data.summary.realizedIncome || 0) : specialIncome;
+  const expense = periodMode === 'month' ? Number(data.summary.realizedExpense || 0) : specialExpense;
+  const result = periodMode === 'month' ? Number(data.summary.realizedResult || 0) : income - expense;
+  const title = periodMode === 'all' ? 'Todo o histórico' : periodMode === 'range' ? (periodLabel || 'Intervalo selecionado') : monthLabel(data.month);
 
   return <main className="meg2-main meg2-home">
     <section className="meg2-title">
-      <span>Situação {data.month === todayIso().slice(0, 7) ? 'atual' : 'do período'}</span>
-      <h1>{monthLabel(data.month)}</h1>
+      <span>Situação {data.month === todayIso().slice(0, 7) && periodMode === 'month' ? 'atual' : 'do período'}</span>
+      <h1>{title}</h1>
       <p>Acompanhe seu caixa e compromissos em tempo real.</p>
       <i><Icon name="trend"/></i>
     </section>
@@ -170,9 +177,9 @@ function Home({ data, onNavigate }: { data: PhoenixReadModel; onNavigate: Props[
     </section>
 
     <section className="meg2-flow">
-      <article><span className="up"><Icon name="up"/></span><div><small>Entradas no mês</small><strong>{money.format(Number(data.summary.realizedIncome || 0))}</strong></div></article>
-      <article><span className="down"><Icon name="down"/></span><div><small>Saídas no mês</small><strong>{money.format(Number(data.summary.realizedExpense || 0))}</strong></div></article>
-      <article className="result"><span><Icon name="trend"/></span><div><small>Resultado do mês</small><strong>{money.format(Number(data.summary.realizedResult || 0))}</strong></div></article>
+      <article><span className="up"><Icon name="up"/></span><div><small>Entradas no mês</small><strong>{money.format(income)}</strong></div></article>
+      <article><span className="down"><Icon name="down"/></span><div><small>Saídas no mês</small><strong>{money.format(expense)}</strong></div></article>
+      <article className="result"><span><Icon name="trend"/></span><div><small>Resultado do mês</small><strong>{money.format(result)}</strong></div></article>
     </section>
 
     <section className="meg2-summary">
@@ -462,7 +469,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, 
     <div className="meg2-shell">
       <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={() => setPeriodOpen(true)} onOpenMenu={() => setMenuOpen(true)}/>
       <div className="meg2-scroll">
-        {view === 'home' ? <Home data={data} onNavigate={onNavigate}/> : null}
+        {view === 'home' ? <Home data={data} periodMode={periodMode} periodLabel={periodLabel} onNavigate={onNavigate}/> : null}
         {view === 'cards' ? <Cards data={data}/> : null}
         {view === 'payables' ? <Payables data={data} onEditEvent={onEditEvent}/> : null}
       </div>
