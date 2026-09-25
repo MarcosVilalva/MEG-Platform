@@ -9,6 +9,7 @@ import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalett
 import { PhoenixSidebar } from './PhoenixSidebar';
 import { PhoenixNavIcon } from './PhoenixNavIcon';
 import { PhoenixOperationalMobileHome } from './PhoenixOperationalMobileHome';
+import { PhoenixReferenceHome, PhoenixReferenceCards, PhoenixReferencePayables } from './PhoenixMobileReferenceScreens';
 import { PhoenixProfileAvatar, hydratePhoenixAvatarPreference, readPhoenixAvatarPreference, type PhoenixAvatarPreference } from './profile-avatar';
 import { syncPhoenixLocalDueNotifications } from './phoenix-native-notifications';
 import { PhoenixCatalogsGrid } from './screens/PhoenixCatalogsGrid';
@@ -391,13 +392,13 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
         onOpenPeriod={onOpenPeriod}
       />;
     }
-    if (nativeOperational) return <PhoenixOperationalMobileHome data={data} onLaunch={onLaunch} onNavigate={onNavigate} onOpenPeriod={onOpenPeriod} onOpenMenu={onOpenMenu} />;
+    if (nativeOperational) return <PhoenixReferenceHome data={data} onNavigate={onNavigate} onOpenPeriod={onOpenPeriod} onOpenMenu={onOpenMenu} />;
     return <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
   }
   if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} periodMode={periodMode} periodLabel={periodMode === 'all' ? 'Tudo' : periodMode === 'range' ? periodRangeLabel || 'Intervalo' : monthLabel(data.month)} launchRequest={launchRequest} launchPreset={launchPreset} editEventRequest={editEventRequest} onNavigateHistory={() => onNavigate('history')} onNavigateHome={() => onNavigate('home')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
   if (view === 'history') return <Suspense fallback={<ScreenWarmFallback label="Histórico" />}><PhoenixHistory data={data} /></Suspense>;
-  if (view === 'payables') return <Suspense fallback={<ScreenWarmFallback label="Pendentes" />}><PhoenixPayables data={data} onMonthChange={onPendingMonthChange} onEditEvent={onEditEvent} /></Suspense>;
-  if (view === 'cards') return <Suspense fallback={<ScreenWarmFallback label="Cartões" />}><PhoenixCardsGrid data={data} /></Suspense>;
+  if (view === 'payables') return nativeOperational ? <PhoenixReferencePayables data={data} onOpenPeriod={onOpenPeriod} onOpenMenu={onOpenMenu} onEditEvent={onEditEvent} /> : <Suspense fallback={<ScreenWarmFallback label="Pendentes" />}><PhoenixPayables data={data} onMonthChange={onPendingMonthChange} onEditEvent={onEditEvent} /></Suspense>;
+  if (view === 'cards') return nativeOperational ? <PhoenixReferenceCards data={data} onOpenPeriod={onOpenPeriod} onOpenMenu={onOpenMenu} /> : <Suspense fallback={<ScreenWarmFallback label="Cartões" />}><PhoenixCardsGrid data={data} /></Suspense>;
   if (view === 'catalogs') return <PhoenixCatalogsGrid data={data} onDataCommitted={onDataCommitted} />;
   if (view === 'users') return <PhoenixUsers data={data} />;
   if (view === 'settings') return <PhoenixSettings data={data} theme={theme} onToggleTheme={onToggleTheme} onLogoutRequest={onLogoutRequest} />;
