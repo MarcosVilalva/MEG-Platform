@@ -19,6 +19,7 @@ import '../phoenix-cards-fidelity-v6.css';
 import '../phoenix-cards-responsive-v61.css';
 import '../phoenix-cards-mobile-v2.css';
 import '../phoenix-cards-mobile-v7.css';
+import '../phoenix-cards-mobile-v8.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
@@ -48,7 +49,7 @@ type CardUiIconName =
   | 'card' | 'mouse' | 'limit' | 'available' | 'used' | 'invoice'
   | 'calendar' | 'star' | 'summary' | 'future' | 'installments'
   | 'history' | 'search' | 'count' | 'clock' | 'excel' | 'pdf'
-  | 'cart' | 'fuel' | 'pharmacy' | 'car' | 'screen' | 'plane' | 'refresh';
+  | 'cart' | 'fuel' | 'pharmacy' | 'car' | 'screen' | 'plane' | 'refresh' | 'wifi';
 
 function CardUiIcon({ name, size = 16 }: { name: CardUiIconName; size?: number }) {
   return <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -76,6 +77,7 @@ function CardUiIcon({ name, size = 16 }: { name: CardUiIconName; size?: number }
     {name === 'screen' ? <><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></> : null}
     {name === 'plane' ? <path d="m3 13 8-2 4-7 2 1-2 7 5 3-1 2-6-2-4 5-2-1 2-6-6 2z"/> : null}
     {name === 'refresh' ? <><path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M6.5 8a7 7 0 0 1 11.2-1L20 12M4 12l2.3 5a7 7 0 0 0 11.2-1"/></> : null}
+    {name === 'wifi' ? <><path d="M4 9a12 12 0 0 1 16 0"/><path d="M7 12a8 8 0 0 1 10 0"/><path d="M10 15a4 4 0 0 1 4 0"/><circle cx="12" cy="18" r="1"/></> : null}
   </svg>;
 }
 
@@ -90,6 +92,20 @@ function cardGroupIcon(group: string): CardUiIconName {
   if (value.includes('ajust') || value.includes('estorno')) return 'refresh';
   if (value.includes('benef')) return 'star';
   return 'card';
+}
+
+function cardRowPresentation(row: GridRow): { label: string; icon: CardUiIconName; tone: string } {
+  const value = normalize(`${row.description} ${row.group}`);
+  if (/(internet|fibra|wifi|banda larga|claro|vivo|tim)/.test(value)) return { label: 'Internet', icon: 'wifi', tone: 'blue' };
+  if (/(latam|azul linhas|gol |viagem|passagem|aereo|aerea|hotel|booking|airbnb)/.test(value)) return { label: 'Viagem', icon: 'plane', tone: 'blue' };
+  if (/(netflix|spotify|prime video|disney|stream|assinatura|youtube)/.test(value)) return { label: 'Streaming', icon: 'screen', tone: 'red' };
+  if (/(supermerc|mercado|atacadao|assai|pao de acucar|carrefour)/.test(value)) return { label: 'Mercado', icon: 'cart', tone: 'yellow' };
+  if (/(combust|posto|shell|ipiranga|petrobras)/.test(value)) return { label: 'Combustível', icon: 'fuel', tone: 'yellow' };
+  if (/(farm|droga|drogasil|raia)/.test(value)) return { label: 'Farmácia', icon: 'pharmacy', tone: 'green' };
+  if (/(uber|99 |transporte|taxi|estacionamento|pedagio)/.test(value)) return { label: 'Transporte', icon: 'car', tone: 'cyan' };
+  const group = String(row.group || '').trim();
+  const generic = /^(—|-|compra|compras|conta geral|contas gerais|outros?|diversos?)$/i.test(group);
+  return { label: generic || !group ? 'Compra' : group, icon: cardGroupIcon(group), tone: 'cyan' };
 }
 
 const labels: Record<GridKey, string> = {
@@ -517,6 +533,10 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   });
   const commandRowsTotal = sumRows(commandRows);
   const topCurrentRows = [...currentRows].filter((row) => row.amount > 0 && !isCancelledStatus(row.status)).sort((left, right) => right.amount - left.amount).slice(0, 5);
+  const recentCurrentRows = [...currentRows]
+    .filter((row) => row.amount !== 0 && !isCancelledStatus(row.status))
+    .sort((left, right) => right.purchaseDate.localeCompare(left.purchaseDate))
+    .slice(0, 4);
 
   const mode: GridMode = tab === 'installments' ? 'installments' : 'current';
   const sourceRows = mode === 'current' ? currentRows : futureRows;
@@ -654,8 +674,8 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
         <div className="px-cards-approved-title-row">
           <span className="px-cards-approved-title-icon" aria-hidden="true"><CardUiIcon name="card" size={24} /></span>
           <div>
-            <h1>Seus cartões</h1>
-            <p>Seus principais meios de pagamento em um só lugar.</p>
+            <h1>{nativeOperational ? 'Cartões' : 'Seus cartões'}</h1>
+            <p>{nativeOperational ? 'Seus principais meios de pagamento' : 'Seus principais meios de pagamento em um só lugar.'}</p>
           </div>
         </div>
       </div>
