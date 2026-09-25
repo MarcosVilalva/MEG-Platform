@@ -877,6 +877,10 @@ assert.match(main, /import '\.\.\/phoenix\/preview-boot\.css';/,
   'Android deve carregar o CSS do boot antes de abrir a biometria.');
 assert.match(nativeBiometric, /nativeBiometricLoadingOverlay/,
   'Biometria reconhecida deve criar uma cobertura premium antes do React montar.');
+assert.match(nativeBiometric, /dataset\.bootFidelity = 'approved-v4'/,
+  'Transição biométrica deve usar exatamente o contrato visual do loading v4 aprovado.');
+assert.doesNotMatch(nativeBiometric, /px-preview-boot-wordmark/,
+  'Transição biométrica não deve reintroduzir o wordmark antigo sob a marca principal.');
 assert.match(nativeBiometric, /beginAuthenticatedLoadingTransition\(\)[\s\S]*px-preview-fullscreen-boot/,
   'Transição biométrica deve reutilizar a identidade visual do loading premium.');
 assert.match(nativeBiometric, /cacheCredentials\(credentials\);[\s\S]*beginAuthenticatedLoadingTransition\(\)/,
