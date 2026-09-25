@@ -1067,10 +1067,10 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
 
   const homeAnalytical = view === 'home' && (periodMode !== 'month' || month !== currentMonth());
 
-  const periodSelector = periodOpen ? <div className={`px-period-popover px-period-popover-v15 ${nativeOperational ? 'is-mobile-sheet meg-period-v12' : ''} ${periodLoading ? 'is-loading' : ''}`} data-period-fidelity={nativeOperational ? 'approved-v12' : undefined} role={nativeOperational ? 'dialog' : undefined} aria-modal={nativeOperational ? true : undefined} aria-label={nativeOperational ? 'Filtro de período' : undefined} ref={nativeOperational ? periodRef : undefined} onPointerDown={(event) => event.stopPropagation()}>
+  const periodSelector = periodOpen ? <div className={`px-period-popover px-period-popover-v15 ${nativeOperational ? 'is-mobile-sheet meg-period-v13' : ''} ${periodLoading ? 'is-loading' : ''}`} data-period-fidelity={nativeOperational ? 'reference-v13' : undefined} role={nativeOperational ? 'dialog' : undefined} aria-modal={nativeOperational ? true : undefined} aria-label={nativeOperational ? 'Filtro de período' : undefined} ref={nativeOperational ? periodRef : undefined} onPointerDown={(event) => event.stopPropagation()}>
                 <header className="px-period-head px-period-head-v9">
                   <div className="px-period-head-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg></div>
-                  <div><strong>Período de consulta</strong><small>{nativeOperational ? 'Mês, intervalo ou histórico completo' : 'Selecione o período dos seus lançamentos'}</small></div>
+                  <div><strong>{nativeOperational ? 'Selecionar período' : 'Período de consulta'}</strong>{!nativeOperational ? <small>Selecione o período dos seus lançamentos</small> : null}</div>
                   <button className="px-period-close" type="button" aria-label="Cancelar e fechar seletor de período" disabled={periodLoading} onPointerDown={(event) => event.stopPropagation()} onClick={closePeriodSelector}>×</button>
                 </header>
 

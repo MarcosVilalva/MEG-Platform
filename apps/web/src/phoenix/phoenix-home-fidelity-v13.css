@@ -430,3 +430,734 @@ body.meg-operational-mobile .px-content:has(.meg-home-v13-current){
   body.meg-operational-mobile .meg-current-v13-stat-label{font-size:7.4px!important}
   body.meg-operational-mobile .meg-current-v13-stats>article>small{font-size:6.8px!important}
 }
+
+
+/* ==========================================================================
+   Períodos v13 · passado, futuro e Tudo
+   Composição reconstruída diretamente da referência aprovada.
+   ========================================================================== */
+body.meg-operational-mobile .meg-home-v13-past,
+body.meg-operational-mobile .meg-home-v13-future,
+body.meg-operational-mobile .meg-home-v13-all{
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0 0 4px!important;
+  display:grid!important;
+  gap:9px!important;
+  color:#f2fbfa!important;
+  background:transparent!important;
+  box-sizing:border-box!important;
+}
+body.meg-operational-mobile .meg-home-v13-past *,
+body.meg-operational-mobile .meg-home-v13-future *,
+body.meg-operational-mobile .meg-home-v13-all *{box-sizing:border-box!important}
+body.meg-operational-mobile .meg-home-v13-past button,
+body.meg-operational-mobile .meg-home-v13-future button,
+body.meg-operational-mobile .meg-home-v13-all button{
+  font:inherit!important;
+  color:inherit!important;
+  -webkit-tap-highlight-color:transparent!important;
+}
+
+/* Cabeçalhos dos três estados */
+body.meg-operational-mobile .meg-past-v13-heading,
+body.meg-operational-mobile .meg-future-v13-heading,
+body.meg-operational-mobile .meg-all-v13-heading{
+  min-width:0!important;
+  min-height:72px!important;
+  padding:0 4px 1px!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 50px!important;
+  align-items:start!important;
+  gap:8px!important;
+}
+body.meg-operational-mobile .meg-past-v13-heading>div,
+body.meg-operational-mobile .meg-future-v13-heading>div,
+body.meg-operational-mobile .meg-all-v13-heading>div{
+  min-width:0!important;
+  display:grid!important;
+  gap:2px!important;
+}
+body.meg-operational-mobile .meg-past-v13-heading>div>span,
+body.meg-operational-mobile .meg-future-v13-heading>div>span,
+body.meg-operational-mobile .meg-all-v13-heading>div>span{
+  color:#d6e0de!important;
+  font-size:12px!important;
+  line-height:1.1!important;
+  font-weight:850!important;
+  text-transform:none!important;
+  letter-spacing:0!important;
+}
+body.meg-operational-mobile .meg-past-v13-heading h1,
+body.meg-operational-mobile .meg-future-v13-heading h1,
+body.meg-operational-mobile .meg-all-v13-heading h1{
+  margin:0!important;
+  color:#fff!important;
+  font-size:27px!important;
+  line-height:1.02!important;
+  font-weight:850!important;
+  letter-spacing:-.035em!important;
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .meg-past-v13-heading p,
+body.meg-operational-mobile .meg-future-v13-heading p,
+body.meg-operational-mobile .meg-all-v13-heading p{
+  max-width:none!important;
+  margin:1px 0 0!important;
+  color:#9eb1ae!important;
+  font-size:10px!important;
+  line-height:1.25!important;
+}
+body.meg-operational-mobile .meg-past-v13-heading-icon,
+body.meg-operational-mobile .meg-future-v13-heading-icon,
+body.meg-operational-mobile .meg-all-v13-heading-icon{
+  width:46px!important;
+  height:46px!important;
+  margin-top:1px!important;
+  display:grid!important;
+  place-items:center!important;
+  color:#31e0d2!important;
+}
+body.meg-operational-mobile .meg-past-v13-heading-icon svg,
+body.meg-operational-mobile .meg-future-v13-heading-icon svg{
+  width:35px!important;
+  height:35px!important;
+  fill:none!important;
+  stroke:currentColor!important;
+  stroke-width:1.7!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+body.meg-operational-mobile .meg-all-v13-heading-icon svg{
+  width:47px!important;
+  height:34px!important;
+  fill:none!important;
+  stroke:currentColor!important;
+  stroke-width:1.4!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+
+/* Passado */
+body.meg-operational-mobile .meg-past-v13-grid{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+body.meg-operational-mobile .meg-past-v13-grid>article{
+  min-width:0!important;
+  min-height:94px!important;
+  padding:9px 10px!important;
+  border:1px solid rgba(55,188,179,.19)!important;
+  border-radius:15px!important;
+  background:linear-gradient(145deg,rgba(2,47,48,.97),rgba(1,38,40,.98))!important;
+  display:grid!important;
+  grid-template-columns:34px minmax(0,1fr)!important;
+  grid-template-rows:34px minmax(0,1fr)!important;
+  align-items:center!important;
+  column-gap:7px!important;
+  row-gap:5px!important;
+}
+body.meg-operational-mobile .meg-past-v13-icon{
+  width:34px!important;
+  height:34px!important;
+  border-radius:11px!important;
+  display:grid!important;
+  place-items:center!important;
+  color:#4ce4d5!important;
+  background:rgba(14,115,101,.22)!important;
+}
+body.meg-operational-mobile .meg-past-v13-grid .expense .meg-past-v13-icon{color:#ff8996!important;background:rgba(151,62,71,.24)!important}
+body.meg-operational-mobile .meg-past-v13-grid .paid .meg-past-v13-icon{color:#50e0ad!important;background:rgba(25,126,101,.22)!important}
+body.meg-operational-mobile .meg-past-v13-grid .opening .meg-past-v13-icon{color:#56ded0!important;background:rgba(15,103,96,.20)!important}
+body.meg-operational-mobile .meg-past-v13-icon svg{
+  width:20px!important;
+  height:20px!important;
+  fill:none!important;
+  stroke:currentColor!important;
+  stroke-width:1.8!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+body.meg-operational-mobile .meg-past-v13-grid>article>span:nth-child(2){
+  min-width:0!important;
+  color:#dce7e5!important;
+  font-size:9px!important;
+  line-height:1.15!important;
+  font-weight:600!important;
+}
+body.meg-operational-mobile .meg-past-v13-grid>article>strong{
+  grid-column:1 / -1!important;
+  align-self:end!important;
+  max-width:100%!important;
+  color:#f7fbfa!important;
+  font-size:17px!important;
+  line-height:1!important;
+  font-weight:850!important;
+  letter-spacing:-.03em!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  font-variant-numeric:tabular-nums!important;
+}
+body.meg-operational-mobile .meg-past-v13-grid .income>strong,
+body.meg-operational-mobile .meg-past-v13-grid .positive>strong{color:#4de0aa!important}
+body.meg-operational-mobile .meg-past-v13-grid .expense>strong,
+body.meg-operational-mobile .meg-past-v13-grid .negative>strong{color:#ff8995!important}
+body.meg-operational-mobile .meg-past-v13-grid .paid{
+  grid-template-rows:34px 22px 14px!important;
+}
+body.meg-operational-mobile .meg-past-v13-grid .paid>strong{
+  grid-column:2!important;
+  grid-row:2!important;
+  align-self:center!important;
+  font-size:15px!important;
+}
+body.meg-operational-mobile .meg-past-v13-grid .paid>small{
+  grid-column:2!important;
+  grid-row:3!important;
+  color:#9eb2ae!important;
+  font-size:8px!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+  font-variant-numeric:tabular-nums!important;
+}
+body.meg-operational-mobile .meg-past-v13-benefit,
+body.meg-operational-mobile .meg-all-v13-benefit{
+  width:100%!important;
+  min-width:0!important;
+  min-height:80px!important;
+  padding:10px 12px!important;
+  border:1px solid rgba(55,208,190,.22)!important;
+  border-radius:16px!important;
+  background:linear-gradient(145deg,rgba(2,54,51,.98),rgba(1,39,40,.99))!important;
+  appearance:none!important;
+  display:grid!important;
+  grid-template-columns:50px minmax(0,1fr) 18px!important;
+  align-items:center!important;
+  gap:10px!important;
+  text-align:left!important;
+}
+body.meg-operational-mobile .meg-past-v13-benefit-icon,
+body.meg-operational-mobile .meg-all-v13-benefit-icon{
+  width:50px!important;
+  height:50px!important;
+  border:1px solid rgba(56,219,190,.17)!important;
+  border-radius:13px!important;
+  background:rgba(10,94,75,.34)!important;
+  display:grid!important;
+  place-items:center!important;
+  color:#55e6bc!important;
+}
+body.meg-operational-mobile .meg-past-v13-benefit-icon svg,
+body.meg-operational-mobile .meg-all-v13-benefit-icon svg{
+  width:29px!important;
+  height:29px!important;
+  fill:none!important;
+  stroke:currentColor!important;
+  stroke-width:1.8!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+body.meg-operational-mobile .meg-past-v13-benefit>span:nth-child(2),
+body.meg-operational-mobile .meg-all-v13-benefit>span:nth-child(2){
+  min-width:0!important;
+  display:grid!important;
+  gap:2px!important;
+}
+body.meg-operational-mobile .meg-past-v13-benefit strong,
+body.meg-operational-mobile .meg-all-v13-benefit strong{font-size:10.5px!important;color:#eef7f5!important}
+body.meg-operational-mobile .meg-past-v13-benefit small,
+body.meg-operational-mobile .meg-all-v13-benefit small{font-size:8.5px!important;color:#98aaa7!important}
+body.meg-operational-mobile .meg-past-v13-benefit span>b,
+body.meg-operational-mobile .meg-all-v13-benefit span>em{
+  color:#4ce0ad!important;
+  font-size:17px!important;
+  line-height:1!important;
+  font-weight:850!important;
+  font-style:normal!important;
+  white-space:nowrap!important;
+  font-variant-numeric:tabular-nums!important;
+}
+body.meg-operational-mobile .meg-past-v13-benefit>em,
+body.meg-operational-mobile .meg-all-v13-benefit>b{
+  color:#eafffb!important;
+  font-size:28px!important;
+  line-height:1!important;
+  font-style:normal!important;
+  font-weight:400!important;
+}
+body.meg-operational-mobile .meg-past-v13-action,
+body.meg-operational-mobile .meg-all-v13-action{
+  width:100%!important;
+  min-width:0!important;
+  min-height:54px!important;
+  padding:8px 11px!important;
+  border:1px solid rgba(52,193,183,.18)!important;
+  border-radius:15px!important;
+  background:linear-gradient(145deg,rgba(2,48,48,.97),rgba(1,38,39,.98))!important;
+  display:grid!important;
+  grid-template-columns:38px minmax(0,1fr) 18px!important;
+  align-items:center!important;
+  gap:8px!important;
+  text-align:left!important;
+}
+body.meg-operational-mobile .meg-past-v13-action-icon,
+body.meg-operational-mobile .meg-all-v13-action-icon{
+  width:34px!important;
+  height:34px!important;
+  border-radius:10px!important;
+  background:rgba(10,95,83,.28)!important;
+  color:#4ce3d3!important;
+  display:grid!important;
+  place-items:center!important;
+}
+body.meg-operational-mobile .meg-past-v13-action-icon svg,
+body.meg-operational-mobile .meg-all-v13-action-icon svg{
+  width:18px!important;height:18px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important
+}
+body.meg-operational-mobile .meg-past-v13-action>strong,
+body.meg-operational-mobile .meg-all-v13-action>strong{
+  min-width:0!important;
+  color:#eff8f6!important;
+  font-size:10px!important;
+  line-height:1.15!important;
+  font-weight:700!important;
+}
+body.meg-operational-mobile .meg-past-v13-action>em,
+body.meg-operational-mobile .meg-all-v13-action>b{
+  color:#eafffb!important;font-size:25px!important;line-height:1!important;font-style:normal!important;font-weight:400!important
+}
+
+/* Futuro */
+body.meg-operational-mobile .meg-future-v13-balance-grid,
+body.meg-operational-mobile .meg-future-v13-grid{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+body.meg-operational-mobile .meg-future-v13-balance-grid>article{
+  min-width:0!important;
+  min-height:140px!important;
+  padding:10px!important;
+  border:1px solid rgba(55,188,179,.19)!important;
+  border-radius:15px!important;
+  background:linear-gradient(145deg,rgba(2,47,48,.97),rgba(1,38,40,.98))!important;
+  display:grid!important;
+  grid-template-columns:34px minmax(0,1fr)!important;
+  grid-template-rows:34px auto auto 1fr!important;
+  align-content:start!important;
+  column-gap:7px!important;
+  row-gap:5px!important;
+}
+body.meg-operational-mobile .meg-future-v13-icon{
+  width:34px!important;
+  height:34px!important;
+  border-radius:11px!important;
+  display:grid!important;
+  place-items:center!important;
+  color:#50e2d0!important;
+  background:rgba(12,112,99,.22)!important;
+}
+body.meg-operational-mobile .meg-future-v13-icon svg{
+  width:19px!important;height:19px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important
+}
+body.meg-operational-mobile .meg-future-v13-balance-grid .closing .meg-future-v13-icon{color:#ff8996!important;background:rgba(151,62,71,.24)!important}
+body.meg-operational-mobile .meg-future-v13-balance-grid>article>span:nth-child(2){
+  color:#dce6e4!important;font-size:9px!important;line-height:1.15!important;font-weight:650!important
+}
+body.meg-operational-mobile .meg-future-v13-balance-grid>article>strong{
+  grid-column:1 / -1!important;
+  max-width:100%!important;
+  color:#f6fbfa!important;
+  font-size:18px!important;
+  line-height:1!important;
+  font-weight:850!important;
+  letter-spacing:-.03em!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  font-variant-numeric:tabular-nums!important;
+}
+body.meg-operational-mobile .meg-future-v13-balance-grid .negative>strong{color:#ff8995!important}
+body.meg-operational-mobile .meg-future-v13-balance-grid .positive>strong{color:#4de0aa!important}
+body.meg-operational-mobile .meg-future-v13-balance-grid>article>small{
+  grid-column:1 / -1!important;
+  align-self:end!important;
+  color:#91a6a2!important;
+  font-size:8px!important;
+  line-height:1.25!important;
+}
+body.meg-operational-mobile .meg-future-v13-grid>article{
+  min-width:0!important;
+  min-height:91px!important;
+  padding:8px 9px!important;
+  border:1px solid rgba(55,188,179,.18)!important;
+  border-radius:14px!important;
+  background:linear-gradient(145deg,rgba(2,47,48,.97),rgba(1,38,40,.98))!important;
+  display:grid!important;
+  grid-template-columns:31px minmax(0,1fr)!important;
+  grid-template-rows:31px 22px 14px!important;
+  column-gap:7px!important;
+  row-gap:2px!important;
+  align-items:center!important;
+}
+body.meg-operational-mobile .meg-future-v13-grid .meg-future-v13-icon{
+  width:31px!important;height:31px!important;border-radius:9px!important
+}
+body.meg-operational-mobile .meg-future-v13-grid>article>span:nth-child(2){
+  color:#dbe6e4!important;font-size:8.5px!important;line-height:1.1!important;font-weight:600!important
+}
+body.meg-operational-mobile .meg-future-v13-grid>article>strong{
+  grid-column:1 / -1!important;
+  color:#f5fbfa!important;
+  font-size:16px!important;
+  line-height:1!important;
+  font-weight:850!important;
+  letter-spacing:-.025em!important;
+  white-space:nowrap!important;
+  font-variant-numeric:tabular-nums!important;
+}
+body.meg-operational-mobile .meg-future-v13-grid>article>small{
+  grid-column:1 / -1!important;
+  color:#93a8a4!important;
+  font-size:7.8px!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .meg-future-v13-grid .income>strong{color:#4de0d1!important}
+body.meg-operational-mobile .meg-future-v13-grid .commitments>strong{color:#ff8995!important}
+body.meg-operational-mobile .meg-future-v13-grid .card>strong{color:#64b9ff!important}
+body.meg-operational-mobile .meg-future-v13-grid .pending>strong{color:#efbf59!important}
+body.meg-operational-mobile .meg-future-v13-grid .commitments .meg-future-v13-icon{color:#ff8996!important;background:rgba(151,62,71,.24)!important}
+body.meg-operational-mobile .meg-future-v13-grid .card .meg-future-v13-icon{color:#68baff!important;background:rgba(62,111,174,.24)!important}
+body.meg-operational-mobile .meg-future-v13-grid .pending .meg-future-v13-icon{color:#f1c55f!important;background:rgba(161,121,43,.22)!important}
+body.meg-operational-mobile .meg-future-v13-benefit{
+  min-width:0!important;
+  min-height:64px!important;
+  padding:8px 11px!important;
+  border:1px solid rgba(55,208,190,.22)!important;
+  border-radius:15px!important;
+  background:linear-gradient(145deg,rgba(2,54,51,.98),rgba(1,39,40,.99))!important;
+  display:grid!important;
+  grid-template-columns:42px minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:9px!important;
+}
+body.meg-operational-mobile .meg-future-v13-benefit-icon{
+  width:42px!important;height:42px!important;border-radius:11px!important;background:rgba(10,94,75,.34)!important;color:#55e6bc!important;display:grid!important;place-items:center!important
+}
+body.meg-operational-mobile .meg-future-v13-benefit-icon svg{width:25px!important;height:25px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+body.meg-operational-mobile .meg-future-v13-benefit>span:nth-child(2){min-width:0!important;display:grid!important;gap:2px!important}
+body.meg-operational-mobile .meg-future-v13-benefit strong{font-size:9.5px!important;color:#edf6f4!important}
+body.meg-operational-mobile .meg-future-v13-benefit small{font-size:8px!important;color:#99aaa7!important}
+body.meg-operational-mobile .meg-future-v13-benefit>b{color:#4ce0ad!important;font-size:17px!important;white-space:nowrap!important;font-variant-numeric:tabular-nums!important}
+body.meg-operational-mobile .meg-future-v13-pending-action{
+  min-width:0!important;
+  min-height:57px!important;
+  padding:8px 9px!important;
+  border:1px solid rgba(52,193,183,.18)!important;
+  border-radius:14px!important;
+  background:linear-gradient(145deg,rgba(2,48,48,.97),rgba(1,38,39,.98))!important;
+  display:grid!important;
+  grid-template-columns:34px minmax(0,1fr) auto 12px!important;
+  align-items:center!important;
+  gap:7px!important;
+  text-align:left!important;
+}
+body.meg-operational-mobile .meg-future-v13-pending-icon{
+  width:34px!important;height:34px!important;border-radius:10px!important;background:rgba(151,62,71,.23)!important;color:#ff8b98!important;display:grid!important;place-items:center!important
+}
+body.meg-operational-mobile .meg-future-v13-pending-icon svg{width:18px!important;height:18px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+body.meg-operational-mobile .meg-future-v13-pending-action>span:nth-child(2){min-width:0!important;display:grid!important;gap:2px!important}
+body.meg-operational-mobile .meg-future-v13-pending-action strong{font-size:9px!important;color:#eef7f5!important}
+body.meg-operational-mobile .meg-future-v13-pending-action small{font-size:7.5px!important;color:#90a6a2!important}
+body.meg-operational-mobile .meg-future-v13-pending-action>em{
+  min-height:25px!important;padding:0 7px!important;border:1px solid rgba(50,217,203,.30)!important;border-radius:8px!important;display:grid!important;place-items:center!important;color:#43ded2!important;font-size:6.8px!important;font-style:normal!important;font-weight:800!important;white-space:nowrap!important
+}
+body.meg-operational-mobile .meg-future-v13-pending-action>b{font-size:21px!important;line-height:1!important;font-weight:400!important}
+
+/* Tudo */
+body.meg-operational-mobile .meg-all-v13-balance{
+  min-width:0!important;
+  min-height:90px!important;
+  padding:11px 13px!important;
+  border:1px solid rgba(55,205,193,.23)!important;
+  border-radius:15px!important;
+  background:linear-gradient(145deg,rgba(2,50,50,.98),rgba(1,41,42,.98))!important;
+  display:grid!important;
+  grid-template-columns:49px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:10px!important;
+}
+body.meg-operational-mobile .meg-all-v13-icon{
+  width:35px!important;height:35px!important;border-radius:11px!important;display:grid!important;place-items:center!important
+}
+body.meg-operational-mobile .meg-all-v13-icon.wallet{width:49px!important;height:49px!important;background:rgba(8,84,75,.44)!important;color:#4ce8d8!important;border:1px solid rgba(47,223,207,.18)!important}
+body.meg-operational-mobile .meg-all-v13-icon svg,
+body.meg-operational-mobile .meg-all-v13-metric-icon svg{width:20px!important;height:20px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+body.meg-operational-mobile .meg-all-v13-icon.wallet svg{width:25px!important;height:25px!important}
+body.meg-operational-mobile .meg-all-v13-balance>div{min-width:0!important;display:grid!important;gap:2px!important}
+body.meg-operational-mobile .meg-all-v13-balance span{font-size:9.5px!important;color:#e1eae8!important}
+body.meg-operational-mobile .meg-all-v13-balance strong{font-size:24px!important;line-height:1!important;color:#48dfd2!important;white-space:nowrap!important;font-variant-numeric:tabular-nums!important}
+body.meg-operational-mobile .meg-all-v13-balance small{font-size:7.5px!important;color:#8fa5a1!important}
+body.meg-operational-mobile .meg-all-v13-flow{
+  min-width:0!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important
+}
+body.meg-operational-mobile .meg-all-v13-flow>article{
+  min-width:0!important;min-height:68px!important;padding:8px 9px!important;border:1px solid rgba(55,188,179,.18)!important;border-radius:14px!important;background:linear-gradient(145deg,rgba(2,47,48,.97),rgba(1,38,40,.98))!important;display:grid!important;grid-template-columns:34px minmax(0,1fr)!important;align-items:center!important;gap:7px!important
+}
+body.meg-operational-mobile .meg-all-v13-flow .income .meg-all-v13-icon{color:#4de0aa!important;background:rgba(19,133,105,.22)!important}
+body.meg-operational-mobile .meg-all-v13-flow .expense .meg-all-v13-icon{color:#ff8995!important;background:rgba(151,62,71,.24)!important}
+body.meg-operational-mobile .meg-all-v13-flow>article>div{min-width:0!important;display:grid!important;gap:2px!important}
+body.meg-operational-mobile .meg-all-v13-flow span{font-size:8.5px!important;color:#dce6e4!important}
+body.meg-operational-mobile .meg-all-v13-flow strong{font-size:15px!important;line-height:1!important;white-space:nowrap!important;font-variant-numeric:tabular-nums!important}
+body.meg-operational-mobile .meg-all-v13-flow .income strong{color:#f5fbfa!important}
+body.meg-operational-mobile .meg-all-v13-flow .expense strong{color:#f5fbfa!important}
+body.meg-operational-mobile .meg-all-v13-result{
+  min-width:0!important;min-height:65px!important;padding:8px 11px!important;border:1px solid rgba(55,188,179,.18)!important;border-radius:14px!important;background:linear-gradient(145deg,rgba(2,47,48,.97),rgba(1,38,40,.98))!important;display:grid!important;grid-template-columns:37px minmax(0,1fr)!important;align-items:center!important;gap:8px!important
+}
+body.meg-operational-mobile .meg-all-v13-result .meg-all-v13-icon{color:#4de0aa!important;background:rgba(19,133,105,.22)!important}
+body.meg-operational-mobile .meg-all-v13-result>div{min-width:0!important;display:grid!important;gap:2px!important}
+body.meg-operational-mobile .meg-all-v13-result span{font-size:8.8px!important;color:#dce6e4!important}
+body.meg-operational-mobile .meg-all-v13-result strong{font-size:18px!important;line-height:1!important;white-space:nowrap!important;font-variant-numeric:tabular-nums!important}
+body.meg-operational-mobile .meg-all-v13-result.positive strong{color:#4de0aa!important}
+body.meg-operational-mobile .meg-all-v13-result.negative strong{color:#ff8995!important}
+body.meg-operational-mobile .meg-all-v13-metrics{
+  min-width:0!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important
+}
+body.meg-operational-mobile .meg-all-v13-metrics>article{
+  min-width:0!important;min-height:88px!important;padding:7px 4px!important;border:1px solid rgba(55,180,173,.17)!important;border-radius:13px!important;background:linear-gradient(155deg,rgba(2,44,45,.98),rgba(1,34,36,.99))!important;display:grid!important;grid-template-rows:27px 30px 18px!important;place-items:center!important;text-align:center!important;gap:2px!important
+}
+body.meg-operational-mobile .meg-all-v13-metric-icon{
+  width:27px!important;height:27px!important;border-radius:9px!important;background:rgba(10,95,83,.28)!important;color:#4ce3d3!important;display:grid!important;place-items:center!important
+}
+body.meg-operational-mobile .meg-all-v13-metrics .income .meg-all-v13-metric-icon{color:#4de0aa!important;background:rgba(19,133,105,.22)!important}
+body.meg-operational-mobile .meg-all-v13-metrics .expense .meg-all-v13-metric-icon{color:#ff8995!important;background:rgba(151,62,71,.24)!important}
+body.meg-operational-mobile .meg-all-v13-metrics>article>span:nth-child(2){font-size:7.6px!important;line-height:1.12!important;color:#a3b5b2!important}
+body.meg-operational-mobile .meg-all-v13-metrics>article>strong{max-width:100%!important;font-size:13px!important;line-height:1!important;color:#f5fbfa!important;white-space:nowrap!important;font-variant-numeric:tabular-nums!important}
+body.meg-operational-mobile .meg-all-v13-metrics .income>strong{color:#4de0aa!important}
+body.meg-operational-mobile .meg-all-v13-metrics .expense>strong{color:#ff8995!important}
+
+/* Mesmo fundo de referência para todos os estados da Home. */
+body.meg-operational-mobile .px-content:has(.meg-home-v13-past),
+body.meg-operational-mobile .px-content:has(.meg-home-v13-future),
+body.meg-operational-mobile .px-content:has(.meg-home-v13-all){
+  background:
+    radial-gradient(circle at 90% 7%,rgba(6,103,92,.14),transparent 30%),
+    linear-gradient(180deg,#012928 0%,#012322 46%,#011f20 100%)!important;
+}
+
+@media(max-width:360px){
+  body.meg-operational-mobile .meg-past-v13-heading h1,
+  body.meg-operational-mobile .meg-future-v13-heading h1,
+  body.meg-operational-mobile .meg-all-v13-heading h1{font-size:25px!important}
+  body.meg-operational-mobile .meg-past-v13-grid>article>strong{font-size:15.5px!important}
+  body.meg-operational-mobile .meg-future-v13-balance-grid>article>strong{font-size:16.5px!important}
+  body.meg-operational-mobile .meg-future-v13-grid>article>strong{font-size:14.5px!important}
+  body.meg-operational-mobile .meg-all-v13-balance strong{font-size:22px!important}
+  body.meg-operational-mobile .meg-all-v13-flow strong{font-size:13.5px!important}
+  body.meg-operational-mobile .meg-all-v13-metrics>article>strong{font-size:11.5px!important}
+}
+
+
+/* ==========================================================================
+   Filtro de período v13 · compacto e funcional como a referência.
+   ========================================================================== */
+body.meg-operational-mobile .px-period-popover.meg-period-v13.is-mobile-sheet{
+  width:min(calc(100vw - 18px),520px)!important;
+  height:auto!important;
+  max-height:min(58dvh,520px)!important;
+  min-height:0!important;
+  top:auto!important;
+  right:9px!important;
+  bottom:calc(78px + env(safe-area-inset-bottom))!important;
+  left:9px!important;
+  margin:auto!important;
+  border:1px solid rgba(59,222,208,.38)!important;
+  border-radius:20px!important;
+  background:linear-gradient(155deg,#053a3a 0%,#042f31 100%)!important;
+  box-shadow:0 22px 58px rgba(0,0,0,.44)!important;
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr) auto!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-head-v9{
+  min-height:62px!important;
+  padding:10px 11px!important;
+  display:grid!important;
+  grid-template-columns:46px minmax(0,1fr) 38px!important;
+  align-items:center!important;
+  gap:9px!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-head-icon{
+  width:46px!important;
+  height:46px!important;
+  border:1px solid rgba(61,222,207,.34)!important;
+  border-radius:13px!important;
+  background:rgba(13,96,87,.48)!important;
+  color:#4ce3d4!important;
+  display:grid!important;
+  place-items:center!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-head-icon svg{
+  width:25px!important;
+  height:25px!important;
+  fill:none!important;
+  stroke:currentColor!important;
+  stroke-width:1.7!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-head-v9>div:nth-child(2){
+  min-width:0!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-head-v9 strong{
+  color:#f5fbfa!important;
+  font-size:16px!important;
+  line-height:1.05!important;
+  font-weight:850!important;
+  letter-spacing:-.02em!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-close{
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  padding:0!important;
+  border:1px solid rgba(82,199,188,.21)!important;
+  border-radius:50%!important;
+  background:rgba(7,61,62,.78)!important;
+  color:#bed2cf!important;
+  font-size:22px!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-scroll-v10{
+  min-height:0!important;
+  padding:0 11px 10px!important;
+  display:grid!important;
+  align-content:start!important;
+  gap:9px!important;
+  overflow-y:auto!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-current-v9,
+body.meg-operational-mobile .meg-period-v13 .px-period-quick,
+body.meg-operational-mobile .meg-period-v13 .px-period-all,
+body.meg-operational-mobile .meg-period-v13 .px-period-preview-v9{
+  display:none!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-modes-v9{
+  min-width:0!important;
+  min-height:66px!important;
+  margin:0!important;
+  padding:4px!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:5px!important;
+  border:1px solid rgba(61,184,175,.13)!important;
+  border-radius:14px!important;
+  background:rgba(2,42,43,.62)!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-modes-v9>button{
+  min-width:0!important;
+  min-height:56px!important;
+  padding:7px 6px!important;
+  border:1px solid transparent!important;
+  border-radius:11px!important;
+  background:rgba(4,54,54,.46)!important;
+  display:grid!important;
+  grid-template-columns:24px minmax(0,1fr)!important;
+  grid-template-rows:auto auto!important;
+  align-content:center!important;
+  align-items:center!important;
+  column-gap:6px!important;
+  text-align:left!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-modes-v9>button.active{
+  border-color:rgba(50,230,211,.70)!important;
+  background:linear-gradient(145deg,rgba(11,111,98,.88),rgba(5,72,70,.96))!important;
+  box-shadow:inset 0 0 0 1px rgba(75,231,213,.10)!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-modes-v9 i{
+  grid-row:1 / 3!important;
+  width:24px!important;
+  height:24px!important;
+  display:grid!important;
+  place-items:center!important;
+  color:#63e0d4!important;
+  font-size:16px!important;
+  font-style:normal!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-modes-v9 span{
+  min-width:0!important;
+  color:#f1f8f6!important;
+  font-size:10px!important;
+  line-height:1.05!important;
+  font-weight:800!important;
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-modes-v9 small{
+  min-width:0!important;
+  color:#819c98!important;
+  font-size:7px!important;
+  line-height:1.05!important;
+  white-space:nowrap!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-month-panel,
+body.meg-operational-mobile .meg-period-v13 .px-period-range-panel{
+  margin:0!important;
+  padding:9px!important;
+  border:1px solid rgba(62,187,176,.15)!important;
+  border-radius:13px!important;
+  background:rgba(3,44,45,.68)!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-month-panel>span,
+body.meg-operational-mobile .meg-period-v13 .px-period-range-panel>span:first-child{
+  display:block!important;
+  margin-bottom:6px!important;
+  color:#91aaa6!important;
+  font-size:8px!important;
+  font-weight:850!important;
+  text-transform:uppercase!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-month-stepper{min-height:50px!important}
+body.meg-operational-mobile .meg-period-v13 .px-period-month-stepper strong{font-size:14px!important}
+body.meg-operational-mobile .meg-period-v13 .px-period-native-month{margin-top:6px!important}
+body.meg-operational-mobile .meg-period-v13 .px-period-range{
+  grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr)!important;
+  gap:5px!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-field input{
+  min-height:39px!important;
+  padding:6px 7px!important;
+  font-size:10px!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-scope-note{
+  margin-top:5px!important;
+  font-size:7.5px!important;
+  line-height:1.2!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-footer-v10{
+  min-height:58px!important;
+  padding:8px 11px!important;
+  background:#042b2d!important;
+  border-top:1px solid rgba(64,181,172,.14)!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-footer-actions{
+  width:100%!important;
+  display:grid!important;
+  grid-template-columns:.8fr 1.2fr!important;
+  gap:8px!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-footer-actions>button{
+  min-height:42px!important;
+  border-radius:12px!important;
+  font-size:11px!important;
+  font-weight:850!important;
+}
+body.meg-operational-mobile .meg-period-v13 .px-period-apply{
+  border:0!important;
+  background:linear-gradient(120deg,#2edfd2,#45e6a0)!important;
+  color:#043433!important;
+}

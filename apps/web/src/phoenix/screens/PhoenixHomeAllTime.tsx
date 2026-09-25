@@ -52,6 +52,18 @@ function openEventAmount(event: PhoenixReadModel['events']['items'][number]) {
   return Math.abs(Number.isFinite(signed) && signed !== 0 ? signed : Number(event.amount || 0));
 }
 
+type AllGlyphKind = 'overview' | 'wallet' | 'income' | 'expense' | 'result' | 'list' | 'benefit';
+
+function AllGlyph({ kind }: { kind: AllGlyphKind }) {
+  if (kind === 'overview') return <svg viewBox="0 0 48 32" aria-hidden="true"><rect x="2" y="18" width="4" height="12" rx="1"/><rect x="9" y="12" width="4" height="18" rx="1"/><rect x="16" y="6" width="4" height="24" rx="1"/><ellipse cx="35" cy="9" rx="9" ry="3"/><path d="M26 9v12c0 1.8 4 3 9 3s9-1.2 9-3V9"/><ellipse cx="35" cy="15" rx="9" ry="3"/><ellipse cx="35" cy="21" rx="9" ry="3"/></svg>;
+  if (kind === 'wallet') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h12.2A2.8 2.8 0 0 1 20 9.8v8.4A2.8 2.8 0 0 1 17.2 21H5a2.8 2.8 0 0 1-2.8-2.8V6.5A2.5 2.5 0 0 1 4.7 4H16"/><path d="M15.2 11.2H21v4.6h-5.8a2.3 2.3 0 1 1 0-4.6Z"/></svg>;
+  if (kind === 'income') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6"/><path d="m7.8 10.2 4.2-4.2 4.2 4.2"/></svg>;
+  if (kind === 'expense') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v13"/><path d="m7.8 13.8 4.2 4.2 4.2-4.2"/></svg>;
+  if (kind === 'result') return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="13" width="3" height="7" rx="1"/><rect x="10.5" y="9" width="3" height="11" rx="1"/><rect x="17" y="4" width="3" height="16" rx="1"/></svg>;
+  if (kind === 'list') return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 3v7.2M5.8 3v7.2M11.2 3v7.2M5.8 7.2h5.4M8.5 10.2V21M16 3v18M16 3c2.8 1.8 3.5 5.9 0 8.2"/></svg>;
+}
+
 export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', periodContext, onNavigate, onOpenPeriod, onLaunch }: {
   data: PhoenixReadModel;
   mode?: PeriodMode;
@@ -121,43 +133,45 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
 
   if (isAll) {
     return <>
-      <section className="meg-home-v12 meg-home-v12-all" data-home-fidelity="approved-v12" aria-label="Histórico financeiro completo">
-        <header className="meg-home-v12-heading">
-          <span>VISÃO GERAL</span>
-          <h1>Histórico completo</h1>
-          <p>Resumo de toda a sua vida financeira.</p>
+      <section className="meg-home-v13-all" data-home-fidelity="reference-v13" aria-label="Histórico financeiro completo">
+        <header className="meg-all-v13-heading">
+          <div>
+            <span>Visão geral</span>
+            <h1>Histórico completo</h1>
+            <p>Resumo de toda a sua vida financeira.</p>
+          </div>
+          <span className="meg-all-v13-heading-icon" aria-hidden="true"><AllGlyph kind="overview" /></span>
         </header>
 
-        <article className="meg-home-v12-all-balance">
-          <span>Saldo atual consolidado</span>
-          <strong>{money.format(summary.currentMonetaryBalance)}</strong>
-          <small>Fotografia real de hoje, sem misturar compromissos futuros.</small>
+        <article className="meg-all-v13-balance">
+          <span className="meg-all-v13-icon wallet" aria-hidden="true"><AllGlyph kind="wallet" /></span>
+          <div><span>Saldo atual (consolidado)</span><strong>{money.format(summary.currentMonetaryBalance)}</strong><small>Considera todos os lançamentos da sua conta.</small></div>
         </article>
 
-        <section className="meg-home-v12-current-flow meg-home-v12-all-flow" aria-label="Movimentação acumulada">
-          <article className="income"><span>Total de receitas</span><strong>{money.format(summary.realizedIncome)}</strong></article>
-          <article className="expense"><span>Total de despesas</span><strong>{money.format(summary.realizedExpense)}</strong></article>
+        <section className="meg-all-v13-flow" aria-label="Movimentação acumulada">
+          <article className="income"><span className="meg-all-v13-icon"><AllGlyph kind="income" /></span><div><span>Total de receitas</span><strong>{money.format(summary.realizedIncome)}</strong></div></article>
+          <article className="expense"><span className="meg-all-v13-icon"><AllGlyph kind="expense" /></span><div><span>Total de despesas</span><strong>{money.format(summary.realizedExpense)}</strong></div></article>
         </section>
 
-        <article className={`meg-home-v12-all-result ${summary.realizedResult >= 0 ? 'positive' : 'negative'}`}>
-          <span>Resultado consolidado</span>
-          <strong>{summary.realizedResult > 0 ? '+' : ''}{money.format(summary.realizedResult)}</strong>
+        <article className={`meg-all-v13-result ${summary.realizedResult >= 0 ? 'positive' : 'negative'}`}>
+          <span className="meg-all-v13-icon" aria-hidden="true"><AllGlyph kind="result" /></span>
+          <div><span>Resultado consolidado</span><strong>{summary.realizedResult > 0 ? '+' : ''}{money.format(summary.realizedResult)}</strong></div>
         </article>
 
-        <section className="meg-home-v12-all-metrics" aria-label="Indicadores históricos">
-          <article><span>Total de lançamentos</span><strong>{summary.monetaryEventCount.toLocaleString('pt-BR')}</strong></article>
-          <article className="income"><span>Média mensal de receita</span><strong>{money.format(averageMonthlyIncome)}</strong></article>
-          <article className="expense"><span>Média mensal de despesa</span><strong>{money.format(averageMonthlyExpense)}</strong></article>
+        <section className="meg-all-v13-metrics" aria-label="Indicadores históricos">
+          <article><span className="meg-all-v13-metric-icon"><AllGlyph kind="list" /></span><span>Total de lançamentos</span><strong>{summary.monetaryEventCount.toLocaleString('pt-BR')}</strong></article>
+          <article className="income"><span className="meg-all-v13-metric-icon"><AllGlyph kind="income" /></span><span>Média mensal de receita</span><strong>{money.format(averageMonthlyIncome)}</strong></article>
+          <article className="expense"><span className="meg-all-v13-metric-icon"><AllGlyph kind="expense" /></span><span>Média mensal de despesa</span><strong>{money.format(averageMonthlyExpense)}</strong></article>
         </section>
 
-        <button className="meg-home-v12-wide-action" type="button" onClick={() => onNavigate('movements')}>
-          <span>Ver detalhamento do histórico</span><b aria-hidden="true">›</b>
+        <button className="meg-all-v13-action" type="button" onClick={() => onNavigate('movements')}>
+          <span className="meg-all-v13-action-icon" aria-hidden="true"><AllGlyph kind="list" /></span><strong>Ver detalhamento do histórico</strong><b aria-hidden="true">›</b>
         </button>
 
-        <button className="meg-home-v12-benefit" type="button" onClick={() => setBenefitOpen(true)}>
-          <span><small>BENEFÍCIO ALIMENTAÇÃO</small><strong>Saldo atual</strong></span>
-          <b>{money.format(summary.benefitBalance)}</b>
-          <em aria-hidden="true">›</em>
+        <button className="meg-all-v13-benefit" type="button" onClick={() => setBenefitOpen(true)}>
+          <span className="meg-all-v13-benefit-icon" aria-hidden="true"><AllGlyph kind="benefit" /></span>
+          <span><strong>Benefício Alimentação</strong><small>Saldo atual</small><em>{money.format(summary.benefitBalance)}</em></span>
+          <b aria-hidden="true">›</b>
         </button>
       </section>
 
