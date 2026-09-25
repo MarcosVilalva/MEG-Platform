@@ -88,7 +88,7 @@ export function PhoenixOperationalMobileHome({ data, onNavigate, onOpenMenu }: P
   ];
 
   return <>
-    <section className="meg-home-v13-current" data-home-fidelity="reference-v13" aria-label="Situação financeira atual">
+    <section className="meg-home-v13-current" data-home-fidelity="reference-v14" aria-label="Situação financeira atual">
       <header className="meg-current-v13-heading">
         <div>
           <span>Situação atual</span>
