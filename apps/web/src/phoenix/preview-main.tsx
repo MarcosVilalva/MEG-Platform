@@ -177,7 +177,7 @@ function PhoenixBootScreen({ stage }: { stage: BootStage }) {
 
   const activeIndex = Math.max(0, bootStages.findIndex((item) => item.id === stage));
   const active = bootStages[activeIndex];
-  const visualStyle = { '--boot-progress': `${active.progress}%` } as CSSProperties;
+  const visualStyle = { '--boot-progress': `${active.progress}%` } as React.CSSProperties;
 
   return <main className="px-preview-fullscreen-boot" data-boot-fidelity="approved-v5" aria-live="polite" aria-busy={stage !== 'ready'}>
     <section className="px-preview-boot-v5" aria-label={`Carregando seu ambiente. ${active.progress}% concluído. ${active.label}.`}>
