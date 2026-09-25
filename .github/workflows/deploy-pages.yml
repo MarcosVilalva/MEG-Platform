@@ -49,26 +49,23 @@ jobs:
           grep -q 'data-meg-shell="phoenix-v15"' apps/web/dist/index.html
           grep -q 'MEG Finanças' apps/web/dist/index.html
 
-      - name: Wait for production API from this commit
+      - name: Verify production API availability
         env:
           API_URL: ${{ vars.VITE_API_URL || 'https://meg-platform-api.onrender.com' }}
-          EXPECTED_COMMIT: ${{ github.sha }}
         run: |
-          # /health.commit is populated from Render's RENDER_GIT_COMMIT.
-          for attempt in {1..36}; do
-            if health=$(curl --silent --show-error --fail --max-time 90 "$API_URL/health"); then
-              actual=$(HEALTH="$health" node --input-type=module -e "const value=JSON.parse(process.env.HEALTH || '{}'); process.stdout.write(String(value.commit || ''))")
-              if [ "$actual" = "$EXPECTED_COMMIT" ]; then
-                echo "Production API is LIVE on $EXPECTED_COMMIT"
-                exit 0
-              fi
-              echo "API commit is ${actual:-unknown}; waiting for $EXPECTED_COMMIT (attempt $attempt/36)"
-            else
-              echo "API not ready yet (attempt $attempt/36)"
+          # Pages is a frontend deployment. A frontend-only publication must not
+          # wait for Render to deploy the exact Git commit. The production smoke
+          # workflow remains responsible for API compatibility.
+          for attempt in {1..12}; do
+            if health=$(curl --silent --show-error --fail --max-time 30 "$API_URL/health"); then
+              actual=$(HEALTH="$health" node --input-type=module -e "const value=JSON.parse(process.env.HEALTH || '{}'); process.stdout.write(String(value.commit || 'unknown'))")
+              echo "Production API is healthy (commit: $actual)."
+              exit 0
             fi
-            sleep 20
+            echo "API not ready yet (attempt $attempt/12)"
+            sleep 10
           done
-          echo "Production API did not reach expected commit $EXPECTED_COMMIT before Pages publication."
+          echo "Production API health endpoint is unavailable."
           exit 1
 
       - name: Stage production artifact
