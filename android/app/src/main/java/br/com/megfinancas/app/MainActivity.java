@@ -18,13 +18,18 @@ public class MainActivity extends BridgeActivity {
             scheduleUpdateCheck();
             return;
         }
-        if (getBridge() == null) return;
-        PluginHandle handle = getBridge().getPlugin("AppUpdater");
-        if (handle != null && handle.getInstance() instanceof AppUpdaterPlugin) {
-            AppUpdaterPlugin updater = (AppUpdaterPlugin) handle.getInstance();
-            if (updater.resumePendingInstallIfAuthorized()) return;
-            updater.checkForAvailableUpdateNative();
+        if (getBridge() == null) {
+            scheduleUpdateCheck();
+            return;
         }
+        PluginHandle handle = getBridge().getPlugin("AppUpdater");
+        if (handle == null || !(handle.getInstance() instanceof AppUpdaterPlugin)) {
+            scheduleUpdateCheck();
+            return;
+        }
+        AppUpdaterPlugin updater = (AppUpdaterPlugin) handle.getInstance();
+        if (updater.resumePendingInstallIfAuthorized()) return;
+        updater.checkForAvailableUpdateNative();
     };
 
     private void scheduleUpdateCheck() {
