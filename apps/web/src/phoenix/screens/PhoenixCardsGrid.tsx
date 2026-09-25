@@ -613,18 +613,20 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     setCommandGroup('');
     setCommandSort('date-desc');
   }
-  function focusNativeCard(id: string) {
+  function focusNativeCard(id: string, behavior: ScrollBehavior = 'smooth') {
     selectCard(id);
     if (typeof window === 'undefined') return;
     window.requestAnimationFrame(() => {
-      document.getElementById(`meg-card-v8-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      document.getElementById(`meg-card-v8-${id}`)?.scrollIntoView({ behavior, block: 'nearest', inline: 'center' });
     });
   }
   function cycleNativeCard(direction: -1 | 1) {
     if (data.cards.length < 2) return;
     const currentIndex = Math.max(0, data.cards.findIndex((card) => card.id === selected?.id));
-    const nextIndex = (currentIndex + direction + data.cards.length) % data.cards.length;
-    focusNativeCard(data.cards[nextIndex].id);
+    const rawIndex = currentIndex + direction;
+    const nextIndex = (rawIndex + data.cards.length) % data.cards.length;
+    const wrapped = rawIndex < 0 || rawIndex >= data.cards.length;
+    focusNativeCard(data.cards[nextIndex].id, wrapped ? 'auto' : 'smooth');
   }
   function exportCardStatement(extension: 'xlsx' | 'pdf') {
     const headers = ['Data', 'Descrição', 'Grupo', 'Parcela', 'Fatura', 'Situação', 'Valor'];
@@ -716,7 +718,10 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
             nativeCarouselStartX.current = null;
             if (startX === null) return;
             const delta = event.clientX - startX;
-            if (Math.abs(delta) < 34) return;
+            if (Math.abs(delta) < 34) {
+              if (selected?.id) focusNativeCard(selected.id, 'smooth');
+              return;
+            }
             cycleNativeCard(delta < 0 ? 1 : -1);
           }}
           onPointerCancel={() => { nativeCarouselStartX.current = null; }}
