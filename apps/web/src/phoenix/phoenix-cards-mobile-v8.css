@@ -1013,3 +1013,49 @@
     min-width:8px!important;
   }
 }
+
+
+/* Cartões V8.3 · fonte única de verdade para o enquadramento da arte */
+@media (max-width:760px){
+  body.meg-operational-mobile .px-cards-v8-slide{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    overflow:visible!important;
+  }
+  body.meg-operational-mobile .px-cards-v8-art{
+    position:relative!important;
+    display:block!important;
+    width:100%!important;
+    height:auto!important;
+    aspect-ratio:1.586/1!important;
+    padding:0!important;
+    margin:0 auto!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+    line-height:0!important;
+  }
+  body.meg-operational-mobile .px-cards-v8-art>img:not(.px-brand-asset){
+    position:absolute!important;
+    top:50%!important;
+    left:50%!important;
+    right:auto!important;
+    bottom:auto!important;
+    width:100%!important;
+    height:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    max-width:none!important;
+    max-height:none!important;
+    margin:0!important;
+    padding:0!important;
+    display:block!important;
+    object-fit:contain!important;
+    object-position:50% 50%!important;
+    transform:translate(-50%,-50%)!important;
+    transform-origin:50% 50%!important;
+    border:0!important;
+    border-radius:inherit!important;
+    box-sizing:border-box!important;
+  }
+}
