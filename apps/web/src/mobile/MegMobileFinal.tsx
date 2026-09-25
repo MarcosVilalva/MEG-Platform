@@ -7,6 +7,16 @@ type MobileView = 'home' | 'cards' | 'payables';
 type TargetView = 'home' | 'movements' | 'payables' | 'cards' | 'cashflow' | 'analytics' | 'history' | 'settings';
 type LaunchPreset = 'expense' | 'income' | 'benefit';
 type PeriodMode = 'month' | 'range' | 'all';
+type MobileHomePeriodContext = {
+  label: string;
+  startDate: string;
+  endDate: string;
+  openingBalance: number;
+  closingBalance: number;
+  currentRealBalance: number;
+  currentBenefitBalance?: number;
+  projectionEvents?: PhoenixReadModel['events']['items'];
+};
 
 type Props = {
   data: PhoenixReadModel;
@@ -16,6 +26,7 @@ type Props = {
   onEditEvent: (eventId: string) => void;
   periodMode: PeriodMode;
   periodLabel?: string;
+  homePeriodContext?: MobileHomePeriodContext | null;
   periodLoading?: boolean;
   periodError?: string;
   onSelectMonth: (month: string) => Promise<void>;
@@ -150,7 +161,108 @@ function Dock({ view, pendingCount, onNavigate, onLaunch, onMenu }: { view: Mobi
   </nav>;
 }
 
-function Home({ data, periodMode, periodLabel, onNavigate }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; onNavigate: Props['onNavigate'] }) {
+function signedEventAmount(event: PhoenixReadModel['events']['items'][number]) {
+  const signed = Number(event.signedAmount || 0);
+  if (Number.isFinite(signed) && signed !== 0) return signed;
+  const amount = Math.abs(Number(event.amount || 0));
+  return event.type === 'income' || event.type === 'redemption' ? amount : -amount;
+}
+
+function isPosted(status: unknown) {
+  return ['paid', 'reconciled', 'confirmed'].includes(String(status || ''));
+}
+
+function PastHome({ data, context, onNavigate }: { data: PhoenixReadModel; context?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate'] }) {
+  const realized = data.events.items.filter((event) =>
+    String(event.competence || String(event.date).slice(0, 7)) === data.month && isPosted(event.status)
+  );
+  let income = 0;
+  let expense = 0;
+  let paidCount = 0;
+  let paidAmount = 0;
+  realized.forEach((event) => {
+    const signed = signedEventAmount(event);
+    if (event.type === 'income' || event.type === 'redemption' || signed > 0) income += Math.max(0, signed);
+    else {
+      expense += Math.max(0, -signed);
+      if (signed < 0) { paidCount += 1; paidAmount += -signed; }
+    }
+  });
+  const opening = Number(context?.openingBalance ?? data.cashflow.openingBalance ?? 0);
+  const result = income - expense;
+  const closing = Number(context?.closingBalance ?? opening + result);
+
+  return <main className="meg2-main meg2-period-home meg2-past-home">
+    <section className="meg2-title">
+      <span>Resumo do mês</span><h1>{monthLabel(data.month)}</h1><p>Veja como foi o período em uma visão simples.</p><i><Icon name="chart"/></i>
+    </section>
+    <section className="meg2-period-balance-grid">
+      <article><span><Icon name="wallet"/></span><small>Saldo inicial</small><strong>{money.format(opening)}</strong></article>
+      <article className="accent"><span><Icon name="wallet"/></span><small>Saldo final</small><strong>{money.format(closing)}</strong></article>
+    </section>
+    <section className="meg2-period-kpis">
+      <article className="income"><Icon name="up"/><small>Receitas realizadas</small><strong>{money.format(income)}</strong></article>
+      <article className="expense"><Icon name="down"/><small>Despesas realizadas</small><strong>{money.format(expense)}</strong></article>
+      <article className={result >= 0 ? 'result positive' : 'result negative'}><Icon name="trend"/><small>Resultado do mês</small><strong>{resultMoney(result)}</strong></article>
+      <article className="paid"><Icon name="check"/><small>Contas pagas</small><strong>{paidCount.toLocaleString('pt-BR')}</strong><em>{money.format(paidAmount)}</em></article>
+    </section>
+    <button className="meg2-benefit" onClick={() => onNavigate('movements')}>
+      <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Saldo final do mês</em><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong></div><b>›</b>
+    </button>
+    <button className="meg2-period-action" onClick={() => onNavigate('movements')}><Icon name="file"/><span><strong>Ver lançamentos do mês</strong><small>Consulte os detalhes de {monthLabel(data.month)}</small></span><b>›</b></button>
+  </main>;
+}
+
+function FutureHome({ data, context, onNavigate }: { data: PhoenixReadModel; context?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate'] }) {
+  const target = data.month;
+  const [year, month] = target.split('-').map(Number);
+  const start = target + '-01';
+  const end = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+  const events = context?.projectionEvents || data.events.items;
+  const planned = events.filter((event) => event.status === 'planned' && String(event.date).slice(0, 10) <= end);
+  const before = planned.filter((event) => String(event.date).slice(0, 10) < start);
+  const monthEvents = planned.filter((event) => {
+    const date = String(event.date).slice(0, 10);
+    return date >= start && date <= end;
+  });
+  const baseBalance = Number(context?.currentRealBalance ?? (Number(data.summary.availableBalance || 0) + Number(data.summary.realizedResult || 0)));
+  const opening = baseBalance + before.reduce((sum, event) => sum + signedEventAmount(event), 0);
+  const income = monthEvents.filter((event) => signedEventAmount(event) > 0).reduce((sum, event) => sum + Math.max(0, signedEventAmount(event)), 0);
+  const expense = monthEvents.filter((event) => signedEventAmount(event) < 0).reduce((sum, event) => sum + Math.max(0, -signedEventAmount(event)), 0);
+  const closing = opening + income - expense;
+  const cardEvents = monthEvents.filter((event) => {
+    const text = String(event.paymentMethod?.name || '') + ' ' + String(event.sourceDetails?.paymentMethod || '');
+    return /cart[aã]o|cr[eé]dito/i.test(text);
+  });
+  const cardAmount = cardEvents.reduce((sum, event) => sum + Math.max(0, -signedEventAmount(event)), 0);
+  const otherAmount = Math.max(0, expense - cardAmount);
+  const benefit = Number(context?.currentBenefitBalance ?? data.summary.benefitBalance ?? 0);
+
+  return <main className="meg2-main meg2-period-home meg2-future-home">
+    <section className="meg2-title">
+      <span>Projeção mensal</span><h1>{monthLabel(target)}</h1><p>O que já está previsto para comprometer ou reforçar seu caixa.</p><i><Icon name="calendar"/></i>
+    </section>
+    <section className="meg2-period-balance-grid">
+      <article><span><Icon name="wallet"/></span><small>Saldo inicial projetado</small><strong>{money.format(opening)}</strong></article>
+      <article className={closing >= 0 ? 'accent' : 'danger'}><span><Icon name="trend"/></span><small>Saldo após compromissos</small><strong>{money.format(closing)}</strong></article>
+    </section>
+    <section className="meg2-period-kpis">
+      <article className="income"><Icon name="up"/><small>Receitas previstas</small><strong>{money.format(income)}</strong><em>{monthEvents.filter((event) => signedEventAmount(event) > 0).length} entrada(s)</em></article>
+      <article className="expense"><Icon name="down"/><small>Total de compromissos</small><strong>{money.format(expense)}</strong><em>{monthEvents.filter((event) => signedEventAmount(event) < 0).length} item(ns)</em></article>
+      <article><Icon name="wallet"/><small>Faturas de cartões</small><strong>{money.format(cardAmount)}</strong><em>{cardEvents.length} item(ns)</em></article>
+      <article><Icon name="file"/><small>Outras pendências</small><strong>{money.format(otherAmount)}</strong></article>
+    </section>
+    <button className="meg2-benefit" onClick={() => onNavigate('movements')}>
+      <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Fora do caixa monetário</em><strong>{money.format(benefit)}</strong></div><b>›</b>
+    </button>
+    <button className="meg2-period-action" onClick={() => onNavigate('payables')}><Icon name="file"/><span><strong>Principais pendências do mês</strong><small>{monthEvents.length} compromisso(s) previsto(s)</small></span><b>›</b></button>
+  </main>;
+}
+
+function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; homePeriodContext?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate'] }) {
+  const nowMonth = todayIso().slice(0, 7);
+  if (periodMode === 'month' && data.month < nowMonth) return <PastHome data={data} context={homePeriodContext} onNavigate={onNavigate}/>;
+  if (periodMode === 'month' && data.month > nowMonth) return <FutureHome data={data} context={homePeriodContext} onNavigate={onNavigate}/>;
   const openPayables = data.payables.filter((item) => openStatus(item.status) && Number(item.openAmount || 0) > 0);
   const planned = data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned');
   const paid = data.events.items.filter((item) => item.type === 'expense' && ['paid', 'reconciled', 'confirmed'].includes(String(item.status)));
@@ -457,7 +569,7 @@ function PeriodSheet({ data, initialMode, loading = false, error = '', onClose, 
   </div>;
 }
 
-export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, periodMode, periodLabel, periodLoading, periodError, onSelectMonth, onSelectRange, onSelectAll, onLogout, onClose }: Props) {
+export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, periodMode, periodLabel, homePeriodContext, periodLoading, periodError, onSelectMonth, onSelectRange, onSelectAll, onLogout, onClose }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [periodOpen, setPeriodOpen] = useState(false);
   useEffect(() => {
@@ -470,7 +582,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, 
     <div className="meg2-shell">
       <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={() => setPeriodOpen(true)} onOpenMenu={() => setMenuOpen(true)}/>
       <div className="meg2-scroll">
-        {view === 'home' ? <Home data={data} periodMode={periodMode} periodLabel={periodLabel} onNavigate={onNavigate}/> : null}
+        {view === 'home' ? <Home data={data} periodMode={periodMode} periodLabel={periodLabel} homePeriodContext={homePeriodContext} onNavigate={onNavigate}/> : null}
         {view === 'cards' ? <Cards data={data}/> : null}
         {view === 'payables' ? <Payables data={data} onEditEvent={onEditEvent}/> : null}
       </div>
