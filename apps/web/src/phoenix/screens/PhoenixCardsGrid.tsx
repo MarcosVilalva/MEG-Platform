@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import type { CreditCard } from '../../app/cards-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
@@ -400,6 +400,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const [commandStatus, setCommandStatus] = useState('');
   const [commandGroup, setCommandGroup] = useState('');
   const [commandSort, setCommandSort] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc' | 'description'>('date-desc');
+  const nativeCarouselStartX = useRef<number | null>(null);
 
   const selected = data.cards.find((card) => card.id === selectedId) || data.cards[0] || null;
 
@@ -535,8 +536,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const topCurrentRows = [...currentRows].filter((row) => row.amount > 0 && !isCancelledStatus(row.status)).sort((left, right) => right.amount - left.amount).slice(0, 5);
   const recentCurrentRows = [...currentRows]
     .filter((row) => row.amount !== 0 && !isCancelledStatus(row.status))
-    .sort((left, right) => right.purchaseDate.localeCompare(left.purchaseDate))
-    .slice(0, 4);
+    .sort((left, right) => right.purchaseDate.localeCompare(left.purchaseDate));
 
   const mode: GridMode = tab === 'installments' ? 'installments' : 'current';
   const sourceRows = mode === 'current' ? currentRows : futureRows;
@@ -561,6 +561,14 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     if (!sort || !keys.includes(sort.key)) return filtered;
     return [...filtered].sort((left, right) => compare(left[sort.key], right[sort.key], sort.direction));
   }, [sourceRows, search, keys, filters, sort]);
+
+  useEffect(() => {
+    if (!nativeOperational || !selectedId || typeof window === 'undefined') return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(`meg-card-v8-${selectedId}`)?.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [nativeOperational, selectedId]);
 
   useEffect(() => {
     if (!cardCommandOpen) return undefined;
@@ -611,6 +619,12 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     window.requestAnimationFrame(() => {
       document.getElementById(`meg-card-v8-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     });
+  }
+  function cycleNativeCard(direction: -1 | 1) {
+    if (data.cards.length < 2) return;
+    const currentIndex = Math.max(0, data.cards.findIndex((card) => card.id === selected?.id));
+    const nextIndex = (currentIndex + direction + data.cards.length) % data.cards.length;
+    focusNativeCard(data.cards[nextIndex].id);
   }
   function exportCardStatement(extension: 'xlsx' | 'pdf') {
     const headers = ['Data', 'Descrição', 'Grupo', 'Parcela', 'Fatura', 'Situação', 'Valor'];
@@ -694,7 +708,19 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
 
     {nativeOperational ? <>
       <div className="px-cards-v8-carousel-shell" aria-label="Carrossel de cartões">
-        <div className="px-cards-v8-carousel">
+        <div
+          className="px-cards-v8-carousel"
+          onPointerDown={(event) => { nativeCarouselStartX.current = event.clientX; }}
+          onPointerUp={(event) => {
+            const startX = nativeCarouselStartX.current;
+            nativeCarouselStartX.current = null;
+            if (startX === null) return;
+            const delta = event.clientX - startX;
+            if (Math.abs(delta) < 34) return;
+            cycleNativeCard(delta < 0 ? 1 : -1);
+          }}
+          onPointerCancel={() => { nativeCarouselStartX.current = null; }}
+        >
           {data.cards.map((card) => {
             const cardIdentity = resolvePhoenixCardIdentity(card);
             const activeCard = selected.id === card.id;
