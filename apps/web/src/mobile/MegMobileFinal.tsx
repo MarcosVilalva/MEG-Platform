@@ -26,6 +26,7 @@ type Props = {
 };
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const resultMoney = (value: number) => value > 0 ? '+' + money.format(value) : money.format(value);
 const longMonth = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 const shortDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
 
@@ -179,7 +180,7 @@ function Home({ data, periodMode, periodLabel, onNavigate }: { data: PhoenixRead
     <section className="meg2-flow">
       <article><span className="up"><Icon name="up"/></span><div><small>Entradas no mês</small><strong>{money.format(income)}</strong></div></article>
       <article><span className="down"><Icon name="down"/></span><div><small>Saídas no mês</small><strong>{money.format(expense)}</strong></div></article>
-      <article className="result"><span><Icon name="trend"/></span><div><small>Resultado do mês</small><strong>{money.format(result)}</strong></div></article>
+      <article className="result"><span><Icon name="trend"/></span><div><small>Resultado do mês</small><strong>{resultMoney(result)}</strong></div></article>
     </section>
 
     <section className="meg2-summary">
