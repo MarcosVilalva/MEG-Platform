@@ -588,12 +588,14 @@ assert.match(homeFidelityV13Css, /\.meg-current-v13-balance>div>strong[\s\S]*whi
   'Saldo atual deve permanecer completo e nunca usar reticências.');
 assert.match(phoenixApp, /px-period-scroll-v10[\s\S]*px-period-footer-v10/,
   'Seletor móvel deve separar conteúdo rolável do rodapé persistente.');
-assert.match(phoenixApp, /is-mobile-sheet meg-period-v12[\s\S]*data-period-fidelity=\{nativeOperational \? 'approved-v12'/,
-  'Filtro móvel deve usar composição v12 própria, sem depender da distribuição antiga.');
-assert.match(homeFidelityV12Css, /\.meg-period-v12 \.px-period-scroll-v10[\s\S]*overflow-y:auto!important/,
-  'Somente o corpo do filtro v12 deve rolar quando necessário.');
-assert.match(homeFidelityV12Css, /\.meg-period-v12 \.px-period-footer-actions[\s\S]*grid-template-columns:\.85fr 1\.35fr!important/,
-  'Cancelar e Aplicar devem permanecer visíveis no rodapé compacto v12.');
+assert.match(phoenixApp, /is-mobile-sheet meg-period-v13[\s\S]*data-period-fidelity=\{nativeOperational \? 'reference-v13'/,
+  'Filtro móvel deve usar composição v13 própria e fiel à referência.');
+assert.match(phoenixApp, /nativeOperational \? 'Selecionar período' : 'Período de consulta'/,
+  'Filtro Android deve usar o título curto aprovado.');
+assert.match(homeFidelityV13Css, /\.meg-period-v13 \.px-period-scroll-v10[\s\S]*overflow-y:auto!important/,
+  'Somente o corpo do filtro v13 deve rolar quando necessário.');
+assert.match(homeFidelityV13Css, /\.meg-period-v13 \.px-period-footer-actions[\s\S]*grid-template-columns:\.8fr 1\.2fr!important/,
+  'Cancelar e Aplicar devem permanecer visíveis no rodapé compacto v13.');
 assert.match(phoenixApp, /!nativeOperational \? <button className="px-period-current-v9"/,
   'Android não deve renderizar o card redundante de filtro atual.');
 assert.match(phoenixApp, /!nativeOperational \? <section className="px-period-preview-v9"/,
@@ -737,22 +739,30 @@ assert.match(phoenixApp, /month < nowMonth[\s\S]*PhoenixHomePastMonth/,
   'Home deve encaminhar mês passado ao resumo histórico compacto.');
 assert.match(phoenixApp, /month > nowMonth[\s\S]*PhoenixHomeHorizon/,
   'Home deve encaminhar mês futuro à projeção operacional.');
-assert.match(homePastMonth, /data-home-fidelity="approved-v12"[\s\S]*Receitas realizadas[\s\S]*Despesas realizadas[\s\S]*Resultado do mês[\s\S]*Saldo inicial[\s\S]*Saldo final[\s\S]*Contas pagas/,
-  'Resumo passado deve seguir a fotografia financeira v12 aprovada.');
-assert.match(homePastMonth, /BENEFÍCIO ALIMENTAÇÃO[\s\S]*Saldo final do mês/,
+assert.match(homePastMonth, /data-home-fidelity="reference-v13"[\s\S]*Receitas realizadas[\s\S]*Despesas realizadas[\s\S]*Resultado do mês[\s\S]*Saldo inicial[\s\S]*Saldo final[\s\S]*Contas pagas/,
+  'Resumo passado deve seguir a fotografia financeira v13 da referência.');
+assert.match(homePastMonth, /Benefício Alimentação[\s\S]*Saldo final do mês/,
   'Benefício deve permanecer em card próprio no histórico.');
+assert.doesNotMatch(homePastMonth, /meg-home-v12/,
+  'Mês passado não pode reutilizar a estrutura visual v12.');
 assert.match(homeHorizon, /Saldo inicial projetado[\s\S]*Receitas previstas[\s\S]*Total de compromissos[\s\S]*Faturas de cartões[\s\S]*Outras pendências/,
   'Mês futuro deve mostrar projeção, faturas e pendências em vez de histórico zerado.');
 assert.match(homeHorizon, /event\.status === 'planned'/,
   'Projeção futura deve usar compromissos ainda abertos.');
-assert.match(homeHorizon, /data-home-fidelity="approved-v12"/,
-  'Mês futuro deve usar o layout v12 aprovado.');
-assert.match(homeAllTime, /meg-home-v12-all[\s\S]*Saldo atual consolidado[\s\S]*Total de receitas[\s\S]*Total de despesas[\s\S]*Resultado consolidado/,
-  'Tudo deve ser um resumo executivo v12, com números grandes e poucos indicadores.');
-assert.match(homeAllTime, /meg-home-v12-all-metrics[\s\S]*Total de lançamentos[\s\S]*Média mensal de receita[\s\S]*Média mensal de despesa/,
+assert.match(homeHorizon, /data-home-fidelity="reference-v13"/,
+  'Mês futuro deve usar o layout v13 reconstruído da referência.');
+assert.match(homeHorizon, /Principais pendências do mês[\s\S]*Abrir Pendentes/,
+  'Mês futuro deve encerrar com o resumo compacto de pendências aprovado.');
+assert.doesNotMatch(homeHorizon, /meg-home-v12-list-card/,
+  'Mês futuro não deve reabrir a lista longa da versão anterior na Home.');
+assert.match(homeAllTime, /meg-home-v13-all[\s\S]*Saldo atual \(consolidado\)[\s\S]*Total de receitas[\s\S]*Total de despesas[\s\S]*Resultado consolidado/,
+  'Tudo deve ser o resumo executivo v13 da referência.');
+assert.match(homeAllTime, /meg-all-v13-metrics[\s\S]*Total de lançamentos[\s\S]*Média mensal de receita[\s\S]*Média mensal de despesa/,
   'Tudo deve limitar o histórico aos três indicadores executivos aprovados.');
-assert.match(homeFidelityV12Css, /\.meg-home-v12-all-metrics\{[\s\S]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/,
-  'Indicadores do Tudo devem ficar distribuídos sem comprimir valores monetários.');
+assert.match(homeFidelityV13Css, /\.meg-all-v13-metrics[\s\S]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/,
+  'Indicadores do Tudo devem permanecer em três colunas sem comprimir os valores.');
+assert.doesNotMatch(homeAllTime, /className="meg-home-v12 meg-home-v12-all"/,
+  'Tudo não pode voltar à composição visual v12.');
 assert.match(periodMobileCss, /\.px-home-past,[\s\S]*\.px-home-future/,
   'Passado e futuro devem compartilhar uma composição móvel compacta.');
 assert.doesNotMatch(periodMobileCss, /position\s*:\s*(?:fixed|sticky)/,
