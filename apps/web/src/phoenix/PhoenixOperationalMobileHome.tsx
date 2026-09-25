@@ -80,87 +80,68 @@ export function PhoenixOperationalMobileHome({ data, onNavigate, onOpenMenu }: P
   const benefitSpent = benefitEvents.reduce((sum, event) => sum + Math.max(0, -Number(event.signedAmount || 0)), 0);
   const benefitOpening = Number(data.summary.benefitBalance || 0) - benefitCredits + benefitSpent;
 
-  const statCards: Array<{ key: string; label: string; count: number; amount: number; kind: CurrentGlyphKind; tone: string }> = [
-    { key: 'payable', label: 'Contas a pagar', count: openPayables.length, amount: payableAmount, kind: 'payable', tone: 'rose' },
-    { key: 'card', label: 'Faturas de cartões', count: cardItems.length, amount: cardAmount, kind: 'card', tone: 'blue' },
-    { key: 'pending', label: 'Outras pendências', count: otherItems.length, amount: otherAmount, kind: 'pending', tone: 'amber' },
-    { key: 'paid', label: 'Contas pagas', count: paidExpenses.length, amount: paidAmount, kind: 'paid', tone: 'green' },
-  ];
+  const income = Number(data.summary.realizedIncome || 0);
+  const expense = Number(data.summary.realizedExpense || 0);
+  const result = Number(data.summary.realizedResult || 0);
+  const totalBills = openPayables.length + paidExpenses.length;
+  const todayItems = agenda.items.filter((item) => String(item.dueDate || '').slice(0, 10) <= today).slice(0, 3);
+  const primaryCard = cardItems[0];
+
+  const compactMonth = (() => {
+    const [year, month] = data.month.split('-').map(Number);
+    const label = new Intl.DateTimeFormat('pt-BR', { month: 'short', timeZone: 'UTC' })
+      .format(new Date(Date.UTC(year, month - 1, 1))).replace('.', '');
+    return `${label.charAt(0).toUpperCase() + label.slice(1)}/${year}`;
+  })();
 
   return <>
-    <section className="meg-home-v13-current" data-home-fidelity="reference-v14" aria-label="Situação financeira atual">
-      <header className="meg-current-v13-heading">
-        <div>
-          <span>Situação atual</span>
-          <h1>{monthLabel(data.month)}</h1>
-          <p>Acompanhe seu caixa e compromissos em tempo real.</p>
-        </div>
-        <span className="meg-current-v13-heading-icon" aria-hidden="true"><CurrentHomeGlyph kind="trend" /></span>
+    <section className="meg-reference-home" data-home-fidelity="approved-25-09" aria-label="Resumo financeiro">
+      <header className="meg-ref-home-head">
+        <div><small>Olá, Marcos</small><strong>Seu resumo financeiro</strong></div>
+        <button type="button" className="meg-ref-period" aria-label="Selecionar período">{compactMonth}</button>
+        <button type="button" className="meg-ref-profile" onClick={onOpenMenu} aria-label="Abrir perfil">M</button>
       </header>
 
-      <article className="meg-current-v13-balance">
-        <span className="meg-current-v13-icon wallet" aria-hidden="true"><CurrentHomeGlyph kind="wallet" /></span>
-        <div>
-          <span>Saldo disponível</span>
-          <strong>{money.format(currentBalance)}</strong>
-          <small>Considerando apenas os lançamentos realizados.</small>
-        </div>
-      </article>
-
-      <section className="meg-current-v13-flow" aria-label="Movimentação realizada no mês">
-        <article className="income">
-          <span className="meg-current-v13-icon" aria-hidden="true"><CurrentHomeGlyph kind="income" /></span>
-          <div><span>Entradas no mês</span><strong>{money.format(Number(data.summary.realizedIncome || 0))}</strong></div>
+      <section className="meg-ref-balance-row">
+        <article className="meg-ref-balance">
+          <span>Saldo atual</span><strong>{money.format(currentBalance)}</strong><small>Atualizado agora</small>
         </article>
-        <article className="expense">
-          <span className="meg-current-v13-icon" aria-hidden="true"><CurrentHomeGlyph kind="expense" /></span>
-          <div><span>Saídas no mês</span><strong>{money.format(Number(data.summary.realizedExpense || 0))}</strong></div>
-        </article>
+        <button className="meg-ref-benefit-mini" type="button" onClick={() => setBenefitOpen(true)}>
+          <span>Benefício Alimentação</span><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong>
+        </button>
       </section>
 
-      <article className={`meg-current-v13-result ${Number(data.summary.realizedResult || 0) >= 0 ? 'positive' : 'negative'}`}>
-        <span className="meg-current-v13-icon" aria-hidden="true"><CurrentHomeGlyph kind="result" /></span>
-        <div>
-          <span>Resultado do mês</span>
-          <strong>{Number(data.summary.realizedResult || 0) > 0 ? '+' : ''}{money.format(Number(data.summary.realizedResult || 0))}</strong>
-        </div>
-      </article>
-
-      <section className="meg-current-v13-stats" aria-label="Compromissos do mês">
-        {statCards.map((item) => <article key={item.key} className={item.tone}>
-          <span className="meg-current-v13-stat-icon" aria-hidden="true"><CurrentHomeGlyph kind={item.kind} /></span>
-          <span className="meg-current-v13-stat-label">{item.label}</span>
-          <strong>{item.count.toLocaleString('pt-BR')}</strong>
-          <small>{money.format(item.amount)}</small>
-        </article>)}
+      <section className="meg-ref-flow">
+        <article><span>Receitas</span><strong>{money.format(income)}</strong></article>
+        <article><span>Despesas</span><strong>{money.format(expense)}</strong></article>
+        <article><span>Resultado</span><strong>{result > 0 ? '+' : ''}{money.format(result)}</strong></article>
       </section>
 
-      <button className="meg-current-v13-benefit" type="button" onClick={() => setBenefitOpen(true)}>
-        <span className="meg-current-v13-benefit-icon" aria-hidden="true"><CurrentHomeGlyph kind="benefit" /></span>
-        <span className="meg-current-v13-benefit-copy"><small>Benefício Alimentação</small><span>Saldo disponível</span><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong></span>
-        <b aria-hidden="true">›</b>
-      </button>
-
-      <section className="meg-current-v14-quick" aria-label="Ações rápidas">
-        <header>
-          <span className="meg-current-v14-quick-title-icon" aria-hidden="true"><CurrentHomeGlyph kind="quick" /></span>
-          <span className="meg-current-v14-quick-copy"><strong>Ações rápidas</strong><small>Acesse as principais funcionalidades.</small></span>
-          <button type="button" onClick={onOpenMenu}>Ver todas <b aria-hidden="true">›</b></button>
-        </header>
-        <div className="meg-current-v14-quick-grid">
-          <button type="button" onClick={() => onNavigate('cards')}>
-            <span className="blue" aria-hidden="true"><CurrentHomeGlyph kind="card" /></span><strong>Cartões</strong>
-          </button>
-          <button type="button" onClick={() => onNavigate('payables')}>
-            <span className="cyan" aria-hidden="true"><CurrentHomeGlyph kind="payable" /></span><strong>Pagar conta</strong>
-          </button>
-          <button type="button" onClick={() => onNavigate('cashflow')}>
-            <span className="teal" aria-hidden="true"><CurrentHomeGlyph kind="cashflow" /></span><strong>Fluxo de caixa</strong>
-          </button>
-          <button type="button" onClick={() => onNavigate('analytics')}>
-            <span className="green" aria-hidden="true"><CurrentHomeGlyph kind="analytics" /></span><strong>Ver relatórios</strong>
-          </button>
+      <section className="meg-ref-month-bills">
+        <header><strong>Contas do mês</strong><button type="button" onClick={() => onNavigate('payables')}>Ver todas</button></header>
+        <div className="meg-ref-bill-grid">
+          <span><b>{totalBills}</b><small>Total</small></span>
+          <span><b>{paidExpenses.length}</b><small>Pagas</small></span>
+          <span><b>{openPayables.length}</b><small>Pendentes</small></span>
+          <span><b>{money.format(payableAmount)}</b><small>Em aberto</small></span>
         </div>
+      </section>
+
+      <section className="meg-ref-cards">
+        <header><strong>Meus cartões</strong><button type="button" onClick={() => onNavigate('cards')}>Ver todos</button></header>
+        <button type="button" className="meg-ref-card-preview" onClick={() => onNavigate('cards')}>
+          <span>{primaryCard?.cardLabel || 'Cartões'}</span>
+          <strong>{primaryCard ? money.format(Number(primaryCard.amount || 0)) : 'Nenhuma fatura pendente'}</strong>
+          <small>{primaryCard ? 'Fatura atual' : 'Toque para abrir a central de cartões'}</small>
+        </button>
+      </section>
+
+      <section className="meg-ref-today">
+        <header><strong>Pendentes de hoje</strong><button type="button" onClick={() => onNavigate('payables')}>Ver pendentes</button></header>
+        {todayItems.length ? todayItems.map((item) => <button type="button" key={item.id} onClick={() => onNavigate('payables')} className="meg-ref-today-row">
+          <span><strong>{item.description}</strong><small>{String(item.dueDate || '').slice(0,10).split('-').reverse().join('/')}</small></span>
+          <b>{money.format(Number(item.amount || 0))}</b>
+        </button>) : <div className="meg-ref-empty">Nenhuma pendência para hoje.</div>}
       </section>
     </section>
 
