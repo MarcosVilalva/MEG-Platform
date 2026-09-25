@@ -780,10 +780,10 @@ assert.match(phoenixApp, /document\.addEventListener\('visibilitychange', onVisi
   'Ao voltar ao app, alterações externas devem ser conferidas imediatamente.');
 assert.match(operationalHome, /Benefício Alimentação/,
   'Home operacional deve manter o Benefício Alimentação separado do caixa monetário.');
-assert.match(operationalHome, /Entradas no mês[\s\S]*Saídas no mês/,
-  'Home operacional deve priorizar receitas e despesas realizadas.');
-assert.match(operationalHome, /Saldo disponível/,
-  'Home operacional deve exibir o saldo atual no layout v12 aprovado.');
+assert.match(operationalHome, /Receitas[\s\S]*Despesas[\s\S]*Resultado/,
+  'Home operacional deve priorizar receitas, despesas e resultado realizados.');
+assert.match(operationalHome, /Saldo atual/,
+  'Home operacional deve exibir o saldo atual na referência mobile aprovada.');
 assert.match(phoenixApp, /px-mobile-menu-sheet/,
   'Android deve possuir menu móvel próprio, independente da sidebar desktop oculta.');
 assert.match(phoenixApp, /px-dock-badge/,
