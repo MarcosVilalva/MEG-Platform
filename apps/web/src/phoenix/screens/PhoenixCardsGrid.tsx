@@ -403,6 +403,15 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const nativeCarouselStartX = useRef<number | null>(null);
 
   const selected = data.cards.find((card) => card.id === selectedId) || data.cards[0] || null;
+  const nativeCarouselCards = useMemo(() => {
+    if (!selected || data.cards.length <= 1) return data.cards;
+    const index = Math.max(0, data.cards.findIndex((card) => card.id === selected.id));
+    return [
+      data.cards[(index - 1 + data.cards.length) % data.cards.length],
+      selected,
+      data.cards[(index + 1) % data.cards.length],
+    ];
+  }, [data.cards, selected]);
 
   const officialRows = useMemo<GridRow[]>(() => selected ? selected.purchases.flatMap((purchase) => purchase.entries.map((entry) => ({
     id: entry.id,
@@ -620,6 +629,14 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
       document.getElementById(`meg-card-v8-${id}`)?.scrollIntoView({ behavior, block: 'nearest', inline: 'center' });
     });
   }
+  useEffect(() => {
+    if (!nativeOperational || !selected?.id || typeof window === 'undefined') return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(`meg-card-v8-${selected.id}`)?.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [nativeOperational, selected?.id]);
+
   function cycleNativeCard(direction: -1 | 1) {
     if (data.cards.length < 2) return;
     const currentIndex = Math.max(0, data.cards.findIndex((card) => card.id === selected?.id));
@@ -726,7 +743,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
           }}
           onPointerCancel={() => { nativeCarouselStartX.current = null; }}
         >
-          {data.cards.map((card) => {
+          {nativeCarouselCards.map((card) => {
             const cardIdentity = resolvePhoenixCardIdentity(card);
             const activeCard = selected.id === card.id;
             return <button
@@ -774,11 +791,11 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
         <div className="px-cards-v8-recent-list">
           {recentCurrentRows.map((row) => {
             const presentation = cardRowPresentation(row);
-            return <button key={row.id} type="button" className="px-cards-v8-row" onClick={() => setDetailRow(row)}>
+            return <button key={row.id} type="button" className="px-cards-v8-row" tabIndex={-1} aria-disabled="true">
               <i className={`tone-${presentation.tone}`} aria-hidden="true"><CardUiIcon name={presentation.icon} /></i>
               <span><strong>{presentation.label}</strong><small>{row.description} · {date.format(new Date(`${row.purchaseDate}T12:00:00Z`))}</small>{row.installment !== 'Única' ? <em>Parcela {row.installment}</em> : null}</span>
               <b className={row.amount < 0 ? 'credit' : ''}>{money.format(row.amount)}</b>
-              <u aria-hidden="true">›</u>
+              <u className="px-cards-v8-row-spacer" aria-hidden="true" />
             </button>;
           })}
           {!recentCurrentRows.length ? <p className="px-empty">Nenhum lançamento nesta fatura.</p> : null}
@@ -1046,7 +1063,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
       </section>
     </div>, document.body) : null}
 
-    {detailRow ? <div className="px-card-detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailRow(null); }}>
+    {detailRow && !nativeOperational ? <div className="px-card-detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailRow(null); }}>
       <aside className="px-card-detail-drawer" role="dialog" aria-modal="true" aria-label={`Detalhes de ${detailRow.description}`}>
         <header><div><span className="px-kicker">{monthLabel(detailRow.statementMonth)}</span><h2>{detailRow.description}</h2><p>{detailRow.installment} · {detailRow.group}</p></div><button type="button" aria-label="Fechar detalhes" onClick={() => setDetailRow(null)}>×</button></header>
         <div className="px-card-detail-amount">
