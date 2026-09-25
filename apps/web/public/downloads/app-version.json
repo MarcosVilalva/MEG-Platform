@@ -1,9 +1,9 @@
 {
-  "versionCode": 367,
-  "versionName": "2.0.367",
+  "versionCode": 368,
+  "versionName": "2.0.368",
   "downloadUrl": "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/MEG-Financas.apk",
-  "sha256": "949babea7aa55ef73c10c579374a37264c5ec61e7694fd9a17a94dfc35a70637",
+  "sha256": "203cd72dc9064f55dd30c95a22778659e074b357dc8afa64274c507cdfd39985",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "restaura cabeçalho Home v14.4 no Android"
+  "releaseNotes": "fecha cabeçalho da Home v14.5"
 }
