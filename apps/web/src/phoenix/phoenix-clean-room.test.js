@@ -606,6 +606,18 @@ assert.match(phoenixApp, /function HomeHeaderIdentity[\s\S]*px-home-user-identit
   'Home Android deve exibir o avatar sincronizado do usuário no cabeçalho.');
 assert.match(phoenixApp, /HomeHeaderIdentity data=\{data\}[\s\S]*px-native-home-period/,
   'Avatar do usuário deve ficar integrado ao topo antes do seletor de período.');
+assert.match(phoenixApp, /const firstName = data\.user\.name\.trim\(\)\.split\(\/\\s\+\/\)\[0\][\s\S]*<strong>\{firstName\}<\/strong>/,
+  'Cabeçalho da Home deve priorizar apenas o primeiro nome para preservar o espaço do período.');
+assert.match(homeFidelityV13Css, /Home v14\.1 · acabamento óptico do cabeçalho[\s\S]*\.px-mobile-brand-home\{[\s\S]*place-items:center!important[\s\S]*padding:0!important/,
+  'Tile da marca deve centralizar fisicamente o logo sem padding residual.');
+assert.match(homeFidelityV13Css, /\.px-mobile-brand-home img\{[\s\S]*object-position:50% 50%!important[\s\S]*translate3d\(0,-\.75px,0\)!important/,
+  'Marca deve receber correção óptica vertical sem deslocamento lateral.');
+assert.match(homeFidelityV13Css, /\.px-native-home-period\{[\s\S]*min-width:150px!important[\s\S]*width:100%!important/,
+  'Período deve receber prioridade de largura no cabeçalho.');
+assert.match(homeFidelityV13Css, /\.px-native-home-period-copy strong\{[\s\S]*white-space:nowrap!important[\s\S]*text-overflow:clip!important/,
+  'Competência principal não deve ser truncada com reticências no cabeçalho.');
+assert.match(homeFidelityV13Css, /@media\(max-width:370px\)[\s\S]*\.px-home-user-identity>span\{[\s\S]*display:none!important/,
+  'Em telas estreitas o nome deve ceder espaço antes de sacrificar o período.');
 assert.match(operationalHome, /meg-current-v14-quick[\s\S]*Ações rápidas[\s\S]*Cartões[\s\S]*Pagar conta[\s\S]*Fluxo de caixa[\s\S]*Ver relatórios/,
   'Home v14 deve preencher a área útil com as quatro ações rápidas aprovadas.');
 assert.doesNotMatch(operationalHome, /meg-current-v14-quick[\s\S]*Novo lançamento/,
