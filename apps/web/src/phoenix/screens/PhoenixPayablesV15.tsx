@@ -614,6 +614,8 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent }: { data: Ph
       description: event.description,
       dueDate: isoDay(event.date),
       openAmount: 0,
+      installmentNo: 1,
+      installmentQty: 1,
       categoryName: event.category?.name || 'Despesa',
       group: event.sourceDetails?.group || '',
       paymentMethod: event.paymentMethod?.name || event.sourceDetails?.paymentMethod || '',
