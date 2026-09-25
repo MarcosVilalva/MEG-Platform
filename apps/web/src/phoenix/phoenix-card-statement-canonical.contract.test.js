@@ -8,6 +8,7 @@ const readScreens = readFileSync(new URL('./screens/PhoenixReadScreens.tsx', imp
 const cardProjection = readFileSync(new URL('./data/card-movement-projection.ts', import.meta.url), 'utf8');
 const cardDates = readFileSync(new URL('./data/card-dates.ts', import.meta.url), 'utf8');
 const cardsMobileV7 = readFileSync(new URL('./phoenix-cards-mobile-v7.css', import.meta.url), 'utf8');
+const cardsMobileV8 = readFileSync(new URL('./phoenix-cards-mobile-v8.css', import.meta.url), 'utf8');
 
 assert.match(cardsGrid, /tx\.amount !== undefined \? parseNumber\(tx\.amount\) : parseNumber\(tx\.expenseAmount\)/,
   'Cartões devem preservar o sinal do amount legado antes do expenseAmount absoluto');
@@ -86,24 +87,38 @@ assert.match(cardDates, /cardCompetenceFromDueDate[\s\S]*dueDate\.slice\(0, 7\)/
   'Competência visual deve ser derivada do vencimento final já ajustado.');
 
 
-assert.match(cardsGrid, /px-cards-native-v7/,
-  'APK deve usar a composição Cartões V7 sem alterar a visão desktop.');
-assert.match(cardsGrid, /onClick=\{\(\) => selectCard\(card\.id\)\}/,
-  'No APK o toque simples deve selecionar o cartão antes de abrir sua central.');
-assert.match(cardsGrid, /px-cards-approved-open[\s\S]*Abrir central/,
-  'APK deve oferecer ação explícita para abrir a Central do cartão selecionado.');
-assert.match(cardsMobileV7, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important;[\s\S]*grid-template-rows:repeat\(2,minmax\(0,1fr\)\)!important;/,
-  'Tela principal móvel deve manter os quatro cartões em composição 2x2 sem lista vertical.');
-assert.match(cardsMobileV7, /\.px-main-cards>\.px-content-cards\{[\s\S]*overflow:hidden!important/,
-  'Tela principal de Cartões não deve possuir rolagem externa.');
-assert.match(cardsMobileV7, /\.px-card-command-approved-data\{[\s\S]*overflow:hidden!important/,
+assert.match(cardsGrid, /px-cards-native-v8/,
+  'APK deve usar a composição Cartões V8 sem alterar a visão desktop.');
+assert.match(cardsGrid, /px-cards-v8-carousel-shell[\s\S]*focusNativeCard/,
+  'Tela móvel deve oferecer carrossel de cartões com seleção explícita.');
+assert.match(cardsGrid, /px-cards-v8-kpis[\s\S]*Limite total[\s\S]*Disponível[\s\S]*Fatura atual[\s\S]*Vencimento/,
+  'Cockpit móvel deve mostrar somente os quatro KPIs essenciais sob o cartão.');
+assert.match(cardsGrid, /px-cards-v8-recent[\s\S]*Lançamentos da fatura[\s\S]*cardRowPresentation/,
+  'Tela principal deve agrupar lançamentos por contexto visual em vez de expor classificação genérica.');
+assert.match(cardsGrid, /function cardRowPresentation[\s\S]*Internet[\s\S]*Viagem[\s\S]*Streaming[\s\S]*Mercado[\s\S]*Farmácia/,
+  'Apresentação dos lançamentos deve reconhecer categorias amigáveis e ícones contextuais.');
+assert.match(cardsGrid, /name === 'wifi'/,
+  'Internet deve possuir ícone próprio no agrupamento móvel.');
+assert.match(cardsGrid, /px-cards-v8-command-recent[\s\S]*Lançamentos recentes/,
+  'Resumo da Central móvel deve priorizar lançamentos recentes, como no mock aprovado.');
+assert.match(cardsMobileV8, /\.px-main-cards>\.px-content-cards\{[\s\S]*overflow:hidden!important/,
+  'Tela principal de Cartões V8 não deve possuir rolagem externa.');
+assert.match(cardsMobileV8, /\.px-cards-v8-carousel\{[\s\S]*scroll-snap-type:x mandatory!important/,
+  'Carrossel móvel deve usar snap central para experiência de app bancário.');
+assert.match(cardsMobileV8, /\.px-cards-v8-art>img:not\(\.px-brand-asset\)\{[\s\S]*object-fit:contain!important/,
+  'Arte dos cartões deve permanecer inteira no enquadramento, sem corte.');
+assert.match(cardsMobileV8, /\.px-cards-v8-kpis\{[\s\S]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)!important/,
+  'Quatro KPIs devem caber em uma única faixa compacta.');
+assert.match(cardsMobileV8, /\.px-card-command-approved-cardbox\{[\s\S]*display:block!important/,
+  'Central móvel deve exibir o cartão protagonista.');
+assert.match(cardsMobileV8, /\.px-card-command-approved-kpis>\.icon-kpi:nth-child\(2\)[\s\S]*nth-child\(4\)[\s\S]*nth-child\(5\)/,
+  'Central móvel deve reduzir KPIs aos três principais da referência aprovada.');
+assert.match(cardsMobileV8, /\.px-card-command-approved-data\{[\s\S]*overflow:hidden!important/,
   'Central do Cartão não deve rolar como um todo.');
-assert.match(cardsMobileV7, /\.px-card-command-approved-table-wrap\{[\s\S]*overflow-y:auto!important/,
-  'Somente a área da tabela da Central pode ter rolagem vertical.');
-assert.match(cardsMobileV7, /\.px-card-command-approved-tabs\{[\s\S]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important[\s\S]*overflow:hidden!important/,
-  'As cinco abas da Central devem permanecer visíveis sem carrossel horizontal.');
-assert.match(cardsMobileV7, /\.px-cards-approved-split strong\{[\s\S]*white-space:nowrap!important/,
-  'Valores monetários dos cartões não podem quebrar ou ser truncados.');
+assert.match(cardsMobileV8, /\.px-card-command-approved-table-wrap\{[\s\S]*overflow-y:auto!important/,
+  'Somente a lista detalhada de lançamentos da Central pode rolar verticalmente.');
+assert.match(cardsMobileV8, /\.px-card-command-approved-tabs\{[\s\S]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/,
+  'As cinco abas da Central devem permanecer visíveis simultaneamente.');
 
 assert.match(readScreens, /creditAwarePendingModel/,
   'Compatibilidade de crédito legado deve continuar ativa durante a transição');
