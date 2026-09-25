@@ -3915,3 +3915,41 @@ body.meg-operational-mobile .px-home-current-v9 .px-approved-summary-v11 .result
     font-size:clamp(9px,2.45vw,10.7px)!important;
   }
 }
+
+
+/* APP final · cabeçalho compacto canônico + composição Home aprovada */
+@media (max-width:760px){
+  body.meg-operational-mobile .px-topbar{
+    min-height:56px!important;
+    padding:calc(5px + env(safe-area-inset-top)) 10px 5px!important;
+  }
+  body.meg-operational-mobile .px-top-left,
+  body.meg-operational-mobile .px-top-left-home-compact{
+    min-width:0!important;
+    gap:8px!important;
+    align-items:center!important;
+  }
+  body.meg-operational-mobile .px-mobile-brand-home{
+    width:46px!important;height:46px!important;min-width:46px!important;
+    padding:3px!important;border-radius:13px!important;
+  }
+  body.meg-operational-mobile .px-mobile-brand-home img{
+    width:40px!important;height:40px!important;max-width:none!important;object-fit:contain!important;
+  }
+  body.meg-operational-mobile .px-native-home-period,
+  body.meg-operational-mobile .px-period-summary{
+    min-width:0!important;max-width:154px!important;min-height:42px!important;
+    padding:4px 9px!important;border-radius:13px!important;
+  }
+  body.meg-operational-mobile .px-native-home-period-icon{width:31px!important;height:31px!important;min-width:31px!important}
+  body.meg-operational-mobile .px-native-home-period-copy strong{font-size:11px!important}
+  body.meg-operational-mobile .px-native-home-period-copy small{font-size:7.5px!important}
+  body.meg-operational-mobile .px-top-right{margin-left:auto!important;gap:5px!important}
+  body.meg-operational-mobile .px-user-pill{width:40px!important;height:40px!important;min-width:40px!important}
+  body.meg-operational-mobile .px-top-quick-launch{display:none!important}
+
+  body.meg-operational-mobile .meg-current-v13-flow{margin-bottom:0!important}
+  body.meg-operational-mobile .meg-current-v13-result{
+    min-height:50px!important;margin-top:-1px!important;padding-top:6px!important;padding-bottom:6px!important;
+  }
+}
