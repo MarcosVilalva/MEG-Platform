@@ -604,8 +604,8 @@ assert.match(homeFidelityV13Css, /\.meg-current-v13-heading\{[\s\S]*min-height:6
   'Cabeçalho financeiro deve usar a escala compacta v13.1 validada no aparelho.');
 assert.match(phoenixApp, /function HomeHeaderIdentity[\s\S]*px-home-user-identity[\s\S]*PhoenixProfileAvatar/,
   'Home Android deve exibir o avatar sincronizado do usuário no cabeçalho.');
-assert.match(phoenixApp, /HomeHeaderIdentity data=\{data\}[\s\S]*px-native-home-period/,
-  'Avatar do usuário deve ficar integrado ao topo antes do seletor de período.');
+assert.match(phoenixApp, /px-top-left px-top-left-home-compact[\s\S]*px-native-home-period[\s\S]*HomeHeaderIdentity data=\{data\}/,
+  'Cabeçalho da Home deve manter período central e perfil à direita.');
 assert.match(phoenixApp, /function HomeHeaderIdentity\(\{ data, onOpenMenu \}[\s\S]*aria-label=\{\`Abrir perfil de \$\{data\.user\.name\}\`\}[\s\S]*onClick=\{onOpenMenu\}/,
   'Avatar da Home deve permanecer visível e funcionar como acesso ao perfil/menu.');
 assert.match(phoenixApp, /function HomeHeaderIdentity[\s\S]*const firstName = data\.user\.name\.trim\(\)\.split\(\/\\s\+\/\)\[0\][\s\S]*<strong>\{firstName\}<\/strong>/,
