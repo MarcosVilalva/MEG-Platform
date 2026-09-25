@@ -1804,3 +1804,165 @@ body.meg-operational-mobile .meg-current-v14-quick-grid>button>strong{
     grid-template-columns:34px max-content 32px minmax(104px,1fr)!important;
   }
 }
+
+
+/* ==========================================================================
+   Home v14.1 · acabamento óptico do cabeçalho
+   - logo realmente centralizado no tile;
+   - usuário reduzido ao primeiro nome;
+   - período é a prioridade de largura e deve permanecer legível por inteiro.
+   ========================================================================== */
+body.meg-operational-mobile .px-main-home .px-top-left:has(.px-home-user-identity){
+  grid-template-columns:38px 52px 76px minmax(150px,1fr)!important;
+  gap:6px!important;
+  align-items:center!important;
+}
+body.meg-operational-mobile .px-main-home .px-mobile-brand-home{
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  min-height:38px!important;
+  padding:0!important;
+  margin:0!important;
+  display:grid!important;
+  place-items:center!important;
+  align-self:center!important;
+  justify-self:center!important;
+  line-height:0!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-main-home .px-mobile-brand-home img{
+  width:31px!important;
+  height:31px!important;
+  max-width:31px!important;
+  max-height:31px!important;
+  margin:0!important;
+  padding:0!important;
+  display:block!important;
+  object-fit:contain!important;
+  object-position:50% 50%!important;
+  transform:translate3d(0,-.75px,0)!important;
+  transform-origin:center!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-title{
+  width:52px!important;
+  min-width:52px!important;
+  max-width:52px!important;
+}
+body.meg-operational-mobile .px-main-home .px-top-title strong{
+  font-size:15px!important;
+  letter-spacing:-.02em!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+}
+body.meg-operational-mobile .px-home-user-identity{
+  width:76px!important;
+  min-width:76px!important;
+  max-width:76px!important;
+  height:38px!important;
+  padding-left:6px!important;
+  grid-template-columns:32px minmax(0,1fr)!important;
+  gap:5px!important;
+  align-self:center!important;
+}
+body.meg-operational-mobile .px-home-user-avatar{
+  width:32px!important;
+  height:32px!important;
+  min-width:32px!important;
+}
+body.meg-operational-mobile .px-home-user-identity strong{
+  font-size:8.8px!important;
+  line-height:1!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+}
+body.meg-operational-mobile .px-home-user-identity small{
+  display:none!important;
+}
+body.meg-operational-mobile .px-main-home .px-native-home-period{
+  min-width:150px!important;
+  max-width:none!important;
+  width:100%!important;
+  height:44px!important;
+  min-height:44px!important;
+  align-self:center!important;
+  justify-self:stretch!important;
+  grid-template-columns:32px minmax(0,1fr) 12px!important;
+  padding:4px 7px 4px 5px!important;
+}
+body.meg-operational-mobile .px-main-home .px-native-home-period-copy{
+  min-width:0!important;
+  overflow:visible!important;
+}
+body.meg-operational-mobile .px-main-home .px-native-home-period-copy strong{
+  display:block!important;
+  max-width:none!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  white-space:nowrap!important;
+  font-size:9.4px!important;
+  letter-spacing:-.015em!important;
+}
+body.meg-operational-mobile .px-main-home .px-native-home-period-copy small{
+  display:block!important;
+  overflow:hidden!important;
+  text-overflow:clip!important;
+  white-space:nowrap!important;
+  font-size:7px!important;
+}
+body.meg-operational-mobile .px-main-home .px-native-home-period>b{
+  justify-self:end!important;
+}
+
+/* Larguras menores: a identidade vira avatar somente antes de sacrificar o período. */
+@media(max-width:370px){
+  body.meg-operational-mobile .px-main-home .px-top-left:has(.px-home-user-identity){
+    grid-template-columns:36px 47px 32px minmax(144px,1fr)!important;
+    gap:5px!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-mobile-brand-home{
+    width:36px!important;
+    height:36px!important;
+    min-width:36px!important;
+    min-height:36px!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-mobile-brand-home img{
+    width:29px!important;
+    height:29px!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-top-title{
+    width:47px!important;
+    min-width:47px!important;
+    max-width:47px!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-top-title strong{
+    font-size:14px!important;
+  }
+  body.meg-operational-mobile .px-home-user-identity{
+    width:32px!important;
+    min-width:32px!important;
+    max-width:32px!important;
+    height:34px!important;
+    padding:0!important;
+    grid-template-columns:32px!important;
+    border-left:0!important;
+  }
+  body.meg-operational-mobile .px-home-user-identity>span{
+    display:none!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-native-home-period{
+    min-width:144px!important;
+    height:42px!important;
+    min-height:42px!important;
+    grid-template-columns:30px minmax(0,1fr) 11px!important;
+    gap:4px!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-native-home-period-icon{
+    width:30px!important;
+    height:30px!important;
+  }
+  body.meg-operational-mobile .px-main-home .px-native-home-period-copy strong{
+    font-size:8.7px!important;
+  }
+}
