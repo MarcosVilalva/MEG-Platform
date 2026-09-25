@@ -35,6 +35,7 @@ import './phoenix-home-period-mobile.css';
 import './phoenix-home-fidelity-v12.css';
 import './phoenix-home-fidelity-v13.css';
 import './phoenix-layers.css';
+import '../mobile/meg-mobile-premium.css';
 
 const loadMovementsModule = () => import('./screens/PhoenixMovementsV15');
 const loadPayablesModule = () => import('./screens/PhoenixReadScreens');
