@@ -21,7 +21,7 @@ assert.doesNotMatch(mobile, /Phoenix(?:Sidebar|NavIcon|Reference|OperationalMobi
   'Reconstrução mobile final não pode importar componentes visuais Phoenix anteriores.');
 assert.doesNotMatch(phoenix, /PhoenixMobileReferenceScreens/,
   'Shell não pode reintroduzir a implementação intermediária das três telas.');
-assert.match(phoenix, /if \(nativeOperational && viewData && \['home','movements','cards','payables','history','cashflow','analytics'\]\.includes\(view\)\)[\s\S]*<MegMobileFinal[\s\S]*return <div className="phoenix-v15"/,
+assert.match(phoenix, /if \(nativeOperational && viewData && \['home','movements','cards','payables','history','cashflow','analytics','settings'\]\.includes\(view\)\)[\s\S]*<MegMobileFinal[\s\S]*return <div className="phoenix-v15"/,
   'Telas operacionais do APK devem retornar a árvore mobile clean-room antes do shell Phoenix antigo.');
 assert.match(mobile, /cards\.concat\(cards, cards\)/,
   'Carrossel de cartões deve possuir cópias circulares para rolagem infinita real.');
