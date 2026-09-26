@@ -96,6 +96,7 @@ export function MegMobileMovements({
     .filter((event) => !normalized || [
       event.description,
       event.category?.name,
+      event.account?.name,
       event.paymentMethod?.name,
       event.sourceDetails?.group,
       event.sourceDetails?.paymentMethod,
@@ -105,9 +106,9 @@ export function MegMobileMovements({
 
   return <main className="meg3-screen meg3-movements" data-meg-fixed-screen="true">
     <header className="meg3-title-block meg3-movements-title">
-      <span>LANÇAMENTOS</span>
+      <span>CONTROLE FINANCEIRO</span>
       <h1>Lançamentos</h1>
-      <p>{rows.length.toLocaleString('pt-BR')} registros no período · toque para abrir</p>
+      <p>Consulte cada lançamento com categoria, conta e forma de pagamento.</p>
     </header>
 
     <nav className="meg3-movement-tabs" aria-label="Tipo de lançamento">
@@ -127,28 +128,26 @@ export function MegMobileMovements({
     </section>
 
     <section className="meg3-event-list" data-meg-scroll-region="true">
-      {rows.map((event, index) => {
+      {rows.map((event) => {
         const signed = signedAmount(event);
         const tone = movementTone(event);
         const category = event.category?.name || event.sourceDetails?.group || (signed >= 0 ? 'Receitas' : 'Despesas');
+        const account = event.account?.name || event.sourceDetails?.accountName || '';
         const method = event.paymentMethod?.name || event.sourceDetails?.paymentMethod || '';
-        const date = shortDate(event.date);
-        const previousDate = index > 0 ? shortDate(rows[index - 1].date) : '';
-        return <div className="meg3-event-entry" key={event.id}>
-          {date !== previousDate ? <small className="meg3-event-date-group">{date}</small> : null}
-          <button className={`meg3-event-card ${tone} kind-${mobileMovementKind(event)}`} type="button" onClick={() => onOpenEvent(event)}>
-            <span className="meg3-event-icon"><EventContextGlyph event={event}/></span>
-            <span className="meg3-event-copy">
-              <small>{statusLabel(event.status)}</small>
-              <strong>{event.description}</strong>
-              <em>{category}{method ? ` · ${method}` : ''}</em>
-            </span>
-            <span className="meg3-event-value">
-              <b>{signed > 0 ? '+' : '-'}{money.format(Math.abs(signed))}</b>
-              <i>›</i>
-            </span>
-          </button>
-        </div>;
+        const detail = [category, account].filter(Boolean).join(' · ');
+        return <button className={`meg3-event-card ${tone} kind-${mobileMovementKind(event)}`} type="button" key={event.id} onClick={() => onOpenEvent(event)}>
+          <span className="meg3-event-icon"><EventContextGlyph event={event}/></span>
+          <span className="meg3-event-copy">
+            <small>{shortDate(event.date)} · {statusLabel(event.status)}</small>
+            <strong>{event.description}</strong>
+            <em>{detail}</em>
+            {method ? <i className="meg3-payment-chip">{method}</i> : <i className="meg3-payment-chip muted">Forma não informada</i>}
+          </span>
+          <span className="meg3-event-value">
+            <b>{signed > 0 ? '+' : '-'}{money.format(Math.abs(signed))}</b>
+            <i>›</i>
+          </span>
+        </button>;
       })}
       {!rows.length ? <div className="meg3-empty">Nenhum lançamento neste filtro.</div> : null}
     </section>
