@@ -100,6 +100,18 @@ assert.match(
 
 assert.match(
   css,
+  /\.meg-loading-layout\{[\s\S]*grid-template-rows:minmax\(0,1\.36fr\) minmax\(0,\.82fr\) auto auto/,
+  'A composição deve manter marca, ícones, progresso e benefícios em quatro zonas compactas como na prancha 04.',
+);
+
+assert.match(
+  css,
+  /\.meg-loading-brand\{[\s\S]*width:clamp\(198px,59vw,252px\)/,
+  'A marca principal deve ocupar a proporção visual dominante da prancha aprovada.',
+);
+
+assert.match(
+  css,
   /\.meg-loading-features\{[\s\S]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/,
   'Os quatro benefícios inferiores devem permanecer em uma grade fixa e responsiva.',
 );
