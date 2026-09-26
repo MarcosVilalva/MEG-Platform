@@ -927,8 +927,12 @@ assert.doesNotMatch(previewMain, /approved-v5|px-preview-boot-v5|Carregando seu 
   'Boot principal não pode reintroduzir a estrutura visual V5 antiga.');
 assert.match(mobileLoading, /data-meg-loading="validated-cleanroom"/,
   'Novo loading deve declarar explicitamente o contrato visual clean-room.');
-assert.match(mobileLoading, /meg-loading-lockup\.svg[\s\S]*SUAS FINANÇAS[\s\S]*EM UM SÓ LUGAR[\s\S]*Carregando sua experiência[\s\S]*CONTROLE[\s\S]*ORGANIZAÇÃO[\s\S]*TRANQUILIDADE[\s\S]*RESULTADOS/,
-  'Loading deve seguir a composição e os textos da quarta prancha aprovada.');
+assert.match(mobileLoading, /meg-loading-lockup\.svg[\s\S]*SUAS FINANÇAS[\s\S]*EM UM SÓ LUGAR/,
+  'Loading deve preservar a marca e o slogan da quarta prancha aprovada.');
+assert.match(mobileLoading, /Carregando sua experiência/,
+  'Loading deve preservar a mensagem de progresso da quarta prancha aprovada.');
+assert.match(mobileLoading, /CONTROLE[\s\S]*ORGANIZAÇÃO[\s\S]*TRANQUILIDADE[\s\S]*RESULTADOS/,
+  'Loading deve preservar os quatro pilares da quarta prancha aprovada.');
 assert.doesNotMatch(mobileLoading, /px-preview-boot-v5-ring|Carregando seu ambiente|Organizando suas finanças para o seu dia a dia/i,
   'Loading final não pode reaproveitar anéis, texto do V5 ou a composição intermediária.');
 assert.match(mobileLoadingCss, /\.meg-loading-screen\{[\s\S]*position:fixed[\s\S]*height:100dvh[\s\S]*overflow:hidden/,
