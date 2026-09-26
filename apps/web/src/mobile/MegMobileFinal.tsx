@@ -431,12 +431,28 @@ function InfiniteCarousel({ data, activeId, onActiveId }: { data: PhoenixReadMod
           key={card.id + '-' + index}
           className={className}
           data-copy={index}
-          style={art ? { backgroundImage: 'url("' + art + '")' } : { background: card.color || '#073f82' }}
+          data-card-identity={cardName(card.name)}
+          style={!art ? { background: card.color || '#073f82' } : undefined}
           onClick={(event) => {
             onActiveId(card.id);
             event.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
           }}
-        >{art ? null : <><strong>{cardName(card.name)}</strong><small>•••• {card.lastFour || '0000'}</small></>}</button>;
+        >
+          <span className="meg2-card-art-fallback" aria-hidden={Boolean(art)}>
+            <strong>{cardName(card.name)}</strong>
+            <small>•••• {card.lastFour || '0000'}</small>
+          </span>
+          {art ? <img
+            src={art}
+            alt={cardName(card.name)}
+            loading="eager"
+            decoding="async"
+            onError={(event) => {
+              event.currentTarget.hidden = true;
+              event.currentTarget.parentElement?.classList.add('asset-failed');
+            }}
+          /> : null}
+        </button>;
       })}
     </div>
     <div className="meg2-dots">{cards.map((card) => <span key={card.id} className={card.id === activeId ? 'active' : ''}/>)}</div>
