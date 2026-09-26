@@ -76,37 +76,35 @@ export function MegMobileLoading({
       </div>
 
       <section className="meg-loading-layout">
-        <div className="meg-loading-hero">
-          <div className="meg-loading-brand-stage">
-            <img
-              className="meg-loading-brand"
-              src={asset('brand/meg-loading-lockup.svg')}
-              alt="MEG Finanças"
-            />
-            <p className="meg-loading-tagline">
-              SUAS FINANÇAS<br />
-              EM UM SÓ LUGAR
-            </p>
-          </div>
+        <div className="meg-loading-brand-stage">
+          <img
+            className="meg-loading-brand"
+            src={asset('brand/meg-loading-lockup.svg')}
+            alt="MEG Finanças"
+          />
+          <p className="meg-loading-tagline">
+            SUAS FINANÇAS<br />
+            EM UM SÓ LUGAR
+          </p>
+        </div>
 
-          <div className="meg-loading-floating" aria-hidden="true">
-            <span className="tile tile-chart"><FeatureIcon name="organization" /></span>
-            <span className="tile tile-card">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9h18M7 15h4"/>
-              </svg>
-            </span>
-            <span className="tile tile-home">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M9.5 20v-6h5v6"/>
-              </svg>
-            </span>
-            <span className="tile tile-pie">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.6A9 9 0 0 1 20.4 9H15z"/>
-              </svg>
-            </span>
-          </div>
+        <div className="meg-loading-floating" aria-hidden="true">
+          <span className="tile tile-chart"><FeatureIcon name="organization" /></span>
+          <span className="tile tile-card">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9h18M7 15h4"/>
+            </svg>
+          </span>
+          <span className="tile tile-home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M9.5 20v-6h5v6"/>
+            </svg>
+          </span>
+          <span className="tile tile-pie">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.6A9 9 0 0 1 20.4 9H15z"/>
+            </svg>
+          </span>
         </div>
 
         <div className="meg-loading-progress-block">
