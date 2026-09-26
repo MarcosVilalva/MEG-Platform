@@ -5,6 +5,8 @@ const preview = readFileSync(new URL('../phoenix/preview-main.tsx', import.meta.
 const component = readFileSync(new URL('./MegMobileLoading.tsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./meg-mobile-loading.css', import.meta.url), 'utf8');
 const legacyBootCss = readFileSync(new URL('../phoenix/preview-boot.css', import.meta.url), 'utf8');
+const androidStyles = readFileSync(new URL('../../../../android/app/src/main/res/values/styles.xml', import.meta.url), 'utf8');
+const mainActivity = readFileSync(new URL('../../../../android/app/src/main/java/br/com/megfinancas/app/MainActivity.java', import.meta.url), 'utf8');
 
 assert.match(
   preview,
@@ -112,6 +114,18 @@ assert.doesNotMatch(
   css,
   /(?:-webkit-)?backdrop-filter\s*:|(^|[;{])\s*filter\s*:/m,
   'O loading não pode depender de filtros de composição instáveis no Android WebView.',
+);
+
+assert.match(
+  androidStyles,
+  /android:windowLightStatusBar">false<[\s\S]*android:windowLightNavigationBar">false</,
+  'O tema Android deve usar ícones claros nas barras do sistema sobre o fundo escuro do MEG.',
+);
+
+assert.match(
+  mainActivity,
+  /setSystemBarsAppearance\([\s\S]*APPEARANCE_LIGHT_STATUS_BARS[\s\S]*APPEARANCE_LIGHT_NAVIGATION_BARS/,
+  'O runtime Android deve limpar explicitamente a aparência de ícones escuros ao retomar o app.',
 );
 
 console.log('Contrato do loading mobile clean-room validado.');
