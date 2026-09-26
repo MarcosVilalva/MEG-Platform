@@ -85,19 +85,21 @@ function asset(path: string) {
 
 function cardArt(name: string) {
   const normalized = String(name || '').toLowerCase();
-  if (normalized.includes('mercado')) return asset('assets/cards/approved-v6/mercado.webp');
-  if (normalized.includes('latam')) return asset('assets/cards/approved-v6/latam.webp');
+  if (normalized.includes('mercado') || normalized.includes('meli')) return asset('assets/cards/mercado-pago-visual.svg');
+  if (normalized.includes('latam')) return asset('assets/cards/latam-pass-platinum.webp');
   if (normalized.includes('azul')) return asset('assets/cards/approved-v6/azul.webp');
-  if (normalized.includes('riachuelo')) return asset('assets/cards/approved-v6/riachuelo.webp');
+  if (normalized.includes('riachuelo') || normalized.includes('midway')) return asset('assets/cards/riachuelo-mastercard-visual.svg');
+  if (normalized.includes('nubank')) return asset('assets/cards/nubank-visual.svg');
   return '';
 }
 
 function cardName(name: string) {
   const normalized = String(name || '').toLowerCase();
-  if (normalized.includes('mercado')) return 'Mercado Pago Visa';
+  if (normalized.includes('mercado') || normalized.includes('meli')) return 'Mercado Pago Visa';
   if (normalized.includes('latam')) return 'LATAM PASS Itaú Mastercard';
   if (normalized.includes('azul')) return 'Azul Visa';
-  if (normalized.includes('riachuelo')) return 'Riachuelo Midway';
+  if (normalized.includes('riachuelo') || normalized.includes('midway')) return 'Riachuelo Midway';
+  if (normalized.includes('nubank')) return 'Nubank';
   return name || 'Cartão';
 }
 
@@ -328,7 +330,7 @@ function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: 
   const income = periodMode === 'month' ? Number(data.summary.realizedIncome || 0) : specialIncome;
   const expense = periodMode === 'month' ? Number(data.summary.realizedExpense || 0) : specialExpense;
   const result = periodMode === 'month' ? Number(data.summary.realizedResult || 0) : income - expense;
-  const title = periodMode === 'all' ? 'Todo o histórico' : periodMode === 'range' ? (periodLabel || 'Intervalo selecionado') : compactMonth(data.month);
+  const title = periodMode === 'all' ? 'Todo o histórico' : periodMode === 'range' ? (periodLabel || 'Intervalo selecionado') : monthLabel(data.month);
 
   return <main className="meg2-main meg2-home" data-meg-fixed-screen="true">
     <section className="meg2-title">
