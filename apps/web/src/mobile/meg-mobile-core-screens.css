@@ -21,7 +21,7 @@
   min-height:72px;
   border:1px solid rgba(70,220,211,.18);
   border-radius:16px;
-  padding:10px;
+  padding:8px 6px;
   background:linear-gradient(155deg,rgba(5,65,66,.86),rgba(2,45,47,.82));
   box-shadow:inset 0 0 18px rgba(20,239,226,.025),0 8px 18px rgba(0,0,0,.10);
   display:grid;
@@ -31,7 +31,17 @@
 .meg3-kpis article>span{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:rgba(31,226,214,.08);color:#43e9df}
 .meg3-kpis svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .meg3-kpis small{color:#a9c2bf;font-size:9px}
-.meg3-kpis strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:clamp(13px,3.8vw,18px)}
+.meg3-kpis strong{
+  min-width:0;
+  max-width:100%;
+  white-space:nowrap;
+  overflow:visible;
+  text-overflow:clip;
+  font-size:clamp(10px,3.05vw,15px);
+  line-height:1;
+  letter-spacing:-.025em;
+  font-variant-numeric:tabular-nums;
+}
 .meg3-kpis .income strong,.meg3-kpis .income>span{color:#54e0b0}
 .meg3-kpis .expense strong,.meg3-kpis .expense>span{color:#ff778a}
 .meg3-kpis .positive strong{color:#45e7df}
