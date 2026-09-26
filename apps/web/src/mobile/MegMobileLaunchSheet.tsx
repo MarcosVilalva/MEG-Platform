@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { MegMobilePicker, type MegMobilePickerOption } from './MegMobilePicker';
+import { loadMegMobileHistorySuggestions, type MegMobileHistorySuggestion } from './meg-mobile-description-history';
 import { cardDueDateForStatement, cardMonthPlus, cardStatementMonthForPurchase } from '../phoenix/data/card-dates';
 import {
   phoenixWriteMessage,
@@ -119,6 +120,10 @@ export function MegMobileLaunchSheet({
   const [message, setMessage] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [installmentPreviewOpen, setInstallmentPreviewOpen] = useState(false);
+  const [historySuggestions, setHistorySuggestions] = useState<MegMobileHistorySuggestion[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyStatus, setHistoryStatus] = useState('');
 
   const accounts = useMemo(() => data.accounts.filter((item) => item.isActive), [data.accounts]);
   const methods = useMemo(() => data.paymentMethods.filter((item) => item.isActive), [data.paymentMethods]);
@@ -147,6 +152,62 @@ export function MegMobileLaunchSheet({
     }));
 
   const selectedMethod = methods.find((item) => item.id === paymentMethodId);
+
+  useEffect(() => {
+    if (event || mode === 'benefit' || !historyOpen) {
+      setHistorySuggestions([]);
+      setHistoryLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setHistoryLoading(true);
+      void loadMegMobileHistorySuggestions(mode, description)
+        .then((items) => {
+          if (!cancelled) setHistorySuggestions(items);
+        })
+        .catch(() => {
+          if (!cancelled) setHistorySuggestions([]);
+        })
+        .finally(() => {
+          if (!cancelled) setHistoryLoading(false);
+        });
+    }, 70);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [description, event, historyOpen, mode]);
+
+  function useHistorySuggestion(suggestion: MegMobileHistorySuggestion) {
+    if (suggestion.type !== mode || event) return;
+
+    setDescription(suggestion.label);
+    setHistoryOpen(false);
+    setHistorySuggestions([]);
+
+    const filled: string[] = [];
+    if (suggestion.categoryId && categories.some((item) => item.id === suggestion.categoryId)) {
+      setCategoryId(suggestion.categoryId);
+      filled.push('categoria');
+    }
+    if (suggestion.paymentMethodId && methods.some((item) => item.id === suggestion.paymentMethodId)) {
+      setPaymentMethodId(suggestion.paymentMethodId);
+      filled.push(mode === 'income' ? 'forma de recebimento' : 'forma de pagamento');
+    }
+    if (suggestion.accountId && accounts.some((item) => item.id === suggestion.accountId)) {
+      setAccountId(suggestion.accountId);
+      filled.push('conta');
+    }
+
+    setHistoryStatus(
+      filled.length
+        ? `Histórico aplicado: ${filled.join(' · ')}. Revise antes de salvar.`
+        : 'Descrição recuperada do histórico. Revise os demais campos antes de salvar.'
+    );
+  }
   const creditMethod = methods.find((item) => isCreditMethod(item));
   const credit = mode === 'expense' && (Boolean(cardId) || isCreditMethod(selectedMethod) || Boolean(cardMeta));
   const selectedCard = data.cards.find((item) => item.id === cardId);
@@ -306,10 +367,54 @@ export function MegMobileLaunchSheet({
         </div> : null}
 
         <div className="meg3-form-grid meg3-form-grid-faithful">
-          <label className="wide meg3-text-field">
-            <span>Descrição</span>
-            <input value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Ex.: Internet, mercado, salário"/>
-          </label>
+          <div className="wide meg3-smart-description">
+            <label className="meg3-text-field">
+              <span>Descrição</span>
+              <input
+                value={description}
+                onFocus={() => {
+                  if (!event && mode !== 'benefit') setHistoryOpen(true);
+                }}
+                onChange={(event) => {
+                  setDescription(event.target.value);
+                  setHistoryStatus('');
+                  if (!event && mode !== 'benefit') setHistoryOpen(true);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') setHistoryOpen(false);
+                }}
+                placeholder="Digite para pesquisar no seu histórico"
+                autoComplete="off"
+                aria-autocomplete="list"
+                aria-expanded={historyOpen && (historyLoading || historySuggestions.length > 0)}
+              />
+            </label>
+
+            {!event && mode !== 'benefit' && historyOpen ? <div className="meg3-history-suggestions" role="listbox">
+              {historyLoading ? <div className="meg3-history-loading">Buscando no seu histórico…</div> : null}
+              {!historyLoading ? historySuggestions.map((suggestion) => <button
+                type="button"
+                role="option"
+                key={suggestion.key}
+                onPointerDown={(event) => event.preventDefault()}
+                onClick={() => useHistorySuggestion(suggestion)}
+              >
+                <span className="meg3-history-icon" aria-hidden="true">↺</span>
+                <span className="meg3-history-copy">
+                  <strong>{suggestion.label}</strong>
+                  <small>{[
+                    suggestion.occurrences > 1 ? `Usado ${suggestion.occurrences}x` : 'Usado 1x',
+                    suggestion.categoryName || suggestion.categoryGroup || '',
+                    suggestion.paymentMethodName || '',
+                    suggestion.accountName || '',
+                  ].filter(Boolean).join(' · ')}</small>
+                </span>
+              </button>) : null}
+              {!historyLoading && !historySuggestions.length && description.trim() ? <div className="meg3-history-empty">Nenhum lançamento semelhante no histórico.</div> : null}
+            </div> : null}
+
+            {historyStatus ? <small className="meg3-history-status">{historyStatus}</small> : null}
+          </div>
 
           <MegMobilePicker
             className="wide"
