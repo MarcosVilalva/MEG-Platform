@@ -174,8 +174,13 @@ assert.match(launchSheet, /runPhoenixSimpleEventArchive/,
   'Exclusão deve usar o writer de domínio.');
 assert.match(
   launchSheet,
-  /negative[\s\S]*Usar valor negativo[\s\S]*-parseAmount\(amount\)/,
-  'Formulário clean-room deve permitir troca explícita de sinal e preservar o valor negativo no writer.',
+  /Usar valor negativo/,
+  'Formulário clean-room deve oferecer troca explícita de sinal.',
+);
+assert.match(
+  launchSheet,
+  /negative && mode !== 'benefit' \? -parseAmount\(amount\) : parseAmount\(amount\)/,
+  'Troca de sinal deve preservar o valor negativo no writer financeiro.',
 );
 assert.match(
   launchSheet,
