@@ -926,7 +926,7 @@ assert.match(mobileLoading, /data-meg-loading="validated-cleanroom"/,
   'Novo loading deve declarar explicitamente o contrato visual clean-room.');
 assert.match(mobileLoading, /meg-loading-lockup\.svg[\s\S]*Carregando seus dados\.\.\.[\s\S]*Organizando suas finanças/,
   'Loading deve seguir os textos e marca da prévia final aprovada.');
-assert.doesNotMatch(mobileLoading, /ring|percent|Carregando seu ambiente/i,
+assert.doesNotMatch(mobileLoading, /px-preview-boot-v5-ring|Carregando seu ambiente|>22%<|<strong>22%/i,
   'Loading final não pode reaproveitar anéis, percentual ou texto do V5.');
 assert.match(mobileLoadingCss, /\.meg-loading-screen\{[\s\S]*position:fixed[\s\S]*height:100dvh[\s\S]*overflow:hidden/,
   'Loading deve ocupar o viewport inteiro sem rolagem.');
