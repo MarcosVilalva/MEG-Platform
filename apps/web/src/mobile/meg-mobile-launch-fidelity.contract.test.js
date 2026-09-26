@@ -16,7 +16,7 @@ for (const token of ['label="Categoria"', 'Forma de pagamento', 'label="Conta"',
 
 const descriptionIndex = launch.indexOf('>Descrição</span>');
 const categoryIndex = launch.indexOf('label="Categoria"');
-const paymentIndex = launch.indexOf('Forma de pagamento');
+const paymentIndex = launch.indexOf("label={mode === 'income' ? 'Forma de recebimento' : 'Forma de pagamento'}");
 const accountIndex = launch.indexOf('label="Conta"');
 const amountIndex = launch.indexOf('meg3-amount-field');
 const dateIndex = launch.indexOf('Vencimento');
