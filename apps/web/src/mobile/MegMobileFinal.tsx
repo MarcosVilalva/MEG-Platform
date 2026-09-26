@@ -176,7 +176,7 @@ function Header({ data, periodMode, periodLabel, onOpenPeriod, onOpenMenu }: { d
   </header>;
 }
 
-function Dock({ view, pendingCount, onNavigate, onLaunch, onMenu }: { view: MobileView; pendingCount: number; onNavigate: Props['onNavigate']; onLaunch: Props['onLaunch']; onMenu: () => void }) {
+function Dock({ view, pendingCount, menuOpen, onNavigate, onLaunch, onMenu }: { view: MobileView; pendingCount: number; menuOpen: boolean; onNavigate: Props['onNavigate']; onLaunch: Props['onLaunch']; onMenu: () => void }) {
   return <nav className="meg2-dock">
     <button className={view === 'home' ? 'active' : ''} onClick={() => onNavigate('home')}><Icon name="home"/><span>Início</span></button>
     <button onClick={() => onNavigate('movements')}><Icon name="file"/><span>Lançamentos</span></button>
@@ -184,7 +184,7 @@ function Dock({ view, pendingCount, onNavigate, onLaunch, onMenu }: { view: Mobi
     <button className={view === 'payables' ? 'active' : ''} onClick={() => onNavigate('payables')}>
       <span className="meg2-badge-wrap"><Icon name="wallet"/>{pendingCount > 0 ? <b>{pendingCount > 9 ? '9+' : pendingCount}</b> : null}</span><span>Pendentes</span>
     </button>
-    <button onClick={onMenu}><Icon name="menu"/><span>Menu</span></button>
+    <button className={menuOpen ? 'active' : ''} onClick={onMenu}><Icon name="menu"/><span>Menu</span></button>
   </nav>;
 }
 
@@ -614,7 +614,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, 
         {view === 'cards' ? <Cards data={data}/> : null}
         {view === 'payables' ? <Payables data={data} onEditEvent={onEditEvent}/> : null}
       </div>
-      <Dock view={view} pendingCount={pendingCount} onNavigate={onNavigate} onLaunch={onLaunch} onMenu={() => setMenuOpen(true)}/>
+      <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={onNavigate} onLaunch={onLaunch} onMenu={() => setMenuOpen(true)}/>
     </div>
     {menuOpen ? <MenuSheet onClose={() => setMenuOpen(false)} onNavigate={onNavigate} onLogout={onLogout} onCloseApp={onClose}/> : null}
     {periodOpen ? <PeriodSheet data={data} initialMode={periodMode} loading={periodLoading} error={periodError} onClose={() => setPeriodOpen(false)} onSelectMonth={onSelectMonth} onSelectRange={onSelectRange} onSelectAll={onSelectAll}/> : null}
