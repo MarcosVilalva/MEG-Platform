@@ -183,6 +183,10 @@
   box-shadow:0 0 13px rgba(35,235,221,.28);
   transition:width .28s ease;
 }
+.meg-loading-track>span.complete{
+  width:100%!important;
+  transition:none;
+}
 
 .meg-loading-progress-copy{
   display:flex;
