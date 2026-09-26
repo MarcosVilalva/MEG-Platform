@@ -42,8 +42,19 @@
   min-height:42px;border:0;border-radius:11px;background:transparent;color:#a8bfbc;font-weight:800;font-size:11px
 }
 .meg3-form-segment button.active{background:rgba(34,225,213,.12);color:#56eee4;box-shadow:inset 0 0 0 1px rgba(48,235,221,.26)}
-.meg3-form-segment button.active.expense{color:#ff8390}
-.meg3-form-segment button.active.income,.meg3-form-segment button.active.benefit{color:#5be6b5}
+.meg3-form-segment button.active.expense{
+  color:#3a1d24;
+  background:linear-gradient(180deg,#ff9dad,#ff8498);
+  box-shadow:inset 0 0 0 1px rgba(255,194,204,.72)
+}
+.meg3-form-segment button.active.income{
+  color:#07352a;
+  background:linear-gradient(180deg,#7ce8ba,#57d99f)
+}
+.meg3-form-segment button.active.benefit{
+  color:#2d2908;
+  background:linear-gradient(180deg,#f4df69,#dcca42)
+}
 .meg3-form-highlight{
   margin-bottom:12px;padding:13px;border:1px solid rgba(48,231,219,.25);border-radius:18px;
   background:linear-gradient(145deg,rgba(7,78,79,.88),rgba(3,51,53,.90));
@@ -56,8 +67,9 @@
   min-width:0;width:100%;border:0;outline:0;background:transparent;color:#fff;font-size:34px;font-weight:800;letter-spacing:-.03em
 }
 .meg3-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.meg3-form-grid-faithful{grid-template-columns:1fr}
 .meg3-form-grid label{min-width:0;display:grid;gap:5px}
-.meg3-form-grid label.wide{grid-column:1/-1}
+.meg3-form-grid label.wide,.meg3-form-grid>.wide{grid-column:1/-1}
 .meg3-form-grid label>span{color:#96b0ad;font-size:9px;font-weight:700}
 .meg3-form-grid input,.meg3-form-grid select,.meg3-form-grid textarea{
   width:100%;min-width:0;box-sizing:border-box;
@@ -71,6 +83,103 @@
 }
 .meg3-form-grid label.locked{opacity:.88}
 .meg3-form-grid label.locked select{color:#65e1d7;border-color:rgba(47,229,216,.27);background:rgba(9,79,78,.50)}
+.meg3-text-field{
+  padding:0;
+}
+.meg3-text-field>span,
+.meg3-amount-field>span{
+  color:#7fd7d1!important;
+  font-size:8px!important;
+  font-weight:800!important;
+}
+.meg3-text-field input,
+.meg3-text-field textarea{
+  background:linear-gradient(145deg,#064447,#023638)!important;
+  border-color:rgba(54,214,204,.24)!important;
+}
+.meg3-amount-field{
+  min-height:78px;
+  padding:10px 12px;
+  border:1px solid rgba(48,231,219,.28);
+  border-radius:15px;
+  background:linear-gradient(145deg,#075356,#033c3f);
+}
+.meg3-amount-field>div{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.meg3-amount-field b{
+  color:#5de7de;
+  font-size:19px;
+}
+.meg3-amount-field input{
+  min-width:0;
+  height:auto!important;
+  min-height:42px!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  color:#fff;
+  font-size:28px!important;
+  font-weight:800;
+  letter-spacing:-.03em;
+}
+.meg3-amount-field.negative{
+  border-color:rgba(255,116,135,.35);
+  background:linear-gradient(145deg,rgba(102,40,51,.72),#033c3f);
+}
+.meg3-amount-field.negative b,
+.meg3-amount-field.negative input{color:#ff8b99}
+.meg3-pending-switch,
+.meg3-negative-toggle{
+  min-height:58px;
+  padding:9px 11px;
+  display:grid;
+  gap:4px;
+  text-align:left;
+  border:1px solid rgba(57,194,188,.18);
+  border-radius:13px;
+  background:linear-gradient(145deg,#064447,#023638);
+  color:#d8ecea;
+}
+.meg3-pending-switch>span{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.meg3-pending-switch>span>i{
+  position:relative;
+  width:34px;
+  height:19px;
+  flex:0 0 auto;
+  border-radius:999px;
+  background:#234e4e;
+}
+.meg3-pending-switch>span>i::after{
+  content:'';
+  position:absolute;
+  top:3px;
+  left:3px;
+  width:13px;
+  height:13px;
+  border-radius:50%;
+  background:#d8efed;
+  transition:left .18s ease,background .18s ease;
+}
+.meg3-pending-switch.active>span>i{background:#159a82}
+.meg3-pending-switch.active>span>i::after{left:18px;background:#ebfff9}
+.meg3-pending-switch strong,
+.meg3-negative-toggle span{font-size:9.5px}
+.meg3-pending-switch small,
+.meg3-negative-toggle small{color:#819b98;font-size:7.5px}
+.meg3-negative-toggle.active{
+  border-color:rgba(255,111,130,.30);
+  background:linear-gradient(145deg,rgba(112,39,51,.40),#033638);
+  color:#ff8f9c;
+}
+.meg3-notes-field textarea{min-height:64px!important}
 .meg3-card-route{padding:9px;border:1px dashed rgba(63,210,202,.18);border-radius:14px;background:rgba(4,58,60,.34)}
 .meg3-form-message{margin-top:11px;padding:10px 12px;border:1px solid rgba(245,188,79,.25);border-radius:12px;background:rgba(120,82,12,.16);color:#ffe2a1;font-size:10px;line-height:1.35}
 .meg3-form-actions{
@@ -167,3 +276,20 @@
 .meg3-installment-preview footer{min-height:60px;padding:8px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;border-top:1px solid rgba(58,198,191,.14);background:rgba(1,34,36,.92)}
 .meg3-installment-preview footer small{display:block;color:#819b98;font-size:7.5px}.meg3-installment-preview footer strong{display:block;margin-top:2px;color:#58e7dd;font-size:16px}
 .meg3-installment-preview footer button{min-height:42px;padding:0 16px;border:1px solid #2de7da;border-radius:12px;background:linear-gradient(180deg,#0a8d89,#076765);color:#fff;font-weight:800}
+
+/* Contrato visual: formulário principal usa uma coluna no celular e nenhum select nativo. */
+.meg3-form-grid-faithful .meg5-picker-field,
+.meg3-form-grid-faithful .meg3-text-field,
+.meg3-form-grid-faithful .meg3-amount-field,
+.meg3-form-grid-faithful .meg3-pending-switch,
+.meg3-form-grid-faithful .meg3-negative-toggle{
+  width:100%;
+}
+@media(max-height:760px){
+  .meg3-form-grid-faithful{gap:7px}
+  .meg3-form-grid-faithful .meg5-picker-field{min-height:51px}
+  .meg3-amount-field{min-height:68px}
+  .meg3-amount-field input{font-size:24px!important}
+  .meg3-pending-switch,.meg3-negative-toggle{min-height:51px}
+  .meg3-notes-field textarea{min-height:54px!important}
+}
