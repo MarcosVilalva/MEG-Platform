@@ -56,6 +56,7 @@ export function MegMobileLoading({
 }: MegMobileLoadingProps) {
   const normalized = Math.max(6, Math.min(100, Number.isFinite(progress) ? progress : 12));
   const progressLabel = Math.round(normalized);
+  const statusText = progressLabel >= 100 ? 'Tudo pronto' : `${stageLabel}...`;
 
   return (
     <main
@@ -110,10 +111,10 @@ export function MegMobileLoading({
 
         <div className="meg-loading-progress-block">
           <div className="meg-loading-track" aria-hidden="true">
-            <span style={{ width: `${normalized}%` }} />
+            <span className={progressLabel >= 100 ? 'complete' : ''} style={{ width: `${normalized}%` }} />
           </div>
           <div className="meg-loading-progress-copy">
-            <span>{stageLabel}...</span>
+            <span>{statusText}</span>
             <strong>{progressLabel}%</strong>
           </div>
         </div>
