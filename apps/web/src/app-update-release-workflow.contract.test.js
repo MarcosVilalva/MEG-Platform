@@ -58,8 +58,13 @@ assert.match(
 );
 assert.match(
   ci,
-  /ANDROID_KEYSTORE_BASE64[\s\S]*meg-release\.jks/,
-  'RC1 deve usar a mesma chave permanente configurada para o canal estável.',
+  /ANDROID_KEYSTORE_PATH:[\s\S]*meg-release\.jks/,
+  'RC1 deve apontar para o keystore permanente do canal estável.',
+);
+assert.match(
+  ci,
+  /ANDROID_KEYSTORE_BASE64/,
+  'RC1 deve reconstruir o keystore permanente a partir do segredo configurado.',
 );
 assert.match(
   ci,
