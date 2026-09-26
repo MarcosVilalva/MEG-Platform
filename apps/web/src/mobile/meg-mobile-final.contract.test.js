@@ -48,7 +48,7 @@ assert.match(mobile, /new URL\(relative, document\.baseURI\)\.href/,
   'Assets do APK devem resolver contra document.baseURI para funcionar dentro do WebView.');
 
 for (const relative of [
-  '../../public/assets/cards/mercado-pago-visual.svg',
+  '../../public/assets/cards/approved-v6/mercado.webp',
   '../../public/assets/cards/latam-pass-platinum.webp',
   '../../public/assets/cards/approved-v6/azul.webp',
   '../../public/assets/cards/riachuelo-mastercard-visual.svg',
@@ -59,7 +59,7 @@ for (const relative of [
 
 assert.match(
   mobile,
-  /mercado.*meli[\s\S]*mercado-pago-visual\.svg[\s\S]*latam-pass-platinum\.webp[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*riachuelo-mastercard-visual\.svg/i,
+  /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*latam-pass-platinum\.webp[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*riachuelo-mastercard-visual\.svg/i,
   'Carrossel deve resolver nomes reais e apelidos para artes horizontais estáveis.',
 );
 assert.match(css, /\.meg2-view-home \.meg2-scroll\{overflow:hidden\}/,
