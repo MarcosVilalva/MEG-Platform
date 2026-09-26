@@ -104,6 +104,16 @@ assert.match(
   'CSS Phoenix deve ser carregado apenas quando o runtime não é o APK.',
 );
 assert.match(
+  phoenix,
+  /if \(nativeOperational \|\| loadState\.status !== 'ready' \|\| view !== 'home'\) return;[\s\S]*warmFrequentScreens/,
+  'APK não pode pré-carregar módulos visuais Phoenix antigos em segundo plano.',
+);
+assert.match(
+  phoenixWebStyles,
+  /phoenix-overlays\.css[\s\S]*phoenix-grid\.css[\s\S]*phoenix-launch-editor-polish\.css/,
+  'CSS de componentes Web compartilhados deve permanecer centralizado no módulo exclusivo da Web.',
+);
+assert.match(
   phoenixWebStyles,
   /phoenix-v15\.css[\s\S]*phoenix-layers\.css/,
   'Página Web deve preservar seus estilos através do módulo Web isolado.',
