@@ -127,17 +127,23 @@ export function MegMobileLaunchSheet({
   const selectedCard = data.cards.find((item) => item.id === cardId);
   const installmentPreview = useMemo(() => {
     if (!credit || !selectedCard || !date || parseAmount(amount) <= 0) return [];
-    const count=Math.max(1,Math.min(48,Math.trunc(installments||1)));
-    const cents=Math.round(parseAmount(amount)*100);
-    const base=Math.floor(cents/count);
-    const remainder=cents-base*count;
-    const firstStatement=cardStatementMonthForPurchase(date,Number(selectedCard.closingDay||1));
-    return Array.from({length:count},(_,index)=>{
-      const statementMonth=cardMonthPlus(firstStatement,index);
-      const due=cardDueDateForStatement(statementMonth,Number(selectedCard.closingDay||1),Number(selectedCard.dueDay||1));
-      return {number:index+1,amount:(base+(index<remainder?1:0))/100,due,statementMonth};
+    const count = Math.max(1, Math.min(48, Math.trunc(installments || 1)));
+    const cents = Math.round(parseAmount(amount) * 100);
+    const baseCents = Math.floor(cents / count);
+    const remainder = cents - baseCents * count;
+    const firstStatement = cardStatementMonthForPurchase(date, Number(selectedCard.closingDay || 1));
+    if (!firstStatement) return [];
+    return Array.from({ length: count }, (_, index) => {
+      const statementMonth = cardMonthPlus(firstStatement, index);
+      const due = cardDueDateForStatement(statementMonth, Number(selectedCard.closingDay || 1), Number(selectedCard.dueDay || 1));
+      return {
+        number: index + 1,
+        amount: (baseCents + (index < remainder ? 1 : 0)) / 100,
+        due,
+        statementMonth,
+      };
     });
-  },[credit,selectedCard,date,amount,installments]);
+  }, [credit, selectedCard, date, amount, installments]);
 
   useEffect(() => {
     if (mode !== 'benefit') return;
@@ -266,7 +272,15 @@ export function MegMobileLaunchSheet({
         </div> : null}
 
         <section className={`meg3-form-highlight ${negative ? 'negative' : ''}`}>
-          <label><span>{negative ? 'Valor negativo / estorno' : 'Valor'}</span><div><b>{negative ? '-R
+          <label>
+            <span>{negative ? 'Valor negativo / estorno' : 'Valor'}</span>
+            <div><b>{negative ? '-R' + '$' : 'R' + '$'}</b><input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00"/></div>
+          </label>
+          {mode !== 'benefit' && !credit ? <button type="button" className={negative ? 'active' : ''} onClick={() => setNegative((value) => !value)}>
+            <span>{negative ? 'Restaurar positivo' : 'Usar valor negativo'}</span>
+            <small>{negative ? 'O lançamento será salvo como estorno/reversão.' : 'Permite inverter o sinal deste lançamento.'}</small>
+          </button> : null}
+        </section>
 
         <div className="meg3-form-grid">
           <label className="wide"><span>Descrição</span><input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex.: Mercado, salário, farmácia"/></label>
@@ -284,7 +298,10 @@ export function MegMobileLaunchSheet({
           {credit ? <>
             <label><span>Cartão</span><select value={cardId} onChange={(e) => setCardId(e.target.value)}><option value="">Selecione</option>{data.cards.filter((card) => card.isActive !== false).map((card) => <option key={card.id} value={card.id}>{card.name}</option>)}</select></label>
             <label><span>Parcelas</span><input type="number" min="1" max="48" value={installments} onChange={(e) => setInstallments(Number(e.target.value || 1))}/></label>
-            <button className="wide meg3-installment-preview-trigger" type="button" disabled={!installmentPreview.length} onClick={() => setInstallmentPreviewOpen(true)}><span>Visualizar parcelas</span><small>{installmentPreview.length ? `${installmentPreview.length} parcela(s) calculadas pelo fechamento e vencimento do cartão.` : 'Selecione cartão, data e valor.'}</small></button>
+            <button className="wide meg3-installment-preview-trigger" type="button" disabled={!installmentPreview.length} onClick={() => setInstallmentPreviewOpen(true)}>
+              <span>Visualizar parcelas</span>
+              <small>{installmentPreview.length ? `${installmentPreview.length} parcela(s) calculadas pelo fechamento e vencimento do cartão.` : 'Selecione cartão, data e valor.'}</small>
+            </button>
           </> : null}
 
           <label className="wide"><span>Observações</span><textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional"/></label>
@@ -302,87 +319,14 @@ export function MegMobileLaunchSheet({
         <section role="dialog" aria-modal="true" aria-label="Visualizar parcelas">
           <header><div><small>PARCELAMENTO</small><h3>Visualizar parcelas</h3></div><button type="button" onClick={() => setInstallmentPreviewOpen(false)}>×</button></header>
           <div className="meg3-installment-list" data-meg-scroll-region="true">
-            {installmentPreview.map((item)=><article key={item.number}><span><strong>Parcela {item.number}/{installmentPreview.length}</strong><small>Fatura {item.statementMonth.split('-').reverse().join('/')} · vence {item.due.split('-').reverse().join('/')}</small></span><b>{money.format(item.amount)}</b></article>)}
+            {installmentPreview.map((item) => <article key={item.number}>
+              <span><strong>Parcela {item.number}/{installmentPreview.length}</strong><small>Fatura {item.statementMonth.split('-').reverse().join('/')} · vence {item.due.split('-').reverse().join('/')}</small></span>
+              <b>{money.format(item.amount)}</b>
+            </article>)}
           </div>
-          <footer><span><small>Total</small><strong>{money.format(installmentPreview.reduce((sum,item)=>sum+item.amount,0))}</strong></span><button type="button" onClick={() => setInstallmentPreviewOpen(false)}>Fechar</button></footer>
+          <footer><span><small>Total</small><strong>{money.format(installmentPreview.reduce((sum, item) => sum + item.amount, 0))}</strong></span><button type="button" onClick={() => setInstallmentPreviewOpen(false)}>Fechar</button></footer>
         </section>
       </div> : null}
-
-      {deleteConfirm ? <div className="meg3-delete-confirm">
-        <div><small>CONFIRMAR EXCLUSÃO</small><h3>Excluir este lançamento?</h3><p>{description || 'O lançamento selecionado'} não ficará mais ativo no MEG.</p><span><button disabled={busy} onClick={() => setDeleteConfirm(false)}>Cancelar</button><button className="danger" disabled={busy} onClick={() => void remove()}>Excluir</button></span></div>
-      </div> : null}
-    </section>
-  </div>;
-}
- : 'R
-
-        <div className="meg3-form-grid">
-          <label className="wide"><span>Descrição</span><input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex.: Mercado, salário, farmácia"/></label>
-          <label><span>Data</span><input type="date" value={date} onChange={(e) => setDate(e.target.value)}/></label>
-          {mode === 'expense' && !credit ? <label><span>Situação</span><select value={status} onChange={(e) => setStatus(e.target.value as 'planned'|'paid')}><option value="planned">Pendente</option><option value="paid">Pago</option></select></label> : null}
-
-          {!credit ? <label className={mode === 'benefit' ? 'locked' : ''}><span>Conta</span><select value={accountId} disabled={mode === 'benefit'} onChange={(e) => setAccountId(e.target.value)}><option value="">Selecione</option>{accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label> : null}
-
-          <label><span>Categoria</span><select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}><option value="">Selecione</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.group ? category.group + ' · ' : ''}{category.name}</option>)}</select></label>
-
-          {!credit ? <label className={mode === 'benefit' ? 'locked' : ''}><span>{mode === 'income' ? 'Recebimento' : 'Pagamento'}</span><select value={paymentMethodId} disabled={mode === 'benefit'} onChange={(e) => setPaymentMethodId(e.target.value)}><option value="">Selecione</option>{methods.map((method) => <option key={method.id} value={method.id}>{method.name}</option>)}</select></label> : null}
-
-          {mode === 'expense' && !event && !credit ? <label className="wide meg3-card-route"><span>Compra no cartão</span><select value="" onChange={(e) => { if(e.target.value) setCardId(e.target.value); }}><option value="">Não usar cartão</option>{data.cards.filter((card) => card.isActive !== false).map((card) => <option key={card.id} value={card.id}>{card.name}</option>)}</select></label> : null}
-
-          {credit ? <>
-            <label><span>Cartão</span><select value={cardId} onChange={(e) => setCardId(e.target.value)}><option value="">Selecione</option>{data.cards.filter((card) => card.isActive !== false).map((card) => <option key={card.id} value={card.id}>{card.name}</option>)}</select></label>
-            <label><span>Parcelas</span><input type="number" min="1" max="48" value={installments} onChange={(e) => setInstallments(Number(e.target.value || 1))}/></label>
-          </> : null}
-
-          <label className="wide"><span>Observações</span><textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional"/></label>
-        </div>
-
-        {message ? <div className="meg3-form-message" role="status">{message}</div> : null}
-      </div>
-
-      <footer className="meg3-form-actions">
-        {event ? <button type="button" className="danger ghost" disabled={busy} onClick={() => setDeleteConfirm(true)}>Excluir</button> : <button type="button" className="ghost" disabled={busy} onClick={onClose}>Cancelar</button>}
-        <button type="button" className="primary" disabled={busy} onClick={() => void save()}>{busy ? 'Processando…' : event ? 'Salvar alterações' : 'Salvar lançamento'}</button>
-      </footer>
-
-      {deleteConfirm ? <div className="meg3-delete-confirm">
-        <div><small>CONFIRMAR EXCLUSÃO</small><h3>Excluir este lançamento?</h3><p>{description || 'O lançamento selecionado'} não ficará mais ativo no MEG.</p><span><button disabled={busy} onClick={() => setDeleteConfirm(false)}>Cancelar</button><button className="danger" disabled={busy} onClick={() => void remove()}>Excluir</button></span></div>
-      </div> : null}
-    </section>
-  </div>;
-}
-}</b><input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00"/></div></label>
-          {mode !== 'benefit' && !credit ? <button type="button" className={negative ? 'active' : ''} onClick={() => setNegative((value) => !value)}><span>{negative ? 'Restaurar positivo' : 'Usar valor negativo'}</span><small>{negative ? 'O lançamento será salvo como estorno/reversão.' : 'Permite inverter o sinal deste lançamento.'}</small></button> : null}
-        </section>
-
-        <div className="meg3-form-grid">
-          <label className="wide"><span>Descrição</span><input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex.: Mercado, salário, farmácia"/></label>
-          <label><span>Data</span><input type="date" value={date} onChange={(e) => setDate(e.target.value)}/></label>
-          {mode === 'expense' && !credit ? <label><span>Situação</span><select value={status} onChange={(e) => setStatus(e.target.value as 'planned'|'paid')}><option value="planned">Pendente</option><option value="paid">Pago</option></select></label> : null}
-
-          {!credit ? <label className={mode === 'benefit' ? 'locked' : ''}><span>Conta</span><select value={accountId} disabled={mode === 'benefit'} onChange={(e) => setAccountId(e.target.value)}><option value="">Selecione</option>{accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label> : null}
-
-          <label><span>Categoria</span><select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}><option value="">Selecione</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.group ? category.group + ' · ' : ''}{category.name}</option>)}</select></label>
-
-          {!credit ? <label className={mode === 'benefit' ? 'locked' : ''}><span>{mode === 'income' ? 'Recebimento' : 'Pagamento'}</span><select value={paymentMethodId} disabled={mode === 'benefit'} onChange={(e) => setPaymentMethodId(e.target.value)}><option value="">Selecione</option>{methods.map((method) => <option key={method.id} value={method.id}>{method.name}</option>)}</select></label> : null}
-
-          {mode === 'expense' && !event && !credit ? <label className="wide meg3-card-route"><span>Compra no cartão</span><select value="" onChange={(e) => { if(e.target.value) setCardId(e.target.value); }}><option value="">Não usar cartão</option>{data.cards.filter((card) => card.isActive !== false).map((card) => <option key={card.id} value={card.id}>{card.name}</option>)}</select></label> : null}
-
-          {credit ? <>
-            <label><span>Cartão</span><select value={cardId} onChange={(e) => setCardId(e.target.value)}><option value="">Selecione</option>{data.cards.filter((card) => card.isActive !== false).map((card) => <option key={card.id} value={card.id}>{card.name}</option>)}</select></label>
-            <label><span>Parcelas</span><input type="number" min="1" max="48" value={installments} onChange={(e) => setInstallments(Number(e.target.value || 1))}/></label>
-          </> : null}
-
-          <label className="wide"><span>Observações</span><textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional"/></label>
-        </div>
-
-        {message ? <div className="meg3-form-message" role="status">{message}</div> : null}
-      </div>
-
-      <footer className="meg3-form-actions">
-        {event ? <button type="button" className="danger ghost" disabled={busy} onClick={() => setDeleteConfirm(true)}>Excluir</button> : <button type="button" className="ghost" disabled={busy} onClick={onClose}>Cancelar</button>}
-        <button type="button" className="primary" disabled={busy} onClick={() => void save()}>{busy ? 'Processando…' : event ? 'Salvar alterações' : 'Salvar lançamento'}</button>
-      </footer>
 
       {deleteConfirm ? <div className="meg3-delete-confirm">
         <div><small>CONFIRMAR EXCLUSÃO</small><h3>Excluir este lançamento?</h3><p>{description || 'O lançamento selecionado'} não ficará mais ativo no MEG.</p><span><button disabled={busy} onClick={() => setDeleteConfirm(false)}>Cancelar</button><button className="danger" disabled={busy} onClick={() => void remove()}>Excluir</button></span></div>
