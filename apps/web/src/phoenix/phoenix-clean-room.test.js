@@ -46,6 +46,8 @@ const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url
 const settings = readFileSync(new URL('./screens/PhoenixSettings.tsx', import.meta.url), 'utf8');
 const loader = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.meta.url), 'utf8');
 const previewMain = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
+const mobileLoading = readFileSync(new URL('../mobile/MegMobileLoading.tsx', import.meta.url), 'utf8');
+const mobileLoadingCss = readFileSync(new URL('../mobile/meg-mobile-loading.css', import.meta.url), 'utf8');
 const previewBootCss = readFileSync(new URL('./preview-boot.css', import.meta.url), 'utf8');
 const previewAuthCss = readFileSync(new URL('./preview-auth-flow.css', import.meta.url), 'utf8');
 const nativeBiometric = readFileSync(new URL('../native-biometric-login.js', import.meta.url), 'utf8');
@@ -916,36 +918,30 @@ assert.doesNotMatch(phoenixApp, /nativeOperational \? <button className="px-mobi
   'Topbar Android não deve reintroduzir o botão hambúrguer quando o dock já possui Menu.');
 assert.doesNotMatch(operationalHome, /PhoenixProfileAvatar|px-operational-home-avatar/,
   'Home v12 não deve duplicar identidade ou avatar dentro do conteúdo abaixo da topbar global.');
-assert.match(previewMain, /data-boot-fidelity="approved-v5"/,
-  'Loading autenticado deve usar a referência visual v5 validada.');
-assert.match(previewMain, /px-preview-boot-v5-visual[\s\S]*px-preview-boot-v5-ring[\s\S]*meg-finance-system-mark\.svg/,
-  'Loading v5 deve manter a marca MEG protagonista dentro do anel animado.');
-assert.match(previewMain, /px-preview-boot-v5-progress[\s\S]*Carregando seu ambiente/,
-  'Loading v5 deve reduzir a leitura visível à barra, percentual e mensagem principal.');
-assert.doesNotMatch(previewMain.slice(previewMain.indexOf('function PhoenixBootScreen'), previewMain.indexOf('function PhoenixBootErrorScreen')), /px-preview-boot-trust|px-preview-boot-steps|MEG CLOUD|Conexão protegida/,
-  'Loading v5 não deve reintroduzir badges, etapas ou rodapé pesados na tela principal.');
-assert.match(previewBootCss, /MEG Boot 5\.0[\s\S]*data-boot-fidelity="approved-v5"/,
-  'CSS deve possuir contrato visual isolado para o loading v5.');
-assert.match(previewBootCss, /\.px-preview-boot-v5-ring[\s\S]*conic-gradient[\s\S]*px-meg-boot-v5-ring/,
-  'Anel do loading v5 deve possuir progresso visual e animação própria.');
-assert.match(previewBootCss, /\.px-preview-boot-v5-track>span[\s\S]*linear-gradient\(90deg,#1cb8ec[\s\S]*#36efae/,
-  'Barra do loading v5 deve usar o gradiente azul-ciano-verde da referência aprovada.');
-assert.match(previewBootCss, /data-boot-fidelity="approved-v5"[\s\S]*position:fixed!important[\s\S]*z-index:2147483000!important/,
-  'Loading v5 deve cobrir o WebView inteiro, sem deixar a tela anterior aparecer por trás.');
-assert.match(previewBootCss, /background-color:#003638!important/,
-  'Loading v5 deve possuir fundo teal opaco próprio.');
-assert.match(main, /import '\.\.\/phoenix\/preview-boot\.css';/,
-  'Android deve carregar o CSS do boot antes de abrir a biometria.');
+assert.match(previewMain, /MegMobileLoading progress=\{active\.progress\}/,
+  'Loading autenticado deve renderizar o componente clean-room aprovado.');
+assert.doesNotMatch(previewMain, /approved-v5|px-preview-boot-v5|Carregando seu ambiente/,
+  'Boot principal não pode reintroduzir a estrutura visual V5 antiga.');
+assert.match(mobileLoading, /data-meg-loading="validated-cleanroom"/,
+  'Novo loading deve declarar explicitamente o contrato visual clean-room.');
+assert.match(mobileLoading, /meg-loading-lockup\.svg[\s\S]*Carregando seus dados\.\.\.[\s\S]*Organizando suas finanças/,
+  'Loading deve seguir os textos e marca da prévia final aprovada.');
+assert.doesNotMatch(mobileLoading, /ring|percent|Carregando seu ambiente/i,
+  'Loading final não pode reaproveitar anéis, percentual ou texto do V5.');
+assert.match(mobileLoadingCss, /\.meg-loading-screen\{[\s\S]*position:fixed[\s\S]*height:100dvh[\s\S]*overflow:hidden/,
+  'Loading deve ocupar o viewport inteiro sem rolagem.');
+assert.match(mobileLoadingCss, /safe-area-inset-top[\s\S]*safe-area-inset-bottom/,
+  'Loading deve respeitar as áreas seguras do Android.');
+assert.doesNotMatch(previewBootCss, /MEG Boot 5\.0|approved-v5|px-preview-boot-v5/,
+  'CSS V5 antigo deve ser removido, não apenas deixado inativo.');
 assert.match(nativeBiometric, /nativeBiometricLoadingOverlay/,
-  'Biometria reconhecida deve criar uma cobertura premium antes do React montar.');
-assert.match(nativeBiometric, /dataset\.bootFidelity = 'approved-v5'/,
-  'Transição biométrica deve usar exatamente o contrato visual do loading v5 aprovado.');
-assert.match(nativeBiometric, /px-preview-boot-v5-visual[\s\S]*Carregando seu ambiente/,
-  'Transição biométrica deve entrar direto no loading v5 leve após autenticação.');
-assert.doesNotMatch(nativeBiometric, /px-preview-boot-wordmark/,
-  'Transição biométrica não deve reintroduzir o wordmark antigo sob a marca principal.');
-assert.match(nativeBiometric, /beginAuthenticatedLoadingTransition\(\)[\s\S]*px-preview-fullscreen-boot/,
-  'Transição biométrica deve reutilizar a identidade visual do loading premium.');
+  'Biometria reconhecida deve criar a cobertura de carregamento antes do React montar.');
+assert.match(nativeBiometric, /dataset\.megLoading = 'validated-cleanroom'/,
+  'Transição biométrica deve usar o mesmo contrato clean-room do loading aprovado.');
+assert.match(nativeBiometric, /meg-loading-lockup\.svg[\s\S]*Carregando seus dados\.\.\.[\s\S]*Organizando suas finanças/,
+  'Transição biométrica deve exibir a mesma composição validada do boot React.');
+assert.doesNotMatch(nativeBiometric, /approved-v5|px-preview-boot-v5|Carregando seu ambiente/,
+  'Biometria não pode reintroduzir o loading V5 antigo.');
 assert.match(nativeBiometric, /cacheCredentials\(credentials\);[\s\S]*beginAuthenticatedLoadingTransition\(\)/,
   'Após reconhecer a biometria, o login deve desaparecer imediatamente.');
 assert.match(previewMain, /'authenticating'/,
