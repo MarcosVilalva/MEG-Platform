@@ -73,6 +73,7 @@ export function MegMobileSettings({data,onLogout}:{data:PhoenixReadModel;onLogou
 
   useEffect(()=>{
     let active=true;
+    // @ts-ignore módulo JS nativo carregado apenas no APK.
     void import('../native-biometric-login.js')
       .then((module)=>module.getBiometricLoginStatus())
       .then((status)=>{if(active)setBiometric(status);})
@@ -129,6 +130,7 @@ export function MegMobileSettings({data,onLogout}:{data:PhoenixReadModel;onLogou
     if(biometricBusy)return;
     setBiometricBusy(true);
     try{
+      // @ts-ignore módulo JS nativo carregado apenas no APK.
       const module=await import('../native-biometric-login.js');
       await module.clearBiometricLogin();
       setBiometric(await module.getBiometricLoginStatus());
