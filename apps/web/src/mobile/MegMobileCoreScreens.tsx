@@ -111,14 +111,14 @@ export function MegMobileMovements({
 }
 
 export function MegMobileHistory({ data }: { data: PhoenixReadModel }) {
-  const items = useMemo(() => [...data.financialAudit.items].sort((a,b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))), [data.financialAudit.items]);
+  const items = useMemo(() => [...data.financialAudit.items].sort((a,b) => String(b.at || '').localeCompare(String(a.at || ''))), [data.financialAudit.items]);
   return <main className="meg3-screen meg3-history" data-meg-fixed-screen="true">
     <header className="meg3-title-block"><span>HISTÓRICO</span><h1>Atividades</h1><p>Alterações e confirmações registradas no MEG.</p></header>
     <section className="meg3-history-summary"><article><small>Registros</small><strong>{items.length.toLocaleString('pt-BR')}</strong></article><article><small>Período</small><strong>{data.month.split('-').reverse().join('/')}</strong></article></section>
     <section className="meg3-timeline" data-meg-scroll-region="true">
       {items.map((item) => <article key={item.id} className="meg3-timeline-item">
         <span className="meg3-timeline-dot"/>
-        <div><small>{item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : 'Registro'}</small><strong>{String(item.action || 'ATUALIZAÇÃO').replaceAll('_',' ')}</strong><p>{item.entity}{item.entityId ? ` · ${item.entityId}` : ''}</p></div>
+        <div><small>{item.at ? new Date(item.at).toLocaleString('pt-BR') : 'Registro'}</small><strong>{String(item.action || 'ATUALIZAÇÃO').replace(/_/g,' ')}</strong><p>{item.entity}{item.entityId ? ` · ${item.entityId}` : ''}</p></div>
       </article>)}
       {!items.length ? <div className="meg3-empty">Nenhuma atividade encontrada.</div> : null}
     </section>
