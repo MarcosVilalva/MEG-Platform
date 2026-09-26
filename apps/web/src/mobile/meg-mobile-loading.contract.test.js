@@ -35,8 +35,8 @@ assert.match(
 
 assert.match(
   component,
-  /data-meg-loading-reference="board-04"/,
-  'O loading deve declarar a quarta prancha aprovada como referência visual.',
+  /data-meg-loading-reference="approved-neon-final"/,
+  'O loading deve declarar a referência neon final aprovada como referência visual.',
 );
 
 assert.match(
@@ -102,12 +102,12 @@ assert.match(
 assert.match(
   css,
   /\.meg-loading-layout\{[\s\S]*grid-template-rows:minmax\(0,1\.36fr\) minmax\(0,\.82fr\) auto auto/,
-  'A composição deve manter marca, ícones, progresso e benefícios em quatro zonas compactas como na prancha 04.',
+  'A composição deve manter marca, ícones, progresso e benefícios em quatro zonas compactas como na referência neon final.',
 );
 
 assert.match(
   css,
-  /\.meg-loading-brand\{[\s\S]*width:clamp\(218px,64vw,284px\)/,
+  /\.meg-loading-brand\{[\s\S]*width:clamp\(176px,49vw,218px\)/,
   'A marca principal deve ocupar a proporção visual dominante da prancha aprovada, sem voltar a ficar pequena no centro da tela.',
 );
 
@@ -119,13 +119,13 @@ assert.match(
 
 assert.match(
   css,
-  /\.meg-loading-floating\{[\s\S]*width:min\(79vw,340px\)[\s\S]*\.meg-loading-floating \.tile\{[\s\S]*width:clamp\(70px,23\.2vw,98px\)/,
+  /\.meg-loading-floating\{[\s\S]*width:min\(84vw,354px\)[\s\S]*\.meg-loading-floating \.tile\{[\s\S]*width:clamp\(68px,20\.5vw,88px\)/,
   'Os quatro cards centrais devem formar o agrupamento grande e compacto da prancha, evitando o vazio excessivo da implementação anterior.',
 );
 
 assert.match(
   css,
-  /\.meg-loading-features\{[\s\S]*min-height:clamp\(92px,12\.8dvh,126px\)/,
+  /\.meg-loading-features\{[\s\S]*min-height:clamp\(68px,9\.8dvh,92px\)/,
   'A faixa inferior deve reservar altura suficiente para manter progresso e benefícios mais acima, como na referência aprovada.',
 );
 
