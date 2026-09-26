@@ -13,7 +13,9 @@ const coreCss = readFileSync(new URL('./meg-mobile-core-screens.css', import.met
 const launchCss = readFileSync(new URL('./meg-mobile-launch-sheet.css', import.meta.url), 'utf8');
 const settings = readFileSync(new URL('./MegMobileSettings.tsx', import.meta.url), 'utf8');
 const settingsCss = readFileSync(new URL('./meg-mobile-settings.css', import.meta.url), 'utf8');
-const source = mobile + '\n' + css + '\n' + coreScreens + '\n' + launchSheet + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss;
+const cardCenter = readFileSync(new URL('./MegMobileCardCenter.tsx', import.meta.url), 'utf8');
+const benefitModal = readFileSync(new URL('./MegMobileBenefitModal.tsx', import.meta.url), 'utf8');
+const source = mobile + '\n' + css + '\n' + coreScreens + '\n' + launchSheet + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
 
 assert.doesNotMatch(source, /\bpx-[a-z0-9-]+/i,
   'Reconstrução mobile final não pode reutilizar classes visuais .px-* do Phoenix legado.');
@@ -189,6 +191,21 @@ assert.match(
   settingsCss,
   /\.meg4-settings\{[\s\S]*overflow:hidden[\s\S]*grid-template-rows:auto auto minmax\(0,1fr\)/,
   'Configurações deve manter viewport fixo e workspace interno rolável.',
+);
+assert.match(
+  cardCenter,
+  /MegMobileCardCenter[\s\S]*exportExcel[\s\S]*exportPdf/,
+  'Central do cartão deve oferecer exportação Excel e PDF no fluxo clean-room.',
+);
+assert.match(
+  benefitModal,
+  /MegMobileBenefitModal[\s\S]*isPhoenixBenefitEvent/,
+  'Benefício Alimentação deve usar modal clean-room ligado aos lançamentos reais.',
+);
+assert.match(
+  mobile,
+  /fromDate[\s\S]*toDate[\s\S]*meg2-pending-filter-sheet[\s\S]*meg2-pending-detail/,
+  'Pendentes deve ter filtro de data funcional e modal de detalhes antes da edição.',
 );
 
 
