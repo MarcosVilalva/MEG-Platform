@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
-import { hydratePhoenixAvatarPreference } from '../phoenix/profile-avatar';
+import { hydratePhoenixAvatarPreference, phoenixAvatarImage, readPhoenixAvatarPreference } from '../phoenix/profile-avatar';
 import { MegMobileAnalytics, MegMobileCashflow, MegMobileHistory, MegMobileMovements } from './MegMobileCoreScreens';
 import { MegMobileLaunchSheet } from './MegMobileLaunchSheet';
 import './meg-mobile-final.css';
@@ -165,6 +165,19 @@ function semanticIcon(label: string) {
 
 function Header({ data, periodMode, periodLabel, onOpenPeriod, onOpenMenu }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; onOpenPeriod: () => void; onOpenMenu: () => void }) {
   const firstName = data.user.name.trim().split(/\s+/)[0] || 'MEG';
+  const [avatar, setAvatar] = useState(() => readPhoenixAvatarPreference(data.user.id));
+  useEffect(() => {
+    let active = true;
+    void hydratePhoenixAvatarPreference(data.user.id).then((preference) => { if (active) setAvatar(preference); });
+    const sync = (event: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string }>).detail;
+      if (detail?.userId && detail.userId !== data.user.id) return;
+      setAvatar(readPhoenixAvatarPreference(data.user.id));
+    };
+    window.addEventListener('meg:profile-avatar-changed', sync);
+    return () => { active = false; window.removeEventListener('meg:profile-avatar-changed', sync); };
+  }, [data.user.id]);
+  const avatarUrl = phoenixAvatarImage(avatar);
   const mainLabel = periodMode === 'all' ? '∞' : periodMode === 'range' ? (periodLabel || 'Intervalo') : compactMonth(data.month);
   const subLabel = periodMode === 'all' ? 'Todos os períodos' : periodMode === 'range' ? 'Intervalo personalizado' : data.month === todayIso().slice(0, 7) ? 'Mês atual' : 'Período selecionado';
   return <header className="meg2-header">
@@ -175,7 +188,8 @@ function Header({ data, periodMode, periodLabel, onOpenPeriod, onOpenMenu }: { d
       <b>⌄</b>
     </button>
     <button className="meg2-user" type="button" onClick={onOpenMenu}>
-      <span className="meg2-avatar">{firstName.charAt(0).toUpperCase()}</span><strong>{firstName.toUpperCase()}</strong>
+      <span className={`meg2-avatar ${avatarUrl ? 'has-image' : ''}`}>{avatarUrl ? <img src={avatarUrl} alt="" draggable={false}/> : firstName.charAt(0).toUpperCase()}</span>
+      <strong>{firstName.toUpperCase()}</strong>
     </button>
   </header>;
 }
