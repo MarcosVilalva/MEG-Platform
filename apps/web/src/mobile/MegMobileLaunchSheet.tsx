@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { MegMobilePicker, type MegMobilePickerOption } from './MegMobilePicker';
-import { loadMegMobileHistorySuggestions, type MegMobileHistorySuggestion } from './meg-mobile-description-history';
+import { clearMegMobileHistorySuggestionCache, loadMegMobileHistorySuggestions, type MegMobileHistorySuggestion } from './meg-mobile-description-history';
 import { cardDueDateForStatement, cardMonthPlus, cardStatementMonthForPurchase } from '../phoenix/data/card-dates';
 import {
   phoenixWriteMessage,
@@ -72,6 +72,7 @@ function projectedCardMeta(event: EventWithPayload) {
 }
 
 function dispatchSnapshot(snapshot: PhoenixReadModel | null | undefined) {
+  clearMegMobileHistorySuggestionCache();
   if (snapshot) {
     window.dispatchEvent(new CustomEvent('meg:phoenix-snapshot-committed', { detail: { snapshot } }));
   } else {
@@ -84,11 +85,15 @@ export function MegMobileLaunchSheet({
   preset,
   event,
   onClose,
+  appHeader,
+  appDock,
 }: {
   data: PhoenixReadModel;
   preset: LaunchPreset;
   event?: FinancialEvent | null;
   onClose: () => void;
+  appHeader?: ReactNode;
+  appDock?: ReactNode;
 }) {
   const cardMeta = event ? projectedCardMeta(event as EventWithPayload) : null;
   const cardPurchase = cardMeta
@@ -353,17 +358,18 @@ export function MegMobileLaunchSheet({
   const title = event ? 'Editar lançamento' : 'Novo lançamento';
 
   return <div className="meg3-form-overlay" role="presentation">
-    <section className="meg3-form-sheet" role="dialog" aria-modal="true" aria-label={title}>
+    <section className={`meg3-form-sheet ${!event && mode === 'expense' ? 'meg3-form-sheet--new-expense' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
+      {!event && mode === 'expense' ? <div className="meg3-app-header">{appHeader}</div> : null}
       <header className="meg3-form-head">
-        <div><small>MEG FINANÇAS</small><h2>{title}</h2></div>
-        <button type="button" disabled={busy} onClick={onClose}>×</button>
+        <div><small>MEG FINANÇAS</small><h2>{title}</h2>{!event ? <p>Registre um novo movimento em sua vida financeira.</p> : null}</div>
+        <button type="button" aria-label="Fechar lançamento" disabled={busy} onClick={onClose}>×</button>
       </header>
 
       <div className="meg3-form-body" data-meg-scroll-region="true">
         {!event ? <div className="meg3-form-segment">
-          <button type="button" className={mode === 'expense' ? 'active expense' : ''} onClick={() => setMode('expense')}>Despesa</button>
-          <button type="button" className={mode === 'income' ? 'active income' : ''} onClick={() => setMode('income')}>Receita</button>
-          <button type="button" className={mode === 'benefit' ? 'active benefit' : ''} onClick={() => setMode('benefit')}>Alimentação</button>
+          <button type="button" className={mode === 'expense' ? 'active expense' : ''} onClick={() => setMode('expense')}><span aria-hidden="true">↓</span>Despesa</button>
+          <button type="button" className={mode === 'income' ? 'active income' : ''} onClick={() => setMode('income')}><span aria-hidden="true">↑</span>Receita</button>
+          <button type="button" className={mode === 'benefit' ? 'active benefit' : ''} onClick={() => setMode('benefit')}><span aria-hidden="true">♜</span>Alimentação</button>
         </div> : null}
 
         <div className="meg3-form-grid meg3-form-grid-faithful">
@@ -427,17 +433,6 @@ export function MegMobileLaunchSheet({
 
           <MegMobilePicker
             className="wide"
-            label={mode === 'income' ? 'Forma de recebimento' : 'Forma de pagamento'}
-            value={paymentMethodId}
-            options={paymentOptions}
-            disabled={mode === 'benefit'}
-            lockedText={mode === 'benefit' ? (verocard?.name || 'Verocard') : undefined}
-            placeholder="Selecione a forma"
-            onChange={setPaymentMethodId}
-          />
-
-          <MegMobilePicker
-            className="wide"
             label="Conta"
             value={accountId}
             options={accountOptions}
@@ -449,7 +444,18 @@ export function MegMobileLaunchSheet({
             onChange={setAccountId}
           />
 
-          {mode === 'expense' ? <MegMobilePicker
+          <MegMobilePicker
+            className="wide"
+            label={mode === 'income' ? 'Forma de recebimento' : 'Forma de pagamento'}
+            value={paymentMethodId}
+            options={paymentOptions}
+            disabled={mode === 'benefit'}
+            lockedText={mode === 'benefit' ? (verocard?.name || 'Verocard') : undefined}
+            placeholder="Selecione a forma"
+            onChange={setPaymentMethodId}
+          />
+
+          {mode === 'expense' && credit ? <MegMobilePicker
             className="wide"
             label="Cartão"
             value={cardId}
@@ -509,9 +515,10 @@ export function MegMobileLaunchSheet({
       </div>
 
       <footer className="meg3-form-actions">
-        {event ? <button type="button" className="danger ghost" disabled={busy} onClick={() => setDeleteConfirm(true)}>Excluir</button> : <button type="button" className="ghost" disabled={busy} onClick={onClose}>Cancelar</button>}
+        {event ? <button type="button" className="danger ghost" disabled={busy} onClick={() => setDeleteConfirm(true)}>Excluir</button> : mode !== 'expense' ? <button type="button" className="ghost" disabled={busy} onClick={onClose}>Cancelar</button> : null}
         <button type="button" className="primary" disabled={busy} onClick={() => void save()}>{busy ? 'Processando…' : event ? 'Salvar alterações' : 'Salvar lançamento'}</button>
       </footer>
+      {!event && mode === 'expense' ? <div className="meg3-app-dock">{appDock}</div> : null}
 
       {installmentPreviewOpen ? <div className="meg3-installment-preview">
         <section role="dialog" aria-modal="true" aria-label="Visualizar parcelas">

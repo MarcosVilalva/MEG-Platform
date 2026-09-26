@@ -51,7 +51,7 @@
 .meg5-picker-overlay{
   position:fixed;
   inset:0;
-  z-index:2147481800;
+  z-index:2147483000;
   display:grid;
   align-items:end;
   padding-top:max(18px,env(safe-area-inset-top));

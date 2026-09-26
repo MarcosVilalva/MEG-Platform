@@ -23,11 +23,17 @@ const amountIndex = launch.indexOf('meg3-amount-field');
 const dateIndex = launch.indexOf('Vencimento');
 assert.ok(
   descriptionIndex >= 0 && descriptionIndex < categoryIndex
-  && categoryIndex < paymentIndex
-  && paymentIndex < accountIndex
+  && categoryIndex < accountIndex
+  && accountIndex < paymentIndex
   && accountIndex < amountIndex
   && amountIndex < dateIndex,
-  'Ordem do formulário deve seguir Descrição → Categoria → Forma → Conta → Valor → Data/Vencimento.',
+  'O formulário deve preservar Descrição, Categoria, Conta, Forma, Valor e Data/Vencimento.',
+);
+assert.ok(
+  launchCss.includes('.meg3-form-sheet--new-expense .meg3-amount-field{order:2')
+  && launchCss.includes('.meg3-app-header')
+  && launchCss.includes('.meg3-app-dock'),
+  'Novo lançamento deve apresentar Valor/Data após Descrição dentro do quadro completo do app.',
 );
 
 assert.ok(
