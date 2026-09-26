@@ -293,3 +293,80 @@
   .meg3-pending-switch,.meg3-negative-toggle{min-height:51px}
   .meg3-notes-field textarea{min-height:54px!important}
 }
+
+
+/* Descrição inteligente: recupera o comportamento histórico sem reintroduzir a UI legada. */
+.meg3-smart-description{
+  position:relative;
+  min-width:0;
+  display:grid;
+  gap:5px;
+}
+.meg3-smart-description>.meg3-text-field{display:grid;gap:5px}
+.meg3-history-suggestions{
+  max-height:190px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  scrollbar-width:none;
+  padding:5px;
+  border:1px solid rgba(48,231,219,.30);
+  border-radius:13px;
+  background:linear-gradient(165deg,#053f42,#022f32);
+  box-shadow:0 14px 30px rgba(0,0,0,.24);
+}
+.meg3-history-suggestions::-webkit-scrollbar{display:none}
+.meg3-history-suggestions>button{
+  width:100%;
+  min-height:49px;
+  padding:7px 8px;
+  display:grid;
+  grid-template-columns:26px minmax(0,1fr);
+  align-items:center;
+  gap:7px;
+  text-align:left;
+  border:0;
+  border-bottom:1px solid rgba(59,195,188,.10);
+  background:transparent;
+  color:#f6ffff;
+}
+.meg3-history-suggestions>button:last-of-type{border-bottom:0}
+.meg3-history-suggestions>button:active,
+.meg3-history-suggestions>button:focus-visible{
+  outline:0;
+  border-radius:10px;
+  background:rgba(38,218,205,.10);
+}
+.meg3-history-icon{
+  width:24px;height:24px;display:grid;place-items:center;
+  border-radius:8px;background:#075154;color:#53e9df;font-size:13px;
+}
+.meg3-history-copy{min-width:0}
+.meg3-history-copy strong{
+  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:10.5px;
+}
+.meg3-history-copy small{
+  display:block;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:#88a6a3;font-size:7.5px;
+}
+.meg3-history-loading,
+.meg3-history-empty{
+  padding:12px 10px;
+  text-align:center;
+  color:#88a6a3;
+  font-size:8px;
+}
+.meg3-history-status{
+  padding:6px 8px;
+  border:1px solid rgba(55,211,199,.16);
+  border-radius:9px;
+  background:rgba(4,69,70,.32);
+  color:#8adbd5;
+  font-size:7.5px;
+  line-height:1.35;
+}
+@media(max-height:760px){
+  .meg3-history-suggestions{max-height:145px}
+  .meg3-history-suggestions>button{min-height:44px}
+}
