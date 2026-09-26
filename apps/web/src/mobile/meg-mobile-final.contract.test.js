@@ -172,6 +172,16 @@ assert.match(launchSheet, /runPhoenixSimpleEventEdit/,
   'Edição deve usar o writer de domínio.');
 assert.match(launchSheet, /runPhoenixSimpleEventArchive/,
   'Exclusão deve usar o writer de domínio.');
+assert.match(
+  launchSheet,
+  /negative[\s\S]*Usar valor negativo[\s\S]*-parseAmount\(amount\)/,
+  'Formulário clean-room deve permitir troca explícita de sinal e preservar o valor negativo no writer.',
+);
+assert.match(
+  launchSheet,
+  /cardStatementMonthForPurchase[\s\S]*cardDueDateForStatement[\s\S]*Visualizar parcelas/,
+  'Parcelamento no cartão deve exibir prévia calculada pela regra real de fechamento e vencimento.',
+);
 assert.doesNotMatch(
   launchSheet + '\n' + coreScreens,
   /className=["'`]px-/,
@@ -186,6 +196,16 @@ assert.match(
   settings,
   /MegMobileSettings[\s\S]*savePhoenixAvatarPreferenceCloud[\s\S]*getBiometricLoginStatus[\s\S]*notifications\/test-channels/,
   'Configurações do APK devem ter implementação clean-room funcional para perfil, biometria e notificações.',
+);
+assert.match(
+  settings,
+  /togglePaymentMethod[\s\S]*deactivatePaymentMethod[\s\S]*updatePaymentMethod/,
+  'Configurações deve ativar e desativar formas de pagamento na base real.',
+);
+assert.match(
+  settings,
+  /toggleCard[\s\S]*cardsClient\.deactivate[\s\S]*cardsClient\.reactivate/,
+  'Configurações deve ativar e desativar cartões na base real.',
 );
 assert.match(
   settingsCss,
