@@ -11,7 +11,9 @@ const coreScreens = readFileSync(new URL('./MegMobileCoreScreens.tsx', import.me
 const launchSheet = readFileSync(new URL('./MegMobileLaunchSheet.tsx', import.meta.url), 'utf8');
 const coreCss = readFileSync(new URL('./meg-mobile-core-screens.css', import.meta.url), 'utf8');
 const launchCss = readFileSync(new URL('./meg-mobile-launch-sheet.css', import.meta.url), 'utf8');
-const source = mobile + '\n' + css + '\n' + coreScreens + '\n' + launchSheet + '\n' + coreCss + '\n' + launchCss;
+const settings = readFileSync(new URL('./MegMobileSettings.tsx', import.meta.url), 'utf8');
+const settingsCss = readFileSync(new URL('./meg-mobile-settings.css', import.meta.url), 'utf8');
+const source = mobile + '\n' + css + '\n' + coreScreens + '\n' + launchSheet + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss;
 
 assert.doesNotMatch(source, /\bpx-[a-z0-9-]+/i,
   'Reconstrução mobile final não pode reutilizar classes visuais .px-* do Phoenix legado.');
@@ -177,6 +179,16 @@ assert.match(
   launchCss,
   /\.meg3-form-sheet\{[\s\S]*grid-template-rows:auto minmax\(0,1fr\) auto[\s\S]*overflow:hidden/,
   'Formulário mobile deve manter cabeçalho e ações fixos, com rolagem apenas no corpo.',
+);
+assert.match(
+  settings,
+  /MegMobileSettings[\s\S]*savePhoenixAvatarPreferenceCloud[\s\S]*getBiometricLoginStatus[\s\S]*notifications\/test-channels/,
+  'Configurações do APK devem ter implementação clean-room funcional para perfil, biometria e notificações.',
+);
+assert.match(
+  settingsCss,
+  /\.meg4-settings\{[\s\S]*overflow:hidden[\s\S]*grid-template-rows:auto auto minmax\(0,1fr\)/,
+  'Configurações deve manter viewport fixo e workspace interno rolável.',
 );
 
 
