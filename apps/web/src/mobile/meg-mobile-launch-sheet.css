@@ -471,6 +471,13 @@
 .meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg3-text-field:has(input[type="date"]) input{
   min-height:60px;font-size:12px;
 }
+.meg3-form-sheet--new-expense .meg3-form-grid-faithful>.wide.meg3-amount-field{
+  grid-column:1;min-width:0;
+}
+.meg3-form-sheet--new-expense .meg3-form-grid-faithful>label.wide.meg3-date-field{
+  order:3;grid-column:2;min-width:0;
+}
+.meg3-form-sheet--new-expense .meg3-date-field input{width:100%;min-width:0}
 @media(max-width:430px){
   .meg3-form-sheet--new-expense{height:100dvh;max-height:100dvh;border-radius:0}
 }

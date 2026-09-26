@@ -410,17 +410,13 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   --meg2-glow-strong:0 0 0 1px rgba(25,245,235,.36),0 0 24px rgba(22,231,222,.2),inset 0 0 22px rgba(15,201,195,.08);
 }
 .meg2-shell{
-  isolation:isolate;
   background:
     radial-gradient(circle at 88% 4%,rgba(17,236,226,.095),transparent 24%),
     radial-gradient(circle at 10% 32%,rgba(0,136,143,.10),transparent 28%),
     linear-gradient(180deg,#003b3d 0%,#002d30 47%,#001f23 100%);
 }
 .meg2-shell::before{
-  content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;
-  background:
-    linear-gradient(135deg,transparent 0 18%,rgba(30,225,217,.028) 18.2% 18.55%,transparent 18.8% 100%),
-    linear-gradient(45deg,transparent 0 71%,rgba(30,225,217,.025) 71.2% 71.5%,transparent 71.8% 100%);
+  content:none;
 }
 .meg2-header{
   min-height:70px;

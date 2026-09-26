@@ -82,9 +82,9 @@ assert.ok(
   launch.includes('loadMegMobileHistorySuggestions')
   && launch.includes('Digite para pesquisar no seu histórico')
   && launch.includes('useHistorySuggestion')
-  && launch.includes("setCategoryId(suggestion.categoryId)")
-  && launch.includes("setPaymentMethodId(suggestion.paymentMethodId)")
-  && launch.includes("setAccountId(suggestion.accountId)"),
+  && launch.includes("setCategoryId(category.id)")
+  && launch.includes("setPaymentMethodId(method.id)")
+  && launch.includes("setAccountId(account.id)"),
   'Lançar Despesa deve pesquisar o histórico e restaurar categoria, forma e conta ao reutilizar uma descrição.'
 );
 assert.ok(
