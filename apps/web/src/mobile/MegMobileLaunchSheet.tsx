@@ -194,16 +194,23 @@ export function MegMobileLaunchSheet({
     setHistorySuggestions([]);
 
     const filled: string[] = [];
-    if (suggestion.categoryId && categories.some((item) => item.id === suggestion.categoryId)) {
-      setCategoryId(suggestion.categoryId);
+    const category = categories.find((item) => item.id === suggestion.categoryId)
+      || categories.find((item) => normalize(item.name) === normalize(suggestion.categoryName)
+        && normalize(item.group) === normalize(suggestion.categoryGroup));
+    const method = methods.find((item) => item.id === suggestion.paymentMethodId)
+      || methods.find((item) => normalize(item.name) === normalize(suggestion.paymentMethodName));
+    const account = accounts.find((item) => item.id === suggestion.accountId)
+      || accounts.find((item) => normalize(item.name) === normalize(suggestion.accountName));
+    if (category) {
+      setCategoryId(category.id);
       filled.push('categoria');
     }
-    if (suggestion.paymentMethodId && methods.some((item) => item.id === suggestion.paymentMethodId)) {
-      setPaymentMethodId(suggestion.paymentMethodId);
+    if (method) {
+      setPaymentMethodId(method.id);
       filled.push(mode === 'income' ? 'forma de recebimento' : 'forma de pagamento');
     }
-    if (suggestion.accountId && accounts.some((item) => item.id === suggestion.accountId)) {
-      setAccountId(suggestion.accountId);
+    if (account) {
+      setAccountId(account.id);
       filled.push('conta');
     }
 
@@ -469,7 +476,7 @@ export function MegMobileLaunchSheet({
             <div><b>{negative ? '-R$' : 'R$'}</b><input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0,00"/></div>
           </label>
 
-          <label className="wide meg3-text-field">
+          <label className="wide meg3-text-field meg3-date-field">
             <span>{mode === 'expense' && !credit && status === 'planned' ? 'Vencimento' : 'Data'}</span>
             <input type="date" value={date} onChange={(event) => setDate(event.target.value)}/>
           </label>
