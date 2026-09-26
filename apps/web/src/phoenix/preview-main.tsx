@@ -16,6 +16,14 @@ import './phoenix-preview-parity.css';
 import './preview-auth-flow.css';
 import './preview-boot.css';
 
+const MEG_MOBILE_RUNTIME = import.meta.env.VITE_MOBILE_APP === 'true';
+if (MEG_MOBILE_RUNTIME && typeof document !== 'undefined') {
+  document.documentElement.classList.add('meg-operational-mobile');
+  document.body.classList.add('meg-operational-mobile');
+  document.documentElement.dataset.megRuntime = 'android';
+  document.body.dataset.megRuntime = 'android';
+}
+
 type PreviewState = 'checking' | 'authenticating' | 'signed-out' | 'preparing' | 'prepare-error' | 'signed-in';
 type AuthMode = 'login' | 'register' | 'forgot';
 type AccountType = 'REQUEST_ACCESS' | 'CREATE_WORKSPACE';

@@ -1237,7 +1237,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
     <section className="px-movements-overview">
       <div className="px-movement-hero-row">
         <header className="px-screen-head">
-          <div><span className="px-kicker">Lançamentos</span><h1>Controle financeiro</h1><p>Inclua e controle seus eventos financeiros.</p></div>
+          <div><span className="px-kicker">{nativeOperational ? 'CONTROLE FINANCEIRO' : 'Lançamentos'}</span><h1>{nativeOperational ? 'Lançamentos' : 'Controle financeiro'}</h1><p>{nativeOperational ? 'Controle seus eventos financeiros.' : 'Inclua e controle seus eventos financeiros.'}</p></div>
         </header>
 
         <section className="px-screen-kpis" aria-label="Resumo do período">

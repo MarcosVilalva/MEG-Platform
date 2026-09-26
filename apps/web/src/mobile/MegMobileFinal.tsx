@@ -134,7 +134,29 @@ function Icon({ name, size = 22 }: { name: string; size?: number }) {
   if (name === 'menu') return <svg {...base}><path d="M4 7h16M4 12h16M4 17h16"/></svg>;
   if (name === 'cashflow') return <svg {...base}><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/></svg>;
   if (name === 'chart') return <svg {...base}><path d="M4 20V10M10 20V5M16 20v-7M22 20V3"/></svg>;
+  if (name === 'cart') return <svg {...base}><path d="M3 5h2l2.2 10h9.9l2-7H6"/><circle cx="9" cy="19" r="1.3"/><circle cx="17" cy="19" r="1.3"/></svg>;
+  if (name === 'car') return <svg {...base}><path d="m5 16 1.6-6.1A2.5 2.5 0 0 1 9 8h6a2.5 2.5 0 0 1 2.4 1.9L19 16"/><path d="M4 16h16v3H4z"/><path d="M7 19v2M17 19v2"/></svg>;
+  if (name === 'wifi') return <svg {...base}><path d="M4 9a12 12 0 0 1 16 0M7 12.5a7.5 7.5 0 0 1 10 0M10 16a3 3 0 0 1 4 0"/><circle cx="12" cy="19" r=".8" fill="currentColor"/></svg>;
+  if (name === 'phone') return <svg {...base}><path d="M7 3h3l1 5-2 1.5a13 13 0 0 0 5.5 5.5L16 13l5 1v3a3 3 0 0 1-3 3C10.3 20 4 13.7 4 6a3 3 0 0 1 3-3Z"/></svg>;
+  if (name === 'building') return <svg {...base}><path d="M5 21V5l7-3 7 3v16M9 7h.01M15 7h.01M9 11h.01M15 11h.01M9 15h.01M15 15h.01M10 21v-3h4v3"/></svg>;
+  if (name === 'play') return <svg {...base}><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4Z"/></svg>;
+  if (name === 'card') return <svg {...base}><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9h18M7 15h4"/></svg>;
   return <svg {...base}><circle cx="12" cy="12" r="8"/></svg>;
+}
+
+function semanticIcon(label: string) {
+  const value = label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+  if (/energia|eletric|cpfl|luz/.test(value)) return 'bolt';
+  if (/internet|wifi|fibra/.test(value)) return 'wifi';
+  if (/telefone|celular|movel/.test(value)) return 'phone';
+  if (/condominio|predio|apartamento/.test(value)) return 'building';
+  if (/stream|netflix|spotify|youtube|assinatura/.test(value)) return 'play';
+  if (/uber|99|combust|posto|carro|veiculo/.test(value)) return 'car';
+  if (/almoco|jantar|lanche|restaurante|food|ifood|mercado|supermercado/.test(value)) return 'food';
+  if (/cartao|card|latam|mercado pago|itau|santander|bradesco|caixa|nubank/.test(value)) return 'card';
+  if (/farmacia|remedio|saude|medic/.test(value)) return 'file';
+  if (/compra|loja|cigarro/.test(value)) return 'cart';
+  return 'file';
 }
 
 function Header({ data, periodMode, periodLabel, onOpenPeriod, onOpenMenu }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; onOpenPeriod: () => void; onOpenMenu: () => void }) {
@@ -154,7 +176,7 @@ function Header({ data, periodMode, periodLabel, onOpenPeriod, onOpenMenu }: { d
   </header>;
 }
 
-function Dock({ view, pendingCount, onNavigate, onLaunch, onMenu }: { view: MobileView; pendingCount: number; onNavigate: Props['onNavigate']; onLaunch: Props['onLaunch']; onMenu: () => void }) {
+function Dock({ view, pendingCount, menuOpen, onNavigate, onLaunch, onMenu }: { view: MobileView; pendingCount: number; menuOpen: boolean; onNavigate: Props['onNavigate']; onLaunch: Props['onLaunch']; onMenu: () => void }) {
   return <nav className="meg2-dock">
     <button className={view === 'home' ? 'active' : ''} onClick={() => onNavigate('home')}><Icon name="home"/><span>Início</span></button>
     <button onClick={() => onNavigate('movements')}><Icon name="file"/><span>Lançamentos</span></button>
@@ -162,7 +184,7 @@ function Dock({ view, pendingCount, onNavigate, onLaunch, onMenu }: { view: Mobi
     <button className={view === 'payables' ? 'active' : ''} onClick={() => onNavigate('payables')}>
       <span className="meg2-badge-wrap"><Icon name="wallet"/>{pendingCount > 0 ? <b>{pendingCount > 9 ? '9+' : pendingCount}</b> : null}</span><span>Pendentes</span>
     </button>
-    <button onClick={onMenu}><Icon name="menu"/><span>Menu</span></button>
+    <button className={menuOpen ? 'active' : ''} onClick={onMenu}><Icon name="menu"/><span>Menu</span></button>
   </nav>;
 }
 
@@ -279,13 +301,13 @@ function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: 
   const income = periodMode === 'month' ? Number(data.summary.realizedIncome || 0) : specialIncome;
   const expense = periodMode === 'month' ? Number(data.summary.realizedExpense || 0) : specialExpense;
   const result = periodMode === 'month' ? Number(data.summary.realizedResult || 0) : income - expense;
-  const title = periodMode === 'all' ? 'Todo o histórico' : periodMode === 'range' ? (periodLabel || 'Intervalo selecionado') : monthLabel(data.month);
+  const title = periodMode === 'all' ? 'Todo o histórico' : periodMode === 'range' ? (periodLabel || 'Intervalo selecionado') : compactMonth(data.month);
 
   return <main className="meg2-main meg2-home">
     <section className="meg2-title">
       <span>Situação {data.month === todayIso().slice(0, 7) && periodMode === 'month' ? 'atual' : 'do período'}</span>
       <h1>{title}</h1>
-      <p>Acompanhe seu caixa e compromissos em tempo real.</p>
+      <p>Acompanhe seu caixa e compromissos.</p>
       <i><Icon name="trend"/></i>
     </section>
 
@@ -415,7 +437,7 @@ function Cards({ data }: { data: PhoenixReadModel }) {
     <section className="meg2-statement">
       <header><div><h2>Lançamentos da fatura</h2><small>{card ? cardName(card.name) : 'Cartão'}</small></div><button>Ver todos ›</button></header>
       <div className="meg2-statement-list">
-        {rows.slice(0, 5).map((row) => <button key={row.id}><span><Icon name="wallet" size={20}/></span><p><b>{row.description}</b><small>{row.installmentNo && row.installmentQty ? 'Parcela ' + row.installmentNo + '/' + row.installmentQty + ' • ' : ''}{String(row.date || '').slice(0, 10).split('-').reverse().join('/')}</small></p><strong>{money.format(row.amount)}</strong><i>›</i></button>)}
+        {rows.slice(0, 5).map((row) => <button key={row.id}><span className={'icon-' + semanticIcon(row.description)}><Icon name={semanticIcon(row.description)} size={20}/></span><p><b>{row.description}</b><small>{row.installmentNo && row.installmentQty ? 'Parcela ' + row.installmentNo + '/' + row.installmentQty + ' • ' : ''}{String(row.date || '').slice(0, 10).split('-').reverse().join('/')}</small></p><strong>{money.format(row.amount)}</strong><i>›</i></button>)}
         {!rows.length ? <div className="meg2-empty">Nenhum lançamento nesta fatura.</div> : null}
       </div>
     </section>
@@ -476,9 +498,9 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       {rows.slice(0, 20).map((item, index) => {
         const late = !item.paid && item.due < today;
         const rowClass = late ? 'late' : item.paid ? 'paid' : '';
-        const icon = index % 3 === 0 ? 'bolt' : index % 3 === 1 ? 'wallet' : 'file';
+        const icon = semanticIcon(item.description);
         return <button key={item.id} className={rowClass} onClick={() => item.source === 'event' && onEditEvent(item.sourceId)}>
-          <span className="meg2-pending-icon"><Icon name={icon}/></span>
+          <span className={'meg2-pending-icon icon-' + icon}><Icon name={icon}/></span>
           <p><b>{item.description}</b><small>{dueLabel(item)}</small></p>
           <span className="meg2-pending-value"><strong>{money.format(item.amount)}</strong><em>{item.paid ? 'Paga' : late ? 'Vencida' : 'A pagar'}</em></span><i>›</i>
         </button>;
@@ -592,7 +614,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, 
         {view === 'cards' ? <Cards data={data}/> : null}
         {view === 'payables' ? <Payables data={data} onEditEvent={onEditEvent}/> : null}
       </div>
-      <Dock view={view} pendingCount={pendingCount} onNavigate={onNavigate} onLaunch={onLaunch} onMenu={() => setMenuOpen(true)}/>
+      <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={onNavigate} onLaunch={onLaunch} onMenu={() => setMenuOpen(true)}/>
     </div>
     {menuOpen ? <MenuSheet onClose={() => setMenuOpen(false)} onNavigate={onNavigate} onLogout={onLogout} onCloseApp={onClose}/> : null}
     {periodOpen ? <PeriodSheet data={data} initialMode={periodMode} loading={periodLoading} error={periodError} onClose={() => setPeriodOpen(false)} onSelectMonth={onSelectMonth} onSelectRange={onSelectRange} onSelectAll={onSelectAll}/> : null}
