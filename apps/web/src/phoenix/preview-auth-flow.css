@@ -475,12 +475,12 @@
 
 /* Android biométrico 2.0 · o estado de autenticação usa o boot React/premium.
    Neutraliza a antiga camada pseudo-elemento que deixava o login visível ao fundo. */
-body.meg-operational-mobile .px-preview-auth:has(.px-preview-button-spinner)::before,
-body.meg-operational-mobile .px-preview-auth:has(.px-preview-button-spinner)::after{
+body.meg-cleanroom-mobile .px-preview-auth:has(.px-preview-button-spinner)::before,
+body.meg-cleanroom-mobile .px-preview-auth:has(.px-preview-button-spinner)::after{
   display:none!important;
   content:none!important;
 }
-body.meg-operational-mobile .px-preview-auth:has(.px-preview-button-spinner) .px-preview-shell{
+body.meg-cleanroom-mobile .px-preview-auth:has(.px-preview-button-spinner) .px-preview-shell{
   opacity:0!important;
   visibility:hidden!important;
   pointer-events:none!important;
