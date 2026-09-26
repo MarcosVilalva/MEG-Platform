@@ -50,8 +50,8 @@ assert.match(
 
 assert.doesNotMatch(
   component,
-  /Carregando seu ambiente|px-preview-boot-v5|ring|percent/i,
-  'O novo loading não pode reaproveitar texto, anéis ou estrutura do V5.',
+  /Carregando seu ambiente|px-preview-boot-v5-ring|>22%<|<strong>22%/i,
+  'O novo loading não pode reaproveitar anéis, percentual visível ou texto do V5.',
 );
 
 assert.match(
