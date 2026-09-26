@@ -101,13 +101,22 @@ export function MegMobileSettings({data,onLogout}:{data:PhoenixReadModel;onLogou
     return()=>{active=false;};
   },[section]);
 
+  const uniquePresets=useMemo(()=>{
+    const seen=new Set<string>();
+    return phoenixAvatarPresets.filter((item)=>{
+      const key=String(item.imageUrl||item.id).trim();
+      if(seen.has(key))return false;
+      seen.add(key);
+      return true;
+    });
+  },[]);
   const visiblePresets=useMemo(()=>{
-    if(avatarExpanded)return phoenixAvatarPresets;
-    const first=phoenixAvatarPresets.slice(0,10);
+    if(avatarExpanded)return uniquePresets;
+    const first=uniquePresets.slice(0,10);
     if(avatar.kind!=='preset'||first.some((item)=>item.id===avatar.presetId))return first;
-    const selected=phoenixAvatarPresets.find((item)=>item.id===avatar.presetId);
+    const selected=uniquePresets.find((item)=>item.id===avatar.presetId);
     return selected?[...first.slice(0,9),selected]:first;
-  },[avatar,avatarExpanded]);
+  },[avatar,avatarExpanded,uniquePresets]);
 
   async function saveAvatar(next:PhoenixAvatarPreference){
     const local=savePhoenixAvatarPreference(next,data.user.id);
