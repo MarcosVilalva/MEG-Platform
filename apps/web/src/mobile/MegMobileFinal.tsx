@@ -7,6 +7,7 @@ import { MegMobileLaunchSheet } from './MegMobileLaunchSheet';
 import { MegMobileCardCenter } from './MegMobileCardCenter';
 import { MegMobileBenefitModal } from './MegMobileBenefitModal';
 import { MegMobileSettings } from './MegMobileSettings';
+import './meg-mobile-runtime.css';
 import './meg-mobile-final.css';
 import './meg-mobile-core-screens.css';
 
