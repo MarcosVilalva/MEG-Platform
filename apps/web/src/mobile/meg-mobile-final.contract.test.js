@@ -101,4 +101,55 @@ assert.match(
   'Pendentes deve escolher ícone pelo conteúdo, não por posição arbitrária na lista.',
 );
 
+assert.match(
+  css,
+  /CONTRATO DE VIEWPORT FIXO[\s\S]*\.meg2-scroll\{[\s\S]*overflow:hidden!important/,
+  'Home, Cartões e Pendentes devem usar viewport fixo sem rolagem da tela inteira.',
+);
+assert.match(
+  css,
+  /\.meg2-statement-list\{[\s\S]*overflow-y:auto/,
+  'Cartões deve rolar somente a lista de lançamentos da fatura.',
+);
+assert.match(
+  css,
+  /\.meg2-pending-list\{[\s\S]*overflow-y:auto/,
+  'Pendentes deve rolar somente a lista de compromissos.',
+);
+assert.match(
+  premiumCss,
+  /CONTRATO GLOBAL DO APK: VIEWPORT FIXO \+ SCROLL INTERNO[\s\S]*body\.meg-operational-mobile \.px-content\{[\s\S]*overflow:hidden!important/,
+  'Shell Phoenix móvel deve bloquear rolagem da tela inteira.',
+);
+assert.match(
+  premiumCss,
+  /\.px-content-movements \.px-mobile-movement-list\{[\s\S]*overflow-y:auto!important/,
+  'Lançamentos deve rolar somente a lista interna.',
+);
+assert.match(
+  premiumCss,
+  /\.px-launch-drawer \.px-launch-form\{[\s\S]*overflow-y:auto!important/,
+  'Formulário deve manter o drawer fixo e rolar somente o corpo do formulário.',
+);
+assert.match(
+  premiumCss,
+  /\.px-history-feed[\s\S]*overflow-y:auto!important/,
+  'Histórico deve rolar a linha do tempo internamente.',
+);
+assert.match(
+  premiumCss,
+  /\.px-settings-workspace\{[\s\S]*overflow-y:auto!important/,
+  'Configurações deve manter a tela fixa e rolar apenas o workspace interno.',
+);
+assert.match(
+  mobile,
+  /data-meg-fixed-screen="true"/,
+  'As telas mobile principais devem declarar explicitamente o contrato de tela fixa.',
+);
+assert.match(
+  mobile,
+  /data-meg-scroll-region="true"/,
+  'Listas móveis roláveis devem ser identificadas como regiões internas de scroll.',
+);
+
 console.log('Contrato da reconstrução mobile final validado.');
