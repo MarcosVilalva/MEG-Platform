@@ -107,8 +107,8 @@ assert.match(
 
 assert.match(
   css,
-  /\.meg-loading-brand\{[\s\S]*width:clamp\(198px,59vw,252px\)/,
-  'A marca principal deve ocupar a proporção visual dominante da prancha aprovada.',
+  /\.meg-loading-brand\{[\s\S]*width:clamp\(218px,64vw,284px\)/,
+  'A marca principal deve ocupar a proporção visual dominante da prancha aprovada, sem voltar a ficar pequena no centro da tela.',
 );
 
 assert.match(
@@ -119,8 +119,20 @@ assert.match(
 
 assert.match(
   css,
-  /@media\(max-height:760px\)[\s\S]*@media\(max-height:640px\)/,
-  'O loading deve adaptar proporções também pela altura do aparelho.',
+  /\.meg-loading-floating\{[\s\S]*width:min\(79vw,340px\)[\s\S]*\.meg-loading-floating \.tile\{[\s\S]*width:clamp\(70px,23\.2vw,98px\)/,
+  'Os quatro cards centrais devem formar o agrupamento grande e compacto da prancha, evitando o vazio excessivo da implementação anterior.',
+);
+
+assert.match(
+  css,
+  /\.meg-loading-features\{[\s\S]*min-height:clamp\(92px,12\.8dvh,126px\)/,
+  'A faixa inferior deve reservar altura suficiente para manter progresso e benefícios mais acima, como na referência aprovada.',
+);
+
+assert.match(
+  css,
+  /@media\(max-height:680px\)[\s\S]*@media\(max-height:560px\)/,
+  'O loading deve adaptar proporções pela altura apenas em viewports realmente curtos, preservando a presença visual nos aparelhos normais.',
 );
 
 assert.doesNotMatch(
