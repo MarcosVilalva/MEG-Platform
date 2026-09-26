@@ -160,11 +160,14 @@ assert.match(
   /MegMobileMovements[\s\S]*MegMobileHistory[\s\S]*MegMobileCashflow[\s\S]*MegMobileAnalytics/,
   'Lançamentos, Histórico, Fluxo e Relatórios devem possuir implementações mobile clean-room próprias.',
 );
-assert.match(
-  launchSheet,
-  /MegMobileLaunchSheet[\s\S]*runPhoenixSimpleEventWrite[\s\S]*runPhoenixSimpleEventEdit[\s\S]*runPhoenixSimpleEventArchive/,
-  'Novo, edição e exclusão devem usar formulário mobile próprio e apenas os writers de domínio.',
-);
+assert.match(launchSheet, /MegMobileLaunchSheet/,
+  'Novo e edição devem usar formulário mobile clean-room próprio.');
+assert.match(launchSheet, /runPhoenixSimpleEventWrite/,
+  'Novo lançamento deve usar o writer de domínio.');
+assert.match(launchSheet, /runPhoenixSimpleEventEdit/,
+  'Edição deve usar o writer de domínio.');
+assert.match(launchSheet, /runPhoenixSimpleEventArchive/,
+  'Exclusão deve usar o writer de domínio.');
 assert.doesNotMatch(
   launchSheet + '\n' + coreScreens,
   /className=["'`]px-/,
