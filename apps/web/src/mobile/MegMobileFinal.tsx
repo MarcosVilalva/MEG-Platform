@@ -221,6 +221,7 @@ function isPosted(status: unknown) {
 }
 
 function PastHome({ data, context, onNavigate }: { data: PhoenixReadModel; context?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate'] }) {
+  const [benefitOpen, setBenefitOpen] = useState(false);
   const realized = data.events.items.filter((event) =>
     String(event.competence || String(event.date).slice(0, 7)) === data.month && isPosted(event.status)
   );
@@ -254,14 +255,16 @@ function PastHome({ data, context, onNavigate }: { data: PhoenixReadModel; conte
       <article className={result >= 0 ? 'result positive' : 'result negative'}><Icon name="trend"/><small>Resultado do mês</small><strong>{resultMoney(result)}</strong></article>
       <article className="paid"><Icon name="check"/><small>Contas pagas</small><strong>{paidCount.toLocaleString('pt-BR')}</strong><em>{money.format(paidAmount)}</em></article>
     </section>
-    <button className="meg2-benefit" onClick={() => onNavigate('movements')}>
+    <button className="meg2-benefit" type="button" onClick={() => setBenefitOpen(true)}>
       <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Saldo final do mês</em><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong></div><b>›</b>
     </button>
     <button className="meg2-period-action" onClick={() => onNavigate('movements')}><Icon name="file"/><span><strong>Ver lançamentos do mês</strong><small>Consulte os detalhes de {monthLabel(data.month)}</small></span><b>›</b></button>
+    {benefitOpen ? <MegMobileBenefitModal data={data} onClose={() => setBenefitOpen(false)} onOpenMovements={() => { setBenefitOpen(false); onNavigate('movements'); }}/> : null}
   </main>;
 }
 
 function FutureHome({ data, context, onNavigate }: { data: PhoenixReadModel; context?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate'] }) {
+  const [benefitOpen, setBenefitOpen] = useState(false);
   const target = data.month;
   const [year, month] = target.split('-').map(Number);
   const start = target + '-01';
@@ -300,10 +303,11 @@ function FutureHome({ data, context, onNavigate }: { data: PhoenixReadModel; con
       <article><Icon name="wallet"/><small>Faturas de cartões</small><strong>{money.format(cardAmount)}</strong><em>{cardEvents.length} item(ns)</em></article>
       <article><Icon name="file"/><small>Outras pendências</small><strong>{money.format(otherAmount)}</strong></article>
     </section>
-    <button className="meg2-benefit" onClick={() => onNavigate('movements')}>
+    <button className="meg2-benefit" type="button" onClick={() => setBenefitOpen(true)}>
       <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Fora do caixa monetário</em><strong>{money.format(benefit)}</strong></div><b>›</b>
     </button>
     <button className="meg2-period-action" onClick={() => onNavigate('payables')}><Icon name="file"/><span><strong>Principais pendências do mês</strong><small>{monthEvents.length} compromisso(s) previsto(s)</small></span><b>›</b></button>
+    {benefitOpen ? <MegMobileBenefitModal data={data} onClose={() => setBenefitOpen(false)} onOpenMovements={() => { setBenefitOpen(false); onNavigate('movements'); }}/> : null}
   </main>;
 }
 
