@@ -117,3 +117,22 @@
   .meg3-form-grid{grid-template-columns:1fr}
   .meg3-form-grid label.wide{grid-column:1}
 }
+
+
+/* Alteração explícita de sinal, sem esconder a consequência financeira. */
+.meg3-form-highlight.negative{
+  border-color:rgba(255,113,132,.34);
+  background:linear-gradient(145deg,rgba(99,37,49,.46),rgba(3,51,53,.90));
+}
+.meg3-form-highlight.negative label>div>b,
+.meg3-form-highlight.negative label>div>input{color:#ff8795}
+.meg3-form-highlight>button{
+  width:100%;min-height:40px;margin-top:10px;padding:7px 9px;
+  display:grid;gap:2px;text-align:left;
+  border:1px solid rgba(64,188,183,.16);border-radius:11px;
+  background:rgba(2,43,45,.58);color:#9db5b2
+}
+.meg3-form-highlight>button span{font-size:9px;font-weight:800}
+.meg3-form-highlight>button small{font-size:7.5px;color:#789491}
+.meg3-form-highlight>button.active{border-color:rgba(255,112,131,.32);color:#ff8c9a;background:rgba(116,37,50,.22)}
+.meg3-form-highlight>button.active small{color:#d6a3a9}
