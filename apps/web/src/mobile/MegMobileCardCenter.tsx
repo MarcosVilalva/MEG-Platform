@@ -13,7 +13,7 @@ function shortDate(value: string) {
 function downloadCsv(filename: string, rows: string[][]) {
   const csv = rows.map((row) => row.map((cell) => {
     const value = String(cell ?? '');
-    return /[;"\n"]/.test(value) ? '"' + value.replaceAll('"','""') + '"' : value;
+    return /[;"\n"]/.test(value) ? '"' + value.replace(/"/g,'""') + '"' : value;
   }).join(';')).join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
