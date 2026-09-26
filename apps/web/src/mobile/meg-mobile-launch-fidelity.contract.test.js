@@ -35,6 +35,18 @@ assert.ok(
   && launchCss.includes('.meg3-app-dock'),
   'Novo lançamento deve apresentar Valor/Data após Descrição dentro do quadro completo do app.',
 );
+assert.ok(
+  launch.includes('<div className="meg3-app-header">{appHeader}</div>')
+  && launch.includes('<div className="meg3-app-dock">{appDock}</div>')
+  && !launch.includes("!event && mode === 'expense' ? <div className=\"meg3-app-header\"")
+  && !launch.includes("!event && mode === 'expense' ? <div className=\"meg3-app-dock\""),
+  'Novo, Editar, Receita e Alimentação devem compartilhar o mesmo shell completo do app.',
+);
+assert.ok(
+  launch.includes("data-editor={event ? 'true' : 'false'}")
+  && launchCss.includes('.meg3-form-sheet--new-expense[data-editor="true"] .meg3-form-actions'),
+  'Editar lançamento deve manter ações fixas e lado a lado dentro do shell mobile.',
+);
 
 assert.ok(
   launch.includes("if (!categoryId) return 'Selecione a categoria.';")
@@ -66,6 +78,13 @@ assert.ok(!movements.includes('meg3-event-date-group'), 'Lista não deve depende
 assert.ok(
   movements.includes('className="meg3-event-list" data-meg-scroll-region="true"'),
   'Somente a lista de lançamentos deve rolar.',
+);
+assert.ok(
+  movements.includes('className="meg3-movement-kpis"')
+  && movements.includes('money.format(totals.income)')
+  && movements.includes('money.format(totals.expense)')
+  && movements.includes('onClick={onNew}'),
+  'Lançamentos deve preservar Entradas, Saídas, Resultado, contagem e ação Novo da referência aprovada.',
 );
 assert.ok(
   movementCss.includes('.meg3-payment-chip{') && movementCss.includes('border-radius:999px'),

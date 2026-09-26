@@ -48,11 +48,52 @@
 .meg3-kpis .negative strong{color:#ff778a}
 .meg3-kpis .accent{border-color:rgba(47,234,221,.38);box-shadow:inset 0 0 22px rgba(23,235,221,.04),0 0 16px rgba(31,226,214,.035)}
 .meg3-movements{
-  grid-template-rows:auto auto auto minmax(0,1fr);
+  grid-template-rows:auto auto auto auto auto minmax(0,1fr);
   gap:clamp(5px,.75dvh,8px);
 }
 .meg3-movements-title h1{font-size:clamp(26px,7vw,36px)}
 .meg3-movements-title p{font-size:9px}
+.meg3-movement-kpis{
+  min-width:0;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+}
+.meg3-movement-kpis article{
+  min-width:0;
+  min-height:72px;
+  padding:7px;
+  display:grid;
+  grid-template-columns:29px minmax(0,1fr);
+  grid-template-rows:auto auto;
+  align-items:center;
+  gap:2px 6px;
+  border:1px solid rgba(62,211,202,.22);
+  border-radius:14px;
+  background:linear-gradient(145deg,#064547,#023638);
+}
+.meg3-movement-kpis article>span{
+  grid-row:1/3;
+  width:29px;height:29px;
+  display:grid;place-items:center;
+  border-radius:9px;
+  background:rgba(43,222,211,.09);
+  color:#56e8df;
+  font-size:17px;font-weight:900;
+}
+.meg3-movement-kpis small{color:#a5bcba;font-size:7px;white-space:nowrap}
+.meg3-movement-kpis strong{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#58e8df;
+  font-size:clamp(9px,2.65vw,13px);
+  font-variant-numeric:tabular-nums;
+}
+.meg3-movement-kpis .income>span,.meg3-movement-kpis .income strong{color:#62e5b8}
+.meg3-movement-kpis .expense>span,.meg3-movement-kpis .expense strong,
+.meg3-movement-kpis .negative>span,.meg3-movement-kpis .negative strong{color:#ff7588}
 .meg3-movement-tabs{
   min-width:0;
   display:grid;
@@ -118,6 +159,33 @@
 .meg3-movement-toolbar input::placeholder{color:#789592}
 .meg3-movement-toolbar button{display:grid;place-items:center}
 .meg3-movement-toolbar button.active{border-color:#2beadd;color:#2beadd}
+.meg3-movement-list-head{
+  min-width:0;
+  min-height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding-inline:3px;
+}
+.meg3-movement-list-head>span{min-width:0}
+.meg3-movement-list-head strong{display:block;font-size:12px}
+.meg3-movement-list-head small{display:block;margin-top:2px;color:#86a09d;font-size:7px}
+.meg3-movement-list-head button{
+  min-height:36px;
+  padding:0 13px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  border:1px solid #28e7dc;
+  border-radius:12px;
+  background:linear-gradient(180deg,#098b87,#066765);
+  color:#fff;
+  font-size:9px;
+  font-weight:850;
+  box-shadow:0 0 13px rgba(40,231,220,.10);
+}
+.meg3-movement-list-head button b{font-size:17px;line-height:1}
 .meg3-event-list,.meg3-timeline,.meg3-cashflow-list,.meg3-analytics-list{
   min-height:0;
   height:100%;
@@ -245,12 +313,20 @@
   .meg3-event-card{min-height:78px;padding-block:7px}
   .meg3-event-icon{width:39px;height:39px}
   .meg3-list-head strong{font-size:18px}
+  .meg3-movement-kpis article{min-height:62px;padding:6px}
+  .meg3-movement-tabs button{height:34px}
+  .meg3-movement-toolbar label,.meg3-movement-toolbar button{height:38px}
+  .meg3-movement-list-head{min-height:34px}
 }
 @media(max-height:650px){
   .meg3-title-block>span{font-size:8px}
   .meg3-kpis article{min-height:52px}
   .meg3-kpis small{display:none}
   .meg3-event-card{min-height:72px}
+  .meg3-movement-kpis article{min-height:54px}
+  .meg3-movement-kpis article>span{width:25px;height:25px;font-size:14px}
+  .meg3-movement-kpis small{font-size:6.5px}
+  .meg3-movement-list-head small{display:none}
 }
 @media(max-width:350px){
   .meg3-kpis-3{gap:5px}
