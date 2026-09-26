@@ -1,6 +1,5 @@
 import { authenticatedRequest } from '../app/auth-client';
 import { financeClient, type FinancialEvent } from '../app/finance-client';
-import './phoenix-launch-editor-polish.css';
 
 declare global {
   interface Window {
