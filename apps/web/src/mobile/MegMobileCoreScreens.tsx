@@ -37,6 +37,44 @@ function FilterGlyph() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h8M16 7h4M4 17h4M12 17h8M4 12h12"/><circle cx="14" cy="7" r="2"/><circle cx="10" cy="17" r="2"/><circle cx="18" cy="12" r="2"/></svg>;
 }
 
+type MobileMovementKind = 'all' | 'income' | 'expense' | 'benefit';
+
+function normalizeMovementText(value: unknown) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+}
+
+function mobileMovementKind(event: FinancialEvent): Exclude<MobileMovementKind, 'all'> {
+  const context = normalizeMovementText([
+    event.description,
+    event.category?.name,
+    event.paymentMethod?.name,
+    event.sourceDetails?.group,
+    event.sourceDetails?.paymentMethod,
+  ].filter(Boolean).join(' '));
+  if (/aliment|verocard|beneficio/.test(context)) return 'benefit';
+  return signedAmount(event) >= 0 ? 'income' : 'expense';
+}
+
+function EventContextGlyph({ event }: { event: FinancialEvent }) {
+  const context = normalizeMovementText([
+    event.description,
+    event.category?.name,
+    event.paymentMethod?.name,
+    event.sourceDetails?.group,
+    event.sourceDetails?.paymentMethod,
+  ].filter(Boolean).join(' '));
+  if (/aliment|verocard|fast food|restaurante|lanche|mercado/.test(context)) {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v8M9 3v8M6 7h3M7.5 11v10M15 3v8c0 2 3 2 3 0V3M16.5 13v8"/></svg>;
+  }
+  if (/pix/.test(context)) {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 4 4-4 4-4-4 4-4ZM7 8l-4 4 4 4 4-4M17 8l4 4-4 4-4-4M12 13l4 4-4 4-4-4"/></svg>;
+  }
+  if (/cartao|credito|latam|itau|santander|bradesco|nubank|mercado pago/.test(context)) {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9h18M7 15h4"/></svg>;
+  }
+  return <EventGlyph positive={signedAmount(event) >= 0}/>;
+}
+
 function movementTone(event: FinancialEvent) {
   return signedAmount(event) >= 0 ? 'income' : 'expense';
 }
@@ -44,66 +82,73 @@ function movementTone(event: FinancialEvent) {
 export function MegMobileMovements({
   data,
   onOpenEvent,
-  onNew,
 }: {
   data: PhoenixReadModel;
   onOpenEvent: (event: FinancialEvent) => void;
   onNew: () => void;
 }) {
   const [query, setQuery] = useState('');
-  const [kind, setKind] = useState<'all'|'income'|'expense'>('all');
+  const [kind, setKind] = useState<MobileMovementKind>('all');
 
   const posted = useMemo(() => data.events.items, [data.events.items]);
-  const income = posted.filter((event) => signedAmount(event) > 0).reduce((sum, event) => sum + signedAmount(event), 0);
-  const expense = posted.filter((event) => signedAmount(event) < 0).reduce((sum, event) => sum + Math.abs(signedAmount(event)), 0);
-  const result = income - expense;
   const normalized = query.trim().toLocaleLowerCase('pt-BR');
   const rows = posted
-    .filter((event) => !normalized || event.description.toLocaleLowerCase('pt-BR').includes(normalized))
-    .filter((event) => kind === 'all' ? true : kind === 'income' ? signedAmount(event) >= 0 : signedAmount(event) < 0)
+    .filter((event) => !normalized || [
+      event.description,
+      event.category?.name,
+      event.paymentMethod?.name,
+      event.sourceDetails?.group,
+      event.sourceDetails?.paymentMethod,
+    ].filter(Boolean).join(' ').toLocaleLowerCase('pt-BR').includes(normalized))
+    .filter((event) => kind === 'all' ? true : mobileMovementKind(event) === kind)
     .sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
   return <main className="meg3-screen meg3-movements" data-meg-fixed-screen="true">
-    <header className="meg3-title-block">
-      <span>CONTROLE FINANCEIRO</span>
+    <header className="meg3-title-block meg3-movements-title">
+      <span>LANÇAMENTOS</span>
       <h1>Lançamentos</h1>
-      <p>Controle seus eventos financeiros.</p>
+      <p>{rows.length.toLocaleString('pt-BR')} registros no período · toque para abrir</p>
     </header>
 
-    <section className="meg3-kpis meg3-kpis-3">
-      <article className="income"><span><EventGlyph positive/></span><strong>{money.format(income)}</strong></article>
-      <article className="expense"><span><EventGlyph positive={false}/></span><strong>{money.format(expense)}</strong></article>
-      <article className={result >= 0 ? 'result positive' : 'result negative'}><span>▥</span><strong>{result > 0 ? '+' : ''}{money.format(result)}</strong></article>
-    </section>
+    <nav className="meg3-movement-tabs" aria-label="Tipo de lançamento">
+      {([
+        ['all','Todos'],
+        ['income','Receitas'],
+        ['expense','Despesas'],
+        ['benefit','Alimentação'],
+      ] as const).map(([value,label]) =>
+        <button key={value} type="button" className={kind === value ? 'active' : ''} onClick={() => setKind(value)}>{label}</button>
+      )}
+    </nav>
 
     <section className="meg3-movement-toolbar">
       <label><SearchGlyph/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamento..."/></label>
-      <button type="button" className={kind === 'all' ? 'active' : ''} onClick={() => setKind(kind === 'all' ? 'expense' : kind === 'expense' ? 'income' : 'all')} aria-label="Alternar tipo"><FilterGlyph/></button>
-    </section>
-
-    <section className="meg3-list-head">
-      <div><strong>{rows.length.toLocaleString('pt-BR')} lançamentos</strong><small>Toque em um lançamento para abrir</small></div>
-      <button type="button" onClick={onNew}>＋ <span>Novo</span></button>
+      <button type="button" aria-label="Limpar filtros" className={kind !== 'all' || query ? 'active' : ''} onClick={() => { setKind('all'); setQuery(''); }}><FilterGlyph/></button>
     </section>
 
     <section className="meg3-event-list" data-meg-scroll-region="true">
-      {rows.map((event) => {
+      {rows.map((event, index) => {
         const signed = signedAmount(event);
         const tone = movementTone(event);
         const category = event.category?.name || event.sourceDetails?.group || (signed >= 0 ? 'Receitas' : 'Despesas');
         const method = event.paymentMethod?.name || event.sourceDetails?.paymentMethod || '';
-        return <button className={`meg3-event-card ${tone}`} type="button" key={event.id} onClick={() => onOpenEvent(event)}>
-          <span className="meg3-event-icon"><EventGlyph positive={signed >= 0}/></span>
-          <span className="meg3-event-copy">
-            <small>{shortDate(event.date)} · {statusLabel(event.status)}</small>
-            <strong>{event.description}</strong>
-            <em>{category}{method ? ` · ${method}` : ''}</em>
-          </span>
-          <span className="meg3-event-value">
-            <b>{signed > 0 ? '+' : '-'}{money.format(Math.abs(signed))}</b>
-            <i>›</i>
-          </span>
-        </button>;
+        const date = shortDate(event.date);
+        const previousDate = index > 0 ? shortDate(rows[index - 1].date) : '';
+        return <div className="meg3-event-entry" key={event.id}>
+          {date !== previousDate ? <small className="meg3-event-date-group">{date}</small> : null}
+          <button className={`meg3-event-card ${tone} kind-${mobileMovementKind(event)}`} type="button" onClick={() => onOpenEvent(event)}>
+            <span className="meg3-event-icon"><EventContextGlyph event={event}/></span>
+            <span className="meg3-event-copy">
+              <small>{statusLabel(event.status)}</small>
+              <strong>{event.description}</strong>
+              <em>{category}{method ? ` · ${method}` : ''}</em>
+            </span>
+            <span className="meg3-event-value">
+              <b>{signed > 0 ? '+' : '-'}{money.format(Math.abs(signed))}</b>
+              <i>›</i>
+            </span>
+          </button>
+        </div>;
       })}
       {!rows.length ? <div className="meg3-empty">Nenhum lançamento neste filtro.</div> : null}
     </section>
