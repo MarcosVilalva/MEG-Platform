@@ -104,7 +104,7 @@ export function MegMobileSettings({data,onLogout}:{data:PhoenixReadModel;onLogou
   const uniquePresets=useMemo(()=>{
     const seen=new Set<string>();
     return phoenixAvatarPresets.filter((item)=>{
-      const key=String(item.imageUrl||item.id).trim();
+      const key=`${item.column}:${item.row}`;
       if(seen.has(key))return false;
       seen.add(key);
       return true;
