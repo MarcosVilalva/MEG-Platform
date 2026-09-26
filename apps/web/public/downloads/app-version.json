@@ -1,9 +1,9 @@
 {
-  "versionCode": 433,
-  "versionName": "2.0.433",
+  "versionCode": 434,
+  "versionName": "2.0.434",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "6dc4e891148236bf39363a9cf0a584f87def9f2596db1fc366ac0269d9b48165",
+  "sha256": "6ffb56c45cf9e4dfcb8d5b8e08d7b99fb165fd6814037cea206562dc4071dfb1",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "fix(mobile): reconstruir loading final clean-room"
+  "releaseNotes": "feat(mobile): concluir reconstrução clean-room do APK"
 }
