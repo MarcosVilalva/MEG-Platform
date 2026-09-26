@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
+import { cardDueDateForStatement, cardMonthPlus, cardStatementMonthForPurchase } from '../phoenix/data/card-dates';
 import {
   phoenixWriteMessage,
   preparePhoenixBenefitEvent,
@@ -116,12 +117,27 @@ export function MegMobileLaunchSheet({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [installmentPreviewOpen, setInstallmentPreviewOpen] = useState(false);
 
   const accounts = useMemo(() => data.accounts.filter((item) => item.isActive), [data.accounts]);
   const methods = useMemo(() => data.paymentMethods.filter((item) => item.isActive), [data.paymentMethods]);
   const categories = useMemo(() => data.categories.filter((item) => item.isActive && (!item.type || item.type === (mode === 'income' ? 'income' : 'expense'))), [data.categories, mode]);
   const selectedMethod = methods.find((item) => item.id === paymentMethodId);
   const credit = mode === 'expense' && (Boolean(cardId) || isCreditMethod(selectedMethod) || Boolean(cardMeta));
+  const selectedCard = data.cards.find((item) => item.id === cardId);
+  const installmentPreview = useMemo(() => {
+    if (!credit || !selectedCard || !date || parseAmount(amount) <= 0) return [];
+    const count=Math.max(1,Math.min(48,Math.trunc(installments||1)));
+    const cents=Math.round(parseAmount(amount)*100);
+    const base=Math.floor(cents/count);
+    const remainder=cents-base*count;
+    const firstStatement=cardStatementMonthForPurchase(date,Number(selectedCard.closingDay||1));
+    return Array.from({length:count},(_,index)=>{
+      const statementMonth=cardMonthPlus(firstStatement,index);
+      const due=cardDueDateForStatement(statementMonth,Number(selectedCard.closingDay||1),Number(selectedCard.dueDay||1));
+      return {number:index+1,amount:(base+(index<remainder?1:0))/100,due,statementMonth};
+    });
+  },[credit,selectedCard,date,amount,installments]);
 
   useEffect(() => {
     if (mode !== 'benefit') return;
@@ -268,6 +284,7 @@ export function MegMobileLaunchSheet({
           {credit ? <>
             <label><span>Cartão</span><select value={cardId} onChange={(e) => setCardId(e.target.value)}><option value="">Selecione</option>{data.cards.filter((card) => card.isActive !== false).map((card) => <option key={card.id} value={card.id}>{card.name}</option>)}</select></label>
             <label><span>Parcelas</span><input type="number" min="1" max="48" value={installments} onChange={(e) => setInstallments(Number(e.target.value || 1))}/></label>
+            <button className="wide meg3-installment-preview-trigger" type="button" disabled={!installmentPreview.length} onClick={() => setInstallmentPreviewOpen(true)}><span>Visualizar parcelas</span><small>{installmentPreview.length ? `${installmentPreview.length} parcela(s) calculadas pelo fechamento e vencimento do cartão.` : 'Selecione cartão, data e valor.'}</small></button>
           </> : null}
 
           <label className="wide"><span>Observações</span><textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional"/></label>
@@ -280,6 +297,16 @@ export function MegMobileLaunchSheet({
         {event ? <button type="button" className="danger ghost" disabled={busy} onClick={() => setDeleteConfirm(true)}>Excluir</button> : <button type="button" className="ghost" disabled={busy} onClick={onClose}>Cancelar</button>}
         <button type="button" className="primary" disabled={busy} onClick={() => void save()}>{busy ? 'Processando…' : event ? 'Salvar alterações' : 'Salvar lançamento'}</button>
       </footer>
+
+      {installmentPreviewOpen ? <div className="meg3-installment-preview">
+        <section role="dialog" aria-modal="true" aria-label="Visualizar parcelas">
+          <header><div><small>PARCELAMENTO</small><h3>Visualizar parcelas</h3></div><button type="button" onClick={() => setInstallmentPreviewOpen(false)}>×</button></header>
+          <div className="meg3-installment-list" data-meg-scroll-region="true">
+            {installmentPreview.map((item)=><article key={item.number}><span><strong>Parcela {item.number}/{installmentPreview.length}</strong><small>Fatura {item.statementMonth.split('-').reverse().join('/')} · vence {item.due.split('-').reverse().join('/')}</small></span><b>{money.format(item.amount)}</b></article>)}
+          </div>
+          <footer><span><small>Total</small><strong>{money.format(installmentPreview.reduce((sum,item)=>sum+item.amount,0))}</strong></span><button type="button" onClick={() => setInstallmentPreviewOpen(false)}>Fechar</button></footer>
+        </section>
+      </div> : null}
 
       {deleteConfirm ? <div className="meg3-delete-confirm">
         <div><small>CONFIRMAR EXCLUSÃO</small><h3>Excluir este lançamento?</h3><p>{description || 'O lançamento selecionado'} não ficará mais ativo no MEG.</p><span><button disabled={busy} onClick={() => setDeleteConfirm(false)}>Cancelar</button><button className="danger" disabled={busy} onClick={() => void remove()}>Excluir</button></span></div>
