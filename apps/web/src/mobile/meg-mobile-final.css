@@ -1009,3 +1009,36 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-pending-filter-sheet>footer .secondary{border:1px solid rgba(62,189,184,.18);background:#043638;color:#bfd2d0}
 .meg2-pending-filter-sheet>footer .apply{border:1px solid #2be8db;background:linear-gradient(180deg,#0a8d89,#076765);color:#fff}
 @media(max-width:350px){.meg2-pending-filter-fields{grid-template-columns:1fr}}
+
+
+/* Pendentes: toque abre detalhes; edição é uma ação explícita do modal. */
+.meg2-pending-detail-overlay{
+  position:fixed;inset:0;z-index:2147482310;width:100vw;height:100dvh;overflow:hidden;
+  display:grid;place-items:end center;background:rgba(0,18,20,.76);backdrop-filter:blur(9px)
+}
+.meg2-pending-detail{
+  width:min(100%,560px);padding:15px 14px calc(14px + env(safe-area-inset-bottom));
+  border:1px solid rgba(45,235,222,.45);border-bottom:0;border-radius:22px 22px 0 0;
+  background:
+    radial-gradient(circle at 90% 0%,rgba(40,232,220,.09),transparent 25%),
+    linear-gradient(165deg,#063d40,#032d30 54%,#012326);
+  box-shadow:0 -20px 60px rgba(0,0,0,.38),0 0 24px rgba(31,232,220,.10)
+}
+.meg2-pending-detail>header{display:flex;align-items:start;justify-content:space-between;gap:12px}
+.meg2-pending-detail>header>div{min-width:0}
+.meg2-pending-detail>header small{display:block;color:#52e8df;font-size:8px;font-weight:800;letter-spacing:.12em}
+.meg2-pending-detail>header h2{margin:4px 0 0;font-size:20px;line-height:1.08;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meg2-pending-detail>header>button{width:42px;height:42px;flex:0 0 42px;border:1px solid rgba(59,202,195,.20);border-radius:13px;background:#043638;color:#fff;font-size:25px}
+.meg2-pending-detail-amount{position:relative;margin-top:13px;padding:13px;border:1px solid rgba(57,202,194,.18);border-radius:16px;background:rgba(5,66,67,.70)}
+.meg2-pending-detail-amount small{display:block;color:#8da6a3;font-size:8px}
+.meg2-pending-detail-amount strong{display:block;margin-top:4px;color:#56e8df;font-size:29px;letter-spacing:-.03em}
+.meg2-pending-detail-amount em{position:absolute;right:12px;top:12px;padding:4px 8px;border-radius:99px;font-size:8px;font-style:normal;font-weight:800;background:rgba(244,190,54,.13);color:#ffd46e}
+.meg2-pending-detail-amount em.paid{background:rgba(56,223,170,.13);color:#69e6b8}
+.meg2-pending-detail-amount em.late{background:rgba(255,105,126,.13);color:#ff8d9c}
+.meg2-pending-detail dl{margin:10px 0 0;display:grid;gap:6px}
+.meg2-pending-detail dl>div{min-height:45px;padding:8px 10px;display:grid;grid-template-columns:95px minmax(0,1fr);align-items:center;gap:8px;border:1px solid rgba(55,183,178,.12);border-radius:11px;background:rgba(2,47,49,.62)}
+.meg2-pending-detail dt{color:#819c99;font-size:8px}.meg2-pending-detail dd{margin:0;text-align:right;font-size:9px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meg2-pending-detail>footer{display:grid;grid-template-columns:1fr 1.35fr;gap:8px;margin-top:12px}
+.meg2-pending-detail>footer button{min-height:46px;border-radius:12px;font-size:9px;font-weight:800}
+.meg2-pending-detail>footer .secondary{border:1px solid rgba(62,189,184,.18);background:#043638;color:#bfd2d0}
+.meg2-pending-detail>footer .apply{border:1px solid #2be8db;background:linear-gradient(180deg,#0a8d89,#076765);color:#fff}
