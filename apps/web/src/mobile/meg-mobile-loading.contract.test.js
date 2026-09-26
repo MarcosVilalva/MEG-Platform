@@ -7,6 +7,7 @@ const css = readFileSync(new URL('./meg-mobile-loading.css', import.meta.url), '
 const legacyBootCss = readFileSync(new URL('../phoenix/preview-boot.css', import.meta.url), 'utf8');
 const androidStyles = readFileSync(new URL('../../../../android/app/src/main/res/values/styles.xml', import.meta.url), 'utf8');
 const mainActivity = readFileSync(new URL('../../../../android/app/src/main/java/br/com/megfinancas/app/MainActivity.java', import.meta.url), 'utf8');
+const nativeBiometric = readFileSync(new URL('../native-biometric-login.js', import.meta.url), 'utf8');
 
 assert.match(
   preview,
@@ -138,6 +139,18 @@ assert.match(
   mainActivity,
   /setSystemBarsAppearance\([\s\S]*APPEARANCE_LIGHT_STATUS_BARS[\s\S]*APPEARANCE_LIGHT_NAVIGATION_BARS/,
   'O runtime Android deve limpar explicitamente a aparência de ícones escuros ao retomar o app.',
+);
+
+assert.doesNotMatch(
+  nativeBiometric,
+  /<span>⚡<\/span>|<span>▥<\/span>|<span>◇<\/span>|<span>☆<\/span>/,
+  'A transição biométrica não pode usar emoji ou glifos diferentes dos ícones vetoriais do loading React.',
+);
+
+assert.match(
+  nativeBiometric,
+  /m13 2-7 11h5l-1 9 8-12h-5z[\s\S]*M4 20V11M10 20V7M16 20v-5M22 20V4[\s\S]*M12 3 5 6v5[\s\S]*M7 4h10v4/,
+  'A transição biométrica deve usar os mesmos quatro ícones vetoriais do loading React.',
 );
 
 console.log('Contrato do loading mobile clean-room validado.');
