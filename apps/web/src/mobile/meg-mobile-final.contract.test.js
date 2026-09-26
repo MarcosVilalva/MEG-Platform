@@ -5,6 +5,8 @@ const mobile = readFileSync(new URL('./MegMobileFinal.tsx', import.meta.url), 'u
 const css = readFileSync(new URL('./meg-mobile-final.css', import.meta.url), 'utf8');
 const premiumCss = readFileSync(new URL('./meg-mobile-premium.css', import.meta.url), 'utf8');
 const phoenix = readFileSync(new URL('../phoenix/PhoenixApp.tsx', import.meta.url), 'utf8');
+const previewMain = readFileSync(new URL('../phoenix/preview-main.tsx', import.meta.url), 'utf8');
+const movements = readFileSync(new URL('../phoenix/screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
 const source = mobile + '\n' + css;
 
 assert.doesNotMatch(source, /\bpx-[a-z0-9-]+/i,
@@ -72,6 +74,31 @@ assert.match(
   premiumCss,
   /\.px-mobile-movement-card[\s\S]*grid-template-columns:48px minmax\(0,1fr\) auto/,
   'Card de lançamento deve usar composição responsiva com coluna central elástica.',
+);
+assert.match(
+  previewMain,
+  /document\.body\.classList\.add\('meg-operational-mobile'\)/,
+  'Runtime Android deve ativar explicitamente a classe que habilita o CSS premium.',
+);
+assert.match(
+  previewMain,
+  /document\.documentElement\.classList\.add\('meg-operational-mobile'\)/,
+  'Raiz do WebView também deve declarar o runtime premium móvel.',
+);
+assert.match(
+  mobile,
+  /const title = periodMode === 'all'[\s\S]*compactMonth\(data\.month\)/,
+  'Home do mês atual deve usar competência compacta como na prévia validada.',
+);
+assert.match(
+  movements,
+  /nativeOperational \? 'Lançamentos' : 'Controle financeiro'/,
+  'No APK, Lançamentos deve usar o título aprovado em vez do título web antigo.',
+);
+assert.match(
+  mobile,
+  /semanticIcon\(item\.description\)[\s\S]*meg2-pending-icon/,
+  'Pendentes deve escolher ícone pelo conteúdo, não por posição arbitrária na lista.',
 );
 
 console.log('Contrato da reconstrução mobile final validado.');
