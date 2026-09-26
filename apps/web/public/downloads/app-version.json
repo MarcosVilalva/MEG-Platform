@@ -1,9 +1,9 @@
 {
-  "versionCode": 435,
-  "versionName": "2.0.435",
+  "versionCode": 436,
+  "versionName": "2.0.436",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "029d9860ca3cde80d6b5a041baa635e9cf905e894f7623fc90c18565fc516282",
+  "sha256": "80c30879ab019cf4b546405288e431d32c1ee18c88c06d2278c02816356bba01",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "refactor(mobile): isolar runtime clean-room do Phoenix legado"
+  "releaseNotes": "fix(mobile): restaurar fidelidade de Lançamentos"
 }
