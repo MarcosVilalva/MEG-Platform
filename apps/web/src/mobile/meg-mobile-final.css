@@ -258,6 +258,33 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-pending-list>button.paid .meg2-pending-value em{background:var(--meg2-green);color:#06362c}
 .meg2-pending-list>button>i{font-style:normal;color:var(--meg2-cyan);font-size:23px;font-weight:300}
 
+.meg2-card-detail-overlay{
+  position:fixed;inset:0;z-index:2147482390;width:100vw;height:100dvh;overflow:hidden;
+  display:grid;place-items:end center;background:rgba(0,18,20,.78)
+}
+.meg2-card-detail{
+  width:min(100%,560px);max-height:calc(100dvh - max(16px,env(safe-area-inset-top)));
+  padding:15px 14px calc(14px + env(safe-area-inset-bottom));overflow:hidden;
+  border:1px solid rgba(45,235,222,.48);border-bottom:0;border-radius:22px 22px 0 0;
+  background:linear-gradient(165deg,#063d40,#032d30 54%,#012326);
+  box-shadow:0 -20px 60px rgba(0,0,0,.40),0 0 24px rgba(31,232,220,.12)
+}
+.meg2-card-detail>header{display:flex;align-items:start;justify-content:space-between;gap:12px}
+.meg2-card-detail>header small{display:block;color:#52e8df;font-size:8px;font-weight:800;letter-spacing:.12em}
+.meg2-card-detail>header h2{margin:4px 0 0;font-size:20px;line-height:1.08}
+.meg2-card-detail>header>button{width:42px;height:42px;flex:0 0 42px;border:1px solid rgba(59,202,195,.20);border-radius:13px;background:#043638;color:#fff;font-size:25px}
+.meg2-card-detail-value{margin-top:12px;padding:11px;display:grid;grid-template-columns:48px minmax(0,1fr);align-items:center;gap:10px;border:1px solid rgba(57,202,194,.18);border-radius:15px;background:rgba(5,66,67,.70)}
+.meg2-card-detail-value>span{width:46px;height:46px;display:grid;place-items:center;border-radius:12px;background:#075154;color:#55e8df}
+.meg2-card-detail-value small{display:block;color:#95afac;font-size:8px}.meg2-card-detail-value strong{display:block;margin-top:3px;color:#5be8df;font-size:24px}
+.meg2-card-detail dl{margin:9px 0 0;display:grid;gap:5px;max-height:42dvh;overflow-y:auto;scrollbar-width:none}
+.meg2-card-detail dl::-webkit-scrollbar{display:none}
+.meg2-card-detail dl>div{min-height:42px;padding:7px 9px;display:grid;grid-template-columns:105px minmax(0,1fr);align-items:center;gap:8px;border:1px solid rgba(55,183,178,.12);border-radius:10px;background:rgba(2,47,49,.62)}
+.meg2-card-detail dt{color:#819c99;font-size:8px}.meg2-card-detail dd{margin:0;text-align:right;font-size:9px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meg2-card-detail>footer{display:grid;grid-template-columns:1fr 1.35fr;gap:8px;margin-top:11px}
+.meg2-card-detail>footer button{min-height:46px;border-radius:12px;font-size:9px;font-weight:800}
+.meg2-card-detail>footer .secondary{border:1px solid rgba(62,189,184,.18);background:#043638;color:#bfd2d0}
+.meg2-card-detail>footer .apply{border:1px solid #2be8db;background:linear-gradient(180deg,#0a8d89,#076765);color:#fff}
+
 .meg2-dock{
   min-height:74px;padding:6px 5px max(6px,env(safe-area-inset-bottom));
   border-top:1px solid rgba(61,220,212,.17);background:rgba(0,38,41,.97);

@@ -282,7 +282,38 @@
 .meg3-timeline-item small{color:#799894;font-size:8px}
 .meg3-timeline-item strong{display:block;margin-top:3px;font-size:12px;text-transform:none}
 .meg3-timeline-item p{margin:3px 0 0;color:#9eb3b0;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.meg3-cashflow{grid-template-rows:auto auto minmax(0,1fr)}
+.meg3-cashflow,.meg3-analytics{grid-template-rows:auto auto minmax(0,1fr)}
+.meg3-analysis-tabs{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));min-height:38px;
+  border:1px solid rgba(58,213,204,.24);border-radius:13px;background:#03383a;overflow:hidden
+}
+.meg3-analysis-tabs button{border:0;border-right:1px solid rgba(63,192,184,.11);background:transparent;color:#bdd1cf;font-size:9px;font-weight:750}
+.meg3-analysis-tabs button:last-child{border-right:0}
+.meg3-analysis-tabs button.active{background:linear-gradient(180deg,#1fcfc4,#14a9a2);color:#032c2e;font-weight:900}
+.meg3-analysis-scroll{min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding:1px 2px 7px}
+.meg3-analysis-scroll::-webkit-scrollbar{display:none}
+.meg3-cashflow-summary,.meg3-analytics-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.meg3-cashflow-summary article,.meg3-analytics-kpis article{
+  min-width:0;min-height:70px;padding:9px 7px;border:1px solid rgba(65,207,199,.19);border-radius:13px;background:linear-gradient(145deg,#064547,#023638);display:grid;align-content:center;gap:5px
+}
+.meg3-cashflow-summary small,.meg3-analytics-kpis small{color:#92aaa7;font-size:7.5px}
+.meg3-cashflow-summary strong,.meg3-analytics-kpis strong{font-size:clamp(9px,2.8vw,13px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meg3-cashflow-summary .income strong,.meg3-analytics-kpis .income strong{color:#54e0b0}
+.meg3-cashflow-summary .expense strong,.meg3-analytics-kpis .expense strong{color:#ff778a}
+.meg3-cashflow-summary .positive strong{color:#45e7df}.meg3-cashflow-summary .negative strong{color:#ff778a}
+.meg3-cashflow-balance{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
+.meg3-cashflow-balance div{padding:10px;border:1px solid rgba(58,205,197,.15);border-radius:13px;background:rgba(2,46,48,.78)}
+.meg3-cashflow-balance small{display:block;color:#8ca5a2;font-size:8px}.meg3-cashflow-balance strong{display:block;margin-top:4px;font-size:13px}
+.meg3-daily-chart,.meg3-trend-chart,.meg3-category-visual{margin-top:7px;border:1px solid rgba(57,201,193,.16);border-radius:15px;background:rgba(2,43,45,.74)}
+.meg3-daily-chart{padding:10px}
+.meg3-daily-chart header,.meg3-trend-chart header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.meg3-daily-chart header strong,.meg3-trend-chart header strong{font-size:11px}.meg3-daily-chart header small,.meg3-trend-chart header small{color:#789793;font-size:7px}
+.meg3-daily-chart-bars{height:94px;margin-top:10px;padding-top:4px;display:flex;align-items:flex-end;gap:4px;border-bottom:1px solid rgba(104,192,185,.22)}
+.meg3-daily-chart-bars>span{height:100%;min-width:0;flex:1;display:flex;align-items:flex-end;justify-content:center;gap:1px}
+.meg3-daily-chart-bars i{width:42%;min-height:3px;border-radius:2px 2px 0 0}.meg3-daily-chart-bars i.income{background:#3bdba8}.meg3-daily-chart-bars i.expense{background:#ff647a}
+.meg3-daily-chart footer{display:flex;justify-content:center;gap:16px;padding-top:7px;color:#95ada9;font-size:7px}
+.meg3-daily-chart footer span{display:flex;align-items:center;gap:4px}.meg3-daily-chart footer i{width:7px;height:7px;border-radius:50%}.meg3-daily-chart footer i.income{background:#3bdba8}.meg3-daily-chart footer i.expense{background:#ff647a}
+.meg3-cashflow-list{height:auto;margin-top:7px;overflow:visible;padding:0}
 .meg3-cashflow-list article{
   min-height:58px;display:grid;grid-template-columns:minmax(0,1.2fr) .8fr .8fr 1fr;align-items:center;gap:7px;
   padding:9px 10px;margin-bottom:6px;border:1px solid rgba(60,198,191,.14);border-radius:14px;background:rgba(3,49,51,.78)
@@ -293,8 +324,17 @@
 .meg3-cashflow-list article>.income{color:#57ddb0;font-size:9px}
 .meg3-cashflow-list article>.expense{color:#ff7e8c;font-size:9px}
 .meg3-cashflow-list article>b{text-align:right;font-size:9px}
-.meg3-analytics{grid-template-rows:auto auto minmax(0,1fr)}
-.meg3-analytics-list{border:1px solid rgba(57,201,193,.16);border-radius:17px;background:rgba(2,43,45,.70);padding:10px}
+.meg3-category-visual{min-height:178px;padding:12px;display:grid;grid-template-columns:46% minmax(0,1fr);align-items:center;gap:10px}
+.meg3-donut{width:min(128px,100%);aspect-ratio:1;margin:auto;border-radius:50%;display:grid;place-items:center;position:relative}
+.meg3-donut:after{content:"";position:absolute;inset:25%;border-radius:50%;background:#06383a}
+.meg3-donut>span{position:relative;z-index:1;display:grid;place-items:center;text-align:center}.meg3-donut small{color:#91aaa7;font-size:7px}.meg3-donut strong{max-width:72px;overflow:hidden;text-overflow:ellipsis;font-size:10px}.meg3-donut em{color:#42e0d6;font-size:8px;font-style:normal}
+.meg3-category-legend p{display:grid;grid-template-columns:8px minmax(0,1fr) auto;align-items:center;gap:5px;margin:6px 0;font-size:7.5px}.meg3-category-legend p i{width:7px;height:7px;border-radius:50%}.meg3-category-legend p span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#b9cdca}.meg3-category-legend p strong{font-size:7.5px}
+.meg3-trend-chart{padding:10px}
+.meg3-trend-chart>div{height:125px;margin-top:9px;display:flex;align-items:stretch;gap:6px}
+.meg3-trend-chart>div>span{min-width:0;flex:1;display:grid;grid-template-rows:minmax(0,1fr) 15px;gap:3px;text-align:center}
+.meg3-trend-chart b{display:flex;align-items:flex-end;justify-content:center;gap:2px;border-bottom:1px solid rgba(99,188,181,.20)}
+.meg3-trend-chart b i{width:34%;min-height:4px;border-radius:3px 3px 0 0}.meg3-trend-chart b i.income{background:#39d7a6}.meg3-trend-chart b i.expense{background:#ff647a}.meg3-trend-chart span small{color:#76938f;font-size:7px}
+.meg3-analytics-list{height:auto;margin-top:7px;overflow:visible;border:1px solid rgba(57,201,193,.16);border-radius:17px;background:rgba(2,43,45,.70);padding:10px}
 .meg3-analytics-list>header{padding:2px 2px 8px}
 .meg3-analytics-list>header strong{display:block;font-size:15px}
 .meg3-analytics-list>header small{color:#8aa4a1;font-size:8px}
