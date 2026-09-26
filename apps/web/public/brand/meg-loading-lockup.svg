@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 150" role="img" aria-labelledby="title desc">
+  <title id="title">MEG Finanças</title>
+  <desc id="desc">Marca MEG Finanças usada na tela de carregamento móvel</desc>
+  <defs>
+    <linearGradient id="megArrow" x1="58" y1="56" x2="176" y2="8" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#21b8e8"/>
+      <stop offset=".52" stop-color="#1ed8d8"/>
+      <stop offset="1" stop-color="#35eca2"/>
+    </linearGradient>
+    <linearGradient id="megWord" x1="52" y1="90" x2="187" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset=".56" stop-color="#f8ffff"/>
+      <stop offset="1" stop-color="#eafffb"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <rect x="76" y="34" width="12" height="22" rx="2.5" fill="#2aa5df"/>
+    <rect x="98" y="23" width="12" height="33" rx="2.5" fill="#20c8df"/>
+    <rect x="120" y="10" width="12" height="46" rx="2.5" fill="#25dda7"/>
+    <path d="M58 66c31-4 55-18 77-40l-10-8 43-11-12 41-10-8c-24 23-50 36-83 38z" fill="url(#megArrow)" stroke="#bffff0" stroke-width="2" stroke-linejoin="round"/>
+  </g>
+  <text x="46" y="112" fill="url(#megWord)" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="63" font-weight="900" letter-spacing="-5">MEG</text>
+  <text x="69" y="137" fill="#54eadb" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" font-weight="850" letter-spacing="6">FINANÇAS</text>
+</svg>
