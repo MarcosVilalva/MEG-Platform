@@ -66,6 +66,18 @@ assert.match(
   'O loading deve exibir o progresso real em percentual ao lado da barra.',
 );
 
+assert.match(
+  component,
+  /progressLabel >= 100 \? 'Tudo pronto'/,
+  'Ao concluir, o texto deve indicar conclusão sem reticências artificiais.',
+);
+
+assert.match(
+  css,
+  /\.meg-loading-track>span\.complete\{[\s\S]*width:100%!important[\s\S]*transition:none/,
+  'Ao chegar a 100%, o preenchimento da barra deve sincronizar imediatamente com o percentual exibido.',
+);
+
 assert.doesNotMatch(
   component,
   /Carregando seu ambiente|px-preview-boot-v5-ring|Organizando suas finanças para o seu dia a dia/i,
