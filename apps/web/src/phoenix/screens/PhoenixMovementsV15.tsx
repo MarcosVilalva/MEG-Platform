@@ -380,7 +380,20 @@ const gridLabels: Record<GridKey, string> = {
   paymentMethod: 'Forma de pagamento', status: 'Situação', modality: 'Modalidade'
 };
 
-type MovementIconName = 'search' | 'filters' | 'calendar' | 'wallet' | 'income' | 'expense' | 'result' | 'warning' | 'close' | 'plus' | 'chevronLeft' | 'chevronRight' | 'chevronsLeft' | 'chevronsRight' | 'expand' | 'collapse';
+type MovementIconName = 'search' | 'filters' | 'calendar' | 'wallet' | 'income' | 'expense' | 'result' | 'warning' | 'close' | 'plus' | 'chevronLeft' | 'chevronRight' | 'chevronsLeft' | 'chevronsRight' | 'expand' | 'collapse' | 'card' | 'pix' | 'food' | 'transfer' | 'cash';
+
+function movementContextIcon(event: FinancialEvent): MovementIconName {
+  const payment = normalizeText(`${event.paymentMethod?.name || ''} ${event.sourceDetails?.paymentMethod || ''}`);
+  const account = normalizeText(`${event.account?.name || ''} ${event.account?.type || ''}`);
+  const description = normalizeText(event.description || '');
+  if (isBenefitEvent(event) || description.includes('alimentacao') || description.includes('verocard')) return 'food';
+  if (projectedCardMeta(event) || payment.includes('cartao') || payment.includes('credito')) return 'card';
+  if (payment.includes('pix')) return 'pix';
+  if (event.type === 'transfer') return 'transfer';
+  if (payment.includes('dinheiro') || payment.includes('especie')) return 'cash';
+  if (account.includes('banco') || account.includes('conta') || account.includes('corrente')) return 'wallet';
+  return launchTypeForEvent(event.type) === 'income' ? 'income' : 'expense';
+}
 
 function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: number }) {
   const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
@@ -388,6 +401,11 @@ function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: numb
   if (name === 'filters') return <svg {...common}><path d="M4 7h10M18 7h2M10 17h10M4 17h2M8 4v6M16 14v6"/></svg>;
   if (name === 'calendar') return <svg {...common}><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>;
   if (name === 'wallet') return <svg {...common}><path d="M4 7.5h14a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12"/><path d="M16 12h4v4h-4a2 2 0 0 1 0-4Z"/></svg>;
+  if (name === 'card') return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9h18M7 15h4"/></svg>;
+  if (name === 'pix') return <svg {...common}><path d="m12 3 4 4-4 4-4-4 4-4Z"/><path d="m7 8-4 4 4 4 4-4M17 8l4 4-4 4-4-4M12 13l4 4-4 4-4-4"/></svg>;
+  if (name === 'food') return <svg {...common}><path d="M6 3v8M9 3v8M6 7h3M7.5 11v10M15 3v8c0 2 3 2 3 0V3M16.5 13v8"/></svg>;
+  if (name === 'transfer') return <svg {...common}><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/></svg>;
+  if (name === 'cash') return <svg {...common}><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M7 9H5v2M17 15h2v-2"/></svg>;
   if (name === 'income') return <svg {...common}><path d="M12 19V5M7 10l5-5 5 5"/></svg>;
   if (name === 'expense') return <svg {...common}><path d="M12 5v14M7 14l5 5 5-5"/></svg>;
   if (name === 'result') return <svg {...common}><path d="M5 19V9M10 19V5M15 19v-7M20 19V7"/></svg>;
@@ -1294,6 +1312,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
           const accountName = event.account?.name || 'Conta não informada';
           const payment = sourcePayment(event);
           const purchaseDate = sourcePurchaseDate(event);
+          const contextIcon = movementContextIcon(event);
           return <button
             className={`px-mobile-movement-card ${visualType} ${recentEventId === event.id ? 'is-recently-updated' : ''}`}
             type="button"
@@ -1301,12 +1320,12 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
             onClick={() => setDetailEvent(event)}
             aria-label={`${event.description}, ${money.format(rawSigned)}, ${sourceSituation(event)}`}
           >
-            <span className={`px-mobile-movement-type ${visualType}`} aria-hidden="true"><MovementIcon name={isIncome ? 'income' : visualType === 'expense' ? 'expense' : 'result'} size={17} /></span>
+            <span className={`px-mobile-movement-type ${visualType}`} aria-hidden="true"><MovementIcon name={contextIcon} size={19} /><i className="px-mobile-movement-direction"><MovementIcon name={isIncome ? 'income' : visualType === 'expense' ? 'expense' : 'transfer'} size={10} /></i></span>
             <span className="px-mobile-movement-main">
               <span className="px-mobile-movement-topline"><small>{formatIsoDate(purchaseDate)} · {event.sourceDetails?.weekday || weekday(event.date)}</small><em className={`px-mobile-movement-status ${event.status}`}>{sourceSituation(event)}</em></span>
               <strong title={event.description}>{event.description}</strong>
               <span className="px-mobile-movement-meta"><b>{group !== '—' ? group : sourceClassification(event)}</b><i>·</i><span>{accountName}</span></span>
-              <span className="px-mobile-movement-submeta">{payment !== '—' ? payment : sourceModality(event)}</span>
+              <span className="px-mobile-movement-submeta"><i aria-hidden="true"><MovementIcon name={contextIcon} size={11}/></i>{payment !== '—' ? payment : sourceModality(event)}</span>
             </span>
             <span className={`px-mobile-movement-value ${rawSigned < 0 ? 'negative' : rawSigned > 0 ? 'positive' : ''}`}>
               <strong>{money.format(rawSigned)}</strong>
