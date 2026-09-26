@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const preview = readFileSync(new URL('../phoenix/preview-main.tsx', import.meta.url), 'utf8');
 const component = readFileSync(new URL('./MegMobileLoading.tsx', import.meta.url), 'utf8');
@@ -8,161 +8,31 @@ const legacyBootCss = readFileSync(new URL('../phoenix/preview-boot.css', import
 const androidStyles = readFileSync(new URL('../../../../android/app/src/main/res/values/styles.xml', import.meta.url), 'utf8');
 const mainActivity = readFileSync(new URL('../../../../android/app/src/main/java/br/com/megfinancas/app/MainActivity.java', import.meta.url), 'utf8');
 const nativeBiometric = readFileSync(new URL('../native-biometric-login.js', import.meta.url), 'utf8');
+const approvedArt = new URL('../../public/brand/meg-loading-approved-bg.jpg', import.meta.url);
 
-assert.match(
-  preview,
-  /MegMobileLoading progress=\{active\.progress\}/,
-  'O boot real do APK deve renderizar o novo loading clean-room.',
-);
+assert.match(preview,/MegMobileLoading progress=\{active\.progress\}/,'O boot real do APK deve renderizar o loading aprovado.');
+assert.doesNotMatch(preview,/px-preview-boot-v5|data-boot-fidelity="approved-v5"/,'O V5 antigo não pode voltar ao boot principal.');
+assert.doesNotMatch(legacyBootCss,/px-preview-boot-v5|MEG Boot 5\.0|approved-v5/,'O CSS visual V5 antigo deve permanecer removido.');
 
-assert.doesNotMatch(
-  preview,
-  /px-preview-boot-v5|data-boot-fidelity="approved-v5"/,
-  'A estrutura visual V5 antiga não pode voltar ao boot principal.',
-);
+assert.ok(existsSync(approvedArt),'A arte estática validada deve existir como asset do aplicativo.');
+assert.match(component,/data-meg-loading-reference="approved-static-art"/,'O loading deve declarar a arte estática aprovada como referência.');
+assert.match(component,/meg-loading-static-art/,'A tela deve usar a arte validada como composição visual única.');
+assert.doesNotMatch(component,/FeatureIcon|tile-chart|tile-card|tile-home|tile-pie|meg-loading-features/,'Ícones, cards e benefícios não podem ser reconstruídos sobre a arte.');
+assert.match(component,/progressLabel/,'O progresso real deve continuar funcional.');
+assert.match(component,/progressLabel >= 100 \? 'Tudo pronto'/,'A conclusão do boot deve continuar dinâmica.');
 
-assert.doesNotMatch(
-  legacyBootCss,
-  /px-preview-boot-v5|MEG Boot 5\.0|approved-v5/,
-  'O CSS visual V5 antigo deve ser removido, não apenas deixado dormente.',
-);
+assert.match(css,/meg-loading-approved-bg\.jpg/,'O CSS deve usar diretamente a imagem validada.');
+assert.match(css,/\.meg-loading-static-art\{[\s\S]*background-size:100% 100%/,'A arte aprovada deve preencher todo o viewport.');
+assert.match(css,/\.meg-loading-progress-shell\{/,'Somente a camada funcional de progresso deve ficar sobre a arte.');
+assert.match(css,/\.meg-loading-screen\{[\s\S]*height:100dvh[\s\S]*overflow:hidden/,'A tela deve ocupar o viewport sem rolagem.');
+assert.match(css,/\.meg-loading-track>span\.complete\{[\s\S]*width:100%!important[\s\S]*transition:none/,'O preenchimento deve sincronizar com 100%.');
+assert.doesNotMatch(css,/(?:-webkit-)?backdrop-filter\s*:|(^|[;{])\s*filter\s*:/m,'O loading não deve depender de filtros instáveis no Android WebView.');
 
-assert.match(
-  component,
-  /data-meg-loading="validated-cleanroom"/,
-  'O loading aprovado deve declarar explicitamente a implementação clean-room.',
-);
+assert.match(nativeBiometric,/approved-static-art/,'A transição biométrica deve reutilizar exatamente a mesma arte estática.');
+assert.match(nativeBiometric,/meg-loading-static-art[\s\S]*meg-loading-progress-shell/,'A transição biométrica deve manter apenas arte e progresso.');
+assert.doesNotMatch(nativeBiometric,/tile-chart|tile-card|tile-home|tile-pie|meg-loading-features/,'A transição biométrica não pode reconstruir os ícones.');
 
-assert.match(
-  component,
-  /data-meg-loading-reference="approved-neon-final"/,
-  'O loading deve declarar a referência neon final aprovada como referência visual.',
-);
+assert.match(androidStyles,/android:windowLightStatusBar">false<[\s\S]*android:windowLightNavigationBar">false</,'O tema Android deve usar ícones claros nas barras do sistema.');
+assert.match(mainActivity,/setSystemBarsAppearance\([\s\S]*APPEARANCE_LIGHT_STATUS_BARS[\s\S]*APPEARANCE_LIGHT_NAVIGATION_BARS/,'O runtime Android deve manter as barras do sistema escuras.');
 
-assert.match(
-  component,
-  /brand\/meg-loading-lockup\.svg/,
-  'O loading deve usar a marca exclusiva reconstruída para a referência aprovada.',
-);
-
-assert.match(
-  component,
-  /SUAS FINANÇAS[\s\S]*EM UM SÓ LUGAR/,
-  'O slogan da prancha aprovada deve permanecer visível no loading.',
-);
-
-assert.match(
-  component,
-  /Carregando sua experiência/,
-  'A mensagem de progresso deve seguir a prancha aprovada.',
-);
-
-assert.match(
-  component,
-  /MAIS[\s\S]*CONTROLE[\s\S]*ORGANIZAÇÃO[\s\S]*TRANQUILIDADE[\s\S]*RESULTADOS/,
-  'O rodapé deve preservar os quatro benefícios visuais da prancha aprovada.',
-);
-
-assert.match(
-  component,
-  /progressLabel/,
-  'O loading deve exibir o progresso real em percentual ao lado da barra.',
-);
-
-assert.match(
-  component,
-  /progressLabel >= 100 \? 'Tudo pronto'/,
-  'Ao concluir, o texto deve indicar conclusão sem reticências artificiais.',
-);
-
-assert.match(
-  css,
-  /\.meg-loading-track>span\.complete\{[\s\S]*width:100%!important[\s\S]*transition:none/,
-  'Ao chegar a 100%, o preenchimento da barra deve sincronizar imediatamente com o percentual exibido.',
-);
-
-assert.doesNotMatch(
-  component,
-  /Carregando seu ambiente|px-preview-boot-v5-ring|Organizando suas finanças para o seu dia a dia/i,
-  'O novo loading não pode reaproveitar a composição textual anterior ou o V5.',
-);
-
-assert.match(
-  css,
-  /\.meg-loading-screen\{[\s\S]*height:100dvh[\s\S]*overflow:hidden/,
-  'A tela de carregamento deve ocupar o viewport inteiro sem rolagem.',
-);
-
-assert.match(
-  css,
-  /\.meg-loading-layout\{[\s\S]*safe-area-inset-top[\s\S]*safe-area-inset-bottom/,
-  'O loading deve respeitar as safe areas do Android.',
-);
-
-assert.match(
-  css,
-  /\.meg-loading-layout\{[\s\S]*grid-template-rows:minmax\(0,1\.36fr\) minmax\(0,\.82fr\) auto auto/,
-  'A composição deve manter marca, ícones, progresso e benefícios em quatro zonas compactas como na referência neon final.',
-);
-
-assert.match(
-  css,
-  /\.meg-loading-brand\{[\s\S]*width:clamp\(176px,49vw,218px\)/,
-  'A marca principal deve ocupar a proporção visual dominante da prancha aprovada, sem voltar a ficar pequena no centro da tela.',
-);
-
-assert.match(
-  css,
-  /\.meg-loading-features\{[\s\S]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/,
-  'Os quatro benefícios inferiores devem permanecer em uma grade fixa e responsiva.',
-);
-
-assert.match(
-  css,
-  /\.meg-loading-floating\{[\s\S]*width:min\(84vw,354px\)[\s\S]*\.meg-loading-floating \.tile\{[\s\S]*width:clamp\(68px,20\.5vw,88px\)/,
-  'Os quatro cards centrais devem formar o agrupamento grande e compacto da prancha, evitando o vazio excessivo da implementação anterior.',
-);
-
-assert.match(
-  css,
-  /\.meg-loading-features\{[\s\S]*min-height:clamp\(68px,9\.8dvh,92px\)/,
-  'A faixa inferior deve reservar altura suficiente para manter progresso e benefícios mais acima, como na referência aprovada.',
-);
-
-assert.match(
-  css,
-  /@media\(max-height:700px\)[\s\S]*@media\(max-height:580px\)/,
-  'O loading deve adaptar proporções pela altura apenas em viewports realmente curtos, preservando a presença visual nos aparelhos normais.',
-);
-
-assert.doesNotMatch(
-  css,
-  /(?:-webkit-)?backdrop-filter\s*:|(^|[;{])\s*filter\s*:/m,
-  'O loading não pode depender de filtros de composição instáveis no Android WebView.',
-);
-
-assert.match(
-  androidStyles,
-  /android:windowLightStatusBar">false<[\s\S]*android:windowLightNavigationBar">false</,
-  'O tema Android deve usar ícones claros nas barras do sistema sobre o fundo escuro do MEG.',
-);
-
-assert.match(
-  mainActivity,
-  /setSystemBarsAppearance\([\s\S]*APPEARANCE_LIGHT_STATUS_BARS[\s\S]*APPEARANCE_LIGHT_NAVIGATION_BARS/,
-  'O runtime Android deve limpar explicitamente a aparência de ícones escuros ao retomar o app.',
-);
-
-assert.doesNotMatch(
-  nativeBiometric,
-  /<span>⚡<\/span>|<span>▥<\/span>|<span>◇<\/span>|<span>☆<\/span>/,
-  'A transição biométrica não pode usar emoji ou glifos diferentes dos ícones vetoriais do loading React.',
-);
-
-assert.match(
-  nativeBiometric,
-  /m13 2-7 11h5l-1 9 8-12h-5z[\s\S]*M4 20V11M10 20V7M16 20v-5M22 20V4[\s\S]*M12 3 5 6v5[\s\S]*M7 4h10v4/,
-  'A transição biométrica deve usar os mesmos quatro ícones vetoriais do loading React.',
-);
-
-console.log('Contrato do loading mobile clean-room validado.');
+console.log('Contrato do loading mobile com arte estática validada.');
