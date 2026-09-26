@@ -5,6 +5,7 @@ import { hydratePhoenixAvatarPreference, phoenixAvatarImage, readPhoenixAvatarPr
 import { MegMobileAnalytics, MegMobileCashflow, MegMobileHistory, MegMobileMovements } from './MegMobileCoreScreens';
 import { MegMobileLaunchSheet } from './MegMobileLaunchSheet';
 import { MegMobileCardCenter } from './MegMobileCardCenter';
+import { MegMobileBenefitModal } from './MegMobileBenefitModal';
 import './meg-mobile-final.css';
 import './meg-mobile-core-screens.css';
 
@@ -306,6 +307,7 @@ function FutureHome({ data, context, onNavigate }: { data: PhoenixReadModel; con
 }
 
 function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; homePeriodContext?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate'] }) {
+  const [benefitOpen, setBenefitOpen] = useState(false);
   const nowMonth = todayIso().slice(0, 7);
   if (periodMode === 'month' && data.month < nowMonth) return <PastHome data={data} context={homePeriodContext} onNavigate={onNavigate}/>;
   if (periodMode === 'month' && data.month > nowMonth) return <FutureHome data={data} context={homePeriodContext} onNavigate={onNavigate}/>;
@@ -348,7 +350,7 @@ function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: 
       <article><span className="green"><Icon name="check"/></span><small>Contas pagas</small><b>{paid.length}</b><em>{money.format(paid.reduce((s, item) => s + Math.abs(Number(item.signedAmount || item.amount || 0)), 0))}</em></article>
     </section>
 
-    <button className="meg2-benefit" onClick={() => onNavigate('movements')}>
+    <button className="meg2-benefit" type="button" onClick={() => setBenefitOpen(true)}>
       <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Saldo disponível</em><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong></div><b>›</b>
     </button>
 
@@ -361,6 +363,7 @@ function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: 
         <button onClick={() => onNavigate('analytics')}><span><Icon name="chart"/></span><small>Ver relatórios</small></button>
       </div>
     </section>
+    {benefitOpen ? <MegMobileBenefitModal data={data} onClose={() => setBenefitOpen(false)} onOpenMovements={() => { setBenefitOpen(false); onNavigate('movements'); }}/> : null}
   </main>;
 }
 
