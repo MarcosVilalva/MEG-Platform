@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { hydratePhoenixAvatarPreference } from '../phoenix/profile-avatar';
 import { MegMobileAnalytics, MegMobileCashflow, MegMobileHistory, MegMobileMovements } from './MegMobileCoreScreens';
+import { MegMobileLaunchSheet } from './MegMobileLaunchSheet';
 import './meg-mobile-final.css';
 import './meg-mobile-core-screens.css';
 
@@ -599,9 +601,10 @@ function PeriodSheet({ data, initialMode, loading = false, error = '', onClose, 
   </div>;
 }
 
-export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, periodMode, periodLabel, homePeriodContext, periodLoading, periodError, onSelectMonth, onSelectRange, onSelectAll, onLogout, onClose }: Props) {
+export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaunch, onEditEvent: _legacyOnEditEvent, periodMode, periodLabel, homePeriodContext, periodLoading, periodError, onSelectMonth, onSelectRange, onSelectAll, onLogout, onClose }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [periodOpen, setPeriodOpen] = useState(false);
+  const [launchSheet, setLaunchSheet] = useState<{ preset: LaunchPreset; event?: FinancialEvent | null } | null>(null);
   useEffect(() => {
     void hydratePhoenixAvatarPreference(data.user.id);
   }, [data.user.id]);
@@ -613,16 +616,20 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, 
       <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={() => setPeriodOpen(true)} onOpenMenu={() => setMenuOpen(true)}/>
       <div className="meg2-scroll">
         {view === 'home' ? <Home data={data} periodMode={periodMode} periodLabel={periodLabel} homePeriodContext={homePeriodContext} onNavigate={onNavigate}/> : null}
-        {view === 'movements' ? <MegMobileMovements data={data} onOpenEvent={(event) => onEditEvent(event.id)} onNew={() => onLaunch('expense')}/> : null}
+        {view === 'movements' ? <MegMobileMovements data={data} onOpenEvent={(event) => setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event })} onNew={() => setLaunchSheet({ preset: 'expense' })}/> : null}
         {view === 'cards' ? <Cards data={data}/> : null}
-        {view === 'payables' ? <Payables data={data} onEditEvent={onEditEvent}/> : null}
+        {view === 'payables' ? <Payables data={data} onEditEvent={(eventId) => {
+          const event = data.events.items.find((item) => item.id === eventId) || null;
+          if (event) setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event });
+        }}/> : null}
         {view === 'history' ? <MegMobileHistory data={data}/> : null}
         {view === 'cashflow' ? <MegMobileCashflow data={data}/> : null}
         {view === 'analytics' ? <MegMobileAnalytics data={data}/> : null}
       </div>
-      <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={onNavigate} onLaunch={onLaunch} onMenu={() => setMenuOpen(true)}/>
+      <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={onNavigate} onLaunch={(preset) => setLaunchSheet({ preset })} onMenu={() => setMenuOpen(true)}/>
     </div>
     {menuOpen ? <MenuSheet onClose={() => setMenuOpen(false)} onNavigate={onNavigate} onLogout={onLogout} onCloseApp={onClose}/> : null}
     {periodOpen ? <PeriodSheet data={data} initialMode={periodMode} loading={periodLoading} error={periodError} onClose={() => setPeriodOpen(false)} onSelectMonth={onSelectMonth} onSelectRange={onSelectRange} onSelectAll={onSelectAll}/> : null}
+    {launchSheet ? <MegMobileLaunchSheet data={data} preset={launchSheet.preset} event={launchSheet.event} onClose={() => setLaunchSheet(null)}/> : null}
   </div>;
 }
