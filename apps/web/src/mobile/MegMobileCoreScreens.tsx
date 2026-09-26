@@ -132,7 +132,7 @@ export function MegMobileMovements({
         const signed = signedAmount(event);
         const tone = movementTone(event);
         const category = event.category?.name || event.sourceDetails?.group || (signed >= 0 ? 'Receitas' : 'Despesas');
-        const account = event.account?.name || event.sourceDetails?.accountName || '';
+        const account = event.account?.name || '';
         const method = event.paymentMethod?.name || event.sourceDetails?.paymentMethod || '';
         const detail = [category, account].filter(Boolean).join(' · ');
         return <button className={`meg3-event-card ${tone} kind-${mobileMovementKind(event)}`} type="button" key={event.id} onClick={() => onOpenEvent(event)}>
