@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 const preview = readFileSync(new URL('../phoenix/preview-main.tsx', import.meta.url), 'utf8');
 const component = readFileSync(new URL('./MegMobileLoading.tsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./meg-mobile-loading.css', import.meta.url), 'utf8');
+const legacyBootCss = readFileSync(new URL('../phoenix/preview-boot.css', import.meta.url), 'utf8');
 
 assert.match(
   preview,
@@ -15,6 +16,12 @@ assert.doesNotMatch(
   preview,
   /px-preview-boot-v5|data-boot-fidelity="approved-v5"/,
   'A estrutura visual V5 antiga não pode voltar ao boot principal.',
+);
+
+assert.doesNotMatch(
+  legacyBootCss,
+  /px-preview-boot-v5|MEG Boot 5\.0|approved-v5/,
+  'O CSS visual V5 antigo deve ser removido, não apenas deixado dormente.',
 );
 
 assert.match(
