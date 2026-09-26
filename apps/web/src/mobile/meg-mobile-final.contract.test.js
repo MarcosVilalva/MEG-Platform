@@ -194,6 +194,11 @@ assert.match(
   /MegMobileMovements[\s\S]*MegMobileHistory[\s\S]*MegMobileCashflow[\s\S]*MegMobileAnalytics/,
   'Lançamentos, Histórico, Fluxo e Relatórios devem possuir implementações mobile clean-room próprias.',
 );
+assert.match(
+  coreScreens,
+  /Visão do fluxo de caixa[\s\S]*Evolução diária[\s\S]*Tipo de relatório[\s\S]*meg3-donut[\s\S]*Evolução mensal/,
+  'Fluxo e Relatórios devem oferecer painéis visuais completos, filtros e comparativo mensal.',
+);
 assert.match(launchSheet, /MegMobileLaunchSheet/,
   'Novo e edição devem usar formulário mobile clean-room próprio.');
 assert.match(launchSheet, /runPhoenixSimpleEventWrite/,
@@ -253,6 +258,16 @@ assert.match(
   'Central do cartão deve oferecer exportação Excel e PDF no fluxo clean-room.',
 );
 assert.match(
+  mobile,
+  /Lançamentos da fatura[\s\S]*setCenterOpen\(true\)[\s\S]*setSelectedRow\(row\)[\s\S]*DETALHE DA COMPRA/,
+  'Cartões deve abrir a central e o detalhe funcional de cada compra.',
+);
+assert.match(
+  cardCenter,
+  /artUrl[\s\S]*meg3-cardcenter-hero[\s\S]*lastFour/,
+  'Central do cartão deve preservar a arte real e a identidade do cartão selecionado.',
+);
+assert.match(
   benefitModal,
   /MegMobileBenefitModal[\s\S]*isPhoenixBenefitEvent/,
   'Benefício Alimentação deve usar modal clean-room ligado aos lançamentos reais.',
@@ -261,6 +276,11 @@ assert.match(
   mobile,
   /fromDate[\s\S]*toDate[\s\S]*meg2-pending-filter-sheet[\s\S]*meg2-pending-detail/,
   'Pendentes deve ter filtro de data funcional e modal de detalhes antes da edição.',
+);
+assert.match(
+  mobile,
+  /<dt>Categoria<\/dt>[\s\S]*<dt>Conta<\/dt>[\s\S]*<dt>Pagamento<\/dt>/,
+  'Detalhe de Pendentes deve preservar categoria, conta e forma de pagamento.',
 );
 
 

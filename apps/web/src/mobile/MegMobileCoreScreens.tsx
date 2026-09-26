@@ -189,44 +189,95 @@ export function MegMobileHistory({ data }: { data: PhoenixReadModel }) {
 }
 
 export function MegMobileCashflow({ data }: { data: PhoenixReadModel }) {
+  const [tab, setTab] = useState<'summary' | 'income' | 'expense'>('summary');
   const days = data.cashflow.days || [];
+  const result = Number(data.cashflow.totalIncome || 0) - Number(data.cashflow.totalExpense || 0);
+  const maxDaily = Math.max(1, ...days.flatMap((day) => [Number(day.income || 0), Number(day.expense || 0)]));
+  const visibleDays = days.filter((day) => tab === 'summary' || (tab === 'income' ? Number(day.income || 0) > 0 : Number(day.expense || 0) > 0));
   return <main className="meg3-screen meg3-cashflow" data-meg-fixed-screen="true">
-    <header className="meg3-title-block"><span>FLUXO DE CAIXA</span><h1>Movimento do mês</h1><p>Realizado e projetado no mesmo painel.</p></header>
-    <section className="meg3-kpis meg3-kpis-2">
-      <article><small>Saldo inicial</small><strong>{money.format(Number(data.cashflow.openingBalance || 0))}</strong></article>
-      <article className="accent"><small>Fechamento realizado</small><strong>{money.format(Number(data.cashflow.realizedClosing || 0))}</strong></article>
-      <article className="income"><small>Entradas</small><strong>{money.format(Number(data.cashflow.totalIncome || 0))}</strong></article>
-      <article className="expense"><small>Saídas</small><strong>{money.format(Number(data.cashflow.totalExpense || 0))}</strong></article>
-    </section>
-    <section className="meg3-cashflow-list" data-meg-scroll-region="true">
-      {days.map((day) => <article key={day.date}>
+    <header className="meg3-title-block"><span>FLUXO DE CAIXA</span><h1>Fluxo de caixa</h1><p>Entradas, saídas e evolução do saldo no período.</p></header>
+    <nav className="meg3-analysis-tabs" aria-label="Visão do fluxo de caixa">
+      <button className={tab === 'summary' ? 'active' : ''} onClick={() => setTab('summary')}>Resumo</button>
+      <button className={tab === 'income' ? 'active' : ''} onClick={() => setTab('income')}>Entradas</button>
+      <button className={tab === 'expense' ? 'active' : ''} onClick={() => setTab('expense')}>Saídas</button>
+    </nav>
+    <section className="meg3-analysis-scroll" data-meg-scroll-region="true">
+      <section className="meg3-cashflow-summary">
+        <article className="income"><small>Entradas</small><strong>{money.format(Number(data.cashflow.totalIncome || 0))}</strong></article>
+        <article className="expense"><small>Saídas</small><strong>{money.format(Number(data.cashflow.totalExpense || 0))}</strong></article>
+        <article className={result >= 0 ? 'result positive' : 'result negative'}><small>Resultado</small><strong>{money.format(result)}</strong></article>
+      </section>
+      <section className="meg3-cashflow-balance">
+        <div><small>Saldo inicial</small><strong>{money.format(Number(data.cashflow.openingBalance || 0))}</strong></div>
+        <div><small>Fechamento realizado</small><strong>{money.format(Number(data.cashflow.realizedClosing || 0))}</strong></div>
+      </section>
+      <section className="meg3-daily-chart" aria-label="Evolução diária do fluxo">
+        <header><strong>Evolução diária</strong><small>{days.length} dias com movimentação</small></header>
+        <div className="meg3-daily-chart-bars">
+          {days.slice(-16).map((day) => <span key={day.date} title={shortDate(day.date)}>
+            <i className="income" style={{height:`${Math.max(3, Number(day.income || 0) / maxDaily * 100)}%`}}/>
+            <i className="expense" style={{height:`${Math.max(3, Number(day.expense || 0) / maxDaily * 100)}%`}}/>
+          </span>)}
+        </div>
+        <footer><span><i className="income"/>Entradas</span><span><i className="expense"/>Saídas</span></footer>
+      </section>
+      <section className="meg3-cashflow-list">
+      {visibleDays.map((day) => <article key={day.date}>
         <span><strong>{shortDate(day.date)}</strong><small>{day.eventCount} lançamento(s)</small></span>
         <span className="income">+{money.format(Number(day.income || 0))}</span>
         <span className="expense">-{money.format(Number(day.expense || 0))}</span>
         <b>{money.format(Number(day.realizedBalance || day.projectedBalance || 0))}</b>
       </article>)}
-      {!days.length ? <div className="meg3-empty">Nenhum movimento diário neste período.</div> : null}
+      {!visibleDays.length ? <div className="meg3-empty">Nenhum movimento diário neste filtro.</div> : null}
+      </section>
     </section>
   </main>;
 }
 
 export function MegMobileAnalytics({ data }: { data: PhoenixReadModel }) {
+  const [tab, setTab] = useState<'overview' | 'categories' | 'compare'>('overview');
   const categories = data.analytics.categories || [];
+  const trend = data.analytics.monthlyTrend || [];
   const max = Math.max(1, ...categories.map((item) => Number(item.amount || 0)));
+  const trendMax = Math.max(1, ...trend.flatMap((item) => [Number(item.income || 0), Number(item.expense || 0)]));
+  const categoryTotal = categories.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const palette = ['#ff667b','#4be0ad','#58a8ff','#f4c94c','#9c86ff','#7faaa5'];
+  let cursor = 0;
+  const donutStops = categories.slice(0, 6).map((item, index) => {
+    const start = cursor;
+    cursor += categoryTotal > 0 ? Number(item.amount || 0) / categoryTotal * 100 : 0;
+    return `${palette[index]} ${start}% ${cursor}%`;
+  });
   return <main className="meg3-screen meg3-analytics" data-meg-fixed-screen="true">
-    <header className="meg3-title-block"><span>RELATÓRIOS</span><h1>Visão financeira</h1><p>Leitura objetiva do comportamento do período.</p></header>
-    <section className="meg3-kpis meg3-kpis-2">
-      <article className="income"><small>Receitas</small><strong>{money.format(Number(data.analytics.summary.realizedIncome || 0))}</strong></article>
-      <article className="expense"><small>Despesas</small><strong>{money.format(Number(data.analytics.summary.realizedExpense || 0))}</strong></article>
-      <article><small>Média diária</small><strong>{money.format(Number(data.analytics.dailyAverageExpense || 0))}</strong></article>
-      <article className="accent"><small>Concentração Top 3</small><strong>{Number(data.analytics.concentrationTop3 || 0).toLocaleString('pt-BR',{maximumFractionDigits:1})}%</strong></article>
-    </section>
-    <section className="meg3-analytics-list" data-meg-scroll-region="true">
-      <header><strong>Despesas por categoria</strong><small>Distribuição do período</small></header>
-      {categories.map((item) => <article key={item.name}>
-        <div><span><strong>{item.name}</strong><small>{money.format(Number(item.amount || 0))}</small></span><div><i style={{width:`${Math.max(3, Math.min(100, Number(item.amount || 0) / max * 100))}%`}}/></div></div>
-      </article>)}
-      {!categories.length ? <div className="meg3-empty">Sem dados suficientes para o período.</div> : null}
+    <header className="meg3-title-block"><span>RELATÓRIOS</span><h1>Relatórios</h1><p>Indicadores para entender hábitos e tomar decisões.</p></header>
+    <nav className="meg3-analysis-tabs" aria-label="Tipo de relatório">
+      <button className={tab === 'overview' ? 'active' : ''} onClick={() => setTab('overview')}>Visão geral</button>
+      <button className={tab === 'categories' ? 'active' : ''} onClick={() => setTab('categories')}>Categorias</button>
+      <button className={tab === 'compare' ? 'active' : ''} onClick={() => setTab('compare')}>Comparar</button>
+    </nav>
+    <section className="meg3-analysis-scroll" data-meg-scroll-region="true">
+      <section className="meg3-analytics-kpis">
+        <article className="income"><small>Receitas</small><strong>{money.format(Number(data.analytics.summary.realizedIncome || 0))}</strong></article>
+        <article className="expense"><small>Despesas</small><strong>{money.format(Number(data.analytics.summary.realizedExpense || 0))}</strong></article>
+        <article><small>Média diária</small><strong>{money.format(Number(data.analytics.dailyAverageExpense || 0))}</strong></article>
+      </section>
+      {tab !== 'compare' ? <section className="meg3-category-visual">
+        <div className="meg3-donut" style={{background: donutStops.length ? `conic-gradient(${donutStops.join(',')})` : 'rgba(255,255,255,.06)'}}><span><small>Total</small><strong>{money.format(categoryTotal)}</strong><em>100%</em></span></div>
+        <div className="meg3-category-legend">
+          {categories.slice(0, 6).map((item, index) => <p key={item.name}><i style={{background:palette[index]}}/><span>{item.name}</span><strong>{categoryTotal ? Math.round(Number(item.amount || 0) / categoryTotal * 100) : 0}%</strong></p>)}
+        </div>
+      </section> : null}
+      {tab === 'compare' || tab === 'overview' ? <section className="meg3-trend-chart">
+        <header><strong>Evolução mensal</strong><small>Receitas e saídas</small></header>
+        <div>{trend.slice(-6).map((item) => <span key={item.month}><b><i className="income" style={{height:`${Math.max(4, Number(item.income || 0) / trendMax * 100)}%`}}/><i className="expense" style={{height:`${Math.max(4, Number(item.expense || 0) / trendMax * 100)}%`}}/></b><small>{item.month.slice(5)}</small></span>)}</div>
+      </section> : null}
+      {tab !== 'compare' ? <section className="meg3-analytics-list">
+        <header><strong>Por categoria</strong><small>{Number(data.analytics.concentrationTop3 || 0).toLocaleString('pt-BR',{maximumFractionDigits:1})}% concentrado nas três maiores</small></header>
+        {categories.map((item) => <article key={item.name}>
+          <div><span><strong>{item.name}</strong><small>{money.format(Number(item.amount || 0))}</small></span><div><i style={{width:`${Math.max(3, Math.min(100, Number(item.amount || 0) / max * 100))}%`}}/></div></div>
+        </article>)}
+        {!categories.length ? <div className="meg3-empty">Sem dados suficientes para o período.</div> : null}
+      </section> : null}
     </section>
   </main>;
 }

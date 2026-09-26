@@ -103,17 +103,33 @@ function cardName(name: string) {
   return name || 'Cartão';
 }
 
-function cardRows(card: PhoenixReadModel['cards'][number] | undefined) {
+type MobileCardRow = {
+  id: string;
+  eventId?: string;
+  description: string;
+  date: string;
+  amount: number;
+  installmentNo?: number;
+  installmentQty?: number;
+  category?: string;
+};
+
+function cardRows(card: PhoenixReadModel['cards'][number] | undefined): MobileCardRow[] {
   if (!card) return [];
   if (card.statement?.lines?.length) {
-    return card.statement.lines.map((line) => ({
+    return card.statement.lines.map((line) => {
+      const purchase = line.purchaseId ? (card.purchases || []).find((item) => item.id === line.purchaseId) : undefined;
+      return {
       id: line.id,
+      eventId: line.eventId,
       description: line.description,
       date: line.purchaseDate || line.dueDate,
       amount: Math.abs(Number(line.effect || 0)),
       installmentNo: line.installmentNo,
-      installmentQty: line.installmentQty
-    }));
+      installmentQty: line.installmentQty,
+      category: purchase?.category?.name || 'Outros',
+    };
+    });
   }
   return (card.purchases || []).flatMap((purchase) => (purchase.entries || []).map((entry) => ({
     id: entry.id,
@@ -121,7 +137,8 @@ function cardRows(card: PhoenixReadModel['cards'][number] | undefined) {
     date: purchase.purchaseDate,
     amount: Math.abs(Number(entry.amount || 0)),
     installmentNo: entry.number,
-    installmentQty: purchase.installments
+    installmentQty: purchase.installments,
+    category: purchase.category?.name || 'Outros',
   })));
 }
 
@@ -459,10 +476,11 @@ function InfiniteCarousel({ data, activeId, onActiveId }: { data: PhoenixReadMod
   </div>;
 }
 
-function Cards({ data }: { data: PhoenixReadModel }) {
+function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Props['onEditEvent'] }) {
   const cards = useMemo(() => data.cards.filter((card) => card.isActive !== false), [data.cards]);
   const [activeId, setActiveId] = useState(cards[0]?.id || '');
   const [centerOpen, setCenterOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<MobileCardRow | null>(null);
   useEffect(() => { if (!cards.some((card) => card.id === activeId)) setActiveId(cards[0]?.id || ''); }, [cards, activeId]);
 
   const card = cards.find((item) => item.id === activeId) || cards[0];
@@ -482,18 +500,32 @@ function Cards({ data }: { data: PhoenixReadModel }) {
       <article><Icon name="calendar"/><small>Vencimento</small><strong>{due}</strong></article>
     </section>
     <section className="meg2-statement">
-      <header><div><h2>Lançamentos da fatura</h2><small>{card ? cardName(card.name) : 'Cartão'}</small></div><button>Ver todos ›</button></header>
+      <header><div><h2>Lançamentos da fatura</h2><small>{card ? cardName(card.name) : 'Cartão'}</small></div><button type="button" onClick={() => card && setCenterOpen(true)}>Ver todos ›</button></header>
       <div className="meg2-statement-list" data-meg-scroll-region="true">
-        {rows.map((row) => <button key={row.id}><span className={'icon-' + semanticIcon(row.description)}><Icon name={semanticIcon(row.description)} size={20}/></span><p><b>{row.description}</b><small>{row.installmentNo && row.installmentQty ? 'Parcela ' + row.installmentNo + '/' + row.installmentQty + ' • ' : ''}{String(row.date || '').slice(0, 10).split('-').reverse().join('/')}</small></p><strong>{money.format(row.amount)}</strong><i>›</i></button>)}
+        {rows.map((row) => <button key={row.id} type="button" onClick={() => setSelectedRow(row)}><span className={'icon-' + semanticIcon(row.description)}><Icon name={semanticIcon(row.description)} size={20}/></span><p><b>{row.description}</b><small>{row.installmentNo && row.installmentQty ? 'Parcela ' + row.installmentNo + '/' + row.installmentQty + ' • ' : ''}{String(row.date || '').slice(0, 10).split('-').reverse().join('/')}</small></p><strong>{money.format(row.amount)}</strong><i>›</i></button>)}
         {!rows.length ? <div className="meg2-empty">Nenhum lançamento nesta fatura.</div> : null}
       </div>
     </section>
     <button className="meg2-primary" type="button" onClick={() => card && setCenterOpen(true)}><Icon name="wallet"/><strong>Abrir central do cartão</strong><span>›</span></button>
-    {centerOpen && card ? <MegMobileCardCenter card={card} cardLabel={cardName(card.name)} rows={rows} onClose={() => setCenterOpen(false)}/> : null}
+    {centerOpen && card ? <MegMobileCardCenter card={card} cardLabel={cardName(card.name)} artUrl={cardArt(card.name)} rows={rows} onClose={() => setCenterOpen(false)}/> : null}
+    {selectedRow && card ? <div className="meg2-card-detail-overlay" role="presentation" onClick={() => setSelectedRow(null)}>
+      <section className="meg2-card-detail" role="dialog" aria-modal="true" aria-label="Detalhe da compra" onClick={(event) => event.stopPropagation()}>
+        <header><div><small>DETALHE DA COMPRA</small><h2>{selectedRow.description}</h2></div><button type="button" onClick={() => setSelectedRow(null)}>×</button></header>
+        <div className="meg2-card-detail-value"><span className={'icon-' + semanticIcon(selectedRow.description)}><Icon name={semanticIcon(selectedRow.description)}/></span><div><small>{cardName(card.name)}</small><strong>{money.format(selectedRow.amount)}</strong></div></div>
+        <dl>
+          <div><dt>Data da compra</dt><dd>{String(selectedRow.date).slice(0,10).split('-').reverse().join('/')}</dd></div>
+          <div><dt>Categoria</dt><dd>{selectedRow.category || 'Outros'}</dd></div>
+          <div><dt>Cartão</dt><dd>{cardName(card.name)} ·•••• {card.lastFour || '0000'}</dd></div>
+          <div><dt>Forma de pagamento</dt><dd>Cartão de crédito</dd></div>
+          <div><dt>Parcelamento</dt><dd>{selectedRow.installmentNo && selectedRow.installmentQty ? `${selectedRow.installmentNo} de ${selectedRow.installmentQty}` : 'À vista'}</dd></div>
+        </dl>
+        <footer><button type="button" className="secondary" onClick={() => setSelectedRow(null)}>Fechar</button><button type="button" className="apply" onClick={() => { const eventId=selectedRow.eventId; setSelectedRow(null); if (eventId) onEditEvent(eventId); else setCenterOpen(true); }}>{selectedRow.eventId ? 'Editar lançamento' : 'Abrir central'}</button></footer>
+      </section>
+    </div> : null}
   </main>;
 }
 
-type PendingRow = { id: string; source: 'payable' | 'event'; sourceId: string; description: string; due: string; amount: number; paid: boolean };
+type PendingRow = { id: string; source: 'payable' | 'event'; sourceId: string; description: string; due: string; amount: number; paid: boolean; category?: string; account?: string; payment?: string; installment?: string; notes?: string };
 
 function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Props['onEditEvent'] }) {
   const [tab, setTab] = useState<'all' | 'open' | 'paid' | 'overdue'>('all');
@@ -506,13 +538,16 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   const today = todayIso();
 
   const openPay = data.payables.filter((item) => openStatus(item.status) && Number(item.openAmount || 0) > 0).map<PendingRow>((item) => ({
-    id: 'p-' + item.id, source: 'payable', sourceId: item.id, description: item.description, due: String(item.dueDate).slice(0, 10), amount: Number(item.openAmount || 0), paid: false
+    id: 'p-' + item.id, source: 'payable', sourceId: item.id, description: item.description, due: String(item.dueDate).slice(0, 10), amount: Number(item.openAmount || 0), paid: false,
+    category: item.category?.name || item.category?.group || 'Contas a pagar', account: 'Conta principal', payment: 'Boleto / compromisso', installment: item.installmentQty > 1 ? `${item.installmentNo} de ${item.installmentQty}` : 'Única'
   }));
   const openEvents = data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned').map<PendingRow>((item) => ({
-    id: 'e-' + item.id, source: 'event', sourceId: item.id, description: item.description, due: String(item.date).slice(0, 10), amount: Math.abs(Number(item.signedAmount || item.amount || 0)), paid: false
+    id: 'e-' + item.id, source: 'event', sourceId: item.id, description: item.description, due: String(item.date).slice(0, 10), amount: Math.abs(Number(item.signedAmount || item.amount || 0)), paid: false,
+    category: item.category?.name || item.sourceDetails?.group || 'Despesas', account: item.account?.name || 'Conta não informada', payment: item.paymentMethod?.name || item.sourceDetails?.paymentMethod || 'Forma não informada', notes: item.notes || item.sourceDetails?.observations || undefined
   }));
   const paidEvents = data.events.items.filter((item) => item.type === 'expense' && ['paid', 'reconciled', 'confirmed'].includes(String(item.status))).map<PendingRow>((item) => ({
-    id: 'e-' + item.id, source: 'event', sourceId: item.id, description: item.description, due: String(item.date).slice(0, 10), amount: Math.abs(Number(item.signedAmount || item.amount || 0)), paid: true
+    id: 'e-' + item.id, source: 'event', sourceId: item.id, description: item.description, due: String(item.date).slice(0, 10), amount: Math.abs(Number(item.signedAmount || item.amount || 0)), paid: true,
+    category: item.category?.name || item.sourceDetails?.group || 'Despesas', account: item.account?.name || 'Conta não informada', payment: item.paymentMethod?.name || item.sourceDetails?.paymentMethod || 'Forma não informada', notes: item.notes || item.sourceDetails?.observations || undefined
   }));
 
   const opens = openPay.concat(openEvents);
@@ -579,6 +614,11 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
         <dl>
           <div><dt>Data</dt><dd>{selected.due.split('-').reverse().join('/')}</dd></div>
           <div><dt>Situação</dt><dd>{dueLabel(selected)}</dd></div>
+          <div><dt>Categoria</dt><dd>{selected.category || 'Não informada'}</dd></div>
+          <div><dt>Conta</dt><dd>{selected.account || 'Não informada'}</dd></div>
+          <div><dt>Pagamento</dt><dd>{selected.payment || 'Não informado'}</dd></div>
+          {selected.installment ? <div><dt>Parcelamento</dt><dd>{selected.installment}</dd></div> : null}
+          {selected.notes ? <div><dt>Observações</dt><dd>{selected.notes}</dd></div> : null}
           <div><dt>Origem</dt><dd>{selected.source === 'event' ? 'Lançamento financeiro' : 'Conta a pagar'}</dd></div>
         </dl>
         <footer><button type="button" className="secondary" onClick={() => setSelected(null)}>Fechar</button>{selected.source === 'event' ? <button type="button" className="apply" onClick={() => { const id=selected.sourceId; setSelected(null); onEditEvent(id); }}>Editar lançamento</button> : <button type="button" className="apply" onClick={() => setSelected(null)}>Entendi</button>}</footer>
@@ -690,7 +730,10 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
       <div className="meg2-scroll">
         {view === 'home' ? <Home data={data} periodMode={periodMode} periodLabel={periodLabel} homePeriodContext={homePeriodContext} onNavigate={onNavigate}/> : null}
         {view === 'movements' ? <MegMobileMovements data={data} onOpenEvent={(event) => setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event })} onNew={() => setLaunchSheet({ preset: 'expense' })}/> : null}
-        {view === 'cards' ? <Cards data={data}/> : null}
+        {view === 'cards' ? <Cards data={data} onEditEvent={(eventId) => {
+          const event = data.events.items.find((item) => item.id === eventId) || null;
+          if (event) setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event });
+        }}/> : null}
         {view === 'payables' ? <Payables data={data} onEditEvent={(eventId) => {
           const event = data.events.items.find((item) => item.id === eventId) || null;
           if (event) setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event });

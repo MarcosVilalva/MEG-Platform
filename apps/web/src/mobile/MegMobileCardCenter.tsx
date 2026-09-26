@@ -81,11 +81,13 @@ function exportPdf(filename: string, title: string, rows: string[][]) {
 export function MegMobileCardCenter({
   card,
   cardLabel,
+  artUrl,
   rows,
   onClose,
 }: {
   card: PhoenixReadModel['cards'][number];
   cardLabel: string;
+  artUrl?: string;
   rows: Array<{ id: string; description: string; date: string; amount: number; installmentNo?: number; installmentQty?: number }>;
   onClose: () => void;
 }) {
@@ -104,6 +106,10 @@ export function MegMobileCardCenter({
         <div><small>CENTRAL DO CARTÃO</small><h2>{cardLabel}</h2><p>Fatura, limites e lançamentos em um só lugar.</p></div>
         <button type="button" onClick={onClose}>×</button>
       </header>
+
+      <section className="meg3-cardcenter-hero" style={!artUrl ? { background: card.color || '#073f82' } : undefined}>
+        {artUrl ? <img src={artUrl} alt={cardLabel}/> : <div><strong>{cardLabel}</strong><small>•••• {card.lastFour || '0000'}</small></div>}
+      </section>
 
       <section className="meg3-cardcenter-kpis">
         <article><small>Limite</small><strong>{money.format(limit)}</strong></article>
