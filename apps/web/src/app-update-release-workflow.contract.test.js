@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const android = readFileSync(new URL('../../../.github/workflows/build-android-apk.yml', import.meta.url), 'utf8');
 const pages = readFileSync(new URL('../../../.github/workflows/deploy-pages.yml', import.meta.url), 'utf8');
+const ci = readFileSync(new URL('../../../.github/workflows/ci.yml', import.meta.url), 'utf8');
 const controller = readFileSync(new URL('./android-update-controller.js', import.meta.url), 'utf8');
 const preview = readFileSync(new URL('./phoenix/preview-main.tsx', import.meta.url), 'utf8');
 const nativeUpdater = readFileSync(new URL('../../../android/app/src/main/java/br/com/megfinancas/app/AppUpdaterPlugin.java', import.meta.url), 'utf8');
@@ -48,6 +49,27 @@ assert.match(
   pages,
   /actual !== manifest\.sha256/,
   'Pages deve validar SHA-256 do APK contra o manifesto baixado',
+);
+
+assert.match(
+  ci,
+  /Compile Android RC1 release-signed APK[\s\S]*assembleRelease/,
+  'RC1 instalável deve ser gerado como release assinado, nunca como debug.',
+);
+assert.match(
+  ci,
+  /ANDROID_KEYSTORE_BASE64[\s\S]*meg-release\.jks/,
+  'RC1 deve usar a mesma chave permanente configurada para o canal estável.',
+);
+assert.match(
+  ci,
+  /EXPECTED_SIGNER[\s\S]*signerSha256[\s\S]*ACTUAL_SIGNER[\s\S]*EXPECTED_SIGNER/,
+  'CI deve comparar o certificado do RC1 com o signerSha256 do canal estável.',
+);
+assert.match(
+  ci,
+  /Align RC1 version with current stable Android channel[\s\S]*app-version\.json[\s\S]*MEG_VERSION_CODE=\$STABLE_CODE/,
+  'RC1 deve herdar o versionCode estável atual para não disparar falso OTA nem bloquear a próxima release.',
 );
 
 assert.match(
