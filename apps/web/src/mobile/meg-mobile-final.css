@@ -1042,3 +1042,9 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-pending-detail>footer button{min-height:46px;border-radius:12px;font-size:9px;font-weight:800}
 .meg2-pending-detail>footer .secondary{border:1px solid rgba(62,189,184,.18);background:#043638;color:#bfd2d0}
 .meg2-pending-detail>footer .apply{border:1px solid #2be8db;background:linear-gradient(180deg,#0a8d89,#076765);color:#fff}
+
+
+/* Home final: ocupa a altura útil inteira; nada fica amontoado no topo. */
+.meg2-view-home .meg2-home{
+  align-content:space-between!important;
+}
