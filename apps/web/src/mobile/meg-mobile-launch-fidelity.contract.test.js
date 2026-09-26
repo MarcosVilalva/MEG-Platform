@@ -7,6 +7,7 @@ const movements = readFileSync(new URL('./MegMobileCoreScreens.tsx', import.meta
 const launchCss = readFileSync(new URL('./meg-mobile-launch-sheet.css', import.meta.url), 'utf8');
 const pickerCss = readFileSync(new URL('./meg-mobile-picker.css', import.meta.url), 'utf8');
 const movementCss = readFileSync(new URL('./meg-mobile-core-screens.css', import.meta.url), 'utf8');
+const history = readFileSync(new URL('./meg-mobile-description-history.ts', import.meta.url), 'utf8');
 
 assert.doesNotMatch(launch, /<select\\b/i, 'Novo/Editar lançamento não pode voltar a usar select nativo do Android.');
 
@@ -70,3 +71,25 @@ assert.ok(
 );
 
 console.log('Contrato de fidelidade de Lançamentos mobile validado.');
+
+assert.ok(
+  launch.includes('loadMegMobileHistorySuggestions')
+  && launch.includes('Digite para pesquisar no seu histórico')
+  && launch.includes('useHistorySuggestion')
+  && launch.includes("setCategoryId(suggestion.categoryId)")
+  && launch.includes("setPaymentMethodId(suggestion.paymentMethodId)")
+  && launch.includes("setAccountId(suggestion.accountId)"),
+  'Lançar Despesa deve pesquisar o histórico e restaurar categoria, forma e conta ao reutilizar uma descrição.'
+);
+assert.ok(
+  history.includes('loadPhoenixAllEvents')
+  && history.includes('occurrences')
+  && history.includes('lastDate')
+  && history.includes('item.normalized.startsWith(query)'),
+  'Autocomplete mobile deve usar o histórico financeiro completo com relevância, frequência e recência.'
+);
+assert.ok(
+  launchCss.includes('.meg3-history-suggestions{')
+  && launchCss.includes('.meg3-history-status{'),
+  'Autocomplete de descrição deve permanecer dentro da identidade visual clean-room.'
+);
