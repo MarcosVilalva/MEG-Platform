@@ -6,6 +6,8 @@ const css = readFileSync(new URL('./meg-mobile-final.css', import.meta.url), 'ut
 const runtimeCss = readFileSync(new URL('./meg-mobile-runtime.css', import.meta.url), 'utf8');
 const phoenix = readFileSync(new URL('../phoenix/PhoenixApp.tsx', import.meta.url), 'utf8');
 const previewMain = readFileSync(new URL('../phoenix/preview-main.tsx', import.meta.url), 'utf8');
+const phoenixWebStyles = readFileSync(new URL('../phoenix/PhoenixWebStyles.ts', import.meta.url), 'utf8');
+const authCss = readFileSync(new URL('../phoenix/preview-auth-flow.css', import.meta.url), 'utf8');
 const coreScreens = readFileSync(new URL('./MegMobileCoreScreens.tsx', import.meta.url), 'utf8');
 const launchSheet = readFileSync(new URL('./MegMobileLaunchSheet.tsx', import.meta.url), 'utf8');
 const coreCss = readFileSync(new URL('./meg-mobile-core-screens.css', import.meta.url), 'utf8');
@@ -90,6 +92,36 @@ assert.doesNotMatch(
   previewMain,
   /classList\.add\('meg-operational-mobile'\)/,
   'Runtime do APK não pode voltar a ativar seletores visuais Phoenix antigos.',
+);
+assert.doesNotMatch(
+  phoenix,
+  /import ['"]\.\/phoenix-(?:v15|parity-v15|period|sidebar|operational-mobile|home-period-mobile|home-fidelity-v12|home-fidelity-v13|layers)\.css['"]/,
+  'PhoenixApp não pode importar estaticamente CSS visual legado no bundle do APK.',
+);
+assert.match(
+  previewMain,
+  /else if \(!MEG_MOBILE_RUNTIME\) \{[\s\S]*import\('\.\/PhoenixWebStyles'\)/,
+  'CSS Phoenix deve ser carregado apenas quando o runtime não é o APK.',
+);
+assert.match(
+  phoenixWebStyles,
+  /phoenix-v15\.css[\s\S]*phoenix-layers\.css/,
+  'Página Web deve preservar seus estilos através do módulo Web isolado.',
+);
+assert.doesNotMatch(
+  authCss,
+  /body\.meg-operational-mobile/,
+  'Fluxo de autenticação móvel não pode depender do marcador visual legado.',
+);
+assert.match(
+  authCss,
+  /body\.meg-cleanroom-mobile/,
+  'Transição biométrica deve acompanhar o runtime clean-room.',
+);
+assert.match(
+  runtimeCss,
+  /OTA clean-room[\s\S]*\.meg-update-overlay[\s\S]*\.meg-update-dialog[\s\S]*\.meg-update-success-toast/,
+  'OTA deve ter estilo próprio no runtime clean-room após remover o CSS premium legado.',
 );
 assert.match(
   runtimeCss,
