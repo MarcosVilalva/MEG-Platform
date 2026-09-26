@@ -35,27 +35,38 @@ assert.ok(
   'Categoria e forma devem ser validadas explicitamente antes de salvar.',
 );
 
-assert.match(picker, /className="meg5-picker-list" data-meg-scroll-region="true"/, 'Seletor MEG deve rolar somente a lista interna.');
-assert.match(
-  pickerCss,
-  /\\.meg5-picker-overlay\\{[\\s\\S]*position:fixed[\\s\\S]*\\.meg5-picker-sheet\\{[\\s\\S]*overflow:hidden/,
+assert.ok(
+  picker.includes('className="meg5-picker-list" data-meg-scroll-region="true"'),
+  'Seletor MEG deve rolar somente a lista interna.',
+);
+assert.ok(
+  pickerCss.includes('.meg5-picker-overlay{')
+  && pickerCss.includes('position:fixed;')
+  && pickerCss.includes('.meg5-picker-sheet{')
+  && pickerCss.includes('overflow:hidden;'),
   'Seletor MEG deve ficar contido no viewport.',
 );
 
-assert.match(
-  movements,
-  /\\[category, account\\]\\.filter\\(Boolean\\)\\.join\\(' · '\\)/,
+assert.ok(
+  movements.includes("[category, account].filter(Boolean).join(' · ')"),
   'Card de lançamento deve preservar categoria e conta como contexto do registro.',
 );
-assert.match(movements, /meg3-payment-chip/, 'Forma de pagamento deve ter chip visual próprio no card.');
-assert.match(
-  movements,
-  /\\['all','Todos'\\][\\s\\S]*\\['income','Receitas'\\][\\s\\S]*\\['expense','Despesas'\\][\\s\\S]*\\['benefit','Alimentação'\\]/,
-  'Abas são filtros Todos / Receitas / Despesas / Alimentação.',
+assert.ok(movements.includes('meg3-payment-chip'), 'Forma de pagamento deve ter chip visual próprio no card.');
+for (const token of ["['all','Todos']", "['income','Receitas']", "['expense','Despesas']", "['benefit','Alimentação']"]) {
+  assert.ok(movements.includes(token), 'Aba de filtro ausente: ' + token);
+}
+assert.ok(!movements.includes('meg3-event-date-group'), 'Lista não deve depender de agrupamento estrutural para representar os registros.');
+assert.ok(
+  movements.includes('className="meg3-event-list" data-meg-scroll-region="true"'),
+  'Somente a lista de lançamentos deve rolar.',
 );
-assert.doesNotMatch(movements, /meg3-event-date-group/, 'Lista não deve depender de agrupamento estrutural para representar os registros.');
-assert.match(movements, /className="meg3-event-list" data-meg-scroll-region="true"/, 'Somente a lista de lançamentos deve rolar.');
-assert.match(movementCss, /\\.meg3-payment-chip\\{[\\s\\S]*border-radius:999px/, 'Forma de pagamento deve permanecer visualmente separada em chip.');
-assert.match(launchCss, /meg3-form-grid-faithful[\\s\\S]*grid-template-columns:1fr/, 'Formulário mobile principal deve usar fluxo vertical fiel à prévia.');
+assert.ok(
+  movementCss.includes('.meg3-payment-chip{') && movementCss.includes('border-radius:999px'),
+  'Forma de pagamento deve permanecer visualmente separada em chip.',
+);
+assert.ok(
+  launchCss.includes('.meg3-form-grid-faithful{grid-template-columns:1fr}'),
+  'Formulário mobile principal deve usar fluxo vertical fiel à prévia.',
+);
 
 console.log('Contrato de fidelidade de Lançamentos mobile validado.');
