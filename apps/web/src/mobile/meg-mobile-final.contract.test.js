@@ -53,5 +53,25 @@ assert.match(premiumCss, /\.px-mobile-movement-card[\s\S]*box-shadow/,
   'Lançamentos deve receber cartões premium com profundidade e contraste.');
 assert.match(premiumCss, /meg-update-overlay[\s\S]*meg-update-dialog/,
   'Fluxo OTA deve usar a mesma identidade premium dos demais modais.');
+assert.match(
+  premiumCss,
+  /\.px-top-left-home-compact[\s\S]*grid-template-columns:44px minmax\(0,1fr\) 82px/,
+  'Cabeçalho das telas internas deve reservar espaço fixo para logo e usuário sem esmagar o filtro de período.',
+);
+assert.match(
+  premiumCss,
+  /\.px-native-home-period-copy strong[\s\S]*text-overflow:ellipsis/,
+  'Filtro de período interno deve truncar com segurança sem sair do cabeçalho.',
+);
+assert.match(
+  premiumCss,
+  /\.px-home-user-identity strong[\s\S]*white-space:nowrap/,
+  'Nome do usuário deve permanecer visível e estável no cabeçalho interno.',
+);
+assert.match(
+  premiumCss,
+  /\.px-mobile-movement-card[\s\S]*grid-template-columns:48px minmax\(0,1fr\) auto/,
+  'Card de lançamento deve usar composição responsiva com coluna central elástica.',
+);
 
 console.log('Contrato da reconstrução mobile final validado.');
