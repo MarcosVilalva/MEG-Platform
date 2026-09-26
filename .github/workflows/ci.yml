@@ -183,10 +183,6 @@ jobs:
       VITE_API_URL: https://meg-platform-api.onrender.com
       VITE_MOBILE_APP: 'true'
       CAPACITOR_BUILD: 'true'
-      MEG_VERSION_CODE: ${{ github.run_number }}
-      MEG_VERSION_NAME: 2.0.${{ github.run_number }}-rc1
-      VITE_ANDROID_VERSION_CODE: ${{ github.run_number }}
-      VITE_ANDROID_VERSION_NAME: 2.0.${{ github.run_number }}-rc1
       ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/app/meg-release.jks
       ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -210,6 +206,20 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Align RC1 version with current stable Android channel
+        shell: bash
+        run: |
+          set -euo pipefail
+          STABLE_CODE=$(node -e "const fs=require('fs'); const x=JSON.parse(fs.readFileSync('apps/web/public/downloads/app-version.json','utf8')); process.stdout.write(String(x.versionCode||''))")
+          STABLE_NAME=$(node -e "const fs=require('fs'); const x=JSON.parse(fs.readFileSync('apps/web/public/downloads/app-version.json','utf8')); process.stdout.write(String(x.versionName||''))")
+          test -n "$STABLE_CODE"
+          test -n "$STABLE_NAME"
+          echo "MEG_VERSION_CODE=$STABLE_CODE" >> "$GITHUB_ENV"
+          echo "MEG_VERSION_NAME=${STABLE_NAME}-rc1" >> "$GITHUB_ENV"
+          echo "VITE_ANDROID_VERSION_CODE=$STABLE_CODE" >> "$GITHUB_ENV"
+          echo "VITE_ANDROID_VERSION_NAME=${STABLE_NAME}-rc1" >> "$GITHUB_ENV"
+          echo "RC1 alinhado ao canal estável: versionCode=$STABLE_CODE versionName=${STABLE_NAME}-rc1"
 
       - name: Prepare permanent Android signing key
         env:
