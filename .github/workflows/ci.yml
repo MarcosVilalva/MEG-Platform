@@ -265,7 +265,7 @@ jobs:
           grep -q "versionName='$MEG_VERSION_NAME'" android-rc1-badging.txt
 
           "$APKSIGNER" verify --print-certs "$APK" | tee android-rc1-signature.txt
-          ACTUAL_SIGNER=$(awk -F': ' '/Signer #1 certificate SHA-256 digest/ {print tolower($2); exit}' android-rc1-signature.txt | tr -d ':')
+          ACTUAL_SIGNER=$(awk -F': ' '/certificate SHA-256 digest/ {print tolower($NF); exit}' android-rc1-signature.txt | tr -d ':')
           EXPECTED_SIGNER=$(node -e "const fs=require('fs'); const x=JSON.parse(fs.readFileSync('apps/web/public/downloads/app-version.json','utf8')); process.stdout.write(String(x.signerSha256||'').toLowerCase().replace(/:/g,''))")
           test -n "$ACTUAL_SIGNER"
           test -n "$EXPECTED_SIGNER"
