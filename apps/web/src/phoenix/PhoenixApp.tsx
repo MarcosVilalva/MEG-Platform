@@ -468,10 +468,10 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
   }, [nativeOperational, loadState]);
 
   useEffect(() => {
-    if (loadState.status !== 'ready' || view !== 'home') return;
+    if (nativeOperational || loadState.status !== 'ready' || view !== 'home') return;
     const timer = window.setTimeout(warmFrequentScreens, 80);
     return () => window.clearTimeout(timer);
-  }, [loadState.status, view]);
+  }, [nativeOperational, loadState.status, view]);
 
 
   useEffect(() => {
