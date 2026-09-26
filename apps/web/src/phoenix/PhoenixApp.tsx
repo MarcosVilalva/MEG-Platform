@@ -1211,7 +1211,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     return <>
       <MegMobileFinal
         data={viewData}
-        view={view}
+        view={view as 'home' | 'movements' | 'cards' | 'payables' | 'history' | 'cashflow' | 'analytics'}
         onNavigate={navigate}
         onLaunch={requestLaunch}
         onEditEvent={requestEditEvent}
