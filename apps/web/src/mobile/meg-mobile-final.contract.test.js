@@ -7,7 +7,15 @@ const premiumCss = readFileSync(new URL('./meg-mobile-premium.css', import.meta.
 const phoenix = readFileSync(new URL('../phoenix/PhoenixApp.tsx', import.meta.url), 'utf8');
 const previewMain = readFileSync(new URL('../phoenix/preview-main.tsx', import.meta.url), 'utf8');
 const movements = readFileSync(new URL('../phoenix/screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
-const source = mobile + '\n' + css;
+const coreScreens = readFileSync(new URL('./MegMobileCoreScreens.tsx', import.meta.url), 'utf8');
+const launchSheet = readFileSync(new URL('./MegMobileLaunchSheet.tsx', import.meta.url), 'utf8');
+const coreCss = readFileSync(new URL('./meg-mobile-core-screens.css', import.meta.url), 'utf8');
+const launchCss = readFileSync(new URL('./meg-mobile-launch-sheet.css', import.meta.url), 'utf8');
+const settings = readFileSync(new URL('./MegMobileSettings.tsx', import.meta.url), 'utf8');
+const settingsCss = readFileSync(new URL('./meg-mobile-settings.css', import.meta.url), 'utf8');
+const cardCenter = readFileSync(new URL('./MegMobileCardCenter.tsx', import.meta.url), 'utf8');
+const benefitModal = readFileSync(new URL('./MegMobileBenefitModal.tsx', import.meta.url), 'utf8');
+const source = mobile + '\n' + css + '\n' + coreScreens + '\n' + launchSheet + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
 
 assert.doesNotMatch(source, /\bpx-[a-z0-9-]+/i,
   'Reconstrução mobile final não pode reutilizar classes visuais .px-* do Phoenix legado.');
@@ -15,8 +23,8 @@ assert.doesNotMatch(mobile, /Phoenix(?:Sidebar|NavIcon|Reference|OperationalMobi
   'Reconstrução mobile final não pode importar componentes visuais Phoenix anteriores.');
 assert.doesNotMatch(phoenix, /PhoenixMobileReferenceScreens/,
   'Shell não pode reintroduzir a implementação intermediária das três telas.');
-assert.match(phoenix, /if \(nativeOperational && viewData && \(view === 'home' \|\| view === 'cards' \|\| view === 'payables'\)\)[\s\S]*<MegMobileFinal[\s\S]*return <div className="phoenix-v15"/,
-  'Home, Cartões e Pendentes do APK devem retornar a árvore mobile nova antes do shell Phoenix antigo.');
+assert.match(phoenix, /if \(nativeOperational && viewData && \['home','movements','cards','payables','history','cashflow','analytics','settings'\]\.includes\(view\)\)[\s\S]*<MegMobileFinal[\s\S]*return <div className="phoenix-v15"/,
+  'Telas operacionais do APK devem retornar a árvore mobile clean-room antes do shell Phoenix antigo.');
 assert.match(mobile, /cards\.concat\(cards, cards\)/,
   'Carrossel de cartões deve possuir cópias circulares para rolagem infinita real.');
 assert.match(mobile, /index < cards\.length[\s\S]*scrollLeft \+=[\s\S]*index >= cards\.length \* 2[\s\S]*scrollLeft \+=/,
@@ -151,5 +159,79 @@ assert.match(
   /data-meg-scroll-region="true"/,
   'Listas móveis roláveis devem ser identificadas como regiões internas de scroll.',
 );
+assert.match(
+  coreScreens,
+  /MegMobileMovements[\s\S]*MegMobileHistory[\s\S]*MegMobileCashflow[\s\S]*MegMobileAnalytics/,
+  'Lançamentos, Histórico, Fluxo e Relatórios devem possuir implementações mobile clean-room próprias.',
+);
+assert.match(launchSheet, /MegMobileLaunchSheet/,
+  'Novo e edição devem usar formulário mobile clean-room próprio.');
+assert.match(launchSheet, /runPhoenixSimpleEventWrite/,
+  'Novo lançamento deve usar o writer de domínio.');
+assert.match(launchSheet, /runPhoenixSimpleEventEdit/,
+  'Edição deve usar o writer de domínio.');
+assert.match(launchSheet, /runPhoenixSimpleEventArchive/,
+  'Exclusão deve usar o writer de domínio.');
+assert.match(
+  launchSheet,
+  /Usar valor negativo/,
+  'Formulário clean-room deve oferecer troca explícita de sinal.',
+);
+assert.match(
+  launchSheet,
+  /negative && mode !== 'benefit' \? -parseAmount\(amount\) : parseAmount\(amount\)/,
+  'Troca de sinal deve preservar o valor negativo no writer financeiro.',
+);
+assert.match(
+  launchSheet,
+  /cardStatementMonthForPurchase[\s\S]*cardDueDateForStatement[\s\S]*Visualizar parcelas/,
+  'Parcelamento no cartão deve exibir prévia calculada pela regra real de fechamento e vencimento.',
+);
+assert.doesNotMatch(
+  launchSheet + '\n' + coreScreens,
+  /className=["'`]px-/,
+  'Telas e formulário clean-room não podem reutilizar classes visuais Phoenix.',
+);
+assert.match(
+  launchCss,
+  /\.meg3-form-sheet\{[\s\S]*grid-template-rows:auto minmax\(0,1fr\) auto[\s\S]*overflow:hidden/,
+  'Formulário mobile deve manter cabeçalho e ações fixos, com rolagem apenas no corpo.',
+);
+assert.match(
+  settings,
+  /MegMobileSettings[\s\S]*savePhoenixAvatarPreferenceCloud[\s\S]*getBiometricLoginStatus[\s\S]*notifications\/test-channels/,
+  'Configurações do APK devem ter implementação clean-room funcional para perfil, biometria e notificações.',
+);
+assert.match(
+  settings,
+  /togglePaymentMethod[\s\S]*deactivatePaymentMethod[\s\S]*updatePaymentMethod/,
+  'Configurações deve ativar e desativar formas de pagamento na base real.',
+);
+assert.match(
+  settings,
+  /toggleCard[\s\S]*cardsClient\.deactivate[\s\S]*cardsClient\.reactivate/,
+  'Configurações deve ativar e desativar cartões na base real.',
+);
+assert.match(
+  settingsCss,
+  /\.meg4-settings\{[\s\S]*overflow:hidden[\s\S]*grid-template-rows:auto auto minmax\(0,1fr\)/,
+  'Configurações deve manter viewport fixo e workspace interno rolável.',
+);
+assert.match(
+  cardCenter,
+  /MegMobileCardCenter[\s\S]*exportExcel[\s\S]*exportPdf/,
+  'Central do cartão deve oferecer exportação Excel e PDF no fluxo clean-room.',
+);
+assert.match(
+  benefitModal,
+  /MegMobileBenefitModal[\s\S]*isPhoenixBenefitEvent/,
+  'Benefício Alimentação deve usar modal clean-room ligado aos lançamentos reais.',
+);
+assert.match(
+  mobile,
+  /fromDate[\s\S]*toDate[\s\S]*meg2-pending-filter-sheet[\s\S]*meg2-pending-detail/,
+  'Pendentes deve ter filtro de data funcional e modal de detalhes antes da edição.',
+);
+
 
 console.log('Contrato da reconstrução mobile final validado.');

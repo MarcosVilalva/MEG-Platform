@@ -1,0 +1,119 @@
+.meg4-settings{
+  height:100%;min-height:0;max-height:100%;overflow:hidden;
+  display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:8px;
+  padding:8px 10px 7px;color:#f6ffff;box-sizing:border-box
+}
+.meg4-settings-title>span{display:block;color:#4ce7dd;font-size:9px;font-weight:800;letter-spacing:.14em}
+.meg4-settings-title h1{margin:3px 0 2px;font-size:clamp(27px,8vw,38px);line-height:1}
+.meg4-settings-title p{margin:0;color:#9bb4b1;font-size:10px}
+.meg4-settings-nav{
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:4px;
+  border:1px solid rgba(61,202,195,.16);border-radius:14px;background:rgba(2,41,43,.82)
+}
+.meg4-settings-nav button{
+  min-width:0;min-height:38px;padding:0 3px;border:0;border-radius:10px;background:transparent;color:#9db6b3;font-size:8px;font-weight:800
+}
+.meg4-settings-nav button.active{background:rgba(36,224,212,.12);color:#58e9df;box-shadow:inset 0 0 0 1px rgba(43,232,220,.23)}
+.meg4-settings-workspace{min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:1px 1px 8px}
+.meg4-settings-workspace::-webkit-scrollbar{display:none}
+.meg4-profile-card,.meg4-settings-card{
+  margin-bottom:8px;border:1px solid rgba(60,198,191,.17);border-radius:17px;
+  background:linear-gradient(145deg,rgba(5,69,70,.86),rgba(2,48,50,.90));
+  box-shadow:inset 0 0 20px rgba(29,230,220,.02),0 7px 18px rgba(0,0,0,.09)
+}
+.meg4-profile-card{min-height:88px;padding:12px;display:grid;grid-template-columns:62px minmax(0,1fr);align-items:center;gap:12px}
+.meg4-avatar{width:58px;height:58px;display:grid;place-items:center;overflow:hidden;border:2px solid rgba(255,255,255,.88);border-radius:50%;background:#d8e7e7;color:#073d3e;font-size:20px;font-weight:900;box-shadow:0 0 0 2px rgba(38,229,218,.20)}
+.meg4-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.meg4-profile-card div{min-width:0}.meg4-profile-card small{display:block;color:#50e7dd;font-size:8px;font-weight:800;letter-spacing:.12em}.meg4-profile-card strong{display:block;margin-top:3px;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.meg4-profile-card span{display:block;margin-top:2px;color:#9fb7b4;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.meg4-profile-card em{display:inline-block;margin-top:5px;padding:3px 7px;border-radius:99px;background:rgba(39,225,213,.10);color:#55e5dc;font-size:7px;font-style:normal;font-weight:800}
+.meg4-settings-card{padding:12px}
+.meg4-settings-card>header{display:flex;align-items:start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.meg4-settings-card>header>div{min-width:0}.meg4-settings-card>header small{display:block;color:#4ee5dc;font-size:8px;font-weight:800;letter-spacing:.12em}.meg4-settings-card>header h2{margin:3px 0 2px;font-size:18px}.meg4-settings-card>header p{margin:0;color:#8fa9a6;font-size:8.5px;line-height:1.35}.meg4-settings-card>header button{min-height:34px;padding:0 10px;border:1px solid rgba(45,229,217,.31);border-radius:10px;background:rgba(9,91,90,.45);color:#55e7dd;font-size:8px;font-weight:800}
+.meg4-avatar-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.meg4-avatar-grid button{position:relative;min-width:0;padding:6px 2px;border:1px solid rgba(58,181,177,.14);border-radius:12px;background:rgba(3,48,50,.65);color:#dceeed;display:grid;justify-items:center;gap:4px}
+.meg4-avatar-grid button.selected{border-color:#2ce7db;box-shadow:0 0 14px rgba(42,231,219,.08)}
+.meg4-avatar-grid .meg4-avatar{width:38px;height:38px;font-size:12px}.meg4-avatar-grid small{font-size:6.5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.meg4-avatar-grid b{position:absolute;right:4px;top:4px;width:14px;height:14px;display:grid;place-items:center;border-radius:50%;background:#34dfac;color:#042d2f;font-size:8px}
+.meg4-inline-actions{display:flex;gap:7px;margin-top:9px}.meg4-inline-actions button{flex:1;min-height:36px;border:1px solid rgba(57,190,184,.17);border-radius:10px;background:#043638;color:#b8cecb;font-size:8px;font-weight:800}
+.meg4-message,.meg4-help{margin:9px 0 0;padding:9px 10px;border:1px solid rgba(48,212,204,.15);border-radius:11px;background:rgba(4,55,57,.48);color:#a9c2bf;font-size:8.5px;line-height:1.4}
+.meg4-switch-list{display:grid;gap:6px}.meg4-switch{min-height:58px;width:100%;padding:9px 10px;display:grid;grid-template-columns:minmax(0,1fr) 42px;align-items:center;gap:9px;text-align:left;border:1px solid rgba(58,186,181,.14);border-radius:13px;background:rgba(3,49,51,.69);color:#fff}.meg4-switch>span{min-width:0}.meg4-switch strong{display:block;font-size:10px}.meg4-switch small{display:block;margin-top:3px;color:#829e9b;font-size:7.5px}.meg4-switch>i{width:40px;height:22px;padding:2px;border-radius:99px;background:#244d4d;display:flex;align-items:center;box-sizing:border-box}.meg4-switch>i>b{width:18px;height:18px;border-radius:50%;background:#8aa3a0;transition:transform .18s ease}.meg4-switch.on>i{background:#087c78}.meg4-switch.on>i>b{background:#59e6dc;transform:translateX(18px)}
+.meg4-status-row{min-height:58px;margin-bottom:7px;padding:9px 10px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;border:1px solid rgba(58,185,180,.14);border-radius:13px;background:rgba(3,49,51,.68)}.meg4-status-row span{min-width:0}.meg4-status-row strong{display:block;font-size:10px}.meg4-status-row small{display:block;margin-top:3px;color:#879f9d;font-size:8px}.meg4-status-row>b{padding:4px 7px;border-radius:99px;background:rgba(255,255,255,.05);color:#a7bfbc;font-size:7px}.meg4-status-row>b.ok{background:rgba(53,221,171,.12);color:#65e6b8}.meg4-status-row>b.warn{background:rgba(255,116,134,.12);color:#ff8e9c}
+.meg4-danger-action,.meg4-logout{width:100%;min-height:46px;border:1px solid rgba(255,109,127,.30);border-radius:12px;background:rgba(121,34,47,.24);color:#ff8d9b;font-size:9px;font-weight:800}
+.meg4-notification-summary{display:grid;gap:6px}.meg4-notification-summary>span{padding:9px;border:1px solid rgba(57,184,179,.13);border-radius:12px;background:rgba(3,49,51,.60)}.meg4-notification-summary strong{display:block;font-size:10px}.meg4-notification-summary small{display:block;margin-top:3px;color:#849f9b;font-size:8px}
+.meg4-status-json{max-height:170px;overflow:auto;margin:9px 0 0;padding:9px;border:1px solid rgba(58,180,176,.12);border-radius:11px;background:rgba(0,29,31,.62);color:#9fb8b5;font:7.5px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
+.meg4-logout{margin-top:2px}
+@media(max-height:760px){.meg4-settings{gap:5px;padding-top:5px}.meg4-settings-title h1{font-size:27px}.meg4-settings-title p{display:none}.meg4-settings-nav button{min-height:32px}.meg4-profile-card{min-height:72px}.meg4-profile-card .meg4-avatar{width:48px;height:48px}.meg4-settings-card{padding:9px}.meg4-switch{min-height:50px}}
+@media(max-width:360px){.meg4-settings-nav button{font-size:7px}.meg4-avatar-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+
+/* Gestão funcional de meios de pagamento e cartões. */
+.meg4-count{
+  align-self:start;
+  padding:4px 7px;
+  border:1px solid rgba(50,228,216,.20);
+  border-radius:99px;
+  background:rgba(39,219,207,.07);
+  color:#57e8de;
+  font-size:7px;
+  white-space:nowrap;
+}
+.meg4-manage-list{
+  display:grid;
+  gap:6px;
+}
+.meg4-manage-list>button{
+  width:100%;
+  min-height:56px;
+  padding:9px 10px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 42px;
+  align-items:center;
+  gap:9px;
+  text-align:left;
+  border:1px solid rgba(58,186,181,.14);
+  border-radius:13px;
+  background:rgba(3,49,51,.69);
+  color:#fff;
+}
+.meg4-manage-list>button:disabled{opacity:.64}
+.meg4-manage-list>button>span{min-width:0}
+.meg4-manage-list strong{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:10px;
+}
+.meg4-manage-list small{
+  display:block;
+  margin-top:3px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#829e9b;
+  font-size:7.5px;
+}
+.meg4-manage-list>button>i{
+  width:40px;
+  height:22px;
+  padding:2px;
+  display:flex;
+  align-items:center;
+  box-sizing:border-box;
+  border-radius:99px;
+  background:#244d4d;
+}
+.meg4-manage-list>button>i>b{
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:#8aa3a0;
+  transition:transform .18s ease;
+}
+.meg4-manage-list>button>i.on{background:#087c78}
+.meg4-manage-list>button>i.on>b{
+  background:#59e6dc;
+  transform:translateX(18px);
+}
+@media(max-width:390px){
+  .meg4-settings-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .meg4-settings-nav button{min-height:30px}
+}

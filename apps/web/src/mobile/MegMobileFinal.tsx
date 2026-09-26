@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
-import { hydratePhoenixAvatarPreference } from '../phoenix/profile-avatar';
+import { hydratePhoenixAvatarPreference, phoenixAvatarImage, readPhoenixAvatarPreference } from '../phoenix/profile-avatar';
+import { MegMobileAnalytics, MegMobileCashflow, MegMobileHistory, MegMobileMovements } from './MegMobileCoreScreens';
+import { MegMobileLaunchSheet } from './MegMobileLaunchSheet';
+import { MegMobileCardCenter } from './MegMobileCardCenter';
+import { MegMobileBenefitModal } from './MegMobileBenefitModal';
+import { MegMobileSettings } from './MegMobileSettings';
 import './meg-mobile-final.css';
+import './meg-mobile-core-screens.css';
 
-type MobileView = 'home' | 'cards' | 'payables';
+type MobileView = 'home' | 'movements' | 'cards' | 'payables' | 'history' | 'cashflow' | 'analytics' | 'settings';
 type TargetView = 'home' | 'movements' | 'payables' | 'cards' | 'cashflow' | 'analytics' | 'history' | 'settings';
 type LaunchPreset = 'expense' | 'income' | 'benefit';
 type PeriodMode = 'month' | 'range' | 'all';
@@ -161,6 +168,19 @@ function semanticIcon(label: string) {
 
 function Header({ data, periodMode, periodLabel, onOpenPeriod, onOpenMenu }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; onOpenPeriod: () => void; onOpenMenu: () => void }) {
   const firstName = data.user.name.trim().split(/\s+/)[0] || 'MEG';
+  const [avatar, setAvatar] = useState(() => readPhoenixAvatarPreference(data.user.id));
+  useEffect(() => {
+    let active = true;
+    void hydratePhoenixAvatarPreference(data.user.id).then((preference) => { if (active) setAvatar(preference); });
+    const sync = (event: Event) => {
+      const detail = (event as CustomEvent<{ userId?: string }>).detail;
+      if (detail?.userId && detail.userId !== data.user.id) return;
+      setAvatar(readPhoenixAvatarPreference(data.user.id));
+    };
+    window.addEventListener('meg:profile-avatar-changed', sync);
+    return () => { active = false; window.removeEventListener('meg:profile-avatar-changed', sync); };
+  }, [data.user.id]);
+  const avatarUrl = phoenixAvatarImage(avatar);
   const mainLabel = periodMode === 'all' ? '∞' : periodMode === 'range' ? (periodLabel || 'Intervalo') : compactMonth(data.month);
   const subLabel = periodMode === 'all' ? 'Todos os períodos' : periodMode === 'range' ? 'Intervalo personalizado' : data.month === todayIso().slice(0, 7) ? 'Mês atual' : 'Período selecionado';
   return <header className="meg2-header">
@@ -171,7 +191,8 @@ function Header({ data, periodMode, periodLabel, onOpenPeriod, onOpenMenu }: { d
       <b>⌄</b>
     </button>
     <button className="meg2-user" type="button" onClick={onOpenMenu}>
-      <span className="meg2-avatar">{firstName.charAt(0).toUpperCase()}</span><strong>{firstName.toUpperCase()}</strong>
+      <span className={`meg2-avatar ${avatarUrl ? 'has-image' : ''}`}>{avatarUrl ? <img src={avatarUrl} alt="" draggable={false}/> : firstName.charAt(0).toUpperCase()}</span>
+      <strong>{firstName.toUpperCase()}</strong>
     </button>
   </header>;
 }
@@ -179,7 +200,7 @@ function Header({ data, periodMode, periodLabel, onOpenPeriod, onOpenMenu }: { d
 function Dock({ view, pendingCount, menuOpen, onNavigate, onLaunch, onMenu }: { view: MobileView; pendingCount: number; menuOpen: boolean; onNavigate: Props['onNavigate']; onLaunch: Props['onLaunch']; onMenu: () => void }) {
   return <nav className="meg2-dock">
     <button className={view === 'home' ? 'active' : ''} onClick={() => onNavigate('home')}><Icon name="home"/><span>Início</span></button>
-    <button onClick={() => onNavigate('movements')}><Icon name="file"/><span>Lançamentos</span></button>
+    <button className={view === 'movements' ? 'active' : ''} onClick={() => onNavigate('movements')}><Icon name="file"/><span>Lançamentos</span></button>
     <button className="meg2-new" onClick={() => onLaunch('expense')}><span><Icon name="plus" size={27}/></span><small>Novo</small></button>
     <button className={view === 'payables' ? 'active' : ''} onClick={() => onNavigate('payables')}>
       <span className="meg2-badge-wrap"><Icon name="wallet"/>{pendingCount > 0 ? <b>{pendingCount > 9 ? '9+' : pendingCount}</b> : null}</span><span>Pendentes</span>
@@ -200,6 +221,7 @@ function isPosted(status: unknown) {
 }
 
 function PastHome({ data, context, onNavigate }: { data: PhoenixReadModel; context?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate'] }) {
+  const [benefitOpen, setBenefitOpen] = useState(false);
   const realized = data.events.items.filter((event) =>
     String(event.competence || String(event.date).slice(0, 7)) === data.month && isPosted(event.status)
   );
@@ -233,14 +255,16 @@ function PastHome({ data, context, onNavigate }: { data: PhoenixReadModel; conte
       <article className={result >= 0 ? 'result positive' : 'result negative'}><Icon name="trend"/><small>Resultado do mês</small><strong>{resultMoney(result)}</strong></article>
       <article className="paid"><Icon name="check"/><small>Contas pagas</small><strong>{paidCount.toLocaleString('pt-BR')}</strong><em>{money.format(paidAmount)}</em></article>
     </section>
-    <button className="meg2-benefit" onClick={() => onNavigate('movements')}>
+    <button className="meg2-benefit" type="button" onClick={() => setBenefitOpen(true)}>
       <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Saldo final do mês</em><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong></div><b>›</b>
     </button>
     <button className="meg2-period-action" onClick={() => onNavigate('movements')}><Icon name="file"/><span><strong>Ver lançamentos do mês</strong><small>Consulte os detalhes de {monthLabel(data.month)}</small></span><b>›</b></button>
+    {benefitOpen ? <MegMobileBenefitModal data={data} onClose={() => setBenefitOpen(false)} onOpenMovements={() => { setBenefitOpen(false); onNavigate('movements'); }}/> : null}
   </main>;
 }
 
 function FutureHome({ data, context, onNavigate }: { data: PhoenixReadModel; context?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate'] }) {
+  const [benefitOpen, setBenefitOpen] = useState(false);
   const target = data.month;
   const [year, month] = target.split('-').map(Number);
   const start = target + '-01';
@@ -279,14 +303,16 @@ function FutureHome({ data, context, onNavigate }: { data: PhoenixReadModel; con
       <article><Icon name="wallet"/><small>Faturas de cartões</small><strong>{money.format(cardAmount)}</strong><em>{cardEvents.length} item(ns)</em></article>
       <article><Icon name="file"/><small>Outras pendências</small><strong>{money.format(otherAmount)}</strong></article>
     </section>
-    <button className="meg2-benefit" onClick={() => onNavigate('movements')}>
+    <button className="meg2-benefit" type="button" onClick={() => setBenefitOpen(true)}>
       <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Fora do caixa monetário</em><strong>{money.format(benefit)}</strong></div><b>›</b>
     </button>
     <button className="meg2-period-action" onClick={() => onNavigate('payables')}><Icon name="file"/><span><strong>Principais pendências do mês</strong><small>{monthEvents.length} compromisso(s) previsto(s)</small></span><b>›</b></button>
+    {benefitOpen ? <MegMobileBenefitModal data={data} onClose={() => setBenefitOpen(false)} onOpenMovements={() => { setBenefitOpen(false); onNavigate('movements'); }}/> : null}
   </main>;
 }
 
 function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; homePeriodContext?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate'] }) {
+  const [benefitOpen, setBenefitOpen] = useState(false);
   const nowMonth = todayIso().slice(0, 7);
   if (periodMode === 'month' && data.month < nowMonth) return <PastHome data={data} context={homePeriodContext} onNavigate={onNavigate}/>;
   if (periodMode === 'month' && data.month > nowMonth) return <FutureHome data={data} context={homePeriodContext} onNavigate={onNavigate}/>;
@@ -329,7 +355,7 @@ function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: 
       <article><span className="green"><Icon name="check"/></span><small>Contas pagas</small><b>{paid.length}</b><em>{money.format(paid.reduce((s, item) => s + Math.abs(Number(item.signedAmount || item.amount || 0)), 0))}</em></article>
     </section>
 
-    <button className="meg2-benefit" onClick={() => onNavigate('movements')}>
+    <button className="meg2-benefit" type="button" onClick={() => setBenefitOpen(true)}>
       <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Saldo disponível</em><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong></div><b>›</b>
     </button>
 
@@ -342,6 +368,7 @@ function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: 
         <button onClick={() => onNavigate('analytics')}><span><Icon name="chart"/></span><small>Ver relatórios</small></button>
       </div>
     </section>
+    {benefitOpen ? <MegMobileBenefitModal data={data} onClose={() => setBenefitOpen(false)} onOpenMovements={() => { setBenefitOpen(false); onNavigate('movements'); }}/> : null}
   </main>;
 }
 
@@ -416,6 +443,7 @@ function InfiniteCarousel({ data, activeId, onActiveId }: { data: PhoenixReadMod
 function Cards({ data }: { data: PhoenixReadModel }) {
   const cards = useMemo(() => data.cards.filter((card) => card.isActive !== false), [data.cards]);
   const [activeId, setActiveId] = useState(cards[0]?.id || '');
+  const [centerOpen, setCenterOpen] = useState(false);
   useEffect(() => { if (!cards.some((card) => card.id === activeId)) setActiveId(cards[0]?.id || ''); }, [cards, activeId]);
 
   const card = cards.find((item) => item.id === activeId) || cards[0];
@@ -441,7 +469,8 @@ function Cards({ data }: { data: PhoenixReadModel }) {
         {!rows.length ? <div className="meg2-empty">Nenhum lançamento nesta fatura.</div> : null}
       </div>
     </section>
-    <button className="meg2-primary"><Icon name="wallet"/><strong>Abrir central do cartão</strong><span>›</span></button>
+    <button className="meg2-primary" type="button" onClick={() => card && setCenterOpen(true)}><Icon name="wallet"/><strong>Abrir central do cartão</strong><span>›</span></button>
+    {centerOpen && card ? <MegMobileCardCenter card={card} cardLabel={cardName(card.name)} rows={rows} onClose={() => setCenterOpen(false)}/> : null}
   </main>;
 }
 
@@ -450,6 +479,11 @@ type PendingRow = { id: string; source: 'payable' | 'event'; sourceId: string; d
 function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Props['onEditEvent'] }) {
   const [tab, setTab] = useState<'all' | 'open' | 'paid' | 'overdue'>('all');
   const [search, setSearch] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selected, setSelected] = useState<PendingRow | null>(null);
+  const [descending, setDescending] = useState(false);
   const today = todayIso();
 
   const openPay = data.payables.filter((item) => openStatus(item.status) && Number(item.openAmount || 0) > 0).map<PendingRow>((item) => ({
@@ -468,8 +502,10 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   const query = search.trim().toLocaleLowerCase('pt-BR');
   const rows = opens.concat(paidEvents)
     .filter((item) => item.description.toLocaleLowerCase('pt-BR').includes(query))
+    .filter((item) => !fromDate || item.due >= fromDate)
+    .filter((item) => !toDate || item.due <= toDate)
     .filter((item) => tab === 'all' ? true : tab === 'open' ? !item.paid : tab === 'paid' ? item.paid : !item.paid && item.due < today)
-    .sort((left, right) => left.due.localeCompare(right.due));
+    .sort((left, right) => descending ? right.due.localeCompare(left.due) : left.due.localeCompare(right.due));
 
   function dueLabel(item: PendingRow) {
     const date = item.due.split('-').reverse().join('/');
@@ -493,13 +529,13 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       <article><small>A pagar</small><strong>{money.format(total)}</strong><span>◷</span></article>
       <article className="late"><small>Vencidas</small><strong>{money.format(overdue.reduce((s, item) => s + item.amount, 0))}</strong><span>!</span></article>
     </section>
-    <section className="meg2-search"><label><Icon name="search" size={20}/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar pendentes..."/></label><button><Icon name="list"/></button><button><Icon name="sliders"/></button></section>
+    <section className="meg2-search"><label><Icon name="search" size={20}/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar pendentes..."/></label><button className={descending ? 'active' : ''} type="button" aria-label="Alternar ordem" onClick={() => setDescending((value) => !value)}><Icon name="list"/></button><button className={fromDate || toDate ? 'active' : ''} type="button" aria-label="Filtrar por data" onClick={() => setFilterOpen(true)}><Icon name="sliders"/></button></section>
     <section className="meg2-pending-list" data-meg-scroll-region="true">
       {rows.map((item, index) => {
         const late = !item.paid && item.due < today;
         const rowClass = late ? 'late' : item.paid ? 'paid' : '';
         const icon = semanticIcon(item.description);
-        return <button key={item.id} className={rowClass} onClick={() => item.source === 'event' && onEditEvent(item.sourceId)}>
+        return <button key={item.id} className={rowClass} onClick={() => setSelected(item)}>
           <span className={'meg2-pending-icon icon-' + icon}><Icon name={icon}/></span>
           <p><b>{item.description}</b><small>{dueLabel(item)}</small></p>
           <span className="meg2-pending-value"><strong>{money.format(item.amount)}</strong><em>{item.paid ? 'Paga' : late ? 'Vencida' : 'A pagar'}</em></span><i>›</i>
@@ -507,6 +543,28 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       })}
       {!rows.length ? <div className="meg2-empty">Nenhum lançamento neste filtro.</div> : null}
     </section>
+    {filterOpen ? <div className="meg2-pending-filter-overlay" role="presentation" onClick={() => setFilterOpen(false)}>
+      <section className="meg2-pending-filter-sheet" role="dialog" aria-modal="true" aria-label="Filtrar pendentes por data" onClick={(event) => event.stopPropagation()}>
+        <header><div><small>FILTRO DE DATA</small><h2>Período dos pendentes</h2></div><button type="button" onClick={() => setFilterOpen(false)}>×</button></header>
+        <div className="meg2-pending-filter-fields">
+          <label><span>Data inicial</span><input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)}/></label>
+          <label><span>Data final</span><input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)}/></label>
+        </div>
+        <footer><button type="button" className="secondary" onClick={() => { setFromDate(''); setToDate(''); }}>Limpar</button><button type="button" className="apply" onClick={() => setFilterOpen(false)}>Aplicar filtro</button></footer>
+      </section>
+    </div> : null}
+    {selected ? <div className="meg2-pending-detail-overlay" role="presentation" onClick={() => setSelected(null)}>
+      <section className="meg2-pending-detail" role="dialog" aria-modal="true" aria-label="Detalhes do compromisso" onClick={(event) => event.stopPropagation()}>
+        <header><div><small>DETALHES DO COMPROMISSO</small><h2>{selected.description}</h2></div><button type="button" onClick={() => setSelected(null)}>×</button></header>
+        <div className="meg2-pending-detail-amount"><small>Valor</small><strong>{money.format(selected.amount)}</strong><em className={selected.paid ? 'paid' : selected.due < today ? 'late' : 'open'}>{selected.paid ? 'Paga' : selected.due < today ? 'Vencida' : 'A pagar'}</em></div>
+        <dl>
+          <div><dt>Data</dt><dd>{selected.due.split('-').reverse().join('/')}</dd></div>
+          <div><dt>Situação</dt><dd>{dueLabel(selected)}</dd></div>
+          <div><dt>Origem</dt><dd>{selected.source === 'event' ? 'Lançamento financeiro' : 'Conta a pagar'}</dd></div>
+        </dl>
+        <footer><button type="button" className="secondary" onClick={() => setSelected(null)}>Fechar</button>{selected.source === 'event' ? <button type="button" className="apply" onClick={() => { const id=selected.sourceId; setSelected(null); onEditEvent(id); }}>Editar lançamento</button> : <button type="button" className="apply" onClick={() => setSelected(null)}>Entendi</button>}</footer>
+      </section>
+    </div> : null}
   </main>;
 }
 
@@ -597,9 +655,10 @@ function PeriodSheet({ data, initialMode, loading = false, error = '', onClose, 
   </div>;
 }
 
-export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, periodMode, periodLabel, homePeriodContext, periodLoading, periodError, onSelectMonth, onSelectRange, onSelectAll, onLogout, onClose }: Props) {
+export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaunch, onEditEvent: _legacyOnEditEvent, periodMode, periodLabel, homePeriodContext, periodLoading, periodError, onSelectMonth, onSelectRange, onSelectAll, onLogout, onClose }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [periodOpen, setPeriodOpen] = useState(false);
+  const [launchSheet, setLaunchSheet] = useState<{ preset: LaunchPreset; event?: FinancialEvent | null } | null>(null);
   useEffect(() => {
     void hydratePhoenixAvatarPreference(data.user.id);
   }, [data.user.id]);
@@ -611,12 +670,21 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, 
       <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={() => setPeriodOpen(true)} onOpenMenu={() => setMenuOpen(true)}/>
       <div className="meg2-scroll">
         {view === 'home' ? <Home data={data} periodMode={periodMode} periodLabel={periodLabel} homePeriodContext={homePeriodContext} onNavigate={onNavigate}/> : null}
+        {view === 'movements' ? <MegMobileMovements data={data} onOpenEvent={(event) => setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event })} onNew={() => setLaunchSheet({ preset: 'expense' })}/> : null}
         {view === 'cards' ? <Cards data={data}/> : null}
-        {view === 'payables' ? <Payables data={data} onEditEvent={onEditEvent}/> : null}
+        {view === 'payables' ? <Payables data={data} onEditEvent={(eventId) => {
+          const event = data.events.items.find((item) => item.id === eventId) || null;
+          if (event) setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event });
+        }}/> : null}
+        {view === 'history' ? <MegMobileHistory data={data}/> : null}
+        {view === 'cashflow' ? <MegMobileCashflow data={data}/> : null}
+        {view === 'analytics' ? <MegMobileAnalytics data={data}/> : null}
+        {view === 'settings' ? <MegMobileSettings data={data} onLogout={onLogout}/> : null}
       </div>
-      <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={onNavigate} onLaunch={onLaunch} onMenu={() => setMenuOpen(true)}/>
+      <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={onNavigate} onLaunch={(preset) => setLaunchSheet({ preset })} onMenu={() => setMenuOpen(true)}/>
     </div>
     {menuOpen ? <MenuSheet onClose={() => setMenuOpen(false)} onNavigate={onNavigate} onLogout={onLogout} onCloseApp={onClose}/> : null}
     {periodOpen ? <PeriodSheet data={data} initialMode={periodMode} loading={periodLoading} error={periodError} onClose={() => setPeriodOpen(false)} onSelectMonth={onSelectMonth} onSelectRange={onSelectRange} onSelectAll={onSelectAll}/> : null}
+    {launchSheet ? <MegMobileLaunchSheet data={data} preset={launchSheet.preset} event={launchSheet.event} onClose={() => setLaunchSheet(null)}/> : null}
   </div>;
 }
