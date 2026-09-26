@@ -1207,11 +1207,11 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     )
     : null;
 
-  if (nativeOperational && viewData && ['home','movements','cards','payables','history','cashflow','analytics'].includes(view)) {
+  if (nativeOperational && viewData && ['home','movements','cards','payables','history','cashflow','analytics','settings'].includes(view)) {
     return <>
       <MegMobileFinal
         data={viewData}
-        view={view as 'home' | 'movements' | 'cards' | 'payables' | 'history' | 'cashflow' | 'analytics'}
+        view={view as 'home' | 'movements' | 'cards' | 'payables' | 'history' | 'cashflow' | 'analytics' | 'settings'}
         onNavigate={navigate}
         onLaunch={requestLaunch}
         onEditEvent={requestEditEvent}
