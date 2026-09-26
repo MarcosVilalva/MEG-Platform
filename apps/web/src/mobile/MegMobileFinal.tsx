@@ -704,6 +704,13 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
     </div>
     {menuOpen ? <MenuSheet onClose={() => setMenuOpen(false)} onNavigate={onNavigate} onLogout={onLogout} onCloseApp={onClose}/> : null}
     {periodOpen ? <PeriodSheet data={data} initialMode={periodMode} loading={periodLoading} error={periodError} onClose={() => setPeriodOpen(false)} onSelectMonth={onSelectMonth} onSelectRange={onSelectRange} onSelectAll={onSelectAll}/> : null}
-    {launchSheet ? <MegMobileLaunchSheet data={data} preset={launchSheet.preset} event={launchSheet.event} onClose={() => setLaunchSheet(null)}/> : null}
+    {launchSheet ? <MegMobileLaunchSheet
+      data={data}
+      preset={launchSheet.preset}
+      event={launchSheet.event}
+      onClose={() => setLaunchSheet(null)}
+      appHeader={<Header data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={() => { setLaunchSheet(null); setPeriodOpen(true); }} onOpenMenu={() => { setLaunchSheet(null); setMenuOpen(true); }}/>}
+      appDock={<Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={(next) => { setLaunchSheet(null); onNavigate(next); }} onLaunch={() => setLaunchSheet({ preset: 'expense' })} onMenu={() => { setLaunchSheet(null); setMenuOpen(true); }}/>}
+    /> : null}
   </div>;
 }
