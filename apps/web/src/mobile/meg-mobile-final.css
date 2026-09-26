@@ -615,3 +615,168 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   .meg2-user{max-width:62px}.meg2-user strong{max-width:26px;font-size:7px!important}
   .meg2-flow strong{font-size:12px!important}
 }
+
+
+/* =========================================================
+   FIDELIDADE FINAL — referência aprovada
+   ========================================================= */
+.meg2-view-home .meg2-title h1{
+  font-size:clamp(26px,7vw,33px);
+}
+.meg2-view-home .meg2-title p{
+  font-size:9px;
+}
+
+/* Menu integrado entre cabeçalho e dock, como na prévia aprovada. */
+.meg2-overlay:not(.meg2-period-overlay){
+  top:calc(70px + env(safe-area-inset-top));
+  bottom:calc(72px + env(safe-area-inset-bottom));
+  left:0;right:0;
+  padding:8px 10px;
+  align-items:stretch;
+  background:linear-gradient(180deg,rgba(0,25,28,.44),rgba(0,18,20,.58));
+  backdrop-filter:blur(10px);
+}
+.meg2-overlay:not(.meg2-period-overlay) .meg2-menu-sheet{
+  width:min(100%,540px);
+  height:100%;
+  max-height:none;
+  margin:0 auto;
+  overflow:hidden;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
+  padding:13px;
+  border-radius:16px;
+  border:1px solid rgba(42,243,234,.68);
+  background:
+    radial-gradient(circle at 88% 6%,rgba(25,240,230,.18),transparent 24%),
+    radial-gradient(circle at 8% 94%,rgba(24,224,215,.10),transparent 24%),
+    linear-gradient(180deg,#064c4e 0%,#03383b 48%,#01282c 100%);
+  box-shadow:
+    inset 0 0 26px rgba(25,231,221,.05),
+    0 0 0 1px rgba(26,234,225,.13),
+    0 0 30px rgba(20,230,220,.17);
+}
+.meg2-overlay:not(.meg2-period-overlay) .meg2-menu-brand>img{display:none}
+.meg2-overlay:not(.meg2-period-overlay) .meg2-menu-sheet>header{
+  min-height:58px;
+  align-items:center;
+}
+.meg2-overlay:not(.meg2-period-overlay) .meg2-menu-sheet h2{
+  font-size:28px;
+  line-height:1;
+}
+.meg2-overlay:not(.meg2-period-overlay) .meg2-menu-sheet header small{
+  font-size:9px;
+  letter-spacing:.08em;
+}
+.meg2-overlay:not(.meg2-period-overlay) .meg2-menu-grid{
+  min-height:0;
+  margin-top:9px;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-rows:repeat(4,minmax(0,1fr));
+  gap:7px;
+}
+.meg2-overlay:not(.meg2-period-overlay) .meg2-menu-grid button{
+  min-height:0;
+  border-color:rgba(35,240,230,.38);
+  background:
+    radial-gradient(circle at 16% 18%,rgba(26,238,228,.15),transparent 34%),
+    linear-gradient(145deg,rgba(7,94,93,.86),rgba(2,49,53,.94));
+  box-shadow:
+    inset 0 0 20px rgba(27,229,220,.035),
+    0 0 16px rgba(23,225,216,.06);
+}
+.meg2-overlay:not(.meg2-period-overlay) .meg2-menu-grid button>svg{
+  filter:drop-shadow(0 0 8px rgba(30,242,232,.35));
+}
+.meg2-overlay:not(.meg2-period-overlay) .meg2-menu-sheet footer{
+  margin-top:9px;
+}
+.meg2-overlay:not(.meg2-period-overlay) .meg2-menu-sheet footer button{
+  min-height:46px;
+  border-color:rgba(33,229,221,.32);
+  background:rgba(2,46,50,.74);
+}
+.meg2-overlay:not(.meg2-period-overlay) .meg2-menu-sheet footer .danger{
+  border-color:rgba(255,93,116,.52);
+  box-shadow:0 0 18px rgba(255,77,103,.10);
+}
+
+/* Ícones contextuais nas listas, iguais ao conceito aprovado. */
+.meg2-statement-list>button>span,
+.meg2-pending-icon{
+  position:relative;
+  overflow:hidden;
+}
+.meg2-statement-list>button>span.icon-food,
+.meg2-pending-icon.icon-food{background:linear-gradient(145deg,#147f78,#075a5a)!important;color:#75f2df!important}
+.meg2-statement-list>button>span.icon-car,
+.meg2-pending-icon.icon-car{background:linear-gradient(145deg,#315fd0,#173684)!important;color:#dce8ff!important}
+.meg2-statement-list>button>span.icon-card,
+.meg2-pending-icon.icon-card{background:linear-gradient(145deg,#166fb7,#084a83)!important;color:#d8f0ff!important}
+.meg2-statement-list>button>span.icon-bolt,
+.meg2-pending-icon.icon-bolt{background:linear-gradient(145deg,#b84859,#6e2736)!important;color:#ffd7df!important}
+.meg2-statement-list>button>span.icon-wifi,
+.meg2-pending-icon.icon-wifi{background:linear-gradient(145deg,#109b8f,#066b6c)!important;color:#d9fff8!important}
+.meg2-statement-list>button>span.icon-phone,
+.meg2-pending-icon.icon-phone{background:linear-gradient(145deg,#1b9db3,#0a6674)!important;color:#e1fbff!important}
+.meg2-statement-list>button>span.icon-building,
+.meg2-pending-icon.icon-building{background:linear-gradient(145deg,#3459b3,#203577)!important;color:#e4eaff!important}
+.meg2-statement-list>button>span.icon-play,
+.meg2-pending-icon.icon-play{background:linear-gradient(145deg,#c55a37,#84331c)!important;color:#fff0e6!important}
+.meg2-statement-list>button>span.icon-cart{background:linear-gradient(145deg,#2f6fc7,#14458a)!important;color:#e4efff!important}
+.meg2-statement-list>button>span.icon-file,
+.meg2-pending-icon.icon-file{background:linear-gradient(145deg,#138e8b,#075c61)!important;color:#dcfffb!important}
+
+/* Cartões: arte real maior e laterais sempre visíveis. */
+.meg2-carousel{
+  padding-left:max(8vw,30px);
+  padding-right:max(8vw,30px);
+}
+.meg2-card-art{
+  flex-basis:min(76vw,320px);
+  min-width:242px;
+  border-radius:17px;
+  background-position:center!important;
+  background-size:cover!important;
+}
+.meg2-card-art.active{
+  box-shadow:
+    0 0 0 2px rgba(38,245,235,.78),
+    0 0 28px rgba(24,229,219,.23),
+    0 14px 34px rgba(0,0,0,.34);
+}
+
+/* Pendentes: bordas e contraste próximos ao mock aprovado. */
+.meg2-payables .meg2-tabs,
+.meg2-payables .meg2-search label,
+.meg2-payables .meg2-search>button,
+.meg2-payables .meg2-pending-metrics article,
+.meg2-payables .meg2-pending-list>button{
+  border-color:rgba(37,231,222,.34);
+}
+.meg2-payables .meg2-pending-list>button{
+  box-shadow:
+    inset 0 0 18px rgba(22,213,205,.025),
+    0 0 14px rgba(18,215,207,.045);
+}
+
+/* Telefones menores continuam mostrando a composição inteira. */
+@media(max-width:370px){
+  .meg2-overlay:not(.meg2-period-overlay){
+    top:calc(66px + env(safe-area-inset-top));
+    bottom:calc(68px + env(safe-area-inset-bottom));
+    padding-inline:7px;
+  }
+  .meg2-overlay:not(.meg2-period-overlay) .meg2-menu-sheet{
+    padding:10px;
+  }
+  .meg2-overlay:not(.meg2-period-overlay) .meg2-menu-sheet h2{font-size:24px}
+  .meg2-overlay:not(.meg2-period-overlay) .meg2-menu-grid{gap:5px}
+  .meg2-overlay:not(.meg2-period-overlay) .meg2-menu-grid button{
+    padding:6px;
+    grid-template-columns:30px minmax(0,1fr);
+  }
+}
