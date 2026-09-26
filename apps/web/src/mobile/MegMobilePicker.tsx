@@ -60,8 +60,8 @@ export function MegMobilePicker({
       onClick={() => !disabled && setOpen(true)}
     >
       <span>{label}</span>
-      <strong>{selected?.label || lockedText || placeholder}</strong>
-      {selected?.subtitle ? <small>{selected.subtitle}</small> : null}
+      <strong>{disabled && lockedText ? lockedText : selected?.label || placeholder}</strong>
+      {!disabled && selected?.subtitle ? <small>{selected.subtitle}</small> : null}
       <i aria-hidden="true">⌄</i>
     </button>
 
