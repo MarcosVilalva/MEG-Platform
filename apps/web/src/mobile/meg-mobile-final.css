@@ -979,3 +979,33 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   .meg2-user{max-width:76px}
   .meg2-user strong{display:block!important;max-width:38px!important;font-size:7.5px!important}
 }
+
+
+/* Pendentes: filtro de data funcional sem rolar a tela principal. */
+.meg2-search>button.active{
+  border-color:#2ce8dc!important;
+  color:#55e9df!important;
+  box-shadow:0 0 14px rgba(41,229,218,.09)!important;
+}
+.meg2-pending-filter-overlay{
+  position:fixed;inset:0;z-index:2147482300;width:100vw;height:100dvh;overflow:hidden;
+  display:grid;place-items:end center;background:rgba(0,18,20,.76);backdrop-filter:blur(9px)
+}
+.meg2-pending-filter-sheet{
+  width:min(100%,560px);padding:14px 14px calc(14px + env(safe-area-inset-bottom));
+  border:1px solid rgba(45,235,222,.45);border-bottom:0;border-radius:22px 22px 0 0;
+  background:linear-gradient(165deg,#063d40,#032d30 54%,#012326);
+  box-shadow:0 -20px 60px rgba(0,0,0,.38),0 0 24px rgba(31,232,220,.10)
+}
+.meg2-pending-filter-sheet>header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.meg2-pending-filter-sheet>header small{display:block;color:#52e8df;font-size:8px;font-weight:800;letter-spacing:.12em}
+.meg2-pending-filter-sheet>header h2{margin:3px 0 0;font-size:20px}
+.meg2-pending-filter-sheet>header>button{width:42px;height:42px;border:1px solid rgba(59,202,195,.20);border-radius:13px;background:#043638;color:#fff;font-size:25px}
+.meg2-pending-filter-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
+.meg2-pending-filter-fields label{display:grid;gap:5px}.meg2-pending-filter-fields span{color:#91aaa7;font-size:8px;font-weight:700}
+.meg2-pending-filter-fields input{min-width:0;width:100%;min-height:46px;box-sizing:border-box;border:1px solid rgba(58,188,183,.17);border-radius:12px;background:#043638;color:#fff;padding:9px;font:inherit;font-size:11px}
+.meg2-pending-filter-sheet>footer{display:grid;grid-template-columns:1fr 1.35fr;gap:8px;margin-top:12px}
+.meg2-pending-filter-sheet>footer button{min-height:46px;border-radius:12px;font-size:9px;font-weight:800}
+.meg2-pending-filter-sheet>footer .secondary{border:1px solid rgba(62,189,184,.18);background:#043638;color:#bfd2d0}
+.meg2-pending-filter-sheet>footer .apply{border:1px solid #2be8db;background:linear-gradient(180deg,#0a8d89,#076765);color:#fff}
+@media(max-width:350px){.meg2-pending-filter-fields{grid-template-columns:1fr}}
