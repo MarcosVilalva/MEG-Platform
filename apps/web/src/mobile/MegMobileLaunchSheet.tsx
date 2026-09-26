@@ -147,6 +147,7 @@ export function MegMobileLaunchSheet({
     }));
 
   const selectedMethod = methods.find((item) => item.id === paymentMethodId);
+  const creditMethod = methods.find((item) => isCreditMethod(item));
   const credit = mode === 'expense' && (Boolean(cardId) || isCreditMethod(selectedMethod) || Boolean(cardMeta));
   const selectedCard = data.cards.find((item) => item.id === cardId);
   const installmentPreview = useMemo(() => {
@@ -176,18 +177,27 @@ export function MegMobileLaunchSheet({
     setStatus('paid');
   }, [mode, benefitAccount?.id, verocard?.id]);
 
+  useEffect(() => {
+    if (mode !== 'expense') {
+      if (!event) setCardId('');
+      return;
+    }
+    if (cardId && !isCreditMethod(selectedMethod) && creditMethod) {
+      setPaymentMethodId(creditMethod.id);
+    }
+  }, [mode, cardId, selectedMethod?.id, creditMethod?.id, event]);
+
   function validate() {
     if (!description.trim()) return 'Informe a descrição.';
+    if (!categoryId) return 'Selecione a categoria.';
+    if (!paymentMethodId) return mode === 'income' ? 'Selecione a forma de recebimento.' : 'Selecione a forma de pagamento.';
     if (parseAmount(amount) <= 0) return 'Informe um valor maior que zero.';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return 'Informe uma data válida.';
     if (credit) {
       if (!cardId) return 'Selecione o cartão.';
-      if (!categoryId) return 'Selecione a categoria.';
       return '';
     }
     if (!accountId) return 'Selecione a conta.';
-    if (!paymentMethodId) return mode === 'income' ? 'Selecione a forma de recebimento.' : 'Selecione a forma de pagamento.';
-    if (mode !== 'income' && !categoryId) return 'Selecione a categoria.';
     if (mode === 'benefit' && (!benefitAccount || !verocard)) return 'A conta Benefício e a forma Verocard precisam estar ativas.';
     return '';
   }
