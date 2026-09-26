@@ -9,7 +9,7 @@ import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalett
 import { PhoenixSidebar } from './PhoenixSidebar';
 import { PhoenixNavIcon } from './PhoenixNavIcon';
 import { PhoenixOperationalMobileHome } from './PhoenixOperationalMobileHome';
-import { PhoenixReferenceHome, PhoenixReferenceCards, PhoenixReferencePayables } from './PhoenixMobileReferenceScreens';
+import { MegMobileFinal } from '../mobile/MegMobileFinal';
 import { PhoenixProfileAvatar, hydratePhoenixAvatarPreference, readPhoenixAvatarPreference, type PhoenixAvatarPreference } from './profile-avatar';
 import { syncPhoenixLocalDueNotifications } from './phoenix-native-notifications';
 import { PhoenixCatalogsGrid } from './screens/PhoenixCatalogsGrid';
@@ -35,6 +35,7 @@ import './phoenix-home-period-mobile.css';
 import './phoenix-home-fidelity-v12.css';
 import './phoenix-home-fidelity-v13.css';
 import './phoenix-layers.css';
+import '../mobile/meg-mobile-premium.css';
 
 const loadMovementsModule = () => import('./screens/PhoenixMovementsV15');
 const loadPayablesModule = () => import('./screens/PhoenixReadScreens');
@@ -392,13 +393,13 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
         onOpenPeriod={onOpenPeriod}
       />;
     }
-    if (nativeOperational) return <PhoenixReferenceHome data={data} onNavigate={onNavigate} onOpenPeriod={onOpenPeriod} onOpenMenu={onOpenMenu} />;
+    if (nativeOperational) return <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
     return <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
   }
   if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} periodMode={periodMode} periodLabel={periodMode === 'all' ? 'Tudo' : periodMode === 'range' ? periodRangeLabel || 'Intervalo' : monthLabel(data.month)} launchRequest={launchRequest} launchPreset={launchPreset} editEventRequest={editEventRequest} onNavigateHistory={() => onNavigate('history')} onNavigateHome={() => onNavigate('home')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
   if (view === 'history') return <Suspense fallback={<ScreenWarmFallback label="Histórico" />}><PhoenixHistory data={data} /></Suspense>;
-  if (view === 'payables') return nativeOperational ? <PhoenixReferencePayables data={data} onOpenPeriod={onOpenPeriod} onOpenMenu={onOpenMenu} onEditEvent={onEditEvent} /> : <Suspense fallback={<ScreenWarmFallback label="Pendentes" />}><PhoenixPayables data={data} onMonthChange={onPendingMonthChange} onEditEvent={onEditEvent} /></Suspense>;
-  if (view === 'cards') return nativeOperational ? <PhoenixReferenceCards data={data} onOpenPeriod={onOpenPeriod} onOpenMenu={onOpenMenu} /> : <Suspense fallback={<ScreenWarmFallback label="Cartões" />}><PhoenixCardsGrid data={data} /></Suspense>;
+  if (view === 'payables') return <Suspense fallback={<ScreenWarmFallback label="Pendentes" />}><PhoenixPayables data={data} onMonthChange={onPendingMonthChange} onEditEvent={onEditEvent} /></Suspense>;
+  if (view === 'cards') return <Suspense fallback={<ScreenWarmFallback label="Cartões" />}><PhoenixCardsGrid data={data} /></Suspense>;
   if (view === 'catalogs') return <PhoenixCatalogsGrid data={data} onDataCommitted={onDataCommitted} />;
   if (view === 'users') return <PhoenixUsers data={data} />;
   if (view === 'settings') return <PhoenixSettings data={data} theme={theme} onToggleTheme={onToggleTheme} onLogoutRequest={onLogoutRequest} />;
@@ -1205,6 +1206,28 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
       document.body,
     )
     : null;
+
+  if (nativeOperational && viewData && (view === 'home' || view === 'cards' || view === 'payables')) {
+    return <>
+      <MegMobileFinal
+        data={viewData}
+        view={view}
+        onNavigate={navigate}
+        onLaunch={requestLaunch}
+        onEditEvent={requestEditEvent}
+        periodMode={periodMode}
+        periodLabel={periodMode === 'range' ? periodRangeLabel : periodMode === 'all' ? 'Tudo' : shortMonthLabel(viewData.month)}
+        homePeriodContext={homePeriodContext}
+        periodLoading={periodLoading}
+        periodError={periodError}
+        onSelectMonth={(targetMonth) => applyMonthlyPeriod(targetMonth)}
+        onSelectRange={(start, end) => applyRangePeriod(start, end)}
+        onSelectAll={() => applyAllPeriod()}
+        onLogout={onLogout}
+        onClose={onClose}
+      />
+    </>;
+  }
 
   return <div className="phoenix-v15" data-theme={theme}>
     <div className={`px-app ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>

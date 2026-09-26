@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const android = readFileSync(new URL('../../../.github/workflows/build-android-apk.yml', import.meta.url), 'utf8');
 const pages = readFileSync(new URL('../../../.github/workflows/deploy-pages.yml', import.meta.url), 'utf8');
+const ci = readFileSync(new URL('../../../.github/workflows/ci.yml', import.meta.url), 'utf8');
 const controller = readFileSync(new URL('./android-update-controller.js', import.meta.url), 'utf8');
 const preview = readFileSync(new URL('./phoenix/preview-main.tsx', import.meta.url), 'utf8');
 const nativeUpdater = readFileSync(new URL('../../../android/app/src/main/java/br/com/megfinancas/app/AppUpdaterPlugin.java', import.meta.url), 'utf8');
@@ -17,6 +18,21 @@ assert.match(
   android,
   /downloadUrl: 'https:\/\/marcosvilalva\.github\.io\/MEG-Platform\/downloads\/MEG-Financas\.apk'/,
   'Manifesto deve apontar para o APK validado e publicado no canal estável do Pages',
+);
+assert.match(
+  android,
+  /mandatory_update:[\s\S]*type: boolean/,
+  'Publicação manual deve permitir marcar uma versão crítica como atualização obrigatória.',
+);
+assert.match(
+  android,
+  /MEG_UPDATE_MANDATORY:[\s\S]*inputs\.mandatory_update/,
+  'Flag de atualização obrigatória deve chegar à geração do manifesto.',
+);
+assert.match(
+  android,
+  /mandatory: String\(process\.env\.MEG_UPDATE_MANDATORY[\s\S]*=== 'true'/,
+  'Manifesto Android deve serializar a flag mandatory a partir da publicação.',
 );
 
 assert.match(
@@ -33,6 +49,32 @@ assert.match(
   pages,
   /actual !== manifest\.sha256/,
   'Pages deve validar SHA-256 do APK contra o manifesto baixado',
+);
+
+assert.match(
+  ci,
+  /Compile Android RC1 release-signed APK[\s\S]*assembleRelease/,
+  'RC1 instalável deve ser gerado como release assinado, nunca como debug.',
+);
+assert.match(
+  ci,
+  /ANDROID_KEYSTORE_PATH:[\s\S]*meg-release\.jks/,
+  'RC1 deve apontar para o keystore permanente do canal estável.',
+);
+assert.match(
+  ci,
+  /ANDROID_KEYSTORE_BASE64/,
+  'RC1 deve reconstruir o keystore permanente a partir do segredo configurado.',
+);
+assert.match(
+  ci,
+  /EXPECTED_SIGNER[\s\S]*signerSha256[\s\S]*ACTUAL_SIGNER[\s\S]*EXPECTED_SIGNER/,
+  'CI deve comparar o certificado do RC1 com o signerSha256 do canal estável.',
+);
+assert.match(
+  ci,
+  /Align RC1 version with current stable Android channel[\s\S]*app-version\.json[\s\S]*MEG_VERSION_CODE=\$STABLE_CODE/,
+  'RC1 deve herdar o versionCode estável atual para não disparar falso OTA nem bloquear a próxima release.',
 );
 
 assert.match(
@@ -95,6 +137,36 @@ assert.match(
   nativeUpdater,
   /if \(sha256 == null \|\| sha256\.trim\(\)\.isEmpty\(\)\) throw new IllegalStateException\("Manifesto sem SHA-256 da atualização\."\);/,
   'Atualização automática nativa deve exigir SHA-256 antes do download',
+);
+assert.match(
+  controller,
+  /meg-update-overlay[\s\S]*data-auto-update-progress[\s\S]*data-auto-update-percent/,
+  'Atualização automática deve mostrar progresso visual premium e percentual real.',
+);
+assert.match(
+  controller,
+  /release\?\.mandatory === true[\s\S]*ATUALIZAÇÃO OBRIGATÓRIA/,
+  'Manifesto mandatory=true deve produzir fluxo obrigatório explícito.',
+);
+assert.match(
+  controller,
+  /addEventListener\('cancel'[\s\S]*mandatory[\s\S]*preventDefault/,
+  'Atualização obrigatória não pode ser dispensada fechando o modal.',
+);
+assert.match(
+  controller,
+  /window\.addEventListener\('online'[\s\S]*checkForAppUpdate\(\{ automatic: true \}\)/,
+  'Ao recuperar internet, o APK deve retomar a checagem automática sem ação manual.',
+);
+assert.match(
+  controller,
+  /PENDING_UPDATE_STORAGE_KEY[\s\S]*rememberPendingUpdateSuccess[\s\S]*showInstalledUpdateSuccess/,
+  'Fluxo OTA deve preservar a versão esperada e confirmar visualmente após a instalação.',
+);
+assert.match(
+  controller,
+  /Atualizado com sucesso![\s\S]*versão v/,
+  'Após reiniciar na nova versão, o APK deve informar que a atualização foi concluída.',
 );
 
 console.log('Android/Page release-pair + automatic update contract: OK');

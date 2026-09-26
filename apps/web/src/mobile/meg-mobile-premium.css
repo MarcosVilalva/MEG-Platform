@@ -1,0 +1,572 @@
+/* MEG Mobile Premium
+   Padrão visual aprovado em 25/09/2026 para telas funcionais Phoenix.
+   Ativo apenas no runtime móvel. */
+body.meg-operational-mobile{
+  --meg-premium-bg:#002d30;
+  --meg-premium-deep:#001f23;
+  --meg-premium-panel:rgba(4,70,70,.88);
+  --meg-premium-panel-2:rgba(2,48,52,.96);
+  --meg-premium-line:rgba(35,232,223,.28);
+  --meg-premium-line-strong:rgba(35,245,235,.62);
+  --meg-premium-cyan:#22e9e1;
+  --meg-premium-text:#f5fbfb;
+  --meg-premium-muted:#9fc3c2;
+  --meg-premium-red:#ff6278;
+  --meg-premium-green:#43efc1;
+  --meg-premium-yellow:#ffd75c;
+  --meg-premium-blue:#59bdff;
+}
+
+/* Shell e cabeçalho */
+body.meg-operational-mobile .phoenix-v15,
+body.meg-operational-mobile .px-app,
+body.meg-operational-mobile .px-main{
+  background:
+    radial-gradient(circle at 86% 0,rgba(22,234,224,.10),transparent 25%),
+    radial-gradient(circle at 7% 28%,rgba(0,137,143,.10),transparent 30%),
+    linear-gradient(180deg,#003b3d 0%,#002b2f 48%,#001f23 100%)!important;
+  color:var(--meg-premium-text)!important;
+}
+body.meg-operational-mobile .px-topbar{
+  background:linear-gradient(180deg,rgba(0,59,61,.985),rgba(0,45,49,.97))!important;
+  border-bottom:1px solid rgba(38,231,222,.2)!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.18)!important;
+}
+body.meg-operational-mobile .px-mobile-brand-home,
+body.meg-operational-mobile .px-native-home-period,
+body.meg-operational-mobile .px-user-pill{
+  border-color:var(--meg-premium-line)!important;
+  background:linear-gradient(145deg,rgba(5,85,85,.76),rgba(1,49,52,.92))!important;
+  box-shadow:0 0 0 1px rgba(29,239,230,.06),inset 0 0 16px rgba(25,225,216,.035)!important;
+}
+body.meg-operational-mobile .px-native-home-period{min-width:0!important;max-width:210px!important}
+body.meg-operational-mobile .px-native-home-period-copy strong{font-size:13px!important}
+body.meg-operational-mobile .px-native-home-period-copy small{font-size:8px!important}
+body.meg-operational-mobile .px-user-name{display:inline!important;max-width:58px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:9px!important}
+body.meg-operational-mobile .px-user-avatar,
+body.meg-operational-mobile .px-profile-avatar{
+  box-shadow:0 0 0 2px rgba(32,235,226,.25),0 0 17px rgba(25,228,219,.16)!important;
+}
+
+/* Estrutura genérica de tela */
+body.meg-operational-mobile .px-screen,
+body.meg-operational-mobile .px-card,
+body.meg-operational-mobile .px-table-card,
+body.meg-operational-mobile .px-movements-v15{
+  color:var(--meg-premium-text)!important;
+}
+body.meg-operational-mobile .px-screen-head{
+  border-bottom-color:rgba(32,230,221,.16)!important;
+}
+body.meg-operational-mobile .px-screen-head h1,
+body.meg-operational-mobile .px-movement-hero-row h1{
+  color:#fff!important;
+  letter-spacing:-.035em!important;
+}
+body.meg-operational-mobile .px-screen-head p,
+body.meg-operational-mobile .px-screen-head small,
+body.meg-operational-mobile .px-kpi-copy small{
+  color:var(--meg-premium-muted)!important;
+}
+body.meg-operational-mobile .px-kicker{
+  color:var(--meg-premium-cyan)!important;
+  letter-spacing:.12em!important;
+  font-weight:900!important;
+}
+body.meg-operational-mobile .px-screen-kpis article,
+body.meg-operational-mobile .px-movements-overview article{
+  border:1px solid var(--meg-premium-line)!important;
+  background:
+    radial-gradient(circle at 15% 8%,rgba(23,226,217,.08),transparent 40%),
+    linear-gradient(145deg,rgba(5,76,76,.88),rgba(2,49,52,.96))!important;
+  box-shadow:0 0 0 1px rgba(23,227,218,.05),0 0 18px rgba(21,220,211,.06),inset 0 1px 0 rgba(255,255,255,.025)!important;
+  border-radius:14px!important;
+}
+body.meg-operational-mobile .px-kpi-icon{
+  border-radius:10px!important;
+  color:var(--meg-premium-cyan)!important;
+  background:rgba(10,135,133,.18)!important;
+  filter:drop-shadow(0 0 7px rgba(29,236,226,.25))!important;
+}
+
+/* Lançamentos: barra de ferramentas e lista premium */
+body.meg-operational-mobile .px-movement-tool-panel,
+body.meg-operational-mobile .px-table-toolbar-shell,
+body.meg-operational-mobile .px-movement-search-panel{
+  border:1px solid var(--meg-premium-line)!important;
+  border-radius:15px!important;
+  background:linear-gradient(145deg,rgba(4,70,71,.92),rgba(1,43,47,.96))!important;
+  box-shadow:0 0 18px rgba(19,218,209,.06)!important;
+}
+body.meg-operational-mobile .px-movement-tool-button,
+body.meg-operational-mobile .px-movement-period-button,
+body.meg-operational-mobile .px-grid-filter-chip,
+body.meg-operational-mobile .px-pagination-controls button,
+body.meg-operational-mobile .px-pagination-options button{
+  border-color:var(--meg-premium-line)!important;
+  border-radius:11px!important;
+  color:#dff3f2!important;
+  background:rgba(3,55,59,.76)!important;
+}
+body.meg-operational-mobile .px-movement-tool-button.active,
+body.meg-operational-mobile .px-grid-filter-chip.active{
+  color:var(--meg-premium-cyan)!important;
+  border-color:var(--meg-premium-cyan)!important;
+  background:rgba(8,133,130,.25)!important;
+  box-shadow:0 0 18px rgba(24,229,219,.15)!important;
+}
+body.meg-operational-mobile .px-mobile-movement-list{gap:7px!important}
+body.meg-operational-mobile .px-mobile-movement-card{
+  position:relative!important;overflow:hidden!important;
+  border:1px solid var(--meg-premium-line)!important;
+  border-radius:15px!important;
+  background:
+    linear-gradient(90deg,rgba(8,104,100,.18),transparent 26%),
+    linear-gradient(145deg,rgba(5,72,73,.92),rgba(2,45,49,.98))!important;
+  box-shadow:0 0 0 1px rgba(26,231,222,.045),0 8px 20px rgba(0,0,0,.09),inset 0 0 18px rgba(21,213,205,.025)!important;
+}
+body.meg-operational-mobile .px-mobile-movement-card::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,transparent 0 74%,rgba(30,240,231,.03) 75% 77%,transparent 78%)
+}
+body.meg-operational-mobile .px-mobile-movement-type{
+  border-radius:11px!important;
+  box-shadow:0 0 15px rgba(25,226,217,.10)!important;
+}
+body.meg-operational-mobile .px-mobile-movement-card[data-type="income"] .px-mobile-movement-type,
+body.meg-operational-mobile .px-mobile-movement-value.is-income{color:var(--meg-premium-green)!important}
+body.meg-operational-mobile .px-mobile-movement-card[data-type="expense"] .px-mobile-movement-type,
+body.meg-operational-mobile .px-mobile-movement-value.is-expense{color:var(--meg-premium-red)!important}
+body.meg-operational-mobile .px-mobile-movement-status{
+  border-radius:999px!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  box-shadow:inset 0 0 12px rgba(255,255,255,.025)!important;
+}
+body.meg-operational-mobile .px-primary-action,
+body.meg-operational-mobile .px-confirm-launch{
+  border:1px solid #27eee5!important;
+  background:linear-gradient(180deg,#0bbdb5,#087a78)!important;
+  color:#fff!important;
+  box-shadow:0 0 22px rgba(27,233,223,.21),inset 0 1px 0 rgba(255,255,255,.14)!important;
+}
+body.meg-operational-mobile .px-secondary-action,
+body.meg-operational-mobile .px-cancel-launch{
+  border:1px solid var(--meg-premium-line)!important;
+  background:rgba(3,52,56,.75)!important;
+  color:#e8f5f5!important;
+}
+body.meg-operational-mobile .px-delete-launch{
+  border:1px solid rgba(255,91,113,.48)!important;
+  background:rgba(126,29,43,.20)!important;
+  color:#ff8294!important;
+  box-shadow:0 0 17px rgba(255,74,102,.08)!important;
+}
+
+/* Formulários: drawer totalmente renovado visualmente */
+body.meg-operational-mobile .px-launch-backdrop{
+  background:rgba(0,14,16,.76)!important;
+  backdrop-filter:blur(10px)!important;
+}
+body.meg-operational-mobile .px-launch-drawer,
+body.meg-operational-mobile .px-detail-drawer{
+  border:1px solid var(--meg-premium-line-strong)!important;
+  background:
+    radial-gradient(circle at 88% 0,rgba(25,239,229,.11),transparent 24%),
+    linear-gradient(180deg,#06484a 0%,#033438 44%,#01262a 100%)!important;
+  color:var(--meg-premium-text)!important;
+  box-shadow:-20px 0 65px rgba(0,0,0,.45),0 0 30px rgba(18,224,215,.13)!important;
+}
+body.meg-operational-mobile .px-drawer-head{
+  background:linear-gradient(180deg,rgba(6,78,79,.98),rgba(3,55,58,.94))!important;
+  border-bottom:1px solid rgba(34,231,222,.22)!important;
+  box-shadow:0 7px 22px rgba(0,0,0,.14)!important;
+}
+body.meg-operational-mobile .px-drawer-head h2{color:#fff!important}
+body.meg-operational-mobile .px-drawer-head .px-icon-btn{
+  width:39px!important;height:39px!important;border-radius:11px!important;
+  border:1px solid var(--meg-premium-line)!important;
+  background:rgba(5,73,74,.70)!important;color:#fff!important;
+}
+body.meg-operational-mobile .px-launch-form{
+  background:transparent!important;
+  border:0!important;box-shadow:none!important;
+}
+body.meg-operational-mobile .px-launch-section-label{
+  color:var(--meg-premium-cyan)!important;
+  font-size:10px!important;letter-spacing:.09em!important;font-weight:900!important;
+  border-bottom:1px solid rgba(29,231,222,.14)!important;
+}
+body.meg-operational-mobile .px-segment{
+  padding:4px!important;gap:5px!important;
+  border:1px solid var(--meg-premium-line)!important;
+  border-radius:14px!important;background:rgba(1,43,47,.54)!important;
+}
+body.meg-operational-mobile .px-segment button{
+  min-height:42px!important;border:1px solid transparent!important;border-radius:10px!important;
+  background:transparent!important;color:#dceeee!important;
+}
+body.meg-operational-mobile .px-segment button.active{
+  color:var(--meg-premium-cyan)!important;
+  border-color:rgba(35,240,230,.55)!important;
+  background:rgba(8,130,128,.24)!important;
+  box-shadow:0 0 18px rgba(25,231,221,.14),inset 0 0 14px rgba(23,228,219,.05)!important;
+}
+body.meg-operational-mobile .px-field,
+body.meg-operational-mobile .px-card-box,
+body.meg-operational-mobile .px-amount-entry,
+body.meg-operational-mobile .px-recurrence-box,
+body.meg-operational-mobile .px-installment-box,
+body.meg-operational-mobile .px-launch-advanced-panel,
+body.meg-operational-mobile .px-transfer-block{
+  border-color:rgba(31,221,213,.20)!important;
+  border-radius:13px!important;
+  background:linear-gradient(145deg,rgba(4,69,70,.68),rgba(1,44,48,.82))!important;
+}
+body.meg-operational-mobile .px-field>span,
+body.meg-operational-mobile .px-field>label,
+body.meg-operational-mobile .px-field small{color:var(--meg-premium-muted)!important}
+body.meg-operational-mobile .px-field input,
+body.meg-operational-mobile .px-field select,
+body.meg-operational-mobile .px-field textarea,
+body.meg-operational-mobile .px-money-mask{
+  border:1px solid rgba(37,221,214,.22)!important;
+  border-radius:10px!important;
+  background:#032e32!important;
+  color:#fff!important;
+  box-shadow:inset 0 0 14px rgba(17,192,186,.03)!important;
+}
+body.meg-operational-mobile .px-field input:focus,
+body.meg-operational-mobile .px-field select:focus,
+body.meg-operational-mobile .px-field textarea:focus,
+body.meg-operational-mobile .px-money-mask:focus{
+  outline:none!important;
+  border-color:#23e9df!important;
+  box-shadow:0 0 0 2px rgba(31,234,224,.10),0 0 18px rgba(24,229,219,.08)!important;
+}
+body.meg-operational-mobile .px-field.is-invalid{
+  border-color:rgba(255,87,110,.48)!important;
+  box-shadow:0 0 15px rgba(255,72,99,.06)!important;
+}
+body.meg-operational-mobile .px-field-error{color:#ff8294!important}
+body.meg-operational-mobile .px-sign-toggle{
+  border:1px solid var(--meg-premium-line)!important;
+  border-radius:11px!important;
+  background:rgba(1,40,44,.62)!important;
+}
+body.meg-operational-mobile .px-sign-toggle button{border-radius:9px!important}
+body.meg-operational-mobile .px-sign-toggle button.active.positive{
+  color:#062e29!important;background:var(--meg-premium-green)!important;box-shadow:0 0 16px rgba(67,239,193,.16)!important
+}
+body.meg-operational-mobile .px-sign-toggle button.active.negative{
+  color:#fff!important;background:rgba(202,50,72,.68)!important;border-color:#ff6278!important;box-shadow:0 0 16px rgba(255,98,120,.13)!important
+}
+body.meg-operational-mobile .px-config-note,
+body.meg-operational-mobile .px-notice{
+  border:1px solid rgba(35,220,212,.18)!important;border-radius:11px!important;
+  background:rgba(2,48,52,.72)!important;color:#cbe0df!important;
+}
+body.meg-operational-mobile .px-notice.warn{border-color:rgba(255,210,77,.35)!important;color:#ffe28a!important}
+body.meg-operational-mobile .px-notice.ok{border-color:rgba(67,239,193,.28)!important;color:#84f6d4!important}
+body.meg-operational-mobile .px-edit-launch-actions,
+body.meg-operational-mobile .px-detail-actions{
+  gap:7px!important;
+  border-top:1px solid rgba(36,222,214,.16)!important;
+  background:linear-gradient(180deg,rgba(1,38,42,.05),rgba(1,35,39,.85))!important;
+}
+
+/* Detalhe de lançamento */
+body.meg-operational-mobile .px-detail-description{
+  color:#fff!important;font-size:20px!important;font-weight:850!important;
+}
+body.meg-operational-mobile .px-detail-grid>div{
+  border:1px solid rgba(35,220,212,.18)!important;border-radius:12px!important;
+  background:linear-gradient(145deg,rgba(4,69,70,.7),rgba(1,44,48,.85))!important;
+  box-shadow:inset 0 0 14px rgba(19,205,197,.025)!important;
+}
+body.meg-operational-mobile .px-detail-grid span{color:var(--meg-premium-muted)!important}
+body.meg-operational-mobile .px-detail-grid strong{color:#fff!important}
+
+/* Modais e confirmações */
+body.meg-operational-mobile .px-meg-confirm-overlay,
+body.meg-operational-mobile .px-installment-preview-overlay{
+  background:rgba(0,14,16,.76)!important;
+  backdrop-filter:blur(10px)!important;
+}
+body.meg-operational-mobile .px-meg-confirm-dialog{
+  width:min(calc(100vw - 24px),520px)!important;
+  max-height:calc(100dvh - max(24px,env(safe-area-inset-top)) - max(24px,env(safe-area-inset-bottom)))!important;
+  overflow:auto!important;
+  border:1px solid var(--meg-premium-line-strong)!important;
+  border-radius:20px!important;
+  background:
+    radial-gradient(circle at 86% 5%,rgba(24,238,228,.12),transparent 28%),
+    linear-gradient(180deg,#06494b 0%,#033337 55%,#01262a 100%)!important;
+  color:#fff!important;
+  box-shadow:0 0 0 1px rgba(30,232,222,.12),0 0 34px rgba(19,226,216,.15),0 24px 65px rgba(0,0,0,.48)!important;
+}
+body.meg-operational-mobile .px-meg-confirm-icon{
+  color:var(--meg-premium-cyan)!important;
+  border:1px solid var(--meg-premium-line)!important;
+  background:rgba(8,126,124,.20)!important;
+  box-shadow:0 0 20px rgba(25,231,221,.12)!important;
+}
+body.meg-operational-mobile .px-meg-confirm-copy h3{color:#fff!important}
+body.meg-operational-mobile .px-meg-confirm-copy p{color:#c3d9d8!important}
+body.meg-operational-mobile .px-meg-confirm-close{
+  border:1px solid var(--meg-premium-line)!important;border-radius:10px!important;
+  background:rgba(3,60,63,.7)!important;color:#fff!important;
+}
+body.meg-operational-mobile .px-meg-confirm-secondary{
+  border:1px solid var(--meg-premium-line)!important;
+  background:rgba(2,51,55,.74)!important;color:#fff!important;
+}
+body.meg-operational-mobile .px-meg-confirm-danger{
+  border:1px solid #ff6178!important;
+  background:linear-gradient(180deg,#db455e,#9e2f43)!important;color:#fff!important;
+  box-shadow:0 0 20px rgba(255,75,102,.16)!important;
+}
+body.meg-operational-mobile .px-installment-preview-list>div,
+body.meg-operational-mobile .px-installment-preview-total{
+  border-color:rgba(35,220,212,.18)!important;
+  background:rgba(2,48,52,.68)!important;
+  border-radius:11px!important;
+}
+
+/* Configurações, histórico e telas auxiliares: cartões no mesmo padrão. */
+body.meg-operational-mobile .px-settings-card,
+body.meg-operational-mobile .px-settings-section,
+body.meg-operational-mobile .px-history-card,
+body.meg-operational-mobile .px-history-row,
+body.meg-operational-mobile [class*="px-settings-"] article,
+body.meg-operational-mobile [class*="px-history-"] article{
+  border-color:rgba(35,220,212,.20)!important;
+  background:linear-gradient(145deg,rgba(5,73,74,.82),rgba(2,46,50,.94))!important;
+  box-shadow:inset 0 0 16px rgba(19,205,197,.025),0 0 13px rgba(16,213,205,.035)!important;
+}
+body.meg-operational-mobile .px-switch input:checked + span,
+body.meg-operational-mobile .px-switch.is-on{
+  background:var(--meg-premium-cyan)!important;
+  box-shadow:0 0 14px rgba(32,233,224,.18)!important;
+}
+
+/* Dock antigo usado nas telas que ainda vivem no shell Phoenix: mesma identidade. */
+body.meg-operational-mobile .px-mobile-dock{
+  border-top:1px solid rgba(37,224,216,.19)!important;
+  background:rgba(0,38,42,.98)!important;
+  box-shadow:0 -9px 24px rgba(0,0,0,.16)!important;
+}
+body.meg-operational-mobile .px-mobile-dock button.active{
+  color:var(--meg-premium-cyan)!important;
+  background:rgba(8,129,127,.18)!important;
+  border-color:rgba(35,235,226,.30)!important;
+}
+body.meg-operational-mobile .px-mobile-dock .px-dock-new strong{
+  border-color:var(--meg-premium-cyan)!important;
+  background:linear-gradient(180deg,#087e7b,#044d52)!important;
+  color:var(--meg-premium-cyan)!important;
+  box-shadow:0 0 0 5px rgba(0,53,56,.96),0 0 23px rgba(24,229,219,.18)!important;
+}
+
+/* Responsividade obrigatória */
+@media(max-width:420px){
+  body.meg-operational-mobile .px-screen-head h1,
+  body.meg-operational-mobile .px-movement-hero-row h1{font-size:clamp(25px,8vw,34px)!important}
+  body.meg-operational-mobile .px-screen-kpis article strong,
+  body.meg-operational-mobile .px-movements-overview article strong{
+    max-width:100%!important;overflow:hidden!important;
+    font-size:clamp(13px,4vw,18px)!important;white-space:nowrap!important;
+  }
+  body.meg-operational-mobile .px-form-row{grid-template-columns:1fr!important}
+  body.meg-operational-mobile .px-launch-drawer,
+  body.meg-operational-mobile .px-detail-drawer{
+    width:100vw!important;max-width:100vw!important;inset:0!important;
+    border-radius:0!important;padding-top:env(safe-area-inset-top)!important;
+  }
+  body.meg-operational-mobile .px-detail-grid{grid-template-columns:1fr 1fr!important}
+}
+@media(max-width:340px){
+  body.meg-operational-mobile .px-detail-grid{grid-template-columns:1fr!important}
+  body.meg-operational-mobile .px-screen-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-height:700px){
+  body.meg-operational-mobile .px-launch-form{padding-top:7px!important}
+  body.meg-operational-mobile .px-launch-section-label{margin-block:7px 4px!important}
+  body.meg-operational-mobile .px-field{padding:7px!important}
+}
+
+
+/* Atualização automática premium */
+body.meg-operational-mobile .meg-update-overlay{
+  position:fixed!important;inset:0!important;z-index:2147482400!important;
+  display:grid!important;place-items:center!important;
+  padding:max(18px,env(safe-area-inset-top)) 14px max(18px,env(safe-area-inset-bottom))!important;
+  background:rgba(0,14,16,.79)!important;
+  backdrop-filter:blur(12px)!important;
+}
+body.meg-operational-mobile .meg-update-card{
+  width:min(100%,420px)!important;
+  border:1px solid rgba(37,244,234,.65)!important;
+  border-radius:22px!important;
+  background:
+    radial-gradient(circle at 50% 12%,rgba(31,237,227,.16),transparent 25%),
+    radial-gradient(circle at 88% 7%,rgba(20,218,210,.09),transparent 23%),
+    linear-gradient(180deg,#064b4d 0%,#03363a 48%,#01272b 100%)!important;
+  color:#fff!important;text-align:center!important;padding:22px 18px 18px!important;
+  box-shadow:0 0 0 1px rgba(31,236,227,.16),0 0 42px rgba(22,229,219,.18),0 25px 70px rgba(0,0,0,.5)!important;
+}
+body.meg-operational-mobile .meg-update-overlay.is-mandatory .meg-update-card{
+  border-color:rgba(255,91,113,.72)!important;
+  box-shadow:0 0 0 1px rgba(255,83,108,.14),0 0 42px rgba(255,72,99,.13),0 25px 70px rgba(0,0,0,.52)!important;
+}
+body.meg-operational-mobile .meg-update-orbit{
+  width:104px;height:104px;margin:0 auto 12px;border-radius:50%;
+  display:grid;place-items:center;position:relative;
+  color:var(--meg-premium-cyan);font-size:43px;font-weight:900;
+  background:radial-gradient(circle,rgba(27,236,226,.24),rgba(4,91,92,.16) 48%,transparent 70%);
+  border:1px solid rgba(35,239,230,.30);
+  box-shadow:0 0 30px rgba(25,231,221,.18),inset 0 0 28px rgba(21,229,219,.10);
+}
+body.meg-operational-mobile .meg-update-orbit::before,
+body.meg-operational-mobile .meg-update-orbit::after{
+  content:"";position:absolute;border-radius:50%;inset:-8px;border:1px solid rgba(33,238,229,.18);
+  animation:megUpdateOrbit 2.4s linear infinite
+}
+body.meg-operational-mobile .meg-update-orbit::after{inset:-16px;opacity:.45;animation-duration:3.6s;animation-direction:reverse}
+body.meg-operational-mobile .meg-update-overlay.is-mandatory .meg-update-orbit{
+  color:#ff7187;border-color:rgba(255,96,119,.42);
+  background:radial-gradient(circle,rgba(255,81,107,.20),rgba(104,27,41,.18) 48%,transparent 70%);
+  box-shadow:0 0 30px rgba(255,74,101,.16),inset 0 0 28px rgba(255,75,101,.08)
+}
+@keyframes megUpdateOrbit{to{transform:rotate(360deg)}}
+body.meg-operational-mobile .meg-update-kicker,
+body.meg-operational-mobile .meg-update-dialog .decision-eyebrow{
+  display:block;color:var(--meg-premium-cyan)!important;font-size:9px!important;font-weight:900!important;letter-spacing:.12em!important
+}
+body.meg-operational-mobile .meg-update-overlay.is-mandatory .meg-update-kicker,
+body.meg-operational-mobile .meg-update-dialog.is-mandatory .decision-eyebrow{color:#ff8295!important}
+body.meg-operational-mobile .meg-update-card h2{
+  margin:5px 0 4px!important;color:#fff!important;font-size:22px!important;letter-spacing:-.035em!important
+}
+body.meg-operational-mobile .meg-update-card>p{margin:0 auto 12px!important;max-width:330px;color:#c4dcdb!important;font-size:10px!important;line-height:1.45!important}
+body.meg-operational-mobile .meg-update-versions{
+  display:grid!important;grid-template-columns:1fr 24px 1fr!important;align-items:center!important;gap:6px!important;margin:12px 0!important
+}
+body.meg-operational-mobile .meg-update-versions>span{
+  min-height:58px;padding:8px!important;border:1px solid var(--meg-premium-line)!important;border-radius:12px!important;
+  background:rgba(2,48,52,.67)!important;display:grid!important;place-items:center!important
+}
+body.meg-operational-mobile .meg-update-versions small{color:var(--meg-premium-muted)!important;font-size:8px!important}
+body.meg-operational-mobile .meg-update-versions strong{color:var(--meg-premium-cyan)!important;font-size:16px!important}
+body.meg-operational-mobile .meg-update-versions>b{color:var(--meg-premium-cyan)!important;font-size:19px!important}
+body.meg-operational-mobile .meg-update-progress{
+  height:10px!important;margin-top:13px!important;border:1px solid rgba(35,222,214,.24)!important;border-radius:999px!important;
+  background:#01262a!important;overflow:hidden!important;box-shadow:inset 0 0 8px rgba(0,0,0,.35)!important
+}
+body.meg-operational-mobile .meg-update-progress>span{
+  display:block!important;height:100%!important;border-radius:inherit!important;
+  background:linear-gradient(90deg,#16b9dc,#23e8df,#46efb9)!important;
+  box-shadow:0 0 16px rgba(31,234,224,.34)!important;transition:width .25s ease!important
+}
+body.meg-operational-mobile .meg-update-progress-copy{display:grid!important;gap:3px!important;justify-items:center!important;margin-top:7px!important}
+body.meg-operational-mobile .meg-update-progress-copy>strong{color:var(--meg-premium-cyan)!important;font-size:24px!important}
+body.meg-operational-mobile .meg-update-progress-copy>span{color:#c4d9d8!important;font-size:9px!important}
+body.meg-operational-mobile .meg-update-security{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important;margin-top:13px!important
+}
+body.meg-operational-mobile .meg-update-security>span{
+  padding:7px 4px!important;border-radius:9px!important;border:1px solid rgba(34,220,212,.16)!important;
+  background:rgba(2,47,51,.55)!important;color:#a9d0ce!important;font-size:7px!important
+}
+body.meg-operational-mobile .meg-update-banner{
+  position:fixed!important;z-index:2147481500!important;
+  top:calc(max(8px,env(safe-area-inset-top)) + 3px)!important;left:50%!important;transform:translateX(-50%)!important;
+  width:min(calc(100vw - 20px),520px)!important;min-height:62px!important;
+  display:grid!important;grid-template-columns:42px minmax(0,1fr) auto!important;align-items:center!important;gap:8px!important;
+  padding:8px 9px!important;border:1px solid rgba(35,240,231,.52)!important;border-radius:14px!important;
+  background:linear-gradient(145deg,rgba(5,84,84,.98),rgba(1,43,48,.99))!important;
+  box-shadow:0 0 24px rgba(24,229,219,.16),0 12px 30px rgba(0,0,0,.28)!important
+}
+body.meg-operational-mobile .meg-update-banner .app-update-banner-icon{
+  width:39px;height:39px;border-radius:10px;display:grid;place-items:center;color:var(--meg-premium-cyan);
+  background:rgba(10,135,132,.18);font-size:22px;box-shadow:0 0 14px rgba(23,225,216,.11)
+}
+body.meg-operational-mobile .meg-update-banner .app-update-banner-copy{min-width:0;display:grid!important}
+body.meg-operational-mobile .meg-update-banner .app-update-banner-copy small{color:var(--meg-premium-cyan)!important;font-size:7px!important;font-weight:900!important}
+body.meg-operational-mobile .meg-update-banner .app-update-banner-copy strong{font-size:11px!important;color:#fff!important}
+body.meg-operational-mobile .meg-update-banner .app-update-banner-copy span{font-size:8px!important;color:#afcbca!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+body.meg-operational-mobile .meg-update-banner .primary-button{
+  min-height:37px!important;padding:0 10px!important;border-radius:10px!important;
+  border:1px solid #27eee4!important;background:linear-gradient(180deg,#0bbdb5,#087a78)!important;color:#fff!important;font-size:8px!important;font-weight:900!important
+}
+body.meg-operational-mobile .meg-update-dialog{
+  width:min(calc(100vw - 24px),430px)!important;padding:20px 17px 16px!important;
+  border:1px solid var(--meg-premium-line-strong)!important;border-radius:21px!important;
+  background:
+    radial-gradient(circle at 50% 0,rgba(26,239,229,.14),transparent 28%),
+    linear-gradient(180deg,#064a4c,#033438 55%,#01262a)!important;
+  color:#fff!important;box-shadow:0 0 36px rgba(22,229,219,.16),0 24px 70px rgba(0,0,0,.5)!important
+}
+body.meg-operational-mobile .meg-update-dialog::backdrop{background:rgba(0,14,16,.78)!important;backdrop-filter:blur(10px)!important}
+body.meg-operational-mobile .meg-update-dialog.is-mandatory{border-color:rgba(255,94,117,.65)!important;box-shadow:0 0 36px rgba(255,75,102,.12),0 24px 70px rgba(0,0,0,.52)!important}
+body.meg-operational-mobile .meg-update-dialog-visual{
+  width:84px;height:84px;border-radius:50%;margin:0 auto 10px;display:grid;place-items:center;
+  color:var(--meg-premium-cyan);font-size:38px;font-weight:900;border:1px solid rgba(36,236,227,.34);
+  background:radial-gradient(circle,rgba(24,229,219,.20),rgba(4,78,81,.16) 54%,transparent 72%);
+  box-shadow:0 0 28px rgba(24,229,219,.14)
+}
+body.meg-operational-mobile .meg-update-dialog-visual.danger{
+  color:#ff7187;border-color:rgba(255,91,114,.44);
+  background:radial-gradient(circle,rgba(255,76,103,.19),rgba(91,24,37,.18) 54%,transparent 72%);
+  box-shadow:0 0 28px rgba(255,75,102,.13)
+}
+body.meg-operational-mobile .meg-update-dialog h2{margin:6px 0!important;text-align:center!important;color:#fff!important;font-size:21px!important;letter-spacing:-.035em!important}
+body.meg-operational-mobile .meg-update-dialog>p{text-align:center!important;color:#bfd7d6!important;font-size:10px!important;line-height:1.45!important}
+body.meg-operational-mobile .meg-update-dialog .app-update-notes{
+  display:grid!important;gap:3px!important;margin:10px 0!important;padding:10px!important;border:1px solid rgba(35,221,213,.18)!important;
+  border-radius:11px!important;background:rgba(2,47,51,.62)!important
+}
+body.meg-operational-mobile .meg-update-dialog .app-update-notes strong{font-size:9px!important;color:#fff!important}
+body.meg-operational-mobile .meg-update-dialog .app-update-notes span{font-size:8px!important;color:#abc9c8!important}
+body.meg-operational-mobile .meg-update-dialog .app-update-status{
+  padding:8px!important;border-radius:10px!important;border:1px solid rgba(35,220,212,.16)!important;background:rgba(2,46,50,.56)!important;color:#c8dddd!important
+}
+body.meg-operational-mobile .meg-update-dialog .modal-actions{display:grid!important;grid-template-columns:1fr 1.25fr!important;gap:7px!important;margin-top:10px!important}
+body.meg-operational-mobile .meg-update-dialog.is-mandatory .modal-actions{grid-template-columns:1fr!important}
+body.meg-operational-mobile .meg-update-dialog .ghost-button,
+body.meg-operational-mobile .meg-update-dialog .primary-button{min-height:44px!important;border-radius:11px!important;font-size:9px!important;font-weight:900!important}
+body.meg-operational-mobile .meg-update-dialog .ghost-button{border:1px solid var(--meg-premium-line)!important;background:rgba(2,48,52,.72)!important;color:#fff!important}
+body.meg-operational-mobile .meg-update-dialog .primary-button{border:1px solid #24eee4!important;background:linear-gradient(180deg,#0cc0b8,#087b79)!important;color:#fff!important;box-shadow:0 0 18px rgba(24,229,219,.15)!important}
+body.meg-operational-mobile .meg-update-dialog.is-mandatory .primary-button{border-color:#ff6278!important;background:linear-gradient(180deg,#db455e,#9d3043)!important;box-shadow:0 0 18px rgba(255,75,102,.15)!important}
+@media(max-width:350px){
+  body.meg-operational-mobile .meg-update-card{padding-inline:13px!important}
+  body.meg-operational-mobile .meg-update-security{grid-template-columns:1fr!important}
+  body.meg-operational-mobile .meg-update-banner{grid-template-columns:36px minmax(0,1fr)!important}
+  body.meg-operational-mobile .meg-update-banner .primary-button{grid-column:1/-1!important}
+}
+@media(prefers-reduced-motion:reduce){
+  body.meg-operational-mobile .meg-update-orbit::before,
+  body.meg-operational-mobile .meg-update-orbit::after{animation:none!important}
+}
+
+
+body.meg-operational-mobile .meg-update-success-toast{
+  position:fixed!important;z-index:2147482000!important;
+  top:calc(max(9px,env(safe-area-inset-top)) + 2px)!important;left:50%!important;transform:translateX(-50%)!important;
+  width:min(calc(100vw - 20px),500px)!important;min-height:58px!important;
+  display:grid!important;grid-template-columns:38px minmax(0,1fr) 30px!important;align-items:center!important;gap:8px!important;
+  padding:8px 9px!important;border:1px solid rgba(67,239,193,.6)!important;border-radius:14px!important;
+  background:linear-gradient(145deg,rgba(5,91,78,.98),rgba(2,53,51,.99))!important;
+  color:#fff!important;box-shadow:0 0 25px rgba(67,239,193,.17),0 12px 30px rgba(0,0,0,.28)!important;
+}
+body.meg-operational-mobile .meg-update-success-toast>span{
+  width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+  background:var(--meg-premium-green)!important;color:#06362d!important;font-size:21px!important;font-weight:1000!important;
+  box-shadow:0 0 18px rgba(67,239,193,.24)!important
+}
+body.meg-operational-mobile .meg-update-success-toast>div{display:grid!important;min-width:0!important}
+body.meg-operational-mobile .meg-update-success-toast strong{font-size:11px!important}
+body.meg-operational-mobile .meg-update-success-toast small{color:#b9ddcf!important;font-size:8px!important}
+body.meg-operational-mobile .meg-update-success-toast button{
+  width:29px;height:29px;border-radius:9px;border:1px solid rgba(160,255,222,.22);
+  background:rgba(255,255,255,.035);color:#eafff8;font-size:18px
+}

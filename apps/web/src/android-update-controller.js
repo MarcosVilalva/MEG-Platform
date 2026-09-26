@@ -8,6 +8,7 @@ const MANIFEST_URLS = [
 const BRIDGE_TIMEOUT_MS = 3500;
 const FETCH_TIMEOUT_MS = 8000;
 const RESUME_DELAY_MS = 1200;
+const PENDING_UPDATE_STORAGE_KEY = 'meg.pending-app-update.v1';
 
 let appUpdaterPromise = null;
 let appPluginPromise = null;
@@ -94,6 +95,43 @@ function publishInstalledVersion(installed) {
     label.dataset.versionSource = installed.source || 'native';
   }
   window.dispatchEvent(new CustomEvent('meg:installed-app-version', { detail: installed }));
+  showInstalledUpdateSuccess(installed);
+}
+
+function rememberPendingUpdateSuccess(release) {
+  try {
+    localStorage.setItem(PENDING_UPDATE_STORAGE_KEY, JSON.stringify({
+      versionCode: Number(release?.versionCode || 0),
+      versionName: String(release?.versionName || ''),
+      storedAt: Date.now(),
+    }));
+  } catch {}
+}
+
+function showInstalledUpdateSuccess(installed) {
+  let pending = null;
+  try {
+    pending = JSON.parse(localStorage.getItem(PENDING_UPDATE_STORAGE_KEY) || 'null');
+  } catch {}
+  if (!pending || Number(pending.versionCode) <= 0) return;
+  if (Date.now() - Number(pending.storedAt || 0) > 7 * 24 * 60 * 60 * 1000) {
+    try { localStorage.removeItem(PENDING_UPDATE_STORAGE_KEY); } catch {}
+    return;
+  }
+  if (Number(installed?.versionCode || 0) < Number(pending.versionCode)) return;
+  try { localStorage.removeItem(PENDING_UPDATE_STORAGE_KEY); } catch {}
+
+  document.querySelector('#megUpdateSuccessToast')?.remove();
+  const toast = document.createElement('section');
+  toast.id = 'megUpdateSuccessToast';
+  toast.className = 'meg-update-success-toast';
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
+  toast.innerHTML = `<span aria-hidden="true">✓</span><div><strong>Atualizado com sucesso!</strong><small>Agora você está usando a versão v${escapeHtml(installed.versionName || pending.versionName)}.</small></div><button type="button" aria-label="Fechar">×</button>`;
+  document.body.append(toast);
+  const close = () => toast.remove();
+  toast.querySelector('button')?.addEventListener('click', close);
+  window.setTimeout(close, 6500);
 }
 
 function publishVersionUnavailable() {
@@ -247,18 +285,38 @@ function secureDownloadUrl(value) {
   }
 }
 
-function ensureAutomaticUpdateStatus(release, message) {
+function ensureAutomaticUpdateStatus(release, installed, message) {
   let banner = document.querySelector('#appUpdateBanner');
   if (!banner) {
     banner = document.createElement('section');
     banner.id = 'appUpdateBanner';
-    banner.className = 'app-update-banner';
     banner.setAttribute('role', 'status');
     banner.setAttribute('aria-live', 'polite');
-    mountUpdateSurface(banner);
+    document.body.append(banner);
   }
-  banner.innerHTML = `<div class="app-update-banner-icon" aria-hidden="true">↻</div><div class="app-update-banner-copy"><small>ATUALIZAÇÃO AUTOMÁTICA</small><strong>MEG ${escapeHtml(release.versionName || release.versionCode)}</strong><span data-auto-update-status>${escapeHtml(message)}</span></div>`;
-  return banner.querySelector('[data-auto-update-status]');
+  const mandatory = release?.mandatory === true;
+  banner.className = `app-update-banner meg-update-overlay ${mandatory ? 'is-mandatory' : 'is-automatic'}`;
+  banner.innerHTML = `
+    <div class="meg-update-card" data-update-phase="preparing">
+      <div class="meg-update-orbit" aria-hidden="true"><span>↓</span></div>
+      <small class="meg-update-kicker">${mandatory ? 'ATUALIZAÇÃO OBRIGATÓRIA' : 'ATUALIZAÇÃO AUTOMÁTICA'}</small>
+      <h2>Preparando nova versão</h2>
+      <p>O MEG encontrou uma versão mais recente e fará a atualização de forma segura.</p>
+      <div class="meg-update-versions">
+        <span><small>Versão atual</small><strong>v${escapeHtml(installed?.versionName || '—')}</strong></span>
+        <b aria-hidden="true">→</b>
+        <span><small>Nova versão</small><strong>v${escapeHtml(release.versionName || release.versionCode)}</strong></span>
+      </div>
+      <div class="meg-update-progress" aria-label="Progresso da atualização"><span data-auto-update-progress style="width:4%"></span></div>
+      <div class="meg-update-progress-copy"><strong data-auto-update-percent>4%</strong><span data-auto-update-status>${escapeHtml(message)}</span></div>
+      <div class="meg-update-security"><span>✓ Download verificado</span><span>✓ Integridade SHA-256</span><span>✓ Instalação protegida</span></div>
+    </div>`;
+  return {
+    status: banner.querySelector('[data-auto-update-status]'),
+    progress: banner.querySelector('[data-auto-update-progress]'),
+    percent: banner.querySelector('[data-auto-update-percent]'),
+    card: banner.querySelector('.meg-update-card'),
+  };
 }
 
 async function startAutomaticUpdate(release, installed, AppUpdater) {
@@ -272,9 +330,14 @@ async function startAutomaticUpdate(release, installed, AppUpdater) {
   if (!AppUpdater) throw new Error('UPDATE_PLUGIN_UNAVAILABLE');
 
   automaticUpdateAttemptedVersion = releaseCode;
+  rememberPendingUpdateSuccess(release);
   window.MEG_AVAILABLE_APP_UPDATE = { release, installed, source: 'android-auto-update' };
   document.body.dataset.availableAppVersion = String(release.versionName || releaseCode);
-  const status = ensureAutomaticUpdateStatus(release, 'Preparando download seguro…');
+  const updateUi = ensureAutomaticUpdateStatus(release, installed, 'Preparando download seguro…');
+  const status = updateUi.status;
+  const progress = updateUi.progress;
+  const percentLabel = updateUi.percent;
+  const updateCard = updateUi.card;
 
   AppUpdater.suppressNativePrompt?.({ versionCode: releaseCode }).catch(() => undefined);
 
@@ -286,16 +349,25 @@ async function startAutomaticUpdate(release, installed, AppUpdater) {
         status.textContent = 'Autorize “Permitir desta fonte”. Ao voltar, o MEG continuará sozinho.';
       } else if (event?.state === 'downloading') {
         const percent = Number(event.percent);
-        status.textContent = Number.isFinite(percent) && percent > 0
-          ? `Baixando atualização… ${Math.min(100, Math.round(percent))}%`
-          : 'Baixando atualização…';
+        const normalized = Number.isFinite(percent) && percent > 0 ? Math.min(100, Math.round(percent)) : 12;
+        status.textContent = 'Baixando a nova versão do MEG…';
+        if (progress) progress.style.width = normalized + '%';
+        if (percentLabel) percentLabel.textContent = normalized + '%';
+        updateCard?.setAttribute('data-update-phase', 'downloading');
       } else if (event?.state === 'validating') {
         status.textContent = 'Validando integridade e assinatura do APK…';
+        if (progress) progress.style.width = '96%';
+        if (percentLabel) percentLabel.textContent = '96%';
+        updateCard?.setAttribute('data-update-phase', 'validating');
       } else if (event?.state === 'installer-launched') {
-        status.textContent = 'Atualização validada. Confirme a instalação na tela do Android.';
+        status.textContent = 'Atualização pronta. Conclua a instalação na tela do Android.';
+        if (progress) progress.style.width = '100%';
+        if (percentLabel) percentLabel.textContent = '100%';
+        updateCard?.setAttribute('data-update-phase', 'ready');
         Promise.resolve(stateListener?.remove?.()).catch(() => undefined);
       } else if (event?.state === 'failed') {
-        status.textContent = 'A atualização automática falhou. Use “Verificar atualização” para tentar novamente.';
+        status.textContent = 'A atualização automática falhou. Toque em “Verificar atualização” para tentar novamente.';
+        updateCard?.setAttribute('data-update-phase', 'failed');
         automaticUpdateAttemptedVersion = -1;
         Promise.resolve(stateListener?.remove?.()).catch(() => undefined);
       }
@@ -347,11 +419,11 @@ function ensureUpdateBanner(release, installed, AppUpdater) {
   if (!banner) {
     banner = document.createElement('section');
     banner.id = 'appUpdateBanner';
-    banner.className = 'app-update-banner';
     banner.setAttribute('role', 'status');
     mountUpdateSurface(banner);
   }
-  banner.innerHTML = `<div class="app-update-banner-icon" aria-hidden="true">↻</div><div class="app-update-banner-copy"><small>ATUALIZAÇÃO DISPONÍVEL</small><strong>MEG ${escapeHtml(release.versionName || release.versionCode)}</strong><span>Uma versão mais recente está pronta para instalar.</span></div><button type="button" class="primary-button">Atualizar agora</button>`;
+  banner.className = 'app-update-banner meg-update-banner';
+  banner.innerHTML = `<div class="app-update-banner-icon" aria-hidden="true">↻</div><div class="app-update-banner-copy"><small>ATUALIZAÇÃO DISPONÍVEL</small><strong>MEG v${escapeHtml(release.versionName || release.versionCode)}</strong><span>Nova versão pronta para atualizar com segurança.</span></div><button type="button" class="primary-button">Atualizar agora</button>`;
   banner.querySelector('button')?.addEventListener('click', () => showUpdateDialog(release, installed, AppUpdater));
 
   let badge = document.querySelector('#appUpdateSidebarBadge');
@@ -374,59 +446,53 @@ function showUpdateDialog(release, installed, AppUpdater) {
     return existing._megDecisionPromise || Promise.resolve('existing');
   }
 
+  const mandatory = release?.mandatory === true;
   let resolveDecision;
   const decisionPromise = new Promise((resolve) => { resolveDecision = resolve; });
   const dialog = document.createElement('dialog');
   dialog.id = 'appUpdateDialog';
-  dialog.className = 'modal app-update-dialog';
+  dialog.className = `modal app-update-dialog meg-update-dialog ${mandatory ? 'is-mandatory' : ''}`;
   dialog._megDecisionPromise = decisionPromise;
   dialog.innerHTML = `
-    <div class="app-update-icon" aria-hidden="true">↻</div>
-    <small class="decision-eyebrow">ATUALIZAÇÃO DO APLICATIVO</small>
-    <h2>Uma nova versão do MEG está disponível</h2>
-    <p>Versão instalada: <strong>${escapeHtml(installed.versionName)}</strong> · nova versão: <strong>${escapeHtml(release.versionName || release.versionCode)}</strong></p>
-    <div class="app-update-notes">${escapeHtml(release.releaseNotes || 'Melhorias de estabilidade, segurança e experiência.')}</div>
-    <p class="app-update-status" id="appUpdateStatus">A atualização está pronta para iniciar.</p>
+    <div class="meg-update-dialog-visual ${mandatory ? 'danger' : ''}" aria-hidden="true"><span>${mandatory ? '!' : '↻'}</span></div>
+    <small class="decision-eyebrow">${mandatory ? 'ATUALIZAÇÃO OBRIGATÓRIA' : 'NOVA ATUALIZAÇÃO DISPONÍVEL'}</small>
+    <h2>${mandatory ? 'Atualize para continuar usando o MEG' : 'Uma nova versão do MEG está disponível'}</h2>
+    <p>${mandatory ? 'Esta versão precisa ser substituída por segurança e compatibilidade.' : 'A nova versão será baixada, validada e entregue ao instalador do Android.'}</p>
+    <div class="meg-update-versions">
+      <span><small>Versão atual</small><strong>v${escapeHtml(installed.versionName)}</strong></span>
+      <b aria-hidden="true">→</b>
+      <span><small>Nova versão</small><strong>v${escapeHtml(release.versionName || release.versionCode)}</strong></span>
+    </div>
+    <div class="app-update-notes"><strong>Principais melhorias</strong><span>${escapeHtml(release.releaseNotes || 'Melhorias de estabilidade, segurança e experiência.')}</span></div>
+    <p class="app-update-status" id="appUpdateStatus">Pronta para iniciar com verificação de integridade.</p>
     <div class="modal-actions">
-      <button type="button" class="ghost-button" id="appUpdateLater">Agora não</button>
-      <button type="button" class="primary-button" id="appUpdateNow">Atualizar agora</button>
+      ${mandatory ? '' : '<button type="button" class="ghost-button" id="appUpdateLater">Agora não</button>'}
+      <button type="button" class="primary-button" id="appUpdateNow">${mandatory ? 'Atualizar e continuar' : 'Atualizar agora'}</button>
     </div>`;
   document.body.append(dialog);
   const status = dialog.querySelector('#appUpdateStatus');
   const later = dialog.querySelector('#appUpdateLater');
   const update = dialog.querySelector('#appUpdateNow');
 
-  later.addEventListener('click', () => dialog.close('later'));
+  later?.addEventListener('click', () => dialog.close('later'));
+  dialog.addEventListener('cancel', (event) => {
+    if (mandatory) event.preventDefault();
+  });
   update.addEventListener('click', async () => {
     update.disabled = true;
-    later.disabled = true;
+    if (later) later.disabled = true;
+    status.textContent = 'Preparando download seguro…';
     try {
       if (!AppUpdater) throw new Error('Atualizador nativo indisponível.');
-      status.textContent = 'Baixando e validando a nova versão...';
-      try {
-        await withDeadline(
-          AppUpdater.downloadAndInstall({ url: release.downloadUrl, sha256: release.sha256 || '' }),
-          140000,
-          'UPDATE_DOWNLOAD_TIMEOUT',
-        );
-      } catch (cause) {
-        const message = String(cause?.message || cause || '');
-        if (!message.includes('INSTALL_PERMISSION_REQUIRED')) throw cause;
-        status.textContent = 'Autorize “Permitir desta fonte”. Depois volte ao MEG e toque em “Atualizar agora” novamente.';
-        await AppUpdater.requestInstallPermission();
-        update.disabled = false;
-        later.disabled = false;
-        update.textContent = 'Atualizar agora';
-        return;
-      }
-      status.textContent = 'APK validado. Conclua a instalação na tela do Android.';
-      window.setTimeout(() => {
-        if (dialog.open) dialog.close('installer-launched');
-      }, 600);
+      const result = await startAutomaticUpdate(release, installed, AppUpdater);
+      status.textContent = result?.permissionRequired
+        ? 'Autorize “Permitir desta fonte”. Ao voltar, o MEG continuará sozinho.'
+        : 'Download iniciado. O MEG vai validar o arquivo antes da instalação.';
+      window.setTimeout(() => { if (dialog.open) dialog.close('updating'); }, 350);
     } catch (cause) {
-      status.textContent = `Não foi possível atualizar: ${cause?.message || String(cause || 'falha desconhecida')}`;
+      status.textContent = `Não foi possível iniciar a atualização: ${cause?.message || String(cause || 'falha desconhecida')}`;
       update.disabled = false;
-      later.disabled = false;
+      if (later) later.disabled = false;
       update.textContent = 'Tentar novamente';
     }
   });
@@ -517,6 +583,9 @@ export async function initializeAndroidUpdateLifecycle() {
       resumeTimer = null;
       checkForAppUpdate({ automatic: true }).catch(() => undefined);
     }, RESUME_DELAY_MS);
+  });
+  window.addEventListener('online', () => {
+    window.setTimeout(() => checkForAppUpdate({ automatic: true }).catch(() => undefined), 600);
   });
   return true;
 }
