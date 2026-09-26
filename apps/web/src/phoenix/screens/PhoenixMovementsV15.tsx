@@ -1304,7 +1304,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
           <div><strong>{filtered.length} lançamento{filtered.length === 1 ? '' : 's'}</strong><span>{movementPeriodLabel} · toque para abrir</span></div>
           <button type="button" onClick={() => openLaunch()}><MovementIcon name="plus" size={15} /> Novo</button>
         </header>
-        {visibleEvents.map((event) => {
+        {filtered.map((event) => {
           const visualType = launchTypeForEvent(event.type);
           const isIncome = visualType === 'income';
           const rawSigned = Number(event.signedAmount || (isIncome ? Math.abs(Number(event.amount || 0)) : visualType === 'expense' ? -Math.abs(Number(event.amount || 0)) : 0));
