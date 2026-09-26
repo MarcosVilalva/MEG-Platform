@@ -6,10 +6,11 @@ import { MegMobileAnalytics, MegMobileCashflow, MegMobileHistory, MegMobileMovem
 import { MegMobileLaunchSheet } from './MegMobileLaunchSheet';
 import { MegMobileCardCenter } from './MegMobileCardCenter';
 import { MegMobileBenefitModal } from './MegMobileBenefitModal';
+import { MegMobileSettings } from './MegMobileSettings';
 import './meg-mobile-final.css';
 import './meg-mobile-core-screens.css';
 
-type MobileView = 'home' | 'movements' | 'cards' | 'payables' | 'history' | 'cashflow' | 'analytics';
+type MobileView = 'home' | 'movements' | 'cards' | 'payables' | 'history' | 'cashflow' | 'analytics' | 'settings';
 type TargetView = 'home' | 'movements' | 'payables' | 'cards' | 'cashflow' | 'analytics' | 'history' | 'settings';
 type LaunchPreset = 'expense' | 'income' | 'benefit';
 type PeriodMode = 'month' | 'range' | 'all';
@@ -645,6 +646,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
         {view === 'history' ? <MegMobileHistory data={data}/> : null}
         {view === 'cashflow' ? <MegMobileCashflow data={data}/> : null}
         {view === 'analytics' ? <MegMobileAnalytics data={data}/> : null}
+        {view === 'settings' ? <MegMobileSettings data={data} onLogout={onLogout}/> : null}
       </div>
       <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={onNavigate} onLaunch={(preset) => setLaunchSheet({ preset })} onMenu={() => setMenuOpen(true)}/>
     </div>
