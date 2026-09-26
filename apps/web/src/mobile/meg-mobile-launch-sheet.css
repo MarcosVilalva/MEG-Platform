@@ -1,0 +1,119 @@
+.meg3-form-overlay{
+  position:fixed;inset:0;z-index:2147482500;
+  width:100vw;height:100dvh;overflow:hidden;
+  background:rgba(0,17,19,.74);
+  backdrop-filter:blur(10px);
+  display:grid;place-items:end center;
+}
+.meg3-form-sheet{
+  width:min(100%,620px);height:min(94dvh,920px);max-height:94dvh;min-height:0;
+  display:grid;grid-template-rows:auto minmax(0,1fr) auto;
+  overflow:hidden;
+  border:1px solid rgba(57,235,222,.42);
+  border-bottom:0;border-radius:24px 24px 0 0;
+  background:
+    radial-gradient(circle at 20% 0%,rgba(22,225,211,.07),transparent 30%),
+    linear-gradient(165deg,#063b3e 0%,#032c2f 52%,#012326 100%);
+  box-shadow:0 -22px 70px rgba(0,0,0,.38),inset 0 0 44px rgba(23,230,216,.025);
+  color:#f8ffff;
+}
+.meg3-form-head{
+  min-height:76px;padding:calc(12px + env(safe-area-inset-top)) 16px 11px;
+  display:flex;align-items:end;justify-content:space-between;gap:12px;
+  border-bottom:1px solid rgba(60,207,199,.14);
+}
+.meg3-form-head small{display:block;color:#4ce7dd;font-size:9px;font-weight:800;letter-spacing:.13em}
+.meg3-form-head h2{margin:3px 0 0;font-size:26px;line-height:1}
+.meg3-form-head>button{
+  width:44px;height:44px;border:1px solid rgba(58,213,205,.22);border-radius:14px;
+  background:rgba(2,56,58,.70);color:#fff;font-size:27px;font-weight:300;
+}
+.meg3-form-body{
+  min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  padding:13px 14px 12px;
+}
+.meg3-form-body::-webkit-scrollbar{display:none}
+.meg3-form-segment{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;
+  padding:4px;margin-bottom:12px;border:1px solid rgba(58,207,199,.14);border-radius:14px;background:rgba(1,36,39,.82)
+}
+.meg3-form-segment button{
+  min-height:42px;border:0;border-radius:11px;background:transparent;color:#a8bfbc;font-weight:800;font-size:11px
+}
+.meg3-form-segment button.active{background:rgba(34,225,213,.12);color:#56eee4;box-shadow:inset 0 0 0 1px rgba(48,235,221,.26)}
+.meg3-form-segment button.active.expense{color:#ff8390}
+.meg3-form-segment button.active.income,.meg3-form-segment button.active.benefit{color:#5be6b5}
+.meg3-form-highlight{
+  margin-bottom:12px;padding:13px;border:1px solid rgba(48,231,219,.25);border-radius:18px;
+  background:linear-gradient(145deg,rgba(7,78,79,.88),rgba(3,51,53,.90));
+  box-shadow:inset 0 0 20px rgba(25,235,221,.025)
+}
+.meg3-form-highlight label>span{display:block;color:#90adaa;font-size:9px}
+.meg3-form-highlight label>div{display:flex;align-items:center;gap:7px;margin-top:5px}
+.meg3-form-highlight b{font-size:18px;color:#68e8df}
+.meg3-form-highlight input{
+  min-width:0;width:100%;border:0;outline:0;background:transparent;color:#fff;font-size:34px;font-weight:800;letter-spacing:-.03em
+}
+.meg3-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.meg3-form-grid label{min-width:0;display:grid;gap:5px}
+.meg3-form-grid label.wide{grid-column:1/-1}
+.meg3-form-grid label>span{color:#96b0ad;font-size:9px;font-weight:700}
+.meg3-form-grid input,.meg3-form-grid select,.meg3-form-grid textarea{
+  width:100%;min-width:0;box-sizing:border-box;
+  border:1px solid rgba(62,194,189,.18);border-radius:12px;
+  background:#043638;color:#f5ffff;outline:0;
+  min-height:48px;padding:10px 11px;font:inherit;font-size:13px;
+}
+.meg3-form-grid textarea{min-height:78px;resize:none}
+.meg3-form-grid input:focus,.meg3-form-grid select:focus,.meg3-form-grid textarea:focus{
+  border-color:#2ee9dc;box-shadow:0 0 0 2px rgba(46,233,220,.08)
+}
+.meg3-form-grid label.locked{opacity:.88}
+.meg3-form-grid label.locked select{color:#65e1d7;border-color:rgba(47,229,216,.27);background:rgba(9,79,78,.50)}
+.meg3-card-route{padding:9px;border:1px dashed rgba(63,210,202,.18);border-radius:14px;background:rgba(4,58,60,.34)}
+.meg3-form-message{margin-top:11px;padding:10px 12px;border:1px solid rgba(245,188,79,.25);border-radius:12px;background:rgba(120,82,12,.16);color:#ffe2a1;font-size:10px;line-height:1.35}
+.meg3-form-actions{
+  min-height:70px;padding:9px 14px calc(9px + env(safe-area-inset-bottom));
+  display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.4fr);gap:9px;
+  border-top:1px solid rgba(60,199,192,.14);background:rgba(1,33,36,.96)
+}
+.meg3-form-actions button{
+  min-height:50px;border-radius:14px;font-weight:800;font-size:12px
+}
+.meg3-form-actions .ghost{border:1px solid rgba(71,194,190,.20);background:rgba(5,57,59,.45);color:#d8efed}
+.meg3-form-actions .primary{border:1px solid #30e7db;background:linear-gradient(180deg,#0a8f8a,#066a69);color:#fff;box-shadow:0 0 16px rgba(37,230,217,.10)}
+.meg3-form-actions .danger{color:#ff8794;border-color:rgba(255,110,128,.35)}
+.meg3-delete-confirm{
+  position:absolute;inset:0;z-index:5;display:grid;place-items:center;padding:20px;
+  background:rgba(0,18,20,.82);backdrop-filter:blur(8px)
+}
+.meg3-delete-confirm>div{
+  width:min(100%,390px);padding:18px;border:1px solid rgba(255,119,135,.34);border-radius:20px;
+  background:linear-gradient(155deg,#073d40,#03272a);box-shadow:0 20px 50px rgba(0,0,0,.34)
+}
+.meg3-delete-confirm small{color:#ff8c99;font-size:9px;font-weight:800;letter-spacing:.12em}
+.meg3-delete-confirm h3{margin:5px 0 6px;font-size:22px}
+.meg3-delete-confirm p{margin:0;color:#a9c0bd;font-size:11px;line-height:1.45}
+.meg3-delete-confirm span{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px}
+.meg3-delete-confirm button{min-height:46px;border:1px solid rgba(66,191,186,.20);border-radius:12px;background:#04383a;color:#fff;font-weight:800}
+.meg3-delete-confirm button.danger{border-color:rgba(255,112,130,.42);background:rgba(131,35,48,.32);color:#ff98a3}
+@media(max-width:430px){
+  .meg3-form-sheet{width:100%;height:96dvh;max-height:96dvh}
+}
+@media(max-height:760px){
+  .meg3-form-sheet{height:98dvh;max-height:98dvh}
+  .meg3-form-head{min-height:64px;padding-top:max(8px,env(safe-area-inset-top))}
+  .meg3-form-head h2{font-size:22px}
+  .meg3-form-body{padding-top:9px}
+  .meg3-form-highlight{padding:10px;margin-bottom:9px}
+  .meg3-form-highlight input{font-size:29px}
+  .meg3-form-grid{gap:7px}
+  .meg3-form-grid input,.meg3-form-grid select{min-height:43px}
+  .meg3-form-actions{min-height:62px}
+  .meg3-form-actions button{min-height:44px}
+}
+@media(max-width:350px){
+  .meg3-form-grid{grid-template-columns:1fr}
+  .meg3-form-grid label.wide{grid-column:1}
+}
