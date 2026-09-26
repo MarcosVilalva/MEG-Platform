@@ -780,3 +780,186 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
     grid-template-columns:30px minmax(0,1fr);
   }
 }
+
+
+/* =========================================================
+   CONTRATO DE VIEWPORT FIXO
+   A tela nunca rola. Somente listas/tabelas/carrosséis.
+   ========================================================= */
+.meg2-shell{
+  height:100dvh;
+  min-height:100dvh;
+  max-height:100dvh;
+  overflow:hidden;
+}
+.meg2-scroll{
+  min-height:0;
+  height:100%;
+  overflow:hidden!important;
+  overscroll-behavior:none;
+}
+.meg2-main{
+  min-height:0;
+  height:100%;
+  max-height:100%;
+  overflow:hidden;
+}
+.meg2-main[data-meg-fixed-screen="true"]{
+  min-height:0;
+  height:100%;
+  max-height:100%;
+}
+
+/* HOME: nenhuma região rolável. Tudo se adapta ao espaço disponível. */
+.meg2-home{
+  display:grid!important;
+  grid-template-rows:auto auto auto auto auto auto;
+  align-content:space-between;
+  gap:clamp(4px,.72dvh,8px);
+  padding:clamp(6px,1dvh,11px) clamp(8px,2.6vw,12px) clamp(6px,1dvh,12px)!important;
+}
+.meg2-home>*{min-width:0;min-height:0}
+.meg2-home .meg2-title,
+.meg2-home .meg2-balance,
+.meg2-home .meg2-flow,
+.meg2-home .meg2-summary,
+.meg2-home .meg2-benefit,
+.meg2-home .meg2-quick{margin-top:0!important;margin-bottom:0!important}
+.meg2-home .meg2-summary article{
+  min-height:clamp(78px,12.6dvh,108px)!important;
+}
+.meg2-home .meg2-quick>div button{
+  min-height:clamp(42px,7.2dvh,58px)!important;
+}
+
+/* CARTÕES: título, carrossel, métricas e ação ficam fixos.
+   Apenas lançamentos da fatura rolam verticalmente. */
+.meg2-cards{
+  display:grid!important;
+  grid-template-rows:auto auto auto minmax(0,1fr) auto;
+  gap:clamp(5px,.8dvh,8px);
+  padding:clamp(7px,1dvh,10px) clamp(8px,2.5vw,12px) clamp(7px,1dvh,10px)!important;
+}
+.meg2-cards>*{min-width:0;min-height:0;margin-top:0!important;margin-bottom:0!important}
+.meg2-carousel-stack{
+  min-height:0;
+  display:grid;
+  grid-template-rows:minmax(0,1fr) 18px;
+  align-items:center;
+}
+.meg2-carousel{
+  min-height:0;
+  max-height:100%;
+  align-items:center;
+}
+.meg2-card-art{
+  height:clamp(145px,23dvh,218px);
+  max-height:100%;
+  aspect-ratio:1.62/1;
+}
+.meg2-dots{height:18px}
+.meg2-card-metrics{
+  min-height:0;
+}
+.meg2-card-metrics article{
+  min-height:clamp(68px,10.8dvh,88px)!important;
+}
+.meg2-statement{
+  min-height:0;
+  height:100%;
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr);
+  overflow:hidden!important;
+}
+.meg2-statement-list{
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.meg2-statement-list::-webkit-scrollbar{display:none}
+.meg2-primary{
+  margin-top:0!important;
+  min-height:clamp(46px,6.8dvh,54px)!important;
+}
+
+/* PENDENTES: cabeçalho/filtros/métricas fixos; só a lista rola. */
+.meg2-payables{
+  display:grid!important;
+  grid-template-rows:auto auto auto auto minmax(0,1fr);
+  gap:clamp(5px,.8dvh,8px);
+  padding:clamp(7px,1dvh,10px) clamp(8px,2.5vw,12px) clamp(7px,1dvh,10px)!important;
+}
+.meg2-payables>*{min-width:0;min-height:0;margin-top:0!important;margin-bottom:0!important}
+.meg2-payables .meg2-page-title{min-height:clamp(49px,7.4dvh,61px)}
+.meg2-payables .meg2-tabs button{height:clamp(36px,5.6dvh,42px)}
+.meg2-payables .meg2-pending-metrics article{min-height:clamp(60px,9.1dvh,73px)}
+.meg2-payables .meg2-search label,
+.meg2-payables .meg2-search>button{height:clamp(38px,5.7dvh,44px)}
+.meg2-pending-list{
+  min-height:0;
+  height:100%;
+  margin-top:0!important;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:2px;
+}
+.meg2-pending-list::-webkit-scrollbar{display:none}
+
+/* Home histórica/futura também é viewport fixo. */
+.meg2-period-home{
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+  align-content:space-between;
+}
+
+/* Menu e filtros não podem criar scroll da página. */
+.meg2-overlay{overscroll-behavior:none}
+.meg2-menu-sheet{overflow:hidden!important}
+.meg2-period-sheet{
+  max-height:calc(100dvh - max(18px,env(safe-area-inset-top)) - max(18px,env(safe-area-inset-bottom)));
+}
+
+/* Densidade progressiva por altura de aparelho. */
+@media (max-height:820px){
+  .meg2-home{gap:4px!important}
+  .meg2-home .meg2-title h1{font-size:clamp(23px,6.5vw,29px)!important}
+  .meg2-home .meg2-title p{font-size:8px!important}
+  .meg2-home .meg2-balance{min-height:62px!important}
+  .meg2-home .meg2-balance>span{width:40px!important;height:40px!important}
+  .meg2-home .meg2-balance strong{font-size:clamp(22px,6.4vw,29px)!important}
+  .meg2-home .meg2-flow article{min-height:45px!important}
+  .meg2-home .meg2-flow article>span{width:31px!important;height:31px!important}
+  .meg2-home .meg2-summary article{min-height:75px!important}
+  .meg2-home .meg2-summary article>span{width:27px!important;height:27px!important}
+  .meg2-home .meg2-benefit{min-height:50px!important}
+  .meg2-home .meg2-benefit>span{width:39px!important;height:39px!important}
+  .meg2-home .meg2-quick{padding:5px!important}
+  .meg2-home .meg2-quick header{margin-bottom:3px!important}
+  .meg2-home .meg2-quick>div button{min-height:39px!important}
+  .meg2-card-art{height:clamp(136px,21.5dvh,184px)}
+  .meg2-card-metrics article{min-height:64px!important}
+  .meg2-statement-list>button{min-height:52px!important}
+}
+@media (max-height:700px){
+  .meg2-home .meg2-title p,
+  .meg2-home .meg2-balance p,
+  .meg2-home .meg2-quick header small{display:none!important}
+  .meg2-home .meg2-title>i{width:38px!important;height:38px!important}
+  .meg2-home .meg2-summary small{min-height:21px!important;font-size:6.8px!important}
+  .meg2-home .meg2-summary b{font-size:14px!important}
+  .meg2-home .meg2-summary em{font-size:7px!important}
+  .meg2-home .meg2-benefit strong{font-size:17px!important}
+  .meg2-home .meg2-quick>div button span{width:27px!important;height:24px!important}
+  .meg2-card-art{height:130px}
+  .meg2-page-title h1{font-size:clamp(25px,7vw,31px)!important}
+  .meg2-card-metrics article{min-height:58px!important}
+  .meg2-statement h2{font-size:15px!important}
+  .meg2-statement-list>button{min-height:48px!important}
+}
