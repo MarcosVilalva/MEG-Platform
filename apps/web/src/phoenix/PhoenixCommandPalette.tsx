@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import type { PhoenixReadModel } from './contracts';
-import './phoenix-overlays.css';
 
 export type PhoenixRoute =
   | 'home'
