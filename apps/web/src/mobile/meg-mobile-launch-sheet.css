@@ -438,6 +438,42 @@
   .meg3-form-sheet--new-expense .meg3-form-body{padding-top:10px}
   .meg3-form-sheet--new-expense .meg3-form-segment{margin-bottom:10px}
 }
+
+/* O novo lançamento ocupa o mesmo quadro do app, incluindo cabeçalho e dock. */
+.meg3-form-sheet--new-expense{
+  grid-template-rows:auto auto minmax(0,1fr) auto auto;
+  border:1px solid rgba(62,233,224,.28);
+  border-radius:24px;
+}
+.meg3-app-header,.meg3-app-dock{min-width:0;min-height:0}
+.meg3-app-header .meg2-header{position:relative;width:100%;background:transparent}
+.meg3-app-dock .meg2-dock{position:relative;width:100%;bottom:auto}
+.meg3-form-sheet--new-expense .meg3-form-head{
+  min-height:67px;padding:6px 16px 8px;align-items:start;
+  border-bottom:0;
+}
+.meg3-form-sheet--new-expense .meg3-form-head small,
+.meg3-form-sheet--new-expense .meg3-form-head>button{display:none}
+.meg3-form-sheet--new-expense .meg3-form-head h2{font-size:23px}
+.meg3-form-sheet--new-expense .meg3-form-head p{font-size:11px}
+.meg3-form-sheet--new-expense .meg3-form-body{padding:0 15px 10px}
+.meg3-form-sheet--new-expense .meg3-form-segment{margin-bottom:11px}
+.meg3-form-sheet--new-expense .meg3-form-segment button{min-height:39px}
+.meg3-form-sheet--new-expense .meg3-form-grid-faithful{gap:9px 7px}
+.meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg5-picker-field{min-height:54px}
+.meg3-form-sheet--new-expense .meg3-form-actions{
+  min-height:62px;display:block;padding:5px 15px;
+  border-top:0;background:transparent;
+}
+.meg3-form-sheet--new-expense .meg3-form-actions .primary{width:100%;min-height:49px}
+.meg3-form-sheet--new-expense .meg3-amount-field{min-height:60px;padding:7px 9px}
+.meg3-form-sheet--new-expense .meg3-amount-field input{font-size:18px!important}
+.meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg3-text-field:has(input[type="date"]) input{
+  min-height:60px;font-size:12px;
+}
+@media(max-width:430px){
+  .meg3-form-sheet--new-expense{height:100dvh;max-height:100dvh;border-radius:0}
+}
 @media(max-height:760px){
   .meg3-history-suggestions{max-height:145px}
   .meg3-history-suggestions>button{min-height:44px}
