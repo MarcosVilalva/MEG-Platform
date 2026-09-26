@@ -303,7 +303,7 @@ function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: 
   const result = periodMode === 'month' ? Number(data.summary.realizedResult || 0) : income - expense;
   const title = periodMode === 'all' ? 'Todo o histórico' : periodMode === 'range' ? (periodLabel || 'Intervalo selecionado') : compactMonth(data.month);
 
-  return <main className="meg2-main meg2-home">
+  return <main className="meg2-main meg2-home" data-meg-fixed-screen="true">
     <section className="meg2-title">
       <span>Situação {data.month === todayIso().slice(0, 7) && periodMode === 'month' ? 'atual' : 'do período'}</span>
       <h1>{title}</h1>
@@ -392,7 +392,7 @@ function InfiniteCarousel({ data, activeId, onActiveId }: { data: PhoenixReadMod
 
   if (!cards.length) return <div className="meg2-empty-card">Nenhum cartão cadastrado.</div>;
 
-  return <>
+  return <div className="meg2-carousel-stack" data-meg-scroll-axis="x">
     <div className="meg2-carousel" ref={track}>
       {repeated.map((card, index) => {
         const art = cardArt(card.name);
@@ -410,7 +410,7 @@ function InfiniteCarousel({ data, activeId, onActiveId }: { data: PhoenixReadMod
       })}
     </div>
     <div className="meg2-dots">{cards.map((card) => <span key={card.id} className={card.id === activeId ? 'active' : ''}/>)}</div>
-  </>;
+  </div>;
 }
 
 function Cards({ data }: { data: PhoenixReadModel }) {
@@ -425,7 +425,7 @@ function Cards({ data }: { data: PhoenixReadModel }) {
   const available = Number(card?.availableLimit ?? Math.max(0, limit - current));
   const due = card?.statement?.dueDate ? shortDate.format(new Date(card.statement.dueDate + 'T12:00:00Z')) : card?.dueDay ? 'Dia ' + card.dueDay : '—';
 
-  return <main className="meg2-main meg2-cards">
+  return <main className="meg2-main meg2-cards" data-meg-fixed-screen="true">
     <section className="meg2-page-title"><div><h1>Cartões</h1><p>Seus principais meios de pagamento.</p></div><span><Icon name="wallet"/></span></section>
     <InfiniteCarousel data={data} activeId={activeId} onActiveId={setActiveId}/>
     <section className="meg2-card-metrics">
@@ -436,8 +436,8 @@ function Cards({ data }: { data: PhoenixReadModel }) {
     </section>
     <section className="meg2-statement">
       <header><div><h2>Lançamentos da fatura</h2><small>{card ? cardName(card.name) : 'Cartão'}</small></div><button>Ver todos ›</button></header>
-      <div className="meg2-statement-list">
-        {rows.slice(0, 5).map((row) => <button key={row.id}><span className={'icon-' + semanticIcon(row.description)}><Icon name={semanticIcon(row.description)} size={20}/></span><p><b>{row.description}</b><small>{row.installmentNo && row.installmentQty ? 'Parcela ' + row.installmentNo + '/' + row.installmentQty + ' • ' : ''}{String(row.date || '').slice(0, 10).split('-').reverse().join('/')}</small></p><strong>{money.format(row.amount)}</strong><i>›</i></button>)}
+      <div className="meg2-statement-list" data-meg-scroll-region="true">
+        {rows.map((row) => <button key={row.id}><span className={'icon-' + semanticIcon(row.description)}><Icon name={semanticIcon(row.description)} size={20}/></span><p><b>{row.description}</b><small>{row.installmentNo && row.installmentQty ? 'Parcela ' + row.installmentNo + '/' + row.installmentQty + ' • ' : ''}{String(row.date || '').slice(0, 10).split('-').reverse().join('/')}</small></p><strong>{money.format(row.amount)}</strong><i>›</i></button>)}
         {!rows.length ? <div className="meg2-empty">Nenhum lançamento nesta fatura.</div> : null}
       </div>
     </section>
@@ -480,7 +480,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
     return 'Vence em ' + diff + (diff === 1 ? ' dia • ' : ' dias • ') + date;
   }
 
-  return <main className="meg2-main meg2-payables">
+  return <main className="meg2-main meg2-payables" data-meg-fixed-screen="true">
     <section className="meg2-page-title"><div><h1>Pendentes</h1><p>Suas contas e compromissos.</p></div><span><Icon name="sliders"/></span></section>
     <div className="meg2-tabs">
       <button className={tab === 'all' ? 'active' : ''} onClick={() => setTab('all')}>Todas</button>
@@ -494,8 +494,8 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       <article className="late"><small>Vencidas</small><strong>{money.format(overdue.reduce((s, item) => s + item.amount, 0))}</strong><span>!</span></article>
     </section>
     <section className="meg2-search"><label><Icon name="search" size={20}/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar pendentes..."/></label><button><Icon name="list"/></button><button><Icon name="sliders"/></button></section>
-    <section className="meg2-pending-list">
-      {rows.slice(0, 20).map((item, index) => {
+    <section className="meg2-pending-list" data-meg-scroll-region="true">
+      {rows.map((item, index) => {
         const late = !item.paid && item.due < today;
         const rowClass = late ? 'late' : item.paid ? 'paid' : '';
         const icon = semanticIcon(item.description);

@@ -835,3 +835,335 @@ body.meg-operational-mobile .px-mobile-dock{z-index:110!important}
   body.meg-operational-mobile .px-mobile-movement-value{min-width:70px!important;max-width:82px!important}
   body.meg-operational-mobile .px-mobile-movement-main>strong{font-size:12px!important}
 }
+
+
+/* =========================================================
+   CONTRATO GLOBAL DO APK: VIEWPORT FIXO + SCROLL INTERNO
+   ========================================================= */
+html.meg-operational-mobile,
+body.meg-operational-mobile,
+body.meg-operational-mobile #root{
+  width:100%!important;
+  height:100%!important;
+  min-height:100%!important;
+  max-height:100%!important;
+  overflow:hidden!important;
+  overscroll-behavior:none!important;
+}
+body.meg-operational-mobile .phoenix-v15,
+body.meg-operational-mobile .px-app{
+  width:100%!important;
+  height:100dvh!important;
+  min-height:100dvh!important;
+  max-height:100dvh!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-app{
+  padding-bottom:0!important;
+}
+body.meg-operational-mobile .px-main{
+  width:100%!important;
+  height:100dvh!important;
+  min-height:0!important;
+  max-height:100dvh!important;
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
+  overflow:hidden!important;
+  padding-bottom:calc(76px + env(safe-area-inset-bottom))!important;
+}
+body.meg-operational-mobile .px-topbar{
+  position:relative!important;
+  top:auto!important;
+  flex:0 0 auto!important;
+}
+body.meg-operational-mobile .px-content{
+  min-width:0!important;
+  min-height:0!important;
+  width:100%!important;
+  height:100%!important;
+  max-height:100%!important;
+  overflow:hidden!important;
+  padding:8px 10px 6px!important;
+}
+body.meg-operational-mobile .px-content>.px-screen{
+  min-height:0!important;
+  height:100%!important;
+  max-height:100%!important;
+  overflow:hidden!important;
+}
+
+/* LANÇAMENTOS: resumo/filtros fixos e somente a lista rola. */
+body.meg-operational-mobile .px-content-movements{
+  min-height:0!important;
+  height:100%!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-movements-v15[data-meg-fixed-screen="true"]{
+  height:100%!important;
+  min-height:0!important;
+  max-height:100%!important;
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
+  gap:6px!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-movements-overview{
+  min-height:0!important;
+  margin:0!important;
+}
+body.meg-operational-mobile .px-content-movements .px-table-card{
+  min-height:0!important;
+  height:100%!important;
+  max-height:100%!important;
+  display:grid!important;
+  grid-template-rows:auto auto minmax(0,1fr)!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-content-movements .px-table-toolbar-shell,
+body.meg-operational-mobile .px-content-movements .px-grid-active-filters{
+  flex:0 0 auto!important;
+}
+body.meg-operational-mobile .px-content-movements .px-mobile-movement-list{
+  min-height:0!important;
+  height:100%!important;
+  max-height:100%!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  scrollbar-width:none!important;
+  padding:0 2px 6px!important;
+  margin-top:5px!important;
+}
+body.meg-operational-mobile .px-content-movements .px-mobile-movement-list::-webkit-scrollbar{display:none!important}
+body.meg-operational-mobile .px-content-movements .px-mobile-movement-list-head{
+  position:sticky!important;
+  top:0!important;
+  z-index:6!important;
+  padding:5px 2px 7px!important;
+  background:linear-gradient(180deg,rgba(0,47,50,.985) 0%,rgba(0,47,50,.96) 82%,rgba(0,47,50,0) 100%)!important;
+  backdrop-filter:blur(10px)!important;
+}
+body.meg-operational-mobile .px-content-movements .px-table-pagination{
+  display:none!important;
+}
+
+/* FORMULÁRIOS: drawer fixo; somente corpo do formulário rola.
+   As ações ficam grudadas no rodapé da área rolável. */
+body.meg-operational-mobile .px-launch-drawer,
+body.meg-operational-mobile .px-detail-drawer{
+  inset:0!important;
+  width:100vw!important;
+  max-width:100vw!important;
+  height:100dvh!important;
+  max-height:100dvh!important;
+  overflow:hidden!important;
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
+  padding-top:env(safe-area-inset-top)!important;
+  padding-bottom:env(safe-area-inset-bottom)!important;
+}
+body.meg-operational-mobile .px-launch-drawer .px-launch-form{
+  min-height:0!important;
+  height:100%!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  scrollbar-width:none!important;
+  padding-bottom:10px!important;
+}
+body.meg-operational-mobile .px-launch-drawer .px-launch-form::-webkit-scrollbar{display:none!important}
+body.meg-operational-mobile .px-edit-launch-actions,
+body.meg-operational-mobile .px-launch-write-panel{
+  position:sticky!important;
+  bottom:0!important;
+  z-index:8!important;
+  margin-top:8px!important;
+  padding:8px!important;
+  border:1px solid rgba(35,225,216,.18)!important;
+  border-radius:12px!important;
+  background:linear-gradient(180deg,rgba(2,49,53,.96),rgba(1,38,42,.995))!important;
+  box-shadow:0 -9px 22px rgba(0,0,0,.18)!important;
+}
+body.meg-operational-mobile .px-detail-drawer{
+  display:flex!important;
+  flex-direction:column!important;
+}
+body.meg-operational-mobile .px-detail-drawer>.px-drawer-head{flex:0 0 auto!important}
+body.meg-operational-mobile .px-detail-drawer>.px-detail-description,
+body.meg-operational-mobile .px-detail-drawer>.px-detail-grid,
+body.meg-operational-mobile .px-detail-drawer>.px-notice{
+  flex:0 0 auto!important;
+}
+body.meg-operational-mobile .px-detail-drawer{
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  scrollbar-width:none!important;
+}
+body.meg-operational-mobile .px-detail-drawer::-webkit-scrollbar{display:none!important}
+body.meg-operational-mobile .px-detail-actions{
+  position:sticky!important;
+  bottom:0!important;
+  z-index:7!important;
+  margin-top:auto!important;
+  padding:8px!important;
+  background:linear-gradient(180deg,rgba(1,38,42,.93),rgba(1,34,38,.995))!important;
+}
+
+/* MODAIS: caixa fixa; apenas conteúdo variável pode rolar. */
+body.meg-operational-mobile .px-meg-confirm-dialog,
+body.meg-operational-mobile .px-installment-preview-dialog{
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-installment-preview-dialog{
+  display:grid!important;
+  grid-template-rows:auto auto minmax(0,1fr) auto auto!important;
+}
+body.meg-operational-mobile .px-installment-preview-list{
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+  scrollbar-width:none!important;
+}
+body.meg-operational-mobile .px-installment-preview-list::-webkit-scrollbar{display:none!important}
+
+/* HISTÓRICO: hero/KPIs/filtros fixos; linha do tempo é a lista rolável. */
+body.meg-operational-mobile .px-history-screen{
+  height:100%!important;
+  min-height:0!important;
+  display:grid!important;
+  grid-template-rows:auto auto auto minmax(0,1fr)!important;
+  gap:6px!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-history-workspace{
+  min-height:0!important;
+  height:100%!important;
+  overflow:hidden!important;
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
+}
+body.meg-operational-mobile .px-history-layout{
+  min-height:0!important;
+  height:100%!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-history-feed,
+body.meg-operational-mobile .px-history-detail{
+  min-height:0!important;
+  max-height:100%!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+  scrollbar-width:none!important;
+}
+body.meg-operational-mobile .px-history-feed::-webkit-scrollbar,
+body.meg-operational-mobile .px-history-detail::-webkit-scrollbar{display:none!important}
+
+/* CONFIGURAÇÕES: navegação fixa; workspace interno rola. */
+body.meg-operational-mobile .px-settings-screen{
+  height:100%!important;
+  min-height:0!important;
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
+  gap:7px!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-settings-v15-layout{
+  min-height:0!important;
+  height:100%!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-settings-workspace{
+  min-height:0!important;
+  max-height:100%!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+  scrollbar-width:none!important;
+}
+body.meg-operational-mobile .px-settings-workspace::-webkit-scrollbar{display:none!important}
+
+/* USUÁRIOS: cabeçalho/KPIs/filtros fixos; grupos rolam no painel. */
+body.meg-operational-mobile .px-users-screen{
+  height:100%!important;
+  min-height:0!important;
+  display:grid!important;
+  grid-template-rows:auto auto minmax(0,1fr)!important;
+  gap:7px!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-users-panel{
+  min-height:0!important;
+  height:100%!important;
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-users-groups{
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+  scrollbar-width:none!important;
+}
+body.meg-operational-mobile .px-users-groups::-webkit-scrollbar{display:none!important}
+
+/* TELAS COM TABELAS: cabeçalho/KPIs/toolbars fixos; tabela é a região rolável. */
+body.meg-operational-mobile .px-content .px-screen:has(> .px-table-card){
+  display:flex!important;
+  flex-direction:column!important;
+  gap:7px!important;
+}
+body.meg-operational-mobile .px-content .px-screen:has(> .px-table-card)>.px-screen-head,
+body.meg-operational-mobile .px-content .px-screen:has(> .px-table-card)>.px-screen-kpis,
+body.meg-operational-mobile .px-content .px-screen:has(> .px-table-card)>.px-tabbar{
+  flex:0 0 auto!important;
+}
+body.meg-operational-mobile .px-content .px-screen:has(> .px-table-card)>.px-table-card,
+body.meg-operational-mobile .px-content .px-screen:has(> .px-catalog-panel),
+body.meg-operational-mobile .px-content .px-screen>.px-users-panel{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+body.meg-operational-mobile .px-content .px-table-card{
+  min-height:0!important;
+}
+body.meg-operational-mobile .px-content .px-table-scroll,
+body.meg-operational-mobile .px-catalog-mobile-list{
+  min-height:0!important;
+  max-height:100%!important;
+  overflow:auto!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  scrollbar-width:thin!important;
+}
+
+/* Segurança: nenhuma tela operacional pode criar scroll no documento. */
+body.meg-operational-mobile .px-screen,
+body.meg-operational-mobile .meg2-app,
+body.meg-operational-mobile .meg2-shell{
+  overscroll-behavior:none!important;
+}
+
+/* Densidade adaptativa por altura. */
+@media(max-height:820px){
+  body.meg-operational-mobile .px-content{padding-top:6px!important;padding-bottom:4px!important}
+  body.meg-operational-mobile .px-movements-overview .px-screen-kpis article{min-height:64px!important}
+  body.meg-operational-mobile .px-content-movements .px-movement-tool-button{height:39px!important;min-height:39px!important}
+  body.meg-operational-mobile .px-mobile-movement-card{min-height:78px!important}
+  body.meg-operational-mobile .px-history-hero p,
+  body.meg-operational-mobile .px-settings-screen>.px-screen-head p,
+  body.meg-operational-mobile .px-users-screen>.px-screen-head p{display:none!important}
+}
+@media(max-height:700px){
+  body.meg-operational-mobile .px-content{padding-top:4px!important}
+  body.meg-operational-mobile .px-content-movements .px-screen-head p{display:none!important}
+  body.meg-operational-mobile .px-movements-overview .px-screen-kpis article{min-height:56px!important}
+  body.meg-operational-mobile .px-mobile-movement-card{min-height:70px!important}
+  body.meg-operational-mobile .px-history-kpis article,
+  body.meg-operational-mobile .px-users-screen>.px-screen-kpis article{min-height:58px!important}
+}
