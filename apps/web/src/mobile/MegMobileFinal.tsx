@@ -475,6 +475,10 @@ type PendingRow = { id: string; source: 'payable' | 'event'; sourceId: string; d
 function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Props['onEditEvent'] }) {
   const [tab, setTab] = useState<'all' | 'open' | 'paid' | 'overdue'>('all');
   const [search, setSearch] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [descending, setDescending] = useState(false);
   const today = todayIso();
 
   const openPay = data.payables.filter((item) => openStatus(item.status) && Number(item.openAmount || 0) > 0).map<PendingRow>((item) => ({
@@ -493,8 +497,10 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   const query = search.trim().toLocaleLowerCase('pt-BR');
   const rows = opens.concat(paidEvents)
     .filter((item) => item.description.toLocaleLowerCase('pt-BR').includes(query))
+    .filter((item) => !fromDate || item.due >= fromDate)
+    .filter((item) => !toDate || item.due <= toDate)
     .filter((item) => tab === 'all' ? true : tab === 'open' ? !item.paid : tab === 'paid' ? item.paid : !item.paid && item.due < today)
-    .sort((left, right) => left.due.localeCompare(right.due));
+    .sort((left, right) => descending ? right.due.localeCompare(left.due) : left.due.localeCompare(right.due));
 
   function dueLabel(item: PendingRow) {
     const date = item.due.split('-').reverse().join('/');
@@ -518,7 +524,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       <article><small>A pagar</small><strong>{money.format(total)}</strong><span>◷</span></article>
       <article className="late"><small>Vencidas</small><strong>{money.format(overdue.reduce((s, item) => s + item.amount, 0))}</strong><span>!</span></article>
     </section>
-    <section className="meg2-search"><label><Icon name="search" size={20}/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar pendentes..."/></label><button><Icon name="list"/></button><button><Icon name="sliders"/></button></section>
+    <section className="meg2-search"><label><Icon name="search" size={20}/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar pendentes..."/></label><button className={descending ? 'active' : ''} type="button" aria-label="Alternar ordem" onClick={() => setDescending((value) => !value)}><Icon name="list"/></button><button className={fromDate || toDate ? 'active' : ''} type="button" aria-label="Filtrar por data" onClick={() => setFilterOpen(true)}><Icon name="sliders"/></button></section>
     <section className="meg2-pending-list" data-meg-scroll-region="true">
       {rows.map((item, index) => {
         const late = !item.paid && item.due < today;
@@ -532,6 +538,16 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       })}
       {!rows.length ? <div className="meg2-empty">Nenhum lançamento neste filtro.</div> : null}
     </section>
+    {filterOpen ? <div className="meg2-pending-filter-overlay" role="presentation" onClick={() => setFilterOpen(false)}>
+      <section className="meg2-pending-filter-sheet" role="dialog" aria-modal="true" aria-label="Filtrar pendentes por data" onClick={(event) => event.stopPropagation()}>
+        <header><div><small>FILTRO DE DATA</small><h2>Período dos pendentes</h2></div><button type="button" onClick={() => setFilterOpen(false)}>×</button></header>
+        <div className="meg2-pending-filter-fields">
+          <label><span>Data inicial</span><input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)}/></label>
+          <label><span>Data final</span><input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)}/></label>
+        </div>
+        <footer><button type="button" className="secondary" onClick={() => { setFromDate(''); setToDate(''); }}>Limpar</button><button type="button" className="apply" onClick={() => setFilterOpen(false)}>Aplicar filtro</button></footer>
+      </section>
+    </div> : null}
   </main>;
 }
 
