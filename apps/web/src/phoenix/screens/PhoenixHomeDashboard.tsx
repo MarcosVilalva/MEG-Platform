@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import type { PhoenixReadModel } from '../contracts';
 import { buildPhoenixHomeAgenda, type PhoenixHomeAgendaItem } from '../home-agenda';
 import { isPhoenixBenefitEvent } from '../home-period-summary';
-import '../phoenix-home-now.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const whole = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
