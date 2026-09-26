@@ -1233,7 +1233,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
     return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={gridFilters[key]} options={options} sort={gridSort?.key === key ? gridSort.direction : null} onSort={(direction) => setGridSort({ key, direction })} onChange={(value) => updateGridFilter(key, value)} /></div>;
   }
 
-  return <section className="px-screen px-movements-v15">
+  return <section className="px-screen px-movements-v15" data-meg-fixed-screen={nativeOperational ? 'true' : undefined}>
     <section className="px-movements-overview">
       <div className="px-movement-hero-row">
         <header className="px-screen-head">
@@ -1299,7 +1299,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
 
       <div className={`px-grid-active-filters ${activeGridFilters.length || gridSort ? '' : 'is-empty'}`} aria-hidden={activeGridFilters.length || gridSort ? undefined : true}><span>Filtros da grade</span>{activeGridFilters.map((key) => <span className="px-grid-filter-chip" key={key}>{filterSummary(gridLabels[key], gridFilters[key])}<button type="button" onClick={() => clearGridFilter(key)} aria-label={`Remover filtro ${gridLabels[key]}`}>×</button></span>)}{gridSort ? <span className="px-grid-filter-chip">Ordenação: {gridLabels[gridSort.key]} {gridSort.direction === 'asc' ? '↑' : '↓'}<button type="button" onClick={() => setGridSort(null)} aria-label="Remover ordenação">×</button></span> : null}{activeGridFilters.length || gridSort ? <button className="px-grid-clear-all" type="button" onClick={clearAllGridFilters}>Limpar grade</button> : null}</div>
 
-      {nativeOperational ? <div className="px-mobile-movement-list" aria-label="Lançamentos do período">
+      {nativeOperational ? <div className="px-mobile-movement-list" data-meg-scroll-region="true" aria-label="Lançamentos do período">
         <header className="px-mobile-movement-list-head">
           <div><strong>{filtered.length} lançamento{filtered.length === 1 ? '' : 's'}</strong><span>{movementPeriodLabel} · toque para abrir</span></div>
           <button type="button" onClick={() => openLaunch()}><MovementIcon name="plus" size={15} /> Novo</button>
