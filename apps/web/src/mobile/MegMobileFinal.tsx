@@ -478,6 +478,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [selected, setSelected] = useState<PendingRow | null>(null);
   const [descending, setDescending] = useState(false);
   const today = todayIso();
 
@@ -530,7 +531,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
         const late = !item.paid && item.due < today;
         const rowClass = late ? 'late' : item.paid ? 'paid' : '';
         const icon = semanticIcon(item.description);
-        return <button key={item.id} className={rowClass} onClick={() => item.source === 'event' && onEditEvent(item.sourceId)}>
+        return <button key={item.id} className={rowClass} onClick={() => setSelected(item)}>
           <span className={'meg2-pending-icon icon-' + icon}><Icon name={icon}/></span>
           <p><b>{item.description}</b><small>{dueLabel(item)}</small></p>
           <span className="meg2-pending-value"><strong>{money.format(item.amount)}</strong><em>{item.paid ? 'Paga' : late ? 'Vencida' : 'A pagar'}</em></span><i>›</i>
@@ -546,6 +547,18 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
           <label><span>Data final</span><input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)}/></label>
         </div>
         <footer><button type="button" className="secondary" onClick={() => { setFromDate(''); setToDate(''); }}>Limpar</button><button type="button" className="apply" onClick={() => setFilterOpen(false)}>Aplicar filtro</button></footer>
+      </section>
+    </div> : null}
+    {selected ? <div className="meg2-pending-detail-overlay" role="presentation" onClick={() => setSelected(null)}>
+      <section className="meg2-pending-detail" role="dialog" aria-modal="true" aria-label="Detalhes do compromisso" onClick={(event) => event.stopPropagation()}>
+        <header><div><small>DETALHES DO COMPROMISSO</small><h2>{selected.description}</h2></div><button type="button" onClick={() => setSelected(null)}>×</button></header>
+        <div className="meg2-pending-detail-amount"><small>Valor</small><strong>{money.format(selected.amount)}</strong><em className={selected.paid ? 'paid' : selected.due < today ? 'late' : 'open'}>{selected.paid ? 'Paga' : selected.due < today ? 'Vencida' : 'A pagar'}</em></div>
+        <dl>
+          <div><dt>Data</dt><dd>{selected.due.split('-').reverse().join('/')}</dd></div>
+          <div><dt>Situação</dt><dd>{dueLabel(selected)}</dd></div>
+          <div><dt>Origem</dt><dd>{selected.source === 'event' ? 'Lançamento financeiro' : 'Conta a pagar'}</dd></div>
+        </dl>
+        <footer><button type="button" className="secondary" onClick={() => setSelected(null)}>Fechar</button>{selected.source === 'event' ? <button type="button" className="apply" onClick={() => { const id=selected.sourceId; setSelected(null); onEditEvent(id); }}>Editar lançamento</button> : <button type="button" className="apply" onClick={() => setSelected(null)}>Entendi</button>}</footer>
       </section>
     </div> : null}
   </main>;
