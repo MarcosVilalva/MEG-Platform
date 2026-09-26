@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { hydratePhoenixAvatarPreference } from '../phoenix/profile-avatar';
+import { MegMobileAnalytics, MegMobileCashflow, MegMobileHistory, MegMobileMovements } from './MegMobileCoreScreens';
 import './meg-mobile-final.css';
+import './meg-mobile-core-screens.css';
 
-type MobileView = 'home' | 'cards' | 'payables';
+type MobileView = 'home' | 'movements' | 'cards' | 'payables' | 'history' | 'cashflow' | 'analytics';
 type TargetView = 'home' | 'movements' | 'payables' | 'cards' | 'cashflow' | 'analytics' | 'history' | 'settings';
 type LaunchPreset = 'expense' | 'income' | 'benefit';
 type PeriodMode = 'month' | 'range' | 'all';
@@ -179,7 +181,7 @@ function Header({ data, periodMode, periodLabel, onOpenPeriod, onOpenMenu }: { d
 function Dock({ view, pendingCount, menuOpen, onNavigate, onLaunch, onMenu }: { view: MobileView; pendingCount: number; menuOpen: boolean; onNavigate: Props['onNavigate']; onLaunch: Props['onLaunch']; onMenu: () => void }) {
   return <nav className="meg2-dock">
     <button className={view === 'home' ? 'active' : ''} onClick={() => onNavigate('home')}><Icon name="home"/><span>Início</span></button>
-    <button onClick={() => onNavigate('movements')}><Icon name="file"/><span>Lançamentos</span></button>
+    <button className={view === 'movements' ? 'active' : ''} onClick={() => onNavigate('movements')}><Icon name="file"/><span>Lançamentos</span></button>
     <button className="meg2-new" onClick={() => onLaunch('expense')}><span><Icon name="plus" size={27}/></span><small>Novo</small></button>
     <button className={view === 'payables' ? 'active' : ''} onClick={() => onNavigate('payables')}>
       <span className="meg2-badge-wrap"><Icon name="wallet"/>{pendingCount > 0 ? <b>{pendingCount > 9 ? '9+' : pendingCount}</b> : null}</span><span>Pendentes</span>
@@ -611,8 +613,12 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch, onEditEvent, 
       <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={() => setPeriodOpen(true)} onOpenMenu={() => setMenuOpen(true)}/>
       <div className="meg2-scroll">
         {view === 'home' ? <Home data={data} periodMode={periodMode} periodLabel={periodLabel} homePeriodContext={homePeriodContext} onNavigate={onNavigate}/> : null}
+        {view === 'movements' ? <MegMobileMovements data={data} onOpenEvent={(event) => onEditEvent(event.id)} onNew={() => onLaunch('expense')}/> : null}
         {view === 'cards' ? <Cards data={data}/> : null}
         {view === 'payables' ? <Payables data={data} onEditEvent={onEditEvent}/> : null}
+        {view === 'history' ? <MegMobileHistory data={data}/> : null}
+        {view === 'cashflow' ? <MegMobileCashflow data={data}/> : null}
+        {view === 'analytics' ? <MegMobileAnalytics data={data}/> : null}
       </div>
       <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={onNavigate} onLaunch={onLaunch} onMenu={() => setMenuOpen(true)}/>
     </div>
