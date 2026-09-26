@@ -963,3 +963,19 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   .meg2-statement h2{font-size:15px!important}
   .meg2-statement-list>button{min-height:48px!important}
 }
+
+
+/* Cabeçalho clean-room: avatar real e nome sempre preservados. */
+.meg2-avatar{overflow:hidden;background-image:none!important}
+.meg2-avatar img{width:100%;height:100%;display:block;object-fit:cover;border-radius:inherit}
+.meg2-avatar.has-image{color:transparent}
+.meg2-user{max-width:104px}
+.meg2-user strong{max-width:56px!important}
+@media(max-width:390px){
+  .meg2-user{max-width:88px}
+  .meg2-user strong{display:block!important;max-width:46px!important}
+}
+@media(max-width:340px){
+  .meg2-user{max-width:76px}
+  .meg2-user strong{display:block!important;max-width:38px!important;font-size:7.5px!important}
+}
