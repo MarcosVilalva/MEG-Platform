@@ -1,8 +1,7 @@
 .meg3-cardcenter-overlay{
   position:fixed;inset:0;z-index:2147482400;width:100vw;height:100dvh;
   display:grid;place-items:end center;overflow:hidden;
-  background:rgba(0,18,20,.76);backdrop-filter:blur(9px)
-}
+  background:rgba(0,18,20,.76);}
 .meg3-cardcenter{
   width:min(100%,620px);height:min(92dvh,900px);max-height:92dvh;min-height:0;
   display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto;overflow:hidden;

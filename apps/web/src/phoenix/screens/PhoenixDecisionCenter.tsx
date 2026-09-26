@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FinancialEvent } from '../../app/finance-client';
 import type { PhoenixReadModel } from '../contracts';
 import { loadPhoenixAllEvents } from '../data/load-phoenix-read-model';
-import '../phoenix-decision-center.css';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const monetaryAccountTypes = new Set(['checking', 'savings', 'cash']);

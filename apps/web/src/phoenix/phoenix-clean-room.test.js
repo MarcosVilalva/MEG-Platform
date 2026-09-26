@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const phoenixApp = readFileSync(new URL('./PhoenixApp.tsx', import.meta.url), 'utf8');
+const phoenixWebStyles = readFileSync(new URL('./PhoenixWebStyles.ts', import.meta.url), 'utf8');
 const sidebar = readFileSync(new URL('./PhoenixSidebar.tsx', import.meta.url), 'utf8');
 const navIcon = readFileSync(new URL('./PhoenixNavIcon.tsx', import.meta.url), 'utf8');
 const profileAvatar = readFileSync(new URL('./profile-avatar.tsx', import.meta.url), 'utf8');
@@ -270,8 +271,10 @@ assert.match(gridCss, /px-grid-filter-body[\s\S]*overscroll-behavior:contain/,
   'Somente o conteúdo interno dos filtros deve rolar');
 assert.match(launchDynamicCss, /px-meg-confirm-overlay/,
   'Confirmação MEG precisa possuir overlay próprio');
-assert.match(phoenixApp, /import '\.\/phoenix-layers\.css'/,
-  'Shell deve importar por último a escala única de camadas.');
+assert.doesNotMatch(phoenixApp, /import '\.\/phoenix-layers\.css'/,
+  'Shell compartilhado não deve carregar estilos Web no bundle visual do APK.');
+assert.match(phoenixWebStyles, /import '\.\/phoenix-v15\.css'[\s\S]*import '\.\/phoenix-layers\.css'/,
+  'Módulo exclusivo da Web deve preservar a ordem dos estilos e terminar na escala de camadas.');
 assert.match(layersCss, /--meg-z-drawer:2000[\s\S]*--meg-z-modal:3200[\s\S]*--meg-z-critical:5200/,
   'Hierarquia global deve separar drawer, modal e confirmação crítica.');
 assert.match(layersCss, /px-meg-confirm-overlay[\s\S]*var\(--meg-z-critical\)/,

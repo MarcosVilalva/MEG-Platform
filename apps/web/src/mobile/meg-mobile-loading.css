@@ -42,7 +42,6 @@
   width:clamp(132px,36vw,174px);
   height:auto;
   object-fit:contain;
-  filter:drop-shadow(0 8px 18px rgba(0,0,0,.16));
 }
 
 .meg-loading-progress{

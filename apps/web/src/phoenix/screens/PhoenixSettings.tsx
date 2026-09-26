@@ -12,7 +12,6 @@ import {
   savePhoenixAvatarPreferenceCloud,
   type PhoenixAvatarPreference
 } from '../profile-avatar';
-import '../phoenix-settings.css';
 
 type PhoenixSettingsProps = {
   data: PhoenixReadModel;

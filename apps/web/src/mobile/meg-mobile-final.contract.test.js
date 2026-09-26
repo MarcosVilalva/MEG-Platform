@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const mobile = readFileSync(new URL('./MegMobileFinal.tsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./meg-mobile-final.css', import.meta.url), 'utf8');
-const premiumCss = readFileSync(new URL('./meg-mobile-premium.css', import.meta.url), 'utf8');
+const runtimeCss = readFileSync(new URL('./meg-mobile-runtime.css', import.meta.url), 'utf8');
 const phoenix = readFileSync(new URL('../phoenix/PhoenixApp.tsx', import.meta.url), 'utf8');
 const previewMain = readFileSync(new URL('../phoenix/preview-main.tsx', import.meta.url), 'utf8');
-const movements = readFileSync(new URL('../phoenix/screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
+const phoenixWebStyles = readFileSync(new URL('../phoenix/PhoenixWebStyles.ts', import.meta.url), 'utf8');
+const authCss = readFileSync(new URL('../phoenix/preview-auth-flow.css', import.meta.url), 'utf8');
 const coreScreens = readFileSync(new URL('./MegMobileCoreScreens.tsx', import.meta.url), 'utf8');
 const launchSheet = readFileSync(new URL('./MegMobileLaunchSheet.tsx', import.meta.url), 'utf8');
 const coreCss = readFileSync(new URL('./meg-mobile-core-screens.css', import.meta.url), 'utf8');
@@ -15,7 +16,7 @@ const settings = readFileSync(new URL('./MegMobileSettings.tsx', import.meta.url
 const settingsCss = readFileSync(new URL('./meg-mobile-settings.css', import.meta.url), 'utf8');
 const cardCenter = readFileSync(new URL('./MegMobileCardCenter.tsx', import.meta.url), 'utf8');
 const benefitModal = readFileSync(new URL('./MegMobileBenefitModal.tsx', import.meta.url), 'utf8');
-const source = mobile + '\n' + css + '\n' + coreScreens + '\n' + launchSheet + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
+const source = mobile + '\n' + css + '\n' + runtimeCss + '\n' + coreScreens + '\n' + launchSheet + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
 
 assert.doesNotMatch(source, /\bpx-[a-z0-9-]+/i,
   'Reconstrução mobile final não pode reutilizar classes visuais .px-* do Phoenix legado.');
@@ -46,9 +47,23 @@ assert.match(mobile, /PeriodSheet[\s\S]*Mês[\s\S]*Intervalo[\s\S]*Tudo/,
 assert.doesNotMatch(source, /phoenix-mobile-reference\.css|PhoenixMobileReferenceScreens/,
   'Arquivos intermediários removidos não podem voltar a ser dependência da reconstrução final.');
 assert.match(mobile, /new URL\(relative, document\.baseURI\)\.href/,
-  'Assets reais do APK devem resolver contra document.baseURI para funcionar dentro do WebView.');
-assert.match(mobile, /approved-v6\/mercado\.webp[\s\S]*approved-v6\/latam\.webp[\s\S]*approved-v6\/azul\.webp[\s\S]*approved-v6\/riachuelo\.webp/,
-  'Carrossel deve usar as imagens reais aprovadas dos cartões.');
+  'Assets do APK devem resolver contra document.baseURI para funcionar dentro do WebView.');
+
+for (const relative of [
+  '../../public/assets/cards/approved-v6/mercado.webp',
+  '../../public/assets/cards/latam-pass-platinum.webp',
+  '../../public/assets/cards/approved-v6/azul.webp',
+  '../../public/assets/cards/riachuelo-mastercard-visual.svg',
+]) {
+  assert.equal(existsSync(new URL(relative, import.meta.url)), true,
+    `Arte de cartão obrigatória ausente: ${relative}`);
+}
+
+assert.match(
+  mobile,
+  /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*latam-pass-platinum\.webp[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*riachuelo-mastercard-visual\.svg/i,
+  'Carrossel deve resolver nomes reais e apelidos para artes horizontais estáveis.',
+);
 assert.match(css, /\.meg2-view-home \.meg2-scroll\{overflow:hidden\}/,
   'Home corrente deve caber no viewport sem rolagem geral.');
 assert.match(css, /@media \(max-height:850px\)[\s\S]*@media \(max-height:760px\)/,
@@ -56,59 +71,93 @@ assert.match(css, /@media \(max-height:850px\)[\s\S]*@media \(max-height:760px\)
 assert.match(css, /\.meg2-user strong\{[\s\S]*display:block!important/,
   'Nome do usuário não pode desaparecer em aparelhos menores.');
 assert.match(css, /MEG PREMIUM MOBILE — referência visual aprovada/,
-  'Nova árvore mobile deve declarar explicitamente a camada premium aprovada.');
-assert.match(premiumCss, /\.px-launch-drawer[\s\S]*\.px-field input[\s\S]*\.px-meg-confirm-dialog/,
-  'Formulários, campos e modais funcionais devem compartilhar o padrão premium do APK.');
-assert.match(premiumCss, /\.px-mobile-movement-card[\s\S]*box-shadow/,
-  'Lançamentos deve receber cartões premium com profundidade e contraste.');
-assert.match(premiumCss, /meg-update-overlay[\s\S]*meg-update-dialog/,
-  'Fluxo OTA deve usar a mesma identidade premium dos demais modais.');
+  'Árvore mobile deve declarar explicitamente a identidade visual aprovada.');
+
 assert.match(
-  premiumCss,
-  /\.px-top-left-home-compact[\s\S]*grid-template-columns:44px minmax\(0,1fr\) 82px/,
-  'Cabeçalho das telas internas deve reservar espaço fixo para logo e usuário sem esmagar o filtro de período.',
-);
-assert.match(
-  premiumCss,
-  /\.px-native-home-period-copy strong[\s\S]*text-overflow:ellipsis/,
-  'Filtro de período interno deve truncar com segurança sem sair do cabeçalho.',
-);
-assert.match(
-  premiumCss,
-  /\.px-home-user-identity strong[\s\S]*white-space:nowrap/,
-  'Nome do usuário deve permanecer visível e estável no cabeçalho interno.',
-);
-assert.match(
-  premiumCss,
-  /\.px-mobile-movement-card[\s\S]*grid-template-columns:48px minmax\(0,1fr\) auto/,
-  'Card de lançamento deve usar composição responsiva com coluna central elástica.',
+  previewMain,
+  /document\.body\.classList\.remove\('meg-operational-mobile'\)[\s\S]*document\.body\.classList\.add\('meg-cleanroom-mobile'\)/,
+  'Runtime Android deve remover o marcador visual legado e ativar apenas o clean-room.',
 );
 assert.match(
   previewMain,
-  /document\.body\.classList\.add\('meg-operational-mobile'\)/,
-  'Runtime Android deve ativar explicitamente a classe que habilita o CSS premium.',
+  /document\.documentElement\.classList\.add\('meg-cleanroom-mobile'\)/,
+  'Raiz do WebView deve declarar o runtime clean-room.',
+);
+assert.doesNotMatch(
+  phoenix,
+  /import ['"]\.\.\/mobile\/meg-mobile-premium\.css['"]/,
+  'Shell Phoenix não pode importar a camada visual mobile legada.',
+);
+assert.doesNotMatch(
+  previewMain,
+  /classList\.add\('meg-operational-mobile'\)/,
+  'Runtime do APK não pode voltar a ativar seletores visuais Phoenix antigos.',
+);
+assert.doesNotMatch(
+  phoenix,
+  /import ['"]\.\/phoenix-(?:v15|parity-v15|period|sidebar|operational-mobile|home-period-mobile|home-fidelity-v12|home-fidelity-v13|layers)\.css['"]/,
+  'PhoenixApp não pode importar estaticamente CSS visual legado no bundle do APK.',
 );
 assert.match(
   previewMain,
-  /document\.documentElement\.classList\.add\('meg-operational-mobile'\)/,
-  'Raiz do WebView também deve declarar o runtime premium móvel.',
+  /else if \(!MEG_MOBILE_RUNTIME\) \{[\s\S]*import\('\.\/PhoenixWebStyles'\)/,
+  'CSS Phoenix deve ser carregado apenas quando o runtime não é o APK.',
+);
+assert.match(
+  phoenix,
+  /if \(nativeOperational \|\| loadState\.status !== 'ready' \|\| view !== 'home'\) return;[\s\S]*warmFrequentScreens/,
+  'APK não pode pré-carregar módulos visuais Phoenix antigos em segundo plano.',
+);
+assert.match(
+  phoenixWebStyles,
+  /phoenix-overlays\.css[\s\S]*phoenix-grid\.css[\s\S]*phoenix-launch-editor-polish\.css/,
+  'CSS de componentes Web compartilhados deve permanecer centralizado no módulo exclusivo da Web.',
+);
+assert.match(
+  phoenixWebStyles,
+  /phoenix-v15\.css[\s\S]*phoenix-layers\.css/,
+  'Página Web deve preservar seus estilos através do módulo Web isolado.',
+);
+assert.doesNotMatch(
+  authCss,
+  /body\.meg-operational-mobile/,
+  'Fluxo de autenticação móvel não pode depender do marcador visual legado.',
+);
+assert.match(
+  authCss,
+  /body\.meg-cleanroom-mobile/,
+  'Transição biométrica deve acompanhar o runtime clean-room.',
+);
+assert.match(
+  runtimeCss,
+  /OTA clean-room[\s\S]*\.meg-update-overlay[\s\S]*\.meg-update-dialog[\s\S]*\.meg-update-success-toast/,
+  'OTA deve ter estilo próprio no runtime clean-room após remover o CSS premium legado.',
+);
+assert.match(
+  runtimeCss,
+  /html\.meg-cleanroom-mobile[\s\S]*body\.meg-cleanroom-mobile[\s\S]*overflow:hidden/,
+  'Runtime clean-room deve controlar viewport e overflow sem depender do Phoenix.',
+);
+assert.doesNotMatch(
+  css + '\n' + coreCss + '\n' + launchCss + '\n' + settingsCss,
+  /(?:-webkit-)?backdrop-filter\s*:|(^|[;{])\s*filter\s*:/m,
+  'CSS clean-room não pode depender de filtros de composição instáveis no Android WebView.',
 );
 assert.match(
   mobile,
-  /const title = periodMode === 'all'[\s\S]*compactMonth\(data\.month\)/,
-  'Home do mês atual deve usar competência compacta como na prévia validada.',
-);
-assert.match(
-  movements,
-  /nativeOperational \? 'Lançamentos' : 'Controle financeiro'/,
-  'No APK, Lançamentos deve usar o título aprovado em vez do título web antigo.',
+  /const title = periodMode === 'all'[\s\S]*monthLabel\(data\.month\)/,
+  'Home do mês deve usar o nome completo da competência no corpo da tela.',
 );
 assert.match(
   mobile,
   /semanticIcon\(item\.description\)[\s\S]*meg2-pending-icon/,
   'Pendentes deve escolher ícone pelo conteúdo, não por posição arbitrária na lista.',
 );
-
+assert.match(
+  coreCss,
+  /\.meg3-kpis strong\{[\s\S]*text-overflow:clip[\s\S]*font-size:clamp\(10px,3\.05vw,15px\)/,
+  'KPIs de Lançamentos devem reduzir tipografia em vez de truncar valores monetários.',
+);
 assert.match(
   css,
   /CONTRATO DE VIEWPORT FIXO[\s\S]*\.meg2-scroll\{[\s\S]*overflow:hidden!important/,
@@ -125,29 +174,9 @@ assert.match(
   'Pendentes deve rolar somente a lista de compromissos.',
 );
 assert.match(
-  premiumCss,
-  /CONTRATO GLOBAL DO APK: VIEWPORT FIXO \+ SCROLL INTERNO[\s\S]*body\.meg-operational-mobile \.px-content\{[\s\S]*overflow:hidden!important/,
-  'Shell Phoenix móvel deve bloquear rolagem da tela inteira.',
-);
-assert.match(
-  premiumCss,
-  /\.px-content-movements \.px-mobile-movement-list\{[\s\S]*overflow-y:auto!important/,
-  'Lançamentos deve rolar somente a lista interna.',
-);
-assert.match(
-  premiumCss,
-  /\.px-launch-drawer \.px-launch-form\{[\s\S]*overflow-y:auto!important/,
-  'Formulário deve manter o drawer fixo e rolar somente o corpo do formulário.',
-);
-assert.match(
-  premiumCss,
-  /\.px-history-feed[\s\S]*overflow-y:auto!important/,
-  'Histórico deve rolar a linha do tempo internamente.',
-);
-assert.match(
-  premiumCss,
-  /\.px-settings-workspace\{[\s\S]*overflow-y:auto!important/,
-  'Configurações deve manter a tela fixa e rolar apenas o workspace interno.',
+  runtimeCss,
+  /\[data-meg-scroll-region="true"\][\s\S]*overflow:auto/,
+  'Runtime deve permitir rolagem somente em regiões internas explicitamente marcadas.',
 );
 assert.match(
   mobile,
@@ -159,6 +188,7 @@ assert.match(
   /data-meg-scroll-region="true"/,
   'Listas móveis roláveis devem ser identificadas como regiões internas de scroll.',
 );
+
 assert.match(
   coreScreens,
   /MegMobileMovements[\s\S]*MegMobileHistory[\s\S]*MegMobileCashflow[\s\S]*MegMobileAnalytics/,

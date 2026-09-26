@@ -19,10 +19,14 @@ import './preview-boot.css';
 
 const MEG_MOBILE_RUNTIME = import.meta.env.VITE_MOBILE_APP === 'true';
 if (MEG_MOBILE_RUNTIME && typeof document !== 'undefined') {
-  document.documentElement.classList.add('meg-operational-mobile');
-  document.body.classList.add('meg-operational-mobile');
-  document.documentElement.dataset.megRuntime = 'android';
-  document.body.dataset.megRuntime = 'android';
+  document.documentElement.classList.remove('meg-operational-mobile');
+  document.body.classList.remove('meg-operational-mobile');
+  document.documentElement.classList.add('meg-cleanroom-mobile');
+  document.body.classList.add('meg-cleanroom-mobile');
+  document.documentElement.dataset.megRuntime = 'android-cleanroom';
+  document.body.dataset.megRuntime = 'android-cleanroom';
+} else if (!MEG_MOBILE_RUNTIME) {
+  void import('./PhoenixWebStyles');
 }
 
 type PreviewState = 'checking' | 'authenticating' | 'signed-out' | 'preparing' | 'prepare-error' | 'signed-in';

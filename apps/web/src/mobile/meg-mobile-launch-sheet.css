@@ -2,7 +2,7 @@
   position:fixed;inset:0;z-index:2147482500;
   width:100vw;height:100dvh;overflow:hidden;
   background:rgba(0,17,19,.74);
-  backdrop-filter:blur(10px);
+  
   display:grid;place-items:end center;
 }
 .meg3-form-sheet{
@@ -86,8 +86,7 @@
 .meg3-form-actions .danger{color:#ff8794;border-color:rgba(255,110,128,.35)}
 .meg3-delete-confirm{
   position:absolute;inset:0;z-index:5;display:grid;place-items:center;padding:20px;
-  background:rgba(0,18,20,.82);backdrop-filter:blur(8px)
-}
+  background:rgba(0,18,20,.82);}
 .meg3-delete-confirm>div{
   width:min(100%,390px);padding:18px;border:1px solid rgba(255,119,135,.34);border-radius:20px;
   background:linear-gradient(155deg,#073d40,#03272a);box-shadow:0 20px 50px rgba(0,0,0,.34)
@@ -150,8 +149,7 @@
 .meg3-installment-preview-trigger:disabled{opacity:.48}
 .meg3-installment-preview{
   position:absolute;inset:0;z-index:6;display:grid;place-items:center;padding:18px;
-  background:rgba(0,18,20,.82);backdrop-filter:blur(9px)
-}
+  background:rgba(0,18,20,.82);}
 .meg3-installment-preview>section{
   width:min(100%,430px);max-height:min(78dvh,650px);min-height:0;
   display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;

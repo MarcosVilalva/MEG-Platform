@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import './phoenix-grid.css';
 
 export type PhoenixGridSortDirection = 'asc' | 'desc';
 export type PhoenixGridFilterKind = 'text' | 'multi' | 'number' | 'date';

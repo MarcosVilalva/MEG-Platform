@@ -37,7 +37,7 @@
   display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;
   border-bottom:1px solid rgba(78,221,214,.17);
   background:linear-gradient(180deg,rgba(0,57,58,.99),rgba(0,47,49,.95));
-  backdrop-filter:blur(20px);z-index:5
+  z-index:5
 }
 .meg2-brand{
   width:52px;height:52px;padding:5px;border:1px solid var(--meg2-line-strong);border-radius:13px;
@@ -158,14 +158,28 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 }
 .meg2-carousel::-webkit-scrollbar{display:none}
 .meg2-card-art{
+  position:relative;
   flex:0 0 min(74vw,310px);aspect-ratio:1.62/1;min-width:235px;max-width:310px;border-radius:18px;
-  border:1px solid rgba(81,245,238,.28);background-position:center;background-size:cover;scroll-snap-align:center;
-  transition:transform .2s ease,opacity .2s ease,filter .2s ease;opacity:.52;transform:scale(.92);
-  overflow:hidden;text-align:left;padding:18px;display:flex;flex-direction:column;justify-content:flex-end;
+  border:1px solid rgba(81,245,238,.28);scroll-snap-align:center;
+  transition:opacity .2s ease;opacity:.52;transform:scale(.92);
+  overflow:hidden;text-align:left;padding:0;background:#063e43;
   box-shadow:0 9px 22px rgba(0,0,0,.22)
 }
-.meg2-card-art.active{opacity:1;transform:scale(1);filter:saturate(1.08);box-shadow:0 0 0 2px rgba(27,236,226,.68),0 12px 30px rgba(0,0,0,.29)}
-.meg2-card-art strong{font-size:18px}.meg2-card-art small{margin-top:5px;opacity:.84}
+.meg2-card-art.active{opacity:1;transform:scale(1);box-shadow:0 0 0 2px rgba(27,236,226,.68),0 12px 30px rgba(0,0,0,.29)}
+.meg2-card-art>img{
+  position:absolute;inset:0;z-index:2;width:100%;height:100%;
+  display:block;object-fit:cover;object-position:center;border-radius:inherit
+}
+.meg2-card-art-fallback{
+  position:absolute;inset:0;z-index:1;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:18px;
+  background:linear-gradient(145deg,#07565a,#032f34 62%,#01262b);
+  color:#f6ffff
+}
+.meg2-card-art:not(.asset-failed)>img + .meg2-card-art-fallback{visibility:hidden}
+.meg2-card-art.asset-failed .meg2-card-art-fallback{visibility:visible}
+.meg2-card-art-fallback strong{font-size:18px}.meg2-card-art-fallback small{margin-top:5px;opacity:.84}
 .meg2-dots{height:20px;display:flex;justify-content:center;align-items:center;gap:5px}
 .meg2-dots span{width:7px;height:7px;border-radius:50%;background:rgba(197,229,228,.45);transition:width .2s ease}
 .meg2-dots span.active{width:24px;border-radius:6px;background:var(--meg2-cyan)}
@@ -247,7 +261,7 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-dock{
   min-height:74px;padding:6px 5px max(6px,env(safe-area-inset-bottom));
   border-top:1px solid rgba(61,220,212,.17);background:rgba(0,38,41,.97);
-  backdrop-filter:blur(18px);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));z-index:6
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));z-index:6
 }
 .meg2-dock>button{min-width:0;border:0;background:transparent;display:grid;justify-items:center;align-content:center;gap:3px;color:#d4e3e3;position:relative}
 .meg2-dock>button>span:last-child,.meg2-new small{font-size:8px}
@@ -258,7 +272,7 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-badge-wrap{position:relative;display:grid;place-items:center}
 .meg2-badge-wrap b{position:absolute;top:-8px;right:-12px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;display:grid;place-items:center;background:#ff3e55;color:#fff;font-size:8px}
 
-.meg2-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,13,15,.67);display:flex;align-items:flex-end;justify-content:center;padding:12px;backdrop-filter:blur(7px)}
+.meg2-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,13,15,.67);display:flex;align-items:flex-end;justify-content:center;padding:12px;}
 .meg2-menu-sheet{width:min(100%,540px);max-height:min(84dvh,760px);overflow:auto;border:1px solid var(--meg2-line-strong);border-radius:22px;background:linear-gradient(180deg,#053f41,#012a2e);box-shadow:0 -20px 60px rgba(0,0,0,.38);padding:14px;position:relative}
 .meg2-menu-sheet>header{display:flex;justify-content:space-between;align-items:center}
 .meg2-menu-sheet h2{margin:1px 0 0;font-size:25px}
@@ -540,7 +554,6 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-menu-aura{
   position:absolute;inset:-50% -20% auto 44%;height:270px;pointer-events:none;
   background:radial-gradient(circle,rgba(23,246,235,.17),transparent 64%);
-  filter:blur(12px);
 }
 .meg2-menu-sheet>header{position:relative;z-index:1}
 .meg2-menu-brand{display:flex;align-items:center;gap:10px}
@@ -562,12 +575,11 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 }
 .meg2-menu-grid button::after{
   content:"";position:absolute;right:-35px;top:-35px;width:85px;height:85px;border-radius:50%;
-  background:rgba(26,236,226,.055);filter:blur(9px)
-}
+  background:rgba(26,236,226,.055);}
 .meg2-menu-grid button:hover,.meg2-menu-grid button:active{
   border-color:#27eee4;box-shadow:0 0 20px rgba(24,229,219,.16),inset 0 0 18px rgba(21,218,209,.07)
 }
-.meg2-menu-grid button>svg{filter:drop-shadow(0 0 8px rgba(25,237,228,.32))}
+.meg2-menu-grid button>svg{}
 .meg2-menu-sheet footer{position:relative;z-index:1}
 .meg2-menu-sheet footer button{border-color:rgba(38,233,225,.27)}
 .meg2-menu-sheet footer .danger{box-shadow:0 0 18px rgba(255,78,105,.08)}
@@ -635,7 +647,7 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   padding:8px 10px;
   align-items:stretch;
   background:linear-gradient(180deg,rgba(0,25,28,.44),rgba(0,18,20,.58));
-  backdrop-filter:blur(10px);
+  
 }
 .meg2-overlay:not(.meg2-period-overlay) .meg2-menu-sheet{
   width:min(100%,540px);
@@ -689,7 +701,6 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
     0 0 16px rgba(23,225,216,.06);
 }
 .meg2-overlay:not(.meg2-period-overlay) .meg2-menu-grid button>svg{
-  filter:drop-shadow(0 0 8px rgba(30,242,232,.35));
 }
 .meg2-overlay:not(.meg2-period-overlay) .meg2-menu-sheet footer{
   margin-top:9px;
@@ -989,8 +1000,7 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 }
 .meg2-pending-filter-overlay{
   position:fixed;inset:0;z-index:2147482300;width:100vw;height:100dvh;overflow:hidden;
-  display:grid;place-items:end center;background:rgba(0,18,20,.76);backdrop-filter:blur(9px)
-}
+  display:grid;place-items:end center;background:rgba(0,18,20,.76);}
 .meg2-pending-filter-sheet{
   width:min(100%,560px);padding:14px 14px calc(14px + env(safe-area-inset-bottom));
   border:1px solid rgba(45,235,222,.45);border-bottom:0;border-radius:22px 22px 0 0;
@@ -1014,8 +1024,7 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 /* Pendentes: toque abre detalhes; edição é uma ação explícita do modal. */
 .meg2-pending-detail-overlay{
   position:fixed;inset:0;z-index:2147482310;width:100vw;height:100dvh;overflow:hidden;
-  display:grid;place-items:end center;background:rgba(0,18,20,.76);backdrop-filter:blur(9px)
-}
+  display:grid;place-items:end center;background:rgba(0,18,20,.76);}
 .meg2-pending-detail{
   width:min(100%,560px);padding:15px 14px calc(14px + env(safe-area-inset-bottom));
   border:1px solid rgba(45,235,222,.45);border-bottom:0;border-radius:22px 22px 0 0;
