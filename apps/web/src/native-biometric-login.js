@@ -146,10 +146,22 @@ function beginAuthenticatedLoadingTransition() {
         <div class="meg-loading-progress-copy"><span>Carregando sua experiência...</span><strong>22%</strong></div>
       </div>
       <div class="meg-loading-features" aria-label="Benefícios do MEG Finanças">
-        <div class="meg-loading-feature"><span>⚡</span><p><b>MAIS</b><strong>CONTROLE</strong></p></div>
-        <div class="meg-loading-feature"><span>▥</span><p><b>MAIS</b><strong>ORGANIZAÇÃO</strong></p></div>
-        <div class="meg-loading-feature"><span>◇</span><p><b>MAIS</b><strong>TRANQUILIDADE</strong></p></div>
-        <div class="meg-loading-feature"><span>☆</span><p><b>MAIS</b><strong>RESULTADOS</strong></p></div>
+        <div class="meg-loading-feature">
+          <span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m13 2-7 11h5l-1 9 8-12h-5z"/></svg></span>
+          <p><b>MAIS</b><strong>CONTROLE</strong></p>
+        </div>
+        <div class="meg-loading-feature">
+          <span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V11M10 20V7M16 20v-5M22 20V4"/></svg></span>
+          <p><b>MAIS</b><strong>ORGANIZAÇÃO</strong></p>
+        </div>
+        <div class="meg-loading-feature">
+          <span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 5 6v5c0 4.6 2.7 8.1 7 10 4.3-1.9 7-5.4 7-10V6z"/><path d="m9.2 12 1.8 1.8 3.8-4"/></svg></span>
+          <p><b>MAIS</b><strong>TRANQUILIDADE</strong></p>
+        </div>
+        <div class="meg-loading-feature">
+          <span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M9 15h6M12 13v6M8 21h8M5 5H3v2a4 4 0 0 0 4 4M19 5h2v2a4 4 0 0 1-4 4"/></svg></span>
+          <p><b>MAIS</b><strong>RESULTADOS</strong></p>
+        </div>
       </div>
     </section>`;
   document.body.appendChild(overlay);
