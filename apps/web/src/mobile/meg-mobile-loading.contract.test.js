@@ -131,7 +131,7 @@ assert.match(
 
 assert.match(
   css,
-  /@media\(max-height:680px\)[\s\S]*@media\(max-height:560px\)/,
+  /@media\(max-height:700px\)[\s\S]*@media\(max-height:580px\)/,
   'O loading deve adaptar proporções pela altura apenas em viewports realmente curtos, preservando a presença visual nos aparelhos normais.',
 );
 
