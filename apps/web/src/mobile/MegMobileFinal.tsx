@@ -85,7 +85,7 @@ function asset(path: string) {
 
 function cardArt(name: string) {
   const normalized = String(name || '').toLowerCase();
-  if (normalized.includes('mercado') || normalized.includes('meli')) return asset('assets/cards/mercado-pago-visual.svg');
+  if (normalized.includes('mercado') || normalized.includes('meli')) return asset('assets/cards/approved-v6/mercado.webp');
   if (normalized.includes('latam')) return asset('assets/cards/latam-pass-platinum.webp');
   if (normalized.includes('azul')) return asset('assets/cards/approved-v6/azul.webp');
   if (normalized.includes('riachuelo') || normalized.includes('midway')) return asset('assets/cards/riachuelo-mastercard-visual.svg');
