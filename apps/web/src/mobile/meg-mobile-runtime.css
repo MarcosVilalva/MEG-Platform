@@ -1,0 +1,96 @@
+html.meg-cleanroom-mobile,
+body.meg-cleanroom-mobile,
+body.meg-cleanroom-mobile #root{
+  width:100%;
+  height:100%;
+  min-height:100%;
+  max-height:100%;
+  margin:0;
+  padding:0;
+  overflow:hidden;
+  overscroll-behavior:none;
+  background:#002f32;
+}
+
+body.meg-cleanroom-mobile{
+  position:fixed;
+  inset:0;
+  color:#f4fbfb;
+  font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;
+}
+
+body.meg-cleanroom-mobile #root{
+  position:relative;
+  isolation:isolate;
+}
+
+body.meg-cleanroom-mobile *,
+body.meg-cleanroom-mobile *::before,
+body.meg-cleanroom-mobile *::after{
+  box-sizing:border-box;
+}
+
+body.meg-cleanroom-mobile button,
+body.meg-cleanroom-mobile input,
+body.meg-cleanroom-mobile select,
+body.meg-cleanroom-mobile textarea{
+  font:inherit;
+}
+
+body.meg-cleanroom-mobile button{
+  -webkit-tap-highlight-color:transparent;
+}
+
+body.meg-cleanroom-mobile .meg2-app{
+  width:100%;
+  height:100dvh;
+  min-height:100dvh;
+  max-height:100dvh;
+  overflow:hidden;
+  background:#002f32;
+}
+
+body.meg-cleanroom-mobile .meg2-shell{
+  width:min(100%,560px);
+  height:100dvh;
+  min-height:100dvh;
+  max-height:100dvh;
+  margin:0 auto;
+  overflow:hidden;
+}
+
+/* Runtime Android: evitar efeitos de composição que geram artefatos no WebView. */
+body.meg-cleanroom-mobile .meg2-header,
+body.meg-cleanroom-mobile .meg2-dock,
+body.meg-cleanroom-mobile .meg2-overlay,
+body.meg-cleanroom-mobile [class*="meg3-"][class*="overlay"],
+body.meg-cleanroom-mobile [class*="meg4-"][class*="overlay"]{
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+
+body.meg-cleanroom-mobile .meg2-card-art,
+body.meg-cleanroom-mobile .meg2-menu-aura,
+body.meg-cleanroom-mobile .meg2-menu-grid button,
+body.meg-cleanroom-mobile .meg2-menu-grid button::after,
+body.meg-cleanroom-mobile .meg2-menu-grid button>svg{
+  filter:none!important;
+}
+
+/* A página nunca rola; apenas as regiões explicitamente roláveis. */
+body.meg-cleanroom-mobile [data-meg-fixed-screen="true"]{
+  min-height:0;
+  max-height:100%;
+  overflow:hidden;
+}
+
+body.meg-cleanroom-mobile [data-meg-scroll-region="true"]{
+  min-height:0;
+  overflow:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+
+@media(max-width:340px){
+  body.meg-cleanroom-mobile .meg2-shell{width:100%}
+}
