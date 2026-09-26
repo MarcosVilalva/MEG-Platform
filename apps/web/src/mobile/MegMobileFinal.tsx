@@ -4,6 +4,7 @@ import type { PhoenixReadModel } from '../phoenix/contracts';
 import { hydratePhoenixAvatarPreference, phoenixAvatarImage, readPhoenixAvatarPreference } from '../phoenix/profile-avatar';
 import { MegMobileAnalytics, MegMobileCashflow, MegMobileHistory, MegMobileMovements } from './MegMobileCoreScreens';
 import { MegMobileLaunchSheet } from './MegMobileLaunchSheet';
+import { MegMobileCardCenter } from './MegMobileCardCenter';
 import './meg-mobile-final.css';
 import './meg-mobile-core-screens.css';
 
@@ -434,6 +435,7 @@ function InfiniteCarousel({ data, activeId, onActiveId }: { data: PhoenixReadMod
 function Cards({ data }: { data: PhoenixReadModel }) {
   const cards = useMemo(() => data.cards.filter((card) => card.isActive !== false), [data.cards]);
   const [activeId, setActiveId] = useState(cards[0]?.id || '');
+  const [centerOpen, setCenterOpen] = useState(false);
   useEffect(() => { if (!cards.some((card) => card.id === activeId)) setActiveId(cards[0]?.id || ''); }, [cards, activeId]);
 
   const card = cards.find((item) => item.id === activeId) || cards[0];
@@ -459,7 +461,8 @@ function Cards({ data }: { data: PhoenixReadModel }) {
         {!rows.length ? <div className="meg2-empty">Nenhum lançamento nesta fatura.</div> : null}
       </div>
     </section>
-    <button className="meg2-primary"><Icon name="wallet"/><strong>Abrir central do cartão</strong><span>›</span></button>
+    <button className="meg2-primary" type="button" onClick={() => card && setCenterOpen(true)}><Icon name="wallet"/><strong>Abrir central do cartão</strong><span>›</span></button>
+    {centerOpen && card ? <MegMobileCardCenter card={card} cardLabel={cardName(card.name)} rows={rows} onClose={() => setCenterOpen(false)}/> : null}
   </main>;
 }
 
