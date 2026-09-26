@@ -25,6 +25,8 @@ if (MEG_MOBILE_RUNTIME && typeof document !== 'undefined') {
   document.body.classList.add('meg-cleanroom-mobile');
   document.documentElement.dataset.megRuntime = 'android-cleanroom';
   document.body.dataset.megRuntime = 'android-cleanroom';
+} else if (!MEG_MOBILE_RUNTIME) {
+  void import('./PhoenixWebStyles');
 }
 
 type PreviewState = 'checking' | 'authenticating' | 'signed-out' | 'preparing' | 'prepare-error' | 'signed-in';
