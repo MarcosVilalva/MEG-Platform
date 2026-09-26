@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { authenticatedRequest } from '../app/auth-client';
+import { cardsClient } from '../app/cards-client';
+import { financeClient } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import {
   imageFileToAvatarDataUrl,
@@ -12,7 +14,7 @@ import {
 } from '../phoenix/profile-avatar';
 import './meg-mobile-settings.css';
 
-type Section = 'profile' | 'home' | 'security' | 'notifications' | 'system';
+type Section = 'profile' | 'home' | 'catalogs' | 'security' | 'notifications' | 'system';
 type BiometricStatus = { available?: boolean; enabled?: boolean; reason?: string };
 type NotificationStatus = Record<string, unknown>;
 type DashboardPrefs = {
@@ -66,9 +68,15 @@ export function MegMobileSettings({data,onLogout}:{data:PhoenixReadModel;onLogou
   const [notifications,setNotifications]=useState<NotificationStatus|null>(null);
   const [notificationBusy,setNotificationBusy]=useState(false);
   const [notificationMessage,setNotificationMessage]=useState('');
+  const [catalogMessage,setCatalogMessage]=useState('');
+  const [catalogBusy,setCatalogBusy]=useState('');
+  const [paymentMethods,setPaymentMethods]=useState(data.paymentMethods);
+  const [cards,setCards]=useState(data.cards);
   const [version,setVersion]=useState('Consultando…');
   const fileRef=useRef<HTMLInputElement>(null);
 
+  useEffect(()=>{ setPaymentMethods(data.paymentMethods); },[data.paymentMethods]);
+  useEffect(()=>{ setCards(data.cards); },[data.cards]);
   useEffect(()=>{ applyPrefs(prefs); },[prefs]);
 
   useEffect(()=>{
@@ -169,12 +177,51 @@ export function MegMobileSettings({data,onLogout}:{data:PhoenixReadModel;onLogou
     }finally{setNotificationBusy(false);}
   }
 
+  function operationId(prefix:string){
+    const uuid=globalThis.crypto?.randomUUID?.();
+    return `${prefix}-${uuid||Date.now().toString(36)}`;
+  }
+
+  async function togglePaymentMethod(id:string){
+    if(catalogBusy)return;
+    const method=paymentMethods.find((item)=>item.id===id);
+    if(!method)return;
+    setCatalogBusy(`payment:${id}`);setCatalogMessage('');
+    try{
+      const updated=method.isActive
+        ? await financeClient.deactivatePaymentMethod(id,{operationId:operationId('mobile-payment-off'),expectedUpdatedAt:method.updatedAt})
+        : await financeClient.updatePaymentMethod(id,{isActive:true,operationId:operationId('mobile-payment-on'),expectedUpdatedAt:method.updatedAt});
+      setPaymentMethods((items)=>items.map((item)=>item.id===id?{...item,...updated}:item));
+      setCatalogMessage(`${method.name}: ${updated.isActive?'ativado':'desativado'}.`);
+      window.dispatchEvent(new CustomEvent('meg:data-invalidated',{detail:{source:'mobile-settings',domain:'payment-methods'}}));
+    }catch(error){
+      setCatalogMessage(error instanceof Error?error.message:'Não foi possível alterar a forma de pagamento.');
+    }finally{setCatalogBusy('');}
+  }
+
+  async function toggleCard(id:string){
+    if(catalogBusy)return;
+    const card=cards.find((item)=>item.id===id);
+    if(!card)return;
+    setCatalogBusy(`card:${id}`);setCatalogMessage('');
+    try{
+      const updated=card.isActive
+        ? await cardsClient.deactivate(id,{operationId:operationId('mobile-card-off'),expectedUpdatedAt:card.updatedAt})
+        : (await cardsClient.reactivate(id,{operationId:operationId('mobile-card-on'),expectedUpdatedAt:card.updatedAt})).card;
+      setCards((items)=>items.map((item)=>item.id===id?{...item,...updated}:item));
+      setCatalogMessage(`${card.name}: ${updated.isActive?'ativado':'desativado'}.`);
+      window.dispatchEvent(new CustomEvent('meg:data-invalidated',{detail:{source:'mobile-settings',domain:'cards'}}));
+    }catch(error){
+      setCatalogMessage(error instanceof Error?error.message:'Não foi possível alterar o cartão.');
+    }finally{setCatalogBusy('');}
+  }
+
   return <main className="meg4-settings" data-meg-fixed-screen="true">
     <header className="meg4-settings-title"><span>CONFIGURAÇÕES</span><h1>Seu MEG</h1><p>Perfil, experiência, segurança e integrações.</p></header>
 
     <nav className="meg4-settings-nav" aria-label="Seções">
       {([
-        ['profile','Perfil'],['home','Home'],['security','Segurança'],['notifications','Avisos'],['system','Sistema']
+        ['profile','Perfil'],['home','Home'],['catalogs','Meios'],['security','Segurança'],['notifications','Avisos'],['system','Sistema']
       ] as Array<[Section,string]>).map(([id,label])=><button key={id} className={section===id?'active':''} onClick={()=>setSection(id)}>{label}</button>)}
     </nav>
 
@@ -210,6 +257,28 @@ export function MegMobileSettings({data,onLogout}:{data:PhoenixReadModel;onLogou
           <Switch checked={prefs.agenda} label="Agenda financeira" description="Vencimentos e compromissos." onChange={()=>setPrefs((p)=>({...p,agenda:!p.agenda}))}/>
         </div>
       </article>:null}
+
+      {section==='catalogs'?<>
+        <article className="meg4-settings-card">
+          <header><div><small>MEIOS DE PAGAMENTO</small><h2>Formas de pagamento</h2><p>Ative ou desative o que aparece nos lançamentos.</p></div><b className="meg4-count">{paymentMethods.filter((item)=>item.isActive).length} ativas</b></header>
+          <div className="meg4-manage-list">
+            {paymentMethods.map((method)=><button key={method.id} type="button" disabled={Boolean(catalogBusy)} onClick={()=>void togglePaymentMethod(method.id)}>
+              <span><strong>{method.name}</strong><small>{method.type||'Forma de pagamento'}</small></span>
+              <i className={method.isActive?'on':''}><b/></i>
+            </button>)}
+          </div>
+        </article>
+        <article className="meg4-settings-card">
+          <header><div><small>CARTÕES</small><h2>Cartões disponíveis</h2><p>Controle quais cartões aparecem no carrossel e nos lançamentos.</p></div><b className="meg4-count">{cards.filter((item)=>item.isActive).length} ativos</b></header>
+          <div className="meg4-manage-list">
+            {cards.map((card)=><button key={card.id} type="button" disabled={Boolean(catalogBusy)} onClick={()=>void toggleCard(card.id)}>
+              <span><strong>{card.name}</strong><small>{card.lastFour?`Final ${card.lastFour}`:'Cartão cadastrado'} · {card.isActive?'Ativo':'Inativo'}</small></span>
+              <i className={card.isActive?'on':''}><b/></i>
+            </button>)}
+          </div>
+          {catalogMessage?<p className="meg4-message">{catalogMessage}</p>:null}
+        </article>
+      </>:null}
 
       {section==='security'?<article className="meg4-settings-card">
         <header><div><small>SEGURANÇA</small><h2>Biometria</h2><p>Proteção do acesso no aparelho Android.</p></div><button disabled={biometricBusy} onClick={()=>void refreshBiometric()}>Atualizar</button></header>
