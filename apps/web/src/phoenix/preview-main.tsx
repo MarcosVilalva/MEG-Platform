@@ -10,6 +10,7 @@ import {
   register
 } from '../app/auth-client';
 import { PhoenixApp } from './PhoenixApp';
+import { MegMobileLoading } from '../mobile/MegMobileLoading';
 import { loadPhoenixReadModel } from './data/load-phoenix-read-model';
 import './preview.css';
 import './phoenix-preview-parity.css';
@@ -167,45 +168,9 @@ function passwordScore(value: string) {
 }
 
 function PhoenixBootScreen({ stage }: { stage: BootStage }) {
-  useEffect(() => {
-    const root = document.documentElement;
-    const syncViewportHeight = () => {
-      const measured = Math.max(320, Math.round(window.visualViewport?.height || window.innerHeight));
-      root.style.setProperty('--meg-viewport-height', `${measured}px`);
-    };
-    syncViewportHeight();
-    window.addEventListener('resize', syncViewportHeight);
-    window.visualViewport?.addEventListener('resize', syncViewportHeight);
-    return () => {
-      window.removeEventListener('resize', syncViewportHeight);
-      window.visualViewport?.removeEventListener('resize', syncViewportHeight);
-      root.style.removeProperty('--meg-viewport-height');
-    };
-  }, []);
-
   const activeIndex = Math.max(0, bootStages.findIndex((item) => item.id === stage));
   const active = bootStages[activeIndex];
-  const visualStyle = { '--boot-progress': `${active.progress}%` } as React.CSSProperties;
-
-  return <main className="px-preview-fullscreen-boot" data-boot-fidelity="approved-v5" aria-live="polite" aria-busy={stage !== 'ready'}>
-    <section className="px-preview-boot-v5" aria-label={`Carregando seu ambiente. ${active.progress}% concluído. ${active.label}.`}>
-      <div className="px-preview-boot-v5-visual" style={visualStyle}>
-        <span className="px-preview-boot-v5-ring" aria-hidden="true" />
-        <span className="px-preview-boot-v5-ring-soft" aria-hidden="true" />
-        <img src={previewBrandAsset('brand/meg-finance-system-mark.svg')} alt="MEG" />
-      </div>
-
-      <div className="px-preview-boot-v5-progress" aria-label={`${active.progress}% preparado`}>
-        <div className="px-preview-boot-v5-track"><span style={{ width: `${active.progress}%` }} /></div>
-        <strong>{active.progress}%</strong>
-      </div>
-
-      <div className="px-preview-boot-v5-copy">
-        <strong>Carregando seu ambiente</strong>
-        <span className="px-preview-boot-v5-stage">{active.label}</span>
-      </div>
-    </section>
-  </main>;
+  return <MegMobileLoading progress={active.progress} stageLabel={active.label} />;
 }
 
 function PhoenixBootErrorScreen({ message, busy, onRetry, onLogout }: { message: string; busy: boolean; onRetry: () => void; onLogout: () => void }) {
