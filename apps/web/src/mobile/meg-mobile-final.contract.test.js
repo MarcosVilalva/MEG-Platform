@@ -7,7 +7,11 @@ const premiumCss = readFileSync(new URL('./meg-mobile-premium.css', import.meta.
 const phoenix = readFileSync(new URL('../phoenix/PhoenixApp.tsx', import.meta.url), 'utf8');
 const previewMain = readFileSync(new URL('../phoenix/preview-main.tsx', import.meta.url), 'utf8');
 const movements = readFileSync(new URL('../phoenix/screens/PhoenixMovementsV15.tsx', import.meta.url), 'utf8');
-const source = mobile + '\n' + css;
+const coreScreens = readFileSync(new URL('./MegMobileCoreScreens.tsx', import.meta.url), 'utf8');
+const launchSheet = readFileSync(new URL('./MegMobileLaunchSheet.tsx', import.meta.url), 'utf8');
+const coreCss = readFileSync(new URL('./meg-mobile-core-screens.css', import.meta.url), 'utf8');
+const launchCss = readFileSync(new URL('./meg-mobile-launch-sheet.css', import.meta.url), 'utf8');
+const source = mobile + '\n' + css + '\n' + coreScreens + '\n' + launchSheet + '\n' + coreCss + '\n' + launchCss;
 
 assert.doesNotMatch(source, /\bpx-[a-z0-9-]+/i,
   'Reconstrução mobile final não pode reutilizar classes visuais .px-* do Phoenix legado.');
@@ -15,8 +19,8 @@ assert.doesNotMatch(mobile, /Phoenix(?:Sidebar|NavIcon|Reference|OperationalMobi
   'Reconstrução mobile final não pode importar componentes visuais Phoenix anteriores.');
 assert.doesNotMatch(phoenix, /PhoenixMobileReferenceScreens/,
   'Shell não pode reintroduzir a implementação intermediária das três telas.');
-assert.match(phoenix, /if \(nativeOperational && viewData && \(view === 'home' \|\| view === 'cards' \|\| view === 'payables'\)\)[\s\S]*<MegMobileFinal[\s\S]*return <div className="phoenix-v15"/,
-  'Home, Cartões e Pendentes do APK devem retornar a árvore mobile nova antes do shell Phoenix antigo.');
+assert.match(phoenix, /if \(nativeOperational && viewData && \['home','movements','cards','payables','history','cashflow','analytics'\]\.includes\(view\)\)[\s\S]*<MegMobileFinal[\s\S]*return <div className="phoenix-v15"/,
+  'Telas operacionais do APK devem retornar a árvore mobile clean-room antes do shell Phoenix antigo.');
 assert.match(mobile, /cards\.concat\(cards, cards\)/,
   'Carrossel de cartões deve possuir cópias circulares para rolagem infinita real.');
 assert.match(mobile, /index < cards\.length[\s\S]*scrollLeft \+=[\s\S]*index >= cards\.length \* 2[\s\S]*scrollLeft \+=/,
@@ -151,5 +155,26 @@ assert.match(
   /data-meg-scroll-region="true"/,
   'Listas móveis roláveis devem ser identificadas como regiões internas de scroll.',
 );
+assert.match(
+  coreScreens,
+  /MegMobileMovements[\s\S]*MegMobileHistory[\s\S]*MegMobileCashflow[\s\S]*MegMobileAnalytics/,
+  'Lançamentos, Histórico, Fluxo e Relatórios devem possuir implementações mobile clean-room próprias.',
+);
+assert.match(
+  launchSheet,
+  /MegMobileLaunchSheet[\s\S]*runPhoenixSimpleEventWrite[\s\S]*runPhoenixSimpleEventEdit[\s\S]*runPhoenixSimpleEventArchive/,
+  'Novo, edição e exclusão devem usar formulário mobile próprio e apenas os writers de domínio.',
+);
+assert.doesNotMatch(
+  launchSheet + '\n' + coreScreens,
+  /className=["'`]px-/,
+  'Telas e formulário clean-room não podem reutilizar classes visuais Phoenix.',
+);
+assert.match(
+  launchCss,
+  /\.meg3-form-sheet\{[\s\S]*grid-template-rows:auto minmax\(0,1fr\) auto[\s\S]*overflow:hidden/,
+  'Formulário mobile deve manter cabeçalho e ações fixos, com rolagem apenas no corpo.',
+);
+
 
 console.log('Contrato da reconstrução mobile final validado.');
