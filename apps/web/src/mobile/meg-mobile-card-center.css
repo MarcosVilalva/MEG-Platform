@@ -22,7 +22,7 @@
 .meg3-cardcenter-kpis article{min-width:0;min-height:67px;padding:9px;border:1px solid rgba(61,198,191,.16);border-radius:14px;background:rgba(4,61,63,.70)}
 .meg3-cardcenter-kpis small{display:block;color:#91aaa7;font-size:8px}
 .meg3-cardcenter-kpis strong{display:block;margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:clamp(11px,3.2vw,15px);color:#5be7dd}
-.meg3-cardcenter-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:10px 14px}
+.meg3-cardcenter-tools{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;padding:10px 14px}
 .meg3-cardcenter-tools label{min-width:0;min-height:44px;display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;padding:0 9px;border:1px solid rgba(59,196,190,.17);border-radius:13px;background:#043638}
 .meg3-cardcenter-tools input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#fff;font:inherit;font-size:11px}
 .meg3-cardcenter-tools input::placeholder{color:#799491}
@@ -51,4 +51,9 @@
   .meg3-cardcenter-kpis{gap:5px;padding-inline:9px}
   .meg3-cardcenter-kpis article{padding:7px}
   .meg3-cardcenter-tools,.meg3-cardcenter-list{padding-inline:9px}
+}
+
+@media(max-width:360px){
+  .meg3-cardcenter-tools{grid-template-columns:minmax(0,1fr) auto auto;gap:4px}
+  .meg3-cardcenter-tools button{padding:0 8px;font-size:8px}
 }
