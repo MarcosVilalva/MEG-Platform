@@ -116,25 +116,21 @@ function beginAuthenticatedLoadingTransition() {
 
   overlay = document.createElement('main');
   overlay.id = 'nativeBiometricLoadingOverlay';
-  overlay.className = 'px-preview-fullscreen-boot px-preview-native-biometric-boot';
-  overlay.dataset.bootFidelity = 'approved-v5';
+  overlay.className = 'meg-loading-screen';
+  overlay.dataset.megLoading = 'validated-cleanroom';
   overlay.setAttribute('aria-live', 'polite');
   overlay.setAttribute('aria-busy', 'true');
+  overlay.setAttribute('aria-label', 'Carregando seus dados.');
   overlay.innerHTML = `
-    <section class="px-preview-boot-v5" aria-label="Biometria reconhecida. Carregando seu ambiente. 22% concluído.">
-      <div class="px-preview-boot-v5-visual" style="--boot-progress:22%">
-        <span class="px-preview-boot-v5-ring" aria-hidden="true"></span>
-        <span class="px-preview-boot-v5-ring-soft" aria-hidden="true"></span>
-        <img src="${asset('brand/meg-finance-system-mark.svg')}" alt="MEG">
+    <section class="meg-loading-layout">
+      <div class="meg-loading-center">
+        <img class="meg-loading-brand" src="${asset('brand/meg-loading-lockup.svg')}" alt="MEG Finanças">
+        <div class="meg-loading-progress" aria-hidden="true">
+          <div class="meg-loading-track"><span style="width:22%"></span></div>
+        </div>
+        <p class="meg-loading-status">Carregando seus dados...</p>
       </div>
-      <div class="px-preview-boot-v5-progress" aria-label="22% preparado">
-        <div class="px-preview-boot-v5-track"><span style="width:22%"></span></div>
-        <strong>22%</strong>
-      </div>
-      <div class="px-preview-boot-v5-copy">
-        <strong>Carregando seu ambiente</strong>
-        <span class="px-preview-boot-v5-stage">Validando sua sessão</span>
-      </div>
+      <p class="meg-loading-footer">Organizando suas finanças<br>para o seu dia a dia.</p>
     </section>`;
   document.body.appendChild(overlay);
 }
