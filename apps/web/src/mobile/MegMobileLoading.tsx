@@ -62,7 +62,7 @@ export function MegMobileLoading({
     <main
       className="meg-loading-screen"
       data-meg-loading="validated-cleanroom"
-      data-meg-loading-reference="board-04"
+      data-meg-loading-reference="approved-neon-final"
       aria-live="polite"
       aria-busy={normalized < 100}
       aria-label={`${stageLabel}. ${progressLabel}% concluído.`}
