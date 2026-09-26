@@ -1207,7 +1207,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     )
     : null;
 
-  if (nativeOperational && viewData && (view === 'home' || view === 'cards' || view === 'payables')) {
+  if (nativeOperational && viewData && ['home','movements','cards','payables','history','cashflow','analytics'].includes(view)) {
     return <>
       <MegMobileFinal
         data={viewData}
