@@ -927,10 +927,10 @@ assert.doesNotMatch(previewMain, /approved-v5|px-preview-boot-v5|Carregando seu 
   'Boot principal não pode reintroduzir a estrutura visual V5 antiga.');
 assert.match(mobileLoading, /data-meg-loading="validated-cleanroom"/,
   'Novo loading deve declarar explicitamente o contrato visual clean-room.');
-assert.match(mobileLoading, /meg-loading-lockup\.svg[\s\S]*Carregando seus dados\.\.\.[\s\S]*Organizando suas finanças/,
-  'Loading deve seguir os textos e marca da prévia final aprovada.');
-assert.doesNotMatch(mobileLoading, /px-preview-boot-v5-ring|Carregando seu ambiente|>22%<|<strong>22%/i,
-  'Loading final não pode reaproveitar anéis, percentual ou texto do V5.');
+assert.match(mobileLoading, /meg-loading-lockup\.svg[\s\S]*SUAS FINANÇAS[\s\S]*EM UM SÓ LUGAR[\s\S]*Carregando sua experiência[\s\S]*CONTROLE[\s\S]*ORGANIZAÇÃO[\s\S]*TRANQUILIDADE[\s\S]*RESULTADOS/,
+  'Loading deve seguir a composição e os textos da quarta prancha aprovada.');
+assert.doesNotMatch(mobileLoading, /px-preview-boot-v5-ring|Carregando seu ambiente|Organizando suas finanças para o seu dia a dia/i,
+  'Loading final não pode reaproveitar anéis, texto do V5 ou a composição intermediária.');
 assert.match(mobileLoadingCss, /\.meg-loading-screen\{[\s\S]*position:fixed[\s\S]*height:100dvh[\s\S]*overflow:hidden/,
   'Loading deve ocupar o viewport inteiro sem rolagem.');
 assert.match(mobileLoadingCss, /safe-area-inset-top[\s\S]*safe-area-inset-bottom/,
@@ -941,7 +941,7 @@ assert.match(nativeBiometric, /nativeBiometricLoadingOverlay/,
   'Biometria reconhecida deve criar a cobertura de carregamento antes do React montar.');
 assert.match(nativeBiometric, /dataset\.megLoading = 'validated-cleanroom'/,
   'Transição biométrica deve usar o mesmo contrato clean-room do loading aprovado.');
-assert.match(nativeBiometric, /meg-loading-lockup\.svg[\s\S]*Carregando seus dados\.\.\.[\s\S]*Organizando suas finanças/,
+assert.match(nativeBiometric, /meg-loading-lockup\.svg[\s\S]*SUAS FINANÇAS[\s\S]*EM UM SÓ LUGAR[\s\S]*Carregando sua experiência[\s\S]*CONTROLE[\s\S]*ORGANIZAÇÃO[\s\S]*TRANQUILIDADE[\s\S]*RESULTADOS/,
   'Transição biométrica deve exibir a mesma composição validada do boot React.');
 assert.doesNotMatch(nativeBiometric, /approved-v5|px-preview-boot-v5|Carregando seu ambiente/,
   'Biometria não pode reintroduzir o loading V5 antigo.');
