@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import type { AuthUser } from '../../app/auth-client';
 import type { PhoenixReadModel } from '../contracts';
 import { PhoenixProfileAvatar, readPhoenixAvatarPreference } from '../profile-avatar';
-import '../phoenix-users.css';
 
 const lastLogin = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
