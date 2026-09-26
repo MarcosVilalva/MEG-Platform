@@ -366,6 +366,78 @@
   font-size:7.5px;
   line-height:1.35;
 }
+
+/* Primeiro formulário aprovado: composição da prancha em medidas reais do Android. */
+.meg3-form-sheet--new-expense{
+  width:min(100%,480px);height:100dvh;max-height:100dvh;
+  border-radius:0;border-bottom:0;
+  background:radial-gradient(circle at 90% 3%,rgba(0,227,229,.13),transparent 34%),
+    linear-gradient(165deg,#002a2d,#002124 64%,#001b1e);
+}
+.meg3-form-sheet--new-expense .meg3-form-head{
+  min-height:112px;padding:calc(17px + env(safe-area-inset-top)) 22px 14px;
+  align-items:center;border-bottom-color:rgba(37,222,220,.22);
+}
+.meg3-form-sheet--new-expense .meg3-form-head small{font-size:10px;color:#28eeec}
+.meg3-form-sheet--new-expense .meg3-form-head h2{font-size:27px;line-height:1.15}
+.meg3-form-head p{margin:5px 0 0;color:#a8c6c5;font-size:12px;line-height:1.3}
+.meg3-form-sheet--new-expense .meg3-form-head>button{
+  flex:none;border-color:rgba(24,236,231,.52);background:#043b3e;
+}
+.meg3-form-sheet--new-expense .meg3-form-body{padding:16px 20px 18px}
+.meg3-form-sheet--new-expense .meg3-form-segment{
+  gap:6px;padding:0;margin-bottom:18px;border:0;background:transparent;
+}
+.meg3-form-sheet--new-expense .meg3-form-segment button{
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  min-height:44px;padding:0 5px;border:1px solid rgba(35,223,218,.36);
+  border-radius:11px;background:#05383b;color:#f2ffff;font-size:11px;
+}
+.meg3-form-sheet--new-expense .meg3-form-segment button span{font-size:17px;line-height:1}
+.meg3-form-sheet--new-expense .meg3-form-segment button.active.expense{
+  border-color:#ff667f;background:linear-gradient(165deg,#542532,#311b26);
+  color:#ff899c;box-shadow:inset 0 0 12px rgba(255,73,108,.14),0 0 9px rgba(255,73,108,.12);
+}
+.meg3-form-sheet--new-expense .meg3-form-grid-faithful{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 10px;
+}
+.meg3-form-sheet--new-expense .meg3-smart-description{order:1}
+.meg3-form-sheet--new-expense .meg3-amount-field{order:2;grid-column:1;min-height:68px}
+.meg3-form-sheet--new-expense .meg3-amount-field b{font-size:15px;white-space:nowrap}
+.meg3-form-sheet--new-expense .meg3-amount-field input{font-size:20px!important}
+.meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg3-text-field:has(input[type="date"]){order:3;grid-column:2}
+.meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg5-picker-field{order:4;grid-column:1/-1}
+.meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg3-text-field:has(input[type="number"]),
+.meg3-form-sheet--new-expense .meg3-installment-preview-trigger{order:5;grid-column:1/-1}
+.meg3-form-sheet--new-expense .meg3-pending-switch{order:6}
+.meg3-form-sheet--new-expense .meg3-negative-toggle{order:7}
+.meg3-form-sheet--new-expense .meg3-notes-field{order:8}
+.meg3-form-sheet--new-expense .meg3-text-field>span,
+.meg3-form-sheet--new-expense .meg3-amount-field>span{font-size:11px!important;color:#b9d6d4!important}
+.meg3-form-sheet--new-expense .meg3-text-field input,
+.meg3-form-sheet--new-expense .meg3-text-field textarea{
+  min-height:49px;border-color:rgba(39,210,207,.4)!important;border-radius:11px;
+  background:#043639!important;font-size:14px;
+}
+.meg3-form-sheet--new-expense .meg3-form-actions{
+  min-height:72px;padding:9px 20px calc(9px + env(safe-area-inset-bottom));
+  border-top-color:rgba(33,217,214,.24);background:#001e21;
+}
+.meg3-form-sheet--new-expense .meg3-form-actions .primary{
+  border-color:#20f3ee;background:linear-gradient(180deg,#0aa9a5,#05797a);
+  box-shadow:inset 0 0 12px rgba(125,255,248,.18),0 0 13px rgba(0,229,226,.29);
+}
+@media(max-width:350px){
+  .meg3-form-sheet--new-expense .meg3-form-body{padding-inline:12px}
+  .meg3-form-sheet--new-expense .meg3-form-head{padding-inline:14px}
+  .meg3-form-sheet--new-expense .meg3-form-segment button{font-size:10px;gap:3px}
+  .meg3-form-sheet--new-expense .meg3-form-actions{padding-inline:12px}
+}
+@media(max-height:650px){
+  .meg3-form-sheet--new-expense .meg3-form-head{min-height:84px;padding-top:calc(7px + env(safe-area-inset-top))}
+  .meg3-form-sheet--new-expense .meg3-form-body{padding-top:10px}
+  .meg3-form-sheet--new-expense .meg3-form-segment{margin-bottom:10px}
+}
 @media(max-height:760px){
   .meg3-history-suggestions{max-height:145px}
   .meg3-history-suggestions>button{min-height:44px}
