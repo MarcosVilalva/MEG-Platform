@@ -106,63 +106,19 @@ function beginAuthenticatedLoadingTransition() {
   let overlay = document.querySelector('#nativeBiometricLoadingOverlay');
   if (overlay) return;
 
-  const asset = (path) => {
-    try {
-      return new URL(path.replace(/^\/+/, ''), document.baseURI).href;
-    } catch {
-      return path;
-    }
-  };
-
   overlay = document.createElement('main');
   overlay.id = 'nativeBiometricLoadingOverlay';
   overlay.className = 'meg-loading-screen';
   overlay.dataset.megLoading = 'validated-cleanroom';
-  overlay.dataset.megLoadingReference = 'board-04';
+  overlay.dataset.megLoadingReference = 'approved-static-art';
   overlay.setAttribute('aria-live', 'polite');
   overlay.setAttribute('aria-busy', 'true');
-  overlay.setAttribute('aria-label', 'Carregando sua experiência. 22% concluído.');
+  overlay.setAttribute('aria-label', 'Validando sua sessão. 22% concluído.');
   overlay.innerHTML = `
-    <div class="meg-loading-background" aria-hidden="true">
-      <span class="meg-loading-line line-a"></span>
-      <span class="meg-loading-line line-b"></span>
-      <span class="meg-loading-line line-c"></span>
-      <span class="meg-loading-glow glow-a"></span>
-      <span class="meg-loading-glow glow-b"></span>
-    </div>
-    <section class="meg-loading-layout">
-      <div class="meg-loading-brand-stage">
-        <img class="meg-loading-brand" src="${asset('brand/meg-loading-lockup.svg')}" alt="MEG Finanças">
-        <p class="meg-loading-tagline">SUAS FINANÇAS<br>EM UM SÓ LUGAR</p>
-      </div>
-      <div class="meg-loading-floating" aria-hidden="true">
-        <span class="tile tile-chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V11M10 20V7M16 20v-5M22 20V4"/></svg></span>
-        <span class="tile tile-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9h18M7 15h4"/></svg></span>
-        <span class="tile tile-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M9.5 20v-6h5v6"/></svg></span>
-        <span class="tile tile-pie"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.6A9 9 0 0 1 20.4 9H15z"/></svg></span>
-      </div>
-      <div class="meg-loading-progress-block">
-        <div class="meg-loading-track" aria-hidden="true"><span style="width:22%"></span></div>
-        <div class="meg-loading-progress-copy"><span>Carregando sua experiência...</span><strong>22%</strong></div>
-      </div>
-      <div class="meg-loading-features" aria-label="Benefícios do MEG Finanças">
-        <div class="meg-loading-feature">
-          <span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m13 2-7 11h5l-1 9 8-12h-5z"/></svg></span>
-          <p><b>MAIS</b><strong>CONTROLE</strong></p>
-        </div>
-        <div class="meg-loading-feature">
-          <span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V11M10 20V7M16 20v-5M22 20V4"/></svg></span>
-          <p><b>MAIS</b><strong>ORGANIZAÇÃO</strong></p>
-        </div>
-        <div class="meg-loading-feature">
-          <span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 5 6v5c0 4.6 2.7 8.1 7 10 4.3-1.9 7-5.4 7-10V6z"/><path d="m9.2 12 1.8 1.8 3.8-4"/></svg></span>
-          <p><b>MAIS</b><strong>TRANQUILIDADE</strong></p>
-        </div>
-        <div class="meg-loading-feature">
-          <span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M9 15h6M12 13v6M8 21h8M5 5H3v2a4 4 0 0 0 4 4M19 5h2v2a4 4 0 0 1-4 4"/></svg></span>
-          <p><b>MAIS</b><strong>RESULTADOS</strong></p>
-        </div>
-      </div>
+    <div class="meg-loading-static-art" aria-hidden="true"></div>
+    <section class="meg-loading-progress-shell" aria-label="Progresso do carregamento">
+      <div class="meg-loading-track" aria-hidden="true"><span style="width:22%"></span></div>
+      <div class="meg-loading-progress-copy"><span>Validando sua sessão...</span><strong>22%</strong></div>
     </section>`;
   document.body.appendChild(overlay);
 }
