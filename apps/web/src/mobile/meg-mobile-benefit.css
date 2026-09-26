@@ -1,7 +1,6 @@
 .meg3-benefit-overlay{
   position:fixed;inset:0;z-index:2147482350;width:100vw;height:100dvh;
-  display:grid;place-items:end center;overflow:hidden;background:rgba(0,18,20,.75);backdrop-filter:blur(9px)
-}
+  display:grid;place-items:end center;overflow:hidden;background:rgba(0,18,20,.75);}
 .meg3-benefit-modal{
   width:min(100%,620px);height:min(88dvh,820px);max-height:88dvh;min-height:0;
   display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;overflow:hidden;
