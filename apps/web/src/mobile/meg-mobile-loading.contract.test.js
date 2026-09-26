@@ -32,26 +32,44 @@ assert.match(
 
 assert.match(
   component,
+  /data-meg-loading-reference="board-04"/,
+  'O loading deve declarar a quarta prancha aprovada como referência visual.',
+);
+
+assert.match(
+  component,
   /brand\/meg-loading-lockup\.svg/,
   'O loading deve usar a marca exclusiva reconstruída para a referência aprovada.',
 );
 
 assert.match(
   component,
-  /Carregando seus dados\.\.\./,
-  'O texto central deve ser exatamente o da prévia aprovada.',
+  /SUAS FINANÇAS[\s\S]*EM UM SÓ LUGAR/,
+  'O slogan da prancha aprovada deve permanecer visível no loading.',
 );
 
 assert.match(
   component,
-  /Organizando suas finanças[\s\S]*para o seu dia a dia\./,
-  'O rodapé deve preservar a mensagem da prévia aprovada.',
+  /Carregando sua experiência/,
+  'A mensagem de progresso deve seguir a prancha aprovada.',
+);
+
+assert.match(
+  component,
+  /MAIS[\s\S]*CONTROLE[\s\S]*ORGANIZAÇÃO[\s\S]*TRANQUILIDADE[\s\S]*RESULTADOS/,
+  'O rodapé deve preservar os quatro benefícios visuais da prancha aprovada.',
+);
+
+assert.match(
+  component,
+  /progressLabel/,
+  'O loading deve exibir o progresso real em percentual ao lado da barra.',
 );
 
 assert.doesNotMatch(
   component,
-  /Carregando seu ambiente|px-preview-boot-v5-ring|>22%<|<strong>22%/i,
-  'O novo loading não pode reaproveitar anéis, percentual visível ou texto do V5.',
+  /Carregando seu ambiente|px-preview-boot-v5-ring|Organizando suas finanças para o seu dia a dia/i,
+  'O novo loading não pode reaproveitar a composição textual anterior ou o V5.',
 );
 
 assert.match(
@@ -68,8 +86,20 @@ assert.match(
 
 assert.match(
   css,
+  /\.meg-loading-features\{[\s\S]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/,
+  'Os quatro benefícios inferiores devem permanecer em uma grade fixa e responsiva.',
+);
+
+assert.match(
+  css,
   /@media\(max-height:760px\)[\s\S]*@media\(max-height:640px\)/,
   'O loading deve adaptar proporções também pela altura do aparelho.',
+);
+
+assert.doesNotMatch(
+  css,
+  /(?:-webkit-)?backdrop-filter\s*:|(^|[;{])\s*filter\s*:/m,
+  'O loading não pode depender de filtros de composição instáveis no Android WebView.',
 );
 
 console.log('Contrato do loading mobile clean-room validado.');
