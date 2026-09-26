@@ -29,9 +29,9 @@ assert.ok(
   'Ordem do formulário deve seguir Descrição → Categoria → Forma → Conta → Valor → Data/Vencimento.',
 );
 
-assert.match(
-  launch,
-  /if \\(!categoryId\\) return 'Selecione a categoria\\.';[\\s\\S]*if \\(!paymentMethodId\\)/,
+assert.ok(
+  launch.includes("if (!categoryId) return 'Selecione a categoria.';")
+  && launch.includes("if (!paymentMethodId) return mode === 'income' ? 'Selecione a forma de recebimento.' : 'Selecione a forma de pagamento.';"),
   'Categoria e forma devem ser validadas explicitamente antes de salvar.',
 );
 
