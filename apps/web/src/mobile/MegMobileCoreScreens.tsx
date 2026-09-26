@@ -82,6 +82,7 @@ function movementTone(event: FinancialEvent) {
 export function MegMobileMovements({
   data,
   onOpenEvent,
+  onNew,
 }: {
   data: PhoenixReadModel;
   onOpenEvent: (event: FinancialEvent) => void;
@@ -103,6 +104,13 @@ export function MegMobileMovements({
     ].filter(Boolean).join(' ').toLocaleLowerCase('pt-BR').includes(normalized))
     .filter((event) => kind === 'all' ? true : mobileMovementKind(event) === kind)
     .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const totals = posted.reduce((summary, event) => {
+    const value = signedAmount(event);
+    if (value >= 0) summary.income += value;
+    else summary.expense += Math.abs(value);
+    return summary;
+  }, { income: 0, expense: 0 });
+  const result = totals.income - totals.expense;
 
   return <main className="meg3-screen meg3-movements" data-meg-fixed-screen="true">
     <header className="meg3-title-block meg3-movements-title">
@@ -110,6 +118,12 @@ export function MegMobileMovements({
       <h1>Lançamentos</h1>
       <p>Consulte cada lançamento com categoria, conta e forma de pagamento.</p>
     </header>
+
+    <section className="meg3-movement-kpis" aria-label="Resumo dos lançamentos">
+      <article className="income"><span aria-hidden="true">↑</span><small>Entradas</small><strong>{money.format(totals.income)}</strong></article>
+      <article className="expense"><span aria-hidden="true">↓</span><small>Saídas</small><strong>{money.format(totals.expense)}</strong></article>
+      <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true">▥</span><small>Resultado</small><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong></article>
+    </section>
 
     <nav className="meg3-movement-tabs" aria-label="Tipo de lançamento">
       {([
@@ -126,6 +140,11 @@ export function MegMobileMovements({
       <label><SearchGlyph/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamento..."/></label>
       <button type="button" aria-label="Limpar filtros" className={kind !== 'all' || query ? 'active' : ''} onClick={() => { setKind('all'); setQuery(''); }}><FilterGlyph/></button>
     </section>
+
+    <header className="meg3-movement-list-head">
+      <span><strong>{rows.length.toLocaleString('pt-BR')} lançamento{rows.length === 1 ? '' : 's'}</strong><small>{data.month.split('-').reverse().join('/')} · toque para abrir</small></span>
+      <button type="button" onClick={onNew}><b aria-hidden="true">＋</b>Novo</button>
+    </header>
 
     <section className="meg3-event-list" data-meg-scroll-region="true">
       {rows.map((event) => {

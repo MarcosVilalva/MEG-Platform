@@ -365,10 +365,17 @@ export function MegMobileLaunchSheet({
   const title = event ? 'Editar lançamento' : 'Novo lançamento';
 
   return <div className="meg3-form-overlay" role="presentation">
-    <section className={`meg3-form-sheet ${!event && mode === 'expense' ? 'meg3-form-sheet--new-expense' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
-      {!event && mode === 'expense' ? <div className="meg3-app-header">{appHeader}</div> : null}
+    <section
+      className="meg3-form-sheet meg3-form-sheet--new-expense"
+      data-editor={event ? 'true' : 'false'}
+      data-launch-mode={mode}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <div className="meg3-app-header">{appHeader}</div>
       <header className="meg3-form-head">
-        <div><small>MEG FINANÇAS</small><h2>{title}</h2>{!event ? <p>Registre um novo movimento em sua vida financeira.</p> : null}</div>
+        <div><small>MEG FINANÇAS</small><h2>{title}</h2><p>{event ? 'Atualize as informações do seu lançamento.' : 'Registre um novo movimento em sua vida financeira.'}</p></div>
         <button type="button" aria-label="Fechar lançamento" disabled={busy} onClick={onClose}>×</button>
       </header>
 
@@ -522,10 +529,10 @@ export function MegMobileLaunchSheet({
       </div>
 
       <footer className="meg3-form-actions">
-        {event ? <button type="button" className="danger ghost" disabled={busy} onClick={() => setDeleteConfirm(true)}>Excluir</button> : mode !== 'expense' ? <button type="button" className="ghost" disabled={busy} onClick={onClose}>Cancelar</button> : null}
+        {event ? <button type="button" className="danger ghost" disabled={busy} onClick={() => setDeleteConfirm(true)}>Excluir</button> : null}
         <button type="button" className="primary" disabled={busy} onClick={() => void save()}>{busy ? 'Processando…' : event ? 'Salvar alterações' : 'Salvar lançamento'}</button>
       </footer>
-      {!event && mode === 'expense' ? <div className="meg3-app-dock">{appDock}</div> : null}
+      <div className="meg3-app-dock">{appDock}</div>
 
       {installmentPreviewOpen ? <div className="meg3-installment-preview">
         <section role="dialog" aria-modal="true" aria-label="Visualizar parcelas">
