@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 
 const mobile = readFileSync(new URL('./MegMobileFinal.tsx', import.meta.url), 'utf8');
+const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./meg-mobile-final.css', import.meta.url), 'utf8');
 const runtimeCss = readFileSync(new URL('./meg-mobile-runtime.css', import.meta.url), 'utf8');
 const phoenix = readFileSync(new URL('../phoenix/PhoenixApp.tsx', import.meta.url), 'utf8');
