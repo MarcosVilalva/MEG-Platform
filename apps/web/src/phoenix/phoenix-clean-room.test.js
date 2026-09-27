@@ -942,6 +942,11 @@ assert.doesNotMatch(operationalHome, /PhoenixProfileAvatar|px-operational-home-a
   'Home v12 não deve duplicar identidade ou avatar dentro do conteúdo abaixo da topbar global.');
 assert.match(previewMain, /MegMobileLoading progress=\{active\.progress\}/,
   'Loading autenticado deve renderizar o componente clean-room aprovado.');
+assert.match(phoenixApp, /if \(nativeOperational && !viewData && loadState\.status !== 'error'\)[\s\S]*<MegMobileLoading progress=\{88\}/,
+  'PhoenixApp móvel não pode cair no px-app-loading legado enquanto os dados finais ainda carregam.');
+assert.doesNotMatch(phoenixApp, /nativeOperational[\s\S]{0,220}px-app-loading/,
+  'Runtime Android não pode usar o loading visual antigo depois do boot clean-room.');
+
 assert.doesNotMatch(previewMain, /approved-v5|px-preview-boot-v5|Carregando seu ambiente/,
   'Boot principal não pode reintroduzir a estrutura visual V5 antiga.');
 assert.match(mobileLoading, /data-meg-loading="validated-cleanroom"/,
