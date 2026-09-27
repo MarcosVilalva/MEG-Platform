@@ -211,3 +211,6 @@ if (typeof window !== 'undefined') {
   const observer = new MutationObserver(onRouteMutation);
   observer.observe(document.documentElement, { childList: true, subtree: true });
 }
+
+
+export {};
