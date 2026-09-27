@@ -1,5 +1,4 @@
 import { cardsClient, type CardInstallment, type CardPurchase, type CreditCard } from '../app/cards-client';
-import './phoenix-card-purchase-detail.css';
 
 type RowSnapshot = {
   description: string;
