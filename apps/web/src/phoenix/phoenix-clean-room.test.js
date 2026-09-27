@@ -752,8 +752,10 @@ for (const icon of ['home', 'movements', 'history', 'payables', 'cards', 'catalo
 assert.notEqual(sidebar.indexOf("icon: 'history'"), sidebar.indexOf("icon: 'payables'"),
   'Histórico e Pendentes devem manter ícones semanticamente distintos');
 
-assert.match(phoenixApp, /PhoenixOperationalMobileHome/,
-  'APK deve substituir a home pesada por uma home operacional focada em lançamentos.');
+assert.doesNotMatch(phoenixApp, /PhoenixOperationalMobileHome/,
+  'APK não deve manter a home operacional intermediária depois da migração para o clean-room.');
+assert.match(phoenixApp, /if \(nativeOperational && viewData\)[\s\S]*<MegMobileFinal/,
+  'APK deve entregar a árvore clean-room consolidada quando os dados estiverem disponíveis.');
 assert.match(phoenixApp, /brand\/meg-finance-system-mark\.svg/,
   'Topbar do APK deve usar a marca MEG oficial.');
 assert.match(brandMark, /<text[^>]*fill="#F8FCFF"[^>]*>M<\/text>[\s\S]*<text[^>]*fill="url\(#e\)"[^>]*>E<\/text>[\s\S]*<text[^>]*fill="url\(#g\)"[^>]*>G<\/text>/,
