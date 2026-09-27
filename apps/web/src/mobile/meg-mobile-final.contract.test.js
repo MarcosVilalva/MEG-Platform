@@ -176,6 +176,10 @@ assert.match(
   'Cartões e Pendentes ainda devem usar viewport fixo enquanto aguardam reconstrução.',
 );
 assert.match(home,/data-meg-home="approved-final"/,'Home nova deve declarar o checkpoint visual aprovado.');
+assert.match(home,/icons\/meg-home-calendar\.svg[\s\S]*icons\/meg-home-trend\.svg/,'Ícones críticos do cabeçalho devem ser assets externos estáveis no Android.');
+assert.doesNotMatch(home,/if\(name==='calendar'\) return <svg|if\(name==='trend'\) return <svg/,'Ícones críticos do cabeçalho não podem voltar a SVG inline no WebView.');
+assert.match(homeCss,/\.meg-home-header\{[\s\S]*min-height:66px[\s\S]*grid-template-columns:50px minmax\(0,1fr\) auto/,'Cabeçalho da Home deve permanecer compacto como na referência final.');
+
 assert.match(home,/Benefício Alimentação[\s\S]*Ações rápidas[\s\S]*Cartões[\s\S]*Pagar conta[\s\S]*Fluxo de caixa[\s\S]*Ver relatórios/,'Home deve preservar os blocos funcionais aprovados.');
 assert.match(home,/Resumo do mês[\s\S]*Saldo inicial[\s\S]*Saldo final[\s\S]*Contas pagas/,'Mês passado deve preservar a leitura histórica validada.');
 assert.match(home,/Projeção mensal[\s\S]*Saldo inicial projetado[\s\S]*Saldo após compromissos[\s\S]*Faturas de cartões[\s\S]*Outras pendências/,'Mês futuro deve preservar a projeção validada.');
