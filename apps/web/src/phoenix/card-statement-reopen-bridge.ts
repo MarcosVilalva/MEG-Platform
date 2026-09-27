@@ -1,6 +1,5 @@
 import { readSession } from '../app/auth-client';
 import { cardsClient, type CreditCard } from '../app/cards-client';
-import './phoenix-card-statement-payment.css';
 
 type StatementContext = {
   month: string;
