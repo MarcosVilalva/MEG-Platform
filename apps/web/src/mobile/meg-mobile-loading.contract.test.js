@@ -27,13 +27,13 @@ assert.match(component,/progressLabel >= 100 \? 'Tudo pronto'/,'A conclusão dev
 
 assert.doesNotMatch(css,/meg-loading-approved-bg|background-size:100% 100%/,'O CSS não pode voltar a esticar uma imagem para fingir a tela.');
 assert.match(css,/\.meg-loading-screen\{[\s\S]*height:100dvh[\s\S]*overflow:hidden/,'A tela deve ocupar o viewport sem rolagem.');
-assert.match(css,/\.meg-loading-scene\{[\s\S]*overflow:visible[\s\S]*width:min\(100vw,430px\)/,'Cena central deve acompanhar a largura real do aparelho sem formar um retângulo recortado.');
-assert.doesNotMatch(css,/\.meg-loading-scene\{[\s\S]{0,240}width:min\((?:84|86)vw/,'Cena central não pode voltar a encolher horizontalmente por breakpoint.');
+assert.match(css,/\.meg-loading-scene\{[\s\S]*overflow:visible[\s\S]*width:100%[\s\S]*max-width:430px/,'Cena central deve acompanhar a largura real do aparelho sem formar um retângulo recortado.');
+assert.doesNotMatch(css,/\.meg-loading-scene\{[\s\S]{0,260}width:(?:min\((?:84|86)vw|100vw)/,'Cena central não pode voltar a usar largura de viewport deslocada nem encolher por breakpoint.');
 
 assert.match(css,/\.meg-loading-tile\{[\s\S]*box-shadow:/,'Os cards devem ter profundidade construída, não rasterizada.');
 assert.match(component,/meg-loading-energy-grid[\s\S]*grid-glow[\s\S]*grid-fine[\s\S]*grid-nodes/,'A malha luminosa central deve ser construída em SVG real, não em screenshot.');
-assert.match(css,/\.meg-loading-energy-grid\{[\s\S]*left:0[\s\S]*width:100%[\s\S]*height:78%[\s\S]*overflow:hidden/,'A malha neon deve preencher toda a largura responsiva da cena sem recorte lateral.');
-assert.match(css,/\.meg-loading-tile\{[\s\S]*width:clamp\(78px,23\.5vw,104px\)/,'Os cards centrais devem permanecer grandes e agrupados.');
+assert.match(css,/\.meg-loading-energy-grid\{[\s\S]*left:50%[\s\S]*width:calc\(100% \+ 88px\)[\s\S]*transform:translateX\(-50%\)/,'A malha neon deve transbordar de forma simétrica para os dois lados da cena.');
+assert.match(css,/\.meg-loading-tile\{[\s\S]*width:clamp\(80px,22\.8vw,106px\)/,'Os cards centrais devem permanecer grandes e agrupados sem ultrapassar o viewport.');
 assert.match(css,/\.meg-loading-scene::before\{[\s\S]*radial-gradient/,'A atmosfera atrás dos cards deve continuar construída em CSS.');
 assert.match(css,/\.meg-loading-features\{[\s\S]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/,'Os quatro benefícios devem permanecer responsivos.');
 assert.match(css,/\.meg-loading-track>span\.complete\{[\s\S]*width:100%!important[\s\S]*transition:none/,'O preenchimento deve sincronizar com 100%.');
