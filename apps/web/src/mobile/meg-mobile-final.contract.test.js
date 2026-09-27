@@ -24,8 +24,12 @@ assert.doesNotMatch(mobile, /Phoenix(?:Sidebar|NavIcon|Reference|OperationalMobi
   'Reconstrução mobile final não pode importar componentes visuais Phoenix anteriores.');
 assert.doesNotMatch(phoenix, /PhoenixMobileReferenceScreens/,
   'Shell não pode reintroduzir a implementação intermediária das três telas.');
-assert.match(phoenix, /if \(nativeOperational && viewData && \['home','movements','cards','payables','history','cashflow','analytics','settings'\]\.includes\(view\)\)[\s\S]*<MegMobileFinal[\s\S]*return <div className="phoenix-v15"/,
-  'Telas operacionais do APK devem retornar a árvore mobile clean-room antes do shell Phoenix antigo.');
+assert.match(phoenix, /if \(nativeOperational && viewData\)[\s\S]*const nativeView[\s\S]*<MegMobileFinal[\s\S]*return <div className="phoenix-v15"/,
+  'Qualquer rota com dados no APK deve permanecer na árvore mobile clean-room antes do shell Phoenix antigo.');
+assert.match(phoenix, /VITE_MOBILE_APP === 'true' \|\| capacitorNative/,
+  'Detecção do APK deve ter fallback nativo e não depender apenas da variável de build.');
+assert.doesNotMatch(phoenix, /if \(nativeOperational && viewData && \[[^\]]+\]\.includes\(view\)\)/,
+  'Android não pode voltar ao shell Phoenix por cair numa rota fora da lista mobile.');
 assert.match(mobile, /cards\.concat\(cards, cards\)/,
   'Carrossel de cartões deve possuir cópias circulares para rolagem infinita real.');
 assert.match(mobile, /index < cards\.length[\s\S]*scrollLeft \+=[\s\S]*index >= cards\.length \* 2[\s\S]*scrollLeft \+=/,
