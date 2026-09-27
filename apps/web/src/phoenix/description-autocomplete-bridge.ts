@@ -1,7 +1,6 @@
 import type { FinancialEvent } from '../app/finance-client';
 import { loadPhoenixAllEvents } from './data/load-phoenix-read-model';
 import { canonicalPhoenixIncomePaymentMethod } from './income-payment-methods';
-import './phoenix-description-autocomplete.css';
 
 type LaunchType = 'income' | 'expense' | 'transfer';
 type Suggestion = {
