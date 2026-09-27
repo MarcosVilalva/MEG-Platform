@@ -5,7 +5,6 @@ import {
   archivePhoenixEventsBulk,
   newPhoenixBulkOperationId,
 } from './data/phoenix-bulk-event-gateway';
-import './phoenix-launch-business-rules.css';
 
 // A UI da edição fica pronta no preview antes do backend dedicado entrar em produção.
 // Mudar para true somente depois da PR protegida correspondente ser mesclada e o smoke passar.
