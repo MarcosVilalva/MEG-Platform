@@ -1,4 +1,3 @@
-import './phoenix-keyboard-grid.css';
 
 type GridState = {
   grid: HTMLElement;
