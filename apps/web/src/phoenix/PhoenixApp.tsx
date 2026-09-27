@@ -10,6 +10,7 @@ import { PhoenixSidebar } from './PhoenixSidebar';
 import { PhoenixNavIcon } from './PhoenixNavIcon';
 import { PhoenixOperationalMobileHome } from './PhoenixOperationalMobileHome';
 import { MegMobileFinal } from '../mobile/MegMobileFinal';
+import { MegMobileLoading } from '../mobile/MegMobileLoading';
 import { PhoenixProfileAvatar, hydratePhoenixAvatarPreference, readPhoenixAvatarPreference, type PhoenixAvatarPreference } from './profile-avatar';
 import { syncPhoenixLocalDueNotifications } from './phoenix-native-notifications';
 import { PhoenixCatalogsGrid } from './screens/PhoenixCatalogsGrid';
@@ -1217,6 +1218,22 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         onClose={onClose}
       />
     </>;
+  }
+
+  if (nativeOperational && !viewData && loadState.status !== 'error') {
+    return <MegMobileLoading progress={88} stageLabel="Carregando seus dados" />;
+  }
+
+  if (nativeOperational && !viewData && loadState.status === 'error') {
+    return <main className="meg-loading-error-screen" aria-live="assertive">
+      <section className="meg-loading-error-card" aria-label="Falha ao carregar dados">
+        <div className="meg-loading-error-logo"><img src={phoenixBrandAsset('brand/meg-finance-system-mark.svg')} alt="MEG Finanças" /></div>
+        <div className="meg-loading-error-copy"><span>MEG FINANÇAS</span><h1>Não foi possível carregar seus dados.</h1><p>{loadState.message}</p></div>
+        <div className="meg-loading-error-actions">
+          <button className="meg-loading-error-primary" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button>
+        </div>
+      </section>
+    </main>;
   }
 
   return <div className="phoenix-v15" data-theme={theme}>
