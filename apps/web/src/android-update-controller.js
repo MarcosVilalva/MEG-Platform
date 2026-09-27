@@ -8,7 +8,7 @@ const STABLE_MANIFEST_URLS = [
 const RC1_MANIFEST_URLS = [
   'https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-rc1-latest/app-version-rc1.json',
 ];
-const UPDATE_CHANNEL = String(import.meta.env.VITE_ANDROID_UPDATE_CHANNEL || 'stable').trim().toLowerCase();
+const UPDATE_CHANNEL = String(import.meta.env?.VITE_ANDROID_UPDATE_CHANNEL || 'stable').trim().toLowerCase();
 const MANIFEST_URLS = UPDATE_CHANNEL === 'rc1' ? RC1_MANIFEST_URLS : STABLE_MANIFEST_URLS;
 const BRIDGE_TIMEOUT_MS = 3500;
 const FETCH_TIMEOUT_MS = 8000;
