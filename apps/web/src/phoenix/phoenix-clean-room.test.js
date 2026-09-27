@@ -1063,8 +1063,10 @@ assert.match(nativeNotifications, /Contas vencidas|contas vencidas|Conta vencida
   'Notificações Android devem cobrir compromissos vencidos.');
 assert.match(nativeNotifications, /Conta vence amanhã[\s\S]*Conta vence hoje/,
   'Notificações Android devem cobrir contas a vencer.');
-assert.match(main, /meg-operational-mobile/,
-  'Build móvel deve marcar o runtime operacional antes de montar a Phoenix.');
+assert.doesNotMatch(main, /classList\.add\([^\n]*meg-operational-mobile|classList\.add\([^\n]*native-mobile/,
+  'Build móvel não pode ativar marcadores de layout Phoenix legado.');
+assert.match(main, /meg-cleanroom-mobile/,
+  'Build móvel deve marcar o runtime clean-room antes de montar a interface.');
 
 assert.match(phoenixApp, /px-top-quick-launch/,
   'Topbar Phoenix deve expor o novo lançamento global do V15');
