@@ -51,7 +51,7 @@ export function MegMobileLoading({
 }: MegMobileLoadingProps) {
   const normalized = Math.max(6, Math.min(100, Number.isFinite(progress) ? progress : 12));
   const progressLabel = Math.round(normalized);
-  const statusText = progressLabel >= 100 ? 'Tudo pronto' : `${stageLabel}...`;
+  const statusText = progressLabel >= 100 ? 'Tudo pronto' : 'Carregando sua experiência...';
 
   return (
     <main
