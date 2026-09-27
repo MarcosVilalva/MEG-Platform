@@ -959,6 +959,13 @@ assert.match(main, /if \(startup\?\.required\)[\s\S]{0,500}clearSession\(\)/,
   'Após o gate biométrico, o APK deve descartar sessão web anterior e usar as credenciais recém-confirmadas.');
 assert.match(main, /import '\.\.\/mobile\/meg-mobile-loading\.css';[\s\S]*bootMegRuntime/,
   'CSS crítico do loading deve estar carregado antes do bootstrap biométrico para impedir flash sem estilo.');
+assert.doesNotMatch(main, /phoenix-release-hardening\.css|preview-boot\.css|phoenix-visual-a11y\.css/,
+  'Bootstrap Android não pode carregar folhas visuais legadas do shell Phoenix.');
+assert.doesNotMatch(previewMain, /import '\.\/phoenix-preview-parity\.css'|import '\.\/preview-boot\.css'/,
+  'Preview mobile não pode carregar parity/boot legado de forma estática.');
+assert.match(phoenixWebStyles, /phoenix-release-hardening\.css[\s\S]*phoenix-preview-parity\.css[\s\S]*preview-boot\.css[\s\S]*phoenix-visual-a11y\.css/,
+  'Folhas legadas devem permanecer isoladas exclusivamente no pacote visual Web.');
+
 assert.match(previewMain, /useLayoutEffect\(\(\) => \{[\s\S]*nativeBiometricLoadingOverlay[\s\S]*remove\(\)/,
   'Handoff do overlay biométrico para o React deve ocorrer antes do paint para não deixar fragmentos visuais.');
 
