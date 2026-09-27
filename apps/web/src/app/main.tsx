@@ -1,7 +1,5 @@
 // Entrada oficial de produção. Mantemos um único bootstrap para Web e Android,
 // mas o runtime visual e financeiro pertence integralmente à Phoenix V15.
-import '../phoenix/phoenix-release-hardening.css';
-import '../phoenix/preview-boot.css';
 import '../mobile/meg-mobile-loading.css';
 import '../phoenix/auth-fast-entry-bridge';
 import '../phoenix/history-prewarm-bridge';
@@ -29,7 +27,6 @@ import '../phoenix/avatar-runtime-bridge';
 import '../phoenix/phoenix-keyboard-grid-bridge';
 import '../phoenix/phoenix-table-export-bridge';
 import '../phoenix/phoenix-overlay-theme-bridge';
-import '../phoenix/phoenix-visual-a11y.css';
 import { clearSession } from './auth-client';
 
 const nativeOperationalBuild = import.meta.env.VITE_MOBILE_APP === 'true';
