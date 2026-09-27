@@ -80,8 +80,38 @@ export function MegMobileLoading({
         </header>
 
         <section className="meg-loading-scene" aria-hidden="true">
-          <div className="meg-loading-wave wave-back" />
-          <div className="meg-loading-wave wave-front" />
+          <svg className="meg-loading-energy-grid" viewBox="0 0 420 250" preserveAspectRatio="none">
+            <g className="grid-glow">
+              <path d="M-20 88 C55 20 125 152 205 78 S350 35 445 94" />
+              <path d="M-18 104 C70 36 120 170 215 94 S345 48 446 108" />
+              <path d="M-15 121 C70 56 135 181 218 111 S350 66 444 124" />
+              <path d="M-10 139 C75 76 145 192 225 129 S355 83 440 141" />
+              <path d="M-4 158 C88 92 150 200 232 147 S360 101 435 158" />
+              <path d="M10 177 C94 115 160 205 240 165 S355 123 425 176" />
+              <path d="M34 195 C110 142 170 211 250 184 S350 145 404 194" />
+            </g>
+            <g className="grid-fine">
+              <path d="M-20 70 C65 5 128 130 208 62 S350 17 445 76" />
+              <path d="M-18 96 C66 28 132 156 213 85 S352 39 445 101" />
+              <path d="M-12 132 C72 66 140 184 223 120 S354 75 442 135" />
+              <path d="M0 169 C88 102 153 207 238 157 S355 114 430 168" />
+              <path d="M20 207 C105 153 176 218 257 197 S350 164 410 205" />
+              <path d="M42 25 L185 225" />
+              <path d="M108 9 L248 233" />
+              <path d="M182 6 L307 229" />
+              <path d="M255 8 L366 214" />
+              <path d="M331 24 L420 188" />
+            </g>
+            <g className="grid-nodes">
+              <circle cx="54" cy="89" r="2.2"/><circle cx="96" cy="117" r="1.8"/>
+              <circle cx="143" cy="90" r="2"/><circle cx="186" cy="136" r="2.2"/>
+              <circle cx="230" cy="106" r="2"/><circle cx="279" cy="128" r="1.9"/>
+              <circle cx="326" cy="94" r="2.2"/><circle cx="370" cy="124" r="1.8"/>
+              <circle cx="78" cy="159" r="1.9"/><circle cx="124" cy="177" r="2.2"/>
+              <circle cx="178" cy="165" r="1.8"/><circle cx="244" cy="174" r="2.1"/>
+              <circle cx="307" cy="158" r="1.9"/><circle cx="355" cy="176" r="2.2"/>
+            </g>
+          </svg>
           <div className="meg-loading-tile tile-bars"><LoadingIcon name="bars" /></div>
           <div className="meg-loading-tile tile-card"><LoadingIcon name="card" /></div>
           <div className="meg-loading-tile tile-home"><LoadingIcon name="home" /></div>
