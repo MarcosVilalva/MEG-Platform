@@ -3,7 +3,9 @@
 import '../mobile/meg-mobile-loading.css';
 import { clearSession } from './auth-client';
 
-const nativeOperationalBuild = import.meta.env.VITE_MOBILE_APP === 'true';
+const capacitorNativeBuild = typeof window !== 'undefined'
+  && Boolean((window as typeof window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.());
+const nativeOperationalBuild = import.meta.env.VITE_MOBILE_APP === 'true' || capacitorNativeBuild;
 
 async function loadWebOnlyLegacyRuntime() {
   await Promise.all([
