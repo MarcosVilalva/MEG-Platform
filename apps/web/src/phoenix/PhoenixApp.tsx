@@ -404,7 +404,9 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
 }
 
 export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClose?: () => void }) {
-  const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
+  const capacitorNative = typeof window !== 'undefined'
+    && Boolean((window as typeof window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.());
+  const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true' || capacitorNative;
   const [month, setMonth] = useState(currentMonth);
   const [view, setView] = useState<PhoenixView>('home');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -1198,11 +1200,17 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     )
     : null;
 
-  if (nativeOperational && viewData && ['home','movements','cards','payables','history','cashflow','analytics','settings'].includes(view)) {
+  if (nativeOperational && viewData) {
+    const nativeView = (['home','movements','cards','payables','history','cashflow','analytics','settings'] as const).includes(
+      view as 'home' | 'movements' | 'cards' | 'payables' | 'history' | 'cashflow' | 'analytics' | 'settings'
+    )
+      ? view as 'home' | 'movements' | 'cards' | 'payables' | 'history' | 'cashflow' | 'analytics' | 'settings'
+      : 'home';
+
     return <>
       <MegMobileFinal
         data={viewData}
-        view={view as 'home' | 'movements' | 'cards' | 'payables' | 'history' | 'cashflow' | 'analytics' | 'settings'}
+        view={nativeView}
         onNavigate={navigate}
         onLaunch={requestLaunch}
         onEditEvent={requestEditEvent}
