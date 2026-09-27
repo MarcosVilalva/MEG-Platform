@@ -3,6 +3,25 @@ import { readFileSync } from 'node:fs';
 
 const phoenixApp = readFileSync(new URL('./PhoenixApp.tsx', import.meta.url), 'utf8');
 const phoenixWebStyles = readFileSync(new URL('./PhoenixWebStyles.ts', import.meta.url), 'utf8');
+const nativeBridgeModules = [
+  './description-autocomplete-bridge.ts',
+  './launch-business-rules-bridge.ts',
+  './card-management-bridge.ts',
+  './card-statement-payment-bridge.ts',
+  './card-statement-reopen-bridge.ts',
+  './card-statement-lifecycle-bridge.ts',
+  './card-statement-history-bridge.ts',
+  './card-statement-projection-bridge.ts',
+  './home-commitment-forecast-bridge.ts',
+  './home-scenario-simulator-bridge.ts',
+  './home-purchase-decision-bridge.ts',
+  './card-purchase-detail-bridge.ts',
+  './bulk-event-actions-bridge.ts',
+  './bulk-event-ux-enhancements.ts',
+  './phoenix-keyboard-grid-bridge.ts',
+  './phoenix-table-export-bridge.ts',
+].map((path) => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
+
 const sidebar = readFileSync(new URL('./PhoenixSidebar.tsx', import.meta.url), 'utf8');
 const navIcon = readFileSync(new URL('./PhoenixNavIcon.tsx', import.meta.url), 'utf8');
 const profileAvatar = readFileSync(new URL('./profile-avatar.tsx', import.meta.url), 'utf8');
@@ -965,6 +984,11 @@ assert.doesNotMatch(previewMain, /import '\.\/phoenix-preview-parity\.css'|impor
   'Preview mobile não pode carregar parity/boot legado de forma estática.');
 assert.match(phoenixWebStyles, /phoenix-release-hardening\.css[\s\S]*phoenix-preview-parity\.css[\s\S]*preview-boot\.css[\s\S]*phoenix-visual-a11y\.css/,
   'Folhas legadas devem permanecer isoladas exclusivamente no pacote visual Web.');
+assert.doesNotMatch(nativeBridgeModules, /import\s+['"][^'"]+\.css['"]/,
+  'Bridges de comportamento carregados no APK não podem importar CSS legado.');
+assert.match(phoenixWebStyles, /phoenix-description-autocomplete\.css[\s\S]*phoenix-launch-business-rules\.css[\s\S]*phoenix-card-management\.css[\s\S]*phoenix-card-statement-payment\.css[\s\S]*phoenix-table-export\.css/,
+  'CSS removido dos bridges deve continuar disponível apenas no bundle visual Web.');
+
 
 assert.match(previewMain, /useLayoutEffect\(\(\) => \{[\s\S]*nativeBiometricLoadingOverlay[\s\S]*remove\(\)/,
   'Handoff do overlay biométrico para o React deve ocorrer antes do paint para não deixar fragmentos visuais.');
