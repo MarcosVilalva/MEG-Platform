@@ -159,6 +159,17 @@ const unexpectedNativeCss = [...nativeStaticGraph.css]
 
 assert.deepEqual(unexpectedNativeCss, [],
   'Grafo estático do APK carregou CSS fora do clean-room/auth permitido: ' + unexpectedNativeCss.join(', '));
+const nativeStaticBridgeImports = [...nativeStaticGraph.visited]
+  .flatMap((file) => {
+    if (!/\.(?:ts|tsx|js)$/.test(file)) return [];
+    const source = readFileSync(file, 'utf8');
+    return [...source.matchAll(/^\s*import\s+['"]([^'"]*(?:bridge|fastpaint|enhancements)[^'"]*)['"];?/gm)]
+      .map((match) => relative(repoRoot, file).replaceAll('\\', '/') + ' -> ' + match[1]);
+  });
+
+assert.deepEqual(nativeStaticBridgeImports, [],
+  'Grafo estático do APK não pode executar side-effect bridge legado: ' + nativeStaticBridgeImports.join(', '));
+
 
 
 assert.doesNotMatch(main, /^import\s+['"]\.\.\/phoenix\/[^'"]*(?:bridge|prewarm|fastpaint|enhancements)[^'"]*['"];?$/m,
