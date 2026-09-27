@@ -75,7 +75,11 @@ export function MegMobileLoading({
 
       <section className="meg-loading-layout">
         <header className="meg-loading-brand-stage">
-          <img className="meg-loading-brand" src={asset('brand/meg-loading-lockup.svg')} alt="MEG Finanças" />
+          <div className="meg-loading-brand-lockup" aria-label="MEG Finanças">
+            <img className="meg-loading-brand-symbol" src={asset('brand/meg-loading-lockup.svg')} alt="" aria-hidden="true" />
+            <div className="meg-loading-wordmark" aria-hidden="true"><b>M</b><b>E</b><b className="accent">G</b></div>
+            <div className="meg-loading-financas" aria-hidden="true">FINANÇAS</div>
+          </div>
           <p className="meg-loading-tagline">SUAS FINANÇAS<br/>EM UM SÓ LUGAR</p>
         </header>
 
