@@ -15,7 +15,9 @@ import { loadPhoenixReadModel } from './data/load-phoenix-read-model';
 import './preview.css';
 import './preview-auth-flow.css';
 
-const MEG_MOBILE_RUNTIME = import.meta.env.VITE_MOBILE_APP === 'true';
+const CAPACITOR_MOBILE_RUNTIME = typeof window !== 'undefined'
+  && Boolean((window as typeof window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.());
+const MEG_MOBILE_RUNTIME = import.meta.env.VITE_MOBILE_APP === 'true' || CAPACITOR_MOBILE_RUNTIME;
 if (MEG_MOBILE_RUNTIME && typeof document !== 'undefined') {
   document.documentElement.classList.remove('meg-operational-mobile');
   document.body.classList.remove('meg-operational-mobile');
