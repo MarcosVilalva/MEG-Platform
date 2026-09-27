@@ -116,11 +116,11 @@
 }
 
 .meg-loading-scene{
-  overflow:hidden;
-  contain:layout paint;
+  overflow:visible;
+  contain:layout;
   position:relative;
   min-height:0;
-  width:min(86vw,376px);
+  width:min(100vw,430px);
   height:100%;
   justify-self:center;
   isolation:isolate;
@@ -152,8 +152,8 @@
 .meg-loading-energy-grid{
   position:absolute;
   z-index:-1;
-  left:-20%;
-  width:140%;
+  left:0;
+  width:100%;
   height:78%;
   top:17%;
   overflow:hidden;
@@ -217,10 +217,10 @@
   background:linear-gradient(180deg,rgba(180,255,252,.18),transparent);
 }
 .meg-loading-tile svg{width:49%;height:49%;stroke-width:1.9}
-.meg-loading-tile-bars{left:2%;top:18%;transform:rotate(-11deg)}
-.meg-loading-tile-card{left:36%;top:10%;transform:rotate(7deg)}
-.meg-loading-tile-home{left:23%;top:47%;z-index:3;transform:rotate(-8deg)}
-.meg-loading-tile-pie{right:0;top:45%;z-index:2;transform:rotate(10deg)}
+.meg-loading-tile-bars{left:5%;top:18%;transform:rotate(-11deg)}
+.meg-loading-tile-card{left:37%;top:10%;transform:rotate(7deg)}
+.meg-loading-tile-home{left:25%;top:47%;z-index:3;transform:rotate(-8deg)}
+.meg-loading-tile-pie{right:5%;top:45%;z-index:2;transform:rotate(10deg)}
 
 .meg-loading-progress-shell{
   width:100%;
@@ -324,7 +324,6 @@
   }
   .meg-loading-brand{width:clamp(160px,47vw,198px)}
   .meg-loading-tagline{font-size:8.4px}
-  .meg-loading-scene{width:min(84vw,342px)}
   .meg-loading-tile{width:clamp(66px,21vw,82px)}
   .meg-loading-features{min-height:62px;padding-top:5px}
   .meg-loading-feature>span{width:28px;height:28px;border-radius:8px}
@@ -349,7 +348,7 @@
   .meg-loading-layout{padding-inline:10px}
   .meg-loading-brand{width:150px}
   .meg-loading-tagline{font-size:7.6px;letter-spacing:.16em}
-  .meg-loading-scene{width:96vw}
+  .meg-loading-scene{width:100vw}
   .meg-loading-tile{width:48px}
   .meg-loading-progress-copy{font-size:7.2px}
   .meg-loading-feature p{font-size:4px}
