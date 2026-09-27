@@ -68,6 +68,62 @@ const preview = readFileSync(resolve(webSrc, 'phoenix/preview-main.tsx'), 'utf8'
 const phoenixApp = readFileSync(resolve(webSrc, 'phoenix/PhoenixApp.tsx'), 'utf8');
 const previewCss = readFileSync(resolve(webSrc, 'phoenix/preview.css'), 'utf8');
 
+function resolveStaticImport(fromFile, specifier) {
+  if (!specifier.startsWith('.')) return null;
+  const base = resolve(dirname(fromFile), specifier);
+  const candidates = [
+    base,
+    base + '.ts',
+    base + '.tsx',
+    base + '.js',
+    base + '.css',
+    join(base, 'index.ts'),
+    join(base, 'index.tsx'),
+    join(base, 'index.js'),
+  ];
+  for (const candidate of candidates) {
+    try {
+      if (statSync(candidate).isFile()) return candidate;
+    } catch {}
+  }
+  return null;
+}
+
+function collectStaticGraph(entryFile) {
+  const visited = new Set();
+  const pending = [entryFile];
+  const css = new Set();
+  while (pending.length) {
+    const file = pending.pop();
+    if (!file || visited.has(file)) continue;
+    visited.add(file);
+    const source = readFileSync(file, 'utf8');
+    const staticImports = [...source.matchAll(/^\s*import(?:[\s\S]*?from\s*)?['"]([^'"]+)['"];?/gm)]
+      .map((match) => match[1]);
+    for (const specifier of staticImports) {
+      const target = resolveStaticImport(file, specifier);
+      if (!target) continue;
+      if (target.endsWith('.css')) css.add(target);
+      else pending.push(target);
+    }
+  }
+  return { visited, css };
+}
+
+const nativeStaticGraph = collectStaticGraph(resolve(webSrc, 'phoenix/preview-main.tsx'));
+const allowedNativeCss = new Set([
+  resolve(webSrc, 'phoenix/preview.css'),
+  resolve(webSrc, 'phoenix/preview-auth-flow.css'),
+  ...filesUnder(mobileDir).filter((file) => file.endsWith('.css')),
+]);
+const unexpectedNativeCss = [...nativeStaticGraph.css]
+  .filter((file) => !allowedNativeCss.has(file))
+  .map((file) => relative(repoRoot, file).replaceAll('\\', '/'));
+
+assert.deepEqual(unexpectedNativeCss, [],
+  'Grafo estático do APK carregou CSS fora do clean-room/auth permitido: ' + unexpectedNativeCss.join(', '));
+
+
 assert.doesNotMatch(main, /^import\s+['"]\.\.\/phoenix\/[^'"]*(?:bridge|prewarm|fastpaint|enhancements)[^'"]*['"];?$/m,
   'Bootstrap não pode importar runtime Phoenix legado estaticamente no APK.');
 assert.match(main, /if \(!nativeOperationalBuild\) \{[\s\S]*await loadWebOnlyLegacyRuntime\(\)/,
