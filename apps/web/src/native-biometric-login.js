@@ -123,7 +123,11 @@ function beginAuthenticatedLoadingTransition() {
     </div>
     <section class="meg-loading-layout">
       <header class="meg-loading-brand-stage">
-        <img class="meg-loading-brand" src="${new URL((import.meta.env.BASE_URL || '/') + 'brand/meg-loading-lockup.svg', document.baseURI).href}" alt="MEG Finanças">
+        <div class="meg-loading-brand-lockup" aria-label="MEG Finanças">
+          <img class="meg-loading-brand-symbol" src="${new URL((import.meta.env.BASE_URL || '/') + 'brand/meg-loading-lockup.svg', document.baseURI).href}" alt="" aria-hidden="true">
+          <div class="meg-loading-wordmark" aria-hidden="true"><b>M</b><b>E</b><b class="accent">G</b></div>
+          <div class="meg-loading-financas" aria-hidden="true">FINANÇAS</div>
+        </div>
         <p class="meg-loading-tagline">SUAS FINANÇAS<br>EM UM SÓ LUGAR</p>
       </header>
       <section class="meg-loading-scene" aria-hidden="true">
