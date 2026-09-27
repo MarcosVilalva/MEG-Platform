@@ -1,5 +1,4 @@
 import { authenticatedRequest } from '../app/auth-client';
-import './phoenix-home-scenario-simulator.css';
 
 type ForecastRisk = 'normal' | 'attention' | 'high';
 type ScenarioMode = 'base' | 'conservative' | 'optimistic';
