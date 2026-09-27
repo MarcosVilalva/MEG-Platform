@@ -9,6 +9,7 @@ const androidStyles = readFileSync(new URL('../../../../android/app/src/main/res
 const mainActivity = readFileSync(new URL('../../../../android/app/src/main/java/br/com/megfinancas/app/MainActivity.java', import.meta.url), 'utf8');
 const nativeBiometric = readFileSync(new URL('../native-biometric-login.js', import.meta.url), 'utf8');
 const abandonedStaticArt = new URL('../../public/brand/meg-loading-approved-bg.jpg', import.meta.url);
+const brandSvg = readFileSync(new URL('../../public/brand/meg-loading-lockup.svg', import.meta.url), 'utf8');
 
 assert.match(preview,/MegMobileLoading progress=\{active\.progress\}/,'O boot real do APK deve renderizar o loading clean-room.');
 assert.doesNotMatch(preview,/px-preview-boot-v5|data-boot-fidelity="approved-v5"/,'O V5 antigo não pode voltar ao boot principal.');
@@ -16,6 +17,8 @@ assert.doesNotMatch(legacyBootCss,/px-preview-boot-v5|MEG Boot 5\.0|approved-v5/
 
 assert.equal(existsSync(abandonedStaticArt),false,'A tentativa de usar screenshot como fundo deve permanecer removida.');
 assert.match(component,/data-meg-loading-reference="approved-neon-built"/,'O loading deve declarar a construção neon validada.');
+assert.match(component,/meg-loading-brand-lockup[\s\S]*meg-loading-wordmark[\s\S]*meg-loading-financas/,'Marca deve ser construída com símbolo vetorial e texto HTML estável.');
+assert.doesNotMatch(brandSvg,/<text\b|<filter\b/i,'SVG da marca não pode usar texto ou filtros que geram artefatos no Android WebView.');
 assert.doesNotMatch(component,/className="(?:beam|spark)|className="meg-loading-tile tile-/,'Classes genéricas não podem voltar ao loading e herdar CSS de outras telas.');
 assert.match(component,/meg-loading-energy-grid[\s\S]*meg-loading-grid-glow[\s\S]*meg-loading-grid-fine[\s\S]*meg-loading-grid-nodes/,'A malha central deve usar classes exclusivas do loading.');
 
