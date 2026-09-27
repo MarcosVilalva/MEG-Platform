@@ -165,6 +165,11 @@ assert.doesNotMatch(main, /^import\s+['"]\.\.\/phoenix\/[^'"]*(?:bridge|prewarm|
   'Bootstrap não pode importar runtime Phoenix legado estaticamente no APK.');
 assert.match(main, /if \(!nativeOperationalBuild\) \{[\s\S]*await loadWebOnlyLegacyRuntime\(\)/,
   'Runtime legado precisa ficar atrás do gate Web.');
+assert.match(main, /VITE_MOBILE_APP === 'true' \|\| capacitorNativeBuild/,
+  'Detecção nativa do bootstrap deve ter fallback Capacitor e não depender só da variável de build.');
+assert.match(preview, /VITE_MOBILE_APP === 'true' \|\| CAPACITOR_MOBILE_RUNTIME/,
+  'Preview deve manter fallback Capacitor antes de decidir carregar estilos Web.');
+
 assert.match(preview, /if \(MEG_MOBILE_RUNTIME[\s\S]*meg-cleanroom-mobile[\s\S]*else if \(!MEG_MOBILE_RUNTIME\)[\s\S]*PhoenixWebStyles/,
   'Preview precisa separar explicitamente clean-room Android e estilos Web.');
 assert.match(phoenixApp, /if \(nativeOperational && viewData\)[\s\S]*<MegMobileFinal/,
