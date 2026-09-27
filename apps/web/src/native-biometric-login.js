@@ -110,15 +110,39 @@ function beginAuthenticatedLoadingTransition() {
   overlay.id = 'nativeBiometricLoadingOverlay';
   overlay.className = 'meg-loading-screen';
   overlay.dataset.megLoading = 'validated-cleanroom';
-  overlay.dataset.megLoadingReference = 'approved-static-art';
+  overlay.dataset.megLoadingReference = 'approved-neon-built';
   overlay.setAttribute('aria-live', 'polite');
   overlay.setAttribute('aria-busy', 'true');
   overlay.setAttribute('aria-label', 'Validando sua sessão. 22% concluído.');
   overlay.innerHTML = `
-    <div class="meg-loading-static-art" aria-hidden="true"></div>
-    <section class="meg-loading-progress-shell" aria-label="Progresso do carregamento">
-      <div class="meg-loading-track" aria-hidden="true"><span style="width:22%"></span></div>
-      <div class="meg-loading-progress-copy"><span>Validando sua sessão...</span><strong>22%</strong></div>
+    <div class="meg-loading-atmosphere" aria-hidden="true">
+      <span class="beam beam-a"></span><span class="beam beam-b"></span>
+      <span class="beam beam-c"></span><span class="beam beam-d"></span>
+      <span class="spark spark-a"></span><span class="spark spark-b"></span>
+      <span class="spark spark-c"></span><span class="spark spark-d"></span>
+    </div>
+    <section class="meg-loading-layout">
+      <header class="meg-loading-brand-stage">
+        <img class="meg-loading-brand" src="${new URL((import.meta.env.BASE_URL || '/') + 'brand/meg-loading-lockup.svg', document.baseURI).href}" alt="MEG Finanças">
+        <p class="meg-loading-tagline">SUAS FINANÇAS<br>EM UM SÓ LUGAR</p>
+      </header>
+      <section class="meg-loading-scene" aria-hidden="true">
+        <div class="meg-loading-wave wave-back"></div><div class="meg-loading-wave wave-front"></div>
+        <div class="meg-loading-tile tile-bars"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V12M9.5 20V8M15 20v-5.5M20.5 20V4"/></svg></div>
+        <div class="meg-loading-tile tile-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9h18M7 15h4"/></svg></div>
+        <div class="meg-loading-tile tile-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10M9.5 20v-6h5v6"/></svg></div>
+        <div class="meg-loading-tile tile-pie"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.6A9 9 0 0 1 20.4 9H15z"/></svg></div>
+      </section>
+      <section class="meg-loading-progress-shell" aria-label="Progresso do carregamento">
+        <div class="meg-loading-track" aria-hidden="true"><span style="width:22%"></span></div>
+        <div class="meg-loading-progress-copy"><span>Validando sua sessão...</span><strong>22%</strong></div>
+      </section>
+      <footer class="meg-loading-features" aria-label="Benefícios do MEG Finanças">
+        <div class="meg-loading-feature"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-7 11h5l-1 9 8-12h-5z"/></svg></span><p><b>MAIS</b><strong>CONTROLE</strong></p></div>
+        <div class="meg-loading-feature"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V12M9.5 20V8M15 20v-5.5M20.5 20V4"/></svg></span><p><b>MAIS</b><strong>ORGANIZAÇÃO</strong></p></div>
+        <div class="meg-loading-feature"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.6 2.7 8.1 7 10 4.3-1.9 7-5.4 7-10V6z"/><path d="m9.2 12 1.8 1.8 3.8-4"/></svg></span><p><b>MAIS</b><strong>TRANQUILIDADE</strong></p></div>
+        <div class="meg-loading-feature"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M9 15h6M12 13v6M8 21h8M5 5H3v2a4 4 0 0 0 4 4M19 5h2v2a4 4 0 0 1-4 4"/></svg></span><p><b>MAIS</b><strong>RESULTADOS</strong></p></div>
+      </footer>
     </section>`;
   document.body.appendChild(overlay);
 }
