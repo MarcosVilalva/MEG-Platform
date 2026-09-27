@@ -957,6 +957,11 @@ assert.match(previewMain, /setState\('authenticating'\)[\s\S]{0,700}loginWithSer
   'Login biométrico deve trocar para o boot antes de chamar a API.');
 assert.match(main, /if \(startup\?\.required\)[\s\S]{0,500}clearSession\(\)/,
   'Após o gate biométrico, o APK deve descartar sessão web anterior e usar as credenciais recém-confirmadas.');
+assert.match(main, /import '\.\.\/mobile\/meg-mobile-loading\.css';[\s\S]*bootMegRuntime/,
+  'CSS crítico do loading deve estar carregado antes do bootstrap biométrico para impedir flash sem estilo.');
+assert.match(previewMain, /useLayoutEffect\(\(\) => \{[\s\S]*nativeBiometricLoadingOverlay[\s\S]*remove\(\)/,
+  'Handoff do overlay biométrico para o React deve ocorrer antes do paint para não deixar fragmentos visuais.');
+
 assert.match(previewMain, /authenticatedRequest\('\/auth\/me', \{ signal: AbortSignal\.timeout\(12_000\), cache: 'no-store' \}\)/,
   'Validação de sessão deve ser limitada e não pode reutilizar uma leitura antiga presa em 22%.');
 assert.match(previewMain, /state !== 'checking'[\s\S]*18_000[\s\S]*setState\('prepare-error'\)/,
