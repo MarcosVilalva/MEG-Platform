@@ -12,6 +12,7 @@ async function loadWebOnlyLegacyRuntime() {
     import('../phoenix/auth-fast-entry-bridge'),
     import('../phoenix/history-prewarm-bridge'),
     import('../phoenix/description-autocomplete-bridge'),
+    import('../phoenix/phoenix-edit-settlement-bridge'),
     import('../phoenix/launch-business-rules-bridge'),
     import('../phoenix/card-domain-live-refresh-bridge'),
     import('../phoenix/card-view-continuity-bridge'),
