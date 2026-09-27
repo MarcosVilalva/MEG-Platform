@@ -113,7 +113,7 @@ function beginAuthenticatedLoadingTransition() {
   overlay.dataset.megLoadingReference = 'approved-neon-built';
   overlay.setAttribute('aria-live', 'polite');
   overlay.setAttribute('aria-busy', 'true');
-  overlay.setAttribute('aria-label', 'Validando sua sessão. 22% concluído.');
+  overlay.setAttribute('aria-label', 'Carregando sua experiência. 22% concluído.');
   overlay.innerHTML = `
     <div class="meg-loading-atmosphere" aria-hidden="true">
       <span class="beam beam-a"></span><span class="beam beam-b"></span>
@@ -135,7 +135,7 @@ function beginAuthenticatedLoadingTransition() {
       </section>
       <section class="meg-loading-progress-shell" aria-label="Progresso do carregamento">
         <div class="meg-loading-track" aria-hidden="true"><span style="width:22%"></span></div>
-        <div class="meg-loading-progress-copy"><span>Validando sua sessão...</span><strong>22%</strong></div>
+        <div class="meg-loading-progress-copy"><span>Carregando sua experiência...</span><strong>22%</strong></div>
       </section>
       <footer class="meg-loading-features" aria-label="Benefícios do MEG Finanças">
         <div class="meg-loading-feature"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-7 11h5l-1 9 8-12h-5z"/></svg></span><p><b>MAIS</b><strong>CONTROLE</strong></p></div>
