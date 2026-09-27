@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
+const previewMain = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
+const phoenixWebStyles = readFileSync(new URL('./PhoenixWebStyles.ts', import.meta.url), 'utf8');
 const exportBridge = readFileSync(new URL('./phoenix-table-export-bridge.ts', import.meta.url), 'utf8');
 const exportCss = readFileSync(new URL('./phoenix-table-export.css', import.meta.url), 'utf8');
 const visualCss = readFileSync(new URL('./phoenix-visual-a11y.css', import.meta.url), 'utf8');
@@ -28,7 +30,9 @@ const screens = [
 
 assert.match(main, /phoenix-table-export-bridge/, 'Runtime oficial deve carregar exportação global.');
 assert.match(main, /phoenix-overlay-theme-bridge/, 'Runtime deve sincronizar o tema dos drawers anexados fora da raiz Phoenix.');
-assert.match(main, /phoenix-visual-a11y\.css'[\s\S]*await import\('\.\.\/phoenix\/preview-main'\)/, 'Guardrails visuais devem carregar antes do bootstrap React final, inclusive quando o Android usa bootstrap assíncrono para biometria.');
+assert.doesNotMatch(main, /phoenix-visual-a11y\.css/, 'Guardrails visuais Phoenix não podem ser carregados pelo bootstrap Android.');
+assert.match(phoenixWebStyles, /phoenix-visual-a11y\.css/, 'Guardrails visuais devem permanecer no pacote visual Web.');
+assert.match(previewMain, /else if \(!MEG_MOBILE_RUNTIME\)[\s\S]*PhoenixWebStyles/, 'Guardrails Web devem carregar apenas fora do runtime Android.');
 assert.match(exportBridge, /querySelectorAll<HTMLTableElement>\('\.phoenix-v15 table'\)/, 'Toda tabela Phoenix deve entrar na descoberta global.');
 assert.match(exportBridge, /dataset\.megExportToolbar = 'true'/, 'Barra de exportação deve possuir marcador explícito.');
 assert.match(exportBridge, /Exportação da tabela/, 'Controles de exportação devem ter nome acessível.');
