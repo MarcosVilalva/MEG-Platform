@@ -1,4 +1,4 @@
-import React, { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import React, { FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   authenticatedRequest,
@@ -225,7 +225,7 @@ function PhoenixPreviewRoot() {
     return () => window.clearTimeout(timer);
   }, [state]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (state === 'signed-out') return;
     const legacyNativeOverlay = document.querySelector('#nativeBiometricLoadingOverlay');
     legacyNativeOverlay?.remove();
