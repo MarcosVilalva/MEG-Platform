@@ -143,7 +143,7 @@ const STABLE_VERSION_URLS = [
 const RC1_VERSION_URLS = [
   'https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-rc1-latest/app-version-rc1.json',
 ];
-const UPDATE_CHANNEL = String(import.meta.env.VITE_ANDROID_UPDATE_CHANNEL || 'stable').trim().toLowerCase();
+const UPDATE_CHANNEL = String(import.meta.env?.VITE_ANDROID_UPDATE_CHANNEL || 'stable').trim().toLowerCase();
 const VERSION_URLS = UPDATE_CHANNEL === 'rc1' ? RC1_VERSION_URLS : STABLE_VERSION_URLS;
 const VERSION_FETCH_ATTEMPTS = 3;
 const VERSION_FETCH_RETRY_MS = 900;
