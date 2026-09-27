@@ -285,3 +285,6 @@ assert.match(
 
 
 console.log('Contrato da reconstrução mobile final validado.');
+
+assert.doesNotMatch(css,/^:root\s*\{/m,'Tokens do app móvel não podem vazar para :root.');
+assert.match(css,/body\.meg-cleanroom-mobile\s*\{[\s\S]*--meg2-bg:/,'Tokens do app móvel devem ficar presos ao runtime clean-room.');
