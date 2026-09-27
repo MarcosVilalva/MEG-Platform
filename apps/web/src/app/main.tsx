@@ -39,8 +39,10 @@ async function loadWebOnlyLegacyRuntime() {
 }
 
 if (nativeOperationalBuild) {
-  document.body.classList.add('native-mobile', 'meg-operational-mobile');
-  document.body.dataset.megOperational = 'android-v2';
+  document.documentElement.classList.add('meg-cleanroom-mobile');
+  document.body.classList.add('meg-cleanroom-mobile');
+  document.documentElement.dataset.megRuntime = 'android-cleanroom';
+  document.body.dataset.megRuntime = 'android-cleanroom';
 }
 
 async function bootMegRuntime() {
