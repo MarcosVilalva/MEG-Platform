@@ -1,6 +1,5 @@
 import { authenticatedRequest } from '../app/auth-client';
 import { cardsClient, type CardStatementLifecycle } from '../app/cards-client';
-import './phoenix-card-statement-history.css';
 
 type HistoryStatus = 'none' | 'open' | 'partial' | 'paid' | 'credit' | 'reopened';
 type StatementHistoryItem = {
