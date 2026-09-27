@@ -77,10 +77,15 @@ assert.match(css, /\.meg2-user strong\{[\s\S]*display:block!important/,
 assert.match(css, /MEG PREMIUM MOBILE — referência visual aprovada/,
   'Árvore mobile deve declarar explicitamente a identidade visual aprovada.');
 
+assert.doesNotMatch(
+  main + '\n' + previewMain,
+  /classList\.add\([^\n]*meg-operational-mobile|classList\.add\([^\n]*native-mobile/,
+  'Runtime Android não pode mais ativar marcadores visuais legados.',
+);
 assert.match(
-  previewMain,
-  /document\.body\.classList\.remove\('meg-operational-mobile'\)[\s\S]*document\.body\.classList\.add\('meg-cleanroom-mobile'\)/,
-  'Runtime Android deve remover o marcador visual legado e ativar apenas o clean-room.',
+  main,
+  /document\.documentElement\.classList\.add\('meg-cleanroom-mobile'\)[\s\S]*document\.body\.classList\.add\('meg-cleanroom-mobile'\)/,
+  'Bootstrap Android deve nascer diretamente no namespace clean-room.',
 );
 assert.match(
   previewMain,
