@@ -63,14 +63,14 @@ export function MegMobileLoading({
       aria-label={`${stageLabel}. ${progressLabel}% concluído.`}
     >
       <div className="meg-loading-atmosphere" aria-hidden="true">
-        <span className="beam beam-a" />
-        <span className="beam beam-b" />
-        <span className="beam beam-c" />
-        <span className="beam beam-d" />
-        <span className="spark spark-a" />
-        <span className="spark spark-b" />
-        <span className="spark spark-c" />
-        <span className="spark spark-d" />
+        <span className="meg-loading-beam meg-loading-beam-a" />
+        <span className="meg-loading-beam meg-loading-beam-b" />
+        <span className="meg-loading-beam meg-loading-beam-c" />
+        <span className="meg-loading-beam meg-loading-beam-d" />
+        <span className="meg-loading-spark meg-loading-spark-a" />
+        <span className="meg-loading-spark meg-loading-spark-b" />
+        <span className="meg-loading-spark meg-loading-spark-c" />
+        <span className="meg-loading-spark meg-loading-spark-d" />
       </div>
 
       <section className="meg-loading-layout">
@@ -81,7 +81,7 @@ export function MegMobileLoading({
 
         <section className="meg-loading-scene" aria-hidden="true">
           <svg className="meg-loading-energy-grid" viewBox="0 0 420 250" preserveAspectRatio="none">
-            <g className="grid-glow">
+            <g className="meg-loading-grid-glow">
               <path d="M-20 88 C55 20 125 152 205 78 S350 35 445 94" />
               <path d="M-18 104 C70 36 120 170 215 94 S345 48 446 108" />
               <path d="M-15 121 C70 56 135 181 218 111 S350 66 444 124" />
@@ -90,7 +90,7 @@ export function MegMobileLoading({
               <path d="M10 177 C94 115 160 205 240 165 S355 123 425 176" />
               <path d="M34 195 C110 142 170 211 250 184 S350 145 404 194" />
             </g>
-            <g className="grid-fine">
+            <g className="meg-loading-grid-fine">
               <path d="M-20 70 C65 5 128 130 208 62 S350 17 445 76" />
               <path d="M-18 96 C66 28 132 156 213 85 S352 39 445 101" />
               <path d="M-12 132 C72 66 140 184 223 120 S354 75 442 135" />
@@ -102,7 +102,7 @@ export function MegMobileLoading({
               <path d="M255 8 L366 214" />
               <path d="M331 24 L420 188" />
             </g>
-            <g className="grid-nodes">
+            <g className="meg-loading-grid-nodes">
               <circle cx="54" cy="89" r="2.2"/><circle cx="96" cy="117" r="1.8"/>
               <circle cx="143" cy="90" r="2"/><circle cx="186" cy="136" r="2.2"/>
               <circle cx="230" cy="106" r="2"/><circle cx="279" cy="128" r="1.9"/>
@@ -112,10 +112,10 @@ export function MegMobileLoading({
               <circle cx="307" cy="158" r="1.9"/><circle cx="355" cy="176" r="2.2"/>
             </g>
           </svg>
-          <div className="meg-loading-tile tile-bars"><LoadingIcon name="bars" /></div>
-          <div className="meg-loading-tile tile-card"><LoadingIcon name="card" /></div>
-          <div className="meg-loading-tile tile-home"><LoadingIcon name="home" /></div>
-          <div className="meg-loading-tile tile-pie"><LoadingIcon name="pie" /></div>
+          <div className="meg-loading-tile meg-loading-tile-bars"><LoadingIcon name="bars" /></div>
+          <div className="meg-loading-tile meg-loading-tile-card"><LoadingIcon name="card" /></div>
+          <div className="meg-loading-tile meg-loading-tile-home"><LoadingIcon name="home" /></div>
+          <div className="meg-loading-tile meg-loading-tile-pie"><LoadingIcon name="pie" /></div>
         </section>
 
         <section className="meg-loading-progress-shell" aria-label="Progresso do carregamento">
