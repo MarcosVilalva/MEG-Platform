@@ -19,8 +19,6 @@ const CAPACITOR_MOBILE_RUNTIME = typeof window !== 'undefined'
   && Boolean((window as typeof window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.());
 const MEG_MOBILE_RUNTIME = import.meta.env.VITE_MOBILE_APP === 'true' || CAPACITOR_MOBILE_RUNTIME;
 if (MEG_MOBILE_RUNTIME && typeof document !== 'undefined') {
-  document.documentElement.classList.remove('meg-operational-mobile');
-  document.body.classList.remove('meg-operational-mobile');
   document.documentElement.classList.add('meg-cleanroom-mobile');
   document.body.classList.add('meg-cleanroom-mobile');
   document.documentElement.dataset.megRuntime = 'android-cleanroom';
