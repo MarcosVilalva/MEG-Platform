@@ -8,7 +8,6 @@ import { isPhoenixMonetaryEvent } from './home-period-summary';
 import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixSidebar } from './PhoenixSidebar';
 import { PhoenixNavIcon } from './PhoenixNavIcon';
-import { PhoenixOperationalMobileHome } from './PhoenixOperationalMobileHome';
 import { MegMobileFinal } from '../mobile/MegMobileFinal';
 import { MegMobileLoading } from '../mobile/MegMobileLoading';
 import { PhoenixProfileAvatar, hydratePhoenixAvatarPreference, readPhoenixAvatarPreference, type PhoenixAvatarPreference } from './profile-avatar';
