@@ -16,6 +16,9 @@ assert.doesNotMatch(legacyBootCss,/px-preview-boot-v5|MEG Boot 5\.0|approved-v5/
 
 assert.equal(existsSync(abandonedStaticArt),false,'A tentativa de usar screenshot como fundo deve permanecer removida.');
 assert.match(component,/data-meg-loading-reference="approved-neon-built"/,'O loading deve declarar a construção neon validada.');
+assert.doesNotMatch(component,/className="(?:beam|spark)|className="meg-loading-tile tile-/,'Classes genéricas não podem voltar ao loading e herdar CSS de outras telas.');
+assert.match(component,/meg-loading-energy-grid[\s\S]*meg-loading-grid-glow[\s\S]*meg-loading-grid-fine[\s\S]*meg-loading-grid-nodes/,'A malha central deve usar classes exclusivas do loading.');
+
 assert.match(component,/meg-loading-brand-stage[\s\S]*meg-loading-scene[\s\S]*meg-loading-progress-shell[\s\S]*meg-loading-features/,'Marca, cena, progresso e benefícios devem ser construídos em camadas reais.');
 assert.match(component,/tile-bars[\s\S]*tile-card[\s\S]*tile-home[\s\S]*tile-pie/,'Os quatro cards centrais devem ser componentes reais.');
 assert.doesNotMatch(component,/meg-loading-static-art|approved-static-art/,'A tela não pode voltar a usar screenshot como composição.');
@@ -26,12 +29,12 @@ assert.doesNotMatch(css,/meg-loading-approved-bg|background-size:100% 100%/,'O C
 assert.match(css,/\.meg-loading-screen\{[\s\S]*height:100dvh[\s\S]*overflow:hidden/,'A tela deve ocupar o viewport sem rolagem.');
 assert.match(css,/\.meg-loading-tile\{[\s\S]*box-shadow:/,'Os cards devem ter profundidade construída, não rasterizada.');
 assert.match(component,/meg-loading-energy-grid[\s\S]*grid-glow[\s\S]*grid-fine[\s\S]*grid-nodes/,'A malha luminosa central deve ser construída em SVG real, não em screenshot.');
-assert.match(css,/\.meg-loading-energy-grid\{[\s\S]*width:140%[\s\S]*height:78%/,'A malha neon deve preencher a região dos cards como na referência.');
+assert.match(css,/\.meg-loading-energy-grid\{[\s\S]*width:140%[\s\S]*height:78%[\s\S]*overflow:hidden/,'A malha neon deve preencher a região dos cards sem vazar fragmentos de rasterização.');
 assert.match(css,/\.meg-loading-tile\{[\s\S]*width:clamp\(78px,23\.5vw,104px\)/,'Os cards centrais devem permanecer grandes e agrupados.');
 assert.match(css,/\.meg-loading-scene::before\{[\s\S]*radial-gradient/,'A atmosfera atrás dos cards deve continuar construída em CSS.');
 assert.match(css,/\.meg-loading-features\{[\s\S]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/,'Os quatro benefícios devem permanecer responsivos.');
 assert.match(css,/\.meg-loading-track>span\.complete\{[\s\S]*width:100%!important[\s\S]*transition:none/,'O preenchimento deve sincronizar com 100%.');
-assert.doesNotMatch(css,/(?:-webkit-)?backdrop-filter\s*:|(^|[;{])\s*filter\s*:/m,'O loading não deve depender de filtros instáveis no Android WebView.');
+assert.doesNotMatch(css,/(?:-webkit-)?backdrop-filter\s*:|(^|[;{])\s*filter\s*:|vector-effect\s*:/m,'O loading não deve depender de filtros ou vector-effect instáveis no Android WebView.');
 
 assert.match(nativeBiometric,/approved-neon-built/,'A transição biométrica deve reutilizar a construção neon.');
 assert.match(nativeBiometric,/meg-loading-brand-stage[\s\S]*meg-loading-scene[\s\S]*meg-loading-progress-shell[\s\S]*meg-loading-features/,'A biometria deve reproduzir a mesma estrutura construída.');
