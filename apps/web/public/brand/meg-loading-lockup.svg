@@ -1,46 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="38 0 146 145" role="img" aria-labelledby="title desc">
-  <title id="title">MEG Finanças</title>
-  <desc id="desc">Marca MEG Finanças da tela inicial neon validada</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 82" role="img" aria-labelledby="title desc">
+  <title id="title">Símbolo MEG Finanças</title>
+  <desc id="desc">Barras financeiras com seta de crescimento</desc>
   <defs>
-    <linearGradient id="megArrow" x1="55" y1="63" x2="176" y2="3" gradientUnits="userSpaceOnUse">
+    <linearGradient id="arrow" x1="11" y1="72" x2="132" y2="4" gradientUnits="userSpaceOnUse">
       <stop stop-color="#119cff"/>
-      <stop offset=".46" stop-color="#14ddf3"/>
+      <stop offset=".5" stop-color="#14ddf3"/>
       <stop offset="1" stop-color="#54ffd2"/>
     </linearGradient>
-    <linearGradient id="barA" x1="77" y1="58" x2="77" y2="25" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#147ee8"/>
-      <stop offset="1" stop-color="#39eaff"/>
+    <linearGradient id="bar1" x1="35" y1="64" x2="35" y2="35" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#147ee8"/><stop offset="1" stop-color="#39eaff"/>
     </linearGradient>
-    <linearGradient id="barB" x1="101" y1="58" x2="101" y2="14" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#11b9ee"/>
-      <stop offset="1" stop-color="#57fff6"/>
+    <linearGradient id="bar2" x1="62" y1="64" x2="62" y2="22" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#11b9ee"/><stop offset="1" stop-color="#57fff6"/>
     </linearGradient>
-    <linearGradient id="barC" x1="126" y1="58" x2="126" y2="2" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#24d6df"/>
-      <stop offset="1" stop-color="#63ffd8"/>
-    </linearGradient>
-    <linearGradient id="megWord" x1="44" y1="101" x2="180" y2="101" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset=".62" stop-color="#ffffff"/>
-      <stop offset=".68" stop-color="#efffff"/>
-      <stop offset=".78" stop-color="#27f0ef"/>
-      <stop offset="1" stop-color="#00dfe8"/>
+    <linearGradient id="bar3" x1="90" y1="64" x2="90" y2="7" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#24d6df"/><stop offset="1" stop-color="#63ffd8"/>
     </linearGradient>
   </defs>
-
-  <g opacity=".16" aria-hidden="true">
-    <rect x="72" y="34" width="17" height="27" rx="2" fill="none" stroke="#38e9ff" stroke-width="5"/>
-    <rect x="96" y="22" width="17" height="39" rx="2" fill="none" stroke="#42f7ff" stroke-width="5"/>
-    <rect x="121" y="8" width="17" height="53" rx="2" fill="none" stroke="#67ffd8" stroke-width="5"/>
-    <path d="M55 69c33-5 58-19 82-43l-11-8 48-13-14 46-11-9c-26 24-54 38-89 42z" fill="none" stroke="#2ff7ef" stroke-width="9" stroke-linejoin="round"/>
-  </g>
-
-  <rect x="73" y="35" width="14" height="24" rx="2" fill="url(#barA)" stroke="#8af9ff" stroke-width=".7"/>
-  <rect x="97" y="24" width="14" height="35" rx="2" fill="url(#barB)" stroke="#8afffb" stroke-width=".7"/>
-  <rect x="122" y="10" width="14" height="49" rx="2" fill="url(#barC)" stroke="#a3ffe6" stroke-width=".7"/>
-  <path d="M56 67c31-4 57-19 80-42l-10-8 45-12-13 43-10-8c-24 23-51 36-85 40z" fill="url(#megArrow)" stroke="#ddfffb" stroke-width="1.9" stroke-linejoin="round"/>
-
-  <text x="44" y="112" fill="none" stroke="#31f6ff" stroke-width="4" opacity=".12" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="62" font-weight="900" letter-spacing="-5">MEG</text>
-  <text x="44" y="112" fill="url(#megWord)" stroke="#ffffff" stroke-width=".25" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="62" font-weight="900" letter-spacing="-5">MEG</text>
-  <text x="67" y="137" fill="#50fff2" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" font-weight="760" letter-spacing="6.1">FINANÇAS</text>
+  <rect x="27" y="38" width="16" height="27" rx="2.5" fill="url(#bar1)" stroke="#8af9ff" stroke-width="1"/>
+  <rect x="54" y="25" width="16" height="40" rx="2.5" fill="url(#bar2)" stroke="#8afffb" stroke-width="1"/>
+  <rect x="82" y="10" width="16" height="55" rx="2.5" fill="url(#bar3)" stroke="#a3ffe6" stroke-width="1"/>
+  <path d="M9 70c34-5 62-21 86-46l-12-9 49-13-14 47-12-9C80 64 51 77 16 80z"
+    fill="url(#arrow)" stroke="#e4fffc" stroke-width="2" stroke-linejoin="round"/>
 </svg>
