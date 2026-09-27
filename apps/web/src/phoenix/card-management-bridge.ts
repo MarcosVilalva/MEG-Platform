@@ -2,7 +2,6 @@ import { readSession } from '../app/auth-client';
 import { cardsClient, type CreditCard, type CreditCardMutationInput } from '../app/cards-client';
 import { resolvePhoenixCardIdentity } from './card-identity';
 import { megConfirm } from './meg-confirm';
-import './phoenix-card-management.css';
 
 type Mode = 'list' | 'create' | 'edit';
 
