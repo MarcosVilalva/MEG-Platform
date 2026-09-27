@@ -8,31 +8,33 @@ const legacyBootCss = readFileSync(new URL('../phoenix/preview-boot.css', import
 const androidStyles = readFileSync(new URL('../../../../android/app/src/main/res/values/styles.xml', import.meta.url), 'utf8');
 const mainActivity = readFileSync(new URL('../../../../android/app/src/main/java/br/com/megfinancas/app/MainActivity.java', import.meta.url), 'utf8');
 const nativeBiometric = readFileSync(new URL('../native-biometric-login.js', import.meta.url), 'utf8');
-const approvedArt = new URL('../../public/brand/meg-loading-approved-bg.jpg', import.meta.url);
+const abandonedStaticArt = new URL('../../public/brand/meg-loading-approved-bg.jpg', import.meta.url);
 
-assert.match(preview,/MegMobileLoading progress=\{active\.progress\}/,'O boot real do APK deve renderizar o loading aprovado.');
+assert.match(preview,/MegMobileLoading progress=\{active\.progress\}/,'O boot real do APK deve renderizar o loading clean-room.');
 assert.doesNotMatch(preview,/px-preview-boot-v5|data-boot-fidelity="approved-v5"/,'O V5 antigo não pode voltar ao boot principal.');
-assert.doesNotMatch(legacyBootCss,/px-preview-boot-v5|MEG Boot 5\.0|approved-v5/,'O CSS visual V5 antigo deve permanecer removido.');
+assert.doesNotMatch(legacyBootCss,/px-preview-boot-v5|MEG Boot 5\.0|approved-v5/,'O CSS V5 antigo deve permanecer removido.');
 
-assert.ok(existsSync(approvedArt),'A arte estática validada deve existir como asset do aplicativo.');
-assert.match(component,/data-meg-loading-reference="approved-static-art"/,'O loading deve declarar a arte estática aprovada como referência.');
-assert.match(component,/meg-loading-static-art/,'A tela deve usar a arte validada como composição visual única.');
-assert.doesNotMatch(component,/FeatureIcon|tile-chart|tile-card|tile-home|tile-pie|meg-loading-features/,'Ícones, cards e benefícios não podem ser reconstruídos sobre a arte.');
+assert.equal(existsSync(abandonedStaticArt),false,'A tentativa de usar screenshot como fundo deve permanecer removida.');
+assert.match(component,/data-meg-loading-reference="approved-neon-built"/,'O loading deve declarar a construção neon validada.');
+assert.match(component,/meg-loading-brand-stage[\s\S]*meg-loading-scene[\s\S]*meg-loading-progress-shell[\s\S]*meg-loading-features/,'Marca, cena, progresso e benefícios devem ser construídos em camadas reais.');
+assert.match(component,/tile-bars[\s\S]*tile-card[\s\S]*tile-home[\s\S]*tile-pie/,'Os quatro cards centrais devem ser componentes reais.');
+assert.doesNotMatch(component,/meg-loading-static-art|approved-static-art/,'A tela não pode voltar a usar screenshot como composição.');
 assert.match(component,/progressLabel/,'O progresso real deve continuar funcional.');
-assert.match(component,/progressLabel >= 100 \? 'Tudo pronto'/,'A conclusão do boot deve continuar dinâmica.');
+assert.match(component,/progressLabel >= 100 \? 'Tudo pronto'/,'A conclusão deve continuar dinâmica.');
 
-assert.match(css,/meg-loading-approved-bg\.jpg/,'O CSS deve usar diretamente a imagem validada.');
-assert.match(css,/\.meg-loading-static-art\{[\s\S]*background-size:100% 100%/,'A arte aprovada deve preencher todo o viewport.');
-assert.match(css,/\.meg-loading-progress-shell\{/,'Somente a camada funcional de progresso deve ficar sobre a arte.');
+assert.doesNotMatch(css,/meg-loading-approved-bg|background-size:100% 100%/,'O CSS não pode voltar a esticar uma imagem para fingir a tela.');
 assert.match(css,/\.meg-loading-screen\{[\s\S]*height:100dvh[\s\S]*overflow:hidden/,'A tela deve ocupar o viewport sem rolagem.');
+assert.match(css,/\.meg-loading-tile\{[\s\S]*box-shadow:/,'Os cards devem ter profundidade construída, não rasterizada.');
+assert.match(css,/\.meg-loading-scene::before\{[\s\S]*repeating-radial-gradient/,'A malha neon deve ser construída em CSS.');
+assert.match(css,/\.meg-loading-features\{[\s\S]*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/,'Os quatro benefícios devem permanecer responsivos.');
 assert.match(css,/\.meg-loading-track>span\.complete\{[\s\S]*width:100%!important[\s\S]*transition:none/,'O preenchimento deve sincronizar com 100%.');
 assert.doesNotMatch(css,/(?:-webkit-)?backdrop-filter\s*:|(^|[;{])\s*filter\s*:/m,'O loading não deve depender de filtros instáveis no Android WebView.');
 
-assert.match(nativeBiometric,/approved-static-art/,'A transição biométrica deve reutilizar exatamente a mesma arte estática.');
-assert.match(nativeBiometric,/meg-loading-static-art[\s\S]*meg-loading-progress-shell/,'A transição biométrica deve manter apenas arte e progresso.');
-assert.doesNotMatch(nativeBiometric,/tile-chart|tile-card|tile-home|tile-pie|meg-loading-features/,'A transição biométrica não pode reconstruir os ícones.');
+assert.match(nativeBiometric,/approved-neon-built/,'A transição biométrica deve reutilizar a construção neon.');
+assert.match(nativeBiometric,/meg-loading-brand-stage[\s\S]*meg-loading-scene[\s\S]*meg-loading-progress-shell[\s\S]*meg-loading-features/,'A biometria deve reproduzir a mesma estrutura construída.');
+assert.doesNotMatch(nativeBiometric,/meg-loading-static-art|approved-static-art/,'A biometria não pode voltar ao screenshot.');
 
 assert.match(androidStyles,/android:windowLightStatusBar">false<[\s\S]*android:windowLightNavigationBar">false</,'O tema Android deve usar ícones claros nas barras do sistema.');
 assert.match(mainActivity,/setSystemBarsAppearance\([\s\S]*APPEARANCE_LIGHT_STATUS_BARS[\s\S]*APPEARANCE_LIGHT_NAVIGATION_BARS/,'O runtime Android deve manter as barras do sistema escuras.');
 
-console.log('Contrato do loading mobile com arte estática validada.');
+console.log('Contrato do loading mobile neon construído validado.');
