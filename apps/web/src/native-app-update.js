@@ -136,10 +136,15 @@ async function getAppUpdater() {
   appUpdaterPromise ||= import('@capacitor/core').then(({ registerPlugin }) => registerPlugin('AppUpdater'));
   return appUpdaterPromise;
 }
-const VERSION_URLS = [
+const STABLE_VERSION_URLS = [
   'https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json',
   'https://raw.githubusercontent.com/MarcosVilalva/MEG-Platform/main/apps/web/public/downloads/app-version.json',
 ];
+const RC1_VERSION_URLS = [
+  'https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-rc1-latest/app-version-rc1.json',
+];
+const UPDATE_CHANNEL = String(import.meta.env.VITE_ANDROID_UPDATE_CHANNEL || 'stable').trim().toLowerCase();
+const VERSION_URLS = UPDATE_CHANNEL === 'rc1' ? RC1_VERSION_URLS : STABLE_VERSION_URLS;
 const VERSION_FETCH_ATTEMPTS = 3;
 const VERSION_FETCH_RETRY_MS = 900;
 const VERSION_FETCH_TIMEOUT_MS = 8000;
