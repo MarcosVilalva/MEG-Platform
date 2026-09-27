@@ -75,6 +75,7 @@
 .meg-loading-spark-d{right:24%;top:13%;width:4px;height:4px}
 
 .meg-loading-layout{
+  --loading-side-pad:clamp(18px,4.8vw,26px);
   position:relative;
   z-index:1;
   width:min(100%,480px);
@@ -82,7 +83,7 @@
   margin:0 auto;
   padding:
     max(14px,env(safe-area-inset-top))
-    clamp(14px,4.4vw,22px)
+    0
     max(12px,calc(env(safe-area-inset-bottom) + 1.2dvh));
   display:grid;
   grid-template-rows:minmax(0,1.02fr) minmax(0,1.08fr) auto auto;
@@ -92,6 +93,7 @@
 
 .meg-loading-brand-stage{
   min-height:0;
+  padding-inline:var(--loading-side-pad);
   display:grid;
   justify-items:center;
   align-content:end;
@@ -120,7 +122,8 @@
   contain:layout;
   position:relative;
   min-height:0;
-  width:min(100vw,430px);
+  width:100%;
+  max-width:430px;
   height:100%;
   justify-self:center;
   isolation:isolate;
@@ -152,11 +155,13 @@
 .meg-loading-energy-grid{
   position:absolute;
   z-index:-1;
-  left:0;
-  width:100%;
-  height:78%;
-  top:17%;
+  left:50%;
+  width:calc(100% + 88px);
+  max-width:none;
+  height:82%;
+  top:14%;
   overflow:hidden;
+  transform:translateX(-50%);
   shape-rendering:geometricPrecision;
 }
 .meg-loading-energy-grid path{
@@ -165,12 +170,12 @@
   stroke-linejoin:round;
 }
 .meg-loading-energy-grid .meg-loading-grid-glow path{
-  stroke:rgba(45,255,248,.30);
-  stroke-width:3;
+  stroke:rgba(45,255,248,.40);
+  stroke-width:3.4;
 }
 .meg-loading-energy-grid .meg-loading-grid-fine path{
-  stroke:rgba(67,255,249,.36);
-  stroke-width:.85;
+  stroke:rgba(67,255,249,.42);
+  stroke-width:.9;
 }
 .meg-loading-energy-grid .meg-loading-grid-nodes circle{
   fill:#72fff8;
@@ -180,7 +185,7 @@
 
 .meg-loading-tile{
   position:absolute;
-  width:clamp(78px,23.5vw,104px);
+  width:clamp(80px,22.8vw,106px);
   aspect-ratio:1;
   display:grid;
   place-items:center;
@@ -217,13 +222,15 @@
   background:linear-gradient(180deg,rgba(180,255,252,.18),transparent);
 }
 .meg-loading-tile svg{width:49%;height:49%;stroke-width:1.9}
-.meg-loading-tile-bars{left:5%;top:18%;transform:rotate(-11deg)}
-.meg-loading-tile-card{left:37%;top:10%;transform:rotate(7deg)}
-.meg-loading-tile-home{left:25%;top:47%;z-index:3;transform:rotate(-8deg)}
-.meg-loading-tile-pie{right:5%;top:45%;z-index:2;transform:rotate(10deg)}
+.meg-loading-tile-bars{left:11%;top:18%;transform:rotate(-11deg)}
+.meg-loading-tile-card{left:48%;top:11%;transform:rotate(7deg)}
+.meg-loading-tile-home{left:28%;top:51%;z-index:3;transform:rotate(-8deg)}
+.meg-loading-tile-pie{right:10%;top:49%;z-index:2;transform:rotate(10deg)}
 
 .meg-loading-progress-shell{
-  width:100%;
+  width:auto;
+  min-width:0;
+  margin-inline:var(--loading-side-pad);
   display:grid;
   gap:6px;
   padding-top:2px;
@@ -262,6 +269,7 @@
 
 .meg-loading-features{
   min-height:clamp(78px,10.8dvh,102px);
+  margin-inline:var(--loading-side-pad);
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
   align-items:center;
@@ -345,10 +353,9 @@
   .meg-loading-feature p{font-size:4px}
 }
 @media(max-width:340px){
-  .meg-loading-layout{padding-inline:10px}
+  .meg-loading-layout{--loading-side-pad:10px}
   .meg-loading-brand{width:150px}
   .meg-loading-tagline{font-size:7.6px;letter-spacing:.16em}
-  .meg-loading-scene{width:100vw}
   .meg-loading-tile{width:48px}
   .meg-loading-progress-copy{font-size:7.2px}
   .meg-loading-feature p{font-size:4px}
