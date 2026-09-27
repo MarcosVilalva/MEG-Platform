@@ -1,5 +1,6 @@
-// Entrada oficial de produção. Mantemos um único bootstrap para Web e Android,
-// mas o runtime visual e financeiro pertence integralmente à Phoenix V15.
+// Entrada oficial de produção.
+// Web mantém o shell Phoenix legado; Android nasce no clean-room móvel e
+// compartilha apenas serviços, dados e regras de negócio explicitamente permitidos.
 import '../mobile/meg-mobile-loading.css';
 import { clearSession } from './auth-client';
 
