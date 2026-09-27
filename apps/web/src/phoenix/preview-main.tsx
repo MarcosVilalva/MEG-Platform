@@ -176,15 +176,15 @@ function PhoenixBootScreen({ stage }: { stage: BootStage }) {
 }
 
 function PhoenixBootErrorScreen({ message, busy, onRetry, onLogout }: { message: string; busy: boolean; onRetry: () => void; onLogout: () => void }) {
-  return <main className="px-preview-fullscreen-boot" aria-live="assertive">
-    <section className="px-preview-boot-card px-preview-boot-error" aria-label="Falha ao preparar MEG Finanças">
-      <div className="px-preview-boot-logo"><img src={previewBrandAsset('brand/meg-finance-system-mark.svg')} alt="MEG Finanças" /></div>
-      <div className="px-preview-boot-copy"><span>ACESSO CONFIRMADO</span><h1>Não foi possível carregar seus dados.</h1><p>{message}</p></div>
-      <div className="px-preview-boot-error-actions">
-        <button className="px-preview-submit" type="button" disabled={busy} onClick={onRetry}><span>{busy ? 'Carregando…' : 'Tentar novamente'}</span><span aria-hidden="true">↻</span></button>
-        <button className="px-preview-secondary" type="button" disabled={busy} onClick={onLogout}>Sair</button>
+  return <main className="meg-loading-error-screen" aria-live="assertive">
+    <section className="meg-loading-error-card" aria-label="Falha ao preparar MEG Finanças">
+      <div className="meg-loading-error-logo"><img src={previewBrandAsset('brand/meg-finance-system-mark.svg')} alt="MEG Finanças" /></div>
+      <div className="meg-loading-error-copy"><span>ACESSO CONFIRMADO</span><h1>Não foi possível carregar seus dados.</h1><p>{message}</p></div>
+      <div className="meg-loading-error-actions">
+        <button className="meg-loading-error-primary" type="button" disabled={busy} onClick={onRetry}><span>{busy ? 'Carregando…' : 'Tentar novamente'}</span><span aria-hidden="true">↻</span></button>
+        <button className="meg-loading-error-secondary" type="button" disabled={busy} onClick={onLogout}>Sair</button>
       </div>
-      <div className="px-preview-boot-foot"><i aria-hidden="true" /><span>Sua autenticação permanece válida enquanto você tenta novamente.</span></div>
+      <div className="meg-loading-error-foot"><i aria-hidden="true" /><span>Sua autenticação permanece válida enquanto você tenta novamente.</span></div>
     </section>
   </main>;
 }
@@ -568,7 +568,7 @@ function PhoenixPreviewRoot() {
           {error ? <div className="px-preview-error" role="alert"><span>!</span><div><strong>Não foi possível entrar</strong><small>{error}</small></div></div> : null}
           {success ? <div className="px-preview-success" role="status"><span>✓</span><div><strong>Pronto</strong><small>{success}</small></div></div> : null}
 
-          <button className="px-preview-submit" type="submit" disabled={busy || !email.trim() || !password}><span>{busy ? 'Validando acesso…' : 'Entrar no MEG'}</span>{!busy ? <span aria-hidden="true">→</span> : <span className="px-preview-button-spinner" aria-hidden="true" />}</button>
+          <button className="meg-loading-error-primary" type="submit" disabled={busy || !email.trim() || !password}><span>{busy ? 'Validando acesso…' : 'Entrar no MEG'}</span>{!busy ? <span aria-hidden="true">→</span> : <span className="px-preview-button-spinner" aria-hidden="true" />}</button>
           <div className="px-preview-auth-switch"><span>Novo por aqui?</span><button type="button" onClick={() => switchMode('register')}>Criar conta</button></div>
         </form> : mode === 'register' ? <form className="px-preview-form px-preview-form-register" onSubmit={submitRegister}>
           <div className="px-preview-copy"><button className="px-preview-back" type="button" onClick={() => switchMode('login')}>← Voltar</button><h2>Crie seu acesso.</h2><p>Cadastre seus dados e escolha como quer começar no MEG.</p></div>
@@ -586,15 +586,15 @@ function PhoenixPreviewRoot() {
 
           {error ? <div className="px-preview-error" role="alert"><span>!</span><div><strong>Revise o cadastro</strong><small>{error}</small></div></div> : null}
           {success ? <div className="px-preview-success" role="status"><span>✓</span><div><strong>Solicitação registrada</strong><small>{success}</small></div></div> : null}
-          <button className="px-preview-submit" type="submit" disabled={busy || Boolean(success)}><span>{busy ? 'Enviando cadastro…' : success ? 'Aguardando aprovação' : 'Continuar'}</span>{!busy ? <span aria-hidden="true">→</span> : <span className="px-preview-button-spinner" aria-hidden="true" />}</button>
-          {success ? <button className="px-preview-secondary" type="button" onClick={() => { setEmail(registerEmail); switchMode('login'); }}>Voltar para o login</button> : null}
+          <button className="meg-loading-error-primary" type="submit" disabled={busy || Boolean(success)}><span>{busy ? 'Enviando cadastro…' : success ? 'Aguardando aprovação' : 'Continuar'}</span>{!busy ? <span aria-hidden="true">→</span> : <span className="px-preview-button-spinner" aria-hidden="true" />}</button>
+          {success ? <button className="meg-loading-error-secondary" type="button" onClick={() => { setEmail(registerEmail); switchMode('login'); }}>Voltar para o login</button> : null}
         </form> : <form className="px-preview-form" onSubmit={submitForgot}>
           <div className="px-preview-copy"><button className="px-preview-back" type="button" onClick={() => switchMode('login')}>← Voltar</button><h2>Recuperar acesso.</h2><p>Informe seu e-mail. O MEG enviará uma senha temporária pelos canais configurados para a sua conta.</p></div>
           <label className="px-preview-field"><span>E-mail</span><input type="email" autoComplete="username" inputMode="email" value={email} onChange={(event) => { setEmail(event.target.value); if (error) setError(''); }} placeholder="seu@email.com" autoFocus /></label>
           {error ? <div className="px-preview-error" role="alert"><span>!</span><div><strong>Não foi possível recuperar</strong><small>{error}</small></div></div> : null}
           {success ? <div className="px-preview-success" role="status"><span>✓</span><div><strong>Confira seus canais</strong><small>{success}</small></div></div> : null}
-          <button className="px-preview-submit" type="submit" disabled={busy || !email.trim() || Boolean(success)}><span>{busy ? 'Enviando…' : success ? 'Recuperação enviada' : 'Enviar recuperação'}</span>{!busy ? <span aria-hidden="true">→</span> : <span className="px-preview-button-spinner" aria-hidden="true" />}</button>
-          {success ? <button className="px-preview-secondary" type="button" onClick={() => switchMode('login')}>Voltar para entrar</button> : null}
+          <button className="meg-loading-error-primary" type="submit" disabled={busy || !email.trim() || Boolean(success)}><span>{busy ? 'Enviando…' : success ? 'Recuperação enviada' : 'Enviar recuperação'}</span>{!busy ? <span aria-hidden="true">→</span> : <span className="px-preview-button-spinner" aria-hidden="true" />}</button>
+          {success ? <button className="meg-loading-error-secondary" type="button" onClick={() => switchMode('login')}>Voltar para entrar</button> : null}
         </form>}
 
         <div className="px-preview-environment"><span>Phoenix V15</span><i aria-hidden="true" /><small>Ambiente de validação</small></div>
