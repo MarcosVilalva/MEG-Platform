@@ -1,17 +1,20 @@
-html, body, #root {
+html:not(.meg-cleanroom-mobile),
+body:not(.meg-cleanroom-mobile),
+body:not(.meg-cleanroom-mobile) #root {
   margin:0;
   min-width:0;
   min-height:100%;
 }
 
-html { background:#03100d; }
-body {
+html:not(.meg-cleanroom-mobile) { background:#03100d; }
+body:not(.meg-cleanroom-mobile) {
   min-height:100vh;
   font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;
   background:#03100d;
 }
-button, input { font:inherit; }
-button { -webkit-tap-highlight-color:transparent; }
+body:not(.meg-cleanroom-mobile) button,
+body:not(.meg-cleanroom-mobile) input { font:inherit; }
+body:not(.meg-cleanroom-mobile) button { -webkit-tap-highlight-color:transparent; }
 
 .px-preview-auth {
   min-height:100vh;
