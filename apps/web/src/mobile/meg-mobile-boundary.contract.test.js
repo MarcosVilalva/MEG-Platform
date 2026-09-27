@@ -30,9 +30,46 @@ const allowedPhoenixImports = [
   '../phoenix/data/',
 ];
 
+const quarantinedGenerations = {
+  'meg2-': new Set([
+    'apps/web/src/mobile/MegMobileFinal.tsx',
+    'apps/web/src/mobile/meg-mobile-final.css',
+    'apps/web/src/mobile/meg-mobile-launch-sheet.css',
+    'apps/web/src/mobile/meg-mobile-runtime.css',
+  ]),
+  'meg3-': new Set([
+    'apps/web/src/mobile/MegMobileBenefitModal.tsx',
+    'apps/web/src/mobile/MegMobileCardCenter.tsx',
+    'apps/web/src/mobile/MegMobileCoreScreens.tsx',
+    'apps/web/src/mobile/MegMobileLaunchSheet.tsx',
+    'apps/web/src/mobile/meg-mobile-benefit.css',
+    'apps/web/src/mobile/meg-mobile-card-center.css',
+    'apps/web/src/mobile/meg-mobile-core-screens.css',
+    'apps/web/src/mobile/meg-mobile-launch-sheet.css',
+    'apps/web/src/mobile/meg-mobile-runtime.css',
+  ]),
+  'meg4-': new Set([
+    'apps/web/src/mobile/MegMobileSettings.tsx',
+    'apps/web/src/mobile/meg-mobile-settings.css',
+    'apps/web/src/mobile/meg-mobile-runtime.css',
+  ]),
+  'meg5-': new Set([
+    'apps/web/src/mobile/MegMobilePicker.tsx',
+    'apps/web/src/mobile/meg-mobile-picker.css',
+    'apps/web/src/mobile/meg-mobile-launch-sheet.css',
+  ]),
+};
+
 for (const file of mobileSources) {
   const source = readFileSync(file, 'utf8');
   const rel = relative(repoRoot, file).replaceAll('\\', '/');
+
+  for (const [prefix, allowedFiles] of Object.entries(quarantinedGenerations)) {
+    if (source.includes(prefix)) {
+      assert.ok(allowedFiles.has(rel),
+        rel + ': geração móvel antiga ' + prefix + ' está em quarentena e não pode se espalhar para novos arquivos. Use o namespace semântico da reconstrução.');
+    }
+  }
 
   assert.doesNotMatch(source, /\bpx-[a-z0-9-]+/i,
     rel + ': código clean-room não pode reutilizar classes visuais px-* do Phoenix.');
