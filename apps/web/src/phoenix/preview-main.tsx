@@ -13,9 +13,7 @@ import { PhoenixApp } from './PhoenixApp';
 import { MegMobileLoading } from '../mobile/MegMobileLoading';
 import { loadPhoenixReadModel } from './data/load-phoenix-read-model';
 import './preview.css';
-import './phoenix-preview-parity.css';
 import './preview-auth-flow.css';
-import './preview-boot.css';
 
 const MEG_MOBILE_RUNTIME = import.meta.env.VITE_MOBILE_APP === 'true';
 if (MEG_MOBILE_RUNTIME && typeof document !== 'undefined') {
