@@ -158,6 +158,7 @@ export function MegMobileLaunchSheet({
 
   const selectedMethod = methods.find((item) => item.id === paymentMethodId);
   const selectedCategory = categories.find((item) => item.id === categoryId);
+  const credit = mode === 'expense' && (Boolean(cardId) || isCreditMethod(selectedMethod) || Boolean(cardMeta));
 
   useEffect(() => {
     if (mode !== 'expense' || credit || !selectedCategory) return;
@@ -228,7 +229,6 @@ export function MegMobileLaunchSheet({
     );
   }
   const creditMethod = methods.find((item) => isCreditMethod(item));
-  const credit = mode === 'expense' && (Boolean(cardId) || isCreditMethod(selectedMethod) || Boolean(cardMeta));
   const selectedCard = data.cards.find((item) => item.id === cardId);
   const installmentPreview = useMemo(() => {
     if (!credit || !selectedCard || !date || parseAmount(amount) <= 0) return [];
