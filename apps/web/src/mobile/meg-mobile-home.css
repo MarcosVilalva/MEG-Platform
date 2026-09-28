@@ -19,26 +19,35 @@
   --home-muted:#acc5c3;
 }
 .meg-home-screen button{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
-.meg-home-screen svg{display:block;overflow:visible;shape-rendering:geometricPrecision}
-.meg-home-screen img{backface-visibility:hidden}
+.meg-home-screen svg{display:block;overflow:hidden;shape-rendering:auto}
+.meg-home-screen img{display:block;image-rendering:auto}
+.meg-home-icon-asset{width:22px;height:22px;object-fit:contain;pointer-events:none}
+.meg-home-period-icon .meg-home-icon-asset{width:18px;height:18px}
+.meg-home-title>i .meg-home-icon-asset{width:24px;height:24px}
+.meg-home-period-icon,.meg-home-title>i{
+  overflow:hidden;
+  contain:paint;
+  isolation:isolate;
+  transform:none;
+}
 .meg-home-header{
   min-height:66px;
   padding:max(9px,env(safe-area-inset-top)) 11px 8px;
   display:grid;
-  grid-template-columns:50px minmax(0,1fr) 92px;
+  grid-template-columns:48px minmax(0,1fr) 88px;
   align-items:end;
-  gap:8px;
+  gap:7px;
   border-bottom:1px solid rgba(41,219,211,.17);
   background:linear-gradient(180deg,rgba(0,57,59,.98),rgba(0,47,50,.94));
 }
-.meg-home-logo{width:46px;height:46px;display:grid;place-items:center}
+.meg-home-logo{width:44px;height:44px;display:grid;place-items:center}
 .meg-home-logo img{width:100%;height:100%;object-fit:contain}
 .meg-home-period{
   min-width:0;
-  height:46px;
-  padding:4px 10px 4px 6px;
+  height:43px;
+  padding:4px 8px 4px 5px;
   display:grid;
-  grid-template-columns:34px minmax(0,1fr) 14px;
+  grid-template-columns:31px minmax(0,1fr) 13px;
   align-items:center;
   gap:7px;
   border:1px solid rgba(29,224,215,.48);
@@ -46,16 +55,16 @@
   background:rgba(1,54,57,.76);
   text-align:left;
 }
-.meg-home-period-icon{width:32px;height:32px;display:grid;place-items:center;border-radius:10px;color:var(--home-cyan);background:rgba(6,125,125,.31);border:1px solid rgba(32,226,217,.16)}
+.meg-home-period-icon{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;color:var(--home-cyan);background:rgba(6,125,125,.31);border:1px solid rgba(32,226,217,.16)}
 .meg-home-period-icon b{font-size:23px;line-height:1}
 .meg-home-period>span:nth-child(2){display:grid;min-width:0}
-.meg-home-period strong{font-size:12px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meg-home-period strong{font-size:11px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .meg-home-period small{margin-top:2px;color:#a9c3c1;font-size:7.5px}
 .meg-home-period>i{font-style:normal;color:var(--home-cyan);font-size:19px;text-align:center}
-.meg-home-user{height:46px;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:6px;border:0;background:transparent;padding:0 1px}
-.meg-home-avatar{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.78);background:#0b7f7b;color:#fff;font-weight:900}
+.meg-home-user{height:43px;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:6px;border:0;background:transparent;padding:0 1px}
+.meg-home-avatar{width:36px;height:36px;display:grid;place-items:center;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.78);background:#0b7f7b;color:#fff;font-weight:900}
 .meg-home-avatar img{width:100%;height:100%;object-fit:cover}
-.meg-home-user strong{min-width:0;max-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;letter-spacing:.025em}
+.meg-home-user strong{min-width:0;max-width:46px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;letter-spacing:.025em}
 
 .meg-home-content{
   min-height:0;
@@ -65,27 +74,27 @@
   flex-direction:column;
   gap:7px;
 }
-.meg-home-title{position:relative;min-height:64px;padding:0 52px 2px 2px;display:grid;align-items:center}
+.meg-home-title{position:relative;min-height:60px;padding:0 47px 2px 2px;display:grid;align-items:center}
 .meg-home-title>div>span{display:block;font-size:9px;font-weight:800}
-.meg-home-title h1{margin:1px 0 0;font-size:clamp(24px,7.2vw,32px);line-height:1.02;letter-spacing:-.035em}
+.meg-home-title h1{margin:1px 0 0;font-size:clamp(22px,6.5vw,29px);line-height:1.02;letter-spacing:-.035em}
 .meg-home-title p{margin:2px 0 0;color:#d4e2e1;font-size:9.5px;line-height:1.25}
-.meg-home-title>i{position:absolute;right:3px;top:8px;width:44px;height:44px;display:grid;place-items:center;border:1px solid rgba(27,219,211,.28);border-radius:9px;color:var(--home-cyan);background:rgba(2,73,75,.54);font-style:normal}
+.meg-home-title>i{position:absolute;right:2px;top:8px;width:40px;height:40px;display:grid;place-items:center;border:1px solid rgba(27,219,211,.28);border-radius:9px;color:var(--home-cyan);background:rgba(2,73,75,.54);font-style:normal}
 
 .meg-home-balance{
-  min-height:82px;
-  padding:9px 11px;
+  min-height:76px;
+  padding:8px 10px;
   display:grid;
-  grid-template-columns:50px minmax(0,1fr);
+  grid-template-columns:46px minmax(0,1fr);
   align-items:center;
   gap:10px;
   border:1px solid rgba(27,220,212,.43);
   border-radius:15px;
   background:linear-gradient(145deg,rgba(5,82,82,.88),rgba(1,48,52,.96));
 }
-.meg-home-balance>span{width:46px;height:46px;display:grid;place-items:center;border-radius:11px;background:rgba(8,132,130,.31);color:var(--home-cyan)}
+.meg-home-balance>span{width:42px;height:42px;display:grid;place-items:center;border-radius:11px;background:rgba(8,132,130,.31);color:var(--home-cyan)}
 .meg-home-balance div{min-width:0}
 .meg-home-balance small{display:block;font-size:10px;font-weight:800}
-.meg-home-balance strong{display:block;margin-top:2px;color:var(--home-cyan);font-size:clamp(22px,7.2vw,31px);line-height:1;white-space:nowrap;letter-spacing:-.025em}
+.meg-home-balance strong{display:block;margin-top:2px;color:var(--home-cyan);font-size:clamp(21px,6.6vw,29px);line-height:1;white-space:nowrap;letter-spacing:-.025em}
 .meg-home-balance p{margin:4px 0 0;color:#b4cbc9;font-size:8px}
 
 .meg-home-flow{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -160,15 +169,15 @@
 .meg-home-quick>header>div>span{width:29px;height:29px;display:grid;place-items:center;border-radius:8px;background:rgba(7,135,132,.25);color:var(--home-cyan)}
 .meg-home-quick p{margin:0;display:grid}
 .meg-home-quick p b{font-size:9px}.meg-home-quick p small{color:var(--home-muted);font-size:7px}
-.meg-home-quick header button{border:0;background:transparent;color:var(--home-cyan);font-size:8px;font-weight:800}
+.meg-home-quick header button{border:0;background:transparent;color:var(--home-cyan);font-size:7px;font-weight:750}
 .meg-home-quick>div{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:5px}
 .meg-home-quick>div button{min-width:0;min-height:53px;padding:5px 2px;display:grid;justify-items:center;align-content:center;gap:3px;border:1px solid rgba(36,201,194,.16);border-radius:10px;background:rgba(2,61,64,.72)}
 .meg-home-quick>div button span{width:31px;height:31px;display:grid;place-items:center;border-radius:8px;color:var(--home-cyan);background:rgba(7,123,122,.22)}
 .meg-home-quick>div button small{font-size:7px;white-space:nowrap}
 
 .meg-home-dock{
-  min-height:70px;
-  padding:5px 5px max(5px,env(safe-area-inset-bottom));
+  min-height:66px;
+  padding:4px 5px max(4px,env(safe-area-inset-bottom));
   display:grid;
   grid-template-columns:repeat(5,minmax(0,1fr));
   border-top:1px solid rgba(50,216,207,.18);
@@ -178,7 +187,7 @@
 .meg-home-dock>button>span:last-child,.meg-home-new small{font-size:7.5px}
 .meg-home-dock>button.active{color:var(--home-cyan)}
 .meg-home-dock>button.active::before{content:"";position:absolute;inset:0 2px;border:1px solid rgba(31,227,219,.36);border-radius:13px;background:rgba(8,124,124,.19);z-index:-1}
-.meg-home-new>span:first-child{width:45px;height:45px;margin-top:-16px;display:grid;place-items:center;border:1px solid var(--home-cyan);border-radius:50%;background:linear-gradient(180deg,#087d7a,#034f54);color:var(--home-cyan);box-shadow:0 0 0 4px #00363a}
+.meg-home-new>span:first-child{width:41px;height:41px;margin-top:-12px;display:grid;place-items:center;border:1px solid var(--home-cyan);border-radius:50%;background:linear-gradient(180deg,#087d7a,#034f54);color:var(--home-cyan);box-shadow:0 0 0 4px #00363a}
 .meg-home-badge-wrap{position:relative;display:grid;place-items:center}
 .meg-home-badge-wrap b{position:absolute;right:-10px;top:-7px;min-width:17px;height:17px;padding:0 4px;display:grid;place-items:center;border-radius:10px;background:#ff3e55;color:#fff;font-size:7px}
 
@@ -211,15 +220,16 @@
   .meg-home-quick>div{gap:3px}
 }
 @media(max-height:760px){
-  .meg-home-header{min-height:68px;padding-bottom:6px}.meg-home-logo{width:48px;height:48px}.meg-home-period,.meg-home-user{height:47px}.meg-home-avatar{width:39px;height:39px}
+  .meg-home-header{min-height:61px;padding-bottom:5px}.meg-home-logo{width:41px;height:41px}.meg-home-period,.meg-home-user{height:40px}.meg-home-avatar{width:34px;height:34px}
   .meg-home-content{gap:5px;padding-top:6px;padding-bottom:5px}
-  .meg-home-title{min-height:59px}.meg-home-title h1{font-size:25px}.meg-home-title p{font-size:8px}.meg-home-title>i{width:43px;height:43px}
-  .meg-home-balance{min-height:76px;padding-block:7px}.meg-home-balance>span{width:45px;height:45px}.meg-home-balance strong{font-size:27px}
+  .meg-home-title{min-height:54px}.meg-home-title h1{font-size:23px}.meg-home-title p{font-size:8px}.meg-home-title>i{width:36px;height:36px}
+  .meg-home-balance{min-height:70px;padding-block:6px}.meg-home-balance>span{width:39px;height:39px}.meg-home-balance strong{font-size:25px}
   .meg-home-flow article{min-height:54px;padding-block:5px}.meg-home-flow article.result{min-height:49px}
   .meg-home-summary article{min-height:88px;padding-top:5px}.meg-home-summary article>span{width:31px;height:31px}.meg-home-summary small{min-height:19px}.meg-home-summary b{font-size:15px}
   .meg-home-benefit{min-height:59px}.meg-home-benefit>span{width:42px;height:42px}.meg-home-benefit strong{font-size:17px}
   .meg-home-quick{min-height:88px}.meg-home-quick>header{min-height:34px}.meg-home-quick>div button{min-height:45px}.meg-home-quick>div button span{width:27px;height:27px}
-  .meg-home-dock{min-height:64px}
+  .meg-home-dock{min-height:59px}
+  .meg-home-new>span:first-child{width:38px;height:38px;margin-top:-10px}
 }
 @media(max-height:680px){
   .meg-home-quick p small,.meg-home-balance p{display:none}
