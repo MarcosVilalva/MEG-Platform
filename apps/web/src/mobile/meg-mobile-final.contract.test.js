@@ -178,7 +178,10 @@ assert.match(
 assert.match(home,/data-meg-home="approved-final"/,'Home nova deve declarar o checkpoint visual aprovado.');
 assert.match(home,/icons\/meg-home-calendar\.svg[\s\S]*icons\/meg-home-trend\.svg/,'Ícones críticos do cabeçalho devem ser assets externos estáveis no Android.');
 assert.doesNotMatch(home,/if\(name==='calendar'\) return <svg|if\(name==='trend'\) return <svg/,'Ícones críticos do cabeçalho não podem voltar a SVG inline no WebView.');
-assert.match(homeCss,/\.meg-home-header\{[\s\S]*min-height:66px[\s\S]*grid-template-columns:50px minmax\(0,1fr\) auto/,'Cabeçalho da Home deve permanecer compacto como na referência final.');
+assert.match(homeCss,/\.meg-home-header\{[\s\S]*min-height:66px[\s\S]*grid-template-columns:48px minmax\(0,1fr\) 88px/,'Cabeçalho da Home deve permanecer compacto e equilibrado como na referência final.');
+assert.match(homeCss,/\.meg-home-screen svg\{[\s\S]*overflow:hidden[\s\S]*shape-rendering:auto/,'SVGs da Home não podem transbordar nem forçar rasterização geométrica instável no WebView.');
+assert.match(homeCss,/\.meg-home-period-icon,\.meg-home-title>i\{[\s\S]*contain:paint[\s\S]*isolation:isolate/,'Ícones críticos devem ficar isolados para impedir fragmentos de composição no Android.');
+assert.match(homeCss,/@media\(max-height:760px\)[\s\S]*\.meg-home-header\{min-height:61px[\s\S]*\.meg-home-dock\{min-height:59px/,'Telas baixas devem compactar a Home, nunca ampliar o cabeçalho ou o dock.');
 
 assert.match(home,/Benefício Alimentação[\s\S]*Ações rápidas[\s\S]*Cartões[\s\S]*Pagar conta[\s\S]*Fluxo de caixa[\s\S]*Ver relatórios/,'Home deve preservar os blocos funcionais aprovados.');
 assert.match(home,/Resumo do mês[\s\S]*Saldo inicial[\s\S]*Saldo final[\s\S]*Contas pagas/,'Mês passado deve preservar a leitura histórica validada.');
