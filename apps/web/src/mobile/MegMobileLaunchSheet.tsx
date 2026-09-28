@@ -518,7 +518,7 @@ export function MegMobileLaunchSheet({
 
           <MegMobilePicker
             className="wide"
-            label={mode === 'income' ? 'Forma de recebimento' : 'Forma de pagamento'
+            label={mode === 'income' ? 'Forma de recebimento' : 'Forma de pagamento'}
             value={paymentMethodId}
             options={paymentOptions}
             disabled={mode === 'benefit'}
