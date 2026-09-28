@@ -65,7 +65,8 @@ function EventContextGlyph({ event }: { event: FinancialEvent }) {
   if (/combust|posto|gasolina|etanol/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h10v17M4 21h12M7 7h6v5H7zM15 8h2l3 3v7a2 2 0 0 1-4 0v-4"/></svg>;
   if (/saude|medic|farmac|hospital/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-4.6-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.4-8 11-8 11Z"/><path d="M9 12h6M12 9v6"/></svg>;
   if (/educa|escola|curso|faculdade|livro/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 7 9-4 9 4-9 4-9-4Z"/><path d="M7 9v5c3 2 7 2 10 0V9M21 7v7"/></svg>;
-  if (/internet|telefone|celular|wifi/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9a12 12 0 0 1 16 0M7 13a8 8 0 0 1 10 0M10 17a3 3 0 0 1 4 0"/><circle cx="12" cy="20" r="1"/></svg>;
+  if (/comunicacao|telefone|celular|claro|vivo|tim|oi|fibra/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.2 3.5 10 7.8 8.2 10c1.2 2.5 3.3 4.6 5.8 5.8l2.2-1.8 4.3 2.8-.8 3.2c-.2.8-1 1.4-1.9 1.3C10.2 20.4 3.6 13.8 2.7 6.2c-.1-.9.5-1.7 1.3-1.9l3.2-.8Z"/></svg>;
+  if (/internet|wifi|banda larga/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9a12 12 0 0 1 16 0M7 13a8 8 0 0 1 10 0M10 17a3 3 0 0 1 4 0"/><circle cx="12" cy="20" r="1"/></svg>;
   if (/energia|eletric|luz/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-8 12h7l-1 8 8-12h-7l1-8Z"/></svg>;
   if (/agua|saneamento/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2S6 9 6 14a6 6 0 0 0 12 0c0-5-6-12-6-12Z"/></svg>;
   if (/transporte|uber|99|onibus|veiculo|carro/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 16-1-4 2-5h12l2 5-1 4M4 16h16v4h-3v-2H7v2H4v-4Z"/><circle cx="8" cy="13" r="1"/><circle cx="16" cy="13" r="1"/></svg>;
