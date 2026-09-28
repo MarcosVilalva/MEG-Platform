@@ -56,7 +56,7 @@ function mobileMovementKind(event: FinancialEvent): Exclude<MobileMovementKind, 
 }
 
 function MovementKpiGlyph({ kind }: { kind: 'income' | 'expense' | 'result' }) {
-  if (kind === 'income') return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M15 14h3M8 4v4M6 6l2-2 2 2"/></svg>;
+  if (kind === 'income') return <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="9" cy="17" rx="5" ry="2.5"/><path d="M4 14.5V17M14 14.5V17M4 12c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5-2.2-2.5-5-2.5S4 10.6 4 12Z"/><circle cx="16.5" cy="7.5" r="4.5"/><path d="M16.5 5v5M18 6h-2.1a1.1 1.1 0 0 0 0 2.2h1.2a1.1 1.1 0 0 1 0 2.2H15"/></svg>;
   if (kind === 'expense') return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M15 14h3M8 3v5M6 6l2 2 2-2"/></svg>;
   return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="8" r="3"/><circle cx="17" cy="16" r="3"/><path d="M9.5 9.5 14.5 14.5M14 5h5v5M19 5l-5 5"/></svg>;
 }
@@ -66,7 +66,7 @@ function EventContextGlyph({ event }: { event: FinancialEvent }) {
   const description = normalizeMovementText(event.description);
   const context = [category, description].filter(Boolean).join(' ');
   const signed = signedAmount(event);
-  if (signed >= 0) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18 10 12l4 4 6-9"/><path d="M15 7h5v5"/></svg>;
+  if (signed >= 0) return <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="9" cy="17" rx="5" ry="2.5"/><path d="M4 14.5V17M14 14.5V17M4 12c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5-2.2-2.5-5-2.5S4 10.6 4 12Z"/><circle cx="16.5" cy="7.5" r="4.5"/><path d="M16.5 5v5M18 6h-2.1a1.1 1.1 0 0 0 0 2.2h1.2a1.1 1.1 0 0 1 0 2.2H15"/></svg>;
   if (/bebidas? e similares|bebida|refrigerante|cerveja|suco|coca.?cola/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l-1 18H8L7 3Z"/><path d="M8 7h8M13 7l3-5"/></svg>;
   if (/fast food|hamburg|lanche/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11c.6-4 3-6 7-6s6.4 2 7 6H5Z"/><path d="M4 14h16M6 14l1 5h10l1-5M8 11h.01M12 9h.01M16 11h.01"/></svg>;
   if (/presentes?|presente/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="9" width="16" height="11" rx="1"/><path d="M3 6h18v4H3zM12 6v14M12 6c-3 0-5-1-5-3 0-1.2 1-2 2.2-2C11 1 12 3.3 12 6Zm0 0c3 0 5-1 5-3 0-1.2-1-2-2.2-2C13 1 12 3.3 12 6Z"/></svg>;
