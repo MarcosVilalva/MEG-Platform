@@ -123,10 +123,9 @@ function HomeDock({pendingCount,onNavigate,onLaunch,onOpenMenu}:{pendingCount:nu
   </nav>;
 }
 
-function SectionTitle({eyebrow,title,copy,icon}:{eyebrow:string;title:string;copy:string;icon:IconName}){
+function SectionTitle({eyebrow,title,copy}:{eyebrow:string;title:string;copy:string}){
   return <section className="meg-home-title">
     <div><span>{eyebrow}</span><h1>{title}</h1><p>{copy}</p></div>
-    <i><HomeIcon name={icon} size={24}/></i>
   </section>;
 }
 
@@ -150,7 +149,7 @@ function CurrentHome({data,onNavigate}:{data:PhoenixReadModel;onNavigate:Props['
   const result=Number(data.summary.realizedResult||0);
 
   return <>
-    <SectionTitle eyebrow="Situação atual" title={monthLabel(data.month)} copy="Acompanhe seu caixa e compromissos em tempo real." icon="trend"/>
+    <SectionTitle eyebrow="Situação atual" title={monthLabel(data.month)} copy="Acompanhe seu caixa e compromissos em tempo real."/>
     <section className="meg-home-balance">
       <span><HomeIcon name="wallet" size={28}/></span>
       <div><small>Saldo disponível</small><strong>{money.format(balance)}</strong><p>Considerando apenas os lançamentos realizados.</p></div>
@@ -168,7 +167,7 @@ function CurrentHome({data,onNavigate}:{data:PhoenixReadModel;onNavigate:Props['
     </section>
     <BenefitCard data={data} label="Saldo disponível" onOpen={()=>setBenefitOpen(true)}/>
     <section className="meg-home-quick">
-      <header><div><span><HomeIcon name="bolt" size={17}/></span><p><b>Ações rápidas</b><small>Acesse as principais funcionalidades.</small></p></div><button onClick={()=>onNavigate('movements')}>Ver todas ›</button></header>
+      <header><div><span><HomeIcon name="bolt" size={17}/></span><p><b>Ações rápidas</b><small>Acesse as principais funcionalidades.</small></p></div><button onClick={()=>onNavigate('settings')}>Atalhos ›</button></header>
       <div>
         <button onClick={()=>onNavigate('cards')}><span><HomeIcon name="card"/></span><small>Cartões</small></button>
         <button onClick={()=>onNavigate('payables')}><span><HomeIcon name="file"/></span><small>Pagar conta</small></button>
@@ -190,7 +189,7 @@ function PastHome({data,context,onNavigate}:{data:PhoenixReadModel;context?:Home
   const closing=Number(context?.closingBalance??opening+result);
 
   return <>
-    <SectionTitle eyebrow="Resumo do mês" title={monthLabel(data.month)} copy="Veja como foi o seu mês em uma visão simples." icon="chart"/>
+    <SectionTitle eyebrow="Resumo do mês" title={monthLabel(data.month)} copy="Veja como foi o seu mês em uma visão simples."/>
     <section className="meg-home-past-grid">
       <article className="income"><span><HomeIcon name="up"/></span><small>Receitas realizadas</small><strong>{money.format(income)}</strong></article>
       <article className="expense"><span><HomeIcon name="down"/></span><small>Despesas realizadas</small><strong>{money.format(expense)}</strong></article>
@@ -228,7 +227,7 @@ function FutureHome({data,context,onNavigate}:{data:PhoenixReadModel;context?:Ho
   const other=otherEvents.reduce((sum,event)=>sum+Math.max(0,-signedAmount(event)),0);
 
   return <>
-    <SectionTitle eyebrow="Projeção mensal" title={monthLabel(target)} copy="O que já está previsto para comprometer ou reforçar seu caixa neste mês." icon="calendar"/>
+    <SectionTitle eyebrow="Projeção mensal" title={monthLabel(target)} copy="O que já está previsto para comprometer ou reforçar seu caixa neste mês."/>
     <section className="meg-home-future-grid">
       <article><small>Saldo inicial projetado</small><strong>{money.format(opening)}</strong><p>Saldo real atual após os compromissos previstos antes deste mês.</p></article>
       <article className={closing>=0?'accent':'danger'}><small>Saldo após compromissos</small><strong>{money.format(closing)}</strong><p>Inclui receitas e despesas previstas do período.</p></article>
@@ -259,7 +258,7 @@ function AggregateHome({data,periodMode,periodLabel,context,onNavigate}:{data:Ph
   const copy=periodMode==='all'?'Resumo de toda a sua vida financeira.':'Resumo financeiro do intervalo selecionado.';
 
   return <>
-    <SectionTitle eyebrow={eyebrow} title={title} copy={copy} icon="history"/>
+    <SectionTitle eyebrow={eyebrow} title={title} copy={copy}/>
     <section className="meg-home-balance meg-home-all-balance">
       <span><HomeIcon name="wallet" size={28}/></span><div><small>Saldo atual (consolidado)</small><strong>{money.format(currentBalance)}</strong><p>Considera todos os lançamentos monetários da conta.</p></div>
     </section>
