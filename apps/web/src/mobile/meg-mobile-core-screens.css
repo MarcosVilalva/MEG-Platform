@@ -388,20 +388,20 @@
   display:grid!important;
   grid-template-rows:auto 74px 44px 38px minmax(0,1fr)!important;
   gap:7px!important;padding:9px 12px 6px!important;
-  background:#003638!important;color:#f7ffff!important;
+  background:radial-gradient(circle at 82% 0%,rgba(34,236,222,.075),transparent 28%),linear-gradient(180deg,#003b3d 0%,#003335 100%)!important;color:#f7ffff!important;
 }
-.meg3-movements,.meg3-movements *{box-sizing:border-box;text-shadow:none!important;-webkit-text-stroke:0!important}
+.meg3-movements,.meg3-movements *{box-sizing:border-box;-webkit-text-stroke:0!important}
 .meg3-movements>*{min-width:0;min-height:0}
 .meg3-movements-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 2px}
 .meg3-movements-heading>div{min-width:0}
 .meg3-movements-heading h1{margin:0;font-size:clamp(29px,7.5vw,36px);line-height:1;letter-spacing:-.035em;font-weight:800}
 .meg3-movements-heading p{margin:4px 0 0;color:#b6cdca;font-size:10px;line-height:1.2}
-.meg3-movements-heading>button{flex:0 0 50px;width:50px;height:50px;border:1px solid rgba(43,231,220,.46);border-radius:12px;background:#06484b;color:#3ee8de;display:grid;place-items:center;box-shadow:none}
+.meg3-movements-heading>button{flex:0 0 50px;width:50px;height:50px;border:1px solid rgba(43,231,220,.46);border-radius:12px;background:linear-gradient(180deg,#07595b,#034144);color:#48eee3;display:grid;place-items:center;box-shadow:inset 0 0 16px rgba(55,238,225,.06),0 0 13px rgba(35,232,219,.08)}
 .meg3-movements-heading>button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .meg3-movements-heading>button b{display:none}
 
 .meg3-movements .meg3-movement-kpis{width:100%;height:74px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0;padding:0;overflow:hidden}
-.meg3-movements .meg3-movement-kpis article{min-width:0;width:100%;height:74px;margin:0;padding:7px;display:grid;grid-template-columns:30px minmax(0,1fr);grid-template-rows:1fr auto;align-items:center;gap:1px 6px;border:1px solid rgba(49,220,210,.31);border-radius:14px;background:#064447;overflow:hidden;box-shadow:none}
+.meg3-movements .meg3-movement-kpis article{min-width:0;width:100%;height:74px;margin:0;padding:7px;display:grid;grid-template-columns:30px minmax(0,1fr);grid-template-rows:1fr auto;align-items:center;gap:1px 6px;border:1px solid rgba(49,220,210,.31);border-radius:14px;background:linear-gradient(150deg,#075052,#03383b 72%);overflow:hidden;box-shadow:inset 0 0 18px rgba(38,235,221,.025),0 0 12px rgba(31,226,214,.045)}
 .meg3-movements .meg3-movement-kpis article>span{grid-column:1;grid-row:1/3;width:30px;height:30px;margin:0;display:grid;place-items:center;border-radius:9px;background:#075457;font-size:18px;font-weight:900}
 .meg3-movements .meg3-movement-kpis strong{grid-column:2;grid-row:1;min-width:0;align-self:end;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:clamp(10px,2.7vw,13px);line-height:1.05;font-variant-numeric:tabular-nums}
 .meg3-movements .meg3-movement-kpis small{grid-column:2;grid-row:2;align-self:start;margin:0;color:#b8ccca;font-size:7px;line-height:1;white-space:nowrap}
@@ -410,22 +410,22 @@
 .meg3-movements .meg3-movement-kpis .positive>span,.meg3-movements .meg3-movement-kpis .positive strong{color:#55e8df}
 
 .meg3-movements .meg3-movement-toolbar{width:100%;height:44px;display:block;margin:0;overflow:hidden}
-.meg3-movements .meg3-movement-toolbar label{width:100%;height:44px;margin:0;padding:0 11px;display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;border:1px solid rgba(55,211,202,.27);border-radius:13px;background:#043b3e;color:#d9eeee;box-shadow:none}
+.meg3-movements .meg3-movement-toolbar label{width:100%;height:44px;margin:0;padding:0 11px;display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;border:1px solid rgba(55,211,202,.27);border-radius:13px;background:linear-gradient(180deg,#044649,#03383b);color:#d9eeee;box-shadow:inset 0 0 15px rgba(43,232,220,.025),0 0 10px rgba(31,226,214,.035)}
 .meg3-movements .meg3-movement-toolbar label svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .meg3-movements .meg3-movement-toolbar input{width:100%;min-width:0;height:100%;padding:0;border:0;outline:0;background:transparent;color:#eefafa;box-shadow:none;font:inherit;font-size:10px;-webkit-appearance:none}
 .meg3-movements .meg3-movement-toolbar input::placeholder{color:#789592}
 
-.meg3-movements .meg3-movement-list-head{width:100%;height:38px;min-height:38px;margin:0;padding:0 3px;display:flex;align-items:center;overflow:hidden;background:#003638;border:0;box-shadow:none}
+.meg3-movements .meg3-movement-list-head{width:100%;height:38px;min-height:38px;margin:0;padding:0 3px;display:flex;align-items:center;overflow:hidden;background:transparent;border:0;box-shadow:none}
 .meg3-movements .meg3-movement-list-head>span{width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;gap:1px;overflow:hidden}
-.meg3-movements .meg3-movement-list-head strong{display:block;margin:0;color:#f1f8f7;font-size:12px;font-weight:800;line-height:14px;white-space:nowrap}
-.meg3-movements .meg3-movement-list-head small{display:block;margin:0;color:#91aaa7;font-size:7px;font-weight:400;line-height:9px;white-space:nowrap}
+.meg3-movements .meg3-movement-list-head strong{display:block;margin:0;color:#f1f8f7;font-size:13px;font-weight:800;line-height:15px;letter-spacing:-.01em;white-space:nowrap}
+.meg3-movements .meg3-movement-list-head small{display:block;margin:0;color:#91aaa7;font-size:8px;font-weight:450;line-height:10px;white-space:nowrap}
 .meg3-movements .meg3-movement-list-head button{display:none!important}
 
-.meg3-movements .meg3-event-list{width:100%;height:100%;min-height:0;margin:0;padding:0 1px 4px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#003638;border:0;outline:0;box-shadow:none}
+.meg3-movements .meg3-event-list{width:100%;height:100%;min-height:0;margin:0;padding:0 1px 4px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:transparent;border:0;outline:0;box-shadow:none}
 .meg3-movements .meg3-event-list::-webkit-scrollbar{display:none}
 .meg3-movements .meg3-event-entry{margin:0 0 6px}
 .meg3-movements .meg3-event-date-group{display:block;padding:3px 5px 5px;color:#91aaa7;font-size:7px;font-weight:800}
-.meg3-movements .meg3-event-card{width:100%;min-height:78px;margin:0 0 5px;padding:6px 8px;display:grid;grid-template-columns:39px minmax(0,1fr) auto;align-items:center;gap:7px;text-align:left;border:1px solid rgba(51,194,187,.23);border-radius:13px;background:#064447;color:#fff;overflow:hidden;outline:0;box-shadow:none;-webkit-tap-highlight-color:transparent}
+.meg3-movements .meg3-event-card{width:100%;min-height:78px;margin:0 0 5px;padding:6px 8px;display:grid;grid-template-columns:39px minmax(0,1fr) auto;align-items:center;gap:7px;text-align:left;border:1px solid rgba(51,194,187,.23);border-radius:13px;background:linear-gradient(145deg,#06484a,#023638);color:#fff;overflow:hidden;outline:0;box-shadow:inset 0 0 16px rgba(42,232,220,.018),0 4px 12px rgba(0,0,0,.10);-webkit-tap-highlight-color:transparent}
 .meg3-movements .meg3-event-icon{width:38px;height:38px;display:grid;place-items:center;border:0;border-radius:11px;background:#075154;color:#48ded5;box-shadow:none}
 .meg3-movements .meg3-event-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .meg3-movements .meg3-event-card.income .meg3-event-icon,.meg3-movements .meg3-event-card.income .meg3-event-value b{color:#55e4b3}
