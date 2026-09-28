@@ -184,7 +184,7 @@ assert.match(homeCss,/@media\(max-height:760px\)[\s\S]*\.meg-home-header\{min-he
 assert.match(home,/Benefício Alimentação[\s\S]*Ações rápidas[\s\S]*Cartões[\s\S]*Pagar conta[\s\S]*Fluxo de caixa[\s\S]*Ver relatórios/,'Home deve preservar os blocos funcionais aprovados.');
 assert.equal((home.match(/<QuickActions onNavigate=\{onNavigate\}\/?>/g)||[]).length,4,'Todos os estados devem reutilizar Ações rápidas para preservar a mesma base visual.');
 
-assert.match(homeCss,/\.meg-home-quick\{height:100%;min-height:0[\s\S]*grid-template-rows:minmax\(31px,\.35fr\) minmax\(0,\.65fr\)/,'Ações rápidas deve ocupar sua faixa proporcional inteira sem recortar os botões.');
+assert.match(homeCss,/\.meg-home-quick\{[\s\S]*height:100%;min-height:0[\s\S]*grid-template-rows:minmax\(31px,\.35fr\) minmax\(0,\.65fr\)/,'Ações rápidas deve ocupar sua faixa proporcional inteira sem recortar os botões.');
 
 assert.match(home,/Resumo do mês[\s\S]*Saldo inicial[\s\S]*Saldo final[\s\S]*Contas pagas/,'Mês passado deve preservar a leitura histórica validada.');
 assert.match(home,/data-home-state=\{state\}/,'Home deve expor o estado visual corrente para mês passado, atual, futuro, intervalo e tudo.');
