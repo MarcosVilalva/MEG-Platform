@@ -331,11 +331,45 @@ function FutureHome({ data, context, onNavigate }: { data: PhoenixReadModel; con
   </main>;
 }
 
+function AllHistoryHome({ data, onNavigate }: { data: PhoenixReadModel; onNavigate: Props['onNavigate'] }) {
+  const [benefitOpen, setBenefitOpen] = useState(false);
+  const posted = data.events.items.filter((item) => isPosted(item.status));
+  const income = posted.filter((item) => signedEventAmount(item) > 0).reduce((sum, item) => sum + Math.max(0, signedEventAmount(item)), 0);
+  const expense = posted.filter((item) => signedEventAmount(item) < 0).reduce((sum, item) => sum + Math.max(0, -signedEventAmount(item)), 0);
+  const result = income - expense;
+  const months = new Set(posted.map((item) => String(item.competence || item.date || '').slice(0, 7)).filter(Boolean));
+  const monthCount = Math.max(1, months.size);
+  const balance = Number(data.summary.availableBalance || 0) + Number(data.summary.realizedResult || 0);
+
+  return <main className="meg2-main meg2-period-home meg2-all-home" data-meg-fixed-screen="true">
+    <section className="meg2-title">
+      <span>Visão geral</span><h1>Histórico completo</h1><p>Consolidado de todos os períodos registrados.</p><i><Icon name="chart"/></i>
+    </section>
+    <section className="meg2-all-balance">
+      <span><Icon name="wallet"/></span><div><small>Saldo atual consolidado</small><strong>{money.format(balance)}</strong><em>Posição atual considerando os lançamentos realizados.</em></div>
+    </section>
+    <section className="meg2-all-kpis">
+      <article className="income"><Icon name="up"/><small>Total de receitas</small><strong>{money.format(income)}</strong></article>
+      <article className="expense"><Icon name="down"/><small>Total de despesas</small><strong>{money.format(expense)}</strong></article>
+      <article className={result >= 0 ? 'result positive' : 'result negative'}><Icon name="trend"/><small>Resultado consolidado</small><strong>{resultMoney(result)}</strong></article>
+      <article><Icon name="file"/><small>Total de lançamentos</small><strong>{posted.length.toLocaleString('pt-BR')}</strong></article>
+      <article><Icon name="up"/><small>Média mensal de receita</small><strong>{money.format(income / monthCount)}</strong></article>
+      <article><Icon name="down"/><small>Média mensal de despesa</small><strong>{money.format(expense / monthCount)}</strong></article>
+    </section>
+    <button className="meg2-period-action" onClick={() => onNavigate('movements')}><Icon name="file"/><span><strong>Ver detalhamento do histórico</strong><small>Consulte todos os lançamentos registrados</small></span><b>›</b></button>
+    <button className="meg2-benefit" type="button" onClick={() => setBenefitOpen(true)}>
+      <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Saldo disponível</em><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong></div><b>›</b>
+    </button>
+    {benefitOpen ? <MegMobileBenefitModal data={data} onClose={() => setBenefitOpen(false)} onOpenMovements={() => { setBenefitOpen(false); onNavigate('movements'); }}/> : null}
+  </main>;
+}
+
 function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; homePeriodContext?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate'] }) {
   const [benefitOpen, setBenefitOpen] = useState(false);
   const nowMonth = todayIso().slice(0, 7);
   if (periodMode === 'month' && data.month < nowMonth) return <PastHome data={data} context={homePeriodContext} onNavigate={onNavigate}/>;
   if (periodMode === 'month' && data.month > nowMonth) return <FutureHome data={data} context={homePeriodContext} onNavigate={onNavigate}/>;
+  if (periodMode === 'all') return <AllHistoryHome data={data} onNavigate={onNavigate}/>;
   const openPayables = data.payables.filter((item) => openStatus(item.status) && Number(item.openAmount || 0) > 0);
   const planned = data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned');
   const paid = data.events.items.filter((item) => item.type === 'expense' && ['paid', 'reconciled', 'confirmed'].includes(String(item.status)));
@@ -347,38 +381,33 @@ function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: 
   const income = periodMode === 'month' ? Number(data.summary.realizedIncome || 0) : specialIncome;
   const expense = periodMode === 'month' ? Number(data.summary.realizedExpense || 0) : specialExpense;
   const result = periodMode === 'month' ? Number(data.summary.realizedResult || 0) : income - expense;
-  const title = periodMode === 'all' ? 'Todo o histórico' : periodMode === 'range' ? (periodLabel || 'Intervalo selecionado') : monthLabel(data.month);
+  const title = periodMode === 'range' ? (periodLabel || 'Intervalo selecionado') : monthLabel(data.month);
 
   return <main className="meg2-main meg2-home" data-meg-fixed-screen="true">
     <section className="meg2-title">
-      <span>Situação {data.month === todayIso().slice(0, 7) && periodMode === 'month' ? 'atual' : 'do período'}</span>
+      <span>Situação {data.month === nowMonth && periodMode === 'month' ? 'atual' : 'do período'}</span>
       <h1>{title}</h1>
       <p>Acompanhe seu caixa e compromissos.</p>
       <i><Icon name="trend"/></i>
     </section>
-
     <section className="meg2-balance">
       <span><Icon name="wallet" size={30}/></span>
       <div><small>Saldo disponível</small><strong>{money.format(balance)}</strong><p>Considerando apenas os lançamentos realizados.</p></div>
     </section>
-
     <section className="meg2-flow">
       <article><span className="up"><Icon name="up"/></span><div><small>Entradas no mês</small><strong>{money.format(income)}</strong></div></article>
       <article><span className="down"><Icon name="down"/></span><div><small>Saídas no mês</small><strong>{money.format(expense)}</strong></div></article>
       <article className="result"><span><Icon name="trend"/></span><div><small>Resultado do mês</small><strong>{resultMoney(result)}</strong></div></article>
     </section>
-
     <section className="meg2-summary">
       <article><span className="red"><Icon name="file"/></span><small>Contas a pagar</small><b>{openPayables.length}</b><em>{money.format(openPayables.reduce((s, item) => s + Number(item.openAmount || 0), 0))}</em></article>
       <article><span className="blue"><Icon name="wallet"/></span><small>Faturas de cartões</small><b>{data.cards.filter((card) => Number(card.statement?.payableAmount ?? card.statementAmount ?? 0) > 0).length}</b><em>{money.format(cardOpen)}</em></article>
       <article><span className="amber"><Icon name="file"/></span><small>Outras pendências</small><b>{planned.length}</b><em>{money.format(planned.reduce((s, item) => s + Math.abs(Number(item.signedAmount || item.amount || 0)), 0))}</em></article>
       <article><span className="green"><Icon name="check"/></span><small>Contas pagas</small><b>{paid.length}</b><em>{money.format(paid.reduce((s, item) => s + Math.abs(Number(item.signedAmount || item.amount || 0)), 0))}</em></article>
     </section>
-
     <button className="meg2-benefit" type="button" onClick={() => setBenefitOpen(true)}>
       <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Saldo disponível</em><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong></div><b>›</b>
     </button>
-
     <section className="meg2-quick">
       <header><div><span><Icon name="bolt" size={18}/></span><p><b>Ações rápidas</b><small>Acesse as principais funcionalidades.</small></p></div><button onClick={() => onNavigate('movements')}>Ver todas ›</button></header>
       <div>
