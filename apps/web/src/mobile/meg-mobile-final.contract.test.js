@@ -178,18 +178,22 @@ assert.match(
 assert.match(home,/data-meg-home="approved-four-periods"/,'Home deve declarar o checkpoint visual dos quatro períodos aprovados.');
 assert.match(home,/meg-home-\$\{name\}\.svg/,'Ícones da Home devem ser resolvidos como assets externos estáveis no Android.');
 assert.doesNotMatch(home,/<svg\b/,'Home não pode voltar a SVG inline no WebView.');
-assert.match(homeCss,/\.meg-home-header\{[\s\S]*min-height:66px[\s\S]*grid-template-columns:48px minmax\(0,1fr\) 86px/,'Cabeçalho da Home deve permanecer compacto e equilibrado como na referência final.');
+assert.match(homeCss,/\.meg-home-header\{[\s\S]*min-height:66px[\s\S]*grid-template-columns:46px minmax\(0,1fr\) 104px/,'Cabeçalho da Home deve preservar filtro compacto sem truncar o nome do usuário em telefones normais.');
 assert.match(homeCss,/@media\(max-height:760px\)[\s\S]*\.meg-home-header\{min-height:60px[\s\S]*\.meg-home-dock\{min-height:58px/,'Telas baixas devem compactar a Home, nunca ampliar o cabeçalho ou o dock.');
 
 assert.match(home,/Benefício Alimentação[\s\S]*Ações rápidas[\s\S]*Cartões[\s\S]*Pagar conta[\s\S]*Fluxo de caixa[\s\S]*Ver relatórios/,'Home deve preservar os blocos funcionais aprovados.');
+assert.match(homeCss,/\.meg-home-quick\{height:auto;min-height:84px/,'Ações rápidas não pode absorver o espaço livre da Home.');
+
 assert.match(home,/Resumo do mês[\s\S]*Saldo inicial[\s\S]*Saldo final[\s\S]*Contas pagas/,'Mês passado deve preservar a leitura histórica validada.');
 assert.match(home,/data-home-state=\{state\}/,'Home deve expor o estado visual corrente para mês passado, atual, futuro, intervalo e tudo.');
 assert.match(home,/Veja como foi o seu mês em uma visão simples\.[\s\S]*Receitas realizadas[\s\S]*Despesas realizadas[\s\S]*Resultado do mês[\s\S]*Saldo inicial[\s\S]*Saldo final[\s\S]*Contas pagas/,'Mês passado deve seguir a composição aprovada de seis indicadores.');
 
 assert.match(home,/Projeção mensal[\s\S]*Saldo inicial projetado[\s\S]*Saldo após compromissos[\s\S]*Receitas previstas[\s\S]*Total de compromissos[\s\S]*Faturas de cartões[\s\S]*Outras pendências/,'Mês futuro deve preservar a projeção validada completa.');
 assert.match(home,/Histórico completo[\s\S]*Saldo atual \(consolidado\)[\s\S]*Total de receitas[\s\S]*Total de despesas[\s\S]*Resultado consolidado[\s\S]*Total de lançamentos[\s\S]*Média mensal de receita[\s\S]*Média mensal de despesa/,'Tudo deve usar o painel histórico completo aprovado, sem virar um resumo vazio.');
-assert.match(homeCss,/\.meg-home-content\.is-past\{[\s\S]*grid-template-rows:auto minmax\(0,1fr\) auto auto/,'Mês passado deve distribuir os cartões pela área útil, sem espaço morto.');
-assert.match(homeCss,/\.meg-home-content\.is-future\{[\s\S]*grid-template-rows:auto minmax\(0,1fr\) auto auto/,'Mês futuro deve distribuir os cartões pela área útil, sem espaço morto.');
+assert.match(homeCss,/\.meg-home-content\.is-current,[\s\S]*flex-direction:column[\s\S]*justify-content:space-between/,'Mês atual deve distribuir blocos naturais pela área útil sem esticar Ações rápidas.');
+assert.match(homeCss,/\.meg-home-content\.is-past,[\s\S]*justify-content:space-between[\s\S]*\.meg-home-content\.is-past \.meg-home-past-grid[\s\S]*flex:1 1 auto/,'Mês passado deve usar a altura útil com os seis indicadores aprovados, sem área morta.');
+assert.match(homeCss,/\.meg-home-content\.is-future,[\s\S]*justify-content:space-between[\s\S]*\.meg-home-content\.is-future \.meg-home-future-grid[\s\S]*flex:1 1 auto/,'Mês futuro deve ocupar a altura útil sem esticar artificialmente os cartões.');
+assert.doesNotMatch(home,/meg-home-title[\s\S]{0,220}<i>/,'Título da Home não pode reintroduzir o tile decorativo que gerava fragmentos no WebView.');
 
 assert.match(mobile,/view === 'home' \? <MegMobileHome[\s\S]*: <div className=\{'meg2-shell/,'Home deve sair do shell meg2 antes das demais telas em reconstrução.');
 assert.match(
