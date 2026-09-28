@@ -111,6 +111,7 @@ export function MegMobileMovements({
   const [accountFilter, setAccountFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
 
   const posted = useMemo(() => data.events.items, [data.events.items]);
   const categories = useMemo(() => Array.from(new Set(posted.map((event) => event.category?.name || event.sourceDetails?.group || '').filter(Boolean))).sort((a, b) => a.localeCompare(b, 'pt-BR')), [posted]);
@@ -138,7 +139,9 @@ export function MegMobileMovements({
       if (paymentFilter && method !== paymentFilter) return false;
       return true;
     })
-    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    .sort((a, b) => sortDirection === 'desc'
+      ? String(b.date).localeCompare(String(a.date))
+      : String(a.date).localeCompare(String(b.date)));
   const totals = posted.reduce((summary, event) => {
     const value = signedAmount(event);
     if (value >= 0) summary.income += value;
@@ -169,13 +172,26 @@ export function MegMobileMovements({
       <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true"><MovementKpiGlyph kind="result"/></span><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong><small>Resultado</small></article>
     </section>
 
-    <section className="meg3-movement-toolbar" aria-label="Buscar lançamentos">
-      <label><SearchGlyph/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamento..."/></label>
-    </section>
+    <section className="meg3-movement-controls" aria-label="Busca, contador e ordenação">
+      <section className="meg3-movement-toolbar" aria-label="Buscar lançamentos">
+        <label><SearchGlyph/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamento..."/></label>
+      </section>
 
-    <header className="meg3-movement-list-head">
-      <span><strong>{rows.length.toLocaleString('pt-BR')} lançamento{rows.length === 1 ? '' : 's'}</strong><small>{period} · toque para abrir</small></span>
-     </header>
+      <header className="meg3-movement-list-head">
+        <span><strong>{rows.length.toLocaleString('pt-BR')} lançamento{rows.length === 1 ? '' : 's'}</strong><small>{period} · toque para abrir</small></span>
+        <button
+          type="button"
+          className="meg3-movement-sort"
+          aria-label={sortDirection === 'desc' ? 'Ordenar do mais antigo para o mais recente' : 'Ordenar do mais recente para o mais antigo'}
+          title={sortDirection === 'desc' ? 'Mais recentes primeiro' : 'Mais antigos primeiro'}
+          onClick={() => setSortDirection((current) => current === 'desc' ? 'asc' : 'desc')}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 4v16M5 7l3-3 3 3M16 20V4M13 17l3 3 3-3"/>
+          </svg>
+        </button>
+      </header>
+    </section>
 
     <section className="meg3-event-list" data-meg-scroll-region="true">
       {rows.map((event) => {
