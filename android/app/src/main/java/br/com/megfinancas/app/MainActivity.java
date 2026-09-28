@@ -61,6 +61,14 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(BiometricAuthPlugin.class);
         registerPlugin(MegNativeShellPlugin.class);
         super.onCreate(savedInstanceState);
+
+        // Alguns WebViews Android recentes apresentam corrupção de composição em
+        // grids densos com SVG/texto (blocos e riscos residuais após o repaint).
+        // Isolamos a correção no WebView do app, sem alterar o layout ou a lógica web.
+        if (getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        }
+
         getWindow().getDecorView().post(this::applyImmersiveNavigation);
     }
 
