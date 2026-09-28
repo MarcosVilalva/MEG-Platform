@@ -694,7 +694,7 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 }
 
 
-/* PROPOSTA FINAL 28/09/2026 - somente camada visual */
+/* DENSIDADE CANONICA MOBILE - dimensoes compactas aprovadas */
 .meg2-header{min-height:64px;padding:max(7px,env(safe-area-inset-top)) 11px 7px;grid-template-columns:50px minmax(0,1fr) auto;gap:8px}
 .meg2-brand{width:48px;height:48px;padding:4px;border-radius:12px}
 .meg2-period{min-height:48px;grid-template-columns:34px minmax(0,1fr) 16px;gap:7px;padding:5px 8px;border-radius:12px}
