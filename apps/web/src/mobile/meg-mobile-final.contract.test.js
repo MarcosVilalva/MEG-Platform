@@ -145,8 +145,13 @@ assert.doesNotMatch(
 );
 assert.match(
   mobile,
-  /const title = periodMode === 'all'[\s\S]*monthLabel\(data\.month\)/,
-  'Home do mês deve usar o nome completo da competência no corpo da tela.',
+  /if \(periodMode === 'all'\) return <AllHistoryHome[\s\S]*const title = periodMode === 'range'[\s\S]*monthLabel\(data\.month\)/,
+  'Home deve separar o histórico completo da competência mensal sem perder o nome do mês no corpo da tela.',
+);
+assert.match(
+  mobile,
+  /function AllHistoryHome[\s\S]*Histórico completo[\s\S]*Total de receitas[\s\S]*Total de despesas[\s\S]*Resultado consolidado[\s\S]*Ver detalhamento do histórico/,
+  'Filtro Tudo deve possuir visão consolidada própria conforme a referência visual aprovada.',
 );
 assert.match(
   mobile,
