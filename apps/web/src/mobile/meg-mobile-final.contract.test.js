@@ -289,4 +289,26 @@ assert.match(
 );
 
 
+assert.match(
+  mobile,
+  /preparePhoenixPendingSettlement[\s\S]*runPhoenixPendingSettlement[\s\S]*Dar baixa[\s\S]*Confirmar baixa/,
+  'Pendentes deve executar a baixa real pelo gateway idempotente antes de retirar o compromisso da tela.',
+);
+assert.match(
+  mobile,
+  /settlementSuccess[\s\S]*BAIXA CONFIRMADA[\s\S]*Data[\s\S]*Conta[\s\S]*Pagamento/,
+  'Baixa de Pendentes deve apresentar confirmação com dados efetivos da operação.',
+);
+assert.match(
+  launchSheet,
+  /event\?\.categoryId \|\| event\?\.category\?\.id[\s\S]*event\?\.paymentMethodId \|\| event\?\.paymentMethod\?\.id/,
+  'Edição deve hidratar categoria e forma de pagamento também pelos objetos do read model.',
+);
+assert.match(
+  launchSheet,
+  /selectedCategory[\s\S]*fixo[\s\S]*setStatus\('paid'\)/i,
+  'Categoria Fixo deve marcar a despesa como realizada automaticamente.',
+);
+
+
 console.log('Contrato da reconstrução mobile final validado.');
