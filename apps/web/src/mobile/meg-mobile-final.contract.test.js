@@ -311,4 +311,16 @@ assert.match(
 );
 
 
+assert.match(
+  launchSheet,
+  /ExpensePaymentMode[\s\S]*À vista[\s\S]*Crédito[\s\S]*Crediário/,
+  'Novo lançamento deve preservar as modalidades À vista, Crédito e Crediário.',
+);
+assert.match(
+  launchSheet,
+  /isPixMethod[\s\S]*expensePaymentMode === 'cash'[\s\S]*setPaymentMethodId\(pixMethod\?\.id/,
+  'À vista deve preferir PIX automaticamente sem impedir troca da forma de pagamento.',
+);
+
+
 console.log('Contrato da reconstrução mobile final validado.');
