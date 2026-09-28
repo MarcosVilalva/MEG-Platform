@@ -157,6 +157,16 @@ function formatShortIso(value: string) {
   return `${day}/${month}/${year}`;
 }
 
+function withPeriodDeadline<T>(promise: Promise<T>, milliseconds: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), milliseconds);
+  });
+  return Promise.race([promise, deadline]).finally(() => {
+    if (timer) clearTimeout(timer);
+  }) as Promise<T>;
+}
+
 function financialActionLabel(action: string) {
   const normalized = action.toUpperCase();
   if (normalized.includes('CREATED')) return 'Lançamento incluído';
@@ -922,7 +932,11 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
       const cached = !force ? peekPhoenixReadModel(targetMonth) : null;
       const fresh = cached && monthlySnapshotMatches(cached, targetMonth)
         ? cached
-        : await loadPhoenixReadModel(targetMonth, force ? { force: true } : {});
+        : await withPeriodDeadline(
+            loadPhoenixReadModel(targetMonth, force ? { force: true } : {}),
+            15000,
+            'A leitura do mês demorou mais que o esperado. Tente novamente.'
+          );
 
       if (!monthlySnapshotMatches(fresh, targetMonth)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       if (periodRequestRef.current !== requestId) return;
@@ -997,11 +1011,11 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     setPeriodLoading(true);
     setPeriodError('');
     try {
-      const [models, currentSnapshot, allEvents] = await Promise.all([
+      const [models, currentSnapshot, allEvents] = await withPeriodDeadline(Promise.all([
         Promise.all(months.map((item) => loadPhoenixReadModel(item, force ? { force: true } : {}))),
         loadPhoenixReadModel(currentMonth(), force ? { force: true } : {}),
         loadPhoenixAllEvents({ force })
-      ]);
+      ]), 30000, 'O intervalo demorou mais que o esperado. Reduza o período ou tente novamente.');
       if (periodRequestRef.current !== requestId) return;
       if (models.some((model, index) => !monthlySnapshotMatches(model, months[index]))) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       if (!monthlySnapshotMatches(currentSnapshot, currentMonth())) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
@@ -1052,10 +1066,10 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     setPeriodError('');
     try {
       const baseMonth = currentMonth();
-      const [base, events] = await Promise.all([
+      const [base, events] = await withPeriodDeadline(Promise.all([
         loadPhoenixReadModel(baseMonth, force ? { force: true } : {}),
         loadPhoenixAllEvents({ force })
-      ]);
+      ]), 20000, 'O histórico completo demorou mais que o esperado. Tente novamente.');
       if (!monthlySnapshotMatches(base, baseMonth)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       if (periodRequestRef.current !== requestId) return;
       const items = events.items.map((event) => ({ ...event }));
