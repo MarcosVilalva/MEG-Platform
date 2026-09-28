@@ -114,9 +114,9 @@ export function MegMobileLaunchSheet({
   const [amount, setAmount] = useState(formatAmount(Number(cardPurchase?.totalAmount ?? Math.abs(Number(event?.amount || event?.signedAmount || 0)))));
   const [negative, setNegative] = useState(Boolean(event && Number(event.signedAmount ?? event.amount ?? 0) < 0));
   const [date, setDate] = useState(String(cardPurchase?.purchaseDate || event?.date || todayIso()).slice(0,10));
-  const [accountId, setAccountId] = useState(event?.accountId || (initialMode === 'benefit' ? benefitAccount?.id || '' : ''));
-  const [categoryId, setCategoryId] = useState(cardPurchase?.category?.id || event?.categoryId || '');
-  const [paymentMethodId, setPaymentMethodId] = useState(event?.paymentMethodId || (initialMode === 'benefit' ? verocard?.id || '' : ''));
+  const [accountId, setAccountId] = useState(event?.accountId || event?.account?.id || (initialMode === 'benefit' ? benefitAccount?.id || '' : ''));
+  const [categoryId, setCategoryId] = useState(cardPurchase?.category?.id || event?.categoryId || event?.category?.id || '');
+  const [paymentMethodId, setPaymentMethodId] = useState(event?.paymentMethodId || event?.paymentMethod?.id || (initialMode === 'benefit' ? verocard?.id || '' : ''));
   const [status, setStatus] = useState<'planned'|'paid'>(event?.status === 'planned' ? 'planned' : 'paid');
   const [cardId, setCardId] = useState(cardMeta?.cardId || '');
   const [installments, setInstallments] = useState(Math.max(1, Number(cardPurchase?.installments || 1)));
@@ -157,6 +157,13 @@ export function MegMobileLaunchSheet({
     }));
 
   const selectedMethod = methods.find((item) => item.id === paymentMethodId);
+  const selectedCategory = categories.find((item) => item.id === categoryId);
+
+  useEffect(() => {
+    if (mode !== 'expense' || credit || !selectedCategory) return;
+    const fixed = /(^|\s)fixo(s)?($|\s)/i.test(normalize(selectedCategory.name) + ' ' + normalize(selectedCategory.group));
+    if (fixed) setStatus('paid');
+  }, [categoryId, credit, mode, selectedCategory]);
 
   useEffect(() => {
     if (event || mode === 'benefit' || !historyOpen) {
