@@ -161,7 +161,7 @@ export function MegMobileLaunchSheet({
   }));
   const paymentOptions: MegMobilePickerOption[] = methods
     .filter((method) => {
-      if (mode !== 'expense' || mode === 'benefit') return true;
+      if (mode !== 'expense') return true;
       if (expensePaymentMode === 'credit') return isCreditMethod(method);
       if (expensePaymentMode === 'crediario') return isCrediarioMethod(method);
       return !isCreditMethod(method) && !isCrediarioMethod(method);
