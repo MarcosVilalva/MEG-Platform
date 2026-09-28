@@ -576,7 +576,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
     /> : <div className={'meg2-shell meg2-view-' + view}>
       <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={() => setPeriodOpen(true)} onOpenMenu={() => setMenuOpen(true)}/>
       <div className="meg2-scroll">
-        {view === 'movements' ? <MegMobileMovements data={data} onOpenEvent={(event) => setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event })} onNew={() => setLaunchSheet({ preset: 'expense' })}/> : null}
+        {view === 'movements' ? <MegMobileMovements data={data} onOpenEvent={(event) => setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event })} onNew={() => setLaunchSheet({ preset: 'expense' })} onOpenPeriod={() => setPeriodOpen(true)}/> : null}
         {view === 'cards' ? <Cards data={data} onEditEvent={(eventId) => {
           const event = data.events.items.find((item) => item.id === eventId) || null;
           if (event) setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event });

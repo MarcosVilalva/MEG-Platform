@@ -329,3 +329,10 @@ assert.doesNotMatch(css,/^:root\s*\{/m,'Tokens do app móvel não podem vazar pa
 assert.match(css,/body\.meg-cleanroom-mobile\s*\{[\s\S]*--meg2-bg:/,'Tokens do app móvel devem ficar presos ao runtime clean-room.');
 
 assert.doesNotMatch(homeCss,/\n\s*\.meg-home-title\{min-height:\d+px\}[\s\S]*\n\}\s*$/,'CSS da Home não pode terminar com bloco órfão ou sobra de media query.');
+
+
+assert.match(coreScreens,/data-meg-movements="approved-redesign"[\s\S]*Controle seus eventos financeiros\.[\s\S]*Buscar lançamento\.\.\.[\s\S]*Forma de pagamento/,'Lançamentos revisada deve declarar o checkpoint visual aprovado e preservar busca, resumo e forma de pagamento.');
+assert.match(coreScreens,/categoryFilter[\s\S]*accountFilter[\s\S]*paymentFilter[\s\S]*Filtrar lançamentos[\s\S]*Todos[\s\S]*Receitas[\s\S]*Despesas/,'Filtros de Lançamentos devem continuar funcionais sem agrupar registros.');
+assert.match(coreScreens,/shortDate\(event\.date\)[\s\S]*weekday[\s\S]*event\.description[\s\S]*detail[\s\S]*meg3-payment-chip[\s\S]*meg3-status-pill[\s\S]*money\.format/,'Cada lançamento deve manter data/dia, descrição, categoria+conta, forma, status e valor.');
+assert.match(coreCss,/LANÇAMENTOS REVISADA[\s\S]*\.meg3-movements\{[\s\S]*grid-template-rows:auto auto auto auto minmax\(0,1fr\)[\s\S]*\.meg3-movements \.meg3-event-list/,'Lançamentos deve usar viewport fixo e reservar a rolagem à lista interna.');
+assert.match(mobile,/MegMobileMovements[\s\S]*onOpenPeriod=\{\(\) => setPeriodOpen\(true\)\}/,'Filtro rápido de período em Lançamentos deve abrir o seletor de período já aprovado.');
