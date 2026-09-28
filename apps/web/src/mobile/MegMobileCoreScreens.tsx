@@ -157,15 +157,8 @@ export function MegMobileMovements({
       <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true">▥</span><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong><small>Resultado</small></article>
     </section>
 
-    <section className="meg3-movement-toolbar" aria-label="Busca e filtros rápidos">
+    <section className="meg3-movement-toolbar" aria-label="Buscar lançamentos">
       <label><SearchGlyph/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamento..."/></label>
-      <button type="button" aria-label="Abrir filtros" className={activeFilterCount ? 'active' : ''} onClick={() => setFiltersOpen(true)}><FilterGlyph/></button>
-      <button type="button" className="meg3-period-quick" aria-label={'Período ' + period} onClick={onOpenPeriod}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 10h18"/></svg><span>{period}</span><b>⌄</b>
-      </button>
-      <button type="button" aria-label="Filtrar por forma de pagamento" className={paymentFilter ? 'active' : ''} onClick={() => setFiltersOpen(true)}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h14a2 2 0 0 1 2 2v9H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h11"/><path d="M15 11h6v5h-6a2.5 2.5 0 0 1 0-5Z"/></svg>
-      </button>
     </section>
 
     <header className="meg3-movement-list-head">
