@@ -718,3 +718,28 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-all-kpis .expense>svg,.meg2-all-kpis .expense strong,.meg2-all-kpis .negative strong{color:var(--meg2-red)}.meg2-all-kpis .income strong,.meg2-all-kpis .positive strong{color:var(--meg2-cyan)}
 .meg2-all-home .meg2-period-action{min-height:55px!important}.meg2-all-home .meg2-benefit{min-height:57px!important}
 @media(max-height:760px){.meg2-all-home{gap:4px}.meg2-all-balance{min-height:64px}.meg2-all-kpis article{min-height:57px}.meg2-all-home .meg2-period-action{min-height:47px!important}.meg2-all-home .meg2-benefit{min-height:49px!important}}
+
+/* Baixa canônica de Pendentes: confirmação real, sem alterar a página base. */
+.meg2-pending-settle-overlay,.meg2-pending-success-overlay{position:fixed;inset:0;z-index:190;display:grid;place-items:end center;padding:14px;background:rgba(0,17,19,.82)}
+.meg2-pending-settle,.meg2-pending-success{width:min(100%,520px);max-height:calc(100dvh - 28px);overflow:hidden;border:1px solid rgba(49,224,214,.34);border-radius:20px;background:linear-gradient(180deg,#06494b,#033638 58%,#022c2f);box-shadow:0 22px 60px rgba(0,0,0,.42);color:#fff}
+.meg2-pending-settle>header{display:grid;grid-template-columns:minmax(0,1fr) 36px;gap:8px;padding:15px 15px 10px}
+.meg2-pending-settle>header small,.meg2-pending-success>small{color:#4ce9df;font-size:8px;font-weight:900;letter-spacing:.12em}
+.meg2-pending-settle>header h2{margin:3px 0 1px;font-size:21px;line-height:1.05}
+.meg2-pending-settle>header p{margin:0;color:#72e9e2;font-size:16px;font-weight:800}
+.meg2-pending-settle>header>button{width:34px;height:34px;border:1px solid rgba(55,205,197,.18);border-radius:10px;background:#063d40;color:#dff;font-size:22px}
+.meg2-pending-settle-fields{display:grid;gap:8px;padding:4px 15px 12px}
+.meg2-pending-settle-fields>label{min-height:55px;display:grid;align-content:center;gap:3px;padding:7px 10px;border:1px solid rgba(55,205,197,.22);border-radius:12px;background:#043b3e}
+.meg2-pending-settle-fields>label span{color:#74c9c4;font-size:8px;font-weight:800}
+.meg2-pending-settle-fields input{width:100%;border:0;outline:0;background:transparent;color:#fff;font-size:14px;color-scheme:dark}
+.meg2-pending-settle-message{margin:0;padding:8px 10px;border-radius:10px;background:rgba(4,47,50,.78);color:#b9d1ce;font-size:9px}
+.meg2-pending-settle>footer{display:grid;grid-template-columns:.8fr 1.2fr;gap:8px;padding:10px 15px 15px}
+.meg2-pending-settle>footer button,.meg2-pending-success>button{min-height:44px;border-radius:12px;font-weight:850}
+.meg2-pending-detail-actions{grid-template-columns:auto auto 1fr!important}
+.meg2-pending-success{padding:20px 16px;text-align:center}
+.meg2-pending-success-icon{width:52px;height:52px;margin:0 auto 8px;display:grid;place-items:center;border-radius:50%;background:#45dfb2;color:#04382f;font-size:25px;font-weight:1000}
+.meg2-pending-success h2{margin:5px 0 3px;font-size:20px}
+.meg2-pending-success>strong{display:block;color:#55e6d9;font-size:25px}
+.meg2-pending-success dl{margin:13px 0;display:grid;gap:6px;text-align:left}
+.meg2-pending-success dl div{display:grid;grid-template-columns:76px 1fr;gap:8px;padding:7px 9px;border-radius:9px;background:rgba(3,49,52,.72)}
+.meg2-pending-success dt{color:#83aaa6;font-size:8px}.meg2-pending-success dd{margin:0;font-size:10px;font-weight:800}
+.meg2-pending-success>button{width:100%}
