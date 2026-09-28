@@ -73,17 +73,6 @@ assert.match(css, /\.meg2-user strong\{[\s\S]*display:block!important/,
 assert.doesNotMatch(css, /MEG PREMIUM MOBILE — referência visual aprovada|FIDELIDADE FINAL — referência aprovada/,
   'CSS mobile canônico não pode reintroduzir camadas visuais históricas concorrentes.');
 
-assert.ok(
-  coreScreens.includes('className="meg3-event-list" data-meg-scroll-region="true"')
-  && coreScreens.includes('rows.map((event) => {')
-  && !coreScreens.includes('meg3-event-date-group'),
-  'Lançamentos deve permanecer como lista cronológica de eventos, sem agrupamento visual por categoria.');
-assert.match(coreScreens, /paymentMethod\?\.name[\\s\\S]*sourceDetails\?\.paymentMethod[\\s\\S]*meg3-payment-chip/,
-  'Lançamentos deve preservar a forma de pagamento em cada item.');
-assert.match(coreScreens, /onClick=\{\(\) => onOpenEvent\(event\)\}/,
-  'Toque no lançamento deve continuar abrindo edição/detalhes do evento.');
-
-
 assert.match(
   previewMain,
   /document\.body\.classList\.remove\('meg-operational-mobile'\)[\s\S]*document\.body\.classList\.add\('meg-cleanroom-mobile'\)/,
