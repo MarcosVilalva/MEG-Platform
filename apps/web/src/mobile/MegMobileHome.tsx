@@ -123,9 +123,10 @@ function HomeDock({pendingCount,onNavigate,onLaunch,onOpenMenu}:{pendingCount:nu
   </nav>;
 }
 
-function SectionTitle({eyebrow,title,copy}:{eyebrow:string;title:string;copy:string}){
-  return <section className="meg-home-title">
+function SectionTitle({eyebrow,title,copy,trendMark=false}:{eyebrow:string;title:string;copy:string;trendMark?:boolean}){
+  return <section className={'meg-home-title'+(trendMark?' has-mark':'')}>
     <div><span>{eyebrow}</span><h1>{title}</h1><p>{copy}</p></div>
+    {trendMark?<span className="meg-home-title-mark" aria-hidden="true"><i/><b>↗</b></span>:null}
   </section>;
 }
 
@@ -164,7 +165,7 @@ function CurrentHome({data,onNavigate}:{data:PhoenixReadModel;onNavigate:Props['
   const result=Number(data.summary.realizedResult||0);
 
   return <>
-    <SectionTitle eyebrow="Situação atual" title={monthLabel(data.month)} copy="Acompanhe seu caixa e compromissos em tempo real."/>
+    <SectionTitle eyebrow="Situação atual" title={monthLabel(data.month)} copy="Acompanhe seu caixa e compromissos em tempo real." trendMark/>
     <section className="meg-home-balance">
       <span><HomeIcon name="wallet" size={28}/></span>
       <div><small>Saldo disponível</small><strong>{money.format(balance)}</strong><p>Considerando apenas os lançamentos realizados.</p></div>
