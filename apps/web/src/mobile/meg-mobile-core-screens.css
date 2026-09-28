@@ -434,3 +434,26 @@
 @media(max-width:350px){
  .meg3-movement-kpis article{grid-template-columns:31px minmax(0,1fr)!important;padding:7px 5px!important;column-gap:4px!important}.meg3-movement-kpis article>span{width:31px!important;height:31px!important}.meg3-movement-kpis article>span svg{width:18px!important;height:18px!important}.meg3-movement-kpis strong{font-size:8.3px!important}.meg3-event-card{grid-template-columns:42px minmax(0,1fr) auto}.meg3-event-icon{width:40px;height:40px}.meg3-event-value{min-width:76px}
 }
+
+/* HARDENING ANDROID — remove artefatos herdados sem alterar o contrato visual */
+.meg3-screen.meg3-movements,.meg3-screen.meg3-movements *{
+ -webkit-text-stroke:0!important;text-shadow:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important
+}
+.meg3-movements .meg3-status-pill{
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;
+ width:max-content!important;height:auto!important;min-height:0!important;max-width:88px!important;
+ padding:4px 9px!important;margin:0!important;border-radius:999px!important;
+ font-size:8px!important;line-height:1!important;font-weight:900!important;letter-spacing:0!important;
+ transform:none!important;scale:none!important
+}
+.meg3-movements .meg3-event-value{font-size:inherit!important;transform:none!important}
+.meg3-movements .meg3-event-value b{font-size:clamp(11px,3vw,14px)!important;line-height:1!important;letter-spacing:0!important}
+.meg3-movements .meg3-event-copy small,.meg3-movements .meg3-event-copy strong,.meg3-movements .meg3-event-copy em,
+.meg3-movements .meg3-movement-list-head strong,.meg3-movements .meg3-movement-list-head small{transform:none!important;scale:none!important}
+.meg3-movements .meg3-movement-kpis strong{overflow:visible!important;text-overflow:clip!important;letter-spacing:-.055em!important}
+@media(max-width:390px){
+ .meg3-movements .meg3-movement-kpis article{grid-template-columns:34px minmax(0,1fr)!important;padding:8px 6px!important;column-gap:5px!important}
+ .meg3-movements .meg3-movement-kpis article>span{width:34px!important;height:34px!important}
+ .meg3-movements .meg3-movement-kpis strong{font-size:9px!important}
+ .meg3-movements .meg3-status-pill{font-size:7.5px!important;max-width:82px!important}
+}
