@@ -118,3 +118,38 @@ assert.ok(
   && launchCss.includes('.meg3-history-status{'),
   'Autocomplete de descrição deve permanecer dentro da identidade visual clean-room.'
 );
+
+
+assert.ok(
+  launch.includes("if (mode !== 'benefit') return;")
+  && launch.includes("setAccountId(benefitAccount?.id || '')")
+  && launch.includes("setPaymentMethodId(verocard?.id || '')")
+  && launch.includes("setStatus('paid')"),
+  'Alimentação deve continuar travando Conta Benefício, Verocard e status pago automaticamente.'
+);
+assert.ok(
+  launch.includes('cardStatementMonthForPurchase')
+  && launch.includes('cardDueDateForStatement')
+  && launch.includes('cardMonthPlus(firstStatement, index)'),
+  'Compra no cartão deve continuar calculando competência, vencimento e evolução das parcelas pela fatura.'
+);
+assert.ok(
+  launch.includes('type="number" min="1" max="48" value={installments}')
+  && launch.includes('setInstallmentPreviewOpen(true)')
+  && launch.includes('Visualizar parcelas'),
+  'Parcelamento deve preservar quantidade editável e prévia das parcelas.'
+);
+assert.ok(
+  launch.includes("role=\"switch\"")
+  && launch.includes('Lançar como pendente')
+  && launch.includes("setStatus((value) => value === 'planned' ? 'paid' : 'planned')"),
+  'Despesa comum deve continuar permitindo alternar entre realizada e pendente.'
+);
+assert.ok(
+  launch.includes('runPhoenixCardPurchaseEdit')
+  && launch.includes('runPhoenixCardPurchaseCancel')
+  && launch.includes('runPhoenixBenefitEventEdit')
+  && launch.includes('runPhoenixSimpleEventEdit')
+  && launch.includes('runPhoenixSimpleEventArchive'),
+  'Editar lançamento deve preservar rotas específicas de edição, cancelamento e exclusão por domínio.'
+);
