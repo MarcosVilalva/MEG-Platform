@@ -64,9 +64,9 @@ assert.match(
   /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*latam-pass-platinum\.webp[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*riachuelo-mastercard-visual\.svg/i,
   'Carrossel deve resolver nomes reais e apelidos para artes horizontais estáveis.',
 );
-assert.match(css, /\.meg2-view-home \.meg2-scroll\{overflow:hidden\}/,
+assert.match(css, /CONTRATO DE VIEWPORT FIXO[\s\S]*\.meg2-scroll\{[\s\S]*overflow:hidden!important/,
   'Home corrente deve caber no viewport sem rolagem geral.');
-assert.match(css, /@media \(max-height:850px\)[\s\S]*@media \(max-height:760px\)/,
+assert.match(css, /@media \(max-height:820px\)[\s\S]*@media \(max-height:700px\)/,
   'Home deve reduzir densidade também conforme a altura do aparelho.');
 assert.match(css, /\.meg2-user strong\{[\s\S]*display:block!important/,
   'Nome do usuário não pode desaparecer em aparelhos menores.');
