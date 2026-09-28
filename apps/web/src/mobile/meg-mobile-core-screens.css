@@ -384,7 +384,6 @@
    Cabeçalho/dock compartilhados ficam congelados; somente a
    lista interna rola. Filtros preservam registros individuais.
    ========================================================= */
-.meg2-view-movements .meg2-scroll{overflow:hidden!important}
 .meg3-movements{
   grid-template-rows:auto auto auto auto minmax(0,1fr)!important;
   gap:clamp(5px,.72dvh,8px)!important;
@@ -521,3 +520,16 @@
  .meg3-movements .meg3-movement-kpis article{height:68px!important;min-height:68px!important;padding:6px!important;grid-template-columns:27px minmax(0,1fr)!important}
  .meg3-movements .meg3-movement-kpis article>span{width:27px!important;height:27px!important}
 }
+
+
+/* LANÇAMENTOS 28/09 - refinamento validado: sem CTA duplicado e sem halo branco */
+.meg3-movements .meg3-movement-list-head{justify-content:flex-start!important}
+.meg3-movements .meg3-movement-list-head>span{width:100%!important}
+.meg3-movements .meg3-event-card,
+.meg3-movements .meg3-movement-kpis article,
+.meg3-movements .meg3-movement-toolbar label,
+.meg3-movements .meg3-movement-toolbar>button,
+.meg3-movements-heading>button{
+  box-shadow:inset 0 0 16px rgba(42,232,220,.025),0 5px 14px rgba(0,0,0,.10)!important;
+}
+.meg3-movements .meg3-event-icon svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
