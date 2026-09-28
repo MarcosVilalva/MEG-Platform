@@ -383,6 +383,7 @@
 .meg3-form-sheet--new-expense .meg3-form-grid-faithful{
 }
 .meg3-form-sheet--new-expense .meg3-smart-description{order:1}
+.meg3-form-sheet--new-expense .meg3-amount-field{order:2;grid-column:1}
 .meg3-form-sheet--new-expense .meg3-amount-field b{font-size:15px;white-space:nowrap}
 .meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg3-text-field:has(input[type="date"]){order:3;grid-column:2}
 .meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg5-picker-field{order:4;grid-column:1/-1}
