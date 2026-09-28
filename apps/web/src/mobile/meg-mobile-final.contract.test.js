@@ -70,8 +70,8 @@ assert.match(css, /@media \(max-height:850px\)[\s\S]*@media \(max-height:760px\)
   'Home deve reduzir densidade também conforme a altura do aparelho.');
 assert.match(css, /\.meg2-user strong\{[\s\S]*display:block!important/,
   'Nome do usuário não pode desaparecer em aparelhos menores.');
-assert.match(css, /MEG PREMIUM MOBILE — referência visual aprovada/,
-  'Árvore mobile deve declarar explicitamente a identidade visual aprovada.');
+assert.doesNotMatch(css, /MEG PREMIUM MOBILE — referência visual aprovada|FIDELIDADE FINAL — referência aprovada/,
+  'CSS mobile canônico não pode reintroduzir camadas visuais históricas concorrentes.');
 
 assert.match(
   previewMain,
