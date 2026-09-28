@@ -31,6 +31,7 @@ assert.match(phoenix, /if \(nativeOperational && viewData\)[\s\S]*const nativeVi
   'Qualquer rota com dados no APK deve permanecer na árvore mobile clean-room antes do shell Phoenix antigo.');
 assert.match(phoenix, /VITE_MOBILE_APP === 'true' \|\| capacitorNative/,
   'Detecção do APK deve ter fallback nativo e não depender apenas da variável de build.');
+assert.match(phoenix,/withPeriodDeadline[\s\S]*15000[\s\S]*30000[\s\S]*20000/,'Filtro de período deve possuir limites de espera para mês, intervalo e histórico completo, evitando loading infinito.');
 assert.doesNotMatch(phoenix, /if \(nativeOperational && viewData && \[[^\]]+\]\.includes\(view\)\)/,
   'Android não pode voltar ao shell Phoenix por cair numa rota fora da lista mobile.');
 assert.match(mobile, /cards\.concat\(cards, cards\)/,
@@ -176,6 +177,7 @@ assert.match(
   'Cartões e Pendentes ainda devem usar viewport fixo enquanto aguardam reconstrução.',
 );
 assert.match(home,/data-meg-home="approved-four-periods"/,'Home deve declarar o checkpoint visual dos quatro períodos aprovados.');
+assert.match(home,/data-meg-home-frozen="true"/,'Home validada deve permanecer marcada como congelada durante a reconstrução das próximas telas.');
 assert.match(home,/meg-home-\$\{name\}\.svg/,'Ícones da Home devem ser resolvidos como assets externos estáveis no Android.');
 assert.doesNotMatch(home,/<svg\b/,'Home não pode voltar a SVG inline no WebView.');
 assert.match(homeCss,/\.meg-home-header\{[\s\S]*min-height:66px[\s\S]*grid-template-columns:48px minmax\(0,1fr\) 96px/,'Cabeçalho da Home deve preservar a proporção compacta da referência final.');
@@ -191,7 +193,7 @@ assert.match(home,/data-home-state=\{state\}/,'Home deve expor o estado visual c
 assert.match(home,/Veja como foi o seu mês em uma visão simples\.[\s\S]*Receitas realizadas[\s\S]*Despesas realizadas[\s\S]*Resultado do mês[\s\S]*Saldo inicial[\s\S]*Saldo final[\s\S]*Contas pagas/,'Mês passado deve seguir a composição aprovada de seis indicadores.');
 
 assert.match(home,/Projeção mensal[\s\S]*Saldo inicial projetado[\s\S]*Saldo após compromissos[\s\S]*Receitas previstas[\s\S]*Total de compromissos[\s\S]*Faturas de cartões[\s\S]*Outras pendências/,'Mês futuro deve preservar a projeção validada completa.');
-assert.match(home,/Histórico completo[\s\S]*Saldo atual \(consolidado\)[\s\S]*Total de receitas[\s\S]*Total de despesas[\s\S]*Resultado consolidado[\s\S]*Total de lançamentos[\s\S]*Média mensal de receita[\s\S]*Média mensal de despesa/,'Tudo deve usar o painel histórico completo aprovado, sem virar um resumo vazio.');
+assert.match(home,/Histórico completo[\s\S]*Saldo atual[\s\S]*Posição atual da conta, separada do resultado histórico\.[\s\S]*Total de receitas[\s\S]*Total de despesas[\s\S]*Resultado acumulado[\s\S]*Total de lançamentos[\s\S]*Média mensal de receita[\s\S]*Média mensal de despesa/,'Tudo deve separar saldo atual de resultado histórico e manter o painel completo.');
 assert.match(homeCss,/\.meg-home-content\.is-current\{[\s\S]*grid-template-rows:minmax\(0,\.68fr\)[\s\S]*minmax\(0,1\.18fr\)/,'Mês atual deve ocupar proporcionalmente toda a área útil, seguindo a densidade da referência.');
 assert.match(homeCss,/\.meg-home-content\.is-past,[\s\S]*\.meg-home-content\.is-future\{[\s\S]*grid-template-rows:minmax\(0,\.68fr\)[\s\S]*minmax\(0,3\.12fr\)[\s\S]*minmax\(0,1\.18fr\)/,'Passado e futuro devem ocupar a mesma malha vertical da Home base.');
 assert.match(homeCss,/\.meg-home-content\.is-all,[\s\S]*\.meg-home-content\.is-range\{[\s\S]*grid-template-rows:minmax\(0,\.68fr\)[\s\S]*minmax\(0,1\.16fr\)/,'Tudo e intervalo devem preencher o viewport com a mesma linguagem visual.');
