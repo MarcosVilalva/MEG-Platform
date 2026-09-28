@@ -1,9 +1,9 @@
 {
-  "versionCode": 447,
-  "versionName": "2.0.447",
+  "versionCode": 448,
+  "versionName": "2.0.448",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "4f6dc0e554997ccff2ac21428dee2318a36238e86ea595c62f5fa6cccd9255b8",
+  "sha256": "25d2cbc3ca7ec5600024af0de1dff194ebb51e89f3d4e0125e045ccbeba7f438",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "ui: estilizar visao geral de todos os periodos"
+  "releaseNotes": "atualizar contrato da home para historico completo"
 }
