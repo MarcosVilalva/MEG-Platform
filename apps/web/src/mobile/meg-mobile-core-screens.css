@@ -491,3 +491,33 @@
   .meg3-movements .meg3-event-icon{width:34px;height:34px}
   .meg3-movements .meg3-payment-chip{margin-top:2px;padding-block:1px}
 }
+
+
+/* HOTFIX LANCAMENTOS 28/09 - neutraliza herancas antigas que distorciam o checkpoint */
+.meg3-screen.meg3-movements{display:grid!important;grid-template-rows:auto auto auto auto minmax(0,1fr)!important;align-content:stretch!important;overflow:hidden!important}
+.meg3-movements .meg3-movement-kpis{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
+.meg3-movements .meg3-movement-kpis article{display:grid!important;grid-template-columns:30px minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr) auto!important;min-width:0!important;min-height:72px!important;height:72px!important;padding:7px!important;gap:2px 5px!important}
+.meg3-movements .meg3-movement-kpis article>span{grid-column:1!important;grid-row:1/3!important;width:30px!important;height:30px!important;margin:0!important}
+.meg3-movements .meg3-movement-kpis article>strong{grid-column:2!important;grid-row:1!important;min-width:0!important;margin:0!important;align-self:end!important;font-size:clamp(9px,2.55vw,12px)!important;line-height:1.05!important;white-space:nowrap!important;letter-spacing:-.035em!important}
+.meg3-movements .meg3-movement-kpis article>small{grid-column:2!important;grid-row:2!important;margin:0!important;align-self:start!important;font-size:7px!important;line-height:1!important}
+.meg3-movements .meg3-movement-toolbar{display:grid!important;grid-template-columns:minmax(0,1fr) 42px 104px 42px!important;gap:6px!important;min-width:0!important;overflow:visible!important}
+.meg3-movements .meg3-movement-toolbar>*{min-width:0!important;margin:0!important}
+.meg3-movements .meg3-movement-toolbar label{display:grid!important;grid-template-columns:25px minmax(0,1fr)!important;align-items:center!important}
+.meg3-movements .meg3-movement-toolbar input{width:100%!important;min-width:0!important}
+.meg3-movements .meg3-movement-toolbar>button{width:auto!important;min-width:0!important;max-width:none!important}
+.meg3-movements .meg3-movement-list-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;overflow:hidden!important;padding:0 2px!important}
+.meg3-movements .meg3-movement-list-head>span{display:grid!important;min-width:0!important;gap:1px!important}
+.meg3-movements .meg3-movement-list-head strong,.meg3-movements .meg3-movement-list-head small{display:block!important;margin:0!important;line-height:1.1!important;text-decoration:none!important;border:0!important}
+.meg3-movements .meg3-movement-list-head button{position:static!important;inset:auto!important;transform:none!important;float:none!important;flex:0 0 auto!important;width:auto!important;margin:0!important}
+.meg3-movements .meg3-event-list{display:block!important;min-height:0!important;height:auto!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;scrollbar-width:none!important}
+.meg3-movements .meg3-event-list::-webkit-scrollbar{display:none!important}
+.meg3-movements .meg3-event-card{display:grid!important;width:100%!important;grid-template-columns:39px minmax(0,1fr) auto!important;align-items:center!important;overflow:hidden!important}
+.meg3-movements .meg3-event-copy{display:grid!important;min-width:0!important;justify-items:start!important;text-align:left!important}
+.meg3-movements .meg3-event-copy>*{max-width:100%!important}
+.meg3-movements .meg3-event-copy strong,.meg3-movements .meg3-event-copy em{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+.meg3-movements .meg3-event-value{position:static!important;transform:none!important;float:none!important;min-width:74px!important}
+@media(max-width:390px){
+ .meg3-movements .meg3-movement-toolbar{grid-template-columns:minmax(0,1fr) 39px 96px 39px!important;gap:5px!important}
+ .meg3-movements .meg3-movement-kpis article{height:68px!important;min-height:68px!important;padding:6px!important;grid-template-columns:27px minmax(0,1fr)!important}
+ .meg3-movements .meg3-movement-kpis article>span{width:27px!important;height:27px!important}
+}
