@@ -67,8 +67,8 @@ type IconName='logo'|'calendar'|'trend'|'wallet'|'up'|'down'|'file'|'card'|'chec
 function HomeIcon({name,size=22}:{name:IconName;size?:number}){
   if(name==='logo') return <img src={asset('brand/meg-finance-system-mark.svg')} alt="MEG"/>;
   const common={viewBox:'0 0 24 24',width:size,height:size,fill:'none',stroke:'currentColor',strokeWidth:1.8,strokeLinecap:'round' as const,strokeLinejoin:'round' as const,'aria-hidden':true};
-  if(name==='calendar') return <svg {...common}><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 10h18"/></svg>;
-  if(name==='trend') return <svg {...common}><path d="M4 18 10 12l4 4 6-8"/><path d="M15 8h5v5"/></svg>;
+  if(name==='calendar') return <img className="meg-home-icon-asset" src={asset('icons/meg-home-calendar.svg')} alt="" aria-hidden="true"/>;
+  if(name==='trend') return <img className="meg-home-icon-asset" src={asset('icons/meg-home-trend.svg')} alt="" aria-hidden="true"/>;
   if(name==='wallet'||name==='card') return <svg {...common}><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/></svg>;
   if(name==='up') return <svg {...common}><path d="M12 20V5M6 11l6-6 6 6"/></svg>;
   if(name==='down') return <svg {...common}><path d="M12 4v15M6 13l6 6 6-6"/></svg>;
