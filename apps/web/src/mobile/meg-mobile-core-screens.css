@@ -583,3 +583,102 @@
 .meg3-movements .meg3-event-copy strong{font-weight:750!important;letter-spacing:-.01em!important}
 .meg3-movements .meg3-event-copy small,.meg3-movements .meg3-event-copy em,.meg3-movements .meg3-payment-chip{font-weight:500!important}
 .meg3-movements .meg3-event-icon{box-shadow:none!important;border:0!important}
+
+
+/* LANÇAMENTOS 28/09 - correção estrutural pela captura real do Android */
+.meg3-screen.meg3-movements{
+  grid-template-rows:auto auto auto 44px minmax(0,1fr)!important;
+  gap:7px!important;
+  padding:9px 12px 6px!important;
+}
+.meg3-movements .meg3-movement-kpis{
+  width:100%!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:7px!important;
+  padding:0!important;
+  margin:0!important;
+  overflow:hidden!important;
+}
+.meg3-movements .meg3-movement-kpis article{
+  width:100%!important;
+  height:76px!important;
+  min-height:76px!important;
+  padding:8px!important;
+  margin:0!important;
+  border-radius:14px!important;
+  overflow:hidden!important;
+}
+.meg3-movements .meg3-movement-toolbar{
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  overflow:hidden!important;
+}
+.meg3-movements .meg3-movement-toolbar label{
+  width:100%!important;
+  height:44px!important;
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:32px minmax(0,1fr)!important;
+  align-items:center!important;
+  padding:0 11px!important;
+  margin:0!important;
+  border-radius:13px!important;
+}
+.meg3-movements .meg3-movement-toolbar input{
+  width:100%!important;
+  min-width:0!important;
+  height:100%!important;
+  border:0!important;
+  outline:0!important;
+  background:transparent!important;
+  color:#e7f4f3!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
+  -webkit-appearance:none!important;
+}
+.meg3-movements .meg3-movement-list-head{
+  position:relative!important;
+  z-index:2!important;
+  width:100%!important;
+  height:44px!important;
+  min-height:44px!important;
+  padding:2px 3px!important;
+  margin:0!important;
+  overflow:hidden!important;
+  background:#003638!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.meg3-movements .meg3-movement-list-head>span{
+  width:100%!important;height:100%!important;
+  display:flex!important;flex-direction:column!important;justify-content:center!important;
+  gap:2px!important;overflow:hidden!important;
+}
+.meg3-movements .meg3-movement-list-head strong{
+  display:block!important;margin:0!important;padding:0!important;
+  color:#f1f8f7!important;font-size:14px!important;font-weight:800!important;
+  line-height:16px!important;letter-spacing:0!important;
+  text-decoration:none!important;text-shadow:none!important;
+}
+.meg3-movements .meg3-movement-list-head small{
+  display:block!important;margin:0!important;padding:0!important;
+  color:#91aaa7!important;font-size:9px!important;font-weight:400!important;
+  line-height:11px!important;letter-spacing:0!important;
+  text-decoration:none!important;text-shadow:none!important;
+}
+.meg3-movements .meg3-event-list{
+  position:relative!important;z-index:1!important;
+  width:100%!important;height:100%!important;min-height:0!important;
+  margin:0!important;padding:0 1px 4px!important;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  background:#003638!important;border:0!important;outline:0!important;box-shadow:none!important;
+}
+.meg3-movements .meg3-event-list::before,.meg3-movements .meg3-event-list::after,
+.meg3-movements .meg3-movement-list-head::before,.meg3-movements .meg3-movement-list-head::after{content:none!important;display:none!important}
+@media(max-width:390px){
+  .meg3-screen.meg3-movements{padding-inline:10px!important;gap:6px!important}
+  .meg3-movements .meg3-movement-kpis{gap:6px!important}
+  .meg3-movements .meg3-movement-kpis article{height:72px!important;min-height:72px!important;padding:6px!important}
+}
