@@ -56,22 +56,24 @@ function mobileMovementKind(event: FinancialEvent): Exclude<MobileMovementKind, 
 }
 
 function EventContextGlyph({ event }: { event: FinancialEvent }) {
-  const context = normalizeMovementText([
-    event.description,
-    event.category?.name,
-    event.paymentMethod?.name,
-    event.sourceDetails?.group,
-    event.sourceDetails?.paymentMethod,
-  ].filter(Boolean).join(' '));
-  if (/aliment|verocard|fast food|restaurante|lanche|mercado/.test(context)) {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v8M9 3v8M6 7h3M7.5 11v10M15 3v8c0 2 3 2 3 0V3M16.5 13v8"/></svg>;
-  }
-  if (/pix/.test(context)) {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 4 4-4 4-4-4 4-4ZM7 8l-4 4 4 4 4-4M17 8l4 4-4 4-4-4M12 13l4 4-4 4-4-4"/></svg>;
-  }
-  if (/cartao|credito|latam|itau|santander|bradesco|nubank|mercado pago/.test(context)) {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9h18M7 15h4"/></svg>;
-  }
+  const category = normalizeMovementText(event.category?.name || event.sourceDetails?.group || '');
+  const description = normalizeMovementText(event.description);
+  const context = [category, description].filter(Boolean).join(' ');
+  if (/supermerc|mercado|mercearia|hortifruti/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2 11h10l3-8H6"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>;
+  if (/aliment|fast food|restaurante|lanche|padaria|refeic/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v8M9 3v8M6 7h3M7.5 11v10M15 3v8c0 2 3 2 3 0V3M16.5 13v8"/></svg>;
+  if (/imovel|moradia|aluguel|condominio|casa/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></svg>;
+  if (/combust|posto|gasolina|etanol/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h10v17M4 21h12M7 7h6v5H7zM15 8h2l3 3v7a2 2 0 0 1-4 0v-4"/></svg>;
+  if (/saude|medic|farmac|hospital/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-4.6-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.4-8 11-8 11Z"/><path d="M9 12h6M12 9v6"/></svg>;
+  if (/educa|escola|curso|faculdade|livro/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 7 9-4 9 4-9 4-9-4Z"/><path d="M7 9v5c3 2 7 2 10 0V9M21 7v7"/></svg>;
+  if (/internet|telefone|celular|wifi/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9a12 12 0 0 1 16 0M7 13a8 8 0 0 1 10 0M10 17a3 3 0 0 1 4 0"/><circle cx="12" cy="20" r="1"/></svg>;
+  if (/energia|eletric|luz/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-8 12h7l-1 8 8-12h-7l1-8Z"/></svg>;
+  if (/agua|saneamento/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2S6 9 6 14a6 6 0 0 0 12 0c0-5-6-12-6-12Z"/></svg>;
+  if (/transporte|uber|99|onibus|veiculo|carro/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 16-1-4 2-5h12l2 5-1 4M4 16h16v4h-3v-2H7v2H4v-4Z"/><circle cx="8" cy="13" r="1"/><circle cx="16" cy="13" r="1"/></svg>;
+  if (/salario|pagamento|provento/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M15 14h3"/></svg>;
+  if (/rendimento|receita|juros|dividendo|resgate/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18 10 12l4 4 6-9"/><path d="M15 7h5v5"/></svg>;
+  if (/imposto|tribut|taxa/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6V3Z"/><path d="M14 3v5h5M9 12h6M9 16h6"/></svg>;
+  if (/lazer|cinema|jogo|entretenimento|viagem/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14l2 11-4 2-3-4h-4l-3 4-4-2L5 7Z"/><path d="M8 11v4M6 13h4M16 12h.01M18 14h.01"/></svg>;
+  if (/pet|veterin/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="8" r="2"/><circle cx="17" cy="8" r="2"/><circle cx="5" cy="13" r="2"/><circle cx="19" cy="13" r="2"/><path d="M12 11c-3 0-6 4-5 7 1 3 4 1 5 1s4 2 5-1c1-3-2-7-5-7Z"/></svg>;
   return <EventGlyph positive={signedAmount(event) >= 0}/>;
 }
 
@@ -167,8 +169,7 @@ export function MegMobileMovements({
 
     <header className="meg3-movement-list-head">
       <span><strong>{rows.length.toLocaleString('pt-BR')} lançamento{rows.length === 1 ? '' : 's'}</strong><small>{period} · toque para abrir</small></span>
-      <button type="button" onClick={onNew}><b aria-hidden="true">＋</b>Novo</button>
-    </header>
+     </header>
 
     <section className="meg3-event-list" data-meg-scroll-region="true">
       {rows.map((event) => {
