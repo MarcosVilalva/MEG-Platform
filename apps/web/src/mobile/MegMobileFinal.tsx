@@ -553,25 +553,6 @@ function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Pro
         <footer><button type="button" className="secondary" onClick={() => setSelectedRow(null)}>Fechar</button><button type="button" className="apply" onClick={() => { const eventId=selectedRow.eventId; setSelectedRow(null); if (eventId) onEditEvent(eventId); else setCenterOpen(true); }}>{selectedRow.eventId ? 'Editar lançamento' : 'Abrir central'}</button></footer>
       </section>
     </div> : null}
-    {settling && selected ? <div className="meg2-pending-settle-overlay" role="presentation">
-      <section className="meg2-pending-settle" role="dialog" aria-modal="true" aria-label="Dar baixa no compromisso">
-        <header><div><small>BAIXA DE PENDÊNCIA</small><h2>{selected.description}</h2><p>{money.format(selected.amount)}</p></div><button type="button" disabled={settlementBusy} onClick={() => setSettling(false)}>×</button></header>
-        <div className="meg2-pending-settle-fields">
-          <label><span>Data do pagamento</span><input type="date" max={today} value={paidAt} disabled={settlementBusy} onChange={(event) => setPaidAt(event.target.value)}/></label>
-          <MegMobilePicker label="Conta utilizada" value={settlementAccountId} disabled={settlementBusy} placeholder="Selecione a conta" options={monetaryAccounts.map((item) => ({ id:item.id, label:item.name, subtitle:item.type ? String(item.type) : undefined }))} onChange={setSettlementAccountId}/>
-          <MegMobilePicker label="Forma de pagamento" value={settlementMethodId} disabled={settlementBusy} placeholder="Selecione a forma" options={activeMethods.map((item) => ({ id:item.id, label:item.name, subtitle:item.type ? String(item.type) : undefined }))} onChange={setSettlementMethodId}/>
-          {settlementMessage ? <p className="meg2-pending-settle-message">{settlementMessage}</p> : null}
-        </div>
-        <footer><button type="button" className="secondary" disabled={settlementBusy} onClick={() => setSettling(false)}>Cancelar</button><button type="button" className="apply" disabled={settlementBusy || !paidAt || !settlementAccountId || !settlementMethodId} onClick={() => void confirmSettlement()}>{settlementBusy ? 'Confirmando…' : 'Confirmar baixa'}</button></footer>
-      </section>
-    </div> : null}
-    {settlementSuccess ? <div className="meg2-pending-success-overlay" role="presentation">
-      <section className="meg2-pending-success" role="dialog" aria-modal="true" aria-label="Baixa confirmada">
-        <span className="meg2-pending-success-icon">✓</span><small>BAIXA CONFIRMADA</small><h2>{settlementSuccess.description}</h2><strong>{money.format(settlementSuccess.amount)}</strong>
-        <dl><div><dt>Data</dt><dd>{settlementSuccess.paidAt.split('-').reverse().join('/')}</dd></div><div><dt>Conta</dt><dd>{settlementSuccess.account}</dd></div><div><dt>Pagamento</dt><dd>{settlementSuccess.payment}</dd></div></dl>
-        <button type="button" className="apply" onClick={() => setSettlementSuccess(null)}>Concluir</button>
-      </section>
-    </div> : null}
   </main>;
 }
 
@@ -721,6 +702,25 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
           <div><dt>Origem</dt><dd>{selected.source === 'event' ? 'Lançamento financeiro' : 'Conta a pagar'}</dd></div>
         </dl>
         <footer className="meg2-pending-detail-actions"><button type="button" className="secondary" onClick={() => setSelected(null)}>Fechar</button>{selected.source === 'event' ? <button type="button" className="secondary" onClick={() => { const id=selected.sourceId; setSelected(null); onEditEvent(id); }}>Editar</button> : null}{!selected.paid ? <button type="button" className="apply" onClick={() => openSettlement(selected)}>Dar baixa</button> : null}</footer>
+      </section>
+    </div> : null}
+    {settling && selected ? <div className="meg2-pending-settle-overlay" role="presentation">
+      <section className="meg2-pending-settle" role="dialog" aria-modal="true" aria-label="Dar baixa no compromisso">
+        <header><div><small>BAIXA DE PENDÊNCIA</small><h2>{selected.description}</h2><p>{money.format(selected.amount)}</p></div><button type="button" disabled={settlementBusy} onClick={() => setSettling(false)}>×</button></header>
+        <div className="meg2-pending-settle-fields">
+          <label><span>Data do pagamento</span><input type="date" max={today} value={paidAt} disabled={settlementBusy} onChange={(event) => setPaidAt(event.target.value)}/></label>
+          <MegMobilePicker label="Conta utilizada" value={settlementAccountId} disabled={settlementBusy} placeholder="Selecione a conta" options={monetaryAccounts.map((item) => ({ id:item.id, label:item.name, subtitle:item.type ? String(item.type) : undefined }))} onChange={setSettlementAccountId}/>
+          <MegMobilePicker label="Forma de pagamento" value={settlementMethodId} disabled={settlementBusy} placeholder="Selecione a forma" options={activeMethods.map((item) => ({ id:item.id, label:item.name, subtitle:item.type ? String(item.type) : undefined }))} onChange={setSettlementMethodId}/>
+          {settlementMessage ? <p className="meg2-pending-settle-message">{settlementMessage}</p> : null}
+        </div>
+        <footer><button type="button" className="secondary" disabled={settlementBusy} onClick={() => setSettling(false)}>Cancelar</button><button type="button" className="apply" disabled={settlementBusy || !paidAt || !settlementAccountId || !settlementMethodId} onClick={() => void confirmSettlement()}>{settlementBusy ? 'Confirmando…' : 'Confirmar baixa'}</button></footer>
+      </section>
+    </div> : null}
+    {settlementSuccess ? <div className="meg2-pending-success-overlay" role="presentation">
+      <section className="meg2-pending-success" role="dialog" aria-modal="true" aria-label="Baixa confirmada">
+        <span className="meg2-pending-success-icon">✓</span><small>BAIXA CONFIRMADA</small><h2>{settlementSuccess.description}</h2><strong>{money.format(settlementSuccess.amount)}</strong>
+        <dl><div><dt>Data</dt><dd>{settlementSuccess.paidAt.split('-').reverse().join('/')}</dd></div><div><dt>Conta</dt><dd>{settlementSuccess.account}</dd></div><div><dt>Pagamento</dt><dd>{settlementSuccess.payment}</dd></div></dl>
+        <button type="button" className="apply" onClick={() => setSettlementSuccess(null)}>Concluir</button>
       </section>
     </div> : null}
   </main>;
