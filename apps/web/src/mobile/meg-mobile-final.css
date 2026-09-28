@@ -1080,3 +1080,7 @@ html.meg-cleanroom-mobile[data-meg-user-avatar="image"] .meg2-avatar{color:trans
 .meg2-view-home .meg2-home{
   align-content:space-between!important;
 }
+
+/* Marca MEG: ocupar integralmente o slot do cabeçalho em todas as telas */
+.meg2-header .meg2-brand{padding:0;overflow:hidden;display:grid;place-items:stretch}
+.meg2-header .meg2-brand img{width:100%;height:100%;max-width:none;max-height:none;object-fit:cover;object-position:center;display:block}
