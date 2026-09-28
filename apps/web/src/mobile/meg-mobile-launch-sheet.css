@@ -419,23 +419,23 @@
 .meg3-app-header .meg2-header{position:relative;width:100%;background:transparent}
 .meg3-app-dock .meg2-dock{position:relative;width:100%;bottom:auto}
 .meg3-form-sheet--new-expense .meg3-form-head{
-  min-height:62px;padding:5px 15px 7px;align-items:start;
+  min-height:54px;padding:4px 14px 5px;align-items:start;
   border-bottom:0;
 }
 .meg3-form-sheet--new-expense .meg3-form-head small,
 .meg3-form-sheet--new-expense .meg3-form-head>button{display:none}
-.meg3-form-sheet--new-expense .meg3-form-head h2{font-size:22px;letter-spacing:-.035em;line-height:1}
-.meg3-form-sheet--new-expense .meg3-form-head p{font-size:10px;color:#93afac}
-.meg3-form-sheet--new-expense .meg3-form-body{padding:0 14px 9px}
-.meg3-form-sheet--new-expense .meg3-form-segment{margin-bottom:9px;border-color:rgba(61,222,213,.20);background:rgba(1,35,38,.72)}
-.meg3-form-sheet--new-expense .meg3-form-segment button{min-height:37px}
-.meg3-form-sheet--new-expense .meg3-form-grid-faithful{gap:8px 7px}
-.meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg5-picker-field{min-height:52px}
+.meg3-form-sheet--new-expense .meg3-form-head h2{font-size:20px;letter-spacing:-.035em;line-height:1}
+.meg3-form-sheet--new-expense .meg3-form-head p{margin-top:3px;font-size:9px;color:#93afac}
+.meg3-form-sheet--new-expense .meg3-form-body{padding:0 13px 7px}
+.meg3-form-sheet--new-expense .meg3-form-segment{margin-bottom:7px;border-color:rgba(61,222,213,.20);background:rgba(1,35,38,.72)}
+.meg3-form-sheet--new-expense .meg3-form-segment button{min-height:34px}
+.meg3-form-sheet--new-expense .meg3-form-grid-faithful{gap:6px 7px}
+.meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg5-picker-field{min-height:46px;padding-block:5px}
 .meg3-form-sheet--new-expense .meg3-form-actions{
-  min-height:59px;display:block;padding:5px 14px;
+  min-height:54px;display:block;padding:4px 13px;
   border-top:0;background:transparent;
 }
-.meg3-form-sheet--new-expense .meg3-form-actions .primary{width:100%;min-height:47px;border-radius:13px}
+.meg3-form-sheet--new-expense .meg3-form-actions .primary{width:100%;min-height:44px;border-radius:12px}
 .meg3-form-sheet--new-expense[data-editor="true"] .meg3-form-actions{
   display:grid;
   grid-template-columns:minmax(0,.82fr) minmax(0,1.35fr);
@@ -444,7 +444,7 @@
 .meg3-form-sheet--new-expense[data-editor="true"] .meg3-form-actions .primary,
 .meg3-form-sheet--new-expense[data-editor="true"] .meg3-form-actions .ghost{
   width:100%;
-  min-height:47px;
+  min-height:44px;
 }
 .meg3-form-sheet--new-expense[data-launch-mode="income"] .meg3-form-segment button.active.income{
   border-color:#43efb5;
@@ -458,10 +458,10 @@
   color:#ffe27d;
   box-shadow:inset 0 0 12px rgba(241,198,79,.12),0 0 9px rgba(241,198,79,.10);
 }
-.meg3-form-sheet--new-expense .meg3-amount-field{min-height:58px;padding:6px 9px;border-color:rgba(48,231,219,.34);background:linear-gradient(150deg,#075154,#033b3e)}
+.meg3-form-sheet--new-expense .meg3-amount-field{min-height:52px;padding:5px 9px;border-color:rgba(48,231,219,.34);background:linear-gradient(150deg,#075154,#033b3e)}
 .meg3-form-sheet--new-expense .meg3-amount-field input{font-size:19px!important}
 .meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg3-text-field:has(input[type="date"]) input{
-  min-height:58px;font-size:12px;
+  min-height:52px;font-size:12px;
 }
 .meg3-form-sheet--new-expense .meg3-form-grid-faithful>.wide.meg3-amount-field{
   grid-column:1;min-width:0;
@@ -477,3 +477,8 @@
   .meg3-history-suggestions{max-height:145px}
   .meg3-history-suggestions>button{min-height:44px}
 }
+
+/* Densidade do formulário aprovada para viewport móvel: ações fixas, corpo interno compacto. */
+.meg3-form-sheet--new-expense .meg3-pending-switch,.meg3-form-sheet--new-expense .meg3-negative-toggle{min-height:46px;padding:7px 10px}
+.meg3-form-sheet--new-expense .meg3-notes-field textarea{min-height:46px!important;max-height:54px}
+.meg3-form-sheet--new-expense .meg3-text-field input,.meg3-form-sheet--new-expense .meg3-text-field textarea{min-height:44px}
