@@ -61,6 +61,16 @@ function isCreditMethod(method: PhoenixReadModel['paymentMethods'][number] | und
   return /cartao|credito|credit/.test(normalize(method.name) + ' ' + normalize(method.type));
 }
 
+function isPixMethod(method: PhoenixReadModel['paymentMethods'][number] | undefined) {
+  return Boolean(method && /(^|\s)pix($|\s)/.test(normalize(method.name) + ' ' + normalize(method.type)));
+}
+
+function isCrediarioMethod(method: PhoenixReadModel['paymentMethods'][number] | undefined) {
+  return Boolean(method && /crediario|carne|parcelado loja/.test(normalize(method.name) + ' ' + normalize(method.type)));
+}
+
+type ExpensePaymentMode = 'cash' | 'credit' | 'crediario';
+
 function projectedCardMeta(event: EventWithPayload) {
   const payload = event.sourcePayload;
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
@@ -129,6 +139,12 @@ export function MegMobileLaunchSheet({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyStatus, setHistoryStatus] = useState('');
+  const [expensePaymentMode, setExpensePaymentMode] = useState<ExpensePaymentMode>(() => {
+    const initialMethod = data.paymentMethods.find((item) => item.id === (event?.paymentMethodId || event?.paymentMethod?.id || ''));
+    if (cardMeta || isCreditMethod(initialMethod)) return 'credit';
+    if (isCrediarioMethod(initialMethod)) return 'crediario';
+    return 'cash';
+  });
 
   const accounts = useMemo(() => data.accounts.filter((item) => item.isActive), [data.accounts]);
   const methods = useMemo(() => data.paymentMethods.filter((item) => item.isActive), [data.paymentMethods]);
@@ -143,11 +159,18 @@ export function MegMobileLaunchSheet({
     label: category.name,
     subtitle: category.group || (category.type === 'income' ? 'Receita' : category.type === 'expense' ? 'Despesa' : undefined),
   }));
-  const paymentOptions: MegMobilePickerOption[] = methods.map((method) => ({
-    id: method.id,
-    label: method.name,
-    subtitle: method.type ? String(method.type) : undefined,
-  }));
+  const paymentOptions: MegMobilePickerOption[] = methods
+    .filter((method) => {
+      if (mode !== 'expense' || mode === 'benefit') return true;
+      if (expensePaymentMode === 'credit') return isCreditMethod(method);
+      if (expensePaymentMode === 'crediario') return isCrediarioMethod(method);
+      return !isCreditMethod(method) && !isCrediarioMethod(method);
+    })
+    .map((method) => ({
+      id: method.id,
+      label: method.name,
+      subtitle: method.type ? String(method.type) : undefined,
+    }));
   const cardOptions: MegMobilePickerOption[] = data.cards
     .filter((card) => card.isActive !== false)
     .map((card) => ({
@@ -157,8 +180,26 @@ export function MegMobileLaunchSheet({
     }));
 
   const selectedMethod = methods.find((item) => item.id === paymentMethodId);
+  const pixMethod = methods.find((item) => isPixMethod(item));
+
+  const crediarioMethod = methods.find((item) => isCrediarioMethod(item));
   const selectedCategory = categories.find((item) => item.id === categoryId);
   const credit = mode === 'expense' && (Boolean(cardId) || isCreditMethod(selectedMethod) || Boolean(cardMeta));
+
+  useEffect(() => {
+    if (mode !== 'expense' || event) return;
+    if (expensePaymentMode === 'cash') {
+      setCardId('');
+      if (!selectedMethod || isCreditMethod(selectedMethod) || isCrediarioMethod(selectedMethod)) {
+        setPaymentMethodId(pixMethod?.id || '');
+      }
+    } else if (expensePaymentMode === 'credit') {
+      if (!isCreditMethod(selectedMethod) && creditMethod) setPaymentMethodId(creditMethod.id);
+    } else {
+      setCardId('');
+      if (!isCrediarioMethod(selectedMethod)) setPaymentMethodId(crediarioMethod?.id || '');
+    }
+  }, [expensePaymentMode, mode, event, pixMethod?.id, crediarioMethod?.id, selectedMethod?.id]);
 
   useEffect(() => {
     if (mode !== 'expense' || credit || !selectedCategory) return;
@@ -465,9 +506,19 @@ export function MegMobileLaunchSheet({
             onChange={setAccountId}
           />
 
+          {mode === 'expense' ? <div className="wide meg3-payment-mode">
+            <span>Modalidade</span>
+            <div>
+              <button type="button" className={expensePaymentMode === 'cash' ? 'active' : ''} onClick={() => setExpensePaymentMode('cash')}>À vista</button>
+              <button type="button" className={expensePaymentMode === 'credit' ? 'active' : ''} onClick={() => setExpensePaymentMode('credit')}>Crédito</button>
+              <button type="button" className={expensePaymentMode === 'crediario' ? 'active' : ''} onClick={() => setExpensePaymentMode('crediario')}>Crediário</button>
+            </div>
+            {expensePaymentMode === 'cash' && pixMethod ? <small>PIX selecionado automaticamente. Toque em Forma de pagamento para alterar.</small> : null}
+          </div> : null}
+
           <MegMobilePicker
             className="wide"
-            label={mode === 'income' ? 'Forma de recebimento' : 'Forma de pagamento'}
+            label={mode === 'income' ? 'Forma de recebimento' : 'Forma de pagamento'
             value={paymentMethodId}
             options={paymentOptions}
             disabled={mode === 'benefit'}
