@@ -238,8 +238,8 @@ function FutureHome({data,context,onNavigate}:{data:PhoenixReadModel;context?:Ho
   return <>
     <SectionTitle eyebrow="Projeção mensal" title={monthLabel(target)} copy="O que já está previsto para comprometer ou reforçar seu caixa neste mês."/>
     <section className="meg-home-future-grid">
-      <article><small>Saldo inicial projetado</small><strong>{money.format(opening)}</strong><p>Saldo real atual após os compromissos previstos antes deste mês.</p></article>
-      <article className={closing>=0?'accent':'danger'}><small>Saldo após compromissos</small><strong>{money.format(closing)}</strong><p>Inclui receitas e despesas previstas do período.</p></article>
+      <article><small>Saldo inicial projetado</small><strong>{money.format(opening)}</strong><p>Saldo atual após compromissos anteriores.</p></article>
+      <article className={closing>=0?'accent':'danger'}><small>Saldo após compromissos</small><strong>{money.format(closing)}</strong><p>Saldo projetado ao fim do período.</p></article>
       <article className="income"><span><HomeIcon name="up"/></span><small>Receitas previstas</small><strong>{money.format(income)}</strong><em>{incomes.length} entrada(s)</em></article>
       <article className="expense"><span><HomeIcon name="file"/></span><small>Total de compromissos</small><strong>{money.format(expense)}</strong><em>{expenses.length} compromisso(s)</em></article>
       <article className="card"><span><HomeIcon name="card"/></span><small>Faturas de cartões</small><strong>{money.format(cardAmount)}</strong><em>{cardEvents.length} fatura(s) no mês</em></article>
@@ -270,12 +270,12 @@ function AggregateHome({data,periodMode,periodLabel,context,onNavigate}:{data:Ph
   return <>
     <SectionTitle eyebrow={eyebrow} title={title} copy={copy}/>
     <section className="meg-home-balance meg-home-all-balance">
-      <span><HomeIcon name="wallet" size={28}/></span><div><small>Saldo atual (consolidado)</small><strong>{money.format(currentBalance)}</strong><p>Considera todos os lançamentos monetários da conta.</p></div>
+      <span><HomeIcon name="wallet" size={28}/></span><div><small>Saldo atual</small><strong>{money.format(currentBalance)}</strong><p>Posição atual da conta, separada do resultado histórico.</p></div>
     </section>
     <section className="meg-home-all-flow">
       <article className="income"><span><HomeIcon name="up"/></span><small>Total de receitas</small><strong>{money.format(income)}</strong></article>
       <article className="expense"><span><HomeIcon name="down"/></span><small>Total de despesas</small><strong>{money.format(expense)}</strong></article>
-      <article className="result"><span><HomeIcon name="chart"/></span><small>Resultado consolidado</small><strong>{resultMoney(result)}</strong></article>
+      <article className="result"><span><HomeIcon name="chart"/></span><small>Resultado acumulado</small><strong>{resultMoney(result)}</strong></article>
     </section>
     <section className="meg-home-history-metrics">
       <article><span><HomeIcon name="file"/></span><small>Total de lançamentos</small><strong>{posted.length.toLocaleString('pt-BR')}</strong></article>
@@ -301,7 +301,7 @@ export function MegMobileHome({data,periodMode,periodLabel,homePeriodContext,pen
         ? <FutureHome data={data} context={homePeriodContext} onNavigate={onNavigate}/>
         : <CurrentHome data={data} onNavigate={onNavigate}/>;
 
-  return <section className="meg-home-screen" data-meg-home="approved-four-periods" data-home-state={state} data-meg-fixed-screen="true">
+  return <section className="meg-home-screen" data-meg-home="approved-four-periods" data-meg-home-frozen="true" data-home-state={state} data-meg-fixed-screen="true">
     <HomeHeader data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={onOpenPeriod} onOpenMenu={onOpenMenu}/>
     <main className={'meg-home-content is-'+state}>{body}</main>
     <HomeDock pendingCount={pendingCount} onNavigate={onNavigate} onLaunch={onLaunch} onOpenMenu={onOpenMenu}/>
