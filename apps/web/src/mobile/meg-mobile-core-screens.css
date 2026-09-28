@@ -380,305 +380,89 @@
 }
 
 /* =========================================================
-   LANÇAMENTOS REVISADA - checkpoint visual aprovado 26/09
-   Cabeçalho/dock compartilhados ficam congelados; somente a
-   lista interna rola. Filtros preservam registros individuais.
+   LANÇAMENTOS — CLEAN ROOM 28/09
+   Bloco único. Sem hotfixes empilhados.
    ========================================================= */
-.meg3-movements{
-  grid-template-rows:auto auto auto auto minmax(0,1fr)!important;
-  gap:clamp(5px,.72dvh,8px)!important;
-  padding:clamp(7px,1dvh,10px) clamp(9px,2.7vw,13px) clamp(5px,.8dvh,9px)!important;
-  background:radial-gradient(circle at 94% 2%,rgba(21,207,198,.055),transparent 24%);
+.meg3-screen.meg3-movements{
+  height:100%;min-height:0;overflow:hidden;
+  display:grid!important;
+  grid-template-rows:auto 74px 44px 38px minmax(0,1fr)!important;
+  gap:7px!important;padding:9px 12px 6px!important;
+  background:#003638!important;color:#f7ffff!important;
 }
+.meg3-movements,.meg3-movements *{box-sizing:border-box;text-shadow:none!important;-webkit-text-stroke:0!important}
 .meg3-movements>*{min-width:0;min-height:0}
 .meg3-movements-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 2px}
 .meg3-movements-heading>div{min-width:0}
-.meg3-movements-heading h1{margin:0;font-size:clamp(27px,7.2vw,35px);line-height:1;letter-spacing:-.04em}
-.meg3-movements-heading p{margin:3px 0 0;color:#b6cdca;font-size:clamp(9px,2.55vw,11px)}
-.meg3-movements-heading>button{
-  position:relative;flex:0 0 clamp(44px,11vw,50px);width:clamp(44px,11vw,50px);height:clamp(44px,11vw,50px);
-  border:1px solid rgba(43,231,220,.46);border-radius:12px;background:linear-gradient(180deg,#075c5d,#034144);color:#3ee8de;
-  display:grid;place-items:center;box-shadow:inset 0 0 18px rgba(42,232,220,.035),0 0 14px rgba(42,232,220,.04)
-}
+.meg3-movements-heading h1{margin:0;font-size:clamp(29px,7.5vw,36px);line-height:1;letter-spacing:-.035em;font-weight:800}
+.meg3-movements-heading p{margin:4px 0 0;color:#b6cdca;font-size:10px;line-height:1.2}
+.meg3-movements-heading>button{flex:0 0 50px;width:50px;height:50px;border:1px solid rgba(43,231,220,.46);border-radius:12px;background:#06484b;color:#3ee8de;display:grid;place-items:center;box-shadow:none}
 .meg3-movements-heading>button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.meg3-movements-heading>button.active{border-color:#2de8dd;color:#69f2e8}
-.meg3-movements-heading>button b{position:absolute;right:-4px;top:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;display:grid;place-items:center;background:#ff5268;color:#fff;font-size:8px}
+.meg3-movements-heading>button b{display:none}
 
-.meg3-movements .meg3-movement-kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.meg3-movements .meg3-movement-kpis article{
-  min-height:clamp(69px,10.4dvh,82px);padding:7px 6px;display:grid;grid-template-columns:31px minmax(0,1fr);grid-template-rows:1fr auto;
-  align-items:center;gap:1px 5px;border-color:rgba(49,220,210,.31);border-radius:13px;background:linear-gradient(150deg,#075052,#03383b 72%);
-  box-shadow:inset 0 0 18px rgba(38,235,221,.025),0 5px 14px rgba(0,0,0,.10)
-}
-.meg3-movements .meg3-movement-kpis article>span{grid-row:1/3;width:31px;height:31px;border-radius:9px;font-size:18px}
-.meg3-movements .meg3-movement-kpis strong{align-self:end;font-size:clamp(10px,2.75vw,13px);line-height:1.05;overflow:visible;text-overflow:clip}
-.meg3-movements .meg3-movement-kpis small{align-self:start;color:#b8ccca;font-size:7px}
+.meg3-movements .meg3-movement-kpis{width:100%;height:74px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0;padding:0;overflow:hidden}
+.meg3-movements .meg3-movement-kpis article{min-width:0;width:100%;height:74px;margin:0;padding:7px;display:grid;grid-template-columns:30px minmax(0,1fr);grid-template-rows:1fr auto;align-items:center;gap:1px 6px;border:1px solid rgba(49,220,210,.31);border-radius:14px;background:#064447;overflow:hidden;box-shadow:none}
+.meg3-movements .meg3-movement-kpis article>span{grid-column:1;grid-row:1/3;width:30px;height:30px;margin:0;display:grid;place-items:center;border-radius:9px;background:#075457;font-size:18px;font-weight:900}
+.meg3-movements .meg3-movement-kpis strong{grid-column:2;grid-row:1;min-width:0;align-self:end;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:clamp(10px,2.7vw,13px);line-height:1.05;font-variant-numeric:tabular-nums}
+.meg3-movements .meg3-movement-kpis small{grid-column:2;grid-row:2;align-self:start;margin:0;color:#b8ccca;font-size:7px;line-height:1;white-space:nowrap}
+.meg3-movements .meg3-movement-kpis .income>span,.meg3-movements .meg3-movement-kpis .income strong{color:#62e5b8}
+.meg3-movements .meg3-movement-kpis .expense>span,.meg3-movements .meg3-movement-kpis .expense strong,.meg3-movements .meg3-movement-kpis .negative>span,.meg3-movements .meg3-movement-kpis .negative strong{color:#ff7588}
+.meg3-movements .meg3-movement-kpis .positive>span,.meg3-movements .meg3-movement-kpis .positive strong{color:#55e8df}
 
-.meg3-movements .meg3-movement-toolbar{display:grid;grid-template-columns:minmax(0,1fr) 43px minmax(92px,116px) 43px;gap:6px}
-.meg3-movements .meg3-movement-toolbar label,
-.meg3-movements .meg3-movement-toolbar>button{height:clamp(39px,5.8dvh,44px);border:1px solid rgba(55,211,202,.27);border-radius:11px;background:#043b3e;color:#d9eeee}
-.meg3-movements .meg3-movement-toolbar label{grid-template-columns:29px minmax(0,1fr);padding:0 8px}
-.meg3-movements .meg3-movement-toolbar label svg,
-.meg3-movements .meg3-movement-toolbar>button svg{width:18px;height:18px}
-.meg3-movements .meg3-movement-toolbar input{font-size:9px}
-.meg3-movements .meg3-movement-toolbar>button{display:flex;align-items:center;justify-content:center;gap:5px;padding:0 7px}
-.meg3-movements .meg3-movement-toolbar>button.active{border-color:#2be8dc;color:#55e9df;box-shadow:0 0 12px rgba(41,229,218,.06)}
-.meg3-movements .meg3-period-quick{min-width:0;color:#eefafa!important}
-.meg3-movements .meg3-period-quick span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;font-weight:800}
-.meg3-movements .meg3-period-quick b{color:#48e8df;font-size:13px}
+.meg3-movements .meg3-movement-toolbar{width:100%;height:44px;display:block;margin:0;overflow:hidden}
+.meg3-movements .meg3-movement-toolbar label{width:100%;height:44px;margin:0;padding:0 11px;display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;border:1px solid rgba(55,211,202,.27);border-radius:13px;background:#043b3e;color:#d9eeee;box-shadow:none}
+.meg3-movements .meg3-movement-toolbar label svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.meg3-movements .meg3-movement-toolbar input{width:100%;min-width:0;height:100%;padding:0;border:0;outline:0;background:transparent;color:#eefafa;box-shadow:none;font:inherit;font-size:10px;-webkit-appearance:none}
+.meg3-movements .meg3-movement-toolbar input::placeholder{color:#789592}
 
-.meg3-movements .meg3-movement-list-head{min-height:34px;padding-inline:2px}
-.meg3-movements .meg3-movement-list-head strong{font-size:11px}
-.meg3-movements .meg3-movement-list-head small{font-size:7px;color:#8ca6a3}
-.meg3-movements .meg3-movement-list-head button{min-height:33px;padding:0 12px;border-radius:11px;background:linear-gradient(180deg,#087d7a,#055b5b);font-size:9px}
+.meg3-movements .meg3-movement-list-head{width:100%;height:38px;min-height:38px;margin:0;padding:0 3px;display:flex;align-items:center;overflow:hidden;background:#003638;border:0;box-shadow:none}
+.meg3-movements .meg3-movement-list-head>span{width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;gap:1px;overflow:hidden}
+.meg3-movements .meg3-movement-list-head strong{display:block;margin:0;color:#f1f8f7;font-size:12px;font-weight:800;line-height:14px;white-space:nowrap}
+.meg3-movements .meg3-movement-list-head small{display:block;margin:0;color:#91aaa7;font-size:7px;font-weight:400;line-height:9px;white-space:nowrap}
+.meg3-movements .meg3-movement-list-head button{display:none!important}
 
-.meg3-movements .meg3-event-list{padding:0 1px 3px;scroll-padding-bottom:6px}
-.meg3-movements .meg3-event-card{
-  position:relative;min-height:clamp(70px,10.2dvh,82px);margin:0 0 5px;padding:6px 7px;
-  grid-template-columns:39px minmax(0,1fr) auto;gap:7px;border-color:rgba(51,194,187,.23);border-radius:13px;
-  background:linear-gradient(145deg,#064447,#023538);box-shadow:0 4px 10px rgba(0,0,0,.09)
-}
-.meg3-movements .meg3-event-icon{width:38px;height:38px;border-radius:11px}
-.meg3-movements .meg3-event-icon svg{width:19px;height:19px}
-.meg3-movements .meg3-event-copy small{font-size:6.7px;color:#87a5a1}
-.meg3-movements .meg3-event-copy strong{margin:2px 0 1px;font-size:10.5px;line-height:1.08}
-.meg3-movements .meg3-event-copy em{font-size:7.2px;color:#a7bcba}
-.meg3-movements .meg3-payment-chip{margin-top:3px;padding:2px 7px;border-radius:999px;font-size:6.6px;background:#0b4b50;color:#d7e7e6;border-color:rgba(120,196,192,.13)}
-.meg3-movements .meg3-event-value{height:100%;min-width:74px;display:grid;grid-template-columns:minmax(0,1fr) 13px;grid-template-rows:1fr auto;align-items:center;justify-items:end;gap:3px 4px}
+.meg3-movements .meg3-event-list{width:100%;height:100%;min-height:0;margin:0;padding:0 1px 4px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#003638;border:0;outline:0;box-shadow:none}
+.meg3-movements .meg3-event-list::-webkit-scrollbar{display:none}
+.meg3-movements .meg3-event-entry{margin:0 0 6px}
+.meg3-movements .meg3-event-date-group{display:block;padding:3px 5px 5px;color:#91aaa7;font-size:7px;font-weight:800}
+.meg3-movements .meg3-event-card{width:100%;min-height:78px;margin:0 0 5px;padding:6px 8px;display:grid;grid-template-columns:39px minmax(0,1fr) auto;align-items:center;gap:7px;text-align:left;border:1px solid rgba(51,194,187,.23);border-radius:13px;background:#064447;color:#fff;overflow:hidden;outline:0;box-shadow:none;-webkit-tap-highlight-color:transparent}
+.meg3-movements .meg3-event-icon{width:38px;height:38px;display:grid;place-items:center;border:0;border-radius:11px;background:#075154;color:#48ded5;box-shadow:none}
+.meg3-movements .meg3-event-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.meg3-movements .meg3-event-card.income .meg3-event-icon,.meg3-movements .meg3-event-card.income .meg3-event-value b{color:#55e4b3}
+.meg3-movements .meg3-event-card.expense .meg3-event-icon,.meg3-movements .meg3-event-card.expense .meg3-event-value b{color:#ff7d8d}
+.meg3-movements .meg3-event-card.kind-benefit .meg3-event-icon{color:#f1dd62;background:#5a5427}
+.meg3-movements .meg3-event-card.kind-income .meg3-event-icon{background:#075b50}
+.meg3-movements .meg3-event-card.kind-expense .meg3-event-icon{background:#50343a}
+.meg3-movements .meg3-event-copy{min-width:0;display:grid;justify-items:start;text-align:left}
+.meg3-movements .meg3-event-copy small{display:block;color:#87a5a1;font-size:6.7px;font-weight:500}
+.meg3-movements .meg3-event-copy strong{display:block;max-width:100%;margin:2px 0 1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;line-height:1.08;font-weight:750}
+.meg3-movements .meg3-event-copy em{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#a7bcba;font-size:7.2px;font-style:normal}
+.meg3-movements .meg3-payment-chip{display:inline-flex;width:max-content;max-width:100%;margin-top:3px;padding:2px 7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid rgba(120,196,192,.13);border-radius:999px;background:#0b4b50;color:#d7e7e6;font-size:6.6px;font-style:normal;font-weight:700}
+.meg3-movements .meg3-event-value{height:100%;min-width:74px;display:grid;grid-template-columns:minmax(0,1fr) 13px;grid-template-rows:1fr auto;align-items:center;justify-items:end;gap:3px 4px;white-space:nowrap}
 .meg3-movements .meg3-status-pill{grid-column:1/3;align-self:start;width:max-content;max-width:100%;padding:3px 7px;border-radius:999px;font-size:6.5px;font-style:normal;font-weight:900;line-height:1.1}
 .meg3-movements .meg3-status-pill.pending{background:rgba(245,185,56,.17);color:#ffd45f}
 .meg3-movements .meg3-status-pill.done{background:rgba(52,215,164,.15);color:#63e4b4}
 .meg3-movements .meg3-status-pill.received{background:rgba(40,220,207,.15);color:#59e8df}
-.meg3-movements .meg3-event-value b{grid-column:1;align-self:end;font-size:9.5px}
+.meg3-movements .meg3-event-value b{grid-column:1;align-self:end;font-size:9.5px;font-variant-numeric:tabular-nums}
 .meg3-movements .meg3-event-chevron{grid-column:2;align-self:end;color:#42e6dc;font-size:20px;font-style:normal;font-weight:300;line-height:.8}
 
 .meg3-movement-filter-overlay{position:fixed;inset:0;z-index:2147482400;width:100vw;height:100dvh;overflow:hidden;display:grid;place-items:center;background:rgba(0,15,17,.78);padding:max(14px,env(safe-area-inset-top)) 12px max(14px,env(safe-area-inset-bottom))}
-.meg3-movement-filter-sheet{width:min(100%,520px);max-height:calc(100dvh - 28px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow:hidden;padding:14px;border:1px solid rgba(47,235,223,.52);border-radius:20px;background:radial-gradient(circle at 92% 0%,rgba(39,232,220,.10),transparent 26%),linear-gradient(165deg,#063f41,#032d30 58%,#012326);box-shadow:0 0 30px rgba(31,232,220,.10),0 24px 60px rgba(0,0,0,.42);display:grid;gap:10px}
-.meg3-movement-filter-sheet>header{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.meg3-movement-filter-sheet>header h2{margin:0;font-size:19px;letter-spacing:-.02em}
-.meg3-movement-filter-sheet>header button{width:39px;height:39px;border:1px solid rgba(59,202,195,.24);border-radius:11px;background:#043638;color:#fff;font-size:24px}
+.meg3-movement-filter-sheet{width:min(100%,520px);max-height:calc(100dvh - 28px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow:hidden;padding:14px;border:1px solid rgba(47,235,223,.52);border-radius:20px;background:#033236;display:grid;gap:10px}
+.meg3-movement-filter-sheet>header{display:flex;align-items:center;justify-content:space-between;gap:10px}.meg3-movement-filter-sheet>header h2{margin:0;font-size:19px}.meg3-movement-filter-sheet>header button{width:39px;height:39px;border:1px solid rgba(59,202,195,.24);border-radius:11px;background:#043638;color:#fff;font-size:24px}
 .meg3-movement-filter-sheet label{display:grid;gap:5px}.meg3-movement-filter-sheet label>span,.meg3-movement-filter-sheet legend{color:#d7e8e6;font-size:8px;font-weight:800}
 .meg3-filter-period>button,.meg3-movement-filter-sheet select{width:100%;min-height:43px;border:1px solid rgba(48,218,207,.28);border-radius:11px;background:#043b3e;color:#f4ffff;padding:0 10px;font:inherit;font-size:9px;outline:0}
 .meg3-filter-period>button{display:grid;grid-template-columns:25px minmax(0,1fr) 18px;align-items:center;gap:7px;text-align:left}
 .meg3-filter-period svg{width:18px;height:18px;fill:none;stroke:#45e8df;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.meg3-filter-period b{color:#45e8df;text-align:center}
 .meg3-movement-filter-sheet fieldset{margin:0;padding:0;border:0;display:grid;gap:5px}
-.meg3-filter-status{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.meg3-filter-status button{min-height:42px;border:1px solid rgba(52,197,190,.22);border-radius:11px;background:#04383b;color:#cfe0de;font-size:8px;font-weight:800}
-.meg3-filter-status button.active{border-color:#29e8dc;background:linear-gradient(180deg,#0a817e,#05605f);color:#fff;box-shadow:0 0 13px rgba(41,232,220,.08)}
-.meg3-filter-status button.income{color:#64e3b6}.meg3-filter-status button.expense{color:#ff8090}.meg3-filter-status button.active.income,.meg3-filter-status button.active.expense{color:#fff}
-.meg3-movement-filter-sheet select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,#43e7de 50%),linear-gradient(135deg,#43e7de 50%,transparent 50%);background-position:calc(100% - 15px) 18px,calc(100% - 10px) 18px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:28px}
-.meg3-movement-filter-sheet>footer{display:grid;grid-template-columns:1fr 1.3fr;gap:7px;margin-top:2px}
-.meg3-movement-filter-sheet>footer button{min-height:44px;border-radius:11px;font-size:9px;font-weight:900}
-.meg3-movement-filter-sheet>footer .secondary{border:1px solid rgba(62,189,184,.22);background:#043638;color:#c7d9d7}
-.meg3-movement-filter-sheet>footer .apply{border:1px solid #2be8db;background:linear-gradient(180deg,#12d9d0,#0aa5a0);color:#022e30}
+.meg3-filter-status{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.meg3-filter-status button{min-height:42px;border:1px solid rgba(52,197,190,.22);border-radius:11px;background:#04383b;color:#cfe0de;font-size:8px;font-weight:800}.meg3-filter-status button.active{border-color:#29e8dc;background:#086d6b;color:#fff}.meg3-filter-status button.income{color:#64e3b6}.meg3-filter-status button.expense{color:#ff8090}.meg3-filter-status button.active.income,.meg3-filter-status button.active.expense{color:#fff}
+.meg3-movement-filter-sheet select{appearance:none;padding-right:28px}
+.meg3-movement-filter-sheet>footer{display:grid;grid-template-columns:1fr 1.3fr;gap:7px;margin-top:2px}.meg3-movement-filter-sheet>footer button{min-height:44px;border-radius:11px;font-size:9px;font-weight:900}.meg3-movement-filter-sheet>footer .secondary{border:1px solid rgba(62,189,184,.22);background:#043638;color:#c7d9d7}.meg3-movement-filter-sheet>footer .apply{border:1px solid #2be8db;background:#0a8d89;color:#fff}
 
-@media(max-width:370px){
-  .meg3-movements .meg3-movement-toolbar{grid-template-columns:minmax(0,1fr) 39px minmax(84px,98px) 39px;gap:5px}
-  .meg3-movements .meg3-period-quick span{font-size:8px}
-  .meg3-movements .meg3-event-value{min-width:68px}
-  .meg3-movements .meg3-event-value b{font-size:8.5px}
-}
-@media(max-height:720px){
-  .meg3-movements{gap:4px!important;padding-top:6px!important;padding-bottom:4px!important}
-  .meg3-movements-heading h1{font-size:25px}.meg3-movements-heading p{font-size:8px}
-  .meg3-movements-heading>button{width:40px;height:40px;flex-basis:40px}
-  .meg3-movements .meg3-movement-kpis article{min-height:61px;padding:5px}
+@media(max-width:390px){
+  .meg3-screen.meg3-movements{padding-inline:10px!important;gap:6px!important;grid-template-rows:auto 70px 42px 36px minmax(0,1fr)!important}
+  .meg3-movements .meg3-movement-kpis{height:70px;gap:6px}
+  .meg3-movements .meg3-movement-kpis article{height:70px;padding:6px;grid-template-columns:27px minmax(0,1fr)}
   .meg3-movements .meg3-movement-kpis article>span{width:27px;height:27px}
-  .meg3-movements .meg3-movement-toolbar label,.meg3-movements .meg3-movement-toolbar>button{height:36px}
-  .meg3-movements .meg3-movement-list-head{min-height:30px}
-  .meg3-movements .meg3-event-card{min-height:64px;margin-bottom:4px;padding-block:5px}
-  .meg3-movements .meg3-event-icon{width:34px;height:34px}
-  .meg3-movements .meg3-payment-chip{margin-top:2px;padding-block:1px}
-}
-
-
-/* HOTFIX LANCAMENTOS 28/09 - neutraliza herancas antigas que distorciam o checkpoint */
-.meg3-screen.meg3-movements{display:grid!important;grid-template-rows:auto auto auto auto minmax(0,1fr)!important;align-content:stretch!important;overflow:hidden!important}
-.meg3-movements .meg3-movement-kpis{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
-.meg3-movements .meg3-movement-kpis article{display:grid!important;grid-template-columns:30px minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr) auto!important;min-width:0!important;min-height:72px!important;height:72px!important;padding:7px!important;gap:2px 5px!important}
-.meg3-movements .meg3-movement-kpis article>span{grid-column:1!important;grid-row:1/3!important;width:30px!important;height:30px!important;margin:0!important}
-.meg3-movements .meg3-movement-kpis article>strong{grid-column:2!important;grid-row:1!important;min-width:0!important;margin:0!important;align-self:end!important;font-size:clamp(9px,2.55vw,12px)!important;line-height:1.05!important;white-space:nowrap!important;letter-spacing:-.035em!important}
-.meg3-movements .meg3-movement-kpis article>small{grid-column:2!important;grid-row:2!important;margin:0!important;align-self:start!important;font-size:7px!important;line-height:1!important}
-.meg3-movements .meg3-movement-toolbar{display:grid!important;grid-template-columns:minmax(0,1fr) 42px 104px 42px!important;gap:6px!important;min-width:0!important;overflow:visible!important}
-.meg3-movements .meg3-movement-toolbar>*{min-width:0!important;margin:0!important}
-.meg3-movements .meg3-movement-toolbar label{display:grid!important;grid-template-columns:25px minmax(0,1fr)!important;align-items:center!important}
-.meg3-movements .meg3-movement-toolbar input{width:100%!important;min-width:0!important}
-.meg3-movements .meg3-movement-toolbar>button{width:auto!important;min-width:0!important;max-width:none!important}
-.meg3-movements .meg3-movement-list-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;overflow:hidden!important;padding:0 2px!important}
-.meg3-movements .meg3-movement-list-head>span{display:grid!important;min-width:0!important;gap:1px!important}
-.meg3-movements .meg3-movement-list-head strong,.meg3-movements .meg3-movement-list-head small{display:block!important;margin:0!important;line-height:1.1!important;text-decoration:none!important;border:0!important}
-.meg3-movements .meg3-movement-list-head button{position:static!important;inset:auto!important;transform:none!important;float:none!important;flex:0 0 auto!important;width:auto!important;margin:0!important}
-.meg3-movements .meg3-event-list{display:block!important;min-height:0!important;height:auto!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;scrollbar-width:none!important}
-.meg3-movements .meg3-event-list::-webkit-scrollbar{display:none!important}
-.meg3-movements .meg3-event-card{display:grid!important;width:100%!important;grid-template-columns:39px minmax(0,1fr) auto!important;align-items:center!important;overflow:hidden!important}
-.meg3-movements .meg3-event-copy{display:grid!important;min-width:0!important;justify-items:start!important;text-align:left!important}
-.meg3-movements .meg3-event-copy>*{max-width:100%!important}
-.meg3-movements .meg3-event-copy strong,.meg3-movements .meg3-event-copy em{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
-.meg3-movements .meg3-event-value{position:static!important;transform:none!important;float:none!important;min-width:74px!important}
-@media(max-width:390px){
- .meg3-movements .meg3-movement-toolbar{grid-template-columns:minmax(0,1fr) 39px 96px 39px!important;gap:5px!important}
- .meg3-movements .meg3-movement-kpis article{height:68px!important;min-height:68px!important;padding:6px!important;grid-template-columns:27px minmax(0,1fr)!important}
- .meg3-movements .meg3-movement-kpis article>span{width:27px!important;height:27px!important}
-}
-
-
-/* LANÇAMENTOS 28/09 - refinamento validado: sem CTA duplicado e sem halo branco */
-.meg3-movements .meg3-movement-list-head{justify-content:flex-start!important}
-.meg3-movements .meg3-movement-list-head>span{width:100%!important}
-.meg3-movements .meg3-event-card,
-.meg3-movements .meg3-movement-kpis article,
-.meg3-movements .meg3-movement-toolbar label,
-.meg3-movements .meg3-movement-toolbar>button,
-.meg3-movements-heading>button{
-  box-shadow:inset 0 0 16px rgba(42,232,220,.025),0 5px 14px rgba(0,0,0,.10)!important;
-}
-.meg3-movements .meg3-event-icon svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-
-
-/* LANÇAMENTOS 28/09 - acabamento tipográfico e neutralização de artefatos WebView */
-.meg3-movements,.meg3-movements *{
-  text-shadow:none!important;
-  -webkit-text-stroke:0 transparent!important;
-}
-.meg3-movements-heading h1{
-  font-size:clamp(29px,7.5vw,36px)!important;
-  line-height:1.02!important;
-  letter-spacing:-.035em!important;
-  font-weight:800!important;
-}
-.meg3-movements-heading p{line-height:1.25!important;font-weight:400!important}
-.meg3-movements .meg3-movement-list-head{
-  min-height:42px!important;
-  height:42px!important;
-  overflow:visible!important;
-  align-items:center!important;
-  padding:0 2px!important;
-}
-.meg3-movements .meg3-movement-list-head>span{
-  display:flex!important;
-  flex-direction:column!important;
-  justify-content:center!important;
-  gap:2px!important;
-  height:100%!important;
-  overflow:visible!important;
-}
-.meg3-movements .meg3-movement-list-head strong{
-  font-size:13px!important;
-  line-height:1.15!important;
-  font-weight:800!important;
-  white-space:nowrap!important;
-}
-.meg3-movements .meg3-movement-list-head small{
-  font-size:8px!important;
-  line-height:1.2!important;
-  white-space:nowrap!important;
-}
-.meg3-movements .meg3-event-list{border:0!important;outline:0!important}
-.meg3-movements .meg3-event-card{
-  outline:0!important;
-  text-decoration:none!important;
-  -webkit-tap-highlight-color:transparent!important;
-}
-.meg3-movements .meg3-event-card:focus,.meg3-movements .meg3-event-card:focus-visible{outline:0!important;box-shadow:0 4px 10px rgba(0,0,0,.09)!important}
-.meg3-movements .meg3-event-copy strong{font-weight:750!important;letter-spacing:-.01em!important}
-.meg3-movements .meg3-event-copy small,.meg3-movements .meg3-event-copy em,.meg3-movements .meg3-payment-chip{font-weight:500!important}
-.meg3-movements .meg3-event-icon{box-shadow:none!important;border:0!important}
-
-
-/* LANÇAMENTOS 28/09 - correção estrutural pela captura real do Android */
-.meg3-screen.meg3-movements{
-  grid-template-rows:auto auto auto 44px minmax(0,1fr)!important;
-  gap:7px!important;
-  padding:9px 12px 6px!important;
-}
-.meg3-movements .meg3-movement-kpis{
-  width:100%!important;
-  grid-template-columns:repeat(3,minmax(0,1fr))!important;
-  gap:7px!important;
-  padding:0!important;
-  margin:0!important;
-  overflow:hidden!important;
-}
-.meg3-movements .meg3-movement-kpis article{
-  width:100%!important;
-  height:76px!important;
-  min-height:76px!important;
-  padding:8px!important;
-  margin:0!important;
-  border-radius:14px!important;
-  overflow:hidden!important;
-}
-.meg3-movements .meg3-movement-toolbar{
-  display:block!important;
-  width:100%!important;
-  min-width:0!important;
-  margin:0!important;
-  overflow:hidden!important;
-}
-.meg3-movements .meg3-movement-toolbar label{
-  width:100%!important;
-  height:44px!important;
-  min-width:0!important;
-  display:grid!important;
-  grid-template-columns:32px minmax(0,1fr)!important;
-  align-items:center!important;
-  padding:0 11px!important;
-  margin:0!important;
-  border-radius:13px!important;
-}
-.meg3-movements .meg3-movement-toolbar input{
-  width:100%!important;
-  min-width:0!important;
-  height:100%!important;
-  border:0!important;
-  outline:0!important;
-  background:transparent!important;
-  color:#e7f4f3!important;
-  box-shadow:none!important;
-  text-shadow:none!important;
-  -webkit-appearance:none!important;
-}
-.meg3-movements .meg3-movement-list-head{
-  position:relative!important;
-  z-index:2!important;
-  width:100%!important;
-  height:44px!important;
-  min-height:44px!important;
-  padding:2px 3px!important;
-  margin:0!important;
-  overflow:hidden!important;
-  background:#003638!important;
-  border:0!important;
-  box-shadow:none!important;
-}
-.meg3-movements .meg3-movement-list-head>span{
-  width:100%!important;height:100%!important;
-  display:flex!important;flex-direction:column!important;justify-content:center!important;
-  gap:2px!important;overflow:hidden!important;
-}
-.meg3-movements .meg3-movement-list-head strong{
-  display:block!important;margin:0!important;padding:0!important;
-  color:#f1f8f7!important;font-size:14px!important;font-weight:800!important;
-  line-height:16px!important;letter-spacing:0!important;
-  text-decoration:none!important;text-shadow:none!important;
-}
-.meg3-movements .meg3-movement-list-head small{
-  display:block!important;margin:0!important;padding:0!important;
-  color:#91aaa7!important;font-size:9px!important;font-weight:400!important;
-  line-height:11px!important;letter-spacing:0!important;
-  text-decoration:none!important;text-shadow:none!important;
-}
-.meg3-movements .meg3-event-list{
-  position:relative!important;z-index:1!important;
-  width:100%!important;height:100%!important;min-height:0!important;
-  margin:0!important;padding:0 1px 4px!important;
-  overflow-y:auto!important;overflow-x:hidden!important;
-  background:#003638!important;border:0!important;outline:0!important;box-shadow:none!important;
-}
-.meg3-movements .meg3-event-list::before,.meg3-movements .meg3-event-list::after,
-.meg3-movements .meg3-movement-list-head::before,.meg3-movements .meg3-movement-list-head::after{content:none!important;display:none!important}
-@media(max-width:390px){
-  .meg3-screen.meg3-movements{padding-inline:10px!important;gap:6px!important}
-  .meg3-movements .meg3-movement-kpis{gap:6px!important}
-  .meg3-movements .meg3-movement-kpis article{height:72px!important;min-height:72px!important;padding:6px!important}
+  .meg3-movements .meg3-movement-toolbar,.meg3-movements .meg3-movement-toolbar label{height:42px}
+  .meg3-movements .meg3-movement-list-head{height:36px;min-height:36px}
 }
