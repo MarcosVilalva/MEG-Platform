@@ -369,13 +369,10 @@
 
 /* Novo lançamento: regras visuais específicas preservadas sobre o shell canônico. */
 .meg3-form-head p{margin:5px 0 0;color:#a8c6c5;font-size:12px;line-height:1.3}
-.meg3-form-sheet--new-expense .meg3-form-body{padding:16px 20px 18px}
 .meg3-form-sheet--new-expense .meg3-form-segment{
-  gap:6px;padding:0;margin-bottom:18px;border:0;background:transparent;
 }
 .meg3-form-sheet--new-expense .meg3-form-segment button{
   display:flex;align-items:center;justify-content:center;gap:5px;
-  min-height:44px;padding:0 5px;border:1px solid rgba(35,223,218,.36);
   border-radius:11px;background:#05383b;color:#f2ffff;font-size:11px;
 }
 .meg3-form-sheet--new-expense .meg3-form-segment button span{font-size:17px;line-height:1}
@@ -384,12 +381,9 @@
   color:#ff899c;box-shadow:inset 0 0 12px rgba(255,73,108,.14),0 0 9px rgba(255,73,108,.12);
 }
 .meg3-form-sheet--new-expense .meg3-form-grid-faithful{
-  grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 10px;
 }
 .meg3-form-sheet--new-expense .meg3-smart-description{order:1}
-.meg3-form-sheet--new-expense .meg3-amount-field{order:2;grid-column:1;min-height:68px}
 .meg3-form-sheet--new-expense .meg3-amount-field b{font-size:15px;white-space:nowrap}
-.meg3-form-sheet--new-expense .meg3-amount-field input{font-size:20px!important}
 .meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg3-text-field:has(input[type="date"]){order:3;grid-column:2}
 .meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg5-picker-field{order:4;grid-column:1/-1}
 .meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg3-text-field:has(input[type="number"]),
