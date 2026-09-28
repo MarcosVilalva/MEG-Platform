@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { hydratePhoenixAvatarPreference, phoenixAvatarImage, readPhoenixAvatarPreference } from '../phoenix/profile-avatar';
 import { isPhoenixBenefitEvent } from '../phoenix/home-period-summary';
@@ -137,6 +137,21 @@ function BenefitCard({data,label,onOpen}:{data:PhoenixReadModel;label:string;onO
   </button>;
 }
 
+function QuickActions({onNavigate}:{onNavigate:Props['onNavigate']}){
+  return <section className="meg-home-quick">
+    <header>
+      <div><span><HomeIcon name="bolt" size={17}/></span><p><b>Ações rápidas</b><small>Acesse as principais funcionalidades.</small></p></div>
+      <button onClick={()=>onNavigate('movements')}>Ver todas ›</button>
+    </header>
+    <div>
+      <button onClick={()=>onNavigate('cards')}><span><HomeIcon name="card"/></span><small>Cartões</small></button>
+      <button onClick={()=>onNavigate('payables')}><span><HomeIcon name="file"/></span><small>Pagar conta</small></button>
+      <button onClick={()=>onNavigate('cashflow')}><span><HomeIcon name="cashflow"/></span><small>Fluxo de caixa</small></button>
+      <button onClick={()=>onNavigate('analytics')}><span><HomeIcon name="chart"/></span><small>Ver relatórios</small></button>
+    </div>
+  </section>;
+}
+
 function CurrentHome({data,onNavigate}:{data:PhoenixReadModel;onNavigate:Props['onNavigate']}){
   const [benefitOpen,setBenefitOpen]=useState(false);
   const openPayables=data.payables.filter((item)=>openStatus(item.status)&&Number(item.openAmount||0)>0);
@@ -166,15 +181,7 @@ function CurrentHome({data,onNavigate}:{data:PhoenixReadModel;onNavigate:Props['
       <article><span className="green"><HomeIcon name="check"/></span><small>Contas pagas</small><b>{paid.length}</b><em>{money.format(paid.reduce((s,item)=>s+Math.abs(Number(item.signedAmount||item.amount||0)),0))}</em></article>
     </section>
     <BenefitCard data={data} label="Saldo disponível" onOpen={()=>setBenefitOpen(true)}/>
-    <section className="meg-home-quick">
-      <header><div><span><HomeIcon name="bolt" size={17}/></span><p><b>Ações rápidas</b><small>Acesse as principais funcionalidades.</small></p></div><button onClick={()=>onNavigate('settings')}>Atalhos ›</button></header>
-      <div>
-        <button onClick={()=>onNavigate('cards')}><span><HomeIcon name="card"/></span><small>Cartões</small></button>
-        <button onClick={()=>onNavigate('payables')}><span><HomeIcon name="file"/></span><small>Pagar conta</small></button>
-        <button onClick={()=>onNavigate('cashflow')}><span><HomeIcon name="cashflow"/></span><small>Fluxo de caixa</small></button>
-        <button onClick={()=>onNavigate('analytics')}><span><HomeIcon name="chart"/></span><small>Ver relatórios</small></button>
-      </div>
-    </section>
+    <QuickActions onNavigate={onNavigate}/>
     {benefitOpen?<MegMobileBenefitModal data={data} onClose={()=>setBenefitOpen(false)} onOpenMovements={()=>{setBenefitOpen(false);onNavigate('movements');}}/>:null}
   </>;
 }
@@ -200,6 +207,7 @@ function PastHome({data,context,onNavigate}:{data:PhoenixReadModel;context?:Home
     </section>
     <BenefitCard data={data} label="Saldo final do mês" onOpen={()=>setBenefitOpen(true)}/>
     <button className="meg-home-period-action" onClick={()=>onNavigate('movements')}><HomeIcon name="file"/><span><strong>Ver lançamentos de {monthLabel(data.month).replace(/ de \d{4}$/,'')}</strong><small>Detalhes de {monthLabel(data.month)}</small></span><b>›</b></button>
+    <QuickActions onNavigate={onNavigate}/>
     {benefitOpen?<MegMobileBenefitModal data={data} onClose={()=>setBenefitOpen(false)} onOpenMovements={()=>{setBenefitOpen(false);onNavigate('movements');}}/>:null}
   </>;
 }
@@ -238,6 +246,7 @@ function FutureHome({data,context,onNavigate}:{data:PhoenixReadModel;context?:Ho
     </section>
     <BenefitCard data={data} label="Fora do caixa monetário" onOpen={()=>setBenefitOpen(true)}/>
     <button className="meg-home-period-action" onClick={()=>onNavigate('payables')}><HomeIcon name="file"/><span><strong>Principais pendências do mês</strong><small>{expenses.length} item(ns) previsto(s)</small></span><b>Abrir ›</b></button>
+    <QuickActions onNavigate={onNavigate}/>
     {benefitOpen?<MegMobileBenefitModal data={data} onClose={()=>setBenefitOpen(false)} onOpenMovements={()=>{setBenefitOpen(false);onNavigate('movements');}}/>:null}
   </>;
 }
@@ -274,6 +283,7 @@ function AggregateHome({data,periodMode,periodLabel,context,onNavigate}:{data:Ph
     </section>
     <button className="meg-home-period-action" onClick={()=>onNavigate('history')}><HomeIcon name="history"/><span><strong>Ver detalhamento do histórico</strong><small>Consulte toda a trajetória financeira</small></span><b>›</b></button>
     <BenefitCard data={data} label="Saldo atual" onOpen={()=>setBenefitOpen(true)}/>
+    <QuickActions onNavigate={onNavigate}/>
     {benefitOpen?<MegMobileBenefitModal data={data} onClose={()=>setBenefitOpen(false)} onOpenMovements={()=>{setBenefitOpen(false);onNavigate('movements');}}/>:null}
   </>;
 }
