@@ -1,4 +1,3 @@
-import './phoenix-keyboard-grid.css';
 
 type GridState = {
   grid: HTMLElement;
@@ -212,3 +211,6 @@ if (typeof window !== 'undefined') {
   const observer = new MutationObserver(onRouteMutation);
   observer.observe(document.documentElement, { childList: true, subtree: true });
 }
+
+
+export {};

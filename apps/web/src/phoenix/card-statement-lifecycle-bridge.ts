@@ -1,5 +1,4 @@
 import { cardsClient, type CardStatementLifecycle } from '../app/cards-client';
-import './phoenix-card-statement-lifecycle.css';
 
 const monthNumbers: Record<string, string> = {
   jan: '01', janeiro: '01', fev: '02', fevereiro: '02', mar: '03', marco: '03', março: '03',

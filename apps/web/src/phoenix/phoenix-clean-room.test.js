@@ -3,6 +3,25 @@ import { readFileSync } from 'node:fs';
 
 const phoenixApp = readFileSync(new URL('./PhoenixApp.tsx', import.meta.url), 'utf8');
 const phoenixWebStyles = readFileSync(new URL('./PhoenixWebStyles.ts', import.meta.url), 'utf8');
+const nativeBridgeModules = [
+  './description-autocomplete-bridge.ts',
+  './launch-business-rules-bridge.ts',
+  './card-management-bridge.ts',
+  './card-statement-payment-bridge.ts',
+  './card-statement-reopen-bridge.ts',
+  './card-statement-lifecycle-bridge.ts',
+  './card-statement-history-bridge.ts',
+  './card-statement-projection-bridge.ts',
+  './home-commitment-forecast-bridge.ts',
+  './home-scenario-simulator-bridge.ts',
+  './home-purchase-decision-bridge.ts',
+  './card-purchase-detail-bridge.ts',
+  './bulk-event-actions-bridge.ts',
+  './bulk-event-ux-enhancements.ts',
+  './phoenix-keyboard-grid-bridge.ts',
+  './phoenix-table-export-bridge.ts',
+].map((path) => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
+
 const sidebar = readFileSync(new URL('./PhoenixSidebar.tsx', import.meta.url), 'utf8');
 const navIcon = readFileSync(new URL('./PhoenixNavIcon.tsx', import.meta.url), 'utf8');
 const profileAvatar = readFileSync(new URL('./profile-avatar.tsx', import.meta.url), 'utf8');
@@ -733,8 +752,10 @@ for (const icon of ['home', 'movements', 'history', 'payables', 'cards', 'catalo
 assert.notEqual(sidebar.indexOf("icon: 'history'"), sidebar.indexOf("icon: 'payables'"),
   'Histórico e Pendentes devem manter ícones semanticamente distintos');
 
-assert.match(phoenixApp, /PhoenixOperationalMobileHome/,
-  'APK deve substituir a home pesada por uma home operacional focada em lançamentos.');
+assert.doesNotMatch(phoenixApp, /PhoenixOperationalMobileHome/,
+  'APK não deve manter a home operacional intermediária depois da migração para o clean-room.');
+assert.match(phoenixApp, /if \(nativeOperational && viewData\)[\s\S]*<MegMobileFinal/,
+  'APK deve entregar a árvore clean-room consolidada quando os dados estiverem disponíveis.');
 assert.match(phoenixApp, /brand\/meg-finance-system-mark\.svg/,
   'Topbar do APK deve usar a marca MEG oficial.');
 assert.match(brandMark, /<text[^>]*fill="#F8FCFF"[^>]*>M<\/text>[\s\S]*<text[^>]*fill="url\(#e\)"[^>]*>E<\/text>[\s\S]*<text[^>]*fill="url\(#g\)"[^>]*>G<\/text>/,
@@ -923,14 +944,23 @@ assert.doesNotMatch(operationalHome, /PhoenixProfileAvatar|px-operational-home-a
   'Home v12 não deve duplicar identidade ou avatar dentro do conteúdo abaixo da topbar global.');
 assert.match(previewMain, /MegMobileLoading progress=\{active\.progress\}/,
   'Loading autenticado deve renderizar o componente clean-room aprovado.');
+assert.match(phoenixApp, /if \(nativeOperational && !viewData && loadState\.status !== 'error'\)[\s\S]*<MegMobileLoading progress=\{88\}/,
+  'PhoenixApp móvel não pode cair no px-app-loading legado enquanto os dados finais ainda carregam.');
+assert.doesNotMatch(phoenixApp, /nativeOperational[\s\S]{0,220}px-app-loading/,
+  'Runtime Android não pode usar o loading visual antigo depois do boot clean-room.');
+
 assert.doesNotMatch(previewMain, /approved-v5|px-preview-boot-v5|Carregando seu ambiente/,
   'Boot principal não pode reintroduzir a estrutura visual V5 antiga.');
 assert.match(mobileLoading, /data-meg-loading="validated-cleanroom"/,
   'Novo loading deve declarar explicitamente o contrato visual clean-room.');
-assert.match(mobileLoading, /meg-loading-lockup\.svg[\s\S]*Carregando seus dados\.\.\.[\s\S]*Organizando suas finanças/,
-  'Loading deve seguir os textos e marca da prévia final aprovada.');
-assert.doesNotMatch(mobileLoading, /px-preview-boot-v5-ring|Carregando seu ambiente|>22%<|<strong>22%/i,
-  'Loading final não pode reaproveitar anéis, percentual ou texto do V5.');
+assert.match(mobileLoading, /meg-loading-lockup\.svg[\s\S]*SUAS FINANÇAS[\s\S]*EM UM SÓ LUGAR/,
+  'Loading deve preservar a marca e o slogan da quarta prancha aprovada.');
+assert.match(mobileLoading, /Carregando sua experiência/,
+  'Loading deve preservar a mensagem de progresso da quarta prancha aprovada.');
+assert.match(mobileLoading, /CONTROLE[\s\S]*ORGANIZAÇÃO[\s\S]*TRANQUILIDADE[\s\S]*RESULTADOS/,
+  'Loading deve preservar os quatro pilares da quarta prancha aprovada.');
+assert.doesNotMatch(mobileLoading, /px-preview-boot-v5-ring|Carregando seu ambiente|Organizando suas finanças para o seu dia a dia/i,
+  'Loading final não pode reaproveitar anéis, texto do V5 ou a composição intermediária.');
 assert.match(mobileLoadingCss, /\.meg-loading-screen\{[\s\S]*position:fixed[\s\S]*height:100dvh[\s\S]*overflow:hidden/,
   'Loading deve ocupar o viewport inteiro sem rolagem.');
 assert.match(mobileLoadingCss, /safe-area-inset-top[\s\S]*safe-area-inset-bottom/,
@@ -941,7 +971,7 @@ assert.match(nativeBiometric, /nativeBiometricLoadingOverlay/,
   'Biometria reconhecida deve criar a cobertura de carregamento antes do React montar.');
 assert.match(nativeBiometric, /dataset\.megLoading = 'validated-cleanroom'/,
   'Transição biométrica deve usar o mesmo contrato clean-room do loading aprovado.');
-assert.match(nativeBiometric, /meg-loading-lockup\.svg[\s\S]*Carregando seus dados\.\.\.[\s\S]*Organizando suas finanças/,
+assert.match(nativeBiometric, /meg-loading-lockup\.svg[\s\S]*SUAS FINANÇAS[\s\S]*EM UM SÓ LUGAR[\s\S]*Carregando sua experiência[\s\S]*CONTROLE[\s\S]*ORGANIZAÇÃO[\s\S]*TRANQUILIDADE[\s\S]*RESULTADOS/,
   'Transição biométrica deve exibir a mesma composição validada do boot React.');
 assert.doesNotMatch(nativeBiometric, /approved-v5|px-preview-boot-v5|Carregando seu ambiente/,
   'Biometria não pode reintroduzir o loading V5 antigo.');
@@ -953,6 +983,23 @@ assert.match(previewMain, /setState\('authenticating'\)[\s\S]{0,700}loginWithSer
   'Login biométrico deve trocar para o boot antes de chamar a API.');
 assert.match(main, /if \(startup\?\.required\)[\s\S]{0,500}clearSession\(\)/,
   'Após o gate biométrico, o APK deve descartar sessão web anterior e usar as credenciais recém-confirmadas.');
+assert.match(main, /import '\.\.\/mobile\/meg-mobile-loading\.css';[\s\S]*bootMegRuntime/,
+  'CSS crítico do loading deve estar carregado antes do bootstrap biométrico para impedir flash sem estilo.');
+assert.doesNotMatch(main, /phoenix-release-hardening\.css|preview-boot\.css|phoenix-visual-a11y\.css/,
+  'Bootstrap Android não pode carregar folhas visuais legadas do shell Phoenix.');
+assert.doesNotMatch(previewMain, /import '\.\/phoenix-preview-parity\.css'|import '\.\/preview-boot\.css'/,
+  'Preview mobile não pode carregar parity/boot legado de forma estática.');
+assert.match(phoenixWebStyles, /phoenix-release-hardening\.css[\s\S]*phoenix-preview-parity\.css[\s\S]*preview-boot\.css[\s\S]*phoenix-visual-a11y\.css/,
+  'Folhas legadas devem permanecer isoladas exclusivamente no pacote visual Web.');
+assert.doesNotMatch(nativeBridgeModules, /import\s+['"][^'"]+\.css['"]/,
+  'Bridges de comportamento carregados no APK não podem importar CSS legado.');
+assert.match(phoenixWebStyles, /phoenix-description-autocomplete\.css[\s\S]*phoenix-launch-business-rules\.css[\s\S]*phoenix-card-management\.css[\s\S]*phoenix-card-statement-payment\.css[\s\S]*phoenix-table-export\.css/,
+  'CSS removido dos bridges deve continuar disponível apenas no bundle visual Web.');
+
+
+assert.match(previewMain, /useLayoutEffect\(\(\) => \{[\s\S]*nativeBiometricLoadingOverlay[\s\S]*remove\(\)/,
+  'Handoff do overlay biométrico para o React deve ocorrer antes do paint para não deixar fragmentos visuais.');
+
 assert.match(previewMain, /authenticatedRequest\('\/auth\/me', \{ signal: AbortSignal\.timeout\(12_000\), cache: 'no-store' \}\)/,
   'Validação de sessão deve ser limitada e não pode reutilizar uma leitura antiga presa em 22%.');
 assert.match(previewMain, /state !== 'checking'[\s\S]*18_000[\s\S]*setState\('prepare-error'\)/,
@@ -1018,8 +1065,10 @@ assert.match(nativeNotifications, /Contas vencidas|contas vencidas|Conta vencida
   'Notificações Android devem cobrir compromissos vencidos.');
 assert.match(nativeNotifications, /Conta vence amanhã[\s\S]*Conta vence hoje/,
   'Notificações Android devem cobrir contas a vencer.');
-assert.match(main, /meg-operational-mobile/,
-  'Build móvel deve marcar o runtime operacional antes de montar a Phoenix.');
+assert.doesNotMatch(main, /classList\.add\([^\n]*meg-operational-mobile|classList\.add\([^\n]*native-mobile/,
+  'Build móvel não pode ativar marcadores de layout Phoenix legado.');
+assert.match(main, /meg-cleanroom-mobile/,
+  'Build móvel deve marcar o runtime clean-room antes de montar a interface.');
 
 assert.match(phoenixApp, /px-top-quick-launch/,
   'Topbar Phoenix deve expor o novo lançamento global do V15');

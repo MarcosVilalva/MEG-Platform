@@ -1,5 +1,4 @@
 import { authenticatedRequest } from '../app/auth-client';
-import './phoenix-home-commitment-forecast.css';
 
 type ForecastRisk = 'normal' | 'attention' | 'high';
 type CardBreakdown = { cardId: string; name: string; amount: number; installments: number };

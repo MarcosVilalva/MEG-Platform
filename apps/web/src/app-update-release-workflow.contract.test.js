@@ -73,8 +73,28 @@ assert.match(
 );
 assert.match(
   ci,
-  /Align RC1 version with current stable Android channel[\s\S]*app-version\.json[\s\S]*MEG_VERSION_CODE=\$STABLE_CODE/,
-  'RC1 deve herdar o versionCode estável atual para não disparar falso OTA nem bloquear a próxima release.',
+  /Allocate monotonic RC1 Android version[\s\S]*date -u \+%s[\s\S]*MEG_VERSION_CODE=\$VERSION_CODE/,
+  'RC1 deve receber versionCode monotônico superior para permitir atualização OTA entre prévias.',
+);
+assert.match(
+  ci,
+  /Publish RC1 OTA channel[\s\S]*android-rc1-latest[\s\S]*MEG-Financas-RC1\.apk[\s\S]*app-version-rc1\.json/,
+  'Push em rc1 deve publicar automaticamente APK e manifesto no canal OTA de validação.',
+);
+assert.match(
+  controller,
+  /RC1_MANIFEST_URLS[\s\S]*android-rc1-latest\/app-version-rc1\.json[\s\S]*VITE_ANDROID_UPDATE_CHANNEL[\s\S]*UPDATE_CHANNEL === 'rc1'/,
+  'Build RC1 deve consultar somente o manifesto OTA de validação.',
+);
+assert.match(
+  nativeUpdater,
+  /RC1_RELEASE_MANIFEST_URLS[\s\S]*android-rc1-latest\/app-version-rc1\.json[\s\S]*manifestUrlsForInstalledBuild[\s\S]*versionName\.contains\("-rc1"\)/,
+  'Fallback nativo deve manter APK RC1 preso ao canal OTA RC1.',
+);
+assert.match(
+  android,
+  /Allocate monotonic stable Android version[\s\S]*date -u \+%s[\s\S]*MEG_VERSION_CODE=\$VERSION_CODE/,
+  'Canal estável deve usar a mesma sequência monotônica para poder substituir uma RC1 validada.',
 );
 
 assert.match(
@@ -119,8 +139,8 @@ assert.match(
 );
 assert.match(
   nativeUpdater,
-  /for \(int index = 0; index < RELEASE_MANIFEST_URLS\.length; index \+= 1\)[\s\S]*return fetchReleaseManifest\(source \+ "\?native="/,
-  'Atualizador nativo deve tratar canais de manifesto como fallbacks ordenados, sem misturar versões entre canais',
+  /String\[\] manifestUrls = manifestUrlsForInstalledBuild\(\)[\s\S]*for \(int index = 0; index < manifestUrls\.length; index \+= 1\)[\s\S]*return fetchReleaseManifest\(source \+ "\?native="/,
+  'Atualizador nativo deve tratar somente as URLs do canal instalado como fallbacks ordenados.',
 );
 assert.match(
   nativeUpdater,

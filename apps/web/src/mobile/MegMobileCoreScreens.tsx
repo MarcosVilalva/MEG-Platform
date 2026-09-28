@@ -55,26 +55,41 @@ function mobileMovementKind(event: FinancialEvent): Exclude<MobileMovementKind, 
   return signedAmount(event) >= 0 ? 'income' : 'expense';
 }
 
-function EventContextGlyph({ event }: { event: FinancialEvent }) {
-  const context = normalizeMovementText([
-    event.description,
-    event.category?.name,
-    event.paymentMethod?.name,
-    event.sourceDetails?.group,
-    event.sourceDetails?.paymentMethod,
-  ].filter(Boolean).join(' '));
-  if (/aliment|verocard|fast food|restaurante|lanche|mercado/.test(context)) {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v8M9 3v8M6 7h3M7.5 11v10M15 3v8c0 2 3 2 3 0V3M16.5 13v8"/></svg>;
-  }
-  if (/pix/.test(context)) {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 4 4-4 4-4-4 4-4ZM7 8l-4 4 4 4 4-4M17 8l4 4-4 4-4-4M12 13l4 4-4 4-4-4"/></svg>;
-  }
-  if (/cartao|credito|latam|itau|santander|bradesco|nubank|mercado pago/.test(context)) {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9h18M7 15h4"/></svg>;
-  }
-  return <EventGlyph positive={signedAmount(event) >= 0}/>;
+function MovementKpiGlyph({ kind }: { kind: 'income' | 'expense' | 'result' }) {
+  if (kind === 'income') return <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="9" cy="17" rx="5" ry="2.5"/><path d="M4 14.5V17M14 14.5V17M4 12c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5-2.2-2.5-5-2.5S4 10.6 4 12Z"/><circle cx="16.5" cy="7.5" r="4.5"/><path d="M16.5 5v5M18 6h-2.1a1.1 1.1 0 0 0 0 2.2h1.2a1.1 1.1 0 0 1 0 2.2H15"/></svg>;
+  if (kind === 'expense') return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M15 14h3M8 3v5M6 6l2 2 2-2"/></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="8" r="3"/><circle cx="17" cy="16" r="3"/><path d="M9.5 9.5 14.5 14.5M14 5h5v5M19 5l-5 5"/></svg>;
 }
 
+function EventContextGlyph({ event }: { event: FinancialEvent }) {
+  const category = normalizeMovementText(event.category?.name || event.sourceDetails?.group || '');
+  const description = normalizeMovementText(event.description);
+  const context = [category, description].filter(Boolean).join(' ');
+  const signed = signedAmount(event);
+  if (signed >= 0) return <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="9" cy="17" rx="5" ry="2.5"/><path d="M4 14.5V17M14 14.5V17M4 12c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5-2.2-2.5-5-2.5S4 10.6 4 12Z"/><circle cx="16.5" cy="7.5" r="4.5"/><path d="M16.5 5v5M18 6h-2.1a1.1 1.1 0 0 0 0 2.2h1.2a1.1 1.1 0 0 1 0 2.2H15"/></svg>;
+  if (/bebidas? e similares|bebida|refrigerante|cerveja|suco|coca.?cola/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l-1 18H8L7 3Z"/><path d="M8 7h8M13 7l3-5"/></svg>;
+  if (/fast food|hamburg|lanche/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11c.6-4 3-6 7-6s6.4 2 7 6H5Z"/><path d="M4 14h16M6 14l1 5h10l1-5M8 11h.01M12 9h.01M16 11h.01"/></svg>;
+  if (/presentes?|presente/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="9" width="16" height="11" rx="1"/><path d="M3 6h18v4H3zM12 6v14M12 6c-3 0-5-1-5-3 0-1.2 1-2 2.2-2C11 1 12 3.3 12 6Zm0 0c3 0 5-1 5-3 0-1.2-1-2-2.2-2C13 1 12 3.3 12 6Z"/></svg>;
+  if (/supermerc|mercado|mercearia|hortifruti/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2 11h10l3-8H6"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>;
+  if (/automovel|veiculo|carro/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 16-1-4 2-5h12l2 5-1 4M4 16h16v4h-3v-2H7v2H4v-4Z"/><circle cx="8" cy="13" r="1"/><circle cx="16" cy="13" r="1"/></svg>;
+  if (/moto|motocic/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h5l3-6h3l2 6M9 9h4l3 8M14 7h4"/></svg>;
+  if (/comunicacao|telefone|celular|claro|vivo|tim|oi|fibra/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.2 3.5 10 7.8 8.2 10c1.2 2.5 3.3 4.6 5.8 5.8l2.2-1.8 4.3 2.8-.8 3.2c-.2.8-1 1.4-1.9 1.3C10.2 20.4 3.6 13.8 2.7 6.2c-.1-.9.5-1.7 1.3-1.9l3.2-.8Z"/></svg>;
+  if (/curso|educa|faculdade/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 7 9-4 9 4-9 4-9-4Z"/><path d="M7 9v5c3 2 7 2 10 0V9M21 7v7"/></svg>;
+  if (/mat\. escolar|material escolar|escola/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2.5"/><path d="m9 14 6-6 2 2-6 6-3 1 1-3Z"/></svg>;
+  if (/eletro|eletron|utilidade/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v6M16 3v6M6 8h12v3a6 6 0 0 1-12 0V8ZM12 17v4"/></svg>;
+  if (/higiene|pessoal/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h6M10 5V3h4v2M8 8h8l1 13H7L8 8Z"/><path d="M10 12h4"/></svg>;
+  if (/imovel|moradia|aluguel|condominio|casa/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></svg>;
+  if (/lazer|cinema|jogo|entretenimento|viagem/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14l2 11-4 2-3-4h-4l-3 4-4-2L5 7Z"/><path d="M8 11v4M6 13h4M16 12h.01M18 14h.01"/></svg>;
+  if (/pet|veterin/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="8" r="2"/><circle cx="17" cy="8" r="2"/><circle cx="5" cy="13" r="2"/><circle cx="19" cy="13" r="2"/><path d="M12 11c-3 0-6 4-5 7 1 3 4 1 5 1s4 2 5-1c1-3-2-7-5-7Z"/></svg>;
+  if (/pgto de dividas|divida/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>;
+  if (/saude|medic|farmac|hospital/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-4.6-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.4-8 11-8 11Z"/><path d="M9 12h6M12 9v6"/></svg>;
+  if (/titulos|previdencia/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 19 6v5c0 4.7-2.8 8.1-7 10-4.2-1.9-7-5.3-7-10V6l7-3Z"/><circle cx="12" cy="11" r="3"/><path d="M12 9v4"/></svg>;
+  if (/transporte|uber|99|onibus/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="16" rx="3"/><path d="M7 8h10M8 19v2M16 19v2"/><circle cx="9" cy="15" r="1"/><circle cx="15" cy="15" r="1"/></svg>;
+  if (/vestuario|roupa/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4-5 3 3 5 2-1v10h8V11l2 1 3-5-5-3c-.6 1.4-1.9 2-4 2S8.6 5.4 8 4Z"/></svg>;
+  if (/sem categoria/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12 12 3h7l2 2v7l-9 9-9-9Z"/><circle cx="17" cy="7" r="1"/></svg>;
+  if (/aliment|restaurante|padaria|refeic/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v8M9 3v8M6 7h3M7.5 11v10M15 3v8c0 2 3 2 3 0V3M16.5 13v8"/></svg>;
+  return <EventGlyph positive={signed >= 0}/>;
+}
 function movementTone(event: FinancialEvent) {
   return signedAmount(event) >= 0 ? 'income' : 'expense';
 }
@@ -83,26 +98,46 @@ export function MegMobileMovements({
   data,
   onOpenEvent,
   onNew,
+  onOpenPeriod,
 }: {
   data: PhoenixReadModel;
   onOpenEvent: (event: FinancialEvent) => void;
   onNew: () => void;
+  onOpenPeriod?: () => void;
 }) {
   const [query, setQuery] = useState('');
-  const [kind, setKind] = useState<MobileMovementKind>('all');
+  const [kind, setKind] = useState<Exclude<MobileMovementKind, 'benefit'>>('all');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [accountFilter, setAccountFilter] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const posted = useMemo(() => data.events.items, [data.events.items]);
-  const normalized = query.trim().toLocaleLowerCase('pt-BR');
+  const categories = useMemo(() => Array.from(new Set(posted.map((event) => event.category?.name || event.sourceDetails?.group || '').filter(Boolean))).sort((a, b) => a.localeCompare(b, 'pt-BR')), [posted]);
+  const accounts = useMemo(() => Array.from(new Set(posted.map((event) => event.account?.name || '').filter(Boolean))).sort((a, b) => a.localeCompare(b, 'pt-BR')), [posted]);
+  const paymentMethods = useMemo(() => Array.from(new Set(posted.map((event) => event.paymentMethod?.name || event.sourceDetails?.paymentMethod || '').filter(Boolean))).sort((a, b) => a.localeCompare(b, 'pt-BR')), [posted]);
+  const normalized = normalizeMovementText(query.trim());
   const rows = posted
-    .filter((event) => !normalized || [
+    .filter((event) => !normalized || normalizeMovementText([
       event.description,
       event.category?.name,
       event.account?.name,
       event.paymentMethod?.name,
       event.sourceDetails?.group,
       event.sourceDetails?.paymentMethod,
-    ].filter(Boolean).join(' ').toLocaleLowerCase('pt-BR').includes(normalized))
-    .filter((event) => kind === 'all' ? true : mobileMovementKind(event) === kind)
+    ].filter(Boolean).join(' ')).includes(normalized))
+    .filter((event) => {
+      const signed = signedAmount(event);
+      if (kind === 'income' && signed < 0) return false;
+      if (kind === 'expense' && signed >= 0) return false;
+      const category = event.category?.name || event.sourceDetails?.group || '';
+      const account = event.account?.name || '';
+      const method = event.paymentMethod?.name || event.sourceDetails?.paymentMethod || '';
+      if (categoryFilter && category !== categoryFilter) return false;
+      if (accountFilter && account !== accountFilter) return false;
+      if (paymentFilter && method !== paymentFilter) return false;
+      return true;
+    })
     .sort((a, b) => String(b.date).localeCompare(String(a.date)));
   const totals = posted.reduce((summary, event) => {
     const value = signedAmount(event);
@@ -111,40 +146,36 @@ export function MegMobileMovements({
     return summary;
   }, { income: 0, expense: 0 });
   const result = totals.income - totals.expense;
+  const activeFilterCount = Number(kind !== 'all') + Number(Boolean(categoryFilter)) + Number(Boolean(accountFilter)) + Number(Boolean(paymentFilter));
+  const period = data.month.split('-').reverse().join('/');
+  const clearFilters = () => {
+    setKind('all');
+    setCategoryFilter('');
+    setAccountFilter('');
+    setPaymentFilter('');
+  };
 
-  return <main className="meg3-screen meg3-movements" data-meg-fixed-screen="true">
-    <header className="meg3-title-block meg3-movements-title">
-      <span>CONTROLE FINANCEIRO</span>
-      <h1>Lançamentos</h1>
-      <p>Consulte cada lançamento com categoria, conta e forma de pagamento.</p>
+  return <main className="meg3-screen meg3-movements" data-meg-fixed-screen="true" data-meg-movements="approved-redesign">
+    <header className="meg3-movements-heading">
+      <div><h1>Lançamentos</h1><p>Controle seus eventos financeiros.</p></div>
+      <button type="button" className={activeFilterCount ? 'active' : ''} aria-label="Filtrar lançamentos" onClick={() => setFiltersOpen(true)}>
+        <FilterGlyph/>{activeFilterCount ? <b>{activeFilterCount}</b> : null}
+      </button>
     </header>
 
     <section className="meg3-movement-kpis" aria-label="Resumo dos lançamentos">
-      <article className="income"><span aria-hidden="true">↑</span><small>Entradas</small><strong>{money.format(totals.income)}</strong></article>
-      <article className="expense"><span aria-hidden="true">↓</span><small>Saídas</small><strong>{money.format(totals.expense)}</strong></article>
-      <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true">▥</span><small>Resultado</small><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong></article>
+      <article className="income"><span aria-hidden="true"><MovementKpiGlyph kind="income"/></span><strong>{money.format(totals.income)}</strong><small>Entradas</small></article>
+      <article className="expense"><span aria-hidden="true"><MovementKpiGlyph kind="expense"/></span><strong>{money.format(totals.expense)}</strong><small>Saídas</small></article>
+      <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true"><MovementKpiGlyph kind="result"/></span><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong><small>Resultado</small></article>
     </section>
 
-    <nav className="meg3-movement-tabs" aria-label="Tipo de lançamento">
-      {([
-        ['all','Todos'],
-        ['income','Receitas'],
-        ['expense','Despesas'],
-        ['benefit','Alimentação'],
-      ] as const).map(([value,label]) =>
-        <button key={value} type="button" className={kind === value ? 'active' : ''} onClick={() => setKind(value)}>{label}</button>
-      )}
-    </nav>
-
-    <section className="meg3-movement-toolbar">
+    <section className="meg3-movement-toolbar" aria-label="Buscar lançamentos">
       <label><SearchGlyph/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamento..."/></label>
-      <button type="button" aria-label="Limpar filtros" className={kind !== 'all' || query ? 'active' : ''} onClick={() => { setKind('all'); setQuery(''); }}><FilterGlyph/></button>
     </section>
 
     <header className="meg3-movement-list-head">
-      <span><strong>{rows.length.toLocaleString('pt-BR')} lançamento{rows.length === 1 ? '' : 's'}</strong><small>{data.month.split('-').reverse().join('/')} · toque para abrir</small></span>
-      <button type="button" onClick={onNew}><b aria-hidden="true">＋</b>Novo</button>
-    </header>
+      <span><strong>{rows.length.toLocaleString('pt-BR')} lançamento{rows.length === 1 ? '' : 's'}</strong><small>{period} · toque para abrir</small></span>
+     </header>
 
     <section className="meg3-event-list" data-meg-scroll-region="true">
       {rows.map((event) => {
@@ -154,22 +185,43 @@ export function MegMobileMovements({
         const account = event.account?.name || '';
         const method = event.paymentMethod?.name || event.sourceDetails?.paymentMethod || '';
         const detail = [category, account].filter(Boolean).join(' · ');
-        return <button className={`meg3-event-card ${tone} kind-${mobileMovementKind(event)}`} type="button" key={event.id} onClick={() => onOpenEvent(event)}>
+        const status = statusLabel(event.status);
+        const statusTone = status === 'PENDENTE' ? 'pending' : signed >= 0 ? 'received' : 'done';
+        const date = String(event.date || '').slice(0, 10);
+        const weekday = date ? new Intl.DateTimeFormat('pt-BR', { weekday: 'short', timeZone: 'UTC' }).format(new Date(date + 'T12:00:00Z')).replace('.', '').toUpperCase() : '';
+        return <button className={'meg3-event-card ' + tone + ' kind-' + mobileMovementKind(event)} type="button" key={event.id} onClick={() => onOpenEvent(event)}>
           <span className="meg3-event-icon"><EventContextGlyph event={event}/></span>
           <span className="meg3-event-copy">
-            <small>{shortDate(event.date)} · {statusLabel(event.status)}</small>
+            <small>{shortDate(event.date)}{weekday ? ' · ' + weekday : ''}</small>
             <strong>{event.description}</strong>
             <em>{detail}</em>
             {method ? <i className="meg3-payment-chip">{method}</i> : <i className="meg3-payment-chip muted">Forma não informada</i>}
           </span>
           <span className="meg3-event-value">
+            <i className={'meg3-status-pill ' + statusTone}>{status}</i>
             <b>{signed > 0 ? '+' : '-'}{money.format(Math.abs(signed))}</b>
-            <i>›</i>
+            <i className="meg3-event-chevron">›</i>
           </span>
         </button>;
       })}
       {!rows.length ? <div className="meg3-empty">Nenhum lançamento neste filtro.</div> : null}
     </section>
+
+    {filtersOpen ? <div className="meg3-movement-filter-overlay" role="presentation" onClick={() => setFiltersOpen(false)}>
+      <section className="meg3-movement-filter-sheet" role="dialog" aria-modal="true" aria-label="Filtrar lançamentos" onClick={(event) => event.stopPropagation()}>
+        <header><h2>Filtrar lançamentos</h2><button type="button" aria-label="Fechar filtros" onClick={() => setFiltersOpen(false)}>×</button></header>
+        <label className="meg3-filter-period"><span>Período</span><button type="button" onClick={() => { setFiltersOpen(false); onOpenPeriod?.(); }}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 10h18"/></svg><strong>{period}</strong><b>⌄</b></button></label>
+        <fieldset><legend>Status</legend><div className="meg3-filter-status">
+          <button type="button" className={kind === 'all' ? 'active' : ''} onClick={() => setKind('all')}>Todos</button>
+          <button type="button" className={kind === 'income' ? 'active income' : 'income'} onClick={() => setKind('income')}>↑ Receitas</button>
+          <button type="button" className={kind === 'expense' ? 'active expense' : 'expense'} onClick={() => setKind('expense')}>↓ Despesas</button>
+        </div></fieldset>
+        <label><span>Categoria</span><select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}><option value="">Todas as categorias</option>{categories.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
+        <label><span>Conta</span><select value={accountFilter} onChange={(event) => setAccountFilter(event.target.value)}><option value="">Todas as contas</option>{accounts.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
+        <label><span>Forma de pagamento</span><select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value)}><option value="">Todas as formas</option>{paymentMethods.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
+        <footer><button type="button" className="secondary" onClick={clearFilters}>Limpar</button><button type="button" className="apply" onClick={() => setFiltersOpen(false)}>✓ Aplicar</button></footer>
+      </section>
+    </div> : null}
   </main>;
 }
 

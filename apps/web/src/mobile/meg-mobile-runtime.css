@@ -313,3 +313,58 @@ body.meg-cleanroom-mobile .meg-update-success-toast button{
   width:27px!important;height:27px!important;border:1px solid rgba(160,255,222,.18)!important;border-radius:8px!important;
   background:#06453f!important;color:#effff9!important;
 }
+
+
+/* Clean-room boot error: substitui o preview-boot legado no APK. */
+body.meg-cleanroom-mobile .meg-loading-error-screen{
+  position:fixed;
+  inset:0;
+  z-index:2147482000;
+  display:grid;
+  place-items:center;
+  padding:max(20px,env(safe-area-inset-top)) 18px max(20px,env(safe-area-inset-bottom));
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 20%,rgba(31,232,222,.14),transparent 34%),
+    linear-gradient(180deg,#002f33,#001c21);
+}
+body.meg-cleanroom-mobile .meg-loading-error-card{
+  width:min(100%,410px);
+  display:grid;
+  gap:14px;
+  padding:24px 18px;
+  border:1px solid rgba(57,232,222,.36);
+  border-radius:22px;
+  background:linear-gradient(180deg,rgba(5,68,71,.96),rgba(1,35,40,.98));
+  color:#f7ffff;
+  box-shadow:0 20px 60px rgba(0,0,0,.42);
+}
+body.meg-cleanroom-mobile .meg-loading-error-logo{
+  width:68px;
+  height:68px;
+  margin:auto;
+}
+body.meg-cleanroom-mobile .meg-loading-error-logo img{width:100%;height:100%;object-fit:contain}
+body.meg-cleanroom-mobile .meg-loading-error-copy{text-align:center}
+body.meg-cleanroom-mobile .meg-loading-error-copy>span{color:#43e8df;font-size:8px;font-weight:900;letter-spacing:.14em}
+body.meg-cleanroom-mobile .meg-loading-error-copy h1{margin:6px 0;font-size:20px;line-height:1.08}
+body.meg-cleanroom-mobile .meg-loading-error-copy p{margin:0;color:#afc8c5;font-size:10px;line-height:1.5}
+body.meg-cleanroom-mobile .meg-loading-error-actions{display:grid;grid-template-columns:1.3fr .8fr;gap:8px}
+body.meg-cleanroom-mobile .meg-loading-error-actions button{
+  min-height:44px;
+  border-radius:11px;
+  font-weight:850;
+  font-size:10px;
+}
+body.meg-cleanroom-mobile .meg-loading-error-primary{
+  border:1px solid #35e3d8;
+  background:linear-gradient(180deg,#108f8a,#08706d);
+  color:#fff;
+}
+body.meg-cleanroom-mobile .meg-loading-error-secondary{
+  border:1px solid rgba(78,214,205,.25);
+  background:#07383c;
+  color:#d9efed;
+}
+body.meg-cleanroom-mobile .meg-loading-error-foot{display:flex;align-items:center;justify-content:center;gap:7px;color:#86a7a3;font-size:8px;text-align:center}
+body.meg-cleanroom-mobile .meg-loading-error-foot i{width:7px;height:7px;border-radius:50%;background:#48dfba}

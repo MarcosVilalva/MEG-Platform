@@ -7,6 +7,7 @@ import { MegMobileLaunchSheet } from './MegMobileLaunchSheet';
 import { MegMobileCardCenter } from './MegMobileCardCenter';
 import { MegMobileBenefitModal } from './MegMobileBenefitModal';
 import { MegMobileSettings } from './MegMobileSettings';
+import { MegMobileHome } from './MegMobileHome';
 import './meg-mobile-runtime.css';
 import './meg-mobile-final.css';
 import './meg-mobile-core-screens.css';
@@ -227,169 +228,6 @@ function Dock({ view, pendingCount, menuOpen, onNavigate, onLaunch, onMenu }: { 
     </button>
     <button className={menuOpen ? 'active' : ''} onClick={onMenu}><Icon name="menu"/><span>Menu</span></button>
   </nav>;
-}
-
-function signedEventAmount(event: PhoenixReadModel['events']['items'][number]) {
-  const signed = Number(event.signedAmount || 0);
-  if (Number.isFinite(signed) && signed !== 0) return signed;
-  const amount = Math.abs(Number(event.amount || 0));
-  return event.type === 'income' || event.type === 'redemption' ? amount : -amount;
-}
-
-function isPosted(status: unknown) {
-  return ['paid', 'reconciled', 'confirmed'].includes(String(status || ''));
-}
-
-function PastHome({ data, context, onNavigate }: { data: PhoenixReadModel; context?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate'] }) {
-  const [benefitOpen, setBenefitOpen] = useState(false);
-  const realized = data.events.items.filter((event) =>
-    String(event.competence || String(event.date).slice(0, 7)) === data.month && isPosted(event.status)
-  );
-  let income = 0;
-  let expense = 0;
-  let paidCount = 0;
-  let paidAmount = 0;
-  realized.forEach((event) => {
-    const signed = signedEventAmount(event);
-    if (event.type === 'income' || event.type === 'redemption' || signed > 0) income += Math.max(0, signed);
-    else {
-      expense += Math.max(0, -signed);
-      if (signed < 0) { paidCount += 1; paidAmount += -signed; }
-    }
-  });
-  const opening = Number(context?.openingBalance ?? data.cashflow.openingBalance ?? 0);
-  const result = income - expense;
-  const closing = Number(context?.closingBalance ?? opening + result);
-
-  return <main className="meg2-main meg2-period-home meg2-past-home">
-    <section className="meg2-title">
-      <span>Resumo do mês</span><h1>{monthLabel(data.month)}</h1><p>Veja como foi o período em uma visão simples.</p><i><Icon name="chart"/></i>
-    </section>
-    <section className="meg2-period-balance-grid">
-      <article><span><Icon name="wallet"/></span><small>Saldo inicial</small><strong>{money.format(opening)}</strong></article>
-      <article className="accent"><span><Icon name="wallet"/></span><small>Saldo final</small><strong>{money.format(closing)}</strong></article>
-    </section>
-    <section className="meg2-period-kpis">
-      <article className="income"><Icon name="up"/><small>Receitas realizadas</small><strong>{money.format(income)}</strong></article>
-      <article className="expense"><Icon name="down"/><small>Despesas realizadas</small><strong>{money.format(expense)}</strong></article>
-      <article className={result >= 0 ? 'result positive' : 'result negative'}><Icon name="trend"/><small>Resultado do mês</small><strong>{resultMoney(result)}</strong></article>
-      <article className="paid"><Icon name="check"/><small>Contas pagas</small><strong>{paidCount.toLocaleString('pt-BR')}</strong><em>{money.format(paidAmount)}</em></article>
-    </section>
-    <button className="meg2-benefit" type="button" onClick={() => setBenefitOpen(true)}>
-      <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Saldo final do mês</em><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong></div><b>›</b>
-    </button>
-    <button className="meg2-period-action" onClick={() => onNavigate('movements')}><Icon name="file"/><span><strong>Ver lançamentos do mês</strong><small>Consulte os detalhes de {monthLabel(data.month)}</small></span><b>›</b></button>
-    {benefitOpen ? <MegMobileBenefitModal data={data} onClose={() => setBenefitOpen(false)} onOpenMovements={() => { setBenefitOpen(false); onNavigate('movements'); }}/> : null}
-  </main>;
-}
-
-function FutureHome({ data, context, onNavigate }: { data: PhoenixReadModel; context?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate'] }) {
-  const [benefitOpen, setBenefitOpen] = useState(false);
-  const target = data.month;
-  const [year, month] = target.split('-').map(Number);
-  const start = target + '-01';
-  const end = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
-  const events = context?.projectionEvents || data.events.items;
-  const planned = events.filter((event) => event.status === 'planned' && String(event.date).slice(0, 10) <= end);
-  const before = planned.filter((event) => String(event.date).slice(0, 10) < start);
-  const monthEvents = planned.filter((event) => {
-    const date = String(event.date).slice(0, 10);
-    return date >= start && date <= end;
-  });
-  const baseBalance = Number(context?.currentRealBalance ?? (Number(data.summary.availableBalance || 0) + Number(data.summary.realizedResult || 0)));
-  const opening = baseBalance + before.reduce((sum, event) => sum + signedEventAmount(event), 0);
-  const income = monthEvents.filter((event) => signedEventAmount(event) > 0).reduce((sum, event) => sum + Math.max(0, signedEventAmount(event)), 0);
-  const expense = monthEvents.filter((event) => signedEventAmount(event) < 0).reduce((sum, event) => sum + Math.max(0, -signedEventAmount(event)), 0);
-  const closing = opening + income - expense;
-  const cardEvents = monthEvents.filter((event) => {
-    const text = String(event.paymentMethod?.name || '') + ' ' + String(event.sourceDetails?.paymentMethod || '');
-    return /cart[aã]o|cr[eé]dito/i.test(text);
-  });
-  const cardAmount = cardEvents.reduce((sum, event) => sum + Math.max(0, -signedEventAmount(event)), 0);
-  const otherAmount = Math.max(0, expense - cardAmount);
-  const benefit = Number(context?.currentBenefitBalance ?? data.summary.benefitBalance ?? 0);
-
-  return <main className="meg2-main meg2-period-home meg2-future-home">
-    <section className="meg2-title">
-      <span>Projeção mensal</span><h1>{monthLabel(target)}</h1><p>O que já está previsto para comprometer ou reforçar seu caixa.</p><i><Icon name="calendar"/></i>
-    </section>
-    <section className="meg2-period-balance-grid">
-      <article><span><Icon name="wallet"/></span><small>Saldo inicial projetado</small><strong>{money.format(opening)}</strong></article>
-      <article className={closing >= 0 ? 'accent' : 'danger'}><span><Icon name="trend"/></span><small>Saldo após compromissos</small><strong>{money.format(closing)}</strong></article>
-    </section>
-    <section className="meg2-period-kpis">
-      <article className="income"><Icon name="up"/><small>Receitas previstas</small><strong>{money.format(income)}</strong><em>{monthEvents.filter((event) => signedEventAmount(event) > 0).length} entrada(s)</em></article>
-      <article className="expense"><Icon name="down"/><small>Total de compromissos</small><strong>{money.format(expense)}</strong><em>{monthEvents.filter((event) => signedEventAmount(event) < 0).length} item(ns)</em></article>
-      <article><Icon name="wallet"/><small>Faturas de cartões</small><strong>{money.format(cardAmount)}</strong><em>{cardEvents.length} item(ns)</em></article>
-      <article><Icon name="file"/><small>Outras pendências</small><strong>{money.format(otherAmount)}</strong></article>
-    </section>
-    <button className="meg2-benefit" type="button" onClick={() => setBenefitOpen(true)}>
-      <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Fora do caixa monetário</em><strong>{money.format(benefit)}</strong></div><b>›</b>
-    </button>
-    <button className="meg2-period-action" onClick={() => onNavigate('payables')}><Icon name="file"/><span><strong>Principais pendências do mês</strong><small>{monthEvents.length} compromisso(s) previsto(s)</small></span><b>›</b></button>
-    {benefitOpen ? <MegMobileBenefitModal data={data} onClose={() => setBenefitOpen(false)} onOpenMovements={() => { setBenefitOpen(false); onNavigate('movements'); }}/> : null}
-  </main>;
-}
-
-function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; homePeriodContext?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate'] }) {
-  const [benefitOpen, setBenefitOpen] = useState(false);
-  const nowMonth = todayIso().slice(0, 7);
-  if (periodMode === 'month' && data.month < nowMonth) return <PastHome data={data} context={homePeriodContext} onNavigate={onNavigate}/>;
-  if (periodMode === 'month' && data.month > nowMonth) return <FutureHome data={data} context={homePeriodContext} onNavigate={onNavigate}/>;
-  const openPayables = data.payables.filter((item) => openStatus(item.status) && Number(item.openAmount || 0) > 0);
-  const planned = data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned');
-  const paid = data.events.items.filter((item) => item.type === 'expense' && ['paid', 'reconciled', 'confirmed'].includes(String(item.status)));
-  const cardOpen = data.cards.reduce((sum, card) => sum + Number(card.statement?.payableAmount ?? card.payableStatementAmount ?? card.statementAmount ?? 0), 0);
-  const balance = Number(data.summary.availableBalance || 0) + Number(data.summary.realizedResult || 0);
-  const posted = data.events.items.filter((item) => ['paid', 'reconciled', 'confirmed'].includes(String(item.status)));
-  const specialIncome = posted.filter((item) => item.type === 'income').reduce((sum, item) => sum + Math.abs(Number(item.signedAmount || item.amount || 0)), 0);
-  const specialExpense = posted.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Math.abs(Number(item.signedAmount || item.amount || 0)), 0);
-  const income = periodMode === 'month' ? Number(data.summary.realizedIncome || 0) : specialIncome;
-  const expense = periodMode === 'month' ? Number(data.summary.realizedExpense || 0) : specialExpense;
-  const result = periodMode === 'month' ? Number(data.summary.realizedResult || 0) : income - expense;
-  const title = periodMode === 'all' ? 'Todo o histórico' : periodMode === 'range' ? (periodLabel || 'Intervalo selecionado') : monthLabel(data.month);
-
-  return <main className="meg2-main meg2-home" data-meg-fixed-screen="true">
-    <section className="meg2-title">
-      <span>Situação {data.month === todayIso().slice(0, 7) && periodMode === 'month' ? 'atual' : 'do período'}</span>
-      <h1>{title}</h1>
-      <p>Acompanhe seu caixa e compromissos.</p>
-      <i><Icon name="trend"/></i>
-    </section>
-
-    <section className="meg2-balance">
-      <span><Icon name="wallet" size={30}/></span>
-      <div><small>Saldo disponível</small><strong>{money.format(balance)}</strong><p>Considerando apenas os lançamentos realizados.</p></div>
-    </section>
-
-    <section className="meg2-flow">
-      <article><span className="up"><Icon name="up"/></span><div><small>Entradas no mês</small><strong>{money.format(income)}</strong></div></article>
-      <article><span className="down"><Icon name="down"/></span><div><small>Saídas no mês</small><strong>{money.format(expense)}</strong></div></article>
-      <article className="result"><span><Icon name="trend"/></span><div><small>Resultado do mês</small><strong>{resultMoney(result)}</strong></div></article>
-    </section>
-
-    <section className="meg2-summary">
-      <article><span className="red"><Icon name="file"/></span><small>Contas a pagar</small><b>{openPayables.length}</b><em>{money.format(openPayables.reduce((s, item) => s + Number(item.openAmount || 0), 0))}</em></article>
-      <article><span className="blue"><Icon name="wallet"/></span><small>Faturas de cartões</small><b>{data.cards.filter((card) => Number(card.statement?.payableAmount ?? card.statementAmount ?? 0) > 0).length}</b><em>{money.format(cardOpen)}</em></article>
-      <article><span className="amber"><Icon name="file"/></span><small>Outras pendências</small><b>{planned.length}</b><em>{money.format(planned.reduce((s, item) => s + Math.abs(Number(item.signedAmount || item.amount || 0)), 0))}</em></article>
-      <article><span className="green"><Icon name="check"/></span><small>Contas pagas</small><b>{paid.length}</b><em>{money.format(paid.reduce((s, item) => s + Math.abs(Number(item.signedAmount || item.amount || 0)), 0))}</em></article>
-    </section>
-
-    <button className="meg2-benefit" type="button" onClick={() => setBenefitOpen(true)}>
-      <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Saldo disponível</em><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong></div><b>›</b>
-    </button>
-
-    <section className="meg2-quick">
-      <header><div><span><Icon name="bolt" size={18}/></span><p><b>Ações rápidas</b><small>Acesse as principais funcionalidades.</small></p></div><button onClick={() => onNavigate('movements')}>Ver todas ›</button></header>
-      <div>
-        <button onClick={() => onNavigate('cards')}><span><Icon name="wallet"/></span><small>Cartões</small></button>
-        <button onClick={() => onNavigate('payables')}><span><Icon name="file"/></span><small>Pagar conta</small></button>
-        <button onClick={() => onNavigate('cashflow')}><span><Icon name="cashflow"/></span><small>Fluxo de caixa</small></button>
-        <button onClick={() => onNavigate('analytics')}><span><Icon name="chart"/></span><small>Ver relatórios</small></button>
-      </div>
-    </section>
-    {benefitOpen ? <MegMobileBenefitModal data={data} onClose={() => setBenefitOpen(false)} onOpenMovements={() => { setBenefitOpen(false); onNavigate('movements'); }}/> : null}
-  </main>;
 }
 
 function InfiniteCarousel({ data, activeId, onActiveId }: { data: PhoenixReadModel; activeId: string; onActiveId: (id: string) => void }) {
@@ -725,11 +563,20 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
     + data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned').length;
 
   return <div className="meg2-app" data-meg-mobile-final="true">
-    <div className={'meg2-shell meg2-view-' + view}>
+    {view === 'home' ? <MegMobileHome
+      data={data}
+      periodMode={periodMode}
+      periodLabel={periodLabel}
+      homePeriodContext={homePeriodContext}
+      pendingCount={pendingCount}
+      onNavigate={onNavigate}
+      onLaunch={(preset) => setLaunchSheet({ preset })}
+      onOpenPeriod={() => setPeriodOpen(true)}
+      onOpenMenu={() => setMenuOpen(true)}
+    /> : <div className={'meg2-shell meg2-view-' + view}>
       <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={() => setPeriodOpen(true)} onOpenMenu={() => setMenuOpen(true)}/>
       <div className="meg2-scroll">
-        {view === 'home' ? <Home data={data} periodMode={periodMode} periodLabel={periodLabel} homePeriodContext={homePeriodContext} onNavigate={onNavigate}/> : null}
-        {view === 'movements' ? <MegMobileMovements data={data} onOpenEvent={(event) => setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event })} onNew={() => setLaunchSheet({ preset: 'expense' })}/> : null}
+        {view === 'movements' ? <MegMobileMovements data={data} onOpenEvent={(event) => setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event })} onNew={() => setLaunchSheet({ preset: 'expense' })} onOpenPeriod={() => setPeriodOpen(true)}/> : null}
         {view === 'cards' ? <Cards data={data} onEditEvent={(eventId) => {
           const event = data.events.items.find((item) => item.id === eventId) || null;
           if (event) setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event });
@@ -744,7 +591,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
         {view === 'settings' ? <MegMobileSettings data={data} onLogout={onLogout}/> : null}
       </div>
       <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={onNavigate} onLaunch={(preset) => setLaunchSheet({ preset })} onMenu={() => setMenuOpen(true)}/>
-    </div>
+    </div>}
     {menuOpen ? <MenuSheet onClose={() => setMenuOpen(false)} onNavigate={onNavigate} onLogout={onLogout} onCloseApp={onClose}/> : null}
     {periodOpen ? <PeriodSheet data={data} initialMode={periodMode} loading={periodLoading} error={periodError} onClose={() => setPeriodOpen(false)} onSelectMonth={onSelectMonth} onSelectRange={onSelectRange} onSelectAll={onSelectAll}/> : null}
     {launchSheet ? <MegMobileLaunchSheet

@@ -1,10 +1,15 @@
 import { updateIsAvailable } from './app-update-release-core.js';
 
-const MANIFEST_URLS = [
+const STABLE_MANIFEST_URLS = [
   'https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-latest/app-version.json',
   'https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json',
   'https://raw.githubusercontent.com/MarcosVilalva/MEG-Platform/main/apps/web/public/downloads/app-version.json',
 ];
+const RC1_MANIFEST_URLS = [
+  'https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-rc1-latest/app-version-rc1.json',
+];
+const UPDATE_CHANNEL = String(import.meta.env?.VITE_ANDROID_UPDATE_CHANNEL || 'stable').trim().toLowerCase();
+const MANIFEST_URLS = UPDATE_CHANNEL === 'rc1' ? RC1_MANIFEST_URLS : STABLE_MANIFEST_URLS;
 const BRIDGE_TIMEOUT_MS = 3500;
 const FETCH_TIMEOUT_MS = 8000;
 const RESUME_DELAY_MS = 1200;

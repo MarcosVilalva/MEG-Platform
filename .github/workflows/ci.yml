@@ -179,9 +179,12 @@ jobs:
     if: github.ref == 'refs/heads/feature/phoenix-launch-dynamic-status' || startsWith(github.ref, 'refs/heads/rc1/') || (github.event_name == 'pull_request' && (github.head_ref == 'feature/phoenix-launch-dynamic-status' || startsWith(github.head_ref, 'rc1/')))
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: write
     env:
       VITE_API_URL: https://meg-platform-api.onrender.com
       VITE_MOBILE_APP: 'true'
+      VITE_ANDROID_UPDATE_CHANNEL: rc1
       CAPACITOR_BUILD: 'true'
       ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/app/meg-release.jks
       ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
@@ -207,19 +210,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Align RC1 version with current stable Android channel
+      - name: Allocate monotonic RC1 Android version
         shell: bash
         run: |
           set -euo pipefail
-          STABLE_CODE=$(node -e "const fs=require('fs'); const x=JSON.parse(fs.readFileSync('apps/web/public/downloads/app-version.json','utf8')); process.stdout.write(String(x.versionCode||''))")
-          STABLE_NAME=$(node -e "const fs=require('fs'); const x=JSON.parse(fs.readFileSync('apps/web/public/downloads/app-version.json','utf8')); process.stdout.write(String(x.versionName||''))")
-          test -n "$STABLE_CODE"
-          test -n "$STABLE_NAME"
-          echo "MEG_VERSION_CODE=$STABLE_CODE" >> "$GITHUB_ENV"
-          echo "MEG_VERSION_NAME=${STABLE_NAME}-rc1" >> "$GITHUB_ENV"
-          echo "VITE_ANDROID_VERSION_CODE=$STABLE_CODE" >> "$GITHUB_ENV"
-          echo "VITE_ANDROID_VERSION_NAME=${STABLE_NAME}-rc1" >> "$GITHUB_ENV"
-          echo "RC1 alinhado ao canal estável: versionCode=$STABLE_CODE versionName=${STABLE_NAME}-rc1"
+          STABLE_CODE=$(node -e "const fs=require('fs'); const x=JSON.parse(fs.readFileSync('apps/web/public/downloads/app-version.json','utf8')); process.stdout.write(String(x.versionCode||0))")
+          VERSION_CODE=$(date -u +%s)
+          if [ "$VERSION_CODE" -le "$STABLE_CODE" ]; then VERSION_CODE=$((STABLE_CODE + 1)); fi
+          VERSION_NAME="2.0.${VERSION_CODE}-rc1"
+          echo "MEG_VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "MEG_VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+          echo "VITE_ANDROID_VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "VITE_ANDROID_VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
+          echo "RC1 OTA: versionCode=$VERSION_CODE versionName=$VERSION_NAME"
 
       - name: Prepare permanent Android signing key
         env:
@@ -270,12 +273,48 @@ jobs:
           test -n "$ACTUAL_SIGNER"
           test -n "$EXPECTED_SIGNER"
           test "$ACTUAL_SIGNER" = "$EXPECTED_SIGNER"
+          echo "RC_SIGNER_SHA256=$ACTUAL_SIGNER" >> "$GITHUB_ENV"
           echo "RC1 assinado com o mesmo certificado permanente do canal Android estável."
+
+      - name: Prepare RC1 OTA package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp android/app/build/outputs/apk/release/app-release.apk MEG-Financas-RC1.apk
+          SHA256=$(sha256sum MEG-Financas-RC1.apk | awk '{print $1}')
+          RELEASE_NOTES=$(git log -1 --pretty=%s | sed -E 's/ \(#[0-9]+\)$//' | sed -E 's/^(Feat|Fix|Chore|Refactor|Perf|Test):[[:space:]]*//I')
+          test -n "$RELEASE_NOTES" || RELEASE_NOTES="Prévia RC1 do MEG Finanças."
+          export SHA256 RELEASE_NOTES
+          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('app-version-rc1.json', JSON.stringify({ versionCode: Number(process.env.MEG_VERSION_CODE), versionName: process.env.MEG_VERSION_NAME, channel: 'rc1', downloadUrl: 'https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-rc1-latest/MEG-Financas-RC1.apk', sha256: process.env.SHA256, signerSha256: process.env.RC_SIGNER_SHA256, mandatory: false, releaseNotes: process.env.RELEASE_NOTES }, null, 2) + '\n')"
 
       - name: Upload Android RC1 release-signed APK
         uses: actions/upload-artifact@v4
         with:
           name: MEG-Financas-RC1-Release-Signed
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: |
+            MEG-Financas-RC1.apk
+            app-version-rc1.json
           if-no-files-found: error
           retention-days: 7
+
+      - name: Publish RC1 OTA channel
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/rc1/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view android-rc1-latest >/dev/null 2>&1 || \
+            gh release create android-rc1-latest --prerelease --title "MEG Finanças Android RC1" --notes "Canal de validação OTA do aplicativo Android."
+
+          for attempt in 1 2 3; do
+            if gh release upload android-rc1-latest MEG-Financas-RC1.apk app-version-rc1.json --clobber; then
+              echo "Canal RC1 OTA publicado na tentativa $attempt."
+              exit 0
+            fi
+            echo "Publicação RC1 falhou na tentativa $attempt/3; tentando novamente..."
+            sleep $((attempt * 5))
+          done
+
+          echo "Não foi possível publicar o canal RC1 OTA."
+          exit 1

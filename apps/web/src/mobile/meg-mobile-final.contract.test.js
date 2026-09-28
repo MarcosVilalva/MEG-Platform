@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 
 const mobile = readFileSync(new URL('./MegMobileFinal.tsx', import.meta.url), 'utf8');
+const home = readFileSync(new URL('./MegMobileHome.tsx', import.meta.url), 'utf8');
+const homeCss = readFileSync(new URL('./meg-mobile-home.css', import.meta.url), 'utf8');
+const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./meg-mobile-final.css', import.meta.url), 'utf8');
 const runtimeCss = readFileSync(new URL('./meg-mobile-runtime.css', import.meta.url), 'utf8');
 const phoenix = readFileSync(new URL('../phoenix/PhoenixApp.tsx', import.meta.url), 'utf8');
@@ -16,7 +19,7 @@ const settings = readFileSync(new URL('./MegMobileSettings.tsx', import.meta.url
 const settingsCss = readFileSync(new URL('./meg-mobile-settings.css', import.meta.url), 'utf8');
 const cardCenter = readFileSync(new URL('./MegMobileCardCenter.tsx', import.meta.url), 'utf8');
 const benefitModal = readFileSync(new URL('./MegMobileBenefitModal.tsx', import.meta.url), 'utf8');
-const source = mobile + '\n' + css + '\n' + runtimeCss + '\n' + coreScreens + '\n' + launchSheet + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
+const source = mobile + '\n' + home + '\n' + homeCss + '\n' + css + '\n' + runtimeCss + '\n' + coreScreens + '\n' + launchSheet + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
 
 assert.doesNotMatch(source, /\bpx-[a-z0-9-]+/i,
   'Reconstrução mobile final não pode reutilizar classes visuais .px-* do Phoenix legado.');
@@ -24,8 +27,13 @@ assert.doesNotMatch(mobile, /Phoenix(?:Sidebar|NavIcon|Reference|OperationalMobi
   'Reconstrução mobile final não pode importar componentes visuais Phoenix anteriores.');
 assert.doesNotMatch(phoenix, /PhoenixMobileReferenceScreens/,
   'Shell não pode reintroduzir a implementação intermediária das três telas.');
-assert.match(phoenix, /if \(nativeOperational && viewData && \['home','movements','cards','payables','history','cashflow','analytics','settings'\]\.includes\(view\)\)[\s\S]*<MegMobileFinal[\s\S]*return <div className="phoenix-v15"/,
-  'Telas operacionais do APK devem retornar a árvore mobile clean-room antes do shell Phoenix antigo.');
+assert.match(phoenix, /if \(nativeOperational && viewData\)[\s\S]*const nativeView[\s\S]*<MegMobileFinal[\s\S]*return <div className="phoenix-v15"/,
+  'Qualquer rota com dados no APK deve permanecer na árvore mobile clean-room antes do shell Phoenix antigo.');
+assert.match(phoenix, /VITE_MOBILE_APP === 'true' \|\| capacitorNative/,
+  'Detecção do APK deve ter fallback nativo e não depender apenas da variável de build.');
+assert.match(phoenix,/withPeriodDeadline[\s\S]*15000[\s\S]*30000[\s\S]*20000/,'Filtro de período deve possuir limites de espera para mês, intervalo e histórico completo, evitando loading infinito.');
+assert.doesNotMatch(phoenix, /if \(nativeOperational && viewData && \[[^\]]+\]\.includes\(view\)\)/,
+  'Android não pode voltar ao shell Phoenix por cair numa rota fora da lista mobile.');
 assert.match(mobile, /cards\.concat\(cards, cards\)/,
   'Carrossel de cartões deve possuir cópias circulares para rolagem infinita real.');
 assert.match(mobile, /index < cards\.length[\s\S]*scrollLeft \+=[\s\S]*index >= cards\.length \* 2[\s\S]*scrollLeft \+=/,
@@ -64,19 +72,24 @@ assert.match(
   /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*latam-pass-platinum\.webp[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*riachuelo-mastercard-visual\.svg/i,
   'Carrossel deve resolver nomes reais e apelidos para artes horizontais estáveis.',
 );
-assert.match(css, /\.meg2-view-home \.meg2-scroll\{overflow:hidden\}/,
-  'Home corrente deve caber no viewport sem rolagem geral.');
-assert.match(css, /@media \(max-height:850px\)[\s\S]*@media \(max-height:760px\)/,
-  'Home deve reduzir densidade também conforme a altura do aparelho.');
+assert.match(homeCss, /\.meg-home-screen\{[\s\S]*height:100dvh[\s\S]*overflow:hidden/,
+  'Home clean-room deve ocupar o viewport sem rolagem geral.');
+assert.match(homeCss, /@media\(max-height:760px\)[\s\S]*@media\(max-height:680px\)/,
+  'Home clean-room deve reduzir densidade conforme a altura do aparelho.');
 assert.match(css, /\.meg2-user strong\{[\s\S]*display:block!important/,
   'Nome do usuário não pode desaparecer em aparelhos menores.');
 assert.match(css, /MEG PREMIUM MOBILE — referência visual aprovada/,
   'Árvore mobile deve declarar explicitamente a identidade visual aprovada.');
 
+assert.doesNotMatch(
+  main + '\n' + previewMain,
+  /classList\.add\([^\n]*meg-operational-mobile|classList\.add\([^\n]*native-mobile/,
+  'Runtime Android não pode mais ativar marcadores visuais legados.',
+);
 assert.match(
-  previewMain,
-  /document\.body\.classList\.remove\('meg-operational-mobile'\)[\s\S]*document\.body\.classList\.add\('meg-cleanroom-mobile'\)/,
-  'Runtime Android deve remover o marcador visual legado e ativar apenas o clean-room.',
+  main,
+  /document\.documentElement\.classList\.add\('meg-cleanroom-mobile'\)[\s\S]*document\.body\.classList\.add\('meg-cleanroom-mobile'\)/,
+  'Bootstrap Android deve nascer diretamente no namespace clean-room.',
 );
 assert.match(
   previewMain,
@@ -139,14 +152,14 @@ assert.match(
   'Runtime clean-room deve controlar viewport e overflow sem depender do Phoenix.',
 );
 assert.doesNotMatch(
-  css + '\n' + coreCss + '\n' + launchCss + '\n' + settingsCss,
+  homeCss + '\n' + css + '\n' + coreCss + '\n' + launchCss + '\n' + settingsCss,
   /(?:-webkit-)?backdrop-filter\s*:|(^|[;{])\s*filter\s*:/m,
   'CSS clean-room não pode depender de filtros de composição instáveis no Android WebView.',
 );
 assert.match(
-  mobile,
-  /const title = periodMode === 'all'[\s\S]*monthLabel\(data\.month\)/,
-  'Home do mês deve usar o nome completo da competência no corpo da tela.',
+  home,
+  /Situação atual[\s\S]*monthLabel\(data\.month\)[\s\S]*Saldo disponível[\s\S]*Entradas no mês[\s\S]*Saídas no mês[\s\S]*Resultado do mês/,
+  'Home atual deve seguir a composição final aprovada e usar o nome completo da competência.',
 );
 assert.match(
   mobile,
@@ -161,8 +174,34 @@ assert.match(
 assert.match(
   css,
   /CONTRATO DE VIEWPORT FIXO[\s\S]*\.meg2-scroll\{[\s\S]*overflow:hidden!important/,
-  'Home, Cartões e Pendentes devem usar viewport fixo sem rolagem da tela inteira.',
+  'Cartões e Pendentes ainda devem usar viewport fixo enquanto aguardam reconstrução.',
 );
+assert.match(home,/data-meg-home="approved-four-periods"/,'Home deve declarar o checkpoint visual dos quatro períodos aprovados.');
+assert.match(home,/data-meg-home-frozen="true"/,'Home validada deve permanecer marcada como congelada durante a reconstrução das próximas telas.');
+assert.match(home,/meg-home-\$\{name\}\.svg/,'Ícones da Home devem ser resolvidos como assets externos estáveis no Android.');
+assert.doesNotMatch(home,/<svg\b/,'Home não pode voltar a SVG inline no WebView.');
+assert.match(homeCss,/\.meg-home-header\{[\s\S]*min-height:66px[\s\S]*grid-template-columns:48px minmax\(0,1fr\) 96px/,'Cabeçalho da Home deve preservar a proporção compacta da referência final.');
+assert.match(homeCss,/@media\(max-height:760px\)[\s\S]*\.meg-home-header\{min-height:60px[\s\S]*\.meg-home-dock\{min-height:58px/,'Telas baixas devem compactar a Home, nunca ampliar o cabeçalho ou o dock.');
+
+assert.match(home,/Benefício Alimentação[\s\S]*Ações rápidas[\s\S]*Cartões[\s\S]*Pagar conta[\s\S]*Fluxo de caixa[\s\S]*Ver relatórios/,'Home deve preservar os blocos funcionais aprovados.');
+assert.equal((home.match(/<QuickActions onNavigate=\{onNavigate\}\/?>/g)||[]).length,4,'Todos os estados devem reutilizar Ações rápidas para preservar a mesma base visual.');
+
+assert.match(homeCss,/\.meg-home-quick\{[\s\S]*height:100%;min-height:0[\s\S]*grid-template-rows:minmax\(31px,\.35fr\) minmax\(0,\.65fr\)/,'Ações rápidas deve ocupar sua faixa proporcional inteira sem recortar os botões.');
+
+assert.match(home,/Resumo do mês[\s\S]*Saldo inicial[\s\S]*Saldo final[\s\S]*Contas pagas/,'Mês passado deve preservar a leitura histórica validada.');
+assert.match(home,/data-home-state=\{state\}/,'Home deve expor o estado visual corrente para mês passado, atual, futuro, intervalo e tudo.');
+assert.match(home,/Veja como foi o seu mês em uma visão simples\.[\s\S]*Receitas realizadas[\s\S]*Despesas realizadas[\s\S]*Resultado do mês[\s\S]*Saldo inicial[\s\S]*Saldo final[\s\S]*Contas pagas/,'Mês passado deve seguir a composição aprovada de seis indicadores.');
+
+assert.match(home,/Projeção mensal[\s\S]*Saldo inicial projetado[\s\S]*Saldo após compromissos[\s\S]*Receitas previstas[\s\S]*Total de compromissos[\s\S]*Faturas de cartões[\s\S]*Outras pendências/,'Mês futuro deve preservar a projeção validada completa.');
+assert.match(home,/Histórico completo[\s\S]*Saldo atual[\s\S]*Posição atual da conta, separada do resultado histórico\.[\s\S]*Total de receitas[\s\S]*Total de despesas[\s\S]*Resultado acumulado[\s\S]*Total de lançamentos[\s\S]*Média mensal de receita[\s\S]*Média mensal de despesa/,'Tudo deve separar saldo atual de resultado histórico e manter o painel completo.');
+assert.match(homeCss,/\.meg-home-content\.is-current\{[\s\S]*grid-template-rows:minmax\(0,\.68fr\)[\s\S]*minmax\(0,1\.18fr\)/,'Mês atual deve ocupar proporcionalmente toda a área útil, seguindo a densidade da referência.');
+assert.match(homeCss,/\.meg-home-content\.is-past,[\s\S]*\.meg-home-content\.is-future\{[\s\S]*grid-template-rows:minmax\(0,\.68fr\)[\s\S]*minmax\(0,3\.12fr\)[\s\S]*minmax\(0,1\.18fr\)/,'Passado e futuro devem ocupar a mesma malha vertical da Home base.');
+assert.match(homeCss,/\.meg-home-content\.is-all,[\s\S]*\.meg-home-content\.is-range\{[\s\S]*grid-template-rows:minmax\(0,\.68fr\)[\s\S]*minmax\(0,1\.16fr\)/,'Tudo e intervalo devem preencher o viewport com a mesma linguagem visual.');
+assert.doesNotMatch(home,/meg-home-title[\s\S]{0,220}<svg/,'Título da Home não pode reintroduzir SVG inline que gerava fragmentos no WebView.');
+assert.match(home,/trendMark\?<span className="meg-home-title-mark"/,'Mês atual deve recuperar o marcador de tendência da referência usando HTML/CSS estável.');
+assert.match(homeCss,/\.meg-home-title-mark\{[\s\S]*translate:0 -50%[\s\S]*overflow:hidden/,'Marcador de tendência CSS deve permanecer contido e sem composição SVG instável.');
+
+assert.match(mobile,/view === 'home' \? <MegMobileHome[\s\S]*: <div className=\{'meg2-shell/,'Home deve sair do shell meg2 antes das demais telas em reconstrução.');
 assert.match(
   css,
   /\.meg2-statement-list\{[\s\S]*overflow-y:auto/,
@@ -285,3 +324,15 @@ assert.match(
 
 
 console.log('Contrato da reconstrução mobile final validado.');
+
+assert.doesNotMatch(css,/^:root\s*\{/m,'Tokens do app móvel não podem vazar para :root.');
+assert.match(css,/body\.meg-cleanroom-mobile\s*\{[\s\S]*--meg2-bg:/,'Tokens do app móvel devem ficar presos ao runtime clean-room.');
+
+assert.doesNotMatch(homeCss,/\n\s*\.meg-home-title\{min-height:\d+px\}[\s\S]*\n\}\s*$/,'CSS da Home não pode terminar com bloco órfão ou sobra de media query.');
+
+
+assert.match(coreScreens,/data-meg-movements="approved-redesign"[\s\S]*Controle seus eventos financeiros\.[\s\S]*Buscar lançamento\.\.\.[\s\S]*Forma de pagamento/,'Lançamentos revisada deve declarar o checkpoint visual aprovado e preservar busca, resumo e forma de pagamento.');
+assert.match(coreScreens,/categoryFilter[\s\S]*accountFilter[\s\S]*paymentFilter[\s\S]*Filtrar lançamentos[\s\S]*Todos[\s\S]*Receitas[\s\S]*Despesas/,'Filtros de Lançamentos devem continuar funcionais sem agrupar registros.');
+assert.match(coreScreens,/shortDate\(event\.date\)[\s\S]*weekday[\s\S]*event\.description[\s\S]*detail[\s\S]*meg3-payment-chip[\s\S]*meg3-status-pill[\s\S]*money\.format/,'Cada lançamento deve manter data/dia, descrição, categoria+conta, forma, status e valor.');
+assert.match(coreCss,/LANÇAMENTOS REVISADA[\s\S]*\.meg3-movements\{[\s\S]*grid-template-rows:auto auto auto auto minmax\(0,1fr\)[\s\S]*\.meg3-movements \.meg3-event-list/,'Lançamentos deve usar viewport fixo e reservar a rolagem à lista interna.');
+assert.match(mobile,/MegMobileMovements[\s\S]*onOpenPeriod=\{\(\) => setPeriodOpen\(true\)\}/,'Filtro rápido de período em Lançamentos deve abrir o seletor de período já aprovado.');

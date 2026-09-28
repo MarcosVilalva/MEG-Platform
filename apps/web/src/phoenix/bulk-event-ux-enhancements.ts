@@ -1,6 +1,5 @@
 import { authenticatedRequest } from '../app/auth-client';
 import { PHOENIX_BULK_EVENT_WRITE_ENABLED } from './data/phoenix-bulk-event-gateway';
-import './phoenix-bulk-ux-enhancements.css';
 
 type AuditItem = {
   id: string;

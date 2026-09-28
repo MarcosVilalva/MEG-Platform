@@ -5,7 +5,6 @@ import {
   phoenixExportFilename,
   type PhoenixExportReport
 } from './table-export-core';
-import './phoenix-table-export.css';
 
 const TOOLBAR_CLASS = 'px-table-export';
 const MANAGED_ATTR = 'data-meg-export-ready';

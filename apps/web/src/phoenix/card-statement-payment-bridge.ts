@@ -1,6 +1,5 @@
 import { cardsClient, type CreditCard } from '../app/cards-client';
 import { financeClient, type Account, type PaymentMethod } from '../app/finance-client';
-import './phoenix-card-statement-payment.css';
 
 type StatementContext = {
   month: string;

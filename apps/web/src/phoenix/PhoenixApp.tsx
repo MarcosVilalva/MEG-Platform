@@ -8,8 +8,8 @@ import { isPhoenixMonetaryEvent } from './home-period-summary';
 import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixSidebar } from './PhoenixSidebar';
 import { PhoenixNavIcon } from './PhoenixNavIcon';
-import { PhoenixOperationalMobileHome } from './PhoenixOperationalMobileHome';
 import { MegMobileFinal } from '../mobile/MegMobileFinal';
+import { MegMobileLoading } from '../mobile/MegMobileLoading';
 import { PhoenixProfileAvatar, hydratePhoenixAvatarPreference, readPhoenixAvatarPreference, type PhoenixAvatarPreference } from './profile-avatar';
 import { syncPhoenixLocalDueNotifications } from './phoenix-native-notifications';
 import { PhoenixCatalogsGrid } from './screens/PhoenixCatalogsGrid';
@@ -155,6 +155,16 @@ function shortMonthLabel(value: string) {
 function formatShortIso(value: string) {
   const [year, month, day] = value.split('-');
   return `${day}/${month}/${year}`;
+}
+
+function withPeriodDeadline<T>(promise: Promise<T>, milliseconds: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), milliseconds);
+  });
+  return Promise.race([promise, deadline]).finally(() => {
+    if (timer) clearTimeout(timer);
+  }) as Promise<T>;
 }
 
 function financialActionLabel(action: string) {
@@ -403,7 +413,9 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
 }
 
 export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClose?: () => void }) {
-  const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
+  const capacitorNative = typeof window !== 'undefined'
+    && Boolean((window as typeof window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.());
+  const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true' || capacitorNative;
   const [month, setMonth] = useState(currentMonth);
   const [view, setView] = useState<PhoenixView>('home');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -920,7 +932,11 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
       const cached = !force ? peekPhoenixReadModel(targetMonth) : null;
       const fresh = cached && monthlySnapshotMatches(cached, targetMonth)
         ? cached
-        : await loadPhoenixReadModel(targetMonth, force ? { force: true } : {});
+        : await withPeriodDeadline(
+            loadPhoenixReadModel(targetMonth, force ? { force: true } : {}),
+            15000,
+            'A leitura do mês demorou mais que o esperado. Tente novamente.'
+          );
 
       if (!monthlySnapshotMatches(fresh, targetMonth)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       if (periodRequestRef.current !== requestId) return;
@@ -995,11 +1011,11 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     setPeriodLoading(true);
     setPeriodError('');
     try {
-      const [models, currentSnapshot, allEvents] = await Promise.all([
+      const [models, currentSnapshot, allEvents] = await withPeriodDeadline(Promise.all([
         Promise.all(months.map((item) => loadPhoenixReadModel(item, force ? { force: true } : {}))),
         loadPhoenixReadModel(currentMonth(), force ? { force: true } : {}),
         loadPhoenixAllEvents({ force })
-      ]);
+      ]), 30000, 'O intervalo demorou mais que o esperado. Reduza o período ou tente novamente.');
       if (periodRequestRef.current !== requestId) return;
       if (models.some((model, index) => !monthlySnapshotMatches(model, months[index]))) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       if (!monthlySnapshotMatches(currentSnapshot, currentMonth())) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
@@ -1050,10 +1066,10 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     setPeriodError('');
     try {
       const baseMonth = currentMonth();
-      const [base, events] = await Promise.all([
+      const [base, events] = await withPeriodDeadline(Promise.all([
         loadPhoenixReadModel(baseMonth, force ? { force: true } : {}),
         loadPhoenixAllEvents({ force })
-      ]);
+      ]), 20000, 'O histórico completo demorou mais que o esperado. Tente novamente.');
       if (!monthlySnapshotMatches(base, baseMonth)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
       if (periodRequestRef.current !== requestId) return;
       const items = events.items.map((event) => ({ ...event }));
@@ -1197,11 +1213,17 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     )
     : null;
 
-  if (nativeOperational && viewData && ['home','movements','cards','payables','history','cashflow','analytics','settings'].includes(view)) {
+  if (nativeOperational && viewData) {
+    const nativeView = (['home','movements','cards','payables','history','cashflow','analytics','settings'] as const).includes(
+      view as 'home' | 'movements' | 'cards' | 'payables' | 'history' | 'cashflow' | 'analytics' | 'settings'
+    )
+      ? view as 'home' | 'movements' | 'cards' | 'payables' | 'history' | 'cashflow' | 'analytics' | 'settings'
+      : 'home';
+
     return <>
       <MegMobileFinal
         data={viewData}
-        view={view as 'home' | 'movements' | 'cards' | 'payables' | 'history' | 'cashflow' | 'analytics' | 'settings'}
+        view={nativeView}
         onNavigate={navigate}
         onLaunch={requestLaunch}
         onEditEvent={requestEditEvent}
@@ -1217,6 +1239,22 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         onClose={onClose}
       />
     </>;
+  }
+
+  if (nativeOperational && !viewData && loadState.status !== 'error') {
+    return <MegMobileLoading progress={88} stageLabel="Carregando seus dados" />;
+  }
+
+  if (nativeOperational && !viewData && loadState.status === 'error') {
+    return <main className="meg-loading-error-screen" aria-live="assertive">
+      <section className="meg-loading-error-card" aria-label="Falha ao carregar dados">
+        <div className="meg-loading-error-logo"><img src={phoenixBrandAsset('brand/meg-finance-system-mark.svg')} alt="MEG Finanças" /></div>
+        <div className="meg-loading-error-copy"><span>MEG FINANÇAS</span><h1>Não foi possível carregar seus dados.</h1><p>{loadState.message}</p></div>
+        <div className="meg-loading-error-actions">
+          <button className="meg-loading-error-primary" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button>
+        </div>
+      </section>
+    </main>;
   }
 
   return <div className="phoenix-v15" data-theme={theme}>

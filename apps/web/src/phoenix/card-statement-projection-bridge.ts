@@ -1,6 +1,5 @@
 import { authenticatedRequest } from '../app/auth-client';
 import { cardsClient, type CreditCard } from '../app/cards-client';
-import './phoenix-card-statement-projection.css';
 
 type HistoryResponse = {
   cardId: string;

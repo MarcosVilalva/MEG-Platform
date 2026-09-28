@@ -9,7 +9,6 @@ import {
   updatePhoenixEventsBulk,
   type PhoenixBulkEventChanges,
 } from './data/phoenix-bulk-event-gateway';
-import './phoenix-bulk-actions.css';
 
 const selected = new Set<string>();
 let observer: MutationObserver | null = null;

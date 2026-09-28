@@ -53,6 +53,9 @@ public class AppUpdaterPlugin extends Plugin {
         "https://marcosvilalva.github.io/MEG-Platform/downloads/app-version.json",
         "https://raw.githubusercontent.com/MarcosVilalva/MEG-Platform/main/apps/web/public/downloads/app-version.json"
     };
+    private static final String[] RC1_RELEASE_MANIFEST_URLS = {
+        "https://github.com/MarcosVilalva/MEG-Platform/releases/download/android-rc1-latest/app-version-rc1.json"
+    };
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final AtomicBoolean nativeCheckRunning = new AtomicBoolean(false);
     private final AtomicBoolean nativePromptVisible = new AtomicBoolean(false);
@@ -269,15 +272,26 @@ public class AppUpdaterPlugin extends Plugin {
         installAvailableUpdateNatively(source, expectedSha256);
     }
 
+    private String[] manifestUrlsForInstalledBuild() {
+        try {
+            PackageInfo installed = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0);
+            String versionName = installed.versionName == null ? "" : installed.versionName.toLowerCase();
+            if (versionName.contains("-rc1")) return RC1_RELEASE_MANIFEST_URLS;
+        } catch (Exception error) {
+            Log.w(TAG, "Não foi possível identificar o canal instalado; usando canal estável.", error);
+        }
+        return RELEASE_MANIFEST_URLS;
+    }
+
     private JSObject fetchNewestReleaseManifest() throws Exception {
         Exception lastError = null;
         long nonce = System.currentTimeMillis();
+        String[] manifestUrls = manifestUrlsForInstalledBuild();
 
-        // Os canais são fallbacks, não concorrentes. Misturar o manifesto mais novo
-        // entre Release/Pages/raw pode combinar metadados de uma publicação com o APK
-        // de outra durante a janela de deploy.
-        for (int index = 0; index < RELEASE_MANIFEST_URLS.length; index += 1) {
-            String source = RELEASE_MANIFEST_URLS[index];
+        // Cada APK fica preso ao seu canal: RC1 recebe RC1; estável recebe estável.
+        // As URLs dentro do mesmo canal são fallbacks ordenados.
+        for (int index = 0; index < manifestUrls.length; index += 1) {
+            String source = manifestUrls[index];
             try {
                 return fetchReleaseManifest(source + "?native=" + nonce + "-" + index);
             } catch (Exception error) {

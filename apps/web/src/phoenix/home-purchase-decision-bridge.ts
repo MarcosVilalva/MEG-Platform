@@ -1,6 +1,5 @@
 import { authenticatedRequest } from '../app/auth-client';
 import { cardsClient, type CreditCard } from '../app/cards-client';
-import './phoenix-home-purchase-decision.css';
 
 type ForecastRisk = 'normal' | 'attention' | 'high';
 type ForecastMonth = {
