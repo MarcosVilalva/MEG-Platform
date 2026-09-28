@@ -59,6 +59,10 @@ function EventContextGlyph({ event }: { event: FinancialEvent }) {
   const category = normalizeMovementText(event.category?.name || event.sourceDetails?.group || '');
   const description = normalizeMovementText(event.description);
   const context = [category, description].filter(Boolean).join(' ');
+  const signed = signedAmount(event);
+  // Receita tem identidade visual própria. Não herda ícone semântico de despesa
+  // a partir do texto (ex.: "Mercado Livre" não pode virar carrinho).
+  if (signed >= 0) return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M14.8 8.7c-.7-.6-1.6-.9-2.7-.9-1.5 0-2.6.7-2.6 1.8 0 2.7 5.3 1.2 5.3 4.2 0 1.2-1.1 2-2.8 2-1.2 0-2.3-.4-3.1-1.1M12 5.8v12.4"/></svg>;
   if (/supermerc|mercado|mercearia|hortifruti/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2 11h10l3-8H6"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>;
   if (/aliment|fast food|restaurante|lanche|padaria|refeic/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v8M9 3v8M6 7h3M7.5 11v10M15 3v8c0 2 3 2 3 0V3M16.5 13v8"/></svg>;
   if (/imovel|moradia|aluguel|condominio|casa/.test(context)) return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></svg>;

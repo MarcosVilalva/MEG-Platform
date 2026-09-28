@@ -466,3 +466,28 @@
   .meg3-movements .meg3-movement-toolbar,.meg3-movements .meg3-movement-toolbar label{height:42px}
   .meg3-movements .meg3-movement-list-head{height:36px;min-height:36px}
 }
+
+
+/* POLIMENTO LANCAMENTOS 28/09 - leitura real em 2410FPCC5G */
+.meg3-movements .meg3-movement-kpis article{
+  grid-template-columns:34px minmax(0,1fr)!important;
+  grid-template-rows:auto auto!important;
+  height:76px!important;min-height:76px!important;
+  padding:9px 8px!important;column-gap:7px!important
+}
+.meg3-movements .meg3-movement-kpis article>span{width:34px!important;height:34px!important;font-size:20px!important}
+.meg3-movements .meg3-movement-kpis article>strong{
+  width:100%!important;font-size:clamp(8px,2.25vw,10.5px)!important;
+  letter-spacing:-.055em!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important
+}
+.meg3-movements .meg3-movement-kpis article>small{font-size:8px!important;white-space:nowrap!important}
+.meg3-movements .meg3-event-card.income .meg3-event-icon{background:rgba(17,184,146,.22)!important;color:#55e6b7!important}
+.meg3-movements .meg3-event-card.expense .meg3-event-icon{background:rgba(220,74,100,.24)!important;color:#ff8396!important}
+.meg3-movements .meg3-event-card.income .meg3-event-icon svg{stroke-width:1.8!important}
+.meg3-movements .meg3-event-copy strong{font-size:10px!important}
+.meg3-movements .meg3-event-copy em{font-size:7px!important}
+@media(max-width:390px){
+ .meg3-movements .meg3-movement-kpis article{grid-template-columns:30px minmax(0,1fr)!important;height:72px!important;min-height:72px!important;padding:7px 6px!important;column-gap:5px!important}
+ .meg3-movements .meg3-movement-kpis article>span{width:30px!important;height:30px!important}
+ .meg3-movements .meg3-movement-kpis article>strong{font-size:8.4px!important}
+}
