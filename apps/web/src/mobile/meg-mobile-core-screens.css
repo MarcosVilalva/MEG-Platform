@@ -430,7 +430,10 @@
 .meg3-movements .meg3-event-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .meg3-movements .meg3-event-card.income .meg3-event-icon,.meg3-movements .meg3-event-card.income .meg3-event-value b{color:#55e4b3}
 .meg3-movements .meg3-event-card.expense .meg3-event-icon,.meg3-movements .meg3-event-card.expense .meg3-event-value b{color:#ff7d8d}
-.meg3-movements .meg3-event-card.kind-benefit .meg3-event-icon{color:#f1dd62;background:#5a5427}
+.meg3-movements .meg3-event-card.kind-benefit .meg3-event-icon{color:#ffe36b;background:linear-gradient(145deg,#5b5120,#3c391b);border:1px solid rgba(255,225,86,.30);box-shadow:inset 0 0 14px rgba(255,225,86,.08),0 0 10px rgba(255,225,86,.07)}
+.meg3-movements .meg3-event-card.kind-benefit .meg3-event-value b{color:#ffe36b}
+.meg3-movements .meg3-event-card.kind-benefit{border-color:rgba(255,225,86,.22)}
+.meg3-movements .meg3-event-card.kind-benefit .meg3-payment-chip{border-color:rgba(255,225,86,.18);color:#f7eaa0}
 .meg3-movements .meg3-event-card.kind-income .meg3-event-icon{background:#075b50}
 .meg3-movements .meg3-event-card.kind-expense .meg3-event-icon{background:#50343a}
 .meg3-movements .meg3-event-copy{min-width:0;display:grid;justify-items:start;text-align:left}
