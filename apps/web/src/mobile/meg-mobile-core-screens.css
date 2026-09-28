@@ -444,7 +444,7 @@
 
 /* HARDENING ANDROID — remove artefatos herdados sem alterar o contrato visual */
 .meg3-screen.meg3-movements,.meg3-screen.meg3-movements *{
- -webkit-text-stroke:0!important;text-shadow:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important
+ -webkit-text-stroke:0!important;text-shadow:none!important
 }
 .meg3-movements .meg3-status-pill{
  display:inline-flex!important;align-items:center!important;justify-content:center!important;
