@@ -25,7 +25,7 @@ assert.ok(
   descriptionIndex >= 0 && descriptionIndex < categoryIndex
   && categoryIndex < accountIndex
   && accountIndex < paymentIndex
-  && accountIndex < amountIndex
+  && paymentIndex < amountIndex
   && amountIndex < dateIndex,
   'O formulário deve preservar Descrição, Categoria, Conta, Forma, Valor e Data/Vencimento.',
 );
