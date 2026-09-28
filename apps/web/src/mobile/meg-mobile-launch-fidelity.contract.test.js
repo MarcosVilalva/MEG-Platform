@@ -71,9 +71,8 @@ assert.ok(
   'Card de lançamento deve preservar categoria e conta como contexto do registro.',
 );
 assert.ok(movements.includes('meg3-payment-chip'), 'Forma de pagamento deve ter chip visual próprio no card.');
-for (const token of ["['all','Todos']", "['income','Receitas']", "['expense','Despesas']", "['benefit','Alimentação']"]) {
-  assert.ok(movements.includes(token), 'Aba de filtro ausente: ' + token);
-}
+assert.ok(!movements.includes('meg3-movement-tabs'), 'Linha de abas removida não pode voltar ao JSX de Lançamentos.');
+assert.ok(!movementCss.includes('.meg3-movement-tabs'), 'Linha de abas removida não pode deixar CSS órfão em Lançamentos.');
 assert.ok(!movements.includes('meg3-event-date-group'), 'Lista não deve depender de agrupamento estrutural para representar os registros.');
 assert.ok(
   movements.includes('className="meg3-event-list" data-meg-scroll-region="true"'),
@@ -83,8 +82,9 @@ assert.ok(
   movements.includes('className="meg3-movement-kpis"')
   && movements.includes('money.format(totals.income)')
   && movements.includes('money.format(totals.expense)')
-  && movements.includes('onClick={onNew}'),
-  'Lançamentos deve preservar Entradas, Saídas, Resultado, contagem e ação Novo da referência aprovada.',
+  && movements.includes('meg3-movement-sort')
+  && movements.includes("setSortDirection((current) => current === 'desc' ? 'asc' : 'desc')"),
+  'Lançamentos deve preservar Entradas, Saídas, Resultado e contagem, com ordenação por data no cabeçalho da lista.',
 );
 assert.ok(
   movementCss.includes('.meg3-payment-chip{') && movementCss.includes('border-radius:999px'),
