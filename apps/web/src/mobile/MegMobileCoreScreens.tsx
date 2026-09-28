@@ -55,6 +55,12 @@ function mobileMovementKind(event: FinancialEvent): Exclude<MobileMovementKind, 
   return signedAmount(event) >= 0 ? 'income' : 'expense';
 }
 
+function MovementKpiGlyph({ kind }: { kind: 'income' | 'expense' | 'result' }) {
+  if (kind === 'income') return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M15 14h3M8 4v4M6 6l2-2 2 2"/></svg>;
+  if (kind === 'expense') return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M15 14h3M8 3v5M6 6l2 2 2-2"/></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="8" r="3"/><circle cx="17" cy="16" r="3"/><path d="M9.5 9.5 14.5 14.5M14 5h5v5M19 5l-5 5"/></svg>;
+}
+
 function EventContextGlyph({ event }: { event: FinancialEvent }) {
   const category = normalizeMovementText(event.category?.name || event.sourceDetails?.group || '');
   const description = normalizeMovementText(event.description);
@@ -158,9 +164,9 @@ export function MegMobileMovements({
     </header>
 
     <section className="meg3-movement-kpis" aria-label="Resumo dos lançamentos">
-      <article className="income"><span aria-hidden="true">↑</span><strong>{money.format(totals.income)}</strong><small>Entradas</small></article>
-      <article className="expense"><span aria-hidden="true">↓</span><strong>{money.format(totals.expense)}</strong><small>Saídas</small></article>
-      <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true">▥</span><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong><small>Resultado</small></article>
+      <article className="income"><span aria-hidden="true"><MovementKpiGlyph kind="income"/></span><strong>{money.format(totals.income)}</strong><small>Entradas</small></article>
+      <article className="expense"><span aria-hidden="true"><MovementKpiGlyph kind="expense"/></span><strong>{money.format(totals.expense)}</strong><small>Saídas</small></article>
+      <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true"><MovementKpiGlyph kind="result"/></span><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong><small>Resultado</small></article>
     </section>
 
     <section className="meg3-movement-toolbar" aria-label="Buscar lançamentos">
