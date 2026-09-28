@@ -184,7 +184,7 @@ assert.match(homeCss,/@media\(max-height:760px\)[\s\S]*\.meg-home-header\{min-he
 assert.match(home,/Benefício Alimentação[\s\S]*Ações rápidas[\s\S]*Cartões[\s\S]*Pagar conta[\s\S]*Fluxo de caixa[\s\S]*Ver relatórios/,'Home deve preservar os blocos funcionais aprovados.');
 assert.equal((home.match(/<QuickActions onNavigate=\{onNavigate\}\/?>/g)||[]).length,4,'Todos os estados devem reutilizar Ações rápidas para preservar a mesma base visual.');
 
-assert.match(homeCss,/\.meg-home-quick\{height:82px;min-height:82px/,'Ações rápidas deve manter altura fixa compacta como na referência final.');
+assert.match(homeCss,/\.meg-home-quick\{height:100%;min-height:0[\s\S]*grid-template-rows:minmax\(31px,\.35fr\) minmax\(0,\.65fr\)/,'Ações rápidas deve ocupar sua faixa proporcional inteira sem recortar os botões.');
 
 assert.match(home,/Resumo do mês[\s\S]*Saldo inicial[\s\S]*Saldo final[\s\S]*Contas pagas/,'Mês passado deve preservar a leitura histórica validada.');
 assert.match(home,/data-home-state=\{state\}/,'Home deve expor o estado visual corrente para mês passado, atual, futuro, intervalo e tudo.');
@@ -192,10 +192,12 @@ assert.match(home,/Veja como foi o seu mês em uma visão simples\.[\s\S]*Receit
 
 assert.match(home,/Projeção mensal[\s\S]*Saldo inicial projetado[\s\S]*Saldo após compromissos[\s\S]*Receitas previstas[\s\S]*Total de compromissos[\s\S]*Faturas de cartões[\s\S]*Outras pendências/,'Mês futuro deve preservar a projeção validada completa.');
 assert.match(home,/Histórico completo[\s\S]*Saldo atual \(consolidado\)[\s\S]*Total de receitas[\s\S]*Total de despesas[\s\S]*Resultado consolidado[\s\S]*Total de lançamentos[\s\S]*Média mensal de receita[\s\S]*Média mensal de despesa/,'Tudo deve usar o painel histórico completo aprovado, sem virar um resumo vazio.');
-assert.match(homeCss,/\.meg-home-content\.is-current,[\s\S]*display:grid[\s\S]*align-content:start/,'Todos os estados da Home devem usar composição compacta determinística, sem stretch vertical.');
-assert.match(homeCss,/\.meg-home-past-grid\{[\s\S]*grid-template-rows:repeat\(3,72px\)/,'Mês passado deve usar seis cartões compactos, sem slabs elásticos.');
-assert.match(homeCss,/\.meg-home-future-grid\{[\s\S]*grid-template-rows:repeat\(3,82px\)/,'Mês futuro deve manter o mesmo ritmo compacto da Home base.');
-assert.doesNotMatch(home,/meg-home-title[\s\S]{0,220}<i>/,'Título da Home não pode reintroduzir o tile decorativo que gerava fragmentos no WebView.');
+assert.match(homeCss,/\.meg-home-content\.is-current\{[\s\S]*grid-template-rows:minmax\(0,\.68fr\)[\s\S]*minmax\(0,1\.18fr\)/,'Mês atual deve ocupar proporcionalmente toda a área útil, seguindo a densidade da referência.');
+assert.match(homeCss,/\.meg-home-content\.is-past,[\s\S]*grid-template-rows:minmax\(0,\.68fr\)[\s\S]*minmax\(0,3\.12fr\)[\s\S]*minmax\(0,1\.18fr\)/,'Mês passado deve ocupar a mesma malha vertical da Home base.');
+assert.match(homeCss,/\.meg-home-content\.is-future[\s\S]*grid-template-rows:minmax\(0,\.68fr\)[\s\S]*minmax\(0,3\.12fr\)[\s\S]*minmax\(0,1\.18fr\)/,'Mês futuro deve ocupar a mesma malha vertical da Home base.');
+assert.doesNotMatch(home,/meg-home-title[\s\S]{0,220}<svg/,'Título da Home não pode reintroduzir SVG inline que gerava fragmentos no WebView.');
+assert.match(home,/trendMark\?<span className="meg-home-title-mark"/,'Mês atual deve recuperar o marcador de tendência da referência usando HTML/CSS estável.');
+assert.match(homeCss,/\.meg-home-title-mark\{[\s\S]*translate:0 -50%[\s\S]*overflow:hidden/,'Marcador de tendência CSS deve permanecer contido e sem composição SVG instável.');
 
 assert.match(mobile,/view === 'home' \? <MegMobileHome[\s\S]*: <div className=\{'meg2-shell/,'Home deve sair do shell meg2 antes das demais telas em reconstrução.');
 assert.match(
