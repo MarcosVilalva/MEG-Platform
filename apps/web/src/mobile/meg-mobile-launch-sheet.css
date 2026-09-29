@@ -415,9 +415,10 @@
   border:1px solid rgba(62,233,224,.28);
   border-radius:24px;
 }
-.meg3-app-header,.meg3-app-dock{min-width:0;min-height:0}
+.meg3-app-header{min-width:0;min-height:0}
+.meg3-app-dock{min-width:0;height:calc(68px + env(safe-area-inset-bottom));min-height:calc(68px + env(safe-area-inset-bottom));max-height:calc(68px + env(safe-area-inset-bottom));position:relative;overflow:visible}
 .meg3-app-header .meg2-header{position:relative;width:100%;background:transparent}
-.meg3-app-dock .meg2-dock{position:relative;width:100%;bottom:auto}
+.meg3-app-dock .meg2-dock{position:absolute!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;margin:0!important;transform:none!important}
 .meg3-form-sheet--new-expense .meg3-form-head{
   min-height:54px;padding:4px 14px 5px;align-items:start;
   border-bottom:0;
