@@ -889,3 +889,37 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 }
 
 /* build 550: validação da zona segura acima do dock */
+
+
+/* CORREÇÃO ESTRUTURAL FINAL: trilho físico reservado para o dock */
+.meg2-shell{
+  --meg2-dock-height:calc(68px + env(safe-area-inset-bottom));
+  --meg2-dock-gap:10px;
+  grid-template-rows:auto minmax(0,1fr) calc(var(--meg2-dock-height) + var(--meg2-dock-gap))!important;
+  padding-bottom:0!important;
+}
+.meg2-shell > .meg2-scroll{
+  grid-row:2!important;
+  min-height:0!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:hidden!important;
+  align-self:stretch!important;
+}
+.meg2-shell > .meg2-dock{
+  height:var(--meg2-dock-height)!important;
+  min-height:var(--meg2-dock-height)!important;
+  max-height:var(--meg2-dock-height)!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  bottom:0!important;
+  margin:0!important;
+  transform:none!important;
+}
+.meg2-shell > .meg2-scroll > [data-meg-fixed-screen="true"]{
+  min-height:0!important;
+  height:100%!important;
+  max-height:100%!important;
+  overflow:hidden!important;
+}
