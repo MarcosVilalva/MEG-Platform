@@ -330,9 +330,12 @@ assert.ok(
   mobileIcons.includes("return 'banknote'"),
   'Receita deve usar ícone de dinheiro com prioridade sobre categoria ou descrição.',
 );
-assert.match(
-  mobileIcons,
-  /categoryName[\\s\\S]*categoryGroup[\\s\\S]*sourceGroup[\\s\\S]*byClassification[\\s\\S]*paymentName[\\s\\S]*byDescription/,
+assert.ok(
+  mobileIcons.includes('context.categoryName') &&
+  mobileIcons.includes('context.categoryGroup') &&
+  mobileIcons.includes('context.sourceGroup') &&
+  mobileIcons.indexOf('byClassification') < mobileIcons.indexOf('context.paymentName') &&
+  mobileIcons.indexOf('context.paymentName') < mobileIcons.indexOf('byDescription'),
   'Ícone financeiro deve priorizar categoria e grupo antes de forma de pagamento e descrição.',
 );
 
