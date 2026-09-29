@@ -148,7 +148,7 @@ export function MegMobileMovements({
         <p>Controle seus eventos financeiros.</p>
       </div>
       <button type="button" className={filterOpen || hasFilters || query ? 'active' : ''} aria-label="Buscar e filtrar lançamentos" onClick={openFilters}>
-        <MegIcon name="sliders" size={20}/>
+        <MegIcon name="sliders" size={24}/>
       </button>
     </header>
 
