@@ -1086,3 +1086,69 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   min-width:0!important;
   flex:none!important;
 }
+
+
+/* INTERAÇÃO RESTAURADA E GEOMETRIA COMPARTILHADA ENTRE TELAS */
+.meg2-shell{
+  --meg-content-gutter:clamp(10px,2.8vw,12px);
+  isolation:isolate;
+}
+.meg2-header{
+  position:relative!important;
+  z-index:30!important;
+}
+.meg2-header>button{
+  position:relative!important;
+  z-index:1!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+}
+.meg2-user{
+  margin-right:clamp(3px,1.2vw,5px)!important;
+}
+
+/* Menu e seletor de período passam a viver dentro do mesmo shell do app.
+   Evita o WebView deixar o estado ativo sem renderizar a folha visual. */
+.meg2-shell>.meg2-overlay{
+  position:absolute!important;
+  top:0!important;
+  left:0!important;
+  right:0!important;
+  bottom:calc(var(--meg-dock-height,var(--meg-dock-height-fallback)) + var(--meg-dock-gap))!important;
+  width:auto!important;
+  height:auto!important;
+  max-height:none!important;
+  z-index:500!important;
+  pointer-events:auto!important;
+}
+.meg2-shell>.meg2-period-overlay{
+  z-index:620!important;
+}
+.meg2-shell>.meg2-dock{
+  z-index:700!important;
+  pointer-events:auto!important;
+}
+.meg2-dock>button{
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+}
+.meg2-dock>button:last-child:not(.active){
+  color:#d4e3e3!important;
+}
+
+/* Um único gutter horizontal para Lançamentos e Pendentes. */
+.meg2-payables{
+  padding-left:var(--meg-content-gutter)!important;
+  padding-right:var(--meg-content-gutter)!important;
+}
+
+/* Centro geométrico explícito do botão +, sem depender de arredondamento visual. */
+.meg2-new{
+  grid-column:3!important;
+  justify-self:stretch!important;
+}
+.meg2-new>span:first-child{
+  left:50%!important;
+  right:auto!important;
+  margin-left:-25px!important;
+}

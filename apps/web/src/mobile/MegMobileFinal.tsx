@@ -838,12 +838,30 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
   const pendingCount = data.payables.filter((item) => openStatus(item.status) && Number(item.openAmount || 0) > 0).length
     + data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned').length;
 
+  const navigateMobile = (next: TargetView) => {
+    setMenuOpen(false);
+    setPeriodOpen(false);
+    onNavigate(next);
+  };
+  const toggleMenu = () => {
+    setPeriodOpen(false);
+    setMenuOpen((value) => !value);
+  };
+  const openMenu = () => {
+    setPeriodOpen(false);
+    setMenuOpen(true);
+  };
+  const openPeriod = () => {
+    setMenuOpen(false);
+    setPeriodOpen(true);
+  };
+
   return <div ref={appRef} className="meg2-app" data-meg-mobile-final="true">
     <div className={'meg2-shell meg2-view-' + view}>
-      <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onHome={() => onNavigate('home')} onOpenPeriod={() => setPeriodOpen(true)} onOpenMenu={() => setMenuOpen(true)}/>
+      <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onHome={() => navigateMobile('home')} onOpenPeriod={openPeriod} onOpenMenu={toggleMenu}/>
       <div className="meg2-scroll">
         {view === 'home' ? <Home data={data} periodMode={periodMode} periodLabel={periodLabel} homePeriodContext={homePeriodContext} onNavigate={onNavigate}/> : null}
-        {view === 'movements' ? <MegMobileMovements data={data} onOpenEvent={(event) => setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event })} onOpenPeriod={() => setPeriodOpen(true)} onCreate={() => setLaunchSheet({ preset: 'expense' })}/> : null}
+        {view === 'movements' ? <MegMobileMovements data={data} onOpenEvent={(event) => setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event })} onOpenPeriod={openPeriod} onCreate={() => setLaunchSheet({ preset: 'expense' })}/> : null}
         {view === 'cards' ? <Cards data={data} onEditEvent={(eventId) => {
           const event = data.events.items.find((item) => item.id === eventId) || null;
           if (event) setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event });
@@ -857,17 +875,17 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
         {view === 'analytics' ? <MegMobileAnalytics data={data}/> : null}
         {view === 'settings' ? <MegMobileSettings data={data} onLogout={onLogout}/> : null}
       </div>
-      <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={onNavigate} onLaunch={(preset) => setLaunchSheet({ preset })} onMenu={() => setMenuOpen(true)}/>
+      <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={navigateMobile} onLaunch={(preset) => setLaunchSheet({ preset })} onMenu={toggleMenu}/>
+      {menuOpen ? <MenuSheet onClose={() => setMenuOpen(false)} onNavigate={navigateMobile} onLogout={onLogout} onCloseApp={onClose}/> : null}
+      {periodOpen ? <PeriodSheet data={data} initialMode={periodMode} loading={periodLoading} error={periodError} onClose={() => setPeriodOpen(false)} onSelectMonth={onSelectMonth} onSelectRange={onSelectRange} onSelectAll={onSelectAll}/> : null}
     </div>
-    {menuOpen ? <MenuSheet onClose={() => setMenuOpen(false)} onNavigate={onNavigate} onLogout={onLogout} onCloseApp={onClose}/> : null}
-    {periodOpen ? <PeriodSheet data={data} initialMode={periodMode} loading={periodLoading} error={periodError} onClose={() => setPeriodOpen(false)} onSelectMonth={onSelectMonth} onSelectRange={onSelectRange} onSelectAll={onSelectAll}/> : null}
     {launchSheet ? <MegMobileLaunchSheet
       data={data}
       preset={launchSheet.preset}
       event={launchSheet.event}
       onClose={() => setLaunchSheet(null)}
-      appHeader={<Header data={data} periodMode={periodMode} periodLabel={periodLabel} onHome={() => { setLaunchSheet(null); onNavigate('home'); }} onOpenPeriod={() => { setLaunchSheet(null); setPeriodOpen(true); }} onOpenMenu={() => { setLaunchSheet(null); setMenuOpen(true); }}/>}
-      appDock={<Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={(next) => { setLaunchSheet(null); onNavigate(next); }} onLaunch={() => setLaunchSheet({ preset: 'expense' })} onMenu={() => { setLaunchSheet(null); setMenuOpen(true); }}/>}
+      appHeader={<Header data={data} periodMode={periodMode} periodLabel={periodLabel} onHome={() => { setLaunchSheet(null); navigateMobile('home'); }} onOpenPeriod={() => { setLaunchSheet(null); openPeriod(); }} onOpenMenu={() => { setLaunchSheet(null); openMenu(); }}/>}
+      appDock={<Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={(next) => { setLaunchSheet(null); navigateMobile(next); }} onLaunch={() => setLaunchSheet({ preset: 'expense' })} onMenu={() => { setLaunchSheet(null); openMenu(); }}/>}
     /> : null}
   </div>;
 }

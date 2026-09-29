@@ -835,3 +835,10 @@
   line-height:1!important;
   flex:none!important;
 }
+
+
+/* GUTTER CANÔNICO COMPARTILHADO COM PENDENTES */
+.meg3-movements{
+  padding-left:var(--meg-content-gutter,clamp(10px,2.8vw,12px))!important;
+  padding-right:var(--meg-content-gutter,clamp(10px,2.8vw,12px))!important;
+}
