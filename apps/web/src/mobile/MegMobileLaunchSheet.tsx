@@ -506,7 +506,7 @@ export function MegMobileLaunchSheet({
             <span>Tipo de pagamento *</span>
             <div className="meg3-payment-mode-four">
               <button type="button" className={expensePaymentMode === 'cash' ? 'active' : ''} onClick={() => setExpensePaymentMode('cash')}>À vista</button>
-              <button type="button" className={expensePaymentMode === 'credit' ? 'active' : ''} onClick={() => setExpensePaymentMode('credit')}>Cartão</button>
+              <button type="button" className={expensePaymentMode === 'credit' ? 'active' : ''} onClick={() => setExpensePaymentMode('credit')}>Crédito</button>
               <button type="button" className={expensePaymentMode === 'crediario' ? 'active' : ''} onClick={() => setExpensePaymentMode('crediario')}>Crediário</button>
               <button type="button" className={expensePaymentMode === 'benefit' ? 'active' : ''} onClick={() => setExpensePaymentMode('benefit')}>Benefício</button>
             </div>
