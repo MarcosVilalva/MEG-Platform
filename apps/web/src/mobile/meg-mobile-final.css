@@ -295,7 +295,17 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-dock>button>span:last-child,.meg2-new small{font-size:7.5px}
 .meg2-dock>button.active{color:var(--meg2-cyan)}
 .meg2-dock>button.active::before{content:"";position:absolute;inset:0 2px;border-radius:14px;background:rgba(8,133,132,.18);border:1px solid rgba(32,231,224,.27);z-index:-1}
-.meg2-new>span:first-child{width:43px;height:43px;margin-top:-16px;border:1px solid var(--meg2-cyan);border-radius:50%;display:grid;place-items:center;color:var(--meg2-cyan);background:linear-gradient(180deg,rgba(4,105,105,.98),rgba(2,63,67,.98));box-shadow:0 0 0 5px rgba(0,57,59,.96),0 0 22px rgba(23,225,215,.16)}
+.meg2-new{overflow:visible!important}
+.meg2-new>span:first-child{
+  width:48px;height:48px;min-width:48px;min-height:48px;aspect-ratio:1;
+  margin-top:-18px;box-sizing:border-box;flex:none;
+  border:1px solid var(--meg2-cyan);border-radius:50%;
+  display:grid;place-items:center;
+  color:var(--meg2-cyan);
+  background:radial-gradient(circle at 35% 28%,rgba(36,229,218,.20),transparent 38%),linear-gradient(180deg,rgba(4,105,105,.99),rgba(2,63,67,.99));
+  box-shadow:0 0 0 5px rgba(0,57,59,.96),0 0 24px rgba(23,225,215,.20),inset 0 0 14px rgba(44,234,222,.06);
+}
+.meg2-new>span:first-child svg{width:28px!important;height:28px!important}
 .meg2-new small{color:var(--meg2-cyan)}
 .meg2-badge-wrap{position:relative;display:grid;place-items:center}
 .meg2-badge-wrap b{position:absolute;top:-8px;right:-12px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;display:grid;place-items:center;background:#ff3e55;color:#fff;font-size:8px}
