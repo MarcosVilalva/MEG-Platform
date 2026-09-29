@@ -92,7 +92,7 @@ function classifyText(value: string): MegIconName | null {
   if (/fast ?food|hamburg|lanche|lanchonete/.test(value)) return 'sandwich';
   if (/mercado|supermercado|hortifruti|mercearia/.test(value)) return 'cart';
   if (/aliment|refeicao|restaurante|ifood|comida|verocard/.test(value)) return 'food';
-  if (/moradia|aluguel|condominio|habitacao|casa|apartamento/.test(value)) return 'house';
+  if (/moradia|imovel|aluguel|condominio|habitacao|casa|apartamento/.test(value)) return 'house';
   if (/energia|eletric|cpfl|luz/.test(value)) return 'bolt';
   if (/agua|saneamento|sabesp/.test(value)) return 'droplet';
   if (/internet|wifi|fibra|banda larga/.test(value)) return 'wifi';
