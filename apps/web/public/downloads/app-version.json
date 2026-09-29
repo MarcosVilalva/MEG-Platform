@@ -1,9 +1,9 @@
 {
-  "versionCode": 555,
-  "versionName": "2.0.555",
+  "versionCode": 556,
+  "versionName": "2.0.556",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "2f26278e7ef45e3f7b69182776899cfd6cc489e13b5fee297fe6412279207a13",
+  "sha256": "639df910a8b45bfda0a1ea3ec3c66be0ed1e66c5a9c702176ad833ae6a98bab6",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "fix(mobile): restaurar menu filtros e alinhamento do dock"
+  "releaseNotes": "fix(auth): remover tela fantasma após login no APK"
 }
