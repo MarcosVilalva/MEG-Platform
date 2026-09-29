@@ -50,8 +50,20 @@ assert.match(
 
 assert.doesNotMatch(
   component,
-  /Carregando seu ambiente|px-preview-boot-v5-ring|>22%<|<strong>22%/i,
-  'O novo loading não pode reaproveitar anéis, percentual visível ou texto do V5.',
+  /Carregando seu ambiente|px-preview-boot-v5-ring/i,
+  'O novo loading não pode reaproveitar anéis ou texto do V5.',
+);
+
+assert.match(
+  component,
+  /Carregando sua experiência\.\.\.[\s\S]*Math\.round\(normalized\)/,
+  'A referência aprovada de 29/09 deve exibir progresso textual e percentual dinâmico.',
+);
+
+assert.match(
+  component,
+  /MAIS[\s\S]*CONTROLE[\s\S]*ORGANIZAÇÃO[\s\S]*TRANQUILIDADE[\s\S]*RESULTADOS/,
+  'O loading deve preservar os quatro pilares visuais da nova referência.',
 );
 
 assert.match(

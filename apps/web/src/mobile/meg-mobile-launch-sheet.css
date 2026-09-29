@@ -429,6 +429,19 @@
 .meg3-form-sheet--new-expense .meg3-form-body{padding:0 13px 7px}
 .meg3-form-sheet--new-expense .meg3-form-segment{margin-bottom:7px;border-color:rgba(61,222,213,.20);background:rgba(1,35,38,.72)}
 .meg3-form-sheet--new-expense .meg3-form-segment button{min-height:34px}
+.meg3-edit-status{
+  margin-bottom:7px;display:grid;gap:5px
+}
+.meg3-edit-status>span{color:#b8d1cf;font-size:9px;font-weight:800}
+.meg3-edit-status>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.meg3-edit-status button{
+  min-height:38px;border:1px solid rgba(55,205,197,.24);border-radius:10px;
+  background:#04383b;color:#b4cbc8;display:flex;align-items:center;justify-content:center;gap:5px;
+  font-size:9px;font-weight:850
+}
+.meg3-edit-status button.active.pending{border-color:#e3c84e;color:#ffe474;background:linear-gradient(180deg,rgba(119,102,24,.42),rgba(72,63,18,.36))}
+.meg3-edit-status button.active.paid{border-color:#42e8b1;color:#72efc4;background:linear-gradient(180deg,rgba(19,112,82,.48),rgba(9,72,58,.40))}
+.meg3-edit-status button.active.received{border-color:#3aa9ef;color:#83ccff;background:linear-gradient(180deg,rgba(15,83,126,.52),rgba(8,56,87,.43))}
 .meg3-form-sheet--new-expense .meg3-form-grid-faithful{gap:6px 7px}
 .meg3-form-sheet--new-expense .meg3-form-grid-faithful>.meg5-picker-field{min-height:46px;padding-block:5px}
 .meg3-form-sheet--new-expense .meg3-form-actions{

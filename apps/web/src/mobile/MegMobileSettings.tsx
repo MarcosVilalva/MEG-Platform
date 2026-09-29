@@ -15,7 +15,7 @@ import {
 import { MegIcon } from './MegMobileIcon';
 import './meg-mobile-settings.css';
 
-type Section = 'profile' | 'home' | 'catalogs' | 'security' | 'notifications' | 'system';
+type Section = 'overview' | 'profile' | 'home' | 'catalogs' | 'security' | 'notifications' | 'system';
 type BiometricStatus = { available?: boolean; enabled?: boolean; reason?: string };
 type NotificationStatus = Record<string, unknown>;
 type DashboardPrefs = {
@@ -58,8 +58,8 @@ function Switch({checked,onChange,label,description}:{checked:boolean;onChange:(
   </button>;
 }
 
-export function MegMobileSettings({data,onLogout}:{data:PhoenixReadModel;onLogout?:()=>void}){
-  const [section,setSection]=useState<Section>('profile');
+export function MegMobileSettings({data,onLogout,initialSection='overview'}:{data:PhoenixReadModel;onLogout?:()=>void;initialSection?:'overview'|'profile'}){
+  const [section,setSection]=useState<Section>(initialSection);
   const [avatar,setAvatar]=useState<PhoenixAvatarPreference>(()=>readPhoenixAvatarPreference(data.user.id));
   const [avatarExpanded,setAvatarExpanded]=useState(false);
   const [avatarMessage,setAvatarMessage]=useState('');
@@ -73,6 +73,7 @@ export function MegMobileSettings({data,onLogout}:{data:PhoenixReadModel;onLogou
   const [catalogBusy,setCatalogBusy]=useState('');
   const [paymentMethods,setPaymentMethods]=useState(data.paymentMethods);
   const [cards,setCards]=useState(data.cards);
+  useEffect(()=>{ setSection(initialSection); },[initialSection]);
   const [version,setVersion]=useState('Consultando…');
   const fileRef=useRef<HTMLInputElement>(null);
 
@@ -218,15 +219,30 @@ export function MegMobileSettings({data,onLogout}:{data:PhoenixReadModel;onLogou
   }
 
   return <main className="meg4-settings" data-meg-fixed-screen="true">
-    <header className="meg4-settings-title"><span>CONFIGURAÇÕES</span><h1>Seu MEG</h1><p>Perfil, experiência, segurança e integrações.</p></header>
-
-    <nav className="meg4-settings-nav" aria-label="Seções">
-      {([
-        ['profile','Perfil'],['home','Home'],['catalogs','Meios'],['security','Segurança'],['notifications','Avisos'],['system','Sistema']
-      ] as Array<[Section,string]>).map(([id,label])=><button key={id} className={section===id?'active':''} onClick={()=>setSection(id)}>{label}</button>)}
-    </nav>
+    <header className="meg4-settings-title">
+      <h1>{section==='profile'?'Meu perfil':'Configurações'}</h1>
+      <p>{section==='profile'?'Suas informações e preferências.':'Ajuste o app conforme suas preferências.'}</p>
+      {section!=='overview'&&section!=='profile'?<button type="button" className="meg4-settings-back" onClick={()=>setSection('overview')}><MegIcon name="chevron-right" size={17}/>Configurações</button>:null}
+    </header>
 
     <section className="meg4-settings-workspace" data-meg-scroll-region="true">
+      {section==='overview'?<div className="meg4-settings-overview">
+        <section><small>APARÊNCIA</small>
+          <button onClick={()=>setSection('home')}><MegIcon name="trend"/><span><strong>Aparência</strong><em>Modo, cores e organização da Home</em></span><MegIcon name="chevron-right" size={16}/></button>
+          <button onClick={()=>setSection('home')}><MegIcon name="home"/><span><strong>Personalizar Home</strong><em>Blocos e indicadores visíveis</em></span><MegIcon name="chevron-right" size={16}/></button>
+        </section>
+        <section><small>NOTIFICAÇÕES</small>
+          <button onClick={()=>setSection('notifications')}><MegIcon name="bolt"/><span><strong>Notificações e lembretes</strong><em>Push, e-mail e alertas de vencimento</em></span><MegIcon name="chevron-right" size={16}/></button>
+        </section>
+        <section><small>SEGURANÇA</small>
+          <button onClick={()=>setSection('security')}><MegIcon name="check"/><span><strong>Biometria e acesso</strong><em>Proteção e login no aparelho</em></span><MegIcon name="chevron-right" size={16}/></button>
+          <button onClick={()=>setSection('profile')}><MegIcon name="home"/><span><strong>Meu perfil</strong><em>Dados, foto e preferências pessoais</em></span><MegIcon name="chevron-right" size={16}/></button>
+        </section>
+        <section><small>DADOS E ARMAZENAMENTO</small>
+          <button onClick={()=>setSection('catalogs')}><MegIcon name="card"/><span><strong>Contas e meios</strong><em>Formas de pagamento e cartões</em></span><MegIcon name="chevron-right" size={16}/></button>
+          <button onClick={()=>setSection('system')}><MegIcon name="sliders"/><span><strong>Sincronização e sistema</strong><em>Versão, OTA e integridade dos dados</em></span><MegIcon name="chevron-right" size={16}/></button>
+        </section>
+      </div>:null}
       {section==='profile'?<>
         <article className="meg4-profile-card">
           <Avatar name={data.user.name} preference={avatar}/>

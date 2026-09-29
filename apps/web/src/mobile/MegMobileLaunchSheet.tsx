@@ -452,6 +452,15 @@ export function MegMobileLaunchSheet({
           <button type="button" className={mode === 'benefit' ? 'active benefit' : ''} onClick={() => setMode('benefit')}><span aria-hidden="true"><MegIcon name="food" size={17}/></span>Alimentação</button>
         </div> : null}
 
+        {event ? <section className="meg3-edit-status" aria-label="Status do lançamento">
+          <span>Status do lançamento</span>
+          <div>
+            <button type="button" className={status === 'planned' ? 'active pending' : ''} onClick={() => setStatus('planned')}><MegIcon name="calendar" size={15}/>Pendente</button>
+            <button type="button" className={status === 'paid' && mode !== 'income' ? 'active paid' : ''} onClick={() => setStatus('paid')}><MegIcon name="check-line" size={15}/>Paga</button>
+            <button type="button" className={status === 'paid' && mode === 'income' ? 'active received' : ''} onClick={() => setStatus('paid')}><MegIcon name="banknote" size={15}/>Recebida</button>
+          </div>
+        </section> : null}
+
         <div className="meg3-form-grid meg3-form-grid-faithful">
           <div className="wide meg3-smart-description">
             <label className="meg3-text-field">

@@ -255,7 +255,7 @@ assert.match(
 );
 assert.match(
   settingsCss,
-  /\.meg4-settings\{[\s\S]*overflow:hidden[\s\S]*grid-template-rows:auto auto minmax\(0,1fr\)/,
+  /\.meg4-settings\{[\s\S]*overflow:hidden[\s\S]*grid-template-rows:auto minmax\(0,1fr\)/,
   'Configurações deve manter viewport fixo e workspace interno rolável.',
 );
 assert.match(
@@ -265,13 +265,18 @@ assert.match(
 );
 assert.match(
   mobile,
-  /Lançamentos da fatura[\s\S]*setCenterOpen\(true\)[\s\S]*setSelectedRow\(row\)[\s\S]*DETALHE DA COMPRA/,
-  'Cartões deve abrir a central e o detalhe funcional de cada compra.',
+  /Lançamentos da fatura[\s\S]*setCenterOpen\('statement'\)[\s\S]*setSelectedRow\(row\)[\s\S]*DETALHE DA COMPRA/,
+  'Cartões deve abrir a fatura detalhada e o detalhe funcional de cada compra.',
 );
 assert.match(
   cardCenter,
   /artUrl[\s\S]*meg3-cardcenter-hero[\s\S]*lastFour/,
   'Central do cartão deve preservar a arte real e a identidade do cartão selecionado.',
+);
+assert.match(
+  cardCenter,
+  /Central do cartão[\s\S]*Ver lançamentos da fatura[\s\S]*Parcelamentos[\s\S]*Ajustar limite[\s\S]*Fatura do cartão/,
+  'Cartões deve separar central de gestão e detalhe da fatura conforme a referência de 29/09.',
 );
 assert.match(
   benefitModal,
