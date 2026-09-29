@@ -79,6 +79,7 @@ export function MegMobileMovements({
 }) {
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState<MobileMovementKind>('all');
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const posted = useMemo(() => data.events.items, [data.events.items]);
   const normalized = query.trim().toLocaleLowerCase('pt-BR');
@@ -100,38 +101,34 @@ export function MegMobileMovements({
     return summary;
   }, { income: 0, expense: 0 });
   const result = totals.income - totals.expense;
+  const competenceLabel = data.month.split('-').reverse().join('/');
 
   return <main className="meg3-screen meg3-movements" data-meg-fixed-screen="true">
-    <header className="meg3-title-block meg3-movements-title">
-      <span>CONTROLE FINANCEIRO</span>
-      <h1>Lançamentos</h1>
-      <p>Consulte cada lançamento com categoria, conta e forma de pagamento.</p>
+    <header className="meg3-movements-heading">
+      <div>
+        <h1>Lançamentos</h1>
+        <p>Controle seus eventos financeiros.</p>
+      </div>
+      <button type="button" className={filterOpen || kind !== 'all' ? 'active' : ''} aria-label="Filtrar lançamentos" onClick={() => setFilterOpen(true)}>
+        <MegIcon name="sliders" size={20}/>
+      </button>
     </header>
 
     <section className="meg3-movement-kpis" aria-label="Resumo dos lançamentos">
-      <article className="income"><span aria-hidden="true"><MegIcon name="banknote" size={18}/></span><small>Entradas</small><strong>{money.format(totals.income)}</strong></article>
+      <article className="income"><span aria-hidden="true"><MegIcon name="arrow-up" size={18}/></span><small>Entradas</small><strong>{money.format(totals.income)}</strong></article>
       <article className="expense"><span aria-hidden="true"><MegIcon name="arrow-down" size={18}/></span><small>Saídas</small><strong>{money.format(totals.expense)}</strong></article>
-      <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true"><MegIcon name="trend" size={18}/></span><small>Resultado</small><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong></article>
+      <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true"><MegIcon name="bars" size={18}/></span><small>Resultado</small><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong></article>
     </section>
 
-    <nav className="meg3-movement-tabs" aria-label="Tipo de lançamento">
-      {([
-        ['all','Todos'],
-        ['income','Receitas'],
-        ['expense','Despesas'],
-        ['benefit','Alimentação'],
-      ] as const).map(([value,label]) =>
-        <button key={value} type="button" className={kind === value ? 'active' : ''} onClick={() => setKind(value)}>{label}</button>
-      )}
-    </nav>
-
     <section className="meg3-movement-toolbar">
-      <label><SearchGlyph/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamento..."/></label>
-      <button type="button" aria-label="Limpar filtros" className={kind !== 'all' || query ? 'active' : ''} onClick={() => { setKind('all'); setQuery(''); }}><FilterGlyph/></button>
+      <label className="meg3-movement-search"><SearchGlyph/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamento..."/></label>
+      <button type="button" aria-label="Filtros" className={kind !== 'all' ? 'active' : ''} onClick={() => setFilterOpen(true)}><FilterGlyph/></button>
+      <button type="button" className="meg3-toolbar-wide" aria-label={"Competência " + competenceLabel}><MegIcon name="calendar" size={18}/><span>{competenceLabel}</span></button>
+      <button type="button" aria-label="Formas de pagamento"><MegIcon name="wallet" size={18}/></button>
     </section>
 
     <header className="meg3-movement-list-head">
-      <span><strong>{rows.length.toLocaleString('pt-BR')} lançamento{rows.length === 1 ? '' : 's'}</strong><small>{data.month.split('-').reverse().join('/')} · toque para abrir</small></span>
+      <span><strong>{rows.length.toLocaleString('pt-BR')} lançamento{rows.length === 1 ? '' : 's'}</strong><small>{competenceLabel} · toque para abrir</small></span>
       <button type="button" onClick={onNew}><b aria-hidden="true"><MegIcon name="plus" size={17}/></b>Novo</button>
     </header>
 
@@ -159,6 +156,28 @@ export function MegMobileMovements({
       })}
       {!rows.length ? <div className="meg3-empty">Nenhum lançamento neste filtro.</div> : null}
     </section>
+
+    {filterOpen ? <div className="meg3-movement-filter-overlay" role="presentation" onClick={() => setFilterOpen(false)}>
+      <section className="meg3-movement-filter-sheet" role="dialog" aria-modal="true" aria-label="Filtrar lançamentos" onClick={(event) => event.stopPropagation()}>
+        <header><div><small>FILTROS</small><h2>Filtrar lançamentos</h2></div><button type="button" aria-label="Fechar" onClick={() => setFilterOpen(false)}>×</button></header>
+        <div className="meg3-movement-filter-types">
+          {([
+            ['all','Todos','sliders'],
+            ['income','Receitas','arrow-up'],
+            ['expense','Despesas','arrow-down'],
+            ['benefit','Alimentação','utensils'],
+          ] as const).map(([value,label,icon]) =>
+            <button key={value} type="button" className={kind === value ? 'active' : ''} onClick={() => setKind(value)}>
+              <MegIcon name={icon} size={18}/><span>{label}</span>
+            </button>
+          )}
+        </div>
+        <footer>
+          <button type="button" className="secondary" onClick={() => { setKind('all'); setQuery(''); }}>Limpar</button>
+          <button type="button" className="apply" onClick={() => setFilterOpen(false)}>Aplicar</button>
+        </footer>
+      </section>
+    </div> : null}
   </main>;
 }
 
