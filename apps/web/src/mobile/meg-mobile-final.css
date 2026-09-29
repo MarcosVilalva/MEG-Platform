@@ -352,22 +352,36 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-new{
   width:100%!important;min-width:0!important;max-width:100%!important;
   height:58px!important;min-height:58px!important;max-height:58px!important;
-  overflow:visible!important;transform:none!important
+  overflow:visible!important;transform:none!important;
+  display:block!important;position:relative!important
 }
 .meg2-new>span:first-child{
+  position:absolute!important;
+  left:calc(50% - 25px)!important;
+  top:-14px!important;
   width:50px!important;height:50px!important;
   min-width:50px!important;min-height:50px!important;
   max-width:50px!important;max-height:50px!important;
-  aspect-ratio:1;flex:0 0 50px;
-  margin-top:-19px!important;box-sizing:border-box;transform:none!important;
+  aspect-ratio:1;box-sizing:border-box;
+  margin:0!important;padding:0!important;
+  flex:none!important;transform:none!important;
   border:1px solid var(--meg2-cyan);border-radius:50%;
-  display:grid;place-items:center;
+  display:grid!important;place-items:center!important;
   color:var(--meg2-cyan);
   background:radial-gradient(circle at 35% 28%,rgba(36,229,218,.20),transparent 38%),linear-gradient(180deg,rgba(4,105,105,.99),rgba(2,63,67,.99));
   box-shadow:0 0 0 5px rgba(0,57,59,.96),0 0 24px rgba(23,225,215,.20),inset 0 0 14px rgba(44,234,222,.06);
 }
-.meg2-new>span:first-child svg{width:29px!important;height:29px!important}
-.meg2-new small{color:var(--meg2-cyan)}
+.meg2-new>span:first-child svg{
+  width:29px!important;height:29px!important;
+  min-width:29px!important;min-height:29px!important;
+  max-width:29px!important;max-height:29px!important;
+  transform:none!important
+}
+.meg2-new small{
+  position:absolute!important;left:0!important;right:0!important;bottom:2px!important;
+  margin:0!important;text-align:center!important;line-height:1!important;
+  color:var(--meg2-cyan)
+}
 .meg2-badge-wrap{position:relative;display:grid;place-items:center}
 .meg2-badge-wrap b{position:absolute;top:-8px;right:-12px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;display:grid;place-items:center;background:#ff3e55;color:#fff;font-size:8px}
 
