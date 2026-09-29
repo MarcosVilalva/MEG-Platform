@@ -231,20 +231,44 @@ export function MegMobileMovements({
   </main>;
 }
 export function MegMobileHistory({ data }: { data: PhoenixReadModel }) {
-  const items = useMemo(() => [...data.financialAudit.items].sort((a,b) => String(b.at || '').localeCompare(String(a.at || ''))), [data.financialAudit.items]);
+  const [query, setQuery] = useState('');
+  const normalized = query.trim().toLocaleLowerCase('pt-BR');
+  const items = useMemo(
+    () => [...data.events.items].sort((a,b) => String(b.date || '').localeCompare(String(a.date || ''))),
+    [data.events.items]
+  ).filter((event) => !normalized || [
+    event.description,
+    event.category?.name,
+    event.account?.name,
+    event.paymentMethod?.name,
+  ].filter(Boolean).join(' ').toLocaleLowerCase('pt-BR').includes(normalized));
+
   return <main className="meg3-screen meg3-history" data-meg-fixed-screen="true">
-    <header className="meg3-title-block"><span>HISTÓRICO</span><h1>Atividades</h1><p>Alterações e confirmações registradas no MEG.</p></header>
-    <section className="meg3-history-summary"><article><small>Registros</small><strong>{items.length.toLocaleString('pt-BR')}</strong></article><article><small>Período</small><strong>{data.month.split('-').reverse().join('/')}</strong></article></section>
-    <section className="meg3-timeline" data-meg-scroll-region="true">
-      {items.map((item) => <article key={item.id} className="meg3-timeline-item">
-        <span className="meg3-timeline-dot"/>
-        <div><small>{item.at ? new Date(item.at).toLocaleString('pt-BR') : 'Registro'}</small><strong>{String(item.action || 'ATUALIZAÇÃO').replace(/_/g,' ')}</strong><p>{item.entity}{item.entityId ? ` · ${item.entityId}` : ''}</p></div>
-      </article>)}
-      {!items.length ? <div className="meg3-empty">Nenhuma atividade encontrada.</div> : null}
+    <header className="meg3-title-block meg3-history-title"><h1>Histórico</h1><p>Todas as suas movimentações em um só lugar.</p></header>
+    <section className="meg3-history-search">
+      <label><SearchGlyph/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamentos..."/></label>
+      <button type="button" aria-label="Limpar busca" className={query ? 'active' : ''} onClick={() => setQuery('')}><FilterGlyph/></button>
+    </section>
+    <section className="meg3-history-list" data-meg-scroll-region="true">
+      {items.map((event, index) => {
+        const signed = signedAmount(event);
+        const previous = index > 0 ? String(items[index - 1]?.date || '').slice(0,10) : '';
+        const current = String(event.date || '').slice(0,10);
+        const showDate = current !== previous;
+        const category = event.category?.name || event.sourceDetails?.group || (signed >= 0 ? 'Receita' : 'Despesa');
+        return <div className="meg3-history-entry" key={event.id}>
+          {showDate ? <header><strong>{shortDate(current)}</strong><small>{data.month.split('-').reverse().join('/')}</small></header> : null}
+          <article className={signed >= 0 ? 'income' : 'expense'}>
+            <span className="meg3-history-icon"><EventContextGlyph event={event}/></span>
+            <div><strong>{event.description}</strong><small>{category}{event.paymentMethod?.name ? ' · ' + event.paymentMethod.name : ''}</small></div>
+            <b>{signed >= 0 ? '+' : '-'}{money.format(Math.abs(signed))}</b>
+          </article>
+        </div>;
+      })}
+      {!items.length ? <div className="meg3-empty">Nenhuma movimentação encontrada.</div> : null}
     </section>
   </main>;
 }
-
 export function MegMobileCashflow({ data }: { data: PhoenixReadModel }) {
   const [tab, setTab] = useState<'summary' | 'income' | 'expense'>('summary');
   const days = data.cashflow.days || [];
