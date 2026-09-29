@@ -923,3 +923,71 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   max-height:100%!important;
   overflow:hidden!important;
 }
+
+
+/* RESPONSIVIDADE AUTOMÁTICA POR VIEWPORT REAL */
+.meg2-app{
+  height:var(--meg-app-height,100dvh)!important;
+  min-height:var(--meg-app-height,100dvh)!important;
+  max-height:var(--meg-app-height,100dvh)!important;
+}
+.meg2-shell{
+  --meg-dock-gap:clamp(8px,1.15dvh,12px);
+  --meg-dock-height-fallback:calc(68px + env(safe-area-inset-bottom));
+  height:var(--meg-app-height,100dvh)!important;
+  min-height:var(--meg-app-height,100dvh)!important;
+  max-height:var(--meg-app-height,100dvh)!important;
+  grid-template-rows:auto minmax(0,1fr) calc(var(--meg-dock-height,var(--meg-dock-height-fallback)) + var(--meg-dock-gap))!important;
+  padding-bottom:0!important;
+}
+.meg2-shell > .meg2-scroll{
+  grid-row:2!important;
+  min-height:0!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:hidden!important;
+  align-self:stretch!important;
+}
+.meg2-shell > .meg2-dock{
+  height:var(--meg-dock-height,var(--meg-dock-height-fallback))!important;
+  min-height:var(--meg-dock-height,var(--meg-dock-height-fallback))!important;
+  max-height:var(--meg-dock-height,var(--meg-dock-height-fallback))!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  bottom:0!important;
+  margin:0!important;
+  transform:none!important;
+}
+.meg2-shell > .meg2-scroll > [data-meg-fixed-screen="true"]{
+  min-height:0!important;
+  height:100%!important;
+  max-height:100%!important;
+  overflow:hidden!important;
+}
+.meg2-overlay{
+  inset:0 0 calc(var(--meg-dock-height,var(--meg-dock-height-fallback)) + var(--meg-dock-gap)) 0!important;
+  height:auto!important;
+  max-height:none!important;
+}
+.meg2-menu-sheet,
+.meg2-period-sheet{
+  max-height:calc(var(--meg-app-height,100dvh) - var(--meg-dock-height,var(--meg-dock-height-fallback)) - var(--meg-dock-gap) - 24px)!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+}
+.meg3-event-list,
+.meg2-pending-list,
+.meg2-statement-list{
+  scroll-padding-bottom:clamp(10px,1.35dvh,14px)!important;
+  padding-bottom:clamp(10px,1.35dvh,14px)!important;
+}
+.meg3-event-list,
+.meg2-pending-list{
+  scroll-snap-type:y proximity;
+}
+.meg3-event-card,
+.meg2-pending-list>button{
+  scroll-snap-align:start;
+  scroll-snap-stop:normal;
+}

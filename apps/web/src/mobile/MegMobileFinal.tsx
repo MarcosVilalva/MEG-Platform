@@ -782,13 +782,63 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
   const [menuOpen, setMenuOpen] = useState(false);
   const [periodOpen, setPeriodOpen] = useState(false);
   const [launchSheet, setLaunchSheet] = useState<{ preset: LaunchPreset; event?: FinancialEvent | null } | null>(null);
+  const appRef = useRef<HTMLDivElement>(null);
+  /* viewport mobile medido em tempo real */
+  useEffect(() => {
+    const app = appRef.current;
+    if (!app || typeof window === 'undefined') return;
+
+    const viewport = window.visualViewport;
+    let frame = 0;
+    let observer: ResizeObserver | null = null;
+
+    const syncViewport = () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const shell = app.querySelector<HTMLElement>('.meg2-shell');
+        const header = shell?.querySelector<HTMLElement>('.meg2-header') || null;
+        const dock = shell?.querySelector<HTMLElement>('.meg2-dock') || null;
+        const viewportHeight = Math.max(0, Math.round(viewport?.height || window.innerHeight || document.documentElement.clientHeight || 0));
+        const headerHeight = Math.max(0, Math.ceil(header?.getBoundingClientRect().height || 0));
+        const dockHeight = Math.max(0, Math.ceil(dock?.getBoundingClientRect().height || 0));
+
+        if (viewportHeight) app.style.setProperty('--meg-app-height', `${viewportHeight}px`);
+        if (headerHeight) app.style.setProperty('--meg-header-height', `${headerHeight}px`);
+        if (dockHeight) app.style.setProperty('--meg-dock-height', `${dockHeight}px`);
+      });
+    };
+
+    syncViewport();
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(syncViewport);
+      const shell = app.querySelector<HTMLElement>('.meg2-shell');
+      const header = shell?.querySelector<HTMLElement>('.meg2-header') || null;
+      const dock = shell?.querySelector<HTMLElement>('.meg2-dock') || null;
+      if (shell) observer.observe(shell);
+      if (header) observer.observe(header);
+      if (dock) observer.observe(dock);
+    }
+    viewport?.addEventListener('resize', syncViewport);
+    viewport?.addEventListener('scroll', syncViewport);
+    window.addEventListener('resize', syncViewport);
+    window.addEventListener('orientationchange', syncViewport);
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      viewport?.removeEventListener('resize', syncViewport);
+      viewport?.removeEventListener('scroll', syncViewport);
+      window.removeEventListener('resize', syncViewport);
+      window.removeEventListener('orientationchange', syncViewport);
+    };
+  }, [view, menuOpen, periodOpen, launchSheet]);
   useEffect(() => {
     void hydratePhoenixAvatarPreference(data.user.id);
   }, [data.user.id]);
   const pendingCount = data.payables.filter((item) => openStatus(item.status) && Number(item.openAmount || 0) > 0).length
     + data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned').length;
 
-  return <div className="meg2-app" data-meg-mobile-final="true">
+  return <div ref={appRef} className="meg2-app" data-meg-mobile-final="true">
     <div className={'meg2-shell meg2-view-' + view}>
       <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onHome={() => onNavigate('home')} onOpenPeriod={() => setPeriodOpen(true)} onOpenMenu={() => setMenuOpen(true)}/>
       <div className="meg2-scroll">
