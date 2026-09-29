@@ -70,7 +70,8 @@ function isCrediarioMethod(method: PhoenixReadModel['paymentMethods'][number] | 
   return Boolean(method && /crediario|carne|parcelado loja/.test(normalize(method.name) + ' ' + normalize(method.type)));
 }
 
-type ExpensePaymentMode = 'cash' | 'credit' | 'crediario';
+type ExpensePaymentMode = 'cash' | 'credit' | 'crediario' | 'benefit';
+type AccountKind = 'general' | 'investment' | 'benefit';
 
 function projectedCardMeta(event: EventWithPayload) {
   const payload = event.sourcePayload;
@@ -140,8 +141,11 @@ export function MegMobileLaunchSheet({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyStatus, setHistoryStatus] = useState('');
+  const [accountKind, setAccountKind] = useState<AccountKind>(initialMode === 'benefit' ? 'benefit' : 'general');
+  const [installmentEnabled, setInstallmentEnabled] = useState(Boolean(cardPurchase && Number(cardPurchase.installments || 1) > 1));
   const [expensePaymentMode, setExpensePaymentMode] = useState<ExpensePaymentMode>(() => {
     const initialMethod = data.paymentMethods.find((item) => item.id === (event?.paymentMethodId || event?.paymentMethod?.id || ''));
+    if (initialMode === 'benefit') return 'benefit';
     if (cardMeta || isCreditMethod(initialMethod)) return 'credit';
     if (isCrediarioMethod(initialMethod)) return 'crediario';
     return 'cash';
@@ -150,7 +154,13 @@ export function MegMobileLaunchSheet({
   const accounts = useMemo(() => data.accounts.filter((item) => item.isActive), [data.accounts]);
   const methods = useMemo(() => data.paymentMethods.filter((item) => item.isActive), [data.paymentMethods]);
   const categories = useMemo(() => data.categories.filter((item) => item.isActive && (!item.type || item.type === (mode === 'income' ? 'income' : 'expense'))), [data.categories, mode]);
-  const accountOptions: MegMobilePickerOption[] = accounts.map((account) => ({
+  const visibleAccounts = accounts.filter((account) => {
+    const hay = normalize(account.type) + ' ' + normalize(account.name);
+    if (accountKind === 'benefit') return isBenefitAccount(account);
+    if (accountKind === 'investment') return /invest|aplic|poup|broker|corret/.test(hay);
+    return !isBenefitAccount(account) && !/invest|aplic|poup|broker|corret/.test(hay);
+  });
+  const accountOptions: MegMobilePickerOption[] = visibleAccounts.map((account) => ({
     id: account.id,
     label: account.name,
     subtitle: account.type ? String(account.type) : undefined,
@@ -163,6 +173,7 @@ export function MegMobileLaunchSheet({
   const paymentOptions: MegMobilePickerOption[] = methods
     .filter((method) => {
       if (mode !== 'expense') return true;
+      if (expensePaymentMode === 'benefit') return isVerocard(method);
       if (expensePaymentMode === 'credit') return isCreditMethod(method);
       if (expensePaymentMode === 'crediario') return isCrediarioMethod(method);
       return !isCreditMethod(method) && !isCrediarioMethod(method);
@@ -188,19 +199,25 @@ export function MegMobileLaunchSheet({
   const credit = mode === 'expense' && (Boolean(cardId) || isCreditMethod(selectedMethod) || Boolean(cardMeta));
 
   useEffect(() => {
-    if (mode !== 'expense' || event) return;
-    if (expensePaymentMode === 'cash') {
+    if ((mode !== 'expense' && mode !== 'benefit') || event) return;
+    if (expensePaymentMode === 'benefit') {
+      setMode('benefit'); setAccountKind('benefit'); setCardId('');
+      setAccountId(benefitAccount?.id || ''); setPaymentMethodId(verocard?.id || ''); setStatus('paid');
+    } else if (expensePaymentMode === 'cash') {
+      if (mode === 'benefit') setMode('expense');
       setCardId('');
       if (!selectedMethod || isCreditMethod(selectedMethod) || isCrediarioMethod(selectedMethod)) {
         setPaymentMethodId(pixMethod?.id || '');
       }
     } else if (expensePaymentMode === 'credit') {
+      if (mode === 'benefit') setMode('expense');
       if (!isCreditMethod(selectedMethod) && creditMethod) setPaymentMethodId(creditMethod.id);
     } else {
+      if (mode === 'benefit') setMode('expense');
       setCardId('');
       if (!isCrediarioMethod(selectedMethod)) setPaymentMethodId(crediarioMethod?.id || '');
     }
-  }, [expensePaymentMode, mode, event, pixMethod?.id, crediarioMethod?.id, selectedMethod?.id]);
+  }, [expensePaymentMode, mode, event, pixMethod?.id, crediarioMethod?.id, selectedMethod?.id, benefitAccount?.id, verocard?.id]);
 
   useEffect(() => {
     if (mode !== 'expense' || credit || !selectedCategory) return;
@@ -339,7 +356,7 @@ export function MegMobileLaunchSheet({
           description: description.trim(),
           totalAmount: parseAmount(amount),
           purchaseDate: date,
-          installments: Math.max(1, Math.min(48, Math.trunc(installments || 1))),
+          installments: installmentEnabled ? Math.max(1, Math.min(48, Math.trunc(installments || 1))) : 1,
         };
         if (event && cardMeta && cardPurchase) {
           const result = await runPhoenixCardPurchaseEdit(cardPurchase.id, input, data.month);
@@ -485,9 +502,19 @@ export function MegMobileLaunchSheet({
             {historyStatus ? <small className="meg3-history-status">{historyStatus}</small> : null}
           </div>
 
+          {mode === 'expense' || mode === 'benefit' ? <div className="wide meg3-payment-mode">
+            <span>Tipo de pagamento *</span>
+            <div className="meg3-payment-mode-four">
+              <button type="button" className={expensePaymentMode === 'cash' ? 'active' : ''} onClick={() => setExpensePaymentMode('cash')}>À vista</button>
+              <button type="button" className={expensePaymentMode === 'credit' ? 'active' : ''} onClick={() => setExpensePaymentMode('credit')}>Cartão</button>
+              <button type="button" className={expensePaymentMode === 'crediario' ? 'active' : ''} onClick={() => setExpensePaymentMode('crediario')}>Crediário</button>
+              <button type="button" className={expensePaymentMode === 'benefit' ? 'active' : ''} onClick={() => setExpensePaymentMode('benefit')}>Benefício</button>
+            </div>
+          </div> : null}
+
           <MegMobilePicker
             className="wide"
-            label="Categoria"
+            label={mode === 'income' ? 'Classificação da receita *' : 'Classificação / categoria *'}
             value={categoryId}
             options={categoryOptions}
             placeholder="Selecione uma categoria"
@@ -496,7 +523,7 @@ export function MegMobileLaunchSheet({
 
           <MegMobilePicker
             className="wide"
-            label="Conta"
+            label="Conta de origem *"
             value={accountId}
             options={accountOptions}
             disabled={mode === 'benefit' || credit}
@@ -507,19 +534,11 @@ export function MegMobileLaunchSheet({
             onChange={setAccountId}
           />
 
-          {mode === 'expense' ? <div className="wide meg3-payment-mode">
-            <span>Modalidade</span>
-            <div>
-              <button type="button" className={expensePaymentMode === 'cash' ? 'active' : ''} onClick={() => setExpensePaymentMode('cash')}>À vista</button>
-              <button type="button" className={expensePaymentMode === 'credit' ? 'active' : ''} onClick={() => setExpensePaymentMode('credit')}>Crédito</button>
-              <button type="button" className={expensePaymentMode === 'crediario' ? 'active' : ''} onClick={() => setExpensePaymentMode('crediario')}>Crediário</button>
-            </div>
-            {expensePaymentMode === 'cash' && pixMethod ? <small>PIX selecionado automaticamente. Toque em Forma de pagamento para alterar.</small> : null}
-          </div> : null}
+          {mode !== 'income' ? <div className="wide meg3-account-kind"><span>Tipo de conta *</span><div><button type="button" className={accountKind === 'general' ? 'active' : ''} onClick={() => setAccountKind('general')}>Contas gerais</button><button type="button" className={accountKind === 'investment' ? 'active' : ''} onClick={() => setAccountKind('investment')}>Investimentos</button>{expensePaymentMode === 'benefit' ? <button type="button" className="active">Benefício</button> : null}</div></div> : null}
 
           <MegMobilePicker
             className="wide"
-            label={mode === 'income' ? 'Forma de recebimento' : 'Forma de pagamento'}
+            label={mode === 'income' ? 'Forma de recebimento *' : expensePaymentMode === 'credit' ? 'Forma de pagamento *' : 'Meio de pagamento *'}
             value={paymentMethodId}
             options={paymentOptions}
             disabled={mode === 'benefit'}
@@ -548,14 +567,12 @@ export function MegMobileLaunchSheet({
           </label>
 
           {credit ? <>
-            <label className="meg3-text-field">
-              <span>Parcelas</span>
-              <input type="number" min="1" max="48" value={installments} onChange={(event) => setInstallments(Number(event.target.value || 1))}/>
-            </label>
-            <button className="meg3-installment-preview-trigger" type="button" disabled={!installmentPreview.length} onClick={() => setInstallmentPreviewOpen(true)}>
+            <button type="button" role="switch" aria-checked={installmentEnabled} className={`wide meg3-pending-switch ${installmentEnabled ? 'active' : ''}`} onClick={() => setInstallmentEnabled(v => !v)}><span><i aria-hidden="true"/><strong>Compra parcelada</strong></span></button>
+            {installmentEnabled ? <div className="meg3-installment-stepper"><span>Parcelas *</span><div><button type="button" onClick={() => setInstallments(v => Math.max(1,v-1))}>−</button><strong>{installments}</strong><button type="button" onClick={() => setInstallments(v => Math.min(48,v+1))}>+</button></div></div> : null}
+            {installmentEnabled ? <button className="meg3-installment-preview-trigger" type="button" disabled={!installmentPreview.length} onClick={() => setInstallmentPreviewOpen(true)}>
               <span>Visualizar parcelas</span>
               <small>{installmentPreview.length ? `${installmentPreview.length} parcela(s) calculadas` : 'Informe cartão, data e valor'}</small>
-            </button>
+            </button> : null}
           </> : null}
 
           {mode === 'expense' && !credit ? <button
@@ -584,6 +601,7 @@ export function MegMobileLaunchSheet({
           </label>
         </div>
 
+        <section className="meg3-launch-summary"><small>RESUMO</small><strong>{description || 'Novo lançamento'}</strong><span>{[mode === 'income' ? 'Receita' : mode === 'benefit' ? 'Benefício' : 'Despesa', selectedCategory?.name, selectedMethod?.name, selectedCard?.name, visibleAccounts.find(a=>a.id===accountId)?.name, status === 'planned' ? 'Pendente' : 'Pago'].filter(Boolean).join(' · ')}</span><b>{money.format(parseAmount(amount))}</b></section>
         {message ? <div className="meg3-form-message" role="status">{message}</div> : null}
       </div>
 
