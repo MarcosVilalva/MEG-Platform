@@ -4,7 +4,6 @@ import { cardsClient } from '../app/cards-client';
 import { financeClient } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import {
-import { MegIcon } from './MegMobileIcon';
   imageFileToAvatarDataUrl,
   phoenixAvatarImage,
   phoenixAvatarPresets,
@@ -13,6 +12,7 @@ import { MegIcon } from './MegMobileIcon';
   savePhoenixAvatarPreferenceCloud,
   type PhoenixAvatarPreference,
 } from '../phoenix/profile-avatar';
+import { MegIcon } from './MegMobileIcon';
 import './meg-mobile-settings.css';
 
 type Section = 'profile' | 'home' | 'catalogs' | 'security' | 'notifications' | 'system';
