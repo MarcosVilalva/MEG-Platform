@@ -12,12 +12,30 @@ function signedAmount(event: FinancialEvent) {
   return event.type === 'income' || event.type === 'redemption' ? amount : -amount;
 }
 
-function statusLabel(status: string) {
-  const value = String(status || '').toLowerCase();
-  if (['paid','reconciled','confirmed'].includes(value)) return 'PAGO';
+function statusLabel(event: FinancialEvent) {
+  const value = String(event.status || '').toLowerCase();
   if (value === 'planned') return 'PENDENTE';
   if (value === 'archived') return 'ARQUIVADO';
+  if (['paid','reconciled','confirmed'].includes(value)) {
+    return signedAmount(event) >= 0 ? 'RECEBIDA' : 'PAGO';
+  }
   return value.toUpperCase() || 'LANÇAMENTO';
+}
+
+function statusTone(event: FinancialEvent) {
+  const value = String(event.status || '').toLowerCase();
+  if (value === 'planned') return 'pending';
+  if (value === 'archived') return 'archived';
+  return signedAmount(event) >= 0 ? 'received' : 'paid';
+}
+
+function weekdayShort(event: FinancialEvent) {
+  const legacy = String(event.sourceDetails?.weekday || '').trim();
+  if (legacy) return legacy.slice(0, 3).replace('.', '').toLocaleUpperCase('pt-BR');
+  const raw = String(event.date || '').slice(0, 10);
+  const parsed = new Date(raw + 'T12:00:00');
+  if (Number.isNaN(parsed.getTime())) return '';
+  return parsed.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toLocaleUpperCase('pt-BR');
 }
 
 function shortDate(value: string) {
@@ -72,13 +90,16 @@ export function MegMobileMovements({
   data,
   onOpenEvent,
   onNew,
+  onOpenPeriod,
 }: {
   data: PhoenixReadModel;
   onOpenEvent: (event: FinancialEvent) => void;
   onNew: () => void;
+  onOpenPeriod?: () => void;
 }) {
   const [query, setQuery] = useState('');
-  const [kind, setKind] = useState<MobileMovementKind>('all');
+  const [filters, setFilters] = useState({ kind: 'all' as MobileMovementKind, categoryId: '', accountId: '', paymentMethodId: '' });
+  const [draft, setDraft] = useState(filters);
   const [filterOpen, setFilterOpen] = useState(false);
 
   const posted = useMemo(() => data.events.items, [data.events.items]);
@@ -92,8 +113,16 @@ export function MegMobileMovements({
       event.sourceDetails?.group,
       event.sourceDetails?.paymentMethod,
     ].filter(Boolean).join(' ').toLocaleLowerCase('pt-BR').includes(normalized))
-    .filter((event) => kind === 'all' ? true : mobileMovementKind(event) === kind)
+    .filter((event) => {
+      if (filters.kind === 'income' && signedAmount(event) < 0) return false;
+      if (filters.kind === 'expense' && signedAmount(event) >= 0) return false;
+      if (filters.categoryId && String(event.categoryId || event.category?.id || '') !== filters.categoryId) return false;
+      if (filters.accountId && String(event.accountId || event.account?.id || '') !== filters.accountId) return false;
+      if (filters.paymentMethodId && String(event.paymentMethodId || event.paymentMethod?.id || '') !== filters.paymentMethodId) return false;
+      return true;
+    })
     .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
   const totals = posted.reduce((summary, event) => {
     const value = signedAmount(event);
     if (value >= 0) summary.income += value;
@@ -102,6 +131,27 @@ export function MegMobileMovements({
   }, { income: 0, expense: 0 });
   const result = totals.income - totals.expense;
   const competenceLabel = data.month.split('-').reverse().join('/');
+  const [year, month] = data.month.split('-').map(Number);
+  const longPeriod = Number.isFinite(year) && Number.isFinite(month)
+    ? new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
+        .format(new Date(year, Math.max(0, month - 1), 1))
+        .replace(/^./, (letter) => letter.toLocaleUpperCase('pt-BR'))
+    : competenceLabel;
+
+  const hasFilters = filters.kind !== 'all' || !!filters.categoryId || !!filters.accountId || !!filters.paymentMethodId;
+  const visibleCount = normalized || hasFilters ? rows.length : Number(data.events.total || posted.length);
+
+  const openFilters = () => {
+    setDraft(filters);
+    setFilterOpen(true);
+  };
+
+  const clearFilters = () => {
+    const clean = { kind: 'all' as MobileMovementKind, categoryId: '', accountId: '', paymentMethodId: '' };
+    setDraft(clean);
+    setFilters(clean);
+    setQuery('');
+  };
 
   return <main className="meg3-screen meg3-movements" data-meg-fixed-screen="true">
     <header className="meg3-movements-heading">
@@ -109,7 +159,7 @@ export function MegMobileMovements({
         <h1>Lançamentos</h1>
         <p>Controle seus eventos financeiros.</p>
       </div>
-      <button type="button" className={filterOpen || kind !== 'all' ? 'active' : ''} aria-label="Filtrar lançamentos" onClick={() => setFilterOpen(true)}>
+      <button type="button" className={filterOpen || hasFilters ? 'active' : ''} aria-label="Filtrar lançamentos" onClick={openFilters}>
         <MegIcon name="sliders" size={20}/>
       </button>
     </header>
@@ -121,14 +171,19 @@ export function MegMobileMovements({
     </section>
 
     <section className="meg3-movement-toolbar">
-      <label className="meg3-movement-search"><SearchGlyph/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamento..."/></label>
-      <button type="button" aria-label="Filtros" className={kind !== 'all' ? 'active' : ''} onClick={() => setFilterOpen(true)}><FilterGlyph/></button>
-      <button type="button" className="meg3-toolbar-wide" aria-label={"Competência " + competenceLabel}><MegIcon name="calendar" size={18}/><span>{competenceLabel}</span></button>
-      <button type="button" aria-label="Formas de pagamento"><MegIcon name="wallet" size={18}/></button>
+      <label className={"meg3-movement-search" + (query ? " has-query" : "")} aria-label="Buscar lançamentos">
+        <SearchGlyph/>
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamentos..."/>
+      </label>
+      <button type="button" className={"meg3-toolbar-filter" + (hasFilters ? " active" : "")} aria-label="Filtros" onClick={openFilters}><FilterGlyph/></button>
+      <button type="button" className="meg3-toolbar-period" aria-label={"Competência " + competenceLabel} onClick={onOpenPeriod}>
+        <MegIcon name="calendar" size={18}/><span>{competenceLabel}</span><MegIcon name="chevron-down" size={13}/>
+      </button>
+      <button type="button" className={"meg3-toolbar-wallet" + (filters.paymentMethodId ? " active" : "")} aria-label="Filtrar forma de pagamento" onClick={openFilters}><MegIcon name="wallet" size={18}/></button>
     </section>
 
     <header className="meg3-movement-list-head">
-      <span><strong>{rows.length.toLocaleString('pt-BR')} lançamento{rows.length === 1 ? '' : 's'}</strong><small>{competenceLabel} · toque para abrir</small></span>
+      <span><strong>{visibleCount.toLocaleString('pt-BR')} lançamento{visibleCount === 1 ? '' : 's'}</strong><small>{competenceLabel} · toque para abrir</small></span>
       <button type="button" onClick={onNew}><b aria-hidden="true"><MegIcon name="plus" size={17}/></b>Novo</button>
     </header>
 
@@ -140,13 +195,17 @@ export function MegMobileMovements({
         const account = event.account?.name || '';
         const method = event.paymentMethod?.name || event.sourceDetails?.paymentMethod || '';
         const detail = [category, account].filter(Boolean).join(' · ');
+        const weekday = weekdayShort(event);
         return <button className={`meg3-event-card ${tone} kind-${mobileMovementKind(event)}`} type="button" key={event.id} onClick={() => onOpenEvent(event)}>
           <span className="meg3-event-icon"><EventContextGlyph event={event}/></span>
+          <span className="meg3-event-meta">
+            <small>{shortDate(event.date)}{weekday ? ` · ${weekday}` : ''}</small>
+            <i className={`status-${statusTone(event)}`}>{statusLabel(event)}</i>
+          </span>
           <span className="meg3-event-copy">
-            <small>{shortDate(event.date)} · {statusLabel(event.status)}</small>
             <strong>{event.description}</strong>
             <em>{detail}</em>
-            {method ? <i className="meg3-payment-chip">{method}</i> : <i className="meg3-payment-chip muted">Forma não informada</i>}
+            <i className={method ? 'meg3-payment-label' : 'meg3-payment-label muted'}>{method || 'Forma não informada'}</i>
           </span>
           <span className="meg3-event-value">
             <b>{signed > 0 ? '+' : '-'}{money.format(Math.abs(signed))}</b>
@@ -159,22 +218,51 @@ export function MegMobileMovements({
 
     {filterOpen ? <div className="meg3-movement-filter-overlay" role="presentation" onClick={() => setFilterOpen(false)}>
       <section className="meg3-movement-filter-sheet" role="dialog" aria-modal="true" aria-label="Filtrar lançamentos" onClick={(event) => event.stopPropagation()}>
-        <header><div><small>FILTROS</small><h2>Filtrar lançamentos</h2></div><button type="button" aria-label="Fechar" onClick={() => setFilterOpen(false)}>×</button></header>
-        <div className="meg3-movement-filter-types">
-          {([
-            ['all','Todos','sliders'],
-            ['income','Receitas','arrow-up'],
-            ['expense','Despesas','arrow-down'],
-            ['benefit','Alimentação','food'],
-          ] as const).map(([value,label,icon]) =>
-            <button key={value} type="button" className={kind === value ? 'active' : ''} onClick={() => setKind(value)}>
-              <MegIcon name={icon} size={18}/><span>{label}</span>
-            </button>
-          )}
+        <header>
+          <h2>Filtrar lançamentos</h2>
+          <button type="button" aria-label="Fechar" onClick={() => setFilterOpen(false)}><MegIcon name="x" size={20}/></button>
+        </header>
+
+        <div className="meg3-filter-field">
+          <small>Período</small>
+          <button type="button" className="meg3-filter-period" onClick={() => { setFilterOpen(false); onOpenPeriod?.(); }}>
+            <MegIcon name="calendar" size={18}/><span>{longPeriod}</span><MegIcon name="chevron-down" size={16}/>
+          </button>
         </div>
+
+        <div className="meg3-filter-field">
+          <small>Status</small>
+          <div className="meg3-movement-filter-types">
+            {([
+              ['all','Todos','sliders'],
+              ['income','Receitas','arrow-up'],
+              ['expense','Despesas','arrow-down'],
+            ] as const).map(([value,label,icon]) =>
+              <button key={value} type="button" className={draft.kind === value ? 'active' : ''} onClick={() => setDraft((current) => ({ ...current, kind: value }))}>
+                <MegIcon name={icon} size={17}/><span>{label}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <label className="meg3-filter-field">
+          <small>Categoria</small>
+          <span className="meg3-filter-select"><MegIcon name="list" size={18}/><select value={draft.categoryId} onChange={(event) => setDraft((current) => ({ ...current, categoryId: event.target.value }))}><option value="">Todas as categorias</option>{data.categories.filter((item) => item.isActive !== false).map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select><MegIcon name="chevron-right" size={15}/></span>
+        </label>
+
+        <label className="meg3-filter-field">
+          <small>Conta</small>
+          <span className="meg3-filter-select"><MegIcon name="wallet" size={18}/><select value={draft.accountId} onChange={(event) => setDraft((current) => ({ ...current, accountId: event.target.value }))}><option value="">Todas as contas</option>{data.accounts.filter((item) => item.isActive !== false).map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select><MegIcon name="chevron-right" size={15}/></span>
+        </label>
+
+        <label className="meg3-filter-field">
+          <small>Forma de pagamento</small>
+          <span className="meg3-filter-select"><MegIcon name="card" size={18}/><select value={draft.paymentMethodId} onChange={(event) => setDraft((current) => ({ ...current, paymentMethodId: event.target.value }))}><option value="">Todas as formas</option>{data.paymentMethods.filter((item) => item.isActive !== false).map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select><MegIcon name="chevron-right" size={15}/></span>
+        </label>
+
         <footer>
-          <button type="button" className="secondary" onClick={() => { setKind('all'); setQuery(''); }}>Limpar</button>
-          <button type="button" className="apply" onClick={() => setFilterOpen(false)}>Aplicar</button>
+          <button type="button" className="secondary" onClick={clearFilters}>Limpar</button>
+          <button type="button" className="apply" onClick={() => { setFilters(draft); setFilterOpen(false); }}><MegIcon name="check-line" size={18}/>Aplicar</button>
         </footer>
       </section>
     </div> : null}
