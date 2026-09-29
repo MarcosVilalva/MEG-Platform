@@ -68,9 +68,12 @@ assert.ok(
   movements.includes("[category, account].filter(Boolean).join(' · ')"),
   'Card de lançamento deve preservar categoria e conta como contexto do registro.',
 );
-assert.ok(movements.includes('meg3-payment-chip'), 'Forma de pagamento deve ter chip visual próprio no card.');
-for (const token of ["['all','Todos','sliders']", "['income','Receitas','arrow-up']", "['expense','Despesas','arrow-down']", "['benefit','Alimentação','food']"]) {
-  assert.ok(movements.includes(token), 'Filtro de tipo ausente: ' + token);
+assert.ok(movements.includes('meg3-payment-label'), 'Forma de pagamento deve permanecer visível no card conforme a referência oficial.');
+for (const token of ["['all','Todos','sliders']", "['income','Receitas','arrow-up']", "['expense','Despesas','arrow-down']"]) {
+  assert.ok(movements.includes(token), 'Filtro de status/tipo ausente: ' + token);
+}
+for (const token of ['Todas as categorias', 'Todas as contas', 'Todas as formas']) {
+  assert.ok(movements.includes(token), 'Filtro detalhado ausente: ' + token);
 }
 assert.ok(
   movements.includes('meg3-movement-filter-overlay')
@@ -92,8 +95,8 @@ assert.ok(
   'Lançamentos deve preservar Entradas, Saídas, Resultado, contagem e ação Novo da referência aprovada.',
 );
 assert.ok(
-  movementCss.includes('.meg3-payment-chip{') && movementCss.includes('border-radius:999px'),
-  'Forma de pagamento deve permanecer visualmente separada em chip.',
+  movementCss.includes('.meg3-payment-label{'),
+  'Forma de pagamento deve permanecer visível em linha própria no card, sem voltar a sumir da lista.',
 );
 assert.ok(
   launchCss.includes('.meg3-form-grid-faithful{grid-template-columns:1fr}'),
