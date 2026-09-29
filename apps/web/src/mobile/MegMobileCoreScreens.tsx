@@ -117,7 +117,7 @@ export function MegMobileMovements({
     <section className="meg3-movement-kpis" aria-label="Resumo dos lançamentos">
       <article className="income"><span aria-hidden="true"><MegIcon name="arrow-up" size={18}/></span><small>Entradas</small><strong>{money.format(totals.income)}</strong></article>
       <article className="expense"><span aria-hidden="true"><MegIcon name="arrow-down" size={18}/></span><small>Saídas</small><strong>{money.format(totals.expense)}</strong></article>
-      <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true"><MegIcon name="bars" size={18}/></span><small>Resultado</small><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong></article>
+      <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true"><MegIcon name="chart" size={18}/></span><small>Resultado</small><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong></article>
     </section>
 
     <section className="meg3-movement-toolbar">
@@ -165,7 +165,7 @@ export function MegMobileMovements({
             ['all','Todos','sliders'],
             ['income','Receitas','arrow-up'],
             ['expense','Despesas','arrow-down'],
-            ['benefit','Alimentação','utensils'],
+            ['benefit','Alimentação','food'],
           ] as const).map(([value,label,icon]) =>
             <button key={value} type="button" className={kind === value ? 'active' : ''} onClick={() => setKind(value)}>
               <MegIcon name={icon} size={18}/><span>{label}</span>
