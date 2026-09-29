@@ -158,7 +158,7 @@
 /* MEG 29-09-2026 · Lançamentos · referência visual oficial
    Bloco canônico: a tela permanece fixa e somente a lista rola. */
 .meg3-movements{
-  grid-template-rows:auto auto auto auto minmax(0,1fr);
+  grid-template-rows:auto auto auto minmax(0,1fr);
   gap:clamp(6px,.78dvh,9px);
   padding:clamp(7px,.9dvh,10px) clamp(9px,2.5vw,12px) clamp(6px,.8dvh,9px);
   background:
@@ -208,130 +208,67 @@
   gap:7px;
 }
 .meg3-movement-kpis article{
+  position:relative;
   min-width:0;
-  min-height:66px;
-  padding:7px;
+  min-height:62px;
+  padding:7px 8px;
   display:grid;
-  grid-template-columns:28px minmax(0,1fr);
+  grid-template-columns:34px minmax(0,1fr);
   grid-template-rows:auto auto;
   align-items:center;
-  gap:2px 5px;
-  border:1px solid rgba(53,221,211,.42);
-  border-radius:13px;
+  gap:1px 7px;
+  overflow:hidden;
+  border:1px solid rgba(53,221,211,.38);
+  border-radius:14px;
   background:
-    radial-gradient(circle at 18% 20%,rgba(29,229,216,.07),transparent 45%),
-    linear-gradient(155deg,rgba(4,76,77,.98),rgba(1,44,47,.98));
-  box-shadow:inset 0 0 18px rgba(32,235,222,.03),0 5px 14px rgba(0,0,0,.12);
+    radial-gradient(circle at 12% 18%,rgba(39,237,224,.10),transparent 42%),
+    linear-gradient(155deg,rgba(5,78,79,.98),rgba(1,42,45,.98));
+  box-shadow:inset 0 1px 0 rgba(150,255,248,.05),0 6px 16px rgba(0,0,0,.14);
+}
+.meg3-movement-kpis article::after{
+  content:"";
+  position:absolute;
+  left:8px;right:8px;bottom:0;
+  height:1px;
+  background:linear-gradient(90deg,transparent,currentColor,transparent);
+  opacity:.20;
 }
 .meg3-movement-kpis article>span{
   grid-row:1/3;
-  width:27px;height:27px;
+  width:32px;height:32px;
   display:grid;place-items:center;
-  border-radius:9px;
-  background:rgba(43,222,211,.09);
+  border:1px solid currentColor;
+  border-radius:10px;
+  background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.015));
   color:#56e8df;
+  box-shadow:inset 0 0 14px rgba(57,235,224,.07);
 }
 .meg3-movement-kpis small{
-  color:#c3d5d3;
-  font-size:7.2px;
-  font-weight:700;
+  align-self:end;
+  color:#c9dbd9;
+  font-size:7.4px;
+  font-weight:760;
   white-space:nowrap;
 }
 .meg3-movement-kpis strong{
   min-width:0;
+  align-self:start;
   overflow:visible;
   text-overflow:clip;
   white-space:nowrap;
   color:#58e8df;
-  font-size:clamp(8.1px,2.35vw,11px);
-  line-height:1.05;
+  font-size:clamp(8.5px,2.5vw,11.4px);
+  line-height:1.04;
+  font-weight:850;
   font-variant-numeric:tabular-nums;
 }
+.meg3-movement-kpis .income{color:#62e5b8}
+.meg3-movement-kpis .expense{color:#ff7588}
+.meg3-movement-kpis .positive{color:#45e7df}
+.meg3-movement-kpis .negative{color:#ff7588}
 .meg3-movement-kpis .income>span,.meg3-movement-kpis .income strong{color:#62e5b8}
 .meg3-movement-kpis .expense>span,.meg3-movement-kpis .expense strong,
 .meg3-movement-kpis .negative>span,.meg3-movement-kpis .negative strong{color:#ff7588}
-
-.meg3-movement-toolbar{
-  position:relative;
-  min-width:0;
-  min-height:41px;
-  display:grid;
-  grid-template-columns:44px 44px minmax(0,1fr) 44px;
-  gap:6px;
-}
-.meg3-movement-toolbar label,
-.meg3-movement-toolbar button{
-  min-width:0;
-  height:41px;
-  box-sizing:border-box;
-  border:1px solid rgba(53,218,208,.37);
-  border-radius:11px;
-  background:linear-gradient(155deg,#043f42,#023234);
-  color:#d9eeee;
-}
-.meg3-movement-toolbar button{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:5px;
-  padding:0 6px;
-}
-.meg3-movement-toolbar button svg,
-.meg3-movement-search svg{
-  flex:0 0 auto;
-  fill:none;
-  stroke:currentColor;
-  stroke-width:1.8;
-  stroke-linecap:round;
-  stroke-linejoin:round;
-}
-.meg3-toolbar-search{grid-column:1}
-.meg3-movement-search{
-  position:absolute;
-  left:0;right:0;top:0;
-  z-index:4;
-  width:100%;
-  overflow:hidden;
-  display:grid;
-  grid-template-columns:42px minmax(0,1fr);
-  align-items:center;
-  padding:0;
-  cursor:text;
-  border-color:#2beadd!important;
-  box-shadow:0 0 15px rgba(40,231,220,.12);
-}
-.meg3-movement-search>svg{justify-self:center}
-.meg3-movement-search input{
-  min-width:0;
-  width:100%;
-  padding:0 10px 0 0;
-  border:0;
-  outline:0;
-  background:transparent;
-  color:#fff;
-  font:inherit;
-  font-size:10px;
-}
-.meg3-movement-search input::placeholder{color:#789592}
-.meg3-toolbar-filter{grid-column:2}
-.meg3-toolbar-period{
-  grid-column:3;
-  color:#e8f7f5!important;
-  font-size:8px;
-  font-weight:800;
-  white-space:nowrap;
-}
-.meg3-toolbar-period span{
-  min-width:0;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.meg3-toolbar-wallet{grid-column:4}
-.meg3-movement-toolbar button.active{
-  border-color:#2beadd;
-  color:#43ebe0;
-  box-shadow:0 0 13px rgba(40,231,220,.10);
-}
 
 .meg3-movement-list-head{
   min-width:0;
@@ -503,6 +440,14 @@
   align-items:center;
   gap:10px;
 }
+.meg3-movement-filter-sheet>header small{
+  display:block;
+  margin-bottom:2px;
+  color:#44e9df;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.14em;
+}
 .meg3-movement-filter-sheet>header h2{
   margin:0;
   font-size:20px;
@@ -516,6 +461,36 @@
   background:#04393c;
   color:#eaffff;
 }
+
+.meg3-filter-search{
+  width:100%;
+  min-height:44px;
+  margin-top:13px;
+  box-sizing:border-box;
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr);
+  align-items:center;
+  gap:4px;
+  padding:0 10px;
+  border:1px solid rgba(49,232,220,.44);
+  border-radius:12px;
+  background:linear-gradient(155deg,#054548,#033537);
+  color:#49e9df;
+  box-shadow:inset 0 0 16px rgba(41,235,222,.035);
+}
+.meg3-filter-search input{
+  min-width:0;
+  width:100%;
+  height:40px;
+  padding:0;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#fff;
+  font:inherit;
+  font-size:9.5px;
+}
+.meg3-filter-search input::placeholder{color:#7e9b98}
 .meg3-filter-field{
   display:block;
   min-width:0;
@@ -640,21 +615,16 @@
 }
 
 @media(max-width:365px){
-  .meg3-movement-toolbar{grid-template-columns:40px 40px minmax(0,1fr) 40px;gap:5px}
-  .meg3-movement-toolbar label,.meg3-movement-toolbar button{height:39px}
-  .meg3-movement-search{grid-template-columns:38px minmax(0,1fr)}
-  .meg3-toolbar-period{font-size:7px;padding-inline:4px!important}
-  .meg3-movement-kpis article{padding-inline:5px;grid-template-columns:24px minmax(0,1fr)}
-  .meg3-movement-kpis article>span{width:24px;height:24px}
+  .meg3-movement-kpis article{padding-inline:5px;grid-template-columns:28px minmax(0,1fr);gap:4px}
+  .meg3-movement-kpis article>span{width:27px;height:27px}
+  .meg3-movement-kpis strong{font-size:8.4px}
 }
 @media(max-height:720px){
   .meg3-movements{gap:4px}
   .meg3-movements-heading h1{font-size:25px}
   .meg3-movements-heading p{display:none}
   .meg3-movements-heading>button{width:40px;height:40px}
-  .meg3-movement-kpis article{min-height:59px}
-  .meg3-movement-toolbar{min-height:36px}
-  .meg3-movement-toolbar label,.meg3-movement-toolbar button{height:36px}
+  .meg3-movement-kpis article{min-height:56px}
   .meg3-movement-list-head{min-height:25px}
   .meg3-event-card{min-height:58px;margin-bottom:4px}
   .meg3-event-icon{width:32px;height:32px}
