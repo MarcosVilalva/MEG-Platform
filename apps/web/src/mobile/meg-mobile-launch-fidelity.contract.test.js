@@ -11,23 +11,21 @@ const history = readFileSync(new URL('./meg-mobile-description-history.ts', impo
 
 assert.doesNotMatch(launch, /<select\\b/i, 'Novo/Editar lançamento não pode voltar a usar select nativo do Android.');
 
-for (const token of ['label="Categoria"', 'Forma de pagamento', 'label="Conta"', 'label="Cartão"', 'meg3-amount-field']) {
+for (const token of ['Classificação / categoria *', 'Forma de pagamento', 'Conta de origem *', 'label="Cartão"', 'meg3-amount-field']) {
   assert.ok(launch.includes(token), 'Campo obrigatório ausente do contrato mobile: ' + token);
 }
 
 const descriptionIndex = launch.indexOf('>Descrição</span>');
-const categoryIndex = launch.indexOf('label="Categoria"');
-const paymentIndex = launch.indexOf("label={mode === 'income' ? 'Forma de recebimento' : 'Forma de pagamento'}");
-const accountIndex = launch.indexOf('label="Conta"');
+const paymentTypeIndex = launch.indexOf('Tipo de pagamento *');
+const categoryIndex = launch.indexOf('Classificação / categoria *');
+const accountIndex = launch.indexOf('Conta de origem *');
 const amountIndex = launch.indexOf('meg3-amount-field');
-const dateIndex = launch.indexOf('Vencimento');
 assert.ok(
-  descriptionIndex >= 0 && descriptionIndex < categoryIndex
+  descriptionIndex >= 0 && descriptionIndex < paymentTypeIndex
+  && paymentTypeIndex < categoryIndex
   && categoryIndex < accountIndex
-  && accountIndex < paymentIndex
-  && paymentIndex < amountIndex
-  && amountIndex < dateIndex,
-  'O formulário deve preservar Descrição, Categoria, Conta, Forma, Valor e Data/Vencimento.',
+  && accountIndex < amountIndex,
+  'O formulário deve preservar Descrição, Tipo de pagamento, Classificação, Conta de origem e Valor.',
 );
 assert.ok(
   launchCss.includes('.meg3-form-sheet--new-expense .meg3-amount-field{order:2')
@@ -134,7 +132,7 @@ assert.ok(
   'Compra no cartão deve continuar calculando competência, vencimento e evolução das parcelas pela fatura.'
 );
 assert.ok(
-  launch.includes('type="number" min="1" max="48" value={installments}')
+  launch.includes('Math.min(48,v+1)') && launch.includes('Math.max(1,v-1)')
   && launch.includes('setInstallmentPreviewOpen(true)')
   && launch.includes('Visualizar parcelas'),
   'Parcelamento deve preservar quantidade editável e prévia das parcelas.'
