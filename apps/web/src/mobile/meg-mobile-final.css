@@ -851,3 +851,13 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   transform:none!important;
   contain:layout paint;
 }
+
+
+/* LANÇAMENTOS: conteúdo respeita o limite superior do dock fixo */
+.meg2-view-movements > .meg2-scroll{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  align-self:stretch!important;
+  overflow:hidden!important;
+}
