@@ -77,10 +77,12 @@ export function MegMobileMovements({
   data,
   onOpenEvent,
   onOpenPeriod,
+  onCreate,
 }: {
   data: PhoenixReadModel;
   onOpenEvent: (event: FinancialEvent) => void;
   onOpenPeriod?: () => void;
+  onCreate?: () => void;
 }) {
   const [query, setQuery] = useState('');
   const [draftQuery, setDraftQuery] = useState('');
@@ -158,8 +160,24 @@ export function MegMobileMovements({
       <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true"><MegIcon name="trend" size={20}/></span><small>Resultado</small><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong></article>
     </section>
 
+    <section className="meg3-movement-toolbar" aria-label="Busca e filtros rápidos">
+      <button type="button" className={query ? 'active icon-only' : 'icon-only'} aria-label="Buscar lançamentos" onClick={openFilters}>
+        <MegIcon name="search" size={19}/>
+      </button>
+      <button type="button" className={hasFilters ? 'active icon-only' : 'icon-only'} aria-label="Filtrar lançamentos" onClick={openFilters}>
+        <MegIcon name="sliders" size={19}/>
+      </button>
+      <button type="button" className="period" aria-label="Selecionar período" onClick={() => onOpenPeriod?.()}>
+        <MegIcon name="calendar" size={17}/><span>{competenceLabel}</span><MegIcon name="chevron-down" size={14}/>
+      </button>
+      <button type="button" className={filters.accountId ? 'active icon-only' : 'icon-only'} aria-label="Filtrar por conta" onClick={openFilters}>
+        <MegIcon name="wallet" size={19}/>
+      </button>
+    </section>
+
     <header className="meg3-movement-list-head">
       <span><strong>{visibleCount.toLocaleString('pt-BR')} lançamento{visibleCount === 1 ? '' : 's'}</strong><small>{competenceLabel} · toque para abrir</small></span>
+      <button type="button" className="meg3-movement-new" onClick={onCreate}><MegIcon name="plus" size={17}/><span>Novo</span></button>
     </header>
 
     <section className="meg3-event-list" data-meg-scroll-region="true">
