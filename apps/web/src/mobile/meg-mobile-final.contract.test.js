@@ -326,7 +326,7 @@ assert.match(
 
 assert.match(
   mobileIcons,
-  /type === 'income'[\\s\\S]*return 'banknote'/,
+  /type === 'income'[\\s\\S]*signed > 0[\\s\\S]*return 'banknote'/,
   'Receita deve usar ícone de dinheiro com prioridade sobre categoria ou descrição.',
 );
 assert.match(
