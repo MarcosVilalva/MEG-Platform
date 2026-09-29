@@ -346,12 +346,13 @@ function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate, on
   const income = Number(data.summary.realizedIncome || 0);
   const expense = Number(data.summary.realizedExpense || 0);
   const result = Number(data.summary.realizedResult || 0);
+  const title = periodMode === 'range' ? (periodLabel || 'Intervalo selecionado') : monthLabel(data.month);
   const recent = [...data.events.items]
     .filter((item) => ['paid', 'reconciled', 'confirmed'].includes(String(item.status)))
     .sort((left, right) => String(right.date).localeCompare(String(left.date)))
     .slice(0, 4);
 
-  return <main className="meg2-main meg2-home meg2-home-preview" data-meg-fixed-screen="true">
+  return <main className="meg2-main meg2-home meg2-home-preview" data-meg-fixed-screen="true" data-period-title={title}>
     <section className="meg2-home-hero">
       <div className="meg2-home-balance-head"><span>Saldo disponível</span><Icon name="wallet" size={18}/></div>
       <strong>{money.format(balance)}</strong>
