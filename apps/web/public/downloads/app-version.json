@@ -1,9 +1,9 @@
 {
-  "versionCode": 517,
-  "versionName": "2.0.517",
+  "versionCode": 521,
+  "versionName": "2.0.521",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "d54e7fc475e141e978601adf98bf601ea95fe9c63cba632c6342f8c8d26e594d",
+  "sha256": "2b1b29d0aa7e781eea38b8b480bfaa3e666dd5c1b72bdc054cb1372fd6043873",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Protege busca unificada de Lançamentos no contrato visual"
+  "releaseNotes": "Padroniza dock e moderniza iconografia da Home"
 }
