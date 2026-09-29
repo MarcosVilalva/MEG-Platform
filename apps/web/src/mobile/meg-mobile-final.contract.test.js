@@ -10,13 +10,14 @@ const phoenixWebStyles = readFileSync(new URL('../phoenix/PhoenixWebStyles.ts', 
 const authCss = readFileSync(new URL('../phoenix/preview-auth-flow.css', import.meta.url), 'utf8');
 const coreScreens = readFileSync(new URL('./MegMobileCoreScreens.tsx', import.meta.url), 'utf8');
 const launchSheet = readFileSync(new URL('./MegMobileLaunchSheet.tsx', import.meta.url), 'utf8');
+const mobileIcons = readFileSync(new URL('./MegMobileIcon.tsx', import.meta.url), 'utf8');
 const coreCss = readFileSync(new URL('./meg-mobile-core-screens.css', import.meta.url), 'utf8');
 const launchCss = readFileSync(new URL('./meg-mobile-launch-sheet.css', import.meta.url), 'utf8');
 const settings = readFileSync(new URL('./MegMobileSettings.tsx', import.meta.url), 'utf8');
 const settingsCss = readFileSync(new URL('./meg-mobile-settings.css', import.meta.url), 'utf8');
 const cardCenter = readFileSync(new URL('./MegMobileCardCenter.tsx', import.meta.url), 'utf8');
 const benefitModal = readFileSync(new URL('./MegMobileBenefitModal.tsx', import.meta.url), 'utf8');
-const source = mobile + '\n' + css + '\n' + runtimeCss + '\n' + coreScreens + '\n' + launchSheet + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
+const source = mobile + '\n' + css + '\n' + runtimeCss + '\n' + coreScreens + '\n' + launchSheet + '\n' + mobileIcons + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
 
 assert.doesNotMatch(source, /\bpx-[a-z0-9-]+/i,
   'Reconstrução mobile final não pode reutilizar classes visuais .px-* do Phoenix legado.');
@@ -155,8 +156,8 @@ assert.match(
 );
 assert.match(
   mobile,
-  /semanticIcon\(item\.description\)[\s\S]*meg2-pending-icon/,
-  'Pendentes deve escolher ícone pelo conteúdo, não por posição arbitrária na lista.',
+  /semanticIcon\\(item\\.description, item\\.category\\)[\\s\\S]*meg2-pending-icon/,
+  'Pendentes deve escolher ícone pela classificação/categoria antes do fallback textual.',
 );
 assert.match(
   coreCss,
@@ -322,5 +323,16 @@ assert.match(
   'À vista deve preferir PIX automaticamente sem impedir troca da forma de pagamento.',
 );
 
+
+assert.match(
+  mobileIcons,
+  /type === 'income'[\\s\\S]*return 'banknote'/,
+  'Receita deve usar ícone de dinheiro com prioridade sobre categoria ou descrição.',
+);
+assert.match(
+  mobileIcons,
+  /categoryName[\\s\\S]*categoryGroup[\\s\\S]*sourceGroup[\\s\\S]*byClassification[\\s\\S]*paymentName[\\s\\S]*byDescription/,
+  'Ícone financeiro deve priorizar categoria e grupo antes de forma de pagamento e descrição.',
+);
 
 console.log('Contrato da reconstrução mobile final validado.');
