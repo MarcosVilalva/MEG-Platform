@@ -225,7 +225,7 @@ export function MegMobileMovements({
           <MegMobilePicker label="Conta" value={accountId} options={accountOptions} placeholder="Todas as contas" onChange={setAccountId}/>
           <MegMobilePicker label="Forma de pagamento" value={paymentId} options={paymentOptions} placeholder="Todas as formas" onChange={setPaymentId}/>
         </div>
-        <footer><button type="button" className="secondary" onClick={clearFilters}><MegIcon name="trash" size={16}/>Limpar</button><button type="button" className="apply" onClick={() => setFilterOpen(false)}><MegIcon name="check-line" size={16}/>Aplicar</button></footer>
+        <footer><button type="button" className="secondary" onClick={clearFilters}><MegIcon name="receipt" size={16}/>Limpar</button><button type="button" className="apply" onClick={() => setFilterOpen(false)}><MegIcon name="check-line" size={16}/>Aplicar</button></footer>
       </section>
     </div> : null}
   </main>;
