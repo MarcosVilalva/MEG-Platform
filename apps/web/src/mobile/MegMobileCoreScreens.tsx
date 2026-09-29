@@ -274,23 +274,22 @@ export function MegMobileCashflow({ data }: { data: PhoenixReadModel }) {
   const days = data.cashflow.days || [];
   const result = Number(data.cashflow.totalIncome || 0) - Number(data.cashflow.totalExpense || 0);
   const maxDaily = Math.max(1, ...days.flatMap((day) => [Number(day.income || 0), Number(day.expense || 0)]));
-  const visibleDays = days.filter((day) => tab === 'summary' || (tab === 'income' ? Number(day.income || 0) > 0 : Number(day.expense || 0) > 0));
+  const categories = data.analytics.categories || [];
   return <main className="meg3-screen meg3-cashflow" data-meg-fixed-screen="true">
-    <header className="meg3-title-block"><span>FLUXO DE CAIXA</span><h1>Fluxo de caixa</h1><p>Entradas, saídas e evolução do saldo no período.</p></header>
+    <header className="meg3-title-block"><h1>Fluxo de caixa</h1><p>Controle suas entradas e saídas de forma simples.</p></header>
     <nav className="meg3-analysis-tabs" aria-label="Visão do fluxo de caixa">
       <button className={tab === 'summary' ? 'active' : ''} onClick={() => setTab('summary')}>Resumo</button>
       <button className={tab === 'income' ? 'active' : ''} onClick={() => setTab('income')}>Entradas</button>
       <button className={tab === 'expense' ? 'active' : ''} onClick={() => setTab('expense')}>Saídas</button>
     </nav>
+    <div className="meg3-analysis-period"><button type="button" aria-label="Período anterior">‹</button><span><MegIcon name="calendar" size={16}/><strong>{data.month.split('-').reverse().join('/')}</strong></span><button type="button" aria-label="Próximo período"><MegIcon name="chevron-right" size={16}/></button></div>
     <section className="meg3-analysis-scroll" data-meg-scroll-region="true">
       <section className="meg3-cashflow-summary">
-        <article className="income"><small>Entradas</small><strong>{money.format(Number(data.cashflow.totalIncome || 0))}</strong></article>
-        <article className="expense"><small>Saídas</small><strong>{money.format(Number(data.cashflow.totalExpense || 0))}</strong></article>
-        <article className={result >= 0 ? 'result positive' : 'result negative'}><small>Resultado</small><strong>{money.format(result)}</strong></article>
+        <article className="income"><small>Entradas</small><strong>{money.format(Number(data.cashflow.totalIncome || 0))}</strong><em>Receitas do período</em></article>
+        <article className="expense"><small>Saídas</small><strong>{money.format(Number(data.cashflow.totalExpense || 0))}</strong><em>Despesas do período</em></article>
       </section>
-      <section className="meg3-cashflow-balance">
-        <div><small>Saldo inicial</small><strong>{money.format(Number(data.cashflow.openingBalance || 0))}</strong></div>
-        <div><small>Fechamento realizado</small><strong>{money.format(Number(data.cashflow.realizedClosing || 0))}</strong></div>
+      <section className={result >= 0 ? 'meg3-cashflow-result positive' : 'meg3-cashflow-result negative'}>
+        <small>Resultado</small><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong><em>Saldo entre entradas e saídas</em>
       </section>
       <section className="meg3-daily-chart" aria-label="Evolução diária do fluxo">
         <header><strong>Evolução diária</strong><small>{days.length} dias com movimentação</small></header>
@@ -302,19 +301,18 @@ export function MegMobileCashflow({ data }: { data: PhoenixReadModel }) {
         </div>
         <footer><span><i className="income"/>Entradas</span><span><i className="expense"/>Saídas</span></footer>
       </section>
-      <section className="meg3-cashflow-list">
-      {visibleDays.map((day) => <article key={day.date}>
-        <span><strong>{shortDate(day.date)}</strong><small>{day.eventCount} lançamento(s)</small></span>
-        <span className="income">+{money.format(Number(day.income || 0))}</span>
-        <span className="expense">-{money.format(Number(day.expense || 0))}</span>
-        <b>{money.format(Number(day.realizedBalance || day.projectedBalance || 0))}</b>
-      </article>)}
-      {!visibleDays.length ? <div className="meg3-empty">Nenhum movimento diário neste filtro.</div> : null}
+      <section className="meg3-cashflow-categories">
+        <header><strong>Por categoria (saídas)</strong><small>Ver distribuição</small></header>
+        {categories.slice(0,5).map((item,index)=><article key={item.name}>
+          <span className="meg3-category-rank">{index+1}</span>
+          <strong>{item.name}</strong>
+          <b>{money.format(Number(item.amount||0))}</b>
+        </article>)}
+        {!categories.length?<div className="meg3-empty">Sem categorias no período.</div>:null}
       </section>
     </section>
   </main>;
 }
-
 export function MegMobileAnalytics({ data }: { data: PhoenixReadModel }) {
   const [tab, setTab] = useState<'overview' | 'categories' | 'compare'>('overview');
   const categories = data.analytics.categories || [];
