@@ -209,7 +209,7 @@
 }
 .meg3-movement-kpis article{
   min-width:0;
-  min-height:74px;
+  min-height:66px;
   padding:7px;
   display:grid;
   grid-template-columns:28px minmax(0,1fr);
@@ -285,16 +285,20 @@
   stroke-linecap:round;
   stroke-linejoin:round;
 }
+.meg3-toolbar-search{grid-column:1}
 .meg3-movement-search{
-  grid-column:1;
-  width:44px;
+  position:absolute;
+  left:0;right:0;top:0;
+  z-index:4;
+  width:100%;
   overflow:hidden;
   display:grid;
   grid-template-columns:42px minmax(0,1fr);
   align-items:center;
   padding:0;
   cursor:text;
-  transition:width .16s ease,border-color .16s ease,box-shadow .16s ease;
+  border-color:#2beadd!important;
+  box-shadow:0 0 15px rgba(40,231,220,.12);
 }
 .meg3-movement-search>svg{justify-self:center}
 .meg3-movement-search input{
@@ -307,22 +311,8 @@
   color:#fff;
   font:inherit;
   font-size:10px;
-  opacity:0;
-  pointer-events:none;
 }
 .meg3-movement-search input::placeholder{color:#789592}
-.meg3-movement-search:focus-within,
-.meg3-movement-search.has-query{
-  position:absolute;
-  left:0;right:0;top:0;
-  z-index:4;
-  width:100%;
-  grid-template-columns:42px minmax(0,1fr);
-  border-color:#2beadd;
-  box-shadow:0 0 15px rgba(40,231,220,.12);
-}
-.meg3-movement-search:focus-within input,
-.meg3-movement-search.has-query input{opacity:1;pointer-events:auto}
 .meg3-toolbar-filter{grid-column:2}
 .meg3-toolbar-period{
   grid-column:3;
@@ -345,31 +335,15 @@
 
 .meg3-movement-list-head{
   min-width:0;
-  min-height:37px;
+  min-height:28px;
   display:flex;
   align-items:center;
-  justify-content:space-between;
-  gap:10px;
+  justify-content:flex-start;
   padding:0 2px;
 }
 .meg3-movement-list-head>span{min-width:0}
-.meg3-movement-list-head strong{display:block;font-size:12px}
-.meg3-movement-list-head small{display:block;margin-top:2px;color:#8aa7a3;font-size:7.2px}
-.meg3-movement-list-head button{
-  min-height:34px;
-  padding:0 13px;
-  display:flex;
-  align-items:center;
-  gap:5px;
-  border:1px solid #28e7dc;
-  border-radius:11px;
-  background:linear-gradient(180deg,#0a908b,#066561);
-  color:#fff;
-  font-size:9px;
-  font-weight:850;
-  box-shadow:0 0 15px rgba(39,231,220,.14);
-}
-.meg3-movement-list-head button b{display:grid;place-items:center}
+.meg3-movement-list-head strong{display:block;font-size:11.5px}
+.meg3-movement-list-head small{display:block;margin-top:1px;color:#8aa7a3;font-size:6.9px}
 
 .meg3-event-list,.meg3-timeline,.meg3-cashflow-list,.meg3-analytics-list{
   min-height:0;
@@ -387,17 +361,13 @@
 
 .meg3-event-card{
   width:100%;
-  min-height:70px;
+  min-height:68px;
   margin:0 0 6px;
-  padding:6px 8px;
+  padding:7px 8px;
   display:grid;
-  grid-template-columns:39px minmax(0,1fr) auto;
-  grid-template-rows:auto minmax(0,1fr);
-  grid-template-areas:
-    "icon meta meta"
-    "icon copy value";
+  grid-template-columns:37px minmax(0,1fr) auto;
   align-items:center;
-  gap:2px 7px;
+  gap:7px;
   text-align:left;
   border:1px solid rgba(48,211,202,.27);
   border-radius:12px;
@@ -406,8 +376,7 @@
   box-shadow:inset 0 0 16px rgba(27,231,219,.018),0 5px 13px rgba(0,0,0,.12);
 }
 .meg3-event-icon{
-  grid-area:icon;
-  width:37px;height:37px;
+  width:35px;height:35px;
   display:grid;place-items:center;
   align-self:center;
   border-radius:10px;
@@ -422,12 +391,12 @@
 .meg3-event-card.kind-expense .meg3-event-icon{background:#50343a}
 
 .meg3-event-meta{
-  grid-area:meta;
   min-width:0;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:8px;
+  gap:6px;
+  margin-bottom:2px;
 }
 .meg3-event-meta small{
   min-width:0;
@@ -453,13 +422,12 @@
 .meg3-event-meta .status-archived{background:#465a59;color:#dce8e6}
 
 .meg3-event-copy{
-  grid-area:copy;
   min-width:0;
-  align-self:start;
+  align-self:center;
 }
 .meg3-event-copy strong{
   display:block;
-  margin:1px 0 1px;
+  margin:0 0 1px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
@@ -477,7 +445,7 @@
 }
 .meg3-payment-label{
   display:block;
-  margin-top:2px;
+  margin-top:1px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
@@ -489,7 +457,6 @@
 .meg3-payment-label.muted{color:#718c89}
 
 .meg3-event-value{
-  grid-area:value;
   align-self:center;
   display:flex;
   align-items:center;
@@ -675,8 +642,7 @@
 @media(max-width:365px){
   .meg3-movement-toolbar{grid-template-columns:40px 40px minmax(0,1fr) 40px;gap:5px}
   .meg3-movement-toolbar label,.meg3-movement-toolbar button{height:39px}
-  .meg3-movement-search{width:40px;grid-template-columns:38px minmax(0,1fr)}
-  .meg3-movement-search:focus-within,.meg3-movement-search.has-query{grid-template-columns:38px minmax(0,1fr)}
+  .meg3-movement-search{grid-template-columns:38px minmax(0,1fr)}
   .meg3-toolbar-period{font-size:7px;padding-inline:4px!important}
   .meg3-movement-kpis article{padding-inline:5px;grid-template-columns:24px minmax(0,1fr)}
   .meg3-movement-kpis article>span{width:24px;height:24px}
@@ -689,10 +655,10 @@
   .meg3-movement-kpis article{min-height:59px}
   .meg3-movement-toolbar{min-height:36px}
   .meg3-movement-toolbar label,.meg3-movement-toolbar button{height:36px}
-  .meg3-movement-list-head{min-height:31px}
-  .meg3-event-card{min-height:60px;margin-bottom:4px}
-  .meg3-event-icon{width:34px;height:34px}
-  .meg3-event-card{grid-template-columns:36px minmax(0,1fr) auto}
+  .meg3-movement-list-head{min-height:25px}
+  .meg3-event-card{min-height:58px;margin-bottom:4px}
+  .meg3-event-icon{width:32px;height:32px}
+  .meg3-event-card{grid-template-columns:34px minmax(0,1fr) auto}
   .meg3-event-copy strong{font-size:10px}
   .meg3-event-copy em,.meg3-payment-label{font-size:6.5px}
 }
