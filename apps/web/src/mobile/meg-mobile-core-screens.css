@@ -267,7 +267,7 @@
 .meg3-history-entry article small{display:block;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#93adaa;font-size:7.5px}
 .meg3-history-entry article>b{padding-left:7px;white-space:nowrap;color:#ff7489;font-size:10px;font-variant-numeric:tabular-nums}
 
-.meg3-cashflow,.meg3-analytics{grid-template-rows:auto auto minmax(0,1fr)}
+.meg3-cashflow,.meg3-analytics{grid-template-rows:auto auto auto minmax(0,1fr)}
 .meg3-analysis-tabs{
   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));min-height:38px;
   border:1px solid rgba(58,213,204,.24);border-radius:13px;background:#03383a;overflow:hidden
@@ -275,20 +275,41 @@
 .meg3-analysis-tabs button{border:0;border-right:1px solid rgba(63,192,184,.11);background:transparent;color:#bdd1cf;font-size:9px;font-weight:750}
 .meg3-analysis-tabs button:last-child{border-right:0}
 .meg3-analysis-tabs button.active{background:linear-gradient(180deg,#1fcfc4,#14a9a2);color:#032c2e;font-weight:900}
+.meg3-analysis-period{
+  min-height:39px;display:grid;grid-template-columns:38px minmax(0,1fr) 38px;align-items:center;gap:6px
+}
+.meg3-analysis-period>button{
+  height:36px;border:1px solid rgba(51,209,200,.22);border-radius:10px;background:#04383a;color:#40e5da;font-size:20px
+}
+.meg3-analysis-period>span{
+  height:36px;display:flex;align-items:center;justify-content:center;gap:7px;
+  border:1px solid rgba(51,209,200,.20);border-radius:10px;background:rgba(3,54,57,.82);color:#44e8de
+}
+.meg3-analysis-period strong{color:#f2ffff;font-size:9px}
 .meg3-analysis-scroll{min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding:1px 2px 7px}
 .meg3-analysis-scroll::-webkit-scrollbar{display:none}
-.meg3-cashflow-summary,.meg3-analytics-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.meg3-cashflow-summary article,.meg3-analytics-kpis article{
-  min-width:0;min-height:70px;padding:9px 7px;border:1px solid rgba(65,207,199,.19);border-radius:13px;background:linear-gradient(145deg,#064547,#023638);display:grid;align-content:center;gap:5px
+.meg3-cashflow-summary{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.meg3-cashflow-summary article{
+  min-width:0;min-height:78px;padding:10px;border:1px solid rgba(65,207,199,.24);border-radius:14px;
+  background:linear-gradient(145deg,#064547,#023638);display:grid;align-content:center;gap:4px
 }
 .meg3-cashflow-summary small,.meg3-analytics-kpis small{color:#92aaa7;font-size:7.5px}
-.meg3-cashflow-summary strong,.meg3-analytics-kpis strong{font-size:clamp(9px,2.8vw,13px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.meg3-cashflow-summary .income strong,.meg3-analytics-kpis .income strong{color:#54e0b0}
-.meg3-cashflow-summary .expense strong,.meg3-analytics-kpis .expense strong{color:#ff778a}
-.meg3-cashflow-summary .positive strong{color:#45e7df}.meg3-cashflow-summary .negative strong{color:#ff778a}
-.meg3-cashflow-balance{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
-.meg3-cashflow-balance div{padding:10px;border:1px solid rgba(58,205,197,.15);border-radius:13px;background:rgba(2,46,48,.78)}
-.meg3-cashflow-balance small{display:block;color:#8ca5a2;font-size:8px}.meg3-cashflow-balance strong{display:block;margin-top:4px;font-size:13px}
+.meg3-cashflow-summary strong{font-size:clamp(12px,3.6vw,17px);white-space:nowrap}
+.meg3-cashflow-summary em{color:#7f9d99;font-size:7px;font-style:normal}
+.meg3-cashflow-summary .income strong{color:#54e0b0}
+.meg3-cashflow-summary .expense strong{color:#ff778a}
+.meg3-cashflow-result{
+  min-height:76px;margin-top:7px;padding:10px 12px;display:grid;align-content:center;gap:4px;
+  border:1px solid rgba(52,226,214,.32);border-radius:14px;background:linear-gradient(145deg,rgba(6,82,82,.92),rgba(2,48,51,.94))
+}
+.meg3-cashflow-result small{color:#a4bcba;font-size:8px}.meg3-cashflow-result strong{font-size:25px;letter-spacing:-.035em}.meg3-cashflow-result em{color:#83a19d;font-size:7px;font-style:normal}
+.meg3-cashflow-result.positive strong{color:#4ee7df}.meg3-cashflow-result.negative strong{color:#ff778a}
+.meg3-analytics-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.meg3-analytics-kpis article{
+  min-width:0;min-height:70px;padding:9px 7px;border:1px solid rgba(65,207,199,.19);border-radius:13px;background:linear-gradient(145deg,#064547,#023638);display:grid;align-content:center;gap:5px
+}
+.meg3-analytics-kpis strong{font-size:clamp(9px,2.8vw,13px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meg3-analytics-kpis .income strong{color:#54e0b0}.meg3-analytics-kpis .expense strong{color:#ff778a}
 .meg3-daily-chart,.meg3-trend-chart,.meg3-category-visual{margin-top:7px;border:1px solid rgba(57,201,193,.16);border-radius:15px;background:rgba(2,43,45,.74)}
 .meg3-daily-chart{padding:10px}
 .meg3-daily-chart header,.meg3-trend-chart header{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -298,17 +319,20 @@
 .meg3-daily-chart-bars i{width:42%;min-height:3px;border-radius:2px 2px 0 0}.meg3-daily-chart-bars i.income{background:#3bdba8}.meg3-daily-chart-bars i.expense{background:#ff647a}
 .meg3-daily-chart footer{display:flex;justify-content:center;gap:16px;padding-top:7px;color:#95ada9;font-size:7px}
 .meg3-daily-chart footer span{display:flex;align-items:center;gap:4px}.meg3-daily-chart footer i{width:7px;height:7px;border-radius:50%}.meg3-daily-chart footer i.income{background:#3bdba8}.meg3-daily-chart footer i.expense{background:#ff647a}
-.meg3-cashflow-list{height:auto;margin-top:7px;overflow:visible;padding:0}
-.meg3-cashflow-list article{
-  min-height:58px;display:grid;grid-template-columns:minmax(0,1.2fr) .8fr .8fr 1fr;align-items:center;gap:7px;
-  padding:9px 10px;margin-bottom:6px;border:1px solid rgba(60,198,191,.14);border-radius:14px;background:rgba(3,49,51,.78)
+.meg3-cashflow-categories{
+  margin-top:7px;padding:9px 10px;border:1px solid rgba(57,201,193,.16);border-radius:15px;background:rgba(2,43,45,.74)
 }
-.meg3-cashflow-list article>span:first-child{min-width:0}
-.meg3-cashflow-list article strong{font-size:10px}
-.meg3-cashflow-list article small{display:block;color:#7f9b98;font-size:7.5px}
-.meg3-cashflow-list article>.income{color:#57ddb0;font-size:9px}
-.meg3-cashflow-list article>.expense{color:#ff7e8c;font-size:9px}
-.meg3-cashflow-list article>b{text-align:right;font-size:9px}
+.meg3-cashflow-categories>header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:1px 1px 6px}
+.meg3-cashflow-categories>header strong{font-size:10px}.meg3-cashflow-categories>header small{color:#42e3da;font-size:7px}
+.meg3-cashflow-categories article{
+  min-height:42px;display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:8px;
+  border-top:1px solid rgba(62,184,178,.10)
+}
+.meg3-category-rank{
+  width:24px;height:24px;display:grid;place-items:center;border-radius:8px;background:#07494c;color:#4ee6dd;font-size:8px;font-weight:900
+}
+.meg3-cashflow-categories article strong{font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meg3-cashflow-categories article b{font-size:9px;color:#e9f4f3;white-space:nowrap}
 .meg3-category-visual{min-height:178px;padding:12px;display:grid;grid-template-columns:46% minmax(0,1fr);align-items:center;gap:10px}
 .meg3-donut{width:min(128px,100%);aspect-ratio:1;margin:auto;border-radius:50%;display:grid;place-items:center;position:relative}
 .meg3-donut:after{content:"";position:absolute;inset:25%;border-radius:50%;background:#06383a}
