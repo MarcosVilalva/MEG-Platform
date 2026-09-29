@@ -27,7 +27,7 @@
 .meg2-app button{color:inherit;-webkit-tap-highlight-color:transparent;cursor:pointer}
 .meg2-shell{
   width:min(100%,560px);height:100dvh;min-height:100dvh;margin:0 auto;
-  display:grid;grid-template-rows:auto minmax(0,1fr) auto;position:relative;
+  display:grid;grid-template-rows:auto minmax(0,1fr) calc(68px + env(safe-area-inset-bottom));position:relative;
   background:linear-gradient(180deg,rgba(0,54,55,.94),rgba(0,35,38,.99));
   border-inline:1px solid rgba(104,255,245,.07);box-shadow:0 0 80px rgba(0,0,0,.32)
 }
@@ -41,11 +41,12 @@
 }
 .meg2-brand{
   width:48px;height:48px;min-width:48px;min-height:48px;max-width:48px;max-height:48px;
-  padding:4px;border:1px solid var(--meg2-line-strong);border-radius:12px;
+  padding:0;overflow:hidden;appearance:none;
+  border:1px solid var(--meg2-line-strong);border-radius:12px;
   background:linear-gradient(145deg,rgba(8,111,111,.82),rgba(0,50,53,.92));
   box-shadow:inset 0 0 18px rgba(25,232,223,.08),0 5px 18px rgba(0,0,0,.15)
 }
-.meg2-brand img{width:100%;height:100%;object-fit:contain;display:block}
+.meg2-brand img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
 .meg2-period{
   min-width:0;min-height:48px;border:1px solid var(--meg2-line);border-radius:12px;
   background:linear-gradient(180deg,rgba(4,72,72,.8),rgba(1,50,52,.9));
@@ -328,24 +329,37 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-card-detail>footer .apply{border:1px solid #2be8db;background:linear-gradient(180deg,#0a8d89,#076765);color:#fff}
 
 .meg2-dock{
-  height:68px;min-height:68px;box-sizing:border-box;
-  padding:5px 6px max(5px,env(safe-area-inset-bottom));
+  width:100%;min-width:0;max-width:100%;
+  height:calc(68px + env(safe-area-inset-bottom));
+  min-height:calc(68px + env(safe-area-inset-bottom));
+  max-height:calc(68px + env(safe-area-inset-bottom));
+  box-sizing:border-box;flex:none;
+  padding:5px 6px calc(5px + env(safe-area-inset-bottom));
   border-top:1px solid rgba(61,220,212,.17);background:rgba(0,38,41,.97);
-  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch;z-index:6
+  display:grid;grid-template-columns:repeat(5,1fr);align-items:stretch;z-index:6
 }
 .meg2-dock>button{
-  min-width:0;height:100%;box-sizing:border-box;
+  width:100%;min-width:0;max-width:100%;
+  height:58px;min-height:58px;max-height:58px;
+  padding:0;margin:0;box-sizing:border-box;
   border:0;background:transparent;
   display:grid;justify-items:center;align-content:center;gap:3px;
-  color:#d4e3e3;position:relative
+  color:#d4e3e3;position:relative;transform:none!important
 }
 .meg2-dock>button>span:last-child,.meg2-new small{font-size:7.5px}
 .meg2-dock>button.active{color:var(--meg2-cyan)}
 .meg2-dock>button.active::before{content:"";position:absolute;inset:0 2px;border-radius:14px;background:rgba(8,133,132,.18);border:1px solid rgba(32,231,224,.27);z-index:-1}
-.meg2-new{overflow:visible!important}
+.meg2-new{
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  height:58px!important;min-height:58px!important;max-height:58px!important;
+  overflow:visible!important;transform:none!important
+}
 .meg2-new>span:first-child{
-  width:50px!important;height:50px!important;min-width:50px!important;min-height:50px!important;aspect-ratio:1;
-  margin-top:-19px!important;box-sizing:border-box;flex:none;
+  width:50px!important;height:50px!important;
+  min-width:50px!important;min-height:50px!important;
+  max-width:50px!important;max-height:50px!important;
+  aspect-ratio:1;flex:0 0 50px;
+  margin-top:-19px!important;box-sizing:border-box;transform:none!important;
   border:1px solid var(--meg2-cyan);border-radius:50%;
   display:grid;place-items:center;
   color:var(--meg2-cyan);
