@@ -1,39 +1,85 @@
 .meg3-benefit-overlay{
   position:fixed;inset:0;z-index:2147482350;width:100vw;height:100dvh;
-  display:grid;place-items:end center;overflow:hidden;background:rgba(0,18,20,.75);}
+  display:grid;place-items:end center;overflow:hidden;background:rgba(0,18,20,.78);backdrop-filter:blur(3px)
+}
 .meg3-benefit-modal{
-  width:min(100%,620px);height:min(88dvh,820px);max-height:88dvh;min-height:0;
-  display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;overflow:hidden;
-  border:1px solid rgba(48,235,221,.45);border-bottom:0;border-radius:24px 24px 0 0;
-  background:linear-gradient(165deg,#063d40,#032d30 54%,#012326);color:#f7ffff;
-  box-shadow:0 -22px 70px rgba(0,0,0,.38),0 0 28px rgba(31,232,220,.10)
+  width:min(100%,560px);height:min(92dvh,860px);max-height:92dvh;min-height:0;
+  display:grid;grid-template-rows:auto auto auto auto auto minmax(0,1fr);gap:8px;overflow:hidden;
+  padding:13px 13px calc(10px + env(safe-area-inset-bottom));
+  border:1px solid rgba(48,235,221,.50);border-bottom:0;border-radius:24px 24px 0 0;
+  background:
+    radial-gradient(circle at 82% 0%,rgba(30,225,214,.10),transparent 30%),
+    linear-gradient(165deg,#064246,#033034 54%,#01272b);
+  color:#f7ffff;box-shadow:0 -22px 70px rgba(0,0,0,.40),0 0 28px rgba(31,232,220,.11)
 }
-.meg3-benefit-modal>header{
-  min-height:78px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;
-  display:flex;align-items:end;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(55,201,194,.14)
+.meg3-benefit-modal>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.meg3-benefit-modal>header h2{margin:0 0 3px;font-size:23px;letter-spacing:-.035em;line-height:1}
+.meg3-benefit-modal>header p{margin:0;color:#9eb7b4;font-size:9px}
+.meg3-benefit-modal>header button{
+  width:40px;height:40px;flex:0 0 40px;border:1px solid rgba(60,204,197,.24);border-radius:12px;
+  background:#043638;color:#fff;display:grid;place-items:center
 }
-.meg3-benefit-modal>header small{display:block;color:#54e9df;font-size:9px;font-weight:800;letter-spacing:.12em}
-.meg3-benefit-modal>header h2{margin:4px 0 2px;font-size:24px;line-height:1}
-.meg3-benefit-modal>header p{margin:0;color:#93afac;font-size:9px}
-.meg3-benefit-modal>header button{width:44px;height:44px;border:1px solid rgba(60,204,197,.20);border-radius:14px;background:#043638;color:#fff;font-size:27px}
-.meg3-benefit-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:10px 14px}
-.meg3-benefit-kpis article{min-width:0;min-height:66px;padding:9px;border:1px solid rgba(61,196,190,.16);border-radius:14px;background:rgba(4,61,63,.70)}
-.meg3-benefit-kpis small{display:block;color:#91aaa7;font-size:8px}
-.meg3-benefit-kpis strong{display:block;margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}
-.meg3-benefit-kpis .credit strong{color:#59e5b5}
-.meg3-benefit-kpis .spent strong{color:#ff8290}
-.meg3-benefit-kpis .balance{border-color:rgba(47,232,219,.34)}
-.meg3-benefit-kpis .balance strong{color:#55e8df}
-.meg3-benefit-list{min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 14px 8px}
+.meg3-benefit-card{
+  min-height:126px;padding:15px;display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:11px;
+  border:1px solid rgba(71,238,225,.36);border-radius:18px;
+  background:
+    radial-gradient(circle at 88% 20%,rgba(79,236,175,.18),transparent 28%),
+    linear-gradient(135deg,#123f34 0%,#0a6b53 48%,#073c39 100%);
+  box-shadow:inset 0 0 26px rgba(104,255,223,.08),0 8px 24px rgba(0,0,0,.20)
+}
+.meg3-benefit-card>span{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:rgba(255,255,255,.10);color:#f4df65}
+.meg3-benefit-card>div{min-width:0;display:grid;gap:2px}
+.meg3-benefit-card small{color:#d5f0e4;font-size:8px;font-weight:900;letter-spacing:.09em}
+.meg3-benefit-card strong{font-size:21px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meg3-benefit-card em{color:#c8e4da;font-size:9px;font-style:normal}
+.meg3-benefit-card>b{font-size:15px;letter-spacing:.15em;color:#e7f8f1}
+.meg3-benefit-balance{
+  min-height:78px;padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-rows:auto auto;gap:3px 12px;
+  align-items:center;border:1px solid rgba(50,225,214,.32);border-radius:15px;background:linear-gradient(145deg,rgba(5,75,76,.84),rgba(2,49,52,.94))
+}
+.meg3-benefit-balance>small{grid-column:1;color:#a4bdb9;font-size:8px}
+.meg3-benefit-balance>strong{grid-column:1;color:#4ce9df;font-size:25px;letter-spacing:-.035em}
+.meg3-benefit-balance>span{grid-row:1/3;display:grid;align-content:center;gap:3px;min-width:72px}
+.meg3-benefit-balance>span em{color:#8da9a5;font-size:7px;font-style:normal}
+.meg3-benefit-balance>span b{color:#5be2b2;font-size:9px;white-space:nowrap}
+.meg3-benefit-balance>span b.spent{color:#ff7c8d}
+.meg3-benefit-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.meg3-benefit-actions button{
+  min-height:46px;border:1px solid rgba(49,225,214,.40);border-radius:13px;background:linear-gradient(160deg,rgba(5,83,83,.86),rgba(2,50,53,.94));
+  color:#f4ffff;display:flex;align-items:center;justify-content:center;gap:7px;font-size:9px;font-weight:850
+}
+.meg3-benefit-actions button svg{color:#43e9de}
+.meg3-benefit-tabs{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;overflow:hidden;
+  border:1px solid rgba(53,207,199,.24);border-radius:11px;background:#03383a
+}
+.meg3-benefit-tabs button{height:36px;border:0;border-right:1px solid rgba(63,192,184,.11);background:transparent;color:#bdd0ce;font-size:8px;font-weight:800}
+.meg3-benefit-tabs button:last-child{border-right:0}
+.meg3-benefit-tabs button.active{background:linear-gradient(180deg,#1fcfc4,#14a9a2);color:#032c2e;font-weight:900}
+.meg3-benefit-list{min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:1px 1px 5px}
 .meg3-benefit-list::-webkit-scrollbar{display:none}
-.meg3-benefit-list article{min-height:58px;margin-bottom:6px;padding:9px 11px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;border:1px solid rgba(57,187,181,.14);border-radius:14px;background:rgba(3,52,54,.76)}
-.meg3-benefit-list span{min-width:0}
-.meg3-benefit-list strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
-.meg3-benefit-list small{display:block;margin-top:3px;color:#8da6a3;font-size:8px}
-.meg3-benefit-list b{white-space:nowrap;font-size:11px}.meg3-benefit-list b.credit{color:#59e5b5}.meg3-benefit-list b.spent{color:#ff8290}
+.meg3-benefit-list article{
+  min-height:60px;margin-bottom:6px;padding:7px 9px;display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:8px;
+  border:1px solid rgba(57,187,181,.17);border-radius:13px;background:rgba(3,52,54,.78)
+}
+.meg3-benefit-list .icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:#075154;color:#f0dc63}
+.meg3-benefit-list .icon.credit{color:#59e5b5;background:#07574d}
+.meg3-benefit-list .copy{min-width:0}
+.meg3-benefit-list strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+.meg3-benefit-list small{display:block;margin-top:3px;color:#8da6a3;font-size:7.5px}
+.meg3-benefit-list>b{white-space:nowrap;font-size:10px}.meg3-benefit-list>b.credit{color:#59e5b5}.meg3-benefit-list>b.spent{color:#ff8290}
 .meg3-benefit-empty{padding:24px;text-align:center;color:#8aa4a1;font-size:10px}
-.meg3-benefit-modal>footer{min-height:64px;padding:8px 14px calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1.35fr;gap:8px;border-top:1px solid rgba(58,199,192,.14);background:rgba(1,34,36,.96)}
-.meg3-benefit-modal>footer button{min-height:46px;border-radius:13px;font-weight:800}
-.meg3-benefit-modal>footer .secondary{border:1px solid rgba(65,192,187,.20);background:#04383a;color:#d9efed}
-.meg3-benefit-modal>footer .primary{border:1px solid #2de7da;background:linear-gradient(180deg,#0a8d89,#076765);color:#fff}
-@media(max-height:720px){.meg3-benefit-modal{height:96dvh;max-height:96dvh}.meg3-benefit-modal>header{min-height:64px}.meg3-benefit-modal>header p{display:none}.meg3-benefit-kpis article{min-height:55px}.meg3-benefit-modal>footer{min-height:56px}}
+@media(max-height:720px){
+  .meg3-benefit-modal{height:98dvh;max-height:98dvh;gap:6px;padding-top:8px}
+  .meg3-benefit-card{min-height:102px}
+  .meg3-benefit-balance{min-height:65px}
+  .meg3-benefit-actions button{min-height:40px}
+  .meg3-benefit-tabs button{height:33px}
+}
+@media(max-width:350px){
+  .meg3-benefit-modal{padding-inline:9px}
+  .meg3-benefit-card{grid-template-columns:42px minmax(0,1fr) auto;padding:11px}
+  .meg3-benefit-card strong{font-size:18px}
+  .meg3-benefit-balance{gap:3px 7px;padding-inline:8px}
+  .meg3-benefit-balance>strong{font-size:22px}
+}
