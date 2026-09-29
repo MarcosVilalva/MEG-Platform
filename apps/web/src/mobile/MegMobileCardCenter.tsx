@@ -155,7 +155,7 @@ export function MegMobileCardCenter({
   }
 
   return <div className="meg3-cardcenter-overlay" role="presentation">
-    <section className="meg3-cardcenter" role="dialog" aria-modal="true" aria-label={view === 'center' ? `Central do cartão ${cardLabel}` : `Fatura do cartão ${cardLabel}`}>
+    <section className="meg3-cardcenter" data-view={view} role="dialog" aria-modal="true" aria-label={view === 'center' ? `Central do cartão ${cardLabel}` : `Fatura do cartão ${cardLabel}`}>
       <header>
         <div><small>{view === 'center' ? 'CENTRAL DO CARTÃO' : 'DETALHE DA FATURA'}</small><h2>{view === 'center' ? 'Central do cartão' : 'Fatura do cartão'}</h2><p>{cardLabel} · final {card.lastFour || '0000'}</p></div>
         <button type="button" onClick={onClose}><MegIcon name="x" size={18}/></button>
