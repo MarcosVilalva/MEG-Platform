@@ -117,6 +117,12 @@ assert.ok(
   'Lista deve manter respiro visual próprio antes do dock sem alterar a altura da barra inferior.',
 );
 assert.ok(
+  movementCss.includes('grid-template-columns:minmax(0,1fr) var(--meg2-header-tile,50px)')
+  && movementCss.includes('max-width:var(--meg2-header-tile,50px)')
+  && movementCss.includes('contain:size layout paint'),
+  'Ação superior de Lançamentos deve manter exatamente a mesma dimensão do cabeçalho em qualquer troca de tela.',
+);
+assert.ok(
   launchCss.includes('.meg3-form-grid-faithful{grid-template-columns:1fr}'),
   'Formulário mobile principal deve usar fluxo vertical fiel à prévia.',
 );
