@@ -160,11 +160,33 @@ function privacyCover() {
   if (typeof document === 'undefined') return null;
   let cover = document.querySelector('#androidPrivacyCover');
   if (cover) return cover;
-  cover = document.createElement('div');
+
+  const asset = (path) => {
+    try {
+      return new URL(path.replace(/^\/+/, ''), document.baseURI).href;
+    } catch {
+      return path;
+    }
+  };
+
+  cover = document.createElement('main');
   cover.id = 'androidPrivacyCover';
-  cover.setAttribute('aria-hidden', 'true');
-  cover.style.cssText = 'position:fixed;inset:0;z-index:2147483646;display:grid;place-items:center;background:#063f37;color:#fff;font:800 22px system-ui,sans-serif;';
-  cover.innerHTML = '<span>MEG Finance System protegido</span>';
+  cover.className = 'meg-loading-screen';
+  cover.setAttribute('aria-live', 'polite');
+  cover.setAttribute('aria-busy', 'true');
+  cover.setAttribute('aria-label', 'Protegendo seus dados.');
+  cover.innerHTML = `
+    <section class="meg-loading-layout">
+      <div class="meg-loading-center">
+        <img class="meg-loading-brand" src="${asset('brand/meg-loading-lockup.svg')}" alt="MEG Finanças">
+        <div class="meg-loading-progress" aria-hidden="true">
+          <div class="meg-loading-track"><span style="width:34%"></span></div>
+        </div>
+        <p class="meg-loading-status">Protegendo seus dados...</p>
+      </div>
+      <p class="meg-loading-footer">Sua sessão permanece segura<br>enquanto confirmamos sua identidade.</p>
+    </section>`;
+  cover.style.zIndex = '2147483646';
   document.body.appendChild(cover);
   return cover;
 }
