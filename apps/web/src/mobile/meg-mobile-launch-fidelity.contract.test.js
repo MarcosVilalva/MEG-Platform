@@ -77,10 +77,16 @@ for (const token of ['Todas as categorias', 'Todas as contas', 'Todas as formas'
 }
 assert.ok(
   movements.includes('meg3-movement-filter-overlay')
-  && movements.includes('Filtrar lançamentos')
+  && movements.includes('Buscar e filtrar')
+  && movements.includes('meg3-filter-search')
   && movements.includes('Limpar')
   && movements.includes('Aplicar'),
-  'Filtros de Lançamentos devem continuar acessíveis sem ocupar a composição principal aprovada.',
+  'Busca e filtros de Lançamentos devem ficar concentrados em um único painel acionado pelo cabeçalho.',
+);
+assert.ok(
+  !movements.includes('meg3-movement-toolbar')
+  && movements.includes('aria-label="Buscar e filtrar lançamentos"'),
+  'Lançamentos não deve voltar a exibir a antiga barra separada de busca, filtro, mês e carteira.',
 );
 assert.ok(!movements.includes('meg3-event-date-group'), 'Lista não deve depender de agrupamento estrutural para representar os registros.');
 assert.ok(
