@@ -293,7 +293,9 @@
   scrollbar-width:none;
 }
 .meg3-event-list{
-  padding:0 1px 4px;
+  margin-bottom:7px;
+  padding:0 1px 10px;
+  scroll-padding-bottom:10px;
 }
 .meg3-event-list::-webkit-scrollbar,.meg3-timeline::-webkit-scrollbar,.meg3-cashflow-list::-webkit-scrollbar,.meg3-analytics-list::-webkit-scrollbar{display:none}
 
