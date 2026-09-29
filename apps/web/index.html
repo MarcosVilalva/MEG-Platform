@@ -33,10 +33,44 @@
         }
       })();
     </script>
+    <style>
+      html,body,#root{margin:0;width:100%;min-height:100%;background:#003436}
+      #meg-initial-boot{
+        position:fixed;inset:0;z-index:2147483000;width:100vw;height:100dvh;overflow:hidden;
+        display:grid;place-items:center;color:#f6ffff;font-family:Inter,Segoe UI,Arial,sans-serif;
+        background:
+          radial-gradient(circle at 50% 44%,rgba(18,118,116,.07),transparent 28%),
+          linear-gradient(180deg,#002f31 0%,#003739 46%,#002a2d 100%);
+      }
+      #meg-initial-boot .meg-initial-center{width:min(82vw,310px);display:grid;justify-items:center;gap:28px}
+      #meg-initial-boot img{display:block;width:min(42vw,164px);height:auto}
+      #meg-initial-boot .meg-initial-track{
+        width:100%;height:8px;overflow:hidden;border:1px solid rgba(43,226,214,.88);border-radius:999px;
+        background:rgba(0,26,29,.48);box-shadow:0 0 10px rgba(25,222,211,.04)
+      }
+      #meg-initial-boot .meg-initial-track>span{
+        display:block;width:18%;height:100%;min-width:18px;border-radius:inherit;
+        background:linear-gradient(90deg,#18c8ee 0%,#25ddd6 58%,#3ce8b0 100%);
+        box-shadow:0 0 10px rgba(35,227,209,.18)
+      }
+      #meg-initial-boot p{margin:-12px 0 0;font-size:14px;text-align:center;color:#eefafa}
+      @media(max-height:640px){
+        #meg-initial-boot .meg-initial-center{gap:20px}
+        #meg-initial-boot img{width:min(36vw,126px)}
+      }
+    </style>
     <title>MEG Finanças — Phoenix V15</title>
   </head>
   <body data-meg-shell="phoenix-v15">
-    <div id="root"></div>
+    <div id="root">
+      <main id="meg-initial-boot" aria-live="polite" aria-busy="true" aria-label="Carregando MEG Finanças">
+        <section class="meg-initial-center">
+          <img src="./brand/meg-loading-lockup.svg" alt="MEG Finanças" />
+          <div class="meg-initial-track" aria-hidden="true"><span></span></div>
+          <p>Carregando seus dados...</p>
+        </section>
+      </main>
+    </div>
     <script type="module" src="/src/app/main.tsx"></script>
   </body>
 </html>
