@@ -34,25 +34,17 @@
 
 .meg2-header{
   min-height:64px;padding:max(7px,env(safe-area-inset-top)) 11px 7px;
-  display:grid;grid-template-columns:var(--meg2-header-tile) minmax(0,1fr) auto;gap:8px;align-items:center;
+  display:grid;grid-template-columns:50px minmax(0,1fr) auto;gap:8px;align-items:center;
   border-bottom:1px solid rgba(78,221,214,.17);
   background:linear-gradient(180deg,rgba(0,57,58,.99),rgba(0,47,49,.95));
   z-index:5
 }
 .meg2-brand{
-  width:var(--meg2-header-tile);height:var(--meg2-header-tile);
-  min-width:var(--meg2-header-tile);min-height:var(--meg2-header-tile);
-  max-width:var(--meg2-header-tile);max-height:var(--meg2-header-tile);
-  padding:0;box-sizing:border-box;overflow:hidden;aspect-ratio:1;
-  border:1px solid var(--meg2-line-strong);border-radius:12px;
+  width:48px;height:48px;padding:4px;border:1px solid var(--meg2-line-strong);border-radius:12px;
   background:linear-gradient(145deg,rgba(8,111,111,.82),rgba(0,50,53,.92));
-  box-shadow:inset 0 0 18px rgba(25,232,223,.08),0 5px 18px rgba(0,0,0,.15);
-  contain:size layout paint
+  box-shadow:inset 0 0 18px rgba(25,232,223,.08),0 5px 18px rgba(0,0,0,.15)
 }
-.meg2-brand img{
-  width:100%;height:100%;min-width:100%;min-height:100%;max-width:none;
-  object-fit:cover;object-position:center;display:block;transform:none!important
-}
+.meg2-brand img{width:100%;height:100%;object-fit:contain;display:block}
 .meg2-period{
   min-width:0;min-height:48px;border:1px solid var(--meg2-line);border-radius:12px;
   background:linear-gradient(180deg,rgba(4,72,72,.8),rgba(1,50,52,.9));
@@ -83,14 +75,9 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-title h1{margin:1px 0;font-size:clamp(29px,8.3vw,39px);line-height:.98;letter-spacing:-.045em}
 .meg2-title p,.meg2-page-title p{margin:0;color:#d0e2e2;font-size:11px}
 .meg2-title>i,.meg2-page-title>span{
-  position:absolute;right:4px;top:4px;
-  width:var(--meg2-header-tile);height:var(--meg2-header-tile);
-  min-width:var(--meg2-header-tile);min-height:var(--meg2-header-tile);
-  max-width:var(--meg2-header-tile);max-height:var(--meg2-header-tile);
-  box-sizing:border-box;aspect-ratio:1;display:grid;place-items:center;
+  position:absolute;right:4px;top:4px;width:50px;height:50px;display:grid;place-items:center;
   border:1px solid var(--meg2-line);border-radius:11px;color:var(--meg2-cyan);
-  background:linear-gradient(180deg,rgba(3,75,76,.8),rgba(2,53,55,.9));font-style:normal;
-  contain:size layout paint;transform:none!important
+  background:linear-gradient(180deg,rgba(3,75,76,.8),rgba(2,53,55,.9));font-style:normal
 }
 
 .meg2-balance,.meg2-flow article,.meg2-summary article,.meg2-benefit,.meg2-quick,
@@ -466,8 +453,8 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-period-sheet button:disabled,.meg2-period-sheet input:disabled{opacity:.55;cursor:not-allowed}
 
 @media(max-width:390px){
-  .meg2-header{grid-template-columns:var(--meg2-header-tile) minmax(0,1fr) auto;gap:7px;padding-inline:9px}
-  .meg2-brand{width:var(--meg2-header-tile);height:var(--meg2-header-tile);min-width:var(--meg2-header-tile);min-height:var(--meg2-header-tile)}
+  .meg2-header{grid-template-columns:50px minmax(0,1fr) auto;gap:7px;padding-inline:9px}
+  .meg2-brand{width:48px;height:48px}
   .meg2-user strong{display:none}.meg2-avatar{width:39px;height:39px}
   .meg2-main{padding-inline:9px}
   .meg2-balance strong{font-size:clamp(25px,8.4vw,31px)}
