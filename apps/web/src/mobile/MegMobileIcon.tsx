@@ -4,7 +4,7 @@ export type MegIconName =
   | 'cart' | 'car' | 'wifi' | 'phone' | 'building' | 'play' | 'card'
   | 'banknote' | 'circle-dollar' | 'house' | 'fuel' | 'droplet' | 'heart-pulse'
   | 'graduation-cap' | 'ticket' | 'shopping-bag' | 'repeat' | 'landmark' | 'receipt'
-  | 'piggy-bank' | 'briefcase' | 'arrow-up' | 'arrow-down' | 'arrows-right-left'
+  | 'piggy-bank' | 'briefcase' | 'cup-soda' | 'sandwich' | 'arrow-up' | 'arrow-down' | 'arrows-right-left'
   | 'x' | 'chevron-right' | 'chevron-down' | 'check-line';
 
 type IconProps = { name: MegIconName; size?: number; strokeWidth?: number; className?: string };
