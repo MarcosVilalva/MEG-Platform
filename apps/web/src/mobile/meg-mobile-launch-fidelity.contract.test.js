@@ -91,8 +91,13 @@ assert.ok(
   movements.includes('className="meg3-movement-kpis"')
   && movements.includes('money.format(totals.income)')
   && movements.includes('money.format(totals.expense)')
-  && movements.includes('onClick={onNew}'),
-  'Lançamentos deve preservar Entradas, Saídas, Resultado, contagem e ação Novo da referência aprovada.',
+  && movements.includes('meg3-movement-list-head'),
+  'Lançamentos deve preservar Entradas, Saídas, Resultado e contagem da referência aprovada.',
+);
+assert.ok(
+  !movements.includes('onClick={onNew}')
+  && !movements.includes('weekdayShort(event)'),
+  'Tela de Lançamentos não deve duplicar a ação Novo nem exibir dia da semana nos cards.',
 );
 assert.ok(
   movementCss.includes('.meg3-payment-label{'),
