@@ -391,7 +391,7 @@ function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate, on
       <div className="meg2-home-recent-list" data-meg-scroll-region="true">
         {recent.map((item) => {
           const amount = signedEventAmount(item);
-          const icon = semanticIcon(item.description, item.category?.name, item.category?.group);
+          const icon = semanticIcon(item.description, item.category?.name, item.sourceDetails?.group);
           return <button key={item.id} onClick={() => onNavigate('movements')}>
             <span className={'icon-' + icon}><Icon name={icon}/></span>
             <p><b>{item.description}</b><small>{shortDate.format(new Date(String(item.date).slice(0,10) + 'T12:00:00Z'))} • {item.paymentMethod?.name || item.account?.name || 'Lançamento'}</small></p>
