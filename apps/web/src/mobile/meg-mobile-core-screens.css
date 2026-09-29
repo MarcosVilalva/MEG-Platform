@@ -158,7 +158,7 @@
 /* MEG 29-09-2026 · Lançamentos · referência visual oficial
    Bloco canônico: a tela permanece fixa e somente a lista rola. */
 .meg3-movements{
-  grid-template-rows:auto auto auto minmax(0,1fr);
+  grid-template-rows:auto auto auto auto minmax(0,1fr);
   gap:clamp(6px,.78dvh,9px);
   padding:clamp(7px,.9dvh,10px) clamp(9px,2.5vw,12px) clamp(6px,.8dvh,9px);
   background:
@@ -271,17 +271,78 @@
 .meg3-movement-kpis .expense>span,.meg3-movement-kpis .expense strong,
 .meg3-movement-kpis .negative>span,.meg3-movement-kpis .negative strong{color:#ff7588}
 
-.meg3-movement-list-head{
+.meg3-movement-toolbar{
   min-width:0;
-  min-height:28px;
+  display:grid;
+  grid-template-columns:42px 42px minmax(0,1fr) 42px;
+  gap:7px;
+  align-items:center;
+}
+.meg3-movement-toolbar button{
+  height:40px;
+  min-width:0;
   display:flex;
   align-items:center;
+  justify-content:center;
+  gap:6px;
+  box-sizing:border-box;
+  border:1px solid rgba(48,211,202,.34);
+  border-radius:11px;
+  background:linear-gradient(155deg,rgba(4,68,70,.98),rgba(2,43,46,.98));
+  color:#dff7f4;
+  box-shadow:inset 0 0 14px rgba(34,232,220,.025);
+}
+.meg3-movement-toolbar button.icon-only{width:42px;padding:0;color:#45e7dd}
+.meg3-movement-toolbar button.period{
   justify-content:flex-start;
+  padding:0 9px;
+  color:#e9f8f6;
+}
+.meg3-movement-toolbar button.period span{
+  min-width:0;
+  flex:1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  text-align:left;
+  font-size:9px;
+  font-weight:800;
+}
+.meg3-movement-toolbar button.active{
+  border-color:#30ebde;
+  background:linear-gradient(155deg,rgba(6,92,93,.98),rgba(3,55,58,.98));
+  box-shadow:0 0 13px rgba(43,232,220,.10),inset 0 0 16px rgba(43,232,220,.05);
+}
+.meg3-movement-list-head{
+  min-width:0;
+  min-height:32px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
   padding:0 2px;
 }
 .meg3-movement-list-head>span{min-width:0}
 .meg3-movement-list-head strong{display:block;font-size:11.5px}
 .meg3-movement-list-head small{display:block;margin-top:1px;color:#8aa7a3;font-size:6.9px}
+.meg3-movement-new{
+  flex:0 0 auto;
+  height:30px;
+  padding:0 10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  border:1px solid rgba(42,235,222,.68);
+  border-radius:10px;
+  background:linear-gradient(180deg,rgba(13,158,153,.92),rgba(7,108,108,.96));
+  color:#ddfffb;
+  font-size:8px;
+  font-weight:900;
+  box-shadow:0 0 14px rgba(35,230,219,.09),inset 0 0 12px rgba(97,255,244,.06);
+}
+.meg3-movement-new span{line-height:1}
+
 
 .meg3-event-list,.meg3-timeline,.meg3-cashflow-list,.meg3-analytics-list{
   min-height:0;
@@ -634,4 +695,18 @@
   .meg3-event-card{grid-template-columns:34px minmax(0,1fr) auto}
   .meg3-event-copy strong{font-size:10px}
   .meg3-event-copy em,.meg3-payment-label{font-size:6.5px}
+}
+
+@media(max-width:365px){
+  .meg3-movement-toolbar{grid-template-columns:38px 38px minmax(0,1fr) 38px;gap:5px}
+  .meg3-movement-toolbar button{height:37px}
+  .meg3-movement-toolbar button.icon-only{width:38px}
+  .meg3-movement-toolbar button.period{padding-inline:7px}
+  .meg3-movement-toolbar button.period span{font-size:8px}
+}
+@media(max-height:720px){
+  .meg3-movement-toolbar button{height:35px}
+  .meg3-movement-toolbar{grid-template-columns:38px 38px minmax(0,1fr) 38px;gap:5px}
+  .meg3-movement-toolbar button.icon-only{width:38px}
+  .meg3-movement-new{height:28px}
 }
