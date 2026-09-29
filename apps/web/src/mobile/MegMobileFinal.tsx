@@ -734,6 +734,19 @@ function MenuSheet({ onClose, onNavigate, onLogout, onCloseApp }: { onClose: () 
   </div>;
 }
 
+function QuickLaunchSheet({ onClose, onChoose }: { onClose: () => void; onChoose: (preset: LaunchPreset) => void }) {
+  return <div className="meg2-overlay meg2-quick-launch-overlay" onClick={onClose}>
+    <section className="meg2-quick-launch" role="dialog" aria-modal="true" aria-label="Novo lançamento" onClick={(event) => event.stopPropagation()}>
+      <header><div><small>NOVO RÁPIDO</small><h2>Novo lançamento</h2><p>O que você deseja registrar?</p></div><button type="button" aria-label="Fechar" onClick={onClose}><Icon name="x" size={18}/></button></header>
+      <div>
+        <button className="expense" type="button" onClick={() => onChoose('expense')}><span><Icon name="arrow-down" size={25}/></span><b>Despesa</b><small>Registre uma nova saída</small><Icon name="chevron-right" size={17}/></button>
+        <button className="income" type="button" onClick={() => onChoose('income')}><span><Icon name="arrow-up" size={25}/></span><b>Receita</b><small>Registre uma nova entrada</small><Icon name="chevron-right" size={17}/></button>
+        <button className="benefit" type="button" onClick={() => onChoose('benefit')}><span><Icon name="food" size={25}/></span><b>Alimentação</b><small>Registre uma despesa com alimentação</small><Icon name="chevron-right" size={17}/></button>
+      </div>
+    </section>
+  </div>;
+}
+
 function PeriodSheet({ data, initialMode, loading = false, error = '', onClose, onSelectMonth, onSelectRange, onSelectAll }: {
   data: PhoenixReadModel;
   initialMode: PeriodMode;
@@ -817,6 +830,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
   const [menuOpen, setMenuOpen] = useState(false);
   const [periodOpen, setPeriodOpen] = useState(false);
   const [launchSheet, setLaunchSheet] = useState<{ preset: LaunchPreset; event?: FinancialEvent | null } | null>(null);
+  const [quickLaunchOpen, setQuickLaunchOpen] = useState(false);
   const [settingsEntry, setSettingsEntry] = useState<'overview'|'profile'>('overview');
   useEffect(() => {
     void hydratePhoenixAvatarPreference(data.user.id);
@@ -843,8 +857,9 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
         {view === 'analytics' ? <MegMobileAnalytics data={data}/> : null}
         {view === 'settings' ? <MegMobileSettings data={data} onLogout={onLogout} initialSection={settingsEntry}/> : null}
       </div>
-      <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={onNavigate} onLaunch={(preset) => setLaunchSheet({ preset })} onMenu={() => setMenuOpen(true)}/>
+      <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={onNavigate} onLaunch={() => setQuickLaunchOpen(true)} onMenu={() => setMenuOpen(true)}/>
     </div>
+    {quickLaunchOpen ? <QuickLaunchSheet onClose={() => setQuickLaunchOpen(false)} onChoose={(preset) => { setQuickLaunchOpen(false); setLaunchSheet({ preset }); }}/> : null}
     {menuOpen ? <MenuSheet onClose={() => setMenuOpen(false)} onNavigate={(next) => { if (next === 'settings') setSettingsEntry('overview'); onNavigate(next); }} onLogout={onLogout} onCloseApp={onClose}/> : null}
     {periodOpen ? <PeriodSheet data={data} initialMode={periodMode} loading={periodLoading} error={periodError} onClose={() => setPeriodOpen(false)} onSelectMonth={onSelectMonth} onSelectRange={onSelectRange} onSelectAll={onSelectAll}/> : null}
     {launchSheet ? <MegMobileLaunchSheet
@@ -853,7 +868,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
       event={launchSheet.event}
       onClose={() => setLaunchSheet(null)}
       appHeader={<Header data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={() => { setLaunchSheet(null); setPeriodOpen(true); }} onOpenProfile={() => { setLaunchSheet(null); setSettingsEntry('profile'); onNavigate('settings'); }}/>}
-      appDock={<Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={(next) => { setLaunchSheet(null); onNavigate(next); }} onLaunch={() => setLaunchSheet({ preset: 'expense' })} onMenu={() => { setLaunchSheet(null); setMenuOpen(true); }}/>}
+      appDock={<Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={(next) => { setLaunchSheet(null); onNavigate(next); }} onLaunch={() => { setLaunchSheet(null); setQuickLaunchOpen(true); }} onMenu={() => { setLaunchSheet(null); setMenuOpen(true); }}/>}
     /> : null}
   </div>;
 }
