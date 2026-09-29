@@ -1,11 +1,17 @@
 .meg4-settings{
   height:100%;min-height:0;max-height:100%;overflow:hidden;
-  display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:8px;
+  display:grid;grid-template-rows:auto minmax(0,1fr);gap:8px;
   padding:8px 10px 7px;color:#f6ffff;box-sizing:border-box
 }
-.meg4-settings-title>span{display:block;color:#4ce7dd;font-size:9px;font-weight:800;letter-spacing:.14em}
-.meg4-settings-title h1{margin:3px 0 2px;font-size:clamp(27px,8vw,38px);line-height:1}
-.meg4-settings-title p{margin:0;color:#9bb4b1;font-size:10px}
+.meg4-settings-title{position:relative;min-height:52px;padding-right:118px}
+.meg4-settings-title h1{margin:0 0 2px;font-size:clamp(27px,8vw,38px);line-height:1;letter-spacing:-.04em}
+.meg4-settings-title p{margin:0;color:#a8bfbc;font-size:10px}
+.meg4-settings-back{
+  position:absolute;right:0;top:2px;min-height:38px;padding:0 10px;
+  border:1px solid rgba(45,229,217,.30);border-radius:11px;background:#04383a;color:#4fe9df;
+  display:flex;align-items:center;gap:5px;font-size:8px;font-weight:850
+}
+.meg4-settings-back svg{transform:rotate(180deg)}
 .meg4-settings-nav{
   display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:4px;
   border:1px solid rgba(61,202,195,.16);border-radius:14px;background:rgba(2,41,43,.82)
@@ -14,6 +20,25 @@
   min-width:0;min-height:38px;padding:0 3px;border:0;border-radius:10px;background:transparent;color:#9db6b3;font-size:8px;font-weight:800
 }
 .meg4-settings-nav button.active{background:rgba(36,224,212,.12);color:#58e9df;box-shadow:inset 0 0 0 1px rgba(43,232,220,.23)}
+.meg4-settings-overview{display:grid;gap:8px}
+.meg4-settings-overview>section{
+  overflow:hidden;border:1px solid rgba(58,199,192,.17);border-radius:15px;
+  background:linear-gradient(145deg,rgba(5,69,70,.86),rgba(2,48,50,.90))
+}
+.meg4-settings-overview>section>small{
+  display:block;padding:9px 10px 5px;color:#59e8df;font-size:8px;font-weight:900;letter-spacing:.08em
+}
+.meg4-settings-overview>section>button{
+  width:100%;min-height:57px;padding:8px 10px;display:grid;grid-template-columns:36px minmax(0,1fr) 18px;align-items:center;gap:9px;
+  border:0;border-top:1px solid rgba(58,185,180,.11);background:transparent;color:#fff;text-align:left
+}
+.meg4-settings-overview>section>button>svg:first-child{
+  width:34px;height:34px;padding:7px;box-sizing:border-box;border-radius:10px;background:rgba(21,151,147,.15);color:#4ce8df
+}
+.meg4-settings-overview>section>button>span{min-width:0;display:grid;gap:2px}
+.meg4-settings-overview strong{font-size:10px}
+.meg4-settings-overview em{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8fa9a6;font-size:7.5px;font-style:normal}
+.meg4-settings-overview>section>button>svg:last-child{color:#3edfd6}
 .meg4-settings-workspace{min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:1px 1px 8px}
 .meg4-settings-workspace::-webkit-scrollbar{display:none}
 .meg4-profile-card,.meg4-settings-card{
@@ -116,4 +141,17 @@
 @media(max-width:390px){
   .meg4-settings-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
   .meg4-settings-nav button{min-height:30px}
+}
+
+/* Perfil e Configurações seguem a mesma linguagem das pranchas 29/09. */
+.meg4-profile-card{
+  border-color:rgba(47,229,217,.34);
+  background:linear-gradient(150deg,rgba(7,83,83,.93),rgba(3,52,55,.92));
+}
+.meg4-profile-card .meg4-avatar{width:64px;height:64px}
+.meg4-profile-card strong{font-size:20px}
+@media(max-height:700px){
+  .meg4-settings-overview{gap:5px}
+  .meg4-settings-overview>section>small{padding-top:6px}
+  .meg4-settings-overview>section>button{min-height:49px;padding-block:6px}
 }
