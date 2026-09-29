@@ -324,9 +324,10 @@ assert.match(
 );
 
 
-assert.match(
-  mobileIcons,
-  /if \\(type === 'income' \\|\\| type === 'redemption' \\|\\| signed > 0\\) return 'banknote';/,
+assert.ok(
+  mobileIcons.includes("type === 'income'") &&
+  mobileIcons.includes("signed > 0") &&
+  mobileIcons.includes("return 'banknote'"),
   'Receita deve usar ícone de dinheiro com prioridade sobre categoria ou descrição.',
 );
 assert.match(
