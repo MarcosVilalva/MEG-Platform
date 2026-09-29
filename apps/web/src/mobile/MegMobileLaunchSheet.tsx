@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { MegMobilePicker, type MegMobilePickerOption } from './MegMobilePicker';
+import { MegIcon } from './MegMobileIcon';
 import { clearMegMobileHistorySuggestionCache, loadMegMobileHistorySuggestions, type MegMobileHistorySuggestion } from './meg-mobile-description-history';
 import { cardDueDateForStatement, cardMonthPlus, cardStatementMonthForPurchase } from '../phoenix/data/card-dates';
 import {
@@ -429,9 +430,9 @@ export function MegMobileLaunchSheet({
 
       <div className="meg3-form-body" data-meg-scroll-region="true">
         {!event ? <div className="meg3-form-segment">
-          <button type="button" className={mode === 'expense' ? 'active expense' : ''} onClick={() => setMode('expense')}><span aria-hidden="true">↓</span>Despesa</button>
-          <button type="button" className={mode === 'income' ? 'active income' : ''} onClick={() => setMode('income')}><span aria-hidden="true">↑</span>Receita</button>
-          <button type="button" className={mode === 'benefit' ? 'active benefit' : ''} onClick={() => setMode('benefit')}><span aria-hidden="true">♜</span>Alimentação</button>
+          <button type="button" className={mode === 'expense' ? 'active expense' : ''} onClick={() => setMode('expense')}><span aria-hidden="true"><MegIcon name="arrow-down" size={17}/></span>Despesa</button>
+          <button type="button" className={mode === 'income' ? 'active income' : ''} onClick={() => setMode('income')}><span aria-hidden="true"><MegIcon name="banknote" size={17}/></span>Receita</button>
+          <button type="button" className={mode === 'benefit' ? 'active benefit' : ''} onClick={() => setMode('benefit')}><span aria-hidden="true"><MegIcon name="food" size={17}/></span>Alimentação</button>
         </div> : null}
 
         <div className="meg3-form-grid meg3-form-grid-faithful">
@@ -467,7 +468,7 @@ export function MegMobileLaunchSheet({
                 onPointerDown={(event) => event.preventDefault()}
                 onClick={() => useHistorySuggestion(suggestion)}
               >
-                <span className="meg3-history-icon" aria-hidden="true">↺</span>
+                <span className="meg3-history-icon" aria-hidden="true"><MegIcon name="repeat" size={15}/></span>
                 <span className="meg3-history-copy">
                   <strong>{suggestion.label}</strong>
                   <small>{[

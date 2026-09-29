@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
+import { MegIcon, resolveFinancialIcon } from './MegMobileIcon';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -25,22 +26,18 @@ function shortDate(value: string) {
   return year && month && day ? `${day}/${month}/${year}` : raw;
 }
 
-function EventGlyph({ positive }: { positive: boolean }) {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d={positive ? 'M12 19V5M7 10l5-5 5 5' : 'M12 5v14M7 14l5 5 5-5'} /></svg>;
-}
-
 function SearchGlyph() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>;
+  return <MegIcon name="search" size={20}/>;
 }
 
 function FilterGlyph() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h8M16 7h4M4 17h4M12 17h8M4 12h12"/><circle cx="14" cy="7" r="2"/><circle cx="10" cy="17" r="2"/><circle cx="18" cy="12" r="2"/></svg>;
+  return <MegIcon name="sliders" size={20}/>;
 }
 
 type MobileMovementKind = 'all' | 'income' | 'expense' | 'benefit';
 
 function normalizeMovementText(value: unknown) {
-  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+  return String(value || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('pt-BR');
 }
 
 function mobileMovementKind(event: FinancialEvent): Exclude<MobileMovementKind, 'all'> {
@@ -56,23 +53,15 @@ function mobileMovementKind(event: FinancialEvent): Exclude<MobileMovementKind, 
 }
 
 function EventContextGlyph({ event }: { event: FinancialEvent }) {
-  const context = normalizeMovementText([
-    event.description,
-    event.category?.name,
-    event.paymentMethod?.name,
-    event.sourceDetails?.group,
-    event.sourceDetails?.paymentMethod,
-  ].filter(Boolean).join(' '));
-  if (/aliment|verocard|fast food|restaurante|lanche|mercado/.test(context)) {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v8M9 3v8M6 7h3M7.5 11v10M15 3v8c0 2 3 2 3 0V3M16.5 13v8"/></svg>;
-  }
-  if (/pix/.test(context)) {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 4 4-4 4-4-4 4-4ZM7 8l-4 4 4 4 4-4M17 8l4 4-4 4-4-4M12 13l4 4-4 4-4-4"/></svg>;
-  }
-  if (/cartao|credito|latam|itau|santander|bradesco|nubank|mercado pago/.test(context)) {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9h18M7 15h4"/></svg>;
-  }
-  return <EventGlyph positive={signedAmount(event) >= 0}/>;
+  const icon = resolveFinancialIcon({
+    type: event.type,
+    signedAmount: signedAmount(event),
+    categoryName: event.category?.name,
+    sourceGroup: event.sourceDetails?.group,
+    description: event.description,
+    paymentName: event.paymentMethod?.name || event.sourceDetails?.paymentMethod,
+  });
+  return <MegIcon name={icon} size={22}/>;
 }
 
 function movementTone(event: FinancialEvent) {
@@ -120,9 +109,9 @@ export function MegMobileMovements({
     </header>
 
     <section className="meg3-movement-kpis" aria-label="Resumo dos lançamentos">
-      <article className="income"><span aria-hidden="true">↑</span><small>Entradas</small><strong>{money.format(totals.income)}</strong></article>
-      <article className="expense"><span aria-hidden="true">↓</span><small>Saídas</small><strong>{money.format(totals.expense)}</strong></article>
-      <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true">▥</span><small>Resultado</small><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong></article>
+      <article className="income"><span aria-hidden="true"><MegIcon name="banknote" size={18}/></span><small>Entradas</small><strong>{money.format(totals.income)}</strong></article>
+      <article className="expense"><span aria-hidden="true"><MegIcon name="arrow-down" size={18}/></span><small>Saídas</small><strong>{money.format(totals.expense)}</strong></article>
+      <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true"><MegIcon name="trend" size={18}/></span><small>Resultado</small><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong></article>
     </section>
 
     <nav className="meg3-movement-tabs" aria-label="Tipo de lançamento">
@@ -143,7 +132,7 @@ export function MegMobileMovements({
 
     <header className="meg3-movement-list-head">
       <span><strong>{rows.length.toLocaleString('pt-BR')} lançamento{rows.length === 1 ? '' : 's'}</strong><small>{data.month.split('-').reverse().join('/')} · toque para abrir</small></span>
-      <button type="button" onClick={onNew}><b aria-hidden="true">＋</b>Novo</button>
+      <button type="button" onClick={onNew}><b aria-hidden="true"><MegIcon name="plus" size={17}/></b>Novo</button>
     </header>
 
     <section className="meg3-event-list" data-meg-scroll-region="true">

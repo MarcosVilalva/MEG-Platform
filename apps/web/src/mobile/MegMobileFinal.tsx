@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { MegIcon, resolveFinancialIcon, type MegIconName } from './MegMobileIcon';
 import type { FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { hydratePhoenixAvatarPreference, phoenixAvatarImage, readPhoenixAvatarPreference } from '../phoenix/profile-avatar';
@@ -145,47 +146,11 @@ function cardRows(card: PhoenixReadModel['cards'][number] | undefined): MobileCa
 }
 
 function Icon({ name, size = 22 }: { name: string; size?: number }) {
-  const base = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
-  if (name === 'home') return <svg {...base}><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M9.5 20v-6h5v6"/></svg>;
-  if (name === 'plus') return <svg {...base}><path d="M12 5v14M5 12h14"/></svg>;
-  if (name === 'wallet') return <svg {...base}><path d="M4 7.5h14a2 2 0 0 1 2 2v9H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h11"/><path d="M15 11h6v5h-6a2.5 2.5 0 0 1 0-5Z"/></svg>;
-  if (name === 'calendar') return <svg {...base}><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></svg>;
-  if (name === 'trend') return <svg {...base}><path d="m4 17 5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg>;
-  if (name === 'up') return <svg {...base}><path d="M12 19V5M7 10l5-5 5 5"/></svg>;
-  if (name === 'down') return <svg {...base}><path d="M12 5v14M7 14l5 5 5-5"/></svg>;
-  if (name === 'file') return <svg {...base}><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>;
-  if (name === 'check') return <svg {...base}><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8.5 12 2.5 2.5 5-5"/></svg>;
-  if (name === 'food') return <svg {...base}><path d="M6 3v8M9 3v8M6 7h3M7.5 11v10M15 3v8c0 2 3 2 3 0V3M16.5 13v8"/></svg>;
-  if (name === 'bolt') return <svg {...base}><path d="m13 2-7 11h5l-1 9 8-12h-5z"/></svg>;
-  if (name === 'search') return <svg {...base}><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>;
-  if (name === 'sliders') return <svg {...base}><path d="M4 7h8M16 7h4M4 17h4M12 17h8M4 12h12"/><circle cx="14" cy="7" r="2"/><circle cx="10" cy="17" r="2"/><circle cx="18" cy="12" r="2"/></svg>;
-  if (name === 'list') return <svg {...base}><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>;
-  if (name === 'menu') return <svg {...base}><path d="M4 7h16M4 12h16M4 17h16"/></svg>;
-  if (name === 'cashflow') return <svg {...base}><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/></svg>;
-  if (name === 'chart') return <svg {...base}><path d="M4 20V10M10 20V5M16 20v-7M22 20V3"/></svg>;
-  if (name === 'cart') return <svg {...base}><path d="M3 5h2l2.2 10h9.9l2-7H6"/><circle cx="9" cy="19" r="1.3"/><circle cx="17" cy="19" r="1.3"/></svg>;
-  if (name === 'car') return <svg {...base}><path d="m5 16 1.6-6.1A2.5 2.5 0 0 1 9 8h6a2.5 2.5 0 0 1 2.4 1.9L19 16"/><path d="M4 16h16v3H4z"/><path d="M7 19v2M17 19v2"/></svg>;
-  if (name === 'wifi') return <svg {...base}><path d="M4 9a12 12 0 0 1 16 0M7 12.5a7.5 7.5 0 0 1 10 0M10 16a3 3 0 0 1 4 0"/><circle cx="12" cy="19" r=".8" fill="currentColor"/></svg>;
-  if (name === 'phone') return <svg {...base}><path d="M7 3h3l1 5-2 1.5a13 13 0 0 0 5.5 5.5L16 13l5 1v3a3 3 0 0 1-3 3C10.3 20 4 13.7 4 6a3 3 0 0 1 3-3Z"/></svg>;
-  if (name === 'building') return <svg {...base}><path d="M5 21V5l7-3 7 3v16M9 7h.01M15 7h.01M9 11h.01M15 11h.01M9 15h.01M15 15h.01M10 21v-3h4v3"/></svg>;
-  if (name === 'play') return <svg {...base}><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4Z"/></svg>;
-  if (name === 'card') return <svg {...base}><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9h18M7 15h4"/></svg>;
-  return <svg {...base}><circle cx="12" cy="12" r="8"/></svg>;
+  return <MegIcon name={name as MegIconName} size={size}/>;
 }
 
-function semanticIcon(label: string) {
-  const value = label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
-  if (/energia|eletric|cpfl|luz/.test(value)) return 'bolt';
-  if (/internet|wifi|fibra/.test(value)) return 'wifi';
-  if (/telefone|celular|movel/.test(value)) return 'phone';
-  if (/condominio|predio|apartamento/.test(value)) return 'building';
-  if (/stream|netflix|spotify|youtube|assinatura/.test(value)) return 'play';
-  if (/uber|99|combust|posto|carro|veiculo/.test(value)) return 'car';
-  if (/almoco|jantar|lanche|restaurante|food|ifood|mercado|supermercado/.test(value)) return 'food';
-  if (/cartao|card|latam|mercado pago|itau|santander|bradesco|caixa|nubank/.test(value)) return 'card';
-  if (/farmacia|remedio|saude|medic/.test(value)) return 'file';
-  if (/compra|loja|cigarro/.test(value)) return 'cart';
-  return 'file';
+function semanticIcon(label: string, category?: string, group?: string) {
+  return resolveFinancialIcon({ description: label, categoryName: category, categoryGroup: group });
 }
 
 function Header({ data, periodMode, periodLabel, onOpenPeriod, onOpenMenu }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; onOpenPeriod: () => void; onOpenMenu: () => void }) {
@@ -533,7 +498,7 @@ function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Pro
     <section className="meg2-statement">
       <header><div><h2>Lançamentos da fatura</h2><small>{card ? cardName(card.name) : 'Cartão'}</small></div><button type="button" onClick={() => card && setCenterOpen(true)}>Ver todos ›</button></header>
       <div className="meg2-statement-list" data-meg-scroll-region="true">
-        {rows.map((row) => <button key={row.id} type="button" onClick={() => setSelectedRow(row)}><span className={'icon-' + semanticIcon(row.description)}><Icon name={semanticIcon(row.description)} size={20}/></span><p><b>{row.description}</b><small>{row.installmentNo && row.installmentQty ? 'Parcela ' + row.installmentNo + '/' + row.installmentQty + ' • ' : ''}{String(row.date || '').slice(0, 10).split('-').reverse().join('/')}</small></p><strong>{money.format(row.amount)}</strong><i>›</i></button>)}
+        {rows.map((row) => <button key={row.id} type="button" onClick={() => setSelectedRow(row)}><span className={'icon-' + semanticIcon(row.description, row.category)}><Icon name={semanticIcon(row.description, row.category)} size={20}/></span><p><b>{row.description}</b><small>{row.installmentNo && row.installmentQty ? 'Parcela ' + row.installmentNo + '/' + row.installmentQty + ' • ' : ''}{String(row.date || '').slice(0, 10).split('-').reverse().join('/')}</small></p><strong>{money.format(row.amount)}</strong><i>›</i></button>)}
         {!rows.length ? <div className="meg2-empty">Nenhum lançamento nesta fatura.</div> : null}
       </div>
     </section>
@@ -542,7 +507,7 @@ function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Pro
     {selectedRow && card ? <div className="meg2-card-detail-overlay" role="presentation" onClick={() => setSelectedRow(null)}>
       <section className="meg2-card-detail" role="dialog" aria-modal="true" aria-label="Detalhe da compra" onClick={(event) => event.stopPropagation()}>
         <header><div><small>DETALHE DA COMPRA</small><h2>{selectedRow.description}</h2></div><button type="button" onClick={() => setSelectedRow(null)}>×</button></header>
-        <div className="meg2-card-detail-value"><span className={'icon-' + semanticIcon(selectedRow.description)}><Icon name={semanticIcon(selectedRow.description)}/></span><div><small>{cardName(card.name)}</small><strong>{money.format(selectedRow.amount)}</strong></div></div>
+        <div className="meg2-card-detail-value"><span className={'icon-' + semanticIcon(selectedRow.description, selectedRow.category)}><Icon name={semanticIcon(selectedRow.description, selectedRow.category)}/></span><div><small>{cardName(card.name)}</small><strong>{money.format(selectedRow.amount)}</strong></div></div>
         <dl>
           <div><dt>Data da compra</dt><dd>{String(selectedRow.date).slice(0,10).split('-').reverse().join('/')}</dd></div>
           <div><dt>Categoria</dt><dd>{selectedRow.category || 'Outros'}</dd></div>
@@ -668,7 +633,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       {rows.map((item, index) => {
         const late = !item.paid && item.due < today;
         const rowClass = late ? 'late' : item.paid ? 'paid' : '';
-        const icon = semanticIcon(item.description);
+        const icon = semanticIcon(item.description, item.category);
         return <button key={item.id} className={rowClass} onClick={() => setSelected(item)}>
           <span className={'meg2-pending-icon icon-' + icon}><Icon name={icon}/></span>
           <p><b>{item.description}</b><small>{dueLabel(item)}</small></p>
