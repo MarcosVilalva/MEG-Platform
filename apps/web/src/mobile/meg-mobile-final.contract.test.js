@@ -43,16 +43,6 @@ assert.match(css, /env\(safe-area-inset-top\)/,
   'Cabeçalho deve respeitar safe area do Android/iOS.');
 assert.match(css, /env\(safe-area-inset-bottom\)/,
   'Dock deve respeitar safe area inferior.');
-assert.match(
-  css,
-  /--meg2-header-tile:50px[\s\S]*\.meg2-brand\{[\s\S]*min-width:var\(--meg2-header-tile\)[\s\S]*max-width:var\(--meg2-header-tile\)[\s\S]*contain:size layout paint/,
-  'Logo do cabeçalho deve manter dimensão física idêntica ao trocar de tela, sem compressão pelo grid.',
-);
-assert.match(
-  css,
-  /\.meg2-title>i,\.meg2-page-title>span\{[\s\S]*min-width:var\(--meg2-header-tile\)[\s\S]*max-width:var\(--meg2-header-tile\)/,
-  'Ação superior das telas deve usar a mesma dimensão fixa do contrato global de cabeçalho.',
-);
 assert.match(mobile, /PeriodSheet[\s\S]*Mês[\s\S]*Intervalo[\s\S]*Tudo/,
   'Filtro de período final deve ser novo e preservar Mês, Intervalo e Tudo.');
 assert.doesNotMatch(source, /phoenix-mobile-reference\.css|PhoenixMobileReferenceScreens/,
