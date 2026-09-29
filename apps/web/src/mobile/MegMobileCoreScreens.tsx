@@ -334,6 +334,7 @@ export function MegMobileAnalytics({ data }: { data: PhoenixReadModel }) {
       <button className={tab === 'categories' ? 'active' : ''} onClick={() => setTab('categories')}>Categorias</button>
       <button className={tab === 'compare' ? 'active' : ''} onClick={() => setTab('compare')}>Comparar</button>
     </nav>
+    <div className="meg3-analysis-period"><button type="button" aria-label="Período anterior">‹</button><span><MegIcon name="calendar" size={16}/><strong>{data.month.split('-').reverse().join('/')}</strong></span><button type="button" aria-label="Próximo período"><MegIcon name="chevron-right" size={16}/></button></div>
     <section className="meg3-analysis-scroll" data-meg-scroll-region="true">
       <section className="meg3-analytics-kpis">
         <article className="income"><small>Receitas</small><strong>{money.format(Number(data.analytics.summary.realizedIncome || 0))}</strong></article>
