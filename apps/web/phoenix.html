@@ -85,9 +85,10 @@
 
         const syncAuthState = () => {
           const form = root.querySelector('.px-preview-form');
-          const reactBoot = root.querySelector('.px-preview-fullscreen-boot');
+          const reactBoot = root.querySelector('.px-preview-fullscreen-boot, .meg-loading-screen');
+          const signedIn = root.querySelector('.px-app, .meg2-app, [data-meg-mobile-final="true"]');
           const authError = root.querySelector('.px-preview-error');
-          if (reactBoot || authError) removeTransition();
+          if (reactBoot || signedIn || authError || !form) removeTransition();
           if (!form) return;
           const busy = Boolean(form.querySelector('.px-preview-button-spinner'));
           form.toggleAttribute('inert', busy);
@@ -102,7 +103,9 @@
           if (!email?.value.trim() || !password?.value) return;
           form.setAttribute('inert', '');
           form.setAttribute('aria-busy', 'true');
-          showTransition();
+          /* No APK o React já monta o loading oficial. Criar uma segunda camada
+             aqui deixava uma tela "fantasma" sobre o app após autenticar. */
+          if (!document.body.classList.contains('meg-cleanroom-mobile')) showTransition();
         }, true);
 
         new MutationObserver(syncAuthState).observe(root, { childList:true, subtree:true });
