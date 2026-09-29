@@ -157,9 +157,9 @@ export function MegMobileMovements({
     </header>
 
     <section className="meg3-movement-kpis" aria-label="Resumo dos lançamentos">
-      <article className="income"><span aria-hidden="true"><MegIcon name="arrow-up" size={18}/></span><small>Entradas</small><strong>{money.format(totals.income)}</strong></article>
-      <article className="expense"><span aria-hidden="true"><MegIcon name="arrow-down" size={18}/></span><small>Saídas</small><strong>{money.format(totals.expense)}</strong></article>
-      <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true"><MegIcon name="chart" size={18}/></span><small>Resultado</small><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong></article>
+      <article className="income"><span aria-hidden="true"><MegIcon name="banknote" size={20}/></span><small>Entradas</small><strong>{money.format(totals.income)}</strong></article>
+      <article className="expense"><span aria-hidden="true"><MegIcon name="receipt" size={20}/></span><small>Saídas</small><strong>{money.format(totals.expense)}</strong></article>
+      <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true"><MegIcon name="trend" size={20}/></span><small>Resultado</small><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong></article>
     </section>
 
     <header className="meg3-movement-list-head">
