@@ -153,7 +153,7 @@ export function MegMobileMovements({
           </span>
           <span className="meg3-event-value">
             <b>{signed > 0 ? '+' : '-'}{money.format(Math.abs(signed))}</b>
-            <i>›</i>
+            <i><MegIcon name="chevron-right" size={15}/></i>
           </span>
         </button>;
       })}

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { MegIcon } from './MegMobileIcon';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { isPhoenixBenefitEvent } from '../phoenix/home-period-summary';
 import './meg-mobile-benefit.css';
@@ -24,7 +25,7 @@ export function MegMobileBenefitModal({data,onClose,onOpenMovements}:{data:Phoen
   const opening=balance-credits+spent;
   return <div className="meg3-benefit-overlay" role="presentation">
     <section className="meg3-benefit-modal" role="dialog" aria-modal="true" aria-label="Benefício Alimentação">
-      <header><div><small>BENEFÍCIO ALIMENTAÇÃO</small><h2>Acompanhamento</h2><p>Saldo e movimentações do período.</p></div><button onClick={onClose}>×</button></header>
+      <header><div><small>BENEFÍCIO ALIMENTAÇÃO</small><h2>Acompanhamento</h2><p>Saldo e movimentações do período.</p></div><button onClick={onClose}><MegIcon name="x" size={18}/></button></header>
       <section className="meg3-benefit-kpis">
         <article><small>Saldo inicial</small><strong>{money.format(opening)}</strong></article>
         <article className="credit"><small>Créditos</small><strong>{money.format(credits)}</strong></article>

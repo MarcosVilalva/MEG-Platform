@@ -425,7 +425,7 @@ export function MegMobileLaunchSheet({
       <div className="meg3-app-header">{appHeader}</div>
       <header className="meg3-form-head">
         <div><small>MEG FINANÇAS</small><h2>{title}</h2><p>{event ? 'Atualize as informações do seu lançamento.' : 'Registre um novo movimento em sua vida financeira.'}</p></div>
-        <button type="button" aria-label="Fechar lançamento" disabled={busy} onClick={onClose}>×</button>
+        <button type="button" aria-label="Fechar lançamento" disabled={busy} onClick={onClose}><MegIcon name="x" size={18}/></button>
       </header>
 
       <div className="meg3-form-body" data-meg-scroll-region="true">
@@ -595,7 +595,7 @@ export function MegMobileLaunchSheet({
 
       {installmentPreviewOpen ? <div className="meg3-installment-preview">
         <section role="dialog" aria-modal="true" aria-label="Visualizar parcelas">
-          <header><div><small>PARCELAMENTO</small><h3>Visualizar parcelas</h3></div><button type="button" onClick={() => setInstallmentPreviewOpen(false)}>×</button></header>
+          <header><div><small>PARCELAMENTO</small><h3>Visualizar parcelas</h3></div><button type="button" onClick={() => setInstallmentPreviewOpen(false)}><MegIcon name="x" size={18}/></button></header>
           <div className="meg3-installment-list" data-meg-scroll-region="true">
             {installmentPreview.map((item) => <article key={item.number}>
               <span><strong>Parcela {item.number}/{installmentPreview.length}</strong><small>Fatura {item.statementMonth.split('-').reverse().join('/')} · vence {item.due.split('-').reverse().join('/')}</small></span>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import './meg-mobile-card-center.css';
+import { MegIcon } from './MegMobileIcon';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -104,7 +105,7 @@ export function MegMobileCardCenter({
     <section className="meg3-cardcenter" role="dialog" aria-modal="true" aria-label={`Central do cartão ${cardLabel}`}>
       <header>
         <div><small>CENTRAL DO CARTÃO</small><h2>{cardLabel}</h2><p>Fatura, limites e lançamentos em um só lugar.</p></div>
-        <button type="button" onClick={onClose}>×</button>
+        <button type="button" onClick={onClose}><MegIcon name="x" size={18}/></button>
       </header>
 
       <section className="meg3-cardcenter-hero" style={!artUrl ? { background: card.color || '#073f82' } : undefined}>

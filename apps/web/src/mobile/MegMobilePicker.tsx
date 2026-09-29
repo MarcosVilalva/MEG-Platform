@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import './meg-mobile-picker.css';
+import { MegIcon } from './MegMobileIcon';
 
 export type MegMobilePickerOption = {
   id: string;
@@ -62,7 +63,7 @@ export function MegMobilePicker({
       <span>{label}</span>
       <strong>{disabled && lockedText ? lockedText : selected?.label || placeholder}</strong>
       {!disabled && selected?.subtitle ? <small>{selected.subtitle}</small> : null}
-      <i aria-hidden="true">⌄</i>
+      <i aria-hidden="true"><MegIcon name="chevron-down" size={16}/></i>
     </button>
 
     {open ? <div className="meg5-picker-overlay" role="presentation" onMouseDown={(event) => {
@@ -71,11 +72,11 @@ export function MegMobilePicker({
       <section className="meg5-picker-sheet" role="dialog" aria-modal="true" aria-label={label}>
         <header>
           <div><small>SELECIONAR</small><h3>{label}</h3></div>
-          <button type="button" aria-label="Fechar" onClick={close}>×</button>
+          <button type="button" aria-label="Fechar" onClick={close}><MegIcon name="x" size={18}/></button>
         </header>
 
         {searchable && options.length > 7 ? <label className="meg5-picker-search">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+          <MegIcon name="search" size={18}/>
           <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Buscar ${label.toLocaleLowerCase('pt-BR')}...`}/>
         </label> : null}
 
@@ -86,7 +87,7 @@ export function MegMobilePicker({
             onClick={() => { onChange(''); close(); }}
           >
             <span><strong>{placeholder}</strong></span>
-            <i aria-hidden="true">{!value ? '✓' : ''}</i>
+            <i aria-hidden="true">{!value ? <MegIcon name="check-line" size={15}/> : null}</i>
           </button>
 
           {filtered.map((item) => <button
@@ -100,7 +101,7 @@ export function MegMobilePicker({
               {item.subtitle ? <small>{item.subtitle}</small> : null}
             </span>
             {item.badge ? <em>{item.badge}</em> : null}
-            <i aria-hidden="true">{item.id === value ? '✓' : ''}</i>
+            <i aria-hidden="true">{item.id === value ? <MegIcon name="check-line" size={15}/> : null}</i>
           </button>)}
 
           {!filtered.length ? <p className="meg5-picker-empty">Nenhuma opção encontrada.</p> : null}

@@ -4,6 +4,7 @@ import { cardsClient } from '../app/cards-client';
 import { financeClient } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import {
+import { MegIcon } from './MegMobileIcon';
   imageFileToAvatarDataUrl,
   phoenixAvatarImage,
   phoenixAvatarPresets,
@@ -238,7 +239,7 @@ export function MegMobileSettings({data,onLogout}:{data:PhoenixReadModel;onLogou
             {visiblePresets.map((preset)=>{
               const preference:PhoenixAvatarPreference={kind:'preset',presetId:preset.id};
               const selected=avatar.kind==='preset'&&avatar.presetId===preset.id;
-              return <button key={preset.id} className={selected?'selected':''} onClick={()=>void saveAvatar(preference)}><Avatar name={preset.label} preference={preference}/><small>{preset.label}</small>{selected?<b>✓</b>:null}</button>;
+              return <button key={preset.id} className={selected?'selected':''} onClick={()=>void saveAvatar(preference)}><Avatar name={preset.label} preference={preference}/><small>{preset.label}</small>{selected?<b><MegIcon name="check-line" size={15}/></b>:null}</button>;
             })}
           </div>
           <div className="meg4-inline-actions"><button onClick={()=>setAvatarExpanded((value)=>!value)}>{avatarExpanded?'Recolher':'Ver todos'}</button><button onClick={()=>void saveAvatar({kind:'initials'})}>Usar iniciais</button></div>
