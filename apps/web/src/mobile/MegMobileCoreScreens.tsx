@@ -87,7 +87,7 @@ export function MegMobileMovements({
   onOpenPeriod?: () => void;
 }) {
   const [query, setQuery] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [draftQuery, setDraftQuery] = useState('');
   const [filters, setFilters] = useState({ kind: 'all' as MobileMovementKind, categoryId: '', accountId: '', paymentMethodId: '' });
   const [draft, setDraft] = useState(filters);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -133,6 +133,7 @@ export function MegMobileMovements({
 
   const openFilters = () => {
     setDraft(filters);
+    setDraftQuery(query);
     setFilterOpen(true);
   };
 
@@ -141,6 +142,7 @@ export function MegMobileMovements({
     setDraft(clean);
     setFilters(clean);
     setQuery('');
+    setDraftQuery('');
   };
 
   return <main className="meg3-screen meg3-movements" data-meg-fixed-screen="true">
@@ -149,7 +151,7 @@ export function MegMobileMovements({
         <h1>Lançamentos</h1>
         <p>Controle seus eventos financeiros.</p>
       </div>
-      <button type="button" className={filterOpen || hasFilters ? 'active' : ''} aria-label="Filtrar lançamentos" onClick={openFilters}>
+      <button type="button" className={filterOpen || hasFilters || query ? 'active' : ''} aria-label="Buscar e filtrar lançamentos" onClick={openFilters}>
         <MegIcon name="sliders" size={20}/>
       </button>
     </header>
@@ -158,24 +160,6 @@ export function MegMobileMovements({
       <article className="income"><span aria-hidden="true"><MegIcon name="arrow-up" size={18}/></span><small>Entradas</small><strong>{money.format(totals.income)}</strong></article>
       <article className="expense"><span aria-hidden="true"><MegIcon name="arrow-down" size={18}/></span><small>Saídas</small><strong>{money.format(totals.expense)}</strong></article>
       <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true"><MegIcon name="chart" size={18}/></span><small>Resultado</small><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong></article>
-    </section>
-
-    <section className="meg3-movement-toolbar">
-      {searchOpen || query ? <label className="meg3-movement-search open" aria-label="Buscar lançamentos">
-        <SearchGlyph/>
-        <input
-          autoFocus
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onBlur={() => { if (!query.trim()) setSearchOpen(false); }}
-          placeholder="Buscar lançamentos..."
-        />
-      </label> : <button type="button" className="meg3-toolbar-search" aria-label="Buscar lançamentos" onClick={() => setSearchOpen(true)}><SearchGlyph/></button>}
-      <button type="button" className={"meg3-toolbar-filter" + (hasFilters ? " active" : "")} aria-label="Filtros" onClick={openFilters}><FilterGlyph/></button>
-      <button type="button" className="meg3-toolbar-period" aria-label={"Competência " + competenceLabel} onClick={onOpenPeriod}>
-        <MegIcon name="calendar" size={18}/><span>{competenceLabel}</span><MegIcon name="chevron-down" size={13}/>
-      </button>
-      <button type="button" className={"meg3-toolbar-wallet" + (filters.paymentMethodId ? " active" : "")} aria-label="Filtrar forma de pagamento" onClick={openFilters}><MegIcon name="wallet" size={18}/></button>
     </section>
 
     <header className="meg3-movement-list-head">
@@ -213,9 +197,14 @@ export function MegMobileMovements({
     {filterOpen ? <div className="meg3-movement-filter-overlay" role="presentation" onClick={() => setFilterOpen(false)}>
       <section className="meg3-movement-filter-sheet" role="dialog" aria-modal="true" aria-label="Filtrar lançamentos" onClick={(event) => event.stopPropagation()}>
         <header>
-          <h2>Filtrar lançamentos</h2>
+          <div><small>LANÇAMENTOS</small><h2>Buscar e filtrar</h2></div>
           <button type="button" aria-label="Fechar" onClick={() => setFilterOpen(false)}><MegIcon name="x" size={20}/></button>
         </header>
+
+        <label className="meg3-filter-search">
+          <SearchGlyph/>
+          <input autoFocus value={draftQuery} onChange={(event) => setDraftQuery(event.target.value)} placeholder="Buscar por descrição, categoria, conta..."/>
+        </label>
 
         <div className="meg3-filter-field">
           <small>Período</small>
@@ -256,7 +245,7 @@ export function MegMobileMovements({
 
         <footer>
           <button type="button" className="secondary" onClick={clearFilters}>Limpar</button>
-          <button type="button" className="apply" onClick={() => { setFilters(draft); setFilterOpen(false); }}><MegIcon name="check-line" size={18}/>Aplicar</button>
+          <button type="button" className="apply" onClick={() => { setFilters(draft); setQuery(draftQuery.trim()); setFilterOpen(false); }}><MegIcon name="check-line" size={18}/>Aplicar</button>
         </footer>
       </section>
     </div> : null}
