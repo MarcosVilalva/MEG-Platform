@@ -5,6 +5,8 @@ const preview = readFileSync(new URL('../phoenix/preview-main.tsx', import.meta.
 const component = readFileSync(new URL('./MegMobileLoading.tsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./meg-mobile-loading.css', import.meta.url), 'utf8');
 const legacyBootCss = readFileSync(new URL('../phoenix/preview-boot.css', import.meta.url), 'utf8');
+const indexHtml = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+const nativeBiometric = readFileSync(new URL('../native-biometric-login.js', import.meta.url), 'utf8');
 
 assert.match(
   preview,
@@ -70,6 +72,24 @@ assert.match(
   css,
   /@media\(max-height:760px\)[\s\S]*@media\(max-height:640px\)/,
   'O loading deve adaptar proporções também pela altura do aparelho.',
+);
+
+assert.match(
+  indexHtml,
+  /id="meg-initial-boot"[\s\S]*meg-loading-lockup\.svg[\s\S]*Carregando seus dados\.\.\./,
+  'Primeiro frame do WebView deve exibir o loading MEG antes mesmo do React montar.',
+);
+
+assert.doesNotMatch(
+  nativeBiometric,
+  /MEG Finance System protegido/,
+  'Cobertura de privacidade antiga não pode reaparecer entre o splash e o loading aprovado.',
+);
+
+assert.match(
+  nativeBiometric,
+  /androidPrivacyCover[\s\S]*meg-loading-screen[\s\S]*Protegendo seus dados/,
+  'Retorno da biometria deve usar a mesma linguagem visual do loading MEG.',
 );
 
 console.log('Contrato do loading mobile clean-room validado.');
