@@ -182,7 +182,7 @@
 
 .meg3-filter-overlay{
   position:fixed;inset:0;z-index:2147482500;display:grid;align-items:end;justify-items:center;
-  padding:0;background:rgba(0,14,16,.78);backdrop-filter:blur(4px)
+  padding:0;background:rgba(0,14,16,.78)
 }
 .meg3-filter-sheet{
   width:min(100%,560px);max-height:calc(100dvh - max(24px,env(safe-area-inset-top)));
