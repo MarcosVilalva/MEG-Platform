@@ -710,3 +710,56 @@
   .meg3-movement-toolbar button.icon-only{width:38px}
   .meg3-movement-new{height:28px}
 }
+
+
+/* Ajuste fino responsivo de Lançamentos sem alterar o dock */
+.meg3-movements{
+  gap:clamp(4px,.58dvh,7px);
+  padding-top:clamp(5px,.68dvh,8px);
+  padding-bottom:clamp(4px,.55dvh,7px);
+}
+.meg3-movements-heading h1{
+  font-size:clamp(25px,7vw,35px);
+}
+.meg3-movements-heading p{
+  margin-top:3px;
+}
+.meg3-movement-kpis{
+  gap:clamp(5px,1.55vw,7px);
+}
+.meg3-movement-kpis article{
+  min-height:clamp(54px,7.7dvh,62px);
+  padding-block:clamp(5px,.7dvh,7px);
+}
+.meg3-movement-toolbar{
+  gap:clamp(5px,1.55vw,7px);
+}
+.meg3-movement-toolbar button{
+  height:clamp(36px,5.2dvh,40px);
+}
+.meg3-movement-list-head{
+  min-height:clamp(27px,4.2dvh,32px);
+}
+.meg3-event-list{
+  min-height:0!important;
+  height:100%!important;
+  max-height:100%!important;
+  margin-bottom:0!important;
+  padding:0 1px clamp(6px,.8dvh,9px)!important;
+  scroll-padding-bottom:clamp(6px,.8dvh,9px);
+}
+.meg3-event-card{
+  min-height:clamp(60px,8.4dvh,68px);
+  margin-bottom:clamp(4px,.55dvh,6px);
+  padding-block:clamp(6px,.8dvh,7px);
+}
+
+@media(max-height:780px){
+  .meg3-movements{gap:4px;padding-top:5px;padding-bottom:4px}
+  .meg3-movements-heading h1{font-size:25px}
+  .meg3-movements-heading p{font-size:8px}
+  .meg3-movement-kpis article{min-height:54px}
+  .meg3-movement-toolbar button{height:36px}
+  .meg3-movement-list-head{min-height:27px}
+  .meg3-event-card{min-height:60px;margin-bottom:4px}
+}
