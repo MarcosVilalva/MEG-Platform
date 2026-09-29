@@ -29,15 +29,6 @@ function statusTone(event: FinancialEvent) {
   return signedAmount(event) >= 0 ? 'received' : 'paid';
 }
 
-function weekdayShort(event: FinancialEvent) {
-  const legacy = String(event.sourceDetails?.weekday || '').trim();
-  if (legacy) return legacy.slice(0, 3).replace('.', '').toLocaleUpperCase('pt-BR');
-  const raw = String(event.date || '').slice(0, 10);
-  const parsed = new Date(raw + 'T12:00:00');
-  if (Number.isNaN(parsed.getTime())) return '';
-  return parsed.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toLocaleUpperCase('pt-BR');
-}
-
 function shortDate(value: string) {
   const raw = String(value || '').slice(0, 10);
   const [year, month, day] = raw.split('-');
@@ -89,15 +80,14 @@ function movementTone(event: FinancialEvent) {
 export function MegMobileMovements({
   data,
   onOpenEvent,
-  onNew,
   onOpenPeriod,
 }: {
   data: PhoenixReadModel;
   onOpenEvent: (event: FinancialEvent) => void;
-  onNew: () => void;
   onOpenPeriod?: () => void;
 }) {
   const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [filters, setFilters] = useState({ kind: 'all' as MobileMovementKind, categoryId: '', accountId: '', paymentMethodId: '' });
   const [draft, setDraft] = useState(filters);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -171,10 +161,16 @@ export function MegMobileMovements({
     </section>
 
     <section className="meg3-movement-toolbar">
-      <label className={"meg3-movement-search" + (query ? " has-query" : "")} aria-label="Buscar lançamentos">
+      {searchOpen || query ? <label className="meg3-movement-search open" aria-label="Buscar lançamentos">
         <SearchGlyph/>
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamentos..."/>
-      </label>
+        <input
+          autoFocus
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onBlur={() => { if (!query.trim()) setSearchOpen(false); }}
+          placeholder="Buscar lançamentos..."
+        />
+      </label> : <button type="button" className="meg3-toolbar-search" aria-label="Buscar lançamentos" onClick={() => setSearchOpen(true)}><SearchGlyph/></button>}
       <button type="button" className={"meg3-toolbar-filter" + (hasFilters ? " active" : "")} aria-label="Filtros" onClick={openFilters}><FilterGlyph/></button>
       <button type="button" className="meg3-toolbar-period" aria-label={"Competência " + competenceLabel} onClick={onOpenPeriod}>
         <MegIcon name="calendar" size={18}/><span>{competenceLabel}</span><MegIcon name="chevron-down" size={13}/>
@@ -184,7 +180,6 @@ export function MegMobileMovements({
 
     <header className="meg3-movement-list-head">
       <span><strong>{visibleCount.toLocaleString('pt-BR')} lançamento{visibleCount === 1 ? '' : 's'}</strong><small>{competenceLabel} · toque para abrir</small></span>
-      <button type="button" onClick={onNew}><b aria-hidden="true"><MegIcon name="plus" size={17}/></b>Novo</button>
     </header>
 
     <section className="meg3-event-list" data-meg-scroll-region="true">
@@ -195,14 +190,13 @@ export function MegMobileMovements({
         const account = event.account?.name || '';
         const method = event.paymentMethod?.name || event.sourceDetails?.paymentMethod || '';
         const detail = [category, account].filter(Boolean).join(' · ');
-        const weekday = weekdayShort(event);
         return <button className={`meg3-event-card ${tone} kind-${mobileMovementKind(event)}`} type="button" key={event.id} onClick={() => onOpenEvent(event)}>
           <span className="meg3-event-icon"><EventContextGlyph event={event}/></span>
-          <span className="meg3-event-meta">
-            <small>{shortDate(event.date)}{weekday ? ` · ${weekday}` : ''}</small>
-            <i className={`status-${statusTone(event)}`}>{statusLabel(event)}</i>
-          </span>
           <span className="meg3-event-copy">
+            <span className="meg3-event-meta">
+              <small>{shortDate(event.date)}</small>
+              <i className={`status-${statusTone(event)}`}>{statusLabel(event)}</i>
+            </span>
             <strong>{event.description}</strong>
             <em>{detail}</em>
             <i className={method ? 'meg3-payment-label' : 'meg3-payment-label muted'}>{method || 'Forma não informada'}</i>
