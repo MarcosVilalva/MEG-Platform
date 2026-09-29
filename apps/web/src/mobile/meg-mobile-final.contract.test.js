@@ -156,7 +156,7 @@ assert.match(
 );
 assert.match(
   mobile,
-  /semanticIcon\\(item\\.description, item\\.category\\)[\\s\\S]*meg2-pending-icon/,
+  /semanticIcon\(item\.description, item\.category\)[\s\S]*meg2-pending-icon/,
   'Pendentes deve escolher ícone pela classificação/categoria antes do fallback textual.',
 );
 assert.match(
