@@ -97,8 +97,11 @@ assert.ok(
   movements.includes('className="meg3-movement-kpis"')
   && movements.includes('money.format(totals.income)')
   && movements.includes('money.format(totals.expense)')
+  && movements.includes('data.summary.realizedIncome')
+  && movements.includes('data.summary.realizedExpense')
+  && movements.includes('data.summary.realizedResult')
   && movements.includes('meg3-movement-list-head'),
-  'Lançamentos deve preservar Entradas, Saídas, Resultado e contagem da referência aprovada.',
+  'Lançamentos deve preservar Entradas, Saídas, Resultado e usar a mesma fonte de verdade realizada da Home.',
 );
 assert.ok(
   !movements.includes('onClick={onNew}')
@@ -108,6 +111,10 @@ assert.ok(
 assert.ok(
   movementCss.includes('.meg3-payment-label{'),
   'Forma de pagamento deve permanecer visível em linha própria no card, sem voltar a sumir da lista.',
+);
+assert.ok(
+  movementCss.includes('margin-bottom:7px') && movementCss.includes('scroll-padding-bottom:10px'),
+  'Lista deve manter respiro visual próprio antes do dock sem alterar a altura da barra inferior.',
 );
 assert.ok(
   launchCss.includes('.meg3-form-grid-faithful{grid-template-columns:1fr}'),
