@@ -63,6 +63,8 @@ export function MegIcon({ name, size = 22, strokeWidth = 1.9, className }: IconP
   if (key === 'landmark') return <svg {...base}><path d="m3 10 9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 21h18"/></svg>;
   if (key === 'piggy-bank') return <svg {...base}><path d="M19 5c-1.5-1-3-1.5-5-1.5C8.5 3.5 5 6.5 5 11c0 3.5 2 6 5 7v3h3v-2h3v2h3v-4c1.4-1 2-2.4 2-4h2v-3h-3c-.3-1-.8-2-1.5-2.8L19 5Z"/><path d="M9 8h.01"/></svg>;
   if (key === 'briefcase') return <svg {...base}><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V4h8v3M3 12h18M10 12v2h4v-2"/></svg>;
+  if (key === 'cup-soda') return <svg {...base}><path d="m6 8 1 13h10l1-13Z"/><path d="M5 8h14M8 4h8l-1 4"/></svg>;
+  if (key === 'sandwich') return <svg {...base}><path d="M4 11h16a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4Z"/><path d="M4 14h16M5 17h14l-2 3H7Z"/></svg>;
   if (key === 'x') return <svg {...base}><path d="M18 6 6 18M6 6l12 12"/></svg>;
   if (key === 'chevron-right') return <svg {...base}><path d="m9 18 6-6-6-6"/></svg>;
   if (key === 'chevron-down') return <svg {...base}><path d="m6 9 6 6 6-6"/></svg>;
@@ -86,8 +88,10 @@ function normalize(value: unknown) {
 
 function classifyText(value: string): MegIconName | null {
   if (/combust|gasolina|etanol|diesel|posto/.test(value)) return 'fuel';
+  if (/bebida|refrigerante|suco|cerveja|vinho/.test(value)) return 'cup-soda';
+  if (/fast ?food|hamburg|lanche|lanchonete/.test(value)) return 'sandwich';
   if (/mercado|supermercado|hortifruti|mercearia/.test(value)) return 'cart';
-  if (/aliment|refeicao|restaurante|lanche|ifood|comida|verocard/.test(value)) return 'food';
+  if (/aliment|refeicao|restaurante|ifood|comida|verocard/.test(value)) return 'food';
   if (/moradia|aluguel|condominio|habitacao|casa|apartamento/.test(value)) return 'house';
   if (/energia|eletric|cpfl|luz/.test(value)) return 'bolt';
   if (/agua|saneamento|sabesp/.test(value)) return 'droplet';
