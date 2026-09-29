@@ -122,10 +122,10 @@ jobs:
           CORS_ORIGINS: http://localhost:5173
 
       - name: Upload Phoenix Web preview
-        if: github.event_name == 'pull_request' && (github.head_ref == 'phoenix/v15-clean-room' || github.head_ref == 'feature/phoenix-launch-dynamic-status' || startsWith(github.head_ref, 'rc1/'))
+        if: github.ref == 'refs/heads/feature/home-visual-preview' || (github.event_name == 'pull_request' && (github.head_ref == 'phoenix/v15-clean-room' || github.head_ref == 'feature/phoenix-launch-dynamic-status' || startsWith(github.head_ref, 'rc1/')))
         uses: actions/upload-artifact@v4
         with:
-          name: phoenix-web-preview
+          name: meg-home-web-preview
           path: apps/web/dist
           if-no-files-found: error
           retention-days: 3
