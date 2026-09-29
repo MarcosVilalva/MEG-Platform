@@ -231,16 +231,42 @@
 .meg3-filter-sheet>footer .apply{border:1px solid #35e9de;background:linear-gradient(180deg,#1ccbc1,#12a39e);color:#042d2e}
 
 .meg3-history{grid-template-rows:auto auto minmax(0,1fr)}
-.meg3-history-summary{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.meg3-history-summary article{min-height:64px;padding:10px;border:1px solid rgba(60,203,195,.18);border-radius:15px;background:rgba(3,48,50,.80)}
-.meg3-history-summary small{display:block;color:#91aaa7;font-size:9px}
-.meg3-history-summary strong{display:block;margin-top:5px;font-size:20px}
-.meg3-timeline{position:relative;padding-left:4px}
-.meg3-timeline-item{position:relative;display:grid;grid-template-columns:18px minmax(0,1fr);gap:10px;padding:10px 8px 10px 3px;border-bottom:1px solid rgba(71,188,182,.11)}
-.meg3-timeline-dot{width:11px;height:11px;margin-top:5px;border:2px solid #35e4da;border-radius:50%;background:#043b3d;box-shadow:0 0 10px rgba(53,228,218,.15)}
-.meg3-timeline-item small{color:#799894;font-size:8px}
-.meg3-timeline-item strong{display:block;margin-top:3px;font-size:12px;text-transform:none}
-.meg3-timeline-item p{margin:3px 0 0;color:#9eb3b0;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meg3-history-title h1{margin:0 0 2px;font-size:clamp(27px,7.5vw,38px)}
+.meg3-history-title p{font-size:10px}
+.meg3-history-search{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:7px}
+.meg3-history-search label,.meg3-history-search button{
+  height:40px;border:1px solid rgba(55,210,201,.25);border-radius:12px;background:#03383a;color:#d8eeee
+}
+.meg3-history-search label{display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;padding:0 8px}
+.meg3-history-search input{width:100%;border:0;outline:0;background:transparent;color:#fff;font:inherit;font-size:9px}
+.meg3-history-search input::placeholder{color:#7e9996}
+.meg3-history-search button{display:grid;place-items:center}
+.meg3-history-search button.active{border-color:#2beadd;color:#2beadd}
+.meg3-history-list{
+  min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;overscroll-behavior:contain;
+  padding:0 1px 6px
+}
+.meg3-history-list::-webkit-scrollbar{display:none}
+.meg3-history-entry>header{
+  min-height:28px;padding:3px 3px 5px;display:flex;align-items:center;justify-content:space-between;color:#d8e8e6
+}
+.meg3-history-entry>header strong{font-size:8px}
+.meg3-history-entry>header small{color:#4ce7dd;font-size:7px;font-weight:850}
+.meg3-history-entry article{
+  min-height:62px;margin-bottom:6px;padding:7px 9px;display:grid;
+  grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:8px;
+  border:1px solid rgba(54,207,198,.20);border-radius:13px;background:linear-gradient(150deg,rgba(5,67,69,.96),rgba(2,45,48,.96))
+}
+.meg3-history-icon{
+  width:38px;height:38px;display:grid;place-items:center;border-radius:10px;background:#075154;color:#52e7dd
+}
+.meg3-history-entry article.income .meg3-history-icon,.meg3-history-entry article.income>b{color:#62e6b7;background-color:#07584d}
+.meg3-history-entry article.expense>b{color:#ff7489}
+.meg3-history-entry article>div{min-width:0}
+.meg3-history-entry article strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+.meg3-history-entry article small{display:block;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#93adaa;font-size:7.5px}
+.meg3-history-entry article>b{padding-left:7px;white-space:nowrap;color:#ff7489;font-size:10px;font-variant-numeric:tabular-nums}
+
 .meg3-cashflow,.meg3-analytics{grid-template-rows:auto auto minmax(0,1fr)}
 .meg3-analysis-tabs{
   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));min-height:38px;
