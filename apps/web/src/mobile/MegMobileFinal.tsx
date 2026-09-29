@@ -358,19 +358,19 @@ function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: 
       <i><Icon name="trend"/></i>
     </section>
     <section className="meg2-balance">
-      <span><Icon name="wallet" size={30}/></span>
+      <span><Icon name="circle-dollar" size={30}/></span>
       <div><small>Saldo disponível</small><strong>{money.format(balance)}</strong><p>Considerando apenas os lançamentos realizados.</p></div>
     </section>
     <section className="meg2-flow">
-      <article><span className="up"><Icon name="up"/></span><div><small>Entradas no mês</small><strong>{money.format(income)}</strong></div></article>
-      <article><span className="down"><Icon name="down"/></span><div><small>Saídas no mês</small><strong>{money.format(expense)}</strong></div></article>
+      <article><span className="up"><Icon name="banknote"/></span><div><small>Entradas no mês</small><strong>{money.format(income)}</strong></div></article>
+      <article><span className="down"><Icon name="receipt"/></span><div><small>Saídas no mês</small><strong>{money.format(expense)}</strong></div></article>
       <article className="result"><span><Icon name="trend"/></span><div><small>Resultado do mês</small><strong>{resultMoney(result)}</strong></div></article>
     </section>
     <section className="meg2-summary">
-      <article><span className="red"><Icon name="file"/></span><small>Contas a pagar</small><b>{openPayables.length}</b><em>{money.format(openPayables.reduce((s, item) => s + Number(item.openAmount || 0), 0))}</em></article>
-      <article><span className="blue"><Icon name="wallet"/></span><small>Faturas de cartões</small><b>{data.cards.filter((card) => Number(card.statement?.payableAmount ?? card.statementAmount ?? 0) > 0).length}</b><em>{money.format(cardOpen)}</em></article>
-      <article><span className="amber"><Icon name="file"/></span><small>Outras pendências</small><b>{planned.length}</b><em>{money.format(planned.reduce((s, item) => s + Math.abs(Number(item.signedAmount || item.amount || 0)), 0))}</em></article>
-      <article><span className="green"><Icon name="check"/></span><small>Contas pagas</small><b>{paid.length}</b><em>{money.format(paid.reduce((s, item) => s + Math.abs(Number(item.signedAmount || item.amount || 0)), 0))}</em></article>
+      <article><span className="red"><Icon name="receipt"/></span><small>Contas a pagar</small><b>{openPayables.length}</b><em>{money.format(openPayables.reduce((s, item) => s + Number(item.openAmount || 0), 0))}</em></article>
+      <article><span className="blue"><Icon name="card"/></span><small>Faturas de cartões</small><b>{data.cards.filter((card) => Number(card.statement?.payableAmount ?? card.statementAmount ?? 0) > 0).length}</b><em>{money.format(cardOpen)}</em></article>
+      <article><span className="amber"><Icon name="list"/></span><small>Outras pendências</small><b>{planned.length}</b><em>{money.format(planned.reduce((s, item) => s + Math.abs(Number(item.signedAmount || item.amount || 0)), 0))}</em></article>
+      <article><span className="green"><Icon name="check-line"/></span><small>Contas pagas</small><b>{paid.length}</b><em>{money.format(paid.reduce((s, item) => s + Math.abs(Number(item.signedAmount || item.amount || 0)), 0))}</em></article>
     </section>
     <button className="meg2-benefit" type="button" onClick={() => setBenefitOpen(true)}>
       <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Saldo disponível</em><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong></div><b><Icon name="chevron-right" size={16}/></b>
@@ -378,8 +378,8 @@ function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: 
     <section className="meg2-quick">
       <header><div><span><Icon name="bolt" size={18}/></span><p><b>Ações rápidas</b><small>Acesse as principais funcionalidades.</small></p></div><button onClick={() => onNavigate('movements')}>Ver todas <Icon name="chevron-right" size={14}/></button></header>
       <div>
-        <button onClick={() => onNavigate('cards')}><span><Icon name="wallet"/></span><small>Cartões</small></button>
-        <button onClick={() => onNavigate('payables')}><span><Icon name="file"/></span><small>Pagar conta</small></button>
+        <button onClick={() => onNavigate('cards')}><span><Icon name="card"/></span><small>Cartões</small></button>
+        <button onClick={() => onNavigate('payables')}><span><Icon name="receipt"/></span><small>Pagar conta</small></button>
         <button onClick={() => onNavigate('cashflow')}><span><Icon name="cashflow"/></span><small>Fluxo de caixa</small></button>
         <button onClick={() => onNavigate('analytics')}><span><Icon name="chart"/></span><small>Ver relatórios</small></button>
       </div>
