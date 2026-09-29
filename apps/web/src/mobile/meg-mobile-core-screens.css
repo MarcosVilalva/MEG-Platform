@@ -169,8 +169,8 @@
 .meg3-movements-heading{
   min-width:0;
   display:grid;
-  grid-template-columns:minmax(0,1fr) 46px;
-  align-items:end;
+  grid-template-columns:minmax(0,1fr) 50px;
+  align-items:start;
   gap:10px;
 }
 .meg3-movements-heading>div{min-width:0}
@@ -187,14 +187,15 @@
   font-size:clamp(8px,2.35vw,10px);
 }
 .meg3-movements-heading>button{
-  width:44px;height:44px;
+  width:50px;height:50px;min-width:50px;min-height:50px;
   display:grid;place-items:center;
   justify-self:end;
+  box-sizing:border-box;
   border:1px solid rgba(32,231,219,.58);
-  border-radius:12px;
-  background:linear-gradient(155deg,rgba(5,78,79,.96),rgba(2,47,50,.98));
+  border-radius:11px;
+  background:linear-gradient(180deg,rgba(3,75,76,.88),rgba(2,53,55,.96));
   color:#3ce8de;
-  box-shadow:inset 0 0 14px rgba(41,235,222,.06),0 0 14px rgba(34,230,219,.08);
+  box-shadow:inset 0 0 16px rgba(41,235,222,.07),0 0 16px rgba(34,230,219,.09);
 }
 .meg3-movements-heading>button.active{
   border-color:#32eee1;
@@ -623,7 +624,7 @@
   .meg3-movements{gap:4px}
   .meg3-movements-heading h1{font-size:25px}
   .meg3-movements-heading p{display:none}
-  .meg3-movements-heading>button{width:40px;height:40px}
+  .meg3-movements-heading>button{width:50px;height:50px;min-width:50px;min-height:50px}
   .meg3-movement-kpis article{min-height:56px}
   .meg3-movement-list-head{min-height:25px}
   .meg3-event-card{min-height:58px;margin-bottom:4px}
