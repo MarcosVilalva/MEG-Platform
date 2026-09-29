@@ -475,7 +475,7 @@ function InfiniteCarousel({ data, activeId, onActiveId }: { data: PhoenixReadMod
 function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Props['onEditEvent'] }) {
   const cards = useMemo(() => data.cards.filter((card) => card.isActive !== false), [data.cards]);
   const [activeId, setActiveId] = useState(cards[0]?.id || '');
-  const [centerOpen, setCenterOpen] = useState(false);
+  const [centerOpen, setCenterOpen] = useState<'center'|'statement'|null>(null);
   const [selectedRow, setSelectedRow] = useState<MobileCardRow | null>(null);
   useEffect(() => { if (!cards.some((card) => card.id === activeId)) setActiveId(cards[0]?.id || ''); }, [cards, activeId]);
 
@@ -487,7 +487,7 @@ function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Pro
   const due = card?.statement?.dueDate ? shortDate.format(new Date(card.statement.dueDate + 'T12:00:00Z')) : card?.dueDay ? 'Dia ' + card.dueDay : '—';
 
   return <main className="meg2-main meg2-cards" data-meg-fixed-screen="true">
-    <section className="meg2-page-title"><div><h1>Cartões</h1><p>Seus principais meios de pagamento.</p></div><button type="button" className="meg2-page-action" aria-label="Abrir central do cartão" onClick={() => card && setCenterOpen(true)}><Icon name="wallet"/></button></section>
+    <section className="meg2-page-title"><div><h1>Cartões</h1><p>Seus principais meios de pagamento.</p></div><button type="button" className="meg2-page-action" aria-label="Abrir central do cartão" onClick={() => card && setCenterOpen('center')}><Icon name="wallet"/></button></section>
     <InfiniteCarousel data={data} activeId={activeId} onActiveId={setActiveId}/>
     <section className="meg2-card-metrics">
       <article><Icon name="wallet"/><small>Limite total</small><strong>{money.format(limit)}</strong></article>
@@ -496,13 +496,13 @@ function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Pro
       <article><Icon name="calendar"/><small>Vencimento</small><strong>{due}</strong></article>
     </section>
     <section className="meg2-statement">
-      <header><div><h2>Lançamentos da fatura</h2><small>{card ? cardName(card.name) : 'Cartão'}</small></div><button type="button" onClick={() => card && setCenterOpen(true)}>Ver todos <Icon name="chevron-right" size={14}/></button></header>
+      <header><div><h2>Lançamentos da fatura</h2><small>{card ? cardName(card.name) : 'Cartão'}</small></div><button type="button" onClick={() => card && setCenterOpen('statement')}>Ver todos <Icon name="chevron-right" size={14}/></button></header>
       <div className="meg2-statement-list" data-meg-scroll-region="true">
         {rows.map((row) => <button key={row.id} type="button" onClick={() => setSelectedRow(row)}><span className={'icon-' + semanticIcon(row.description, row.category)}><Icon name={semanticIcon(row.description, row.category)} size={20}/></span><p><b>{row.description}</b><small>{row.installmentNo && row.installmentQty ? 'Parcela ' + row.installmentNo + '/' + row.installmentQty + ' • ' : ''}{String(row.date || '').slice(0, 10).split('-').reverse().join('/')}</small></p><strong>{money.format(row.amount)}</strong><i><Icon name="chevron-right" size={15}/></i></button>)}
         {!rows.length ? <div className="meg2-empty">Nenhum lançamento nesta fatura.</div> : null}
       </div>
     </section>
-    {centerOpen && card ? <MegMobileCardCenter card={card} cardLabel={cardName(card.name)} artUrl={cardArt(card.name)} rows={rows} onClose={() => setCenterOpen(false)}/> : null}
+    {centerOpen && card ? <MegMobileCardCenter card={card} cardLabel={cardName(card.name)} artUrl={cardArt(card.name)} rows={rows} initialView={centerOpen} onClose={() => setCenterOpen(null)}/> : null}
     {selectedRow && card ? <div className="meg2-card-detail-overlay" role="presentation" onClick={() => setSelectedRow(null)}>
       <section className="meg2-card-detail" role="dialog" aria-modal="true" aria-label="Detalhe da compra" onClick={(event) => event.stopPropagation()}>
         <header><div><small>DETALHE DA COMPRA</small><h2>{selectedRow.description}</h2></div><button type="button" onClick={() => setSelectedRow(null)}><Icon name="x" size={18}/></button></header>
@@ -515,7 +515,7 @@ function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Pro
           <div><dt>Parcelamento</dt><dd>{selectedRow.installmentNo && selectedRow.installmentQty ? `${selectedRow.installmentNo} de ${selectedRow.installmentQty}` : 'À vista'}</dd></div>
           <div><dt>Descrição</dt><dd>{selectedRow.description}</dd></div>
         </dl>
-        <footer><button type="button" className="secondary" onClick={() => setSelectedRow(null)}>Fechar</button><button type="button" className="apply" onClick={() => { const eventId=selectedRow.eventId; setSelectedRow(null); if (eventId) onEditEvent(eventId); else setCenterOpen(true); }}>{selectedRow.eventId ? 'Editar lançamento' : 'Abrir central'}</button></footer>
+        <footer><button type="button" className="secondary" onClick={() => setSelectedRow(null)}>Fechar</button><button type="button" className="apply" onClick={() => { const eventId=selectedRow.eventId; setSelectedRow(null); if (eventId) onEditEvent(eventId); else setCenterOpen('center'); }}>{selectedRow.eventId ? 'Editar lançamento' : 'Abrir central'}</button></footer>
       </section>
     </div> : null}
   </main>;
