@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { MegIcon } from './MegMobileIcon';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { isPhoenixBenefitEvent } from '../phoenix/home-period-summary';
@@ -18,25 +18,56 @@ function datePt(value:string){
 }
 
 export function MegMobileBenefitModal({data,onClose,onOpenMovements}:{data:PhoenixReadModel;onClose:()=>void;onOpenMovements:()=>void}) {
-  const events=useMemo(()=>data.events.items.filter(isPhoenixBenefitEvent).filter((event)=>['paid','reconciled','confirmed'].includes(String(event.status))).sort((a,b)=>String(b.date).localeCompare(String(a.date))),[data.events.items]);
+  const [filter,setFilter]=useState<'all'|'income'|'expense'>('all');
+  const events=useMemo(()=>data.events.items
+    .filter(isPhoenixBenefitEvent)
+    .filter((event)=>['paid','reconciled','confirmed'].includes(String(event.status)))
+    .sort((a,b)=>String(b.date).localeCompare(String(a.date))),[data.events.items]);
   const credits=events.reduce((sum,event)=>sum+Math.max(0,signed(event)),0);
   const spent=events.reduce((sum,event)=>sum+Math.max(0,-signed(event)),0);
   const balance=Number(data.summary.benefitBalance||0);
-  const opening=balance-credits+spent;
+  const visible=events.filter((event)=>filter==='all'||(filter==='income'?signed(event)>=0:signed(event)<0));
+  const verocard=data.paymentMethods.find((method)=>method.isActive&&/verocard/i.test(method.name));
+
   return <div className="meg3-benefit-overlay" role="presentation">
     <section className="meg3-benefit-modal" role="dialog" aria-modal="true" aria-label="Benefício Alimentação">
-      <header><div><small>BENEFÍCIO ALIMENTAÇÃO</small><h2>Acompanhamento</h2><p>Saldo e movimentações do período.</p></div><button onClick={onClose}><MegIcon name="x" size={18}/></button></header>
-      <section className="meg3-benefit-kpis">
-        <article><small>Saldo inicial</small><strong>{money.format(opening)}</strong></article>
-        <article className="credit"><small>Créditos</small><strong>{money.format(credits)}</strong></article>
-        <article className="spent"><small>Consumo</small><strong>{money.format(spent)}</strong></article>
-        <article className="balance"><small>Saldo atual</small><strong>{money.format(balance)}</strong></article>
+      <header>
+        <div><h2>Benefício Alimentação</h2><p>Seu saldo e movimentações do cartão benefício.</p></div>
+        <button onClick={onClose} aria-label="Fechar"><MegIcon name="x" size={18}/></button>
+      </header>
+
+      <section className="meg3-benefit-card">
+        <span><MegIcon name="food" size={28}/></span>
+        <div><small>MEG BENEFÍCIO</small><strong>{verocard?.name || 'Verocard'}</strong><em>Alimentação</em></div>
+        <b>••••</b>
       </section>
+
+      <section className="meg3-benefit-balance">
+        <small>Saldo disponível</small>
+        <strong>{money.format(balance)}</strong>
+        <span><em>Créditos</em><b>+{money.format(credits)}</b></span>
+        <span><em>Consumo</em><b className="spent">-{money.format(spent)}</b></span>
+      </section>
+
+      <div className="meg3-benefit-actions">
+        <button type="button" onClick={onOpenMovements}><MegIcon name="receipt" size={18}/>Ver extrato</button>
+        <button type="button" onClick={onOpenMovements}><MegIcon name="card" size={18}/>Lançamentos</button>
+      </div>
+
+      <nav className="meg3-benefit-tabs" aria-label="Filtrar movimentações do benefício">
+        <button className={filter==='all'?'active':''} onClick={()=>setFilter('all')}>Todas</button>
+        <button className={filter==='income'?'active':''} onClick={()=>setFilter('income')}>Entradas</button>
+        <button className={filter==='expense'?'active':''} onClick={()=>setFilter('expense')}>Saídas</button>
+      </nav>
+
       <section className="meg3-benefit-list" data-meg-scroll-region="true">
-        {events.map((event)=><article key={event.id}><span><strong>{event.description}</strong><small>{datePt(event.date)} · {event.paymentMethod?.name || 'Verocard'}</small></span><b className={signed(event)>=0?'credit':'spent'}>{signed(event)>=0?'+':'-'}{money.format(Math.abs(signed(event)))}</b></article>)}
-        {!events.length?<div className="meg3-benefit-empty">Nenhuma movimentação encontrada.</div>:null}
+        {visible.map((event)=><article key={event.id}>
+          <span className={signed(event)>=0?'icon credit':'icon spent'}><MegIcon name={signed(event)>=0?'banknote':'food'} size={18}/></span>
+          <span className="copy"><strong>{event.description}</strong><small>{event.category?.name || 'Alimentação'} · {datePt(event.date)}</small></span>
+          <b className={signed(event)>=0?'credit':'spent'}>{signed(event)>=0?'+':'-'}{money.format(Math.abs(signed(event)))}</b>
+        </article>)}
+        {!visible.length?<div className="meg3-benefit-empty">Nenhuma movimentação encontrada.</div>:null}
       </section>
-      <footer><button className="secondary" onClick={onClose}>Fechar</button><button className="primary" onClick={onOpenMovements}>Ver lançamentos</button></footer>
     </section>
   </div>;
 }
