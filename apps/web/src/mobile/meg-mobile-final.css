@@ -1223,3 +1223,64 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   margin:0!important;
   transform:none!important;
 }
+
+
+/* NAVEGAÇÃO INFERIOR PROFISSIONAL: estado exclusivo e geometria imutável */
+.meg2-dock>button:not(.meg2-new){
+  display:grid!important;
+  grid-template-rows:28px 10px!important;
+  grid-template-columns:1fr!important;
+  place-items:center!important;
+  align-content:center!important;
+  row-gap:3px!important;
+  padding:0!important;
+  margin:0!important;
+  transform:none!important;
+}
+.meg2-dock>button:not(.meg2-new)>svg{
+  grid-row:1!important;
+  width:22px!important;height:22px!important;
+  min-width:22px!important;min-height:22px!important;
+  max-width:22px!important;max-height:22px!important;
+  place-self:center!important;transform:none!important;
+}
+.meg2-badge-wrap{
+  grid-row:1!important;
+  width:28px!important;height:28px!important;
+  min-width:28px!important;min-height:28px!important;
+  max-width:28px!important;max-height:28px!important;
+  display:grid!important;place-items:center!important;
+  margin:0!important;transform:none!important;
+}
+.meg2-badge-wrap>svg{
+  width:22px!important;height:22px!important;
+  min-width:22px!important;min-height:22px!important;
+  max-width:22px!important;max-height:22px!important;
+  transform:none!important;
+}
+.meg2-dock>button:not(.meg2-new)>span:last-child{
+  grid-row:2!important;
+  height:10px!important;min-height:10px!important;line-height:10px!important;
+  margin:0!important;padding:0!important;align-self:center!important;
+}
+.meg2-dock>button.active{
+  width:100%!important;
+  height:58px!important;min-height:58px!important;max-height:58px!important;
+  padding:0!important;margin:0!important;transform:none!important;
+}
+.meg2-dock>button.active::before{
+  pointer-events:none!important;transform:none!important;
+}
+.meg2-new.active::before{display:none!important}
+.meg2-dock[data-active-item="new"] .meg2-new>span:first-child{
+  color:#8ffff8!important;
+  border-color:#6efff6!important;
+  box-shadow:0 0 0 5px rgba(0,57,59,.96),0 0 26px rgba(23,225,215,.28),inset 0 0 16px rgba(80,255,244,.10)!important;
+}
+.meg2-badge-wrap b{
+  top:-5px!important;right:-8px!important;
+}
+.meg2-dock[data-active-item="menu"]>button:not(:last-child):not(.meg2-new),
+.meg2-dock[data-active-item="new"]>button:not(.meg2-new){
+  color:#d4e3e3!important;
+}
