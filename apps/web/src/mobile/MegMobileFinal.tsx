@@ -331,63 +331,80 @@ function AllHistoryHome({ data, onNavigate }: { data: PhoenixReadModel; onNaviga
   </main>;
 }
 
-function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; homePeriodContext?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate'] }) {
+function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate, onLaunch }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; homePeriodContext?: MobileHomePeriodContext | null; onNavigate: Props['onNavigate']; onLaunch: (preset: LaunchPreset) => void }) {
   const [benefitOpen, setBenefitOpen] = useState(false);
   const nowMonth = todayIso().slice(0, 7);
   if (periodMode === 'month' && data.month < nowMonth) return <PastHome data={data} context={homePeriodContext} onNavigate={onNavigate}/>;
   if (periodMode === 'month' && data.month > nowMonth) return <FutureHome data={data} context={homePeriodContext} onNavigate={onNavigate}/>;
   if (periodMode === 'all') return <AllHistoryHome data={data} onNavigate={onNavigate}/>;
+
   const openPayables = data.payables.filter((item) => openStatus(item.status) && Number(item.openAmount || 0) > 0);
   const planned = data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned');
   const paid = data.events.items.filter((item) => item.type === 'expense' && ['paid', 'reconciled', 'confirmed'].includes(String(item.status)));
   const cardOpen = data.cards.reduce((sum, card) => sum + Number(card.statement?.payableAmount ?? card.payableStatementAmount ?? card.statementAmount ?? 0), 0);
   const balance = Number(data.summary.availableBalance || 0) + Number(data.summary.realizedResult || 0);
-  const posted = data.events.items.filter((item) => ['paid', 'reconciled', 'confirmed'].includes(String(item.status)));
-  const specialIncome = posted.filter((item) => item.type === 'income').reduce((sum, item) => sum + Math.abs(Number(item.signedAmount || item.amount || 0)), 0);
-  const specialExpense = posted.filter((item) => item.type === 'expense').reduce((sum, item) => sum + Math.abs(Number(item.signedAmount || item.amount || 0)), 0);
-  const income = periodMode === 'month' ? Number(data.summary.realizedIncome || 0) : specialIncome;
-  const expense = periodMode === 'month' ? Number(data.summary.realizedExpense || 0) : specialExpense;
-  const result = periodMode === 'month' ? Number(data.summary.realizedResult || 0) : income - expense;
-  const title = periodMode === 'range' ? (periodLabel || 'Intervalo selecionado') : monthLabel(data.month);
+  const income = Number(data.summary.realizedIncome || 0);
+  const expense = Number(data.summary.realizedExpense || 0);
+  const result = Number(data.summary.realizedResult || 0);
+  const recent = [...data.events.items]
+    .filter((item) => ['paid', 'reconciled', 'confirmed'].includes(String(item.status)))
+    .sort((left, right) => String(right.date).localeCompare(String(left.date)))
+    .slice(0, 4);
 
-  return <main className="meg2-main meg2-home" data-meg-fixed-screen="true">
-    <section className="meg2-title">
-      <span>Situação {data.month === nowMonth && periodMode === 'month' ? 'atual' : 'do período'}</span>
-      <h1>{title}</h1>
-      <p>Acompanhe seu caixa e compromissos.</p>
-      <i><Icon name="trend"/></i>
+  return <main className="meg2-main meg2-home meg2-home-preview" data-meg-fixed-screen="true">
+    <section className="meg2-home-hero">
+      <div className="meg2-home-balance-head"><span>Saldo disponível</span><Icon name="wallet" size={18}/></div>
+      <strong>{money.format(balance)}</strong>
+      <div className="meg2-home-flowline">
+        <div><small>Entradas</small><b>{money.format(income)}</b></div>
+        <div><small>Saídas</small><b>{money.format(expense)}</b></div>
+        <div className={result >= 0 ? 'positive' : 'negative'}><small>Resultado</small><b>{resultMoney(result)}</b></div>
+      </div>
     </section>
-    <section className="meg2-balance">
-      <span><Icon name="wallet" size={30}/></span>
-      <div><small>Saldo disponível</small><strong>{money.format(balance)}</strong><p>Considerando apenas os lançamentos realizados.</p></div>
+
+    <section className="meg2-home-status">
+      <button onClick={() => onNavigate('payables')}><span className="red"><Icon name="file"/></span><small>Contas a pagar</small><b>{openPayables.length}</b><em>{money.format(openPayables.reduce((sum,item) => sum + Number(item.openAmount || 0),0))}</em></button>
+      <button onClick={() => onNavigate('cards')}><span className="blue"><Icon name="wallet"/></span><small>Faturas</small><b>{data.cards.filter((card) => Number(card.statement?.payableAmount ?? card.statementAmount ?? 0) > 0).length}</b><em>{money.format(cardOpen)}</em></button>
+      <button onClick={() => onNavigate('payables')}><span className="amber"><Icon name="calendar"/></span><small>Outras pendências</small><b>{planned.length}</b><em>{money.format(planned.reduce((sum,item) => sum + Math.abs(Number(item.signedAmount || item.amount || 0)),0))}</em></button>
+      <button onClick={() => onNavigate('history')}><span className="green"><Icon name="check"/></span><small>Contas pagas</small><b>{paid.length}</b><em>{money.format(paid.reduce((sum,item) => sum + Math.abs(Number(item.signedAmount || item.amount || 0)),0))}</em></button>
     </section>
-    <section className="meg2-flow">
-      <article><span className="up"><Icon name="up"/></span><div><small>Entradas no mês</small><strong>{money.format(income)}</strong></div></article>
-      <article><span className="down"><Icon name="down"/></span><div><small>Saídas no mês</small><strong>{money.format(expense)}</strong></div></article>
-      <article className="result"><span><Icon name="trend"/></span><div><small>Resultado do mês</small><strong>{resultMoney(result)}</strong></div></article>
-    </section>
-    <section className="meg2-summary">
-      <article><span className="red"><Icon name="file"/></span><small>Contas a pagar</small><b>{openPayables.length}</b><em>{money.format(openPayables.reduce((s, item) => s + Number(item.openAmount || 0), 0))}</em></article>
-      <article><span className="blue"><Icon name="wallet"/></span><small>Faturas de cartões</small><b>{data.cards.filter((card) => Number(card.statement?.payableAmount ?? card.statementAmount ?? 0) > 0).length}</b><em>{money.format(cardOpen)}</em></article>
-      <article><span className="amber"><Icon name="file"/></span><small>Outras pendências</small><b>{planned.length}</b><em>{money.format(planned.reduce((s, item) => s + Math.abs(Number(item.signedAmount || item.amount || 0)), 0))}</em></article>
-      <article><span className="green"><Icon name="check"/></span><small>Contas pagas</small><b>{paid.length}</b><em>{money.format(paid.reduce((s, item) => s + Math.abs(Number(item.signedAmount || item.amount || 0)), 0))}</em></article>
-    </section>
-    <button className="meg2-benefit" type="button" onClick={() => setBenefitOpen(true)}>
-      <span><Icon name="food"/></span><div><small>Benefício Alimentação</small><em>Saldo disponível</em><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong></div><b><Icon name="chevron-right" size={16}/></b>
+
+    <button className="meg2-home-benefit" type="button" onClick={() => setBenefitOpen(true)}>
+      <span className="meg2-home-benefit-icon"><Icon name="food" size={25}/></span>
+      <div><small>Benefício Alimentação</small><em>Saldo disponível</em><strong>{money.format(Number(data.summary.benefitBalance || 0))}</strong></div>
+      <span className="meg2-home-benefit-art" aria-hidden="true"><b>BENEFÍCIO</b></span>
+      <Icon name="chevron-right" size={18}/>
     </button>
-    <section className="meg2-quick">
-      <header><div><span><Icon name="bolt" size={18}/></span><p><b>Ações rápidas</b><small>Acesse as principais funcionalidades.</small></p></div><button onClick={() => onNavigate('movements')}>Ver todas <Icon name="chevron-right" size={14}/></button></header>
+
+    <section className="meg2-home-actions">
+      <h2>Ações rápidas</h2>
       <div>
-        <button onClick={() => onNavigate('cards')}><span><Icon name="wallet"/></span><small>Cartões</small></button>
-        <button onClick={() => onNavigate('payables')}><span><Icon name="file"/></span><small>Pagar conta</small></button>
-        <button onClick={() => onNavigate('cashflow')}><span><Icon name="cashflow"/></span><small>Fluxo de caixa</small></button>
-        <button onClick={() => onNavigate('analytics')}><span><Icon name="chart"/></span><small>Ver relatórios</small></button>
+        <button onClick={() => onLaunch('expense')}><span className="expense"><Icon name="plus"/></span><small>Nova Despesa</small></button>
+        <button onClick={() => onLaunch('income')}><span className="income"><Icon name="plus"/></span><small>Nova Receita</small></button>
+        <button onClick={() => onLaunch('benefit')}><span className="benefit"><Icon name="food"/></span><small>Alimentação</small></button>
+        <button onClick={() => onNavigate('cashflow')}><span className="transfer"><Icon name="cashflow"/></span><small>Fluxo de caixa</small></button>
+      </div>
+    </section>
+
+    <section className="meg2-home-recent">
+      <header><h2>Últimos lançamentos</h2><button onClick={() => onNavigate('movements')}>Ver todos</button></header>
+      <div className="meg2-home-recent-list" data-meg-scroll-region="true">
+        {recent.map((item) => {
+          const amount = signedEventAmount(item);
+          const icon = semanticIcon(item.description, item.category?.name, item.category?.group);
+          return <button key={item.id} onClick={() => onNavigate('movements')}>
+            <span className={'icon-' + icon}><Icon name={icon}/></span>
+            <p><b>{item.description}</b><small>{shortDate.format(new Date(String(item.date).slice(0,10) + 'T12:00:00Z'))} • {item.paymentMethod?.name || item.account?.name || 'Lançamento'}</small></p>
+            <strong className={amount >= 0 ? 'income' : 'expense'}>{amount >= 0 ? '+ ' : '- '}{money.format(Math.abs(amount))}</strong>
+            <Icon name="chevron-right" size={15}/>
+          </button>;
+        })}
+        {!recent.length ? <div className="meg2-empty">Nenhum lançamento realizado neste período.</div> : null}
       </div>
     </section>
     {benefitOpen ? <MegMobileBenefitModal data={data} onClose={() => setBenefitOpen(false)} onOpenMovements={() => { setBenefitOpen(false); onNavigate('movements'); }}/> : null}
   </main>;
 }
-
 function InfiniteCarousel({ data, activeId, onActiveId }: { data: PhoenixReadModel; activeId: string; onActiveId: (id: string) => void }) {
   const cards = useMemo(() => data.cards.filter((card) => card.isActive !== false), [data.cards]);
   const repeated = useMemo(() => cards.length > 1 ? cards.concat(cards, cards) : cards, [cards]);
@@ -792,7 +809,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
     <div className={'meg2-shell meg2-view-' + view}>
       <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={() => setPeriodOpen(true)} onOpenMenu={() => setMenuOpen(true)}/>
       <div className="meg2-scroll">
-        {view === 'home' ? <Home data={data} periodMode={periodMode} periodLabel={periodLabel} homePeriodContext={homePeriodContext} onNavigate={onNavigate}/> : null}
+        {view === 'home' ? <Home data={data} periodMode={periodMode} periodLabel={periodLabel} homePeriodContext={homePeriodContext} onNavigate={onNavigate} onLaunch={(preset) => setLaunchSheet({ preset })}/> : null}
         {view === 'movements' ? <MegMobileMovements data={data} onOpenEvent={(event) => setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event })} onNew={() => setLaunchSheet({ preset: 'expense' })}/> : null}
         {view === 'cards' ? <Cards data={data} onEditEvent={(eventId) => {
           const event = data.events.items.find((item) => item.id === eventId) || null;
