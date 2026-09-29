@@ -153,7 +153,7 @@ function semanticIcon(label: string, category?: string, group?: string) {
   return resolveFinancialIcon({ description: label, categoryName: category, categoryGroup: group });
 }
 
-function Header({ data, periodMode, periodLabel, onOpenPeriod, onOpenMenu }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; onOpenPeriod: () => void; onOpenMenu: () => void }) {
+function Header({ data, periodMode, periodLabel, onHome, onOpenPeriod, onOpenMenu }: { data: PhoenixReadModel; periodMode: PeriodMode; periodLabel?: string; onHome: () => void; onOpenPeriod: () => void; onOpenMenu: () => void }) {
   const firstName = data.user.name.trim().split(/\s+/)[0] || 'MEG';
   const [avatar, setAvatar] = useState(() => readPhoenixAvatarPreference(data.user.id));
   useEffect(() => {
@@ -171,7 +171,7 @@ function Header({ data, periodMode, periodLabel, onOpenPeriod, onOpenMenu }: { d
   const mainLabel = periodMode === 'all' ? '∞' : periodMode === 'range' ? (periodLabel || 'Intervalo') : compactMonth(data.month);
   const subLabel = periodMode === 'all' ? 'Todos os períodos' : periodMode === 'range' ? 'Intervalo personalizado' : data.month === todayIso().slice(0, 7) ? 'Mês atual' : 'Período selecionado';
   return <header className="meg2-header">
-    <div className="meg2-brand"><img src={asset('brand/meg-finance-system-mark.svg')} alt="MEG"/></div>
+    <button className="meg2-brand" type="button" onClick={onHome} aria-label="Voltar para a Home"><img src={asset('brand/meg-finance-system-mark.svg')} alt="MEG"/></button>
     <button className="meg2-period" type="button" onClick={onOpenPeriod}>
       <span className="meg2-period-icon">{periodMode === 'all' ? <b className="meg2-infinity">∞</b> : <Icon name="calendar" size={19}/>}</span>
       <span><strong>{mainLabel}</strong><small>{subLabel}</small></span>
@@ -790,7 +790,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
 
   return <div className="meg2-app" data-meg-mobile-final="true">
     <div className={'meg2-shell meg2-view-' + view}>
-      <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={() => setPeriodOpen(true)} onOpenMenu={() => setMenuOpen(true)}/>
+      <Header data={data} periodMode={periodMode} periodLabel={periodLabel} onHome={() => onNavigate('home')} onOpenPeriod={() => setPeriodOpen(true)} onOpenMenu={() => setMenuOpen(true)}/>
       <div className="meg2-scroll">
         {view === 'home' ? <Home data={data} periodMode={periodMode} periodLabel={periodLabel} homePeriodContext={homePeriodContext} onNavigate={onNavigate}/> : null}
         {view === 'movements' ? <MegMobileMovements data={data} onOpenEvent={(event) => setLaunchSheet({ preset: event.type === 'income' ? 'income' : 'expense', event })} onOpenPeriod={() => setPeriodOpen(true)}/> : null}
@@ -816,7 +816,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
       preset={launchSheet.preset}
       event={launchSheet.event}
       onClose={() => setLaunchSheet(null)}
-      appHeader={<Header data={data} periodMode={periodMode} periodLabel={periodLabel} onOpenPeriod={() => { setLaunchSheet(null); setPeriodOpen(true); }} onOpenMenu={() => { setLaunchSheet(null); setMenuOpen(true); }}/>}
+      appHeader={<Header data={data} periodMode={periodMode} periodLabel={periodLabel} onHome={() => { setLaunchSheet(null); onNavigate('home'); }} onOpenPeriod={() => { setLaunchSheet(null); setPeriodOpen(true); }} onOpenMenu={() => { setLaunchSheet(null); setMenuOpen(true); }}/>}
       appDock={<Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={(next) => { setLaunchSheet(null); onNavigate(next); }} onLaunch={() => setLaunchSheet({ preset: 'expense' })} onMenu={() => { setLaunchSheet(null); setMenuOpen(true); }}/>}
     /> : null}
   </div>;
