@@ -109,13 +109,13 @@ export function MegMobileMovements({
     })
     .sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
-  const totals = posted.reduce((summary, event) => {
-    const value = signedAmount(event);
-    if (value >= 0) summary.income += value;
-    else summary.expense += Math.abs(value);
-    return summary;
-  }, { income: 0, expense: 0 });
-  const result = totals.income - totals.expense;
+  // Mantém os KPIs de Lançamentos alinhados à mesma fonte de verdade da Home:
+  // apenas movimentos realizados da competência atual entram no resumo.
+  const totals = {
+    income: Number(data.summary.realizedIncome || 0),
+    expense: Number(data.summary.realizedExpense || 0),
+  };
+  const result = Number(data.summary.realizedResult ?? (totals.income - totals.expense));
   const competenceLabel = data.month.split('-').reverse().join('/');
   const [year, month] = data.month.split('-').map(Number);
   const longPeriod = Number.isFinite(year) && Number.isFinite(month)
