@@ -763,3 +763,14 @@
   .meg3-movement-list-head{min-height:27px}
   .meg3-event-card{min-height:60px;margin-bottom:4px}
 }
+
+
+/* RESPIRO INFERIOR DE LANÇAMENTOS SEM TOCAR NO DOCK */
+.meg3-movements{
+  padding-bottom:clamp(10px,1.35dvh,14px)!important;
+}
+.meg3-event-list{
+  margin-bottom:clamp(8px,1.15dvh,12px)!important;
+  padding-bottom:clamp(8px,1.15dvh,12px)!important;
+  scroll-padding-bottom:clamp(8px,1.15dvh,12px)!important;
+}

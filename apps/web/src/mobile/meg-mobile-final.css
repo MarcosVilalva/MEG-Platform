@@ -861,3 +861,29 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   align-self:stretch!important;
   overflow:hidden!important;
 }
+
+
+/* ZONA DE SEGURANÇA DO CONTEÚDO ACIMA DO DOCK FIXO */
+.meg2-view-movements > .meg2-scroll,
+.meg2-view-payables > .meg2-scroll,
+.meg2-view-cards > .meg2-scroll{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  align-self:stretch!important;
+  overflow:hidden!important;
+}
+.meg2-payables{
+  padding-bottom:clamp(10px,1.35dvh,14px)!important;
+}
+.meg2-pending-list{
+  margin-bottom:clamp(8px,1.15dvh,12px)!important;
+  padding-bottom:clamp(8px,1.15dvh,12px)!important;
+  scroll-padding-bottom:clamp(8px,1.15dvh,12px)!important;
+}
+.meg2-cards{
+  padding-bottom:clamp(10px,1.35dvh,14px)!important;
+}
+.meg2-cards .meg2-primary{
+  margin-bottom:0!important;
+}
