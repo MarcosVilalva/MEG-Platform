@@ -39,10 +39,6 @@ function SearchGlyph() {
   return <MegIcon name="search" size={20}/>;
 }
 
-function FilterGlyph() {
-  return <MegIcon name="sliders" size={20}/>;
-}
-
 type MobileMovementKind = 'all' | 'income' | 'expense' | 'benefit';
 
 function normalizeMovementText(value: unknown) {
