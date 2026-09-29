@@ -171,7 +171,7 @@ function Header({ data, periodMode, periodLabel, onHome, onOpenPeriod, onOpenMen
   const mainLabel = periodMode === 'all' ? '∞' : periodMode === 'range' ? (periodLabel || 'Intervalo') : compactMonth(data.month);
   const subLabel = periodMode === 'all' ? 'Todos os períodos' : periodMode === 'range' ? 'Intervalo personalizado' : data.month === todayIso().slice(0, 7) ? 'Mês atual' : 'Período selecionado';
   return <header className="meg2-header">
-    <button className="meg2-brand" type="button" onClick={onHome} aria-label="Voltar para a Home"><img src={asset('brand/meg-finance-system-mark.svg')} alt="MEG"/></button>
+    <button className="meg2-brand" type="button" onClick={onHome} aria-label="Voltar para a Home"><img src={asset('brand/meg-finance-system-mark-transparent.svg')} alt="MEG"/></button>
     <button className="meg2-period" type="button" onClick={onOpenPeriod}>
       <span className="meg2-period-icon">{periodMode === 'all' ? <b className="meg2-infinity">∞</b> : <Icon name="calendar" size={19}/>}</span>
       <span><strong>{mainLabel}</strong><small>{subLabel}</small></span>

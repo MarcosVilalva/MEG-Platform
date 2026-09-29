@@ -774,3 +774,64 @@
   padding-bottom:clamp(8px,1.15dvh,12px)!important;
   scroll-padding-bottom:clamp(8px,1.15dvh,12px)!important;
 }
+
+
+/* AJUSTES DE LANÇAMENTOS APÓS VALIDAÇÃO EM VÍDEO */
+/* Botão de filtro superior menor e proporcional. */
+.meg3-movements-heading{
+  grid-template-columns:minmax(0,1fr) clamp(38px,10.5vw,44px)!important;
+  gap:clamp(7px,2vw,10px)!important;
+}
+.meg3-movements-heading>button{
+  width:clamp(38px,10.5vw,44px)!important;
+  height:clamp(38px,10.5vw,44px)!important;
+  min-width:clamp(38px,10.5vw,44px)!important;
+  min-height:clamp(38px,10.5vw,44px)!important;
+  border-radius:10px!important;
+  position:relative!important;
+  z-index:4!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+}
+.meg3-movements-heading>button svg{
+  width:clamp(19px,5.6vw,22px)!important;
+  height:clamp(19px,5.6vw,22px)!important;
+}
+
+/* Barra de filtros rápidos mais baixa, sem perder a área de toque. */
+.meg3-movement-toolbar{
+  grid-template-columns:clamp(34px,9.4vw,38px) clamp(34px,9.4vw,38px) minmax(0,1fr) clamp(34px,9.4vw,38px)!important;
+  gap:clamp(4px,1.3vw,6px)!important;
+  position:relative!important;
+  z-index:3!important;
+}
+.meg3-movement-toolbar button{
+  height:clamp(34px,4.8dvh,38px)!important;
+  min-height:34px!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+}
+.meg3-movement-toolbar button.icon-only{
+  width:clamp(34px,9.4vw,38px)!important;
+}
+.meg3-movement-toolbar button.period{
+  padding-inline:clamp(6px,1.8vw,8px)!important;
+}
+.meg3-movement-toolbar button.period span{
+  font-size:clamp(7.5px,2.15vw,8.5px)!important;
+}
+
+/* "Novo" da lista também fica inteiro em qualquer densidade de tela. */
+.meg3-movement-list-head{
+  min-height:32px!important;
+  overflow:visible!important;
+}
+.meg3-movement-new{
+  min-width:68px!important;
+  height:30px!important;
+  min-height:30px!important;
+  padding:0 9px!important;
+  overflow:visible!important;
+  line-height:1!important;
+  flex:none!important;
+}

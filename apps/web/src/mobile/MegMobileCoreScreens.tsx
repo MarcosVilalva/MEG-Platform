@@ -81,7 +81,7 @@ export function MegMobileMovements({
 }: {
   data: PhoenixReadModel;
   onOpenEvent: (event: FinancialEvent) => void;
-  onOpenPeriod?: () => void;
+  onOpenPeriod: () => void;
   onCreate?: () => void;
 }) {
   const [query, setQuery] = useState('');
@@ -167,7 +167,7 @@ export function MegMobileMovements({
       <button type="button" className={hasFilters ? 'active icon-only' : 'icon-only'} aria-label="Filtrar lançamentos" onClick={openFilters}>
         <MegIcon name="sliders" size={19}/>
       </button>
-      <button type="button" className="period" aria-label="Selecionar período" onClick={() => onOpenPeriod?.()}>
+      <button type="button" className="period" aria-label="Selecionar período" onClick={onOpenPeriod}>
         <MegIcon name="calendar" size={17}/><span>{competenceLabel}</span><MegIcon name="chevron-down" size={14}/>
       </button>
       <button type="button" className={filters.accountId ? 'active icon-only' : 'icon-only'} aria-label="Filtrar por conta" onClick={openFilters}>

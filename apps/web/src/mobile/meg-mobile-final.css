@@ -991,3 +991,98 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   scroll-snap-align:start;
   scroll-snap-stop:normal;
 }
+
+
+/* AJUSTES VISUAIS DO CABEÇALHO E DOCK APÓS VALIDAÇÃO EM VÍDEO */
+/* O botão central pode ultrapassar visualmente o topo do dock sem ser recortado. */
+.meg2-dock{
+  contain:layout!important;
+  overflow:visible!important;
+}
+
+/* Marca MEG sem card verde ao redor: somente a identidade visual ocupa o espaço. */
+.meg2-brand{
+  width:clamp(44px,12vw,50px)!important;
+  height:clamp(44px,12vw,50px)!important;
+  min-width:clamp(44px,12vw,50px)!important;
+  min-height:clamp(44px,12vw,50px)!important;
+  max-width:50px!important;
+  max-height:50px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+  display:grid!important;
+  place-items:center!important;
+}
+.meg2-brand img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  transform:scale(1.06);
+}
+
+/* Avatar nunca pode ser comprimido horizontalmente pelo texto ou pelo filtro central. */
+.meg2-avatar{
+  flex:0 0 clamp(36px,9.8vw,40px)!important;
+  width:clamp(36px,9.8vw,40px)!important;
+  height:clamp(36px,9.8vw,40px)!important;
+  min-width:clamp(36px,9.8vw,40px)!important;
+  min-height:clamp(36px,9.8vw,40px)!important;
+  max-width:40px!important;
+  max-height:40px!important;
+  aspect-ratio:1/1!important;
+  border-radius:50%!important;
+}
+.meg2-avatar img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  aspect-ratio:1/1!important;
+}
+
+/* Seletor de competência compacto, central e com área de toque confiável. */
+.meg2-period{
+  justify-self:center!important;
+  width:min(100%,clamp(132px,42vw,174px))!important;
+  min-height:clamp(38px,5.7dvh,43px)!important;
+  height:clamp(38px,5.7dvh,43px)!important;
+  grid-template-columns:clamp(25px,7vw,29px) minmax(0,1fr) 13px!important;
+  gap:clamp(4px,1.2vw,6px)!important;
+  padding:3px clamp(6px,1.8vw,8px)!important;
+  border-radius:10px!important;
+  position:relative!important;
+  z-index:8!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+}
+.meg2-period-icon{
+  width:clamp(24px,6.8vw,28px)!important;
+  height:clamp(24px,6.8vw,28px)!important;
+  border-radius:8px!important;
+}
+.meg2-period strong{
+  font-size:clamp(9px,2.75vw,11.5px)!important;
+  line-height:1!important;
+}
+.meg2-period small{
+  font-size:clamp(6.5px,1.9vw,7.5px)!important;
+  line-height:1!important;
+}
+.meg2-period b{
+  font-size:14px!important;
+}
+
+/* Mantém o cabeçalho responsivo sem deformar marca, filtro ou avatar. */
+.meg2-header{
+  grid-template-columns:clamp(44px,12vw,50px) minmax(0,1fr) auto!important;
+  gap:clamp(5px,1.6vw,8px)!important;
+  padding-inline:clamp(8px,2.6vw,11px)!important;
+}
+.meg2-user{
+  min-width:0!important;
+  flex:none!important;
+}
