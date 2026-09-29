@@ -380,3 +380,272 @@
   .meg3-cashflow-list article{grid-template-columns:minmax(0,1fr) .8fr .8fr}
   .meg3-cashflow-list article>b{display:none}
 }
+
+
+/* MEG 29-09-2026 · Lançamentos · referência visual oficial */
+.meg3-movements{
+  grid-template-rows:auto auto auto auto minmax(0,1fr)!important;
+  gap:clamp(6px,.78dvh,9px)!important;
+  padding:clamp(7px,.9dvh,10px) clamp(9px,2.5vw,12px) clamp(6px,.8dvh,9px)!important;
+  background:
+    radial-gradient(circle at 88% 3%,rgba(10,214,204,.08),transparent 27%),
+    linear-gradient(180deg,rgba(1,47,49,.12),rgba(0,27,29,.08));
+}
+.meg3-movements-heading{
+  min-width:0;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 48px;
+  align-items:end;
+  gap:10px;
+}
+.meg3-movements-heading>div{min-width:0}
+.meg3-movements-heading h1{
+  margin:0;
+  color:#f7ffff;
+  font-size:clamp(27px,7.4vw,38px);
+  line-height:.98;
+  letter-spacing:-.045em;
+}
+.meg3-movements-heading p{
+  margin:4px 0 0;
+  color:#a9c3c0;
+  font-size:clamp(8px,2.35vw,10px);
+}
+.meg3-movements-heading>button{
+  width:46px;height:46px;
+  display:grid;place-items:center;
+  justify-self:end;
+  border:1px solid rgba(32,231,219,.58);
+  border-radius:13px;
+  background:linear-gradient(155deg,rgba(5,78,79,.96),rgba(2,47,50,.98));
+  color:#3ce8de;
+  box-shadow:inset 0 0 14px rgba(41,235,222,.06),0 0 14px rgba(34,230,219,.08);
+}
+.meg3-movements-heading>button.active{
+  border-color:#32eee1;
+  box-shadow:inset 0 0 16px rgba(41,235,222,.09),0 0 18px rgba(34,230,219,.14);
+}
+.meg3-movement-kpis{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:7px!important;
+}
+.meg3-movement-kpis article{
+  min-height:76px!important;
+  padding:7px 7px!important;
+  grid-template-columns:28px minmax(0,1fr)!important;
+  grid-template-rows:auto auto!important;
+  gap:2px 5px!important;
+  border-color:rgba(53,221,211,.42)!important;
+  border-radius:13px!important;
+  background:
+    radial-gradient(circle at 18% 20%,rgba(29,229,216,.07),transparent 45%),
+    linear-gradient(155deg,rgba(4,76,77,.98),rgba(1,44,47,.98))!important;
+}
+.meg3-movement-kpis article>span{
+  width:27px!important;height:27px!important;
+  border-radius:9px!important;
+}
+.meg3-movement-kpis small{
+  color:#c3d5d3!important;
+  font-size:7.2px!important;
+  font-weight:700;
+}
+.meg3-movement-kpis strong{
+  font-size:clamp(8.1px,2.35vw,11px)!important;
+  line-height:1.05!important;
+}
+.meg3-movement-toolbar{
+  grid-template-columns:minmax(0,1fr) 44px minmax(88px,.72fr) 44px!important;
+  gap:6px!important;
+}
+.meg3-movement-toolbar label,
+.meg3-movement-toolbar button{
+  height:41px!important;
+  border-radius:11px!important;
+  border-color:rgba(53,218,208,.37)!important;
+  background:linear-gradient(155deg,#043f42,#023234)!important;
+}
+.meg3-movement-search{
+  grid-template-columns:28px minmax(0,1fr)!important;
+  padding:0 7px!important;
+}
+.meg3-movement-toolbar button{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:6px!important;
+  padding:0 7px!important;
+}
+.meg3-movement-toolbar .meg3-toolbar-wide{
+  min-width:0;
+  color:#e8f7f5;
+  font-size:8px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.meg3-movement-toolbar button.active{
+  border-color:#2beadd!important;
+  color:#43ebe0!important;
+  box-shadow:0 0 13px rgba(40,231,220,.10)!important;
+}
+.meg3-movement-list-head{
+  min-height:37px!important;
+  padding:0 2px!important;
+}
+.meg3-movement-list-head strong{font-size:12px!important}
+.meg3-movement-list-head small{font-size:7.2px!important;color:#8aa7a3!important}
+.meg3-movement-list-head button{
+  min-height:34px!important;
+  padding:0 13px!important;
+  border-radius:11px!important;
+  background:linear-gradient(180deg,#0a908b,#066561)!important;
+  box-shadow:0 0 15px rgba(39,231,220,.14)!important;
+}
+.meg3-event-list{padding:0 1px 4px!important}
+.meg3-event-card{
+  min-height:68px!important;
+  margin-bottom:6px;
+  padding:6px 8px!important;
+  grid-template-columns:39px minmax(0,1fr) auto!important;
+  gap:7px!important;
+  border-radius:12px!important;
+  border-color:rgba(48,211,202,.27)!important;
+  background:linear-gradient(150deg,rgba(4,68,70,.98),rgba(2,43,46,.98))!important;
+}
+.meg3-event-icon{
+  width:37px!important;height:37px!important;border-radius:10px!important;
+}
+.meg3-event-copy small{font-size:6.8px!important}
+.meg3-event-copy strong{font-size:10.8px!important;margin:2px 0 1px!important}
+.meg3-event-copy em{font-size:7.2px!important}
+.meg3-payment-chip{
+  margin-top:3px!important;
+  padding:2px 6px!important;
+  font-size:6.6px!important;
+}
+.meg3-event-value b{font-size:9.5px!important}
+.meg3-event-value i{font-size:16px!important}
+
+.meg3-movement-filter-overlay{
+  position:fixed;
+  inset:0;
+  z-index:2147482500;
+  width:100vw;
+  height:100dvh;
+  overflow:hidden;
+  display:grid;
+  place-items:center;
+  padding:14px;
+  box-sizing:border-box;
+  background:rgba(0,14,16,.78);
+}
+.meg3-movement-filter-sheet{
+  width:min(100%,480px);
+  max-height:calc(100dvh - 28px);
+  overflow:hidden;
+  padding:14px;
+  border:1px solid rgba(48,231,219,.52);
+  border-radius:20px;
+  background:
+    radial-gradient(circle at 86% 0%,rgba(32,233,220,.10),transparent 30%),
+    linear-gradient(165deg,#06474a,#033436 55%,#02282b);
+  box-shadow:0 20px 56px rgba(0,0,0,.48),0 0 24px rgba(34,232,220,.13);
+}
+.meg3-movement-filter-sheet>header{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 40px;
+  align-items:start;
+  gap:10px;
+}
+.meg3-movement-filter-sheet>header small{
+  display:block;
+  color:#4ce9df;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.14em;
+}
+.meg3-movement-filter-sheet>header h2{
+  margin:4px 0 0;
+  font-size:21px;
+  letter-spacing:-.02em;
+}
+.meg3-movement-filter-sheet>header>button{
+  width:38px;height:38px;
+  border:1px solid rgba(60,215,205,.25);
+  border-radius:11px;
+  background:#04393c;
+  color:#eaffff;
+  font-size:25px;
+  line-height:1;
+}
+.meg3-movement-filter-types{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin-top:14px;
+}
+.meg3-movement-filter-types button{
+  min-height:61px;
+  display:grid;
+  grid-template-columns:31px minmax(0,1fr);
+  align-items:center;
+  gap:8px;
+  text-align:left;
+  padding:8px 10px;
+  border:1px solid rgba(59,201,194,.20);
+  border-radius:13px;
+  background:#043638;
+  color:#d7e9e7;
+}
+.meg3-movement-filter-types button svg{
+  width:28px;height:28px;padding:5px;box-sizing:border-box;
+  border-radius:9px;background:rgba(32,225,213,.07);color:#54e9df;
+}
+.meg3-movement-filter-types button span{font-size:10px;font-weight:800}
+.meg3-movement-filter-types button.active{
+  border-color:#2beadd;
+  background:linear-gradient(155deg,rgba(6,99,99,.98),rgba(4,62,65,.98));
+  box-shadow:0 0 14px rgba(40,231,220,.10);
+}
+.meg3-movement-filter-sheet>footer{
+  display:grid;
+  grid-template-columns:.8fr 1.2fr;
+  gap:8px;
+  margin-top:14px;
+}
+.meg3-movement-filter-sheet>footer button{
+  min-height:44px;
+  border-radius:11px;
+  font-size:9px;
+  font-weight:850;
+}
+.meg3-movement-filter-sheet>footer .secondary{
+  border:1px solid rgba(62,189,184,.22);
+  background:#043638;
+  color:#bfd2d0;
+}
+.meg3-movement-filter-sheet>footer .apply{
+  border:1px solid #2be8db;
+  background:linear-gradient(180deg,#11c9c0,#07837f);
+  color:#022d2f;
+}
+
+@media(max-width:365px){
+  .meg3-movement-toolbar{
+    grid-template-columns:minmax(0,1fr) 40px minmax(76px,.66fr) 40px!important;
+    gap:5px!important;
+  }
+  .meg3-movement-toolbar .meg3-toolbar-wide{font-size:7px!important;padding:0 4px!important}
+  .meg3-movement-kpis article{padding-inline:5px!important;grid-template-columns:24px minmax(0,1fr)!important}
+  .meg3-movement-kpis article>span{width:24px!important;height:24px!important}
+}
+@media(max-height:720px){
+  .meg3-movements{gap:4px!important}
+  .meg3-movements-heading h1{font-size:25px}
+  .meg3-movements-heading p{display:none}
+  .meg3-movements-heading>button{width:40px;height:40px}
+  .meg3-movement-kpis article{min-height:61px!important}
+  .meg3-movement-toolbar label,.meg3-movement-toolbar button{height:36px!important}
+  .meg3-movement-list-head{min-height:31px!important}
+  .meg3-event-card{min-height:61px!important;margin-bottom:4px}
+}
