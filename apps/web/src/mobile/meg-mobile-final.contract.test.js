@@ -255,7 +255,7 @@ assert.match(
 );
 assert.match(
   settingsCss,
-  /\.meg4-settings\{[\s\S]*overflow:hidden[\s\S]*grid-template-rows:auto auto minmax\(0,1fr\)/,
+  /\.meg4-settings\{[\s\S]*overflow:hidden[\s\S]*grid-template-rows:auto minmax\(0,1fr\)/,
   'Configurações deve manter viewport fixo e workspace interno rolável.',
 );
 assert.match(
