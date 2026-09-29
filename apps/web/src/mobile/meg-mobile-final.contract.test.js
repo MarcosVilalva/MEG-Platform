@@ -43,6 +43,31 @@ assert.match(css, /env\(safe-area-inset-top\)/,
   'Cabeçalho deve respeitar safe area do Android/iOS.');
 assert.match(css, /env\(safe-area-inset-bottom\)/,
   'Dock deve respeitar safe area inferior.');
+assert.match(
+  css,
+  /grid-template-rows:auto minmax\(0,1fr\) calc\(68px \+ env\(safe-area-inset-bottom\)\)/,
+  'Shell deve reservar uma faixa inferior fixa para o dock em todas as telas.',
+);
+assert.match(
+  css,
+  /\.meg2-dock\{[\s\S]*height:calc\(68px \+ env\(safe-area-inset-bottom\)\)[\s\S]*min-height:calc\(68px \+ env\(safe-area-inset-bottom\)\)[\s\S]*max-height:calc\(68px \+ env\(safe-area-inset-bottom\)\)/,
+  'Dock deve manter exatamente a mesma altura em qualquer tela.',
+);
+assert.match(
+  css,
+  /\.meg2-new>span:first-child\{[\s\S]*width:50px!important[\s\S]*min-width:50px!important[\s\S]*max-width:50px!important[\s\S]*transform:none!important/,
+  'Botão central Novo não pode estreitar ou redimensionar durante a navegação.',
+);
+assert.match(
+  mobile,
+  /className="meg2-brand"[\s\S]*onClick=\{onHome\}[\s\S]*aria-label="Voltar para a Home"/,
+  'Marca MEG no cabeçalho deve ser um atalho permanente para a Home.',
+);
+assert.match(
+  css,
+  /\.meg2-brand\{[\s\S]*width:48px[\s\S]*padding:0[\s\S]*overflow:hidden[\s\S]*\.meg2-brand img\{width:100%;height:100%;object-fit:cover/,
+  'Marca MEG deve preencher integralmente o card esquerdo do cabeçalho sem alterar sua dimensão.',
+);
 assert.match(mobile, /PeriodSheet[\s\S]*Mês[\s\S]*Intervalo[\s\S]*Tudo/,
   'Filtro de período final deve ser novo e preservar Mês, Intervalo e Tudo.');
 assert.doesNotMatch(source, /phoenix-mobile-reference\.css|PhoenixMobileReferenceScreens/,
