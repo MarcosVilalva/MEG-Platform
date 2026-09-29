@@ -1,9 +1,9 @@
 {
-  "versionCode": 553,
-  "versionName": "2.0.553",
+  "versionCode": 554,
+  "versionName": "2.0.554",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "2cf75ae2ddba0b082bdb3e2ead727cf1b98c4c6918a027f4a5fa5499f85b92b2",
+  "sha256": "d5e39ead0edb6749ac84b6ac85dddac49c198b36f42ebbe98c91e804a2433c21",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "fix(mobile): responsividade automática pelo viewport real"
+  "releaseNotes": "fix(mobile): corrigir Novo, cabeçalho e filtros responsivos"
 }
