@@ -339,7 +339,7 @@ assert.match(
 
 assert.match(
   launchSheet,
-  /ExpensePaymentMode[\s\S]*À vista[\s\S]*Crédito[\s\S]*Crediário/,
+  /ExpensePaymentMode[\s\S]*À Vista[\s\S]*Crédito[\s\S]*Crediário/,
   'Novo lançamento deve preservar as modalidades À vista, Crédito e Crediário.',
 );
 assert.match(
