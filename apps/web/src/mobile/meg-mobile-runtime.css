@@ -24,6 +24,12 @@ body.meg-cleanroom-mobile #root{
   isolation:isolate;
 }
 
+/* Picker modal é soberano: quando aberto, o app-base sai da composição visual.
+   O conteúdo do picker é renderizado via portal diretamente no body. */
+body.meg-cleanroom-mobile.meg-picker-open #root{
+  visibility:hidden!important;
+}
+
 body.meg-cleanroom-mobile *,
 body.meg-cleanroom-mobile *::before,
 body.meg-cleanroom-mobile *::after{
