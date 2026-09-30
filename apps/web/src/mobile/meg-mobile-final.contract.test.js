@@ -78,9 +78,9 @@ assert.match(mobile, /new URL\(relative, document\.baseURI\)\.href/,
 
 for (const relative of [
   '../../public/assets/cards/approved-v6/mercado.webp',
-  '../../public/assets/cards/approved-v6/latam.webp',
+  '../../public/assets/cards/latam-user-model-v61.svg',
   '../../public/assets/cards/approved-v6/azul.webp',
-  '../../public/assets/cards/approved-v6/riachuelo.webp',
+  '../../public/assets/cards/riachuelo-mastercard-visual.svg',
 ]) {
   assert.equal(existsSync(new URL(relative, import.meta.url)), true,
     `Arte de cartão obrigatória ausente: ${relative}`);
@@ -88,7 +88,7 @@ for (const relative of [
 
 assert.match(
   mobile,
-  /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*approved-v6\/latam\.webp[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*approved-v6\/riachuelo\.webp/i,
+  /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*latam-user-model-v61\.svg[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*riachuelo-mastercard-visual\.svg/i,
   'Carrossel deve usar artes recortadas e estáveis para preencher os cartões ativos.',
 );
 assert.match(css, /CONTRATO DE VIEWPORT FIXO[\s\S]*\.meg2-scroll\{[\s\S]*overflow:hidden!important/,
@@ -498,4 +498,25 @@ assert.match(
   cardCenter,
   /meg3-cardcenter-row-icon icon-\$\{icon\}/,
   'Ícones da Central devem carregar a identidade visual da classificação resolvida.',
+);
+
+assert.match(
+  mobile + '\n' + cardCenter,
+  /statement\?\.netAmount[\s\S]*statementAmount/,
+  'Fatura atual deve exibir o valor integral da competência, não apenas o saldo ainda pagável.',
+);
+assert.match(
+  iconSource,
+  /game ?pass[\s\S]*gamepad[\s\S]*capilar[\s\S]*sparkles[\s\S]*microondas[\s\S]*appliance[\s\S]*shopee[\s\S]*shopping-bag/,
+  'Resolvedor semântico deve reconhecer jogos, beleza, eletrodomésticos e e-commerce.',
+);
+assert.match(
+  cardCenterCss,
+  /-webkit-text-size-adjust:100%[\s\S]*\.meg3-cardcenter-tabs button\{[\s\S]*font-size:[^;]+!important[\s\S]*letter-spacing:-\.035em/,
+  'Abas da Central devem resistir ao autoajuste de texto do WebView e permanecer contidas.',
+);
+assert.doesNotMatch(
+  css + '\n' + cardCenterCss,
+  /\.meg2-card-art>img\{[\s\S]{0,260}transform:scale|\.meg3-cardcenter-hero img\{[\s\S]{0,260}transform:scale/,
+  'Artes finais não devem depender de zoom artificial para preencher o cartão.',
 );
