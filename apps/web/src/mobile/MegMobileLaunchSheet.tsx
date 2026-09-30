@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { MegMobilePicker, type MegMobilePickerOption } from './MegMobilePicker';
-import { MegIcon } from './MegMobileIcon';
+import { MegIcon, resolveFinancialIcon } from './MegMobileIcon';
 import { clearMegMobileHistorySuggestionCache, loadMegMobileHistorySuggestions, type MegMobileHistorySuggestion } from './meg-mobile-description-history';
 import { cardDueDateForStatement, cardMonthPlus, cardStatementMonthForPurchase } from '../phoenix/data/card-dates';
 import {
@@ -63,7 +63,8 @@ function uniquePickerOptions<T extends { id: string; name: string; group?: strin
     const key = normalize(item.name);
     if (!key || seen.has(key)) continue;
     seen.add(key);
-    options.push({ id: item.id, label: item.name, subtitle: item.group || undefined });
+    const icon = resolveFinancialIcon({ type: 'expense', signedAmount: -1, categoryName: item.name, categoryGroup: item.group });
+    options.push({ id: item.id, label: item.name, subtitle: item.group || undefined, icon, tone: icon === 'cart' || icon === 'food' || icon === 'sandwich' || icon === 'cup-soda' ? 'yellow' : icon === 'house' || icon === 'car' || icon === 'fuel' ? 'violet' : icon === 'heart-pulse' ? 'red' : 'cyan' });
   }
   return options;
 }
