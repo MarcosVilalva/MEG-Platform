@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 const launch = readFileSync(new URL('./MegMobileLaunchSheet.tsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./meg-mobile-launch-sheet.css', import.meta.url), 'utf8');
 const picker = readFileSync(new URL('./MegMobilePicker.tsx', import.meta.url), 'utf8');
+const pickerCss = readFileSync(new URL('./meg-mobile-picker.css', import.meta.url), 'utf8');
 const movements = readFileSync(new URL('./MegMobileCoreScreens.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./meg-mobile-description-history.ts', import.meta.url), 'utf8');
 
@@ -34,6 +35,18 @@ assert.ok(launch.includes('LANÇAMENTO SALVO') && launch.includes('Novo lançame
 assert.ok(css.includes('.meg3-launch-type-cards') && css.includes('.meg3-launch-scroll') && css.includes('overflow-y:auto') && css.includes('@media(max-width:350px)') && css.includes('@media(min-width:700px)'), 'Fluxo deve ser responsivo e rolar apenas internamente.');
 assert.ok(!css.includes('.meg3-account-kind') && !css.includes('.meg3-form-segment'), 'CSS rejeitado deve ser excluído, não escondido.');
 assert.ok(picker.includes('data-meg-scroll-region="true"'), 'Picker deve manter rolagem interna.');
+assert.ok(picker.includes('meg5-picker-search-trigger') && !picker.includes('<input autoFocus value={query}') === false, 'Pesquisa do picker deve abrir somente pelo botão Buscar.');
+assert.ok(pickerCss.includes('position:sticky') && pickerCss.includes('touch-action:pan-y'), 'Busca deve permanecer no topo e lista deve priorizar gesto vertical.');
+assert.ok(launch.includes('uniquePickerOptions(categories)'), 'Categorias duplicadas devem aparecer uma única vez no seletor.');
+assert.ok(launch.includes('isMainMonetaryAccount') && launch.includes('setAccountId(mainMonetaryAccount.id)'), 'Conta monetária principal deve ser pré-selecionada.');
+assert.ok(launch.includes('formatCurrencyInput') && launch.includes('inputMode="numeric"'), 'Valor deve usar máscara monetária brasileira da direita para a esquerda.');
+assert.ok(launch.includes('meg3-value-sign') && launch.includes("mode === 'expense'"), 'Estorno deve ser um controle compacto junto ao valor e exclusivo de despesa.');
+assert.ok(launch.includes('Vencimento da 1ª parcela') && launch.includes('firstInstallment.due'), 'Crédito deve mostrar vencimento calculado da primeira parcela.');
+assert.ok(launch.includes("expensePaymentMode === 'credit') setStatus('planned')"), 'Crédito deve iniciar como pendente.');
+assert.ok(launch.includes("mode === 'income' ? 'Data do recebimento'"), 'Receita deve usar Data do recebimento.');
+assert.ok(launch.includes('isIncomeReceiptMethod') && launch.includes('dinheiro|transferencia banc'), 'Receita deve restringir recebimento a Dinheiro, PIX e Transferência Bancária.');
+assert.ok(launch.includes('onBlur={closeHistoryForKeyboardDismiss}'), 'Sugestões do histórico devem fechar com o teclado/foco.');
+assert.ok(launch.includes("categories.find((item) => normalize(item.name) === normalize(suggestion.categoryName))"), 'Histórico deve recuperar categoria canônica por descrição sem depender do grupo duplicado.');
 
 assert.ok(movements.includes("[category, account].filter(Boolean).join(' · ')") && movements.includes('meg3-payment-label') && movements.includes('onClick={() => onOpenEvent(event)}'), 'Lançamentos deve preservar contexto e edição direta.');
 assert.ok(movements.includes('className="meg3-event-list" data-meg-scroll-region="true"'), 'Somente lista de lançamentos deve rolar.');
