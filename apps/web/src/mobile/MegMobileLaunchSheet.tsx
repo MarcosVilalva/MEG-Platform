@@ -332,7 +332,7 @@ export function MegMobileLaunchSheet({
     if (mode !== 'income' && !categoryId) return 'Selecione a categoria.';
     if (!pending && !paymentMethodId) return mode === 'income' ? 'Selecione a forma de recebimento.' : 'Selecione a forma de pagamento.';
     if (parseAmount(amount) <= 0) return 'Informe um valor maior que zero.';
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) return 'Informe uma data válida.';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return 'Informe uma data válida.';
     if (credit) {
       if (!cardId) return 'Selecione o cartão.';
       return '';
