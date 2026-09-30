@@ -71,7 +71,6 @@ function isCrediarioMethod(method: PhoenixReadModel['paymentMethods'][number] | 
 }
 
 type ExpensePaymentMode = 'cash' | 'credit' | 'crediario' | 'benefit';
-type AccountKind = 'general' | 'investment' | 'benefit';
 
 function projectedCardMeta(event: EventWithPayload) {
   const payload = event.sourcePayload;
@@ -141,7 +140,7 @@ export function MegMobileLaunchSheet({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyStatus, setHistoryStatus] = useState('');
-  const [accountKind, setAccountKind] = useState<AccountKind>(initialMode === 'benefit' ? 'benefit' : 'general');
+  const [step, setStep] = useState<'choose'|'form'|'success'>(event ? 'form' : 'choose');
   const [installmentEnabled, setInstallmentEnabled] = useState(Boolean(cardPurchase && Number(cardPurchase.installments || 1) > 1));
   const [expensePaymentMode, setExpensePaymentMode] = useState<ExpensePaymentMode>(() => {
     const initialMethod = data.paymentMethods.find((item) => item.id === (event?.paymentMethodId || event?.paymentMethod?.id || ''));
@@ -154,12 +153,7 @@ export function MegMobileLaunchSheet({
   const accounts = useMemo(() => data.accounts.filter((item) => item.isActive), [data.accounts]);
   const methods = useMemo(() => data.paymentMethods.filter((item) => item.isActive), [data.paymentMethods]);
   const categories = useMemo(() => data.categories.filter((item) => item.isActive && (!item.type || item.type === (mode === 'income' ? 'income' : 'expense'))), [data.categories, mode]);
-  const visibleAccounts = accounts.filter((account) => {
-    const hay = normalize(account.type) + ' ' + normalize(account.name);
-    if (accountKind === 'benefit') return isBenefitAccount(account);
-    if (accountKind === 'investment') return /invest|aplic|poup|broker|corret/.test(hay);
-    return !isBenefitAccount(account) && !/invest|aplic|poup|broker|corret/.test(hay);
-  });
+  const visibleAccounts = accounts.filter((account) => mode === 'benefit' ? isBenefitAccount(account) : !isBenefitAccount(account));
   const accountOptions: MegMobilePickerOption[] = visibleAccounts.map((account) => ({
     id: account.id,
     label: account.name,
@@ -202,7 +196,7 @@ export function MegMobileLaunchSheet({
   useEffect(() => {
     if ((mode !== 'expense' && mode !== 'benefit') || event) return;
     if (expensePaymentMode === 'benefit') {
-      setMode('benefit'); setAccountKind('benefit'); setCardId('');
+      setMode('benefit'); setCardId('');
       setAccountId(benefitAccount?.id || ''); setPaymentMethodId(verocard?.id || ''); setStatus('paid');
     } else if (expensePaymentMode === 'cash') {
       if (mode === 'benefit') setMode('expense');
@@ -366,7 +360,7 @@ export function MegMobileLaunchSheet({
           const result = await runPhoenixCardPurchaseWrite(preparePhoenixCardPurchase(input), data.month);
           dispatchSnapshot(result.status === 'confirmed' ? result.snapshot : null);
         }
-        onClose();
+        setStep('success');
         return;
       }
 
@@ -398,7 +392,7 @@ export function MegMobileLaunchSheet({
         const result = await runPhoenixSimpleEventWrite(preparePhoenixSimpleEvent(simple), data.month);
         dispatchSnapshot(result.status === 'confirmed' ? result.snapshot : null);
       }
-      onClose();
+      setStep('success');
     } catch (error) {
       const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
       setMessage(phoenixWriteMessage(code));
@@ -429,215 +423,143 @@ export function MegMobileLaunchSheet({
     }
   }
 
-  const title = event ? 'Editar lançamento' : 'Novo lançamento';
+  const title = event ? 'Editar lançamento' : 'Novo Lançamento';
+  const typeLabel = mode === 'income' ? 'Receita' : mode === 'benefit' ? 'Alimentação' : 'Despesa';
+  const firstInstallment = installmentPreview[0];
+
+  function chooseMode(next: LaunchPreset) {
+    setMode(next);
+    if (next === 'benefit') {
+      setExpensePaymentMode('benefit');
+      setAccountId(benefitAccount?.id || '');
+      setPaymentMethodId(verocard?.id || '');
+      setStatus('paid');
+    } else {
+      setExpensePaymentMode('cash');
+      setCardId('');
+      setPaymentMethodId(next === 'expense' ? (pixMethod?.id || '') : '');
+      setAccountId('');
+    }
+    setStep('form');
+  }
+
+  function back() {
+    if (busy) return;
+    if (!event && step === 'form') {
+      setStep('choose');
+      setMessage('');
+      setHistoryOpen(false);
+      return;
+    }
+    onClose();
+  }
 
   return <div className="meg3-form-overlay" role="presentation">
-    <section
-      className="meg3-form-sheet meg3-form-sheet--new-expense"
-      data-editor={event ? 'true' : 'false'}
-      data-launch-mode={mode}
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
-    >
+    <section className="meg3-form-sheet meg3-launch-flow" data-editor={event ? 'true' : 'false'} data-launch-mode={mode} data-launch-step={step} role="dialog" aria-modal="true" aria-label={title}>
       <div className="meg3-app-header">{appHeader}</div>
-      <header className="meg3-form-head">
-        <div><small>MEG FINANÇAS</small><h2>{title}</h2><p>{event ? 'Atualize as informações do seu lançamento.' : 'Registre um novo movimento em sua vida financeira.'}</p></div>
-        <button type="button" className="meg3-form-back" aria-label="Voltar para a tela anterior" disabled={busy} onClick={onClose}><MegIcon name="chevron-left" size={18}/></button>
+
+      <header className="meg3-launch-head">
+        <button type="button" className="meg3-form-back" aria-label="Voltar para a tela anterior" disabled={busy} onClick={back}><MegIcon name="chevron-left" size={18}/></button>
+        <div><h2>{title}</h2>{step === 'form' ? <span className={`meg3-type-badge ${mode}`}>{typeLabel}</span> : null}</div>
       </header>
 
-      <div className="meg3-form-body" data-meg-scroll-region="true">
-        {!event ? <div className="meg3-form-segment">
-          <button type="button" className={mode === 'expense' ? 'active expense' : ''} onClick={() => setMode('expense')}><span aria-hidden="true"><MegIcon name="arrow-down" size={17}/></span>Despesa</button>
-          <button type="button" className={mode === 'income' ? 'active income' : ''} onClick={() => setMode('income')}><span aria-hidden="true"><MegIcon name="banknote" size={17}/></span>Receita</button>
-          <button type="button" className={mode === 'benefit' ? 'active benefit' : ''} onClick={() => setMode('benefit')}><span aria-hidden="true"><MegIcon name="food" size={17}/></span>Alimentação</button>
-        </div> : null}
-
-        <div className="meg3-form-grid meg3-form-grid-faithful">
-          <div className="wide meg3-smart-description">
-            <label className="meg3-text-field">
-              <span>Descrição</span>
-              <input
-                value={description}
-                onFocus={() => {
-                  if (!event && mode !== 'benefit') setHistoryOpen(true);
-                }}
-                onChange={(event) => {
-                  setDescription(event.target.value);
-                  setHistoryStatus('');
-                  if (!event && mode !== 'benefit') setHistoryOpen(true);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') setHistoryOpen(false);
-                }}
-                placeholder="Digite para pesquisar no seu histórico"
-                autoComplete="off"
-                aria-autocomplete="list"
-                aria-expanded={historyOpen && (historyLoading || historySuggestions.length > 0)}
-              />
-            </label>
-
-            {!event && mode !== 'benefit' && historyOpen ? <div className="meg3-history-suggestions" role="listbox">
-              {historyLoading ? <div className="meg3-history-loading">Buscando no seu histórico…</div> : null}
-              {!historyLoading ? historySuggestions.map((suggestion) => <button
-                type="button"
-                role="option"
-                key={suggestion.key}
-                onPointerDown={(event) => event.preventDefault()}
-                onClick={() => useHistorySuggestion(suggestion)}
-              >
-                <span className="meg3-history-icon" aria-hidden="true"><MegIcon name="repeat" size={15}/></span>
-                <span className="meg3-history-copy">
-                  <strong>{suggestion.label}</strong>
-                  <small>{[
-                    suggestion.occurrences > 1 ? `Usado ${suggestion.occurrences}x` : 'Usado 1x',
-                    suggestion.categoryName || suggestion.categoryGroup || '',
-                    suggestion.paymentMethodName || '',
-                    suggestion.accountName || '',
-                  ].filter(Boolean).join(' · ')}</small>
-                </span>
-              </button>) : null}
-              {!historyLoading && !historySuggestions.length && description.trim() ? <div className="meg3-history-empty">Nenhum lançamento semelhante no histórico.</div> : null}
-            </div> : null}
-
-            {historyStatus ? <small className="meg3-history-status">{historyStatus}</small> : null}
-          </div>
-
-          {mode === 'expense' || mode === 'benefit' ? <div className="wide meg3-payment-mode">
-            <span>Tipo de pagamento *</span>
-            <div className="meg3-payment-mode-four">
-              <button type="button" className={expensePaymentMode === 'cash' ? 'active' : ''} onClick={() => setExpensePaymentMode('cash')}>À vista</button>
-              <button type="button" className={expensePaymentMode === 'credit' ? 'active' : ''} onClick={() => setExpensePaymentMode('credit')}>Crédito</button>
-              <button type="button" className={expensePaymentMode === 'crediario' ? 'active' : ''} onClick={() => setExpensePaymentMode('crediario')}>Crediário</button>
-              <button type="button" className={expensePaymentMode === 'benefit' ? 'active' : ''} onClick={() => setExpensePaymentMode('benefit')}>Benefício</button>
-            </div>
-          </div> : null}
-
-          <MegMobilePicker
-            className="wide"
-            label={mode === 'income' ? 'Classificação da receita (opcional)' : 'Classificação / categoria *'}
-            value={categoryId}
-            options={categoryOptions}
-            placeholder="Selecione uma categoria"
-            onChange={setCategoryId}
-          />
-
-          <MegMobilePicker
-            className="wide"
-            label="Conta de origem *"
-            value={accountId}
-            options={accountOptions}
-            disabled={mode === 'benefit' || credit || pending}
-            lockedText={mode === 'benefit'
-              ? (benefitAccount?.name || 'Benefício Alimentação')
-              : credit ? 'Definida pela fatura do cartão'
-              : pending ? 'Definida quando o pendente for baixado' : undefined}
-            placeholder="Selecione a conta"
-            onChange={setAccountId}
-          />
-
-          {mode !== 'income' ? <div className="wide meg3-account-kind"><span>Tipo de conta *</span><div><button type="button" className={accountKind === 'general' ? 'active' : ''} onClick={() => setAccountKind('general')}>Contas gerais</button><button type="button" className={accountKind === 'investment' ? 'active' : ''} onClick={() => setAccountKind('investment')}>Investimentos</button>{expensePaymentMode === 'benefit' ? <button type="button" className="active">Benefício</button> : null}</div></div> : null}
-
-          <MegMobilePicker
-            className="wide"
-            label={mode === 'income' ? 'Forma de recebimento *' : expensePaymentMode === 'credit' ? 'Forma de pagamento *' : 'Meio de pagamento *'}
-            value={paymentMethodId}
-            options={paymentOptions}
-            disabled={mode === 'benefit' || pending}
-            lockedText={mode === 'benefit'
-              ? (verocard?.name || 'Verocard')
-              : pending ? 'Definida quando o pendente for baixado' : undefined}
-            placeholder="Selecione a forma"
-            onChange={setPaymentMethodId}
-          />
-
-          {mode === 'expense' && credit ? <MegMobilePicker
-            className="wide"
-            label="Cartão"
-            value={cardId}
-            options={cardOptions}
-            placeholder="Não usar cartão"
-            onChange={setCardId}
-          /> : null}
-
-          <label className={`wide meg3-amount-field ${negative ? 'negative' : ''}`}>
-            <span>{negative ? 'Valor negativo / estorno' : 'Valor'}</span>
-            <div><b>{negative ? '-R$' : 'R$'}</b><input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0,00"/></div>
-          </label>
-
-          <label className="wide meg3-text-field meg3-date-field">
-            <span>{mode === 'expense' && !credit && status === 'planned' ? 'Vencimento' : 'Data'}</span>
-            <input type="date" value={date} onChange={(event) => setDate(event.target.value)}/>
-          </label>
-
-          {credit ? <>
-            <button type="button" role="switch" aria-checked={installmentEnabled} className={`wide meg3-pending-switch ${installmentEnabled ? 'active' : ''}`} onClick={() => setInstallmentEnabled(v => !v)}><span><i aria-hidden="true"/><strong>Compra parcelada</strong></span></button>
-            {installmentEnabled ? <div className="meg3-installment-stepper"><span>Parcelas *</span><div><button type="button" onClick={() => setInstallments(v => Math.max(1,v-1))}>−</button><strong>{installments}</strong><button type="button" onClick={() => setInstallments(v => Math.min(48,v+1))}>+</button></div></div> : null}
-            {installmentEnabled ? <button className="meg3-installment-preview-trigger" type="button" disabled={!installmentPreview.length} onClick={() => setInstallmentPreviewOpen(true)}>
-              <span>Visualizar parcelas</span>
-              <small>{installmentPreview.length ? `${installmentPreview.length} parcela(s) calculadas` : 'Informe cartão, data e valor'}</small>
-            </button> : null}
-          </> : null}
-
-          {mode === 'expense' && !credit ? <button
-            type="button"
-            role="switch"
-            aria-checked={status === 'planned'}
-            className={`wide meg3-pending-switch ${status === 'planned' ? 'active' : ''}`}
-            onClick={() => setStatus((value) => {
-              const next = value === 'planned' ? 'paid' : 'planned';
-              if (next === 'planned') {
-                setAccountId('');
-                setPaymentMethodId('');
-              }
-              return next;
-            })}
-          >
-            <span><i aria-hidden="true"/><strong>Lançar como pendente</strong></span>
-            <small>{status === 'planned' ? 'O valor ficará em Pendentes até a baixa.' : 'O lançamento será considerado realizado.'}</small>
-          </button> : null}
-
-          {mode !== 'benefit' && !credit ? <button
-            type="button"
-            className={`wide meg3-negative-toggle ${negative ? 'active' : ''}`}
-            onClick={() => setNegative((value) => !value)}
-          >
-            <span>{negative ? 'Restaurar valor positivo' : 'Usar valor negativo / estorno'}</span>
-            <small>{negative ? 'O lançamento está com sinal invertido.' : 'Use apenas para estorno, reversão ou ajuste.'}</small>
-          </button> : null}
-
-          <label className="wide meg3-text-field meg3-notes-field">
-            <span>Observações</span>
-            <textarea rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Opcional"/>
-          </label>
+      {step === 'choose' ? <main className="meg3-launch-choose">
+        <div className="meg3-launch-intro"><small>NOVO MOVIMENTO</small><h3>O que deseja lançar?</h3><p>Escolha o tipo para abrir somente os campos necessários.</p></div>
+        <div className="meg3-launch-type-cards">
+          <button type="button" onClick={() => chooseMode('expense')}><i><MegIcon name="arrow-down" size={22}/></i><span><strong>Despesa</strong><small>Saídas e gastos</small></span><b>›</b></button>
+          <button type="button" onClick={() => chooseMode('income')}><i><MegIcon name="banknote" size={22}/></i><span><strong>Receita</strong><small>Entradas e recebimentos</small></span><b>›</b></button>
+          <button type="button" onClick={() => chooseMode('benefit')}><i><MegIcon name="food" size={22}/></i><span><strong>Alimentação</strong><small>Usa o benefício (Verocard)</small></span><b>›</b></button>
         </div>
+      </main> : null}
 
-        <section className="meg3-launch-summary"><small>RESUMO</small><strong>{description || 'Novo lançamento'}</strong><span>{[mode === 'income' ? 'Receita' : mode === 'benefit' ? 'Benefício' : 'Despesa', selectedCategory?.name, selectedMethod?.name, selectedCard?.name, visibleAccounts.find(a=>a.id===accountId)?.name, status === 'planned' ? 'Pendente' : 'Pago'].filter(Boolean).join(' · ')}</span><b>{money.format(parseAmount(amount))}</b></section>
+      {step === 'form' ? <main className="meg3-launch-scroll" data-meg-scroll-region="true">
+        <section className="meg3-launch-section meg3-smart-description">
+          <label className="meg3-launch-field">
+            <span>Descrição</span>
+            <input value={description} onFocus={() => { if (!event && mode !== 'benefit') setHistoryOpen(true); }} onChange={(e) => { setDescription(e.target.value); setHistoryStatus(''); if (!event && mode !== 'benefit') setHistoryOpen(true); }} onKeyDown={(e) => { if (e.key === 'Escape') setHistoryOpen(false); }} placeholder="Digite para pesquisar no seu histórico" autoComplete="off" aria-autocomplete="list" aria-expanded={historyOpen && (historyLoading || historySuggestions.length > 0)}/>
+          </label>
+          {!event && mode !== 'benefit' && historyOpen ? <div className="meg3-history-suggestions" role="listbox">
+            {historyLoading ? <div className="meg3-history-loading">Buscando no seu histórico…</div> : null}
+            {!historyLoading ? historySuggestions.map((suggestion) => <button type="button" role="option" key={suggestion.key} onPointerDown={(e) => e.preventDefault()} onClick={() => useHistorySuggestion(suggestion)}>
+              <span className="meg3-history-icon"><MegIcon name="repeat" size={15}/></span>
+              <span className="meg3-history-copy"><strong>{suggestion.label}</strong><small>{[suggestion.categoryName || suggestion.categoryGroup || '', suggestion.paymentMethodName || '', suggestion.accountName || ''].filter(Boolean).join(' · ')}</small></span>
+            </button>) : null}
+            {!historyLoading && !historySuggestions.length && description.trim() ? <div className="meg3-history-empty">Nenhum lançamento semelhante no histórico.</div> : null}
+          </div> : null}
+          {historyStatus ? <small className="meg3-history-status">{historyStatus}</small> : null}
+        </section>
+
+        <section className="meg3-launch-section">
+          <MegMobilePicker className="wide" label={mode === 'income' ? 'Classificação da receita (opcional)' : 'Categoria *'} value={categoryId} options={categoryOptions} placeholder="Selecione uma categoria" onChange={setCategoryId}/>
+        </section>
+
+        {mode === 'expense' ? <section className="meg3-launch-section">
+          <span className="meg3-section-label">Modalidade de pagamento</span>
+          <div className="meg3-choice-row">
+            <button type="button" className={expensePaymentMode === 'cash' ? 'active' : ''} onClick={() => setExpensePaymentMode('cash')}>À Vista</button>
+            <button type="button" className={expensePaymentMode === 'credit' ? 'active' : ''} onClick={() => setExpensePaymentMode('credit')}>Crédito</button>
+            <button type="button" className={expensePaymentMode === 'crediario' ? 'active' : ''} onClick={() => setExpensePaymentMode('crediario')}>Crediário</button>
+          </div>
+        </section> : null}
+
+        {mode === 'benefit' ? <section className="meg3-auto-card">
+          <strong>Campos automáticos</strong>
+          <p>Conta, forma de pagamento e situação são definidos automaticamente para lançamentos de alimentação.</p>
+          <div><span>Conta</span><b>{benefitAccount?.name || 'Conta Benefício (Verocard)'}</b></div>
+          <div><span>Forma de pagamento</span><b>{verocard?.name || 'VEROCARD'}</b></div>
+          <div><span>Situação</span><b>Pago</b></div>
+        </section> : <>
+          {mode === 'expense' && credit ? <section className="meg3-launch-section"><MegMobilePicker className="wide" label="Cartão *" value={cardId} options={cardOptions} placeholder="Selecione o cartão" onChange={setCardId}/>{firstInstallment ? <div className="meg3-statement-hint"><span>Fatura / Competência</span><b>{firstInstallment.statementMonth.split('-').reverse().join('/')}</b></div> : null}</section> : null}
+          <section className="meg3-launch-section"><MegMobilePicker className="wide" label={mode === 'income' ? 'Forma de recebimento *' : 'Forma de pagamento *'} value={paymentMethodId} options={paymentOptions} disabled={pending} lockedText={pending ? 'Definida quando o pendente for baixado' : undefined} placeholder="Selecione a forma" onChange={setPaymentMethodId}/></section>
+          {!credit ? <section className="meg3-launch-section"><MegMobilePicker className="wide" label={mode === 'income' ? 'Conta *' : 'Conta *'} value={accountId} options={accountOptions} disabled={pending} lockedText={pending ? 'Definida quando o pendente for baixado' : undefined} placeholder="Selecione a conta" onChange={setAccountId}/></section> : null}
+        </>}
+
+        <section className="meg3-launch-section meg3-data-grid">
+          <label className="meg3-launch-field"><span>{pending ? 'Vencimento' : 'Data do lançamento'}</span><input type="date" value={date} onChange={(e) => setDate(e.target.value)}/></label>
+          <label className={`meg3-launch-field meg3-value-field ${negative ? 'negative' : ''}`}><span>Valor</span><div><b>{negative ? '-R$' : 'R$'}</b><input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00"/></div></label>
+        </section>
+
+        {mode === 'expense' && !credit ? <section className="meg3-launch-section">
+          <span className="meg3-section-label">Situação</span>
+          <div className="meg3-choice-row meg3-status-row">
+            <button type="button" className={status === 'paid' ? 'active' : ''} onClick={() => setStatus('paid')}>Pago</button>
+            <button type="button" className={status === 'planned' ? 'active pending' : ''} onClick={() => { setStatus('planned'); setAccountId(''); setPaymentMethodId(''); }}>Pendente</button>
+          </div>
+          {pending ? <div className="meg3-pending-note">Este lançamento será incluído em Pendentes. A conta e a forma de pagamento serão definidas quando ele for baixado.</div> : null}
+        </section> : null}
+
+        {credit ? <section className="meg3-launch-section">
+          <span className="meg3-section-label">Número de parcelas</span>
+          <div className="meg3-installment-stepper"><div><button type="button" aria-label="Diminuir parcelas" onClick={() => { setInstallmentEnabled(true); setInstallments(v => Math.max(1,v-1)); }}>−</button><strong>{installmentEnabled ? installments : 1}</strong><button type="button" aria-label="Aumentar parcelas" onClick={() => { setInstallmentEnabled(true); setInstallments(v => Math.min(48,v+1)); }}>+</button></div></div>
+          <button className="meg3-installment-preview-trigger" type="button" disabled={!installmentPreview.length} onClick={() => setInstallmentPreviewOpen(true)}><span>Visualizar parcelas</span><small>{installmentPreview.length ? `${installmentPreview.length} parcela(s) calculadas` : 'Informe cartão, data e valor'}</small></button>
+        </section> : null}
+
+        {mode !== 'benefit' && !credit ? <button type="button" className={`meg3-negative-toggle ${negative ? 'active' : ''}`} onClick={() => setNegative(v => !v)}><span>{negative ? 'Restaurar valor positivo' : 'Usar valor negativo / estorno'}</span><small>Use somente para estorno, reversão ou ajuste.</small></button> : null}
+
+        <label className="meg3-launch-field meg3-notes-field"><span>Observações</span><textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional"/></label>
         {message ? <div className="meg3-form-message" role="status">{message}</div> : null}
-      </div>
+      </main> : null}
 
-      <footer className="meg3-form-actions">
+      {step === 'success' ? <main className="meg3-launch-success">
+        <div className="meg3-success-icon">✓</div><small>LANÇAMENTO SALVO</small><h3>{event ? 'Alterações salvas' : 'Tudo certo!'}</h3>
+        <section><span>{description}</span><b>{money.format(parseAmount(amount))}</b><small>{[typeLabel, selectedCategory?.name, status === 'planned' ? 'Pendente' : 'Pago'].filter(Boolean).join(' · ')}</small></section>
+        <button type="button" className="primary" onClick={() => { setDescription(''); setAmount(''); setCategoryId(''); setMessage(''); setStep('choose'); }}>Novo lançamento</button>
+        <button type="button" className="ghost" onClick={onClose}>Voltar para Início</button>
+      </main> : null}
+
+      {step === 'form' ? <footer className="meg3-form-actions">
         {event ? <button type="button" className="danger ghost" disabled={busy} onClick={() => setDeleteConfirm(true)}>Excluir</button> : null}
         <button type="button" className="primary" disabled={busy} onClick={() => void save()}>{busy ? 'Processando…' : event ? 'Salvar alterações' : 'Salvar lançamento'}</button>
-      </footer>
+      </footer> : <div/>}
       <div className="meg3-app-dock">{appDock}</div>
 
-      {installmentPreviewOpen ? <div className="meg3-installment-preview">
-        <section role="dialog" aria-modal="true" aria-label="Visualizar parcelas">
-          <header><div><small>PARCELAMENTO</small><h3>Visualizar parcelas</h3></div><button type="button" onClick={() => setInstallmentPreviewOpen(false)}><MegIcon name="x" size={18}/></button></header>
-          <div className="meg3-installment-list" data-meg-scroll-region="true">
-            {installmentPreview.map((item) => <article key={item.number}>
-              <span><strong>Parcela {item.number}/{installmentPreview.length}</strong><small>Fatura {item.statementMonth.split('-').reverse().join('/')} · vence {item.due.split('-').reverse().join('/')}</small></span>
-              <b>{money.format(item.amount)}</b>
-            </article>)}
-          </div>
-          <footer><span><small>Total</small><strong>{money.format(installmentPreview.reduce((sum, item) => sum + item.amount, 0))}</strong></span><button type="button" onClick={() => setInstallmentPreviewOpen(false)}>Fechar</button></footer>
-        </section>
-      </div> : null}
+      {installmentPreviewOpen ? <div className="meg3-installment-preview"><section role="dialog" aria-modal="true" aria-label="Parcelas do lançamento">
+        <header><div><small>PARCELAMENTO</small><h3>Parcelas do lançamento</h3></div><button type="button" onClick={() => setInstallmentPreviewOpen(false)}><MegIcon name="x" size={18}/></button></header>
+        <div className="meg3-installment-list" data-meg-scroll-region="true">{installmentPreview.map((item) => <article key={item.number}><span><strong>Parcela {item.number}/{installmentPreview.length}</strong><small>Fatura {item.statementMonth.split('-').reverse().join('/')} · vence {item.due.split('-').reverse().join('/')}</small></span><b>{money.format(item.amount)}</b></article>)}</div>
+        <footer><span><small>Total</small><strong>{money.format(installmentPreview.reduce((sum,item)=>sum+item.amount,0))}</strong></span><button type="button" onClick={() => setInstallmentPreviewOpen(false)}>Editar número de parcelas</button></footer>
+      </section></div> : null}
 
-      {deleteConfirm ? <div className="meg3-delete-confirm">
-        <div><small>CONFIRMAR EXCLUSÃO</small><h3>Excluir este lançamento?</h3><p>{description || 'O lançamento selecionado'} não ficará mais ativo no MEG.</p><span><button disabled={busy} onClick={() => setDeleteConfirm(false)}>Cancelar</button><button className="danger" disabled={busy} onClick={() => void remove()}>Excluir</button></span></div>
-      </div> : null}
+      {deleteConfirm ? <div className="meg3-delete-confirm"><div><small>CONFIRMAR EXCLUSÃO</small><h3>Excluir este lançamento?</h3><p>{description || 'O lançamento selecionado'} não ficará mais ativo no MEG.</p><span><button disabled={busy} onClick={() => setDeleteConfirm(false)}>Cancelar</button><button className="danger" disabled={busy} onClick={() => void remove()}>Excluir</button></span></div></div> : null}
     </section>
   </div>;
 }
