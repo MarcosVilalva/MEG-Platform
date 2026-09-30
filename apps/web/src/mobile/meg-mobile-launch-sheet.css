@@ -423,8 +423,12 @@
   min-height:54px;padding:4px 14px 5px;align-items:start;
   border-bottom:0;
 }
-.meg3-form-sheet--new-expense .meg3-form-head small,
-.meg3-form-sheet--new-expense .meg3-form-head>button{display:none}
+.meg3-form-sheet--new-expense .meg3-form-head small{display:none}
+.meg3-form-sheet--new-expense .meg3-form-head>button.meg3-form-back{
+  display:grid;place-items:center;width:38px;height:38px;min-width:38px;
+  border:1px solid rgba(55,220,211,.22);border-radius:12px;
+  background:#04383a;color:#68e9e1;
+}
 .meg3-form-sheet--new-expense .meg3-form-head h2{font-size:20px;letter-spacing:-.035em;line-height:1}
 .meg3-form-sheet--new-expense .meg3-form-head p{margin-top:3px;font-size:9px;color:#93afac}
 .meg3-form-sheet--new-expense .meg3-form-body{padding:0 13px 7px}
