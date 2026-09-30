@@ -980,3 +980,87 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   .meg2-user{max-width:76px!important}
   .meg2-user strong{max-width:38px!important;font-size:7.5px!important}
 }
+
+
+/* BOTÃO NOVO CANÔNICO: hitbox e círculo na mesma geometria */
+/* A terceira coluna continua exatamente no centro do dock.
+   O botão inteiro sobe 14px, portanto o círculo fica 100% dentro da área clicável. */
+.meg2-dock>.meg2-new,
+.meg2-dock>.meg2-new.active{
+  grid-column:3!important;
+  align-self:start!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  height:72px!important;
+  min-height:72px!important;
+  max-height:72px!important;
+  margin:-14px 0 0!important;
+  padding:0!important;
+  position:relative!important;
+  display:block!important;
+  overflow:visible!important;
+  transform:none!important;
+  contain:none!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  z-index:20!important;
+}
+
+/* O círculo não sai mais para fora do botão. */
+.meg2-dock>.meg2-new>span:first-child{
+  position:absolute!important;
+  left:50%!important;
+  top:0!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:50px!important;
+  height:50px!important;
+  min-width:50px!important;
+  min-height:50px!important;
+  max-width:50px!important;
+  max-height:50px!important;
+  margin:0 0 0 -25px!important;
+  padding:0!important;
+  aspect-ratio:1/1!important;
+  border-radius:50%!important;
+  box-sizing:border-box!important;
+  display:grid!important;
+  place-items:center!important;
+  transform:none!important;
+  scale:1!important;
+  pointer-events:none!important;
+  z-index:3!important;
+}
+
+/* O + interno fica rigorosamente centralizado no círculo. */
+.meg2-dock>.meg2-new>span:first-child>svg{
+  width:29px!important;
+  height:29px!important;
+  min-width:29px!important;
+  min-height:29px!important;
+  max-width:29px!important;
+  max-height:29px!important;
+  margin:0!important;
+  transform:none!important;
+  place-self:center!important;
+}
+
+/* Rótulo permanece no mesmo nível visual dos demais itens. */
+.meg2-dock>.meg2-new>small{
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  bottom:2px!important;
+  height:10px!important;
+  line-height:10px!important;
+  margin:0!important;
+  padding:0!important;
+  text-align:center!important;
+  z-index:3!important;
+}
+
+.meg2-dock>.meg2-new::before,
+.meg2-dock>.meg2-new.active::before{
+  display:none!important;
+}
