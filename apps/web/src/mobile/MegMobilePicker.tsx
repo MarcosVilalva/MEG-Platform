@@ -32,6 +32,7 @@ export function MegMobilePicker({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
   const selected = options.find((item) => item.id === value);
 
   const filtered = useMemo(() => {
@@ -49,6 +50,7 @@ export function MegMobilePicker({
   function close() {
     setOpen(false);
     setQuery('');
+    setSearching(false);
   }
 
   return <>
@@ -75,10 +77,13 @@ export function MegMobilePicker({
           <button type="button" aria-label="Fechar" onClick={close}><MegIcon name="x" size={18}/></button>
         </header>
 
-        {searchable && options.length > 7 ? <label className="meg5-picker-search">
-          <MegIcon name="search" size={18}/>
-          <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Buscar ${label.toLocaleLowerCase('pt-BR')}...`}/>
-        </label> : null}
+        {searchable && options.length > 7 ? <div className="meg5-picker-search-zone">
+          {!searching ? <button type="button" className="meg5-picker-search-trigger" onClick={() => setSearching(true)}><MegIcon name="search" size={17}/><span>Buscar</span></button> : <label className="meg5-picker-search">
+            <MegIcon name="search" size={18}/>
+            <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Buscar ${label.toLocaleLowerCase('pt-BR')}...`}/>
+            <button type="button" aria-label="Fechar busca" onClick={() => { setQuery(''); setSearching(false); }}><MegIcon name="x" size={15}/></button>
+          </label>}
+        </div> : null}
 
         <div className="meg5-picker-list" data-meg-scroll-region="true">
           <button
