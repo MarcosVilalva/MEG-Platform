@@ -215,7 +215,7 @@ export function MegMobileLaunchSheet({
   const pixMethod = methods.find((item) => isPixMethod(item));
 
   const selectedCategory = categories.find((item) => item.id === categoryId);
-  const credit = mode === 'expense' && (Boolean(cardId) || isCreditMethod(selectedMethod) || Boolean(cardMeta));
+  const credit = mode === 'expense' && (expensePaymentMode === 'credit' || Boolean(cardId) || isCreditMethod(selectedMethod) || Boolean(cardMeta));
   const pending = mode === 'expense' && !credit && status === 'planned';
 
   useEffect(() => {
@@ -282,7 +282,7 @@ export function MegMobileLaunchSheet({
   function useHistorySuggestion(suggestion: MegMobileHistorySuggestion) {
     if (suggestion.type !== mode || event) return;
 
-    setDescription(suggestion.label);
+    setDescription(suggestion.label.toLocaleUpperCase('pt-BR'));
     setHistoryOpen(false);
     setHistorySuggestions([]);
 
@@ -312,7 +312,6 @@ export function MegMobileLaunchSheet({
         : 'Descrição recuperada do histórico. Revise os demais campos antes de salvar.'
     );
   }
-  const creditMethod = methods.find((item) => isCreditMethod(item));
   const selectedCard = data.cards.find((item) => item.id === cardId);
   const installmentPreview = useMemo(() => {
     if (!credit || !selectedCard || !date || parseAmount(amount) <= 0) return [];
