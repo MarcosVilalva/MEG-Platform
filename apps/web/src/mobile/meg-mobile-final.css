@@ -1284,3 +1284,89 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-dock[data-active-item="new"]>button:not(.meg2-new){
   color:#d4e3e3!important;
 }
+
+
+/* DOCK FINAL: Novo fora do grid, centro absoluto e imutável */
+.meg2-dock{
+  position:absolute!important;
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  overflow:visible!important;
+}
+
+/* Os quatro itens de navegação ocupam colunas explícitas.
+   A coluna 3 fica reservada visualmente ao Novo, mas o botão não participa do grid. */
+.meg2-dock>button:nth-child(1){grid-column:1!important}
+.meg2-dock>button:nth-child(2){grid-column:2!important}
+.meg2-dock>button:nth-child(4){grid-column:4!important}
+.meg2-dock>button:nth-child(5){grid-column:5!important}
+
+/* Novo é um overlay geométrico independente das telas e das colunas. */
+.meg2-dock>.meg2-new,
+.meg2-dock>.meg2-new.active{
+  position:absolute!important;
+  left:50%!important;
+  top:5px!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:72px!important;
+  min-width:72px!important;
+  max-width:72px!important;
+  height:58px!important;
+  min-height:58px!important;
+  max-height:58px!important;
+  margin:0 0 0 -36px!important;
+  padding:0!important;
+  display:block!important;
+  overflow:visible!important;
+  transform:none!important;
+  z-index:50!important;
+  contain:none!important;
+}
+
+/* O círculo usa dimensões físicas próprias. Nenhum estado de tela pode escalá-lo. */
+.meg2-dock>.meg2-new>span:first-child{
+  position:absolute!important;
+  left:50%!important;
+  top:-14px!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:50px!important;
+  min-width:50px!important;
+  max-width:50px!important;
+  height:50px!important;
+  min-height:50px!important;
+  max-height:50px!important;
+  aspect-ratio:1 / 1!important;
+  margin:0 0 0 -25px!important;
+  padding:0!important;
+  border-radius:999px!important;
+  box-sizing:border-box!important;
+  transform:none!important;
+  scale:1!important;
+  flex:none!important;
+  z-index:2!important;
+  pointer-events:none!important;
+}
+
+/* O rótulo também é independente do círculo. */
+.meg2-dock>.meg2-new>small{
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  bottom:2px!important;
+  width:100%!important;
+  height:10px!important;
+  line-height:10px!important;
+  margin:0!important;
+  padding:0!important;
+  text-align:center!important;
+  transform:none!important;
+  z-index:3!important;
+}
+
+/* O destaque ativo jamais cria caixa/escala sobre o Novo. */
+.meg2-dock>.meg2-new::before,
+.meg2-dock>.meg2-new.active::before{
+  display:none!important;
+}

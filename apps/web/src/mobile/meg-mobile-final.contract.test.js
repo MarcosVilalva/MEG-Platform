@@ -55,8 +55,13 @@ assert.match(
 );
 assert.match(
   css,
-  /\.meg2-new\{[\s\S]*display:block!important[\s\S]*position:relative!important[\s\S]*\.meg2-new>span:first-child\{[\s\S]*position:absolute!important[\s\S]*left:calc\(50% - 25px\)!important[\s\S]*width:50px!important[\s\S]*min-width:50px!important[\s\S]*max-width:50px!important/,
-  'Botão central Novo deve ficar isolado do fluxo do dock para nunca estreitar ou redimensionar durante a navegação.',
+  /DOCK FINAL: Novo fora do grid[\s\S]*\.meg2-dock>button:nth-child\(1\)\{grid-column:1!important\}[\s\S]*\.meg2-dock>button:nth-child\(2\)\{grid-column:2!important\}[\s\S]*\.meg2-dock>button:nth-child\(4\)\{grid-column:4!important\}[\s\S]*\.meg2-dock>button:nth-child\(5\)\{grid-column:5!important\}[\s\S]*\.meg2-dock>\.meg2-new[\s\S]*position:absolute!important[\s\S]*left:50%!important[\s\S]*width:72px!important[\s\S]*margin:0 0 0 -36px!important[\s\S]*\.meg2-dock>\.meg2-new>span:first-child[\s\S]*width:50px!important[\s\S]*height:50px!important[\s\S]*aspect-ratio:1 \/ 1!important[\s\S]*border-radius:999px!important/,
+  'Botão central Novo deve ficar fora do grid, preso ao centro físico do dock e com círculo 50x50 imutável.',
+);
+assert.doesNotMatch(
+  css,
+  /DOCK FINAL: Novo fora do grid[\s\S]*\.meg2-dock>\.meg2-new[\s\S]*grid-column:3!important/,
+  'Botão Novo final não pode voltar a participar da terceira coluna do grid.',
 );
 assert.match(
   mobile,
