@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { PhoenixReadModel } from '../phoenix/contracts';
+import { cardDueDateForStatement } from '../phoenix/data/card-dates';
 import './meg-mobile-card-center.css';
 import { MegIcon } from './MegMobileIcon';
 
@@ -9,6 +10,11 @@ function shortDate(value: string) {
   const raw = String(value || '').slice(0,10);
   const [year,month,day] = raw.split('-');
   return year && month && day ? `${day}/${month}/${year}` : raw;
+}
+
+function monthLabel(value: string) {
+  const [year, month] = String(value || '').split('-');
+  return year && month ? `${month}/${year}` : value || '—';
 }
 
 function downloadBlob(filename: string, blob: Blob) {
@@ -79,27 +85,85 @@ function exportPdf(filename: string, title: string, rows: string[][]) {
   downloadBlob(filename, new Blob([pdf], { type:'application/pdf' }));
 }
 
+export type MegMobileCardCenterRow = {
+  id: string;
+  eventId?: string;
+  description: string;
+  date: string;
+  amount: number;
+  installmentNo?: number;
+  installmentQty?: number;
+  category?: string;
+  statementMonth?: string;
+  dueDate?: string;
+  status?: string;
+};
+
+type CreditTab = 'summary' | 'current' | 'upcoming' | 'installments' | 'history';
+
+function allCardRows(card: PhoenixReadModel['cards'][number]): MegMobileCardCenterRow[] {
+  return (card.purchases || []).flatMap((purchase) => (purchase.entries || []).map((entry) => ({
+    id: entry.id,
+    description: purchase.description,
+    date: purchase.purchaseDate,
+    amount: Math.abs(Number(entry.amount || 0)),
+    installmentNo: entry.number,
+    installmentQty: purchase.installments,
+    category: purchase.category?.name || 'Outros',
+    statementMonth: entry.statementMonth,
+    dueDate: cardDueDateForStatement(entry.statementMonth, Number(card.closingDay || 1), Number(card.dueDay || 1)),
+    status: entry.status,
+  })));
+}
+
 export function MegMobileCardCenter({
   card,
   cardLabel,
   artUrl,
   rows,
+  currentMonth,
   onClose,
+  onOpenRow,
 }: {
   card: PhoenixReadModel['cards'][number];
   cardLabel: string;
   artUrl?: string;
-  rows: Array<{ id: string; description: string; date: string; amount: number; installmentNo?: number; installmentQty?: number }>;
+  rows: MegMobileCardCenterRow[];
+  currentMonth: string;
   onClose: () => void;
+  onOpenRow?: (row: MegMobileCardCenterRow) => void;
 }) {
   const [query,setQuery] = useState('');
+  const [tab,setTab] = useState<CreditTab>('summary');
+  const allRows = useMemo(() => allCardRows(card), [card]);
+  const sourceRows = useMemo(() => {
+    if (tab === 'summary' || tab === 'current') return rows;
+    if (tab === 'upcoming') return allRows.filter((row) => (row.statementMonth || '') > currentMonth);
+    if (tab === 'installments') return allRows.filter((row) => Number(row.installmentQty || 1) > 1);
+    return allRows;
+  }, [tab, rows, allRows, currentMonth]);
+
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('pt-BR');
-    return rows.filter((row) => !normalized || row.description.toLocaleLowerCase('pt-BR').includes(normalized));
-  }, [rows, query]);
+    const items = sourceRows.filter((row) => !normalized || [row.description,row.category,row.statementMonth].filter(Boolean).join(' ').toLocaleLowerCase('pt-BR').includes(normalized));
+    return tab === 'summary' ? items.slice(0,6) : items;
+  }, [sourceRows, query, tab]);
+
   const total = filtered.reduce((sum,row) => sum + Number(row.amount || 0), 0);
   const limit = Number(card.creditLimit || 0);
   const available = Number(card.availableLimit ?? Math.max(0, limit - Number(card.statementAmount || 0)));
+  const current = Number(card.statement?.payableAmount ?? card.payableStatementAmount ?? card.statementAmount ?? 0);
+  const used = Math.max(0, limit - available);
+  const usage = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  const due = card.statement?.dueDate || (card.statement?.month ? cardDueDateForStatement(card.statement.month, Number(card.closingDay || 1), Number(card.dueDay || 1)) : '');
+  const bestDay = Number(card.closingDay || 1) >= 28 ? 1 : Number(card.closingDay || 1) + 1;
+
+  const exportRows=[['Descrição','Data','Parcela','Valor'], ...filtered.map((row) => [
+    row.description,
+    shortDate(row.date),
+    row.installmentNo && row.installmentQty ? `${row.installmentNo}/${row.installmentQty}` : '',
+    row.amount.toFixed(2).replace('.',',')
+  ])];
 
   return <div className="meg3-cardcenter-overlay" role="presentation">
     <section className="meg3-cardcenter" role="dialog" aria-modal="true" aria-label={`Central do cartão ${cardLabel}`}>
@@ -108,38 +172,124 @@ export function MegMobileCardCenter({
         <button type="button" onClick={onClose}><MegIcon name="x" size={18}/></button>
       </header>
 
-      <section className="meg3-cardcenter-hero" style={!artUrl ? { background: card.color || '#073f82' } : undefined}>
-        {artUrl ? <img src={artUrl} alt={cardLabel}/> : <div><strong>{cardLabel}</strong><small>•••• {card.lastFour || '0000'}</small></div>}
-      </section>
+      <div className="meg3-cardcenter-top">
+        <section className="meg3-cardcenter-hero" style={!artUrl ? { background: card.color || '#073f82' } : undefined}>
+          {artUrl ? <img src={artUrl} alt={cardLabel}/> : <div><strong>{cardLabel}</strong><small>•••• {card.lastFour || '0000'}</small></div>}
+        </section>
+        <section className="meg3-cardcenter-kpis">
+          <article><small>Limite total</small><strong>{money.format(limit)}</strong></article>
+          <article><small>Disponível</small><strong>{money.format(available)}</strong></article>
+          <article><small>Fatura atual</small><strong>{money.format(current)}</strong></article>
+          <article><small>Vencimento</small><strong>{due ? shortDate(due) : `Dia ${card.dueDay || '—'}`}</strong></article>
+          <article><small>Utilizado</small><strong>{usage}%</strong></article>
+          <article><small>Melhor dia</small><strong>Dia {bestDay}</strong></article>
+        </section>
+      </div>
 
-      <section className="meg3-cardcenter-kpis">
-        <article><small>Limite</small><strong>{money.format(limit)}</strong></article>
-        <article><small>Disponível</small><strong>{money.format(available)}</strong></article>
-        <article><small>Fatura</small><strong>{money.format(Number(card.statement?.payableAmount ?? card.statementAmount ?? 0))}</strong></article>
-      </section>
+      <div className="meg3-cardcenter-tabs" role="tablist" aria-label="Visões do cartão">
+        <button className={tab==='summary'?'active':''} onClick={()=>setTab('summary')}>Resumo</button>
+        <button className={tab==='current'?'active':''} onClick={()=>setTab('current')}>Fatura atual</button>
+        <button className={tab==='upcoming'?'active':''} onClick={()=>setTab('upcoming')}>Próximas</button>
+        <button className={tab==='installments'?'active':''} onClick={()=>setTab('installments')}>Parcelas</button>
+        <button className={tab==='history'?'active':''} onClick={()=>setTab('history')}>Histórico</button>
+      </div>
 
       <section className="meg3-cardcenter-tools">
-        <label><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar na fatura..."/></label>
-        <button type="button" onClick={() => {
-          const exportRows=[['Descrição','Data','Parcela','Valor'], ...filtered.map((row) => [row.description,shortDate(row.date),row.installmentNo && row.installmentQty ? `${row.installmentNo}/${row.installmentQty}` : '',row.amount.toFixed(2).replace('.',',')])];
-          exportExcel(`fatura-${cardLabel.toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,'-')}.xls`,exportRows);
-        }}>Excel</button>
-        <button type="button" onClick={() => {
-          const exportRows=[['Descrição','Data','Parcela','Valor'], ...filtered.map((row) => [row.description,shortDate(row.date),row.installmentNo && row.installmentQty ? `${row.installmentNo}/${row.installmentQty}` : '',row.amount.toFixed(2).replace('.',',')])];
-          exportPdf(`fatura-${cardLabel.toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,'-')}.pdf`,`Fatura - ${cardLabel}`,exportRows);
-        }}>PDF</button>
+        <label><MegIcon name="search" size={16}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamentos..."/></label>
+        <button type="button" onClick={() => exportExcel(`fatura-${cardLabel.toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,'-')}.xls`,exportRows)}>Excel</button>
+        <button type="button" onClick={() => exportPdf(`fatura-${cardLabel.toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,'-')}.pdf`,`Fatura - ${cardLabel}`,exportRows)}>PDF</button>
       </section>
 
       <section className="meg3-cardcenter-list" data-meg-scroll-region="true">
-        {filtered.map((row) => <article key={row.id}>
-          <span><strong>{row.description}</strong><small>{shortDate(row.date)}{row.installmentNo && row.installmentQty ? ` · parcela ${row.installmentNo}/${row.installmentQty}` : ''}</small></span>
+        {filtered.map((row) => <button type="button" key={row.id} onClick={() => onOpenRow?.(row)}>
+          <span><strong>{row.description}</strong><small>{shortDate(row.date)}{row.statementMonth ? ` · fatura ${monthLabel(row.statementMonth)}` : ''}{row.installmentNo && row.installmentQty ? ` · parcela ${row.installmentNo}/${row.installmentQty}` : ''}</small></span>
           <b>{money.format(Number(row.amount || 0))}</b>
-        </article>)}
-        {!filtered.length ? <div className="meg3-cardcenter-empty">Nenhum lançamento encontrado.</div> : null}
+          {onOpenRow ? <i><MegIcon name="chevron-right" size={14}/></i> : null}
+        </button>)}
+        {!filtered.length ? <div className="meg3-cardcenter-empty">{tab === 'upcoming' ? 'Nenhuma fatura futura projetada.' : 'Nenhum lançamento encontrado.'}</div> : null}
       </section>
 
       <footer>
         <span><small>{filtered.length} lançamento(s)</small><strong>{money.format(total)}</strong></span>
+        <button type="button" onClick={onClose}>Fechar</button>
+      </footer>
+    </section>
+  </div>;
+}
+
+export type MegMobileBenefitRow = {
+  id: string;
+  eventId?: string;
+  description: string;
+  date: string;
+  amount: number;
+  category?: string;
+  kind: 'credit' | 'debit';
+};
+
+export function MegMobileBenefitCardCenter({
+  artUrl,
+  balance,
+  credits,
+  used,
+  rows,
+  onClose,
+  onOpenEvent,
+}: {
+  artUrl: string;
+  balance: number;
+  credits: number;
+  used: number;
+  rows: MegMobileBenefitRow[];
+  onClose: () => void;
+  onOpenEvent?: (eventId: string) => void;
+}) {
+  const [tab,setTab] = useState<'all'|'credits'|'debits'>('all');
+  const [query,setQuery] = useState('');
+  const filtered = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase('pt-BR');
+    return rows.filter((row) => tab === 'all' ? true : tab === 'credits' ? row.kind === 'credit' : row.kind === 'debit')
+      .filter((row) => !normalized || [row.description,row.category].filter(Boolean).join(' ').toLocaleLowerCase('pt-BR').includes(normalized));
+  }, [rows,query,tab]);
+
+  return <div className="meg3-cardcenter-overlay" role="presentation">
+    <section className="meg3-cardcenter benefit" role="dialog" aria-modal="true" aria-label="Central do cartão Verocard Alimentação">
+      <header>
+        <div><small>BENEFÍCIO ALIMENTAÇÃO</small><h2>Verocard Alimentação</h2><p>Saldo, recargas e consumo do benefício.</p></div>
+        <button type="button" onClick={onClose}><MegIcon name="x" size={18}/></button>
+      </header>
+
+      <div className="meg3-cardcenter-top">
+        <section className="meg3-cardcenter-hero verocard"><img src={artUrl} alt="Verocard Alimentação"/></section>
+        <section className="meg3-cardcenter-kpis benefit">
+          <article><small>Saldo disponível</small><strong>{money.format(balance)}</strong></article>
+          <article><small>Recargas no mês</small><strong>{money.format(credits)}</strong></article>
+          <article><small>Consumo no mês</small><strong>{money.format(used)}</strong></article>
+          <article><small>Movimentações</small><strong>{rows.length}</strong></article>
+        </section>
+      </div>
+
+      <div className="meg3-cardcenter-tabs benefit" role="tablist" aria-label="Visões do Verocard">
+        <button className={tab==='all'?'active':''} onClick={()=>setTab('all')}>Todas</button>
+        <button className={tab==='credits'?'active':''} onClick={()=>setTab('credits')}>Entradas</button>
+        <button className={tab==='debits'?'active':''} onClick={()=>setTab('debits')}>Saídas</button>
+      </div>
+
+      <section className="meg3-cardcenter-tools benefit">
+        <label><MegIcon name="search" size={16}/><input value={query} onChange={(event)=>setQuery(event.target.value)} placeholder="Buscar no extrato..."/></label>
+      </section>
+
+      <section className="meg3-cardcenter-list benefit" data-meg-scroll-region="true">
+        {filtered.map((row)=><button key={row.id} type="button" onClick={()=>row.eventId && onOpenEvent?.(row.eventId)}>
+          <span><strong>{row.description}</strong><small>{shortDate(row.date)}{row.category ? ` · ${row.category}` : ''}</small></span>
+          <b className={row.kind}>{row.kind==='credit'?'+':'−'}{money.format(Math.abs(row.amount))}</b>
+          {row.eventId ? <i><MegIcon name="chevron-right" size={14}/></i> : null}
+        </button>)}
+        {!filtered.length ? <div className="meg3-cardcenter-empty">Nenhuma movimentação neste filtro.</div> : null}
+      </section>
+
+      <footer>
+        <span><small>Saldo disponível</small><strong>{money.format(balance)}</strong></span>
         <button type="button" onClick={onClose}>Fechar</button>
       </footer>
     </section>
