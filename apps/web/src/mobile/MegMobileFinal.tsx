@@ -107,7 +107,7 @@ function cardArt(name: string) {
     return asset('assets/cards/approved-v6/mercado.webp');
   }
   if (normalized.includes('latam')) {
-    return 'https://s.latamairlines.com/images/web-offer-creditcards/itau_latampass_mc_platinum.png';
+    return asset('assets/cards/latam-pass-platinum.webp');
   }
   if (normalized.includes('azul')) {
     return asset('assets/cards/approved-v6/azul.webp');
