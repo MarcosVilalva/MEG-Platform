@@ -1,9 +1,9 @@
 {
-  "versionCode": 632,
-  "versionName": "2.0.632",
+  "versionCode": 641,
+  "versionName": "2.0.641",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "1d8fb0faa96e6d7597e8667f40b34432c5e391fcdaae75d1c2497aabfb038cb7",
+  "sha256": "bfb03127ff35592d3f7cb0917c3996b9c6c933a008aec3b12e290dda5706530d",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "test(mobile): alinhar picker sem camada extra"
+  "releaseNotes": "fix(mobile): renderizar miniaturas reais dos cartoes"
 }
