@@ -95,6 +95,18 @@ body.meg-cleanroom-mobile [data-meg-scroll-region="true"]{
   overflow:auto;
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  scroll-behavior:auto;
+  contain:layout paint style;
+  text-rendering:optimizeSpeed;
+}
+body.meg-cleanroom-mobile [data-meg-scroll-region="true"]>*{
+  content-visibility:auto;
+  contain-intrinsic-size:64px;
+}
+body.meg-cleanroom-mobile [data-meg-scroll-region="true"] *{
+  transition:none!important;
+  animation:none!important;
 }
 
 @media(max-width:340px){
