@@ -1,9 +1,9 @@
 {
-  "versionCode": 587,
-  "versionName": "2.0.587",
+  "versionCode": 592,
+  "versionName": "2.0.592",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "955d91e67e4f65f8117c51bc6767f8f2608226e42394846798073ab9d8958b88",
+  "sha256": "446b3879f0b061adc1692690c3b7ba53820c90fec5bf6f50f77ed0d7e006d5d2",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "fix(android): gerar Prisma antes do gate obrigatório"
+  "releaseNotes": "test(mobile): preservar rotulo validado À Vista"
 }
