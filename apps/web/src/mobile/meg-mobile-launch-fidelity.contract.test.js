@@ -70,3 +70,11 @@ console.log('Contrato do fluxo validado de Novo/Editar lançamento aprovado.');
   assert.ok(launch.includes("if (isCrediarioMethod(initialMethod)) return 'credit'"), 'Histórico legado de crediário deve abrir para edição como Crédito.');
   assert.ok(pickerCss.includes('scroll-behavior:auto') && pickerCss.includes('will-change:scroll-position'), 'Rolagem do picker deve permanecer nativa e imediata.');
 }
+
+{
+  assert.ok(launch.includes("effectiveInstallments === 1"), 'Parcela única deve usar apresentação direta de vencimento.');
+  assert.ok(launch.includes("Insira o valor para visualizar as parcelas"), 'Parcelamento múltiplo sem valor deve orientar o usuário antes de liberar a visualização.');
+  assert.ok(launch.includes("const cardSchedule = useMemo"), 'Calendário do cartão deve ser calculado independentemente do valor para exibir vencimento da parcela única.');
+  assert.ok(launchCss.includes('touch-action:pan-y') && launchCss.includes('scroll-behavior:auto'), 'Áreas roláveis do fluxo devem usar rolagem vertical nativa e imediata.');
+  assert.ok(launchCss.includes('.meg3-single-installment-due'), 'Fluxo deve possuir apresentação própria para vencimento de parcela única.');
+}
