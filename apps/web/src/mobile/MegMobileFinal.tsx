@@ -158,7 +158,7 @@ function cardRows(card: PhoenixReadModel['cards'][number] | undefined): MobileCa
     amount: Math.abs(Number(entry.amount || 0)),
     installmentNo: entry.number,
     installmentQty: purchase.installments,
-    category: purchase.category?.name || 'Outros',
+    category: purchase.category?.name || undefined,
     statementMonth: entry.statementMonth,
     dueDate: cardDueDateForStatement(entry.statementMonth, Number(card.closingDay || 1), Number(card.dueDay || 1)),
     status: entry.status,
