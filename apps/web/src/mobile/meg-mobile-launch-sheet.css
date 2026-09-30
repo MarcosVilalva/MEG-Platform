@@ -35,3 +35,35 @@
 }
 .meg3-launch-type-cards button:nth-child(1) b{color:#ff8c9e}.meg3-launch-type-cards button:nth-child(2) b{color:#70efb2}.meg3-launch-type-cards button:nth-child(3) b{color:#f4d864}
 .meg3-launch-type-cards button:nth-child(1) small,.meg3-launch-type-cards button:nth-child(2) small,.meg3-launch-type-cards button:nth-child(3) small{color:rgba(240,255,253,.68)}
+
+.meg3-launch-fieldset{
+  min-width:0;
+  margin:0;
+  padding:0;
+  border:0;
+  display:contents;
+}
+.meg3-launch-flow[data-busy="true"] .meg3-launch-scroll{
+  cursor:progress;
+}
+.meg3-launch-flow[data-busy="true"] .meg3-app-dock{
+  pointer-events:none;
+  opacity:.72;
+}
+.meg3-launch-flow[data-busy="true"] .meg3-launch-fieldset{
+  opacity:.78;
+}
+.meg3-choice-row button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.meg3-choice-row button svg{
+  flex:0 0 auto;
+}
+.meg3-launch-scroll>*,
+.meg3-history-suggestions>button,
+.meg3-installment-list>article{
+  contain:layout paint style;
+}
