@@ -197,6 +197,7 @@ export function MegMobileLaunchSheet({
   const crediarioMethod = methods.find((item) => isCrediarioMethod(item));
   const selectedCategory = categories.find((item) => item.id === categoryId);
   const credit = mode === 'expense' && (Boolean(cardId) || isCreditMethod(selectedMethod) || Boolean(cardMeta));
+  const pending = mode === 'expense' && !credit && status === 'planned';
 
   useEffect(() => {
     if ((mode !== 'expense' && mode !== 'benefit') || event) return;
@@ -328,15 +329,15 @@ export function MegMobileLaunchSheet({
 
   function validate() {
     if (!description.trim()) return 'Informe a descrição.';
-    if (!categoryId) return 'Selecione a categoria.';
-    if (!paymentMethodId) return mode === 'income' ? 'Selecione a forma de recebimento.' : 'Selecione a forma de pagamento.';
+    if (mode !== 'income' && !categoryId) return 'Selecione a categoria.';
+    if (!pending && !paymentMethodId) return mode === 'income' ? 'Selecione a forma de recebimento.' : 'Selecione a forma de pagamento.';
     if (parseAmount(amount) <= 0) return 'Informe um valor maior que zero.';
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return 'Informe uma data válida.';
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) return 'Informe uma data válida.';
     if (credit) {
       if (!cardId) return 'Selecione o cartão.';
       return '';
     }
-    if (!accountId) return 'Selecione a conta.';
+    if (!pending && !accountId) return 'Selecione a conta.';
     if (mode === 'benefit' && (!benefitAccount || !verocard)) return 'A conta Benefício e a forma Verocard precisam estar ativas.';
     return '';
   }
@@ -375,9 +376,9 @@ export function MegMobileLaunchSheet({
         status: mode === 'benefit' || mode === 'income' ? 'paid' : status,
         date,
         amount: negative && mode !== 'benefit' ? -parseAmount(amount) : parseAmount(amount),
-        accountId: accountId || undefined,
+        accountId: pending ? undefined : (accountId || undefined),
         categoryId: categoryId || undefined,
-        paymentMethodId: paymentMethodId || undefined,
+        paymentMethodId: pending ? undefined : (paymentMethodId || undefined),
         notes: notes.trim() || undefined,
       };
 
@@ -442,7 +443,7 @@ export function MegMobileLaunchSheet({
       <div className="meg3-app-header">{appHeader}</div>
       <header className="meg3-form-head">
         <div><small>MEG FINANÇAS</small><h2>{title}</h2><p>{event ? 'Atualize as informações do seu lançamento.' : 'Registre um novo movimento em sua vida financeira.'}</p></div>
-        <button type="button" aria-label="Fechar lançamento" disabled={busy} onClick={onClose}><MegIcon name="x" size={18}/></button>
+        <button type="button" className="meg3-form-back" aria-label="Voltar para a tela anterior" disabled={busy} onClick={onClose}><MegIcon name="chevron-left" size={18}/></button>
       </header>
 
       <div className="meg3-form-body" data-meg-scroll-region="true">
@@ -514,7 +515,7 @@ export function MegMobileLaunchSheet({
 
           <MegMobilePicker
             className="wide"
-            label={mode === 'income' ? 'Classificação da receita *' : 'Classificação / categoria *'}
+            label={mode === 'income' ? 'Classificação da receita (opcional)' : 'Classificação / categoria *'}
             value={categoryId}
             options={categoryOptions}
             placeholder="Selecione uma categoria"
@@ -526,10 +527,11 @@ export function MegMobileLaunchSheet({
             label="Conta de origem *"
             value={accountId}
             options={accountOptions}
-            disabled={mode === 'benefit' || credit}
+            disabled={mode === 'benefit' || credit || pending}
             lockedText={mode === 'benefit'
               ? (benefitAccount?.name || 'Benefício Alimentação')
-              : credit ? 'Definida pela fatura do cartão' : undefined}
+              : credit ? 'Definida pela fatura do cartão'
+              : pending ? 'Definida quando o pendente for baixado' : undefined}
             placeholder="Selecione a conta"
             onChange={setAccountId}
           />
@@ -541,8 +543,10 @@ export function MegMobileLaunchSheet({
             label={mode === 'income' ? 'Forma de recebimento *' : expensePaymentMode === 'credit' ? 'Forma de pagamento *' : 'Meio de pagamento *'}
             value={paymentMethodId}
             options={paymentOptions}
-            disabled={mode === 'benefit'}
-            lockedText={mode === 'benefit' ? (verocard?.name || 'Verocard') : undefined}
+            disabled={mode === 'benefit' || pending}
+            lockedText={mode === 'benefit'
+              ? (verocard?.name || 'Verocard')
+              : pending ? 'Definida quando o pendente for baixado' : undefined}
             placeholder="Selecione a forma"
             onChange={setPaymentMethodId}
           />
@@ -580,7 +584,14 @@ export function MegMobileLaunchSheet({
             role="switch"
             aria-checked={status === 'planned'}
             className={`wide meg3-pending-switch ${status === 'planned' ? 'active' : ''}`}
-            onClick={() => setStatus((value) => value === 'planned' ? 'paid' : 'planned')}
+            onClick={() => setStatus((value) => {
+              const next = value === 'planned' ? 'paid' : 'planned';
+              if (next === 'planned') {
+                setAccountId('');
+                setPaymentMethodId('');
+              }
+              return next;
+            })}
           >
             <span><i aria-hidden="true"/><strong>Lançar como pendente</strong></span>
             <small>{status === 'planned' ? 'O valor ficará em Pendentes até a baixa.' : 'O lançamento será considerado realizado.'}</small>
