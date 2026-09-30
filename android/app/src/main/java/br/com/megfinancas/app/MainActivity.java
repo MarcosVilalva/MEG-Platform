@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.view.MotionEvent;
+import android.webkit.WebView;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import com.getcapacitor.BridgeActivity;
@@ -12,7 +14,15 @@ import com.getcapacitor.PluginHandle;
 
 public class MainActivity extends BridgeActivity {
     private static final long UPDATE_FOCUS_DELAY_MS = 1500;
+    private static final long WEBVIEW_RENDER_SETTLE_MS = 220;
     private final Handler updateHandler = new Handler(Looper.getMainLooper());
+    private final Handler renderHandler = new Handler(Looper.getMainLooper());
+    private WebView appWebView;
+    private final Runnable settleWebViewRender = () -> {
+        if (appWebView == null) return;
+        appWebView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        appWebView.invalidate();
+    };
     private final Runnable updateCheck = () -> {
         if (!hasWindowFocus()) {
             scheduleUpdateCheck();
@@ -62,13 +72,36 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(MegNativeShellPlugin.class);
         super.onCreate(savedInstanceState);
 
-        // O app usa listas e formulários internos roláveis. Forçar LAYER_TYPE_SOFTWARE
-        // no WebView elimina a aceleração por GPU e deixa o gesto de rolagem pesado.
-        // Mantemos o WebView no pipeline normal acelerado da janela; o CSS clean-room
-        // já remove os filtros que causavam artefatos de composição nas telas antigas.
+        // Renderização híbrida: software quando a interface está parada elimina
+        // os artefatos visuais vistos em alguns WebViews; durante gesto/fling usamos
+        // hardware para manter a rolagem fluida. Depois que o scroll estabiliza,
+        // voltamos ao modo estável e forçamos um repaint completo.
         if (getBridge() != null && getBridge().getWebView() != null) {
-            getBridge().getWebView().setLayerType(View.LAYER_TYPE_NONE, null);
-            getBridge().getWebView().setOverScrollMode(View.OVER_SCROLL_NEVER);
+            appWebView = getBridge().getWebView();
+            appWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+            appWebView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+            appWebView.setOnTouchListener((view, event) -> {
+                int action = event.getActionMasked();
+                if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
+                    renderHandler.removeCallbacks(settleWebViewRender);
+                    if (appWebView.getLayerType() != View.LAYER_TYPE_HARDWARE) {
+                        appWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+                    }
+                } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                    renderHandler.removeCallbacks(settleWebViewRender);
+                    renderHandler.postDelayed(settleWebViewRender, WEBVIEW_RENDER_SETTLE_MS);
+                }
+                return false;
+            });
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                appWebView.setOnScrollChangeListener((view, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+                    renderHandler.removeCallbacks(settleWebViewRender);
+                    if (appWebView.getLayerType() != View.LAYER_TYPE_HARDWARE) {
+                        appWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+                    }
+                    renderHandler.postDelayed(settleWebViewRender, WEBVIEW_RENDER_SETTLE_MS);
+                });
+            }
         }
 
         getWindow().getDecorView().post(this::applyImmersiveNavigation);
@@ -100,6 +133,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onPause() {
         updateHandler.removeCallbacks(updateCheck);
+        renderHandler.removeCallbacks(settleWebViewRender);
         super.onPause();
     }
 }
