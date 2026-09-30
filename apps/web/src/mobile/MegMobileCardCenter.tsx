@@ -182,12 +182,12 @@ export function MegMobileCardCenter({
           {artUrl ? <img src={artUrl} alt={cardLabel}/> : <div><strong>{cardLabel}</strong><small>•••• {card.lastFour || '0000'}</small></div>}
         </section>
         <section className="meg3-cardcenter-kpis">
-          <article><small>Limite total</small><strong>{money.format(limit)}</strong></article>
-          <article><small>Disponível</small><strong>{money.format(available)}</strong></article>
-          <article><small>Fatura atual</small><strong>{money.format(current)}</strong></article>
-          <article><small>Vencimento</small><strong>{due ? shortDate(due) : `Dia ${card.dueDay || '—'}`}</strong></article>
-          <article><small>Utilizado</small><strong>{usage}%</strong></article>
-          <article><small>Melhor dia</small><strong>Dia {bestDay}</strong></article>
+          <article><MegIcon name="wallet" size={16}/><small>Limite total</small><strong>{money.format(limit)}</strong></article>
+          <article><MegIcon name="trend" size={16}/><small>Disponível</small><strong>{money.format(available)}</strong></article>
+          <article><MegIcon name="file" size={16}/><small>Fatura atual</small><strong>{money.format(current)}</strong></article>
+          <article><MegIcon name="calendar" size={16}/><small>Vencimento</small><strong>{due ? shortDate(due) : `Dia ${card.dueDay || '—'}`}</strong></article>
+          <article><MegIcon name="chart" size={16}/><small>Utilizado</small><strong>{usage}%</strong></article>
+          <article><MegIcon name="card" size={16}/><small>Melhor dia</small><strong>Dia {bestDay}</strong></article>
         </section>
       </div>
 
@@ -201,8 +201,8 @@ export function MegMobileCardCenter({
 
       <section className="meg3-cardcenter-tools">
         <label><MegIcon name="search" size={16}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamentos..."/></label>
-        <button type="button" onClick={() => exportExcel(`fatura-${cardLabel.toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,'-')}.xls`,exportRows)}>Excel</button>
-        <button type="button" onClick={() => exportPdf(`fatura-${cardLabel.toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,'-')}.pdf`,`Fatura - ${cardLabel}`,exportRows)}>PDF</button>
+        <button type="button" className="icon-action" aria-label="Exportar Excel" title="Exportar Excel" onClick={() => exportExcel(`fatura-${cardLabel.toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,'-')}.xls`,exportRows)}><MegIcon name="list" size={18}/></button>
+        <button type="button" className="icon-action" aria-label="Exportar PDF" title="Exportar PDF" onClick={() => exportPdf(`fatura-${cardLabel.toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,'-')}.pdf`,`Fatura - ${cardLabel}`,exportRows)}><MegIcon name="file" size={18}/></button>
       </section>
 
       <section className="meg3-cardcenter-list" data-meg-scroll-region="true">
@@ -268,10 +268,10 @@ export function MegMobileBenefitCardCenter({
       <div className="meg3-cardcenter-top">
         <section className="meg3-cardcenter-hero verocard"><img src={artUrl} alt="Verocard Alimentação"/></section>
         <section className="meg3-cardcenter-kpis benefit">
-          <article><small>Saldo disponível</small><strong>{money.format(balance)}</strong></article>
-          <article><small>Recargas no mês</small><strong>{money.format(credits)}</strong></article>
-          <article><small>Consumo no mês</small><strong>{money.format(used)}</strong></article>
-          <article><small>Movimentações</small><strong>{rows.length}</strong></article>
+          <article><MegIcon name="wallet" size={16}/><small>Saldo disponível</small><strong>{money.format(balance)}</strong></article>
+          <article><MegIcon name="arrow-up" size={16}/><small>Recargas no mês</small><strong>{money.format(credits)}</strong></article>
+          <article><MegIcon name="food" size={16}/><small>Consumo no mês</small><strong>{money.format(used)}</strong></article>
+          <article><MegIcon name="list" size={16}/><small>Movimentações</small><strong>{rows.length}</strong></article>
         </section>
       </div>
 
