@@ -1064,3 +1064,72 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-dock>.meg2-new.active::before{
   display:none!important;
 }
+
+/* CARTÕES V9 · referência aprovada + benefício Verocard */
+.meg2-cards-v9 .meg2-page-title{min-height:clamp(48px,7dvh,58px)}
+.meg2-cards-v9 .meg2-page-title p{font-size:9px}
+.meg2-card-art.benefit{
+  border-color:rgba(255,214,82,.48);
+  box-shadow:0 9px 22px rgba(0,0,0,.24),0 0 22px rgba(255,214,82,.05);
+}
+.meg2-card-art.benefit.active{
+  border-color:#f0d65d;
+  box-shadow:0 0 0 2px rgba(240,214,93,.58),0 12px 30px rgba(0,0,0,.30),0 0 24px rgba(240,214,93,.09);
+}
+.meg2-benefit-card-tag{
+  position:absolute!important;z-index:5!important;right:9px!important;top:9px!important;
+  width:auto!important;height:21px!important;padding:0 8px!important;display:grid!important;place-items:center!important;
+  border:1px solid rgba(255,227,105,.45)!important;border-radius:99px!important;
+  background:rgba(32,29,15,.78)!important;color:#ffe56f!important;font-size:7px!important;font-weight:900!important;letter-spacing:.08em!important;
+}
+.meg2-card-snapshot{
+  min-height:0;border:1px solid rgba(50,221,211,.22);border-radius:15px;padding:7px;
+  background:linear-gradient(155deg,rgba(4,65,67,.86),rgba(2,45,48,.90));
+  outline:0;cursor:pointer;box-shadow:inset 0 0 18px rgba(43,230,218,.025);
+}
+.meg2-card-snapshot.benefit{border-color:rgba(239,207,83,.28);background:linear-gradient(155deg,rgba(70,65,26,.34),rgba(2,46,48,.92) 42%)}
+.meg2-card-snapshot>header{
+  min-height:29px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 3px 6px;
+}
+.meg2-card-snapshot>header>span{min-width:0;display:grid}
+.meg2-card-snapshot>header strong{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meg2-card-snapshot>header small{color:#88aaa6;font-size:7px}
+.meg2-card-snapshot>header>b{display:flex;align-items:center;gap:3px;color:#55e8df;font-size:7.5px;white-space:nowrap}
+.meg2-card-snapshot.benefit>header>b{color:#ffe56f}
+.meg2-card-snapshot .meg2-card-metrics{gap:5px}
+.meg2-card-snapshot .meg2-card-metrics article{
+  min-height:clamp(55px,8.2dvh,68px)!important;padding:6px 3px!important;
+  box-shadow:none!important;background:#04383b!important;
+}
+.meg2-card-snapshot .meg2-card-metrics.benefit article{background:rgba(49,54,31,.52)!important}
+.meg2-card-snapshot .meg2-card-metrics.benefit article:nth-child(1) strong{color:#63efd7}
+.meg2-card-snapshot .meg2-card-metrics.benefit article:nth-child(2) strong{color:#7af0be}
+.meg2-card-snapshot .meg2-card-metrics.benefit article:nth-child(3) strong{color:#ffd96b}
+.meg2-card-snapshot .meg2-card-metrics.benefit article:nth-child(4) strong{color:#f3faf9}
+.meg2-card-usage{padding:6px 3px 1px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:7px}
+.meg2-card-usage>span{height:5px;overflow:hidden;border-radius:99px;background:rgba(73,155,151,.16)}
+.meg2-card-usage>span>i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#28c7bf,#61ead9)}
+.meg2-card-usage>small{color:#87a6a2;font-size:6.8px;white-space:nowrap}
+.meg2-card-usage.benefit>span>i{background:linear-gradient(90deg,#62e0b7,#f2d25d)}
+.meg2-card-usage.benefit>small{max-width:54%;white-space:normal;text-align:right;line-height:1.1}
+.meg2-cards-v9 .meg2-statement-list>button>strong.credit{color:#58e9c5}
+.meg2-cards-v9 .meg2-statement-list>button>strong.debit{color:#ff8092}
+.meg2-cards-v9 .meg2-statement-list>button{
+  contain:layout paint style;box-shadow:none!important;background:#033638!important;
+}
+.meg2-cards-v9 .meg2-carousel{scroll-behavior:auto!important;touch-action:pan-x}
+.meg2-cards-v9 .meg2-card-art{transition:opacity .12s linear,transform .12s linear}
+
+@media(max-height:820px){
+  .meg2-card-snapshot .meg2-card-metrics article{min-height:52px!important}
+  .meg2-card-snapshot>header{min-height:25px}
+  .meg2-card-usage{padding-top:4px}
+}
+@media(max-height:700px){
+  .meg2-card-snapshot{padding:5px}
+  .meg2-card-snapshot .meg2-card-metrics article{min-height:46px!important}
+  .meg2-card-snapshot .meg2-card-metrics article>svg{width:17px;height:17px;margin-bottom:1px}
+  .meg2-card-snapshot .meg2-card-metrics small{font-size:6.5px}
+  .meg2-card-snapshot .meg2-card-metrics strong{font-size:8.5px}
+  .meg2-card-usage>small{font-size:6px}
+}
