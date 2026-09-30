@@ -35,7 +35,7 @@ assert.ok(launch.includes('LANÇAMENTO SALVO') && launch.includes('Novo lançame
 assert.ok(css.includes('.meg3-launch-type-cards') && css.includes('.meg3-launch-scroll') && css.includes('overflow-y:auto') && css.includes('@media(max-width:350px)') && css.includes('@media(min-width:700px)'), 'Fluxo deve ser responsivo e rolar apenas internamente.');
 assert.ok(!css.includes('.meg3-account-kind') && !css.includes('.meg3-form-segment'), 'CSS rejeitado deve ser excluído, não escondido.');
 assert.ok(picker.includes('data-meg-scroll-region="true"'), 'Picker deve manter rolagem interna.');
-assert.ok(picker.includes('meg5-picker-search-trigger') && !picker.includes('<input autoFocus value={query}') === false, 'Pesquisa do picker deve abrir somente pelo botão Buscar.');
+assert.ok(picker.includes('meg5-picker-search-trigger') && picker.includes('!searching ? <button') && picker.includes('<input ref={searchRef} autoFocus'), 'Pesquisa do picker deve abrir somente pelo botão Buscar.');
 assert.ok(pickerCss.includes('position:sticky') && pickerCss.includes('touch-action:pan-y'), 'Busca deve permanecer no topo e lista deve priorizar gesto vertical.');
 assert.ok(launch.includes('uniquePickerOptions(categories)'), 'Categorias duplicadas devem aparecer uma única vez no seletor.');
 assert.ok(launch.includes('isMainMonetaryAccount') && launch.includes('setAccountId(mainMonetaryAccount.id)'), 'Conta monetária principal deve ser pré-selecionada.');
