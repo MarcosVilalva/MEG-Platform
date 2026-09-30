@@ -41,7 +41,7 @@ assert.ok(launch.includes('uniquePickerOptions(categories)'), 'Categorias duplic
 assert.ok(launch.includes('isMainMonetaryAccount') && launch.includes('setAccountId(mainMonetaryAccount.id)'), 'Conta monetária principal deve ser pré-selecionada.');
 assert.ok(launch.includes('formatCurrencyInput') && launch.includes('inputMode="numeric"'), 'Valor deve usar máscara monetária brasileira da direita para a esquerda.');
 assert.ok(launch.includes('meg3-value-sign') && launch.includes("mode === 'expense'"), 'Estorno deve ser um controle compacto junto ao valor e exclusivo de despesa.');
-assert.ok(launch.includes('Vencimento da 1ª parcela') && launch.includes('firstInstallment.due'), 'Crédito deve mostrar vencimento calculado da primeira parcela.');
+assert.ok(launch.includes('Fatura / Competência') && launch.includes('firstInstallment.due'), 'Crédito deve calcular competência e vencimento da parcela.');
 assert.ok(launch.includes("expensePaymentMode === 'credit') setStatus('planned')"), 'Crédito deve iniciar como pendente.');
 assert.ok(launch.includes("mode === 'income' ? 'Data do recebimento'"), 'Receita deve usar Data do recebimento.');
 assert.ok(launch.includes('isIncomeReceiptMethod') && launch.includes('dinheiro|transferencia banc'), 'Receita deve restringir recebimento a Dinheiro, PIX e Transferência Bancária.');
@@ -75,6 +75,6 @@ console.log('Contrato do fluxo validado de Novo/Editar lançamento aprovado.');
   assert.ok(launch.includes("effectiveInstallments === 1"), 'Parcela única deve usar apresentação direta de vencimento.');
   assert.ok(launch.includes("Insira o valor para visualizar as parcelas"), 'Parcelamento múltiplo sem valor deve orientar o usuário antes de liberar a visualização.');
   assert.ok(launch.includes("const cardSchedule = useMemo"), 'Calendário do cartão deve ser calculado independentemente do valor para exibir vencimento da parcela única.');
-  assert.ok(launchCss.includes('touch-action:pan-y') && launchCss.includes('scroll-behavior:auto'), 'Áreas roláveis do fluxo devem usar rolagem vertical nativa e imediata.');
-  assert.ok(launchCss.includes('.meg3-single-installment-due'), 'Fluxo deve possuir apresentação própria para vencimento de parcela única.');
+  assert.ok(css.includes('touch-action:pan-y') && css.includes('scroll-behavior:auto'), 'Áreas roláveis do fluxo devem usar rolagem vertical nativa e imediata.');
+  assert.ok(css.includes('.meg3-single-installment-due'), 'Fluxo deve possuir apresentação própria para vencimento de parcela única.');
 }
