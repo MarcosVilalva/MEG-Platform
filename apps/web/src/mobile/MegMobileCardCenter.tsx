@@ -137,7 +137,12 @@ export function MegMobileCardCenter({
   const [tab,setTab] = useState<CreditTab>('summary');
   const allRows = useMemo(() => allCardRows(card), [card]);
   const sourceRows = useMemo(() => {
-    if (tab === 'summary' || tab === 'current') return rows;
+    if (tab === 'current') return rows;
+    if (tab === 'summary') {
+      const currentIds = new Set(rows.map((row) => row.id));
+      const upcoming = allRows.filter((row) => !currentIds.has(row.id) && (row.statementMonth || '') > currentMonth);
+      return rows.concat(upcoming).slice(0, 6);
+    }
     if (tab === 'upcoming') return allRows.filter((row) => (row.statementMonth || '') > currentMonth);
     if (tab === 'installments') return allRows.filter((row) => Number(row.installmentQty || 1) > 1);
     return allRows;
@@ -188,7 +193,7 @@ export function MegMobileCardCenter({
 
       <div className="meg3-cardcenter-tabs" role="tablist" aria-label="Visões do cartão">
         <button className={tab==='summary'?'active':''} onClick={()=>setTab('summary')}>Resumo</button>
-        <button className={tab==='current'?'active':''} onClick={()=>setTab('current')}>Fatura atual</button>
+        <button className={tab==='current'?'active':''} onClick={()=>setTab('current')}>Atual</button>
         <button className={tab==='upcoming'?'active':''} onClick={()=>setTab('upcoming')}>Próximas</button>
         <button className={tab==='installments'?'active':''} onClick={()=>setTab('installments')}>Parcelas</button>
         <button className={tab==='history'?'active':''} onClick={()=>setTab('history')}>Histórico</button>
@@ -201,12 +206,13 @@ export function MegMobileCardCenter({
       </section>
 
       <section className="meg3-cardcenter-list" data-meg-scroll-region="true">
+        {tab === 'summary' && !rows.length && filtered.length ? <div className="meg3-cardcenter-context">Fatura atual sem lançamentos · exibindo próximas compras</div> : null}
         {filtered.map((row) => <button type="button" key={row.id} onClick={() => onOpenRow?.(row)}>
           <span><strong>{row.description}</strong><small>{shortDate(row.date)}{row.statementMonth ? ` · fatura ${monthLabel(row.statementMonth)}` : ''}{row.installmentNo && row.installmentQty ? ` · parcela ${row.installmentNo}/${row.installmentQty}` : ''}</small></span>
           <b>{money.format(Number(row.amount || 0))}</b>
           {onOpenRow ? <i><MegIcon name="chevron-right" size={14}/></i> : null}
         </button>)}
-        {!filtered.length ? <div className="meg3-cardcenter-empty">{tab === 'upcoming' ? 'Nenhuma fatura futura projetada.' : 'Nenhum lançamento encontrado.'}</div> : null}
+        {!filtered.length ? <div className="meg3-cardcenter-empty">{tab === 'upcoming' ? 'Nenhuma fatura futura projetada.' : tab === 'current' ? 'Nenhum lançamento na fatura atual.' : 'Nenhum lançamento encontrado.'}</div> : null}
       </section>
 
       <footer>
