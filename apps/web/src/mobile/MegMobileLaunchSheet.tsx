@@ -52,6 +52,10 @@ function formatCurrencyInput(raw: string) {
   return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents);
 }
 
+function normalize(value: unknown) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
+}
+
 function uniquePickerOptions<T extends { id: string; name: string; group?: string | null }>(items: T[]): MegMobilePickerOption[] {
   const seen = new Set<string>();
   const options: MegMobilePickerOption[] = [];
@@ -70,10 +74,6 @@ function isIncomeReceiptMethod(method: PhoenixReadModel['paymentMethods'][number
 
 function isMainMonetaryAccount(account: PhoenixReadModel['accounts'][number]) {
   return /conta monetaria principal/.test(normalize(account.name));
-}
-
-function normalize(value: unknown) {
-  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
 }
 
 function isBenefitAccount(account: PhoenixReadModel['accounts'][number]) {
