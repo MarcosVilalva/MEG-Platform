@@ -64,7 +64,7 @@
   background:linear-gradient(150deg,rgba(4,61,63,.77),rgba(2,46,48,.82));
 }
 .meg3-cardcenter-kpis small{display:block;color:#91aaa7;font-size:7.2px}
-.meg3-cardcenter-kpis strong{display:block;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:clamp(10px,2.9vw,13px);color:#5be7dd}
+.meg3-cardcenter-kpis strong{display:block;margin-top:3px;overflow:visible;text-overflow:clip;white-space:nowrap;font-size:clamp(8.6px,2.45vw,11px);letter-spacing:-.02em;color:#5be7dd}
 .meg3-cardcenter-kpis article:nth-child(3) strong{color:#74bfff}
 .meg3-cardcenter-kpis.benefit article:first-child{grid-column:1/-1;background:linear-gradient(145deg,rgba(9,112,105,.55),rgba(2,53,54,.86))}
 .meg3-cardcenter-kpis.benefit article:first-child strong{font-size:clamp(16px,4.8vw,22px);color:#65f0d7}
@@ -76,7 +76,7 @@
 .meg3-cardcenter-tabs.benefit{grid-template-columns:repeat(3,minmax(0,1fr))}
 .meg3-cardcenter-tabs button{
   min-height:36px;border:1px solid rgba(55,191,186,.15);border-radius:10px;background:rgba(2,45,48,.74);
-  color:#b5c8c6;font-size:7.2px;font-weight:800;padding:0 4px;
+  color:#b5c8c6;font-size:7.2px;font-weight:800;padding:0 2px;white-space:normal;line-height:1.04;
 }
 .meg3-cardcenter-tabs button.active{
   color:#eafffb;border-color:#33e9dc;background:linear-gradient(180deg,rgba(12,138,132,.62),rgba(5,83,83,.72));
@@ -84,7 +84,7 @@
 }
 
 .meg3-cardcenter-tools{
-  display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;padding:8px 14px;
+  display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;padding:8px 14px;box-sizing:border-box;
 }
 .meg3-cardcenter-tools.benefit{grid-template-columns:1fr}
 .meg3-cardcenter-tools label{
@@ -94,7 +94,7 @@
 .meg3-cardcenter-tools input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#fff;font:inherit;font-size:10px}
 .meg3-cardcenter-tools input::placeholder{color:#799491}
 .meg3-cardcenter-tools button{
-  min-height:42px;padding:0 11px;border:1px solid rgba(45,231,219,.40);border-radius:12px;
+  min-height:42px;padding:0 5px;border:1px solid rgba(45,231,219,.40);border-radius:12px;
   background:rgba(10,108,105,.55);color:#58e9df;font-size:8.5px;font-weight:850;
 }
 
@@ -115,6 +115,7 @@
 .meg3-cardcenter-list>button>b.credit{color:#58e9c5}
 .meg3-cardcenter-list>button>b.debit{color:#ff8092}
 .meg3-cardcenter-list>button>i{color:#52e7de;font-style:normal}
+.meg3-cardcenter-context{margin:0 0 6px;padding:7px 9px;border:1px solid rgba(81,230,219,.15);border-radius:10px;background:#043638;color:#8eb1ad;font-size:7.5px;text-align:center}
 .meg3-cardcenter-empty{padding:24px;text-align:center;color:#8aa5a2;font-size:9px}
 
 .meg3-cardcenter>footer{
@@ -131,6 +132,12 @@
   .meg3-cardcenter-top{grid-template-columns:1fr;padding-inline:10px;gap:7px}
   .meg3-cardcenter-tabs,.meg3-cardcenter-tools,.meg3-cardcenter-list{padding-inline:10px}
   .meg3-cardcenter-hero{height:132px;min-height:132px;max-height:132px}
+  .meg3-cardcenter-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .meg3-cardcenter-kpis article{min-height:43px;padding:5px 6px}
+  .meg3-cardcenter-kpis strong{font-size:9px}
+  .meg3-cardcenter-tabs{gap:3px}
+  .meg3-cardcenter-tabs button{font-size:6.5px}
+  .meg3-cardcenter-tools{grid-template-columns:minmax(0,1fr) 52px 44px;gap:5px}
 }
 @media(max-width:350px){
   .meg3-cardcenter-top{grid-template-columns:1fr}
