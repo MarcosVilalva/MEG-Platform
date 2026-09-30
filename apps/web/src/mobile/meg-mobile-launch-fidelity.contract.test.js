@@ -47,9 +47,12 @@ assert.ok(
 );
 
 assert.ok(
-  launch.includes("if (!categoryId) return 'Selecione a categoria.';")
-  && launch.includes("if (!paymentMethodId) return mode === 'income' ? 'Selecione a forma de recebimento.' : 'Selecione a forma de pagamento.';"),
-  'Categoria e forma devem ser validadas explicitamente antes de salvar.',
+  launch.includes("if (mode !== 'income' && !categoryId) return 'Selecione a categoria.';")
+  && launch.includes("if (!pending && !paymentMethodId)")
+  && launch.includes("if (!pending && !accountId)")
+  && launch.includes("accountId: pending ? undefined")
+  && launch.includes("paymentMethodId: pending ? undefined"),
+  'Receita pode manter categoria nula e pendente não pode fabricar conta ou forma de pagamento.',
 );
 
 assert.ok(
@@ -84,9 +87,10 @@ assert.ok(
   'Busca e filtros de Lançamentos devem ficar concentrados em um único painel acionado pelo cabeçalho.',
 );
 assert.ok(
-  !movements.includes('meg3-movement-toolbar')
-  && movements.includes('aria-label="Buscar e filtrar lançamentos"'),
-  'Lançamentos não deve voltar a exibir a antiga barra separada de busca, filtro, mês e carteira.',
+  movements.includes('meg3-movement-toolbar')
+  && movements.includes('aria-label="Buscar e filtrar lançamentos"')
+  && movements.includes('onClick={() => onOpenEvent(event)}'),
+  'Lançamentos deve manter acesso aos filtros e abrir o registro selecionado no editor canônico.',
 );
 assert.ok(!movements.includes('meg3-event-date-group'), 'Lista não deve depender de agrupamento estrutural para representar os registros.');
 assert.ok(
@@ -168,7 +172,9 @@ assert.ok(
 assert.ok(
   launch.includes("role=\"switch\"")
   && launch.includes('Lançar como pendente')
-  && launch.includes("setStatus((value) => value === 'planned' ? 'paid' : 'planned')"),
+  && launch.includes("const next = value === 'planned' ? 'paid' : 'planned'")
+  && launch.includes("setAccountId('')")
+  && launch.includes("setPaymentMethodId('')"),
   'Despesa comum deve continuar permitindo alternar entre realizada e pendente.'
 );
 assert.ok(
