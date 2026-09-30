@@ -14,14 +14,14 @@ import com.getcapacitor.PluginHandle;
 
 public class MainActivity extends BridgeActivity {
     private static final long UPDATE_FOCUS_DELAY_MS = 1500;
-    private static final long WEBVIEW_RENDER_SETTLE_MS = 220;
+    private static final long WEBVIEW_REPAINT_DELAY_MS = 90;
     private final Handler updateHandler = new Handler(Looper.getMainLooper());
     private final Handler renderHandler = new Handler(Looper.getMainLooper());
     private WebView appWebView;
-    private final Runnable settleWebViewRender = () -> {
+    private final Runnable repaintWebView = () -> {
         if (appWebView == null) return;
-        appWebView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-        appWebView.invalidate();
+        appWebView.postInvalidateOnAnimation();
+        appWebView.postDelayed(appWebView::postInvalidateOnAnimation, 48);
     };
     private final Runnable updateCheck = () -> {
         if (!hasWindowFocus()) {
@@ -72,34 +72,28 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(MegNativeShellPlugin.class);
         super.onCreate(savedInstanceState);
 
-        // Renderização híbrida: software quando a interface está parada elimina
-        // os artefatos visuais vistos em alguns WebViews; durante gesto/fling usamos
-        // hardware para manter a rolagem fluida. Depois que o scroll estabiliza,
-        // voltamos ao modo estável e forçamos um repaint completo.
+        // Mantemos uma única camada acelerada durante toda a vida do WebView.
+        // Alternar software/hardware invalidava tiles do Chromium e gerava os
+        // fragmentos brancos/coloridos vistos ao voltar para a Home. A correção
+        // agora é repaint pós-gesto, sem trocar o compositor e sem sacrificar scroll.
         if (getBridge() != null && getBridge().getWebView() != null) {
             appWebView = getBridge().getWebView();
             appWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-            appWebView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+            appWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
             appWebView.setOnTouchListener((view, event) -> {
                 int action = event.getActionMasked();
                 if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
-                    renderHandler.removeCallbacks(settleWebViewRender);
-                    if (appWebView.getLayerType() != View.LAYER_TYPE_HARDWARE) {
-                        appWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-                    }
+                    renderHandler.removeCallbacks(repaintWebView);
                 } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                    renderHandler.removeCallbacks(settleWebViewRender);
-                    renderHandler.postDelayed(settleWebViewRender, WEBVIEW_RENDER_SETTLE_MS);
+                    renderHandler.removeCallbacks(repaintWebView);
+                    renderHandler.postDelayed(repaintWebView, WEBVIEW_REPAINT_DELAY_MS);
                 }
                 return false;
             });
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 appWebView.setOnScrollChangeListener((view, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-                    renderHandler.removeCallbacks(settleWebViewRender);
-                    if (appWebView.getLayerType() != View.LAYER_TYPE_HARDWARE) {
-                        appWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-                    }
-                    renderHandler.postDelayed(settleWebViewRender, WEBVIEW_RENDER_SETTLE_MS);
+                    renderHandler.removeCallbacks(repaintWebView);
+                    renderHandler.postDelayed(repaintWebView, WEBVIEW_REPAINT_DELAY_MS);
                 });
             }
         }
@@ -133,7 +127,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onPause() {
         updateHandler.removeCallbacks(updateCheck);
-        renderHandler.removeCallbacks(settleWebViewRender);
+        renderHandler.removeCallbacks(repaintWebView);
         super.onPause();
     }
 }
