@@ -88,7 +88,7 @@ for (const relative of [
 
 assert.match(
   mobile,
-  /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*latamairlines\.com[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*approved-v6\/riachuelo\.webp/i,
+  /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*latam-pass-platinum\.webp[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*approved-v6\/riachuelo\.webp/i,
   'Carrossel deve usar artes recortadas e estáveis para preencher os cartões ativos.',
 );
 assert.match(css, /CONTRATO DE VIEWPORT FIXO[\s\S]*\.meg2-scroll\{[\s\S]*overflow:hidden!important/,
@@ -456,4 +456,20 @@ assert.match(
   cardCenterCss,
   /@media\(max-width:560px\)[\s\S]*\.meg3-cardcenter-top\{[\s\S]*grid-template-columns:1fr[\s\S]*\.meg3-cardcenter-hero\{[\s\S]*aspect-ratio:1\.62\/1/,
   'Central móvel deve empilhar a arte do cartão em largura total antes dos KPIs.',
+);
+
+assert.doesNotMatch(
+  mobile,
+  /latamairlines\.com|voeazul\.com\.br|plusdin\.com\.br|mlstatic\.com/,
+  'Cartões do APK não podem depender de imagens remotas sujeitas a placeholder no WebView.',
+);
+assert.doesNotMatch(
+  mobile + '\n' + cardCenter,
+  /category:\s*purchase\?\.category\?\.name\s*\|\|\s*['"]Outros['"]|category:\s*purchase\.category\?\.name\s*\|\|\s*['"]Outros['"]/,
+  'Ausência de categoria não pode ser mascarada por "Outros", pois a descrição precisa definir o ícone semântico.',
+);
+assert.match(
+  cardCenter,
+  /function transactionIcon[\s\S]*resolveFinancialIcon\(\{ description, categoryName: category \}\)/,
+  'Lançamentos da Central devem resolver ícone pela categoria real e, na ausência dela, pela descrição.',
 );
