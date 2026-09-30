@@ -70,7 +70,7 @@ console.log('Contrato do fluxo validado de Novo/Editar lançamento aprovado.');
   assert.ok(launch.includes("expensePaymentMode === 'credit' || Boolean(cardId)"), 'Crédito deve ser definido pela modalidade/cartão, sem depender de forma de pagamento.');
   assert.ok(launch.includes("{!credit ? <section className=\"meg3-launch-section\"><MegMobilePicker") && launch.includes("Forma de pagamento *"), 'Forma de pagamento deve desaparecer quando a modalidade for Crédito.');
   assert.ok(launch.includes("if (isCrediarioMethod(initialMethod)) return 'credit'"), 'Histórico legado de crediário deve abrir para edição como Crédito.');
-  assert.ok(pickerCss.includes('scroll-behavior:auto') && pickerCss.includes('will-change:scroll-position'), 'Rolagem do picker deve permanecer nativa e imediata.');
+  assert.ok(pickerCss.includes('scroll-behavior:auto') && pickerCss.includes('touch-action:pan-y'), 'Rolagem do picker deve permanecer nativa e imediata sem criar camada extra.');
 }
 
 {
