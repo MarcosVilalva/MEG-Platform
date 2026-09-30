@@ -5,7 +5,7 @@ export type MegIconName =
   | 'banknote' | 'circle-dollar' | 'house' | 'fuel' | 'droplet' | 'heart-pulse'
   | 'graduation-cap' | 'ticket' | 'shopping-bag' | 'repeat' | 'landmark' | 'receipt'
   | 'piggy-bank' | 'briefcase' | 'cup-soda' | 'sandwich' | 'arrow-up' | 'arrow-down' | 'arrows-right-left'
-  | 'x' | 'chevron-right' | 'chevron-down' | 'check-line';
+  | 'x' | 'chevron-left' | 'chevron-right' | 'chevron-down' | 'check-line';
 
 type IconProps = { name: MegIconName; size?: number; strokeWidth?: number; className?: string };
 
@@ -66,6 +66,7 @@ export function MegIcon({ name, size = 22, strokeWidth = 1.9, className }: IconP
   if (key === 'cup-soda') return <svg {...base}><path d="m6 8 1 13h10l1-13Z"/><path d="M5 8h14M8 4h8l-1 4"/></svg>;
   if (key === 'sandwich') return <svg {...base}><path d="M4 11h16a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4Z"/><path d="M4 14h16M5 17h14l-2 3H7Z"/></svg>;
   if (key === 'x') return <svg {...base}><path d="M18 6 6 18M6 6l12 12"/></svg>;
+  if (key === 'chevron-left') return <svg {...base}><path d="m15 18-6-6 6-6"/></svg>;
   if (key === 'chevron-right') return <svg {...base}><path d="m9 18 6-6-6-6"/></svg>;
   if (key === 'chevron-down') return <svg {...base}><path d="m6 9 6 6 6-6"/></svg>;
   if (key === 'check-line') return <svg {...base}><path d="m5 12 4 4L19 6"/></svg>;
