@@ -1,9 +1,9 @@
 {
-  "versionCode": 613,
-  "versionName": "2.0.613",
+  "versionCode": 617,
+  "versionName": "2.0.617",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "3a114f1e5899f6d7085c90a2d9cf66329745d17d0d5b93900e255bf0568fa7fb",
+  "sha256": "3e57a3b87862f3a4f6f4008aafc69e3f73d5dd883f38a4458f1dcd7a6e455317",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "test(mobile): remover crediario do contrato de criacao"
+  "releaseNotes": "test(mobile): alinhar contrato ao vencimento direto"
 }
