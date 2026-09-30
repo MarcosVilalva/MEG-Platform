@@ -506,7 +506,7 @@ assert.match(
   'Fatura atual deve exibir o valor integral da competência, não apenas o saldo ainda pagável.',
 );
 assert.match(
-  iconSource,
+  mobileIcons,
   /game ?pass[\s\S]*gamepad[\s\S]*capilar[\s\S]*sparkles[\s\S]*microondas[\s\S]*appliance[\s\S]*shopee[\s\S]*shopping-bag/,
   'Resolvedor semântico deve reconhecer jogos, beleza, eletrodomésticos e e-commerce.',
 );
