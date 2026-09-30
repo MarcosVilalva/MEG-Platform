@@ -88,8 +88,8 @@ for (const relative of [
 
 assert.match(
   mobile,
-  /mercado.*meli[\s\S]*mlstatic\.com[\s\S]*latamairlines\.com[\s\S]*voeazul\.com\.br[\s\S]*riachuelo.*midway[\s\S]*plusdin\.com\.br/i,
-  'Carrossel deve resolver cartões ativos para artes reais de alta resolução.',
+  /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*latamairlines\.com[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*approved-v6\/riachuelo\.webp/i,
+  'Carrossel deve usar artes recortadas e estáveis para preencher os cartões ativos.',
 );
 assert.match(css, /CONTRATO DE VIEWPORT FIXO[\s\S]*\.meg2-scroll\{[\s\S]*overflow:hidden!important/,
   'Home corrente deve caber no viewport sem rolagem geral.');
@@ -435,4 +435,25 @@ assert.doesNotMatch(
   css + '\n' + cardCenterCss,
   /meg2-card-art>img[\s\S]{0,180}object-fit:contain|meg3-cardcenter-hero img[\s\S]{0,180}object-fit:contain/,
   'Cartões não podem voltar ao enquadramento interno desconexo após a validação full-bleed.',
+);
+
+assert.match(
+  cardCenter,
+  /resolveFinancialIcon[\s\S]*meg3-cardcenter-row-icon[\s\S]*meg3-cardcenter-row-copy/,
+  'Central deve padronizar lançamentos com os mesmos ícones semânticos do restante do sistema.',
+);
+assert.match(
+  cardCenterCss,
+  /grid-template-columns:36px minmax\(0,1fr\) auto 14px[\s\S]*\.meg3-cardcenter-row-icon/,
+  'Lista da central deve reservar coluna própria para o ícone de cada lançamento.',
+);
+assert.match(
+  css,
+  /img\[alt\*="LATAM"\][\s\S]*transform:scale\(1\.24\)/,
+  'LATAM deve receber recorte específico para eliminar margem interna da arte.',
+);
+assert.match(
+  cardCenterCss,
+  /@media\(max-width:560px\)[\s\S]*\.meg3-cardcenter-top\{[\s\S]*grid-template-columns:1fr[\s\S]*\.meg3-cardcenter-hero\{[\s\S]*aspect-ratio:1\.62\/1/,
+  'Central móvel deve empilhar a arte do cartão em largura total antes dos KPIs.',
 );
