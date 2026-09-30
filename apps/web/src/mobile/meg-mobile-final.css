@@ -829,326 +829,154 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-pending-success dt{color:#83aaa6;font-size:8px}.meg2-pending-success dd{margin:0;font-size:10px;font-weight:800}
 .meg2-pending-success>button{width:100%}
 
-
 /* =========================================================
-   DOCK ESTÁVEL NO VIEWPORT ANDROID
-   A barra inferior não participa mais do fluxo vertical da
-   tela. O espaço dela continua reservado no shell, mas sua
-   geometria fica ancorada ao mesmo quadro em todas as views.
+   MEG MOBILE CLEANROOM V2 · FUNDAÇÃO CANÔNICA
+   Uma única geometria para viewport, header e dock.
    ========================================================= */
-.meg2-shell{
-  grid-template-rows:auto minmax(0,1fr)!important;
-  padding-bottom:calc(68px + env(safe-area-inset-bottom))!important;
-}
-.meg2-dock{
-  position:absolute!important;
-  left:0!important;
-  right:0!important;
-  bottom:0!important;
-  width:100%!important;
-  margin:0!important;
-  flex:none!important;
-  transform:none!important;
-  contain:layout paint;
-}
-
-
-/* LANÇAMENTOS: conteúdo respeita o limite superior do dock fixo */
-.meg2-view-movements > .meg2-scroll{
-  height:auto!important;
-  min-height:0!important;
-  max-height:none!important;
-  align-self:stretch!important;
-  overflow:hidden!important;
-}
-
-
-/* ZONA DE SEGURANÇA DO CONTEÚDO ACIMA DO DOCK FIXO */
-.meg2-view-movements > .meg2-scroll,
-.meg2-view-payables > .meg2-scroll,
-.meg2-view-cards > .meg2-scroll{
-  height:auto!important;
-  min-height:0!important;
-  max-height:none!important;
-  align-self:stretch!important;
-  overflow:hidden!important;
-}
-.meg2-payables{
-  padding-bottom:clamp(10px,1.35dvh,14px)!important;
-}
-.meg2-pending-list{
-  margin-bottom:clamp(8px,1.15dvh,12px)!important;
-  padding-bottom:clamp(8px,1.15dvh,12px)!important;
-  scroll-padding-bottom:clamp(8px,1.15dvh,12px)!important;
-}
-.meg2-cards{
-  padding-bottom:clamp(10px,1.35dvh,14px)!important;
-}
-.meg2-cards .meg2-primary{
-  margin-bottom:0!important;
-}
-
-/* build 550: validação da zona segura acima do dock */
-
-
-/* CORREÇÃO ESTRUTURAL FINAL: trilho físico reservado para o dock */
-.meg2-shell{
-  --meg2-dock-height:calc(68px + env(safe-area-inset-bottom));
-  --meg2-dock-gap:10px;
-  grid-template-rows:auto minmax(0,1fr) calc(var(--meg2-dock-height) + var(--meg2-dock-gap))!important;
-  padding-bottom:0!important;
-}
-.meg2-shell > .meg2-scroll{
-  grid-row:2!important;
-  min-height:0!important;
-  height:auto!important;
-  max-height:none!important;
-  overflow:hidden!important;
-  align-self:stretch!important;
-}
-.meg2-shell > .meg2-dock{
-  height:var(--meg2-dock-height)!important;
-  min-height:var(--meg2-dock-height)!important;
-  max-height:var(--meg2-dock-height)!important;
-  position:absolute!important;
-  left:0!important;
-  right:0!important;
-  bottom:0!important;
-  margin:0!important;
-  transform:none!important;
-}
-.meg2-shell > .meg2-scroll > [data-meg-fixed-screen="true"]{
-  min-height:0!important;
-  height:100%!important;
-  max-height:100%!important;
-  overflow:hidden!important;
-}
-
-
-/* RESPONSIVIDADE AUTOMÁTICA POR VIEWPORT REAL */
 .meg2-app{
-  height:var(--meg-app-height,100dvh)!important;
-  min-height:var(--meg-app-height,100dvh)!important;
-  max-height:var(--meg-app-height,100dvh)!important;
+  --meg-app-height:100dvh;
+  --meg-dock-height:calc(68px + env(safe-area-inset-bottom));
+  --meg-dock-gap:10px;
+  --meg-content-gutter:clamp(10px,2.8vw,12px);
+  width:100vw!important;height:var(--meg-app-height)!important;
+  min-height:var(--meg-app-height)!important;max-height:var(--meg-app-height)!important;
+  overflow:hidden!important;
 }
 .meg2-shell{
-  --meg-dock-gap:clamp(8px,1.15dvh,12px);
-  --meg-dock-height-fallback:calc(68px + env(safe-area-inset-bottom));
-  height:var(--meg-app-height,100dvh)!important;
-  min-height:var(--meg-app-height,100dvh)!important;
-  max-height:var(--meg-app-height,100dvh)!important;
-  grid-template-rows:auto minmax(0,1fr) calc(var(--meg-dock-height,var(--meg-dock-height-fallback)) + var(--meg-dock-gap))!important;
-  padding-bottom:0!important;
-}
-.meg2-shell > .meg2-scroll{
-  grid-row:2!important;
-  min-height:0!important;
-  height:auto!important;
-  max-height:none!important;
-  overflow:hidden!important;
-  align-self:stretch!important;
-}
-.meg2-shell > .meg2-dock{
-  height:var(--meg-dock-height,var(--meg-dock-height-fallback))!important;
-  min-height:var(--meg-dock-height,var(--meg-dock-height-fallback))!important;
-  max-height:var(--meg-dock-height,var(--meg-dock-height-fallback))!important;
-  position:absolute!important;
-  left:0!important;
-  right:0!important;
-  bottom:0!important;
-  margin:0!important;
-  transform:none!important;
-}
-.meg2-shell > .meg2-scroll > [data-meg-fixed-screen="true"]{
-  min-height:0!important;
-  height:100%!important;
-  max-height:100%!important;
-  overflow:hidden!important;
-}
-.meg2-overlay{
-  inset:0 0 calc(var(--meg-dock-height,var(--meg-dock-height-fallback)) + var(--meg-dock-gap)) 0!important;
-  height:auto!important;
-  max-height:none!important;
-}
-.meg2-menu-sheet,
-.meg2-period-sheet{
-  max-height:calc(var(--meg-app-height,100dvh) - var(--meg-dock-height,var(--meg-dock-height-fallback)) - var(--meg-dock-gap) - 24px)!important;
-  overflow-y:auto!important;
-  overflow-x:hidden!important;
-}
-.meg3-event-list,
-.meg2-pending-list,
-.meg2-statement-list{
-  scroll-padding-bottom:clamp(10px,1.35dvh,14px)!important;
-  padding-bottom:clamp(10px,1.35dvh,14px)!important;
-}
-.meg3-event-list,
-.meg2-pending-list{
-  scroll-snap-type:y proximity;
-}
-.meg3-event-card,
-.meg2-pending-list>button{
-  scroll-snap-align:start;
-  scroll-snap-stop:normal;
-}
-
-
-/* AJUSTES VISUAIS DO CABEÇALHO E DOCK APÓS VALIDAÇÃO EM VÍDEO */
-/* O botão central pode ultrapassar visualmente o topo do dock sem ser recortado. */
-.meg2-dock{
-  contain:layout!important;
-  overflow:visible!important;
-}
-
-/* Marca MEG sem card verde ao redor: somente a identidade visual ocupa o espaço. */
-.meg2-brand{
-  width:clamp(44px,12vw,50px)!important;
-  height:clamp(44px,12vw,50px)!important;
-  min-width:clamp(44px,12vw,50px)!important;
-  min-height:clamp(44px,12vw,50px)!important;
-  max-width:50px!important;
-  max-height:50px!important;
-  border:0!important;
-  border-radius:0!important;
-  background:transparent!important;
-  box-shadow:none!important;
-  overflow:visible!important;
+  width:min(100%,560px)!important;height:var(--meg-app-height)!important;
+  min-height:var(--meg-app-height)!important;max-height:var(--meg-app-height)!important;
+  margin:0 auto!important;padding:0!important;
   display:grid!important;
-  place-items:center!important;
+  grid-template-rows:auto minmax(0,1fr) calc(var(--meg-dock-height) + var(--meg-dock-gap))!important;
+  position:relative!important;overflow:hidden!important;isolation:isolate;
 }
-.meg2-brand img{
-  width:100%!important;
-  height:100%!important;
-  object-fit:contain!important;
-  object-position:center!important;
-  transform:scale(1.06);
+.meg2-header{
+  min-height:64px!important;
+  padding:max(7px,env(safe-area-inset-top)) clamp(8px,2.6vw,11px) 7px!important;
+  display:grid!important;
+  grid-template-columns:clamp(44px,12vw,50px) minmax(0,1fr) auto!important;
+  gap:clamp(5px,1.6vw,8px)!important;align-items:center!important;
+  position:relative!important;z-index:30!important;
 }
-
-/* Avatar nunca pode ser comprimido horizontalmente pelo texto ou pelo filtro central. */
+.meg2-header>button{pointer-events:auto!important;touch-action:manipulation!important}
+.meg2-brand{
+  width:clamp(44px,12vw,50px)!important;height:clamp(44px,12vw,50px)!important;
+  min-width:clamp(44px,12vw,50px)!important;min-height:clamp(44px,12vw,50px)!important;
+  max-width:50px!important;max-height:50px!important;padding:0!important;
+  border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+  overflow:visible!important;display:grid!important;place-items:center!important;
+}
+.meg2-brand img{width:100%!important;height:100%!important;display:block!important;object-fit:contain!important;object-position:center!important}
+.meg2-period{
+  justify-self:center!important;width:min(100%,clamp(132px,42vw,174px))!important;
+  height:clamp(38px,5.7dvh,43px)!important;min-height:clamp(38px,5.7dvh,43px)!important;
+  display:grid!important;grid-template-columns:clamp(25px,7vw,29px) minmax(0,1fr) 13px!important;
+  gap:clamp(4px,1.2vw,6px)!important;align-items:center!important;
+  padding:3px clamp(6px,1.8vw,8px)!important;border-radius:10px!important;position:relative!important;z-index:2!important;
+}
+.meg2-period-icon{width:clamp(24px,6.8vw,28px)!important;height:clamp(24px,6.8vw,28px)!important;border-radius:8px!important}
+.meg2-period strong{font-size:clamp(9px,2.75vw,11.5px)!important;line-height:1!important}
+.meg2-period small{font-size:clamp(6.5px,1.9vw,7.5px)!important;line-height:1!important}
+.meg2-period b{font-size:14px!important}
+.meg2-user{
+  min-width:0!important;max-width:104px!important;margin-right:clamp(3px,1.2vw,5px)!important;padding:0!important;
+  display:flex!important;align-items:center!important;gap:6px!important;flex:none!important;
+}
 .meg2-avatar{
   flex:0 0 clamp(36px,9.8vw,40px)!important;
-  width:clamp(36px,9.8vw,40px)!important;
-  height:clamp(36px,9.8vw,40px)!important;
-  min-width:clamp(36px,9.8vw,40px)!important;
-  min-height:clamp(36px,9.8vw,40px)!important;
-  max-width:40px!important;
-  max-height:40px!important;
-  aspect-ratio:1/1!important;
-  border-radius:50%!important;
+  width:clamp(36px,9.8vw,40px)!important;height:clamp(36px,9.8vw,40px)!important;
+  min-width:clamp(36px,9.8vw,40px)!important;min-height:clamp(36px,9.8vw,40px)!important;
+  max-width:40px!important;max-height:40px!important;aspect-ratio:1/1!important;border-radius:50%!important;overflow:hidden!important;
 }
-.meg2-avatar img{
-  width:100%!important;
-  height:100%!important;
-  object-fit:cover!important;
-  object-position:center!important;
-  aspect-ratio:1/1!important;
+.meg2-avatar img{width:100%!important;height:100%!important;display:block!important;object-fit:cover!important;object-position:center!important}
+.meg2-user strong{display:block!important;min-width:0!important;max-width:56px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+
+.meg2-shell>.meg2-scroll{
+  grid-row:2!important;min-height:0!important;height:auto!important;max-height:none!important;
+  overflow:hidden!important;align-self:stretch!important;
+}
+.meg2-shell>.meg2-scroll>[data-meg-fixed-screen="true"]{
+  min-height:0!important;height:100%!important;max-height:100%!important;overflow:hidden!important;
 }
 
-/* Seletor de competência compacto, central e com área de toque confiável. */
-.meg2-period{
-  justify-self:center!important;
-  width:min(100%,clamp(132px,42vw,174px))!important;
-  min-height:clamp(38px,5.7dvh,43px)!important;
-  height:clamp(38px,5.7dvh,43px)!important;
-  grid-template-columns:clamp(25px,7vw,29px) minmax(0,1fr) 13px!important;
-  gap:clamp(4px,1.2vw,6px)!important;
-  padding:3px clamp(6px,1.8vw,8px)!important;
-  border-radius:10px!important;
-  position:relative!important;
-  z-index:8!important;
-  pointer-events:auto!important;
-  touch-action:manipulation!important;
-}
-.meg2-period-icon{
-  width:clamp(24px,6.8vw,28px)!important;
-  height:clamp(24px,6.8vw,28px)!important;
-  border-radius:8px!important;
-}
-.meg2-period strong{
-  font-size:clamp(9px,2.75vw,11.5px)!important;
-  line-height:1!important;
-}
-.meg2-period small{
-  font-size:clamp(6.5px,1.9vw,7.5px)!important;
-  line-height:1!important;
-}
-.meg2-period b{
-  font-size:14px!important;
-}
-
-/* Mantém o cabeçalho responsivo sem deformar marca, filtro ou avatar. */
-.meg2-header{
-  grid-template-columns:clamp(44px,12vw,50px) minmax(0,1fr) auto!important;
-  gap:clamp(5px,1.6vw,8px)!important;
-  padding-inline:clamp(8px,2.6vw,11px)!important;
-}
-.meg2-user{
-  min-width:0!important;
-  flex:none!important;
-}
-
-
-/* INTERAÇÃO RESTAURADA E GEOMETRIA COMPARTILHADA ENTRE TELAS */
-.meg2-shell{
-  --meg-content-gutter:clamp(10px,2.8vw,12px);
-  isolation:isolate;
-}
-.meg2-header{
-  position:relative!important;
-  z-index:30!important;
-}
-.meg2-header>button{
-  position:relative!important;
-  z-index:1!important;
-  pointer-events:auto!important;
-  touch-action:manipulation!important;
-}
-.meg2-user{
-  margin-right:clamp(3px,1.2vw,5px)!important;
-}
-
-/* Menu e seletor de período passam a viver dentro do mesmo shell do app.
-   Evita o WebView deixar o estado ativo sem renderizar a folha visual. */
-.meg2-shell>.meg2-overlay{
-  position:absolute!important;
-  top:0!important;
-  left:0!important;
-  right:0!important;
-  bottom:calc(var(--meg-dock-height,var(--meg-dock-height-fallback)) + var(--meg-dock-gap))!important;
-  width:auto!important;
-  height:auto!important;
-  max-height:none!important;
-  z-index:500!important;
-  pointer-events:auto!important;
-}
-.meg2-shell>.meg2-period-overlay{
-  z-index:620!important;
-}
-.meg2-shell>.meg2-dock{
-  z-index:700!important;
-  pointer-events:auto!important;
+/* Dock único: cinco colunas iguais; nenhuma view altera a geometria. */
+.meg2-dock{
+  position:absolute!important;left:0!important;right:0!important;bottom:0!important;
+  width:100%!important;height:var(--meg-dock-height)!important;
+  min-height:var(--meg-dock-height)!important;max-height:var(--meg-dock-height)!important;
+  margin:0!important;padding:5px 6px calc(5px + env(safe-area-inset-bottom))!important;
+  display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;align-items:stretch!important;
+  box-sizing:border-box!important;overflow:visible!important;contain:layout!important;isolation:isolate!important;z-index:700!important;
 }
 .meg2-dock>button{
-  pointer-events:auto!important;
-  touch-action:manipulation!important;
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  height:58px!important;min-height:58px!important;max-height:58px!important;
+  padding:0!important;margin:0!important;box-sizing:border-box!important;
+  position:relative!important;transform:none!important;pointer-events:auto!important;touch-action:manipulation!important;z-index:2!important;
 }
-.meg2-dock>button:last-child:not(.active){
-  color:#d4e3e3!important;
+.meg2-dock>button:not(.meg2-new){
+  display:grid!important;grid-template-rows:28px 10px!important;grid-template-columns:1fr!important;
+  place-items:center!important;align-content:center!important;row-gap:3px!important;
+}
+.meg2-dock>button:not(.meg2-new)>svg{
+  grid-row:1!important;width:22px!important;height:22px!important;min-width:22px!important;min-height:22px!important;
+  max-width:22px!important;max-height:22px!important;place-self:center!important;transform:none!important;
+}
+.meg2-dock>button:not(.meg2-new)>span:last-child{
+  grid-row:2!important;height:10px!important;min-height:10px!important;line-height:10px!important;margin:0!important;padding:0!important;
+}
+.meg2-dock>button.active::before{
+  content:""!important;position:absolute!important;inset:2px 5px 3px!important;border-radius:12px!important;
+  pointer-events:none!important;z-index:0!important;
+}
+.meg2-dock>button>svg,.meg2-dock>button>span,.meg2-dock>button>small{position:relative;z-index:1}
+
+/* Novo pertence à terceira coluna; somente o círculo sobe acima do dock. */
+.meg2-dock>.meg2-new,.meg2-dock>.meg2-new.active{
+  grid-column:3!important;display:block!important;overflow:visible!important;contain:none!important;
+}
+.meg2-dock>.meg2-new::before,.meg2-dock>.meg2-new.active::before{display:none!important}
+.meg2-dock>.meg2-new>span:first-child{
+  position:absolute!important;left:50%!important;top:-14px!important;right:auto!important;bottom:auto!important;
+  width:50px!important;height:50px!important;min-width:50px!important;min-height:50px!important;max-width:50px!important;max-height:50px!important;
+  aspect-ratio:1/1!important;margin-left:-25px!important;padding:0!important;border-radius:50%!important;
+  box-sizing:border-box!important;transform:none!important;scale:1!important;z-index:3!important;pointer-events:none!important;
+}
+.meg2-dock>.meg2-new>small{
+  position:absolute!important;left:0!important;right:0!important;bottom:2px!important;
+  margin:0!important;line-height:1!important;text-align:center!important;z-index:3!important;
+}
+.meg2-badge-wrap{
+  grid-row:1!important;position:relative!important;width:28px!important;height:28px!important;
+  display:grid!important;place-items:center!important;margin:0!important;
+}
+.meg2-badge-wrap>svg{width:22px!important;height:22px!important}
+.meg2-badge-wrap b{top:-5px!important;right:-8px!important}
+
+/* Overlays ficam no mesmo shell e nunca cobrem o dock. */
+.meg2-shell>.meg2-overlay{
+  position:absolute!important;top:0!important;left:0!important;right:0!important;
+  bottom:calc(var(--meg-dock-height) + var(--meg-dock-gap))!important;
+  width:auto!important;height:auto!important;max-height:none!important;z-index:500!important;pointer-events:auto!important;
+}
+.meg2-shell>.meg2-period-overlay{z-index:620!important}
+.meg2-menu-sheet,.meg2-period-sheet{
+  max-height:calc(var(--meg-app-height) - var(--meg-dock-height) - var(--meg-dock-gap) - 24px)!important;
+  overflow-y:auto!important;overflow-x:hidden!important;
 }
 
-/* Um único gutter horizontal para Lançamentos e Pendentes. */
-.meg2-payables{
-  padding-left:var(--meg-content-gutter)!important;
-  padding-right:var(--meg-content-gutter)!important;
+.meg2-payables,.meg2-cards{
+  padding-left:var(--meg-content-gutter)!important;padding-right:var(--meg-content-gutter)!important;
+}
+.meg2-pending-list,.meg2-statement-list{
+  min-height:0!important;scroll-padding-bottom:12px!important;padding-bottom:12px!important;
 }
 
-/* Centro geométrico explícito do botão +, sem depender de arredondamento visual. */
-.meg2-new{
-  grid-column:3!important;
-  justify-self:stretch!important;
+@media(max-width:390px){
+  .meg2-user{max-width:88px!important}
+  .meg2-user strong{max-width:46px!important}
 }
-.meg2-new>span:first-child{
-  left:50%!important;
-  right:auto!important;
-  margin-left:-25px!important;
+@media(max-width:340px){
+  .meg2-user{max-width:76px!important}
+  .meg2-user strong{max-width:38px!important;font-size:7.5px!important}
 }

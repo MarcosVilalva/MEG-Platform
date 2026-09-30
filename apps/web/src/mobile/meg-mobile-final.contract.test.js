@@ -45,18 +45,18 @@ assert.match(css, /env\(safe-area-inset-bottom\)/,
   'Dock deve respeitar safe area inferior.');
 assert.match(
   css,
-  /grid-template-rows:auto minmax\(0,1fr\) calc\(68px \+ env\(safe-area-inset-bottom\)\)/,
-  'Shell deve reservar uma faixa inferior fixa para o dock em todas as telas.',
+  /MEG MOBILE CLEANROOM V2[\s\S]*grid-template-rows:auto minmax\(0,1fr\) calc\(var\(--meg-dock-height\) \+ var\(--meg-dock-gap\)\)/,
+  'Shell clean-room deve reservar faixa própria para conteúdo e dock.',
 );
 assert.match(
   css,
-  /\.meg2-dock\{[\s\S]*height:calc\(68px \+ env\(safe-area-inset-bottom\)\)[\s\S]*min-height:calc\(68px \+ env\(safe-area-inset-bottom\)\)[\s\S]*max-height:calc\(68px \+ env\(safe-area-inset-bottom\)\)/,
-  'Dock deve manter exatamente a mesma altura em qualquer tela.',
+  /\.meg2-dock\{[\s\S]*height:var\(--meg-dock-height\)!important[\s\S]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/,
+  'Dock canônico deve ter altura única e cinco colunas iguais.',
 );
 assert.match(
   css,
-  /\.meg2-new\{[\s\S]*display:block!important[\s\S]*position:relative!important[\s\S]*\.meg2-new>span:first-child\{[\s\S]*position:absolute!important[\s\S]*left:calc\(50% - 25px\)!important[\s\S]*width:50px!important[\s\S]*min-width:50px!important[\s\S]*max-width:50px!important/,
-  'Botão central Novo deve ficar isolado do fluxo do dock para nunca estreitar ou redimensionar durante a navegação.',
+  /\.meg2-dock>\.meg2-new[\s\S]*grid-column:3!important[\s\S]*\.meg2-dock>\.meg2-new>span:first-child\{[\s\S]*left:50%!important[\s\S]*width:50px!important[\s\S]*height:50px!important[\s\S]*aspect-ratio:1\/1!important/,
+  'Botão Novo deve permanecer na terceira coluna com círculo 50x50 e proporção fixa.',
 );
 assert.match(
   mobile,
@@ -65,8 +65,8 @@ assert.match(
 );
 assert.match(
   css,
-  /\.meg2-brand\{[\s\S]*width:48px[\s\S]*padding:0[\s\S]*overflow:hidden[\s\S]*\.meg2-brand img\{width:100%;height:100%;object-fit:cover/,
-  'Marca MEG deve preencher integralmente o card esquerdo do cabeçalho sem alterar sua dimensão.',
+  /\.meg2-brand\{[\s\S]*background:transparent!important[\s\S]*\.meg2-brand img\{[\s\S]*object-fit:contain!important/,
+  'Marca MEG deve aparecer sem card de fundo e manter proporção integral.',
 );
 assert.match(mobile, /PeriodSheet[\s\S]*Mês[\s\S]*Intervalo[\s\S]*Tudo/,
   'Filtro de período final deve ser novo e preservar Mês, Intervalo e Tudo.');
