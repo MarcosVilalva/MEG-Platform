@@ -27,9 +27,9 @@ assert.doesNotMatch(phoenix, /PhoenixMobileReferenceScreens/,
   'Shell não pode reintroduzir a implementação intermediária das três telas.');
 assert.match(phoenix, /if \(nativeOperational && viewData && \['home','movements','cards','payables','history','cashflow','analytics','settings'\]\.includes\(view\)\)[\s\S]*<MegMobileFinal[\s\S]*return <div className="phoenix-v15"/,
   'Telas operacionais do APK devem retornar a árvore mobile clean-room antes do shell Phoenix antigo.');
-assert.match(mobile, /cards\.concat\(cards, cards\)/,
+assert.match(mobile, /items\.concat\(items, items\)/,
   'Carrossel de cartões deve possuir cópias circulares para rolagem infinita real.');
-assert.match(mobile, /index < cards\.length[\s\S]*scrollLeft \+=[\s\S]*index >= cards\.length \* 2[\s\S]*scrollLeft \+=/,
+assert.match(mobile, /index < items\.length[\s\S]*scrollLeft \+=[\s\S]*index >= items\.length \* 2[\s\S]*scrollLeft \+=/,
   'Carrossel deve recircular para frente e para trás sem travar nas extremidades.');
 assert.match(mobile, /scroll-snap|scrollIntoView/,
   'Carrossel deve manter interação por gesto e centralização visual.');
@@ -77,9 +77,9 @@ assert.match(mobile, /new URL\(relative, document\.baseURI\)\.href/,
 
 for (const relative of [
   '../../public/assets/cards/approved-v6/mercado.webp',
-  '../../public/assets/cards/latam-pass-platinum.webp',
+  '../../public/assets/cards/approved-v6/latam.webp',
   '../../public/assets/cards/approved-v6/azul.webp',
-  '../../public/assets/cards/riachuelo-mastercard-visual.svg',
+  '../../public/assets/cards/approved-v6/riachuelo.webp',
 ]) {
   assert.equal(existsSync(new URL(relative, import.meta.url)), true,
     `Arte de cartão obrigatória ausente: ${relative}`);
@@ -87,7 +87,7 @@ for (const relative of [
 
 assert.match(
   mobile,
-  /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*latam-pass-platinum\.webp[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*riachuelo-mastercard-visual\.svg/i,
+  /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*approved-v6\/latam\.webp[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*approved-v6\/riachuelo\.webp/i,
   'Carrossel deve resolver nomes reais e apelidos para artes horizontais estáveis.',
 );
 assert.match(css, /CONTRATO DE VIEWPORT FIXO[\s\S]*\.meg2-scroll\{[\s\S]*overflow:hidden!important/,
@@ -366,3 +366,34 @@ assert.ok(
 );
 
 console.log('Contrato da reconstrução mobile final validado.');
+
+assert.match(
+  mobile,
+  /VEROCARD_ART_URL[\s\S]*benefit-verocard[\s\S]*Verocard Alimentação[\s\S]*benefitBalance[\s\S]*benefitCredits[\s\S]*benefitUsed/,
+  'Cartões deve incluir Verocard como cartão-benefício com saldo, recargas e consumo reais.',
+);
+assert.match(
+  mobile,
+  /data\.cards\.filter\(\(card\) => card\.isActive !== false\)[\s\S]*carouselCards/,
+  'Carrossel deve usar somente cartões de crédito ativos do cadastro.',
+);
+assert.match(
+  cardCenter,
+  /Resumo[\s\S]*Fatura atual[\s\S]*Próximas[\s\S]*Parcelas[\s\S]*Histórico/,
+  'Central do cartão de crédito deve preservar as visões validadas de fatura e histórico.',
+);
+assert.match(
+  cardCenter,
+  /MegMobileBenefitCardCenter[\s\S]*Saldo disponível[\s\S]*Recargas no mês[\s\S]*Consumo no mês[\s\S]*Entradas[\s\S]*Saídas/,
+  'Central do Verocard deve usar regra própria de benefício, sem limite ou fatura futura.',
+);
+assert.doesNotMatch(
+  mobile,
+  /<dt>Forma de pagamento<\/dt><dd>Cartão de crédito<\/dd>/,
+  'Detalhe da compra não deve repetir forma de pagamento quando o cartão já é a fonte da verdade.',
+);
+assert.match(
+  mobile,
+  /Fatura \/ competência[\s\S]*Vencimento[\s\S]*Parcelamento/,
+  'Detalhe da compra deve informar competência, vencimento e parcelamento.',
+);
