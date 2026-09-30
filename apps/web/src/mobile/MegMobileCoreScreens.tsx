@@ -188,22 +188,26 @@ export function MegMobileMovements({
         const account = event.account?.name || '';
         const method = event.paymentMethod?.name || event.sourceDetails?.paymentMethod || '';
         const detail = [category, account].filter(Boolean).join(' · ');
-        return <button className={`meg3-event-card ${tone} kind-${mobileMovementKind(event)}`} type="button" key={event.id} onClick={() => onOpenEvent(event)}>
-          <span className="meg3-event-icon"><EventContextGlyph event={event}/></span>
-          <span className="meg3-event-copy">
-            <span className="meg3-event-meta">
-              <small>{shortDate(event.date)}</small>
-              <i className={`status-${statusTone(event)}`}>{statusLabel(event)}</i>
+        return <article className={`meg3-event-card ${tone} kind-${mobileMovementKind(event)}`} key={event.id}>
+          <button className="meg3-event-open" type="button" aria-label={`Abrir ${event.description}`} onClick={() => onOpenEvent(event)}>
+            <span className="meg3-event-icon"><EventContextGlyph event={event}/></span>
+            <span className="meg3-event-copy">
+              <span className="meg3-event-meta">
+                <small>{shortDate(event.date)}</small>
+                <i className={`status-${statusTone(event)}`}>{statusLabel(event)}</i>
+              </span>
+              <strong>{event.description}</strong>
+              <em>{detail}</em>
+              <i className={method ? 'meg3-payment-label' : 'meg3-payment-label muted'}>{method || ''}</i>
             </span>
-            <strong>{event.description}</strong>
-            <em>{detail}</em>
-            <i className={method ? 'meg3-payment-label' : 'meg3-payment-label muted'}>{method || 'Forma não informada'}</i>
-          </span>
-          <span className="meg3-event-value">
-            <b>{signed > 0 ? '+' : '-'}{money.format(Math.abs(signed))}</b>
-            <i><MegIcon name="chevron-right" size={15}/></i>
-          </span>
-        </button>;
+            <span className="meg3-event-value">
+              <b>{signed > 0 ? '+' : '-'}{money.format(Math.abs(signed))}</b>
+            </span>
+          </button>
+          <button className="meg3-event-edit" type="button" aria-label={`Editar ${event.description}`} title="Editar lançamento" onClick={() => onOpenEvent(event)}>
+            <MegIcon name="edit" size={15}/>
+          </button>
+        </article>;
       })}
       {!rows.length ? <div className="meg3-empty">Nenhum lançamento neste filtro.</div> : null}
     </section>
