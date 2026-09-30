@@ -558,7 +558,7 @@ export function MegMobileLaunchSheet({
 
         <section className="meg3-launch-section meg3-data-grid">
           <label className="meg3-launch-field"><span>{mode === 'income' ? 'Data do recebimento' : credit ? 'Data da compra' : pending ? 'Vencimento' : 'Data do lançamento'}</span><input type="date" value={date} onChange={(e) => setDate(e.target.value)}/></label>
-          <label className={`meg3-launch-field meg3-value-field ${negative ? 'negative' : ''}`}><span>Valor</span><div><b>{negative ? '-R
+          <label className={`meg3-launch-field meg3-value-field ${negative ? 'negative' : ''}`}><span>Valor</span><div><b>{negative ? '-R$' : 'R$'}</b><input inputMode="numeric" value={amount} onChange={(e) => setAmount(formatCurrencyInput(e.target.value))} placeholder="0,00"/>{mode === 'expense' ? <button type="button" className={`meg3-value-sign ${negative ? 'active' : ''}`} aria-label={negative ? 'Restaurar valor positivo' : 'Marcar como estorno'} onClick={() => setNegative(v => !v)}>−</button> : null}</div></label>
         </section>
 
         {mode === 'expense' && !credit ? <section className="meg3-launch-section">
