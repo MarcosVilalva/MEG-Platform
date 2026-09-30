@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { MegMobilePicker, type MegMobilePickerOption } from './MegMobilePicker';
-import { MegIcon, resolveFinancialIcon } from './MegMobileIcon';
+import { MegIcon, resolveFinancialIcon, type MegIconName } from './MegMobileIcon';
 import { clearMegMobileHistorySuggestionCache, loadMegMobileHistorySuggestions, type MegMobileHistorySuggestion } from './meg-mobile-description-history';
 import { cardDueDateForStatement, cardMonthPlus, cardStatementMonthForPurchase } from '../phoenix/data/card-dates';
 import {
@@ -54,6 +54,46 @@ function formatCurrencyInput(raw: string) {
 
 function normalize(value: unknown) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
+}
+
+function asset(path: string) {
+  const configuredBase = import.meta.env.BASE_URL || '/';
+  const base = configuredBase.endsWith('/') ? configuredBase : configuredBase + '/';
+  const relative = base + path.replace(/^\/+/, '');
+  try {
+    return typeof document !== 'undefined' ? new URL(relative, document.baseURI).href : relative;
+  } catch {
+    return relative;
+  }
+}
+
+function paymentIcon(method: PhoenixReadModel['paymentMethods'][number]): MegIconName {
+  const source = normalize(method.name) + ' ' + normalize(method.type);
+  if (/verocard|aliment/.test(source)) return 'food';
+  if (/pix|transferencia|ted|doc/.test(source)) return 'arrows-right-left';
+  if (/boleto/.test(source)) return 'receipt';
+  if (/dinheiro|cash/.test(source)) return 'banknote';
+  if (/debito automatico/.test(source)) return 'repeat';
+  if (/cartao|credito|debito/.test(source)) return 'card';
+  if (/deposito|banco/.test(source)) return 'landmark';
+  return 'wallet';
+}
+
+function paymentTone(icon: MegIconName): MegMobilePickerOption['tone'] {
+  if (icon === 'food') return 'yellow';
+  if (icon === 'banknote') return 'green';
+  if (icon === 'card') return 'violet';
+  return 'cyan';
+}
+
+function cardImage(name: string) {
+  const value = normalize(name);
+  if (/latam/.test(value)) return asset('assets/cards/approved-v6/latam.webp');
+  if (/azul/.test(value)) return asset('assets/cards/approved-v6/azul.webp');
+  if (/mercado|meli/.test(value)) return asset('assets/cards/approved-v6/mercado.webp');
+  if (/riachuelo|midway/.test(value)) return asset('assets/cards/approved-v6/riachuelo.webp');
+  if (/nubank/.test(value)) return asset('assets/cards/nubank-visual.svg');
+  return '';
 }
 
 function uniquePickerOptions<T extends { id: string; name: string; group?: string | null }>(items: T[]): MegMobilePickerOption[] {
@@ -187,6 +227,8 @@ export function MegMobileLaunchSheet({
     id: account.id,
     label: account.name,
     subtitle: account.type ? String(account.type) : undefined,
+    icon: isBenefitAccount(account) ? 'food' : 'landmark',
+    tone: isBenefitAccount(account) ? 'yellow' : 'cyan',
   }));
   const categoryOptions: MegMobilePickerOption[] = uniquePickerOptions(categories);
   const paymentOptions: MegMobilePickerOption[] = methods
@@ -197,17 +239,25 @@ export function MegMobileLaunchSheet({
       if (expensePaymentMode === 'credit') return isCreditMethod(method);
       return !isCreditMethod(method) && !isCrediarioMethod(method);
     })
-    .map((method) => ({
-      id: method.id,
-      label: method.name,
-      subtitle: method.type ? String(method.type) : undefined,
-    }));
+    .map((method) => {
+      const icon = paymentIcon(method);
+      return {
+        id: method.id,
+        label: method.name,
+        subtitle: method.type ? String(method.type) : undefined,
+        icon,
+        tone: paymentTone(icon),
+      };
+    });
   const cardOptions: MegMobilePickerOption[] = data.cards
     .filter((card) => card.isActive !== false)
     .map((card) => ({
       id: card.id,
       label: card.name,
       subtitle: card.lastFour ? `Final ${card.lastFour}` : 'Cartão de crédito',
+      imageSrc: cardImage(card.name) || undefined,
+      icon: cardImage(card.name) ? undefined : 'card',
+      tone: 'violet',
     }));
 
   const selectedMethod = methods.find((item) => item.id === paymentMethodId);
@@ -494,7 +544,7 @@ export function MegMobileLaunchSheet({
   }
 
   return <div className="meg3-form-overlay" role="presentation">
-    <section className="meg3-form-sheet meg3-launch-flow" data-editor={event ? 'true' : 'false'} data-launch-mode={mode} data-launch-step={step} role="dialog" aria-modal="true" aria-label={title}>
+    <section className="meg3-form-sheet meg3-launch-flow" data-editor={event ? 'true' : 'false'} data-launch-mode={mode} data-launch-step={step} data-busy={busy ? 'true' : 'false'} role="dialog" aria-modal="true" aria-label={title}>
       <div className="meg3-app-header">{appHeader}</div>
 
       <header className="meg3-launch-head">
@@ -511,7 +561,8 @@ export function MegMobileLaunchSheet({
         </div>
       </main> : null}
 
-      {step === 'form' ? <main className="meg3-launch-scroll" data-meg-scroll-region="true">
+      {step === 'form' ? <main className="meg3-launch-scroll" data-meg-scroll-region="true" aria-busy={busy}>
+        <fieldset className="meg3-launch-fieldset" disabled={busy}>
         <section className="meg3-launch-section meg3-smart-description">
           <label className="meg3-launch-field">
             <span>Descrição</span>
@@ -535,8 +586,8 @@ export function MegMobileLaunchSheet({
         {mode === 'expense' ? <section className="meg3-launch-section">
           <span className="meg3-section-label">Modalidade de pagamento</span>
           <div className="meg3-choice-row">
-            <button type="button" className={expensePaymentMode === 'cash' ? 'active' : ''} onClick={() => setExpensePaymentMode('cash')}>À Vista</button>
-            <button type="button" className={expensePaymentMode === 'credit' ? 'active' : ''} onClick={() => setExpensePaymentMode('credit')}>Crédito</button>
+            <button type="button" className={expensePaymentMode === 'cash' ? 'active' : ''} onClick={() => setExpensePaymentMode('cash')}><MegIcon name="banknote" size={16}/><span>À Vista</span></button>
+            <button type="button" className={expensePaymentMode === 'credit' ? 'active' : ''} onClick={() => setExpensePaymentMode('credit')}><MegIcon name="card" size={16}/><span>Crédito</span></button>
           </div>
         </section> : null}
 
@@ -581,6 +632,7 @@ export function MegMobileLaunchSheet({
 
         <label className="meg3-launch-field meg3-notes-field"><span>Observações</span><textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value.toLocaleUpperCase('pt-BR'))} placeholder="Opcional"/></label>
         {message ? <div className="meg3-form-message" role="status">{message}</div> : null}
+        </fieldset>
       </main> : null}
 
       {step === 'success' ? <main className="meg3-launch-success">
