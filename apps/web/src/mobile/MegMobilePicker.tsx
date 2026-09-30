@@ -9,6 +9,7 @@ export type MegMobilePickerOption = {
   subtitle?: string;
   badge?: string;
   icon?: MegIconName;
+  imageSrc?: string;
   tone?: 'red' | 'green' | 'yellow' | 'cyan' | 'violet';
 };
 
