@@ -505,11 +505,14 @@ assert.match(
   /statement\?\.netAmount[\s\S]*statementAmount/,
   'Fatura atual deve exibir o valor integral da competência, não apenas o saldo ainda pagável.',
 );
-assert.match(
-  mobileIcons,
-  /game ?pass[\s\S]*gamepad[\s\S]*capilar[\s\S]*sparkles[\s\S]*microondas[\s\S]*appliance[\s\S]*shopee[\s\S]*shopping-bag/,
-  'Resolvedor semântico deve reconhecer jogos, beleza, eletrodomésticos e e-commerce.',
-);
+assert.match(mobileIcons, /game \\?pass[\s\S]{0,180}return 'gamepad'/,
+  'Resolvedor semântico deve reconhecer jogos e assinaturas gamer.');
+assert.match(mobileIcons, /capilar[\s\S]{0,180}return 'sparkles'/,
+  'Resolvedor semântico deve reconhecer beleza e cuidados pessoais.');
+assert.match(mobileIcons, /microondas[\s\S]{0,240}return 'appliance'/,
+  'Resolvedor semântico deve reconhecer eletrodomésticos.');
+assert.match(mobileIcons, /shopee[\s\S]{0,180}return 'shopping-bag'/,
+  'Resolvedor semântico deve reconhecer e-commerce.');
 assert.match(
   cardCenterCss,
   /-webkit-text-size-adjust:100%[\s\S]*\.meg3-cardcenter-tabs button\{[\s\S]*font-size:[^;]+!important[\s\S]*letter-spacing:-\.035em/,
