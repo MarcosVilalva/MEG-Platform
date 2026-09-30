@@ -19,3 +19,19 @@
 @media(max-width:350px){.meg3-data-grid,.meg3-credit-dates{grid-template-columns:1fr}.meg3-choice-row{grid-template-columns:1fr}.meg3-launch-type-cards button{min-height:72px}.meg3-launch-scroll{padding-inline:9px}}
 @media(max-height:700px){.meg3-launch-head{min-height:50px}.meg3-launch-choose{padding-top:14px}.meg3-launch-intro{margin-bottom:15px}.meg3-launch-type-cards button{min-height:68px}.meg3-launch-scroll{padding-top:7px}.meg3-launch-section{margin-bottom:7px}.meg3-form-actions{min-height:52px}.meg3-form-actions button{min-height:42px}}
 @media(min-width:700px){.meg3-form-sheet.meg3-launch-flow{width:min(92vw,720px)}.meg3-launch-scroll{padding-inline:22px}.meg3-launch-type-cards{max-width:520px}}
+
+/* Cards de tipo: cor é linguagem, não enfeite. */
+.meg3-launch-type-cards button:nth-child(1){
+ border-color:rgba(255,83,111,.62);background:radial-gradient(circle at 10% 50%,rgba(255,65,100,.30),transparent 36%),linear-gradient(135deg,rgba(122,25,48,.72),rgba(62,17,33,.72) 58%,rgba(3,54,57,.86));
+ box-shadow:inset 0 1px rgba(255,255,255,.06),0 0 24px rgba(255,53,91,.10)
+}
+.meg3-launch-type-cards button:nth-child(2){
+ border-color:rgba(62,238,155,.55);background:radial-gradient(circle at 10% 50%,rgba(35,225,137,.27),transparent 36%),linear-gradient(135deg,rgba(13,105,72,.74),rgba(7,67,53,.76) 58%,rgba(3,54,57,.86));
+ box-shadow:inset 0 1px rgba(255,255,255,.06),0 0 24px rgba(38,225,142,.09)
+}
+.meg3-launch-type-cards button:nth-child(3){
+ border-color:rgba(246,209,75,.54);background:radial-gradient(circle at 10% 50%,rgba(235,194,45,.26),transparent 36%),linear-gradient(135deg,rgba(113,91,21,.76),rgba(70,59,18,.76) 58%,rgba(3,54,57,.86));
+ box-shadow:inset 0 1px rgba(255,255,255,.06),0 0 24px rgba(236,196,50,.09)
+}
+.meg3-launch-type-cards button:nth-child(1) b{color:#ff8c9e}.meg3-launch-type-cards button:nth-child(2) b{color:#70efb2}.meg3-launch-type-cards button:nth-child(3) b{color:#f4d864}
+.meg3-launch-type-cards button:nth-child(1) small,.meg3-launch-type-cards button:nth-child(2) small,.meg3-launch-type-cards button:nth-child(3) small{color:rgba(240,255,253,.68)}
