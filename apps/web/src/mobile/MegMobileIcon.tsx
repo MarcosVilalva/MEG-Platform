@@ -4,7 +4,7 @@ export type MegIconName =
   | 'cart' | 'car' | 'wifi' | 'phone' | 'building' | 'play' | 'card'
   | 'banknote' | 'circle-dollar' | 'house' | 'fuel' | 'droplet' | 'heart-pulse'
   | 'graduation-cap' | 'ticket' | 'shopping-bag' | 'repeat' | 'landmark' | 'receipt'
-  | 'piggy-bank' | 'briefcase' | 'cup-soda' | 'sandwich' | 'arrow-up' | 'arrow-down' | 'arrows-right-left'
+  | 'piggy-bank' | 'briefcase' | 'cup-soda' | 'sandwich' | 'gamepad' | 'sparkles' | 'appliance' | 'arrow-up' | 'arrow-down' | 'arrows-right-left'
   | 'x' | 'edit' | 'chevron-left' | 'chevron-right' | 'chevron-down' | 'check-line';
 
 type IconProps = { name: MegIconName; size?: number; strokeWidth?: number; className?: string };
@@ -66,6 +66,9 @@ export function MegIcon({ name, size = 22, strokeWidth = 1.9, className }: IconP
   if (key === 'briefcase') return <svg {...base}><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V4h8v3M3 12h18M10 12v2h4v-2"/></svg>;
   if (key === 'cup-soda') return <svg {...base}><path d="m6 8 1 13h10l1-13Z"/><path d="M5 8h14M8 4h8l-1 4"/></svg>;
   if (key === 'sandwich') return <svg {...base}><path d="M4 11h16a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4Z"/><path d="M4 14h16M5 17h14l-2 3H7Z"/></svg>;
+  if (key === 'gamepad') return <svg {...base}><path d="M8 8h8a6 6 0 0 1 5.7 7.9l-.7 2.1a2.5 2.5 0 0 1-4.2.9L15 17H9l-1.8 1.9A2.5 2.5 0 0 1 3 18l-.7-2.1A6 6 0 0 1 8 8Z"/><path d="M7 12v4M5 14h4M17 13h.01M19 15h.01"/></svg>;
+  if (key === 'sparkles') return <svg {...base}><path d="m12 3 1.2 3.2L16.5 7.5l-3.3 1.3L12 12l-1.2-3.2-3.3-1.3 3.3-1.3Z"/><path d="m18 12 .8 2.2L21 15l-2.2.8L18 18l-.8-2.2L15 15l2.2-.8Z"/><path d="m6 13 .7 1.8 1.8.7-1.8.7L6 18l-.7-1.8-1.8-.7 1.8-.7Z"/></svg>;
+  if (key === 'appliance') return <svg {...base}><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/><circle cx="8" cy="7" r=".7"/><circle cx="11" cy="7" r=".7"/><rect x="6" y="12" width="9" height="4" rx="1"/><path d="M18 12v4"/></svg>;
   if (key === 'x') return <svg {...base}><path d="M18 6 6 18M6 6l12 12"/></svg>;
   if (key === 'chevron-left') return <svg {...base}><path d="m15 18-6-6 6-6"/></svg>;
   if (key === 'chevron-right') return <svg {...base}><path d="m9 18 6-6-6-6"/></svg>;
@@ -102,6 +105,10 @@ function classifyText(value: string): MegIconName | null {
   if (/transporte|uber|99|carro|veiculo|estacionamento|pedagio/.test(value)) return 'car';
   if (/saude|farmacia|remedio|medic|consulta|hospital|odont/.test(value)) return 'heart-pulse';
   if (/educacao|escola|faculdade|curso|mensalidade escolar|livro/.test(value)) return 'graduation-cap';
+  if (/game ?pass|xbox|playstation|steam|nintendo|jogo|games?/.test(value)) return 'gamepad';
+  if (/capilar|cabelo|cosmetic|beleza|shampoo|condicionador|perfume|maquiagem|salao/.test(value)) return 'sparkles';
+  if (/microondas|eletrodomest|geladeira|freezer|fogao|air ?fryer|liquidificador|cafeteira|lavadora|maquina de lavar/.test(value)) return 'appliance';
+  if (/shopee|amazon|mercado livre|aliexpress|magalu|magazine luiza/.test(value)) return 'shopping-bag';
   if (/lazer|cinema|viagem|evento|show|entretenimento/.test(value)) return 'ticket';
   if (/assinatura|stream|netflix|spotify|youtube/.test(value)) return 'repeat';
   if (/roupa|vestuario|compra|loja|shopping/.test(value)) return 'shopping-bag';
