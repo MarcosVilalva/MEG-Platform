@@ -104,16 +104,16 @@ function isVerocardMethod(method: PhoenixReadModel['paymentMethods'][number]) {
 function cardArt(name: string) {
   const normalized = normalizeCardText(name);
   if (normalized.includes('mercado') || normalized.includes('meli')) {
-    return 'https://http2.mlstatic.com/storage/pog-cm-admin/calm-assets/cartao--9da2bc3a.png';
+    return asset('assets/cards/approved-v6/mercado.webp');
   }
   if (normalized.includes('latam')) {
     return 'https://s.latamairlines.com/images/web-offer-creditcards/itau_latampass_mc_platinum.png';
   }
   if (normalized.includes('azul')) {
-    return 'https://www.voeazul.com.br/content/dam/azul/voe-azul/institucional-tudoazul/parceiros/tabs/tabs-cartao.png';
+    return asset('assets/cards/approved-v6/azul.webp');
   }
   if (normalized.includes('riachuelo') || normalized.includes('midway')) {
-    return 'https://media.plusdin.com.br/uploads/2024/02/cartao-riachuelo-1.png';
+    return asset('assets/cards/approved-v6/riachuelo.webp');
   }
   if (normalized.includes('nubank')) return asset('assets/cards/nubank-visual.svg');
   return '';

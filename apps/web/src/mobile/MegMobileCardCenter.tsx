@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { cardDueDateForStatement } from '../phoenix/data/card-dates';
 import './meg-mobile-card-center.css';
-import { MegIcon } from './MegMobileIcon';
+import { MegIcon, resolveFinancialIcon } from './MegMobileIcon';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -100,6 +100,11 @@ export type MegMobileCardCenterRow = {
 };
 
 type CreditTab = 'summary' | 'current' | 'upcoming' | 'installments' | 'history';
+
+function transactionIcon(description: string, category?: string, kind?: 'credit' | 'debit') {
+  if (kind === 'credit') return 'banknote';
+  return resolveFinancialIcon({ description, categoryName: category });
+}
 
 function allCardRows(card: PhoenixReadModel['cards'][number]): MegMobileCardCenterRow[] {
   return (card.purchases || []).flatMap((purchase) => (purchase.entries || []).map((entry) => ({
@@ -207,11 +212,15 @@ export function MegMobileCardCenter({
 
       <section className="meg3-cardcenter-list" data-meg-scroll-region="true">
         {tab === 'summary' && !rows.length && filtered.length ? <div className="meg3-cardcenter-context">Fatura atual sem lançamentos · exibindo próximas compras</div> : null}
-        {filtered.map((row) => <button type="button" key={row.id} onClick={() => onOpenRow?.(row)}>
-          <span><strong>{row.description}</strong><small>{shortDate(row.date)}{row.statementMonth ? ` · fatura ${monthLabel(row.statementMonth)}` : ''}{row.installmentNo && row.installmentQty ? ` · parcela ${row.installmentNo}/${row.installmentQty}` : ''}</small></span>
-          <b>{money.format(Number(row.amount || 0))}</b>
-          {onOpenRow ? <i><MegIcon name="chevron-right" size={14}/></i> : null}
-        </button>)}
+        {filtered.map((row) => {
+          const icon = transactionIcon(row.description, row.category);
+          return <button type="button" key={row.id} onClick={() => onOpenRow?.(row)}>
+            <span className="meg3-cardcenter-row-icon"><MegIcon name={icon} size={18}/></span>
+            <span className="meg3-cardcenter-row-copy"><strong>{row.description}</strong><small>{shortDate(row.date)}{row.statementMonth ? ` · fatura ${monthLabel(row.statementMonth)}` : ''}{row.installmentNo && row.installmentQty ? ` · parcela ${row.installmentNo}/${row.installmentQty}` : ''}</small></span>
+            <b>{money.format(Number(row.amount || 0))}</b>
+            {onOpenRow ? <i><MegIcon name="chevron-right" size={14}/></i> : null}
+          </button>;
+        })}
         {!filtered.length ? <div className="meg3-cardcenter-empty">{tab === 'upcoming' ? 'Nenhuma fatura futura projetada.' : tab === 'current' ? 'Nenhum lançamento na fatura atual.' : 'Nenhum lançamento encontrado.'}</div> : null}
       </section>
 
@@ -286,11 +295,15 @@ export function MegMobileBenefitCardCenter({
       </section>
 
       <section className="meg3-cardcenter-list benefit" data-meg-scroll-region="true">
-        {filtered.map((row)=><button key={row.id} type="button" onClick={()=>row.eventId && onOpenEvent?.(row.eventId)}>
-          <span><strong>{row.description}</strong><small>{shortDate(row.date)}{row.category ? ` · ${row.category}` : ''}</small></span>
-          <b className={row.kind}>{row.kind==='credit'?'+':'−'}{money.format(Math.abs(row.amount))}</b>
-          {row.eventId ? <i><MegIcon name="chevron-right" size={14}/></i> : null}
-        </button>)}
+        {filtered.map((row)=>{
+          const icon = transactionIcon(row.description, row.category, row.kind);
+          return <button key={row.id} type="button" onClick={()=>row.eventId && onOpenEvent?.(row.eventId)}>
+            <span className="meg3-cardcenter-row-icon"><MegIcon name={icon} size={18}/></span>
+            <span className="meg3-cardcenter-row-copy"><strong>{row.description}</strong><small>{shortDate(row.date)}{row.category ? ` · ${row.category}` : ''}</small></span>
+            <b className={row.kind}>{row.kind==='credit'?'+':'−'}{money.format(Math.abs(row.amount))}</b>
+            {row.eventId ? <i><MegIcon name="chevron-right" size={14}/></i> : null}
+          </button>;
+        })}
         {!filtered.length ? <div className="meg3-cardcenter-empty">Nenhuma movimentação neste filtro.</div> : null}
       </section>
 
