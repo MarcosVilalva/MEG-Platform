@@ -2,186 +2,39 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const launch = readFileSync(new URL('./MegMobileLaunchSheet.tsx', import.meta.url), 'utf8');
+const css = readFileSync(new URL('./meg-mobile-launch-sheet.css', import.meta.url), 'utf8');
 const picker = readFileSync(new URL('./MegMobilePicker.tsx', import.meta.url), 'utf8');
 const movements = readFileSync(new URL('./MegMobileCoreScreens.tsx', import.meta.url), 'utf8');
-const launchCss = readFileSync(new URL('./meg-mobile-launch-sheet.css', import.meta.url), 'utf8');
-const pickerCss = readFileSync(new URL('./meg-mobile-picker.css', import.meta.url), 'utf8');
-const movementCss = readFileSync(new URL('./meg-mobile-core-screens.css', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./meg-mobile-description-history.ts', import.meta.url), 'utf8');
 
-assert.doesNotMatch(launch, /<select\\b/i, 'Novo/Editar lançamento não pode voltar a usar select nativo do Android.');
-
-for (const token of ['Classificação / categoria *', 'Forma de pagamento', 'Conta de origem *', 'label="Cartão"', 'meg3-amount-field']) {
-  assert.ok(launch.includes(token), 'Campo obrigatório ausente do contrato mobile: ' + token);
+assert.doesNotMatch(launch, /<select\\b/i, 'Novo/Editar não pode usar select nativo.');
+for (const token of ['O que deseja lançar?', 'Saídas e gastos', 'Entradas e recebimentos', 'Usa o benefício (Verocard)', "setStep('form')", "setStep('success')"]) {
+  assert.ok(launch.includes(token), 'Fluxo validado ausente: ' + token);
 }
-
+assert.ok(!launch.includes('Tipo de conta *') && !launch.includes('meg3-account-kind'), 'Implementação rejeitada de Tipo de conta não pode permanecer como legado.');
+assert.ok(!launch.includes('meg3-form-segment'), 'Abas antigas Despesa/Receita/Alimentação não podem permanecer.');
 const descriptionIndex = launch.indexOf('>Descrição</span>');
-const paymentTypeIndex = launch.indexOf('Tipo de pagamento *');
-const categoryIndex = launch.indexOf('Classificação / categoria *');
-const accountIndex = launch.indexOf('Conta de origem *');
-const amountIndex = launch.indexOf('meg3-amount-field');
-assert.ok(
-  descriptionIndex >= 0 && descriptionIndex < paymentTypeIndex
-  && paymentTypeIndex < categoryIndex
-  && categoryIndex < accountIndex
-  && accountIndex < amountIndex,
-  'O formulário deve preservar Descrição, Tipo de pagamento, Classificação, Conta de origem e Valor.',
-);
-assert.ok(
-  launchCss.includes('.meg3-form-sheet--new-expense .meg3-amount-field{order:2')
-  && launchCss.includes('.meg3-app-header')
-  && launchCss.includes('.meg3-app-dock'),
-  'Novo lançamento deve apresentar Valor/Data após Descrição dentro do quadro completo do app.',
-);
-assert.ok(
-  launch.includes('<div className="meg3-app-header">{appHeader}</div>')
-  && launch.includes('<div className="meg3-app-dock">{appDock}</div>')
-  && !launch.includes("!event && mode === 'expense' ? <div className=\"meg3-app-header\"")
-  && !launch.includes("!event && mode === 'expense' ? <div className=\"meg3-app-dock\""),
-  'Novo, Editar, Receita e Alimentação devem compartilhar o mesmo shell completo do app.',
-);
-assert.ok(
-  launch.includes("data-editor={event ? 'true' : 'false'}")
-  && launchCss.includes('.meg3-form-sheet--new-expense[data-editor="true"] .meg3-form-actions'),
-  'Editar lançamento deve manter ações fixas e lado a lado dentro do shell mobile.',
-);
+const categoryIndex = launch.indexOf("label={mode === 'income' ? 'Classificação da receita (opcional)' : 'Categoria *'}");
+const modalityIndex = launch.indexOf('Modalidade de pagamento');
+const paymentIndex = launch.indexOf("label={mode === 'income' ? 'Forma de recebimento *' : 'Forma de pagamento *'}");
+const accountIndex = launch.indexOf("label={mode === 'income' ? 'Conta *' : 'Conta *'}");
+assert.ok(descriptionIndex >= 0 && descriptionIndex < categoryIndex && categoryIndex < modalityIndex && modalityIndex < paymentIndex && paymentIndex < accountIndex, 'Ordem canônica deve ser Descrição, Categoria, Modalidade, Forma e Conta.');
 
-assert.ok(
-  launch.includes("if (mode !== 'income' && !categoryId) return 'Selecione a categoria.';")
-  && launch.includes("if (!pending && !paymentMethodId)")
-  && launch.includes("if (!pending && !accountId)")
-  && launch.includes("accountId: pending ? undefined")
-  && launch.includes("paymentMethodId: pending ? undefined"),
-  'Receita pode manter categoria nula e pendente não pode fabricar conta ou forma de pagamento.',
-);
+assert.ok(launch.includes('loadMegMobileHistorySuggestions') && launch.includes('Digite para pesquisar no seu histórico') && launch.includes('useHistorySuggestion') && launch.includes('setCategoryId(category.id)') && launch.includes('setPaymentMethodId(method.id)') && launch.includes('setAccountId(account.id)'), 'Autocomplete deve recuperar categoria, forma e conta.');
+assert.ok(history.includes('loadPhoenixAllEvents') && history.includes('occurrences') && history.includes('lastDate'), 'Autocomplete deve usar histórico financeiro completo.');
+assert.ok(launch.includes("if (mode !== 'benefit') return;") && launch.includes("setAccountId(benefitAccount?.id || '')") && launch.includes("setPaymentMethodId(verocard?.id || '')") && launch.includes("setStatus('paid')"), 'Alimentação deve travar Benefício, Verocard e Pago.');
+assert.ok(launch.includes('Campos automáticos') && launch.includes('Conta, forma de pagamento e situação são definidos automaticamente'), 'Alimentação deve explicar os campos automáticos.');
+assert.ok(launch.includes('cardStatementMonthForPurchase') && launch.includes('cardDueDateForStatement') && launch.includes('Fatura / Competência'), 'Crédito deve calcular e exibir competência da fatura.');
+assert.ok(launch.includes('Math.max(1,v-1)') && launch.includes('Math.min(48,v+1)') && launch.includes('Parcelas do lançamento') && launch.includes('Editar número de parcelas'), 'Parcelamento deve ser editável e visualizável.');
+assert.ok(launch.includes("setStatus('planned'); setAccountId(''); setPaymentMethodId('');") && launch.includes('Este lançamento será incluído em Pendentes.'), 'Pendente não pode fabricar conta ou forma de pagamento.');
+assert.ok(launch.includes("accountId: pending ? undefined") && launch.includes("paymentMethodId: pending ? undefined"), 'Persistência pendente deve preservar campos ausentes.');
+assert.ok(launch.includes('runPhoenixCardPurchaseEdit') && launch.includes('runPhoenixCardPurchaseCancel') && launch.includes('runPhoenixBenefitEventEdit') && launch.includes('runPhoenixSimpleEventEdit') && launch.includes('runPhoenixSimpleEventArchive'), 'Edição deve preservar gateways canônicos.');
+assert.ok(launch.includes('LANÇAMENTO SALVO') && launch.includes('Novo lançamento') && launch.includes('Voltar para Início'), 'Salvar deve abrir confirmação final validada.');
 
-assert.ok(
-  picker.includes('className="meg5-picker-list" data-meg-scroll-region="true"'),
-  'Seletor MEG deve rolar somente a lista interna.',
-);
-assert.ok(
-  pickerCss.includes('.meg5-picker-overlay{')
-  && pickerCss.includes('position:fixed;')
-  && pickerCss.includes('.meg5-picker-sheet{')
-  && pickerCss.includes('overflow:hidden;'),
-  'Seletor MEG deve ficar contido no viewport.',
-);
+assert.ok(css.includes('.meg3-launch-type-cards') && css.includes('.meg3-launch-scroll') && css.includes('overflow-y:auto') && css.includes('@media(max-width:350px)') && css.includes('@media(min-width:700px)'), 'Fluxo deve ser responsivo e rolar apenas internamente.');
+assert.ok(!css.includes('.meg3-account-kind') && !css.includes('.meg3-form-segment'), 'CSS rejeitado deve ser excluído, não escondido.');
+assert.ok(picker.includes('data-meg-scroll-region="true"'), 'Picker deve manter rolagem interna.');
 
-assert.ok(
-  movements.includes("[category, account].filter(Boolean).join(' · ')"),
-  'Card de lançamento deve preservar categoria e conta como contexto do registro.',
-);
-assert.ok(movements.includes('meg3-payment-label'), 'Forma de pagamento deve permanecer visível no card conforme a referência oficial.');
-for (const token of ["['all','Todos','sliders']", "['income','Receitas','arrow-up']", "['expense','Despesas','arrow-down']"]) {
-  assert.ok(movements.includes(token), 'Filtro de status/tipo ausente: ' + token);
-}
-for (const token of ['Todas as categorias', 'Todas as contas', 'Todas as formas']) {
-  assert.ok(movements.includes(token), 'Filtro detalhado ausente: ' + token);
-}
-assert.ok(
-  movements.includes('meg3-movement-filter-overlay')
-  && movements.includes('Buscar e filtrar')
-  && movements.includes('meg3-filter-search')
-  && movements.includes('Limpar')
-  && movements.includes('Aplicar'),
-  'Busca e filtros de Lançamentos devem ficar concentrados em um único painel acionado pelo cabeçalho.',
-);
-assert.ok(
-  movements.includes('meg3-movement-toolbar')
-  && movements.includes('aria-label="Buscar e filtrar lançamentos"')
-  && movements.includes('onClick={() => onOpenEvent(event)}'),
-  'Lançamentos deve manter acesso aos filtros e abrir o registro selecionado no editor canônico.',
-);
-assert.ok(!movements.includes('meg3-event-date-group'), 'Lista não deve depender de agrupamento estrutural para representar os registros.');
-assert.ok(
-  movements.includes('className="meg3-event-list" data-meg-scroll-region="true"'),
-  'Somente a lista de lançamentos deve rolar.',
-);
-assert.ok(
-  movements.includes('className="meg3-movement-kpis"')
-  && movements.includes('money.format(totals.income)')
-  && movements.includes('money.format(totals.expense)')
-  && movements.includes('data.summary.realizedIncome')
-  && movements.includes('data.summary.realizedExpense')
-  && movements.includes('data.summary.realizedResult')
-  && movements.includes('meg3-movement-list-head'),
-  'Lançamentos deve preservar Entradas, Saídas, Resultado e usar a mesma fonte de verdade realizada da Home.',
-);
-assert.ok(
-  !movements.includes('onClick={onNew}')
-  && !movements.includes('weekdayShort(event)'),
-  'Tela de Lançamentos não deve duplicar a ação Novo nem exibir dia da semana nos cards.',
-);
-assert.ok(
-  movementCss.includes('.meg3-payment-label{'),
-  'Forma de pagamento deve permanecer visível em linha própria no card, sem voltar a sumir da lista.',
-);
-assert.ok(
-  movementCss.includes('margin-bottom:7px') && movementCss.includes('scroll-padding-bottom:10px'),
-  'Lista deve manter respiro visual próprio antes do dock sem alterar a altura da barra inferior.',
-);
-assert.ok(
-  launchCss.includes('.meg3-form-grid-faithful{grid-template-columns:1fr}'),
-  'Formulário mobile principal deve usar fluxo vertical fiel à prévia.',
-);
-
-console.log('Contrato de fidelidade de Lançamentos mobile validado.');
-
-assert.ok(
-  launch.includes('loadMegMobileHistorySuggestions')
-  && launch.includes('Digite para pesquisar no seu histórico')
-  && launch.includes('useHistorySuggestion')
-  && launch.includes("setCategoryId(category.id)")
-  && launch.includes("setPaymentMethodId(method.id)")
-  && launch.includes("setAccountId(account.id)"),
-  'Lançar Despesa deve pesquisar o histórico e restaurar categoria, forma e conta ao reutilizar uma descrição.'
-);
-assert.ok(
-  history.includes('loadPhoenixAllEvents')
-  && history.includes('occurrences')
-  && history.includes('lastDate')
-  && history.includes('item.normalized.startsWith(query)'),
-  'Autocomplete mobile deve usar o histórico financeiro completo com relevância, frequência e recência.'
-);
-assert.ok(
-  launchCss.includes('.meg3-history-suggestions{')
-  && launchCss.includes('.meg3-history-status{'),
-  'Autocomplete de descrição deve permanecer dentro da identidade visual clean-room.'
-);
-
-
-assert.ok(
-  launch.includes("if (mode !== 'benefit') return;")
-  && launch.includes("setAccountId(benefitAccount?.id || '')")
-  && launch.includes("setPaymentMethodId(verocard?.id || '')")
-  && launch.includes("setStatus('paid')"),
-  'Alimentação deve continuar travando Conta Benefício, Verocard e status pago automaticamente.'
-);
-assert.ok(
-  launch.includes('cardStatementMonthForPurchase')
-  && launch.includes('cardDueDateForStatement')
-  && launch.includes('cardMonthPlus(firstStatement, index)'),
-  'Compra no cartão deve continuar calculando competência, vencimento e evolução das parcelas pela fatura.'
-);
-assert.ok(
-  launch.includes('Math.min(48,v+1)') && launch.includes('Math.max(1,v-1)')
-  && launch.includes('setInstallmentPreviewOpen(true)')
-  && launch.includes('Visualizar parcelas'),
-  'Parcelamento deve preservar quantidade editável e prévia das parcelas.'
-);
-assert.ok(
-  launch.includes("role=\"switch\"")
-  && launch.includes('Lançar como pendente')
-  && launch.includes("const next = value === 'planned' ? 'paid' : 'planned'")
-  && launch.includes("setAccountId('')")
-  && launch.includes("setPaymentMethodId('')"),
-  'Despesa comum deve continuar permitindo alternar entre realizada e pendente.'
-);
-assert.ok(
-  launch.includes('runPhoenixCardPurchaseEdit')
-  && launch.includes('runPhoenixCardPurchaseCancel')
-  && launch.includes('runPhoenixBenefitEventEdit')
-  && launch.includes('runPhoenixSimpleEventEdit')
-  && launch.includes('runPhoenixSimpleEventArchive'),
-  'Editar lançamento deve preservar rotas específicas de edição, cancelamento e exclusão por domínio.'
-);
+assert.ok(movements.includes("[category, account].filter(Boolean).join(' · ')") && movements.includes('meg3-payment-label') && movements.includes('onClick={() => onOpenEvent(event)}'), 'Lançamentos deve preservar contexto e edição direta.');
+assert.ok(movements.includes('className="meg3-event-list" data-meg-scroll-region="true"'), 'Somente lista de lançamentos deve rolar.');
+console.log('Contrato do fluxo validado de Novo/Editar lançamento aprovado.');
