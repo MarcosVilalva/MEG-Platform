@@ -1135,3 +1135,15 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   .meg2-card-snapshot .meg2-card-metrics strong{font-size:8.5px}
   .meg2-card-usage>small{font-size:6px}
 }
+
+/* Cartões final: artes sem moldura interna, com ajuste específico do LATAM. */
+.meg2-card-art>img{
+  object-fit:cover!important;
+  padding:0!important;
+  background:transparent!important;
+}
+.meg2-card-art>img[alt*="LATAM"]{
+  transform:scale(1.24);
+  transform-origin:center;
+}
+.meg2-card-art.benefit>img{transform:none!important}
