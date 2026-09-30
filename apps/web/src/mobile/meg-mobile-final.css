@@ -1142,7 +1142,7 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   object-position:center!important;
   padding:0!important;
   background:transparent!important;
-  transform:scale(1.035)!important;
+  transform:none!important;
   transform-origin:center!important;
   image-rendering:auto!important;
 }
