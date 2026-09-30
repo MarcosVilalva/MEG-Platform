@@ -76,12 +76,13 @@
 }
 .meg3-cardcenter-tabs.benefit{grid-template-columns:repeat(3,minmax(0,1fr))}
 .meg3-cardcenter-tabs button{
-  min-height:36px;border:1px solid rgba(55,191,186,.15);border-radius:10px;background:rgba(2,45,48,.74);
-  color:#b5c8c6;font-size:7.2px;font-weight:800;padding:0 2px;white-space:normal;line-height:1.04;
+  min-width:0;min-height:36px;border:1px solid rgba(55,191,186,.15);border-radius:10px;background:rgba(2,45,48,.74);
+  color:#b5c8c6;font-size:clamp(6.4px,1.95vw,7.6px);font-weight:800;padding:0 2px;
+  white-space:nowrap;overflow:hidden;text-overflow:clip;line-height:1;
 }
 .meg3-cardcenter-tabs button.active{
-  color:#eafffb;border-color:#33e9dc;background:linear-gradient(180deg,rgba(12,138,132,.62),rgba(5,83,83,.72));
-  box-shadow:inset 0 0 16px rgba(44,232,220,.06);
+  color:#f3fffd;border-color:#39eee1;background:linear-gradient(180deg,rgba(12,138,132,.72),rgba(5,83,83,.82));
+  box-shadow:inset 0 0 16px rgba(44,232,220,.10),0 0 12px rgba(45,232,220,.14);
 }
 
 .meg3-cardcenter-tools{
@@ -115,10 +116,17 @@
 }
 .meg3-cardcenter-row-icon{
   width:34px;height:34px;display:grid;place-items:center;border-radius:9px;
-  border:1px solid rgba(63,226,216,.16);
+  border:1px solid rgba(63,226,216,.18);
   background:linear-gradient(145deg,rgba(8,122,119,.48),rgba(3,76,80,.58));
-  color:#64ece3;
+  color:#64ece3;box-shadow:inset 0 0 12px rgba(50,235,222,.035);
 }
+.meg3-cardcenter-row-icon.icon-food,.meg3-cardcenter-row-icon.icon-cart,.meg3-cardcenter-row-icon.icon-sandwich,.meg3-cardcenter-row-icon.icon-cup-soda{color:#78efc5}
+.meg3-cardcenter-row-icon.icon-fuel,.meg3-cardcenter-row-icon.icon-car{color:#ffd477}
+.meg3-cardcenter-row-icon.icon-heart-pulse{color:#ff91a3}
+.meg3-cardcenter-row-icon.icon-house,.meg3-cardcenter-row-icon.icon-building{color:#8ecbff}
+.meg3-cardcenter-row-icon.icon-bolt{color:#ffe36d}
+.meg3-cardcenter-row-icon.icon-wifi,.meg3-cardcenter-row-icon.icon-phone{color:#7fdff4}
+.meg3-cardcenter-row-icon.icon-banknote{color:#72f0bb}
 .meg3-cardcenter-row-copy{min-width:0}
 .meg3-cardcenter-list>button strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px}
 .meg3-cardcenter-list>button small{display:block;margin-top:3px;color:#8ea7a4;font-size:7.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -130,13 +138,16 @@
 .meg3-cardcenter-empty{padding:24px;text-align:center;color:#8aa5a2;font-size:9px}
 
 .meg3-cardcenter>footer{
-  min-height:62px;padding:8px 14px calc(8px + env(safe-area-inset-bottom));
-  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;
-  border-top:1px solid rgba(58,199,192,.14);background:rgba(1,34,36,.96)
+  min-height:70px;padding:9px 14px calc(10px + env(safe-area-inset-bottom));
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;
+  border-top:1px solid rgba(67,225,215,.22);
+  background:linear-gradient(180deg,rgba(2,45,47,.98),rgba(1,31,34,.99));
+  box-shadow:0 -8px 22px rgba(0,0,0,.16),0 -1px 14px rgba(48,231,219,.035)
 }
-.meg3-cardcenter>footer small{display:block;color:#829e9b;font-size:7.5px}
-.meg3-cardcenter>footer strong{display:block;margin-top:2px;font-size:16px;color:#5ae6dc}
-.meg3-cardcenter>footer button{min-height:42px;padding:0 17px;border:1px solid #2de7da;border-radius:12px;background:linear-gradient(180deg,#0a8d89,#076765);color:#fff;font-weight:850}
+.meg3-cardcenter-total{min-width:0;display:grid;align-content:center}
+.meg3-cardcenter>footer small{display:block;color:#98b4b1;font-size:8px;line-height:1.05}
+.meg3-cardcenter>footer strong{display:block;margin-top:3px;font-size:18px;line-height:1;color:#67eee4;text-shadow:0 0 12px rgba(51,232,221,.12)}
+.meg3-cardcenter>footer button{min-height:46px;padding:0 20px;border:1px solid #35ebde;border-radius:12px;background:linear-gradient(180deg,#0b9690,#076c69);color:#fff;font-weight:850;box-shadow:0 0 14px rgba(43,231,218,.11)}
 
 @media(max-width:430px){
   .meg3-cardcenter{height:100dvh;max-height:100dvh;border-radius:0;border-inline:0}
@@ -147,7 +158,7 @@
   .meg3-cardcenter-kpis article{min-height:43px;padding:5px 6px}
   .meg3-cardcenter-kpis strong{font-size:9px}
   .meg3-cardcenter-tabs{gap:3px}
-  .meg3-cardcenter-tabs button{font-size:6.5px}
+  .meg3-cardcenter-tabs button{font-size:clamp(6.2px,1.9vw,7.2px);padding-inline:1px}
   .meg3-cardcenter-tools{grid-template-columns:minmax(0,1fr) 42px 42px;gap:5px}
 }
 @media(max-width:350px){
@@ -156,7 +167,7 @@
   .meg3-cardcenter-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
   .meg3-cardcenter-kpis article{min-height:44px;padding:5px}
   .meg3-cardcenter-tabs{gap:2px}
-  .meg3-cardcenter-tabs button{font-size:6.5px}
+  .meg3-cardcenter-tabs button{font-size:6.1px;padding-inline:0}
 }
 @media(max-height:720px){
   .meg3-cardcenter>header{min-height:62px;padding-top:max(8px,env(safe-area-inset-top))}
@@ -166,21 +177,24 @@
   .meg3-cardcenter-kpis article{min-height:41px}
   .meg3-cardcenter-tabs{padding-top:6px}
   .meg3-cardcenter-tools{padding-block:6px}
-  .meg3-cardcenter>footer{min-height:54px}
+  .meg3-cardcenter>footer{min-height:64px;padding-top:7px}
 }
 
 /* A central segue a mesma regra visual do Verocard: cartão como elemento inteiro,
-   não uma foto solta dentro de outro card. */
+   sem zoom exclusivo por bandeira e sem imagem solta dentro de outra moldura. */
 .meg3-cardcenter-hero img{
   object-fit:cover!important;
+  object-position:center!important;
   padding:0!important;
   background:transparent!important;
+  transform:scale(1.025)!important;
+  transform-origin:center!important;
+  image-rendering:auto!important;
 }
-.meg3-cardcenter-hero img[alt*="LATAM"]{
-  transform:scale(1.24);
-  transform-origin:center;
+.meg3-cardcenter-hero.verocard img{
+  transform:none!important;
+  object-position:center!important;
 }
-.meg3-cardcenter-hero.verocard img{transform:none!important}
 
 @media(max-width:560px){
   .meg3-cardcenter{
@@ -200,7 +214,7 @@
     height:auto;
     min-height:0;
     max-height:none;
-    aspect-ratio:1.62/1;
+    aspect-ratio:1.586/1;
   }
   .meg3-cardcenter-kpis{
     grid-template-columns:repeat(3,minmax(0,1fr));

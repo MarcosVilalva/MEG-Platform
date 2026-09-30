@@ -881,8 +881,8 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-period small{font-size:clamp(6.5px,1.9vw,7.5px)!important;line-height:1!important}
 .meg2-period b{font-size:14px!important}
 .meg2-user{
-  min-width:0!important;max-width:104px!important;margin-right:clamp(3px,1.2vw,5px)!important;padding:0!important;
-  display:flex!important;align-items:center!important;gap:6px!important;flex:none!important;
+  min-width:max-content!important;max-width:none!important;margin-right:clamp(1px,.8vw,4px)!important;padding:0!important;
+  display:flex!important;align-items:center!important;justify-self:end!important;gap:5px!important;flex:none!important;
 }
 .meg2-avatar{
   flex:0 0 clamp(36px,9.8vw,40px)!important;
@@ -891,7 +891,7 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   max-width:40px!important;max-height:40px!important;aspect-ratio:1/1!important;border-radius:50%!important;overflow:hidden!important;
 }
 .meg2-avatar img{width:100%!important;height:100%!important;display:block!important;object-fit:cover!important;object-position:center!important}
-.meg2-user strong{display:block!important;min-width:0!important;max-width:56px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+.meg2-user strong{display:block!important;min-width:max-content!important;max-width:none!important;overflow:visible!important;text-overflow:clip!important;white-space:nowrap!important;font-size:clamp(8px,2.45vw,10.5px)!important;letter-spacing:.015em!important;color:#f3ffff!important;text-shadow:0 0 10px rgba(73,235,224,.16)}
 
 .meg2-shell>.meg2-scroll{
   grid-row:2!important;min-height:0!important;height:auto!important;max-height:none!important;
@@ -975,12 +975,12 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 }
 
 @media(max-width:390px){
-  .meg2-user{max-width:88px!important}
-  .meg2-user strong{max-width:46px!important}
+  .meg2-user{min-width:max-content!important;max-width:none!important;gap:4px!important}
+  .meg2-user strong{max-width:none!important;font-size:8.5px!important}
 }
 @media(max-width:340px){
-  .meg2-user{max-width:76px!important}
-  .meg2-user strong{max-width:38px!important;font-size:7.5px!important}
+  .meg2-user{min-width:max-content!important;max-width:none!important;gap:3px!important}
+  .meg2-user strong{max-width:none!important;font-size:7.5px!important;letter-spacing:0!important}
 }
 
 
@@ -1136,14 +1136,20 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   .meg2-card-usage>small{font-size:6px}
 }
 
-/* Cartões final: artes sem moldura interna, com ajuste específico do LATAM. */
+/* Cartões final: a arte ocupa o próprio cartão, sem moldura ou zoom exclusivo por bandeira. */
 .meg2-card-art>img{
   object-fit:cover!important;
+  object-position:center!important;
   padding:0!important;
   background:transparent!important;
+  transform:scale(1.035)!important;
+  transform-origin:center!important;
+  image-rendering:auto!important;
 }
-.meg2-card-art>img[alt*="LATAM"]{
-  transform:scale(1.24);
-  transform-origin:center;
+.meg2-card-art.benefit>img{
+  transform:none!important;
+  object-position:center!important;
 }
-.meg2-card-art.benefit>img{transform:none!important}
+.meg2-card-art.active{
+  box-shadow:0 0 0 2px rgba(53,238,226,.82),0 0 22px rgba(40,228,217,.18),0 13px 30px rgba(0,0,0,.30)!important;
+}

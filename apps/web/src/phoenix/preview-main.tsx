@@ -195,6 +195,7 @@ function PhoenixPreviewRoot() {
   const [state, setState] = useState<PreviewState>(() => readSession() ? 'checking' : 'signed-out');
   const [bootStage, setBootStage] = useState<BootStage>('session');
   const [bootError, setBootError] = useState('');
+  const [signedInVisualReady, setSignedInVisualReady] = useState(false);
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -326,6 +327,29 @@ function PhoenixPreviewRoot() {
     // Executa apenas no mount. O bootstrap nativo já decidiu se haverá biometria.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (state !== 'signed-in') {
+      setSignedInVisualReady(false);
+      return;
+    }
+
+    let firstFrame = 0;
+    let secondFrame = 0;
+    let settleTimer = 0;
+
+    firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        settleTimer = window.setTimeout(() => setSignedInVisualReady(true), 80);
+      });
+    });
+
+    return () => {
+      if (firstFrame) window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+      if (settleTimer) window.clearTimeout(settleTimer);
+    };
+  }, [state]);
 
   useEffect(() => {
     if (state !== 'signed-in' || import.meta.env.VITE_MOBILE_APP !== 'true' || nativeLifecycleStartedRef.current) return;
@@ -534,7 +558,10 @@ function PhoenixPreviewRoot() {
     }
   }
 
-  if (state === 'signed-in') return <PhoenixApp onLogout={() => { void signOut(); }} onClose={() => { void closeNativeApp(); }} />;
+  if (state === 'signed-in') return <>
+    <PhoenixApp onLogout={() => { void signOut(); }} onClose={() => { void closeNativeApp(); }} />
+    {!signedInVisualReady ? <PhoenixBootScreen stage="ready" /> : null}
+  </>;
   if (state === 'checking' || state === 'authenticating' || state === 'preparing') return <PhoenixBootScreen stage={bootStage} />;
   if (state === 'prepare-error') return <PhoenixBootErrorScreen message={bootError} busy={busy} onRetry={() => { void retryPreparation(); }} onLogout={() => { void signOut(); }} />;
 

@@ -78,7 +78,7 @@ assert.match(mobile, /new URL\(relative, document\.baseURI\)\.href/,
 
 for (const relative of [
   '../../public/assets/cards/approved-v6/mercado.webp',
-  '../../public/assets/cards/latam-pass-platinum.webp',
+  '../../public/assets/cards/approved-v6/latam.webp',
   '../../public/assets/cards/approved-v6/azul.webp',
   '../../public/assets/cards/approved-v6/riachuelo.webp',
 ]) {
@@ -88,7 +88,7 @@ for (const relative of [
 
 assert.match(
   mobile,
-  /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*latam-pass-platinum\.webp[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*approved-v6\/riachuelo\.webp/i,
+  /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*approved-v6\/latam\.webp[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*approved-v6\/riachuelo\.webp/i,
   'Carrossel deve usar artes recortadas e estáveis para preencher os cartões ativos.',
 );
 assert.match(css, /CONTRATO DE VIEWPORT FIXO[\s\S]*\.meg2-scroll\{[\s\S]*overflow:hidden!important/,
@@ -447,14 +447,14 @@ assert.match(
   /grid-template-columns:36px minmax\(0,1fr\) auto 14px[\s\S]*\.meg3-cardcenter-row-icon/,
   'Lista da central deve reservar coluna própria para o ícone de cada lançamento.',
 );
-assert.match(
-  css,
-  /img\[alt\*="LATAM"\][\s\S]*transform:scale\(1\.24\)/,
-  'LATAM deve receber recorte específico para eliminar margem interna da arte.',
+assert.doesNotMatch(
+  css + '\n' + cardCenterCss,
+  /img\[alt\*="LATAM"\][\s\S]{0,180}transform:scale\(/,
+  'LATAM deve usar a mesma geometria full-card das demais artes, sem zoom exclusivo.',
 );
 assert.match(
   cardCenterCss,
-  /@media\(max-width:560px\)[\s\S]*\.meg3-cardcenter-top\{[\s\S]*grid-template-columns:1fr[\s\S]*\.meg3-cardcenter-hero\{[\s\S]*aspect-ratio:1\.62\/1/,
+  /@media\(max-width:560px\)[\s\S]*\.meg3-cardcenter-top\{[\s\S]*grid-template-columns:1fr[\s\S]*\.meg3-cardcenter-hero\{[\s\S]*aspect-ratio:1\.586\/1/,
   'Central móvel deve empilhar a arte do cartão em largura total antes dos KPIs.',
 );
 
@@ -472,4 +472,30 @@ assert.match(
   cardCenter,
   /function transactionIcon[\s\S]*resolveFinancialIcon\(\{ description, categoryName: category \}\)/,
   'Lançamentos da Central devem resolver ícone pela categoria real e, na ausência dela, pela descrição.',
+);
+
+assert.match(
+  previewMain,
+  /signedInVisualReady[\s\S]*requestAnimationFrame[\s\S]*PhoenixBootScreen stage="ready"/,
+  'Loading validado deve permanecer sobre o primeiro frame da Home para impedir flash intermediário.',
+);
+assert.match(
+  css,
+  /\.meg2-user strong\{[\s\S]*overflow:visible!important[\s\S]*text-overflow:clip!important/,
+  'Cabeçalho deve reservar o primeiro nome completo ao lado do avatar, sem reticências.',
+);
+assert.match(
+  cardCenterCss,
+  /\.meg3-cardcenter-tabs button\{[\s\S]*white-space:nowrap[\s\S]*overflow:hidden/,
+  'Abas da Central devem manter cada rótulo dentro da própria segmentação.',
+);
+assert.match(
+  cardCenterCss,
+  /\.meg3-cardcenter>footer\{[\s\S]*min-height:70px[\s\S]*\.meg3-cardcenter-total/,
+  'Rodapé da Central deve preservar total e ação Fechar com acabamento e altura próprios.',
+);
+assert.match(
+  cardCenter,
+  /meg3-cardcenter-row-icon icon-\$\{icon\}/,
+  'Ícones da Central devem carregar a identidade visual da classificação resolvida.',
 );
