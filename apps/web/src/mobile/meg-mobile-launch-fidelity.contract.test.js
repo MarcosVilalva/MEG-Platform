@@ -7,6 +7,7 @@ const picker = readFileSync(new URL('./MegMobilePicker.tsx', import.meta.url), '
 const pickerCss = readFileSync(new URL('./meg-mobile-picker.css', import.meta.url), 'utf8');
 const runtimeCss = readFileSync(new URL('./meg-mobile-runtime.css', import.meta.url), 'utf8');
 const androidMain = readFileSync(new URL('../../../../android/app/src/main/java/br/com/megfinancas/app/MainActivity.java', import.meta.url), 'utf8');
+const phoenixApp = readFileSync(new URL('../phoenix/PhoenixApp.tsx', import.meta.url), 'utf8');
 const movements = readFileSync(new URL('./MegMobileCoreScreens.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./meg-mobile-description-history.ts', import.meta.url), 'utf8');
 
@@ -86,11 +87,21 @@ console.log('Contrato do fluxo validado de Novo/Editar lançamento aprovado.');
   assert.ok(picker.includes("document.body.classList.add('meg-picker-open')"), 'Abrir seletor deve ativar estado modal soberano.');
   assert.ok(pickerCss.includes('z-index:2147483600') && pickerCss.includes('background:#012d30') && pickerCss.includes('height:100dvh'), 'Seletor deve ocupar a viewport com fundo opaco.');
   assert.ok(runtimeCss.includes('body.meg-cleanroom-mobile.meg-picker-open #root') && runtimeCss.includes('visibility:hidden!important'), 'App-base deve sair da composição enquanto o seletor estiver aberto.');
-  assert.ok(androidMain.includes('View.LAYER_TYPE_SOFTWARE') && !androidMain.includes('View.LAYER_TYPE_HARDWARE') && androidMain.includes('setOffscreenPreRaster(true)'), 'WebView deve permanecer em compositor estável por software neste aparelho, sem alternância de camada.');
+  assert.ok(androidMain.includes('View.LAYER_TYPE_SOFTWARE') && !androidMain.includes('View.LAYER_TYPE_HARDWARE') && !androidMain.includes('setOffscreenPreRaster(true)'), 'WebView deve permanecer em compositor estável por software sem pré-rasterizar conteúdo fora da viewport.');
 }
 
 {
   assert.ok(runtimeCss.includes('content-visibility:auto') && runtimeCss.includes('contain-intrinsic-size:64px'), 'Regiões roláveis devem descartar conteúdo fora da viewport para reduzir pintura no WebView em software.');
   assert.ok(runtimeCss.includes('contain:layout paint style') && runtimeCss.includes('text-rendering:optimizeSpeed'), 'Scroll interno deve usar contenção de pintura e renderização otimizada.');
   assert.ok(!pickerCss.includes('will-change:scroll-position'), 'Seletor não deve forçar camada extra de composição.');
+}
+
+{
+  assert.ok(launch.includes('<fieldset className="meg3-launch-fieldset" disabled={busy}>'), 'Ao salvar, todos os campos do formulário devem ficar bloqueados até a confirmação.');
+  assert.ok(launch.includes("data-busy={busy ? 'true' : 'false'}") && css.includes('[data-busy="true"] .meg3-app-dock'), 'Persistência deve bloquear também a navegação do editor enquanto processa.');
+  assert.ok(launch.includes('function paymentIcon') && launch.includes('icon: isBenefitAccount(account)') && launch.includes('imageSrc: cardImage(card.name)'), 'Conta, forma de pagamento e cartão devem ter iconografia consistente.');
+  assert.ok(picker.includes('imageSrc?: string') && picker.includes('item.imageSrc'), 'Picker deve aceitar miniatura visual real dos cartões.');
+  assert.ok(phoenixApp.includes('mobileSettling') && phoenixApp.includes('meg-mobile-entry-shield'), 'Transição do loading para a Home deve usar um frame opaco de proteção.');
+  assert.ok(runtimeCss.includes('.meg-mobile-entry-shield') && runtimeCss.includes('background:#002f32'), 'Proteção pós-loading deve cobrir toda a viewport com fundo opaco.');
+  assert.ok(runtimeCss.includes('overflow-anchor:none') && runtimeCss.includes('box-shadow:none!important'), 'Listas móveis devem reduzir custo de pintura sem reativar composição por GPU.');
 }
