@@ -1149,7 +1149,6 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-card-art.benefit>img{
   transform:none!important;
   object-position:center!important;
-  filter:contrast(1.025) saturate(1.02);
 }
 .meg2-card-art.active{
   box-shadow:0 0 0 2px rgba(53,238,226,.82),0 0 22px rgba(40,228,217,.18),0 13px 30px rgba(0,0,0,.30)!important;
