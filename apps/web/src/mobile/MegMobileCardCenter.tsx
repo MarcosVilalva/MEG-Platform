@@ -137,7 +137,12 @@ export function MegMobileCardCenter({
   const [tab,setTab] = useState<CreditTab>('summary');
   const allRows = useMemo(() => allCardRows(card), [card]);
   const sourceRows = useMemo(() => {
-    if (tab === 'summary' || tab === 'current') return rows;
+    if (tab === 'current') return rows;
+    if (tab === 'summary') {
+      const currentIds = new Set(rows.map((row) => row.id));
+      const upcoming = allRows.filter((row) => !currentIds.has(row.id) && (row.statementMonth || '') > currentMonth);
+      return rows.concat(upcoming).slice(0, 6);
+    }
     if (tab === 'upcoming') return allRows.filter((row) => (row.statementMonth || '') > currentMonth);
     if (tab === 'installments') return allRows.filter((row) => Number(row.installmentQty || 1) > 1);
     return allRows;
@@ -177,18 +182,18 @@ export function MegMobileCardCenter({
           {artUrl ? <img src={artUrl} alt={cardLabel}/> : <div><strong>{cardLabel}</strong><small>•••• {card.lastFour || '0000'}</small></div>}
         </section>
         <section className="meg3-cardcenter-kpis">
-          <article><small>Limite total</small><strong>{money.format(limit)}</strong></article>
-          <article><small>Disponível</small><strong>{money.format(available)}</strong></article>
-          <article><small>Fatura atual</small><strong>{money.format(current)}</strong></article>
-          <article><small>Vencimento</small><strong>{due ? shortDate(due) : `Dia ${card.dueDay || '—'}`}</strong></article>
-          <article><small>Utilizado</small><strong>{usage}%</strong></article>
-          <article><small>Melhor dia</small><strong>Dia {bestDay}</strong></article>
+          <article><MegIcon name="wallet" size={16}/><small>Limite total</small><strong>{money.format(limit)}</strong></article>
+          <article><MegIcon name="trend" size={16}/><small>Disponível</small><strong>{money.format(available)}</strong></article>
+          <article><MegIcon name="file" size={16}/><small>Fatura atual</small><strong>{money.format(current)}</strong></article>
+          <article><MegIcon name="calendar" size={16}/><small>Vencimento</small><strong>{due ? shortDate(due) : `Dia ${card.dueDay || '—'}`}</strong></article>
+          <article><MegIcon name="chart" size={16}/><small>Utilizado</small><strong>{usage}%</strong></article>
+          <article><MegIcon name="card" size={16}/><small>Melhor dia</small><strong>Dia {bestDay}</strong></article>
         </section>
       </div>
 
       <div className="meg3-cardcenter-tabs" role="tablist" aria-label="Visões do cartão">
         <button className={tab==='summary'?'active':''} onClick={()=>setTab('summary')}>Resumo</button>
-        <button className={tab==='current'?'active':''} onClick={()=>setTab('current')}>Fatura atual</button>
+        <button className={tab==='current'?'active':''} onClick={()=>setTab('current')}>Atual</button>
         <button className={tab==='upcoming'?'active':''} onClick={()=>setTab('upcoming')}>Próximas</button>
         <button className={tab==='installments'?'active':''} onClick={()=>setTab('installments')}>Parcelas</button>
         <button className={tab==='history'?'active':''} onClick={()=>setTab('history')}>Histórico</button>
@@ -196,17 +201,18 @@ export function MegMobileCardCenter({
 
       <section className="meg3-cardcenter-tools">
         <label><MegIcon name="search" size={16}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamentos..."/></label>
-        <button type="button" onClick={() => exportExcel(`fatura-${cardLabel.toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,'-')}.xls`,exportRows)}>Excel</button>
-        <button type="button" onClick={() => exportPdf(`fatura-${cardLabel.toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,'-')}.pdf`,`Fatura - ${cardLabel}`,exportRows)}>PDF</button>
+        <button type="button" className="icon-action" aria-label="Exportar Excel" title="Exportar Excel" onClick={() => exportExcel(`fatura-${cardLabel.toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,'-')}.xls`,exportRows)}><MegIcon name="list" size={18}/></button>
+        <button type="button" className="icon-action" aria-label="Exportar PDF" title="Exportar PDF" onClick={() => exportPdf(`fatura-${cardLabel.toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g,'-')}.pdf`,`Fatura - ${cardLabel}`,exportRows)}><MegIcon name="file" size={18}/></button>
       </section>
 
       <section className="meg3-cardcenter-list" data-meg-scroll-region="true">
+        {tab === 'summary' && !rows.length && filtered.length ? <div className="meg3-cardcenter-context">Fatura atual sem lançamentos · exibindo próximas compras</div> : null}
         {filtered.map((row) => <button type="button" key={row.id} onClick={() => onOpenRow?.(row)}>
           <span><strong>{row.description}</strong><small>{shortDate(row.date)}{row.statementMonth ? ` · fatura ${monthLabel(row.statementMonth)}` : ''}{row.installmentNo && row.installmentQty ? ` · parcela ${row.installmentNo}/${row.installmentQty}` : ''}</small></span>
           <b>{money.format(Number(row.amount || 0))}</b>
           {onOpenRow ? <i><MegIcon name="chevron-right" size={14}/></i> : null}
         </button>)}
-        {!filtered.length ? <div className="meg3-cardcenter-empty">{tab === 'upcoming' ? 'Nenhuma fatura futura projetada.' : 'Nenhum lançamento encontrado.'}</div> : null}
+        {!filtered.length ? <div className="meg3-cardcenter-empty">{tab === 'upcoming' ? 'Nenhuma fatura futura projetada.' : tab === 'current' ? 'Nenhum lançamento na fatura atual.' : 'Nenhum lançamento encontrado.'}</div> : null}
       </section>
 
       <footer>
@@ -262,10 +268,10 @@ export function MegMobileBenefitCardCenter({
       <div className="meg3-cardcenter-top">
         <section className="meg3-cardcenter-hero verocard"><img src={artUrl} alt="Verocard Alimentação"/></section>
         <section className="meg3-cardcenter-kpis benefit">
-          <article><small>Saldo disponível</small><strong>{money.format(balance)}</strong></article>
-          <article><small>Recargas no mês</small><strong>{money.format(credits)}</strong></article>
-          <article><small>Consumo no mês</small><strong>{money.format(used)}</strong></article>
-          <article><small>Movimentações</small><strong>{rows.length}</strong></article>
+          <article><MegIcon name="wallet" size={16}/><small>Saldo disponível</small><strong>{money.format(balance)}</strong></article>
+          <article><MegIcon name="arrow-up" size={16}/><small>Recargas no mês</small><strong>{money.format(credits)}</strong></article>
+          <article><MegIcon name="food" size={16}/><small>Consumo no mês</small><strong>{money.format(used)}</strong></article>
+          <article><MegIcon name="list" size={16}/><small>Movimentações</small><strong>{rows.length}</strong></article>
         </section>
       </div>
 

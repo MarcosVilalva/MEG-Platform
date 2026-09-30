@@ -125,8 +125,8 @@ type MobileCardRow = MegMobileCardCenterRow;
 
 function cardRows(card: PhoenixReadModel['cards'][number] | undefined): MobileCardRow[] {
   if (!card) return [];
-  if (card.statement?.lines?.length) {
-    return card.statement.lines.map((line) => {
+  if (card.statement) {
+    return (card.statement.lines || []).map((line) => {
       const purchase = line.purchaseId ? (card.purchases || []).find((item) => item.id === line.purchaseId) : undefined;
       return {
         id: line.id,

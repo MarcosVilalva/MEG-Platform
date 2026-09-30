@@ -16,6 +16,7 @@ const launchCss = readFileSync(new URL('./meg-mobile-launch-sheet.css', import.m
 const settings = readFileSync(new URL('./MegMobileSettings.tsx', import.meta.url), 'utf8');
 const settingsCss = readFileSync(new URL('./meg-mobile-settings.css', import.meta.url), 'utf8');
 const cardCenter = readFileSync(new URL('./MegMobileCardCenter.tsx', import.meta.url), 'utf8');
+const cardCenterCss = readFileSync(new URL('./meg-mobile-card-center.css', import.meta.url), 'utf8');
 const benefitModal = readFileSync(new URL('./MegMobileBenefitModal.tsx', import.meta.url), 'utf8');
 const source = mobile + '\n' + css + '\n' + runtimeCss + '\n' + coreScreens + '\n' + launchSheet + '\n' + mobileIcons + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
 
@@ -379,7 +380,7 @@ assert.match(
 );
 assert.match(
   cardCenter,
-  /Resumo[\s\S]*Fatura atual[\s\S]*Próximas[\s\S]*Parcelas[\s\S]*Histórico/,
+  /Resumo[\s\S]*>Atual<\/button>[\s\S]*Próximas[\s\S]*Parcelas[\s\S]*Histórico/,
   'Central do cartão de crédito deve preservar as visões validadas de fatura e histórico.',
 );
 assert.match(
@@ -396,4 +397,30 @@ assert.match(
   mobile,
   /Fatura \/ competência[\s\S]*Vencimento[\s\S]*Parcelamento/,
   'Detalhe da compra deve informar competência, vencimento e parcelamento.',
+);
+
+assert.match(
+  cardCenter,
+  /Limite total[\s\S]*MegIcon name="wallet"[\s\S]*Disponível|MegIcon name="wallet"[\s\S]*Limite total/,
+  'Central deve usar iconografia semântica nos KPIs.',
+);
+assert.match(
+  cardCenter,
+  /aria-label="Exportar Excel"[\s\S]*MegIcon name="list"[\s\S]*aria-label="Exportar PDF"[\s\S]*MegIcon name="file"/,
+  'Exportações Excel e PDF devem usar ações compactas por ícone.',
+);
+assert.match(
+  css,
+  /\.meg2-card-art>img\{[\s\S]*object-fit:contain/,
+  'Carrossel deve preservar a arte inteira dos cartões sem corte.',
+);
+assert.match(
+  cardCenterCss,
+  /\.meg3-cardcenter-hero img\{[\s\S]*object-fit:contain[\s\S]*\.meg3-cardcenter-hero\.verocard img\{object-fit:cover/,
+  'Central deve conter cartões de crédito no quadro e preservar enquadramento validado do Verocard.',
+);
+assert.match(
+  cardCenterCss,
+  /\.meg3-cardcenter-kpis article>svg[\s\S]*\.meg3-cardcenter-kpis strong[\s\S]*overflow:visible/,
+  'KPIs devem apresentar ícones e valores completos sem ellipsis.',
 );
