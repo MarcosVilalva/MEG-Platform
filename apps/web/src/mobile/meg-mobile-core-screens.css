@@ -842,3 +842,49 @@
   padding-left:var(--meg-content-gutter,clamp(10px,2.8vw,12px))!important;
   padding-right:var(--meg-content-gutter,clamp(10px,2.8vw,12px))!important;
 }
+
+
+/* Edição direta de Lançamentos: o card inteiro abre e o lápis torna a ação inequívoca. */
+.meg3-event-card{
+  position:relative;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 34px!important;
+  gap:3px!important;
+  padding:0!important;
+  overflow:hidden;
+}
+.meg3-event-open{
+  min-width:0;
+  width:100%;
+  min-height:inherit;
+  padding:7px 3px 7px 8px;
+  display:grid;
+  grid-template-columns:37px minmax(0,1fr) auto;
+  align-items:center;
+  gap:7px;
+  border:0;
+  background:transparent;
+  color:inherit;
+  text-align:left;
+}
+.meg3-event-edit{
+  width:30px;
+  height:30px;
+  align-self:center;
+  justify-self:center;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(55,226,216,.34);
+  border-radius:9px;
+  background:rgba(3,70,72,.88);
+  color:#48e5db;
+  touch-action:manipulation;
+}
+.meg3-event-edit:active{transform:scale(.96)}
+.meg3-event-card.income .meg3-event-edit{color:#58dfb3}
+.meg3-event-card.expense .meg3-event-edit{color:#ff8493}
+@media(max-width:350px){
+  .meg3-event-card{grid-template-columns:minmax(0,1fr) 31px!important}
+  .meg3-event-open{grid-template-columns:34px minmax(0,1fr) auto;gap:5px;padding-left:6px}
+  .meg3-event-edit{width:28px;height:28px}
+}
