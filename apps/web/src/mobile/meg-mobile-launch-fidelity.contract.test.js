@@ -58,7 +58,7 @@ console.log('Contrato do fluxo validado de Novo/Editar lançamento aprovado.');
   assert.ok(picker.includes("searchRef.current?.blur()"), 'Fechar seletor deve dispensar teclado explicitamente.');
   assert.ok(picker.includes("meg5-picker-sheet ${searching ? 'is-searching' : ''}"), 'Busca deve ativar layout ancorado próprio.');
   assert.ok(picker.includes('item.icon') && picker.includes('MegIcon name={item.icon}'), 'Opções devem aceitar ícone SVG contextual.');
-  assert.ok(pickerCss.includes('.meg5-picker-sheet.is-searching') && pickerCss.includes('align-self:start'), 'Busca com teclado deve ficar no topo da safe area.');
+  assert.ok(pickerCss.includes('.meg5-picker-sheet.is-searching') && pickerCss.includes('align-self:stretch') && pickerCss.includes('height:100dvh'), 'Busca com teclado deve permanecer soberana em toda a viewport.');
   assert.ok(pickerCss.includes('.meg5-picker-option-icon'), 'Categoria deve ter container visual de ícone.');
   assert.ok(launch.includes('resolveFinancialIcon') && launch.includes('icon, tone'), 'Categorias devem receber iconografia financeira real.');
   assert.ok(css.includes('.meg3-launch-type-cards button:nth-child(1)') && css.includes('rgba(255,83,111') && css.includes('rgba(62,238,155') && css.includes('rgba(246,209,75'), 'Cards Despesa, Receita e Alimentação devem usar cores neon integrais.');
