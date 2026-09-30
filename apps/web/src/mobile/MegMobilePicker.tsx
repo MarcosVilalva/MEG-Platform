@@ -100,7 +100,11 @@ export function MegMobilePicker({
         </button>
 
         {filtered.map((item) => <button type="button" key={item.id} className={item.id === value ? 'selected' : ''} onClick={() => { onChange(item.id); close(); }}>
-          {item.icon ? <span className={`meg5-picker-option-icon ${item.tone || 'cyan'}`}><MegIcon name={item.icon} size={19}/></span> : null}
+          {item.imageSrc
+            ? <span className="meg5-picker-option-icon image"><img src={item.imageSrc} alt="" draggable={false}/></span>
+            : item.icon
+              ? <span className={`meg5-picker-option-icon ${item.tone || 'cyan'}`}><MegIcon name={item.icon} size={19}/></span>
+              : null}
           <span>
             <strong>{item.label}</strong>
             {item.subtitle ? <small>{item.subtitle}</small> : null}
