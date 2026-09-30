@@ -86,5 +86,5 @@ console.log('Contrato do fluxo validado de Novo/Editar lançamento aprovado.');
   assert.ok(picker.includes("document.body.classList.add('meg-picker-open')"), 'Abrir seletor deve ativar estado modal soberano.');
   assert.ok(pickerCss.includes('z-index:2147483600') && pickerCss.includes('background:#012d30') && pickerCss.includes('height:100dvh'), 'Seletor deve ocupar a viewport com fundo opaco.');
   assert.ok(runtimeCss.includes('body.meg-cleanroom-mobile.meg-picker-open #root') && runtimeCss.includes('visibility:hidden!important'), 'App-base deve sair da composição enquanto o seletor estiver aberto.');
-  assert.ok(androidMain.includes('View.LAYER_TYPE_HARDWARE') && androidMain.includes('View.LAYER_TYPE_SOFTWARE') && androidMain.includes('setOnScrollChangeListener'), 'WebView deve alternar aceleração durante scroll e repaint estável em repouso.');
+  assert.ok(androidMain.includes('View.LAYER_TYPE_HARDWARE') && !androidMain.includes('View.LAYER_TYPE_SOFTWARE') && androidMain.includes('postInvalidateOnAnimation') && androidMain.includes('setOnScrollChangeListener'), 'WebView deve permanecer acelerado e usar repaint explícito sem alternar compositor.');
 }
