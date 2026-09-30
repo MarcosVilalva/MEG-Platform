@@ -427,6 +427,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [loadState, setLoadState] = useState<PhoenixLoadState>({ status: 'idle' });
+  const [mobileSettling, setMobileSettling] = useState(nativeOperational);
   const periodRef = useRef<HTMLDivElement>(null);
   const monthRef = useRef(month);
   const dataRef = useRef<PhoenixReadModel | null>(null);
@@ -435,6 +436,22 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
   const workspaceSyncCheckingRef = useRef(false);
   const periodRequestRef = useRef(0);
   const navigationHistoryRef = useRef<PhoenixView[]>([]);
+
+  useEffect(() => {
+    if (!nativeOperational) {
+      setMobileSettling(false);
+      return;
+    }
+    let frame = 0;
+    let timer = 0;
+    frame = window.requestAnimationFrame(() => {
+      timer = window.setTimeout(() => setMobileSettling(false), 96);
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [nativeOperational]);
 
   useEffect(() => {
     monthRef.current = month;
@@ -1215,6 +1232,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         onLogout={onLogout}
         onClose={onClose}
       />
+      {mobileSettling ? <div className="meg-mobile-entry-shield" aria-hidden="true" /> : null}
     </>;
   }
 
