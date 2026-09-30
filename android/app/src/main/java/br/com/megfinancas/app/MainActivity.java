@@ -5,8 +5,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
-import android.view.MotionEvent;
-import android.webkit.WebView;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import com.getcapacitor.BridgeActivity;
@@ -14,15 +12,7 @@ import com.getcapacitor.PluginHandle;
 
 public class MainActivity extends BridgeActivity {
     private static final long UPDATE_FOCUS_DELAY_MS = 1500;
-    private static final long WEBVIEW_REPAINT_DELAY_MS = 90;
     private final Handler updateHandler = new Handler(Looper.getMainLooper());
-    private final Handler renderHandler = new Handler(Looper.getMainLooper());
-    private WebView appWebView;
-    private final Runnable repaintWebView = () -> {
-        if (appWebView == null) return;
-        appWebView.postInvalidateOnAnimation();
-        appWebView.postDelayed(appWebView::postInvalidateOnAnimation, 48);
-    };
     private final Runnable updateCheck = () -> {
         if (!hasWindowFocus()) {
             scheduleUpdateCheck();
@@ -72,29 +62,16 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(MegNativeShellPlugin.class);
         super.onCreate(savedInstanceState);
 
-        // Mantemos uma única camada acelerada durante toda a vida do WebView.
-        // Alternar software/hardware invalidava tiles do Chromium e gerava os
-        // fragmentos brancos/coloridos vistos ao voltar para a Home. A correção
-        // agora é repaint pós-gesto, sem trocar o compositor e sem sacrificar scroll.
+        // Este aparelho demonstrou corrupção persistente de tiles/glyphs quando o
+        // WebView usa composição por GPU. A correção confiável é manter o WebView
+        // sempre em software. A fluidez passa a ser tratada no CSS com contenção
+        // de pintura e descarte de conteúdo fora da viewport, sem trocar compositor.
         if (getBridge() != null && getBridge().getWebView() != null) {
-            appWebView = getBridge().getWebView();
-            appWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-            appWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-            appWebView.setOnTouchListener((view, event) -> {
-                int action = event.getActionMasked();
-                if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
-                    renderHandler.removeCallbacks(repaintWebView);
-                } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                    renderHandler.removeCallbacks(repaintWebView);
-                    renderHandler.postDelayed(repaintWebView, WEBVIEW_REPAINT_DELAY_MS);
-                }
-                return false;
-            });
+            getBridge().getWebView().setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+            getBridge().getWebView().setOverScrollMode(View.OVER_SCROLL_NEVER);
+            getBridge().getWebView().setVerticalScrollBarEnabled(false);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                appWebView.setOnScrollChangeListener((view, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-                    renderHandler.removeCallbacks(repaintWebView);
-                    renderHandler.postDelayed(repaintWebView, WEBVIEW_REPAINT_DELAY_MS);
-                });
+                getBridge().getWebView().getSettings().setOffscreenPreRaster(true);
             }
         }
 
@@ -127,7 +104,6 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onPause() {
         updateHandler.removeCallbacks(updateCheck);
-        renderHandler.removeCallbacks(repaintWebView);
         super.onPause();
     }
 }
