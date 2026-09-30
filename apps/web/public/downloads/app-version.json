@@ -1,9 +1,9 @@
 {
-  "versionCode": 649,
-  "versionName": "2.0.649",
+  "versionCode": 651,
+  "versionName": "2.0.651",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "e627f32936b1dc6fedda66c0059d0045bfc9b1028b2074914ac4774a655018d0",
+  "sha256": "0bf3017a5977c5de5675feabb95fe27b14700262b3ef2f1d1c18b95a260f62e1",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "style(mobile): finalizar enquadramento do Verocard"
+  "releaseNotes": "test(mobile): alinhar arte LATAM ao modelo validado"
 }
