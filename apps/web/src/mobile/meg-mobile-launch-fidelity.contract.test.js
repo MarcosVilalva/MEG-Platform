@@ -5,6 +5,8 @@ const launch = readFileSync(new URL('./MegMobileLaunchSheet.tsx', import.meta.ur
 const css = readFileSync(new URL('./meg-mobile-launch-sheet.css', import.meta.url), 'utf8');
 const picker = readFileSync(new URL('./MegMobilePicker.tsx', import.meta.url), 'utf8');
 const pickerCss = readFileSync(new URL('./meg-mobile-picker.css', import.meta.url), 'utf8');
+const runtimeCss = readFileSync(new URL('./meg-mobile-runtime.css', import.meta.url), 'utf8');
+const androidMain = readFileSync(new URL('../../../../android/app/src/main/java/br/com/megfinancas/app/MainActivity.java', import.meta.url), 'utf8');
 const movements = readFileSync(new URL('./MegMobileCoreScreens.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./meg-mobile-description-history.ts', import.meta.url), 'utf8');
 
@@ -77,4 +79,12 @@ console.log('Contrato do fluxo validado de Novo/Editar lançamento aprovado.');
   assert.ok(launch.includes("const cardSchedule = useMemo"), 'Calendário do cartão deve ser calculado independentemente do valor para exibir vencimento da parcela única.');
   assert.ok(css.includes('touch-action:pan-y') && css.includes('scroll-behavior:auto'), 'Áreas roláveis do fluxo devem usar rolagem vertical nativa e imediata.');
   assert.ok(css.includes('.meg3-single-installment-due'), 'Fluxo deve possuir apresentação própria para vencimento de parcela única.');
+}
+
+{
+  assert.ok(picker.includes("createPortal(overlay, document.body)"), 'Seletor deve ser portado para o body e escapar do stacking context da tela.');
+  assert.ok(picker.includes("document.body.classList.add('meg-picker-open')"), 'Abrir seletor deve ativar estado modal soberano.');
+  assert.ok(pickerCss.includes('z-index:2147483600') && pickerCss.includes('background:#012d30') && pickerCss.includes('height:100dvh'), 'Seletor deve ocupar a viewport com fundo opaco.');
+  assert.ok(runtimeCss.includes('body.meg-cleanroom-mobile.meg-picker-open #root') && runtimeCss.includes('visibility:hidden!important'), 'App-base deve sair da composição enquanto o seletor estiver aberto.');
+  assert.ok(androidMain.includes('View.LAYER_TYPE_HARDWARE') && androidMain.includes('View.LAYER_TYPE_SOFTWARE') && androidMain.includes('setOnScrollChangeListener'), 'WebView deve alternar aceleração durante scroll e repaint estável em repouso.');
 }
