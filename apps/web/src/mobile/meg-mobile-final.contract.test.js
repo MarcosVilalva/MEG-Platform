@@ -290,7 +290,7 @@ assert.match(
 );
 assert.match(
   mobile,
-  /Lançamentos da fatura[\s\S]*setCenterOpen\(true\)[\s\S]*setSelectedRow\(row\)[\s\S]*DETALHE DA COMPRA/,
+  /Lançamentos da fatura[\s\S]*openActiveCenter[\s\S]*setSelectedRow\(creditRow\)[\s\S]*DETALHE DA COMPRA/,
   'Cartões deve abrir a central e o detalhe funcional de cada compra.',
 );
 assert.match(
