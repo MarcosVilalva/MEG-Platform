@@ -1154,78 +1154,51 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 }
 
 
-/* DOCK CANÔNICO: botão central independente das colunas/scrollbars */
+/* DOCK FINAL CANÔNICO: cinco faixas físicas, geometria imutável */
 .meg2-dock{
-  grid-template-columns:repeat(5,minmax(0,1fr))!important;
-  isolation:isolate!important;
-}
-.meg2-dock>button{
-  position:relative!important;
-  z-index:2!important;
-  min-width:0!important;
-  max-width:none!important;
-}
-.meg2-dock>button.active::before{
-  inset:2px 5px 3px!important;
-  border-radius:12px!important;
-  z-index:0!important;
-}
-.meg2-dock>button>svg,
-.meg2-dock>button>span,
-.meg2-dock>button>small{
-  position:relative;
-  z-index:1;
-}
-
-/* A terceira coluna continua sendo a área de toque.
-   O círculo visual fica preso ao centro físico do viewport,
-   portanto não acompanha variação de largura por scrollbar/view. */
-.meg2-new{
-  grid-column:3!important;
-  z-index:20!important;
-  overflow:visible!important;
-}
-.meg2-new>span:first-child{
-  position:fixed!important;
-  left:50%!important;
-  right:auto!important;
-  top:auto!important;
-  bottom:calc(27px + env(safe-area-inset-bottom))!important;
-  width:50px!important;
-  height:50px!important;
-  min-width:50px!important;
-  min-height:50px!important;
-  max-width:50px!important;
-  max-height:50px!important;
-  margin:0 0 0 -25px!important;
-  transform:none!important;
-  z-index:2147481000!important;
-  pointer-events:none!important;
-}
-.meg2-new small{
   position:absolute!important;
   left:0!important;
   right:0!important;
-  bottom:2px!important;
-  z-index:2!important;
+  bottom:0!important;
+  width:100%!important;
+  height:calc(68px + env(safe-area-inset-bottom))!important;
+  min-height:calc(68px + env(safe-area-inset-bottom))!important;
+  max-height:calc(68px + env(safe-area-inset-bottom))!important;
+  display:block!important;
+  overflow:visible!important;
+  margin:0!important;
+  padding:5px 6px calc(5px + env(safe-area-inset-bottom))!important;
+  box-sizing:border-box!important;
+  contain:layout!important;
+  isolation:isolate!important;
 }
 
-/* Nenhuma aba ativa pode alterar a geometria do botão central. */
-.meg2-new,
-.meg2-new.active{
-  width:auto!important;
-  min-width:0!important;
-  max-width:none!important;
+/* Cada item ocupa sempre exatamente 20% do dock. Nada depende da tela ativa. */
+.meg2-dock>button{
+  position:absolute!important;
+  top:5px!important;
+  bottom:auto!important;
+  width:20%!important;
+  min-width:20%!important;
+  max-width:20%!important;
   height:58px!important;
   min-height:58px!important;
   max-height:58px!important;
-  padding:0!important;
   margin:0!important;
+  padding:0!important;
   transform:none!important;
+  box-sizing:border-box!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  z-index:2!important;
 }
+.meg2-dock>button:nth-child(1){left:0!important}
+.meg2-dock>button:nth-child(2){left:20%!important}
+.meg2-dock>button:nth-child(3){left:40%!important}
+.meg2-dock>button:nth-child(4){left:60%!important}
+.meg2-dock>button:nth-child(5){left:80%!important}
 
-
-/* NAVEGAÇÃO INFERIOR PROFISSIONAL: estado exclusivo e geometria imutável */
+/* Itens comuns usam a mesma caixa visual em qualquer estado. */
 .meg2-dock>button:not(.meg2-new){
   display:grid!important;
   grid-template-rows:28px 10px!important;
@@ -1233,102 +1206,68 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   place-items:center!important;
   align-content:center!important;
   row-gap:3px!important;
-  padding:0!important;
-  margin:0!important;
-  transform:none!important;
 }
 .meg2-dock>button:not(.meg2-new)>svg{
   grid-row:1!important;
-  width:22px!important;height:22px!important;
-  min-width:22px!important;min-height:22px!important;
-  max-width:22px!important;max-height:22px!important;
-  place-self:center!important;transform:none!important;
-}
-.meg2-badge-wrap{
-  grid-row:1!important;
-  width:28px!important;height:28px!important;
-  min-width:28px!important;min-height:28px!important;
-  max-width:28px!important;max-height:28px!important;
-  display:grid!important;place-items:center!important;
-  margin:0!important;transform:none!important;
-}
-.meg2-badge-wrap>svg{
-  width:22px!important;height:22px!important;
-  min-width:22px!important;min-height:22px!important;
-  max-width:22px!important;max-height:22px!important;
+  width:22px!important;
+  height:22px!important;
+  min-width:22px!important;
+  min-height:22px!important;
+  max-width:22px!important;
+  max-height:22px!important;
+  place-self:center!important;
   transform:none!important;
 }
 .meg2-dock>button:not(.meg2-new)>span:last-child{
   grid-row:2!important;
-  height:10px!important;min-height:10px!important;line-height:10px!important;
-  margin:0!important;padding:0!important;align-self:center!important;
+  height:10px!important;
+  min-height:10px!important;
+  line-height:10px!important;
+  margin:0!important;
+  padding:0!important;
+  align-self:center!important;
 }
-.meg2-dock>button.active{
-  width:100%!important;
-  height:58px!important;min-height:58px!important;max-height:58px!important;
-  padding:0!important;margin:0!important;transform:none!important;
+
+/* Pendentes usa um wrapper fixo, sem poder deslocar o ícone. */
+.meg2-badge-wrap{
+  grid-row:1!important;
+  position:relative!important;
+  width:28px!important;
+  height:28px!important;
+  min-width:28px!important;
+  min-height:28px!important;
+  max-width:28px!important;
+  max-height:28px!important;
+  display:grid!important;
+  place-items:center!important;
+  margin:0!important;
+  transform:none!important;
 }
-.meg2-dock>button.active::before{
-  pointer-events:none!important;transform:none!important;
-}
-.meg2-new.active::before{display:none!important}
-.meg2-dock[data-active-item="new"] .meg2-new>span:first-child{
-  color:#8ffff8!important;
-  border-color:#6efff6!important;
-  box-shadow:0 0 0 5px rgba(0,57,59,.96),0 0 26px rgba(23,225,215,.28),inset 0 0 16px rgba(80,255,244,.10)!important;
+.meg2-badge-wrap>svg{
+  width:22px!important;
+  height:22px!important;
+  min-width:22px!important;
+  min-height:22px!important;
+  max-width:22px!important;
+  max-height:22px!important;
+  transform:none!important;
 }
 .meg2-badge-wrap b{
-  top:-5px!important;right:-8px!important;
-}
-.meg2-dock[data-active-item="menu"]>button:not(:last-child):not(.meg2-new),
-.meg2-dock[data-active-item="new"]>button:not(.meg2-new){
-  color:#d4e3e3!important;
+  top:-5px!important;
+  right:-8px!important;
 }
 
-
-/* DOCK FINAL: Novo fora do grid, centro absoluto e imutável */
-.meg2-dock{
-  position:absolute!important;
-  display:grid!important;
-  grid-template-columns:repeat(5,minmax(0,1fr))!important;
-  overflow:visible!important;
-}
-
-/* Os quatro itens de navegação ocupam colunas explícitas.
-   A coluna 3 fica reservada visualmente ao Novo, mas o botão não participa do grid. */
-.meg2-dock>button:nth-child(1){grid-column:1!important}
-.meg2-dock>button:nth-child(2){grid-column:2!important}
-.meg2-dock>button:nth-child(4){grid-column:4!important}
-.meg2-dock>button:nth-child(5){grid-column:5!important}
-
-/* Novo é um overlay geométrico independente das telas e das colunas. */
+/* Novo continua integrado ao dock, mas seu círculo tem caixa própria 50x50. */
 .meg2-dock>.meg2-new,
 .meg2-dock>.meg2-new.active{
-  position:absolute!important;
-  left:50%!important;
-  top:5px!important;
-  right:auto!important;
-  bottom:auto!important;
-  width:72px!important;
-  min-width:72px!important;
-  max-width:72px!important;
-  height:58px!important;
-  min-height:58px!important;
-  max-height:58px!important;
-  margin:0 0 0 -36px!important;
-  padding:0!important;
   display:block!important;
   overflow:visible!important;
-  transform:none!important;
-  z-index:50!important;
   contain:none!important;
 }
-
-/* O círculo usa dimensões físicas próprias. Nenhum estado de tela pode escalá-lo. */
 .meg2-dock>.meg2-new>span:first-child{
   position:absolute!important;
   left:50%!important;
-  top:-14px!important;
+  top:-13px!important;
   right:auto!important;
   bottom:auto!important;
   width:50px!important;
@@ -1340,7 +1279,7 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   aspect-ratio:1 / 1!important;
   margin:0 0 0 -25px!important;
   padding:0!important;
-  border-radius:999px!important;
+  border-radius:50%!important;
   box-sizing:border-box!important;
   transform:none!important;
   scale:1!important;
@@ -1348,8 +1287,6 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   z-index:2!important;
   pointer-events:none!important;
 }
-
-/* O rótulo também é independente do círculo. */
 .meg2-dock>.meg2-new>small{
   position:absolute!important;
   left:0!important;
@@ -1365,8 +1302,34 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   z-index:3!important;
 }
 
-/* O destaque ativo jamais cria caixa/escala sobre o Novo. */
+/* Estado ativo muda só acabamento. Nunca tamanho, posição ou escala. */
+.meg2-dock>button.active{
+  width:20%!important;
+  min-width:20%!important;
+  max-width:20%!important;
+  height:58px!important;
+  min-height:58px!important;
+  max-height:58px!important;
+  transform:none!important;
+}
+.meg2-dock>button.active::before{
+  inset:2px 5px 3px!important;
+  border-radius:12px!important;
+  pointer-events:none!important;
+  transform:none!important;
+  z-index:0!important;
+}
 .meg2-dock>.meg2-new::before,
 .meg2-dock>.meg2-new.active::before{
   display:none!important;
 }
+.meg2-dock[data-active-item="new"] .meg2-new>span:first-child{
+  color:#8ffff8!important;
+  border-color:#6efff6!important;
+  box-shadow:0 0 0 5px rgba(0,57,59,.96),0 0 26px rgba(23,225,215,.28),inset 0 0 16px rgba(80,255,244,.10)!important;
+}
+.meg2-dock[data-active-item="menu"]>button:not(:last-child):not(.meg2-new),
+.meg2-dock[data-active-item="new"]>button:not(.meg2-new){
+  color:#d4e3e3!important;
+}
+

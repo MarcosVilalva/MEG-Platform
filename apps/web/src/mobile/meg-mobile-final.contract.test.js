@@ -55,13 +55,18 @@ assert.match(
 );
 assert.match(
   css,
-  /DOCK FINAL: Novo fora do grid[\s\S]*\.meg2-dock>button:nth-child\(1\)\{grid-column:1!important\}[\s\S]*\.meg2-dock>button:nth-child\(2\)\{grid-column:2!important\}[\s\S]*\.meg2-dock>button:nth-child\(4\)\{grid-column:4!important\}[\s\S]*\.meg2-dock>button:nth-child\(5\)\{grid-column:5!important\}[\s\S]*\.meg2-dock>\.meg2-new[\s\S]*position:absolute!important[\s\S]*left:50%!important[\s\S]*width:72px!important[\s\S]*margin:0 0 0 -36px!important[\s\S]*\.meg2-dock>\.meg2-new>span:first-child[\s\S]*width:50px!important[\s\S]*height:50px!important[\s\S]*aspect-ratio:1 \/ 1!important[\s\S]*border-radius:999px!important/,
-  'Botão central Novo deve ficar fora do grid, preso ao centro físico do dock e com círculo 50x50 imutável.',
+  /DOCK FINAL CANÔNICO: cinco faixas físicas[\s\S]*\.meg2-dock>button:nth-child\(1\)\{left:0!important\}[\s\S]*\.meg2-dock>button:nth-child\(2\)\{left:20%!important\}[\s\S]*\.meg2-dock>button:nth-child\(3\)\{left:40%!important\}[\s\S]*\.meg2-dock>button:nth-child\(4\)\{left:60%!important\}[\s\S]*\.meg2-dock>button:nth-child\(5\)\{left:80%!important\}/,
+  'Dock deve usar cinco faixas físicas de 20% independentes da tela ativa.',
+);
+assert.match(
+  css,
+  /\.meg2-dock>\.meg2-new>span:first-child\{[\s\S]*width:50px!important[\s\S]*height:50px!important[\s\S]*aspect-ratio:1 \/ 1!important[\s\S]*border-radius:50%!important[\s\S]*transform:none!important/,
+  'Botão central Novo deve manter círculo 50x50 e proporção 1:1 em qualquer tela.',
 );
 assert.doesNotMatch(
   css,
-  /DOCK FINAL: Novo fora do grid[\s\S]*\.meg2-dock>\.meg2-new[\s\S]*grid-column:3!important/,
-  'Botão Novo final não pode voltar a participar da terceira coluna do grid.',
+  /DOCK FINAL CANÔNICO:[\s\S]*grid-template-columns:/,
+  'Dock final não deve depender de grid para posicionar seus cinco itens.',
 );
 assert.match(
   mobile,
