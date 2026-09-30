@@ -339,9 +339,10 @@ assert.match(
 
 assert.match(
   launchSheet,
-  /ExpensePaymentMode[\s\S]*À Vista[\s\S]*Crédito[\s\S]*Crediário/,
-  'Novo lançamento deve preservar as modalidades À vista, Crédito e Crediário.',
+  /ExpensePaymentMode[\s\S]*À Vista[\s\S]*Crédito/,
+  'Novo lançamento deve preservar as modalidades À vista e Crédito.',
 );
+assert.doesNotMatch(launchSheet, />Crediário<\/button>/, 'Crediário legado não deve aparecer na criação de novos lançamentos.');
 assert.match(
   launchSheet,
   /isPixMethod[\s\S]*expensePaymentMode === 'cash'[\s\S]*setPaymentMethodId\(pixMethod\?\.id/,
