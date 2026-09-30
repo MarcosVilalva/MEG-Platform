@@ -50,7 +50,7 @@
   box-shadow:0 0 0 1px rgba(42,232,222,.08),0 12px 28px rgba(0,0,0,.22);
 }
 .meg3-cardcenter-hero img{width:100%;height:100%;display:block;object-fit:cover;object-position:center}
-.meg3-cardcenter-hero.verocard img{object-fit:cover;background:#101010}
+.meg3-cardcenter-hero.verocard img{object-fit:cover;object-position:center;background:#101010;image-rendering:auto}
 .meg3-cardcenter-hero>div{height:100%;padding:16px;display:flex;flex-direction:column;justify-content:flex-end}
 .meg3-cardcenter-hero>div strong{font-size:18px}.meg3-cardcenter-hero>div small{margin-top:5px;color:#b9d2d0;font-size:9px}
 
