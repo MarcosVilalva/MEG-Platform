@@ -331,3 +331,38 @@ body.meg-cleanroom-mobile .meg-update-success-toast button{
   width:27px!important;height:27px!important;border:1px solid rgba(160,255,222,.18)!important;border-radius:8px!important;
   background:#06453f!important;color:#effff9!important;
 }
+
+/* Entrada móvel limpa: cobre o único intervalo entre o boot autenticado e o primeiro
+   frame completo da Home para impedir qualquer resíduo visual do compositor anterior. */
+.meg-mobile-entry-shield{
+  position:fixed;
+  inset:0;
+  z-index:2147483550;
+  width:100vw;
+  height:100dvh;
+  pointer-events:none;
+  background:#002f32;
+}
+
+/* WebView em software: menos pintura por frame, mesma geometria e sem fantasmas. */
+body.meg-cleanroom-mobile .meg3-event-card,
+body.meg-cleanroom-mobile .meg2-pending-list>button,
+body.meg-cleanroom-mobile .meg2-statement-list>button,
+body.meg-cleanroom-mobile .meg3-history-suggestions>button,
+body.meg-cleanroom-mobile .meg3-installment-list>article{
+  contain:layout paint style;
+  box-shadow:none!important;
+  filter:none!important;
+  -webkit-filter:none!important;
+}
+body.meg-cleanroom-mobile .meg3-event-list,
+body.meg-cleanroom-mobile .meg2-pending-list,
+body.meg-cleanroom-mobile .meg2-statement-list,
+body.meg-cleanroom-mobile .meg5-picker-list,
+body.meg-cleanroom-mobile .meg3-history-suggestions,
+body.meg-cleanroom-mobile .meg3-installment-list{
+  overflow-anchor:none;
+  scroll-snap-type:none!important;
+  touch-action:pan-y;
+  scroll-behavior:auto!important;
+}
