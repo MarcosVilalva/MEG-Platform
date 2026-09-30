@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import './meg-mobile-picker.css';
-import { MegIcon } from './MegMobileIcon';
+import { MegIcon, type MegIconName } from './MegMobileIcon';
 
 export type MegMobilePickerOption = {
   id: string;
   label: string;
   subtitle?: string;
   badge?: string;
+  icon?: MegIconName;
+  tone?: 'red' | 'green' | 'yellow' | 'cyan' | 'violet';
 };
 
 export function MegMobilePicker({
@@ -33,6 +35,7 @@ export function MegMobilePicker({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
   const selected = options.find((item) => item.id === value);
 
   const filtered = useMemo(() => {
@@ -47,8 +50,20 @@ export function MegMobilePicker({
     );
   }, [options, query]);
 
+  function dismissKeyboard() {
+    searchRef.current?.blur();
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+  }
+
   function close() {
+    dismissKeyboard();
     setOpen(false);
+    setQuery('');
+    setSearching(false);
+  }
+
+  function closeSearch() {
+    dismissKeyboard();
     setQuery('');
     setSearching(false);
   }
@@ -71,7 +86,7 @@ export function MegMobilePicker({
     {open ? <div className="meg5-picker-overlay" role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) close();
     }}>
-      <section className="meg5-picker-sheet" role="dialog" aria-modal="true" aria-label={label}>
+      <section className={`meg5-picker-sheet ${searching ? 'is-searching' : ''}`} role="dialog" aria-modal="true" aria-label={label}>
         <header>
           <div><small>SELECIONAR</small><h3>{label}</h3></div>
           <button type="button" aria-label="Fechar" onClick={close}><MegIcon name="x" size={18}/></button>
@@ -80,8 +95,8 @@ export function MegMobilePicker({
         {searchable && options.length > 7 ? <div className="meg5-picker-search-zone">
           {!searching ? <button type="button" className="meg5-picker-search-trigger" onClick={() => setSearching(true)}><MegIcon name="search" size={17}/><span>Buscar</span></button> : <label className="meg5-picker-search">
             <MegIcon name="search" size={18}/>
-            <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Buscar ${label.toLocaleLowerCase('pt-BR')}...`}/>
-            <button type="button" aria-label="Fechar busca" onClick={() => { setQuery(''); setSearching(false); }}><MegIcon name="x" size={15}/></button>
+            <input ref={searchRef} autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Buscar ${label.toLocaleLowerCase('pt-BR')}...`}/>
+            <button type="button" aria-label="Fechar busca" onClick={closeSearch}><MegIcon name="x" size={15}/></button>
           </label>}
         </div> : null}
 
@@ -101,6 +116,7 @@ export function MegMobilePicker({
             className={item.id === value ? 'selected' : ''}
             onClick={() => { onChange(item.id); close(); }}
           >
+            {item.icon ? <span className={`meg5-picker-option-icon ${item.tone || 'cyan'}`}><MegIcon name={item.icon} size={19}/></span> : null}
             <span>
               <strong>{item.label}</strong>
               {item.subtitle ? <small>{item.subtitle}</small> : null}
