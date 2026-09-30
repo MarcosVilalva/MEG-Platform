@@ -167,7 +167,7 @@ type CarouselCard = {
 };
 
 function carouselCards(data: PhoenixReadModel): CarouselCard[] {
-  const credit = data.cards.filter((card) => card.isActive !== false).map((card) => ({
+  const credit: CarouselCard[] = data.cards.filter((card) => card.isActive !== false).map((card) => ({
     id: card.id,
     kind: 'credit' as const,
     label: cardName(card.name),
