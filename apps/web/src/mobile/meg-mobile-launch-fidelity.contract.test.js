@@ -86,5 +86,11 @@ console.log('Contrato do fluxo validado de Novo/Editar lançamento aprovado.');
   assert.ok(picker.includes("document.body.classList.add('meg-picker-open')"), 'Abrir seletor deve ativar estado modal soberano.');
   assert.ok(pickerCss.includes('z-index:2147483600') && pickerCss.includes('background:#012d30') && pickerCss.includes('height:100dvh'), 'Seletor deve ocupar a viewport com fundo opaco.');
   assert.ok(runtimeCss.includes('body.meg-cleanroom-mobile.meg-picker-open #root') && runtimeCss.includes('visibility:hidden!important'), 'App-base deve sair da composição enquanto o seletor estiver aberto.');
-  assert.ok(androidMain.includes('View.LAYER_TYPE_HARDWARE') && !androidMain.includes('View.LAYER_TYPE_SOFTWARE') && androidMain.includes('postInvalidateOnAnimation') && androidMain.includes('setOnScrollChangeListener'), 'WebView deve permanecer acelerado e usar repaint explícito sem alternar compositor.');
+  assert.ok(androidMain.includes('View.LAYER_TYPE_SOFTWARE') && !androidMain.includes('View.LAYER_TYPE_HARDWARE') && androidMain.includes('setOffscreenPreRaster(true)'), 'WebView deve permanecer em compositor estável por software neste aparelho, sem alternância de camada.');
+}
+
+{
+  assert.ok(runtimeCss.includes('content-visibility:auto') && runtimeCss.includes('contain-intrinsic-size:64px'), 'Regiões roláveis devem descartar conteúdo fora da viewport para reduzir pintura no WebView em software.');
+  assert.ok(runtimeCss.includes('contain:layout paint style') && runtimeCss.includes('text-rendering:optimizeSpeed'), 'Scroll interno deve usar contenção de pintura e renderização otimizada.');
+  assert.ok(!pickerCss.includes('will-change:scroll-position'), 'Seletor não deve forçar camada extra de composição.');
 }
