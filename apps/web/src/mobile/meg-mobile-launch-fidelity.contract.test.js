@@ -61,3 +61,12 @@ console.log('Contrato do fluxo validado de Novo/Editar lançamento aprovado.');
   assert.ok(launch.includes('resolveFinancialIcon') && launch.includes('icon, tone'), 'Categorias devem receber iconografia financeira real.');
   assert.ok(css.includes('.meg3-launch-type-cards button:nth-child(1)') && css.includes('rgba(255,83,111') && css.includes('rgba(62,238,155') && css.includes('rgba(246,209,75'), 'Cards Despesa, Receita e Alimentação devem usar cores neon integrais.');
 }
+
+{
+  assert.ok(launch.includes("toLocaleUpperCase('pt-BR')"), 'Campos textuais devem ser normalizados para caixa alta.');
+  assert.ok(!launch.includes(">Crediário</button>"), 'Novo lançamento não deve oferecer Crediário.');
+  assert.ok(launch.includes("expensePaymentMode === 'credit' || Boolean(cardId)"), 'Crédito deve ser definido pela modalidade/cartão, sem depender de forma de pagamento.');
+  assert.ok(launch.includes("{!credit ? <section className=\"meg3-launch-section\"><MegMobilePicker") && launch.includes("Forma de pagamento *"), 'Forma de pagamento deve desaparecer quando a modalidade for Crédito.');
+  assert.ok(launch.includes("if (isCrediarioMethod(initialMethod)) return 'credit'"), 'Histórico legado de crediário deve abrir para edição como Crédito.');
+  assert.ok(pickerCss.includes('scroll-behavior:auto') && pickerCss.includes('will-change:scroll-position'), 'Rolagem do picker deve permanecer nativa e imediata.');
+}
