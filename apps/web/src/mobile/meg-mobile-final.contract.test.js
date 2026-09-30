@@ -88,8 +88,8 @@ for (const relative of [
 
 assert.match(
   mobile,
-  /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*latam-pass-platinum\.webp[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*approved-v6\/riachuelo\.webp/i,
-  'Carrossel deve resolver nomes reais e apelidos para artes horizontais estáveis.',
+  /mercado.*meli[\s\S]*mlstatic\.com[\s\S]*latamairlines\.com[\s\S]*voeazul\.com\.br[\s\S]*riachuelo.*midway[\s\S]*plusdin\.com\.br/i,
+  'Carrossel deve resolver cartões ativos para artes reais de alta resolução.',
 );
 assert.match(css, /CONTRATO DE VIEWPORT FIXO[\s\S]*\.meg2-scroll\{[\s\S]*overflow:hidden!important/,
   'Home corrente deve caber no viewport sem rolagem geral.');
@@ -423,4 +423,10 @@ assert.match(
   cardCenterCss,
   /\.meg3-cardcenter-kpis article>svg[\s\S]*\.meg3-cardcenter-kpis strong[\s\S]*overflow:visible/,
   'KPIs devem apresentar ícones e valores completos sem ellipsis.',
+);
+
+assert.match(
+  mobile,
+  /LATAM PASS Itaú Mastercard Platinum[\s\S]*Azul Itaú Visa Infinite[\s\S]*Riachuelo Midway Mastercard/,
+  'Rótulos visuais dos cartões devem refletir as variantes cadastradas com clareza.',
 );

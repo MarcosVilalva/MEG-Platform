@@ -103,10 +103,18 @@ function isVerocardMethod(method: PhoenixReadModel['paymentMethods'][number]) {
 
 function cardArt(name: string) {
   const normalized = normalizeCardText(name);
-  if (normalized.includes('mercado') || normalized.includes('meli')) return asset('assets/cards/approved-v6/mercado.webp');
-  if (normalized.includes('latam')) return asset('assets/cards/latam-pass-platinum.webp');
-  if (normalized.includes('azul')) return asset('assets/cards/approved-v6/azul.webp');
-  if (normalized.includes('riachuelo') || normalized.includes('midway')) return asset('assets/cards/approved-v6/riachuelo.webp');
+  if (normalized.includes('mercado') || normalized.includes('meli')) {
+    return 'https://http2.mlstatic.com/storage/pog-cm-admin/calm-assets/cartao--9da2bc3a.png';
+  }
+  if (normalized.includes('latam')) {
+    return 'https://s.latamairlines.com/images/web-offer-creditcards/itau_latampass_mc_platinum.png';
+  }
+  if (normalized.includes('azul')) {
+    return 'https://www.voeazul.com.br/content/dam/azul/voe-azul/institucional-tudoazul/parceiros/tabs/tabs-cartao.png';
+  }
+  if (normalized.includes('riachuelo') || normalized.includes('midway')) {
+    return 'https://media.plusdin.com.br/uploads/2024/02/cartao-riachuelo-1.png';
+  }
   if (normalized.includes('nubank')) return asset('assets/cards/nubank-visual.svg');
   return '';
 }
@@ -114,9 +122,9 @@ function cardArt(name: string) {
 function cardName(name: string) {
   const normalized = normalizeCardText(name);
   if (normalized.includes('mercado') || normalized.includes('meli')) return 'Mercado Pago Visa';
-  if (normalized.includes('latam')) return 'LATAM PASS Itaú Mastercard';
-  if (normalized.includes('azul')) return 'Azul Visa';
-  if (normalized.includes('riachuelo') || normalized.includes('midway')) return 'Riachuelo Midway';
+  if (normalized.includes('latam')) return 'LATAM PASS Itaú Mastercard Platinum';
+  if (normalized.includes('azul')) return normalized.includes('infinite') ? 'Azul Itaú Visa Infinite' : 'Azul Itaú Visa';
+  if (normalized.includes('riachuelo') || normalized.includes('midway')) return 'Riachuelo Midway Mastercard';
   if (normalized.includes('nubank')) return 'Nubank';
   return name || 'Cartão';
 }
