@@ -5,11 +5,12 @@ import type { PhoenixReadModel } from '../phoenix/contracts';
 import { hydratePhoenixAvatarPreference, phoenixAvatarImage, readPhoenixAvatarPreference } from '../phoenix/profile-avatar';
 import { MegMobileAnalytics, MegMobileCashflow, MegMobileHistory, MegMobileMovements } from './MegMobileCoreScreens';
 import { MegMobileLaunchSheet } from './MegMobileLaunchSheet';
-import { MegMobileCardCenter } from './MegMobileCardCenter';
+import { MegMobileBenefitCardCenter, MegMobileCardCenter, type MegMobileBenefitRow, type MegMobileCardCenterRow } from './MegMobileCardCenter';
 import { MegMobileBenefitModal } from './MegMobileBenefitModal';
 import { MegMobileSettings } from './MegMobileSettings';
 import { MegMobilePicker } from './MegMobilePicker';
 import { preparePhoenixPendingSettlement, runPhoenixPendingSettlement } from '../phoenix/data/phoenix-pending-write-gateway';
+import { cardDueDateForStatement } from '../phoenix/data/card-dates';
 import './meg-mobile-runtime.css';
 import './meg-mobile-final.css';
 import './meg-mobile-core-screens.css';
@@ -86,18 +87,32 @@ function asset(path: string) {
   }
 }
 
+const VEROCARD_ART_URL = 'https://verocard.com.br/wp-content/uploads/2025/01/verocardAlimentacaoBlack.png';
+
+function normalizeCardText(value: unknown) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
+}
+
+function isBenefitAccount(account: PhoenixReadModel['accounts'][number]) {
+  return account.isActive && (/benefit/.test(normalizeCardText(account.type)) || /benef|verocard|alimenta/.test(normalizeCardText(account.name)));
+}
+
+function isVerocardMethod(method: PhoenixReadModel['paymentMethods'][number]) {
+  return method.isActive && /verocard/.test(normalizeCardText(method.name) + ' ' + normalizeCardText(method.type));
+}
+
 function cardArt(name: string) {
-  const normalized = String(name || '').toLowerCase();
+  const normalized = normalizeCardText(name);
   if (normalized.includes('mercado') || normalized.includes('meli')) return asset('assets/cards/approved-v6/mercado.webp');
-  if (normalized.includes('latam')) return asset('assets/cards/latam-pass-platinum.webp');
+  if (normalized.includes('latam')) return asset('assets/cards/approved-v6/latam.webp');
   if (normalized.includes('azul')) return asset('assets/cards/approved-v6/azul.webp');
-  if (normalized.includes('riachuelo') || normalized.includes('midway')) return asset('assets/cards/riachuelo-mastercard-visual.svg');
+  if (normalized.includes('riachuelo') || normalized.includes('midway')) return asset('assets/cards/approved-v6/riachuelo.webp');
   if (normalized.includes('nubank')) return asset('assets/cards/nubank-visual.svg');
   return '';
 }
 
 function cardName(name: string) {
-  const normalized = String(name || '').toLowerCase();
+  const normalized = normalizeCardText(name);
   if (normalized.includes('mercado') || normalized.includes('meli')) return 'Mercado Pago Visa';
   if (normalized.includes('latam')) return 'LATAM PASS Itaú Mastercard';
   if (normalized.includes('azul')) return 'Azul Visa';
@@ -106,16 +121,7 @@ function cardName(name: string) {
   return name || 'Cartão';
 }
 
-type MobileCardRow = {
-  id: string;
-  eventId?: string;
-  description: string;
-  date: string;
-  amount: number;
-  installmentNo?: number;
-  installmentQty?: number;
-  category?: string;
-};
+type MobileCardRow = MegMobileCardCenterRow;
 
 function cardRows(card: PhoenixReadModel['cards'][number] | undefined): MobileCardRow[] {
   if (!card) return [];
@@ -123,15 +129,18 @@ function cardRows(card: PhoenixReadModel['cards'][number] | undefined): MobileCa
     return card.statement.lines.map((line) => {
       const purchase = line.purchaseId ? (card.purchases || []).find((item) => item.id === line.purchaseId) : undefined;
       return {
-      id: line.id,
-      eventId: line.eventId,
-      description: line.description,
-      date: line.purchaseDate || line.dueDate,
-      amount: Math.abs(Number(line.effect || 0)),
-      installmentNo: line.installmentNo,
-      installmentQty: line.installmentQty,
-      category: purchase?.category?.name || 'Outros',
-    };
+        id: line.id,
+        eventId: line.eventId,
+        description: line.description,
+        date: line.purchaseDate || line.dueDate,
+        amount: Math.abs(Number(line.effect || 0)),
+        installmentNo: line.installmentNo,
+        installmentQty: line.installmentQty,
+        category: purchase?.category?.name || 'Outros',
+        statementMonth: line.statementMonth,
+        dueDate: line.dueDate,
+        status: line.sourceStatus,
+      };
     });
   }
   return (card.purchases || []).flatMap((purchase) => (purchase.entries || []).map((entry) => ({
@@ -142,7 +151,71 @@ function cardRows(card: PhoenixReadModel['cards'][number] | undefined): MobileCa
     installmentNo: entry.number,
     installmentQty: purchase.installments,
     category: purchase.category?.name || 'Outros',
+    statementMonth: entry.statementMonth,
+    dueDate: cardDueDateForStatement(entry.statementMonth, Number(card.closingDay || 1), Number(card.dueDay || 1)),
+    status: entry.status,
   })));
+}
+
+type CarouselCard = {
+  id: string;
+  kind: 'credit' | 'benefit';
+  label: string;
+  artUrl: string;
+  color?: string | null;
+  lastFour?: string | null;
+};
+
+function carouselCards(data: PhoenixReadModel): CarouselCard[] {
+  const credit = data.cards.filter((card) => card.isActive !== false).map((card) => ({
+    id: card.id,
+    kind: 'credit' as const,
+    label: cardName(card.name),
+    artUrl: cardArt(card.name),
+    color: card.color,
+    lastFour: card.lastFour,
+  }));
+  const benefitAccount = data.accounts.find(isBenefitAccount);
+  const verocard = data.paymentMethods.find(isVerocardMethod);
+  if (benefitAccount && verocard) {
+    credit.push({
+      id: 'benefit-verocard',
+      kind: 'benefit',
+      label: 'Verocard Alimentação',
+      artUrl: VEROCARD_ART_URL,
+      color: '#111111',
+      lastFour: null,
+    });
+  }
+  return credit;
+}
+
+function benefitRows(data: PhoenixReadModel): MegMobileBenefitRow[] {
+  const benefitAccount = data.accounts.find(isBenefitAccount);
+  const verocard = data.paymentMethods.find(isVerocardMethod);
+  if (!benefitAccount && !verocard) return [];
+  return data.events.items
+    .filter((event) => {
+      const accountId = event.accountId || event.account?.id;
+      const methodId = event.paymentMethodId || event.paymentMethod?.id;
+      return (benefitAccount && accountId === benefitAccount.id)
+        || (verocard && methodId === verocard.id)
+        || /verocard|benef|alimenta/.test(normalizeCardText(event.account?.name) + ' ' + normalizeCardText(event.paymentMethod?.name));
+    })
+    .map((event) => {
+      const signed = Number(event.signedAmount ?? event.amount ?? 0);
+      const credit = event.type === 'income' || event.type === 'redemption' || signed > 0;
+      return {
+        id: event.id,
+        eventId: event.id,
+        description: event.description,
+        date: String(event.date).slice(0,10),
+        amount: Math.abs(signed),
+        category: event.category?.name || event.sourceDetails?.group || (credit ? 'Recarga' : 'Alimentação'),
+        kind: credit ? 'credit' as const : 'debit' as const,
+      };
+    })
+    .sort((a,b) => b.date.localeCompare(a.date));
 }
 
 function Icon({ name, size = 22 }: { name: string; size?: number }) {
@@ -388,22 +461,21 @@ function Home({ data, periodMode, periodLabel, homePeriodContext, onNavigate }: 
   </main>;
 }
 
-function InfiniteCarousel({ data, activeId, onActiveId }: { data: PhoenixReadModel; activeId: string; onActiveId: (id: string) => void }) {
-  const cards = useMemo(() => data.cards.filter((card) => card.isActive !== false), [data.cards]);
-  const repeated = useMemo(() => cards.length > 1 ? cards.concat(cards, cards) : cards, [cards]);
+function InfiniteCarousel({ items, activeId, onActiveId }: { items: CarouselCard[]; activeId: string; onActiveId: (id: string) => void }) {
+  const repeated = useMemo(() => items.length > 1 ? items.concat(items, items) : items, [items]);
   const track = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = track.current;
-    if (!el || cards.length <= 1) return;
+    if (!el || items.length <= 1) return;
     const nodes = Array.from(el.querySelectorAll<HTMLElement>('[data-copy]'));
-    const firstMiddle = nodes[cards.length];
+    const firstMiddle = nodes[items.length];
     if (firstMiddle) el.scrollLeft = firstMiddle.offsetLeft - (el.clientWidth - firstMiddle.clientWidth) / 2;
-  }, [cards.length]);
+  }, [items.length]);
 
   useEffect(() => {
     const el = track.current;
-    if (!el || cards.length <= 1) return;
+    if (!el || items.length <= 1) return;
     let frame = 0;
     const onScroll = () => {
       cancelAnimationFrame(frame);
@@ -418,46 +490,45 @@ function InfiniteCarousel({ data, activeId, onActiveId }: { data: PhoenixReadMod
         });
         if (!nearest) return;
         const index = Number(nearest.dataset.copy || 0);
-        const logical = ((index % cards.length) + cards.length) % cards.length;
-        onActiveId(cards[logical]?.id || '');
-        if (index < cards.length) {
-          const target = nodes[index + cards.length];
+        const logical = ((index % items.length) + items.length) % items.length;
+        onActiveId(items[logical]?.id || '');
+        if (index < items.length) {
+          const target = nodes[index + items.length];
           if (target) el.scrollLeft += target.offsetLeft - nearest.offsetLeft;
-        } else if (index >= cards.length * 2) {
-          const target = nodes[index - cards.length];
+        } else if (index >= items.length * 2) {
+          const target = nodes[index - items.length];
           if (target) el.scrollLeft += target.offsetLeft - nearest.offsetLeft;
         }
       });
     };
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => { cancelAnimationFrame(frame); el.removeEventListener('scroll', onScroll); };
-  }, [cards, onActiveId]);
+  }, [items, onActiveId]);
 
-  if (!cards.length) return <div className="meg2-empty-card">Nenhum cartão cadastrado.</div>;
+  if (!items.length) return <div className="meg2-empty-card">Nenhum cartão ou benefício ativo.</div>;
 
   return <div className="meg2-carousel-stack" data-meg-scroll-axis="x">
     <div className="meg2-carousel" ref={track}>
-      {repeated.map((card, index) => {
-        const art = cardArt(card.name);
-        const className = 'meg2-card-art ' + (card.id === activeId ? 'active' : '');
+      {repeated.map((item, index) => {
+        const className = 'meg2-card-art ' + (item.id === activeId ? 'active ' : '') + (item.kind === 'benefit' ? 'benefit' : '');
         return <button
-          key={card.id + '-' + index}
+          key={item.id + '-' + index}
           className={className}
           data-copy={index}
-          data-card-identity={cardName(card.name)}
-          style={!art ? { background: card.color || '#073f82' } : undefined}
+          data-card-identity={item.label}
+          style={!item.artUrl ? { background: item.color || '#073f82' } : undefined}
           onClick={(event) => {
-            onActiveId(card.id);
-            event.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            onActiveId(item.id);
+            event.currentTarget.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
           }}
         >
-          <span className="meg2-card-art-fallback" aria-hidden={Boolean(art)}>
-            <strong>{cardName(card.name)}</strong>
-            <small>•••• {card.lastFour || '0000'}</small>
+          <span className="meg2-card-art-fallback" aria-hidden={Boolean(item.artUrl)}>
+            <strong>{item.label}</strong>
+            <small>{item.kind === 'benefit' ? 'Benefício Alimentação' : '•••• ' + (item.lastFour || '0000')}</small>
           </span>
-          {art ? <img
-            src={art}
-            alt={cardName(card.name)}
+          {item.artUrl ? <img
+            src={item.artUrl}
+            alt={item.label}
             loading="eager"
             decoding="async"
             onError={(event) => {
@@ -465,45 +536,92 @@ function InfiniteCarousel({ data, activeId, onActiveId }: { data: PhoenixReadMod
               event.currentTarget.parentElement?.classList.add('asset-failed');
             }}
           /> : null}
+          {item.kind === 'benefit' ? <span className="meg2-benefit-card-tag">BENEFÍCIO</span> : null}
         </button>;
       })}
     </div>
-    <div className="meg2-dots">{cards.map((card) => <span key={card.id} className={card.id === activeId ? 'active' : ''}/>)}</div>
+    <div className="meg2-dots">{items.map((item) => <span key={item.id} className={item.id === activeId ? 'active' : ''}/>)}</div>
   </div>;
 }
 
 function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Props['onEditEvent'] }) {
-  const cards = useMemo(() => data.cards.filter((card) => card.isActive !== false), [data.cards]);
-  const [activeId, setActiveId] = useState(cards[0]?.id || '');
+  const items = useMemo(() => carouselCards(data), [data.cards, data.accounts, data.paymentMethods]);
+  const [activeId, setActiveId] = useState(items[0]?.id || '');
   const [centerOpen, setCenterOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<MobileCardRow | null>(null);
-  useEffect(() => { if (!cards.some((card) => card.id === activeId)) setActiveId(cards[0]?.id || ''); }, [cards, activeId]);
+  useEffect(() => { if (!items.some((item) => item.id === activeId)) setActiveId(items[0]?.id || ''); }, [items, activeId]);
 
-  const card = cards.find((item) => item.id === activeId) || cards[0];
+  const active = items.find((item) => item.id === activeId) || items[0];
+  const isBenefit = active?.kind === 'benefit';
+  const card = !isBenefit ? data.cards.find((item) => item.id === active?.id) : undefined;
   const rows = useMemo(() => cardRows(card), [card]);
+  const benefit = useMemo(() => benefitRows(data), [data.events.items, data.accounts, data.paymentMethods]);
   const current = Number(card?.statement?.payableAmount ?? card?.payableStatementAmount ?? card?.statementAmount ?? 0);
   const limit = Number(card?.creditLimit || 0);
   const available = Number(card?.availableLimit ?? Math.max(0, limit - current));
   const due = card?.statement?.dueDate ? shortDate.format(new Date(card.statement.dueDate + 'T12:00:00Z')) : card?.dueDay ? 'Dia ' + card.dueDay : '—';
+  const bestDay = card ? (Number(card.closingDay || 1) >= 28 ? 1 : Number(card.closingDay || 1) + 1) : 0;
+  const usage = limit > 0 ? Math.min(100, Math.round(((limit - available) / limit) * 100)) : 0;
+  const benefitBalance = Number(data.summary.benefitBalance || 0);
+  const benefitCredits = Number(data.summary.benefitCredits || 0);
+  const benefitUsed = Number(data.summary.benefitUsed || 0);
+  const visibleRows = isBenefit ? benefit.slice(0,10) : rows;
 
-  return <main className="meg2-main meg2-cards" data-meg-fixed-screen="true">
-    <section className="meg2-page-title"><div><h1>Cartões</h1><p>Seus principais meios de pagamento.</p></div><span><Icon name="wallet"/></span></section>
-    <InfiniteCarousel data={data} activeId={activeId} onActiveId={setActiveId}/>
-    <section className="meg2-card-metrics">
-      <article><Icon name="wallet"/><small>Limite total</small><strong>{money.format(limit)}</strong></article>
-      <article><Icon name="trend"/><small>Disponível</small><strong>{money.format(available)}</strong></article>
-      <article><Icon name="file"/><small>Fatura atual</small><strong>{money.format(current)}</strong></article>
-      <article><Icon name="calendar"/><small>Vencimento</small><strong>{due}</strong></article>
+  function openActiveCenter() {
+    if (!active) return;
+    setCenterOpen(true);
+  }
+
+  return <main className="meg2-main meg2-cards meg2-cards-v9" data-meg-fixed-screen="true">
+    <section className="meg2-page-title"><div><h1>Cartões</h1><p>Crédito e benefício em uma visão única.</p></div><span><Icon name="card"/></span></section>
+    <InfiniteCarousel items={items} activeId={activeId} onActiveId={(id) => { setActiveId(id); setCenterOpen(false); setSelectedRow(null); }}/>
+
+    <section className={'meg2-card-snapshot ' + (isBenefit ? 'benefit' : 'credit')} role="button" tabIndex={0} onClick={openActiveCenter} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') openActiveCenter(); }}>
+      <header>
+        <span><strong>{active?.label || 'Cartão'}</strong><small>{isBenefit ? 'Saldo carregado · consumo imediato' : `Fatura ${data.month.split('-').reverse().join('/')}`}</small></span>
+        <b>Abrir central <Icon name="chevron-right" size={13}/></b>
+      </header>
+      {isBenefit ? <div className="meg2-card-metrics benefit">
+        <article><Icon name="wallet"/><small>Saldo disponível</small><strong>{money.format(benefitBalance)}</strong></article>
+        <article><Icon name="arrow-up"/><small>Recargas</small><strong>{money.format(benefitCredits)}</strong></article>
+        <article><Icon name="food"/><small>Consumido</small><strong>{money.format(benefitUsed)}</strong></article>
+        <article><Icon name="list"/><small>Movimentos</small><strong>{benefit.length}</strong></article>
+      </div> : <div className="meg2-card-metrics">
+        <article><Icon name="wallet"/><small>Limite total</small><strong>{money.format(limit)}</strong></article>
+        <article><Icon name="trend"/><small>Disponível</small><strong>{money.format(available)}</strong></article>
+        <article><Icon name="file"/><small>Fatura atual</small><strong>{money.format(current)}</strong></article>
+        <article><Icon name="calendar"/><small>Vencimento</small><strong>{due}</strong></article>
+      </div>}
+      {!isBenefit && card ? <div className="meg2-card-usage"><span><i style={{ width: usage + '%' }}/></span><small>{usage}% utilizado · melhor dia para compra: {bestDay}</small></div> : null}
+      {isBenefit ? <div className="meg2-card-usage benefit"><span><i style={{ width: benefitCredits > 0 ? Math.min(100,(benefitUsed/benefitCredits)*100) + '%' : '0%' }}/></span><small>O saldo remanescente continua disponível após a próxima recarga.</small></div> : null}
     </section>
+
     <section className="meg2-statement">
-      <header><div><h2>Lançamentos da fatura</h2><small>{card ? cardName(card.name) : 'Cartão'}</small></div><button type="button" onClick={() => card && setCenterOpen(true)}>Ver todos <Icon name="chevron-right" size={14}/></button></header>
+      <header><div><h2>{isBenefit ? 'Movimentações do benefício' : 'Lançamentos da fatura'}</h2><small>{active?.label || 'Cartão'}</small></div><button type="button" onClick={openActiveCenter}>Ver todos <Icon name="chevron-right" size={14}/></button></header>
       <div className="meg2-statement-list" data-meg-scroll-region="true">
-        {rows.map((row) => <button key={row.id} type="button" onClick={() => setSelectedRow(row)}><span className={'icon-' + semanticIcon(row.description, row.category)}><Icon name={semanticIcon(row.description, row.category)} size={20}/></span><p><b>{row.description}</b><small>{row.installmentNo && row.installmentQty ? 'Parcela ' + row.installmentNo + '/' + row.installmentQty + ' • ' : ''}{String(row.date || '').slice(0, 10).split('-').reverse().join('/')}</small></p><strong>{money.format(row.amount)}</strong><i><Icon name="chevron-right" size={15}/></i></button>)}
-        {!rows.length ? <div className="meg2-empty">Nenhum lançamento nesta fatura.</div> : null}
+        {visibleRows.map((row) => {
+          if (isBenefit) {
+            const benefitRow = row as MegMobileBenefitRow;
+            const icon = semanticIcon(benefitRow.description, benefitRow.category);
+            return <button key={benefitRow.id} type="button" onClick={() => benefitRow.eventId && onEditEvent(benefitRow.eventId)}>
+              <span className={'icon-' + icon}><Icon name={icon} size={20}/></span>
+              <p><b>{benefitRow.description}</b><small>{benefitRow.date.split('-').reverse().join('/')} · {benefitRow.category || 'Alimentação'}</small></p>
+              <strong className={benefitRow.kind}>{benefitRow.kind === 'credit' ? '+' : '−'}{money.format(benefitRow.amount)}</strong><i><Icon name="chevron-right" size={15}/></i>
+            </button>;
+          }
+          const creditRow = row as MobileCardRow;
+          const icon = semanticIcon(creditRow.description, creditRow.category);
+          return <button key={creditRow.id} type="button" onClick={() => setSelectedRow(creditRow)}><span className={'icon-' + icon}><Icon name={icon} size={20}/></span><p><b>{creditRow.description}</b><small>{creditRow.installmentNo && creditRow.installmentQty ? 'Parcela ' + creditRow.installmentNo + '/' + creditRow.installmentQty + ' • ' : ''}{String(creditRow.date || '').slice(0, 10).split('-').reverse().join('/')}</small></p><strong>{money.format(creditRow.amount)}</strong><i><Icon name="chevron-right" size={15}/></i></button>;
+        })}
+        {!visibleRows.length ? <div className="meg2-empty">{isBenefit ? 'Nenhuma movimentação de benefício neste período.' : 'Nenhum lançamento nesta fatura.'}</div> : null}
       </div>
     </section>
-    <button className="meg2-primary" type="button" onClick={() => card && setCenterOpen(true)}><Icon name="wallet"/><strong>Abrir central do cartão</strong><span><Icon name="chevron-right" size={16}/></span></button>
-    {centerOpen && card ? <MegMobileCardCenter card={card} cardLabel={cardName(card.name)} artUrl={cardArt(card.name)} rows={rows} onClose={() => setCenterOpen(false)}/> : null}
+
+    <button className="meg2-primary" type="button" onClick={openActiveCenter}><Icon name={isBenefit ? 'food' : 'card'}/><strong>{isBenefit ? 'Abrir extrato do Verocard' : 'Abrir central do cartão'}</strong><span><Icon name="chevron-right" size={16}/></span></button>
+
+    {centerOpen && card && !isBenefit ? <MegMobileCardCenter card={card} cardLabel={cardName(card.name)} artUrl={cardArt(card.name)} rows={rows} currentMonth={data.month} onOpenRow={(row) => { setCenterOpen(false); setSelectedRow(row); }} onClose={() => setCenterOpen(false)}/> : null}
+    {centerOpen && isBenefit ? <MegMobileBenefitCardCenter artUrl={VEROCARD_ART_URL} balance={benefitBalance} credits={benefitCredits} used={benefitUsed} rows={benefit} onOpenEvent={(eventId) => { setCenterOpen(false); onEditEvent(eventId); }} onClose={() => setCenterOpen(false)}/> : null}
+
     {selectedRow && card ? <div className="meg2-card-detail-overlay" role="presentation" onClick={() => setSelectedRow(null)}>
       <section className="meg2-card-detail" role="dialog" aria-modal="true" aria-label="Detalhe da compra" onClick={(event) => event.stopPropagation()}>
         <header><div><small>DETALHE DA COMPRA</small><h2>{selectedRow.description}</h2></div><button type="button" onClick={() => setSelectedRow(null)}><Icon name="x" size={18}/></button></header>
@@ -511,8 +629,9 @@ function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Pro
         <dl>
           <div><dt>Data da compra</dt><dd>{String(selectedRow.date).slice(0,10).split('-').reverse().join('/')}</dd></div>
           <div><dt>Categoria</dt><dd>{selectedRow.category || 'Outros'}</dd></div>
-          <div><dt>Cartão</dt><dd>{cardName(card.name)} ·•••• {card.lastFour || '0000'}</dd></div>
-          <div><dt>Forma de pagamento</dt><dd>Cartão de crédito</dd></div>
+          <div><dt>Cartão</dt><dd>{cardName(card.name)}{card.lastFour ? ` ·•••• ${card.lastFour}` : ''}</dd></div>
+          <div><dt>Fatura / competência</dt><dd>{selectedRow.statementMonth ? selectedRow.statementMonth.split('-').reverse().join('/') : data.month.split('-').reverse().join('/')}</dd></div>
+          <div><dt>Vencimento</dt><dd>{selectedRow.dueDate ? selectedRow.dueDate.split('-').reverse().join('/') : due}</dd></div>
           <div><dt>Parcelamento</dt><dd>{selectedRow.installmentNo && selectedRow.installmentQty ? `${selectedRow.installmentNo} de ${selectedRow.installmentQty}` : 'À vista'}</dd></div>
         </dl>
         <footer><button type="button" className="secondary" onClick={() => setSelectedRow(null)}>Fechar</button><button type="button" className="apply" onClick={() => { const eventId=selectedRow.eventId; setSelectedRow(null); if (eventId) onEditEvent(eventId); else setCenterOpen(true); }}>{selectedRow.eventId ? 'Editar lançamento' : 'Abrir central'}</button></footer>
