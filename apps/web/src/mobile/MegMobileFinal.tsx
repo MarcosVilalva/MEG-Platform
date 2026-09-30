@@ -184,28 +184,15 @@ function Header({ data, periodMode, periodLabel, onHome, onOpenPeriod, onOpenMen
   </header>;
 }
 
-function Dock({ view, pendingCount, menuOpen, launchOpen, onNavigate, onLaunch, onMenu }: { view: MobileView; pendingCount: number; menuOpen: boolean; launchOpen: boolean; onNavigate: Props['onNavigate']; onLaunch: Props['onLaunch']; onMenu: () => void }) {
-  const secondaryView = !['home', 'movements', 'payables'].includes(view);
-  const activeItem = launchOpen
-    ? 'new'
-    : menuOpen
-      ? 'menu'
-      : secondaryView
-        ? 'menu'
-        : view === 'home'
-          ? 'home'
-          : view === 'movements'
-            ? 'movements'
-            : 'payables';
-
-  return <nav className="meg2-dock" data-active-item={activeItem}>
-    <button className={activeItem === 'home' ? 'active' : ''} aria-current={activeItem === 'home' ? 'page' : undefined} onClick={() => onNavigate('home')}><Icon name="home"/><span>Início</span></button>
-    <button className={activeItem === 'movements' ? 'active' : ''} aria-current={activeItem === 'movements' ? 'page' : undefined} onClick={() => onNavigate('movements')}><Icon name="file"/><span>Lançamentos</span></button>
-    <button className={activeItem === 'new' ? 'meg2-new active' : 'meg2-new'} aria-current={activeItem === 'new' ? 'page' : undefined} onClick={() => onLaunch('expense')}><span><Icon name="plus" size={27}/></span><small>Novo</small></button>
-    <button className={activeItem === 'payables' ? 'active' : ''} aria-current={activeItem === 'payables' ? 'page' : undefined} onClick={() => onNavigate('payables')}>
+function Dock({ view, pendingCount, menuOpen, onNavigate, onLaunch, onMenu }: { view: MobileView; pendingCount: number; menuOpen: boolean; onNavigate: Props['onNavigate']; onLaunch: Props['onLaunch']; onMenu: () => void }) {
+  return <nav className="meg2-dock">
+    <button className={view === 'home' ? 'active' : ''} onClick={() => onNavigate('home')}><Icon name="home"/><span>Início</span></button>
+    <button className={view === 'movements' ? 'active' : ''} onClick={() => onNavigate('movements')}><Icon name="file"/><span>Lançamentos</span></button>
+    <button className="meg2-new" onClick={() => onLaunch('expense')}><span><Icon name="plus" size={27}/></span><small>Novo</small></button>
+    <button className={view === 'payables' ? 'active' : ''} onClick={() => onNavigate('payables')}>
       <span className="meg2-badge-wrap"><Icon name="wallet"/>{pendingCount > 0 ? <b>{pendingCount > 9 ? '9+' : pendingCount}</b> : null}</span><span>Pendentes</span>
     </button>
-    <button className={activeItem === 'menu' ? 'active' : ''} aria-current={activeItem === 'menu' ? 'page' : undefined} onClick={onMenu}><Icon name="menu"/><span>Menu</span></button>
+    <button className={menuOpen ? 'active' : ''} onClick={onMenu}><Icon name="menu"/><span>Menu</span></button>
   </nav>;
 }
 
@@ -888,7 +875,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
         {view === 'analytics' ? <MegMobileAnalytics data={data}/> : null}
         {view === 'settings' ? <MegMobileSettings data={data} onLogout={onLogout}/> : null}
       </div>
-      <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} launchOpen={!!launchSheet} onNavigate={navigateMobile} onLaunch={(preset) => setLaunchSheet({ preset })} onMenu={toggleMenu}/>
+      <Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={navigateMobile} onLaunch={(preset) => setLaunchSheet({ preset })} onMenu={toggleMenu}/>
       {menuOpen ? <MenuSheet onClose={() => setMenuOpen(false)} onNavigate={navigateMobile} onLogout={onLogout} onCloseApp={onClose}/> : null}
       {periodOpen ? <PeriodSheet data={data} initialMode={periodMode} loading={periodLoading} error={periodError} onClose={() => setPeriodOpen(false)} onSelectMonth={onSelectMonth} onSelectRange={onSelectRange} onSelectAll={onSelectAll}/> : null}
     </div>
@@ -898,7 +885,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
       event={launchSheet.event}
       onClose={() => setLaunchSheet(null)}
       appHeader={<Header data={data} periodMode={periodMode} periodLabel={periodLabel} onHome={() => { setLaunchSheet(null); navigateMobile('home'); }} onOpenPeriod={() => { setLaunchSheet(null); openPeriod(); }} onOpenMenu={() => { setLaunchSheet(null); openMenu(); }}/>}
-      appDock={<Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} launchOpen={true} onNavigate={(next) => { setLaunchSheet(null); navigateMobile(next); }} onLaunch={() => setLaunchSheet({ preset: 'expense' })} onMenu={() => { setLaunchSheet(null); openMenu(); }}/>}
+      appDock={<Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={(next) => { setLaunchSheet(null); navigateMobile(next); }} onLaunch={() => setLaunchSheet({ preset: 'expense' })} onMenu={() => { setLaunchSheet(null); openMenu(); }}/>}
     /> : null}
   </div>;
 }

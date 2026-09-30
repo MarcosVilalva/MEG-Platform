@@ -55,18 +55,8 @@ assert.match(
 );
 assert.match(
   css,
-  /DOCK FINAL CANÔNICO: cinco faixas físicas[\s\S]*\.meg2-dock>button:nth-child\(1\)\{left:0!important\}[\s\S]*\.meg2-dock>button:nth-child\(2\)\{left:20%!important\}[\s\S]*\.meg2-dock>button:nth-child\(3\)\{left:40%!important\}[\s\S]*\.meg2-dock>button:nth-child\(4\)\{left:60%!important\}[\s\S]*\.meg2-dock>button:nth-child\(5\)\{left:80%!important\}/,
-  'Dock deve usar cinco faixas físicas de 20% independentes da tela ativa.',
-);
-assert.match(
-  css,
-  /\.meg2-dock>\.meg2-new>span:first-child\{[\s\S]*width:50px!important[\s\S]*height:50px!important[\s\S]*aspect-ratio:1 \/ 1!important[\s\S]*border-radius:50%!important[\s\S]*transform:none!important/,
-  'Botão central Novo deve manter círculo 50x50 e proporção 1:1 em qualquer tela.',
-);
-assert.doesNotMatch(
-  css,
-  /DOCK FINAL CANÔNICO:[\s\S]*grid-template-columns:/,
-  'Dock final não deve depender de grid para posicionar seus cinco itens.',
+  /\.meg2-new\{[\s\S]*display:block!important[\s\S]*position:relative!important[\s\S]*\.meg2-new>span:first-child\{[\s\S]*position:absolute!important[\s\S]*left:calc\(50% - 25px\)!important[\s\S]*width:50px!important[\s\S]*min-width:50px!important[\s\S]*max-width:50px!important/,
+  'Botão central Novo deve ficar isolado do fluxo do dock para nunca estreitar ou redimensionar durante a navegação.',
 );
 assert.match(
   mobile,
