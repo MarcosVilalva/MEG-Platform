@@ -70,9 +70,6 @@ public class MainActivity extends BridgeActivity {
             getBridge().getWebView().setLayerType(View.LAYER_TYPE_SOFTWARE, null);
             getBridge().getWebView().setOverScrollMode(View.OVER_SCROLL_NEVER);
             getBridge().getWebView().setVerticalScrollBarEnabled(false);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                getBridge().getWebView().getSettings().setOffscreenPreRaster(true);
-            }
         }
 
         getWindow().getDecorView().post(this::applyImmersiveNavigation);
