@@ -215,7 +215,7 @@ export function MegMobileCardCenter({
         {filtered.map((row) => {
           const icon = transactionIcon(row.description, row.category);
           return <button type="button" key={row.id} onClick={() => onOpenRow?.(row)}>
-            <span className="meg3-cardcenter-row-icon"><MegIcon name={icon} size={18}/></span>
+            <span className={`meg3-cardcenter-row-icon icon-${icon}`}><MegIcon name={icon} size={18}/></span>
             <span className="meg3-cardcenter-row-copy"><strong>{row.description}</strong><small>{shortDate(row.date)}{row.statementMonth ? ` · fatura ${monthLabel(row.statementMonth)}` : ''}{row.installmentNo && row.installmentQty ? ` · parcela ${row.installmentNo}/${row.installmentQty}` : ''}</small></span>
             <b>{money.format(Number(row.amount || 0))}</b>
             {onOpenRow ? <i><MegIcon name="chevron-right" size={14}/></i> : null}
@@ -225,7 +225,7 @@ export function MegMobileCardCenter({
       </section>
 
       <footer>
-        <span><small>{filtered.length} lançamento(s)</small><strong>{money.format(total)}</strong></span>
+        <span className="meg3-cardcenter-total"><small>{filtered.length} lançamento(s)</small><strong>{money.format(total)}</strong></span>
         <button type="button" onClick={onClose}>Fechar</button>
       </footer>
     </section>
@@ -298,7 +298,7 @@ export function MegMobileBenefitCardCenter({
         {filtered.map((row)=>{
           const icon = transactionIcon(row.description, row.category, row.kind);
           return <button key={row.id} type="button" onClick={()=>row.eventId && onOpenEvent?.(row.eventId)}>
-            <span className="meg3-cardcenter-row-icon"><MegIcon name={icon} size={18}/></span>
+            <span className={`meg3-cardcenter-row-icon icon-${icon}`}><MegIcon name={icon} size={18}/></span>
             <span className="meg3-cardcenter-row-copy"><strong>{row.description}</strong><small>{shortDate(row.date)}{row.category ? ` · ${row.category}` : ''}</small></span>
             <b className={row.kind}>{row.kind==='credit'?'+':'−'}{money.format(Math.abs(row.amount))}</b>
             {row.eventId ? <i><MegIcon name="chevron-right" size={14}/></i> : null}
