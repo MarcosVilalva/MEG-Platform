@@ -107,7 +107,7 @@ function cardArt(name: string) {
     return asset('assets/cards/approved-v6/mercado.webp');
   }
   if (normalized.includes('latam')) {
-    return asset('assets/cards/latam-pass-platinum.webp');
+    return asset('assets/cards/approved-v6/latam.webp');
   }
   if (normalized.includes('azul')) {
     return asset('assets/cards/approved-v6/azul.webp');
