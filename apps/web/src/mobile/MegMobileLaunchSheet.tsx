@@ -313,25 +313,32 @@ export function MegMobileLaunchSheet({
     );
   }
   const selectedCard = data.cards.find((item) => item.id === cardId);
-  const installmentPreview = useMemo(() => {
-    if (!credit || !selectedCard || !date || parseAmount(amount) <= 0) return [];
-    const count = Math.max(1, Math.min(48, Math.trunc(installments || 1)));
-    const cents = Math.round(parseAmount(amount) * 100);
-    const baseCents = Math.floor(cents / count);
-    const remainder = cents - baseCents * count;
+  const effectiveInstallments = installmentEnabled ? Math.max(1, Math.min(48, Math.trunc(installments || 1))) : 1;
+  const cardSchedule = useMemo(() => {
+    if (!credit || !selectedCard || !date) return [];
     const firstStatement = cardStatementMonthForPurchase(date, Number(selectedCard.closingDay || 1));
     if (!firstStatement) return [];
-    return Array.from({ length: count }, (_, index) => {
+    return Array.from({ length: effectiveInstallments }, (_, index) => {
       const statementMonth = cardMonthPlus(firstStatement, index);
-      const due = cardDueDateForStatement(statementMonth, Number(selectedCard.closingDay || 1), Number(selectedCard.dueDay || 1));
       return {
         number: index + 1,
-        amount: (baseCents + (index < remainder ? 1 : 0)) / 100,
-        due,
+        due: cardDueDateForStatement(statementMonth, Number(selectedCard.closingDay || 1), Number(selectedCard.dueDay || 1)),
         statementMonth,
       };
     });
-  }, [credit, selectedCard, date, amount, installments]);
+  }, [credit, selectedCard, date, effectiveInstallments]);
+
+  const installmentPreview = useMemo(() => {
+    const total = parseAmount(amount);
+    if (!cardSchedule.length || total <= 0) return [];
+    const cents = Math.round(total * 100);
+    const baseCents = Math.floor(cents / cardSchedule.length);
+    const remainder = cents - baseCents * cardSchedule.length;
+    return cardSchedule.map((item, index) => ({
+      ...item,
+      amount: (baseCents + (index < remainder ? 1 : 0)) / 100,
+    }));
+  }, [cardSchedule, amount]);
 
   useEffect(() => {
     if (mode !== 'benefit') return;
@@ -448,7 +455,7 @@ export function MegMobileLaunchSheet({
 
   const title = event ? 'Editar lançamento' : 'Novo Lançamento';
   const typeLabel = mode === 'income' ? 'Receita' : mode === 'benefit' ? 'Alimentação' : 'Despesa';
-  const firstInstallment = installmentPreview[0];
+  const firstInstallment = cardSchedule[0];
 
   function chooseMode(next: LaunchPreset) {
     setMode(next);
@@ -540,7 +547,7 @@ export function MegMobileLaunchSheet({
           <div><span>Forma de pagamento</span><b>{verocard?.name || 'VEROCARD'}</b></div>
           <div><span>Situação</span><b>Pago</b></div>
         </section> : <>
-          {mode === 'expense' && credit ? <section className="meg3-launch-section"><MegMobilePicker className="wide" label="Cartão *" value={cardId} options={cardOptions} placeholder="Selecione o cartão" onChange={setCardId}/>{firstInstallment ? <div className="meg3-credit-dates"><div className="meg3-statement-hint"><span>Fatura / Competência</span><b>{firstInstallment.statementMonth.split('-').reverse().join('/')}</b></div><div className="meg3-statement-hint"><span>Vencimento da 1ª parcela</span><b>{firstInstallment.due.split('-').reverse().join('/')}</b></div></div> : null}</section> : null}
+          {mode === 'expense' && credit ? <section className="meg3-launch-section"><MegMobilePicker className="wide" label="Cartão *" value={cardId} options={cardOptions} placeholder="Selecione o cartão" onChange={setCardId}/>{firstInstallment ? <div className="meg3-credit-dates single"><div className="meg3-statement-hint"><span>Fatura / Competência</span><b>{firstInstallment.statementMonth.split('-').reverse().join('/')}</b></div></div> : null}</section> : null}
           {!credit ? <section className="meg3-launch-section"><MegMobilePicker className="wide" label={mode === 'income' ? 'Forma de recebimento *' : 'Forma de pagamento *'} value={paymentMethodId} options={paymentOptions} disabled={pending} lockedText={pending ? 'Definida quando o pendente for baixado' : undefined} placeholder="Selecione a forma" onChange={setPaymentMethodId}/></section> : null}
           {!credit ? <section className="meg3-launch-section"><MegMobilePicker className="wide" label={mode === 'income' ? 'Conta *' : 'Conta *'} value={accountId} options={accountOptions} disabled={pending} lockedText={pending ? 'Definida quando o pendente for baixado' : undefined} placeholder="Selecione a conta" onChange={setAccountId}/></section> : null}
         </>}
@@ -562,7 +569,12 @@ export function MegMobileLaunchSheet({
         {credit ? <section className="meg3-launch-section">
           <span className="meg3-section-label">Número de parcelas</span>
           <div className="meg3-installment-stepper"><div><button type="button" aria-label="Diminuir parcelas" onClick={() => { setInstallmentEnabled(true); setInstallments(v => Math.max(1,v-1)); }}>−</button><strong>{installmentEnabled ? installments : 1}</strong><button type="button" aria-label="Aumentar parcelas" onClick={() => { setInstallmentEnabled(true); setInstallments(v => Math.min(48,v+1)); }}>+</button></div></div>
-          <button className="meg3-installment-preview-trigger" type="button" disabled={!installmentPreview.length} onClick={() => setInstallmentPreviewOpen(true)}><span>Visualizar parcelas</span><small>{installmentPreview.length ? `${installmentPreview.length} parcela(s) calculadas` : 'Informe cartão, data e valor'}</small></button>
+          {effectiveInstallments === 1
+            ? <div className="meg3-single-installment-due"><span>Vencimento</span><strong>{firstInstallment ? firstInstallment.due.split('-').reverse().join('/') : 'Selecione cartão e data'}</strong><small>Parcela única · calculada pelas regras do cartão</small></div>
+            : <button className="meg3-installment-preview-trigger" type="button" disabled={!installmentPreview.length} onClick={() => setInstallmentPreviewOpen(true)}>
+                <span>{installmentPreview.length ? 'Visualizar parcelas' : 'Insira o valor para visualizar as parcelas'}</span>
+                <small>{installmentPreview.length ? `${installmentPreview.length} parcelas calculadas` : 'O detalhamento será liberado após informar o valor'}</small>
+              </button>}
         </section> : null}
 
         
