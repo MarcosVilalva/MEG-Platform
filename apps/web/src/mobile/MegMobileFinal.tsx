@@ -107,13 +107,13 @@ function cardArt(name: string) {
     return asset('assets/cards/approved-v6/mercado.webp');
   }
   if (normalized.includes('latam')) {
-    return asset('assets/cards/approved-v6/latam.webp');
+    return asset('assets/cards/latam-user-model-v61.svg');
   }
   if (normalized.includes('azul')) {
     return asset('assets/cards/approved-v6/azul.webp');
   }
   if (normalized.includes('riachuelo') || normalized.includes('midway')) {
-    return asset('assets/cards/approved-v6/riachuelo.webp');
+    return asset('assets/cards/riachuelo-mastercard-visual.svg');
   }
   if (normalized.includes('nubank')) return asset('assets/cards/nubank-visual.svg');
   return '';
@@ -564,7 +564,7 @@ function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Pro
   const card = !isBenefit ? data.cards.find((item) => item.id === active?.id) : undefined;
   const rows = useMemo(() => cardRows(card), [card]);
   const benefit = useMemo(() => benefitRows(data), [data.events.items, data.accounts, data.paymentMethods]);
-  const current = Number(card?.statement?.payableAmount ?? card?.payableStatementAmount ?? card?.statementAmount ?? 0);
+  const current = Number(card?.statement?.netAmount ?? card?.statementAmount ?? 0);
   const limit = Number(card?.creditLimit || 0);
   const available = Number(card?.availableLimit ?? Math.max(0, limit - current));
   const due = card?.statement?.dueDate ? shortDate.format(new Date(card.statement.dueDate + 'T12:00:00Z')) : card?.dueDay ? 'Dia ' + card.dueDay : '—';
