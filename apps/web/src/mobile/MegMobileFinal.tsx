@@ -104,7 +104,7 @@ function isVerocardMethod(method: PhoenixReadModel['paymentMethods'][number]) {
 function cardArt(name: string) {
   const normalized = normalizeCardText(name);
   if (normalized.includes('mercado') || normalized.includes('meli')) return asset('assets/cards/approved-v6/mercado.webp');
-  if (normalized.includes('latam')) return asset('assets/cards/approved-v6/latam.webp');
+  if (normalized.includes('latam')) return asset('assets/cards/latam-pass-platinum.webp');
   if (normalized.includes('azul')) return asset('assets/cards/approved-v6/azul.webp');
   if (normalized.includes('riachuelo') || normalized.includes('midway')) return asset('assets/cards/approved-v6/riachuelo.webp');
   if (normalized.includes('nubank')) return asset('assets/cards/nubank-visual.svg');
