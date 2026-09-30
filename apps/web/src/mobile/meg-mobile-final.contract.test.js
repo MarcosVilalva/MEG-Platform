@@ -411,13 +411,13 @@ assert.match(
 );
 assert.match(
   css,
-  /\.meg2-card-art>img\{[\s\S]*object-fit:contain/,
-  'Carrossel deve preservar a arte inteira dos cartões sem corte.',
+  /\.meg2-card-art>img\{[\s\S]*object-fit:cover[\s\S]*padding:0[\s\S]*background:transparent/,
+  'Carrossel deve usar a arte do cartão em full-bleed, ocupando todo o card sem moldura interna.',
 );
 assert.match(
   cardCenterCss,
-  /\.meg3-cardcenter-hero img\{[\s\S]*object-fit:contain[\s\S]*\.meg3-cardcenter-hero\.verocard img\{object-fit:cover/,
-  'Central deve conter cartões de crédito no quadro e preservar enquadramento validado do Verocard.',
+  /\.meg3-cardcenter-hero img\{[\s\S]*object-fit:cover[\s\S]*padding:0[\s\S]*background:transparent[\s\S]*\.meg3-cardcenter-hero\.verocard img\{object-fit:cover/,
+  'Central deve usar todos os cartões em full-bleed, preservando o padrão visual validado do Verocard.',
 );
 assert.match(
   cardCenterCss,
@@ -429,4 +429,10 @@ assert.match(
   mobile,
   /LATAM PASS Itaú Mastercard Platinum[\s\S]*Azul Itaú Visa Infinite[\s\S]*Riachuelo Midway Mastercard/,
   'Rótulos visuais dos cartões devem refletir as variantes cadastradas com clareza.',
+);
+
+assert.doesNotMatch(
+  css + '\n' + cardCenterCss,
+  /meg2-card-art>img[\s\S]{0,180}object-fit:contain|meg3-cardcenter-hero img[\s\S]{0,180}object-fit:contain/,
+  'Cartões não podem voltar ao enquadramento interno desconexo após a validação full-bleed.',
 );

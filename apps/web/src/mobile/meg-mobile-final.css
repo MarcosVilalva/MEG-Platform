@@ -210,8 +210,8 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-card-art.active{opacity:1;transform:scale(1);box-shadow:0 0 0 2px rgba(27,236,226,.68),0 12px 30px rgba(0,0,0,.29)}
 .meg2-card-art>img{
   position:absolute;inset:0;z-index:2;width:100%;height:100%;
-  display:block;object-fit:contain;object-position:center;border-radius:inherit;
-  padding:4px;background:#032f32
+  display:block;object-fit:cover;object-position:center;border-radius:inherit;
+  padding:0;background:transparent
 }
 .meg2-card-art.benefit>img{object-fit:cover;padding:0;background:#101010}
 .meg2-card-art-fallback{
