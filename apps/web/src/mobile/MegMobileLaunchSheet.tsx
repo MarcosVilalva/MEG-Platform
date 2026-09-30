@@ -98,7 +98,7 @@ function isCrediarioMethod(method: PhoenixReadModel['paymentMethods'][number] | 
   return Boolean(method && /crediario|carne|parcelado loja/.test(normalize(method.name) + ' ' + normalize(method.type)));
 }
 
-type ExpensePaymentMode = 'cash' | 'credit' | 'crediario' | 'benefit';
+type ExpensePaymentMode = 'cash' | 'credit' | 'benefit';
 
 function projectedCardMeta(event: EventWithPayload) {
   const payload = event.sourcePayload;
@@ -174,7 +174,8 @@ export function MegMobileLaunchSheet({
     const initialMethod = data.paymentMethods.find((item) => item.id === (event?.paymentMethodId || event?.paymentMethod?.id || ''));
     if (initialMode === 'benefit') return 'benefit';
     if (cardMeta || isCreditMethod(initialMethod)) return 'credit';
-    if (isCrediarioMethod(initialMethod)) return 'crediario';
+    // Legado de crediário abre como Crédito para edição; novos lançamentos não oferecem mais crediário.
+    if (isCrediarioMethod(initialMethod)) return 'credit';
     return 'cash';
   });
 
@@ -194,7 +195,6 @@ export function MegMobileLaunchSheet({
       if (mode !== 'expense') return true;
       if (expensePaymentMode === 'benefit') return isVerocard(method);
       if (expensePaymentMode === 'credit') return isCreditMethod(method);
-      if (expensePaymentMode === 'crediario') return isCrediarioMethod(method);
       return !isCreditMethod(method) && !isCrediarioMethod(method);
     })
     .map((method) => ({
@@ -214,7 +214,6 @@ export function MegMobileLaunchSheet({
   const mainMonetaryAccount = accounts.find((item) => !isBenefitAccount(item) && isMainMonetaryAccount(item));
   const pixMethod = methods.find((item) => isPixMethod(item));
 
-  const crediarioMethod = methods.find((item) => isCrediarioMethod(item));
   const selectedCategory = categories.find((item) => item.id === categoryId);
   const credit = mode === 'expense' && (Boolean(cardId) || isCreditMethod(selectedMethod) || Boolean(cardMeta));
   const pending = mode === 'expense' && !credit && status === 'planned';
@@ -241,13 +240,10 @@ export function MegMobileLaunchSheet({
       }
     } else if (expensePaymentMode === 'credit') {
       if (mode === 'benefit') setMode('expense');
-      if (!isCreditMethod(selectedMethod) && creditMethod) setPaymentMethodId(creditMethod.id);
-    } else {
-      if (mode === 'benefit') setMode('expense');
-      setCardId('');
-      if (!isCrediarioMethod(selectedMethod)) setPaymentMethodId(crediarioMethod?.id || '');
+      // No crédito o cartão é a única fonte de verdade. A forma de pagamento não participa da UI nem da validação.
+      if (!event) setPaymentMethodId('');
     }
-  }, [expensePaymentMode, mode, event, pixMethod?.id, crediarioMethod?.id, selectedMethod?.id, benefitAccount?.id, verocard?.id]);
+  }, [expensePaymentMode, mode, event, pixMethod?.id, selectedMethod?.id, benefitAccount?.id, verocard?.id]);
 
   useEffect(() => {
     if (mode !== 'expense' || credit || !selectedCategory) return;
@@ -346,19 +342,13 @@ export function MegMobileLaunchSheet({
   }, [mode, benefitAccount?.id, verocard?.id]);
 
   useEffect(() => {
-    if (mode !== 'expense') {
-      if (!event) setCardId('');
-      return;
-    }
-    if (cardId && !isCreditMethod(selectedMethod) && creditMethod) {
-      setPaymentMethodId(creditMethod.id);
-    }
-  }, [mode, cardId, selectedMethod?.id, creditMethod?.id, event]);
+    if (mode !== 'expense' && !event) setCardId('');
+  }, [mode, event]);
 
   function validate() {
     if (!description.trim()) return 'Informe a descrição.';
     if (mode !== 'income' && !categoryId) return 'Selecione a categoria.';
-    if (!pending && !paymentMethodId) return mode === 'income' ? 'Selecione a forma de recebimento.' : 'Selecione a forma de pagamento.';
+    if (!credit && !pending && !paymentMethodId) return mode === 'income' ? 'Selecione a forma de recebimento.' : 'Selecione a forma de pagamento.';
     if (parseAmount(amount) <= 0) return 'Informe um valor maior que zero.';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return 'Informe uma data válida.';
     if (credit) {
@@ -382,7 +372,7 @@ export function MegMobileLaunchSheet({
         const input: PhoenixCardPurchaseInput = {
           cardId,
           categoryId: categoryId || undefined,
-          description: description.trim(),
+          description: description.trim().toLocaleUpperCase('pt-BR'),
           totalAmount: parseAmount(amount),
           purchaseDate: date,
           installments: installmentEnabled ? Math.max(1, Math.min(48, Math.trunc(installments || 1))) : 1,
@@ -399,7 +389,7 @@ export function MegMobileLaunchSheet({
       }
 
       const simple: PhoenixSimpleEventInput = {
-        description: description.trim(),
+        description: description.trim().toLocaleUpperCase('pt-BR'),
         type: mode === 'income' ? 'income' : 'expense',
         status: mode === 'benefit' || mode === 'income' ? 'paid' : status,
         date,
@@ -407,7 +397,7 @@ export function MegMobileLaunchSheet({
         accountId: pending ? undefined : (accountId || undefined),
         categoryId: categoryId || undefined,
         paymentMethodId: pending ? undefined : (paymentMethodId || undefined),
-        notes: notes.trim() || undefined,
+        notes: notes.trim().toLocaleUpperCase('pt-BR') || undefined,
       };
 
       if (mode === 'benefit') {
@@ -519,7 +509,7 @@ export function MegMobileLaunchSheet({
         <section className="meg3-launch-section meg3-smart-description">
           <label className="meg3-launch-field">
             <span>Descrição</span>
-            <input value={description} onFocus={() => { if (!event && mode !== 'benefit') setHistoryOpen(true); }} onChange={(e) => { setDescription(e.target.value); setHistoryStatus(''); if (!event && mode !== 'benefit') setHistoryOpen(true); }} onKeyDown={(e) => { if (e.key === 'Escape') setHistoryOpen(false); }} onBlur={closeHistoryForKeyboardDismiss} placeholder="Digite para pesquisar no seu histórico" autoComplete="off" aria-autocomplete="list" aria-expanded={historyOpen && (historyLoading || historySuggestions.length > 0)}/>
+            <input value={description} onFocus={() => { if (!event && mode !== 'benefit') setHistoryOpen(true); }} onChange={(e) => { setDescription(e.target.value.toLocaleUpperCase('pt-BR')); setHistoryStatus(''); if (!event && mode !== 'benefit') setHistoryOpen(true); }} onKeyDown={(e) => { if (e.key === 'Escape') setHistoryOpen(false); }} onBlur={closeHistoryForKeyboardDismiss} placeholder="Digite para pesquisar no seu histórico" autoComplete="off" aria-autocomplete="list" aria-expanded={historyOpen && (historyLoading || historySuggestions.length > 0)}/>
           </label>
           {!event && mode !== 'benefit' && historyOpen ? <div className="meg3-history-suggestions" role="listbox">
             {historyLoading ? <div className="meg3-history-loading">Buscando no seu histórico…</div> : null}
@@ -541,7 +531,6 @@ export function MegMobileLaunchSheet({
           <div className="meg3-choice-row">
             <button type="button" className={expensePaymentMode === 'cash' ? 'active' : ''} onClick={() => setExpensePaymentMode('cash')}>À Vista</button>
             <button type="button" className={expensePaymentMode === 'credit' ? 'active' : ''} onClick={() => setExpensePaymentMode('credit')}>Crédito</button>
-            <button type="button" className={expensePaymentMode === 'crediario' ? 'active' : ''} onClick={() => setExpensePaymentMode('crediario')}>Crediário</button>
           </div>
         </section> : null}
 
@@ -553,7 +542,7 @@ export function MegMobileLaunchSheet({
           <div><span>Situação</span><b>Pago</b></div>
         </section> : <>
           {mode === 'expense' && credit ? <section className="meg3-launch-section"><MegMobilePicker className="wide" label="Cartão *" value={cardId} options={cardOptions} placeholder="Selecione o cartão" onChange={setCardId}/>{firstInstallment ? <div className="meg3-credit-dates"><div className="meg3-statement-hint"><span>Fatura / Competência</span><b>{firstInstallment.statementMonth.split('-').reverse().join('/')}</b></div><div className="meg3-statement-hint"><span>Vencimento da 1ª parcela</span><b>{firstInstallment.due.split('-').reverse().join('/')}</b></div></div> : null}</section> : null}
-          <section className="meg3-launch-section"><MegMobilePicker className="wide" label={mode === 'income' ? 'Forma de recebimento *' : 'Forma de pagamento *'} value={paymentMethodId} options={paymentOptions} disabled={pending} lockedText={pending ? 'Definida quando o pendente for baixado' : undefined} placeholder="Selecione a forma" onChange={setPaymentMethodId}/></section>
+          {!credit ? <section className="meg3-launch-section"><MegMobilePicker className="wide" label={mode === 'income' ? 'Forma de recebimento *' : 'Forma de pagamento *'} value={paymentMethodId} options={paymentOptions} disabled={pending} lockedText={pending ? 'Definida quando o pendente for baixado' : undefined} placeholder="Selecione a forma" onChange={setPaymentMethodId}/></section> : null}
           {!credit ? <section className="meg3-launch-section"><MegMobilePicker className="wide" label={mode === 'income' ? 'Conta *' : 'Conta *'} value={accountId} options={accountOptions} disabled={pending} lockedText={pending ? 'Definida quando o pendente for baixado' : undefined} placeholder="Selecione a conta" onChange={setAccountId}/></section> : null}
         </>}
 
@@ -579,7 +568,7 @@ export function MegMobileLaunchSheet({
 
         
 
-        <label className="meg3-launch-field meg3-notes-field"><span>Observações</span><textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional"/></label>
+        <label className="meg3-launch-field meg3-notes-field"><span>Observações</span><textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value.toLocaleUpperCase('pt-BR'))} placeholder="Opcional"/></label>
         {message ? <div className="meg3-form-message" role="status">{message}</div> : null}
       </main> : null}
 
