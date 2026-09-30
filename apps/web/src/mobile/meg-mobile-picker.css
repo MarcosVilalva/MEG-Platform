@@ -242,3 +242,25 @@
 @media(max-height:680px){
   .meg5-picker-sheet.is-searching{height:100dvh;max-height:100dvh}
 }
+
+.meg5-picker-option-icon.image{
+  overflow:hidden;
+  padding:0;
+  background:#032f32;
+  border-color:rgba(255,255,255,.10);
+}
+.meg5-picker-option-icon.image img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+  object-position:center;
+}
+.meg5-picker-list>button{
+  contain:layout paint style;
+  box-shadow:none!important;
+  background:#04383b!important;
+}
+.meg5-picker-list>button.selected{
+  background:#075553!important;
+}
