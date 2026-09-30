@@ -194,7 +194,6 @@
 .meg3-cardcenter-hero.verocard img{
   transform:none!important;
   object-position:center!important;
-  filter:contrast(1.025) saturate(1.02);
 }
 
 @media(max-width:560px){
