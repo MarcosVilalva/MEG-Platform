@@ -162,7 +162,7 @@ export function MegMobileCardCenter({
   const total = filtered.reduce((sum,row) => sum + Number(row.amount || 0), 0);
   const limit = Number(card.creditLimit || 0);
   const available = Number(card.availableLimit ?? Math.max(0, limit - Number(card.statementAmount || 0)));
-  const current = Number(card.statement?.payableAmount ?? card.payableStatementAmount ?? card.statementAmount ?? 0);
+  const current = Number(card.statement?.netAmount ?? card.statementAmount ?? 0);
   const used = Math.max(0, limit - available);
   const usage = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
   const due = card.statement?.dueDate || (card.statement?.month ? cardDueDateForStatement(card.statement.month, Number(card.closingDay || 1), Number(card.dueDay || 1)) : '');
