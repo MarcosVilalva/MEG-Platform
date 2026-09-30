@@ -379,7 +379,7 @@ assert.match(
 );
 assert.match(
   cardCenter,
-  /Resumo[\s\S]*Fatura atual[\s\S]*Próximas[\s\S]*Parcelas[\s\S]*Histórico/,
+  /Resumo[\s\S]*>Atual<\/button>[\s\S]*Próximas[\s\S]*Parcelas[\s\S]*Histórico/,
   'Central do cartão de crédito deve preservar as visões validadas de fatura e histórico.',
 );
 assert.match(
