@@ -240,7 +240,7 @@ assert.match(launchSheet, /runPhoenixSimpleEventArchive/,
   'Exclusão deve usar o writer de domínio.');
 assert.match(
   launchSheet,
-  /Usar valor negativo/,
+  /meg3-value-sign[\s\S]*Marcar como estorno/,
   'Formulário clean-room deve oferecer troca explícita de sinal.',
 );
 assert.match(
