@@ -1,9 +1,9 @@
 {
-  "versionCode": 601,
-  "versionName": "2.0.601",
+  "versionCode": 608,
+  "versionName": "2.0.608",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "5d89e0fd1aff538a9aaf1fd406be3c3f61574eb55047079721792d6be0deac82",
+  "sha256": "a451dd645a352c1fa4f0bf4452fec3448cf3ab9365e8c342bbdd667f6d1e6c77",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "test(mobile): alinhar contrato ao botão compacto de estorno"
+  "releaseNotes": "test(mobile): manter contrato no runner assert nativo"
 }
