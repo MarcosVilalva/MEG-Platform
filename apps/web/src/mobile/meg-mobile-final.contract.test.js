@@ -260,7 +260,7 @@ assert.doesNotMatch(
 );
 assert.match(
   launchCss,
-  /\.meg3-form-sheet\{[\s\S]*grid-template-rows:auto minmax\(0,1fr\) auto[\s\S]*overflow:hidden/,
+  /\.meg3-form-sheet\.meg3-launch-flow\{[\s\S]*grid-template-rows:auto auto minmax\(0,1fr\) auto var\(--meg-dock-height[\s\S]*overflow:hidden/,
   'Formulário mobile deve manter cabeçalho e ações fixos, com rolagem apenas no corpo.',
 );
 assert.match(
