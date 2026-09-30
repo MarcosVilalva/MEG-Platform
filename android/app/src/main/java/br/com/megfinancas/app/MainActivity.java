@@ -62,11 +62,13 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(MegNativeShellPlugin.class);
         super.onCreate(savedInstanceState);
 
-        // Alguns WebViews Android recentes apresentam corrupção de composição em
-        // grids densos com SVG/texto (blocos e riscos residuais após o repaint).
-        // Isolamos a correção no WebView do app, sem alterar o layout ou a lógica web.
+        // O app usa listas e formulários internos roláveis. Forçar LAYER_TYPE_SOFTWARE
+        // no WebView elimina a aceleração por GPU e deixa o gesto de rolagem pesado.
+        // Mantemos o WebView no pipeline normal acelerado da janela; o CSS clean-room
+        // já remove os filtros que causavam artefatos de composição nas telas antigas.
         if (getBridge() != null && getBridge().getWebView() != null) {
-            getBridge().getWebView().setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+            getBridge().getWebView().setLayerType(View.LAYER_TYPE_NONE, null);
+            getBridge().getWebView().setOverScrollMode(View.OVER_SCROLL_NEVER);
         }
 
         getWindow().getDecorView().post(this::applyImmersiveNavigation);
