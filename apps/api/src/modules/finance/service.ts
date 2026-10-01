@@ -165,7 +165,7 @@ export async function updateFinancialEvent(userId: string, id: string, input: Up
       include: { account: true, category: true, paymentMethod: true, ledgerEntries: true, receipt: { select: { id: true, receivableId: true, reversedAt: true } } }
     });
     if (!current) throw new Error('FINANCIAL_EVENT_NOT_FOUND');
-    if (current.receipt && !current.receipt.reversedAt) throw new Error('RECEIPT_LINKED_EVENT_PROTECTED');
+    if (current.receipt && !current.receipt.reversedAt) throw new Error('FINANCIAL_EVENT_LINKED_DOMAIN');
     await validateActiveReferences(tx, dataOwnerId, input);
 
     const nextType = input.type ?? current.type;
@@ -221,7 +221,7 @@ export async function deleteFinancialEvent(userId: string, id: string) {
       include: { account: true, category: true, paymentMethod: true, ledgerEntries: true, receipt: { select: { id: true, receivableId: true, reversedAt: true } } }
     });
     if (!current) throw new Error('FINANCIAL_EVENT_NOT_FOUND');
-    if (current.receipt && !current.receipt.reversedAt) throw new Error('RECEIPT_LINKED_EVENT_PROTECTED');
+    if (current.receipt && !current.receipt.reversedAt) throw new Error('FINANCIAL_EVENT_LINKED_DOMAIN');
 
     const archived = await tx.financialEvent.update({
       where: { id },
