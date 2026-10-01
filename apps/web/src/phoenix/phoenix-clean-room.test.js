@@ -351,8 +351,8 @@ assert.match(webScreens, /preparePhoenixReconciliationAdjustment/,
   'Ajuste deve ser preparado antes da gravação para preservar idempotência.');
 assert.match(webScreens, /runPhoenixReconciliationAdjustment/,
   'Tela de Conciliação deve delegar a mutação ao bridge protegido.');
-assert.match(webScreens, /window\.confirm/,
-  'Ajuste de conciliação deve exigir confirmação explícita do usuário.');
+assert.match(webScreens, /megConfirm/,
+  'Ajuste de conciliação deve exigir confirmação visual MEG explícita do usuário.');
 assert.doesNotMatch(webScreens, /financeClient|loadPhoenixReadModel/,
   'Tela de Conciliação não pode acessar cliente mutável nem administrar o snapshot diretamente.');
 assert.match(reconciliationBridge, /financeClient\.getMonetaryBalance/,
