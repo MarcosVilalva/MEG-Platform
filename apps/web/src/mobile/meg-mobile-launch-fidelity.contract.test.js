@@ -85,7 +85,7 @@ console.log('Contrato do fluxo validado de Novo/Editar lançamento aprovado.');
 {
   assert.ok(picker.includes("createPortal(overlay, document.body)"), 'Seletor deve ser portado para o body e escapar do stacking context da tela.');
   assert.ok(picker.includes("document.body.classList.add('meg-picker-open')"), 'Abrir seletor deve ativar estado modal soberano.');
-  assert.ok(pickerCss.includes('z-index:2147483600') && pickerCss.includes('background:#012d30') && pickerCss.includes('height:100dvh'), 'Seletor deve ocupar a viewport com fundo opaco.');
+  assert.ok(pickerCss.includes('z-index:2147483600') && pickerCss.includes('background:#012d30') && pickerCss.includes('var(--meg-visual-height,100dvh)'), 'Seletor deve ocupar a viewport visual real com fundo opaco.');
   assert.ok(runtimeCss.includes('body.meg-cleanroom-mobile.meg-picker-open #root') && runtimeCss.includes('visibility:hidden!important'), 'App-base deve sair da composição enquanto o seletor estiver aberto.');
   assert.ok(androidMain.includes('View.LAYER_TYPE_SOFTWARE') && !androidMain.includes('View.LAYER_TYPE_HARDWARE') && !androidMain.includes('setOffscreenPreRaster(true)'), 'WebView deve permanecer em compositor estável por software sem pré-rasterizar conteúdo fora da viewport.');
 }
