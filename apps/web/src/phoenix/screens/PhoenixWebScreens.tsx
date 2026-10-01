@@ -1,5 +1,6 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { PhoenixReadModel } from '../contracts';
+import { preparePhoenixReconciliationAdjustment, readPhoenixReconciliationBalance, runPhoenixReconciliationAdjustment } from '../reconciliation-bridge';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -161,8 +162,159 @@ export function PhoenixBudgets({ data }: { data: PhoenixReadModel }) {
   </section>;
 }
 
-export function PhoenixReconciliation({ data }: { data: PhoenixReadModel }) {
-  return <section className="px-screen"><PageIntro kicker="Conciliação" title="Compare o MEG com o saldo real" text="A V15 preserva esta área, mas nenhum status bancário será inferido sem uma fonte oficial de conciliação." />
-    <section className="px-card px-reconcile-locked"><span className="px-kicker">Contrato em auditoria</span><h2>Conciliação ainda não liberada na Phoenix</h2><p>As {data.accounts.filter((item) => item.isActive).length} conta(s) financeira(s) ativa(s) estão disponíveis no cadastro, porém os endpoints financeiros atuais não fornecem um contrato de leitura de conciliação bancária equivalente ao desenho V15. Mostrar “conciliado”, “diferença” ou saldo de extrato aqui seria inventar informação.</p><div className="px-rule-strip"><span>✓ Nenhum saldo bancário é estimado.</span><span>✓ Nenhuma baixa é executada.</span><span>✓ A tela será ligada quando a fonte oficial for confirmada.</span></div></section>
+function parseReconciliationMoney(value: string) {
+  const normalized = value.trim().replace(/\s/g, '').replace(/R\$/gi, '').replace(/\./g, '').replace(',', '.');
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
+export function PhoenixReconciliation({ data, onDataCommitted }: { data: PhoenixReadModel; onDataCommitted: (snapshot: PhoenixReadModel) => void }) {
+  const monetaryAccounts = useMemo(() => data.accounts.filter((item) =>
+    item.isActive && ['checking', 'savings', 'cash'].includes(String(item.type || '').toLowerCase())
+  ), [data.accounts]);
+  const canWrite = data.user.role !== 'VIEWER';
+  const [accountId, setAccountId] = useState(monetaryAccounts[0]?.id || '');
+  const [effectiveDate, setEffectiveDate] = useState(todaySaoPaulo());
+  const [bankBalanceInput, setBankBalanceInput] = useState('');
+  const [megBalance, setMegBalance] = useState<number | null>(null);
+  const [difference, setDifference] = useState<number | null>(null);
+  const [loadingBalance, setLoadingBalance] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [retryOperationId, setRetryOperationId] = useState('');
+
+  const selectedAccount = monetaryAccounts.find((item) => item.id === accountId) || null;
+  const bankBalance = parseReconciliationMoney(bankBalanceInput);
+  const validBankBalance = Number.isFinite(bankBalance);
+
+  useEffect(() => {
+    if (accountId && monetaryAccounts.some((item) => item.id === accountId)) return;
+    setAccountId(monetaryAccounts[0]?.id || '');
+  }, [accountId, monetaryAccounts]);
+
+  useEffect(() => {
+    setMegBalance(null);
+    setDifference(null);
+    setMessage('');
+    setError('');
+    setRetryOperationId('');
+  }, [accountId, effectiveDate]);
+
+  async function compareBalances() {
+    if (!accountId) {
+      setError('Selecione uma conta monetária.');
+      return;
+    }
+    if (!validBankBalance) {
+      setError('Informe o saldo real exibido pelo banco.');
+      return;
+    }
+    setLoadingBalance(true);
+    setError('');
+    setMessage('');
+    try {
+      const result = await readPhoenixReconciliationBalance(accountId, effectiveDate);
+      const officialBalance = Number(result.available || 0);
+      setMegBalance(officialBalance);
+      setDifference(Math.round((bankBalance - officialBalance) * 100) / 100);
+    } catch (cause) {
+      setMegBalance(null);
+      setDifference(null);
+      setError(cause instanceof Error ? cause.message : 'Não foi possível consultar o saldo oficial da conta.');
+    } finally {
+      setLoadingBalance(false);
+    }
+  }
+
+  async function registerAdjustment() {
+    if (!selectedAccount || difference === null || Math.abs(difference) < 0.005 || !canWrite) return;
+    const adjustment = Math.round(Math.abs(difference) * 100) / 100;
+    const direction = difference > 0 ? 'income' : 'expense';
+    const confirmed = window.confirm(
+      `Registrar ajuste de ${money.format(adjustment)} na conta ${selectedAccount.name}?\n\n`
+      + `Saldo MEG: ${money.format(megBalance || 0)}\n`
+      + `Saldo informado do banco: ${money.format(bankBalance)}\n\n`
+      + 'O ajuste será gravado como um novo evento financeiro auditável e o lançamento anterior será preservado.'
+    );
+    if (!confirmed) return;
+
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const prepared = preparePhoenixReconciliationAdjustment({
+        refreshMonth: data.month,
+        accountId: selectedAccount.id,
+        date: effectiveDate,
+        difference,
+        megBalance: megBalance || 0,
+        bankBalance,
+        existingOperationId: retryOperationId || undefined,
+      });
+      const result = await runPhoenixReconciliationAdjustment(prepared);
+      if (result.status === 'error') {
+        setRetryOperationId(result.operationId);
+        setError(result.message);
+        return;
+      }
+      setRetryOperationId('');
+      onDataCommitted(result.snapshot);
+      const refreshed = await readPhoenixReconciliationBalance(selectedAccount.id, effectiveDate);
+      setMegBalance(Number(refreshed.available || 0));
+      setDifference(Math.round((bankBalance - Number(refreshed.available || 0)) * 100) / 100);
+      setMessage('Ajuste registrado, auditado e confirmado na base financeira.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'A base não confirmou o ajuste de conciliação.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const diffTone = difference === null ? '' : Math.abs(difference) < 0.005 ? 'positive' : 'negative';
+
+  return <section className="px-screen px-reconcile-screen">
+    <PageIntro kicker="Conciliação" title="Compare o MEG com o saldo real" text="Informe o saldo exibido pelo banco. O MEG consulta o saldo oficial da conta na mesma data e só registra ajuste após sua confirmação." aside={<span className="px-total-pill">{monetaryAccounts.length} conta(s) monetária(s)</span>} />
+
+    {error ? <div className="px-settings-avatar-error">{error}</div> : null}
+    {message ? <div className="px-settings-profile-note">{message}</div> : null}
+
+    <section className="px-card px-settings-card">
+      <div className="px-settings-card-head"><div><span className="px-kicker">Conferência manual</span><h2>Saldo do banco x saldo MEG</h2><p>Nenhum saldo bancário é estimado ou importado sem fonte. O valor real é sempre informado por você.</p></div></div>
+      <div className="px-settings-control-row">
+        <div><strong>Conta financeira</strong><small>Somente contas monetárias ativas.</small></div>
+        <select value={accountId} onChange={(event) => setAccountId(event.target.value)} disabled={busy || loadingBalance}>
+          <option value="">Selecione</option>
+          {monetaryAccounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select>
+      </div>
+      <div className="px-settings-control-row">
+        <div><strong>Data da conferência</strong><small>O saldo MEG será calculado até esta data.</small></div>
+        <input type="date" max={todaySaoPaulo()} value={effectiveDate} onChange={(event) => setEffectiveDate(event.target.value)} disabled={busy || loadingBalance} />
+      </div>
+      <div className="px-settings-control-row">
+        <div><strong>Saldo real no banco</strong><small>Digite exatamente o valor exibido no extrato bancário.</small></div>
+        <input inputMode="decimal" placeholder="0,00" value={bankBalanceInput} onChange={(event) => { setBankBalanceInput(event.target.value); setDifference(null); setMessage(''); setRetryOperationId(''); }} disabled={busy || loadingBalance} />
+      </div>
+      <div className="px-settings-actions">
+        <button type="button" onClick={() => void compareBalances()} disabled={busy || loadingBalance || !accountId || !validBankBalance}>{loadingBalance ? 'Consultando…' : 'Comparar saldos'}</button>
+      </div>
+    </section>
+
+    <section className="px-screen-kpis px-reconcile-kpis">
+      <article><span>Saldo MEG</span><strong>{megBalance === null ? '—' : money.format(megBalance)}</strong><small>{selectedAccount?.name || 'Selecione uma conta'}</small></article>
+      <article><span>Saldo do banco</span><strong>{validBankBalance ? money.format(bankBalance) : '—'}</strong><small>Valor informado manualmente</small></article>
+      <article className={difference !== null && Math.abs(difference) >= 0.005 ? 'danger' : ''}><span>Diferença</span><strong className={diffTone}>{difference === null ? '—' : money.format(difference)}</strong><small>{difference === null ? 'Compare os saldos' : Math.abs(difference) < 0.005 ? 'Conta fechada' : difference > 0 ? 'Banco acima do MEG' : 'MEG acima do banco'}</small></article>
+      <article><span>Data</span><strong>{new Date(`${effectiveDate}T12:00:00`).toLocaleDateString('pt-BR')}</strong><small>Base da comparação</small></article>
+    </section>
+
+    <section className="px-card px-settings-card">
+      <div className="px-settings-card-head"><div><span className="px-kicker">Ajuste auditável</span><h2>{difference !== null && Math.abs(difference) < 0.005 ? 'Nenhum ajuste necessário' : 'Regularizar diferença'}</h2><p>{difference === null ? 'Primeiro compare os saldos.' : Math.abs(difference) < 0.005 ? 'O saldo informado coincide com o saldo oficial do MEG.' : 'O ajuste cria um novo evento financeiro confirmado. Nenhum lançamento anterior é apagado ou sobrescrito.'}</p></div></div>
+      <div className="px-rule-strip"><span>✓ Saldo MEG consultado por conta e data.</span><span>✓ Ajuste passa pelo writer protegido da API.</span><span>✓ Histórico e auditoria preservados.</span></div>
+      <div className="px-settings-actions">
+        <button type="button" onClick={() => void registerAdjustment()} disabled={!canWrite || busy || difference === null || Math.abs(difference) < 0.005 || !selectedAccount}>{busy ? 'Confirmando na base…' : 'Registrar ajuste'}</button>
+      </div>
+      {!canWrite ? <small className="px-settings-warning">Seu perfil é somente leitura e não pode registrar ajustes.</small> : null}
+    </section>
   </section>;
 }

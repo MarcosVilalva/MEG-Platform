@@ -17,6 +17,7 @@ const cardsFidelityCss = readFileSync(new URL('./phoenix-cards-fidelity-v6.css',
 const cardsResponsiveCss = readFileSync(new URL('./phoenix-cards-responsive-v61.css', import.meta.url), 'utf8');
 const cardIdentity = readFileSync(new URL('./card-identity.ts', import.meta.url), 'utf8');
 const simpleEventBridge = readFileSync(new URL('./simple-event-form-bridge.ts', import.meta.url), 'utf8');
+const reconciliationBridge = readFileSync(new URL('./reconciliation-bridge.ts', import.meta.url), 'utf8');
 const launchBusinessRules = readFileSync(new URL('./launch-business-rules-bridge.ts', import.meta.url), 'utf8');
 const operationalHome = readFileSync(new URL('./PhoenixOperationalMobileHome.tsx', import.meta.url), 'utf8');
 const operationalCss = readFileSync(new URL('./phoenix-operational-mobile.css', import.meta.url), 'utf8');
@@ -243,8 +244,30 @@ assert.match(webScreens, /Origem e evolução das entradas/);
 assert.match(webScreens, /Fechamento realizado e projetado/);
 assert.match(webScreens, /Tendências e comparações históricas/);
 assert.match(webScreens, /Planejamento financeiro/);
-assert.match(webScreens, /Conciliação ainda não liberada na Phoenix/,
-  'Conciliação não pode fingir dados sem contrato oficial');
+assert.match(webScreens, /Saldo do banco x saldo MEG/,
+  'Conciliação deve comparar somente o saldo informado pelo usuário com o saldo oficial da conta.');
+assert.match(webScreens, /readPhoenixReconciliationBalance/,
+  'Tela de Conciliação deve consultar o saldo por meio do bridge homologado.');
+assert.match(webScreens, /preparePhoenixReconciliationAdjustment/,
+  'Ajuste deve ser preparado antes da gravação para preservar idempotência.');
+assert.match(webScreens, /runPhoenixReconciliationAdjustment/,
+  'Tela de Conciliação deve delegar a mutação ao bridge protegido.');
+assert.match(webScreens, /window\.confirm/,
+  'Ajuste de conciliação deve exigir confirmação explícita do usuário.');
+assert.doesNotMatch(webScreens, /financeClient|loadPhoenixReadModel/,
+  'Tela de Conciliação não pode acessar cliente mutável nem administrar o snapshot diretamente.');
+assert.match(reconciliationBridge, /financeClient\.getMonetaryBalance/,
+  'Bridge deve consultar o saldo monetário oficial por conta e data.');
+assert.match(reconciliationBridge, /financeClient\.createEvent/,
+  'Bridge deve usar o writer financeiro protegido para registrar o ajuste.');
+assert.match(reconciliationBridge, /getPhoenixRuntimeWriteCapabilities\(true\)/,
+  'Bridge deve respeitar o gate de escrita da Phoenix antes de gravar.');
+assert.match(reconciliationBridge, /loadPhoenixReadModel\(prepared\.refreshMonth, \{ force: true, forceStatic: true \}\)/,
+  'Após o ajuste, a conciliação deve reler a fotografia oficial do mês.');
+assert.match(reconciliationBridge, /input\.existingOperationId/,
+  'Retry da conciliação deve preservar o operationId original.');
+assert.match(reconciliationBridge, /AJUSTE DE CONCILIAÇÃO BANCÁRIA/,
+  'Ajuste deve ser identificado de forma explícita e auditável.');
 assert.doesNotMatch(webScreens, /Math\.random|mock|demo/i,
   'Web completo não pode fabricar dados de demonstração');
 assert.match(commandPalette, /Buscar tela, lançamento, cartão, conta, cliente ou usuário/);

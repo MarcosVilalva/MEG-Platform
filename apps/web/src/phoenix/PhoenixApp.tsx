@@ -401,7 +401,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   if (view === 'cashflow') return <PhoenixCashflowGrid data={data} />;
   if (view === 'decisions') return <PhoenixDecisionCenter data={data} />;
   if (view === 'reports') return <PhoenixReportsCenter data={data} />;
-  if (view === 'reconcile') return <PhoenixReconciliation data={data} />;
+  if (view === 'reconcile') return <PhoenixReconciliation data={data} onDataCommitted={onDataCommitted} />;
   if (view === 'analytics') return <PhoenixAnalytics data={data} />;
   return <PhoenixBudgetsGrid data={data} onDataCommitted={onDataCommitted} />;
 }
