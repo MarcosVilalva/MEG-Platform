@@ -150,7 +150,7 @@ export function preparePhoenixPendingBatchSettlement(
   };
 }
 
-function friendlyMessage(code: string) {
+function friendlyMessage(code: string, error?: unknown) {
   const messages: Record<string, string> = {
     PHOENIX_PENDING_WRITE_NOT_ENABLED: 'A baixa real de Pendentes está temporariamente bloqueada no preview.',
     PHOENIX_PENDING_REQUIRED: 'Selecione um compromisso válido.',
@@ -182,6 +182,20 @@ function friendlyMessage(code: string) {
     PHOENIX_PENDING_CONNECTION_INTERRUPTED: 'A conexão foi interrompida antes da confirmação do servidor. O MEG verificou o recibo idempotente e não encontrou confirmação; a mesma tentativa pode ser reenviada com segurança.',
     PENDING_BATCH_TIMEOUT: 'O servidor interrompeu a baixa porque ela excedeu a janela de segurança. Nenhum lote foi tratado como confirmado.',
   };
+  if (code === 'INSUFFICIENT_MONETARY_BALANCE' && error && typeof error === 'object') {
+    const missing = Number((error as { missing?: unknown }).missing);
+    const available = Number((error as { available?: unknown }).available);
+    const requested = Number((error as { requested?: unknown }).requested);
+    const accountName = String((error as { accountName?: unknown }).accountName || '').trim();
+    if (Number.isFinite(missing) && missing > 0) {
+      const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+      const account = accountName ? ` na ${accountName}` : '';
+      const detail = Number.isFinite(available) && Number.isFinite(requested)
+        ? ` Saldo: ${currency.format(available)} · baixa: ${currency.format(requested)}.`
+        : '';
+      return `Saldo insuficiente${account}. Faltam ${currency.format(missing)} para concluir a baixa.${detail}`;
+    }
+  }
   return messages[code] || 'Não foi possível confirmar a baixa. Nenhuma alteração do lote foi considerada concluída.';
 }
 
@@ -275,7 +289,7 @@ async function refreshConfirmed(operationId: string, result: unknown, refreshMon
 
 function failedState(operationId: string, error: unknown, onState?: (state: PhoenixPendingWriteState) => void) {
   const code = codeFromError(error);
-  const failed: PhoenixPendingWriteState = { status: 'error', operationId, code, message: friendlyMessage(code) };
+  const failed: PhoenixPendingWriteState = { status: 'error', operationId, code, message: friendlyMessage(code, error) };
   onState?.(failed);
   return failed;
 }

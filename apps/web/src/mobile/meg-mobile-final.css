@@ -1208,3 +1208,194 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 @media(max-width:430px){
   .meg2-card-detail{width:100vw!important;border-inline:0;border-radius:20px 20px 0 0}
 }
+
+
+/* PENDENTES BAIXA V2 · confirmação financeira protegida e acabamento premium. */
+.meg2-pending-detail{
+  max-height:min(88dvh,760px)!important;
+  display:grid!important;
+  grid-template-rows:auto auto minmax(0,1fr) auto!important;
+  overflow:hidden!important;
+}
+.meg2-pending-detail>header{padding-bottom:2px}
+.meg2-pending-detail-amount{
+  margin-top:10px!important;
+  background:
+    radial-gradient(circle at 78% 18%,rgba(53,236,222,.10),transparent 30%),
+    linear-gradient(145deg,rgba(6,86,85,.86),rgba(3,57,60,.92))!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.035),0 8px 20px rgba(0,0,0,.10);
+}
+.meg2-pending-detail-amount strong{
+  font-size:clamp(27px,8vw,36px)!important;
+  text-shadow:0 0 16px rgba(70,235,223,.10);
+}
+.meg2-pending-detail dl{
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  scrollbar-width:none;
+  padding-right:1px;
+}
+.meg2-pending-detail dl::-webkit-scrollbar{display:none}
+.meg2-pending-detail dl>div{
+  min-height:42px!important;
+  padding:7px 10px!important;
+}
+.meg2-pending-detail>footer{
+  padding-top:3px;
+  background:linear-gradient(180deg,rgba(2,44,47,0),rgba(2,44,47,.96) 28%);
+}
+
+.meg2-pending-settle-overlay{
+  z-index:2147482320!important;
+  padding:10px!important;
+  background:rgba(0,15,17,.88)!important;
+}
+.meg2-pending-success-overlay{
+  z-index:2147482330!important;
+  padding:10px!important;
+}
+.meg2-pending-settle{
+  width:min(100%,540px)!important;
+  max-height:min(92dvh,780px)!important;
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr) auto!important;
+  border-color:rgba(58,239,226,.50)!important;
+  border-radius:24px!important;
+  background:
+    radial-gradient(circle at 84% -4%,rgba(49,236,224,.13),transparent 28%),
+    linear-gradient(165deg,#074b4e 0%,#03393c 48%,#02292c 100%)!important;
+  box-shadow:0 26px 72px rgba(0,0,0,.48),0 0 28px rgba(37,231,219,.08)!important;
+}
+.meg2-pending-settle>header{
+  padding:16px 16px 11px!important;
+  border-bottom:1px solid rgba(54,222,213,.10);
+}
+.meg2-pending-settle>header h2{
+  max-width:100%;
+  margin-top:4px!important;
+  font-size:clamp(19px,5.5vw,24px)!important;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.meg2-pending-settle>header p{
+  margin-top:5px!important;
+  font-size:clamp(18px,5.4vw,24px)!important;
+  letter-spacing:-.025em;
+}
+.meg2-pending-settle-fields{
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  scrollbar-width:none;
+  padding:10px 16px 13px!important;
+}
+.meg2-pending-settle-fields::-webkit-scrollbar{display:none}
+.meg2-pending-date-field{
+  min-height:58px!important;
+  border-color:rgba(62,225,215,.26)!important;
+  background:linear-gradient(145deg,#06474a,#033a3d)!important;
+}
+.meg2-pending-balance-card{
+  padding:11px 12px;
+  display:grid;
+  gap:9px;
+  border:1px solid rgba(61,209,201,.18);
+  border-radius:15px;
+  background:linear-gradient(145deg,rgba(3,61,63,.94),rgba(2,45,48,.94));
+}
+.meg2-pending-balance-card.ok{border-color:rgba(74,231,185,.28)}
+.meg2-pending-balance-card.danger{
+  border-color:rgba(255,110,132,.44);
+  background:linear-gradient(145deg,rgba(82,34,43,.70),rgba(46,30,35,.72));
+  box-shadow:0 0 16px rgba(255,86,112,.055);
+}
+.meg2-pending-balance-card>header{
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr);
+  align-items:center;
+  gap:9px;
+}
+.meg2-pending-balance-card>header>span{
+  width:34px;height:34px;display:grid;place-items:center;border-radius:10px;
+  border:1px solid rgba(65,227,217,.17);background:rgba(9,101,101,.30);color:#5ce8df;
+}
+.meg2-pending-balance-card.danger>header>span{
+  border-color:rgba(255,112,132,.22);background:rgba(118,45,58,.30);color:#ff8c9d;
+}
+.meg2-pending-balance-card header small{
+  display:block;color:#7fb2ae;font-size:7.5px;font-weight:900;letter-spacing:.10em
+}
+.meg2-pending-balance-card header strong{
+  display:block;margin-top:2px;color:#eafffd;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.meg2-pending-balance-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:7px;
+}
+.meg2-pending-balance-grid>span{
+  min-width:0;padding:8px 9px;border:1px solid rgba(62,195,189,.11);border-radius:10px;background:rgba(2,46,49,.58)
+}
+.meg2-pending-balance-grid>span.missing{grid-column:1/-1;border-color:rgba(255,105,127,.25)}
+.meg2-pending-balance-grid small{display:block;color:#82a6a2;font-size:7.5px}
+.meg2-pending-balance-grid b{display:block;margin-top:3px;color:#61e8df;font-size:13px;white-space:nowrap}
+.meg2-pending-balance-grid b.negative,.meg2-pending-balance-grid .missing b{color:#ff8c9c}
+.meg2-pending-balance-card>p{margin:0;color:#a9c6c3;font-size:8px;line-height:1.35}
+.meg2-pending-balance-card.danger>p{color:#f2a5af}
+.meg2-pending-settle-message.danger{border:1px solid rgba(255,109,129,.25);color:#ff9eab;background:rgba(93,37,47,.30)}
+
+.meg2-pending-confirm{
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  scrollbar-width:none;
+  padding:14px 16px 12px;
+  text-align:center;
+}
+.meg2-pending-confirm::-webkit-scrollbar{display:none}
+.meg2-pending-confirm-icon{
+  width:48px;height:48px;margin:0 auto 8px;display:grid;place-items:center;border-radius:50%;
+  border:1px solid rgba(61,238,220,.42);background:rgba(9,126,119,.24);color:#61eee2;
+  box-shadow:0 0 20px rgba(44,231,219,.07);
+}
+.meg2-pending-confirm h3{margin:0;font-size:17px}
+.meg2-pending-confirm>p{margin:6px auto 12px;max-width:390px;color:#95afac;font-size:9px;line-height:1.4}
+.meg2-pending-confirm dl{margin:0;display:grid;gap:6px;text-align:left}
+.meg2-pending-confirm dl>div{
+  min-height:41px;padding:7px 10px;display:grid;grid-template-columns:100px minmax(0,1fr);align-items:center;gap:8px;
+  border:1px solid rgba(57,188,181,.12);border-radius:10px;background:rgba(2,48,50,.66)
+}
+.meg2-pending-confirm dl>div.after{border-color:rgba(58,229,180,.20);background:rgba(5,78,65,.30)}
+.meg2-pending-confirm dt{color:#839e9b;font-size:8px}
+.meg2-pending-confirm dd{margin:0;text-align:right;color:#effffd;font-size:9px;font-weight:800;overflow-wrap:anywhere}
+.meg2-pending-confirm .after dd{color:#68e8bb}
+.meg2-pending-settle>footer{
+  padding:10px 16px calc(12px + env(safe-area-inset-bottom))!important;
+  border-top:1px solid rgba(55,210,201,.10);
+  background:rgba(2,43,46,.94);
+}
+.meg2-pending-settle>footer .apply:disabled{opacity:.38;box-shadow:none}
+.meg2-pending-settle-message{
+  border:1px solid rgba(235,188,72,.18);
+  background:rgba(95,72,20,.18)!important;
+  color:#f1d99a!important;
+}
+.meg2-pending-success{
+  width:min(100%,500px)!important;
+  border:1px solid rgba(65,235,220,.42)!important;
+  border-radius:22px!important;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(43,230,215,.10),transparent 28%),
+    linear-gradient(165deg,#06474a,#032f32 62%,#02272a)!important;
+}
+.meg2-pending-success dl div:last-child dd{color:#68e8bb}
+
+@media(max-height:700px){
+  .meg2-pending-detail{max-height:91dvh!important}
+  .meg2-pending-settle{max-height:95dvh!important}
+  .meg2-pending-settle>header{padding-top:10px!important;padding-bottom:7px!important}
+  .meg2-pending-settle-fields,.meg2-pending-confirm{padding-top:8px!important}
+  .meg2-pending-balance-card{padding:8px 9px}
+}

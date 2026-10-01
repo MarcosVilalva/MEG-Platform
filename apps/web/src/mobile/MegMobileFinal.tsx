@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MegIcon, resolveFinancialIcon, type MegIconName } from './MegMobileIcon';
-import type { FinancialEvent } from '../app/finance-client';
+import { financeClient, type FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { hydratePhoenixAvatarPreference, phoenixAvatarImage, readPhoenixAvatarPreference } from '../phoenix/profile-avatar';
 import { MegMobileAnalytics, MegMobileCashflow, MegMobileHistory, MegMobileMovements } from './MegMobileCoreScreens';
@@ -99,6 +99,16 @@ function isBenefitAccount(account: PhoenixReadModel['accounts'][number]) {
 
 function isVerocardMethod(method: PhoenixReadModel['paymentMethods'][number]) {
   return method.isActive && /verocard/.test(normalizeCardText(method.name) + ' ' + normalizeCardText(method.type));
+}
+
+function isMonetaryAccount(account: PhoenixReadModel['accounts'][number]) {
+  return account.isActive && ['checking', 'savings', 'cash'].includes(normalizeCardText(account.type));
+}
+
+function isSettlementPaymentMethod(method: PhoenixReadModel['paymentMethods'][number]) {
+  const type = normalizeCardText(method.type);
+  const identity = normalizeCardText(method.name) + ' ' + type;
+  return method.isActive && type !== 'credit' && !/verocard/.test(identity);
 }
 
 function cardArt(name: string) {
@@ -649,6 +659,8 @@ function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Pro
 }
 
 type PendingRow = { id: string; source: 'payable' | 'event'; sourceId: string; description: string; due: string; amount: number; paid: boolean; category?: string; account?: string; payment?: string; installment?: string; notes?: string };
+type PendingSettlementBalance = { status: 'idle' | 'loading' | 'ready' | 'error'; available: number; accountName: string; message?: string };
+type PendingSettlementSuccess = { description:string; amount:number; paidAt:string; account:string; payment:string; balanceBefore:number; balanceAfter:number };
 
 function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Props['onEditEvent'] }) {
   const [tab, setTab] = useState<'all' | 'open' | 'paid' | 'overdue'>('all');
@@ -658,50 +670,118 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   const [filterOpen, setFilterOpen] = useState(false);
   const [selected, setSelected] = useState<PendingRow | null>(null);
   const [descending, setDescending] = useState(false);
-  const [settling, setSettling] = useState(false);
+  const [settlementItem, setSettlementItem] = useState<PendingRow | null>(null);
+  const [settlementStep, setSettlementStep] = useState<'form' | 'confirm'>('form');
   const [settlementBusy, setSettlementBusy] = useState(false);
   const [settlementMessage, setSettlementMessage] = useState('');
-  const [settlementSuccess, setSettlementSuccess] = useState<{ description:string; amount:number; paidAt:string; account:string; payment:string } | null>(null);
+  const [settlementBalance, setSettlementBalance] = useState<PendingSettlementBalance>({ status:'idle', available:0, accountName:'' });
+  const [settlementSuccess, setSettlementSuccess] = useState<PendingSettlementSuccess | null>(null);
   const [paidAt, setPaidAt] = useState(todayIso());
-  const monetaryAccounts = data.accounts.filter((item) => item.isActive && !/benef|alimenta|verocard/i.test(String(item.type || '') + ' ' + item.name));
-  const activeMethods = data.paymentMethods.filter((item) => item.isActive);
+  const monetaryAccounts = data.accounts.filter(isMonetaryAccount);
+  const activeMethods = data.paymentMethods.filter(isSettlementPaymentMethod);
   const [settlementAccountId, setSettlementAccountId] = useState(monetaryAccounts[0]?.id || '');
   const [settlementMethodId, setSettlementMethodId] = useState('');
   const today = todayIso();
 
+  const settlementMissing = settlementItem && settlementBalance.status === 'ready'
+    ? Math.max(0, Math.round((settlementItem.amount - settlementBalance.available) * 100) / 100)
+    : 0;
+  const settlementAfter = settlementItem && settlementBalance.status === 'ready'
+    ? Math.round((settlementBalance.available - settlementItem.amount) * 100) / 100
+    : 0;
+  const settlementCanReview = Boolean(
+    settlementItem
+    && !settlementItem.paid
+    && paidAt
+    && settlementAccountId
+    && settlementMethodId
+    && settlementBalance.status === 'ready'
+    && settlementMissing <= 0
+    && !settlementBusy
+  );
+
+  useEffect(() => {
+    if (!settlementItem || !settlementAccountId || !paidAt) {
+      setSettlementBalance({ status:'idle', available:0, accountName:'' });
+      return;
+    }
+    let cancelled = false;
+    setSettlementBalance((current) => ({ ...current, status:'loading', message:undefined }));
+    void financeClient.getMonetaryBalance(settlementAccountId, paidAt)
+      .then((balance) => {
+        if (cancelled) return;
+        setSettlementBalance({
+          status:'ready',
+          available:Number(balance.available || 0),
+          accountName:balance.accountName || monetaryAccounts.find((item) => item.id === settlementAccountId)?.name || 'Conta monetária',
+        });
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setSettlementBalance({
+          status:'error',
+          available:0,
+          accountName:monetaryAccounts.find((item) => item.id === settlementAccountId)?.name || 'Conta monetária',
+          message:error instanceof Error ? error.message : 'Não foi possível consultar o saldo da conta.',
+        });
+      });
+    return () => { cancelled = true; };
+  }, [settlementItem?.id, settlementAccountId, paidAt]);
+
   function openSettlement(item: PendingRow) {
-    setSelected(item);
+    setSelected(null);
+    setSettlementItem(item);
     setPaidAt(todayIso());
     setSettlementAccountId(monetaryAccounts[0]?.id || '');
     setSettlementMethodId('');
     setSettlementMessage('');
-    setSettling(true);
+    setSettlementBalance({ status:'idle', available:0, accountName:'' });
+    setSettlementStep('form');
+  }
+
+  function reviewSettlement() {
+    if (!settlementCanReview) return;
+    setSettlementMessage('');
+    setSettlementStep('confirm');
   }
 
   async function confirmSettlement() {
-    if (!selected || selected.paid || settlementBusy) return;
+    if (!settlementItem || settlementItem.paid || settlementBusy || settlementStep !== 'confirm') return;
     try {
       setSettlementBusy(true);
-      setSettlementMessage('Confirmando a operação…');
+      setSettlementMessage('Confirmando a operação no servidor…');
       const prepared = preparePhoenixPendingSettlement({
-        source: selected.source,
-        sourceId: selected.sourceId,
-        amount: selected.amount,
+        source: settlementItem.source,
+        sourceId: settlementItem.sourceId,
+        amount: settlementItem.amount,
         paidAt,
         accountId: settlementAccountId,
         paymentMethodId: settlementMethodId,
       });
       const result = await runPhoenixPendingSettlement(prepared, data.month, (state) => {
-        if (state.status === 'saving') setSettlementMessage('Confirmando a operação…');
+        if (state.status === 'saving') setSettlementMessage('Confirmando a operação no servidor…');
         if (state.status === 'error') setSettlementMessage(state.message);
       });
       if (result.status !== 'confirmed') return;
-      const account = monetaryAccounts.find((item) => item.id === settlementAccountId)?.name || 'Conta financeira';
+      const account = monetaryAccounts.find((item) => item.id === settlementAccountId)?.name || settlementBalance.accountName || 'Conta monetária';
       const payment = activeMethods.find((item) => item.id === settlementMethodId)?.name || 'Forma de pagamento';
-      setSettlementSuccess({ description:selected.description, amount:selected.amount, paidAt, account, payment });
-      setSettling(false);
-      setSelected(null);
+      const response = result.result && typeof result.result === 'object' ? result.result as Record<string, unknown> : {};
+      const serverBefore = Number(response.accountBalanceBefore);
+      const serverAfter = Number(response.accountBalanceAfter);
+      const balanceBefore = Number.isFinite(serverBefore) ? serverBefore : settlementBalance.available;
+      const balanceAfter = Number.isFinite(serverAfter) ? serverAfter : Math.round((balanceBefore - settlementItem.amount) * 100) / 100;
+      setSettlementSuccess({
+        description:settlementItem.description,
+        amount:settlementItem.amount,
+        paidAt,
+        account,
+        payment,
+        balanceBefore,
+        balanceAfter,
+      });
+      setSettlementItem(null);
       setSettlementMessage('');
+      setSettlementStep('form');
     } catch (error) {
       setSettlementMessage(error instanceof Error ? error.message : 'Não foi possível confirmar a baixa.');
     } finally {
@@ -796,22 +876,61 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
         <footer className="meg2-pending-detail-actions"><button type="button" className="secondary" onClick={() => setSelected(null)}>Fechar</button>{selected.source === 'event' ? <button type="button" className="secondary" onClick={() => { const id=selected.sourceId; setSelected(null); onEditEvent(id); }}>Editar</button> : null}{!selected.paid ? <button type="button" className="apply" onClick={() => openSettlement(selected)}>Dar baixa</button> : null}</footer>
       </section>
     </div> : null}
-    {settling && selected ? <div className="meg2-pending-settle-overlay" role="presentation">
+    {settlementItem ? <div className="meg2-pending-settle-overlay" role="presentation">
       <section className="meg2-pending-settle" role="dialog" aria-modal="true" aria-label="Dar baixa no compromisso">
-        <header><div><small>BAIXA DE PENDÊNCIA</small><h2>{selected.description}</h2><p>{money.format(selected.amount)}</p></div><button type="button" disabled={settlementBusy} onClick={() => setSettling(false)}><Icon name="x" size={18}/></button></header>
-        <div className="meg2-pending-settle-fields">
-          <label><span>Data do pagamento</span><input type="date" max={today} value={paidAt} disabled={settlementBusy} onChange={(event) => setPaidAt(event.target.value)}/></label>
-          <MegMobilePicker label="Conta utilizada" value={settlementAccountId} disabled={settlementBusy} placeholder="Selecione a conta" options={monetaryAccounts.map((item) => ({ id:item.id, label:item.name, subtitle:item.type ? String(item.type) : undefined }))} onChange={setSettlementAccountId}/>
-          <MegMobilePicker label="Forma de pagamento" value={settlementMethodId} disabled={settlementBusy} placeholder="Selecione a forma" options={activeMethods.map((item) => ({ id:item.id, label:item.name, subtitle:item.type ? String(item.type) : undefined }))} onChange={setSettlementMethodId}/>
-          {settlementMessage ? <p className="meg2-pending-settle-message">{settlementMessage}</p> : null}
-        </div>
-        <footer><button type="button" className="secondary" disabled={settlementBusy} onClick={() => setSettling(false)}>Cancelar</button><button type="button" className="apply" disabled={settlementBusy || !paidAt || !settlementAccountId || !settlementMethodId} onClick={() => void confirmSettlement()}>{settlementBusy ? 'Confirmando…' : 'Confirmar baixa'}</button></footer>
+        <header>
+          <div><small>{settlementStep === 'form' ? 'REVISAR BAIXA' : 'CONFIRMAÇÃO FINAL'}</small><h2>{settlementItem.description}</h2><p>{money.format(settlementItem.amount)}</p></div>
+          <button type="button" disabled={settlementBusy} onClick={() => { setSettlementItem(null); setSettlementStep('form'); setSettlementMessage(''); }}><Icon name="x" size={18}/></button>
+        </header>
+        {settlementStep === 'form' ? <>
+          <div className="meg2-pending-settle-fields" data-meg-scroll-region="true">
+            <label className="meg2-pending-date-field"><span>Data efetiva do pagamento</span><input type="date" max={today} value={paidAt} disabled={settlementBusy} onChange={(event) => { setPaidAt(event.target.value); setSettlementMessage(''); }}/></label>
+            <MegMobilePicker label="Conta monetária" value={settlementAccountId} disabled={settlementBusy} placeholder="Selecione a conta" options={monetaryAccounts.map((item) => ({ id:item.id, label:item.name, subtitle:item.type ? String(item.type) : undefined, icon:'wallet', tone:'cyan' }))} onChange={(value) => { setSettlementAccountId(value); setSettlementMessage(''); }}/>
+            <MegMobilePicker label="Forma de pagamento" value={settlementMethodId} disabled={settlementBusy} placeholder="Selecione a forma" options={activeMethods.map((item) => ({ id:item.id, label:item.name, subtitle:item.type ? String(item.type) : undefined, icon:'wallet', tone:'cyan' }))} onChange={(value) => { setSettlementMethodId(value); setSettlementMessage(''); }}/>
+
+            <section className={'meg2-pending-balance-card ' + (settlementMissing > 0 ? 'danger' : settlementBalance.status === 'ready' ? 'ok' : '')}>
+              <header><span><Icon name="wallet" size={17}/></span><div><small>PROTEÇÃO DE SALDO</small><strong>{settlementBalance.status === 'loading' ? 'Consultando saldo…' : settlementBalance.status === 'error' ? 'Saldo indisponível' : settlementBalance.status === 'ready' ? settlementBalance.accountName : 'Selecione a conta e a data'}</strong></div></header>
+              {settlementBalance.status === 'ready' ? <div className="meg2-pending-balance-grid">
+                <span><small>Saldo disponível</small><b>{money.format(settlementBalance.available)}</b></span>
+                <span><small>Após a baixa</small><b className={settlementMissing > 0 ? 'negative' : ''}>{money.format(settlementAfter)}</b></span>
+                {settlementMissing > 0 ? <span className="missing"><small>Falta para baixar</small><b>{money.format(settlementMissing)}</b></span> : null}
+              </div> : null}
+              {settlementBalance.status === 'error' ? <p>Não foi possível validar o saldo desta conta. A baixa permanece bloqueada.</p> : null}
+              {settlementMissing > 0 ? <p>Saldo insuficiente. A baixa não pode ser confirmada até haver saldo monetário suficiente na conta selecionada.</p> : null}
+            </section>
+            {!monetaryAccounts.length ? <p className="meg2-pending-settle-message danger">Nenhuma conta monetária ativa disponível. Cadastre ou ative uma conta corrente, poupança ou caixa antes de dar baixa.</p> : null}
+            {settlementMessage ? <p className="meg2-pending-settle-message">{settlementMessage}</p> : null}
+          </div>
+          <footer>
+            <button type="button" className="secondary" disabled={settlementBusy} onClick={() => { setSettlementItem(null); setSettlementMessage(''); }}>Cancelar</button>
+            <button type="button" className="apply" disabled={!settlementCanReview} onClick={reviewSettlement}>Revisar baixa</button>
+          </footer>
+        </> : <>
+          <div className="meg2-pending-confirm">
+            <div className="meg2-pending-confirm-icon"><Icon name="check-line" size={22}/></div>
+            <h3>Confirme antes de movimentar o saldo</h3>
+            <p>A baixa só será concluída depois da confirmação real do servidor. Confira os dados abaixo.</p>
+            <dl>
+              <div><dt>Data da baixa</dt><dd>{paidAt.split('-').reverse().join('/')}</dd></div>
+              <div><dt>Conta</dt><dd>{monetaryAccounts.find((item) => item.id === settlementAccountId)?.name || settlementBalance.accountName}</dd></div>
+              <div><dt>Pagamento</dt><dd>{activeMethods.find((item) => item.id === settlementMethodId)?.name || 'Não informado'}</dd></div>
+              <div><dt>Valor</dt><dd>{money.format(settlementItem.amount)}</dd></div>
+              <div><dt>Saldo antes</dt><dd>{money.format(settlementBalance.available)}</dd></div>
+              <div className="after"><dt>Saldo após</dt><dd>{money.format(settlementAfter)}</dd></div>
+            </dl>
+            {settlementMessage ? <p className="meg2-pending-settle-message">{settlementMessage}</p> : null}
+          </div>
+          <footer>
+            <button type="button" className="secondary" disabled={settlementBusy} onClick={() => { setSettlementStep('form'); setSettlementMessage(''); }}>Voltar</button>
+            <button type="button" className="apply" disabled={settlementBusy || settlementMissing > 0 || settlementBalance.status !== 'ready'} onClick={() => void confirmSettlement()}>{settlementBusy ? 'Confirmando…' : 'Confirmar e dar baixa'}</button>
+          </footer>
+        </>}
       </section>
     </div> : null}
     {settlementSuccess ? <div className="meg2-pending-success-overlay" role="presentation">
       <section className="meg2-pending-success" role="dialog" aria-modal="true" aria-label="Baixa confirmada">
         <span className="meg2-pending-success-icon"><Icon name="check-line" size={24}/></span><small>BAIXA CONFIRMADA</small><h2>{settlementSuccess.description}</h2><strong>{money.format(settlementSuccess.amount)}</strong>
-        <dl><div><dt>Data</dt><dd>{settlementSuccess.paidAt.split('-').reverse().join('/')}</dd></div><div><dt>Conta</dt><dd>{settlementSuccess.account}</dd></div><div><dt>Pagamento</dt><dd>{settlementSuccess.payment}</dd></div></dl>
+        <dl><div><dt>Data</dt><dd>{settlementSuccess.paidAt.split('-').reverse().join('/')}</dd></div><div><dt>Conta</dt><dd>{settlementSuccess.account}</dd></div><div><dt>Pagamento</dt><dd>{settlementSuccess.payment}</dd></div><div><dt>Saldo antes</dt><dd>{money.format(settlementSuccess.balanceBefore)}</dd></div><div><dt>Saldo após</dt><dd>{money.format(settlementSuccess.balanceAfter)}</dd></div></dl>
         <button type="button" className="apply" onClick={() => setSettlementSuccess(null)}>Concluir</button>
       </section>
     </div> : null}

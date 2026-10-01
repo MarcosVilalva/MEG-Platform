@@ -27,6 +27,7 @@ import {
 } from './catalog-mutation';
 import { prisma } from '@meg/database';
 import { resolveWorkspaceContext } from '../workspaces/service';
+import { isMonetaryAccountType, monetaryAccountBalanceAt } from './monetary-protection';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
 const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
@@ -215,6 +216,31 @@ export async function financeRoutes(app: FastifyInstance) {
     };
   });
 
+
+  app.get('/monetary-balance', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
+    const parsed = z.object({
+      accountId: z.string().trim().min(1),
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    }).safeParse(request.query);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const dataOwnerId = await financialDataOwnerId(request.user.sub);
+    const account = await prisma.account.findFirst({
+      where: { id: parsed.data.accountId, userId: dataOwnerId, isActive: true },
+      select: { id: true, name: true, type: true, openingBalance: true },
+    });
+    if (!account) return reply.code(404).send({ error: 'INVALID_ACCOUNT' });
+    if (!isMonetaryAccountType(account.type)) {
+      return reply.code(400).send({ error: 'ACCOUNT_NOT_MONETARY', accountId: account.id, accountType: account.type });
+    }
+    const available = await monetaryAccountBalanceAt(prisma, dataOwnerId, account, parsed.data.date);
+    return {
+      accountId: account.id,
+      accountName: account.name,
+      accountType: account.type,
+      date: parsed.data.date,
+      available,
+    };
+  });
 
   app.get('/analytics', { preHandler: app.authorize([...readRoles]) }, async (request, reply) => {
     const parsed = z.object({ month: monthSchema }).safeParse(request.query);

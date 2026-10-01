@@ -348,13 +348,33 @@ assert.match(
 
 assert.match(
   mobile,
-  /preparePhoenixPendingSettlement[\s\S]*runPhoenixPendingSettlement[\s\S]*Dar baixa[\s\S]*Confirmar baixa/,
-  'Pendentes deve executar a baixa real pelo gateway idempotente antes de retirar o compromisso da tela.',
+  /preparePhoenixPendingSettlement[\s\S]*runPhoenixPendingSettlement[\s\S]*Dar baixa[\s\S]*Revisar baixa[\s\S]*Confirmar e dar baixa/,
+  'Pendentes deve revisar e confirmar explicitamente a baixa real pelo gateway idempotente antes de retirar o compromisso da tela.',
 );
 assert.match(
   mobile,
   /settlementSuccess[\s\S]*BAIXA CONFIRMADA[\s\S]*Data[\s\S]*Conta[\s\S]*Pagamento/,
   'Baixa de Pendentes deve apresentar confirmação com dados efetivos da operação.',
+);
+assert.match(
+  mobile,
+  /financeClient\.getMonetaryBalance[\s\S]*settlementMissing[\s\S]*Falta para baixar/,
+  'Baixa deve consultar saldo real da conta e informar exatamente quanto falta quando insuficiente.',
+);
+assert.match(
+  mobile,
+  /setSelected\(null\)[\s\S]*setSettlementItem\(item\)[\s\S]*setSettlementStep\('form'\)/,
+  'Ao iniciar a baixa, o detalhe deve sair do caminho e abrir um fluxo próprio, sem sobreposição de modais.',
+);
+assert.match(
+  mobile,
+  /Confirme antes de movimentar o saldo[\s\S]*Saldo antes[\s\S]*Saldo após/,
+  'Confirmação final deve mostrar data, conta, forma e impacto no saldo antes da gravação.',
+);
+assert.match(
+  css,
+  /PENDENTES BAIXA V2[\s\S]*z-index:2147482320!important[\s\S]*\.meg2-pending-balance-card\.danger[\s\S]*\.meg2-pending-confirm/,
+  'Modal de baixa deve ficar acima do detalhe e exibir proteção visual de saldo e confirmação premium.',
 );
 assert.match(
   launchSheet,

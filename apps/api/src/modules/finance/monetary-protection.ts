@@ -147,6 +147,29 @@ export async function monetaryOpeningBalance(tx: Tx, userId: string) {
   return Math.round(balance * 100) / 100;
 }
 
+export async function monetaryAccountBalanceAt(
+  tx: Tx,
+  userId: string,
+  account: { id: string; openingBalance: Prisma.Decimal | number | string },
+  effectiveAt: string,
+) {
+  const cutoff = nextDayExclusive(effectiveAt.slice(0, 10));
+  const events = await tx.financialEvent.findMany({
+    where: {
+      userId,
+      accountId: account.id,
+      archivedAt: null,
+      date: { lt: cutoff },
+      status: { in: ['paid', 'reconciled', 'confirmed'] },
+    },
+    select: { signedAmount: true, status: true },
+  });
+  const balance = events
+    .filter((event) => isPostedFinancialStatus(event.status))
+    .reduce((sum, event) => sum + Number(event.signedAmount), Number(account.openingBalance));
+  return Math.round(balance * 100) / 100;
+}
+
 export async function monetaryBalanceAt(tx: Tx, userId: string, effectiveAt: string) {
   const cutoff = nextDayExclusive(effectiveAt.slice(0, 10));
   const [openingBalance, events] = await Promise.all([

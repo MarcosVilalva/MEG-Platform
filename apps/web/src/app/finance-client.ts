@@ -185,6 +185,13 @@ export type BenefitSummary = {
   credits: number;
   used: number;
 };
+export type MonetaryAccountBalance = {
+  accountId: string;
+  accountName: string;
+  accountType: string;
+  date: string;
+  available: number;
+};
 export const financeClient = {
   getAnalytics: (month: string) =>
     authorizedRequest<FinancialAnalytics>(`/finance/analytics?month=${encodeURIComponent(month)}`),
@@ -200,6 +207,8 @@ export const financeClient = {
     authorizedRequest<FinanceSummary>(`/finance/summary?month=${encodeURIComponent(month)}`),
   getBenefitSummary: (month: string) =>
     authorizedRequest<BenefitSummary>(`/finance/benefit-summary?month=${encodeURIComponent(month)}`),
+  getMonetaryBalance: (accountId: string, date: string) =>
+    authorizedRequest<MonetaryAccountBalance>(`/finance/monetary-balance?accountId=${encodeURIComponent(accountId)}&date=${encodeURIComponent(date)}`),
   listEventsForMonth: (month: string) =>
     authorizedRequest<FinancialEventPage>(`/finance/events/month?month=${encodeURIComponent(month)}`),
   getSyncStatus: () =>

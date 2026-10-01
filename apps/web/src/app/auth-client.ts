@@ -57,9 +57,12 @@ function responseError(payload: unknown, status: number) {
     ? String((payload as { error?: unknown }).error || '')
     : '';
   const transientProxyFailure = code === 'PREVIEW_PROXY_FAILED';
+  const details = payload && typeof payload === 'object' && !Array.isArray(payload)
+    ? payload as Record<string, unknown>
+    : {};
   return Object.assign(
     new Error(transientProxyFailure ? `HTTP_${status}` : code || `HTTP_${status}`),
-    { status, code: code || undefined }
+    { ...details, status, code: code || undefined }
   );
 }
 

@@ -4,7 +4,7 @@ import { writeBackNormalizedEventsToAppState } from '../app-state/normalized-pri
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
 import { assertActiveCatalogReferences } from './catalog-scope';
-import { serializableFinancialTransaction } from './monetary-protection';
+import { isFutureFinancialDay, isMonetaryAccountType, monetaryAccountBalanceAt, paymentBalanceDecision, serializableFinancialTransaction } from './monetary-protection';
 
 export class FinancialEventSettlementError extends Error {
   constructor(public code: string, public details?: Record<string, unknown>) {
@@ -36,6 +36,9 @@ function normalize(value: unknown) {
 }
 
 export async function settleLegacyFinancialEventProtected(userId: string, input: SettleLegacyFinancialEventInput) {
+  if (isFutureFinancialDay(input.paidAt)) {
+    throw new FinancialEventSettlementError('FUTURE_PAYMENT_NOT_ALLOWED', { paidAt: input.paidAt.slice(0, 10) });
+  }
   const workspace = await resolveWorkspaceContext(userId);
   const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = mutationRequestHash({ ...input, operationId: undefined });
@@ -62,6 +65,30 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
         throw error;
       }
 
+      const settlementAccount = await tx.account.findFirst({
+        where: { id: input.accountId, userId: dataOwnerId, isActive: true },
+        select: { id: true, name: true, type: true, openingBalance: true },
+      });
+      if (!settlementAccount) throw new FinancialEventSettlementError('INVALID_ACCOUNT');
+      if (!isMonetaryAccountType(settlementAccount.type)) {
+        throw new FinancialEventSettlementError('ACCOUNT_NOT_MONETARY', {
+          accountId: settlementAccount.id,
+          accountType: settlementAccount.type,
+        });
+      }
+
+      const settlementMethod = await tx.paymentMethod.findFirst({
+        where: { id: input.paymentMethodId, userId: dataOwnerId, isActive: true },
+        select: { id: true, name: true, type: true },
+      });
+      if (!settlementMethod) throw new FinancialEventSettlementError('INVALID_PAYMENT_METHOD');
+      if (normalize(settlementMethod.type) === 'CREDIT' || normalize(settlementMethod.name) === 'VEROCARD') {
+        throw new FinancialEventSettlementError('INVALID_PAYMENT_METHOD', {
+          paymentMethodId: settlementMethod.id,
+          reason: 'NON_MONETARY_METHOD_NOT_ALLOWED_FOR_SETTLEMENT',
+        });
+      }
+
       const current = await tx.financialEvent.findFirst({
         where: { id: input.eventId, userId: dataOwnerId, archivedAt: null },
         include: { account: true, paymentMethod: true, ledgerEntries: true },
@@ -78,6 +105,18 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
       const paidAt = new Date(input.paidAt);
       if (Number.isNaN(paidAt.getTime())) throw new FinancialEventSettlementError('INVALID_PAID_AT');
 
+      const value = Math.abs(Number(current.amount));
+      const accountBalanceBefore = await monetaryAccountBalanceAt(tx, dataOwnerId, settlementAccount, input.paidAt);
+      const protection = paymentBalanceDecision(accountBalanceBefore, value);
+      if (!protection.allowed) {
+        throw new FinancialEventSettlementError('INSUFFICIENT_MONETARY_BALANCE', {
+          ...protection,
+          accountId: settlementAccount.id,
+          accountName: settlementAccount.name,
+          at: input.paidAt.slice(0, 10),
+        });
+      }
+
       await tx.ledgerEntry.deleteMany({ where: { eventId: current.id } });
       await tx.financialEvent.update({
         where: { id: current.id },
@@ -90,7 +129,6 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
         },
       });
 
-      const value = Number(current.amount);
       await tx.ledgerEntry.create({
         data: {
           eventId: current.id,
@@ -133,6 +171,9 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
           legacyTransactionId: current.legacyTransactionId,
           compatibility,
           workspaceId: workspace.workspaceId,
+          accountBalanceBefore,
+          accountBalanceAfter: Math.round((accountBalanceBefore - value) * 100) / 100,
+          protection,
         },
       });
 
@@ -140,6 +181,9 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
         event: settled,
         originalDueDate,
         paidAt: input.paidAt,
+        accountBalanceBefore,
+        accountBalanceAfter: Math.round((accountBalanceBefore - value) * 100) / 100,
+        protection,
         idempotentReplay: false,
       };
       const state = await tx.appState.findUnique({
