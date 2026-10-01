@@ -17,6 +17,7 @@ const cardsFidelityCss = readFileSync(new URL('./phoenix-cards-fidelity-v6.css',
 const cardsResponsiveCss = readFileSync(new URL('./phoenix-cards-responsive-v61.css', import.meta.url), 'utf8');
 const cardIdentity = readFileSync(new URL('./card-identity.ts', import.meta.url), 'utf8');
 const simpleEventBridge = readFileSync(new URL('./simple-event-form-bridge.ts', import.meta.url), 'utf8');
+const backupRestoreBridge = readFileSync(new URL('./backup-restore-bridge.ts', import.meta.url), 'utf8');
 const reconciliationBridge = readFileSync(new URL('./reconciliation-bridge.ts', import.meta.url), 'utf8');
 const launchBusinessRules = readFileSync(new URL('./launch-business-rules-bridge.ts', import.meta.url), 'utf8');
 const operationalHome = readFileSync(new URL('./PhoenixOperationalMobileHome.tsx', import.meta.url), 'utf8');
@@ -222,9 +223,34 @@ assert.doesNotMatch(notificationRecipients, /window\.confirm|window\.alert/,
   'Destinatários não podem usar diálogos nativos do navegador.');
 assert.match(nativeNotifications, /getPhoenixLocalNotificationStatus/,
   'Camada nativa deve expor diagnóstico verificável das notificações locais.');
+assert.match(settings, /Exportar backup/);
 assert.match(settings, /Restaurar backup/);
-assert.match(settings, /disabled/,
-  'Restauração deve permanecer bloqueada durante a fase read-only');
+assert.match(settings, /exportPhoenixTransactionBackup/,
+  'Configurações deve exportar o backup pelo bridge Phoenix homologado.');
+assert.match(settings, /inspectPhoenixTransactionBackup/,
+  'Restauração deve inspecionar e validar o arquivo antes da confirmação.');
+assert.match(settings, /restorePhoenixTransactionBackup/,
+  'Configurações deve delegar a restauração ao bridge protegido.');
+assert.match(settings, /megConfirm/,
+  'Restauração deve exigir confirmação visual MEG antes da gravação.');
+assert.match(settings, /onDataCommitted\(result\.snapshot\)/,
+  'Restauração confirmada deve propagar a nova fotografia financeira ao shell.');
+assert.match(backupRestoreBridge, /readJsonBackup/,
+  'Bridge deve validar estrutura, tipos e IDs do arquivo antes da restauração.');
+assert.match(backupRestoreBridge, /current\.revision !== prepared\.expectedRevision/,
+  'Bridge deve cancelar a restauração se a base mudar depois da conferência.');
+assert.match(backupRestoreBridge, /method:\s*'PUT'/,
+  'Bridge deve usar o contrato oficial de substituição do AppState.');
+assert.match(backupRestoreBridge, /expectedRevision:\s*prepared\.expectedRevision/,
+  'Writer de restauração deve enviar a revisão exata confirmada pelo usuário.');
+assert.match(backupRestoreBridge, /RESTORE_VERIFICATION_FAILED/,
+  'Bridge deve conferir o fingerprint após a gravação antes de declarar sucesso.');
+assert.match(backupRestoreBridge, /clearPhoenixReadModelCache\(\)/,
+  'Restauração deve invalidar fotografias antigas antes da releitura.');
+assert.match(backupRestoreBridge, /loadPhoenixReadModel\(refreshMonth, \{ force: true, forceStatic: true \}\)/,
+  'Restauração deve reler o snapshot oficial depois da conferência.');
+assert.doesNotMatch(backupRestoreBridge, /replaceCloudTransactions/,
+  'Restauração destrutiva não pode usar retry automático após conflito de revisão.');
 assert.match(settings, /Meu perfil/,
   'Configurações V15 deve expor uma área clara de perfil pessoal');
 assert.match(settings, /Escolher foto/,
