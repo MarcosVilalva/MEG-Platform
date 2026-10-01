@@ -42,6 +42,7 @@ const homeFidelityV12Css = readFileSync(new URL('./phoenix-home-fidelity-v12.css
 const homeFidelityV13Css = readFileSync(new URL('./phoenix-home-fidelity-v13.css', import.meta.url), 'utf8');
 const homePeriodSummary = readFileSync(new URL('./home-period-summary.ts', import.meta.url), 'utf8');
 const webScreens = readFileSync(new URL('./screens/PhoenixWebScreens.tsx', import.meta.url), 'utf8');
+const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
 const settings = readFileSync(new URL('./screens/PhoenixSettings.tsx', import.meta.url), 'utf8');
@@ -66,7 +67,7 @@ const androidStrings = readFileSync(new URL('../../../../android/app/src/main/re
 const capacitorConfig = readFileSync(new URL('../../../../capacitor.config.ts', import.meta.url), 'utf8');
 const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-home-dashboard.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-fidelity-v6.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-responsive-v61.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-operational-mobile.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
-const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${profileAvatar}\n${commandPalette}\n${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${homePastMonth}\n${homeHorizon}\n${homePeriodSummary}\n${webScreens}\n${history}\n${users}\n${settings}\n${previewMain}`;
+const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${profileAvatar}\n${commandPalette}\n${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${homePastMonth}\n${homeHorizon}\n${homePeriodSummary}\n${webScreens}\n${budgetsScreen}\n${history}\n${users}\n${settings}\n${previewMain}`;
 const readOnlyScreens = `${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${homePastMonth}\n${homeHorizon}\n${webScreens}\n${history}\n${users}\n${settings}\n${sidebar}\n${commandPalette}`;
 
 for (const forbidden of ['global.css', 'v15-contract.css', 'meg-v15.css']) {
@@ -82,6 +83,22 @@ assert.doesNotMatch(readOnlyScreens, /import\s+(?!type\b)[^;]*from\s+['"][^'"]*a
   'Telas Phoenix não podem acessar clientes mutáveis em runtime durante a paridade');
 assert.doesNotMatch(readOnlyScreens, /patchCloudTransactions|createEvent|updateEvent|archiveEvent|createPurchase|payStatement|createReceivable|receive\(|saveBudget|deleteBudget|changeUserAccess|deleteManagedUser/,
   'Telas Phoenix não podem invocar gateways de escrita durante a paridade');
+assert.match(phoenixApp, /PhoenixBudgetsGrid data=\{data\} onDataCommitted=\{onDataCommitted\}/,
+  'Orçamentos Web operacionais devem reconciliar o snapshot oficial depois de cada mutação.');
+assert.match(budgetsScreen, /financeClient\.saveBudget/,
+  'Orçamentos Web devem usar a rota oficial de criação e atualização.');
+assert.match(budgetsScreen, /financeClient\.deleteBudget/,
+  'Orçamentos Web devem usar a rota oficial de exclusão.');
+assert.match(budgetsScreen, /financeClient\.listBudgets/,
+  'Após escrever, Orçamentos deve reler a coleção oficial do período.');
+assert.match(budgetsScreen, /loadPhoenixReadModel\(data\.month, \{ force: true \}\)/,
+  'Após escrever, Orçamentos deve reconciliar a fotografia financeira completa.');
+assert.match(budgetsScreen, /megConfirm/,
+  'Exclusão de orçamento deve exigir confirmação MEG.');
+assert.match(budgetsScreen, /readOnly=\{editor\.mode === 'edit'\}/,
+  'Grupo deve permanecer fixo ao editar para preservar a chave mês + grupo.');
+assert.doesNotMatch(budgetsScreen, /button type="button" disabled>Editar orçamento<\/button>/,
+  'Edição de orçamento não pode permanecer artificialmente bloqueada no Web.');
 assert.match(simpleEventBridge, /preparePhoenixBenefitEvent/,
   'Drawer de lançamento deve preparar conta de Benefício Alimentação pelo writer específico.');
 assert.match(simpleEventBridge, /runPhoenixBenefitEventWrite/,
