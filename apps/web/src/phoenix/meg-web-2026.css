@@ -1513,3 +1513,58 @@
   .meg-web-2026 .meg-web-report-head { flex-direction:column; }
   .meg-web-2026 .meg-web-report-actions { justify-content:flex-start; }
 }
+
+
+@media print {
+  .meg-web-2026 {
+    background:#fff!important;
+    color:#111!important;
+  }
+  .meg-web-2026 .meg-web-sidebar,
+  .meg-web-2026 .meg-web-topbar,
+  .meg-web-2026 .meg-web-report-grid,
+  .meg-web-2026 .meg-web-report-actions,
+  .meg-web-2026 .px-table-export,
+  .meg-web-2026 .px-mobile-dock {
+    display:none!important;
+  }
+  .meg-web-2026 .px-app,
+  .meg-web-2026 .px-main {
+    display:block!important;
+    width:100%!important;
+  }
+  .meg-web-2026 .meg-web-content {
+    width:100%!important;
+    max-width:none!important;
+    padding:0!important;
+  }
+  .meg-web-2026 .px-screen-head,
+  .meg-web-2026 .meg-web-report-workspace,
+  .meg-web-2026 .px-card {
+    border-color:#ddd!important;
+    background:#fff!important;
+    box-shadow:none!important;
+    color:#111!important;
+  }
+  .meg-web-2026 .meg-web-report-preview {
+    max-height:none!important;
+    overflow:visible!important;
+    border-color:#ddd!important;
+  }
+  .meg-web-2026 .px-data-table {
+    min-width:0!important;
+    width:100%!important;
+    color:#111!important;
+  }
+  .meg-web-2026 .px-data-table th {
+    position:static!important;
+    background:#f2f2f2!important;
+    color:#333!important;
+  }
+  .meg-web-2026 .px-data-table td,
+  .meg-web-2026 .px-data-table td strong,
+  .meg-web-2026 .meg-web-report-head h2,
+  .meg-web-2026 .meg-web-report-meta strong {
+    color:#111!important;
+  }
+}
