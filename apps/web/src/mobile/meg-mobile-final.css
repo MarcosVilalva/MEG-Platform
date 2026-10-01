@@ -1399,3 +1399,112 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   .meg2-pending-settle-fields,.meg2-pending-confirm{padding-top:8px!important}
   .meg2-pending-balance-card{padding:8px 9px}
 }
+
+
+/* PENDENTES V3 · agrupamento por vencimento, seleção em lote e faturas consolidadas. */
+.meg2-pending-list.grouped{
+  display:block!important;
+  padding-bottom:78px!important;
+}
+.meg2-pending-group-row{display:grid;gap:5px}
+.meg2-pending-date-heading{
+  min-height:30px;padding:4px 4px 1px;display:flex;align-items:end;justify-content:space-between;gap:8px;
+  position:sticky;top:0;z-index:3;
+  background:linear-gradient(180deg,rgba(1,40,43,.98),rgba(1,40,43,.93) 78%,rgba(1,40,43,0));
+}
+.meg2-pending-date-heading span{display:grid;gap:1px}
+.meg2-pending-date-heading strong{color:#dffffb;font-size:10px;letter-spacing:.015em}
+.meg2-pending-date-heading small{color:#70a09c;font-size:7px;text-transform:uppercase;letter-spacing:.08em}
+.meg2-pending-date-heading i{height:1px;flex:1;background:linear-gradient(90deg,rgba(67,222,213,.18),transparent)}
+.meg2-pending-group-row>article{
+  min-height:63px;border:1px solid rgba(56,205,197,.18);border-radius:12px;
+  display:grid;grid-template-columns:31px minmax(0,1fr);align-items:stretch;
+  background:linear-gradient(150deg,rgba(4,61,63,.80),rgba(2,43,46,.76));
+  transition:border-color .16s ease,background .16s ease,box-shadow .16s ease;
+}
+.meg2-pending-group-row>article.selected{
+  border-color:rgba(62,239,226,.58);
+  background:linear-gradient(150deg,rgba(6,82,81,.92),rgba(3,54,57,.88));
+  box-shadow:inset 0 0 0 1px rgba(63,231,222,.07),0 0 16px rgba(36,225,213,.05);
+}
+.meg2-pending-select{
+  width:31px;min-width:31px;border:0;border-right:1px solid rgba(55,199,191,.10);background:transparent;display:grid;place-items:center;color:#54e8df;
+}
+.meg2-pending-select>span{
+  width:17px;height:17px;border:1px solid rgba(89,203,197,.34);border-radius:6px;display:grid;place-items:center;
+  background:rgba(2,48,50,.62);font-size:9px;font-weight:900;
+}
+.meg2-pending-group-row>article.selected .meg2-pending-select>span{border-color:#4de9df;background:#0f8c86;color:#fff}
+.meg2-pending-select.spacer{opacity:.28}
+.meg2-pending-open{
+  min-width:0;padding:6px 8px;border:0;background:transparent;
+  display:grid;grid-template-columns:44px minmax(0,1fr) auto 12px;align-items:center;gap:7px;text-align:left;color:inherit
+}
+.meg2-pending-open>p{min-width:0;margin:0;display:grid;gap:2px}
+.meg2-pending-open>p b{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meg2-pending-open>p small{color:var(--meg2-green);font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meg2-pending-group-row>article.late .meg2-pending-open>p small{color:var(--meg2-red)}
+.meg2-pending-group-row>article.late .meg2-pending-icon{color:var(--meg2-red);background:linear-gradient(145deg,rgba(180,62,62,.58),rgba(93,28,38,.58))}
+.meg2-pending-group-row>article.late .meg2-pending-value em{background:var(--meg2-red);color:#3c1016}
+.meg2-pending-group-row>article.paid .meg2-pending-value em{background:var(--meg2-green);color:#06362c}
+.meg2-pending-open>i{font-style:normal;color:var(--meg2-cyan)}
+.meg2-pending-icon img{width:100%;height:100%;display:block;object-fit:cover;border-radius:inherit}
+.meg2-pending-batchbar{
+  position:absolute;left:10px;right:10px;bottom:8px;z-index:25;min-height:60px;
+  padding:8px 9px 8px 12px;border:1px solid rgba(55,235,222,.45);border-radius:17px;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;
+  background:linear-gradient(145deg,rgba(5,94,91,.98),rgba(3,59,62,.98));
+  box-shadow:0 14px 34px rgba(0,0,0,.38),0 0 18px rgba(45,229,218,.07);
+}
+.meg2-pending-batchbar>div{display:grid;gap:2px}
+.meg2-pending-batchbar small{color:#a1c6c2;font-size:8px}
+.meg2-pending-batchbar strong{color:#61eee2;font-size:17px}
+.meg2-pending-batchbar>button{
+  min-height:42px;padding:0 16px;border:1px solid #4ce9df;border-radius:12px;background:linear-gradient(180deg,#0a948f,#08706d);color:#fff;font-size:9px;font-weight:900
+}
+
+.meg2-pending-detail.card-group{grid-template-rows:auto auto minmax(0,1fr) auto!important}
+.meg2-pending-card-detail{min-height:0;overflow-y:auto;scrollbar-width:none;padding-top:9px}
+.meg2-pending-card-detail::-webkit-scrollbar{display:none}
+.meg2-pending-card-meta{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px}
+.meg2-pending-card-meta>span{padding:8px 9px;border:1px solid rgba(57,190,184,.12);border-radius:10px;background:rgba(3,52,54,.62)}
+.meg2-pending-card-meta small{display:block;color:#819d99;font-size:7.5px}
+.meg2-pending-card-meta b{display:block;margin-top:2px;font-size:9px;color:#eafffd}
+.meg2-pending-card-lines{display:grid;gap:6px}
+.meg2-pending-card-lines article{
+  min-height:52px;padding:7px 8px;border:1px solid rgba(53,183,177,.11);border-radius:11px;background:rgba(2,46,49,.66);
+  display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:8px
+}
+.meg2-pending-card-lines article>span{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:rgba(9,116,113,.25);color:#58e6dd}
+.meg2-pending-card-lines article>p{min-width:0;margin:0}
+.meg2-pending-card-lines article>p b{display:block;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meg2-pending-card-lines article>p small{display:block;margin-top:2px;color:#829d99;font-size:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meg2-pending-card-lines article>strong{font-size:9px;white-space:nowrap}
+.meg2-pending-card-lines article>strong.credit{color:#6ee7b8}
+
+.meg2-pending-lot-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.meg2-pending-lot-summary>span{padding:8px;border:1px solid rgba(60,200,193,.12);border-radius:10px;background:rgba(2,47,50,.62)}
+.meg2-pending-lot-summary small{display:block;color:#80a19e;font-size:7px}
+.meg2-pending-lot-summary b{display:block;margin-top:2px;color:#eafffd;font-size:10px;white-space:nowrap}
+
+/* Os modais financeiros seguem o mesmo alinhamento superior do restante do sistema. */
+.meg2-pending-detail-overlay,
+.meg2-pending-settle-overlay,
+.meg2-pending-success-overlay{
+  place-items:start center!important;
+  padding-top:max(14px,env(safe-area-inset-top))!important;
+}
+.meg2-pending-settle>footer .secondary{
+  border:1px solid rgba(64,199,192,.28)!important;
+  background:linear-gradient(180deg,#06494b,#04383b)!important;
+  color:#cce5e2!important;
+  box-shadow:none!important;
+}
+.meg2-pending-settle>footer .secondary:disabled{opacity:.45!important}
+
+@media(max-width:360px){
+  .meg2-pending-open{grid-template-columns:40px minmax(0,1fr) auto 10px;gap:5px;padding-inline:6px}
+  .meg2-pending-select{width:28px;min-width:28px}
+  .meg2-pending-group-row>article{grid-template-columns:28px minmax(0,1fr)}
+  .meg2-pending-batchbar{left:7px;right:7px}
+}

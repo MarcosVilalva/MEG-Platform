@@ -3,7 +3,7 @@ import type { FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { MegMobilePicker, type MegMobilePickerOption } from './MegMobilePicker';
 import { MegIcon, resolveFinancialIcon, type MegIconName } from './MegMobileIcon';
-import { clearMegMobileHistorySuggestionCache, loadMegMobileHistorySuggestions, type MegMobileHistorySuggestion } from './meg-mobile-description-history';
+import { clearMegMobileHistorySuggestionCache, loadMegMobileHistorySuggestions, prewarmMegMobileHistorySuggestions, primeMegMobileHistorySuggestions, type MegMobileHistorySuggestion } from './meg-mobile-description-history';
 import { cardDueDateForStatement, cardMonthPlus, cardStatementMonthForPurchase } from '../phoenix/data/card-dates';
 import {
   phoenixWriteMessage,
@@ -121,8 +121,8 @@ function isBenefitAccount(account: PhoenixReadModel['accounts'][number]) {
   return normalize(account.type).includes('benefit') || /benef|verocard|alimenta/.test(normalize(account.name));
 }
 
-function isVerocard(method: PhoenixReadModel['paymentMethods'][number]) {
-  return normalize(method.name).includes('verocard');
+function isVerocard(method: PhoenixReadModel['paymentMethods'][number] | undefined) {
+  return Boolean(method && normalize(method.name).includes('verocard'));
 }
 
 function isCreditMethod(method: PhoenixReadModel['paymentMethods'][number] | undefined) {
@@ -183,7 +183,7 @@ export function MegMobileLaunchSheet({
     (event.accountId && data.accounts.some((account) => account.id === event.accountId && isBenefitAccount(account)))
     || /verocard|benef|alimenta/.test(normalize(event.paymentMethod?.name) + ' ' + normalize(event.account?.name))
   ));
-  const initialMode: LaunchPreset = event ? (inferredBenefit ? 'benefit' : event.type === 'income' ? 'income' : 'expense') : preset;
+  const initialMode: LaunchPreset = event ? (event.type === 'income' ? 'income' : inferredBenefit ? 'benefit' : 'expense') : preset;
 
   const benefitAccount = data.accounts.find((account) => account.isActive && isBenefitAccount(account));
   const verocard = data.paymentMethods.find((method) => method.isActive && isVerocard(method));
@@ -222,7 +222,7 @@ export function MegMobileLaunchSheet({
   const accounts = useMemo(() => data.accounts.filter((item) => item.isActive), [data.accounts]);
   const methods = useMemo(() => data.paymentMethods.filter((item) => item.isActive), [data.paymentMethods]);
   const categories = useMemo(() => data.categories.filter((item) => item.isActive && (!item.type || item.type === (mode === 'income' ? 'income' : 'expense'))), [data.categories, mode]);
-  const visibleAccounts = accounts.filter((account) => mode === 'benefit' ? isBenefitAccount(account) : !isBenefitAccount(account));
+  const visibleAccounts = accounts.filter((account) => mode === 'benefit' ? isBenefitAccount(account) : mode === 'income' ? true : !isBenefitAccount(account));
   const accountOptions: MegMobilePickerOption[] = visibleAccounts.map((account) => ({
     id: account.id,
     label: account.name,
@@ -231,9 +231,11 @@ export function MegMobileLaunchSheet({
     tone: isBenefitAccount(account) ? 'yellow' : 'cyan',
   }));
   const categoryOptions: MegMobilePickerOption[] = uniquePickerOptions(categories);
+  const selectedAccount = accounts.find((item) => item.id === accountId);
+  const benefitIncome = mode === 'income' && Boolean(selectedAccount && isBenefitAccount(selectedAccount));
   const paymentOptions: MegMobilePickerOption[] = methods
     .filter((method) => {
-      if (mode === 'income') return isIncomeReceiptMethod(method);
+      if (mode === 'income') return benefitIncome ? isVerocard(method) : (isIncomeReceiptMethod(method) || isVerocard(method));
       if (mode !== 'expense') return true;
       if (expensePaymentMode === 'benefit') return isVerocard(method);
       if (expensePaymentMode === 'credit') return isCreditMethod(method);
@@ -303,6 +305,21 @@ export function MegMobileLaunchSheet({
   }, [categoryId, credit, mode, selectedCategory]);
 
   useEffect(() => {
+    primeMegMobileHistorySuggestions(data.events.items);
+    prewarmMegMobileHistorySuggestions();
+  }, [data.events.items]);
+
+  useEffect(() => {
+    if (mode === 'income') {
+      if (benefitIncome) {
+        if (verocard?.id && paymentMethodId !== verocard.id) setPaymentMethodId(verocard.id);
+      } else if (isVerocard(selectedMethod)) {
+        setPaymentMethodId('');
+      }
+    }
+  }, [mode, benefitIncome, verocard?.id, selectedMethod?.id]);
+
+  useEffect(() => {
     if (event || mode === 'benefit' || !historyOpen) {
       setHistorySuggestions([]);
       setHistoryLoading(false);
@@ -322,7 +339,7 @@ export function MegMobileLaunchSheet({
         .finally(() => {
           if (!cancelled) setHistoryLoading(false);
         });
-    }, 70);
+    }, 20);
 
     return () => {
       cancelled = true;
@@ -413,6 +430,7 @@ export function MegMobileLaunchSheet({
       return '';
     }
     if (!pending && !accountId) return 'Selecione a conta.';
+    if (mode === 'income' && benefitIncome && (!verocard || paymentMethodId !== verocard.id)) return 'Receitas na conta Benefício devem usar a forma Verocard.';
     if (mode === 'benefit' && (!benefitAccount || !verocard)) return 'A conta Benefício e a forma Verocard precisam estar ativas.';
     return '';
   }
@@ -459,6 +477,21 @@ export function MegMobileLaunchSheet({
 
       if (mode === 'benefit') {
         const benefit: PhoenixBenefitEventInput = { ...simple, type: 'expense', status: 'paid' };
+        if (event) {
+          const result = await runPhoenixBenefitEventEdit(event.id, benefit, data.month, event.updatedAt);
+          dispatchSnapshot(result.snapshot);
+        } else {
+          const result = await runPhoenixBenefitEventWrite(preparePhoenixBenefitEvent(benefit), data.month);
+          dispatchSnapshot(result.status === 'confirmed' ? result.snapshot : null);
+        }
+      } else if (benefitIncome) {
+        const benefit: PhoenixBenefitEventInput = {
+          ...simple,
+          type: 'income',
+          status: 'paid',
+          accountId,
+          paymentMethodId: verocard?.id || paymentMethodId,
+        };
         if (event) {
           const result = await runPhoenixBenefitEventEdit(event.id, benefit, data.month, event.updatedAt);
           dispatchSnapshot(result.snapshot);

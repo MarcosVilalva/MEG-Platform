@@ -8,7 +8,7 @@ import {
   isBenefitFinancialEvent,
   isFutureFinancialDay,
   isMonetaryAccountType,
-  monetaryBalanceAt,
+  monetaryAccountBalanceAt,
   paymentBalanceDecision,
   serializableFinancialTransaction,
 } from './monetary-protection';
@@ -205,7 +205,7 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
 
     const account = await tx.account.findFirst({
       where: { id: input.accountId, userId: ownerId, isActive: true },
-      select: { id: true, name: true, type: true, institution: true },
+      select: { id: true, name: true, type: true, institution: true, openingBalance: true },
     });
     if (!account) throw new PendingBatchSettlementError('INVALID_ACCOUNT');
     if (!isMonetaryAccountType(account.type)) {
@@ -249,10 +249,10 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
     if (!Number.isFinite(total) || total <= 0) {
       throw new PendingBatchSettlementError('BATCH_NET_NOT_PAYABLE', { total });
     }
-    const available = await monetaryBalanceAt(tx, ownerId, input.paidAt);
+    const available = await monetaryAccountBalanceAt(tx, ownerId, account, input.paidAt);
     const protection = paymentBalanceDecision(available, total);
     if (!protection.allowed) {
-      throw new PendingBatchSettlementError('INSUFFICIENT_MONETARY_BALANCE', { ...protection, at: input.paidAt.slice(0, 10) });
+      throw new PendingBatchSettlementError('INSUFFICIENT_MONETARY_BALANCE', { ...protection, accountId: account.id, accountName: account.name, at: input.paidAt.slice(0, 10) });
     }
     markPhase('balanceProtection');
 
@@ -435,7 +435,9 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
       paidAt: input.paidAt,
       account: { id: account.id, name: account.name },
       paymentMethod: { id: paymentMethod.id, name: paymentMethod.name },
-      protection: { monetary: true, ...protection, at: input.paidAt.slice(0, 10) },
+      accountBalanceBefore: available,
+      accountBalanceAfter: Math.round((available - total) * 100) / 100,
+      protection: { monetary: true, ...protection, accountId: account.id, accountName: account.name, at: input.paidAt.slice(0, 10) },
       items: results,
       idempotentReplay: false,
       timingsMs,
