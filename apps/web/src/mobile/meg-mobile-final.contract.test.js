@@ -454,6 +454,21 @@ assert.doesNotMatch(
   /img\[alt\*="LATAM"\][\s\S]{0,180}transform:scale\(/,
   'LATAM deve usar a mesma geometria full-card das demais artes, sem zoom exclusivo.',
 );
+assert.doesNotMatch(
+  css + '\n' + cardCenterCss,
+  /Mercado Pago[^\n]*[\s\S]{0,180}transform:scale\(/,
+  'Mercado Pago não pode receber zoom artificial que corte VISA ou a composição lateral.',
+);
+assert.match(
+  css,
+  /data-card-identity\^="Mercado Pago"[^\{]*\{[\s\S]{0,140}object-position:center!important[\s\S]{0,80}transform:none!important/,
+  'Mercado Pago deve permanecer centralizado no carrossel sem recorte adicional.',
+);
+assert.match(
+  cardCenterCss,
+  /data-card-identity\^="Mercado Pago"[^\{]*\{[\s\S]{0,140}object-position:center!important[\s\S]{0,80}transform:none!important/,
+  'Mercado Pago deve permanecer centralizado também na Central do Cartão.',
+);
 assert.match(
   cardCenterCss,
   /@media\(max-width:560px\)[\s\S]*\.meg3-cardcenter-top\{[\s\S]*grid-template-columns:1fr[\s\S]*\.meg3-cardcenter-hero\{[\s\S]*aspect-ratio:1\.586\/1/,
