@@ -226,7 +226,7 @@ export async function authRoutes(app: FastifyInstance) {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
       if (message === 'USER_NOT_FOUND' || message === 'USER_NOT_IN_WORKSPACE') return reply.status(404).send({ error: message });
-      if (message === 'PRIMARY_ADMIN_CANNOT_BE_DELETED' || message === 'CANNOT_DELETE_OWN_ACCESS') return reply.status(409).send({ error: message });
+      if (['PRIMARY_ADMIN_CANNOT_BE_DELETED', 'CANNOT_DELETE_OWN_ACCESS', 'USER_MUST_BE_INACTIVE_BEFORE_DELETE'].includes(message)) return reply.status(409).send({ error: message });
       throw error;
     }
   });
