@@ -1,9 +1,9 @@
 {
-  "versionCode": 664,
-  "versionName": "2.0.664",
+  "versionCode": 665,
+  "versionName": "2.0.665",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "8e4b6cb1115abf485f13880aeb6d1e351cd4a29e0665333f69831aedbb2d2978",
+  "sha256": "12b8590446ef453c5af7bb894b5332419fddd47aa684038334ed6a6a39f3b88a",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "fix(pending): tornar baixa segura, confirmada e protegida por saldo"
+  "releaseNotes": "feat(pending): baixa em lote, faturas agrupadas e receita Verocard"
 }
