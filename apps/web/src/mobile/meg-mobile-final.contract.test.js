@@ -10,6 +10,8 @@ const phoenixWebStyles = readFileSync(new URL('../phoenix/PhoenixWebStyles.ts', 
 const authCss = readFileSync(new URL('../phoenix/preview-auth-flow.css', import.meta.url), 'utf8');
 const coreScreens = readFileSync(new URL('./MegMobileCoreScreens.tsx', import.meta.url), 'utf8');
 const launchSheet = readFileSync(new URL('./MegMobileLaunchSheet.tsx', import.meta.url), 'utf8');
+const picker = readFileSync(new URL('./MegMobilePicker.tsx', import.meta.url), 'utf8');
+const pickerCss = readFileSync(new URL('./meg-mobile-picker.css', import.meta.url), 'utf8');
 const mobileIcons = readFileSync(new URL('./MegMobileIcon.tsx', import.meta.url), 'utf8');
 const coreCss = readFileSync(new URL('./meg-mobile-core-screens.css', import.meta.url), 'utf8');
 const launchCss = readFileSync(new URL('./meg-mobile-launch-sheet.css', import.meta.url), 'utf8');
@@ -19,7 +21,7 @@ const cardCenter = readFileSync(new URL('./MegMobileCardCenter.tsx', import.meta
 const cardCenterCss = readFileSync(new URL('./meg-mobile-card-center.css', import.meta.url), 'utf8');
 const benefitModal = readFileSync(new URL('./MegMobileBenefitModal.tsx', import.meta.url), 'utf8');
 const benefitCss = readFileSync(new URL('./meg-mobile-benefit.css', import.meta.url), 'utf8');
-const source = mobile + '\n' + css + '\n' + runtimeCss + '\n' + coreScreens + '\n' + launchSheet + '\n' + mobileIcons + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
+const source = mobile + '\n' + css + '\n' + runtimeCss + '\n' + coreScreens + '\n' + launchSheet + '\n' + picker + '\n' + pickerCss + '\n' + mobileIcons + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
 
 assert.doesNotMatch(source, /\bpx-[a-z0-9-]+/i,
   'Reconstrução mobile final não pode reutilizar classes visuais .px-* do Phoenix legado.');
@@ -92,6 +94,32 @@ assert.match(
   mobile,
   /mercado.*meli[\s\S]*mercado-pago-visa-v662\.svg[\s\S]*latam-user-model-v61\.svg[\s\S]*azul-itau-platinum-v659\.svg[\s\S]*riachuelo.*midway[\s\S]*riachuelo-mastercard-visual\.svg/i,
   'Carrossel deve usar artes recortadas e estáveis para preencher os cartões ativos.',
+);
+
+assert.match(
+  launchSheet,
+  /function cardImage[\s\S]*latam-user-model-v61\.svg[\s\S]*azul-itau-platinum-v659\.svg[\s\S]*mercado-pago-visa-v662\.svg[\s\S]*riachuelo-mastercard-visual\.svg/,
+  'Seletor de cartão da despesa deve reutilizar exatamente as artes finais aprovadas no módulo Cartões.',
+);
+assert.doesNotMatch(
+  launchSheet,
+  /cardImage[\s\S]{0,900}approved-v6\/(?:latam|azul|mercado|riachuelo)\.webp/,
+  'Seletor de cartão não pode voltar às artes antigas ou quebradas de approved-v6.',
+);
+assert.match(
+  launchSheet,
+  /imageKind: cardImage\(card\.name\) \? 'card' : undefined/,
+  'Opções de cartão devem sinalizar thumbnail com proporção própria de cartão.',
+);
+assert.match(
+  picker,
+  /imageKind\?: 'card' \| 'square'[\s\S]*meg5-picker-option-icon image \$\{item\.imageKind === 'card' \? 'card' : 'square'\}/,
+  'Picker deve suportar thumbnail específica de cartão sem afetar outras imagens.',
+);
+assert.match(
+  pickerCss,
+  /CARD PICKER V1[\s\S]*\.meg5-picker-option-icon\.image\.card\{[\s\S]*width:62px[\s\S]*height:39px[\s\S]*object-fit:cover[\s\S]*grid-template-columns:62px minmax\(0,1fr\)/,
+  'Miniaturas de cartão devem manter proporção horizontal, enquadramento central e linha alinhada.',
 );
 assert.match(css, /CONTRATO DE VIEWPORT FIXO[\s\S]*\.meg2-scroll\{[\s\S]*overflow:hidden!important/,
   'Home corrente deve caber no viewport sem rolagem geral.');
