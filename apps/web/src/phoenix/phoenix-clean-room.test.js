@@ -358,9 +358,9 @@ assert.match(profileAvatar, /imageFileToAvatarDataUrl/,
   'Upload de foto deve normalizar a imagem antes de armazenar a preferência local');
 assert.ok((profileAvatar.match(/id: '/g) || []).length >= 10,
   'Biblioteca de avatares deve manter variedade suficiente de estilos prontos');
-assert.match(webScreens, /Títulos e recebimentos em aberto/);
-assert.match(webScreens, /Origem e evolução das entradas/);
-assert.match(webScreens, /Fechamento realizado e projetado/);
+assert.match(webGridScreens, /Títulos, clientes e recebimentos/);
+assert.match(webGridScreens, /Origem e evolução das entradas/);
+assert.match(webGridScreens, /Fechamento realizado e projetado/);
 assert.match(webScreens, /Tendências e comparações históricas/);
 assert.doesNotMatch(webScreens, /Índice MEG|Em calibração/,
   'Análises não pode exibir uma nota proprietária sem critérios e pesos validados.');
@@ -370,7 +370,7 @@ assert.match(webScreens, /Resultado realizado ÷ receitas realizadas/,
   'Margem realizada deve explicar a fórmula diretamente na interface.');
 assert.match(webScreens, /realizedResult \/ realizedIncome \* 100/,
   'Margem realizada deve ser calculada somente a partir dos valores reais do período.');
-assert.match(webScreens, /Planejamento financeiro/);
+assert.match(budgetsScreen, /Planejamento financeiro/);
 assert.match(webScreens, /Saldo do banco x saldo MEG/,
   'Conciliação deve comparar somente o saldo informado pelo usuário com o saldo oficial da conta.');
 assert.match(webScreens, /readPhoenixReconciliationBalance/,
@@ -397,6 +397,8 @@ assert.match(reconciliationBridge, /AJUSTE DE CONCILIAÇÃO BANCÁRIA/,
   'Ajuste deve ser identificado de forma explícita e auditável.');
 assert.doesNotMatch(webScreens, /Math\.random|mock|demo/i,
   'Web completo não pode fabricar dados de demonstração');
+assert.doesNotMatch(webScreens, /export function PhoenixReceivables|export function PhoenixRevenues|export function PhoenixCashflow|export function PhoenixBudgets/,
+  'Telas legadas de somente leitura não podem voltar a competir com as grades Web operacionais.');
 assert.match(commandPalette, /Buscar tela, lançamento, título, pendência, orçamento, cartão, conta, cliente ou usuário/);
 assert.match(commandPalette, /data\.events\.items/);
 assert.match(commandPalette, /data\.cards/);
