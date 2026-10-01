@@ -647,6 +647,20 @@ assert.match(homeDashboard, /Consolidado realizado/,
   'Home deve preservar o consolidado realizado do V15');
 assert.match(payablesScreen, /Lançamentos pendentes/,
   'Pendentes deve usar o título canônico aprovado para a agenda mobile.');
+assert.match(homeDashboard, /onReviewPayables/,
+  'Home Web deve poder encaminhar a seleção do drawer para Pendentes.');
+assert.match(homeDashboard, /const ids = \[\.\.\.detailSelected\]/,
+  'Revisar pagamento deve preservar exatamente os itens marcados pelo usuário.');
+assert.match(payablesScreen, /selectionRequestTokenRef/,
+  'Pendentes deve consumir cada solicitação de pré-seleção apenas uma vez.');
+assert.match(payablesScreen, /selectionRequest\.ids\.includes/,
+  'Pendentes deve conferir os IDs recebidos contra os compromissos realmente abertos.');
+assert.match(payablesScreen, /void selectAllPending\(\)/,
+  'Seleção vinda da Home fora do mês atual deve revelar a carteira completa em Pendentes.');
+assert.match(payablesScreen, /nativeOperational \|\| !selectionRequest/,
+  'Pré-seleção vinda da Home deve permanecer exclusiva do Web e não alterar o Android congelado.');
+assert.match(phoenixApp, /selectionRequest=\{nativeOperational \? undefined : payablesSelectionRequest\}/,
+  'Shell deve bloquear explicitamente a nova pré-seleção no runtime Android.');
 assert.match(screens, /conta\(s\) selecionada\(s\)/,
   'Pendentes deve mostrar barra contextual ao selecionar contas');
 assert.match(screens, /Revisar e confirmar baixa/,

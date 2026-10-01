@@ -69,6 +69,7 @@ type PhoenixView = PhoenixRoute;
 type ViewDefinition = { id: PhoenixView; icon: string; label: string };
 type PeriodMode = 'month' | 'range' | 'all';
 type LaunchPreset = 'expense' | 'income' | 'benefit';
+type PayablesSelectionRequest = { token: number; ids: string[] };
 type HomePeriodContext = {
   label: string;
   startDate: string;
@@ -272,8 +273,8 @@ function resetViewport() {
   document.querySelector<HTMLElement>('.px-content')?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 }
 
-function HomeScreen({ data, month, onNavigate }: { data: PhoenixReadModel; month: string; onNavigate: (view: PhoenixView) => void }) {
-  return <PhoenixHomeDashboard data={data} month={month} onNavigate={onNavigate} />;
+function HomeScreen({ data, month, onNavigate, onReviewPayables }: { data: PhoenixReadModel; month: string; onNavigate: (view: PhoenixView) => void; onReviewPayables?: (ids: string[]) => void }) {
+  return <PhoenixHomeDashboard data={data} month={month} onNavigate={onNavigate} onReviewPayables={onReviewPayables} />;
 }
 
 function ScreenWarmFallback({ label }: { label: string }) {
@@ -333,7 +334,7 @@ function HomeHeaderIdentity({ data, onOpenMenu }: { data: PhoenixReadModel; onOp
   </button>;
 }
 
-function ReadScreen({ view, data, month, theme, periodMode, periodContext, periodRangeLabel, launchRequest, launchPreset, editEventRequest, nativeOperational, onToggleTheme, onNavigate, onLaunch, onEditEvent, onDataCommitted, onOpenPeriod, onOpenMenu, onLogoutRequest, onPendingMonthChange }: {
+function ReadScreen({ view, data, month, theme, periodMode, periodContext, periodRangeLabel, launchRequest, launchPreset, editEventRequest, payablesSelectionRequest, nativeOperational, onToggleTheme, onNavigate, onLaunch, onEditEvent, onReviewPayables, onDataCommitted, onOpenPeriod, onOpenMenu, onLogoutRequest, onPendingMonthChange }: {
   view: PhoenixView;
   data: PhoenixReadModel;
   month: string;
@@ -344,11 +345,13 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   launchRequest: number;
   launchPreset: LaunchPreset;
   editEventRequest: string;
+  payablesSelectionRequest: PayablesSelectionRequest | null;
   nativeOperational: boolean;
   onToggleTheme: () => void;
   onNavigate: (view: PhoenixView) => void;
   onLaunch: (preset: LaunchPreset) => void;
   onEditEvent: (eventId: string) => void;
+  onReviewPayables: (ids: string[]) => void;
   onDataCommitted: (snapshot: PhoenixReadModel) => void;
   onOpenPeriod: () => void;
   onOpenMenu: () => void;
@@ -389,11 +392,11 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
       />;
     }
     if (nativeOperational) return <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
-    return <HomeScreen data={data} month={month} onNavigate={onNavigate} />;
+    return <HomeScreen data={data} month={month} onNavigate={onNavigate} onReviewPayables={onReviewPayables} />;
   }
   if (view === 'movements') return <Suspense fallback={<ScreenWarmFallback label="Lançamentos" />}><PhoenixMovementsV15 data={data} periodMode={periodMode} periodLabel={periodMode === 'all' ? 'Tudo' : periodMode === 'range' ? periodRangeLabel || 'Intervalo' : monthLabel(data.month)} launchRequest={launchRequest} launchPreset={launchPreset} editEventRequest={editEventRequest} onNavigateHistory={() => onNavigate('history')} onNavigateHome={() => onNavigate('home')} onDataCommitted={onDataCommitted} onOpenPeriod={onOpenPeriod} /></Suspense>;
   if (view === 'history') return <Suspense fallback={<ScreenWarmFallback label="Histórico" />}><PhoenixHistory data={data} /></Suspense>;
-  if (view === 'payables') return <Suspense fallback={<ScreenWarmFallback label="Pendentes" />}><PhoenixPayables data={data} onMonthChange={onPendingMonthChange} onEditEvent={onEditEvent} /></Suspense>;
+  if (view === 'payables') return <Suspense fallback={<ScreenWarmFallback label="Pendentes" />}><PhoenixPayables data={data} onMonthChange={onPendingMonthChange} onEditEvent={onEditEvent} selectionRequest={nativeOperational ? undefined : payablesSelectionRequest} /></Suspense>;
   if (view === 'cards') return <Suspense fallback={<ScreenWarmFallback label="Cartões" />}><PhoenixCardsGrid data={data} /></Suspense>;
   if (view === 'catalogs') return <PhoenixCatalogsGrid data={data} onDataCommitted={onDataCommitted} />;
   if (view === 'users') return <PhoenixUsers data={data} onDataCommitted={onDataCommitted} />;
@@ -431,6 +434,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
   const [launchRequest, setLaunchRequest] = useState(0);
   const [launchPreset, setLaunchPreset] = useState<LaunchPreset>('expense');
   const [editEventRequest, setEditEventRequest] = useState('');
+  const [payablesSelectionRequest, setPayablesSelectionRequest] = useState<PayablesSelectionRequest | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [loadState, setLoadState] = useState<PhoenixLoadState>({ status: 'idle' });
@@ -1338,7 +1342,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         </header>
 
         <div className={`px-content meg-web-content ${view === 'home' ? 'px-content-home' : ''} ${homeAnalytical ? 'px-content-home-all' : ''} ${view === 'movements' ? 'px-content-movements' : ''} ${view === 'payables' ? 'px-content-payables' : ''} ${view === 'history' ? 'px-content-history' : ''} ${view === 'cards' ? 'px-content-cards' : ''} ${view === 'catalogs' ? 'px-content-catalogs' : ''}`}>
-          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen key={`${view}:${periodMode}:${viewData.month}:${periodRangeLabel}`} view={view} data={viewData} month={viewData.month} theme={theme} periodMode={periodMode} periodContext={homePeriodContext} periodRangeLabel={periodRangeLabel} launchRequest={launchRequest} launchPreset={launchPreset} editEventRequest={editEventRequest} nativeOperational={nativeOperational} onToggleTheme={toggleTheme} onNavigate={navigate} onLaunch={requestLaunch} onEditEvent={requestEditEvent} onDataCommitted={commitSnapshot} onOpenPeriod={openPeriodSelector} onOpenMenu={() => setMobileOpen(true)} onLogoutRequest={requestLogout} onPendingMonthChange={(targetMonth) => { void applyMonthlyPeriod(targetMonth); }} /> : <section className="px-app-loading" role="status" aria-live="polite"><div className="px-app-loading-mark"><img src={phoenixBrandAsset('brand/meg-finance-system-mark.svg')} alt="" /><span className="px-app-loading-pulse" /></div><strong>Carregando seus dados</strong><small>Organizando suas informações financeiras…</small><div className="px-app-loading-track"><i /></div></section>}
+          {loadState.status === 'error' && !data ? <section className="px-card"><span className="px-kicker">Phoenix V15</span><h1>Não foi possível carregar a leitura real</h1><p>{loadState.message}</p><button className="px-history-export" type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></section> : viewData ? <ReadScreen key={`${view}:${periodMode}:${viewData.month}:${periodRangeLabel}`} view={view} data={viewData} month={viewData.month} theme={theme} periodMode={periodMode} periodContext={homePeriodContext} periodRangeLabel={periodRangeLabel} launchRequest={launchRequest} launchPreset={launchPreset} editEventRequest={editEventRequest} payablesSelectionRequest={payablesSelectionRequest} nativeOperational={nativeOperational} onToggleTheme={toggleTheme} onNavigate={navigate} onLaunch={requestLaunch} onEditEvent={requestEditEvent} onReviewPayables={(ids) => { setPayablesSelectionRequest((current) => ({ token: (current?.token || 0) + 1, ids })); navigate('payables'); }} onDataCommitted={commitSnapshot} onOpenPeriod={openPeriodSelector} onOpenMenu={() => setMobileOpen(true)} onLogoutRequest={requestLogout} onPendingMonthChange={(targetMonth) => { void applyMonthlyPeriod(targetMonth); }} /> : <section className="px-app-loading" role="status" aria-live="polite"><div className="px-app-loading-mark"><img src={phoenixBrandAsset('brand/meg-finance-system-mark.svg')} alt="" /><span className="px-app-loading-pulse" /></div><strong>Carregando seus dados</strong><small>Organizando suas informações financeiras…</small><div className="px-app-loading-track"><i /></div></section>}
         </div>
       </main>
 

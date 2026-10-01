@@ -248,7 +248,7 @@ function buildIntelligentAlerts(data: PhoenixReadModel, month: string): Intellig
   return alerts.slice(0, 4);
 }
 
-export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: PhoenixReadModel; month: string; onNavigate: (view: HomeRoute) => void }) {
+export function PhoenixHomeDashboard({ data, month, onNavigate, onReviewPayables }: { data: PhoenixReadModel; month: string; onNavigate: (view: HomeRoute) => void; onReviewPayables?: (ids: string[]) => void }) {
   const today = todayIso();
   const agenda = useMemo(() => buildPhoenixHomeAgenda(data, today), [data, today]);
   const agendaRows = useMemo(() => agendaDisplayGroups(agenda.items), [agenda.items]);
@@ -502,7 +502,7 @@ export function PhoenixHomeDashboard({ data, month, onNavigate }: { data: Phoeni
         <header className="px-home-drawer-head"><div><span className="px-kicker">Vencimento · {shortDate(detail.dueDate)}</span><h2>{detail.title}</h2><p>{detail.items.length} item(ns) · {money.format(detail.amount)}</p></div><button type="button" aria-label="Fechar detalhes" onClick={() => setDetail(null)}>×</button></header>
         <div className="px-home-drawer-tools"><button type="button" onClick={() => setDetailSelected(new Set(detail.items.map((item) => item.id)))}>Selecionar todos</button><button type="button" onClick={() => setDetailSelected(new Set())}>Limpar</button><span>{detailSelected.size} selecionado(s)</span></div>
         <div className="px-home-drawer-list">{detail.items.map((item) => <label key={item.id} className="px-home-drawer-item"><input type="checkbox" checked={detailSelected.has(item.id)} onChange={() => toggleDetailItem(item.id)} /><div><strong>{item.description}</strong><small>{item.meta}</small></div><strong>{money.format(item.amount)}</strong></label>)}</div>
-        <footer className="px-home-drawer-footer"><div><span>Total selecionado</span><strong>{money.format(selectedDetailAmount)}</strong></div><button type="button" className="px-secondary-action" onClick={() => { setDetail(null); onNavigate('payables'); }}>Abrir Pendentes</button><button type="button" className="px-primary-action" disabled={!detailSelected.size} onClick={() => { setDetail(null); onNavigate('payables'); }}>Revisar pagamento</button><small>A baixa é concluída na tela Pendentes, onde seleção, conta e forma de pagamento são revisadas.</small></footer>
+        <footer className="px-home-drawer-footer"><div><span>Total selecionado</span><strong>{money.format(selectedDetailAmount)}</strong></div><button type="button" className="px-secondary-action" onClick={() => { setDetail(null); onNavigate('payables'); }}>Abrir Pendentes</button><button type="button" className="px-primary-action" disabled={!detailSelected.size} onClick={() => { const ids = [...detailSelected]; setDetail(null); if (onReviewPayables) onReviewPayables(ids); else onNavigate('payables'); }}>Revisar pagamento</button><small>A baixa é concluída na tela Pendentes, onde seleção, conta e forma de pagamento são revisadas.</small></footer>
       </aside>
     </div> : null}
   </>;
