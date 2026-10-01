@@ -5,6 +5,7 @@ import type { PhoenixReadModel } from '../contracts';
 import { receivablesClient } from '../../app/receivables-client';
 import { readSession } from '../../app/auth-client';
 import { loadPhoenixReadModel } from '../data/load-phoenix-read-model';
+import { megConfirm } from '../meg-confirm';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -73,7 +74,7 @@ function options(values: Array<string | number>, label?: (value: string) => stri
 }
 
 function statusText(status: string) {
-  return ({ open: 'Em aberto', partial: 'Parcial', paid: 'Recebido', overdue: 'Vencido' } as Record<string, string>)[status] || status;
+  return ({ open: 'Em aberto', partial: 'Parcial', paid: 'Recebido', overdue: 'Vencido', cancelled: 'Cancelado' } as Record<string, string>)[status] || status;
 }
 
 function isoDay(value: string | Date) {
@@ -106,6 +107,7 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
   const [filters, setFilters] = useState<ReceivableFilters>(initialReceivableFilters);
   const [sort, setSort] = useState<{ key: ReceivableKey; direction: PhoenixGridSortDirection } | null>(null);
   const [newTitleOpen, setNewTitleOpen] = useState(false);
+  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [receiptTargetId, setReceiptTargetId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -113,6 +115,7 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
   const today = todaySaoPaulo();
   const role = readSession()?.user.role;
   const canWrite = role === 'ADMIN' || role === 'MANAGER' || role === 'OPERATOR';
+  const canCancel = role === 'ADMIN' || role === 'MANAGER';
 
   const [titleDraft, setTitleDraft] = useState({
     customerId: '',
@@ -164,6 +167,7 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
   const monetaryAccounts = data.accounts.filter((item) => item.isActive && ['checking', 'savings', 'cash'].includes(normalize(item.type)));
   const receiptMethods = data.paymentMethods.filter((item) => item.isActive && normalize(item.type) !== 'credit' && !normalize(item.name).includes('verocard'));
   const receiptTarget = receiptTargetId ? data.receivables.find((item) => item.id === receiptTargetId) || null : null;
+  const editingTitle = editingTitleId ? data.receivables.find((item) => item.id === editingTitleId) || null : null;
 
   function operationId(prefix: string, fingerprint: string) {
     if (operationRef.current?.fingerprint === fingerprint) return operationRef.current.id;
@@ -191,6 +195,9 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
     const code = error instanceof Error ? error.message : 'RECEIVABLE_WRITE_FAILED';
     if (/AMOUNT_EXCEEDS_OPEN_BALANCE/i.test(code)) return 'O valor informado ultrapassa o saldo em aberto deste título.';
     if (/RECEIVABLE_NOT_FOUND/i.test(code)) return 'Este título já foi quitado, alterado ou não está mais disponível.';
+    if (/RECEIVABLE_STALE_VERSION/i.test(code)) return 'Este título mudou em outro dispositivo. A tela será atualizada antes de uma nova tentativa.';
+    if (/RECEIVABLE_HAS_RECEIPTS/i.test(code)) return 'Este título já possui recebimento registrado e não pode mais ser editado ou cancelado.';
+    if (/RECEIVABLE_NOT_EDITABLE/i.test(code)) return 'Este título já foi quitado ou cancelado e está protegido contra alteração.';
     if (/INVALID_ACCOUNT/i.test(code)) return 'A conta selecionada não está mais ativa.';
     if (/INVALID_PAYMENT_METHOD/i.test(code)) return 'A forma de recebimento selecionada não está mais ativa.';
     if (/FUTURE_RECEIPT_NOT_ALLOWED/i.test(code)) return 'O recebimento não pode ser confirmado em data futura.';
@@ -206,10 +213,33 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
     onDataCommitted?.(snapshot);
   }
 
+  function closeTitleEditor() {
+    if (busy) return;
+    setNewTitleOpen(false);
+    setEditingTitleId(null);
+  }
+
   function openNewTitle() {
     resetOperation();
     setMessage('');
+    setEditingTitleId(null);
     setTitleDraft({ customerId: '', description: '', totalAmount: '', dueDate: today, notes: '' });
+    setNewTitleOpen(true);
+  }
+
+  function openEditTitle(id: string) {
+    const target = data.receivables.find((item) => item.id === id);
+    if (!target || target.receipts.length || ['paid', 'cancelled'].includes(target.status)) return;
+    resetOperation();
+    setMessage('');
+    setEditingTitleId(id);
+    setTitleDraft({
+      customerId: target.customer?.id || '',
+      description: target.description,
+      totalAmount: Number(target.totalAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      dueDate: isoDay(target.dueDate),
+      notes: target.notes || '',
+    });
     setNewTitleOpen(true);
   }
 
@@ -230,35 +260,82 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
     setReceiptTargetId(id);
   }
 
-  async function createTitle() {
+  async function saveTitle() {
     if (busy || !canWrite) return;
     const amount = parseBrazilianNumber(titleDraft.totalAmount) || 0;
     if (titleDraft.description.trim().length < 2) return setMessage('Informe uma descrição para o título.');
     if (amount <= 0) return setMessage('Informe um valor maior que zero.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(titleDraft.dueDate)) return setMessage('Informe uma data de vencimento válida.');
-    const fingerprint = JSON.stringify({ action:'create-receivable', ...titleDraft, amount });
-    const opId = operationId('web-receivable', fingerprint);
+    const fingerprint = JSON.stringify({ action: editingTitle ? 'update-receivable' : 'create-receivable', id: editingTitle?.id || '', ...titleDraft, amount });
+    const opId = operationId(editingTitle ? 'web-receivable-edit' : 'web-receivable', fingerprint);
     setBusy(true);
-    setMessage('Criando título e confirmando no servidor…');
+    setMessage(editingTitle ? 'Atualizando título e conferindo a versão…' : 'Criando título e confirmando no servidor…');
     try {
-      await receivablesClient.createReceivable({
-        customerId: titleDraft.customerId || null,
-        description: titleDraft.description.trim().toLocaleUpperCase('pt-BR'),
-        totalAmount: amount,
-        dueDate: titleDraft.dueDate,
-        installmentNo: 1,
-        installmentQty: 1,
-        interestRate: 0,
-        fineRate: 0,
-        notes: titleDraft.notes.trim() || null,
+      if (editingTitle) {
+        await receivablesClient.updateReceivable(editingTitle.id, {
+          customerId: titleDraft.customerId || null,
+          description: titleDraft.description.trim().toLocaleUpperCase('pt-BR'),
+          totalAmount: amount,
+          dueDate: titleDraft.dueDate,
+          notes: titleDraft.notes.trim() || null,
+          expectedUpdatedAt: editingTitle.updatedAt,
+          operationId: opId,
+        });
+      } else {
+        await receivablesClient.createReceivable({
+          customerId: titleDraft.customerId || null,
+          description: titleDraft.description.trim().toLocaleUpperCase('pt-BR'),
+          totalAmount: amount,
+          dueDate: titleDraft.dueDate,
+          installmentNo: 1,
+          installmentQty: 1,
+          interestRate: 0,
+          fineRate: 0,
+          notes: titleDraft.notes.trim() || null,
+          operationId: opId,
+        });
+      }
+      await refreshOfficialSnapshot();
+      resetOperation();
+      setNewTitleOpen(false);
+      setEditingTitleId(null);
+      setMessage(editingTitle ? 'Título atualizado e confirmado na base financeira.' : 'Título criado e confirmado na base financeira.');
+    } catch (error) {
+      setMessage(receivableError(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancelTitle(id: string) {
+    if (busy || !canCancel) return;
+    const target = data.receivables.find((item) => item.id === id);
+    if (!target || target.receipts.length || ['paid', 'cancelled'].includes(target.status)) return;
+    const confirmed = await megConfirm({
+      kicker: 'Contas a receber',
+      title: 'Cancelar este título?',
+      message: `${target.description} · ${money.format(Number(target.openAmount || 0))}. O título ficará preservado no histórico como cancelado e não poderá receber baixas.`,
+      confirmLabel: 'Cancelar título',
+      cancelLabel: 'Voltar',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    const fingerprint = JSON.stringify({ action:'cancel-receivable', id:target.id, updatedAt:target.updatedAt || '' });
+    const opId = operationId('web-receivable-cancel', fingerprint);
+    setBusy(true);
+    setMessage('Cancelando título e preservando a auditoria…');
+    try {
+      await receivablesClient.cancelReceivable(target.id, {
+        expectedUpdatedAt: target.updatedAt,
         operationId: opId,
       });
       await refreshOfficialSnapshot();
       resetOperation();
-      setNewTitleOpen(false);
-      setMessage('Título criado e confirmado na base financeira.');
+      setMessage('Título cancelado e preservado no histórico.');
     } catch (error) {
       setMessage(receivableError(error));
+      if (/RECEIVABLE_STALE_VERSION/i.test(error instanceof Error ? error.message : '')) await refreshOfficialSnapshot();
     } finally {
       setBusy(false);
     }
