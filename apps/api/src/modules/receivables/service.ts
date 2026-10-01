@@ -409,7 +409,7 @@ export async function updateReceivableProtected(userId: string, receivableId: st
     });
     if (!current) throw new ReceivableDomainError('RECEIVABLE_NOT_FOUND');
     if (current.status === 'paid' || current.status === 'cancelled') throw new ReceivableDomainError('RECEIVABLE_NOT_EDITABLE');
-    if (current.receipts.length) throw new ReceivableDomainError('RECEIVABLE_HAS_RECEIPTS');
+    if (current.receipts.some((receipt) => !receipt.reversedAt)) throw new ReceivableDomainError('RECEIVABLE_HAS_RECEIPTS');
     assertReceivableVersion(current, input.expectedUpdatedAt);
 
     if (input.customerId) {
@@ -495,7 +495,7 @@ export async function cancelReceivableProtected(userId: string, receivableId: st
     if (!current) throw new ReceivableDomainError('RECEIVABLE_NOT_FOUND');
     if (current.status === 'cancelled') return { ...current, idempotentReplay: true };
     if (current.status === 'paid') throw new ReceivableDomainError('RECEIVABLE_NOT_EDITABLE');
-    if (current.receipts.length) throw new ReceivableDomainError('RECEIVABLE_HAS_RECEIPTS');
+    if (current.receipts.some((receipt) => !receipt.reversedAt)) throw new ReceivableDomainError('RECEIVABLE_HAS_RECEIPTS');
     assertReceivableVersion(current, input.expectedUpdatedAt);
 
     const updated = await tx.receivable.update({
