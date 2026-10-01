@@ -131,6 +131,9 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
   const [appVersion, setAppVersion] = useState<string>('Consultando…');
   const [deviceSessions, setDeviceSessions] = useState<DeviceSession[]>([]);
   const [deviceSessionsBusy, setDeviceSessionsBusy] = useState(false);
+  const [sessionActionId, setSessionActionId] = useState('');
+  const [sessionActionMessage, setSessionActionMessage] = useState('');
+  const [sessionActionError, setSessionActionError] = useState('');
   const [notificationTestBusy, setNotificationTestBusy] = useState(false);
   const [notificationTestResult, setNotificationTestResult] = useState<Record<string, { status?: string; detail?: unknown }> | null>(null);
   const [localNotificationStatus, setLocalNotificationStatus] = useState<LocalNotificationStatus | null>(null);
@@ -244,6 +247,41 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
       const result = await authenticatedRequest<{ sessions: DeviceSession[] }>('/auth/sessions', { cache: 'no-store' });
       setDeviceSessions(result.sessions || []);
     } finally { setDeviceSessionsBusy(false); }
+  }
+
+
+  async function revokeDeviceSession(session: DeviceSession) {
+    if (!session.active || sessionActionId) return;
+    const target = data.user.role === 'ADMIN' && session.userId !== data.user.id
+      ? `${session.userName} · ${session.deviceName}`
+      : session.deviceName;
+    const confirmed = await megConfirm({
+      kicker: 'Segurança da conta',
+      title: 'Encerrar esta sessão?',
+      message: `O acesso de ${target} (${session.platform}) será revogado. O aparelho precisará autenticar novamente quando tentar renovar o acesso.`,
+      confirmLabel: 'Encerrar sessão',
+      cancelLabel: 'Cancelar',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    setSessionActionId(session.id);
+    setSessionActionMessage('');
+    setSessionActionError('');
+    try {
+      await authenticatedRequest<{ revoked: boolean }>(`/auth/sessions/${encodeURIComponent(session.id)}`, { method: 'DELETE' });
+      await refreshDeviceSessions();
+      setSessionActionMessage(`Sessão de ${target} encerrada.`);
+    } catch (cause) {
+      const status = cause && typeof cause === 'object' && 'status' in cause
+        ? Number((cause as { status?: unknown }).status)
+        : 0;
+      setSessionActionError(status === 404
+        ? 'A sessão não está mais disponível ou não pertence à sua área de acesso.'
+        : cause instanceof Error ? cause.message : 'Não foi possível encerrar a sessão.');
+    } finally {
+      setSessionActionId('');
+    }
   }
 
   async function inspectNormalization() {
@@ -427,7 +465,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
           <section className="px-settings-grid">
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Sincronização</span><h2>Integridade da base</h2></div></div><div className={`px-settings-sync-banner ${normalizationOk ? 'ok' : 'warn'}`}><strong>{normalizationOk ? 'Tudo reconciliado' : 'Verificação necessária'}</strong><small>{data.normalization.updatedAt ? `Atualização: ${new Date(data.normalization.updatedAt).toLocaleString('pt-BR')}` : 'Horário de atualização não informado'}</small></div><dl><div><dt>Base primária</dt><dd>{data.normalization.primary ? 'Sim' : 'Não'}</dd></div><div><dt>Revisão</dt><dd>{data.normalization.revision}</dd></div><div><dt>Eventos normalizados</dt><dd>{data.normalization.normalized?.count ?? '—'}</dd></div></dl></article>
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Backup e dados</span><h2>Proteção dos lançamentos</h2><p>Exporte ou restaure os lançamentos compatíveis com o AppState. Os domínios nativos do MEG continuam preservados na base oficial.</p></div></div><input ref={backupFileRef} type="file" accept="application/json" hidden onChange={(event) => { void importBackup(event.target.files?.[0]); }} /><div className="px-settings-actions"><button type="button" disabled={backupBusy} onClick={() => { void exportBackup(); }}>{backupBusy ? 'Aguarde…' : 'Exportar backup'}</button><button type="button" disabled={backupBusy || !canRestoreBackup} onClick={() => backupFileRef.current?.click()}>Restaurar backup</button></div>{backupMessage ? <div className="px-settings-sync-banner ok"><strong>Backup confirmado</strong><small>{backupMessage}</small></div> : null}{backupError ? <div className="px-settings-sync-banner warn"><strong>Operação não concluída</strong><small>{backupError}</small></div> : null}<small className="px-settings-note">{canRestoreBackup ? 'A restauração exige confirmação explícita, revisão exata da base e conferência final antes de informar sucesso.' : 'Seu perfil pode exportar backups, mas não possui permissão para restaurar lançamentos.'}</small></article>
-            <article className="px-card px-settings-card px-settings-devices"><div className="px-settings-card-head"><div><span className="px-kicker">Dispositivos e sessões</span><h2>{data.user.role === 'ADMIN' ? 'Acessos ao MEG' : 'Meus aparelhos'}</h2><p>{data.user.role === 'ADMIN' ? 'Sessões registradas para os usuários deste workspace.' : 'Aparelhos usados pela sua conta.'}</p></div><button type="button" onClick={() => { void refreshDeviceSessions(); }} disabled={deviceSessionsBusy}>{deviceSessionsBusy ? 'Atualizando…' : 'Atualizar'}</button></div><div className="px-settings-device-list">{deviceSessions.length ? deviceSessions.map((session) => <div className="px-settings-device-row" key={session.id}><div><strong>{session.deviceName}</strong><small>{data.user.role === 'ADMIN' ? session.userName + ' · ' : ''}{session.platform} · {session.active ? 'Sessão ativa' : 'Sessão encerrada'}</small></div><span><b>{session.lastLoginAt ? new Date(session.lastLoginAt).toLocaleString('pt-BR') : new Date(session.createdAt).toLocaleString('pt-BR')}</b><small>Último login</small></span></div>) : <p>Nenhuma sessão registrada.</p>}</div><small className="px-settings-note">A identificação automática depende das informações fornecidas pelo aparelho. A base financeira permanece única entre Web e Android.</small></article>
+            <article className="px-card px-settings-card px-settings-devices"><div className="px-settings-card-head"><div><span className="px-kicker">Dispositivos e sessões</span><h2>{data.user.role === 'ADMIN' ? 'Acessos ao MEG' : 'Meus aparelhos'}</h2><p>{data.user.role === 'ADMIN' ? 'Sessões registradas para os usuários deste workspace.' : 'Aparelhos usados pela sua conta.'}</p></div><button type="button" onClick={() => { void refreshDeviceSessions(); }} disabled={deviceSessionsBusy || Boolean(sessionActionId)}>{deviceSessionsBusy ? 'Atualizando…' : 'Atualizar'}</button></div>{sessionActionMessage ? <div className="px-settings-sync-banner ok"><strong>Sessão encerrada</strong><small>{sessionActionMessage}</small></div> : null}{sessionActionError ? <div className="px-settings-sync-banner warn"><strong>Não foi possível encerrar</strong><small>{sessionActionError}</small></div> : null}<div className="px-settings-device-list">{deviceSessions.length ? deviceSessions.map((session) => <div className="px-settings-device-row" key={session.id}><div><strong>{session.deviceName}</strong><small>{data.user.role === 'ADMIN' ? session.userName + ' · ' : ''}{session.platform} · {session.active ? 'Sessão ativa' : 'Sessão encerrada'}</small></div><span><b>{session.lastLoginAt ? new Date(session.lastLoginAt).toLocaleString('pt-BR') : new Date(session.createdAt).toLocaleString('pt-BR')}</b><small>Último login</small></span><div className="px-settings-device-actions">{session.active ? <button className="danger" type="button" disabled={Boolean(sessionActionId) || deviceSessionsBusy} onClick={() => { void revokeDeviceSession(session); }}>{sessionActionId === session.id ? 'Encerrando…' : 'Encerrar sessão'}</button> : <span className="px-status archived">Encerrada</span>}</div></div>) : <p>Nenhuma sessão registrada.</p>}</div><small className="px-settings-note">Encerrar uma sessão revoga a renovação daquele acesso. A identificação automática depende das informações fornecidas pelo aparelho.</small></article>
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Diagnóstico</span><h2>Reparo e normalização</h2></div><button type="button" disabled={normalizationPreviewBusy} onClick={() => { void inspectNormalization(); }}>{normalizationPreviewBusy ? 'Comparando…' : 'Comparar fontes'}</button></div><dl><div><dt>Reparo</dt><dd>{repair ? stateLabel(repair.status) : 'Não informado'}</dd></div><div><dt>Itens verificados</dt><dd>{repair?.scanned ?? '—'}</dd></div><div><dt>Itens reparados</dt><dd>{repair?.repaired ?? '—'}</dd></div><div><dt>Ocorrências</dt><dd>{repair?.issues ?? '—'}</dd></div><div><dt>Normalização API</dt><dd>{healthNormalization ? stateLabel(healthNormalization.status) : 'Não informado'}</dd></div></dl>{normalizationPreview ? <div className={`px-settings-sync-banner ${normalizationPreview.reconciled ? 'ok' : 'warn'}`}><strong>{normalizationPreview.reconciled ? 'Fontes reconciliadas' : 'Divergência confirmada em modo somente leitura'}</strong><small>AppState: {normalizationPreview.source.validCount} válidos · Normalizada: {normalizationPreview.normalized.count} · Inválidos na origem: {normalizationPreview.source.invalidCount} · Revisão {normalizationPreview.revision}. Nenhum reparo foi executado por esta consulta.</small></div> : null}{normalizationPreviewError ? <div className="px-settings-sync-banner warn"><strong>Não foi possível concluir a comparação</strong><small>{normalizationPreviewError}</small></div> : null}</article>
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Sobre</span><h2>MEG Finance System</h2></div></div><p>Meu Equilíbrio Gerencial · Phoenix V15.</p><dl><div><dt>Aplicativo</dt><dd>{appVersion}</dd></div><div><dt>Perfil de dados</dt><dd>Base oficial do workspace</dd></div><div><dt>Usuários</dt><dd>{data.sourcePolicy.users}</dd></div></dl><details className="px-settings-advanced"><summary>Diagnóstico avançado</summary><dl><div><dt>Modo</dt><dd>{data.sourcePolicy.mode}</dd></div><div><dt>Eventos</dt><dd>{data.sourcePolicy.events}</dd></div><div><dt>Revisão</dt><dd>{data.normalization.revision}</dd></div></dl></details></article>
           </section>
