@@ -1153,7 +1153,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
             >
               <span className={'meg2-pending-icon icon-' + icon}><Icon name={icon}/></span>
               <p><b>{cardGroup ? 'Fatura ' + item.description : item.description}</b><small>{cardGroup ? String(item.itemCount || 0) + ' lançamentos · ' + dueLabel(item) : dueLabel(item)}</small></p>
-              <span className="meg2-pending-value"><strong>{money.format(item.amount)}</strong><em>{item.paid ? 'Paga' : late ? 'Vencida' : 'A pagar'}</em></span><i className={expanded ? 'expanded' : ''}><Icon name={cardGroup ? 'chevron-down' : 'chevron-right'} size={15}/></i>
+              <span className="meg2-pending-value"><strong>{money.format(item.amount)}</strong><em>{item.paid ? 'Paga' : late ? 'Vencida' : 'A pagar'}</em></span><i className={expanded ? 'expanded' : ''}><Icon name={cardGroup && expanded ? 'chevron-down' : 'chevron-right'} size={15}/></i>
             </button>
           </article>
           {cardGroup && expanded ? <section className="meg2-pending-card-inline" aria-label={'Lançamentos da fatura ' + item.description}>
