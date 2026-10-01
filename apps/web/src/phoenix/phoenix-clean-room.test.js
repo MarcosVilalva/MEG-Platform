@@ -453,8 +453,8 @@ assert.match(commandPalette, /route: 'payables'[\s\S]*kind: 'Conta pendente'[\s\
   'Resultado de Pendentes deve preservar competência e compromisso exato.');
 assert.match(commandPalette, /targetId: `payable-\$\{item\.id\}`/,
   'Pendência deve usar o identificador canônico do cockpit.');
-assert.match(phoenixApp, /\(route === 'movements' \|\| route === 'payables'\)[\s\S]*await applyMonthlyPeriod\(targetMonth\)/,
-  'Busca deve carregar a competência correta também para uma pendência histórica.');
+assert.match(phoenixApp, /\(route === 'movements' \|\| route === 'payables' \|\| route === 'budgets'\)[\s\S]*await applyMonthlyPeriod\(targetMonth\)/,
+  'Busca deve carregar a competência correta para resultados mensais do Web.');
 assert.match(phoenixApp, /route === 'payables' && targetId[\s\S]*setSearchPayableRequest[\s\S]*payableId: targetId/,
   'Shell Web deve encaminhar a pendência exata ao cockpit.');
 assert.match(phoenixApp, /focusRequest=\{nativeOperational \? undefined : searchPayableRequest\}/,
@@ -475,6 +475,18 @@ assert.match(pendingCss, /\.px-pending-row\.is-search-focused/,
   'Pendentes deve possuir destaque visual dedicado para o resultado pesquisado.');
 assert.match(commandPalette, /data\.budgets\.map/,
   'Busca global deve localizar orçamentos do período.');
+assert.match(commandPalette, /route: 'budgets'[\s\S]*kind: 'Orçamento'[\s\S]*targetMonth: item\.month[\s\S]*targetId: item\.id/,
+  'Resultado de Orçamentos deve preservar competência e card exato.');
+assert.match(phoenixApp, /route === 'budgets' && targetId[\s\S]*setSearchBudgetRequest[\s\S]*budgetId: targetId/,
+  'Shell Web deve encaminhar o orçamento exato ao planejamento.');
+assert.match(phoenixApp, /focusRequest=\{nativeOperational \? undefined : searchBudgetRequest\}/,
+  'Foco de Orçamentos vindo da busca deve permanecer exclusivo do Web.');
+assert.match(budgetsScreen, /focusRequest[\s\S]*setFocusedBudgetId\(target\.id\)[\s\S]*CSS\.escape\(target\.id\)[\s\S]*scrollIntoView/,
+  'Orçamentos deve destacar e rolar até o card localizado sem abrir o editor.');
+assert.match(budgetsScreen, /data-budget-id=\{item\.id\}[\s\S]*is-search-focused/,
+  'Card de orçamento pesquisado deve possuir âncora e destaque visual.');
+assert.match(megWebCss, /\.meg-web-budget-card\.is-search-focused/,
+  'Web deve possuir destaque visual dedicado para o orçamento pesquisado.');
 assert.match(commandPalette, /Comparação de saldo e ajustes auditáveis/,
   'Busca global não pode continuar descrevendo Conciliação como contrato em auditoria.');
 assert.doesNotMatch(commandPalette, /Contrato ainda em auditoria/,
