@@ -391,7 +391,15 @@ function revenueBenefit(event: PhoenixReadModel['events']['items'][number]) {
     || normalize(event.description).includes('verocard');
 }
 
-export function PhoenixRevenuesGrid({ data }: { data: PhoenixReadModel }) {
+export function PhoenixRevenuesGrid({
+  data,
+  onCreateRevenue,
+  onEditRevenue,
+}: {
+  data: PhoenixReadModel;
+  onCreateRevenue?: () => void;
+  onEditRevenue?: (eventId: string) => void;
+}) {
   const [search,setSearch] = useState('');
   const [filters,setFilters] = useState<RevenueFilters>(initialRevenueFilters);
   const [sort,setSort] = useState<{key:RevenueKey;direction:PhoenixGridSortDirection}|null>(null);
@@ -426,7 +434,12 @@ export function PhoenixRevenuesGrid({ data }: { data: PhoenixReadModel }) {
   const periodBenefit = rows.filter((row)=>row.scope==='Benefício alimentação').reduce((sum,row)=>sum+Number(row.amount),0);
   function header(label:string,key:RevenueKey,kind:PhoenixGridFilterKind,list?:PhoenixGridOption[]){return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} options={list} sort={sort?.key===key?sort.direction:null} onSort={(direction)=>setSort({key,direction})} onChange={(value)=>setFilters((current)=>({...current,[key]:value}))}/></div>;}
   function clearAll(){setSearch('');setFilters(initialRevenueFilters());setSort(null);}
-  return <section className="px-screen"><PageIntro kicker="Receitas" title="Origem e evolução das entradas" text="Receitas monetárias e créditos de benefício permanecem visíveis, porém separados conforme a política financeira do MEG." />
+  return <section className="px-screen"><PageIntro
+      kicker="Receitas"
+      title="Origem e evolução das entradas"
+      text="Receitas monetárias e créditos de benefício permanecem visíveis, porém separados conforme a política financeira do MEG."
+      aside={onCreateRevenue ? <button className="px-primary-action" type="button" onClick={onCreateRevenue}>＋ Nova receita</button> : undefined}
+    />
     <section className="px-screen-kpis">
       <article><span>Receitas monetárias</span><strong>{money.format(monetaryTotal)}</strong><small>{hasFilters ? `Visão filtrada · Total do período ${money.format(periodMonetary)}` : `${monetaryRows.length} entrada(s)`}</small></article>
       <article className="info"><span>Benefício alimentação</span><strong>{money.format(benefitTotal)}</strong><small>{hasFilters ? `Visão filtrada · Total do período ${money.format(periodBenefit)}` : 'Fora do caixa monetário'}</small></article>
@@ -435,7 +448,7 @@ export function PhoenixRevenuesGrid({ data }: { data: PhoenixReadModel }) {
     </section>
     <section className="px-card px-table-card"><div className="px-toolbar"><label className="px-search-field"><span>⌕</span><input value={search} onChange={(event)=>setSearch(event.target.value)} placeholder="Buscar em todas as colunas"/></label><span className="px-toolbar-note">{visible.length} de {rows.length} exibido(s)</span></div>
       {activeKeys.length || sort || search ? <div className="px-grid-active-filters"><span>Filtros da grade</span>{search?<span className="px-grid-filter-chip">Busca: {search}<button type="button" onClick={()=>setSearch('')}>×</button></span>:null}{activeKeys.map((key)=><span className="px-grid-filter-chip" key={key}>{summary(revenueLabels[key],filters[key])}<button type="button" onClick={()=>{const fresh=initialRevenueFilters();setFilters((current)=>({...current,[key]:fresh[key]}));}}>×</button></span>)}{sort?<span className="px-grid-filter-chip">Ordenação: {revenueLabels[sort.key]} {sort.direction==='asc'?'↑':'↓'}<button type="button" onClick={()=>setSort(null)}>×</button></span>:null}<button className="px-grid-clear-all" type="button" onClick={clearAll}>Limpar grade</button></div>:null}
-      <div className="px-table-scroll"><table className="px-data-table"><thead><tr><th>{header('Data','eventDate','date')}</th><th>{header('Descrição','description','text')}</th><th>{header('Escopo','scope','multi',gridOptions.scope)}</th><th>{header('Classificação','category','multi',gridOptions.category)}</th><th>{header('Conta','account','multi',gridOptions.account)}</th><th>{header('Forma','payment','multi',gridOptions.payment)}</th><th>{header('Situação','status','multi',gridOptions.status)}</th><th>{header('Valor','amount','number')}</th></tr></thead><tbody>{visible.map((row)=><tr key={row.id}><td>{date.format(new Date(`${row.eventDate}T12:00:00Z`))}</td><td><strong>{row.description}</strong></td><td><span className={`px-status ${row.scope === 'Monetária' ? 'reconciled' : 'planned'}`}>{row.scope}</span></td><td>{row.category}</td><td>{row.account}</td><td>{row.payment}</td><td><span className={`px-status ${row.status}`}>{row.status}</span></td><td className={`px-money ${Number(row.amount)<0?'negative':'positive'}`}>{money.format(Number(row.amount))}</td></tr>)}</tbody></table>{!visible.length?<p className="px-empty">Nenhuma receita corresponde aos filtros aplicados.</p>:null}</div>
+      <div className="px-table-scroll"><table className="px-data-table"><thead><tr><th>{header('Data','eventDate','date')}</th><th>{header('Descrição','description','text')}</th><th>{header('Escopo','scope','multi',gridOptions.scope)}</th><th>{header('Classificação','category','multi',gridOptions.category)}</th><th>{header('Conta','account','multi',gridOptions.account)}</th><th>{header('Forma','payment','multi',gridOptions.payment)}</th><th>{header('Situação','status','multi',gridOptions.status)}</th><th>{header('Valor','amount','number')}</th>{onEditRevenue ? <th aria-label="Ações" /> : null}</tr></thead><tbody>{visible.map((row)=><tr key={row.id} onDoubleClick={onEditRevenue ? () => onEditRevenue(row.id) : undefined} title={onEditRevenue ? 'Duplo clique para editar a receita' : undefined}><td>{date.format(new Date(`${row.eventDate}T12:00:00Z`))}</td><td><strong>{row.description}</strong></td><td><span className={`px-status ${row.scope === 'Monetária' ? 'reconciled' : 'planned'}`}>{row.scope}</span></td><td>{row.category}</td><td>{row.account}</td><td>{row.payment}</td><td><span className={`px-status ${row.status}`}>{row.status}</span></td><td className={`px-money ${Number(row.amount)<0?'negative':'positive'}`}>{money.format(Number(row.amount))}</td>{onEditRevenue ? <td><button className="px-detail-btn" type="button" aria-label={`Editar ${row.description}`} onClick={() => onEditRevenue(row.id)}>Editar</button></td> : null}</tr>)}</tbody></table>{!visible.length?<p className="px-empty">Nenhuma receita corresponde aos filtros aplicados.</p>:null}</div>
     </section></section>;
 }
 
