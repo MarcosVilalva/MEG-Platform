@@ -78,7 +78,7 @@ assert.match(mobile, /new URL\(relative, document\.baseURI\)\.href/,
   'Assets do APK devem resolver contra document.baseURI para funcionar dentro do WebView.');
 
 for (const relative of [
-  '../../public/assets/cards/mercado-pago-visa-v661.svg',
+  '../../public/assets/cards/mercado-pago-visa-v662.svg',
   '../../public/assets/cards/latam-user-model-v61.svg',
   '../../public/assets/cards/azul-itau-platinum-v659.svg',
   '../../public/assets/cards/riachuelo-mastercard-visual.svg',
@@ -90,7 +90,7 @@ for (const relative of [
 
 assert.match(
   mobile,
-  /mercado.*meli[\s\S]*mercado-pago-visa-v661\.svg[\s\S]*latam-user-model-v61\.svg[\s\S]*azul-itau-platinum-v659\.svg[\s\S]*riachuelo.*midway[\s\S]*riachuelo-mastercard-visual\.svg/i,
+  /mercado.*meli[\s\S]*mercado-pago-visa-v662\.svg[\s\S]*latam-user-model-v61\.svg[\s\S]*azul-itau-platinum-v659\.svg[\s\S]*riachuelo.*midway[\s\S]*riachuelo-mastercard-visual\.svg/i,
   'Carrossel deve usar artes recortadas e estáveis para preencher os cartões ativos.',
 );
 assert.match(css, /CONTRATO DE VIEWPORT FIXO[\s\S]*\.meg2-scroll\{[\s\S]*overflow:hidden!important/,
@@ -461,8 +461,13 @@ assert.doesNotMatch(
 );
 assert.match(
   mobile,
-  /mercado-pago-visa-v661\.svg/,
+  /mercado-pago-visa-v662\.svg/,
   'Mercado Pago deve usar a nova arte horizontal local, não a imagem anterior problemática.',
+);
+assert.match(
+  readFileSync(new URL('../../public/assets/cards/mercado-pago-visa-v662.svg', import.meta.url), 'utf8'),
+  /isotipo oficial integrado ao próprio SVG[\s\S]*Símbolo Mercado Pago/,
+  'Símbolo do Mercado Pago deve estar integrado na própria arte base, não sobreposto por CSS.',
 );
 assert.match(
   css,
