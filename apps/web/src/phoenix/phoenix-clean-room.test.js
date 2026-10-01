@@ -370,7 +370,7 @@ assert.match(webScreens, /Resultado realizado ÷ receitas realizadas/,
   'Margem realizada deve explicar a fórmula diretamente na interface.');
 assert.match(webScreens, /realizedResult \/ realizedIncome \* 100/,
   'Margem realizada deve ser calculada somente a partir dos valores reais do período.');
-assert.match(webScreens, /Planejamento financeiro/);
+assert.match(budgetsScreen, /Planejamento financeiro/);
 assert.match(webScreens, /Saldo do banco x saldo MEG/,
   'Conciliação deve comparar somente o saldo informado pelo usuário com o saldo oficial da conta.');
 assert.match(webScreens, /readPhoenixReconciliationBalance/,
