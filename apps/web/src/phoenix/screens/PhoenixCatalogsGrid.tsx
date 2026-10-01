@@ -220,6 +220,7 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
   const [accounts, setAccounts] = useState<Account[]>(() => data.accounts.map((item) => ({ ...item })));
   const [categories, setCategories] = useState<Category[]>(() => data.categories.map((item) => ({ ...item })));
   const [payments, setPayments] = useState<PaymentMethod[]>(() => data.paymentMethods.map((item) => ({ ...item })));
+  const [customers, setCustomers] = useState<Customer[]>(() => data.customers.map((item) => ({ ...item })));
   const [editor, setEditor] = useState<CatalogEditor>(null);
   const [mutationBusy, setMutationBusy] = useState(false);
   const [mutationMessage, setMutationMessage] = useState('');
@@ -244,16 +245,19 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
   useEffect(() => { setAccounts(data.accounts.map((item) => ({ ...item }))); }, [data.accounts]);
   useEffect(() => { setCategories(data.categories.map((item) => ({ ...item }))); }, [data.categories]);
   useEffect(() => { setPayments(data.paymentMethods.map((item) => ({ ...item }))); }, [data.paymentMethods]);
+  useEffect(() => { setCustomers(data.customers.map((item) => ({ ...item }))); }, [data.customers]);
 
   const activeAccounts = accounts.filter((item) => item.isActive);
   const activeCategories = categories.filter((item) => item.isActive);
   const activePayments = payments.filter((item) => item.isActive);
   const activeCards = data.cards.filter((item) => item.isActive);
+  const activeCustomers = customers.filter((item) => item.isActive);
   const catalogCounts: Record<CatalogTab, { active: number; total: number }> = {
     accounts: { active: activeAccounts.length, total: accounts.length },
     categories: { active: activeCategories.length, total: categories.length },
     payments: { active: activePayments.length, total: payments.length },
     cards: { active: activeCards.length, total: data.cards.length },
+    customers: { active: activeCustomers.length, total: customers.length },
   };
 
   const rows = useMemo<CatalogRow[]>(() => {
@@ -265,7 +269,7 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       openingBalance: Number(item.openingBalance || 0),
       group: '',
       status: item.isActive ? 'Ativa' : 'Inativa',
-      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null,
+      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null, document: '', email: '', phone: '',
       updatedAt: item.updatedAt
     }));
     if (tab === 'categories') return categories.map((item) => ({
@@ -275,7 +279,7 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       institution: '', openingBalance: null,
       group: item.group || '—',
       status: item.isActive ? 'Ativa' : 'Inativa',
-      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null,
+      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null, document: '', email: '', phone: '',
       updatedAt: item.updatedAt
     }));
     if (tab === 'payments') return payments.map((item) => ({
@@ -284,8 +288,19 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       type: item.type || '—',
       institution: '', openingBalance: null, group: '',
       status: item.isActive ? 'Ativa' : 'Inativa',
-      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null,
+      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null, document: '', email: '', phone: '',
       updatedAt: item.updatedAt
+    }));
+    if (tab === 'customers') return customers.map((item) => ({
+      id: item.id,
+      name: item.name,
+      type: '', institution: '', openingBalance: null, group: '',
+      status: item.isActive ? 'Ativa' : 'Inativa',
+      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null,
+      document: item.document || '—',
+      email: item.email || '—',
+      phone: item.phone || '—',
+      updatedAt: item.updatedAt,
     }));
     return data.cards.map((item) => ({
       id: item.id,
@@ -296,9 +311,10 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       creditLimit: Number(item.creditLimit || 0),
       closingDay: Number(item.closingDay || 0),
       dueDay: Number(item.dueDay || 0),
+      document: '', email: '', phone: '',
       card: item
     }));
-  }, [accounts, categories, payments, data.cards, tab]);
+  }, [accounts, categories, payments, customers, data.cards, tab]);
 
   const filters = filtersByTab[tab];
   const sort = sortByTab[tab];
