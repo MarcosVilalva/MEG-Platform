@@ -769,11 +769,11 @@ export async function runPhoenixSimpleEventWrite(
 
   const accepted: PhoenixWriteState = { status: 'accepted', operationId: prepared.operationId, event };
   onState?.(accepted);
-  const snapshot = await snapshotAfterAccepted(refreshMonth, 'simple-event-refresh-pending');
-  if (!snapshot) return accepted;
-  const confirmed: PhoenixWriteState = { status: 'confirmed', operationId: prepared.operationId, event, snapshot };
-  onState?.(confirmed);
-  return confirmed;
+  publishOptimisticEvent(refreshMonth, event);
+  refreshSnapshotInBackground(refreshMonth, 'simple-event-refresh-pending', (snapshot) => {
+    onState?.({ status: 'confirmed', operationId: prepared.operationId, event, snapshot });
+  });
+  return accepted;
 }
 
 export async function runPhoenixBenefitEventWrite(
@@ -799,11 +799,11 @@ export async function runPhoenixBenefitEventWrite(
 
   const accepted: PhoenixWriteState = { status: 'accepted', operationId: prepared.operationId, event };
   onState?.(accepted);
-  const snapshot = await snapshotAfterAccepted(refreshMonth, 'benefit-event-refresh-pending');
-  if (!snapshot) return accepted;
-  const confirmed: PhoenixWriteState = { status: 'confirmed', operationId: prepared.operationId, event, snapshot };
-  onState?.(confirmed);
-  return confirmed;
+  publishOptimisticEvent(refreshMonth, event);
+  refreshSnapshotInBackground(refreshMonth, 'benefit-event-refresh-pending', (snapshot) => {
+    onState?.({ status: 'confirmed', operationId: prepared.operationId, event, snapshot });
+  });
+  return accepted;
 }
 
 export async function runPhoenixCardPurchaseWrite(
@@ -829,21 +829,8 @@ export async function runPhoenixCardPurchaseWrite(
 
   const accepted: PhoenixCardPurchaseWriteState = { status: 'accepted', operationId: prepared.operationId, purchase };
   onState?.(accepted);
-
-  try {
-    const snapshot = await Promise.race([
-      confirmedSnapshot(refreshMonth),
-      new Promise<never>((_, reject) => window.setTimeout(() => reject(new PhoenixWriteError('PHOENIX_CARD_REFRESH_TIMEOUT')), 12_000)),
-    ]);
-    const confirmed: PhoenixCardPurchaseWriteState = { status: 'confirmed', operationId: prepared.operationId, purchase, snapshot };
-    onState?.(confirmed);
-    return confirmed;
-  } catch {
-    // A compra já foi aceita pela API. Falha/lentidão da releitura não pode manter
-    // o formulário preso nem sugerir que o usuário deva gravar a compra novamente.
-    window.dispatchEvent(new CustomEvent('meg:data-invalidated', {
-      detail: { path: '/cards/purchases', method: 'POST', reason: 'card-refresh-pending' },
-    }));
-    return accepted;
-  }
+  refreshSnapshotInBackground(refreshMonth, 'card-refresh-pending', (snapshot) => {
+    onState?.({ status: 'confirmed', operationId: prepared.operationId, purchase, snapshot });
+  });
+  return accepted;
 }
