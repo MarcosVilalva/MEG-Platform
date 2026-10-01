@@ -362,6 +362,14 @@ assert.match(webScreens, /Títulos e recebimentos em aberto/);
 assert.match(webScreens, /Origem e evolução das entradas/);
 assert.match(webScreens, /Fechamento realizado e projetado/);
 assert.match(webScreens, /Tendências e comparações históricas/);
+assert.doesNotMatch(webScreens, /Índice MEG|Em calibração/,
+  'Análises não pode exibir uma nota proprietária sem critérios e pesos validados.');
+assert.match(webScreens, /Margem realizada/,
+  'Análises deve substituir o placeholder por um indicador financeiro objetivo.');
+assert.match(webScreens, /Resultado realizado ÷ receitas realizadas/,
+  'Margem realizada deve explicar a fórmula diretamente na interface.');
+assert.match(webScreens, /realizedResult \/ realizedIncome \* 100/,
+  'Margem realizada deve ser calculada somente a partir dos valores reais do período.');
 assert.match(webScreens, /Planejamento financeiro/);
 assert.match(webScreens, /Saldo do banco x saldo MEG/,
   'Conciliação deve comparar somente o saldo informado pelo usuário com o saldo oficial da conta.');
