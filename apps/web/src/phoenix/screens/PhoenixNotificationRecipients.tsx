@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { authenticatedRequest } from '../../app/auth-client';
 import { megConfirm } from '../meg-confirm';
 
@@ -71,7 +71,7 @@ export function PhoenixNotificationRecipients() {
     void loadRecipients();
   }, []);
 
-  async function addWhatsapp(event: React.FormEvent) {
+  async function addWhatsapp(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
     const name = waName.trim();
@@ -99,7 +99,7 @@ export function PhoenixNotificationRecipients() {
     }
   }
 
-  async function addEmail(event: React.FormEvent) {
+  async function addEmail(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
     const name = emailName.trim();
