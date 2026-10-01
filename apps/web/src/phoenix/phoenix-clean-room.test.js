@@ -409,8 +409,8 @@ assert.match(phoenixApp, /allEvents=\{!nativeOperational \? searchEvents \|\| un
   'Histórico completo da busca não pode ser injetado no runtime Android.');
 assert.match(commandPalette, /targetMonth: item\.competence \|\| String\(item\.date\)\.slice\(0, 7\)/,
   'Resultado de lançamento deve preservar a competência financeira encontrada.');
-assert.match(commandPalette, /await onNavigate\(result\.route, result\.targetMonth\)[\s\S]*opened === false/,
-  'Busca só deve fechar depois que o destino confirmar que a competência correta foi aberta.');
+assert.match(commandPalette, /await onNavigate\(result\.route, result\.targetMonth, result\.targetEventId\)[\s\S]*opened === false/,
+  'Busca só deve fechar depois que o destino confirmar a competência e o lançamento correto.');
 assert.match(phoenixApp, /openSearchResult[\s\S]*route === 'movements'[\s\S]*await applyMonthlyPeriod\(targetMonth\)[\s\S]*monthRef\.current !== targetMonth[\s\S]*return false/,
   'Lançamento histórico deve abrir Lançamentos na competência encontrada e permanecer na busca se a troca falhar.');
 assert.match(phoenixApp, /onNavigate=\{openSearchResult\}/,
