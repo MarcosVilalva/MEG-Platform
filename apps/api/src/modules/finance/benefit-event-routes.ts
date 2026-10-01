@@ -14,6 +14,7 @@ const benefitEventSchema = z.object({
   paymentMethodId: z.string().trim().min(1),
   notes: z.string().trim().max(1000).optional(),
   operationId: z.string().trim().min(8).max(128).regex(/^[A-Za-z0-9._:-]+$/),
+  allowDuplicate: z.boolean().optional(),
 });
 
 const benefitEventUpdateSchema = benefitEventSchema.extend({
@@ -26,7 +27,7 @@ function validationError(reply: FastifyReply, details: unknown) {
 
 function benefitError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof BenefitEventMutationError)) throw error;
-  const status = ['OPERATION_ID_REUSED', 'INSUFFICIENT_BENEFIT_BALANCE', 'FINANCIAL_EVENT_STALE_VERSION'].includes(error.code) ? 409
+  const status = ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE', 'INSUFFICIENT_BENEFIT_BALANCE', 'FINANCIAL_EVENT_STALE_VERSION'].includes(error.code) ? 409
     : error.code === 'BENEFIT_EVENT_NOT_FOUND' ? 404
       : 400;
   return reply.code(status).send({ error: error.code, ...(error.details || {}) });
