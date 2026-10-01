@@ -1068,6 +1068,15 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     }
   }
 
+  async function openSearchResult(route: PhoenixRoute, targetMonth?: string) {
+    if (!nativeOperational && route === 'movements' && targetMonth && targetMonth !== monthRef.current) {
+      await applyMonthlyPeriod(targetMonth);
+      if (monthRef.current !== targetMonth) return false;
+    }
+    navigate(route);
+    return true;
+  }
+
   async function applyRangePeriod(start: string, end: string, force = false) {
     if (!start || !end) {
       setPeriodError('Informe a data inicial e a data final.');
@@ -1384,7 +1393,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         <button className={mobileOpen ? 'active' : ''} type="button" onClick={() => setMobileOpen(true)}><strong><PhoenixNavIcon name="more" /></strong><span>Menu</span></button>
       </nav>
     </div>
-    {searchOpen ? <PhoenixCommandPalette data={viewData} allEvents={!nativeOperational ? searchEvents || undefined : undefined} onClose={() => setSearchOpen(false)} onNavigate={navigate} /> : null}
+    {searchOpen ? <PhoenixCommandPalette data={viewData} allEvents={!nativeOperational ? searchEvents || undefined : undefined} onClose={() => setSearchOpen(false)} onNavigate={openSearchResult} /> : null}
     {exitConfirmOpen && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay px-app-exit-confirm">
       <button className="px-meg-confirm-backdrop" type="button" aria-label="Não sair" onClick={() => setExitConfirmOpen(false)} />
       <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-exit-title" aria-describedby="px-exit-copy">
