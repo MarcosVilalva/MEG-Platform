@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { financeClient, type Account, type Category, type PaymentMethod } from '../../app/finance-client';
 import { readSession } from '../../app/auth-client';
 import type { CreditCard } from '../../app/cards-client';
+import { receivablesClient, type Customer } from '../../app/receivables-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import { PhoenixNavIcon, type PhoenixNavigationIcon } from '../PhoenixNavIcon';
 import { resolvePhoenixCardIdentity } from '../card-identity';
@@ -10,8 +11,8 @@ import type { PhoenixReadModel } from '../contracts';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
-type CatalogTab = 'accounts' | 'categories' | 'payments' | 'cards';
-type CatalogGridKey = 'name' | 'type' | 'institution' | 'openingBalance' | 'group' | 'status' | 'issuer' | 'brand' | 'creditLimit' | 'closingDay' | 'dueDay';
+type CatalogTab = 'accounts' | 'categories' | 'payments' | 'cards' | 'customers';
+type CatalogGridKey = 'name' | 'type' | 'institution' | 'openingBalance' | 'group' | 'status' | 'issuer' | 'brand' | 'creditLimit' | 'closingDay' | 'dueDay' | 'document' | 'email' | 'phone';
 type CatalogSort = { key: CatalogGridKey; direction: PhoenixGridSortDirection } | null;
 type CatalogFilterMap = Record<CatalogGridKey, PhoenixGridFilterValue>;
 type CatalogRow = {
@@ -27,6 +28,9 @@ type CatalogRow = {
   creditLimit: number | null;
   closingDay: number | null;
   dueDay: number | null;
+  document: string;
+  email: string;
+  phone: string;
   updatedAt?: string;
   card?: CreditCard;
 };
@@ -39,10 +43,14 @@ type CatalogDraft = {
   institution: string;
   openingBalance: string;
   group: string;
+  document: string;
+  email: string;
+  phone: string;
+  notes: string;
 };
 type CatalogEditor = { mode: 'create' | 'edit'; tab: EditableCatalogTab; id?: string; expectedUpdatedAt?: string; draft: CatalogDraft } | null;
 
-const emptyDraft = (): CatalogDraft => ({ name: '', type: '', institution: '', openingBalance: '0,00', group: '' });
+const emptyDraft = (): CatalogDraft => ({ name: '', type: '', institution: '', openingBalance: '0,00', group: '', document: '', email: '', phone: '', notes: '' });
 
 const accountTypes = [
   ['checking', 'Conta corrente'], ['savings', 'Poupança'], ['cash', 'Dinheiro'],
@@ -58,14 +66,16 @@ const catalogMeta: Record<CatalogTab, { title: string; short: string; descriptio
   accounts: { title: 'Contas financeiras', short: 'Contas', description: 'Bancos, caixa, benefício e demais origens que sustentam saldos e baixas.', icon: 'cashflow' },
   categories: { title: 'Classificações e grupos', short: 'Classificações', description: 'Estrutura analítica que organiza despesas e receitas para relatórios e decisões.', icon: 'catalogs' },
   payments: { title: 'Formas de pagamento', short: 'Pagamentos', description: 'Meios usados nos lançamentos e regras automáticas de recebimento e pagamento.', icon: 'movements' },
-  cards: { title: 'Cartões de crédito', short: 'Cartões', description: 'Limites, ciclos, fechamento, vencimento e identidade visual dos cartões ativos.', icon: 'cards' }
+  cards: { title: 'Cartões de crédito', short: 'Cartões', description: 'Limites, ciclos, fechamento, vencimento e identidade visual dos cartões ativos.', icon: 'cards' },
+  customers: { title: 'Clientes e pagadores', short: 'Clientes', description: 'Pessoas e empresas vinculadas aos títulos e recebimentos do contas a receber.', icon: 'users' }
 };
 
 const tabKeys: Record<CatalogTab, CatalogGridKey[]> = {
   accounts: ['name', 'type', 'institution', 'openingBalance', 'status'],
   categories: ['name', 'group', 'type', 'status'],
   payments: ['name', 'type', 'status'],
-  cards: ['name', 'issuer', 'brand', 'creditLimit', 'closingDay', 'dueDay']
+  cards: ['name', 'issuer', 'brand', 'creditLimit', 'closingDay', 'dueDay'],
+  customers: ['name', 'document', 'email', 'phone', 'status']
 };
 
 const labels: Record<CatalogGridKey, string> = {
@@ -79,7 +89,10 @@ const labels: Record<CatalogGridKey, string> = {
   brand: 'Bandeira',
   creditLimit: 'Limite',
   closingDay: 'Fechamento',
-  dueDay: 'Vencimento'
+  dueDay: 'Vencimento',
+  document: 'Documento',
+  email: 'E-mail',
+  phone: 'Telefone'
 };
 
 function initialFilters(): CatalogFilterMap {
@@ -94,7 +107,10 @@ function initialFilters(): CatalogFilterMap {
     brand: { kind: 'multi', values: [] },
     creditLimit: { kind: 'number', min: '', max: '' },
     closingDay: { kind: 'number', min: '', max: '' },
-    dueDay: { kind: 'number', min: '', max: '' }
+    dueDay: { kind: 'number', min: '', max: '' },
+    document: { kind: 'text', value: '' },
+    email: { kind: 'text', value: '' },
+    phone: { kind: 'text', value: '' }
   };
 }
 
@@ -103,16 +119,17 @@ function initialFiltersByTab(): CatalogState<CatalogFilterMap> {
     accounts: initialFilters(),
     categories: initialFilters(),
     payments: initialFilters(),
-    cards: initialFilters()
+    cards: initialFilters(),
+    customers: initialFilters()
   };
 }
 
 function initialSortByTab(): CatalogState<CatalogSort> {
-  return { accounts: null, categories: null, payments: null, cards: null };
+  return { accounts: null, categories: null, payments: null, cards: null, customers: null };
 }
 
 function initialSearchByTab(): CatalogState<string> {
-  return { accounts: '', categories: '', payments: '', cards: '' };
+  return { accounts: '', categories: '', payments: '', cards: '', customers: '' };
 }
 
 function normalize(value: unknown) {
