@@ -397,11 +397,21 @@ assert.match(reconciliationBridge, /AJUSTE DE CONCILIAÇÃO BANCÁRIA/,
   'Ajuste deve ser identificado de forma explícita e auditável.');
 assert.doesNotMatch(webScreens, /Math\.random|mock|demo/i,
   'Web completo não pode fabricar dados de demonstração');
-assert.match(commandPalette, /Buscar tela, lançamento, cartão, conta, cliente ou usuário/);
+assert.match(commandPalette, /Buscar tela, lançamento, título, pendência, orçamento, cartão, conta, cliente ou usuário/);
 assert.match(commandPalette, /data\.events\.items/);
 assert.match(commandPalette, /data\.cards/);
 assert.match(commandPalette, /data\.accounts/);
 assert.match(commandPalette, /data\.customers/);
+assert.match(commandPalette, /data\.receivables\.map/,
+  'Busca global deve localizar títulos a receber pelo domínio oficial.');
+assert.match(commandPalette, /data\.payables\.map/,
+  'Busca global deve localizar contas pendentes pelo domínio oficial.');
+assert.match(commandPalette, /data\.budgets\.map/,
+  'Busca global deve localizar orçamentos do período.');
+assert.match(commandPalette, /Comparação de saldo e ajustes auditáveis/,
+  'Busca global não pode continuar descrevendo Conciliação como contrato em auditoria.');
+assert.doesNotMatch(commandPalette, /Contrato ainda em auditoria/,
+  'Texto legado de Conciliação deve permanecer removido.');
 assert.match(commandPalette, /event\.target === event\.currentTarget/,
   'Busca deve fechar ao clicar fora do painel');
 

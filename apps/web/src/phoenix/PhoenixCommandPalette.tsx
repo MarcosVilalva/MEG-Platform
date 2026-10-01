@@ -27,6 +27,8 @@ type SearchResult = {
   detail: string;
 };
 
+const commandMoney = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
 const pageResults: SearchResult[] = [
   { id: 'page-home', route: 'home', kind: 'Tela', title: 'Início', detail: 'Visão geral da sua vida financeira' },
   { id: 'page-movements', route: 'movements', kind: 'Tela', title: 'Lançamentos', detail: 'Eventos financeiros' },
@@ -39,7 +41,7 @@ const pageResults: SearchResult[] = [
   { id: 'page-receivables', route: 'receivables', kind: 'Tela', title: 'Contas a receber', detail: 'Títulos e recebimentos' },
   { id: 'page-revenues', route: 'revenues', kind: 'Tela', title: 'Receitas', detail: 'Origem das entradas' },
   { id: 'page-cashflow', route: 'cashflow', kind: 'Tela', title: 'Fluxo de caixa', detail: 'Realizado e projetado' },
-  { id: 'page-reconcile', route: 'reconcile', kind: 'Tela', title: 'Conciliação', detail: 'Contrato ainda em auditoria' },
+  { id: 'page-reconcile', route: 'reconcile', kind: 'Tela', title: 'Conciliação', detail: 'Comparação de saldo e ajustes auditáveis' },
   { id: 'page-analytics', route: 'analytics', kind: 'Tela', title: 'Análises', detail: 'Tendências históricas' },
   { id: 'page-decisions', route: 'decisions', kind: 'Tela', title: 'Decisões', detail: 'Radar de 12 meses, simulador e assistente de decisão' },
   { id: 'page-budgets', route: 'budgets', kind: 'Tela', title: 'Orçamentos e metas', detail: 'Planejamento financeiro' },
@@ -59,6 +61,9 @@ export function PhoenixCommandPalette({ data, onClose, onNavigate }: { data: Pho
       ...data.accounts.map((item) => ({ id: `account-${item.id}`, route: 'catalogs' as const, kind: 'Conta', title: item.name, detail: item.institution || item.type || 'Conta financeira' })),
       ...data.categories.map((item) => ({ id: `category-${item.id}`, route: 'catalogs' as const, kind: 'Classificação', title: item.name, detail: item.group || item.type || 'Cadastro financeiro' })),
       ...data.customers.map((item) => ({ id: `customer-${item.id}`, route: 'receivables' as const, kind: 'Cliente', title: item.name, detail: item.email || item.phone || 'Cliente cadastrado' })),
+      ...data.receivables.map((item) => ({ id: `receivable-${item.id}`, route: 'receivables' as const, kind: 'Título a receber', title: item.description, detail: [item.customer?.name, `Vence ${String(item.dueDate).slice(0, 10).split('-').reverse().join('/')}`, `Em aberto ${commandMoney.format(Number(item.openAmount || 0))}`].filter(Boolean).join(' · ') })),
+      ...data.payables.map((item) => ({ id: `payable-${item.id}`, route: 'payables' as const, kind: 'Conta pendente', title: item.description, detail: [item.category?.group || item.category?.name, `Vence ${String(item.dueDate).slice(0, 10).split('-').reverse().join('/')}`, `Em aberto ${commandMoney.format(Number(item.openAmount || 0))}`].filter(Boolean).join(' · ') })),
+      ...data.budgets.map((item) => ({ id: `budget-${item.id}`, route: 'budgets' as const, kind: 'Orçamento', title: item.group, detail: [item.month, `Disponível ${commandMoney.format(Number(item.available || 0))}`, `${Number(item.percent || 0).toFixed(0)}% utilizado`].join(' · ') })),
       ...(data.workspaceUsers.status === 'ready' ? data.workspaceUsers.users.map((item) => ({ id: `user-${item.id}`, route: 'users' as const, kind: 'Usuário', title: item.name, detail: `${item.email} · ${item.role}` })) : [])
     ] : [];
     const all = [...pageResults, ...dynamic];
@@ -74,7 +79,7 @@ export function PhoenixCommandPalette({ data, onClose, onNavigate }: { data: Pho
 
   return <div className="px-command-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section className="px-command" role="dialog" aria-modal="true" aria-label="Buscar no MEG">
-      <div className="px-command-input"><span>⌕</span><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar tela, lançamento, cartão, conta, cliente ou usuário" /><kbd>ESC</kbd></div>
+      <div className="px-command-input"><span>⌕</span><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar tela, lançamento, título, pendência, orçamento, cartão, conta, cliente ou usuário" /><kbd>ESC</kbd></div>
       <div className="px-command-results">
         {results.map((result) => <button key={result.id} type="button" onClick={() => open(result)}><span className="px-command-kind">{result.kind}</span><span className="px-command-copy"><strong>{result.title}</strong><small>{result.detail}</small></span><span className="px-command-arrow">↗</span></button>)}
         {!results.length ? <div className="px-command-empty"><strong>Nenhum resultado</strong><span>Tente outro termo de busca.</span></div> : null}
