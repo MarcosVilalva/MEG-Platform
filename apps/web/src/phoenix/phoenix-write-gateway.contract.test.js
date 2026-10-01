@@ -415,10 +415,10 @@ assert.match(gateway, /status:\s*'accepted'/,
   'Compra no cartão deve distinguir aceite autoritativo da releitura posterior da tela.');
 assert.match(gateway, /onState\?\.\(accepted\)/,
   'Writer de cartão deve avisar a interface assim que a API aceitar a compra.');
-assert.match(gateway, /PHOENIX_CARD_REFRESH_TIMEOUT/,
-  'Releitura de cartão deve possuir limite para não prender o modal indefinidamente.');
-assert.match(gateway, /reason:\s*'card-refresh-pending'/,
-  'Compra aceita deve solicitar atualização em segundo plano se a releitura imediata atrasar.');
+assert.match(gateway, /refreshSnapshotInBackground\(refreshMonth, 'card-refresh-pending'/,
+  'Compra no cartão deve liberar a interface no aceite e reconciliar a fotografia em segundo plano.');
+assert.match(gateway, /function refreshSnapshotInBackground[\s\S]*snapshotAfterAccepted\(refreshMonth, reason\)/,
+  'Releitura em segundo plano deve continuar protegida pelo timeout comum de reconciliação.');
 assert.match(writeControl, /state\.status !== 'accepted'[\s\S]*onAccepted\?\.\(\)/,
   'Controle de lançamento deve permitir fechar o drawer após aceite real do cartão.');
 assert.match(movements, /onAccepted=\{\(\) => \{[\s\S]*setLaunchOpen\(false\)/,
