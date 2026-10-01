@@ -46,10 +46,10 @@ assert.match(gateway, /operationId\('phoenix-card-purchase'\)/,
   'Compra no cartão deve nascer com operationId próprio para retry idempotente.');
 assert.match(gateway, /status:\s*'accepted'; operationId: string; event: FinancialEvent/,
   'Receita, despesa e benefício devem distinguir aceite do servidor da releitura visual.');
-assert.match(gateway, /snapshotAfterAccepted\(refreshMonth, 'simple-event-refresh-pending'\)/,
-  'Lançamento simples não pode manter o formulário bloqueado esperando snapshot indefinidamente.');
-assert.match(gateway, /snapshotAfterAccepted\(refreshMonth, 'benefit-event-refresh-pending'\)/,
-  'Benefício deve liberar a interface após aceite e reler o saldo em segundo plano.');
+assert.match(gateway, /publishOptimisticEvent\(refreshMonth, event\)[\s\S]*refreshSnapshotInBackground\(refreshMonth, 'simple-event-refresh-pending'/,
+  'Lançamento simples deve refletir o aceite imediatamente e reconciliar o snapshot em segundo plano.');
+assert.match(gateway, /publishOptimisticEvent\(refreshMonth, event\)[\s\S]*refreshSnapshotInBackground\(refreshMonth, 'benefit-event-refresh-pending'/,
+  'Benefício deve atualizar o saldo percebido após aceite e reler o snapshot em segundo plano.');
 assert.match(gateway, /onAccepted\?\.\(event\)/,
   'Edição deve possuir callback explícito de aceite antes da releitura.');
 assert.match(gateway, /onAccepted\?\.\(\)/,
