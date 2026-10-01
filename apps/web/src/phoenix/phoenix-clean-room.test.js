@@ -1119,6 +1119,13 @@ assert.doesNotMatch(phoenixApp, /setMonth\(end\.slice\(0,\s*7\)\)/,
 for (const screen of ['PhoenixMovementsV15', 'PhoenixHomeDashboard', 'PhoenixHomeAllTime', 'PhoenixHomePastMonth', 'PhoenixHomeHorizon', 'PhoenixHistory', 'PhoenixPayables', 'PhoenixCards', 'PhoenixCatalogs', 'PhoenixUsers', 'PhoenixSettings', 'PhoenixReceivables', 'PhoenixRevenues', 'PhoenixCashflow', 'PhoenixReconciliation', 'PhoenixAnalytics', 'PhoenixBudgets', 'PhoenixCommandPalette', 'PhoenixSidebar']) {
   assert.ok(phoenixApp.includes(screen), `Tela Phoenix não conectada: ${screen}`);
 }
+assert.match(phoenixApp, /PhoenixRevenuesGrid data=\{data\} onCreateRevenue=\{\(\) => onLaunch\('income'\)\} onEditRevenue=\{onEditEvent\}/,
+  'Receitas Web deve reutilizar o launcher oficial de receita e o editor canônico de eventos.');
+assert.match(webScreens, /Nova receita/,
+  'Central de Receitas deve oferecer criação direta a partir do próprio módulo.');
+assert.match(webScreens, /onDoubleClick=\{onEditRevenue \? \(\) => onEditRevenue\(row\.id\)/,
+  'Receita existente deve poder abrir o editor oficial diretamente pela grade.');
+
 assert.match(phoenixApp, /onLogout/,
   'Phoenix deve expor saída de sessão ao preview isolado');
 
