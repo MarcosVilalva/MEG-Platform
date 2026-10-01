@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { alexaCycleForSlot, messagingCycleForSlot, notificationCycleIsActive, notificationWatchdogHealth, notificationWatchdogPlan } from './watchdog';
+import { DEFAULT_NOTIFICATION_SCHEDULE, validateNotificationSchedule } from './schedule-config';
 
 function keys(value: Date) {
   return notificationWatchdogPlan(value).cycles.map((cycle) => `${cycle.kind}:${cycle.slot}:${cycle.task}`);
@@ -50,6 +51,61 @@ assert.equal(messagingCycleForSlot('07:00'), null);
 assert.equal(alexaCycleForSlot(new Date('2026-09-23T12:00:00Z'), '06:20')?.task, 'alexa-daily-briefing');
 assert.equal(alexaCycleForSlot(new Date('2026-09-26T15:00:00Z'), '12:00')?.task, 'alexa-daily-briefing');
 assert.equal(alexaCycleForSlot(new Date('2026-09-26T15:00:00Z'), '18:00'), null);
+
+
+const customSchedule = validateNotificationSchedule({
+  ...DEFAULT_NOTIFICATION_SCHEDULE,
+  messagingMorningTime: '08:30',
+  messagingMiddayTime: '13:15',
+  messagingEveningTime: '20:30',
+  alexaAutomationEnabled: false,
+  alexaWeekdayMorningTime: '07:10',
+  alexaWeekdayEveningTime: '17:30',
+  alexaWeekdayNightTime: '20:45',
+  alexaWeekendTime: '11:30',
+});
+assert.deepEqual(
+  notificationWatchdogPlan(new Date('2026-09-23T11:32:00Z'), customSchedule).cycles.map((cycle) => `${cycle.kind}:${cycle.slot}:${cycle.task}`),
+  ['messaging:08:30:daily-summary'],
+  'Agenda customizada deve substituir o slot fixo das 06h pelo horário salvo no workspace.',
+);
+assert.equal(messagingCycleForSlot('08:30', customSchedule)?.task, 'daily-summary');
+assert.equal(messagingCycleForSlot('06:00', customSchedule), null,
+  'Após customizar a agenda, o slot antigo não deve continuar ativo por acidente.');
+
+
+const customAlexaSchedule = validateNotificationSchedule({
+  ...customSchedule,
+  automationEnabled: false,
+  alexaAutomationEnabled: true,
+});
+assert.deepEqual(
+  notificationWatchdogPlan(new Date('2026-09-23T10:12:00Z'), customAlexaSchedule).cycles.map((cycle) => `${cycle.kind}:${cycle.slot}:${cycle.task}`),
+  ['alexa:07:10:alexa-daily-briefing'],
+  'Agenda customizada da Alexa deve substituir o briefing fixo das 06:20.',
+);
+
+const quietSchedule = validateNotificationSchedule({
+  ...customSchedule,
+  quietHoursEnabled: true,
+  quietHoursStart: '20:00',
+  quietHoursEnd: '07:00',
+});
+assert.deepEqual(
+  notificationWatchdogPlan(new Date('2026-09-23T23:32:00Z'), quietSchedule).cycles,
+  [],
+  'Período silencioso deve impedir ciclos mesmo quando um horário configurado cair dentro da janela.',
+);
+assert.throws(
+  () => validateNotificationSchedule({ ...DEFAULT_NOTIFICATION_SCHEDULE, messagingMorningTime: '05:30' }),
+  /NOTIFICATION_TIME_OUTSIDE_AUTOMATION_WINDOW/,
+  'Agenda automática não pode aceitar horário fora da cobertura real dos watchdogs.',
+);
+assert.throws(
+  () => validateNotificationSchedule({ ...DEFAULT_NOTIFICATION_SCHEDULE, messagingMorningTime: '12:00', messagingMiddayTime: '11:00' }),
+  /MESSAGING_SCHEDULE_ORDER_INVALID/,
+  'Horários de mensagens devem permanecer em ordem e separados.',
+);
 
 const weekdayEveningCycle = alexaCycleForSlot(new Date('2026-09-23T21:05:00Z'), '18:00')!;
 assert.equal(notificationCycleIsActive(new Date('2026-09-23T21:05:00Z'), weekdayEveningCycle), true,
@@ -108,6 +164,22 @@ assert.match(alexaWorkflow, /cron: '21 9 \* \* 1-5'/,
 
 
 const notificationRoutes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
+const notificationScheduleConfig = readFileSync(new URL('./schedule-config.ts', import.meta.url), 'utf8');
+const databaseSchema = readFileSync(new URL('../../../../../packages/database/prisma/schema.prisma', import.meta.url), 'utf8');
+assert.match(notificationRoutes, /app\.get\('\/schedule'/,
+  'API deve expor a agenda real do workspace.');
+assert.match(notificationRoutes, /app\.put\('\/schedule'/,
+  'API deve permitir atualização protegida da agenda por ADMIN.');
+assert.match(notificationRoutes, /saveNotificationSchedule/,
+  'Rota de escrita deve delegar validação e auditoria ao contrato de agenda.');
+assert.match(notificationScheduleConfig, /NOTIFICATION_TIME_OUTSIDE_AUTOMATION_WINDOW/,
+  'Contrato deve impedir horários que não possuem cobertura real de watchdog.');
+assert.match(notificationScheduleConfig, /NOTIFICATION_SCHEDULE_UPDATED/,
+  'Alteração de agenda deve gerar trilha de auditoria.');
+assert.match(databaseSchema, /messagingMorningTime\s+String\s+@default\("06:00"\)/,
+  'Schema deve persistir o horário da manhã mantendo o comportamento atual como default.');
+assert.match(databaseSchema, /quietHoursEnabled\s+Boolean\s+@default\(false\)/,
+  'Schema deve persistir o período silencioso sem ativá-lo por surpresa.');
 assert.match(notificationRoutes, /app\.post\('\/watchdog'/,
   'API deve expor endpoint autenticado por segredo para recuperação dos ciclos.');
 assert.match(notificationRoutes, /runMessagingCycle/,

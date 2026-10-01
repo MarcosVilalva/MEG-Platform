@@ -223,6 +223,20 @@ assert.doesNotMatch(notificationRecipients, /window\.confirm|window\.alert/,
   'Destinatários não podem usar diálogos nativos do navegador.');
 assert.match(nativeNotifications, /getPhoenixLocalNotificationStatus/,
   'Camada nativa deve expor diagnóstico verificável das notificações locais.');
+assert.match(settings, /\/notifications\/schedule/,
+  'Configurações deve carregar a agenda oficial do workspace pela API.');
+assert.match(settings, /method:\s*'PUT'/,
+  'Salvar agenda deve usar o contrato oficial de atualização.');
+assert.match(settings, /Horários automáticos/,
+  'Configurações deve expor edição real da agenda.');
+assert.match(settings, /Período silencioso/,
+  'Configurações deve permitir administrar a janela silenciosa.');
+assert.match(settings, /America\/Sao_Paulo/,
+  'Agenda deve deixar explícito o fuso aplicado pelo backend.');
+assert.match(settings, /saveNotificationScheduleSettings/,
+  'Tela deve possuir fluxo explícito para persistir a agenda.');
+assert.doesNotMatch(settings, /A próxima etapa desta tela será permitir editar essas agendas/,
+  'Agenda não pode voltar ao estado informativo depois de liberar o contrato de escrita.');
 assert.match(settings, /Exportar backup/);
 assert.match(settings, /Restaurar backup/);
 assert.match(settings, /exportPhoenixTransactionBackup/,

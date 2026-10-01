@@ -2,10 +2,17 @@ import { prisma } from '@meg/database';
 import { config } from '../../config';
 import { deliverAlexaDailyBriefing, deliverDailyFinancialSummary } from './daily-summary';
 import { deliverAlexaAnnouncement, deliverNotifications } from './service';
+import {
+  DEFAULT_NOTIFICATION_SCHEDULE,
+  notificationMinuteIsQuiet,
+  notificationScheduleForUser,
+  notificationTimeToMinute,
+  type NotificationScheduleSettings,
+} from './schedule-config';
 
 export type NotificationWatchdogCycle = {
   kind: 'messaging' | 'alexa';
-  slot: '06:00' | '12:00' | '19:00' | '06:20' | '18:00' | '21:00';
+  slot: string;
   task: 'daily-summary' | 'due-now' | 'alexa-daily-briefing' | 'alexa-due';
   dueMinute: number;
   expiresMinute: number;
@@ -54,62 +61,96 @@ function localClock(referenceDate = new Date()): LocalClock {
   };
 }
 
-const min = (hour: number, minute = 0) => hour * 60 + minute;
 
-function scheduledCyclesForWeekday(weekday: number): NotificationWatchdogCycle[] {
-  const weekend = weekday === 0 || weekday === 6;
-  return [
-    { kind: 'messaging', slot: '06:00', task: 'daily-summary', dueMinute: min(6), expiresMinute: min(9) },
-    { kind: 'messaging', slot: '12:00', task: 'due-now', dueMinute: min(12), expiresMinute: min(15) },
-    { kind: 'messaging', slot: '19:00', task: 'due-now', dueMinute: min(19), expiresMinute: min(21, 59) },
-    ...(weekend
-      ? [{ kind: 'alexa', slot: '12:00', task: 'alexa-daily-briefing', dueMinute: min(12), expiresMinute: min(15), includeTomorrow: false } satisfies NotificationWatchdogCycle]
-      : [
-          { kind: 'alexa', slot: '06:20', task: 'alexa-daily-briefing', dueMinute: min(6, 20), expiresMinute: min(9), includeTomorrow: true } satisfies NotificationWatchdogCycle,
-          { kind: 'alexa', slot: '18:00', task: 'alexa-due', dueMinute: min(18), expiresMinute: min(20), includeTomorrow: true } satisfies NotificationWatchdogCycle,
-          { kind: 'alexa', slot: '21:00', task: 'alexa-due', dueMinute: min(21), expiresMinute: min(21, 59), includeTomorrow: true } satisfies NotificationWatchdogCycle,
-        ]),
-  ];
-}
-
-export function notificationWatchdogPlan(referenceDate = new Date()) {
-  const local = localClock(referenceDate);
-  const cycles = scheduledCyclesForWeekday(local.weekday);
+function cycle(
+  kind: NotificationWatchdogCycle['kind'],
+  slot: string,
+  task: NotificationWatchdogCycle['task'],
+  recoveryMinutes: number,
+  includeTomorrow?: boolean,
+): NotificationWatchdogCycle {
+  const dueMinute = notificationTimeToMinute(slot);
   return {
-    local,
-    cycles: cycles.filter((cycle) => local.minuteOfDay >= cycle.dueMinute && local.minuteOfDay <= cycle.expiresMinute),
+    kind,
+    slot,
+    task,
+    dueMinute,
+    expiresMinute: Math.min(23 * 60 + 59, dueMinute + recoveryMinutes),
+    ...(includeTomorrow === undefined ? {} : { includeTomorrow }),
   };
 }
 
-export function notificationCycleIsActive(referenceDate: Date, cycle: NotificationWatchdogCycle) {
-  const local = localClock(referenceDate);
-  return local.minuteOfDay >= cycle.dueMinute && local.minuteOfDay <= cycle.expiresMinute;
+function scheduledCyclesForWeekday(
+  weekday: number,
+  settings: NotificationScheduleSettings = DEFAULT_NOTIFICATION_SCHEDULE,
+): NotificationWatchdogCycle[] {
+  const weekend = weekday === 0 || weekday === 6;
+  const cycles: NotificationWatchdogCycle[] = [];
+
+  if (settings.automationEnabled) {
+    cycles.push(
+      cycle('messaging', settings.messagingMorningTime, 'daily-summary', 180),
+      cycle('messaging', settings.messagingMiddayTime, 'due-now', 180),
+      cycle('messaging', settings.messagingEveningTime, 'due-now', 179),
+    );
+  }
+
+  if (settings.alexaAutomationEnabled) {
+    if (weekend) {
+      cycles.push(cycle('alexa', settings.alexaWeekendTime, 'alexa-daily-briefing', 180, false));
+    } else {
+      cycles.push(
+        cycle('alexa', settings.alexaWeekdayMorningTime, 'alexa-daily-briefing', 160, true),
+        cycle('alexa', settings.alexaWeekdayEveningTime, 'alexa-due', 120, true),
+        cycle('alexa', settings.alexaWeekdayNightTime, 'alexa-due', 59, true),
+      );
+    }
+  }
+
+  return cycles.filter((item) => !notificationMinuteIsQuiet(item.dueMinute, settings));
 }
 
-export function messagingCycleForSlot(slot: string): NotificationWatchdogCycle | null {
-  if (slot === '06:00') return { kind: 'messaging', slot, task: 'daily-summary', dueMinute: min(6), expiresMinute: min(9) };
-  if (slot === '12:00') return { kind: 'messaging', slot, task: 'due-now', dueMinute: min(12), expiresMinute: min(15) };
-  if (slot === '19:00') return { kind: 'messaging', slot, task: 'due-now', dueMinute: min(19), expiresMinute: min(21, 59) };
-  return null;
+export function notificationWatchdogPlan(
+  referenceDate = new Date(),
+  settings: NotificationScheduleSettings = DEFAULT_NOTIFICATION_SCHEDULE,
+) {
+  const local = localClock(referenceDate);
+  const cycles = scheduledCyclesForWeekday(local.weekday, settings);
+  if (notificationMinuteIsQuiet(local.minuteOfDay, settings)) return { local, cycles: [] };
+  return {
+    local,
+    cycles: cycles.filter((item) => local.minuteOfDay >= item.dueMinute && local.minuteOfDay <= item.expiresMinute),
+  };
 }
 
-export function alexaCycleForSlot(referenceDate: Date, slot: string): NotificationWatchdogCycle | null {
+export function notificationCycleIsActive(
+  referenceDate: Date,
+  item: NotificationWatchdogCycle,
+  settings: NotificationScheduleSettings = DEFAULT_NOTIFICATION_SCHEDULE,
+) {
   const local = localClock(referenceDate);
-  const weekend = local.weekday === 0 || local.weekday === 6;
-  if (weekend && slot === '12:00') {
-    return { kind: 'alexa', slot, task: 'alexa-daily-briefing', dueMinute: min(12), expiresMinute: min(15), includeTomorrow: false };
-  }
-  if (weekend) return null;
-  if (slot === '06:20') {
-    return { kind: 'alexa', slot, task: 'alexa-daily-briefing', dueMinute: min(6, 20), expiresMinute: min(9), includeTomorrow: true };
-  }
-  if (slot === '18:00') {
-    return { kind: 'alexa', slot, task: 'alexa-due', dueMinute: min(18), expiresMinute: min(20), includeTomorrow: true };
-  }
-  if (slot === '21:00') {
-    return { kind: 'alexa', slot, task: 'alexa-due', dueMinute: min(21), expiresMinute: min(21, 59), includeTomorrow: true };
-  }
-  return null;
+  return !notificationMinuteIsQuiet(local.minuteOfDay, settings)
+    && !notificationMinuteIsQuiet(item.dueMinute, settings)
+    && local.minuteOfDay >= item.dueMinute
+    && local.minuteOfDay <= item.expiresMinute;
+}
+
+export function messagingCycleForSlot(
+  slot: string,
+  settings: NotificationScheduleSettings = DEFAULT_NOTIFICATION_SCHEDULE,
+): NotificationWatchdogCycle | null {
+  return scheduledCyclesForWeekday(1, settings)
+    .find((item) => item.kind === 'messaging' && item.slot === slot) || null;
+}
+
+export function alexaCycleForSlot(
+  referenceDate: Date,
+  slot: string,
+  settings: NotificationScheduleSettings = DEFAULT_NOTIFICATION_SCHEDULE,
+): NotificationWatchdogCycle | null {
+  const local = localClock(referenceDate);
+  return scheduledCyclesForWeekday(local.weekday, settings)
+    .find((item) => item.kind === 'alexa' && item.slot === slot) || null;
 }
 
 function markerChannel(cycle: NotificationWatchdogCycle) {
@@ -131,9 +172,10 @@ export function notificationWatchdogHealth(
   rows: WatchdogHealthRow[],
   referenceDate = new Date(),
   graceMinutes = 35,
+  settings: NotificationScheduleSettings = DEFAULT_NOTIFICATION_SCHEDULE,
 ) {
   const local = localClock(referenceDate);
-  const due = scheduledCyclesForWeekday(local.weekday)
+  const due = scheduledCyclesForWeekday(local.weekday, settings)
     .filter((cycle) => local.minuteOfDay >= cycle.dueMinute + graceMinutes);
 
   const latestByKind = (['messaging', 'alexa'] as const)
@@ -330,46 +372,40 @@ export async function runAlexaCycle(
 }
 
 export async function runNotificationWatchdog(referenceDate = new Date(), force = false) {
-  const plan = notificationWatchdogPlan(referenceDate);
-  if (!plan.cycles.length) {
-    return { checkedAt: referenceDate.toISOString(), local: plan.local, cycles: [], failed: 0 };
-  }
-
-  const messagingCycles = plan.cycles.filter((cycle) => cycle.kind === 'messaging');
-  const alexaCycles = plan.cycles.filter((cycle) => cycle.kind === 'alexa');
-  const users = messagingCycles.length
-    ? await prisma.user.findMany({
-        where: { isActive: true, status: 'ACTIVE', ownedWorkspace: { isActive: true } },
-        select: { id: true, email: true },
-      })
-    : [];
+  const local = localClock(referenceDate);
+  const users = await prisma.user.findMany({
+    where: { isActive: true, status: 'ACTIVE', ownedWorkspace: { isActive: true } },
+    select: { id: true, email: true },
+  });
 
   const results: any[] = [];
-  for (const cycle of messagingCycles) {
-    for (const user of users) {
-      const result = await runMessagingCycle(user.id, cycle, referenceDate, force);
+  for (const user of users) {
+    const { settings } = await notificationScheduleForUser(user.id);
+    const messagingCycles = notificationWatchdogPlan(referenceDate, settings).cycles
+      .filter((item) => item.kind === 'messaging');
+    for (const item of messagingCycles) {
+      const result = await runMessagingCycle(user.id, item, referenceDate, force);
       results.push({ kind: 'messaging', user: user.email, ...result });
     }
   }
 
-  if (alexaCycles.length) {
-    const owner = await prisma.user.findUnique({
-      where: { email: config.alexaOwnerEmail.trim().toLowerCase() },
-      select: { id: true, email: true, isActive: true, status: true },
-    });
-    if (owner?.isActive && owner.status === 'ACTIVE') {
-      for (const cycle of alexaCycles) {
-        const result = await runAlexaCycle(owner.id, cycle, referenceDate, force);
-        results.push({ kind: 'alexa', user: owner.email, ...result });
-      }
-    } else {
-      results.push({ kind: 'alexa', status: 'failed', detail: 'ALEXA_OWNER_NOT_ACTIVE' });
+  const owner = await prisma.user.findUnique({
+    where: { email: config.alexaOwnerEmail.trim().toLowerCase() },
+    select: { id: true, email: true, isActive: true, status: true },
+  });
+  if (owner?.isActive && owner.status === 'ACTIVE') {
+    const { settings } = await notificationScheduleForUser(owner.id);
+    const alexaCycles = notificationWatchdogPlan(referenceDate, settings).cycles
+      .filter((item) => item.kind === 'alexa');
+    for (const item of alexaCycles) {
+      const result = await runAlexaCycle(owner.id, item, referenceDate, force);
+      results.push({ kind: 'alexa', user: owner.email, ...result });
     }
   }
 
   return {
     checkedAt: referenceDate.toISOString(),
-    local: plan.local,
+    local,
     cycles: results,
     failed: results.filter((item) => item.status === 'failed').length,
   };

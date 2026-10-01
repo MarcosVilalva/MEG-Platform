@@ -1,6 +1,13 @@
 import { prisma } from '@meg/database';
 import { config } from '../../config';
 import { resolveWorkspaceContext } from '../workspaces/service';
+import {
+  DEFAULT_NOTIFICATION_SCHEDULE,
+  alexaScheduleLabel,
+  messagingScheduleLabel,
+  notificationScheduleForUser,
+  quietHoursLabel,
+} from './schedule-config';
 
 export type NotificationMode = 'upcoming' | 'due-now' | 'open-summary';
 
@@ -456,11 +463,14 @@ export async function sendSystemWhatsApp(number: string, text: string) {
   return sendWhatsApp(number, text);
 }
 
-export function notificationIntegrationStatus() {
+export async function notificationIntegrationStatus(userId?: string) {
   const senderAddress = config.notificationEmailFrom.match(/<([^>]+)>/)?.[1] || config.notificationEmailFrom;
   const testOnly = senderAddress.trim().toLowerCase().endsWith('@resend.dev');
   const brevoReady = Boolean(config.brevoApiKey && config.brevoSenderEmail);
   const resendReadyForAll = Boolean(config.resendApiKey && config.notificationEmailFrom && !testOnly);
+  const schedule = userId
+    ? (await notificationScheduleForUser(userId)).settings
+    : DEFAULT_NOTIFICATION_SCHEDULE;
   return {
     email: {
       configured: Boolean(config.resendApiKey || brevoReady),
@@ -476,9 +486,15 @@ export function notificationIntegrationStatus() {
       announcementsConfigured: Boolean(config.alexaAnnouncementWebhookUrl),
       skillConfigured: Boolean(config.alexaSkillSecret),
       owner: config.alexaOwnerEmail,
-      schedule: 'dias úteis às 06:20, 18:00 e 21:00; fins de semana às 12:00'
+      enabled: schedule.alexaAutomationEnabled,
+      schedule: alexaScheduleLabel(schedule)
     },
-    automation: { configured: Boolean(config.notificationCronSecret), schedule: '06:00, 12:00 e 19:00 America/Sao_Paulo; resumo geral a cada 5 dias às 06:00' }
+    automation: {
+      configured: Boolean(config.notificationCronSecret),
+      enabled: schedule.automationEnabled,
+      schedule: messagingScheduleLabel(schedule),
+      quietHours: quietHoursLabel(schedule)
+    }
   };
 }
 
