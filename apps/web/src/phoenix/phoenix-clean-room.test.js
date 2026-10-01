@@ -298,6 +298,20 @@ assert.match(layersCss, /px-meg-confirm-overlay[\s\S]*var\(--meg-z-critical\)/,
   'Notificação decisória deve sempre usar a camada crítica.');
 assert.doesNotMatch(cardPurchaseEdit, /window\.confirm|window\.alert/,
   'Compra de cartão não pode usar confirmação nativa.');
+assert.match(cardsGrid, /purchaseId:\s*purchase\.id/,
+  'Linhas do domínio de cartões devem preservar o purchaseId no detalhe Web.');
+assert.match(cardsGrid, /purchaseId:\s*line\.purchaseId/,
+  'Fatura canônica deve propagar purchaseId quando a linha vier de uma compra do cartão.');
+assert.match(cardsGrid, /data-card-purchase-id=\{detailRow\.purchaseId \|\| undefined\}/,
+  'Drawer Web deve expor o identificador canônico somente quando ele existir.');
+assert.match(cardPurchaseEdit, /\.px-card-detail-drawer\[data-card-purchase-id\]/,
+  'Writer protegido deve reconhecer o drawer Web de cartões.');
+assert.match(cardPurchaseEdit, /directPurchaseId[\s\S]{0,1100}cardsClient\.list\(directMonth\)/,
+  'Drawer Web deve resolver a compra diretamente pelos IDs canônicos antes de editar.');
+assert.match(cardPurchaseEdit, /role === 'ADMIN' \|\| role === 'MANAGER' \|\| role === 'OPERATOR'/,
+  'Ação de editar compra deve respeitar os perfis autorizados.');
+assert.doesNotMatch(cardsGrid, /Detalhe somente leitura nesta etapa\./,
+  'Compra canônica não deve permanecer artificialmente bloqueada no detalhe Web.');
 assert.doesNotMatch(cardManagement, /window\.confirm|window\.alert/,
   'Gerenciador de cartões não pode usar confirmação nativa.');
 assert.match(megConfirm, /data-meg-priority-layer|dataset\.megPriorityLayer/,
