@@ -34,6 +34,11 @@ export type ReceiveReceivableInput = {
   operationId?: string;
 };
 
+export type ReverseReceiptInput = {
+  reason?: string | null;
+  operationId?: string;
+};
+
 export type UpdateReceivableInput = {
   customerId?: string | null;
   description?: string;
@@ -240,6 +245,136 @@ export async function receiveReceivableProtected(userId: string, receivableId: s
         response,
       }) });
     }
+    return response;
+  });
+}
+
+export async function reverseReceivableReceiptProtected(userId: string, receivableId: string, receiptId: string, input: ReverseReceiptInput = {}) {
+  const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
+  const requestHash = input.operationId
+    ? mutationRequestHash({ action: 'reverse-receipt', receivableId, receiptId, reason: input.reason?.trim() || null })
+    : null;
+
+  return serializableFinancialTransaction(async (tx) => {
+    if (input.operationId && requestHash) {
+      const previous = await tx.cloudMutationReceipt.findUnique({
+        where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
+      });
+      if (previous) {
+        if (previous.requestHash !== requestHash) throw new ReceivableDomainError('OPERATION_ID_REUSED');
+        return previous.response as unknown;
+      }
+    }
+
+    const receivable = await tx.receivable.findFirst({
+      where: { id: receivableId, userId: dataOwnerId },
+      include: {
+        customer: true,
+        receipts: { orderBy: { receivedAt: 'asc' } },
+      },
+    });
+    if (!receivable) throw new ReceivableDomainError('RECEIVABLE_NOT_FOUND');
+
+    const receipt = receivable.receipts.find((item) => item.id === receiptId);
+    if (!receipt) throw new ReceivableDomainError('RECEIPT_NOT_FOUND');
+    if (receipt.reversedAt) throw new ReceivableDomainError('RECEIPT_ALREADY_REVERSED');
+
+    const reversedAt = new Date();
+    const reason = input.reason?.trim() || null;
+    const updatedReceipt = await tx.receipt.update({
+      where: { id: receipt.id },
+      data: { reversedAt, reversalReason: reason },
+    });
+
+    let archivedFinancialEventId: string | null = null;
+    if (receipt.financialEventId) {
+      const financialEvent = await tx.financialEvent.findFirst({
+        where: { id: receipt.financialEventId, userId: dataOwnerId },
+        include: { account: true, category: true, paymentMethod: true, ledgerEntries: true },
+      });
+      if (financialEvent && !financialEvent.archivedAt) {
+        const archived = await tx.financialEvent.update({
+          where: { id: financialEvent.id },
+          data: { status: 'archived', archivedAt: reversedAt, workspaceId: workspace.workspaceId },
+          include: { account: true, category: true, paymentMethod: true, ledgerEntries: true },
+        });
+        await tx.ledgerEntry.deleteMany({ where: { eventId: financialEvent.id } });
+        await recordFinancialAudit(tx, {
+          actorId: userId,
+          entity: 'FinancialEvent',
+          entityId: financialEvent.id,
+          action: 'FINANCIAL_EVENT_ARCHIVED',
+          before: financialEvent,
+          after: { ...archived, ledgerEntries: [] },
+          context: {
+            workspaceId: workspace.workspaceId,
+            dataOwnerId,
+            receivableId,
+            receiptId,
+            reason: reason || 'Estorno de recebimento',
+          },
+        });
+        archivedFinancialEventId = financialEvent.id;
+      }
+    }
+
+    const activeReceipts = receivable.receipts.filter((item) => item.id !== receipt.id && !item.reversedAt);
+    const activePrincipal = activeReceipts.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const totalAmount = Number(receivable.totalAmount || 0);
+    const openAmount = Math.max(0, totalAmount - activePrincipal);
+    const status = openAmount <= 0.0001 ? 'paid' : activeReceipts.length ? 'partial' : 'open';
+
+    const updatedReceivable = await tx.receivable.update({
+      where: { id: receivable.id },
+      data: { openAmount, status },
+      include: { customer: true, receipts: { orderBy: { receivedAt: 'desc' } } },
+    });
+
+    const response = {
+      receipt: updatedReceipt,
+      receivable: updatedReceivable,
+      reopenedAmount: Number(receipt.amount || 0),
+      archivedFinancialEventId,
+      idempotentReplay: false,
+    };
+
+    await recordFinancialAudit(tx, {
+      actorId: userId,
+      entity: 'Receivable',
+      entityId: receivable.id,
+      action: 'RECEIVABLE_RECEIPT_REVERSED',
+      before: receivable,
+      after: updatedReceivable,
+      context: {
+        receiptId: receipt.id,
+        receipt: {
+          amount: Number(receipt.amount || 0),
+          interestAmount: Number(receipt.interestAmount || 0),
+          fineAmount: Number(receipt.fineAmount || 0),
+          receivedAt: receipt.receivedAt,
+          financialEventId: receipt.financialEventId,
+        },
+        reversedAt,
+        reason,
+        archivedFinancialEventId,
+        operationId: input.operationId ?? null,
+        workspaceId: workspace.workspaceId,
+      },
+    });
+
+    if (input.operationId && requestHash) {
+      const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
+      await tx.cloudMutationReceipt.create({ data: receiptCreateData({
+        workspaceId: workspace.workspaceId,
+        operationId: input.operationId,
+        requestHash,
+        mutationType: 'RECEIVABLE_RECEIPT_REVERSE',
+        revision: state?.revision || 0,
+        response,
+      }) });
+    }
+
     return response;
   });
 }
