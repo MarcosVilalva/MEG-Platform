@@ -696,15 +696,16 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   const [settlementMethodId, setSettlementMethodId] = useState('');
   const today = todayIso();
 
-  const settlementMissing = settlementItem && settlementBalance.status === 'ready'
-    ? Math.max(0, Math.round((settlementItem.amount - settlementBalance.available) * 100) / 100)
+  const settlementTotal = settlementItems.reduce((sum, item) => sum + item.amount, 0);
+  const settlementMissing = settlementItems.length && settlementBalance.status === 'ready'
+    ? Math.max(0, Math.round((settlementTotal - settlementBalance.available) * 100) / 100)
     : 0;
-  const settlementAfter = settlementItem && settlementBalance.status === 'ready'
-    ? Math.round((settlementBalance.available - settlementItem.amount) * 100) / 100
+  const settlementAfter = settlementItems.length && settlementBalance.status === 'ready'
+    ? Math.round((settlementBalance.available - settlementTotal) * 100) / 100
     : 0;
   const settlementCanReview = Boolean(
-    settlementItem
-    && !settlementItem.paid
+    settlementItems.length
+    && settlementItems.every((item) => !item.paid)
     && paidAt
     && settlementAccountId
     && settlementMethodId
@@ -714,7 +715,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   );
 
   useEffect(() => {
-    if (!settlementItem || !settlementAccountId || !paidAt) {
+    if (!settlementItems.length || !settlementAccountId || !paidAt) {
       setSettlementBalance({ status:'idle', available:0, accountName:'' });
       return;
     }
@@ -739,17 +740,26 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
         });
       });
     return () => { cancelled = true; };
-  }, [settlementItem?.id, settlementAccountId, paidAt]);
+  }, [settlementItems.map((item) => item.id).join('|'), settlementAccountId, paidAt]);
 
-  function openSettlement(item: PendingRow) {
+  function openSettlement(itemOrItems: PendingRow | PendingRow[]) {
+    const items = (Array.isArray(itemOrItems) ? itemOrItems : [itemOrItems]).filter((item) => !item.paid);
+    if (!items.length) return;
     setSelected(null);
-    setSettlementItem(item);
+    setSettlementItems(items);
     setPaidAt(todayIso());
     setSettlementAccountId(monetaryAccounts[0]?.id || '');
     setSettlementMethodId('');
     setSettlementMessage('');
     setSettlementBalance({ status:'idle', available:0, accountName:'' });
     setSettlementStep('form');
+  }
+
+  function closeSettlement() {
+    if (settlementBusy) return;
+    setSettlementItems([]);
+    setSettlementStep('form');
+    setSettlementMessage('');
   }
 
   function reviewSettlement() {
@@ -759,40 +769,46 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   }
 
   async function confirmSettlement() {
-    if (!settlementItem || settlementItem.paid || settlementBusy || settlementStep !== 'confirm') return;
+    if (!settlementItems.length || settlementBusy || settlementStep !== 'confirm') return;
     try {
       setSettlementBusy(true);
-      setSettlementMessage('Confirmando a operação no servidor…');
-      const prepared = preparePhoenixPendingSettlement({
-        source: settlementItem.source,
-        sourceId: settlementItem.sourceId,
-        amount: settlementItem.amount,
+      setSettlementMessage('Confirmando o lote no servidor…');
+      const prepared = preparePhoenixPendingBatchSettlement({
+        items: settlementItems.map((item) => ({
+          source: item.source,
+          sourceId: item.sourceId,
+          amount: item.amount,
+          statementMonth: item.statementMonth,
+        })),
         paidAt,
         accountId: settlementAccountId,
         paymentMethodId: settlementMethodId,
       });
-      const result = await runPhoenixPendingSettlement(prepared, data.month, (state) => {
-        if (state.status === 'saving') setSettlementMessage('Confirmando a operação no servidor…');
+      const result = await runPhoenixPendingBatchSettlement(prepared, data.month, (state) => {
+        if (state.status === 'saving') setSettlementMessage('Confirmando o lote no servidor…');
         if (state.status === 'error') setSettlementMessage(state.message);
       });
       if (result.status !== 'confirmed') return;
       const account = monetaryAccounts.find((item) => item.id === settlementAccountId)?.name || settlementBalance.accountName || 'Conta monetária';
       const payment = activeMethods.find((item) => item.id === settlementMethodId)?.name || 'Forma de pagamento';
       const response = result.result && typeof result.result === 'object' ? result.result as Record<string, unknown> : {};
-      const serverBefore = Number(response.accountBalanceBefore);
+      const protection = response.protection && typeof response.protection === 'object' ? response.protection as Record<string, unknown> : {};
+      const serverBefore = Number(response.accountBalanceBefore ?? protection.available);
       const serverAfter = Number(response.accountBalanceAfter);
       const balanceBefore = Number.isFinite(serverBefore) ? serverBefore : settlementBalance.available;
-      const balanceAfter = Number.isFinite(serverAfter) ? serverAfter : Math.round((balanceBefore - settlementItem.amount) * 100) / 100;
+      const balanceAfter = Number.isFinite(serverAfter) ? serverAfter : Math.round((balanceBefore - settlementTotal) * 100) / 100;
       setSettlementSuccess({
-        description:settlementItem.description,
-        amount:settlementItem.amount,
+        description: settlementItems.length === 1 ? settlementItems[0].description : 'Lote com ' + settlementItems.length + ' compromissos',
+        amount:settlementTotal,
         paidAt,
         account,
         payment,
         balanceBefore,
         balanceAfter,
+        count:settlementItems.length,
       });
-      setSettlementItem(null);
+      setBatchSelected([]);
+      setSettlementItems([]);
       setSettlementMessage('');
       setSettlementStep('form');
     } catch (error) {
