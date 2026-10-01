@@ -1397,7 +1397,10 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
         const headerHeight = Math.max(0, Math.ceil(header?.getBoundingClientRect().height || 0));
         const dockHeight = Math.max(0, Math.ceil(dock?.getBoundingClientRect().height || 0));
 
-        if (viewportHeight) app.style.setProperty('--meg-app-height', `${viewportHeight}px`);
+        if (viewportHeight) {
+          app.style.setProperty('--meg-app-height', `${viewportHeight}px`);
+          document.documentElement.style.setProperty('--meg-visual-height', `${viewportHeight}px`);
+        }
         if (headerHeight) app.style.setProperty('--meg-header-height', `${headerHeight}px`);
         if (dockHeight) app.style.setProperty('--meg-dock-height', `${dockHeight}px`);
       });
@@ -1425,6 +1428,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
       viewport?.removeEventListener('scroll', syncViewport);
       window.removeEventListener('resize', syncViewport);
       window.removeEventListener('orientationchange', syncViewport);
+      document.documentElement.style.removeProperty('--meg-visual-height');
     };
   }, [view, menuOpen, periodOpen, launchSheet]);
   useEffect(() => {
@@ -1479,6 +1483,7 @@ export function MegMobileFinal({ data, view, onNavigate, onLaunch: _legacyOnLaun
       preset={launchSheet.preset}
       event={launchSheet.event}
       onClose={() => setLaunchSheet(null)}
+      onGoHome={() => { setLaunchSheet(null); navigateMobile('home'); }}
       appHeader={<Header data={data} periodMode={periodMode} periodLabel={periodLabel} onHome={() => { setLaunchSheet(null); navigateMobile('home'); }} onOpenPeriod={() => { setLaunchSheet(null); openPeriod(); }} onOpenMenu={() => { setLaunchSheet(null); openMenu(); }}/>}
       appDock={<Dock view={view} pendingCount={pendingCount} menuOpen={menuOpen} onNavigate={(next) => { setLaunchSheet(null); navigateMobile(next); }} onLaunch={() => setLaunchSheet({ preset: 'expense' })} onMenu={() => { setLaunchSheet(null); openMenu(); }}/>}
     /> : null}
