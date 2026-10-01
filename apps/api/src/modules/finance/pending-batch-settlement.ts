@@ -55,6 +55,20 @@ function normalize(value: unknown) {
   return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
 }
 
+function isAllowedSettlementPaymentMethod(method: { name: unknown; type: unknown }) {
+  const identity = normalize(method.name) + ' ' + normalize(method.type);
+  return /(^|\s)PIX(\s|$)/.test(identity)
+    || identity.includes('BOLETO')
+    || /(^|\s)BILL(\s|$)/.test(identity)
+    || identity.includes('DINHEIRO')
+    || identity.includes('ESPECIE')
+    || /(^|\s)CASH(\s|$)/.test(identity)
+    || identity.includes('TRANSFERENCIA')
+    || identity.includes('TRANSFER')
+    || /(^|\s)(TED|DOC)(\s|$)/.test(identity)
+    || identity.includes('BANK TRANSFER');
+}
+
 async function loadEvent(tx: Tx, ownerId: string, eventId: string) {
   const current = await tx.financialEvent.findFirst({
     where: { id: eventId, userId: ownerId, archivedAt: null },
@@ -219,6 +233,13 @@ export async function settlePendingBatchProtected(actorId: string, input: Settle
     if (!paymentMethod) throw new PendingBatchSettlementError('INVALID_PAYMENT_METHOD');
     if (normalize(paymentMethod.type) === 'CREDIT') {
       throw new PendingBatchSettlementError('INVALID_PAYMENT_METHOD', { paymentMethodId: paymentMethod.id, reason: 'CREDIT_METHOD_NOT_ALLOWED_FOR_SETTLEMENT' });
+    }
+    if (!isAllowedSettlementPaymentMethod(paymentMethod)) {
+      throw new PendingBatchSettlementError('INVALID_PAYMENT_METHOD', {
+        paymentMethodId: paymentMethod.id,
+        reason: 'SETTLEMENT_METHOD_NOT_ALLOWED',
+        allowed: ['PIX', 'BOLETO', 'DINHEIRO', 'TRANSFERENCIA_BANCARIA'],
+      });
     }
     markPhase('receiptAccountMethod');
 
