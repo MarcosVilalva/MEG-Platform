@@ -16,7 +16,8 @@ export type PhoenixRoute =
   | 'reconcile'
   | 'analytics'
   | 'decisions'
-  | 'budgets';
+  | 'budgets'
+  | 'reports';
 
 type SearchResult = {
   id: string;
@@ -41,7 +42,8 @@ const pageResults: SearchResult[] = [
   { id: 'page-reconcile', route: 'reconcile', kind: 'Tela', title: 'Conciliação', detail: 'Contrato ainda em auditoria' },
   { id: 'page-analytics', route: 'analytics', kind: 'Tela', title: 'Análises', detail: 'Tendências históricas' },
   { id: 'page-decisions', route: 'decisions', kind: 'Tela', title: 'Decisões', detail: 'Radar de 12 meses, simulador e assistente de decisão' },
-  { id: 'page-budgets', route: 'budgets', kind: 'Tela', title: 'Orçamentos e metas', detail: 'Planejamento financeiro' }
+  { id: 'page-budgets', route: 'budgets', kind: 'Tela', title: 'Orçamentos e metas', detail: 'Planejamento financeiro' },
+  { id: 'page-reports', route: 'reports', kind: 'Tela', title: 'Relatórios e exportações', detail: 'Excel, PDF e impressão da base financeira' }
 ];
 
 function normalize(value: unknown) {
