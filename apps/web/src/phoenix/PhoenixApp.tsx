@@ -1240,7 +1240,8 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     </>;
   }
 
-  return <div className="phoenix-v15 meg-web-2026" data-theme={theme} data-web-view={view} data-web-period={periodMode}>
+  return <div className="phoenix-v15" data-theme={theme}>
+    <div className="meg-web-2026" data-web-view={view} data-web-period={periodMode}>
     <div className={`px-app ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
       <PhoenixSidebar
         view={view}
@@ -1327,5 +1328,6 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         </div>
       </section>
     </div>, document.body) : null}
+    </div>
   </div>;
 }
