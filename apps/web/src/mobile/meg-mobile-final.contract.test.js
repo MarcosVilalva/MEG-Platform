@@ -880,3 +880,13 @@ assert.match(
   /A baixa já está confirmada pelo servidor[\s\S]*void \(async \(\) =>[\s\S]*publishCommittedSnapshot\(snapshot\)/,
   'Baixa confirmada deve liberar o comprovante sem aguardar a releitura mensal completa.',
 );
+
+
+assert.equal(
+  mobile.includes('function publishOptimisticSettlementBalance') &&
+  mobile.includes("paidAt.slice(0,7) !== data.month") &&
+  mobile.includes('publishOptimisticSettlementBalance(data, settlementTotal, paidAt)') &&
+  mobile.includes("'meg:phoenix-snapshot-committed'"),
+  true,
+  'Baixa confirmada do mês visível deve refletir o débito na Home imediatamente, antes da reconciliação oficial.',
+);
