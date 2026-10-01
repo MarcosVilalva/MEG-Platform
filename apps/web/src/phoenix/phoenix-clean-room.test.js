@@ -787,8 +787,8 @@ assert.match(phoenixApp, /financeClient\.getSyncStatus\(\)/,
   'Shell deve consultar um pulso leve do workspace para detectar mudanças de outro dispositivo.');
 assert.match(phoenixApp, /window\.setInterval\(\(\) => \{ void checkWorkspaceChanges\(\); \}, 6_000\)/,
   'Pulso entre dispositivos deve rodar em intervalo curto enquanto a tela estiver visível.');
-assert.match(phoenixApp, /previous && previous !== status\.token[\s\S]{0,180}refreshData\(\)/,
-  'Mutação confirmada em outro dispositivo deve disparar releitura oficial.');
+assert.match(phoenixApp, /previous && previous !== status\.token[\s\S]{0,220}refreshData\(\{ silent: true \}\)/,
+  'Mutação confirmada em outro dispositivo deve disparar releitura oficial silenciosa.');
 assert.match(phoenixApp, /document\.addEventListener\('visibilitychange', onVisible\)/,
   'Ao voltar ao app, alterações externas devem ser conferidas imediatamente.');
 assert.match(operationalHome, /Benefício Alimentação/,
@@ -1067,6 +1067,14 @@ assert.match(phoenixApp, /periodRequestRef/,
   'Respostas atrasadas de trocas anteriores não podem sobrescrever a seleção mais recente');
 assert.match(phoenixApp, /prefetchPhoenixReadModel/,
   'Shell deve pré-aquecer o mês escolhido e meses vizinhos para reduzir a espera percebida.');
+assert.match(phoenixApp, /PHOENIX_SUPPLEMENTAL_READY_EVENT/,
+  'Hidratação suplementar deve publicar seus dados na tela sem exigir navegação ou refresh manual.');
+assert.match(phoenixApp, /loadPhoenixReadModel\(month, \{ force: true \}\)/,
+  'Snapshot exibido a partir do cache deve ser revalidado imediatamente em segundo plano.');
+assert.match(phoenixApp, /refreshData\(\{ silent: true \}\)/,
+  'Atualizações automáticas devem ocorrer silenciosamente, preservando o conteúdo visível.');
+assert.match(phoenixApp, /startTransition/,
+  'Publicação de fotografia fresca deve ser não bloqueante para manter a interface responsiva.');
 assert.match(phoenixApp, /Promise\.all\(\[\s*loadPhoenixReadModel\(baseMonth[\s\S]*loadPhoenixAllEvents/,
   'Modo Tudo deve carregar snapshot-base e eventos completos em paralelo.');
 assert.match(phoenixApp, /quickRange/,

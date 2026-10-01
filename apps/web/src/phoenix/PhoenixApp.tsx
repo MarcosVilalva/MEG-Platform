@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, startTransition, Suspense, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { financeClient } from '../app/finance-client';
 import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
@@ -50,6 +50,7 @@ function warmFrequentScreens() {
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const shortDate = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const PHOENIX_SNAPSHOT_COMMITTED_EVENT = 'meg:phoenix-snapshot-committed';
+const PHOENIX_SUPPLEMENTAL_READY_EVENT = 'meg:phoenix-supplemental-ready';
 
 function phoenixBrandAsset(path: string) {
   const configuredBase = import.meta.env.BASE_URL || '/';
@@ -511,7 +512,25 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
       dataRef.current = cached;
       setLoadState({ status: 'ready', data: cached });
       setRefreshing(false);
-      return () => { active = false; };
+
+      const revalidateTimer = window.setTimeout(() => {
+        void loadPhoenixReadModel(month, { force: true })
+          .then((fresh) => {
+            if (!active || monthRef.current !== month || !monthlySnapshotMatches(fresh, month)) return;
+            startTransition(() => {
+              dataRef.current = fresh;
+              setLoadState({ status: 'ready', data: fresh });
+            });
+          })
+          .catch(() => {
+            // Snapshot em cache continua válido; a próxima oportunidade fará nova revalidação.
+          });
+      }, 0);
+
+      return () => {
+        active = false;
+        window.clearTimeout(revalidateTimer);
+      };
     }
 
     const hasValidSnapshot = Boolean(dataRef.current);
@@ -538,8 +557,9 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     return () => { active = false; };
   }, [month, refreshKey]);
 
-  async function refreshData() {
+  async function refreshData(options: { silent?: boolean } = {}) {
     if (refreshingRef.current || periodLoading || loadState.status !== 'ready') return;
+    const silent = Boolean(options.silent);
     if (periodMode === 'range' && periodRangeLabel && (view === 'home' || view === 'movements')) {
       void applyRangePeriod(periodStart, periodEnd, true);
       return;
@@ -554,7 +574,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
       return;
     }
     refreshingRef.current = true;
-    setRefreshing(true);
+    if (!silent) setRefreshing(true);
     try {
       const fresh = await loadPhoenixReadModel(targetMonth, { force: true });
       if (!monthlySnapshotMatches(fresh, targetMonth)) throw new Error('PHOENIX_MONTH_SNAPSHOT_MISMATCH');
@@ -566,7 +586,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
       // Mantém a fotografia válida já exibida. Falhas de atualização em segundo plano não desmontam a tela.
     } finally {
       refreshingRef.current = false;
-      setRefreshing(false);
+      if (!silent) setRefreshing(false);
     }
   }
 
@@ -607,10 +627,28 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
   }, [periodMode]);
 
   useEffect(() => {
+    const handleSupplementalReady = (event: Event) => {
+      const readyMonth = (event as CustomEvent<{ month?: string }>).detail?.month;
+      if (!readyMonth || readyMonth !== monthRef.current) return;
+      const hydrated = peekPhoenixReadModel(readyMonth);
+      if (!hydrated || !monthlySnapshotMatches(hydrated, readyMonth)) return;
+
+      const nextSnapshot = { ...hydrated };
+      startTransition(() => {
+        dataRef.current = nextSnapshot;
+        setLoadState({ status: 'ready', data: nextSnapshot });
+      });
+    };
+
+    window.addEventListener(PHOENIX_SUPPLEMENTAL_READY_EVENT, handleSupplementalReady as EventListener);
+    return () => window.removeEventListener(PHOENIX_SUPPLEMENTAL_READY_EVENT, handleSupplementalReady as EventListener);
+  }, []);
+
+  useEffect(() => {
     if (loadState.status !== 'ready') return;
     const refreshIfVisible = (event?: Event) => {
       if (event?.type === 'focus' && !event.isTrusted) return;
-      if (document.visibilityState === 'visible' && periodMode === 'month') void refreshData();
+      if (document.visibilityState === 'visible' && periodMode === 'month') void refreshData({ silent: true });
     };
     const timer = window.setInterval(refreshIfVisible, 120_000);
     window.addEventListener('focus', refreshIfVisible);
@@ -634,7 +672,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
           return;
         }
         attempts = 0;
-        void refreshData();
+        void refreshData({ silent: true });
       }, attempts ? 450 : 180);
     };
     window.addEventListener('meg:data-invalidated', refreshAfterMutation);
@@ -657,7 +695,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         const previous = workspaceSyncTokenRef.current;
         workspaceSyncTokenRef.current = status.token;
         if (previous && previous !== status.token) {
-          void refreshData();
+          void refreshData({ silent: true });
         }
       } catch {
         // Pulso de sincronização é auxiliar; falha temporária não desmonta a fotografia válida.
