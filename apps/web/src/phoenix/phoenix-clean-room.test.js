@@ -409,12 +409,24 @@ assert.match(phoenixApp, /allEvents=\{!nativeOperational \? searchEvents \|\| un
   'Histórico completo da busca não pode ser injetado no runtime Android.');
 assert.match(commandPalette, /targetMonth: item\.competence \|\| String\(item\.date\)\.slice\(0, 7\)/,
   'Resultado de lançamento deve preservar a competência financeira encontrada.');
-assert.match(commandPalette, /await onNavigate\(result\.route, result\.targetMonth\)[\s\S]*opened === false/,
-  'Busca só deve fechar depois que o destino confirmar que a competência correta foi aberta.');
+assert.match(commandPalette, /await onNavigate\(result\.route, result\.targetMonth, result\.targetEventId\)[\s\S]*opened === false/,
+  'Busca só deve fechar depois que o destino confirmar a competência e o lançamento correto.');
 assert.match(phoenixApp, /openSearchResult[\s\S]*route === 'movements'[\s\S]*await applyMonthlyPeriod\(targetMonth\)[\s\S]*monthRef\.current !== targetMonth[\s\S]*return false/,
   'Lançamento histórico deve abrir Lançamentos na competência encontrada e permanecer na busca se a troca falhar.');
 assert.match(phoenixApp, /onNavigate=\{openSearchResult\}/,
   'Busca global deve usar a navegação com continuidade de período.');
+assert.match(commandPalette, /targetEventId: item\.id/,
+  'Resultado de lançamento deve preservar o identificador exato encontrado.');
+assert.match(phoenixApp, /setSearchEventRequest[\s\S]*eventId: targetEventId/,
+  'Shell Web deve encaminhar o lançamento exato para a tela de Lançamentos.');
+assert.match(phoenixApp, /focusEventRequest=\{nativeOperational \? undefined : searchEventRequest\}/,
+  'Foco vindo da busca deve permanecer exclusivo do Web.');
+assert.match(movementScreen, /focusEventRequest[\s\S]*setSearch\(target\.description\)[\s\S]*setGridFilters\(initialGridFilters\(\)\)[\s\S]*markRecentlyUpdated\(target\.id\)/,
+  'Lançamentos deve revelar e destacar o evento localizado, removendo filtros que poderiam escondê-lo.');
+assert.match(movementScreen, /data-event-id=\{event\.id\}/,
+  'Evento encontrado deve possuir âncora visual na lista de Lançamentos.');
+assert.match(movementScreen, /scrollIntoView\(\{ block: 'center', behavior: 'smooth' \}\)/,
+  'Busca deve rolar suavemente até o lançamento localizado.');
 assert.match(commandPalette, /data\.cards/);
 assert.match(commandPalette, /data\.accounts/);
 assert.match(commandPalette, /data\.customers/);
