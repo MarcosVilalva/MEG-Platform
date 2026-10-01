@@ -198,6 +198,139 @@ export async function monetaryBalanceAt(tx: Tx, userId: string, effectiveAt: str
   return Math.round(balance * 100) / 100;
 }
 
+export const SEMANTIC_DUPLICATE_WINDOW_MS = 10 * 60_000;
+
+export type SemanticDuplicateDetails = {
+  entity: 'financial-event' | 'card-purchase';
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+  createdAt: string;
+  type?: string;
+  status?: string;
+  accountName?: string | null;
+  categoryName?: string | null;
+  paymentMethodName?: string | null;
+  cardName?: string | null;
+  installments?: number;
+};
+
+function duplicateDescription(value: unknown) {
+  return normalizeText(value).replace(/\s+/g, ' ');
+}
+
+function duplicateDayRange(day: string) {
+  const parsed = parseIsoDay(day.slice(0, 10));
+  if (!parsed) throw new Error('INVALID_FINANCIAL_DATE');
+  const start = new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day));
+  const end = new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day + 1));
+  return { start, end };
+}
+
+function duplicateWindowStart(now = new Date()) {
+  return new Date(now.getTime() - SEMANTIC_DUPLICATE_WINDOW_MS);
+}
+
+export async function findRecentFinancialEventDuplicate(tx: Tx, input: {
+  workspaceId: string;
+  userId: string;
+  description: string;
+  type: string;
+  status: string;
+  date: string;
+  amount: number;
+  signedAmount: number;
+  accountId?: string | null;
+  categoryId?: string | null;
+  paymentMethodId?: string | null;
+}) {
+  const { start, end } = duplicateDayRange(input.date);
+  const candidates = await tx.financialEvent.findMany({
+    where: {
+      workspaceId: input.workspaceId,
+      userId: input.userId,
+      archivedAt: null,
+      type: input.type,
+      status: input.status,
+      date: { gte: start, lt: end },
+      amount: Math.abs(input.amount),
+      signedAmount: input.signedAmount,
+      accountId: input.accountId || null,
+      categoryId: input.categoryId || null,
+      paymentMethodId: input.paymentMethodId || null,
+      createdAt: { gte: duplicateWindowStart() },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    include: {
+      account: { select: { name: true } },
+      category: { select: { name: true } },
+      paymentMethod: { select: { name: true } },
+    },
+  });
+  const normalized = duplicateDescription(input.description);
+  const duplicate = candidates.find((candidate) => duplicateDescription(candidate.description) === normalized);
+  if (!duplicate) return null;
+  return {
+    entity: 'financial-event' as const,
+    id: duplicate.id,
+    description: duplicate.description,
+    amount: Number(duplicate.amount),
+    date: duplicate.date.toISOString().slice(0, 10),
+    createdAt: duplicate.createdAt.toISOString(),
+    type: duplicate.type,
+    status: duplicate.status,
+    accountName: duplicate.account?.name || null,
+    categoryName: duplicate.category?.name || null,
+    paymentMethodName: duplicate.paymentMethod?.name || null,
+  } satisfies SemanticDuplicateDetails;
+}
+
+export async function findRecentCardPurchaseDuplicate(tx: Tx, input: {
+  userId: string;
+  cardId: string;
+  categoryId?: string | null;
+  description: string;
+  totalAmount: number;
+  purchaseDate: string;
+  installments: number;
+}) {
+  const { start, end } = duplicateDayRange(input.purchaseDate);
+  const candidates = await tx.cardPurchase.findMany({
+    where: {
+      userId: input.userId,
+      cardId: input.cardId,
+      categoryId: input.categoryId || null,
+      status: 'active',
+      totalAmount: input.totalAmount,
+      purchaseDate: { gte: start, lt: end },
+      installments: input.installments,
+      createdAt: { gte: duplicateWindowStart() },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    include: {
+      card: { select: { name: true } },
+      category: { select: { name: true } },
+    },
+  });
+  const normalized = duplicateDescription(input.description);
+  const duplicate = candidates.find((candidate) => duplicateDescription(candidate.description) === normalized);
+  if (!duplicate) return null;
+  return {
+    entity: 'card-purchase' as const,
+    id: duplicate.id,
+    description: duplicate.description,
+    amount: Number(duplicate.totalAmount),
+    date: duplicate.purchaseDate.toISOString().slice(0, 10),
+    createdAt: duplicate.createdAt.toISOString(),
+    categoryName: duplicate.category?.name || null,
+    cardName: duplicate.card?.name || null,
+    installments: duplicate.installments,
+  } satisfies SemanticDuplicateDetails;
+}
+
 function retryableTransaction(error: unknown) {
   return Boolean(error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'P2034');
 }
