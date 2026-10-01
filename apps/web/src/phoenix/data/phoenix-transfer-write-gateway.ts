@@ -12,6 +12,7 @@ export type PhoenixTransferInput = {
   date: string;
   description?: string;
   notes?: string;
+  allowDuplicate?: boolean;
 };
 
 export type PreparedPhoenixTransfer = {
@@ -38,7 +39,7 @@ export type PhoenixTransferWriteState =
   | { status: 'saving'; operationId: string }
   | { status: 'accepted'; operationId: string; result: PhoenixTransferResult }
   | { status: 'confirmed'; operationId: string; result: PhoenixTransferResult; snapshot: PhoenixReadModel }
-  | { status: 'error'; operationId: string; code: string; message: string };
+  | { status: 'error'; operationId: string; code: string; message: string; details?: Record<string, unknown> };
 
 export class PhoenixTransferWriteError extends Error {
   constructor(public code: string) {
@@ -88,6 +89,7 @@ export function phoenixTransferWriteMessage(code: string) {
     FUTURE_TRANSFER_NOT_ALLOWED: 'A transferência não pode ser registrada em data futura.',
     INVALID_TRANSFER_DATE: 'Informe uma data válida para a transferência.',
     OPERATION_ID_REUSED: 'A tentativa atual não corresponde à transferência original. Revise os dados antes de tentar novamente.',
+    POSSIBLE_DUPLICATE: 'Encontramos uma transferência praticamente idêntica salva há poucos minutos. Confirme antes de criar outra.',
   };
   return messages[code] || 'Não foi possível confirmar a transferência no servidor. Os dados foram mantidos para nova tentativa.';
 }
@@ -96,6 +98,15 @@ function transferErrorCode(error: unknown) {
   if (error instanceof PhoenixTransferWriteError) return error.code;
   if (error instanceof Error && error.message) return error.message;
   return 'PHOENIX_TRANSFER_WRITE_FAILED';
+}
+
+function transferErrorDetails(error: unknown) {
+  if (!error || typeof error !== 'object' || Array.isArray(error)) return undefined;
+  const source = error as Record<string, unknown>;
+  const details: Record<string, unknown> = {};
+  if (source.duplicate && typeof source.duplicate === 'object') details.duplicate = source.duplicate;
+  if (Number.isFinite(Number(source.duplicateWindowSeconds))) details.duplicateWindowSeconds = Number(source.duplicateWindowSeconds);
+  return Object.keys(details).length ? details : undefined;
 }
 
 async function confirmedSnapshot(refreshMonth: string) {
@@ -156,6 +167,7 @@ export async function runPhoenixTransferWrite(
       operationId: prepared.operationId,
       code,
       message: phoenixTransferWriteMessage(code),
+      details: transferErrorDetails(error),
     };
     onState?.(failed);
     return failed;
