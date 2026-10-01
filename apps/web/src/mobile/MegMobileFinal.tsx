@@ -663,6 +663,17 @@ type PendingRow = { id: string; source: 'payable' | 'event' | 'card'; sourceId: 
 type PendingSettlementBalance = { status: 'idle' | 'loading' | 'ready' | 'error'; available: number; accountName: string; message?: string };
 type PendingSettlementSuccess = { description:string; amount:number; paidAt:string; account:string; payment:string; balanceBefore:number; balanceAfter:number; count:number };
 
+function pendingSourcePayload(event: FinancialEvent) {
+  const payload = (event as FinancialEvent & { sourcePayload?: unknown }).sourcePayload;
+  return payload && typeof payload === 'object' && !Array.isArray(payload)
+    ? payload as Record<string, unknown>
+    : null;
+}
+
+function isProjectedCardPending(event: FinancialEvent) {
+  return pendingSourcePayload(event)?.cardDomain === true;
+}
+
 function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Props['onEditEvent'] }) {
   const [tab, setTab] = useState<'all' | 'open' | 'paid' | 'overdue'>('all');
   const [search, setSearch] = useState('');
