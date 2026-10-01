@@ -1,9 +1,9 @@
 {
-  "versionCode": 699,
-  "versionName": "2.0.699",
+  "versionCode": 700,
+  "versionName": "2.0.700",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "d11cb1c67c428c7eb13eabd569f6d959a52d0525f74de780c7340382292f37e3",
+  "sha256": "2ebebf7c2e8d285b9bd8559df880bfb65cf258bd752666d662d10b93955cbc53",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #470 from MarcosVilalva/feat/phoenix-theme-preference-cloud"
+  "releaseNotes": "Merge pull request #471 from MarcosVilalva/feat/phoenix-reconciliation-meg-confirm"
 }
