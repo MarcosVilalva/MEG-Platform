@@ -1028,7 +1028,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
           <article className={rowClass + (marked ? ' selected' : '')}>
             {!item.paid ? <button type="button" className="meg2-pending-select" aria-pressed={marked} aria-label={marked ? 'Remover da baixa em lote' : 'Selecionar para baixa em lote'} onClick={() => toggleRow(item)}><span>{marked ? '✓' : ''}</span></button> : <span className="meg2-pending-select spacer"/>}
             <button type="button" className="meg2-pending-open" onClick={() => setSelected(item)}>
-              <span className={'meg2-pending-icon icon-' + icon}>{item.source === 'card' && cardArt(item.description) ? <img src={cardArt(item.description)} alt=""/> : <Icon name={icon}/>}</span>
+              <span className={'meg2-pending-icon icon-' + icon}><Icon name={icon}/></span>
               <p><b>{item.source === 'card' ? 'Fatura ' + item.description : item.description}</b><small>{item.source === 'card' ? String(item.itemCount || 0) + ' lançamentos · ' + dueLabel(item) : dueLabel(item)}</small></p>
               <span className="meg2-pending-value"><strong>{money.format(item.amount)}</strong><em>{item.paid ? 'Paga' : late ? 'Vencida' : 'A pagar'}</em></span><i><Icon name="chevron-right" size={15}/></i>
             </button>
