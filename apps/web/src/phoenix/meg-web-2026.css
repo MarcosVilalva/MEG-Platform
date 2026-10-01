@@ -1515,6 +1515,274 @@
 }
 
 
+
+
+/* Orçamentos operacionais */
+.meg-web-2026 .meg-web-budget-head-actions {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.meg-web-2026 .meg-web-budget-message {
+  margin:-2px 0 12px;
+  padding:10px 12px;
+  border:1px solid rgba(75,226,163,.16);
+  border-radius:11px;
+  background:rgba(47,170,117,.07);
+  color:#9be7bd;
+  font-size:9px;
+  font-weight:750;
+}
+.meg-web-2026 .meg-web-budget-message.is-warning {
+  border-color:rgba(244,194,84,.18);
+  background:rgba(141,103,34,.09);
+  color:#e9d391;
+}
+.meg-web-2026 .meg-web-budget-grid {
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+}
+.meg-web-2026 .meg-web-budget-card {
+  display:grid;
+  gap:13px;
+  min-height:220px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(52,217,202,.055),transparent 42%),
+    rgba(7,42,45,.91);
+}
+.meg-web-2026 .meg-web-budget-card dl {
+  margin:0;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.meg-web-2026 .meg-web-budget-card dl>div {
+  padding:9px 10px;
+  border:1px solid rgba(91,222,211,.08);
+  border-radius:10px;
+  background:rgba(2,28,30,.35);
+}
+.meg-web-2026 .meg-web-budget-card dt,
+.meg-web-2026 .meg-web-budget-card dd {
+  margin:0;
+}
+.meg-web-2026 .meg-web-budget-card dt {
+  color:#6f9691;
+  font-size:7px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.meg-web-2026 .meg-web-budget-card dd {
+  margin-top:5px;
+  color:#dcecea;
+  font-size:10px;
+  font-weight:850;
+}
+.meg-web-2026 .meg-web-budget-card dd.negative {
+  color:#ff9898;
+}
+.meg-web-2026 .meg-web-budget-card-actions {
+  margin-top:auto;
+  display:flex;
+  gap:8px;
+}
+.meg-web-2026 .meg-web-budget-card-actions button {
+  min-height:36px;
+  padding:8px 11px;
+  border:1px solid rgba(82,229,216,.15);
+  border-radius:9px;
+  background:rgba(53,185,174,.07);
+  color:#91ddd6;
+  font:inherit;
+  font-size:8px;
+  font-weight:850;
+}
+.meg-web-2026 .meg-web-budget-card-actions button:hover:not(:disabled) {
+  border-color:rgba(82,229,216,.31);
+  background:rgba(53,185,174,.13);
+  color:#effffc;
+}
+.meg-web-2026 .meg-web-budget-card-actions button.danger {
+  margin-left:auto;
+  border-color:rgba(244,115,115,.14);
+  background:rgba(180,60,60,.06);
+  color:#dca1a1;
+}
+.meg-web-2026 .meg-web-budget-card-actions button:disabled {
+  opacity:.42;
+  cursor:not-allowed;
+}
+.meg-web-2026 .meg-web-budget-empty {
+  grid-column:1/-1;
+  min-height:180px;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:8px;
+  text-align:center;
+}
+.meg-web-2026 .meg-web-budget-empty strong {
+  color:#d7eae7;
+  font-size:13px;
+}
+.meg-web-2026 .meg-web-budget-empty span {
+  color:#749792;
+  font-size:9px;
+}
+.meg-web-2026 .meg-web-budget-empty .px-primary-action {
+  margin-top:6px;
+}
+
+.meg-web-budget-overlay {
+  position:fixed;
+  inset:0;
+  z-index:2147482600;
+  display:grid;
+  place-items:center;
+  padding:22px;
+  background:rgba(0,15,17,.84);
+}
+.meg-web-budget-backdrop {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  border:0;
+  background:transparent;
+}
+.meg-web-budget-dialog {
+  position:relative;
+  z-index:1;
+  width:min(650px,96vw);
+  overflow:hidden;
+  border:1px solid rgba(76,231,216,.24);
+  border-radius:20px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(49,218,202,.075),transparent 38%),
+    #06282b;
+  color:#f0fbf9;
+  box-shadow:0 32px 90px rgba(0,0,0,.46);
+}
+.meg-web-budget-dialog>header {
+  padding:18px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 36px;
+  gap:12px;
+  align-items:start;
+  border-bottom:1px solid rgba(89,221,211,.09);
+}
+.meg-web-budget-dialog>header h2 {
+  margin:4px 0 3px;
+  font-size:21px;
+  letter-spacing:-.035em;
+}
+.meg-web-budget-dialog>header p {
+  margin:0;
+  color:#789b96;
+  font-size:8px;
+}
+.meg-web-budget-dialog>header>button {
+  width:36px;
+  height:36px;
+  border:1px solid rgba(89,221,211,.12);
+  border-radius:10px;
+  background:rgba(255,255,255,.035);
+  color:#9fc0bc;
+  font-size:20px;
+}
+.meg-web-budget-form {
+  padding:18px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,.72fr);
+  gap:12px;
+}
+.meg-web-budget-form label {
+  display:grid;
+  gap:6px;
+}
+.meg-web-budget-form label>span {
+  color:#87aaa5;
+  font-size:8px;
+  font-weight:850;
+}
+.meg-web-budget-form input {
+  width:100%;
+  box-sizing:border-box;
+  min-height:44px;
+  padding:10px 12px;
+  border:1px solid rgba(91,223,211,.15);
+  border-radius:10px;
+  outline:0;
+  background:#073033;
+  color:#f2fffd;
+  font:inherit;
+  font-size:10px;
+}
+.meg-web-budget-form input[readonly] {
+  color:#91aaa6;
+  background:#06292c;
+}
+.meg-web-budget-form input:focus {
+  border-color:rgba(63,237,221,.42);
+  box-shadow:0 0 0 3px rgba(44,216,202,.055);
+}
+.meg-web-budget-form small {
+  color:#648984;
+  font-size:7px;
+  line-height:1.45;
+}
+.meg-web-budget-form-error {
+  grid-column:1/-1;
+  padding:9px 10px;
+  border:1px solid rgba(244,115,115,.16);
+  border-radius:9px;
+  background:rgba(164,52,52,.08);
+  color:#efaaaa;
+  font-size:8px;
+  font-weight:750;
+}
+.meg-web-budget-dialog>footer {
+  padding:14px 18px 18px;
+  display:flex;
+  justify-content:flex-end;
+  gap:9px;
+  border-top:1px solid rgba(89,221,211,.08);
+}
+.meg-web-budget-dialog>footer button {
+  min-height:39px;
+  padding:9px 14px;
+  border:1px solid rgba(89,221,211,.14);
+  border-radius:10px;
+  background:rgba(255,255,255,.035);
+  color:#a8c5c1;
+  font:inherit;
+  font-size:8px;
+  font-weight:850;
+}
+.meg-web-budget-dialog>footer .px-primary-action {
+  color:#032624;
+  background:#55dfd2;
+  border-color:#55dfd2;
+}
+.meg-web-budget-dialog button:disabled {
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+@media (max-width:1180px) {
+  .meg-web-2026 .meg-web-budget-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:820px) {
+  .meg-web-2026 .meg-web-budget-grid { grid-template-columns:1fr; }
+  .meg-web-2026 .meg-web-budget-head-actions { justify-content:flex-start; }
+  .meg-web-budget-overlay { padding:12px; }
+  .meg-web-budget-form { grid-template-columns:1fr; }
+  .meg-web-budget-dialog>footer { flex-wrap:wrap; }
+}
+
 @media print {
   .meg-web-2026 {
     background:#fff!important;
