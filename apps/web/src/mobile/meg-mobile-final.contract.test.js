@@ -826,3 +826,12 @@ assert.match(
   /MEG 2\.0\.670[\s\S]*\.meg4-confirm-overlay[\s\S]*\.meg4-confirm-card[\s\S]*button\.danger/,
   'Configurações deve usar confirmação de logout consistente com os modais mobile.',
 );
+
+
+/* MEG 2.0.671 · acabamento textual do Benefício. */
+assert.equal(
+  benefitModal.includes("events.length===1?'movimentação':'movimentações'") &&
+  benefitModal.includes('aria-label="Fechar acompanhamento do benefício"'),
+  true,
+  'Benefício deve manter plural correto e botão de fechar identificado para acessibilidade.',
+);
