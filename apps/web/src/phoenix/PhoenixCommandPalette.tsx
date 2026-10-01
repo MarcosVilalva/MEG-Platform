@@ -27,6 +27,8 @@ type SearchResult = {
   detail: string;
 };
 
+const commandMoney = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
 const pageResults: SearchResult[] = [
   { id: 'page-home', route: 'home', kind: 'Tela', title: 'Início', detail: 'Visão geral da sua vida financeira' },
   { id: 'page-movements', route: 'movements', kind: 'Tela', title: 'Lançamentos', detail: 'Eventos financeiros' },
@@ -59,9 +61,9 @@ export function PhoenixCommandPalette({ data, onClose, onNavigate }: { data: Pho
       ...data.accounts.map((item) => ({ id: `account-${item.id}`, route: 'catalogs' as const, kind: 'Conta', title: item.name, detail: item.institution || item.type || 'Conta financeira' })),
       ...data.categories.map((item) => ({ id: `category-${item.id}`, route: 'catalogs' as const, kind: 'Classificação', title: item.name, detail: item.group || item.type || 'Cadastro financeiro' })),
       ...data.customers.map((item) => ({ id: `customer-${item.id}`, route: 'receivables' as const, kind: 'Cliente', title: item.name, detail: item.email || item.phone || 'Cliente cadastrado' })),
-      ...data.receivables.map((item) => ({ id: `receivable-${item.id}`, route: 'receivables' as const, kind: 'Título a receber', title: item.description, detail: [item.customer?.name, `Vence ${String(item.dueDate).slice(0, 10).split('-').reverse().join('/')}`, `Em aberto ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(item.openAmount || 0))}`].filter(Boolean).join(' · ') })),
-      ...data.payables.map((item) => ({ id: `payable-${item.id}`, route: 'payables' as const, kind: 'Conta pendente', title: item.description, detail: [item.category?.group || item.category?.name, `Vence ${String(item.dueDate).slice(0, 10).split('-').reverse().join('/')}`, `Em aberto ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(item.openAmount || 0))}`].filter(Boolean).join(' · ') })),
-      ...data.budgets.map((item) => ({ id: `budget-${item.id}`, route: 'budgets' as const, kind: 'Orçamento', title: item.group, detail: [item.month, `Disponível ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(item.available || 0))}`, `${Number(item.percent || 0).toFixed(0)}% utilizado`].join(' · ') })),
+      ...data.receivables.map((item) => ({ id: `receivable-${item.id}`, route: 'receivables' as const, kind: 'Título a receber', title: item.description, detail: [item.customer?.name, `Vence ${String(item.dueDate).slice(0, 10).split('-').reverse().join('/')}`, `Em aberto ${commandMoney.format(Number(item.openAmount || 0))}`].filter(Boolean).join(' · ') })),
+      ...data.payables.map((item) => ({ id: `payable-${item.id}`, route: 'payables' as const, kind: 'Conta pendente', title: item.description, detail: [item.category?.group || item.category?.name, `Vence ${String(item.dueDate).slice(0, 10).split('-').reverse().join('/')}`, `Em aberto ${commandMoney.format(Number(item.openAmount || 0))}`].filter(Boolean).join(' · ') })),
+      ...data.budgets.map((item) => ({ id: `budget-${item.id}`, route: 'budgets' as const, kind: 'Orçamento', title: item.group, detail: [item.month, `Disponível ${commandMoney.format(Number(item.available || 0))}`, `${Number(item.percent || 0).toFixed(0)}% utilizado`].join(' · ') })),
       ...(data.workspaceUsers.status === 'ready' ? data.workspaceUsers.users.map((item) => ({ id: `user-${item.id}`, route: 'users' as const, kind: 'Usuário', title: item.name, detail: `${item.email} · ${item.role}` })) : [])
     ] : [];
     const all = [...pageResults, ...dynamic];
