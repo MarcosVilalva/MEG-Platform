@@ -452,3 +452,27 @@ html[data-meg-dashboard-history="off"][data-meg-dashboard-agenda="off"] .px-bott
   .px-settings-recipient-form { grid-template-columns:1fr; }
   .px-settings-recipient-form>button { width:100%; }
 }
+
+
+.px-settings-schedule-card{grid-column:span 1}
+.px-settings-schedule-section{display:grid;gap:12px;padding:14px 0;border-top:1px solid var(--line)}
+.px-settings-schedule-section:first-of-type{border-top:0;padding-top:2px}
+.px-settings-schedule-title{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.px-settings-schedule-title>div{display:grid;gap:3px}
+.px-settings-schedule-title small{opacity:.68}
+.px-settings-schedule-title>button{min-width:92px;min-height:34px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel);font-weight:900}
+.px-settings-schedule-title>button.is-on{border-color:color-mix(in srgb,var(--brand) 48%,var(--line));background:color-mix(in srgb,var(--brand) 14%,var(--panel));color:var(--brand2)}
+.px-settings-time-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.px-settings-time-grid.four{grid-template-columns:repeat(2,minmax(0,1fr))}
+.px-settings-time-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.px-settings-time-grid label{display:grid;gap:6px;min-width:0}
+.px-settings-time-grid label>span{font-size:10px;font-weight:850;letter-spacing:.05em;text-transform:uppercase;opacity:.66}
+.px-settings-time-grid input[type="time"]{width:100%;min-height:42px;border:1px solid var(--line);border-radius:11px;background:var(--panel);color:inherit;padding:0 10px;font:inherit;font-weight:800}
+@media(max-width:760px){
+  .px-settings-schedule-title{align-items:flex-start;flex-direction:column}
+  .px-settings-schedule-title>button{width:100%}
+  .px-settings-time-grid,.px-settings-time-grid.four{grid-template-columns:1fr 1fr}
+}
+@media(max-width:480px){
+  .px-settings-time-grid,.px-settings-time-grid.four,.px-settings-time-grid.two{grid-template-columns:1fr}
+}
