@@ -7,6 +7,7 @@ const styles = readFileSync(new URL('./phoenix-screens.css', import.meta.url), '
 const confirm = readFileSync(new URL('./meg-confirm.ts', import.meta.url), 'utf8');
 const financeClient = readFileSync(new URL('../app/finance-client.ts', import.meta.url), 'utf8');
 const cardsClient = readFileSync(new URL('../app/cards-client.ts', import.meta.url), 'utf8');
+const receivablesClient = readFileSync(new URL('../app/receivables-client.ts', import.meta.url), 'utf8');
 
 for (const writer of [
   'financeClient.createAccount',
@@ -89,3 +90,16 @@ assert.match(cardsClient, /updatedAt\?: string/,
   'Cliente de cartões deve preservar versão de concorrência do cadastro.');
 
 console.log('Contrato de cadastros operacionais Web/Android validado.');
+
+assert.match(catalogs, /customers:\s*\{ title: 'Clientes e pagadores'/,
+  'Clientes devem fazer parte da central de cadastros.');
+assert.match(catalogs, /receivablesClient\.createCustomer/,
+  'Novo cliente deve usar writer oficial do domínio de recebíveis.');
+assert.match(catalogs, /receivablesClient\.updateCustomer/,
+  'Edição e reativação de cliente devem usar writer oficial.');
+assert.match(catalogs, /receivablesClient\.deactivateCustomer/,
+  'Desativação de cliente deve preservar histórico e usar endpoint protegido.');
+assert.match(catalogs, /CUSTOMER_ALREADY_EXISTS[\s\S]*CUSTOMER_STALE_VERSION/,
+  'Duplicidade e concorrência de clientes devem possuir mensagens operacionais.');
+assert.match(receivablesClient, /operationId\?: string; expectedUpdatedAt\?: string/,
+  'Cliente Web deve transportar idempotência e versão concorrente.');

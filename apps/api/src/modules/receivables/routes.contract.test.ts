@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const routes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
 const service = readFileSync(new URL('./service.ts', import.meta.url), 'utf8');
+const customers = readFileSync(new URL('./customer-mutation.ts', import.meta.url), 'utf8');
 
 assert.match(routes, /createReceivableProtected/,
   'Criação de conta a receber deve passar pelo gateway transacional idempotente.');
@@ -36,3 +37,19 @@ assert.match(service, /INVALID_CUSTOMER/,
   'Cliente informado na criação precisa pertencer ao usuário e estar ativo.');
 
 console.log('Contrato transacional de contas a receber validado.');
+assert.match(routes, /createCustomerProtected/,
+  'Cliente deve usar writer protegido em vez de gravação Prisma direta na rota.');
+assert.match(routes, /updateCustomerProtected/,
+  'Edição e ativação de cliente devem usar writer protegido.');
+assert.match(routes, /CUSTOMER_STALE_VERSION/,
+  'Conflito de cliente entre dispositivos deve responder como conflito.');
+assert.match(customers, /serializableFinancialTransaction/,
+  'Cadastro de cliente deve executar em transação serializável.');
+assert.match(customers, /workspaceId_operationId/,
+  'Retry de cliente deve preservar idempotência por workspace.');
+assert.match(customers, /CUSTOMER_ALREADY_EXISTS/,
+  'Documento ou e-mail duplicado deve ser bloqueado antes da gravação.');
+assert.match(customers, /expectedUpdatedAt/,
+  'Edição de cliente deve detectar versão concorrente.');
+assert.match(customers, /CUSTOMER_CREATED[\s\S]*CUSTOMER_UPDATED/,
+  'Cadastro de cliente deve manter auditoria estrutural.');

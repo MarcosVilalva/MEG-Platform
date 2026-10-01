@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { financeClient, type Account, type Category, type PaymentMethod } from '../../app/finance-client';
 import { readSession } from '../../app/auth-client';
 import type { CreditCard } from '../../app/cards-client';
+import { receivablesClient, type Customer } from '../../app/receivables-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import { PhoenixNavIcon, type PhoenixNavigationIcon } from '../PhoenixNavIcon';
 import { resolvePhoenixCardIdentity } from '../card-identity';
@@ -10,8 +11,8 @@ import type { PhoenixReadModel } from '../contracts';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
-type CatalogTab = 'accounts' | 'categories' | 'payments' | 'cards';
-type CatalogGridKey = 'name' | 'type' | 'institution' | 'openingBalance' | 'group' | 'status' | 'issuer' | 'brand' | 'creditLimit' | 'closingDay' | 'dueDay';
+type CatalogTab = 'accounts' | 'categories' | 'payments' | 'cards' | 'customers';
+type CatalogGridKey = 'name' | 'type' | 'institution' | 'openingBalance' | 'group' | 'status' | 'issuer' | 'brand' | 'creditLimit' | 'closingDay' | 'dueDay' | 'document' | 'email' | 'phone';
 type CatalogSort = { key: CatalogGridKey; direction: PhoenixGridSortDirection } | null;
 type CatalogFilterMap = Record<CatalogGridKey, PhoenixGridFilterValue>;
 type CatalogRow = {
@@ -27,6 +28,9 @@ type CatalogRow = {
   creditLimit: number | null;
   closingDay: number | null;
   dueDay: number | null;
+  document: string;
+  email: string;
+  phone: string;
   updatedAt?: string;
   card?: CreditCard;
 };
@@ -39,10 +43,14 @@ type CatalogDraft = {
   institution: string;
   openingBalance: string;
   group: string;
+  document: string;
+  email: string;
+  phone: string;
+  notes: string;
 };
 type CatalogEditor = { mode: 'create' | 'edit'; tab: EditableCatalogTab; id?: string; expectedUpdatedAt?: string; draft: CatalogDraft } | null;
 
-const emptyDraft = (): CatalogDraft => ({ name: '', type: '', institution: '', openingBalance: '0,00', group: '' });
+const emptyDraft = (): CatalogDraft => ({ name: '', type: '', institution: '', openingBalance: '0,00', group: '', document: '', email: '', phone: '', notes: '' });
 
 const accountTypes = [
   ['checking', 'Conta corrente'], ['savings', 'Poupança'], ['cash', 'Dinheiro'],
@@ -58,14 +66,16 @@ const catalogMeta: Record<CatalogTab, { title: string; short: string; descriptio
   accounts: { title: 'Contas financeiras', short: 'Contas', description: 'Bancos, caixa, benefício e demais origens que sustentam saldos e baixas.', icon: 'cashflow' },
   categories: { title: 'Classificações e grupos', short: 'Classificações', description: 'Estrutura analítica que organiza despesas e receitas para relatórios e decisões.', icon: 'catalogs' },
   payments: { title: 'Formas de pagamento', short: 'Pagamentos', description: 'Meios usados nos lançamentos e regras automáticas de recebimento e pagamento.', icon: 'movements' },
-  cards: { title: 'Cartões de crédito', short: 'Cartões', description: 'Limites, ciclos, fechamento, vencimento e identidade visual dos cartões ativos.', icon: 'cards' }
+  cards: { title: 'Cartões de crédito', short: 'Cartões', description: 'Limites, ciclos, fechamento, vencimento e identidade visual dos cartões ativos.', icon: 'cards' },
+  customers: { title: 'Clientes e pagadores', short: 'Clientes', description: 'Pessoas e empresas vinculadas aos títulos e recebimentos do contas a receber.', icon: 'users' }
 };
 
 const tabKeys: Record<CatalogTab, CatalogGridKey[]> = {
   accounts: ['name', 'type', 'institution', 'openingBalance', 'status'],
   categories: ['name', 'group', 'type', 'status'],
   payments: ['name', 'type', 'status'],
-  cards: ['name', 'issuer', 'brand', 'creditLimit', 'closingDay', 'dueDay']
+  cards: ['name', 'issuer', 'brand', 'creditLimit', 'closingDay', 'dueDay'],
+  customers: ['name', 'document', 'email', 'phone', 'status']
 };
 
 const labels: Record<CatalogGridKey, string> = {
@@ -79,7 +89,10 @@ const labels: Record<CatalogGridKey, string> = {
   brand: 'Bandeira',
   creditLimit: 'Limite',
   closingDay: 'Fechamento',
-  dueDay: 'Vencimento'
+  dueDay: 'Vencimento',
+  document: 'Documento',
+  email: 'E-mail',
+  phone: 'Telefone'
 };
 
 function initialFilters(): CatalogFilterMap {
@@ -94,7 +107,10 @@ function initialFilters(): CatalogFilterMap {
     brand: { kind: 'multi', values: [] },
     creditLimit: { kind: 'number', min: '', max: '' },
     closingDay: { kind: 'number', min: '', max: '' },
-    dueDay: { kind: 'number', min: '', max: '' }
+    dueDay: { kind: 'number', min: '', max: '' },
+    document: { kind: 'text', value: '' },
+    email: { kind: 'text', value: '' },
+    phone: { kind: 'text', value: '' }
   };
 }
 
@@ -103,16 +119,17 @@ function initialFiltersByTab(): CatalogState<CatalogFilterMap> {
     accounts: initialFilters(),
     categories: initialFilters(),
     payments: initialFilters(),
-    cards: initialFilters()
+    cards: initialFilters(),
+    customers: initialFilters()
   };
 }
 
 function initialSortByTab(): CatalogState<CatalogSort> {
-  return { accounts: null, categories: null, payments: null, cards: null };
+  return { accounts: null, categories: null, payments: null, cards: null, customers: null };
 }
 
 function initialSearchByTab(): CatalogState<string> {
-  return { accounts: '', categories: '', payments: '', cards: '' };
+  return { accounts: '', categories: '', payments: '', cards: '', customers: '' };
 }
 
 function normalize(value: unknown) {
@@ -203,6 +220,7 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
   const [accounts, setAccounts] = useState<Account[]>(() => data.accounts.map((item) => ({ ...item })));
   const [categories, setCategories] = useState<Category[]>(() => data.categories.map((item) => ({ ...item })));
   const [payments, setPayments] = useState<PaymentMethod[]>(() => data.paymentMethods.map((item) => ({ ...item })));
+  const [customers, setCustomers] = useState<Customer[]>(() => data.customers.map((item) => ({ ...item })));
   const [editor, setEditor] = useState<CatalogEditor>(null);
   const [mutationBusy, setMutationBusy] = useState(false);
   const [mutationMessage, setMutationMessage] = useState('');
@@ -227,16 +245,19 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
   useEffect(() => { setAccounts(data.accounts.map((item) => ({ ...item }))); }, [data.accounts]);
   useEffect(() => { setCategories(data.categories.map((item) => ({ ...item }))); }, [data.categories]);
   useEffect(() => { setPayments(data.paymentMethods.map((item) => ({ ...item }))); }, [data.paymentMethods]);
+  useEffect(() => { setCustomers(data.customers.map((item) => ({ ...item }))); }, [data.customers]);
 
   const activeAccounts = accounts.filter((item) => item.isActive);
   const activeCategories = categories.filter((item) => item.isActive);
   const activePayments = payments.filter((item) => item.isActive);
   const activeCards = data.cards.filter((item) => item.isActive);
+  const activeCustomers = customers.filter((item) => item.isActive);
   const catalogCounts: Record<CatalogTab, { active: number; total: number }> = {
     accounts: { active: activeAccounts.length, total: accounts.length },
     categories: { active: activeCategories.length, total: categories.length },
     payments: { active: activePayments.length, total: payments.length },
     cards: { active: activeCards.length, total: data.cards.length },
+    customers: { active: activeCustomers.length, total: customers.length },
   };
 
   const rows = useMemo<CatalogRow[]>(() => {
@@ -248,7 +269,7 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       openingBalance: Number(item.openingBalance || 0),
       group: '',
       status: item.isActive ? 'Ativa' : 'Inativa',
-      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null,
+      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null, document: '', email: '', phone: '',
       updatedAt: item.updatedAt
     }));
     if (tab === 'categories') return categories.map((item) => ({
@@ -258,7 +279,7 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       institution: '', openingBalance: null,
       group: item.group || '—',
       status: item.isActive ? 'Ativa' : 'Inativa',
-      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null,
+      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null, document: '', email: '', phone: '',
       updatedAt: item.updatedAt
     }));
     if (tab === 'payments') return payments.map((item) => ({
@@ -267,8 +288,19 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       type: item.type || '—',
       institution: '', openingBalance: null, group: '',
       status: item.isActive ? 'Ativa' : 'Inativa',
-      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null,
+      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null, document: '', email: '', phone: '',
       updatedAt: item.updatedAt
+    }));
+    if (tab === 'customers') return customers.map((item) => ({
+      id: item.id,
+      name: item.name,
+      type: '', institution: '', openingBalance: null, group: '',
+      status: item.isActive ? 'Ativa' : 'Inativa',
+      issuer: '', brand: '', creditLimit: null, closingDay: null, dueDay: null,
+      document: item.document || '—',
+      email: item.email || '—',
+      phone: item.phone || '—',
+      updatedAt: item.updatedAt,
     }));
     return data.cards.map((item) => ({
       id: item.id,
@@ -279,9 +311,10 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       creditLimit: Number(item.creditLimit || 0),
       closingDay: Number(item.closingDay || 0),
       dueDay: Number(item.dueDay || 0),
+      document: '', email: '', phone: '',
       card: item
     }));
-  }, [accounts, categories, payments, data.cards, tab]);
+  }, [accounts, categories, payments, customers, data.cards, tab]);
 
   const filters = filtersByTab[tab];
   const sort = sortByTab[tab];
@@ -346,7 +379,11 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       type: row.type === '—' ? '' : row.type,
       institution: row.institution === '—' ? '' : row.institution,
       openingBalance: Number(row.openingBalance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      group: row.group === '—' ? '' : row.group
+      group: row.group === '—' ? '' : row.group,
+      document: row.document === '—' ? '' : row.document,
+      email: row.email === '—' ? '' : row.email,
+      phone: row.phone === '—' ? '' : row.phone,
+      notes: ''
     };
   }
 
@@ -380,12 +417,13 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
     setEditor((current) => current ? { ...current, draft: { ...current.draft, [key]: value } } : current);
   }
 
-  function commitCatalogSnapshot(nextAccounts: Account[], nextCategories: Category[], nextPayments: PaymentMethod[]) {
+  function commitCatalogSnapshot(nextAccounts: Account[], nextCategories: Category[], nextPayments: PaymentMethod[], nextCustomers: Customer[] = customers) {
     onDataCommitted?.({
       ...data,
       accounts: nextAccounts.map((item) => ({ ...item })),
       categories: nextCategories.map((item) => ({ ...item })),
       paymentMethods: nextPayments.map((item) => ({ ...item })),
+      customers: nextCustomers.map((item) => ({ ...item })),
     });
   }
 
@@ -398,6 +436,8 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
     if (/ACCOUNT_ALREADY_EXISTS/i.test(message)) return 'Já existe uma conta com este nome. Edite ou reative o cadastro existente.';
     if (/CATEGORY_ALREADY_EXISTS/i.test(message)) return 'Já existe esta combinação de classificação, grupo e tipo. Edite ou reative o cadastro existente.';
     if (/PAYMENT_METHOD_ALREADY_EXISTS/i.test(message)) return 'Já existe uma forma de pagamento com este nome. Edite ou reative o cadastro existente.';
+    if (/CUSTOMER_ALREADY_EXISTS/i.test(message)) return 'Já existe um cliente com o mesmo documento ou e-mail. Edite ou reative o cadastro existente.';
+    if (/CUSTOMER_STALE_VERSION/i.test(message)) return 'Este cliente foi alterado em outro dispositivo. Feche a edição e abra novamente antes de salvar.';
     if (/CATALOG_STALE_VERSION/i.test(message)) return 'Este cadastro foi alterado em outro dispositivo. Feche a edição, aguarde a sincronização e abra novamente antes de salvar.';
     if (/OPERATION_ID_REUSED/i.test(message)) return 'Os dados mudaram depois de uma tentativa anterior. Revise o cadastro e tente salvar novamente.';
     if (/VALIDATION_ERROR/i.test(message)) return 'Confira os campos informados. Tipo e saldo inicial ficam protegidos depois que o cadastro é criado.';
@@ -456,7 +496,7 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
         const nextCategories = replaceCatalogItem(categories, saved, creating);
         setCategories(nextCategories);
         commitCatalogSnapshot(accounts, nextCategories, payments);
-      } else {
+      } else if (editor.tab === 'payments') {
         const saved = creating
           ? await financeClient.createPaymentMethod({
               name,
@@ -471,6 +511,28 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
         const nextPayments = replaceCatalogItem(payments, saved, creating);
         setPayments(nextPayments);
         commitCatalogSnapshot(accounts, categories, nextPayments);
+      } else {
+        const saved = creating
+          ? await receivablesClient.createCustomer({
+              name,
+              document: editor.draft.document.trim() || null,
+              email: editor.draft.email.trim() || null,
+              phone: editor.draft.phone.trim() || null,
+              notes: editor.draft.notes.trim() || null,
+              operationId,
+            })
+          : await receivablesClient.updateCustomer(editor.id!, {
+              name,
+              document: editor.draft.document.trim() || null,
+              email: editor.draft.email.trim() || null,
+              phone: editor.draft.phone.trim() || null,
+              notes: editor.draft.notes.trim() || null,
+              expectedUpdatedAt: editor.expectedUpdatedAt,
+              operationId,
+            });
+        const nextCustomers = replaceCatalogItem(customers, saved, creating);
+        setCustomers(nextCustomers);
+        commitCatalogSnapshot(accounts, categories, payments, nextCustomers);
       }
       clearMutationOperation();
       setMutationMessage(creating ? 'Cadastro criado e confirmado pelo servidor.' : 'Alteração salva e confirmada pelo servidor.');
@@ -520,13 +582,20 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
         const nextCategories = replaceCatalogItem(categories, saved, false);
         setCategories(nextCategories);
         commitCatalogSnapshot(accounts, nextCategories, payments);
-      } else {
+      } else if (tab === 'payments') {
         const saved = active
           ? await financeClient.updatePaymentMethod(row.id, { isActive: true, ...meta })
           : await financeClient.deactivatePaymentMethod(row.id, meta);
         const nextPayments = replaceCatalogItem(payments, saved, false);
         setPayments(nextPayments);
         commitCatalogSnapshot(accounts, categories, nextPayments);
+      } else if (tab === 'customers') {
+        const saved = active
+          ? await receivablesClient.updateCustomer(row.id, { isActive: true, ...meta })
+          : await receivablesClient.deactivateCustomer(row.id, meta);
+        const nextCustomers = replaceCatalogItem(customers, saved, false);
+        setCustomers(nextCustomers);
+        commitCatalogSnapshot(accounts, categories, payments, nextCustomers);
       }
       clearMutationOperation();
       setMutationMessage(active ? 'Cadastro reativado com o histórico preservado.' : 'Cadastro desativado. Nenhum histórico foi apagado.');
@@ -554,9 +623,9 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
     </section>
 
     <section className="px-screen-kpis meg-web-catalog-kpis">
-      <article><span>Total da base</span><strong>{accounts.length + categories.length + payments.length + data.cards.length}</strong><small>Cadastros rastreados</small></article>
-      <article><span>Ativos</span><strong>{activeAccounts.length + activeCategories.length + activePayments.length + activeCards.length}</strong><small>Disponíveis para uso</small></article>
-      <article><span>Inativos</span><strong>{Math.max(0, accounts.length + categories.length + payments.length + data.cards.length - activeAccounts.length - activeCategories.length - activePayments.length - activeCards.length)}</strong><small>Histórico preservado</small></article>
+      <article><span>Total da base</span><strong>{accounts.length + categories.length + payments.length + data.cards.length + customers.length}</strong><small>Cadastros rastreados</small></article>
+      <article><span>Ativos</span><strong>{activeAccounts.length + activeCategories.length + activePayments.length + activeCards.length + activeCustomers.length}</strong><small>Disponíveis para uso</small></article>
+      <article><span>Inativos</span><strong>{Math.max(0, accounts.length + categories.length + payments.length + data.cards.length + customers.length - activeAccounts.length - activeCategories.length - activePayments.length - activeCards.length - activeCustomers.length)}</strong><small>Histórico preservado</small></article>
       <article><span>Permissão atual</span><strong>{canWrite ? 'Edição' : 'Leitura'}</strong><small>{canDeactivate ? 'Pode desativar cadastros' : canWrite ? 'Criação e edição liberadas' : 'Sem alterações'}</small></article>
     </section>
 
@@ -590,11 +659,13 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
             {tab === 'categories' ? <><th>{header('Classificação', 'name', 'text')}</th><th>{header('Grupo', 'group', 'multi', options.group)}</th><th>{header('Tipo', 'type', 'multi', options.type)}</th><th>{header('Status', 'status', 'multi', options.status)}</th><th>Ações</th></> : null}
             {tab === 'payments' ? <><th>{header('Forma', 'name', 'text')}</th><th>{header('Tipo', 'type', 'multi', options.type)}</th><th>{header('Status', 'status', 'multi', options.status)}</th><th>Ações</th></> : null}
             {tab === 'cards' ? <><th>{header('Cartão', 'name', 'text')}</th><th>{header('Emissor', 'issuer', 'multi', options.issuer)}</th><th>{header('Bandeira', 'brand', 'multi', options.brand)}</th><th>{header('Limite', 'creditLimit', 'number')}</th><th>{header('Fechamento', 'closingDay', 'number')}</th><th>{header('Vencimento', 'dueDay', 'number')}</th><th>Ações</th></> : null}
+            {tab === 'customers' ? <><th>{header('Cliente', 'name', 'text')}</th><th>{header('Documento', 'document', 'text')}</th><th>{header('E-mail', 'email', 'text')}</th><th>{header('Telefone', 'phone', 'text')}</th><th>{header('Status', 'status', 'multi', options.status)}</th><th>Ações</th></> : null}
           </tr></thead>
           <tbody>{visibleRows.map((row) => {
             if (tab === 'accounts') return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.type}</td><td>{row.institution}</td><td className="px-money">{money.format(row.openingBalance || 0)}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
             if (tab === 'categories') return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.group}</td><td>{row.type}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
             if (tab === 'payments') return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.type}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
+            if (tab === 'customers') return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.document}</td><td>{row.email}</td><td>{row.phone}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
             const identity = row.card ? resolvePhoenixCardIdentity(row.card) : null;
             return <tr key={row.id}><td><span className="px-catalog-card-name"><span className="px-mini-card" style={{ background: identity?.background }}>{identity?.miniLabel || row.name.slice(0, 6).toUpperCase()}</span><strong>{row.name}</strong></span></td><td>{row.issuer}</td><td>{row.brand}</td><td className="px-money">{money.format(row.creditLimit || 0)}</td><td>dia {row.closingDay}</td><td>dia {row.dueDay}</td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Gerenciar</button></div></td></tr>;
           })}</tbody>
@@ -604,7 +675,7 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
 
       <div className="px-catalog-mobile-list" aria-label="Cadastros">
         {visibleRows.map((row) => <article key={row.id} className="px-catalog-mobile-item">
-          <div><strong>{row.name}</strong><small>{tab === 'accounts' ? `${row.type} · ${row.institution}` : tab === 'categories' ? `${row.group} · ${row.type}` : tab === 'payments' ? row.type : `${row.issuer} · ${row.brand}`}</small></div>
+          <div><strong>{row.name}</strong><small>{tab === 'accounts' ? `${row.type} · ${row.institution}` : tab === 'categories' ? `${row.group} · ${row.type}` : tab === 'payments' ? row.type : tab === 'customers' ? [row.document, row.email].filter((value) => value && value !== '—').join(' · ') || 'Cliente sem documento/e-mail' : `${row.issuer} · ${row.brand}`}</small></div>
           {tab !== 'cards' ? <span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span> : <span className="px-status reconciled">Cartão</span>}
           <div className="px-catalog-mobile-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>{tab === 'cards' ? 'Gerenciar' : 'Editar'}</button>{tab !== 'cards' ? <button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button> : null}</div>
         </article>)}
@@ -633,7 +704,7 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
     {editor ? <div className="px-catalog-editor-layer">
       <button type="button" className="px-catalog-editor-backdrop" aria-label="Fechar cadastro" onClick={() => !mutationBusy && setEditor(null)} />
       <aside className="px-catalog-editor" role="dialog" aria-modal="true" aria-label={editor.mode === 'create' ? 'Novo cadastro' : 'Editar cadastro'}>
-        <header><div><span className="px-kicker">{editor.mode === 'create' ? 'Novo cadastro' : 'Editar cadastro'}</span><h2>{editor.tab === 'accounts' ? 'Conta' : editor.tab === 'categories' ? 'Classificação' : 'Forma de pagamento'}</h2></div><button type="button" onClick={() => setEditor(null)} disabled={mutationBusy}>×</button></header>
+        <header><div><span className="px-kicker">{editor.mode === 'create' ? 'Novo cadastro' : 'Editar cadastro'}</span><h2>{editor.tab === 'accounts' ? 'Conta' : editor.tab === 'categories' ? 'Classificação' : editor.tab === 'payments' ? 'Forma de pagamento' : 'Cliente'}</h2></div><button type="button" onClick={() => setEditor(null)} disabled={mutationBusy}>×</button></header>
         <div className="px-catalog-editor-body">
           <label><span>Nome *</span><input value={editor.draft.name} maxLength={120} onChange={(event) => updateDraft('name', event.target.value)} /></label>
           {editor.tab === 'accounts' ? <>
@@ -646,7 +717,13 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
             <label><span>Tipo</span><select value={editor.draft.type} disabled={editor.mode === 'edit'} onChange={(event) => updateDraft('type', event.target.value)}>{categoryTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>{editor.mode === 'edit' ? <small>Tipo protegido para não reclassificar lançamentos antigos silenciosamente.</small> : null}</label>
           </> : null}
           {editor.tab === 'payments' ? <label><span>Tipo</span><select value={editor.draft.type} disabled={editor.mode === 'edit'} onChange={(event) => updateDraft('type', event.target.value)}>{paymentTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>{editor.mode === 'edit' ? <small>Tipo protegido depois da criação para manter as regras de pagamento consistentes.</small> : null}</label> : null}
-          <p>Alterar nome ou instituição não apaga o histórico. Campos estruturais ficam protegidos após a criação; desativar impede novos usos sem excluir lançamentos anteriores.</p>
+          {editor.tab === 'customers' ? <>
+            <label><span>CPF/CNPJ ou documento</span><input value={editor.draft.document} maxLength={30} onChange={(event) => updateDraft('document', event.target.value)} /></label>
+            <label><span>E-mail</span><input type="email" value={editor.draft.email} maxLength={120} onChange={(event) => updateDraft('email', event.target.value)} /></label>
+            <label><span>Telefone</span><input value={editor.draft.phone} maxLength={30} onChange={(event) => updateDraft('phone', event.target.value)} /></label>
+            <label><span>Observações</span><textarea value={editor.draft.notes} maxLength={500} onChange={(event) => updateDraft('notes', event.target.value)} /></label>
+          </> : null}
+          <p>{editor.tab === 'customers' ? 'O cliente pode ser vinculado aos títulos do contas a receber. Desativar preserva títulos e recebimentos anteriores, mas impede novos vínculos.' : 'Alterar nome ou instituição não apaga o histórico. Campos estruturais ficam protegidos após a criação; desativar impede novos usos sem excluir lançamentos anteriores.'}</p>
           {mutationMessage ? <div className="px-catalog-feedback warn">{mutationMessage}</div> : null}
         </div>
         <footer><button type="button" onClick={() => setEditor(null)} disabled={mutationBusy}>Cancelar</button><button type="button" className="px-primary-action" onClick={() => void saveEditor()} disabled={mutationBusy}>{mutationBusy ? 'Salvando…' : 'Salvar'}</button></footer>
