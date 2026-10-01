@@ -1,9 +1,9 @@
 {
-  "versionCode": 707,
-  "versionName": "2.0.707",
+  "versionCode": 708,
+  "versionName": "2.0.708",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "0a4554d1881e736e088e9db05eb7b5592e95667f5d1d5aeb1a17247cf926e6da",
+  "sha256": "1718b23c2f38977c5d759c07b26e59762819fd9d16168c017859bd09f2ee83c6",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #479 from MarcosVilalva/fix/phoenix-analytics-transparent-margin"
+  "releaseNotes": "Merge pull request #480 from MarcosVilalva/feat/phoenix-command-search-domains"
 }
