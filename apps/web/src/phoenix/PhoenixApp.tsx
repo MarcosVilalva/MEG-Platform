@@ -12,7 +12,6 @@ import { MegMobileFinal } from '../mobile/MegMobileFinal';
 import { PhoenixProfileAvatar, hydratePhoenixAvatarPreference, readPhoenixAvatarPreference, type PhoenixAvatarPreference } from './profile-avatar';
 import { syncPhoenixLocalDueNotifications } from './phoenix-native-notifications';
 import { PhoenixCatalogsGrid } from './screens/PhoenixCatalogsGrid';
-import './card-purchase-edit-bridge';
 import { PhoenixHomeAllTime } from './screens/PhoenixHomeAllTime';
 import { PhoenixHomeDashboard } from './screens/PhoenixHomeDashboard';
 import { PhoenixHomeHorizon } from './screens/PhoenixHomeHorizon';
