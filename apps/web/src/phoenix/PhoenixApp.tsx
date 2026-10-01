@@ -19,6 +19,7 @@ import { PhoenixHomePastMonth } from './screens/PhoenixHomePastMonth';
 import { PhoenixUsers } from './screens/PhoenixUsers';
 import { PhoenixSettings } from './screens/PhoenixSettings';
 import { PhoenixDecisionCenter } from './screens/PhoenixDecisionCenter';
+import { PhoenixReportsCenter } from './screens/PhoenixReportsCenter';
 import { PhoenixCashflowGrid, PhoenixReceivablesGrid, PhoenixRevenuesGrid } from './screens/PhoenixWebGridScreens';
 import {
   PhoenixAnalytics,
@@ -94,7 +95,8 @@ const webViews: ViewDefinition[] = [
   { id: 'decisions', icon: '◇', label: 'Decisões' },
   { id: 'reconcile', icon: '✓', label: 'Conciliação' },
   { id: 'analytics', icon: '⌁', label: 'Análises' },
-  { id: 'budgets', icon: '◎', label: 'Orçamentos e metas' }
+  { id: 'budgets', icon: '◎', label: 'Orçamentos e metas' },
+  { id: 'reports', icon: '▤', label: 'Relatórios e exportações' }
 ];
 
 const views = [...mainViews, ...webViews];
@@ -114,7 +116,8 @@ const subtitles: Record<PhoenixView, string> = {
   decisions: 'Radar, simulação e impacto antes de decidir',
   reconcile: 'Compare o MEG com o saldo real',
   analytics: 'Tendências e comparações históricas',
-  budgets: 'Planejamento financeiro'
+  budgets: 'Planejamento financeiro',
+  reports: 'Excel, PDF, impressão e relatórios gerenciais'
 };
 
 function currentMonth() {
@@ -396,6 +399,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   if (view === 'revenues') return <PhoenixRevenuesGrid data={data} />;
   if (view === 'cashflow') return <PhoenixCashflowGrid data={data} />;
   if (view === 'decisions') return <PhoenixDecisionCenter data={data} />;
+  if (view === 'reports') return <PhoenixReportsCenter data={data} />;
   if (view === 'reconcile') return <PhoenixReconciliation data={data} />;
   if (view === 'analytics') return <PhoenixAnalytics data={data} />;
   return <PhoenixBudgets data={data} />;
