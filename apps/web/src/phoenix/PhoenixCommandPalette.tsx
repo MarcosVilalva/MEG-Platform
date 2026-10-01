@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import type { PhoenixReadModel } from './contracts';
 
 export type PhoenixRoute =
@@ -54,6 +54,7 @@ function normalize(value: unknown) {
 
 export function PhoenixCommandPalette({ data, onClose, onNavigate }: { data: PhoenixReadModel | null; onClose: () => void; onNavigate: (route: PhoenixRoute) => void }) {
   const [query, setQuery] = useState('');
+  const [activeIndex, setActiveIndex] = useState(0);
   const results = useMemo(() => {
     const dynamic: SearchResult[] = data ? [
       ...data.events.items.map((item) => ({ id: `event-${item.id}`, route: 'movements' as const, kind: item.type === 'income' ? 'Receita' : 'Lançamento', title: item.description, detail: [item.category?.name, item.account?.name, item.paymentMethod?.name].filter(Boolean).join(' · ') || 'Evento financeiro' })),
@@ -72,19 +73,53 @@ export function PhoenixCommandPalette({ data, onClose, onNavigate }: { data: Pho
     return all.filter((item) => normalize(`${item.kind} ${item.title} ${item.detail}`).includes(needle)).slice(0, 24);
   }, [data, query]);
 
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [query]);
+
+  useEffect(() => {
+    if (!results.length) {
+      setActiveIndex(0);
+      return;
+    }
+    setActiveIndex((current) => Math.min(current, results.length - 1));
+  }, [results.length]);
+
   function open(result: SearchResult) {
     onNavigate(result.route);
     onClose();
   }
 
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveIndex((current) => results.length ? (current + 1) % results.length : 0);
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveIndex((current) => results.length ? (current - 1 + results.length) % results.length : 0);
+      return;
+    }
+    if (event.key === 'Enter' && results[activeIndex]) {
+      event.preventDefault();
+      open(results[activeIndex]);
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      onClose();
+    }
+  }
+
   return <div className="px-command-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section className="px-command" role="dialog" aria-modal="true" aria-label="Buscar no MEG">
-      <div className="px-command-input"><span>⌕</span><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar tela, lançamento, título, pendência, orçamento, cartão, conta, cliente ou usuário" /><kbd>ESC</kbd></div>
-      <div className="px-command-results">
-        {results.map((result) => <button key={result.id} type="button" onClick={() => open(result)}><span className="px-command-kind">{result.kind}</span><span className="px-command-copy"><strong>{result.title}</strong><small>{result.detail}</small></span><span className="px-command-arrow">↗</span></button>)}
+      <div className="px-command-input"><span>⌕</span><input autoFocus role="combobox" aria-expanded="true" aria-controls="px-command-results" aria-activedescendant={results[activeIndex] ? `px-command-result-${activeIndex}` : undefined} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={handleKeyDown} placeholder="Buscar tela, lançamento, título, pendência, orçamento, cartão, conta, cliente ou usuário" /><kbd>ESC</kbd></div>
+      <div className="px-command-results" id="px-command-results" role="listbox">
+        {results.map((result, index) => <button id={`px-command-result-${index}`} key={result.id} type="button" role="option" aria-selected={activeIndex === index} className={activeIndex === index ? 'is-active' : undefined} onMouseEnter={() => setActiveIndex(index)} onClick={() => open(result)}><span className="px-command-kind">{result.kind}</span><span className="px-command-copy"><strong>{result.title}</strong><small>{result.detail}</small></span><span className="px-command-arrow">↗</span></button>)}
         {!results.length ? <div className="px-command-empty"><strong>Nenhum resultado</strong><span>Tente outro termo de busca.</span></div> : null}
       </div>
-      <footer><span>Enter para abrir</span><span>Esc para fechar</span><strong>Somente leitura</strong></footer>
+      <footer><span>↑↓ para selecionar</span><span>Enter para abrir · Esc para fechar</span><strong>Somente leitura</strong></footer>
     </section>
   </div>;
 }
