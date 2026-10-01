@@ -358,9 +358,9 @@ assert.match(profileAvatar, /imageFileToAvatarDataUrl/,
   'Upload de foto deve normalizar a imagem antes de armazenar a preferência local');
 assert.ok((profileAvatar.match(/id: '/g) || []).length >= 10,
   'Biblioteca de avatares deve manter variedade suficiente de estilos prontos');
-assert.match(webScreens, /Títulos e recebimentos em aberto/);
-assert.match(webScreens, /Origem e evolução das entradas/);
-assert.match(webScreens, /Fechamento realizado e projetado/);
+assert.match(webGridScreens, /Títulos e recebimentos em aberto/);
+assert.match(webGridScreens, /Origem e evolução das entradas/);
+assert.match(webGridScreens, /Fechamento realizado e projetado/);
 assert.match(webScreens, /Tendências e comparações históricas/);
 assert.doesNotMatch(webScreens, /Índice MEG|Em calibração/,
   'Análises não pode exibir uma nota proprietária sem critérios e pesos validados.');
