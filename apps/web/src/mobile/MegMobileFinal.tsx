@@ -889,7 +889,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
             <MegMobilePicker label="Forma de pagamento" value={settlementMethodId} disabled={settlementBusy} placeholder="Selecione a forma" options={activeMethods.map((item) => ({ id:item.id, label:item.name, subtitle:item.type ? String(item.type) : undefined, icon:'wallet', tone:'cyan' }))} onChange={(value) => { setSettlementMethodId(value); setSettlementMessage(''); }}/>
 
             <section className={'meg2-pending-balance-card ' + (settlementMissing > 0 ? 'danger' : settlementBalance.status === 'ready' ? 'ok' : '')}>
-              <header><span><Icon name={settlementMissing > 0 ? 'alert' : 'wallet'} size={17}/></span><div><small>PROTEÇÃO DE SALDO</small><strong>{settlementBalance.status === 'loading' ? 'Consultando saldo…' : settlementBalance.status === 'error' ? 'Saldo indisponível' : settlementBalance.status === 'ready' ? settlementBalance.accountName : 'Selecione a conta e a data'}</strong></div></header>
+              <header><span><Icon name="wallet" size={17}/></span><div><small>PROTEÇÃO DE SALDO</small><strong>{settlementBalance.status === 'loading' ? 'Consultando saldo…' : settlementBalance.status === 'error' ? 'Saldo indisponível' : settlementBalance.status === 'ready' ? settlementBalance.accountName : 'Selecione a conta e a data'}</strong></div></header>
               {settlementBalance.status === 'ready' ? <div className="meg2-pending-balance-grid">
                 <span><small>Saldo disponível</small><b>{money.format(settlementBalance.available)}</b></span>
                 <span><small>Após a baixa</small><b className={settlementMissing > 0 ? 'negative' : ''}>{money.format(settlementAfter)}</b></span>
