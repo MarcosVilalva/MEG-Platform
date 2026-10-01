@@ -625,9 +625,9 @@ export async function runPhoenixCardPurchaseEdit(
     operationId: editOperationId,
   });
   onAccepted?.(purchase);
-  const snapshot = await snapshotAfterAccepted(refreshMonth, 'card-edit-refresh-pending');
   pendingCardEditOperations.delete(requestKey);
-  return { purchase, snapshot };
+  refreshSnapshotInBackground(refreshMonth, 'card-edit-refresh-pending');
+  return { purchase, snapshot: null };
 }
 
 export async function runPhoenixCardPurchaseCancel(
@@ -643,9 +643,9 @@ export async function runPhoenixCardPurchaseCancel(
   pendingCardCancelOperations.set(purchaseId, cancelOperationId);
   const purchase = await cardsClient.cancelPurchaseProtected(purchaseId, cancelOperationId);
   onAccepted?.(purchase);
-  const snapshot = await snapshotAfterAccepted(refreshMonth, 'card-delete-refresh-pending');
   pendingCardCancelOperations.delete(purchaseId);
-  return { purchase, snapshot };
+  refreshSnapshotInBackground(refreshMonth, 'card-delete-refresh-pending');
+  return { purchase, snapshot: null };
 }
 
 export async function runPhoenixSimpleEventEdit(
@@ -682,9 +682,10 @@ export async function runPhoenixSimpleEventEdit(
   const event = result.events[0];
   if (!event) throw new PhoenixWriteError('PHOENIX_EDIT_CONFIRMATION_MISSING');
   onAccepted?.(event);
-  const snapshot = await snapshotAfterAccepted(refreshMonth, 'event-edit-refresh-pending');
   pendingEditOperations.delete(requestKey);
-  return { event, snapshot };
+  publishOptimisticEvent(refreshMonth, event);
+  refreshSnapshotInBackground(refreshMonth, 'event-edit-refresh-pending');
+  return { event, snapshot: null };
 }
 
 export async function runPhoenixBenefitEventEdit(
@@ -713,9 +714,10 @@ export async function runPhoenixBenefitEventEdit(
       }),
     });
     onAccepted?.(event);
-    const snapshot = await snapshotAfterAccepted(refreshMonth, 'benefit-edit-refresh-pending');
     pendingBenefitEditOperations.delete(requestKey);
-    return { event, snapshot };
+    publishOptimisticEvent(refreshMonth, event);
+    refreshSnapshotInBackground(refreshMonth, 'benefit-edit-refresh-pending');
+    return { event, snapshot: null };
   } catch (error) {
     throw error;
   }
@@ -741,9 +743,10 @@ export async function runPhoenixSimpleEventArchive(
   });
 
   onAccepted?.();
-  const snapshot = await snapshotAfterAccepted(refreshMonth, 'event-archive-refresh-pending');
   pendingArchiveOperations.delete(archiveRequestKey);
-  return { snapshot };
+  publishOptimisticArchive(refreshMonth, eventId);
+  refreshSnapshotInBackground(refreshMonth, 'event-archive-refresh-pending');
+  return { snapshot: null };
 }
 
 export async function runPhoenixSimpleEventWrite(
