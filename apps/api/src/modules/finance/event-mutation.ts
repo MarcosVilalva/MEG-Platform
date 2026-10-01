@@ -4,7 +4,7 @@ import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
 import { financialAmountValues } from './amount-sign';
 import { assertActiveCatalogReferences } from './catalog-scope';
-import { serializableFinancialTransaction } from './monetary-protection';
+import { SEMANTIC_DUPLICATE_WINDOW_MS, findRecentFinancialEventDuplicate, serializableFinancialTransaction } from './monetary-protection';
 
 export class FinancialEventMutationError extends Error {
   constructor(public code: string, public details?: Record<string, unknown>) {
@@ -24,6 +24,7 @@ export type CreateFinancialEventMutationInput = {
   paymentMethodId?: string;
   notes?: string;
   operationId?: string;
+  allowDuplicate?: boolean;
 };
 
 function isPosted(status: string) {
@@ -48,7 +49,7 @@ export async function createFinancialEventProtected(userId: string, input: Creat
   const workspace = await resolveWorkspaceContext(userId);
   const dataOwnerId = workspace.workspace.ownerId;
   const requestHash = input.operationId
-    ? mutationRequestHash({ ...input, operationId: undefined })
+    ? mutationRequestHash({ ...input, operationId: undefined, allowDuplicate: undefined })
     : null;
 
   try {
@@ -73,6 +74,28 @@ export async function createFinancialEventProtected(userId: string, input: Creat
       }
 
       const values = financialAmountValues(input.type, input.amount);
+      if (!input.allowDuplicate) {
+        const duplicate = await findRecentFinancialEventDuplicate(tx, {
+          workspaceId: workspace.workspaceId,
+          userId: dataOwnerId,
+          description: input.description,
+          type: input.type,
+          status: input.status,
+          date: input.date,
+          amount: values.amount,
+          signedAmount: values.signedAmount,
+          accountId: input.accountId,
+          categoryId: input.categoryId,
+          paymentMethodId: input.paymentMethodId,
+        });
+        if (duplicate) {
+          throw new FinancialEventMutationError('POSSIBLE_DUPLICATE', {
+            duplicate,
+            duplicateWindowSeconds: Math.round(SEMANTIC_DUPLICATE_WINDOW_MS / 1000),
+          });
+        }
+      }
+
       const event = await tx.financialEvent.create({
         data: {
           userId: dataOwnerId,
@@ -122,6 +145,7 @@ export async function createFinancialEventProtected(userId: string, input: Creat
           operationId: input.operationId ?? null,
           competence: result.competence,
           workspaceId: workspace.workspaceId,
+          duplicateOverride: Boolean(input.allowDuplicate),
         },
       });
 
