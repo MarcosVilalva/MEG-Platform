@@ -16,6 +16,7 @@ import {
   rollbackNormalizationPrimary,
   synchronizeNormalizedRows,
 } from './normalization-migration';
+import { reconcilePrimaryAppStateFromNormalized } from './normalized-primary-writeback';
 
 const MAX_TRANSACTION_PATCH_OPERATIONS = 2000;
 const MAX_ACTIVITY_LOG_ITEMS = 500;
@@ -80,6 +81,10 @@ const normalizationCutoverSchema = z.object({
   expectedRevision: z.number().int().nonnegative(),
   confirmation: z.string(),
 });
+const normalizationReconcileSchema = z.object({
+  expectedRevision: z.number().int().nonnegative(),
+  confirmation: z.literal('RECONCILIAR_ESPELHO_APPSTATE'),
+});
 
 function activityMetadata(activityLog: unknown[] | undefined): Record<string, unknown> {
   return activityLog === undefined ? {} : { activityLog };
@@ -100,6 +105,39 @@ export async function appStateRoutes(app: FastifyInstance) {
   app.get('/normalization-preview', { preHandler: app.authenticate }, async (request) => {
     const context = await resolveWorkspaceContext(request.user.sub);
     return normalizationPreview(context.workspaceId, context.workspace.ownerId);
+  });
+
+  app.post('/normalization-reconcile-primary', { preHandler: app.authorize(['ADMIN']) }, async (request, reply) => {
+    const parsed = normalizationReconcileSchema.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: 'INVALID_NORMALIZATION_RECONCILE_REQUEST', details: parsed.error.flatten() });
+    const context = await resolveWorkspaceContext(request.user.sub);
+    if (!(await assertWriteAccess(context.workspaceId, reply))) return;
+    const before = await normalizationPreview(context.workspaceId, context.workspace.ownerId);
+    if (!before.primary) return reply.status(409).send({ error: 'NORMALIZATION_PRIMARY_REQUIRED', preview: before });
+    if (before.revision !== parsed.data.expectedRevision) {
+      return reply.status(409).send({ error: 'NORMALIZATION_REVISION_CONFLICT', revision: before.revision, preview: before });
+    }
+    try {
+      const repair = await reconcilePrimaryAppStateFromNormalized(context.workspaceId, {
+        expectedRevision: parsed.data.expectedRevision,
+        actorId: request.user.sub,
+      });
+      const after = await normalizationPreview(context.workspaceId, context.workspace.ownerId);
+      if (!after.reconciled) {
+        return reply.status(422).send({ error: 'NORMALIZATION_RECONCILIATION_FAILED', repair, preview: after });
+      }
+      return { repair, preview: after, reconciled: true };
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'NORMALIZATION_RECONCILE_FAILED';
+      if (code === 'NORMALIZATION_REVISION_CONFLICT' || code === 'NORMALIZED_PRIMARY_MIRROR_CONFLICT') {
+        const preview = await normalizationPreview(context.workspaceId, context.workspace.ownerId);
+        return reply.status(409).send({ error: 'NORMALIZATION_REVISION_CONFLICT', revision: preview.revision, preview });
+      }
+      if (code === 'NORMALIZATION_PRIMARY_REQUIRED') {
+        return reply.status(409).send({ error: code, preview: await normalizationPreview(context.workspaceId, context.workspace.ownerId) });
+      }
+      throw error;
+    }
   });
 
   app.post('/normalization-shadow', { preHandler: app.authorize(['ADMIN']) }, async (request, reply) => {
