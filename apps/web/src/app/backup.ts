@@ -27,8 +27,9 @@ function normalizeTransaction(value: unknown, index: number): LegacyTransaction 
   if (type !== 'income' && type !== 'expense') throw new Error(`Backup inválido: lançamento ${index + 1} possui tipo desconhecido.`);
   if (!Number.isFinite(amount)) throw new Error(`Backup inválido: lançamento ${index + 1} possui valor inválido.`);
 
+  const base = item as unknown as LegacyTransaction;
   return {
-    ...(item as LegacyTransaction),
+    ...base,
     id,
     date,
     description,
