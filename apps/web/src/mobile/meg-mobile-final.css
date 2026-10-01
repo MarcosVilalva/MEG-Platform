@@ -1508,3 +1508,118 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   .meg2-pending-group-row>article{grid-template-columns:28px minmax(0,1fr)}
   .meg2-pending-batchbar{left:7px;right:7px}
 }
+
+
+/* MEG 2.0.666 · Pendentes V4 · leitura financeira, seleção e CTAs premium. */
+.meg2-pending-metrics article.selected{
+  border-color:rgba(72,238,225,.62)!important;
+  background:
+    radial-gradient(circle at 92% 12%,rgba(69,238,224,.16),transparent 35%),
+    linear-gradient(150deg,rgba(6,83,82,.96),rgba(3,54,57,.94))!important;
+  box-shadow:0 0 18px rgba(47,229,217,.08),inset 0 0 18px rgba(62,235,222,.04);
+}
+.meg2-pending-metrics article.selected small{color:#b6d8d4!important}
+.meg2-pending-metrics article.selected strong{color:#63eee3!important}
+.meg2-pending-metrics article.selected>span{
+  background:linear-gradient(145deg,#0ea89f,#087a78)!important;
+  color:#eafffd!important;
+  border:1px solid rgba(96,245,233,.32);
+}
+
+.meg2-pending-date-heading{
+  align-items:center!important;
+  min-height:35px!important;
+  padding-top:5px!important;
+}
+.meg2-pending-date-heading>i{
+  align-self:center;
+  min-width:12px;
+}
+.meg2-pending-date-total{
+  flex:0 0 auto;
+  min-width:76px;
+  text-align:right;
+  align-items:end;
+}
+.meg2-pending-date-total small{
+  color:#739d99!important;
+  font-size:6.8px!important;
+  letter-spacing:.04em!important;
+  text-transform:none!important;
+}
+.meg2-pending-date-total strong{
+  color:#63e9df!important;
+  font-size:9px!important;
+  font-variant-numeric:tabular-nums;
+}
+
+.meg2-pending-icon.icon-card{
+  color:#63eee3!important;
+  background:
+    linear-gradient(145deg,rgba(9,135,131,.40),rgba(4,72,76,.58))!important;
+  border:1px solid rgba(75,229,219,.18);
+}
+.meg2-pending-icon.icon-card svg{
+  width:21px!important;
+  height:21px!important;
+}
+
+.meg2-pending-batchbar{
+  min-height:58px!important;
+  border-color:rgba(68,239,225,.62)!important;
+  background:
+    radial-gradient(circle at 84% 0%,rgba(79,244,230,.12),transparent 36%),
+    linear-gradient(145deg,rgba(6,105,101,.99),rgba(3,59,63,.99))!important;
+}
+.meg2-pending-batchbar small{font-size:7.5px!important;letter-spacing:.015em}
+.meg2-pending-batchbar strong{font-size:16px!important;font-variant-numeric:tabular-nums}
+.meg2-pending-batchbar>button{
+  min-height:40px!important;
+  border-color:#55f1e5!important;
+  background:linear-gradient(135deg,#16c9bb,#079e98)!important;
+  color:#f6fffe!important;
+  box-shadow:0 0 18px rgba(39,231,217,.18),inset 0 1px 0 rgba(255,255,255,.12)!important;
+}
+
+.meg2-pending-settle>footer .apply,
+.meg2-pending-detail-actions .apply,
+.meg2-pending-success>button.apply{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  border:1px solid #52efe3!important;
+  background:
+    linear-gradient(135deg,#18cbbb 0%,#0aa7a0 52%,#07847f 100%)!important;
+  color:#f5fffe!important;
+  text-shadow:0 1px 0 rgba(0,49,49,.34)!important;
+  box-shadow:
+    0 8px 22px rgba(0,0,0,.18),
+    0 0 20px rgba(39,230,217,.14),
+    inset 0 1px 0 rgba(255,255,255,.14)!important;
+  font-weight:900!important;
+  letter-spacing:.01em;
+}
+.meg2-pending-settle>footer .apply:not(:disabled):active,
+.meg2-pending-detail-actions .apply:not(:disabled):active,
+.meg2-pending-success>button.apply:active{
+  transform:translateY(1px);
+  background:linear-gradient(135deg,#12b9ae,#078f8b)!important;
+}
+.meg2-pending-settle>footer .apply:disabled{
+  opacity:1!important;
+  border-color:rgba(73,178,172,.20)!important;
+  background:linear-gradient(135deg,rgba(7,74,77,.86),rgba(4,50,54,.88))!important;
+  color:#789e9b!important;
+  text-shadow:none!important;
+  box-shadow:none!important;
+}
+.meg2-pending-success>button.apply{
+  min-height:48px!important;
+  font-size:12px!important;
+  border-radius:13px!important;
+}
+
+@media(max-width:360px){
+  .meg2-pending-date-total{min-width:68px}
+  .meg2-pending-date-total strong{font-size:8.3px!important}
+  .meg2-pending-batchbar>button{padding-inline:12px!important}
+}

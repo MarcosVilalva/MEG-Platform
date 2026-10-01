@@ -120,3 +120,12 @@ assert.match(batchSettlement, /transactionTotal/,
   'Tempo transacional total deve ser registrado junto das fases.');
 
 console.log('Contrato da baixa protegida individual e em lote validado.');
+
+
+assert.equal(
+  batchSettlement.includes('isAllowedSettlementPaymentMethod') &&
+  batchSettlement.includes('SETTLEMENT_METHOD_NOT_ALLOWED') &&
+  batchSettlement.includes("'PIX', 'BOLETO', 'DINHEIRO', 'TRANSFERENCIA_BANCARIA'"),
+  true,
+  'Baixa protegida deve aceitar apenas PIX, boleto, dinheiro e transferência bancária.',
+);

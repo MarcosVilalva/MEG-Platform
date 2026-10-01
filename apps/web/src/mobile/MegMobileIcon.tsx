@@ -5,6 +5,7 @@ export type MegIconName =
   | 'banknote' | 'circle-dollar' | 'house' | 'fuel' | 'droplet' | 'heart-pulse'
   | 'graduation-cap' | 'ticket' | 'shopping-bag' | 'repeat' | 'landmark' | 'receipt'
   | 'piggy-bank' | 'briefcase' | 'cup-soda' | 'sandwich' | 'gamepad' | 'sparkles' | 'appliance' | 'arrow-up' | 'arrow-down' | 'arrows-right-left'
+  | 'pix' | 'barcode' | 'coins' | 'bank-transfer'
   | 'x' | 'edit' | 'chevron-left' | 'chevron-right' | 'chevron-down' | 'check-line';
 
 type IconProps = { name: MegIconName; size?: number; strokeWidth?: number; className?: string };
@@ -52,6 +53,10 @@ export function MegIcon({ name, size = 22, strokeWidth = 1.9, className }: IconP
   if (key === 'play-circle') return <svg {...base}><circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4Z"/></svg>;
   if (key === 'credit-card') return <svg {...base}><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>;
   if (key === 'banknote') return <svg {...base}><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10h.01M18 14h.01"/></svg>;
+  if (key === 'pix') return <svg {...base}><path d="m12 3 3.35 3.35a2.25 2.25 0 0 0 3.18 0L20 4.88"/><path d="m12 21-3.35-3.35a2.25 2.25 0 0 0-3.18 0L4 19.12"/><path d="m3 12 3.35-3.35a2.25 2.25 0 0 1 3.18 0l5.82 5.82a2.25 2.25 0 0 0 3.18 0L21 12"/><path d="m21 12-3.35 3.35a2.25 2.25 0 0 1-3.18 0L8.65 9.53a2.25 2.25 0 0 0-3.18 0L3 12"/></svg>;
+  if (key === 'barcode') return <svg {...base}><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M7 7v10M10 7v10M13 7v10M16 7v10M18 7v10"/></svg>;
+  if (key === 'coins') return <svg {...base}><ellipse cx="9" cy="7" rx="6" ry="3"/><path d="M3 7v4c0 1.7 2.7 3 6 3 1.2 0 2.3-.2 3.2-.5"/><path d="M3 11v4c0 1.7 2.7 3 6 3 .8 0 1.6-.1 2.3-.2"/><ellipse cx="16" cy="15" rx="5" ry="3"/><path d="M11 15v3c0 1.7 2.2 3 5 3s5-1.3 5-3v-3"/></svg>;
+  if (key === 'bank-transfer') return <svg {...base}><path d="m3 8 9-5 9 5"/><path d="M5 9h14M7 9v5M17 9v5M5 15h14"/><path d="m8 19-3 2 3 2M5 21h7"/><path d="m16 19 3 2-3 2M19 21h-7"/></svg>;
   if (key === 'circle-dollar') return <svg {...base}><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8M12 6v12"/></svg>;
   if (key === 'house') return <svg {...base}><path d="m3 11 9-8 9 8"/><path d="M5 10v11h14V10"/><path d="M9 21v-6h6v6"/></svg>;
   if (key === 'fuel') return <svg {...base}><path d="M3 22V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v18"/><path d="M2 22h15M6 6h7v5H6z"/><path d="m16 7 3 3v8a2 2 0 0 0 4 0v-5l-2-2"/></svg>;

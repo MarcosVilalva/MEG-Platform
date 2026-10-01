@@ -684,3 +684,47 @@ assert.doesNotMatch(
   /\.meg2-card-art>img\{[\s\S]{0,260}transform:scale|\.meg3-cardcenter-hero img\{[\s\S]{0,260}transform:scale/,
   'Artes finais não devem depender de zoom artificial para preencher o cartão.',
 );
+
+
+/* MEG 2.0.666 · contratos da rodada final de acabamento. */
+assert.equal(
+  coreScreens.includes('meg3-movement-sort') &&
+  coreScreens.includes('dateDescending') &&
+  !coreScreens.includes('<section className="meg3-movement-toolbar"') &&
+  !coreScreens.includes('className="meg3-movement-new"'),
+  true,
+  'Lançamentos deve remover comandos rápidos duplicados e manter apenas ordenação simples por data no cabeçalho da lista.',
+);
+assert.equal(
+  mobile.includes('canonicalCardKeys') &&
+  mobile.includes('card.statement') &&
+  mobile.includes('statement.payableAmount') &&
+  mobile.includes('meg2-pending-date-total') &&
+  mobile.includes('Total selecionado'),
+  true,
+  'Pendentes deve usar a fatura canônica, totalizar por vencimento e refletir o lote selecionado no resumo.',
+);
+assert.equal(
+  mobile.includes("subtitle:'Pagamento instantâneo'") &&
+  mobile.includes("icon:'pix'") &&
+  mobile.includes("icon:'barcode'") &&
+  mobile.includes("icon:'coins'") &&
+  mobile.includes("icon:'bank-transfer'") &&
+  mobile.includes('searchable={false}'),
+  true,
+  'Baixa deve expor somente as formas operacionais com iconografia SVG própria.',
+);
+assert.equal(
+  mobileIcons.includes("| 'pix' | 'barcode' | 'coins' | 'bank-transfer'") &&
+  mobileIcons.includes("key === 'pix'") &&
+  mobileIcons.includes("key === 'barcode'") &&
+  mobileIcons.includes("key === 'coins'") &&
+  mobileIcons.includes("key === 'bank-transfer'"),
+  true,
+  'Ícones de PIX, boleto, dinheiro e transferência devem ser SVGs nativos do MEG.',
+);
+assert.match(
+  css,
+  /Pendentes V4[\s\S]*\.meg2-pending-date-total[\s\S]*\.meg2-pending-settle>footer \.apply[\s\S]*\.meg2-pending-success>button\.apply/,
+  'Pendentes V4 deve destacar totais por data e CTAs de revisão, confirmação e conclusão.',
+);

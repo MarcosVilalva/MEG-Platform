@@ -77,7 +77,6 @@ export function MegMobileMovements({
   data,
   onOpenEvent,
   onOpenPeriod,
-  onCreate,
 }: {
   data: PhoenixReadModel;
   onOpenEvent: (event: FinancialEvent) => void;
@@ -89,6 +88,7 @@ export function MegMobileMovements({
   const [filters, setFilters] = useState({ kind: 'all' as MobileMovementKind, categoryId: '', accountId: '', paymentMethodId: '' });
   const [draft, setDraft] = useState(filters);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [dateDescending, setDateDescending] = useState(true);
 
   const posted = useMemo(() => data.events.items, [data.events.items]);
   const normalized = query.trim().toLocaleLowerCase('pt-BR');
@@ -109,7 +109,9 @@ export function MegMobileMovements({
       if (filters.paymentMethodId && String(event.paymentMethodId || event.paymentMethod?.id || '') !== filters.paymentMethodId) return false;
       return true;
     })
-    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    .sort((a, b) => dateDescending
+      ? String(b.date).localeCompare(String(a.date))
+      : String(a.date).localeCompare(String(b.date)));
 
   // Mantém os KPIs de Lançamentos alinhados à mesma fonte de verdade da Home:
   // apenas movimentos realizados da competência atual entram no resumo.
@@ -160,24 +162,11 @@ export function MegMobileMovements({
       <article className={result >= 0 ? 'result positive' : 'result negative'}><span aria-hidden="true"><MegIcon name="trend" size={20}/></span><small>Resultado</small><strong>{result >= 0 ? '+' : '-'}{money.format(Math.abs(result))}</strong></article>
     </section>
 
-    <section className="meg3-movement-toolbar" aria-label="Busca e filtros rápidos">
-      <button type="button" className={query ? 'active icon-only' : 'icon-only'} aria-label="Buscar lançamentos" onClick={openFilters}>
-        <MegIcon name="search" size={19}/>
-      </button>
-      <button type="button" className={hasFilters ? 'active icon-only' : 'icon-only'} aria-label="Filtrar lançamentos" onClick={openFilters}>
-        <MegIcon name="sliders" size={19}/>
-      </button>
-      <button type="button" className="period" aria-label="Selecionar período" onClick={onOpenPeriod}>
-        <MegIcon name="calendar" size={17}/><span>{competenceLabel}</span><MegIcon name="chevron-down" size={14}/>
-      </button>
-      <button type="button" className={filters.accountId ? 'active icon-only' : 'icon-only'} aria-label="Filtrar por conta" onClick={openFilters}>
-        <MegIcon name="wallet" size={19}/>
-      </button>
-    </section>
-
     <header className="meg3-movement-list-head">
-      <span><strong>{visibleCount.toLocaleString('pt-BR')} lançamento{visibleCount === 1 ? '' : 's'}</strong><small>{competenceLabel} · toque para abrir</small></span>
-      <button type="button" className="meg3-movement-new" onClick={onCreate}><MegIcon name="plus" size={17}/><span>Novo</span></button>
+      <span><strong>{visibleCount.toLocaleString('pt-BR')} lançamento{visibleCount === 1 ? '' : 's'}</strong><small>{competenceLabel} · {dateDescending ? 'mais recentes primeiro' : 'mais antigos primeiro'}</small></span>
+      <button type="button" className="meg3-movement-sort" aria-label={dateDescending ? 'Ordenar por data crescente' : 'Ordenar por data decrescente'} onClick={() => setDateDescending((value) => !value)}>
+        <MegIcon name={dateDescending ? 'arrow-down' : 'arrow-up'} size={16}/><span>Data</span>
+      </button>
     </header>
 
     <section className="meg3-event-list" data-meg-scroll-region="true">

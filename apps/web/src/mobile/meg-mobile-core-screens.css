@@ -158,7 +158,7 @@
 /* MEG 29-09-2026 · Lançamentos · referência visual oficial
    Bloco canônico: a tela permanece fixa e somente a lista rola. */
 .meg3-movements{
-  grid-template-rows:auto auto auto auto minmax(0,1fr);
+  grid-template-rows:auto auto auto minmax(0,1fr);
   gap:clamp(6px,.78dvh,9px);
   padding:clamp(7px,.9dvh,10px) clamp(9px,2.5vw,12px) clamp(6px,.8dvh,9px);
   background:
@@ -887,4 +887,42 @@
   .meg3-event-card{grid-template-columns:minmax(0,1fr) 31px!important}
   .meg3-event-open{grid-template-columns:34px minmax(0,1fr) auto;gap:5px;padding-left:6px}
   .meg3-event-edit{width:28px;height:28px}
+}
+
+
+/* MEG 2.0.666 · Lançamentos enxuto: sem comandos duplicados; ordenação de data no cabeçalho da lista. */
+.meg3-movement-sort{
+  flex:0 0 auto;
+  min-width:72px;
+  height:32px;
+  padding:0 11px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  border:1px solid rgba(67,235,223,.52);
+  border-radius:11px;
+  background:
+    linear-gradient(180deg,rgba(8,109,108,.96),rgba(3,67,70,.98));
+  color:#cffffa;
+  box-shadow:0 0 14px rgba(49,232,220,.08),inset 0 0 11px rgba(85,255,241,.04);
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.02em;
+  touch-action:manipulation;
+}
+.meg3-movement-sort:active{
+  transform:translateY(1px);
+  background:linear-gradient(180deg,rgba(11,137,132,.98),rgba(4,78,80,.98));
+}
+.meg3-movement-sort svg{color:#55ece2}
+.meg3-movement-list-head>span small{
+  max-width:220px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+@media(max-width:365px){
+  .meg3-movement-sort{min-width:64px;height:30px;padding-inline:9px}
+  .meg3-movement-list-head>span small{max-width:190px}
 }
