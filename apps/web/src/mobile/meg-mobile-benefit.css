@@ -37,3 +37,25 @@
 .meg3-benefit-modal>footer .secondary{border:1px solid rgba(65,192,187,.20);background:#04383a;color:#d9efed}
 .meg3-benefit-modal>footer .primary{border:1px solid #2de7da;background:linear-gradient(180deg,#0a8d89,#076765);color:#fff}
 @media(max-height:720px){.meg3-benefit-modal{height:96dvh;max-height:96dvh}.meg3-benefit-modal>header{min-height:64px}.meg3-benefit-modal>header p{display:none}.meg3-benefit-kpis article{min-height:55px}.meg3-benefit-modal>footer{min-height:56px}}
+
+
+/* BENEFÍCIO V10 · modal consistente com a Central de Cartões. */
+.meg3-benefit-overlay,
+.meg3-benefit-modal,
+.meg3-benefit-modal *{box-sizing:border-box}
+.meg3-benefit-overlay{width:100vw!important;max-width:100vw!important;overflow-x:hidden!important}
+.meg3-benefit-modal{
+  width:min(100vw,620px)!important;max-width:100vw!important;min-width:0!important;overflow-x:hidden!important;
+}
+.meg3-benefit-modal>header,.meg3-benefit-kpis,.meg3-benefit-list,.meg3-benefit-modal>footer{
+  width:100%;min-width:0;max-width:100%;
+}
+.meg3-benefit-modal>header>div{min-width:0;flex:1}
+.meg3-benefit-modal>header h2{
+  max-width:100%;white-space:normal;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;
+}
+.meg3-benefit-modal>header button{flex:0 0 44px}
+@media(max-width:560px){
+  .meg3-benefit-modal{width:100vw!important;max-width:100vw!important;border-inline:0!important;border-radius:22px 22px 0 0}
+}
