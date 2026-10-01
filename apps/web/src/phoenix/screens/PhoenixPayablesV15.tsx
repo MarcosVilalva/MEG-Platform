@@ -26,6 +26,7 @@ const monetaryAccountTypes = new Set(['checking', 'savings', 'cash', 'investment
 type Priority = 'all' | 'overdue' | 'today' | 'upcoming' | 'paid';
 type PendingPeriodMode = 'month' | 'all';
 type GroupMode = 'date' | 'category' | 'account' | 'payment-method' | 'none';
+export type PhoenixPayablesSelectionRequest = { token: number; ids: string[] };
 type PendingChild = {
   id: string;
   description: string;
@@ -458,7 +459,7 @@ function dateRenderBlocks(group: PendingGroup): DateRenderBlock[] {
   });
 }
 
-export function PhoenixPayables({ data, onMonthChange, onEditEvent }: { data: PhoenixReadModel; onMonthChange?: (month: string) => void; onEditEvent?: (eventId: string) => void }) {
+export function PhoenixPayables({ data, onMonthChange, onEditEvent, selectionRequest }: { data: PhoenixReadModel; onMonthChange?: (month: string) => void; onEditEvent?: (eventId: string) => void; selectionRequest?: PhoenixPayablesSelectionRequest | null }) {
   const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
   const [model, setModel] = useState(data);
   const today = todaySaoPaulo();
@@ -510,6 +511,7 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent }: { data: Ph
   const [settlementReceipt, setSettlementReceipt] = useState<SettlementReceipt | null>(null);
   const [locallySettled, setLocallySettled] = useState<Set<string>>(() => new Set());
   const pendingScrollRef = useRef<HTMLDivElement | null>(null);
+  const selectionRequestTokenRef = useRef<number | null>(null);
 
   useEffect(() => {
     setModel(data);
@@ -585,6 +587,21 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent }: { data: Ph
       .filter((item) => !locallySettled.has(item.id))
       .sort((left, right) => left.dueDate.localeCompare(right.dueDate) || left.description.localeCompare(right.description, 'pt-BR'));
   }, [model, allPortfolio, periodMode, locallySettled]);
+
+  useEffect(() => {
+    if (nativeOperational || !selectionRequest || selectionRequestTokenRef.current === selectionRequest.token) return;
+    const eligibleIds = new Set(open.filter(isBatchSelectable).map((item) => item.id));
+    const requestedIds = selectionRequest.ids.filter((id) => eligibleIds.has(id));
+    selectionRequestTokenRef.current = selectionRequest.token;
+    if (!requestedIds.length) return;
+    setSelected(new Set(requestedIds));
+    setPriority('all');
+    setSearch('');
+    setDateFrom('');
+    setDateTo('');
+    setSuccessMessage('');
+    resetPrepared();
+  }, [nativeOperational, selectionRequest, open]);
 
   const searchNeedle = useMemo(() => normalize(search), [search]);
 
