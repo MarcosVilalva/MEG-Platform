@@ -13,6 +13,7 @@ export type PhoenixNavigationIcon =
   | 'reconcile'
   | 'analytics'
   | 'budgets'
+  | 'reports'
   | 'logout'
   | 'search'
   | 'more';
@@ -43,6 +44,7 @@ export function PhoenixNavIcon({ name }: { name: PhoenixNavigationIcon }) {
   if (name === 'reconcile') return <svg {...common}><path d="M4 7h9M10 4l3 3-3 3M20 17h-9M14 14l-3 3 3 3M15.5 10.5l1.7 1.7 3.3-3.7"/></svg>;
   if (name === 'analytics') return <svg {...common}><path d="M3 20h18M5 17v-5M10 17V7M15 17v-3M20 17V9M4 8l5-4 6 5 5-4"/></svg>;
   if (name === 'budgets') return <svg {...common}><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/><path d="m15 9 5-5"/></svg>;
+  if (name === 'reports') return <svg {...common}><path d="M6 3.5h8.5L19 8v12.5H6z"/><path d="M14.5 3.5V8H19M9 12h7M9 15h7M9 18h4"/></svg>;
   if (name === 'logout') return <svg {...common}><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5M14 8l4 4-4 4M18 12H8"/></svg>;
   return <svg {...common}><path d="M4 7h16M4 12h16M4 17h16"/></svg>;
 }
