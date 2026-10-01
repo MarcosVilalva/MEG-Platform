@@ -58,6 +58,7 @@ const customSchedule = validateNotificationSchedule({
   messagingMorningTime: '08:30',
   messagingMiddayTime: '13:15',
   messagingEveningTime: '20:30',
+  alexaAutomationEnabled: false,
   alexaWeekdayMorningTime: '07:10',
   alexaWeekdayEveningTime: '17:30',
   alexaWeekdayNightTime: '20:45',
@@ -71,6 +72,18 @@ assert.deepEqual(
 assert.equal(messagingCycleForSlot('08:30', customSchedule)?.task, 'daily-summary');
 assert.equal(messagingCycleForSlot('06:00', customSchedule), null,
   'Após customizar a agenda, o slot antigo não deve continuar ativo por acidente.');
+
+
+const customAlexaSchedule = validateNotificationSchedule({
+  ...customSchedule,
+  automationEnabled: false,
+  alexaAutomationEnabled: true,
+});
+assert.deepEqual(
+  notificationWatchdogPlan(new Date('2026-09-23T10:12:00Z'), customAlexaSchedule).cycles.map((cycle) => `${cycle.kind}:${cycle.slot}:${cycle.task}`),
+  ['alexa:07:10:alexa-daily-briefing'],
+  'Agenda customizada da Alexa deve substituir o briefing fixo das 06:20.',
+);
 
 const quietSchedule = validateNotificationSchedule({
   ...customSchedule,
