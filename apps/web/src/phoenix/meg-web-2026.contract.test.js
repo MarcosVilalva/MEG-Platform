@@ -9,8 +9,8 @@ const reports = readFileSync(new URL('./screens/PhoenixReportsCenter.tsx', impor
 const command = readFileSync(new URL('./PhoenixCommandPalette.tsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./meg-web-2026.css', import.meta.url), 'utf8');
 
-assert.match(app, /className="phoenix-v15 meg-web-2026"/,
-  'Runtime Web deve possuir shell canônico próprio sem alterar o clean-room móvel.');
+assert.match(app, /className="phoenix-v15"[\s\S]*className="meg-web-2026"/,
+  'Runtime Web deve preservar o boundary Phoenix usado pelo APK e montar a camada canônica em um wrapper desktop próprio.');
 assert.match(app, /data-web-view=\{view\}/,
   'Shell Web deve expor contexto do módulo para composição responsiva.');
 assert.match(app, /meg-web-quick-actions[\s\S]*requestLaunch\('expense'\)[\s\S]*requestLaunch\('income'\)[\s\S]*navigate\('decisions'\)/,
