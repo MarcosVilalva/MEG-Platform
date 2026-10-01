@@ -25,6 +25,7 @@ const normalizationReconcileBridge = readFileSync(new URL('./normalization-recon
 const launchBusinessRules = readFileSync(new URL('./launch-business-rules-bridge.ts', import.meta.url), 'utf8');
 const operationalHome = readFileSync(new URL('./PhoenixOperationalMobileHome.tsx', import.meta.url), 'utf8');
 const operationalCss = readFileSync(new URL('./phoenix-operational-mobile.css', import.meta.url), 'utf8');
+const pendingCss = readFileSync(new URL('./phoenix-pending-v15.css', import.meta.url), 'utf8');
 const nativeNotifications = readFileSync(new URL('./phoenix-native-notifications.ts', import.meta.url), 'utf8');
 const gridFilter = readFileSync(new URL('./PhoenixGridFilter.tsx', import.meta.url), 'utf8');
 const gridCss = readFileSync(new URL('./phoenix-grid.css', import.meta.url), 'utf8');
@@ -448,6 +449,30 @@ assert.match(megWebCss, /\.px-data-table tbody tr\.is-search-focused/,
   'Web deve possuir estilo dedicado para destacar o resultado localizado.');
 assert.match(commandPalette, /data\.payables\.map/,
   'Busca global deve localizar contas pendentes pelo domínio oficial.');
+assert.match(commandPalette, /route: 'payables'[\s\S]*kind: 'Conta pendente'[\s\S]*targetMonth: String\(item\.dueDate\)\.slice\(0, 7\)[\s\S]*targetId:/,
+  'Resultado de Pendentes deve preservar competência e compromisso exato.');
+assert.match(commandPalette, /targetId: `payable-\$\{item\.id\}`/,
+  'Pendência deve usar o identificador canônico do cockpit.');
+assert.match(phoenixApp, /\(route === 'movements' \|\| route === 'payables'\)[\s\S]*await applyMonthlyPeriod\(targetMonth\)/,
+  'Busca deve carregar a competência correta também para uma pendência histórica.');
+assert.match(phoenixApp, /route === 'payables' && targetId[\s\S]*setSearchPayableRequest[\s\S]*payableId: targetId/,
+  'Shell Web deve encaminhar a pendência exata ao cockpit.');
+assert.match(phoenixApp, /focusRequest=\{nativeOperational \? undefined : searchPayableRequest\}/,
+  'Foco de Pendentes vindo da busca deve permanecer exclusivo do Web.');
+assert.match(payablesScreen, /focusRequest[\s\S]*setPriority\('all'\)[\s\S]*setSearch\(''\)[\s\S]*setDateFrom\(''\)[\s\S]*setDateTo\(''\)[\s\S]*setFocusedPayableId\(target\.id\)/,
+  'Pendentes deve remover somente filtros visuais que poderiam esconder o compromisso pesquisado.');
+assert.match(screens, /PhoenixPayablesFocusRequest[\s\S]*focusRequest\?: PhoenixPayablesFocusRequest[\s\S]*focusRequest=\{focusRequest\}/,
+  'Adaptador canônico de Pendentes deve tipar e repassar o foco vindo da busca.');
+assert.match(payablesScreen, /buildGroups\(\[target\], groupMode\)[\s\S]*setExpandedGroups/,
+  'Busca deve preservar o agrupamento atual e abrir apenas o grupo do compromisso localizado.');
+assert.doesNotMatch(payablesScreen, /focusRequest[\s\S]{0,900}setSelected\(/,
+  'Foco vindo da busca não pode selecionar automaticamente uma pendência para baixa.');
+assert.match(payablesScreen, /data-pending-id=\{item\.id\}[\s\S]*is-search-focused/,
+  'Compromisso pesquisado deve possuir âncora e destaque visual.');
+assert.match(payablesScreen, /CSS\.escape\(target\.id\)[\s\S]*scrollIntoView\(\{ block: 'center', behavior: 'smooth' \}\)/,
+  'Busca deve rolar suavemente até a pendência localizada.');
+assert.match(pendingCss, /\.px-pending-row\.is-search-focused/,
+  'Pendentes deve possuir destaque visual dedicado para o resultado pesquisado.');
 assert.match(commandPalette, /data\.budgets\.map/,
   'Busca global deve localizar orçamentos do período.');
 assert.match(commandPalette, /Comparação de saldo e ajustes auditáveis/,

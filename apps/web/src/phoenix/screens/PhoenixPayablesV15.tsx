@@ -27,6 +27,7 @@ type Priority = 'all' | 'overdue' | 'today' | 'upcoming' | 'paid';
 type PendingPeriodMode = 'month' | 'all';
 type GroupMode = 'date' | 'category' | 'account' | 'payment-method' | 'none';
 export type PhoenixPayablesSelectionRequest = { token: number; ids: string[] };
+export type PhoenixPayablesFocusRequest = { token: number; payableId: string };
 type PendingChild = {
   id: string;
   description: string;
@@ -459,7 +460,7 @@ function dateRenderBlocks(group: PendingGroup): DateRenderBlock[] {
   });
 }
 
-export function PhoenixPayables({ data, onMonthChange, onEditEvent, selectionRequest }: { data: PhoenixReadModel; onMonthChange?: (month: string) => void; onEditEvent?: (eventId: string) => void; selectionRequest?: PhoenixPayablesSelectionRequest | null }) {
+export function PhoenixPayables({ data, onMonthChange, onEditEvent, selectionRequest, focusRequest }: { data: PhoenixReadModel; onMonthChange?: (month: string) => void; onEditEvent?: (eventId: string) => void; selectionRequest?: PhoenixPayablesSelectionRequest | null; focusRequest?: PhoenixPayablesFocusRequest | null }) {
   const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
   const [model, setModel] = useState(data);
   const today = todaySaoPaulo();
@@ -512,6 +513,8 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent, selectionReq
   const [locallySettled, setLocallySettled] = useState<Set<string>>(() => new Set());
   const pendingScrollRef = useRef<HTMLDivElement | null>(null);
   const selectionRequestTokenRef = useRef<number | null>(null);
+  const focusRequestTokenRef = useRef<number | null>(null);
+  const [focusedPayableId, setFocusedPayableId] = useState<string | null>(null);
 
   useEffect(() => {
     setModel(data);
@@ -603,6 +606,37 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent, selectionReq
     setSuccessMessage('');
     resetPrepared();
   }, [nativeOperational, selectionRequest, open]);
+
+  useEffect(() => {
+    if (nativeOperational || !focusRequest || focusRequestTokenRef.current === focusRequest.token) return;
+    const target = open.find((item) => item.id === focusRequest.payableId);
+    if (!target) return;
+    focusRequestTokenRef.current = focusRequest.token;
+    setPriority('all');
+    setSearch('');
+    setDateFrom('');
+    setDateTo('');
+    setSuccessMessage('');
+    setFocusedPayableId(target.id);
+    const targetGroup = buildGroups([target], groupMode)[0];
+    if (targetGroup) {
+      setExpandedGroups((current) => {
+        const next = new Set(current);
+        next.add(targetGroup.key);
+        return next;
+      });
+    }
+    const scrollTimer = window.setTimeout(() => {
+      document.querySelector<HTMLElement>(`[data-pending-id="${CSS.escape(target.id)}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 100);
+    const clearTimer = window.setTimeout(() => {
+      setFocusedPayableId((current) => current === target.id ? null : current);
+    }, 3600);
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [focusRequest, groupMode, nativeOperational, open]);
 
   const searchNeedle = useMemo(() => normalize(search), [search]);
 
@@ -919,7 +953,7 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent, selectionReq
       ? Math.max(1, Math.floor((new Date(`${today}T12:00:00Z`).getTime() - new Date(`${item.dueDate}T12:00:00Z`).getTime()) / 86400000))
       : 0;
     const card = isCardLike(item);
-    return <div className={`px-pending-row ${adjustment ? 'is-adjustment' : ''} ${item.source === 'card' ? 'is-card-statement' : ''}`} key={item.id}>
+    return <div data-pending-id={item.id} className={`px-pending-row ${adjustment ? 'is-adjustment' : ''} ${item.source === 'card' ? 'is-card-statement' : ''} ${focusedPayableId === item.id ? 'is-search-focused' : ''}`} key={item.id}>
       <input type="checkbox" aria-label={`Selecionar ${item.description}`} disabled={adjustment || saving} checked={selected.has(item.id)} onChange={() => toggle(item.id)} />
       <div className="px-pending-date"><strong>{date.format(new Date(`${item.dueDate}T12:00:00Z`))}</strong><small>{adjustment ? 'Ajuste de estorno' : late ? `${late} dia(s) em atraso` : item.dueDate === today ? 'Vence hoje' : 'Programado'}</small></div>
       <div className="px-pending-copy"><strong>{item.description}</strong><small>{item.source === 'card' ? `${item.children?.length || 0} lançamento(s) agrupado(s)` : item.installmentQty > 1 ? `Parcela ${item.installmentNo}/${item.installmentQty}` : 'Pagamento único'} · {item.categoryName} · {item.paymentMethod}</small></div>
