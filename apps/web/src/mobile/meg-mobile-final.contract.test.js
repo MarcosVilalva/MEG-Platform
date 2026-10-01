@@ -795,3 +795,34 @@ assert.equal(
   true,
   'Pickers globais devem respeitar o visualViewport real, travar o fundo e permitir fechamento por Escape.',
 );
+
+
+/* MEG 2.0.670 · fechamento do Benefício e da sessão. */
+assert.equal(
+  benefitModal.includes('const evolution=useMemo') &&
+  benefitModal.includes('EVOLUÇÃO DO SALDO') &&
+  benefitModal.includes('meg3-benefit-chart') &&
+  benefitModal.includes('Saldo inicial') &&
+  benefitModal.includes('Saldo atual'),
+  true,
+  'Benefício deve exibir evolução real do saldo a partir das movimentações do período.',
+);
+assert.match(
+  benefitCss,
+  /BENEFÍCIO V11[\s\S]*\.meg3-benefit-evolution[\s\S]*\.meg3-benefit-chart[\s\S]*\.meg3-benefit-chart \.line/,
+  'Evolução do Verocard deve possuir apresentação compacta própria sem substituir a lista rolável.',
+);
+assert.equal(
+  mobile.includes("useState<'logout'|'close'|null>") &&
+  mobile.includes("setConfirm('logout')") &&
+  mobile.includes("Deseja sair da sua conta?") &&
+  settings.includes('setLogoutConfirm(true)') &&
+  settings.includes('Confirmar saída da conta'),
+  true,
+  'Todos os caminhos visíveis de logout mobile devem exigir confirmação antes de encerrar a sessão.',
+);
+assert.match(
+  settingsCss,
+  /MEG 2\.0\.670[\s\S]*\.meg4-confirm-overlay[\s\S]*\.meg4-confirm-card[\s\S]*button\.danger/,
+  'Configurações deve usar confirmação de logout consistente com os modais mobile.',
+);

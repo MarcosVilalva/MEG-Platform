@@ -74,6 +74,7 @@ export function MegMobileSettings({data,onLogout}:{data:PhoenixReadModel;onLogou
   const [paymentMethods,setPaymentMethods]=useState(data.paymentMethods);
   const [cards,setCards]=useState(data.cards);
   const [version,setVersion]=useState('Consultando…');
+  const [logoutConfirm,setLogoutConfirm]=useState(false);
   const fileRef=useRef<HTMLInputElement>(null);
 
   useEffect(()=>{ setPaymentMethods(data.paymentMethods); },[data.paymentMethods]);
@@ -305,8 +306,17 @@ export function MegMobileSettings({data,onLogout}:{data:PhoenixReadModel;onLogou
           <div className="meg4-status-row"><span><strong>Versão instalada</strong><small>{version}</small></span><b className="ok">OTA</b></div>
           <div className="meg4-status-row"><span><strong>Dados normalizados</strong><small>{data.normalization.primary&&data.normalization.reconciled?'Leitura conciliada':'Requer verificação'}</small></span><b className={data.normalization.primary&&data.normalization.reconciled?'ok':'warn'}>{data.normalization.primary&&data.normalization.reconciled?'OK':'ATENÇÃO'}</b></div>
         </article>
-        {onLogout?<button className="meg4-logout" onClick={onLogout}>Sair da conta</button>:null}
+        {onLogout?<button className="meg4-logout" onClick={()=>setLogoutConfirm(true)}>Sair da conta</button>:null}
       </>:null}
     </section>
+
+    {logoutConfirm&&onLogout?<div className="meg4-confirm-overlay" role="presentation" onClick={()=>setLogoutConfirm(false)}>
+      <section className="meg4-confirm-card" role="dialog" aria-modal="true" aria-label="Confirmar saída da conta" onClick={(event)=>event.stopPropagation()}>
+        <small>SESSÃO</small>
+        <h3>Deseja sair da sua conta?</h3>
+        <p>Você precisará entrar novamente para acessar seus dados.</p>
+        <div><button type="button" onClick={()=>setLogoutConfirm(false)}>Cancelar</button><button type="button" className="danger" onClick={onLogout}>Sim, sair</button></div>
+      </section>
+    </div>:null}
   </main>;
 }

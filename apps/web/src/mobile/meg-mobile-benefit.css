@@ -3,7 +3,7 @@
   display:grid;place-items:end center;overflow:hidden;background:rgba(0,18,20,.75);}
 .meg3-benefit-modal{
   width:min(100%,620px);height:min(88dvh,820px);max-height:88dvh;min-height:0;
-  display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;overflow:hidden;
+  display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto;overflow:hidden;
   border:1px solid rgba(48,235,221,.45);border-bottom:0;border-radius:24px 24px 0 0;
   background:linear-gradient(165deg,#063d40,#032d30 54%,#012326);color:#f7ffff;
   box-shadow:0 -22px 70px rgba(0,0,0,.38),0 0 28px rgba(31,232,220,.10)
@@ -58,4 +58,114 @@
 .meg3-benefit-modal>header button{flex:0 0 44px}
 @media(max-width:560px){
   .meg3-benefit-modal{width:100vw!important;max-width:100vw!important;border-inline:0!important;border-radius:22px 22px 0 0}
+}
+
+
+/* BENEFÍCIO V11 · evolução compacta do saldo, sem roubar a rolagem dos lançamentos. */
+.meg3-benefit-evolution{
+  margin:0 14px 9px;
+  padding:10px 11px 9px;
+  border:1px solid rgba(48,232,219,.22);
+  border-radius:15px;
+  background:linear-gradient(145deg,rgba(4,64,66,.86),rgba(2,43,46,.92));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+.meg3-benefit-evolution>header{
+  display:flex;
+  align-items:start;
+  justify-content:space-between;
+  gap:10px;
+}
+.meg3-benefit-evolution>header>div{min-width:0}
+.meg3-benefit-evolution>header small{
+  display:block;
+  color:#5ae8df;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.11em;
+}
+.meg3-benefit-evolution>header strong{
+  display:block;
+  margin-top:3px;
+  color:#fff;
+  font-size:15px;
+  line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.meg3-benefit-evolution>header>span{
+  padding:4px 7px;
+  border-radius:999px;
+  background:rgba(49,224,211,.08);
+  color:#8fd5d0;
+  font-size:7px;
+  white-space:nowrap;
+}
+.meg3-benefit-chart{
+  position:relative;
+  height:62px;
+  margin-top:6px;
+  padding-bottom:13px;
+}
+.meg3-benefit-chart svg{
+  width:100%;
+  height:49px;
+  display:block;
+  overflow:visible;
+}
+.meg3-benefit-chart .grid{
+  stroke:rgba(108,183,179,.10);
+  stroke-width:1;
+  vector-effect:non-scaling-stroke;
+}
+.meg3-benefit-chart .line{
+  fill:none;
+  stroke:#55e8df;
+  stroke-width:2.2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  vector-effect:non-scaling-stroke;
+}
+.meg3-benefit-chart-range{
+  position:absolute;
+  inset:auto 0 0;
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  color:#759b98;
+  font-size:6.5px;
+  font-variant-numeric:tabular-nums;
+}
+.meg3-benefit-evolution>footer{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  margin-top:4px;
+}
+.meg3-benefit-evolution>footer>span{
+  min-width:0;
+  padding:7px 8px;
+  border:1px solid rgba(58,190,184,.12);
+  border-radius:10px;
+  background:rgba(2,45,47,.55);
+}
+.meg3-benefit-evolution>footer small{
+  display:block;
+  color:#809e9b;
+  font-size:6.5px;
+}
+.meg3-benefit-evolution>footer b{
+  display:block;
+  margin-top:2px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#dff7f5;
+  font-size:9px;
+  font-variant-numeric:tabular-nums;
+}
+@media(max-height:720px){
+  .meg3-benefit-evolution{margin-bottom:6px;padding:8px 9px 7px}
+  .meg3-benefit-chart{height:48px}
+  .meg3-benefit-chart svg{height:36px}
+  .meg3-benefit-evolution>footer{display:none}
 }
