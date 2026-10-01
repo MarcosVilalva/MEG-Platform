@@ -1,6 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import type { PhoenixReadModel } from '../contracts';
+import { receivablesClient } from '../../app/receivables-client';
+import { readSession } from '../../app/auth-client';
+import { loadPhoenixReadModel } from '../data/load-phoenix-read-model';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -97,34 +101,281 @@ function initialReceivableFilters(): ReceivableFilters {
 
 const receivableLabels: Record<ReceivableKey, string> = { dueDate: 'Vencimento', description: 'Descrição', customer: 'Cliente', installment: 'Parcela', totalAmount: 'Total', openAmount: 'Em aberto', status: 'Status', receipts: 'Recebimentos' };
 
-export function PhoenixReceivablesGrid({ data }: { data: PhoenixReadModel }) {
+export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: PhoenixReadModel; onDataCommitted?: (snapshot: PhoenixReadModel) => void }) {
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<ReceivableFilters>(initialReceivableFilters);
   const [sort, setSort] = useState<{ key: ReceivableKey; direction: PhoenixGridSortDirection } | null>(null);
+  const [newTitleOpen, setNewTitleOpen] = useState(false);
+  const [receiptTargetId, setReceiptTargetId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const operationRef = useRef<{ fingerprint: string; id: string } | null>(null);
   const today = todaySaoPaulo();
+  const role = readSession()?.user.role;
+  const canWrite = role === 'ADMIN' || role === 'MANAGER' || role === 'OPERATOR';
+
+  const [titleDraft, setTitleDraft] = useState({
+    customerId: '',
+    description: '',
+    totalAmount: '',
+    dueDate: today,
+    notes: '',
+  });
+  const [receiptDraft, setReceiptDraft] = useState({
+    amount: '',
+    receivedAt: today,
+    interestAmount: '0,00',
+    fineAmount: '0,00',
+    accountId: '',
+    paymentMethodId: '',
+    notes: '',
+  });
+
   const open = data.receivables.filter((item) => item.status !== 'paid' && Number(item.openAmount) > 0);
   const overdue = open.filter((item) => isoDay(item.dueDate) < today);
   const totalOpen = open.reduce((sum, item) => sum + Number(item.openAmount || 0), 0);
-  const totalReceived = data.receivables.reduce((sum, item) => sum + item.receipts.reduce((receiptSum, receipt) => receiptSum + Number(receipt.amount || 0), 0), 0);
-  const rows = useMemo<ReceivableRow[]>(() => data.receivables.map((item) => ({ id: item.id, dueDate: isoDay(item.dueDate), description: item.description, customer: item.customer?.name || 'Não informado', installment: item.installmentQty > 1 ? `${item.installmentNo}/${item.installmentQty}` : 'Única', totalAmount: Number(item.totalAmount || 0), openAmount: Number(item.openAmount || 0), status: statusText(item.status), receipts: item.receipts.length })), [data.receivables]);
+  const totalReceived = data.receivables.reduce((sum, item) => sum + item.receipts.reduce((receiptSum, receipt) => receiptSum + Number(receipt.amount || 0) + Number(receipt.interestAmount || 0) + Number(receipt.fineAmount || 0), 0), 0);
+  const rows = useMemo<ReceivableRow[]>(() => data.receivables.map((item) => ({
+    id: item.id,
+    dueDate: isoDay(item.dueDate),
+    description: item.description,
+    customer: item.customer?.name || 'Não informado',
+    installment: item.installmentQty > 1 ? `${item.installmentNo}/${item.installmentQty}` : 'Única',
+    totalAmount: Number(item.totalAmount || 0),
+    openAmount: Number(item.openAmount || 0),
+    status: statusText(item.status),
+    receipts: item.receipts.length
+  })), [data.receivables]);
+
   const keys = Object.keys(receivableLabels) as ReceivableKey[];
   const activeKeys = keys.filter((key) => active(filters[key]));
-  const gridOptions = useMemo(() => ({ customer: options(rows.map((row) => row.customer)), installment: options(rows.map((row) => row.installment)), status: options(rows.map((row) => row.status)) }), [rows]);
+  const gridOptions = useMemo(() => ({
+    customer: options(rows.map((row) => row.customer)),
+    installment: options(rows.map((row) => row.installment)),
+    status: options(rows.map((row) => row.status))
+  }), [rows]);
   const visible = useMemo(() => {
     const needle = normalize(search);
     const filtered = rows.filter((row) => (!needle || normalize(keys.map((key) => row[key]).join(' ')).includes(needle)) && keys.every((key) => matches(row[key], filters[key])));
     if (!sort) return filtered;
     return [...filtered].sort((a, b) => compare(a[sort.key], b[sort.key], sort.direction));
   }, [rows, search, filters, sort]);
-  function header(label: string, key: ReceivableKey, kind: PhoenixGridFilterKind, list?: PhoenixGridOption[]) { return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} options={list} sort={sort?.key === key ? sort.direction : null} onSort={(direction) => setSort({ key, direction })} onChange={(value) => setFilters((current) => ({ ...current, [key]: value }))} /></div>; }
-  function clearAll() { setSearch(''); setFilters(initialReceivableFilters()); setSort(null); }
-  return <section className="px-screen">
-    <PageIntro kicker="Contas a receber" title="Títulos e recebimentos em aberto" text="Leitura do domínio oficial de contas a receber, sem registrar recebimentos nesta fase." aside={<span className="px-total-pill">{money.format(totalOpen)} em aberto</span>} />
-    <section className="px-screen-kpis"><article><span>Em aberto</span><strong>{money.format(totalOpen)}</strong><small>{open.length} título(s)</small></article><article className="danger"><span>Vencidos</span><strong>{overdue.length}</strong><small>{money.format(overdue.reduce((sum, item) => sum + Number(item.openAmount || 0), 0))}</small></article><article><span>Recebido</span><strong>{money.format(totalReceived)}</strong><small>Recebimentos registrados</small></article><article><span>Clientes</span><strong>{data.customers.filter((item) => item.isActive).length}</strong><small>Cadastros ativos</small></article></section>
-    <section className="px-card px-table-card"><div className="px-toolbar"><label className="px-search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar em todas as colunas" /></label><span className="px-toolbar-note">{visible.length} de {rows.length} exibido(s)</span></div>
-      {activeKeys.length || sort || search ? <div className="px-grid-active-filters"><span>Filtros da grade</span>{search ? <span className="px-grid-filter-chip">Busca: {search}<button type="button" onClick={() => setSearch('')}>×</button></span> : null}{activeKeys.map((key) => <span className="px-grid-filter-chip" key={key}>{summary(receivableLabels[key], filters[key])}<button type="button" onClick={() => { const fresh = initialReceivableFilters(); setFilters((current) => ({ ...current, [key]: fresh[key] })); }}>×</button></span>)}{sort ? <span className="px-grid-filter-chip">Ordenação: {receivableLabels[sort.key]} {sort.direction === 'asc' ? '↑' : '↓'}<button type="button" onClick={() => setSort(null)}>×</button></span> : null}<button className="px-grid-clear-all" type="button" onClick={clearAll}>Limpar grade</button></div> : null}
-      <div className="px-table-scroll"><table className="px-data-table"><thead><tr><th>{header('Vencimento','dueDate','date')}</th><th>{header('Descrição','description','text')}</th><th>{header('Cliente','customer','multi',gridOptions.customer)}</th><th>{header('Parcela','installment','multi',gridOptions.installment)}</th><th>{header('Total','totalAmount','number')}</th><th>{header('Em aberto','openAmount','number')}</th><th>{header('Status','status','multi',gridOptions.status)}</th><th>{header('Recebimentos','receipts','number')}</th></tr></thead><tbody>{visible.map((row) => <tr key={row.id}><td>{date.format(new Date(`${row.dueDate}T12:00:00Z`))}</td><td><strong>{row.description}</strong></td><td>{row.customer}</td><td>{row.installment}</td><td className="px-money">{money.format(Number(row.totalAmount))}</td><td className="px-money">{money.format(Number(row.openAmount))}</td><td><span className={`px-status ${normalize(row.status).replace(/\s+/g,'-')}`}>{row.status}</span></td><td>{row.receipts}</td></tr>)}</tbody></table>{!visible.length ? <p className="px-empty">Nenhum título corresponde aos filtros aplicados.</p> : null}</div>
+  const activeCustomers = data.customers.filter((item) => item.isActive);
+  const monetaryAccounts = data.accounts.filter((item) => item.isActive && ['checking', 'savings', 'cash'].includes(normalize(item.type)));
+  const receiptMethods = data.paymentMethods.filter((item) => item.isActive && normalize(item.type) !== 'credit' && !normalize(item.name).includes('verocard'));
+  const receiptTarget = receiptTargetId ? data.receivables.find((item) => item.id === receiptTargetId) || null : null;
+
+  function operationId(prefix: string, fingerprint: string) {
+    if (operationRef.current?.fingerprint === fingerprint) return operationRef.current.id;
+    const random = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const id = `${prefix}:${random}`;
+    operationRef.current = { fingerprint, id };
+    return id;
+  }
+
+  function resetOperation() {
+    operationRef.current = null;
+  }
+
+  function header(label: string, key: ReceivableKey, kind: PhoenixGridFilterKind, list?: PhoenixGridOption[]) {
+    return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} options={list} sort={sort?.key === key ? sort.direction : null} onSort={(direction) => setSort({ key, direction })} onChange={(value) => setFilters((current) => ({ ...current, [key]: value }))} /></div>;
+  }
+
+  function clearAll() {
+    setSearch('');
+    setFilters(initialReceivableFilters());
+    setSort(null);
+  }
+
+  function receivableError(error: unknown) {
+    const code = error instanceof Error ? error.message : 'RECEIVABLE_WRITE_FAILED';
+    if (/AMOUNT_EXCEEDS_OPEN_BALANCE/i.test(code)) return 'O valor informado ultrapassa o saldo em aberto deste título.';
+    if (/RECEIVABLE_NOT_FOUND/i.test(code)) return 'Este título já foi quitado, alterado ou não está mais disponível.';
+    if (/INVALID_ACCOUNT/i.test(code)) return 'A conta selecionada não está mais ativa.';
+    if (/INVALID_PAYMENT_METHOD/i.test(code)) return 'A forma de recebimento selecionada não está mais ativa.';
+    if (/FUTURE_RECEIPT_NOT_ALLOWED/i.test(code)) return 'O recebimento não pode ser confirmado em data futura.';
+    if (/INVALID_CUSTOMER/i.test(code)) return 'O cliente selecionado não está mais ativo.';
+    if (/OPERATION_ID_REUSED/i.test(code)) return 'A tentativa atual não corresponde à operação original. Revise os dados antes de tentar novamente.';
+    if (/VALIDATION_ERROR/i.test(code)) return 'Revise os campos obrigatórios e os valores informados.';
+    if (/403|FORBIDDEN/i.test(code)) return 'Seu perfil não possui permissão para esta operação.';
+    return 'Não foi possível confirmar a operação no servidor. Os dados foram mantidos para nova tentativa.';
+  }
+
+  async function refreshOfficialSnapshot() {
+    const snapshot = await loadPhoenixReadModel(data.month, { force: true });
+    onDataCommitted?.(snapshot);
+  }
+
+  function openNewTitle() {
+    resetOperation();
+    setMessage('');
+    setTitleDraft({ customerId: '', description: '', totalAmount: '', dueDate: today, notes: '' });
+    setNewTitleOpen(true);
+  }
+
+  function openReceipt(id: string) {
+    const target = data.receivables.find((item) => item.id === id);
+    if (!target) return;
+    resetOperation();
+    setMessage('');
+    setReceiptDraft({
+      amount: Number(target.openAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      receivedAt: today,
+      interestAmount: '0,00',
+      fineAmount: '0,00',
+      accountId: '',
+      paymentMethodId: '',
+      notes: '',
+    });
+    setReceiptTargetId(id);
+  }
+
+  async function createTitle() {
+    if (busy || !canWrite) return;
+    const amount = parseBrazilianNumber(titleDraft.totalAmount) || 0;
+    if (titleDraft.description.trim().length < 2) return setMessage('Informe uma descrição para o título.');
+    if (amount <= 0) return setMessage('Informe um valor maior que zero.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(titleDraft.dueDate)) return setMessage('Informe uma data de vencimento válida.');
+    const fingerprint = JSON.stringify({ action:'create-receivable', ...titleDraft, amount });
+    const opId = operationId('web-receivable', fingerprint);
+    setBusy(true);
+    setMessage('Criando título e confirmando no servidor…');
+    try {
+      await receivablesClient.createReceivable({
+        customerId: titleDraft.customerId || null,
+        description: titleDraft.description.trim().toLocaleUpperCase('pt-BR'),
+        totalAmount: amount,
+        dueDate: titleDraft.dueDate,
+        installmentNo: 1,
+        installmentQty: 1,
+        interestRate: 0,
+        fineRate: 0,
+        notes: titleDraft.notes.trim() || null,
+        operationId: opId,
+      });
+      await refreshOfficialSnapshot();
+      resetOperation();
+      setNewTitleOpen(false);
+      setMessage('Título criado e confirmado na base financeira.');
+    } catch (error) {
+      setMessage(receivableError(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function receiveTitle() {
+    if (!receiptTarget || busy || !canWrite) return;
+    const amount = parseBrazilianNumber(receiptDraft.amount) || 0;
+    const interest = parseBrazilianNumber(receiptDraft.interestAmount) || 0;
+    const fine = parseBrazilianNumber(receiptDraft.fineAmount) || 0;
+    const openAmount = Number(receiptTarget.openAmount || 0);
+    if (amount <= 0) return setMessage('Informe o valor principal recebido.');
+    if (amount > openAmount + 0.0001) return setMessage('O valor principal não pode ultrapassar o saldo em aberto.');
+    if (!receiptDraft.accountId) return setMessage('Selecione a conta que recebeu o valor.');
+    if (!receiptDraft.paymentMethodId) return setMessage('Selecione a forma de recebimento.');
+    if (receiptDraft.receivedAt > today) return setMessage('A data de recebimento não pode ser futura.');
+    const fingerprint = JSON.stringify({ action:'receive-receivable', id:receiptTarget.id, ...receiptDraft, amount, interest, fine });
+    const opId = operationId('web-receipt', fingerprint);
+    setBusy(true);
+    setMessage('Confirmando recebimento e atualizando o caixa…');
+    try {
+      await receivablesClient.receive(receiptTarget.id, {
+        amount,
+        receivedAt: receiptDraft.receivedAt,
+        interestAmount: interest,
+        fineAmount: fine,
+        accountId: receiptDraft.accountId,
+        paymentMethodId: receiptDraft.paymentMethodId,
+        notes: receiptDraft.notes.trim() || null,
+        operationId: opId,
+      });
+      await refreshOfficialSnapshot();
+      resetOperation();
+      setReceiptTargetId(null);
+      setMessage('Recebimento confirmado. O título e o saldo financeiro foram atualizados.');
+    } catch (error) {
+      setMessage(receivableError(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <section className="px-screen meg-web-receivables-screen">
+    <PageIntro
+      kicker="Contas a receber"
+      title="Títulos, clientes e recebimentos"
+      text="Cadastre valores a receber, acompanhe vencimentos e confirme recebimentos diretamente no caixa. A baixa gera evento financeiro realizado e relê a base oficial antes de atualizar a tela."
+      aside={<div className="meg-web-receivable-head-actions"><span className="px-total-pill">{money.format(totalOpen)} em aberto</span><button className="px-primary-action" type="button" disabled={!canWrite} onClick={openNewTitle}>＋ Novo título</button></div>}
+    />
+
+    <section className="px-screen-kpis">
+      <article><span>Em aberto</span><strong>{money.format(totalOpen)}</strong><small>{open.length} título(s)</small></article>
+      <article className="danger"><span>Vencidos</span><strong>{overdue.length}</strong><small>{money.format(overdue.reduce((sum, item) => sum + Number(item.openAmount || 0), 0))}</small></article>
+      <article><span>Recebido</span><strong>{money.format(totalReceived)}</strong><small>Principal + acréscimos registrados</small></article>
+      <article><span>Clientes ativos</span><strong>{activeCustomers.length}</strong><small>Gerenciados em Cadastros</small></article>
     </section>
+
+    {message ? <div className={`meg-web-operation-feedback ${/não|ultrapassa|revise|permissão|futura|maior que zero/i.test(message) ? 'warn' : 'ok'}`}>{message}</div> : null}
+
+    <section className="px-card px-table-card">
+      <div className="px-toolbar">
+        <label className="px-search-field"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar título, cliente, status ou parcela" /></label>
+        <span className="px-toolbar-note">{visible.length} de {rows.length} exibido(s)</span>
+      </div>
+      {activeKeys.length || sort || search ? <div className="px-grid-active-filters"><span>Filtros da grade</span>{search ? <span className="px-grid-filter-chip">Busca: {search}<button type="button" onClick={() => setSearch('')}>×</button></span> : null}{activeKeys.map((key) => <span className="px-grid-filter-chip" key={key}>{summary(receivableLabels[key], filters[key])}<button type="button" onClick={() => { const fresh = initialReceivableFilters(); setFilters((current) => ({ ...current, [key]: fresh[key] })); }}>×</button></span>)}{sort ? <span className="px-grid-filter-chip">Ordenação: {receivableLabels[sort.key]} {sort.direction === 'asc' ? '↑' : '↓'}<button type="button" onClick={() => setSort(null)}>×</button></span> : null}<button className="px-grid-clear-all" type="button" onClick={clearAll}>Limpar grade</button></div> : null}
+      <div className="px-table-scroll">
+        <table className="px-data-table">
+          <thead><tr>
+            <th>{header('Vencimento','dueDate','date')}</th><th>{header('Descrição','description','text')}</th><th>{header('Cliente','customer','multi',gridOptions.customer)}</th><th>{header('Parcela','installment','multi',gridOptions.installment)}</th><th>{header('Total','totalAmount','number')}</th><th>{header('Em aberto','openAmount','number')}</th><th>{header('Status','status','multi',gridOptions.status)}</th><th>{header('Recebimentos','receipts','number')}</th><th>Ações</th>
+          </tr></thead>
+          <tbody>{visible.map((row) => <tr key={row.id}>
+            <td>{date.format(new Date(`${row.dueDate}T12:00:00Z`))}</td><td><strong>{row.description}</strong></td><td>{row.customer}</td><td>{row.installment}</td><td className="px-money">{money.format(Number(row.totalAmount))}</td><td className="px-money">{money.format(Number(row.openAmount))}</td><td><span className={`px-status ${normalize(row.status).replace(/\s+/g,'-')}`}>{row.status}</span></td><td>{row.receipts}</td><td><div className="meg-web-row-actions">{Number(row.openAmount) > 0 ? <button type="button" disabled={!canWrite} onClick={() => openReceipt(row.id)}>Receber</button> : <span className="px-status reconciled">Quitado</span>}</div></td>
+          </tr>)}</tbody>
+        </table>
+        {!visible.length ? <p className="px-empty">Nenhum título corresponde aos filtros aplicados.</p> : null}
+      </div>
+    </section>
+
+    {newTitleOpen && typeof document !== 'undefined' ? createPortal(<div className="meg-web-receivable-overlay">
+      <button className="meg-web-receivable-backdrop" type="button" aria-label="Fechar novo título" disabled={busy} onClick={() => setNewTitleOpen(false)} />
+      <section className="meg-web-receivable-dialog" role="dialog" aria-modal="true" aria-labelledby="meg-new-receivable-title">
+        <header><div><span className="px-kicker">Contas a receber</span><h2 id="meg-new-receivable-title">Novo título</h2><p>Cadastre uma obrigação de recebimento sem alterar o caixa antes da baixa real.</p></div><button type="button" disabled={busy} onClick={() => setNewTitleOpen(false)}>×</button></header>
+        <div className="meg-web-receivable-form">
+          <label><span>Cliente</span><select value={titleDraft.customerId} onChange={(event) => setTitleDraft((current) => ({ ...current, customerId:event.target.value }))}><option value="">Sem cliente vinculado</option>{activeCustomers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <label className="wide"><span>Descrição *</span><input autoFocus maxLength={160} value={titleDraft.description} onChange={(event) => setTitleDraft((current) => ({ ...current, description:event.target.value }))} /></label>
+          <label><span>Valor *</span><input inputMode="decimal" placeholder="0,00" value={titleDraft.totalAmount} onChange={(event) => setTitleDraft((current) => ({ ...current, totalAmount:event.target.value }))} /></label>
+          <label><span>Vencimento *</span><input type="date" value={titleDraft.dueDate} onChange={(event) => setTitleDraft((current) => ({ ...current, dueDate:event.target.value }))} /></label>
+          <label className="wide"><span>Observações</span><textarea maxLength={500} value={titleDraft.notes} onChange={(event) => setTitleDraft((current) => ({ ...current, notes:event.target.value }))} /></label>
+          {message ? <div className="meg-web-form-feedback wide">{message}</div> : null}
+        </div>
+        <footer><button type="button" disabled={busy} onClick={() => setNewTitleOpen(false)}>Cancelar</button><button className="px-primary-action" type="button" disabled={busy || !canWrite} onClick={() => void createTitle()}>{busy ? 'Confirmando…' : 'Criar título'}</button></footer>
+      </section>
+    </div>, document.body) : null}
+
+    {receiptTarget && typeof document !== 'undefined' ? createPortal(<div className="meg-web-receivable-overlay">
+      <button className="meg-web-receivable-backdrop" type="button" aria-label="Fechar recebimento" disabled={busy} onClick={() => setReceiptTargetId(null)} />
+      <section className="meg-web-receivable-dialog receipt" role="dialog" aria-modal="true" aria-labelledby="meg-receipt-title">
+        <header><div><span className="px-kicker">Baixa de recebimento</span><h2 id="meg-receipt-title">{receiptTarget.description}</h2><p>{receiptTarget.customer?.name || 'Sem cliente vinculado'} · saldo em aberto {money.format(Number(receiptTarget.openAmount || 0))}</p></div><button type="button" disabled={busy} onClick={() => setReceiptTargetId(null)}>×</button></header>
+        <div className="meg-web-receivable-summary">
+          <span><small>Total do título</small><strong>{money.format(Number(receiptTarget.totalAmount || 0))}</strong></span>
+          <span><small>Já recebido</small><strong>{money.format(Number(receiptTarget.totalAmount || 0) - Number(receiptTarget.openAmount || 0))}</strong></span>
+          <span><small>Em aberto</small><strong>{money.format(Number(receiptTarget.openAmount || 0))}</strong></span>
+        </div>
+        <div className="meg-web-receivable-form">
+          <label><span>Principal recebido *</span><input inputMode="decimal" value={receiptDraft.amount} onChange={(event) => setReceiptDraft((current) => ({ ...current, amount:event.target.value }))} /></label>
+          <label><span>Data do recebimento *</span><input type="date" max={today} value={receiptDraft.receivedAt} onChange={(event) => setReceiptDraft((current) => ({ ...current, receivedAt:event.target.value }))} /></label>
+          <label><span>Juros</span><input inputMode="decimal" value={receiptDraft.interestAmount} onChange={(event) => setReceiptDraft((current) => ({ ...current, interestAmount:event.target.value }))} /></label>
+          <label><span>Multa</span><input inputMode="decimal" value={receiptDraft.fineAmount} onChange={(event) => setReceiptDraft((current) => ({ ...current, fineAmount:event.target.value }))} /></label>
+          <label><span>Conta que recebeu *</span><select value={receiptDraft.accountId} onChange={(event) => setReceiptDraft((current) => ({ ...current, accountId:event.target.value }))}><option value="">Selecione</option>{monetaryAccounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <label><span>Forma de recebimento *</span><select value={receiptDraft.paymentMethodId} onChange={(event) => setReceiptDraft((current) => ({ ...current, paymentMethodId:event.target.value }))}><option value="">Selecione</option>{receiptMethods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <label className="wide"><span>Observações</span><textarea maxLength={500} value={receiptDraft.notes} onChange={(event) => setReceiptDraft((current) => ({ ...current, notes:event.target.value }))} /></label>
+          {receiptTarget.receipts.length ? <div className="meg-web-receipt-history wide"><strong>Recebimentos anteriores</strong>{receiptTarget.receipts.slice(0,5).map((item) => <span key={item.id}><small>{brDate(String(item.receivedAt))}</small><b>{money.format(Number(item.amount || 0) + Number(item.interestAmount || 0) + Number(item.fineAmount || 0))}</b></span>)}</div> : null}
+          {message ? <div className="meg-web-form-feedback wide">{message}</div> : null}
+        </div>
+        <footer><button type="button" disabled={busy} onClick={() => setReceiptTargetId(null)}>Cancelar</button><button className="px-primary-action" type="button" disabled={busy || !canWrite} onClick={() => void receiveTitle()}>{busy ? 'Confirmando baixa…' : 'Confirmar recebimento'}</button></footer>
+      </section>
+    </div>, document.body) : null}
   </section>;
 }
 
