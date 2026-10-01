@@ -590,10 +590,11 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent, selectionReq
 
   useEffect(() => {
     if (nativeOperational || !selectionRequest || selectionRequestTokenRef.current === selectionRequest.token) return;
-    const eligibleIds = new Set(open.filter(isBatchSelectable).map((item) => item.id));
-    const requestedIds = selectionRequest.ids.filter((id) => eligibleIds.has(id));
+    const eligibleItems = open.filter((item) => isBatchSelectable(item) && selectionRequest.ids.includes(item.id));
+    const requestedIds = eligibleItems.map((item) => item.id);
     selectionRequestTokenRef.current = selectionRequest.token;
     if (!requestedIds.length) return;
+    if (eligibleItems.some((item) => item.dueDate.slice(0, 7) !== selectedMonth)) void selectAllPending();
     setSelected(new Set(requestedIds));
     setPriority('all');
     setSearch('');
