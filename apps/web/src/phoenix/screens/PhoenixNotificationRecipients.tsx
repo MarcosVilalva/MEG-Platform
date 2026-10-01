@@ -51,6 +51,7 @@ export function PhoenixNotificationRecipients() {
   const activeEmails = useMemo(() => emails.filter((item) => item.isActive !== false), [emails]);
 
   async function loadRecipients() {
+    // A lista exibida sempre volta a ser reconciliada com o servidor após cada mutação.
     setLoading(true);
     setError('');
     try {
