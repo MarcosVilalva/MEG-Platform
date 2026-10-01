@@ -15,6 +15,7 @@ const FINANCIAL_ENTITIES = [
   'Account',
   'Category',
   'PaymentMethod',
+  'Customer',
 ] as const;
 
 export type FinancialAuditAction =
@@ -51,7 +52,11 @@ export type FinancialAuditAction =
   | 'PAYMENT_METHOD_CREATED'
   | 'PAYMENT_METHOD_UPDATED'
   | 'PAYMENT_METHOD_DEACTIVATED'
-  | 'PAYMENT_METHOD_REACTIVATED';
+  | 'PAYMENT_METHOD_REACTIVATED'
+  | 'CUSTOMER_CREATED'
+  | 'CUSTOMER_UPDATED'
+  | 'CUSTOMER_DEACTIVATED'
+  | 'CUSTOMER_REACTIVATED';
 
 function jsonValue(value: unknown) {
   if (value === undefined) return null;
