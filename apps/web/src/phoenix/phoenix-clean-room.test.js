@@ -423,8 +423,10 @@ assert.match(phoenixApp, /focusEventRequest=\{nativeOperational \? undefined : s
   'Foco vindo da busca deve permanecer exclusivo do Web.');
 assert.match(movementScreen, /focusEventRequest[\s\S]*setSearch\(target\.description\)[\s\S]*setGridFilters\(initialGridFilters\(\)\)[\s\S]*markRecentlyUpdated\(target\.id\)/,
   'Lançamentos deve revelar e destacar o evento localizado, removendo filtros que poderiam escondê-lo.');
-assert.match(movementScreen, /data-event-id=\{event\.id\}[\s\S]*scrollIntoView/,
-  'Evento encontrado deve possuir âncora visual e rolagem até a linha correspondente.');
+assert.match(movementScreen, /data-event-id=\{event\.id\}/,
+  'Evento encontrado deve possuir âncora visual na lista de Lançamentos.');
+assert.match(movementScreen, /scrollIntoView\(\{ block: 'center', behavior: 'smooth' \}\)/,
+  'Busca deve rolar suavemente até o lançamento localizado.');
 assert.match(commandPalette, /data\.cards/);
 assert.match(commandPalette, /data\.accounts/);
 assert.match(commandPalette, /data\.customers/);
