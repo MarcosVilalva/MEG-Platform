@@ -385,7 +385,7 @@ function cardViewMetrics(card: CreditCard, rows: GridRow[], fallbackMonth: strin
   };
 }
 
-export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
+export function PhoenixCardsGrid({ data, focusRequest }: { data: PhoenixReadModel; focusRequest?: { token: number; cardId: string } | null }) {
   const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
   const [selectedId, setSelectedId] = useState(data.cards[0]?.id || '');
   const [tab, setTab] = useState<CardTab>('current');
@@ -402,6 +402,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
   const [commandGroup, setCommandGroup] = useState('');
   const [commandSort, setCommandSort] = useState<'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc' | 'description'>('date-desc');
   const nativeCarouselStartX = useRef<number | null>(null);
+const focusRequestTokenRef = useRef(0);
 
   const selected = data.cards.find((card) => card.id === selectedId) || data.cards[0] || null;
   const nativeCarouselCards = useMemo(() => {
@@ -573,6 +574,18 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     if (!sort || !keys.includes(sort.key)) return filtered;
     return [...filtered].sort((left, right) => compare(left[sort.key], right[sort.key], sort.direction));
   }, [sourceRows, search, keys, filters, sort]);
+
+  useEffect(() => {
+    if (nativeOperational || !focusRequest || focusRequest.token === focusRequestTokenRef.current) return;
+    if (!data.cards.some((card) => card.id === focusRequest.cardId)) return;
+    focusRequestTokenRef.current = focusRequest.token;
+    selectCard(focusRequest.cardId);
+    if (typeof window === 'undefined') return;
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>(`[data-search-card-id="${CSS.escape(focusRequest.cardId)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [data.cards, focusRequest, nativeOperational]);
 
   useEffect(() => {
     if (!nativeOperational || !selectedId || typeof window === 'undefined') return;
@@ -849,6 +862,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
         const displayTier = cardDisplayTier(card);
         return <button
           key={card.id}
+          data-search-card-id={card.id}
           type="button"
           className={`px-cards-approved-tile px-card-product-${cardIdentity.key} ${selected.id === card.id ? 'active' : ''}`}
           onClick={() => selectCard(card.id)}
