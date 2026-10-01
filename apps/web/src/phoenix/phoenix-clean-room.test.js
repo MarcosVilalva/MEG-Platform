@@ -414,6 +414,12 @@ assert.doesNotMatch(commandPalette, /Contrato ainda em auditoria/,
   'Texto legado de Conciliação deve permanecer removido.');
 assert.match(commandPalette, /event\.target === event\.currentTarget/,
   'Busca deve fechar ao clicar fora do painel');
+assert.match(commandPalette, /ArrowDown[\s\S]*ArrowUp[\s\S]*Enter[\s\S]*Escape/,
+  'Busca global deve permitir navegação completa pelo teclado.');
+assert.match(commandPalette, /aria-activedescendant[\s\S]*aria-selected/,
+  'Busca global deve expor a seleção ativa para tecnologias assistivas.');
+assert.match(commandPalette, /↑↓ para selecionar/,
+  'Ajuda visual deve refletir os atalhos de teclado realmente disponíveis.');
 
 assert.match(movementScreen, /Novo lançamento/);
 assert.match(movementScreen, /launchRequest/,
