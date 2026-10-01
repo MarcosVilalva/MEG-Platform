@@ -61,6 +61,12 @@ export type FinancialEvent = {
     modality: string;
     observations: string;
   } | null;
+  sourcePayload?: {
+    transferId?: string;
+    transferLeg?: 'source' | 'destination';
+    counterpartyAccountId?: string;
+    [key: string]: unknown;
+  } | null;
   createdAt?: string;
   updatedAt?: string;
   idempotentReplay?: boolean;
@@ -221,6 +227,11 @@ export const financeClient = {
     method: 'POST',
     body: JSON.stringify(data)
   }),
+  createTransfer: (data: { operationId: string; sourceAccountId: string; destinationAccountId: string; amount: number; date: string; description?: string; notes?: string; allowDuplicate?: boolean }) =>
+    authorizedRequest<{ transferId: string; sourceEventId: string; destinationEventId: string; sourceAccountId: string; destinationAccountId: string; amount: number; date: string; sourceBalanceBefore: number; sourceBalanceAfter: number; idempotentReplay?: boolean }>('/finance/transfers', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
   updateEvent: (id: string, data: Partial<FinancialEventInput>) => authorizedRequest<FinancialEvent>(`/finance/events/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data)
