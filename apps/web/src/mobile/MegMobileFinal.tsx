@@ -830,7 +830,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
     const cardId = String(payload.cardId || '');
     const statementMonth = String(payload.statementMonth || '');
     const card = data.cards.find((item) => item.id === cardId);
-    if (!cardId || !card || !/^\\d{4}-\\d{2}$/.test(statementMonth)) continue;
+    if (!cardId || !card || !/^\d{4}-\d{2}$/.test(statementMonth)) continue;
     const due = String(payload.dueDate || event.date || '').slice(0,10);
     const rawEffect = Number(payload.statementEffect);
     const effect = Number.isFinite(rawEffect) ? rawEffect : -Number(event.signedAmount || 0);
@@ -838,7 +838,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
     const key = cardId + '|' + statementMonth;
     const line: PendingCardLine = {
       id:event.id,
-      description:String(event.description || '').replace(/\\s+·\\s+\\d+\\/\\d+\\s*$/,''),
+      description:String(event.description || '').replace(/\s+·\s+\d+\/\d+\s*$/,''),
       amount:Math.abs(effect),
       purchaseDate:String(payload.purchaseDate || event.date || '').slice(0,10),
       category:event.category?.name || event.sourceDetails?.group || 'Cartão',
