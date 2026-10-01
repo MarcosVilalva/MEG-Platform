@@ -199,7 +199,7 @@ export function PhoenixReportsCenter({ data }: { data: PhoenixReadModel }) {
       <div className="px-table-scroll meg-web-report-preview">
         <table className="px-data-table">
           <thead><tr>{report.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead>
-          <tbody>{report.rows.slice(0, 12).map((row, index) => <tr key={index}>{row.map((cell, cellIndex) => <td key={cellIndex}>{cell}</td>)}</tr>)}</tbody>
+          <tbody>{report.rows.map((row, index) => <tr key={index} className={index >= 12 ? 'meg-web-report-print-extra' : undefined}>{row.map((cell, cellIndex) => <td key={cellIndex}>{cell}</td>)}</tr>)}</tbody>
         </table>
         {!report.rows.length ? <p className="px-empty">Não há registros para este relatório no período atual.</p> : null}
       </div>
