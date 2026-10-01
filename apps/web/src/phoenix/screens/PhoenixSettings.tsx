@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { authenticatedRequest } from '../../app/auth-client';
 import type { PhoenixReadModel } from '../contracts';
+import { exportPhoenixTransactionBackup, inspectPhoenixTransactionBackup, restorePhoenixTransactionBackup } from '../backup-restore-bridge';
+import { megConfirm } from '../meg-confirm';
 import { getPhoenixLocalNotificationStatus, testPhoenixLocalNotification } from '../phoenix-native-notifications';
 import { PhoenixNotificationRecipients } from './PhoenixNotificationRecipients';
 import {
@@ -18,6 +20,7 @@ type PhoenixSettingsProps = {
   data: PhoenixReadModel;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
+  onDataCommitted: (snapshot: PhoenixReadModel) => void;
   onLogoutRequest?: () => void;
 };
 
@@ -107,11 +110,12 @@ function DashboardToggle({ checked, label, description, onChange }: { checked: b
   </button>;
 }
 
-export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }: PhoenixSettingsProps) {
+export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, onLogoutRequest }: PhoenixSettingsProps) {
   const normalizationOk = Boolean(data.normalization.primary && data.normalization.reconciled);
   const repair = data.health.dataRepair;
   const healthNormalization = data.health.normalization;
   const fileRef = useRef<HTMLInputElement>(null);
+  const backupFileRef = useRef<HTMLInputElement>(null);
   const [section, setSection] = useState<SettingsSection>('profile');
   const [avatar, setAvatar] = useState<PhoenixAvatarPreference>(() => readPhoenixAvatarPreference(data.user.id));
   const [avatarError, setAvatarError] = useState('');
@@ -130,6 +134,10 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
   const [notificationTestBusy, setNotificationTestBusy] = useState(false);
   const [notificationTestResult, setNotificationTestResult] = useState<Record<string, { status?: string; detail?: unknown }> | null>(null);
   const [localNotificationStatus, setLocalNotificationStatus] = useState<LocalNotificationStatus | null>(null);
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupMessage, setBackupMessage] = useState('');
+  const [backupError, setBackupError] = useState('');
+  const canRestoreBackup = data.user.role !== 'VIEWER';
 
   const visibleAvatarPresets = useMemo(() => {
     if (avatarsExpanded) return phoenixAvatarPresets;
@@ -282,6 +290,64 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
     setDashboardPreferences((current) => ({ ...current, [key]: !current[key] }));
   }
 
+
+  async function exportBackup() {
+    if (backupBusy) return;
+    setBackupBusy(true);
+    setBackupError('');
+    setBackupMessage('');
+    try {
+      const result = await exportPhoenixTransactionBackup();
+      setBackupMessage(`Backup criado com ${result.count} lançamento(s) compatível(is), revisão ${result.revision}.`);
+    } catch (cause) {
+      setBackupError(cause instanceof Error ? cause.message : 'Não foi possível gerar o backup.');
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  async function importBackup(file?: File) {
+    if (!file) return;
+    if (!canRestoreBackup) {
+      setBackupError('Seu perfil possui acesso somente para consulta e não pode restaurar backups.');
+      if (backupFileRef.current) backupFileRef.current.value = '';
+      return;
+    }
+
+    setBackupBusy(true);
+    setBackupError('');
+    setBackupMessage('');
+    try {
+      const prepared = await inspectPhoenixTransactionBackup(file);
+      const exportedAt = prepared.backup.exportedAt
+        ? new Date(prepared.backup.exportedAt).toLocaleString('pt-BR')
+        : 'data não informada';
+      const confirmed = await megConfirm({
+        kicker: 'Backup de lançamentos',
+        title: 'Restaurar lançamentos compatíveis?',
+        message: `O arquivo contém ${prepared.backup.transactions.length} lançamento(s) e foi gerado em ${exportedAt}. A base atual possui ${prepared.currentCount}. A restauração substitui somente os lançamentos compatíveis do AppState; transferências nativas, cartões, recebíveis, cadastros e demais domínios não são apagados. Se a base mudar antes da gravação, a operação será cancelada.`,
+        confirmLabel: 'Sim, restaurar',
+        cancelLabel: 'Cancelar',
+        danger: true,
+      });
+      if (!confirmed) return;
+
+      const result = await restorePhoenixTransactionBackup(prepared, data.month);
+      if (result.status === 'error') {
+        setBackupError(result.message);
+        return;
+      }
+
+      onDataCommitted(result.snapshot);
+      setBackupMessage(`Backup restaurado e conferido na revisão ${result.revision}. ${result.restoredCount} lançamento(s) compatível(is) ativos.`);
+    } catch (cause) {
+      setBackupError(cause instanceof Error ? cause.message : 'Não foi possível restaurar o backup.');
+    } finally {
+      setBackupBusy(false);
+      if (backupFileRef.current) backupFileRef.current.value = '';
+    }
+  }
+
   return <section className="px-screen px-settings-screen">
     <header className="px-screen-head"><div><span className="px-kicker">Configurações</span><h1>Seu MEG, do seu jeito</h1><p>Perfil, aparência, segurança e saúde do sistema organizados no padrão V15.</p></div><div className="px-screen-head-aside"><span className={`px-settings-health ${normalizationOk ? 'ok' : 'warn'}`}>{normalizationOk ? 'Sistema operacional' : 'Verificar integridade'}</span></div></header>
 
@@ -360,7 +426,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onLogoutRequest }:
           <section className="px-card px-settings-health-banner"><div className="px-settings-health-copy"><span className="px-settings-health-icon" aria-hidden="true">{normalizationOk ? '✓' : '!'}</span><div><span className="px-kicker">Saúde do sistema</span><h2>{normalizationOk ? 'Sistema funcionando normalmente' : 'Sistema requer verificação'}</h2><p>Status construído apenas com indicadores reais expostos pela API.</p></div></div><div className="px-settings-health-chips"><span>API · {stateLabel(data.health.status)}</span><span>Banco · {data.normalization.primary ? 'Primário' : 'Verificar'}</span><span>Normalização · {normalizationOk ? 'OK' : 'Pendente'}</span><span>Modo · {data.normalization.mode || '—'}</span></div></section>
           <section className="px-settings-grid">
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Sincronização</span><h2>Integridade da base</h2></div></div><div className={`px-settings-sync-banner ${normalizationOk ? 'ok' : 'warn'}`}><strong>{normalizationOk ? 'Tudo reconciliado' : 'Verificação necessária'}</strong><small>{data.normalization.updatedAt ? `Atualização: ${new Date(data.normalization.updatedAt).toLocaleString('pt-BR')}` : 'Horário de atualização não informado'}</small></div><dl><div><dt>Base primária</dt><dd>{data.normalization.primary ? 'Sim' : 'Não'}</dd></div><div><dt>Revisão</dt><dd>{data.normalization.revision}</dd></div><div><dt>Eventos normalizados</dt><dd>{data.normalization.normalized?.count ?? '—'}</dd></div></dl></article>
-            <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Backup e dados</span><h2>Proteção da base</h2></div></div><p>A restauração continua bloqueada para impedir mutações durante a homologação.</p><button type="button" disabled>Restaurar backup</button><small className="px-settings-note">Bloqueado propositalmente até o gate de escrita.</small></article>
+            <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Backup e dados</span><h2>Proteção dos lançamentos</h2><p>Exporte ou restaure os lançamentos compatíveis com o AppState. Os domínios nativos do MEG continuam preservados na base oficial.</p></div></div><input ref={backupFileRef} type="file" accept="application/json" hidden onChange={(event) => { void importBackup(event.target.files?.[0]); }} /><div className="px-settings-actions"><button type="button" disabled={backupBusy} onClick={() => { void exportBackup(); }}>{backupBusy ? 'Aguarde…' : 'Exportar backup'}</button><button type="button" disabled={backupBusy || !canRestoreBackup} onClick={() => backupFileRef.current?.click()}>Restaurar backup</button></div>{backupMessage ? <div className="px-settings-sync-banner ok"><strong>Backup confirmado</strong><small>{backupMessage}</small></div> : null}{backupError ? <div className="px-settings-sync-banner warn"><strong>Operação não concluída</strong><small>{backupError}</small></div> : null}<small className="px-settings-note">{canRestoreBackup ? 'A restauração exige confirmação explícita, revisão exata da base e conferência final antes de informar sucesso.' : 'Seu perfil pode exportar backups, mas não possui permissão para restaurar lançamentos.'}</small></article>
             <article className="px-card px-settings-card px-settings-devices"><div className="px-settings-card-head"><div><span className="px-kicker">Dispositivos e sessões</span><h2>{data.user.role === 'ADMIN' ? 'Acessos ao MEG' : 'Meus aparelhos'}</h2><p>{data.user.role === 'ADMIN' ? 'Sessões registradas para os usuários deste workspace.' : 'Aparelhos usados pela sua conta.'}</p></div><button type="button" onClick={() => { void refreshDeviceSessions(); }} disabled={deviceSessionsBusy}>{deviceSessionsBusy ? 'Atualizando…' : 'Atualizar'}</button></div><div className="px-settings-device-list">{deviceSessions.length ? deviceSessions.map((session) => <div className="px-settings-device-row" key={session.id}><div><strong>{session.deviceName}</strong><small>{data.user.role === 'ADMIN' ? session.userName + ' · ' : ''}{session.platform} · {session.active ? 'Sessão ativa' : 'Sessão encerrada'}</small></div><span><b>{session.lastLoginAt ? new Date(session.lastLoginAt).toLocaleString('pt-BR') : new Date(session.createdAt).toLocaleString('pt-BR')}</b><small>Último login</small></span></div>) : <p>Nenhuma sessão registrada.</p>}</div><small className="px-settings-note">A identificação automática depende das informações fornecidas pelo aparelho. A base financeira permanece única entre Web e Android.</small></article>
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Diagnóstico</span><h2>Reparo e normalização</h2></div><button type="button" disabled={normalizationPreviewBusy} onClick={() => { void inspectNormalization(); }}>{normalizationPreviewBusy ? 'Comparando…' : 'Comparar fontes'}</button></div><dl><div><dt>Reparo</dt><dd>{repair ? stateLabel(repair.status) : 'Não informado'}</dd></div><div><dt>Itens verificados</dt><dd>{repair?.scanned ?? '—'}</dd></div><div><dt>Itens reparados</dt><dd>{repair?.repaired ?? '—'}</dd></div><div><dt>Ocorrências</dt><dd>{repair?.issues ?? '—'}</dd></div><div><dt>Normalização API</dt><dd>{healthNormalization ? stateLabel(healthNormalization.status) : 'Não informado'}</dd></div></dl>{normalizationPreview ? <div className={`px-settings-sync-banner ${normalizationPreview.reconciled ? 'ok' : 'warn'}`}><strong>{normalizationPreview.reconciled ? 'Fontes reconciliadas' : 'Divergência confirmada em modo somente leitura'}</strong><small>AppState: {normalizationPreview.source.validCount} válidos · Normalizada: {normalizationPreview.normalized.count} · Inválidos na origem: {normalizationPreview.source.invalidCount} · Revisão {normalizationPreview.revision}. Nenhum reparo foi executado por esta consulta.</small></div> : null}{normalizationPreviewError ? <div className="px-settings-sync-banner warn"><strong>Não foi possível concluir a comparação</strong><small>{normalizationPreviewError}</small></div> : null}</article>
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Sobre</span><h2>MEG Finance System</h2></div></div><p>Meu Equilíbrio Gerencial · Phoenix V15.</p><dl><div><dt>Aplicativo</dt><dd>{appVersion}</dd></div><div><dt>Perfil de dados</dt><dd>Base oficial do workspace</dd></div><div><dt>Usuários</dt><dd>{data.sourcePolicy.users}</dd></div></dl><details className="px-settings-advanced"><summary>Diagnóstico avançado</summary><dl><div><dt>Modo</dt><dd>{data.sourcePolicy.mode}</dd></div><div><dt>Eventos</dt><dd>{data.sourcePolicy.events}</dd></div><div><dt>Revisão</dt><dd>{data.normalization.revision}</dd></div></dl></details></article>
