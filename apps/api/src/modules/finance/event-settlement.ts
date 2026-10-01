@@ -126,9 +126,6 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
           accountId: input.accountId,
           paymentMethodId: input.paymentMethodId,
           workspaceId: workspace.workspaceId,
-          accountBalanceBefore,
-          accountBalanceAfter: Math.round((accountBalanceBefore - value) * 100) / 100,
-          protection,
         },
       });
 
@@ -174,6 +171,9 @@ export async function settleLegacyFinancialEventProtected(userId: string, input:
           legacyTransactionId: current.legacyTransactionId,
           compatibility,
           workspaceId: workspace.workspaceId,
+          accountBalanceBefore,
+          accountBalanceAfter: Math.round((accountBalanceBefore - value) * 100) / 100,
+          protection,
         },
       });
 
