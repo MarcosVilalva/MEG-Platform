@@ -415,6 +415,16 @@ assert.match(phoenixApp, /openSearchResult[\s\S]*route === 'movements'[\s\S]*awa
   'Lançamento histórico deve abrir Lançamentos na competência encontrada e permanecer na busca se a troca falhar.');
 assert.match(phoenixApp, /onNavigate=\{openSearchResult\}/,
   'Busca global deve usar a navegação com continuidade de período.');
+assert.match(commandPalette, /targetEventId: item\.id/,
+  'Resultado de lançamento deve preservar o identificador exato encontrado.');
+assert.match(phoenixApp, /setSearchEventRequest[\s\S]*eventId: targetEventId/,
+  'Shell Web deve encaminhar o lançamento exato para a tela de Lançamentos.');
+assert.match(phoenixApp, /focusEventRequest=\{nativeOperational \? undefined : searchEventRequest\}/,
+  'Foco vindo da busca deve permanecer exclusivo do Web.');
+assert.match(movementScreen, /focusEventRequest[\s\S]*setSearch\(target\.description\)[\s\S]*setGridFilters\(initialGridFilters\(\)\)[\s\S]*markRecentlyUpdated\(target\.id\)/,
+  'Lançamentos deve revelar e destacar o evento localizado, removendo filtros que poderiam escondê-lo.');
+assert.match(movementScreen, /data-event-id=\{event\.id\}[\s\S]*scrollIntoView/,
+  'Evento encontrado deve possuir âncora visual e rolagem até a linha correspondente.');
 assert.match(commandPalette, /data\.cards/);
 assert.match(commandPalette, /data\.accounts/);
 assert.match(commandPalette, /data\.customers/);
