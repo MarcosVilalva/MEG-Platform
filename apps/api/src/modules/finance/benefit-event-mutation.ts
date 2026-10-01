@@ -6,6 +6,8 @@ import { recordFinancialAudit } from './audit';
 import { financialAmountValues } from './amount-sign';
 import { activeAccountForUser, activeCategoryForUser, activePaymentMethodForUser } from './catalog-scope';
 import {
+  SEMANTIC_DUPLICATE_WINDOW_MS,
+  findRecentFinancialEventDuplicate,
   isBenefitFinancialEvent,
   isBenefitPaymentMethod,
   isPostedFinancialStatus,
@@ -35,6 +37,7 @@ export type BenefitEventMutationInput = {
   paymentMethodId: string;
   notes?: string;
   operationId: string;
+  allowDuplicate?: boolean;
 };
 
 export type BenefitEventUpdateInput = BenefitEventMutationInput & {
@@ -256,7 +259,7 @@ export async function createBenefitEventProtected(
   assertBaseInput(input);
   const workspace = await resolveWorkspaceContext(userId);
   const dataOwnerId = workspace.workspace.ownerId;
-  const requestHash = mutationRequestHash({ contract: 'benefit', ...input, operationId: undefined });
+  const requestHash = mutationRequestHash({ contract: 'benefit', ...input, operationId: undefined, allowDuplicate: undefined });
 
   try {
     return await serializableFinancialTransaction(async (tx) => {
@@ -283,6 +286,29 @@ export async function createBenefitEventProtected(
       if (input.categoryId && !category) throw new BenefitEventMutationError('INVALID_CATEGORY');
       if (category?.type && category.type !== input.type) throw new BenefitEventMutationError('BENEFIT_CATEGORY_TYPE_MISMATCH');
 
+      const values = financialAmountValues(input.type, input.amount);
+      if (!input.allowDuplicate) {
+        const duplicate = await findRecentFinancialEventDuplicate(tx, {
+          workspaceId: workspace.workspaceId,
+          userId: dataOwnerId,
+          description: input.description,
+          type: input.type,
+          status: 'paid',
+          date: input.date,
+          amount: values.amount,
+          signedAmount: values.signedAmount,
+          accountId: account.id,
+          categoryId: category?.id || null,
+          paymentMethodId: paymentMethod.id,
+        });
+        if (duplicate) {
+          throw new BenefitEventMutationError('POSSIBLE_DUPLICATE', {
+            duplicate,
+            duplicateWindowSeconds: Math.round(SEMANTIC_DUPLICATE_WINDOW_MS / 1000),
+          });
+        }
+      }
+
       let balanceBefore: number | null = null;
       if (input.type === 'expense') {
         balanceBefore = await benefitBalanceAt(tx, dataOwnerId, input.date);
@@ -297,7 +323,6 @@ export async function createBenefitEventProtected(
         }
       }
 
-      const values = financialAmountValues(input.type, input.amount);
       const event = await tx.financialEvent.create({
         data: {
           userId: dataOwnerId,
@@ -346,6 +371,7 @@ export async function createBenefitEventProtected(
           benefitDirection: input.type === 'income' ? 'credit' : 'debit',
           balanceBefore,
           workspaceId: workspace.workspaceId,
+          duplicateOverride: Boolean(input.allowDuplicate),
         },
       });
 

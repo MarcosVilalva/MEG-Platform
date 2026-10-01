@@ -36,7 +36,7 @@ const purchaseSchema = z.object({
   purchaseDate: isoDateSchema,
   installments: z.coerce.number().int().min(1).max(48).default(1)
 });
-const purchaseCreateSchema = purchaseSchema.extend({ operationId: operationSchema.optional() });
+const purchaseCreateSchema = purchaseSchema.extend({ operationId: operationSchema.optional(), allowDuplicate: z.boolean().optional() });
 const purchaseUpdateSchema = purchaseSchema.extend({ operationId: operationSchema });
 const purchaseCancelSchema = z.object({ operationId: operationSchema.optional() }).optional();
 const statementPaymentSchema = z.object({
@@ -81,7 +81,7 @@ function mutationError(reply: FastifyReply, error: unknown) {
 function domainError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof CardDomainError)) throw error;
   const status = error.code === 'CARD_NOT_FOUND' ? 404
-    : ['OPERATION_ID_REUSED', 'STATEMENT_CHANGED_RETRY', 'INSUFFICIENT_MONETARY_BALANCE'].includes(error.code) ? 409
+    : ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE', 'STATEMENT_CHANGED_RETRY', 'INSUFFICIENT_MONETARY_BALANCE'].includes(error.code) ? 409
       : 400;
   return reply.code(status).send({ error: error.code, ...(error.details || {}) });
 }

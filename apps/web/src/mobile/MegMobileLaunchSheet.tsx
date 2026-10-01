@@ -20,12 +20,18 @@ import {
   runPhoenixSimpleEventWrite,
   type PhoenixBenefitEventInput,
   type PhoenixCardPurchaseInput,
+  type PhoenixDuplicateCandidate,
   type PhoenixSimpleEventInput,
 } from '../phoenix/data/phoenix-write-gateway';
 import './meg-mobile-launch-sheet.css';
 
 type LaunchPreset = 'expense' | 'income' | 'benefit';
 type EventWithPayload = FinancialEvent & { sourcePayload?: unknown };
+type DuplicateWarning = {
+  operationId: string;
+  candidate: PhoenixDuplicateCandidate;
+  windowSeconds?: number;
+};
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -205,6 +211,7 @@ export function MegMobileLaunchSheet({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState<DuplicateWarning | null>(null);
   const [installmentPreviewOpen, setInstallmentPreviewOpen] = useState(false);
   const [historySuggestions, setHistorySuggestions] = useState<MegMobileHistorySuggestion[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -437,12 +444,25 @@ export function MegMobileLaunchSheet({
     return '';
   }
 
-  async function save() {
+  async function save(allowDuplicate = false, existingOperationId?: string) {
     if (busy) return;
-    const error = validate();
-    if (error) { setMessage(error); return; }
+    const validation = validate();
+    if (validation) { setMessage(validation); return; }
     setBusy(true);
-    setMessage(event ? 'Salvando alterações…' : 'Salvando lançamento…');
+    setMessage(event ? 'Salvando alterações…' : allowDuplicate ? 'Confirmando novo lançamento…' : 'Salvando lançamento…');
+
+    const duplicateFrom = (
+      result: { status: string; operationId?: string; code?: string; details?: { duplicate?: PhoenixDuplicateCandidate; duplicateWindowSeconds?: number } },
+    ) => {
+      if (result.status !== 'error' || result.code !== 'POSSIBLE_DUPLICATE' || !result.operationId || !result.details?.duplicate) return false;
+      setDuplicateWarning({
+        operationId: result.operationId,
+        candidate: result.details.duplicate,
+        windowSeconds: result.details.duplicateWindowSeconds,
+      });
+      setMessage('');
+      return true;
+    };
 
     try {
       if (credit) {
@@ -453,15 +473,18 @@ export function MegMobileLaunchSheet({
           totalAmount: parseAmount(amount),
           purchaseDate: date,
           installments: installmentEnabled ? Math.max(1, Math.min(48, Math.trunc(installments || 1))) : 1,
+          allowDuplicate: allowDuplicate || undefined,
         };
         if (event && cardMeta && cardPurchase) {
           const result = await runPhoenixCardPurchaseEdit(cardPurchase.id, input, data.month);
           if (result.snapshot) dispatchSnapshot(result.snapshot);
         } else {
-          const result = await runPhoenixCardPurchaseWrite(preparePhoenixCardPurchase(input), data.month);
+          const result = await runPhoenixCardPurchaseWrite(preparePhoenixCardPurchase(input, existingOperationId), data.month);
+          if (duplicateFrom(result)) return;
           if (result.status === 'error') throw new Error(result.code);
           if (result.status === 'confirmed') dispatchSnapshot(result.snapshot);
         }
+        setDuplicateWarning(null);
         setStep('success');
         return;
       }
@@ -476,6 +499,7 @@ export function MegMobileLaunchSheet({
         categoryId: categoryId || undefined,
         paymentMethodId: pending ? undefined : (paymentMethodId || undefined),
         notes: notes.trim().toLocaleUpperCase('pt-BR') || undefined,
+        allowDuplicate: allowDuplicate || undefined,
       };
 
       if (mode === 'benefit') {
@@ -484,7 +508,8 @@ export function MegMobileLaunchSheet({
           const result = await runPhoenixBenefitEventEdit(event.id, benefit, data.month, event.updatedAt);
           if (result.snapshot) dispatchSnapshot(result.snapshot);
         } else {
-          const result = await runPhoenixBenefitEventWrite(preparePhoenixBenefitEvent(benefit), data.month);
+          const result = await runPhoenixBenefitEventWrite(preparePhoenixBenefitEvent(benefit, existingOperationId), data.month);
+          if (duplicateFrom(result)) return;
           if (result.status === 'error') throw new Error(result.code);
           if (result.status === 'confirmed') dispatchSnapshot(result.snapshot);
         }
@@ -500,7 +525,8 @@ export function MegMobileLaunchSheet({
           const result = await runPhoenixBenefitEventEdit(event.id, benefit, data.month, event.updatedAt);
           if (result.snapshot) dispatchSnapshot(result.snapshot);
         } else {
-          const result = await runPhoenixBenefitEventWrite(preparePhoenixBenefitEvent(benefit), data.month);
+          const result = await runPhoenixBenefitEventWrite(preparePhoenixBenefitEvent(benefit, existingOperationId), data.month);
+          if (duplicateFrom(result)) return;
           if (result.status === 'error') throw new Error(result.code);
           if (result.status === 'confirmed') dispatchSnapshot(result.snapshot);
         }
@@ -508,10 +534,12 @@ export function MegMobileLaunchSheet({
         const result = await runPhoenixSimpleEventEdit(event.id, simple, data.month, event.updatedAt);
         if (result.snapshot) dispatchSnapshot(result.snapshot);
       } else {
-        const result = await runPhoenixSimpleEventWrite(preparePhoenixSimpleEvent(simple), data.month);
+        const result = await runPhoenixSimpleEventWrite(preparePhoenixSimpleEvent(simple, existingOperationId), data.month);
+        if (duplicateFrom(result)) return;
         if (result.status === 'error') throw new Error(result.code);
         if (result.status === 'confirmed') dispatchSnapshot(result.snapshot);
       }
+      setDuplicateWarning(null);
       setStep('success');
     } catch (error) {
       const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
@@ -693,6 +721,25 @@ export function MegMobileLaunchSheet({
         <div className="meg3-installment-list" data-meg-scroll-region="true">{installmentPreview.map((item) => <article key={item.number}><span><strong>Parcela {item.number}/{installmentPreview.length}</strong><small>Fatura {item.statementMonth.split('-').reverse().join('/')} · vence {item.due.split('-').reverse().join('/')}</small></span><b>{money.format(item.amount)}</b></article>)}</div>
         <footer><span><small>Total</small><strong>{money.format(installmentPreview.reduce((sum,item)=>sum+item.amount,0))}</strong></span><button type="button" onClick={() => setInstallmentPreviewOpen(false)}>Editar número de parcelas</button></footer>
       </section></div> : null}
+
+      {duplicateWarning ? <div className="meg3-duplicate-confirm">
+        <section role="alertdialog" aria-modal="true" aria-label="Possível lançamento duplicado">
+          <small>PROTEÇÃO MULTIPLATAFORMA</small>
+          <h3>Possível duplicidade detectada</h3>
+          <p>Encontramos um lançamento praticamente idêntico gravado há poucos minutos. Isso pode acontecer quando o mesmo movimento já foi salvo no App ou no Web.</p>
+          <div className="meg3-duplicate-card">
+            <span><small>Descrição</small><strong>{duplicateWarning.candidate.description || description}</strong></span>
+            <span><small>Valor</small><strong>{money.format(Number(duplicateWarning.candidate.amount || parseAmount(amount)))}</strong></span>
+            <span><small>Data</small><strong>{duplicateWarning.candidate.date ? duplicateWarning.candidate.date.split('-').reverse().join('/') : date.split('-').reverse().join('/')}</strong></span>
+            <span><small>{duplicateWarning.candidate.cardName ? 'Cartão' : 'Conta / origem'}</small><strong>{duplicateWarning.candidate.cardName || duplicateWarning.candidate.accountName || duplicateWarning.candidate.paymentMethodName || 'Já registrado no MEG'}</strong></span>
+          </div>
+          <p className="meg3-duplicate-note">Se for realmente outra operação, você pode salvar mesmo assim. Caso seja a mesma, volte sem criar um segundo lançamento.</p>
+          <footer>
+            <button type="button" disabled={busy} onClick={() => setDuplicateWarning(null)}>Voltar e revisar</button>
+            <button type="button" className="danger" disabled={busy} onClick={() => { const operationId=duplicateWarning.operationId; setDuplicateWarning(null); void save(true, operationId); }}>Salvar mesmo assim</button>
+          </footer>
+        </section>
+      </div> : null}
 
       {deleteConfirm ? <div className="meg3-delete-confirm"><div><small>CONFIRMAR EXCLUSÃO</small><h3>Excluir este lançamento?</h3><p>{description || 'O lançamento selecionado'} não ficará mais ativo no MEG.</p><span><button disabled={busy} onClick={() => setDeleteConfirm(false)}>Cancelar</button><button className="danger" disabled={busy} onClick={() => void remove()}>Excluir</button></span></div></div> : null}
     </section>

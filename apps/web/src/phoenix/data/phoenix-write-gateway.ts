@@ -44,6 +44,7 @@ export type PhoenixWriteStatus = 'idle' | 'saving' | 'confirmed' | 'error';
 export type PhoenixSimpleEventInput = Omit<FinancialEventInput, 'type' | 'status'> & {
   type: 'income' | 'expense';
   status: 'planned' | 'paid';
+  allowDuplicate?: boolean;
 };
 
 export type PhoenixBenefitEventInput = Omit<PhoenixSimpleEventInput, 'status'> & {
@@ -57,6 +58,7 @@ export type PhoenixCardPurchaseInput = {
   totalAmount: number;
   purchaseDate: string;
   installments: number;
+  allowDuplicate?: boolean;
 };
 
 export type PreparedPhoenixSimpleEvent = {
@@ -77,19 +79,41 @@ export type PreparedPhoenixCardPurchase = {
   preparedAt: string;
 };
 
+export type PhoenixDuplicateCandidate = {
+  entity?: 'financial-event' | 'card-purchase';
+  id?: string;
+  description?: string;
+  amount?: number;
+  date?: string;
+  createdAt?: string;
+  type?: string;
+  status?: string;
+  accountName?: string | null;
+  categoryName?: string | null;
+  paymentMethodName?: string | null;
+  cardName?: string | null;
+  installments?: number;
+};
+
+export type PhoenixWriteErrorDetails = {
+  duplicate?: PhoenixDuplicateCandidate;
+  duplicateWindowSeconds?: number;
+  [key: string]: unknown;
+};
+
 export type PhoenixWriteState =
   | { status: 'idle' }
   | { status: 'saving'; operationId: string }
   | { status: 'accepted'; operationId: string; event: FinancialEvent }
   | { status: 'confirmed'; operationId: string; event: FinancialEvent; snapshot: PhoenixReadModel }
-  | { status: 'error'; operationId: string; code: string; message: string };
+  | { status: 'error'; operationId: string; code: string; message: string; details?: PhoenixWriteErrorDetails };
 
 export type PhoenixCardPurchaseWriteState =
   | { status: 'idle' }
   | { status: 'saving'; operationId: string }
   | { status: 'accepted'; operationId: string; purchase: CardPurchase }
   | { status: 'confirmed'; operationId: string; purchase: CardPurchase; snapshot: PhoenixReadModel }
-  | { status: 'error'; operationId: string; code: string; message: string };
+  | { status: 'error'; operationId: string; code: string; message: string; details?: PhoenixWriteErrorDetails };
 
 export class PhoenixWriteError extends Error {
   constructor(public code: string) {
@@ -399,6 +423,7 @@ export function phoenixWriteMessage(code: string) {
     INVALID_CATEGORY: 'A classificação ou grupo selecionado não está mais disponível.',
     INVALID_PAYMENT_METHOD: 'A forma de pagamento ou recebimento não está mais disponível.',
     OPERATION_ID_REUSED: 'A tentativa de reenvio não corresponde ao lançamento original. Revise os dados antes de tentar novamente.',
+    POSSIBLE_DUPLICATE: 'Encontramos um lançamento praticamente idêntico salvo há poucos minutos. Confirme antes de gravar outro.',
     TRANSFER_CONTRACT_NOT_READY: 'Transferências ainda não estão liberadas neste fluxo.',
   };
   return messages[code] || 'Não foi possível confirmar o lançamento no servidor. Os dados foram mantidos para nova tentativa.';
@@ -408,6 +433,15 @@ function writeErrorCode(error: unknown) {
   if (error instanceof PhoenixWriteError) return error.code;
   if (error instanceof Error && error.message) return error.message;
   return 'PHOENIX_WRITE_FAILED';
+}
+
+function writeErrorDetails(error: unknown): PhoenixWriteErrorDetails | undefined {
+  if (!error || typeof error !== 'object' || Array.isArray(error)) return undefined;
+  const source = error as Record<string, unknown>;
+  const details: PhoenixWriteErrorDetails = {};
+  if (source.duplicate && typeof source.duplicate === 'object') details.duplicate = source.duplicate as PhoenixDuplicateCandidate;
+  if (Number.isFinite(Number(source.duplicateWindowSeconds))) details.duplicateWindowSeconds = Number(source.duplicateWindowSeconds);
+  return Object.keys(details).length ? details : undefined;
 }
 
 async function confirmedSnapshot(refreshMonth: string) {
@@ -765,6 +799,7 @@ export async function runPhoenixSimpleEventWrite(
       operationId: prepared.operationId,
       code,
       message: phoenixWriteMessage(code),
+      details: writeErrorDetails(error),
     };
     onState?.(failed);
     return failed;
@@ -795,6 +830,7 @@ export async function runPhoenixBenefitEventWrite(
       operationId: prepared.operationId,
       code,
       message: phoenixWriteMessage(code),
+      details: writeErrorDetails(error),
     };
     onState?.(failed);
     return failed;
@@ -825,6 +861,7 @@ export async function runPhoenixCardPurchaseWrite(
       operationId: prepared.operationId,
       code,
       message: phoenixWriteMessage(code),
+      details: writeErrorDetails(error),
     };
     onState?.(failed);
     return failed;

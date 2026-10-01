@@ -114,6 +114,8 @@ export function PhoenixLaunchWriteControl({
   const [commitState, setCommitState] = useState<CommitState>('idle');
   const [commitMessage, setCommitMessage] = useState('');
   const [duplicateAccepted, setDuplicateAccepted] = useState(false);
+  const [serverDuplicateMessage, setServerDuplicateMessage] = useState('');
+  const effectiveDuplicateMessage = duplicateMessage || serverDuplicateMessage || '';
   const reportCommitError = (message: string) => {
     setCommitState('error');
     setCommitMessage(message);
@@ -171,6 +173,7 @@ export function PhoenixLaunchWriteControl({
     setCommitState('idle');
     setCommitMessage('');
     setDuplicateAccepted(false);
+    setServerDuplicateMessage('');
   }, [inputKey, reviewed]);
 
   useEffect(() => {
@@ -230,7 +233,7 @@ export function PhoenixLaunchWriteControl({
     if (!eligibility.eligible || runtimeState !== 'enabled' || commitState === 'saving') return;
     const missingNonTransferInput = benefitFlow ? !benefitInput : cardFlow ? !cardInput : !input;
     if (!transferFlow && missingNonTransferInput) return;
-    if (duplicateMessage && !duplicateAccepted) return;
+    if (effectiveDuplicateMessage && !duplicateAccepted) return;
 
     setCommitState('saving');
     setCommitMessage(transferFlow
@@ -270,7 +273,10 @@ export function PhoenixLaunchWriteControl({
       }
 
       if (benefitFlow) {
-        const prepared = preparedBenefitRef.current || preparePhoenixBenefitEvent(benefitInput!);
+        const existing = preparedBenefitRef.current;
+        const prepared = existing
+          ? duplicateAccepted ? preparePhoenixBenefitEvent({ ...benefitInput!, allowDuplicate:true }, existing.operationId) : existing
+          : preparePhoenixBenefitEvent({ ...benefitInput!, allowDuplicate:duplicateAccepted || undefined });
         preparedBenefitRef.current = prepared;
         const result = await runPhoenixBenefitEventWrite(
           prepared,
@@ -291,12 +297,22 @@ export function PhoenixLaunchWriteControl({
           return;
         }
         if (result.status === 'accepted') return;
+        if (result.status === 'error' && result.code === 'POSSIBLE_DUPLICATE') {
+          setCommitState('idle');
+          setCommitMessage(result.message);
+          setServerDuplicateMessage(result.message);
+          setDuplicateAccepted(false);
+          return;
+        }
         reportCommitError(result.status === 'error' ? result.message : 'Não foi possível concluir a movimentação do benefício.');
         return;
       }
 
       if (cardFlow) {
-        const prepared = preparedCardRef.current || preparePhoenixCardPurchase(cardInput!);
+        const existing = preparedCardRef.current;
+        const prepared = existing
+          ? duplicateAccepted ? preparePhoenixCardPurchase({ ...cardInput!, allowDuplicate:true }, existing.operationId) : existing
+          : preparePhoenixCardPurchase({ ...cardInput!, allowDuplicate:duplicateAccepted || undefined });
         preparedCardRef.current = prepared;
         const result = await runPhoenixCardPurchaseWrite(
           prepared,
@@ -317,13 +333,23 @@ export function PhoenixLaunchWriteControl({
           return;
         }
         if (result.status === 'accepted') return;
+        if (result.status === 'error' && result.code === 'POSSIBLE_DUPLICATE') {
+          setCommitState('idle');
+          setCommitMessage(result.message);
+          setServerDuplicateMessage(result.message);
+          setDuplicateAccepted(false);
+          return;
+        }
         reportCommitError(result.status === 'error'
           ? result.message
           : 'Não foi possível concluir a confirmação visual da compra. A operação não será reenviada automaticamente.');
         return;
       }
 
-      const prepared = preparedRef.current || preparePhoenixSimpleEvent(input!);
+      const existing = preparedRef.current;
+      const prepared = existing
+        ? duplicateAccepted ? preparePhoenixSimpleEvent({ ...input!, allowDuplicate:true }, existing.operationId) : existing
+        : preparePhoenixSimpleEvent({ ...input!, allowDuplicate:duplicateAccepted || undefined });
       preparedRef.current = prepared;
       const result = await runPhoenixSimpleEventWrite(
         prepared,
@@ -344,6 +370,13 @@ export function PhoenixLaunchWriteControl({
         return;
       }
       if (result.status === 'accepted') return;
+      if (result.status === 'error' && result.code === 'POSSIBLE_DUPLICATE') {
+        setCommitState('idle');
+        setCommitMessage(result.message);
+        setServerDuplicateMessage(result.message);
+        setDuplicateAccepted(false);
+        return;
+      }
       reportCommitError(result.status === 'error' ? result.message : 'Não foi possível concluir o lançamento.');
     } catch (error) {
       const code = error instanceof Error ? error.message : 'PHOENIX_WRITE_FAILED';
@@ -377,15 +410,15 @@ export function PhoenixLaunchWriteControl({
 
     {transferFlow && commitState !== 'confirmed' ? <div className="px-notice ok">A transferência é atômica entre origem e destino. Após o aceite do servidor, este formulário fecha e a releitura continua sem bloquear o uso do MEG.</div> : null}
 
-    {duplicateMessage && commitState !== 'confirmed' ? <label className="px-launch-duplicate-confirm">
+    {effectiveDuplicateMessage && commitState !== 'confirmed' ? <label className="px-launch-duplicate-confirm">
       <input type="checkbox" checked={duplicateAccepted} onChange={(event) => setDuplicateAccepted(event.target.checked)} />
-      <span><strong>Confirmar possível duplicidade</strong><small>{duplicateMessage}</small></span>
+      <span><strong>Confirmar possível duplicidade</strong><small>{effectiveDuplicateMessage}</small></span>
     </label> : null}
 
     <button
       className="px-primary-action px-confirm-launch"
       type="button"
-      disabled={runtimeState !== 'enabled' || commitState === 'saving' || commitState === 'confirmed' || Boolean(duplicateMessage && !duplicateAccepted)}
+      disabled={runtimeState !== 'enabled' || commitState === 'saving' || commitState === 'confirmed' || Boolean(effectiveDuplicateMessage && !duplicateAccepted)}
       onClick={() => { void confirmLaunch(); }}
       aria-busy={commitState === 'saving'}
     >

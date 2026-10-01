@@ -105,3 +105,11 @@ console.log('Contrato do fluxo validado de Novo/Editar lançamento aprovado.');
   assert.ok(runtimeCss.includes('.meg-mobile-entry-shield') && runtimeCss.includes('background:#002f32'), 'Proteção pós-loading deve cobrir toda a viewport com fundo opaco.');
   assert.ok(runtimeCss.includes('overflow-anchor:none') && runtimeCss.includes('box-shadow:none!important'), 'Listas móveis devem reduzir custo de pintura sem reativar composição por GPU.');
 }
+
+{
+  assert.ok(launch.includes('PROTEÇÃO MULTIPLATAFORMA') && launch.includes('Possível duplicidade detectada'), 'Novo lançamento deve alertar claramente quando App/Web já gravaram algo idêntico.');
+  assert.ok(launch.includes('Voltar e revisar') && launch.includes('Salvar mesmo assim'), 'Duplicidade legítima deve exigir decisão explícita do usuário.');
+  assert.ok(launch.includes('save(true, operationId)') && launch.includes('existingOperationId'), 'Confirmação deve repetir o mesmo comando lógico, preservando o operationId original.');
+  assert.ok(launch.includes("result.code !== 'POSSIBLE_DUPLICATE'") && launch.includes('result.details?.duplicate'), 'Modal só pode abrir a partir de conflito estruturado confirmado pelo servidor.');
+  assert.ok(css.includes('.meg3-duplicate-confirm') && css.includes('.meg3-duplicate-card'), 'Alerta de duplicidade deve possuir composição própria e responsiva.');
+}

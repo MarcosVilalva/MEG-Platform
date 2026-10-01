@@ -890,3 +890,22 @@ assert.equal(
   true,
   'Baixa confirmada do mês visível deve refletir o débito na Home imediatamente, antes da reconciliação oficial.',
 );
+
+
+/* MEG 2.0.673 · proteção multiplataforma contra lançamentos duplicados. */
+assert.equal(
+  launchSheet.includes('type DuplicateWarning') &&
+  launchSheet.includes('PROTEÇÃO MULTIPLATAFORMA') &&
+  launchSheet.includes('save(true, operationId)') &&
+  launchSheet.includes("POSSIBLE_DUPLICATE") &&
+  launchCss.includes('.meg3-duplicate-confirm'),
+  true,
+  'Novo/Editar deve interromper a segunda criação suspeita e exigir confirmação consciente antes do override.',
+);
+assert.equal(
+  writeGateway.includes('PhoenixWriteErrorDetails') &&
+  writeGateway.includes('details: writeErrorDetails(error)') &&
+  writeGateway.includes('allowDuplicate?: boolean'),
+  true,
+  'Gateway Phoenix deve transportar o conflito semântico estruturado entre API, App e Web.',
+);
