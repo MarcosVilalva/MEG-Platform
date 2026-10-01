@@ -84,9 +84,9 @@ async function assertAvailable(tx: Tx, userId: string, input: {
   if (duplicate) throw new CustomerMutationError('CUSTOMER_ALREADY_EXISTS', { id: duplicate.id });
 }
 
-async function runCustomerMutation<T>(
+async function runCustomerMutation<T, I extends CustomerMutationMeta>(
   actorId: string,
-  input: CustomerMutationMeta & Record<string, unknown>,
+  input: I,
   mutationType: string,
   work: (tx: Tx, context: { workspaceId: string; dataOwnerId: string }) => Promise<T>,
 ) {
