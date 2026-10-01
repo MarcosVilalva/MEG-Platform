@@ -1,6 +1,6 @@
 import type { FinancialEvent } from '../../app/finance-client';
 import type { PhoenixReadModel } from '../contracts';
-import { PhoenixPayables as PhoenixPayablesV15 } from './PhoenixPayablesV15';
+import { PhoenixPayables as PhoenixPayablesV15, type PhoenixPayablesSelectionRequest } from './PhoenixPayablesV15';
 
 function normalize(value: unknown) {
   return String(value ?? '')
@@ -62,6 +62,6 @@ function creditAwarePendingModel(data: PhoenixReadModel): PhoenixReadModel {
  * No runtime atual, a baixa múltipla não depende desses marcadores: ela é
  * transacional no backend e a agenda reconhece crédito por forma/cartão e ciclo.
  */
-export function PhoenixPayables({ data, onMonthChange, onEditEvent }: { data: PhoenixReadModel; onMonthChange?: (month: string) => void; onEditEvent?: (eventId: string) => void }) {
-  return <PhoenixPayablesV15 data={creditAwarePendingModel(data)} onMonthChange={onMonthChange} onEditEvent={onEditEvent} />;
+export function PhoenixPayables({ data, onMonthChange, onEditEvent, selectionRequest }: { data: PhoenixReadModel; onMonthChange?: (month: string) => void; onEditEvent?: (eventId: string) => void; selectionRequest?: PhoenixPayablesSelectionRequest | null }) {
+  return <PhoenixPayablesV15 data={creditAwarePendingModel(data)} onMonthChange={onMonthChange} onEditEvent={onEditEvent} selectionRequest={selectionRequest} />;
 }
