@@ -1120,9 +1120,9 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
     <section className="meg2-page-title"><div><h1>Pendentes</h1><p>Suas contas e compromissos.</p></div><span><Icon name="sliders"/></span></section>
     <div className="meg2-tabs">
       <button className={tab === 'all' ? 'active' : ''} onClick={() => changeTab('all')}>Todas</button>
-      <button className={tab === 'open' ? 'active' : ''} onClick={() => changeTab('open')}>A pagar {opens.length ? <b>{opens.length}</b> : null}</button>
+      <button className={(tab === 'open' ? 'active' : '') + (opens.length ? ' has-count' : '')} onClick={() => changeTab('open')}>A pagar {opens.length ? <b>{opens.length}</b> : null}</button>
       <button className={tab === 'paid' ? 'active' : ''} onClick={() => changeTab('paid')}>Pagas</button>
-      <button className={tab === 'overdue' ? 'active' : ''} onClick={() => changeTab('overdue')}>Vencidas {overdue.length ? <b>{overdue.length}</b> : null}</button>
+      <button className={(tab === 'overdue' ? 'active' : '') + (overdue.length ? ' has-count' : '')} onClick={() => changeTab('overdue')}>Vencidas {overdue.length ? <b>{overdue.length}</b> : null}</button>
     </div>
     <section className="meg2-pending-metrics">
       <article className={selectedRows.length ? 'selected' : ''}><small>{selectedRows.length ? 'Total selecionado' : 'Total'}</small><strong>{money.format(selectedRows.length ? selectedTotal : total)}</strong>{selectedRows.length ? <span>{selectedRows.length}</span> : null}</article>

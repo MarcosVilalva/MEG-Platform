@@ -761,3 +761,19 @@ assert.match(
   /MEG 2\.0\.667[\s\S]*\.meg2-pending-card-inline[\s\S]*\.meg2-pending-card-inline-lines[\s\S]*\.meg2-pending-card-inline>footer/,
   'A fatura expandida deve possuir layout próprio dentro da lista de Pendentes.',
 );
+
+
+/* MEG 2.0.668 · badges devem ter área reservada e nunca sobrepor rótulos. */
+assert.equal(
+  mobile.includes("' has-count'") &&
+  css.includes('.meg2-payables .meg2-tabs button.has-count') &&
+  css.includes('.meg2-pending-metrics article.selected>small') &&
+  css.includes('.meg2-pending-metrics article.selected>span'),
+  true,
+  'Contadores das abas e do total selecionado devem reservar espaço próprio sem cobrir o texto.',
+);
+assert.match(
+  css,
+  /MEG 2\.0\.668[\s\S]*button\.has-count>b[\s\S]*position:absolute[\s\S]*article\.selected>small[\s\S]*max-width:calc\(100% - 31px\)[\s\S]*\.meg2-badge-wrap b/,
+  'Microacabamento dos badges deve manter posicionamento responsivo nas abas, resumo e dock.',
+);
