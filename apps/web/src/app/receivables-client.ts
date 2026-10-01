@@ -34,11 +34,16 @@ export type Receivable = {
   totalAmount: string | number;
   openAmount: string | number;
   dueDate: string;
-  status: 'open' | 'partial' | 'paid' | 'overdue';
+  status: 'open' | 'partial' | 'paid' | 'overdue' | 'cancelled';
   installmentNo: number;
   installmentQty: number;
   customer?: Customer | null;
   receipts: Receipt[];
+  interestRate?: string | number;
+  fineRate?: string | number;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
   idempotentReplay?: boolean;
 };
 
@@ -66,6 +71,18 @@ export type ReceiveReceivableInput = {
   operationId?: string;
 };
 
+export type UpdateReceivableInput = {
+  customerId?: string | null;
+  description?: string;
+  totalAmount?: number;
+  dueDate?: string;
+  interestRate?: number;
+  fineRate?: number;
+  notes?: string | null;
+  expectedUpdatedAt?: string;
+  operationId?: string;
+};
+
 export const receivablesClient = {
   listCustomers: () => request<Customer[]>('/receivables/customers'),
   createCustomer: (data: Pick<Customer, 'name'> & Partial<Pick<Customer, 'email' | 'phone' | 'document' | 'notes'>> & { operationId?: string }) => request<Customer>('/receivables/customers', {
@@ -80,6 +97,14 @@ export const receivablesClient = {
   listReceivables: () => request<Receivable[]>('/receivables/receivables'),
   createReceivable: (data: CreateReceivableInput) => request<Receivable>('/receivables/receivables', {
     method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  updateReceivable: (id: string, data: UpdateReceivableInput) => request<Receivable>(`/receivables/receivables/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data)
+  }),
+  cancelReceivable: (id: string, data: { expectedUpdatedAt?: string; operationId?: string } = {}) => request<Receivable>(`/receivables/receivables/${id}`, {
+    method: 'DELETE',
     body: JSON.stringify(data)
   }),
   receive: (id: string, data: ReceiveReceivableInput) => request<Receipt>(`/receivables/receivables/${id}/receipts`, {
