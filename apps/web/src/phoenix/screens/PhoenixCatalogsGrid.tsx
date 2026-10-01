@@ -4,6 +4,7 @@ import { financeClient, type Account, type Category, type PaymentMethod } from '
 import { readSession } from '../../app/auth-client';
 import type { CreditCard } from '../../app/cards-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
+import { PhoenixNavIcon, type PhoenixNavigationIcon } from '../PhoenixNavIcon';
 import { resolvePhoenixCardIdentity } from '../card-identity';
 import type { PhoenixReadModel } from '../contracts';
 
@@ -52,6 +53,13 @@ const paymentTypes = [
   ['instant', 'Instantâneo / Pix'], ['bill', 'Boleto'], ['credit', 'Crédito'], ['debit', 'Débito'],
   ['transfer', 'Transferência'], ['cash', 'Dinheiro'], ['other', 'Outro']
 ] as const;
+
+const catalogMeta: Record<CatalogTab, { title: string; short: string; description: string; icon: PhoenixNavigationIcon }> = {
+  accounts: { title: 'Contas financeiras', short: 'Contas', description: 'Bancos, caixa, benefício e demais origens que sustentam saldos e baixas.', icon: 'cashflow' },
+  categories: { title: 'Classificações e grupos', short: 'Classificações', description: 'Estrutura analítica que organiza despesas e receitas para relatórios e decisões.', icon: 'catalogs' },
+  payments: { title: 'Formas de pagamento', short: 'Pagamentos', description: 'Meios usados nos lançamentos e regras automáticas de recebimento e pagamento.', icon: 'movements' },
+  cards: { title: 'Cartões de crédito', short: 'Cartões', description: 'Limites, ciclos, fechamento, vencimento e identidade visual dos cartões ativos.', icon: 'cards' }
+};
 
 const tabKeys: Record<CatalogTab, CatalogGridKey[]> = {
   accounts: ['name', 'type', 'institution', 'openingBalance', 'status'],
@@ -181,9 +189,9 @@ function optionList(rows: CatalogRow[], key: CatalogGridKey): PhoenixGridOption[
 }
 
 function PageIntro() {
-  return <header className="px-screen-head">
-    <div><span className="px-kicker">Cadastros</span><h1>Base operacional</h1><p>Contas, classificações, grupos, formas de pagamento e cartões usados pelas regras financeiras.</p></div>
-    <div className="px-screen-head-aside"><span className="px-status reconciled">Histórico protegido</span></div>
+  return <header className="px-screen-head meg-web-catalog-head">
+    <div><span className="px-kicker">Cadastros e estrutura</span><h1>Central de configuração financeira</h1><p>Gerencie a base que alimenta lançamentos, baixas, cartões, filtros, relatórios e análises. Alterações estruturais preservam o histórico e seguem as mesmas proteções transacionais do aplicativo.</p></div>
+    <div className="px-screen-head-aside"><span className="px-status reconciled">Base protegida e compartilhada</span></div>
   </header>;
 }
 
@@ -223,6 +231,13 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
   const activeAccounts = accounts.filter((item) => item.isActive);
   const activeCategories = categories.filter((item) => item.isActive);
   const activePayments = payments.filter((item) => item.isActive);
+  const activeCards = data.cards.filter((item) => item.isActive);
+  const catalogCounts: Record<CatalogTab, { active: number; total: number }> = {
+    accounts: { active: activeAccounts.length, total: accounts.length },
+    categories: { active: activeCategories.length, total: categories.length },
+    payments: { active: activePayments.length, total: payments.length },
+    cards: { active: activeCards.length, total: data.cards.length },
+  };
 
   const rows = useMemo<CatalogRow[]>(() => {
     if (tab === 'accounts') return accounts.map((item) => ({
@@ -523,24 +538,36 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
     }
   }
 
-  return <section className="px-screen">
+  return <section className="px-screen meg-web-catalog-screen">
     <PageIntro />
-    <section className="px-screen-kpis">
-      <article><span>Contas ativas</span><strong>{activeAccounts.length}</strong><small>Base financeira</small></article>
-      <article><span>Classificações</span><strong>{activeCategories.length}</strong><small>Organização das despesas</small></article>
-      <article><span>Formas de pagamento</span><strong>{activePayments.length}</strong><small>Meios ativos</small></article>
-      <article><span>Cartões ativos</span><strong>{data.cards.filter((item) => item.isActive).length}</strong><small>Identidade automática MEG</small></article>
+
+    <section className="meg-web-catalog-map" aria-label="Tipos de cadastro">
+      {(Object.keys(catalogMeta) as CatalogTab[]).map((item) => {
+        const meta = catalogMeta[item];
+        const count = catalogCounts[item];
+        return <button type="button" key={item} className={`meg-web-catalog-tile ${tab === item ? 'active' : ''}`} onClick={() => setTab(item)}>
+          <span className="meg-web-catalog-icon"><PhoenixNavIcon name={meta.icon} /></span>
+          <span className="meg-web-catalog-copy"><small>{meta.short}</small><strong>{meta.title}</strong><em>{meta.description}</em></span>
+          <span className="meg-web-catalog-count"><strong>{count.active}</strong><small>ativos de {count.total}</small></span>
+        </button>;
+      })}
     </section>
 
-    <div className="px-tabbar px-catalog-tabs">
-      <button className={tab === 'accounts' ? 'active' : ''} onClick={() => setTab('accounts')}>Contas</button>
-      <button className={tab === 'categories' ? 'active' : ''} onClick={() => setTab('categories')}>Classificações</button>
-      <button className={tab === 'payments' ? 'active' : ''} onClick={() => setTab('payments')}>Formas de pagamento</button>
-      <button className={tab === 'cards' ? 'active' : ''} onClick={() => setTab('cards')}>Cartões</button>
-    </div>
+    <section className="px-screen-kpis meg-web-catalog-kpis">
+      <article><span>Total da base</span><strong>{accounts.length + categories.length + payments.length + data.cards.length}</strong><small>Cadastros rastreados</small></article>
+      <article><span>Ativos</span><strong>{activeAccounts.length + activeCategories.length + activePayments.length + activeCards.length}</strong><small>Disponíveis para uso</small></article>
+      <article><span>Inativos</span><strong>{Math.max(0, accounts.length + categories.length + payments.length + data.cards.length - activeAccounts.length - activeCategories.length - activePayments.length - activeCards.length)}</strong><small>Histórico preservado</small></article>
+      <article><span>Permissão atual</span><strong>{canWrite ? 'Edição' : 'Leitura'}</strong><small>{canDeactivate ? 'Pode desativar cadastros' : canWrite ? 'Criação e edição liberadas' : 'Sem alterações'}</small></article>
+    </section>
 
-    <section className="px-card px-catalog-panel px-table-card">
-      <div className="px-panel-head"><div><span>Base real</span><h2>{tab === 'accounts' ? 'Contas' : tab === 'categories' ? 'Classificações' : tab === 'payments' ? 'Formas de pagamento' : 'Cartões'}</h2></div><button className="px-secondary-action" type="button" disabled={!canWrite} onClick={openNew}>{tab === 'cards' ? 'Gerenciar cartões' : '＋ Novo cadastro'}</button></div>
+    <section className="px-card px-catalog-panel px-table-card meg-web-catalog-workspace">
+      <div className="px-panel-head meg-web-catalog-panel-head">
+        <div><span>Base operacional real</span><h2>{catalogMeta[tab].title}</h2><p>{catalogMeta[tab].description}</p></div>
+        <div className="meg-web-catalog-head-actions">
+          <span className="meg-web-catalog-live"><i />{catalogCounts[tab].active} ativo(s)</span>
+          <button className="px-secondary-action" type="button" disabled={!canWrite} onClick={openNew}>{tab === 'cards' ? 'Gerenciar cartões' : '＋ Novo cadastro'}</button>
+        </div>
+      </div>
       {mutationMessage ? <div className={`px-catalog-feedback ${/não|erro|confira|permissão/i.test(mutationMessage) ? 'warn' : 'ok'}`}>{mutationMessage}</div> : null}
 
       <div className="px-toolbar px-catalog-grid-toolbar">
