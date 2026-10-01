@@ -44,7 +44,16 @@ export function MegMobilePicker({
   useEffect(() => {
     if (!open || typeof document === 'undefined') return;
     document.body.classList.add('meg-picker-open');
-    return () => document.body.classList.remove('meg-picker-open');
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      close();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.classList.remove('meg-picker-open');
+      document.removeEventListener('keydown', onKeyDown);
+    };
   }, [open]);
 
   const filtered = useMemo(() => {
