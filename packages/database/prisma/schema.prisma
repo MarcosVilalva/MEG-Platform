@@ -209,6 +209,18 @@ model WorkspaceNotificationConfig {
   emailEnabled             Boolean  @default(true)
   replyToEmail             String?
   senderName               String?  @default("MEG Finanças")
+  automationEnabled        Boolean  @default(true)
+  messagingMorningTime     String   @default("06:00")
+  messagingMiddayTime      String   @default("12:00")
+  messagingEveningTime     String   @default("19:00")
+  alexaAutomationEnabled   Boolean  @default(true)
+  alexaWeekdayMorningTime  String   @default("06:20")
+  alexaWeekdayEveningTime  String   @default("18:00")
+  alexaWeekdayNightTime    String   @default("21:00")
+  alexaWeekendTime         String   @default("12:00")
+  quietHoursEnabled        Boolean  @default(false)
+  quietHoursStart          String   @default("22:00")
+  quietHoursEnd            String   @default("06:00")
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 
