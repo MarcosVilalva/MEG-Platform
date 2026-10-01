@@ -696,13 +696,12 @@ assert.equal(
   'Lançamentos deve remover comandos rápidos duplicados e manter apenas ordenação simples por data no cabeçalho da lista.',
 );
 assert.equal(
-  mobile.includes('canonicalCardKeys') &&
-  mobile.includes('card.statement') &&
-  mobile.includes('statement.payableAmount') &&
+  mobile.includes('cardGroups') &&
+  mobile.includes('isProjectedCardPending') &&
   mobile.includes('meg2-pending-date-total') &&
   mobile.includes('Total selecionado'),
   true,
-  'Pendentes deve usar a fatura canônica, totalizar por vencimento e refletir o lote selecionado no resumo.',
+  'Pendentes deve consolidar as fontes de cartão da competência do vencimento, totalizar por data e refletir o lote selecionado no resumo.',
 );
 assert.equal(
   mobile.includes("subtitle:'Pagamento instantâneo'") &&
@@ -727,4 +726,38 @@ assert.match(
   css,
   /Pendentes V4[\s\S]*\.meg2-pending-date-total[\s\S]*\.meg2-pending-settle>footer \.apply[\s\S]*\.meg2-pending-success>button\.apply/,
   'Pendentes V4 deve destacar totais por data e CTAs de revisão, confirmação e conclusão.',
+);
+
+
+/* MEG 2.0.667 · fatura é uma obrigação visual única, inclusive para histórico legado. */
+assert.equal(
+  mobile.includes('legacyPendingCardForEvent') &&
+  mobile.includes('groupedLegacyEventIds') &&
+  mobile.includes("displayKind:'card'") &&
+  mobile.includes('settlementParts'),
+  true,
+  'Pendentes deve reconhecer lançamentos legados pelo cartão e convertê-los em uma única obrigação visual de fatura.',
+);
+assert.match(
+  mobile,
+  /settlementItems\.flatMap[\s\S]*item\.settlementParts[\s\S]*source: item\.source/,
+  'Baixa de uma fatura agrupada deve expandir suas fontes internas somente no payload atômico enviado ao servidor.',
+);
+assert.equal(
+  mobile.includes('meg2-pending-card-inline') &&
+  mobile.includes('Selecionar fatura') &&
+  mobile.includes('Fatura selecionada') &&
+  mobile.includes('aria-expanded'),
+  true,
+  'Toque na fatura deve expandir os lançamentos na própria lista e a seleção deve ocorrer no nível da fatura.',
+);
+assert.match(
+  mobile,
+  /!groupedLegacyEventIds\.has\(item\.id\)/,
+  'Lançamentos legados já agrupados no cartão não podem reaparecer como pendências individuais.',
+);
+assert.match(
+  css,
+  /MEG 2\.0\.667[\s\S]*\.meg2-pending-card-inline[\s\S]*\.meg2-pending-card-inline-lines[\s\S]*\.meg2-pending-card-inline>footer/,
+  'A fatura expandida deve possuir layout próprio dentro da lista de Pendentes.',
 );
