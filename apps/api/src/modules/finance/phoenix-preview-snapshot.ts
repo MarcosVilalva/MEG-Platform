@@ -523,19 +523,18 @@ export async function getPhoenixPreviewSnapshot(userId: string, month: string) {
   // A base financeira do workspace é canônica e pertence ao owner. Qualquer membro
   // autorizado deve ler exatamente a mesma fotografia, inclusive em instalação nova.
   const dataOwnerId = context.workspace.ownerId;
-  const accountsPromise = prisma.account.findMany({ where: { userId: dataOwnerId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] });
 
-  const [allEvents, futureCandidates, accounts, categories, paymentMethods, events, payables] = await Promise.all([
+  // Todas as leituras independentes começam juntas. Antes, cartões e auditoria
+  // só eram consultados depois que o núcleo financeiro inteiro terminava, somando
+  // uma segunda janela de espera a cada refresh da Home.
+  const [allEvents, futureCandidates, accounts, categories, paymentMethods, events, payables, cards, financialAudit] = await Promise.all([
     loadCoreEvents(dataOwnerId, end),
     loadFutureCandidates(dataOwnerId),
-    accountsPromise,
+    prisma.account.findMany({ where: { userId: dataOwnerId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] }),
     prisma.category.findMany({ where: { userId: dataOwnerId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] }),
     prisma.paymentMethod.findMany({ where: { userId: dataOwnerId }, orderBy: [{ isActive: 'desc' }, { name: 'asc' }] }),
     monthlyEvents(dataOwnerId, month),
     payablesReadOnly(dataOwnerId, month),
-  ]);
-
-  const [cards, financialAudit] = await Promise.all([
     listCards(dataOwnerId, month),
     financialAuditReadOnly(context),
   ]);
