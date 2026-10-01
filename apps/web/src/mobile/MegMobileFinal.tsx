@@ -934,51 +934,11 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   }));
 
   const cardGroups = new Map<string, PendingRow>();
-  const canonicalCardKeys = new Set<string>();
+  const groupedLegacyEventIds = new Set<string>();
 
-  // Pendentes usa a fatura canônica do domínio de cartões como fonte principal.
-  // Os eventos projetados ficam apenas como fallback para dados antigos sem statement.
-  for (const card of data.cards.filter((item) => item.isActive !== false)) {
-    const statement = card.statement;
-    if (!statement || !/^\d{4}-\d{2}$/.test(String(statement.month || ''))) continue;
-    const openLines = (statement.lines || []).filter((line) => line.isOpen !== false);
-    const payableAmount = Number(statement.payableAmount ?? statement.openNetAmount ?? 0);
-    if (!openLines.length || !Number.isFinite(payableAmount) || payableAmount <= 0.009) continue;
-
-    const key = card.id + '|' + statement.month;
-    canonicalCardKeys.add(key);
-    const lines: PendingCardLine[] = openLines.map((line) => {
-      const purchase = line.purchaseId ? (card.purchases || []).find((item) => item.id === line.purchaseId) : undefined;
-      const effect = Number(line.effect || 0);
-      return {
-        id:line.id,
-        description:String(line.description || '').replace(/\s+·\s+\d+\/\d+\s*$/,''),
-        amount:Math.abs(effect),
-        purchaseDate:String(line.purchaseDate || '').slice(0,10),
-        category:purchase?.category?.name || 'Cartão',
-        installment:line.installmentNo && line.installmentQty ? String(line.installmentNo) + '/' + String(line.installmentQty) : undefined,
-        credit:line.kind === 'credit' || effect < 0,
-      };
-    });
-
-    cardGroups.set(key, {
-      id:'c-' + card.id + '-' + statement.month,
-      source:'card',
-      sourceId:card.id,
-      statementMonth:statement.month,
-      description:cardName(card.name),
-      due:String(statement.dueDate || cardDueDateForStatement(statement.month, Number(card.closingDay || 1), Number(card.dueDay || 1))).slice(0,10),
-      amount:Math.round(payableAmount * 100) / 100,
-      paid:false,
-      category:'Cartão de crédito',
-      account:'Definida na baixa',
-      payment:'Fatura ' + statement.month.split('-').reverse().join('/'),
-      itemCount:openLines.length,
-      cardLines:lines,
-      searchText:[card.name, card.issuer, card.brand, statement.month, ...lines.map((line) => line.description + ' ' + (line.category || ''))].filter(Boolean).join(' '),
-    });
-  }
-
+  // Faturas oficiais: a projeção de parcelas já está recortada pela competência
+  // real do vencimento. Para Pendentes ela é mais precisa que card.statement,
+  // que representa a competência da fatura selecionada na Central de Cartões.
   for (const event of data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned' && isProjectedCardPending(item))) {
     const payload = pendingSourcePayload(event);
     if (!payload) continue;
@@ -986,12 +946,13 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
     const statementMonth = String(payload.statementMonth || '');
     const card = data.cards.find((item) => item.id === cardId);
     if (!cardId || !card || !/^\d{4}-\d{2}$/.test(statementMonth)) continue;
-    const key = cardId + '|' + statementMonth;
-    if (canonicalCardKeys.has(key)) continue;
+
     const due = String(payload.dueDate || event.date || '').slice(0,10);
     const rawEffect = Number(payload.statementEffect);
-    const effect = Number.isFinite(rawEffect) ? rawEffect : -Number(event.signedAmount || 0);
+    const effect = Number.isFinite(rawEffect) ? rawEffect : eventStatementEffect(event);
     if (!Number.isFinite(effect) || effect === 0) continue;
+
+    const key = cardId + '|' + statementMonth;
     const line: PendingCardLine = {
       id:event.id,
       description:String(event.description || '').replace(/\s+·\s+\d+\/\d+\s*$/,''),
@@ -1007,6 +968,8 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       current.itemCount = (current.itemCount || 0) + 1;
       current.cardLines?.push(line);
       current.searchText = (current.searchText || '') + ' ' + line.description + ' ' + (line.category || '');
+      const officialPart = current.settlementParts?.find((part) => part.source === 'card' && part.sourceId === cardId && part.statementMonth === statementMonth);
+      if (officialPart) officialPart.amount = Math.round((officialPart.amount + effect) * 100) / 100;
       if (due && due < current.due) current.due = due;
     } else {
       cardGroups.set(key, {
@@ -1024,15 +987,77 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
         itemCount:1,
         cardLines:[line],
         searchText:card.name + ' ' + line.description + ' ' + (line.category || ''),
+        displayKind:'card',
+        settlementParts:[{ source:'card', sourceId:cardId, statementMonth, amount:Math.round(effect * 100) / 100 }],
       });
     }
   }
+
+  // Histórico legado: os lançamentos normalizados preservam a forma/cartão no
+  // sourcePayload. Eles entram na mesma fatura visual, porém são liquidados como
+  // eventos individuais dentro da MESMA transação atômica do lote.
+  for (const event of data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned' && !isProjectedCardPending(item))) {
+    const card = legacyPendingCardForEvent(event, data.cards);
+    if (!card) continue;
+    const due = String(event.date || '').slice(0,10);
+    const statementMonth = statementMonthFromDueDate(due, card);
+    const effect = eventStatementEffect(event);
+    if (!/^\d{4}-\d{2}$/.test(statementMonth) || !Number.isFinite(effect) || effect === 0) continue;
+
+    groupedLegacyEventIds.add(event.id);
+    const payload = pendingSourcePayload(event) || {};
+    const installment = payload.installmentNumber && payload.installmentCount
+      ? String(payload.installmentNumber) + '/' + String(payload.installmentCount)
+      : (String(event.description || '').match(/\b(\d+)\/(\d+)\b/)?.slice(1).join('/') || undefined);
+    const line: PendingCardLine = {
+      id:event.id,
+      description:String(event.description || '').replace(/\s+·\s+\d+\/\d+\s*$/,''),
+      amount:Math.abs(effect),
+      purchaseDate:String(payload.purchaseDate || event.date || '').slice(0,10),
+      category:event.category?.name || event.sourceDetails?.group || 'Cartão',
+      installment,
+      credit:effect < 0,
+    };
+    const key = card.id + '|' + statementMonth;
+    const part: PendingSettlementPart = { source:'event', sourceId:event.id, amount:effect };
+    const current = cardGroups.get(key);
+    if (current) {
+      current.amount = Math.round((current.amount + effect) * 100) / 100;
+      current.itemCount = (current.itemCount || 0) + 1;
+      current.cardLines?.push(line);
+      current.settlementParts = [...(current.settlementParts || []), part];
+      current.searchText = (current.searchText || '') + ' ' + event.description + ' ' + (line.category || '');
+      if (due && due < current.due) current.due = due;
+    } else {
+      cardGroups.set(key, {
+        id:'lc-' + card.id + '-' + statementMonth,
+        source:'event',
+        sourceId:event.id,
+        statementMonth,
+        description:cardName(card.name),
+        due,
+        amount:Math.round(effect * 100) / 100,
+        paid:false,
+        category:'Cartão de crédito',
+        account:'Definida na baixa',
+        payment:'Fatura ' + statementMonth.split('-').reverse().join('/'),
+        itemCount:1,
+        cardLines:[line],
+        searchText:[card.name,event.description,line.category,statementMonth].filter(Boolean).join(' '),
+        displayKind:'card',
+        settlementParts:[part],
+      });
+    }
+  }
+
   const cardRows = [...cardGroups.values()].filter((item) => item.amount > 0.009);
 
-  const openEvents = data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned' && !isProjectedCardPending(item)).map<PendingRow>((item) => ({
-    id: 'e-' + item.id, source: 'event', sourceId: item.id, description: item.description, due: String(item.date).slice(0, 10), amount: Math.abs(Number(item.signedAmount || item.amount || 0)), paid: false,
-    category: item.category?.name || item.sourceDetails?.group || 'Despesas', account: item.account?.name || 'Conta não informada', payment: item.paymentMethod?.name || item.sourceDetails?.paymentMethod || 'Forma não informada', notes: item.notes || item.sourceDetails?.observations || undefined
-  }));
+  const openEvents = data.events.items
+    .filter((item) => item.type === 'expense' && item.status === 'planned' && !isProjectedCardPending(item) && !groupedLegacyEventIds.has(item.id))
+    .map<PendingRow>((item) => ({
+      id: 'e-' + item.id, source: 'event', sourceId: item.id, description: item.description, due: String(item.date).slice(0, 10), amount: Math.abs(Number(item.signedAmount || item.amount || 0)), paid: false,
+      category: item.category?.name || item.sourceDetails?.group || 'Despesas', account: item.account?.name || 'Conta não informada', payment: item.paymentMethod?.name || item.sourceDetails?.paymentMethod || 'Forma não informada', notes: item.notes || item.sourceDetails?.observations || undefined
+    }));
   const paidEvents = data.events.items.filter((item) => item.type === 'expense' && ['paid', 'reconciled', 'confirmed'].includes(String(item.status)) && !isProjectedCardPending(item)).map<PendingRow>((item) => ({
     id: 'e-' + item.id, source: 'event', sourceId: item.id, description: item.description, due: String(item.date).slice(0, 10), amount: Math.abs(Number(item.signedAmount || item.amount || 0)), paid: true,
     category: item.category?.name || item.sourceDetails?.group || 'Despesas', account: item.account?.name || 'Conta não informada', payment: item.paymentMethod?.name || item.sourceDetails?.paymentMethod || 'Forma não informada', notes: item.notes || item.sourceDetails?.observations || undefined
