@@ -23,6 +23,7 @@ type HistoryIndex = {
 };
 
 let cachedIndex: HistoryIndex | null = null;
+let fastIndex: HistoryIndex | null = null;
 let indexPromise: Promise<HistoryIndex> | null = null;
 
 function normalize(value: unknown) {
@@ -42,9 +43,9 @@ function isBenefitEvent(event: FinancialEvent) {
 }
 
 function eventType(event: FinancialEvent): 'expense' | 'income' | null {
-  if (event.status === 'archived' || isBenefitEvent(event)) return null;
-  if (event.type === 'expense') return 'expense';
+  if (event.status === 'archived') return null;
   if (event.type === 'income') return 'income';
+  if (event.type === 'expense' && !isBenefitEvent(event)) return 'expense';
   return null;
 }
 
@@ -103,10 +104,9 @@ function buildIndex(events: FinancialEvent[]): HistoryIndex {
   };
 }
 
-function ensureIndex() {
+function startFullIndexLoad() {
   if (cachedIndex) return Promise.resolve(cachedIndex);
   if (indexPromise) return indexPromise;
-
   indexPromise = loadPhoenixAllEvents()
     .then((page) => buildIndex(page.items))
     .then((index) => {
@@ -116,8 +116,16 @@ function ensureIndex() {
     .finally(() => {
       indexPromise = null;
     });
-
   return indexPromise;
+}
+
+function ensureIndex() {
+  if (cachedIndex) return Promise.resolve(cachedIndex);
+  if (fastIndex) {
+    void startFullIndexLoad();
+    return Promise.resolve(fastIndex);
+  }
+  return startFullIndexLoad();
 }
 
 function score(item: MegMobileHistorySuggestion, query: string) {
@@ -150,7 +158,16 @@ export async function loadMegMobileHistorySuggestions(
     .map((entry) => entry.item);
 }
 
+export function primeMegMobileHistorySuggestions(events: FinancialEvent[]) {
+  fastIndex = buildIndex(events);
+}
+
+export function prewarmMegMobileHistorySuggestions() {
+  void startFullIndexLoad();
+}
+
 export function clearMegMobileHistorySuggestionCache() {
   cachedIndex = null;
+  fastIndex = null;
   indexPromise = null;
 }
