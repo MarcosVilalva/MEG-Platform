@@ -181,6 +181,9 @@ export const usersAdminClient = {
   testEmail: (id: string) => authenticatedRequest<{ deliveredTo: string; email: { status: string; detail?: string } }>(`/auth/users/${id}/test-email`, {
     method: 'POST',
   }),
+  deleteUser: (id: string) => authenticatedRequest<{ id: string; deleted: true }>(`/auth/users/${id}`, {
+    method: 'DELETE',
+  }),
 };
 
 export function clearAuthenticatedCache() {
