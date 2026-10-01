@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1010 638" role="img" aria-labelledby="t d">
+<title id="t">Azul Itaú Visa Platinum</title>
+<desc id="d">Arte local horizontal refinada para o cartão Azul Itaú Visa Platinum.</desc>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#162a55"/><stop offset=".46" stop-color="#102344"/><stop offset="1" stop-color="#071325"/>
+  </linearGradient>
+  <radialGradient id="shine" cx=".76" cy=".08" r=".78">
+    <stop offset="0" stop-color="#557fbd" stop-opacity=".22"/><stop offset=".45" stop-color="#274d86" stop-opacity=".08"/><stop offset="1" stop-color="#071325" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="chip" x1="0" y1="0" x2="1" y2="1">
+    <stop stop-color="#ececef"/><stop offset=".42" stop-color="#b7bac0"/><stop offset=".7" stop-color="#f5f6f7"/><stop offset="1" stop-color="#8c9198"/>
+  </linearGradient>
+  <filter id="grain" x="-20%" y="-20%" width="140%" height="140%">
+    <feTurbulence type="fractalNoise" baseFrequency=".55" numOctaves="2" seed="31" result="n"/>
+    <feColorMatrix in="n" type="saturate" values="0"/>
+    <feComponentTransfer><feFuncA type="table" tableValues="0 .07"/></feComponentTransfer>
+  </filter>
+  <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+    <feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+</defs>
+<rect width="1010" height="638" rx="52" fill="url(#bg)"/>
+<rect width="1010" height="638" rx="52" fill="url(#shine)"/>
+<rect width="1010" height="638" rx="52" filter="url(#grain)" opacity=".78"/>
+<path d="M74 94h286" stroke="#fff" stroke-opacity=".035" stroke-width="2"/>
+<text x="72" y="132" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="76" font-weight="800" letter-spacing="-4">VISA</text>
+<text x="78" y="181" fill="#d9e2f0" font-family="Arial,Helvetica,sans-serif" font-size="29" font-weight="500">Platinum</text>
+<g transform="translate(445 96)">
+  <rect width="126" height="94" rx="19" fill="url(#chip)" stroke="#858a92" stroke-width="2"/>
+  <path d="M31 0v94M63 0v94M95 0v94M0 31h126M0 63h126" stroke="#8a8f96" stroke-width="3" opacity=".72"/>
+</g>
+<g transform="translate(608 117)" fill="none" stroke="#e7edf6" stroke-width="8" stroke-linecap="round">
+  <path d="M0 16c11-11 11-24 0-35"/><path d="M18 22c16-16 16-35 0-50"/><path d="M39 28c22-21 22-46 0-67"/>
+</g>
+<g transform="translate(72 486)" fill="#fff" filter="url(#glow)">
+  <text x="0" y="72" font-family="Arial,Helvetica,sans-serif" font-size="84" font-weight="800" letter-spacing="-5">Azul</text>
+  <g transform="translate(173 10)">
+    <rect x="0" y="0" width="17" height="17" fill="#2f75bd"/><rect x="19" y="0" width="17" height="17" fill="#48a2dc"/>
+    <rect x="0" y="19" width="17" height="17" fill="#55b877"/><rect x="19" y="19" width="17" height="17" fill="#f4c746"/>
+    <rect x="38" y="0" width="17" height="17" fill="#e75d5d"/><rect x="38" y="19" width="17" height="17" fill="#7a6db2"/>
+  </g>
+</g>
+<g transform="translate(834 500)">
+  <rect width="110" height="74" rx="18" fill="#f6f7f9"/>
+  <text x="23" y="50" fill="#f36f21" font-family="Arial,Helvetica,sans-serif" font-size="40" font-weight="800">itaú</text>
+</g>
+</svg>

@@ -226,3 +226,69 @@
     grid-template-columns:repeat(3,minmax(0,1fr));
   }
 }
+
+
+/* CENTRAL V10 · mesma geometria para Mercado, LATAM, Azul, Riachuelo e Verocard. */
+.meg3-cardcenter-overlay,
+.meg3-cardcenter,
+.meg3-cardcenter *{box-sizing:border-box}
+.meg3-cardcenter-overlay{
+  width:100vw!important;max-width:100vw!important;overflow-x:hidden!important;
+}
+.meg3-cardcenter{
+  width:min(100vw,620px)!important;max-width:100vw!important;min-width:0!important;
+  overflow-x:hidden!important;
+}
+.meg3-cardcenter>header,
+.meg3-cardcenter-top,
+.meg3-cardcenter-kpis,
+.meg3-cardcenter-tabs,
+.meg3-cardcenter-tools,
+.meg3-cardcenter-list,
+.meg3-cardcenter>footer{
+  width:100%;min-width:0;max-width:100%;
+}
+.meg3-cardcenter>header{align-items:center}
+.meg3-cardcenter>header>div{min-width:0;max-width:calc(100% - 54px);flex:1}
+.meg3-cardcenter>header h2{
+  max-width:100%;font-size:clamp(17px,5.1vw,24px);line-height:1.04;
+  white-space:normal;overflow:hidden;text-overflow:clip;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+}
+.meg3-cardcenter>header>button{flex:0 0 42px;align-self:center}
+.meg3-cardcenter-top>*,
+.meg3-cardcenter-kpis>*,
+.meg3-cardcenter-tabs>*,
+.meg3-cardcenter-tools>*,
+.meg3-cardcenter-list>*,
+.meg3-cardcenter>footer>*{min-width:0;max-width:100%}
+.meg3-cardcenter-hero{box-sizing:border-box;max-width:100%;min-width:0}
+.meg3-cardcenter-hero[data-card-identity^="Mercado Pago"] img{
+  object-position:51% 50%!important;transform:scale(1.025)!important;
+}
+.meg3-cardcenter-hero[data-card-identity^="LATAM PASS"] img,
+.meg3-cardcenter-hero[data-card-identity^="Azul Itaú"] img,
+.meg3-cardcenter-hero[data-card-identity^="Riachuelo Midway"] img,
+.meg3-cardcenter-hero[data-card-identity^="Verocard Alimentação"] img{
+  object-position:center!important;transform:none!important;
+}
+.meg3-cardcenter-hero::after{
+  content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(120deg,rgba(255,255,255,.055),transparent 24%,transparent 74%,rgba(54,235,222,.035));
+}
+.meg3-cardcenter-hero{position:relative}
+.meg3-cardcenter-tabs{
+  overflow:hidden!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+}
+.meg3-cardcenter-tabs button{
+  width:100%;max-width:100%;min-width:0!important;
+}
+@media(max-width:560px){
+  .meg3-cardcenter{
+    width:100vw!important;max-width:100vw!important;border-inline:0!important;border-radius:0!important;
+  }
+  .meg3-cardcenter>header{padding-inline:12px!important}
+  .meg3-cardcenter-top,.meg3-cardcenter-tools,.meg3-cardcenter-list{padding-inline:10px!important}
+  .meg3-cardcenter-tabs{padding-inline:8px!important}
+  .meg3-cardcenter>footer{padding-inline:12px!important}
+}

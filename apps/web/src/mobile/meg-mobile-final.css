@@ -1153,3 +1153,58 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
 .meg2-card-art.active{
   box-shadow:0 0 0 2px rgba(53,238,226,.82),0 0 22px rgba(40,228,217,.18),0 13px 30px rgba(0,0,0,.30)!important;
 }
+
+
+/* CARTÕES V10 · fechamento visual: impacto, enquadramento e modais à prova de overflow. */
+.meg2-card-art,
+.meg2-card-art *{
+  box-sizing:border-box;
+}
+.meg2-card-art.active{
+  position:relative;
+  box-shadow:0 0 0 2px rgba(68,244,232,.88),0 0 26px rgba(45,231,219,.20),0 14px 34px rgba(0,0,0,.34)!important;
+}
+.meg2-card-art.active::after{
+  content:"";position:absolute;inset:0;z-index:4;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(118deg,rgba(255,255,255,.08),transparent 23%,transparent 70%,rgba(69,239,227,.05));
+  mix-blend-mode:screen;
+}
+.meg2-card-art[data-card-identity^="Mercado Pago"]>img{
+  object-position:51% 50%!important;
+  transform:scale(1.03)!important;
+}
+.meg2-card-art[data-card-identity^="LATAM PASS"]>img,
+.meg2-card-art[data-card-identity^="Azul Itaú"]>img,
+.meg2-card-art[data-card-identity^="Riachuelo Midway"]>img,
+.meg2-card-art[data-card-identity^="Verocard Alimentação"]>img{
+  object-position:center!important;
+  transform:none!important;
+}
+.meg2-card-art[data-card-identity^="Azul Itaú"]{
+  box-shadow:0 9px 24px rgba(0,0,0,.28),0 0 20px rgba(74,131,214,.08);
+}
+.meg2-card-art[data-card-identity^="Verocard Alimentação"]>img{
+  object-fit:cover!important;
+}
+
+/* Detalhe de compra: modal de cartão sempre cabe no viewport, inclusive com nomes longos. */
+.meg2-card-detail-overlay,
+.meg2-card-detail,
+.meg2-card-detail *{box-sizing:border-box}
+.meg2-card-detail-overlay{max-width:100vw;overflow-x:hidden!important}
+.meg2-card-detail{
+  width:min(100vw,560px)!important;max-width:100vw!important;min-width:0!important;
+  overflow-x:hidden!important;
+}
+.meg2-card-detail>header{width:100%;min-width:0}
+.meg2-card-detail>header>div{min-width:0;flex:1}
+.meg2-card-detail>header h2{
+  max-width:100%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;white-space:normal;overflow-wrap:anywhere;font-size:clamp(17px,5vw,20px);
+}
+.meg2-card-detail>header>button{flex:0 0 42px}
+.meg2-card-detail-value,.meg2-card-detail dl,.meg2-card-detail>footer{min-width:0;max-width:100%}
+.meg2-card-detail dd{min-width:0;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:430px){
+  .meg2-card-detail{width:100vw!important;border-inline:0;border-radius:20px 20px 0 0}
+}

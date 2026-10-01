@@ -183,7 +183,7 @@ export function MegMobileCardCenter({
       </header>
 
       <div className="meg3-cardcenter-top">
-        <section className="meg3-cardcenter-hero" style={!artUrl ? { background: card.color || '#073f82' } : undefined}>
+        <section className="meg3-cardcenter-hero" data-card-identity={cardLabel} style={!artUrl ? { background: card.color || '#073f82' } : undefined}>
           {artUrl ? <img src={artUrl} alt={cardLabel}/> : <div><strong>{cardLabel}</strong><small>•••• {card.lastFour || '0000'}</small></div>}
         </section>
         <section className="meg3-cardcenter-kpis">
@@ -275,7 +275,7 @@ export function MegMobileBenefitCardCenter({
       </header>
 
       <div className="meg3-cardcenter-top">
-        <section className="meg3-cardcenter-hero verocard"><img src={artUrl} alt="Verocard Alimentação"/></section>
+        <section className="meg3-cardcenter-hero verocard" data-card-identity="Verocard Alimentação"><img src={artUrl} alt="Verocard Alimentação"/></section>
         <section className="meg3-cardcenter-kpis benefit">
           <article><MegIcon name="wallet" size={16}/><small>Saldo disponível</small><strong>{money.format(balance)}</strong></article>
           <article><MegIcon name="arrow-up" size={16}/><small>Recargas no mês</small><strong>{money.format(credits)}</strong></article>
