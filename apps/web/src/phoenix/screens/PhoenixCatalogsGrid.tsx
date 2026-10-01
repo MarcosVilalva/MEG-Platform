@@ -379,7 +379,11 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
       type: row.type === '—' ? '' : row.type,
       institution: row.institution === '—' ? '' : row.institution,
       openingBalance: Number(row.openingBalance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      group: row.group === '—' ? '' : row.group
+      group: row.group === '—' ? '' : row.group,
+      document: row.document === '—' ? '' : row.document,
+      email: row.email === '—' ? '' : row.email,
+      phone: row.phone === '—' ? '' : row.phone,
+      notes: ''
     };
   }
 
@@ -413,12 +417,13 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
     setEditor((current) => current ? { ...current, draft: { ...current.draft, [key]: value } } : current);
   }
 
-  function commitCatalogSnapshot(nextAccounts: Account[], nextCategories: Category[], nextPayments: PaymentMethod[]) {
+  function commitCatalogSnapshot(nextAccounts: Account[], nextCategories: Category[], nextPayments: PaymentMethod[], nextCustomers: Customer[] = customers) {
     onDataCommitted?.({
       ...data,
       accounts: nextAccounts.map((item) => ({ ...item })),
       categories: nextCategories.map((item) => ({ ...item })),
       paymentMethods: nextPayments.map((item) => ({ ...item })),
+      customers: nextCustomers.map((item) => ({ ...item })),
     });
   }
 
@@ -431,6 +436,8 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
     if (/ACCOUNT_ALREADY_EXISTS/i.test(message)) return 'Já existe uma conta com este nome. Edite ou reative o cadastro existente.';
     if (/CATEGORY_ALREADY_EXISTS/i.test(message)) return 'Já existe esta combinação de classificação, grupo e tipo. Edite ou reative o cadastro existente.';
     if (/PAYMENT_METHOD_ALREADY_EXISTS/i.test(message)) return 'Já existe uma forma de pagamento com este nome. Edite ou reative o cadastro existente.';
+    if (/CUSTOMER_ALREADY_EXISTS/i.test(message)) return 'Já existe um cliente com o mesmo documento ou e-mail. Edite ou reative o cadastro existente.';
+    if (/CUSTOMER_STALE_VERSION/i.test(message)) return 'Este cliente foi alterado em outro dispositivo. Feche a edição e abra novamente antes de salvar.';
     if (/CATALOG_STALE_VERSION/i.test(message)) return 'Este cadastro foi alterado em outro dispositivo. Feche a edição, aguarde a sincronização e abra novamente antes de salvar.';
     if (/OPERATION_ID_REUSED/i.test(message)) return 'Os dados mudaram depois de uma tentativa anterior. Revise o cadastro e tente salvar novamente.';
     if (/VALIDATION_ERROR/i.test(message)) return 'Confira os campos informados. Tipo e saldo inicial ficam protegidos depois que o cadastro é criado.';
@@ -489,7 +496,7 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
         const nextCategories = replaceCatalogItem(categories, saved, creating);
         setCategories(nextCategories);
         commitCatalogSnapshot(accounts, nextCategories, payments);
-      } else {
+      } else if (editor.tab === 'payments') {
         const saved = creating
           ? await financeClient.createPaymentMethod({
               name,
@@ -504,6 +511,28 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
         const nextPayments = replaceCatalogItem(payments, saved, creating);
         setPayments(nextPayments);
         commitCatalogSnapshot(accounts, categories, nextPayments);
+      } else {
+        const saved = creating
+          ? await receivablesClient.createCustomer({
+              name,
+              document: editor.draft.document.trim() || null,
+              email: editor.draft.email.trim() || null,
+              phone: editor.draft.phone.trim() || null,
+              notes: editor.draft.notes.trim() || null,
+              operationId,
+            })
+          : await receivablesClient.updateCustomer(editor.id!, {
+              name,
+              document: editor.draft.document.trim() || null,
+              email: editor.draft.email.trim() || null,
+              phone: editor.draft.phone.trim() || null,
+              notes: editor.draft.notes.trim() || null,
+              expectedUpdatedAt: editor.expectedUpdatedAt,
+              operationId,
+            });
+        const nextCustomers = replaceCatalogItem(customers, saved, creating);
+        setCustomers(nextCustomers);
+        commitCatalogSnapshot(accounts, categories, payments, nextCustomers);
       }
       clearMutationOperation();
       setMutationMessage(creating ? 'Cadastro criado e confirmado pelo servidor.' : 'Alteração salva e confirmada pelo servidor.');
@@ -553,13 +582,20 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
         const nextCategories = replaceCatalogItem(categories, saved, false);
         setCategories(nextCategories);
         commitCatalogSnapshot(accounts, nextCategories, payments);
-      } else {
+      } else if (tab === 'payments') {
         const saved = active
           ? await financeClient.updatePaymentMethod(row.id, { isActive: true, ...meta })
           : await financeClient.deactivatePaymentMethod(row.id, meta);
         const nextPayments = replaceCatalogItem(payments, saved, false);
         setPayments(nextPayments);
         commitCatalogSnapshot(accounts, categories, nextPayments);
+      } else if (tab === 'customers') {
+        const saved = active
+          ? await receivablesClient.updateCustomer(row.id, { isActive: true, ...meta })
+          : await receivablesClient.deactivateCustomer(row.id, meta);
+        const nextCustomers = replaceCatalogItem(customers, saved, false);
+        setCustomers(nextCustomers);
+        commitCatalogSnapshot(accounts, categories, payments, nextCustomers);
       }
       clearMutationOperation();
       setMutationMessage(active ? 'Cadastro reativado com o histórico preservado.' : 'Cadastro desativado. Nenhum histórico foi apagado.');
