@@ -104,7 +104,7 @@ function isVerocardMethod(method: PhoenixReadModel['paymentMethods'][number]) {
 function cardArt(name: string) {
   const normalized = normalizeCardText(name);
   if (normalized.includes('mercado') || normalized.includes('meli')) {
-    return asset('assets/cards/approved-v6/mercado.webp');
+    return asset('assets/cards/mercado-pago-visa-v661.svg');
   }
   if (normalized.includes('latam')) {
     return asset('assets/cards/latam-user-model-v61.svg');
