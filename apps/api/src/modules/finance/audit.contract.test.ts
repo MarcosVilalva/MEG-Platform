@@ -6,6 +6,7 @@ const routes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
 const financeService = readFileSync(new URL('./service.ts', import.meta.url), 'utf8');
 const payablesService = readFileSync(new URL('../payables/service.ts', import.meta.url), 'utf8');
 const cardsService = readFileSync(new URL('../cards/service.ts', import.meta.url), 'utf8');
+const receivablesService = readFileSync(new URL('../receivables/service.ts', import.meta.url), 'utf8');
 
 assert.match(routes, /app\.get\('\/audit'/,
   'API financeira deve expor a trilha normalizada em rota somente leitura.');
@@ -22,6 +23,12 @@ assert.match(financeService, /recordFinancialAudit/);
 assert.match(payablesService, /PAYABLE_PAYMENT_CREATED/);
 assert.match(payablesService, /RECURRING_EXPENSE_CREATED/);
 assert.match(cardsService, /CARD_STATEMENT_PAID/);
+assert.match(audit, /RECEIVABLE_UPDATED/,
+  'Contrato central deve aceitar auditoria de edição de recebível.');
+assert.match(audit, /RECEIVABLE_CANCELLED/,
+  'Contrato central deve aceitar auditoria de cancelamento de recebível.');
+assert.match(receivablesService, /action:\s*'RECEIVABLE_UPDATED'/);
+assert.match(receivablesService, /action:\s*'RECEIVABLE_CANCELLED'/);
 
 const updateStart = financeService.indexOf('export async function updateFinancialEvent');
 const deleteStart = financeService.indexOf('export async function deleteFinancialEvent');
