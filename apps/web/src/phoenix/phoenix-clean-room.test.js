@@ -196,8 +196,10 @@ assert.match(history, /Exportar filtrado/);
 assert.match(users, /Administração habilitada/);
 assert.match(users, /Gerenciar acesso/);
 assert.match(settings, /Saúde do sistema/);
-assert.match(settings, /\/app-state\/normalization-preview/,
-  'Diagnóstico deve comparar as fontes em modo somente leitura.');
+assert.match(settings, /readPhoenixNormalizationPreview/,
+  'Diagnóstico deve comparar as fontes pelo bridge homologado.');
+assert.match(normalizationReconcileBridge, /\/app-state\/normalization-preview/,
+  'Bridge deve manter a leitura de diagnóstico separada da mutação protegida.');
 assert.match(settings, /Nenhum reparo foi executado por esta consulta/,
   'Tela de integridade não pode sugerir que a comparação alterou a base.');
 assert.match(settings, /getBiometricLoginStatus/,
