@@ -225,6 +225,16 @@ export const financeClient = {
     method: 'PATCH',
     body: JSON.stringify(data)
   }),
+  settleEvent: (id: string, data: { paidAt: string; accountId: string; paymentMethodId: string; operationId: string }) =>
+    authorizedRequest<{ event: FinancialEvent; originalDueDate: string; paidAt: string; accountBalanceBefore: number; accountBalanceAfter: number; idempotentReplay?: boolean }>(`/finance/events/${id}/settle`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  updateBenefitEvent: (id: string, data: { description: string; type: 'income' | 'expense'; date: string; amount: number; accountId: string; categoryId?: string; paymentMethodId: string; notes?: string; operationId: string; expectedUpdatedAt?: string }) =>
+    authorizedRequest<FinancialEvent>(`/finance/benefit-events/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    }),
   archiveEvent: (id: string) => authorizedRequest<{ id: string; archived: boolean }>(`/finance/events/${id}`, { method: 'DELETE' }),
   bulkUpdateEvents: (data: { ids: string[]; changes: BulkEventChanges; operationId: string; expectedUpdatedAtById?: Record<string, string> }) =>
     authorizedRequest<{ ids: string[]; updated: number; events: FinancialEvent[]; idempotentReplay: boolean }>('/finance/events/bulk/update', {
