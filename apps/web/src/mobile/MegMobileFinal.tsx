@@ -659,6 +659,8 @@ function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Pro
 }
 
 type PendingRow = { id: string; source: 'payable' | 'event'; sourceId: string; description: string; due: string; amount: number; paid: boolean; category?: string; account?: string; payment?: string; installment?: string; notes?: string };
+type PendingSettlementBalance = { status: 'idle' | 'loading' | 'ready' | 'error'; available: number; accountName: string; message?: string };
+type PendingSettlementSuccess = { description:string; amount:number; paidAt:string; account:string; payment:string; balanceBefore:number; balanceAfter:number };
 
 function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Props['onEditEvent'] }) {
   const [tab, setTab] = useState<'all' | 'open' | 'paid' | 'overdue'>('all');
@@ -668,50 +670,118 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   const [filterOpen, setFilterOpen] = useState(false);
   const [selected, setSelected] = useState<PendingRow | null>(null);
   const [descending, setDescending] = useState(false);
-  const [settling, setSettling] = useState(false);
+  const [settlementItem, setSettlementItem] = useState<PendingRow | null>(null);
+  const [settlementStep, setSettlementStep] = useState<'form' | 'confirm'>('form');
   const [settlementBusy, setSettlementBusy] = useState(false);
   const [settlementMessage, setSettlementMessage] = useState('');
-  const [settlementSuccess, setSettlementSuccess] = useState<{ description:string; amount:number; paidAt:string; account:string; payment:string } | null>(null);
+  const [settlementBalance, setSettlementBalance] = useState<PendingSettlementBalance>({ status:'idle', available:0, accountName:'' });
+  const [settlementSuccess, setSettlementSuccess] = useState<PendingSettlementSuccess | null>(null);
   const [paidAt, setPaidAt] = useState(todayIso());
-  const monetaryAccounts = data.accounts.filter((item) => item.isActive && !/benef|alimenta|verocard/i.test(String(item.type || '') + ' ' + item.name));
-  const activeMethods = data.paymentMethods.filter((item) => item.isActive);
+  const monetaryAccounts = data.accounts.filter(isMonetaryAccount);
+  const activeMethods = data.paymentMethods.filter(isSettlementPaymentMethod);
   const [settlementAccountId, setSettlementAccountId] = useState(monetaryAccounts[0]?.id || '');
   const [settlementMethodId, setSettlementMethodId] = useState('');
   const today = todayIso();
 
+  const settlementMissing = settlementItem && settlementBalance.status === 'ready'
+    ? Math.max(0, Math.round((settlementItem.amount - settlementBalance.available) * 100) / 100)
+    : 0;
+  const settlementAfter = settlementItem && settlementBalance.status === 'ready'
+    ? Math.round((settlementBalance.available - settlementItem.amount) * 100) / 100
+    : 0;
+  const settlementCanReview = Boolean(
+    settlementItem
+    && !settlementItem.paid
+    && paidAt
+    && settlementAccountId
+    && settlementMethodId
+    && settlementBalance.status === 'ready'
+    && settlementMissing <= 0
+    && !settlementBusy
+  );
+
+  useEffect(() => {
+    if (!settlementItem || !settlementAccountId || !paidAt) {
+      setSettlementBalance({ status:'idle', available:0, accountName:'' });
+      return;
+    }
+    let cancelled = false;
+    setSettlementBalance((current) => ({ ...current, status:'loading', message:undefined }));
+    void financeClient.getMonetaryBalance(settlementAccountId, paidAt)
+      .then((balance) => {
+        if (cancelled) return;
+        setSettlementBalance({
+          status:'ready',
+          available:Number(balance.available || 0),
+          accountName:balance.accountName || monetaryAccounts.find((item) => item.id === settlementAccountId)?.name || 'Conta monetária',
+        });
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setSettlementBalance({
+          status:'error',
+          available:0,
+          accountName:monetaryAccounts.find((item) => item.id === settlementAccountId)?.name || 'Conta monetária',
+          message:error instanceof Error ? error.message : 'Não foi possível consultar o saldo da conta.',
+        });
+      });
+    return () => { cancelled = true; };
+  }, [settlementItem?.id, settlementAccountId, paidAt]);
+
   function openSettlement(item: PendingRow) {
-    setSelected(item);
+    setSelected(null);
+    setSettlementItem(item);
     setPaidAt(todayIso());
     setSettlementAccountId(monetaryAccounts[0]?.id || '');
     setSettlementMethodId('');
     setSettlementMessage('');
-    setSettling(true);
+    setSettlementBalance({ status:'idle', available:0, accountName:'' });
+    setSettlementStep('form');
+  }
+
+  function reviewSettlement() {
+    if (!settlementCanReview) return;
+    setSettlementMessage('');
+    setSettlementStep('confirm');
   }
 
   async function confirmSettlement() {
-    if (!selected || selected.paid || settlementBusy) return;
+    if (!settlementItem || settlementItem.paid || settlementBusy || settlementStep !== 'confirm') return;
     try {
       setSettlementBusy(true);
-      setSettlementMessage('Confirmando a operação…');
+      setSettlementMessage('Confirmando a operação no servidor…');
       const prepared = preparePhoenixPendingSettlement({
-        source: selected.source,
-        sourceId: selected.sourceId,
-        amount: selected.amount,
+        source: settlementItem.source,
+        sourceId: settlementItem.sourceId,
+        amount: settlementItem.amount,
         paidAt,
         accountId: settlementAccountId,
         paymentMethodId: settlementMethodId,
       });
       const result = await runPhoenixPendingSettlement(prepared, data.month, (state) => {
-        if (state.status === 'saving') setSettlementMessage('Confirmando a operação…');
+        if (state.status === 'saving') setSettlementMessage('Confirmando a operação no servidor…');
         if (state.status === 'error') setSettlementMessage(state.message);
       });
       if (result.status !== 'confirmed') return;
-      const account = monetaryAccounts.find((item) => item.id === settlementAccountId)?.name || 'Conta financeira';
+      const account = monetaryAccounts.find((item) => item.id === settlementAccountId)?.name || settlementBalance.accountName || 'Conta monetária';
       const payment = activeMethods.find((item) => item.id === settlementMethodId)?.name || 'Forma de pagamento';
-      setSettlementSuccess({ description:selected.description, amount:selected.amount, paidAt, account, payment });
-      setSettling(false);
-      setSelected(null);
+      const response = result.result && typeof result.result === 'object' ? result.result as Record<string, unknown> : {};
+      const serverBefore = Number(response.accountBalanceBefore);
+      const serverAfter = Number(response.accountBalanceAfter);
+      const balanceBefore = Number.isFinite(serverBefore) ? serverBefore : settlementBalance.available;
+      const balanceAfter = Number.isFinite(serverAfter) ? serverAfter : Math.round((balanceBefore - settlementItem.amount) * 100) / 100;
+      setSettlementSuccess({
+        description:settlementItem.description,
+        amount:settlementItem.amount,
+        paidAt,
+        account,
+        payment,
+        balanceBefore,
+        balanceAfter,
+      });
+      setSettlementItem(null);
       setSettlementMessage('');
+      setSettlementStep('form');
     } catch (error) {
       setSettlementMessage(error instanceof Error ? error.message : 'Não foi possível confirmar a baixa.');
     } finally {
