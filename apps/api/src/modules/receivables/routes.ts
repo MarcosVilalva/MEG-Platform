@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@meg/database';
 import { ReceivableDomainError, createReceivableProtected, receiveReceivableProtected } from './service';
+import { CustomerMutationError, createCustomerProtected, updateCustomerProtected } from './customer-mutation';
 import { resolveWorkspaceContext } from '../workspaces/service';
 
 const readRoles = ['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'] as const;
