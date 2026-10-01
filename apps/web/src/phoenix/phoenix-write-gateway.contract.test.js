@@ -505,3 +505,18 @@ assert.match(gateway, /existingOperationId \|\| operationId\('phoenix-card-purch
   'Confirmação de compra duplicada deve reutilizar o operationId da primeira tentativa.');
 assert.match(gateway, /existingOperationId \|\| operationId\('phoenix-benefit'\)/,
   'Confirmação de benefício duplicado deve reutilizar o operationId original.');
+
+assert.match(writeControl, /serverDuplicateMessage/,
+  'Web deve manter o conflito de duplicidade retornado pelo servidor, mesmo quando o snapshot local ainda não o conhece.');
+assert.match(writeControl, /effectiveDuplicateMessage = duplicateMessage \|\| serverDuplicateMessage/,
+  'Aviso local e aviso autoritativo do servidor devem convergir para o mesmo fluxo de confirmação.');
+assert.match(writeControl, /result\.status === 'error' && result\.code === 'POSSIBLE_DUPLICATE'/,
+  'Web deve tratar POSSIBLE_DUPLICATE como decisão do usuário, e não como falha genérica de gravação.');
+assert.match(writeControl, /preparePhoenixSimpleEvent\(\{ \.\.\.input!, allowDuplicate:true \}, existing\.operationId\)/,
+  'Override de evento no Web deve reutilizar o operationId original.');
+assert.match(writeControl, /preparePhoenixBenefitEvent\(\{ \.\.\.benefitInput!, allowDuplicate:true \}, existing\.operationId\)/,
+  'Override do benefício no Web deve reutilizar o operationId original.');
+assert.match(writeControl, /preparePhoenixCardPurchase\(\{ \.\.\.cardInput!, allowDuplicate:true \}, existing\.operationId\)/,
+  'Override de compra no cartão no Web deve reutilizar o operationId original.');
+assert.match(writeControl, /effectiveDuplicateMessage && commitState !== 'confirmed'/,
+  'Confirmação visual do Web deve aparecer tanto para duplicidade detectada localmente quanto pelo servidor.');
