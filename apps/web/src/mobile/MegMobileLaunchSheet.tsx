@@ -121,8 +121,8 @@ function isBenefitAccount(account: PhoenixReadModel['accounts'][number]) {
   return normalize(account.type).includes('benefit') || /benef|verocard|alimenta/.test(normalize(account.name));
 }
 
-function isVerocard(method: PhoenixReadModel['paymentMethods'][number]) {
-  return normalize(method.name).includes('verocard');
+function isVerocard(method: PhoenixReadModel['paymentMethods'][number] | undefined) {
+  return Boolean(method && normalize(method.name).includes('verocard'));
 }
 
 function isCreditMethod(method: PhoenixReadModel['paymentMethods'][number] | undefined) {
@@ -183,7 +183,7 @@ export function MegMobileLaunchSheet({
     (event.accountId && data.accounts.some((account) => account.id === event.accountId && isBenefitAccount(account)))
     || /verocard|benef|alimenta/.test(normalize(event.paymentMethod?.name) + ' ' + normalize(event.account?.name))
   ));
-  const initialMode: LaunchPreset = event ? (inferredBenefit ? 'benefit' : event.type === 'income' ? 'income' : 'expense') : preset;
+  const initialMode: LaunchPreset = event ? (event.type === 'income' ? 'income' : inferredBenefit ? 'benefit' : 'expense') : preset;
 
   const benefitAccount = data.accounts.find((account) => account.isActive && isBenefitAccount(account));
   const verocard = data.paymentMethods.find((method) => method.isActive && isVerocard(method));
