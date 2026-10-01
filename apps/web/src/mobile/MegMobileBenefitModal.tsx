@@ -52,7 +52,7 @@ export function MegMobileBenefitModal({data,onClose,onOpenMovements}:{data:Phoen
   },[evolution]);
   return <div className="meg3-benefit-overlay" role="presentation">
     <section className="meg3-benefit-modal" role="dialog" aria-modal="true" aria-label="Benefício Alimentação">
-      <header><div><small>BENEFÍCIO ALIMENTAÇÃO</small><h2>Acompanhamento</h2><p>Saldo e movimentações do período.</p></div><button onClick={onClose}><MegIcon name="x" size={18}/></button></header>
+      <header><div><small>BENEFÍCIO ALIMENTAÇÃO</small><h2>Acompanhamento</h2><p>Saldo e movimentações do período.</p></div><button type="button" aria-label="Fechar acompanhamento do benefício" onClick={onClose}><MegIcon name="x" size={18}/></button></header>
       <section className="meg3-benefit-kpis">
         <article><small>Saldo inicial</small><strong>{money.format(opening)}</strong></article>
         <article className="credit"><small>Créditos</small><strong>{money.format(credits)}</strong></article>
@@ -60,7 +60,7 @@ export function MegMobileBenefitModal({data,onClose,onOpenMovements}:{data:Phoen
         <article className="balance"><small>Saldo atual</small><strong>{money.format(balance)}</strong></article>
       </section>
       <section className="meg3-benefit-evolution" aria-label="Evolução do saldo do benefício">
-        <header><div><small>EVOLUÇÃO DO SALDO</small><strong>{money.format(balance)}</strong></div><span>{events.length} movimentação{events.length===1?'':'ões'}</span></header>
+        <header><div><small>EVOLUÇÃO DO SALDO</small><strong>{money.format(balance)}</strong></div><span>{events.length} {events.length===1?'movimentação':'movimentações'}</span></header>
         <div className="meg3-benefit-chart" role="img" aria-label={`Saldo evoluiu de ${money.format(opening)} para ${money.format(balance)} no período`}>
           <svg viewBox="0 0 300 72" preserveAspectRatio="none" aria-hidden="true">
             <line x1="6" y1="66" x2="294" y2="66" className="grid"/>
