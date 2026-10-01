@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@meg/database';
-import { ReceivableDomainError, cancelReceivableProtected, createReceivableProtected, receiveReceivableProtected, updateReceivableProtected } from './service';
+import { ReceivableDomainError, cancelReceivableProtected, createReceivableProtected, receiveReceivableProtected, reverseReceivableReceiptProtected, updateReceivableProtected } from './service';
 import { CustomerMutationError, createCustomerProtected, updateCustomerProtected } from './customer-mutation';
 import { resolveWorkspaceContext } from '../workspaces/service';
 
@@ -71,14 +71,19 @@ const receivableCancelSchema = z.object({
   operationId: operationIdSchema,
 }).optional();
 
+const receiptReversalSchema = z.object({
+  reason: z.string().trim().max(500).optional().nullable(),
+  operationId: operationIdSchema,
+}).optional();
+
 function validationError(reply: FastifyReply, details: unknown) {
   return reply.code(400).send({ error: 'VALIDATION_ERROR', details });
 }
 
 function domainError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof ReceivableDomainError)) throw error;
-  const status = error.code === 'RECEIVABLE_NOT_FOUND' ? 404
-    : ['OPERATION_ID_REUSED', 'RECEIVABLE_STALE_VERSION', 'RECEIVABLE_HAS_RECEIPTS', 'RECEIVABLE_NOT_EDITABLE'].includes(error.code) ? 409
+  const status = ['RECEIVABLE_NOT_FOUND', 'RECEIPT_NOT_FOUND'].includes(error.code) ? 404
+    : ['OPERATION_ID_REUSED', 'RECEIVABLE_STALE_VERSION', 'RECEIVABLE_HAS_RECEIPTS', 'RECEIVABLE_NOT_EDITABLE', 'RECEIPT_ALREADY_REVERSED'].includes(error.code) ? 409
       : 400;
   return reply.code(status).send({ error: error.code, ...(error.details || {}) });
 }
@@ -181,6 +186,17 @@ export async function receivableRoutes(app: FastifyInstance) {
     try {
       const receipt = await receiveReceivableProtected(request.user.sub, id, parsed.data);
       return reply.code(201).send(receipt);
+    } catch (error) {
+      return domainError(reply, error);
+    }
+  });
+
+  app.post('/receivables/:id/receipts/:receiptId/reverse', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
+    const parsed = receiptReversalSchema.safeParse(request.body);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const { id, receiptId } = request.params as { id: string; receiptId: string };
+    try {
+      return await reverseReceivableReceiptProtected(request.user.sub, id, receiptId, parsed.data || {});
     } catch (error) {
       return domainError(reply, error);
     }

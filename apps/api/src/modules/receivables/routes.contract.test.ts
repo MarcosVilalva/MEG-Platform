@@ -53,6 +53,24 @@ assert.match(service, /RECEIVABLE_CANCEL/,
   'Cancelamento deve possuir recibo idempotente próprio.');
 assert.match(service, /status: 'cancelled', openAmount: 0/,
   'Cancelamento deve ser lógico e zerar apenas o saldo aberto.');
+assert.match(routes, /app\.post\('\/receivables\/:id\/receipts\/:receiptId\/reverse'/,
+  'API deve expor estorno protegido de um recebimento específico.');
+assert.match(routes, /app\.authorize\(\[\.\.\.adminRoles\]\)/,
+  'Estorno deve permanecer restrito a ADMIN e MANAGER.');
+assert.match(service, /RECEIPT_ALREADY_REVERSED/,
+  'Recebimento já estornado não pode produzir novo efeito financeiro.');
+assert.match(service, /reversedAt, reversalReason: reason/,
+  'Recibo original deve permanecer preservado com marca explícita de estorno.');
+assert.match(service, /status: 'archived', archivedAt: reversedAt/,
+  'Evento financeiro do recebimento deve ser arquivado no mesmo estorno.');
+assert.match(service, /activeReceipts = receivable\.receipts\.filter/,
+  'Saldo reaberto deve ser recalculado pelos recebimentos ainda ativos.');
+assert.match(service, /RECEIVABLE_RECEIPT_REVERSE/,
+  'Estorno deve possuir recibo de idempotência próprio.');
+assert.match(service, /RECEIVABLE_RECEIPT_REVERSED/,
+  'Estorno deve registrar auditoria estrutural.');
+assert.match(service, /current\.receipts\.some\(\(receipt\) => !receipt\.reversedAt\)/,
+  'Recebimentos já estornados não podem bloquear edição e cancelamento do título.');
 
 console.log('Contrato transacional de contas a receber validado.');
 assert.match(routes, /createCustomerProtected/,

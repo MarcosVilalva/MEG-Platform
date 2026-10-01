@@ -80,7 +80,8 @@ function actionLabel(action: string) {
     CARD_STATEMENT_PAID: 'Fatura paga',
     CARD_STATEMENT_REOPENED: 'Fatura reaberta',
     RECEIVABLE_CREATED: 'Conta a receber criada',
-    RECEIVABLE_RECEIVED: 'Recebimento confirmado'
+    RECEIVABLE_RECEIVED: 'Recebimento confirmado',
+    RECEIVABLE_RECEIPT_REVERSED: 'Recebimento estornado'
   } as Record<string, string>)[action] || 'Atualização registrada';
 }
 
@@ -111,6 +112,7 @@ function actionSentence(action: string, actor: string) {
     CARD_STATEMENT_REOPENED: `${actor} reabriu esta fatura`,
     RECEIVABLE_CREATED: `${actor} criou esta conta a receber`,
     RECEIVABLE_RECEIVED: `${actor} confirmou este recebimento`,
+    RECEIVABLE_RECEIPT_REVERSED: `${actor} estornou este recebimento`,
   };
   return sentences[action] || `${actor} atualizou este registro`;
 }

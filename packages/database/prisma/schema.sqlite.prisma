@@ -197,6 +197,8 @@ model Receipt {
   paymentMethodId String?
   financialEventId String? @unique
   notes           String?
+  reversedAt      DateTime?
+  reversalReason  String?
   createdAt       DateTime @default(now())
 
   receivable    Receivable     @relation(fields: [receivableId], references: [id], onDelete: Cascade)

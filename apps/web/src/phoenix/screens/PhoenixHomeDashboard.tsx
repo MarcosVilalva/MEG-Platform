@@ -77,6 +77,7 @@ function shortDate(value: string) {
 
 function actionLabel(action: string) {
   const normalized = action.toUpperCase();
+  if (normalized.includes('RECEIVABLE_RECEIPT_REVERSED')) return 'Recebimento estornado';
   if (normalized.includes('CREATED')) return 'Lançamento incluído';
   if (normalized.includes('UPDATED')) return 'Lançamento alterado';
   if (normalized.includes('ARCHIVED') || normalized.includes('DELETED')) return 'Lançamento arquivado';

@@ -1309,6 +1309,18 @@ assert.match(webGridScreens, /RECEIVABLE_HAS_RECEIPTS/,
   'Interface deve explicar o bloqueio após a primeira baixa.');
 assert.match(webGridScreens, /megConfirm/,
   'Cancelamento de título deve exigir confirmação visual MEG.');
+assert.match(webGridScreens, /receivablesClient\.reverseReceipt/,
+  'Histórico de recebimentos deve usar o contrato oficial de estorno.');
+assert.match(webGridScreens, /RECEIPT_ALREADY_REVERSED/,
+  'Interface deve tratar tentativa concorrente de estornar o mesmo recebimento.');
+assert.match(webGridScreens, /receipt\.reversedAt/,
+  'Totais e permissões devem ignorar recebimentos já estornados.');
+assert.match(webGridScreens, /Histórico de recebimentos/,
+  'Título quitado deve continuar permitindo consultar os recebimentos anteriores.');
+assert.match(webGridScreens, /Confirmar estorno/,
+  'Estorno deve possuir confirmação explícita e motivo auditável.');
+assert.match(webGridScreens, /setReverseReceiptId/,
+  'A seleção do recebimento a estornar deve permanecer explícita na interface.');
 
 assert.match(phoenixApp, /onLogout/,
   'Phoenix deve expor saída de sessão ao preview isolado');
