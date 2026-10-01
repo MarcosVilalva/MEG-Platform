@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { alexaCycleForSlot, messagingCycleForSlot, notificationCycleIsActive, notificationWatchdogHealth, notificationWatchdogPlan } from './watchdog';
+import { DEFAULT_NOTIFICATION_SCHEDULE, validateNotificationSchedule } from './schedule-config';
 
 function keys(value: Date) {
   return notificationWatchdogPlan(value).cycles.map((cycle) => `${cycle.kind}:${cycle.slot}:${cycle.task}`);
@@ -50,6 +51,48 @@ assert.equal(messagingCycleForSlot('07:00'), null);
 assert.equal(alexaCycleForSlot(new Date('2026-09-23T12:00:00Z'), '06:20')?.task, 'alexa-daily-briefing');
 assert.equal(alexaCycleForSlot(new Date('2026-09-26T15:00:00Z'), '12:00')?.task, 'alexa-daily-briefing');
 assert.equal(alexaCycleForSlot(new Date('2026-09-26T15:00:00Z'), '18:00'), null);
+
+
+const customSchedule = validateNotificationSchedule({
+  ...DEFAULT_NOTIFICATION_SCHEDULE,
+  messagingMorningTime: '08:30',
+  messagingMiddayTime: '13:15',
+  messagingEveningTime: '20:30',
+  alexaWeekdayMorningTime: '07:10',
+  alexaWeekdayEveningTime: '17:30',
+  alexaWeekdayNightTime: '20:45',
+  alexaWeekendTime: '11:30',
+});
+assert.deepEqual(
+  notificationWatchdogPlan(new Date('2026-09-23T11:32:00Z'), customSchedule).cycles.map((cycle) => `${cycle.kind}:${cycle.slot}:${cycle.task}`),
+  ['messaging:08:30:daily-summary'],
+  'Agenda customizada deve substituir o slot fixo das 06h pelo horário salvo no workspace.',
+);
+assert.equal(messagingCycleForSlot('08:30', customSchedule)?.task, 'daily-summary');
+assert.equal(messagingCycleForSlot('06:00', customSchedule), null,
+  'Após customizar a agenda, o slot antigo não deve continuar ativo por acidente.');
+
+const quietSchedule = validateNotificationSchedule({
+  ...customSchedule,
+  quietHoursEnabled: true,
+  quietHoursStart: '20:00',
+  quietHoursEnd: '07:00',
+});
+assert.deepEqual(
+  notificationWatchdogPlan(new Date('2026-09-23T23:32:00Z'), quietSchedule).cycles,
+  [],
+  'Período silencioso deve impedir ciclos mesmo quando um horário configurado cair dentro da janela.',
+);
+assert.throws(
+  () => validateNotificationSchedule({ ...DEFAULT_NOTIFICATION_SCHEDULE, messagingMorningTime: '05:30' }),
+  /NOTIFICATION_TIME_OUTSIDE_AUTOMATION_WINDOW/,
+  'Agenda automática não pode aceitar horário fora da cobertura real dos watchdogs.',
+);
+assert.throws(
+  () => validateNotificationSchedule({ ...DEFAULT_NOTIFICATION_SCHEDULE, messagingMorningTime: '12:00', messagingMiddayTime: '11:00' }),
+  /MESSAGING_SCHEDULE_ORDER_INVALID/,
+  'Horários de mensagens devem permanecer em ordem e separados.',
+);
 
 const weekdayEveningCycle = alexaCycleForSlot(new Date('2026-09-23T21:05:00Z'), '18:00')!;
 assert.equal(notificationCycleIsActive(new Date('2026-09-23T21:05:00Z'), weekdayEveningCycle), true,
