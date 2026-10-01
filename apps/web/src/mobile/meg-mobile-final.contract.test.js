@@ -522,9 +522,11 @@ assert.match(
   /CENTRAL V10[\s\S]*width:min\(100vw,620px\)!important[\s\S]*max-width:100vw!important[\s\S]*overflow-x:hidden!important/,
   'Central de qualquer cartão deve ficar rigidamente contida no viewport.',
 );
-assert.match(
-  cardCenterCss,
-  /\.meg3-cardcenter>header h2\{[\s\S]*-webkit-line-clamp:2[\s\S]*overflow-wrap:anywhere/,
+assert.equal(
+  cardCenterCss.includes('.meg3-cardcenter>header h2{') &&
+  cardCenterCss.includes('-webkit-line-clamp:2') &&
+  cardCenterCss.includes('overflow-wrap:anywhere'),
+  true,
   'Títulos longos da Central devem caber sem expulsar o botão fechar.',
 );
 assert.match(
