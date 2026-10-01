@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const routes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
 const mutation = readFileSync(new URL('./event-mutation.ts', import.meta.url), 'utf8');
+const protection = readFileSync(new URL('./monetary-protection.ts', import.meta.url), 'utf8');
 
 assert.match(routes, /createFinancialEventProtected/,
   'Criação de evento deve passar pelo gateway transacional idempotente.');
@@ -33,3 +34,17 @@ assert.match(mutation, /INVALID_CATEGORY/);
 assert.match(mutation, /INVALID_PAYMENT_METHOD/);
 
 console.log('Contrato de criação idempotente de eventos financeiros validado.');
+assert.match(routes, /allowDuplicate:\s*z\.boolean\(\)\.optional\(\)/,
+  'Criação deve exigir override explícito para aceitar uma duplicidade suspeita.');
+assert.match(routes, /POSSIBLE_DUPLICATE/,
+  'Possível duplicidade deve responder como conflito, sem criar silenciosamente outro evento.');
+assert.match(mutation, /findRecentFinancialEventDuplicate/,
+  'Writer deve consultar duplicidade semântica dentro da mesma transação serializável.');
+assert.match(mutation, /allowDuplicate:\s*undefined/,
+  'Override de duplicidade não pode alterar o hash idempotente da operação original.');
+assert.match(mutation, /duplicateOverride:\s*Boolean\(input\.allowDuplicate\)/,
+  'Override consciente deve permanecer registrado na auditoria financeira.');
+assert.match(protection, /SEMANTIC_DUPLICATE_WINDOW_MS\s*=\s*10 \* 60_000/,
+  'Janela de proteção multiplataforma deve permanecer curta e explícita.');
+assert.match(protection, /findRecentFinancialEventDuplicate[\s\S]*workspaceId:[\s\S]*createdAt: \{ gte: duplicateWindowStart\(\) \}/,
+  'Detector deve limitar a comparação ao workspace e às gravações realmente recentes.');
