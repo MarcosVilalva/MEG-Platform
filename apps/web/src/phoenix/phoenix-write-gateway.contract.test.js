@@ -492,3 +492,16 @@ assert.match(previewServer, /PREVIEW_READ_ONLY/,
   'Mutações não habilitadas no ambiente isolado devem continuar bloqueadas pelo proxy.');
 
 console.log('Writers Phoenix validados: criação simples, Benefício Alimentação, compra real no cartão, transferência atômica, edição protegida, baixa com snapshot imediato e preview gated.');
+
+assert.match(gateway, /allowDuplicate\?: boolean/,
+  'Writers de criação devem suportar confirmação explícita de duplicidade sem criar outro contrato paralelo.');
+assert.match(gateway, /POSSIBLE_DUPLICATE:\s*'Encontramos um lançamento praticamente idêntico/,
+  'Gateway deve explicar o conflito sem sugerir que a gravação falhou silenciosamente.');
+assert.match(gateway, /writeErrorDetails[\s\S]*duplicateWindowSeconds/,
+  'Detalhes do candidato duplicado devem chegar à interface para decisão consciente.');
+assert.match(gateway, /details: writeErrorDetails\(error\)/,
+  'Estado de erro deve preservar detalhes estruturados do servidor.');
+assert.match(gateway, /existingOperationId \|\| operationId\('phoenix-card-purchase'\)/,
+  'Confirmação de compra duplicada deve reutilizar o operationId da primeira tentativa.');
+assert.match(gateway, /existingOperationId \|\| operationId\('phoenix-benefit'\)/,
+  'Confirmação de benefício duplicado deve reutilizar o operationId original.');
