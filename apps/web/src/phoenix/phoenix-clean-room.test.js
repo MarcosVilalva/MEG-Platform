@@ -330,6 +330,16 @@ assert.match(settings, /Escolher foto/,
   'Perfil deve permitir escolher foto sem simular gravação na API');
 assert.match(settings, /Avatares MEG/,
   'Perfil deve oferecer avatares pré-selecionados');
+assert.match(settings, /Editar dados/,
+  'Perfil Web deve permitir editar os próprios dados cadastrais.');
+assert.match(settings, /updateOwnProfile/,
+  'Edição do perfil deve usar o contrato autenticado oficial.');
+assert.match(settings, /!nativeOperational && !profileEditing/,
+  'Editor de dados pessoais deve permanecer exclusivo do Web enquanto o Android estiver congelado.');
+assert.match(settings, /Alteração de e-mail não é feita por esta tela/,
+  'E-mail deve permanecer protegido fora do editor simples de perfil.');
+assert.match(settings, /onDataCommitted\(\{ \.\.\.data, user:/,
+  'Perfil salvo deve atualizar imediatamente o snapshot exibido pelo shell.');
 assert.match(settings, /Monte sua Home/,
   'Personalização do dashboard deve permanecer dentro das Configurações V15');
 assert.match(profileAvatar, /meg\.profile\.avatar\./,
