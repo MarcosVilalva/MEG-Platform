@@ -18,4 +18,7 @@ import './phoenix-overlays.css';
 import './phoenix-grid.css';
 import './phoenix-launch-editor-polish.css';
 
+// Camada canônica Web: deve permanecer por último para não afetar o clean-room móvel.
+import './meg-web-2026.css';
+
 export {};

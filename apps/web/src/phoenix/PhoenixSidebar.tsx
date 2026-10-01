@@ -42,7 +42,8 @@ const sections: SidebarSection[] = [
       { id: 'decisions', label: 'Decisões', icon: 'analytics' },
       { id: 'reconcile', label: 'Conciliação', icon: 'reconcile' },
       { id: 'analytics', label: 'Análises', icon: 'analytics' },
-      { id: 'budgets', label: 'Orçamentos e metas', icon: 'budgets' }
+      { id: 'budgets', label: 'Orçamentos e metas', icon: 'budgets' },
+      { id: 'reports', label: 'Relatórios e exportações', icon: 'reports' }
     ]
   },
   {
@@ -90,8 +91,8 @@ export function PhoenixSidebar({
     window.requestAnimationFrame(() => active.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
   }, [view, collapsed]);
 
-  return <aside className="px-sidebar" aria-label="Menu Lateral MEG">
-    <div className="px-side-brand"><img src="./brand/meg-finance-system-mark.svg" alt="MEG Finance System" /></div>
+  return <aside className="px-sidebar meg-web-sidebar" aria-label="Menu Lateral MEG">
+    <div className="px-side-brand"><img src="./brand/meg-finance-system-mark.svg" alt="" /><span><strong>MEG</strong><small>Finance System</small></span></div>
     <button className="px-search-command" type="button" title={collapsed ? 'Buscar no MEG · Ctrl/Cmd + K' : 'Atalho: Ctrl/Cmd + K'} aria-label="Buscar no MEG" onClick={onSearch}><span className="px-search-icon" aria-hidden="true">⌘</span><span className="px-search-label">Buscar no MEG</span></button>
 
     <nav ref={navRef} className="px-nav-group" aria-label="Módulos do MEG" tabIndex={0}>
@@ -113,6 +114,7 @@ export function PhoenixSidebar({
     </nav>
 
     <div className="px-side-footer">
+      <div className="meg-web-side-status" aria-label="Status do ambiente"><span /><div><strong>Ambiente financeiro</strong><small>Sincronização protegida</small></div></div>
       <button className="px-side-exit" type="button" title={collapsed ? 'Sair' : undefined} aria-label="Sair" onClick={onLogout}>
         <span className="px-nav-icon"><PhoenixNavIcon name="logout" /></span><strong>Sair</strong>
       </button>
