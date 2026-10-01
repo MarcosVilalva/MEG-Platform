@@ -967,10 +967,22 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       </section>
     </div> : null}
     {selected ? <div className="meg2-pending-detail-overlay" role="presentation" onClick={() => setSelected(null)}>
-      <section className="meg2-pending-detail" role="dialog" aria-modal="true" aria-label="Detalhes do compromisso" onClick={(event) => event.stopPropagation()}>
-        <header><div><small>DETALHES DO COMPROMISSO</small><h2>{selected.description}</h2></div><button type="button" onClick={() => setSelected(null)}><Icon name="x" size={18}/></button></header>
-        <div className="meg2-pending-detail-amount"><small>Valor</small><strong>{money.format(selected.amount)}</strong><em className={selected.paid ? 'paid' : selected.due < today ? 'late' : 'open'}>{selected.paid ? 'Paga' : selected.due < today ? 'Vencida' : 'A pagar'}</em></div>
-        <dl>
+      <section className={'meg2-pending-detail ' + (selected.source === 'card' ? 'card-group' : '')} role="dialog" aria-modal="true" aria-label="Detalhes do compromisso" onClick={(event) => event.stopPropagation()}>
+        <header><div><small>{selected.source === 'card' ? 'DETALHES DA FATURA' : 'DETALHES DO COMPROMISSO'}</small><h2>{selected.source === 'card' ? 'Fatura ' + selected.description : selected.description}</h2></div><button type="button" onClick={() => setSelected(null)}><Icon name="x" size={18}/></button></header>
+        <div className="meg2-pending-detail-amount"><small>{selected.source === 'card' ? String(selected.itemCount || 0) + ' lançamentos' : 'Valor'}</small><strong>{money.format(selected.amount)}</strong><em className={selected.paid ? 'paid' : selected.due < today ? 'late' : 'open'}>{selected.paid ? 'Paga' : selected.due < today ? 'Vencida' : 'A pagar'}</em></div>
+        {selected.source === 'card' ? <div className="meg2-pending-card-detail" data-meg-scroll-region="true">
+          <div className="meg2-pending-card-meta"><span><small>Fatura</small><b>{selected.statementMonth?.split('-').reverse().join('/')}</b></span><span><small>Vencimento</small><b>{selected.due.split('-').reverse().join('/')}</b></span></div>
+          <div className="meg2-pending-card-lines">
+            {(selected.cardLines || []).map((line) => {
+              const icon = semanticIcon(line.description, line.category);
+              return <article key={line.id}>
+                <span className={'icon-' + icon}><Icon name={icon} size={16}/></span>
+                <p><b>{line.description}</b><small>{[line.purchaseDate ? line.purchaseDate.split('-').reverse().join('/') : '', line.category || '', line.installment ? 'parcela ' + line.installment : ''].filter(Boolean).join(' · ')}</small></p>
+                <strong className={line.credit ? 'credit' : ''}>{line.credit ? '− ' : ''}{money.format(line.amount)}</strong>
+              </article>;
+            })}
+          </div>
+        </div> : <dl>
           <div><dt>Data</dt><dd>{selected.due.split('-').reverse().join('/')}</dd></div>
           <div><dt>Situação</dt><dd>{dueLabel(selected)}</dd></div>
           <div><dt>Categoria</dt><dd>{selected.category || 'Não informada'}</dd></div>
@@ -979,7 +991,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
           {selected.installment ? <div><dt>Parcelamento</dt><dd>{selected.installment}</dd></div> : null}
           {selected.notes ? <div><dt>Observações</dt><dd>{selected.notes}</dd></div> : null}
           <div><dt>Origem</dt><dd>{selected.source === 'event' ? 'Lançamento financeiro' : 'Conta a pagar'}</dd></div>
-        </dl>
+        </dl>}
         <footer className="meg2-pending-detail-actions"><button type="button" className="secondary" onClick={() => setSelected(null)}>Fechar</button>{selected.source === 'event' ? <button type="button" className="secondary" onClick={() => { const id=selected.sourceId; setSelected(null); onEditEvent(id); }}>Editar</button> : null}{!selected.paid ? <button type="button" className="apply" onClick={() => openSettlement(selected)}>Dar baixa</button> : null}</footer>
       </section>
     </div> : null}
