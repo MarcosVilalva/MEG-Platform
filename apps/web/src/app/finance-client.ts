@@ -79,6 +79,26 @@ export type FinancialEventPage = {
   pageSize: number;
 };
 
+export type FinancialAuditEntry = {
+  id: string;
+  at: string;
+  actor: { id: string; name: string; email: string };
+  entity: string;
+  entityId: string;
+  action: string;
+  schemaVersion: number;
+  before: unknown;
+  after: unknown;
+  context: Record<string, unknown>;
+};
+
+export type FinancialAuditPage = {
+  items: FinancialAuditEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 export type FinancialEventInput = {
   description: string;
   type: FinancialEventType;
@@ -223,6 +243,12 @@ export const financeClient = {
     authorizedRequest<FinancialEventPage>(
       `/finance/events?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`
     ),
+  listAudit: (page = 1, pageSize = 100, filters: { action?: string; entity?: string } = {}) => {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (filters.action) params.set('action', filters.action);
+    if (filters.entity) params.set('entity', filters.entity);
+    return authorizedRequest<FinancialAuditPage>(`/finance/audit?${params.toString()}`);
+  },
   createEvent: (data: FinancialEventInput & { operationId?: string; allowDuplicate?: boolean }) => authorizedRequest<FinancialEvent>('/finance/events', {
     method: 'POST',
     body: JSON.stringify(data)
