@@ -23,9 +23,9 @@ import { PhoenixReportsCenter } from './screens/PhoenixReportsCenter';
 import { PhoenixCashflowGrid, PhoenixReceivablesGrid, PhoenixRevenuesGrid } from './screens/PhoenixWebGridScreens';
 import {
   PhoenixAnalytics,
-  PhoenixBudgets,
   PhoenixReconciliation
 } from './screens/PhoenixWebScreens';
+import { PhoenixBudgetsGrid } from './screens/PhoenixBudgetsGrid';
 
 const loadMovementsModule = () => import('./screens/PhoenixMovementsV15');
 const loadPayablesModule = () => import('./screens/PhoenixReadScreens');
@@ -403,7 +403,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   if (view === 'reports') return <PhoenixReportsCenter data={data} />;
   if (view === 'reconcile') return <PhoenixReconciliation data={data} />;
   if (view === 'analytics') return <PhoenixAnalytics data={data} />;
-  return <PhoenixBudgets data={data} />;
+  return <PhoenixBudgetsGrid data={data} onDataCommitted={onDataCommitted} />;
 }
 
 export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClose?: () => void }) {
