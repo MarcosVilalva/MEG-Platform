@@ -247,7 +247,10 @@ export function PhoenixLaunchWriteControl({
       if (transferFlow) {
         const resolvedTransferInput = transferInput || readTransferInputFromDrawer();
         if (!resolvedTransferInput) throw new Error('PHOENIX_TRANSFER_FORM_NOT_READY');
-        const prepared = preparedTransferRef.current || preparePhoenixTransfer(resolvedTransferInput);
+        const existing = preparedTransferRef.current;
+        const prepared = existing
+          ? duplicateAccepted ? preparePhoenixTransfer({ ...resolvedTransferInput, allowDuplicate:true }, existing.operationId) : existing
+          : preparePhoenixTransfer({ ...resolvedTransferInput, allowDuplicate:duplicateAccepted || undefined });
         preparedTransferRef.current = prepared;
         const result = await runPhoenixTransferWrite(
           prepared,
@@ -268,6 +271,13 @@ export function PhoenixLaunchWriteControl({
           return;
         }
         if (result.status === 'accepted') return;
+        if (result.status === 'error' && result.code === 'POSSIBLE_DUPLICATE') {
+          setCommitState('idle');
+          setCommitMessage(result.message);
+          setServerDuplicateMessage(result.message);
+          setDuplicateAccepted(false);
+          return;
+        }
         reportCommitError(result.status === 'error' ? result.message : 'Não foi possível concluir a transferência.');
         return;
       }
