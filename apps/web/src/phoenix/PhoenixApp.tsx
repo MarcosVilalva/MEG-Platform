@@ -1265,7 +1265,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
           </div>}
           <div className="px-top-right meg-web-top-right">
             <div className="meg-web-quick-actions" role="group" aria-label="Ações rápidas">
-              <button className="meg-web-action expense" type="button" onClick={() => requestLaunch('expense')}><span aria-hidden="true">＋</span><strong>Despesa</strong></button>
+              <button className="meg-web-action expense px-top-quick-launch" type="button" onClick={() => requestLaunch('expense')}><span aria-hidden="true">＋</span><strong>Despesa</strong></button>
               <button className="meg-web-action income" type="button" onClick={() => requestLaunch('income')}><span aria-hidden="true">＋</span><strong>Receita</strong></button>
               <button className="meg-web-action intelligence" type="button" onClick={() => navigate('decisions')}><PhoenixNavIcon name="analytics" /><strong>Decisões</strong></button>
             </div>
