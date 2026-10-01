@@ -16,6 +16,38 @@ export async function readCloudState(signal?: AbortSignal): Promise<CloudAppStat
   return { ...result, state: { ...result.state, transactions: Array.isArray(result.state?.transactions) ? result.state.transactions : [] } };
 }
 
+function restoreFingerprint(transactions: LegacyTransaction[]) {
+  return transactions
+    .map((item) => [item.id, String(item.date || '').slice(0, 10), item.type, Number(item.amount), item.description].join('|'))
+    .sort()
+    .join('\n');
+}
+
+export async function replaceCloudTransactions(transactions: LegacyTransaction[]) {
+  const expectedFingerprint = restoreFingerprint(transactions);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const current = await readCloudState();
+    try {
+      const result = await request<{ revision: number; updatedAt?: string | null; normalization?: { active?: boolean; reconciled?: boolean } }>('/app-state', {
+        method: 'PUT',
+        body: JSON.stringify({
+          state: { ...current.state, transactions },
+          expectedRevision: current.revision,
+        }),
+      });
+      const verified = await readCloudState();
+      if (restoreFingerprint(verified.state.transactions) !== expectedFingerprint) {
+        throw new Error('RESTORE_VERIFICATION_FAILED');
+      }
+      return { ...result, state: verified.state, verifiedRevision: verified.revision };
+    } catch (error) {
+      if ((error as { status?: number }).status === 409 && attempt === 0) continue;
+      throw error;
+    }
+  }
+  throw new Error('STATE_CONFLICT');
+}
+
 export async function patchCloudTransactions(upserts: LegacyTransaction[], deletes: string[] = []) {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const current = await readCloudState();
