@@ -1,9 +1,9 @@
 {
-  "versionCode": 660,
-  "versionName": "2.0.660",
+  "versionCode": 661,
+  "versionName": "2.0.661",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "ce7058f3527707f3781397d658ddc4c2bb84af7b056a070e28eb67e5fcd7cef2",
+  "sha256": "92b09c8b812f7c24fd8769460a919fb715162748c8fbbfb7bf1266455f20a975",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "fix(cards): centralizar Mercado Pago sem recorte"
+  "releaseNotes": "fix(cards): substituir arte final do Mercado Pago"
 }
