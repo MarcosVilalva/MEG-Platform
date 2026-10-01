@@ -1104,6 +1104,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   function changeTab(next: 'all' | 'open' | 'paid' | 'overdue') {
     setTab(next);
     setBatchSelected([]);
+    setExpandedCardId('');
   }
 
   function dueLabel(item: PendingRow) {
@@ -1133,21 +1134,49 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       {rows.map((item, index) => {
         const late = !item.paid && item.due < today;
         const rowClass = late ? 'late' : item.paid ? 'paid' : '';
-        const icon: MegIconName = item.source === 'card' ? 'card' : semanticIcon(item.description, item.category);
+        const cardGroup = pendingRowIsCard(item);
+        const icon: MegIconName = cardGroup ? 'card' : semanticIcon(item.description, item.category);
         const marked = batchSelected.includes(item.id);
+        const expanded = cardGroup && expandedCardId === item.id;
         const newDate = index === 0 || rows[index - 1]?.due !== item.due;
         const dateLabel = item.due === today ? 'Hoje · ' + item.due.split('-').reverse().join('/') : item.due.split('-').reverse().join('/');
         const dateSummary = dateStats.get(item.due) || { count:1, total:item.amount };
-        return <div className="meg2-pending-group-row" key={item.id}>
+        return <div className={'meg2-pending-group-row' + (expanded ? ' card-expanded' : '')} key={item.id}>
           {newDate ? <div className="meg2-pending-date-heading"><span><strong>{dateLabel}</strong><small>Vencimento</small></span><i/><span className="meg2-pending-date-total"><small>{dateSummary.count} {dateSummary.count === 1 ? 'item' : 'itens'}</small><strong>{money.format(dateSummary.total)}</strong></span></div> : null}
-          <article className={rowClass + (marked ? ' selected' : '')}>
-            {!item.paid ? <button type="button" className="meg2-pending-select" aria-pressed={marked} aria-label={marked ? 'Remover da baixa em lote' : 'Selecionar para baixa em lote'} onClick={() => toggleRow(item)}><span>{marked ? '✓' : ''}</span></button> : <span className="meg2-pending-select spacer"/>}
-            <button type="button" className="meg2-pending-open" onClick={() => setSelected(item)}>
+          <article className={rowClass + (marked ? ' selected' : '') + (cardGroup ? ' card-group-row' : '')}>
+            {!item.paid ? <button type="button" className="meg2-pending-select" aria-pressed={marked} aria-label={marked ? 'Remover a obrigação da baixa em lote' : cardGroup ? 'Selecionar a fatura inteira para baixa' : 'Selecionar para baixa em lote'} onClick={() => toggleRow(item)}><span>{marked ? '✓' : ''}</span></button> : <span className="meg2-pending-select spacer"/>}
+            <button
+              type="button"
+              className="meg2-pending-open"
+              aria-expanded={cardGroup ? expanded : undefined}
+              onClick={() => cardGroup ? setExpandedCardId((current) => current === item.id ? '' : item.id) : setSelected(item)}
+            >
               <span className={'meg2-pending-icon icon-' + icon}><Icon name={icon}/></span>
-              <p><b>{item.source === 'card' ? 'Fatura ' + item.description : item.description}</b><small>{item.source === 'card' ? String(item.itemCount || 0) + ' lançamentos · ' + dueLabel(item) : dueLabel(item)}</small></p>
-              <span className="meg2-pending-value"><strong>{money.format(item.amount)}</strong><em>{item.paid ? 'Paga' : late ? 'Vencida' : 'A pagar'}</em></span><i><Icon name="chevron-right" size={15}/></i>
+              <p><b>{cardGroup ? 'Fatura ' + item.description : item.description}</b><small>{cardGroup ? String(item.itemCount || 0) + ' lançamentos · ' + dueLabel(item) : dueLabel(item)}</small></p>
+              <span className="meg2-pending-value"><strong>{money.format(item.amount)}</strong><em>{item.paid ? 'Paga' : late ? 'Vencida' : 'A pagar'}</em></span><i className={expanded ? 'expanded' : ''}><Icon name={cardGroup ? 'chevron-down' : 'chevron-right'} size={15}/></i>
             </button>
           </article>
+          {cardGroup && expanded ? <section className="meg2-pending-card-inline" aria-label={'Lançamentos da fatura ' + item.description}>
+            <header>
+              <span><small>FATURA</small><strong>{item.statementMonth?.split('-').reverse().join('/') || 'Cartão'}</strong></span>
+              <span><small>LANÇAMENTOS</small><strong>{item.itemCount || item.cardLines?.length || 0}</strong></span>
+              <span><small>TOTAL</small><strong>{money.format(item.amount)}</strong></span>
+            </header>
+            <div className="meg2-pending-card-inline-lines">
+              {[...(item.cardLines || [])].sort((left,right) => String(left.purchaseDate || '').localeCompare(String(right.purchaseDate || '')) || left.description.localeCompare(right.description,'pt-BR')).map((line) => {
+                const lineIcon = semanticIcon(line.description, line.category);
+                return <article key={line.id}>
+                  <span className={'icon-' + lineIcon}><Icon name={lineIcon} size={15}/></span>
+                  <p><b>{line.description}</b><small>{[line.purchaseDate ? line.purchaseDate.split('-').reverse().join('/') : '', line.category || '', line.installment ? 'parcela ' + line.installment : ''].filter(Boolean).join(' · ')}</small></p>
+                  <strong className={line.credit ? 'credit' : ''}>{line.credit ? '− ' : ''}{money.format(line.amount)}</strong>
+                </article>;
+              })}
+            </div>
+            <footer>
+              <span>Selecione a fatura acima para pagar todos os lançamentos de uma vez.</span>
+              {!item.paid ? <button type="button" className={marked ? 'selected' : ''} onClick={() => toggleRow(item)}><Icon name={marked ? 'check-line' : 'card'} size={15}/>{marked ? 'Fatura selecionada' : 'Selecionar fatura'}</button> : null}
+            </footer>
+          </section> : null}
         </div>;
       })}
       {!rows.length ? <div className="meg2-empty">Nenhum lançamento neste filtro.</div> : null}
@@ -1166,7 +1195,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
         <footer><button type="button" className="secondary" onClick={() => { setFromDate(''); setToDate(''); }}>Limpar</button><button type="button" className="apply" onClick={() => setFilterOpen(false)}>Aplicar filtro</button></footer>
       </section>
     </div> : null}
-    {selected ? <div className="meg2-pending-detail-overlay" role="presentation" onClick={() => setSelected(null)}>
+    {selected && !pendingRowIsCard(selected) ? <div className="meg2-pending-detail-overlay" role="presentation" onClick={() => setSelected(null)}>
       <section className={'meg2-pending-detail ' + (selected.source === 'card' ? 'card-group' : '')} role="dialog" aria-modal="true" aria-label="Detalhes do compromisso" onClick={(event) => event.stopPropagation()}>
         <header><div><small>{selected.source === 'card' ? 'DETALHES DA FATURA' : 'DETALHES DO COMPROMISSO'}</small><h2>{selected.source === 'card' ? 'Fatura ' + selected.description : selected.description}</h2></div><button type="button" onClick={() => setSelected(null)}><Icon name="x" size={18}/></button></header>
         <div className="meg2-pending-detail-amount"><small>{selected.source === 'card' ? String(selected.itemCount || 0) + ' lançamentos' : 'Valor'}</small><strong>{money.format(selected.amount)}</strong><em className={selected.paid ? 'paid' : selected.due < today ? 'late' : 'open'}>{selected.paid ? 'Paga' : selected.due < today ? 'Vencida' : 'A pagar'}</em></div>
