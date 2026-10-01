@@ -2,9 +2,9 @@ import { Prisma, prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { recordFinancialAudit } from '../finance/audit';
 import {
-  isBenefitPaymentMethod,
   isFutureFinancialDay,
-  monetaryBalanceAt,
+  isMonetaryAccountType,
+  monetaryAccountBalanceAt,
   paymentBalanceDecision,
   serializableFinancialTransaction,
 } from '../finance/monetary-protection';
@@ -263,22 +263,41 @@ export async function payPayableProtected(userId: string, payableId: string, inp
     const open = Number(payable.openAmount);
     if (principal > open) throw new PayableDomainError('AMOUNT_EXCEEDS_OPEN_BALANCE', { requested: principal, open });
 
-    const account = input.accountId
-      ? await tx.account.findFirst({ where: { id: input.accountId, userId: dataOwnerId, isActive: true }, select: { id: true } })
-      : null;
-    if (input.accountId && !account) throw new PayableDomainError('INVALID_ACCOUNT');
-    const paymentMethod = input.paymentMethodId
-      ? await tx.paymentMethod.findFirst({ where: { id: input.paymentMethodId, userId: dataOwnerId, isActive: true }, select: { id: true, name: true } })
-      : null;
-    if (input.paymentMethodId && !paymentMethod) throw new PayableDomainError('INVALID_PAYMENT_METHOD');
-
-    let protection: Record<string, unknown> = { monetary: false, allowed: true };
-    if (!isBenefitPaymentMethod(paymentMethod?.name)) {
-      const available = await monetaryBalanceAt(tx, dataOwnerId, input.paidAt);
-      const decision = paymentBalanceDecision(available, paidTotal);
-      protection = { monetary: true, ...decision, at: input.paidAt.slice(0, 10) };
-      if (!decision.allowed) throw new PayableDomainError('INSUFFICIENT_MONETARY_BALANCE', protection);
+    if (!input.accountId) throw new PayableDomainError('INVALID_ACCOUNT');
+    const account = await tx.account.findFirst({
+      where: { id: input.accountId, userId: dataOwnerId, isActive: true },
+      select: { id: true, name: true, type: true, openingBalance: true },
+    });
+    if (!account) throw new PayableDomainError('INVALID_ACCOUNT');
+    if (!isMonetaryAccountType(account.type)) {
+      throw new PayableDomainError('ACCOUNT_NOT_MONETARY', { accountId: account.id, accountType: account.type });
     }
+
+    if (!input.paymentMethodId) throw new PayableDomainError('INVALID_PAYMENT_METHOD');
+    const paymentMethod = await tx.paymentMethod.findFirst({
+      where: { id: input.paymentMethodId, userId: dataOwnerId, isActive: true },
+      select: { id: true, name: true, type: true },
+    });
+    if (!paymentMethod) throw new PayableDomainError('INVALID_PAYMENT_METHOD');
+    const paymentType = String(paymentMethod.type || '').trim().toUpperCase();
+    const paymentName = String(paymentMethod.name || '').trim().toUpperCase();
+    if (paymentType === 'CREDIT' || paymentName === 'VEROCARD') {
+      throw new PayableDomainError('INVALID_PAYMENT_METHOD', {
+        paymentMethodId: paymentMethod.id,
+        reason: 'NON_MONETARY_METHOD_NOT_ALLOWED_FOR_SETTLEMENT',
+      });
+    }
+
+    const available = await monetaryAccountBalanceAt(tx, dataOwnerId, account, input.paidAt);
+    const decision = paymentBalanceDecision(available, paidTotal);
+    const protection: Record<string, unknown> = {
+      monetary: true,
+      ...decision,
+      accountId: account.id,
+      accountName: account.name,
+      at: input.paidAt.slice(0, 10),
+    };
+    if (!decision.allowed) throw new PayableDomainError('INSUFFICIENT_MONETARY_BALANCE', protection);
 
     const event = await tx.financialEvent.create({ data: {
       userId: dataOwnerId,
