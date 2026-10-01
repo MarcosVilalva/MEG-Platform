@@ -162,9 +162,10 @@ export async function updateFinancialEvent(userId: string, id: string, input: Up
   return prisma.$transaction(async (tx) => {
     const current = await tx.financialEvent.findFirst({
       where: { id, userId: dataOwnerId, archivedAt: null },
-      include: { account: true, category: true, paymentMethod: true, ledgerEntries: true }
+      include: { account: true, category: true, paymentMethod: true, ledgerEntries: true, receipt: { select: { id: true, receivableId: true, reversedAt: true } } }
     });
     if (!current) throw new Error('FINANCIAL_EVENT_NOT_FOUND');
+    if (current.receipt && !current.receipt.reversedAt) throw new Error('RECEIPT_LINKED_EVENT_PROTECTED');
     await validateActiveReferences(tx, dataOwnerId, input);
 
     const nextType = input.type ?? current.type;
@@ -217,9 +218,10 @@ export async function deleteFinancialEvent(userId: string, id: string) {
   return prisma.$transaction(async (tx) => {
     const current = await tx.financialEvent.findFirst({
       where: { id, userId: dataOwnerId, archivedAt: null },
-      include: { account: true, category: true, paymentMethod: true, ledgerEntries: true }
+      include: { account: true, category: true, paymentMethod: true, ledgerEntries: true, receipt: { select: { id: true, receivableId: true, reversedAt: true } } }
     });
     if (!current) throw new Error('FINANCIAL_EVENT_NOT_FOUND');
+    if (current.receipt && !current.receipt.reversedAt) throw new Error('RECEIPT_LINKED_EVENT_PROTECTED');
 
     const archived = await tx.financialEvent.update({
       where: { id },
