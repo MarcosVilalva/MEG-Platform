@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { authenticatedRequest } from '../../app/auth-client';
+import { authenticatedRequest, updateOwnProfile } from '../../app/auth-client';
 import type { PhoenixReadModel } from '../contracts';
 import { exportPhoenixTransactionBackup, inspectPhoenixTransactionBackup, restorePhoenixTransactionBackup } from '../backup-restore-bridge';
 import { megConfirm } from '../meg-confirm';
@@ -105,6 +105,12 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
   const [section, setSection] = useState<SettingsSection>('profile');
   const [avatar, setAvatar] = useState<PhoenixAvatarPreference>(() => readPhoenixAvatarPreference(data.user.id));
   const [avatarError, setAvatarError] = useState('');
+  const [profileEditing, setProfileEditing] = useState(false);
+  const [profileName, setProfileName] = useState(data.user.name);
+  const [profilePhone, setProfilePhone] = useState(data.user.phone || '');
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [profileMessage, setProfileMessage] = useState('');
+  const [profileError, setProfileError] = useState('');
   const [dashboardPreferences, setDashboardPreferences] = useState<DashboardPreferences>(() => readDashboardPreferences(data.user.id, nativeOperational));
   const [avatarsExpanded, setAvatarsExpanded] = useState(false);
   const [biometricStatus, setBiometricStatus] = useState<BiometricStatus | null>(null);
@@ -164,6 +170,12 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
     });
     return () => { active = false; };
   }, [data.user.id]);
+
+  useEffect(() => {
+    if (profileEditing) return;
+    setProfileName(data.user.name);
+    setProfilePhone(data.user.phone || '');
+  }, [data.user.name, data.user.phone, profileEditing]);
 
   useEffect(() => {
     let active = true;
@@ -230,6 +242,50 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
       updateAvatar({ kind: 'photo', dataUrl });
     } catch (error) {
       setAvatarError(error instanceof Error ? error.message : 'Não foi possível usar esta imagem.');
+    }
+  }
+
+  function startProfileEdit() {
+    if (nativeOperational) return;
+    setProfileName(data.user.name);
+    setProfilePhone(data.user.phone || '');
+    setProfileMessage('');
+    setProfileError('');
+    setProfileEditing(true);
+  }
+
+  function cancelProfileEdit() {
+    if (profileBusy) return;
+    setProfileEditing(false);
+    setProfileName(data.user.name);
+    setProfilePhone(data.user.phone || '');
+    setProfileError('');
+  }
+
+  async function saveProfile() {
+    if (nativeOperational || profileBusy) return;
+    const name = profileName.trim();
+    const phoneDigits = profilePhone.replace(/\D/g, '');
+    setProfileMessage('');
+    setProfileError('');
+    if (name.length < 2) return setProfileError('Informe um nome com pelo menos 2 caracteres.');
+    if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 15)) return setProfileError('Informe um telefone válido com DDD.');
+
+    setProfileBusy(true);
+    try {
+      const result = await updateOwnProfile({ name, phone: phoneDigits || null });
+      onDataCommitted({ ...data, user: { ...data.user, ...result.user } });
+      setProfileName(result.user.name);
+      setProfilePhone(result.user.phone || '');
+      setProfileEditing(false);
+      setProfileMessage('Dados pessoais atualizados e sincronizados com sua sessão.');
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : '';
+      setProfileError(/VALIDATION_ERROR|INVALID_PROFILE_NAME/i.test(raw)
+        ? 'Revise o nome e o telefone informados.'
+        : 'Não foi possível atualizar seus dados agora.');
+    } finally {
+      setProfileBusy(false);
     }
   }
 
@@ -524,8 +580,15 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
           </section>
 
           <section className="px-card px-settings-card">
-            <div className="px-settings-card-head"><div><span className="px-kicker">Cadastro</span><h2>Dados do usuário</h2><p>Os dados abaixo vêm do cadastro oficial de autenticação.</p></div></div>
-            <dl><div><dt>Nome</dt><dd>{data.user.name}</dd></div><div><dt>E-mail</dt><dd>{data.user.email}</dd></div><div><dt>Telefone</dt><dd>{data.user.phone || 'Não informado'}</dd></div><div><dt>Perfil</dt><dd>{data.user.role}</dd></div><div><dt>Status</dt><dd>{data.user.status}</dd></div><div><dt>Último acesso</dt><dd>{data.user.lastLoginAt ? new Date(data.user.lastLoginAt).toLocaleString('pt-BR') : 'Não informado'}</dd></div></dl>
+            <div className="px-settings-card-head"><div><span className="px-kicker">Cadastro</span><h2>Dados do usuário</h2><p>Nome e telefone podem ser atualizados por você. E-mail, perfil e status permanecem protegidos.</p></div>{!nativeOperational && !profileEditing ? <button type="button" onClick={startProfileEdit}>Editar dados</button> : null}</div>
+            {profileMessage ? <div className="px-settings-sync-banner ok"><strong>Perfil atualizado</strong><small>{profileMessage}</small></div> : null}
+            {profileEditing && !nativeOperational ? <div className="px-settings-profile-edit">
+              <label><span>Nome *</span><input autoFocus maxLength={120} value={profileName} onChange={(event) => setProfileName(event.target.value)} disabled={profileBusy} /></label>
+              <label><span>Telefone</span><input inputMode="tel" maxLength={30} value={profilePhone} onChange={(event) => setProfilePhone(event.target.value)} disabled={profileBusy} placeholder="DDD + número" /></label>
+              <div className="px-settings-profile-edit-readonly"><span>E-mail</span><strong>{data.user.email}</strong><small>Alteração de e-mail não é feita por esta tela.</small></div>
+              {profileError ? <div className="px-settings-sync-banner warn"><strong>Perfil não atualizado</strong><small>{profileError}</small></div> : null}
+              <div className="px-settings-profile-edit-actions"><button type="button" disabled={profileBusy} onClick={cancelProfileEdit}>Cancelar</button><button className="px-primary-action" type="button" disabled={profileBusy} onClick={() => { void saveProfile(); }}>{profileBusy ? 'Salvando…' : 'Salvar dados'}</button></div>
+            </div> : <dl><div><dt>Nome</dt><dd>{data.user.name}</dd></div><div><dt>E-mail</dt><dd>{data.user.email}</dd></div><div><dt>Telefone</dt><dd>{data.user.phone || 'Não informado'}</dd></div><div><dt>Perfil</dt><dd>{data.user.role}</dd></div><div><dt>Status</dt><dd>{data.user.status}</dd></div><div><dt>Último acesso</dt><dd>{data.user.lastLoginAt ? new Date(data.user.lastLoginAt).toLocaleString('pt-BR') : 'Não informado'}</dd></div></dl>}
           </section>
         </> : null}
 

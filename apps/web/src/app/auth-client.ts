@@ -294,6 +294,16 @@ export async function validateSession(session: AuthSession) {
   return request<{ user: AuthUser }>('/auth/me', { headers: { Authorization: `Bearer ${session.accessToken}` } });
 }
 
+export async function updateOwnProfile(data: { name: string; phone?: string | null }) {
+  const result = await authenticatedRequest<{ user: AuthUser }>('/auth/me/profile', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+  const current = readSession();
+  if (current) saveSession({ ...current, user: { ...current.user, ...result.user } });
+  return result;
+}
+
 export async function listManagedUsers(session: AuthSession) {
   return request<{ users: AuthUser[] }>('/auth/users', { headers: { Authorization: `Bearer ${session.accessToken}` } });
 }

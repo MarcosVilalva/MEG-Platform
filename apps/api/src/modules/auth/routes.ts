@@ -15,7 +15,8 @@ import {
   resetUserPassword,
   revokeRefreshSession,
   testUserEmail,
-  updateUserAccess
+  updateUserAccess,
+  updateOwnProfile
 } from './service';
 
 const credentialsSchema = z.object({
@@ -43,6 +44,14 @@ const accessSchema = z.object({
   role: z.nativeEnum(UserRole).optional(),
   phone: z.string().transform((value) => value.replace(/\D/g, '')).refine((value) => value.length >= 10 && value.length <= 15, 'INVALID_PHONE').optional(),
   note: z.string().max(500).optional()
+});
+
+const ownProfileSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  phone: z.string().max(30).optional().nullable().transform((value) => {
+    if (value === null || value === undefined || !String(value).trim()) return null;
+    return String(value).replace(/\D/g, '');
+  }).refine((value) => value === null || (value.length >= 10 && value.length <= 15), 'INVALID_PHONE'),
 });
 
 function requestContext(request: { ip: string; headers: Record<string, unknown> }) {
@@ -153,6 +162,19 @@ export async function authRoutes(app: FastifyInstance) {
     const user = await getUserById(request.user.sub);
     if (!user || !user.isActive) return reply.status(401).send({ error: 'USER_NOT_AVAILABLE' });
     return { user };
+  });
+
+  app.patch('/me/profile', { preHandler: app.authenticate }, async (request, reply) => {
+    const parsed = ownProfileSchema.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: 'VALIDATION_ERROR', details: parsed.error.flatten().fieldErrors });
+    try {
+      return { user: await updateOwnProfile(request.user.sub, parsed.data) };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+      if (message === 'USER_NOT_AVAILABLE') return reply.status(401).send({ error: message });
+      if (message === 'INVALID_PROFILE_NAME') return reply.status(400).send({ error: message });
+      throw error;
+    }
   });
 
   app.get('/users', { preHandler: app.authorize(['ADMIN']) }, async (request) => listUsers(request.user.sub));
