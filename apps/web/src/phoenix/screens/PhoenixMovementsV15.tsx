@@ -420,7 +420,7 @@ function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: numb
   return <svg {...common}><path d="M8 8H3V3M16 8h5V3M8 16H3v5M21 21v-5h-5"/></svg>;
 }
 
-export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', periodLabel = '', onNavigateHistory, onNavigateHome, onDataCommitted, onOpenPeriod, launchRequest = 0, launchPreset = 'expense', editEventRequest = '' }: { data: PhoenixReadModel; periodMode?: 'month' | 'range' | 'all'; periodLabel?: string; onNavigateHistory?: () => void; onNavigateHome?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number; launchPreset?: LaunchPreset; editEventRequest?: string }) {
+export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', periodLabel = '', onNavigateHistory, onNavigateHome, onDataCommitted, onOpenPeriod, launchRequest = 0, launchPreset = 'expense', editEventRequest = '', focusEventRequest }: { data: PhoenixReadModel; periodMode?: 'month' | 'range' | 'all'; periodLabel?: string; onNavigateHistory?: () => void; onNavigateHome?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number; launchPreset?: LaunchPreset; editEventRequest?: string; focusEventRequest?: { token: number; eventId: string } | null }) {
   const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
   const [data, setData] = useState(initialData);
   const [search, setSearch] = useState('');
@@ -456,6 +456,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
   const [validationVisible, setValidationVisible] = useState(false);
   const [recentEventId, setRecentEventId] = useState<string | null>(null);
   const recentTimerRef = useRef<number | null>(null);
+  const focusRequestTokenRef = useRef(0);
   const toolsRef = useRef<HTMLDivElement>(null);
   // Evita que o botão Voltar/fechamento do Android interprete um lançamento
   // já aceito pela API como alteração não salva durante a troca de tela.
@@ -464,6 +465,27 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
   useEffect(() => {
     setData(initialData);
   }, [initialData]);
+
+  useEffect(() => {
+    if (nativeOperational || !focusEventRequest || focusEventRequest.token === focusRequestTokenRef.current) return;
+    const target = initialData.events.items.find((event) => event.id === focusEventRequest.eventId);
+    if (!target) return;
+    focusRequestTokenRef.current = focusEventRequest.token;
+    setSearch(target.description);
+    setTypeFilter('all');
+    setStatus('all');
+    setAccount('all');
+    setGridFilters(initialGridFilters());
+    setGridSort(null);
+    setPage(1);
+    setExpandedList(true);
+    setToolPanel(null);
+    markRecentlyUpdated(target.id);
+    const timer = window.setTimeout(() => {
+      document.querySelector<HTMLElement>(`[data-event-id="${CSS.escape(target.id)}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [focusEventRequest, initialData, nativeOperational]);
 
   useEffect(() => {
     setInstallmentInput(String(Math.max(1, draft.installments || 1)));
@@ -1314,7 +1336,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
           const purchaseDate = sourcePurchaseDate(event);
           const contextIcon = movementContextIcon(event);
           return <button
-            className={`px-mobile-movement-card ${visualType} ${recentEventId === event.id ? 'is-recently-updated' : ''}`}
+            data-event-id={event.id} className={`px-mobile-movement-card ${visualType} ${recentEventId === event.id ? 'is-recently-updated' : ''}`}
             type="button"
             key={event.id}
             onClick={() => setDetailEvent(event)}
@@ -1343,7 +1365,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
             const visualType = launchTypeForEvent(event.type);
             const effect = displayEffect(event);
             const isIncome = visualType === 'income';
-            return <tr key={event.id} className={recentEventId === event.id ? 'is-recently-updated' : undefined} onDoubleClick={() => openEventForEdit(event)} title="Duplo clique para editar">
+            return <tr key={event.id} data-event-id={event.id} className={recentEventId === event.id ? 'is-recently-updated' : undefined} onDoubleClick={() => openEventForEdit(event)} title="Duplo clique para editar">
               <td data-col="dueDate" data-label="Vencimento">{formatIsoDate(event.date)}</td>
               <td data-col="purchaseDate" data-label="Data da compra">{formatIsoDate(sourcePurchaseDate(event))}</td>
               <td data-col="weekday" data-label="Dia">{event.sourceDetails?.weekday || weekday(event.date)}</td>
