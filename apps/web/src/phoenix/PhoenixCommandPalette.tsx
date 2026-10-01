@@ -60,7 +60,7 @@ export function PhoenixCommandPalette({ data, allEvents, onClose, onNavigate }: 
   const results = useMemo(() => {
     const dynamic: SearchResult[] = data ? [
       ...(allEvents ?? data.events.items).map((item) => ({ id: `event-${item.id}`, route: 'movements' as const, kind: item.type === 'income' ? 'Receita' : 'Lançamento', title: item.description, detail: [item.category?.name, item.account?.name, item.paymentMethod?.name].filter(Boolean).join(' · ') || 'Evento financeiro', targetMonth: item.competence || String(item.date).slice(0, 7), targetId: item.id })),
-      ...data.cards.map((item) => ({ id: `card-${item.id}`, route: 'cards' as const, kind: 'Cartão', title: item.name, detail: item.brand || 'Cartão cadastrado' })),
+      ...data.cards.map((item) => ({ id: `card-${item.id}`, route: 'cards' as const, kind: 'Cartão', title: item.name, detail: item.brand || 'Cartão cadastrado', targetId: item.id })),
       ...data.accounts.map((item) => ({ id: `account-${item.id}`, route: 'catalogs' as const, kind: 'Conta', title: item.name, detail: item.institution || item.type || 'Conta financeira' })),
       ...data.categories.map((item) => ({ id: `category-${item.id}`, route: 'catalogs' as const, kind: 'Classificação', title: item.name, detail: item.group || item.type || 'Cadastro financeiro' })),
       ...data.customers.map((item) => ({ id: `customer-${item.id}`, route: 'receivables' as const, kind: 'Cliente', title: item.name, detail: item.email || item.phone || 'Cliente cadastrado' })),

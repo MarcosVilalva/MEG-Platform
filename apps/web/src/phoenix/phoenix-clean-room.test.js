@@ -429,6 +429,17 @@ assert.match(movementScreen, /data-event-id=\{event\.id\}/,
 assert.match(movementScreen, /scrollIntoView\(\{ block: 'center', behavior: 'smooth' \}\)/,
   'Busca deve rolar suavemente até o lançamento localizado.');
 assert.match(commandPalette, /data\.cards/);
+assert.match(commandPalette, /route: 'cards'[\s\S]*kind: 'Cartão'[\s\S]*targetId: item\.id/,
+  'Resultado de Cartões deve preservar o cartão exato localizado.');
+assert.match(phoenixApp, /route === 'cards' && targetId[\s\S]*setSearchCardRequest[\s\S]*cardId: targetId/,
+  'Shell Web deve encaminhar o cartão exato ao módulo de Cartões.');
+assert.match(phoenixApp, /focusRequest=\{nativeOperational \? undefined : searchCardRequest\}/,
+  'Foco de Cartões vindo da busca deve permanecer exclusivo do Web.');
+assert.match(cardsGrid, /focusRequest[\s\S]*selectCard\(focusRequest\.cardId\)[\s\S]*data-search-card-id[\s\S]*scrollIntoView/,
+  'Cartões deve selecionar e centralizar o cartão localizado sem abrir a central automaticamente.');
+assert.match(cardsGrid, /data-search-card-id=\{card\.id\}/,
+  'Card pesquisável deve possuir âncora visual própria.');
+
 assert.match(commandPalette, /data\.accounts/);
 assert.match(commandPalette, /data\.customers/);
 assert.match(commandPalette, /data\.receivables\.map/,
