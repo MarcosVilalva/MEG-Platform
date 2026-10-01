@@ -2,7 +2,7 @@ import { authenticatedRequest } from '../../app/auth-client';
 import { cardsClient, type CardPurchase } from '../../app/cards-client';
 import { financeClient, type FinancialEvent, type FinancialEventInput } from '../../app/finance-client';
 import type { PhoenixReadModel } from '../contracts';
-import { clearPhoenixReadModelCache, loadPhoenixReadModel } from './load-phoenix-read-model';
+import { invalidatePhoenixReadModelMonth, loadPhoenixReadModel, peekPhoenixReadModel } from './load-phoenix-read-model';
 
 export const PHOENIX_WRITE_CAPABILITIES = {
   simpleEvent: true,
@@ -411,8 +411,107 @@ function writeErrorCode(error: unknown) {
 }
 
 async function confirmedSnapshot(refreshMonth: string) {
-  clearPhoenixReadModelCache();
+  // Uma mutação mensal não precisa apagar catálogos, health, outros meses e
+  // contexto estático. Invalidar apenas o mês reduz bastante o custo da releitura.
+  await invalidatePhoenixReadModelMonth(refreshMonth);
   return loadPhoenixReadModel(refreshMonth, { force: true });
+}
+
+function roundMoney(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function postedEvent(status: string) {
+  return ['paid', 'reconciled', 'confirmed'].includes(String(status));
+}
+
+function benefitEvent(event: FinancialEvent) {
+  const accountType = String(event.account?.type || '').toUpperCase();
+  const method = String(event.paymentMethod?.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  const description = String(event.description || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  return accountType === 'BENEFIT' || method === 'VEROCARD' || description.includes('VEROCARD');
+}
+
+function effectiveSigned(event: FinancialEvent) {
+  const stored = Number(event.signedAmount);
+  if (Number.isFinite(stored) && stored !== 0) return stored;
+  const amount = Math.abs(Number(event.amount || 0));
+  if (!Number.isFinite(amount)) return 0;
+  return event.type === 'income' || event.type === 'redemption' ? amount : -amount;
+}
+
+function applyEventToSummary(summary: PhoenixReadModel['summary'], event: FinancialEvent, direction: 1 | -1) {
+  if (String(event.date || '').slice(0, 7) !== summary.month) return summary;
+  const next = { ...summary };
+  const signed = effectiveSigned(event);
+  if (benefitEvent(event)) {
+    if (postedEvent(event.status)) {
+      next.benefitBalance = roundMoney(Number(next.benefitBalance || 0) + direction * signed);
+      next.benefitCredits = roundMoney(Number(next.benefitCredits || 0) + direction * Math.max(0, signed));
+      next.benefitUsed = roundMoney(Number(next.benefitUsed || 0) + direction * Math.max(0, -signed));
+    }
+    return next;
+  }
+
+  const incomeLike = event.type === 'income' || event.type === 'redemption';
+  next.eventCount = Math.max(0, Number(next.eventCount || 0) + direction);
+  if (incomeLike) next.income = roundMoney(Number(next.income || 0) + direction * signed);
+  else next.expense = roundMoney(Number(next.expense || 0) + direction * -signed);
+  next.projectedResult = roundMoney(Number(next.income || 0) - Number(next.expense || 0));
+
+  if (postedEvent(event.status)) {
+    if (incomeLike) next.realizedIncome = roundMoney(Number(next.realizedIncome || 0) + direction * signed);
+    else next.realizedExpense = roundMoney(Number(next.realizedExpense || 0) + direction * -signed);
+    next.realizedResult = roundMoney(Number(next.realizedIncome || 0) - Number(next.realizedExpense || 0));
+  }
+
+  if (event.status === 'planned' && !incomeLike) {
+    next.pendingCount = Math.max(0, Number(next.pendingCount || 0) + direction);
+    next.pendingAmount = roundMoney(Math.max(0, Number(next.pendingAmount || 0) + direction * -signed));
+  }
+  return next;
+}
+
+function publishSnapshot(snapshot: PhoenixReadModel) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('meg:phoenix-snapshot-committed', { detail: { snapshot } }));
+}
+
+function publishOptimisticEvent(refreshMonth: string, event: FinancialEvent) {
+  const current = peekPhoenixReadModel(refreshMonth);
+  if (!current || String(event.date || '').slice(0, 7) !== refreshMonth) return;
+  const previous = current.events.items.find((item) => item.id === event.id);
+  let summary = { ...current.summary };
+  if (previous) summary = applyEventToSummary(summary, previous, -1);
+  summary = applyEventToSummary(summary, event, 1);
+  const items = current.events.items
+    .filter((item) => item.id !== event.id)
+    .concat(event)
+    .sort((left, right) => String(right.date).localeCompare(String(left.date)));
+  const snapshot: PhoenixReadModel = {
+    ...current,
+    loadedAt: new Date().toISOString(),
+    summary,
+    analytics: { ...current.analytics, summary },
+    events: { ...current.events, items, total: items.length, page: 1, pageSize: Math.max(current.events.pageSize || 0, items.length) },
+  };
+  publishSnapshot(snapshot);
+}
+
+function publishOptimisticArchive(refreshMonth: string, eventId: string) {
+  const current = peekPhoenixReadModel(refreshMonth);
+  if (!current) return;
+  const previous = current.events.items.find((item) => item.id === eventId);
+  if (!previous) return;
+  const summary = applyEventToSummary({ ...current.summary }, previous, -1);
+  const items = current.events.items.filter((item) => item.id !== eventId);
+  publishSnapshot({
+    ...current,
+    loadedAt: new Date().toISOString(),
+    summary,
+    analytics: { ...current.analytics, summary },
+    events: { ...current.events, items, total: items.length, page: 1, pageSize: Math.max(0, items.length) },
+  });
 }
 
 async function snapshotAfterAccepted(refreshMonth: string, reason: string, timeoutMs = 12_000) {
@@ -429,6 +528,18 @@ async function snapshotAfterAccepted(refreshMonth: string, reason: string, timeo
     }
     return null;
   }
+}
+
+function refreshSnapshotInBackground(
+  refreshMonth: string,
+  reason: string,
+  onSnapshot?: (snapshot: PhoenixReadModel) => void,
+) {
+  void snapshotAfterAccepted(refreshMonth, reason).then((snapshot) => {
+    if (!snapshot) return;
+    publishSnapshot(snapshot);
+    onSnapshot?.(snapshot);
+  });
 }
 
 async function createPhoenixSimpleEvent(prepared: PreparedPhoenixSimpleEvent) {
@@ -514,9 +625,9 @@ export async function runPhoenixCardPurchaseEdit(
     operationId: editOperationId,
   });
   onAccepted?.(purchase);
-  const snapshot = await snapshotAfterAccepted(refreshMonth, 'card-edit-refresh-pending');
   pendingCardEditOperations.delete(requestKey);
-  return { purchase, snapshot };
+  refreshSnapshotInBackground(refreshMonth, 'card-edit-refresh-pending');
+  return { purchase, snapshot: null };
 }
 
 export async function runPhoenixCardPurchaseCancel(
@@ -532,9 +643,9 @@ export async function runPhoenixCardPurchaseCancel(
   pendingCardCancelOperations.set(purchaseId, cancelOperationId);
   const purchase = await cardsClient.cancelPurchaseProtected(purchaseId, cancelOperationId);
   onAccepted?.(purchase);
-  const snapshot = await snapshotAfterAccepted(refreshMonth, 'card-delete-refresh-pending');
   pendingCardCancelOperations.delete(purchaseId);
-  return { purchase, snapshot };
+  refreshSnapshotInBackground(refreshMonth, 'card-delete-refresh-pending');
+  return { purchase, snapshot: null };
 }
 
 export async function runPhoenixSimpleEventEdit(
@@ -571,9 +682,10 @@ export async function runPhoenixSimpleEventEdit(
   const event = result.events[0];
   if (!event) throw new PhoenixWriteError('PHOENIX_EDIT_CONFIRMATION_MISSING');
   onAccepted?.(event);
-  const snapshot = await snapshotAfterAccepted(refreshMonth, 'event-edit-refresh-pending');
   pendingEditOperations.delete(requestKey);
-  return { event, snapshot };
+  publishOptimisticEvent(refreshMonth, event);
+  refreshSnapshotInBackground(refreshMonth, 'event-edit-refresh-pending');
+  return { event, snapshot: null };
 }
 
 export async function runPhoenixBenefitEventEdit(
@@ -602,9 +714,10 @@ export async function runPhoenixBenefitEventEdit(
       }),
     });
     onAccepted?.(event);
-    const snapshot = await snapshotAfterAccepted(refreshMonth, 'benefit-edit-refresh-pending');
     pendingBenefitEditOperations.delete(requestKey);
-    return { event, snapshot };
+    publishOptimisticEvent(refreshMonth, event);
+    refreshSnapshotInBackground(refreshMonth, 'benefit-edit-refresh-pending');
+    return { event, snapshot: null };
   } catch (error) {
     throw error;
   }
@@ -630,9 +743,10 @@ export async function runPhoenixSimpleEventArchive(
   });
 
   onAccepted?.();
-  const snapshot = await snapshotAfterAccepted(refreshMonth, 'event-archive-refresh-pending');
   pendingArchiveOperations.delete(archiveRequestKey);
-  return { snapshot };
+  publishOptimisticArchive(refreshMonth, eventId);
+  refreshSnapshotInBackground(refreshMonth, 'event-archive-refresh-pending');
+  return { snapshot: null };
 }
 
 export async function runPhoenixSimpleEventWrite(
@@ -658,11 +772,11 @@ export async function runPhoenixSimpleEventWrite(
 
   const accepted: PhoenixWriteState = { status: 'accepted', operationId: prepared.operationId, event };
   onState?.(accepted);
-  const snapshot = await snapshotAfterAccepted(refreshMonth, 'simple-event-refresh-pending');
-  if (!snapshot) return accepted;
-  const confirmed: PhoenixWriteState = { status: 'confirmed', operationId: prepared.operationId, event, snapshot };
-  onState?.(confirmed);
-  return confirmed;
+  publishOptimisticEvent(refreshMonth, event);
+  refreshSnapshotInBackground(refreshMonth, 'simple-event-refresh-pending', (snapshot) => {
+    onState?.({ status: 'confirmed', operationId: prepared.operationId, event, snapshot });
+  });
+  return accepted;
 }
 
 export async function runPhoenixBenefitEventWrite(
@@ -688,11 +802,11 @@ export async function runPhoenixBenefitEventWrite(
 
   const accepted: PhoenixWriteState = { status: 'accepted', operationId: prepared.operationId, event };
   onState?.(accepted);
-  const snapshot = await snapshotAfterAccepted(refreshMonth, 'benefit-event-refresh-pending');
-  if (!snapshot) return accepted;
-  const confirmed: PhoenixWriteState = { status: 'confirmed', operationId: prepared.operationId, event, snapshot };
-  onState?.(confirmed);
-  return confirmed;
+  publishOptimisticEvent(refreshMonth, event);
+  refreshSnapshotInBackground(refreshMonth, 'benefit-event-refresh-pending', (snapshot) => {
+    onState?.({ status: 'confirmed', operationId: prepared.operationId, event, snapshot });
+  });
+  return accepted;
 }
 
 export async function runPhoenixCardPurchaseWrite(
@@ -718,21 +832,8 @@ export async function runPhoenixCardPurchaseWrite(
 
   const accepted: PhoenixCardPurchaseWriteState = { status: 'accepted', operationId: prepared.operationId, purchase };
   onState?.(accepted);
-
-  try {
-    const snapshot = await Promise.race([
-      confirmedSnapshot(refreshMonth),
-      new Promise<never>((_, reject) => window.setTimeout(() => reject(new PhoenixWriteError('PHOENIX_CARD_REFRESH_TIMEOUT')), 12_000)),
-    ]);
-    const confirmed: PhoenixCardPurchaseWriteState = { status: 'confirmed', operationId: prepared.operationId, purchase, snapshot };
-    onState?.(confirmed);
-    return confirmed;
-  } catch {
-    // A compra já foi aceita pela API. Falha/lentidão da releitura não pode manter
-    // o formulário preso nem sugerir que o usuário deva gravar a compra novamente.
-    window.dispatchEvent(new CustomEvent('meg:data-invalidated', {
-      detail: { path: '/cards/purchases', method: 'POST', reason: 'card-refresh-pending' },
-    }));
-    return accepted;
-  }
+  refreshSnapshotInBackground(refreshMonth, 'card-refresh-pending', (snapshot) => {
+    onState?.({ status: 'confirmed', operationId: prepared.operationId, purchase, snapshot });
+  });
+  return accepted;
 }

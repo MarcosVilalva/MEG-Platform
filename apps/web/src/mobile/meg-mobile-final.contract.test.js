@@ -22,6 +22,10 @@ const cardCenter = readFileSync(new URL('./MegMobileCardCenter.tsx', import.meta
 const cardCenterCss = readFileSync(new URL('./meg-mobile-card-center.css', import.meta.url), 'utf8');
 const benefitModal = readFileSync(new URL('./MegMobileBenefitModal.tsx', import.meta.url), 'utf8');
 const benefitCss = readFileSync(new URL('./meg-mobile-benefit.css', import.meta.url), 'utf8');
+const writeGateway = readFileSync(new URL('../phoenix/data/phoenix-write-gateway.ts', import.meta.url), 'utf8');
+const pendingWriteGateway = readFileSync(new URL('../phoenix/data/phoenix-pending-write-gateway.ts', import.meta.url), 'utf8');
+const previewSnapshot = readFileSync(new URL('../../../api/src/modules/finance/phoenix-preview-snapshot.ts', import.meta.url), 'utf8');
+const eventMutation = readFileSync(new URL('../../../api/src/modules/finance/event-mutation.ts', import.meta.url), 'utf8');
 const source = mobile + '\n' + css + '\n' + runtimeCss + '\n' + coreScreens + '\n' + launchSheet + '\n' + mobileHistory + '\n' + picker + '\n' + pickerCss + '\n' + mobileIcons + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
 
 assert.doesNotMatch(source, /\bpx-[a-z0-9-]+/i,
@@ -834,4 +838,55 @@ assert.equal(
   benefitModal.includes('aria-label="Fechar acompanhamento do benefício"'),
   true,
   'Benefício deve manter plural correto e botão de fechar identificado para acessibilidade.',
+);
+
+
+/* MEG 2.0.672 · baixa em lote acionável e caminho crítico de gravação reduzido. */
+assert.equal(
+  mobile.includes("className={selectedRows.length ? 'selected batch-action' : ''}") &&
+  mobile.includes("onClick={selectedRows.length ? () => openSettlement(selectedRows) : undefined}") &&
+  mobile.includes("tabIndex={selectedRows.length ? 0 : undefined}") &&
+  css.includes('.meg2-pending-metrics article.batch-action'),
+  true,
+  'Total selecionado deve abrir a baixa em lote somente quando houver seleção ativa.',
+);
+assert.equal(
+  writeGateway.includes('invalidatePhoenixReadModelMonth') &&
+  writeGateway.includes('publishOptimisticEvent') &&
+  writeGateway.includes('refreshSnapshotInBackground') &&
+  !writeGateway.includes('clearPhoenixReadModelCache();'),
+  true,
+  'Gravações devem invalidar apenas o mês, publicar estado otimista e reconciliar o snapshot em segundo plano.',
+);
+assert.equal(
+  launchSheet.includes("if (result.status === 'error') throw new Error(result.code);") &&
+  launchSheet.includes("if (result.status === 'confirmed') dispatchSnapshot(result.snapshot);"),
+  true,
+  'Editor deve liberar sucesso após aceite real da API e nunca mascarar erro de gravação como sucesso.',
+);
+assert.match(
+  previewSnapshot,
+  /Promise\.all\(\[[\s\S]*loadCoreEvents[\s\S]*listCards\(dataOwnerId, month\)[\s\S]*financialAuditReadOnly\(context\)[\s\S]*\]\)/,
+  'Snapshot Phoenix deve iniciar cartões e auditoria na mesma janela paralela das leituras financeiras.',
+);
+assert.equal(
+  eventMutation.includes("include: { account: true, category: true, paymentMethod: true }") &&
+  eventMutation.includes("const result = { ...event, ledgerEntries: ledgerEntry ? [ledgerEntry] : [] };"),
+  true,
+  'Criação de evento deve reutilizar o retorno do INSERT em vez de reler o mesmo evento do banco.',
+);
+assert.match(
+  pendingWriteGateway,
+  /A baixa já está confirmada pelo servidor[\s\S]*void \(async \(\) =>[\s\S]*publishCommittedSnapshot\(snapshot\)/,
+  'Baixa confirmada deve liberar o comprovante sem aguardar a releitura mensal completa.',
+);
+
+
+assert.equal(
+  mobile.includes('function publishOptimisticSettlementBalance') &&
+  mobile.includes("paidAt.slice(0,7) !== data.month") &&
+  mobile.includes('publishOptimisticSettlementBalance(data, settlementTotal, paidAt)') &&
+  mobile.includes("'meg:phoenix-snapshot-committed'"),
+  true,
+  'Baixa confirmada do mês visível deve refletir o débito na Home imediatamente, antes da reconciliação oficial.',
 );

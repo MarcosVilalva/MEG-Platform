@@ -1883,3 +1883,35 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
     font-size:7.8px!important;
   }
 }
+
+
+/* MEG 2.0.672 · o resumo selecionado vira a porta de entrada da baixa em lote. */
+.meg2-pending-metrics article.batch-action{
+  cursor:pointer;
+  outline:none;
+  transform:translateZ(0);
+  transition:transform .14s ease,border-color .14s ease,box-shadow .14s ease;
+}
+.meg2-pending-metrics article.batch-action::after{
+  content:'TOCAR PARA BAIXAR';
+  position:absolute;
+  left:8px;
+  bottom:6px;
+  color:rgba(118,239,230,.72);
+  font-size:5.8px;
+  font-weight:900;
+  letter-spacing:.08em;
+  line-height:1;
+}
+.meg2-pending-metrics article.batch-action:active{
+  transform:scale(.985);
+}
+.meg2-pending-metrics article.batch-action:focus-visible{
+  box-shadow:0 0 0 2px rgba(82,238,226,.24),0 0 18px rgba(47,229,217,.10),inset 0 0 18px rgba(62,235,222,.04)!important;
+}
+@media(max-width:360px){
+  .meg2-pending-metrics article.batch-action::after{
+    font-size:5.2px;
+    bottom:5px;
+  }
+}

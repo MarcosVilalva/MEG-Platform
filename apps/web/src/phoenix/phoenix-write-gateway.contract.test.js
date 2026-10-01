@@ -46,10 +46,10 @@ assert.match(gateway, /operationId\('phoenix-card-purchase'\)/,
   'Compra no cartão deve nascer com operationId próprio para retry idempotente.');
 assert.match(gateway, /status:\s*'accepted'; operationId: string; event: FinancialEvent/,
   'Receita, despesa e benefício devem distinguir aceite do servidor da releitura visual.');
-assert.match(gateway, /snapshotAfterAccepted\(refreshMonth, 'simple-event-refresh-pending'\)/,
-  'Lançamento simples não pode manter o formulário bloqueado esperando snapshot indefinidamente.');
-assert.match(gateway, /snapshotAfterAccepted\(refreshMonth, 'benefit-event-refresh-pending'\)/,
-  'Benefício deve liberar a interface após aceite e reler o saldo em segundo plano.');
+assert.match(gateway, /publishOptimisticEvent\(refreshMonth, event\)[\s\S]*refreshSnapshotInBackground\(refreshMonth, 'simple-event-refresh-pending'/,
+  'Lançamento simples deve refletir o aceite imediatamente e reconciliar o snapshot em segundo plano.');
+assert.match(gateway, /publishOptimisticEvent\(refreshMonth, event\)[\s\S]*refreshSnapshotInBackground\(refreshMonth, 'benefit-event-refresh-pending'/,
+  'Benefício deve atualizar o saldo percebido após aceite e reler o snapshot em segundo plano.');
 assert.match(gateway, /onAccepted\?\.\(event\)/,
   'Edição deve possuir callback explícito de aceite antes da releitura.');
 assert.match(gateway, /onAccepted\?\.\(\)/,
@@ -72,9 +72,12 @@ assert.match(gateway, /input\.installments < 1 \|\| input\.installments > 48/,
   'Writer de cartão deve respeitar o limite de parcelas homologado pela API.');
 assert.match(gateway, /input\.status !== 'paid'/,
   'Writer do benefício deve exigir situação realizada.');
-assert.match(gateway, /clearPhoenixReadModelCache\(\)/);
+assert.match(gateway, /invalidatePhoenixReadModelMonth\(refreshMonth\)/,
+  'Writer deve invalidar somente o mês afetado em vez de destruir todo o cache Phoenix.');
 assert.match(gateway, /loadPhoenixReadModel\(refreshMonth,\s*\{ force: true \}\)/,
-  'Snapshot só deve ser recarregado depois da confirmação do servidor.');
+  'Reconciliação oficial deve reler o mês somente depois da confirmação do servidor.');
+assert.doesNotMatch(gateway, /clearPhoenixReadModelCache\(\)/,
+  'Mutação mensal não deve invalidar catálogos, health e fotografias de outros períodos.');
 assert.match(gateway, /input\.amount\s*===\s*0/,
   'Writer simples deve rejeitar zero e preservar valores negativos usados para estorno/reversão.');
 assert.doesNotMatch(gateway, /getPhoenixSimpleEventEligibility[\s\S]{0,600}PHOENIX_REVERSAL_NOT_IN_SIMPLE_FLOW/,
@@ -412,10 +415,10 @@ assert.match(gateway, /status:\s*'accepted'/,
   'Compra no cartão deve distinguir aceite autoritativo da releitura posterior da tela.');
 assert.match(gateway, /onState\?\.\(accepted\)/,
   'Writer de cartão deve avisar a interface assim que a API aceitar a compra.');
-assert.match(gateway, /PHOENIX_CARD_REFRESH_TIMEOUT/,
-  'Releitura de cartão deve possuir limite para não prender o modal indefinidamente.');
-assert.match(gateway, /reason:\s*'card-refresh-pending'/,
-  'Compra aceita deve solicitar atualização em segundo plano se a releitura imediata atrasar.');
+assert.match(gateway, /refreshSnapshotInBackground\(refreshMonth, 'card-refresh-pending'/,
+  'Compra no cartão deve liberar a interface no aceite e reconciliar a fotografia em segundo plano.');
+assert.match(gateway, /function refreshSnapshotInBackground[\s\S]*snapshotAfterAccepted\(refreshMonth, reason\)/,
+  'Releitura em segundo plano deve continuar protegida pelo timeout comum de reconciliação.');
 assert.match(writeControl, /state\.status !== 'accepted'[\s\S]*onAccepted\?\.\(\)/,
   'Controle de lançamento deve permitir fechar o drawer após aceite real do cartão.');
 assert.match(movements, /onAccepted=\{\(\) => \{[\s\S]*setLaunchOpen\(false\)/,

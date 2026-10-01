@@ -270,21 +270,26 @@ function publishCommittedSnapshot(snapshot: PhoenixReadModel) {
   window.dispatchEvent(new CustomEvent(PHOENIX_SNAPSHOT_COMMITTED_EVENT, { detail: { snapshot } }));
 }
 
-async function refreshConfirmed(operationId: string, result: unknown, refreshMonth: string, onState?: (state: PhoenixPendingWriteState) => void) {
+function refreshConfirmed(operationId: string, result: unknown, refreshMonth: string, onState?: (state: PhoenixPendingWriteState) => void) {
   const committed: PhoenixPendingWriteState = { status: 'confirmed', operationId, result };
   onState?.(committed);
-  try {
-    await invalidatePhoenixReadModelMonth(refreshMonth);
-    const snapshot = await loadPhoenixReadModel(refreshMonth, { force: true });
-    const confirmed: PhoenixPendingWriteState = { ...committed, snapshot };
-    publishCommittedSnapshot(snapshot);
-    onState?.(confirmed);
-    return confirmed;
-  } catch {
-    // A gravação já foi confirmada pelo servidor. Falha na releitura não pode
-    // transformar uma baixa concluída em erro nem induzir o usuário a reenviar.
-    return committed;
-  }
+
+  // A baixa já está confirmada pelo servidor. O usuário não precisa esperar o
+  // snapshot mensal inteiro para ver o comprovante; a reconciliação segue em
+  // segundo plano e substitui a fotografia assim que terminar.
+  void (async () => {
+    try {
+      await invalidatePhoenixReadModelMonth(refreshMonth);
+      const snapshot = await loadPhoenixReadModel(refreshMonth, { force: true });
+      const confirmed: PhoenixPendingWriteState = { ...committed, snapshot };
+      publishCommittedSnapshot(snapshot);
+      onState?.(confirmed);
+    } catch {
+      // A gravação já foi confirmada. Uma falha de releitura jamais induz reenvio.
+    }
+  })();
+
+  return committed;
 }
 
 function failedState(operationId: string, error: unknown, onState?: (state: PhoenixPendingWriteState) => void) {
