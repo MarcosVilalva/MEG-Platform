@@ -7,7 +7,7 @@ import {
   findRecentCardPurchaseDuplicate,
   isFutureFinancialDay,
   isMonetaryAccountType,
-  monetaryBalanceAt,
+  monetaryAccountBalanceAt,
   paymentBalanceDecision,
   serializableFinancialTransaction,
 } from '../finance/monetary-protection';
@@ -398,7 +398,7 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
     const account = input.accountId
       ? await tx.account.findFirst({
         where: { id: input.accountId, userId: shared.ownerId, isActive: true },
-        select: { id: true, name: true, type: true, institution: true },
+        select: { id: true, name: true, type: true, institution: true, openingBalance: true },
       })
       : null;
     if (!account) throw new CardDomainError('INVALID_ACCOUNT');
@@ -441,7 +441,7 @@ export async function payCardStatementProtected(userId: string, cardId: string, 
     if (!Number.isFinite(amount) || amount <= 0) {
       throw new CardDomainError('CARD_STATEMENT_NOT_PAYABLE', { cardId, month, amount });
     }
-    const available = await monetaryBalanceAt(tx, shared.ownerId, input.paidAt);
+    const available = await monetaryAccountBalanceAt(tx, shared.ownerId, account, input.paidAt);
     const protection = paymentBalanceDecision(available, amount);
     if (!protection.allowed) throw new CardDomainError('INSUFFICIENT_MONETARY_BALANCE', { ...protection, at: input.paidAt.slice(0, 10) });
 
