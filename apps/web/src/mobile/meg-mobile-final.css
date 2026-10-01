@@ -1170,8 +1170,8 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   mix-blend-mode:screen;
 }
 .meg2-card-art[data-card-identity^="Mercado Pago"]>img{
-  object-position:51% 50%!important;
-  transform:scale(1.03)!important;
+  object-position:center!important;
+  transform:none!important;
 }
 .meg2-card-art[data-card-identity^="LATAM PASS"]>img,
 .meg2-card-art[data-card-identity^="Azul Itaú"]>img,
