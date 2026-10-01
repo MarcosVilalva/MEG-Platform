@@ -35,6 +35,24 @@ assert.match(service, /INVALID_PAYMENT_METHOD/,
   'Forma de pagamento informada precisa estar ativa.');
 assert.match(service, /INVALID_CUSTOMER/,
   'Cliente informado na criação precisa pertencer ao usuário e estar ativo.');
+assert.match(routes, /app\.patch\('\/receivables\/:id'/,
+  'API deve expor edição protegida de título.');
+assert.match(routes, /app\.delete\('\/receivables\/:id'/,
+  'API deve expor cancelamento protegido de título.');
+assert.match(service, /RECEIVABLE_STALE_VERSION/,
+  'Edição deve bloquear gravação quando outro dispositivo alterou o título.');
+assert.match(service, /RECEIVABLE_HAS_RECEIPTS/,
+  'Título com recebimento deve permanecer protegido contra edição ou cancelamento.');
+assert.match(service, /RECEIVABLE_UPDATED/,
+  'Edição deve registrar auditoria estrutural.');
+assert.match(service, /RECEIVABLE_CANCELLED/,
+  'Cancelamento deve registrar auditoria estrutural sem apagar o título.');
+assert.match(service, /RECEIVABLE_UPDATE/,
+  'Edição deve possuir recibo idempotente próprio.');
+assert.match(service, /RECEIVABLE_CANCEL/,
+  'Cancelamento deve possuir recibo idempotente próprio.');
+assert.match(service, /status: 'cancelled', openAmount: 0/,
+  'Cancelamento deve ser lógico e zerar apenas o saldo aberto.');
 
 console.log('Contrato transacional de contas a receber validado.');
 assert.match(routes, /createCustomerProtected/,
