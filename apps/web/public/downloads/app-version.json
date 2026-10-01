@@ -1,9 +1,9 @@
 {
-  "versionCode": 703,
-  "versionName": "2.0.703",
+  "versionCode": 704,
+  "versionName": "2.0.704",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "a1eee3c8232a1fa3bf2a48a9749dbf314a83c6a41c9642d8f25e28afcb573202",
+  "sha256": "1d78d6299dca1229e047e1a4cf44f3babeade88099c72fb2d8a13a2899b357a5",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "Merge pull request #474 from MarcosVilalva/feat/phoenix-self-profile-edit"
+  "releaseNotes": "Merge pull request #476 from MarcosVilalva/feat/phoenix-receivable-receipt-reversal"
 }
