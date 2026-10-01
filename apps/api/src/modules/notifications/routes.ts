@@ -1,13 +1,56 @@
 import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { prisma } from '@meg/database';
 import { config } from '../../config';
 import { alexaSecretsMatch } from './alexa-auth';
 import { alexaFinancialPanorama, deliverAlexaNextDuePreview, deliverNotifications, notificationDigest, notificationIntegrationStatus, type AlexaSkillIntent, type AlexaSkillQuery } from './service';
 import { deliverDailyFinancialSummary } from './daily-summary';
 import { alexaCycleForSlot, messagingCycleForSlot, notificationCycleIsActive, notificationWatchdogHealth, runAlexaCycle, runMessagingCycle, runNotificationWatchdog } from './watchdog';
+import { notificationScheduleForUser, saveNotificationSchedule } from './schedule-config';
+
+const scheduleSchema = z.object({
+  automationEnabled: z.boolean(),
+  messagingMorningTime: z.string().regex(/^(?:[01]\\d|2[0-3]):[0-5]\\d$/),
+  messagingMiddayTime: z.string().regex(/^(?:[01]\\d|2[0-3]):[0-5]\\d$/),
+  messagingEveningTime: z.string().regex(/^(?:[01]\\d|2[0-3]):[0-5]\\d$/),
+  alexaAutomationEnabled: z.boolean(),
+  alexaWeekdayMorningTime: z.string().regex(/^(?:[01]\\d|2[0-3]):[0-5]\\d$/),
+  alexaWeekdayEveningTime: z.string().regex(/^(?:[01]\\d|2[0-3]):[0-5]\\d$/),
+  alexaWeekdayNightTime: z.string().regex(/^(?:[01]\\d|2[0-3]):[0-5]\\d$/),
+  alexaWeekendTime: z.string().regex(/^(?:[01]\\d|2[0-3]):[0-5]\\d$/),
+  quietHoursEnabled: z.boolean(),
+  quietHoursStart: z.string().regex(/^(?:[01]\\d|2[0-3]):[0-5]\\d$/),
+  quietHoursEnd: z.string().regex(/^(?:[01]\\d|2[0-3]):[0-5]\\d$/),
+});
 
 export async function notificationRoutes(app: FastifyInstance) {
-  app.get('/status', { preHandler: app.authorize(['ADMIN']) }, async () => notificationIntegrationStatus());
+  app.get('/status', { preHandler: app.authorize(['ADMIN']) }, async (request) => notificationIntegrationStatus(request.user.sub));
+
+  app.get('/schedule', { preHandler: app.authorize(['ADMIN']) }, async (request) => {
+    const result = await notificationScheduleForUser(request.user.sub);
+    return { workspaceId: result.workspaceId, ...result.settings };
+  });
+
+  app.put('/schedule', { preHandler: app.authorize(['ADMIN']) }, async (request, reply) => {
+    const parsed = scheduleSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'INVALID_NOTIFICATION_SCHEDULE', details: parsed.error.flatten() });
+    }
+    try {
+      return await saveNotificationSchedule(request.user.sub, parsed.data);
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'INVALID_NOTIFICATION_SCHEDULE';
+      const validationCodes = new Set([
+        'INVALID_NOTIFICATION_TIME',
+        'NOTIFICATION_TIME_OUTSIDE_AUTOMATION_WINDOW',
+        'MESSAGING_SCHEDULE_ORDER_INVALID',
+        'ALEXA_SCHEDULE_ORDER_INVALID',
+        'QUIET_HOURS_RANGE_INVALID',
+      ]);
+      if (validationCodes.has(code)) return reply.status(400).send({ error: code });
+      throw error;
+    }
+  });
 
   app.get('/deliveries', { preHandler: app.authorize(['ADMIN']) }, async (request) => {
     const allDeliveries = await prisma.notificationDelivery.findMany({
@@ -19,7 +62,8 @@ export async function notificationRoutes(app: FastifyInstance) {
     const deliveries = allDeliveries.filter((item) => !item.channel.startsWith('watchdog:')).slice(0, 100);
     const watchdogCycles = allDeliveries.filter((item) => item.channel.startsWith('watchdog:')).slice(0, 30);
     const last24Hours = Date.now() - 86_400_000;
-    const watchdogHealth = notificationWatchdogHealth(watchdogCycles, new Date());
+    const { settings } = await notificationScheduleForUser(request.user.sub);
+    const watchdogHealth = notificationWatchdogHealth(watchdogCycles, new Date(), 35, settings);
     return {
       generatedAt: new Date().toISOString(),
       summary: {
