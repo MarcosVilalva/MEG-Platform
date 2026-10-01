@@ -410,6 +410,10 @@ assert.match(movementScreen, /<option value="all">Todos<\/option>/,
   'Paginação deve oferecer a opção Todos sem criar scroll da página');
 assert.doesNotMatch(movementScreen, /window\.confirm|window\.alert/,
   'Fluxo de Lançamentos não pode voltar a usar alertas nativos do navegador');
+assert.doesNotMatch(webScreens, /window\.confirm|window\.alert/,
+  'Telas Web ativas não podem usar alertas nativos em operações financeiras.');
+assert.match(webScreens, /megConfirm/,
+  'Conciliação Web deve usar a confirmação visual MEG antes de registrar ajuste.');
 assert.doesNotMatch(movementScreen, /Revisar alterações/,
   'Edição comum deve salvar diretamente sem revisão intermediária redundante.');
 assert.match(movementScreen, /Somente no pagamento da fatura/,
