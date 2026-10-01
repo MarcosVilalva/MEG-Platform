@@ -14,12 +14,21 @@ const isoDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
 }, 'INVALID_DATE');
 
 const customerSchema = z.object({
-  name: z.string().min(2).max(120),
-  email: z.string().email().optional().nullable(),
-  phone: z.string().max(30).optional().nullable(),
-  document: z.string().max(30).optional().nullable(),
-  notes: z.string().max(500).optional().nullable()
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().email().optional().nullable(),
+  phone: z.string().trim().max(30).optional().nullable(),
+  document: z.string().trim().max(30).optional().nullable(),
+  notes: z.string().trim().max(500).optional().nullable(),
+  operationId: operationIdSchema,
 });
+const customerUpdateSchema = customerSchema.partial().extend({
+  isActive: z.boolean().optional(),
+  expectedUpdatedAt: z.string().datetime({ offset: true }).optional(),
+});
+const customerDeactivateSchema = z.object({
+  operationId: operationIdSchema,
+  expectedUpdatedAt: z.string().datetime({ offset: true }).optional(),
+}).optional();
 
 const receivableSchema = z.object({
   customerId: z.string().optional().nullable(),
@@ -55,6 +64,14 @@ function domainError(reply: FastifyReply, error: unknown) {
   return reply.code(status).send({ error: error.code, ...(error.details || {}) });
 }
 
+function customerError(reply: FastifyReply, error: unknown) {
+  if (!(error instanceof CustomerMutationError)) throw error;
+  const status = error.code === 'CUSTOMER_NOT_FOUND' ? 404
+    : ['CUSTOMER_ALREADY_EXISTS', 'CUSTOMER_STALE_VERSION', 'OPERATION_ID_REUSED'].includes(error.code) ? 409
+      : 400;
+  return reply.code(status).send({ error: error.code, ...(error.details || {}) });
+}
+
 export async function receivableRoutes(app: FastifyInstance) {
   app.get('/customers', { preHandler: app.authorize([...readRoles]) }, async (request) => {
     const context = await resolveWorkspaceContext(request.user.sub);
@@ -67,28 +84,33 @@ export async function receivableRoutes(app: FastifyInstance) {
   app.post('/customers', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
     const parsed = customerSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
-    const context = await resolveWorkspaceContext(request.user.sub);
-    return reply.code(201).send(await prisma.customer.create({
-      data: { userId: context.workspace.ownerId, ...parsed.data }
-    }));
+    try {
+      return reply.code(201).send(await createCustomerProtected(request.user.sub, parsed.data));
+    } catch (error) {
+      return customerError(reply, error);
+    }
   });
 
   app.patch('/customers/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
-    const parsed = customerSchema.partial().safeParse(request.body);
+    const parsed = customerUpdateSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
-    const context = await resolveWorkspaceContext(request.user.sub);
-    const existing = await prisma.customer.findFirst({ where: { id, userId: context.workspace.ownerId } });
-    if (!existing) return reply.code(404).send({ error: 'CUSTOMER_NOT_FOUND' });
-    return prisma.customer.update({ where: { id }, data: parsed.data });
+    try {
+      return await updateCustomerProtected(request.user.sub, id, parsed.data);
+    } catch (error) {
+      return customerError(reply, error);
+    }
   });
 
   app.delete('/customers/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
+    const parsed = customerDeactivateSchema.safeParse(request.body);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const { id } = request.params as { id: string };
-    const context = await resolveWorkspaceContext(request.user.sub);
-    const existing = await prisma.customer.findFirst({ where: { id, userId: context.workspace.ownerId } });
-    if (!existing) return reply.code(404).send({ error: 'CUSTOMER_NOT_FOUND' });
-    return prisma.customer.update({ where: { id }, data: { isActive: false } });
+    try {
+      return await updateCustomerProtected(request.user.sub, id, { ...(parsed.data || {}), isActive: false });
+    } catch (error) {
+      return customerError(reply, error);
+    }
   });
 
   app.get('/receivables', { preHandler: app.authorize([...readRoles]) }, async (request) => {
