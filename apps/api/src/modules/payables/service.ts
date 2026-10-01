@@ -333,6 +333,8 @@ export async function payPayableProtected(userId: string, payableId: string, inp
       financialEventId: event.id,
       remaining,
       payableStatus,
+      accountBalanceBefore: available,
+      accountBalanceAfter: Math.round((available - paidTotal) * 100) / 100,
       protection,
       idempotentReplay: false,
     };
