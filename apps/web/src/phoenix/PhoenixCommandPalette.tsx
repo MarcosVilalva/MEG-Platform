@@ -25,6 +25,7 @@ type SearchResult = {
   kind: string;
   title: string;
   detail: string;
+  targetMonth?: string;
 };
 
 const commandMoney = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -52,12 +53,12 @@ function normalize(value: unknown) {
   return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
 }
 
-export function PhoenixCommandPalette({ data, allEvents, onClose, onNavigate }: { data: PhoenixReadModel | null; allEvents?: PhoenixReadModel['events']['items']; onClose: () => void; onNavigate: (route: PhoenixRoute) => void }) {
+export function PhoenixCommandPalette({ data, allEvents, onClose, onNavigate }: { data: PhoenixReadModel | null; allEvents?: PhoenixReadModel['events']['items']; onClose: () => void; onNavigate: (route: PhoenixRoute, targetMonth?: string) => boolean | void | Promise<boolean | void> }) {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const results = useMemo(() => {
     const dynamic: SearchResult[] = data ? [
-      ...(allEvents ?? data.events.items).map((item) => ({ id: `event-${item.id}`, route: 'movements' as const, kind: item.type === 'income' ? 'Receita' : 'Lançamento', title: item.description, detail: [item.category?.name, item.account?.name, item.paymentMethod?.name].filter(Boolean).join(' · ') || 'Evento financeiro' })),
+      ...(allEvents ?? data.events.items).map((item) => ({ id: `event-${item.id}`, route: 'movements' as const, kind: item.type === 'income' ? 'Receita' : 'Lançamento', title: item.description, detail: [item.category?.name, item.account?.name, item.paymentMethod?.name].filter(Boolean).join(' · ') || 'Evento financeiro', targetMonth: item.competence || String(item.date).slice(0, 7) })),
       ...data.cards.map((item) => ({ id: `card-${item.id}`, route: 'cards' as const, kind: 'Cartão', title: item.name, detail: item.brand || 'Cartão cadastrado' })),
       ...data.accounts.map((item) => ({ id: `account-${item.id}`, route: 'catalogs' as const, kind: 'Conta', title: item.name, detail: item.institution || item.type || 'Conta financeira' })),
       ...data.categories.map((item) => ({ id: `category-${item.id}`, route: 'catalogs' as const, kind: 'Classificação', title: item.name, detail: item.group || item.type || 'Cadastro financeiro' })),
@@ -85,8 +86,9 @@ export function PhoenixCommandPalette({ data, allEvents, onClose, onNavigate }: 
     setActiveIndex((current) => Math.min(current, results.length - 1));
   }, [results.length]);
 
-  function open(result: SearchResult) {
-    onNavigate(result.route);
+  async function open(result: SearchResult) {
+    const opened = await onNavigate(result.route, result.targetMonth);
+    if (opened === false) return;
     onClose();
   }
 
@@ -103,7 +105,7 @@ export function PhoenixCommandPalette({ data, allEvents, onClose, onNavigate }: 
     }
     if (event.key === 'Enter' && results[activeIndex]) {
       event.preventDefault();
-      open(results[activeIndex]);
+      void open(results[activeIndex]);
       return;
     }
     if (event.key === 'Escape') {
@@ -116,7 +118,7 @@ export function PhoenixCommandPalette({ data, allEvents, onClose, onNavigate }: 
     <section className="px-command" role="dialog" aria-modal="true" aria-label="Buscar no MEG">
       <div className="px-command-input"><span>⌕</span><input autoFocus role="combobox" aria-expanded="true" aria-controls="px-command-results" aria-activedescendant={results[activeIndex] ? `px-command-result-${activeIndex}` : undefined} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={handleKeyDown} placeholder="Buscar tela, lançamento, título, pendência, orçamento, cartão, conta, cliente ou usuário" /><kbd>ESC</kbd></div>
       <div className="px-command-results" id="px-command-results" role="listbox">
-        {results.map((result, index) => <button id={`px-command-result-${index}`} key={result.id} type="button" role="option" aria-selected={activeIndex === index} className={activeIndex === index ? 'is-active' : undefined} onMouseEnter={() => setActiveIndex(index)} onClick={() => open(result)}><span className="px-command-kind">{result.kind}</span><span className="px-command-copy"><strong>{result.title}</strong><small>{result.detail}</small></span><span className="px-command-arrow">↗</span></button>)}
+        {results.map((result, index) => <button id={`px-command-result-${index}`} key={result.id} type="button" role="option" aria-selected={activeIndex === index} className={activeIndex === index ? 'is-active' : undefined} onMouseEnter={() => setActiveIndex(index)} onClick={() => { void open(result); }}><span className="px-command-kind">{result.kind}</span><span className="px-command-copy"><strong>{result.title}</strong><small>{result.detail}</small></span><span className="px-command-arrow">↗</span></button>)}
         {!results.length ? <div className="px-command-empty"><strong>Nenhum resultado</strong><span>Tente outro termo de busca.</span></div> : null}
       </div>
       <footer><span>↑↓ para selecionar</span><span>Enter para abrir · Esc para fechar</span><strong>Somente leitura</strong></footer>

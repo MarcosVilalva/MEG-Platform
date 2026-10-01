@@ -407,6 +407,14 @@ assert.match(phoenixApp, /if \(!searchOpen \|\| nativeOperational\) return;[\s\S
   'Busca global deve carregar o histórico completo somente no Web, preservando o Android congelado.');
 assert.match(phoenixApp, /allEvents=\{!nativeOperational \? searchEvents \|\| undefined : undefined\}/,
   'Histórico completo da busca não pode ser injetado no runtime Android.');
+assert.match(commandPalette, /targetMonth: item\.competence \|\| String\(item\.date\)\.slice\(0, 7\)/,
+  'Resultado de lançamento deve preservar a competência financeira encontrada.');
+assert.match(commandPalette, /await onNavigate\(result\.route, result\.targetMonth\)[\s\S]*opened === false/,
+  'Busca só deve fechar depois que o destino confirmar que a competência correta foi aberta.');
+assert.match(phoenixApp, /openSearchResult[\s\S]*route === 'movements'[\s\S]*await applyMonthlyPeriod\(targetMonth\)[\s\S]*monthRef\.current !== targetMonth[\s\S]*return false/,
+  'Lançamento histórico deve abrir Lançamentos na competência encontrada e permanecer na busca se a troca falhar.');
+assert.match(phoenixApp, /onNavigate=\{openSearchResult\}/,
+  'Busca global deve usar a navegação com continuidade de período.');
 assert.match(commandPalette, /data\.cards/);
 assert.match(commandPalette, /data\.accounts/);
 assert.match(commandPalette, /data\.customers/);
