@@ -117,3 +117,66 @@
   .meg4-settings-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
   .meg4-settings-nav button{min-height:30px}
 }
+
+
+/* MEG 2.0.670 · confirmação de logout alinhada ao padrão dos modais mobile. */
+.meg4-confirm-overlay{
+  position:fixed;
+  inset:0;
+  z-index:2147483500;
+  width:100vw;
+  height:var(--meg-visual-height,100dvh);
+  display:grid;
+  place-items:center;
+  padding:18px;
+  box-sizing:border-box;
+  background:rgba(0,20,22,.78);
+}
+.meg4-confirm-card{
+  width:min(100%,420px);
+  padding:18px;
+  box-sizing:border-box;
+  border:1px solid rgba(61,218,208,.28);
+  border-radius:20px;
+  background:linear-gradient(155deg,#073f42,#032f32 62%,#02272a);
+  color:#fff;
+  box-shadow:0 22px 60px rgba(0,0,0,.42),0 0 24px rgba(41,229,218,.08);
+}
+.meg4-confirm-card>small{
+  display:block;
+  color:#56e7de;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.13em;
+}
+.meg4-confirm-card>h3{
+  margin:5px 0 6px;
+  font-size:21px;
+  line-height:1.1;
+}
+.meg4-confirm-card>p{
+  margin:0;
+  color:#99b2af;
+  font-size:9px;
+  line-height:1.45;
+}
+.meg4-confirm-card>div{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:16px;
+}
+.meg4-confirm-card button{
+  min-height:44px;
+  border:1px solid rgba(59,194,188,.20);
+  border-radius:12px;
+  background:#04383a;
+  color:#dcefed;
+  font-size:9px;
+  font-weight:850;
+}
+.meg4-confirm-card button.danger{
+  border-color:rgba(255,108,125,.34);
+  background:linear-gradient(180deg,rgba(160,48,64,.76),rgba(113,33,46,.82));
+  color:#fff;
+}
