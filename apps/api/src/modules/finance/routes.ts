@@ -49,6 +49,7 @@ const transferRequestSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   description: z.string().trim().min(2).max(160).optional(),
   notes: z.string().trim().max(1000).optional(),
+  allowDuplicate: z.boolean().optional(),
 });
 
 const expectedUpdatedAtSchema = z.string().datetime({ offset: true }).optional();
@@ -127,7 +128,7 @@ function settlementError(reply: FastifyReply, error: unknown) {
 
 function transferError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof FinancialTransferError)) throw error;
-  const status = ['OPERATION_ID_REUSED', 'INSUFFICIENT_SOURCE_ACCOUNT_BALANCE'].includes(error.code) ? 409 : 400;
+  const status = ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE', 'INSUFFICIENT_SOURCE_ACCOUNT_BALANCE'].includes(error.code) ? 409 : 400;
   return reply.code(status).send({ error: error.code, ...(error.details || {}) });
 }
 

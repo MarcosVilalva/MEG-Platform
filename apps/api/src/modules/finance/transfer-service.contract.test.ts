@@ -21,3 +21,16 @@ assert.match(routes, /transferRequestSchema/, 'A rota deve validar o payload ant
 assert.match(routes, /createFinancialTransfer\(request\.user\.sub/, 'A rota deve preservar o usuário autenticado como ator; o serviço resolve o proprietário financeiro do workspace.');
 
 console.log('Contrato transacional de transferência validado.');
+
+assert.match(routes, /allowDuplicate:\s*z\.boolean\(\)\.optional\(\)/,
+  'Transferência deve aceitar override explícito somente após alerta de duplicidade.');
+assert.match(routes, /POSSIBLE_DUPLICATE/,
+  'Possível transferência duplicada deve responder como conflito.');
+assert.match(source, /SEMANTIC_DUPLICATE_WINDOW_MS/,
+  'Transferência deve compartilhar a janela curta de proteção multiplataforma.');
+assert.match(source, /createdAt:\s*\{ gte:\s*new Date\(Date\.now\(\) - SEMANTIC_DUPLICATE_WINDOW_MS\) \}/,
+  'Detector deve olhar apenas transferências realmente recentes.');
+assert.match(source, /allowDuplicate:\s*undefined/,
+  'Override de duplicidade não pode alterar o hash idempotente da transferência.');
+assert.match(source, /duplicateOverride:\s*Boolean\(input\.allowDuplicate\)/,
+  'Override consciente deve permanecer registrado na auditoria da transferência.');
