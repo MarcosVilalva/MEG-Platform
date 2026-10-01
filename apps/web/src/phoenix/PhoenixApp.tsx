@@ -4,6 +4,7 @@ import { financeClient } from '../app/finance-client';
 import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
 import { loadPhoenixAllEvents, loadPhoenixReadModel, peekPhoenixReadModel, prefetchPhoenixReadModel } from './data/load-phoenix-read-model';
 import { buildPhoenixHomeAgenda } from './home-agenda';
+import { hydrateDashboardPreferences } from './dashboard-preferences';
 import { isPhoenixMonetaryEvent } from './home-period-summary';
 import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixSidebar } from './PhoenixSidebar';
@@ -482,6 +483,11 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
   useEffect(() => {
     if (loadState.status === 'ready') dataRef.current = loadState.data;
   }, [loadState]);
+
+  useEffect(() => {
+    if (nativeOperational || loadState.status !== 'ready') return;
+    void hydrateDashboardPreferences(loadState.data.user.id, false);
+  }, [nativeOperational, loadState.status, loadState.status === 'ready' ? loadState.data.user.id : '']);
 
   useEffect(() => {
     if (!nativeOperational || loadState.status !== 'ready') return;
