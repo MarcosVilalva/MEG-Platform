@@ -696,13 +696,12 @@ assert.equal(
   'Lançamentos deve remover comandos rápidos duplicados e manter apenas ordenação simples por data no cabeçalho da lista.',
 );
 assert.equal(
-  mobile.includes('canonicalCardKeys') &&
-  mobile.includes('card.statement') &&
-  mobile.includes('statement.payableAmount') &&
+  mobile.includes('cardGroups') &&
+  mobile.includes('isProjectedCardPending') &&
   mobile.includes('meg2-pending-date-total') &&
   mobile.includes('Total selecionado'),
   true,
-  'Pendentes deve usar a fatura canônica, totalizar por vencimento e refletir o lote selecionado no resumo.',
+  'Pendentes deve consolidar as fontes de cartão da competência do vencimento, totalizar por data e refletir o lote selecionado no resumo.',
 );
 assert.equal(
   mobile.includes("subtitle:'Pagamento instantâneo'") &&
