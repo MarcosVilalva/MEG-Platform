@@ -84,7 +84,9 @@ function setStatus(root: HTMLElement, text: string, warn = false) {
 function ensureButtons(root: HTMLElement) {
   const actions = actionRoot(root);
   if (!actions || !projectedCard(root)) return;
-  if (!actions.querySelector('[data-card-domain-edit]')) {
+  const role = readSession()?.user.role;
+  const canWrite = role === 'ADMIN' || role === 'MANAGER' || role === 'OPERATOR';
+  if (canWrite && !actions.querySelector('[data-card-domain-edit]')) {
     const edit = document.createElement('button');
     edit.type = 'button';
     edit.className = 'px-primary-action';
@@ -92,7 +94,6 @@ function ensureButtons(root: HTMLElement) {
     edit.textContent = 'Editar compra no cartão';
     actions.prepend(edit);
   }
-  const role = readSession()?.user.role;
   if ((role === 'ADMIN' || role === 'MANAGER') && !actions.querySelector('[data-card-domain-cancel]')) {
     const cancel = document.createElement('button');
     cancel.type = 'button';
