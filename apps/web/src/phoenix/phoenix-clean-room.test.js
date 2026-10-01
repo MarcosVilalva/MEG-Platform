@@ -351,8 +351,8 @@ assert.match(webScreens, /preparePhoenixReconciliationAdjustment/,
   'Ajuste deve ser preparado antes da gravação para preservar idempotência.');
 assert.match(webScreens, /runPhoenixReconciliationAdjustment/,
   'Tela de Conciliação deve delegar a mutação ao bridge protegido.');
-assert.match(webScreens, /window\.confirm/,
-  'Ajuste de conciliação deve exigir confirmação explícita do usuário.');
+assert.match(webScreens, /megConfirm/,
+  'Ajuste de conciliação deve exigir confirmação visual MEG explícita do usuário.');
 assert.doesNotMatch(webScreens, /financeClient|loadPhoenixReadModel/,
   'Tela de Conciliação não pode acessar cliente mutável nem administrar o snapshot diretamente.');
 assert.match(reconciliationBridge, /financeClient\.getMonetaryBalance/,
@@ -410,6 +410,10 @@ assert.match(movementScreen, /<option value="all">Todos<\/option>/,
   'Paginação deve oferecer a opção Todos sem criar scroll da página');
 assert.doesNotMatch(movementScreen, /window\.confirm|window\.alert/,
   'Fluxo de Lançamentos não pode voltar a usar alertas nativos do navegador');
+assert.doesNotMatch(webScreens, /window\.confirm|window\.alert/,
+  'Telas Web ativas não podem usar alertas nativos em operações financeiras.');
+assert.match(webScreens, /megConfirm/,
+  'Conciliação Web deve usar a confirmação visual MEG antes de registrar ajuste.');
 assert.doesNotMatch(movementScreen, /Revisar alterações/,
   'Edição comum deve salvar diretamente sem revisão intermediária redundante.');
 assert.match(movementScreen, /Somente no pagamento da fatura/,
