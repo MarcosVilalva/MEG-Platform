@@ -759,6 +759,6 @@ assert.match(
 );
 assert.match(
   css,
-  /MEG 2\.0\.667[\s\S]*\.meg2-pending-card-inline[\s\S]*\.meg2-pending-card-inline-lines[\s\S]*Selecionar/,
+  /MEG 2\.0\.667[\s\S]*\.meg2-pending-card-inline[\s\S]*\.meg2-pending-card-inline-lines[\s\S]*\.meg2-pending-card-inline>footer/,
   'A fatura expandida deve possuir layout próprio dentro da lista de Pendentes.',
 );
