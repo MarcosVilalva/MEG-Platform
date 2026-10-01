@@ -72,9 +72,12 @@ assert.match(gateway, /input\.installments < 1 \|\| input\.installments > 48/,
   'Writer de cartão deve respeitar o limite de parcelas homologado pela API.');
 assert.match(gateway, /input\.status !== 'paid'/,
   'Writer do benefício deve exigir situação realizada.');
-assert.match(gateway, /clearPhoenixReadModelCache\(\)/);
+assert.match(gateway, /invalidatePhoenixReadModelMonth\(refreshMonth\)/,
+  'Writer deve invalidar somente o mês afetado em vez de destruir todo o cache Phoenix.');
 assert.match(gateway, /loadPhoenixReadModel\(refreshMonth,\s*\{ force: true \}\)/,
-  'Snapshot só deve ser recarregado depois da confirmação do servidor.');
+  'Reconciliação oficial deve reler o mês somente depois da confirmação do servidor.');
+assert.doesNotMatch(gateway, /clearPhoenixReadModelCache\(\)/,
+  'Mutação mensal não deve invalidar catálogos, health e fotografias de outros períodos.');
 assert.match(gateway, /input\.amount\s*===\s*0/,
   'Writer simples deve rejeitar zero e preservar valores negativos usados para estorno/reversão.');
 assert.doesNotMatch(gateway, /getPhoenixSimpleEventEligibility[\s\S]{0,600}PHOENIX_REVERSAL_NOT_IN_SIMPLE_FLOW/,
