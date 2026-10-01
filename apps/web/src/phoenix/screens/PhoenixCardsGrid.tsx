@@ -42,6 +42,7 @@ type GridRow = {
   amount: number;
   status: string;
   statementMonth: string;
+  purchaseId?: string;
 };
 type GridState<T> = Record<GridMode, T>;
 
@@ -423,7 +424,8 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     group: purchase.category?.name || '—',
     amount: Number(entry.amount || 0),
     status: entry.status,
-    statementMonth: entry.statementMonth
+    statementMonth: entry.statementMonth,
+    purchaseId: purchase.id
   }))) : [], [selected]);
 
   const legacyRows = useMemo<GridRow[]>(() => selected ? data.legacyTransactions
@@ -458,6 +460,7 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     amount: Number(line.effect || 0),
     status: line.isOpen ? 'open' : line.sourceStatus,
     statementMonth: line.statementMonth,
+    purchaseId: line.purchaseId,
   })) || [], [selected]);
 
   const currentCardMonth = selected ? resolveActiveCardMonth(selected, allRows, data.month) : data.month;
@@ -1064,8 +1067,16 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
     </div>, document.body) : null}
 
     {detailRow && !nativeOperational ? <div className="px-card-detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailRow(null); }}>
-      <aside className="px-card-detail-drawer" role="dialog" aria-modal="true" aria-label={`Detalhes de ${detailRow.description}`}>
-        <header><div><span className="px-kicker">{monthLabel(detailRow.statementMonth)}</span><h2>{detailRow.description}</h2><p>{detailRow.installment} · {detailRow.group}</p></div><button type="button" aria-label="Fechar detalhes" onClick={() => setDetailRow(null)}>×</button></header>
+      <aside
+        className="px-card-detail-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Detalhes de ${detailRow.description}`}
+        data-card-purchase-id={detailRow.purchaseId || undefined}
+        data-card-id={detailRow.purchaseId ? selected?.id : undefined}
+        data-card-statement-month={detailRow.purchaseId ? detailRow.statementMonth : undefined}
+      >
+        <header><div><span className="px-kicker">{monthLabel(detailRow.statementMonth)}</span><h2>{detailRow.description}</h2><p>{detailRow.installment} · {detailRow.group}</p></div><button type="button" data-card-detail-close aria-label="Fechar detalhes" onClick={() => setDetailRow(null)}>×</button></header>
         <div className="px-card-detail-amount">
           <span>Efeito na fatura</span>
           <strong className={detailRow.amount < 0 ? 'positive' : ''}>{money.format(detailRow.amount)}</strong>
@@ -1078,7 +1089,10 @@ export function PhoenixCardsGrid({ data }: { data: PhoenixReadModel }) {
           <div><dt>Grupo</dt><dd>{detailRow.group}</dd></div>
           <div><dt>Origem</dt><dd>{detailRow.source === 'canonical' ? 'Fatura canônica' : detailRow.source === 'domain' ? 'Domínio de cartões' : 'Compatibilidade legada'}</dd></div>
         </dl>
-        <footer><span>Detalhe somente leitura nesta etapa.</span><button type="button" onClick={() => setDetailRow(null)}>Fechar</button></footer>
+        <footer>
+          <span data-card-detail-status>{detailRow.purchaseId ? 'Compra vinculada ao domínio de cartões. Edição protegida disponível.' : 'Registro sem compra canônica vinculada. Mantido somente leitura.'}</span>
+          <div className="px-card-detail-actions"><button type="button" data-card-detail-close onClick={() => setDetailRow(null)}>Fechar</button></div>
+        </footer>
       </aside>
     </div> : null}
   </section>;
