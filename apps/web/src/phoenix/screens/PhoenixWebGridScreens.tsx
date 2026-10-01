@@ -302,6 +302,7 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
       setMessage(editingTitle ? 'Título atualizado e confirmado na base financeira.' : 'Título criado e confirmado na base financeira.');
     } catch (error) {
       setMessage(receivableError(error));
+      if (/RECEIVABLE_STALE_VERSION/i.test(error instanceof Error ? error.message : '')) await refreshOfficialSnapshot();
     } finally {
       setBusy(false);
     }
