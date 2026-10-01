@@ -658,9 +658,10 @@ function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Pro
   </main>;
 }
 
-type PendingRow = { id: string; source: 'payable' | 'event'; sourceId: string; description: string; due: string; amount: number; paid: boolean; category?: string; account?: string; payment?: string; installment?: string; notes?: string };
+type PendingCardLine = { id:string; description:string; amount:number; purchaseDate:string; category?:string; installment?:string; credit?:boolean };
+type PendingRow = { id: string; source: 'payable' | 'event' | 'card'; sourceId: string; statementMonth?: string; description: string; due: string; amount: number; paid: boolean; category?: string; account?: string; payment?: string; installment?: string; notes?: string; itemCount?: number; cardLines?: PendingCardLine[]; searchText?: string };
 type PendingSettlementBalance = { status: 'idle' | 'loading' | 'ready' | 'error'; available: number; accountName: string; message?: string };
-type PendingSettlementSuccess = { description:string; amount:number; paidAt:string; account:string; payment:string; balanceBefore:number; balanceAfter:number };
+type PendingSettlementSuccess = { description:string; amount:number; paidAt:string; account:string; payment:string; balanceBefore:number; balanceAfter:number; count:number };
 
 function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Props['onEditEvent'] }) {
   const [tab, setTab] = useState<'all' | 'open' | 'paid' | 'overdue'>('all');
@@ -670,7 +671,8 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   const [filterOpen, setFilterOpen] = useState(false);
   const [selected, setSelected] = useState<PendingRow | null>(null);
   const [descending, setDescending] = useState(false);
-  const [settlementItem, setSettlementItem] = useState<PendingRow | null>(null);
+  const [batchSelected, setBatchSelected] = useState<string[]>([]);
+  const [settlementItems, setSettlementItems] = useState<PendingRow[]>([]);
   const [settlementStep, setSettlementStep] = useState<'form' | 'confirm'>('form');
   const [settlementBusy, setSettlementBusy] = useState(false);
   const [settlementMessage, setSettlementMessage] = useState('');
