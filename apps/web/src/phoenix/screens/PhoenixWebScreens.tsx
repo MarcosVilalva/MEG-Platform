@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { financeClient } from '../../app/finance-client';
 import type { PhoenixReadModel } from '../contracts';
-import { loadPhoenixReadModel } from '../data/load-phoenix-read-model';
+import { preparePhoenixReconciliationAdjustment, readPhoenixReconciliationBalance, runPhoenixReconciliationAdjustment } from '../reconciliation-bridge';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -183,6 +182,7 @@ export function PhoenixReconciliation({ data, onDataCommitted }: { data: Phoenix
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [retryOperationId, setRetryOperationId] = useState('');
 
   const selectedAccount = monetaryAccounts.find((item) => item.id === accountId) || null;
   const bankBalance = parseReconciliationMoney(bankBalanceInput);
@@ -198,6 +198,7 @@ export function PhoenixReconciliation({ data, onDataCommitted }: { data: Phoenix
     setDifference(null);
     setMessage('');
     setError('');
+    setRetryOperationId('');
   }, [accountId, effectiveDate]);
 
   async function compareBalances() {
@@ -213,7 +214,7 @@ export function PhoenixReconciliation({ data, onDataCommitted }: { data: Phoenix
     setError('');
     setMessage('');
     try {
-      const result = await financeClient.getMonetaryBalance(accountId, effectiveDate);
+      const result = await readPhoenixReconciliationBalance(accountId, effectiveDate);
       const officialBalance = Number(result.available || 0);
       setMegBalance(officialBalance);
       setDifference(Math.round((bankBalance - officialBalance) * 100) / 100);
@@ -242,29 +243,29 @@ export function PhoenixReconciliation({ data, onDataCommitted }: { data: Phoenix
     setError('');
     setMessage('');
     try {
-      await financeClient.createEvent({
-        operationId: `phoenix-reconcile:${crypto.randomUUID()}`,
-        description: 'AJUSTE DE CONCILIAÇÃO BANCÁRIA',
-        type: direction,
-        status: 'confirmed',
-        date: effectiveDate,
-        amount: adjustment,
+      const prepared = preparePhoenixReconciliationAdjustment({
+        refreshMonth: data.month,
         accountId: selectedAccount.id,
-        notes: `Conciliação manual Phoenix V15. Saldo MEG antes do ajuste: ${money.format(megBalance || 0)}. Saldo real informado: ${money.format(bankBalance)}.`,
+        date: effectiveDate,
+        difference,
+        megBalance: megBalance || 0,
+        bankBalance,
+        existingOperationId: retryOperationId || undefined,
       });
-      const snapshot = await loadPhoenixReadModel(data.month, { force: true, forceStatic: true });
-      onDataCommitted(snapshot);
-      const refreshed = await financeClient.getMonetaryBalance(selectedAccount.id, effectiveDate);
+      const result = await runPhoenixReconciliationAdjustment(prepared);
+      if (result.status === 'error') {
+        setRetryOperationId(result.operationId);
+        setError(result.message);
+        return;
+      }
+      setRetryOperationId('');
+      onDataCommitted(result.snapshot);
+      const refreshed = await readPhoenixReconciliationBalance(selectedAccount.id, effectiveDate);
       setMegBalance(Number(refreshed.available || 0));
       setDifference(Math.round((bankBalance - Number(refreshed.available || 0)) * 100) / 100);
       setMessage('Ajuste registrado, auditado e confirmado na base financeira.');
     } catch (cause) {
-      const raw = cause instanceof Error ? cause.message : '';
-      if (/POSSIBLE_DUPLICATE/i.test(raw)) {
-        setError('Possível ajuste duplicado detectado. Revise a conciliação antes de repetir o lançamento.');
-      } else {
-        setError(raw || 'A base não confirmou o ajuste de conciliação.');
-      }
+      setError(cause instanceof Error ? cause.message : 'A base não confirmou o ajuste de conciliação.');
     } finally {
       setBusy(false);
     }
@@ -293,7 +294,7 @@ export function PhoenixReconciliation({ data, onDataCommitted }: { data: Phoenix
       </div>
       <div className="px-settings-control-row">
         <div><strong>Saldo real no banco</strong><small>Digite exatamente o valor exibido no extrato bancário.</small></div>
-        <input inputMode="decimal" placeholder="0,00" value={bankBalanceInput} onChange={(event) => { setBankBalanceInput(event.target.value); setDifference(null); setMessage(''); }} disabled={busy || loadingBalance} />
+        <input inputMode="decimal" placeholder="0,00" value={bankBalanceInput} onChange={(event) => { setBankBalanceInput(event.target.value); setDifference(null); setMessage(''); setRetryOperationId(''); }} disabled={busy || loadingBalance} />
       </div>
       <div className="px-settings-actions">
         <button type="button" onClick={() => void compareBalances()} disabled={busy || loadingBalance || !accountId || !validBankBalance}>{loadingBalance ? 'Consultando…' : 'Comparar saldos'}</button>
