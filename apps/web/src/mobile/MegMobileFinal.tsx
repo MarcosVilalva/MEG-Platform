@@ -105,10 +105,28 @@ function isMonetaryAccount(account: PhoenixReadModel['accounts'][number]) {
   return account.isActive && ['checking', 'savings', 'cash'].includes(normalizeCardText(account.type));
 }
 
+type SettlementMethodKind = 'pix' | 'boleto' | 'cash' | 'transfer';
+
+function settlementMethodKind(method: PhoenixReadModel['paymentMethods'][number]): SettlementMethodKind | null {
+  if (!method.isActive) return null;
+  const identity = normalizeCardText(method.name) + ' ' + normalizeCardText(method.type);
+  if (/\bpix\b/.test(identity)) return 'pix';
+  if (/boleto|\bbill\b/.test(identity)) return 'boleto';
+  if (/dinheiro|especie|\bcash\b/.test(identity)) return 'cash';
+  if (/transferencia|transfer|\bted\b|\bdoc\b|bank.?transfer/.test(identity)) return 'transfer';
+  return null;
+}
+
 function isSettlementPaymentMethod(method: PhoenixReadModel['paymentMethods'][number]) {
-  const type = normalizeCardText(method.type);
-  const identity = normalizeCardText(method.name) + ' ' + type;
-  return method.isActive && type !== 'credit' && !/verocard/.test(identity);
+  return Boolean(settlementMethodKind(method));
+}
+
+function settlementMethodMeta(method: PhoenixReadModel['paymentMethods'][number]): { icon: MegIconName; subtitle: string; order: number } {
+  const kind = settlementMethodKind(method);
+  if (kind === 'pix') return { icon:'pix', subtitle:'Pagamento instantâneo', order:0 };
+  if (kind === 'boleto') return { icon:'barcode', subtitle:'Título bancário', order:1 };
+  if (kind === 'cash') return { icon:'coins', subtitle:'Pagamento em espécie', order:2 };
+  return { icon:'bank-transfer', subtitle:'Transferência entre contas', order:3 };
 }
 
 function cardArt(name: string) {
@@ -691,7 +709,9 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   const [settlementSuccess, setSettlementSuccess] = useState<PendingSettlementSuccess | null>(null);
   const [paidAt, setPaidAt] = useState(todayIso());
   const monetaryAccounts = data.accounts.filter(isMonetaryAccount);
-  const activeMethods = data.paymentMethods.filter(isSettlementPaymentMethod);
+  const activeMethods = data.paymentMethods
+    .filter(isSettlementPaymentMethod)
+    .sort((left, right) => settlementMethodMeta(left).order - settlementMethodMeta(right).order);
   const [settlementAccountId, setSettlementAccountId] = useState(monetaryAccounts[0]?.id || '');
   const [settlementMethodId, setSettlementMethodId] = useState('');
   const today = todayIso();
@@ -824,6 +844,51 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   }));
 
   const cardGroups = new Map<string, PendingRow>();
+  const canonicalCardKeys = new Set<string>();
+
+  // Pendentes usa a fatura canônica do domínio de cartões como fonte principal.
+  // Os eventos projetados ficam apenas como fallback para dados antigos sem statement.
+  for (const card of data.cards.filter((item) => item.isActive !== false)) {
+    const statement = card.statement;
+    if (!statement || !/^\d{4}-\d{2}$/.test(String(statement.month || ''))) continue;
+    const openLines = (statement.lines || []).filter((line) => line.isOpen !== false);
+    const payableAmount = Number(statement.payableAmount ?? statement.openNetAmount ?? 0);
+    if (!openLines.length || !Number.isFinite(payableAmount) || payableAmount <= 0.009) continue;
+
+    const key = card.id + '|' + statement.month;
+    canonicalCardKeys.add(key);
+    const lines: PendingCardLine[] = openLines.map((line) => {
+      const purchase = line.purchaseId ? (card.purchases || []).find((item) => item.id === line.purchaseId) : undefined;
+      const effect = Number(line.effect || 0);
+      return {
+        id:line.id,
+        description:String(line.description || '').replace(/\s+·\s+\d+\/\d+\s*$/,''),
+        amount:Math.abs(effect),
+        purchaseDate:String(line.purchaseDate || '').slice(0,10),
+        category:purchase?.category?.name || 'Cartão',
+        installment:line.installmentNo && line.installmentQty ? String(line.installmentNo) + '/' + String(line.installmentQty) : undefined,
+        credit:line.kind === 'credit' || effect < 0,
+      };
+    });
+
+    cardGroups.set(key, {
+      id:'c-' + card.id + '-' + statement.month,
+      source:'card',
+      sourceId:card.id,
+      statementMonth:statement.month,
+      description:cardName(card.name),
+      due:String(statement.dueDate || cardDueDateForStatement(statement.month, Number(card.closingDay || 1), Number(card.dueDay || 1))).slice(0,10),
+      amount:Math.round(payableAmount * 100) / 100,
+      paid:false,
+      category:'Cartão de crédito',
+      account:'Definida na baixa',
+      payment:'Fatura ' + statement.month.split('-').reverse().join('/'),
+      itemCount:openLines.length,
+      cardLines:lines,
+      searchText:[card.name, card.issuer, card.brand, statement.month, ...lines.map((line) => line.description + ' ' + (line.category || ''))].filter(Boolean).join(' '),
+    });
+  }
+
   for (const event of data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned' && isProjectedCardPending(item))) {
     const payload = pendingSourcePayload(event);
     if (!payload) continue;
@@ -831,11 +896,12 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
     const statementMonth = String(payload.statementMonth || '');
     const card = data.cards.find((item) => item.id === cardId);
     if (!cardId || !card || !/^\d{4}-\d{2}$/.test(statementMonth)) continue;
+    const key = cardId + '|' + statementMonth;
+    if (canonicalCardKeys.has(key)) continue;
     const due = String(payload.dueDate || event.date || '').slice(0,10);
     const rawEffect = Number(payload.statementEffect);
     const effect = Number.isFinite(rawEffect) ? rawEffect : -Number(event.signedAmount || 0);
     if (!Number.isFinite(effect) || effect === 0) continue;
-    const key = cardId + '|' + statementMonth;
     const line: PendingCardLine = {
       id:event.id,
       description:String(event.description || '').replace(/\s+·\s+\d+\/\d+\s*$/,''),
@@ -887,13 +953,31 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   const total = opens.reduce((sum, item) => sum + item.amount, 0);
   const query = search.trim().toLocaleLowerCase('pt-BR');
   const rows = opens.concat(paidEvents)
-    .filter((item) => (item.description + ' ' + (item.searchText || '')).toLocaleLowerCase('pt-BR').includes(query))
+    .filter((item) => [
+      item.description,
+      item.searchText,
+      item.category,
+      item.account,
+      item.payment,
+      item.statementMonth,
+      item.due,
+      item.due.split('-').reverse().join('/'),
+      Number.isFinite(item.amount) ? String(item.amount).replace('.', ',') : '',
+    ].filter(Boolean).join(' ').toLocaleLowerCase('pt-BR').includes(query))
     .filter((item) => !fromDate || item.due >= fromDate)
     .filter((item) => !toDate || item.due <= toDate)
     .filter((item) => tab === 'all' ? true : tab === 'open' ? !item.paid : tab === 'paid' ? item.paid : !item.paid && item.due < today)
     .sort((left, right) => descending ? right.due.localeCompare(left.due) : left.due.localeCompare(right.due));
 
   const selectedRows = opens.filter((item) => batchSelected.includes(item.id));
+  const selectedTotal = selectedRows.reduce((sum, item) => sum + item.amount, 0);
+  const dateStats = rows.reduce((map, item) => {
+    const current = map.get(item.due) || { count:0, total:0 };
+    current.count += 1;
+    current.total = Math.round((current.total + item.amount) * 100) / 100;
+    map.set(item.due, current);
+    return map;
+  }, new Map<string, { count:number; total:number }>());
 
   function toggleRow(item: PendingRow) {
     if (item.paid) return;
@@ -925,11 +1009,11 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       <button className={tab === 'overdue' ? 'active' : ''} onClick={() => changeTab('overdue')}>Vencidas {overdue.length ? <b>{overdue.length}</b> : null}</button>
     </div>
     <section className="meg2-pending-metrics">
-      <article><small>Total</small><strong>{money.format(total)}</strong></article>
+      <article className={selectedRows.length ? 'selected' : ''}><small>{selectedRows.length ? 'Total selecionado' : 'Total'}</small><strong>{money.format(selectedRows.length ? selectedTotal : total)}</strong>{selectedRows.length ? <span>{selectedRows.length}</span> : null}</article>
       <article><small>A pagar</small><strong>{money.format(total)}</strong><span>◷</span></article>
       <article className="late"><small>Vencidas</small><strong>{money.format(overdue.reduce((s, item) => s + item.amount, 0))}</strong><span>!</span></article>
     </section>
-    <section className="meg2-search"><label><Icon name="search" size={20}/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar pendentes..."/></label><button className={descending ? 'active' : ''} type="button" aria-label="Alternar ordem" onClick={() => setDescending((value) => !value)}><Icon name="list"/></button><button className={fromDate || toDate ? 'active' : ''} type="button" aria-label="Filtrar por data" onClick={() => setFilterOpen(true)}><Icon name="sliders"/></button></section>
+    <section className="meg2-search"><label><Icon name="search" size={20}/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar pendentes..."/></label><button className={descending ? 'active' : ''} type="button" aria-label={descending ? 'Ordenar vencimentos do mais antigo para o mais recente' : 'Ordenar vencimentos do mais recente para o mais antigo'} onClick={() => setDescending((value) => !value)}><Icon name={descending ? 'arrow-down' : 'arrow-up'}/></button><button className={fromDate || toDate ? 'active' : ''} type="button" aria-label="Filtrar por data" onClick={() => setFilterOpen(true)}><Icon name="sliders"/></button></section>
     <section className={'meg2-pending-list grouped ' + (batchSelected.length ? 'has-batch' : '')} data-meg-scroll-region="true">
       {rows.map((item, index) => {
         const late = !item.paid && item.due < today;
@@ -938,8 +1022,9 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
         const marked = batchSelected.includes(item.id);
         const newDate = index === 0 || rows[index - 1]?.due !== item.due;
         const dateLabel = item.due === today ? 'Hoje · ' + item.due.split('-').reverse().join('/') : item.due.split('-').reverse().join('/');
+        const dateSummary = dateStats.get(item.due) || { count:1, total:item.amount };
         return <div className="meg2-pending-group-row" key={item.id}>
-          {newDate ? <div className="meg2-pending-date-heading"><span><strong>{dateLabel}</strong><small>Vencimento</small></span><i/></div> : null}
+          {newDate ? <div className="meg2-pending-date-heading"><span><strong>{dateLabel}</strong><small>Vencimento</small></span><i/><span className="meg2-pending-date-total"><small>{dateSummary.count} {dateSummary.count === 1 ? 'item' : 'itens'}</small><strong>{money.format(dateSummary.total)}</strong></span></div> : null}
           <article className={rowClass + (marked ? ' selected' : '')}>
             {!item.paid ? <button type="button" className="meg2-pending-select" aria-pressed={marked} aria-label={marked ? 'Remover da baixa em lote' : 'Selecionar para baixa em lote'} onClick={() => toggleRow(item)}><span>{marked ? '✓' : ''}</span></button> : <span className="meg2-pending-select spacer"/>}
             <button type="button" className="meg2-pending-open" onClick={() => setSelected(item)}>
@@ -953,7 +1038,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       {!rows.length ? <div className="meg2-empty">Nenhum lançamento neste filtro.</div> : null}
     </section>
     {selectedRows.length ? <section className="meg2-pending-batchbar">
-      <div><small>{selectedRows.length} {selectedRows.length === 1 ? 'selecionado' : 'selecionados'}</small><strong>{money.format(selectedRows.reduce((sum,item)=>sum+item.amount,0))}</strong></div>
+      <div><small>{selectedRows.length} {selectedRows.length === 1 ? 'selecionado' : 'selecionados'} · total do lote</small><strong>{money.format(selectedTotal)}</strong></div>
       <button type="button" onClick={() => openSettlement(selectedRows)}>Baixar lote</button>
     </section> : null}
     {filterOpen ? <div className="meg2-pending-filter-overlay" role="presentation" onClick={() => setFilterOpen(false)}>
@@ -1006,7 +1091,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
             <div className="meg2-pending-lot-summary"><span><small>Itens</small><b>{settlementItems.length}</b></span><span><small>Vencimentos</small><b>{new Set(settlementItems.map((item)=>item.due)).size}</b></span><span><small>Total</small><b>{money.format(settlementTotal)}</b></span></div>
             <label className="meg2-pending-date-field"><span>Data efetiva do pagamento</span><input type="date" max={today} value={paidAt} disabled={settlementBusy} onChange={(event) => { setPaidAt(event.target.value); setSettlementMessage(''); }}/></label>
             <MegMobilePicker label="Conta monetária" value={settlementAccountId} disabled={settlementBusy} placeholder="Selecione a conta" options={monetaryAccounts.map((item) => ({ id:item.id, label:item.name, subtitle:item.type ? String(item.type) : undefined, icon:'wallet', tone:'cyan' }))} onChange={(value) => { setSettlementAccountId(value); setSettlementMessage(''); }}/>
-            <MegMobilePicker label="Forma de pagamento" value={settlementMethodId} disabled={settlementBusy} placeholder="Selecione a forma" options={activeMethods.map((item) => ({ id:item.id, label:item.name, subtitle:item.type ? String(item.type) : undefined, icon:'wallet', tone:'cyan' }))} onChange={(value) => { setSettlementMethodId(value); setSettlementMessage(''); }}/>
+            <MegMobilePicker label="Forma de pagamento" value={settlementMethodId} disabled={settlementBusy} searchable={false} placeholder="Selecione a forma" options={activeMethods.map((item) => { const meta=settlementMethodMeta(item); return { id:item.id, label:item.name, subtitle:meta.subtitle, icon:meta.icon, tone:'cyan' }; })} onChange={(value) => { setSettlementMethodId(value); setSettlementMessage(''); }}/>
             <section className={'meg2-pending-balance-card ' + (settlementMissing > 0 ? 'danger' : settlementBalance.status === 'ready' ? 'ok' : '')}>
               <header><span><Icon name="wallet" size={17}/></span><div><small>PROTEÇÃO DE SALDO DO LOTE</small><strong>{settlementBalance.status === 'loading' ? 'Consultando saldo…' : settlementBalance.status === 'error' ? 'Saldo indisponível' : settlementBalance.status === 'ready' ? settlementBalance.accountName : 'Selecione a conta e a data'}</strong></div></header>
               {settlementBalance.status === 'ready' ? <div className="meg2-pending-balance-grid">
