@@ -30,6 +30,9 @@ function actionLabel(item: AuthUser) {
 function accessError(error: unknown) {
   const code = error instanceof Error ? error.message : 'USER_ACCESS_FAILED';
   if (/PRIMARY_ADMIN_CANNOT_BE_BLOCKED/i.test(code)) return 'O administrador principal do workspace não pode ser bloqueado.';
+  if (/PRIMARY_ADMIN_CANNOT_BE_DELETED/i.test(code)) return 'O administrador principal do workspace não pode ser removido.';
+  if (/CANNOT_DELETE_OWN_ACCESS/i.test(code)) return 'Sua própria conta não pode ser removida por esta tela.';
+  if (/USER_MUST_BE_INACTIVE_BEFORE_DELETE/i.test(code)) return 'Bloqueie ou rejeite o acesso antes de remover definitivamente este usuário.';
   if (/USER_NOT_IN_WORKSPACE|USER_NOT_FOUND/i.test(code)) return 'Este usuário não pertence mais ao workspace atual.';
   if (/USER_NOT_ACTIVE/i.test(code)) return 'A conta precisa estar ativa para executar esta ação.';
   if (/EMAIL_DELIVERY_FAILED|NOTIFICATION_DELIVERY_FAILED/i.test(code)) return 'A alteração foi processada, mas o aviso ao usuário não pôde ser entregue por nenhum canal disponível.';
@@ -117,6 +120,37 @@ export function PhoenixUsers({ data, onDataCommitted }: { data: PhoenixReadModel
         : 'sem aviso externo necessário';
       setMessage(`Acesso atualizado e confirmado. ${delivery}.`);
       setSelectedId('');
+    } catch (error) {
+      setMessage(accessError(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteUser() {
+    if (!selected || busy || selected.id === data.user.id) return;
+    const removable = selected.status === 'BLOCKED' || selected.status === 'REJECTED' || !selected.isActive;
+    if (!removable) {
+      setMessage('Bloqueie ou rejeite o acesso antes de remover definitivamente este usuário.');
+      return;
+    }
+    const confirmed = await megConfirm({
+      kicker:'Remoção de usuário',
+      title:'Remover este usuário do workspace?',
+      message:`${selected.name} (${selected.email}) será removido do cadastro e não poderá mais acessar este workspace. O histórico financeiro já registrado será preservado e a remoção ficará auditada.`,
+      confirmLabel:'Remover usuário',
+      cancelLabel:'Voltar',
+      danger:true,
+    });
+    if (!confirmed) return;
+
+    setBusy(true);
+    setMessage('Removendo usuário e preservando a auditoria…');
+    try {
+      await usersAdminClient.deleteUser(selected.id);
+      await refreshUsers();
+      setSelectedId('');
+      setMessage('Usuário removido do workspace. O histórico financeiro foi preservado.');
     } catch (error) {
       setMessage(accessError(error));
     } finally {
@@ -215,7 +249,7 @@ export function PhoenixUsers({ data, onDataCommitted }: { data: PhoenixReadModel
           <button type="button" disabled={busy} onClick={() => setSelectedId('')}>Fechar</button>
           {selected.status === 'PENDING' ? <><button className="danger" type="button" disabled={busy} onClick={() => void performAccess('REJECT')}>Rejeitar</button><button className="px-primary-action" type="button" disabled={busy} onClick={() => void performAccess('APPROVE')}>Aprovar</button></> : null}
           {selected.status === 'ACTIVE' && selected.isActive ? <><button className="danger" type="button" disabled={busy || selected.id === data.user.id} onClick={() => void performAccess('BLOCK')}>Bloquear</button><button className="px-primary-action" type="button" disabled={busy} onClick={() => void performAccess('UPDATE')}>Salvar perfil</button></> : null}
-          {(selected.status === 'BLOCKED' || selected.status === 'REJECTED' || !selected.isActive) ? <button className="px-primary-action" type="button" disabled={busy} onClick={() => void performAccess('ACTIVATE')}>Reativar acesso</button> : null}
+          {(selected.status === 'BLOCKED' || selected.status === 'REJECTED' || !selected.isActive) ? <><button className="danger" type="button" disabled={busy || selected.id === data.user.id} onClick={() => void deleteUser()}>Remover usuário</button><button className="px-primary-action" type="button" disabled={busy} onClick={() => void performAccess('ACTIVATE')}>Reativar acesso</button></> : null}
         </footer>
       </section>
     </div>, document.body) : null}

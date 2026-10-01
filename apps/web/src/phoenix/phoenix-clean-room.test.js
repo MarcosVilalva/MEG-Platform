@@ -219,6 +219,14 @@ assert.match(history, /Histórico legado/,
 assert.match(history, /Exportar filtrado/);
 assert.match(users, /Administração habilitada/);
 assert.match(users, /Gerenciar acesso/);
+assert.match(users, /Remover usuário/,
+  'Administração Web deve permitir remover contas já inativas.');
+assert.match(users, /usersAdminClient\.deleteUser/,
+  'Remoção deve usar o contrato administrativo oficial.');
+assert.match(users, /USER_MUST_BE_INACTIVE_BEFORE_DELETE/,
+  'Interface deve explicar que o acesso precisa ser inativado antes da remoção.');
+assert.match(users, /megConfirm/,
+  'Remoção definitiva deve exigir confirmação visual MEG.');
 assert.match(settings, /Saúde do sistema/);
 assert.match(settings, /readPhoenixNormalizationPreview/,
   'Diagnóstico deve comparar as fontes pelo bridge homologado.');
