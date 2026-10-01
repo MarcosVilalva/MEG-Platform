@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MegIcon, resolveFinancialIcon, type MegIconName } from './MegMobileIcon';
-import type { FinancialEvent } from '../app/finance-client';
+import { financeClient, type FinancialEvent } from '../app/finance-client';
 import type { PhoenixReadModel } from '../phoenix/contracts';
 import { hydratePhoenixAvatarPreference, phoenixAvatarImage, readPhoenixAvatarPreference } from '../phoenix/profile-avatar';
 import { MegMobileAnalytics, MegMobileCashflow, MegMobileHistory, MegMobileMovements } from './MegMobileCoreScreens';
@@ -99,6 +99,16 @@ function isBenefitAccount(account: PhoenixReadModel['accounts'][number]) {
 
 function isVerocardMethod(method: PhoenixReadModel['paymentMethods'][number]) {
   return method.isActive && /verocard/.test(normalizeCardText(method.name) + ' ' + normalizeCardText(method.type));
+}
+
+function isMonetaryAccount(account: PhoenixReadModel['accounts'][number]) {
+  return account.isActive && ['checking', 'savings', 'cash'].includes(normalizeCardText(account.type));
+}
+
+function isSettlementPaymentMethod(method: PhoenixReadModel['paymentMethods'][number]) {
+  const type = normalizeCardText(method.type);
+  const identity = normalizeCardText(method.name) + ' ' + type;
+  return method.isActive && type !== 'credit' && !/verocard/.test(identity);
 }
 
 function cardArt(name: string) {
