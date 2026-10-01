@@ -10,7 +10,10 @@ export type Customer = {
   email?: string | null;
   phone?: string | null;
   document?: string | null;
+  notes?: string | null;
   isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type Receipt = {
@@ -65,10 +68,15 @@ export type ReceiveReceivableInput = {
 
 export const receivablesClient = {
   listCustomers: () => request<Customer[]>('/receivables/customers'),
-  createCustomer: (data: Partial<Customer>) => request<Customer>('/receivables/customers', {
+  createCustomer: (data: Pick<Customer, 'name'> & Partial<Pick<Customer, 'email' | 'phone' | 'document' | 'notes'>>) => request<Customer>('/receivables/customers', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
+  updateCustomer: (id: string, data: Partial<Pick<Customer, 'name' | 'email' | 'phone' | 'document' | 'notes' | 'isActive'>>) => request<Customer>(`/receivables/customers/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data)
+  }),
+  deactivateCustomer: (id: string) => request<Customer>(`/receivables/customers/${id}`, { method: 'DELETE' }),
   listReceivables: () => request<Receivable[]>('/receivables/receivables'),
   createReceivable: (data: CreateReceivableInput) => request<Receivable>('/receivables/receivables', {
     method: 'POST',
