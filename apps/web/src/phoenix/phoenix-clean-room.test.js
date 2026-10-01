@@ -49,6 +49,7 @@ const homeFidelityV13Css = readFileSync(new URL('./phoenix-home-fidelity-v13.css
 const homePeriodSummary = readFileSync(new URL('./home-period-summary.ts', import.meta.url), 'utf8');
 const webScreens = readFileSync(new URL('./screens/PhoenixWebScreens.tsx', import.meta.url), 'utf8');
 const webGridScreens = readFileSync(new URL('./screens/PhoenixWebGridScreens.tsx', import.meta.url), 'utf8');
+const catalogsGrid = readFileSync(new URL('./screens/PhoenixCatalogsGrid.tsx', import.meta.url), 'utf8');
 const reportsCenter = readFileSync(new URL('./screens/PhoenixReportsCenter.tsx', import.meta.url), 'utf8');
 const megWebCss = readFileSync(new URL('./meg-web-2026.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
@@ -400,7 +401,7 @@ assert.doesNotMatch(webScreens, /Math\.random|mock|demo/i,
   'Web completo não pode fabricar dados de demonstração');
 assert.doesNotMatch(webScreens, /export function PhoenixReceivables|export function PhoenixRevenues|export function PhoenixCashflow|export function PhoenixBudgets/,
   'Telas legadas de somente leitura não podem voltar a competir com as grades Web operacionais.');
-assert.match(commandPalette, /Buscar tela, lançamento, título, pendência, orçamento, cartão, conta, cliente ou usuário/);
+assert.match(commandPalette, /Buscar tela, lançamento, título, pendência, orçamento, cartão, conta, classificação, forma de pagamento, cliente ou usuário/);
 assert.match(commandPalette, /data\.events\.items/);
 assert.match(commandPalette, /allEvents \?\? data\.events\.items/,
   'Busca global Web deve priorizar o histórico financeiro completo quando ele estiver disponível.');
@@ -410,7 +411,7 @@ assert.match(phoenixApp, /allEvents=\{!nativeOperational \? searchEvents \|\| un
   'Histórico completo da busca não pode ser injetado no runtime Android.');
 assert.match(commandPalette, /targetMonth: item\.competence \|\| String\(item\.date\)\.slice\(0, 7\)/,
   'Resultado de lançamento deve preservar a competência financeira encontrada.');
-assert.match(commandPalette, /await onNavigate\(result\.route, result\.targetMonth, result\.targetId\)[\s\S]*opened === false/,
+assert.match(commandPalette, /await onNavigate\(result\.route, result\.targetMonth, result\.targetId, result\.targetSection\)[\s\S]*opened === false/,
   'Busca só deve fechar depois que o destino confirmar o alvo correto.');
 assert.match(phoenixApp, /openSearchResult[\s\S]*route === 'movements'[\s\S]*await applyMonthlyPeriod\(targetMonth\)[\s\S]*monthRef\.current !== targetMonth[\s\S]*return false/,
   'Lançamento histórico deve abrir Lançamentos na competência encontrada e permanecer na busca se a troca falhar.');
@@ -442,6 +443,28 @@ assert.match(cardsGrid, /data-search-card-id=\{card\.id\}/,
 
 assert.match(commandPalette, /data\.accounts/);
 assert.match(commandPalette, /data\.customers/);
+assert.match(commandPalette, /data\.paymentMethods\.map/,
+  'Busca global deve localizar formas de pagamento do cadastro.');
+assert.match(commandPalette, /route: 'catalogs'[\s\S]*kind: 'Conta'[\s\S]*targetSection: 'accounts'/,
+  'Conta pesquisada deve apontar para Cadastros > Contas.');
+assert.match(commandPalette, /route: 'catalogs'[\s\S]*kind: 'Classificação'[\s\S]*targetSection: 'categories'/,
+  'Classificação pesquisada deve apontar para Cadastros > Classificações.');
+assert.match(commandPalette, /kind: 'Forma de pagamento'[\s\S]*targetSection: 'payments'/,
+  'Forma de pagamento pesquisada deve apontar para Cadastros > Formas de pagamento.');
+assert.match(commandPalette, /route: 'catalogs'[\s\S]*kind: 'Cliente'[\s\S]*targetSection: 'customers'/,
+  'Cliente pesquisado deve apontar para o cadastro do cliente, não para Contas a receber.');
+assert.match(phoenixApp, /route === 'catalogs' && targetId[\s\S]*setSearchCatalogRequest[\s\S]*itemId: targetId[\s\S]*tab: targetSection/,
+  'Shell Web deve encaminhar cadastro e aba exatos.');
+assert.match(phoenixApp, /focusRequest=\{nativeOperational \? undefined : searchCatalogRequest\}/,
+  'Foco de Cadastros vindo da busca deve permanecer exclusivo do Web.');
+assert.match(catalogsGrid, /focusRequest[\s\S]*setTab\(focusRequest\.tab\)[\s\S]*initialFilters\(\)[\s\S]*setFocusedCatalogId\(focusRequest\.itemId\)/,
+  'Cadastros deve abrir a aba correta, limpar apenas seus filtros e destacar o item localizado.');
+assert.match(catalogsGrid, /data-catalog-id=\{row\.id\}[\s\S]*is-search-focused/,
+  'Cadastro pesquisado deve possuir âncora e destaque visual.');
+assert.match(catalogsGrid, /CSS\.escape\(focusRequest\.itemId\)[\s\S]*scrollIntoView\(\{ block: 'center', behavior: 'smooth' \}\)/,
+  'Busca deve rolar suavemente até o cadastro localizado.');
+assert.match(megWebCss, /\.px-catalog-mobile-item\.is-search-focused/,
+  'Layout responsivo de Cadastros deve destacar o resultado pesquisado.');
 assert.match(commandPalette, /data\.receivables\.map/,
   'Busca global deve localizar títulos a receber pelo domínio oficial.');
 assert.match(commandPalette, /route: 'receivables'[\s\S]*kind: 'Título a receber'[\s\S]*targetId: item\.id/,
