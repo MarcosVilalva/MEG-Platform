@@ -158,6 +158,31 @@ export async function authenticatedRequest<T>(path: string, init?: RequestInit):
   try { return await pending; } finally { if (cacheKey && requestsInFlight.get(cacheKey) === pending) requestsInFlight.delete(cacheKey); }
 }
 
+export type UserAccessAction = 'APPROVE' | 'REJECT' | 'BLOCK' | 'ACTIVATE' | 'UPDATE';
+
+export type UserAccessResult = {
+  user: AuthUser;
+  notifications?: Array<{ channel: string; status: string; detail?: string }>;
+};
+
+export const usersAdminClient = {
+  updateAccess: (id: string, data: {
+    action: UserAccessAction;
+    role?: UserRole;
+    phone?: string;
+    note?: string;
+  }) => authenticatedRequest<UserAccessResult>(`/auth/users/${id}/access`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  }),
+  resetPassword: (id: string) => authenticatedRequest<{ user: AuthUser; deliveredTo: string; notifications?: unknown[] }>(`/auth/users/${id}/reset-password`, {
+    method: 'POST',
+  }),
+  testEmail: (id: string) => authenticatedRequest<{ deliveredTo: string; email: { status: string; detail?: string } }>(`/auth/users/${id}/test-email`, {
+    method: 'POST',
+  }),
+};
+
 export function clearAuthenticatedCache() {
   cacheEpoch += 1;
   responseCache.clear();
