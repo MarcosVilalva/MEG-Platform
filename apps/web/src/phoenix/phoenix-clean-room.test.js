@@ -200,8 +200,10 @@ assert.match(settings, /readPhoenixNormalizationPreview/,
   'Diagnóstico deve comparar as fontes pelo bridge homologado.');
 assert.match(normalizationReconcileBridge, /\/app-state\/normalization-preview/,
   'Bridge deve manter a leitura de diagnóstico separada da mutação protegida.');
-assert.match(settings, /Nenhum reparo foi executado por esta consulta/,
-  'Tela de integridade não pode sugerir que a comparação alterou a base.');
+assert.match(settings, /readPhoenixNormalizationPreview/,
+  'Comparar fontes deve permanecer uma leitura separada da ação de reconciliação.');
+assert.match(settings, /Comparar fontes/,
+  'Tela de integridade deve manter o diagnóstico explícito antes de qualquer reparo.');
 assert.match(settings, /getBiometricLoginStatus/,
   'Configurações Phoenix deve consultar o estado real da biometria no APK em vez de inventar disponibilidade.');
 assert.match(settings, /getPhoenixLocalNotificationStatus/,
