@@ -31,3 +31,14 @@ assert.doesNotMatch(bridge, /authenticatedRequest\('\/finance\/transfers'/,
   'O bridge visual não pode voltar a gravar transferência diretamente na API.');
 
 console.log('Contrato de transferência direta da Phoenix validado sem dependência do bridge legado.');
+
+assert.match(transferGateway, /allowDuplicate\?: boolean/,
+  'Gateway da transferência deve suportar confirmação explícita de duplicidade.');
+assert.match(transferGateway, /POSSIBLE_DUPLICATE/,
+  'Gateway deve explicar a suspeita de transferência duplicada.');
+assert.match(transferGateway, /details:\s*transferErrorDetails\(error\)/,
+  'Conflito estruturado do servidor deve ser preservado no Web.');
+assert.match(control, /preparePhoenixTransfer\(\{ \.\.\.resolvedTransferInput, allowDuplicate:true \}, existing\.operationId\)/,
+  'Confirmação de transferência duplicada deve reutilizar o operationId original.');
+assert.match(control, /result\.status === 'error' && result\.code === 'POSSIBLE_DUPLICATE'/,
+  'Web deve interromper a segunda transferência e pedir confirmação, não tratá-la como erro genérico.');
