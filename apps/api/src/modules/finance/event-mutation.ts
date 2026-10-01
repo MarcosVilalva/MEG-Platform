@@ -89,11 +89,13 @@ export async function createFinancialEventProtected(userId: string, input: Creat
           paymentMethodId: input.paymentMethodId,
           notes: input.notes?.trim() || undefined,
         },
+        include: { account: true, category: true, paymentMethod: true },
       });
 
+      let ledgerEntry = null;
       if (event.accountId && isPosted(event.status)) {
         const value = Number(event.amount);
-        await tx.ledgerEntry.create({
+        ledgerEntry = await tx.ledgerEntry.create({
           data: {
             eventId: event.id,
             date: event.date,
@@ -105,11 +107,9 @@ export async function createFinancialEventProtected(userId: string, input: Creat
         });
       }
 
-      const result = await tx.financialEvent.findUnique({
-        where: { id: event.id },
-        include: { account: true, category: true, paymentMethod: true, ledgerEntries: true },
-      });
-      if (!result) throw new FinancialEventMutationError('FINANCIAL_EVENT_NOT_FOUND');
+      // A resposta já pode ser montada com o retorno do INSERT. Antes havia um
+      // SELECT adicional apenas para reler o evento recém-criado.
+      const result = { ...event, ledgerEntries: ledgerEntry ? [ledgerEntry] : [] };
 
       await recordFinancialAudit(tx, {
         actorId: userId,
