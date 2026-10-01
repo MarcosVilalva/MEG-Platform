@@ -18,6 +18,7 @@ const settingsCss = readFileSync(new URL('./meg-mobile-settings.css', import.met
 const cardCenter = readFileSync(new URL('./MegMobileCardCenter.tsx', import.meta.url), 'utf8');
 const cardCenterCss = readFileSync(new URL('./meg-mobile-card-center.css', import.meta.url), 'utf8');
 const benefitModal = readFileSync(new URL('./MegMobileBenefitModal.tsx', import.meta.url), 'utf8');
+const benefitCss = readFileSync(new URL('./meg-mobile-benefit.css', import.meta.url), 'utf8');
 const source = mobile + '\n' + css + '\n' + runtimeCss + '\n' + coreScreens + '\n' + launchSheet + '\n' + mobileIcons + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
 
 assert.doesNotMatch(source, /\bpx-[a-z0-9-]+/i,
@@ -79,8 +80,9 @@ assert.match(mobile, /new URL\(relative, document\.baseURI\)\.href/,
 for (const relative of [
   '../../public/assets/cards/approved-v6/mercado.webp',
   '../../public/assets/cards/latam-user-model-v61.svg',
-  '../../public/assets/cards/approved-v6/azul.webp',
+  '../../public/assets/cards/azul-itau-platinum-v659.svg',
   '../../public/assets/cards/riachuelo-mastercard-visual.svg',
+  '../../public/assets/cards/verocard-alimentacao-v659.svg',
 ]) {
   assert.equal(existsSync(new URL(relative, import.meta.url)), true,
     `Arte de cartão obrigatória ausente: ${relative}`);
@@ -88,7 +90,7 @@ for (const relative of [
 
 assert.match(
   mobile,
-  /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*latam-user-model-v61\.svg[\s\S]*approved-v6\/azul\.webp[\s\S]*riachuelo.*midway[\s\S]*riachuelo-mastercard-visual\.svg/i,
+  /mercado.*meli[\s\S]*approved-v6\/mercado\.webp[\s\S]*latam-user-model-v61\.svg[\s\S]*azul-itau-platinum-v659\.svg[\s\S]*riachuelo.*midway[\s\S]*riachuelo-mastercard-visual\.svg/i,
   'Carrossel deve usar artes recortadas e estáveis para preencher os cartões ativos.',
 );
 assert.match(css, /CONTRATO DE VIEWPORT FIXO[\s\S]*\.meg2-scroll\{[\s\S]*overflow:hidden!important/,
@@ -498,6 +500,42 @@ assert.match(
   cardCenter,
   /meg3-cardcenter-row-icon icon-\$\{icon\}/,
   'Ícones da Central devem carregar a identidade visual da classificação resolvida.',
+);
+
+assert.match(
+  mobile,
+  /VEROCARD_ART_URL = asset\('assets\/cards\/verocard-alimentacao-v659\.svg'\)/,
+  'Verocard deve usar arte local horizontal para não depender de imagem remota esticada.',
+);
+assert.doesNotMatch(
+  mobile,
+  /verocard\.com\.br\/wp-content\/uploads/i,
+  'APK não pode voltar a usar a arte remota vertical do Verocard.',
+);
+assert.match(
+  cardCenter,
+  /data-card-identity=\{cardLabel\}[\s\S]*data-card-identity="Verocard Alimentação"/,
+  'Central deve identificar a arte ativa para enquadramento individual por cartão.',
+);
+assert.match(
+  cardCenterCss,
+  /CENTRAL V10[\s\S]*width:min\(100vw,620px\)!important[\s\S]*max-width:100vw!important[\s\S]*overflow-x:hidden!important/,
+  'Central de qualquer cartão deve ficar rigidamente contida no viewport.',
+);
+assert.match(
+  cardCenterCss,
+  /\.meg3-cardcenter>header h2\{[\s\S]*-webkit-line-clamp:2[\s\S]*overflow-wrap:anywhere/,
+  'Títulos longos da Central devem caber sem expulsar o botão fechar.',
+);
+assert.match(
+  css,
+  /CARTÕES V10[\s\S]*\.meg2-card-detail\{[\s\S]*width:min\(100vw,560px\)!important[\s\S]*overflow-x:hidden!important/,
+  'Modal de detalhe da compra deve obedecer ao viewport em qualquer cartão.',
+);
+assert.match(
+  benefitCss,
+  /BENEFÍCIO V10[\s\S]*width:min\(100vw,620px\)!important[\s\S]*overflow-x:hidden!important/,
+  'Modal do benefício também deve seguir a mesma regra responsiva dos cartões.',
 );
 
 assert.match(
