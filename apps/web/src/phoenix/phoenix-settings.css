@@ -228,6 +228,9 @@
 .px-settings-sync-banner small { margin-top:3px; color:var(--muted); font-size:9px; }
 .px-settings-sync-banner.ok { border-color:color-mix(in srgb,var(--brand) 30%,var(--line)); background:var(--ok-bg); }
 .px-settings-sync-banner.warn { border-color:color-mix(in srgb,var(--warn) 25%,var(--line)); background:var(--warn-bg); }
+.px-settings-repair-action{margin-top:10px;min-height:38px;padding:0 13px;border:1px solid color-mix(in srgb,var(--brand) 42%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--brand) 14%,var(--panel));color:var(--brand2);font-weight:900}
+.px-settings-repair-action:hover:not(:disabled){transform:translateY(-1px)}
+.px-settings-repair-action:disabled{opacity:.55;cursor:not-allowed}
 
 html[data-meg-dashboard-balance="off"] .px-dashboard-grid { display:none!important; }
 html[data-meg-dashboard-projection="off"] .px-dashboard-alert { display:none!important; }

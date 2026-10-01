@@ -19,6 +19,7 @@ const cardIdentity = readFileSync(new URL('./card-identity.ts', import.meta.url)
 const simpleEventBridge = readFileSync(new URL('./simple-event-form-bridge.ts', import.meta.url), 'utf8');
 const backupRestoreBridge = readFileSync(new URL('./backup-restore-bridge.ts', import.meta.url), 'utf8');
 const reconciliationBridge = readFileSync(new URL('./reconciliation-bridge.ts', import.meta.url), 'utf8');
+const normalizationReconcileBridge = readFileSync(new URL('./normalization-reconcile-bridge.ts', import.meta.url), 'utf8');
 const launchBusinessRules = readFileSync(new URL('./launch-business-rules-bridge.ts', import.meta.url), 'utf8');
 const operationalHome = readFileSync(new URL('./PhoenixOperationalMobileHome.tsx', import.meta.url), 'utf8');
 const operationalCss = readFileSync(new URL('./phoenix-operational-mobile.css', import.meta.url), 'utf8');
@@ -195,10 +196,14 @@ assert.match(history, /Exportar filtrado/);
 assert.match(users, /Administração habilitada/);
 assert.match(users, /Gerenciar acesso/);
 assert.match(settings, /Saúde do sistema/);
-assert.match(settings, /\/app-state\/normalization-preview/,
-  'Diagnóstico deve comparar as fontes em modo somente leitura.');
-assert.match(settings, /Nenhum reparo foi executado por esta consulta/,
-  'Tela de integridade não pode sugerir que a comparação alterou a base.');
+assert.match(settings, /readPhoenixNormalizationPreview/,
+  'Diagnóstico deve comparar as fontes pelo bridge homologado.');
+assert.match(normalizationReconcileBridge, /\/app-state\/normalization-preview/,
+  'Bridge deve manter a leitura de diagnóstico separada da mutação protegida.');
+assert.match(settings, /readPhoenixNormalizationPreview/,
+  'Comparar fontes deve permanecer uma leitura separada da ação de reconciliação.');
+assert.match(settings, /Comparar fontes/,
+  'Tela de integridade deve manter o diagnóstico explícito antes de qualquer reparo.');
 assert.match(settings, /getBiometricLoginStatus/,
   'Configurações Phoenix deve consultar o estado real da biometria no APK em vez de inventar disponibilidade.');
 assert.match(settings, /getPhoenixLocalNotificationStatus/,
@@ -265,6 +270,26 @@ assert.match(backupRestoreBridge, /loadPhoenixReadModel\(refreshMonth, \{ force:
   'Restauração deve reler o snapshot oficial depois da conferência.');
 assert.doesNotMatch(backupRestoreBridge, /replaceCloudTransactions/,
   'Restauração destrutiva não pode usar retry automático após conflito de revisão.');
+assert.match(settings, /Reconciliar espelho/,
+  'Diagnóstico deve permitir reconciliar o espelho somente após divergência confirmada.');
+assert.match(settings, /repairNormalizationMirror/,
+  'Configurações deve possuir fluxo explícito para a reconciliação protegida.');
+assert.match(settings, /normalizationPreview\.primary/,
+  'A ação deve permanecer condicionada ao modo normalized-primary.');
+assert.match(settings, /megConfirm/,
+  'Reconciliação do espelho deve exigir confirmação visual MEG.');
+assert.match(normalizationReconcileBridge, /\/app-state\/normalization-reconcile-primary/,
+  'Bridge deve usar o endpoint protegido específico para o reparo.');
+assert.match(normalizationReconcileBridge, /expectedRevision:\s*prepared\.revision/,
+  'Reparo deve ficar vinculado à revisão previamente conferida.');
+assert.match(normalizationReconcileBridge, /RECONCILIAR_ESPELHO_APPSTATE/,
+  'Bridge deve enviar a confirmação explícita exigida pelo backend.');
+assert.match(normalizationReconcileBridge, /clearPhoenixReadModelCache\(\)/,
+  'Após o reparo confirmado, fotografias antigas devem ser invalidadas.');
+assert.match(normalizationReconcileBridge, /loadPhoenixReadModel\(month, \{ force: true, forceStatic: true \}\)/,
+  'Após o reparo, Phoenix deve reler o snapshot oficial antes de informar sucesso.');
+assert.doesNotMatch(settings, /Nenhum reparo foi executado por esta consulta/,
+  'Diagnóstico não pode continuar apresentado como somente leitura após a liberação do fluxo protegido.');
 assert.match(settings, /Encerrar sessão/,
   'Configurações deve permitir revogar sessões ativas pelo contrato oficial.');
 assert.match(settings, /\/auth\/sessions\/\$\{encodeURIComponent\(session\.id\)\}/,

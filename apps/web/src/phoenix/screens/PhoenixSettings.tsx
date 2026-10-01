@@ -3,6 +3,11 @@ import { authenticatedRequest } from '../../app/auth-client';
 import type { PhoenixReadModel } from '../contracts';
 import { exportPhoenixTransactionBackup, inspectPhoenixTransactionBackup, restorePhoenixTransactionBackup } from '../backup-restore-bridge';
 import { megConfirm } from '../meg-confirm';
+import {
+  readPhoenixNormalizationPreview,
+  reconcilePhoenixPrimaryMirror,
+  type PhoenixNormalizationPreview,
+} from '../normalization-reconcile-bridge';
 import { getPhoenixLocalNotificationStatus, testPhoenixLocalNotification } from '../phoenix-native-notifications';
 import { PhoenixNotificationRecipients } from './PhoenixNotificationRecipients';
 import {
@@ -65,15 +70,6 @@ type DeliverySummary = {
   };
 };
 type LocalNotificationStatus = { native: boolean; permission: string; scheduled: number; platform: string };
-type NormalizationPreview = {
-  revision: number;
-  primary: boolean;
-  reconciled: boolean;
-  mode: string;
-  updatedAt?: string | null;
-  source: { sourceCount: number; validCount: number; invalidCount: number; fingerprint: string };
-  normalized: { count: number; fingerprint: string };
-};
 type DeviceSession = { id: string; userId: string; userName: string; deviceName: string; platform: string; createdAt: string; expiresAt: string; lastLoginAt?: string | null; active: boolean; revokedAt?: string | null };
 type DashboardPreferences = {
   balance: boolean;
@@ -145,9 +141,11 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
   const [notificationScheduleMessage, setNotificationScheduleMessage] = useState('');
   const [notificationScheduleError, setNotificationScheduleError] = useState('');
   const [deliverySummary, setDeliverySummary] = useState<DeliverySummary | null>(null);
-  const [normalizationPreview, setNormalizationPreview] = useState<NormalizationPreview | null>(null);
+  const [normalizationPreview, setNormalizationPreview] = useState<PhoenixNormalizationPreview | null>(null);
   const [normalizationPreviewError, setNormalizationPreviewError] = useState('');
   const [normalizationPreviewBusy, setNormalizationPreviewBusy] = useState(false);
+  const [normalizationRepairBusy, setNormalizationRepairBusy] = useState(false);
+  const [normalizationRepairMessage, setNormalizationRepairMessage] = useState('');
   const [appVersion, setAppVersion] = useState<string>('Consultando…');
   const [deviceSessions, setDeviceSessions] = useState<DeviceSession[]>([]);
   const [deviceSessionsBusy, setDeviceSessionsBusy] = useState(false);
@@ -307,16 +305,60 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
   }
 
   async function inspectNormalization() {
-    if (normalizationPreviewBusy) return;
+    if (normalizationPreviewBusy || normalizationRepairBusy) return;
     setNormalizationPreviewBusy(true);
     setNormalizationPreviewError('');
+    setNormalizationRepairMessage('');
     try {
-      const preview = await authenticatedRequest<NormalizationPreview>('/app-state/normalization-preview', { cache: 'no-store' });
+      const preview = await readPhoenixNormalizationPreview();
       setNormalizationPreview(preview);
     } catch (error) {
       setNormalizationPreviewError(error instanceof Error ? error.message : 'Não foi possível comparar as duas fontes.');
     } finally {
       setNormalizationPreviewBusy(false);
+    }
+  }
+
+  async function repairNormalizationMirror() {
+    if (!normalizationPreview || normalizationRepairBusy || normalizationPreview.reconciled) return;
+    if (!normalizationPreview.primary) {
+      setNormalizationPreviewError('A base normalizada ainda não é a fonte primária. Esta operação de reconciliação permanece bloqueada.');
+      return;
+    }
+
+    const confirmed = await megConfirm({
+      kicker: 'Integridade da base',
+      title: 'Reconciliar o espelho do AppState?',
+      message: `A base normalizada continuará sendo a fonte autoritativa. O MEG vai reconstruir apenas o espelho compatível do AppState usando ${normalizationPreview.normalized.count} evento(s) normalizado(s), na revisão ${normalizationPreview.revision}. Alterações concorrentes cancelam a operação automaticamente.`,
+      confirmLabel: 'Reconciliar espelho',
+      cancelLabel: 'Cancelar',
+      danger: false,
+    });
+    if (!confirmed) return;
+
+    setNormalizationRepairBusy(true);
+    setNormalizationPreviewError('');
+    setNormalizationRepairMessage('');
+    try {
+      const result = await reconcilePhoenixPrimaryMirror(normalizationPreview, data.month);
+      if (result.status === 'error') {
+        if (result.preview) setNormalizationPreview(result.preview);
+        setNormalizationPreviewError(result.message);
+        return;
+      }
+
+      setNormalizationPreview(result.preview);
+      onDataCommitted(result.snapshot);
+      const changed = result.repair.changed
+        ? `Espelho atualizado na revisão ${result.repair.revision ?? result.preview.revision}.`
+        : 'As fontes já estavam equivalentes no momento da gravação.';
+      const details = [
+        result.repair.refreshedEvents ? `${result.repair.refreshedEvents} origem(ns) atualizada(s)` : '',
+        result.repair.removedLegacyIds ? `${result.repair.removedLegacyIds} espelho(s) obsoleto(s) removido(s)` : '',
+      ].filter(Boolean).join(' · ');
+      setNormalizationRepairMessage(`${changed}${details ? ` ${details}.` : ''} Conferência final concluída.`);
+    } finally {
+      setNormalizationRepairBusy(false);
     }
   }
 
@@ -535,7 +577,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Sincronização</span><h2>Integridade da base</h2></div></div><div className={`px-settings-sync-banner ${normalizationOk ? 'ok' : 'warn'}`}><strong>{normalizationOk ? 'Tudo reconciliado' : 'Verificação necessária'}</strong><small>{data.normalization.updatedAt ? `Atualização: ${new Date(data.normalization.updatedAt).toLocaleString('pt-BR')}` : 'Horário de atualização não informado'}</small></div><dl><div><dt>Base primária</dt><dd>{data.normalization.primary ? 'Sim' : 'Não'}</dd></div><div><dt>Revisão</dt><dd>{data.normalization.revision}</dd></div><div><dt>Eventos normalizados</dt><dd>{data.normalization.normalized?.count ?? '—'}</dd></div></dl></article>
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Backup e dados</span><h2>Proteção dos lançamentos</h2><p>Exporte ou restaure os lançamentos compatíveis com o AppState. Os domínios nativos do MEG continuam preservados na base oficial.</p></div></div><input ref={backupFileRef} type="file" accept="application/json" hidden onChange={(event) => { void importBackup(event.target.files?.[0]); }} /><div className="px-settings-actions"><button type="button" disabled={backupBusy} onClick={() => { void exportBackup(); }}>{backupBusy ? 'Aguarde…' : 'Exportar backup'}</button><button type="button" disabled={backupBusy || !canRestoreBackup} onClick={() => backupFileRef.current?.click()}>Restaurar backup</button></div>{backupMessage ? <div className="px-settings-sync-banner ok"><strong>Backup confirmado</strong><small>{backupMessage}</small></div> : null}{backupError ? <div className="px-settings-sync-banner warn"><strong>Operação não concluída</strong><small>{backupError}</small></div> : null}<small className="px-settings-note">{canRestoreBackup ? 'A restauração exige confirmação explícita, revisão exata da base e conferência final antes de informar sucesso.' : 'Seu perfil pode exportar backups, mas não possui permissão para restaurar lançamentos.'}</small></article>
             <article className="px-card px-settings-card px-settings-devices"><div className="px-settings-card-head"><div><span className="px-kicker">Dispositivos e sessões</span><h2>{data.user.role === 'ADMIN' ? 'Acessos ao MEG' : 'Meus aparelhos'}</h2><p>{data.user.role === 'ADMIN' ? 'Sessões registradas para os usuários deste workspace.' : 'Aparelhos usados pela sua conta.'}</p></div><button type="button" onClick={() => { void refreshDeviceSessions(); }} disabled={deviceSessionsBusy || Boolean(sessionActionId)}>{deviceSessionsBusy ? 'Atualizando…' : 'Atualizar'}</button></div>{sessionActionMessage ? <div className="px-settings-sync-banner ok"><strong>Sessão encerrada</strong><small>{sessionActionMessage}</small></div> : null}{sessionActionError ? <div className="px-settings-sync-banner warn"><strong>Não foi possível encerrar</strong><small>{sessionActionError}</small></div> : null}<div className="px-settings-device-list">{deviceSessions.length ? deviceSessions.map((session) => <div className="px-settings-device-row" key={session.id}><div><strong>{session.deviceName}</strong><small>{data.user.role === 'ADMIN' ? session.userName + ' · ' : ''}{session.platform} · {session.active ? 'Sessão ativa' : 'Sessão encerrada'}</small></div><span><b>{session.lastLoginAt ? new Date(session.lastLoginAt).toLocaleString('pt-BR') : new Date(session.createdAt).toLocaleString('pt-BR')}</b><small>Último login</small></span><div className="px-settings-device-actions">{session.active ? <button className="danger" type="button" disabled={Boolean(sessionActionId) || deviceSessionsBusy} onClick={() => { void revokeDeviceSession(session); }}>{sessionActionId === session.id ? 'Encerrando…' : 'Encerrar sessão'}</button> : <span className="px-status archived">Encerrada</span>}</div></div>) : <p>Nenhuma sessão registrada.</p>}</div><small className="px-settings-note">Encerrar uma sessão revoga a renovação daquele acesso. A identificação automática depende das informações fornecidas pelo aparelho.</small></article>
-            <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Diagnóstico</span><h2>Reparo e normalização</h2></div><button type="button" disabled={normalizationPreviewBusy} onClick={() => { void inspectNormalization(); }}>{normalizationPreviewBusy ? 'Comparando…' : 'Comparar fontes'}</button></div><dl><div><dt>Reparo</dt><dd>{repair ? stateLabel(repair.status) : 'Não informado'}</dd></div><div><dt>Itens verificados</dt><dd>{repair?.scanned ?? '—'}</dd></div><div><dt>Itens reparados</dt><dd>{repair?.repaired ?? '—'}</dd></div><div><dt>Ocorrências</dt><dd>{repair?.issues ?? '—'}</dd></div><div><dt>Normalização API</dt><dd>{healthNormalization ? stateLabel(healthNormalization.status) : 'Não informado'}</dd></div></dl>{normalizationPreview ? <div className={`px-settings-sync-banner ${normalizationPreview.reconciled ? 'ok' : 'warn'}`}><strong>{normalizationPreview.reconciled ? 'Fontes reconciliadas' : 'Divergência confirmada em modo somente leitura'}</strong><small>AppState: {normalizationPreview.source.validCount} válidos · Normalizada: {normalizationPreview.normalized.count} · Inválidos na origem: {normalizationPreview.source.invalidCount} · Revisão {normalizationPreview.revision}. Nenhum reparo foi executado por esta consulta.</small></div> : null}{normalizationPreviewError ? <div className="px-settings-sync-banner warn"><strong>Não foi possível concluir a comparação</strong><small>{normalizationPreviewError}</small></div> : null}</article>
+            <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Diagnóstico</span><h2>Reparo e normalização</h2></div><button type="button" disabled={normalizationPreviewBusy || normalizationRepairBusy} onClick={() => { void inspectNormalization(); }}>{normalizationPreviewBusy ? 'Comparando…' : 'Comparar fontes'}</button></div><dl><div><dt>Reparo</dt><dd>{repair ? stateLabel(repair.status) : 'Não informado'}</dd></div><div><dt>Itens verificados</dt><dd>{repair?.scanned ?? '—'}</dd></div><div><dt>Itens reparados</dt><dd>{repair?.repaired ?? '—'}</dd></div><div><dt>Ocorrências</dt><dd>{repair?.issues ?? '—'}</dd></div><div><dt>Normalização API</dt><dd>{healthNormalization ? stateLabel(healthNormalization.status) : 'Não informado'}</dd></div></dl>{normalizationPreview ? <div className={`px-settings-sync-banner ${normalizationPreview.reconciled ? 'ok' : 'warn'}`}><strong>{normalizationPreview.reconciled ? 'Fontes reconciliadas' : normalizationPreview.primary ? 'Divergência confirmada' : 'Divergência em modo protegido'}</strong><small>AppState: {normalizationPreview.source.validCount} válidos · Normalizada: {normalizationPreview.normalized.count} · Inválidos na origem: {normalizationPreview.source.invalidCount} · Revisão {normalizationPreview.revision} · Fonte primária: {normalizationPreview.primary ? 'base normalizada' : 'AppState'}.</small>{!normalizationPreview.reconciled && normalizationPreview.primary ? <button className="px-settings-repair-action" type="button" disabled={normalizationRepairBusy || normalizationPreviewBusy} onClick={() => { void repairNormalizationMirror(); }}>{normalizationRepairBusy ? 'Reconciliando…' : 'Reconciliar espelho'}</button> : null}{!normalizationPreview.reconciled && !normalizationPreview.primary ? <small>O reparo automático permanece bloqueado porque a base normalizada ainda não é a fonte autoritativa.</small> : null}</div> : null}{normalizationRepairMessage ? <div className="px-settings-sync-banner ok"><strong>Reconciliação concluída</strong><small>{normalizationRepairMessage}</small></div> : null}{normalizationPreviewError ? <div className="px-settings-sync-banner warn"><strong>Operação não concluída</strong><small>{normalizationPreviewError}</small></div> : null}</article>
             <article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Sobre</span><h2>MEG Finance System</h2></div></div><p>Meu Equilíbrio Gerencial · Phoenix V15.</p><dl><div><dt>Aplicativo</dt><dd>{appVersion}</dd></div><div><dt>Perfil de dados</dt><dd>Base oficial do workspace</dd></div><div><dt>Usuários</dt><dd>{data.sourcePolicy.users}</dd></div></dl><details className="px-settings-advanced"><summary>Diagnóstico avançado</summary><dl><div><dt>Modo</dt><dd>{data.sourcePolicy.mode}</dd></div><div><dt>Eventos</dt><dd>{data.sourcePolicy.events}</dd></div><div><dt>Revisão</dt><dd>{data.normalization.revision}</dd></div></dl></details></article>
           </section>
         </> : null}

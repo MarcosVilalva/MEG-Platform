@@ -173,14 +173,20 @@ export async function writeBackNormalizedEventsToAppState(
   return { active: true, changed: true, revision: nextRevision, refreshedEvents: sourceRefresh.length };
 }
 
-export async function reconcilePrimaryAppStateFromNormalized(workspaceId: string) {
+export async function reconcilePrimaryAppStateFromNormalized(
+  workspaceId: string,
+  options: { expectedRevision?: number; actorId?: string } = {},
+) {
   return prisma.$transaction(async (tx) => {
     const current = await tx.appState.findUnique({
       where: { workspaceId },
       select: { id: true, state: true, revision: true },
     });
     if (!current || !isNormalizedPrimaryState(current.state)) {
-      return { active: false, changed: false, revision: current?.revision || 0 };
+      throw new Error('NORMALIZATION_PRIMARY_REQUIRED');
+    }
+    if (options.expectedRevision !== undefined && current.revision !== options.expectedRevision) {
+      throw new Error('NORMALIZATION_REVISION_CONFLICT');
     }
 
     const [events, archived] = await Promise.all([
@@ -212,9 +218,31 @@ export async function reconcilePrimaryAppStateFromNormalized(workspaceId: string
     const removedLegacyIds = [...new Set([...archivedLegacyIds, ...orphanLegacyIds])];
 
     if (!events.length && !removedLegacyIds.length) {
-      return { active: true, changed: false, revision: current.revision };
+      return { active: true, changed: false, revision: current.revision, refreshedEvents: 0, removedLegacyIds: 0 };
     }
 
-    return writeBackNormalizedEventsToAppState(tx, workspaceId, events, removedLegacyIds);
+    const result = await writeBackNormalizedEventsToAppState(tx, workspaceId, events, removedLegacyIds);
+    if (options.actorId && result.changed) {
+      await tx.auditLog.create({
+        data: {
+          userId: options.actorId,
+          entity: 'AppState',
+          entityId: current.id,
+          action: 'NORMALIZATION_PRIMARY_RECONCILED',
+          metadata: JSON.stringify({
+            schemaVersion: 1,
+            before: { revision: current.revision, transactionCount: sourceTransactions.length },
+            after: { revision: result.revision, activeLegacyEvents: events.length },
+            context: {
+              workspaceId,
+              refreshedEvents: result.refreshedEvents || 0,
+              removedLegacyIds: removedLegacyIds.length,
+            },
+          }),
+        },
+      });
+    }
+
+    return { ...result, removedLegacyIds: removedLegacyIds.length };
   }, { maxWait: 10_000, timeout: 120_000 });
 }
