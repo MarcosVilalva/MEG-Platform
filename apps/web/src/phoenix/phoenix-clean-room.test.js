@@ -397,6 +397,8 @@ assert.match(reconciliationBridge, /AJUSTE DE CONCILIAÇÃO BANCÁRIA/,
   'Ajuste deve ser identificado de forma explícita e auditável.');
 assert.doesNotMatch(webScreens, /Math\.random|mock|demo/i,
   'Web completo não pode fabricar dados de demonstração');
+assert.doesNotMatch(webScreens, /export function PhoenixReceivables|export function PhoenixRevenues|export function PhoenixCashflow|export function PhoenixBudgets/,
+  'Telas legadas de somente leitura não podem voltar a competir com as grades Web operacionais.');
 assert.match(commandPalette, /Buscar tela, lançamento, título, pendência, orçamento, cartão, conta, cliente ou usuário/);
 assert.match(commandPalette, /data\.events\.items/);
 assert.match(commandPalette, /data\.cards/);
