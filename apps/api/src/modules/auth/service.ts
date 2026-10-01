@@ -331,6 +331,7 @@ export async function deleteUserAccess(input: { actorId: string; userId: string 
   const scope = await assertSameWorkspace(input.actorId, input.userId);
   if (scope.actor.workspace.ownerId === target.id) throw new Error('PRIMARY_ADMIN_CANNOT_BE_DELETED');
   if (target.id === input.actorId) throw new Error('CANNOT_DELETE_OWN_ACCESS');
+  if (target.isActive || target.status === UserStatus.ACTIVE) throw new Error('USER_MUST_BE_INACTIVE_BEFORE_DELETE');
 
   await prisma.$transaction([
     prisma.auditLog.create({
