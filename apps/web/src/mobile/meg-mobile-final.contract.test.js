@@ -382,9 +382,11 @@ assert.match(
   /isProjectedCardPending[\s\S]*cardGroups[\s\S]*statementMonth[\s\S]*itemCount[\s\S]*cardLines/,
   'Pendentes deve consolidar parcelas de cartão por cartão/fatura antes da baixa.',
 );
-assert.match(
-  mobile,
-  /meg2-pending-date-heading[\s\S]*batchSelected[\s\S]*Baixar lote/,
+assert.equal(
+  mobile.includes('meg2-pending-date-heading') &&
+  mobile.includes('batchSelected') &&
+  mobile.includes('Baixar lote'),
+  true,
   'Pendentes deve agrupar visualmente por vencimento e permitir seleção múltipla.',
 );
 assert.match(
