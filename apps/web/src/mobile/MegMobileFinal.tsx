@@ -87,7 +87,7 @@ function asset(path: string) {
   }
 }
 
-const VEROCARD_ART_URL = 'https://verocard.com.br/wp-content/uploads/2025/01/verocardAlimentacaoBlack.png';
+const VEROCARD_ART_URL = asset('assets/cards/verocard-alimentacao-v659.svg');
 
 function normalizeCardText(value: unknown) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
@@ -110,7 +110,7 @@ function cardArt(name: string) {
     return asset('assets/cards/latam-user-model-v61.svg');
   }
   if (normalized.includes('azul')) {
-    return asset('assets/cards/approved-v6/azul.webp');
+    return asset('assets/cards/azul-itau-platinum-v659.svg');
   }
   if (normalized.includes('riachuelo') || normalized.includes('midway')) {
     return asset('assets/cards/riachuelo-mastercard-visual.svg');
