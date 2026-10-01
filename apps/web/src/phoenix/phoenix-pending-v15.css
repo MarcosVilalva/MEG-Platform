@@ -1389,6 +1389,11 @@
   background:rgba(255,255,255,.018);
 }
 
+.px-pending-row.is-search-focused {
+  background:rgba(74,236,222,.10);
+  box-shadow:inset 3px 0 0 rgba(74,236,222,.75);
+}
+
 .px-pending-row .px-pending-copy > strong {
   color:#eafff8;
   font-size:11px;
