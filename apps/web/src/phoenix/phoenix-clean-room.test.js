@@ -251,6 +251,16 @@ assert.match(backupRestoreBridge, /loadPhoenixReadModel\(refreshMonth, \{ force:
   'Restauração deve reler o snapshot oficial depois da conferência.');
 assert.doesNotMatch(backupRestoreBridge, /replaceCloudTransactions/,
   'Restauração destrutiva não pode usar retry automático após conflito de revisão.');
+assert.match(settings, /Encerrar sessão/,
+  'Configurações deve permitir revogar sessões ativas pelo contrato oficial.');
+assert.match(settings, /\/auth\/sessions\/\$\{encodeURIComponent\(session\.id\)\}/,
+  'Revogação deve apontar para a sessão exata selecionada.');
+assert.match(settings, /method:\s*'DELETE'/,
+  'Revogação de sessão deve usar a rota oficial DELETE.');
+assert.match(settings, /revokeDeviceSession/,
+  'Ação de segurança deve possuir fluxo explícito de revogação.');
+assert.match(settings, /megConfirm/,
+  'Encerrar sessão deve exigir confirmação MEG.');
 assert.match(settings, /Meu perfil/,
   'Configurações V15 deve expor uma área clara de perfil pessoal');
 assert.match(settings, /Escolher foto/,
