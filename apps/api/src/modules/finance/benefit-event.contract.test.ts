@@ -47,3 +47,12 @@ assert.match(server, /financeBenefitEventRoutes/,
   'Servidor deve registrar o domínio protegido de benefício.');
 
 console.log('Contrato do Benefício Alimentação validado: conta benefit, VEROCARD, saldo protegido, idempotência e auditoria.');
+
+assert.match(routes, /allowDuplicate: z\.boolean\(\)\.optional\(\)/,
+  'Benefício deve exigir confirmação explícita para gravar movimentação suspeita de duplicidade.');
+assert.match(routes, /POSSIBLE_DUPLICATE/,
+  'Duplicidade no Verocard deve ser conflito confirmável, nunca segunda gravação silenciosa.');
+assert.match(mutation, /findRecentFinancialEventDuplicate/,
+  'Writer do benefício deve compartilhar a mesma proteção semântica do financeiro.');
+assert.match(mutation, /duplicateOverride: Boolean\(input\.allowDuplicate\)/,
+  'Confirmação consciente de duplicidade no benefício deve permanecer auditável.');
