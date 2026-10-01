@@ -30,8 +30,24 @@ type BiometricStatus = { available: boolean; enabled: boolean; reason?: string |
 type NotificationStatus = {
   email?: { configured?: boolean; provider?: string; mode?: string; readyForAllUsers?: boolean; sender?: string };
   whatsapp?: { configured?: boolean; defaultRecipient?: string | null };
-  alexa?: { configured?: boolean; announcementsConfigured?: boolean; skillConfigured?: boolean; schedule?: string };
-  automation?: { configured?: boolean; schedule?: string };
+  alexa?: { configured?: boolean; announcementsConfigured?: boolean; skillConfigured?: boolean; enabled?: boolean; schedule?: string };
+  automation?: { configured?: boolean; enabled?: boolean; schedule?: string; quietHours?: string };
+};
+
+type NotificationSchedule = {
+  workspaceId?: string;
+  automationEnabled: boolean;
+  messagingMorningTime: string;
+  messagingMiddayTime: string;
+  messagingEveningTime: string;
+  alexaAutomationEnabled: boolean;
+  alexaWeekdayMorningTime: string;
+  alexaWeekdayEveningTime: string;
+  alexaWeekdayNightTime: string;
+  alexaWeekendTime: string;
+  quietHoursEnabled: boolean;
+  quietHoursStart: string;
+  quietHoursEnd: string;
 };
 type DeliverySummary = {
   sentLast24Hours?: number;
@@ -124,6 +140,10 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
   const [biometricStatus, setBiometricStatus] = useState<BiometricStatus | null>(null);
   const [biometricBusy, setBiometricBusy] = useState(false);
   const [notificationStatus, setNotificationStatus] = useState<NotificationStatus | null>(null);
+  const [notificationSchedule, setNotificationSchedule] = useState<NotificationSchedule | null>(null);
+  const [notificationScheduleBusy, setNotificationScheduleBusy] = useState(false);
+  const [notificationScheduleMessage, setNotificationScheduleMessage] = useState('');
+  const [notificationScheduleError, setNotificationScheduleError] = useState('');
   const [deliverySummary, setDeliverySummary] = useState<DeliverySummary | null>(null);
   const [normalizationPreview, setNormalizationPreview] = useState<NormalizationPreview | null>(null);
   const [normalizationPreviewError, setNormalizationPreviewError] = useState('');
@@ -193,11 +213,13 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
     if (data.user.role !== 'ADMIN') return () => { active = false; };
     void Promise.allSettled([
       authenticatedRequest<NotificationStatus>('/notifications/status', { cache: 'no-store' }),
-      authenticatedRequest<{ summary?: DeliverySummary }>('/notifications/deliveries', { cache: 'no-store' })
-    ]).then(([statusResult, deliveriesResult]) => {
+      authenticatedRequest<{ summary?: DeliverySummary }>('/notifications/deliveries', { cache: 'no-store' }),
+      authenticatedRequest<NotificationSchedule>('/notifications/schedule', { cache: 'no-store' })
+    ]).then(([statusResult, deliveriesResult, scheduleResult]) => {
       if (!active) return;
       if (statusResult.status === 'fulfilled') setNotificationStatus(statusResult.value);
       if (deliveriesResult.status === 'fulfilled') setDeliverySummary(deliveriesResult.value.summary || null);
+      if (scheduleResult.status === 'fulfilled') setNotificationSchedule(scheduleResult.value);
     });
     return () => { active = false; };
   }, [data.user.role]);
@@ -301,6 +323,53 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
   useEffect(() => {
     if (section === 'system' || section === 'security') void refreshDeviceSessions();
   }, [section]);
+
+  async function saveNotificationScheduleSettings() {
+    if (!notificationSchedule || notificationScheduleBusy) return;
+    setNotificationScheduleBusy(true);
+    setNotificationScheduleMessage('');
+    setNotificationScheduleError('');
+    try {
+      const payload = {
+        automationEnabled: notificationSchedule.automationEnabled,
+        messagingMorningTime: notificationSchedule.messagingMorningTime,
+        messagingMiddayTime: notificationSchedule.messagingMiddayTime,
+        messagingEveningTime: notificationSchedule.messagingEveningTime,
+        alexaAutomationEnabled: notificationSchedule.alexaAutomationEnabled,
+        alexaWeekdayMorningTime: notificationSchedule.alexaWeekdayMorningTime,
+        alexaWeekdayEveningTime: notificationSchedule.alexaWeekdayEveningTime,
+        alexaWeekdayNightTime: notificationSchedule.alexaWeekdayNightTime,
+        alexaWeekendTime: notificationSchedule.alexaWeekendTime,
+        quietHoursEnabled: notificationSchedule.quietHoursEnabled,
+        quietHoursStart: notificationSchedule.quietHoursStart,
+        quietHoursEnd: notificationSchedule.quietHoursEnd,
+      };
+      const saved = await authenticatedRequest<{ settings: NotificationSchedule; updatedAt?: string }>('/notifications/schedule', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+      setNotificationSchedule({ ...saved.settings, workspaceId: notificationSchedule.workspaceId });
+      const [status, deliveries] = await Promise.all([
+        authenticatedRequest<NotificationStatus>('/notifications/status', { cache: 'no-store' }),
+        authenticatedRequest<{ summary?: DeliverySummary }>('/notifications/deliveries', { cache: 'no-store' }),
+      ]);
+      setNotificationStatus(status);
+      setDeliverySummary(deliveries.summary || null);
+      setNotificationScheduleMessage('Agenda salva e aplicada ao watchdog deste workspace.');
+    } catch (cause) {
+      const raw = cause instanceof Error ? cause.message : '';
+      const messages: Record<string, string> = {
+        NOTIFICATION_TIME_OUTSIDE_AUTOMATION_WINDOW: 'Os horários automáticos precisam ficar entre 06:00 e 21:00.',
+        MESSAGING_SCHEDULE_ORDER_INVALID: 'Os três horários de alertas devem ficar em ordem e separados por pelo menos 30 minutos.',
+        ALEXA_SCHEDULE_ORDER_INVALID: 'Os horários da Alexa em dias úteis devem ficar em ordem e separados por pelo menos 30 minutos.',
+        QUIET_HOURS_RANGE_INVALID: 'O início e o fim do período silencioso não podem ser iguais.',
+      };
+      const code = Object.keys(messages).find((item) => raw.includes(item));
+      setNotificationScheduleError(code ? messages[code] : raw || 'Não foi possível salvar a agenda.');
+    } finally {
+      setNotificationScheduleBusy(false);
+    }
+  }
 
   async function testNotificationChannels() {
     setNotificationTestBusy(true);
@@ -457,7 +526,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
         {section === 'notifications' ? <>
           <section className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Notificações</span><h2>Canais do MEG</h2><p>Status real das integrações. Nenhuma chave ou segredo é exibido nesta tela.</p></div></div>{data.user.role !== 'ADMIN' ? <p>O administrador da base controla integrações e agendas de envio.</p> : <><div className="px-settings-channel-grid"><article><strong>E-mail</strong><span>{notificationStatus?.email?.configured ? 'Configurado' : 'Não configurado'}</span><small>{notificationStatus?.email?.provider ? `Provedor: ${notificationStatus.email.provider}` : 'Provedor não informado'}</small></article><article><strong>WhatsApp</strong><span>{notificationStatus?.whatsapp?.configured ? 'Configurado' : 'Não configurado'}</span><small>{notificationStatus?.whatsapp?.defaultRecipient ? `Destino padrão: ${notificationStatus.whatsapp.defaultRecipient}` : 'Sem destino padrão'}</small></article><article><strong>Alexa</strong><span>{notificationStatus?.alexa?.configured ? 'Configurada' : 'Não configurada'}</span><small>{notificationStatus?.alexa?.schedule || 'Agenda não informada'}</small></article><article><strong>Android</strong><span>{localNotificationStatus?.native ? localNotificationStatus.permission === 'granted' ? 'Permitido' : 'Permissão necessária' : 'Somente no aplicativo'}</span><small>{localNotificationStatus?.native ? `${localNotificationStatus.scheduled} alerta(s) agendado(s) neste aparelho` : 'Abra esta tela no Android para diagnosticar'}</small></article><article><strong>Automação</strong><span>{notificationStatus?.automation?.configured ? 'Ativa' : 'Não configurada'}</span><small>{notificationStatus?.automation?.schedule || 'Agenda não informada'}</small></article></div><div className="px-settings-notification-test"><button type="button" onClick={() => { void testNotificationChannels(); }} disabled={notificationTestBusy}>{notificationTestBusy ? 'Testando canais…' : 'Testar canais agora'}</button><small>Dispara um teste real de e-mail, WhatsApp e Alexa. No aplicativo Android, também agenda um aviso local para aparecer em alguns segundos.</small>{notificationTestResult ? <div className="px-settings-test-results">{['email','whatsapp','alexa','android'].map((channel) => { const item = notificationTestResult[channel]; return <span key={channel} className={item?.status === 'sent' ? 'ok' : 'warn'}><strong>{channel === 'email' ? 'E-mail' : channel === 'whatsapp' ? 'WhatsApp' : channel === 'android' ? 'Android' : 'Alexa'}</strong><b>{item?.status === 'sent' ? channel === 'android' ? 'Agendado' : 'Enviado' : item?.status === 'failed' ? 'Falhou' : 'Não enviado'}</b></span>; })}</div> : null}</div></>}</section>
           {data.user.role === 'ADMIN' ? <PhoenixNotificationRecipients /> : null}
-          {data.user.role === 'ADMIN' ? <section className="px-settings-grid"><article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Entrega</span><h2>Últimas 24 horas</h2></div></div><dl><div><dt>Enviadas</dt><dd>{deliverySummary?.sentLast24Hours ?? '—'}</dd></div><div><dt>Falhas</dt><dd>{deliverySummary?.failedLast24Hours ?? '—'}</dd></div><div><dt>Último sucesso</dt><dd>{deliverySummary?.lastSuccessAt ? new Date(deliverySummary.lastSuccessAt).toLocaleString('pt-BR') : 'Não informado'}</dd></div><div><dt>Última falha</dt><dd>{deliverySummary?.lastFailureAt ? new Date(deliverySummary.lastFailureAt).toLocaleString('pt-BR') : 'Nenhuma registrada'}</dd></div><div><dt>Watchdog</dt><dd>{deliverySummary?.watchdog?.status === 'attention' ? 'Requer atenção' : deliverySummary?.watchdog?.status === 'processing' ? 'Processando' : deliverySummary?.watchdog?.status === 'waiting' ? 'Aguardando próxima janela' : deliverySummary?.watchdog?.lastCheckAt ? 'Ativo' : 'Aguardando primeiro ciclo'}</dd></div><div><dt>Último ciclo registrado</dt><dd>{deliverySummary?.watchdog?.lastCheckAt ? new Date(deliverySummary.watchdog.lastCheckAt).toLocaleString('pt-BR') : 'Ainda não executado'}</dd></div><div><dt>Ciclos esperados</dt><dd>{deliverySummary?.watchdog?.expected?.length ? deliverySummary.watchdog.expected.map((item) => `${item.slot}: ${item.state === 'ok' ? 'OK' : item.state || '—'}`).join(' · ') : 'Nenhum ciclo vencido nesta janela'}</dd></div></dl></article><article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Agenda</span><h2>Horários atuais</h2><p>Os horários abaixo vêm da configuração ativa do servidor.</p></div></div><div className="px-settings-status-list"><span>Alertas · {notificationStatus?.automation?.schedule || 'Não informado'}</span><span>Alexa · {notificationStatus?.alexa?.schedule || 'Não informado'}</span></div><p className="px-settings-note">A próxima etapa desta tela será permitir editar essas agendas e o período silencioso sem expor credenciais.</p></article></section> : null}
+          {data.user.role === 'ADMIN' ? <section className="px-settings-grid"><article className="px-card px-settings-card"><div className="px-settings-card-head"><div><span className="px-kicker">Entrega</span><h2>Últimas 24 horas</h2></div></div><dl><div><dt>Enviadas</dt><dd>{deliverySummary?.sentLast24Hours ?? '—'}</dd></div><div><dt>Falhas</dt><dd>{deliverySummary?.failedLast24Hours ?? '—'}</dd></div><div><dt>Último sucesso</dt><dd>{deliverySummary?.lastSuccessAt ? new Date(deliverySummary.lastSuccessAt).toLocaleString('pt-BR') : 'Não informado'}</dd></div><div><dt>Última falha</dt><dd>{deliverySummary?.lastFailureAt ? new Date(deliverySummary.lastFailureAt).toLocaleString('pt-BR') : 'Nenhuma registrada'}</dd></div><div><dt>Watchdog</dt><dd>{deliverySummary?.watchdog?.status === 'attention' ? 'Requer atenção' : deliverySummary?.watchdog?.status === 'processing' ? 'Processando' : deliverySummary?.watchdog?.status === 'waiting' ? 'Aguardando próxima janela' : deliverySummary?.watchdog?.lastCheckAt ? 'Ativo' : 'Aguardando primeiro ciclo'}</dd></div><div><dt>Último ciclo registrado</dt><dd>{deliverySummary?.watchdog?.lastCheckAt ? new Date(deliverySummary.watchdog.lastCheckAt).toLocaleString('pt-BR') : 'Ainda não executado'}</dd></div><div><dt>Ciclos esperados</dt><dd>{deliverySummary?.watchdog?.expected?.length ? deliverySummary.watchdog.expected.map((item) => `${item.slot}: ${item.state === 'ok' ? 'OK' : item.state || '—'}`).join(' · ') : 'Nenhum ciclo vencido nesta janela'}</dd></div></dl></article><article className="px-card px-settings-card px-settings-schedule-card"><div className="px-settings-card-head"><div><span className="px-kicker">Agenda</span><h2>Horários automáticos</h2><p>Configuração real deste workspace, sempre no fuso America/Sao_Paulo.</p></div><button type="button" disabled={!notificationSchedule || notificationScheduleBusy} onClick={() => { void saveNotificationScheduleSettings(); }}>{notificationScheduleBusy ? 'Salvando…' : 'Salvar agenda'}</button></div>{notificationSchedule ? <><div className="px-settings-schedule-section"><div className="px-settings-schedule-title"><div><strong>Alertas financeiros</strong><small>Resumo da manhã e lembretes de vencimento.</small></div><button type="button" className={notificationSchedule.automationEnabled ? 'is-on' : ''} aria-pressed={notificationSchedule.automationEnabled} onClick={() => setNotificationSchedule((current) => current ? { ...current, automationEnabled: !current.automationEnabled } : current)}>{notificationSchedule.automationEnabled ? 'Ativos' : 'Pausados'}</button></div><div className="px-settings-time-grid"><label><span>Manhã</span><input type="time" min="06:00" max="21:00" value={notificationSchedule.messagingMorningTime} onChange={(event) => setNotificationSchedule((current) => current ? { ...current, messagingMorningTime: event.target.value } : current)} /></label><label><span>Meio do dia</span><input type="time" min="06:00" max="21:00" value={notificationSchedule.messagingMiddayTime} onChange={(event) => setNotificationSchedule((current) => current ? { ...current, messagingMiddayTime: event.target.value } : current)} /></label><label><span>Noite</span><input type="time" min="06:00" max="21:00" value={notificationSchedule.messagingEveningTime} onChange={(event) => setNotificationSchedule((current) => current ? { ...current, messagingEveningTime: event.target.value } : current)} /></label></div></div><div className="px-settings-schedule-section"><div className="px-settings-schedule-title"><div><strong>Alexa</strong><small>Briefing e lembretes falados.</small></div><button type="button" className={notificationSchedule.alexaAutomationEnabled ? 'is-on' : ''} aria-pressed={notificationSchedule.alexaAutomationEnabled} onClick={() => setNotificationSchedule((current) => current ? { ...current, alexaAutomationEnabled: !current.alexaAutomationEnabled } : current)}>{notificationSchedule.alexaAutomationEnabled ? 'Ativa' : 'Pausada'}</button></div><div className="px-settings-time-grid four"><label><span>Útil · manhã</span><input type="time" min="06:00" max="21:00" value={notificationSchedule.alexaWeekdayMorningTime} onChange={(event) => setNotificationSchedule((current) => current ? { ...current, alexaWeekdayMorningTime: event.target.value } : current)} /></label><label><span>Útil · tarde</span><input type="time" min="06:00" max="21:00" value={notificationSchedule.alexaWeekdayEveningTime} onChange={(event) => setNotificationSchedule((current) => current ? { ...current, alexaWeekdayEveningTime: event.target.value } : current)} /></label><label><span>Útil · noite</span><input type="time" min="06:00" max="21:00" value={notificationSchedule.alexaWeekdayNightTime} onChange={(event) => setNotificationSchedule((current) => current ? { ...current, alexaWeekdayNightTime: event.target.value } : current)} /></label><label><span>Fim de semana</span><input type="time" min="06:00" max="21:00" value={notificationSchedule.alexaWeekendTime} onChange={(event) => setNotificationSchedule((current) => current ? { ...current, alexaWeekendTime: event.target.value } : current)} /></label></div></div><div className="px-settings-schedule-section"><div className="px-settings-schedule-title"><div><strong>Período silencioso</strong><small>Bloqueia ciclos automáticos dentro desta janela.</small></div><button type="button" className={notificationSchedule.quietHoursEnabled ? 'is-on' : ''} aria-pressed={notificationSchedule.quietHoursEnabled} onClick={() => setNotificationSchedule((current) => current ? { ...current, quietHoursEnabled: !current.quietHoursEnabled } : current)}>{notificationSchedule.quietHoursEnabled ? 'Ativo' : 'Desativado'}</button></div><div className="px-settings-time-grid two"><label><span>Início</span><input type="time" value={notificationSchedule.quietHoursStart} onChange={(event) => setNotificationSchedule((current) => current ? { ...current, quietHoursStart: event.target.value } : current)} /></label><label><span>Fim</span><input type="time" value={notificationSchedule.quietHoursEnd} onChange={(event) => setNotificationSchedule((current) => current ? { ...current, quietHoursEnd: event.target.value } : current)} /></label></div></div>{notificationScheduleMessage ? <div className="px-settings-sync-banner ok"><strong>Agenda atualizada</strong><small>{notificationScheduleMessage}</small></div> : null}{notificationScheduleError ? <div className="px-settings-sync-banner warn"><strong>Agenda não salva</strong><small>{notificationScheduleError}</small></div> : null}<div className="px-settings-status-list"><span>Alertas · {notificationStatus?.automation?.schedule || 'Não informado'}</span><span>Alexa · {notificationStatus?.alexa?.schedule || 'Não informado'}</span><span>Silêncio · {notificationStatus?.automation?.quietHours || 'Não informado'}</span></div></> : <p className="px-settings-note">Carregando agenda do workspace…</p>}</article></section> : null}
         </> : null}
 
         {section === 'system' ? <>
