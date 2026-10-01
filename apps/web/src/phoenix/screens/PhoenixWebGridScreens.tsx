@@ -406,18 +406,26 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
           <thead><tr>
             <th>{header('Vencimento','dueDate','date')}</th><th>{header('Descrição','description','text')}</th><th>{header('Cliente','customer','multi',gridOptions.customer)}</th><th>{header('Parcela','installment','multi',gridOptions.installment)}</th><th>{header('Total','totalAmount','number')}</th><th>{header('Em aberto','openAmount','number')}</th><th>{header('Status','status','multi',gridOptions.status)}</th><th>{header('Recebimentos','receipts','number')}</th><th>Ações</th>
           </tr></thead>
-          <tbody>{visible.map((row) => <tr key={row.id}>
-            <td>{date.format(new Date(`${row.dueDate}T12:00:00Z`))}</td><td><strong>{row.description}</strong></td><td>{row.customer}</td><td>{row.installment}</td><td className="px-money">{money.format(Number(row.totalAmount))}</td><td className="px-money">{money.format(Number(row.openAmount))}</td><td><span className={`px-status ${normalize(row.status).replace(/\s+/g,'-')}`}>{row.status}</span></td><td>{row.receipts}</td><td><div className="meg-web-row-actions">{Number(row.openAmount) > 0 ? <button type="button" disabled={!canWrite} onClick={() => openReceipt(row.id)}>Receber</button> : <span className="px-status reconciled">Quitado</span>}</div></td>
-          </tr>)}</tbody>
+          <tbody>{visible.map((row) => {
+            const target = data.receivables.find((item) => item.id === row.id);
+            const editable = Boolean(target && !target.receipts.length && !['paid', 'cancelled'].includes(target.status));
+            return <tr key={row.id}>
+              <td>{date.format(new Date(`${row.dueDate}T12:00:00Z`))}</td><td><strong>{row.description}</strong></td><td>{row.customer}</td><td>{row.installment}</td><td className="px-money">{money.format(Number(row.totalAmount))}</td><td className="px-money">{money.format(Number(row.openAmount))}</td><td><span className={`px-status ${normalize(row.status).replace(/\s+/g,'-')}`}>{row.status}</span></td><td>{row.receipts}</td><td><div className="meg-web-row-actions">
+                {target?.status === 'cancelled' ? <span className="px-status archived">Cancelado</span> : Number(row.openAmount) > 0 ? <button type="button" disabled={!canWrite} onClick={() => openReceipt(row.id)}>Receber</button> : <span className="px-status reconciled">Quitado</span>}
+                {editable ? <button type="button" disabled={!canWrite || busy} onClick={() => openEditTitle(row.id)}>Editar</button> : null}
+                {editable && canCancel ? <button type="button" className="danger" disabled={busy} onClick={() => { void cancelTitle(row.id); }}>Cancelar</button> : null}
+              </div></td>
+            </tr>;
+          })}</tbody>
         </table>
         {!visible.length ? <p className="px-empty">Nenhum título corresponde aos filtros aplicados.</p> : null}
       </div>
     </section>
 
     {newTitleOpen && typeof document !== 'undefined' ? createPortal(<div className="meg-web-receivable-overlay">
-      <button className="meg-web-receivable-backdrop" type="button" aria-label="Fechar novo título" disabled={busy} onClick={() => setNewTitleOpen(false)} />
+      <button className="meg-web-receivable-backdrop" type="button" aria-label="Fechar editor de título" disabled={busy} onClick={closeTitleEditor} />
       <section className="meg-web-receivable-dialog" role="dialog" aria-modal="true" aria-labelledby="meg-new-receivable-title">
-        <header><div><span className="px-kicker">Contas a receber</span><h2 id="meg-new-receivable-title">Novo título</h2><p>Cadastre uma obrigação de recebimento sem alterar o caixa antes da baixa real.</p></div><button type="button" disabled={busy} onClick={() => setNewTitleOpen(false)}>×</button></header>
+        <header><div><span className="px-kicker">Contas a receber</span><h2 id="meg-new-receivable-title">{editingTitle ? 'Editar título' : 'Novo título'}</h2><p>{editingTitle ? 'A edição é permitida somente enquanto nenhum recebimento tiver sido registrado.' : 'Cadastre uma obrigação de recebimento sem alterar o caixa antes da baixa real.'}</p></div><button type="button" disabled={busy} onClick={closeTitleEditor}>×</button></header>
         <div className="meg-web-receivable-form">
           <label><span>Cliente</span><select value={titleDraft.customerId} onChange={(event) => setTitleDraft((current) => ({ ...current, customerId:event.target.value }))}><option value="">Sem cliente vinculado</option>{activeCustomers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           <label className="wide"><span>Descrição *</span><input autoFocus maxLength={160} value={titleDraft.description} onChange={(event) => setTitleDraft((current) => ({ ...current, description:event.target.value }))} /></label>
@@ -426,7 +434,7 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
           <label className="wide"><span>Observações</span><textarea maxLength={500} value={titleDraft.notes} onChange={(event) => setTitleDraft((current) => ({ ...current, notes:event.target.value }))} /></label>
           {message ? <div className="meg-web-form-feedback wide">{message}</div> : null}
         </div>
-        <footer><button type="button" disabled={busy} onClick={() => setNewTitleOpen(false)}>Cancelar</button><button className="px-primary-action" type="button" disabled={busy || !canWrite} onClick={() => void createTitle()}>{busy ? 'Confirmando…' : 'Criar título'}</button></footer>
+        <footer><button type="button" disabled={busy} onClick={closeTitleEditor}>Cancelar</button><button className="px-primary-action" type="button" disabled={busy || !canWrite} onClick={() => void saveTitle()}>{busy ? 'Confirmando…' : editingTitle ? 'Salvar alterações' : 'Criar título'}</button></footer>
       </section>
     </div>, document.body) : null}
 
