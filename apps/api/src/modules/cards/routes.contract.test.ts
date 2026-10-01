@@ -52,3 +52,13 @@ assert.match(management, /serializableFinancialTransaction/,
   'Cadastro de cartões deve permanecer em transação serializável.');
 
 console.log('Contrato transacional e de leitura de cartões validado.');
+assert.match(routes, /purchaseCreateSchema = purchaseSchema\.extend\(\{ operationId: operationSchema\.optional\(\), allowDuplicate: z\.boolean\(\)\.optional\(\) \}\)/,
+  'Compra no cartão deve aceitar override explícito somente depois do alerta de duplicidade.');
+assert.match(routes, /POSSIBLE_DUPLICATE/,
+  'Possível compra duplicada deve responder como conflito.');
+assert.match(service, /findRecentCardPurchaseDuplicate/,
+  'Compra no cartão deve consultar duplicidade semântica antes de criar parcelas.');
+assert.match(service, /allowDuplicate: undefined/,
+  'Override de duplicidade não pode mudar a identidade idempotente da compra.');
+assert.match(service, /duplicateOverride: Boolean\(input\.allowDuplicate\)/,
+  'Compra duplicada confirmada deve ficar registrada na auditoria.');
