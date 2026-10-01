@@ -171,7 +171,7 @@ assert.match(history, /Integridade confirmada pelo backend/,
 assert.match(history, /Histórico legado/,
   'Histórico anterior à auditoria normalizada deve permanecer preservado');
 assert.match(history, /Exportar filtrado/);
-assert.match(users, /Somente leitura/);
+assert.match(users, /Administração habilitada/);
 assert.match(users, /Gerenciar acesso/);
 assert.match(settings, /Saúde do sistema/);
 assert.match(settings, /\/app-state\/normalization-preview/,
