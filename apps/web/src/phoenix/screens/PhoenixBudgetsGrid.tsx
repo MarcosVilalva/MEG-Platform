@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { financeClient, type BudgetOverview } from '../../app/finance-client';
 import type { PhoenixReadModel } from '../contracts';
@@ -51,14 +51,18 @@ async function officialBudgetSnapshot(data: PhoenixReadModel) {
 export function PhoenixBudgetsGrid({
   data,
   onDataCommitted,
+  focusRequest,
 }: {
   data: PhoenixReadModel;
   onDataCommitted: (snapshot: PhoenixReadModel) => void;
+  focusRequest?: { token: number; budgetId: string } | null;
 }) {
   const [editor, setEditor] = useState<BudgetEditor | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [formError, setFormError] = useState('');
+  const [focusedBudgetId, setFocusedBudgetId] = useState<string | null>(null);
+  const focusRequestTokenRef = useRef(0);
   const canWrite = ['ADMIN', 'MANAGER', 'OPERATOR'].includes(String(data.user.role));
   const budgets = [...data.budgets].sort((left, right) => left.group.localeCompare(right.group, 'pt-BR', { sensitivity: 'base' }));
 
@@ -66,6 +70,24 @@ export function PhoenixBudgetsGrid({
   const used = budgets.reduce((sum, item) => sum + Number(item.used || 0), 0);
   const available = total - used;
   const danger = budgets.filter((item) => item.status === 'danger').length;
+
+  useEffect(() => {
+    if (!focusRequest || focusRequest.token === focusRequestTokenRef.current) return;
+    const target = budgets.find((item) => item.id === focusRequest.budgetId);
+    if (!target) return;
+    focusRequestTokenRef.current = focusRequest.token;
+    setFocusedBudgetId(target.id);
+    const scrollTimer = window.setTimeout(() => {
+      document.querySelector<HTMLElement>(`[data-budget-id="${CSS.escape(target.id)}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 80);
+    const clearTimer = window.setTimeout(() => {
+      setFocusedBudgetId((current) => current === target.id ? null : current);
+    }, 3600);
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [budgets, focusRequest]);
 
   function openNew() {
     setMessage('');
@@ -217,7 +239,7 @@ export function PhoenixBudgetsGrid({
     </section>
 
     <section className="px-budget-grid meg-web-budget-grid">
-      {budgets.map((item) => <article className="px-card px-budget-card meg-web-budget-card" key={item.id}>
+      {budgets.map((item) => <article data-budget-id={item.id} className={`px-card px-budget-card meg-web-budget-card ${focusedBudgetId === item.id ? 'is-search-focused' : ''}`} key={item.id}>
         <div className="px-panel-head">
           <div><span>Grupo</span><h2>{item.group}</h2></div>
           <span className={`px-status ${item.status}`}>{item.percent.toFixed(0)}%</span>

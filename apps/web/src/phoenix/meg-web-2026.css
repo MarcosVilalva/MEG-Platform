@@ -1557,6 +1557,12 @@
   background:
     radial-gradient(circle at 100% 0%,rgba(52,217,202,.055),transparent 42%),
     rgba(7,42,45,.91);
+  transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease;
+}
+.meg-web-2026 .meg-web-budget-card.is-search-focused {
+  border-color:rgba(74,236,222,.42);
+  box-shadow:0 0 0 3px rgba(74,236,222,.08),0 18px 36px rgba(0,0,0,.18);
+  transform:translateY(-2px);
 }
 .meg-web-2026 .meg-web-budget-card dl {
   margin:0;
