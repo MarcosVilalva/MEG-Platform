@@ -52,12 +52,12 @@ function normalize(value: unknown) {
   return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
 }
 
-export function PhoenixCommandPalette({ data, onClose, onNavigate }: { data: PhoenixReadModel | null; onClose: () => void; onNavigate: (route: PhoenixRoute) => void }) {
+export function PhoenixCommandPalette({ data, allEvents, onClose, onNavigate }: { data: PhoenixReadModel | null; allEvents?: PhoenixReadModel['events']['items']; onClose: () => void; onNavigate: (route: PhoenixRoute) => void }) {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const results = useMemo(() => {
     const dynamic: SearchResult[] = data ? [
-      ...data.events.items.map((item) => ({ id: `event-${item.id}`, route: 'movements' as const, kind: item.type === 'income' ? 'Receita' : 'Lançamento', title: item.description, detail: [item.category?.name, item.account?.name, item.paymentMethod?.name].filter(Boolean).join(' · ') || 'Evento financeiro' })),
+      ...(allEvents ?? data.events.items).map((item) => ({ id: `event-${item.id}`, route: 'movements' as const, kind: item.type === 'income' ? 'Receita' : 'Lançamento', title: item.description, detail: [item.category?.name, item.account?.name, item.paymentMethod?.name].filter(Boolean).join(' · ') || 'Evento financeiro' })),
       ...data.cards.map((item) => ({ id: `card-${item.id}`, route: 'cards' as const, kind: 'Cartão', title: item.name, detail: item.brand || 'Cartão cadastrado' })),
       ...data.accounts.map((item) => ({ id: `account-${item.id}`, route: 'catalogs' as const, kind: 'Conta', title: item.name, detail: item.institution || item.type || 'Conta financeira' })),
       ...data.categories.map((item) => ({ id: `category-${item.id}`, route: 'catalogs' as const, kind: 'Classificação', title: item.name, detail: item.group || item.type || 'Cadastro financeiro' })),
@@ -71,7 +71,7 @@ export function PhoenixCommandPalette({ data, onClose, onNavigate }: { data: Pho
     const needle = normalize(query.trim());
     if (!needle) return all.slice(0, 12);
     return all.filter((item) => normalize(`${item.kind} ${item.title} ${item.detail}`).includes(needle)).slice(0, 24);
-  }, [data, query]);
+  }, [allEvents, data, query]);
 
   useEffect(() => {
     setActiveIndex(0);
