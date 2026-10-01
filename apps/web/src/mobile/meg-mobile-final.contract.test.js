@@ -10,6 +10,7 @@ const phoenixWebStyles = readFileSync(new URL('../phoenix/PhoenixWebStyles.ts', 
 const authCss = readFileSync(new URL('../phoenix/preview-auth-flow.css', import.meta.url), 'utf8');
 const coreScreens = readFileSync(new URL('./MegMobileCoreScreens.tsx', import.meta.url), 'utf8');
 const launchSheet = readFileSync(new URL('./MegMobileLaunchSheet.tsx', import.meta.url), 'utf8');
+const mobileHistory = readFileSync(new URL('./meg-mobile-description-history.ts', import.meta.url), 'utf8');
 const picker = readFileSync(new URL('./MegMobilePicker.tsx', import.meta.url), 'utf8');
 const pickerCss = readFileSync(new URL('./meg-mobile-picker.css', import.meta.url), 'utf8');
 const mobileIcons = readFileSync(new URL('./MegMobileIcon.tsx', import.meta.url), 'utf8');
@@ -21,7 +22,7 @@ const cardCenter = readFileSync(new URL('./MegMobileCardCenter.tsx', import.meta
 const cardCenterCss = readFileSync(new URL('./meg-mobile-card-center.css', import.meta.url), 'utf8');
 const benefitModal = readFileSync(new URL('./MegMobileBenefitModal.tsx', import.meta.url), 'utf8');
 const benefitCss = readFileSync(new URL('./meg-mobile-benefit.css', import.meta.url), 'utf8');
-const source = mobile + '\n' + css + '\n' + runtimeCss + '\n' + coreScreens + '\n' + launchSheet + '\n' + picker + '\n' + pickerCss + '\n' + mobileIcons + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
+const source = mobile + '\n' + css + '\n' + runtimeCss + '\n' + coreScreens + '\n' + launchSheet + '\n' + mobileHistory + '\n' + picker + '\n' + pickerCss + '\n' + mobileIcons + '\n' + coreCss + '\n' + launchCss + '\n' + settings + '\n' + settingsCss + '\n' + cardCenter + '\n' + benefitModal;
 
 assert.doesNotMatch(source, /\bpx-[a-z0-9-]+/i,
   'Reconstrução mobile final não pode reutilizar classes visuais .px-* do Phoenix legado.');
@@ -348,8 +349,8 @@ assert.match(
 
 assert.match(
   mobile,
-  /preparePhoenixPendingSettlement[\s\S]*runPhoenixPendingSettlement[\s\S]*Dar baixa[\s\S]*Revisar baixa[\s\S]*Confirmar e dar baixa/,
-  'Pendentes deve revisar e confirmar explicitamente a baixa real pelo gateway idempotente antes de retirar o compromisso da tela.',
+  /preparePhoenixPendingBatchSettlement[\s\S]*runPhoenixPendingBatchSettlement[\s\S]*Baixar lote[\s\S]*Revisar baixa[\s\S]*Confirmar e dar baixa/,
+  'Pendentes deve revisar e confirmar explicitamente a baixa atômica em lote pelo gateway idempotente.',
 );
 assert.match(
   mobile,
@@ -363,8 +364,8 @@ assert.match(
 );
 assert.match(
   mobile,
-  /setSelected\(null\)[\s\S]*setSettlementItem\(item\)[\s\S]*setSettlementStep\('form'\)/,
-  'Ao iniciar a baixa, o detalhe deve sair do caminho e abrir um fluxo próprio, sem sobreposição de modais.',
+  /setSelected\(null\)[\s\S]*setSettlementItems\(items\)[\s\S]*setSettlementStep\('form'\)/,
+  'Ao iniciar a baixa, o detalhe deve sair do caminho e abrir um fluxo próprio para um ou vários itens.',
 );
 assert.match(
   mobile,
@@ -375,6 +376,51 @@ assert.match(
   css,
   /PENDENTES BAIXA V2[\s\S]*z-index:2147482320!important[\s\S]*\.meg2-pending-balance-card\.danger[\s\S]*\.meg2-pending-confirm/,
   'Modal de baixa deve ficar acima do detalhe e exibir proteção visual de saldo e confirmação premium.',
+);
+assert.match(
+  mobile,
+  /isProjectedCardPending[\s\S]*cardGroups[\s\S]*statementMonth[\s\S]*itemCount[\s\S]*cardLines/,
+  'Pendentes deve consolidar parcelas de cartão por cartão/fatura antes da baixa.',
+);
+assert.match(
+  mobile,
+  /meg2-pending-date-heading[\s\S]*batchSelected[\s\S]*Baixar lote/,
+  'Pendentes deve agrupar visualmente por vencimento e permitir seleção múltipla.',
+);
+assert.match(
+  mobile,
+  /DETALHES DA FATURA[\s\S]*meg2-pending-card-lines[\s\S]*semanticIcon/,
+  'Fatura agrupada deve abrir detalhe com seus lançamentos e ícones semânticos antes da baixa.',
+);
+assert.match(
+  css,
+  /PENDENTES V3[\s\S]*\.meg2-pending-batchbar[\s\S]*\.meg2-pending-card-lines[\s\S]*place-items:start center!important/,
+  'Pendentes V3 deve manter barra de lote, detalhe de fatura e modais alinhados ao topo.',
+);
+assert.match(
+  css,
+  /\.meg2-pending-settle>footer \.secondary\{[\s\S]*background:linear-gradient[\s\S]*color:#cce5e2!important/,
+  'Cancelar da baixa deve seguir o padrão secundário teal e nunca voltar ao botão branco.',
+);
+assert.match(
+  launchSheet,
+  /visibleAccounts[\s\S]*mode === 'income' \? true[\s\S]*benefitIncome[\s\S]*isVerocard/,
+  'Receita deve permitir selecionar conta Benefício e restringir a forma a Verocard quando aplicável.',
+);
+assert.match(
+  launchSheet,
+  /benefitIncome[\s\S]*runPhoenixBenefitEventWrite[\s\S]*type: 'income'/,
+  'Crédito do Verocard deve usar o writer especializado de benefício como receita realizada.',
+);
+assert.match(
+  mobileHistory,
+  /if \(event\.type === 'income'\) return 'income'[\s\S]*primeMegMobileHistorySuggestions[\s\S]*prewarmMegMobileHistorySuggestions/,
+  'Histórico deve incluir receitas de benefício e ter índice rápido pré-aquecido.',
+);
+assert.match(
+  launchSheet,
+  /primeMegMobileHistorySuggestions\(data\.events\.items\)[\s\S]*prewarmMegMobileHistorySuggestions\(\)[\s\S]*}, 20\);/,
+  'Busca do histórico mobile deve responder primeiro pelo snapshot local e usar debounce curto.',
 );
 assert.match(
   launchSheet,
