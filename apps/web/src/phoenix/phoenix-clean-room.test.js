@@ -48,6 +48,8 @@ const homeFidelityV13Css = readFileSync(new URL('./phoenix-home-fidelity-v13.css
 const homePeriodSummary = readFileSync(new URL('./home-period-summary.ts', import.meta.url), 'utf8');
 const webScreens = readFileSync(new URL('./screens/PhoenixWebScreens.tsx', import.meta.url), 'utf8');
 const webGridScreens = readFileSync(new URL('./screens/PhoenixWebGridScreens.tsx', import.meta.url), 'utf8');
+const reportsCenter = readFileSync(new URL('./screens/PhoenixReportsCenter.tsx', import.meta.url), 'utf8');
+const megWebCss = readFileSync(new URL('./meg-web-2026.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
@@ -1329,6 +1331,19 @@ assert.match(webGridScreens, /Confirmar estorno/,
   'Estorno deve possuir confirmação explícita e motivo auditável.');
 assert.match(webGridScreens, /setReverseReceiptId/,
   'A seleção do recebimento a estornar deve permanecer explícita na interface.');
+
+assert.match(reportsCenter, /report\.rows\.map\(\(row, index\)/,
+  'Relatórios devem manter todas as linhas no DOM para impressão completa.');
+assert.doesNotMatch(reportsCenter, /report\.rows\.slice\(0,\s*12\)/,
+  'Impressão não pode ficar limitada aos 12 registros da prévia visual.');
+assert.match(reportsCenter, /meg-web-report-print-extra/,
+  'Linhas além da prévia devem ser marcadas para aparecer somente na impressão.');
+assert.match(megWebCss, /meg-web-report-print-extra\s*\{\s*display:none/,
+  'Linhas extras devem permanecer ocultas na visualização normal.');
+assert.match(megWebCss, /@media print[\s\S]*meg-web-report-print-extra[\s\S]*display:table-row!important/,
+  'Modo de impressão deve revelar todas as linhas do relatório.');
+assert.match(megWebCss, /@media print[\s\S]*meg-web-report-foot/,
+  'Aviso de prévia deve ser ocultado no documento impresso.');
 
 assert.match(phoenixApp, /onLogout/,
   'Phoenix deve expor saída de sessão ao preview isolado');
