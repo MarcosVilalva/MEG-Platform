@@ -1125,7 +1125,14 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       <button className={(tab === 'overdue' ? 'active' : '') + (overdue.length ? ' has-count' : '')} onClick={() => changeTab('overdue')}>Vencidas {overdue.length ? <b>{overdue.length}</b> : null}</button>
     </div>
     <section className="meg2-pending-metrics">
-      <article className={selectedRows.length ? 'selected' : ''}><small>{selectedRows.length ? 'Total selecionado' : 'Total'}</small><strong>{money.format(selectedRows.length ? selectedTotal : total)}</strong>{selectedRows.length ? <span>{selectedRows.length}</span> : null}</article>
+      <article
+        className={selectedRows.length ? 'selected batch-action' : ''}
+        role={selectedRows.length ? 'button' : undefined}
+        tabIndex={selectedRows.length ? 0 : undefined}
+        aria-label={selectedRows.length ? `Abrir baixa em lote de ${selectedRows.length} compromisso${selectedRows.length === 1 ? '' : 's'}, total ${money.format(selectedTotal)}` : undefined}
+        onClick={selectedRows.length ? () => openSettlement(selectedRows) : undefined}
+        onKeyDown={selectedRows.length ? (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openSettlement(selectedRows); } } : undefined}
+      ><small>{selectedRows.length ? 'Total selecionado' : 'Total'}</small><strong>{money.format(selectedRows.length ? selectedTotal : total)}</strong>{selectedRows.length ? <span>{selectedRows.length}</span> : null}</article>
       <article><small>A pagar</small><strong>{money.format(total)}</strong><span>◷</span></article>
       <article className="late"><small>Vencidas</small><strong>{money.format(overdue.reduce((s, item) => s + item.amount, 0))}</strong><span>!</span></article>
     </section>
