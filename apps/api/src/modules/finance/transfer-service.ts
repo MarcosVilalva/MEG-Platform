@@ -2,7 +2,7 @@ import { Prisma, prisma } from '@meg/database';
 import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-receipt';
 import { resolveWorkspaceContext } from '../workspaces/service';
 import { recordFinancialAudit } from './audit';
-import { isFutureFinancialDay, isMonetaryAccountType, isPostedFinancialStatus, serializableFinancialTransaction } from './monetary-protection';
+import { SEMANTIC_DUPLICATE_WINDOW_MS, isFutureFinancialDay, isMonetaryAccountType, isPostedFinancialStatus, serializableFinancialTransaction } from './monetary-protection';
 import { buildTransferLegs } from './transfer-core';
 
 export class FinancialTransferError extends Error {
@@ -19,7 +19,21 @@ export type CreateFinancialTransferInput = {
   date: string;
   description?: string;
   notes?: string;
+  allowDuplicate?: boolean;
 };
+
+function normalizeTransferText(value: unknown) {
+  return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, ' ').toUpperCase();
+}
+
+function transferDayRange(day: string) {
+  const match = day.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) throw new FinancialTransferError('INVALID_TRANSFER_DATE');
+  return {
+    start: new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))),
+    end: new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + 1)),
+  };
+}
 
 function nextDayExclusive(day: string) {
   const match = day.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -76,7 +90,7 @@ export async function createFinancialTransfer(userId: string, input: CreateFinan
 
   const workspace = await resolveWorkspaceContext(userId);
   const dataOwnerId = workspace.workspace.ownerId;
-  const requestHash = mutationRequestHash({ ...input, operationId: undefined });
+  const requestHash = mutationRequestHash({ ...input, operationId: undefined, allowDuplicate: undefined });
 
   return serializableFinancialTransaction(async (tx) => {
     const previous = await tx.cloudMutationReceipt.findUnique({
@@ -102,8 +116,53 @@ export async function createFinancialTransfer(userId: string, input: CreateFinan
     if (!isMonetaryAccountType(source.type)) throw new FinancialTransferError('SOURCE_ACCOUNT_NOT_MONETARY');
     if (!isMonetaryAccountType(destination.type)) throw new FinancialTransferError('DESTINATION_ACCOUNT_NOT_MONETARY');
 
-    const sourceBalanceBefore = await sourceAccountBalanceAt(tx, dataOwnerId, source, input.date);
     const requested = Math.round(Number(input.amount) * 100) / 100;
+    if (!input.allowDuplicate) {
+      const { start, end } = transferDayRange(input.date);
+      const recent = await tx.financialEvent.findMany({
+        where: {
+          workspaceId: workspace.workspaceId,
+          userId: dataOwnerId,
+          archivedAt: null,
+          type: 'transfer',
+          status: 'paid',
+          accountId: source.id,
+          amount: requested,
+          signedAmount: -requested,
+          date: { gte: start, lt: end },
+          createdAt: { gte: new Date(Date.now() - SEMANTIC_DUPLICATE_WINDOW_MS) },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: { id:true, description:true, date:true, createdAt:true, sourcePayload:true },
+      });
+      const expectedDescription = normalizeTransferText(legs[0].description);
+      const duplicate = recent.find((event) => {
+        const payload = event.sourcePayload && typeof event.sourcePayload === 'object' && !Array.isArray(event.sourcePayload)
+          ? event.sourcePayload as Record<string, unknown>
+          : {};
+        return normalizeTransferText(event.description) === expectedDescription
+          && String(payload.transferLeg || '') === 'source'
+          && String(payload.counterpartyAccountId || '') === destination.id;
+      });
+      if (duplicate) {
+        throw new FinancialTransferError('POSSIBLE_DUPLICATE', {
+          duplicate: {
+            entity:'financial-transfer',
+            id:duplicate.id,
+            description:duplicate.description,
+            amount:requested,
+            date:duplicate.date.toISOString().slice(0,10),
+            createdAt:duplicate.createdAt.toISOString(),
+            sourceAccountName:source.name,
+            destinationAccountName:destination.name,
+          },
+          duplicateWindowSeconds:Math.round(SEMANTIC_DUPLICATE_WINDOW_MS / 1000),
+        });
+      }
+    }
+
+    const sourceBalanceBefore = await sourceAccountBalanceAt(tx, dataOwnerId, source, input.date);
     if (requested > sourceBalanceBefore) {
       throw new FinancialTransferError('INSUFFICIENT_SOURCE_ACCOUNT_BALANCE', {
         available: sourceBalanceBefore,
@@ -166,6 +225,7 @@ export async function createFinancialTransfer(userId: string, input: CreateFinan
         workspaceId: workspace.workspaceId,
         sourceAccountName: source.name,
         destinationAccountName: destination.name,
+        duplicateOverride: Boolean(input.allowDuplicate),
       },
     });
 
