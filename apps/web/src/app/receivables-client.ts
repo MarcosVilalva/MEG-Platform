@@ -23,6 +23,8 @@ export type Receipt = {
   interestAmount: string | number;
   fineAmount: string | number;
   financialEventId?: string | null;
+  reversedAt?: string | null;
+  reversalReason?: string | null;
   remaining?: number;
   receivableStatus?: string;
   idempotentReplay?: boolean;
@@ -108,6 +110,16 @@ export const receivablesClient = {
     body: JSON.stringify(data)
   }),
   receive: (id: string, data: ReceiveReceivableInput) => request<Receipt>(`/receivables/receivables/${id}/receipts`, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  reverseReceipt: (id: string, receiptId: string, data: { reason?: string | null; operationId?: string } = {}) => request<{
+    receipt: Receipt;
+    receivable: Receivable;
+    reopenedAmount: number;
+    archivedFinancialEventId?: string | null;
+    idempotentReplay?: boolean;
+  }>(`/receivables/receivables/${id}/receipts/${receiptId}/reverse`, {
     method: 'POST',
     body: JSON.stringify(data)
   })
