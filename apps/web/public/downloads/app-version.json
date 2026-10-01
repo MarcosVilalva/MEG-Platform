@@ -1,9 +1,9 @@
 {
-  "versionCode": 666,
-  "versionName": "2.0.666",
+  "versionCode": 667,
+  "versionName": "2.0.667",
   "downloadUrl": "https://marcosvilalva.github.io/MEG-Platform/downloads/MEG-Financas.apk",
-  "sha256": "f36588e846ae2199603c72d96b073cf2281e7176ca35d7de8a14b0b9ec1f7af0",
+  "sha256": "fab3525e81f3772974f757f9bf20554012b00717209495d839c8d8457fc3d6a3",
   "signerSha256": "8d35217dec4f552efb866320cfbe076ae6bc1b675cd9f617d8b000f955bec7d3",
   "mandatory": false,
-  "releaseNotes": "feat(mobile): acabamento de lançamentos e pendentes"
+  "releaseNotes": "fix(pending): agrupar faturas legadas por cartão"
 }
