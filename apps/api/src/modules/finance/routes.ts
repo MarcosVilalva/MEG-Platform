@@ -34,7 +34,7 @@ const writeRoles = ['ADMIN', 'MANAGER', 'OPERATOR'] as const;
 const adminRoles = ['ADMIN', 'MANAGER'] as const;
 const operationIdSchema = z.string().trim().min(8).max(128).optional();
 const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
-const createEventRequestSchema = createFinancialEventSchema.extend({ operationId: operationIdSchema });
+const createEventRequestSchema = createFinancialEventSchema.extend({ operationId: operationIdSchema, allowDuplicate: z.boolean().optional() });
 const settleLegacyEventRequestSchema = z.object({
   paidAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   accountId: z.string().trim().min(1),
@@ -108,7 +108,7 @@ function validationError(reply: FastifyReply, details: unknown) {
 
 function eventError(reply: FastifyReply, error: unknown) {
   if (error instanceof FinancialEventMutationError) {
-    const status = error.code === 'FINANCIAL_EVENT_NOT_FOUND' ? 404 : error.code === 'OPERATION_ID_REUSED' ? 409 : 400;
+    const status = error.code === 'FINANCIAL_EVENT_NOT_FOUND' ? 404 : ['OPERATION_ID_REUSED', 'POSSIBLE_DUPLICATE'].includes(error.code) ? 409 : 400;
     return reply.code(status).send({ error: error.code, ...(error.details || {}) });
   }
   if (!(error instanceof Error)) throw error;
