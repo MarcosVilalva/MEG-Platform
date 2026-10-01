@@ -231,6 +231,8 @@ export function MegMobileLaunchSheet({
     tone: isBenefitAccount(account) ? 'yellow' : 'cyan',
   }));
   const categoryOptions: MegMobilePickerOption[] = uniquePickerOptions(categories);
+  const selectedAccount = accounts.find((item) => item.id === accountId);
+  const benefitIncome = mode === 'income' && Boolean(selectedAccount && isBenefitAccount(selectedAccount));
   const paymentOptions: MegMobilePickerOption[] = methods
     .filter((method) => {
       if (mode === 'income') return benefitIncome ? isVerocard(method) : (isIncomeReceiptMethod(method) || isVerocard(method));
@@ -262,8 +264,6 @@ export function MegMobileLaunchSheet({
     }));
 
   const selectedMethod = methods.find((item) => item.id === paymentMethodId);
-  const selectedAccount = accounts.find((item) => item.id === accountId);
-  const benefitIncome = mode === 'income' && Boolean(selectedAccount && isBenefitAccount(selectedAccount));
   const mainMonetaryAccount = accounts.find((item) => !isBenefitAccount(item) && isMainMonetaryAccount(item));
   const pixMethod = methods.find((item) => isPixMethod(item));
 
