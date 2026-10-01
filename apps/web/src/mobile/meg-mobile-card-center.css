@@ -264,7 +264,7 @@
 .meg3-cardcenter>footer>*{min-width:0;max-width:100%}
 .meg3-cardcenter-hero{box-sizing:border-box;max-width:100%;min-width:0}
 .meg3-cardcenter-hero[data-card-identity^="Mercado Pago"] img{
-  object-position:51% 50%!important;transform:scale(1.025)!important;
+  object-position:center!important;transform:none!important;
 }
 .meg3-cardcenter-hero[data-card-identity^="LATAM PASS"] img,
 .meg3-cardcenter-hero[data-card-identity^="Azul Itaú"] img,
