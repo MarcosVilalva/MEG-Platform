@@ -10,6 +10,7 @@ export type MegMobilePickerOption = {
   badge?: string;
   icon?: MegIconName;
   imageSrc?: string;
+  imageKind?: 'card' | 'square';
   tone?: 'red' | 'green' | 'yellow' | 'cyan' | 'violet';
 };
 
@@ -101,7 +102,7 @@ export function MegMobilePicker({
 
         {filtered.map((item) => <button type="button" key={item.id} className={item.id === value ? 'selected' : ''} onClick={() => { onChange(item.id); close(); }}>
           {item.imageSrc
-            ? <span className="meg5-picker-option-icon image"><img src={item.imageSrc} alt="" draggable={false}/></span>
+            ? <span className={`meg5-picker-option-icon image ${item.imageKind === 'card' ? 'card' : 'square'}`}><img src={item.imageSrc} alt="" draggable={false}/></span>
             : item.icon
               ? <span className={`meg5-picker-option-icon ${item.tone || 'cyan'}`}><MegIcon name={item.icon} size={19}/></span>
               : null}
