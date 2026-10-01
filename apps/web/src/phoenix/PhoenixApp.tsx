@@ -416,7 +416,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   if (view === 'reports') return <PhoenixReportsCenter data={data} />;
   if (view === 'reconcile') return <PhoenixReconciliation data={data} onDataCommitted={onDataCommitted} />;
   if (view === 'analytics') return <PhoenixAnalytics data={data} />;
-  return <PhoenixBudgetsGrid data={data} onDataCommitted={onDataCommitted} />;
+  return <PhoenixBudgetsGrid data={data} onDataCommitted={onDataCommitted} focusRequest={nativeOperational ? undefined : searchBudgetRequest} />;
 }
 
 export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClose?: () => void }) {
