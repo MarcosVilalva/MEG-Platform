@@ -23,8 +23,10 @@ import {
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const isoDate = (value: string) => String(value || '').slice(0, 10);
 const amountForInput = (value: number) => value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const isMonetaryAccount = (account: Account) => !['benefit', 'credit'].includes(String(account.type || '').toLowerCase());
 
 type EditableStatus = 'planned' | 'paid' | 'reconciled';
+type DisplayEvent = ReturnType<typeof normalizeEvents>[number];
 
 function situationFor(status: EditableStatus, type: 'income' | 'expense') {
   if (status === 'reconciled') return 'CONCILIADO';
@@ -51,6 +53,7 @@ export function PersistentTransactions() {
   const globalPeriodStart = useAppStore((state) => state.periodStart);
   const globalPeriodEnd = useAppStore((state) => state.periodEnd);
   const [transactions, setTransactions] = useState<LegacyTransaction[]>([]);
+  const [normalizedEvents, setNormalizedEvents] = useState<FinancialEvent[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,6 +80,11 @@ export function PersistentTransactions() {
   const [categoryId, setCategoryId] = useState('');
   const [paymentMethodId, setPaymentMethodId] = useState('');
   const [creditCardId, setCreditCardId] = useState('');
+  const [transferMode, setTransferMode] = useState(false);
+  const [transferSourceAccountId, setTransferSourceAccountId] = useState('');
+  const [transferDestinationAccountId, setTransferDestinationAccountId] = useState('');
+  const [transferBalance, setTransferBalance] = useState<number | null>(null);
+  const [transferBalanceLoading, setTransferBalanceLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const descriptionRef = useRef<HTMLInputElement>(null);
@@ -91,6 +99,7 @@ export function PersistentTransactions() {
       let normalized: FinancialEvent[] = [];
       try { normalized = await listAllNormalizedEvents(); } catch { normalized = []; }
       const byLegacyId = new Map(normalized.filter((item) => item.legacyTransactionId).map((item) => [String(item.legacyTransactionId), item]));
+      setNormalizedEvents(normalized);
       setTransactions(cloud.state.transactions.map((item) => {
         const linked = byLegacyId.get(item.id);
         if (!linked) return item;
@@ -138,6 +147,7 @@ export function PersistentTransactions() {
   }, [selectedMonth, globalPeriodMode, globalPeriodStart, globalPeriodEnd]);
 
   const accountOptions = useMemo(() => compatibleAccounts(accounts, modality), [accounts, modality]);
+  const transferAccounts = useMemo(() => accounts.filter(isMonetaryAccount), [accounts]);
   const paymentOptions = useMemo<PaymentMethod[]>(() => {
     const compatible = compatiblePaymentMethods(methods, type, modality);
     if (compatible.length) return compatible;
@@ -152,6 +162,20 @@ export function PersistentTransactions() {
     }
   }, [accountId, accountOptions, accounts, modality]);
   useEffect(() => {
+    if (!transferMode || !transferSourceAccountId || !date) {
+      setTransferBalance(null);
+      return;
+    }
+    let active = true;
+    setTransferBalanceLoading(true);
+    void financeClient.getMonetaryBalance(transferSourceAccountId, date)
+      .then((result) => { if (active) setTransferBalance(result.available); })
+      .catch(() => { if (active) setTransferBalance(null); })
+      .finally(() => { if (active) setTransferBalanceLoading(false); });
+    return () => { active = false; };
+  }, [transferMode, transferSourceAccountId, date]);
+
+  useEffect(() => {
     if (modality === 'credit') {
       if (paymentMethodId) setPaymentMethodId('');
       return;
@@ -165,9 +189,33 @@ export function PersistentTransactions() {
   }, [modality, paymentMethodId, paymentOptions, type]);
 
   const events = useMemo(() => normalizeEvents(transactions), [transactions]);
-  const groups = useMemo(() => [...new Set(events.map((x) => x.group || x.category || 'Não informado'))].sort(), [events]);
-  const accountNames = useMemo(() => [...new Set(events.map((x) => x.account || 'Não informada'))].sort(), [events]);
-  const filtered = useMemo(() => events.filter((item) => {
+  const transferRows = useMemo<DisplayEvent[]>(() => normalizedEvents
+    .filter((item) => item.type === 'transfer' && item.sourcePayload?.transferLeg === 'source')
+    .map((item) => {
+      const destinationId = String(item.sourcePayload?.counterpartyAccountId || '');
+      const sourceName = item.account?.name || accounts.find((account) => account.id === item.accountId)?.name || 'Conta de origem';
+      const destinationName = accounts.find((account) => account.id === destinationId)?.name || 'Conta de destino';
+      return {
+        id: `transfer:${String(item.sourcePayload?.transferId || item.id)}`,
+        type: 'transfer',
+        status: item.status,
+        date: String(item.date).slice(0, 10),
+        competence: item.competence,
+        description: item.description || 'Transferência entre contas',
+        amount: Math.abs(Number(item.amount) || 0),
+        signedAmount: 0,
+        account: `${sourceName} → ${destinationName}`,
+        paymentMethod: 'Transferência interna',
+        group: 'Transferência entre contas',
+        category: 'Não se aplica',
+        tags: [],
+        notes: item.notes || '',
+      };
+    }), [normalizedEvents, accounts]);
+  const displayEvents = useMemo(() => [...events, ...transferRows], [events, transferRows]);
+  const groups = useMemo(() => [...new Set(displayEvents.map((x) => x.group || x.category || 'Não informado'))].sort(), [displayEvents]);
+  const accountNames = useMemo(() => [...new Set(displayEvents.map((x) => x.account || 'Não informada'))].sort(), [displayEvents]);
+  const filtered = useMemo(() => displayEvents.filter((item) => {
     const day = isoDate(item.date);
     const inPeriod = globalPeriodMode === 'all' ? true : periodMode === 'month' ? day.startsWith(selectedMonth) : day >= startDate && day <= endDate;
     const text = `${item.description} ${item.group || ''} ${item.category || ''} ${item.paymentMethod || ''} ${item.account || ''}`.toLowerCase();
@@ -176,7 +224,7 @@ export function PersistentTransactions() {
       && (filterStatus === 'all' || item.status === filterStatus || (filterStatus === 'paid' && item.status === 'reconciled'))
       && (filterGroup === 'all' || (item.group || item.category || 'Não informado') === filterGroup)
       && (filterAccount === 'all' || (item.account || 'Não informada') === filterAccount);
-  }).sort((a, b) => order === 'highest' ? Math.abs(b.signedAmount) - Math.abs(a.signedAmount) : order === 'oldest' ? isoDate(a.date).localeCompare(isoDate(b.date)) : isoDate(b.date).localeCompare(isoDate(a.date))), [events, globalPeriodMode, periodMode, selectedMonth, startDate, endDate, search, filterType, filterStatus, filterGroup, filterAccount, order]);
+  }).sort((a, b) => order === 'highest' ? Math.abs(b.amount) - Math.abs(a.amount) : order === 'oldest' ? isoDate(a.date).localeCompare(isoDate(b.date)) : isoDate(b.date).localeCompare(isoDate(a.date))), [displayEvents, globalPeriodMode, periodMode, selectedMonth, startDate, endDate, search, filterType, filterStatus, filterGroup, filterAccount, order]);
 
   const totals = useMemo(() => filtered.reduce((acc, item) => {
     if (item.signedAmount >= 0) acc.income += item.signedAmount;
@@ -190,6 +238,7 @@ export function PersistentTransactions() {
 
   function openNew() {
     setEditingId(null);
+    setTransferMode(false);
     setType('expense');
     setDescription('');
     setDate(dateInSaoPaulo());
@@ -212,6 +261,8 @@ export function PersistentTransactions() {
   }
 
   function changeType(next: 'income' | 'expense') {
+    if (transferMode && description === 'Transferência entre contas') setDescription('');
+    setTransferMode(false);
     setType(next);
     setCategoryId('');
     if (next === 'income') {
@@ -230,6 +281,7 @@ export function PersistentTransactions() {
   }
 
   function openEdit(source: LegacyTransaction) {
+    setTransferMode(false);
     const nextType = source.type === 'income' || String(source.launchType || '').toUpperCase() === 'RECEITA' ? 'income' : 'expense';
     const nextModality = inferLaunchModality(source, cards);
     const nextStatus: EditableStatus = String(source.status || source.situation || '').toLowerCase().includes('concili')
@@ -259,6 +311,55 @@ export function PersistentTransactions() {
     setError('');
     setShowForm(true);
     focusDescription();
+  }
+
+  function openTransferMode() {
+    const available = accounts.filter(isMonetaryAccount);
+    setTransferMode(true);
+    setEditingId(null);
+    setType('expense');
+    setDescription('Transferência entre contas');
+    setDate(dateInSaoPaulo());
+    setAmount('');
+    setTransferSourceAccountId(available[0]?.id || '');
+    setTransferDestinationAccountId(available.find((account) => account.id !== available[0]?.id)?.id || '');
+    setTransferBalance(null);
+    setError('');
+  }
+
+  async function submitTransfer(event: FormEvent) {
+    event.preventDefault();
+    if (!canWrite) return;
+    const value = parseBRL(amount);
+    if (!Number.isFinite(value) || value <= 0) { setError('Informe um valor maior que zero.'); return; }
+    if (!transferSourceAccountId || !transferDestinationAccountId) { setError('Selecione as contas de origem e destino.'); return; }
+    if (transferSourceAccountId === transferDestinationAccountId) { setError('A conta de destino deve ser diferente da conta de origem.'); return; }
+    if (date > dateInSaoPaulo()) { setError('Transferências futuras não são permitidas.'); return; }
+    if (transferBalance !== null && value > transferBalance) { setError('Saldo insuficiente na conta de origem para esta transferência.'); return; }
+
+    setBusy(true);
+    setError('');
+    try {
+      await financeClient.createTransfer({
+        operationId: `web-transfer:${crypto.randomUUID()}`,
+        sourceAccountId: transferSourceAccountId,
+        destinationAccountId: transferDestinationAccountId,
+        amount: value,
+        date,
+        description: description.trim() || 'Transferência entre contas',
+      });
+      invalidateFinanceSummary();
+      setShowForm(false);
+      setTransferMode(false);
+      setDescription('');
+      setAmount('');
+      await load(true);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : '';
+      if (/INSUFFICIENT_SOURCE_ACCOUNT_BALANCE/i.test(message)) setError('Saldo insuficiente na conta de origem.');
+      else if (/POSSIBLE_DUPLICATE/i.test(message)) setError('Possível transferência duplicada detectada. Revise origem, destino, data e valor antes de repetir.');
+      else setError(cause instanceof Error ? cause.message : 'A base não confirmou a transferência.');
+    } finally { setBusy(false); }
   }
 
   function draftPayment() {
@@ -428,8 +529,18 @@ export function PersistentTransactions() {
         <button className="secondary-button" onClick={clearFilters}>Limpar filtros</button>
         {canWrite && <button className="header-primary compact-new" onClick={() => showForm ? closeForm() : openNew()} aria-label="Novo lançamento">{showForm ? 'Fechar' : '+'}</button>}
       </div>
-      {showForm && <><button className="launch-drawer-backdrop" type="button" onClick={closeForm} aria-label="Fechar lançamento"/><aside className="launch-drawer" aria-label={editingId ? 'Editar lançamento' : 'Novo lançamento'}><header><div><span>{editingId ? 'EDITAR EVENTO' : 'NOVO EVENTO'}</span><h2>{editingId ? 'Editar lançamento' : 'Lançamento'}</h2></div><button type="button" onClick={closeForm} aria-label="Fechar">×</button></header><form className="transaction-quick-form" onSubmit={submit}>
-        <div className="launch-type-tabs" role="tablist"><button type="button" className={type === 'expense' ? 'active' : ''} onClick={() => changeType('expense')}>Despesa</button><button type="button" className={type === 'income' ? 'active' : ''} onClick={() => changeType('income')}>Receita</button><button type="button" disabled title="Disponível na etapa de transferências">Transferência</button></div>
+      {showForm && <><button className="launch-drawer-backdrop" type="button" onClick={closeForm} aria-label="Fechar lançamento"/><aside className="launch-drawer" aria-label={editingId ? 'Editar lançamento' : 'Novo lançamento'}><header><div><span>{editingId ? 'EDITAR EVENTO' : transferMode ? 'TRANSFERÊNCIA' : 'NOVO EVENTO'}</span><h2>{editingId ? 'Editar lançamento' : transferMode ? 'Transferir entre contas' : 'Lançamento'}</h2></div><button type="button" onClick={closeForm} aria-label="Fechar">×</button></header>{transferMode ? <form className="transaction-quick-form" onSubmit={submitTransfer}>
+        <div className="launch-type-tabs" role="tablist"><button type="button" onClick={() => changeType('expense')}>Despesa</button><button type="button" onClick={() => changeType('income')}>Receita</button><button type="button" className="active">Transferência</button></div>
+        <label>Descrição *<input ref={descriptionRef} value={description} onChange={(e) => setDescription(e.target.value)} required autoComplete="off" /></label>
+        <label>Conta de origem *<select value={transferSourceAccountId} onChange={(e) => setTransferSourceAccountId(e.target.value)} required><option value="">Selecione</option>{transferAccounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>
+        <label>Conta de destino *<select value={transferDestinationAccountId} onChange={(e) => setTransferDestinationAccountId(e.target.value)} required><option value="">Selecione</option>{transferAccounts.filter((account) => account.id !== transferSourceAccountId).map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>
+        <div className="launch-form-row"><label>Valor *<MEGCurrencyInput value={amount} onValueChange={setAmount} required /></label><label>Data *<input type="date" max={dateInSaoPaulo()} value={date} onChange={(e) => setDate(e.target.value)} required /></label></div>
+        <div className="launch-preview"><div><span>Saldo na origem</span><strong>{transferBalanceLoading ? 'Consultando...' : transferBalance === null ? '—' : brl.format(transferBalance)}</strong></div><div><span>Saldo após transferência</span><strong>{transferBalance === null ? '—' : brl.format(transferBalance - Math.max(0, parseBRL(amount)))}</strong></div><div><span>Regra</span><strong>Dupla partida auditável</strong></div></div>
+        {transferBalance !== null && parseBRL(amount) > transferBalance && <div className="notice danger">Saldo insuficiente na conta de origem.</div>}
+        <div className="notice">A transferência movimenta duas contas sem alterar o resultado consolidado. A API grava as duas pernas de forma atômica.</div>
+        <div className="launch-form-actions"><button className="auth-submit" disabled={busy || transferBalanceLoading || transferAccounts.length < 2}>{busy ? 'Confirmando na base...' : 'Confirmar transferência'}</button></div>
+      </form> : <form className="transaction-quick-form" onSubmit={submit}>
+        <div className="launch-type-tabs" role="tablist"><button type="button" className={type === 'expense' ? 'active' : ''} onClick={() => changeType('expense')}>Despesa</button><button type="button" className={type === 'income' ? 'active' : ''} onClick={() => changeType('income')}>Receita</button><button type="button" onClick={openTransferMode}>Transferência</button></div>
         <label>Descrição *<input ref={descriptionRef} value={description} onChange={(e) => setDescription(e.target.value)} required autoComplete="off" /></label>
         <label>Modalidade *<select value={modality} onChange={(e) => changeModality(e.target.value as LaunchModality)}><option value="cash">À vista</option>{type === 'expense' && <option value="credit">Crédito</option>}<option value="benefit">Alimentação</option></select><small>A modalidade limita automaticamente as combinações compatíveis.</small></label>
         {modality === 'credit'
@@ -441,10 +552,10 @@ export function PersistentTransactions() {
         <label>Situação<select value={type === 'income' && status === 'planned' ? 'paid' : status} onChange={(e) => setStatus(e.target.value as EditableStatus)}><option value="planned" disabled={type === 'income'}>Pendente</option><option value="paid">{type === 'income' ? 'Recebido' : 'Pago'}</option><option value="reconciled">Conciliado</option></select></label>
         <div className="launch-preview"><div><span>Modalidade</span><strong>{modalityLabel(modality)}</strong></div><div><span>Situação</span><strong>{status === 'reconciled' ? 'Conciliado' : type === 'income' || status === 'paid' ? type === 'income' ? 'Recebido' : 'Pago' : 'Pendente'}</strong></div><div><span>Sincronização</span><strong>{editingId ? 'Edição auditável' : 'Confirmação obrigatória'}</strong></div></div>
         <div className="launch-form-actions">{editingId && canArchive && <button type="button" className="secondary-button launch-delete" onClick={() => void archive(editingId)} disabled={busy}>Excluir lançamento</button>}<button className="auth-submit" disabled={busy}>{busy ? 'Confirmando na base...' : editingId ? 'Salvar alterações' : 'Confirmar e sincronizar'}</button></div>
-      </form></aside></>}
+      </form>}</aside></>}
       {error && <div className="notice danger">{error}</div>}
-      <div className="launch-toolbar transaction-filter-panel"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar descrição, grupo, conta ou pagamento"/><select value={filterType} onChange={(e) => setFilterType(e.target.value)}><option value="all">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option></select><select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}><option value="all">Todas as situações</option><option value="planned">Pendentes</option><option value="paid">Pagos/recebidos</option><option value="reconciled">Conciliados</option></select><select value={filterGroup} onChange={(e) => setFilterGroup(e.target.value)}><option value="all">Todos os grupos</option>{groups.map((item) => <option key={item}>{item}</option>)}</select><select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)}><option value="all">Todas as contas</option>{accountNames.map((item) => <option key={item}>{item}</option>)}</select><select value={order} onChange={(e) => setOrder(e.target.value as typeof order)}><option value="newest">Mais recentes</option><option value="oldest">Mais antigos</option><option value="highest">Maior valor</option></select></div>
-      <div className="transaction-grid-scroll fixed-grid"><div className="transaction-grid"><div className="transaction-grid-head"><span>Vencimento</span><span>Data da compra</span><span>Dia</span><span>Tipo</span><span>Descrição</span><span>Receita</span><span>Classificação</span><span>Grupo</span><span>Conta</span><span>Despesa</span><span>Forma de pagamento</span><span>Situação</span><span>Detalhes</span></div>{filtered.map((item) => { const source = transactions.find((entry) => entry.id === item.id); const purchaseDate = isoDate(source?.purchaseDate || source?.date || item.date); const dueDate = isoDate(source?.dueDate || source?.date || item.date); return <article className="transaction-grid-row" key={item.id}><time>{new Date(`${dueDate}T12:00:00`).toLocaleDateString('pt-BR')}</time><time>{new Date(`${purchaseDate}T12:00:00`).toLocaleDateString('pt-BR')}</time><span>{new Date(`${purchaseDate}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short' })}</span><span className={`transaction-kind ${item.type}`}>{item.type === 'income' ? 'Receita' : 'Despesa'}</span><div className="transaction-description"><strong>{item.description}</strong>{item.notes && <small>{item.notes}</small>}</div><strong className="positive">{item.type === 'income' ? brl.format(item.amount) : '—'}</strong><span>{item.type === 'income' ? 'Não se aplica' : source?.classification || item.category || 'Não informada'}</span><span>{item.group || item.category || 'Não informado'}</span><span>{item.account || 'Não informada'}</span><strong className="negative">{item.type === 'expense' ? brl.format(item.amount) : '—'}</strong><span>{item.paymentMethod || 'Não informado'}</span><span className={`status-pill ${item.status !== 'planned' ? 'active' : ''}`}>{item.status === 'planned' ? 'Pendente' : item.status === 'paid' ? item.type === 'income' ? 'Recebido' : 'Pago' : 'Conciliado'}</span><div className="table-actions">{canWrite && source && <button onClick={() => openEdit(source)} disabled={busy}>Editar</button>}{item.status === 'planned' && canWrite && <button onClick={() => void changeStatus(item.id, 'paid')} disabled={busy}>Baixar</button>}{item.status === 'paid' && canWrite && <button onClick={() => void changeStatus(item.id, 'reconciled')} disabled={busy}>Conciliar</button>}{canArchive && <button className="danger" onClick={() => void archive(item.id)} disabled={busy}>Excluir</button>}</div></article>; })}{loading && <p className="catalog-empty">Carregando dados da base...</p>}{!loading && !filtered.length && <p className="catalog-empty">Nenhum lançamento encontrado para os filtros aplicados.</p>}</div></div>
+      <div className="launch-toolbar transaction-filter-panel"><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar descrição, grupo, conta ou pagamento"/><select value={filterType} onChange={(e) => setFilterType(e.target.value)}><option value="all">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option><option value="transfer">Transferências</option></select><select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}><option value="all">Todas as situações</option><option value="planned">Pendentes</option><option value="paid">Pagos/recebidos</option><option value="reconciled">Conciliados</option></select><select value={filterGroup} onChange={(e) => setFilterGroup(e.target.value)}><option value="all">Todos os grupos</option>{groups.map((item) => <option key={item}>{item}</option>)}</select><select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)}><option value="all">Todas as contas</option>{accountNames.map((item) => <option key={item}>{item}</option>)}</select><select value={order} onChange={(e) => setOrder(e.target.value as typeof order)}><option value="newest">Mais recentes</option><option value="oldest">Mais antigos</option><option value="highest">Maior valor</option></select></div>
+      <div className="transaction-grid-scroll fixed-grid"><div className="transaction-grid"><div className="transaction-grid-head"><span>Vencimento</span><span>Data da compra</span><span>Dia</span><span>Tipo</span><span>Descrição</span><span>Receita</span><span>Classificação</span><span>Grupo</span><span>Conta</span><span>Despesa</span><span>Forma de pagamento</span><span>Situação</span><span>Detalhes</span></div>{filtered.map((item) => { const source = transactions.find((entry) => entry.id === item.id); const purchaseDate = isoDate(source?.purchaseDate || source?.date || item.date); const dueDate = isoDate(source?.dueDate || source?.date || item.date); return <article className="transaction-grid-row" key={item.id}><time>{new Date(`${dueDate}T12:00:00`).toLocaleDateString('pt-BR')}</time><time>{new Date(`${purchaseDate}T12:00:00`).toLocaleDateString('pt-BR')}</time><span>{new Date(`${purchaseDate}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short' })}</span><span className={`transaction-kind ${item.type}`}>{item.type === 'income' ? 'Receita' : item.type === 'transfer' ? 'Transferência' : 'Despesa'}</span><div className="transaction-description"><strong>{item.description}</strong>{item.notes && <small>{item.notes}</small>}</div><strong className="positive">{item.type === 'income' ? brl.format(item.amount) : '—'}</strong><span>{item.type === 'income' || item.type === 'transfer' ? 'Não se aplica' : source?.classification || item.category || 'Não informada'}</span><span>{item.group || item.category || 'Não informado'}</span><span>{item.account || 'Não informada'}</span><strong className="negative">{item.type === 'expense' ? brl.format(item.amount) : '—'}</strong><span>{item.paymentMethod || 'Não informado'}</span><span className={`status-pill ${item.status !== 'planned' ? 'active' : ''}`}>{item.type === 'transfer' ? 'Transferida' : item.status === 'planned' ? 'Pendente' : item.status === 'paid' ? item.type === 'income' ? 'Recebido' : 'Pago' : 'Conciliado'}</span><div className="table-actions">{canWrite && source && <button onClick={() => openEdit(source)} disabled={busy}>Editar</button>}{item.status === 'planned' && canWrite && <button onClick={() => void changeStatus(item.id, 'paid')} disabled={busy}>Baixar</button>}{item.status === 'paid' && canWrite && <button onClick={() => void changeStatus(item.id, 'reconciled')} disabled={busy}>Conciliar</button>}{source && canArchive && <button className="danger" onClick={() => void archive(item.id)} disabled={busy}>Excluir</button>}</div></article>; })}{loading && <p className="catalog-empty">Carregando dados da base...</p>}{!loading && !filtered.length && <p className="catalog-empty">Nenhum lançamento encontrado para os filtros aplicados.</p>}</div></div>
     </article>
   </section>;
 }
