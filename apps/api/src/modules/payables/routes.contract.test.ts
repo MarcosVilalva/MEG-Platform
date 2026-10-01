@@ -52,6 +52,14 @@ assert.match(service, /INSUFFICIENT_MONETARY_BALANCE/,
 assert.match(service, /FUTURE_PAYMENT_NOT_ALLOWED/,
   'Pagamento futuro não pode nascer diretamente como pago.');
 assert.match(monetaryProtection, /monetaryBalanceAt/,
-  'Cálculo de saldo monetário deve estar centralizado.');
+  'Cálculo de saldo monetário consolidado deve estar centralizado.');
+assert.match(monetaryProtection, /monetaryAccountBalanceAt/,
+  'Cálculo de saldo por conta e data deve estar centralizado.');
+assert.match(service, /isMonetaryAccountType[\s\S]*ACCOUNT_NOT_MONETARY/,
+  'Baixa de conta a pagar deve rejeitar conta não monetária.');
+assert.match(service, /monetaryAccountBalanceAt[\s\S]*INSUFFICIENT_MONETARY_BALANCE/,
+  'Baixa de conta a pagar deve bloquear saldo insuficiente na conta selecionada.');
+assert.match(service, /accountBalanceBefore[\s\S]*accountBalanceAfter/,
+  'Recibo da baixa deve devolver saldo antes e depois da movimentação.');
 
 console.log('Contrato transacional de contas a pagar validado.');
