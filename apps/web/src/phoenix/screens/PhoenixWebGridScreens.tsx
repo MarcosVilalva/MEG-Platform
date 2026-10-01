@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import type { PhoenixReadModel } from '../contracts';
@@ -102,7 +102,7 @@ function initialReceivableFilters(): ReceivableFilters {
 
 const receivableLabels: Record<ReceivableKey, string> = { dueDate: 'Vencimento', description: 'Descrição', customer: 'Cliente', installment: 'Parcela', totalAmount: 'Total', openAmount: 'Em aberto', status: 'Status', receipts: 'Recebimentos' };
 
-export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: PhoenixReadModel; onDataCommitted?: (snapshot: PhoenixReadModel) => void }) {
+export function PhoenixReceivablesGrid({ data, onDataCommitted, focusRequest }: { data: PhoenixReadModel; onDataCommitted?: (snapshot: PhoenixReadModel) => void; focusRequest?: { token: number; receivableId: string } | null }) {
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<ReceivableFilters>(initialReceivableFilters);
   const [sort, setSort] = useState<{ key: ReceivableKey; direction: PhoenixGridSortDirection } | null>(null);
@@ -113,7 +113,9 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
   const [reverseReason, setReverseReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [focusedReceivableId, setFocusedReceivableId] = useState<string | null>(null);
   const operationRef = useRef<{ fingerprint: string; id: string } | null>(null);
+  const focusRequestTokenRef = useRef(0);
   const today = todaySaoPaulo();
   const role = readSession()?.user.role;
   const canWrite = role === 'ADMIN' || role === 'MANAGER' || role === 'OPERATOR';
@@ -172,6 +174,27 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
   const reverseReceipt = receiptTarget && reverseReceiptId ? receiptTarget.receipts.find((item) => item.id === reverseReceiptId) || null : null;
   const canReceiveTarget = Boolean(receiptTarget && Number(receiptTarget.openAmount || 0) > 0 && !['paid', 'cancelled'].includes(receiptTarget.status));
   const editingTitle = editingTitleId ? data.receivables.find((item) => item.id === editingTitleId) || null : null;
+
+  useEffect(() => {
+    if (!focusRequest || focusRequest.token === focusRequestTokenRef.current) return;
+    const target = data.receivables.find((item) => item.id === focusRequest.receivableId);
+    if (!target) return;
+    focusRequestTokenRef.current = focusRequest.token;
+    setSearch('');
+    setFilters(initialReceivableFilters());
+    setSort(null);
+    setFocusedReceivableId(target.id);
+    const scrollTimer = window.setTimeout(() => {
+      document.querySelector<HTMLElement>(`[data-receivable-id="${CSS.escape(target.id)}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 80);
+    const clearTimer = window.setTimeout(() => {
+      setFocusedReceivableId((current) => current === target.id ? null : current);
+    }, 3600);
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [data.receivables, focusRequest]);
 
   function operationId(prefix: string, fingerprint: string) {
     if (operationRef.current?.fingerprint === fingerprint) return operationRef.current.id;
@@ -461,7 +484,7 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
             const target = data.receivables.find((item) => item.id === row.id);
             const activeReceipts = target?.receipts.filter((receipt) => !receipt.reversedAt) || [];
             const editable = Boolean(target && !activeReceipts.length && !['paid', 'cancelled'].includes(target.status));
-            return <tr key={row.id}>
+            return <tr key={row.id} data-receivable-id={row.id} className={focusedReceivableId === row.id ? 'is-search-focused' : undefined}>
               <td>{date.format(new Date(`${row.dueDate}T12:00:00Z`))}</td><td><strong>{row.description}</strong></td><td>{row.customer}</td><td>{row.installment}</td><td className="px-money">{money.format(Number(row.totalAmount))}</td><td className="px-money">{money.format(Number(row.openAmount))}</td><td><span className={`px-status ${normalize(row.status).replace(/\s+/g,'-')}`}>{row.status}</span></td><td>{row.receipts}</td><td><div className="meg-web-row-actions">
                 {target?.status === 'cancelled' ? <span className="px-status archived">Cancelado</span> : Number(row.openAmount) > 0 ? <button type="button" disabled={!canWrite} onClick={() => openReceipt(row.id)}>Receber</button> : <span className="px-status reconciled">Quitado</span>}
                 {target?.receipts.length ? <button type="button" disabled={busy} onClick={() => openReceipt(row.id)}>Histórico</button> : null}

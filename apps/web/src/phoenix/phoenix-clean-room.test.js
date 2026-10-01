@@ -409,15 +409,15 @@ assert.match(phoenixApp, /allEvents=\{!nativeOperational \? searchEvents \|\| un
   'Histórico completo da busca não pode ser injetado no runtime Android.');
 assert.match(commandPalette, /targetMonth: item\.competence \|\| String\(item\.date\)\.slice\(0, 7\)/,
   'Resultado de lançamento deve preservar a competência financeira encontrada.');
-assert.match(commandPalette, /await onNavigate\(result\.route, result\.targetMonth, result\.targetEventId\)[\s\S]*opened === false/,
-  'Busca só deve fechar depois que o destino confirmar a competência e o lançamento correto.');
+assert.match(commandPalette, /await onNavigate\(result\.route, result\.targetMonth, result\.targetId\)[\s\S]*opened === false/,
+  'Busca só deve fechar depois que o destino confirmar o alvo correto.');
 assert.match(phoenixApp, /openSearchResult[\s\S]*route === 'movements'[\s\S]*await applyMonthlyPeriod\(targetMonth\)[\s\S]*monthRef\.current !== targetMonth[\s\S]*return false/,
   'Lançamento histórico deve abrir Lançamentos na competência encontrada e permanecer na busca se a troca falhar.');
 assert.match(phoenixApp, /onNavigate=\{openSearchResult\}/,
   'Busca global deve usar a navegação com continuidade de período.');
-assert.match(commandPalette, /targetEventId: item\.id/,
-  'Resultado de lançamento deve preservar o identificador exato encontrado.');
-assert.match(phoenixApp, /setSearchEventRequest[\s\S]*eventId: targetEventId/,
+assert.match(commandPalette, /targetId: item\.id/,
+  'Resultados pesquisáveis devem preservar o identificador exato encontrado.');
+assert.match(phoenixApp, /setSearchEventRequest[\s\S]*eventId: targetId/,
   'Shell Web deve encaminhar o lançamento exato para a tela de Lançamentos.');
 assert.match(phoenixApp, /focusEventRequest=\{nativeOperational \? undefined : searchEventRequest\}/,
   'Foco vindo da busca deve permanecer exclusivo do Web.');
@@ -432,6 +432,20 @@ assert.match(commandPalette, /data\.accounts/);
 assert.match(commandPalette, /data\.customers/);
 assert.match(commandPalette, /data\.receivables\.map/,
   'Busca global deve localizar títulos a receber pelo domínio oficial.');
+assert.match(commandPalette, /route: 'receivables'[\s\S]*kind: 'Título a receber'[\s\S]*targetId: item\.id/,
+  'Resultado de Contas a receber deve preservar o título exato localizado.');
+assert.match(phoenixApp, /route === 'receivables' && targetId[\s\S]*setSearchReceivableRequest[\s\S]*receivableId: targetId/,
+  'Shell Web deve encaminhar o título exato para Contas a receber.');
+assert.match(phoenixApp, /focusRequest=\{nativeOperational \? undefined : searchReceivableRequest\}/,
+  'Foco de Recebíveis vindo da busca deve permanecer exclusivo do Web.');
+assert.match(webGridScreens, /focusRequest[\s\S]*setSearch\(''\)[\s\S]*setFilters\(initialReceivableFilters\(\)\)[\s\S]*setFocusedReceivableId\(target\.id\)/,
+  'Contas a receber deve remover filtros visuais que poderiam esconder o título localizado.');
+assert.match(webGridScreens, /data-receivable-id=\{row\.id\}[\s\S]*is-search-focused/,
+  'Título localizado deve possuir âncora e destaque visual na grade.');
+assert.match(webGridScreens, /CSS\.escape\(target\.id\)[\s\S]*scrollIntoView\(\{ block: 'center', behavior: 'smooth' \}\)/,
+  'Busca deve rolar suavemente até o título localizado.');
+assert.match(megWebCss, /\.px-data-table tbody tr\.is-search-focused/,
+  'Web deve possuir estilo dedicado para destacar o resultado localizado.');
 assert.match(commandPalette, /data\.payables\.map/,
   'Busca global deve localizar contas pendentes pelo domínio oficial.');
 assert.match(commandPalette, /data\.budgets\.map/,

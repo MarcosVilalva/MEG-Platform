@@ -602,6 +602,11 @@
   background:rgba(78,218,205,.045);
 }
 
+.meg-web-2026 .px-data-table tbody tr.is-search-focused {
+  background:rgba(74,236,222,.10);
+  box-shadow:inset 3px 0 0 rgba(74,236,222,.75);
+}
+
 .meg-web-2026 .px-data-table td strong {
   color:#effaf8;
 }
