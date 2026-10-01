@@ -422,10 +422,45 @@ export async function revokeAuthSession(actorId: string, sessionId: string) {
   return { revoked: true };
 }
 
+export async function updateOwnProfile(userId: string, input: { name: string; phone?: string | null }) {
+  const current = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, email: true, phone: true, role: true, status: true, isActive: true, lastLoginAt: true, createdAt: true },
+  });
+  if (!current || !current.isActive) throw new Error('USER_NOT_AVAILABLE');
+
+  const nextName = input.name.trim();
+  if (nextName.length < 2 || nextName.length > 120) throw new Error('INVALID_PROFILE_NAME');
+  const nextPhone = input.phone === undefined ? current.phone : normalizePhone(input.phone);
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.update({
+      where: { id: userId },
+      data: { name: nextName, phone: nextPhone },
+    });
+    await tx.auditLog.create({
+      data: {
+        userId,
+        entity: 'User',
+        entityId: userId,
+        action: 'PROFILE_UPDATED',
+        metadata: JSON.stringify({
+          schemaVersion: 1,
+          before: { name: current.name, phone: current.phone ?? null },
+          after: { name: user.name, phone: user.phone ?? null },
+        }),
+      },
+    });
+    return user;
+  });
+
+  return publicUser(updated);
+}
+
 export async function getUserById(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, email: true, role: true, status: true, isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true }
+    select: { id: true, name: true, email: true, phone: true, role: true, status: true, isActive: true, lastLoginAt: true, createdAt: true, updatedAt: true }
   });
   if (!user) return null;
   const workspace = await currentWorkspaceForUser(userId);
