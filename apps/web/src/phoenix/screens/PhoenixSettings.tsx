@@ -8,6 +8,15 @@ import {
   reconcilePhoenixPrimaryMirror,
   type PhoenixNormalizationPreview,
 } from '../normalization-reconcile-bridge';
+import {
+  applyDashboardPreferences,
+  defaultDashboardPreferences,
+  hydrateDashboardPreferences,
+  readDashboardPreferences,
+  saveDashboardPreferences,
+  saveDashboardPreferencesCloud,
+  type DashboardPreferences,
+} from '../dashboard-preferences';
 import { getPhoenixLocalNotificationStatus, testPhoenixLocalNotification } from '../phoenix-native-notifications';
 import { PhoenixNotificationRecipients } from './PhoenixNotificationRecipients';
 import {
@@ -71,47 +80,11 @@ type DeliverySummary = {
 };
 type LocalNotificationStatus = { native: boolean; permission: string; scheduled: number; platform: string };
 type DeviceSession = { id: string; userId: string; userName: string; deviceName: string; platform: string; createdAt: string; expiresAt: string; lastLoginAt?: string | null; active: boolean; revokedAt?: string | null };
-type DashboardPreferences = {
-  balance: boolean;
-  projection: boolean;
-  summary: boolean;
-  benefit: boolean;
-  history: boolean;
-  agenda: boolean;
-};
-
-const DASHBOARD_PREFS_KEY = 'meg.dashboard.preferences';
-const defaultDashboardPreferences: DashboardPreferences = {
-  balance: true,
-  projection: true,
-  summary: true,
-  benefit: true,
-  history: true,
-  agenda: true
-};
-
 function stateLabel(value?: string | boolean | null) {
   if (value === true) return 'OK';
   if (value === false) return 'Atenção';
   if (!value) return 'Não informado';
   return String(value);
-}
-
-function readDashboardPreferences(): DashboardPreferences {
-  try {
-    const stored = localStorage.getItem(DASHBOARD_PREFS_KEY);
-    if (!stored) return defaultDashboardPreferences;
-    return { ...defaultDashboardPreferences, ...JSON.parse(stored) } as DashboardPreferences;
-  } catch {
-    return defaultDashboardPreferences;
-  }
-}
-
-function applyDashboardPreferences(preferences: DashboardPreferences) {
-  const root = document.documentElement;
-  (Object.entries(preferences) as Array<[keyof DashboardPreferences, boolean]>).forEach(([key, enabled]) => {
-    root.dataset[`megDashboard${key.slice(0, 1).toUpperCase()}${key.slice(1)}`] = enabled ? 'on' : 'off';
-  });
 }
 
 function DashboardToggle({ checked, label, description, onChange }: { checked: boolean; label: string; description: string; onChange: () => void }) {
@@ -123,6 +96,7 @@ function DashboardToggle({ checked, label, description, onChange }: { checked: b
 }
 
 export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, onLogoutRequest }: PhoenixSettingsProps) {
+  const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
   const normalizationOk = Boolean(data.normalization.primary && data.normalization.reconciled);
   const repair = data.health.dataRepair;
   const healthNormalization = data.health.normalization;
@@ -131,7 +105,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
   const [section, setSection] = useState<SettingsSection>('profile');
   const [avatar, setAvatar] = useState<PhoenixAvatarPreference>(() => readPhoenixAvatarPreference(data.user.id));
   const [avatarError, setAvatarError] = useState('');
-  const [dashboardPreferences, setDashboardPreferences] = useState<DashboardPreferences>(() => readDashboardPreferences());
+  const [dashboardPreferences, setDashboardPreferences] = useState<DashboardPreferences>(() => readDashboardPreferences(data.user.id, nativeOperational));
   const [avatarsExpanded, setAvatarsExpanded] = useState(false);
   const [biometricStatus, setBiometricStatus] = useState<BiometricStatus | null>(null);
   const [biometricBusy, setBiometricBusy] = useState(false);
@@ -169,9 +143,19 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
   }, [avatar, avatarsExpanded]);
 
   useEffect(() => {
-    applyDashboardPreferences(dashboardPreferences);
-    try { localStorage.setItem(DASHBOARD_PREFS_KEY, JSON.stringify(dashboardPreferences)); } catch { /* preferência local opcional */ }
-  }, [dashboardPreferences]);
+    let active = true;
+    const local = readDashboardPreferences(data.user.id, nativeOperational);
+    applyDashboardPreferences(local);
+    setDashboardPreferences(local);
+
+    if (!nativeOperational) {
+      void hydrateDashboardPreferences(data.user.id, false).then((preferences) => {
+        if (active) setDashboardPreferences(preferences);
+      });
+    }
+
+    return () => { active = false; };
+  }, [data.user.id, nativeOperational]);
 
   useEffect(() => {
     let active = true;
@@ -435,8 +419,14 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
     }
   }
 
+  function updateDashboardPreferences(next: DashboardPreferences) {
+    const normalized = saveDashboardPreferences(next, data.user.id, nativeOperational);
+    setDashboardPreferences(normalized);
+    if (!nativeOperational) void saveDashboardPreferencesCloud(normalized, data.user.id);
+  }
+
   function toggleDashboardPreference(key: keyof DashboardPreferences) {
-    setDashboardPreferences((current) => ({ ...current, [key]: !current[key] }));
+    updateDashboardPreferences({ ...dashboardPreferences, [key]: !dashboardPreferences[key] });
   }
 
 
@@ -548,7 +538,7 @@ export function PhoenixSettings({ data, theme, onToggleTheme, onDataCommitted, o
           </section>
 
           <section className="px-card px-settings-card px-settings-dashboard-card">
-            <div className="px-settings-card-head"><div><span className="px-kicker">Dashboard</span><h2>Monte sua Home</h2><p>Escolha os blocos que fazem sentido para o seu dia a dia.</p></div><button type="button" className="px-settings-restore" onClick={() => setDashboardPreferences(defaultDashboardPreferences)}>Restaurar padrão</button></div>
+            <div className="px-settings-card-head"><div><span className="px-kicker">Dashboard</span><h2>Monte sua Home</h2><p>Escolha os blocos que fazem sentido para o seu dia a dia.</p></div><button type="button" className="px-settings-restore" onClick={() => updateDashboardPreferences(defaultDashboardPreferences)}>Restaurar padrão</button></div>
             <div className="px-settings-dashboard-grid">
               <DashboardToggle checked={dashboardPreferences.balance} label="Saldo monetário" description="Card principal com o saldo realizado." onChange={() => toggleDashboardPreference('balance')} />
               <DashboardToggle checked={dashboardPreferences.projection} label="Diagnóstico e projeção" description="Alerta de fechamento positivo ou déficit." onChange={() => toggleDashboardPreference('projection')} />
