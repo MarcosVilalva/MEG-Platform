@@ -68,15 +68,15 @@ export type ReceiveReceivableInput = {
 
 export const receivablesClient = {
   listCustomers: () => request<Customer[]>('/receivables/customers'),
-  createCustomer: (data: Pick<Customer, 'name'> & Partial<Pick<Customer, 'email' | 'phone' | 'document' | 'notes'>>) => request<Customer>('/receivables/customers', {
+  createCustomer: (data: Pick<Customer, 'name'> & Partial<Pick<Customer, 'email' | 'phone' | 'document' | 'notes'>> & { operationId?: string }) => request<Customer>('/receivables/customers', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
-  updateCustomer: (id: string, data: Partial<Pick<Customer, 'name' | 'email' | 'phone' | 'document' | 'notes' | 'isActive'>>) => request<Customer>(`/receivables/customers/${id}`, {
+  updateCustomer: (id: string, data: Partial<Pick<Customer, 'name' | 'email' | 'phone' | 'document' | 'notes' | 'isActive'>> & { operationId?: string; expectedUpdatedAt?: string }) => request<Customer>(`/receivables/customers/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data)
   }),
-  deactivateCustomer: (id: string) => request<Customer>(`/receivables/customers/${id}`, { method: 'DELETE' }),
+  deactivateCustomer: (id: string, meta: { operationId?: string; expectedUpdatedAt?: string } = {}) => request<Customer>(`/receivables/customers/${id}`, { method: 'DELETE', body: JSON.stringify(meta) }),
   listReceivables: () => request<Receivable[]>('/receivables/receivables'),
   createReceivable: (data: CreateReceivableInput) => request<Receivable>('/receivables/receivables', {
     method: 'POST',
