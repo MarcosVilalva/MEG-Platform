@@ -217,7 +217,7 @@ export const financeClient = {
     authorizedRequest<FinancialEventPage>(
       `/finance/events?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`
     ),
-  createEvent: (data: FinancialEventInput & { operationId?: string }) => authorizedRequest<FinancialEvent>('/finance/events', {
+  createEvent: (data: FinancialEventInput & { operationId?: string; allowDuplicate?: boolean }) => authorizedRequest<FinancialEvent>('/finance/events', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
