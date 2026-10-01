@@ -88,10 +88,10 @@ function paymentTone(icon: MegIconName): MegMobilePickerOption['tone'] {
 
 function cardImage(name: string) {
   const value = normalize(name);
-  if (/latam/.test(value)) return asset('assets/cards/approved-v6/latam.webp');
-  if (/azul/.test(value)) return asset('assets/cards/approved-v6/azul.webp');
-  if (/mercado|meli/.test(value)) return asset('assets/cards/approved-v6/mercado.webp');
-  if (/riachuelo|midway/.test(value)) return asset('assets/cards/approved-v6/riachuelo.webp');
+  if (/latam/.test(value)) return asset('assets/cards/latam-user-model-v61.svg');
+  if (/azul/.test(value)) return asset('assets/cards/azul-itau-platinum-v659.svg');
+  if (/mercado|meli/.test(value)) return asset('assets/cards/mercado-pago-visa-v662.svg');
+  if (/riachuelo|midway/.test(value)) return asset('assets/cards/riachuelo-mastercard-visual.svg');
   if (/nubank/.test(value)) return asset('assets/cards/nubank-visual.svg');
   return '';
 }
@@ -256,6 +256,7 @@ export function MegMobileLaunchSheet({
       label: card.name,
       subtitle: card.lastFour ? `Final ${card.lastFour}` : 'Cartão de crédito',
       imageSrc: cardImage(card.name) || undefined,
+      imageKind: cardImage(card.name) ? 'card' : undefined,
       icon: cardImage(card.name) ? undefined : 'card',
       tone: 'violet',
     }));
