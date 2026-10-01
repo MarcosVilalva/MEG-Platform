@@ -77,7 +77,6 @@ export function MegMobileMovements({
   data,
   onOpenEvent,
   onOpenPeriod,
-  onCreate,
 }: {
   data: PhoenixReadModel;
   onOpenEvent: (event: FinancialEvent) => void;
