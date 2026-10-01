@@ -5,6 +5,7 @@ import type { PhoenixLoadState, PhoenixReadModel } from './contracts';
 import { loadPhoenixAllEvents, loadPhoenixReadModel, peekPhoenixReadModel, prefetchPhoenixReadModel } from './data/load-phoenix-read-model';
 import { buildPhoenixHomeAgenda } from './home-agenda';
 import { hydrateDashboardPreferences } from './dashboard-preferences';
+import { hydratePhoenixTheme, savePhoenixThemeCloud } from './appearance-preferences';
 import { isPhoenixMonetaryEvent } from './home-period-summary';
 import { PhoenixCommandPalette, type PhoenixRoute } from './PhoenixCommandPalette';
 import { PhoenixSidebar } from './PhoenixSidebar';
@@ -490,6 +491,15 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
   }, [nativeOperational, loadState.status, loadState.status === 'ready' ? loadState.data.user.id : '']);
 
   useEffect(() => {
+    if (nativeOperational || loadState.status !== 'ready') return;
+    let active = true;
+    void hydratePhoenixTheme(loadState.data.user.id).then((nextTheme) => {
+      if (active) setTheme(nextTheme);
+    });
+    return () => { active = false; };
+  }, [nativeOperational, loadState.status, loadState.status === 'ready' ? loadState.data.user.id : '']);
+
+  useEffect(() => {
     if (!nativeOperational || loadState.status !== 'ready') return;
     syncPhoenixLocalDueNotifications(loadState.data);
   }, [nativeOperational, loadState]);
@@ -788,7 +798,12 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
   const viewData = specialView && movementPeriodData ? movementPeriodData : data;
   const currentView = views.find((item) => item.id === view) || mainViews[0];
   const pendingCount = data ? buildPhoenixHomeAgenda(data, todayIso()).items.length : 0;
-  const toggleTheme = () => setTheme((value) => value === 'dark' ? 'light' : 'dark');
+  const toggleTheme = () => setTheme((value) => {
+    const nextTheme = value === 'dark' ? 'light' : 'dark';
+    const userId = dataRef.current?.user.id;
+    if (!nativeOperational && userId) void savePhoenixThemeCloud(nextTheme, userId);
+    return nextTheme;
+  });
   const userInitial = (data?.user.name || 'M').slice(0, 1).toUpperCase();
   const activePeriodMonth = data?.month || month;
   const periodActiveLabel = periodMode === 'month'
