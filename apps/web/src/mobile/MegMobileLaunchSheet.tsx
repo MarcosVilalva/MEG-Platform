@@ -456,10 +456,11 @@ export function MegMobileLaunchSheet({
         };
         if (event && cardMeta && cardPurchase) {
           const result = await runPhoenixCardPurchaseEdit(cardPurchase.id, input, data.month);
-          dispatchSnapshot(result.snapshot);
+          if (result.snapshot) dispatchSnapshot(result.snapshot);
         } else {
           const result = await runPhoenixCardPurchaseWrite(preparePhoenixCardPurchase(input), data.month);
-          dispatchSnapshot(result.status === 'confirmed' ? result.snapshot : null);
+          if (result.status === 'error') throw new Error(result.code);
+          if (result.status === 'confirmed') dispatchSnapshot(result.snapshot);
         }
         setStep('success');
         return;
@@ -481,10 +482,11 @@ export function MegMobileLaunchSheet({
         const benefit: PhoenixBenefitEventInput = { ...simple, type: 'expense', status: 'paid' };
         if (event) {
           const result = await runPhoenixBenefitEventEdit(event.id, benefit, data.month, event.updatedAt);
-          dispatchSnapshot(result.snapshot);
+          if (result.snapshot) dispatchSnapshot(result.snapshot);
         } else {
           const result = await runPhoenixBenefitEventWrite(preparePhoenixBenefitEvent(benefit), data.month);
-          dispatchSnapshot(result.status === 'confirmed' ? result.snapshot : null);
+          if (result.status === 'error') throw new Error(result.code);
+          if (result.status === 'confirmed') dispatchSnapshot(result.snapshot);
         }
       } else if (benefitIncome) {
         const benefit: PhoenixBenefitEventInput = {
@@ -496,17 +498,19 @@ export function MegMobileLaunchSheet({
         };
         if (event) {
           const result = await runPhoenixBenefitEventEdit(event.id, benefit, data.month, event.updatedAt);
-          dispatchSnapshot(result.snapshot);
+          if (result.snapshot) dispatchSnapshot(result.snapshot);
         } else {
           const result = await runPhoenixBenefitEventWrite(preparePhoenixBenefitEvent(benefit), data.month);
-          dispatchSnapshot(result.status === 'confirmed' ? result.snapshot : null);
+          if (result.status === 'error') throw new Error(result.code);
+          if (result.status === 'confirmed') dispatchSnapshot(result.snapshot);
         }
       } else if (event) {
         const result = await runPhoenixSimpleEventEdit(event.id, simple, data.month, event.updatedAt);
-        dispatchSnapshot(result.snapshot);
+        if (result.snapshot) dispatchSnapshot(result.snapshot);
       } else {
         const result = await runPhoenixSimpleEventWrite(preparePhoenixSimpleEvent(simple), data.month);
-        dispatchSnapshot(result.status === 'confirmed' ? result.snapshot : null);
+        if (result.status === 'error') throw new Error(result.code);
+        if (result.status === 'confirmed') dispatchSnapshot(result.snapshot);
       }
       setStep('success');
     } catch (error) {
@@ -524,10 +528,10 @@ export function MegMobileLaunchSheet({
     try {
       if (cardMeta && cardPurchase) {
         const result = await runPhoenixCardPurchaseCancel(cardPurchase.id, data.month);
-        dispatchSnapshot(result.snapshot);
+        if (result.snapshot) dispatchSnapshot(result.snapshot);
       } else {
         const result = await runPhoenixSimpleEventArchive(event.id, data.month, event.updatedAt);
-        dispatchSnapshot(result.snapshot);
+        if (result.snapshot) dispatchSnapshot(result.snapshot);
       }
       onClose();
     } catch (error) {
