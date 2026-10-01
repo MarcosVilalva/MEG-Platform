@@ -3,6 +3,8 @@ import { mutationRequestHash, receiptCreateData } from '../app-state/mutation-re
 import { recordFinancialAudit } from '../finance/audit';
 import { buildCanonicalCardStatement, legacyCardStatementEffect } from '../finance/card-statement-canonical';
 import {
+  SEMANTIC_DUPLICATE_WINDOW_MS,
+  findRecentCardPurchaseDuplicate,
   isFutureFinancialDay,
   isMonetaryAccountType,
   monetaryBalanceAt,
@@ -266,9 +268,10 @@ export async function createCardPurchaseProtected(userId: string, input: {
   purchaseDate: string;
   installments: number;
   operationId?: string;
+  allowDuplicate?: boolean;
 }) {
   const shared = await sharedCardContext(userId);
-  const requestHash = input.operationId ? mutationRequestHash({ ...input, operationId: undefined }) : null;
+  const requestHash = input.operationId ? mutationRequestHash({ ...input, operationId: undefined, allowDuplicate: undefined }) : null;
 
   return serializableFinancialTransaction(async (tx) => {
     if (input.operationId && requestHash) {
@@ -292,6 +295,25 @@ export async function createCardPurchaseProtected(userId: string, input: {
 
     const purchaseDate = new Date(input.purchaseDate);
     if (Number.isNaN(purchaseDate.getTime())) throw new CardDomainError('INVALID_PURCHASE_DATE');
+
+    if (!input.allowDuplicate) {
+      const duplicate = await findRecentCardPurchaseDuplicate(tx, {
+        userId: shared.ownerId,
+        cardId: card.id,
+        categoryId: input.categoryId || null,
+        description: input.description,
+        totalAmount: input.totalAmount,
+        purchaseDate: input.purchaseDate,
+        installments: input.installments,
+      });
+      if (duplicate) {
+        throw new CardDomainError('POSSIBLE_DUPLICATE', {
+          duplicate,
+          duplicateWindowSeconds: Math.round(SEMANTIC_DUPLICATE_WINDOW_MS / 1000),
+        });
+      }
+    }
+
     const purchaseMonth = input.purchaseDate.slice(0, 7);
     const firstMonth = addMonths(purchaseMonth, purchaseDate.getUTCDate() > card.closingDay ? 1 : 0);
     const totalCents = Math.round(input.totalAmount * 100);
@@ -330,6 +352,7 @@ export async function createCardPurchaseProtected(userId: string, input: {
         ownerId: shared.ownerId,
         workspaceId: shared.workspaceId,
         firstStatementMonth: firstMonth,
+        duplicateOverride: Boolean(input.allowDuplicate),
       },
     });
 
