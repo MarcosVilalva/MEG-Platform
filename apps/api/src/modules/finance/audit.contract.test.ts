@@ -31,7 +31,7 @@ assert.match(audit, /RECEIVABLE_RECEIPT_REVERSED/,
   'Contrato central deve aceitar auditoria de estorno de recebimento.');
 assert.match(receivablesService, /action:\s*'RECEIVABLE_UPDATED'/);
 assert.match(receivablesService, /action:\s*'RECEIVABLE_CANCELLED'/);
-assert.match(financeService, /RECEIPT_LINKED_EVENT_PROTECTED/,
+assert.match(financeService, /FINANCIAL_EVENT_LINKED_DOMAIN/,
   'Evento financeiro gerado por recebimento ativo não pode ser editado ou arquivado fora do fluxo de estorno.');
 assert.match(financeService, /receipt:\s*\{ select:\s*\{ id: true, receivableId: true, reversedAt: true \} \}/,
   'Mutação de evento deve consultar o vínculo com o recibo antes de alterar o caixa.');
