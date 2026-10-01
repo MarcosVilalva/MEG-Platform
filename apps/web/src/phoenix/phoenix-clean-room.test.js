@@ -47,6 +47,7 @@ const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', i
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
 const settings = readFileSync(new URL('./screens/PhoenixSettings.tsx', import.meta.url), 'utf8');
+const notificationRecipients = readFileSync(new URL('./screens/PhoenixNotificationRecipients.tsx', import.meta.url), 'utf8');
 const loader = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.meta.url), 'utf8');
 const previewMain = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
 const mobileLoading = readFileSync(new URL('../mobile/MegMobileLoading.tsx', import.meta.url), 'utf8');
@@ -68,7 +69,7 @@ const androidStrings = readFileSync(new URL('../../../../android/app/src/main/re
 const capacitorConfig = readFileSync(new URL('../../../../capacitor.config.ts', import.meta.url), 'utf8');
 const styles = `${readFileSync(new URL('./phoenix-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-parity-v15.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-period.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-sidebar.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-home-dashboard.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-premium.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-wow.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-fidelity-v6.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-cards-responsive-v61.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-operational-mobile.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-history.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-users.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-settings.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-web-screens.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-overlays.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./phoenix-launch.css', import.meta.url), 'utf8')}\n${readFileSync(new URL('./preview.css', import.meta.url), 'utf8')}`;
 const main = readFileSync(new URL('../app/main.tsx', import.meta.url), 'utf8');
-const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${profileAvatar}\n${commandPalette}\n${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${homePastMonth}\n${homeHorizon}\n${homePeriodSummary}\n${webScreens}\n${webGridScreens}\n${budgetsScreen}\n${history}\n${users}\n${settings}\n${previewMain}`;
+const phoenixSource = `${phoenixApp}\n${sidebar}\n${navIcon}\n${profileAvatar}\n${commandPalette}\n${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${homePastMonth}\n${homeHorizon}\n${homePeriodSummary}\n${webScreens}\n${webGridScreens}\n${budgetsScreen}\n${history}\n${users}\n${settings}\n${notificationRecipients}\n${previewMain}`;
 const readOnlyScreens = `${screens}\n${movementScreen}\n${cardsGrid}\n${homeDashboard}\n${homeAllTime}\n${homePastMonth}\n${homeHorizon}\n${webScreens}\n${history}\n${users}\n${settings}\n${sidebar}\n${commandPalette}`;
 
 for (const forbidden of ['global.css', 'v15-contract.css', 'meg-v15.css']) {
@@ -204,6 +205,20 @@ assert.match(settings, /Watchdog/,
   'Central de notificações deve mostrar a saúde da recuperação automática dos ciclos.');
 assert.match(settings, /alerta\(s\) agendado\(s\) neste aparelho/,
   'Tela de notificações precisa mostrar ao usuário se o aparelho realmente possui alertas agendados.');
+assert.match(settings, /PhoenixNotificationRecipients/,
+  'Configurações Web deve incorporar o gerenciador operacional de destinatários para ADMIN.');
+assert.match(notificationRecipients, /\/notifications\/recipients/,
+  'Gerenciador deve usar o contrato oficial de destinatários de WhatsApp.');
+assert.match(notificationRecipients, /\/notifications\/email-recipients/,
+  'Gerenciador deve usar o contrato oficial de destinatários de e-mail.');
+assert.match(notificationRecipients, /method:\s*'POST'/,
+  'Cadastro de destinatários deve gravar pela API autenticada.');
+assert.match(notificationRecipients, /method:\s*'DELETE'/,
+  'Remoção de destinatários deve usar a rota oficial de exclusão.');
+assert.match(notificationRecipients, /megConfirm/,
+  'Remoção de destinatários deve exigir confirmação MEG.');
+assert.doesNotMatch(notificationRecipients, /window\.confirm|window\.alert/,
+  'Destinatários não podem usar diálogos nativos do navegador.');
 assert.match(nativeNotifications, /getPhoenixLocalNotificationStatus/,
   'Camada nativa deve expor diagnóstico verificável das notificações locais.');
 assert.match(settings, /Restaurar backup/);
