@@ -1285,6 +1285,20 @@ assert.match(webGridScreens, /Nova receita/,
   'Central de Receitas deve oferecer criação direta a partir do próprio módulo.');
 assert.match(webGridScreens, /onDoubleClick=\{onEditRevenue \? \(\) => onEditRevenue\(row\.id\)/,
   'Receita existente deve poder abrir o editor oficial diretamente pela grade.');
+assert.match(webGridScreens, /openEditTitle/,
+  'Contas a receber deve permitir editar título sem recebimentos.');
+assert.match(webGridScreens, /cancelTitle/,
+  'Contas a receber deve expor cancelamento protegido para perfis autorizados.');
+assert.match(webGridScreens, /receivablesClient\.updateReceivable/,
+  'Edição deve usar o contrato oficial de recebíveis.');
+assert.match(webGridScreens, /receivablesClient\.cancelReceivable/,
+  'Cancelamento deve usar o contrato oficial e preservar histórico.');
+assert.match(webGridScreens, /expectedUpdatedAt:\s*editingTitle\.updatedAt/,
+  'Edição deve enviar a versão conferida para detectar concorrência.');
+assert.match(webGridScreens, /RECEIVABLE_HAS_RECEIPTS/,
+  'Interface deve explicar o bloqueio após a primeira baixa.');
+assert.match(webGridScreens, /megConfirm/,
+  'Cancelamento de título deve exigir confirmação visual MEG.');
 
 assert.match(phoenixApp, /onLogout/,
   'Phoenix deve expor saída de sessão ao preview isolado');
