@@ -397,7 +397,7 @@ function ReadScreen({ view, data, month, theme, periodMode, periodContext, perio
   if (view === 'users') return <PhoenixUsers data={data} onDataCommitted={onDataCommitted} />;
   if (view === 'settings') return <PhoenixSettings data={data} theme={theme} onToggleTheme={onToggleTheme} onLogoutRequest={onLogoutRequest} />;
   if (view === 'receivables') return <PhoenixReceivablesGrid data={data} onDataCommitted={onDataCommitted} />;
-  if (view === 'revenues') return <PhoenixRevenuesGrid data={data} />;
+  if (view === 'revenues') return <PhoenixRevenuesGrid data={data} onCreateRevenue={() => onLaunch('income')} onEditRevenue={onEditEvent} />;
   if (view === 'cashflow') return <PhoenixCashflowGrid data={data} />;
   if (view === 'decisions') return <PhoenixDecisionCenter data={data} />;
   if (view === 'reports') return <PhoenixReportsCenter data={data} />;
