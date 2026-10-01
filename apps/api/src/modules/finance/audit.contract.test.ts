@@ -27,6 +27,8 @@ assert.match(audit, /RECEIVABLE_UPDATED/,
   'Contrato central deve aceitar auditoria de edição de recebível.');
 assert.match(audit, /RECEIVABLE_CANCELLED/,
   'Contrato central deve aceitar auditoria de cancelamento de recebível.');
+assert.match(audit, /RECEIVABLE_RECEIPT_REVERSED/,
+  'Contrato central deve aceitar auditoria de estorno de recebimento.');
 assert.match(receivablesService, /action:\s*'RECEIVABLE_UPDATED'/);
 assert.match(receivablesService, /action:\s*'RECEIVABLE_CANCELLED'/);
 
