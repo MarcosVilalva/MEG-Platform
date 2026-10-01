@@ -212,7 +212,7 @@ function PageIntro() {
   </header>;
 }
 
-export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixReadModel; onDataCommitted?: (snapshot: PhoenixReadModel) => void }) {
+export function PhoenixCatalogsGrid({ data, onDataCommitted, focusRequest }: { data: PhoenixReadModel; onDataCommitted?: (snapshot: PhoenixReadModel) => void; focusRequest?: { token: number; itemId: string; tab: 'accounts' | 'categories' | 'payments' | 'customers' } | null }) {
   const [tab, setTab] = useState<CatalogTab>('accounts');
   const [filtersByTab, setFiltersByTab] = useState<CatalogState<CatalogFilterMap>>(initialFiltersByTab);
   const [sortByTab, setSortByTab] = useState<CatalogState<CatalogSort>>(initialSortByTab);
@@ -225,6 +225,8 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
   const [mutationBusy, setMutationBusy] = useState(false);
   const [mutationMessage, setMutationMessage] = useState('');
   const [activeConfirm, setActiveConfirm] = useState<{ row: CatalogRow; active: boolean } | null>(null);
+  const [focusedCatalogId, setFocusedCatalogId] = useState<string | null>(null);
+  const focusRequestTokenRef = useRef(0);
   const mutationOperationRef = useRef<{ fingerprint: string; operationId: string } | null>(null);
   const role = readSession()?.user.role;
   const canWrite = role === 'ADMIN' || role === 'MANAGER' || role === 'OPERATOR';
@@ -246,6 +248,31 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
   useEffect(() => { setCategories(data.categories.map((item) => ({ ...item }))); }, [data.categories]);
   useEffect(() => { setPayments(data.paymentMethods.map((item) => ({ ...item }))); }, [data.paymentMethods]);
   useEffect(() => { setCustomers(data.customers.map((item) => ({ ...item }))); }, [data.customers]);
+
+  useEffect(() => {
+    if (!focusRequest || focusRequest.token === focusRequestTokenRef.current) return;
+    const exists = focusRequest.tab === 'accounts' ? accounts.some((item) => item.id === focusRequest.itemId)
+      : focusRequest.tab === 'categories' ? categories.some((item) => item.id === focusRequest.itemId)
+      : focusRequest.tab === 'payments' ? payments.some((item) => item.id === focusRequest.itemId)
+      : customers.some((item) => item.id === focusRequest.itemId);
+    if (!exists) return;
+    focusRequestTokenRef.current = focusRequest.token;
+    setTab(focusRequest.tab);
+    setFiltersByTab((current) => ({ ...current, [focusRequest.tab]: initialFilters() }));
+    setSortByTab((current) => ({ ...current, [focusRequest.tab]: null }));
+    setSearchByTab((current) => ({ ...current, [focusRequest.tab]: '' }));
+    setFocusedCatalogId(focusRequest.itemId);
+    const scrollTimer = window.setTimeout(() => {
+      document.querySelector<HTMLElement>(`[data-catalog-id="${CSS.escape(focusRequest.itemId)}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 80);
+    const clearTimer = window.setTimeout(() => {
+      setFocusedCatalogId((current) => current === focusRequest.itemId ? null : current);
+    }, 3600);
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [accounts, categories, customers, focusRequest, payments]);
 
   const activeAccounts = accounts.filter((item) => item.isActive);
   const activeCategories = categories.filter((item) => item.isActive);
@@ -662,19 +689,19 @@ export function PhoenixCatalogsGrid({ data, onDataCommitted }: { data: PhoenixRe
             {tab === 'customers' ? <><th>{header('Cliente', 'name', 'text')}</th><th>{header('Documento', 'document', 'text')}</th><th>{header('E-mail', 'email', 'text')}</th><th>{header('Telefone', 'phone', 'text')}</th><th>{header('Status', 'status', 'multi', options.status)}</th><th>Ações</th></> : null}
           </tr></thead>
           <tbody>{visibleRows.map((row) => {
-            if (tab === 'accounts') return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.type}</td><td>{row.institution}</td><td className="px-money">{money.format(row.openingBalance || 0)}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
-            if (tab === 'categories') return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.group}</td><td>{row.type}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
-            if (tab === 'payments') return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.type}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
-            if (tab === 'customers') return <tr key={row.id}><td><strong>{row.name}</strong></td><td>{row.document}</td><td>{row.email}</td><td>{row.phone}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
+            if (tab === 'accounts') return <tr key={row.id} data-catalog-id={row.id} className={focusedCatalogId === row.id ? 'is-search-focused' : undefined}><td><strong>{row.name}</strong></td><td>{row.type}</td><td>{row.institution}</td><td className="px-money">{money.format(row.openingBalance || 0)}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
+            if (tab === 'categories') return <tr key={row.id} data-catalog-id={row.id} className={focusedCatalogId === row.id ? 'is-search-focused' : undefined}><td><strong>{row.name}</strong></td><td>{row.group}</td><td>{row.type}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
+            if (tab === 'payments') return <tr key={row.id} data-catalog-id={row.id} className={focusedCatalogId === row.id ? 'is-search-focused' : undefined}><td><strong>{row.name}</strong></td><td>{row.type}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
+            if (tab === 'customers') return <tr key={row.id} data-catalog-id={row.id} className={focusedCatalogId === row.id ? 'is-search-focused' : undefined}><td><strong>{row.name}</strong></td><td>{row.document}</td><td>{row.email}</td><td>{row.phone}</td><td><span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span></td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Editar</button><button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button></div></td></tr>;
             const identity = row.card ? resolvePhoenixCardIdentity(row.card) : null;
-            return <tr key={row.id}><td><span className="px-catalog-card-name"><span className="px-mini-card" style={{ background: identity?.background }}>{identity?.miniLabel || row.name.slice(0, 6).toUpperCase()}</span><strong>{row.name}</strong></span></td><td>{row.issuer}</td><td>{row.brand}</td><td className="px-money">{money.format(row.creditLimit || 0)}</td><td>dia {row.closingDay}</td><td>dia {row.dueDay}</td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Gerenciar</button></div></td></tr>;
+            return <tr key={row.id} data-catalog-id={row.id} className={focusedCatalogId === row.id ? 'is-search-focused' : undefined}><td><span className="px-catalog-card-name"><span className="px-mini-card" style={{ background: identity?.background }}>{identity?.miniLabel || row.name.slice(0, 6).toUpperCase()}</span><strong>{row.name}</strong></span></td><td>{row.issuer}</td><td>{row.brand}</td><td className="px-money">{money.format(row.creditLimit || 0)}</td><td>dia {row.closingDay}</td><td>dia {row.dueDay}</td><td><div className="px-catalog-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>Gerenciar</button></div></td></tr>;
           })}</tbody>
         </table>
         {!visibleRows.length ? <p className="px-empty">Nenhum cadastro corresponde aos filtros aplicados.</p> : null}
       </div>
 
       <div className="px-catalog-mobile-list" aria-label="Cadastros">
-        {visibleRows.map((row) => <article key={row.id} className="px-catalog-mobile-item">
+        {visibleRows.map((row) => <article key={row.id} data-catalog-id={row.id} className={`px-catalog-mobile-item ${focusedCatalogId === row.id ? 'is-search-focused' : ''}`}>
           <div><strong>{row.name}</strong><small>{tab === 'accounts' ? `${row.type} · ${row.institution}` : tab === 'categories' ? `${row.group} · ${row.type}` : tab === 'payments' ? row.type : tab === 'customers' ? [row.document, row.email].filter((value) => value && value !== '—').join(' · ') || 'Cliente sem documento/e-mail' : `${row.issuer} · ${row.brand}`}</small></div>
           {tab !== 'cards' ? <span className={`px-status ${row.status === 'Ativa' ? 'reconciled' : 'archived'}`}>{row.status}</span> : <span className="px-status reconciled">Cartão</span>}
           <div className="px-catalog-mobile-actions"><button type="button" onClick={() => openEdit(row)} disabled={!canWrite}>{tab === 'cards' ? 'Gerenciar' : 'Editar'}</button>{tab !== 'cards' ? <button type="button" onClick={() => void changeActive(row, row.status !== 'Ativa')} disabled={row.status === 'Ativa' ? !canDeactivate : !canWrite}>{row.status === 'Ativa' ? 'Desativar' : 'Reativar'}</button> : null}</div>

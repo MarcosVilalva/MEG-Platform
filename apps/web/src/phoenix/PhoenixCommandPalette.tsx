@@ -27,6 +27,7 @@ type SearchResult = {
   detail: string;
   targetMonth?: string;
   targetId?: string;
+  targetSection?: string;
 };
 
 const commandMoney = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -54,16 +55,17 @@ function normalize(value: unknown) {
   return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
 }
 
-export function PhoenixCommandPalette({ data, allEvents, onClose, onNavigate }: { data: PhoenixReadModel | null; allEvents?: PhoenixReadModel['events']['items']; onClose: () => void; onNavigate: (route: PhoenixRoute, targetMonth?: string, targetId?: string) => boolean | void | Promise<boolean | void> }) {
+export function PhoenixCommandPalette({ data, allEvents, onClose, onNavigate }: { data: PhoenixReadModel | null; allEvents?: PhoenixReadModel['events']['items']; onClose: () => void; onNavigate: (route: PhoenixRoute, targetMonth?: string, targetId?: string, targetSection?: string) => boolean | void | Promise<boolean | void> }) {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const results = useMemo(() => {
     const dynamic: SearchResult[] = data ? [
       ...(allEvents ?? data.events.items).map((item) => ({ id: `event-${item.id}`, route: 'movements' as const, kind: item.type === 'income' ? 'Receita' : 'Lançamento', title: item.description, detail: [item.category?.name, item.account?.name, item.paymentMethod?.name].filter(Boolean).join(' · ') || 'Evento financeiro', targetMonth: item.competence || String(item.date).slice(0, 7), targetId: item.id })),
       ...data.cards.map((item) => ({ id: `card-${item.id}`, route: 'cards' as const, kind: 'Cartão', title: item.name, detail: item.brand || 'Cartão cadastrado', targetId: item.id })),
-      ...data.accounts.map((item) => ({ id: `account-${item.id}`, route: 'catalogs' as const, kind: 'Conta', title: item.name, detail: item.institution || item.type || 'Conta financeira' })),
-      ...data.categories.map((item) => ({ id: `category-${item.id}`, route: 'catalogs' as const, kind: 'Classificação', title: item.name, detail: item.group || item.type || 'Cadastro financeiro' })),
-      ...data.customers.map((item) => ({ id: `customer-${item.id}`, route: 'receivables' as const, kind: 'Cliente', title: item.name, detail: item.email || item.phone || 'Cliente cadastrado' })),
+      ...data.accounts.map((item) => ({ id: `account-${item.id}`, route: 'catalogs' as const, kind: 'Conta', title: item.name, detail: item.institution || item.type || 'Conta financeira', targetId: item.id, targetSection: 'accounts' })),
+      ...data.categories.map((item) => ({ id: `category-${item.id}`, route: 'catalogs' as const, kind: 'Classificação', title: item.name, detail: item.group || item.type || 'Cadastro financeiro', targetId: item.id, targetSection: 'categories' })),
+      ...data.paymentMethods.map((item) => ({ id: `payment-${item.id}`, route: 'catalogs' as const, kind: 'Forma de pagamento', title: item.name, detail: item.type || 'Forma cadastrada', targetId: item.id, targetSection: 'payments' })),
+      ...data.customers.map((item) => ({ id: `customer-${item.id}`, route: 'catalogs' as const, kind: 'Cliente', title: item.name, detail: item.email || item.phone || 'Cliente cadastrado', targetId: item.id, targetSection: 'customers' })),
       ...data.receivables.map((item) => ({ id: `receivable-${item.id}`, route: 'receivables' as const, kind: 'Título a receber', title: item.description, detail: [item.customer?.name, `Vence ${String(item.dueDate).slice(0, 10).split('-').reverse().join('/')}`, `Em aberto ${commandMoney.format(Number(item.openAmount || 0))}`].filter(Boolean).join(' · '), targetId: item.id })),
       ...data.payables.map((item) => ({ id: `payable-${item.id}`, route: 'payables' as const, kind: 'Conta pendente', title: item.description, detail: [item.category?.group || item.category?.name, `Vence ${String(item.dueDate).slice(0, 10).split('-').reverse().join('/')}`, `Em aberto ${commandMoney.format(Number(item.openAmount || 0))}`].filter(Boolean).join(' · '), targetMonth: String(item.dueDate).slice(0, 7), targetId: `payable-${item.id}` })),
       ...data.budgets.map((item) => ({ id: `budget-${item.id}`, route: 'budgets' as const, kind: 'Orçamento', title: item.group, detail: [item.month, `Disponível ${commandMoney.format(Number(item.available || 0))}`, `${Number(item.percent || 0).toFixed(0)}% utilizado`].join(' · '), targetMonth: item.month, targetId: item.id })),
@@ -88,7 +90,7 @@ export function PhoenixCommandPalette({ data, allEvents, onClose, onNavigate }: 
   }, [results.length]);
 
   async function open(result: SearchResult) {
-    const opened = await onNavigate(result.route, result.targetMonth, result.targetId);
+    const opened = await onNavigate(result.route, result.targetMonth, result.targetId, result.targetSection);
     if (opened === false) return;
     onClose();
   }
@@ -117,7 +119,7 @@ export function PhoenixCommandPalette({ data, allEvents, onClose, onNavigate }: 
 
   return <div className="px-command-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section className="px-command" role="dialog" aria-modal="true" aria-label="Buscar no MEG">
-      <div className="px-command-input"><span>⌕</span><input autoFocus role="combobox" aria-expanded="true" aria-controls="px-command-results" aria-activedescendant={results[activeIndex] ? `px-command-result-${activeIndex}` : undefined} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={handleKeyDown} placeholder="Buscar tela, lançamento, título, pendência, orçamento, cartão, conta, cliente ou usuário" /><kbd>ESC</kbd></div>
+      <div className="px-command-input"><span>⌕</span><input autoFocus role="combobox" aria-expanded="true" aria-controls="px-command-results" aria-activedescendant={results[activeIndex] ? `px-command-result-${activeIndex}` : undefined} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={handleKeyDown} placeholder="Buscar tela, lançamento, título, pendência, orçamento, cartão, conta, classificação, forma de pagamento, cliente ou usuário" /><kbd>ESC</kbd></div>
       <div className="px-command-results" id="px-command-results" role="listbox">
         {results.map((result, index) => <button id={`px-command-result-${index}`} key={result.id} type="button" role="option" aria-selected={activeIndex === index} className={activeIndex === index ? 'is-active' : undefined} onMouseEnter={() => setActiveIndex(index)} onClick={() => { void open(result); }}><span className="px-command-kind">{result.kind}</span><span className="px-command-copy"><strong>{result.title}</strong><small>{result.detail}</small></span><span className="px-command-arrow">↗</span></button>)}
         {!results.length ? <div className="px-command-empty"><strong>Nenhum resultado</strong><span>Tente outro termo de busca.</span></div> : null}
