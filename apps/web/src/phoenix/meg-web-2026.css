@@ -1332,6 +1332,7 @@
   max-height:520px;
 }
 
+.meg-web-2026 .meg-web-report-print-extra { display:none; }
 .meg-web-2026 .meg-web-report-foot {
   padding-top:9px;
   color:#668c87;
@@ -1792,6 +1793,7 @@
   .meg-web-2026 .meg-web-topbar,
   .meg-web-2026 .meg-web-report-grid,
   .meg-web-2026 .meg-web-report-actions,
+  .meg-web-2026 .meg-web-report-foot,
   .meg-web-2026 .px-table-export,
   .meg-web-2026 .px-mobile-dock {
     display:none!important;
@@ -1818,6 +1820,9 @@
     max-height:none!important;
     overflow:visible!important;
     border-color:#ddd!important;
+  }
+  .meg-web-2026 .meg-web-report-print-extra {
+    display:table-row!important;
   }
   .meg-web-2026 .px-data-table {
     min-width:0!important;
