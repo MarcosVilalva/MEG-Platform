@@ -27,6 +27,7 @@ type Priority = 'all' | 'overdue' | 'today' | 'upcoming' | 'paid';
 type PendingPeriodMode = 'month' | 'all';
 type GroupMode = 'date' | 'category' | 'account' | 'payment-method' | 'none';
 export type PhoenixPayablesSelectionRequest = { token: number; ids: string[] };
+export type PhoenixPayablesFocusRequest = { token: number; payableId: string };
 type PendingChild = {
   id: string;
   description: string;
@@ -459,7 +460,7 @@ function dateRenderBlocks(group: PendingGroup): DateRenderBlock[] {
   });
 }
 
-export function PhoenixPayables({ data, onMonthChange, onEditEvent, selectionRequest, focusRequest }: { data: PhoenixReadModel; onMonthChange?: (month: string) => void; onEditEvent?: (eventId: string) => void; selectionRequest?: PhoenixPayablesSelectionRequest | null; focusRequest?: { token: number; payableId: string } | null }) {
+export function PhoenixPayables({ data, onMonthChange, onEditEvent, selectionRequest, focusRequest }: { data: PhoenixReadModel; onMonthChange?: (month: string) => void; onEditEvent?: (eventId: string) => void; selectionRequest?: PhoenixPayablesSelectionRequest | null; focusRequest?: PhoenixPayablesFocusRequest | null }) {
   const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
   const [model, setModel] = useState(data);
   const today = todaySaoPaulo();
