@@ -401,6 +401,12 @@ assert.doesNotMatch(webScreens, /export function PhoenixReceivables|export funct
   'Telas legadas de somente leitura não podem voltar a competir com as grades Web operacionais.');
 assert.match(commandPalette, /Buscar tela, lançamento, título, pendência, orçamento, cartão, conta, cliente ou usuário/);
 assert.match(commandPalette, /data\.events\.items/);
+assert.match(commandPalette, /allEvents \?\? data\.events\.items/,
+  'Busca global Web deve priorizar o histórico financeiro completo quando ele estiver disponível.');
+assert.match(phoenixApp, /if \(!searchOpen \|\| nativeOperational\) return;[\s\S]*loadPhoenixAllEvents\(\)[\s\S]*setSearchEvents\(events\.items\)/,
+  'Busca global deve carregar o histórico completo somente no Web, preservando o Android congelado.');
+assert.match(phoenixApp, /allEvents=\{!nativeOperational \? searchEvents \|\| undefined : undefined\}/,
+  'Histórico completo da busca não pode ser injetado no runtime Android.');
 assert.match(commandPalette, /data\.cards/);
 assert.match(commandPalette, /data\.accounts/);
 assert.match(commandPalette, /data\.customers/);
