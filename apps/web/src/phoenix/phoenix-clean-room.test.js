@@ -461,6 +461,8 @@ assert.match(phoenixApp, /focusRequest=\{nativeOperational \? undefined : search
   'Foco de Pendentes vindo da busca deve permanecer exclusivo do Web.');
 assert.match(payablesScreen, /focusRequest[\s\S]*setPriority\('all'\)[\s\S]*setSearch\(''\)[\s\S]*setDateFrom\(''\)[\s\S]*setDateTo\(''\)[\s\S]*setFocusedPayableId\(target\.id\)/,
   'Pendentes deve remover somente filtros visuais que poderiam esconder o compromisso pesquisado.');
+assert.match(screens, /PhoenixPayablesFocusRequest[\s\S]*focusRequest\?: PhoenixPayablesFocusRequest[\s\S]*focusRequest=\{focusRequest\}/,
+  'Adaptador canônico de Pendentes deve tipar e repassar o foco vindo da busca.');
 assert.match(payablesScreen, /buildGroups\(\[target\], groupMode\)[\s\S]*setExpandedGroups/,
   'Busca deve preservar o agrupamento atual e abrir apenas o grupo do compromisso localizado.');
 assert.doesNotMatch(payablesScreen, /focusRequest[\s\S]{0,900}setSelected\(/,
