@@ -109,6 +109,8 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
   const [newTitleOpen, setNewTitleOpen] = useState(false);
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [receiptTargetId, setReceiptTargetId] = useState<string | null>(null);
+  const [reverseReceiptId, setReverseReceiptId] = useState<string | null>(null);
+  const [reverseReason, setReverseReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const operationRef = useRef<{ fingerprint: string; id: string } | null>(null);
@@ -137,7 +139,7 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
   const open = data.receivables.filter((item) => item.status !== 'paid' && Number(item.openAmount) > 0);
   const overdue = open.filter((item) => isoDay(item.dueDate) < today);
   const totalOpen = open.reduce((sum, item) => sum + Number(item.openAmount || 0), 0);
-  const totalReceived = data.receivables.reduce((sum, item) => sum + item.receipts.reduce((receiptSum, receipt) => receiptSum + Number(receipt.amount || 0) + Number(receipt.interestAmount || 0) + Number(receipt.fineAmount || 0), 0), 0);
+  const totalReceived = data.receivables.reduce((sum, item) => sum + item.receipts.filter((receipt) => !receipt.reversedAt).reduce((receiptSum, receipt) => receiptSum + Number(receipt.amount || 0) + Number(receipt.interestAmount || 0) + Number(receipt.fineAmount || 0), 0), 0);
   const rows = useMemo<ReceivableRow[]>(() => data.receivables.map((item) => ({
     id: item.id,
     dueDate: isoDay(item.dueDate),
@@ -147,7 +149,7 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
     totalAmount: Number(item.totalAmount || 0),
     openAmount: Number(item.openAmount || 0),
     status: statusText(item.status),
-    receipts: item.receipts.length
+    receipts: item.receipts.filter((receipt) => !receipt.reversedAt).length
   })), [data.receivables]);
 
   const keys = Object.keys(receivableLabels) as ReceivableKey[];
@@ -167,6 +169,8 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
   const monetaryAccounts = data.accounts.filter((item) => item.isActive && ['checking', 'savings', 'cash'].includes(normalize(item.type)));
   const receiptMethods = data.paymentMethods.filter((item) => item.isActive && normalize(item.type) !== 'credit' && !normalize(item.name).includes('verocard'));
   const receiptTarget = receiptTargetId ? data.receivables.find((item) => item.id === receiptTargetId) || null : null;
+  const reverseReceipt = receiptTarget && reverseReceiptId ? receiptTarget.receipts.find((item) => item.id === reverseReceiptId) || null : null;
+  const canReceiveTarget = Boolean(receiptTarget && Number(receiptTarget.openAmount || 0) > 0 && !['paid', 'cancelled'].includes(receiptTarget.status));
   const editingTitle = editingTitleId ? data.receivables.find((item) => item.id === editingTitleId) || null : null;
 
   function operationId(prefix: string, fingerprint: string) {
@@ -198,6 +202,8 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
     if (/RECEIVABLE_STALE_VERSION/i.test(code)) return 'Este título mudou em outro dispositivo. A tela será atualizada antes de uma nova tentativa.';
     if (/RECEIVABLE_HAS_RECEIPTS/i.test(code)) return 'Este título já possui recebimento registrado e não pode mais ser editado ou cancelado.';
     if (/RECEIVABLE_NOT_EDITABLE/i.test(code)) return 'Este título já foi quitado ou cancelado e está protegido contra alteração.';
+    if (/RECEIPT_NOT_FOUND/i.test(code)) return 'Este recebimento não está mais disponível neste título.';
+    if (/RECEIPT_ALREADY_REVERSED/i.test(code)) return 'Este recebimento já foi estornado em outra operação.';
     if (/INVALID_ACCOUNT/i.test(code)) return 'A conta selecionada não está mais ativa.';
     if (/INVALID_PAYMENT_METHOD/i.test(code)) return 'A forma de recebimento selecionada não está mais ativa.';
     if (/FUTURE_RECEIPT_NOT_ALLOWED/i.test(code)) return 'O recebimento não pode ser confirmado em data futura.';
@@ -248,6 +254,8 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
     if (!target) return;
     resetOperation();
     setMessage('');
+    setReverseReceiptId(null);
+    setReverseReason('');
     setReceiptDraft({
       amount: Number(target.openAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       receivedAt: today,
@@ -337,6 +345,48 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
     } catch (error) {
       setMessage(receivableError(error));
       if (/RECEIVABLE_STALE_VERSION/i.test(error instanceof Error ? error.message : '')) await refreshOfficialSnapshot();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reverseReceiptEntry() {
+    if (!receiptTarget || !reverseReceipt || reverseReceipt.reversedAt || busy || !canCancel) return;
+    const total = Number(reverseReceipt.amount || 0) + Number(reverseReceipt.interestAmount || 0) + Number(reverseReceipt.fineAmount || 0);
+    const confirmed = await megConfirm({
+      kicker: 'Estorno de recebimento',
+      title: 'Reabrir este valor?',
+      message: `${date.format(new Date(String(reverseReceipt.receivedAt)))} · ${money.format(total)}. O recibo será preservado como estornado, o evento de receita será arquivado e o principal voltará ao saldo em aberto do título.`,
+      confirmLabel: 'Confirmar estorno',
+      cancelLabel: 'Voltar',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    const fingerprint = JSON.stringify({
+      action: 'reverse-receivable-receipt',
+      receivableId: receiptTarget.id,
+      receiptId: reverseReceipt.id,
+      reason: reverseReason.trim(),
+    });
+    const opId = operationId('web-receipt-reverse', fingerprint);
+    setBusy(true);
+    setMessage('Estornando recebimento e reabrindo o saldo do título…');
+    try {
+      await receivablesClient.reverseReceipt(receiptTarget.id, reverseReceipt.id, {
+        reason: reverseReason.trim() || null,
+        operationId: opId,
+      });
+      await refreshOfficialSnapshot();
+      resetOperation();
+      setReverseReceiptId(null);
+      setReverseReason('');
+      setMessage('Recebimento estornado. O saldo do título e o caixa foram recalculados.');
+    } catch (error) {
+      setMessage(receivableError(error));
+      if (/RECEIPT_ALREADY_REVERSED|RECEIPT_NOT_FOUND/i.test(error instanceof Error ? error.message : '')) {
+        await refreshOfficialSnapshot();
+      }
     } finally {
       setBusy(false);
     }
