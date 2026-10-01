@@ -1822,3 +1822,239 @@
   .meg-web-receivable-dialog>header,
   .meg-web-receivable-dialog>footer { padding-inline:14px; }
 }
+
+
+/* Administração operacional de usuários */
+.meg-web-2026 .px-users-readonly.active {
+  border-color:rgba(75,225,164,.18);
+  background:rgba(58,173,124,.08);
+  color:#8fe8bc;
+}
+.meg-web-2026 .px-users-readonly.active.has-pending {
+  border-color:rgba(244,194,84,.22);
+  background:rgba(141,103,34,.10);
+  color:#ead59b;
+}
+.meg-web-2026 .px-user-card-footer button:not(:disabled) {
+  border-color:rgba(82,229,216,.18);
+  background:rgba(53,185,174,.08);
+  color:#8ce6dd;
+}
+.meg-web-2026 .px-user-card-footer button:not(:disabled):hover {
+  border-color:rgba(75,236,221,.34);
+  background:rgba(53,185,174,.14);
+  color:#effffc;
+}
+.meg-web-user-access-overlay {
+  position:fixed;
+  inset:0;
+  z-index:2147482600;
+  display:grid;
+  place-items:center;
+  padding:22px;
+  background:rgba(0,15,17,.84);
+}
+.meg-web-user-access-backdrop {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  border:0;
+  background:transparent;
+}
+.meg-web-user-access-dialog {
+  position:relative;
+  z-index:1;
+  width:min(720px,96vw);
+  max-height:min(88dvh,840px);
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
+  overflow:hidden;
+  border:1px solid rgba(76,231,216,.24);
+  border-radius:20px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(49,218,202,.075),transparent 38%),
+    #06282b;
+  color:#f0fbf9;
+  box-shadow:0 32px 90px rgba(0,0,0,.46);
+}
+.meg-web-user-access-dialog>header {
+  padding:17px 18px 14px;
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr) 36px;
+  align-items:center;
+  gap:11px;
+  border-bottom:1px solid rgba(89,221,211,.09);
+}
+.meg-web-user-access-dialog>header .px-user-card-avatar {
+  width:44px;
+  height:44px;
+}
+.meg-web-user-access-dialog>header h2 {
+  margin:4px 0 2px;
+  font-size:21px;
+  letter-spacing:-.035em;
+}
+.meg-web-user-access-dialog>header p {
+  margin:0;
+  color:#799c97;
+  font-size:8px;
+}
+.meg-web-user-access-dialog>header>button {
+  width:36px;
+  height:36px;
+  border:1px solid rgba(89,221,211,.12);
+  border-radius:10px;
+  background:rgba(255,255,255,.035);
+  color:#9fc0bc;
+  font-size:20px;
+}
+.meg-web-user-access-body {
+  min-height:0;
+  overflow:auto;
+  padding:16px 18px;
+  display:grid;
+  gap:12px;
+}
+.meg-web-user-access-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.meg-web-user-access-grid label,
+.meg-web-user-rejection {
+  display:grid;
+  gap:6px;
+}
+.meg-web-user-access-grid span,
+.meg-web-user-rejection>span {
+  color:#87aaa5;
+  font-size:8px;
+  font-weight:850;
+}
+.meg-web-user-access-grid input,
+.meg-web-user-access-grid select,
+.meg-web-user-rejection textarea {
+  width:100%;
+  box-sizing:border-box;
+  min-height:43px;
+  padding:9px 11px;
+  border:1px solid rgba(91,223,211,.15);
+  border-radius:10px;
+  outline:0;
+  background:#073033;
+  color:#f2fffd;
+  font:inherit;
+  font-size:9px;
+}
+.meg-web-user-rejection textarea {
+  min-height:78px;
+  resize:vertical;
+}
+.meg-web-user-access-grid input:focus,
+.meg-web-user-access-grid select:focus,
+.meg-web-user-rejection textarea:focus {
+  border-color:rgba(63,237,221,.42);
+  box-shadow:0 0 0 3px rgba(44,216,202,.055);
+}
+.meg-web-user-access-facts {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.meg-web-user-access-facts>span {
+  padding:10px 11px;
+  border:1px solid rgba(88,220,209,.09);
+  border-radius:10px;
+  background:rgba(2,29,31,.34);
+}
+.meg-web-user-access-facts small,
+.meg-web-user-access-facts strong {
+  display:block;
+}
+.meg-web-user-access-facts small {
+  color:#688f8a;
+  font-size:6.5px;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+.meg-web-user-access-facts strong {
+  margin-top:4px;
+  color:#d6eae7;
+  font-size:8px;
+}
+.meg-web-user-security-actions {
+  padding:11px 12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  border:1px solid rgba(96,220,209,.09);
+  border-radius:11px;
+  background:rgba(3,31,33,.46);
+}
+.meg-web-user-security-actions div strong,
+.meg-web-user-security-actions div small {
+  display:block;
+}
+.meg-web-user-security-actions div strong {
+  color:#bfd6d2;
+  font-size:8px;
+}
+.meg-web-user-security-actions div small {
+  margin-top:3px;
+  color:#688d88;
+  font-size:7px;
+}
+.meg-web-user-security-actions>span {
+  display:flex;
+  gap:6px;
+}
+.meg-web-user-security-actions button {
+  min-height:34px;
+  padding:0 10px;
+  border:1px solid rgba(91,222,211,.12);
+  border-radius:8px;
+  background:rgba(255,255,255,.035);
+  color:#a6c5c1;
+  font-size:7.5px;
+  font-weight:850;
+}
+.meg-web-user-access-dialog>footer {
+  padding:11px 18px 15px;
+  display:flex;
+  justify-content:flex-end;
+  gap:7px;
+  border-top:1px solid rgba(88,222,211,.08);
+  background:rgba(4,34,36,.78);
+}
+.meg-web-user-access-dialog>footer>button {
+  min-height:38px;
+  padding:0 12px;
+  border:1px solid rgba(90,219,209,.13);
+  border-radius:9px;
+  background:rgba(255,255,255,.035);
+  color:#afcac6;
+  font-size:8px;
+  font-weight:850;
+}
+.meg-web-user-access-dialog>footer>button.danger {
+  border-color:rgba(255,118,137,.24);
+  background:rgba(128,43,56,.12);
+  color:#ff9fac;
+}
+.meg-web-user-access-dialog>footer>.px-primary-action {
+  border-color:rgba(59,235,218,.32);
+  background:linear-gradient(180deg,rgba(12,154,147,.96),rgba(8,107,105,.97));
+  color:#fff;
+}
+@media(max-width:720px) {
+  .meg-web-user-access-overlay { padding:10px; }
+  .meg-web-user-access-dialog { width:100%; max-height:94dvh; border-radius:16px; }
+  .meg-web-user-access-grid,
+  .meg-web-user-access-facts { grid-template-columns:1fr; }
+  .meg-web-user-security-actions { align-items:flex-start; flex-direction:column; }
+  .meg-web-user-security-actions>span { width:100%; }
+  .meg-web-user-security-actions button { flex:1; }
+  .meg-web-user-access-dialog>footer { flex-wrap:wrap; }
+}
