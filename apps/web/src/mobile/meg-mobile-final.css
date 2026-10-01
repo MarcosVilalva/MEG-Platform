@@ -1788,3 +1788,98 @@ html[data-meg-user-avatar="image"] .meg2-avatar{color:transparent;text-shadow:no
   .meg2-pending-card-inline>footer{grid-template-columns:1fr}
   .meg2-pending-card-inline>footer>button{width:100%}
 }
+
+
+/* MEG 2.0.668 · microacabamento dos badges: números nunca disputam espaço com os rótulos. */
+.meg2-payables .meg2-tabs button{
+  position:relative;
+}
+.meg2-payables .meg2-tabs button.has-count{
+  padding-left:7px;
+  padding-right:29px;
+}
+.meg2-payables .meg2-tabs button.has-count>b{
+  position:absolute;
+  top:5px;
+  right:5px;
+  min-width:18px;
+  width:auto;
+  height:18px;
+  margin:0;
+  padding:0 4px;
+  box-sizing:border-box;
+  border-radius:9px;
+  display:grid;
+  place-items:center;
+  font-size:7.5px;
+  line-height:1;
+  font-variant-numeric:tabular-nums;
+  box-shadow:0 2px 7px rgba(0,0,0,.18);
+}
+
+.meg2-pending-metrics article.selected>small{
+  display:block;
+  max-width:calc(100% - 31px);
+  padding-right:2px;
+  font-size:8px!important;
+  line-height:1.08;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.meg2-pending-metrics article.selected>span{
+  top:6px!important;
+  right:6px!important;
+  min-width:24px!important;
+  width:auto!important;
+  height:24px!important;
+  padding:0 5px!important;
+  box-sizing:border-box;
+  border-radius:8px!important;
+  font-size:8.5px!important;
+  line-height:1!important;
+  font-variant-numeric:tabular-nums;
+  box-shadow:0 3px 9px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+/* O contador do dock segue a mesma disciplina visual. */
+.meg2-badge-wrap b{
+  top:-4px!important;
+  right:-6px!important;
+  min-width:17px!important;
+  width:auto!important;
+  height:17px!important;
+  padding:0 4px!important;
+  box-sizing:border-box;
+  border:1px solid rgba(255,255,255,.16);
+  font-size:7px!important;
+  line-height:1!important;
+  font-variant-numeric:tabular-nums;
+  box-shadow:0 2px 7px rgba(0,0,0,.22);
+}
+
+@media(max-width:360px){
+  .meg2-payables .meg2-tabs button.has-count{
+    padding-left:5px;
+    padding-right:25px;
+    font-size:8.4px;
+  }
+  .meg2-payables .meg2-tabs button.has-count>b{
+    top:5px;
+    right:4px;
+    min-width:16px;
+    height:16px;
+    padding-inline:3px;
+    font-size:6.8px;
+  }
+  .meg2-pending-metrics article.selected>small{
+    max-width:calc(100% - 28px);
+    font-size:7.3px!important;
+  }
+  .meg2-pending-metrics article.selected>span{
+    min-width:22px!important;
+    height:22px!important;
+    padding-inline:4px!important;
+    font-size:7.8px!important;
+  }
+}
