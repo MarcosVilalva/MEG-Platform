@@ -59,7 +59,7 @@ console.log('Contrato do fluxo validado de Novo/Editar lançamento aprovado.');
   assert.ok(picker.includes("searchRef.current?.blur()"), 'Fechar seletor deve dispensar teclado explicitamente.');
   assert.ok(picker.includes("meg5-picker-sheet ${searching ? 'is-searching' : ''}"), 'Busca deve ativar layout ancorado próprio.');
   assert.ok(picker.includes('item.icon') && picker.includes('MegIcon name={item.icon}'), 'Opções devem aceitar ícone SVG contextual.');
-  assert.ok(pickerCss.includes('.meg5-picker-sheet.is-searching') && pickerCss.includes('align-self:stretch') && pickerCss.includes('height:100dvh'), 'Busca com teclado deve permanecer soberana em toda a viewport.');
+  assert.ok(pickerCss.includes('.meg5-picker-sheet.is-searching') && pickerCss.includes('align-self:stretch') && pickerCss.includes('var(--meg-visual-height,100dvh)'), 'Busca com teclado deve permanecer soberana em toda a viewport visual, inclusive com teclado aberto.');
   assert.ok(pickerCss.includes('.meg5-picker-option-icon'), 'Categoria deve ter container visual de ícone.');
   assert.ok(launch.includes('resolveFinancialIcon') && launch.includes('icon, tone'), 'Categorias devem receber iconografia financeira real.');
   assert.ok(css.includes('.meg3-launch-type-cards button:nth-child(1)') && css.includes('rgba(255,83,111') && css.includes('rgba(62,238,155') && css.includes('rgba(246,209,75'), 'Cards Despesa, Receita e Alimentação devem usar cores neon integrais.');
@@ -85,7 +85,7 @@ console.log('Contrato do fluxo validado de Novo/Editar lançamento aprovado.');
 {
   assert.ok(picker.includes("createPortal(overlay, document.body)"), 'Seletor deve ser portado para o body e escapar do stacking context da tela.');
   assert.ok(picker.includes("document.body.classList.add('meg-picker-open')"), 'Abrir seletor deve ativar estado modal soberano.');
-  assert.ok(pickerCss.includes('z-index:2147483600') && pickerCss.includes('background:#012d30') && pickerCss.includes('height:100dvh'), 'Seletor deve ocupar a viewport com fundo opaco.');
+  assert.ok(pickerCss.includes('z-index:2147483600') && pickerCss.includes('background:#012d30') && pickerCss.includes('var(--meg-visual-height,100dvh)'), 'Seletor deve ocupar a viewport visual real com fundo opaco.');
   assert.ok(runtimeCss.includes('body.meg-cleanroom-mobile.meg-picker-open #root') && runtimeCss.includes('visibility:hidden!important'), 'App-base deve sair da composição enquanto o seletor estiver aberto.');
   assert.ok(androidMain.includes('View.LAYER_TYPE_SOFTWARE') && !androidMain.includes('View.LAYER_TYPE_HARDWARE') && !androidMain.includes('setOffscreenPreRaster(true)'), 'WebView deve permanecer em compositor estável por software sem pré-rasterizar conteúdo fora da viewport.');
 }

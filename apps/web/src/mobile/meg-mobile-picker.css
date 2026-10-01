@@ -53,7 +53,7 @@
   inset:0;
   z-index:2147483600;
   width:100vw;
-  height:100dvh;
+  height:var(--meg-visual-height,100dvh);
   display:grid;
   align-items:stretch;
   padding:0;
@@ -62,8 +62,8 @@
 }
  .meg5-picker-sheet{
   width:min(100%,560px);
-  height:100dvh;
-  max-height:100dvh;
+  height:var(--meg-visual-height,100dvh);
+  max-height:var(--meg-visual-height,100dvh);
   min-height:0;
   margin:0 auto;
   display:grid;
@@ -211,8 +211,8 @@
 .meg5-picker-sheet.is-searching{
   align-self:stretch;
   margin-top:0;
-  height:100dvh;
-  max-height:100dvh;
+  height:var(--meg-visual-height,100dvh);
+  max-height:var(--meg-visual-height,100dvh);
   border:0;
   border-radius:0;
 }
@@ -240,7 +240,7 @@
   min-height:60px;
 }
 @media(max-height:680px){
-  .meg5-picker-sheet.is-searching{height:100dvh;max-height:100dvh}
+  .meg5-picker-sheet.is-searching{height:var(--meg-visual-height,100dvh);max-height:var(--meg-visual-height,100dvh)}
 }
 
 .meg5-picker-option-icon.image{
@@ -300,4 +300,21 @@
     grid-template-columns:56px minmax(0,1fr) auto 20px;
     gap:8px;
   }
+}
+
+
+/* MEG 2.0.669 · picker usa o viewport visual real para não ficar atrás do teclado. */
+body.meg-picker-open{
+  overflow:hidden!important;
+  overscroll-behavior:none!important;
+}
+.meg5-picker-overlay,
+.meg5-picker-sheet,
+.meg5-picker-sheet.is-searching{
+  height:var(--meg-visual-height,100dvh)!important;
+  max-height:var(--meg-visual-height,100dvh)!important;
+}
+.meg5-picker-list{
+  min-height:0!important;
+  padding-bottom:max(16px,env(safe-area-inset-bottom))!important;
 }

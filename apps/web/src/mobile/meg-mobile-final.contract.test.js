@@ -777,3 +777,21 @@ assert.match(
   /MEG 2\.0\.668[\s\S]*button\.has-count>b[\s\S]*position:absolute[\s\S]*article\.selected>small[\s\S]*max-width:calc\(100% - 31px\)[\s\S]*\.meg2-badge-wrap b/,
   'Microacabamento dos badges deve manter posicionamento responsivo nas abas, resumo e dock.',
 );
+
+
+/* MEG 2.0.669 · fechamento de UX do editor e seletores globais. */
+assert.equal(
+  launchSheet.includes('onGoHome?: () => void') &&
+  launchSheet.includes('onClick={onGoHome || onClose}>Voltar para Início') &&
+  mobile.includes("onGoHome={() => { setLaunchSheet(null); navigateMobile('home'); }}"),
+  true,
+  'Tela de sucesso do lançamento deve voltar de fato para a Home quando o usuário escolhe Voltar para Início.',
+);
+assert.equal(
+  mobile.includes("document.documentElement.style.setProperty('--meg-visual-height'") &&
+  picker.includes("if (event.key !== 'Escape') return") &&
+  pickerCss.includes("var(--meg-visual-height,100dvh)") &&
+  pickerCss.includes('body.meg-picker-open'),
+  true,
+  'Pickers globais devem respeitar o visualViewport real, travar o fundo e permitir fechamento por Escape.',
+);

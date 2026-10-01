@@ -164,6 +164,7 @@ export function MegMobileLaunchSheet({
   preset,
   event,
   onClose,
+  onGoHome,
   appHeader,
   appDock,
 }: {
@@ -171,6 +172,7 @@ export function MegMobileLaunchSheet({
   preset: LaunchPreset;
   event?: FinancialEvent | null;
   onClose: () => void;
+  onGoHome?: () => void;
   appHeader?: ReactNode;
   appDock?: ReactNode;
 }) {
@@ -673,7 +675,7 @@ export function MegMobileLaunchSheet({
         <div className="meg3-success-icon">✓</div><small>LANÇAMENTO SALVO</small><h3>{event ? 'Alterações salvas' : 'Tudo certo!'}</h3>
         <section><span>{description}</span><b>{money.format(parseAmount(amount))}</b><small>{[typeLabel, selectedCategory?.name, status === 'planned' ? 'Pendente' : 'Pago'].filter(Boolean).join(' · ')}</small></section>
         <button type="button" className="primary" onClick={() => { setDescription(''); setAmount(''); setCategoryId(''); setMessage(''); setStep('choose'); }}>Novo lançamento</button>
-        <button type="button" className="ghost" onClick={onClose}>Voltar para Início</button>
+        <button type="button" className="ghost" onClick={onGoHome || onClose}>Voltar para Início</button>
       </main> : null}
 
       {step === 'form' ? <footer className="meg3-form-actions">
