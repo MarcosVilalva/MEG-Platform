@@ -114,6 +114,7 @@ function eventError(reply: FastifyReply, error: unknown) {
   }
   if (!(error instanceof Error)) throw error;
   if (error.message === 'FINANCIAL_EVENT_NOT_FOUND') return reply.code(404).send({ error: error.message });
+  if (error.message === 'RECEIPT_LINKED_EVENT_PROTECTED') return reply.code(409).send({ error: error.message });
   if (['INVALID_ACCOUNT', 'INVALID_CATEGORY', 'INVALID_PAYMENT_METHOD'].includes(error.message)) {
     return reply.code(400).send({ error: error.message });
   }
