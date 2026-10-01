@@ -419,6 +419,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchEvents, setSearchEvents] = useState<PhoenixReadModel['events']['items'] | null>(null);
   const [periodOpen, setPeriodOpen] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [periodMode, setPeriodMode] = useState<PeriodMode>('month');
@@ -447,6 +448,15 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
   const workspaceSyncCheckingRef = useRef(false);
   const periodRequestRef = useRef(0);
   const navigationHistoryRef = useRef<PhoenixView[]>([]);
+
+  useEffect(() => {
+    if (!searchOpen || nativeOperational) return;
+    let active = true;
+    void loadPhoenixAllEvents()
+      .then((events) => { if (active) setSearchEvents(events.items); })
+      .catch(() => { if (active) setSearchEvents(null); });
+    return () => { active = false; };
+  }, [searchOpen, nativeOperational]);
 
   useEffect(() => {
     if (!nativeOperational) {
@@ -1374,7 +1384,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         <button className={mobileOpen ? 'active' : ''} type="button" onClick={() => setMobileOpen(true)}><strong><PhoenixNavIcon name="more" /></strong><span>Menu</span></button>
       </nav>
     </div>
-    {searchOpen ? <PhoenixCommandPalette data={viewData} onClose={() => setSearchOpen(false)} onNavigate={navigate} /> : null}
+    {searchOpen ? <PhoenixCommandPalette data={viewData} allEvents={!nativeOperational ? searchEvents || undefined : undefined} onClose={() => setSearchOpen(false)} onNavigate={navigate} /> : null}
     {exitConfirmOpen && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay px-app-exit-confirm">
       <button className="px-meg-confirm-backdrop" type="button" aria-label="Não sair" onClick={() => setExitConfirmOpen(false)} />
       <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-exit-title" aria-describedby="px-exit-copy">
