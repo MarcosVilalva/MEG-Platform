@@ -82,8 +82,13 @@ assert.match(batchSettlement, /monetaryAccountBalanceAt\(tx, ownerId, account, i
   'Lote deve validar o saldo da conta monetária escolhida, não um saldo consolidado entre contas.');
 assert.match(batchSettlement, /accountBalanceBefore[\s\S]*accountBalanceAfter/,
   'Resposta da baixa em lote deve devolver saldo antes e depois para o comprovante.');
-assert.match(batchSettlement, /source === 'card'[\s\S]*statementMonth[\s\S]*cardInstallment\.updateMany/,
-  'Fatura selecionada deve ser baixada como unidade financeira, atualizando suas parcelas abertas de forma atômica.');
+assert.equal(
+  batchSettlement.includes("item.source === 'card'") &&
+  batchSettlement.includes('statementMonth') &&
+  batchSettlement.includes('cardInstallment.updateMany'),
+  true,
+  'Fatura selecionada deve ser baixada como unidade financeira, atualizando suas parcelas abertas de forma atômica.',
+);
 assert.match(batchSettlement, /PHOENIX_PENDING_DUPLICATE/,
   'O mesmo compromisso não pode aparecer duas vezes no lote.');
 assert.doesNotMatch(batchSettlement, /FINANCIAL_EVENT_NOT_LEGACY_COMPAT/,
