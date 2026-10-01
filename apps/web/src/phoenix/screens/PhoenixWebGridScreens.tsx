@@ -5,6 +5,7 @@ import type { PhoenixReadModel } from '../contracts';
 import { receivablesClient } from '../../app/receivables-client';
 import { readSession } from '../../app/auth-client';
 import { loadPhoenixReadModel } from '../data/load-phoenix-read-model';
+import { megConfirm } from '../meg-confirm';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -73,7 +74,7 @@ function options(values: Array<string | number>, label?: (value: string) => stri
 }
 
 function statusText(status: string) {
-  return ({ open: 'Em aberto', partial: 'Parcial', paid: 'Recebido', overdue: 'Vencido' } as Record<string, string>)[status] || status;
+  return ({ open: 'Em aberto', partial: 'Parcial', paid: 'Recebido', overdue: 'Vencido', cancelled: 'Cancelado' } as Record<string, string>)[status] || status;
 }
 
 function isoDay(value: string | Date) {
@@ -106,6 +107,7 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
   const [filters, setFilters] = useState<ReceivableFilters>(initialReceivableFilters);
   const [sort, setSort] = useState<{ key: ReceivableKey; direction: PhoenixGridSortDirection } | null>(null);
   const [newTitleOpen, setNewTitleOpen] = useState(false);
+  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [receiptTargetId, setReceiptTargetId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -113,6 +115,7 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
   const today = todaySaoPaulo();
   const role = readSession()?.user.role;
   const canWrite = role === 'ADMIN' || role === 'MANAGER' || role === 'OPERATOR';
+  const canCancel = role === 'ADMIN' || role === 'MANAGER';
 
   const [titleDraft, setTitleDraft] = useState({
     customerId: '',
@@ -164,6 +167,7 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
   const monetaryAccounts = data.accounts.filter((item) => item.isActive && ['checking', 'savings', 'cash'].includes(normalize(item.type)));
   const receiptMethods = data.paymentMethods.filter((item) => item.isActive && normalize(item.type) !== 'credit' && !normalize(item.name).includes('verocard'));
   const receiptTarget = receiptTargetId ? data.receivables.find((item) => item.id === receiptTargetId) || null : null;
+  const editingTitle = editingTitleId ? data.receivables.find((item) => item.id === editingTitleId) || null : null;
 
   function operationId(prefix: string, fingerprint: string) {
     if (operationRef.current?.fingerprint === fingerprint) return operationRef.current.id;
@@ -191,6 +195,9 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
     const code = error instanceof Error ? error.message : 'RECEIVABLE_WRITE_FAILED';
     if (/AMOUNT_EXCEEDS_OPEN_BALANCE/i.test(code)) return 'O valor informado ultrapassa o saldo em aberto deste título.';
     if (/RECEIVABLE_NOT_FOUND/i.test(code)) return 'Este título já foi quitado, alterado ou não está mais disponível.';
+    if (/RECEIVABLE_STALE_VERSION/i.test(code)) return 'Este título mudou em outro dispositivo. A tela será atualizada antes de uma nova tentativa.';
+    if (/RECEIVABLE_HAS_RECEIPTS/i.test(code)) return 'Este título já possui recebimento registrado e não pode mais ser editado ou cancelado.';
+    if (/RECEIVABLE_NOT_EDITABLE/i.test(code)) return 'Este título já foi quitado ou cancelado e está protegido contra alteração.';
     if (/INVALID_ACCOUNT/i.test(code)) return 'A conta selecionada não está mais ativa.';
     if (/INVALID_PAYMENT_METHOD/i.test(code)) return 'A forma de recebimento selecionada não está mais ativa.';
     if (/FUTURE_RECEIPT_NOT_ALLOWED/i.test(code)) return 'O recebimento não pode ser confirmado em data futura.';
@@ -206,10 +213,33 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
     onDataCommitted?.(snapshot);
   }
 
+  function closeTitleEditor() {
+    if (busy) return;
+    setNewTitleOpen(false);
+    setEditingTitleId(null);
+  }
+
   function openNewTitle() {
     resetOperation();
     setMessage('');
+    setEditingTitleId(null);
     setTitleDraft({ customerId: '', description: '', totalAmount: '', dueDate: today, notes: '' });
+    setNewTitleOpen(true);
+  }
+
+  function openEditTitle(id: string) {
+    const target = data.receivables.find((item) => item.id === id);
+    if (!target || target.receipts.length || ['paid', 'cancelled'].includes(target.status)) return;
+    resetOperation();
+    setMessage('');
+    setEditingTitleId(id);
+    setTitleDraft({
+      customerId: target.customer?.id || '',
+      description: target.description,
+      totalAmount: Number(target.totalAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      dueDate: isoDay(target.dueDate),
+      notes: target.notes || '',
+    });
     setNewTitleOpen(true);
   }
 
@@ -230,35 +260,83 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
     setReceiptTargetId(id);
   }
 
-  async function createTitle() {
+  async function saveTitle() {
     if (busy || !canWrite) return;
     const amount = parseBrazilianNumber(titleDraft.totalAmount) || 0;
     if (titleDraft.description.trim().length < 2) return setMessage('Informe uma descrição para o título.');
     if (amount <= 0) return setMessage('Informe um valor maior que zero.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(titleDraft.dueDate)) return setMessage('Informe uma data de vencimento válida.');
-    const fingerprint = JSON.stringify({ action:'create-receivable', ...titleDraft, amount });
-    const opId = operationId('web-receivable', fingerprint);
+    const fingerprint = JSON.stringify({ action: editingTitle ? 'update-receivable' : 'create-receivable', id: editingTitle?.id || '', ...titleDraft, amount });
+    const opId = operationId(editingTitle ? 'web-receivable-edit' : 'web-receivable', fingerprint);
     setBusy(true);
-    setMessage('Criando título e confirmando no servidor…');
+    setMessage(editingTitle ? 'Atualizando título e conferindo a versão…' : 'Criando título e confirmando no servidor…');
     try {
-      await receivablesClient.createReceivable({
-        customerId: titleDraft.customerId || null,
-        description: titleDraft.description.trim().toLocaleUpperCase('pt-BR'),
-        totalAmount: amount,
-        dueDate: titleDraft.dueDate,
-        installmentNo: 1,
-        installmentQty: 1,
-        interestRate: 0,
-        fineRate: 0,
-        notes: titleDraft.notes.trim() || null,
+      if (editingTitle) {
+        await receivablesClient.updateReceivable(editingTitle.id, {
+          customerId: titleDraft.customerId || null,
+          description: titleDraft.description.trim().toLocaleUpperCase('pt-BR'),
+          totalAmount: amount,
+          dueDate: titleDraft.dueDate,
+          notes: titleDraft.notes.trim() || null,
+          expectedUpdatedAt: editingTitle.updatedAt,
+          operationId: opId,
+        });
+      } else {
+        await receivablesClient.createReceivable({
+          customerId: titleDraft.customerId || null,
+          description: titleDraft.description.trim().toLocaleUpperCase('pt-BR'),
+          totalAmount: amount,
+          dueDate: titleDraft.dueDate,
+          installmentNo: 1,
+          installmentQty: 1,
+          interestRate: 0,
+          fineRate: 0,
+          notes: titleDraft.notes.trim() || null,
+          operationId: opId,
+        });
+      }
+      await refreshOfficialSnapshot();
+      resetOperation();
+      setNewTitleOpen(false);
+      setEditingTitleId(null);
+      setMessage(editingTitle ? 'Título atualizado e confirmado na base financeira.' : 'Título criado e confirmado na base financeira.');
+    } catch (error) {
+      setMessage(receivableError(error));
+      if (/RECEIVABLE_STALE_VERSION/i.test(error instanceof Error ? error.message : '')) await refreshOfficialSnapshot();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancelTitle(id: string) {
+    if (busy || !canCancel) return;
+    const target = data.receivables.find((item) => item.id === id);
+    if (!target || target.receipts.length || ['paid', 'cancelled'].includes(target.status)) return;
+    const confirmed = await megConfirm({
+      kicker: 'Contas a receber',
+      title: 'Cancelar este título?',
+      message: `${target.description} · ${money.format(Number(target.openAmount || 0))}. O título ficará preservado no histórico como cancelado e não poderá receber baixas.`,
+      confirmLabel: 'Cancelar título',
+      cancelLabel: 'Voltar',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    const fingerprint = JSON.stringify({ action:'cancel-receivable', id:target.id, updatedAt:target.updatedAt || '' });
+    const opId = operationId('web-receivable-cancel', fingerprint);
+    setBusy(true);
+    setMessage('Cancelando título e preservando a auditoria…');
+    try {
+      await receivablesClient.cancelReceivable(target.id, {
+        expectedUpdatedAt: target.updatedAt,
         operationId: opId,
       });
       await refreshOfficialSnapshot();
       resetOperation();
-      setNewTitleOpen(false);
-      setMessage('Título criado e confirmado na base financeira.');
+      setMessage('Título cancelado e preservado no histórico.');
     } catch (error) {
       setMessage(receivableError(error));
+      if (/RECEIVABLE_STALE_VERSION/i.test(error instanceof Error ? error.message : '')) await refreshOfficialSnapshot();
     } finally {
       setBusy(false);
     }
@@ -329,18 +407,26 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
           <thead><tr>
             <th>{header('Vencimento','dueDate','date')}</th><th>{header('Descrição','description','text')}</th><th>{header('Cliente','customer','multi',gridOptions.customer)}</th><th>{header('Parcela','installment','multi',gridOptions.installment)}</th><th>{header('Total','totalAmount','number')}</th><th>{header('Em aberto','openAmount','number')}</th><th>{header('Status','status','multi',gridOptions.status)}</th><th>{header('Recebimentos','receipts','number')}</th><th>Ações</th>
           </tr></thead>
-          <tbody>{visible.map((row) => <tr key={row.id}>
-            <td>{date.format(new Date(`${row.dueDate}T12:00:00Z`))}</td><td><strong>{row.description}</strong></td><td>{row.customer}</td><td>{row.installment}</td><td className="px-money">{money.format(Number(row.totalAmount))}</td><td className="px-money">{money.format(Number(row.openAmount))}</td><td><span className={`px-status ${normalize(row.status).replace(/\s+/g,'-')}`}>{row.status}</span></td><td>{row.receipts}</td><td><div className="meg-web-row-actions">{Number(row.openAmount) > 0 ? <button type="button" disabled={!canWrite} onClick={() => openReceipt(row.id)}>Receber</button> : <span className="px-status reconciled">Quitado</span>}</div></td>
-          </tr>)}</tbody>
+          <tbody>{visible.map((row) => {
+            const target = data.receivables.find((item) => item.id === row.id);
+            const editable = Boolean(target && !target.receipts.length && !['paid', 'cancelled'].includes(target.status));
+            return <tr key={row.id}>
+              <td>{date.format(new Date(`${row.dueDate}T12:00:00Z`))}</td><td><strong>{row.description}</strong></td><td>{row.customer}</td><td>{row.installment}</td><td className="px-money">{money.format(Number(row.totalAmount))}</td><td className="px-money">{money.format(Number(row.openAmount))}</td><td><span className={`px-status ${normalize(row.status).replace(/\s+/g,'-')}`}>{row.status}</span></td><td>{row.receipts}</td><td><div className="meg-web-row-actions">
+                {target?.status === 'cancelled' ? <span className="px-status archived">Cancelado</span> : Number(row.openAmount) > 0 ? <button type="button" disabled={!canWrite} onClick={() => openReceipt(row.id)}>Receber</button> : <span className="px-status reconciled">Quitado</span>}
+                {editable ? <button type="button" disabled={!canWrite || busy} onClick={() => openEditTitle(row.id)}>Editar</button> : null}
+                {editable && canCancel ? <button type="button" className="danger" disabled={busy} onClick={() => { void cancelTitle(row.id); }}>Cancelar</button> : null}
+              </div></td>
+            </tr>;
+          })}</tbody>
         </table>
         {!visible.length ? <p className="px-empty">Nenhum título corresponde aos filtros aplicados.</p> : null}
       </div>
     </section>
 
     {newTitleOpen && typeof document !== 'undefined' ? createPortal(<div className="meg-web-receivable-overlay">
-      <button className="meg-web-receivable-backdrop" type="button" aria-label="Fechar novo título" disabled={busy} onClick={() => setNewTitleOpen(false)} />
+      <button className="meg-web-receivable-backdrop" type="button" aria-label="Fechar editor de título" disabled={busy} onClick={closeTitleEditor} />
       <section className="meg-web-receivable-dialog" role="dialog" aria-modal="true" aria-labelledby="meg-new-receivable-title">
-        <header><div><span className="px-kicker">Contas a receber</span><h2 id="meg-new-receivable-title">Novo título</h2><p>Cadastre uma obrigação de recebimento sem alterar o caixa antes da baixa real.</p></div><button type="button" disabled={busy} onClick={() => setNewTitleOpen(false)}>×</button></header>
+        <header><div><span className="px-kicker">Contas a receber</span><h2 id="meg-new-receivable-title">{editingTitle ? 'Editar título' : 'Novo título'}</h2><p>{editingTitle ? 'A edição é permitida somente enquanto nenhum recebimento tiver sido registrado.' : 'Cadastre uma obrigação de recebimento sem alterar o caixa antes da baixa real.'}</p></div><button type="button" disabled={busy} onClick={closeTitleEditor}>×</button></header>
         <div className="meg-web-receivable-form">
           <label><span>Cliente</span><select value={titleDraft.customerId} onChange={(event) => setTitleDraft((current) => ({ ...current, customerId:event.target.value }))}><option value="">Sem cliente vinculado</option>{activeCustomers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           <label className="wide"><span>Descrição *</span><input autoFocus maxLength={160} value={titleDraft.description} onChange={(event) => setTitleDraft((current) => ({ ...current, description:event.target.value }))} /></label>
@@ -349,7 +435,7 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
           <label className="wide"><span>Observações</span><textarea maxLength={500} value={titleDraft.notes} onChange={(event) => setTitleDraft((current) => ({ ...current, notes:event.target.value }))} /></label>
           {message ? <div className="meg-web-form-feedback wide">{message}</div> : null}
         </div>
-        <footer><button type="button" disabled={busy} onClick={() => setNewTitleOpen(false)}>Cancelar</button><button className="px-primary-action" type="button" disabled={busy || !canWrite} onClick={() => void createTitle()}>{busy ? 'Confirmando…' : 'Criar título'}</button></footer>
+        <footer><button type="button" disabled={busy} onClick={closeTitleEditor}>Cancelar</button><button className="px-primary-action" type="button" disabled={busy || !canWrite} onClick={() => void saveTitle()}>{busy ? 'Confirmando…' : editingTitle ? 'Salvar alterações' : 'Criar título'}</button></footer>
       </section>
     </div>, document.body) : null}
 

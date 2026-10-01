@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@meg/database';
-import { ReceivableDomainError, createReceivableProtected, receiveReceivableProtected } from './service';
+import { ReceivableDomainError, cancelReceivableProtected, createReceivableProtected, receiveReceivableProtected, updateReceivableProtected } from './service';
 import { CustomerMutationError, createCustomerProtected, updateCustomerProtected } from './customer-mutation';
 import { resolveWorkspaceContext } from '../workspaces/service';
 
@@ -55,13 +55,31 @@ const receiptSchema = z.object({
   operationId: operationIdSchema
 });
 
+const receivableUpdateSchema = z.object({
+  customerId: z.string().optional().nullable(),
+  description: z.string().trim().min(2).max(160).optional(),
+  totalAmount: z.coerce.number().positive().optional(),
+  dueDate: isoDaySchema.optional(),
+  interestRate: z.coerce.number().min(0).optional(),
+  fineRate: z.coerce.number().min(0).optional(),
+  notes: z.string().max(500).optional().nullable(),
+  expectedUpdatedAt: z.string().datetime({ offset: true }).optional(),
+  operationId: operationIdSchema,
+});
+const receivableCancelSchema = z.object({
+  expectedUpdatedAt: z.string().datetime({ offset: true }).optional(),
+  operationId: operationIdSchema,
+}).optional();
+
 function validationError(reply: FastifyReply, details: unknown) {
   return reply.code(400).send({ error: 'VALIDATION_ERROR', details });
 }
 
 function domainError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof ReceivableDomainError)) throw error;
-  const status = error.code === 'RECEIVABLE_NOT_FOUND' ? 404 : error.code === 'OPERATION_ID_REUSED' ? 409 : 400;
+  const status = error.code === 'RECEIVABLE_NOT_FOUND' ? 404
+    : ['OPERATION_ID_REUSED', 'RECEIVABLE_STALE_VERSION', 'RECEIVABLE_HAS_RECEIPTS', 'RECEIVABLE_NOT_EDITABLE'].includes(error.code) ? 409
+      : 400;
   return reply.code(status).send({ error: error.code, ...(error.details || {}) });
 }
 
@@ -129,6 +147,28 @@ export async function receivableRoutes(app: FastifyInstance) {
     try {
       const receivable = await createReceivableProtected(request.user.sub, parsed.data);
       return reply.code(201).send(receivable);
+    } catch (error) {
+      return domainError(reply, error);
+    }
+  });
+
+  app.patch('/receivables/:id', { preHandler: app.authorize([...writeRoles]) }, async (request, reply) => {
+    const parsed = receivableUpdateSchema.safeParse(request.body);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const { id } = request.params as { id: string };
+    try {
+      return await updateReceivableProtected(request.user.sub, id, parsed.data);
+    } catch (error) {
+      return domainError(reply, error);
+    }
+  });
+
+  app.delete('/receivables/:id', { preHandler: app.authorize([...adminRoles]) }, async (request, reply) => {
+    const parsed = receivableCancelSchema.safeParse(request.body);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const { id } = request.params as { id: string };
+    try {
+      return await cancelReceivableProtected(request.user.sub, id, parsed.data || {});
     } catch (error) {
       return domainError(reply, error);
     }

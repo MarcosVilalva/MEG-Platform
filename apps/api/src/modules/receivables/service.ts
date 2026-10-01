@@ -34,6 +34,23 @@ export type ReceiveReceivableInput = {
   operationId?: string;
 };
 
+export type UpdateReceivableInput = {
+  customerId?: string | null;
+  description?: string;
+  totalAmount?: number;
+  dueDate?: string;
+  interestRate?: number;
+  fineRate?: number;
+  notes?: string | null;
+  expectedUpdatedAt?: string;
+  operationId?: string;
+};
+
+export type CancelReceivableInput = {
+  expectedUpdatedAt?: string;
+  operationId?: string;
+};
+
 export async function createReceivableProtected(userId: string, input: CreateReceivableInput) {
   const workspace = await resolveWorkspaceContext(userId);
   const dataOwnerId = workspace.workspace.ownerId;
@@ -219,6 +236,157 @@ export async function receiveReceivableProtected(userId: string, receivableId: s
         operationId: input.operationId,
         requestHash,
         mutationType: 'RECEIVABLE_RECEIPT',
+        revision: state?.revision || 0,
+        response,
+      }) });
+    }
+    return response;
+  });
+}
+
+function assertReceivableVersion(current: { updatedAt: Date }, expectedUpdatedAt?: string) {
+  if (expectedUpdatedAt && current.updatedAt.toISOString() !== expectedUpdatedAt) {
+    throw new ReceivableDomainError('RECEIVABLE_STALE_VERSION', { updatedAt: current.updatedAt.toISOString() });
+  }
+}
+
+export async function updateReceivableProtected(userId: string, receivableId: string, input: UpdateReceivableInput) {
+  const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
+  const requestHash = input.operationId
+    ? mutationRequestHash({ action: 'update-receivable', receivableId, ...input, operationId: undefined })
+    : null;
+
+  return serializableFinancialTransaction(async (tx) => {
+    if (input.operationId && requestHash) {
+      const previous = await tx.cloudMutationReceipt.findUnique({
+        where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
+      });
+      if (previous) {
+        if (previous.requestHash !== requestHash) throw new ReceivableDomainError('OPERATION_ID_REUSED');
+        return previous.response as unknown;
+      }
+    }
+
+    const current = await tx.receivable.findFirst({
+      where: { id: receivableId, userId: dataOwnerId },
+      include: { customer: true, receipts: true },
+    });
+    if (!current) throw new ReceivableDomainError('RECEIVABLE_NOT_FOUND');
+    if (current.status === 'paid' || current.status === 'cancelled') throw new ReceivableDomainError('RECEIVABLE_NOT_EDITABLE');
+    if (current.receipts.length) throw new ReceivableDomainError('RECEIVABLE_HAS_RECEIPTS');
+    assertReceivableVersion(current, input.expectedUpdatedAt);
+
+    if (input.customerId) {
+      const customer = await tx.customer.findFirst({
+        where: { id: input.customerId, userId: dataOwnerId, isActive: true },
+        select: { id: true },
+      });
+      if (!customer) throw new ReceivableDomainError('INVALID_CUSTOMER');
+    }
+
+    let dueDate: Date | undefined;
+    if (input.dueDate !== undefined) {
+      dueDate = new Date(input.dueDate);
+      if (Number.isNaN(dueDate.getTime())) throw new ReceivableDomainError('INVALID_DUE_DATE');
+    }
+
+    const totalAmount = input.totalAmount === undefined ? undefined : Math.abs(input.totalAmount);
+    if (totalAmount !== undefined && totalAmount <= 0) throw new ReceivableDomainError('INVALID_TOTAL_AMOUNT');
+
+    const updated = await tx.receivable.update({
+      where: { id: receivableId },
+      data: {
+        ...(input.customerId !== undefined ? { customerId: input.customerId } : {}),
+        ...(input.description !== undefined ? { description: input.description.trim() } : {}),
+        ...(totalAmount !== undefined ? { totalAmount, openAmount: totalAmount } : {}),
+        ...(dueDate ? { dueDate } : {}),
+        ...(input.interestRate !== undefined ? { interestRate: Math.max(0, input.interestRate) } : {}),
+        ...(input.fineRate !== undefined ? { fineRate: Math.max(0, input.fineRate) } : {}),
+        ...(input.notes !== undefined ? { notes: input.notes?.trim() || null } : {}),
+        status: 'open',
+      },
+      include: { customer: true, receipts: true },
+    });
+
+    await recordFinancialAudit(tx, {
+      actorId: userId,
+      entity: 'Receivable',
+      entityId: receivableId,
+      action: 'RECEIVABLE_UPDATED',
+      before: current,
+      after: updated,
+      context: { operationId: input.operationId ?? null, workspaceId: workspace.workspaceId },
+    });
+
+    const response = { ...updated, idempotentReplay: false };
+    if (input.operationId && requestHash) {
+      const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
+      await tx.cloudMutationReceipt.create({ data: receiptCreateData({
+        workspaceId: workspace.workspaceId,
+        operationId: input.operationId,
+        requestHash,
+        mutationType: 'RECEIVABLE_UPDATE',
+        revision: state?.revision || 0,
+        response,
+      }) });
+    }
+    return response;
+  });
+}
+
+export async function cancelReceivableProtected(userId: string, receivableId: string, input: CancelReceivableInput = {}) {
+  const workspace = await resolveWorkspaceContext(userId);
+  const dataOwnerId = workspace.workspace.ownerId;
+  const requestHash = input.operationId
+    ? mutationRequestHash({ action: 'cancel-receivable', receivableId, ...input, operationId: undefined })
+    : null;
+
+  return serializableFinancialTransaction(async (tx) => {
+    if (input.operationId && requestHash) {
+      const previous = await tx.cloudMutationReceipt.findUnique({
+        where: { workspaceId_operationId: { workspaceId: workspace.workspaceId, operationId: input.operationId } },
+      });
+      if (previous) {
+        if (previous.requestHash !== requestHash) throw new ReceivableDomainError('OPERATION_ID_REUSED');
+        return previous.response as unknown;
+      }
+    }
+
+    const current = await tx.receivable.findFirst({
+      where: { id: receivableId, userId: dataOwnerId },
+      include: { customer: true, receipts: true },
+    });
+    if (!current) throw new ReceivableDomainError('RECEIVABLE_NOT_FOUND');
+    if (current.status === 'cancelled') return { ...current, idempotentReplay: true };
+    if (current.status === 'paid') throw new ReceivableDomainError('RECEIVABLE_NOT_EDITABLE');
+    if (current.receipts.length) throw new ReceivableDomainError('RECEIVABLE_HAS_RECEIPTS');
+    assertReceivableVersion(current, input.expectedUpdatedAt);
+
+    const updated = await tx.receivable.update({
+      where: { id: receivableId },
+      data: { status: 'cancelled', openAmount: 0 },
+      include: { customer: true, receipts: true },
+    });
+
+    await recordFinancialAudit(tx, {
+      actorId: userId,
+      entity: 'Receivable',
+      entityId: receivableId,
+      action: 'RECEIVABLE_CANCELLED',
+      before: current,
+      after: updated,
+      context: { operationId: input.operationId ?? null, workspaceId: workspace.workspaceId },
+    });
+
+    const response = { ...updated, idempotentReplay: false };
+    if (input.operationId && requestHash) {
+      const state = await tx.appState.findUnique({ where: { workspaceId: workspace.workspaceId }, select: { revision: true } });
+      await tx.cloudMutationReceipt.create({ data: receiptCreateData({
+        workspaceId: workspace.workspaceId,
+        operationId: input.operationId,
+        requestHash,
+        mutationType: 'RECEIVABLE_CANCEL',
         revision: state?.revision || 0,
         response,
       }) });
