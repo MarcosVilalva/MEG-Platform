@@ -151,6 +151,22 @@ assert.match(alexaWorkflow, /cron: '21 9 \* \* 1-5'/,
 
 
 const notificationRoutes = readFileSync(new URL('./routes.ts', import.meta.url), 'utf8');
+const notificationScheduleConfig = readFileSync(new URL('./schedule-config.ts', import.meta.url), 'utf8');
+const databaseSchema = readFileSync(new URL('../../../../../packages/database/prisma/schema.prisma', import.meta.url), 'utf8');
+assert.match(notificationRoutes, /app\.get\('\/schedule'/,
+  'API deve expor a agenda real do workspace.');
+assert.match(notificationRoutes, /app\.put\('\/schedule'/,
+  'API deve permitir atualização protegida da agenda por ADMIN.');
+assert.match(notificationRoutes, /saveNotificationSchedule/,
+  'Rota de escrita deve delegar validação e auditoria ao contrato de agenda.');
+assert.match(notificationScheduleConfig, /NOTIFICATION_TIME_OUTSIDE_AUTOMATION_WINDOW/,
+  'Contrato deve impedir horários que não possuem cobertura real de watchdog.');
+assert.match(notificationScheduleConfig, /NOTIFICATION_SCHEDULE_UPDATED/,
+  'Alteração de agenda deve gerar trilha de auditoria.');
+assert.match(databaseSchema, /messagingMorningTime\s+String\s+@default\("06:00"\)/,
+  'Schema deve persistir o horário da manhã mantendo o comportamento atual como default.');
+assert.match(databaseSchema, /quietHoursEnabled\s+Boolean\s+@default\(false\)/,
+  'Schema deve persistir o período silencioso sem ativá-lo por surpresa.');
 assert.match(notificationRoutes, /app\.post\('\/watchdog'/,
   'API deve expor endpoint autenticado por segredo para recuperação dos ciclos.');
 assert.match(notificationRoutes, /runMessagingCycle/,
