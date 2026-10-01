@@ -235,7 +235,7 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
 
   function openEditTitle(id: string) {
     const target = data.receivables.find((item) => item.id === id);
-    if (!target || target.receipts.length || ['paid', 'cancelled'].includes(target.status)) return;
+    if (!target || target.receipts.some((receipt) => !receipt.reversedAt) || ['paid', 'cancelled'].includes(target.status)) return;
     resetOperation();
     setMessage('');
     setEditingTitleId(id);
@@ -459,10 +459,12 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
           </tr></thead>
           <tbody>{visible.map((row) => {
             const target = data.receivables.find((item) => item.id === row.id);
-            const editable = Boolean(target && !target.receipts.length && !['paid', 'cancelled'].includes(target.status));
+            const activeReceipts = target?.receipts.filter((receipt) => !receipt.reversedAt) || [];
+            const editable = Boolean(target && !activeReceipts.length && !['paid', 'cancelled'].includes(target.status));
             return <tr key={row.id}>
               <td>{date.format(new Date(`${row.dueDate}T12:00:00Z`))}</td><td><strong>{row.description}</strong></td><td>{row.customer}</td><td>{row.installment}</td><td className="px-money">{money.format(Number(row.totalAmount))}</td><td className="px-money">{money.format(Number(row.openAmount))}</td><td><span className={`px-status ${normalize(row.status).replace(/\s+/g,'-')}`}>{row.status}</span></td><td>{row.receipts}</td><td><div className="meg-web-row-actions">
                 {target?.status === 'cancelled' ? <span className="px-status archived">Cancelado</span> : Number(row.openAmount) > 0 ? <button type="button" disabled={!canWrite} onClick={() => openReceipt(row.id)}>Receber</button> : <span className="px-status reconciled">Quitado</span>}
+                {target?.receipts.length ? <button type="button" disabled={busy} onClick={() => openReceipt(row.id)}>Histórico</button> : null}
                 {editable ? <button type="button" disabled={!canWrite || busy} onClick={() => openEditTitle(row.id)}>Editar</button> : null}
                 {editable && canCancel ? <button type="button" className="danger" disabled={busy} onClick={() => { void cancelTitle(row.id); }}>Cancelar</button> : null}
               </div></td>
@@ -499,17 +501,20 @@ export function PhoenixReceivablesGrid({ data, onDataCommitted }: { data: Phoeni
           <span><small>Em aberto</small><strong>{money.format(Number(receiptTarget.openAmount || 0))}</strong></span>
         </div>
         <div className="meg-web-receivable-form">
-          <label><span>Principal recebido *</span><input inputMode="decimal" value={receiptDraft.amount} onChange={(event) => setReceiptDraft((current) => ({ ...current, amount:event.target.value }))} /></label>
-          <label><span>Data do recebimento *</span><input type="date" max={today} value={receiptDraft.receivedAt} onChange={(event) => setReceiptDraft((current) => ({ ...current, receivedAt:event.target.value }))} /></label>
-          <label><span>Juros</span><input inputMode="decimal" value={receiptDraft.interestAmount} onChange={(event) => setReceiptDraft((current) => ({ ...current, interestAmount:event.target.value }))} /></label>
-          <label><span>Multa</span><input inputMode="decimal" value={receiptDraft.fineAmount} onChange={(event) => setReceiptDraft((current) => ({ ...current, fineAmount:event.target.value }))} /></label>
-          <label><span>Conta que recebeu *</span><select value={receiptDraft.accountId} onChange={(event) => setReceiptDraft((current) => ({ ...current, accountId:event.target.value }))}><option value="">Selecione</option>{monetaryAccounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-          <label><span>Forma de recebimento *</span><select value={receiptDraft.paymentMethodId} onChange={(event) => setReceiptDraft((current) => ({ ...current, paymentMethodId:event.target.value }))}><option value="">Selecione</option>{receiptMethods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-          <label className="wide"><span>Observações</span><textarea maxLength={500} value={receiptDraft.notes} onChange={(event) => setReceiptDraft((current) => ({ ...current, notes:event.target.value }))} /></label>
-          {receiptTarget.receipts.length ? <div className="meg-web-receipt-history wide"><strong>Recebimentos anteriores</strong>{receiptTarget.receipts.slice(0,5).map((item) => <span key={item.id}><small>{date.format(new Date(String(item.receivedAt)))}</small><b>{money.format(Number(item.amount || 0) + Number(item.interestAmount || 0) + Number(item.fineAmount || 0))}</b></span>)}</div> : null}
+          {canReceiveTarget ? <>
+            <label><span>Principal recebido *</span><input inputMode="decimal" value={receiptDraft.amount} onChange={(event) => setReceiptDraft((current) => ({ ...current, amount:event.target.value }))} /></label>
+            <label><span>Data do recebimento *</span><input type="date" max={today} value={receiptDraft.receivedAt} onChange={(event) => setReceiptDraft((current) => ({ ...current, receivedAt:event.target.value }))} /></label>
+            <label><span>Juros</span><input inputMode="decimal" value={receiptDraft.interestAmount} onChange={(event) => setReceiptDraft((current) => ({ ...current, interestAmount:event.target.value }))} /></label>
+            <label><span>Multa</span><input inputMode="decimal" value={receiptDraft.fineAmount} onChange={(event) => setReceiptDraft((current) => ({ ...current, fineAmount:event.target.value }))} /></label>
+            <label><span>Conta que recebeu *</span><select value={receiptDraft.accountId} onChange={(event) => setReceiptDraft((current) => ({ ...current, accountId:event.target.value }))}><option value="">Selecione</option>{monetaryAccounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label><span>Forma de recebimento *</span><select value={receiptDraft.paymentMethodId} onChange={(event) => setReceiptDraft((current) => ({ ...current, paymentMethodId:event.target.value }))}><option value="">Selecione</option>{receiptMethods.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label className="wide"><span>Observações</span><textarea maxLength={500} value={receiptDraft.notes} onChange={(event) => setReceiptDraft((current) => ({ ...current, notes:event.target.value }))} /></label>
+          </> : null}
+          {receiptTarget.receipts.length ? <div className="meg-web-receipt-history wide"><strong>Histórico de recebimentos</strong>{receiptTarget.receipts.slice(0,8).map((item) => <span key={item.id} className={item.reversedAt ? 'is-reversed' : ''}><small>{date.format(new Date(String(item.receivedAt)))}{item.reversedAt ? ' · estornado' : ''}</small><b>{money.format(Number(item.amount || 0) + Number(item.interestAmount || 0) + Number(item.fineAmount || 0))}</b>{!item.reversedAt && canCancel ? <button type="button" disabled={busy} onClick={() => { setReverseReceiptId(item.id); setReverseReason(''); setMessage(''); }}>Estornar</button> : null}</span>)}</div> : null}
+          {reverseReceipt ? <div className="meg-web-receipt-reversal wide"><div><strong>Estornar recebimento</strong><small>Informe o motivo para facilitar a auditoria. O recibo original continuará visível como estornado.</small></div><label><span>Motivo</span><textarea maxLength={500} value={reverseReason} onChange={(event) => setReverseReason(event.target.value)} placeholder="Ex.: baixa lançada na conta errada" /></label><div><button type="button" disabled={busy} onClick={() => { setReverseReceiptId(null); setReverseReason(''); }}>Voltar</button><button type="button" className="danger" disabled={busy} onClick={() => { void reverseReceiptEntry(); }}>Confirmar estorno</button></div></div> : null}
           {message ? <div className="meg-web-form-feedback wide">{message}</div> : null}
         </div>
-        <footer><button type="button" disabled={busy} onClick={() => setReceiptTargetId(null)}>Cancelar</button><button className="px-primary-action" type="button" disabled={busy || !canWrite} onClick={() => void receiveTitle()}>{busy ? 'Confirmando baixa…' : 'Confirmar recebimento'}</button></footer>
+        <footer><button type="button" disabled={busy} onClick={() => { setReverseReceiptId(null); setReceiptTargetId(null); }}>Fechar</button>{canReceiveTarget ? <button className="px-primary-action" type="button" disabled={busy || !canWrite} onClick={() => void receiveTitle()}>{busy ? 'Confirmando baixa…' : 'Confirmar recebimento'}</button> : null}</footer>
       </section>
     </div>, document.body) : null}
   </section>;
