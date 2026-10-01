@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-import { normalizeEvents } from '@core/finance/events';
-import { financeClient, type BenefitSummary, type FinanceSummary, type FinancialEvent } from '../../app/finance-client';
+import { useEffect, useState } from 'react';
+import { financeClient, type Account, type BenefitSummary, type FinanceSummary, type FinancialEvent } from '../../app/finance-client';
 import { useAppStore } from '../../app/store';
 import { dateInSaoPaulo } from '../../app/calendar';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const day = (value: string) => String(value || '').slice(0, 10);
+const round = (value: number) => Math.round(value * 100) / 100;
 
 function monthTitle(value: string) {
   const [year, month] = value.split('-').map(Number);
@@ -13,12 +13,51 @@ function monthTitle(value: string) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-function isBenefit(item: { description: string; category?: string; group?: string; account?: string; paymentMethod?: string }) {
-  return /benef|aliment|vero/i.test(`${item.description} ${item.category || ''} ${item.group || ''} ${item.account || ''} ${item.paymentMethod || ''}`);
+function normalizeText(value: unknown) {
+  return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
 }
 
-function isRealized(item: { type: string; status: string }) {
-  return item.type === 'income' || ['paid', 'confirmed', 'reconciled'].includes(item.status);
+function isPosted(status: string) {
+  return status === 'paid' || status === 'confirmed' || status === 'reconciled';
+}
+
+function isBenefitEvent(item: FinancialEvent) {
+  return normalizeText(item.account?.type) === 'BENEFIT'
+    || normalizeText(item.paymentMethod?.name) === 'VEROCARD'
+    || normalizeText(item.description).includes('VEROCARD');
+}
+
+function isMonetaryEvent(item: FinancialEvent) {
+  return item.type !== 'transfer' && !isBenefitEvent(item);
+}
+
+function isIncomeLike(item: FinancialEvent) {
+  return item.type === 'income' || item.type === 'redemption';
+}
+
+function monetaryOpeningBalance(accounts: Account[]) {
+  return round(accounts
+    .filter((account) => ['CHECKING', 'SAVINGS', 'CASH'].includes(normalizeText(account.type)))
+    .reduce((sum, account) => sum + Number(account.openingBalance || 0), 0));
+}
+
+function benefitOpeningBalance(accounts: Account[]) {
+  return round(accounts
+    .filter((account) => normalizeText(account.type) === 'BENEFIT')
+    .reduce((sum, account) => sum + Number(account.openingBalance || 0), 0));
+}
+
+async function listAllNormalizedEvents() {
+  const items: FinancialEvent[] = [];
+  let page = 1;
+  let total = 0;
+  do {
+    const result = await financeClient.listEvents(page, 100);
+    items.push(...result.items);
+    total = result.total;
+    page += 1;
+  } while (items.length < total && page <= 250);
+  return items;
 }
 
 type DashboardEvent = {
@@ -43,78 +82,15 @@ type DashboardView = {
   next: number;
 };
 
-interface DashboardProps { onNavigate?: (view: string) => void; }
-
-export function Dashboard({ onNavigate }: DashboardProps) {
-  const selectedMonth = useAppStore((state) => state.selectedMonth);
-  const periodMode = useAppStore((state) => state.periodMode);
-  const periodStart = useAppStore((state) => state.periodStart);
-  const periodEnd = useAppStore((state) => state.periodEnd);
-  const transactions = useAppStore((state) => state.transactions);
-  const [canonicalSummary, setCanonicalSummary] = useState<FinanceSummary | null>(null);
-  const [canonicalBenefit, setCanonicalBenefit] = useState<BenefitSummary | null>(null);
-  const [canonicalEvents, setCanonicalEvents] = useState<FinancialEvent[]>([]);
-
-  useEffect(() => {
-    if (periodMode !== 'month') return;
-    let active = true;
-    void Promise.all([
-      financeClient.getSummary(selectedMonth),
-      financeClient.getBenefitSummary(selectedMonth),
-      financeClient.listEventsForMonth(selectedMonth),
-    ]).then(([summary, benefit, events]) => {
-      if (!active) return;
-      setCanonicalSummary(summary);
-      setCanonicalBenefit(benefit);
-      setCanonicalEvents(events.items);
-    }).catch(() => {
-      if (!active) return;
-      setCanonicalSummary(null);
-      setCanonicalBenefit(null);
-      setCanonicalEvents([]);
-    });
-    return () => { active = false; };
-  }, [selectedMonth, periodMode]);
-
-  const localView = useMemo<DashboardView>(() => {
-    const events = normalizeEvents(transactions);
-    const monetary = events.filter((item) => !isBenefit(item));
-    const before = monetary.filter((item) => day(item.date) < `${selectedMonth}-01` && isRealized(item));
-    const inPeriod = (value: string) => periodMode === 'all' || (periodMode === 'range' ? value >= periodStart && value <= periodEnd : value.startsWith(selectedMonth));
-    const current = monetary.filter((item) => inPeriod(day(item.date)));
-    const benefitEvents = events.filter((item) => inPeriod(day(item.date)) && isBenefit(item));
-    const opening = before.reduce((sum, item) => sum + item.signedAmount, 0);
-    const income = current.filter((item) => item.type === 'income').reduce((sum, item) => sum + item.amount, 0);
-    const paidExpense = current.filter((item) => item.type === 'expense' && isRealized(item)).reduce((sum, item) => sum + item.amount, 0);
-    const pendingEvents = current.filter((item) => item.type === 'expense' && item.status === 'planned');
-    const pending = pendingEvents.reduce((sum, item) => sum + item.amount, 0);
-    const benefit = benefitEvents.reduce((sum, item) => sum + Math.abs(item.signedAmount), 0);
-    const realized = opening + income - paidExpense;
-    const projected = realized - pending;
-    const recent = events
-      .filter((item) => inPeriod(day(item.date)))
-      .sort((a, b) => day(b.date).localeCompare(day(a.date)))
-      .slice(0, 4)
-      .map((item) => ({
-        id: item.id,
-        description: item.description,
-        date: item.date,
-        status: item.status,
-        group: item.group,
-        category: item.category,
-      }));
-    const today = dateInSaoPaulo();
-    const overdue = pendingEvents.filter((item) => day(item.date) < today).reduce((sum, item) => sum + item.amount, 0);
-    const next = pendingEvents.filter((item) => day(item.date) >= today).reduce((sum, item) => sum + item.amount, 0);
-    return { opening, income, paidExpense, pending, benefit, realized, projected, recent, overdue, next };
-  }, [transactions, selectedMonth, periodMode, periodStart, periodEnd]);
-
-  const canonicalView = useMemo<DashboardView | null>(() => {
-    if (!canonicalSummary || !canonicalBenefit || periodMode !== 'month') return null;
-    const today = dateInSaoPaulo();
-    const monetaryEvents = canonicalEvents.filter((item) => String(item.account?.type || '').toLowerCase() !== 'benefit');
-    const pendingEvents = monetaryEvents.filter((item) => item.type === 'expense' && item.status === 'planned');
-    const recent = canonicalEvents.slice(0, 4).map((item) => ({
+function recentRows(events: FinancialEvent[]): DashboardEvent[] {
+  return [...events]
+    .sort((left, right) => {
+      const byDate = day(right.date).localeCompare(day(left.date));
+      if (byDate !== 0) return byDate;
+      return String(right.createdAt || '').localeCompare(String(left.createdAt || ''));
+    })
+    .slice(0, 4)
+    .map((item) => ({
       id: item.id,
       description: item.description,
       date: day(item.date),
@@ -122,21 +98,152 @@ export function Dashboard({ onNavigate }: DashboardProps) {
       group: item.sourceDetails?.group || item.category?.group || undefined,
       category: item.category?.name || undefined,
     }));
-    return {
-      opening: canonicalSummary.availableBalance,
-      income: canonicalSummary.realizedIncome,
-      paidExpense: canonicalSummary.realizedExpense,
-      pending: canonicalSummary.pendingAmount,
-      benefit: canonicalBenefit.balance,
-      realized: canonicalSummary.availableBalance + canonicalSummary.realizedResult,
-      projected: canonicalSummary.availableBalance + canonicalSummary.projectedResult,
-      recent,
-      overdue: pendingEvents.filter((item) => day(item.date) < today).reduce((sum, item) => sum + Number(item.amount || 0), 0),
-      next: pendingEvents.filter((item) => day(item.date) >= today).reduce((sum, item) => sum + Number(item.amount || 0), 0),
-    };
-  }, [canonicalSummary, canonicalBenefit, canonicalEvents, periodMode]);
+}
 
-  const view = canonicalView || localView;
+function monthlyView(summary: FinanceSummary, benefit: BenefitSummary, events: FinancialEvent[]): DashboardView {
+  const today = dateInSaoPaulo();
+  const monetaryEvents = events.filter(isMonetaryEvent);
+  const pendingEvents = monetaryEvents.filter((item) =>
+    item.status === 'planned' && !isIncomeLike(item)
+  );
+  return {
+    opening: summary.availableBalance,
+    income: summary.realizedIncome,
+    paidExpense: summary.realizedExpense,
+    pending: summary.pendingAmount,
+    benefit: benefit.balance,
+    realized: round(summary.availableBalance + summary.realizedResult),
+    projected: round(summary.availableBalance + summary.projectedResult),
+    recent: recentRows(events),
+    overdue: round(pendingEvents.filter((item) => day(item.date) < today).reduce((sum, item) => sum + Number(item.amount || 0), 0)),
+    next: round(pendingEvents.filter((item) => day(item.date) >= today).reduce((sum, item) => sum + Number(item.amount || 0), 0)),
+  };
+}
+
+function rangedView(
+  accounts: Account[],
+  events: FinancialEvent[],
+  mode: 'range' | 'all',
+  start: string,
+  end: string,
+): DashboardView {
+  const today = dateInSaoPaulo();
+  const inPeriod = (value: string) => mode === 'all' || (value >= start && value <= end);
+  const beforePeriod = (value: string) => mode === 'range' && value < start;
+  const upToPeriodEnd = (value: string) => mode === 'all' || value <= end;
+
+  const monetary = events.filter(isMonetaryEvent);
+  const current = monetary.filter((item) => inPeriod(day(item.date)));
+  const openingEvents = monetary.filter((item) => beforePeriod(day(item.date)) && isPosted(item.status));
+  const opening = round(openingEvents.reduce(
+    (sum, item) => sum + Number(item.signedAmount || 0),
+    monetaryOpeningBalance(accounts),
+  ));
+
+  let projectedIncome = 0;
+  let projectedExpense = 0;
+  let realizedIncome = 0;
+  let realizedExpense = 0;
+  for (const item of current) {
+    const signed = Number(item.signedAmount || 0);
+    if (!Number.isFinite(signed)) continue;
+    if (isIncomeLike(item)) {
+      projectedIncome += signed;
+      if (isPosted(item.status)) realizedIncome += signed;
+    } else {
+      projectedExpense += -signed;
+      if (isPosted(item.status)) realizedExpense += -signed;
+    }
+  }
+
+  const pendingEvents = current.filter((item) =>
+    item.status === 'planned' && !isIncomeLike(item)
+  );
+  const pending = round(pendingEvents.reduce((sum, item) => sum - Number(item.signedAmount || 0), 0));
+
+  const benefitEvents = events.filter((item) =>
+    isBenefitEvent(item) && isPosted(item.status) && upToPeriodEnd(day(item.date))
+  );
+  const benefit = round(benefitEvents.reduce(
+    (sum, item) => sum + Number(item.signedAmount || 0),
+    benefitOpeningBalance(accounts),
+  ));
+
+  const realizedResult = round(realizedIncome - realizedExpense);
+  const projectedResult = round(projectedIncome - projectedExpense);
+  const periodEvents = events.filter((item) => inPeriod(day(item.date)));
+
+  return {
+    opening,
+    income: round(realizedIncome),
+    paidExpense: round(realizedExpense),
+    pending,
+    benefit,
+    realized: round(opening + realizedResult),
+    projected: round(opening + projectedResult),
+    recent: recentRows(periodEvents),
+    overdue: round(pendingEvents.filter((item) => day(item.date) < today).reduce((sum, item) => sum + Number(item.amount || 0), 0)),
+    next: round(pendingEvents.filter((item) => day(item.date) >= today).reduce((sum, item) => sum + Number(item.amount || 0), 0)),
+  };
+}
+
+interface DashboardProps { onNavigate?: (view: string) => void; }
+
+const EMPTY_VIEW: DashboardView = {
+  opening: 0,
+  income: 0,
+  paidExpense: 0,
+  pending: 0,
+  benefit: 0,
+  realized: 0,
+  projected: 0,
+  recent: [],
+  overdue: 0,
+  next: 0,
+};
+
+export function Dashboard({ onNavigate }: DashboardProps) {
+  const selectedMonth = useAppStore((state) => state.selectedMonth);
+  const periodMode = useAppStore((state) => state.periodMode);
+  const periodStart = useAppStore((state) => state.periodStart);
+  const periodEnd = useAppStore((state) => state.periodEnd);
+  const [view, setView] = useState<DashboardView>(EMPTY_VIEW);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+
+    const request = periodMode === 'month'
+      ? Promise.all([
+          financeClient.getSummary(selectedMonth),
+          financeClient.getBenefitSummary(selectedMonth),
+          financeClient.listEventsForMonth(selectedMonth),
+        ]).then(([summary, benefit, events]) => monthlyView(summary, benefit, events.items))
+      : Promise.all([
+          financeClient.listAccounts(),
+          listAllNormalizedEvents(),
+        ]).then(([accounts, events]) => rangedView(
+          accounts,
+          events,
+          periodMode,
+          periodStart,
+          periodEnd,
+        ));
+
+    void request
+      .then((next) => { if (active) setView(next); })
+      .catch(() => {
+        if (!active) return;
+        setError('Não foi possível carregar a visão financeira canônica deste período.');
+      })
+      .finally(() => { if (active) setLoading(false); });
+
+    return () => { active = false; };
+  }, [selectedMonth, periodMode, periodStart, periodEnd]);
+
   const statusCopy = (status: string) => status === 'paid'
     ? ['Pago', '']
     : status === 'planned'
@@ -145,8 +252,10 @@ export function Dashboard({ onNavigate }: DashboardProps) {
         ? ['Conciliado', 'info']
         : ['Confirmado', ''];
 
-  return <section id="home" className="page meg-screen dashboard-screen validated-dashboard">
-    <header className="page-head screen-heading"><div><span className="kicker">Visão geral</span><h1>{periodMode === 'month' ? monthTitle(selectedMonth) : periodMode === 'range' ? 'Período selecionado' : 'Todo o histórico'}</h1><p>Leitura do período usando exclusivamente os lançamentos preservados na base financeira do MEG.</p><span className="dashboard-updated">Base compartilhada carregada · atualização automática ativa</span></div></header>
+  return <section id="home" className="page meg-screen dashboard-screen validated-dashboard" aria-busy={loading}>
+    <header className="page-head screen-heading"><div><span className="kicker">Visão geral</span><h1>{periodMode === 'month' ? monthTitle(selectedMonth) : periodMode === 'range' ? 'Período selecionado' : 'Todo o histórico'}</h1><p>Leitura do período usando exclusivamente a base financeira normalizada do MEG.</p><span className="dashboard-updated">{loading ? 'Atualizando leitura financeira...' : 'Base financeira canônica carregada · atualização automática ativa'}</span></div></header>
+
+    {error && <div className="notice danger">{error}</div>}
 
     <div className="dashboard-primary">
       <article className="premium-balance">
@@ -155,15 +264,15 @@ export function Dashboard({ onNavigate }: DashboardProps) {
         <p>Receita disponível menos despesas monetárias efetivamente pagas.</p>
         <div className="premium-balance-stats">
           <div className="pb-stat"><span>Saldo anterior</span><strong>{money.format(view.opening)}</strong></div>
-          <div className="pb-stat"><span>Receitas do mês</span><strong>{money.format(view.income)}</strong></div>
+          <div className="pb-stat"><span>{periodMode === 'month' ? 'Receitas do mês' : 'Receitas do período'}</span><strong>{money.format(view.income)}</strong></div>
           <div className="pb-stat"><span>Receita disponível</span><strong>{money.format(view.opening + view.income)}</strong></div>
         </div>
       </article>
     </div>
 
     <article className={`premium-alert dashboard-alert ${view.projected < 0 ? 'danger' : 'ok'}`}>
-      <div><div className="premium-alert-icon">{view.projected < 0 ? '!' : '✓'}</div><h3>{view.projected < 0 ? 'Mês exige atenção' : 'Mês sob controle'}</h3><p>O diagnóstico principal considera o mês corrente e não pode ser mascarado pelos filtros analíticos.</p></div>
-      <div><span className="gap-label">{view.projected < 0 ? 'Falta projetada para fechar o mês' : 'Resultado projetado'}</span><strong>{money.format(view.projected)}</strong></div>
+      <div><div className="premium-alert-icon">{view.projected < 0 ? '!' : '✓'}</div><h3>{view.projected < 0 ? 'Período exige atenção' : 'Período sob controle'}</h3><p>O diagnóstico usa a mesma base financeira canônica adotada por Fluxo de Caixa e Análises.</p></div>
+      <div><span className="gap-label">{view.projected < 0 ? 'Falta projetada para fechar o período' : 'Resultado projetado'}</span><strong>{money.format(view.projected)}</strong></div>
     </article>
 
     <div className="premium-metrics dashboard-metrics">
@@ -176,7 +285,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     <div className="premium-grid2 dashboard-lower">
       <article className="premium-card">
         <div className="premium-card-head"><div><span className="premium-label">Histórico recente</span><h3>Últimos lançamentos</h3></div><button className="btn secondary row-action" onClick={() => onNavigate?.('history')}>Ver histórico completo</button></div>
-        <div className="dashboard-list">{view.recent.map((event) => { const [label, tone] = statusCopy(event.status); return <div className="dashboard-row" key={event.id}><div><strong>{event.description}</strong><small>{new Date(`${day(event.date)}T12:00:00`).toLocaleDateString('pt-BR')} · {event.group || event.category || 'Sem grupo'}</small></div><span className={`pill ${tone}`}>{label}</span><button className="btn secondary row-action" onClick={() => onNavigate?.('history')}>Abrir</button></div>; })}{!view.recent.length && <p className="empty-state">Nenhum lançamento no período.</p>}</div>
+        <div className="dashboard-list">{view.recent.map((event) => { const [label, tone] = statusCopy(event.status); return <div className="dashboard-row" key={event.id}><div><strong>{event.description}</strong><small>{new Date(`${day(event.date)}T12:00:00`).toLocaleDateString('pt-BR')} · {event.group || event.category || 'Sem grupo'}</small></div><span className={`pill ${tone}`}>{label}</span><button className="btn secondary row-action" onClick={() => onNavigate?.('history')}>Abrir</button></div>; })}{!loading && !view.recent.length && <p className="empty-state">Nenhum lançamento no período.</p>}</div>
       </article>
 
       <article className="premium-card agenda-card">
