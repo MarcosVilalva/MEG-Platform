@@ -820,27 +820,92 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
 
   const openPay = data.payables.filter((item) => openStatus(item.status) && Number(item.openAmount || 0) > 0).map<PendingRow>((item) => ({
     id: 'p-' + item.id, source: 'payable', sourceId: item.id, description: item.description, due: String(item.dueDate).slice(0, 10), amount: Number(item.openAmount || 0), paid: false,
-    category: item.category?.name || item.category?.group || 'Contas a pagar', account: 'Conta principal', payment: 'Boleto / compromisso', installment: item.installmentQty > 1 ? `${item.installmentNo} de ${item.installmentQty}` : 'Única'
+    category: item.category?.name || item.category?.group || 'Contas a pagar', account: 'Definida na baixa', payment: 'Boleto / compromisso', installment: item.installmentQty > 1 ? item.installmentNo + ' de ' + item.installmentQty : 'Única'
   }));
-  const openEvents = data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned').map<PendingRow>((item) => ({
+
+  const cardGroups = new Map<string, PendingRow>();
+  for (const event of data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned' && isProjectedCardPending(item))) {
+    const payload = pendingSourcePayload(event);
+    if (!payload) continue;
+    const cardId = String(payload.cardId || '');
+    const statementMonth = String(payload.statementMonth || '');
+    const card = data.cards.find((item) => item.id === cardId);
+    if (!cardId || !card || !/^\\d{4}-\\d{2}$/.test(statementMonth)) continue;
+    const due = String(payload.dueDate || event.date || '').slice(0,10);
+    const rawEffect = Number(payload.statementEffect);
+    const effect = Number.isFinite(rawEffect) ? rawEffect : -Number(event.signedAmount || 0);
+    if (!Number.isFinite(effect) || effect === 0) continue;
+    const key = cardId + '|' + statementMonth;
+    const line: PendingCardLine = {
+      id:event.id,
+      description:String(event.description || '').replace(/\\s+·\\s+\\d+\\/\\d+\\s*$/,''),
+      amount:Math.abs(effect),
+      purchaseDate:String(payload.purchaseDate || event.date || '').slice(0,10),
+      category:event.category?.name || event.sourceDetails?.group || 'Cartão',
+      installment:payload.installmentNumber && payload.installmentCount ? String(payload.installmentNumber) + '/' + String(payload.installmentCount) : undefined,
+      credit:effect < 0,
+    };
+    const current = cardGroups.get(key);
+    if (current) {
+      current.amount = Math.round((current.amount + effect) * 100) / 100;
+      current.itemCount = (current.itemCount || 0) + 1;
+      current.cardLines?.push(line);
+      current.searchText = (current.searchText || '') + ' ' + line.description + ' ' + (line.category || '');
+      if (due && due < current.due) current.due = due;
+    } else {
+      cardGroups.set(key, {
+        id:'c-' + cardId + '-' + statementMonth,
+        source:'card',
+        sourceId:cardId,
+        statementMonth,
+        description:cardName(card.name),
+        due,
+        amount:Math.round(effect * 100) / 100,
+        paid:false,
+        category:'Cartão de crédito',
+        account:'Definida na baixa',
+        payment:'Fatura ' + statementMonth.split('-').reverse().join('/'),
+        itemCount:1,
+        cardLines:[line],
+        searchText:card.name + ' ' + line.description + ' ' + (line.category || ''),
+      });
+    }
+  }
+  const cardRows = [...cardGroups.values()].filter((item) => item.amount > 0.009);
+
+  const openEvents = data.events.items.filter((item) => item.type === 'expense' && item.status === 'planned' && !isProjectedCardPending(item)).map<PendingRow>((item) => ({
     id: 'e-' + item.id, source: 'event', sourceId: item.id, description: item.description, due: String(item.date).slice(0, 10), amount: Math.abs(Number(item.signedAmount || item.amount || 0)), paid: false,
     category: item.category?.name || item.sourceDetails?.group || 'Despesas', account: item.account?.name || 'Conta não informada', payment: item.paymentMethod?.name || item.sourceDetails?.paymentMethod || 'Forma não informada', notes: item.notes || item.sourceDetails?.observations || undefined
   }));
-  const paidEvents = data.events.items.filter((item) => item.type === 'expense' && ['paid', 'reconciled', 'confirmed'].includes(String(item.status))).map<PendingRow>((item) => ({
+  const paidEvents = data.events.items.filter((item) => item.type === 'expense' && ['paid', 'reconciled', 'confirmed'].includes(String(item.status)) && !isProjectedCardPending(item)).map<PendingRow>((item) => ({
     id: 'e-' + item.id, source: 'event', sourceId: item.id, description: item.description, due: String(item.date).slice(0, 10), amount: Math.abs(Number(item.signedAmount || item.amount || 0)), paid: true,
     category: item.category?.name || item.sourceDetails?.group || 'Despesas', account: item.account?.name || 'Conta não informada', payment: item.paymentMethod?.name || item.sourceDetails?.paymentMethod || 'Forma não informada', notes: item.notes || item.sourceDetails?.observations || undefined
   }));
 
-  const opens = openPay.concat(openEvents);
+  const opens = openPay.concat(openEvents, cardRows);
   const overdue = opens.filter((item) => item.due < today);
   const total = opens.reduce((sum, item) => sum + item.amount, 0);
   const query = search.trim().toLocaleLowerCase('pt-BR');
   const rows = opens.concat(paidEvents)
-    .filter((item) => item.description.toLocaleLowerCase('pt-BR').includes(query))
+    .filter((item) => (item.description + ' ' + (item.searchText || '')).toLocaleLowerCase('pt-BR').includes(query))
     .filter((item) => !fromDate || item.due >= fromDate)
     .filter((item) => !toDate || item.due <= toDate)
     .filter((item) => tab === 'all' ? true : tab === 'open' ? !item.paid : tab === 'paid' ? item.paid : !item.paid && item.due < today)
     .sort((left, right) => descending ? right.due.localeCompare(left.due) : left.due.localeCompare(right.due));
+
+  const selectedRows = opens.filter((item) => batchSelected.includes(item.id));
+
+  function toggleRow(item: PendingRow) {
+    if (item.paid) return;
+    setBatchSelected((current) => current.includes(item.id)
+      ? current.filter((id) => id !== item.id)
+      : [...current, item.id]);
+  }
+
+  function changeTab(next: 'all' | 'open' | 'paid' | 'overdue') {
+    setTab(next);
+    setBatchSelected([]);
+  }
 
   function dueLabel(item: PendingRow) {
     const date = item.due.split('-').reverse().join('/');
