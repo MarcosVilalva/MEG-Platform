@@ -1,6 +1,6 @@
 import type { FinancialEvent } from '../../app/finance-client';
 import type { PhoenixReadModel } from '../contracts';
-import { PhoenixPayables as PhoenixPayablesV15, type PhoenixPayablesSelectionRequest } from './PhoenixPayablesV15';
+import { PhoenixPayables as PhoenixPayablesV15, type PhoenixPayablesFocusRequest, type PhoenixPayablesSelectionRequest } from './PhoenixPayablesV15';
 
 function normalize(value: unknown) {
   return String(value ?? '')
