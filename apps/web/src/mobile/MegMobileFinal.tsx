@@ -1287,7 +1287,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
 }
 
 function MenuSheet({ onClose, onNavigate, onLogout, onCloseApp }: { onClose: () => void; onNavigate: Props['onNavigate']; onLogout?: () => void; onCloseApp?: () => void }) {
-  const [confirm, setConfirm] = useState(false);
+  const [confirm, setConfirm] = useState<'logout'|'close'|null>(null);
   const go = (view: TargetView) => { onClose(); onNavigate(view); };
   return <div className="meg2-overlay" onClick={onClose}>
     <section className="meg2-menu-sheet" onClick={(event) => event.stopPropagation()}>
@@ -1303,8 +1303,13 @@ function MenuSheet({ onClose, onNavigate, onLogout, onCloseApp }: { onClose: () 
         <button onClick={() => go('history')}><Icon name="file"/><span>Histórico</span></button>
         <button onClick={() => go('settings')}><Icon name="sliders"/><span>Configurações</span></button>
       </div>
-      <footer>{onLogout ? <button onClick={onLogout}>Sair da conta</button> : null}{onCloseApp ? <button className="danger" onClick={() => setConfirm(true)}>Fechar o MEG</button> : null}</footer>
-      {confirm ? <div className="meg2-confirm"><div><h3>Deseja fechar o aplicativo?</h3><p>Seus dados já salvos serão preservados.</p><span><button onClick={() => setConfirm(false)}>Não</button><button className="danger" onClick={onCloseApp}>Sim, fechar</button></span></div></div> : null}
+      <footer>{onLogout ? <button onClick={() => setConfirm('logout')}>Sair da conta</button> : null}{onCloseApp ? <button className="danger" onClick={() => setConfirm('close')}>Fechar o MEG</button> : null}</footer>
+      {confirm ? <div className="meg2-confirm"><div>
+        <small>{confirm === 'logout' ? 'SESSÃO' : 'APLICATIVO'}</small>
+        <h3>{confirm === 'logout' ? 'Deseja sair da sua conta?' : 'Deseja fechar o aplicativo?'}</h3>
+        <p>{confirm === 'logout' ? 'Você precisará entrar novamente para acessar seus dados.' : 'Seus dados já salvos serão preservados.'}</p>
+        <span><button onClick={() => setConfirm(null)}>Cancelar</button><button className="danger" onClick={() => { if (confirm === 'logout') onLogout?.(); else onCloseApp?.(); }}>{confirm === 'logout' ? 'Sim, sair' : 'Sim, fechar'}</button></span>
+      </div></div> : null}
     </section>
   </div>;
 }
