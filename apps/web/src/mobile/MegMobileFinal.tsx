@@ -10,7 +10,7 @@ import { MegMobileBenefitModal } from './MegMobileBenefitModal';
 import { MegMobileSettings } from './MegMobileSettings';
 import { MegMobilePicker } from './MegMobilePicker';
 import { preparePhoenixPendingBatchSettlement, runPhoenixPendingBatchSettlement } from '../phoenix/data/phoenix-pending-write-gateway';
-import { cardDueDateForStatement } from '../phoenix/data/card-dates';
+import { cardDueDateForStatement, cardMonthPlus } from '../phoenix/data/card-dates';
 import './meg-mobile-runtime.css';
 import './meg-mobile-final.css';
 import './meg-mobile-core-screens.css';
@@ -677,7 +677,27 @@ function Cards({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Pro
 }
 
 type PendingCardLine = { id:string; description:string; amount:number; purchaseDate:string; category?:string; installment?:string; credit?:boolean };
-type PendingRow = { id: string; source: 'payable' | 'event' | 'card'; sourceId: string; statementMonth?: string; description: string; due: string; amount: number; paid: boolean; category?: string; account?: string; payment?: string; installment?: string; notes?: string; itemCount?: number; cardLines?: PendingCardLine[]; searchText?: string };
+type PendingSettlementPart = { source:'payable' | 'event' | 'card'; sourceId:string; amount:number; statementMonth?:string };
+type PendingRow = {
+  id: string;
+  source: 'payable' | 'event' | 'card';
+  sourceId: string;
+  statementMonth?: string;
+  description: string;
+  due: string;
+  amount: number;
+  paid: boolean;
+  category?: string;
+  account?: string;
+  payment?: string;
+  installment?: string;
+  notes?: string;
+  itemCount?: number;
+  cardLines?: PendingCardLine[];
+  searchText?: string;
+  displayKind?: 'card';
+  settlementParts?: PendingSettlementPart[];
+};
 type PendingSettlementBalance = { status: 'idle' | 'loading' | 'ready' | 'error'; available: number; accountName: string; message?: string };
 type PendingSettlementSuccess = { description:string; amount:number; paidAt:string; account:string; payment:string; balanceBefore:number; balanceAfter:number; count:number };
 
@@ -692,6 +712,73 @@ function isProjectedCardPending(event: FinancialEvent) {
   return pendingSourcePayload(event)?.cardDomain === true;
 }
 
+function pendingRowIsCard(item: PendingRow) {
+  return item.source === 'card' || item.displayKind === 'card';
+}
+
+function cardIdentityAliases(card: PhoenixReadModel['cards'][number]) {
+  const raw = normalizeCardText(card.name);
+  const display = normalizeCardText(cardName(card.name));
+  const compact = raw
+    .replace(/\b(cartao|credito|credit|visa|mastercard|elo|platinum|gold|infinite)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const aliases = new Set([raw, display, compact].filter((item) => item.length >= 3));
+  if (/mercado|meli/.test(raw)) ['mercado pago','mercado livre','cartao ml','cartao mercado pago','meli'].forEach((item) => aliases.add(item));
+  if (/latam/.test(raw)) aliases.add('latam');
+  if (/azul/.test(raw)) aliases.add('azul');
+  if (/riachuelo|midway/.test(raw)) ['riachuelo','midway'].forEach((item) => aliases.add(item));
+  if (/nubank/.test(raw)) aliases.add('nubank');
+  if (/santander/.test(raw)) aliases.add('santander');
+  if (/\bbb\b|banco do brasil/.test(raw)) ['cartao bb','banco do brasil'].forEach((item) => aliases.add(item));
+  if (/caixa/.test(raw)) aliases.add('caixa');
+  if (/\bbv\b/.test(raw)) aliases.add('cartao bv');
+  if (/itau/.test(raw)) aliases.add(raw);
+  return [...aliases];
+}
+
+function legacyPendingCardForEvent(event: FinancialEvent, cards: PhoenixReadModel['cards']) {
+  if (isProjectedCardPending(event)) return null;
+  const payload = pendingSourcePayload(event) || {};
+  const identity = normalizeCardText([
+    event.paymentMethod?.name,
+    event.sourceDetails?.paymentMethod,
+    payload.paymentMethod,
+    payload.account,
+    payload.cardName,
+  ].filter(Boolean).join(' '));
+  if (!identity) return null;
+
+  let best: { card: PhoenixReadModel['cards'][number]; score: number } | null = null;
+  for (const card of cards.filter((item) => item.isActive !== false)) {
+    for (const alias of cardIdentityAliases(card)) {
+      const score = identity === alias ? 1000 + alias.length
+        : identity.includes(alias) ? 500 + alias.length
+        : alias.includes(identity) && identity.length >= 4 ? 250 + identity.length
+        : 0;
+      if (score && (!best || score > best.score)) best = { card, score };
+    }
+  }
+  return best?.card || null;
+}
+
+function statementMonthFromDueDate(due: string, card: PhoenixReadModel['cards'][number]) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(due)) return '';
+  const dueMonth = due.slice(0, 7);
+  for (const offset of [-1, 0, 1]) {
+    const candidate = cardMonthPlus(dueMonth, offset);
+    if (cardDueDateForStatement(candidate, Number(card.closingDay || 1), Number(card.dueDay || 1)) === due) return candidate;
+  }
+  return Number(card.dueDay || 1) <= Number(card.closingDay || 1) ? cardMonthPlus(dueMonth, -1) : dueMonth;
+}
+
+function eventStatementEffect(event: FinancialEvent) {
+  const signed = Number(event.signedAmount);
+  if (Number.isFinite(signed) && signed !== 0) return -signed;
+  const amount = Math.abs(Number(event.amount || 0));
+  return Number.isFinite(amount) ? amount : 0;
+}
+
 function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Props['onEditEvent'] }) {
   const [tab, setTab] = useState<'all' | 'open' | 'paid' | 'overdue'>('all');
   const [search, setSearch] = useState('');
@@ -699,6 +786,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
   const [toDate, setToDate] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
   const [selected, setSelected] = useState<PendingRow | null>(null);
+  const [expandedCardId, setExpandedCardId] = useState('');
   const [descending, setDescending] = useState(false);
   const [batchSelected, setBatchSelected] = useState<string[]>([]);
   const [settlementItems, setSettlementItems] = useState<PendingRow[]>([]);
@@ -794,12 +882,14 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       setSettlementBusy(true);
       setSettlementMessage('Confirmando o lote no servidor…');
       const prepared = preparePhoenixPendingBatchSettlement({
-        items: settlementItems.map((item) => ({
-          source: item.source,
-          sourceId: item.sourceId,
-          amount: item.amount,
-          statementMonth: item.statementMonth,
-        })),
+        items: settlementItems.flatMap((item) => item.settlementParts?.length
+          ? item.settlementParts
+          : [{
+              source: item.source,
+              sourceId: item.sourceId,
+              amount: item.amount,
+              statementMonth: item.statementMonth,
+            }]),
         paidAt,
         accountId: settlementAccountId,
         paymentMethodId: settlementMethodId,
