@@ -779,6 +779,24 @@ function eventStatementEffect(event: FinancialEvent) {
   return Number.isFinite(amount) ? amount : 0;
 }
 
+function publishOptimisticSettlementBalance(data: PhoenixReadModel, amount: number, paidAt: string) {
+  if (typeof window === 'undefined' || paidAt.slice(0,7) !== data.month) return;
+  const value = Math.round(Math.abs(Number(amount || 0)) * 100) / 100;
+  if (!value) return;
+  const summary = {
+    ...data.summary,
+    realizedExpense: Math.round((Number(data.summary.realizedExpense || 0) + value) * 100) / 100,
+    realizedResult: Math.round((Number(data.summary.realizedResult || 0) - value) * 100) / 100,
+  };
+  const snapshot: PhoenixReadModel = {
+    ...data,
+    loadedAt:new Date().toISOString(),
+    summary,
+    analytics:{ ...data.analytics, summary },
+  };
+  window.dispatchEvent(new CustomEvent('meg:phoenix-snapshot-committed', { detail:{ snapshot } }));
+}
+
 function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: Props['onEditEvent'] }) {
   const [tab, setTab] = useState<'all' | 'open' | 'paid' | 'overdue'>('all');
   const [search, setSearch] = useState('');
@@ -907,6 +925,7 @@ function Payables({ data, onEditEvent }: { data: PhoenixReadModel; onEditEvent: 
       const serverAfter = Number(response.accountBalanceAfter);
       const balanceBefore = Number.isFinite(serverBefore) ? serverBefore : settlementBalance.available;
       const balanceAfter = Number.isFinite(serverAfter) ? serverAfter : Math.round((balanceBefore - settlementTotal) * 100) / 100;
+      publishOptimisticSettlementBalance(data, settlementTotal, paidAt);
       setSettlementSuccess({
         description: settlementItems.length === 1 ? settlementItems[0].description : 'Lote com ' + settlementItems.length + ' compromissos',
         amount:settlementTotal,
