@@ -1,5 +1,6 @@
 name: Build MEG Finanças Android APK
-# O push em main também publica a versão estável assinada do aplicativo.
+# Android congelado: a publicação do APK só pode ser iniciada manualmente.
+# Alterações no Web/API não devem gerar nem publicar uma nova versão do aplicativo.
 
 on:
   workflow_dispatch:
@@ -9,17 +10,6 @@ on:
         required: false
         default: false
         type: boolean
-  push:
-    branches:
-      - main
-    paths:
-      - 'apps/web/**'
-      - 'android/**'
-      - 'capacitor.config.ts'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'scripts/apply-android-biometric-runtime-fix.mjs'
-      - '.github/workflows/build-android-apk.yml'
 
 permissions:
   contents: write
