@@ -10,6 +10,8 @@ assert.match(routes, /app\.post\('\/events\/:id\/settle'/,
   'Baixa individual deve possuir endpoint dedicado.');
 assert.match(routes, /settleLegacyFinancialEventProtected/,
   'Endpoint individual deve usar o gateway protegido.');
+assert.match(routes, /app\.get\('\/monetary-balance'[\s\S]*monetaryAccountBalanceAt/,
+  'API deve expor saldo exato por conta e data para a revisão prévia da baixa.');
 assert.doesNotMatch(routes, /app\.post\('\/pending\/batch\/settle'/,
   'Rota de baixa múltipla não pode ser registrada duas vezes no módulo financeiro.');
 assert.match(batchRoutes, /app\.post\('\/pending\/batch\/settle'/,
@@ -59,6 +61,14 @@ assert.match(settlement, /BENEFIT_SETTLEMENT_NOT_SUPPORTED/,
   'Benefício não pode cair nesse writer monetário.');
 assert.match(settlement, /assertActiveCatalogReferences/,
   'Conta e forma de pagamento devem ser cadastros ativos do usuário.');
+assert.match(settlement, /isFutureFinancialDay[\s\S]*FUTURE_PAYMENT_NOT_ALLOWED/,
+  'Baixa individual não pode aceitar data futura.');
+assert.match(settlement, /isMonetaryAccountType[\s\S]*ACCOUNT_NOT_MONETARY/,
+  'Baixa individual deve exigir conta monetária ativa.');
+assert.match(settlement, /monetaryAccountBalanceAt[\s\S]*paymentBalanceDecision[\s\S]*INSUFFICIENT_MONETARY_BALANCE/,
+  'Baixa individual deve validar saldo da conta escolhida antes da primeira gravação.');
+assert.match(settlement, /accountBalanceBefore[\s\S]*accountBalanceAfter/,
+  'Resposta e auditoria da baixa devem registrar saldo antes e depois.');
 
 assert.match(batchSettlement, /serializableFinancialTransaction/,
   'Baixa múltipla deve executar toda a seleção em uma única transação serializável.');
