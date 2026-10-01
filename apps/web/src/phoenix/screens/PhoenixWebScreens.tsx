@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { PhoenixReadModel } from '../contracts';
 import { preparePhoenixReconciliationAdjustment, readPhoenixReconciliationBalance, runPhoenixReconciliationAdjustment } from '../reconciliation-bridge';
+import { megConfirm } from '../meg-confirm';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const date = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -231,12 +232,14 @@ export function PhoenixReconciliation({ data, onDataCommitted }: { data: Phoenix
     if (!selectedAccount || difference === null || Math.abs(difference) < 0.005 || !canWrite) return;
     const adjustment = Math.round(Math.abs(difference) * 100) / 100;
     const direction = difference > 0 ? 'income' : 'expense';
-    const confirmed = window.confirm(
-      `Registrar ajuste de ${money.format(adjustment)} na conta ${selectedAccount.name}?\n\n`
-      + `Saldo MEG: ${money.format(megBalance || 0)}\n`
-      + `Saldo informado do banco: ${money.format(bankBalance)}\n\n`
-      + 'O ajuste será gravado como um novo evento financeiro auditável e o lançamento anterior será preservado.'
-    );
+    const confirmed = await megConfirm({
+      kicker: 'Conciliação financeira',
+      title: 'Registrar este ajuste?',
+      message: `Ajuste de ${money.format(adjustment)} na conta ${selectedAccount.name}. Saldo MEG: ${money.format(megBalance || 0)}. Saldo informado do banco: ${money.format(bankBalance)}. O ajuste será gravado como um novo evento financeiro auditável e o lançamento anterior será preservado.`,
+      confirmLabel: direction === 'income' ? 'Registrar entrada' : 'Registrar saída',
+      cancelLabel: 'Cancelar',
+      danger: false,
+    });
     if (!confirmed) return;
 
     setBusy(true);
