@@ -9,7 +9,7 @@ import { MegMobileBenefitCardCenter, MegMobileCardCenter, type MegMobileBenefitR
 import { MegMobileBenefitModal } from './MegMobileBenefitModal';
 import { MegMobileSettings } from './MegMobileSettings';
 import { MegMobilePicker } from './MegMobilePicker';
-import { preparePhoenixPendingSettlement, runPhoenixPendingSettlement } from '../phoenix/data/phoenix-pending-write-gateway';
+import { preparePhoenixPendingBatchSettlement, runPhoenixPendingBatchSettlement } from '../phoenix/data/phoenix-pending-write-gateway';
 import { cardDueDateForStatement } from '../phoenix/data/card-dates';
 import './meg-mobile-runtime.css';
 import './meg-mobile-final.css';
