@@ -61,7 +61,6 @@ function localClock(referenceDate = new Date()): LocalClock {
   };
 }
 
-const min = (hour: number, minute = 0) => hour * 60 + minute;
 
 function cycle(
   kind: NotificationWatchdogCycle['kind'],
