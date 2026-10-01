@@ -20,7 +20,11 @@ function normalize(value: unknown) {
   return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase().replace(/\s+/g, ' ');
 }
 
-function detailDrawer() { return document.querySelector<HTMLElement>('.px-detail-drawer.open'); }
+function detailDrawer() { return document.querySelector<HTMLElement>('.px-detail-drawer.open, .px-card-detail-drawer[data-card-purchase-id]'); }
+function actionRoot(root: HTMLElement) { return root.querySelector<HTMLElement>('.px-detail-actions, .px-card-detail-actions'); }
+function closeDetail(root: HTMLElement) {
+  root.querySelector<HTMLButtonElement>('.px-drawer-head .px-icon-btn, [data-card-detail-close]')?.click();
+}
 function detailValue(root: HTMLElement, label: string) {
   const wanted = normalize(label);
   return [...root.querySelectorAll<HTMLElement>('.px-detail-grid > div')]
@@ -28,6 +32,7 @@ function detailValue(root: HTMLElement, label: string) {
     ?.querySelector('strong')?.textContent?.trim() || '';
 }
 function projectedCard(root: HTMLElement) {
+  if (root.dataset.cardPurchaseId && root.dataset.cardId) return true;
   const notices = normalize([...root.querySelectorAll<HTMLElement>('.px-notice')].map((node) => node.textContent || '').join(' '));
   return normalize(detailValue(root, 'Modalidade')) === 'CREDITO' && notices.includes('DOMINIO DE CARTOES/FATURAS');
 }
@@ -58,12 +63,14 @@ function escapeHtml(value: unknown) {
 }
 
 function statusNode(root: HTMLElement) {
+  const direct = root.querySelector<HTMLElement>('[data-card-detail-status]');
+  if (direct) return direct;
   let node = root.querySelector<HTMLElement>('[data-card-domain-editor-status]');
   if (!node) {
     node = document.createElement('div');
     node.dataset.cardDomainEditorStatus = 'true';
     node.className = 'px-notice ok';
-    root.querySelector('.px-detail-actions')?.insertAdjacentElement('beforebegin', node);
+    actionRoot(root)?.insertAdjacentElement('beforebegin', node);
   }
   return node;
 }
@@ -75,9 +82,11 @@ function setStatus(root: HTMLElement, text: string, warn = false) {
 }
 
 function ensureButtons(root: HTMLElement) {
-  const actions = root.querySelector<HTMLElement>('.px-detail-actions');
+  const actions = actionRoot(root);
   if (!actions || !projectedCard(root)) return;
-  if (!actions.querySelector('[data-card-domain-edit]')) {
+  const role = readSession()?.user.role;
+  const canWrite = role === 'ADMIN' || role === 'MANAGER' || role === 'OPERATOR';
+  if (canWrite && !actions.querySelector('[data-card-domain-edit]')) {
     const edit = document.createElement('button');
     edit.type = 'button';
     edit.className = 'px-primary-action';
@@ -85,7 +94,6 @@ function ensureButtons(root: HTMLElement) {
     edit.textContent = 'Editar compra no cartão';
     actions.prepend(edit);
   }
-  const role = readSession()?.user.role;
   if ((role === 'ADMIN' || role === 'MANAGER') && !actions.querySelector('[data-card-domain-cancel]')) {
     const cancel = document.createElement('button');
     cancel.type = 'button';
@@ -100,6 +108,22 @@ function ensureButtons(root: HTMLElement) {
 }
 
 async function resolvePurchase(root: HTMLElement): Promise<ResolvedPurchase> {
+  const directPurchaseId = root.dataset.cardPurchaseId || '';
+  const directCardId = root.dataset.cardId || '';
+  const directMonth = root.dataset.cardStatementMonth || '';
+  if (directPurchaseId && directCardId) {
+    if (!/^\d{4}-\d{2}$/.test(directMonth)) throw new Error('Não foi possível identificar a fatura da compra.');
+    const [loadedCards, loadedCategories] = await Promise.all([cardsClient.list(directMonth), financeClient.listCategories()]);
+    cards = loadedCards.filter((card) => card.isActive);
+    categories = loadedCategories.filter((category) => category.isActive && (!category.type || category.type === 'expense'));
+    const card = loadedCards.find((item) => item.id === directCardId);
+    const purchase = card?.purchases.find((item) => item.id === directPurchaseId);
+    if (!card || !purchase) throw new Error('A compra de origem não foi localizada com segurança.');
+    const entry = purchase.entries.find((item) => item.statementMonth === directMonth);
+    if (!entry) throw new Error('A parcela vinculada a esta fatura não foi localizada.');
+    return { card, purchase, statementMonth: directMonth, installmentNumber: Number(entry.number || 1) };
+  }
+
   const month = statementMonth(root);
   if (!/^\d{4}-\d{2}$/.test(month)) throw new Error('Não foi possível identificar a fatura da parcela.');
   const [loadedCards, loadedCategories] = await Promise.all([cardsClient.list(month), financeClient.listCategories()]);
@@ -220,7 +244,7 @@ async function save(detail: HTMLElement, item: ResolvedPurchase) {
   try {
     await cardsClient.updatePurchase(item.purchase.id, { ...draft, categoryId: draft.categoryId || undefined, operationId: saveOperation.operationId });
     closeEditor();
-    detail.querySelector<HTMLButtonElement>('.px-drawer-head .px-icon-btn')?.click();
+    closeDetail(detail);
     window.dispatchEvent(new CustomEvent('meg:data-invalidated', { detail: { path: `/cards/purchases/${item.purchase.id}`, method: 'PATCH' } }));
     window.setTimeout(() => document.querySelector<HTMLButtonElement>('.px-sync:not(:disabled)')?.click(), 100);
   } catch (error) {
@@ -246,7 +270,7 @@ async function cancel(detail: HTMLElement, item: ResolvedPurchase) {
   setStatus(detail, 'Cancelando compra e registrando a operação na auditoria…');
   try {
     await cardsClient.cancelPurchaseProtected(item.purchase.id, cancelOperationId);
-    detail.querySelector<HTMLButtonElement>('.px-drawer-head .px-icon-btn')?.click();
+    closeDetail(detail);
     window.dispatchEvent(new CustomEvent('meg:data-invalidated', { detail: { path: `/cards/purchases/${item.purchase.id}`, method: 'DELETE' } }));
     window.setTimeout(() => document.querySelector<HTMLButtonElement>('.px-sync:not(:disabled)')?.click(), 100);
   } catch (error) {
@@ -272,7 +296,7 @@ async function handleCancel(detail: HTMLElement) {
 
 function onClick(event: MouseEvent) {
   const target = event.target as HTMLElement;
-  const detail = target.closest<HTMLElement>('.px-detail-drawer.open');
+  const detail = target.closest<HTMLElement>('.px-detail-drawer.open, .px-card-detail-drawer[data-card-purchase-id]');
   if (!detail || !projectedCard(detail)) return;
   if (target.closest('[data-card-domain-edit]')) { event.preventDefault(); event.stopImmediatePropagation(); void handleEdit(detail); }
   else if (target.closest('[data-card-domain-cancel]')) { event.preventDefault(); event.stopImmediatePropagation(); void handleCancel(detail); }

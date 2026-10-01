@@ -962,6 +962,37 @@
   font-weight:900;
 }
 
+.px-card-detail-actions {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:7px;
+  flex-wrap:wrap;
+}
+
+.px-card-detail-drawer > footer .px-card-detail-actions button {
+  min-height:36px;
+  padding:0 12px;
+  border:1px solid color-mix(in srgb,var(--brand) 34%,var(--line));
+  border-radius:10px;
+  background:color-mix(in srgb,var(--brand) 8%,var(--panel));
+  color:var(--brand2);
+  font-size:8px;
+  font-weight:900;
+}
+
+.px-card-detail-drawer > footer .px-card-detail-actions .px-primary-action {
+  border-color:color-mix(in srgb,var(--brand2) 62%,var(--line));
+  background:var(--brand2);
+  color:#032624;
+}
+
+.px-card-detail-drawer > footer .px-card-detail-actions .px-card-danger-action {
+  border-color:rgba(244,115,115,.22);
+  background:rgba(164,52,52,.08);
+  color:#efaaaa;
+}
+
 @container phoenix-workspace (max-width:1180px) {
   .px-card-focus {
     grid-template-columns:1fr;
