@@ -404,6 +404,10 @@ assert.match(launchDynamicCss, /px-meg-confirm-overlay/,
   'Confirmação MEG precisa possuir overlay próprio');
 assert.doesNotMatch(phoenixApp, /import '\.\/phoenix-layers\.css'/,
   'Shell compartilhado não deve carregar estilos Web no bundle visual do APK.');
+assert.doesNotMatch(phoenixApp, /card-purchase-edit-bridge/,
+  'Shell compartilhado não pode ativar o editor de compras no runtime Android.');
+assert.match(previewMain, /!MEG_MOBILE_RUNTIME[\s\S]{0,220}import\('\.\/card-purchase-edit-bridge'\)/,
+  'Entrada oficial da Web deve ativar o editor protegido de compras apenas fora do Android.');
 assert.match(phoenixWebStyles, /import '\.\/phoenix-v15\.css'[\s\S]*import '\.\/phoenix-layers\.css'/,
   'Módulo exclusivo da Web deve preservar a ordem dos estilos e terminar na escala de camadas.');
 assert.match(layersCss, /--meg-z-drawer:2000[\s\S]*--meg-z-modal:3200[\s\S]*--meg-z-critical:5200/,

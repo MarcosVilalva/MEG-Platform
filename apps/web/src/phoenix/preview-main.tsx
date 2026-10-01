@@ -27,6 +27,7 @@ if (MEG_MOBILE_RUNTIME && typeof document !== 'undefined') {
   document.body.dataset.megRuntime = 'android-cleanroom';
 } else if (!MEG_MOBILE_RUNTIME) {
   void import('./PhoenixWebStyles');
+  void import('./card-purchase-edit-bridge');
 }
 
 type PreviewState = 'checking' | 'authenticating' | 'signed-out' | 'preparing' | 'prepare-error' | 'signed-in';
