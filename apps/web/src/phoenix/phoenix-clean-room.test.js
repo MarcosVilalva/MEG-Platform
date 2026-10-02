@@ -51,6 +51,7 @@ const webScreens = readFileSync(new URL('./screens/PhoenixWebScreens.tsx', impor
 const webGridScreens = readFileSync(new URL('./screens/PhoenixWebGridScreens.tsx', import.meta.url), 'utf8');
 const catalogsGrid = readFileSync(new URL('./screens/PhoenixCatalogsGrid.tsx', import.meta.url), 'utf8');
 const reportsCenter = readFileSync(new URL('./screens/PhoenixReportsCenter.tsx', import.meta.url), 'utf8');
+const decisionCenter = readFileSync(new URL('./screens/PhoenixDecisionCenter.tsx', import.meta.url), 'utf8');
 const megWebCss = readFileSync(new URL('./meg-web-2026.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
@@ -538,6 +539,10 @@ assert.match(usersCss, /\.px-user-card\.is-search-focused/,
   'Usuários deve possuir destaque visual dedicado para o resultado pesquisado.');
 assert.match(commandPalette, /Comparação de saldo e ajustes auditáveis/,
   'Busca global não pode continuar descrevendo Conciliação como contrato em auditoria.');
+assert.match(decisionCenter, /currentMonthRows\?\.balance \?\? radar\.currentBalance/,
+  'Assistente de decisão deve preservar saldo projetado igual a zero.');
+assert.doesNotMatch(decisionCenter, /currentMonthRows\?\.balance \|\| radar\.currentBalance/,
+  'Saldo zero não pode ser tratado como valor ausente no assistente de decisão.');
 assert.doesNotMatch(commandPalette, /Contrato ainda em auditoria/,
   'Texto legado de Conciliação deve permanecer removido.');
 assert.match(commandPalette, /event\.target === event\.currentTarget/,
