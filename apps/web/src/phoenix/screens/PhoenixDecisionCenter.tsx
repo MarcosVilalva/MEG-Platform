@@ -338,7 +338,7 @@ export function PhoenixDecisionCenter({ data }: { data: PhoenixReadModel }) {
         <div className="px-decision-action-list">
           <div><span>Compromissos deste mês</span><strong>{money.format(currentMonthRows?.expense || 0)}</strong></div>
           <div><span>Receitas previstas deste mês</span><strong>{money.format(currentMonthRows?.income || 0)}</strong></div>
-          <div><span>Saldo ao fim deste mês</span><strong className={(currentMonthRows?.balance || 0) < 0 ? 'negative' : ''}>{money.format(currentMonthRows?.balance || radar.currentBalance)}</strong></div>
+          <div><span>Saldo ao fim deste mês</span><strong className={(currentMonthRows?.balance ?? 0) < 0 ? 'negative' : ''}>{money.format(currentMonthRows?.balance ?? radar.currentBalance)}</strong></div>
           <div><span>Pior ponto dos 12 meses</span><strong className={radar.minimumBalance < 0 ? 'negative' : ''}>{money.format(radar.minimumBalance)}</strong></div>
         </div>
       </section>
