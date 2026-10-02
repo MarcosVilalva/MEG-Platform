@@ -1,7 +1,7 @@
 # MEG — MEMÓRIA OFICIAL DE VALIDAÇÃO E CONTINUIDADE
 
 > Fonte operacional para retomar a reconstrução após troca ou travamento de chat.
-> Comando de retomada: **Retomar MEG pela Memória Oficial de Validação e Continuidade, do último ponto validado.**
+> Comando oficial de retomada: **Retomar MEG pela Memória Oficial de Validação e Continuidade. Não revalidar decisões já aprovadas. Conferir o estado atual do GitHub e continuar exatamente do último ponto validado.**
 
 ## 1. Regra de continuidade
 
@@ -44,26 +44,54 @@ Linguagem visual: dark premium, navy + teal/ciano/verde, neon elegante e localiz
 
 ## 4. Regras permanentes
 
-- Web e Android são superfícies diferentes; reconstrução Web não altera visual Android.
+- Web e Android são superfícies diferentes.
+- **ANDROID CONGELADO:** o aplicativo Android atualmente em uso permanece funcionando na base atual enquanto o Web Evolution é reconstruído.
+- **Não gerar, publicar, oferecer nem atualizar APK/OTA Android durante a reconstrução do Web Evolution.**
+- O manifesto estável Android deve permanecer na versão já publicada (`2.0.708`) até decisão explícita posterior.
+- A migração do Android para deixar de depender do Phoenix ocorrerá somente depois que o Web Evolution estiver concluído e validado.
+- Durante essa fase, arquivos Phoenix ainda necessários ao Android não devem ser removidos.
+- **EVOLUTION é o futuro cliente Web oficial. Phoenix deixa de ser referência visual e deixa de ser o destino arquitetural do Web.**
+- A reconstrução do Evolution é clean-room na camada visual/estrutural Web.
+- Preservar autenticação, APIs, gateways, regras financeiras, persistência e dados.
 - Uma tela por vez.
 - Tela validada fica congelada.
 - Não empilhar CSS visual antigo.
-- Preservar autenticação, APIs, gateways e regras financeiras.
 - Tela principal sem scroll geral; scroll apenas em regiões internas densas. Novo/Editar lançamento pode rolar.
 - Responsividade estrutural.
-- Não manter versões paralelas `vXX`, `old`, `final2` etc. no Web Next.
+- O Evolution não deve importar componentes visuais ou CSS Phoenix.
+- O Android não pode ser usado como laboratório para alterações do Evolution Web.
 
 ## 5. Ponto atual
 
-Home, Lançamentos e Novo/Editar lançamento já possuem implementação Web Next mesclada e aguardam validação visual final antes de remoção de legado.
+### DECISÃO FINAL DE ARQUITETURA — 02/10/2026
 
-**Login/Autenticação Web Next foi mesclado na main no commit `7640aa780b8772504257c86e9bc645716cbeaa0c` (PR #522).**
-CI, smoke de produção e publicação do GitHub Pages passaram. O Android permaneceu na superfície atual e não recebeu alteração visual.
+A estratégia anterior de evolução incremental do `web-next` sobre o runtime Phoenix foi encerrada como direção futura.
 
-**Estado de retomada: aguardar validação visual do Login Web Next publicado. Não avançar para Pendentes/baixa antes dessa validação.**
+A partir deste marco:
 
-Após Login validado:
-1. marcar Login como VALIDADO e congelá-lo;
-2. auditar/remover a apresentação Phoenix de autenticação Web que ficar órfã, preservando o Android;
-3. seguir para Pendentes / baixa;
-4. atualizar este documento e a matriz oficial.
+1. **MEG Evolution será reconstruído do zero na camada visual Web**, com raiz, shell, navegação, componentes, estilos e rotas próprios.
+2. Phoenix passa a ser **legado protegido temporariamente**, mantido apenas onde ainda sustenta o Android atual ou regras/bridges que ainda não foram desacopladas.
+3. O Evolution Web não deve depender visualmente de `PhoenixApp`, componentes Phoenix nem CSS Phoenix.
+4. Regras de negócio, autenticação, APIs, persistência e gateways existentes serão preservados e acessados por fronteiras/adaptadores quando necessário.
+5. As referências visuais oficiais continuam sendo as imagens aprovadas em 02/10/2026 e a paleta **Navy Compacto + Verde MEG**.
+6. O Android atual fica **CONGELADO** e continua sendo usado normalmente.
+7. **Nenhum novo APK/OTA Android deve ser gerado ou publicado enquanto o Web Evolution estiver em reconstrução.**
+8. O canal estável Android permanece em `2.0.708` até decisão explícita de retomada da migração Android.
+9. Somente após o Web Evolution estar concluído e validado será iniciada a migração do Android para deixar de depender do Phoenix.
+
+### Próximo ponto obrigatório de retomada
+
+**Iniciar a fundação do MEG Evolution Web com separação real de entrypoint/runtime, mantendo o Android atual intocado.**
+
+Ordem inicial:
+1. criar a raiz `apps/web/src/evolution/`;
+2. criar entrypoint Web Evolution separado do runtime Android;
+3. preservar o entrypoint Android atual;
+4. construir Loading → Login → Shell → Home pelas referências aprovadas;
+5. avançar uma tela por vez somente após validação explícita.
+
+### Frase obrigatória para retomar após travamento
+
+> **Retomar MEG pela Memória Oficial de Validação e Continuidade. Não revalidar decisões já aprovadas. Conferir o estado atual do GitHub e continuar exatamente do último ponto validado.**
+
+Ao receber essa frase, o primeiro procedimento é ler este arquivo e o estado do GitHub. Não voltar ao plano Web Next/Phoenix incremental e não gerar atualização Android.

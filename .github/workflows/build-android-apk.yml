@@ -1,6 +1,7 @@
-name: Build MEG Finanças Android APK
-# Android congelado: a publicação do APK só pode ser iniciada manualmente.
-# Alterações no Web/API não devem gerar nem publicar uma nova versão do aplicativo.
+name: Build MEG Finanças Android APK (CONGELADO)
+# ANDROID CONGELADO DURANTE A RECONSTRUÇÃO DO MEG EVOLUTION WEB.
+# Não gerar, publicar ou oferecer APK/OTA até a conclusão e validação do Web Evolution.
+# Para reativar, é obrigatório remover explicitamente a trava do job após decisão registrada em docs/MEG-VALIDACAO-OFICIAL.md.
 
 on:
   workflow_dispatch:
@@ -17,7 +18,8 @@ permissions:
 
 jobs:
   build-apk:
-    if: ${{ !contains(github.event.head_commit.message, '[skip apk]') }}
+    # Trava deliberada: mesmo workflow_dispatch manual não publica Android nesta fase.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     env:
       VITE_API_URL: https://meg-platform-api.onrender.com

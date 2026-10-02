@@ -1,11 +1,15 @@
-# MEG WEB NEXT — STATUS OFICIAL DA RECONSTRUÇÃO
+# MEG EVOLUTION — STATUS OFICIAL DA RECONSTRUÇÃO
 
 > Este arquivo é a fonte de verdade para qualquer continuação da reconstrução Web.
 > Antes de alterar a interface Web, leia este documento e `WEB-LEGACY-REMOVAL.md`.
 
 ## 1. Decisão arquitetural
 
-O cliente Web será reconstruído em modo **clean-room**, tela por tela.
+**Decisão final de 02/10/2026:** o Web deixa de evoluir sobre Phoenix/Web Next híbrido e passa a ser reconstruído como **MEG Evolution**, em clean-room visual e estrutural.
+
+O cliente Web será reconstruído tela por tela em `apps/web/src/evolution/`.
+
+O Android atualmente em uso fica congelado na base atual. Nenhum APK/OTA deve ser gerado ou publicado durante a reconstrução do Evolution. A migração Android para remover dependências Phoenix só começa após a conclusão e validação do Web.
 
 O objetivo NÃO é reconstruir o sistema financeiro. Devem ser preservados:
 - API e contratos de backend;
@@ -64,22 +68,16 @@ Se uma tela ainda não foi validada, o legado necessário pode continuar ativo t
 
 ## 6. Estado atual
 
-Última base conhecida antes da fundação clean-room:
 - branch oficial: `main`;
-- governança clean-room consolidada em `main`: `8a1ad79b427c356bd0478060dd464515e5ce5a88` (PR #512);
-- fundação Web Next: mesclada em `main` no commit `61049d51dc0cc17e710366073a36802eb8e3de64`;
-- Home Web Next: mesclada em `main` no commit `44731391fc3b06a1b32431caff72b307b7eca70e` (PR #514), em validação visual;
-- UI transversal Web Next: mesclada na `main` em `bc4c1466f0e14f772265292c32f9dcd8725d0edb` (PR #515);
-- Home + Sidebar premium: mesclada em `main` no commit `d961b35bf6ef801b16bc44bf11da62097852d4c8` (PR #516), reprovada visualmente pelo usuário por falta de impacto;
-- Home Command Center: mesclada em `main` no commit `ab154c5d160e092ec11333d5f06ff3d2edeec93b` (PR #517), ainda aguardando validação visual;
-- Home launcher/carrossel: mesclada em `main` no commit `0cdc42d2fbd17b24da1b1aecc20edc20c1f8c26b` (PR #518), com + Incluir, Despesa/Receita/Alimentação, carrossel sem scroll horizontal e Home fixa no viewport;
-- Lançamentos Web Next: mesclado em `main` no commit `495a73e2c2f6cc80b2099764d96cf2fd8cc1f6f3` (PR #519), com leitura, filtros, KPIs e grade no Command Center;
-- Novo/Editar lançamento: mesclado em `main` no commit `609072f47ff5e8d5dcc91fffd42a272e0f384b66` (PR #520), com superfície Web Next e gateways financeiros preservados;
-- Login/Autenticação Web Next: mesclado em `main` no commit `7640aa780b8772504257c86e9bc645716cbeaa0c` (PR #522), baseado nas referências validadas de 02/10/2026; CI/smoke/deploy verdes; aguardando validação visual; autenticação e Android preservados;
-- cliente visual em `main`: **híbrido temporário** — Home mensal e Lançamentos em Web Next; demais rotas ainda Phoenix;
-- situação do runtime atual: **transitória e controlada**.
+- Android estável publicado: `2.0.708`;
+- Android: **CONGELADO / PROTEGIDO** durante toda a reconstrução Web;
+- workflow de publicação Android deve permanecer bloqueado até decisão explícita após conclusão do Evolution;
+- Phoenix: legado temporário, preservado somente para manter o Android atual e dependências ainda não desacopladas;
+- implementações Web Next anteriores (#512–#522): histórico/protótipos úteis, mas **não são a fundação arquitetural final do Evolution**;
+- referências visuais aprovadas de 02/10/2026 permanecem o contrato visual;
+- próximo marco: criar a fundação `apps/web/src/evolution/` e separar o entrypoint Web do entrypoint Android sem alterar o app móvel.
 
-A Home do PR #511 serviu como diagnóstico e evolução visual, mas NÃO é considerada a Home clean-room definitiva.
+**Não retomar Pendentes/baixa sobre a arquitetura Web Next anterior. Primeiro construir a fundação Evolution.**
 
 ## 7. Matriz de migração
 
@@ -122,12 +120,17 @@ Princípios:
 
 ## 9. Continuidade entre chats
 
+Comando oficial:
+
+> **Retomar MEG pela Memória Oficial de Validação e Continuidade. Não revalidar decisões já aprovadas. Conferir o estado atual do GitHub e continuar exatamente do último ponto validado.**
+
 Em qualquer novo chat:
 1. abrir `MEG-VALIDACAO-OFICIAL.md`;
 2. abrir este arquivo;
 3. abrir `WEB-LEGACY-REMOVAL.md`;
 4. verificar HEAD da `main`;
-5. verificar PRs abertos `web-next`;
-6. continuar a primeira linha da matriz que estiver EM CONSTRUÇÃO ou PRÓXIMA.
+5. verificar PRs abertos relacionados a Evolution;
+6. confirmar que o Android continua congelado;
+7. continuar exatamente do último marco Evolution registrado.
 
-Não inferir o estado a partir de arquivos `v12/v13/v15` antigos.
+Não reabrir Web Next incremental como direção arquitetural. Não gerar APK/OTA Android durante a reconstrução do Web.
