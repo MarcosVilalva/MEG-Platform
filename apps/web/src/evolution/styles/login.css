@@ -528,9 +528,14 @@
   .evo-login-signals i{width:20px;height:20px}
   .evo-login-card{
     width:100%;
-    max-height:71dvh;
+    height:100%;
+    min-height:0;
+    max-height:none;
+    align-self:stretch;
+    display:flex;
+    flex-direction:column;
     padding:20px 18px 17px;
-    border-radius:23px 23px 0 0;
+    border-radius:23px;
     box-shadow:0 25px 80px rgba(0,0,0,.54),0 0 32px rgba(45,221,199,.07);
   }
   .evo-login-lock{width:42px;height:42px;border-radius:13px}
@@ -544,9 +549,10 @@
   .evo-login-options{font-size:10px}
   .evo-login-primary{min-height:49px;border-radius:14px;margin-top:14px}
   .evo-login-switch{margin-top:13px;font-size:10px}
-  .evo-login-secure{margin-top:13px;padding-top:12px;font-size:8px}
+  .evo-login-secure{margin-top:auto;padding-top:12px;font-size:8px}
   .evo-login-account-type{grid-template-columns:1fr}
-  .evo-login-card-register .evo-login-form-scroll{max-height:43dvh}
+  .evo-login-card-register .evo-login-form{min-height:0;flex:1}
+  .evo-login-card-register .evo-login-form-scroll{max-height:none;overflow-y:auto}
 }
 
 @media(max-height:720px) and (min-width:1041px){
