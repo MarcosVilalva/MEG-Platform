@@ -17,6 +17,9 @@ assert.match(sidebar, /Início[\s\S]*Lançamentos[\s\S]*Cartões[\s\S]*Planejame
 assert.match(topbar, /Olá, \{firstName\}!/);
 assert.match(topbar, /onPayables/);
 assert.match(topbar, /mnx-top-search[\s\S]*Buscar no MEG/);
+assert.match(topbar, /mnx-add-button[\s\S]*Incluir/);
+assert.match(shell, /WebNextLaunchSelector/);
+assert.match(shell, /onLaunch/);
 assert.match(sidebar, /brandSrc[\s\S]*mnx-brand-mark/);
 assert.match(sidebar, /Recolher menu/);
 assert.match(sidebar, /Visão financeira[\s\S]*Organização/);
