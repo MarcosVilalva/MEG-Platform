@@ -220,3 +220,17 @@ Até essa etapa:
 - não remover `phoenix-launch.css`, `phoenix-launch-dynamic.css`, `phoenix-launch-editor-polish.css` ou `phoenix-launch-write.css`;
 - não remover `PhoenixLaunchWriteControl` nem os gateways de escrita usados pelo editor;
 - `meg-web-movements-revolution.css` continua candidato a remoção somente após validação visual da nova rota e auditoria de consumidores.
+
+
+## 14. Novo / Editar lançamento Web Next
+
+A branch `feat/web-next-launch-editor-clean-room` substitui a superfície visual do editor na rota Web:
+- `WebNextLaunchEditor.tsx` renderiza Novo e Editar com classes `mnx-`, sem importar CSS Phoenix;
+- o formulário mantém Despesa, Receita, Transferência, Benefício, cartão, crediário, parcelas, recorrência, modelo, observações, validação e resumo;
+- confirmações de descarte, baixa, exclusão e visualização de parcelas possuem superfície Web Next própria;
+- `PhoenixMovementsV15` continua temporariamente como controlador de estado/orquestração, mas em `editorOnly` entrega a apresentação ao Web Next;
+- `PhoenixLaunchWriteControl` mantém um único motor de gravação e recebe `surface="web-next"` apenas para trocar a apresentação do estado de escrita;
+- transferência passa a receber `transferInput` explícito na rota nova, sem depender de leitura do DOM;
+- Android continua usando a superfície Phoenix existente e não muda nesta etapa.
+
+Esta etapa NÃO autoriza remoção imediata dos gateways nem do editor Phoenix. Após CI, publicação e validação visual, deve-se auditar consumidores e então extrair/remover a apresentação antiga que ficar órfã.
