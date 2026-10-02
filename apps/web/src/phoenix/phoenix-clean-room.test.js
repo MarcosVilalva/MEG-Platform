@@ -60,6 +60,7 @@ const movementsRevolutionCss = readFileSync(new URL('./meg-web-movements-revolut
 const cardsRevolutionCss = readFileSync(new URL('./meg-web-cards-revolution.css', import.meta.url), 'utf8');
 const payablesBenefitRevolutionCss = readFileSync(new URL('./meg-web-payables-benefit-revolution.css', import.meta.url), 'utf8');
 const reportsRevolutionCss = readFileSync(new URL('./meg-web-reports-revolution.css', import.meta.url), 'utf8');
+const cashflowRevolutionCss = readFileSync(new URL('./meg-web-cashflow-revolution.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
@@ -1713,6 +1714,22 @@ assert.match(reportsRevolutionCss, /meg-web-report-grid[\s\S]*display:flex[\s\S]
   'Em larguras reduzidas os tipos de relatório devem virar trilho horizontal sem empurrar a página.');
 assert.doesNotMatch(reportsRevolutionCss, /meg-cleanroom-mobile|android-cleanroom/,
   'Camada Revolution de Relatórios deve permanecer exclusiva do Web.');
+
+
+assert.match(webGridScreens, /meg-web-cashflow-revolution/,
+  'Fluxo de Caixa Web deve declarar explicitamente a camada Revolution.');
+assert.match(phoenixWebStyles, /meg-web-reports-revolution\.css'[\s\S]*meg-web-cashflow-revolution\.css'/,
+  'Fluxo de Caixa Revolution deve ser carregado depois de Relatórios.');
+assert.match(cashflowRevolutionCss, /container-name:cashflow-revolution/,
+  'Fluxo de Caixa Revolution deve responder ao espaço real do módulo.');
+assert.match(cashflowRevolutionCss, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/,
+  'KPIs do Fluxo de Caixa devem ocupar quatro colunas quando houver espaço.');
+assert.match(cashflowRevolutionCss, />\.px-table-card>\.px-table-scroll[\s\S]*overflow:auto/,
+  'Rolagem do Fluxo de Caixa deve permanecer confinada à tabela.');
+assert.match(cashflowRevolutionCss, /@container cashflow-revolution \(max-width:760px\)/,
+  'Fluxo de Caixa deve compactar KPIs com base no container.');
+assert.doesNotMatch(cashflowRevolutionCss, /meg-operational-mobile|android-cleanroom|meg-cleanroom-mobile/,
+  'Camada Revolution de Fluxo de Caixa deve permanecer exclusiva do Web.');
 
 assert.match(phoenixApp, /onLogout/,
   'Phoenix deve expor saída de sessão ao preview isolado');
