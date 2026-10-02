@@ -1,7 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {EvolutionLoading} from '../screens/EvolutionLoading';
 import {EvolutionLogin} from '../screens/EvolutionLogin';
-import {EvolutionSystemEntry} from '../screens/EvolutionSystemEntry';
+import {EvolutionHome} from '../screens/EvolutionHome';
 
 type EvolutionPhase='login'|'loading'|'system';
 
@@ -41,7 +41,7 @@ export function EvolutionApp(){
   },[phase,forcedScreen]);
 
   if(phase==='loading')return <EvolutionLoading progress={progress}/>;
-  if(phase==='system')return <EvolutionSystemEntry/>;
+  if(phase==='system')return <EvolutionHome/>;
 
   return <EvolutionLogin onAuthenticated={()=>{
     setProgress(18);
