@@ -112,3 +112,21 @@ Correção oficial implementada no PR #525 / commit `d4ffde4d6f49fef3bf6a9d2e861
 - Android permaneceu congelado e não participou da correção.
 
 **Estado de retomada: Loading Evolution corrigido e publicado, aguardando validação visual. Não avançar para Login Evolution antes dessa validação.**
+
+
+### Reprovação visual do Loading Evolution — 02/10/2026
+
+A composição minimalista publicada anteriormente foi **reprovada visualmente** por não corresponder à imagem oficial de referência. Não tratar o PR #525 como validação visual.
+
+O Loading deve reproduzir a linguagem da referência aprovada:
+- logo MEG FINANÇAS grande e central;
+- cena holográfica central, não um simples card retangular;
+- gráfico de barras + curva luminosa;
+- quatro cards flutuantes (donut, lista, tendência e alvo);
+- plataforma/rings luminosos na base;
+- arcos neon e relevo/paisagem escura no fundo;
+- ordem: **logo → cena → progresso → título → subtítulo**;
+- progresso obrigatório até 100%.
+
+Branch de reconstrução visual: `feat/evolution-loading-cinematic`.
+Android permanece congelado e não participa desta alteração.

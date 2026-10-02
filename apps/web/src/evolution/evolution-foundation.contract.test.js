@@ -24,6 +24,11 @@ assert.doesNotMatch(html,/phoenix/i);
 const loading=fs.readFileSync(new URL('./screens/EvolutionLoading.tsx',import.meta.url),'utf8');
 assert.match(loading,/Carregando seus dados/);
 assert.match(loading,/Organizando suas finanças/);
+assert.match(loading,/evo-card-donut/);
+assert.match(loading,/evo-card-list/);
+assert.match(loading,/evo-card-trend/);
+assert.match(loading,/evo-card-target/);
+assert.match(loading,/evo-holo-platform/);
 assert.match(loading,/\.\/evolution\/brand\/meg-mark\.svg/);
 assert.doesNotMatch(loading,/meg-finance-system-mark-transparent\.svg/);
 
@@ -33,9 +38,10 @@ assert.match(app,/\?\? 100/,'fallback de progresso precisa ser 100%');
 
 const logo=fs.readFileSync(new URL('../../public/evolution/brand/meg-mark.svg',import.meta.url),'utf8');
 assert.doesNotMatch(logo,/letter-spacing="-\d/,'logo Evolution não pode comprimir as letras MEG');
-assert.match(logo,/<text x="28"[^>]*>M<\/text>/);
-assert.match(logo,/<text x="89"[^>]*>E<\/text>/);
-assert.match(logo,/<text x="132"[^>]*>G<\/text>/);
+assert.match(logo,/>M<\/text>/);
+assert.match(logo,/>E<\/text>/);
+assert.match(logo,/>G<\/text>/);
+assert.match(logo,/>FINANÇAS<\/text>/);
 
 const tokens=fs.readFileSync(new URL('./styles/tokens.css',import.meta.url),'utf8');
 for(const color of ['#071321','#0a1728','#0d1d2d','#53cf8d','#71dda4','#4bbac7']){
