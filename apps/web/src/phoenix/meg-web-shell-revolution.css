@@ -1,0 +1,436 @@
+/* MEG WEB · Revolution responsive shell
+ * Fonte única da geometria Web: sidebar, topbar, área útil e compactação.
+ * Carregado depois das folhas legadas para neutralizar conflitos sem tocar no Android.
+ */
+
+.meg-web-2026 {
+  --meg-shell-sidebar-expanded:clamp(244px,17vw,292px);
+  --meg-shell-sidebar-collapsed:84px;
+  --meg-shell-topbar-height:76px;
+  --meg-shell-gutter:clamp(18px,2.25vw,44px);
+  --meg-shell-content-max:2200px;
+  --meg-shell-transition:180ms cubic-bezier(.2,.8,.2,1);
+  inline-size:100%;
+  min-inline-size:0;
+  min-block-size:100dvh;
+  overflow-x:clip;
+}
+
+.meg-web-2026 .px-app {
+  inline-size:100%;
+  min-inline-size:0;
+  block-size:100dvh;
+  min-block-size:100dvh;
+  display:grid;
+  grid-template-columns:var(--meg-shell-sidebar-expanded) minmax(0,1fr);
+  overflow:hidden;
+  transition:grid-template-columns var(--meg-shell-transition);
+}
+
+.meg-web-2026 .px-app.is-collapsed {
+  grid-template-columns:var(--meg-shell-sidebar-collapsed) minmax(0,1fr);
+}
+
+/* Sidebar: nunca altera a largura útil fora do grid e possui rolagem interna. */
+.meg-web-2026 .meg-web-sidebar {
+  inline-size:100%;
+  min-inline-size:0;
+  block-size:100dvh;
+  min-block-size:0;
+  position:relative;
+  inset:auto;
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr) auto;
+  align-self:stretch;
+  overflow:hidden;
+  contain:layout paint;
+}
+
+.meg-web-2026 .meg-web-sidebar .px-nav-group {
+  min-inline-size:0;
+  min-block-size:0;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+
+.meg-web-2026 .meg-web-sidebar .px-side-section,
+.meg-web-2026 .meg-web-sidebar .px-nav-btn,
+.meg-web-2026 .meg-web-sidebar .px-side-footer {
+  min-inline-size:0;
+}
+
+.meg-web-2026 .px-app.is-collapsed .meg-web-sidebar {
+  padding-inline:10px;
+}
+
+.meg-web-2026 .px-app.is-collapsed .px-side-brand {
+  justify-content:center;
+  padding-inline:0;
+}
+
+.meg-web-2026 .px-app.is-collapsed .px-side-brand>span,
+.meg-web-2026 .px-app.is-collapsed .px-search-label,
+.meg-web-2026 .px-app.is-collapsed .px-side-section-label,
+.meg-web-2026 .px-app.is-collapsed .px-nav-text,
+.meg-web-2026 .px-app.is-collapsed .meg-web-side-status,
+.meg-web-2026 .px-app.is-collapsed .px-side-exit>strong {
+  display:none!important;
+}
+
+.meg-web-2026 .px-app.is-collapsed .px-search-command,
+.meg-web-2026 .px-app.is-collapsed .px-nav-btn,
+.meg-web-2026 .px-app.is-collapsed .px-side-exit {
+  inline-size:48px;
+  min-inline-size:48px;
+  margin-inline:auto;
+  justify-content:center;
+  padding-inline:0;
+}
+
+.meg-web-2026 .px-app.is-collapsed .px-side-badge {
+  position:absolute;
+  inset-block-start:3px;
+  inset-inline-end:0;
+  min-inline-size:17px;
+  block-size:17px;
+  padding:0 4px;
+  display:grid;
+  place-items:center;
+  font-size:7px;
+}
+
+/* Main: topbar e conteúdo dividem a viewport; a página em si não ganha scroll horizontal. */
+.meg-web-2026 .px-main {
+  min-inline-size:0;
+  min-block-size:0;
+  block-size:100dvh;
+  display:grid;
+  grid-template-rows:var(--meg-shell-topbar-height) minmax(0,1fr);
+  overflow:hidden;
+  container-type:inline-size;
+  container-name:meg-main;
+}
+
+.meg-web-2026 .meg-web-topbar {
+  inline-size:100%;
+  min-inline-size:0;
+  min-block-size:var(--meg-shell-topbar-height);
+  block-size:var(--meg-shell-topbar-height);
+  padding-inline:var(--meg-shell-gutter);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:nowrap;
+  gap:clamp(10px,1.25vw,20px);
+  overflow:visible;
+  z-index:30;
+}
+
+.meg-web-2026 .meg-web-top-left,
+.meg-web-2026 .meg-web-top-right,
+.meg-web-2026 .meg-web-quick-actions {
+  min-inline-size:0;
+  flex-wrap:nowrap;
+}
+
+.meg-web-2026 .meg-web-top-left {
+  flex:1 1 auto;
+  overflow:hidden;
+}
+
+.meg-web-2026 .px-top-title {
+  min-inline-size:0;
+  max-inline-size:min(32vw,520px);
+}
+
+.meg-web-2026 .px-top-title>strong,
+.meg-web-2026 .px-top-title>small,
+.meg-web-2026 .meg-web-breadcrumb {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.meg-web-2026 .meg-web-top-right {
+  flex:0 1 auto;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:clamp(5px,.7vw,9px);
+}
+
+.meg-web-2026 .meg-web-quick-actions {
+  flex:0 1 auto;
+}
+
+.meg-web-2026 .meg-web-action,
+.meg-web-2026 .px-period-summary,
+.meg-web-2026 .px-sync,
+.meg-web-2026 .px-home-user-identity,
+.meg-web-2026 .px-icon-btn {
+  flex:0 0 auto;
+}
+
+.meg-web-2026 .meg-web-content {
+  inline-size:100%!important;
+  max-inline-size:var(--meg-shell-content-max)!important;
+  min-inline-size:0;
+  min-block-size:0;
+  block-size:100%;
+  margin-inline:auto;
+  padding:clamp(20px,2vw,34px) var(--meg-shell-gutter) clamp(38px,4vw,64px);
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+  container-type:inline-size;
+  container-name:meg-content;
+}
+
+.meg-web-2026[data-web-view="catalogs"] .meg-web-content,
+.meg-web-2026[data-web-view="movements"] .meg-web-content,
+.meg-web-2026[data-web-view="history"] .meg-web-content,
+.meg-web-2026[data-web-view="receivables"] .meg-web-content,
+.meg-web-2026[data-web-view="revenues"] .meg-web-content {
+  inline-size:100%!important;
+  max-inline-size:var(--meg-shell-content-max)!important;
+}
+
+.meg-web-2026 .meg-web-content>.px-screen,
+.meg-web-2026 .meg-web-content>.px-card,
+.meg-web-2026 .meg-web-content>section,
+.meg-web-2026 .px-screen,
+.meg-web-2026 .px-screen>* {
+  min-inline-size:0;
+  max-inline-size:100%;
+}
+
+.meg-web-2026 .px-screen-head {
+  min-inline-size:0;
+  flex-wrap:wrap;
+  align-items:flex-end;
+}
+
+.meg-web-2026 .px-screen-head>div:first-child {
+  flex:1 1 420px;
+  min-inline-size:0;
+}
+
+.meg-web-2026 .px-screen-head-aside {
+  flex:0 1 auto;
+  min-inline-size:0;
+}
+
+/* Desktop largo: usa espaço extra sem inflar componentes até perder hierarquia. */
+@media (min-width:1680px) {
+  .meg-web-2026 {
+    --meg-shell-sidebar-expanded:clamp(276px,16vw,304px);
+    --meg-shell-gutter:clamp(30px,2.5vw,54px);
+    --meg-shell-content-max:2280px;
+  }
+}
+
+/* Desktop/notebook: compacta controles antes de sacrificar a área financeira. */
+@media (max-width:1450px) {
+  .meg-web-2026 {
+    --meg-shell-sidebar-expanded:244px;
+    --meg-shell-gutter:22px;
+  }
+
+  .meg-web-2026 .meg-web-action {
+    inline-size:40px;
+    min-inline-size:40px;
+    justify-content:center;
+    padding-inline:0;
+  }
+
+  .meg-web-2026 .meg-web-action>strong {
+    position:absolute;
+    inline-size:1px;
+    block-size:1px;
+    margin:-1px;
+    overflow:hidden;
+    clip:rect(0 0 0 0);
+    clip-path:inset(50%);
+    white-space:nowrap;
+  }
+
+  .meg-web-2026 .px-sync>span:last-child {
+    display:none;
+  }
+
+  .meg-web-2026 .px-home-user-identity {
+    min-inline-size:42px;
+    inline-size:42px;
+    padding:4px;
+    justify-content:center;
+  }
+
+  .meg-web-2026 .px-home-user-identity>span:last-child {
+    display:none;
+  }
+}
+
+/* Notebook compacto/tablet horizontal: rail fixo. O estado do botão não espreme a aplicação. */
+@media (max-width:1180px) {
+  .meg-web-2026 {
+    --meg-shell-sidebar-expanded:84px;
+    --meg-shell-sidebar-collapsed:84px;
+    --meg-shell-gutter:18px;
+    --meg-shell-topbar-height:70px;
+  }
+
+  .meg-web-2026 .px-side-brand {
+    justify-content:center;
+    padding-inline:0;
+  }
+
+  .meg-web-2026 .px-side-brand>span,
+  .meg-web-2026 .px-search-label,
+  .meg-web-2026 .px-side-section-label,
+  .meg-web-2026 .px-nav-text,
+  .meg-web-2026 .meg-web-side-status,
+  .meg-web-2026 .px-side-exit>strong {
+    display:none!important;
+  }
+
+  .meg-web-2026 .px-search-command,
+  .meg-web-2026 .px-nav-btn,
+  .meg-web-2026 .px-side-exit {
+    inline-size:48px;
+    min-inline-size:48px;
+    margin-inline:auto;
+    justify-content:center;
+    padding-inline:0;
+  }
+
+  .meg-web-2026 .meg-web-topbar {
+    min-block-size:70px;
+    block-size:70px;
+  }
+
+  .meg-web-2026 .px-top-title>small,
+  .meg-web-2026 .meg-web-breadcrumb {
+    display:none;
+  }
+
+  .meg-web-2026 .px-top-title {
+    max-inline-size:min(34vw,360px);
+  }
+}
+
+/* Largura compacta de navegador: preserva rail, reduz ornamentos e mantém ações essenciais. */
+@media (max-width:900px) {
+  .meg-web-2026 {
+    --meg-shell-sidebar-expanded:72px;
+    --meg-shell-sidebar-collapsed:72px;
+    --meg-shell-gutter:14px;
+    --meg-shell-topbar-height:64px;
+  }
+
+  .meg-web-2026 .meg-web-sidebar {
+    padding-inline:8px;
+  }
+
+  .meg-web-2026 .px-side-brand img {
+    inline-size:38px;
+    block-size:38px;
+    flex-basis:38px;
+  }
+
+  .meg-web-2026 .px-search-command,
+  .meg-web-2026 .px-nav-btn,
+  .meg-web-2026 .px-side-exit {
+    inline-size:44px;
+    min-inline-size:44px;
+  }
+
+  .meg-web-2026 .meg-web-topbar {
+    min-block-size:64px;
+    block-size:64px;
+    gap:8px;
+  }
+
+  .meg-web-2026 .px-collapse {
+    inline-size:38px;
+    block-size:38px;
+    flex-basis:38px;
+  }
+
+  .meg-web-2026 .px-top-title {
+    max-inline-size:28vw;
+  }
+
+  .meg-web-2026 .meg-web-quick-actions .intelligence,
+  .meg-web-2026 .px-sync,
+  .meg-web-2026 .px-theme-toggle {
+    display:none;
+  }
+
+  .meg-web-2026 .px-period-summary {
+    min-inline-size:38px;
+  }
+
+  .meg-web-2026 .meg-web-content {
+    padding-block-start:16px;
+  }
+
+  .meg-web-2026 .px-screen-head {
+    gap:12px;
+  }
+}
+
+/* Browser estreito: a interface continua utilizável sem alterar o runtime Android. */
+@media (max-width:720px) {
+  .meg-web-2026 {
+    --meg-shell-sidebar-expanded:64px;
+    --meg-shell-sidebar-collapsed:64px;
+    --meg-shell-gutter:12px;
+  }
+
+  .meg-web-2026 .meg-web-sidebar {
+    padding-inline:6px;
+  }
+
+  .meg-web-2026 .px-side-brand img {
+    inline-size:34px;
+    block-size:34px;
+    flex-basis:34px;
+  }
+
+  .meg-web-2026 .px-search-command,
+  .meg-web-2026 .px-nav-btn,
+  .meg-web-2026 .px-side-exit {
+    inline-size:40px;
+    min-inline-size:40px;
+  }
+
+  .meg-web-2026 .px-top-title {
+    display:none;
+  }
+
+  .meg-web-2026 .meg-web-top-left {
+    flex:0 0 auto;
+  }
+
+  .meg-web-2026 .meg-web-quick-actions .income {
+    display:none;
+  }
+
+  .meg-web-2026 .px-home-user-identity,
+  .meg-web-2026 .px-top-exit {
+    display:none;
+  }
+
+  .meg-web-2026 .px-screen-head>div:first-child {
+    flex-basis:100%;
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .meg-web-2026 .px-app {
+    transition:none;
+  }
+}
