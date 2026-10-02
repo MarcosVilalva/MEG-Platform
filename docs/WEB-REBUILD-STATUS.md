@@ -66,10 +66,11 @@ Se uma tela ainda não foi validada, o legado necessário pode continuar ativo t
 
 Última base conhecida antes da fundação clean-room:
 - branch oficial: `main`;
-- commit: `735db4942e702d83d75a7197e1d9efa065b3b928`;
-- PR anterior: #511;
-- cliente visual atual: Phoenix + camadas MEG Web Revolution/Fidelity;
-- situação: **transitória**.
+- governança clean-room consolidada em `main`: `8a1ad79b427c356bd0478060dd464515e5ce5a88` (PR #512);
+- fundação Web Next: em implementação na branch `feat/web-next-foundation`;
+- cliente visual em produção: Phoenix + camadas MEG Web Revolution/Fidelity;
+- Web Next ainda NÃO está roteado em produção;
+- situação do runtime atual: **transitória**.
 
 A Home do PR #511 serviu como diagnóstico e evolução visual, mas NÃO é considerada a Home clean-room definitiva.
 
@@ -77,7 +78,7 @@ A Home do PR #511 serviu como diagnóstico e evolução visual, mas NÃO é cons
 
 | Área | Referência | Estado clean-room | Legado removido |
 |---|---|---|---|
-| Fundação Web / shell | Prancha 1 + sistema visual das 5 pranchas | EM CONSTRUÇÃO | NÃO |
+| Fundação Web / shell | Prancha 1 + sistema visual das 5 pranchas | CONSTRUÍDA CLEAN-ROOM, AGUARDANDO MERGE/ROTEAMENTO | N/A |
 | Home | Prancha 1 | PRÓXIMA | NÃO |
 | Lançamentos | Prancha 2 | NÃO INICIADA | NÃO |
 | Novo / Editar lançamento | Prancha 2 | NÃO INICIADA | NÃO |
@@ -94,7 +95,7 @@ A Home do PR #511 serviu como diagnóstico e evolução visual, mas NÃO é cons
 
 ## 8. Estrutura alvo
 
-Nova camada visual:
+Nova camada visual criada em `apps/web/src/web-next/`:
 ```
 apps/web/src/web-next/
   app/
