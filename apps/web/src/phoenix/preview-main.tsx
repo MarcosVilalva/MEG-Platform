@@ -91,12 +91,14 @@ function waitForService(ms: number) {
 }
 
 async function loginWithServiceRetry(email: string, password: string) {
+  const deadline = AbortSignal.timeout(20_000);
   try {
-    return await login(email, password, { signal: AbortSignal.timeout(12_000) });
+    return await login(email, password, { signal: deadline });
   } catch (cause) {
-    if (!isTransientAuthError(cause)) throw cause;
-    await waitForService(900);
-    return login(email, password, { signal: AbortSignal.timeout(15_000) });
+    if (deadline.aborted || !isTransientAuthError(cause)) throw cause;
+    await waitForService(700);
+    if (deadline.aborted) throw cause;
+    return login(email, password, { signal: deadline });
   }
 }
 
