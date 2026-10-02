@@ -6,9 +6,11 @@ const paths=[
   './main.tsx',
   './app/EvolutionApp.tsx',
   './screens/EvolutionLoading.tsx',
+  './screens/EvolutionLogin.tsx',
   './styles/global.css',
   './styles/tokens.css',
-  './styles/loading.css'
+  './styles/loading.css',
+  './styles/login.css'
 ];
 
 for(const filePath of paths){
@@ -45,18 +47,41 @@ assert.equal(
 
 const app=fs.readFileSync(new URL('./app/EvolutionApp.tsx',import.meta.url),'utf8');
 assert.match(app,/92,100/,'Loading Evolution precisa concluir em 100%');
-assert.match(app,/\?\? 100/,'fallback de progresso precisa ser 100%');
+assert.match(app,/setPhase\('login'\)/,'Fluxo Evolution deve sair do Loading para o Login.');
+assert.match(app,/screen==='loading'\|\|screen==='login'/,'QA precisa permitir acesso direto ao Loading e Login.');
 
-const css=fs.readFileSync(new URL('./styles/loading.css',import.meta.url),'utf8');
-assert.match(css,/width:min\(100vw,100dvh\)/,'Artboard deve preservar o quadrado mestre no viewport 1254x1254.');
-assert.match(css,/left:24\.45%/,'Barra funcional deve permanecer alinhada à prancha mestre.');
-assert.match(css,/top:69\.08%/,'Barra funcional deve permanecer alinhada verticalmente à prancha mestre.');
-assert.match(css,/object-fit:contain/,'Artwork mestre não pode ser deformado.');
-assert.match(css,/prefers-reduced-motion:reduce/,'Progresso deve respeitar preferência de movimento reduzido.');
+const loginScreen=fs.readFileSync(new URL('./screens/EvolutionLogin.tsx',import.meta.url),'utf8');
+assert.match(loginScreen,/data-evolution-login-fidelity="stage-1"/);
+assert.match(loginScreen,/Sua vida financeira,/);
+assert.match(loginScreen,/com clareza para decidir/);
+assert.match(loginScreen,/Saldo real/);
+assert.match(loginScreen,/Projeções/);
+assert.match(loginScreen,/Controle/);
+assert.match(loginScreen,/Bem-vindo de volta/);
+assert.match(loginScreen,/Entrar no MEG/);
+assert.match(loginScreen,/Criar conta/);
+assert.match(loginScreen,/Esqueci minha senha/);
+assert.match(loginScreen,/login\(email\.trim\(\),password\)/,'Login Evolution deve usar autenticação real.');
+assert.match(loginScreen,/forgotPassword\(email\.trim\(\)\)/,'Recuperação deve usar contrato real.');
+assert.match(loginScreen,/register\(/,'Cadastro deve usar contrato real.');
+assert.doesNotMatch(loginScreen,/Phoenix|preview-v15|web-next/i,'Login Evolution não pode herdar identidade visual anterior.');
+
+const loginCss=fs.readFileSync(new URL('./styles/login.css',import.meta.url),'utf8');
+assert.match(loginCss,/grid-template-columns:minmax\(0,1\.08fr\) minmax\(430px,.72fr\)/,'Desktop precisa manter composição institucional + acesso.');
+assert.match(loginCss,/@media\(max-width:620px\)/,'Login precisa de composição vertical dedicada.');
+assert.match(loginCss,/height:100dvh/,'Login deve ocupar o viewport.');
+assert.match(loginCss,/overflow:hidden/,'Tela principal de Login não pode criar rolagem de página.');
+assert.match(loginCss,/backdrop-filter:blur\(28px\)/,'Painel de acesso deve preservar acabamento de vidro premium.');
+
+const loadingCss=fs.readFileSync(new URL('./styles/loading.css',import.meta.url),'utf8');
+assert.match(loadingCss,/width:min\(100vw,100dvh\)/,'Artboard deve preservar o quadrado mestre no viewport 1254x1254.');
+assert.match(loadingCss,/left:24\.45%/,'Barra funcional deve permanecer alinhada à prancha mestre.');
+assert.match(loadingCss,/top:69\.08%/,'Barra funcional deve permanecer alinhada verticalmente à prancha mestre.');
+assert.match(loadingCss,/object-fit:contain/,'Artwork mestre não pode ser deformado.');
 
 const tokens=fs.readFileSync(new URL('./styles/tokens.css',import.meta.url),'utf8');
 for(const color of ['#071321','#0a1728','#0d1d2d','#53cf8d','#71dda4','#4bbac7']){
   assert.ok(tokens.toLowerCase().includes(color),'paleta oficial ausente');
 }
 
-console.log('MEG Evolution foundation contract OK');
+console.log('MEG Evolution foundation + login contract OK');
