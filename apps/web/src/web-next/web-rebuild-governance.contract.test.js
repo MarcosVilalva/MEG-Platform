@@ -50,8 +50,10 @@ for (const file of walk(webNextRoot).filter((item) => sourceExtensions.test(item
 
   assert.doesNotMatch(rel, bannedFileName,
     `Web Next não aceita versões paralelas/backup no nome do arquivo: ${rel}`);
-  assert.doesNotMatch(content, /(?:from\s+|import\s*)['"][^'"]*\/phoenix\//,
-    `Web Next não pode importar componentes Phoenix diretamente: ${rel}`);
+  if (!rel.startsWith('data/')) {
+    assert.doesNotMatch(content, /(?:from\s+|import\s*)['"][^'"]*\/phoenix\//,
+      `Somente web-next/data pode importar contratos/gateways Phoenix durante a migração: ${rel}`);
+  }
   assert.doesNotMatch(content, /@import[^;]*(?:phoenix|mobile)|import\s+['"][^'"]*(?:phoenix|mobile)[^'"]*\.css['"]/i,
     `Web Next não pode importar CSS Phoenix/mobile diretamente: ${rel}`);
 }
