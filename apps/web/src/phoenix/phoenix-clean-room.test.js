@@ -276,6 +276,20 @@ assert.match(settings, /Período silencioso/,
   'Configurações deve permitir administrar a janela silenciosa.');
 assert.match(settings, /America\/Sao_Paulo/,
   'Agenda deve deixar explícito o fuso aplicado pelo backend.');
+assert.match(settings, /const saoPauloDateTime = new Intl\.DateTimeFormat\('pt-BR',[\s\S]*timeZone: 'America\/Sao_Paulo'/,
+  'Configurações deve usar formatter operacional explícito no fuso de São Paulo.');
+assert.match(settings, /formatSaoPauloDateTime\(data\.user\.lastLoginAt\)/,
+  'Último acesso do usuário deve ser exibido no fuso operacional do MEG.');
+assert.match(settings, /formatSaoPauloDateTime\(deliverySummary\.lastSuccessAt\)/,
+  'Resumo de entregas deve usar o mesmo fuso operacional.');
+assert.match(settings, /formatSaoPauloDateTime\(deliverySummary\.watchdog\.lastCheckAt\)/,
+  'Watchdog deve exibir o último ciclo no fuso operacional.');
+assert.match(settings, /formatSaoPauloDateTime\(data\.normalization\.updatedAt\)/,
+  'Integridade da base deve exibir atualização no fuso operacional.');
+assert.match(settings, /formatSaoPauloDateTime\(session\.lastLoginAt\)/,
+  'Sessões devem exibir último login no fuso operacional.');
+assert.doesNotMatch(settings, /toLocaleString\('pt-BR'\)/,
+  'Configurações não deve voltar a depender do fuso local do navegador para timestamps operacionais.');
 assert.match(settings, /saveNotificationScheduleSettings/,
   'Tela deve possuir fluxo explícito para persistir a agenda.');
 assert.doesNotMatch(settings, /A próxima etapa desta tela será permitir editar essas agendas/,
