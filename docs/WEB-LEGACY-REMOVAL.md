@@ -190,3 +190,15 @@ A branch `feat/web-next-home-command-center` substitui a composição oficial da
 
 Não foi criada segunda Home, stylesheet paralelo ou fallback visual novo.
 O legado Phoenix permanece bloqueado para remoção até aprovação explícita desta nova composição.
+
+## 12. Launcher Web e carrossel da Home
+
+A branch `feat/web-next-home-launcher-carousel` incorpora duas regras aprovadas:
+- botão `+ Incluir` na topbar Web Next;
+- launcher inicial com `Despesa`, `Receita` e `Alimentação`, inspirado funcionalmente no Android;
+- cada opção usa os presets financeiros canônicos existentes: `expense`, `income`, `benefit`;
+- `benefit` continua delegando ao fluxo existente que fixa conta benefício e Verocard;
+- carteira deixa de usar `overflow-x:auto` e passa a usar carrossel por estado, setas e indicadores;
+- Home mantém `overflow:hidden`; rolagem é permitida apenas verticalmente dentro de listas densas, com scrollbar visual MEG.
+
+A referência Android define o fluxo de escolha do lançamento, não o layout Web.
