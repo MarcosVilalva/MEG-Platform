@@ -1,0 +1,578 @@
+.evo-login{
+  position:relative;
+  isolation:isolate;
+  width:100vw;
+  height:100dvh;
+  overflow:hidden;
+  color:#f4fbfc;
+  background:
+    radial-gradient(circle at 20% 24%,rgba(37,231,211,.14),transparent 31%),
+    radial-gradient(circle at 82% 76%,rgba(55,209,160,.11),transparent 27%),
+    linear-gradient(135deg,#02161b 0%,#041e24 43%,#03151b 100%);
+}
+.evo-login:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-3;
+  background:
+    linear-gradient(90deg,rgba(0,0,0,.12),transparent 28%,transparent 73%,rgba(0,0,0,.18)),
+    repeating-linear-gradient(90deg,transparent 0 109px,rgba(94,248,230,.018) 110px 111px);
+  pointer-events:none;
+}
+.evo-login-bg{
+  position:absolute;
+  inset:-10%;
+  z-index:-5;
+  overflow:hidden;
+}
+.evo-login-bg:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(90deg,rgba(0,16,20,.45) 0%,rgba(0,18,23,.68) 52%,rgba(0,11,15,.82) 100%),
+    linear-gradient(180deg,rgba(0,19,23,.10),rgba(0,10,13,.68));
+}
+.evo-login-bg img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  filter:blur(28px) brightness(.58) saturate(.88);
+  transform:scale(1.09);
+  opacity:.83;
+}
+.evo-login-orbit{
+  position:absolute;
+  z-index:-2;
+  border-radius:50%;
+  border:1px solid rgba(88,255,235,.28);
+  box-shadow:0 0 32px rgba(55,239,219,.09);
+  pointer-events:none;
+}
+.evo-login-orbit-a{width:84vw;height:50vw;min-width:1050px;min-height:610px;left:-32vw;top:-29vw;transform:rotate(14deg)}
+.evo-login-orbit-b{width:72vw;height:38vw;min-width:850px;min-height:430px;right:-34vw;bottom:-28vw;transform:rotate(-9deg)}
+
+.evo-login-shell{
+  width:min(94vw,1480px);
+  height:min(92dvh,900px);
+  min-height:650px;
+  margin:auto;
+  position:absolute;
+  inset:0;
+  display:grid;
+  grid-template-columns:minmax(0,1.08fr) minmax(430px,.72fr);
+  gap:clamp(30px,5vw,82px);
+  align-items:center;
+}
+
+.evo-login-story{
+  position:relative;
+  align-self:stretch;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-width:0;
+  padding:clamp(28px,4vw,64px) 0 clamp(20px,3vw,52px) clamp(6px,1vw,18px);
+}
+.evo-login-brand{
+  width:clamp(170px,15vw,228px);
+  height:auto;
+  margin-bottom:clamp(28px,4vh,54px);
+  filter:drop-shadow(0 20px 34px rgba(0,0,0,.42)) drop-shadow(0 0 28px rgba(64,235,216,.22));
+}
+.evo-login-kicker{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:18px;
+  color:#68ead4;
+  font-size:12px;
+  font-weight:850;
+  letter-spacing:.22em;
+}
+.evo-login-kicker span{width:34px;height:1px;background:linear-gradient(90deg,#65f1dc,transparent);box-shadow:0 0 12px #4ee2d0}
+.evo-login-story h1{
+  margin:0;
+  max-width:790px;
+  color:#f7fbfc;
+  font-size:clamp(46px,5vw,78px);
+  line-height:.98;
+  letter-spacing:-.055em;
+  font-weight:760;
+  text-wrap:balance;
+  text-shadow:0 8px 28px rgba(0,0,0,.34);
+}
+.evo-login-story h1 strong{
+  color:#67e6c7;
+  font-weight:850;
+  text-shadow:0 0 28px rgba(67,230,201,.17);
+}
+.evo-login-story>p{
+  max-width:660px;
+  margin:26px 0 0;
+  color:#a9c4c4;
+  font-size:clamp(17px,1.5vw,21px);
+  line-height:1.58;
+}
+.evo-login-signals{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:34px;
+}
+.evo-login-signals span{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:132px;
+  padding:11px 16px 11px 11px;
+  border:1px solid rgba(113,239,216,.24);
+  border-radius:999px;
+  background:linear-gradient(180deg,rgba(19,72,76,.54),rgba(5,39,45,.55));
+  box-shadow:inset 0 1px rgba(255,255,255,.05),0 14px 28px rgba(0,0,0,.16);
+  color:#d6eeeb;
+  font-size:13px;
+  font-weight:720;
+  backdrop-filter:blur(12px);
+}
+.evo-login-signals i{
+  display:grid;
+  place-items:center;
+  width:29px;height:29px;
+  border-radius:50%;
+  background:rgba(67,222,195,.12);
+  color:#6ee9d0;
+  font-size:9px;
+  font-style:normal;
+  letter-spacing:.08em;
+  box-shadow:inset 0 0 0 1px rgba(100,245,221,.14);
+}
+.evo-login-storyline{
+  position:absolute;
+  left:2%;
+  right:4%;
+  bottom:7%;
+  height:70px;
+  opacity:.34;
+  border-bottom:1px solid rgba(84,237,216,.19);
+}
+.evo-login-storyline:before{
+  content:"";
+  position:absolute;
+  left:2%;right:2%;top:25px;height:2px;
+  background:linear-gradient(90deg,transparent,#35c8c9 13%,#5ae6cd 38%,#24aeb8 64%,#70edc9 82%,transparent);
+  clip-path:polygon(0 72%,13% 58%,25% 70%,38% 39%,49% 51%,63% 18%,75% 31%,88% 7%,100% 13%,100% 66%,0 100%);
+  filter:drop-shadow(0 0 6px rgba(76,237,216,.45));
+}
+.evo-login-storyline i{position:absolute;bottom:-4px;width:1px;height:48px;background:linear-gradient(transparent,rgba(81,227,210,.17))}
+.evo-login-storyline i:nth-child(1){left:8%}.evo-login-storyline i:nth-child(2){left:28%}.evo-login-storyline i:nth-child(3){left:48%}.evo-login-storyline i:nth-child(4){left:68%}.evo-login-storyline i:nth-child(5){left:88%}
+
+.evo-login-card{
+  position:relative;
+  width:100%;
+  max-width:530px;
+  justify-self:end;
+  max-height:min(90dvh,820px);
+  padding:clamp(28px,3vw,42px);
+  border:1px solid rgba(119,239,220,.28);
+  border-radius:32px;
+  overflow:hidden;
+  background:
+    linear-gradient(145deg,rgba(13,48,56,.93),rgba(4,27,34,.94) 64%,rgba(3,22,28,.97)),
+    rgba(6,31,38,.94);
+  box-shadow:
+    0 42px 110px rgba(0,0,0,.48),
+    0 0 0 1px rgba(255,255,255,.02) inset,
+    0 0 54px rgba(45,221,199,.08);
+  backdrop-filter:blur(28px) saturate(1.08);
+}
+.evo-login-card:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  background:linear-gradient(125deg,rgba(255,255,255,.07),transparent 22%,transparent 72%,rgba(69,226,198,.045));
+}
+.evo-login-card-glow{
+  position:absolute;
+  width:230px;height:230px;
+  right:-110px;top:-105px;
+  border-radius:50%;
+  background:rgba(69,232,204,.13);
+  filter:blur(35px);
+  pointer-events:none;
+}
+.evo-login-card-head{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:16px;
+  align-items:start;
+  margin-bottom:30px;
+}
+.evo-login-lock{
+  display:grid;
+  place-items:center;
+  width:48px;height:48px;
+  margin-top:2px;
+  border:1px solid rgba(100,236,212,.27);
+  border-radius:15px;
+  background:rgba(52,218,191,.09);
+  box-shadow:inset 0 1px rgba(255,255,255,.05),0 0 20px rgba(60,232,207,.08);
+}
+.evo-login-lock svg,.evo-login-secure svg{
+  width:22px;height:22px;
+  fill:none;stroke:#6ce8d0;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+}
+.evo-login-card-head span{
+  display:block;
+  margin-bottom:7px;
+  color:#61d8c5;
+  font-size:10px;
+  font-weight:850;
+  letter-spacing:.19em;
+}
+.evo-login-card-head h2{
+  margin:0;
+  color:#f5fbfb;
+  font-size:clamp(29px,2.5vw,38px);
+  line-height:1.06;
+  letter-spacing:-.035em;
+}
+.evo-login-card-head p{
+  margin:10px 0 0;
+  color:#9bb8b9;
+  font-size:14px;
+  line-height:1.48;
+}
+
+.evo-login-form{
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+.evo-login-form-scroll{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  min-height:0;
+}
+.evo-login-card-register .evo-login-form-scroll{
+  max-height:48dvh;
+  overflow-y:auto;
+  padding-right:7px;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(81,222,201,.34) transparent;
+}
+.evo-login-card-register .evo-login-form-scroll::-webkit-scrollbar{width:5px}
+.evo-login-card-register .evo-login-form-scroll::-webkit-scrollbar-thumb{background:rgba(81,222,201,.34);border-radius:99px}
+.evo-login-field{
+  display:grid;
+  gap:8px;
+  color:#b8cccb;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.015em;
+}
+.evo-login-field>div{
+  display:grid;
+  grid-template-columns:22px minmax(0,1fr) auto;
+  gap:11px;
+  align-items:center;
+  min-height:57px;
+  padding:0 15px;
+  border:1px solid rgba(137,213,206,.17);
+  border-radius:15px;
+  background:rgba(1,19,25,.63);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+  transition:border-color .2s ease,box-shadow .2s ease,background .2s ease;
+}
+.evo-login-field>div:focus-within{
+  border-color:rgba(92,236,210,.58);
+  background:rgba(3,26,31,.78);
+  box-shadow:0 0 0 3px rgba(68,221,197,.08),0 0 26px rgba(54,221,198,.08);
+}
+.evo-login-field svg{
+  width:20px;height:20px;
+  fill:none;stroke:#6b9fa2;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;
+}
+.evo-login-field input{
+  width:100%;
+  min-width:0;
+  border:0;
+  outline:0;
+  color:#e9f5f5;
+  background:transparent;
+  font-size:14px;
+}
+.evo-login-field input::placeholder{color:#617d80}
+.evo-login-eye{
+  display:grid;place-items:center;
+  width:31px;height:31px;
+  margin-right:-5px;
+  border:0;border-radius:10px;
+  background:transparent;
+}
+.evo-login-eye:hover{background:rgba(100,236,212,.07)}
+.evo-login-eye svg{width:18px;height:18px}
+
+.evo-login-options{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:-1px;
+  color:#8faaaa;
+  font-size:12px;
+}
+.evo-login-options label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.evo-login-options input{position:absolute;opacity:0;pointer-events:none}
+.evo-login-options label span{
+  position:relative;
+  width:17px;height:17px;
+  border:1px solid rgba(123,204,198,.28);
+  border-radius:5px;
+  background:#051e24;
+}
+.evo-login-options input:checked+span{
+  border-color:#5fe0c8;
+  background:#45cfae;
+  box-shadow:0 0 12px rgba(69,207,174,.22);
+}
+.evo-login-options input:checked+span:after{
+  content:"";position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #03251f;border-width:0 2px 2px 0;transform:rotate(45deg)
+}
+.evo-login-options button,.evo-login-switch button{
+  border:0;padding:0;color:#63dbc6;background:none;font-weight:750;font-size:inherit;
+}
+.evo-login-options button:hover,.evo-login-switch button:hover{color:#86f1da;text-decoration:underline}
+
+.evo-login-primary,.evo-login-secondary{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  width:100%;
+  min-height:58px;
+  margin-top:21px;
+  border:0;
+  border-radius:16px;
+  font-weight:850;
+}
+.evo-login-primary{
+  position:relative;
+  overflow:hidden;
+  color:#03251e;
+  background:linear-gradient(100deg,#38c8d8 0%,#52e0c0 48%,#74e8b6 100%);
+  box-shadow:0 17px 38px rgba(26,191,169,.16),0 0 26px rgba(63,226,197,.12);
+}
+.evo-login-primary:before{
+  content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 20%,rgba(255,255,255,.22) 48%,transparent 67%);transform:translateX(-120%);transition:transform .5s ease
+}
+.evo-login-primary:hover:not(:disabled):before{transform:translateX(120%)}
+.evo-login-primary:disabled{opacity:.68;cursor:wait}
+.evo-login-primary svg{
+  width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round
+}
+.evo-login-spinner{
+  width:18px;height:18px;border:2px solid rgba(3,37,30,.28);border-top-color:#03251e;border-radius:50%;animation:evoLoginSpin .7s linear infinite
+}
+@keyframes evoLoginSpin{to{transform:rotate(360deg)}}
+.evo-login-switch{
+  margin-top:18px;
+  text-align:center;
+  color:#779698;
+  font-size:12px;
+}
+.evo-login-secure{
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  margin-top:26px;
+  padding-top:20px;
+  border-top:1px solid rgba(119,201,195,.10);
+  color:#789497;
+  font-size:10px;
+  letter-spacing:.025em;
+}
+.evo-login-secure svg{width:15px;height:15px;stroke:#61bfb1}
+.evo-login-secure i{width:3px;height:3px;border-radius:50%;background:#3b7774}
+
+.evo-login-notice{
+  padding:11px 13px;
+  border-radius:12px;
+  font-size:12px;
+  line-height:1.45;
+}
+.evo-login-notice-error{color:#ffd0d0;border:1px solid rgba(226,99,107,.25);background:rgba(128,39,47,.18)}
+.evo-login-notice-success{color:#c8f9e5;border:1px solid rgba(83,207,141,.25);background:rgba(32,110,81,.20)}
+.evo-login-notice-info{color:#d4e9f5;border:1px solid rgba(75,186,199,.24);background:rgba(37,104,113,.18)}
+
+.evo-login-account-type{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin:1px 0 0;
+  padding:0;
+  border:0;
+}
+.evo-login-account-type legend{
+  grid-column:1/-1;
+  padding:0 0 7px;
+  color:#b8cccb;
+  font-size:12px;
+  font-weight:700;
+}
+.evo-login-account-type button{
+  padding:12px;
+  border:1px solid rgba(137,213,206,.15);
+  border-radius:13px;
+  text-align:left;
+  color:#b5cbca;
+  background:rgba(1,19,25,.52);
+}
+.evo-login-account-type button.active{
+  border-color:rgba(85,224,199,.48);
+  background:rgba(36,140,123,.14);
+  box-shadow:inset 0 0 0 1px rgba(75,213,190,.05);
+}
+.evo-login-account-type strong,.evo-login-account-type small{display:block}
+.evo-login-account-type strong{font-size:11px}.evo-login-account-type small{margin-top:5px;color:#718e90;font-size:9px;line-height:1.35}
+
+.evo-login-confirmed{
+  position:relative;
+  z-index:1;
+  min-height:310px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+.evo-login-confirmed-ring{
+  display:grid;place-items:center;
+  width:86px;height:86px;
+  border:1px solid rgba(99,235,210,.36);
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(72,223,195,.18),rgba(22,91,84,.08));
+  box-shadow:0 0 45px rgba(67,224,197,.16),inset 0 0 26px rgba(84,227,204,.08);
+}
+.evo-login-confirmed-ring svg{width:40px;height:40px;fill:none;stroke:#68e5ca;stroke-width:1.5}
+.evo-login-confirmed strong{margin-top:20px;font-size:21px}
+.evo-login-confirmed p{max-width:330px;color:#89a7a8;font-size:13px;line-height:1.5}
+.evo-login-secondary{
+  max-width:220px;
+  min-height:48px;
+  color:#b7d5d2;
+  border:1px solid rgba(119,213,204,.19);
+  background:rgba(3,26,32,.72);
+}
+
+@media(max-width:1040px){
+  .evo-login-shell{
+    width:min(94vw,760px);
+    grid-template-columns:1fr;
+    grid-template-rows:auto minmax(0,1fr);
+    gap:14px;
+    height:96dvh;
+    min-height:0;
+    align-items:stretch;
+  }
+  .evo-login-story{
+    align-self:auto;
+    justify-content:flex-end;
+    padding:8px 8px 4px;
+  }
+  .evo-login-brand{width:150px;margin-bottom:15px}
+  .evo-login-kicker{margin-bottom:8px;font-size:9px}
+  .evo-login-story h1{font-size:clamp(29px,6.5vw,42px);line-height:1.02}
+  .evo-login-story>p{max-width:570px;margin-top:9px;font-size:13px;line-height:1.4}
+  .evo-login-signals{margin-top:13px;gap:7px}
+  .evo-login-signals span{min-width:0;padding:7px 10px 7px 7px;font-size:10px}
+  .evo-login-signals i{width:22px;height:22px;font-size:7px}
+  .evo-login-storyline{display:none}
+  .evo-login-card{
+    justify-self:center;
+    align-self:start;
+    max-width:620px;
+    max-height:66dvh;
+    padding:24px;
+    border-radius:25px;
+  }
+  .evo-login-card-head{margin-bottom:18px}
+  .evo-login-card-head h2{font-size:28px}
+  .evo-login-card-head p{font-size:12px}
+  .evo-login-field>div{min-height:50px}
+  .evo-login-primary{min-height:51px;margin-top:16px}
+  .evo-login-secure{margin-top:17px;padding-top:14px}
+  .evo-login-card-register .evo-login-form-scroll{max-height:40dvh}
+}
+
+@media(max-width:620px){
+  .evo-login-shell{
+    width:100%;
+    height:100dvh;
+    padding:16px 16px 14px;
+    gap:10px;
+    grid-template-rows:auto auto;
+    align-content:center;
+    transform:translateY(-3.2dvh);
+  }
+  .evo-login-story{padding:0 4px}
+  .evo-login-brand{width:124px;margin-bottom:8px}
+  .evo-login-kicker{display:none}
+  .evo-login-story h1{font-size:29px;letter-spacing:-.04em}
+  .evo-login-story>p{display:none}
+  .evo-login-signals{margin-top:10px}
+  .evo-login-signals span{padding:6px 9px 6px 6px}
+  .evo-login-signals i{width:20px;height:20px}
+  .evo-login-card{
+    width:100%;
+    height:auto;
+    min-height:0;
+    max-height:71dvh;
+    align-self:auto;
+    display:block;
+    padding:20px 18px 17px;
+    border-radius:23px;
+    box-shadow:0 25px 80px rgba(0,0,0,.54),0 0 32px rgba(45,221,199,.07);
+  }
+  .evo-login-lock{width:42px;height:42px;border-radius:13px}
+  .evo-login-card-head{grid-template-columns:42px 1fr;gap:12px;margin-bottom:16px}
+  .evo-login-card-head span{font-size:8px;margin-bottom:5px}
+  .evo-login-card-head h2{font-size:26px}
+  .evo-login-card-head p{margin-top:6px}
+  .evo-login-form-scroll{gap:12px}
+  .evo-login-field{gap:6px}
+  .evo-login-field>div{min-height:49px;border-radius:13px}
+  .evo-login-options{font-size:10px}
+  .evo-login-primary{min-height:49px;border-radius:14px;margin-top:14px}
+  .evo-login-switch{margin-top:13px;font-size:10px}
+  .evo-login-secure{margin-top:13px;padding-top:12px;font-size:8px}
+  .evo-login-account-type{grid-template-columns:1fr}
+  .evo-login-card-register .evo-login-form-scroll{max-height:43dvh;overflow-y:auto}
+}
+
+@media(max-height:720px) and (min-width:1041px){
+  .evo-login-shell{height:97dvh;min-height:0}
+  .evo-login-brand{width:145px;margin-bottom:18px}
+  .evo-login-story h1{font-size:48px}
+  .evo-login-story>p{margin-top:16px;font-size:15px}
+  .evo-login-signals{margin-top:20px}
+  .evo-login-card{padding:25px 28px;max-height:95dvh}
+  .evo-login-card-head{margin-bottom:18px}
+  .evo-login-field>div{min-height:49px}
+  .evo-login-secure{margin-top:14px;padding-top:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .evo-login-primary:before{display:none}
+  .evo-login-spinner{animation-duration:1.4s}
+}

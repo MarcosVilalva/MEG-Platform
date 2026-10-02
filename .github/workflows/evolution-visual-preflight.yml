@@ -69,7 +69,7 @@ jobs:
           python3 -m http.server 4173 --directory apps/web/dist >/tmp/evolution-preview.log 2>&1 &
           echo $! >/tmp/evolution-preview.pid
           for i in {1..30}; do
-            if curl -fsS "http://127.0.0.1:4173/${PREVIEW_ROUTE}" >/dev/null; then
+            if curl -fsS "http://127.0.0.1:4173/evolution.html" >/dev/null; then
               exit 0
             fi
             sleep 1
@@ -77,19 +77,44 @@ jobs:
           cat /tmp/evolution-preview.log
           exit 1
 
-      - name: Capture Evolution screenshot
+      - name: Capture Evolution visual set
         run: |
           mkdir -p artifacts
-          npx --yes playwright@1.55.0 screenshot             --viewport-size="${PREVIEW_WIDTH},${PREVIEW_HEIGHT}"             --wait-for-timeout="${PREVIEW_WAIT_MS}"             "http://127.0.0.1:4173/${PREVIEW_ROUTE}"             "artifacts/evolution-${PREVIEW_WIDTH}x${PREVIEW_HEIGHT}.png"
+
+          npx --yes playwright@1.55.0 screenshot \
+            --viewport-size="${PREVIEW_WIDTH},${PREVIEW_HEIGHT}" \
+            --wait-for-timeout="${PREVIEW_WAIT_MS}" \
+            "http://127.0.0.1:4173/${PREVIEW_ROUTE}" \
+            "artifacts/evolution-${PREVIEW_WIDTH}x${PREVIEW_HEIGHT}.png"
+
+          npx --yes playwright@1.55.0 screenshot \
+            --viewport-size="1440,900" \
+            --wait-for-timeout="1200" \
+            "http://127.0.0.1:4173/evolution.html?screen=login" \
+            "artifacts/evolution-login-desktop-1440x900.png"
+
+          npx --yes playwright@1.55.0 screenshot \
+            --viewport-size="430,932" \
+            --wait-for-timeout="1200" \
+            "http://127.0.0.1:4173/evolution.html?screen=login" \
+            "artifacts/evolution-login-vertical-430x932.png"
+
+          npx --yes playwright@1.55.0 screenshot \
+            --viewport-size="1254,1254" \
+            --wait-for-timeout="1200" \
+            "http://127.0.0.1:4173/evolution.html?screen=loading" \
+            "artifacts/evolution-loading-frozen-1254x1254.png"
 
       - name: Record capture metadata
         run: |
           cat > artifacts/visual-preflight.txt <<EOF
-          route=${PREVIEW_ROUTE}
-          viewport=${PREVIEW_WIDTH}x${PREVIEW_HEIGHT}
-          wait_ms=${PREVIEW_WAIT_MS}
+          requested_route=${PREVIEW_ROUTE}
+          requested_viewport=${PREVIEW_WIDTH}x${PREVIEW_HEIGHT}
+          login_desktop=1440x900
+          login_vertical=430x932
+          loading_frozen=1254x1254
           commit=${GITHUB_SHA}
-          rule=CI verde nao equivale a validacao visual. A captura deve ser comparada com a prancha oficial antes de declarar pronto.
+          rule=CI verde nao equivale a validacao visual. Todas as capturas devem ser comparadas com a referencia aprovada antes de declarar pronto.
           EOF
 
       - name: Upload visual preflight
