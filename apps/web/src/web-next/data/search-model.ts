@@ -63,7 +63,7 @@ export function buildWebNextSearchCatalog(
     })),
     ...data.cards.map((item) => ({
       id:`card-${item.id}`, route:'cards' as const, kind:'Cartão', title:item.name,
-      detail:item.brand || item.issuer || 'Cartão cadastrado', targetId:item.id,
+      detail:item.brand || 'Cartão cadastrado', targetId:item.id,
     })),
     ...data.accounts.map((item) => ({
       id:`account-${item.id}`, route:'catalogs' as const, kind:'Conta', title:item.name,
