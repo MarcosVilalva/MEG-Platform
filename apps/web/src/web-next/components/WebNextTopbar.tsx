@@ -7,6 +7,7 @@ export function WebNextTopbar({
   collapsed,
   onToggleSidebar,
   onSearch,
+  onAdd,
   onPeriod,
   onPayables,
   onProfile,
@@ -17,6 +18,7 @@ export function WebNextTopbar({
   collapsed: boolean;
   onToggleSidebar: () => void;
   onSearch: () => void;
+  onAdd: () => void;
   onPeriod: () => void;
   onPayables: () => void;
   onProfile: () => void;
@@ -33,6 +35,7 @@ export function WebNextTopbar({
     </div>
 
     <div className="mnx-topbar-actions">
+      <button className="mnx-add-button" type="button" onClick={onAdd}><WebNextIcon name="plus" aria-hidden="true" /><strong>Incluir</strong></button>
       <button className="mnx-period" type="button" onClick={onPeriod}><WebNextIcon name="calendar" aria-hidden="true" /><strong>{periodLabel}</strong><WebNextIcon name="chevron" aria-hidden="true" /></button>
       <button className="mnx-top-search" type="button" aria-label="Buscar no MEG" onClick={onSearch}><WebNextIcon name="search" aria-hidden="true" /><span>Buscar no MEG...</span><kbd>Ctrl K</kbd></button>
       <button className="mnx-icon-button mnx-alert-button" type="button" aria-label="Pendências" onClick={onPayables}>
