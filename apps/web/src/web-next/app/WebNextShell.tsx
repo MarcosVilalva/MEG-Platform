@@ -38,6 +38,7 @@ export function WebNextShell({
       pendingCount={pendingCount}
       brandSrc={brandSrc}
       onNavigate={onNavigate}
+      onCollapse={() => setCollapsed(true)}
       onLogout={onLogout}
     />
     <main className="mnx-main">
