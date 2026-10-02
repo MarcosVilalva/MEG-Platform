@@ -63,6 +63,7 @@ const reportsRevolutionCss = readFileSync(new URL('./meg-web-reports-revolution.
 const cashflowRevolutionCss = readFileSync(new URL('./meg-web-cashflow-revolution.css', import.meta.url), 'utf8');
 const board4ReportsCashflowCss = readFileSync(new URL('./meg-web-board4-reports-cashflow.css', import.meta.url), 'utf8');
 const board4PlanningGoalsCss = readFileSync(new URL('./meg-web-board4-planning-goals.css', import.meta.url), 'utf8');
+const board1HomeCss = readFileSync(new URL('./meg-web-home-board1-fidelity.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
@@ -1762,6 +1763,30 @@ assert.match(board4PlanningGoalsCss, /meg-board4-goal-ring[\s\S]*conic-gradient/
   'Metas aprovadas devem possuir leitura circular de progresso.');
 assert.doesNotMatch(board4PlanningGoalsCss, /meg-operational-mobile|android-cleanroom|meg-cleanroom-mobile/,
   'Camada Web de Planejamento e Metas não pode tocar no Android.');
+
+
+assert.match(homeDashboard, /data-home-reference="web-board-1-approved"/,
+  'Home Web deve declarar explicitamente a Prancha 1 aprovada como referência visual.');
+assert.match(homeDashboard, /meg-board1-kpis[\s\S]*Receitas[\s\S]*Despesas[\s\S]*Saldo do mês[\s\S]*Metas/,
+  'Home aprovada deve abrir com os quatro indicadores da Prancha 1.');
+assert.match(homeDashboard, /Saldo total[\s\S]*Contas e cartões[\s\S]*Evolução financeira[\s\S]*Lançamentos recentes[\s\S]*Pendências e alertas/,
+  'Home deve preservar a hierarquia visual completa da Prancha 1.');
+assert.match(homeDashboard, /homeTrend = data\.analytics\.monthlyTrend\.slice\(-6\)/,
+  'Gráfico da Home deve usar a série histórica real do MEG.');
+assert.match(homeDashboard, /budgetTotal = data\.budgets\.reduce/,
+  'Card de Metas da Home deve usar os orçamentos reais do período.');
+assert.match(phoenixApp, /meg-board1-home-greeting[\s\S]*Olá, \{data\.user\.name/,
+  'Topbar da Home deve usar saudação real do usuário conforme a Prancha 1.');
+assert.match(phoenixApp, /meg-board1-top-search[\s\S]*setSearchOpen\(true\)/,
+  'Busca da topbar aprovada deve abrir a busca global real.');
+assert.match(board1HomeCss, /grid-template-columns:repeat\(12,minmax\(0,1fr\)\)/,
+  'Home ampla deve aproveitar o widescreen em doze colunas.');
+assert.match(board1HomeCss, /meg-board1-total \{ grid-column:1\/4[\s\S]*meg-board1-accounts \{ grid-column:4\/13/,
+  'Saldo total e Contas e cartões devem ocupar a primeira faixa aprovada.');
+assert.match(board1HomeCss, /meg-board1-chart \{ grid-column:1\/7[\s\S]*meg-board1-recent \{ grid-column:7\/10[\s\S]*meg-board1-alerts \{ grid-column:10\/13/,
+  'Evolução, lançamentos e alertas devem ocupar a faixa inferior aprovada.');
+assert.doesNotMatch(board1HomeCss, /android-cleanroom|meg-cleanroom-mobile|meg-operational-mobile/,
+  'Fidelidade da Home Web não pode interferir no Android.');
 
 assert.match(phoenixApp, /onLogout/,
   'Phoenix deve expor saída de sessão ao preview isolado');
