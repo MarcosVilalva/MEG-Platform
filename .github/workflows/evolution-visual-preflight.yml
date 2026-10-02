@@ -1,0 +1,101 @@
+name: MEG Evolution Visual Preflight
+
+on:
+  pull_request:
+    paths:
+      - 'apps/web/evolution.html'
+      - 'apps/web/src/evolution/**'
+      - 'apps/web/public/evolution/**'
+      - 'docs/EVOLUTION-VISUAL-CONTRACT.md'
+      - 'docs/EVOLUTION-VISUAL-QA.md'
+      - '.github/workflows/evolution-visual-preflight.yml'
+  workflow_dispatch:
+    inputs:
+      route:
+        description: 'Rota relativa a capturar'
+        required: false
+        default: 'evolution.html'
+        type: string
+      width:
+        description: 'Largura do viewport'
+        required: false
+        default: '1254'
+        type: string
+      height:
+        description: 'Altura do viewport'
+        required: false
+        default: '1254'
+        type: string
+      wait_ms:
+        description: 'Tempo de espera antes da captura'
+        required: false
+        default: '4500'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    name: capture-evolution
+    runs-on: ubuntu-latest
+    env:
+      PREVIEW_ROUTE: ${{ inputs.route || 'evolution.html' }}
+      PREVIEW_WIDTH: ${{ inputs.width || '1254' }}
+      PREVIEW_HEIGHT: ${{ inputs.height || '1254' }}
+      PREVIEW_WAIT_MS: ${{ inputs.wait_ms || '4500' }}
+      VITE_PUBLIC_BASE_PATH: /
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Web preview
+        run: npm run build:web
+
+      - name: Install Chromium for visual capture
+        run: npx --yes playwright@1.55.0 install --with-deps chromium
+
+      - name: Start static preview
+        run: |
+          python3 -m http.server 4173 --directory apps/web/dist >/tmp/evolution-preview.log 2>&1 &
+          echo $! >/tmp/evolution-preview.pid
+          for i in {1..30}; do
+            if curl -fsS "http://127.0.0.1:4173/${PREVIEW_ROUTE}" >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/evolution-preview.log
+          exit 1
+
+      - name: Capture Evolution screenshot
+        run: |
+          mkdir -p artifacts
+          npx --yes playwright@1.55.0 screenshot             --viewport-size="${PREVIEW_WIDTH},${PREVIEW_HEIGHT}"             --wait-for-timeout="${PREVIEW_WAIT_MS}"             "http://127.0.0.1:4173/${PREVIEW_ROUTE}"             "artifacts/evolution-${PREVIEW_WIDTH}x${PREVIEW_HEIGHT}.png"
+
+      - name: Record capture metadata
+        run: |
+          cat > artifacts/visual-preflight.txt <<EOF
+          route=${PREVIEW_ROUTE}
+          viewport=${PREVIEW_WIDTH}x${PREVIEW_HEIGHT}
+          wait_ms=${PREVIEW_WAIT_MS}
+          commit=${GITHUB_SHA}
+          rule=CI verde nao equivale a validacao visual. A captura deve ser comparada com a prancha oficial antes de declarar pronto.
+          EOF
+
+      - name: Upload visual preflight
+        uses: actions/upload-artifact@v4
+        with:
+          name: evolution-visual-preflight
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14

@@ -194,3 +194,21 @@ O contrato detalhado está em `docs/EVOLUTION-VISUAL-CONTRACT.md` e deve ser lid
 Regra para telas novas: **não criar uma nova identidade**. Toda variação futura deve ser derivada dessas cinco pranchas e parecer pertencer exatamente ao mesmo produto.
 
 Critério visual simples: ao colocar uma captura de qualquer nova tela ao lado das cinco pranchas, ela deve parecer parte do mesmo MEG sem precisar de explicação.
+
+
+## 8. Pré-validação visual interna obrigatória
+
+O usuário **não é o QA visual primário** do MEG Evolution.
+
+Antes de comunicar que qualquer tela está pronta, concluída ou disponível para validação final, o assistente deve executar a **pré-validação visual interna obrigatória** definida em `docs/EVOLUTION-VISUAL-QA.md`.
+
+Fluxo:
+`implementar → CI → preview → screenshot real → comparar com a prancha → corrigir → recapturar → repetir → pré-validar → só então chamar o usuário`.
+
+CI verde não autoriza a frase “está pronto”.
+
+Se a captura ainda apresentar divergências evidentes, o assistente deve continuar corrigindo sem transferir essa triagem ao usuário.
+
+Se a captura não puder ser obtida ou inspecionada, o estado correto é **CAPTURA PENDENTE**, nunca “pronto”.
+
+O workflow oficial de captura é `.github/workflows/evolution-visual-preflight.yml`.

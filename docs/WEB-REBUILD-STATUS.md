@@ -1,7 +1,7 @@
 # MEG EVOLUTION — STATUS OFICIAL DA RECONSTRUÇÃO
 
 > Este arquivo é a fonte de verdade para qualquer continuação da reconstrução Web.
-> Antes de alterar a interface Web, leia `MEG-VALIDACAO-OFICIAL.md`, `EVOLUTION-VISUAL-CONTRACT.md`, este documento e `WEB-LEGACY-REMOVAL.md`.
+> Antes de alterar a interface Web, leia `MEG-VALIDACAO-OFICIAL.md`, `EVOLUTION-VISUAL-CONTRACT.md`, `EVOLUTION-VISUAL-QA.md`, este documento e `WEB-LEGACY-REMOVAL.md`.
 
 ## 1. Decisão arquitetural
 
@@ -69,6 +69,10 @@ A aplicação continua responsiva. O alvo Full HD é referência de composição
 12. Toda remoção deve ocorrer após busca de consumidores e CI completo.
 
 ## 5. Processo obrigatório por tela
+
+**Nova regra:** antes da validação do usuário existe uma etapa de **pré-validação visual interna** com screenshot real e comparação contra a prancha oficial. O usuário não deve ser usado para detectar divergências visuais óbvias que podem ser identificadas previamente.
+
+
 
 `mapear → construir clean-room → CI → publicar preview/produção → validação visual → remover legado substituído → CI → congelar`
 

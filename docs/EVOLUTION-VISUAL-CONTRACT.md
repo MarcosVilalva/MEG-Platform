@@ -190,3 +190,14 @@ Este contrato rege a reconstrução **Web Evolution**.
 O Android atual permanece congelado e protegido até a conclusão e validação do Evolution Web. Nenhum APK/OTA deve ser publicado durante esta fase.
 
 A migração visual do Android será tratada somente depois e deverá seguir o mesmo DNA visual, adaptado à experiência nativa/móvel.
+
+
+## 8. Pré-validação antes da apresentação ao usuário
+
+Toda implementação visual do Evolution deve passar pelo processo descrito em `docs/EVOLUTION-VISUAL-QA.md`.
+
+O assistente deve comparar uma captura real da implementação contra a prancha-mestre correspondente **antes** de declarar a tela pronta.
+
+A aprovação final continua pertencendo ao usuário, porém a identificação de desalinhamentos óbvios de composição, marca, proporção, tipografia, profundidade, cor e componentes deve ocorrer antes.
+
+Uma tela que ainda não passou por screenshot + comparação não pode receber status de pronta ou validada.
