@@ -1,35 +1,39 @@
 import {useEffect,useMemo,useState} from 'react';
 import {EvolutionLoading} from '../screens/EvolutionLoading';
 import {EvolutionLogin} from '../screens/EvolutionLogin';
+import {EvolutionSystemEntry} from '../screens/EvolutionSystemEntry';
 
-type EvolutionPhase='loading'|'login';
+type EvolutionPhase='login'|'loading'|'system';
 
 function requestedScreen():EvolutionPhase|null{
   const screen=new URLSearchParams(window.location.search).get('screen');
-  return screen==='loading'||screen==='login'?screen:null;
+  return screen==='login'||screen==='loading'||screen==='system'?screen:null;
 }
 
 export function EvolutionApp(){
   const forcedScreen=useMemo(requestedScreen,[]);
-  const [phase,setPhase]=useState<EvolutionPhase>(forcedScreen||'loading');
-  const [progress,setProgress]=useState(forcedScreen==='login'?100:18);
+  const [phase,setPhase]=useState<EvolutionPhase>(forcedScreen||'login');
+  const [progress,setProgress]=useState(18);
 
   useEffect(()=>{
-    if(phase!=='loading'||forcedScreen==='login')return;
+    if(phase!=='loading')return;
     const steps=[32,48,63,78,92,100];
     let index=0;
     let transitionTimer=0;
+
     const timer=window.setInterval(()=>{
       const next=steps[index] ?? 100;
       setProgress(next);
       index+=1;
+
       if(index>=steps.length){
         window.clearInterval(timer);
         if(forcedScreen!=='loading'){
-          transitionTimer=window.setTimeout(()=>setPhase('login'),520);
+          transitionTimer=window.setTimeout(()=>setPhase('system'),520);
         }
       }
     },520);
+
     return()=>{
       window.clearInterval(timer);
       if(transitionTimer)window.clearTimeout(transitionTimer);
@@ -37,5 +41,10 @@ export function EvolutionApp(){
   },[phase,forcedScreen]);
 
   if(phase==='loading')return <EvolutionLoading progress={progress}/>;
-  return <EvolutionLogin/>;
+  if(phase==='system')return <EvolutionSystemEntry/>;
+
+  return <EvolutionLogin onAuthenticated={()=>{
+    setProgress(18);
+    setPhase('loading');
+  }}/>;
 }
