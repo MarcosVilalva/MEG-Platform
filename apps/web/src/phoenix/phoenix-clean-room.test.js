@@ -59,6 +59,7 @@ const homeRevolutionCss = readFileSync(new URL('./meg-web-home-revolution.css', 
 const movementsRevolutionCss = readFileSync(new URL('./meg-web-movements-revolution.css', import.meta.url), 'utf8');
 const cardsRevolutionCss = readFileSync(new URL('./meg-web-cards-revolution.css', import.meta.url), 'utf8');
 const payablesBenefitRevolutionCss = readFileSync(new URL('./meg-web-payables-benefit-revolution.css', import.meta.url), 'utf8');
+const reportsRevolutionCss = readFileSync(new URL('./meg-web-reports-revolution.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
@@ -1698,6 +1699,20 @@ assert.match(reportsCenter, /EXPORT_EMPTY/,
   'Exportação vazia deve ser tratada como falha, não como download válido.');
 assert.match(reportsCenter, /catch \{[\s\S]*megAlert\([\s\S]*Não foi possível gerar o arquivo/,
   'Falha de Excel ou PDF deve produzir feedback visual padrão MEG.');
+
+
+assert.match(reportsCenter, /meg-web-reports-revolution/,
+  'Central de Relatórios deve declarar explicitamente a camada Revolution.');
+assert.match(reportsRevolutionCss, /grid-template-rows:auto auto minmax\(0,1fr\)/,
+  'Relatórios Revolution deve manter cabeçalho, seletor e workspace dentro da viewport.');
+assert.match(reportsRevolutionCss, /meg-web-report-preview[\\s\\S]*overflow:auto/,
+  'Somente a prévia do relatório deve assumir rolagem interna.');
+assert.match(reportsRevolutionCss, /@container meg-main \(max-width:820px\)/,
+  'Relatórios Revolution deve reagir à largura útil depois da sidebar, não à tela inteira.');
+assert.match(reportsRevolutionCss, /meg-web-report-grid[\\s\\S]*display:flex[\\s\\S]*overflow-x:auto/,
+  'Em larguras reduzidas os tipos de relatório devem virar trilho horizontal sem empurrar a página.');
+assert.doesNotMatch(reportsRevolutionCss, /meg-cleanroom-mobile|android-cleanroom/,
+  'Camada Revolution de Relatórios deve permanecer exclusiva do Web.');
 
 assert.match(phoenixApp, /onLogout/,
   'Phoenix deve expor saída de sessão ao preview isolado');
