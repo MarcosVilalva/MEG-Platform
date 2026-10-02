@@ -54,6 +54,7 @@ const reportsCenter = readFileSync(new URL('./screens/PhoenixReportsCenter.tsx',
 const decisionCenter = readFileSync(new URL('./screens/PhoenixDecisionCenter.tsx', import.meta.url), 'utf8');
 const decisionCss = readFileSync(new URL('./phoenix-decision-center.css', import.meta.url), 'utf8');
 const megWebCss = readFileSync(new URL('./meg-web-2026.css', import.meta.url), 'utf8');
+const revolutionShellCss = readFileSync(new URL('./meg-web-shell-revolution.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
@@ -939,6 +940,24 @@ assert.match(periodCss, /\.px-period-progress/,
   'Carregamento de período deve ser comunicado dentro do próprio seletor.');
 assert.match(styles, /@media \(min-width:681px\) and \(max-width:980px\)/,
   'Web estreito deve manter sidebar em vez de assumir navegação móvel');
+assert.match(phoenixWebStyles, /meg-web-2026\.css'[\s\S]*meg-web-shell-revolution\.css'/,
+  'Shell Revolution deve ser carregado depois da camada Web anterior para neutralizar a geometria legada.');
+assert.match(phoenixApp, /data-web-shell="revolution"/,
+  'Runtime Web deve declarar explicitamente a nova fundação responsiva.');
+assert.match(revolutionShellCss, /--meg-shell-sidebar-expanded:clamp\(244px,17vw,292px\)/,
+  'Sidebar expandida deve usar largura fluida na base responsiva.');
+assert.match(revolutionShellCss, /grid-template-columns:var\(--meg-shell-sidebar-expanded\) minmax\(0,1fr\)/,
+  'Shell deve reservar a sidebar e permitir que a área principal absorva a largura restante sem overflow.');
+assert.match(revolutionShellCss, /\.px-main[\s\S]*grid-template-rows:var\(--meg-shell-topbar-height\) minmax\(0,1fr\)[\s\S]*overflow:hidden/,
+  'Main Web deve manter topbar e conteúdo dentro da viewport sem deslocamento estrutural.');
+assert.match(revolutionShellCss, /\.meg-web-content[\s\S]*inline-size:100%!important[\s\S]*overflow-y:auto/,
+  'Conteúdo deve ocupar a largura útil e controlar a rolagem internamente.');
+assert.match(revolutionShellCss, /@media \(max-width:1180px\)[\s\S]*--meg-shell-sidebar-expanded:84px[\s\S]*--meg-shell-sidebar-collapsed:84px/,
+  'Notebook compacto deve usar rail estável, sem espremer o conteúdo quando o menu é alternado.');
+assert.match(revolutionShellCss, /@media \(max-width:900px\)[\s\S]*--meg-shell-sidebar-expanded:72px/,
+  'Browser compacto deve preservar navegação Web sem herdar o runtime Android.');
+assert.doesNotMatch(revolutionShellCss, /meg-cleanroom-mobile|android-cleanroom/,
+  'Nova fundação responsiva Web não pode interferir no clean-room Android.');
 assert.match(styles, /\.px-premium-balance/);
 assert.match(styles, /\.px-launch-drawer/);
 assert.match(styles, /\.px-detail-drawer/);
