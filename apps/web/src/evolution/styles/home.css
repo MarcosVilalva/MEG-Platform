@@ -686,3 +686,27 @@
   .evo-home-category-list>div{font-size:7.5px;min-height:18px}
   .evo-home-category-list b{font-size:7.5px}
 }
+
+
+/* === EVOLUTION HOME — FIDELITY PASS 3 / HERO ARTWORK === */
+@media(min-width:1421px) and (min-height:791px){
+  .evo-home-hero{
+    background:
+      linear-gradient(90deg,#03131c 0%,rgba(3,19,28,.985) 28%,rgba(3,19,28,.72) 43%,rgba(3,19,28,.12) 58%,rgba(3,19,28,0) 100%),
+      url('/evolution/artwork/home-hero-scene.svg') right center / auto 100% no-repeat,
+      #03131c;
+  }
+  .evo-home-hero:before{
+    z-index:3;
+    background:
+      radial-gradient(ellipse at 70% 6%,rgba(67,255,235,.12),transparent 32%),
+      linear-gradient(90deg,rgba(2,16,24,.96) 0%,rgba(2,16,24,.62) 34%,transparent 54%);
+    opacity:1;
+    filter:none;
+    pointer-events:none;
+  }
+  .evo-home-mountain,
+  .evo-home-hero-cards{display:none}
+  .evo-home-hero-copy{z-index:6}
+  .evo-home-hero:after{z-index:7}
+}
