@@ -24,7 +24,7 @@ assert.match(sidebar, /Resumo e prioridades[\s\S]*Receitas e despesas/);
 assert.match(sidebar, /mnx-sidebar-status[\s\S]*VISÃO FINANCEIRA ATIVA/);
 assert.match(tokens, /--mnx-sidebar-expanded:278px/);
 assert.match(tokens, /--mnx-topbar-height:84px/);
-assert.match(tokens, /--mnx-neon:#43eadb/);
+assert.match(tokens, /--mnx-neon:#49f0df/);
 assert.match(styles, /grid-template-columns:var\(--mnx-sidebar-expanded\) minmax\(0,1fr\)/);
 assert.match(styles, /block-size:100dvh/);
 assert.match(styles, /container-name:mnx-main/);
