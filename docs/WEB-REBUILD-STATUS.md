@@ -1,7 +1,7 @@
 # MEG EVOLUTION — STATUS OFICIAL DA RECONSTRUÇÃO
 
 > Este arquivo é a fonte de verdade para qualquer continuação da reconstrução Web.
-> Antes de alterar a interface Web, leia este documento e `WEB-LEGACY-REMOVAL.md`.
+> Antes de alterar a interface Web, leia `MEG-VALIDACAO-OFICIAL.md`, `EVOLUTION-VISUAL-CONTRACT.md`, este documento e `WEB-LEGACY-REMOVAL.md`.
 
 ## 1. Decisão arquitetural
 
@@ -33,7 +33,7 @@ Não aceitar implementações apenas inspiradas na referência. Quando uma compo
 
 
 
-Referência oficial: **5 pranchas Web aprovadas em 01/10/2026**.
+Referência oficial: **5 pranchas-mestre reafirmadas e fixadas em 02/10/2026**, detalhadas em `EVOLUTION-VISUAL-CONTRACT.md`. Elas regem telas existentes e também todas as variações/telas futuras.
 
 Regra de prioridade:
 1. pranchas Web aprovadas;
