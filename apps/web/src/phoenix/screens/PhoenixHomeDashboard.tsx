@@ -565,7 +565,7 @@ export function PhoenixHomeDashboard({ data, month, onNavigate, onReviewPayables
     </section>
 
     {benefitOpen ? <div className="px-home-benefit-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setBenefitOpen(false); }}>
-      <section className="px-home-benefit-modal" role="dialog" aria-modal="true" aria-label="Acompanhamento do benefício alimentação">
+      <section className="px-home-benefit-modal" data-web-revolution="benefit" role="dialog" aria-modal="true" aria-label="Acompanhamento do benefício alimentação">
         <header className="px-home-benefit-modal-head">
           <div className="px-home-benefit-modal-title">
             <span className="px-home-benefit-modal-icon" aria-hidden="true"><HomeGlyph kind="benefit" /></span>

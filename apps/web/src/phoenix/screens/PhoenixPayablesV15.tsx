@@ -1018,7 +1018,7 @@ export function PhoenixPayables({ data, onMonthChange, onEditEvent, selectionReq
     </section>;
   }
 
-  return <section className="px-screen px-pending-cockpit" data-pending-layout="canonical-v3" onWheel={routeWheelToPendingList}>
+  return <section className="px-screen px-pending-cockpit" data-web-revolution={nativeOperational ? undefined : 'payables'} data-pending-layout="canonical-v3" onWheel={routeWheelToPendingList}>
     <header className="px-screen-head px-pending-hero">
       <div className="px-pending-hero-main">
         <span className="px-pending-hero-icon" aria-hidden="true"><PendingGlyph kind="calendar" /></span>

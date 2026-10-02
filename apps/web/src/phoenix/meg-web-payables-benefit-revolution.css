@@ -1,0 +1,1128 @@
+/* MEG WEB · Revolution · Pendências + Benefício
+ * Camada exclusiva do Web. Preserva o runtime Android e toda a lógica financeira existente.
+ */
+
+/* =========================
+   PENDÊNCIAS REVOLUTION
+   ========================= */
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] {
+  --pd-accent:#45e0d1;
+  --pd-success:#68e5c3;
+  --pd-danger:#ff8792;
+  --pd-warn:#f2c46f;
+  --pd-text:#effdfa;
+  --pd-muted:#7da39e;
+  --pd-line:rgba(96,230,217,.12);
+  --pd-line-strong:rgba(96,230,217,.24);
+  display:grid;
+  grid-template-rows:auto auto auto auto minmax(0,1fr);
+  gap:14px;
+  min-inline-size:0;
+  min-block-size:100%;
+  container-type:inline-size;
+  container-name:payables-revolution;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-hero {
+  min-inline-size:0;
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:20px;
+  padding:0 2px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-hero-main {
+  min-inline-size:0;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-hero-icon {
+  inline-size:46px;
+  block-size:46px;
+  flex:0 0 46px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(75,229,215,.16);
+  border-radius:14px;
+  background:rgba(62,218,205,.07);
+  color:#68e2d7;
+  box-shadow:0 14px 30px rgba(0,0,0,.14);
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-hero-main>div {
+  min-inline-size:0;
+  display:grid;
+  gap:4px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-hero .px-kicker {
+  color:var(--pd-accent);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-hero h1 {
+  margin:0;
+  color:#f4fffd;
+  font-size:clamp(28px,2.2vw,40px);
+  line-height:1.02;
+  letter-spacing:-.035em;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-hero p {
+  margin:0;
+  color:#789d98;
+  font-size:12px;
+  line-height:1.45;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-total-pill {
+  min-block-size:36px;
+  display:inline-flex;
+  align-items:center;
+  padding:0 12px;
+  border:1px solid rgba(67,225,211,.16);
+  border-radius:999px;
+  background:rgba(59,208,196,.055);
+  color:#bfe5e0;
+  font-size:9px;
+  font-weight:850;
+  white-space:nowrap;
+}
+
+/* Navegação temporal */
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-month-nav {
+  inline-size:max-content;
+  max-inline-size:100%;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  padding:5px;
+  overflow-x:auto;
+  border:1px solid var(--pd-line);
+  border-radius:14px;
+  background:rgba(3,29,32,.72);
+  scrollbar-width:none;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-month-nav::-webkit-scrollbar {
+  display:none;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-month-nav button {
+  min-block-size:34px;
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  padding:0 10px;
+  border:1px solid transparent;
+  border-radius:9px;
+  background:transparent;
+  color:#7da29d;
+  font:inherit;
+  font-size:8px;
+  font-weight:850;
+  cursor:pointer;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-month-nav button:hover,
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-month-nav button.active {
+  border-color:rgba(67,225,211,.16);
+  background:rgba(58,208,196,.07);
+  color:#eafffc;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-month-step {
+  inline-size:34px;
+  padding:0;
+  font-size:16px;
+}
+
+/* KPIs */
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-kpis {
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:11px;
+  min-inline-size:0;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-kpis>article {
+  position:relative;
+  min-inline-size:0;
+  min-block-size:98px;
+  display:grid!important;
+  grid-template-columns:38px minmax(0,1fr);
+  align-items:center;
+  gap:11px;
+  padding:14px;
+  overflow:hidden;
+  border:1px solid var(--pd-line);
+  border-radius:17px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(68,226,212,.065),transparent 43%),
+    linear-gradient(145deg,rgba(7,43,46,.93),rgba(3,29,32,.93));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.02),0 16px 40px rgba(0,0,0,.12);
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-kpi-icon {
+  inline-size:38px;
+  block-size:38px;
+  display:grid;
+  place-items:center;
+  border-radius:12px;
+  background:rgba(62,218,205,.07);
+  color:#6de0d5;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-kpis article.danger .px-pending-kpi-icon {
+  background:rgba(255,117,130,.07);
+  color:#ff929d;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-kpis article.warn .px-pending-kpi-icon {
+  background:rgba(242,196,111,.07);
+  color:#efc97c;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-kpis article>div {
+  min-inline-size:0;
+  display:grid;
+  gap:3px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-kpis article>div>span,
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-kpis article>div>small {
+  overflow:hidden;
+  color:#769a95;
+  font-size:8px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-kpis article>div>strong {
+  overflow:hidden;
+  color:#effdfa;
+  font-size:clamp(15px,1.3vw,21px);
+  font-weight:900;
+  letter-spacing:-.02em;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-kpis article.danger>div>strong {
+  color:#ff9ca5;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-kpis article.warn>div>strong {
+  color:#f0cb83;
+}
+
+/* Barra de comando */
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-commandbar {
+  position:relative;
+  min-inline-size:0;
+  display:grid;
+  grid-template-columns:minmax(220px,1.2fr) auto auto auto;
+  align-items:center;
+  gap:8px;
+  padding:10px;
+  border:1px solid var(--pd-line);
+  border-radius:16px;
+  background:rgba(4,32,35,.76);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.018);
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-command-search {
+  min-inline-size:0;
+  min-block-size:40px;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  align-items:center;
+  gap:8px;
+  padding:0 11px;
+  border:1px solid rgba(91,225,213,.11);
+  border-radius:11px;
+  background:rgba(0,21,24,.42);
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-command-search input {
+  min-inline-size:0;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#e9fbf8;
+  font:inherit;
+  font-size:9px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-command-tabs {
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-command-tabs button,
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-filter-toggle {
+  min-block-size:36px;
+  padding:0 10px;
+  border:1px solid transparent;
+  border-radius:9px;
+  background:transparent;
+  color:#779c97;
+  font:inherit;
+  font-size:8px;
+  font-weight:850;
+  cursor:pointer;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-command-tabs button.active,
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-filter-toggle.active,
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-command-tabs button:hover {
+  border-color:rgba(69,225,212,.15);
+  background:rgba(58,207,195,.07);
+  color:#eafffc;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-command-group {
+  min-inline-size:150px;
+  display:grid;
+  gap:3px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-command-group>span {
+  color:#668d88;
+  font-size:6.5px;
+  font-weight:850;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-command-group select {
+  min-block-size:31px;
+  border:1px solid rgba(91,225,213,.10);
+  border-radius:8px;
+  background:rgba(0,20,23,.46);
+  color:#bcd7d3;
+  font:inherit;
+  font-size:8px;
+  outline:none;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-command-separator,
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-toolbar-note {
+  display:none;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-date-filter {
+  position:absolute;
+  inset-block-start:calc(100% + 8px);
+  inset-inline-end:0;
+  z-index:25;
+  inline-size:min(480px,calc(100vw - 140px));
+  display:grid;
+  gap:10px;
+  padding:13px;
+  border:1px solid rgba(75,229,215,.18);
+  border-radius:14px;
+  background:rgba(4,31,34,.98);
+  box-shadow:0 24px 68px rgba(0,0,0,.42);
+  backdrop-filter:blur(18px);
+}
+
+/* Agenda */
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-layout {
+  min-inline-size:0;
+  min-block-size:0;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-agenda {
+  min-inline-size:0;
+  min-block-size:0;
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr);
+  overflow:hidden;
+  padding:0;
+  border:1px solid var(--pd-line);
+  border-radius:19px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(61,224,210,.045),transparent 36%),
+    linear-gradient(180deg,rgba(6,38,41,.95),rgba(3,28,31,.95));
+  box-shadow:0 22px 52px rgba(0,0,0,.15),inset 0 1px 0 rgba(255,255,255,.018);
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-agenda-head {
+  min-inline-size:0;
+  min-block-size:62px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:12px 15px;
+  border-bottom:1px solid rgba(95,229,217,.08);
+  background:rgba(2,25,28,.34);
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-agenda-title {
+  min-inline-size:0;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-agenda-icon {
+  inline-size:35px;
+  block-size:35px;
+  flex:0 0 35px;
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  background:rgba(61,220,207,.06);
+  color:#6edfd5;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-agenda-title>div {
+  min-inline-size:0;
+  display:grid;
+  gap:2px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-agenda-title h2 {
+  margin:0;
+  color:#eafbf8;
+  font-size:12px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-agenda-title p,
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-agenda-signature {
+  margin:0;
+  color:#6e938e;
+  font-size:8px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-bulk-action-bar {
+  min-inline-size:0;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:10px 14px;
+  border-bottom:1px solid rgba(79,230,216,.10);
+  background:rgba(61,214,201,.055);
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-bulk-action-bar>div {
+  min-inline-size:0;
+  flex:1 1 auto;
+  display:grid;
+  gap:2px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-bulk-action-bar strong {
+  color:#dcf6f1;
+  font-size:9px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-bulk-action-bar span {
+  color:#759a95;
+  font-size:7px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-scroll-region {
+  min-inline-size:0;
+  min-block-size:0;
+  max-block-size:none;
+  overflow:auto;
+  padding:8px 10px 12px;
+  scrollbar-gutter:stable;
+  overscroll-behavior:contain;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-date-cluster,
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-card-group,
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-group {
+  margin:7px 0;
+  overflow:hidden;
+  border:1px solid rgba(92,224,212,.09);
+  border-radius:13px;
+  background:rgba(255,255,255,.012);
+  box-shadow:none;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-date-cluster:hover,
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-date-cluster.is-open {
+  border-color:rgba(68,225,211,.20);
+  background:rgba(55,205,193,.035);
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-date-cluster-head {
+  min-block-size:58px;
+  padding:10px 12px;
+  grid-template-columns:auto minmax(0,1fr) auto auto;
+  gap:11px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-date-cluster-copy strong {
+  color:#dff7f3;
+  font-size:10px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-date-cluster-copy small {
+  color:#70958f;
+  font-size:8px;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-date-cluster-total {
+  color:#eefcf9;
+  font-size:10px;
+  font-variant-numeric:tabular-nums;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-row {
+  min-inline-size:0;
+  min-block-size:54px;
+  display:grid;
+  grid-template-columns:auto minmax(112px,.55fr) minmax(180px,1.8fr) minmax(95px,.48fr) auto auto;
+  align-items:center;
+  gap:10px;
+  padding:8px 11px;
+  border-top:1px solid rgba(103,218,209,.055);
+  background:transparent;
+  transition:background .13s ease,box-shadow .13s ease;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-row:hover {
+  background:rgba(65,219,207,.035);
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-row.is-search-focused {
+  background:rgba(65,219,207,.08);
+  box-shadow:inset 3px 0 0 rgba(67,226,212,.72);
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-date strong,
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-copy strong {
+  overflow:hidden;
+  color:#dcefeb;
+  font-size:9px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-date small,
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-copy small {
+  overflow:hidden;
+  color:#6f938e;
+  font-size:7px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-amount {
+  color:#edfdfa;
+  font-size:10px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-quick-settle {
+  min-block-size:30px;
+  padding:0 9px;
+  border:1px solid rgba(68,226,212,.16);
+  border-radius:9px;
+  background:rgba(60,211,198,.055);
+  color:#bfe7e2;
+  font:inherit;
+  font-size:7px;
+  font-weight:850;
+  cursor:pointer;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-quick-settle:hover:not(:disabled) {
+  border-color:rgba(68,226,212,.30);
+  background:rgba(60,211,198,.10);
+  color:#effffc;
+}
+
+/* Resumo da seleção */
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-layout:has(input[type="checkbox"]:checked) {
+  grid-template-columns:minmax(0,1fr) minmax(290px,340px);
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-side {
+  display:none;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-layout:has(input[type="checkbox"]:checked) .px-pending-side {
+  position:sticky;
+  inset-block-start:0;
+  display:block;
+  align-self:start;
+  padding:18px;
+  border:1px solid rgba(74,228,214,.19);
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(59,221,207,.09),transparent 38%),
+    rgba(5,35,38,.94);
+  box-shadow:0 22px 54px rgba(0,0,0,.24);
+}
+
+/* Drawers / confirmações / sucesso */
+.meg-web-2026 .px-pending-overlay {
+  position:fixed;
+  inset:0;
+  z-index:4300;
+  display:grid;
+  place-items:center;
+  padding:24px;
+  background:rgba(0,12,15,.76);
+  backdrop-filter:blur(9px) saturate(112%);
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-drawer,
+.meg-web-2026 .px-pending-confirm-modal,
+.meg-web-2026 .px-pending-success-modal {
+  inline-size:min(720px,calc(100vw - 48px));
+  max-block-size:calc(100dvh - 48px);
+  overflow:auto;
+  border:1px solid rgba(78,230,216,.20);
+  border-radius:23px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(59,224,210,.09),transparent 36%),
+    linear-gradient(155deg,#07373a,#052d30 48%,#03272a);
+  box-shadow:0 38px 110px rgba(0,0,0,.58),inset 0 1px 0 rgba(255,255,255,.024);
+  scrollbar-gutter:stable;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-drawer {
+  padding:0;
+}
+
+.meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-drawer>header,
+.meg-web-2026 .px-pending-confirm-modal>header {
+  position:sticky;
+  inset-block-start:0;
+  z-index:3;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  padding:16px 18px;
+  border-bottom:1px solid rgba(93,228,216,.09);
+  background:rgba(3,28,31,.95);
+  backdrop-filter:blur(18px);
+}
+
+.meg-web-2026 .px-pending-confirm-modal {
+  inline-size:min(760px,calc(100vw - 48px));
+  padding:0;
+}
+
+.meg-web-2026 .px-pending-confirm-modal .px-pending-confirm-highlight,
+.meg-web-2026 .px-pending-success-modal .px-pending-success-total {
+  margin:16px 18px 10px;
+  padding:14px;
+  border:1px solid rgba(66,225,211,.16);
+  border-radius:14px;
+  background:rgba(60,211,198,.05);
+}
+
+.meg-web-2026 .px-pending-payment-fields {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin:10px 18px;
+}
+
+.meg-web-2026 .px-pending-payment-fields input,
+.meg-web-2026 .px-pending-payment-fields select {
+  inline-size:100%;
+  min-block-size:42px;
+  border:1px solid rgba(94,223,211,.11);
+  border-radius:11px;
+  background:rgba(0,20,23,.48);
+  color:#dcefeb;
+  font:inherit;
+  font-size:9px;
+  outline:none;
+}
+
+.meg-web-2026 .px-pending-confirm-modal>footer,
+.meg-web-2026 .px-pending-success-modal>footer {
+  position:sticky;
+  inset-block-end:0;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:13px 18px;
+  border-top:1px solid rgba(93,228,216,.09);
+  background:rgba(3,28,31,.96);
+  backdrop-filter:blur(18px);
+}
+
+.meg-web-2026 .px-pending-success-modal {
+  inline-size:min(620px,calc(100vw - 48px));
+  padding:20px;
+  text-align:center;
+}
+
+.meg-web-2026 .px-pending-success-check {
+  inline-size:54px;
+  block-size:54px;
+  margin:0 auto 10px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(103,229,190,.22);
+  border-radius:50%;
+  background:rgba(103,229,190,.08);
+  color:#77e5c4;
+  font-size:24px;
+}
+
+/* =========================
+   BENEFÍCIO REVOLUTION
+   ========================= */
+.meg-web-2026 :is(.px-home-benefit-backdrop,.meg-home-v12-modal-backdrop):has(>[data-web-revolution="benefit"]) {
+  position:fixed;
+  inset:0;
+  z-index:4400;
+  display:grid;
+  place-items:center;
+  padding:24px;
+  background:rgba(0,12,15,.78);
+  backdrop-filter:blur(10px) saturate(114%);
+}
+
+.meg-web-2026 :is(.px-home-benefit-modal,.meg-home-v12-modal)[data-web-revolution="benefit"] {
+  inline-size:min(920px,calc(100vw - 48px));
+  max-inline-size:920px;
+  max-block-size:calc(100dvh - 48px);
+  display:grid;
+  grid-template-rows:auto auto auto minmax(0,1fr) auto;
+  overflow:hidden;
+  padding:0;
+  border:1px solid rgba(75,230,216,.22);
+  border-radius:25px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(61,227,212,.11),transparent 35%),
+    radial-gradient(circle at 0% 100%,rgba(68,189,230,.055),transparent 40%),
+    linear-gradient(155deg,#07383b 0%,#052e31 48%,#03272a 100%);
+  color:#effdfa;
+  box-shadow:0 40px 120px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+.meg-web-2026 :is(.px-home-benefit-modal,.meg-home-v12-modal)[data-web-revolution="benefit"]>header {
+  min-block-size:78px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:15px 18px;
+  border-bottom:1px solid rgba(94,228,216,.09);
+  background:rgba(3,28,31,.55);
+  backdrop-filter:blur(18px);
+}
+
+.meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"] .px-home-benefit-modal-title {
+  min-inline-size:0;
+  display:flex;
+  align-items:center;
+  gap:11px;
+}
+
+.meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"] .px-home-benefit-modal-icon {
+  inline-size:42px;
+  block-size:42px;
+  flex:0 0 42px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(75,230,216,.16);
+  border-radius:13px;
+  background:rgba(61,218,205,.07);
+  color:#70e2d8;
+}
+
+.meg-web-2026 :is(.px-home-benefit-modal,.meg-home-v12-modal)[data-web-revolution="benefit"]>header h2,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"]>header strong {
+  margin:0;
+  color:#f4fffd;
+  font-size:20px;
+  letter-spacing:-.025em;
+}
+
+.meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"]>header p {
+  margin:3px 0 0;
+  color:#729893;
+  font-size:9px;
+  line-height:1.4;
+}
+
+.meg-web-2026 :is(.px-home-benefit-modal,.meg-home-v12-modal)[data-web-revolution="benefit"]>header button {
+  inline-size:38px;
+  block-size:38px;
+  flex:0 0 38px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:11px;
+  background:rgba(255,255,255,.025);
+  color:#a0bbb7;
+  font:inherit;
+  font-size:18px;
+  cursor:pointer;
+}
+
+/* métricas das duas variantes */
+.meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"] .px-home-benefit-summary,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-stats {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:9px;
+  padding:14px 18px 8px;
+}
+
+.meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"] .px-home-benefit-summary>article,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-stats>article {
+  min-inline-size:0;
+  min-block-size:92px;
+  display:grid;
+  align-content:center;
+  gap:4px;
+  padding:12px;
+  border:1px solid rgba(93,224,212,.09);
+  border-radius:14px;
+  background:rgba(255,255,255,.016);
+}
+
+.meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"] .px-home-benefit-summary article>span,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-stats article>span {
+  color:#729792;
+  font-size:7px;
+  font-weight:800;
+  text-transform:uppercase;
+}
+
+.meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"] .px-home-benefit-summary article>strong,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-stats article>strong {
+  overflow:hidden;
+  color:#effdfa;
+  font-size:17px;
+  font-weight:900;
+  letter-spacing:-.02em;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"] .px-home-benefit-summary article.credit>strong,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-stats article.income>strong {
+  color:#73e5c4;
+}
+
+.meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"] .px-home-benefit-summary article.spent>strong,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-stats article.expense>strong {
+  color:#ff9ba5;
+}
+
+.meg-web-2026 .px-home-benefit-equation {
+  margin:2px 18px 10px;
+  min-block-size:52px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:10px 13px;
+  overflow-x:auto;
+  border:1px solid rgba(74,226,213,.10);
+  border-radius:13px;
+  background:rgba(0,21,24,.28);
+  color:#86aaa5;
+  font-size:9px;
+  scrollbar-width:none;
+}
+
+.meg-web-2026 .px-home-benefit-equation span,
+.meg-web-2026 .px-home-benefit-equation strong {
+  white-space:nowrap;
+}
+
+.meg-web-2026 .px-home-benefit-equation strong {
+  color:#73e5c4;
+  font-size:12px;
+}
+
+/* lista de movimentações */
+.meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"] .px-home-benefit-movements,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-list {
+  min-inline-size:0;
+  min-block-size:0;
+  margin:0 18px 12px;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  overflow:hidden;
+  border:1px solid rgba(93,224,212,.09);
+  border-radius:15px;
+  background:rgba(0,21,24,.24);
+}
+
+.meg-web-2026 .px-home-benefit-movements>header {
+  min-block-size:52px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 12px;
+  border-bottom:1px solid rgba(93,224,212,.08);
+}
+
+.meg-web-2026 .px-home-benefit-list,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-list {
+  min-block-size:0;
+  overflow:auto;
+  scrollbar-gutter:stable;
+}
+
+.meg-web-2026 .px-home-benefit-row,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-list>div {
+  min-inline-size:0;
+  min-block-size:50px;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:8px 11px;
+  border-bottom:1px solid rgba(100,218,209,.055);
+}
+
+.meg-web-2026 .px-home-benefit-row:last-child,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-list>div:last-child {
+  border-bottom:0;
+}
+
+.meg-web-2026 .px-home-benefit-row-icon {
+  inline-size:30px;
+  block-size:30px;
+  display:grid;
+  place-items:center;
+  border-radius:9px;
+  background:rgba(65,219,177,.07);
+  color:#70e2c1;
+  font-size:12px;
+}
+
+.meg-web-2026 .px-home-benefit-row-icon.debit {
+  background:rgba(255,120,133,.07);
+  color:#ff969f;
+}
+
+.meg-web-2026 .px-home-benefit-row>div,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-list>div>span {
+  min-inline-size:0;
+  display:grid;
+  gap:2px;
+}
+
+.meg-web-2026 .px-home-benefit-row>div>strong,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-list>div>span>strong {
+  overflow:hidden;
+  color:#dcefeb;
+  font-size:9px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.meg-web-2026 .px-home-benefit-row>div>small,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-list>div>span>small {
+  overflow:hidden;
+  color:#6f948f;
+  font-size:7px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.meg-web-2026 .px-home-benefit-row>strong,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-list>div>b {
+  color:#eafaf7;
+  font-size:9px;
+  font-weight:900;
+  white-space:nowrap;
+}
+
+.meg-web-2026 .px-home-benefit-row>strong.credit,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-list>div>b.income {
+  color:#72e4c3;
+}
+
+.meg-web-2026 .px-home-benefit-row>strong.debit,
+.meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-list>div>b.expense {
+  color:#ff99a3;
+}
+
+.meg-web-2026 :is(.px-home-benefit-modal,.meg-home-v12-modal)[data-web-revolution="benefit"]>footer {
+  min-block-size:60px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  padding:11px 18px;
+  border-top:1px solid rgba(94,228,216,.09);
+  background:rgba(3,28,31,.72);
+}
+
+.meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"]>footer>span {
+  margin-right:auto;
+  color:#688e89;
+  font-size:7px;
+}
+
+/* Container queries */
+@container payables-revolution (max-width:1080px) {
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-kpis {
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-commandbar {
+    grid-template-columns:minmax(220px,1fr) auto auto;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-command-group {
+    grid-column:2;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-row {
+    grid-template-columns:auto 105px minmax(170px,1fr) 95px auto;
+  }
+}
+
+@container payables-revolution (max-width:780px) {
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-hero {
+    display:grid;
+    grid-template-columns:1fr;
+    align-items:start;
+    gap:10px;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-screen-head-aside {
+    justify-self:start;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-commandbar {
+    grid-template-columns:1fr auto;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-command-search {
+    grid-column:1/-1;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-command-tabs {
+    overflow-x:auto;
+    scrollbar-width:none;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-command-group {
+    grid-column:auto;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-row {
+    grid-template-columns:auto minmax(0,1fr) auto auto;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-date {
+    display:none;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-layout:has(input[type="checkbox"]:checked) {
+    grid-template-columns:1fr;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-side {
+    position:static!important;
+  }
+
+  .meg-web-2026 .px-pending-payment-fields {
+    grid-template-columns:1fr;
+  }
+
+  .meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"] .px-home-benefit-summary,
+  .meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-stats {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@container payables-revolution (max-width:520px) {
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-kpis {
+    grid-template-columns:1fr!important;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-commandbar {
+    grid-template-columns:1fr;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-row {
+    grid-template-columns:auto minmax(0,1fr) auto;
+  }
+
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-quick-settle {
+    display:none;
+  }
+
+  .meg-web-2026 .px-pending-overlay {
+    padding:10px;
+  }
+
+  .meg-web-2026 .px-pending-confirm-modal,
+  .meg-web-2026 .px-pending-success-modal {
+    inline-size:calc(100vw - 20px);
+    max-block-size:calc(100dvh - 18px);
+    border-radius:19px;
+  }
+}
+
+/* Modal de benefício responde ao viewport, não ao container da Home. */
+@media (max-width:760px) {
+  .meg-web-2026 :is(.px-home-benefit-backdrop,.meg-home-v12-modal-backdrop):has(>[data-web-revolution="benefit"]) {
+    padding:10px;
+  }
+
+  .meg-web-2026 :is(.px-home-benefit-modal,.meg-home-v12-modal)[data-web-revolution="benefit"] {
+    inline-size:calc(100vw - 20px);
+    max-block-size:calc(100dvh - 18px);
+    border-radius:19px;
+  }
+
+  .meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"] .px-home-benefit-summary,
+  .meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-stats {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"]>footer {
+    flex-wrap:wrap;
+  }
+
+  .meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"]>footer>span {
+    flex-basis:100%;
+    margin-right:0;
+  }
+}
+
+@media (max-width:480px) {
+  .meg-web-2026 .px-home-benefit-modal[data-web-revolution="benefit"] .px-home-benefit-summary,
+  .meg-web-2026 .meg-home-v12-modal[data-web-revolution="benefit"] .meg-home-v12-modal-stats {
+    grid-template-columns:1fr;
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-row,
+  .meg-web-2026 .px-pending-cockpit[data-web-revolution="payables"] .px-pending-date-cluster {
+    transition:none;
+  }
+}

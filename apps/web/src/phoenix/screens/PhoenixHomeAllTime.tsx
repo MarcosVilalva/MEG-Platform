@@ -176,7 +176,7 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
       </section>
 
       {benefitOpen ? <div className="meg-home-v12-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setBenefitOpen(false); }}>
-        <section className="meg-home-v12-modal" role="dialog" aria-modal="true" aria-label="Acompanhamento do benefício alimentação">
+        <section className="meg-home-v12-modal" data-web-revolution="benefit" role="dialog" aria-modal="true" aria-label="Acompanhamento do benefício alimentação">
           <header><div><small>BENEFÍCIO ALIMENTAÇÃO</small><strong>Evolução do saldo</strong></div><button type="button" aria-label="Fechar" onClick={() => setBenefitOpen(false)}>×</button></header>
           <div className="meg-home-v12-modal-stats">
             <article><span>Saldo inicial</span><strong>{money.format(benefitOpening)}</strong></article>
@@ -319,7 +319,7 @@ export function PhoenixHomeAllTime({ data, mode = 'all', periodLabel = 'Tudo', p
     </section>}
   </section>
   {benefitOpen ? <div className="px-home-benefit-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setBenefitOpen(false); }}>
-    <section className="px-home-benefit-modal" role="dialog" aria-modal="true" aria-label="Acompanhamento do benefício alimentação">
+    <section className="px-home-benefit-modal" data-web-revolution="benefit" role="dialog" aria-modal="true" aria-label="Acompanhamento do benefício alimentação">
       <header className="px-home-benefit-modal-head"><div className="px-home-benefit-modal-title"><div><span className="px-kicker">Benefício alimentação · {periodLabel}</span><h2>Evolução do saldo</h2><p>Benefício separado do caixa monetário, preservando a leitura do período.</p></div></div><button type="button" aria-label="Fechar" onClick={() => setBenefitOpen(false)}>×</button></header>
       <div className="px-home-benefit-summary px-home-benefit-summary-four">
         <article><span>Saldo inicial</span><strong>{money.format(benefitOpening)}</strong></article>
