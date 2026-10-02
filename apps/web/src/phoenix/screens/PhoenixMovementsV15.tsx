@@ -1604,7 +1604,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
             <button className="px-secondary-action px-cancel-launch" type="button" disabled={savingEdit || deletingEvent} onClick={requestCloseLaunch}>Cancelar</button>
             {canArchiveEvent ? <button className="px-delete-launch" type="button" disabled={savingEdit || deletingEvent} onClick={() => requestDeleteEvent()}>Excluir lançamento</button> : null}
           </div>
-            : {renderLaunchWriteControl()}}
+            : renderLaunchWriteControl()}
         </div>
       </aside>
     </> : null}
