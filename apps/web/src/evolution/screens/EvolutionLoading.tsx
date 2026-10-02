@@ -24,19 +24,31 @@ function TargetIcon(){
 export function EvolutionLoading({progress=42,message='Organizando suas finanças para o seu dia a dia.'}:EvolutionLoadingProps){
   const normalized=Math.max(0,Math.min(100,progress));
 
-  return <main className="evo-loading" data-evolution-screen="loading" aria-live="polite" aria-busy={normalized < 100}>
+  return <main
+    className="evo-loading"
+    data-evolution-screen="loading"
+    data-evolution-loading-fidelity="cinematic-v2"
+    aria-live="polite"
+    aria-busy={normalized < 100}
+  >
     <div className="evo-loading-aurora evo-loading-aurora-top" aria-hidden="true"/>
     <div className="evo-loading-aurora evo-loading-aurora-side" aria-hidden="true"/>
     <div className="evo-loading-arc evo-loading-arc-a" aria-hidden="true"/>
     <div className="evo-loading-arc evo-loading-arc-b" aria-hidden="true"/>
+    <div className="evo-loading-arc evo-loading-arc-c" aria-hidden="true"/>
+    <div className="evo-loading-reflection" aria-hidden="true"/>
 
     <svg className="evo-loading-terrain evo-loading-terrain-left" viewBox="0 0 700 260" preserveAspectRatio="none" aria-hidden="true">
       <path d="M0 206 70 172 118 151 166 159 218 118 259 130 312 92 353 121 405 86 452 101 515 59 582 109 626 91 700 154 700 260 0 260Z"/>
       <path d="M0 214 93 180 167 191 226 151 302 164 361 132 425 151 487 114 558 154 626 132 700 173" className="terrain-edge"/>
+      <path d="M74 174 118 151 166 159 136 191ZM219 119 259 130 312 92 286 159ZM405 86 452 101 515 59 489 124Z" className="terrain-facet"/>
+      <path d="M18 231 106 203 192 214 277 184 361 199 449 166 545 196 628 170 700 195" className="terrain-ridge"/>
     </svg>
     <svg className="evo-loading-terrain evo-loading-terrain-right" viewBox="0 0 700 260" preserveAspectRatio="none" aria-hidden="true">
       <path d="M0 172 66 131 123 144 179 105 238 126 288 85 347 111 397 67 453 99 514 63 571 110 622 88 700 135 700 260 0 260Z"/>
       <path d="M0 184 73 145 139 158 197 121 258 142 314 101 373 128 428 86 487 116 546 82 611 127 700 151" className="terrain-edge"/>
+      <path d="M65 132 123 144 179 105 153 163ZM287 85 347 111 397 67 365 136ZM453 99 514 63 571 110 522 142Z" className="terrain-facet"/>
+      <path d="M0 211 88 178 169 194 255 160 346 181 427 145 515 171 609 149 700 176" className="terrain-ridge"/>
     </svg>
 
     <section className="evo-loading-stage">
@@ -45,6 +57,7 @@ export function EvolutionLoading({progress=42,message='Organizando suas finança
       </div>
 
       <div className="evo-loading-scene" aria-hidden="true">
+        <div className="evo-scene-glow"/>
         <div className="evo-floating-card evo-card-donut"><DonutIcon/></div>
         <div className="evo-floating-card evo-card-list"><ListIcon/></div>
         <div className="evo-floating-card evo-card-trend"><TrendIcon/></div>
@@ -56,6 +69,7 @@ export function EvolutionLoading({progress=42,message='Organizando suas finança
 
         <div className="evo-holo-frame">
           <div className="evo-holo-grid"/>
+          <div className="evo-holo-frame-shine"/>
           <div className="evo-holo-bars">
             <i/><i/><i/><i/><i/><i/>
           </div>
@@ -67,12 +81,13 @@ export function EvolutionLoading({progress=42,message='Organizando suas finança
         </div>
 
         <div className="evo-holo-platform">
+          <span className="evo-holo-platform-core"/>
           <i/><i/><i/>
         </div>
       </div>
 
-      <div className="evo-loading-progress" aria-label={`Carregamento ${normalized}%`}>
-        <div><span style={{width:`${normalized}%`}}/></div>
+      <div className="evo-loading-progress" aria-label={'Carregamento '+normalized+'%'}>
+        <div><span style={{width:normalized+'%'}}/></div>
         <small>{normalized}%</small>
       </div>
 
