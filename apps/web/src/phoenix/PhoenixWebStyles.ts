@@ -30,5 +30,7 @@ import './meg-web-movements-revolution.css';
 import './meg-web-cards-revolution.css';
 // Pendências + Benefício Revolution: terceira prancha concluída no Web.
 import './meg-web-payables-benefit-revolution.css';
+// Relatórios Revolution: central de exportação responsiva com rolagem confinada à prévia.
+import './meg-web-reports-revolution.css';
 
 export {};
