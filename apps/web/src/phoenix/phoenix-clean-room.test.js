@@ -762,12 +762,12 @@ assert.doesNotMatch(movementScreen, /Os campos marcados com \* são obrigatório
 assert.doesNotMatch(movementScreen, /method\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/,
   'Tela de Lançamentos não deve incorporar requisições de escrita diretamente');
 
-assert.match(homeDashboard, /Última atividade/,
-  'Home corrente deve preservar uma leitura resumida da atividade financeira recente.');
+assert.match(homeDashboard, /Lançamentos recentes/,
+  'Home aprovada deve preservar uma leitura resumida da atividade financeira recente.');
 assert.match(homeDashboard, /data\.activities/,
   'Home deve usar o histórico legado como compatibilidade quando necessário');
-assert.match(homeDashboard, /Prioridades de agora/,
-  'Agenda da Home deve priorizar compromissos acionáveis do período.');
+assert.match(homeDashboard, /Pendências e alertas/,
+  'Agenda da Home aprovada deve priorizar compromissos e alertas acionáveis.');
 assert.match(homeDashboard, /Fatura \$\{item\.cardLabel/,
   'Cartões devem ser agrupados por identidade e vencimento na agenda');
 assert.match(homeDashboard, /px-home-drawer/,
@@ -918,10 +918,10 @@ assert.match(cardsResponsiveCss, /px-card-command-approved-table-wrap[\s\S]*over
 
 
 
-assert.match(homeDashboard, /Benefício alimentação · disponível/,
-  'Home deve preservar o indicador de benefício do V15');
-assert.match(homeDashboard, /Consolidado realizado/,
-  'Home deve preservar o consolidado realizado do V15');
+assert.match(homeDashboard, /Saldo alimentação/,
+  'Home aprovada deve manter o benefício separado na faixa de contas e cartões');
+assert.match(homeDashboard, /Saldo total/,
+  'Home aprovada deve destacar o saldo monetário total');
 assert.match(payablesScreen, /Lançamentos pendentes/,
   'Pendentes deve usar o título canônico aprovado para a agenda mobile.');
 assert.match(homeDashboard, /onReviewPayables/,
@@ -1024,16 +1024,16 @@ assert.match(styles, /\.px-home-scroll-list/,
   'Agenda e histórico da Home devem possuir rolagem interna controlada');
 assert.match(homeDashboard, /data-home-layout="revolution-v1"/,
   'Home Web deve expor o marcador oficial Revolution.');
-assert.match(homeDashboard, /Seu dinheiro, agora/,
-  'Home deve abrir com uma leitura executiva e imediata.');
+assert.match(homeDashboard, /Saldo do mês/,
+  'Home aprovada deve abrir com leitura executiva imediata nos KPIs.');
 assert.match(phoenixWebStyles, /meg-web-shell-revolution\.css'[\s\S]*meg-web-home-revolution\.css'/,
   'Home Revolution deve ser carregada depois da fundação global e permanecer restrita ao módulo.');
-assert.match(homeDashboard, /Panorama financeiro[\s\S]*Evolução do caixa/,
-  'Home Revolution deve incorporar panorama financeiro real do fluxo de caixa.');
-assert.match(homeDashboard, /cashflowDays = data\.cashflow\.days/,
-  'Gráfico da Home deve usar a série real de fluxo de caixa.');
-assert.match(homeDashboard, /realizedCashflowPoints[\s\S]*projectedCashflowPoints/,
-  'Home deve comparar saldo realizado e projetado sem inventar série paralela.');
+assert.match(homeDashboard, /Evolução financeira[\s\S]*Receitas, despesas e saldo/,
+  'Home aprovada deve incorporar o painel financeiro da Prancha 1.');
+assert.match(homeDashboard, /homeTrend = data\.analytics\.monthlyTrend\.slice\(-6\)/,
+  'Gráfico da Home deve usar a série histórica financeira real.');
+assert.match(homeDashboard, /trendResultPoints = homeChartPoints/,
+  'Linha de saldo da Home deve ser derivada dos resultados históricos reais.');
 assert.match(homeDashboard, /featuredCards = data\.cards\.filter/,
   'Home Revolution deve usar cartões reais e ativos do domínio.');
 assert.match(homeDashboard, /recentMovements = data\.events\.items/,
@@ -1076,13 +1076,12 @@ assert.match(homeRevolutionCss, /@container meg-content \(max-width:620px\)/,
   'Home Revolution deve preservar leitura em largura compacta.');
 assert.doesNotMatch(homeRevolutionCss, /android-cleanroom|meg-cleanroom-mobile/,
   'Camada visual da Home Web não pode interferir no Android.');
-assert.match(homeDashboard, /Saldo disponível/);
-assert.match(homeDashboard, /Pendências abertas/);
-assert.match(homeDashboard, /Próximos 7 dias/);
-assert.match(homeDashboard, /A receber/);
-assert.match(homeDashboard, /Resumo executivo/);
-assert.match(homeDashboard, /px-home-benefit-chip/,
-  'Home deve mostrar o saldo do benefício no hero sem criar um quinto KPI.');
+assert.match(homeDashboard, /Receitas/);
+assert.match(homeDashboard, /Despesas/);
+assert.match(homeDashboard, /Saldo do mês/);
+assert.match(homeDashboard, /Metas/);
+assert.match(homeDashboard, /meg-board1-account-tile benefit/,
+  'Home aprovada deve mostrar o benefício separado dentro de Contas e cartões.');
 assert.match(homeDashboard, /setBenefitOpen\(true\)/,
   'Chip do benefício deve abrir o acompanhamento detalhado.');
 assert.match(homeDashboard, /Evolução do saldo/,
@@ -1246,7 +1245,7 @@ assert.match(homeNowCss, /\.px-main-home-all > \.px-content-home\.px-content-hom
   'Home Tudo deve começar imediatamente abaixo da topbar, sem compensação vertical duplicada.');
 assert.match(homeNowCss, /\.px-home-alltime > \.px-page-head[\s\S]*padding:0 2px 2px !important/,
   'Cabeçalho da Home Tudo não deve reservar faixa vazia no topo.');
-assert.match(homeDashboard, /benefício permanece separado do saldo monetário/i,
+assert.match(homeDashboard, /Saldo alimentação/,
   'Benefício deve permanecer visualmente separado do saldo monetário.');
 assert.match(homeNowCss, /\.px-home-benefit-chip/,
   'Chip de benefício deve possuir estilo próprio no hero.');
