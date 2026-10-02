@@ -9,7 +9,7 @@ const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL
 function pct(value: number | null) {
   if (value === null || !Number.isFinite(value)) return 'Sem base comparativa';
   const sign = value > 0 ? '+' : '';
-  return `${sign}${value.toFixed(0)}% vs. período anterior`;
+  return `${sign}${value.toFixed(0)}%`;
 }
 
 function shortDate(value: string) {
@@ -17,7 +17,7 @@ function shortDate(value: string) {
   return day && month ? `${day}/${month}` : value;
 }
 
-function chartCoordinates(values: number[], width = 560, height = 148) {
+function chartCoordinates(values: number[], width = 600, height = 168) {
   if (!values.length) return [] as Array<{x:number;y:number}>;
   const min = Math.min(0, ...values);
   const max = Math.max(1, ...values);
@@ -25,9 +25,13 @@ function chartCoordinates(values: number[], width = 560, height = 148) {
   const step = values.length > 1 ? width / (values.length - 1) : width / 2;
   return values.map((value, index) => {
     const x = values.length > 1 ? index * step : width / 2;
-    const y = height - ((value - min) / range) * height;
-    return { x, y: Math.max(0, Math.min(height, y)) };
+    const y = 8 + (height - 16) - ((value - min) / range) * (height - 16);
+    return { x, y: Math.max(8, Math.min(height, y)) };
   });
+}
+
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
 }
 
 export function WebNextHome({
@@ -38,146 +42,176 @@ export function WebNextHome({
   onNavigate: (route: WebNextRoute) => void;
 }) {
   const [activeTrendIndex,setActiveTrendIndex]=useState(()=>Math.max(0,model.trend.length-1));
-  const maxBar = Math.max(1, ...model.trend.flatMap((item) => [Math.abs(item.income), Math.abs(item.expense)]));
   const resultCoordinates = chartCoordinates(model.trend.map((item) => item.result));
   const resultPoints = resultCoordinates.map((point)=>`${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
+  const areaPath = resultCoordinates.length
+    ? `M ${resultCoordinates[0].x},168 L ${resultCoordinates.map((point)=>`${point.x},${point.y}`).join(' L ')} L ${resultCoordinates[resultCoordinates.length-1].x},168 Z`
+    : '';
   const resultPositive = model.kpis.result.value >= 0;
   const activeTrend = model.trend[Math.min(activeTrendIndex,Math.max(0,model.trend.length-1))] || null;
   const activePoint = resultCoordinates[Math.min(activeTrendIndex,Math.max(0,resultCoordinates.length-1))] || null;
-  const activeTrendPosition = model.trend.length > 1 ? activeTrendIndex/(model.trend.length-1)*100 : 50;
+  const maxFlow = Math.max(1, ...model.trend.flatMap((item)=>[Math.abs(item.income),Math.abs(item.expense)]));
+  const liquidityPercent = model.totalBalance > 0
+    ? clampPercent(model.freeAfterCommitments / model.totalBalance * 100)
+    : 0;
+  const committedAmount = Math.max(0, model.totalBalance - model.freeAfterCommitments);
 
-  return <section className="mnx-home" data-web-next-screen="home" data-reference="web-board-1-approved" data-month={model.month}>
-    <section className="mnx-home-kpis" aria-label="Resumo financeiro">
-      <article className="mnx-kpi mnx-kpi-income">
-        <span className="mnx-kpi-icon"><WebNextIcon name="receivables" /></span>
-        <div><small>Receitas</small><strong>{money.format(model.kpis.income.value)}</strong><em>{pct(model.kpis.income.changePct)}</em></div>
-        <span className="mnx-kpi-spark" aria-hidden="true">↗</span>
-      </article>
-      <article className="mnx-kpi mnx-kpi-expense">
-        <span className="mnx-kpi-icon"><WebNextIcon name="payables" /></span>
-        <div><small>Despesas</small><strong>{money.format(model.kpis.expense.value)}</strong><em>{pct(model.kpis.expense.changePct)}</em></div>
-        <span className="mnx-kpi-spark" aria-hidden="true">↘</span>
-      </article>
-      <article className="mnx-kpi mnx-kpi-balance">
-        <span className="mnx-kpi-icon"><WebNextIcon name="analytics" /></span>
-        <div><small>Saldo do mês</small><strong>{money.format(model.kpis.result.value)}</strong><em>{pct(model.kpis.result.changePct)}</em></div>
-        <span className="mnx-kpi-spark" aria-hidden="true">⌁</span>
-      </article>
-      <article className="mnx-kpi mnx-kpi-goal">
-        <span className="mnx-kpi-icon"><WebNextIcon name="budgets" /></span>
-        <div><small>Metas</small><strong>{model.kpis.goals.total > 0 ? money.format(model.kpis.goals.total) : 'Sem meta'}</strong><em>{model.kpis.goals.active ? `${model.kpis.goals.active} meta(s) ativa(s)` : 'Defina limites no planejamento'}</em></div>
-        <span className="mnx-kpi-goal-track"><i style={{ width: `${model.kpis.goals.percent}%` }} /></span>
-        {model.kpis.goals.total > 0 ? <b className="mnx-kpi-goal-pct">{model.kpis.goals.percent.toFixed(0)}%</b> : null}
-      </article>
-    </section>
+  return <section className="mnx-home mnx-command-center" data-web-next-screen="home" data-reference="web-board-1-approved" data-month={model.month}>
+    <section className="mnx-command-hero" aria-label="Seu dinheiro agora">
+      <article className="mnx-money-stage">
+        <div className="mnx-money-stage-copy">
+          <span className="mnx-stage-eyebrow"><i /> SEU DINHEIRO AGORA</span>
+          <h1>{money.format(model.totalBalance)}</h1>
+          <p>Saldo monetário disponível neste momento</p>
+          <div className="mnx-stage-chips">
+            <span className={resultPositive ? 'is-positive' : 'is-negative'}><b>{resultPositive ? '+' : ''}{money.format(model.kpis.result.value)}</b> no mês</span>
+            <span><b>{money.format(model.freeAfterCommitments)}</b> livre após compromissos</span>
+          </div>
+          <button type="button" onClick={() => onNavigate('cashflow')}>Abrir fluxo de caixa <WebNextIcon name="chevron" /></button>
+        </div>
 
-    <section className="mnx-home-board">
-      <article className="mnx-panel mnx-balance-panel">
-        <header><span>Saldo total</span><button type="button" aria-label="Abrir fluxo de caixa" onClick={() => onNavigate('cashflow')}><WebNextIcon name="chevron" /></button></header>
-        <strong>{money.format(model.totalBalance)}</strong>
-        <small>Disponível em caixa monetário</small>
-        <div className={resultPositive ? 'is-positive' : 'is-negative'}>{resultPositive ? '+' : ''}{money.format(model.kpis.result.value)} no mês</div>
-        <footer><span>Benefício alimentação</span><b>{money.format(model.benefitBalance)}</b></footer>
-      </article>
-
-      <article className="mnx-panel mnx-assets-panel">
-        <header className="mnx-panel-heading"><div><span>Contas e cartões</span><h2>Sua carteira financeira</h2></div><button type="button" onClick={() => onNavigate('cards')}>Ver todos <WebNextIcon name="chevron" /></button></header>
-        <div className="mnx-assets-strip">
-          {model.assets.map((asset) => <button
-            type="button"
-            className={`mnx-asset-card is-${asset.kind}`}
-            key={asset.id}
-            onClick={() => onNavigate(asset.kind === 'card' ? 'cards' : 'catalogs')}
-            style={asset.accent ? { '--mnx-asset-accent': asset.accent } as CSSProperties : undefined}
-          >
-            <span className="mnx-asset-icon"><WebNextIcon name={asset.kind === 'card' ? 'cards' : 'catalogs'} /></span>
-            <span className="mnx-asset-copy"><small>{asset.eyebrow}</small><strong>{asset.name}</strong><em>{asset.value !== undefined ? money.format(asset.value) : asset.meta}</em></span>
-          </button>)}
-          {model.hiddenAssetCount > 0 ? <button type="button" className="mnx-asset-card is-more" onClick={() => onNavigate('catalogs')}>
-            <strong>+{model.hiddenAssetCount}</strong><small>outros vínculos</small>
-          </button> : null}
-          {!model.assets.length && !model.hiddenAssetCount ? <div className="mnx-empty">Nenhuma conta ou cartão ativo.</div> : null}
+        <div className="mnx-liquidity-orbit" style={{ '--mnx-liquidity': `${liquidityPercent}%` } as CSSProperties}>
+          <div className="mnx-liquidity-ring">
+            <div><strong>{liquidityPercent.toFixed(0)}%</strong><span>livre</span></div>
+          </div>
+          <small>Liquidez após compromissos</small>
+          <em>{money.format(committedAmount)} comprometido</em>
         </div>
       </article>
 
-      <article className="mnx-panel mnx-chart-panel">
-        <header className="mnx-panel-heading mnx-chart-heading">
-          <div><span>Evolução financeira</span><h2>Entenda o movimento do seu dinheiro</h2></div>
+      <div className="mnx-command-metrics">
+        <article className="mnx-orbit-card is-income">
+          <span className="mnx-orbit-icon"><WebNextIcon name="receivables" /></span>
+          <div><small>Receitas</small><strong>{money.format(model.kpis.income.value)}</strong><em>{pct(model.kpis.income.changePct)} vs. anterior</em></div>
+          <i className="mnx-orbit-line" />
+        </article>
+        <article className="mnx-orbit-card is-expense">
+          <span className="mnx-orbit-icon"><WebNextIcon name="payables" /></span>
+          <div><small>Despesas</small><strong>{money.format(model.kpis.expense.value)}</strong><em>{pct(model.kpis.expense.changePct)} vs. anterior</em></div>
+          <i className="mnx-orbit-line" />
+        </article>
+        <article className="mnx-orbit-card is-result">
+          <span className="mnx-orbit-icon"><WebNextIcon name="analytics" /></span>
+          <div><small>Resultado do mês</small><strong>{money.format(model.kpis.result.value)}</strong><em>{resultPositive ? 'Resultado positivo' : 'Resultado negativo'}</em></div>
+          <i className="mnx-orbit-line" />
+        </article>
+        <article className="mnx-orbit-card is-goal">
+          <span className="mnx-orbit-icon"><WebNextIcon name="budgets" /></span>
+          <div><small>Metas</small><strong>{model.kpis.goals.total > 0 ? money.format(model.kpis.goals.total) : 'Sem meta'}</strong><em>{model.kpis.goals.active ? `${model.kpis.goals.active} ativa(s) · ${model.kpis.goals.percent.toFixed(0)}% utilizado` : 'Defina seus próximos objetivos'}</em></div>
+          <i className="mnx-orbit-line" />
+        </article>
+      </div>
+    </section>
+
+    <section className="mnx-wallet-ribbon" aria-label="Carteira financeira">
+      <header>
+        <div><span>CARTEIRA</span><strong>Contas e cartões</strong></div>
+        <div className="mnx-wallet-meta"><span>Benefício <b>{money.format(model.benefitBalance)}</b></span><button type="button" onClick={() => onNavigate('cards')}>Ver carteira <WebNextIcon name="chevron" /></button></div>
+      </header>
+      <div className="mnx-wallet-strip">
+        {model.assets.map((asset,index) => <button
+          type="button"
+          className={`mnx-wallet-card is-${asset.kind}`}
+          key={asset.id}
+          onClick={() => onNavigate(asset.kind === 'card' ? 'cards' : 'catalogs')}
+          style={{
+            '--mnx-wallet-accent': asset.accent || (asset.kind === 'card' ? '#617dff' : '#49f0df'),
+            '--mnx-wallet-depth': `${index + 1}`,
+          } as CSSProperties}
+        >
+          <span className="mnx-wallet-icon"><WebNextIcon name={asset.kind === 'card' ? 'cards' : 'catalogs'} /></span>
+          <span className="mnx-wallet-copy"><small>{asset.eyebrow}</small><strong>{asset.name}</strong><em>{asset.value !== undefined ? money.format(asset.value) : asset.meta}</em></span>
+          <WebNextIcon name="chevron" />
+        </button>)}
+        {model.hiddenAssetCount > 0 ? <button type="button" className="mnx-wallet-card is-more" onClick={() => onNavigate('catalogs')}>
+          <strong>+{model.hiddenAssetCount}</strong><span>outros vínculos</span><WebNextIcon name="chevron" />
+        </button> : null}
+        {!model.assets.length && !model.hiddenAssetCount ? <div className="mnx-empty">Nenhuma conta ou cartão ativo.</div> : null}
+      </div>
+    </section>
+
+    <section className="mnx-cockpit">
+      <article className="mnx-flow-console">
+        <header className="mnx-console-header">
+          <div><span>MEG PULSE</span><h2>O movimento do seu dinheiro</h2><p>Receitas, despesas e resultado dos últimos meses.</p></div>
           <button type="button" onClick={() => onNavigate('reports')}>Análise completa <WebNextIcon name="chevron" /></button>
         </header>
 
-        {activeTrend ? <div className="mnx-chart-readout" aria-live="polite">
-          <span><small>Mês selecionado</small><strong>{activeTrend.label}</strong></span>
-          <span className="income"><small>Receitas</small><strong>{money.format(activeTrend.income)}</strong></span>
-          <span className="expense"><small>Despesas</small><strong>{money.format(activeTrend.expense)}</strong></span>
-          <span className={activeTrend.result >= 0 ? 'result positive' : 'result negative'}><small>Saldo</small><strong>{money.format(activeTrend.result)}</strong></span>
-          <em>Passe o mouse pelos meses</em>
-        </div> : null}
+        <div className="mnx-flow-inspector">
+          {activeTrend ? <>
+            <div className="is-period"><small>Período em foco</small><strong>{activeTrend.label}</strong></div>
+            <div className="is-income"><small>Receitas</small><strong>{money.format(activeTrend.income)}</strong></div>
+            <div className="is-expense"><small>Despesas</small><strong>{money.format(activeTrend.expense)}</strong></div>
+            <div className={activeTrend.result >= 0 ? 'is-result positive' : 'is-result negative'}><small>Saldo</small><strong>{money.format(activeTrend.result)}</strong></div>
+          </> : null}
+        </div>
 
-        <div className="mnx-chart-area">
-          <div className="mnx-chart-bars">
-            {model.trend.map((item,index) => <button
+        <div className="mnx-flow-chart">
+          <div className="mnx-flow-grid" aria-hidden="true"><i/><i/><i/><i/></div>
+          <div className="mnx-flow-bars">
+            {model.trend.map((item,index)=><button
               type="button"
-              className={`mnx-chart-month ${index===activeTrendIndex?'is-active':''}`}
               key={item.month}
+              className={index===activeTrendIndex?'is-active':''}
               aria-label={`${item.label}: receitas ${money.format(item.income)}, despesas ${money.format(item.expense)}, saldo ${money.format(item.result)}`}
               onMouseEnter={()=>setActiveTrendIndex(index)}
               onFocus={()=>setActiveTrendIndex(index)}
               onClick={()=>setActiveTrendIndex(index)}
             >
-              <span className="mnx-chart-value income">{money.format(item.income)}</span>
-              <div className="mnx-chart-bar-pair">
-                <i className="income" style={{ height: `${Math.max(5, Math.abs(item.income) / maxBar * 100)}%` }} />
-                <i className="expense" style={{ height: `${Math.max(5, Math.abs(item.expense) / maxBar * 100)}%` }} />
+              <div className="mnx-flow-bar-pair">
+                <i className="income" style={{height:`${Math.max(7,Math.abs(item.income)/maxFlow*100)}%`}}/>
+                <i className="expense" style={{height:`${Math.max(7,Math.abs(item.expense)/maxFlow*100)}%`}}/>
               </div>
-              <span className="mnx-chart-month-label">{item.label}</span>
+              <span>{item.label}</span>
             </button>)}
           </div>
-          {resultPoints ? <svg viewBox="0 0 560 160" preserveAspectRatio="none" role="img" aria-label="Linha de saldo mensal">
-            <defs><linearGradient id="mnx-result-line" x1="0" x2="1"><stop offset="0" stopColor="#69f5e7"/><stop offset=".55" stopColor="#eafffc"/><stop offset="1" stopColor="#70b8ff"/></linearGradient></defs>
-            <polyline points={resultPoints} />
-            {resultCoordinates.map((point,index)=><circle key={index} className={index===activeTrendIndex?'is-active':''} cx={point.x} cy={point.y} r={index===activeTrendIndex?5.5:3.2}/>)}
+
+          {resultPoints ? <svg viewBox="0 0 600 178" preserveAspectRatio="none" aria-label="Evolução do saldo">
+            <defs>
+              <linearGradient id="mnx-area-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#6ff8e7" stopOpacity=".28"/><stop offset="1" stopColor="#6ff8e7" stopOpacity="0"/></linearGradient>
+              <linearGradient id="mnx-pulse-line" x1="0" x2="1"><stop offset="0" stopColor="#6ff8e7"/><stop offset=".5" stopColor="#f4fffd"/><stop offset="1" stopColor="#68b9ff"/></linearGradient>
+            </defs>
+            {areaPath ? <path className="mnx-flow-area" d={areaPath}/> : null}
+            <polyline className="mnx-flow-line" points={resultPoints}/>
+            {activePoint ? <line className="mnx-flow-crosshair" x1={activePoint.x} x2={activePoint.x} y1="4" y2="168"/> : null}
+            {resultCoordinates.map((point,index)=><circle key={index} className={index===activeTrendIndex?'is-active':''} cx={point.x} cy={point.y} r={index===activeTrendIndex?6:3.2}/>)}
           </svg> : null}
-          {activeTrend && activePoint ? <div className="mnx-chart-tooltip" style={{ '--mnx-chart-x': `${activeTrendPosition}%` } as CSSProperties}>
-            <strong>{activeTrend.label}</strong>
-            <span><i className="income"/>Receitas <b>{money.format(activeTrend.income)}</b></span>
-            <span><i className="expense"/>Despesas <b>{money.format(activeTrend.expense)}</b></span>
-            <span><i className="result"/>Saldo <b>{money.format(activeTrend.result)}</b></span>
-          </div> : null}
-        </div>
-        <footer className="mnx-chart-legend"><span className="income">Receitas</span><span className="expense">Despesas</span><span className="result">Saldo do mês</span></footer>
-      </article>
 
-      <article className="mnx-panel mnx-list-panel mnx-recent-panel">
-        <header className="mnx-panel-heading"><div><span>Lançamentos recentes</span><h2>Últimas movimentações</h2></div><button type="button" onClick={() => onNavigate('movements')}>Ver todos <WebNextIcon name="chevron" /></button></header>
-        <div className="mnx-home-list">
-          {model.recent.map((item) => <button type="button" key={item.id} onClick={() => onNavigate('movements')}>
-            <span className={item.amount >= 0 ? 'is-income' : 'is-expense'}><WebNextIcon name={item.amount >= 0 ? 'receivables' : 'payables'} /></span>
-            <div><strong>{item.description}</strong><small>{shortDate(item.date)} · {item.meta}</small></div>
-            <b className={item.amount >= 0 ? 'is-income' : 'is-expense'}>{item.amount >= 0 ? '+' : '−'} {money.format(Math.abs(item.amount))}</b>
-          </button>)}
-          {!model.recent.length ? <div className="mnx-empty">Nenhuma movimentação neste período.</div> : null}
+          <div className="mnx-flow-legend"><span className="income">Receitas</span><span className="expense">Despesas</span><span className="result">Saldo</span><em>Passe o mouse pelos meses</em></div>
         </div>
       </article>
 
-      <article className="mnx-panel mnx-list-panel mnx-alerts-panel">
-        <header className="mnx-panel-heading"><div><span>Pendências e alertas</span><h2>O que pede sua atenção</h2></div>{model.pendingCount ? <b className="mnx-heading-badge">{model.pendingCount}</b> : null}<button type="button" onClick={() => onNavigate('payables')}>Ver todos <WebNextIcon name="chevron" /></button></header>
-        <div className="mnx-home-list">
-          {model.alerts.map((item) => <button type="button" key={item.id} onClick={() => onNavigate('payables')}>
-            <span className={`is-${item.level}`}><WebNextIcon name={item.level === 'card' ? 'cards' : item.level === 'danger' ? 'bell' : 'calendar'} /></span>
-            <div><strong>{item.title}</strong><small>{item.meta}</small></div>
-            <b>{money.format(item.amount)}</b>
-            <em>Pagar</em>
-          </button>)}
-          {model.smartAlert ? <button type="button" className="mnx-smart-alert" onClick={() => onNavigate(model.smartAlert!.route)}>
-            <span className="is-warning"><WebNextIcon name="bell" /></span>
-            <div><strong>{model.smartAlert.title}</strong><small>{model.smartAlert.text}</small></div>
-            <WebNextIcon name="chevron" />
-          </button> : null}
-          {!model.alerts.length && !model.smartAlert ? <div className="mnx-empty"><strong>Sem alertas relevantes</strong><small>Sua agenda imediata está organizada.</small></div> : null}
-        </div>
-        <footer className="mnx-alert-footer"><span>{money.format(model.freeAfterCommitments)} livre após compromissos</span><button type="button" onClick={() => onNavigate('payables')}>Ver pendências</button></footer>
-      </article>
+      <aside className="mnx-action-console">
+        <section className="mnx-action-section">
+          <header><div><span>AGORA</span><h2>O que pede atenção</h2></div>{model.pendingCount ? <b>{model.pendingCount}</b> : null}</header>
+          <div className="mnx-attention-list">
+            {model.alerts.slice(0,3).map((item)=><button type="button" key={item.id} onClick={()=>onNavigate('payables')}>
+              <span className={`is-${item.level}`}><WebNextIcon name={item.level==='card'?'cards':item.level==='danger'?'bell':'calendar'}/></span>
+              <div><strong>{item.title}</strong><small>{item.meta}</small></div>
+              <b>{money.format(item.amount)}</b>
+            </button>)}
+            {model.smartAlert ? <button type="button" className="is-smart" onClick={()=>onNavigate(model.smartAlert!.route)}>
+              <span className="is-warning"><WebNextIcon name="bell"/></span>
+              <div><strong>{model.smartAlert.title}</strong><small>{model.smartAlert.text}</small></div>
+              <WebNextIcon name="chevron"/>
+            </button> : null}
+            {!model.alerts.length && !model.smartAlert ? <div className="mnx-mini-empty"><strong>Nada urgente</strong><span>Seu período está sob controle.</span></div> : null}
+          </div>
+          <footer><span><strong>{money.format(model.freeAfterCommitments)}</strong> livre após compromissos</span><button type="button" onClick={()=>onNavigate('payables')}>Abrir pendências</button></footer>
+        </section>
+
+        <section className="mnx-action-section is-recent">
+          <header><div><span>ÚLTIMOS MOVIMENTOS</span><h2>Atividade recente</h2></div><button type="button" onClick={()=>onNavigate('movements')}>Ver todos</button></header>
+          <div className="mnx-recent-stream">
+            {model.recent.slice(0,3).map((item)=><button type="button" key={item.id} onClick={()=>onNavigate('movements')}>
+              <span className={item.amount>=0?'is-income':'is-expense'}><WebNextIcon name={item.amount>=0?'receivables':'payables'}/></span>
+              <div><strong>{item.description}</strong><small>{shortDate(item.date)} · {item.meta}</small></div>
+              <b className={item.amount>=0?'is-income':'is-expense'}>{item.amount>=0?'+':'−'} {money.format(Math.abs(item.amount))}</b>
+            </button>)}
+            {!model.recent.length ? <div className="mnx-mini-empty"><strong>Sem movimentações</strong><span>Nada registrado neste período.</span></div> : null}
+          </div>
+        </section>
+      </aside>
     </section>
   </section>;
 }
