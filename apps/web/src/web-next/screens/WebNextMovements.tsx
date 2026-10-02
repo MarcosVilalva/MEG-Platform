@@ -90,7 +90,7 @@ export function WebNextMovements({
   const dynamicTotals = useMemo(() => filteredTotals(filtered), [filtered]);
   const income = hasFilters ? dynamicTotals.income : model.summary.income;
   const expense = hasFilters ? dynamicTotals.expense : model.summary.expense;
-  const result = income - expense;
+  const result = hasFilters ? income - expense : model.summary.result;
   const pendingCount = hasFilters
     ? filtered.filter((item) => item.status === 'pending').length
     : model.summary.pendingCount;
