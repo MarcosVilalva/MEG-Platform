@@ -41,7 +41,7 @@ export function WebNextHome({
   const resultPoints = chartPoints(model.trend.map((item) => item.result));
   const resultPositive = model.kpis.result.value >= 0;
 
-  return <section className="mnx-home" data-web-next-screen="home" data-reference="web-board-1-approved">
+  return <section className="mnx-home" data-web-next-screen="home" data-reference="web-board-1-approved" data-month={model.month}>
     <section className="mnx-home-kpis" aria-label="Resumo financeiro">
       <article className="mnx-kpi mnx-kpi-income">
         <span className="mnx-kpi-icon"><WebNextIcon name="receivables" /></span>
@@ -68,7 +68,7 @@ export function WebNextHome({
 
     <section className="mnx-home-board">
       <article className="mnx-panel mnx-balance-panel">
-        <header><span>Saldo total</span><button type="button" aria-label="Abrir fluxo de caixa" onClick={() => onNavigate('home')}><WebNextIcon name="chevron" /></button></header>
+        <header><span>Saldo total</span><button type="button" aria-label="Abrir fluxo de caixa" onClick={() => onNavigate('cashflow')}><WebNextIcon name="chevron" /></button></header>
         <strong>{money.format(model.totalBalance)}</strong>
         <small>em caixa monetário</small>
         <div className={resultPositive ? 'is-positive' : 'is-negative'}>{resultPositive ? '+' : ''}{money.format(model.kpis.result.value)} no mês</div>
