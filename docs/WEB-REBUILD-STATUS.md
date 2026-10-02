@@ -25,6 +25,14 @@ O que será substituído progressivamente é a **camada visual/estrutural Web an
 
 ## 2. Fonte de verdade visual
 
+### Fidelidade visual global obrigatória
+
+As referências aprovadas são contrato visual para o **MEG Evolution inteiro**. Isso vale para todas as telas, módulos, modais e estados do sistema, não apenas para o Loading.
+
+Não aceitar implementações apenas inspiradas na referência. Quando uma composição aprovada depender de arte complexa, profundidade, cenário, iluminação ou elementos 3D/holográficos, a solução pode usar artwork dedicado do Evolution como base e manter interações/dados como camadas reais. O critério de aprovação é fidelidade visual máxima somada à funcionalidade real.
+
+
+
 Referência oficial: **5 pranchas Web aprovadas em 01/10/2026**.
 
 Regra de prioridade:
