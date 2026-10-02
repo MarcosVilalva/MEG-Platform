@@ -62,6 +62,7 @@ const settings = readFileSync(new URL('./screens/PhoenixSettings.tsx', import.me
 const notificationRecipients = readFileSync(new URL('./screens/PhoenixNotificationRecipients.tsx', import.meta.url), 'utf8');
 const loader = readFileSync(new URL('./data/load-phoenix-read-model.ts', import.meta.url), 'utf8');
 const previewMain = readFileSync(new URL('./preview-main.tsx', import.meta.url), 'utf8');
+const authFastEntry = readFileSync(new URL('./auth-fast-entry-bridge.ts', import.meta.url), 'utf8');
 const mobileLoading = readFileSync(new URL('../mobile/MegMobileLoading.tsx', import.meta.url), 'utf8');
 const mobileLoadingCss = readFileSync(new URL('../mobile/meg-mobile-loading.css', import.meta.url), 'utf8');
 const previewBootCss = readFileSync(new URL('./preview-boot.css', import.meta.url), 'utf8');
@@ -1581,6 +1582,10 @@ assert.match(productionHtml, /src\/app\/main\.tsx/,
 assert.doesNotMatch(productionHtml, /src\/phoenix\/preview-main\.tsx/,
   'Produção não deve apontar para o preview Phoenix');
 assert.match(previewMain, /PhoenixApp/);
+assert.match(authFastEntry, /if \(!form\) \{[\s\S]*removeTransition\(\);[\s\S]*return;[\s\S]*\}/,
+  'Overlay de 22% deve ser removido quando o formulário de login desaparece após autenticação.');
+assert.match(authFastEntry, /authError\) removeTransition\(\)/,
+  'Overlay de autenticação deve continuar sendo removido quando houver erro de login.');
 assert.match(previewMain, /login\(/,
   'Preview deve autenticar pelo contrato existente sem reutilizar a tela de login antiga');
 assert.match(previewMain, /logout\(/,
