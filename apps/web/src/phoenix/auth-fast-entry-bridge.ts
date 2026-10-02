@@ -48,7 +48,10 @@ if (root) {
     const reactBoot = root.querySelector('.px-preview-fullscreen-boot');
     const authError = root.querySelector('.px-preview-error');
     if (reactBoot || authError) removeTransition();
-    if (!form) return;
+    if (!form) {
+      removeTransition();
+      return;
+    }
     const busy = Boolean(form.querySelector('.px-preview-button-spinner'));
     form.toggleAttribute('inert', busy);
     form.setAttribute('aria-busy', busy ? 'true' : 'false');
