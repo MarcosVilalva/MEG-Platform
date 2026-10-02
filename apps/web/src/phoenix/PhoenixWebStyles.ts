@@ -38,5 +38,7 @@ import './meg-web-cashflow-revolution.css';
 import './meg-web-board4-reports-cashflow.css';
 // Prancha 4 Web aprovada: Planejamento e Metas sobre o núcleo real de orçamentos.
 import './meg-web-board4-planning-goals.css';
+// Home Web validada tela a tela: fidelidade da Prancha 1 carregada por último.
+import './meg-web-home-board1-fidelity.css';
 
 export {};
