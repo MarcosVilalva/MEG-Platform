@@ -1272,7 +1272,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
     return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={gridFilters[key]} options={options} sort={gridSort?.key === key ? gridSort.direction : null} onSort={(direction) => setGridSort({ key, direction })} onChange={(value) => updateGridFilter(key, value)} /></div>;
   }
 
-  return <section className="px-screen px-movements-v15" data-web-revolution="movements" data-meg-fixed-screen={nativeOperational ? 'true' : undefined} data-editor-only={editorOnly ? 'true' : undefined}>
+  return <section className="px-screen px-movements-v15" data-web-revolution="movements" data-meg-fixed-screen={nativeOperational ? 'true' : undefined} data-editor-only={editorOnly ? 'true' : undefined} style={editorOnly ? { display: 'contents' } : undefined}>
     {!editorOnly ? <>
     <section className="px-movements-overview">
       <div className="px-movement-hero-row">
