@@ -55,6 +55,7 @@ const decisionCenter = readFileSync(new URL('./screens/PhoenixDecisionCenter.tsx
 const decisionCss = readFileSync(new URL('./phoenix-decision-center.css', import.meta.url), 'utf8');
 const megWebCss = readFileSync(new URL('./meg-web-2026.css', import.meta.url), 'utf8');
 const revolutionShellCss = readFileSync(new URL('./meg-web-shell-revolution.css', import.meta.url), 'utf8');
+const homeRevolutionCss = readFileSync(new URL('./meg-web-home-revolution.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
@@ -971,10 +972,34 @@ assert.match(styles, /\.px-user-chevron\s*\{\s*display:none!important;/,
   'Topbar não deve exibir chevron sem menu de perfil funcional');
 assert.match(styles, /\.px-home-scroll-list/,
   'Agenda e histórico da Home devem possuir rolagem interna controlada');
-assert.match(homeDashboard, /data-home-layout="premium-v1"/,
-  'Home deve expor o marcador do cockpit premium.');
+assert.match(homeDashboard, /data-home-layout="revolution-v1"/,
+  'Home Web deve expor o marcador oficial Revolution.');
 assert.match(homeDashboard, /Seu dinheiro, agora/,
   'Home deve abrir com uma leitura executiva e imediata.');
+assert.match(phoenixWebStyles, /meg-web-shell-revolution\.css'[\s\S]*meg-web-home-revolution\.css'/,
+  'Home Revolution deve ser carregada depois da fundação global e permanecer restrita ao módulo.');
+assert.match(homeDashboard, /Panorama financeiro[\s\S]*Evolução do caixa/,
+  'Home Revolution deve incorporar panorama financeiro real do fluxo de caixa.');
+assert.match(homeDashboard, /cashflowDays = data\.cashflow\.days/,
+  'Gráfico da Home deve usar a série real de fluxo de caixa.');
+assert.match(homeDashboard, /realizedCashflowPoints[\s\S]*projectedCashflowPoints/,
+  'Home deve comparar saldo realizado e projetado sem inventar série paralela.');
+assert.match(homeDashboard, /featuredCards = data\.cards\.filter/,
+  'Home Revolution deve usar cartões reais e ativos do domínio.');
+assert.match(homeDashboard, /recentMovements = data\.events\.items/,
+  'Home Revolution deve usar eventos financeiros reais nas movimentações recentes.');
+assert.match(homeDashboard, /timeZone: 'America\/Sao_Paulo'/,
+  'Atividade recente da Home deve respeitar o fuso operacional do MEG.');
+assert.match(homeRevolutionCss, /\.px-main\.px-main-home[\s\S]*grid-template-rows:var\(--meg-shell-topbar-height\) minmax\(0,1fr\)/,
+  'Home Revolution deve neutralizar a geometria fixa antiga e reutilizar o shell responsivo.');
+assert.match(homeRevolutionCss, /@container meg-content \(max-width:1180px\)/,
+  'Home Revolution deve responder ao espaço real do conteúdo, não apenas à viewport.');
+assert.match(homeRevolutionCss, /@container meg-content \(max-width:900px\)/,
+  'Home Revolution deve reorganizar panorama e widgets em notebook compacto.');
+assert.match(homeRevolutionCss, /@container meg-content \(max-width:620px\)/,
+  'Home Revolution deve preservar leitura em largura compacta.');
+assert.doesNotMatch(homeRevolutionCss, /android-cleanroom|meg-cleanroom-mobile/,
+  'Camada visual da Home Web não pode interferir no Android.');
 assert.match(homeDashboard, /Saldo disponível/);
 assert.match(homeDashboard, /Pendências abertas/);
 assert.match(homeDashboard, /Próximos 7 dias/);
