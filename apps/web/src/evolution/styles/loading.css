@@ -1,0 +1,29 @@
+.evo-loading{position:relative;isolation:isolate;width:100vw;height:100dvh;overflow:hidden;display:grid;place-items:center;background:
+  radial-gradient(circle at 50% 35%,rgba(75,186,199,.17),transparent 28%),
+  radial-gradient(circle at 18% 84%,rgba(83,207,141,.09),transparent 30%),
+  linear-gradient(135deg,#071321 0,#081627 54%,#07111f 100%)}
+.evo-loading:before{content:"";position:absolute;inset:-20%;z-index:-2;background:
+  repeating-linear-gradient(90deg,transparent 0 92px,rgba(75,186,199,.025) 93px 94px),
+  linear-gradient(112deg,transparent 42%,rgba(83,207,141,.035) 43%,transparent 45%);transform:rotate(-5deg)}
+.evo-loading-stage{width:min(92vw,920px);display:grid;justify-items:center;text-align:center;position:relative;z-index:2}
+.evo-loading-logo{width:132px;filter:drop-shadow(0 18px 34px rgba(0,0,0,.38)) drop-shadow(0 0 20px rgba(83,207,141,.12));animation:evoLogoFloat 5s ease-in-out infinite}
+.evo-loading-logo img{width:100%;height:auto}
+.evo-loading-visual{position:relative;width:min(80vw,700px);height:290px;margin:18px 0 2px}
+.evo-loading-chart{position:absolute;inset:20px 8% 12px;overflow:hidden;border:1px solid rgba(113,221,164,.28);border-radius:28px;background:linear-gradient(145deg,rgba(38,52,70,.54),rgba(16,31,49,.48) 30%,rgba(9,22,37,.78));box-shadow:var(--evo-shadow),0 0 46px rgba(75,186,199,.09);backdrop-filter:blur(16px);transform:perspective(1200px) rotateX(7deg)}
+.evo-loading-grid{position:absolute;inset:0;background:linear-gradient(rgba(75,186,199,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(75,186,199,.05) 1px,transparent 1px);background-size:54px 54px}
+.evo-loading-bars{position:absolute;left:10%;right:10%;bottom:9%;height:68%;display:flex;align-items:flex-end;gap:7%}
+.evo-loading-bars i{width:8%;border-radius:5px 5px 0 0;background:linear-gradient(180deg,#71dda4,#4bbac7);border:1px solid rgba(238,244,246,.22);box-shadow:0 0 20px rgba(83,207,141,.13)}
+.evo-loading-bars i:nth-child(1){height:24%}.evo-loading-bars i:nth-child(2){height:38%}.evo-loading-bars i:nth-child(3){height:44%}.evo-loading-bars i:nth-child(4){height:61%}.evo-loading-bars i:nth-child(5){height:74%}.evo-loading-bars i:nth-child(6){height:91%}
+.evo-loading-chart svg{position:absolute;left:6%;top:10%;width:88%;height:76%;overflow:visible;filter:drop-shadow(0 0 8px rgba(113,221,164,.5))}
+.evo-loading-chart path{fill:none;stroke:#baffeb;stroke-width:4}.evo-loading-chart circle{fill:#eef4f6;stroke:#53cf8d;stroke-width:6}
+.evo-loading-chip{position:absolute;z-index:4;width:62px;height:62px;border:1px solid rgba(113,221,164,.3);border-radius:18px;display:grid;place-items:center;background:linear-gradient(145deg,rgba(16,41,56,.92),rgba(7,19,33,.92));color:#71dda4;font-size:28px;box-shadow:0 16px 34px rgba(0,0,0,.32),0 0 24px rgba(83,207,141,.1);backdrop-filter:blur(10px)}
+.evo-loading-chip-a{left:2%;top:34px;animation:evoChip 4.6s ease-in-out infinite}.evo-loading-chip-b{right:1%;top:72px;animation:evoChip 5.2s ease-in-out infinite reverse}.evo-loading-chip-c{right:14%;bottom:2px;animation:evoChip 4.9s ease-in-out infinite .4s}
+.evo-loading-copy h1{margin:10px 0 8px;font-size:clamp(28px,3.1vw,42px);letter-spacing:-.045em}
+.evo-loading-copy p{margin:0;color:var(--evo-muted);font-size:clamp(14px,1.4vw,17px)}
+.evo-loading-progress{width:min(72vw,520px);display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px;margin-top:30px}
+.evo-loading-progress>div{height:9px;padding:1px;border:1px solid rgba(75,186,199,.4);border-radius:999px;background:#071827;overflow:hidden;box-shadow:inset 0 0 12px rgba(0,0,0,.35)}
+.evo-loading-progress span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#4bbac7,#53cf8d 70%,#71dda4);box-shadow:0 0 18px rgba(83,207,141,.5);transition:width .45s ease}
+.evo-loading-progress small{min-width:38px;text-align:right;color:#91bbb7;font-weight:800;font-size:12px}
+.evo-loading-orb{position:absolute;border-radius:50%;filter:blur(2px);pointer-events:none}.evo-loading-orb-a{width:520px;height:520px;right:-280px;top:-250px;border:1px solid rgba(75,186,199,.13);box-shadow:0 0 0 80px rgba(75,186,199,.018),0 0 0 160px rgba(83,207,141,.015)}.evo-loading-orb-b{width:430px;height:430px;left:-240px;bottom:-280px;border:1px solid rgba(83,207,141,.12);box-shadow:0 0 0 70px rgba(83,207,141,.018)}
+@keyframes evoLogoFloat{50%{transform:translateY(-8px)}}@keyframes evoChip{50%{transform:translateY(-9px)}}
+@media(max-width:720px){.evo-loading-visual{height:240px}.evo-loading-chip{width:52px;height:52px;border-radius:15px;font-size:23px}.evo-loading-chart{inset:18px 4% 8px}.evo-loading-stage{width:94vw}.evo-loading-logo{width:116px}}
