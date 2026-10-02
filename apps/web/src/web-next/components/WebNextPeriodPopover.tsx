@@ -1,3 +1,5 @@
+import '../styles/period.css';
+
 export type WebNextPeriodMode = 'month' | 'range' | 'all';
 
 export function WebNextPeriodPopover({
