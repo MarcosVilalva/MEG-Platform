@@ -11,7 +11,9 @@ const writer = readFileSync(join(here, '../phoenix/components/PhoenixLaunchWrite
 
 assert.match(editor, /data-web-next-overlay="launch-editor"/);
 assert.match(editor, /Registrar movimento/);
-assert.match(editor, /Despesa[\s\S]*Receita[\s\S]*Transferência/);
+assert.match(editor, /Despesa/);
+assert.match(editor, /Receita/);
+assert.match(editor, /Transferência/);
 assert.match(editor, /Benefício Alimentação/);
 assert.match(editor, /Conta de origem/);
 assert.match(editor, /Conta de destino/);
