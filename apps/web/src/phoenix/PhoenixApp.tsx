@@ -32,6 +32,9 @@ import { WebNextShell } from '../web-next/app/WebNextShell';
 import { WebNextHome } from '../web-next/screens/WebNextHome';
 import { buildWebNextHomeModel } from '../web-next/data/home-view-model';
 import { WebNextPeriodPopover } from '../web-next/components/WebNextPeriodPopover';
+import { WebNextSearchDialog } from '../web-next/components/WebNextSearchDialog';
+import { WebNextStatus } from '../web-next/components/WebNextStatus';
+import { buildWebNextSearchCatalog } from '../web-next/data/search-model';
 
 const loadMovementsModule = () => import('./screens/PhoenixMovementsV15');
 const loadPayablesModule = () => import('./screens/PhoenixReadScreens');
@@ -1378,6 +1381,7 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     const homeModel = viewData
       ? buildWebNextHomeModel(viewData, { closingBalance: homePeriodContext?.closingBalance })
       : null;
+    const webNextSearchCatalog = buildWebNextSearchCatalog(viewData, searchEvents || undefined);
 
     return <>
       <WebNextShell
@@ -1392,11 +1396,17 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         onProfile={() => navigate('settings')}
         onLogout={requestLogout}
       >
-        {loadState.status === 'error' && !data ? <section className="mnx-home-error" role="alert">
-          <div><strong>Não foi possível carregar sua visão financeira</strong><span>{loadState.message}</span><button type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></div>
-        </section> : homeModel ? <WebNextHome model={homeModel} onNavigate={navigate} /> : <section className="mnx-home-loading" role="status" aria-live="polite">
-          <div><i aria-hidden="true" /><strong>Carregando seus dados</strong><span>Organizando sua visão financeira no novo MEG Web.</span></div>
-        </section>}
+        {loadState.status === 'error' && !data ? <WebNextStatus
+          kind="error"
+          title="Não foi possível carregar sua visão financeira"
+          message={loadState.message}
+          actionLabel="Tentar novamente"
+          onAction={() => setRefreshKey((value) => value + 1)}
+        /> : homeModel ? <WebNextHome model={homeModel} onNavigate={navigate} /> : <WebNextStatus
+          kind="loading"
+          title="Carregando seus dados"
+          message="Organizando sua visão financeira no novo MEG Web."
+        />}
       </WebNextShell>
 
       <WebNextPeriodPopover
@@ -1419,12 +1429,12 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         onClose={closePeriodSelector}
       />
 
-      {searchOpen && viewData ? <PhoenixCommandPalette
-        data={viewData}
-        allEvents={searchEvents || undefined}
+      <WebNextSearchDialog
+        open={searchOpen}
+        results={webNextSearchCatalog}
         onClose={() => setSearchOpen(false)}
-        onNavigate={openSearchResult}
-      /> : null}
+        onOpen={(result) => openSearchResult(result.route, result.targetMonth, result.targetId, result.targetSection)}
+      />
     </>;
   }
 
