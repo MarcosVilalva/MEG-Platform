@@ -32,5 +32,7 @@ import './meg-web-cards-revolution.css';
 import './meg-web-payables-benefit-revolution.css';
 // Relatórios Revolution: central de exportação responsiva com rolagem confinada à prévia.
 import './meg-web-reports-revolution.css';
+// Fluxo de Caixa Revolution: leitura diária responsiva com grid e filtros confinados.
+import './meg-web-cashflow-revolution.css';
 
 export {};
