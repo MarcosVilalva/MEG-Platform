@@ -81,13 +81,13 @@ A partir deste marco:
 
 ### Próximo ponto obrigatório de retomada
 
-**Fundação do MEG Evolution iniciada em `feat/evolution-foundation`, com entrypoint independente `evolution.html`, raiz `apps/web/src/evolution/` e Loading clean-room. Android permanece intocado.**
+**Fundação do MEG Evolution mesclada na `main` pelo PR #524, commit `640cec2da12897c5515aa5dd6c540448f8d93154`, com entrypoint independente `evolution.html`, raiz `apps/web/src/evolution/` e Loading clean-room. CI, smoke e deploy verdes. Android permanece intocado e congelado.**
 
 Estado da fundação:
 1. raiz `apps/web/src/evolution/`: CRIADA;
 2. entrypoint `apps/web/evolution.html`: CRIADO e separado do Android;
 3. build Capacitor: permanece usando somente `index.html`, portanto não inclui o entrypoint Evolution;
-4. Loading Evolution: EM CONSTRUÇÃO / PRÓXIMO ITEM PARA VALIDAÇÃO VISUAL;
+4. Loading Evolution: PUBLICADO / PRÓXIMO ITEM PARA VALIDAÇÃO VISUAL;
 5. após validação do Loading: construir Login → Shell → Home, uma tela por vez.
 
 ### Frase obrigatória para retomar após travamento
