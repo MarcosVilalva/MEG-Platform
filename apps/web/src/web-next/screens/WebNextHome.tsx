@@ -42,6 +42,7 @@ export function WebNextHome({
   onNavigate: (route: WebNextRoute) => void;
 }) {
   const [activeTrendIndex,setActiveTrendIndex]=useState(()=>Math.max(0,model.trend.length-1));
+  const [walletIndex,setWalletIndex]=useState(0);
   const resultCoordinates = chartCoordinates(model.trend.map((item) => item.result));
   const resultPoints = resultCoordinates.map((point)=>`${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
   const areaPath = resultCoordinates.length
@@ -55,6 +56,15 @@ export function WebNextHome({
     ? clampPercent(model.freeAfterCommitments / model.totalBalance * 100)
     : 0;
   const committedAmount = Math.max(0, model.totalBalance - model.freeAfterCommitments);
+  const walletVisibleCount = Math.min(3, model.assets.length);
+  const walletAssets = model.assets.length
+    ? Array.from({ length: walletVisibleCount }, (_, offset) => model.assets[(walletIndex + offset) % model.assets.length])
+    : [];
+  const canRotateWallet = model.assets.length > walletVisibleCount;
+  const rotateWallet = (direction: number) => {
+    if (!model.assets.length) return;
+    setWalletIndex((current) => (current + direction + model.assets.length) % model.assets.length);
+  };
 
   return <section className="mnx-home mnx-command-center" data-web-next-screen="home" data-reference="web-board-1-approved" data-month={model.month}>
     <section className="mnx-command-hero" aria-label="Seu dinheiro agora">
@@ -103,30 +113,32 @@ export function WebNextHome({
       </div>
     </section>
 
-    <section className="mnx-wallet-ribbon" aria-label="Carteira financeira">
+    <section className="mnx-wallet-ribbon" aria-label="Carrossel da carteira financeira">
       <header>
         <div><span>CARTEIRA</span><strong>Contas e cartões</strong></div>
         <div className="mnx-wallet-meta"><span>Benefício <b>{money.format(model.benefitBalance)}</b></span><button type="button" onClick={() => onNavigate('cards')}>Ver carteira <WebNextIcon name="chevron" /></button></div>
       </header>
-      <div className="mnx-wallet-strip">
-        {model.assets.map((asset,index) => <button
-          type="button"
-          className={`mnx-wallet-card is-${asset.kind}`}
-          key={asset.id}
-          onClick={() => onNavigate(asset.kind === 'card' ? 'cards' : 'catalogs')}
-          style={{
-            '--mnx-wallet-accent': asset.accent || (asset.kind === 'card' ? '#617dff' : '#49f0df'),
-            '--mnx-wallet-depth': `${index + 1}`,
-          } as CSSProperties}
-        >
-          <span className="mnx-wallet-icon"><WebNextIcon name={asset.kind === 'card' ? 'cards' : 'catalogs'} /></span>
-          <span className="mnx-wallet-copy"><small>{asset.eyebrow}</small><strong>{asset.name}</strong><em>{asset.value !== undefined ? money.format(asset.value) : asset.meta}</em></span>
-          <WebNextIcon name="chevron" />
-        </button>)}
-        {model.hiddenAssetCount > 0 ? <button type="button" className="mnx-wallet-card is-more" onClick={() => onNavigate('catalogs')}>
-          <strong>+{model.hiddenAssetCount}</strong><span>outros vínculos</span><WebNextIcon name="chevron" />
-        </button> : null}
-        {!model.assets.length && !model.hiddenAssetCount ? <div className="mnx-empty">Nenhuma conta ou cartão ativo.</div> : null}
+      <div className="mnx-wallet-carousel">
+        <button className="mnx-wallet-arrow is-prev" type="button" aria-label="Cartão anterior" disabled={!canRotateWallet} onClick={()=>rotateWallet(-1)}><WebNextIcon name="chevron"/></button>
+        <div className="mnx-wallet-stage">
+          {walletAssets.map((asset,index) => <button
+            type="button"
+            className={`mnx-wallet-card is-${asset.kind} is-slot-${index}`}
+            key={asset.id}
+            onClick={() => onNavigate(asset.kind === 'card' ? 'cards' : 'catalogs')}
+            style={{
+              '--mnx-wallet-accent': asset.accent || (asset.kind === 'card' ? '#617dff' : '#49f0df'),
+              '--mnx-wallet-depth': `${index + 1}`,
+            } as CSSProperties}
+          >
+            <span className="mnx-wallet-icon"><WebNextIcon name={asset.kind === 'card' ? 'cards' : 'catalogs'} /></span>
+            <span className="mnx-wallet-copy"><small>{asset.eyebrow}</small><strong>{asset.name}</strong><em>{asset.value !== undefined ? money.format(asset.value) : asset.meta}</em></span>
+            <WebNextIcon name="chevron" />
+          </button>)}
+          {!model.assets.length ? <div className="mnx-empty">Nenhuma conta ou cartão ativo.</div> : null}
+        </div>
+        <button className="mnx-wallet-arrow is-next" type="button" aria-label="Próximo cartão" disabled={!canRotateWallet} onClick={()=>rotateWallet(1)}><WebNextIcon name="chevron"/></button>
+        {model.assets.length > 1 ? <div className="mnx-wallet-dots" aria-label="Posição do carrossel">{model.assets.map((asset,index)=><button key={asset.id} type="button" className={index===walletIndex?'is-active':''} aria-label={`Mostrar ${asset.name}`} onClick={()=>setWalletIndex(index)}/>)}</div> : null}
       </div>
     </section>
 
