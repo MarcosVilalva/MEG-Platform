@@ -1527,6 +1527,10 @@ assert.match(webGridScreens, /receipt\.reversedAt/,
   'Totais e permissões devem ignorar recebimentos já estornados.');
 assert.match(webGridScreens, /Histórico de recebimentos/,
   'Título quitado deve continuar permitindo consultar os recebimentos anteriores.');
+assert.match(webGridScreens, /const date = new Intl\.DateTimeFormat\('pt-BR',[\s\S]*timeZone: 'America\/Sao_Paulo'/,
+  'Grades operacionais Web devem formatar datas no fuso do MEG, não no fuso do navegador.');
+assert.match(webGridScreens, /date\.format\(new Date\(String\(item\.receivedAt\)\)\)/,
+  'Histórico de recebimentos deve usar o formatter operacional protegido.');
 assert.match(webGridScreens, /Confirmar estorno/,
   'Estorno deve possuir confirmação explícita e motivo auditável.');
 assert.match(webGridScreens, /setReverseReceiptId/,
