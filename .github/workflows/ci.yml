@@ -31,6 +31,34 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Validate Render API build filter
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const yaml = fs.readFileSync('render.yaml', 'utf8');
+          const required = [
+            'autoDeployTrigger: commit',
+            'buildFilter:',
+            '- apps/api/**',
+            '- packages/database/**',
+            '- package.json',
+            '- package-lock.json'
+          ];
+          for (const token of required) {
+            if (!yaml.includes(token)) {
+              console.error(`Filtro de deploy da API incompleto: faltando ${token}`);
+              process.exit(1);
+            }
+          }
+          const buildFilter = yaml.split('buildFilter:')[1]?.split('envVars:')[0] || '';
+          if (/apps\/web/.test(buildFilter)) {
+            console.error('apps/web não pode acionar deploy automático da API.');
+            process.exit(1);
+          }
+          console.log('Render protegido: mudanças Web não reiniciam a API.');
+          NODE
+
       - name: Validate API dependency manifest
         shell: bash
         run: |
