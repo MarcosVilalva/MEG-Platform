@@ -22,5 +22,7 @@ import './phoenix-launch-editor-polish.css';
 import './meg-web-2026.css';
 // Nova geometria oficial Web: precisa permanecer como a última camada.
 import './meg-web-shell-revolution.css';
+// Home Revolution: composição visual exclusiva da Home sobre a fundação responsiva.
+import './meg-web-home-revolution.css';
 
 export {};

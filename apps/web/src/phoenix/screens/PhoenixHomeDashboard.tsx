@@ -5,7 +5,7 @@ import { isPhoenixBenefitEvent } from '../home-period-summary';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const whole = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
-const dateTime = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const dateTime = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
 
 type HomeRoute = 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs' | 'users' | 'settings' | 'receivables' | 'revenues' | 'cashflow' | 'reconcile' | 'analytics' | 'decisions' | 'budgets';
 type AgendaDisplayGroup = {
@@ -141,6 +141,17 @@ function statusForDate(dueDate: string, today: string) {
   return 'PRÓXIMO';
 }
 
+function homeChartPoints(values: number[], min: number, max: number, width = 620, height = 170) {
+  if (!values.length) return '';
+  const range = Math.max(1, max - min);
+  const step = values.length > 1 ? width / (values.length - 1) : width / 2;
+  return values.map((value, index) => {
+    const x = values.length > 1 ? index * step : width / 2;
+    const y = height - ((value - min) / range) * height;
+    return `${x.toFixed(1)},${Math.max(0, Math.min(height, y)).toFixed(1)}`;
+  }).join(' ');
+}
+
 
 type HomeGlyphKind = 'home' | 'wallet' | 'pending' | 'calendar' | 'receive' | 'alert' | 'income' | 'expense' | 'benefit' | 'history' | 'launch' | 'decision';
 
@@ -268,6 +279,17 @@ export function PhoenixHomeDashboard({ data, month, onNavigate, onReviewPayables
   const openReceivables = data.receivables.filter((item) => item.status !== 'paid' && Number(item.openAmount || 0) > 0);
   const openReceivableAmount = openReceivables.reduce((sum, item) => sum + Number(item.openAmount || 0), 0);
   const latestActivity = feed[0] || null;
+  const recentMovements = data.events.items
+    .filter((event) => eventIsActive(event.status) && !isPhoenixBenefitEvent(event))
+    .sort((left, right) => String(right.date).localeCompare(String(left.date)) || String(right.updatedAt || right.createdAt || '').localeCompare(String(left.updatedAt || left.createdAt || '')))
+    .slice(0, 5);
+  const featuredCards = data.cards.filter((card) => card.isActive).slice(0, 3);
+  const cashflowDays = data.cashflow.days || [];
+  const cashflowValues = cashflowDays.flatMap((day) => [Number(day.realizedBalance || 0), Number(day.projectedBalance || 0)]);
+  const cashflowMin = Math.min(0, ...cashflowValues);
+  const cashflowMax = Math.max(1, ...cashflowValues);
+  const realizedCashflowPoints = homeChartPoints(cashflowDays.map((day) => Number(day.realizedBalance || 0)), cashflowMin, cashflowMax);
+  const projectedCashflowPoints = homeChartPoints(cashflowDays.map((day) => Number(day.projectedBalance || 0)), cashflowMin, cashflowMax);
   const benefitEvents = data.events.items
     .filter(isPhoenixBenefitEvent)
     .filter((event) => ['paid', 'reconciled', 'confirmed'].includes(event.status))
@@ -366,7 +388,7 @@ export function PhoenixHomeDashboard({ data, month, onNavigate, onReviewPayables
   }
 
   return <>
-    <section className="px-home-cockpit" data-home-layout="premium-v1">
+    <section className="px-home-cockpit" data-home-layout="revolution-v1">
       <header className="px-home-top-hero">
         <div className="px-home-top-main">
           <span className="px-home-top-icon" aria-hidden="true"><HomeGlyph kind="home" /></span>
@@ -391,6 +413,87 @@ export function PhoenixHomeDashboard({ data, month, onNavigate, onReviewPayables
         <article className={pendingAmount > 0 ? 'pending' : 'neutral'}><span className="px-home-kpi-icon" aria-hidden="true"><HomeGlyph kind="pending" /></span><div><span>Pendências abertas</span><strong>{money.format(pendingAmount)}</strong><small>{agendaRows.length} compromisso(s) na agenda</small></div></article>
         <article className={nextSevenTotal > realizedBalance ? 'warning' : 'week'}><span className="px-home-kpi-icon" aria-hidden="true"><HomeGlyph kind="calendar" /></span><div><span>Próximos 7 dias</span><strong>{money.format(nextSevenTotal)}</strong><small>{nextSevenRows.length} compromisso(s) até {shortDate(sevenDayEnd)}</small></div></article>
         <article className="receive"><span className="px-home-kpi-icon" aria-hidden="true"><HomeGlyph kind="receive" /></span><div><span>A receber</span><strong>{money.format(openReceivableAmount)}</strong><small>{openReceivables.length} título(s) em aberto</small></div></article>
+      </section>
+
+      <section className="px-home-revolution-stage" aria-label="Panorama financeiro">
+        <article className="px-home-revolution-flow">
+          <header className="px-home-revolution-head">
+            <div>
+              <span className="px-kicker">Panorama financeiro</span>
+              <h2>Evolução do caixa</h2>
+              <p>Realizado e projetado no período selecionado, sem misturar benefício ao saldo monetário.</p>
+            </div>
+            <button type="button" onClick={() => onNavigate('cashflow')}>Abrir fluxo de caixa</button>
+          </header>
+
+          <div className="px-home-revolution-flow-body">
+            <div className="px-home-revolution-balance-card">
+              <span>Saldo realizado</span>
+              <strong className={data.cashflow.realizedClosing < 0 ? 'negative' : ''}>{money.format(data.cashflow.realizedClosing)}</strong>
+              <small>Fechamento realizado do período</small>
+              <dl>
+                <div><dt>Inicial</dt><dd>{money.format(data.cashflow.openingBalance)}</dd></div>
+                <div><dt>Projetado</dt><dd>{money.format(data.cashflow.projectedClosing)}</dd></div>
+                <div><dt>Resultado</dt><dd>{money.format(data.summary.realizedResult)}</dd></div>
+              </dl>
+            </div>
+
+            <div className="px-home-revolution-chart">
+              <div className="px-home-revolution-chart-legend"><span className="realized"><i />Realizado</span><span className="projected"><i />Projetado</span></div>
+              {cashflowDays.length ? <svg viewBox="0 0 620 190" role="img" aria-label="Evolução do saldo realizado e projetado">
+                <defs>
+                  <linearGradient id="meg-home-flow-fill" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor="currentColor" stopOpacity=".18" />
+                    <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <line x1="0" y1="170" x2="620" y2="170" className="axis" />
+                <polyline points={projectedCashflowPoints} className="projected-line" />
+                <polyline points={realizedCashflowPoints} className="realized-line" />
+              </svg> : <div className="px-home-revolution-chart-empty">Sem movimentação suficiente para desenhar a evolução deste período.</div>}
+              <div className="px-home-revolution-chart-scale">
+                <span>{cashflowDays[0] ? shortDate(cashflowDays[0].date) : '—'}</span>
+                <strong>{money.format(data.cashflow.totalIncome)} entradas · {money.format(data.cashflow.totalExpense)} saídas</strong>
+                <span>{cashflowDays.length ? shortDate(cashflowDays[cashflowDays.length - 1].date) : '—'}</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <aside className="px-home-revolution-side">
+          <section className="px-home-revolution-cards">
+            <header><div><span className="px-kicker">Cartões</span><h2>Visão rápida</h2></div><button type="button" onClick={() => onNavigate('cards')}>Ver todos</button></header>
+            <div>
+              {featuredCards.map((card) => {
+                const limit = Math.max(0, Number(card.creditLimit || 0));
+                const used = Math.max(0, Number(card.usedLimit || 0));
+                const usage = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
+                return <button type="button" className="px-home-revolution-card" key={card.id} onClick={() => onNavigate('cards')}>
+                  <span className="px-home-revolution-card-brand"><i style={{ background: card.color || undefined }} /><strong>{card.name}</strong><small>{card.brand || card.issuer || 'Cartão'}</small></span>
+                  <span className="px-home-revolution-card-value"><small>Fatura</small><strong>{money.format(Number(card.payableStatementAmount ?? card.statementAmount ?? 0))}</strong></span>
+                  <span className="px-home-revolution-card-track"><i style={{ width: `${usage}%` }} /></span>
+                  <span className="px-home-revolution-card-foot"><small>{whole.format(usage)}% do limite</small><small>vence dia {card.dueDay}</small></span>
+                </button>;
+              })}
+              {!featuredCards.length ? <div className="px-home-revolution-empty">Nenhum cartão ativo cadastrado.</div> : null}
+            </div>
+          </section>
+
+          <section className="px-home-revolution-activity">
+            <header><div><span className="px-kicker">Movimentações</span><h2>Recentes</h2></div><button type="button" onClick={() => onNavigate('movements')}>Abrir lançamentos</button></header>
+            <div>
+              {recentMovements.map((event) => {
+                const signed = Number(event.signedAmount || 0);
+                return <button type="button" className="px-home-revolution-movement" key={event.id} onClick={() => onNavigate('movements')}>
+                  <span className={signed >= 0 ? 'income' : 'expense'} aria-hidden="true"><HomeGlyph kind={signed >= 0 ? 'income' : 'expense'} /></span>
+                  <div><strong>{event.description}</strong><small>{shortDate(String(event.date))} · {event.category?.name || event.paymentMethod?.name || 'Sem classificação'}</small></div>
+                  <b className={signed >= 0 ? 'income' : 'expense'}>{signed >= 0 ? '+' : '−'} {money.format(Math.abs(signed))}</b>
+                </button>;
+              })}
+              {!recentMovements.length ? <div className="px-home-revolution-empty">Nenhuma movimentação financeira neste período.</div> : null}
+            </div>
+          </section>
+        </aside>
       </section>
 
       <section className={`px-home-priority-strip ${megNow.kind === 'danger' ? 'is-danger' : megNow.kind === 'warning' ? 'is-warning' : 'is-ok'}`} aria-label="Prioridade do momento">
