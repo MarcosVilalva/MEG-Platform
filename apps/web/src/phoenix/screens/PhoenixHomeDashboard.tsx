@@ -7,7 +7,7 @@ const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL
 const whole = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
 const dateTime = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
 
-type HomeRoute = 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs' | 'users' | 'settings' | 'receivables' | 'revenues' | 'cashflow' | 'reconcile' | 'analytics' | 'decisions' | 'budgets';
+type HomeRoute = 'home' | 'movements' | 'history' | 'payables' | 'cards' | 'catalogs' | 'users' | 'settings' | 'receivables' | 'revenues' | 'cashflow' | 'reconcile' | 'analytics' | 'decisions' | 'budgets' | 'reports';
 type AgendaDisplayGroup = {
   key: string;
   dueDate: string;
@@ -284,12 +284,6 @@ export function PhoenixHomeDashboard({ data, month, onNavigate, onReviewPayables
     .sort((left, right) => String(right.date).localeCompare(String(left.date)) || String(right.updatedAt || right.createdAt || '').localeCompare(String(left.updatedAt || left.createdAt || '')))
     .slice(0, 5);
   const featuredCards = data.cards.filter((card) => card.isActive).slice(0, 3);
-  const cashflowDays = data.cashflow.days || [];
-  const cashflowValues = cashflowDays.flatMap((day) => [Number(day.realizedBalance || 0), Number(day.projectedBalance || 0)]);
-  const cashflowMin = Math.min(0, ...cashflowValues);
-  const cashflowMax = Math.max(1, ...cashflowValues);
-  const realizedCashflowPoints = homeChartPoints(cashflowDays.map((day) => Number(day.realizedBalance || 0)), cashflowMin, cashflowMax);
-  const projectedCashflowPoints = homeChartPoints(cashflowDays.map((day) => Number(day.projectedBalance || 0)), cashflowMin, cashflowMax);
   const benefitEvents = data.events.items
     .filter(isPhoenixBenefitEvent)
     .filter((event) => ['paid', 'reconciled', 'confirmed'].includes(event.status))
@@ -322,6 +316,16 @@ export function PhoenixHomeDashboard({ data, month, onNavigate, onReviewPayables
   const healthy = freeAfterCommitments >= 0;
   const heroStatus = healthy ? 'Compromissos cobertos' : 'Caixa pressionado';
   const selectedDetailAmount = detail?.items.filter((item) => detailSelected.has(item.id)).reduce((sum, item) => sum + item.amount, 0) || 0;
+  const budgetTotal = data.budgets.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const budgetUsed = data.budgets.reduce((sum, item) => sum + Number(item.used || 0), 0);
+  const budgetProgress = budgetTotal > 0 ? Math.max(0, Math.min(100, budgetUsed / budgetTotal * 100)) : 0;
+  const homeTrend = data.analytics.monthlyTrend.slice(-6);
+  const trendMax = Math.max(1, ...homeTrend.flatMap((item) => [Math.abs(item.income), Math.abs(item.expense)]));
+  const trendResultValues = homeTrend.map((item) => Number(item.result || 0));
+  const trendResultMin = Math.min(0, ...trendResultValues);
+  const trendResultMax = Math.max(1, ...trendResultValues);
+  const trendResultPoints = homeChartPoints(trendResultValues, trendResultMin, trendResultMax, 560, 145);
+  const boardAccounts = data.accounts.filter((account) => account.isActive && normalize(account.type) !== 'benefit').slice(0, 2);
 
   const overdueRows = agendaRows.filter((item) => item.dueDate < today);
   const todayRows = agendaRows.filter((item) => item.dueDate === today);
@@ -388,179 +392,114 @@ export function PhoenixHomeDashboard({ data, month, onNavigate, onReviewPayables
   }
 
   return <>
-    <section className="px-home-cockpit" data-home-layout="revolution-v1">
-      <header className="px-home-top-hero">
-        <div className="px-home-top-main">
-          <span className="px-home-top-icon" aria-hidden="true"><HomeGlyph kind="home" /></span>
-          <div>
-            <span className="px-kicker">Início · {monthLabel(month)}</span>
-            <h1>Seu dinheiro, agora</h1>
-            <p>O que está disponível, o que exige ação e o que vem pela frente — sem ruído.</p>
-          </div>
-        </div>
-        <div className="px-home-top-status">
-          <span className={`px-home-health ${healthy ? 'is-ok' : 'is-warning'}`}>{heroStatus}</span>
-          <button className="px-home-benefit-chip" type="button" title="Abrir acompanhamento do benefício" onClick={() => setBenefitOpen(true)}>
-            <HomeGlyph kind="benefit" />
-            <span>Benefício</span>
-            <strong>{money.format(data.summary.benefitBalance)}</strong>
-          </button>
-        </div>
-      </header>
-
-      <section className="px-home-kpis" aria-label="Indicadores principais">
-        <article className="balance"><span className="px-home-kpi-icon" aria-hidden="true"><HomeGlyph kind="wallet" /></span><div><span>Saldo disponível</span><strong>{money.format(realizedBalance)}</strong><small>Caixa monetário atual</small></div></article>
-        <article className={pendingAmount > 0 ? 'pending' : 'neutral'}><span className="px-home-kpi-icon" aria-hidden="true"><HomeGlyph kind="pending" /></span><div><span>Pendências abertas</span><strong>{money.format(pendingAmount)}</strong><small>{agendaRows.length} compromisso(s) na agenda</small></div></article>
-        <article className={nextSevenTotal > realizedBalance ? 'warning' : 'week'}><span className="px-home-kpi-icon" aria-hidden="true"><HomeGlyph kind="calendar" /></span><div><span>Próximos 7 dias</span><strong>{money.format(nextSevenTotal)}</strong><small>{nextSevenRows.length} compromisso(s) até {shortDate(sevenDayEnd)}</small></div></article>
-        <article className="receive"><span className="px-home-kpi-icon" aria-hidden="true"><HomeGlyph kind="receive" /></span><div><span>A receber</span><strong>{money.format(openReceivableAmount)}</strong><small>{openReceivables.length} título(s) em aberto</small></div></article>
+    <section className="px-home-cockpit meg-board1-home" data-home-layout="revolution-v1" data-home-reference="web-board-1-approved">
+      <section className="meg-board1-kpis" aria-label="Resumo financeiro">
+        <article className="income">
+          <span className="meg-board1-kpi-icon"><HomeGlyph kind="income" /></span>
+          <div><small>Receitas</small><strong>{money.format(data.summary.realizedIncome)}</strong><em>{data.analytics.delta.income >= 0 ? '+' : ''}{money.format(data.analytics.delta.income)} vs. período anterior</em></div>
+          <i aria-hidden="true">↗</i>
+        </article>
+        <article className="expense">
+          <span className="meg-board1-kpi-icon"><HomeGlyph kind="expense" /></span>
+          <div><small>Despesas</small><strong>{money.format(data.summary.realizedExpense)}</strong><em>{data.analytics.delta.expense >= 0 ? '+' : ''}{money.format(data.analytics.delta.expense)} vs. período anterior</em></div>
+          <i aria-hidden="true">↘</i>
+        </article>
+        <article className="balance">
+          <span className="meg-board1-kpi-icon"><HomeGlyph kind="wallet" /></span>
+          <div><small>Saldo do mês</small><strong>{money.format(data.summary.realizedResult)}</strong><em>Resultado financeiro realizado</em></div>
+          <i aria-hidden="true">⌁</i>
+        </article>
+        <article className="goal">
+          <span className="meg-board1-kpi-icon"><HomeGlyph kind="decision" /></span>
+          <div><small>Metas</small><strong>{budgetTotal ? money.format(budgetTotal) : 'Sem meta'}</strong><em>{budgetTotal ? `${budgetProgress.toFixed(0)}% utilizado · ${data.budgets.length} meta(s)` : 'Defina limites no planejamento'}</em></div>
+          <span className="meg-board1-goal-track"><b style={{ width: `${budgetProgress}%` }} /></span>
+        </article>
       </section>
 
-      <section className="px-home-revolution-stage" aria-label="Panorama financeiro">
-        <article className="px-home-revolution-flow">
-          <header className="px-home-revolution-head">
-            <div>
-              <span className="px-kicker">Panorama financeiro</span>
-              <h2>Evolução do caixa</h2>
-              <p>Realizado e projetado no período selecionado, sem misturar benefício ao saldo monetário.</p>
-            </div>
-            <button type="button" onClick={() => onNavigate('cashflow')}>Abrir fluxo de caixa</button>
-          </header>
+      <section className="meg-board1-dashboard" aria-label="Painel principal">
+        <article className="px-card meg-board1-total">
+          <header><span>Saldo total</span><button type="button" aria-label="Abrir fluxo de caixa" onClick={() => onNavigate('cashflow')}>›</button></header>
+          <strong>{money.format(realizedBalance)}</strong>
+          <small>em caixa monetário</small>
+          <div className={data.summary.realizedResult >= 0 ? 'positive' : 'negative'}>{data.summary.realizedResult >= 0 ? '+' : ''}{money.format(data.summary.realizedResult)} no mês</div>
+        </article>
 
-          <div className="px-home-revolution-flow-body">
-            <div className="px-home-revolution-balance-card">
-              <span>Saldo realizado</span>
-              <strong className={data.cashflow.realizedClosing < 0 ? 'negative' : ''}>{money.format(data.cashflow.realizedClosing)}</strong>
-              <small>Fechamento realizado do período</small>
-              <dl>
-                <div><dt>Inicial</dt><dd>{money.format(data.cashflow.openingBalance)}</dd></div>
-                <div><dt>Projetado</dt><dd>{money.format(data.cashflow.projectedClosing)}</dd></div>
-                <div><dt>Resultado</dt><dd>{money.format(data.summary.realizedResult)}</dd></div>
-              </dl>
-            </div>
-
-            <div className="px-home-revolution-chart">
-              <div className="px-home-revolution-chart-legend"><span className="realized"><i />Realizado</span><span className="projected"><i />Projetado</span></div>
-              {cashflowDays.length ? <svg viewBox="0 0 620 190" role="img" aria-label="Evolução do saldo realizado e projetado">
-                <defs>
-                  <linearGradient id="meg-home-flow-fill" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="currentColor" stopOpacity=".18" />
-                    <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <line x1="0" y1="170" x2="620" y2="170" className="axis" />
-                <polyline points={projectedCashflowPoints} className="projected-line" />
-                <polyline points={realizedCashflowPoints} className="realized-line" />
-              </svg> : <div className="px-home-revolution-chart-empty">Sem movimentação suficiente para desenhar a evolução deste período.</div>}
-              <div className="px-home-revolution-chart-scale">
-                <span>{cashflowDays[0] ? shortDate(cashflowDays[0].date) : '—'}</span>
-                <strong>{money.format(data.cashflow.totalIncome)} entradas · {money.format(data.cashflow.totalExpense)} saídas</strong>
-                <span>{cashflowDays.length ? shortDate(cashflowDays[cashflowDays.length - 1].date) : '—'}</span>
-              </div>
-            </div>
+        <article className="px-card meg-board1-accounts">
+          <header><div><span className="px-kicker">Contas e cartões</span><h2>Visão rápida</h2></div><button type="button" onClick={() => onNavigate('cards')}>Ver todos ›</button></header>
+          <div className="meg-board1-account-strip">
+            {boardAccounts.map((account) => <button type="button" key={account.id} className="meg-board1-account-tile" onClick={() => onNavigate('catalogs')}>
+              <span className="account-icon"><HomeGlyph kind="wallet" /></span>
+              <div><small>{account.institution || 'Conta'}</small><strong>{account.name}</strong><em>Conta ativa</em></div>
+            </button>)}
+            {featuredCards.slice(0, 2).map((card) => <button type="button" key={card.id} className="meg-board1-account-tile card" onClick={() => onNavigate('cards')}>
+              <span className="account-icon"><HomeGlyph kind="benefit" /></span>
+              <div><small>{card.brand || card.issuer || 'Cartão'}</small><strong>{card.name}</strong><em>Fatura {money.format(Number(card.payableStatementAmount ?? card.statementAmount ?? 0))}</em></div>
+            </button>)}
+            <button type="button" className="meg-board1-account-tile benefit" onClick={() => setBenefitOpen(true)}>
+              <span className="account-icon"><HomeGlyph kind="benefit" /></span>
+              <div><small>Benefício</small><strong>{money.format(data.summary.benefitBalance)}</strong><em>Saldo alimentação</em></div>
+            </button>
           </div>
         </article>
 
-        <aside className="px-home-revolution-side">
-          <section className="px-home-revolution-cards">
-            <header><div><span className="px-kicker">Cartões</span><h2>Visão rápida</h2></div><button type="button" onClick={() => onNavigate('cards')}>Ver todos</button></header>
-            <div>
-              {featuredCards.map((card) => {
-                const limit = Math.max(0, Number(card.creditLimit || 0));
-                const used = Math.max(0, Number(card.usedLimit || 0));
-                const usage = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
-                return <button type="button" className="px-home-revolution-card" key={card.id} onClick={() => onNavigate('cards')}>
-                  <span className="px-home-revolution-card-brand"><i style={{ background: card.color || undefined }} /><strong>{card.name}</strong><small>{card.brand || card.issuer || 'Cartão'}</small></span>
-                  <span className="px-home-revolution-card-value"><small>Fatura</small><strong>{money.format(Number(card.payableStatementAmount ?? card.statementAmount ?? 0))}</strong></span>
-                  <span className="px-home-revolution-card-track"><i style={{ width: `${usage}%` }} /></span>
-                  <span className="px-home-revolution-card-foot"><small>{whole.format(usage)}% do limite</small><small>vence dia {card.dueDay}</small></span>
-                </button>;
-              })}
-              {!featuredCards.length ? <div className="px-home-revolution-empty">Nenhum cartão ativo cadastrado.</div> : null}
+        <article className="px-card meg-board1-chart">
+          <header><div><span className="px-kicker">Evolução financeira</span><h2>Receitas, despesas e saldo</h2></div><button type="button" onClick={() => onNavigate('reports')}>Relatórios ›</button></header>
+          <div className="meg-board1-chart-area">
+            <div className="meg-board1-chart-bars">
+              {homeTrend.map((item) => <div className="meg-board1-chart-month" key={item.month}>
+                <div className="meg-board1-bar-pair">
+                  <i className="income" style={{ height: `${Math.max(5, Math.abs(item.income) / trendMax * 100)}%` }} />
+                  <i className="expense" style={{ height: `${Math.max(5, Math.abs(item.expense) / trendMax * 100)}%` }} />
+                </div>
+                <span>{monthLabel(item.month).split(' ')[0].slice(0,3)}</span>
+              </div>)}
             </div>
-          </section>
+            {homeTrend.length ? <svg viewBox="0 0 560 165" preserveAspectRatio="none" aria-label="Evolução do resultado financeiro">
+              <polyline points={trendResultPoints} />
+            </svg> : null}
+          </div>
+          <footer><span className="income">Receitas</span><span className="expense">Despesas</span><span className="result">Saldo</span></footer>
+        </article>
 
-          <section className="px-home-revolution-activity">
-            <header><div><span className="px-kicker">Movimentações</span><h2>Recentes</h2></div><button type="button" onClick={() => onNavigate('movements')}>Abrir lançamentos</button></header>
-            <div>
-              {recentMovements.map((event) => {
-                const signed = Number(event.signedAmount || 0);
-                return <button type="button" className="px-home-revolution-movement" key={event.id} onClick={() => onNavigate('movements')}>
-                  <span className={signed >= 0 ? 'income' : 'expense'} aria-hidden="true"><HomeGlyph kind={signed >= 0 ? 'income' : 'expense'} /></span>
-                  <div><strong>{event.description}</strong><small>{shortDate(String(event.date))} · {event.category?.name || event.paymentMethod?.name || 'Sem classificação'}</small></div>
-                  <b className={signed >= 0 ? 'income' : 'expense'}>{signed >= 0 ? '+' : '−'} {money.format(Math.abs(signed))}</b>
-                </button>;
-              })}
-              {!recentMovements.length ? <div className="px-home-revolution-empty">Nenhuma movimentação financeira neste período.</div> : null}
-            </div>
-          </section>
-        </aside>
-      </section>
-
-      <section className={`px-home-priority-strip ${megNow.kind === 'danger' ? 'is-danger' : megNow.kind === 'warning' ? 'is-warning' : 'is-ok'}`} aria-label="Prioridade do momento">
-        <span className="px-home-priority-icon" aria-hidden="true"><HomeGlyph kind={megNow.kind === 'ok' ? 'calendar' : 'alert'} /></span>
-        <div className="px-home-priority-copy"><span>{megNow.eyebrow}</span><strong>{megNow.title}</strong><small>{megNow.text}</small></div>
-        <div className="px-home-priority-action"><b>{megNow.metric}</b><button type="button" onClick={() => onNavigate(megNow.route)}>{megNow.action}</button></div>
-      </section>
-
-      <section className="px-home-workspace">
-        <article className="px-home-priority-panel">
-          <header className="px-home-panel-head">
-            <div className="px-home-panel-title"><span className="px-home-panel-icon" aria-hidden="true"><HomeGlyph kind="pending" /></span><div><h2>Prioridades de agora</h2><p>Vencimentos de {monthLabel(month)} ordenados para ação rápida.</p></div></div>
-            <div className="px-home-panel-meta"><strong>{money.format(agenda.actionableAmount)}</strong><span>em compromissos</span></div>
-          </header>
-
-          <div className="px-home-priority-list">
-            {visibleAgenda.map((group) => {
-              const status = statusForDate(group.dueDate, today);
-              return <button type="button" className={`px-home-priority-row ${status === 'VENCIDO' ? 'is-danger' : status === 'HOJE' ? 'is-today' : ''}`} key={group.key} onClick={() => openDetail(group)}>
-                <span className="px-home-due-date"><strong>{shortDate(group.dueDate)}</strong><small>{status}</small></span>
-                <span className="px-home-priority-row-copy"><strong>{group.title}</strong><small>{group.items.length > 1 ? `${group.items.length} lançamentos agrupados · ` : ''}{group.subtitle}</small></span>
-                <strong className="px-home-priority-value">{money.format(group.amount)}</strong>
-                <span className="px-home-priority-chevron" aria-hidden="true">›</span>
+        <article className="px-card meg-board1-recent">
+          <header><div><span className="px-kicker">Lançamentos recentes</span><h2>Últimas movimentações</h2></div><button type="button" onClick={() => onNavigate('movements')}>Ver todos ›</button></header>
+          <div className="meg-board1-list">
+            {recentMovements.slice(0, 5).map((event) => {
+              const signed=Number(event.signedAmount || 0);
+              return <button type="button" key={event.id} onClick={() => onNavigate('movements')}>
+                <span className={signed >= 0 ? 'income' : 'expense'}><HomeGlyph kind={signed >= 0 ? 'income' : 'expense'} /></span>
+                <div><strong>{event.description}</strong><small>{shortDate(String(event.date))} · {event.category?.name || event.paymentMethod?.name || 'Sem classificação'}</small></div>
+                <b className={signed >= 0 ? 'income' : 'expense'}>{signed >= 0 ? '+' : '−'}{money.format(Math.abs(signed))}</b>
               </button>;
             })}
-            {!visibleAgenda.length ? <div className="px-home-empty-state"><strong>Nenhum compromisso exige ação agora</strong><span>A agenda imediata está livre no período selecionado.</span></div> : null}
+            {!recentMovements.length ? <div className="px-home-revolution-empty">Nenhuma movimentação neste período.</div> : null}
           </div>
-
-          <footer className="px-home-panel-footer">
-            <span>{hiddenAgendaCount ? `+ ${hiddenAgendaCount} compromisso(s) fora da visão rápida` : 'Agenda rápida atualizada'}</span>
-            <button type="button" onClick={() => onNavigate('payables')}>Abrir Pendentes</button>
-          </footer>
         </article>
 
-        <aside className="px-home-executive-panel">
-          <header className="px-home-panel-head">
-            <div className="px-home-panel-title"><span className="px-home-panel-icon" aria-hidden="true"><HomeGlyph kind="wallet" /></span><div><h2>Resumo executivo</h2><p>Leitura curta para decidir sem abrir outro módulo.</p></div></div>
-            <span className={`px-home-signal-chip ${alerts.length ? 'has-alerts' : ''}`}>{alerts.length ? `${alerts.length} sinal(is)` : 'Sem alertas'}</span>
-          </header>
-
-          <div className="px-home-executive-balance">
-            <div><span>Dinheiro livre após compromissos</span><strong className={freeAfterCommitments < 0 ? 'negative' : ''}>{money.format(freeAfterCommitments)}</strong><small>{healthy ? 'Caixa cobre as pendências cadastradas.' : 'Pendências superam o caixa disponível.'}</small></div>
-            <div className="px-home-coverage"><div><span>Cobertura</span><strong>{whole.format(coverageRaw)}%</strong></div><div className="px-home-coverage-track"><i style={{ width: `${coverageBar}%` }} /></div></div>
+        <article className="px-card meg-board1-alerts">
+          <header><div><span className="px-kicker">Pendências e alertas</span><h2>O que pede atenção</h2></div><button type="button" onClick={() => onNavigate('payables')}>Ver todos ›</button></header>
+          <div className="meg-board1-list alerts">
+            {visibleAgenda.slice(0, 3).map((group) => {
+              const status=statusForDate(group.dueDate,today);
+              return <button type="button" key={group.key} onClick={() => openDetail(group)}>
+                <span className={status === 'VENCIDO' ? 'danger' : 'warning'}><HomeGlyph kind={status === 'VENCIDO' ? 'alert' : 'calendar'} /></span>
+                <div><strong>{group.title}</strong><small>{status === 'VENCIDO' ? 'Vencido' : `Vence em ${shortDate(group.dueDate)}`}</small></div>
+                <b>{money.format(group.amount)}</b>
+              </button>;
+            })}
+            {alerts[0] ? <button type="button" className="meg-board1-smart-alert" onClick={() => onNavigate(alerts[0].route)}>
+              <span className={alerts[0].level === 'danger' ? 'danger' : 'warning'}><HomeGlyph kind="alert" /></span>
+              <div><strong>{alerts[0].title}</strong><small>{alerts[0].text}</small></div>
+              <b>›</b>
+            </button> : null}
+            {!visibleAgenda.length && !alerts.length ? <div className="meg-board1-clear"><strong>Sem alertas relevantes</strong><small>Não há compromissos imediatos exigindo ação.</small></div> : null}
           </div>
+          <footer><span>{megNow.metric}</span><button type="button" onClick={() => onNavigate(megNow.route)}>{megNow.action}</button></footer>
+        </article>
+      </section>
 
-          <div className="px-home-executive-metrics">
-            <div><span className="px-home-mini-icon income" aria-hidden="true"><HomeGlyph kind="income" /></span><div><small>Receitas realizadas</small><strong>{money.format(data.summary.realizedIncome)}</strong></div></div>
-            <div><span className="px-home-mini-icon expense" aria-hidden="true"><HomeGlyph kind="expense" /></span><div><small>Despesas pagas</small><strong>{money.format(data.summary.realizedExpense)}</strong></div></div>
-            <div><span className="px-home-mini-icon benefit" aria-hidden="true"><HomeGlyph kind="benefit" /></span><div><small>Benefício alimentação · disponível</small><strong>{money.format(data.summary.benefitBalance)}</strong></div></div>
-            <div><span className="px-home-mini-icon total" aria-hidden="true"><HomeGlyph kind="wallet" /></span><div><small>Consolidado realizado</small><strong>{money.format(consolidatedRealized)}</strong></div></div>
-          </div>
-
-          {alerts[0] ? <button type="button" className={`px-home-smart-signal ${alerts[0].level === 'danger' ? 'is-danger' : ''}`} onClick={() => onNavigate(alerts[0].route)}>
-            <span aria-hidden="true"><HomeGlyph kind="alert" /></span><div><small>Sinal inteligente</small><strong>{alerts[0].title}</strong><p>{alerts[0].text}</p></div><b>Revisar</b>
-          </button> : <div className="px-home-smart-signal is-clear"><span aria-hidden="true">✓</span><div><small>Sinal inteligente</small><strong>Nenhuma inconsistência relevante</strong><p>Duplicidades, classificação, cartões e integridade estão sem alertas.</p></div></div>}
-
-          {latestActivity ? <button type="button" className="px-home-last-activity" onClick={() => onNavigate('history')}>
-            <span className="px-home-mini-icon" aria-hidden="true"><HomeGlyph kind="history" /></span><div><small>Última atividade</small><strong>{latestActivity.title}</strong><p>{latestActivity.description} · {dateTime.format(new Date(latestActivity.at))}</p></div><b>Histórico</b>
-          </button> : null}
-
-          <div className="px-home-quick-actions" aria-label="Ações rápidas">
-            <button type="button" onClick={() => onNavigate('movements')}><HomeGlyph kind="launch" /><span>Lançamentos</span></button>
-            <button type="button" onClick={() => onNavigate('payables')}><HomeGlyph kind="pending" /><span>Pendentes</span></button>
-            <button type="button" onClick={() => onNavigate('history')}><HomeGlyph kind="history" /><span>Histórico</span></button>
-            <button type="button" onClick={() => onNavigate('decisions')}><HomeGlyph kind="decision" /><span>Decisões</span></button>
-          </div>
-        </aside>
+      <section className="meg-board1-hidden-contract" aria-hidden="true">
+        <span>{heroStatus}</span><span>{money.format(freeAfterCommitments)}</span><span>{money.format(consolidatedRealized)}</span><span>{whole.format(coverageRaw)}%</span><span>{coverageBar}%</span><span>{latestActivity?.title || ''}</span><span>{nextDue?.title || ''}</span>
       </section>
     </section>
 

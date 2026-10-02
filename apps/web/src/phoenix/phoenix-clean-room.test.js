@@ -63,6 +63,7 @@ const reportsRevolutionCss = readFileSync(new URL('./meg-web-reports-revolution.
 const cashflowRevolutionCss = readFileSync(new URL('./meg-web-cashflow-revolution.css', import.meta.url), 'utf8');
 const board4ReportsCashflowCss = readFileSync(new URL('./meg-web-board4-reports-cashflow.css', import.meta.url), 'utf8');
 const board4PlanningGoalsCss = readFileSync(new URL('./meg-web-board4-planning-goals.css', import.meta.url), 'utf8');
+const board1HomeCss = readFileSync(new URL('./meg-web-home-board1-fidelity.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
@@ -761,12 +762,12 @@ assert.doesNotMatch(movementScreen, /Os campos marcados com \* são obrigatório
 assert.doesNotMatch(movementScreen, /method\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/,
   'Tela de Lançamentos não deve incorporar requisições de escrita diretamente');
 
-assert.match(homeDashboard, /Última atividade/,
-  'Home corrente deve preservar uma leitura resumida da atividade financeira recente.');
+assert.match(homeDashboard, /Lançamentos recentes/,
+  'Home aprovada deve preservar uma leitura resumida da atividade financeira recente.');
 assert.match(homeDashboard, /data\.activities/,
   'Home deve usar o histórico legado como compatibilidade quando necessário');
-assert.match(homeDashboard, /Prioridades de agora/,
-  'Agenda da Home deve priorizar compromissos acionáveis do período.');
+assert.match(homeDashboard, /Pendências e alertas/,
+  'Agenda da Home aprovada deve priorizar compromissos e alertas acionáveis.');
 assert.match(homeDashboard, /Fatura \$\{item\.cardLabel/,
   'Cartões devem ser agrupados por identidade e vencimento na agenda');
 assert.match(homeDashboard, /px-home-drawer/,
@@ -917,10 +918,10 @@ assert.match(cardsResponsiveCss, /px-card-command-approved-table-wrap[\s\S]*over
 
 
 
-assert.match(homeDashboard, /Benefício alimentação · disponível/,
-  'Home deve preservar o indicador de benefício do V15');
-assert.match(homeDashboard, /Consolidado realizado/,
-  'Home deve preservar o consolidado realizado do V15');
+assert.match(homeDashboard, /Saldo alimentação/,
+  'Home aprovada deve manter o benefício separado na faixa de contas e cartões');
+assert.match(homeDashboard, /Saldo total/,
+  'Home aprovada deve destacar o saldo monetário total');
 assert.match(payablesScreen, /Lançamentos pendentes/,
   'Pendentes deve usar o título canônico aprovado para a agenda mobile.');
 assert.match(homeDashboard, /onReviewPayables/,
@@ -1023,16 +1024,16 @@ assert.match(styles, /\.px-home-scroll-list/,
   'Agenda e histórico da Home devem possuir rolagem interna controlada');
 assert.match(homeDashboard, /data-home-layout="revolution-v1"/,
   'Home Web deve expor o marcador oficial Revolution.');
-assert.match(homeDashboard, /Seu dinheiro, agora/,
-  'Home deve abrir com uma leitura executiva e imediata.');
+assert.match(homeDashboard, /Saldo do mês/,
+  'Home aprovada deve abrir com leitura executiva imediata nos KPIs.');
 assert.match(phoenixWebStyles, /meg-web-shell-revolution\.css'[\s\S]*meg-web-home-revolution\.css'/,
   'Home Revolution deve ser carregada depois da fundação global e permanecer restrita ao módulo.');
-assert.match(homeDashboard, /Panorama financeiro[\s\S]*Evolução do caixa/,
-  'Home Revolution deve incorporar panorama financeiro real do fluxo de caixa.');
-assert.match(homeDashboard, /cashflowDays = data\.cashflow\.days/,
-  'Gráfico da Home deve usar a série real de fluxo de caixa.');
-assert.match(homeDashboard, /realizedCashflowPoints[\s\S]*projectedCashflowPoints/,
-  'Home deve comparar saldo realizado e projetado sem inventar série paralela.');
+assert.match(homeDashboard, /Evolução financeira[\s\S]*Receitas, despesas e saldo/,
+  'Home aprovada deve incorporar o painel financeiro da Prancha 1.');
+assert.match(homeDashboard, /homeTrend = data\.analytics\.monthlyTrend\.slice\(-6\)/,
+  'Gráfico da Home deve usar a série histórica financeira real.');
+assert.match(homeDashboard, /trendResultPoints = homeChartPoints/,
+  'Linha de saldo da Home deve ser derivada dos resultados históricos reais.');
 assert.match(homeDashboard, /featuredCards = data\.cards\.filter/,
   'Home Revolution deve usar cartões reais e ativos do domínio.');
 assert.match(homeDashboard, /recentMovements = data\.events\.items/,
@@ -1075,13 +1076,12 @@ assert.match(homeRevolutionCss, /@container meg-content \(max-width:620px\)/,
   'Home Revolution deve preservar leitura em largura compacta.');
 assert.doesNotMatch(homeRevolutionCss, /android-cleanroom|meg-cleanroom-mobile/,
   'Camada visual da Home Web não pode interferir no Android.');
-assert.match(homeDashboard, /Saldo disponível/);
-assert.match(homeDashboard, /Pendências abertas/);
-assert.match(homeDashboard, /Próximos 7 dias/);
-assert.match(homeDashboard, /A receber/);
-assert.match(homeDashboard, /Resumo executivo/);
-assert.match(homeDashboard, /px-home-benefit-chip/,
-  'Home deve mostrar o saldo do benefício no hero sem criar um quinto KPI.');
+assert.match(homeDashboard, /Receitas/);
+assert.match(homeDashboard, /Despesas/);
+assert.match(homeDashboard, /Saldo do mês/);
+assert.match(homeDashboard, /Metas/);
+assert.match(homeDashboard, /meg-board1-account-tile benefit/,
+  'Home aprovada deve mostrar o benefício separado dentro de Contas e cartões.');
 assert.match(homeDashboard, /setBenefitOpen\(true\)/,
   'Chip do benefício deve abrir o acompanhamento detalhado.');
 assert.match(homeDashboard, /Evolução do saldo/,
@@ -1245,7 +1245,7 @@ assert.match(homeNowCss, /\.px-main-home-all > \.px-content-home\.px-content-hom
   'Home Tudo deve começar imediatamente abaixo da topbar, sem compensação vertical duplicada.');
 assert.match(homeNowCss, /\.px-home-alltime > \.px-page-head[\s\S]*padding:0 2px 2px !important/,
   'Cabeçalho da Home Tudo não deve reservar faixa vazia no topo.');
-assert.match(homeDashboard, /benefício permanece separado do saldo monetário/i,
+assert.match(homeDashboard, /Saldo alimentação/,
   'Benefício deve permanecer visualmente separado do saldo monetário.');
 assert.match(homeNowCss, /\.px-home-benefit-chip/,
   'Chip de benefício deve possuir estilo próprio no hero.');
@@ -1762,6 +1762,30 @@ assert.match(board4PlanningGoalsCss, /meg-board4-goal-ring[\s\S]*conic-gradient/
   'Metas aprovadas devem possuir leitura circular de progresso.');
 assert.doesNotMatch(board4PlanningGoalsCss, /meg-operational-mobile|android-cleanroom|meg-cleanroom-mobile/,
   'Camada Web de Planejamento e Metas não pode tocar no Android.');
+
+
+assert.match(homeDashboard, /data-home-reference="web-board-1-approved"/,
+  'Home Web deve declarar explicitamente a Prancha 1 aprovada como referência visual.');
+assert.match(homeDashboard, /meg-board1-kpis[\s\S]*Receitas[\s\S]*Despesas[\s\S]*Saldo do mês[\s\S]*Metas/,
+  'Home aprovada deve abrir com os quatro indicadores da Prancha 1.');
+assert.match(homeDashboard, /Saldo total[\s\S]*Contas e cartões[\s\S]*Evolução financeira[\s\S]*Lançamentos recentes[\s\S]*Pendências e alertas/,
+  'Home deve preservar a hierarquia visual completa da Prancha 1.');
+assert.match(homeDashboard, /homeTrend = data\.analytics\.monthlyTrend\.slice\(-6\)/,
+  'Gráfico da Home deve usar a série histórica real do MEG.');
+assert.match(homeDashboard, /budgetTotal = data\.budgets\.reduce/,
+  'Card de Metas da Home deve usar os orçamentos reais do período.');
+assert.match(phoenixApp, /meg-board1-home-greeting[\s\S]*Olá, \{data\.user\.name/,
+  'Topbar da Home deve usar saudação real do usuário conforme a Prancha 1.');
+assert.match(phoenixApp, /meg-board1-top-search[\s\S]*setSearchOpen\(true\)/,
+  'Busca da topbar aprovada deve abrir a busca global real.');
+assert.match(board1HomeCss, /grid-template-columns:repeat\(12,minmax\(0,1fr\)\)/,
+  'Home ampla deve aproveitar o widescreen em doze colunas.');
+assert.match(board1HomeCss, /meg-board1-total \{ grid-column:1\/4[\s\S]*meg-board1-accounts \{ grid-column:4\/13/,
+  'Saldo total e Contas e cartões devem ocupar a primeira faixa aprovada.');
+assert.match(board1HomeCss, /meg-board1-chart \{ grid-column:1\/7[\s\S]*meg-board1-recent \{ grid-column:7\/10[\s\S]*meg-board1-alerts \{ grid-column:10\/13/,
+  'Evolução, lançamentos e alertas devem ocupar a faixa inferior aprovada.');
+assert.doesNotMatch(board1HomeCss, /android-cleanroom|meg-cleanroom-mobile|meg-operational-mobile/,
+  'Fidelidade da Home Web não pode interferir no Android.');
 
 assert.match(phoenixApp, /onLogout/,
   'Phoenix deve expor saída de sessão ao preview isolado');
