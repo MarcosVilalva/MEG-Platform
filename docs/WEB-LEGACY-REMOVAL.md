@@ -175,3 +175,18 @@ A branch `feat/web-next-home-sidebar-v2` refina a Home e o shell clean-room sem 
 - legado Phoenix continua intocado até aprovação explícita.
 
 A validação desta rodada ainda NÃO autoriza exclusão da Home Phoenix.
+
+## 11. Home Command Center
+
+A rodada visual do PR #516 foi funcionalmente válida, porém NÃO aprovada visualmente pelo usuário por ainda transmitir sensação de dashboard convencional.
+
+A branch `feat/web-next-home-command-center` substitui a composição oficial da Home no próprio `WebNextHome.tsx` e `home.css`:
+- núcleo financeiro dominante com saldo e liquidez;
+- quatro indicadores orbitais subordinados ao núcleo;
+- carteira financeira em faixa própria;
+- cockpit inferior com MEG Pulse;
+- central de atenção e atividade recente;
+- sidebar permanece a única implementação Web Next e recebe acabamento de bandeja flutuante.
+
+Não foi criada segunda Home, stylesheet paralelo ou fallback visual novo.
+O legado Phoenix permanece bloqueado para remoção até aprovação explícita desta nova composição.
