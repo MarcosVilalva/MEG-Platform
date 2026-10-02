@@ -77,7 +77,7 @@ Se uma tela ainda não foi validada, o legado necessário pode continuar ativo t
 - referências visuais aprovadas de 02/10/2026 permanecem o contrato visual;
 - fundação Evolution: mesclada na `main` pelo PR #524, commit `640cec2da12897c5515aa5dd6c540448f8d93154`;
 - entrypoint Evolution publicado em `apps/web/evolution.html`;
-- Loading Evolution publicado e aguardando validação visual;
+- Loading Evolution corrigido no PR #525 / `d4ffde4d`: logo própria com espaçamento corrigido e progresso em 100%; aguardando nova validação visual;
 - próximo marco: validar Loading e, somente depois, construir o Login Evolution sem alterar o app móvel.
 
 **Não retomar Pendentes/baixa sobre a arquitetura Web Next anterior. Primeiro construir a fundação Evolution.**
