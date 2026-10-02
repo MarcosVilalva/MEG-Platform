@@ -630,10 +630,34 @@ export function PhoenixCashflowGrid({data}:{data:PhoenixReadModel}){
   const keys=Object.keys(cashflowLabels) as CashflowKey[];
   const activeKeys=keys.filter((key)=>active(filters[key]));
   const visible=useMemo(()=>{const filtered=rows.filter((row)=>keys.every((key)=>matches(row[key],filters[key])));if(!sort)return filtered;return[...filtered].sort((a,b)=>compare(a[sort.key],b[sort.key],sort.direction));},[rows,filters,sort]);
+  const chartRows=useMemo(()=>{const source=cashflow.days;if(source.length<=14)return source;const step=Math.max(1,Math.ceil(source.length/12));return source.filter((_,index)=>index%step===0||index===source.length-1);},[cashflow.days]);
+  const chartMax=Math.max(1,...chartRows.flatMap((item)=>[Math.abs(item.income),Math.abs(item.expense),Math.abs(item.projectedBalance),Math.abs(item.realizedBalance)]));
+  const pointX=(index:number)=>60+(chartRows.length<=1?0:index*(880/(chartRows.length-1)));
+  const pointY=(value:number)=>210-Math.min(170,Math.abs(value)/chartMax*170);
+  const projectedPoints=chartRows.map((item,index)=>`${pointX(index)},${pointY(item.projectedBalance)}`).join(' ');
+  const realizedPoints=chartRows.map((item,index)=>`${pointX(index)},${pointY(item.realizedBalance)}`).join(' ');
   function header(label:string,key:CashflowKey,kind:PhoenixGridFilterKind){return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={filters[key]} sort={sort?.key===key?sort.direction:null} onSort={(direction)=>setSort({key,direction})} onChange={(value)=>setFilters((current)=>({...current,[key]:value}))}/></div>;}
-  return <section className="px-screen meg-web-cashflow-revolution"><PageIntro kicker="Fluxo de caixa" title="Fechamento realizado e projetado" text="Saldos e movimentos diários fornecidos pelo serviço oficial de fluxo de caixa." />
-    <section className="px-screen-kpis"><article><span>Saldo inicial</span><strong>{money.format(cashflow.openingBalance)}</strong><small>Antes do período</small></article><article><span>Entradas</span><strong>{money.format(cashflow.totalIncome)}</strong><small>Total do período</small></article><article className="danger"><span>Saídas</span><strong>{money.format(cashflow.totalExpense)}</strong><small>Total do período</small></article><article><span>Fechamento projetado</span><strong>{money.format(cashflow.projectedClosing)}</strong><small>Realizado: {money.format(cashflow.realizedClosing)}</small></article></section>
-    <section className="px-card px-table-card"><div className="px-panel-head"><div><span>Movimentação diária</span><h2>Realizado x projetado</h2></div><strong>{visible.length} de {rows.length} dia(s)</strong></div>
+  return <section className="px-screen meg-web-cashflow-revolution meg-board4-cashflow"><PageIntro kicker="Fluxo de caixa" title="Entradas, saídas e projeções futuras" text="Acompanhe o movimento financeiro com leitura visual imediata e detalhamento diário quando precisar." />
+    <section className="px-screen-kpis meg-board4-cashflow-kpis">
+      <article><span>Entradas</span><strong>{money.format(cashflow.totalIncome)}</strong><small>Total do período</small></article>
+      <article className="danger"><span>Saídas</span><strong>{money.format(cashflow.totalExpense)}</strong><small>Total do período</small></article>
+      <article className={cashflow.projectedClosing<0?'danger':''}><span>Saldo projetado</span><strong>{money.format(cashflow.projectedClosing)}</strong><small>Realizado: {money.format(cashflow.realizedClosing)}</small></article>
+    </section>
+
+    <section className="px-card meg-board4-cashflow-chart">
+      <header><div><span className="px-kicker">Realizado x projetado</span><h2>Evolução do período</h2></div><small>Saldo inicial {money.format(cashflow.openingBalance)}</small></header>
+      <div className="meg-board4-cashflow-legend"><span className="income">Entradas</span><span className="expense">Saídas</span><span className="realized">Saldo realizado</span><span className="projected">Saldo projetado</span></div>
+      <svg viewBox="0 0 1000 250" role="img" aria-label="Gráfico de fluxo de caixa realizado e projetado">
+        <line className="grid" x1="40" y1="210" x2="960" y2="210" />
+        <line className="grid" x1="40" y1="125" x2="960" y2="125" />
+        <line className="grid" x1="40" y1="40" x2="960" y2="40" />
+        {chartRows.map((item,index)=>{const x=pointX(index);const incomeHeight=Math.abs(item.income)/chartMax*150;const expenseHeight=Math.abs(item.expense)/chartMax*150;return <g key={item.date}><rect className="income-bar" x={x-14} y={210-incomeHeight} width="10" height={incomeHeight}/><rect className="expense-bar" x={x+4} y={210-expenseHeight} width="10" height={expenseHeight}/><text x={x} y="234" textAnchor="middle">{String(item.date).slice(8,10)}</text></g>;})}
+        {projectedPoints?<polyline className="projected-line" points={projectedPoints}/>:null}
+        {realizedPoints?<polyline className="realized-line" points={realizedPoints}/>:null}
+      </svg>
+    </section>
+
+    <section className="px-card px-table-card meg-board4-cashflow-detail"><div className="px-panel-head"><div><span>Movimentação diária</span><h2>Detalhamento do fluxo</h2></div><strong>{visible.length} de {rows.length} dia(s)</strong></div>
       {activeKeys.length||sort?<div className="px-grid-active-filters"><span>Filtros da grade</span>{activeKeys.map((key)=><span className="px-grid-filter-chip" key={key}>{summary(cashflowLabels[key],filters[key])}<button type="button" onClick={()=>{const fresh=initialCashflowFilters();setFilters((current)=>({...current,[key]:fresh[key]}));}}>×</button></span>)}{sort?<span className="px-grid-filter-chip">Ordenação: {cashflowLabels[sort.key]} {sort.direction==='asc'?'↑':'↓'}<button type="button" onClick={()=>setSort(null)}>×</button></span>:null}<button className="px-grid-clear-all" type="button" onClick={()=>{setFilters(initialCashflowFilters());setSort(null);}}>Limpar grade</button></div>:null}
       <div className="px-table-scroll"><table className="px-data-table"><thead><tr><th>{header('Data','day','date')}</th><th>{header('Entradas','income','number')}</th><th>{header('Saídas','expense','number')}</th><th>{header('Líquido','net','number')}</th><th>{header('Saldo realizado','realizedBalance','number')}</th><th>{header('Saldo projetado','projectedBalance','number')}</th><th>{header('Eventos','eventCount','number')}</th></tr></thead><tbody>{visible.map((row)=><tr key={String(row.day)}><td>{date.format(new Date(`${row.day}T12:00:00Z`))}</td><td className="px-money positive">{money.format(Number(row.income))}</td><td className="px-money negative">{money.format(Number(row.expense))}</td><td className="px-money">{money.format(Number(row.net))}</td><td className="px-money">{money.format(Number(row.realizedBalance))}</td><td className="px-money">{money.format(Number(row.projectedBalance))}</td><td>{row.eventCount}</td></tr>)}</tbody></table>{!visible.length?<p className="px-empty">Nenhuma movimentação corresponde aos filtros aplicados.</p>:null}</div>
     </section></section>;
