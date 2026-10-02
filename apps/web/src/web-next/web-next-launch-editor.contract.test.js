@@ -23,7 +23,7 @@ assert.match(editor, /Quantidade de parcelas/);
 assert.match(editor, /Visualizar parcelas/);
 assert.match(editor, /Lançamento recorrente/);
 assert.match(editor, /Salvar como modelo/);
-assert.match(editor, /RESUMO[\\s\\S]*Antes de confirmar/);
+assert.match(editor, /RESUMO[\s\S]*Antes de confirmar/);
 assert.match(editor, /Descartar alterações/);
 assert.match(editor, /BAIXA DE PENDÊNCIA/);
 assert.match(editor, /EXCLUIR LANÇAMENTO/);
