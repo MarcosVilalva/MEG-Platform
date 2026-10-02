@@ -710,3 +710,28 @@
   .evo-home-hero-copy{z-index:6}
   .evo-home-hero:after{z-index:7}
 }
+
+
+/* === EVOLUTION HOME — FIDELITY PASS 4 / HERO SCALE === */
+@media(min-width:1421px) and (min-height:791px){
+  .evo-home-hero{
+    background:
+      linear-gradient(90deg,#03131c 0%,rgba(3,19,28,.985) 26%,rgba(3,19,28,.70) 34%,rgba(3,19,28,.18) 43%,rgba(3,19,28,0) 50%),
+      url('/evolution/artwork/home-hero-scene.svg') right 47% / auto 124% no-repeat,
+      #03131c;
+  }
+  .evo-home-hero:before{
+    background:
+      radial-gradient(ellipse at 69% 0%,rgba(75,255,237,.16),transparent 31%),
+      linear-gradient(90deg,rgba(2,16,24,.96) 0%,rgba(2,16,24,.50) 31%,rgba(2,16,24,.09) 43%,transparent 49%);
+  }
+  .evo-home-hero h1{font-size:55px}
+  .evo-home-kpi-detail{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .evo-home-kpis article:first-child .evo-home-kpi-detail{font-size:9.7px}
+  .evo-home-cards .evo-credit-card.active strong{
+    color:#efffff;
+    font-size:19px;
+    letter-spacing:.055em;
+    text-shadow:0 0 12px rgba(83,244,228,.22);
+  }
+}
