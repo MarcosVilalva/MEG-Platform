@@ -9,7 +9,13 @@ services:
     # plano gratuito demorar muito mais para responder ao primeiro acesso.
     startCommand: npm run start:api
     healthCheckPath: /health
-    autoDeploy: true
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/database/**
+        - package.json
+        - package-lock.json
     envVars:
       - key: NODE_ENV
         value: production
