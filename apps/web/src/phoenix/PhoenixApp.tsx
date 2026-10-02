@@ -30,7 +30,9 @@ import {
 import { PhoenixBudgetsGrid } from './screens/PhoenixBudgetsGrid';
 import { WebNextShell } from '../web-next/app/WebNextShell';
 import { WebNextHome } from '../web-next/screens/WebNextHome';
+import { WebNextMovements } from '../web-next/screens/WebNextMovements';
 import { buildWebNextHomeModel } from '../web-next/data/home-view-model';
+import { buildWebNextMovementsModel } from '../web-next/data/movements-view-model';
 import { WebNextPeriodPopover } from '../web-next/components/WebNextPeriodPopover';
 import { WebNextSearchDialog } from '../web-next/components/WebNextSearchDialog';
 import { WebNextStatus } from '../web-next/components/WebNextStatus';
@@ -75,7 +77,7 @@ function phoenixBrandAsset(path: string) {
 type PhoenixView = PhoenixRoute;
 type ViewDefinition = { id: PhoenixView; icon: string; label: string };
 type PeriodMode = 'month' | 'range' | 'all';
-type LaunchPreset = 'expense' | 'income' | 'benefit';
+type LaunchPreset = 'expense' | 'income' | 'benefit' | 'transfer';
 type PayablesSelectionRequest = { token: number; ids: string[] };
 type SearchEventRequest = { token: number; eventId: string };
 type SearchReceivableRequest = { token: number; receivableId: string };
@@ -1409,6 +1411,86 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
           message="Organizando sua visão financeira no novo MEG Web."
         />}
       </WebNextShell>
+
+      <WebNextPeriodPopover
+        open={periodOpen}
+        mode={periodDraftMode}
+        month={periodDraftMonth}
+        start={periodStart}
+        end={periodEnd}
+        currentLabel={nativeHomePeriodTitle}
+        loading={periodLoading}
+        error={periodError}
+        onModeChange={setPeriodDraftMode}
+        onMonthChange={setPeriodDraftMonth}
+        onStartChange={setPeriodStart}
+        onEndChange={setPeriodEnd}
+        onStepMonth={stepDraftMonth}
+        onQuickCurrent={() => quickMonth(0)}
+        onQuickPrevious={() => quickMonth(-1)}
+        onApply={applyPeriod}
+        onClose={closePeriodSelector}
+      />
+
+      <WebNextSearchDialog
+        open={searchOpen}
+        results={webNextSearchCatalog}
+        onClose={() => setSearchOpen(false)}
+        onOpen={(result) => openSearchResult(result.route, result.targetMonth, result.targetId, result.targetSection)}
+      />
+    </>;
+  }
+
+  if (!nativeOperational && view === 'movements') {
+    const movementsModel = viewData ? buildWebNextMovementsModel(viewData) : null;
+    const webNextSearchCatalog = buildWebNextSearchCatalog(viewData, searchEvents || undefined);
+
+    return <>
+      <WebNextShell
+        route="movements"
+        userName={data?.user.name || 'MEG'}
+        brandSrc={phoenixBrandAsset('brand/meg-finance-system-mark.svg')}
+        periodLabel={periodActiveLabel}
+        pendingCount={pendingCount}
+        onNavigate={navigate}
+        onSearch={() => setSearchOpen(true)}
+        onLaunch={requestLaunch}
+        onPeriod={() => periodOpen ? closePeriodSelector() : openPeriodSelector()}
+        onProfile={() => navigate('settings')}
+        onLogout={requestLogout}
+      >
+        {loadState.status === 'error' && !data ? <WebNextStatus
+          kind="error"
+          title="Não foi possível carregar seus lançamentos"
+          message={loadState.message}
+          actionLabel="Tentar novamente"
+          onAction={() => setRefreshKey((value) => value + 1)}
+        /> : movementsModel ? <WebNextMovements
+          model={movementsModel}
+          periodLabel={periodActiveLabel}
+          focusEventRequest={searchEventRequest}
+          onLaunch={requestLaunch}
+          onEditEvent={requestEditEvent}
+          onOpenPeriod={openPeriodSelector}
+        /> : <WebNextStatus
+          kind="loading"
+          title="Carregando lançamentos"
+          message="Organizando receitas, despesas e transferências do período."
+        />}
+      </WebNextShell>
+
+      {viewData ? <Suspense fallback={null}><PhoenixMovementsV15
+        data={viewData}
+        periodMode={periodMode}
+        periodLabel={periodMode === 'all' ? 'Tudo' : periodMode === 'range' ? periodRangeLabel || 'Intervalo' : monthLabel(viewData.month)}
+        launchRequest={launchRequest}
+        launchPreset={launchPreset}
+        editEventRequest={editEventRequest}
+        onNavigateHome={() => navigate('home')}
+        onDataCommitted={commitSnapshot}
+        onOpenPeriod={openPeriodSelector}
+        editorOnly
+      /></Suspense> : null}
 
       <WebNextPeriodPopover
         open={periodOpen}

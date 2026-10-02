@@ -1,0 +1,1075 @@
+.mnx-movements {
+  inline-size:100%;
+  block-size:100%;
+  min-inline-size:0;
+  min-block-size:0;
+  display:grid;
+  grid-template-rows:auto auto auto minmax(0,1fr);
+  gap:12px;
+  overflow:hidden;
+  color:var(--mnx-ink);
+}
+
+.mnx-movements button,
+.mnx-movements input,
+.mnx-movements select {
+  font:inherit;
+}
+
+.mnx-movements-hero {
+  min-inline-size:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  padding:14px 18px;
+  border:1px solid rgba(73,240,223,.15);
+  border-radius:20px;
+  background:
+    radial-gradient(circle at 3% 0%,rgba(73,240,223,.10),transparent 26rem),
+    linear-gradient(145deg,rgba(8,55,59,.96),rgba(3,28,31,.985));
+  box-shadow:0 18px 38px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+.mnx-movements-title {
+  min-inline-size:0;
+}
+
+.mnx-movements-title>span {
+  color:var(--mnx-neon);
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:.16em;
+}
+
+.mnx-movements-title h1 {
+  margin:3px 0 2px;
+  color:#f7fffe;
+  font-size:clamp(27px,2vw,38px);
+  line-height:1;
+  letter-spacing:-.045em;
+}
+
+.mnx-movements-title p {
+  margin:0;
+  color:#8db4af;
+  font-size:11px;
+}
+
+.mnx-movements-actions {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.mnx-movements-actions button {
+  min-block-size:42px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 14px;
+  border:1px solid rgba(91,204,193,.18);
+  border-radius:12px;
+  background:rgba(255,255,255,.025);
+  color:#b8d8d4;
+  cursor:pointer;
+  transition:transform var(--mnx-fast),border-color var(--mnx-fast),background var(--mnx-fast),box-shadow var(--mnx-fast);
+}
+
+.mnx-movements-actions button:hover {
+  transform:translateY(-1px);
+  border-color:rgba(73,240,223,.34);
+  background:rgba(73,240,223,.055);
+  color:#f4fffd;
+}
+
+.mnx-movements-actions button.is-primary {
+  border-color:rgba(73,240,223,.46);
+  background:linear-gradient(145deg,rgba(73,240,223,.22),rgba(19,126,121,.18));
+  color:#f6fffe;
+  box-shadow:0 0 24px rgba(73,240,223,.10),inset 0 1px 0 rgba(255,255,255,.07);
+}
+
+.mnx-movements-actions svg {
+  inline-size:17px;
+  block-size:17px;
+  color:var(--mnx-neon);
+}
+
+.mnx-movements-actions span {
+  font-size:10px;
+  font-weight:850;
+  white-space:nowrap;
+}
+
+.mnx-movement-kpis {
+  min-inline-size:0;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+
+.mnx-movement-kpis article {
+  min-inline-size:0;
+  min-block-size:78px;
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  align-items:center;
+  gap:10px;
+  padding:10px 13px;
+  overflow:hidden;
+  position:relative;
+  border:1px solid rgba(93,202,192,.13);
+  border-radius:16px;
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.025),transparent 30%),
+    rgba(4,35,38,.92);
+  box-shadow:0 12px 28px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+.mnx-movement-kpis article::after {
+  content:'';
+  position:absolute;
+  inset:auto -12px -34px auto;
+  inline-size:100px;
+  block-size:70px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(73,240,223,.065),transparent 66%);
+  pointer-events:none;
+}
+
+.mnx-movement-kpis article>span {
+  inline-size:42px;
+  block-size:42px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(255,255,255,.045);
+  border-radius:13px;
+  background:rgba(255,255,255,.025);
+}
+
+.mnx-movement-kpis article>span svg {
+  inline-size:20px;
+  block-size:20px;
+}
+
+.mnx-movement-kpis article>div {
+  min-inline-size:0;
+  display:grid;
+  gap:2px;
+}
+
+.mnx-movement-kpis small,
+.mnx-movement-kpis em {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.mnx-movement-kpis small {
+  color:#82a5a1;
+  font-size:9px;
+  font-weight:780;
+}
+
+.mnx-movement-kpis strong {
+  overflow:hidden;
+  color:#f2fffd;
+  font-size:clamp(17px,1.35vw,23px);
+  line-height:1.08;
+  letter-spacing:-.035em;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.mnx-movement-kpis em {
+  color:#557f7a;
+  font-size:8px;
+  font-style:normal;
+}
+
+.mnx-movement-kpis .is-income>span,
+.mnx-movement-kpis .is-income strong {
+  color:#6df3bb;
+}
+
+.mnx-movement-kpis .is-expense>span,
+.mnx-movement-kpis .is-expense strong {
+  color:#ff8499;
+}
+
+.mnx-movement-kpis .is-result>span {
+  color:#78ccff;
+}
+
+.mnx-movement-kpis .is-result.positive strong {
+  color:#72efd2;
+}
+
+.mnx-movement-kpis .is-result.negative strong {
+  color:#ff8499;
+}
+
+.mnx-movement-kpis .is-pending>span {
+  color:#f5c86c;
+}
+
+.mnx-movement-toolbar {
+  min-inline-size:0;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border:1px solid rgba(83,197,187,.13);
+  border-radius:16px;
+  background:rgba(3,29,32,.91);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.02);
+}
+
+.mnx-movement-search {
+  min-inline-size:210px;
+  flex:1 1 320px;
+  block-size:40px;
+  display:grid;
+  grid-template-columns:18px minmax(0,1fr) 28px;
+  align-items:center;
+  gap:8px;
+  padding:0 8px 0 11px;
+  border:1px solid rgba(101,197,188,.14);
+  border-radius:11px;
+  background:rgba(0,0,0,.11);
+}
+
+.mnx-movement-search:focus-within {
+  border-color:rgba(73,240,223,.42);
+  box-shadow:0 0 0 3px rgba(73,240,223,.055);
+}
+
+.mnx-movement-search>svg {
+  inline-size:17px;
+  block-size:17px;
+  color:#709d98;
+}
+
+.mnx-movement-search input {
+  min-inline-size:0;
+  inline-size:100%;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#eafffc;
+  font-size:10px;
+}
+
+.mnx-movement-search input::placeholder {
+  color:#527974;
+}
+
+.mnx-movement-search button {
+  inline-size:28px;
+  block-size:28px;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:#739b96;
+  cursor:pointer;
+}
+
+.mnx-movement-search button:hover {
+  background:rgba(73,240,223,.06);
+  color:#eafffc;
+}
+
+.mnx-movement-type-filter {
+  min-inline-size:max-content;
+  display:flex;
+  align-items:center;
+  gap:3px;
+  padding:3px;
+  border:1px solid rgba(101,197,188,.10);
+  border-radius:11px;
+  background:rgba(0,0,0,.10);
+}
+
+.mnx-movement-type-filter button {
+  min-block-size:32px;
+  padding:0 9px;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:#71938f;
+  font-size:9px;
+  font-weight:820;
+  cursor:pointer;
+}
+
+.mnx-movement-type-filter button.is-active {
+  background:linear-gradient(145deg,rgba(73,240,223,.16),rgba(73,240,223,.055));
+  color:#edfffc;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+.mnx-movement-select {
+  min-inline-size:126px;
+  block-size:40px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  padding:0 7px 0 9px;
+  border:1px solid rgba(101,197,188,.12);
+  border-radius:11px;
+  background:rgba(0,0,0,.10);
+}
+
+.mnx-movement-select>span {
+  display:none;
+}
+
+.mnx-movement-select select {
+  min-inline-size:0;
+  inline-size:100%;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#a9cbc6;
+  font-size:9px;
+  font-weight:720;
+  cursor:pointer;
+}
+
+.mnx-movement-select select option {
+  background:#062c30;
+  color:#e9fffc;
+}
+
+.mnx-movement-select.is-account {
+  min-inline-size:142px;
+  max-inline-size:180px;
+}
+
+.mnx-movement-period,
+.mnx-movement-clear {
+  block-size:40px;
+  flex:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  padding:0 10px;
+  border:1px solid rgba(101,197,188,.14);
+  border-radius:11px;
+  background:rgba(255,255,255,.02);
+  color:#a6c7c3;
+  cursor:pointer;
+}
+
+.mnx-movement-period svg {
+  inline-size:15px;
+  block-size:15px;
+  color:var(--mnx-neon);
+}
+
+.mnx-movement-period svg:last-child {
+  inline-size:10px;
+  block-size:10px;
+  color:#658984;
+}
+
+.mnx-movement-period span,
+.mnx-movement-clear {
+  font-size:9px;
+  font-weight:800;
+}
+
+.mnx-movement-clear {
+  color:#f0b2bc;
+}
+
+.mnx-movement-ledger {
+  min-inline-size:0;
+  min-block-size:0;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
+  overflow:hidden;
+  border:1px solid rgba(83,197,187,.14);
+  border-radius:19px;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.018),transparent 12%),
+    rgba(3,26,29,.96);
+  box-shadow:0 18px 42px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+.mnx-movement-ledger>header {
+  min-inline-size:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  padding:11px 15px;
+  border-bottom:1px solid rgba(255,255,255,.045);
+}
+
+.mnx-movement-ledger>header>div {
+  min-inline-size:0;
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+}
+
+.mnx-movement-ledger>header span {
+  color:var(--mnx-neon);
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.14em;
+}
+
+.mnx-movement-ledger>header strong {
+  color:#dff4f1;
+  font-size:11px;
+}
+
+.mnx-movement-ledger>header>small {
+  overflow:hidden;
+  color:#5e8580;
+  font-size:8px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.mnx-movement-table-scroll {
+  min-inline-size:0;
+  min-block-size:0;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(73,240,223,.54) rgba(255,255,255,.02);
+}
+
+.mnx-movement-table-scroll::-webkit-scrollbar {
+  inline-size:6px;
+}
+
+.mnx-movement-table-scroll::-webkit-scrollbar-track {
+  background:rgba(255,255,255,.018);
+}
+
+.mnx-movement-table-scroll::-webkit-scrollbar-thumb {
+  border-radius:999px;
+  background:linear-gradient(180deg,rgba(73,240,223,.72),rgba(27,139,132,.36));
+  box-shadow:0 0 10px rgba(73,240,223,.14);
+}
+
+.mnx-movement-table {
+  inline-size:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+
+.mnx-movement-table th,
+.mnx-movement-table td {
+  min-inline-size:0;
+  padding:9px 8px;
+  border-bottom:1px solid rgba(255,255,255,.043);
+  overflow:hidden;
+  vertical-align:middle;
+  text-align:left;
+}
+
+.mnx-movement-table th {
+  position:sticky;
+  inset-block-start:0;
+  z-index:2;
+  background:#05272a;
+  color:#648b86;
+  font-size:7.5px;
+  font-weight:900;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+
+.mnx-movement-table td {
+  color:#8eafaa;
+  font-size:9px;
+}
+
+.mnx-movement-table tbody tr {
+  transition:background var(--mnx-fast),box-shadow var(--mnx-fast);
+}
+
+.mnx-movement-table tbody tr:hover,
+.mnx-movement-table tbody tr.is-focused {
+  background:linear-gradient(90deg,rgba(73,240,223,.07),rgba(73,240,223,.018));
+  box-shadow:inset 2px 0 0 rgba(73,240,223,.65);
+}
+
+.mnx-movement-table tbody tr:last-child td {
+  border-bottom:0;
+}
+
+.mnx-movement-table td strong,
+.mnx-movement-table td small {
+  display:block;
+  min-inline-size:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.mnx-movement-table td strong {
+  color:#cfe3df;
+  font-size:9px;
+  font-weight:780;
+}
+
+.mnx-movement-table td small {
+  margin-top:2px;
+  color:#547a75;
+  font-size:7.5px;
+}
+
+.mnx-movement-table .is-date {
+  inline-size:98px;
+}
+
+.mnx-movement-table .is-purchase {
+  inline-size:92px;
+}
+
+.mnx-movement-table .is-type {
+  inline-size:100px;
+}
+
+.mnx-movement-table .is-description {
+  inline-size:19%;
+}
+
+.mnx-movement-table .is-classification {
+  inline-size:13%;
+}
+
+.mnx-movement-table .is-value {
+  inline-size:124px;
+  text-align:right;
+}
+
+.mnx-movement-table .is-payment {
+  inline-size:13%;
+}
+
+.mnx-movement-table .is-status {
+  inline-size:104px;
+}
+
+.mnx-movement-table .is-account {
+  inline-size:12%;
+}
+
+.mnx-movement-table .is-action {
+  inline-size:42px;
+  text-align:center;
+}
+
+.mnx-movement-kind,
+.mnx-movement-status {
+  max-inline-size:100%;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:5px 7px;
+  overflow:hidden;
+  border:1px solid transparent;
+  border-radius:999px;
+  font-size:7.5px;
+  font-weight:880;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.mnx-movement-kind.is-income {
+  border-color:rgba(92,229,168,.15);
+  background:rgba(92,229,168,.085);
+  color:#71edb4;
+}
+
+.mnx-movement-kind.is-expense {
+  border-color:rgba(255,112,137,.16);
+  background:rgba(255,112,137,.08);
+  color:#ff9aaa;
+}
+
+.mnx-movement-kind.is-transfer {
+  border-color:rgba(104,185,255,.18);
+  background:rgba(104,185,255,.08);
+  color:#8bcbff;
+}
+
+.mnx-movement-table .is-value.is-income strong {
+  color:#70ecb4;
+}
+
+.mnx-movement-table .is-value.is-expense strong {
+  color:#ff93a5;
+}
+
+.mnx-movement-table .is-value.is-transfer strong {
+  color:#8bcaff;
+}
+
+.mnx-movement-status.is-pending {
+  border-color:rgba(245,196,93,.16);
+  background:rgba(245,196,93,.08);
+  color:#edc977;
+}
+
+.mnx-movement-status.is-paid {
+  border-color:rgba(92,229,168,.14);
+  background:rgba(92,229,168,.075);
+  color:#79dfb1;
+}
+
+.mnx-movement-status.is-reconciled {
+  border-color:rgba(104,185,255,.15);
+  background:rgba(104,185,255,.075);
+  color:#86c5f5;
+}
+
+.mnx-movement-status.is-other {
+  border-color:rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);
+  color:#93aaa7;
+}
+
+.mnx-movement-table .is-action button {
+  inline-size:30px;
+  block-size:30px;
+  display:grid;
+  place-items:center;
+  margin-inline:auto;
+  border:1px solid rgba(73,240,223,.10);
+  border-radius:9px;
+  background:rgba(73,240,223,.025);
+  color:#78aaa4;
+  cursor:pointer;
+}
+
+.mnx-movement-table .is-action button:hover {
+  border-color:rgba(73,240,223,.32);
+  background:rgba(73,240,223,.08);
+  color:#eafffc;
+}
+
+.mnx-movement-table .is-action svg {
+  inline-size:13px;
+  block-size:13px;
+}
+
+.mnx-movement-empty {
+  min-block-size:220px;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:6px;
+  padding:24px;
+  color:#688d88;
+  text-align:center;
+}
+
+.mnx-movement-empty>span {
+  inline-size:44px;
+  block-size:44px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(73,240,223,.12);
+  border-radius:14px;
+  background:rgba(73,240,223,.035);
+  color:#75aaa4;
+}
+
+.mnx-movement-empty svg {
+  inline-size:20px;
+  block-size:20px;
+}
+
+.mnx-movement-empty strong {
+  color:#bdd5d1;
+  font-size:11px;
+}
+
+.mnx-movement-empty small {
+  font-size:9px;
+}
+
+.mnx-movement-empty button {
+  margin-top:4px;
+  padding:7px 11px;
+  border:1px solid rgba(73,240,223,.20);
+  border-radius:9px;
+  background:rgba(73,240,223,.06);
+  color:#bce3de;
+  font-size:9px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.mnx-movement-pagination {
+  min-inline-size:0;
+  min-block-size:44px;
+  display:grid;
+  grid-template-columns:minmax(170px,1fr) auto minmax(170px,1fr);
+  align-items:center;
+  gap:12px;
+  padding:6px 12px;
+  border-top:1px solid rgba(255,255,255,.045);
+  background:rgba(0,0,0,.055);
+}
+
+.mnx-movement-pagination>div:first-child {
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+}
+
+.mnx-movement-pagination>div:first-child strong {
+  color:#bed8d4;
+  font-size:9px;
+}
+
+.mnx-movement-pagination>div:first-child span,
+.mnx-movement-page-controls span,
+.mnx-movement-pagination>label>span {
+  color:#5d817c;
+  font-size:8px;
+}
+
+.mnx-movement-page-controls {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+
+.mnx-movement-page-controls button {
+  inline-size:30px;
+  block-size:30px;
+  border:1px solid rgba(73,240,223,.10);
+  border-radius:9px;
+  background:rgba(255,255,255,.02);
+  color:#9fc2bd;
+  font-size:17px;
+  cursor:pointer;
+}
+
+.mnx-movement-page-controls button:disabled {
+  opacity:.28;
+  cursor:default;
+}
+
+.mnx-movement-page-controls strong {
+  color:#cfe4e0;
+}
+
+.mnx-movement-pagination>label {
+  justify-self:end;
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+
+.mnx-movement-pagination select {
+  block-size:30px;
+  padding:0 7px;
+  border:1px solid rgba(73,240,223,.10);
+  border-radius:9px;
+  outline:0;
+  background:#062a2e;
+  color:#9dbeba;
+  font-size:8px;
+}
+
+.mnx-visually-hidden {
+  position:absolute!important;
+  inline-size:1px!important;
+  block-size:1px!important;
+  padding:0!important;
+  margin:-1px!important;
+  overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;
+  white-space:nowrap!important;
+  border:0!important;
+}
+
+@container mnx-content (max-width:1250px) {
+  .mnx-movements-hero {
+    padding-block:11px;
+  }
+
+  .mnx-movements-title p {
+    display:none;
+  }
+
+  .mnx-movements-actions button {
+    padding-inline:11px;
+  }
+
+  .mnx-movement-toolbar {
+    flex-wrap:wrap;
+  }
+
+  .mnx-movement-search {
+    flex-basis:280px;
+  }
+
+  .mnx-movement-table .is-classification,
+  .mnx-movement-table th.is-classification,
+  .mnx-movement-table .is-account,
+  .mnx-movement-table th.is-account {
+    display:none;
+  }
+
+  .mnx-movement-table .is-description {
+    inline-size:26%;
+  }
+
+  .mnx-movement-table .is-payment {
+    inline-size:17%;
+  }
+}
+
+@container mnx-content (max-width:980px) {
+  .mnx-movements {
+    gap:9px;
+  }
+
+  .mnx-movements-hero {
+    align-items:flex-start;
+  }
+
+  .mnx-movements-actions {
+    max-inline-size:310px;
+  }
+
+  .mnx-movements-actions button {
+    min-block-size:38px;
+  }
+
+  .mnx-movement-kpis {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+  }
+
+  .mnx-movement-kpis article {
+    min-block-size:62px;
+    grid-template-columns:34px minmax(0,1fr);
+    padding:7px 10px;
+  }
+
+  .mnx-movement-kpis article>span {
+    inline-size:34px;
+    block-size:34px;
+  }
+
+  .mnx-movement-kpis article>span svg {
+    inline-size:17px;
+    block-size:17px;
+  }
+
+  .mnx-movement-kpis strong {
+    font-size:16px;
+  }
+
+  .mnx-movement-kpis em {
+    display:none;
+  }
+
+  .mnx-movement-type-filter {
+    order:3;
+  }
+
+  .mnx-movement-select {
+    order:4;
+  }
+
+  .mnx-movement-period {
+    order:5;
+  }
+
+  .mnx-movement-clear {
+    order:6;
+  }
+
+  .mnx-movement-table .is-purchase,
+  .mnx-movement-table th.is-purchase,
+  .mnx-movement-table .is-payment,
+  .mnx-movement-table th.is-payment {
+    display:none;
+  }
+
+  .mnx-movement-table .is-description {
+    inline-size:38%;
+  }
+}
+
+@container mnx-content (max-width:720px) {
+  .mnx-movements {
+    grid-template-rows:auto auto auto minmax(0,1fr);
+  }
+
+  .mnx-movements-hero {
+    display:grid;
+    gap:10px;
+  }
+
+  .mnx-movements-actions {
+    max-inline-size:none;
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+
+  .mnx-movements-actions button {
+    justify-content:center;
+    padding-inline:7px;
+  }
+
+  .mnx-movements-actions span {
+    font-size:8px;
+  }
+
+  .mnx-movement-search {
+    flex:1 1 100%;
+  }
+
+  .mnx-movement-type-filter {
+    inline-size:100%;
+    min-inline-size:0;
+  }
+
+  .mnx-movement-type-filter button {
+    flex:1 1 0;
+    min-inline-size:0;
+    padding-inline:5px;
+  }
+
+  .mnx-movement-select {
+    flex:1 1 120px;
+  }
+
+  .mnx-movement-period {
+    flex:1 1 150px;
+  }
+
+  .mnx-movement-ledger>header>small {
+    display:none;
+  }
+
+  .mnx-movement-table thead {
+    display:none;
+  }
+
+  .mnx-movement-table,
+  .mnx-movement-table tbody {
+    display:block;
+  }
+
+  .mnx-movement-table tbody {
+    padding:7px;
+  }
+
+  .mnx-movement-table tbody tr {
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) auto auto;
+    grid-template-areas:
+      "type description value action"
+      "date description status action";
+    gap:4px 8px;
+    align-items:center;
+    margin-bottom:6px;
+    padding:8px;
+    border:1px solid rgba(255,255,255,.045);
+    border-radius:12px;
+    background:rgba(255,255,255,.012);
+  }
+
+  .mnx-movement-table td {
+    display:block;
+    inline-size:auto!important;
+    padding:0;
+    border:0;
+  }
+
+  .mnx-movement-table td.is-date {
+    grid-area:date;
+  }
+
+  .mnx-movement-table td.is-type {
+    grid-area:type;
+  }
+
+  .mnx-movement-table td.is-description {
+    grid-area:description;
+  }
+
+  .mnx-movement-table td.is-value {
+    grid-area:value;
+  }
+
+  .mnx-movement-table td.is-status {
+    grid-area:status;
+    text-align:right;
+  }
+
+  .mnx-movement-table td.is-action {
+    grid-area:action;
+  }
+
+  .mnx-movement-table td.is-purchase,
+  .mnx-movement-table td.is-classification,
+  .mnx-movement-table td.is-payment,
+  .mnx-movement-table td.is-account {
+    display:none;
+  }
+
+  .mnx-movement-table td.is-description small {
+    display:block;
+  }
+
+  .mnx-movement-table td.is-date small {
+    display:none;
+  }
+
+  .mnx-movement-pagination {
+    grid-template-columns:1fr auto;
+  }
+
+  .mnx-movement-page-controls {
+    display:none;
+  }
+}
+
+@media (max-height:790px) and (min-width:981px) {
+  .mnx-movements {
+    gap:8px;
+  }
+
+  .mnx-movements-hero {
+    padding-block:9px;
+  }
+
+  .mnx-movement-kpis article {
+    min-block-size:66px;
+    padding-block:7px;
+  }
+
+  .mnx-movement-toolbar {
+    padding-block:6px;
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .mnx-movements-actions button,
+  .mnx-movement-table tbody tr {
+    transition:none;
+  }
+}
