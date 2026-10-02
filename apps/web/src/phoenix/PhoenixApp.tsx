@@ -1392,13 +1392,18 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
             {data ? <HomeHeaderIdentity data={data} onOpenMenu={() => setMobileOpen(true)} /> : null}
           </div> : <div className="px-top-left meg-web-top-left">
             <button className="px-collapse" type="button" aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} onClick={() => setCollapsed((value) => !value)}><span aria-hidden="true">☰</span></button>
-            <div className="px-top-title"><span className="meg-web-breadcrumb">MEG Finance System <b>›</b> {currentView.label}</span><strong>{currentView.label}</strong><small>{subtitles[view]}</small></div>
+            <div className={`px-top-title ${view === 'home' ? 'meg-board1-home-greeting' : ''}`}>{view === 'home' && data ? <><span className="meg-web-breadcrumb">MEG Finanças</span><strong>Olá, {data.user.name.trim().split(/\\s+/)[0]}!</strong><small>Aqui está o resumo da sua vida financeira.</small></> : <><span className="meg-web-breadcrumb">MEG Finance System <b>›</b> {currentView.label}</span><strong>{currentView.label}</strong><small>{subtitles[view]}</small></>}</div>
           </div>}
           <div className="px-top-right meg-web-top-right">
-            <div className="meg-web-quick-actions" role="group" aria-label="Ações rápidas">
-              <button className="meg-web-action expense px-top-quick-launch" type="button" onClick={() => requestLaunch('expense')}><span aria-hidden="true">＋</span><strong>Despesa</strong></button>
-              <button className="meg-web-action income" type="button" onClick={() => requestLaunch('income')}><span aria-hidden="true">＋</span><strong>Receita</strong></button>
-              <button className="meg-web-action intelligence" type="button" onClick={() => navigate('decisions')}><PhoenixNavIcon name="analytics" /><strong>Decisões</strong></button>
+            <div className={`meg-web-quick-actions ${view === 'home' ? 'meg-board1-top-tools' : ''}`} role="group" aria-label={view === 'home' ? 'Ferramentas da Home' : 'Ações rápidas'}>
+              {view === 'home' ? <>
+                <button className="meg-board1-top-search" type="button" aria-label="Buscar no MEG" title="Buscar no MEG" onClick={() => setSearchOpen(true)}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></button>
+                <button className="meg-board1-top-alert" type="button" aria-label="Abrir pendências" title="Pendências" onClick={() => navigate('payables')}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0v4l2 3H4l2-3V9Z"/><path d="M9.5 19h5"/><circle cx="18.5" cy="5.5" r="3"/></svg>{pendingCount > 0 ? <b>{pendingCount > 99 ? '99+' : pendingCount}</b> : null}</button>
+              </> : <>
+                <button className="meg-web-action expense px-top-quick-launch" type="button" onClick={() => requestLaunch('expense')}><span aria-hidden="true">＋</span><strong>Despesa</strong></button>
+                <button className="meg-web-action income" type="button" onClick={() => requestLaunch('income')}><span aria-hidden="true">＋</span><strong>Receita</strong></button>
+                <button className="meg-web-action intelligence" type="button" onClick={() => navigate('decisions')}><PhoenixNavIcon name="analytics" /><strong>Decisões</strong></button>
+              </>}
             </div>
             <div className={`px-period-menu ${periodOpen ? 'is-open' : ''}`} ref={!nativeOperational ? periodRef : undefined}>
               {!nativeOperational ? <button className={`px-period-summary ${periodLoading ? 'is-loading' : ''}`} type="button" title="Selecionar período" aria-label="Selecionar período" aria-busy={periodLoading} onClick={() => periodOpen ? closePeriodSelector() : openPeriodSelector()}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M8 14h2M14 14h2M8 18h2"/></svg><span className="px-period-active">{periodActiveLabel}</span></button> : null}
