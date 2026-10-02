@@ -11,6 +11,7 @@ import {
 } from '../app/auth-client';
 import { PhoenixApp } from './PhoenixApp';
 import { MegMobileLoading } from '../mobile/MegMobileLoading';
+import { WebNextAuth } from '../web-next/screens/WebNextAuth';
 import { loadPhoenixReadModel } from './data/load-phoenix-read-model';
 import './preview.css';
 import './phoenix-preview-parity.css';
@@ -567,6 +568,43 @@ function PhoenixPreviewRoot() {
   </>;
   if (state === 'checking' || state === 'authenticating' || state === 'preparing') return <PhoenixBootScreen stage={bootStage} />;
   if (state === 'prepare-error') return <PhoenixBootErrorScreen message={bootError} busy={busy} onRetry={() => { void retryPreparation(); }} onLogout={() => { void signOut(); }} />;
+
+  if (!MEG_MOBILE_RUNTIME) return <WebNextAuth
+    mode={mode}
+    logoSrc={previewBrandAsset('brand/meg-finance-system-mark-transparent.svg')}
+    email={email}
+    password={password}
+    showPassword={showPassword}
+    busy={busy}
+    error={error}
+    success={success}
+    registerName={registerName}
+    registerPhone={registerPhone}
+    registerEmail={registerEmail}
+    registerPassword={registerPassword}
+    registerConfirm={registerConfirm}
+    showRegisterPassword={showRegisterPassword}
+    showRegisterConfirm={showRegisterConfirm}
+    registerStrength={registerStrength}
+    accountType={accountType}
+    workspaceName={workspaceName}
+    onModeChange={switchMode}
+    onEmailChange={(value) => { setEmail(value); if (error) setError(''); }}
+    onPasswordChange={(value) => { setPassword(value); if (error) setError(''); }}
+    onTogglePassword={() => setShowPassword((value) => !value)}
+    onRegisterNameChange={setRegisterName}
+    onRegisterPhoneChange={setRegisterPhone}
+    onRegisterEmailChange={setRegisterEmail}
+    onRegisterPasswordChange={setRegisterPassword}
+    onRegisterConfirmChange={setRegisterConfirm}
+    onToggleRegisterPassword={() => setShowRegisterPassword((value) => !value)}
+    onToggleRegisterConfirm={() => setShowRegisterConfirm((value) => !value)}
+    onAccountTypeChange={setAccountType}
+    onWorkspaceNameChange={setWorkspaceName}
+    onSubmitLogin={submitLogin}
+    onSubmitRegister={submitRegister}
+    onSubmitForgot={submitForgot}
+  />;
 
   return <main className="px-preview-auth">
     <section className="px-preview-shell" aria-label="Acesso ao MEG Finanças">
