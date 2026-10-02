@@ -5,6 +5,7 @@ import type { FinancialEvent } from '../../app/finance-client';
 import { PhoenixGridFilter, type PhoenixGridFilterKind, type PhoenixGridFilterValue, type PhoenixGridOption, type PhoenixGridSortDirection } from '../PhoenixGridFilter';
 import type { PhoenixReadModel } from '../contracts';
 import { PhoenixLaunchWriteControl } from '../components/PhoenixLaunchWriteControl';
+import { WebNextLaunchEditor } from '../../web-next/components/WebNextLaunchEditor';
 import { cardDueDateForPurchase, cardDueDateForStatement, cardMonthPlus, cardStatementMonthForPurchase } from '../data/card-dates';
 import { projectCardInstallmentsIntoEvents } from '../data/card-movement-projection';
 import { phoenixWriteMessage, runPhoenixBenefitEventEdit, runPhoenixCardPurchaseCancel, runPhoenixCardPurchaseEdit, runPhoenixSimpleEventArchive, runPhoenixSimpleEventEdit } from '../data/phoenix-write-gateway';
@@ -779,6 +780,15 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
     manualDue: draft.manualDue,
   }), [draft.type, draft.recurring, draft.saveTemplate, draft.installments, draft.manualDue, negative, benefit, credit, crediario]);
 
+  const transferWriteInput = useMemo(() => draft.type === 'transfer' ? {
+    sourceAccountId: draft.accountId,
+    destinationAccountId: draft.destinationId,
+    amount: amountCents / 100,
+    date: draft.eventDate,
+    description: draft.description.trim(),
+    notes: draft.notes.trim() || undefined,
+  } : null, [draft.type, draft.accountId, draft.destinationId, draft.eventDate, draft.description, draft.notes, amountCents]);
+
   const duplicateMessage = duplicate
     ? `${duplicate.description}, ${money.format(amountFromEvent(duplicate))}, em ${date.format(new Date(duplicate.date))}.`
     : null;
@@ -1272,6 +1282,40 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
     return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={gridFilters[key]} options={options} sort={gridSort?.key === key ? gridSort.direction : null} onSort={(direction) => setGridSort({ key, direction })} onChange={(value) => updateGridFilter(key, value)} /></div>;
   }
 
+  function renderLaunchWriteControl(surface: 'phoenix' | 'web-next' = 'phoenix') {
+    return <PhoenixLaunchWriteControl
+      reviewed={reviewed}
+      missing={missing}
+      input={simpleWriteInput}
+      cardInput={cardWriteInput}
+      transferInput={transferWriteInput}
+      flow={simpleWriteFlow}
+      refreshMonth={data.month}
+      duplicateMessage={duplicateMessage}
+      surface={surface}
+      onReview={reviewLaunch}
+      onBusyChange={setLaunchWriteBusy}
+      onAccepted={() => {
+        saveAcceptedRef.current = true;
+        setDirty(false);
+        setDiscardConfirmOpen(false);
+        setLaunchOpen(false);
+        resetLaunch();
+        if (nativeOperational) onNavigateHome?.();
+      }}
+      onCommitted={(snapshot, event) => {
+        setData(snapshot);
+        onDataCommitted?.(snapshot);
+        if (event) markRecentlyUpdated(event.id);
+        setDirty(false);
+        setDiscardConfirmOpen(false);
+        setLaunchOpen(false);
+        resetLaunch();
+        if (nativeOperational && !saveAcceptedRef.current) onNavigateHome?.();
+      }}
+    />;
+  }
+
   return <section className="px-screen px-movements-v15" data-web-revolution="movements" data-meg-fixed-screen={nativeOperational ? 'true' : undefined} data-editor-only={editorOnly ? 'true' : undefined} style={editorOnly ? { display: 'contents' } : undefined}>
     {!editorOnly ? <>
     <section className="px-movements-overview">
@@ -1430,7 +1474,60 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
     </section>
     </> : null}
 
-    {launchOpen ? <>
+    {launchOpen ? editorOnly ? <WebNextLaunchEditor
+      editing={Boolean(editingEventId)}
+      draft={draft}
+      amountCents={amountCents}
+      negative={negative}
+      benefit={benefit}
+      credit={credit}
+      crediario={crediario}
+      effectiveSituation={effectiveSituation}
+      situationRule={situationRule}
+      accounts={accounts}
+      classifications={expenseClassifications}
+      expenseGroups={expenseGroups}
+      incomeCategories={incomeCategories}
+      paymentMethods={paymentMethods}
+      cards={cards}
+      selectedCardName={selectedCard?.name}
+      selectedCategoryName={selectedCategory?.name}
+      sourceAccountName={labelForAccount(data, draft.accountId)}
+      destinationAccountName={draft.destinationId ? labelForAccount(data, draft.destinationId) : 'Selecione a conta'}
+      calculatedDue={calculatedDue}
+      installmentPreview={installmentPreview}
+      validationVisible={validationVisible}
+      missing={missing}
+      duplicateMessage={duplicateMessage}
+      editMessage={editMessage}
+      advancedOpen={advancedLaunchOpen}
+      installmentPreviewOpen={installmentPreviewOpen}
+      discardConfirmOpen={discardConfirmOpen}
+      settlementConfirmOpen={settlementConfirmOpen}
+      deleteConfirmOpen={deleteConfirmOpen}
+      savingEdit={savingEdit}
+      deletingEvent={deletingEvent}
+      canArchive={canArchiveEvent}
+      writeControl={editingEventId ? null : renderLaunchWriteControl('web-next')}
+      onClose={requestCloseLaunch}
+      onDiscardConfirm={discardLaunchChanges}
+      onDiscardCancel={() => setDiscardConfirmOpen(false)}
+      onSettlementConfirm={() => { void saveEdit(); }}
+      onSettlementCancel={() => setSettlementConfirmOpen(false)}
+      onDeleteConfirm={() => { void deleteSelectedEvent(); }}
+      onDeleteCancel={() => { setDeleteConfirmOpen(false); setDeleteTargetEvent(null); }}
+      onSaveEdit={requestSaveEdit}
+      onRequestDelete={() => requestDeleteEvent()}
+      onTypeChange={changeLaunchType}
+      onDraftChange={updateDraft}
+      onClassificationChange={changeClassification}
+      onMoneyChange={onMoneyChange}
+      onMoneyKeyDown={onMoneyKeyDown}
+      onSignChange={changeAmountSign}
+      onAdvancedToggle={() => setAdvancedLaunchOpen((value) => !value)}
+      onInstallmentPreviewOpen={() => setInstallmentPreviewOpen(true)}
+      onInstallmentPreviewClose={() => setInstallmentPreviewOpen(false)}
+    /> : <>
       <button className="px-launch-backdrop" type="button" aria-label="Fechar lançamento" onClick={requestCloseLaunch} />
       <aside className="px-launch-drawer" data-web-revolution="launch-editor" data-launch-mode={editingEventId ? 'edit' : 'new'} data-phoenix-refresh-month={data.month} aria-label={editingEventId ? 'Editar lançamento' : 'Novo lançamento'}>
         <div className="px-drawer-head"><div><span className="px-kicker">{editingEventId ? 'Editar evento' : 'Novo evento'}</span><h2>{editingEventId ? 'Editar lançamento' : 'Lançamento'}</h2></div><button className="px-icon-btn" type="button" aria-label="Fechar lançamento" title="Fechar lançamento" onClick={requestCloseLaunch}>×</button></div>
@@ -1507,40 +1604,12 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
             <button className="px-secondary-action px-cancel-launch" type="button" disabled={savingEdit || deletingEvent} onClick={requestCloseLaunch}>Cancelar</button>
             {canArchiveEvent ? <button className="px-delete-launch" type="button" disabled={savingEdit || deletingEvent} onClick={() => requestDeleteEvent()}>Excluir lançamento</button> : null}
           </div>
-            : <PhoenixLaunchWriteControl
-              reviewed={reviewed}
-              missing={missing}
-              input={simpleWriteInput}
-              cardInput={cardWriteInput}
-              flow={simpleWriteFlow}
-              refreshMonth={data.month}
-              duplicateMessage={duplicateMessage}
-              onReview={reviewLaunch}
-              onBusyChange={setLaunchWriteBusy}
-              onAccepted={() => {
-                saveAcceptedRef.current = true;
-                setDirty(false);
-                setDiscardConfirmOpen(false);
-                setLaunchOpen(false);
-                resetLaunch();
-                if (nativeOperational) onNavigateHome?.();
-              }}
-              onCommitted={(snapshot, event) => {
-                setData(snapshot);
-                onDataCommitted?.(snapshot);
-                if (event) markRecentlyUpdated(event.id);
-                setDirty(false);
-                setDiscardConfirmOpen(false);
-                setLaunchOpen(false);
-                resetLaunch();
-                if (nativeOperational && !saveAcceptedRef.current) onNavigateHome?.();
-              }}
-            />}
+            : renderLaunchWriteControl()}
         </div>
       </aside>
     </> : null}
 
-    {installmentPreviewOpen && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay px-installment-preview-overlay">
+    {!editorOnly && installmentPreviewOpen && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay px-installment-preview-overlay">
       <button className="px-meg-confirm-backdrop" type="button" aria-label="Fechar visualização das parcelas" onClick={() => setInstallmentPreviewOpen(false)} />
       <section className="px-meg-confirm-dialog px-installment-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="px-installment-preview-title">
         <div className="px-meg-confirm-copy"><span className="px-kicker">Parcelamento</span><h3 id="px-installment-preview-title">{draft.installments} parcelas da compra</h3><p>{draft.description || 'Nova despesa'} · total {money.format(amountCents / 100)}</p></div>
@@ -1551,7 +1620,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
       </section>
     </div>, document.body) : null}
 
-    {discardConfirmOpen && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay">
+    {!editorOnly && discardConfirmOpen && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay">
       <button className="px-meg-confirm-backdrop" type="button" aria-label="Continuar editando" onClick={() => setDiscardConfirmOpen(false)} />
       <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-discard-title" aria-describedby="px-discard-copy">
         <div className="px-meg-confirm-icon"><MovementIcon name="warning" size={22} /></div>
@@ -1568,7 +1637,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
       </section>
     </div>, document.body) : null}
 
-    {settlementConfirmOpen && editingEvent && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay px-settlement-confirm">
+    {!editorOnly && settlementConfirmOpen && editingEvent && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay px-settlement-confirm">
       <button className="px-meg-confirm-backdrop" type="button" aria-label="Não baixar a pendência" onClick={() => setSettlementConfirmOpen(false)} />
       <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-settlement-title" aria-describedby="px-settlement-copy">
         <div className="px-meg-confirm-icon"><MovementIcon name="warning" size={22} /></div>
@@ -1585,7 +1654,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
       </section>
     </div>, document.body) : null}
 
-    {deleteConfirmOpen && (deleteTargetEvent || editingEvent) && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay px-delete-event-confirm">
+    {!editorOnly && deleteConfirmOpen && (deleteTargetEvent || editingEvent) && typeof document !== 'undefined' ? createPortal(<div className="px-meg-confirm-overlay px-delete-event-confirm">
       <button className="px-meg-confirm-backdrop" type="button" aria-label="Cancelar exclusão" onClick={() => { setDeleteConfirmOpen(false); setDeleteTargetEvent(null); }} />
       <section className="px-meg-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="px-delete-event-title" aria-describedby="px-delete-event-copy">
         <div className="px-meg-confirm-icon"><MovementIcon name="warning" size={22} /></div>
