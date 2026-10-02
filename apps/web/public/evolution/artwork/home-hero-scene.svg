@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="920" height="210" viewBox="0 0 920 210" role="img" aria-label="Cenário futurista MEG">
 <defs>
   <radialGradient id="space" cx="45%" cy="22%" r="88%"><stop offset="0" stop-color="#0b6970" stop-opacity=".35"/><stop offset=".52" stop-color="#052a35" stop-opacity=".15"/><stop offset="1" stop-color="#03131c" stop-opacity="0"/></radialGradient>
-  <radialGradient id="planet" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#37e8dc"/><stop offset=".18" stop-color="#1599a3"/><stop offset=".55" stop-color="#07556a"/><stop offset="1" stop-color="#032939"/></radialGradient>
-  <linearGradient id="mount" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a5d64"/><stop offset=".28" stop-color="#063a45"/><stop offset=".75" stop-color="#031923"/><stop offset="1" stop-color="#020f17"/></linearGradient>
+  <radialGradient id="planet" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#7ffff2"/><stop offset=".16" stop-color="#2edfd4"/><stop offset=".48" stop-color="#0d8794"/><stop offset=".78" stop-color="#075064"/><stop offset="1" stop-color="#032938"/></radialGradient>
+  <linearGradient id="mount" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#138f91"/><stop offset=".26" stop-color="#08606a"/><stop offset=".62" stop-color="#04303c"/><stop offset="1" stop-color="#02131c"/></linearGradient>
   <linearGradient id="mountHi" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#38e9db" stop-opacity=".75"/><stop offset=".14" stop-color="#0d6a70" stop-opacity=".4"/><stop offset=".5" stop-color="#082d38" stop-opacity=".08"/><stop offset="1" stop-color="#061b26" stop-opacity="0"/></linearGradient>
   <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b7d84" stop-opacity=".72"/><stop offset=".45" stop-color="#0b4959" stop-opacity=".65"/><stop offset="1" stop-color="#041f2c" stop-opacity=".76"/></linearGradient>
   <linearGradient id="glassMain" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#16b7b0" stop-opacity=".9"/><stop offset=".5" stop-color="#0a6e7e" stop-opacity=".82"/><stop offset="1" stop-color="#073145" stop-opacity=".92"/></linearGradient>
@@ -14,7 +14,7 @@
 
 <rect width="920" height="210" fill="url(#space)"/>
 <ellipse cx="304" cy="18" rx="240" ry="92" fill="#18cabe" opacity=".10" filter="url(#soft)"/>
-<circle cx="270" cy="6" r="135" fill="url(#planet)" opacity=".96"/>
+<circle cx="270" cy="6" r="146" fill="#31e9db" opacity=".13" filter="url(#soft)"/><circle cx="270" cy="6" r="138" fill="url(#planet)" opacity="1" stroke="#5dfff0" stroke-width="2.3" stroke-opacity=".68" filter="url(#glow)"/>
 <g clip-path="url(#planetClip)" opacity=".6">
   <path d="M120 35 C185 -5 248 10 355 -18" fill="none" stroke="#4cf2df" stroke-width="2" opacity=".25"/>
   <path d="M120 62 C210 18 305 42 420 2" fill="none" stroke="#58eedf" stroke-width="5" opacity=".12"/>
@@ -29,6 +29,13 @@
   <path d="M0 190 L42 145 L78 160 L124 99 L164 139 L220 76 L264 132 L321 59 L360 118 L420 66 L467 132 L520 48 L575 124 L632 82 L686 145 L742 66 L800 128 L862 88 L920 142" fill="none" stroke="#2fddcf" stroke-width="1.4" opacity=".56" filter="url(#glow)"/>
   <path d="M102 132 L124 99 L154 136 L164 139 L220 76 L204 132 L264 132 L321 59 L301 134 L360 118 L420 66 L402 138 L467 132 L520 48 L500 134 L575 124 L632 82 L612 145 L686 145 L742 66 L723 145 L800 128 L862 88 L842 147" fill="none" stroke="url(#mountHi)" stroke-width="8" opacity=".65"/>
   <path d="M66 169 L120 127 M139 153 L211 98 M241 154 L316 83 M345 148 L412 91 M466 155 L514 75 M573 151 L626 106 M680 164 L737 91 M790 159 L856 111" stroke="#7ffff0" stroke-width="1" opacity=".15"/>
+  <path d="M74 180 L124 99 L164 139 Z" fill="#2bc8bd" opacity=".18"/>
+  <path d="M174 160 L220 76 L264 132 Z" fill="#49e7d8" opacity=".17"/>
+  <path d="M272 154 L321 59 L360 118 Z" fill="#6af7e7" opacity=".16"/>
+  <path d="M372 151 L420 66 L467 132 Z" fill="#36d7cb" opacity=".16"/>
+  <path d="M476 152 L520 48 L575 124 Z" fill="#5ef4e3" opacity=".19"/>
+  <path d="M590 157 L632 82 L686 145 Z" fill="#34d8cd" opacity=".16"/>
+  <path d="M703 158 L742 66 L800 128 Z" fill="#61f4e4" opacity=".17"/>
 </g>
 
 <g transform="translate(593 42)" filter="url(#glow)">
@@ -75,5 +82,5 @@
   <rect x="91" y="106" width="26" height="4" rx="2" fill="url(#edge)" filter="url(#glow)"/>
 </g>
 
-<path d="M0 205 C190 174 348 199 520 182 C697 166 818 176 920 157 L920 210 L0 210 Z" fill="#021018" opacity=".72"/>
+<path d="M0 205 C190 174 348 199 520 182 C697 166 818 176 920 157 L920 210 L0 210 Z" fill="#021018" opacity=".28"/>
 </svg>
