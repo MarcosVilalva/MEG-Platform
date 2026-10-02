@@ -130,3 +130,20 @@ O Loading deve reproduzir a linguagem da referência aprovada:
 
 Branch de reconstrução visual: `feat/evolution-loading-cinematic`.
 Android permanece congelado e não participa desta alteração.
+
+
+### Loading Evolution cinematográfico publicado — PR #527
+
+Implementação mesclada na `main` no commit `17176eeaed92b3b9a72db50671a7acd472954f8a`.
+
+Estado:
+- composição anterior minimalista: REPROVADA;
+- PR #526: ENCERRADO sem merge;
+- Loading cinematográfico: PUBLICADO;
+- CI: verde;
+- smoke: verde;
+- GitHub Pages: publicado;
+- validação visual do usuário: PENDENTE;
+- Android: congelado, sem alteração.
+
+**Não avançar para Login Evolution até a validação explícita do Loading publicado no PR #527.**
