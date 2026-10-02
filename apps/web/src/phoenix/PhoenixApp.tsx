@@ -36,6 +36,7 @@ import { buildWebNextMovementsModel } from '../web-next/data/movements-view-mode
 import { WebNextPeriodPopover } from '../web-next/components/WebNextPeriodPopover';
 import { WebNextSearchDialog } from '../web-next/components/WebNextSearchDialog';
 import { WebNextStatus } from '../web-next/components/WebNextStatus';
+import { WebNextLaunchEditor } from '../web-next/components/WebNextLaunchEditor';
 import { buildWebNextSearchCatalog } from '../web-next/data/search-model';
 
 const loadMovementsModule = () => import('./screens/PhoenixMovementsV15');
@@ -943,11 +944,12 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
     resetViewport();
     if (periodMode !== 'month') resetSpecialPeriod();
     if (nativeOperational && view !== 'movements') navigationHistoryRef.current.push(view);
-    setEditEventRequest(eventId);
+    setEditEventRequest('');
     setView('movements');
     setMobileOpen(false);
     setSearchOpen(false);
     setPeriodOpen(false);
+    window.setTimeout(() => setEditEventRequest(eventId), 0);
   }
 
   useEffect(() => {
@@ -1479,18 +1481,13 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         />}
       </WebNextShell>
 
-      {viewData ? <Suspense fallback={null}><PhoenixMovementsV15
+      {viewData ? <WebNextLaunchEditor
         data={viewData}
-        periodMode={periodMode}
-        periodLabel={periodMode === 'all' ? 'Tudo' : periodMode === 'range' ? periodRangeLabel || 'Intervalo' : monthLabel(viewData.month)}
         launchRequest={launchRequest}
         launchPreset={launchPreset}
         editEventRequest={editEventRequest}
-        onNavigateHome={() => navigate('home')}
         onDataCommitted={commitSnapshot}
-        onOpenPeriod={openPeriodSelector}
-        editorOnly
-      /></Suspense> : null}
+      /> : null}
 
       <WebNextPeriodPopover
         open={periodOpen}

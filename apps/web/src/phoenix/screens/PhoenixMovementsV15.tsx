@@ -420,7 +420,7 @@ function MovementIcon({ name, size = 18 }: { name: MovementIconName; size?: numb
   return <svg {...common}><path d="M8 8H3V3M16 8h5V3M8 16H3v5M21 21v-5h-5"/></svg>;
 }
 
-export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', periodLabel = '', onNavigateHistory, onNavigateHome, onDataCommitted, onOpenPeriod, launchRequest = 0, launchPreset = 'expense', editEventRequest = '', focusEventRequest, editorOnly = false }: { data: PhoenixReadModel; periodMode?: 'month' | 'range' | 'all'; periodLabel?: string; onNavigateHistory?: () => void; onNavigateHome?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number; launchPreset?: LaunchPreset; editEventRequest?: string; focusEventRequest?: { token: number; eventId: string } | null; editorOnly?: boolean }) {
+export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', periodLabel = '', onNavigateHistory, onNavigateHome, onDataCommitted, onOpenPeriod, launchRequest = 0, launchPreset = 'expense', editEventRequest = '', focusEventRequest }: { data: PhoenixReadModel; periodMode?: 'month' | 'range' | 'all'; periodLabel?: string; onNavigateHistory?: () => void; onNavigateHome?: () => void; onDataCommitted?: (snapshot: PhoenixReadModel) => void; onOpenPeriod?: () => void; launchRequest?: number; launchPreset?: LaunchPreset; editEventRequest?: string; focusEventRequest?: { token: number; eventId: string } | null }) {
   const nativeOperational = import.meta.env.VITE_MOBILE_APP === 'true';
   const [data, setData] = useState(initialData);
   const [search, setSearch] = useState('');
@@ -1272,8 +1272,7 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
     return <div className="px-grid-th"><span>{label}</span><PhoenixGridFilter label={label} kind={kind} value={gridFilters[key]} options={options} sort={gridSort?.key === key ? gridSort.direction : null} onSort={(direction) => setGridSort({ key, direction })} onChange={(value) => updateGridFilter(key, value)} /></div>;
   }
 
-  return <section className="px-screen px-movements-v15" data-web-revolution="movements" data-meg-fixed-screen={nativeOperational ? 'true' : undefined} data-editor-only={editorOnly ? 'true' : undefined} style={editorOnly ? { display: 'contents' } : undefined}>
-    {!editorOnly ? <>
+  return <section className="px-screen px-movements-v15" data-web-revolution="movements" data-meg-fixed-screen={nativeOperational ? 'true' : undefined}>
     <section className="px-movements-overview">
       <div className="px-movement-hero-row">
         <header className="px-screen-head">
@@ -1428,7 +1427,6 @@ export function PhoenixMovementsV15({ data: initialData, periodMode = 'month', p
         </div>
       </footer>
     </section>
-    </> : null}
 
     {launchOpen ? <>
       <button className="px-launch-backdrop" type="button" aria-label="Fechar lançamento" onClick={requestCloseLaunch} />

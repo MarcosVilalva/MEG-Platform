@@ -73,7 +73,9 @@ Se uma tela ainda não foi validada, o legado necessário pode continuar ativo t
 - Home + Sidebar premium: mesclada em `main` no commit `d961b35bf6ef801b16bc44bf11da62097852d4c8` (PR #516), reprovada visualmente pelo usuário por falta de impacto;
 - Home Command Center: mesclada em `main` no commit `ab154c5d160e092ec11333d5f06ff3d2edeec93b` (PR #517), ainda aguardando validação visual;
 - Home launcher/carrossel: mesclada em `main` no commit `0cdc42d2fbd17b24da1b1aecc20edc20c1f8c26b` (PR #518), com + Incluir, Despesa/Receita/Alimentação, carrossel sem scroll horizontal e Home fixa no viewport;
-- cliente visual em produção: **híbrido temporário** — Home mensal em Web Next; demais rotas ainda Phoenix;
+- Lançamentos Web Next: mesclado em `main` no commit `495a73e2c2f6cc80b2099764d96cf2fd8cc1f6f3` (PR #519), com cockpit clean-room, filtros, grade cronológica e rolagem interna;
+- Novo/Editar lançamento: em reconstrução clean-room na branch `feat/web-next-launch-editor`, substituindo o último host visual Phoenix da rota Web sem reimplementar os gateways financeiros;
+- cliente visual em produção: **híbrido temporário** — Home mensal e Lançamentos em Web Next; demais rotas ainda Phoenix;
 - situação do runtime atual: **transitória e controlada**.
 
 A Home do PR #511 serviu como diagnóstico e evolução visual, mas NÃO é considerada a Home clean-room definitiva.
@@ -84,8 +86,8 @@ A Home do PR #511 serviu como diagnóstico e evolução visual, mas NÃO é cons
 |---|---|---|---|
 | Fundação Web / shell | Prancha 1 + sistema visual das 5 pranchas | MERGED CLEAN-ROOM · `61049d51` | N/A |
 | Home | Prancha 1 | COMMAND CENTER + LAUNCHER + CARROSSEL MERGED · PR #518 | NÃO — aguardando nova validação |
-| Lançamentos | Prancha 2 | CLEAN-ROOM EM CONSTRUÇÃO · `feat/web-next-movements-command-center` | NÃO — aguardando validação |
-| Novo / Editar lançamento | Prancha 2 | NÃO INICIADA CLEAN-ROOM · editor Phoenix mantido apenas como host transitório | NÃO |
+| Lançamentos | Prancha 2 | MERGED CLEAN-ROOM · PR #519 · `495a73e2` | NÃO — aguardando validação |
+| Novo / Editar lançamento | Prancha 2 | CLEAN-ROOM EM CONSTRUÇÃO · `feat/web-next-launch-editor` | NÃO — aguardando CI e validação |
 | Pendentes / baixa | Prancha 3 | NÃO INICIADA | NÃO |
 | Cartões / Central / Fatura | Prancha 3 | NÃO INICIADA | NÃO |
 | Benefício | Prancha 3 | NÃO INICIADA | NÃO |
