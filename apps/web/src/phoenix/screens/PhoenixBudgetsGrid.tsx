@@ -70,6 +70,13 @@ export function PhoenixBudgetsGrid({
   const used = budgets.reduce((sum, item) => sum + Number(item.used || 0), 0);
   const available = total - used;
   const danger = budgets.filter((item) => item.status === 'danger').length;
+  const overallPercent = total > 0 ? Math.max(0, used / total * 100) : 0;
+  const goalPreview = [...budgets].sort((left, right) => right.percent - left.percent).slice(0, 5);
+  const planningNote = danger
+    ? `${danger} grupo(s) acima do limite precisam de revisão neste período.`
+    : total > 0
+      ? `O planejamento mantém ${money.format(Math.max(0, available))} de margem disponível.`
+      : 'Cadastre limites por grupo para acompanhar o planejamento com dados reais.';
 
   useEffect(() => {
     if (!focusRequest || focusRequest.token === focusRequestTokenRef.current) return;
@@ -231,14 +238,40 @@ export function PhoenixBudgetsGrid({
     {message ? <div className="meg-web-budget-message" role="status">{message}</div> : null}
     {!canWrite ? <div className="meg-web-budget-message is-warning">Seu perfil pode consultar o planejamento, mas não alterar limites.</div> : null}
 
-    <section className="px-screen-kpis">
-      <article><span>Orçado</span><strong>{money.format(total)}</strong><small>{budgets.length} grupo(s)</small></article>
-      <article><span>Utilizado</span><strong>{money.format(used)}</strong><small>{total ? `${(used / total * 100).toFixed(1)}% do orçamento` : 'Sem orçamento'}</small></article>
-      <article className={available < 0 ? 'danger' : ''}><span>Disponível</span><strong>{money.format(available)}</strong><small>Saldo planejado</small></article>
-      <article className={danger ? 'danger' : ''}><span>Acima do limite</span><strong>{danger}</strong><small>Grupo(s) em alerta</small></article>
+    <section className="px-screen-kpis meg-board4-planning-kpis">
+      <article><span>Planejado</span><strong>{money.format(total)}</strong><small>{budgets.length} grupo(s)</small></article>
+      <article><span>Utilizado</span><strong>{money.format(used)}</strong><small>{total ? `${overallPercent.toFixed(1)}% do planejamento` : 'Sem orçamento'}</small></article>
+      <article className={available < 0 ? 'danger' : ''}><span>Disponível</span><strong>{money.format(available)}</strong><small>Margem planejada</small></article>
+      <article className={danger ? 'danger' : ''}><span>Alertas</span><strong>{danger}</strong><small>Grupo(s) acima do limite</small></article>
     </section>
 
-    <section className="px-budget-grid meg-web-budget-grid">
+    <section className="meg-board4-planning-panels">
+      <article className="px-card meg-board4-planning-chart">
+        <header><div><span className="px-kicker">Planejamento</span><h2>Utilização por grupo</h2></div><small>{monthLabel(data.month)}</small></header>
+        <div className="meg-board4-planning-bars">
+          {budgets.slice(0, 8).map((item) => <div key={item.id}>
+            <span>{item.group}</span>
+            <div><i className={item.percent >= 100 ? 'danger' : item.percent >= 80 ? 'warning' : ''} style={{ '--meg-goal-progress': `${Math.min(100, Math.max(0, item.percent))}%` } as CSSProperties} /></div>
+            <strong>{item.percent.toFixed(0)}%</strong>
+          </div>)}
+          {!budgets.length ? <p className="px-empty">Nenhum limite planejado neste período.</p> : null}
+        </div>
+        <footer className={danger ? 'warning' : ''}><span>{planningNote}</span></footer>
+      </article>
+
+      <article className="px-card meg-board4-goals-overview">
+        <header><div><span className="px-kicker">Metas</span><h2>Progresso do período</h2></div></header>
+        <div className="meg-board4-goal-ring" style={{ '--meg-goal-angle': `${Math.min(100, overallPercent) * 3.6}deg` } as CSSProperties}>
+          <span><strong>{total ? `${Math.min(999, overallPercent).toFixed(0)}%` : '—'}</strong><small>utilizado</small></span>
+        </div>
+        <div className="meg-board4-goal-list">
+          {goalPreview.map((item) => <div key={item.id}><span>{item.group}</span><div><i className={item.percent >= 100 ? 'danger' : ''} style={{ '--meg-goal-progress': `${Math.min(100, Math.max(0, item.percent))}%` } as CSSProperties} /></div><strong>{money.format(item.available)}</strong></div>)}
+          {!goalPreview.length ? <p className="px-empty">As metas aparecerão quando houver orçamento cadastrado.</p> : null}
+        </div>
+      </article>
+    </section>
+
+    <section className="px-budget-grid meg-web-budget-grid meg-board4-budget-grid">
       {budgets.map((item) => <article data-budget-id={item.id} className={`px-card px-budget-card meg-web-budget-card ${focusedBudgetId === item.id ? 'is-search-focused' : ''}`} key={item.id}>
         <div className="px-panel-head">
           <div><span>Grupo</span><h2>{item.group}</h2></div>
