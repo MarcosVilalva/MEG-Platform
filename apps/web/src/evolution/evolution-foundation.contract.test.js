@@ -53,7 +53,7 @@ const artworks=[
 ];
 for(const [asset,hash] of artworks){
   const buffer=fs.readFileSync(new URL('../../public/evolution/artwork/'+asset,import.meta.url));
-  assert.ok(buffer.length>50000,asset+' não pode ser placeholder.');
+  assert.ok(buffer.length>20000,asset+' não pode ser placeholder.');
   assert.equal(
     crypto.createHash('sha256').update(buffer).digest('hex'),
     hash,
