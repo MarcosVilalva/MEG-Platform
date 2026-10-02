@@ -73,6 +73,19 @@
 
 .px-decision-note.is-warning { border-color:rgba(245,177,66,.22); background:rgba(245,177,66,.045); }
 .px-decision-note strong { color:#dff7f0; }
+.px-decision-note button {
+  margin-left:auto;
+  min-height:30px;
+  padding:0 10px;
+  border:1px solid rgba(245,177,66,.28);
+  border-radius:8px;
+  background:rgba(245,177,66,.08);
+  color:#f5c46b;
+  font:inherit;
+  font-weight:850;
+  cursor:pointer;
+}
+.px-decision-note button:hover { background:rgba(245,177,66,.14); }
 
 .px-decision-spinner {
   width:15px;
