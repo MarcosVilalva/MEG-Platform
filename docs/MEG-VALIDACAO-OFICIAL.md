@@ -183,3 +183,14 @@ Regras:
 9. Se a implementação ficar apenas “parecida”, “inspirada” ou “na mesma paleta”, ela deve continuar como NÃO VALIDADA.
 
 **Resumo operacional:** o objetivo do Evolution é reproduzir o sistema aprovado, tela por tela, com fidelidade máxima e funcionalidade real.
+
+
+## 7. Cinco pranchas fixadas como contrato mestre
+
+As cinco imagens reafirmadas pelo usuário em 02/10/2026 estão fixadas como matriz visual canônica de **TODO o MEG Evolution**.
+
+O contrato detalhado está em `docs/EVOLUTION-VISUAL-CONTRACT.md` e deve ser lido obrigatoriamente em qualquer retomada.
+
+Regra para telas novas: **não criar uma nova identidade**. Toda variação futura deve ser derivada dessas cinco pranchas e parecer pertencer exatamente ao mesmo produto.
+
+Critério visual simples: ao colocar uma captura de qualquer nova tela ao lado das cinco pranchas, ela deve parecer parte do mesmo MEG sem precisar de explicação.
