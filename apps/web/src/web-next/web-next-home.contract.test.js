@@ -31,12 +31,20 @@ assert.match(model, /possível\(is\) duplicidade/);
 
 assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
 assert.match(css, /grid-template-columns:repeat\(12,minmax\(0,1fr\)\)/);
-assert.match(css, /mnx-chart-panel \{ grid-column:1\/7/);
-assert.match(css, /mnx-recent-panel \{ grid-column:7\/10/);
-assert.match(css, /mnx-alerts-panel \{ grid-column:10\/13/);
+assert.match(css, /mnx-chart-panel\s*\{[\s\S]*?grid-column:1\/7/);
+assert.match(css, /mnx-recent-panel\s*\{[\s\S]*?grid-column:7\/10/);
+assert.match(css, /mnx-alerts-panel\s*\{[\s\S]*?grid-column:10\/13/);
 assert.match(css, /perspective\(900px\)/);
-assert.match(css, /@container mnx-content \(max-width:1220px\)/);
-assert.match(css, /@container mnx-content \(max-width:760px\)/);
+assert.match(home, /activeTrendIndex/);
+assert.match(home, /Passe o mouse pelos meses/);
+assert.match(home, /mnx-chart-tooltip/);
+assert.match(home, /Receitas[\s\S]*Despesas[\s\S]*Saldo/);
+assert.match(home, /onMouseEnter=\{\(\)=>setActiveTrendIndex\(index\)\}/);
+assert.match(css, /mnx-chart-readout/);
+assert.match(css, /mnx-chart-tooltip/);
+assert.match(css, /mnx-chart-month\.is-active/);
+assert.match(css, /@container mnx-content \(max-width:1360px\)/);
+assert.match(css, /@container mnx-content \(max-width:820px\)/);
 
 assert.match(period, /Mês[\s\S]*Intervalo[\s\S]*Tudo/);
 assert.match(period, /type="month"/);
