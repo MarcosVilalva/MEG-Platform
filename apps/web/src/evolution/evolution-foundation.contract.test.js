@@ -33,9 +33,13 @@ assert.match(app,/\?\? 100/,'fallback de progresso precisa ser 100%');
 
 const logo=fs.readFileSync(new URL('../../public/evolution/brand/meg-mark.svg',import.meta.url),'utf8');
 assert.doesNotMatch(logo,/letter-spacing="-\d/,'logo Evolution não pode comprimir as letras MEG');
-assert.match(logo,/<text x="28"[^>]*>M<\/text>/);
-assert.match(logo,/<text x="89"[^>]*>E<\/text>/);
-assert.match(logo,/<text x="132"[^>]*>G<\/text>/);
+assert.match(logo,/<text x="42"[^>]*>M<\/text>/);
+assert.match(logo,/<text x="92"[^>]*>E<\/text>/);
+assert.match(logo,/<text x="137"[^>]*>G<\/text>/);
+assert.match(logo,/>FINANÇAS<\/text>/);
+assert.match(logo,/fill="#F8FCFF"[^>]*>M<\/text>/);
+assert.match(logo,/fill="#F8FCFF"[^>]*>E<\/text>/);
+assert.match(logo,/fill="#F8FCFF"[^>]*>G<\/text>/);
 
 const tokens=fs.readFileSync(new URL('./styles/tokens.css',import.meta.url),'utf8');
 for(const color of ['#071321','#0a1728','#0d1d2d','#53cf8d','#71dda4','#4bbac7']){
