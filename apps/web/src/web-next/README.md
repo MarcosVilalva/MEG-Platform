@@ -29,3 +29,14 @@ A fundação clean-room contém:
 - contrato automático `web-next-foundation.contract.test.js`.
 
 Ela ainda não assume rotas de produção. A primeira rota a migrar será a Home.
+
+## Home Web Next
+
+A primeira tela migrada é a Home da Prancha Web 1:
+- adaptador: `data/home-view-model.ts`;
+- tela: `screens/WebNextHome.tsx`;
+- estilo: `styles/home.css`;
+- seletor de período: `components/WebNextPeriodPopover.tsx`;
+- contrato: `web-next-home.contract.test.js`.
+
+A competência mensal utiliza Web Next. Intervalo/Tudo permanecem temporariamente no runtime anterior até sua reconstrução.
