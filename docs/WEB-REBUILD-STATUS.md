@@ -75,7 +75,7 @@ Se uma tela ainda não foi validada, o legado necessário pode continuar ativo t
 - Home launcher/carrossel: mesclada em `main` no commit `0cdc42d2fbd17b24da1b1aecc20edc20c1f8c26b` (PR #518), com + Incluir, Despesa/Receita/Alimentação, carrossel sem scroll horizontal e Home fixa no viewport;
 - Lançamentos Web Next: mesclado em `main` no commit `495a73e2c2f6cc80b2099764d96cf2fd8cc1f6f3` (PR #519), com leitura, filtros, KPIs e grade no Command Center;
 - Novo/Editar lançamento: mesclado em `main` no commit `609072f47ff5e8d5dcc91fffd42a272e0f384b66` (PR #520), com superfície Web Next e gateways financeiros preservados;
-- Login/Autenticação Web Next: branch `feat/web-next-auth-validated`, reconstrução visual baseada nas referências validadas de 02/10/2026; autenticação e Android preservados;
+- Login/Autenticação Web Next: mesclado em `main` no commit `7640aa780b8772504257c86e9bc645716cbeaa0c` (PR #522), baseado nas referências validadas de 02/10/2026; CI/smoke/deploy verdes; aguardando validação visual; autenticação e Android preservados;
 - cliente visual em `main`: **híbrido temporário** — Home mensal e Lançamentos em Web Next; demais rotas ainda Phoenix;
 - situação do runtime atual: **transitória e controlada**.
 
@@ -86,7 +86,7 @@ A Home do PR #511 serviu como diagnóstico e evolução visual, mas NÃO é cons
 | Área | Referência | Estado clean-room | Legado removido |
 |---|---|---|---|
 | Fundação Web / shell | Prancha 1 + sistema visual das 5 pranchas | MERGED CLEAN-ROOM · `61049d51` | N/A |
-| Login / Autenticação | Referências validadas 02/10/2026 + Navy Compacto/Verde MEG | EM CONSTRUÇÃO CLEAN-ROOM · `feat/web-next-auth-validated` | NÃO — autenticação Phoenix permanece apenas como superfície Android durante transição |
+| Login / Autenticação | Referências validadas 02/10/2026 + Navy Compacto/Verde MEG | MERGED CLEAN-ROOM · PR #522 · AGUARDANDO VALIDAÇÃO VISUAL | NÃO — autenticação Phoenix permanece como superfície Android durante transição |
 | Home | Prancha 1 | COMMAND CENTER + LAUNCHER + CARROSSEL MERGED · PR #518 | NÃO — aguardando nova validação |
 | Lançamentos | Prancha 2 | MERGED CLEAN-ROOM · PR #519 | NÃO — aguardando validação visual |
 | Novo / Editar lançamento | Prancha 2 | MERGED CLEAN-ROOM · PR #520 | NÃO — aguardando validação visual; controlador/gateways ainda preservados durante transição |
