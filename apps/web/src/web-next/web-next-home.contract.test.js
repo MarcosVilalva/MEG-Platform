@@ -40,6 +40,15 @@ assert.match(home, /onMouseEnter=\{\(\)=>setActiveTrendIndex\(index\)\}/);
 assert.match(home, /mnx-flow-crosshair/);
 assert.match(home, /mnx-flow-area/);
 assert.match(home, /Passe o mouse pelos meses/);
+assert.match(home, /walletIndex/);
+assert.match(home, /mnx-wallet-carousel/);
+assert.match(home, /rotateWallet\(-1\)/);
+assert.match(home, /rotateWallet\(1\)/);
+assert.match(css, /mnx-wallet-dots/);
+assert.doesNotMatch(css, /\.mnx-wallet-strip[\s\S]*overflow-x:\s*auto/,
+  'Carrossel da Home não pode depender de rolagem horizontal.');
+assert.match(css, /mnx-attention-list[\s\S]*overflow-y:auto/);
+assert.match(css, /scrollbar-color:rgba\(73,240,223/);
 assert.match(css, /mnx-command-hero/);
 assert.match(css, /mnx-money-stage/);
 assert.match(css, /mnx-liquidity-ring/);
@@ -51,9 +60,9 @@ assert.match(css, /mnx-flow-console/);
 assert.match(css, /mnx-action-console/);
 assert.match(css, /mnx-flow-line/);
 assert.match(css, /mnx-flow-crosshair/);
-assert.match(css, /@container mnx-content \(max-width:1380px\)/);
-assert.match(css, /@container mnx-content \(max-width:980px\)/);
-assert.match(css, /@container mnx-content \(max-width:720px\)/);
+assert.match(css, /@container mnx-content \(max-width:900px\)/);
+assert.match(css, /@container mnx-content \(max-width:760px\)/);
+assert.match(css, /@container mnx-content \(max-width:620px\)/);
 
 assert.match(period, /Mês[\s\S]*Intervalo[\s\S]*Tudo/);
 assert.match(period, /type="month"/);
