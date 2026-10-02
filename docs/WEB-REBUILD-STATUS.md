@@ -72,8 +72,9 @@ Se uma tela ainda não foi validada, o legado necessário pode continuar ativo t
 - UI transversal Web Next: mesclada na `main` em `bc4c1466f0e14f772265292c32f9dcd8725d0edb` (PR #515);
 - Home + Sidebar premium: mesclada em `main` no commit `d961b35bf6ef801b16bc44bf11da62097852d4c8` (PR #516), reprovada visualmente pelo usuário por falta de impacto;
 - Home Command Center: mesclada em `main` no commit `ab154c5d160e092ec11333d5f06ff3d2edeec93b` (PR #517), ainda aguardando validação visual;
-- Home launcher/carrossel: branch `feat/web-next-home-launcher-carousel`, implementando + Incluir com Despesa/Receita/Alimentação e carrossel sem scroll horizontal;
-- cliente visual em produção: **híbrido temporário** — Home mensal em Web Next; demais rotas ainda Phoenix;
+- Home launcher/carrossel: mesclado em `main` no commit `0cdc42d2fbd17b24da1b1aecc20edc20c1f8c26b` (PR #518), com + Incluir, Despesa/Receita/Alimentação e carrossel sem scroll horizontal;
+- Lançamentos Web Next: branch `feat/web-next-movements-clean-room`, em construção; nova leitura/grade clean-room usa o shell Web Next e mantém o editor financeiro Phoenix isolado somente como host transitório de escrita até a migração de Novo/Editar;
+- cliente visual em `main`: **híbrido temporário** — Home mensal em Web Next; demais rotas ainda Phoenix. Na branch de Lançamentos, a rota `movements` já é desviada para Web Next sem alterar Android;
 - situação do runtime atual: **transitória e controlada**.
 
 A Home do PR #511 serviu como diagnóstico e evolução visual, mas NÃO é considerada a Home clean-room definitiva.
@@ -83,9 +84,9 @@ A Home do PR #511 serviu como diagnóstico e evolução visual, mas NÃO é cons
 | Área | Referência | Estado clean-room | Legado removido |
 |---|---|---|---|
 | Fundação Web / shell | Prancha 1 + sistema visual das 5 pranchas | MERGED CLEAN-ROOM · `61049d51` | N/A |
-| Home | Prancha 1 | COMMAND CENTER + LAUNCHER + CARROSSEL EM IMPLEMENTAÇÃO | NÃO — aguardando nova validação |
-| Lançamentos | Prancha 2 | NÃO INICIADA | NÃO |
-| Novo / Editar lançamento | Prancha 2 | NÃO INICIADA | NÃO |
+| Home | Prancha 1 | COMMAND CENTER + LAUNCHER + CARROSSEL MERGED · PR #518 | NÃO — aguardando validação visual |
+| Lançamentos | Prancha 2 | EM CONSTRUÇÃO CLEAN-ROOM · `feat/web-next-movements-clean-room` | NÃO — grade Phoenix isolada, editor de escrita ainda transitório |
+| Novo / Editar lançamento | Prancha 2 | PRÓXIMO · editor Phoenix preservado temporariamente como host de escrita | NÃO |
 | Pendentes / baixa | Prancha 3 | NÃO INICIADA | NÃO |
 | Cartões / Central / Fatura | Prancha 3 | NÃO INICIADA | NÃO |
 | Benefício | Prancha 3 | NÃO INICIADA | NÃO |
