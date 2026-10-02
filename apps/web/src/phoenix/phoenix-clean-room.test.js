@@ -1496,6 +1496,20 @@ assert.match(megWebCss, /@media print[\s\S]*meg-web-report-print-extra[\s\S]*dis
   'Modo de impressão deve revelar todas as linhas do relatório.');
 assert.match(megWebCss, /@media print[\s\S]*meg-web-report-foot/,
   'Aviso de prévia deve ser ocultado no documento impresso.');
+assert.match(reportsCenter, /const isoDate = raw\.match/,
+  'Datas civis ISO dos relatórios devem ser reconhecidas sem conversão de fuso.');
+assert.match(reportsCenter, /if \(isoDate\) return/,
+  'Data civil ISO deve ser formatada diretamente, preservando o dia informado.');
+assert.match(reportsCenter, /const dateTime = new Intl\.DateTimeFormat\('pt-BR',[\s\S]*America\/Sao_Paulo/,
+  'Data e hora de auditoria devem usar explicitamente o fuso America/Sao_Paulo.');
+assert.match(reportsCenter, /brDateTime\(item\.at\)/,
+  'Relatório de Auditoria deve exportar data e hora, não apenas a data.');
+assert.doesNotMatch(reportsCenter, /brDate\(item\.at\)/,
+  'Auditoria não pode voltar a descartar o horário.');
+assert.match(reportsCenter, /EXPORT_EMPTY/,
+  'Exportação vazia deve ser tratada como falha, não como download válido.');
+assert.match(reportsCenter, /catch \{[\s\S]*megAlert\([\s\S]*Não foi possível gerar o arquivo/,
+  'Falha de Excel ou PDF deve produzir feedback visual padrão MEG.');
 
 assert.match(phoenixApp, /onLogout/,
   'Phoenix deve expor saída de sessão ao preview isolado');
