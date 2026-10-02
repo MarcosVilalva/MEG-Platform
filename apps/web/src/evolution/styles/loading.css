@@ -1,71 +1,30 @@
 .evo-loading{
+  --evo-load-left:24.45%;
+  --evo-load-top:69.08%;
+  --evo-load-width:50.72%;
+  --evo-load-height:3.38%;
   position:relative;
   isolation:isolate;
   width:100vw;
   height:100dvh;
   overflow:hidden;
-  display:grid;
-  place-items:center;
   background:#00191d;
 }
 
-.evo-loading-backdrop{
+.evo-loading-picture{
   position:absolute;
-  inset:-3%;
-  z-index:-2;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
   overflow:hidden;
   background:#00191d;
 }
-.evo-loading-backdrop:before{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:1;
-  pointer-events:none;
-  opacity:0;
-}
-.evo-loading-backdrop:after{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:2;
-  pointer-events:none;
-  background:
-    linear-gradient(90deg,rgba(0,15,19,.18),transparent 24%,transparent 76%,rgba(0,15,19,.18)),
-    rgba(0,17,21,.08);
-}
-.evo-loading-backdrop img{
+.evo-loading-master{
   width:100%;
   height:100%;
   object-fit:cover;
   object-position:center;
-  filter:blur(13px) brightness(.68) saturate(.96);
-  transform:scale(1.045);
-  opacity:.98;
-}
-
-.evo-loading-artboard{
-  position:relative;
-  width:100vw;
-  height:100dvh;
-  overflow:hidden;
-  background:transparent;
-}
-
-.evo-loading-core{
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:min(100vw,100dvh);
-  height:min(100vw,100dvh);
-  transform:translate(-50%,-50%);
-}
-.evo-loading-master{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:contain;
   user-select:none;
   pointer-events:none;
   -webkit-user-drag:none;
@@ -74,15 +33,15 @@
 .evo-loading-progress{
   position:absolute;
   z-index:3;
-  left:24.45%;
-  top:69.08%;
-  width:50.72%;
-  height:3.38%;
-  padding:.34%;
+  left:var(--evo-load-left);
+  top:var(--evo-load-top);
+  width:var(--evo-load-width);
+  height:var(--evo-load-height);
+  padding:clamp(1px,.22vh,3px);
   overflow:hidden;
-  border:clamp(1px,.16vw,2px) solid rgba(73,255,244,.95);
+  border:clamp(1px,.15vw,2px) solid rgba(73,255,244,.95);
   border-radius:999px;
-  background:rgba(0,47,51,.96);
+  background:rgba(0,47,51,.97);
   box-shadow:
     0 0 10px rgba(27,235,231,.60),
     inset 0 0 11px rgba(0,16,20,.78);
@@ -111,56 +70,30 @@
   border:0;
 }
 
-@media(min-aspect-ratio:5/4){
-  .evo-loading-core{
-    width:100dvh;
-    height:100dvh;
-  }
-  .evo-loading-master{
-    -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 8%,#000 92%,transparent 100%);
-    mask-image:linear-gradient(90deg,transparent 0%,#000 8%,#000 92%,transparent 100%);
+@media(min-aspect-ratio:4/3){
+  .evo-loading{
+    --evo-load-left:35.63%;
+    --evo-load-top:69.08%;
+    --evo-load-width:28.53%;
+    --evo-load-height:3.38%;
   }
 }
-
-@media(max-aspect-ratio:4/5){
-  .evo-loading-backdrop{
-    inset:0;
-    background:
-      radial-gradient(ellipse at 50% 45%,rgba(28,225,211,.19) 0%,rgba(8,78,80,.12) 27%,transparent 55%),
-      radial-gradient(circle at 12% 24%,rgba(26,178,181,.10),transparent 20%),
-      radial-gradient(circle at 86% 78%,rgba(33,213,191,.08),transparent 24%),
-      linear-gradient(180deg,#00191d 0%,#01262b 34%,#02252a 66%,#001419 100%);
-  }
-  .evo-loading-backdrop img{
-    opacity:0;
-  }
-  .evo-loading-backdrop:before{
-    inset:auto;
-    left:-38vw;
-    top:8.5%;
-    width:158vw;
-    height:48vw;
-    border:1px solid rgba(65,242,229,.26);
-    border-radius:50%;
-    transform:rotate(-8deg);
-    filter:drop-shadow(0 0 11px rgba(47,229,216,.30));
-    opacity:.72;
-  }
-  .evo-loading-backdrop:after{
-    background:
-      linear-gradient(180deg,rgba(0,10,14,.18),transparent 18%,transparent 82%,rgba(0,8,12,.28)),
-      repeating-linear-gradient(90deg,transparent 0 82px,rgba(74,230,217,.018) 83px 84px);
-  }
-  .evo-loading-core{
-    width:100vw;
-    height:100vw;
-  }
-  .evo-loading-master{
-    -webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 8%,#000 92%,transparent 100%);
-    mask-image:linear-gradient(180deg,transparent 0%,#000 8%,#000 92%,transparent 100%);
+@media(min-aspect-ratio:2/1){
+  .evo-loading{
+    --evo-load-left:38.27%;
+    --evo-load-top:69.08%;
+    --evo-load-width:23.28%;
+    --evo-load-height:3.38%;
   }
 }
-
+@media(max-aspect-ratio:3/4){
+  .evo-loading{
+    --evo-load-left:24.45%;
+    --evo-load-top:58.81%;
+    --evo-load-width:50.72%;
+    --evo-load-height:1.56%;
+  }
+}
 @media(prefers-reduced-motion:reduce){
   .evo-loading-progress span{transition:none}
 }
