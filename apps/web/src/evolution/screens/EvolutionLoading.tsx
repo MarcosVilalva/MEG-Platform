@@ -16,7 +16,7 @@ export function EvolutionLoading({
   return <main
     className="evo-loading"
     data-evolution-screen="loading"
-    data-evolution-loading-fidelity="master-artwork"
+    data-evolution-loading-fidelity="master-artwork-fullscreen"
     aria-live="polite"
     aria-busy={normalized < 100}
   >
@@ -25,23 +25,25 @@ export function EvolutionLoading({
     </div>
 
     <section className="evo-loading-artboard">
-      <img
-        className="evo-loading-master"
-        src={loadingMasterArtwork}
-        alt=""
-        aria-hidden="true"
-        draggable={false}
-      />
+      <div className="evo-loading-core">
+        <img
+          className="evo-loading-master"
+          src={loadingMasterArtwork}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+        />
 
-      <div
-        className="evo-loading-progress"
-        role="progressbar"
-        aria-label="Carregamento do MEG Finanças"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={normalized}
-      >
-        <span style={{width:normalized+'%'}}/>
+        <div
+          className="evo-loading-progress"
+          role="progressbar"
+          aria-label="Carregamento do MEG Finanças"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={normalized}
+        >
+          <span style={{width:normalized+'%'}}/>
+        </div>
       </div>
 
       <p className="evo-loading-a11y">
