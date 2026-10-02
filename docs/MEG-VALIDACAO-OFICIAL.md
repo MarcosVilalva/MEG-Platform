@@ -57,10 +57,13 @@ Linguagem visual: dark premium, navy + teal/ciano/verde, neon elegante e localiz
 
 Home, Lançamentos e Novo/Editar lançamento já possuem implementação Web Next mesclada e aguardam validação visual final antes de remoção de legado.
 
-Próximo marco: **Login/Autenticação Web Next**, seguindo exatamente a referência desktop dividida e a identidade acima, sem alterar Android.
+**Login/Autenticação Web Next foi mesclado na main no commit `7640aa780b8772504257c86e9bc645716cbeaa0c` (PR #522).**
+CI, smoke de produção e publicação do GitHub Pages passaram. O Android permaneceu na superfície atual e não recebeu alteração visual.
+
+**Estado de retomada: aguardar validação visual do Login Web Next publicado. Não avançar para Pendentes/baixa antes dessa validação.**
 
 Após Login validado:
-1. congelar Login;
-2. auditar/remover apresentação Phoenix de autenticação Web que ficar órfã;
+1. marcar Login como VALIDADO e congelá-lo;
+2. auditar/remover a apresentação Phoenix de autenticação Web que ficar órfã, preservando o Android;
 3. seguir para Pendentes / baixa;
 4. atualizar este documento e a matriz oficial.
