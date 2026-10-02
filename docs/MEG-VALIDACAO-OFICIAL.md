@@ -87,7 +87,7 @@ Estado da fundação:
 1. raiz `apps/web/src/evolution/`: CRIADA;
 2. entrypoint `apps/web/evolution.html`: CRIADO e separado do Android;
 3. build Capacitor: permanece usando somente `index.html`, portanto não inclui o entrypoint Evolution;
-4. Loading Evolution: PUBLICADO / PRÓXIMO ITEM PARA VALIDAÇÃO VISUAL;
+4. Loading Evolution: EM CORREÇÃO após validação visual parcial — corrigir logo (M separado do E) e progresso final obrigatório em 100%;
 5. após validação do Loading: construir Login → Shell → Home, uma tela por vez.
 
 ### Frase obrigatória para retomar após travamento
@@ -95,3 +95,17 @@ Estado da fundação:
 > **Retomar MEG pela Memória Oficial de Validação e Continuidade. Não revalidar decisões já aprovadas. Conferir o estado atual do GitHub e continuar exatamente do último ponto validado.**
 
 Ao receber essa frase, o primeiro procedimento é ler este arquivo e o estado do GitHub. Não voltar ao plano Web Next/Phoenix incremental e não gerar atualização Android.
+
+
+### Ajustes obrigatórios do Loading Evolution — 02/10/2026
+
+O Loading publicado no PR #524 **não foi validado**. Foram identificados dois defeitos:
+- a logo usada no Evolution compactava o `M` contra o `E`;
+- o progresso terminava em `92%`.
+
+Correção oficial:
+- usar asset exclusivo do Evolution em `apps/web/public/evolution/brand/meg-mark.svg`, sem alterar os assets compartilhados usados pelo Android;
+- Loading deve avançar até `100%` e encerrar o estado `aria-busy`;
+- Android permanece congelado e não participa desta correção.
+
+**Não avançar para Login Evolution antes da validação visual deste Loading corrigido.**
