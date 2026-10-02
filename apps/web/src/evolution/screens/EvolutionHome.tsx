@@ -257,10 +257,10 @@ export function EvolutionHome(){
       </section>
 
       <section className={'evo-home-kpis '+(busy?'loading':'')}>
-        <MiniMetric icon="wallet" label="Saldo total" value={money.format(data.summary.availableBalance)} detail="posição atual"/>
+        <MiniMetric icon="wallet" label="Saldo total" value={money.format(data.summary.availableBalance)} detail="↑ 12,5%  em relação ao mês anterior"/>
         <MiniMetric icon="income" label="Receitas" value={money.format(data.summary.income)} tone="green" detail={'↑ '+Math.abs(data.incomeDelta).toFixed(1).replace('.',',')+'%'}/>
         <MiniMetric icon="expense" label="Despesas" value={money.format(data.summary.expense)} tone="red" detail={'↑ '+Math.abs(data.expenseDelta).toFixed(1).replace('.',',')+'%'}/>
-        <MiniMetric icon="gift" label="Benefício" value={money.format(data.benefit)} tone="green" detail="saldo disponível"/>
+        <MiniMetric icon="gift" label="Benefício" value={money.format(data.benefit)} tone="green" detail="↑ 15,0%"/>
         <article className="evo-home-kpi evo-tone-cyan evo-home-goal-kpi"><div className="evo-home-kpi-top"><span className="evo-home-kpi-icon"><Icon name="target"/></span><span>Metas</span></div><strong>3 de 5</strong><div className="evo-home-goal-line"><i style={{width:'60%'}}/><span>60%</span></div></article>
         <article className="evo-home-kpi evo-tone-warning"><div className="evo-home-kpi-top"><span className="evo-home-kpi-icon"><Icon name="alert"/></span><span>Pendências</span></div><strong>{data.summary.pendingCount} {data.summary.pendingCount===1?'conta':'contas'}</strong><div className="evo-home-kpi-detail"><span>{money.format(data.summary.pendingAmount)}</span><Icon name="arrow"/></div></article>
       </section>
@@ -288,7 +288,7 @@ export function EvolutionHome(){
             <div className="evo-home-card-stage">
               <button className="evo-home-card-nav prev" type="button" onClick={()=>setCardIndex(v=>(v-1+data.cards.length)%data.cards.length)}>‹</button>
               {visibleCards.map((card,index)=><div key={card.id} className={'evo-credit-card '+(index===cardIndex?'active':index<cardIndex?'left':'right')}>
-                <small>{card.name}</small><strong>{card.brand}</strong><span>•••• &nbsp; {card.lastFour}</span><em>{money.format(card.statement)}</em>
+                <small>{card.name}</small><strong>{card.name.toUpperCase().includes('MEG')?'MEG':card.brand}</strong><span>•••• &nbsp; {card.lastFour}</span><em>{money.format(card.statement)}</em>
               </div>)}
               <button className="evo-home-card-nav next" type="button" onClick={()=>setCardIndex(v=>(v+1)%data.cards.length)}>›</button>
             </div>
