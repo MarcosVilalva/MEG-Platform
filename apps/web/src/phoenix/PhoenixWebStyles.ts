@@ -28,5 +28,7 @@ import './meg-web-home-revolution.css';
 import './meg-web-movements-revolution.css';
 // Cartões Revolution: grid, resumo e central responsiva exclusivos do Web.
 import './meg-web-cards-revolution.css';
+// Pendências + Benefício Revolution: terceira prancha concluída no Web.
+import './meg-web-payables-benefit-revolution.css';
 
 export {};
