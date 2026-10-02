@@ -87,7 +87,7 @@ Estado da fundação:
 1. raiz `apps/web/src/evolution/`: CRIADA;
 2. entrypoint `apps/web/evolution.html`: CRIADO e separado do Android;
 3. build Capacitor: permanece usando somente `index.html`, portanto não inclui o entrypoint Evolution;
-4. Loading Evolution: EM CORREÇÃO após validação visual parcial — corrigir logo (M separado do E) e progresso final obrigatório em 100%;
+4. Loading Evolution: CORRIGIDO no PR #525, commit `d4ffde4d6f49fef3bf6a9d2e861c5cc0b3ba0b28` — logo Evolution própria com M/E separados e progresso concluindo em 100%; aguardando nova validação visual;
 5. após validação do Loading: construir Login → Shell → Home, uma tela por vez.
 
 ### Frase obrigatória para retomar após travamento
@@ -103,9 +103,12 @@ O Loading publicado no PR #524 **não foi validado**. Foram identificados dois d
 - a logo usada no Evolution compactava o `M` contra o `E`;
 - o progresso terminava em `92%`.
 
-Correção oficial:
-- usar asset exclusivo do Evolution em `apps/web/public/evolution/brand/meg-mark.svg`, sem alterar os assets compartilhados usados pelo Android;
-- Loading deve avançar até `100%` e encerrar o estado `aria-busy`;
-- Android permanece congelado e não participa desta correção.
+Correção oficial implementada no PR #525 / commit `d4ffde4d6f49fef3bf6a9d2e861c5cc0b3ba0b28`:
+- asset exclusivo do Evolution em `apps/web/public/evolution/brand/meg-mark.svg`, sem alterar os assets compartilhados usados pelo Android;
+- letras M, E e G posicionadas separadamente, sem compactação negativa;
+- progresso do Loading avança até `100%`;
+- o estado `aria-busy` encerra ao atingir 100%;
+- CI, smoke e deploy verdes;
+- Android permaneceu congelado e não participou da correção.
 
-**Não avançar para Login Evolution antes da validação visual deste Loading corrigido.**
+**Estado de retomada: Loading Evolution corrigido e publicado, aguardando validação visual. Não avançar para Login Evolution antes dessa validação.**
