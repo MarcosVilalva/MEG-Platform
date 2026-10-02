@@ -178,6 +178,11 @@ export function draftFromWebNextTarget(target: WebNextEditorTarget, context: Web
   const { event, card, purchase } = target;
   const mode = eventMode(event);
   const benefit = mode === 'benefit';
+  const cardPayment = purchase && card
+    ? context.paymentMethods.find((item) => normalize(item.name) === normalize(card.name) && isCreditPayment(item.name, item.type))
+      || context.paymentMethods.find((item) => isCreditPayment(item.name, item.type))
+      || null
+    : null;
   const amount = purchase
     ? Math.abs(Number(purchase.totalAmount || 0))
     : Math.abs(Number(event.signedAmount || event.amount || 0));
@@ -196,7 +201,7 @@ export function draftFromWebNextTarget(target: WebNextEditorTarget, context: Web
     accountId: benefit ? context.canonicalBenefitAccountId || event.accountId || '' : event.accountId || '',
     destinationAccountId: String(event.sourcePayload?.counterpartyAccountId || ''),
     categoryId: purchase?.category?.id || event.categoryId || '',
-    paymentMethodId: benefit ? context.canonicalBenefitPaymentId || event.paymentMethodId || '' : event.paymentMethodId || '',
+    paymentMethodId: benefit ? context.canonicalBenefitPaymentId || event.paymentMethodId || '' : cardPayment?.id || event.paymentMethodId || '',
     cardId: card?.id || '',
     installments: Math.max(1, Number(purchase?.installments || event.sourcePayload?.installmentCount || 1)),
     notes: event.notes || '',
