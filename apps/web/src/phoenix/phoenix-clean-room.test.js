@@ -392,7 +392,7 @@ assert.ok((profileAvatar.match(/id: '/g) || []).length >= 10,
   'Biblioteca de avatares deve manter variedade suficiente de estilos prontos');
 assert.match(webGridScreens, /Títulos, clientes e recebimentos/);
 assert.match(webGridScreens, /Origem e evolução das entradas/);
-assert.match(webGridScreens, /Fechamento realizado e projetado/);
+assert.match(webGridScreens, /Entradas, saídas e projeções futuras/);
 assert.match(webScreens, /Tendências e comparações históricas/);
 assert.doesNotMatch(webScreens, /Índice MEG|Em calibração/,
   'Análises não pode exibir uma nota proprietária sem critérios e pesos validados.');
