@@ -34,5 +34,7 @@ import './meg-web-payables-benefit-revolution.css';
 import './meg-web-reports-revolution.css';
 // Fluxo de Caixa Revolution: leitura diária responsiva com grid e filtros confinados.
 import './meg-web-cashflow-revolution.css';
+// Prancha 4 Web aprovada: fidelidade visual de Relatórios e Fluxo de Caixa.
+import './meg-web-board4-reports-cashflow.css';
 
 export {};
