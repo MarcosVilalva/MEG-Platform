@@ -28,6 +28,10 @@ import {
   PhoenixReconciliation
 } from './screens/PhoenixWebScreens';
 import { PhoenixBudgetsGrid } from './screens/PhoenixBudgetsGrid';
+import { WebNextShell } from '../web-next/app/WebNextShell';
+import { WebNextHome } from '../web-next/screens/WebNextHome';
+import { buildWebNextHomeModel } from '../web-next/data/home-view-model';
+import { WebNextPeriodPopover } from '../web-next/components/WebNextPeriodPopover';
 
 const loadMovementsModule = () => import('./screens/PhoenixMovementsV15');
 const loadPayablesModule = () => import('./screens/PhoenixReadScreens');
@@ -1367,6 +1371,60 @@ export function PhoenixApp({ onLogout, onClose }: { onLogout?: () => void; onClo
         onClose={onClose}
       />
       {mobileSettling ? <div className="meg-mobile-entry-shield" aria-hidden="true" /> : null}
+    </>;
+  }
+
+  if (!nativeOperational && view === 'home' && periodMode === 'month') {
+    const homeModel = viewData
+      ? buildWebNextHomeModel(viewData, { closingBalance: homePeriodContext?.closingBalance })
+      : null;
+
+    return <>
+      <WebNextShell
+        route="home"
+        userName={data?.user.name || 'MEG'}
+        brandSrc={phoenixBrandAsset('brand/meg-finance-system-mark.svg')}
+        periodLabel={periodActiveLabel}
+        pendingCount={pendingCount}
+        onNavigate={navigate}
+        onSearch={() => setSearchOpen(true)}
+        onPeriod={() => periodOpen ? closePeriodSelector() : openPeriodSelector()}
+        onProfile={() => navigate('settings')}
+        onLogout={requestLogout}
+      >
+        {loadState.status === 'error' && !data ? <section className="mnx-home-error" role="alert">
+          <div><strong>Não foi possível carregar sua visão financeira</strong><span>{loadState.message}</span><button type="button" onClick={() => setRefreshKey((value) => value + 1)}>Tentar novamente</button></div>
+        </section> : homeModel ? <WebNextHome model={homeModel} onNavigate={navigate} /> : <section className="mnx-home-loading" role="status" aria-live="polite">
+          <div><i aria-hidden="true" /><strong>Carregando seus dados</strong><span>Organizando sua visão financeira no novo MEG Web.</span></div>
+        </section>}
+      </WebNextShell>
+
+      <WebNextPeriodPopover
+        open={periodOpen}
+        mode={periodDraftMode}
+        month={periodDraftMonth}
+        start={periodStart}
+        end={periodEnd}
+        currentLabel={nativeHomePeriodTitle}
+        loading={periodLoading}
+        error={periodError}
+        onModeChange={setPeriodDraftMode}
+        onMonthChange={setPeriodDraftMonth}
+        onStartChange={setPeriodStart}
+        onEndChange={setPeriodEnd}
+        onStepMonth={stepDraftMonth}
+        onQuickCurrent={() => quickMonth(0)}
+        onQuickPrevious={() => quickMonth(-1)}
+        onApply={applyPeriod}
+        onClose={closePeriodSelector}
+      />
+
+      {searchOpen && viewData ? <PhoenixCommandPalette
+        data={viewData}
+        allEvents={searchEvents || undefined}
+        onClose={() => setSearchOpen(false)}
+        onNavigate={openSearchResult}
+      /> : null}
     </>;
   }
 
