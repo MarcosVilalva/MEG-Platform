@@ -61,6 +61,7 @@ const cardsRevolutionCss = readFileSync(new URL('./meg-web-cards-revolution.css'
 const payablesBenefitRevolutionCss = readFileSync(new URL('./meg-web-payables-benefit-revolution.css', import.meta.url), 'utf8');
 const reportsRevolutionCss = readFileSync(new URL('./meg-web-reports-revolution.css', import.meta.url), 'utf8');
 const cashflowRevolutionCss = readFileSync(new URL('./meg-web-cashflow-revolution.css', import.meta.url), 'utf8');
+const board4ReportsCashflowCss = readFileSync(new URL('./meg-web-board4-reports-cashflow.css', import.meta.url), 'utf8');
 const budgetsScreen = readFileSync(new URL('./screens/PhoenixBudgetsGrid.tsx', import.meta.url), 'utf8');
 const history = readFileSync(new URL('./screens/PhoenixHistory.tsx', import.meta.url), 'utf8');
 const users = readFileSync(new URL('./screens/PhoenixUsers.tsx', import.meta.url), 'utf8');
@@ -1730,6 +1731,22 @@ assert.match(cashflowRevolutionCss, /@container cashflow-revolution \(max-width:
   'Fluxo de Caixa deve compactar KPIs com base no container.');
 assert.doesNotMatch(cashflowRevolutionCss, /meg-operational-mobile|android-cleanroom|meg-cleanroom-mobile/,
   'Camada Revolution de Fluxo de Caixa deve permanecer exclusiva do Web.');
+
+
+assert.match(reportsCenter, /meg-board4-report-kpis[\s\S]*meg-board4-report-analytics/,
+  'Relatórios deve seguir a prancha Web 4 com KPIs e painel analítico antes da exportação.');
+assert.match(reportsCenter, /Receitas x despesas[\s\S]*Distribuição de despesas/,
+  'Relatórios deve preservar os dois gráficos principais aprovados na prancha 4.');
+assert.match(webGridScreens, /meg-board4-cashflow[\s\S]*Evolução do período/,
+  'Fluxo de Caixa deve seguir a prancha 4 com leitura gráfica principal.');
+assert.match(webGridScreens, /projectedPoints[\s\S]*realizedPoints/,
+  'Fluxo de Caixa deve comparar saldo projetado e realizado com dados reais.');
+assert.match(board4ReportsCashflowCss, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/,
+  'Relatórios aprovado deve manter quatro KPIs em desktop amplo.');
+assert.match(board4ReportsCashflowCss, /meg-board4-cashflow-kpis[\s\S]*repeat\(3,minmax\(0,1fr\)\)/,
+  'Fluxo de Caixa aprovado deve destacar Entradas, Saídas e Saldo projetado.');
+assert.doesNotMatch(board4ReportsCashflowCss, /meg-operational-mobile|android-cleanroom|meg-cleanroom-mobile/,
+  'Fidelidade da prancha Web 4 não pode tocar no Android.');
 
 assert.match(phoenixApp, /onLogout/,
   'Phoenix deve expor saída de sessão ao preview isolado');
