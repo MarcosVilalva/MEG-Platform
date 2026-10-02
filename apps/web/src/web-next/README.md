@@ -40,3 +40,14 @@ A primeira tela migrada é a Home da Prancha Web 1:
 - contrato: `web-next-home.contract.test.js`.
 
 A competência mensal utiliza Web Next. Intervalo/Tudo permanecem temporariamente no runtime anterior até sua reconstrução.
+
+## UI transversal
+
+Componentes canônicos disponíveis:
+- `WebNextSearchDialog`;
+- `WebNextStatus`;
+- `WebNextModal` + `WebNextConfirm`;
+- `WebNextDrawer`;
+- `WebNextToastStack`.
+
+A Home mensal usa Busca, Status e Confirm Web Next. Rotas Phoenix não migradas mantêm temporariamente seus overlays antigos.
