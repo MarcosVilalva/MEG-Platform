@@ -7,12 +7,12 @@ type EvolutionLoadingProps = {
 
 export function EvolutionLoading({progress=42,message='Organizando suas finanças para o seu dia a dia.'}:EvolutionLoadingProps){
   const normalized=Math.max(0,Math.min(100,progress));
-  return <main className="evo-loading" data-evolution-screen="loading" aria-live="polite" aria-busy="true">
+  return <main className="evo-loading" data-evolution-screen="loading" aria-live="polite" aria-busy={normalized < 100}>
     <div className="evo-loading-orb evo-loading-orb-a" aria-hidden="true"/>
     <div className="evo-loading-orb evo-loading-orb-b" aria-hidden="true"/>
     <section className="evo-loading-stage">
       <div className="evo-loading-logo">
-        <img src="./brand/meg-finance-system-mark-transparent.svg" alt="MEG Finanças"/>
+        <img src="./evolution/brand/meg-mark.svg" alt="MEG Finanças"/>
       </div>
 
       <div className="evo-loading-visual" aria-hidden="true">
