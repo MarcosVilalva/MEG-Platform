@@ -424,3 +424,265 @@
   .evo-home-middle,.evo-home-bottom{grid-template-columns:1fr}
   .evo-home-cashflow{min-height:310px}.evo-home-right-stack{min-height:320px}.evo-home-list{min-height:210px}.evo-home-month-summary{display:flex;min-height:220px}
 }
+
+
+/* === EVOLUTION HOME — FIDELITY PASS 2 / PRANCHA D === */
+@media(min-width:1421px) and (min-height:791px){
+  .evo-home{
+    grid-template-columns:218px minmax(0,1fr);
+    gap:13px;
+    padding:12px 13px 13px 12px;
+    background:
+      radial-gradient(circle at 64% 3%,rgba(47,246,224,.22),transparent 19%),
+      radial-gradient(circle at 89% 26%,rgba(13,160,169,.11),transparent 27%),
+      linear-gradient(151deg,#02121b 0%,#051923 39%,#020e17 100%);
+  }
+  .evo-home:before{opacity:.16}
+  .evo-home-sidebar{
+    border-color:rgba(55,241,221,.47);
+    background:
+      radial-gradient(circle at 48% 18%,rgba(30,207,193,.08),transparent 28%),
+      linear-gradient(180deg,rgba(2,29,37,.985),rgba(2,18,27,.99));
+    box-shadow:
+      0 28px 76px rgba(0,0,0,.48),
+      inset 0 1px rgba(255,255,255,.055),
+      inset 0 0 36px rgba(33,232,213,.035),
+      0 0 30px rgba(35,224,207,.09);
+  }
+  .evo-home-brand{height:140px;margin:-3px 1px 10px}
+  .evo-home-brand img{
+    width:154px;
+    max-height:122px;
+    filter:drop-shadow(0 0 22px rgba(57,245,225,.30));
+  }
+  .evo-home-sidebar nav{gap:3px}
+  .evo-home-sidebar nav button{min-height:42px;font-size:14px;font-weight:720}
+  .evo-home-sidebar nav button.active{
+    border-color:rgba(57,255,231,.92);
+    background:
+      radial-gradient(circle at 18% 50%,rgba(45,246,222,.22),transparent 38%),
+      linear-gradient(90deg,rgba(20,205,190,.40),rgba(7,65,72,.30));
+    box-shadow:
+      inset 0 0 24px rgba(49,241,221,.16),
+      0 0 22px rgba(41,237,217,.25);
+  }
+  .evo-home-premium{
+    border-color:rgba(59,246,224,.52);
+    background:
+      radial-gradient(circle at 50% 0%,rgba(70,255,226,.22),transparent 44%),
+      linear-gradient(180deg,rgba(5,57,62,.87),rgba(4,38,47,.84));
+    box-shadow:inset 0 0 30px rgba(39,234,213,.06),0 0 26px rgba(35,226,207,.11);
+  }
+
+  .evo-home-workspace{
+    grid-template-rows:48px 176px 128px minmax(276px,1.12fr) minmax(188px,.78fr);
+    gap:9px;
+  }
+  .evo-home-search,
+  .evo-home-month,
+  .evo-home-bell{
+    border-color:rgba(59,228,213,.48);
+    background:linear-gradient(180deg,rgba(4,40,49,.78),rgba(3,27,37,.86));
+    box-shadow:inset 0 1px rgba(255,255,255,.035),0 0 15px rgba(33,216,202,.05);
+  }
+
+  .evo-home-hero{
+    border-radius:14px;
+    background:
+      radial-gradient(ellipse at 71% 37%,rgba(24,194,186,.18),transparent 30%),
+      linear-gradient(90deg,#03131c 0%,#031721 34%,rgba(3,32,39,.93) 58%,#02131c 100%);
+    box-shadow:
+      inset 0 -28px 55px rgba(0,0,0,.38),
+      inset 0 0 30px rgba(40,220,205,.04);
+  }
+  .evo-home-hero:before{
+    z-index:1;
+    background:
+      radial-gradient(circle at 66% -6%,rgba(79,255,235,.88) 0 1.0%,rgba(22,171,173,.82) 1.4% 10.2%,rgba(10,78,91,.96) 10.6% 18.5%,rgba(5,34,46,.96) 18.8% 22.5%,transparent 22.9%),
+      radial-gradient(circle at 66% -7%,rgba(52,244,224,.35) 0 21%,transparent 31%),
+      linear-gradient(112deg,transparent 0 57%,rgba(49,237,217,.11) 57.4%,transparent 58.2%);
+    opacity:.98;
+    filter:drop-shadow(0 0 18px rgba(42,225,211,.18));
+  }
+  .evo-home-hero:after{
+    z-index:5;left:46%;height:2px;opacity:.80;
+    background:linear-gradient(90deg,transparent,#5ffff0 30%,rgba(73,247,228,.76) 55%,transparent 94%);
+    filter:drop-shadow(0 0 12px rgba(79,255,238,.95));
+  }
+  .evo-home-hero-copy{left:27px;top:13px;z-index:6}
+  .evo-home-hero h1{
+    font-size:53px;
+    line-height:.91;
+    letter-spacing:-.049em;
+    text-shadow:0 10px 32px rgba(0,0,0,.58);
+  }
+  .evo-home-hero h1 em{
+    color:#19eee1;
+    text-shadow:0 0 24px rgba(31,239,224,.24);
+  }
+  .evo-home-hero-copy p{
+    margin-top:9px;
+    color:#dce9ea;
+    font-size:14.5px;
+    font-weight:520;
+    text-shadow:0 4px 14px rgba(0,0,0,.75);
+  }
+  .evo-home-mountain{z-index:2;inset:0 0 0 39%;filter:drop-shadow(0 -1px 10px rgba(45,237,219,.14))}
+  .evo-home-mountain:before{
+    left:-4%;right:-3%;bottom:-25px;height:100%;
+    background:
+      linear-gradient(158deg,transparent 0 15%,rgba(81,255,236,.76) 15.2% 15.65%,rgba(8,61,68,.98) 15.9% 20%,transparent 20.3% 24%,
+      rgba(50,231,214,.45) 24.2% 24.6%,rgba(5,45,55,.98) 24.9% 32%,transparent 32.4% 36%,
+      rgba(61,244,224,.53) 36.2% 36.7%,rgba(5,53,62,.98) 37% 44%,transparent 44.4%),
+      linear-gradient(27deg,#010f17 0%,#05323a 35%,#072f38 50%,#02121b 78%);
+    clip-path:polygon(0 88%,6% 74%,12% 79%,19% 55%,25% 68%,32% 39%,39% 60%,48% 31%,56% 57%,65% 18%,72% 52%,79% 30%,85% 62%,92% 42%,100% 66%,100% 100%,0 100%);
+    filter:drop-shadow(0 -3px 12px rgba(47,239,219,.23));
+  }
+  .evo-home-mountain:after{
+    width:665px;height:250px;left:10%;top:-194px;
+    border-color:rgba(80,255,236,.58);
+    box-shadow:
+      0 0 30px rgba(51,235,218,.20),
+      inset 0 0 30px rgba(38,218,203,.10);
+  }
+  .evo-home-hero-cards{
+    z-index:4;
+    right:7px;
+    top:10px;
+    height:156px;
+    gap:9px;
+  }
+  .evo-home-hero-cards span{
+    width:132px;
+    height:111px;
+    padding:14px 12px;
+    border-color:rgba(85,249,231,.48);
+    border-radius:9px;
+    color:#aeeceb;
+    background:
+      linear-gradient(145deg,rgba(14,96,100,.72),rgba(3,31,40,.78));
+    font-size:8.4px;
+    font-weight:650;
+    line-height:1.52;
+    letter-spacing:.15em;
+    box-shadow:
+      0 17px 32px rgba(0,0,0,.38),
+      0 0 20px rgba(37,232,212,.10),
+      inset 0 1px rgba(255,255,255,.05);
+    backdrop-filter:blur(3px);
+  }
+  .evo-home-hero-cards span:first-child{transform:translateY(18px) perspective(420px) rotateY(-10deg) rotate(-1deg)}
+  .evo-home-hero-cards span.main{
+    width:150px;height:142px;
+    font-size:66px;
+    border-color:rgba(102,255,240,.85);
+    background:
+      linear-gradient(135deg,transparent 0 28%,rgba(103,255,244,.22) 29% 36%,transparent 37% 48%,rgba(69,231,219,.14) 49% 54%,transparent 55%),
+      linear-gradient(145deg,rgba(17,150,153,.88),rgba(6,44,58,.90));
+    transform:translateY(-5px) rotate(-4deg);
+    box-shadow:
+      0 23px 38px rgba(0,0,0,.43),
+      0 0 34px rgba(49,239,219,.23),
+      inset 0 0 28px rgba(77,249,232,.10);
+  }
+  .evo-home-hero-cards span:nth-child(3){
+    width:142px;height:121px;
+    transform:translateY(17px) perspective(420px) rotateY(10deg);
+  }
+  .evo-home-hero-cards span:nth-child(4){
+    width:114px;height:116px;
+    transform:translateY(3px) perspective(420px) rotateY(14deg);
+  }
+
+  .evo-home-kpis{gap:9px;grid-template-columns:1.18fr .88fr .88fr .88fr .88fr .84fr}
+  .evo-home-kpi{
+    padding:12px 14px 11px;
+    border-color:rgba(53,242,222,.72);
+    border-radius:12px;
+    background:
+      radial-gradient(circle at 84% 12%,rgba(41,245,220,.13),transparent 34%),
+      radial-gradient(ellipse at 62% 115%,rgba(25,186,176,.18),transparent 54%),
+      linear-gradient(147deg,rgba(5,67,72,.96),rgba(3,28,38,.97));
+    box-shadow:
+      inset 0 1px rgba(255,255,255,.055),
+      inset 0 -18px 30px rgba(0,0,0,.16),
+      0 15px 31px rgba(0,0,0,.27),
+      0 0 16px rgba(42,233,214,.09);
+  }
+  .evo-home-kpi:before{
+    content:"";
+    position:absolute;
+    right:-4px;
+    top:-5px;
+    width:62px;
+    height:62px;
+    border-radius:50%;
+    background:radial-gradient(circle,rgba(59,247,224,.10),transparent 68%);
+    pointer-events:none;
+  }
+  .evo-home-kpi:after{
+    left:46%;right:-6px;bottom:8px;height:34px;
+    background:
+      linear-gradient(166deg,transparent 0 27%,rgba(61,255,234,.88) 28% 31%,transparent 32% 45%,rgba(49,220,208,.66) 46% 49%,transparent 50%);
+    opacity:.70;
+  }
+  .evo-home-kpi-top{font-size:13px;font-weight:540;gap:9px}
+  .evo-home-kpi-icon{width:31px;height:31px;border-radius:8px;background:rgba(29,211,194,.14)}
+  .evo-home-kpi-icon svg{width:21px;height:21px}
+  .evo-home-kpi>strong{margin-top:6px;font-size:28px;font-weight:850}
+  .evo-home-kpi-detail{margin-top:7px;font-size:10.5px}
+  .evo-tone-red{border-color:rgba(232,100,111,.48)}
+  .evo-tone-red .evo-home-kpi-icon{background:rgba(226,99,107,.10)}
+  .evo-tone-warning{border-color:rgba(226,182,93,.33)}
+  .evo-home-goal-line:before,.evo-home-goal-line>i{height:10px}
+
+  .evo-home-panel{
+    border-color:rgba(49,236,217,.66);
+    background:
+      radial-gradient(circle at 60% -18%,rgba(44,236,214,.10),transparent 42%),
+      radial-gradient(ellipse at 50% 115%,rgba(20,123,130,.12),transparent 52%),
+      linear-gradient(156deg,rgba(4,54,63,.97),rgba(3,24,34,.98));
+    box-shadow:
+      inset 0 1px rgba(255,255,255,.05),
+      inset 0 0 28px rgba(33,224,205,.04),
+      0 16px 36px rgba(0,0,0,.26),
+      0 0 15px rgba(34,226,207,.07);
+  }
+  .evo-home-panel h2{font-size:17px}
+  .evo-home-panel h2 svg{width:23px;height:23px}
+  .evo-home-panel header p{font-size:10.5px}
+  .evo-home-middle{grid-template-columns:minmax(0,1.12fr) minmax(454px,.88fr)}
+  .evo-home-right-stack{grid-template-rows:minmax(185px,1.52fr) minmax(92px,.66fr)}
+  .evo-home-card-stage{min-height:112px}
+  .evo-credit-card{
+    width:42%;
+    min-width:178px;
+    max-width:244px;
+    height:112px;
+    border-radius:10px;
+    border-color:rgba(126,220,228,.40);
+    box-shadow:0 18px 34px rgba(0,0,0,.46);
+  }
+  .evo-credit-card.active{
+    transform:translateX(0) scale(1.10);
+    border-color:rgba(88,255,238,.96);
+    box-shadow:
+      0 20px 38px rgba(0,0,0,.50),
+      0 0 34px rgba(42,238,217,.30),
+      inset 0 0 24px rgba(76,247,229,.10);
+  }
+  .evo-credit-card.left{transform:translateX(-70%) scale(.91) rotateY(9deg);opacity:.82}
+  .evo-credit-card.right{transform:translateX(70%) scale(.91) rotateY(-9deg);opacity:.79}
+  .evo-credit-card small{font-size:8.5px}
+  .evo-credit-card strong{font-size:17px}
+  .evo-credit-card span{font-size:9.5px}
+  .evo-home-card-nav{width:38px;height:38px;border-color:rgba(70,245,226,.65)}
+  .evo-home-goals h2,.evo-home-list h2,.evo-home-month-summary h2{font-size:14px}
+  .evo-home-list-row section b{font-size:9.5px}
+  .evo-home-list-row section small,.evo-home-list-row time{font-size:7.5px}
+  .evo-home-list-row>strong{font-size:9.5px}
+  .evo-home-donut{width:132px;height:132px}
+  .evo-home-donut:after{inset:29px}
+  .evo-home-category-list>div{font-size:7.5px;min-height:18px}
+  .evo-home-category-list b{font-size:7.5px}
+}
