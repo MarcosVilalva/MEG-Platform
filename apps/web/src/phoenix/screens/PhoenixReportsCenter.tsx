@@ -184,7 +184,7 @@ export function PhoenixReportsCenter({ data }: { data: PhoenixReadModel }) {
     }
   }
 
-  return <section className="px-screen meg-web-reports">
+  return <section className="px-screen meg-web-reports meg-web-reports-revolution">
     <header className="px-screen-head">
       <div><span className="px-kicker">Relatórios e exportações</span><h1>Central de saída e análise</h1><p>Transforme os dados confirmados do MEG em relatórios de apoio, planilhas de trabalho e documentos para conferência. A exportação respeita o período financeiro carregado.</p></div>
       <div className="px-screen-head-aside"><span className="px-status reconciled">Período · {monthLabel(data.month)}</span></div>
