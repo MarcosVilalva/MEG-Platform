@@ -743,3 +743,19 @@
   .evo-home-hero h1{font-size:58px;line-height:.92}
   .evo-home-hero-copy p{margin-top:8px;font-size:15px}
 }
+
+
+/* === EVOLUTION HOME — FIDELITY PASS 6 / CANONICAL HERO CROP === */
+@media(min-width:1421px) and (min-height:791px){
+  .evo-home-hero{
+    background:
+      linear-gradient(90deg,#03131c 0%,rgba(3,19,28,.99) 25%,rgba(3,19,28,.72) 34%,rgba(3,19,28,.14) 45%,rgba(3,19,28,0) 52%),
+      url('/evolution/artwork/home-hero-canonical.jpg') right center / auto 112% no-repeat,
+      #03131c;
+  }
+  .evo-home-hero:before{
+    background:
+      radial-gradient(ellipse at 70% 2%,rgba(69,255,236,.08),transparent 31%),
+      linear-gradient(90deg,rgba(2,16,24,.97) 0%,rgba(2,16,24,.46) 28%,rgba(2,16,24,.04) 40%,transparent 48%);
+  }
+}
