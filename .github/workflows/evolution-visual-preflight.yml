@@ -117,6 +117,12 @@ jobs:
             "http://127.0.0.1:4173/evolution.html?screen=loading" \
             "artifacts/evolution-loading-vertical-430x932.png"
 
+          npx --yes playwright@1.55.0 screenshot \
+            --viewport-size="1672,941" \
+            --wait-for-timeout="1800" \
+            "http://127.0.0.1:4173/evolution.html?screen=system" \
+            "artifacts/evolution-home-1672x941.png"
+
       - name: Record capture metadata
         run: |
           cat > artifacts/visual-preflight.txt <<EOF
@@ -127,6 +133,7 @@ jobs:
           loading_frozen=1254x1254
           loading_wide=1364x626
           loading_vertical=430x932
+          home_command_center=1672x941
           commit=${GITHUB_SHA}
           rule=CI verde nao equivale a validacao visual. Todas as capturas devem ser comparadas com a referencia aprovada antes de declarar pronto.
           EOF
