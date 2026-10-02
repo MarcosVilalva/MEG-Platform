@@ -735,3 +735,11 @@
     text-shadow:0 0 12px rgba(83,244,228,.22);
   }
 }
+
+
+/* === EVOLUTION HOME — FIDELITY PASS 5 / FINAL HERO ATMOSPHERE === */
+@media(min-width:1421px) and (min-height:791px){
+  .evo-home-hero-copy{top:18px;left:27px}
+  .evo-home-hero h1{font-size:58px;line-height:.92}
+  .evo-home-hero-copy p{margin-top:8px;font-size:15px}
+}
