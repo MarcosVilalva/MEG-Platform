@@ -69,7 +69,8 @@ Se uma tela ainda não foi validada, o legado necessário pode continuar ativo t
 - governança clean-room consolidada em `main`: `8a1ad79b427c356bd0478060dd464515e5ce5a88` (PR #512);
 - fundação Web Next: mesclada em `main` no commit `61049d51dc0cc17e710366073a36802eb8e3de64`;
 - Home Web Next: mesclada em `main` no commit `44731391fc3b06a1b32431caff72b307b7eca70e` (PR #514), em validação visual;
-- UI transversal Web Next: branch `feat/web-next-global-ui` com Busca, Loading/Erro/Vazio, Modal, Confirm, Drawer e Toast;
+- UI transversal Web Next: mesclada na `main` em `bc4c1466f0e14f772265292c32f9dcd8725d0edb` (PR #515);
+- Home + Sidebar premium: branch `feat/web-next-home-sidebar-v2`, em implementação para nova validação visual;
 - cliente visual em produção: **híbrido temporário** — Home mensal em Web Next; demais rotas ainda Phoenix;
 - situação do runtime atual: **transitória e controlada**.
 
@@ -80,7 +81,7 @@ A Home do PR #511 serviu como diagnóstico e evolução visual, mas NÃO é cons
 | Área | Referência | Estado clean-room | Legado removido |
 |---|---|---|---|
 | Fundação Web / shell | Prancha 1 + sistema visual das 5 pranchas | MERGED CLEAN-ROOM · `61049d51` | N/A |
-| Home | Prancha 1 | EM VALIDAÇÃO PRODUÇÃO · `44731391` | NÃO — aguardando validação |
+| Home | Prancha 1 | REFINO PREMIUM EM IMPLEMENTAÇÃO · tipografia, 3D/neon e gráfico interativo | NÃO — aguardando nova validação |
 | Lançamentos | Prancha 2 | NÃO INICIADA | NÃO |
 | Novo / Editar lançamento | Prancha 2 | NÃO INICIADA | NÃO |
 | Pendentes / baixa | Prancha 3 | NÃO INICIADA | NÃO |
@@ -92,7 +93,7 @@ A Home do PR #511 serviu como diagnóstico e evolução visual, mas NÃO é cons
 | Categorias / Cadastros | Prancha 4/5 | NÃO INICIADA | NÃO |
 | Histórico | Prancha 5 | NÃO INICIADA | NÃO |
 | Configurações / Perfil | Prancha 5 | NÃO INICIADA | NÃO |
-| Busca / Modal / Drawer / Toast / Loading / Erro / Vazio | Pranchas 1–5 | EM IMPLEMENTAÇÃO CLEAN-ROOM | NÃO — Phoenix segue nas rotas não migradas |
+| Busca / Modal / Drawer / Toast / Loading / Erro / Vazio | Pranchas 1–5 | MERGED CLEAN-ROOM · `bc4c1466` | NÃO — Phoenix segue nas rotas não migradas |
 
 ## 8. Estrutura alvo
 
