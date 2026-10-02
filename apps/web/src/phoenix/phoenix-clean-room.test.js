@@ -1705,11 +1705,11 @@ assert.match(reportsCenter, /meg-web-reports-revolution/,
   'Central de Relatórios deve declarar explicitamente a camada Revolution.');
 assert.match(reportsRevolutionCss, /grid-template-rows:auto auto minmax\(0,1fr\)/,
   'Relatórios Revolution deve manter cabeçalho, seletor e workspace dentro da viewport.');
-assert.match(reportsRevolutionCss, /meg-web-report-preview[\\s\\S]*overflow:auto/,
+assert.match(reportsRevolutionCss, /meg-web-report-preview[\s\S]*overflow:auto/,
   'Somente a prévia do relatório deve assumir rolagem interna.');
 assert.match(reportsRevolutionCss, /@container meg-main \(max-width:820px\)/,
   'Relatórios Revolution deve reagir à largura útil depois da sidebar, não à tela inteira.');
-assert.match(reportsRevolutionCss, /meg-web-report-grid[\\s\\S]*display:flex[\\s\\S]*overflow-x:auto/,
+assert.match(reportsRevolutionCss, /meg-web-report-grid[\s\S]*display:flex[\s\S]*overflow-x:auto/,
   'Em larguras reduzidas os tipos de relatório devem virar trilho horizontal sem empurrar a página.');
 assert.doesNotMatch(reportsRevolutionCss, /meg-cleanroom-mobile|android-cleanroom/,
   'Camada Revolution de Relatórios deve permanecer exclusiva do Web.');
