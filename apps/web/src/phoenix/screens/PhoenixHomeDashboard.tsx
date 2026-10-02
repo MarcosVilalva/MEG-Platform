@@ -284,12 +284,6 @@ export function PhoenixHomeDashboard({ data, month, onNavigate, onReviewPayables
     .sort((left, right) => String(right.date).localeCompare(String(left.date)) || String(right.updatedAt || right.createdAt || '').localeCompare(String(left.updatedAt || left.createdAt || '')))
     .slice(0, 5);
   const featuredCards = data.cards.filter((card) => card.isActive).slice(0, 3);
-  const cashflowDays = data.cashflow.days || [];
-  const cashflowValues = cashflowDays.flatMap((day) => [Number(day.realizedBalance || 0), Number(day.projectedBalance || 0)]);
-  const cashflowMin = Math.min(0, ...cashflowValues);
-  const cashflowMax = Math.max(1, ...cashflowValues);
-  const realizedCashflowPoints = homeChartPoints(cashflowDays.map((day) => Number(day.realizedBalance || 0)), cashflowMin, cashflowMax);
-  const projectedCashflowPoints = homeChartPoints(cashflowDays.map((day) => Number(day.projectedBalance || 0)), cashflowMin, cashflowMax);
   const benefitEvents = data.events.items
     .filter(isPhoenixBenefitEvent)
     .filter((event) => ['paid', 'reconciled', 'confirmed'].includes(event.status))
