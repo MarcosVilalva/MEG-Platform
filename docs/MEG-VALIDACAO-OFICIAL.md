@@ -212,3 +212,20 @@ Se a captura ainda apresentar divergências evidentes, o assistente deve continu
 Se a captura não puder ser obtida ou inspecionada, o estado correto é **CAPTURA PENDENTE**, nunca “pronto”.
 
 O workflow oficial de captura é `.github/workflows/evolution-visual-preflight.yml`.
+
+
+### Visual QA operacionalizado — PR #529
+
+O processo de pré-validação visual foi mesclado na `main` pelo PR #529, commit `fb76537a351bdf280491e412644927abeba20dc9`.
+
+Foi criado o workflow `MEG Evolution Visual Preflight`, que captura a implementação real no navegador e gera artifact de screenshot para inspeção antes de comunicar prontidão.
+
+Primeira aplicação real do processo em 02/10/2026:
+- captura do Loading em `1254 × 1254`;
+- comparação lado a lado com a prancha Loading oficial;
+- resultado: **REPROVADO NA PRÉ-VALIDAÇÃO INTERNA**;
+- divergências observadas: logo pequena, cena central menor e mais plana, cards com pouco volume, ausência do mesmo nível de brilho/reflexos, plataforma pouco cinematográfica, paisagem simplificada e hierarquia vertical diferente;
+- portanto o usuário **não deve ser chamado para validar essa versão**;
+- próximo passo: continuar corrigindo internamente e recapturar até atingir o contrato visual.
+
+**Regra prática definitiva:** o usuário faz a aprovação final, mas não deve precisar descobrir divergências visuais óbvias para o assistente.
