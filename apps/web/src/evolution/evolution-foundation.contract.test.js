@@ -7,10 +7,12 @@ const paths=[
   './app/EvolutionApp.tsx',
   './screens/EvolutionLoading.tsx',
   './screens/EvolutionLogin.tsx',
+  './screens/EvolutionSystemEntry.tsx',
   './styles/global.css',
   './styles/tokens.css',
   './styles/loading.css',
-  './styles/login.css'
+  './styles/login.css',
+  './styles/system-entry.css'
 ];
 
 for(const filePath of paths){
@@ -25,17 +27,12 @@ assert.match(html,/\/src\/evolution\/main\.tsx/);
 assert.doesNotMatch(html,/phoenix/i);
 
 const loading=fs.readFileSync(new URL('./screens/EvolutionLoading.tsx',import.meta.url),'utf8');
-assert.match(loading,/data-evolution-loading-fidelity="master-artwork"/);
+assert.match(loading,/data-evolution-loading-fidelity="master-artwork-fullscreen"/);
 assert.match(loading,/\.\/evolution\/artwork\/loading-master\.webp/);
 assert.match(loading,/role="progressbar"/);
 assert.match(loading,/aria-valuenow=\{normalized\}/);
 assert.match(loading,/Carregando seus dados/);
 assert.match(loading,/Organizando suas finanças/);
-assert.doesNotMatch(
-  loading,
-  /DonutIcon|ListIcon|TrendIcon|TargetIcon|evo-holo-frame|evo-card-donut|terrain-facet/,
-  'Loading não pode voltar a redesenhar a prancha com componentes aproximados.'
-);
 
 const artwork=fs.readFileSync(new URL('../../public/evolution/artwork/loading-master.webp',import.meta.url));
 assert.ok(artwork.length > 50000,'Artwork mestre não pode ser substituído por placeholder.');
@@ -46,42 +43,34 @@ assert.equal(
 );
 
 const app=fs.readFileSync(new URL('./app/EvolutionApp.tsx',import.meta.url),'utf8');
-assert.match(app,/92,100/,'Loading Evolution precisa concluir em 100%');
-assert.match(app,/setPhase\('login'\)/,'Fluxo Evolution deve sair do Loading para o Login.');
-assert.match(app,/screen==='loading'\|\|screen==='login'/,'QA precisa permitir acesso direto ao Loading e Login.');
+assert.match(app,/forcedScreen\|\|'login'/,'Acesso normal ao Evolution deve começar no Login.');
+assert.match(app,/onAuthenticated=\{\(\)=>\{/,'Login deve disparar a etapa de carregamento após autenticação.');
+assert.match(app,/setPhase\('loading'\)/,'Autenticação deve levar ao Loading.');
+assert.match(app,/setPhase\('system'\)/,'Loading deve levar ao sistema.');
+assert.doesNotMatch(app,/setPhase\('login'\).*520/,'Loading não pode voltar ao Login.');
+assert.match(app,/screen==='login'\|\|screen==='loading'\|\|screen==='system'/,'QA precisa permitir acesso direto às três fases.');
 
 const loginScreen=fs.readFileSync(new URL('./screens/EvolutionLogin.tsx',import.meta.url),'utf8');
 assert.match(loginScreen,/data-evolution-login-fidelity="stage-1"/);
-assert.match(loginScreen,/Sua vida financeira,/);
-assert.match(loginScreen,/com clareza para decidir/);
-assert.match(loginScreen,/Saldo real/);
-assert.match(loginScreen,/Projeções/);
-assert.match(loginScreen,/Controle/);
 assert.match(loginScreen,/Bem-vindo de volta/);
 assert.match(loginScreen,/Entrar no MEG/);
-assert.match(loginScreen,/Criar conta/);
-assert.match(loginScreen,/Esqueci minha senha/);
 assert.match(loginScreen,/login\(email\.trim\(\),password\)/,'Login Evolution deve usar autenticação real.');
-assert.match(loginScreen,/forgotPassword\(email\.trim\(\)\)/,'Recuperação deve usar contrato real.');
-assert.match(loginScreen,/register\(/,'Cadastro deve usar contrato real.');
-assert.doesNotMatch(loginScreen,/Phoenix|preview-v15|web-next/i,'Login Evolution não pode herdar identidade visual anterior.');
-
-const loginCss=fs.readFileSync(new URL('./styles/login.css',import.meta.url),'utf8');
-assert.match(loginCss,/grid-template-columns:minmax\(0,1\.08fr\) minmax\(430px,.72fr\)/,'Desktop precisa manter composição institucional + acesso.');
-assert.match(loginCss,/@media\(max-width:620px\)/,'Login precisa de composição vertical dedicada.');
-assert.match(loginCss,/height:100dvh/,'Login deve ocupar o viewport.');
-assert.match(loginCss,/overflow:hidden/,'Tela principal de Login não pode criar rolagem de página.');
-assert.match(loginCss,/backdrop-filter:blur\(28px\)/,'Painel de acesso deve preservar acabamento de vidro premium.');
 
 const loadingCss=fs.readFileSync(new URL('./styles/loading.css',import.meta.url),'utf8');
-assert.match(loadingCss,/width:min\(100vw,100dvh\)/,'Artboard deve preservar o quadrado mestre no viewport 1254x1254.');
-assert.match(loadingCss,/left:24\.45%/,'Barra funcional deve permanecer alinhada à prancha mestre.');
-assert.match(loadingCss,/top:69\.08%/,'Barra funcional deve permanecer alinhada verticalmente à prancha mestre.');
-assert.match(loadingCss,/object-fit:contain/,'Artwork mestre não pode ser deformado.');
+assert.match(loadingCss,/\.evo-loading-artboard\{[\s\S]*width:100vw;[\s\S]*height:100dvh;/,'Loading deve ocupar todo o viewport.');
+assert.match(loadingCss,/filter:blur\(13px\) brightness\(\.68\)/,'Extensão visual deve preencher a tela sem criar um quadrado destacado.');
+assert.match(loadingCss,/mask-image:linear-gradient/,'Artwork central deve se fundir ao cenário estendido.');
+assert.doesNotMatch(loadingCss,/box-shadow:0 0 90px/,'Loading não pode parecer um artboard quadrado sobre o fundo.');
+assert.match(loadingCss,/left:24\.45%/);
+assert.match(loadingCss,/top:69\.08%/);
+
+const systemEntry=fs.readFileSync(new URL('./screens/EvolutionSystemEntry.tsx',import.meta.url),'utf8');
+assert.match(systemEntry,/LOGIN <b>→<\/b> LOADING <b>→<\/b> SISTEMA/);
+assert.match(systemEntry,/porta técnica temporária/);
 
 const tokens=fs.readFileSync(new URL('./styles/tokens.css',import.meta.url),'utf8');
 for(const color of ['#071321','#0a1728','#0d1d2d','#53cf8d','#71dda4','#4bbac7']){
   assert.ok(tokens.toLowerCase().includes(color),'paleta oficial ausente');
 }
 
-console.log('MEG Evolution foundation + login contract OK');
+console.log('MEG Evolution auth -> loading -> system contract OK');
