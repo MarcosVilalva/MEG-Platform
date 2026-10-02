@@ -48,12 +48,16 @@ export function WebNextMovementEditor({
   launchPreset,
   editRequest,
   onSnapshot,
+  onLaunchConsumed,
+  onEditConsumed,
 }: {
   data: PhoenixReadModel;
   launchRequest: number;
   launchPreset: 'expense' | 'income' | 'benefit' | 'transfer';
   editRequest?: WebNextMovementEditRequest | null;
   onSnapshot?: (snapshot: PhoenixReadModel) => void;
+  onLaunchConsumed?: () => void;
+  onEditConsumed?: () => void;
 }) {
   const context = useMemo(() => buildWebNextEditorContext(data), [data]);
   const [open, setOpen] = useState(false);
@@ -99,10 +103,15 @@ export function WebNextMovementEditor({
   }
 
   useEffect(() => {
-    if (launchRequest <= 0 || launchRequest === launchTokenRef.current) return;
+    if (launchRequest <= 0) {
+      launchTokenRef.current = 0;
+      return;
+    }
+    if (launchRequest === launchTokenRef.current) return;
     launchTokenRef.current = launchRequest;
     initialize(blankWebNextEditorDraft(launchPreset as WebNextEditorMode, context), null);
-  }, [launchRequest, launchPreset, context]);
+    onLaunchConsumed?.();
+  }, [launchRequest, launchPreset, context, onLaunchConsumed]);
 
   useEffect(() => {
     if (!editRequest || editRequest.token === editTokenRef.current) return;
@@ -110,7 +119,8 @@ export function WebNextMovementEditor({
     const nextTarget = resolveWebNextEditorTarget(data, editRequest.eventId);
     if (!nextTarget) return;
     initialize(draftFromWebNextTarget(nextTarget, context), nextTarget);
-  }, [editRequest, data, context]);
+    onEditConsumed?.();
+  }, [editRequest, data, context, onEditConsumed]);
 
   useEffect(() => {
     if (!open) return;
